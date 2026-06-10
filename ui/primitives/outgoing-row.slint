@@ -1,0 +1,180 @@
+import { Palette, Theme, Reaction, MessageLine, ProfileSink } from "../tokens.slint";
+import { Avatar } from "avatar.slint";
+import { MessageBubble } from "message-bubble.slint";
+import { ReactionChips, HoverActions } from "reactions-row.slint";
+
+export component OutgoingRow inherits VerticalLayout {
+    in property <string> text;
+    in property <[MessageLine]> lines;
+    in property <string> stamp;
+    in property <length> bubble-max: 440px;
+    in property <length> row-w: 9999px;
+    in property <bool> show-avatar: true;
+    in property <bool> align-right: true;
+    in property <color> av-a: #BEF264;
+    in property <color> av-b: #65A30D;
+    in property <string> av-initials: "Y";
+    in property <image> av-picture;
+    in property <bool> av-has-picture: false;
+    // Own account-id hex — avatar taps open the profile modal via ProfileSink.
+    in property <string> sender-id;
+    in property <string> message-id;
+    in property <[Reaction]> reactions;
+    in property <bool> first-in-group: true;
+    in property <bool> last-in-group: true;
+    in property <bool> pending: false;
+    in property <bool> failed: false;
+    in property <string> reply-to-id;
+    in property <string> reply-to-text;
+    in property <string> reply-to-author;
+    in property <bool> has-attachment: false;
+    in property <string> att-name;
+    in property <string> att-mime;
+    in property <string> att-size-label;
+    in property <bool> att-is-image: false;
+    in property <image> att-image;
+    in property <bool> att-has-image: false;
+    in property <bool> att-loading: false;
+    in property <bool> att-failed: false;
+    in property <bool> edited: false;
+    in property <int> edit-count: 0;
+    in property <bool> can-edit: false;
+    callback react(string, string);
+    callback unreact(string);
+    callback request-picker(string, length, length);
+    callback request-reply(string, string, string);
+    callback request-edit(string, string);
+    // message_id, text, author, can_edit, window-abs x, y
+    callback request-context-menu(string, string, string, bool, length, length);
+    callback show-history(string);
+    callback retry();
+    callback attachment-clicked(string);
+
+    spacing: 0;
+
+    HorizontalLayout {
+        spacing: 10px;
+        alignment: root.align-right ? end : start;
+
+        if root.align-right : Rectangle { horizontal-stretch: 1; }
+
+        if !root.align-right && root.show-avatar : TouchArea {
+            width: 28px;
+            height: 28px;
+            mouse-cursor: pointer;
+            clicked => { if (root.sender-id != "") { ProfileSink.open(root.sender-id); } }
+            Avatar {
+                size: 28px;
+                y: 0;
+                initials: root.av-initials;
+                color-a: root.av-a;
+                color-b: root.av-b;
+                picture: root.av-picture;
+                has-picture: root.av-has-picture;
+                font-size: (Theme.retro ? 14px : 9px) * Theme.fs-scale;
+            }
+        }
+        if !root.align-right && !root.show-avatar : Rectangle { width: 28px; }
+
+        VerticalLayout {
+            spacing: 2px;
+
+            block := Rectangle {
+                horizontal-stretch: 0;
+                width: bubble.width;
+                height: bubble.height;
+
+                // Stable hover region spanning toolbar → bubble. The toolbar
+                // floats on the side opposite the avatar (left when right-
+                // aligned), overflowing into the gutter.
+                hover := TouchArea {
+                    x: root.align-right ? -(acts.width + 6px) : 0px;
+                    y: 0;
+                    width: bubble.width + 6px + acts.width;
+                    height: parent.height;
+                }
+
+                bubble := MessageBubble {
+                    x: 0; y: 0;
+                    message: root.text;
+                    lines: root.lines;
+                    stamp: root.stamp;
+                    outgoing: true;
+                    max-w: root.bubble-max;
+                    available-w: max(80px, root.row-w - 28px - 10px - 10px);
+                    first-in-group: root.first-in-group;
+                    last-in-group: root.last-in-group;
+                    pending: root.pending;
+                    failed: root.failed;
+                    reply-to-id: root.reply-to-id;
+                    reply-to-text: root.reply-to-text;
+                    reply-to-author: root.reply-to-author;
+                    has-attachment: root.has-attachment;
+                    att-name: root.att-name;
+                    att-mime: root.att-mime;
+                    att-size-label: root.att-size-label;
+                    att-is-image: root.att-is-image;
+                    att-image: root.att-image;
+                    att-has-image: root.att-has-image;
+                    att-loading: root.att-loading;
+                    att-failed: root.att-failed;
+                    edited: root.edited;
+                    edit-count: root.edit-count;
+                    retry-clicked => { root.retry(); }
+                    attachment-clicked => { root.attachment-clicked(root.message-id); }
+                    show-history-clicked => { root.show-history(root.message-id); }
+                    context-menu-requested(ax, ay) => {
+                        // Same gate as the hover toolbar: confirmed rows only.
+                        if (root.message-id != "" && !root.pending && !root.failed) {
+                            root.request-context-menu(root.message-id, root.text, @tr("You"), root.can-edit, ax, ay);
+                        }
+                    }
+                }
+
+                acts := HoverActions {
+                    x: root.align-right ? -(self.width + 6px) : (bubble.width + 6px);
+                    y: (parent.height - self.height) / 2;
+                    message-id: root.message-id;
+                    reply-preview-text: root.text;
+                    reply-author: @tr("You");
+                    can-edit: root.can-edit;
+                    visible: root.message-id != "" && !root.pending && !root.failed
+                        && (hover.has-hover || self.hovered);
+                    opacity: (hover.has-hover || self.hovered) ? 1.0 : 0.0;
+                    animate opacity { duration: 100ms; }
+                    request-picker(id, ax, ay) => { root.request-picker(id, ax, ay); }
+                    request-reply(id, preview, author) => { root.request-reply(id, preview, author); }
+                    request-edit(id, current) => { root.request-edit(id, current); }
+                }
+            }
+
+            if root.message-id != "" && !root.pending && !root.failed && root.reactions.length > 0 : ReactionChips {
+                message-id: root.message-id;
+                reactions: root.reactions;
+                align-right: root.align-right;
+                react(id, emoji) => { root.react(id, emoji); }
+                unreact(id) => { root.unreact(id); }
+            }
+        }
+
+        if root.align-right && root.show-avatar : TouchArea {
+            width: 28px;
+            height: 28px;
+            mouse-cursor: pointer;
+            clicked => { if (root.sender-id != "") { ProfileSink.open(root.sender-id); } }
+            Avatar {
+                size: 28px;
+                y: 0;
+                initials: root.av-initials;
+                color-a: root.av-a;
+                color-b: root.av-b;
+                picture: root.av-picture;
+                has-picture: root.av-has-picture;
+                font-size: (Theme.retro ? 14px : 9px) * Theme.fs-scale;
+            }
+        }
+        if root.align-right && !root.show-avatar : Rectangle { width: 28px; }
+
+        if !root.align-right : Rectangle { horizontal-stretch: 1; }
+    }
+}

@@ -1,0 +1,325 @@
+import { Palette, Theme } from "../tokens.slint";
+import { LogoMark } from "../icons/logo-mark.slint";
+import { ChatBubbleIcon } from "../icons/chat-bubble-icon.slint";
+import { PeopleIcon } from "../icons/people-icon.slint";
+import { ArchiveIcon } from "../icons/archive-icon.slint";
+import { KeyIcon } from "../icons/key-icon.slint";
+import { PlusIcon } from "../icons/plus-icon.slint";
+import { SettingsIcon } from "../icons/settings-icon.slint";
+import { Avatar } from "../primitives/avatar.slint";
+import { MiniBadge } from "../primitives/unread-badge.slint";
+import { Tooltip } from "../primitives/tooltip.slint";
+
+// ─── Inner components ─────────────────────────────────────────────────────
+
+// One navigation item in the left rail — icon + optional label + badge + tooltip.
+component NavItem inherits Rectangle {
+    callback clicked;
+    in property <string> label: "";
+    in property <bool> selected: false;
+    in property <bool> has-badge: false;
+    in property <bool> show-glow: false;
+    in property <bool> rail-expanded: false;
+    in property <length> rail-width: 56px;
+    out property <bool> item-hovered: touch.has-hover;
+
+    height: 36px;
+    width: root.rail-width;
+    background: root.selected
+        ? Palette.selected
+        : (touch.has-hover ? Palette.hover : transparent);
+    border-radius: (6px) * Theme.r-scale;
+    animate background { duration: 100ms; easing: ease-out; }
+
+    // Glow ring for active-chat indicator (when not on Chats page).
+    if root.show-glow : Rectangle {
+        x: 4px; y: 4px;
+        width: parent.width - 8px;
+        height: parent.height - 8px;
+        border-radius: (6px) * Theme.r-scale;
+        border-width: 1.5px;
+        border-color: Palette.mint;
+        opacity: 0.6;
+    }
+
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        spacing: 10px;
+        alignment: start;
+
+        // Icon container — fixed 36px square so icons stay centered when collapsed.
+        Rectangle {
+            width: 36px; height: 36px;
+            VerticalLayout {
+                alignment: center;
+                HorizontalLayout {
+                    alignment: center;
+                    @children
+                }
+            }
+        }
+
+        // Label — fades in when expanded.
+        Text {
+            text: root.label;
+            color: root.selected
+                ? (Theme.retro ? Palette.bubble-out-fg : Palette.mint)
+                : Palette.text-mid;
+            font-size: (11px) * Theme.fs-scale;
+            font-weight: 600;
+            font-family: Theme.font;
+            vertical-alignment: center;
+            opacity: root.rail-expanded ? 1.0 : 0.0;
+            animate opacity { duration: 120ms; easing: ease-out; }
+        }
+    }
+
+    // Badge dot — top-right of the icon.
+    if root.has-badge : MiniBadge {
+        x: 28px;
+        y: 4px;
+    }
+
+    // Tooltip when collapsed and hovered.
+    if !root.rail-expanded && touch.has-hover && root.label != "" : Tooltip {
+        x: root.width + 8px;
+        y: touch.mouse-y - 14px;
+        label: root.label;
+        is-visible: touch.has-hover;
+        offset-y: 0px;
+    }
+
+    touch := TouchArea {
+        clicked => { root.clicked(); }
+    }
+}
+
+// Profile tile at the bottom of the rail.
+component ProfileTile inherits Rectangle {
+    callback clicked;
+    in property <string> initials: "?";
+    in property <color> color-a: Palette.mint;
+    in property <color> color-b: Palette.mint-dim;
+    in property <image> picture;
+    in property <bool> has-picture: false;
+    in property <bool> selected: false;
+    in property <bool> rail-expanded: false;
+    in property <length> rail-width: 56px;
+    out property <bool> item-hovered: touch.has-hover;
+
+    height: root.rail-expanded ? 56px : 36px;
+    width: root.rail-width;
+    background: root.selected
+        ? Palette.selected
+        : (touch.has-hover ? Palette.hover : transparent);
+    border-radius: (6px) * Theme.r-scale;
+    animate background, height { duration: 100ms; easing: ease-out; }
+
+    // Avatar container — full width minus padding, centered.
+    Rectangle {
+        width: root.rail-expanded ? root.rail-width - 16px : 32px;
+        height: root.rail-expanded ? 48px : 32px;
+        x: root.rail-expanded ? 8px : (root.rail-width - 32px) / 2;
+        y: (parent.height - self.height) / 2;
+        border-radius: (8px) * Theme.r-scale;
+        border-width: 1px;
+        border-color: root.selected
+            ? Palette.mint
+            : (touch.has-hover ? Palette.mint-dim : transparent);
+        animate border-color { duration: 100ms; easing: ease-out; }
+
+        Avatar {
+            size: root.rail-expanded ? 44px : 28px;
+            initials: root.initials;
+            color-a: root.color-a;
+            color-b: root.color-b;
+            picture: root.picture;
+            has-picture: root.has-picture;
+            font-size: (Theme.retro ? 18px : 11px) * Theme.fs-scale;
+        }
+    }
+
+    // Tooltip when collapsed and hovered.
+    if !root.rail-expanded && touch.has-hover : Tooltip {
+        x: root.width + 8px;
+        y: touch.mouse-y - 14px;
+        label: @tr("Profile");
+        is-visible: touch.has-hover;
+        offset-y: 0px;
+    }
+
+    touch := TouchArea {
+        clicked => { root.clicked(); }
+    }
+}
+
+// ─── Main component ───────────────────────────────────────────────────────
+
+export component LeftRail inherits Rectangle {
+    callback nav-clicked(int);
+    callback plus-clicked;
+    callback settings-clicked;
+    callback profile-clicked;
+
+    in property <int> selected-index: 0;
+    in property <string> my-initials: "?";
+    in property <color> my-color-a: Palette.mint;
+    in property <color> my-color-b: Palette.mint-dim;
+    in property <image> my-picture;
+    in property <bool> my-has-picture: false;
+    in property <string> my-display-name: "";
+
+    in property <int> badge-chats: 0;
+    in property <int> badge-contacts: 0;
+    in property <int> badge-archive: 0;
+    in property <int> badge-keys: 0;
+
+    in property <bool> has-active-chat: false;
+
+    property <color> selected-glyph: Theme.retro ? Palette.bubble-out-fg : Palette.mint;
+
+    property <length> collapsed-width: 56px;
+    property <length> expanded-width: 160px;
+    // Width driven by hover state — the rail itself detects hover.
+    width: root.is-hovered ? root.expanded-width : root.collapsed-width;
+    background: Palette.rail;
+    animate width { duration: 180ms; easing: ease-out; }
+
+    // Right border.
+    Rectangle {
+        x: parent.width - 1px;
+        width: 1px; height: parent.height;
+        background: Palette.border-2;
+    }
+
+    // Full-size hover detector — declared first so content is painted on top.
+    // enabled: true allows has-hover to work; since it's behind the NavItems,
+    // clicks pass through to the NavItem TouchAreas above.
+    hover-area := TouchArea {
+        width: parent.width;
+        height: parent.height;
+    }
+
+    property <bool> is-hovered:
+        hover-area.has-hover
+        || nav0.item-hovered
+        || nav1.item-hovered
+        || nav2.item-hovered
+        || nav3.item-hovered
+        || nav-new.item-hovered
+        || nav-settings.item-hovered
+        || profile.item-hovered;
+
+    // Content.
+    VerticalLayout {
+        padding-top: 12px;
+        padding-bottom: 16px;
+        spacing: 8px;
+        alignment: stretch;
+
+        // ── Logo ──
+        Rectangle {
+            height: 44px;
+            LogoMark { size: 18px; color: Palette.text-hi; }
+        }
+        Rectangle { height: 4px; }
+
+        // ── Primary nav ──
+        nav0 := NavItem {
+            label: @tr("Chats");
+            selected: root.selected-index == 0;
+            has-badge: root.badge-chats > 0;
+            show-glow: root.has-active-chat && root.selected-index != 0;
+            rail-expanded: root.is-hovered;
+            rail-width: root.width;
+            ChatBubbleIcon {
+                stroke: root.selected-index == 0 ? root.selected-glyph : Palette.text-mid;
+                filled: root.selected-index == 0;
+            }
+            clicked => { root.nav-clicked(0); }
+        }
+        nav1 := NavItem {
+            label: @tr("Contacts");
+            selected: root.selected-index == 1;
+            has-badge: root.badge-contacts > 0;
+            rail-expanded: root.is-hovered;
+            rail-width: root.width;
+            PeopleIcon {
+                stroke: root.selected-index == 1 ? root.selected-glyph : Palette.text-mid;
+            }
+            clicked => { root.nav-clicked(1); }
+        }
+        nav2 := NavItem {
+            label: @tr("Archive");
+            selected: root.selected-index == 2;
+            has-badge: root.badge-archive > 0;
+            rail-expanded: root.is-hovered;
+            rail-width: root.width;
+            ArchiveIcon {
+                stroke: root.selected-index == 2 ? root.selected-glyph : Palette.text-mid;
+            }
+            clicked => { root.nav-clicked(2); }
+        }
+        nav3 := NavItem {
+            label: @tr("Keys");
+            selected: root.selected-index == 3;
+            has-badge: root.badge-keys > 0;
+            rail-expanded: root.is-hovered;
+            rail-width: root.width;
+            KeyIcon {
+                stroke: root.selected-index == 3 ? root.selected-glyph : Palette.text-mid;
+            }
+            clicked => { root.nav-clicked(3); }
+        }
+
+        // New chat — same style as nav items, accent icon.
+        nav-new := NavItem {
+            label: @tr("New chat");
+            rail-expanded: root.is-hovered;
+            rail-width: root.width;
+            PlusIcon {
+                stroke: Palette.mint;
+                size: 14px;
+            }
+            clicked => { root.plus-clicked(); }
+        }
+
+        // ── Divider ──
+        Rectangle { height: 8px; }
+        Rectangle {
+            width: root.width;
+            height: 1px;
+            background: Palette.border-2;
+            opacity: 0.4;
+        }
+        Rectangle { height: 8px; }
+
+        // ── Meta ──
+        nav-settings := NavItem {
+            label: @tr("Settings");
+            selected: root.selected-index == 4;
+            rail-expanded: root.is-hovered;
+            rail-width: root.width;
+            SettingsIcon {
+                stroke: root.selected-index == 4 ? root.selected-glyph : Palette.text-mid;
+            }
+            clicked => { root.settings-clicked(); }
+        }
+
+        Rectangle { vertical-stretch: 1; }
+
+        // ── Profile ──
+        profile := ProfileTile {
+            initials: root.my-initials;
+            color-a: root.my-color-a;
+            color-b: root.my-color-b;
+            picture: root.my-picture;
+            has-picture: root.my-has-picture;
+            selected: root.selected-index == 5;
+            rail-expanded: root.is-hovered;
+            rail-width: root.width;
+            clicked => { root.profile-clicked(); }
+        }
+    }
+}

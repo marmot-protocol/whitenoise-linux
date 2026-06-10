@@ -1,0 +1,41 @@
+import { Palette , Theme} from "../tokens.slint";
+
+export component PageHeader inherits Rectangle {
+    in property <string> title;
+    in property <string> caption;
+
+    height: 56px;
+
+    HorizontalLayout {
+        spacing: 14px;
+        alignment: start;
+
+        Rectangle {
+            width: 36px; height: 36px;
+            y: (parent.height - self.height) / 2;
+            border-radius: (6px) * Theme.r-scale;
+            border-width: 1px;
+            border-color: Palette.border;
+            @children
+        }
+
+        VerticalLayout {
+            spacing: 4px;
+            alignment: center;
+            horizontal-stretch: 1;
+            Text {
+                text: root.title;
+                color: Palette.text-hi;
+                font-size: (16px) * Theme.fs-scale;
+                font-weight: 700;
+            }
+            Text {
+                text: root.caption;
+                color: Palette.text-lo;
+                font-size: (10px) * Theme.fs-scale;
+                font-weight: 600;
+                letter-spacing: 1.2px;
+            }
+        }
+    }
+}

@@ -1,0 +1,14 @@
+import { Palette } from "../tokens.slint";
+
+export component MonitorIcon inherits Rectangle {
+    in property <color> stroke: Palette.text-mid;
+    width: 18px; height: 14px;
+    Rectangle {
+        x: 0; y: 0;
+        width: 18px; height: 11px;
+        border-radius: 1.5px;
+        border-width: 1.3px; border-color: root.stroke;
+    }
+    Rectangle { x: 5px; y: 11px; width: 8px; height: 1.2px; background: root.stroke; }
+    Rectangle { x: 7px; y: 12px; width: 4px; height: 1.4px; background: root.stroke; }
+}

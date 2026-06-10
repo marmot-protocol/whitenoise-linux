@@ -1,0 +1,120 @@
+// Generic button primitive — the only button in the system.
+// Variations: pass overrides at the call site, or use the presets below.
+//
+// @children slot is for an optional leading icon. Label is set via `label` property.
+import { Palette, Theme } from "../tokens.slint";
+
+export component Button inherits Rectangle {
+    callback clicked;
+    in property <string> label;
+    in property <length> button-height: 32px;
+    in property <length> button-width: 0px;   // 0 = auto (preferred-width)
+    in property <length> min-w: 0px;
+    in property <length> radius: 6px;
+    in property <length> pad-left: 12px;
+    in property <length> pad-right: 14px;
+    in property <length> spacing: 8px;
+    in property <length> font-size: Theme.retro ? 16px : 12px;
+    in property <int>    font-weight: 700;
+    in property <color>  fg: Palette.text-hi;
+    in property <color>  bg-color: Palette.panel-2;
+    in property <color>  outline: Palette.border;
+    in property <length> border-w: Theme.border-w;
+    in property <bool>   selected: false;
+    in property <color>  selected-bg: Palette.selected;
+    in property <color>  hover-bg: Palette.bubble-in;
+    in property <color>  hover-fg: root.fg;
+    in property <color>  hover-outline: root.outline;
+    in property <bool>   use-hover: true;
+    in property <bool>   has-fill: true;
+    out property <bool> has-hover: touch.has-hover;
+    out property <bool> is-primary: root.bg-color == Palette.mint;
+
+    height: root.button-height;
+    min-width: root.button-width > 0px ? root.button-width : root.min-w;
+    max-width: root.button-width > 0px ? root.button-width : 100000px;
+    border-radius: (root.radius) * Theme.r-scale;
+    border-width: root.border-w;
+    border-color: root.use-hover && touch.has-hover ? root.hover-outline : root.outline;
+    background: root.selected
+        ? root.selected-bg
+        : (root.use-hover && touch.has-hover ? root.hover-bg : root.bg-color);
+    drop-shadow-color: Theme.retro && root.has-fill ? Palette.shadow
+        : (root.is-primary && root.has-fill ? Palette.mint-glow : transparent);
+    // In retro: hover pushes the shadow further (3px) for a "lifted" SNES-button feel.
+    drop-shadow-offset-x: Theme.retro && root.has-fill
+        ? (root.use-hover && touch.has-hover ? 3px : 2px)
+        : (root.is-primary && root.has-fill && touch.has-hover ? 0px : 0px);
+    drop-shadow-offset-y: Theme.retro && root.has-fill
+        ? (root.use-hover && touch.has-hover ? 3px : 2px)
+        : (root.is-primary && root.has-fill ? 2px : 0px);
+    drop-shadow-blur: Theme.retro && root.has-fill ? 0px : (root.is-primary && root.has-fill ? 12px : 0px);
+    animate background, border-color { duration: 120ms; easing: ease-out; }
+    animate drop-shadow-offset-x, drop-shadow-offset-y { duration: 90ms; easing: ease-out; }
+
+    // SNES bevel: bright pixel highlight on top edge, dark shade on bottom.
+    if Theme.retro && root.has-fill && !touch.has-hover : Rectangle {
+        x: root.border-w; y: root.border-w;
+        width: parent.width - root.border-w * 2;
+        height: 2px;
+        background: Palette.bevel-hi;
+        opacity: root.selected ? 0.6 : 0.35;
+    }
+    if Theme.retro && root.has-fill && !touch.has-hover : Rectangle {
+        x: root.border-w; y: parent.height - root.border-w - 2px;
+        width: parent.width - root.border-w * 2;
+        height: 2px;
+        background: Palette.bevel-lo;
+        opacity: 0.5;
+    }
+
+    HorizontalLayout {
+        padding-left: root.pad-left;
+        padding-right: root.label == "" ? root.pad-left : root.pad-right;
+        spacing: root.spacing;
+        alignment: center;
+
+        VerticalLayout {
+            alignment: center;
+            @children
+        }
+
+        if root.label != "" : Text {
+            text: root.label;
+            color: root.use-hover && touch.has-hover ? root.hover-fg : root.fg;
+            font-size: (root.font-size) * Theme.fs-scale;
+            font-weight: root.font-weight;
+            font-family: Theme.font;
+            vertical-alignment: center;
+            animate color { duration: 120ms; easing: ease-out; }
+        }
+    }
+
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+// Small chip-style button (info-row actions in settings/profile/keys/contacts).
+export component MicroButton inherits Button {
+    button-height: 26px;
+    radius: 5px;
+    pad-left: 10px;
+    pad-right: 12px;
+    spacing: 6px;
+    font-size: Theme.retro ? 15px : 11px;
+}
+
+// Icon-only ghost button used in the left nav rail.
+export component RailButton inherits Button {
+    button-height: 30px;
+    button-width: 36px;
+    radius: 6px;
+    bg-color: transparent;
+    outline: transparent;
+    border-w: 0px;
+    has-fill: false;
+    use-hover: true;
+    hover-bg: Palette.hover;
+    pad-left: 0px;
+    pad-right: 0px;
+    spacing: 0px;
+}

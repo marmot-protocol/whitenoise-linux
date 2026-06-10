@@ -1,0 +1,38 @@
+import { Palette, Theme } from "../tokens.slint";
+
+// Tooltip — a small floating label that appears to the right of a target element.
+// Used in the left rail for icon-only buttons when the rail is collapsed.
+export component Tooltip inherits Rectangle {
+    in property <string> label: "";
+    in property <bool> is-visible: false;
+    in property <length> offset-y: 0px;
+
+    x: 0px;
+    y: root.offset-y;
+    width: self.preferred-width;
+    height: 28px;
+    background: Palette.elevated;
+    border-radius: (6px) * Theme.r-scale;
+    border-width: Theme.border-w;
+    border-color: Palette.elevated-border;
+    opacity: root.is-visible ? 1.0 : 0.0;
+    drop-shadow-color: Theme.retro ? Palette.shadow : #00000040;
+    drop-shadow-offset-x: Theme.retro ? 2px : 0px;
+    drop-shadow-offset-y: Theme.retro ? 2px : 1px;
+    drop-shadow-blur: Theme.retro ? 0px : 4px;
+    animate opacity { duration: 120ms; easing: ease-out; }
+
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        alignment: center;
+        Text {
+            text: root.label;
+            color: Palette.text-mid;
+            font-size: (10px) * Theme.fs-scale;
+            font-weight: 600;
+            font-family: Theme.font;
+            vertical-alignment: center;
+        }
+    }
+}

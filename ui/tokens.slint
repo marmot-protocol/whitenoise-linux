@@ -1,0 +1,342 @@
+// design tokens — colors + shared structs.
+
+// Retro mode uses Zpix — a 12px-grid pixel font with full CJK coverage. Picked
+// over Press Start 2P because PS2P is ASCII-only, so any non-Latin chat text
+// rendered as tofu in retro.
+import "../assets/fonts/Zpix.ttf";
+
+export global Theme {
+    // when true, the regular modern UI uses a warm light palette.
+    in-out property <bool> light: false;
+    // when true, the entire UI flips to a SNES-era palette + chunky typography.
+    in-out property <bool> retro: false;
+    // 0=mint, 1=ocean, 2=berry, 3=coral, 4=lavender
+    in-out property <int> accent: 0;
+    out property <string> font: root.retro ? "Zpix" : "JetBrains Mono";
+    // multiplier applied to every border-radius — 0 in retro for pixel-sharp corners.
+    out property <float> r-scale: root.retro ? 0.0 : 1.0;
+    // base border width — chunky 2px outlines in retro.
+    out property <length> border-w: root.retro ? 2px : 1px;
+    // Zpix is a bitmap pixel font — it renders crisply only at integer
+    // multiples of its native 12px grid and looks blurry/tiny at fractional
+    // sizes. Identity scale in both modes; per-call-site `font-size` values
+    // are authoritative.
+    out property <float> fs-scale: 1.0;
+}
+
+export global Palette {
+    // SNES-era palette: deep indigo canvas, vivid Mario-yellow accent, crisp white text.
+    // Modern palettes: layered charcoal or warm paper surfaces with a mint accent.
+    out property <color> bg:        Theme.retro ? #0d0d28 : (Theme.light ? #F6F2EA : #060708);
+    out property <color> panel:     Theme.retro ? #2B2B7F : (Theme.light ? #FFFFFF : #0B0D0F);
+    out property <color> panel-2:   Theme.retro ? #3838A8 : (Theme.light ? #F8FAFC : #101316);
+    out property <color> rail:      Theme.retro ? #0E0E36 : (Theme.light ? #ECE6DA : #060708);
+    out property <color> banner:    Theme.retro ? #3838A8 : (Theme.light ? #ECFDF3 : #0D1014);
+    // Retro borders: warm cream instead of pure white to cut glare against the indigo bg.
+    out property <color> border:    Theme.retro ? #E8E0C4 : (Theme.light ? #D7D0C3 : #1C2128);
+    out property <color> border-2:  Theme.retro ? #9090E0 : (Theme.light ? #E7DFD2 : #14181D);
+    // Retro bubble: deep SNES-dialog indigo so cream body text reads cleanly.
+    // (The old #4848C8 was too light/saturated to host text comfortably.)
+    out property <color> bubble-in: Theme.retro ? #1F1F6E : (Theme.light ? #FFFFFF : #141A21);
+
+    // Accent color lookup tables — indexed by Theme.accent (0..4).
+    // Each entry is: [mint, ocean, berry, coral, lavender].
+    property <[color]> accent-base: [
+        Theme.retro ? #FFD93D : (Theme.light ? #16855F : #72F0B0),
+        Theme.retro ? #6B8CFF : (Theme.light ? #0D5AA0 : #4AA8FF),
+        Theme.retro ? #FF6B9D : (Theme.light ? #C73E6E : #FF6B9D),
+        Theme.retro ? #FF8C42 : (Theme.light ? #C45C1A : #FF8C42),
+        Theme.retro ? #C9A0DC : (Theme.light ? #7B5FB0 : #B8A1E6),
+    ];
+    property <[color]> accent-hi: [
+        Theme.retro ? #FFE873 : (Theme.light ? #1EA875 : #8AF7C0),
+        Theme.retro ? #8CA5FF : (Theme.light ? #1A70B8 : #6BC4FF),
+        Theme.retro ? #FF8CB5 : (Theme.light ? #E05585 : #FF8CB5),
+        Theme.retro ? #FFAB6B : (Theme.light ? #D4712E : #FFAB6B),
+        Theme.retro ? #DEB8F0 : (Theme.light ? #9678C9 : #D4BFF2),
+    ];
+    property <[color]> accent-dim: [
+        Theme.retro ? #C9A521 : (Theme.light ? #0F6B4B : #3DD68A),
+        Theme.retro ? #4A6BCC : (Theme.light ? #084578 : #2A7ACC),
+        Theme.retro ? #CC3E6E : (Theme.light ? #9E2E56 : #CC3E6E),
+        Theme.retro ? #CC6B2A : (Theme.light ? #9E4710 : #CC6B2A),
+        Theme.retro ? #A07AB8 : (Theme.light ? #5E4696 : #8C75B8),
+    ];
+    property <[color]> accent-glow: [
+        Theme.retro ? #FFD93D40 : (Theme.light ? #16855F22 : #72F0B018),
+        Theme.retro ? #6B8CFF40 : (Theme.light ? #0D5AA022 : #4AA8FF18),
+        Theme.retro ? #FF6B9D40 : (Theme.light ? #C73E6E22 : #FF6B9D18),
+        Theme.retro ? #FF8C4240 : (Theme.light ? #C45C1A22 : #FF8C4218),
+        Theme.retro ? #C9A0DC40 : (Theme.light ? #7B5FB022 : #B8A1E618),
+    ];
+    property <[color]> accent-surface: [
+        Theme.retro ? #FFD93D30 : (Theme.light ? #DFF5EA : #122820),
+        Theme.retro ? #6B8CFF30 : (Theme.light ? #E0F0FF : #0F1A2E),
+        Theme.retro ? #FF6B9D30 : (Theme.light ? #FFE0EC : #2E0F18),
+        Theme.retro ? #FF8C4230 : (Theme.light ? #FFF0E0 : #2E150F),
+        Theme.retro ? #C9A0DC30 : (Theme.light ? #F0E8FF : #1A0F2E),
+    ];
+
+    out property <color> mint:      accent-base[Theme.accent];
+    out property <color> mint-hi:   accent-hi[Theme.accent];
+    out property <color> mint-dim:  accent-dim[Theme.accent];
+    out property <color> mint-glow: accent-glow[Theme.accent];
+    out property <color> mint-surface: accent-surface[Theme.accent];
+    // Soft warm cream for primary text — easier on the eyes than pure white at
+    // the chunky Press Start 2P sizes used in retro.
+    out property <color> text-hi:   Theme.retro ? #F4EFDD : (Theme.light ? #1F2937 : #E4E7EC);
+    out property <color> text-mid:  Theme.retro ? #DDDAEE : (Theme.light ? #4B5563 : #9CA3AF);
+    // Secondary text — bumped brighter in retro (#9090D8 → #B5B5E8) so chat previews,
+    // npubs, timestamps stay readable against the dark indigo bg.
+    out property <color> text-lo:   Theme.retro ? #B5B5E8 : (Theme.light ? #6B7280 : #6B7280);
+    out property <color> text-vlo:  Theme.retro ? #5858A4 : (Theme.light ? #9CA3AF : #4B5563);
+    out property <color> selected:  Theme.retro ? accent-base[Theme.accent] : accent-surface[Theme.accent];
+    out property <color> hover:     Theme.retro ? #3838A8 : (Theme.light ? #F0EADF : #0D1114);
+    out property <color> bubble-out-fg: Theme.retro ? #1A1A4E : (Theme.light ? #FFFFFF : #0A1410);
+    // SNES menu: hard pixel shadow + button bevel colors.
+    out property <color> shadow:    #000000;
+    // Bevel highlight matches the cream borders so the SNES button edge reads
+    // as warm material rather than fluorescent glare.
+    out property <color> bevel-hi:  Theme.retro ? #F4EFDD : #FFFFFF;
+    out property <color> bevel-lo:  Theme.light ? #D8CFBF : #0A0A2A;
+
+    out property <color> field: Theme.retro ? #0E0E36 : (Theme.light ? #FFFFFF : #0A0D11);
+    out property <color> field-hover: Theme.retro ? #2B2B7F : (Theme.light ? #F8FAFC : #12171C);
+    out property <color> field-border: Theme.retro ? #E8E0C4 : (Theme.light ? #D7D0C3 : #1F242A);
+    out property <color> field-border-hover: Theme.retro ? #E8E0C4 : (Theme.light ? #C5BCAD : #2C333B);
+    out property <color> divider: Theme.retro ? #E8E0C4 : (Theme.light ? #E7DFD2 : #1A1F25);
+    out property <color> elevated: Theme.retro ? #2B2B7F : (Theme.light ? #FFFFFF : #0F1318);
+    out property <color> elevated-border: Theme.retro ? #E8E0C4 : (Theme.light ? #D7D0C3 : #242A31);
+    out property <color> top-glint: Theme.light ? #FFFFFFB8 : #FFFFFF0A;
+    out property <color> canvas-top: Theme.light ? #FFFDF7 : #0E1216;
+    out property <color> banner-edge: Theme.light ? #F6F2EA : #0E1418;
+}
+
+export struct Contact {
+    // Resolved display name: the private nickname when set, else the
+    // published profile name. `real-name` always holds the published one.
+    name: string,
+    real-name: string,
+    nickname: string,
+    account-id: string,
+    npub-full: string,
+    npub-short: string,
+    av-a: color,
+    av-b: color,
+    av-initials: string,
+    verified: bool,
+    online: bool,
+    relays: int,
+    added: string,
+}
+
+export struct ArchivedChat {
+    name: string,
+    last-msg: string,
+    last-date: string,
+    av-a: color,
+    av-b: color,
+    av-initials: string,
+    members: int,
+    group-id: string,
+}
+
+// One aggregated reaction on a message: an emoji, how many people used it,
+// and whether *I* am one of them (drives the highlight chip).
+export struct Reaction {
+    emoji: string,
+    count: int,
+    mine: bool,
+}
+
+// One emoji in the picker grid. `clip-x`/`clip-y` are pixel coordinates
+// into the shared Twemoji sprite sheet (passed in separately at the picker
+// level). `name` is the human-readable label.
+export struct EmojiEntry {
+    emoji: string,
+    name: string,
+    clip-x: int,
+    clip-y: int,
+}
+
+// One inline cell inside a wrapped line of a chat-message body. Slint's
+// `Text` can't host inline images and `HorizontalLayout` doesn't wrap, so
+// Rust pre-tokenizes the message into text + emoji runs and pre-groups them
+// into lines (see `MessageLine`). The bubble renders one HorizontalLayout
+// per line, letting Slint size text cells naturally — no per-cell width
+// estimation in Rust (which used to overshoot and produce huge inter-word
+// gaps because Rust didn't know JetBrains Mono's real advance).
+export struct MessageRun {
+    is-emoji: bool,
+    text: string,
+    clip-x: int,
+    clip-y: int,
+    // Inline Markdown styling, resolved per-run by the Rust AST walker.
+    // `link` is the destination URL ("" = not a link); when set the run
+    // renders as an accent-colored, underlined, tappable anchor.
+    bold: bool,
+    italic: bool,
+    strike: bool,
+    code: bool,
+    link: string,
+}
+
+// One wrapped line of a chat-message body. Beyond its runs a line carries
+// block-level Markdown context resolved in Rust: `indent` is the left inset
+// from list/blockquote nesting, `scale` multiplies the body font (headings),
+// `quote` is the blockquote depth (0 = none, drives the left accent bar),
+// `code-block` flags a fenced/indented code line (monospace plate), and
+// `rule` marks a thematic break (renders a horizontal divider, no runs).
+export struct MessageLine {
+    runs: [MessageRun],
+    indent: length,
+    scale: float,
+    quote: int,
+    code-block: bool,
+    rule: bool,
+}
+
+// Link activation sink. Chat bubbles render Markdown anchors deep inside the
+// IncomingRow/OutgoingRow → MessageBubble → RunCell chain; rather than thread a
+// callback through every level, the leaf RunCell invokes `Linkout.open(url)`
+// directly and Rust binds the handler once (opens the URL externally).
+export global Linkout {
+    callback open(string);
+}
+
+// Profile activation sink, mirroring `Linkout`: tapping a user's avatar (or
+// sender name) anywhere in the message tree invokes `ProfileSink.open` with
+// the account-id hex, and Rust binds the handler once (opens the profile
+// modal) instead of threading a callback through every row component.
+export global ProfileSink {
+    callback open(string);
+}
+
+// Shared Twemoji sprite sheet — set once at startup from Rust and read by
+// every chat bubble that needs to draw inline emoji. A global avoids drilling
+// the sprite + tile size through the IncomingRow/OutgoingRow → MessageBubble
+// chain.
+export global EmojiSheet {
+    in property <image> sprite;
+    in property <int> tile;
+}
+
+export struct ChatMessage {
+    text: string,
+    // Pre-tokenized + pre-wrapped body, grouped into lines. Empty for
+    // synthetic rows; the bubble falls back to plain `Text` when empty.
+    lines: [MessageLine],
+    stamp: string,
+    outgoing: bool,
+    show-avatar: bool,
+    av-initials: string,
+    av-a: color,
+    av-b: color,
+    // Sender account-id hex. Not rendered — it's the stable key the avatar
+    // fetch worker uses to find this sender's rows and bind a picture once it
+    // decodes, without rebuilding the whole message list.
+    sender-id: string,
+    // Sender display name (resolved from the directory profile). Rendered as a
+    // small label above incoming group-chat bubbles; `show-sender-name` gates
+    // it so 1:1 chats and outgoing rows don't repeat the obvious.
+    sender-name: string,
+    show-sender-name: bool,
+    // Sender profile picture. When `has-picture` is true the avatar renders the
+    // decoded image instead of initials. Populated lazily from the picture
+    // cache, same as the members list.
+    picture: image,
+    has-picture: bool,
+    bubble-max: length,
+    gap-before: length,
+    // Visual grouping of consecutive same-sender messages. `first-in-group`
+    // rounds the top corner on the avatar side; `last-in-group` is the row
+    // that carries the avatar + tail. A standalone message is both true.
+    first-in-group: bool,
+    last-in-group: bool,
+    // Stable id of the underlying Marmot inner event (kind-9 chat). Empty
+    // when the message hasn't been confirmed yet. Needed to send / aggregate
+    // reactions which target this id.
+    message-id: string,
+    reactions: [Reaction],
+    // Optimistic-send state. `pending` = inserted locally, waiting for relay
+    // ack; bubble dims + shows a clock instead of the double-check. `failed`
+    // = send threw; bubble gains a red border and becomes clickable to retry.
+    pending: bool,
+    failed: bool,
+    // Reply preview. When `reply-to-id` is non-empty this row was sent as a
+    // reply to that message; the bubble renders a quoted-parent block above
+    // its own text. `reply-to-text` is already truncated by Rust for display.
+    // `reply-to-author` is the parent's display label ("You" or initials/name).
+    reply-to-id: string,
+    reply-to-text: string,
+    reply-to-author: string,
+    // Attachment (NIP-92 imeta payload, parsed in Rust). When `has-attachment`
+    // is true the bubble renders a chip / image preview block above the body.
+    has-attachment: bool,
+    att-name: string,
+    att-mime: string,
+    att-size-label: string,
+    att-is-image: bool,
+    // Cached decoded preview pixels. Populated lazily on first tap; empty
+    // (default) image otherwise.
+    att-image: image,
+    att-has-image: bool,
+    att-loading: bool,
+    att-failed: bool,
+    // Edit state. `edited` true => the bubble renders the latest edit's text
+    // and shows an "(edited · N)" affordance that opens the history modal.
+    // `can-edit` gates the edit pencil to the author's own messages.
+    edited: bool,
+    edit-count: int,
+    can-edit: bool,
+}
+
+// One entry in a message's edit history (original + each subsequent edit),
+// rendered by the edit-history modal. `label` is "Original" / "Edited".
+export struct EditVersion {
+    label: string,
+    text: string,
+    stamp: string,
+}
+
+export struct GroupMember {
+    name: string,
+    npub-short: string,
+    av-a: color,
+    av-b: color,
+    av-initials: string,
+    is-self: bool,
+    picture: image,
+    has-picture: bool,
+    // Stable account-id hex; the ref passed back to promote a member to admin.
+    member-id: string,
+    // This member is already an admin of the group.
+    is-admin: bool,
+    // The viewer is an admin and this row is a non-self, non-admin member,
+    // so the "Make admin" affordance should show.
+    can-promote: bool,
+    // The viewer is an admin and this row is another admin — "Remove admin".
+    can-demote: bool,
+    // The viewer is an admin and this is their own admin row — "Step down".
+    can-self-demote: bool,
+}
+
+export struct ChatMeta {
+    name: string,
+    preview: string,
+    stamp: string,
+    last-seen: string,
+    npub: string,
+    session-time: string,
+    badge: string,
+    read: bool,
+    sending: bool,
+    av-a: color,
+    av-b: color,
+    av-initials: string,
+    // Peer profile picture for 1:1 chats (group chats stay on the gradient).
+    // Bound lazily from the picture cache, same pipeline as the members list.
+    picture: image,
+    has-picture: bool,
+    is-chat-request: bool,
+}

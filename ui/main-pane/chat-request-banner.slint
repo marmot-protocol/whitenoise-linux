@@ -1,0 +1,44 @@
+import { Palette , Theme} from "../tokens.slint";
+import { UserPlusIcon } from "../icons/user-plus-icon.slint";
+
+export component ChatRequestBanner inherits Rectangle {
+    height: 56px;
+    background: Palette.banner;
+
+    Rectangle {
+        x: 0; y: 0;
+        width: 2px;
+        height: parent.height;
+        background: Palette.mint;
+    }
+
+    HorizontalLayout {
+        padding-left: 22px; padding-right: 22px;
+        padding-top: 8px; padding-bottom: 8px;
+        spacing: 12px;
+        alignment: start;
+
+        UserPlusIcon {
+            stroke: Palette.mint;
+            y: (parent.height - self.height) / 2;
+        }
+
+        VerticalLayout {
+            spacing: 4px;
+            alignment: center;
+            Text {
+                text: @tr("Chat request");
+                color: Palette.text-hi;
+                font-size: (13px) * Theme.fs-scale;
+                font-weight: 600;
+            }
+            Text {
+                text: @tr("This sender isn't in your contacts. Accept to start an") + " MLS " + @tr("session.");
+                color: Palette.text-lo;
+                font-size: (11px) * Theme.fs-scale;
+                vertical-alignment: center;
+            }
+        }
+        Rectangle { horizontal-stretch: 1; }
+    }
+}

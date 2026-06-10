@@ -1,0 +1,24 @@
+# Observability wiring — telemetry (OTLP metrics) + audit-log (Goggles) upload.
+#
+# These are NOT secret; they live here so endpoints/tokens are easy to change in
+# one place without touching Rust. This file is embedded into the binary at
+# build time, so the app always has working defaults. To override at runtime
+# without rebuilding, drop a copy at `$DM_HOME/observability.toml` — if present
+# and valid, it wins.
+#
+# Sending still only happens when the user enables the Telemetry / Audit-logs
+# toggles in Settings → Advanced.
+
+# OTLP/HTTP metrics collector (protobuf, Authorization: Bearer <otlp_token>).
+otlp_metrics_endpoint = "https://otlp.ipf.dev/v1/metrics"
+otlp_token = "g4glnN9wFvpO6Dd6mxmDJBPfToS3iw1k1AWgHNAwCJoIYLuXjCCxmb6a1TZayppJ"
+
+# Goggles audit-log sink (NDJSON, Authorization: Bearer <goggles_token>).
+goggles_audit_endpoint = "https://goggles.ipf.dev/api/v1/audit-logs/"
+goggles_token = "goggles_b8b8cfca_QtpxFqpYfT-zTwEkHpTuN_08fsbjAVt7xQX-G6Uhw0E"
+
+# Resource attribute `tenant` (a metric label, not the X-OTLP-Tenant header).
+tenant = "darkmatter-linux"
+
+# OTLP resource attr `deployment.environment`: production | staging | development.
+deployment_environment = "production"

@@ -1,0 +1,33 @@
+import { Palette, Theme } from "../tokens.slint";
+
+export component ChatBubbleIcon inherits Rectangle {
+    in property <color> stroke: Palette.text-mid;
+    in property <bool> filled: false;
+    width: 18px;
+    height: 16px;
+    if !Theme.retro : Rectangle {
+        x: 0px; y: 0px;
+        width: 18px; height: 14px;
+        border-radius: 3px;
+        border-width: 1.4px;
+        border-color: root.stroke;
+        background: root.filled ? root.stroke.with-alpha(0.10) : transparent;
+    }
+    if !Theme.retro : Path {
+        x: 3px; y: 13px;
+        width: 6px; height: 4px;
+        viewbox-width: 6; viewbox-height: 4;
+        commands: "M 0 0 L 6 0 L 2 4 Z";
+        fill: root.filled ? root.stroke.with-alpha(0.10) : Palette.bg;
+        stroke: root.stroke;
+        stroke-width: 1.4px;
+    }
+    // Retro: chunky 8×8 pixel-art chat bubble (2px cells).
+    // Body
+    if Theme.retro : Rectangle { x: 2px; y: 0px; width: 14px; height: 2px; background: root.stroke; }
+    if Theme.retro : Rectangle { x: 0px; y: 2px; width: 18px; height: 8px; background: root.stroke; }
+    if Theme.retro : Rectangle { x: 2px; y: 10px; width: 14px; height: 2px; background: root.stroke; }
+    // Tail
+    if Theme.retro : Rectangle { x: 4px; y: 12px; width: 4px; height: 2px; background: root.stroke; }
+    if Theme.retro : Rectangle { x: 6px; y: 14px; width: 2px; height: 2px; background: root.stroke; }
+}

@@ -1,0 +1,63 @@
+import { Palette, Theme } from "../tokens.slint";
+import { TerminalIcon } from "../icons/terminal-icon.slint";
+import { DetailPage } from "../shells/detail-page.slint";
+import { PageHeader } from "../shells/page-header.slint";
+import { Section } from "../shells/section.slint";
+import { Button } from "../primitives/button.slint";
+
+export component DebugPane inherits DetailPage {
+    in property <string> dump;
+    callback refresh-clicked;
+    callback copy-clicked;
+
+    PageHeader {
+        title: @tr("Debug");
+        caption: @tr("Account / key packages / groups");
+        TerminalIcon { stroke: Palette.mint; }
+    }
+
+    Section {
+        label: @tr("STATE SNAPSHOT");
+
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: start;
+            Button {
+                label: @tr("Refresh");
+                clicked => { root.refresh-clicked(); }
+            }
+            Button {
+                label: @tr("Copy JSON");
+                clicked => { root.copy-clicked(); }
+            }
+        }
+
+        Rectangle {
+            border-width: 1px;
+            border-color: Palette.border-2;
+            border-radius: 6px;
+            background: Palette.panel-2;
+            preferred-height: 540px;
+            vertical-stretch: 1;
+            clip: true;
+
+            Flickable {
+                x: 0; y: 0;
+                width: parent.width;
+                height: parent.height;
+                viewport-width: parent.width;
+                viewport-height: dump-text.preferred-height + 24px;
+
+                dump-text := Text {
+                    x: 12px; y: 12px;
+                    width: parent.width - 24px;
+                    text: root.dump != "" ? root.dump : @tr("(no snapshot yet — click Refresh)");
+                    color: Palette.text-hi;
+                    font-family: Theme.font;
+                    font-size: 11px;
+                    wrap: word-wrap;
+                }
+            }
+        }
+    }
+}

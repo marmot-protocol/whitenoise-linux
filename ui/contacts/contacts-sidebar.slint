@@ -1,0 +1,21 @@
+import { Contact } from "../tokens.slint";
+import { SidePanel } from "../shells/side-panel.slint";
+import { ContactListItem } from "contact-list-item.slint";
+
+export component ContactsSidebar inherits SidePanel {
+    callback contact-clicked(int);
+    in property <[Contact]> contacts;
+    in property <int> active-contact;
+
+    title: @tr("CONTACTS");
+    count: root.contacts.length;
+    show-search: true;
+    search-placeholder: @tr("Search contacts…");
+    show-add: true;
+
+    for c[idx] in root.contacts : ContactListItem {
+        data: c;
+        selected: idx == root.active-contact;
+        clicked => { root.contact-clicked(idx); }
+    }
+}

@@ -1,0 +1,27 @@
+import { Modal } from "modal.slint";
+
+// Full-window lightbox for an image attachment, built on Modal's bare mode:
+// the backdrop darkens the whole app and the image is letterboxed
+// (`image-fit: contain`) into ~90% of the window so any aspect ratio fits
+// without cropping. Backdrop click, the floating ✕, and Esc all dismiss;
+// tapping the image itself is swallowed so it doesn't bubble to the backdrop.
+export component ImageViewerModal inherits Modal {
+    in property <image> source;
+
+    bare: true;
+    // Lightboxes want a real darken, unlike the subtle scrim card modals use.
+    background: #000000E6;
+
+    Rectangle {
+        Image {
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            width: parent.width * 0.9;
+            height: parent.height * 0.9;
+            source: root.source;
+            image-fit: contain;
+            // Swallow taps on the image so they don't reach the backdrop.
+            TouchArea { }
+        }
+    }
+}

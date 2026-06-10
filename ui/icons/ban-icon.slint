@@ -1,0 +1,21 @@
+import { Palette } from "../tokens.slint";
+
+export component BanIcon inherits Rectangle {
+    in property <color> stroke: Palette.text-mid;
+    in property <length> size: 14px;
+    width: root.size; height: root.size;
+    Rectangle {
+        width: root.size; height: root.size;
+        border-radius: root.size / 2;
+        border-width: 1.3px; border-color: root.stroke;
+    }
+    Path {
+        x: root.size * 0.22; y: root.size * 0.22;
+        width: root.size * 0.56; height: root.size * 0.56;
+        viewbox-width: 1; viewbox-height: 1;
+        commands: "M 0 0 L 1 1";
+        stroke: root.stroke;
+        stroke-width: 1.3px;
+        fill: transparent;
+    }
+}

@@ -1,0 +1,62 @@
+import { ListView } from "std-widgets.slint";
+import { Palette, Theme, EditVersion } from "../tokens.slint";
+import { Modal } from "modal.slint";
+
+// Read-only viewer for a message's full edit history (original + each edit,
+// oldest → newest). Visible to anyone in the chat, not just the author.
+export component EditHistoryModal inherits Modal {
+    in property <[EditVersion]> versions;
+
+    card-width: 460px;
+    card-height: 480px;
+    title: @tr("Edit history");
+
+    // Version list — newest entries sit at the bottom, matching reading
+    // order. Each row shows its label ("Original" / "Edited") + timestamp
+    // above the full text of that revision.
+    ListView {
+        vertical-stretch: 1;
+        for v in root.versions : Rectangle {
+            background: Palette.panel;
+            border-width: Theme.retro ? Theme.border-w : 1px;
+            border-color: Palette.border-2;
+            border-radius: (8px) * Theme.r-scale;
+            height: item-layout.preferred-height + 16px;
+
+            item-layout := VerticalLayout {
+                x: 12px;
+                y: 8px;
+                width: parent.width - 24px;
+                spacing: 4px;
+
+                HorizontalLayout {
+                    alignment: stretch;
+                    spacing: 8px;
+                    Text {
+                        text: v.label;
+                        color: Palette.mint;
+                        font-size: (11px) * Theme.fs-scale;
+                        font-family: Theme.font;
+                        font-weight: 700;
+                        horizontal-stretch: 1;
+                    }
+                    Text {
+                        text: v.stamp;
+                        color: Palette.text-lo;
+                        font-size: (10px) * Theme.fs-scale;
+                        font-family: Theme.font;
+                        vertical-alignment: center;
+                    }
+                }
+                Text {
+                    text: v.text;
+                    color: Palette.text-hi;
+                    font-size: (13px) * Theme.fs-scale;
+                    font-family: Theme.font;
+                    wrap: word-wrap;
+                    width: parent.width;
+                }
+            }
+        }
+    }
+}

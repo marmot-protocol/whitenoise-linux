@@ -1,0 +1,101 @@
+import { Palette, Theme } from "../tokens.slint";
+import { Modal } from "modal.slint";
+import { CheckMark } from "../icons/check-mark.slint";
+
+component LanguageRow inherits Rectangle {
+    in property <string> label;
+    in property <bool> selected: false;
+    in property <bool> show-divider: true;
+    callback clicked;
+
+    height: 44px;
+    background: ta.pressed ? Palette.hover : (root.selected ? Palette.mint-surface : transparent);
+    animate background { duration: 80ms; }
+
+    ta := TouchArea {
+        clicked => { root.clicked(); }
+    }
+
+    HorizontalLayout {
+        padding-left: 16px;
+        padding-right: 14px;
+        spacing: 10px;
+        alignment: stretch;
+
+        Text {
+            horizontal-stretch: 1;
+            text: root.label;
+            color: root.selected ? Palette.mint : Palette.text-hi;
+            font-size: (13px) * Theme.fs-scale;
+            font-weight: root.selected ? 700 : 500;
+            vertical-alignment: center;
+        }
+
+        VerticalLayout {
+            alignment: center;
+            if root.selected : CheckMark { stroke: Palette.mint; }
+        }
+    }
+
+    if root.show-divider : Rectangle {
+        y: parent.height - 1px;
+        width: parent.width;
+        height: 1px;
+        background: Palette.border-2;
+    }
+}
+
+export component LanguagePickerModal inherits Modal {
+    in property <string> active-locale;
+    callback locale-selected(string);
+
+    card-width: 360px;
+    title: @tr("Interface language");
+
+    Rectangle {
+        height: rows-layout.preferred-height;
+        border-radius: (8px) * Theme.r-scale;
+        border-width: Theme.border-w;
+        border-color: Palette.border-2;
+        background: Palette.panel-2;
+        clip: true;
+
+        rows-layout := VerticalLayout {
+            padding: 0;
+
+            LanguageRow {
+                label: "English";
+                selected: root.active-locale == "en";
+                clicked => {
+                    root.locale-selected("en");
+                    root.dismissed();
+                }
+            }
+            LanguageRow {
+                label: "Italiano";
+                selected: root.active-locale == "it";
+                clicked => {
+                    root.locale-selected("it");
+                    root.dismissed();
+                }
+            }
+            LanguageRow {
+                label: "Deutsch";
+                selected: root.active-locale == "de";
+                clicked => {
+                    root.locale-selected("de");
+                    root.dismissed();
+                }
+            }
+            LanguageRow {
+                label: "日本語";
+                selected: root.active-locale == "ja";
+                show-divider: false;
+                clicked => {
+                    root.locale-selected("ja");
+                    root.dismissed();
+                }
+            }
+        }
+    }
+}

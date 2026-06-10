@@ -1,0 +1,92 @@
+import { Palette } from "../tokens.slint";
+import { MonitorIcon } from "../icons/monitor-icon.slint";
+import { DetailPage } from "../shells/detail-page.slint";
+import { PageHeader } from "../shells/page-header.slint";
+import { Section } from "../shells/section.slint";
+import { GroupCard } from "../shells/group-card.slint";
+import { PrefRow } from "pref-row.slint";
+import { Toggle } from "toggle.slint";
+import { AccentPicker } from "accent-picker.slint";
+
+export component AppearancePane inherits DetailPage {
+    in-out property <bool> light-theme: false;
+    in-out property <bool> retro-mode: false;
+    in-out property <int> accent-color: 0;
+    in-out property <bool> outgoing-on-right: true;
+    callback theme-mode-selected(string);
+    callback accent-selected(int);
+    callback outgoing-on-right-toggled(bool);
+
+    property <[string]> accent-names: [
+        @tr("Mint"),
+        @tr("Ocean"),
+        @tr("Berry"),
+        @tr("Coral"),
+        @tr("Lavender"),
+    ];
+
+    PageHeader {
+        title: @tr("Appearance");
+        caption: "";
+        MonitorIcon { stroke: Palette.mint; }
+    }
+
+    Section {
+        label: @tr("THEME");
+        GroupCard {
+            PrefRow {
+                label: @tr("Theme");
+                value: root.retro-mode ? @tr("Retro") : (root.light-theme ? @tr("Light") : @tr("Dark"));
+            }
+            PrefRow {
+                label: @tr("Light theme");
+                sublabel: @tr("Use a warm paper palette across the app.");
+                Toggle {
+                    on <=> root.light-theme;
+                    toggled => { root.theme-mode-selected(root.light-theme ? "light" : "dark"); }
+                }
+            }
+            PrefRow {
+                label: @tr("Accent color");
+                value: accent-names[root.accent-color];
+                show-divider: false;
+                AccentPicker {
+                    selected <=> root.accent-color;
+                    accent-selected(idx) => { root.accent-selected(idx); }
+                }
+            }
+        }
+    }
+
+    Section {
+        label: @tr("FUN");
+        GroupCard {
+            PrefRow {
+                label: @tr("Retro mode");
+                sublabel: @tr("Turn the whole app into SNES style.");
+                show-divider: false;
+                Toggle {
+                    on <=> root.retro-mode;
+                    toggled => {
+                        root.theme-mode-selected(root.retro-mode ? "retro" : (root.light-theme ? "light" : "dark"));
+                    }
+                }
+            }
+        }
+    }
+
+    Section {
+        label: @tr("MESSAGES");
+        GroupCard {
+            PrefRow {
+                label: @tr("Own messages on the right");
+                sublabel: @tr("Place your sent messages on the right side.");
+                show-divider: false;
+                Toggle {
+                    on <=> root.outgoing-on-right;
+                    toggled => { root.outgoing-on-right-toggled(root.outgoing-on-right); }
+                }
+            }
+        }
+    }
+}

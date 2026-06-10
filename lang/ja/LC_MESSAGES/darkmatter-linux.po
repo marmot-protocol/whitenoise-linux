@@ -1,0 +1,870 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2026-05-27 13:21+0000\n"
+"PO-Revision-Date: 2026-05-27 13:20+0000\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgctxt "ArchivedDetail"
+msgid "ARCHIVED  ·  {} MEMBERS  ·  {}"
+msgstr "アーカイブ済み  ·  {} メンバー  ·  {}"
+
+msgctxt "ArchivedDetail"
+msgid "Unarchive"
+msgstr "アーカイブ解除"
+
+msgctxt "ArchivedDetail"
+msgid "Delete"
+msgstr "削除"
+
+msgctxt "ArchivedDetail"
+msgid "This chat is archived"
+msgstr "このチャットはアーカイブされています"
+
+msgctxt "ArchivedDetail"
+msgid "It stays end-to-end encrypted. Unarchiving returns it to your main lis"
+"t and resumes notifications."
+msgstr "エンドツーエンド暗号化は維持されます。アーカイブ解除するとメインリストに戻り、通知が再開されます。"
+
+msgctxt "ArchivedDetail"
+msgid "LAST ACTIVITY"
+msgstr "最終アクティビティ"
+
+msgctxt "ArchivedDetail"
+msgid "Last message"
+msgstr "最後のメッセージ"
+
+msgctxt "ArchivedDetail"
+msgid "Members"
+msgstr "メンバー"
+
+msgctxt "ArchivedDetail"
+msgid "Group id"
+msgstr "グループ ID"
+
+msgctxt "ArchivedDetail"
+msgid "MEMBER LIST"
+msgstr "メンバー一覧"
+
+msgctxt "ArchivedSidebar"
+msgid "ARCHIVED"
+msgstr "アーカイブ"
+
+msgctxt "ChatListPanel"
+msgid "CHATS"
+msgstr "チャット"
+
+msgctxt "ChatListPanel"
+msgid "Search chats…"
+msgstr "チャットを検索…"
+
+msgctxt "ContactDetail"
+msgid "Contact"
+msgstr "連絡先"
+
+msgctxt "ContactDetail"
+msgid "ADDED {}  ·  {} RELAYS"
+msgstr "追加 {}  ·  {} リレー"
+
+msgctxt "ContactDetail"
+msgid "✓ VERIFIED"
+msgstr "✓ 確認済み"
+
+msgctxt "ContactDetail"
+msgid "{} RELAYS"
+msgstr "{} リレー"
+
+msgctxt "ContactDetail"
+msgid "Start chat"
+msgstr "チャットを開始"
+
+msgctxt "ContactDetail"
+msgid "IDENTITY"
+msgstr "ID"
+
+msgctxt "ContactDetail"
+msgid "Public key, safe to share."
+msgstr "公開鍵。共有して問題ありません。"
+
+msgctxt "ContactDetail"
+msgid "Copy"
+msgstr "コピー"
+
+msgctxt "ContactDetail"
+msgid "Key package"
+msgstr "キーパッケージ"
+
+msgctxt "ContactDetail"
+msgid "Fetched from relay.damus.io · refreshed 4m ago"
+msgstr "relay.damus.io から取得 · 4分前に更新"
+
+msgctxt "ContactDetail"
+msgid "up to date"
+msgstr "最新"
+
+msgctxt "ContactDetail"
+msgid "Refresh"
+msgstr "更新"
+
+msgctxt "ContactDetail"
+msgid "Mutual relays"
+msgstr "共通リレー"
+
+msgctxt "ContactDetail"
+msgid "Used to deliver messages between you."
+msgstr "お互いの間でメッセージを配信するために使用されます。"
+
+msgctxt "ContactDetail"
+msgid "{} relays"
+msgstr "{} リレー"
+
+msgctxt "ContactDetail"
+msgid "Show as QR"
+msgstr "QR コードで表示"
+
+msgctxt "ContactDetail"
+msgid "ACTIONS"
+msgstr "操作"
+
+msgctxt "ContactDetail"
+msgid "Mute"
+msgstr "ミュート"
+
+msgctxt "ContactDetail"
+msgid "Archive chat"
+msgstr "チャットをアーカイブ"
+
+msgctxt "ContactDetail"
+msgid "Block"
+msgstr "ブロック"
+
+msgctxt "ContactDetail"
+msgid "Remove contact"
+msgstr "連絡先を削除"
+
+msgctxt "ContactsSidebar"
+msgid "CONTACTS"
+msgstr "連絡先"
+
+msgctxt "ContactsSidebar"
+msgid "Search contacts…"
+msgstr "連絡先を検索…"
+
+msgctxt "DarkMatterLinux"
+msgid "Connecting to relays…"
+msgstr "リレーに接続中…"
+
+msgctxt "EmojiPicker"
+msgid "search…"
+msgstr "検索…"
+
+msgctxt "EmojiPicker"
+msgid "no matches"
+msgstr "一致なし"
+
+msgctxt "DeviceRow"
+msgid "Revoke"
+msgstr "取り消し"
+
+msgctxt "KeysPage"
+msgid "This computer"
+msgstr "このコンピューター"
+
+msgctxt "KeysPage"
+msgid "Keys & identity"
+msgstr "鍵と ID"
+
+msgctxt "KeysPage"
+msgid "MLS  ·  YOUR KEY MATERIAL"
+msgstr "MLS  ·  あなたの鍵素材"
+
+msgctxt "KeysPage"
+msgid "Your identity is sovereign"
+msgstr "あなたの ID は主権的です"
+
+msgctxt "KeysPage"
+msgid "Dark Matter never sees your private key. It lives only on this device "
+"and any signer you connect."
+msgstr "Dark Matter はあなたの秘密鍵を一切見ません。このデバイスと接続した署名者にのみ存在します。"
+
+msgctxt "KeysPage"
+msgid "IDENTITY"
+msgstr "ID"
+
+msgctxt "KeysPage"
+msgid "Public key (npub)"
+msgstr "公開鍵 (npub)"
+
+msgctxt "KeysPage"
+msgid "Safe to share. This is how people find you."
+msgstr "共有して問題ありません。他のユーザーがあなたを見つける方法です。"
+
+msgctxt "KeysPage"
+msgid "Copy"
+msgstr "コピー"
+
+msgctxt "KeysPage"
+msgid "KEY PACKAGES"
+msgstr "キーパッケージ"
+
+msgctxt "KeysPage"
+msgid "(published to your kind-10051 relay list)"
+msgstr "(kind-10051 リレーリストに公開)"
+
+msgctxt "KeysPage"
+msgid "(no key-package relays configured)"
+msgstr "(キーパッケージ用リレーが未設定)"
+
+msgctxt "KeysPage"
+msgid "…"
+msgstr "…"
+
+msgctxt "KeysPage"
+msgid "Refresh"
+msgstr "更新"
+
+msgctxt "KeysPage"
+msgid "No key packages yet"
+msgstr "キーパッケージがありません"
+
+msgctxt "KeysPage"
+msgid "Publish one so other users can invite you to groups."
+msgstr "公開すると他のユーザーがグループに招待できるようになります。"
+
+msgctxt "KeysPage"
+msgid "Configure key-package relays first."
+msgstr "先にキーパッケージ用リレーを設定してください。"
+
+msgctxt "KeysPage"
+msgid "Publishing…"
+msgstr "公開中…"
+
+msgctxt "KeysPage"
+msgid "Publish"
+msgstr "公開"
+
+msgctxt "KeysPage"
+msgid "{n} relay"
+msgid_plural "{n} relays"
+msgstr[0] "{n} リレー"
+msgstr[1] "{n} リレー"
+
+msgctxt "KeysPage"
+msgid "local only"
+msgstr "ローカルのみ"
+
+msgctxt "KeysPage"
+msgid "LINKED DEVICES"
+msgstr "リンク済みデバイス"
+
+msgctxt "KeysPage"
+msgid "(other Dark Matter instances signed into this identity)"
+msgstr "(この ID でサインインしている他の Dark Matter インスタンス)"
+
+msgctxt "KeysPage"
+msgid "current"
+msgstr "現在"
+
+msgctxt "KeysPage"
+msgid "Sign out"
+msgstr "サインアウト"
+
+msgctxt "KeysPage"
+msgid "DANGER ZONE"
+msgstr "危険ゾーン"
+
+msgctxt "KeysPage"
+msgid "Rotate key package now"
+msgstr "キーパッケージを今すぐローテーション"
+
+msgctxt "KeysPage"
+msgid "Invalidates the current package and uploads a fresh one to your relays"
+"."
+msgstr "現在のパッケージを無効化し、新しいものをリレーにアップロードします。"
+
+msgctxt "KeysPage"
+msgid "Rotate"
+msgstr "ローテーション"
+
+msgctxt "LoginScreen"
+msgid "Sign in to your Nostr identity"
+msgstr "Nostr ID でサインイン"
+
+msgctxt "LoginScreen"
+msgid "Paste your nsec"
+msgstr "nsec を貼り付け"
+
+msgctxt "LoginScreen"
+msgid "Save your new key"
+msgstr "新しい鍵を保存"
+
+msgctxt "LoginScreen"
+msgid "I have an nsec"
+msgstr "nsec がある"
+
+msgctxt "LoginScreen"
+msgid "Generate a new key"
+msgstr "新しい鍵を生成"
+
+msgctxt "LoginScreen"
+msgid "Your key never leaves this device."
+msgstr "鍵がこのデバイス外に出ることはありません。"
+
+msgctxt "LoginScreen"
+msgid "Back"
+msgstr "戻る"
+
+msgctxt "LoginScreen"
+msgid "Signing in…"
+msgstr "サインイン中…"
+
+msgctxt "LoginScreen"
+msgid "Continue"
+msgstr "続行"
+
+msgctxt "LoginScreen"
+msgid "Back up your nsec before saving"
+msgstr "保存前に nsec をバックアップ"
+
+msgctxt "LoginScreen"
+msgid "Save stores it in your OS keyring. Keep your own copy too — lose it an"
+"d this identity is gone."
+msgstr "保存すると OS のキーリングに格納されます。自分でもコピーを保管してください。失うとこの ID は復元できません。"
+
+msgctxt "LoginScreen"
+msgid "Regenerate"
+msgstr "再生成"
+
+msgctxt "LoginScreen"
+msgid "Copy"
+msgstr "コピー"
+
+msgctxt "LoginScreen"
+msgid "Saving…"
+msgstr "保存中…"
+
+msgctxt "LoginScreen"
+msgid "Save to keyring"
+msgstr "キーリングに保存"
+
+msgctxt "ChatHeader"
+msgid "1 member"
+msgid_plural "{n} members"
+msgstr[0] "1 メンバー"
+msgstr[1] "{n} メンバー"
+
+msgctxt "ChatHeader"
+msgid "Block"
+msgstr "ブロック"
+
+msgctxt "ChatHeader"
+msgid "Archive"
+msgstr "アーカイブ"
+
+msgctxt "ChatHeader"
+msgid "Accept"
+msgstr "承認"
+
+msgctxt "ChatRequestBanner"
+msgid "Chat request"
+msgstr "チャットリクエスト"
+
+msgctxt "ChatRequestBanner"
+msgid "This sender isn't in your contacts. Accept to start an"
+msgstr "この送信者は連絡先にいません。承認して"
+
+msgctxt "ChatRequestBanner"
+msgid "session."
+msgstr "セッションを開始。"
+
+msgctxt "Composer"
+msgid "Replying to message:"
+msgstr "返信先メッセージ:"
+
+msgctxt "Composer"
+msgid "Replying to {}:"
+msgstr "{} への返信:"
+
+msgctxt "Composer"
+msgid "Send a message  ·  encrypted with"
+msgstr "メッセージを送信  ·  暗号化:"
+
+msgctxt "Composer"
+msgid "for newline"
+msgstr "改行"
+
+msgctxt "Composer"
+msgid "Send"
+msgstr "送信"
+
+msgctxt "EncryptionBanner"
+msgid "End-to-end encrypted with"
+msgstr "エンドツーエンド暗号化:"
+
+msgctxt "EncryptionBanner"
+msgid "Forward secret"
+msgstr "フォワードシークレット"
+
+msgctxt "EncryptionBanner"
+msgid "post-compromise secure"
+msgstr "侵害後も安全"
+
+msgctxt "GroupMemberRow"
+msgid "YOU"
+msgstr "あなた"
+
+msgctxt "GroupMembersPanel"
+msgid "Members"
+msgstr "メンバー"
+
+msgctxt "GroupMembersPanel"
+msgid "1 in this group"
+msgid_plural "{n} in this group"
+msgstr[0] "このグループに 1 人"
+msgstr[1] "このグループに {n} 人"
+
+msgctxt "MainPane"
+msgid "CHAT REQUEST"
+msgstr "チャットリクエスト"
+
+msgctxt "MainPane"
+msgid "SESSION ESTABLISHED"
+msgstr "セッション確立"
+
+msgctxt "CommandPalette"
+msgid "Type a command…"
+msgstr "コマンドを入力…"
+
+msgctxt "CommandPalette"
+msgid "No matches"
+msgstr "一致なし"
+
+msgctxt "LanguagePickerModal"
+msgid "Interface language"
+msgstr "インターフェース言語"
+
+msgctxt "StartNewChatModal"
+msgid "Start a new chat"
+msgstr "新しいチャットを開始"
+
+msgctxt "StartNewChatModal"
+msgid "Paste an npub or scan a QR. A key package will be fetched from your re"
+"lays."
+msgstr "npub を貼り付けるか QR をスキャンしてください。キーパッケージがリレーから取得されます。"
+
+msgctxt "StartNewChatModal"
+msgid "or"
+msgstr "または"
+
+msgctxt "StartNewChatModal"
+msgid "Scan QR code from device"
+msgstr "デバイスから QR コードをスキャン"
+
+msgctxt "StartNewChatModal"
+msgid "Cancel"
+msgstr "キャンセル"
+
+msgctxt "StartNewChatModal"
+msgid "Start chat"
+msgstr "チャットを開始"
+
+msgctxt "MessageBubble"
+msgid "Original message"
+msgstr "元のメッセージ"
+
+msgctxt "MessageBubble"
+msgid "(message unavailable)"
+msgstr "(メッセージを表示できません)"
+
+msgctxt "MessageBubble"
+msgid "failed · tap to retry"
+msgstr "失敗 · タップして再試行"
+
+msgctxt "OutgoingRow"
+msgid "You"
+msgstr "あなた"
+
+msgctxt "ProfilePage"
+msgid "Your profile"
+msgstr "あなたのプロフィール"
+
+msgctxt "ProfilePage"
+msgid "EDITING · BROADCAST TO RELAYS ON SAVE"
+msgstr "編集中 · 保存時にリレーへ配信"
+
+msgctxt "ProfilePage"
+msgid "VISIBLE TO ANYONE YOU CHAT WITH"
+msgstr "チャット相手全員に公開"
+
+msgctxt "ProfilePage"
+msgid "Edit profile"
+msgstr "プロフィールを編集"
+
+msgctxt "ProfilePage"
+msgid "Saving…"
+msgstr "保存中…"
+
+msgctxt "ProfilePage"
+msgid "Save"
+msgstr "保存"
+
+msgctxt "ProfilePage"
+msgid "Cancel"
+msgstr "キャンセル"
+
+msgctxt "ProfilePage"
+msgid "(no display name)"
+msgstr "(表示名なし)"
+
+msgctxt "ProfilePage"
+msgid "(no nip-05)"
+msgstr "(nip-05 なし)"
+
+msgctxt "ProfilePage"
+msgid "IDENTITY"
+msgstr "ID"
+
+msgctxt "ProfilePage"
+msgid "Your public key. Safe to share."
+msgstr "公開鍵。共有して問題ありません。"
+
+msgctxt "ProfilePage"
+msgid "Copy"
+msgstr "コピー"
+
+msgctxt "ProfilePage"
+msgid "EDIT"
+msgstr "編集"
+
+msgctxt "ProfilePage"
+msgid "Display name"
+msgstr "表示名"
+
+msgctxt "ProfilePage"
+msgid "How your name appears in chats"
+msgstr "チャットでの表示名"
+
+msgctxt "ProfilePage"
+msgid "Username"
+msgstr "ユーザー名"
+
+msgctxt "ProfilePage"
+msgid "Short handle (no spaces)"
+msgstr "短いハンドル（スペース不可）"
+
+msgctxt "ProfilePage"
+msgid "About"
+msgstr "自己紹介"
+
+msgctxt "ProfilePage"
+msgid "A line or two about you"
+msgstr "自己紹介を1〜2行"
+
+msgctxt "ProfilePage"
+msgid "Picture URL"
+msgstr "画像 URL"
+
+msgctxt "ProfilePage"
+msgid "Lightning address (LUD-16)"
+msgstr "Lightning アドレス (LUD-16)"
+
+msgctxt "ProfilePage"
+msgid "PROFILE"
+msgstr "プロフィール"
+
+msgctxt "ProfilePage"
+msgid "Lightning"
+msgstr "Lightning"
+
+msgctxt "ProfilePage"
+msgid "Picture"
+msgstr "画像"
+
+msgctxt "WalletAddressRow"
+msgid "Lightning address"
+msgstr "Lightning アドレス"
+
+msgctxt "WalletAddressRow"
+msgid "People can zap you via this address."
+msgstr "このアドレスで Zap できます。"
+
+msgctxt "WalletAddressRow"
+msgid "Copy"
+msgstr "コピー"
+
+msgctxt "AdvancedPane"
+msgid "Advanced"
+msgstr "詳細"
+
+msgctxt "AdvancedPane"
+msgid "Developer flags"
+msgstr "開発者フラグ"
+
+msgctxt "AdvancedPane"
+msgid "DEVELOPER"
+msgstr "開発者"
+
+msgctxt "AdvancedPane"
+msgid "Show debug pane"
+msgstr "デバッグペインを表示"
+
+msgctxt "AdvancedPane"
+msgid "Adds a Debug entry below. Surfaces account, key-packages, and group st"
+"ate."
+msgstr "下に Debug 項目を追加。アカウント、キーパッケージ、グループ状態を表示します。"
+
+msgctxt "AppearancePane"
+msgid "Appearance"
+msgstr "外観"
+
+msgctxt "AppearancePane"
+msgid "THEME"
+msgstr "テーマ"
+
+msgctxt "AppearancePane"
+msgid "Theme"
+msgstr "テーマ"
+
+msgctxt "AppearancePane"
+msgid "Dark"
+msgstr "ダーク"
+
+msgctxt "AppearancePane"
+msgid "Accent color"
+msgstr "アクセントカラー"
+
+msgctxt "AppearancePane"
+msgid "SNES yellow"
+msgstr "SNES イエロー"
+
+msgctxt "AppearancePane"
+msgid "Mint"
+msgstr "ミント"
+
+msgctxt "AppearancePane"
+msgid "Density"
+msgstr "密度"
+
+msgctxt "AppearancePane"
+msgid "Comfortable"
+msgstr "快適"
+
+msgctxt "AppearancePane"
+msgid "FUN"
+msgstr "お楽しみ"
+
+msgctxt "AppearancePane"
+msgid "Retro mode"
+msgstr "レトロモード"
+
+msgctxt "AppearancePane"
+msgid "Turn the whole app into SNES style."
+msgstr "アプリ全体を SNES スタイルにします。"
+
+msgctxt "DebugPane"
+msgid "Debug"
+msgstr "デバッグ"
+
+msgctxt "DebugPane"
+msgid "Account / key packages / groups"
+msgstr "アカウント / キーパッケージ / グループ"
+
+msgctxt "DebugPane"
+msgid "STATE SNAPSHOT"
+msgstr "状態スナップショット"
+
+msgctxt "DebugPane"
+msgid "Refresh"
+msgstr "更新"
+
+msgctxt "DebugPane"
+msgid "Copy JSON"
+msgstr "JSON をコピー"
+
+msgctxt "DebugPane"
+msgid "(no snapshot yet — click Refresh)"
+msgstr "(スナップショットなし — 更新をクリック)"
+
+msgctxt "GeneralPane"
+msgid "General"
+msgstr "一般"
+
+msgctxt "GeneralPane"
+msgid "STARTUP"
+msgstr "起動"
+
+msgctxt "GeneralPane"
+msgid "Launch at login"
+msgstr "ログイン時に起動"
+
+msgctxt "GeneralPane"
+msgid "Start minimized to tray"
+msgstr "トレイに最小化して起動"
+
+msgctxt "GeneralPane"
+msgid "Restore last selected chat on launch"
+msgstr "起動時に最後のチャットを復元"
+
+msgctxt "GeneralPane"
+msgid "LANGUAGE"
+msgstr "言語"
+
+msgctxt "GeneralPane"
+msgid "Interface language"
+msgstr "インターフェース言語"
+
+msgctxt "language picker button"
+msgid "Change"
+msgstr "変更"
+
+msgctxt "GeneralPane"
+msgid "Time format"
+msgstr "時刻形式"
+
+msgctxt "GeneralPane"
+msgid "Date format"
+msgstr "日付形式"
+
+msgctxt "NetworkPane"
+msgid "Network & relays"
+msgstr "ネットワークとリレー"
+
+msgctxt "NetworkPane"
+msgid "Where your messages land."
+msgstr "メッセージの配信先。"
+
+msgctxt "NetworkPane"
+msgid "STATUS"
+msgstr "状態"
+
+msgctxt "NetworkPane"
+msgid "No relays configured"
+msgstr "リレー未設定"
+
+msgctxt "NetworkPane"
+msgid "Connected · {}/{}"
+msgstr "接続済み · {}/{}"
+
+msgctxt "NetworkPane"
+msgid "Partial · {}/{} connected"
+msgstr "一部接続 · {}/{} 接続"
+
+msgctxt "NetworkPane"
+msgid "Add a relay below — nothing publishes until you do."
+msgstr "下にリレーを追加してください。追加するまで何も公開されません。"
+
+msgctxt "NetworkPane"
+msgid "Aggregate connection counter from the relay pool."
+msgstr "リレープールからの接続数カウンター。"
+
+msgctxt "NetworkPane"
+msgid "Refresh"
+msgstr "更新"
+
+msgctxt "NetworkPane"
+msgid "RELAYS"
+msgstr "リレー"
+
+msgctxt "NetworkPane"
+msgid "Add"
+msgstr "追加"
+
+msgctxt "NetworkPane"
+msgid "No relays yet. Add one above."
+msgstr "リレーがありません。上で追加してください。"
+
+msgctxt "NetworkPane"
+msgid "Restart darkmatter to apply relay changes."
+msgstr "リレー変更を適用するには darkmatter を再起動してください。"
+
+msgctxt "SettingsPage"
+msgid "Notifications"
+msgstr "通知"
+
+msgctxt "SettingsPage"
+msgid "Per-chat notification rules, sounds, focus mode."
+msgstr "チャットごとの通知ルール、サウンド、フォーカスモード。"
+
+msgctxt "SettingsPage"
+msgid "Storage"
+msgstr "ストレージ"
+
+msgctxt "SettingsPage"
+msgid "Local cache, message retention, attachments."
+msgstr "ローカルキャッシュ、メッセージ保持、添付ファイル。"
+
+msgctxt "SettingsPage"
+msgid "About"
+msgstr "自己紹介"
+
+msgctxt "SettingsPage"
+msgid "Dark Matter v0.1.0"
+msgstr "Dark Matter v0.1.0"
+
+msgctxt "SettingsSidebar"
+msgid "SETTINGS"
+msgstr "設定"
+
+msgctxt "SettingsSidebar"
+msgid "General"
+msgstr "一般"
+
+msgctxt "SettingsSidebar"
+msgid "Network & relays"
+msgstr "ネットワークとリレー"
+
+msgctxt "SettingsSidebar"
+msgid "Appearance"
+msgstr "外観"
+
+msgctxt "SettingsSidebar"
+msgid "Notifications"
+msgstr "通知"
+
+msgctxt "SettingsSidebar"
+msgid "Storage"
+msgstr "ストレージ"
+
+msgctxt "SettingsSidebar"
+msgid "Advanced"
+msgstr "詳細"
+
+msgctxt "SettingsSidebar"
+msgid "About"
+msgstr "自己紹介"
+
+msgctxt "SettingsSidebar"
+msgid "Debug"
+msgstr "デバッグ"
+
+msgctxt "SidePanel"
+msgid "Search…"
+msgstr "検索…"
+
+msgctxt "SidePanel"
+msgid "Add"
+msgstr "追加"
+
+msgctxt "SplashScreen"
+msgid "Connecting to relays…"
+msgstr "リレーに接続中…"
+
+msgctxt "StatusBar"
+msgid "ONLINE"
+msgstr "オンライン"
+
+msgctxt "StatusBar"
+msgid "RELAYS"
+msgstr "リレー"
+
+msgctxt "StatusBar"
+msgid "COMMAND"
+msgstr "コマンド"
+

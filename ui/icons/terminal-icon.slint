@@ -1,0 +1,13 @@
+import { Palette } from "../tokens.slint";
+
+export component TerminalIcon inherits Rectangle {
+    in property <color> stroke: Palette.text-mid;
+    width: 14px; height: 12px;
+    Path {
+        width: 14px; height: 12px;
+        viewbox-width: 14; viewbox-height: 12;
+        commands: "M 2 2 L 6 6 L 2 10";
+        stroke: root.stroke; stroke-width: 1.3px; fill: transparent;
+    }
+    Rectangle { x: 7px; y: 9px; width: 5px; height: 1.2px; background: root.stroke; }
+}

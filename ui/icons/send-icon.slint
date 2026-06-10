@@ -1,0 +1,11 @@
+import { Palette } from "../tokens.slint";
+
+export component SendIcon inherits Path {
+    in property <color> fill-color: Palette.text-mid;
+    in property <length> size: 14px;
+    width: root.size;
+    height: root.size;
+    viewbox-width: 24; viewbox-height: 24;
+    commands: "M 1 23 L 23 12 L 1 1 L 7 12 Z";
+    fill: root.fill-color;
+}

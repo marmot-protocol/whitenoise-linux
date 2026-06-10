@@ -1,0 +1,89 @@
+// status bar — online dot, relays, MLS, cwd, hotkey hint.
+import { Palette, Theme } from "tokens.slint";
+
+export component StatusBar inherits Rectangle {
+    height: Theme.retro ? 36px : 30px;
+    background: Theme.retro ? Palette.rail : Palette.panel;
+
+    in property <int> relaysConnected;
+    in property <int> relaysTotal;
+
+    Rectangle {
+        y: 0;
+        width: parent.width;
+        height: Theme.retro ? Theme.border-w : 1px;
+        background: Theme.retro ? Palette.border : Palette.border-2;
+    }
+
+    HorizontalLayout {
+        padding-left: 18px;
+        padding-right: 18px;
+        spacing: 18px;
+        alignment: stretch;
+
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: start;
+            Rectangle {
+                width: 8px;
+                height: 8px;
+                y: (parent.height - self.height) / 2;
+                border-radius: (4px) * Theme.r-scale;
+                background: root.relaysConnected > 0
+                    ? Palette.mint-dim
+                    : (root.relaysTotal > 0 ? #f59e0b : Palette.text-vlo);
+                drop-shadow-blur: Theme.retro ? 0px : 4px;
+                drop-shadow-color: root.relaysConnected > 0 ? Palette.mint-glow : transparent;
+            }
+
+            Text {
+                text: root.relaysConnected > 0
+                    ? @tr("ONLINE")
+                    : (root.relaysTotal > 0 ? @tr("CONNECTING") : @tr("OFFLINE"));
+                color: Palette.text-hi;
+                font-size: (Theme.retro ? 14px : 10px) * Theme.fs-scale;
+                font-weight: 700;
+                letter-spacing: 1.2px;
+                vertical-alignment: center;
+            }
+        }
+
+        Text {
+            text: root.relaysConnected + "/" + root.relaysTotal + " " + @tr("RELAYS");
+            color: Palette.text-mid;
+            font-size: (Theme.retro ? 14px : 10px) * Theme.fs-scale;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            vertical-alignment: center;
+        }
+
+        Rectangle {
+            horizontal-stretch: 1;
+        }
+
+        Text {
+            text: "Ctrl+K";
+            color: Palette.text-mid;
+            font-size: (Theme.retro ? 14px : 10px) * Theme.fs-scale;
+            font-weight: 700;
+            letter-spacing: 1.0px;
+            vertical-alignment: center;
+        }
+
+        Text {
+            text: "·";
+            color: Palette.text-vlo;
+            font-size: (Theme.retro ? 14px : 10px) * Theme.fs-scale;
+            vertical-alignment: center;
+        }
+
+        Text {
+            text: @tr("COMMAND");
+            color: Palette.text-mid;
+            font-size: (Theme.retro ? 14px : 10px) * Theme.fs-scale;
+            font-weight: 700;
+            letter-spacing: 1.4px;
+            vertical-alignment: center;
+        }
+    }
+}

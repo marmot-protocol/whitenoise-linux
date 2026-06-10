@@ -1,0 +1,37 @@
+import { Modal, ModalField } from "modal.slint";
+
+export component StartNewChatModal inherits Modal {
+    // start-chat(name, members) — `members` is the raw textarea content;
+    // Rust splits on whitespace/commas and validates npub/hex. An empty
+    // `name` with a single member becomes a 1:1 chat.
+    callback start-chat(string, string);
+    callback cancel;
+    in-out property <string> chat-name;
+    in-out property <string> members-text;
+    in property <bool> busy: false;
+
+    card-width: 460px;
+    title: @tr("New chat or group");
+    subtitle: @tr("Paste one npub for a direct chat, or several (one per line) plus a group name.");
+    secondary-label: @tr("Cancel");
+    primary-label: @tr("Create");
+    primary-busy-label: @tr("Creating…");
+    primary-busy: root.busy;
+    primary => { root.start-chat(root.chat-name, root.members-text); }
+    secondary => { root.cancel(); }
+
+    ModalField {
+        label: @tr("GROUP NAME (OPTIONAL)");
+        placeholder: @tr("e.g. friday-crew");
+        text <=> root.chat-name;
+        autofocus: true;
+    }
+
+    ModalField {
+        label: @tr("MEMBERS");
+        placeholder: "npub1…\nnpub1…";
+        text <=> root.members-text;
+        multiline: true;
+        field-height: 132px;
+    }
+}

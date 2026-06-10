@@ -1,0 +1,164 @@
+// messages area — driven by a model fed from Rust.
+import { Palette, Theme, ChatMessage } from "tokens.slint";
+import { IncomingRow, OutgoingRow, CypherScroll } from "primitives.slint";
+
+export component MessagesArea inherits Rectangle {
+    in property <[ChatMessage]> messages;
+    in property <length> available-w: 9999px;
+    in property <bool> outgoing-on-right: true;
+    in property <image> my-picture;
+    in property <bool> my-has-picture: false;
+    // Bumped by Rust whenever a fresh outgoing message lands. The `changed`
+    // handler below jumps the viewport to the bottom — with animation — so
+    // the user always sees the message they just sent.
+    in property <int> scroll-tick: 0;
+    callback react(string, string);
+    callback unreact(string);
+    callback request-picker(string, length, length);
+    callback request-reply(string, string, string);
+    callback request-edit(string, string);
+    callback request-context-menu(string, string, string, bool, length, length);
+    callback show-history(string);
+    callback retry(string);
+    callback attachment-clicked(string);
+    property <length> content-w: max(120px, root.available-w - 36px);
+    // Subtle vertical lift — keeps the chat canvas from feeling flat.
+    background: Theme.retro
+        ? Palette.bg
+        : @linear-gradient(180deg, Palette.canvas-top 0%, Palette.bg 28%);
+
+    // Computed "stick to bottom" position. We don't bind viewport-y directly
+    // to this (that would override manual scrolling) — instead the changed
+    // handlers below imperatively snap to it at the right moments.
+    property <length> bottom-y: -max(0px, inner.preferred-height - cs.visible-height);
+    // True when the user is within 40px of the bottom — used to auto-follow
+    // incoming messages without yanking the scroll out from under them if
+    // they've explicitly paged up to read history.
+    property <bool> at-bottom: (-cs.viewport-y) >= (-root.bottom-y) - 40px;
+
+    // Send-driven scroll: any tick bump (from Rust) snaps to bottom even if
+    // the user had paged up. This is "I just hit send, take me there."
+    changed scroll-tick => {
+        cs.viewport-y = root.bottom-y;
+    }
+    // Content-driven scroll: when new rows append (preferred-height grows),
+    // only follow if we were already near the bottom. Prevents the scroll
+    // from yanking when a message arrives mid-history-reading.
+    changed bottom-y => {
+        if (root.at-bottom) {
+            cs.viewport-y = root.bottom-y;
+        }
+    }
+
+    cs := CypherScroll {
+        width: parent.width;
+        height: parent.height;
+        viewport-width: self.width;
+        viewport-height: inner.preferred-height;
+        // Smooth scroll when we snap programmatically. Wheel/scrollbar
+        // interaction sets viewport-y directly and bypasses the animation,
+        // which is exactly what we want (manual scrolling stays crisp).
+        animate viewport-y { duration: 220ms; easing: ease-in-out; }
+
+        inner := VerticalLayout {
+            width: parent.width;
+            padding-left: 18px; padding-right: 18px;
+            padding-top: 18px; padding-bottom: 18px;
+            // Tight within a group; Rust adds `gap-before` between groups.
+            spacing: 3px;
+
+            for msg in root.messages : VerticalLayout {
+                spacing: 0;
+                if msg.gap-before > 0px : Rectangle { height: msg.gap-before; }
+
+                if !msg.outgoing : IncomingRow {
+                    row-w: root.content-w;
+                    text: msg.text;
+                    lines: msg.lines;
+                    stamp: msg.stamp;
+                    show-avatar: msg.show-avatar;
+                    bubble-max: msg.bubble-max;
+                    av-initials: msg.av-initials;
+                    av-a: msg.av-a;
+                    av-b: msg.av-b;
+                    av-picture: msg.picture;
+                    av-has-picture: msg.has-picture;
+                    sender-name: msg.sender-name;
+                    show-sender-name: msg.show-sender-name;
+                    sender-id: msg.sender-id;
+                    message-id: msg.message-id;
+                    reactions: msg.reactions;
+                    first-in-group: msg.first-in-group;
+                    last-in-group: msg.last-in-group;
+                    reply-to-id: msg.reply-to-id;
+                    reply-to-text: msg.reply-to-text;
+                    reply-to-author: msg.reply-to-author;
+                    has-attachment: msg.has-attachment;
+                    att-name: msg.att-name;
+                    att-mime: msg.att-mime;
+                    att-size-label: msg.att-size-label;
+                    att-is-image: msg.att-is-image;
+                    att-image: msg.att-image;
+                    att-has-image: msg.att-has-image;
+                    att-loading: msg.att-loading;
+                    att-failed: msg.att-failed;
+                    edited: msg.edited;
+                    edit-count: msg.edit-count;
+                    react(id, emoji) => { root.react(id, emoji); }
+                    unreact(id) => { root.unreact(id); }
+                    request-picker(id, ax, ay) => { root.request-picker(id, ax, ay); }
+                    request-reply(id, preview, author) => { root.request-reply(id, preview, author); }
+                    request-context-menu(id, text, author, can-edit, ax, ay) => { root.request-context-menu(id, text, author, can-edit, ax, ay); }
+                    show-history(id) => { root.show-history(id); }
+                    attachment-clicked(id) => { root.attachment-clicked(id); }
+                }
+
+                if msg.outgoing : OutgoingRow {
+                    align-right: root.outgoing-on-right;
+                    row-w: root.content-w;
+                    text: msg.text;
+                    lines: msg.lines;
+                    stamp: msg.stamp;
+                    show-avatar: msg.show-avatar;
+                    av-initials: msg.av-initials;
+                    av-a: msg.av-a;
+                    av-b: msg.av-b;
+                    av-picture: root.my-picture;
+                    av-has-picture: root.my-has-picture;
+                    bubble-max: msg.bubble-max;
+                    sender-id: msg.sender-id;
+                    message-id: msg.message-id;
+                    reactions: msg.reactions;
+                    first-in-group: msg.first-in-group;
+                    last-in-group: msg.last-in-group;
+                    pending: msg.pending;
+                    failed: msg.failed;
+                    reply-to-id: msg.reply-to-id;
+                    reply-to-text: msg.reply-to-text;
+                    reply-to-author: msg.reply-to-author;
+                    has-attachment: msg.has-attachment;
+                    att-name: msg.att-name;
+                    att-mime: msg.att-mime;
+                    att-size-label: msg.att-size-label;
+                    att-is-image: msg.att-is-image;
+                    att-image: msg.att-image;
+                    att-has-image: msg.att-has-image;
+                    att-loading: msg.att-loading;
+                    att-failed: msg.att-failed;
+                    edited: msg.edited;
+                    edit-count: msg.edit-count;
+                    can-edit: msg.can-edit;
+                    react(id, emoji) => { root.react(id, emoji); }
+                    unreact(id) => { root.unreact(id); }
+                    request-picker(id, ax, ay) => { root.request-picker(id, ax, ay); }
+                    request-reply(id, preview, author) => { root.request-reply(id, preview, author); }
+                    request-edit(id, current) => { root.request-edit(id, current); }
+                    request-context-menu(id, text, author, can-edit, ax, ay) => { root.request-context-menu(id, text, author, can-edit, ax, ay); }
+                    show-history(id) => { root.show-history(id); }
+                    retry => { root.retry(msg.message-id); }
+                    attachment-clicked(id) => { root.attachment-clicked(id); }
+                }
+            }
+        }
+    }
+}

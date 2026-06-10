@@ -1,0 +1,19 @@
+import { Palette } from "../tokens.slint";
+
+export component SmileyIcon inherits Rectangle {
+    in property <color> stroke: Palette.text-mid;
+    width: 16px; height: 16px;
+    Rectangle {
+        width: 16px; height: 16px;
+        border-radius: 8px;
+        border-width: 1.4px; border-color: root.stroke;
+    }
+    Rectangle { x: 5px; y: 5.5px; width: 1.6px; height: 1.6px; border-radius: 0.8px; background: root.stroke; }
+    Rectangle { x: 9.4px; y: 5.5px; width: 1.6px; height: 1.6px; border-radius: 0.8px; background: root.stroke; }
+    Path {
+        x: 4.5px; y: 8.5px; width: 7px; height: 4px;
+        viewbox-width: 7; viewbox-height: 4;
+        commands: "M 0.5 0.5 C 1.5 2.5 5.5 2.5 6.5 0.5";
+        stroke: root.stroke; stroke-width: 1.3px; fill: transparent;
+    }
+}

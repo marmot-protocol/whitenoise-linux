@@ -1,0 +1,58 @@
+import { Palette , Theme} from "../tokens.slint";
+import { LockIcon } from "../icons/lock-icon.slint";
+
+export component EncryptionBanner inherits Rectangle {
+    in property <string> npub;
+
+    height: 56px;
+    background: Theme.retro
+        ? Palette.banner
+        : @linear-gradient(90deg, Palette.banner-edge 0%, Palette.banner 40%, Palette.banner-edge 100%);
+
+    // Left accent stripe — encryption at a glance.
+    Rectangle {
+        x: 0; y: 0;
+        width: 3px; height: parent.height;
+        background: Palette.mint;
+        opacity: Theme.retro ? 1.0 : 0.85;
+    }
+
+    Rectangle {
+        y: parent.height - 1px;
+        width: parent.width; height: 1px;
+        background: Palette.border-2;
+    }
+
+    HorizontalLayout {
+        padding-left: 22px; padding-right: 22px;
+        padding-top: 8px; padding-bottom: 8px;
+        spacing: 12px;
+        alignment: start;
+
+        LockIcon {
+            stroke: Palette.mint;
+            y: (parent.height - self.height) / 2;
+        }
+
+        VerticalLayout {
+            spacing: 4px;
+            alignment: center;
+            Text {
+                text: @tr("End-to-end encrypted with") + " MLS";
+                color: Palette.text-hi;
+                font-size: (13px) * Theme.fs-scale;
+                font-weight: 600;
+            }
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: start;
+                Text { text: @tr("Forward secret"); color: Palette.text-lo; font-size: (11px) * Theme.fs-scale; vertical-alignment: center; }
+                Text { text: "·"; color: Palette.text-vlo; font-size: (11px) * Theme.fs-scale; vertical-alignment: center; }
+                Text { text: @tr("post-compromise secure"); color: Palette.text-lo; font-size: (11px) * Theme.fs-scale; vertical-alignment: center; }
+                Text { text: "·"; color: Palette.text-vlo; font-size: (11px) * Theme.fs-scale; vertical-alignment: center; }
+                Text { text: root.npub; color: Palette.mint; font-size: (11px) * Theme.fs-scale; font-weight: 600; vertical-alignment: center; }
+            }
+        }
+        Rectangle { horizontal-stretch: 1; }
+    }
+}

@@ -1,0 +1,47 @@
+// chat list panel — a SidePanel populated with chat list items.
+import { ChatMeta } from "tokens.slint";
+import { ChatListItem } from "primitives.slint";
+import { SidePanel } from "shells.slint";
+
+export component ChatListPanel inherits SidePanel {
+    callback chat-clicked(int);
+    callback new-chat-clicked;
+
+    in property <[ChatMeta]> chats;
+    in property <int> active-chat;
+    // Live relay health + seconds since last sync (see DarkMatterLinux.sync-secs).
+    in property <int> relays-connected;
+    in property <int> relays-total;
+    in property <int> sync-secs: -1;
+
+    add-clicked => { root.new-chat-clicked(); }
+
+    title: @tr("CHATS");
+    count: root.chats.length;
+    show-search: true;
+    search-placeholder: @tr("Search chats…");
+    show-search-shortcut: true;
+    show-add: true;
+    footer-text: root.relays-total > 0
+        ? root.relays-connected + "/" + root.relays-total + " " + @tr("RELAYS")
+        : @tr("NO RELAYS");
+    footer-trail: root.sync-secs < 0
+        ? "· " + @tr("SYNCING…")
+        : "· " + @tr("SYNCED") + " " + root.sync-secs + "S " + @tr("AGO");
+
+    for chat[idx] in root.chats : ChatListItem {
+        selected: idx == root.active-chat;
+        name: chat.name;
+        preview: chat.preview;
+        stamp: chat.stamp;
+        badge: chat.badge;
+        read: chat.read;
+        sending: chat.sending;
+        av-initials: chat.av-initials;
+        av-a: chat.av-a;
+        av-b: chat.av-b;
+        picture: chat.picture;
+        has-picture: chat.has-picture;
+        clicked => { root.chat-clicked(idx); }
+    }
+}

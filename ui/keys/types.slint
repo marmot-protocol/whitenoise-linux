@@ -1,0 +1,24 @@
+export struct Signer {
+    name: string,
+    kind: string,
+    status: string,
+    last-seen: string,
+}
+
+export struct LinkedDevice {
+    name: string,
+    detail: string,
+    current: bool,
+}
+
+// A single key-package record surfaced on the Keys page. Combines local
+// + relay state so the UI can show whether the package is published.
+export struct KeyPackageInfo {
+    key-package-id: string,        // short slot id (the "d" tag on the relay event)
+    key-package-ref: string,       // MLS key_package_ref (HPKE init key fingerprint)
+    event-id: string,              // Nostr event id (empty if never published)
+    published-at: string,          // pretty-formatted timestamp ("May 26 · 19:09") or empty
+    relay-count: int,              // number of relays we saw this KP on (0 if local-only)
+    local: bool,                   // present in the local on-disk record
+    on-relay: bool,                // observed on at least one configured relay
+}

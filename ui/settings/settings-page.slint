@@ -1,0 +1,125 @@
+import { Palette } from "../tokens.slint";
+import { SettingsSidebar } from "settings-sidebar.slint";
+import { GeneralPane } from "general-pane.slint";
+import { AppearancePane } from "appearance-pane.slint";
+import { PlaceholderPane } from "placeholder-pane.slint";
+import { NetworkPane } from "network-pane.slint";
+import { AdvancedPane } from "advanced-pane.slint";
+import { DebugPane } from "debug-pane.slint";
+import { AboutPane } from "about-pane.slint";
+
+export component SettingsPage inherits Rectangle {
+    in-out property <int> active-tab: 0;
+    in-out property <bool> debug-enabled: false;
+    in property <string> debug-dump;
+    callback debug-toggled(bool);
+    callback debug-refresh-clicked;
+    callback debug-copy-clicked;
+
+    in-out property <bool> telemetry-enabled: false;
+    in-out property <bool> audit-enabled: false;
+    in property <string> audit-status;
+    callback telemetry-toggled(bool);
+    callback audit-toggled(bool);
+
+    in property <string> locale-display;
+    callback change-language-clicked();
+    in-out property <bool> light-theme: false;
+    in-out property <bool> retro-mode: false;
+    in-out property <int> accent-color: 0;
+    in-out property <bool> outgoing-on-right: true;
+    callback theme-mode-selected(string);
+    callback accent-selected(int);
+    callback outgoing-on-right-toggled(bool);
+
+    // Network & relays — forwarded straight to NetworkPane.
+    in property <[string]> network-relays;
+    in property <[string]> network-booted-relays;
+    in property <int> network-connected;
+    in property <int> network-total;
+    in property <string> network-status;
+    callback network-add-relay(string);
+    callback network-remove-relay(string);
+    callback network-refresh-health();
+    callback network-republish-relay-list();
+
+    horizontal-stretch: 1;
+    vertical-stretch: 1;
+    preferred-width: 0px;
+    preferred-height: 0px;
+    background: Palette.bg;
+
+    HorizontalLayout {
+        width: parent.width;
+        height: parent.height;
+        spacing: 0;
+
+        sidebar := SettingsSidebar {
+            active-tab <=> root.active-tab;
+            debug-enabled <=> root.debug-enabled;
+        }
+
+        Rectangle {
+            horizontal-stretch: 1;
+            background: Palette.bg;
+
+            if root.active-tab == 0 : GeneralPane {
+                width: parent.width; height: parent.height;
+                locale-display: root.locale-display;
+                change-language-clicked => { root.change-language-clicked(); }
+            }
+            if root.active-tab == 1 : NetworkPane {
+                width: parent.width; height: parent.height;
+                relays: root.network-relays;
+                booted-relays: root.network-booted-relays;
+                connected: root.network-connected;
+                total: root.network-total;
+                status: root.network-status;
+                add-relay(u) => { root.network-add-relay(u); }
+                remove-relay(u) => { root.network-remove-relay(u); }
+                refresh-health => { root.network-refresh-health(); }
+                republish-relay-list => { root.network-republish-relay-list(); }
+            }
+            if root.active-tab == 2 : AppearancePane {
+                width: parent.width; height: parent.height;
+                light-theme <=> root.light-theme;
+                retro-mode <=> root.retro-mode;
+                accent-color <=> root.accent-color;
+                outgoing-on-right <=> root.outgoing-on-right;
+                theme-mode-selected(mode) => { root.theme-mode-selected(mode); }
+                accent-selected(idx) => { root.accent-selected(idx); }
+                outgoing-on-right-toggled(v) => { root.outgoing-on-right-toggled(v); }
+            }
+            if root.active-tab == 3 : PlaceholderPane {
+                width: parent.width; height: parent.height;
+                title: @tr("Notifications");
+                body: @tr("Per-chat notification rules, sounds, focus mode.");
+            }
+            if root.active-tab == 4 : PlaceholderPane {
+                width: parent.width; height: parent.height;
+                title: @tr("Storage");
+                body: @tr("Local cache, message retention, attachments.");
+            }
+            if root.active-tab == 5 : AdvancedPane {
+                width: parent.width; height: parent.height;
+                debug-enabled <=> root.debug-enabled;
+                debug-toggled(v) => { root.debug-toggled(v); }
+                telemetry-enabled <=> root.telemetry-enabled;
+                telemetry-toggled(v) => { root.telemetry-toggled(v); }
+                audit-enabled <=> root.audit-enabled;
+                audit-toggled(v) => { root.audit-toggled(v); }
+                audit-status: root.audit-status;
+            }
+            if root.active-tab == 6 : AboutPane {
+                width: parent.width;
+                height: parent.height;
+            }
+            if root.active-tab == 7 : DebugPane {
+                width: parent.width; height: parent.height;
+                dump: root.debug-dump;
+                refresh-clicked => { root.debug-refresh-clicked(); }
+                copy-clicked => { root.debug-copy-clicked(); }
+            }
+        }
+    }
+}

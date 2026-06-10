@@ -1,0 +1,879 @@
+// darkmatter — the whole system on one page.
+// Root composition: owns state + data, wires sections together.
+
+import { Palette, Theme, ChatMeta, ChatMessage, Contact, ArchivedChat, GroupMember } from "tokens.slint";
+import { TitleBar } from "title-bar.slint";
+import { LeftRail } from "left-rail.slint";
+import { ChatListPanel } from "chat-list.slint";
+import { MainPane } from "main-pane.slint";
+import { GetStartedScreen } from "get-started.slint";
+import { ContactsPage } from "contacts.slint";
+import { ArchivedPage } from "archived.slint";
+import { KeysPage } from "keys.slint";
+import { SettingsPage } from "settings.slint";
+import { ProfilePage } from "profile.slint";
+import { KeyPackageInfo } from "keys.slint";
+import { StatusBar } from "status-bar.slint";
+import { StartNewChatModal, AddContactModal, NicknameModal, CommandPalette, PaletteAction, LanguagePickerModal, EditHistoryModal, ImageViewerModal, ProfileModal } from "modals.slint";
+import { LoginScreen } from "login.slint";
+import { SplashScreen } from "splash.slint";
+import { EmojiPicker } from "emoji-picker.slint";
+import { MessageContextMenu } from "primitives/context-menu.slint";
+import { EmojiEntry, EmojiSheet, Linkout, ProfileSink } from "tokens.slint";
+import { EditVersion } from "tokens.slint";
+// Re-export so Rust can do `ui.global::<EmojiSheet>().set_sprite(...)`.
+// Slint only generates a Rust binding for a global when the entry file
+// exports it (or names it in the component tree).
+export { EmojiSheet }
+// Same for the Markdown link sink, bound once in Rust to open URLs externally.
+export { Linkout }
+export { ProfileSink }
+
+export component DarkMatterLinux inherits Window {
+    title: "darkmatter";
+    preferred-width: 1920px;
+    preferred-height: 1080px;
+    min-width: Theme.retro ? 1200px : 960px;
+    min-height: Theme.retro ? 760px : 650px;
+    background: Palette.bg;
+    default-font-family: Theme.font;
+
+    in-out property <int> active-chat: 0;
+    in-out property <int> active-page: 0;
+    in-out property <int> active-contact: 0;
+    in-out property <int> active-archived: 0;
+    in-out property <bool> show-new-chat: false;
+    in-out property <bool> show-add-contact: false;
+    in-out property <bool> show-palette: false;
+    in-out property <bool> outgoing-on-right: true;
+    in-out property <bool> light-theme: false;
+    in-out property <bool> retro-mode: false;
+    in-out property <int> accent-color: 0;
+    in property <string> my-npub;
+    // Login gate. When false the LoginScreen replaces the entire app shell.
+    in-out property <bool> logged-in: false;
+    // 0=choose, 1=enter-nsec, 2=show-generated, 3=unlock-existing-vault.
+    in-out property <int> login-mode: 0;
+    in-out property <string> login-nsec-input;
+    // Vault password fields (set on first run, entered on unlock).
+    in-out property <string> password-input;
+    in-out property <string> password-confirm;
+    in property <string> generated-nsec;
+    in property <string> generated-npub;
+    in property <string> login-error;
+    in property <bool> login-busy;
+    callback login-with-nsec(string, string, string); // nsec, password, confirm
+    callback generate-key-requested();
+    callback confirm-saved-key(string, string);        // password, confirm
+    callback unlock(string);                            // vault password
+    callback reset-vault();                             // delete vault, start over
+    callback copy-nsec(string);
+
+    // Composer state + send wiring (real chat send through marmot-app).
+    in-out property <string> composer-draft;
+    // Reply target — set by Rust when the user taps a bubble's reply button,
+    // cleared on send or cancel. Drives the composer's "Replying to …" chip
+    // and tells Rust to send the next message as a kind-9 reply (e+q tags).
+    in-out property <string> reply-target-id;
+    in-out property <string> reply-target-author;
+    in-out property <string> reply-target-preview;
+    // Edit state — set by Rust when the user taps a bubble's edit pencil,
+    // cleared on save or cancel. Drives the composer's "Editing message" banner
+    // and tells Rust the next send is a kind-1010 edit of this message.
+    in-out property <string> editing-message-id;
+    // Edit-history modal — populated + shown when a bubble's "(edited)" label
+    // is tapped. Read-only; visible to anyone in the chat.
+    in property <[EditVersion]> edit-history;
+    in-out property <bool> edit-history-open: false;
+    callback send-message(string);
+    callback cancel-reply();
+    callback cancel-edit();
+    callback react-message(string, string);
+    callback unreact-message(string);
+    callback retry-message(string);
+    callback request-reply(string, string, string); // message_id, preview, author
+    callback request-edit(string, string);           // message_id, current_text
+    callback show-edit-history(string);               // message_id
+    callback dismiss-edit-history();
+    callback attach-file(); // composer paperclip → open file picker
+    callback attachment-clicked(string); // bubble attachment tapped (message_id)
+
+    // Image lightbox — opened by Rust when an already-decoded image attachment
+    // is tapped; shows it full-window over a darkened backdrop.
+    in-out property <bool> image-viewer-open: false;
+    in property <image> image-viewer-image;
+    callback dismiss-image-viewer();
+
+    // Peer-profile modal — opened by tapping an @mention or any avatar (Rust
+    // binds ProfileSink.open and the nostr: link interception). The `peer-`
+    // prefix keeps these clear of the own-profile *page* props below.
+    // `peer-profile-account-id` is the stable key async fetch completions
+    // compare against so a late relay/picture response can't repaint a modal
+    // that moved on to another user. Loading drives the skeleton state;
+    // not-found the empty state.
+    in-out property <bool> peer-profile-open: false;
+    in-out property <string> peer-profile-account-id;
+    in property <string> peer-profile-name;
+    in property <string> peer-profile-npub;        // full npub (copy target)
+    in property <string> peer-profile-npub-short;
+    in property <string> peer-profile-nip05;
+    in property <string> peer-profile-about;
+    in property <string> peer-profile-lud16;
+    in property <bool> peer-profile-loading: false;
+    in property <bool> peer-profile-not-found: false;
+    in property <bool> peer-profile-is-contact: false;
+    in property <bool> peer-profile-is-self: false;
+    in property <bool> peer-profile-adding: false;
+    in property <string> peer-profile-status;
+    in property <color> peer-profile-av-a;
+    in property <color> peer-profile-av-b;
+    in property <string> peer-profile-av-initials;
+    in property <image> peer-profile-picture;
+    in property <bool> peer-profile-has-picture: false;
+    callback peer-profile-dismissed();
+    callback peer-profile-add-contact();
+    // Bumped by Rust after a send to force the MessagesArea to scroll to
+    // the bottom. Plain integer counter — content doesn't matter, only the
+    // edge — picked up via a Slint `changed` handler.
+    in property <int> messages-scroll-tick: 0;
+
+    // Emoji picker (full-window modal).
+    in property <[EmojiEntry]> emoji-list;
+    in property <int> emoji-shown;
+    in property <image> emoji-sprite;
+    in property <int> emoji-tile;
+    in-out property <string> emoji-query;
+    in-out property <bool> show-emoji-picker: false;
+    in-out property <string> emoji-target-message-id;
+    in-out property <length> emoji-anchor-x;
+    in-out property <length> emoji-anchor-y;
+    callback emoji-picker-requested(string, length, length);  // message-id, anchor-x, anchor-y
+    callback emoji-query-changed(string);
+    callback emoji-picked(string, string);    // message-id, emoji
+    callback emoji-picker-dismissed();
+    // Message context menu (right-click on a bubble). Handled entirely in
+    // Slint — the menu items re-fire the existing reaction-picker / reply /
+    // edit plumbing above, so Rust never sees the menu itself.
+    property <bool> ctx-menu-open: false;
+    property <string> ctx-menu-id;
+    property <string> ctx-menu-text;
+    property <string> ctx-menu-author;
+    property <bool> ctx-menu-can-edit: false;
+    property <length> ctx-menu-x;
+    property <length> ctx-menu-y;
+    // ── Mention autocomplete ────────────────────────────────────────────────
+    // Driven from Rust: as the user types, `composer-input-changed` reports the
+    // caret offset, Rust detects the active `@query`, and fills `mention-*`.
+    in-out property <bool> mention-active: false;
+    in property <[GroupMember]> mention-candidates;
+    in-out property <int> mention-selected: 0;
+    callback composer-input-changed(int);   // caret byte-offset
+    callback mention-nav(int);               // +1 / -1
+    callback mention-commit();               // accept highlighted
+    callback mention-choose(int);            // accept clicked index
+    callback mention-dismiss();
+    // Move the composer caret after Rust splices in a mention. `pos` is the
+    // target byte offset; `tick` is bumped every time so even a repeat offset
+    // re-triggers the `changed` handler down in MainPane.
+    in-out property <int> composer-caret-pos: 0;
+    in-out property <int> composer-caret-tick: 0;
+    // Keys & identity — key-package state and management.
+    in property <[KeyPackageInfo]> key-packages;
+    in property <[string]> kp-relays;
+    in property <string> kp-status;
+    in property <bool> kp-busy: false;
+    // True only when a key package is actually published to a relay (not merely
+    // present locally). Set by Rust from the live KP records.
+    in property <bool> kp-published: false;
+    callback kp-publish-clicked();
+    callback kp-rotate-clicked();
+    callback kp-refresh-clicked();
+
+    // Debug pane (gated by Settings → Advanced toggle).
+    in-out property <bool> debug-enabled: false;
+    in property <string> debug-dump;
+    callback debug-toggled(bool);
+    callback debug-refresh-clicked();
+    callback debug-copy-clicked();
+
+    in-out property <bool> telemetry-enabled: false;
+    in-out property <bool> audit-enabled: false;
+    in property <string> audit-status;
+    callback telemetry-toggled(bool);
+    callback audit-toggled(bool);
+
+    // Network & relays settings pane. `network-relays` is the on-disk list
+    // (drives the UI); `network-booted-relays` is what the running backend
+    // was started with — a divergence between the two surfaces the "restart
+    // to apply" banner. Connection counts come from the SDK relay pool's
+    // aggregate health, refreshed on demand and on boot.
+    in property <[string]> network-relays;
+    // Well-known relays not yet added — one-click suggestions on get-started.
+    in property <[string]> suggested-relays;
+    in property <[string]> network-booted-relays;
+    in property <int> network-connected;
+    in property <int> network-total;
+    in property <string> network-status;
+    callback network-add-relay(string);
+    callback network-remove-relay(string);
+    callback network-refresh-health();
+    callback network-republish-relay-list();
+    // Seconds since the last successful relay-health sync. Driven by the 1s
+    // Timer below; reset to 0 by Rust on boot and after each health refresh.
+    // -1 means "not synced yet" (shown as SYNCING…). Drives the chat-list
+    // footer's "SYNCED Ns AGO".
+    in-out property <int> sync-secs: -1;
+    // Counts down each second; at 0 we re-poll relay health (~every 15s).
+    in-out property <int> sync-refresh-countdown: 15;
+
+    // Interface language — persisted in prefs; Slint @tr() catalogs switch via
+    // slint::select_bundled_translation in Rust.
+    in-out property <string> locale: "en";
+    in property <string> locale-display;
+    in-out property <bool> show-language-picker: false;
+    callback change-language-clicked();
+    callback locale-selected(string);
+    callback theme-mode-selected(string);
+    callback accent-selected(int);
+    callback outgoing-on-right-toggled(bool);
+
+    in property <string> backend-error;
+    in property <bool> backend-ready;
+    // When true, the marmot runtime is booting on a worker thread; we show
+    // the splash overlay instead of the (empty, useless) main shell.
+    in property <bool> booting;
+    in property <string> booting-status: @tr("Connecting to relays…");
+
+    // Profile editor state (kind-0 metadata via marmot-app).
+    // Derived in Rust from the profile (display name → initials + palette).
+    // Drives the left-rail avatar tile and the outgoing-message sender avatar.
+    in property <string> my-av-initials: "?";
+    in property <color> my-av-a: Palette.mint;
+    in property <color> my-av-b: Palette.mint-dim;
+    in property <image> my-av-picture;
+    in property <bool> my-av-has-picture: false;
+    in property <string> my-display-name: "";
+    // Rail badge counts — aggregated unread/activity per section.
+    in property <int> rail-badge-chats: 0;
+    in property <int> rail-badge-contacts: 0;
+    in property <int> rail-badge-archive: 0;
+    in property <int> rail-badge-keys: 0;
+    in-out property <string> profile-display-name;
+    in-out property <string> profile-name;
+    in-out property <string> profile-about;
+    in-out property <string> profile-picture;
+    in-out property <string> profile-nip05;
+    in-out property <string> profile-lud16;
+    in-out property <bool> profile-editing: false;
+    in property <bool> profile-busy: false;
+    in property <bool> profile-uploading: false;
+    in property <string> profile-status;
+    callback save-profile();
+    callback start-edit-profile();
+    callback cancel-edit-profile();
+    callback upload-profile-picture();
+    callback copy-to-clipboard(string);
+    // Filtered command palette items — Rust owns the source list & filtering.
+    in property <[PaletteAction]> palette-actions;
+    in-out property <string> palette-query;
+    // Computed in Rust from active-page + the relevant active-* index. Already upper-cased.
+    in property <string> breadcrumb;
+    // Selection callbacks — design is dumb, Rust decides what to do.
+    callback nav-requested(int);             // left-rail icon clicked, 0..3 or 4 (settings)
+    callback profile-requested();
+    callback new-chat-requested();
+    callback chat-selected(int);
+    callback contact-selected(int);
+    callback archive-selected(int);
+    // Chat-request + archive actions — operate on the active chat / active archived row.
+    callback accept-chat-request();
+    callback block-chat-request();
+    callback archive-chat();
+    callback unarchive-chat();
+    callback modal-dismissed();
+    // Command-palette callbacks.
+    callback palette-requested();            // Ctrl+K — Rust populates actions then sets show-palette
+    callback palette-query-changed(string);  // Rust refilters
+    callback palette-execute(string);        // Rust runs the action by id
+    callback palette-dismissed();
+
+    in property <[Contact]> contacts;
+
+    in property <[ArchivedChat]> archived-chats;
+
+    in property <[ChatMeta]> chats;
+
+    in property <[[ChatMessage]]> chats-messages;
+
+    // Active group membership (refreshed when the selected chat/archive changes).
+    in property <[GroupMember]> chat-members;
+    in property <bool> chat-is-group: false;
+    in property <bool> chat-can-show-members: false;
+    in property <int> chat-member-count: 0;
+    in property <bool> chat-can-add-members: false;
+    in property <bool> add-member-busy: false;
+    in property <string> add-member-status;
+    in-out property <string> add-member-draft;
+    // Admin group settings (rename + avatar), surfaced in the members panel.
+    in property <image> chat-group-picture;
+    in property <bool> chat-group-has-picture: false;
+    in property <color> chat-group-av-a;
+    in property <color> chat-group-av-b;
+    in property <string> chat-group-av-initials;
+    in property <bool> group-rename-busy: false;
+    in property <bool> group-image-busy: false;
+    in property <string> group-settings-status;
+    in-out property <string> group-rename-draft;
+    callback rename-group(string);
+    callback change-group-image();
+    callback clear-group-image();
+    in-out property <bool> show-chat-members: false;
+    callback members-toggle-clicked();
+    callback add-member(string);
+    callback promote-admin(string);
+    callback demote-admin(string);
+    callback self-demote-admin();
+
+    changed light-theme => { Theme.light = root.light-theme; }
+    changed retro-mode => { Theme.retro = root.retro-mode; }
+    changed accent-color => { Theme.accent = root.accent-color; }
+
+    // New-chat modal state. `new-chat-status` surfaces validation errors
+    // inline ("invalid npub", "you can't invite yourself", etc.) — Rust
+    // owns the string. `new-chat-busy` greys the submit button while the
+    // create_group call is in flight.
+    in-out property <string> new-chat-name;
+    in-out property <string> new-chat-members;
+    in property <bool> new-chat-busy: false;
+    in property <string> new-chat-status;
+    callback start-chat(string, string);
+
+    // Add-contact modal state — same shape as the new-chat modal: Rust owns
+    // the inline error string and the busy flag while the follow-list publish
+    // is in flight.
+    in-out property <string> add-contact-input;
+    in property <bool> add-contact-busy: false;
+    in property <string> add-contact-status;
+    callback add-contact-requested();
+    callback add-contact(string);
+    callback add-contact-dismissed();
+
+    // Nickname modal state — a private, local-only rename of the active
+    // contact. Rust prefills the input and owns persistence (settings.json).
+    in-out property <bool> show-nickname-modal: false;
+    in-out property <string> nickname-input;
+    in property <string> nickname-contact-name;
+    callback contact-nickname-requested();
+    callback set-contact-nickname(string);
+    callback nickname-modal-dismissed();
+
+    // Top-level FocusScope captures Ctrl+K globally. When a modal mounts and
+    // calls focus() on its own scope, focus leaves here; on dismiss, focus comes back.
+    global-keys := FocusScope {
+        init => { self.focus(); }
+        key-pressed(event) => {
+            if (root.logged-in && event.text == "k" && event.modifiers.control) {
+                root.palette-requested();
+                return accept;
+            }
+            return reject;
+        }
+    }
+
+    if root.logged-in && !root.booting : VerticalLayout {
+        spacing: 0;
+
+        TitleBar {
+            breadcrumb: root.breadcrumb;
+            rail-width: rail.width;
+        }
+
+        // Middle area is a Rectangle (absolute children) instead of a HorizontalLayout
+        // so that the conditional page contents NEVER drive the outer preferred size.
+        // The window stays the size the user picked across tab switches.
+        Rectangle {
+            vertical-stretch: 1;
+            preferred-width: 0px;
+            preferred-height: 0px;
+            background: Palette.bg;
+
+            // left rail — expandable on hover (56px → 160px)
+            rail := LeftRail {
+                x: 0; y: 0;
+                height: parent.height;
+                selected-index: root.active-page;
+                my-initials: root.my-av-initials;
+                my-color-a: root.my-av-a;
+                my-color-b: root.my-av-b;
+                my-picture: root.my-av-picture;
+                my-has-picture: root.my-av-has-picture;
+                my-display-name: root.my-display-name;
+                badge-chats: root.rail-badge-chats;
+                badge-contacts: root.rail-badge-contacts;
+                badge-archive: root.rail-badge-archive;
+                badge-keys: root.rail-badge-keys;
+                has-active-chat: root.active-chat >= 0 && root.chats.length > 0;
+                nav-clicked(idx) => { root.nav-requested(idx); }
+                plus-clicked => { root.new-chat-requested(); }
+                settings-clicked => { root.nav-requested(4); }
+                profile-clicked => { root.profile-requested(); }
+            }
+
+            // page slot — fills the rest, tracks rail width
+            Rectangle {
+                x: rail.width; y: 0;
+                width: parent.width - rail.width;
+                height: parent.height;
+
+                // chats: side panel + main pane laid out side-by-side.
+                // Each page is wrapped in a fade-in Rectangle so navigation feels smooth.
+                if root.active-page == 0 : Rectangle {
+                    width: parent.width;
+                    height: parent.height;
+                    property <float> enter: 0;
+                    init => { self.enter = 1; }
+                    opacity: self.enter;
+                    animate enter { duration: Theme.retro ? 100ms : 180ms; easing: ease-out; }
+
+                    // No chats yet → first-run get-started screen (with live relay
+                    // setup). Once a chat exists, the normal list + pane shell.
+                    if root.chats.length == 0 : GetStartedScreen {
+                        width: parent.width;
+                        height: parent.height;
+                        relays: root.network-relays;
+                        suggested: root.suggested-relays;
+                        connected: root.network-connected;
+                        total: root.network-total;
+                        network-status: root.network-status;
+                        add-relay(u) => { root.network-add-relay(u); }
+                        remove-relay(u) => { root.network-remove-relay(u); }
+                        kp-published: root.kp-published;
+                        kp-busy: root.kp-busy;
+                        kp-status: root.kp-status;
+                        publish-kp => { root.kp-publish-clicked(); }
+                        start-chat => { root.new-chat-requested(); }
+                    }
+
+                    if root.chats.length > 0 : HorizontalLayout {
+                        width: parent.width;
+                        height: parent.height;
+                        spacing: 0;
+                        ChatListPanel {
+                            chats: root.chats;
+                            active-chat: root.active-chat;
+                            relays-connected: root.network-connected;
+                            relays-total: root.network-total;
+                            sync-secs: root.sync-secs;
+                            chat-clicked(idx) => { root.chat-selected(idx); }
+                            new-chat-clicked => { root.new-chat-requested(); }
+                        }
+                        main-pane := MainPane {
+                            horizontal-stretch: 1;
+                            preferred-width: 0px;
+                            chat: root.chats[root.active-chat];
+                            active-chat: root.active-chat;
+                            mention-active: root.mention-active;
+                            mention-candidates: root.mention-candidates;
+                            mention-selected: root.mention-selected;
+                            caret-pos: root.composer-caret-pos;
+                            caret-tick: root.composer-caret-tick;
+                            caret-moved(c) => { root.composer-input-changed(c); }
+                            mention-nav(d) => { root.mention-nav(d); }
+                            mention-commit => { root.mention-commit(); }
+                            mention-choose(i) => { root.mention-choose(i); }
+                            mention-dismiss => { root.mention-dismiss(); }
+                            outgoing-on-right: root.outgoing-on-right;
+                            my-picture: root.my-av-picture;
+                            my-has-picture: root.my-av-has-picture;
+                            messages: root.chats-messages[root.active-chat];
+                            scroll-tick: root.messages-scroll-tick;
+                            draft <=> root.composer-draft;
+                            reply-target-id: root.reply-target-id;
+                            reply-target-author: root.reply-target-author;
+                            reply-target-preview: root.reply-target-preview;
+                            editing-message-id: root.editing-message-id;
+                            send-clicked => { root.send-message(root.composer-draft); }
+                            cancel-reply => { root.cancel-reply(); }
+                            cancel-edit => { root.cancel-edit(); }
+                            react(id, emoji) => { root.react-message(id, emoji); }
+                            unreact(id) => { root.unreact-message(id); }
+                            request-picker(id, ax, ay) => { root.emoji-picker-requested(id, ax, ay); }
+                            request-reply(id, preview, author) => { root.request-reply(id, preview, author); }
+                            request-edit(id, current) => { root.request-edit(id, current); }
+                            request-context-menu(id, text, author, can-edit, ax, ay) => {
+                                root.ctx-menu-id = id;
+                                root.ctx-menu-text = text;
+                                root.ctx-menu-author = author;
+                                root.ctx-menu-can-edit = can-edit;
+                                root.ctx-menu-x = ax;
+                                root.ctx-menu-y = ay;
+                                root.ctx-menu-open = true;
+                            }
+                            show-history(id) => { root.show-edit-history(id); }
+                            retry(id) => { root.retry-message(id); }
+                            attach-clicked => { root.attach-file(); }
+                            // Sentinel target id routes the picked emoji into
+                            // the composer draft instead of a kind-7 reaction.
+                            emoji-clicked(ax, ay) => { root.emoji-picker-requested("\u{1}composer", ax, ay); }
+                            attachment-clicked(id) => { root.attachment-clicked(id); }
+                            is-group: root.chat-is-group;
+                            can-show-members: root.chat-can-show-members;
+                            member-count: root.chat-member-count;
+                            members: root.chat-members;
+                            show-members <=> root.show-chat-members;
+                            members-toggle-clicked => { root.members-toggle-clicked(); }
+                            can-add-members: root.chat-can-add-members;
+                            add-member-busy: root.add-member-busy;
+                            add-member-status: root.add-member-status;
+                            add-member-draft <=> root.add-member-draft;
+                            add-member(npub) => { root.add-member(npub); }
+                            promote-admin(id) => { root.promote-admin(id); }
+                            demote-admin(id) => { root.demote-admin(id); }
+                            self-demote-admin => { root.self-demote-admin(); }
+                            group-picture: root.chat-group-picture;
+                            group-has-picture: root.chat-group-has-picture;
+                            group-av-a: root.chat-group-av-a;
+                            group-av-b: root.chat-group-av-b;
+                            group-av-initials: root.chat-group-av-initials;
+                            group-rename-busy: root.group-rename-busy;
+                            group-image-busy: root.group-image-busy;
+                            group-status: root.group-settings-status;
+                            group-rename-draft <=> root.group-rename-draft;
+                            rename-group(name) => { root.rename-group(name); }
+                            change-group-image => { root.change-group-image(); }
+                            clear-group-image => { root.clear-group-image(); }
+                            accept-clicked => { root.accept-chat-request(); }
+                            block-clicked => { root.block-chat-request(); }
+                            archive-clicked => { root.archive-chat(); }
+                        }
+                    }
+                }
+
+                if root.active-page == 1 : Rectangle {
+                    width: parent.width;
+                    height: parent.height;
+                    property <float> enter: 0;
+                    init => { self.enter = 1; }
+                    opacity: self.enter;
+                    animate enter { duration: Theme.retro ? 100ms : 180ms; easing: ease-out; }
+                    ContactsPage {
+                        width: parent.width;
+                        height: parent.height;
+                        contacts: root.contacts;
+                        active-contact: root.active-contact;
+                        contact-clicked(idx) => { root.contact-selected(idx); }
+                        add-contact-clicked => { root.add-contact-requested(); }
+                        edit-nickname-clicked => { root.contact-nickname-requested(); }
+                    }
+                }
+
+                if root.active-page == 2 : Rectangle {
+                    width: parent.width;
+                    height: parent.height;
+                    property <float> enter: 0;
+                    init => { self.enter = 1; }
+                    opacity: self.enter;
+                    animate enter { duration: Theme.retro ? 100ms : 180ms; easing: ease-out; }
+                    ArchivedPage {
+                        width: parent.width;
+                        height: parent.height;
+                        archives: root.archived-chats;
+                        active-archived: root.active-archived;
+                        members: root.chat-members;
+                        is-group: root.chat-is-group;
+                        archive-clicked(idx) => { root.archive-selected(idx); }
+                        unarchive-clicked => { root.unarchive-chat(); }
+                    }
+                }
+
+                if root.active-page == 3 : Rectangle {
+                    width: parent.width;
+                    height: parent.height;
+                    property <float> enter: 0;
+                    init => { self.enter = 1; }
+                    opacity: self.enter;
+                    animate enter { duration: Theme.retro ? 100ms : 180ms; easing: ease-out; }
+                    KeysPage {
+                        width: parent.width;
+                        height: parent.height;
+                        npub: root.my-npub;
+                        key-packages: root.key-packages;
+                        kp-relays: root.kp-relays;
+                        kp-status: root.kp-status;
+                        kp-busy: root.kp-busy;
+                        copy-npub-clicked => { root.copy-to-clipboard(root.my-npub); }
+                        publish-clicked => { root.kp-publish-clicked(); }
+                        rotate-clicked => { root.kp-rotate-clicked(); }
+                        refresh-clicked => { root.kp-refresh-clicked(); }
+                    }
+                }
+
+                if root.active-page == 4 : Rectangle {
+                    width: parent.width;
+                    height: parent.height;
+                    property <float> enter: 0;
+                    init => { self.enter = 1; }
+                    opacity: self.enter;
+                    animate enter { duration: Theme.retro ? 100ms : 180ms; easing: ease-out; }
+                    SettingsPage {
+                        width: parent.width;
+                        height: parent.height;
+                        debug-enabled <=> root.debug-enabled;
+                        debug-dump: root.debug-dump;
+                        debug-toggled(v) => { root.debug-toggled(v); }
+                        debug-refresh-clicked => { root.debug-refresh-clicked(); }
+                        debug-copy-clicked => { root.debug-copy-clicked(); }
+                        telemetry-enabled <=> root.telemetry-enabled;
+                        telemetry-toggled(v) => { root.telemetry-toggled(v); }
+                        audit-enabled <=> root.audit-enabled;
+                        audit-toggled(v) => { root.audit-toggled(v); }
+                        audit-status: root.audit-status;
+                        network-relays: root.network-relays;
+                        network-booted-relays: root.network-booted-relays;
+                        network-connected: root.network-connected;
+                        network-total: root.network-total;
+                        network-status: root.network-status;
+                        network-add-relay(u) => { root.network-add-relay(u); }
+                        network-remove-relay(u) => { root.network-remove-relay(u); }
+                        network-refresh-health => { root.network-refresh-health(); }
+                        network-republish-relay-list => { root.network-republish-relay-list(); }
+                        locale-display: root.locale-display;
+                        change-language-clicked => { root.change-language-clicked(); }
+                        light-theme <=> root.light-theme;
+                        retro-mode <=> root.retro-mode;
+                        accent-color <=> root.accent-color;
+                        outgoing-on-right <=> root.outgoing-on-right;
+                        theme-mode-selected(mode) => { root.theme-mode-selected(mode); }
+                        accent-selected(idx) => { root.accent-selected(idx); }
+                        outgoing-on-right-toggled(v) => { root.outgoing-on-right-toggled(v); }
+                    }
+                }
+
+                if root.active-page == 5 : Rectangle {
+                    width: parent.width;
+                    height: parent.height;
+                    property <float> enter: 0;
+                    init => { self.enter = 1; }
+                    opacity: self.enter;
+                    animate enter { duration: Theme.retro ? 100ms : 180ms; easing: ease-out; }
+                    ProfilePage {
+                        width: parent.width;
+                        height: parent.height;
+                        npub: root.my-npub;
+                        editing: root.profile-editing;
+                        busy: root.profile-busy;
+                        uploading: root.profile-uploading;
+                        status: root.profile-status;
+                        display-name <=> root.profile-display-name;
+                        username <=> root.profile-name;
+                        about <=> root.profile-about;
+                        picture-url <=> root.profile-picture;
+                        picture: root.my-av-picture;
+                        has-picture: root.my-av-has-picture;
+                        nip05 <=> root.profile-nip05;
+                        lud16 <=> root.profile-lud16;
+                        edit-clicked => { root.start-edit-profile(); }
+                        save-clicked => { root.save-profile(); }
+                        cancel-clicked => { root.cancel-edit-profile(); }
+                        copy-npub-clicked => { root.copy-to-clipboard(root.my-npub); }
+                        upload-picture-clicked => { root.upload-profile-picture(); }
+                    }
+                }
+            }
+        }
+
+        StatusBar {
+            relaysConnected: root.network-connected;
+            relaysTotal: root.network-total;
+        }
+    }
+
+    if root.show-language-picker : LanguagePickerModal {
+        x: 0; y: 0;
+        width: root.width;
+        height: root.height;
+        active-locale: root.locale;
+        locale-selected(code) => { root.locale-selected(code); }
+        dismissed => { root.show-language-picker = false; }
+    }
+
+    if root.show-new-chat : StartNewChatModal {
+        x: 0; y: 0;
+        width: root.width;
+        height: root.height;
+        chat-name <=> root.new-chat-name;
+        members-text <=> root.new-chat-members;
+        busy: root.new-chat-busy;
+        status: root.new-chat-status;
+        start-chat(n, m) => { root.start-chat(n, m); }
+        dismissed => { root.modal-dismissed(); }
+    }
+
+    if root.show-add-contact : AddContactModal {
+        x: 0; y: 0;
+        width: root.width;
+        height: root.height;
+        npub-text <=> root.add-contact-input;
+        busy: root.add-contact-busy;
+        status: root.add-contact-status;
+        add-contact(n) => { root.add-contact(n); }
+        dismissed => { root.add-contact-dismissed(); }
+    }
+
+    if root.show-nickname-modal : NicknameModal {
+        x: 0; y: 0;
+        width: root.width;
+        height: root.height;
+        nickname-text <=> root.nickname-input;
+        contact-name: root.nickname-contact-name;
+        save(n) => { root.set-contact-nickname(n); }
+        dismissed => { root.nickname-modal-dismissed(); }
+    }
+
+    if root.show-palette : CommandPalette {
+        x: 0; y: 0;
+        width: root.width;
+        height: root.height;
+        actions: root.palette-actions;
+        query <=> root.palette-query;
+        dismissed => { root.palette-dismissed(); }
+        execute(id) => { root.palette-execute(id); }
+        query-changed(q) => { root.palette-query-changed(q); }
+    }
+
+    // Right-click message context menu. Items re-fire the same callbacks the
+    // hover toolbar uses, so the Rust side is untouched.
+    if root.ctx-menu-open : MessageContextMenu {
+        x: 0; y: 0;
+        width: root.width;
+        height: root.height;
+        anchor-x: root.ctx-menu-x;
+        anchor-y: root.ctx-menu-y;
+        can-edit: root.ctx-menu-can-edit;
+        add-reaction(ax, ay) => {
+            root.ctx-menu-open = false;
+            root.emoji-picker-requested(root.ctx-menu-id, ax, ay);
+        }
+        reply => {
+            root.ctx-menu-open = false;
+            root.request-reply(root.ctx-menu-id, root.ctx-menu-text, root.ctx-menu-author);
+        }
+        edit => {
+            root.ctx-menu-open = false;
+            root.request-edit(root.ctx-menu-id, root.ctx-menu-text);
+        }
+        dismissed => { root.ctx-menu-open = false; }
+    }
+
+    // `if`-mounted so the (expensive) emoji grid doesn't paint when closed.
+    if root.show-emoji-picker : EmojiPicker {
+        x: 0; y: 0;
+        width: root.width;
+        height: root.height;
+        anchor-x: root.emoji-anchor-x;
+        anchor-y: root.emoji-anchor-y;
+        emoji-list: root.emoji-list;
+        sprite: root.emoji-sprite;
+        tile: root.emoji-tile;
+        total-shown: root.emoji-shown;
+        query <=> root.emoji-query;
+        query-changed(q) => { root.emoji-query-changed(q); }
+        picked(emoji) => {
+            root.emoji-picked(root.emoji-target-message-id, emoji);
+        }
+        dismissed => { root.emoji-picker-dismissed(); }
+    }
+
+    if root.edit-history-open : EditHistoryModal {
+        x: 0; y: 0;
+        width: root.width;
+        height: root.height;
+        versions: root.edit-history;
+        dismissed => { root.dismiss-edit-history(); }
+    }
+
+    if root.image-viewer-open : ImageViewerModal {
+        x: 0; y: 0;
+        width: root.width;
+        height: root.height;
+        source: root.image-viewer-image;
+        dismissed => { root.dismiss-image-viewer(); }
+    }
+
+    if root.peer-profile-open : ProfileModal {
+        x: 0; y: 0;
+        width: root.width;
+        height: root.height;
+        display-name: root.peer-profile-name;
+        npub-short: root.peer-profile-npub-short;
+        nip05: root.peer-profile-nip05;
+        about: root.peer-profile-about;
+        lud16: root.peer-profile-lud16;
+        loading: root.peer-profile-loading;
+        not-found: root.peer-profile-not-found;
+        is-contact: root.peer-profile-is-contact;
+        is-self: root.peer-profile-is-self;
+        adding: root.peer-profile-adding;
+        status: root.peer-profile-status;
+        av-a: root.peer-profile-av-a;
+        av-b: root.peer-profile-av-b;
+        av-initials: root.peer-profile-av-initials;
+        av-picture: root.peer-profile-picture;
+        av-has-picture: root.peer-profile-has-picture;
+        copy-npub => { root.copy-to-clipboard(root.peer-profile-npub); }
+        add-contact => { root.peer-profile-add-contact(); }
+        dismissed => { root.peer-profile-dismissed(); }
+    }
+
+    if root.logged-in && root.booting : SplashScreen {
+        x: 0; y: 0;
+        width: root.width;
+        height: root.height;
+        status: root.booting-status;
+    }
+
+    // Drives the chat-list "SYNCED Ns AGO" footer and keeps relay health live.
+    // Ticks once per second while signed in; counts up `sync-secs` and, every
+    // ~15s, re-polls relay health (the Rust handler resets sync-secs to 0 on a
+    // successful poll). Non-visual — does not affect layout.
+    sync-timer := Timer {
+        interval: 1s;
+        running: root.logged-in && !root.booting;
+        triggered => {
+            if (root.sync-secs >= 0) {
+                root.sync-secs += 1;
+            }
+            root.sync-refresh-countdown -= 1;
+            if (root.sync-refresh-countdown <= 0) {
+                root.sync-refresh-countdown = 15;
+                root.network-refresh-health();
+            }
+        }
+    }
+
+    if !root.logged-in : LoginScreen {
+        x: 0; y: 0;
+        width: root.width;
+        height: root.height;
+        mode <=> root.login-mode;
+        nsec-input <=> root.login-nsec-input;
+        password-input <=> root.password-input;
+        password-confirm <=> root.password-confirm;
+        generated-nsec: root.generated-nsec;
+        generated-npub: root.generated-npub;
+        error: root.login-error;
+        busy: root.login-busy;
+        login-with-nsec(n, p, c) => { root.login-with-nsec(n, p, c); }
+        generate-requested => { root.generate-key-requested(); }
+        confirm-saved(p, c) => { root.confirm-saved-key(p, c); }
+        unlock(p) => { root.unlock(p); }
+        reset-vault => { root.reset-vault(); }
+        copy-nsec(s) => { root.copy-nsec(s); }
+    }
+
+    // Emoji glyph pre-paint. This Text contains every emoji in the catalog
+    // joined by spaces; the renderer paints them at near-zero opacity so
+    // they're invisible to the user, but the OS font cache and Slint's
+    // glyph-texture cache fill up. Without this, the picker freezes on
+    // first open while ~120 first-time emojis rasterize one at a time.
+}

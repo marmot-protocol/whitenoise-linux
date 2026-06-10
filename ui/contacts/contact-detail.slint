@@ -1,0 +1,204 @@
+import { Palette, Contact , Theme} from "../tokens.slint";
+import { StartChatIcon } from "../icons/start-chat-icon.slint";
+import { CopyIcon } from "../icons/copy-icon.slint";
+import { RefreshIcon } from "../icons/refresh-icon.slint";
+import { QRIcon } from "../icons/qr-icon.slint";
+import { MuteIcon } from "../icons/mute-icon.slint";
+import { ArchiveIcon } from "../icons/archive-icon.slint";
+import { BanIcon } from "../icons/ban-icon.slint";
+import { TrashIcon } from "../icons/trash-icon.slint";
+import { PeopleIcon } from "../icons/people-icon.slint";
+import { Avatar } from "../primitives/avatar.slint";
+import { Pill } from "../primitives/pill.slint";
+import { DetailPage } from "../shells/detail-page.slint";
+import { PageHeader } from "../shells/page-header.slint";
+import { Section } from "../shells/section.slint";
+import { GroupCard } from "../shells/group-card.slint";
+import { InfoRow } from "info-row.slint";
+import { MicroButton } from "../primitives/button.slint";
+import { PencilIcon } from "../icons/pencil-icon.slint";
+
+export component ContactDetail inherits DetailPage {
+    callback edit-nickname();
+    in property <Contact> contact;
+
+    PageHeader {
+        title: @tr("Contact");
+        caption: @tr("ADDED {}  ·  {} RELAYS", root.contact.added, root.contact.relays);
+        PeopleIcon { stroke: Palette.text-mid; }
+    }
+
+    HorizontalLayout {
+        height: 80px;
+        spacing: 22px;
+        alignment: stretch;
+        Rectangle {
+            width: 80px;
+            Avatar {
+                size: 72px;
+                initials: root.contact.av-initials;
+                color-a: root.contact.av-a;
+                color-b: root.contact.av-b;
+                font-size: (22px) * Theme.fs-scale;
+            }
+            if root.contact.online : Rectangle {
+                x: parent.width - 18px;
+                y: parent.height - 18px;
+                width: 16px; height: 16px;
+                border-radius: (8px) * Theme.r-scale;
+                background: Palette.mint-dim;
+                Rectangle {
+                    width: 16px; height: 16px;
+                    border-radius: (8px) * Theme.r-scale;
+                    border-width: 2px;
+                    border-color: Palette.bg;
+                }
+            }
+        }
+        VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: 6px;
+            alignment: center;
+            HorizontalLayout {
+                spacing: 12px;
+                alignment: start;
+                Text {
+                    text: root.contact.name;
+                    color: Palette.text-hi;
+                    font-size: (22px) * Theme.fs-scale;
+                    font-weight: 700;
+                    vertical-alignment: center;
+                }
+                // When a private nickname is shown above, keep the published
+                // name visible so the identity stays unambiguous.
+                if root.contact.nickname != "" : Text {
+                    text: @tr("aka {}", root.contact.real-name);
+                    color: Palette.text-lo;
+                    font-size: (12px) * Theme.fs-scale;
+                    vertical-alignment: center;
+                }
+                if root.contact.verified : Pill {
+                    label: @tr("✓ VERIFIED");
+                    bg-color: Palette.mint;
+                    fg: Palette.bubble-out-fg;
+                }
+                VerticalLayout {
+                    alignment: center;
+                    MicroButton {
+                        label: @tr("Nickname");
+                        PencilIcon { stroke: Palette.text-mid; }
+                        clicked => { root.edit-nickname(); }
+                    }
+                }
+            }
+            Text {
+                text: @tr("{} RELAYS", root.contact.relays);
+                color: Palette.text-lo;
+                font-size: (10px) * Theme.fs-scale;
+                font-weight: 700;
+                letter-spacing: 1.2px;
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            Rectangle {
+                width: 130px; height: 40px;
+                background: Palette.mint;
+                border-radius: (7px) * Theme.r-scale;
+                HorizontalLayout {
+                    alignment: center;
+                    spacing: 8px;
+                    padding-left: 14px; padding-right: 14px;
+                    VerticalLayout {
+                        alignment: center;
+                        StartChatIcon { stroke: Palette.bubble-out-fg; }
+                    }
+                    Text {
+                        text: @tr("Start chat");
+                        color: Palette.bubble-out-fg;
+                        font-size: (13px) * Theme.fs-scale;
+                        font-weight: 700;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+    }
+
+    Section {
+        label: @tr("IDENTITY");
+        GroupCard {
+            InfoRow {
+                label: "npub";
+                sublabel: @tr("Public key, safe to share.");
+                value: root.contact.npub-short;
+                MicroButton {
+                    label: @tr("Copy");
+                    CopyIcon { stroke: Palette.text-mid; }
+                }
+            }
+            InfoRow {
+                label: @tr("Key package");
+                sublabel: @tr("Fetched from relay.damus.io · refreshed 4m ago");
+                value: @tr("up to date");
+                MicroButton {
+                    label: @tr("Refresh");
+                    RefreshIcon { stroke: Palette.text-mid; }
+                }
+            }
+            InfoRow {
+                label: @tr("Mutual relays");
+                sublabel: @tr("Used to deliver messages between you.");
+                value: @tr("{} relays", root.contact.relays);
+                show-divider: false;
+            }
+            Rectangle {
+                height: 56px;
+                HorizontalLayout {
+                    padding-left: 16px; padding-right: 16px;
+                    padding-top: 12px; padding-bottom: 14px;
+                    alignment: start;
+                    MicroButton {
+                        label: @tr("Show as QR");
+                        QRIcon { stroke: Palette.text-mid; }
+                    }
+                }
+            }
+        }
+    }
+
+    Section {
+        label: @tr("ACTIONS");
+        HorizontalLayout {
+            spacing: 10px;
+            alignment: start;
+            MicroButton {
+                label: @tr("Mute");
+                MuteIcon { stroke: Palette.text-mid; }
+            }
+            MicroButton {
+                label: @tr("Archive chat");
+                ArchiveIcon { stroke: Palette.text-mid; }
+            }
+            Rectangle { width: 16px; }
+            MicroButton {
+                label: @tr("Block");
+                fg: #FCA5A5;
+                bg-color: #2A1418;
+                hover-bg: #3A1A20;
+                outline: #5A2429;
+                hover-outline: #7A2E36;
+                BanIcon { stroke: #FCA5A5; }
+            }
+            MicroButton {
+                label: @tr("Remove contact");
+                fg: #FCA5A5;
+                bg-color: #2A1418;
+                hover-bg: #3A1A20;
+                outline: #5A2429;
+                hover-outline: #7A2E36;
+                TrashIcon { stroke: #FCA5A5; }
+            }
+        }
+    }
+}

@@ -1,0 +1,480 @@
+import { Palette, Theme, MessageLine, EmojiSheet, Linkout } from "../tokens.slint";
+import { CheckMark } from "../icons/check-mark.slint";
+
+// One inline run inside a wrapped chat line. The Text element is always
+// instantiated (empty string when emoji) so the wrapper can bind to its
+// `preferred-width` — a Rectangle that only conditionally hosts children
+// reports zero preferred-width to its parent HorizontalLayout and all runs
+// collapse onto each other.
+component RunCell inherits Rectangle {
+    in property <bool> is-emoji;
+    in property <string> text;
+    in property <int> clip-x;
+    in property <int> clip-y;
+    in property <length> body-fs;
+    in property <length> emoji-px;
+    in property <color> fg;
+    // Inline Markdown styling, resolved per-run by the Rust AST walker.
+    in property <bool> bold;
+    in property <bool> italic;
+    in property <bool> strike;
+    in property <bool> code;
+    in property <string> link;
+    // Per-line font scale (headings). 1.0 for body text.
+    in property <float> scale: 1.0;
+    in property <color> link-color;
+    in property <color> code-bg;
+    property <bool> is-link: root.link != "";
+    property <length> em-px: root.emoji-px * root.scale;
+    horizontal-stretch: 0;
+    width: root.is-emoji ? root.em-px : t.preferred-width;
+    height: root.is-emoji ? root.em-px : t.preferred-height;
+
+    // Inline-code plate — flush to the cell so adjacent code runs read as one
+    // continuous span.
+    if root.code && !root.is-emoji : Rectangle {
+        width: 100%;
+        height: 100%;
+        background: root.code-bg;
+        border-radius: (2px) * Theme.r-scale;
+    }
+
+    t := Text {
+        text: root.is-emoji ? "" : root.text;
+        color: root.is-link ? root.link-color : root.fg;
+        font-size: root.body-fs * root.scale;
+        font-family: Theme.font;
+        font-weight: root.bold ? 700 : 400;
+        font-italic: root.italic;
+        visible: !root.is-emoji;
+    }
+
+    if root.is-emoji : Image {
+        width: root.em-px;
+        height: root.em-px;
+        source: EmojiSheet.sprite;
+        source-clip-x: root.clip-x;
+        source-clip-y: root.clip-y;
+        source-clip-width: EmojiSheet.tile;
+        source-clip-height: EmojiSheet.tile;
+        image-fit: contain;
+    }
+
+    // Strikethrough — Slint's Text has no strike property, so overlay a rule
+    // across the cell's mid-line.
+    if root.strike && !root.is-emoji : Rectangle {
+        y: parent.height / 2;
+        width: 100%;
+        height: 1px;
+        background: root.is-link ? root.link-color : root.fg;
+    }
+    // Link underline.
+    if root.is-link && !root.is-emoji : Rectangle {
+        y: parent.height - 1px;
+        width: 100%;
+        height: 1px;
+        background: root.link-color;
+    }
+
+    // Always mounted (never `if`-gated) and disabled for non-link runs so it
+    // doesn't intercept hover/clicks meant for the bubble's hover sensor.
+    TouchArea {
+        enabled: root.is-link;
+        mouse-cursor: root.is-link ? pointer : default;
+        clicked => { Linkout.open(root.link); }
+    }
+}
+
+export component MessageBubble inherits Rectangle {
+    in property <string> message;
+    // Pre-tokenized + pre-wrapped body, one MessageLine per visual line.
+    // The body renders as a VerticalLayout-of-HorizontalLayouts so each
+    // Text cell is sized by Slint's real text metrics (no width estimation
+    // in Rust — that produced huge inter-word gaps). Empty falls back to
+    // a plain `Text` so synthetic / programmatic uses still work.
+    in property <[MessageLine]> lines;
+    in property <string> stamp;
+    in property <bool> outgoing: false;
+    in property <length> max-w: 640px;
+    in property <length> min-w: 56px;
+    in property <length> available-w: 9999px;
+    // Optimistic-send states. `pending` = inserted locally, waiting on relay
+    // ack; `failed` = the send raised an error and the row sits in retry state.
+    in property <bool> pending: false;
+    in property <bool> failed: false;
+    // Quoted-parent preview. Empty `reply-to-id` => not a reply, no block.
+    in property <string> reply-to-id;
+    in property <string> reply-to-text;
+    in property <string> reply-to-author;
+    // Attachment block — rendered when has-attachment is true. Tapping the
+    // chip (or the image placeholder) fires attachment-clicked(); for images
+    // this kicks off decrypt+decode; for files it opens a save dialog.
+    in property <bool> has-attachment: false;
+    in property <string> att-name;
+    in property <string> att-mime;
+    in property <string> att-size-label;
+    in property <bool> att-is-image: false;
+    in property <image> att-image;
+    in property <bool> att-has-image: false;
+    in property <bool> att-loading: false;
+    in property <bool> att-failed: false;
+    // Edit state. When `edited` is true an "(edited)" affordance renders next
+    // to the timestamp; tapping it asks the root to open the history modal.
+    in property <bool> edited: false;
+    in property <int> edit-count: 0;
+    // Visual grouping. `first-in-group` controls whether the top corner on the
+    // avatar side is rounded (group head) or tightened (continuation). A
+    // standalone bubble is the head, so it defaults true.
+    in property <bool> first-in-group: true;
+    in property <bool> last-in-group: true;
+    // True while the pointer is anywhere over the bubble. Read by the row to
+    // reveal the floating action toolbar. Sourced from a bottom-most sensor so
+    // it never steals taps from the attachment / retry areas above it.
+    out property <bool> hovered: hover-sensor.has-hover;
+    callback retry-clicked();
+    callback attachment-clicked();
+    callback show-history-clicked();
+    // Right-click anywhere on the bubble — reports window-absolute pointer
+    // coords so the row can anchor a context menu there.
+    callback context-menu-requested(length, length);
+
+    property <length> pad-h: 14px;
+    property <length> pad-v: 10px;
+    property <length> gap: 12px;
+    property <length> effective-max: min(root.max-w, root.available-w);
+    property <length> text-budget: max(40px, root.effective-max - root.pad-h * 2 - root.gap - meta.preferred-width);
+    // Body typography. Emoji glyphs are sized off `body-fs` so they ride
+    // the text line cleanly.
+    property <length> body-fs: (13px) * Theme.fs-scale;
+    property <length> emoji-px: root.body-fs * 1.2;
+
+    property <float> enter: 0;
+    init => { self.enter = 1; }
+    animate enter { duration: Theme.retro ? 120ms : 220ms; easing: ease-out; }
+
+    property <length> r-lg: (16px) * Theme.r-scale;
+    property <length> r-sm: (5px) * Theme.r-scale;
+
+    // Outgoing bubbles get a vertical mint gradient for a bit of depth; retro
+    // stays flat for the pixel aesthetic. Incoming stays on the flat surface.
+    background: root.outgoing
+        ? (Theme.retro
+            ? Palette.mint
+            : @linear-gradient(180deg, Palette.mint-hi 0%, Palette.mint 92%))
+        : Palette.bubble-in;
+    // Chat-style asymmetric corners. The tail corner (bottom, avatar side)
+    // stays tight; within a group the top corner on the avatar side also
+    // tightens so consecutive bubbles read as one stacked column.
+    border-top-left-radius: root.outgoing ? root.r-lg : (root.first-in-group ? root.r-lg : root.r-sm);
+    border-top-right-radius: root.outgoing ? (root.first-in-group ? root.r-lg : root.r-sm) : root.r-lg;
+    border-bottom-left-radius: root.outgoing ? root.r-lg : root.r-sm;
+    border-bottom-right-radius: root.outgoing ? root.r-sm : root.r-lg;
+    border-width: root.failed ? 1.5px : (Theme.retro ? Theme.border-w : 1px);
+    border-color: root.failed ? #ff5a5a : (root.outgoing ? transparent : Palette.border-2);
+    drop-shadow-color: Theme.retro
+        ? Palette.shadow
+        : (root.outgoing ? Palette.mint-glow : (Theme.light ? #00000018 : #00000050));
+    drop-shadow-offset-x: Theme.retro ? 2px : 0px;
+    drop-shadow-offset-y: Theme.retro ? 2px : (root.outgoing ? 3px : 2px);
+    drop-shadow-blur: Theme.retro ? 0px : (root.outgoing ? 14px : 8px);
+    width: max(root.min-w, layout.preferred-width);
+    height: layout.preferred-height;
+    opacity: root.pending ? root.enter * 0.62 : root.enter;
+    animate opacity { duration: 180ms; easing: ease-out; }
+
+    // Bottom-most hover sensor. No click handler, so taps fall through to the
+    // attachment / retry areas declared above it; it reports `has-hover` so
+    // the row can float its action toolbar, and right-clicks so the row can
+    // open the context menu.
+    hover-sensor := TouchArea {
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down && e.button == PointerEventButton.right) {
+                root.context-menu-requested(
+                    self.absolute-position.x + self.mouse-x,
+                    self.absolute-position.y + self.mouse-y);
+            }
+        }
+    }
+
+    if root.failed : TouchArea {
+        clicked => { root.retry-clicked(); }
+    }
+
+    layout := VerticalLayout {
+        padding-left: root.pad-h; padding-right: root.pad-h;
+        padding-top: root.pad-v; padding-bottom: root.pad-v;
+        spacing: 6px;
+        alignment: stretch;
+
+        // Quoted parent — a recessed plate inside the bubble with an accent
+        // bar on the left. For outgoing (mint) bubbles the accent is dark so
+        // it actually shows up; for incoming (dark) bubbles it's mint.
+        if root.reply-to-id != "" : Rectangle {
+            background: root.outgoing ? #00000018 : (Theme.light ? #F8FAFC : #ffffff0c);
+            border-radius: (3px) * Theme.r-scale;
+            HorizontalLayout {
+                padding-left: 8px; padding-right: 8px;
+                padding-top: 5px; padding-bottom: 5px;
+                spacing: 7px;
+                Rectangle {
+                    width: 2.5px;
+                    background: root.outgoing ? Palette.bubble-out-fg : Palette.mint;
+                    border-radius: 1.25px;
+                }
+                VerticalLayout {
+                    spacing: 1px;
+                    horizontal-stretch: 1;
+                    Text {
+                        text: root.reply-to-author == "" ? @tr("Original message") : root.reply-to-author;
+                        color: root.outgoing ? Palette.bubble-out-fg : Palette.mint;
+                        font-size: (10px) * Theme.fs-scale;
+                        font-family: Theme.font;
+                        font-weight: 700;
+                        overflow: elide;
+                        opacity: root.outgoing ? 0.85 : 1.0;
+                        width: max(40px, root.text-budget - 18px);
+                    }
+                    Text {
+                        text: root.reply-to-text == "" ? @tr("(message unavailable)") : root.reply-to-text;
+                        color: root.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
+                        font-size: (11px) * Theme.fs-scale;
+                        font-family: Theme.font;
+                        overflow: elide;
+                        opacity: root.outgoing ? 0.65 : 0.9;
+                        width: max(40px, root.text-budget - 18px);
+                    }
+                }
+            }
+        }
+
+        // Attachment block. Image attachments render as a tappable preview
+        // tile (placeholder until decoded); other files render as a chip with
+        // filename + size. Both fire `attachment-clicked` on tap.
+        if root.has-attachment && root.att-is-image : img-tile := Rectangle {
+            property <length> img-w: min(280px, max(120px, root.text-budget));
+            property <length> img-h: 180px;
+            width: self.img-w;
+            height: self.img-h;
+            border-radius: (8px) * Theme.r-scale;
+            background: root.outgoing ? #00000022 : (Theme.light ? #E2E8F0 : #ffffff10);
+            clip: true;
+            border-width: Theme.retro ? Theme.border-w : 0px;
+            border-color: Palette.border-2;
+            if root.att-has-image : Image {
+                width: parent.width;
+                height: parent.height;
+                source: root.att-image;
+                image-fit: cover;
+            }
+            if !root.att-has-image : VerticalLayout {
+                alignment: center;
+                spacing: 4px;
+                Text {
+                    text: root.att-loading ? "…" : (root.att-failed ? "!" : "🖼");
+                    color: root.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
+                    font-size: (28px) * Theme.fs-scale;
+                    font-family: Theme.font;
+                    horizontal-alignment: center;
+                }
+                Text {
+                    text: root.att-loading
+                        ? @tr("decrypting…")
+                        : (root.att-failed
+                            ? @tr("tap to retry")
+                            : @tr("tap to load"));
+                    color: root.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
+                    font-size: (10px) * Theme.fs-scale;
+                    font-family: Theme.font;
+                    horizontal-alignment: center;
+                    opacity: 0.85;
+                }
+            }
+            TouchArea {
+                enabled: !root.att-loading;
+                clicked => { root.attachment-clicked(); }
+            }
+        }
+
+        if root.has-attachment && !root.att-is-image : Rectangle {
+            background: root.outgoing ? #00000022 : (Theme.light ? #F1F5F9 : #ffffff0e);
+            border-radius: (6px) * Theme.r-scale;
+            border-width: Theme.retro ? Theme.border-w : 0px;
+            border-color: Palette.border-2;
+            height: chip-l.preferred-height;
+            chip-l := HorizontalLayout {
+                padding-left: 10px; padding-right: 10px;
+                padding-top: 8px; padding-bottom: 8px;
+                spacing: 10px;
+                alignment: stretch;
+                Text {
+                    text: root.att-loading ? "…" : "📎";
+                    color: root.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
+                    font-size: (16px) * Theme.fs-scale;
+                    font-family: Theme.font;
+                    vertical-alignment: center;
+                }
+                VerticalLayout {
+                    spacing: 1px;
+                    horizontal-stretch: 1;
+                    Text {
+                        text: root.att-name;
+                        color: root.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
+                        font-size: (12px) * Theme.fs-scale;
+                        font-family: Theme.font;
+                        font-weight: 600;
+                        overflow: elide;
+                        width: max(40px, root.text-budget - 32px);
+                    }
+                    Text {
+                        text: root.att-failed
+                            ? @tr("failed · tap to retry")
+                            : (root.att-size-label != "" && root.att-mime != ""
+                                ? root.att-size-label + "  ·  " + root.att-mime
+                                : root.att-size-label + root.att-mime);
+                        color: root.att-failed
+                            ? #ff5a5a
+                            : (root.outgoing ? Palette.bubble-out-fg : Palette.text-mid);
+                        font-size: (10px) * Theme.fs-scale;
+                        font-family: Theme.font;
+                        opacity: root.att-failed ? 1.0 : (root.outgoing ? 0.75 : 0.9);
+                        overflow: elide;
+                        width: max(40px, root.text-budget - 32px);
+                    }
+                }
+            }
+            TouchArea {
+                enabled: !root.att-loading;
+                clicked => { root.attachment-clicked(); }
+            }
+        }
+
+        HorizontalLayout {
+        spacing: root.gap;
+        alignment: stretch;
+
+        // Runs renderer — one HorizontalLayout per line of pre-wrapped runs.
+        // Slint sizes Text cells from real font metrics (no Rust-side
+        // estimation), so spacing matches what a plain `Text` would render.
+        // Empty `lines` falls back to a plain `Text` so synthetic / legacy
+        // paths still render.
+        if root.lines.length > 0 : VerticalLayout {
+            spacing: 0;
+            alignment: start;
+            for line in root.lines : Rectangle {
+                // Fenced/indented code lines get a subtle monospace plate that
+                // hugs their content.
+                background: line.code-block
+                    ? (root.outgoing ? #00000022 : (Theme.light ? #0000000d : #ffffff10))
+                    : transparent;
+                border-radius: line.code-block ? (3px) * Theme.r-scale : 0;
+                HorizontalLayout {
+                    spacing: 0;
+                    alignment: start;
+                    // Blockquote accent bar.
+                    if line.quote > 0 : Rectangle {
+                        width: 2.5px;
+                        background: root.outgoing ? Palette.bubble-out-fg : Palette.mint;
+                        border-radius: 1.25px;
+                    }
+                    // List / blockquote nesting inset.
+                    if line.indent > 0px : Rectangle { width: line.indent; }
+                    // Thematic break — a horizontal divider, no runs.
+                    if line.rule : Rectangle {
+                        height: 11px;
+                        width: root.text-budget;
+                        Rectangle {
+                            y: parent.height / 2;
+                            width: 100%;
+                            height: 1px;
+                            opacity: 0.5;
+                            background: root.outgoing ? Palette.bubble-out-fg : Palette.border-2;
+                        }
+                    }
+                    if !line.rule : HorizontalLayout {
+                        spacing: 0;
+                        alignment: start;
+                        for r in line.runs : RunCell {
+                            is-emoji: r.is-emoji;
+                            text: r.text;
+                            clip-x: r.clip-x;
+                            clip-y: r.clip-y;
+                            body-fs: root.body-fs;
+                            emoji-px: root.emoji-px;
+                            scale: line.scale;
+                            fg: root.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
+                            bold: r.bold;
+                            italic: r.italic;
+                            strike: r.strike;
+                            code: r.code;
+                            link: r.link;
+                            link-color: root.outgoing ? Palette.bubble-out-fg : Palette.mint;
+                            code-bg: root.outgoing ? #00000022 : (Theme.light ? #0000000d : #ffffff14);
+                        }
+                    }
+                }
+            }
+        }
+        if root.lines.length == 0 : Text {
+            text: root.message;
+            color: root.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
+            font-size: root.body-fs;
+            font-family: Theme.font;
+            vertical-alignment: top;
+            wrap: Theme.retro ? char-wrap : word-wrap;
+            width: min(self.preferred-width, root.text-budget);
+        }
+
+        meta := VerticalLayout {
+            alignment: end;
+            HorizontalLayout {
+                spacing: 4px;
+                alignment: end;
+                // "(edited)" affordance — opens the history modal on tap. Sits
+                // before the timestamp so the stamp + check stay rightmost.
+                if root.edited && !root.failed : edited-rect := Rectangle {
+                    height: edited-label.preferred-height;
+                    width: edited-label.preferred-width;
+                    y: parent.height - self.height;
+                    edited-label := Text {
+                        text: @tr("edited");
+                        color: root.outgoing ? Palette.bubble-out-fg : Palette.mint;
+                        font-size: (10px) * Theme.fs-scale;
+                        font-family: Theme.font;
+                        font-weight: 600;
+                        vertical-alignment: bottom;
+                        opacity: edited-touch.has-hover ? 1.0 : (root.outgoing ? 0.7 : 0.85);
+                        animate opacity { duration: 100ms; }
+                    }
+                    edited-touch := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => { root.show-history-clicked(); }
+                    }
+                }
+                Text {
+                    text: root.failed ? @tr("failed · tap to retry") : root.stamp;
+                    color: root.failed ? #ff5a5a : (root.outgoing ? Palette.bubble-out-fg : Palette.text-lo);
+                    font-size: (10px) * Theme.fs-scale;
+                    font-family: Theme.font;
+                    vertical-alignment: bottom;
+                    opacity: root.outgoing && !root.failed ? 0.7 : 1;
+                }
+                // Status indicator: confirmed = double check, pending = single
+                // (lighter, animates), failed = "!" in red. Only on outgoing.
+                if root.outgoing && !root.failed : CheckMark {
+                    stroke: Palette.bubble-out-fg;
+                    double: !root.pending;
+                    opacity: root.pending ? 0.55 : 1.0;
+                    animate opacity { duration: 180ms; }
+                }
+                if root.outgoing && root.failed : Text {
+                    text: "!";
+                    color: #ff5a5a;
+                    font-size: (11px) * Theme.fs-scale;
+                    font-family: Theme.font;
+                    vertical-alignment: bottom;
+                }
+            }
+        }
+        }
+    }
+}

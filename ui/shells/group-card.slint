@@ -1,0 +1,16 @@
+import { Palette , Theme} from "../tokens.slint";
+
+export component GroupCard inherits Rectangle {
+    background: Palette.panel;
+    border-radius: (8px) * Theme.r-scale;
+    border-width: Theme.border-w;
+    border-color: Theme.retro ? Palette.border : Palette.border-2;
+    drop-shadow-color: Theme.retro ? Palette.shadow : transparent;
+    drop-shadow-offset-x: Theme.retro ? 3px : 0px;
+    drop-shadow-offset-y: Theme.retro ? 3px : 0px;
+    drop-shadow-blur: 0px;
+    VerticalLayout {
+        spacing: 0;
+        @children
+    }
+}

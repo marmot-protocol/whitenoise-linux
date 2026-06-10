@@ -1,0 +1,66 @@
+import { Palette, Theme } from "../tokens.slint";
+
+// Centered placeholder for empty list/detail areas: an icon medallion, a title,
+// and a one-line description. The icon is supplied as a child element.
+//
+// The content column is centered with absolute `x` positioning rather than a
+// stretch layout — referencing the stretched width inside a layout that sizes
+// from its children creates a binding loop.
+export component EmptyState inherits Rectangle {
+    in property <string> title;
+    in property <string> description;
+
+    horizontal-stretch: 1;
+    background: Palette.bg;
+
+    VerticalLayout {
+        alignment: center;
+
+        Rectangle {
+            height: col.preferred-height;
+
+            col := VerticalLayout {
+                width: min(360px, parent.width - 48px);
+                x: (parent.width - self.width) / 2;
+                spacing: 14px;
+
+                // Icon medallion (square in retro, circular otherwise).
+                HorizontalLayout {
+                    alignment: center;
+                    Rectangle {
+                        width: 56px; height: 56px;
+                        border-radius: (28px) * Theme.r-scale;
+                        background: Palette.panel;
+                        border-width: Theme.retro ? Theme.border-w : 1px;
+                        border-color: Theme.retro ? Palette.border : Palette.border-2;
+                        drop-shadow-color: Theme.retro ? Palette.shadow : transparent;
+                        drop-shadow-offset-x: Theme.retro ? 4px : 0px;
+                        drop-shadow-offset-y: Theme.retro ? 4px : 0px;
+                        HorizontalLayout {
+                            alignment: center;
+                            VerticalLayout {
+                                alignment: center;
+                                @children
+                            }
+                        }
+                    }
+                }
+
+                Text {
+                    text: root.title;
+                    color: Palette.text-hi;
+                    font-size: (16px) * Theme.fs-scale;
+                    font-weight: 700;
+                    horizontal-alignment: center;
+                }
+                Text {
+                    text: root.description;
+                    color: Palette.text-lo;
+                    font-size: (12px) * Theme.fs-scale;
+                    horizontal-alignment: center;
+                    wrap: word-wrap;
+                }
+            }
+        }
+    }
+}

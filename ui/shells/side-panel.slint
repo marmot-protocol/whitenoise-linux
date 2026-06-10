@@ -1,0 +1,165 @@
+import { Palette , Theme} from "../tokens.slint";
+import { SearchIcon } from "../icons/search-icon.slint";
+import { AddUserIcon } from "../icons/add-user-icon.slint";
+import { LineInput } from "../primitives/line-input.slint";
+import { CypherScroll } from "../primitives/cypher-scroll.slint";
+import { Button } from "../primitives/button.slint";
+
+export component SidePanel inherits Rectangle {
+    callback add-clicked;
+
+    in property <string> title;
+    in property <int> count;
+    in property <bool> show-search: false;
+    in property <string> search-placeholder: @tr("Search…");
+    in property <bool> show-search-shortcut: false;
+    in property <string> search-shortcut-label: "Ctrl+F";
+    in property <bool> show-add: false;
+    in property <string> add-label: @tr("Add");
+    in property <string> footer-text: "";
+    in property <string> footer-trail: "";
+
+    width: 304px;
+    background: Palette.bg;
+
+    Rectangle {
+        x: parent.width - 1px;
+        width: 1px; height: parent.height;
+        background: Palette.border-2;
+    }
+
+    VerticalLayout {
+        padding-left: 14px; padding-right: 14px;
+        padding-top: 14px; padding-bottom: 14px;
+        spacing: 0;
+
+        HorizontalLayout {
+            height: 24px;
+            alignment: stretch;
+            HorizontalLayout {
+                spacing: 7px;
+                alignment: start;
+                Text {
+                    text: root.title;
+                    color: Palette.text-mid;
+                    font-size: (11px) * Theme.fs-scale;
+                    font-weight: 700;
+                    letter-spacing: 1.4px;
+                    vertical-alignment: center;
+                }
+                Text {
+                    text: "·";
+                    color: Palette.text-vlo;
+                    font-size: (11px) * Theme.fs-scale;
+                    vertical-alignment: center;
+                }
+                Text {
+                    text: root.count;
+                    color: Palette.text-mid;
+                    font-size: (11px) * Theme.fs-scale;
+                    font-weight: 700;
+                    vertical-alignment: center;
+                }
+            }
+            Rectangle { horizontal-stretch: 1; }
+            if root.show-add : Button {
+                label: root.add-label;
+                button-height: 24px;
+                radius: 5px;
+                pad-left: 6px;
+                pad-right: 8px;
+                spacing: 5px;
+                font-size: (10px) * Theme.fs-scale;
+                bg-color: transparent;
+                AddUserIcon { stroke: Palette.text-mid; }
+                clicked => { root.add-clicked(); }
+            }
+        }
+
+        Rectangle { height: 12px; }
+
+        if root.show-search : Rectangle {
+            height: 34px;
+            border-radius: (8px) * Theme.r-scale;
+            background: Palette.panel;
+            border-width: 1px;
+            border-color: search-input.has-focus ? Palette.mint-dim : Palette.border-2;
+            drop-shadow-blur: search-input.has-focus && !Theme.retro ? 10px : 0px;
+            drop-shadow-color: Palette.mint-glow;
+            animate border-color { duration: 140ms; easing: ease-out; }
+
+            HorizontalLayout {
+                padding-left: 10px; padding-right: 8px;
+                spacing: 8px;
+                SearchIcon {
+                    stroke: search-input.has-focus ? Palette.mint-dim : Palette.text-vlo;
+                    size: 12px;
+                    y: (parent.height - self.height) / 2;
+                    animate stroke { duration: 140ms; }
+                }
+                search-input := LineInput {
+                    placeholder: root.search-placeholder;
+                    font-size: (Theme.retro ? 16px : 12px) * Theme.fs-scale;
+                    fg: Palette.text-hi;
+                    placeholder-color: Palette.text-vlo;
+                    horizontal-stretch: 1;
+                }
+                if root.show-search-shortcut : Rectangle {
+                    width: 44px; height: 18px;
+                    y: (parent.height - self.height) / 2;
+                    border-radius: (3px) * Theme.r-scale;
+                    background: Palette.panel-2;
+                    border-width: 1px;
+                    border-color: Palette.border;
+                    Text {
+                        text: root.search-shortcut-label;
+                        color: Palette.text-lo;
+                        font-size: (9px) * Theme.fs-scale;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+        if root.show-search : Rectangle { height: 10px; }
+
+        CypherScroll {
+            vertical-stretch: 1;
+            viewport-height: list-layout.preferred-height;
+            viewport-width: self.visible-width;
+            list-layout := VerticalLayout {
+                spacing: 2px;
+                @children
+            }
+        }
+
+        if root.footer-text != "" : Rectangle { height: 6px; }
+        if root.footer-text != "" : HorizontalLayout {
+            height: 20px;
+            spacing: 8px;
+            alignment: start;
+            Rectangle {
+                width: 8px; height: 8px;
+                y: (parent.height - self.height) / 2;
+                border-radius: (4px) * Theme.r-scale;
+                background: Palette.mint-dim;
+            }
+            Text {
+                text: root.footer-text;
+                color: Palette.text-mid;
+                font-size: (10px) * Theme.fs-scale;
+                font-weight: 700;
+                letter-spacing: 1.0px;
+                vertical-alignment: center;
+            }
+            if root.footer-trail != "" : Text {
+                text: root.footer-trail;
+                color: Palette.text-vlo;
+                font-size: (10px) * Theme.fs-scale;
+                font-weight: 600;
+                letter-spacing: 1.0px;
+                vertical-alignment: center;
+            }
+        }
+    }
+}

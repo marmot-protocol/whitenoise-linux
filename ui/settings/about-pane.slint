@@ -1,0 +1,256 @@
+import { Palette, Theme } from "../tokens.slint";
+import { InfoIcon } from "../icons/info-icon.slint";
+import { LogoMark } from "../icons/logo-mark.slint";
+import { LockIcon } from "../icons/lock-icon.slint";
+import { KeyIcon } from "../icons/key-icon.slint";
+import { MonitorIcon } from "../icons/monitor-icon.slint";
+import { PageHeader } from "../shells/page-header.slint";
+import { Section } from "../shells/section.slint";
+import { GroupCard } from "../shells/group-card.slint";
+import { PrefRow } from "pref-row.slint";
+import { CypherScroll } from "../primitives/cypher-scroll.slint";
+
+// Compact feature row with a tinted icon tile on the left.
+component AboutFeatureRow inherits Rectangle {
+    in property <string> title;
+    in property <string> detail;
+    in property <bool> show-divider: true;
+
+    height: 64px;
+
+    HorizontalLayout {
+        padding-left: 14px;
+        padding-right: 16px;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        spacing: 12px;
+        alignment: stretch;
+
+        Rectangle {
+            width: 36px;
+            height: 36px;
+            y: (parent.height - self.height) / 2;
+            border-radius: (8px) * Theme.r-scale;
+            background: Palette.mint-surface;
+            border-width: Theme.border-w;
+            border-color: Theme.retro ? Palette.border : Palette.border-2;
+
+            VerticalLayout {
+                alignment: center;
+                HorizontalLayout {
+                    alignment: center;
+                    @children
+                }
+            }
+        }
+
+        VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: 3px;
+            alignment: center;
+
+            Text {
+                text: root.title;
+                color: Palette.text-hi;
+                font-size: (12px) * Theme.fs-scale;
+                font-weight: 700;
+            }
+            Text {
+                text: root.detail;
+                color: Palette.text-lo;
+                font-size: (11px) * Theme.fs-scale;
+                wrap: word-wrap;
+            }
+        }
+    }
+
+    if root.show-divider : Rectangle {
+        y: parent.height - 1px;
+        width: parent.width;
+        height: 1px;
+        background: Palette.border-2;
+    }
+}
+
+export component AboutPane inherits Rectangle {
+    horizontal-stretch: 1;
+    background: Palette.bg;
+
+    CypherScroll {
+        width: parent.width;
+        height: parent.height;
+        viewport-height: page.preferred-height;
+        viewport-width: self.visible-width;
+
+        page := VerticalLayout {
+            width: parent.width;
+            padding-left: 28px;
+            padding-right: 28px;
+            padding-top: 16px;
+            padding-bottom: 28px;
+            spacing: 20px;
+
+            PageHeader {
+                title: @tr("About");
+                caption: @tr("Encrypted group chat on Nostr");
+                InfoIcon { stroke: Palette.mint; size: 14px; }
+            }
+
+            // Hero artwork — SNES lab scene in a framed card.
+            GroupCard {
+                VerticalLayout {
+                    spacing: 0;
+
+                    Rectangle {
+                        clip: true;
+                        background: #0a0a14;
+
+                        Image {
+                            width: parent.width;
+                            height: parent.height;
+                            source: @image-url("../../assets/about.png");
+                            image-fit: contain;
+                            horizontal-alignment: center;
+                        }
+                    }
+
+                    HorizontalLayout {
+                        padding-left: 16px;
+                        padding-right: 16px;
+                        padding-top: 12px;
+                        padding-bottom: 12px;
+                        spacing: 14px;
+                        alignment: start;
+
+                        LogoMark {
+                            size: 42px;
+                            color: Palette.mint;
+                        }
+
+                        VerticalLayout {
+                            horizontal-stretch: 1;
+                            spacing: 4px;
+                            alignment: center;
+
+                            HorizontalLayout {
+                                spacing: 10px;
+                                alignment: start;
+
+                                Text {
+                                    text: "darkmatter";
+                                    color: Palette.text-hi;
+                                    font-size: (18px) * Theme.fs-scale;
+                                    font-weight: 700;
+                                    font-family: Theme.font;
+                                    vertical-alignment: center;
+                                }
+
+                                Rectangle {
+                                    border-radius: (11px) * Theme.r-scale;
+                                    background: Palette.mint-surface;
+                                    border-width: Theme.border-w;
+                                    border-color: Palette.mint-dim;
+
+                                    HorizontalLayout {
+                                        padding-left: 10px;
+                                        padding-right: 10px;
+                                        padding-top: 5px;
+
+                                        Text {
+                                            text: "v0.1.0";
+                                            color: Palette.mint;
+                                            font-size: (10px) * Theme.fs-scale;
+                                            font-weight: 700;
+                                            font-family: Theme.font;
+                                            letter-spacing: 0.6px;
+                                        }
+                                    }
+                                }
+                            }
+
+                            Text {
+                                text: @tr("End-to-end encrypted group messaging for Linux.");
+                                color: Palette.text-mid;
+                                font-size: (11px) * Theme.fs-scale;
+                                wrap: word-wrap;
+                            }
+                        }
+                    }
+                }
+            }
+
+            Section {
+                label: @tr("WHAT IT IS");
+
+                GroupCard {
+                    VerticalLayout {
+                        padding-left: 16px;
+                        padding-right: 16px;
+                        padding-top: 14px;
+                        padding-bottom: 14px;
+                        spacing: 10px;
+
+                        Text {
+                            text: @tr("Dark Matter is a native desktop client for private group chat. Messages are encrypted with MLS before they leave your machine, routed over Nostr relays, and decrypted only for the people in the room.");
+                            color: Palette.text-mid;
+                            font-size: (12px) * Theme.fs-scale;
+                            wrap: word-wrap;
+                        }
+
+                        Text {
+                            text: @tr("Your keys stay on this device — we never see them.");
+                            color: Palette.mint;
+                            font-size: (11px) * Theme.fs-scale;
+                            font-weight: 700;
+                            wrap: word-wrap;
+                        }
+                    }
+                }
+            }
+
+            Section {
+                label: @tr("UNDER THE HOOD");
+
+                GroupCard {
+                    AboutFeatureRow {
+                        title: @tr("End-to-end encryption");
+                        detail: @tr("MLS group keys; no server in the trust path.");
+                        LockIcon { stroke: Palette.mint; }
+                    }
+                    AboutFeatureRow {
+                        title: @tr("Decentralized network");
+                        detail: @tr("Connect to Nostr relays you choose.");
+                        MonitorIcon { stroke: Palette.mint; }
+                    }
+                    AboutFeatureRow {
+                        title: @tr("Local key custody");
+                        detail: @tr("Private material lives in your OS keychain or encrypted store.");
+                        show-divider: false;
+                        KeyIcon { stroke: Palette.mint; }
+                    }
+                }
+            }
+
+            Section {
+                label: @tr("CREDITS");
+
+                GroupCard {
+                    PrefRow {
+                        label: @tr("Built with");
+                        value: "Rust · Nostr · MLS · Slint";
+                        show-divider: false;
+                    }
+                }
+            }
+
+            Text {
+                text: @tr("Made with marmots, math, and a little purple liquid.");
+                color: Palette.text-vlo;
+                font-size: (10px) * Theme.fs-scale;
+                font-weight: 600;
+                letter-spacing: 0.4px;
+                horizontal-alignment: center;
+            }
+        }
+    }
+}

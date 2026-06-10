@@ -1,0 +1,15 @@
+import { Palette } from "../tokens.slint";
+
+export component PlusIcon inherits Rectangle {
+    in property <color> stroke: Palette.text-mid;
+    in property <length> size: 12px;
+    width: root.size; height: root.size;
+    Rectangle {
+        width: root.size; height: 1.4px;
+        background: root.stroke;
+    }
+    Rectangle {
+        width: 1.4px; height: root.size;
+        background: root.stroke;
+    }
+}

@@ -1,0 +1,12 @@
+import { Palette } from "../tokens.slint";
+
+export component RefreshIcon inherits Rectangle {
+    in property <color> stroke: Palette.text-mid;
+    width: 14px; height: 14px;
+    Path {
+        width: 14px; height: 14px;
+        viewbox-width: 14; viewbox-height: 14;
+        commands: "M 12 7 C 12 9.8 9.8 12 7 12 C 4.2 12 2 9.8 2 7 C 2 4.2 4.2 2 7 2 C 8.8 2 10.4 3 11.3 4.4 M 11.3 1.5 L 11.3 4.5 L 8.3 4.5";
+        stroke: root.stroke; stroke-width: 1.3px; fill: transparent;
+    }
+}

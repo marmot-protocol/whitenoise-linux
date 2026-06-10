@@ -1,0 +1,405 @@
+// First-run empty state for the chats page: shown when the user has no chats yet.
+// A welcome hero plus three real setup steps — connect a relay, publish a key
+// package, start a chat. All data is live (relays, connection counts, KP state);
+// nothing here is decorative placeholder.
+
+import { Palette, Theme } from "tokens.slint";
+import { Button, MicroButton } from "primitives/button.slint";
+import { LineInput } from "primitives/line-input.slint";
+import { LogoMark } from "icons/logo-mark.slint";
+import { KeyIcon } from "icons/key-icon.slint";
+import { StartChatIcon } from "icons/start-chat-icon.slint";
+import { PlusIcon } from "icons/plus-icon.slint";
+import { TrashIcon } from "icons/trash-icon.slint";
+import { CheckMark } from "icons/check-mark.slint";
+
+// One relay row inside the relay step (url + remove).
+component MiniRelayRow inherits Rectangle {
+    in property <string> url;
+    in property <bool> show-divider: true;
+    callback remove-clicked;
+    height: 40px;
+
+    HorizontalLayout {
+        padding-left: 14px; padding-right: 10px;
+        padding-top: 6px; padding-bottom: 6px;
+        spacing: 8px;
+        VerticalLayout {
+            horizontal-stretch: 1;
+            alignment: center;
+            Text {
+                text: root.url;
+                color: Palette.text-hi;
+                font-size: (12px) * Theme.fs-scale;
+                font-weight: 500;
+                overflow: elide;
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            MicroButton {
+                label: "";
+                pad-left: 8px; pad-right: 8px;
+                TrashIcon { stroke: Palette.text-mid; }
+                clicked => { root.remove-clicked(); }
+            }
+        }
+    }
+    if root.show-divider : Rectangle {
+        y: parent.height - 1px;
+        width: parent.width; height: 1px;
+        background: Palette.border-2;
+    }
+}
+
+// A numbered/checked setup card. The leading badge shows the step number until
+// `done`, then a check. `@children` are stacked under the title/description as
+// the action area.
+component StepCard inherits Rectangle {
+    in property <string> step-no;
+    in property <string> title;
+    in property <string> desc;
+    in property <bool> done: false;
+
+    background: Palette.panel;
+    border-radius: (12px) * Theme.r-scale;
+    border-width: Theme.retro ? Theme.border-w : 1px;
+    border-color: root.done
+        ? Palette.mint
+        : (Theme.retro ? Palette.border : Palette.border-2);
+    drop-shadow-color: Theme.retro ? Palette.shadow : transparent;
+    drop-shadow-offset-x: Theme.retro ? 4px : 0px;
+    drop-shadow-offset-y: Theme.retro ? 4px : 0px;
+    drop-shadow-blur: 0px;
+
+    HorizontalLayout {
+        padding: 18px;
+        spacing: 16px;
+        alignment: stretch;
+
+        // Leading badge.
+        VerticalLayout {
+            alignment: start;
+            Rectangle {
+                width: 34px; height: 34px;
+                border-radius: root.done ? (17px) : (9px) * Theme.r-scale;
+                background: root.done ? Palette.mint : Palette.panel-2;
+                border-width: root.done ? 0px : 1px;
+                border-color: Palette.border-2;
+                if !root.done : Text {
+                    text: root.step-no;
+                    color: Palette.text-mid;
+                    font-size: (13px) * Theme.fs-scale;
+                    font-weight: 700;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+                if root.done : CheckMark {
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    stroke: Palette.bubble-out-fg;
+                }
+            }
+        }
+
+        // Title + description + action area.
+        VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: 4px;
+            Text {
+                text: root.title;
+                color: Palette.text-hi;
+                font-size: (15px) * Theme.fs-scale;
+                font-weight: 700;
+            }
+            Text {
+                text: root.desc;
+                color: Palette.text-lo;
+                font-size: (12px) * Theme.fs-scale;
+                wrap: word-wrap;
+            }
+            // Action area, padded off the description.
+            Rectangle { height: 6px; }
+            @children
+        }
+    }
+}
+
+export component GetStartedScreen inherits Rectangle {
+    // Relay setup (live).
+    in property <[string]> relays;
+    // Well-known relays not yet added — one-click chips.
+    in property <[string]> suggested;
+    in property <int> connected;
+    in property <int> total;
+    in property <string> network-status;
+    callback add-relay(string);
+    callback remove-relay(string);
+    // Key package (live).
+    in property <bool> kp-published: false;
+    in property <bool> kp-busy: false;
+    in property <string> kp-status;
+    callback publish-kp();
+    // First chat.
+    callback start-chat();
+
+    property <string> relay-draft;
+
+    background: Palette.bg;
+
+    Flickable {
+        x: 0; y: 0;
+        width: parent.width; height: parent.height;
+        viewport-width: self.width;
+        viewport-height: max(self.height, body.preferred-height);
+
+        body := VerticalLayout {
+            width: root.width;
+            padding-top: 40px; padding-bottom: 40px;
+
+            HorizontalLayout {
+                alignment: center;
+
+                VerticalLayout {
+                    width: min(600px, root.width - 64px);
+                    spacing: 22px;
+
+                    // ── Hero ──
+                    VerticalLayout {
+                        spacing: 10px;
+                        alignment: center;
+                        LogoMark { size: 52px; color: Palette.mint; }
+                        Text {
+                            text: @tr("Welcome to darkmatter");
+                            color: Palette.text-hi;
+                            font-size: (24px) * Theme.fs-scale;
+                            font-weight: 700;
+                            horizontal-alignment: center;
+                        }
+                        Text {
+                            text: @tr("Three quick steps and you're ready to message — end-to-end encrypted, no servers in the middle.");
+                            color: Palette.text-lo;
+                            font-size: (13px) * Theme.fs-scale;
+                            horizontal-alignment: center;
+                            wrap: word-wrap;
+                        }
+                    }
+
+                    // ── Step 1: Connect a relay ──
+                    StepCard {
+                        step-no: "1";
+                        title: @tr("Connect a relay");
+                        desc: @tr("Relays carry your encrypted messages. Add at least one to get online.");
+                        done: root.total > 0;
+
+                        // Live status line.
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Rectangle {
+                                width: 8px; height: 8px;
+                                y: (parent.height - self.height) / 2;
+                                border-radius: 4px;
+                                background: root.connected > 0
+                                    ? Palette.mint
+                                    : (root.total > 0 ? #f59e0b : Palette.text-vlo);
+                            }
+                            Text {
+                                text: root.total == 0
+                                    ? @tr("No relays yet")
+                                    : (root.connected == root.total
+                                        ? @tr("Connected · {}/{}", root.connected, root.total)
+                                        : @tr("Partial · {}/{} connected", root.connected, root.total));
+                                color: Palette.text-mid;
+                                font-size: (11px) * Theme.fs-scale;
+                                font-weight: 600;
+                                vertical-alignment: center;
+                            }
+                        }
+
+                        Rectangle { height: 4px; }
+
+                        // Add row.
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Rectangle {
+                                horizontal-stretch: 1;
+                                height: 40px;
+                                border-width: 1px;
+                                border-color: relay-input.has-focus ? Palette.mint : Palette.border-2;
+                                border-radius: (7px) * Theme.r-scale;
+                                background: Palette.field;
+                                animate border-color { duration: 120ms; }
+                                relay-input := LineInput {
+                                    x: 12px; y: 0;
+                                    width: parent.width - 24px;
+                                    height: parent.height;
+                                    placeholder: "wss://relay.example.com";
+                                    text <=> root.relay-draft;
+                                    fg: Palette.text-hi;
+                                    placeholder-color: Palette.text-vlo;
+                                    submit => {
+                                        if (root.relay-draft != "") {
+                                            root.add-relay(root.relay-draft);
+                                            root.relay-draft = "";
+                                        }
+                                    }
+                                }
+                            }
+                            Button {
+                                label: @tr("Add");
+                                button-height: 40px;
+                                bg-color: Palette.mint;
+                                outline: Palette.mint;
+                                hover-bg: Palette.mint-hi;
+                                hover-outline: Palette.mint-hi;
+                                fg: Palette.bubble-out-fg;
+                                PlusIcon { stroke: Palette.bubble-out-fg; size: 12px; }
+                                clicked => {
+                                    if (root.relay-draft != "") {
+                                        root.add-relay(root.relay-draft);
+                                        root.relay-draft = "";
+                                    }
+                                }
+                            }
+                        }
+
+                        // One-click suggested relays (hidden once added).
+                        if root.suggested.length > 0 : VerticalLayout {
+                            spacing: 7px;
+                            Text {
+                                text: @tr("SUGGESTED");
+                                color: Palette.text-mid;
+                                font-size: (9px) * Theme.fs-scale;
+                                font-weight: 700;
+                                letter-spacing: 1.4px;
+                            }
+                            HorizontalLayout {
+                                spacing: 8px;
+                                alignment: start;
+                                for url in root.suggested : Button {
+                                    label: url;
+                                    button-height: 32px;
+                                    radius: 8px;
+                                    font-size: (Theme.retro ? 12px : 11px) * Theme.fs-scale;
+                                    bg-color: Palette.panel-2;
+                                    outline: Palette.border-2;
+                                    hover-bg: Palette.mint-surface;
+                                    hover-outline: Palette.mint;
+                                    fg: Palette.text-hi;
+                                    PlusIcon { stroke: Palette.mint; size: 11px; }
+                                    clicked => { root.add-relay(url); }
+                                }
+                                Rectangle { horizontal-stretch: 1; }
+                            }
+                        }
+
+                        // Saved relay list.
+                        if root.relays.length > 0 : Rectangle {
+                            height: root.relays.length * 40px;
+                            border-radius: (7px) * Theme.r-scale;
+                            border-width: 1px;
+                            border-color: Palette.border-2;
+                            background: Palette.panel-2;
+                            VerticalLayout {
+                                spacing: 0;
+                                for url[i] in root.relays : MiniRelayRow {
+                                    url: url;
+                                    show-divider: i < root.relays.length - 1;
+                                    remove-clicked => { root.remove-relay(url); }
+                                }
+                            }
+                        }
+
+                        if root.network-status != "" : Text {
+                            text: root.network-status;
+                            color: Palette.text-lo;
+                            font-size: (11px) * Theme.fs-scale;
+                            wrap: word-wrap;
+                        }
+                    }
+
+                    // ── Step 2: Publish key package ──
+                    StepCard {
+                        step-no: "2";
+                        title: @tr("Publish your key package");
+                        desc: @tr("This is what lets other people start an encrypted chat with you.");
+                        done: root.kp-published;
+
+                        HorizontalLayout {
+                            spacing: 10px;
+                            alignment: start;
+                            // Primary (mint) only when relays exist and not yet
+                            // published. Until a relay is added, the button is
+                            // muted and inert — publishing needs somewhere to land.
+                            Button {
+                                property <bool> ready: root.total > 0 && !root.kp-published;
+                                label: root.kp-published
+                                    ? @tr("Published")
+                                    : (root.kp-busy ? @tr("Publishing…") : @tr("Publish key package"));
+                                button-height: 38px;
+                                bg-color: self.ready ? Palette.mint : Palette.panel-2;
+                                outline: self.ready ? Palette.mint : Palette.border-2;
+                                hover-bg: self.ready ? Palette.mint-hi : Palette.panel-2;
+                                hover-outline: self.ready ? Palette.mint-hi : Palette.border-2;
+                                fg: root.kp-published
+                                    ? Palette.text-mid
+                                    : (root.total > 0 ? Palette.bubble-out-fg : Palette.text-vlo);
+                                KeyIcon {
+                                    stroke: root.kp-published
+                                        ? Palette.text-mid
+                                        : (root.total > 0 ? Palette.bubble-out-fg : Palette.text-vlo);
+                                }
+                                clicked => {
+                                    if (root.total > 0 && !root.kp-busy && !root.kp-published) {
+                                        root.publish-kp();
+                                    }
+                                }
+                            }
+                            if root.total == 0 && !root.kp-published : VerticalLayout {
+                                alignment: center;
+                                Text {
+                                    text: @tr("Add a relay first.");
+                                    color: #f59e0b;
+                                    font-size: (11px) * Theme.fs-scale;
+                                    font-weight: 600;
+                                }
+                            }
+                        }
+
+                        if root.kp-status != "" : Text {
+                            text: root.kp-status;
+                            color: Palette.text-lo;
+                            font-size: (11px) * Theme.fs-scale;
+                            wrap: word-wrap;
+                        }
+                    }
+
+                    // ── Step 3: Start a chat ──
+                    StepCard {
+                        step-no: "3";
+                        title: @tr("Start your first chat");
+                        desc: @tr("Invite someone by their npub and say hello.");
+                        done: false;
+
+                        HorizontalLayout {
+                            alignment: start;
+                            Button {
+                                label: @tr("New chat");
+                                button-height: 38px;
+                                bg-color: Palette.mint;
+                                outline: Palette.mint;
+                                hover-bg: Palette.mint-hi;
+                                hover-outline: Palette.mint-hi;
+                                fg: Palette.bubble-out-fg;
+                                StartChatIcon { stroke: Palette.bubble-out-fg; }
+                                clicked => { root.start-chat(); }
+                            }
+                        }
+                    }
+
+                    Rectangle { height: 8px; }
+                }
+            }
+        }
+    }
+}

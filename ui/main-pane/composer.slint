@@ -1,0 +1,270 @@
+import { Palette , Theme} from "../tokens.slint";
+import { PaperclipIcon } from "../icons/paperclip-icon.slint";
+import { SmileyIcon } from "../icons/smiley-icon.slint";
+import { SendIcon } from "../icons/send-icon.slint";
+import { LineInput } from "../primitives/line-input.slint";
+import { Button } from "../primitives/button.slint";
+
+export component Composer inherits Rectangle {
+    in-out property <string> draft <=> composer-input.text;
+    // Reply target — when non-empty, the next send goes out as a reply and a
+    // small "Replying to <author>: <preview>" chip renders above the input.
+    in property <string> reply-target-id;
+    in property <string> reply-target-author;
+    in property <string> reply-target-preview;
+    // When non-empty the composer is in edit mode: a banner shows and the next
+    // send rewrites that message instead of posting a new one.
+    in property <string> editing-message-id;
+    // Mention-autocomplete passthrough (see MentionPicker). `mention-active`
+    // makes the input capture nav keys; the callbacks bubble up to Rust.
+    in property <bool> mention-active: false;
+    callback caret-moved(int);
+    callback mention-nav(int);
+    callback mention-commit();
+    callback mention-dismiss();
+    public function set-cursor(pos: int) { composer-input.set-cursor(pos); }
+    callback send-clicked();
+    callback cancel-reply();
+    callback cancel-edit();
+    callback attach-clicked();
+    // Open the emoji picker anchored at (x, y) in window coords; the picked
+    // emoji is appended to the draft rather than sent as a reaction.
+    callback emoji-clicked(length, length);
+
+    property <length> min-row-h: 52px;
+    property <length> max-row-h: 132px;
+    property <length> row-h: clamp(composer-input.preferred-height + 20px, root.min-row-h, root.max-row-h);
+    property <length> chip-h: (root.reply-target-id == "" && root.editing-message-id == "") ? 0px : 30px;
+
+    height: root.row-h + 26px + root.chip-h;
+    background: Palette.bg;
+
+    VerticalLayout {
+        spacing: 0;
+
+    if root.editing-message-id != "" : Rectangle {
+        height: 30px;
+        background: Palette.panel;
+        border-width: 1px;
+        border-color: Palette.border-2;
+        border-radius: (6px) * Theme.r-scale;
+        HorizontalLayout {
+            padding-left: 18px; padding-right: 18px;
+            spacing: 8px;
+            alignment: stretch;
+            Rectangle {
+                width: 3px;
+                background: Palette.mint;
+                y: (parent.height - self.height) / 2;
+                height: 18px;
+                border-radius: 1.5px;
+            }
+            VerticalLayout {
+                alignment: center;
+                horizontal-stretch: 1;
+                Text {
+                    text: @tr("Editing message  ·  Enter to save");
+                    color: Palette.mint;
+                    font-size: (11px) * Theme.fs-scale;
+                    font-family: Theme.font;
+                    font-weight: 700;
+                    vertical-alignment: center;
+                }
+            }
+            edit-cancel-rect := Rectangle {
+                width: 24px;
+                height: 22px;
+                y: (parent.height - self.height) / 2;
+                border-radius: (4px) * Theme.r-scale;
+                background: edit-cancel-touch.has-hover ? Palette.panel-2 : transparent;
+                animate background { duration: 100ms; }
+                Text {
+                    text: "✕";
+                    color: Palette.text-mid;
+                    font-size: (12px) * Theme.fs-scale;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+                edit-cancel-touch := TouchArea {
+                    clicked => { root.cancel-edit(); }
+                }
+            }
+        }
+    }
+
+    if root.reply-target-id != "" : Rectangle {
+        height: 30px;
+        background: Palette.panel;
+        border-width: 1px;
+        border-color: Palette.border-2;
+        border-radius: (6px) * Theme.r-scale;
+        HorizontalLayout {
+            padding-left: 18px; padding-right: 18px;
+            spacing: 8px;
+            alignment: stretch;
+            Rectangle {
+                width: 3px;
+                background: Palette.mint;
+                y: (parent.height - self.height) / 2;
+                height: 18px;
+                border-radius: 1.5px;
+            }
+            VerticalLayout {
+                alignment: center;
+                horizontal-stretch: 1;
+                HorizontalLayout {
+                    spacing: 6px;
+                    Text {
+                        text: root.reply-target-author == ""
+                            ? @tr("Replying to message:")
+                            : @tr("Replying to {}:", root.reply-target-author);
+                        color: Palette.mint;
+                        font-size: (11px) * Theme.fs-scale;
+                        font-family: Theme.font;
+                        font-weight: 700;
+                        vertical-alignment: center;
+                    }
+                    Text {
+                        text: root.reply-target-preview;
+                        color: Palette.text-mid;
+                        font-size: (11px) * Theme.fs-scale;
+                        font-family: Theme.font;
+                        overflow: elide;
+                        horizontal-stretch: 1;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+            cancel-rect := Rectangle {
+                width: 24px;
+                height: 22px;
+                y: (parent.height - self.height) / 2;
+                border-radius: (4px) * Theme.r-scale;
+                background: cancel-touch.has-hover ? Palette.panel-2 : transparent;
+                animate background { duration: 100ms; }
+                Text {
+                    text: "✕";
+                    color: Palette.text-mid;
+                    font-size: (12px) * Theme.fs-scale;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+                cancel-touch := TouchArea {
+                    clicked => { root.cancel-reply(); }
+                }
+            }
+        }
+    }
+
+    HorizontalLayout {
+        padding-left: 18px; padding-right: 18px;
+        padding-top: 12px; padding-bottom: 14px;
+        Rectangle {
+            horizontal-stretch: 1;
+            height: root.row-h;
+            border-radius: (10px) * Theme.r-scale;
+            background: Palette.panel;
+            border-width: 1px;
+            border-color: composer-input.has-focus
+                ? Palette.mint-dim
+                : Palette.border-2;
+            drop-shadow-blur: composer-input.has-focus && !Theme.retro ? 12px : 0px;
+            drop-shadow-color: Palette.mint-glow;
+            animate border-color { duration: 160ms; easing: ease-out; }
+            animate drop-shadow-blur { duration: 160ms; easing: ease-out; }
+
+            HorizontalLayout {
+                padding-left: 16px; padding-right: 8px;
+                spacing: 12px;
+                alignment: stretch;
+
+                Rectangle {
+                    width: 22px;
+                    height: parent.height;
+                    border-radius: (4px) * Theme.r-scale;
+                    background: attach-touch.has-hover ? Palette.panel-2 : transparent;
+                    animate background { duration: 100ms; }
+                    PaperclipIcon {
+                        stroke: attach-touch.has-hover ? Palette.text-hi : Palette.text-lo;
+                        y: (parent.height - self.height) / 2;
+                    }
+                    attach-touch := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => { root.attach-clicked(); }
+                    }
+                }
+                composer-input := LineInput {
+                    placeholder: @tr("Send a message  ·  encrypted with") + " MLS  ·  Shift+Enter " + @tr("for newline");
+                    font-size: (Theme.retro ? 16px : 13px) * Theme.fs-scale;
+                    fg: Palette.text-hi;
+                    placeholder-color: Palette.text-lo;
+                    single-line: false;
+                    horizontal-stretch: 1;
+                    capture-nav: root.mention-active;
+                    submit => { root.send-clicked(); }
+                    caret-moved(c) => { root.caret-moved(c); }
+                    nav(d) => { root.mention-nav(d); }
+                    commit-mention => { root.mention-commit(); }
+                    dismiss-mention => { root.mention-dismiss(); }
+                }
+                emoji-rect := Rectangle {
+                    width: 32px;
+                    height: parent.height;
+                    Rectangle {
+                        width: 26px;
+                        height: 26px;
+                        y: (parent.height - self.height) / 2;
+                        border-radius: (4px) * Theme.r-scale;
+                        background: emoji-touch.has-hover ? Palette.panel-2 : transparent;
+                        animate background { duration: 100ms; }
+                        SmileyIcon {
+                            stroke: emoji-touch.has-hover ? Palette.text-hi : Palette.text-lo;
+                            x: (parent.width - self.width) / 2;
+                            y: (parent.height - self.height) / 2;
+                        }
+                    }
+                    emoji-touch := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => {
+                            root.emoji-clicked(
+                                emoji-rect.absolute-position.x,
+                                emoji-rect.absolute-position.y);
+                        }
+                    }
+                }
+                send-button := Button {
+                    label: @tr("Send");
+                    clicked => { root.send-clicked(); }
+                    button-width: 92px;
+                    button-height: 36px;
+                    y: (parent.height - self.height) / 2;
+                    radius: 8px;
+                    pad-left: 12px;
+                    pad-right: 14px;
+                    spacing: 8px;
+                    use-hover: true;
+                    bg-color: root.draft != "" ? Palette.mint : Palette.panel-2;
+                    hover-bg: Palette.mint-hi;
+                    outline: root.draft != "" ? Palette.mint : Palette.border;
+                    hover-outline: Palette.mint-hi;
+                    fg: root.draft != "" ? Palette.bubble-out-fg : Palette.text-hi;
+                    hover-fg: Palette.bubble-out-fg;
+                    animate bg-color, outline, fg { duration: 140ms; easing: ease-out; }
+                    Rectangle {
+                        width: 14px;
+                        SendIcon {
+                            fill-color: (send-button.has-hover || root.draft != "")
+                                ? Palette.bubble-out-fg
+                                : Palette.text-mid;
+                            size: 14px;
+                            x: 0;
+                            y: (parent.height - self.height) / 2;
+                            animate fill-color { duration: 100ms; }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    }
+}

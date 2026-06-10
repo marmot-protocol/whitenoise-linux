@@ -1,0 +1,504 @@
+import { Palette, Theme } from "../tokens.slint";
+import { CopyIcon } from "../icons/copy-icon.slint";
+import { CameraIcon } from "../icons/camera-icon.slint";
+import { Avatar } from "../primitives/avatar.slint";
+import { CypherScroll } from "../primitives/cypher-scroll.slint";
+import { LineInput } from "../primitives/line-input.slint";
+import { Section } from "../shells/section.slint";
+import { GroupCard } from "../shells/group-card.slint";
+import { InfoRow } from "info-row.slint";
+import { Button, MicroButton } from "../primitives/button.slint";
+
+// Single editable field row used by the edit form.
+component FieldRow inherits Rectangle {
+    in property <string> label;
+    in property <string> placeholder;
+    in property <bool> single-line: true;
+    in property <bool> show-divider: true;
+    in-out property <string> text <=> input.text;
+    height: root.single-line ? 64px : 96px;
+    VerticalLayout {
+        padding-left: 16px; padding-right: 16px;
+        padding-top: 10px; padding-bottom: 10px;
+        spacing: 6px;
+        Text {
+            text: root.label;
+            color: Palette.text-hi;
+            font-size: (12px) * Theme.fs-scale;
+            font-weight: 700;
+        }
+        Rectangle {
+            background: Palette.bg;
+            border-width: 1px;
+            border-color: Palette.border-2;
+            border-radius: (6px) * Theme.r-scale;
+            vertical-stretch: 1;
+            HorizontalLayout {
+                padding-left: 10px; padding-right: 10px;
+                padding-top: 6px; padding-bottom: 6px;
+                input := LineInput {
+                    horizontal-stretch: 1;
+                    placeholder: root.placeholder;
+                    single-line: root.single-line;
+                    fg: Palette.text-hi;
+                    placeholder-color: Palette.text-lo;
+                }
+            }
+        }
+    }
+    if root.show-divider : Rectangle {
+        y: parent.height - 1px;
+        width: parent.width;
+        height: 1px;
+        background: Palette.border-2;
+    }
+}
+
+// Picture row: an upload-to-Blossom button alongside the URL field, so the user
+// can either pick a local file (uploaded for them) or paste a URL directly.
+component PictureField inherits Rectangle {
+    in-out property <string> text <=> input.text;
+    in property <bool> uploading: false;
+    callback upload-clicked();
+    height: 96px;
+    VerticalLayout {
+        padding-left: 16px; padding-right: 16px;
+        padding-top: 10px; padding-bottom: 10px;
+        spacing: 6px;
+        Text {
+            text: @tr("Picture");
+            color: Palette.text-hi;
+            font-size: (12px) * Theme.fs-scale;
+            font-weight: 700;
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            vertical-stretch: 1;
+            Rectangle {
+                horizontal-stretch: 1;
+                background: Palette.bg;
+                border-width: 1px;
+                border-color: Palette.border-2;
+                border-radius: (6px) * Theme.r-scale;
+                HorizontalLayout {
+                    padding-left: 10px; padding-right: 10px;
+                    padding-top: 6px; padding-bottom: 6px;
+                    input := LineInput {
+                        horizontal-stretch: 1;
+                        placeholder: "https://… or upload a file →";
+                        single-line: true;
+                        fg: Palette.text-hi;
+                        placeholder-color: Palette.text-lo;
+                    }
+                }
+            }
+            Button {
+                label: root.uploading ? @tr("Uploading…") : @tr("Upload");
+                button-height: 40px;
+                button-width: 120px;
+                bg-color: Palette.mint-surface;
+                fg: Palette.mint;
+                outline: Palette.mint;
+                hover-bg: Palette.mint-surface;
+                clicked => { if (!root.uploading) { root.upload-clicked(); } }
+                CameraIcon { stroke: Palette.mint; }
+            }
+        }
+    }
+}
+
+// Compact badge used under the display name (nip-05 / lightning) — only shown
+// when the value is present.
+component MetaChip inherits Rectangle {
+    in property <string> text;
+    in property <string> glyph;
+    in property <color> tint: Palette.mint;
+    height: 22px;
+    background: Theme.retro ? Palette.panel-2 : Palette.mint-surface;
+    border-radius: (11px) * Theme.r-scale;
+    border-width: Theme.retro ? Theme.border-w : 1px;
+    border-color: Theme.retro ? Palette.border : transparent;
+    HorizontalLayout {
+        padding-left: 9px; padding-right: 10px;
+        spacing: 5px;
+        alignment: center;
+        Text {
+            text: root.glyph;
+            color: root.tint;
+            font-size: (10px) * Theme.fs-scale;
+            font-weight: 700;
+            vertical-alignment: center;
+        }
+        Text {
+            text: root.text;
+            color: Theme.retro ? Palette.text-hi : root.tint;
+            font-size: (11px) * Theme.fs-scale;
+            font-weight: 600;
+            font-family: Theme.font;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+    }
+}
+
+// Avatar with an in-place upload affordance. Tapping anywhere on the avatar
+// while editing triggers an upload; a camera badge advertises it. We use a
+// single full-cover TouchArea (no overlapping siblings) to dodge the Slint
+// first-click-swallowing pitfall.
+component AvatarEditable inherits Rectangle {
+    in property <string> initials;
+    in property <image> picture;
+    in property <bool> has-picture: false;
+    in property <bool> editing: false;
+    in property <bool> uploading: false;
+    callback upload-clicked();
+    width: 96px; height: 96px;
+
+    Avatar {
+        size: 96px;
+        initials: root.initials == "" ? "?" : root.initials;
+        color-a: Palette.mint;
+        color-b: Palette.mint-dim;
+        picture: root.picture;
+        has-picture: root.has-picture;
+        font-size: (34px) * Theme.fs-scale;
+    }
+
+    // Dim + label while an upload is in flight.
+    if root.uploading : Rectangle {
+        width: 96px; height: 96px;
+        border-radius: (48px) * Theme.r-scale;
+        background: #000000B0;
+        Text {
+            text: @tr("Uploading…");
+            color: white;
+            font-size: (10px) * Theme.fs-scale;
+            font-weight: 700;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+    }
+
+    // Camera badge (decorative — the whole avatar is the hit target).
+    if root.editing && !root.uploading : Rectangle {
+        x: parent.width - self.width - 2px;
+        y: parent.height - self.height - 2px;
+        width: 30px; height: 30px;
+        border-radius: (15px) * Theme.r-scale;
+        background: Palette.mint;
+        border-width: 2px;
+        border-color: Palette.panel;
+        CameraIcon { stroke: Palette.bubble-out-fg; }
+    }
+
+    if root.editing : TouchArea {
+        width: 96px; height: 96px;
+        mouse-cursor: pointer;
+        clicked => { if (!root.uploading) { root.upload-clicked(); } }
+    }
+}
+
+export component ProfilePage inherits Rectangle {
+    horizontal-stretch: 1;
+    vertical-stretch: 1;
+    preferred-width: 0px;
+    preferred-height: 0px;
+    background: Palette.bg;
+
+    // Display props (always visible — also surface what was last saved).
+    in property <string> npub;
+    // Editable props — two-way bound to root in dark-matter-linux.slint.
+    in-out property <string> display-name;
+    in property <image> picture;
+    in property <bool> has-picture: false;
+    in-out property <string> username;
+    in-out property <string> about;
+    in-out property <string> picture-url;
+    in-out property <string> nip05;
+    in-out property <string> lud16;
+    // Form state.
+    in property <bool> editing: false;
+    in property <bool> busy: false;
+    in property <bool> uploading: false;
+    in property <string> status;
+
+    callback edit-clicked();
+    callback save-clicked();
+    callback cancel-clicked();
+    callback copy-npub-clicked();
+    callback upload-picture-clicked();
+
+    CypherScroll {
+        width: parent.width;
+        height: parent.height;
+        viewport-height: page.preferred-height;
+        viewport-width: self.visible-width;
+
+        page := VerticalLayout {
+            width: parent.width;
+            padding-left: 28px;
+            padding-right: 28px;
+            padding-top: 16px;
+            padding-bottom: 24px;
+            spacing: 20px;
+
+            // ── Action header ──────────────────────────────────────────
+            HorizontalLayout {
+                height: 40px;
+                spacing: 10px;
+                alignment: stretch;
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    alignment: center;
+                    spacing: 4px;
+                    Text {
+                        text: @tr("Your profile");
+                        color: Palette.text-hi;
+                        font-size: (18px) * Theme.fs-scale;
+                        font-weight: 700;
+                    }
+                    Text {
+                        text: root.editing
+                            ? @tr("EDITING · BROADCAST TO RELAYS ON SAVE")
+                            : @tr("VISIBLE TO ANYONE YOU CHAT WITH");
+                        color: Palette.text-lo;
+                        font-size: (10px) * Theme.fs-scale;
+                        font-weight: 600;
+                        letter-spacing: 1.2px;
+                    }
+                }
+                VerticalLayout {
+                    alignment: center;
+                    if !root.editing : Button {
+                        label: @tr("Edit profile");
+                        bg-color: Palette.mint;
+                        fg: Palette.bubble-out-fg;
+                        hover-bg: Palette.mint-hi;
+                        hover-fg: Palette.bubble-out-fg;
+                        outline: Palette.mint;
+                        button-width: 128px;
+                        button-height: 36px;
+                        clicked => { root.edit-clicked(); }
+                        Text {
+                            text: "✎";
+                            color: Palette.bubble-out-fg;
+                            font-size: (12px) * Theme.fs-scale;
+                        }
+                    }
+                    if root.editing : HorizontalLayout {
+                        spacing: 8px;
+                        Button {
+                            label: root.busy ? @tr("Saving…") : @tr("Save");
+                            bg-color: Palette.mint;
+                            fg: Palette.bubble-out-fg;
+                            hover-bg: Palette.mint-hi;
+                            hover-fg: Palette.bubble-out-fg;
+                            outline: Palette.mint;
+                            button-width: 96px;
+                            button-height: 36px;
+                            clicked => { if (!root.busy) { root.save-clicked(); } }
+                        }
+                        Button {
+                            label: @tr("Cancel");
+                            button-width: 80px;
+                            button-height: 36px;
+                            clicked => { root.cancel-clicked(); }
+                        }
+                    }
+                }
+            }
+
+            // ── Hero card: banner + overlapping avatar + headline ──────
+            Rectangle {
+                height: 188px;
+                background: Palette.panel;
+                border-radius: (12px) * Theme.r-scale;
+                border-width: Theme.border-w;
+                border-color: Theme.retro ? Palette.border : Palette.border-2;
+                drop-shadow-color: Theme.retro ? Palette.shadow : transparent;
+                drop-shadow-offset-x: Theme.retro ? 3px : 0px;
+                drop-shadow-offset-y: Theme.retro ? 3px : 0px;
+                clip: true;
+
+                // Banner wash.
+                Rectangle {
+                    x: 0; y: 0;
+                    width: parent.width;
+                    height: 96px;
+                    background: Theme.retro
+                        ? Palette.panel-2
+                        : @linear-gradient(120deg, Palette.mint 0%, Palette.mint-dim 100%);
+                    opacity: Theme.retro ? 1.0 : 0.92;
+                    Rectangle {
+                        y: parent.height - 1px;
+                        width: parent.width;
+                        height: 1px;
+                        background: Theme.retro ? Palette.border : Palette.border-2;
+                    }
+                }
+
+                // Avatar overlapping the banner's lower edge.
+                Rectangle {
+                    x: 24px; y: 48px;
+                    width: 104px; height: 104px;
+                    border-radius: (52px) * Theme.r-scale;
+                    background: Palette.panel;
+                    AvatarEditable {
+                        x: 4px; y: 4px;
+                        initials: root.display-name;
+                        picture: root.picture;
+                        has-picture: root.has-picture;
+                        editing: root.editing;
+                        uploading: root.uploading;
+                        upload-clicked => { root.upload-picture-clicked(); }
+                    }
+                }
+
+                // Headline — name + identity chips, to the right of the avatar.
+                VerticalLayout {
+                    x: 144px;
+                    y: 104px;
+                    width: parent.width - 168px;
+                    height: 76px;
+                    spacing: 6px;
+                    alignment: center;
+                    Text {
+                        text: root.display-name == "" ? @tr("(no display name)") : root.display-name;
+                        color: Palette.text-hi;
+                        font-size: (24px) * Theme.fs-scale;
+                        font-weight: 700;
+                        overflow: elide;
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        alignment: start;
+                        if root.nip05 != "" : MetaChip {
+                            glyph: "✓";
+                            text: root.nip05;
+                            tint: Palette.mint;
+                        }
+                        if root.lud16 != "" : MetaChip {
+                            glyph: "⚡";
+                            text: root.lud16;
+                            tint: Palette.mint-dim;
+                        }
+                        if root.nip05 == "" && root.lud16 == "" : Text {
+                            text: root.username == "" ? @tr("no handle yet") : "@" + root.username;
+                            color: Palette.text-lo;
+                            font-size: (12px) * Theme.fs-scale;
+                            font-family: Theme.font;
+                            vertical-alignment: center;
+                        }
+                    }
+                    if root.about != "" : Text {
+                        text: root.about;
+                        color: Palette.text-mid;
+                        font-size: (12px) * Theme.fs-scale;
+                        wrap: word-wrap;
+                        overflow: elide;
+                    }
+                }
+            }
+
+            // ── Status line (errors / publish receipts) ────────────────
+            if root.status != "" : Rectangle {
+                height: 36px;
+                background: Palette.panel;
+                border-radius: (6px) * Theme.r-scale;
+                border-width: 1px;
+                border-color: Palette.border-2;
+                HorizontalLayout {
+                    padding-left: 12px; padding-right: 12px;
+                    Text {
+                        text: root.status;
+                        color: Palette.text-mid;
+                        font-size: (12px) * Theme.fs-scale;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+
+            // ── Identity (always visible — copyable npub) ──────────────
+            Section {
+                label: @tr("IDENTITY");
+                GroupCard {
+                    InfoRow {
+                        label: "npub";
+                        sublabel: @tr("Your public key. Safe to share.");
+                        value: npub;
+                        show-divider: false;
+                        MicroButton {
+                            label: @tr("Copy");
+                            clicked => { root.copy-npub-clicked(); }
+                            CopyIcon {
+                                stroke: Palette.text-mid;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── Edit form OR read-only summary ─────────────────────────
+            if root.editing : Section {
+                label: @tr("EDIT");
+                GroupCard {
+                    FieldRow {
+                        label: @tr("Display name");
+                        placeholder: @tr("How your name appears in chats");
+                        text <=> root.display-name;
+                    }
+                    FieldRow {
+                        label: @tr("Username");
+                        placeholder: @tr("Short handle (no spaces)");
+                        text <=> root.username;
+                    }
+                    FieldRow {
+                        label: @tr("About");
+                        placeholder: @tr("A line or two about you");
+                        single-line: false;
+                        text <=> root.about;
+                    }
+                    PictureField {
+                        text <=> root.picture-url;
+                        uploading: root.uploading;
+                        upload-clicked => { root.upload-picture-clicked(); }
+                    }
+                    FieldRow {
+                        label: "NIP-05";
+                        placeholder: "you@example.com";
+                        text <=> root.nip05;
+                    }
+                    FieldRow {
+                        label: @tr("Lightning address (LUD-16)");
+                        placeholder: "you@walletofsatoshi.com";
+                        text <=> root.lud16;
+                        show-divider: false;
+                    }
+                }
+            }
+
+            if !root.editing : Section {
+                label: @tr("PROFILE");
+                GroupCard {
+                    InfoRow {
+                        label: @tr("Username");
+                        value: root.username == "" ? "—" : "@" + root.username;
+                    }
+                    InfoRow {
+                        label: "NIP-05";
+                        value: root.nip05 == "" ? "—" : root.nip05;
+                    }
+                    InfoRow {
+                        label: @tr("Lightning");
+                        value: root.lud16 == "" ? "—" : root.lud16;
+                    }
+                    InfoRow {
+                        label: @tr("Picture");
+                        value: root.picture-url == "" ? @tr("Not set") : @tr("Set");
+                        show-divider: false;
+                    }
+                }
+            }
+        }
+    }
+}

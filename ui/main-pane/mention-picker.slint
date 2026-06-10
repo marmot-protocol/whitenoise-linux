@@ -1,0 +1,88 @@
+import { Palette, Theme, GroupMember } from "../tokens.slint";
+import { Avatar } from "../primitives/avatar.slint";
+
+// `@`-mention autocomplete popup. Rendered by MainPane just above the composer
+// when the user is typing a mention. The candidate list (already filtered by the
+// query) is built in Rust; this component only renders + reports selection. Rows
+// highlight on hover and on the keyboard-selected index.
+export component MentionPicker inherits Rectangle {
+    in property <[GroupMember]> candidates;
+    // Keyboard-highlighted row (driven by ↑/↓ in the composer).
+    in property <int> selected: 0;
+    // Fired with the row index on click; Enter/Tab commit goes through the
+    // composer's own callback instead.
+    callback choose(int);
+
+    property <length> row-h: 44px;
+    property <int> max-visible: 6;
+    width: 320px;
+    height: min(root.candidates.length * root.row-h, root.row-h * root.max-visible) + 8px;
+
+    background: Palette.panel;
+    border-width: 1px;
+    border-color: Palette.border-2;
+    border-radius: (10px) * Theme.r-scale;
+    drop-shadow-color: Theme.retro ? Palette.shadow : #00000055;
+    drop-shadow-offset-y: Theme.retro ? 2px : 4px;
+    drop-shadow-blur: Theme.retro ? 0px : 16px;
+
+    Flickable {
+        x: 4px;
+        y: 4px;
+        width: parent.width - 8px;
+        height: parent.height - 8px;
+        viewport-height: max(self.height, root.candidates.length * root.row-h);
+        VerticalLayout {
+            spacing: 0;
+            alignment: start;
+            for c[i] in root.candidates : Rectangle {
+                height: root.row-h;
+                border-radius: (6px) * Theme.r-scale;
+                background: i == root.selected
+                    ? Palette.panel-2
+                    : (row-touch.has-hover ? Palette.panel-2 : transparent);
+                animate background { duration: 80ms; }
+                HorizontalLayout {
+                    padding-left: 8px;
+                    padding-right: 8px;
+                    spacing: 10px;
+                    alignment: start;
+                    Avatar {
+                        size: 28px;
+                        initials: c.av-initials;
+                        color-a: c.av-a;
+                        color-b: c.av-b;
+                        picture: c.picture;
+                        has-picture: c.has-picture;
+                        font-size: (Theme.retro ? 13px : 10px) * Theme.fs-scale;
+                        y: (parent.height - self.height) / 2;
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        horizontal-stretch: 1;
+                        spacing: 1px;
+                        Text {
+                            text: c.is-self ? c.name + " " + @tr("(you)") : c.name;
+                            color: Palette.text-hi;
+                            font-size: (12px) * Theme.fs-scale;
+                            font-family: Theme.font;
+                            font-weight: 600;
+                            overflow: elide;
+                        }
+                        Text {
+                            text: c.npub-short;
+                            color: Palette.text-lo;
+                            font-size: (10px) * Theme.fs-scale;
+                            font-family: Theme.font;
+                            overflow: elide;
+                        }
+                    }
+                }
+                row-touch := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => { root.choose(i); }
+                }
+            }
+        }
+    }
+}

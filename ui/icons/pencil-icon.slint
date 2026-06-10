@@ -1,0 +1,13 @@
+import { Palette } from "../tokens.slint";
+
+export component PencilIcon inherits Rectangle {
+    in property <color> stroke: Palette.text-mid;
+    width: 14px; height: 14px;
+    // Diagonal pencil body, stair-stepped (no rotation support on Rectangle).
+    Rectangle { x: 10px; y: 1px; width: 3.5px; height: 3.5px; border-radius: 1px; background: root.stroke; }
+    Rectangle { x: 7.5px; y: 3.5px; width: 3.5px; height: 3.5px; background: root.stroke; }
+    Rectangle { x: 5px; y: 6px; width: 3.5px; height: 3.5px; background: root.stroke; }
+    Rectangle { x: 2.5px; y: 8.5px; width: 3.5px; height: 3.5px; background: root.stroke; }
+    // Nib tip.
+    Rectangle { x: 0.5px; y: 11.5px; width: 2px; height: 2px; background: root.stroke; }
+}

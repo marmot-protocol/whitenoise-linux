@@ -1,0 +1,18 @@
+import { ArchivedChat } from "../tokens.slint";
+import { SidePanel } from "../shells/side-panel.slint";
+import { ArchivedListItem } from "archived-list-item.slint";
+
+export component ArchivedSidebar inherits SidePanel {
+    callback archive-clicked(int);
+    in property <[ArchivedChat]> archives;
+    in property <int> active-archived;
+
+    title: @tr("ARCHIVED");
+    count: root.archives.length;
+
+    for a[idx] in root.archives : ArchivedListItem {
+        data: a;
+        selected: idx == root.active-archived;
+        clicked => { root.archive-clicked(idx); }
+    }
+}

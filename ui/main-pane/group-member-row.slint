@@ -1,0 +1,139 @@
+import { Palette, Theme, GroupMember, ProfileSink } from "../tokens.slint";
+import { Avatar } from "../primitives/avatar.slint";
+import { Pill } from "../primitives/pill.slint";
+
+export component GroupMemberRow inherits Rectangle {
+    in property <GroupMember> data;
+    in property <bool> show-divider: true;
+    callback promote-admin(string);
+    callback demote-admin(string);
+    callback self-demote-admin();
+
+    height: 52px;
+
+    HorizontalLayout {
+        padding-left: 14px; padding-right: 14px;
+        padding-top: 8px; padding-bottom: 8px;
+        spacing: 12px;
+        alignment: stretch;
+
+        TouchArea {
+            width: 36px;
+            height: 36px;
+            mouse-cursor: pointer;
+            clicked => { if (root.data.member-id != "") { ProfileSink.open(root.data.member-id); } }
+            Avatar {
+                size: 36px;
+                y: 0;
+                initials: root.data.av-initials;
+                color-a: root.data.av-a;
+                color-b: root.data.av-b;
+                picture: root.data.picture;
+                has-picture: root.data.has-picture;
+                font-size: (Theme.retro ? 16px : 11px) * Theme.fs-scale;
+            }
+        }
+
+        VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: 2px;
+            alignment: center;
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: stretch;
+                Text {
+                    text: root.data.name;
+                    color: Palette.text-hi;
+                    font-size: (13px) * Theme.fs-scale;
+                    font-weight: 700;
+                    vertical-alignment: center;
+                    horizontal-stretch: 1;
+                    overflow: elide;
+                }
+                if root.data.is-self : Pill {
+                    label: @tr("YOU");
+                    bg-color: Palette.mint;
+                    fg: Palette.bubble-out-fg;
+                    font-size: Theme.retro ? 11px : 10px;
+                }
+                if root.data.is-admin : Pill {
+                    label: @tr("ADMIN");
+                    bg-color: Palette.mint-surface;
+                    fg: Palette.mint;
+                    font-size: Theme.retro ? 11px : 10px;
+                }
+            }
+            Text {
+                text: root.data.npub-short;
+                color: Palette.text-lo;
+                font-size: (10px) * Theme.fs-scale;
+                overflow: elide;
+            }
+        }
+
+        // "Make admin" affordance — only when the viewer is an admin and this
+        // row is a promotable (non-self, non-admin) member.
+        if root.data.can-promote : Rectangle {
+            promote-ta := TouchArea {
+                clicked => { root.promote-admin(root.data.member-id); }
+            }
+            width: badge.preferred-width + 20px;
+            border-radius: (6px) * Theme.r-scale;
+            background: promote-ta.has-hover ? Palette.mint-surface : transparent;
+            border-width: Theme.border-w;
+            border-color: promote-ta.has-hover ? Palette.mint : Palette.border-2;
+            badge := Text {
+                text: @tr("Make admin");
+                color: promote-ta.has-hover ? Palette.mint : Palette.text-mid;
+                font-size: (Theme.retro ? 11px : 10px) * Theme.fs-scale;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+        }
+
+        // "Remove admin" — strip admin from another admin member.
+        if root.data.can-demote : Rectangle {
+            demote-ta := TouchArea {
+                clicked => { root.demote-admin(root.data.member-id); }
+            }
+            width: demote-badge.preferred-width + 20px;
+            border-radius: (6px) * Theme.r-scale;
+            background: demote-ta.has-hover ? #ff5a5a20 : transparent;
+            border-width: Theme.border-w;
+            border-color: demote-ta.has-hover ? #ff5a5a : Palette.border-2;
+            demote-badge := Text {
+                text: @tr("Remove admin");
+                color: demote-ta.has-hover ? #ff5a5a : Palette.text-mid;
+                font-size: (Theme.retro ? 11px : 10px) * Theme.fs-scale;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+        }
+
+        // "Step down" — the viewer relinquishes their own admin rights.
+        if root.data.can-self-demote : Rectangle {
+            self-demote-ta := TouchArea {
+                clicked => { root.self-demote-admin(); }
+            }
+            width: self-demote-badge.preferred-width + 20px;
+            border-radius: (6px) * Theme.r-scale;
+            background: self-demote-ta.has-hover ? #ff5a5a20 : transparent;
+            border-width: Theme.border-w;
+            border-color: self-demote-ta.has-hover ? #ff5a5a : Palette.border-2;
+            self-demote-badge := Text {
+                text: @tr("Step down");
+                color: self-demote-ta.has-hover ? #ff5a5a : Palette.text-mid;
+                font-size: (Theme.retro ? 11px : 10px) * Theme.fs-scale;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+        }
+    }
+
+    if root.show-divider : Rectangle {
+        y: parent.height - 1px;
+        width: parent.width;
+        height: 1px;
+        background: Palette.border-2;
+    }
+}

@@ -1,0 +1,47 @@
+import { Palette, Contact } from "../tokens.slint";
+import { ContactsSidebar } from "contacts-sidebar.slint";
+import { ContactDetail } from "contact-detail.slint";
+import { EmptyState } from "../shells.slint";
+import { PeopleIcon } from "../icons/people-icon.slint";
+
+export component ContactsPage inherits Rectangle {
+    callback contact-clicked(int);
+    callback add-contact-clicked();
+    callback edit-nickname-clicked();
+    in property <[Contact]> contacts;
+    in property <int> active-contact;
+
+    horizontal-stretch: 1;
+    vertical-stretch: 1;
+    preferred-width: 0px;
+    preferred-height: 0px;
+    background: Palette.bg;
+
+    HorizontalLayout {
+        width: parent.width;
+        height: parent.height;
+        spacing: 0;
+
+        ContactsSidebar {
+            contacts: root.contacts;
+            active-contact: root.active-contact;
+            contact-clicked(idx) => { root.contact-clicked(idx); }
+            add-clicked => { root.add-contact-clicked(); }
+        }
+
+        // No contacts → friendly empty state; otherwise the selected detail.
+        if root.contacts.length == 0 : EmptyState {
+            horizontal-stretch: 1;
+            preferred-width: 0px;
+            title: @tr("No contacts yet");
+            description: @tr("People you start chats with will show up here.");
+            PeopleIcon { stroke: Palette.text-mid; }
+        }
+        if root.contacts.length > 0 : ContactDetail {
+            horizontal-stretch: 1;
+            preferred-width: 0px;
+            contact: root.contacts[root.active-contact];
+            edit-nickname => { root.edit-nickname-clicked(); }
+        }
+    }
+}

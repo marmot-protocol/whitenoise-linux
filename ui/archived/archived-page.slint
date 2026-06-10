@@ -1,0 +1,49 @@
+import { Palette, ArchivedChat, GroupMember } from "../tokens.slint";
+import { ArchivedSidebar } from "archived-sidebar.slint";
+import { ArchivedDetail } from "archived-detail.slint";
+import { EmptyState } from "../shells.slint";
+import { ArchiveIcon } from "../icons/archive-icon.slint";
+
+export component ArchivedPage inherits Rectangle {
+    callback archive-clicked(int);
+    callback unarchive-clicked();
+    in property <[ArchivedChat]> archives;
+    in property <int> active-archived;
+    in property <[GroupMember]> members;
+    in property <bool> is-group: false;
+
+    horizontal-stretch: 1;
+    vertical-stretch: 1;
+    preferred-width: 0px;
+    preferred-height: 0px;
+    background: Palette.bg;
+
+    HorizontalLayout {
+        width: parent.width;
+        height: parent.height;
+        spacing: 0;
+
+        ArchivedSidebar {
+            archives: root.archives;
+            active-archived: root.active-archived;
+            archive-clicked(idx) => { root.archive-clicked(idx); }
+        }
+
+        // No archived chats → empty state; otherwise the selected detail.
+        if root.archives.length == 0 : EmptyState {
+            horizontal-stretch: 1;
+            preferred-width: 0px;
+            title: @tr("No archived chats");
+            description: @tr("Chats you archive are kept here, out of your main list.");
+            ArchiveIcon { stroke: Palette.text-mid; }
+        }
+        if root.archives.length > 0 : ArchivedDetail {
+            horizontal-stretch: 1;
+            preferred-width: 0px;
+            data: root.archives[root.active-archived];
+            members: root.members;
+            is-group: root.is-group;
+            unarchive-clicked => { root.unarchive-clicked(); }
+        }
+    }
+}

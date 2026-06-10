@@ -1,0 +1,64 @@
+import { Palette } from "../tokens.slint";
+import { SettingsIcon } from "../icons/settings-icon.slint";
+import { ChevronRightIcon } from "../icons/chevron-right-icon.slint";
+import { DetailPage } from "../shells/detail-page.slint";
+import { PageHeader } from "../shells/page-header.slint";
+import { Section } from "../shells/section.slint";
+import { GroupCard } from "../shells/group-card.slint";
+import { PrefRow } from "pref-row.slint";
+import { Toggle } from "toggle.slint";
+import { MicroButton } from "../primitives/button.slint";
+
+export component GeneralPane inherits DetailPage {
+    in property <string> locale-display;
+    callback change-language-clicked();
+
+    PageHeader {
+        title: @tr("General");
+        caption: "";
+        SettingsIcon { stroke: Palette.mint; }
+    }
+
+    Section {
+        label: @tr("STARTUP");
+        GroupCard {
+            PrefRow {
+                label: @tr("Launch at login");
+                Toggle { on: true; }
+            }
+            PrefRow {
+                label: @tr("Start minimized to tray");
+                Toggle { on: false; }
+            }
+            PrefRow {
+                label: @tr("Restore last selected chat on launch");
+                show-divider: false;
+                Toggle { on: true; }
+            }
+        }
+    }
+
+    Section {
+        label: @tr("LANGUAGE");
+        GroupCard {
+            PrefRow {
+                label: @tr("Interface language");
+                value: root.locale-display;
+                MicroButton {
+                    label: @tr("language picker button" => "Change");
+                    ChevronRightIcon { stroke: Palette.text-mid; }
+                    clicked => { root.change-language-clicked(); }
+                }
+            }
+            PrefRow {
+                label: @tr("Time format");
+                value: "24h";
+            }
+            PrefRow {
+                label: @tr("Date format");
+                value: "ISO  ·  YYYY-MM-DD";
+                show-divider: false;
+            }
+        }
+    }
+}

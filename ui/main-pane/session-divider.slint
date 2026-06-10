@@ -1,0 +1,58 @@
+import { Palette , Theme} from "../tokens.slint";
+
+export component SessionDivider inherits Rectangle {
+    in property <string> label;
+    height: 40px;
+    HorizontalLayout {
+        padding-left: 18px; padding-right: 18px;
+        spacing: 0;
+        alignment: stretch;
+
+        Rectangle {
+            horizontal-stretch: 1;
+            Rectangle {
+                width: parent.width;
+                height: 1px;
+                y: (parent.height - 1px) / 2;
+                background: @linear-gradient(90deg, transparent 0%, Palette.border 100%);
+            }
+        }
+        Rectangle { width: 10px; }
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: center;
+            if !Theme.retro : Rectangle {
+                width: 5px; height: 5px;
+                border-radius: 2.5px;
+                background: Palette.mint-dim;
+                y: (parent.height - self.height) / 2;
+                opacity: 0.7;
+            }
+            Text {
+                text: root.label;
+                color: Palette.text-lo;
+                font-size: (10px) * Theme.fs-scale;
+                font-weight: 600;
+                letter-spacing: 1.4px;
+                vertical-alignment: center;
+            }
+            if !Theme.retro : Rectangle {
+                width: 5px; height: 5px;
+                border-radius: 2.5px;
+                background: Palette.mint-dim;
+                y: (parent.height - self.height) / 2;
+                opacity: 0.7;
+            }
+        }
+        Rectangle { width: 10px; }
+        Rectangle {
+            horizontal-stretch: 1;
+            Rectangle {
+                width: parent.width;
+                height: 1px;
+                y: (parent.height - 1px) / 2;
+                background: @linear-gradient(90deg, Palette.border 0%, transparent 100%);
+            }
+        }
+    }
+}

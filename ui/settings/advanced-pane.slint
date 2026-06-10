@@ -1,0 +1,70 @@
+import { Palette, Theme } from "../tokens.slint";
+import { TerminalIcon } from "../icons/terminal-icon.slint";
+import { DetailPage } from "../shells/detail-page.slint";
+import { PageHeader } from "../shells/page-header.slint";
+import { Section } from "../shells/section.slint";
+import { GroupCard } from "../shells/group-card.slint";
+import { PrefRow } from "pref-row.slint";
+import { Toggle } from "toggle.slint";
+
+export component AdvancedPane inherits DetailPage {
+    in-out property <bool> debug-enabled: false;
+    in-out property <bool> telemetry-enabled: false;
+    in-out property <bool> audit-enabled: false;
+    in property <string> audit-status;
+    callback debug-toggled(bool);
+    callback telemetry-toggled(bool);
+    callback audit-toggled(bool);
+
+    PageHeader {
+        title: @tr("Advanced");
+        caption: @tr("Privacy & developer flags");
+        TerminalIcon { stroke: Palette.text-mid; }
+    }
+
+    Section {
+        label: @tr("SECURITY & PRIVACY");
+        GroupCard {
+            PrefRow {
+                label: @tr("Share anonymous app telemetry");
+                sublabel: @tr("Share relay connection telemetry.");
+                Toggle {
+                    on <=> root.telemetry-enabled;
+                    toggled => { root.telemetry-toggled(self.on); }
+                }
+            }
+            PrefRow {
+                label: @tr("Audit logs");
+                sublabel: @tr("Create and send group audit log files. Takes effect after restart.");
+                show-divider: false;
+                Toggle {
+                    on <=> root.audit-enabled;
+                    toggled => { root.audit-toggled(self.on); }
+                }
+            }
+        }
+
+        if root.audit-status != "" : Text {
+            text: root.audit-status;
+            color: Palette.text-mid;
+            font-family: Theme.font;
+            font-size: 11px * Theme.fs-scale;
+            wrap: word-wrap;
+        }
+    }
+
+    Section {
+        label: @tr("DEVELOPER");
+        GroupCard {
+            PrefRow {
+                label: @tr("Developer mode");
+                sublabel: @tr("Shows diagnostics and MLS internals. Adds a Debug entry with account, key-packages, and group state.");
+                show-divider: false;
+                Toggle {
+                    on <=> root.debug-enabled;
+                    toggled => { root.debug-toggled(self.on); }
+                }
+            }
+        }
+    }
+}

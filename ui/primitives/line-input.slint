@@ -1,0 +1,100 @@
+import { Palette, Theme } from "../tokens.slint";
+
+// text input with overlay placeholder — single-line by default; in multi-line mode
+// the inner TextInput is wrapped in a Flickable so it scrolls once content exceeds
+// the available height, and Enter fires `submit` while Shift+Enter inserts a newline.
+export component LineInput inherits Rectangle {
+    in property <string> placeholder;
+    in-out property <string> text;
+    in property <length> font-size: Theme.retro ? 16px : 13px;
+    in property <int> font-weight: 400;
+    in property <color> fg: Palette.text-hi;
+    in property <color> placeholder-color: Palette.text-vlo;
+    in property <bool> single-line: true;
+    // When true the inner TextInput masks its glyphs (vault password fields).
+    in property <bool> password: false;
+    out property <bool> has-focus: input.has-focus;
+    callback submit;
+    // ── Mention autocomplete hooks ──────────────────────────────────────────
+    // When `capture-nav` is true (the composer's mention picker is open) the
+    // ↑/↓/Enter/Tab/Esc keys drive the picker instead of editing/submitting.
+    in property <bool> capture-nav: false;
+    // Fired on every edit / caret move with the cursor's byte offset, so the
+    // owner can detect the active `@query` token at the caret.
+    callback caret-moved(int);
+    callback nav(int);            // +1 / -1 to move the picker selection
+    callback commit-mention();    // accept the highlighted candidate
+    callback dismiss-mention();   // close the picker
+
+    // Move the caret to `pos` (byte offset) and refocus — used after Rust
+    // splices a chosen mention into the text.
+    public function set-cursor(pos: int) {
+        input.set-selection-offsets(pos, pos);
+        input.focus();
+    }
+
+    preferred-height: root.single-line ? 0px : input.preferred-height;
+    min-height: root.single-line ? 0px : input.font-size * 1.4;
+
+    if root.text == "" : Text {
+        x: 0; y: 0;
+        width: parent.width;
+        height: parent.height;
+        text: root.placeholder;
+        color: root.placeholder-color;
+        font-size: (root.font-size) * Theme.fs-scale;
+        font-family: Theme.font;
+        font-weight: root.font-weight;
+        vertical-alignment: center;
+        horizontal-alignment: left;
+        wrap: root.single-line ? no-wrap : char-wrap;
+    }
+
+    flick := Flickable {
+        x: 0; y: 0;
+        width: parent.width;
+        height: parent.height;
+        viewport-width: self.width;
+        viewport-height: root.single-line ? self.height : max(self.height, input.preferred-height);
+        interactive: false;
+
+        input := TextInput {
+            x: 0; y: 0;
+            width: parent.width;
+            height: max(parent.height, self.preferred-height);
+            text <=> root.text;
+            color: root.fg;
+            font-size: (root.font-size) * Theme.fs-scale;
+            font-family: Theme.font;
+            font-weight: root.font-weight;
+            single-line: root.single-line;
+            input-type: root.password ? InputType.password : InputType.text;
+            wrap: root.single-line ? no-wrap : char-wrap;
+            vertical-alignment: root.single-line || self.preferred-height <= parent.height ? center : top;
+            horizontal-alignment: left;
+            selection-background-color: Palette.mint;
+            selection-foreground-color: Palette.bubble-out-fg;
+
+            edited => { root.caret-moved(self.cursor-position-byte-offset); }
+            cursor-position-changed(p) => { root.caret-moved(self.cursor-position-byte-offset); }
+
+            key-pressed(event) => {
+                // While the mention picker is open, steer it instead of editing.
+                if (root.capture-nav) {
+                    if (event.text == Key.UpArrow) { root.nav(-1); return accept; }
+                    if (event.text == Key.DownArrow) { root.nav(1); return accept; }
+                    if (event.text == Key.Return || event.text == Key.Tab) {
+                        root.commit-mention();
+                        return accept;
+                    }
+                    if (event.text == Key.Escape) { root.dismiss-mention(); return accept; }
+                }
+                if (event.text == Key.Return && !event.modifiers.shift) {
+                    root.submit();
+                    return accept;
+                }
+                return reject;
+            }
+        }
+    }
+}

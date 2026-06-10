@@ -1,0 +1,55 @@
+import { Palette, Theme } from "../tokens.slint";
+
+export component AccentPicker inherits Rectangle {
+    in-out property <int> selected: 0;
+    callback accent-selected(int);
+
+    property <[color]> swatches-dark: [
+        #72F0B0,
+        #4AA8FF,
+        #FF6B9D,
+        #FF8C42,
+        #B8A1E6,
+    ];
+    property <[color]> swatches-light: [
+        #16855F,
+        #0D5AA0,
+        #C73E6E,
+        #C45C1A,
+        #7B5FB0,
+    ];
+    property <[color]> swatches-retro: [
+        #FFD93D,
+        #6B8CFF,
+        #FF6B9D,
+        #FF8C42,
+        #C9A0DC,
+    ];
+
+    property <[color]> swatches: Theme.retro
+        ? swatches-retro
+        : (Theme.light ? swatches-light : swatches-dark);
+
+    height: 32px;
+
+    HorizontalLayout {
+        spacing: 8px;
+        alignment: start;
+
+        for color[idx] in root.swatches: Rectangle {
+            width: 24px; height: 24px;
+            border-radius: (12px) * Theme.r-scale;
+            background: color;
+            border-width: root.selected == idx ? 2px : 0px;
+            border-color: Palette.text-hi;
+            animate border-width { duration: 100ms; }
+
+            TouchArea {
+                clicked => {
+                    root.selected = idx;
+                    root.accent-selected(idx);
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,62 @@
+[package]
+name = "darkmatter-linux"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+slint = "1.8"
+nostr = { version = "0.44.2", default-features = false, features = [
+  "std",
+  "nip59",
+] }
+# Password-encrypted secret vault (replaces libsecret/pass). Argon2id derives a
+# 32-byte key from the user's password; XChaCha20-Poly1305 seals the secret DB.
+argon2 = "0.5"
+chacha20poly1305 = "0.10"
+zeroize = { version = "1", features = ["derive"] }
+getrandom = "0.2"
+tokio = { version = "1", features = [
+  "sync",
+  "macros",
+  "rt",
+  "rt-multi-thread",
+  "time",
+] }
+hex = "0.4"
+sha2 = "0.10"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.9"
+anyhow = "1"
+arboard = "3"
+directories = "5"
+emojis = "0.6"
+image = { version = "0.25", default-features = false, features = [
+  "png",
+  "jpeg",
+  "webp",
+  "gif",
+] }
+reqwest = { version = "0.12", default-features = false, features = [
+  "rustls-tls",
+] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+rfd = { version = "0.15", default-features = false, features = [
+  "xdg-portal",
+  "async-std",
+] }
+mime_guess = "2"
+whitenoise-markdown = { git = "https://github.com/marmot-protocol/whitenoise-rs" }
+marmot-app = { git = "ssh://git@github.com/marmot-protocol/darkmatter.git", branch = "master" }
+marmot-account = { git = "ssh://git@github.com/marmot-protocol/darkmatter.git", branch = "master" }
+cgka-traits = { git = "ssh://git@github.com/marmot-protocol/darkmatter.git", branch = "master" }
+
+[build-dependencies]
+slint-build = "1.8"
+# build.rs uses these to compose the Twemoji sprite sheet at compile time.
+twemoji-assets = { version = "1.5", default-features = false, features = [
+  "png",
+] }
+image = { version = "0.25", default-features = false, features = ["png"] }
+emojis = "0.6"

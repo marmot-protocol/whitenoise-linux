@@ -1,0 +1,55 @@
+import { Palette, Theme } from "../tokens.slint";
+
+export component UnreadBadge inherits Rectangle {
+    in property <string> count;
+    // Free-running clock used for the attention pulse.
+    property <duration> tick: animation-tick();
+    // ~1800ms cycle: smooth sine in normal, square-ish blink in retro.
+    property <float> phase-sin: 0.5 + 0.5 * sin(self.tick / 1ms * 0.2deg);
+    property <float> phase-blink: mod(self.tick / 1ms, 900) < 450 ? 1.0 : 0.55;
+    property <float> pulse: Theme.retro ? self.phase-blink : (0.78 + self.phase-sin * 0.22);
+
+    width: self.preferred-width;
+    height: 20px;
+    background: Palette.mint;
+    border-radius: (10px) * Theme.r-scale;
+    opacity: root.pulse;
+
+    // Soft halo ring in normal mode that breathes with the pulse.
+    if !Theme.retro : Rectangle {
+        x: -3px; y: -3px;
+        width: parent.width + 6px;
+        height: parent.height + 6px;
+        border-radius: (13px) * Theme.r-scale;
+        border-width: 1.5px;
+        border-color: Palette.mint;
+        opacity: (1 - root.phase-sin) * 0.45;
+    }
+
+    HorizontalLayout {
+        padding-left: 8px; padding-right: 8px;
+        alignment: center;
+        Text {
+            text: root.count;
+            color: Palette.bg;
+            font-size: (10px) * Theme.fs-scale;
+            font-weight: 700;
+            font-family: Theme.font;
+            vertical-alignment: center;
+        }
+    }
+}
+
+// Tiny activity dot for rail icons — no count, just a 6px accent pulse.
+export component MiniBadge inherits Rectangle {
+    // Free-running clock used for the attention pulse.
+    property <duration> tick: animation-tick();
+    property <float> phase-sin: 0.5 + 0.5 * sin(self.tick / 1ms * 0.2deg);
+    property <float> phase-blink: mod(self.tick / 1ms, 900) < 450 ? 1.0 : 0.55;
+    property <float> pulse: Theme.retro ? self.phase-blink : (0.78 + self.phase-sin * 0.22);
+
+    width: 6px; height: 6px;
+    border-radius: (3px) * Theme.r-scale;
+    background: Palette.mint;
+    opacity: root.pulse;
+}

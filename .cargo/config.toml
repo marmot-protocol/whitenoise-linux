@@ -1,0 +1,4 @@
+# darkmatter is a private repo fetched over ssh; cargo's built-in libgit2
+# fetch can't use the user's ssh config/agent reliably, the git CLI can.
+[net]
+git-fetch-with-cli = true

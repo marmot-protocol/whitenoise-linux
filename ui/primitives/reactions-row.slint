@@ -1,0 +1,154 @@
+import { Palette, Theme, Reaction } from "../tokens.slint";
+
+// A single emoji + count chip. `mine` controls the highlight style.
+component ReactionChip inherits Rectangle {
+    in property <string> emoji;
+    in property <int> count;
+    in property <bool> mine: false;
+    callback clicked();
+
+    height: 22px;
+    min-width: 36px;
+    border-radius: (11px) * Theme.r-scale;
+    border-width: 1px;
+    border-color: root.mine ? Palette.mint : (touch.has-hover ? Palette.mint-dim : Palette.border-2);
+    background: root.mine ? Palette.mint-surface : (touch.has-hover ? Palette.panel-2 : Palette.panel);
+    horizontal-stretch: 0;
+    // Pop-in: when a new chip appears (optimistic add, or relay echo), it
+    // fades in. Colors animate too so toggling `mine` glides between states.
+    property <float> enter: 0;
+    init => { self.enter = 1; }
+    animate enter { duration: 160ms; easing: ease-out; }
+    opacity: root.enter;
+    animate background, border-color { duration: 140ms; easing: ease-out; }
+
+    HorizontalLayout {
+        padding-left: 8px; padding-right: 8px;
+        spacing: 4px;
+        alignment: center;
+        Text {
+            text: root.emoji;
+            font-size: (12px) * Theme.fs-scale;
+            vertical-alignment: center;
+        }
+        if root.count > 1 : Text {
+            text: root.count;
+            color: root.mine ? Palette.text-hi : Palette.text-mid;
+            font-size: (11px) * Theme.fs-scale;
+            font-weight: 600;
+            vertical-alignment: center;
+        }
+    }
+
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+// In-flow row of reaction chips, rendered directly under a bubble (only when
+// the message actually has reactions, so empty messages stay tight). Tapping a
+// chip toggles my reaction on/off.
+export component ReactionChips inherits HorizontalLayout {
+    in property <string> message-id;
+    in property <[Reaction]> reactions;
+    in property <bool> align-right: false;
+    callback react(string, string);
+    callback unreact(string);
+
+    spacing: 6px;
+    alignment: root.align-right ? end : start;
+
+    for r in root.reactions : ReactionChip {
+        emoji: r.emoji;
+        count: r.count;
+        mine: r.mine;
+        clicked => {
+            if (r.mine) {
+                root.unreact(root.message-id);
+            } else {
+                root.react(root.message-id, r.emoji);
+            }
+        }
+    }
+}
+
+// One round icon button inside the floating toolbar.
+component ActionButton inherits Rectangle {
+    in property <string> glyph;
+    // When false the button collapses to nothing — used to keep the edit
+    // button in the tree (so its id stays referenceable) while hiding it for
+    // non-authors.
+    in property <bool> shown: true;
+    callback clicked();
+    out property <bool> hovered: touch.has-hover;
+
+    visible: root.shown;
+    width: root.shown ? 28px : 0px;
+    height: 28px;
+    border-radius: (8px) * Theme.r-scale;
+    background: touch.has-hover ? Palette.hover : transparent;
+    animate background { duration: 100ms; }
+    Text {
+        text: root.glyph;
+        color: touch.has-hover ? Palette.text-hi : Palette.text-mid;
+        font-size: (13px) * Theme.fs-scale;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Floating action toolbar — react / reply / (author-only) edit. Positioned by
+// the row to the side of the bubble and shown on hover. It's a self-contained
+// card so it reads as a hovering control rather than chrome baked into the row.
+// `hovered` is the union of all button hovers so the row can keep it open while
+// the pointer is on a button (which steals hover from the bubble sensor).
+export component HoverActions inherits Rectangle {
+    in property <string> message-id;
+    in property <string> reply-preview-text;
+    in property <string> reply-author;
+    in property <bool> can-edit: false;
+    callback request-picker(string, length, length);
+    callback request-reply(string, string, string);
+    callback request-edit(string, string);
+    out property <bool> hovered: plus-btn.hovered || reply-btn.hovered || edit-btn.hovered;
+
+    width: bar.preferred-width;
+    height: bar.preferred-height;
+    border-radius: (10px) * Theme.r-scale;
+    background: Palette.elevated;
+    border-width: Theme.retro ? Theme.border-w : 1px;
+    border-color: Palette.elevated-border;
+    drop-shadow-color: Theme.retro ? Palette.shadow : #00000040;
+    drop-shadow-offset-y: Theme.retro ? 2px : 2px;
+    drop-shadow-blur: Theme.retro ? 0px : 10px;
+
+    bar := HorizontalLayout {
+        padding: 3px;
+        spacing: 2px;
+        plus-btn := ActionButton {
+            glyph: "☺";
+            clicked => {
+                root.request-picker(
+                    root.message-id,
+                    self.absolute-position.x,
+                    self.absolute-position.y + self.height,
+                );
+            }
+        }
+        reply-btn := ActionButton {
+            glyph: "↩";
+            clicked => {
+                root.request-reply(root.message-id, root.reply-preview-text, root.reply-author);
+            }
+        }
+        edit-btn := ActionButton {
+            glyph: "✎";
+            shown: root.can-edit;
+            clicked => {
+                root.request-edit(root.message-id, root.reply-preview-text);
+            }
+        }
+    }
+}

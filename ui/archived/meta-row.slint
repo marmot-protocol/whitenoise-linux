@@ -1,0 +1,42 @@
+import { Palette, Theme } from "../tokens.slint";
+
+export component MetaRow inherits Rectangle {
+    in property <string> label;
+    in property <string> value;
+    in property <bool> show-divider: true;
+    in property <string> sublabel;
+
+    height: 56px;
+    HorizontalLayout {
+        padding-left: 16px; padding-right: 16px;
+        padding-top: 10px; padding-bottom: 10px;
+        VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: 4px;
+            alignment: center;
+            Text { text: root.label; color: Palette.text-hi; font-size: (12px) * Theme.fs-scale; font-weight: 700; }
+            if root.sublabel != "" : Text {
+                text: root.sublabel;
+                color: Palette.text-lo;
+                font-size: (11px) * Theme.fs-scale;
+                font-family: Theme.font;
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            Text {
+                text: root.value;
+                color: Palette.text-hi;
+                font-size: (12px) * Theme.fs-scale;
+                font-family: Theme.font;
+                vertical-alignment: center;
+            }
+        }
+    }
+    if root.show-divider : Rectangle {
+        y: parent.height - 1px;
+        width: parent.width;
+        height: 1px;
+        background: Palette.border-2;
+    }
+}

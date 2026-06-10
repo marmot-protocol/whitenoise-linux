@@ -1,0 +1,29 @@
+import { Palette, Theme } from "../tokens.slint";
+import { LockIcon } from "../icons/lock-icon.slint";
+
+export component Pill inherits Rectangle {
+    in property <string> label;
+    in property <color> fg: Palette.bg;
+    in property <color> bg-color: Palette.mint;
+    in property <length> font-size: 10px;
+    in property <bool> has-lock: false;
+    height: 20px;
+    background: root.bg-color;
+    border-radius: (4px) * Theme.r-scale;
+    HorizontalLayout {
+        alignment: center;
+        padding-left: 7px; padding-right: 8px;
+        spacing: 5px;
+        if root.has-lock : LockIcon {
+            stroke: root.fg;
+        }
+        Text {
+            text: root.label;
+            color: root.fg;
+            font-size: (root.font-size) * Theme.fs-scale;
+            font-weight: 700;
+            font-family: Theme.font;
+            vertical-alignment: center;
+        }
+    }
+}

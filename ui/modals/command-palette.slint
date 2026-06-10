@@ -1,0 +1,302 @@
+import { Palette, Theme } from "../tokens.slint";
+import { SearchIcon } from "../icons/search-icon.slint";
+import { LineInput } from "../primitives/line-input.slint";
+import { Modal } from "modal.slint";
+
+// A single row in the palette. Rust supplies the array, filtering & selection logic.
+export struct PaletteAction {
+    id: string,
+    label: string,
+    group: string,
+    kbd: string,
+}
+
+export component CommandPalette inherits Modal {
+    callback execute(string);          // id of triggered action
+    callback query-changed(string);    // Rust filters the action list
+
+    in property <[PaletteAction]> actions;
+    in-out property <string> query;
+    in-out property <int> selected: 0;
+
+    // Top-anchored frameless card: the palette brings its own search header,
+    // list, and hint strip, plus a FocusScope that owns the keyboard.
+    card-width: min(560px, root.width - 64px);
+    v-pos: 0.16;
+    title: "";
+    show-close: false;
+    content-padding: 0px;
+    grab-focus: false;
+
+    // Key handling — Esc dismiss, arrows navigate, Enter execute. Wraps the
+    // content so rejected keys from the search input bubble up to it.
+    focus-scope := FocusScope {
+        init => { self.focus(); }
+        key-pressed(event) => {
+            if (event.text == Key.Escape) {
+                root.dismissed();
+                return accept;
+            }
+            if (event.text == Key.UpArrow) {
+                if (root.actions.length > 0) {
+                    root.selected = root.selected == 0
+                        ? root.actions.length - 1
+                        : root.selected - 1;
+                }
+                return accept;
+            }
+            if (event.text == Key.DownArrow) {
+                if (root.actions.length > 0) {
+                    root.selected = mod(root.selected + 1, root.actions.length);
+                }
+                return accept;
+            }
+            if (event.text == Key.Return) {
+                if (root.actions.length > 0) {
+                    root.execute(root.actions[root.selected].id);
+                    root.dismissed();
+                }
+                return accept;
+            }
+            return reject;
+        }
+
+        VerticalLayout {
+            spacing: 0;
+
+            // ── Search row ─────────────────────────────────────────────
+            Rectangle {
+                height: 52px;
+                background: transparent;
+                HorizontalLayout {
+                    padding-left: 18px; padding-right: 18px;
+                    spacing: 12px;
+                    alignment: stretch;
+                    VerticalLayout {
+                        alignment: center;
+                        SearchIcon { size: 16px; stroke: Palette.text-mid; }
+                    }
+                    LineInput {
+                        placeholder: @tr("Type a command…");
+                        text <=> root.query;
+                        font-size: Theme.retro ? 16px : 14px;
+                        fg: Palette.text-hi;
+                        placeholder-color: Palette.text-vlo;
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        Rectangle {
+                            height: 22px;
+                            min-width: kbd-text.preferred-width + 14px;
+                            border-radius: (4px) * Theme.r-scale;
+                            border-width: Theme.border-w;
+                            border-color: Palette.border-2;
+                            background: Palette.panel-2;
+                            kbd-text := Text {
+                                text: "Ctrl K";
+                                color: Palette.text-mid;
+                                font-size: (10px) * Theme.fs-scale;
+                                font-weight: 700;
+                                font-family: Theme.font;
+                                vertical-alignment: center;
+                                horizontal-alignment: center;
+                                x: 7px; y: 0;
+                                width: parent.width - 14px;
+                                height: parent.height;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── Divider ─────────────────────────────────────────────────
+            Rectangle {
+                height: Theme.retro ? Theme.border-w : 1px;
+                background: Theme.retro ? Palette.border : Palette.divider;
+            }
+
+            // ── Action list ─────────────────────────────────────────────
+            Rectangle {
+                height: min(380px, list-layout.preferred-height + 8px);
+                clip: true;
+                list-layout := VerticalLayout {
+                    padding-top: 6px; padding-bottom: 6px;
+                    spacing: 0;
+                    for action[i] in root.actions : Rectangle {
+                        height: row-stack.preferred-height;
+                        row-stack := VerticalLayout {
+                            spacing: 0;
+                            // Group header — only when this row's group differs from the previous row's.
+                            if i == 0 || root.actions[i - 1].group != action.group : Rectangle {
+                                height: 24px;
+                                HorizontalLayout {
+                                    padding-left: 18px; padding-right: 18px;
+                                    padding-top: 8px;
+                                    Text {
+                                        text: action.group;
+                                        color: Palette.text-vlo;
+                                        font-size: (9px) * Theme.fs-scale;
+                                        font-weight: 700;
+                                        letter-spacing: 1.4px;
+                                        font-family: Theme.font;
+                                    }
+                                }
+                            }
+                            // Row body.
+                            Rectangle {
+                                height: 36px;
+                                background: i == root.selected
+                                    ? (Theme.retro ? Palette.selected : Palette.bubble-in)
+                                    : (row-touch.has-hover ? Palette.hover : transparent);
+                                border-radius: (5px) * Theme.r-scale;
+                                animate background { duration: 90ms; easing: ease-out; }
+
+                                // Mint accent bar on selected row (normal mode).
+                                if !Theme.retro : Rectangle {
+                                    x: 8px;
+                                    width: 2px;
+                                    y: (parent.height - self.height) / 2;
+                                    height: i == root.selected ? 18px : 0px;
+                                    background: Palette.mint;
+                                    border-radius: 1px;
+                                    animate height { duration: 160ms; easing: ease-in-out; }
+                                }
+                                // Retro selection chevron.
+                                if Theme.retro && i == root.selected : Text {
+                                    x: 6px;
+                                    y: (parent.height - self.height) / 2;
+                                    text: "▶";
+                                    color: Palette.bubble-out-fg;
+                                    font-size: 12px;
+                                    font-family: Theme.font;
+                                    vertical-alignment: center;
+                                }
+
+                                HorizontalLayout {
+                                    padding-left: 22px; padding-right: 18px;
+                                    spacing: 12px;
+                                    alignment: stretch;
+                                    Text {
+                                        text: action.label;
+                                        color: Theme.retro && i == root.selected
+                                            ? Palette.bubble-out-fg
+                                            : Palette.text-hi;
+                                        font-size: (Theme.retro ? 13px : 12px) * Theme.fs-scale;
+                                        font-weight: i == root.selected ? 700 : 500;
+                                        font-family: Theme.font;
+                                        vertical-alignment: center;
+                                        horizontal-stretch: 1;
+                                    }
+                                    if action.kbd != "" : Rectangle {
+                                        height: 20px;
+                                        min-width: kbd-pill-text.preferred-width + 12px;
+                                        border-radius: (4px) * Theme.r-scale;
+                                        border-width: Theme.border-w;
+                                        border-color: Palette.border-2;
+                                        background: i == root.selected && !Theme.retro
+                                            ? Palette.panel
+                                            : Palette.panel-2;
+                                        y: (parent.height - self.height) / 2;
+                                        kbd-pill-text := Text {
+                                            text: action.kbd;
+                                            color: Palette.text-mid;
+                                            font-size: (9px) * Theme.fs-scale;
+                                            font-weight: 700;
+                                            font-family: Theme.font;
+                                            x: 6px; y: 0;
+                                            width: parent.width - 12px;
+                                            height: parent.height;
+                                            vertical-alignment: center;
+                                            horizontal-alignment: center;
+                                        }
+                                    }
+                                }
+
+                                row-touch := TouchArea {
+                                    clicked => {
+                                        root.selected = i;
+                                        root.execute(action.id);
+                                        root.dismissed();
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if root.actions.length == 0 : Rectangle {
+                        height: 60px;
+                        Text {
+                            text: @tr("No matches");
+                            color: Palette.text-lo;
+                            font-size: (12px) * Theme.fs-scale;
+                            font-family: Theme.font;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                            width: parent.width;
+                            height: parent.height;
+                        }
+                    }
+                }
+            }
+
+            // ── Footer hint strip ───────────────────────────────────────
+            Rectangle {
+                height: Theme.retro ? Theme.border-w : 1px;
+                background: Theme.retro ? Palette.border : Palette.divider;
+            }
+            Rectangle {
+                height: 28px;
+                background: Theme.retro ? Palette.rail : Palette.field;
+                HorizontalLayout {
+                    padding-left: 16px; padding-right: 16px;
+                    spacing: 16px;
+                    alignment: start;
+                    VerticalLayout {
+                        alignment: center;
+                        Text {
+                            text: "↑↓ Navigate";
+                            color: Palette.text-vlo;
+                            font-size: (9px) * Theme.fs-scale;
+                            font-weight: 700;
+                            letter-spacing: 1.0px;
+                            font-family: Theme.font;
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        Text {
+                            text: "⏎ Select";
+                            color: Palette.text-vlo;
+                            font-size: (9px) * Theme.fs-scale;
+                            font-weight: 700;
+                            letter-spacing: 1.0px;
+                            font-family: Theme.font;
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        Text {
+                            text: "Esc Close";
+                            color: Palette.text-vlo;
+                            font-size: (9px) * Theme.fs-scale;
+                            font-weight: 700;
+                            letter-spacing: 1.0px;
+                            font-family: Theme.font;
+                        }
+                    }
+                    Rectangle { horizontal-stretch: 1; }
+                }
+            }
+        }
+    }
+
+    // When the query changes, tell Rust so it can refilter & reset selection.
+    property <string> last-query: "";
+    changed query => {
+        if (root.query != root.last-query) {
+            root.last-query = root.query;
+            root.selected = 0;
+            root.query-changed(root.query);
+        }
+    }
+}

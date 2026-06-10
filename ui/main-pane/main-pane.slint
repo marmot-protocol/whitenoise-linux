@@ -1,0 +1,188 @@
+import { Palette, ChatMeta, ChatMessage, GroupMember } from "../tokens.slint";
+import { MessagesArea } from "../messages.slint";
+import { ChatHeader } from "chat-header.slint";
+import { EncryptionBanner } from "encryption-banner.slint";
+import { ChatRequestBanner } from "chat-request-banner.slint";
+import { SessionDivider } from "session-divider.slint";
+import { Composer } from "composer.slint";
+import { MentionPicker } from "mention-picker.slint";
+import { GroupMembersPanel } from "group-members-panel.slint";
+
+export component MainPane inherits Rectangle {
+    in property <ChatMeta> chat;
+    in property <int> active-chat;
+    in property <bool> is-group: false;
+    in property <bool> can-show-members: false;
+    in property <int> member-count: 0;
+    in property <[GroupMember]> members;
+    in property <bool> can-add-members: false;
+    in property <bool> add-member-busy: false;
+    in property <string> add-member-status;
+    in-out property <string> add-member-draft;
+    callback add-member(string);
+    callback promote-admin(string);
+    callback demote-admin(string);
+    callback self-demote-admin();
+    in property <image> group-picture;
+    in property <bool> group-has-picture: false;
+    in property <color> group-av-a;
+    in property <color> group-av-b;
+    in property <string> group-av-initials;
+    in property <bool> group-rename-busy: false;
+    in property <bool> group-image-busy: false;
+    in property <string> group-status;
+    in-out property <string> group-rename-draft;
+    callback rename-group(string);
+    callback change-group-image();
+    callback clear-group-image();
+    in-out property <bool> show-members: false;
+    in property <bool> outgoing-on-right: true;
+    in property <image> my-picture;
+    in property <bool> my-has-picture: false;
+    in property <[ChatMessage]> messages;
+    in property <int> scroll-tick: 0;
+    in-out property <string> draft <=> composer.draft;
+    in property <string> reply-target-id;
+    in property <string> reply-target-author;
+    in property <string> reply-target-preview;
+    in property <string> editing-message-id;
+    // Mention autocomplete.
+    in property <bool> mention-active: false;
+    in property <[GroupMember]> mention-candidates;
+    in property <int> mention-selected: 0;
+    callback caret-moved(int);
+    callback mention-nav(int);
+    callback mention-commit();
+    callback mention-choose(int);
+    callback mention-dismiss();
+    // Caret restore after a mention splice — bumping `caret-tick` re-applies
+    // `caret-pos` even when the offset is unchanged.
+    in property <int> caret-pos: 0;
+    in property <int> caret-tick: 0;
+    changed caret-tick => { composer.set-cursor(self.caret-pos); }
+    callback send-clicked();
+    callback cancel-reply();
+    callback cancel-edit();
+    callback attach-clicked();
+    callback emoji-clicked(length, length);
+    callback attachment-clicked(string);
+    callback react(string, string);
+    callback unreact(string);
+    callback request-picker(string, length, length);
+    callback request-reply(string, string, string);
+    callback request-edit(string, string);
+    callback request-context-menu(string, string, string, bool, length, length);
+    callback show-history(string);
+    callback retry(string);
+    callback accept-clicked();
+    callback block-clicked();
+    callback archive-clicked();
+    callback members-toggle-clicked();
+
+    horizontal-stretch: 1;
+    background: Palette.bg;
+
+    HorizontalLayout {
+        spacing: 0;
+        vertical-stretch: 1;
+
+        VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: 0;
+
+            ChatHeader {
+                chat: root.chat;
+                is-group: root.is-group;
+                group-picture: root.group-picture;
+                group-has-picture: root.group-has-picture;
+                can-show-members: root.can-show-members;
+                member-count: root.member-count;
+                members-open: root.show-members;
+                accept-clicked => { root.accept-clicked(); }
+                block-clicked => { root.block-clicked(); }
+                archive-clicked => { root.archive-clicked(); }
+                members-toggle-clicked => { root.members-toggle-clicked(); }
+            }
+
+            if root.chat.is-chat-request : ChatRequestBanner { }
+            if !root.chat.is-chat-request : EncryptionBanner { npub: root.chat.npub; }
+
+            SessionDivider {
+                label: root.chat.is-chat-request
+                    ? @tr("CHAT REQUEST") + " · " + root.chat.session-time
+                    : "MLS · " + @tr("SESSION ESTABLISHED") + " · " + root.chat.session-time;
+            }
+            MessagesArea {
+                vertical-stretch: 1;
+                messages: root.messages;
+                scroll-tick: root.scroll-tick;
+                available-w: parent.width;
+                outgoing-on-right: root.outgoing-on-right;
+                my-picture: root.my-picture;
+                my-has-picture: root.my-has-picture;
+                react(id, emoji) => { root.react(id, emoji); }
+                unreact(id) => { root.unreact(id); }
+                request-picker(id, ax, ay) => { root.request-picker(id, ax, ay); }
+                request-reply(id, preview, author) => { root.request-reply(id, preview, author); }
+                request-edit(id, current) => { root.request-edit(id, current); }
+                request-context-menu(id, text, author, can-edit, ax, ay) => { root.request-context-menu(id, text, author, can-edit, ax, ay); }
+                show-history(id) => { root.show-history(id); }
+                retry(id) => { root.retry(id); }
+                attachment-clicked(id) => { root.attachment-clicked(id); }
+            }
+            composer := Composer {
+                reply-target-id: root.reply-target-id;
+                reply-target-author: root.reply-target-author;
+                reply-target-preview: root.reply-target-preview;
+                editing-message-id: root.editing-message-id;
+                mention-active: root.mention-active;
+                send-clicked => { root.send-clicked(); }
+                cancel-reply => { root.cancel-reply(); }
+                cancel-edit => { root.cancel-edit(); }
+                attach-clicked => { root.attach-clicked(); }
+                emoji-clicked(ax, ay) => { root.emoji-clicked(ax, ay); }
+                caret-moved(c) => { root.caret-moved(c); }
+                mention-nav(d) => { root.mention-nav(d); }
+                mention-commit => { root.mention-commit(); }
+                mention-dismiss => { root.mention-dismiss(); }
+            }
+        }
+
+        if root.can-show-members && root.show-members : GroupMembersPanel {
+            members: root.members;
+            member-count: root.member-count;
+            can-add-members: root.can-add-members;
+            add-busy: root.add-member-busy;
+            add-status: root.add-member-status;
+            add-draft <=> root.add-member-draft;
+            group-picture: root.group-picture;
+            group-has-picture: root.group-has-picture;
+            group-av-a: root.group-av-a;
+            group-av-b: root.group-av-b;
+            group-av-initials: root.group-av-initials;
+            rename-busy: root.group-rename-busy;
+            image-busy: root.group-image-busy;
+            group-status: root.group-status;
+            rename-draft <=> root.group-rename-draft;
+            close-clicked => { root.members-toggle-clicked(); }
+            add-member(npub) => { root.add-member(npub); }
+            promote-admin(id) => { root.promote-admin(id); }
+            demote-admin(id) => { root.demote-admin(id); }
+            self-demote-admin => { root.self-demote-admin(); }
+            rename-group(name) => { root.rename-group(name); }
+            change-image => { root.change-group-image(); }
+            clear-image => { root.clear-group-image(); }
+        }
+    }
+
+    // Mention autocomplete popup, floated just above the composer's text field.
+    // A direct child of the root Rectangle (not the layout) so it can be
+    // free-positioned and overlay the messages area.
+    if root.mention-active && root.mention-candidates.length > 0 : MentionPicker {
+        candidates: root.mention-candidates;
+        selected: root.mention-selected;
+        x: composer.absolute-position.x - root.absolute-position.x + 46px;
+        y: composer.absolute-position.y - root.absolute-position.y - self.height - 2px;
+        choose(i) => { root.mention-choose(i); }
+    }
+}

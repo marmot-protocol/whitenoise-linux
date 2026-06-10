@@ -1,0 +1,26 @@
+import { Modal, ModalField } from "modal.slint";
+
+export component NicknameModal inherits Modal {
+    // save(nickname) — Rust trims it and stores it locally (settings.json);
+    // an empty string clears the nickname and reverts to the published name.
+    callback save(string);
+    in-out property <string> nickname-text;
+    // The contact's published name, shown in the subtitle and as the
+    // input placeholder so "empty = revert" is self-explanatory.
+    in property <string> contact-name;
+
+    card-width: 460px;
+    title: @tr("Nickname");
+    subtitle: @tr("A private name for {}. Only you see it — leave empty to use their published name.", root.contact-name);
+    secondary-label: @tr("Cancel");
+    primary-label: @tr("Save");
+    primary => { root.save(root.nickname-text); }
+
+    ModalField {
+        label: @tr("NICKNAME");
+        placeholder: root.contact-name;
+        text <=> root.nickname-text;
+        autofocus: true;
+        submitted => { root.save(root.nickname-text); }
+    }
+}

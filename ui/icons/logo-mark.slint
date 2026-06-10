@@ -1,0 +1,13 @@
+export component LogoMark {
+    in property <length> size: 14px;
+    in property <color> color;
+    width: root.size;
+    height: root.size;
+    Image {
+        source: @image-url("../../assets/svg/logo.svg");
+        width: root.size;
+        height: root.size;
+        image-fit: contain;
+        colorize: root.color;
+    }
+}

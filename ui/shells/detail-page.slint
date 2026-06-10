@@ -1,0 +1,14 @@
+import { Palette } from "../tokens.slint";
+
+export component DetailPage inherits Rectangle {
+    horizontal-stretch: 1;
+    background: Palette.bg;
+
+    VerticalLayout {
+        padding-left: 28px; padding-right: 28px;
+        padding-top: 16px; padding-bottom: 16px;
+        spacing: 20px;
+        @children
+        Rectangle { vertical-stretch: 1; }
+    }
+}

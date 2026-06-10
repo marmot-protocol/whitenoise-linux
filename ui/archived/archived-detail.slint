@@ -1,0 +1,119 @@
+import { Palette, ArchivedChat, GroupMember, Theme } from "../tokens.slint";
+import { ArchiveIcon } from "../icons/archive-icon.slint";
+import { UnarchiveIcon } from "../icons/unarchive-icon.slint";
+import { TrashIcon } from "../icons/trash-icon.slint";
+import { DetailPage } from "../shells/detail-page.slint";
+import { PageHeader } from "../shells/page-header.slint";
+import { Section } from "../shells/section.slint";
+import { GroupCard } from "../shells/group-card.slint";
+import { MetaRow } from "meta-row.slint";
+import { Button } from "../primitives/button.slint";
+import { GroupMemberRow } from "../main-pane/group-member-row.slint";
+
+export component ArchivedDetail inherits DetailPage {
+    in property <ArchivedChat> data;
+    in property <[GroupMember]> members;
+    in property <bool> is-group: false;
+    callback unarchive-clicked();
+
+    HorizontalLayout {
+        height: 56px;
+        spacing: 10px;
+        alignment: stretch;
+
+        PageHeader {
+            horizontal-stretch: 1;
+            title: root.data.name;
+            caption: @tr("ARCHIVED  ·  {} MEMBERS  ·  {}", root.data.members, root.data.group-id);
+            ArchiveIcon { stroke: Palette.text-mid; }
+        }
+
+        Button {
+            label: @tr("Unarchive");
+            button-height: 36px;
+            y: (parent.height - self.height) / 2;
+            clicked => { root.unarchive-clicked(); }
+            UnarchiveIcon { stroke: Palette.text-mid; }
+        }
+        Button {
+            label: @tr("Delete");
+            button-height: 36px;
+            fg: #FCA5A5;
+            bg-color: #2A1418;
+            hover-bg: #3A1A20;
+            outline: #5A2429;
+            hover-outline: #7A2E36;
+            y: (parent.height - self.height) / 2;
+            TrashIcon { stroke: #FCA5A5; }
+        }
+    }
+
+    Rectangle {
+        height: 72px;
+        background: Palette.banner;
+        border-radius: (8px) * Theme.r-scale;
+        border-width: 1px;
+        border-color: Palette.border-2;
+        Rectangle {
+            x: 0; y: 0;
+            width: 3px; height: parent.height;
+            background: Palette.mint-dim;
+        }
+        HorizontalLayout {
+            padding-left: 18px; padding-right: 18px;
+            padding-top: 12px; padding-bottom: 12px;
+            spacing: 12px;
+            alignment: start;
+            VerticalLayout {
+                alignment: center;
+                ArchiveIcon { stroke: Palette.mint; }
+            }
+            VerticalLayout {
+                spacing: 4px;
+                alignment: center;
+                Text {
+                    text: @tr("This chat is archived");
+                    color: Palette.text-hi;
+                    font-size: (13px) * Theme.fs-scale;
+                    font-weight: 600;
+                }
+                Text {
+                    text: @tr("It stays end-to-end encrypted. Unarchiving returns it to your main list and resumes notifications.");
+                    color: Palette.text-lo;
+                    font-size: (11px) * Theme.fs-scale;
+                    wrap: word-wrap;
+                }
+            }
+        }
+    }
+
+    Section {
+        label: @tr("LAST ACTIVITY");
+        GroupCard {
+            MetaRow {
+                label: @tr("Last message");
+                sublabel: root.data.last-msg;
+                value: root.data.last-date;
+            }
+            MetaRow {
+                label: @tr("Members");
+                value: root.data.members;
+            }
+            MetaRow {
+                label: @tr("Group id");
+                value: root.data.group-id;
+                show-divider: root.is-group;
+            }
+        }
+    }
+
+    if root.is-group : Section {
+        label: @tr("MEMBER LIST");
+        GroupCard {
+            for m[i] in root.members : GroupMemberRow {
+                data: m;
+                show-divider: i < root.members.length - 1;
+            }
+        }
+    }
+}

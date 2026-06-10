@@ -1,0 +1,144 @@
+import { Palette, ChatMeta , Theme} from "../tokens.slint";
+import { ArchiveIcon } from "../icons/archive-icon.slint";
+import { BanIcon } from "../icons/ban-icon.slint";
+import { CheckMark } from "../icons/check-mark.slint";
+import { PeopleIcon } from "../icons/people-icon.slint";
+import { Avatar } from "../primitives/avatar.slint";
+import { Pill } from "../primitives/pill.slint";
+import { Button } from "../primitives/button.slint";
+
+export component ChatHeader inherits Rectangle {
+    in property <ChatMeta> chat;
+    in property <bool> is-group: false;
+    in property <image> group-picture;
+    in property <bool> group-has-picture: false;
+    in property <bool> can-show-members: false;
+    in property <int> member-count: 0;
+    in property <bool> members-open: false;
+    callback accept-clicked();
+    callback block-clicked();
+    callback archive-clicked();
+    callback members-toggle-clicked();
+
+    height: 72px;
+    background: Palette.bg;
+
+    Rectangle {
+        y: parent.height - 1px;
+        width: parent.width; height: 1px;
+        background: Palette.border-2;
+    }
+
+    HorizontalLayout {
+        padding-left: 18px; padding-right: 18px;
+        padding-top: 14px; padding-bottom: 14px;
+        spacing: 14px;
+        alignment: stretch;
+
+        Rectangle {
+            width: 44px;
+            Avatar {
+                size: 40px;
+                initials: root.chat.av-initials;
+                color-a: root.chat.av-a;
+                color-b: root.chat.av-b;
+                picture: root.is-group ? root.group-picture : root.chat.picture;
+                has-picture: root.is-group ? root.group-has-picture : root.chat.has-picture;
+                font-size: (Theme.retro ? 17px : 12px) * Theme.fs-scale;
+            }
+            Rectangle {
+                x: parent.width / 2 + 10px;
+                y: parent.height / 2 + 8px;
+                width: 11px; height: 11px;
+                border-radius: (5.5px) * Theme.r-scale;
+                background: Palette.mint-dim;
+                Rectangle {
+                    width: 11px; height: 11px;
+                    border-radius: (5.5px) * Theme.r-scale;
+                    border-width: 1.6px;
+                    border-color: Palette.bg;
+                }
+            }
+        }
+
+        VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: 4px;
+            alignment: center;
+            HorizontalLayout {
+                spacing: 10px;
+                alignment: start;
+                Text {
+                    text: root.chat.name;
+                    color: Palette.text-hi;
+                    font-size: (14px) * Theme.fs-scale;
+                    font-weight: 700;
+                    vertical-alignment: center;
+                }
+                Pill {
+                    label: "MLS";
+                    has-lock: true;
+                    bg-color: Palette.mint;
+                    fg: Palette.bubble-out-fg;
+                }
+            }
+            Text {
+                text: root.is-group
+                    ? @tr("1 member" | "{n} members" % root.member-count)
+                    : root.chat.last-seen;
+                color: Palette.text-lo;
+                font-size: (11px) * Theme.fs-scale;
+            }
+        }
+
+        if root.can-show-members && !root.chat.is-chat-request : Rectangle {
+            width: 36px;
+            height: 36px;
+            y: (parent.height - self.height) / 2;
+            background: root.members-open ? Palette.selected : transparent;
+            border-radius: (6px) * Theme.r-scale;
+            border-width: root.members-open ? 1px : 0px;
+            border-color: Palette.border-2;
+            TouchArea {
+                clicked => { root.members-toggle-clicked(); }
+                PeopleIcon {
+                    stroke: root.members-open ? Palette.mint : Palette.text-mid;
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                }
+            }
+        }
+
+        if root.chat.is-chat-request : HorizontalLayout {
+            spacing: 8px;
+            alignment: end;
+
+            Button {
+                label: @tr("Block");
+                y: (parent.height - self.height) / 2;
+                clicked => { root.block-clicked(); }
+                BanIcon { stroke: Palette.text-mid; size: 13px; }
+            }
+            Button {
+                label: @tr("Archive");
+                y: (parent.height - self.height) / 2;
+                clicked => { root.archive-clicked(); }
+                ArchiveIcon { stroke: Palette.text-mid; }
+            }
+            Button {
+                label: @tr("Accept");
+                bg-color: Palette.mint;
+                fg: Palette.bubble-out-fg;
+                outline: Palette.mint;
+                hover-bg: Palette.mint-hi;
+                hover-outline: Palette.mint-hi;
+                y: (parent.height - self.height) / 2;
+                clicked => { root.accept-clicked(); }
+                CheckMark {
+                    stroke: Palette.bubble-out-fg;
+                    double: false;
+                }
+            }
+        }
+    }
+}

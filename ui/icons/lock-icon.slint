@@ -1,0 +1,19 @@
+import { Palette } from "../tokens.slint";
+
+export component LockIcon inherits Rectangle {
+    in property <color> stroke: Palette.mint;
+    width: 12px; height: 14px;
+    Path {
+        x: 1.5px; y: 0px;
+        width: 9px; height: 7px;
+        viewbox-width: 9; viewbox-height: 7;
+        commands: "M 1.2 7 L 1.2 4 C 1.2 1.8 2.8 0.6 4.5 0.6 C 6.2 0.6 7.8 1.8 7.8 4 L 7.8 7";
+        stroke: root.stroke; stroke-width: 1.3px; fill: transparent;
+    }
+    Rectangle {
+        x: 0px; y: 6px;
+        width: 12px; height: 8px;
+        border-radius: 1.4px;
+        background: root.stroke;
+    }
+}

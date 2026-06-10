@@ -1,0 +1,878 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2026-05-27 13:21+0000\n"
+"PO-Revision-Date: 2026-05-27 13:20+0000\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgctxt "ArchivedDetail"
+msgid "ARCHIVED  ·  {} MEMBERS  ·  {}"
+msgstr "ARCHIVIERT  ·  {} MITGLIEDER  ·  {}"
+
+msgctxt "ArchivedDetail"
+msgid "Unarchive"
+msgstr "Wiederherstellen"
+
+msgctxt "ArchivedDetail"
+msgid "Delete"
+msgstr "Löschen"
+
+msgctxt "ArchivedDetail"
+msgid "This chat is archived"
+msgstr "Dieser Chat ist archiviert"
+
+msgctxt "ArchivedDetail"
+msgid "It stays end-to-end encrypted. Unarchiving returns it to your main lis"
+"t and resumes notifications."
+msgstr "Sie bleibt Ende-zu-Ende-verschlüsselt. Durch Wiederherstellen kehrt si"
+"e in deine Hauptliste zurück und Benachrichtigungen werden fortgesetzt"
+"."
+
+msgctxt "ArchivedDetail"
+msgid "LAST ACTIVITY"
+msgstr "LETZTE AKTIVITÄT"
+
+msgctxt "ArchivedDetail"
+msgid "Last message"
+msgstr "Letzte Nachricht"
+
+msgctxt "ArchivedDetail"
+msgid "Members"
+msgstr "Mitglieder"
+
+msgctxt "ArchivedDetail"
+msgid "Group id"
+msgstr "Gruppen-ID"
+
+msgctxt "ArchivedDetail"
+msgid "MEMBER LIST"
+msgstr "MITGLIEDERLISTE"
+
+msgctxt "ArchivedSidebar"
+msgid "ARCHIVED"
+msgstr "ARCHIVIERT"
+
+msgctxt "ChatListPanel"
+msgid "CHATS"
+msgstr "CHATS"
+
+msgctxt "ChatListPanel"
+msgid "Search chats…"
+msgstr "Chats durchsuchen…"
+
+msgctxt "ContactDetail"
+msgid "Contact"
+msgstr "Kontakt"
+
+msgctxt "ContactDetail"
+msgid "ADDED {}  ·  {} RELAYS"
+msgstr "HINZUGEFÜGT {}  ·  {} RELAYS"
+
+msgctxt "ContactDetail"
+msgid "✓ VERIFIED"
+msgstr "✓ VERIFIZIERT"
+
+msgctxt "ContactDetail"
+msgid "{} RELAYS"
+msgstr "{} RELAYS"
+
+msgctxt "ContactDetail"
+msgid "Start chat"
+msgstr "Chat starten"
+
+msgctxt "ContactDetail"
+msgid "IDENTITY"
+msgstr "IDENTITÄT"
+
+msgctxt "ContactDetail"
+msgid "Public key, safe to share."
+msgstr "Öffentlicher Schlüssel, sicher zum Teilen."
+
+msgctxt "ContactDetail"
+msgid "Copy"
+msgstr "Kopieren"
+
+msgctxt "ContactDetail"
+msgid "Key package"
+msgstr "Schlüsselpaket"
+
+msgctxt "ContactDetail"
+msgid "Fetched from relay.damus.io · refreshed 4m ago"
+msgstr "Von relay.damus.io abgerufen · vor 4 Min. aktualisiert"
+
+msgctxt "ContactDetail"
+msgid "up to date"
+msgstr "aktuell"
+
+msgctxt "ContactDetail"
+msgid "Refresh"
+msgstr "Aktualisieren"
+
+msgctxt "ContactDetail"
+msgid "Mutual relays"
+msgstr "Gemeinsame Relays"
+
+msgctxt "ContactDetail"
+msgid "Used to deliver messages between you."
+msgstr "Werden genutzt, um Nachrichten zwischen euch zuzustellen."
+
+msgctxt "ContactDetail"
+msgid "{} relays"
+msgstr "{} Relays"
+
+msgctxt "ContactDetail"
+msgid "Show as QR"
+msgstr "Als QR anzeigen"
+
+msgctxt "ContactDetail"
+msgid "ACTIONS"
+msgstr "AKTIONEN"
+
+msgctxt "ContactDetail"
+msgid "Mute"
+msgstr "Stummschalten"
+
+msgctxt "ContactDetail"
+msgid "Archive chat"
+msgstr "Chat archivieren"
+
+msgctxt "ContactDetail"
+msgid "Block"
+msgstr "Blockieren"
+
+msgctxt "ContactDetail"
+msgid "Remove contact"
+msgstr "Kontakt entfernen"
+
+msgctxt "ContactsSidebar"
+msgid "CONTACTS"
+msgstr "KONTAKTE"
+
+msgctxt "ContactsSidebar"
+msgid "Search contacts…"
+msgstr "Kontakte durchsuchen…"
+
+msgctxt "DarkMatterLinux"
+msgid "Connecting to relays…"
+msgstr "Verbinde mit Relays…"
+
+msgctxt "EmojiPicker"
+msgid "search…"
+msgstr "suchen…"
+
+msgctxt "EmojiPicker"
+msgid "no matches"
+msgstr "keine Treffer"
+
+msgctxt "DeviceRow"
+msgid "Revoke"
+msgstr "Widerrufen"
+
+msgctxt "KeysPage"
+msgid "This computer"
+msgstr "Dieser Computer"
+
+msgctxt "KeysPage"
+msgid "Keys & identity"
+msgstr "Schlüssel & Identität"
+
+msgctxt "KeysPage"
+msgid "MLS  ·  YOUR KEY MATERIAL"
+msgstr "MLS  ·  DEIN SCHLÜSSELMATERIAL"
+
+msgctxt "KeysPage"
+msgid "Your identity is sovereign"
+msgstr "Deine Identität ist souverän"
+
+msgctxt "KeysPage"
+msgid "Dark Matter never sees your private key. It lives only on this device "
+"and any signer you connect."
+msgstr "Dark Matter sieht deinen privaten Schlüssel nie. Er bleibt nur auf die"
+"sem Gerät und jedem verbundenen Signiergerät."
+
+msgctxt "KeysPage"
+msgid "IDENTITY"
+msgstr "IDENTITÄT"
+
+msgctxt "KeysPage"
+msgid "Public key (npub)"
+msgstr "Öffentlicher Schlüssel (npub)"
+
+msgctxt "KeysPage"
+msgid "Safe to share. This is how people find you."
+msgstr "Sicher zum Teilen. So finden dich andere."
+
+msgctxt "KeysPage"
+msgid "Copy"
+msgstr "Kopieren"
+
+msgctxt "KeysPage"
+msgid "KEY PACKAGES"
+msgstr "SCHLÜSSELPAKETE"
+
+msgctxt "KeysPage"
+msgid "(published to your kind-10051 relay list)"
+msgstr "(in deiner kind-10051-Relay-Liste veröffentlicht)"
+
+msgctxt "KeysPage"
+msgid "(no key-package relays configured)"
+msgstr "(keine Schlüsselpaket-Relays konfiguriert)"
+
+msgctxt "KeysPage"
+msgid "…"
+msgstr "…"
+
+msgctxt "KeysPage"
+msgid "Refresh"
+msgstr "Aktualisieren"
+
+msgctxt "KeysPage"
+msgid "No key packages yet"
+msgstr "Noch keine Schlüsselpakete"
+
+msgctxt "KeysPage"
+msgid "Publish one so other users can invite you to groups."
+msgstr "Veröffentliche eines, damit andere dich in Gruppen einladen können."
+
+msgctxt "KeysPage"
+msgid "Configure key-package relays first."
+msgstr "Konfiguriere zuerst Schlüsselpaket-Relays."
+
+msgctxt "KeysPage"
+msgid "Publishing…"
+msgstr "Veröffentliche…"
+
+msgctxt "KeysPage"
+msgid "Publish"
+msgstr "Veröffentlichen"
+
+msgctxt "KeysPage"
+msgid "{n} relay"
+msgid_plural "{n} relays"
+msgstr[0] "{n} Relay"
+msgstr[1] "{n} Relays"
+
+msgctxt "KeysPage"
+msgid "local only"
+msgstr "nur lokal"
+
+msgctxt "KeysPage"
+msgid "LINKED DEVICES"
+msgstr "VERKNÜPFTE GERÄTE"
+
+msgctxt "KeysPage"
+msgid "(other Dark Matter instances signed into this identity)"
+msgstr "(andere Dark Matter-Instanzen mit dieser Identität angemeldet)"
+
+msgctxt "KeysPage"
+msgid "current"
+msgstr "aktuell"
+
+msgctxt "KeysPage"
+msgid "Sign out"
+msgstr "Abmelden"
+
+msgctxt "KeysPage"
+msgid "DANGER ZONE"
+msgstr "GEFAHRENZONE"
+
+msgctxt "KeysPage"
+msgid "Rotate key package now"
+msgstr "Schlüsselpaket jetzt rotieren"
+
+msgctxt "KeysPage"
+msgid "Invalidates the current package and uploads a fresh one to your relays"
+"."
+msgstr "Macht das aktuelle Paket ungültig und lädt ein neues auf deine Relays "
+"hoch."
+
+msgctxt "KeysPage"
+msgid "Rotate"
+msgstr "Rotieren"
+
+msgctxt "LoginScreen"
+msgid "Sign in to your Nostr identity"
+msgstr "Bei deiner Nostr-Identität anmelden"
+
+msgctxt "LoginScreen"
+msgid "Paste your nsec"
+msgstr "Füge deinen nsec ein"
+
+msgctxt "LoginScreen"
+msgid "Save your new key"
+msgstr "Speichere deinen neuen Schlüssel"
+
+msgctxt "LoginScreen"
+msgid "I have an nsec"
+msgstr "Ich habe einen nsec"
+
+msgctxt "LoginScreen"
+msgid "Generate a new key"
+msgstr "Neuen Schlüssel generieren"
+
+msgctxt "LoginScreen"
+msgid "Your key never leaves this device."
+msgstr "Dein Schlüssel verlässt nie dieses Gerät."
+
+msgctxt "LoginScreen"
+msgid "Back"
+msgstr "Zurück"
+
+msgctxt "LoginScreen"
+msgid "Signing in…"
+msgstr "Anmeldung…"
+
+msgctxt "LoginScreen"
+msgid "Continue"
+msgstr "Weiter"
+
+msgctxt "LoginScreen"
+msgid "Back up your nsec before saving"
+msgstr "Sichere deinen nsec vor dem Speichern"
+
+msgctxt "LoginScreen"
+msgid "Save stores it in your OS keyring. Keep your own copy too — lose it an"
+"d this identity is gone."
+msgstr "Speichern legt ihn im OS-Schlüsselbund ab. Bewahre auch eine eigene Ko"
+"pie auf — verlierst du ihn, ist die Identität weg."
+
+msgctxt "LoginScreen"
+msgid "Regenerate"
+msgstr "Neu generieren"
+
+msgctxt "LoginScreen"
+msgid "Copy"
+msgstr "Kopieren"
+
+msgctxt "LoginScreen"
+msgid "Saving…"
+msgstr "Speichere…"
+
+msgctxt "LoginScreen"
+msgid "Save to keyring"
+msgstr "Im Schlüsselbund speichern"
+
+msgctxt "ChatHeader"
+msgid "1 member"
+msgid_plural "{n} members"
+msgstr[0] "1 Mitglied"
+msgstr[1] "{n} Mitglieder"
+
+msgctxt "ChatHeader"
+msgid "Block"
+msgstr "Blockieren"
+
+msgctxt "ChatHeader"
+msgid "Archive"
+msgstr "Archivieren"
+
+msgctxt "ChatHeader"
+msgid "Accept"
+msgstr "Annehmen"
+
+msgctxt "ChatRequestBanner"
+msgid "Chat request"
+msgstr "Chat-Anfrage"
+
+msgctxt "ChatRequestBanner"
+msgid "This sender isn't in your contacts. Accept to start an"
+msgstr "Dieser Absender ist nicht in deinen Kontakten. Annehmen, um eine"
+
+msgctxt "ChatRequestBanner"
+msgid "session."
+msgstr "Sitzung zu starten."
+
+msgctxt "Composer"
+msgid "Replying to message:"
+msgstr "Antwort auf Nachricht:"
+
+msgctxt "Composer"
+msgid "Replying to {}:"
+msgstr "Antwort an {}:"
+
+msgctxt "Composer"
+msgid "Send a message  ·  encrypted with"
+msgstr "Nachricht senden  ·  verschlüsselt mit"
+
+msgctxt "Composer"
+msgid "for newline"
+msgstr "für Zeilenumbruch"
+
+msgctxt "Composer"
+msgid "Send"
+msgstr "Senden"
+
+msgctxt "EncryptionBanner"
+msgid "End-to-end encrypted with"
+msgstr "Ende-zu-Ende-verschlüsselt mit"
+
+msgctxt "EncryptionBanner"
+msgid "Forward secret"
+msgstr "Forward Secret"
+
+msgctxt "EncryptionBanner"
+msgid "post-compromise secure"
+msgstr "post-kompromiss-sicher"
+
+msgctxt "GroupMemberRow"
+msgid "YOU"
+msgstr "DU"
+
+msgctxt "GroupMembersPanel"
+msgid "Members"
+msgstr "Mitglieder"
+
+msgctxt "GroupMembersPanel"
+msgid "1 in this group"
+msgid_plural "{n} in this group"
+msgstr[0] "1 in dieser Gruppe"
+msgstr[1] "{n} in dieser Gruppe"
+
+msgctxt "MainPane"
+msgid "CHAT REQUEST"
+msgstr "CHAT-ANFRAGE"
+
+msgctxt "MainPane"
+msgid "SESSION ESTABLISHED"
+msgstr "SITZUNG HERGESTELLT"
+
+msgctxt "CommandPalette"
+msgid "Type a command…"
+msgstr "Befehl eingeben…"
+
+msgctxt "CommandPalette"
+msgid "No matches"
+msgstr "Keine Treffer"
+
+msgctxt "LanguagePickerModal"
+msgid "Interface language"
+msgstr "Oberflächensprache"
+
+msgctxt "StartNewChatModal"
+msgid "Start a new chat"
+msgstr "Neuen Chat starten"
+
+msgctxt "StartNewChatModal"
+msgid "Paste an npub or scan a QR. A key package will be fetched from your re"
+"lays."
+msgstr "Füge einen npub ein oder scanne einen QR. Ein Schlüsselpaket wird von "
+"deinen Relays abgerufen."
+
+msgctxt "StartNewChatModal"
+msgid "or"
+msgstr "oder"
+
+msgctxt "StartNewChatModal"
+msgid "Scan QR code from device"
+msgstr "QR-Code vom Gerät scannen"
+
+msgctxt "StartNewChatModal"
+msgid "Cancel"
+msgstr "Abbrechen"
+
+msgctxt "StartNewChatModal"
+msgid "Start chat"
+msgstr "Chat starten"
+
+msgctxt "MessageBubble"
+msgid "Original message"
+msgstr "Originalnachricht"
+
+msgctxt "MessageBubble"
+msgid "(message unavailable)"
+msgstr "(Nachricht nicht verfügbar)"
+
+msgctxt "MessageBubble"
+msgid "failed · tap to retry"
+msgstr "fehlgeschlagen · tippen zum Wiederholen"
+
+msgctxt "OutgoingRow"
+msgid "You"
+msgstr "Du"
+
+msgctxt "ProfilePage"
+msgid "Your profile"
+msgstr "Dein Profil"
+
+msgctxt "ProfilePage"
+msgid "EDITING · BROADCAST TO RELAYS ON SAVE"
+msgstr "BEARBEITUNG · BEIM SPEICHERN AN RELAYS SENDEN"
+
+msgctxt "ProfilePage"
+msgid "VISIBLE TO ANYONE YOU CHAT WITH"
+msgstr "SICHTBAR FÜR ALLE CHAT-PARTNER"
+
+msgctxt "ProfilePage"
+msgid "Edit profile"
+msgstr "Profil bearbeiten"
+
+msgctxt "ProfilePage"
+msgid "Saving…"
+msgstr "Speichere…"
+
+msgctxt "ProfilePage"
+msgid "Save"
+msgstr "Speichern"
+
+msgctxt "ProfilePage"
+msgid "Cancel"
+msgstr "Abbrechen"
+
+msgctxt "ProfilePage"
+msgid "(no display name)"
+msgstr "(kein Anzeigename)"
+
+msgctxt "ProfilePage"
+msgid "(no nip-05)"
+msgstr "(kein nip-05)"
+
+msgctxt "ProfilePage"
+msgid "IDENTITY"
+msgstr "IDENTITÄT"
+
+msgctxt "ProfilePage"
+msgid "Your public key. Safe to share."
+msgstr "Dein öffentlicher Schlüssel. Sicher zum Teilen."
+
+msgctxt "ProfilePage"
+msgid "Copy"
+msgstr "Kopieren"
+
+msgctxt "ProfilePage"
+msgid "EDIT"
+msgstr "BEARBEITEN"
+
+msgctxt "ProfilePage"
+msgid "Display name"
+msgstr "Anzeigename"
+
+msgctxt "ProfilePage"
+msgid "How your name appears in chats"
+msgstr "Wie dein Name in Chats erscheint"
+
+msgctxt "ProfilePage"
+msgid "Username"
+msgstr "Benutzername"
+
+msgctxt "ProfilePage"
+msgid "Short handle (no spaces)"
+msgstr "Kurzer Handle (ohne Leerzeichen)"
+
+msgctxt "ProfilePage"
+msgid "About"
+msgstr "Über"
+
+msgctxt "ProfilePage"
+msgid "A line or two about you"
+msgstr "Ein oder zwei Zeilen über dich"
+
+msgctxt "ProfilePage"
+msgid "Picture URL"
+msgstr "Bild-URL"
+
+msgctxt "ProfilePage"
+msgid "Lightning address (LUD-16)"
+msgstr "Lightning-Adresse (LUD-16)"
+
+msgctxt "ProfilePage"
+msgid "PROFILE"
+msgstr "PROFIL"
+
+msgctxt "ProfilePage"
+msgid "Lightning"
+msgstr "Lightning"
+
+msgctxt "ProfilePage"
+msgid "Picture"
+msgstr "Bild"
+
+msgctxt "WalletAddressRow"
+msgid "Lightning address"
+msgstr "Lightning-Adresse"
+
+msgctxt "WalletAddressRow"
+msgid "People can zap you via this address."
+msgstr "Andere können dir über diese Adresse zappen."
+
+msgctxt "WalletAddressRow"
+msgid "Copy"
+msgstr "Kopieren"
+
+msgctxt "AdvancedPane"
+msgid "Advanced"
+msgstr "Erweitert"
+
+msgctxt "AdvancedPane"
+msgid "Developer flags"
+msgstr "Entwickler-Flags"
+
+msgctxt "AdvancedPane"
+msgid "DEVELOPER"
+msgstr "ENTWICKLER"
+
+msgctxt "AdvancedPane"
+msgid "Show debug pane"
+msgstr "Debug-Bereich anzeigen"
+
+msgctxt "AdvancedPane"
+msgid "Adds a Debug entry below. Surfaces account, key-packages, and group st"
+"ate."
+msgstr "Fügt unten einen Debug-Eintrag hinzu. Zeigt Konto, Schlüsselpakete und"
+" Gruppenstatus."
+
+msgctxt "AppearancePane"
+msgid "Appearance"
+msgstr "Erscheinungsbild"
+
+msgctxt "AppearancePane"
+msgid "THEME"
+msgstr "THEMA"
+
+msgctxt "AppearancePane"
+msgid "Theme"
+msgstr "Thema"
+
+msgctxt "AppearancePane"
+msgid "Dark"
+msgstr "Dunkel"
+
+msgctxt "AppearancePane"
+msgid "Accent color"
+msgstr "Akzentfarbe"
+
+msgctxt "AppearancePane"
+msgid "SNES yellow"
+msgstr "SNES-Gelb"
+
+msgctxt "AppearancePane"
+msgid "Mint"
+msgstr "Minze"
+
+msgctxt "AppearancePane"
+msgid "Density"
+msgstr "Dichte"
+
+msgctxt "AppearancePane"
+msgid "Comfortable"
+msgstr "Komfortabel"
+
+msgctxt "AppearancePane"
+msgid "FUN"
+msgstr "SPASS"
+
+msgctxt "AppearancePane"
+msgid "Retro mode"
+msgstr "Retro-Modus"
+
+msgctxt "AppearancePane"
+msgid "Turn the whole app into SNES style."
+msgstr "Verwandelt die ganze App in SNES-Stil."
+
+msgctxt "DebugPane"
+msgid "Debug"
+msgstr "Debug"
+
+msgctxt "DebugPane"
+msgid "Account / key packages / groups"
+msgstr "Konto / Schlüsselpakete / Gruppen"
+
+msgctxt "DebugPane"
+msgid "STATE SNAPSHOT"
+msgstr "ZUSTANDSSNAPSHOT"
+
+msgctxt "DebugPane"
+msgid "Refresh"
+msgstr "Aktualisieren"
+
+msgctxt "DebugPane"
+msgid "Copy JSON"
+msgstr "JSON kopieren"
+
+msgctxt "DebugPane"
+msgid "(no snapshot yet — click Refresh)"
+msgstr "(noch kein Snapshot — Aktualisieren klicken)"
+
+msgctxt "GeneralPane"
+msgid "General"
+msgstr "Allgemein"
+
+msgctxt "GeneralPane"
+msgid "STARTUP"
+msgstr "START"
+
+msgctxt "GeneralPane"
+msgid "Launch at login"
+msgstr "Beim Anmelden starten"
+
+msgctxt "GeneralPane"
+msgid "Start minimized to tray"
+msgstr "Minimiert in Tray starten"
+
+msgctxt "GeneralPane"
+msgid "Restore last selected chat on launch"
+msgstr "Letzten Chat beim Start wiederherstellen"
+
+msgctxt "GeneralPane"
+msgid "LANGUAGE"
+msgstr "SPRACHE"
+
+msgctxt "GeneralPane"
+msgid "Interface language"
+msgstr "Oberflächensprache"
+
+msgctxt "language picker button"
+msgid "Change"
+msgstr "Ändern"
+
+msgctxt "GeneralPane"
+msgid "Time format"
+msgstr "Zeitformat"
+
+msgctxt "GeneralPane"
+msgid "Date format"
+msgstr "Datumsformat"
+
+msgctxt "NetworkPane"
+msgid "Network & relays"
+msgstr "Netzwerk & Relays"
+
+msgctxt "NetworkPane"
+msgid "Where your messages land."
+msgstr "Wo deine Nachrichten ankommen."
+
+msgctxt "NetworkPane"
+msgid "STATUS"
+msgstr "STATUS"
+
+msgctxt "NetworkPane"
+msgid "No relays configured"
+msgstr "Keine Relays konfiguriert"
+
+msgctxt "NetworkPane"
+msgid "Connected · {}/{}"
+msgstr "Verbunden · {}/{}"
+
+msgctxt "NetworkPane"
+msgid "Partial · {}/{} connected"
+msgstr "Teilweise · {}/{} verbunden"
+
+msgctxt "NetworkPane"
+msgid "Add a relay below — nothing publishes until you do."
+msgstr "Füge unten ein Relay hinzu — nichts wird veröffentlicht, bis du es tus"
+"t."
+
+msgctxt "NetworkPane"
+msgid "Aggregate connection counter from the relay pool."
+msgstr "Aggregierter Verbindungszähler aus dem Relay-Pool."
+
+msgctxt "NetworkPane"
+msgid "Refresh"
+msgstr "Aktualisieren"
+
+msgctxt "NetworkPane"
+msgid "RELAYS"
+msgstr "RELAYS"
+
+msgctxt "NetworkPane"
+msgid "Add"
+msgstr "Hinzufügen"
+
+msgctxt "NetworkPane"
+msgid "No relays yet. Add one above."
+msgstr "Noch keine Relays. Füge oben eines hinzu."
+
+msgctxt "NetworkPane"
+msgid "Restart darkmatter to apply relay changes."
+msgstr "Starte darkmatter neu, um Relay-Änderungen anzuwenden."
+
+msgctxt "SettingsPage"
+msgid "Notifications"
+msgstr "Benachrichtigungen"
+
+msgctxt "SettingsPage"
+msgid "Per-chat notification rules, sounds, focus mode."
+msgstr "Benachrichtigungsregeln pro Chat, Töne, Fokusmodus."
+
+msgctxt "SettingsPage"
+msgid "Storage"
+msgstr "Speicher"
+
+msgctxt "SettingsPage"
+msgid "Local cache, message retention, attachments."
+msgstr "Lokaler Cache, Nachrichtenaufbewahrung, Anhänge."
+
+msgctxt "SettingsPage"
+msgid "About"
+msgstr "Über"
+
+msgctxt "SettingsPage"
+msgid "Dark Matter v0.1.0"
+msgstr "Dark Matter v0.1.0"
+
+msgctxt "SettingsSidebar"
+msgid "SETTINGS"
+msgstr "EINSTELLUNGEN"
+
+msgctxt "SettingsSidebar"
+msgid "General"
+msgstr "Allgemein"
+
+msgctxt "SettingsSidebar"
+msgid "Network & relays"
+msgstr "Netzwerk & Relays"
+
+msgctxt "SettingsSidebar"
+msgid "Appearance"
+msgstr "Erscheinungsbild"
+
+msgctxt "SettingsSidebar"
+msgid "Notifications"
+msgstr "Benachrichtigungen"
+
+msgctxt "SettingsSidebar"
+msgid "Storage"
+msgstr "Speicher"
+
+msgctxt "SettingsSidebar"
+msgid "Advanced"
+msgstr "Erweitert"
+
+msgctxt "SettingsSidebar"
+msgid "About"
+msgstr "Über"
+
+msgctxt "SettingsSidebar"
+msgid "Debug"
+msgstr "Debug"
+
+msgctxt "SidePanel"
+msgid "Search…"
+msgstr "Suchen…"
+
+msgctxt "SidePanel"
+msgid "Add"
+msgstr "Hinzufügen"
+
+msgctxt "SplashScreen"
+msgid "Connecting to relays…"
+msgstr "Verbinde mit Relays…"
+
+msgctxt "StatusBar"
+msgid "ONLINE"
+msgstr "ONLINE"
+
+msgctxt "StatusBar"
+msgid "RELAYS"
+msgstr "RELAYS"
+
+msgctxt "StatusBar"
+msgid "COMMAND"
+msgstr "BEFEHL"
+

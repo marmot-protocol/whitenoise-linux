@@ -1,0 +1,19 @@
+import { Palette } from "../tokens.slint";
+
+export component SearchIcon inherits Rectangle {
+    in property <color> stroke: Palette.text-mid;
+    in property <length> size: 14px;
+    width: root.size; height: root.size;
+    Rectangle {
+        x: 0px; y: 0px;
+        width: 10px; height: 10px;
+        border-radius: 5px;
+        border-width: 1.4px; border-color: root.stroke;
+    }
+    Path {
+        x: 8px; y: 8px; width: 6px; height: 6px;
+        viewbox-width: 6; viewbox-height: 6;
+        commands: "M 0.5 0.5 L 5.5 5.5";
+        stroke: root.stroke; stroke-width: 1.4px;
+    }
+}

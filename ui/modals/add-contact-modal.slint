@@ -1,0 +1,28 @@
+import { Modal, ModalField } from "modal.slint";
+
+export component AddContactModal inherits Modal {
+    // add-contact(input) — the raw field content; Rust trims it, validates
+    // npub/hex, republishes the follow list, and surfaces errors via `status`.
+    callback add-contact(string);
+    in-out property <string> npub-text;
+    in property <bool> busy: false;
+
+    card-width: 460px;
+    title: @tr("Add contact");
+    subtitle: @tr("Paste their npub or hex public key. They'll appear in your contacts on every device.");
+    secondary-label: @tr("Cancel");
+    primary-label: @tr("Add contact");
+    primary-busy-label: @tr("Adding…");
+    primary-busy: root.busy;
+    primary => { root.add-contact(root.npub-text); }
+
+    ModalField {
+        label: @tr("PUBLIC KEY");
+        placeholder: "npub1…";
+        text <=> root.npub-text;
+        autofocus: true;
+        submitted => {
+            if (!root.busy) { root.add-contact(root.npub-text); }
+        }
+    }
+}
