@@ -48,7 +48,7 @@ rfd = { version = "0.15", default-features = false, features = [
 ] }
 mime_guess = "2"
 whitenoise-markdown = { git = "https://github.com/marmot-protocol/whitenoise-rs" }
-marmot-app = { git = "ssh://git@github.com/marmot-protocol/darkmatter.git", branch = "master" }
+marmot-app = { git = "ssh://git@github.com/marmot-protocol/darkmatter.git", branch = "master", features = ["otlp-export"] }
 marmot-account = { git = "ssh://git@github.com/marmot-protocol/darkmatter.git", branch = "master" }
 cgka-traits = { git = "ssh://git@github.com/marmot-protocol/darkmatter.git", branch = "master" }
 
