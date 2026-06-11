@@ -154,6 +154,21 @@ fn model<T: Clone + 'static>(v: Vec<T>) -> ModelRc<T> {
     ModelRc::new(VecModel::from(v))
 }
 
+/// Recompute the breadcrumb from the UI's own models. Same effect as the
+/// `refresh_breadcrumb` closure in `main`, but callable from `Send` completion
+/// closures that can't capture the model handles.
+fn refresh_breadcrumb_now(ui: &DarkMatterLinux) {
+    ui.set_breadcrumb(breadcrumb(
+        ui.get_active_page(),
+        &ui.get_chats(),
+        &ui.get_contacts(),
+        &ui.get_archived_chats(),
+        ui.get_active_chat(),
+        ui.get_active_contact(),
+        ui.get_active_archived(),
+    ));
+}
+
 fn breadcrumb(
     page: i32,
     chats: &ModelRc<ChatMeta>,
@@ -340,12 +355,17 @@ fn main() -> Result<(), slint::PlatformError> {
     // and installs the result into this cell from inside
     // `slint::invoke_from_event_loop`. Access from UI callbacks is always
     // single-threaded — `lock()` is uncontended.
-    let backend_cell: Arc<Mutex<Option<Backend>>> = Arc::new(Mutex::new(None));
+    // The inner `Arc<Backend>` lets worker threads clone a handle and drop
+    // the lock *before* a blocking call, so the UI thread never contends on
+    // this mutex while a relay round-trip is in flight.
+    let backend_cell: Arc<Mutex<Option<Arc<Backend>>>> = Arc::new(Mutex::new(None));
     // The unlocked secret vault for this session. Held behind `Arc<Mutex>` so a
     // clone can be moved into the boot worker thread (and into marmot's secret
     // store) while the UI thread keeps its own handle. `None` until the user
     // unlocks or creates a vault on the login screen.
-    let vault_cell: Rc<RefCell<Option<Arc<Mutex<Vault>>>>> = Rc::new(RefCell::new(None));
+    // `Arc<Mutex>` (not `Rc<RefCell>`) so the boot closure stays `Send` and
+    // can be invoked from worker-thread completion closures.
+    let vault_cell: Arc<Mutex<Option<Arc<Mutex<Vault>>>>> = Arc::new(Mutex::new(None));
     let group_ids: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
     let archived_group_ids: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
     // Optimistic-render overlay: pending sends + pending reactions. Lives
@@ -359,21 +379,25 @@ fn main() -> Result<(), slint::PlatformError> {
 
     // ─── Login gate ────────────────────────────────────────────────────
     // Holds the freshly generated nsec until the user confirms they've saved it.
-    let pending_generated: Rc<RefCell<Option<String>>> = Rc::new(RefCell::new(None));
+    let pending_generated: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
 
     // Boot the backend from an nsec and populate the chat models. Errors are
     // surfaced on the UI's backend-error property; the UI stays logged-in
     // either way so the user can still navigate.
-    let boot_backend: Rc<dyn Fn(String, Arc<Mutex<Vault>>)> = {
+    // A plain closure (not `Rc<dyn Fn>`): every capture is `Send + Clone`, so
+    // clones can ride through worker threads back into
+    // `invoke_from_event_loop` completions (login/unlock run the vault KDF
+    // off-thread and boot from the completion).
+    let boot_backend = {
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
         let archived_group_ids = archived_group_ids.clone();
         let vault_cell = vault_cell.clone();
-        Rc::new(move |nsec: String, vault: Arc<Mutex<Vault>>| {
+        move |nsec: String, vault: Arc<Mutex<Vault>>| {
             let Some(ui) = weak.upgrade() else { return };
             // Keep the unlocked vault for the rest of the session.
-            *vault_cell.borrow_mut() = Some(vault.clone());
+            *vault_cell.lock().unwrap() = Some(vault.clone());
             ui.set_backend_ready(false);
             ui.set_backend_error(s(""));
             ui.set_booting(true);
@@ -462,6 +486,7 @@ fn main() -> Result<(), slint::PlatformError> {
                     let Some(ui) = weak_for_worker.upgrade() else { return };
                     match result {
                         Ok(b) => {
+                            let b = Arc::new(b);
                             let t_ui = std::time::Instant::now();
                             let chats = ui.get_chats();
                             let chats_messages = ui.get_chats_messages();
@@ -493,7 +518,7 @@ fn main() -> Result<(), slint::PlatformError> {
                             ui.set_telemetry_enabled(b.telemetry_enabled());
                             ui.set_audit_enabled(b.audit_logs_enabled());
                             install_chat_watcher(&b, ui.as_weak(), group_ids.clone(), backend_cell.clone());
-                            *backend_cell.lock().unwrap() = Some(b);
+                            *backend_cell.lock().unwrap() = Some(b.clone());
                             ui.set_backend_ready(true);
                             ui.set_booting(false);
                             // The background sync can take a relay's full
@@ -544,7 +569,7 @@ fn main() -> Result<(), slint::PlatformError> {
                     }
                 });
             });
-        })
+        }
     };
 
     // There is no silent auto-login anymore: secrets live in a password-encrypted
@@ -566,33 +591,48 @@ fn main() -> Result<(), slint::PlatformError> {
             let Some(ui) = weak.upgrade() else { return };
             let trimmed = input.trim().to_string();
             let password = password.to_string();
-            ui.set_login_busy(true);
-            let result = (|| -> Result<(String, String, Arc<Mutex<Vault>>), String> {
-                validate_new_password(&password, confirm.as_str())?;
-                let keys = Keys::parse(&trimmed)
-                    .map_err(|_| "That doesn't look like a valid nsec.".to_string())?;
-                let npub = keys.public_key().to_bech32().map_err(|e| e.to_string())?;
-                let nsec = keys.secret_key().to_bech32().map_err(|e| e.to_string())?;
-                let mut v = Vault::create(&password).map_err(|e| format!("create vault: {e}"))?;
-                v.set(vault::NSEC_KEY, &nsec)
-                    .map_err(|e| format!("seal nsec: {e}"))?;
-                Ok((npub, nsec, Arc::new(Mutex::new(v))))
-            })();
-            ui.set_login_busy(false);
-            match result {
-                Ok((npub, nsec, vault)) => {
-                    ui.set_login_error(s(""));
-                    ui.set_my_npub(npub.into());
-                    ui.set_login_nsec_input(s(""));
-                    ui.set_password_input(s(""));
-                    ui.set_password_confirm(s(""));
-                    ui.set_logged_in(true);
-                    boot(nsec, vault);
-                }
-                Err(err) => {
-                    ui.set_login_error(err.into());
-                }
+            // Cheap validation stays here so typos fail instantly; the
+            // Argon2id KDF inside `Vault::create` is deliberately slow, so it
+            // runs on a worker thread and the busy state gets a frame to paint.
+            if let Err(err) = validate_new_password(&password, confirm.as_str()) {
+                ui.set_login_error(err.into());
+                return;
             }
+            let Ok(keys) = Keys::parse(&trimmed) else {
+                ui.set_login_error(s("That doesn't look like a valid nsec."));
+                return;
+            };
+            ui.set_login_busy(true);
+            let weak = weak.clone();
+            let boot = boot.clone();
+            std::thread::spawn(move || {
+                let result = (|| -> Result<(String, String, Arc<Mutex<Vault>>), String> {
+                    let npub = keys.public_key().to_bech32().map_err(|e| e.to_string())?;
+                    let nsec = keys.secret_key().to_bech32().map_err(|e| e.to_string())?;
+                    let mut v = Vault::create(&password).map_err(|e| format!("create vault: {e}"))?;
+                    v.set(vault::NSEC_KEY, &nsec)
+                        .map_err(|e| format!("seal nsec: {e}"))?;
+                    Ok((npub, nsec, Arc::new(Mutex::new(v))))
+                })();
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    ui.set_login_busy(false);
+                    match result {
+                        Ok((npub, nsec, vault)) => {
+                            ui.set_login_error(s(""));
+                            ui.set_my_npub(npub.into());
+                            ui.set_login_nsec_input(s(""));
+                            ui.set_password_input(s(""));
+                            ui.set_password_confirm(s(""));
+                            ui.set_logged_in(true);
+                            boot(nsec, vault);
+                        }
+                        Err(err) => {
+                            ui.set_login_error(err.into());
+                        }
+                    }
+                });
+            });
         }
     });
 
@@ -604,32 +644,41 @@ fn main() -> Result<(), slint::PlatformError> {
             let Some(ui) = weak.upgrade() else { return };
             let password = password.to_string();
             ui.set_login_busy(true);
-            let result = (|| -> Result<(String, String, Arc<Mutex<Vault>>), String> {
-                let v = Vault::open(&password).map_err(|e| match e {
-                    vault::VaultError::WrongPassword => "Wrong password.".to_string(),
-                    other => format!("{other}"),
-                })?;
-                let nsec = v
-                    .nsec()
-                    .ok_or_else(|| "Vault has no key. Reset and re-enter your nsec.".to_string())?;
-                let keys =
-                    Keys::parse(&nsec).map_err(|_| "Stored key is invalid.".to_string())?;
-                let npub = keys.public_key().to_bech32().map_err(|e| e.to_string())?;
-                Ok((npub, nsec, Arc::new(Mutex::new(v))))
-            })();
-            ui.set_login_busy(false);
-            match result {
-                Ok((npub, nsec, vault)) => {
-                    ui.set_login_error(s(""));
-                    ui.set_password_input(s(""));
-                    ui.set_my_npub(npub.into());
-                    ui.set_logged_in(true);
-                    boot(nsec, vault);
-                }
-                Err(err) => {
-                    ui.set_login_error(err.into());
-                }
-            }
+            // `Vault::open` re-derives the Argon2id key — worker thread, so
+            // the unlock spinner actually spins while it grinds.
+            let weak = weak.clone();
+            let boot = boot.clone();
+            std::thread::spawn(move || {
+                let result = (|| -> Result<(String, String, Arc<Mutex<Vault>>), String> {
+                    let v = Vault::open(&password).map_err(|e| match e {
+                        vault::VaultError::WrongPassword => "Wrong password.".to_string(),
+                        other => format!("{other}"),
+                    })?;
+                    let nsec = v
+                        .nsec()
+                        .ok_or_else(|| "Vault has no key. Reset and re-enter your nsec.".to_string())?;
+                    let keys =
+                        Keys::parse(&nsec).map_err(|_| "Stored key is invalid.".to_string())?;
+                    let npub = keys.public_key().to_bech32().map_err(|e| e.to_string())?;
+                    Ok((npub, nsec, Arc::new(Mutex::new(v))))
+                })();
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    ui.set_login_busy(false);
+                    match result {
+                        Ok((npub, nsec, vault)) => {
+                            ui.set_login_error(s(""));
+                            ui.set_password_input(s(""));
+                            ui.set_my_npub(npub.into());
+                            ui.set_logged_in(true);
+                            boot(nsec, vault);
+                        }
+                        Err(err) => {
+                            ui.set_login_error(err.into());
+                        }
+                    }
+                });
+            });
         }
     });
 
@@ -670,7 +719,7 @@ fn main() -> Result<(), slint::PlatformError> {
                     return;
                 }
             };
-            *pending.borrow_mut() = Some(nsec.clone());
+            *pending.lock().unwrap() = Some(nsec.clone());
             ui.set_generated_nsec(nsec.into());
             ui.set_generated_npub(npub.into());
             ui.set_login_error(s(""));
@@ -685,7 +734,7 @@ fn main() -> Result<(), slint::PlatformError> {
         move |password, confirm| {
             eprintln!("[login] confirm_saved_key fired");
             let Some(ui) = weak.upgrade() else { return };
-            let Some(nsec) = pending.borrow().clone() else {
+            let Some(nsec) = pending.lock().unwrap().clone() else {
                 eprintln!("[login] no pending generated key");
                 ui.set_login_error(s("No generated key to save. Try again."));
                 ui.set_login_mode(0);
@@ -693,38 +742,46 @@ fn main() -> Result<(), slint::PlatformError> {
             };
             let password = password.to_string();
             ui.set_login_busy(true);
-            let result = (|| -> Result<(String, Arc<Mutex<Vault>>), String> {
-                validate_new_password(&password, confirm.as_str())?;
-                let keys = Keys::parse(&nsec).map_err(|e| format!("parse: {e}"))?;
-                let npub = keys
-                    .public_key()
-                    .to_bech32()
-                    .map_err(|e| format!("npub encode: {e}"))?;
-                let mut v = Vault::create(&password).map_err(|e| format!("create vault: {e}"))?;
-                v.set(vault::NSEC_KEY, &nsec)
-                    .map_err(|e| format!("seal nsec: {e}"))?;
-                Ok((npub, Arc::new(Mutex::new(v))))
-            })();
-            match result {
-                Ok((npub, vault)) => {
-                    eprintln!("[login] sealed nsec into vault, logging in as {npub}");
-                    *pending.borrow_mut() = None;
+            // Vault creation runs the Argon2id KDF — off the UI thread.
+            let weak = weak.clone();
+            let boot = boot.clone();
+            let pending = pending.clone();
+            std::thread::spawn(move || {
+                let result = (|| -> Result<(String, Arc<Mutex<Vault>>), String> {
+                    validate_new_password(&password, confirm.as_str())?;
+                    let keys = Keys::parse(&nsec).map_err(|e| format!("parse: {e}"))?;
+                    let npub = keys
+                        .public_key()
+                        .to_bech32()
+                        .map_err(|e| format!("npub encode: {e}"))?;
+                    let mut v = Vault::create(&password).map_err(|e| format!("create vault: {e}"))?;
+                    v.set(vault::NSEC_KEY, &nsec)
+                        .map_err(|e| format!("seal nsec: {e}"))?;
+                    Ok((npub, Arc::new(Mutex::new(v))))
+                })();
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
                     ui.set_login_busy(false);
-                    ui.set_login_error(s(""));
-                    ui.set_my_npub(npub.into());
-                    ui.set_generated_nsec(s(""));
-                    ui.set_generated_npub(s(""));
-                    ui.set_password_input(s(""));
-                    ui.set_password_confirm(s(""));
-                    ui.set_logged_in(true);
-                    boot(nsec, vault);
-                }
-                Err(err) => {
-                    eprintln!("[login] save failed: {err}");
-                    ui.set_login_busy(false);
-                    ui.set_login_error(err.into());
-                }
-            }
+                    match result {
+                        Ok((npub, vault)) => {
+                            eprintln!("[login] sealed nsec into vault, logging in as {npub}");
+                            *pending.lock().unwrap() = None;
+                            ui.set_login_error(s(""));
+                            ui.set_my_npub(npub.into());
+                            ui.set_generated_nsec(s(""));
+                            ui.set_generated_npub(s(""));
+                            ui.set_password_input(s(""));
+                            ui.set_password_confirm(s(""));
+                            ui.set_logged_in(true);
+                            boot(nsec, vault);
+                        }
+                        Err(err) => {
+                            eprintln!("[login] save failed: {err}");
+                            ui.set_login_error(err.into());
+                        }
+                    }
+                });
+            });
         }
     });
 
@@ -833,13 +890,23 @@ fn main() -> Result<(), slint::PlatformError> {
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         move || {
-            let Some(ui) = weak.upgrade() else { return };
-            let snap = backend_cell
-                .lock()
-                .ok()
-                .and_then(|g| g.as_ref().map(|b| b.debug_snapshot()))
-                .unwrap_or_else(|| "(backend not booted)".to_string());
-            ui.set_debug_dump(snap.into());
+            // Liveness check only — the dump lands via the completion below.
+            if weak.upgrade().is_none() {
+                return;
+            }
+            // `debug_snapshot` does a `block_on` per group for MLS state —
+            // collect it on a worker.
+            let b = backend_cell.lock().unwrap().clone();
+            let weak = weak.clone();
+            std::thread::spawn(move || {
+                let snap = b
+                    .map(|b| b.debug_snapshot())
+                    .unwrap_or_else(|| "(backend not booted)".to_string());
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    ui.set_debug_dump(snap.into());
+                });
+            });
         }
     });
 
@@ -957,7 +1024,7 @@ fn main() -> Result<(), slint::PlatformError> {
             if ui.get_chats().row_count() > 0 {
                 return;
             }
-            let Some(vault) = vault_cell.borrow().clone() else {
+            let Some(vault) = vault_cell.lock().unwrap().clone() else {
                 return;
             };
             let Some(nsec) = vault.lock().unwrap().nsec() else {
@@ -1027,10 +1094,10 @@ fn main() -> Result<(), slint::PlatformError> {
             let weak = weak.clone();
             let backend_cell = backend_cell.clone();
             std::thread::spawn(move || {
-                let snapshot = {
-                    let guard = backend_cell.lock().unwrap();
-                    guard.as_ref().map(|b| b.relay_health())
-                };
+                // Clone the handle, drop the lock, then poll — the UI thread
+                // must never find this mutex held across a relay query.
+                let b = backend_cell.lock().unwrap().clone();
+                let snapshot = b.map(|b| b.relay_health());
                 let _ = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak.upgrade() else { return };
                     match snapshot {
@@ -1057,12 +1124,12 @@ fn main() -> Result<(), slint::PlatformError> {
             let weak = weak.clone();
             let backend_cell = backend_cell.clone();
             std::thread::spawn(move || {
-                let result = {
-                    let guard = backend_cell.lock().unwrap();
-                    match guard.as_ref() {
-                        None => Err("Backend not ready.".to_string()),
-                        Some(b) => b.republish_relay_lists().map_err(|e| format!("{e:#}")),
-                    }
+                // Same handle-clone dance: never hold the cell lock across
+                // the relay publish.
+                let b = backend_cell.lock().unwrap().clone();
+                let result = match b {
+                    None => Err("Backend not ready.".to_string()),
+                    Some(b) => b.republish_relay_lists().map_err(|e| format!("{e:#}")),
                 };
                 let _ = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak.upgrade() else { return };
@@ -1093,11 +1160,12 @@ fn main() -> Result<(), slint::PlatformError> {
             ui.set_kp_busy(true);
             ui.set_kp_status(format!("{op_kind}…").into());
             let weak = weak.clone();
-            let backend_cell = backend_cell.clone();
+            // Clone the backend handle and drop the lock before the relay
+            // round-trip — other callbacks keep locking this cell freely.
+            let b = backend_cell.lock().unwrap().clone();
             std::thread::spawn(move || {
                 let result: Result<String, String> = {
-                    let guard = backend_cell.lock().unwrap();
-                    match guard.as_ref() {
+                    match b.as_deref() {
                         None => Err("backend not ready".to_string()),
                         Some(b) => match op_kind {
                             // NOTE: the SDK returns the key-package size in bytes,
@@ -1119,7 +1187,18 @@ fn main() -> Result<(), slint::PlatformError> {
                         },
                     }
                 };
-                let backend_cell = backend_cell.clone();
+                // The post-op snapshot for "refresh" hits relays too — pull
+                // the rows here on the worker, never in the event-loop
+                // completion (that closure runs on the UI thread).
+                let rows: Option<Vec<KeyPackageInfo>> = b.as_deref().and_then(|b| {
+                    if op_kind == "refresh" {
+                        b.key_packages_fetch()
+                            .ok()
+                            .map(|recs| recs.iter().map(kp_to_ui).collect())
+                    } else {
+                        None
+                    }
+                });
                 let _ = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak.upgrade() else { return };
                     ui.set_kp_busy(false);
@@ -1129,15 +1208,9 @@ fn main() -> Result<(), slint::PlatformError> {
                     }
                     // Refresh from local state regardless of op outcome; for
                     // "refresh" we additionally surface the relay snapshot.
-                    let guard = backend_cell.lock().unwrap();
-                    if let Some(b) = guard.as_ref() {
-                        if op_kind == "refresh" {
-                            if let Ok(recs) = b.key_packages_fetch() {
-                                let rows: Vec<KeyPackageInfo> = recs.iter().map(kp_to_ui).collect();
-                                ui.set_key_packages(ModelRc::new(VecModel::from(rows)));
-                            } else {
-                                refresh_kp_local(b, &ui);
-                            }
+                    if let Some(b) = b.as_deref() {
+                        if let Some(rows) = rows {
+                            ui.set_key_packages(ModelRc::new(VecModel::from(rows)));
                         } else {
                             refresh_kp_local(b, &ui);
                         }
@@ -1184,22 +1257,13 @@ fn main() -> Result<(), slint::PlatformError> {
 
 
     // After any selection mutation, refresh the breadcrumb so the title bar matches state.
+    // Captures only the weak handle, so clones are `Send` and can ride
+    // through worker threads into completion closures.
     let refresh_breadcrumb = {
         let weak = ui.as_weak();
-        let chats = chats.clone();
-        let contacts = contacts.clone();
-        let archived = archived.clone();
         move || {
             let Some(ui) = weak.upgrade() else { return };
-            ui.set_breadcrumb(breadcrumb(
-                ui.get_active_page(),
-                &chats,
-                &contacts,
-                &archived,
-                ui.get_active_chat(),
-                ui.get_active_contact(),
-                ui.get_active_archived(),
-            ));
+            refresh_breadcrumb_now(&ui);
         }
     };
     refresh_breadcrumb();
@@ -1264,8 +1328,7 @@ fn main() -> Result<(), slint::PlatformError> {
                 ui.set_new_chat_status(s("Add at least one npub."));
                 return;
             }
-            let guard = backend_cell.lock().unwrap();
-            let Some(b) = guard.as_ref() else {
+            let Some(b) = backend_cell.lock().unwrap().clone() else {
                 ui.set_new_chat_status(s("Backend not ready."));
                 return;
             };
@@ -1289,39 +1352,48 @@ fn main() -> Result<(), slint::PlatformError> {
             } else {
                 name.trim().to_string()
             };
-            match b.create_group(&group_name, &members) {
-                Ok(group_id) => {
-                    let group_hex = hex::encode(group_id.as_slice());
-                    let chats = ui.get_chats();
-                    let chats_messages = ui.get_chats_messages();
-                    refresh_chats(b, &chats, &chats_messages, &group_ids);
-                    set_rail_badges(&ui, &chats);
-                    spawn_chat_list_avatar_fetches(&ui, b);
-                    // Select the freshly-created chat. The runtime appends it
-                    // to the visible-chats projection synchronously after
-                    // create_group resolves, so it should be present.
-                    let pos = group_ids
-                        .lock()
-                        .unwrap()
-                        .iter()
-                        .position(|g| g.eq_ignore_ascii_case(&group_hex));
-                    drop(guard);
-                    if let Some(pos) = pos {
-                        ui.set_active_chat(pos as i32);
-                        ui.invoke_chat_selected(pos as i32);
+            // `create_group` fetches key packages and publishes welcomes —
+            // relay round-trips, so a worker does them while the busy state
+            // paints.
+            let weak = weak.clone();
+            let group_ids = group_ids.clone();
+            std::thread::spawn(move || {
+                let result = b.create_group(&group_name, &members);
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    ui.set_new_chat_busy(false);
+                    match result {
+                        Ok(group_id) => {
+                            let group_hex = hex::encode(group_id.as_slice());
+                            let chats = ui.get_chats();
+                            let chats_messages = ui.get_chats_messages();
+                            refresh_chats(&b, &chats, &chats_messages, &group_ids);
+                            set_rail_badges(&ui, &chats);
+                            spawn_chat_list_avatar_fetches(&ui, &b);
+                            // Select the freshly-created chat. The runtime appends it
+                            // to the visible-chats projection synchronously after
+                            // create_group resolves, so it should be present.
+                            let pos = group_ids
+                                .lock()
+                                .unwrap()
+                                .iter()
+                                .position(|g| g.eq_ignore_ascii_case(&group_hex));
+                            if let Some(pos) = pos {
+                                ui.set_active_chat(pos as i32);
+                                ui.invoke_chat_selected(pos as i32);
+                            }
+                            ui.set_new_chat_name(s(""));
+                            ui.set_new_chat_members(s(""));
+                            ui.set_new_chat_status(s(""));
+                            ui.set_show_new_chat(false);
+                        }
+                        Err(e) => {
+                            eprintln!("[create-group] {e:#}");
+                            ui.set_new_chat_status(format!("Failed: {e:#}").into());
+                        }
                     }
-                    ui.set_new_chat_busy(false);
-                    ui.set_new_chat_name(s(""));
-                    ui.set_new_chat_members(s(""));
-                    ui.set_new_chat_status(s(""));
-                    ui.set_show_new_chat(false);
-                }
-                Err(e) => {
-                    eprintln!("[create-group] {e:#}");
-                    ui.set_new_chat_busy(false);
-                    ui.set_new_chat_status(format!("Failed: {e:#}").into());
-                }
-            }
+                });
+            });
         }
     });
     ui.on_add_contact_requested({
@@ -1346,9 +1418,6 @@ fn main() -> Result<(), slint::PlatformError> {
     ui.on_add_contact({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
-        let contacts = contacts.clone();
-        let refresh = refresh_breadcrumb.clone();
-        let settings_cell = settings_cell.clone();
         move |input| {
             let Some(ui) = weak.upgrade() else { return };
             let input = input.trim().to_string();
@@ -1356,37 +1425,47 @@ fn main() -> Result<(), slint::PlatformError> {
                 ui.set_add_contact_status(s("Paste an npub or hex pubkey."));
                 return;
             }
-            let guard = backend_cell.lock().unwrap();
-            let Some(b) = guard.as_ref() else {
+            let Some(b) = backend_cell.lock().unwrap().clone() else {
                 ui.set_add_contact_status(s("Backend not ready."));
                 return;
             };
             ui.set_add_contact_busy(true);
             ui.set_add_contact_status(s(""));
-            match b.add_contact(&input) {
-                Ok(account_id_hex) => {
-                    refresh_contacts(b, &contacts, &settings_cell.borrow().nicknames);
-                    // Select the freshly-added row so the detail pane shows it.
-                    if let Ok(npub) = npub_for_account_id(&account_id_hex) {
-                        if let Some(pos) = contacts
-                            .iter()
-                            .position(|c| c.npub_full.as_str().eq_ignore_ascii_case(&npub))
-                        {
-                            ui.set_active_contact(pos as i32);
+            // `add_contact` publishes the follow list and runs a broad
+            // directory refresh across relays — worker thread.
+            let weak = weak.clone();
+            std::thread::spawn(move || {
+                let result = b.add_contact(&input);
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    ui.set_add_contact_busy(false);
+                    match result {
+                        Ok(account_id_hex) => {
+                            // Send closure: re-read nicknames from disk instead
+                            // of capturing the Rc settings cell.
+                            let contacts = ui.get_contacts();
+                            refresh_contacts(&b, &contacts, &Settings::load().nicknames);
+                            // Select the freshly-added row so the detail pane shows it.
+                            if let Ok(npub) = npub_for_account_id(&account_id_hex) {
+                                if let Some(pos) = contacts
+                                    .iter()
+                                    .position(|c| c.npub_full.as_str().eq_ignore_ascii_case(&npub))
+                                {
+                                    ui.set_active_contact(pos as i32);
+                                }
+                            }
+                            ui.set_add_contact_input(s(""));
+                            ui.set_add_contact_status(s(""));
+                            ui.set_show_add_contact(false);
+                            refresh_breadcrumb_now(&ui);
+                        }
+                        Err(e) => {
+                            eprintln!("[add-contact] {e:#}");
+                            ui.set_add_contact_status(format!("Failed: {e:#}").into());
                         }
                     }
-                    ui.set_add_contact_busy(false);
-                    ui.set_add_contact_input(s(""));
-                    ui.set_add_contact_status(s(""));
-                    ui.set_show_add_contact(false);
-                    refresh();
-                }
-                Err(e) => {
-                    eprintln!("[add-contact] {e:#}");
-                    ui.set_add_contact_busy(false);
-                    ui.set_add_contact_status(format!("Failed: {e:#}").into());
-                }
-            }
+                });
+            });
         }
     });
     // "Add contact" from the peer-profile modal — same flow as the add-contact
@@ -1394,32 +1473,34 @@ fn main() -> Result<(), slint::PlatformError> {
     ui.on_peer_profile_add_contact({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
-        let contacts = contacts.clone();
-        let refresh = refresh_breadcrumb.clone();
-        let settings_cell = settings_cell.clone();
         move || {
             let Some(ui) = weak.upgrade() else { return };
             let npub = ui.get_peer_profile_npub().to_string();
             if npub.is_empty() {
                 return;
             }
-            let guard = backend_cell.lock().unwrap();
-            let Some(b) = guard.as_ref() else { return };
+            let Some(b) = backend_cell.lock().unwrap().clone() else { return };
             ui.set_peer_profile_adding(true);
             ui.set_peer_profile_status(s(""));
-            match b.add_contact(&npub) {
-                Ok(_) => {
-                    refresh_contacts(b, &contacts, &settings_cell.borrow().nicknames);
+            let weak = weak.clone();
+            std::thread::spawn(move || {
+                let result = b.add_contact(&npub);
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
                     ui.set_peer_profile_adding(false);
-                    ui.set_peer_profile_is_contact(true);
-                    refresh();
-                }
-                Err(e) => {
-                    eprintln!("[profile-add-contact] {e:#}");
-                    ui.set_peer_profile_adding(false);
-                    ui.set_peer_profile_status(format!("Failed: {e:#}").into());
-                }
-            }
+                    match result {
+                        Ok(_) => {
+                            refresh_contacts(&b, &ui.get_contacts(), &Settings::load().nicknames);
+                            ui.set_peer_profile_is_contact(true);
+                            refresh_breadcrumb_now(&ui);
+                        }
+                        Err(e) => {
+                            eprintln!("[profile-add-contact] {e:#}");
+                            ui.set_peer_profile_status(format!("Failed: {e:#}").into());
+                        }
+                    }
+                });
+            });
         }
     });
     ui.on_contact_nickname_requested({
@@ -1484,27 +1565,32 @@ fn main() -> Result<(), slint::PlatformError> {
             let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
                 return;
             };
-            ui.set_add_member_busy(true);
-            ui.set_add_member_status(s(""));
-            let guard = backend_cell.lock().unwrap();
-            let Some(b) = guard.as_ref() else {
-                ui.set_add_member_busy(false);
+            let Some(b) = backend_cell.lock().unwrap().clone() else {
                 ui.set_add_member_status(s("Backend not ready."));
                 return;
             };
-            match b.invite_members(&group_hex, &[npub.clone()]) {
-                Ok(_) => {
-                    push_group_members_to_ui(&ui, b, &group_hex);
+            ui.set_add_member_busy(true);
+            ui.set_add_member_status(s(""));
+            // Inviting publishes an MLS commit + welcome to relays — worker.
+            let weak = weak.clone();
+            std::thread::spawn(move || {
+                let result = b.invite_members(&group_hex, &[npub.clone()]);
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
                     ui.set_add_member_busy(false);
-                    ui.set_add_member_draft(s(""));
-                    ui.set_add_member_status(s("Invited."));
-                }
-                Err(e) => {
-                    eprintln!("[invite] {e:#}");
-                    ui.set_add_member_busy(false);
-                    ui.set_add_member_status(format!("Failed: {e:#}").into());
-                }
-            }
+                    match result {
+                        Ok(_) => {
+                            push_group_members_to_ui(&ui, &b, &group_hex);
+                            ui.set_add_member_draft(s(""));
+                            ui.set_add_member_status(s("Invited."));
+                        }
+                        Err(e) => {
+                            eprintln!("[invite] {e:#}");
+                            ui.set_add_member_status(format!("Failed: {e:#}").into());
+                        }
+                    }
+                });
+            });
         }
     });
     ui.on_promote_admin({
@@ -1522,21 +1608,28 @@ fn main() -> Result<(), slint::PlatformError> {
                 return;
             };
             ui.set_group_settings_status(s(""));
-            let guard = backend_cell.lock().unwrap();
-            let Some(b) = guard.as_ref() else {
+            let Some(b) = backend_cell.lock().unwrap().clone() else {
                 ui.set_group_settings_status(s("Backend not ready."));
                 return;
             };
-            match b.promote_admin(&group_hex, &member_id) {
-                Ok(_) => {
-                    push_group_members_to_ui(&ui, b, &group_hex);
-                    ui.set_group_settings_status(s("Admin added."));
-                }
-                Err(e) => {
-                    eprintln!("[promote] {e:#}");
-                    ui.set_group_settings_status(format!("Failed: {e:#}").into());
-                }
-            }
+            // Admin changes publish an MLS commit to relays — worker.
+            let weak = weak.clone();
+            std::thread::spawn(move || {
+                let result = b.promote_admin(&group_hex, &member_id);
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    match result {
+                        Ok(_) => {
+                            push_group_members_to_ui(&ui, &b, &group_hex);
+                            ui.set_group_settings_status(s("Admin added."));
+                        }
+                        Err(e) => {
+                            eprintln!("[promote] {e:#}");
+                            ui.set_group_settings_status(format!("Failed: {e:#}").into());
+                        }
+                    }
+                });
+            });
         }
     });
     ui.on_demote_admin({
@@ -1554,21 +1647,27 @@ fn main() -> Result<(), slint::PlatformError> {
                 return;
             };
             ui.set_group_settings_status(s(""));
-            let guard = backend_cell.lock().unwrap();
-            let Some(b) = guard.as_ref() else {
+            let Some(b) = backend_cell.lock().unwrap().clone() else {
                 ui.set_group_settings_status(s("Backend not ready."));
                 return;
             };
-            match b.demote_admin(&group_hex, &member_id) {
-                Ok(_) => {
-                    push_group_members_to_ui(&ui, b, &group_hex);
-                    ui.set_group_settings_status(s("Admin removed."));
-                }
-                Err(e) => {
-                    eprintln!("[demote] {e:#}");
-                    ui.set_group_settings_status(format!("Failed: {e:#}").into());
-                }
-            }
+            let weak = weak.clone();
+            std::thread::spawn(move || {
+                let result = b.demote_admin(&group_hex, &member_id);
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    match result {
+                        Ok(_) => {
+                            push_group_members_to_ui(&ui, &b, &group_hex);
+                            ui.set_group_settings_status(s("Admin removed."));
+                        }
+                        Err(e) => {
+                            eprintln!("[demote] {e:#}");
+                            ui.set_group_settings_status(format!("Failed: {e:#}").into());
+                        }
+                    }
+                });
+            });
         }
     });
     ui.on_self_demote_admin({
@@ -1582,21 +1681,27 @@ fn main() -> Result<(), slint::PlatformError> {
                 return;
             };
             ui.set_group_settings_status(s(""));
-            let guard = backend_cell.lock().unwrap();
-            let Some(b) = guard.as_ref() else {
+            let Some(b) = backend_cell.lock().unwrap().clone() else {
                 ui.set_group_settings_status(s("Backend not ready."));
                 return;
             };
-            match b.self_demote_admin(&group_hex) {
-                Ok(_) => {
-                    push_group_members_to_ui(&ui, b, &group_hex);
-                    ui.set_group_settings_status(s("You stepped down."));
-                }
-                Err(e) => {
-                    eprintln!("[self-demote] {e:#}");
-                    ui.set_group_settings_status(format!("Failed: {e:#}").into());
-                }
-            }
+            let weak = weak.clone();
+            std::thread::spawn(move || {
+                let result = b.self_demote_admin(&group_hex);
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    match result {
+                        Ok(_) => {
+                            push_group_members_to_ui(&ui, &b, &group_hex);
+                            ui.set_group_settings_status(s("You stepped down."));
+                        }
+                        Err(e) => {
+                            eprintln!("[self-demote] {e:#}");
+                            ui.set_group_settings_status(format!("Failed: {e:#}").into());
+                        }
+                    }
+                });
+            });
         }
     });
     ui.on_rename_group({
@@ -1614,29 +1719,35 @@ fn main() -> Result<(), slint::PlatformError> {
             let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
                 return;
             };
-            ui.set_group_rename_busy(true);
-            ui.set_group_settings_status(s(""));
-            let guard = backend_cell.lock().unwrap();
-            let Some(b) = guard.as_ref() else {
-                ui.set_group_rename_busy(false);
+            let Some(b) = backend_cell.lock().unwrap().clone() else {
                 ui.set_group_settings_status(s("Backend not ready."));
                 return;
             };
-            match b.rename_group(&group_hex, &name) {
-                Ok(_) => {
-                    let chats = ui.get_chats();
-                    let chats_messages = ui.get_chats_messages();
-                    refresh_chats(b, &chats, &chats_messages, &group_ids);
-                    push_group_members_to_ui(&ui, b, &group_hex);
+            ui.set_group_rename_busy(true);
+            ui.set_group_settings_status(s(""));
+            // Renaming publishes an MLS commit to relays — worker.
+            let weak = weak.clone();
+            let group_ids = group_ids.clone();
+            std::thread::spawn(move || {
+                let result = b.rename_group(&group_hex, &name);
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
                     ui.set_group_rename_busy(false);
-                    ui.set_group_settings_status(s("Renamed."));
-                }
-                Err(e) => {
-                    eprintln!("[rename] {e:#}");
-                    ui.set_group_rename_busy(false);
-                    ui.set_group_settings_status(format!("Failed: {e:#}").into());
-                }
-            }
+                    match result {
+                        Ok(_) => {
+                            let chats = ui.get_chats();
+                            let chats_messages = ui.get_chats_messages();
+                            refresh_chats(&b, &chats, &chats_messages, &group_ids);
+                            push_group_members_to_ui(&ui, &b, &group_hex);
+                            ui.set_group_settings_status(s("Renamed."));
+                        }
+                        Err(e) => {
+                            eprintln!("[rename] {e:#}");
+                            ui.set_group_settings_status(format!("Failed: {e:#}").into());
+                        }
+                    }
+                });
+            });
         }
     });
     ui.on_clear_group_image({
@@ -1993,18 +2104,26 @@ fn main() -> Result<(), slint::PlatformError> {
         move || {
             let Some(ui) = weak.upgrade() else { return };
             let Some(group_hex) = resolve() else { return };
-            let guard = backend_cell.lock().unwrap();
-            let Some(b) = guard.as_ref() else {
+            let Some(b) = backend_cell.lock().unwrap().clone() else {
                 ui.set_backend_error(s("backend not ready"));
                 return;
             };
-            if let Err(e) = b.accept_group_invite(&group_hex) {
-                eprintln!("[accept] {e:#}");
-                ui.set_backend_error(format!("accept: {e:#}").into());
-                return;
-            }
-            drop(guard);
-            refresh();
+            // Accepting publishes to relays — worker; `refresh` captures only
+            // Send handles, so a clone rides into the completion.
+            let weak = weak.clone();
+            let refresh = refresh.clone();
+            std::thread::spawn(move || {
+                let result = b.accept_group_invite(&group_hex);
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    if let Err(e) = result {
+                        eprintln!("[accept] {e:#}");
+                        ui.set_backend_error(format!("accept: {e:#}").into());
+                        return;
+                    }
+                    refresh();
+                });
+            });
         }
     });
 
@@ -2016,18 +2135,24 @@ fn main() -> Result<(), slint::PlatformError> {
         move || {
             let Some(ui) = weak.upgrade() else { return };
             let Some(group_hex) = resolve() else { return };
-            let guard = backend_cell.lock().unwrap();
-            let Some(b) = guard.as_ref() else {
+            let Some(b) = backend_cell.lock().unwrap().clone() else {
                 ui.set_backend_error(s("backend not ready"));
                 return;
             };
-            if let Err(e) = b.decline_group_invite(&group_hex) {
-                eprintln!("[block] {e:#}");
-                ui.set_backend_error(format!("block: {e:#}").into());
-                return;
-            }
-            drop(guard);
-            refresh();
+            let weak = weak.clone();
+            let refresh = refresh.clone();
+            std::thread::spawn(move || {
+                let result = b.decline_group_invite(&group_hex);
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    if let Err(e) = result {
+                        eprintln!("[block] {e:#}");
+                        ui.set_backend_error(format!("block: {e:#}").into());
+                        return;
+                    }
+                    refresh();
+                });
+            });
         }
     });
 
@@ -2976,7 +3101,7 @@ fn main() -> Result<(), slint::PlatformError> {
             let is_image = mime_is_image(&reference.media_type);
             // Unlocked vault for this session (UI thread only). Clones of this
             // Arc ride into the tokio tasks below to seal/unseal the disk cache.
-            let vault = vault_cell.borrow().clone();
+            let vault = vault_cell.lock().unwrap().clone();
 
             let chats_messages = ui.get_chats_messages();
             let overlay = pending_state.lock().unwrap();
@@ -3600,8 +3725,7 @@ fn main() -> Result<(), slint::PlatformError> {
         let backend_cell = backend_cell.clone();
         move || {
             let Some(ui) = weak.upgrade() else { return };
-            let guard = backend_cell.lock().unwrap();
-            let Some(backend) = guard.as_ref() else {
+            let Some(backend) = backend_cell.lock().unwrap().clone() else {
                 // Backend failed to boot earlier. Show the captured reason
                 // instead of a generic message so the user can act on it.
                 let saved = ui.get_backend_error().to_string();
@@ -3616,19 +3740,27 @@ fn main() -> Result<(), slint::PlatformError> {
             let profile = profile_from_ui(&ui);
             ui.set_profile_busy(true);
             ui.set_profile_status(s("publishing…"));
-            let result = backend.save_profile(profile);
-            ui.set_profile_busy(false);
-            match result {
-                Ok(saved) => {
-                    apply_profile(&ui, Some(&saved));
-                    ui.set_profile_editing(false);
-                    ui.set_profile_status(s("profile published"));
-                }
-                Err(e) => {
-                    eprintln!("[profile] save failed: {e:#}");
-                    ui.set_profile_status(format!("error: {e:#}").into());
-                }
-            }
+            // Publishing the kind-0 is a relay round-trip — worker thread, so
+            // "publishing…" actually shows instead of freezing the window.
+            let weak = weak.clone();
+            std::thread::spawn(move || {
+                let result = backend.save_profile(profile);
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    ui.set_profile_busy(false);
+                    match result {
+                        Ok(saved) => {
+                            apply_profile(&ui, Some(&saved));
+                            ui.set_profile_editing(false);
+                            ui.set_profile_status(s("profile published"));
+                        }
+                        Err(e) => {
+                            eprintln!("[profile] save failed: {e:#}");
+                            ui.set_profile_status(format!("error: {e:#}").into());
+                        }
+                    }
+                });
+            });
         }
     });
 
@@ -3906,7 +4038,7 @@ fn nostr_ref_to_hex(reference: &str) -> Option<String> {
 /// async relay fetch through the discovery set.
 fn open_profile_modal(
     ui: &DarkMatterLinux,
-    backend_cell: &Arc<Mutex<Option<Backend>>>,
+    backend_cell: &Arc<Mutex<Option<Arc<Backend>>>>,
     account_id_hex: &str,
 ) {
     let guard = backend_cell.lock().unwrap();
@@ -4568,7 +4700,7 @@ fn install_chat_watcher(
     backend: &Backend,
     weak: Weak<DarkMatterLinux>,
     group_ids: Arc<Mutex<Vec<String>>>,
-    backend_cell: Arc<Mutex<Option<Backend>>>,
+    backend_cell: Arc<Mutex<Option<Arc<Backend>>>>,
 ) {
     backend.watch_chats(move |record| {
         let weak = weak.clone();
@@ -4602,12 +4734,12 @@ fn install_chat_watcher(
             let mut ids = group_ids.lock().unwrap();
             if let Some(pos) = ids.iter().position(|g| g == &id) {
                 if let Some(vm) = chats.as_any().downcast_ref::<VecModel<ChatMeta>>() {
-                    vm.set_row_data(pos, meta(guard.as_ref()));
+                    vm.set_row_data(pos, meta(guard.as_deref()));
                 }
             } else {
                 ids.push(id);
                 if let Some(vm) = chats.as_any().downcast_ref::<VecModel<ChatMeta>>() {
-                    vm.push(meta(guard.as_ref()));
+                    vm.push(meta(guard.as_deref()));
                 }
                 if let Some(vm) = chats_messages
                     .as_any()
@@ -6637,7 +6769,7 @@ fn validate_relay_url(url: &str) -> Result<(), String> {
 
 /// Push the booted-relays list + current health into the UI. Called after
 /// the backend finishes booting.
-fn refresh_network_post_boot(backend: &Backend, ui: &DarkMatterLinux) {
+fn refresh_network_post_boot(backend: &Arc<Backend>, ui: &DarkMatterLinux) {
     let booted: Vec<SharedString> = backend
         .booted_relays()
         .iter()
@@ -6645,12 +6777,21 @@ fn refresh_network_post_boot(backend: &Backend, ui: &DarkMatterLinux) {
         .map(SharedString::from)
         .collect();
     ui.set_network_booted_relays(ModelRc::new(VecModel::from(booted)));
-    let (connected, total) = backend.relay_health();
-    ui.set_network_connected(connected as i32);
-    ui.set_network_total(total as i32);
-    // Mark the first sync so the chat-list footer leaves "SYNCING…" and the 1s
-    // timer starts counting up from a real baseline.
-    ui.set_sync_secs(0);
+    // `relay_health` does a `block_on` into the relay plane — poll it from a
+    // worker so this post-boot UI pass never stalls the event loop.
+    let weak = ui.as_weak();
+    let backend = backend.clone();
+    std::thread::spawn(move || {
+        let (connected, total) = backend.relay_health();
+        let _ = slint::invoke_from_event_loop(move || {
+            let Some(ui) = weak.upgrade() else { return };
+            ui.set_network_connected(connected as i32);
+            ui.set_network_total(total as i32);
+            // Mark the first sync so the chat-list footer leaves "SYNCING…"
+            // and the 1s timer starts counting up from a real baseline.
+            ui.set_sync_secs(0);
+        });
+    });
 }
 
 /// `Mon DD · HH:MM` for KP timestamps. Returns "" for zero (unknown).
@@ -7277,7 +7418,7 @@ fn archived_from(
 fn install_message_watcher(
     backend: &Backend,
     weak: Weak<DarkMatterLinux>,
-    backend_cell: Arc<Mutex<Option<Backend>>>,
+    backend_cell: Arc<Mutex<Option<Arc<Backend>>>>,
     pending_state: Arc<Mutex<PendingState>>,
     group_hex: String,
     chat_idx: usize,
