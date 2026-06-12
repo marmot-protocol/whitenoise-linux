@@ -213,6 +213,8 @@ export component ProfilePage inherits Rectangle {
 
     // Display props (always visible — also surface what was last saved).
     in property <string> npub;
+    // QR of the nostr:npub URI, rasterized Rust-side (see qr_image in main.rs).
+    in property <image> qr;
     // Editable props — two-way bound to root in dark-matter-linux.slint.
     in-out property <string> display-name;
     in property <image> picture;
@@ -432,13 +434,43 @@ export component ProfilePage inherits Rectangle {
                         label: "npub";
                         sublabel: @tr("Your public key. Safe to share.");
                         value: npub;
-                        show-divider: false;
                         MicroButton {
                             label: @tr("Copy");
                             clicked => { root.copy-npub-clicked(); }
                             CopyIcon {
                                 stroke: Palette.text-mid;
                             }
+                        }
+                    }
+                    // QR of the nostr:npub URI. The plate stays white in every
+                    // theme — phone cameras need real contrast, and the image's
+                    // baked-in quiet zone merges with the white plate.
+                    VerticalLayout {
+                        padding-top: 16px;
+                        padding-bottom: 16px;
+                        spacing: 8px;
+                        HorizontalLayout {
+                            alignment: center;
+                            Rectangle {
+                                width: 168px;
+                                height: 168px;
+                                background: white;
+                                border-radius: (8px) * Theme.r-scale;
+                                border-width: Theme.retro ? Theme.border-w : 1px;
+                                border-color: Theme.retro ? Palette.border : Palette.border-2;
+                                Image {
+                                    width: 152px;
+                                    height: 152px;
+                                    source: root.qr;
+                                    image-rendering: pixelated;
+                                }
+                            }
+                        }
+                        Text {
+                            text: @tr("Scan to add me from another device");
+                            color: Palette.text-lo;
+                            font-size: (11px) * Theme.fs-scale;
+                            horizontal-alignment: center;
                         }
                     }
                 }

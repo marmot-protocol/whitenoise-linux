@@ -59,6 +59,8 @@ export component DarkMatterLinux inherits Window {
     in-out property <bool> retro-mode: false;
     in-out property <int> accent-color: 0;
     in property <string> my-npub;
+    // QR of the nostr:npub URI, rasterized Rust-side on login.
+    in property <image> my-qr;
     // Login gate. When false the LoginScreen replaces the entire app shell.
     in-out property <bool> logged-in: false;
     // 0=choose, 1=enter-nsec, 2=show-generated, 3=unlock-existing-vault.
@@ -697,6 +699,7 @@ export component DarkMatterLinux inherits Window {
                         width: parent.width;
                         height: parent.height;
                         npub: root.my-npub;
+                        qr: root.my-qr;
                         editing: root.profile-editing;
                         busy: root.profile-busy;
                         uploading: root.profile-uploading;
