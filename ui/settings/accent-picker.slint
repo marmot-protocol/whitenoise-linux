@@ -40,11 +40,11 @@ export component AccentPicker inherits Rectangle {
             width: 24px; height: 24px;
             border-radius: (12px) * Theme.r-scale;
             background: color;
-            border-width: root.selected == idx ? 2px : 0px;
+            border-width: root.selected == idx ? 2px : (touch.has-hover ? 1px : 0px);
             border-color: Palette.text-hi;
             animate border-width { duration: 100ms; }
 
-            TouchArea {
+            touch := TouchArea {
                 clicked => {
                     root.selected = idx;
                     root.accent-selected(idx);

@@ -24,6 +24,13 @@ pub struct Settings {
     pub accent_color: String,
     #[serde(default = "default_outgoing_on_right")]
     pub outgoing_on_right: bool,
+    /// Clock style for all visible timestamps. One of `24h`, `12h`.
+    #[serde(default = "default_time_format")]
+    pub time_format: String,
+    /// Date style for all visible stamps. One of `mdy` ("Jun 12"),
+    /// `dmy` ("12 Jun"), `iso` ("2026-06-12").
+    #[serde(default = "default_date_format")]
+    pub date_format: String,
     /// Private per-contact nicknames, keyed by the contact's account id (hex).
     /// Local-only — never published to relays.
     #[serde(default)]
@@ -46,6 +53,14 @@ fn default_outgoing_on_right() -> bool {
     true
 }
 
+fn default_time_format() -> String {
+    "24h".into()
+}
+
+fn default_date_format() -> String {
+    "mdy".into()
+}
+
 impl Default for Settings {
     fn default() -> Self {
         Self {
@@ -54,6 +69,8 @@ impl Default for Settings {
             theme: default_theme(),
             accent_color: default_accent(),
             outgoing_on_right: default_outgoing_on_right(),
+            time_format: default_time_format(),
+            date_format: default_date_format(),
             nicknames: BTreeMap::new(),
         }
     }

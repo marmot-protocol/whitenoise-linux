@@ -39,6 +39,8 @@ export component ContactDetail inherits DetailPage {
                 initials: root.contact.av-initials;
                 color-a: root.contact.av-a;
                 color-b: root.contact.av-b;
+                picture: root.contact.picture;
+                has-picture: root.contact.has-picture;
                 font-size: (22px) * Theme.fs-scale;
             }
             if root.contact.online : Rectangle {
@@ -183,21 +185,21 @@ export component ContactDetail inherits DetailPage {
             Rectangle { width: 16px; }
             MicroButton {
                 label: @tr("Block");
-                fg: #FCA5A5;
-                bg-color: #2A1418;
-                hover-bg: #3A1A20;
-                outline: #5A2429;
-                hover-outline: #7A2E36;
-                BanIcon { stroke: #FCA5A5; }
+                fg: Palette.danger;
+                bg-color: Palette.danger-soft;
+                hover-bg: Palette.danger-soft-hover;
+                outline: Palette.danger-border;
+                hover-outline: Palette.danger-border-hover;
+                BanIcon { stroke: Palette.danger; }
             }
             MicroButton {
                 label: @tr("Remove contact");
-                fg: #FCA5A5;
-                bg-color: #2A1418;
-                hover-bg: #3A1A20;
-                outline: #5A2429;
-                hover-outline: #7A2E36;
-                TrashIcon { stroke: #FCA5A5; }
+                fg: Palette.danger;
+                bg-color: Palette.danger-soft;
+                hover-bg: Palette.danger-soft-hover;
+                outline: Palette.danger-border;
+                hover-outline: Palette.danger-border-hover;
+                TrashIcon { stroke: Palette.danger; }
             }
         }
     }

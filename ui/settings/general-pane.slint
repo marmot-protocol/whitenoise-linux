@@ -1,4 +1,4 @@
-import { Palette } from "../tokens.slint";
+import { Palette, Theme } from "../tokens.slint";
 import { SettingsIcon } from "../icons/settings-icon.slint";
 import { ChevronRightIcon } from "../icons/chevron-right-icon.slint";
 import { DetailPage } from "../shells/detail-page.slint";
@@ -12,6 +12,11 @@ import { MicroButton } from "../primitives/button.slint";
 export component GeneralPane inherits DetailPage {
     in property <string> locale-display;
     callback change-language-clicked();
+    // `24h` | `12h` and `mdy` | `dmy` | `iso` — mirrors Settings in Rust.
+    in property <string> time-format: "24h";
+    in property <string> date-format: "mdy";
+    callback time-format-selected(string);
+    callback date-format-selected(string);
 
     PageHeader {
         title: @tr("General");
@@ -52,12 +57,41 @@ export component GeneralPane inherits DetailPage {
             }
             PrefRow {
                 label: @tr("Time format");
-                value: "24h";
+                MicroButton {
+                    label: @tr("24-hour");
+                    selected: root.time-format == "24h";
+                    fg: root.time-format == "24h" && Theme.retro ? Palette.bubble-out-fg : Palette.text-hi;
+                    clicked => { root.time-format-selected("24h"); }
+                }
+                MicroButton {
+                    label: @tr("12-hour");
+                    selected: root.time-format == "12h";
+                    fg: root.time-format == "12h" && Theme.retro ? Palette.bubble-out-fg : Palette.text-hi;
+                    clicked => { root.time-format-selected("12h"); }
+                }
             }
             PrefRow {
                 label: @tr("Date format");
-                value: "ISO  ·  YYYY-MM-DD";
                 show-divider: false;
+                // Labels are example renderings, not prose — keep untranslated.
+                MicroButton {
+                    label: "Jun 12";
+                    selected: root.date-format == "mdy";
+                    fg: root.date-format == "mdy" && Theme.retro ? Palette.bubble-out-fg : Palette.text-hi;
+                    clicked => { root.date-format-selected("mdy"); }
+                }
+                MicroButton {
+                    label: "12 Jun";
+                    selected: root.date-format == "dmy";
+                    fg: root.date-format == "dmy" && Theme.retro ? Palette.bubble-out-fg : Palette.text-hi;
+                    clicked => { root.date-format-selected("dmy"); }
+                }
+                MicroButton {
+                    label: "2026-06-12";
+                    selected: root.date-format == "iso";
+                    fg: root.date-format == "iso" && Theme.retro ? Palette.bubble-out-fg : Palette.text-hi;
+                    clicked => { root.date-format-selected("iso"); }
+                }
             }
         }
     }

@@ -38,13 +38,13 @@ export component ArchivedDetail inherits DetailPage {
         Button {
             label: @tr("Delete");
             button-height: 36px;
-            fg: #FCA5A5;
-            bg-color: #2A1418;
-            hover-bg: #3A1A20;
-            outline: #5A2429;
-            hover-outline: #7A2E36;
+            fg: Palette.danger;
+            bg-color: Palette.danger-soft;
+            hover-bg: Palette.danger-soft-hover;
+            outline: Palette.danger-border;
+            hover-outline: Palette.danger-border-hover;
             y: (parent.height - self.height) / 2;
-            TrashIcon { stroke: #FCA5A5; }
+            TrashIcon { stroke: Palette.danger; }
         }
     }
 

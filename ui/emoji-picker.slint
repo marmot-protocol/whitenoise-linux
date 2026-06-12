@@ -79,7 +79,8 @@ export component EmojiPicker inherits Rectangle {
                 background: Palette.bg;
                 border-radius: (5px) * Theme.r-scale;
                 border-width: 1px;
-                border-color: Palette.border-2;
+                border-color: search.has-focus ? Palette.mint-dim : Palette.border-2;
+                animate border-color { duration: 140ms; easing: ease-out; }
                 HorizontalLayout {
                     padding-left: 8px; padding-right: 8px;
                     spacing: 6px;
@@ -89,7 +90,8 @@ export component EmojiPicker inherits Rectangle {
                         placeholder: @tr("search…");
                         fg: Palette.text-hi;
                         placeholder-color: Palette.text-lo;
-                        font-size: (12px) * Theme.fs-scale;
+                        // LineInput multiplies by fs-scale internally.
+                        font-size: 12px;
                     }
                 }
             }
@@ -167,8 +169,11 @@ export component EmojiPicker inherits Rectangle {
                                         source-clip-y: cell-slot.active ? emoji-list[cell-slot.flat-idx].clip-y : 0;
                                         source-clip-width: root.tile;
                                         source-clip-height: root.tile;
-                                        width: 22px;
-                                        height: 22px;
+                                        // Slight pop on hover so the glyph responds
+                                        // along with the cell highlight.
+                                        width: cell.has-hover ? 26px : 22px;
+                                        height: cell.has-hover ? 26px : 22px;
+                                        animate width, height { duration: 80ms; easing: ease-out; }
                                         image-fit: contain;
                                     }
                                     cell := TouchArea {

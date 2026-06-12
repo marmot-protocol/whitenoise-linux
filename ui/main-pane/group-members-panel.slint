@@ -149,10 +149,13 @@ export component GroupMembersPanel inherits Rectangle {
                             border-radius: (6px) * Theme.r-scale;
                             background: Palette.field;
                             border-width: Theme.border-w;
-                            border-color: Palette.field-border;
+                            border-color: rename-input.has-focus ? Palette.mint-dim : Palette.field-border;
+                            drop-shadow-blur: rename-input.has-focus && !Theme.retro ? 10px : 0px;
+                            drop-shadow-color: Palette.mint-glow;
+                            animate border-color { duration: 140ms; easing: ease-out; }
                             HorizontalLayout {
                                 padding-left: 10px; padding-right: 10px;
-                                LineInput {
+                                rename-input := LineInput {
                                     placeholder: @tr("Group name");
                                     text <=> root.rename-draft;
                                     font-size: (Theme.retro ? 14px : 12px);
@@ -242,10 +245,13 @@ export component GroupMembersPanel inherits Rectangle {
                         border-radius: (6px) * Theme.r-scale;
                         background: Palette.field;
                         border-width: Theme.border-w;
-                        border-color: Palette.field-border;
+                        border-color: add-input.has-focus ? Palette.mint-dim : Palette.field-border;
+                        drop-shadow-blur: add-input.has-focus && !Theme.retro ? 10px : 0px;
+                        drop-shadow-color: Palette.mint-glow;
+                        animate border-color { duration: 140ms; easing: ease-out; }
                         HorizontalLayout {
                             padding-left: 10px; padding-right: 10px;
-                            LineInput {
+                            add-input := LineInput {
                                 placeholder: "npub1…";
                                 text <=> root.add-draft;
                                 font-size: (Theme.retro ? 14px : 12px);

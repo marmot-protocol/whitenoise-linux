@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2026-06-12 01:00+0000\n"
+"POT-Creation-Date: 2026-06-12 02:04+0000\n"
 "PO-Revision-Date: 2026-05-27 13:20+0000\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -129,107 +129,107 @@ msgctxt "ContactDetail"
 msgid "ADDED {}  ·  {} RELAYS"
 msgstr "AGGIUNTO {}  ·  {} RELAY"
 
-#: ui/contacts/contact-detail.slint:75
+#: ui/contacts/contact-detail.slint:77
 msgctxt "ContactDetail"
 msgid "aka {}"
 msgstr ""
 
-#: ui/contacts/contact-detail.slint:81
+#: ui/contacts/contact-detail.slint:83
 msgctxt "ContactDetail"
 msgid "✓ VERIFIED"
 msgstr "✓ VERIFICATO"
 
-#: ui/contacts/contact-detail.slint:88
+#: ui/contacts/contact-detail.slint:90
 msgctxt "ContactDetail"
 msgid "Nickname"
 msgstr ""
 
-#: ui/contacts/contact-detail.slint:95
+#: ui/contacts/contact-detail.slint:97
 msgctxt "ContactDetail"
 msgid "{} RELAYS"
 msgstr "{} RELAY"
 
-#: ui/contacts/contact-detail.slint:117
+#: ui/contacts/contact-detail.slint:119
 msgctxt "ContactDetail"
 msgid "Start chat"
 msgstr "Avvia chat"
 
-#: ui/contacts/contact-detail.slint:129
+#: ui/contacts/contact-detail.slint:131
 msgctxt "ContactDetail"
 msgid "IDENTITY"
 msgstr "IDENTITÀ"
 
-#: ui/contacts/contact-detail.slint:133
+#: ui/contacts/contact-detail.slint:135
 msgctxt "ContactDetail"
 msgid "Public key, safe to share."
 msgstr "Chiave pubblica, sicura da condividere."
 
-#: ui/contacts/contact-detail.slint:136
+#: ui/contacts/contact-detail.slint:138
 msgctxt "ContactDetail"
 msgid "Copy"
 msgstr "Copia"
 
-#: ui/contacts/contact-detail.slint:141
+#: ui/contacts/contact-detail.slint:143
 msgctxt "ContactDetail"
 msgid "Key package"
 msgstr "Pacchetto chiavi"
 
-#: ui/contacts/contact-detail.slint:142
+#: ui/contacts/contact-detail.slint:144
 msgctxt "ContactDetail"
 msgid "Fetched from relay.damus.io · refreshed 4m ago"
 msgstr "Recuperato da relay.damus.io · aggiornato 4 min fa"
 
-#: ui/contacts/contact-detail.slint:143
+#: ui/contacts/contact-detail.slint:145
 msgctxt "ContactDetail"
 msgid "up to date"
 msgstr "aggiornato"
 
-#: ui/contacts/contact-detail.slint:145
+#: ui/contacts/contact-detail.slint:147
 msgctxt "ContactDetail"
 msgid "Refresh"
 msgstr "Aggiorna"
 
-#: ui/contacts/contact-detail.slint:150
+#: ui/contacts/contact-detail.slint:152
 msgctxt "ContactDetail"
 msgid "Mutual relays"
 msgstr "Relay condivisi"
 
-#: ui/contacts/contact-detail.slint:151
+#: ui/contacts/contact-detail.slint:153
 msgctxt "ContactDetail"
 msgid "Used to deliver messages between you."
 msgstr "Usati per consegnare i messaggi tra voi."
 
-#: ui/contacts/contact-detail.slint:152
+#: ui/contacts/contact-detail.slint:154
 msgctxt "ContactDetail"
 msgid "{} relays"
 msgstr "{} relay"
 
-#: ui/contacts/contact-detail.slint:162
+#: ui/contacts/contact-detail.slint:164
 msgctxt "ContactDetail"
 msgid "Show as QR"
 msgstr "Mostra come QR"
 
-#: ui/contacts/contact-detail.slint:171
+#: ui/contacts/contact-detail.slint:173
 msgctxt "ContactDetail"
 msgid "ACTIONS"
 msgstr "AZIONI"
 
-#: ui/contacts/contact-detail.slint:176
+#: ui/contacts/contact-detail.slint:178
 msgctxt "ContactDetail"
 msgid "Mute"
 msgstr "Silenzia"
 
-#: ui/contacts/contact-detail.slint:180
+#: ui/contacts/contact-detail.slint:182
 msgctxt "ContactDetail"
 msgid "Archive chat"
 msgstr "Archivia chat"
 
-#: ui/contacts/contact-detail.slint:185
+#: ui/contacts/contact-detail.slint:187
 msgctxt "ContactDetail"
 msgid "Block"
 msgstr "Blocca"
 
-#: ui/contacts/contact-detail.slint:194
+#: ui/contacts/contact-detail.slint:196
 msgctxt "ContactDetail"
 msgid "Remove contact"
 msgstr "Rimuovi contatto"
@@ -255,36 +255,36 @@ msgctxt "ContactsSidebar"
 msgid "Search contacts…"
 msgstr "Cerca contatti…"
 
-#: ui/dark-matter-linux.slint:262
+#: ui/dark-matter-linux.slint:268
 msgctxt "DarkMatterLinux"
 msgid "Connecting to relays…"
 msgstr "Connessione ai relay…"
 
-#: ui/dark-matter-linux.slint:764
+#: ui/dark-matter-linux.slint:774
 #, fuzzy
 msgctxt "DarkMatterLinux"
 msgid "Block this chat request?"
 msgstr "Richiesta chat"
 
-#: ui/dark-matter-linux.slint:765
+#: ui/dark-matter-linux.slint:775
 msgctxt "DarkMatterLinux"
 msgid ""
 "This declines the invite from {}. It can't be restored unless they invite "
 "you again."
 msgstr ""
 
-#: ui/dark-matter-linux.slint:766
+#: ui/dark-matter-linux.slint:776
 #, fuzzy
 msgctxt "DarkMatterLinux"
 msgid "Block"
 msgstr "Blocca"
 
-#: ui/emoji-picker.slint:89
+#: ui/emoji-picker.slint:90
 msgctxt "EmojiPicker"
 msgid "search…"
 msgstr "cerca…"
 
-#: ui/emoji-picker.slint:190
+#: ui/emoji-picker.slint:195
 msgctxt "EmojiPicker"
 msgid "no matches"
 msgstr "nessun risultato"
@@ -330,63 +330,63 @@ msgctxt "GetStartedScreen"
 msgid "Partial · {}/{} connected"
 msgstr "Parziale · {}/{} connessi"
 
-#: ui/get-started.slint:249
+#: ui/get-started.slint:251
 #, fuzzy
 msgctxt "GetStartedScreen"
 msgid "Add"
 msgstr "Aggiungi"
 
-#: ui/get-started.slint:270
+#: ui/get-started.slint:272
 msgctxt "GetStartedScreen"
 msgid "SUGGESTED"
 msgstr ""
 
-#: ui/get-started.slint:324
+#: ui/get-started.slint:326
 #, fuzzy
 msgctxt "GetStartedScreen"
 msgid "Publish your key package"
 msgstr "Nessun pacchetto chiave"
 
-#: ui/get-started.slint:325
+#: ui/get-started.slint:327
 msgctxt "GetStartedScreen"
 msgid "This is what lets other people start an encrypted chat with you."
 msgstr ""
 
-#: ui/get-started.slint:337
+#: ui/get-started.slint:339
 #, fuzzy
 msgctxt "GetStartedScreen"
 msgid "Published"
 msgstr "Pubblica"
 
-#: ui/get-started.slint:338
+#: ui/get-started.slint:340
 #, fuzzy
 msgctxt "GetStartedScreen"
 msgid "Publishing…"
 msgstr "Pubblicazione…"
 
-#: ui/get-started.slint:338
+#: ui/get-started.slint:340
 #, fuzzy
 msgctxt "GetStartedScreen"
 msgid "Publish key package"
 msgstr "Pacchetto chiavi"
 
-#: ui/get-started.slint:361
+#: ui/get-started.slint:363
 msgctxt "GetStartedScreen"
 msgid "Add a relay first."
 msgstr ""
 
-#: ui/get-started.slint:380
+#: ui/get-started.slint:382
 #, fuzzy
 msgctxt "GetStartedScreen"
 msgid "Start your first chat"
 msgstr "Avvia una nuova chat"
 
-#: ui/get-started.slint:381
+#: ui/get-started.slint:383
 msgctxt "GetStartedScreen"
 msgid "Invite someone by their npub and say hello."
 msgstr ""
 
-#: ui/get-started.slint:387
+#: ui/get-started.slint:389
 msgctxt "GetStartedScreen"
 msgid "New chat"
 msgstr ""
@@ -585,82 +585,82 @@ msgctxt "LeftRail"
 msgid "Settings"
 msgstr ""
 
-#: ui/login/login-screen.slint:152
+#: ui/login/login-screen.slint:161
 msgctxt "LoginScreen"
 msgid "Sign in to your Nostr identity"
 msgstr "Accedi alla tua identità Nostr"
 
-#: ui/login/login-screen.slint:154
+#: ui/login/login-screen.slint:163
 msgctxt "LoginScreen"
 msgid "Import a key & set a password"
 msgstr ""
 
-#: ui/login/login-screen.slint:156
+#: ui/login/login-screen.slint:165
 msgctxt "LoginScreen"
 msgid "Enter your password to unlock"
 msgstr ""
 
-#: ui/login/login-screen.slint:157
+#: ui/login/login-screen.slint:166
 msgctxt "LoginScreen"
 msgid "Save your new key"
 msgstr "Salva la tua nuova chiave"
 
-#: ui/login/login-screen.slint:169
+#: ui/login/login-screen.slint:178
 msgctxt "LoginScreen"
 msgid "I have an nsec"
 msgstr "Ho un nsec"
 
-#: ui/login/login-screen.slint:189
+#: ui/login/login-screen.slint:198
 msgctxt "LoginScreen"
 msgid "Generate a new key"
 msgstr "Genera una nuova chiave"
 
-#: ui/login/login-screen.slint:209
+#: ui/login/login-screen.slint:218
 msgctxt "LoginScreen"
 msgid "Your key never leaves this device."
 msgstr "La tua chiave non lascia mai questo dispositivo."
 
-#: ui/login/login-screen.slint:228 ui/login/login-screen.slint:401
+#: ui/login/login-screen.slint:237 ui/login/login-screen.slint:410
 msgctxt "LoginScreen"
 msgid "VAULT PASSWORD"
 msgstr ""
 
-#: ui/login/login-screen.slint:229 ui/login/login-screen.slint:402
+#: ui/login/login-screen.slint:238 ui/login/login-screen.slint:411
 msgctxt "LoginScreen"
 msgid "Choose a password"
 msgstr ""
 
-#: ui/login/login-screen.slint:235 ui/login/login-screen.slint:408
+#: ui/login/login-screen.slint:244 ui/login/login-screen.slint:417
 msgctxt "LoginScreen"
 msgid "CONFIRM PASSWORD"
 msgstr ""
 
-#: ui/login/login-screen.slint:236 ui/login/login-screen.slint:409
+#: ui/login/login-screen.slint:245 ui/login/login-screen.slint:418
 msgctxt "LoginScreen"
 msgid "Re-enter password"
 msgstr ""
 
-#: ui/login/login-screen.slint:254 ui/login/login-screen.slint:427
+#: ui/login/login-screen.slint:263 ui/login/login-screen.slint:436
 msgctxt "LoginScreen"
 msgid "Back"
 msgstr "Indietro"
 
-#: ui/login/login-screen.slint:264
+#: ui/login/login-screen.slint:273
 msgctxt "LoginScreen"
 msgid "Signing in…"
 msgstr "Accesso…"
 
-#: ui/login/login-screen.slint:264
+#: ui/login/login-screen.slint:273
 msgctxt "LoginScreen"
 msgid "Continue"
 msgstr "Continua"
 
-#: ui/login/login-screen.slint:301
+#: ui/login/login-screen.slint:310
 msgctxt "LoginScreen"
 msgid "Back up your nsec before saving"
 msgstr "Fai backup del nsec prima di salvare"
 
-#: ui/login/login-screen.slint:307
+#: ui/login/login-screen.slint:316
 #, fuzzy
 msgctxt "LoginScreen"
 msgid ""
@@ -670,42 +670,42 @@ msgstr ""
 "Salva lo memorizza nel portachiavi del sistema. Tieni anche una tua copia — "
 "se lo perdi, l'identità è persa."
 
-#: ui/login/login-screen.slint:376
+#: ui/login/login-screen.slint:385
 msgctxt "LoginScreen"
 msgid "Regenerate"
 msgstr "Rigenera"
 
-#: ui/login/login-screen.slint:387
+#: ui/login/login-screen.slint:396
 msgctxt "LoginScreen"
 msgid "Copy"
 msgstr "Copia"
 
-#: ui/login/login-screen.slint:434
+#: ui/login/login-screen.slint:443
 msgctxt "LoginScreen"
 msgid "Saving…"
 msgstr "Salvataggio…"
 
-#: ui/login/login-screen.slint:434
+#: ui/login/login-screen.slint:443
 msgctxt "LoginScreen"
 msgid "Create vault"
 msgstr ""
 
-#: ui/login/login-screen.slint:453
+#: ui/login/login-screen.slint:462
 msgctxt "LoginScreen"
 msgid "Enter your password"
 msgstr ""
 
-#: ui/login/login-screen.slint:472
+#: ui/login/login-screen.slint:481
 msgctxt "LoginScreen"
 msgid "Use another key"
 msgstr ""
 
-#: ui/login/login-screen.slint:479
+#: ui/login/login-screen.slint:488
 msgctxt "LoginScreen"
 msgid "Unlocking…"
 msgstr ""
 
-#: ui/login/login-screen.slint:479
+#: ui/login/login-screen.slint:488
 #, fuzzy
 msgctxt "LoginScreen"
 msgid "Unlock"
@@ -861,31 +861,31 @@ msgctxt "GroupMembersPanel"
 msgid "Group name"
 msgstr "ID gruppo"
 
-#: ui/main-pane/group-members-panel.slint:173
+#: ui/main-pane/group-members-panel.slint:176
 #, fuzzy
 msgctxt "GroupMembersPanel"
 msgid "Saving…"
 msgstr "Salvataggio…"
 
-#: ui/main-pane/group-members-panel.slint:173
+#: ui/main-pane/group-members-panel.slint:176
 #, fuzzy
 msgctxt "GroupMembersPanel"
 msgid "Save name"
 msgstr "Salva"
 
-#: ui/main-pane/group-members-panel.slint:233
+#: ui/main-pane/group-members-panel.slint:236
 #, fuzzy
 msgctxt "GroupMembersPanel"
 msgid "Add member"
 msgstr "1 membro"
 
-#: ui/main-pane/group-members-panel.slint:267
+#: ui/main-pane/group-members-panel.slint:273
 #, fuzzy
 msgctxt "GroupMembersPanel"
 msgid "Inviting…"
 msgstr "Salvataggio…"
 
-#: ui/main-pane/group-members-panel.slint:267
+#: ui/main-pane/group-members-panel.slint:273
 msgctxt "GroupMembersPanel"
 msgid "Invite"
 msgstr ""
@@ -905,7 +905,7 @@ msgctxt "MentionPicker"
 msgid "(you)"
 msgstr ""
 
-#: ui/messages.slint:107
+#: ui/messages.slint:108
 #, fuzzy
 msgctxt "MessagesArea"
 msgid "Load earlier messages"
@@ -996,35 +996,36 @@ msgctxt "NicknameModal"
 msgid "NICKNAME"
 msgstr ""
 
-#: ui/modals/profile-modal.slint:35
+#. or failed kind-0 fetch hides the action entirely.
+#: ui/modals/profile-modal.slint:38
 #, fuzzy
 msgctxt "ProfileModal"
 msgid "Add contact"
 msgstr "Contatto"
 
-#: ui/modals/profile-modal.slint:36
+#: ui/modals/profile-modal.slint:39
 #, fuzzy
 msgctxt "ProfileModal"
 msgid "Adding…"
 msgstr "Salvataggio…"
 
-#: ui/modals/profile-modal.slint:188
+#: ui/modals/profile-modal.slint:193
 msgctxt "ProfileModal"
 msgid "Copied ✓"
 msgstr ""
 
-#: ui/modals/profile-modal.slint:221
+#: ui/modals/profile-modal.slint:226
 msgctxt "ProfileModal"
 msgid "✓ In your contacts"
 msgstr ""
 
-#: ui/modals/profile-modal.slint:282
+#: ui/modals/profile-modal.slint:287
 #, fuzzy
 msgctxt "ProfileModal"
 msgid "Contacting relays…"
 msgstr "Connessione ai relay…"
 
-#: ui/modals/profile-modal.slint:289
+#: ui/modals/profile-modal.slint:294
 msgctxt "ProfileModal"
 msgid "No profile found on relays."
 msgstr ""
@@ -1130,150 +1131,150 @@ msgctxt "OutgoingRow"
 msgid "You"
 msgstr "Tu"
 
-#: ui/profile/profile-page.slint:69
+#: ui/profile/profile-page.slint:72
 #, fuzzy
 msgctxt "PictureField"
 msgid "Picture"
 msgstr "Immagine"
 
-#: ui/profile/profile-page.slint:96
+#: ui/profile/profile-page.slint:102
 #, fuzzy
 msgctxt "PictureField"
 msgid "Uploading…"
 msgstr "Salvataggio…"
 
-#: ui/profile/profile-page.slint:96
+#: ui/profile/profile-page.slint:102
 msgctxt "PictureField"
 msgid "Upload"
 msgstr ""
 
-#: ui/profile/profile-page.slint:173
+#: ui/profile/profile-page.slint:179
 #, fuzzy
 msgctxt "AvatarEditable"
 msgid "Uploading…"
 msgstr "Salvataggio…"
 
-#: ui/profile/profile-page.slint:255
+#: ui/profile/profile-page.slint:261
 msgctxt "ProfilePage"
 msgid "Your profile"
 msgstr "Il tuo profilo"
 
-#: ui/profile/profile-page.slint:262
+#: ui/profile/profile-page.slint:268
 msgctxt "ProfilePage"
 msgid "EDITING · BROADCAST TO RELAYS ON SAVE"
 msgstr "MODIFICA · TRASMETTE AI RELAY AL SALVATAGGIO"
 
-#: ui/profile/profile-page.slint:263
+#: ui/profile/profile-page.slint:269
 msgctxt "ProfilePage"
 msgid "VISIBLE TO ANYONE YOU CHAT WITH"
 msgstr "VISIBILE A CHIUNQUE CHATTI"
 
-#: ui/profile/profile-page.slint:273
+#: ui/profile/profile-page.slint:279
 msgctxt "ProfilePage"
 msgid "Edit profile"
 msgstr "Modifica profilo"
 
-#: ui/profile/profile-page.slint:291
+#: ui/profile/profile-page.slint:297
 msgctxt "ProfilePage"
 msgid "Saving…"
 msgstr "Salvataggio…"
 
-#: ui/profile/profile-page.slint:291
+#: ui/profile/profile-page.slint:297
 msgctxt "ProfilePage"
 msgid "Save"
 msgstr "Salva"
 
-#: ui/profile/profile-page.slint:302
+#: ui/profile/profile-page.slint:308
 msgctxt "ProfilePage"
 msgid "Cancel"
 msgstr "Annulla"
 
-#: ui/profile/profile-page.slint:366
+#: ui/profile/profile-page.slint:372
 msgctxt "ProfilePage"
 msgid "(no display name)"
 msgstr "(nessun nome visualizzato)"
 
-#: ui/profile/profile-page.slint:386
+#: ui/profile/profile-page.slint:392
 msgctxt "ProfilePage"
 msgid "no handle yet"
 msgstr ""
 
-#: ui/profile/profile-page.slint:423
+#: ui/profile/profile-page.slint:429
 msgctxt "ProfilePage"
 msgid "IDENTITY"
 msgstr "IDENTITÀ"
 
-#: ui/profile/profile-page.slint:427
+#: ui/profile/profile-page.slint:433
 msgctxt "ProfilePage"
 msgid "Your public key. Safe to share."
 msgstr "La tua chiave pubblica. Sicura da condividere."
 
-#: ui/profile/profile-page.slint:431
+#: ui/profile/profile-page.slint:437
 msgctxt "ProfilePage"
 msgid "Copy"
 msgstr "Copia"
 
-#: ui/profile/profile-page.slint:443
+#: ui/profile/profile-page.slint:449
 msgctxt "ProfilePage"
 msgid "EDIT"
 msgstr "MODIFICA"
 
-#: ui/profile/profile-page.slint:446
+#: ui/profile/profile-page.slint:452
 msgctxt "ProfilePage"
 msgid "Display name"
 msgstr "Nome visualizzato"
 
-#: ui/profile/profile-page.slint:447
+#: ui/profile/profile-page.slint:453
 msgctxt "ProfilePage"
 msgid "How your name appears in chats"
 msgstr "Come appare il tuo nome nelle chat"
 
-#: ui/profile/profile-page.slint:451 ui/profile/profile-page.slint:484
+#: ui/profile/profile-page.slint:457 ui/profile/profile-page.slint:490
 msgctxt "ProfilePage"
 msgid "Username"
 msgstr "Nome utente"
 
-#: ui/profile/profile-page.slint:452
+#: ui/profile/profile-page.slint:458
 msgctxt "ProfilePage"
 msgid "Short handle (no spaces)"
 msgstr "Handle breve (senza spazi)"
 
-#: ui/profile/profile-page.slint:456
+#: ui/profile/profile-page.slint:462
 msgctxt "ProfilePage"
 msgid "About"
 msgstr "Informazioni"
 
-#: ui/profile/profile-page.slint:457
+#: ui/profile/profile-page.slint:463
 msgctxt "ProfilePage"
 msgid "A line or two about you"
 msgstr "Una riga o due su di te"
 
-#: ui/profile/profile-page.slint:472
+#: ui/profile/profile-page.slint:478
 msgctxt "ProfilePage"
 msgid "Lightning address (LUD-16)"
 msgstr "Indirizzo Lightning (LUD-16)"
 
-#: ui/profile/profile-page.slint:481
+#: ui/profile/profile-page.slint:487
 msgctxt "ProfilePage"
 msgid "PROFILE"
 msgstr "PROFILO"
 
-#: ui/profile/profile-page.slint:492
+#: ui/profile/profile-page.slint:498
 msgctxt "ProfilePage"
 msgid "Lightning"
 msgstr "Lightning"
 
-#: ui/profile/profile-page.slint:496
+#: ui/profile/profile-page.slint:502
 msgctxt "ProfilePage"
 msgid "Picture"
 msgstr "Immagine"
 
-#: ui/profile/profile-page.slint:497
+#: ui/profile/profile-page.slint:503
 msgctxt "ProfilePage"
 msgid "Not set"
 msgstr ""
 
-#: ui/profile/profile-page.slint:497
+#: ui/profile/profile-page.slint:503
 msgctxt "ProfilePage"
 msgid "Set"
 msgstr ""
@@ -1592,52 +1593,62 @@ msgctxt "DebugPane"
 msgid "(no snapshot yet — click Refresh)"
 msgstr "(nessuna istantanea — clicca Aggiorna)"
 
-#: ui/settings/general-pane.slint:17
+#: ui/settings/general-pane.slint:22
 msgctxt "GeneralPane"
 msgid "General"
 msgstr "Generale"
 
-#: ui/settings/general-pane.slint:23
+#: ui/settings/general-pane.slint:28
 msgctxt "GeneralPane"
 msgid "STARTUP"
 msgstr "AVVIO"
 
-#: ui/settings/general-pane.slint:26
+#: ui/settings/general-pane.slint:31
 msgctxt "GeneralPane"
 msgid "Launch at login"
 msgstr "Avvia all'accesso"
 
-#: ui/settings/general-pane.slint:30
+#: ui/settings/general-pane.slint:35
 msgctxt "GeneralPane"
 msgid "Start minimized to tray"
 msgstr "Avvia minimizzato nella tray"
 
-#: ui/settings/general-pane.slint:34
+#: ui/settings/general-pane.slint:39
 msgctxt "GeneralPane"
 msgid "Restore last selected chat on launch"
 msgstr "Ripristina l'ultima chat selezionata all'avvio"
 
-#: ui/settings/general-pane.slint:42
+#: ui/settings/general-pane.slint:47
 msgctxt "GeneralPane"
 msgid "LANGUAGE"
 msgstr "LINGUA"
 
-#: ui/settings/general-pane.slint:45
+#: ui/settings/general-pane.slint:50
 msgctxt "GeneralPane"
 msgid "Interface language"
 msgstr "Lingua interfaccia"
 
-#: ui/settings/general-pane.slint:48
+#: ui/settings/general-pane.slint:53
 msgctxt "language picker button"
 msgid "Change"
 msgstr "Modifica"
 
-#: ui/settings/general-pane.slint:54
+#: ui/settings/general-pane.slint:59
 msgctxt "GeneralPane"
 msgid "Time format"
 msgstr "Formato ora"
 
-#: ui/settings/general-pane.slint:58
+#: ui/settings/general-pane.slint:61
+msgctxt "GeneralPane"
+msgid "24-hour"
+msgstr ""
+
+#: ui/settings/general-pane.slint:67
+msgctxt "GeneralPane"
+msgid "12-hour"
+msgstr ""
+
+#: ui/settings/general-pane.slint:74
 msgctxt "GeneralPane"
 msgid "Date format"
 msgstr "Formato data"
@@ -1719,22 +1730,22 @@ msgid ""
 "find you."
 msgstr ""
 
-#: ui/settings/settings-page.slint:98
+#: ui/settings/settings-page.slint:106
 msgctxt "SettingsPage"
 msgid "Notifications"
 msgstr "Notifiche"
 
-#: ui/settings/settings-page.slint:99
+#: ui/settings/settings-page.slint:107
 msgctxt "SettingsPage"
 msgid "Per-chat notification rules, sounds, focus mode."
 msgstr "Regole notifiche per chat, suoni, modalità focus."
 
-#: ui/settings/settings-page.slint:103
+#: ui/settings/settings-page.slint:111
 msgctxt "SettingsPage"
 msgid "Storage"
 msgstr "Archiviazione"
 
-#: ui/settings/settings-page.slint:104
+#: ui/settings/settings-page.slint:112
 msgctxt "SettingsPage"
 msgid "Local cache, message retention, attachments."
 msgstr "Cache locale, conservazione messaggi, allegati."

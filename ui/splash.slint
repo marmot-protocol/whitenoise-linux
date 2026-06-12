@@ -24,7 +24,7 @@ export component SplashScreen inherits Rectangle {
             for i in [0, 1, 2] : Rectangle {
                 width: 12px;
                 height: 12px;
-                border-radius: 6px;
+                border-radius: (6px) * Theme.r-scale;
                 background: Palette.mint;
 
                 property <float> pulse: 0.35;

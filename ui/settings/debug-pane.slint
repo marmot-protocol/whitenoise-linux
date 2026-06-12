@@ -35,7 +35,7 @@ export component DebugPane inherits DetailPage {
         Rectangle {
             border-width: 1px;
             border-color: Palette.border-2;
-            border-radius: 6px;
+            border-radius: (6px) * Theme.r-scale;
             background: Palette.panel-2;
             preferred-height: 540px;
             vertical-stretch: 1;
@@ -54,7 +54,7 @@ export component DebugPane inherits DetailPage {
                     text: root.dump != "" ? root.dump : @tr("(no snapshot yet — click Refresh)");
                     color: Palette.text-hi;
                     font-family: Theme.font;
-                    font-size: 11px;
+                    font-size: (11px) * Theme.fs-scale;
                     wrap: word-wrap;
                 }
             }

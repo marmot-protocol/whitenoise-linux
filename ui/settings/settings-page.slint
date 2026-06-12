@@ -27,6 +27,10 @@ export component SettingsPage inherits Rectangle {
 
     in property <string> locale-display;
     callback change-language-clicked();
+    in property <string> time-format: "24h";
+    in property <string> date-format: "mdy";
+    callback time-format-selected(string);
+    callback date-format-selected(string);
     in-out property <bool> light-theme: false;
     in-out property <bool> retro-mode: false;
     in-out property <int> accent-color: 0;
@@ -70,6 +74,10 @@ export component SettingsPage inherits Rectangle {
                 width: parent.width; height: parent.height;
                 locale-display: root.locale-display;
                 change-language-clicked => { root.change-language-clicked(); }
+                time-format: root.time-format;
+                date-format: root.date-format;
+                time-format-selected(f) => { root.time-format-selected(f); }
+                date-format-selected(f) => { root.date-format-selected(f); }
             }
             if root.active-tab == 1 : NetworkPane {
                 width: parent.width; height: parent.height;

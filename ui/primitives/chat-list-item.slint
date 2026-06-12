@@ -48,7 +48,7 @@ export component ChatListItem inherits Rectangle {
         y: (parent.height - self.height) / 2;
         text: "▶";
         color: Palette.bubble-out-fg;
-        font-size: 14px;
+        font-size: (14px) * Theme.fs-scale;
         font-family: Theme.font;
         vertical-alignment: center;
         opacity: root.selected ? 1.0 : 0.0;

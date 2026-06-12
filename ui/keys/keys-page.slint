@@ -208,9 +208,9 @@ export component KeysPage inherits Rectangle {
                 Rectangle {
                     height: 60px;
                     border-radius: (8px) * Theme.r-scale;
-                    background: #2A1418;
+                    background: Palette.danger-soft;
                     border-width: 1px;
-                    border-color: #5A2429;
+                    border-color: Palette.danger-border;
                     HorizontalLayout {
                         padding-left: 16px; padding-right: 16px;
                         padding-top: 12px; padding-bottom: 12px;
@@ -222,7 +222,7 @@ export component KeysPage inherits Rectangle {
                             alignment: center;
                             Text {
                                 text: @tr("Rotate key package now");
-                                color: #FCA5A5;
+                                color: Palette.danger;
                                 font-size: (12px) * Theme.fs-scale;
                                 font-weight: 700;
                             }
@@ -236,12 +236,12 @@ export component KeysPage inherits Rectangle {
                             alignment: center;
                             MicroButton {
                                 label: root.kp-busy ? @tr("…") : @tr("Rotate");
-                                fg: #FCA5A5;
-                                bg-color: #2A1418;
-                                hover-bg: #3A1A20;
-                                outline: #5A2429;
-                                hover-outline: #7A2E36;
-                                RefreshIcon { stroke: #FCA5A5; }
+                                fg: Palette.danger;
+                                bg-color: Palette.danger-soft;
+                                hover-bg: Palette.danger-soft-hover;
+                                outline: Palette.danger-border;
+                                hover-outline: Palette.danger-border-hover;
+                                RefreshIcon { stroke: Palette.danger; }
                                 clicked => { if (!root.kp-busy) { root.rotate-clicked(); } }
                             }
                         }

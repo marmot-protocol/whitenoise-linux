@@ -31,7 +31,7 @@ export component StatusBar inherits Rectangle {
                 border-radius: (4px) * Theme.r-scale;
                 background: root.relaysConnected > 0
                     ? Palette.mint-dim
-                    : (root.relaysTotal > 0 ? #f59e0b : Palette.text-vlo);
+                    : (root.relaysTotal > 0 ? Palette.warning : Palette.text-vlo);
                 drop-shadow-blur: Theme.retro ? 0px : 4px;
                 drop-shadow-color: root.relaysConnected > 0 ? Palette.mint-glow : transparent;
             }

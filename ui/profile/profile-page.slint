@@ -30,7 +30,10 @@ component FieldRow inherits Rectangle {
         Rectangle {
             background: Palette.bg;
             border-width: 1px;
-            border-color: Palette.border-2;
+            border-color: input.has-focus ? Palette.mint-dim : Palette.border-2;
+            drop-shadow-blur: input.has-focus && !Theme.retro ? 10px : 0px;
+            drop-shadow-color: Palette.mint-glow;
+            animate border-color { duration: 140ms; easing: ease-out; }
             border-radius: (6px) * Theme.r-scale;
             vertical-stretch: 1;
             HorizontalLayout {
@@ -78,7 +81,10 @@ component PictureField inherits Rectangle {
                 horizontal-stretch: 1;
                 background: Palette.bg;
                 border-width: 1px;
-                border-color: Palette.border-2;
+                border-color: input.has-focus ? Palette.mint-dim : Palette.border-2;
+                drop-shadow-blur: input.has-focus && !Theme.retro ? 10px : 0px;
+                drop-shadow-color: Palette.mint-glow;
+                animate border-color { duration: 140ms; easing: ease-out; }
                 border-radius: (6px) * Theme.r-scale;
                 HorizontalLayout {
                     padding-left: 10px; padding-right: 10px;

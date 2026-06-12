@@ -97,10 +97,10 @@ export component NetworkPane inherits DetailPage {
                     Rectangle {
                         width: 10px; height: 10px;
                         y: (parent.height - self.height) / 2;
-                        border-radius: 5px;
+                        border-radius: (5px) * Theme.r-scale;
                         background: root.connected > 0
                             ? Palette.mint
-                            : (root.total > 0 ? #f59e0b : Palette.text-vlo);
+                            : (root.total > 0 ? Palette.warning : Palette.text-vlo);
                     }
 
                     VerticalLayout {
@@ -221,8 +221,8 @@ export component NetworkPane inherits DetailPage {
             height: 36px;
             border-radius: (6px) * Theme.r-scale;
             border-width: 1px;
-            border-color: #f59e0b;
-            background: Palette.panel-2;
+            border-color: Palette.warning-border;
+            background: Palette.warning-soft;
             HorizontalLayout {
                 padding-left: 12px; padding-right: 12px;
                 alignment: start;
@@ -231,8 +231,8 @@ export component NetworkPane inherits DetailPage {
                     alignment: center;
                     Rectangle {
                         width: 6px; height: 6px;
-                        border-radius: 3px;
-                        background: #f59e0b;
+                        border-radius: (3px) * Theme.r-scale;
+                        background: Palette.warning;
                     }
                 }
                 Text {

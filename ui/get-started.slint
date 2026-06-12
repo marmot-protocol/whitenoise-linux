@@ -198,10 +198,10 @@ export component GetStartedScreen inherits Rectangle {
                             Rectangle {
                                 width: 8px; height: 8px;
                                 y: (parent.height - self.height) / 2;
-                                border-radius: 4px;
+                                border-radius: (4px) * Theme.r-scale;
                                 background: root.connected > 0
                                     ? Palette.mint
-                                    : (root.total > 0 ? #f59e0b : Palette.text-vlo);
+                                    : (root.total > 0 ? Palette.warning : Palette.text-vlo);
                             }
                             Text {
                                 text: root.total == 0
@@ -228,7 +228,9 @@ export component GetStartedScreen inherits Rectangle {
                                 border-color: relay-input.has-focus ? Palette.mint : Palette.border-2;
                                 border-radius: (7px) * Theme.r-scale;
                                 background: Palette.field;
-                                animate border-color { duration: 120ms; }
+                                drop-shadow-blur: relay-input.has-focus && !Theme.retro ? 10px : 0px;
+                                drop-shadow-color: Palette.mint-glow;
+                                animate border-color { duration: 140ms; easing: ease-out; }
                                 relay-input := LineInput {
                                     x: 12px; y: 0;
                                     width: parent.width - 24px;
@@ -359,7 +361,7 @@ export component GetStartedScreen inherits Rectangle {
                                 alignment: center;
                                 Text {
                                     text: @tr("Add a relay first.");
-                                    color: #f59e0b;
+                                    color: Palette.warning;
                                     font-size: (11px) * Theme.fs-scale;
                                     font-weight: 600;
                                 }

@@ -102,10 +102,12 @@ export component MessagesArea inherits Rectangle {
                     border-radius: 13px * Theme.r-scale;
                     background: pill-touch.has-hover ? Palette.hover : Palette.panel-2;
                     border-width: Theme.retro ? 2px : 1px;
-                    border-color: Palette.border;
+                    border-color: pill-touch.has-hover ? Palette.border-2 : Palette.border;
+                    animate background, border-color { duration: 100ms; }
                     pill-label := Text {
                         text: @tr("Load earlier messages");
                         color: pill-touch.has-hover ? Palette.text-hi : Palette.text-lo;
+                        animate color { duration: 100ms; }
                         font-size: 10px * Theme.fs-scale;
                         font-weight: 600;
                         letter-spacing: 1.1px;
@@ -244,6 +246,7 @@ export component MessagesArea inherits Rectangle {
             y: (parent.height - self.height) / 2;
             size: 14px;
             stroke: jump-touch.has-hover ? Palette.text-hi : Palette.text-mid;
+            animate stroke { duration: 100ms; }
         }
 
         jump-touch := TouchArea {

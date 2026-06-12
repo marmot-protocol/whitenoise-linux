@@ -15,7 +15,7 @@ export component Avatar inherits Rectangle {
     border-radius: (root.size / 2) * Theme.r-scale;
     background: Theme.retro ? root.color-a : @linear-gradient(135deg, root.color-a 0%, root.color-b 100%);
     border-width: Theme.retro ? Theme.border-w : 1.5px;
-    border-color: Theme.retro ? white : #FFFFFF20;
+    border-color: Theme.retro ? Palette.bevel-hi : (Theme.light ? #00000015 : #FFFFFF20);
     clip: true;
     drop-shadow-color: Theme.retro ? Palette.shadow : #00000060;
     drop-shadow-offset-x: Theme.retro ? 2px : 0px;

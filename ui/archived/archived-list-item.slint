@@ -6,30 +6,32 @@ export component ArchivedListItem inherits Rectangle {
     in property <ArchivedChat> data;
     in property <bool> selected: false;
 
-    height: 56px;
+    height: 64px;
     background: root.selected ? Palette.selected : (touch.has-hover ? Palette.hover : transparent);
-    border-radius: (6px) * Theme.r-scale;
-    border-width: Theme.retro && root.selected ? Theme.border-w : 0px;
-    border-color: Palette.border;
-    animate background { duration: 120ms; easing: ease-out; }
+    border-radius: (8px) * Theme.r-scale;
+    border-width: Theme.retro && root.selected ? Theme.border-w : (root.selected && !Theme.retro ? 1px : 0px);
+    border-color: root.selected && !Theme.retro ? Palette.mint-glow : Palette.border;
+    animate background, border-color { duration: 140ms; easing: ease-out; }
 
     if !Theme.retro : Rectangle {
         x: 0;
-        width: 2px;
-        height: root.selected ? 44px : 0px;
+        width: 3px;
+        height: root.selected ? 40px : 0px;
         y: (parent.height - self.height) / 2;
         background: Palette.mint;
-        border-radius: (1px) * Theme.r-scale;
+        border-radius: (1.5px) * Theme.r-scale;
+        drop-shadow-blur: root.selected ? 6px : 0px;
+        drop-shadow-color: Palette.mint-glow;
         opacity: root.selected ? 1.0 : 0.0;
         animate height { duration: 220ms; easing: ease-in-out; }
-        animate opacity { duration: 160ms; }
+        animate opacity { duration: 160ms; easing: ease-out; }
     }
     if Theme.retro : Text {
         x: root.selected ? 2px : -14px;
         y: (parent.height - self.height) / 2;
         text: "▶";
         color: Palette.bubble-out-fg;
-        font-size: 14px;
+        font-size: (14px) * Theme.fs-scale;
         font-family: Theme.font;
         vertical-alignment: center;
         opacity: root.selected ? 1.0 : 0.0;
@@ -39,18 +41,20 @@ export component ArchivedListItem inherits Rectangle {
 
     HorizontalLayout {
         padding-left: 12px; padding-right: 12px;
-        padding-top: 10px; padding-bottom: 10px;
+        padding-top: 14px; padding-bottom: 14px;
         spacing: 12px;
         Avatar {
             size: 36px;
             initials: root.data.av-initials;
             color-a: root.data.av-a;
             color-b: root.data.av-b;
+            picture: root.data.picture;
+            has-picture: root.data.has-picture;
             font-size: (Theme.retro ? 16px : 11px) * Theme.fs-scale;
         }
         VerticalLayout {
             horizontal-stretch: 1;
-            spacing: 2px;
+            spacing: 4px;
             HorizontalLayout {
                 spacing: 6px;
                 Text {

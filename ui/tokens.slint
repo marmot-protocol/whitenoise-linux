@@ -108,6 +108,18 @@ export global Palette {
     // saturated accent even in light theme, so this stays bright everywhere
     // (the light-theme deep red would vanish on it).
     out property <color> danger-on-bubble: #FF5A5A;
+    // Border for danger surfaces (danger-zone cards, error fields). The dark
+    // value is a muted maroon so the edge doesn't shout louder than the text.
+    out property <color> danger-border: Theme.retro ? #FF5A5A : (Theme.light ? #E3B8B8 : #5A2429);
+    out property <color> danger-soft-hover:   Theme.retro ? #FF5A5A48 : (Theme.light ? #C628282E : #FF5A5A33);
+    out property <color> danger-border-hover: Theme.retro ? #FF5A5A : (Theme.light ? #D49C9C : #7A2E36);
+
+    // Warning accent (partial relay connectivity, restart-required banners).
+    // Dark keeps the familiar amber; light needs a deeper amber to survive the
+    // warm paper bg; retro goes full SNES coin-yellow.
+    out property <color> warning:      Theme.retro ? #FFD75A : (Theme.light ? #B45309 : #F59E0B);
+    out property <color> warning-soft: Theme.retro ? #FFD75A30 : (Theme.light ? #B453091A : #F59E0B20);
+    out property <color> warning-border: Theme.retro ? #FFD75A : (Theme.light ? #E2C9A4 : #5A3F1A);
 
     out property <color> field: Theme.retro ? #0E0E36 : (Theme.light ? #FFFFFF : #0A0D11);
     out property <color> field-hover: Theme.retro ? #2B2B7F : (Theme.light ? #F8FAFC : #12171C);
@@ -137,6 +149,9 @@ export struct Contact {
     online: bool,
     relays: int,
     added: string,
+    // Profile picture, lazily bound from the process-wide picture cache.
+    picture: image,
+    has-picture: bool,
 }
 
 // One on-disk forensic audit-log file (Settings → Advanced). `path` is the
@@ -157,6 +172,9 @@ export struct ArchivedChat {
     av-initials: string,
     members: int,
     group-id: string,
+    // Peer profile picture for archived 1:1 chats (groups keep the gradient).
+    picture: image,
+    has-picture: bool,
 }
 
 // One aggregated reaction on a message: an emoji, how many people used it,

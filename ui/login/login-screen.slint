@@ -38,16 +38,22 @@ component VaultField inherits VerticalLayout {
     Rectangle {
         height: 44px;
         border-radius: (7px) * Theme.r-scale;
-        background: Palette.field;
+        background: root.error ? Palette.danger-soft : Palette.field;
         border-width: 1px;
-        border-color: root.error ? #5A2429 : Palette.field-border;
+        border-color: root.error
+            ? Palette.danger-border
+            : (vf-input.has-focus ? Palette.mint-dim : Palette.field-border);
+        drop-shadow-blur: vf-input.has-focus && !root.error && !Theme.retro ? 10px : 0px;
+        drop-shadow-color: Palette.mint-glow;
+        animate border-color { duration: 140ms; easing: ease-out; }
         HorizontalLayout {
             padding-left: 14px; padding-right: 14px;
-            LineInput {
+            vf-input := LineInput {
                 placeholder: root.placeholder;
                 text <=> root.text;
                 password: root.password;
-                font-size: (Theme.retro ? 14px : 13px) * Theme.fs-scale;
+                // LineInput multiplies by fs-scale internally.
+                font-size: Theme.retro ? 14px : 13px;
                 fg: Palette.text-hi;
                 placeholder-color: Palette.text-vlo;
                 submit => { root.submit(); }
@@ -106,7 +112,10 @@ export component LoginScreen inherits Rectangle {
     // Centered card.
     Rectangle {
         width: 480px;
-        height: root.mode == 2 ? 660px : root.mode == 1 ? 520px : 420px;
+        // Per-mode baseline, but never clip the content: translated strings
+        // (de/ja) can run taller than the English layout was tuned for.
+        height: max(root.mode == 2 ? 660px : root.mode == 1 ? 520px : 420px,
+                    card-content.preferred-height);
         x: (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;
         border-radius: (12px) * Theme.r-scale;
@@ -127,7 +136,7 @@ export component LoginScreen inherits Rectangle {
             background: Palette.top-glint;
         }
 
-        VerticalLayout {
+        card-content := VerticalLayout {
             padding-left: 32px; padding-right: 32px;
             padding-top: 32px; padding-bottom: 24px;
             spacing: 22px;
@@ -241,7 +250,7 @@ export component LoginScreen inherits Rectangle {
 
                 if root.error != "" : Text {
                     text: root.error;
-                    color: #FCA5A5;
+                    color: Palette.danger;
                     font-size: (11px) * Theme.fs-scale;
                     wrap: word-wrap;
                 }
@@ -281,17 +290,17 @@ export component LoginScreen inherits Rectangle {
                 // Warning banner.
                 Rectangle {
                     height: 64px;
-                    background: #2A1F0F;
+                    background: Palette.warning-soft;
                     border-radius: (8px) * Theme.r-scale;
                     border-width: 1px;
-                    border-color: #5A3F1A;
+                    border-color: Palette.warning-border;
                     HorizontalLayout {
                         padding-left: 14px; padding-right: 14px;
                         padding-top: 10px; padding-bottom: 10px;
                         spacing: 12px;
                         VerticalLayout {
                             alignment: center;
-                            LockIcon { stroke: #F4C772; }
+                            LockIcon { stroke: Palette.warning; }
                         }
                         VerticalLayout {
                             spacing: 3px;
@@ -299,7 +308,7 @@ export component LoginScreen inherits Rectangle {
                             horizontal-stretch: 1;
                             Text {
                                 text: @tr("Back up your nsec before saving");
-                                color: #F4C772;
+                                color: Palette.warning;
                                 font-size: (12px) * Theme.fs-scale;
                                 font-weight: 700;
                             }
@@ -414,7 +423,7 @@ export component LoginScreen inherits Rectangle {
 
                 if root.error != "" : Text {
                     text: root.error;
-                    color: #FCA5A5;
+                    color: Palette.danger;
                     font-size: (11px) * Theme.fs-scale;
                     wrap: word-wrap;
                 }
@@ -459,7 +468,7 @@ export component LoginScreen inherits Rectangle {
 
                 if root.error != "" : Text {
                     text: root.error;
-                    color: #FCA5A5;
+                    color: Palette.danger;
                     font-size: (11px) * Theme.fs-scale;
                     wrap: word-wrap;
                 }

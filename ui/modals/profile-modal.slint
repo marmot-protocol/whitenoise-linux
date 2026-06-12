@@ -32,7 +32,10 @@ export component ProfileModal inherits Modal {
     title: "";
     show-close: false;          // custom ✕ lives on the banner
     content-padding: 0px;
-    primary-label: root.is-self || root.is-contact || root.loading ? "" : @tr("Add contact");
+    // Adding only needs the npub (known before the relay round-trip), so the
+    // button shows even while the profile is still loading — otherwise a slow
+    // or failed kind-0 fetch hides the action entirely.
+    primary-label: root.is-self || root.is-contact ? "" : @tr("Add contact");
     primary-busy-label: @tr("Adding…");
     primary-busy: root.adding;
     primary => { root.add-contact(); }
@@ -80,7 +83,9 @@ export component ProfileModal inherits Modal {
                 width: 30px;
                 height: 30px;
                 border-radius: (8px) * Theme.r-scale;
-                background: close-touch.has-hover ? #FFFFFF33 : #FFFFFF1A;
+                // Dark scrim, not white-alpha: the banner can be a bright
+                // picture (or light-theme gradient) where white overlays vanish.
+                background: close-touch.has-hover ? #00000059 : #00000038;
                 animate background { duration: 100ms; }
                 Text {
                     text: "✕";

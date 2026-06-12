@@ -336,6 +336,9 @@ fn main() -> Result<(), slint::PlatformError> {
     apply_theme_mode(&ui, &theme_mode);
     ui.set_accent_color(accent_color_idx(accent_color));
     ui.set_outgoing_on_right(initial_settings.outgoing_on_right);
+    apply_stamp_formats(&initial_settings);
+    ui.set_time_format(s(&initial_settings.time_format));
+    ui.set_date_format(s(&initial_settings.date_format));
     let settings_cell: Rc<RefCell<Settings>> = Rc::new(RefCell::new(initial_settings));
 
     // All models start empty; they're filled from marmot-app after login.
@@ -455,6 +458,8 @@ fn main() -> Result<(), slint::PlatformError> {
                         refresh_contacts(b, &ui.get_contacts(), &Settings::load().nicknames);
                         refresh_archived(b, &ui.get_archived_chats(), &archived_for_sync);
                         spawn_chat_list_avatar_fetches(&ui, b);
+                        spawn_contact_avatar_fetches(&ui, b);
+                        spawn_archived_avatar_fetches(&ui, b);
                         populate_profile(b, &ui);
                         refresh_kp_local(b, &ui);
                         refresh_network_post_boot(b, &ui);
@@ -504,6 +509,8 @@ fn main() -> Result<(), slint::PlatformError> {
                             refresh_contacts(&b, &contacts, &Settings::load().nicknames);
                             refresh_archived(&b, &archived, &archived_group_ids);
                             spawn_chat_list_avatar_fetches(&ui, &b);
+                            spawn_contact_avatar_fetches(&ui, &b);
+                            spawn_archived_avatar_fetches(&ui, &b);
                             eprintln!("[boot-timing] ui contacts/archived done at {:?}", t_ui.elapsed());
                             if let Some(hex) = group_ids.lock().unwrap().first().cloned() {
                                 push_group_members_to_ui(&ui, &b, &hex);
@@ -560,6 +567,7 @@ fn main() -> Result<(), slint::PlatformError> {
                                             &Settings::load().nicknames,
                                         );
                                         spawn_chat_list_avatar_fetches(&ui, b);
+                                        spawn_contact_avatar_fetches(&ui, b);
                                         populate_profile(b, &ui);
                                     },
                                 );
@@ -887,6 +895,78 @@ fn main() -> Result<(), slint::PlatformError> {
             let mut s = settings_cell.borrow_mut();
             s.outgoing_on_right = on;
             s.save();
+        }
+    });
+
+    ui.on_time_format_selected({
+        let weak = ui.as_weak();
+        let settings_cell = settings_cell.clone();
+        let backend_cell = backend_cell.clone();
+        let pending_state = pending_state.clone();
+        let chats = chats.clone();
+        let chats_messages = chats_messages.clone();
+        let group_ids = group_ids.clone();
+        let archived = archived.clone();
+        let archived_group_ids = archived_group_ids.clone();
+        move |fmt| {
+            let fmt = if fmt.as_str() == "12h" { "12h" } else { "24h" };
+            {
+                let mut st = settings_cell.borrow_mut();
+                st.time_format = fmt.to_string();
+                st.save();
+                apply_stamp_formats(&st);
+            }
+            if let Some(ui) = weak.upgrade() {
+                ui.set_time_format(s(fmt));
+                refresh_stamps_everywhere(
+                    &ui,
+                    &backend_cell,
+                    &pending_state,
+                    &chats,
+                    &chats_messages,
+                    &group_ids,
+                    &archived,
+                    &archived_group_ids,
+                );
+            }
+        }
+    });
+
+    ui.on_date_format_selected({
+        let weak = ui.as_weak();
+        let settings_cell = settings_cell.clone();
+        let backend_cell = backend_cell.clone();
+        let pending_state = pending_state.clone();
+        let chats = chats.clone();
+        let chats_messages = chats_messages.clone();
+        let group_ids = group_ids.clone();
+        let archived = archived.clone();
+        let archived_group_ids = archived_group_ids.clone();
+        move |fmt| {
+            let fmt = match fmt.as_str() {
+                "dmy" => "dmy",
+                "iso" => "iso",
+                _ => "mdy",
+            };
+            {
+                let mut st = settings_cell.borrow_mut();
+                st.date_format = fmt.to_string();
+                st.save();
+                apply_stamp_formats(&st);
+            }
+            if let Some(ui) = weak.upgrade() {
+                ui.set_date_format(s(fmt));
+                refresh_stamps_everywhere(
+                    &ui,
+                    &backend_cell,
+                    &pending_state,
+                    &chats,
+                    &chats_messages,
+                    &group_ids,
+                    &archived,
+                    &archived_group_ids,
+                );
+            }
         }
     });
 
@@ -1506,6 +1586,7 @@ fn main() -> Result<(), slint::PlatformError> {
                             // of capturing the Rc settings cell.
                             let contacts = ui.get_contacts();
                             refresh_contacts(&b, &contacts, &Settings::load().nicknames);
+                            spawn_contact_avatar_fetches(&ui, &b);
                             // Select the freshly-added row so the detail pane shows it.
                             if let Ok(npub) = npub_for_account_id(&account_id_hex) {
                                 if let Some(pos) = contacts
@@ -1552,6 +1633,7 @@ fn main() -> Result<(), slint::PlatformError> {
                     match result {
                         Ok(_) => {
                             refresh_contacts(&b, &ui.get_contacts(), &Settings::load().nicknames);
+                            spawn_contact_avatar_fetches(&ui, &b);
                             ui.set_peer_profile_is_contact(true);
                             refresh_breadcrumb_now(&ui);
                         }
@@ -2145,6 +2227,7 @@ fn main() -> Result<(), slint::PlatformError> {
             set_rail_badges(&ui, &chats);
             refresh_archived(b, &archived, &archived_group_ids);
             spawn_chat_list_avatar_fetches(&ui, b);
+            spawn_archived_avatar_fetches(&ui, b);
             // Clamp active-chat so we don't dangle past the end after a row was removed.
             let len = chats.row_count() as i32;
             if ui.get_active_chat() >= len {
@@ -2269,6 +2352,8 @@ fn main() -> Result<(), slint::PlatformError> {
                 av_initials: removed_meta.av_initials.clone(),
                 members: 0,
                 group_id: removed_meta.npub.clone(),
+                picture: removed_meta.picture.clone(),
+                has_picture: removed_meta.has_picture,
             };
             if let Some(archived_vm) = ui
                 .get_archived_chats()
@@ -4685,6 +4770,32 @@ fn replace_message_row(
 /// Take a snapshot of chats and (lazily-loaded) messages, push them into the
 /// Slint models, and store the parallel group-id list so on_send_message can
 /// resolve the active group.
+/// Repaint every surface that renders a timestamp — chat list, archived
+/// list, and the open conversation. Called when the user flips the time or
+/// date format so stale stamps don't linger until the next sync.
+fn refresh_stamps_everywhere(
+    ui: &DarkMatterLinux,
+    backend_cell: &Arc<Mutex<Option<Arc<Backend>>>>,
+    pending_state: &Arc<Mutex<PendingState>>,
+    chats: &ModelRc<ChatMeta>,
+    chats_messages: &ModelRc<ModelRc<ChatMessage>>,
+    group_ids: &Arc<Mutex<Vec<String>>>,
+    archived: &ModelRc<ArchivedChat>,
+    archived_group_ids: &Arc<Mutex<Vec<String>>>,
+) {
+    let guard = backend_cell.lock().unwrap();
+    // Pre-login there's nothing on screen to repaint; boot applies the
+    // formats before the first population.
+    let Some(backend) = guard.as_ref() else { return };
+    refresh_chats(backend, chats, chats_messages, group_ids);
+    refresh_archived(backend, archived, archived_group_ids);
+    let idx = ui.get_active_chat() as usize;
+    if let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() {
+        let overlay = pending_state.lock().unwrap();
+        rebuild_chat_messages(backend, &overlay, chats_messages, idx, &group_hex);
+    }
+}
+
 fn refresh_chats(
     backend: &Backend,
     chats: &ModelRc<ChatMeta>,
@@ -6914,22 +7025,80 @@ fn refresh_network_post_boot(backend: &Arc<Backend>, ui: &DarkMatterLinux) {
 }
 
 /// `Mon DD · HH:MM` (local time) for KP timestamps. Returns "" for zero (unknown).
+// ─── User-selectable stamp formats ──────────────────────────────────────
+// Mirrors `Settings::{time_format,date_format}` as process-wide atomics so
+// the formatters (called per row in rebuild loops) never touch disk. Synced
+// at boot and whenever the user changes the pickers in Settings → General.
+
+static TIME_FORMAT_12H: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+/// 0 = mdy ("Jun 12"), 1 = dmy ("12 Jun"), 2 = iso ("2026-06-12").
+static DATE_FORMAT_KIND: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
+
+fn apply_stamp_formats(settings: &Settings) {
+    use std::sync::atomic::Ordering;
+    TIME_FORMAT_12H.store(settings.time_format == "12h", Ordering::Relaxed);
+    let kind = match settings.date_format.as_str() {
+        "dmy" => 1,
+        "iso" => 2,
+        _ => 0,
+    };
+    DATE_FORMAT_KIND.store(kind, Ordering::Relaxed);
+}
+
+/// Clock part of a stamp, honoring the 12h/24h preference.
+fn format_clock(z: &jiff::Zoned) -> String {
+    if TIME_FORMAT_12H.load(std::sync::atomic::Ordering::Relaxed) {
+        let (h, half) = match z.hour() {
+            0 => (12, "AM"),
+            h @ 1..=11 => (h, "AM"),
+            12 => (12, "PM"),
+            h => (h - 12, "PM"),
+        };
+        format!("{}:{:02} {}", h, z.minute(), half)
+    } else {
+        format!("{:02}:{:02}", z.hour(), z.minute())
+    }
+}
+
+/// Date part of a stamp, honoring the mdy/dmy/iso preference. `with_year`
+/// is advisory for the named-month styles; ISO always carries the year.
+fn format_date_part(z: &jiff::Zoned, with_year: bool) -> String {
+    let months = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    ];
+    let mi = (z.month() as usize).saturating_sub(1).min(11);
+    match DATE_FORMAT_KIND.load(std::sync::atomic::Ordering::Relaxed) {
+        1 => {
+            if with_year {
+                format!("{} {} {}", z.day(), months[mi], z.year())
+            } else {
+                format!("{} {}", z.day(), months[mi])
+            }
+        }
+        2 => format!("{:04}-{:02}-{:02}", z.year(), z.month(), z.day()),
+        _ => {
+            if with_year {
+                format!("{} {} {}", months[mi], z.day(), z.year())
+            } else {
+                format!("{} {}", months[mi], z.day())
+            }
+        }
+    }
+}
+
 fn format_date_unix(secs: u64) -> String {
     if secs == 0 {
         return String::new();
     }
     let z = local_time(secs);
-    let months = [
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-    ];
-    let mi = (z.month() as usize).saturating_sub(1).min(11);
-    format!("{} {} · {:02}:{:02}", months[mi], z.day(), z.hour(), z.minute())
+    format!("{} · {}", format_date_part(&z, false), format_clock(&z))
 }
 
-/// Render a unix-seconds timestamp as `HH:MM` in the user's local timezone.
+/// Render a unix-seconds timestamp as a clock stamp in the user's local
+/// timezone, honoring the 12h/24h preference.
 fn format_unix(secs: u64) -> String {
     let z = local_time(secs);
-    format!("{:02}:{:02}", z.hour(), z.minute())
+    format_clock(&z)
 }
 
 /// Friendly chat-list stamp: `HH:MM` for today, "Yesterday", the weekday
@@ -6952,7 +7121,7 @@ fn format_chat_stamp(secs: u64) -> String {
     if days <= 0 {
         // Today — or a clock-skewed future stamp, which gets the same benefit
         // of the doubt rather than a nonsense date.
-        return format!("{:02}:{:02}", z.hour(), z.minute());
+        return format_clock(&z);
     }
     if days == 1 {
         return "Yesterday".to_string();
@@ -6970,15 +7139,7 @@ fn format_chat_stamp(secs: u64) -> String {
         }
         .to_string();
     }
-    let months = [
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-    ];
-    let mi = (z.month() as usize).saturating_sub(1).min(11);
-    if z.year() == now.year() {
-        format!("{} {}", months[mi], z.day())
-    } else {
-        format!("{} {} {}", months[mi], z.day(), z.year())
-    }
+    format_date_part(&z, z.year() != now.year())
 }
 
 /// Epoch seconds → civil time in the system timezone. Conversion happens
@@ -7037,6 +7198,8 @@ fn contact_from(
         .as_ref()
         .and_then(|p| p.nip05.as_ref())
         .is_some();
+    let picture_url = record.profile.as_ref().and_then(|p| p.picture.clone());
+    let (picture, has_picture) = bind_cached_picture(picture_url.as_deref());
     Contact {
         name: s(&display),
         real_name: s(&published),
@@ -7051,6 +7214,8 @@ fn contact_from(
         online: false,
         relays: relays as i32,
         added: s(""),
+        picture,
+        has_picture,
     }
 }
 
@@ -7346,6 +7511,115 @@ fn update_chat_picture(ui: &DarkMatterLinux, npub: &str, pixels: &PicturePixels)
     }
 }
 
+/// Queue async fetches for contact-list avatars whose picture URL isn't in
+/// the cache yet. Mirrors [`spawn_chat_list_avatar_fetches`].
+fn spawn_contact_avatar_fetches(ui: &DarkMatterLinux, backend: &Backend) {
+    let records = match backend.follow_list() {
+        Ok(v) => v,
+        Err(_) => return,
+    };
+    for record in records {
+        let Some(url) = record
+            .profile
+            .as_ref()
+            .and_then(|p| p.picture.clone())
+            .map(|u| u.trim().to_string())
+            .filter(|u| !u.is_empty())
+        else {
+            continue;
+        };
+        if picture_cache_has(&url) {
+            continue;
+        }
+        let account_id = record.account_id_hex.clone();
+        let weak = ui.as_weak();
+        backend.tokio_handle().spawn(async move {
+            let Some(pixels) = fetch_picture_pixels(&url).await else {
+                return;
+            };
+            let _ = slint::invoke_from_event_loop(move || {
+                if let Some(ui) = weak.upgrade() {
+                    update_contact_picture(&ui, &account_id, &pixels);
+                }
+            });
+        });
+    }
+}
+
+/// Bind a decoded picture onto the contact row identified by `account_id`.
+fn update_contact_picture(ui: &DarkMatterLinux, account_id: &str, pixels: &PicturePixels) {
+    let contacts = ui.get_contacts();
+    let Some(vm) = contacts.as_any().downcast_ref::<VecModel<Contact>>() else {
+        return;
+    };
+    let img = rgba_to_slint_image(pixels);
+    for i in 0..vm.row_count() {
+        let Some(mut row) = vm.row_data(i) else { continue };
+        if !row.account_id.as_str().eq_ignore_ascii_case(account_id) {
+            continue;
+        }
+        row.picture = img.clone();
+        row.has_picture = true;
+        vm.set_row_data(i, row);
+        break;
+    }
+}
+
+/// Queue async fetches for archived-chat avatars (1:1 peers only) whose
+/// picture URL isn't in the cache yet.
+fn spawn_archived_avatar_fetches(ui: &DarkMatterLinux, backend: &Backend) {
+    let records = match backend.archived_chats() {
+        Ok(v) => v,
+        Err(_) => return,
+    };
+    for record in records {
+        let Some(peer) = backend.direct_chat_peer(&record.group_id_hex) else {
+            continue;
+        };
+        let Some(url) = backend
+            .account_picture_url(&peer)
+            .map(|u| u.trim().to_string())
+            .filter(|u| !u.is_empty())
+        else {
+            continue;
+        };
+        if picture_cache_has(&url) {
+            continue;
+        }
+        let group_id = format!("mls:0x{}", short_hex(&record.group_id_hex));
+        let weak = ui.as_weak();
+        backend.tokio_handle().spawn(async move {
+            let Some(pixels) = fetch_picture_pixels(&url).await else {
+                return;
+            };
+            let _ = slint::invoke_from_event_loop(move || {
+                if let Some(ui) = weak.upgrade() {
+                    update_archived_picture(&ui, &group_id, &pixels);
+                }
+            });
+        });
+    }
+}
+
+/// Bind a decoded picture onto the archived row identified by `group_id`.
+fn update_archived_picture(ui: &DarkMatterLinux, group_id: &str, pixels: &PicturePixels) {
+    let archived = ui.get_archived_chats();
+    let Some(vm) = archived.as_any().downcast_ref::<VecModel<ArchivedChat>>() else {
+        return;
+    };
+    let img = rgba_to_slint_image(pixels);
+    for i in 0..vm.row_count() {
+        let Some(mut row) = vm.row_data(i) else { continue };
+        if row.group_id.as_str() != group_id {
+            continue;
+        }
+        row.picture = img.clone();
+        row.has_picture = true;
+        vm.set_row_data(i, row);
+        break;
+    }
+}
+
 fn spawn_member_picture_fetch(
     ui: &DarkMatterLinux,
     backend: &Backend,
@@ -7553,6 +7827,12 @@ fn archived_from(
         }
         None => (record.profile.description.clone(), String::new()),
     };
+    // Archived 1:1 chats keep the peer's profile picture; groups stay on the
+    // gradient (group images are an MLS component, not a public URL).
+    let picture_url = backend
+        .direct_chat_peer(&record.group_id_hex)
+        .and_then(|peer| backend.account_picture_url(&peer));
+    let (picture, has_picture) = bind_cached_picture(picture_url.as_deref());
     ArchivedChat {
         name: s(&name),
         last_msg: s(&last_msg),
@@ -7562,6 +7842,8 @@ fn archived_from(
         av_initials: s(&init),
         members: backend.group_member_count(&record.group_id_hex) as i32,
         group_id: s(&format!("mls:0x{}", short_hex(&record.group_id_hex))),
+        picture,
+        has_picture,
     }
 }
 

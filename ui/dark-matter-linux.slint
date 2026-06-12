@@ -253,6 +253,12 @@ export component DarkMatterLinux inherits Window {
     callback theme-mode-selected(string);
     callback accent-selected(int);
     callback outgoing-on-right-toggled(bool);
+    // Stamp formats — `24h`/`12h` and `mdy`/`dmy`/`iso`; Rust persists and
+    // re-renders all visible timestamps on change.
+    in-out property <string> time-format: "24h";
+    in-out property <string> date-format: "mdy";
+    callback time-format-selected(string);
+    callback date-format-selected(string);
 
     in property <string> backend-error;
     in property <bool> backend-ready;
@@ -666,6 +672,10 @@ export component DarkMatterLinux inherits Window {
                         network-republish-relay-list => { root.network-republish-relay-list(); }
                         locale-display: root.locale-display;
                         change-language-clicked => { root.change-language-clicked(); }
+                        time-format: root.time-format;
+                        date-format: root.date-format;
+                        time-format-selected(f) => { root.time-format-selected(f); }
+                        date-format-selected(f) => { root.date-format-selected(f); }
                         light-theme <=> root.light-theme;
                         retro-mode <=> root.retro-mode;
                         accent-color <=> root.accent-color;
