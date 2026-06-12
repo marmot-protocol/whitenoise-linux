@@ -19,7 +19,8 @@ use cgka_traits::TransportEndpoint;
 use marmot_account::{AccountHome, AccountSecretStore, AccountSummary};
 use marmot_app::{
     AccountRelayListBootstrap, AccountSetupRequest, AppGroupMemberRecord, AppGroupMlsState,
-    AppGroupRecord, AppMessageQuery, AppMessageRecord, AuditLogSettings, AuditLogTrackerConfig,
+    AppGroupRecord, AppMessageQuery, AppMessageRecord, AuditLogFile, AuditLogSettings,
+    AuditLogTrackerConfig,
     AuditLogUploadSource, MarmotApp, MarmotAppRuntime, MediaAttachmentReference,
     MediaDownloadResult, MediaUploadAttachmentRequest, MediaUploadRequest, MediaUploadResult,
     RelayTelemetryResource, RelayTelemetryRuntimeConfig, RelayTelemetrySettings,
@@ -1805,9 +1806,7 @@ impl Backend {
         Ok(())
     }
 
-    /// Whether the per-account forensic audit log (JSONL) is enabled. The
-    /// recorder is wired at account-open time, so a change here only takes
-    /// effect after the next restart.
+    /// Whether the per-account forensic audit log (JSONL) is enabled.
     pub fn audit_logs_enabled(&self) -> bool {
         self.app
             .audit_log_settings()
@@ -1815,12 +1814,49 @@ impl Backend {
             .unwrap_or(false)
     }
 
-    /// Enable/disable forensic audit logging. Takes effect on next restart.
-    pub fn set_audit_logs_enabled(&self, on: bool) -> Result<()> {
-        self.app
-            .set_audit_log_settings(AuditLogSettings { enabled: on })
-            .map_err(|e| anyhow!("set_audit_log_settings: {e}"))?;
-        Ok(())
+    /// Enable/disable forensic audit logging. Persists the switch and applies
+    /// it to running sessions in place via marmot's recorder hot-swap, so no
+    /// restart is needed. The returned future must run on the backend tokio
+    /// runtime — applying the switch awaits each account worker's FIFO queue,
+    /// which a misbehaving relay can hold for its full connection timeout.
+    pub fn set_audit_logs_enabled(
+        &self,
+        on: bool,
+    ) -> impl std::future::Future<Output = Result<()>> + Send + 'static {
+        let runtime = self.runtime.clone();
+        async move {
+            runtime
+                .set_audit_log_settings(AuditLogSettings { enabled: on })
+                .await
+                .map_err(|e| anyhow!("set_audit_log_settings: {e}"))?;
+            Ok(())
+        }
+    }
+
+    /// On-disk forensic audit-log files (JSONL) across all accounts. Reads
+    /// the account directories directly; cheap, but still disk IO — call off
+    /// the UI thread.
+    pub fn audit_log_files(&self) -> Result<Vec<AuditLogFile>> {
+        self.runtime
+            .audit_log_files()
+            .map_err(|e| anyhow!("audit_log_files: {e}"))
+    }
+
+    /// Delete one audit-log file by path. Resolves to `still_recording`:
+    /// `true` means a live recorder owned the file and rotated to a fresh one
+    /// (recording continues), `false` means the file was simply removed.
+    pub fn delete_audit_log_file(
+        &self,
+        path: String,
+    ) -> impl std::future::Future<Output = Result<bool>> + Send + 'static {
+        let runtime = self.runtime.clone();
+        async move {
+            let outcome = runtime
+                .delete_audit_log_file(&path)
+                .await
+                .map_err(|e| anyhow!("delete_audit_log_file: {e}"))?;
+            Ok(outcome.still_recording)
+        }
     }
 
     pub fn debug_snapshot(&self) -> String {

@@ -1,4 +1,4 @@
-import { Palette } from "../tokens.slint";
+import { Palette, AuditLogEntry } from "../tokens.slint";
 import { SettingsSidebar } from "settings-sidebar.slint";
 import { GeneralPane } from "general-pane.slint";
 import { AppearancePane } from "appearance-pane.slint";
@@ -19,8 +19,11 @@ export component SettingsPage inherits Rectangle {
     in-out property <bool> telemetry-enabled: false;
     in-out property <bool> audit-enabled: false;
     in property <string> audit-status;
+    in property <[AuditLogEntry]> audit-files;
     callback telemetry-toggled(bool);
     callback audit-toggled(bool);
+    callback audit-delete-file(string);
+    callback audit-refresh-files();
 
     in property <string> locale-display;
     callback change-language-clicked();
@@ -109,6 +112,9 @@ export component SettingsPage inherits Rectangle {
                 audit-enabled <=> root.audit-enabled;
                 audit-toggled(v) => { root.audit-toggled(v); }
                 audit-status: root.audit-status;
+                audit-files: root.audit-files;
+                audit-delete-file(p) => { root.audit-delete-file(p); }
+                audit-refresh-files => { root.audit-refresh-files(); }
             }
             if root.active-tab == 6 : AboutPane {
                 width: parent.width;

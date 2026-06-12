@@ -28,6 +28,7 @@ import { EmojiPicker } from "emoji-picker.slint";
 import { MessageContextMenu } from "primitives/context-menu.slint";
 import { EmojiEntry, EmojiSheet, Linkout, ProfileSink } from "tokens.slint";
 import { EditVersion } from "tokens.slint";
+import { AuditLogEntry } from "tokens.slint";
 // Re-export so Rust can do `ui.global::<EmojiSheet>().set_sprite(...)`.
 // Slint only generates a Rust binding for a global when the entry file
 // exports it (or names it in the component tree).
@@ -211,8 +212,11 @@ export component DarkMatterLinux inherits Window {
     in-out property <bool> telemetry-enabled: false;
     in-out property <bool> audit-enabled: false;
     in property <string> audit-status;
+    in property <[AuditLogEntry]> audit-files;
     callback telemetry-toggled(bool);
     callback audit-toggled(bool);
+    callback audit-delete-file(string);
+    callback audit-refresh-files();
 
     // Network & relays settings pane. `network-relays` is the on-disk list
     // (drives the UI); `network-booted-relays` is what the running backend
@@ -642,6 +646,9 @@ export component DarkMatterLinux inherits Window {
                         audit-enabled <=> root.audit-enabled;
                         audit-toggled(v) => { root.audit-toggled(v); }
                         audit-status: root.audit-status;
+                        audit-files: root.audit-files;
+                        audit-delete-file(p) => { root.audit-delete-file(p); }
+                        audit-refresh-files => { root.audit-refresh-files(); }
                         network-relays: root.network-relays;
                         network-booted-relays: root.network-booted-relays;
                         network-connected: root.network-connected;

@@ -1,20 +1,80 @@
-import { Palette, Theme } from "../tokens.slint";
+import { Palette, Theme, AuditLogEntry } from "../tokens.slint";
 import { TerminalIcon } from "../icons/terminal-icon.slint";
+import { TrashIcon } from "../icons/trash-icon.slint";
+import { RefreshIcon } from "../icons/refresh-icon.slint";
 import { DetailPage } from "../shells/detail-page.slint";
 import { PageHeader } from "../shells/page-header.slint";
 import { Section } from "../shells/section.slint";
 import { GroupCard } from "../shells/group-card.slint";
 import { PrefRow } from "pref-row.slint";
 import { Toggle } from "toggle.slint";
+import { MicroButton } from "../primitives/button.slint";
+
+// One row in the audit-log file list. Self-contained so delete hit-testing
+// doesn't fight the list-level layout (same shape as the relay rows).
+component AuditFileRow inherits Rectangle {
+    in property <string> name;
+    in property <string> meta;
+    in property <bool> show-divider: true;
+    callback delete-clicked;
+
+    height: 48px;
+
+    HorizontalLayout {
+        padding-left: 16px; padding-right: 12px;
+        padding-top: 8px; padding-bottom: 8px;
+        spacing: 10px;
+        alignment: stretch;
+
+        VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: 2px;
+            alignment: center;
+            Text {
+                text: root.name;
+                color: Palette.text-hi;
+                font-size: (12px) * Theme.fs-scale;
+                font-weight: 500;
+                overflow: elide;
+            }
+            Text {
+                text: root.meta;
+                color: Palette.text-lo;
+                font-size: (11px) * Theme.fs-scale;
+                overflow: elide;
+            }
+        }
+
+        VerticalLayout {
+            alignment: center;
+            MicroButton {
+                label: "";
+                pad-left: 8px;
+                pad-right: 8px;
+                TrashIcon { stroke: Palette.text-mid; }
+                clicked => { root.delete-clicked(); }
+            }
+        }
+    }
+
+    if root.show-divider : Rectangle {
+        y: parent.height - 1px;
+        width: parent.width; height: 1px;
+        background: Palette.border-2;
+    }
+}
 
 export component AdvancedPane inherits DetailPage {
     in-out property <bool> debug-enabled: false;
     in-out property <bool> telemetry-enabled: false;
     in-out property <bool> audit-enabled: false;
     in property <string> audit-status;
+    in property <[AuditLogEntry]> audit-files;
     callback debug-toggled(bool);
     callback telemetry-toggled(bool);
     callback audit-toggled(bool);
+    callback audit-delete-file(string);
+    callback audit-refresh-files();
 
     PageHeader {
         title: @tr("Advanced");
@@ -35,7 +95,7 @@ export component AdvancedPane inherits DetailPage {
             }
             PrefRow {
                 label: @tr("Audit logs");
-                sublabel: @tr("Create and send group audit log files. Takes effect after restart.");
+                sublabel: @tr("Create and send group audit log files. Applies immediately.");
                 show-divider: false;
                 Toggle {
                     on <=> root.audit-enabled;
@@ -49,6 +109,45 @@ export component AdvancedPane inherits DetailPage {
             color: Palette.text-mid;
             font-family: Theme.font;
             font-size: 11px * Theme.fs-scale;
+            wrap: word-wrap;
+        }
+    }
+
+    Section {
+        label: @tr("AUDIT LOG FILES");
+        GroupCard {
+            if root.audit-files.length == 0 : Rectangle {
+                height: 48px;
+                Text {
+                    x: 16px;
+                    width: parent.width - 32px;
+                    height: parent.height;
+                    text: @tr("No audit log files on disk.");
+                    color: Palette.text-lo;
+                    font-size: (12px) * Theme.fs-scale;
+                    vertical-alignment: center;
+                }
+            }
+            for f[i] in root.audit-files : AuditFileRow {
+                name: f.name;
+                meta: f.meta;
+                show-divider: i < root.audit-files.length - 1;
+                delete-clicked => { root.audit-delete-file(f.path); }
+            }
+        }
+
+        HorizontalLayout {
+            alignment: start;
+            MicroButton {
+                label: @tr("Refresh");
+                RefreshIcon { stroke: Palette.text-mid; }
+                clicked => { root.audit-refresh-files(); }
+            }
+        }
+        Text {
+            text: @tr("Deleting the file being recorded rotates it — recording continues in a fresh file.");
+            color: Palette.text-lo;
+            font-size: (11px) * Theme.fs-scale;
             wrap: word-wrap;
         }
     }

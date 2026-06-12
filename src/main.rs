@@ -4,7 +4,7 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
 use marmot_app::{
-    npub_for_account_id, AppGroupMemberRecord, AppGroupRecord, AppMessageRecord,
+    npub_for_account_id, AppGroupMemberRecord, AppGroupRecord, AppMessageRecord, AuditLogFile,
     MediaAttachmentReference, MediaLocator, UserDirectoryRecord, UserProfileMetadata,
 };
 use nostr::nips::nip19::ToBech32;
@@ -517,6 +517,7 @@ fn main() -> Result<(), slint::PlatformError> {
                             // surface their current state once the backend is up.
                             ui.set_telemetry_enabled(b.telemetry_enabled());
                             ui.set_audit_enabled(b.audit_logs_enabled());
+                            refresh_audit_files(&ui, &b);
                             install_chat_watcher(&b, ui.as_weak(), group_ids.clone(), backend_cell.clone());
                             *backend_cell.lock().unwrap() = Some(b.clone());
                             ui.set_backend_ready(true);
@@ -950,28 +951,85 @@ fn main() -> Result<(), slint::PlatformError> {
         let backend_cell = backend_cell.clone();
         move |on| {
             let Some(ui) = weak.upgrade() else { return };
-            let result = backend_cell
-                .lock()
-                .ok()
-                .and_then(|g| g.as_ref().map(|b| b.set_audit_logs_enabled(on)));
-            match result {
-                Some(Ok(())) => {
-                    ui.set_audit_status(
-                        if on {
-                            "Audit logging enabled. Restart to begin recording; \
-                             logs upload automatically after that."
-                        } else {
-                            "Audit logging disabled. Takes effect after restart."
+            let Some(b) = backend_cell.lock().ok().and_then(|g| g.as_ref().cloned()) else {
+                ui.set_audit_enabled(!on);
+                return;
+            };
+            // Persist + hot-swap the recorder on running sessions (no restart).
+            // Applying the switch awaits each account worker's FIFO queue, which
+            // a misbehaving relay can hold for ~35s — never block here.
+            let weak = ui.as_weak();
+            let fut = b.set_audit_logs_enabled(on);
+            b.tokio_handle().spawn(async move {
+                let result = fut.await;
+                let files = b.audit_log_files().unwrap_or_default();
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    match result {
+                        Ok(()) => ui.set_audit_status(
+                            if on {
+                                "Audit logging enabled — recording now; \
+                                 logs upload automatically."
+                            } else {
+                                "Audit logging disabled. Existing files stay \
+                                 until you delete them."
+                            }
+                            .into(),
+                        ),
+                        Err(e) => {
+                            eprintln!("[settings] set audit logs failed: {e:#}");
+                            ui.set_audit_enabled(!on);
+                            ui.set_audit_status("Couldn't change audit logging.".into());
                         }
-                        .into(),
-                    );
-                }
-                Some(Err(e)) => {
-                    eprintln!("[settings] set audit logs failed: {e}");
-                    ui.set_audit_enabled(!on);
-                }
-                None => ui.set_audit_enabled(!on),
-            }
+                    }
+                    push_audit_files(&ui, files);
+                });
+            });
+        }
+    });
+
+    ui.on_audit_refresh_files({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        move || {
+            let Some(ui) = weak.upgrade() else { return };
+            let Some(b) = backend_cell.lock().ok().and_then(|g| g.as_ref().cloned()) else {
+                return;
+            };
+            refresh_audit_files(&ui, &b);
+        }
+    });
+
+    ui.on_audit_delete_file({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        move |path| {
+            let Some(ui) = weak.upgrade() else { return };
+            let Some(b) = backend_cell.lock().ok().and_then(|g| g.as_ref().cloned()) else {
+                return;
+            };
+            let weak = ui.as_weak();
+            let fut = b.delete_audit_log_file(path.to_string());
+            b.tokio_handle().spawn(async move {
+                let result = fut.await;
+                let files = b.audit_log_files().unwrap_or_default();
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    match result {
+                        // `true` = the live recorder owned that file and
+                        // rotated in place rather than going dark.
+                        Ok(true) => ui.set_audit_status(
+                            "Audit log deleted — recording continues in a fresh file.".into(),
+                        ),
+                        Ok(false) => ui.set_audit_status("Audit log deleted.".into()),
+                        Err(e) => {
+                            eprintln!("[settings] delete audit log failed: {e:#}");
+                            ui.set_audit_status("Couldn't delete audit log.".into());
+                        }
+                    }
+                    push_audit_files(&ui, files);
+                });
+            });
         }
     });
 
@@ -4438,6 +4496,50 @@ fn mime_is_image(mime: &str) -> bool {
 }
 
 /// Compact byte-size label for attachment chips. KB/MB rounded to one decimal.
+/// Map on-disk audit-log files into UI rows (newest first) and push the model.
+fn push_audit_files(ui: &DarkMatterLinux, mut files: Vec<AuditLogFile>) {
+    files.sort_by(|a, b| {
+        b.modified_at_ms
+            .unwrap_or(0)
+            .cmp(&a.modified_at_ms.unwrap_or(0))
+    });
+    let rows: Vec<AuditLogEntry> = files
+        .iter()
+        .map(|f| AuditLogEntry {
+            path: f.path.clone().into(),
+            name: f.file_name.clone().into(),
+            meta: match f.modified_at_ms {
+                Some(ms) => format!(
+                    "{} · {}",
+                    human_bytes(f.size_bytes),
+                    format_date_unix(ms / 1000)
+                )
+                .into(),
+                None => human_bytes(f.size_bytes).into(),
+            },
+        })
+        .collect();
+    ui.set_audit_files(ModelRc::new(VecModel::from(rows)));
+}
+
+/// List audit-log files off the UI thread (disk IO) and push the rows back
+/// through the event loop.
+fn refresh_audit_files(ui: &DarkMatterLinux, backend: &Arc<Backend>) {
+    let weak = ui.as_weak();
+    let b = backend.clone();
+    backend.tokio_handle().spawn(async move {
+        let files = b.audit_log_files().unwrap_or_else(|e| {
+            eprintln!("[settings] list audit logs failed: {e:#}");
+            Vec::new()
+        });
+        let _ = slint::invoke_from_event_loop(move || {
+            if let Some(ui) = weak.upgrade() {
+                push_audit_files(&ui, files);
+            }
+        });
+    });
+}
+
 fn human_bytes(n: u64) -> String {
     const KB: u64 = 1024;
     const MB: u64 = 1024 * 1024;

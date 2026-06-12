@@ -130,6 +130,15 @@ export struct Contact {
     added: string,
 }
 
+// One on-disk forensic audit-log file (Settings → Advanced). `path` is the
+// opaque key handed back to the delete callback; `meta` is the preformatted
+// "size · date" line (formatting stays Rust-side).
+export struct AuditLogEntry {
+    path: string,
+    name: string,
+    meta: string,
+}
+
 export struct ArchivedChat {
     name: string,
     last-msg: string,
