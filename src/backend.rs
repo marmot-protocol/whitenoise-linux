@@ -10,8 +10,10 @@
 // `dmd` does in the upstream stack.
 
 use std::collections::{HashMap, HashSet};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, RwLock};
+use std::time::Duration;
 
 use anyhow::{Context, Result, anyhow};
 use cgka_traits::GroupId;
@@ -1068,10 +1070,7 @@ impl Backend {
         let label = self.active_label();
         let runtime = self.runtime.clone();
         self.tokio.spawn(async move {
-            let res = runtime
-                .download_media(&label, &group_id, reference)
-                .await
-                .map_err(|e| anyhow!("download_media: {e}"));
+            let res = download_media_with_redirect_retry(runtime, label, group_id, reference).await;
             on_done(res);
         });
     }
@@ -2293,6 +2292,275 @@ fn is_stale_encrypted_media_policy(msg: &str) -> bool {
     msg.contains("encrypted media format must be")
         || msg.contains("encrypted media policy has no default endpoint")
         || msg.contains("group does not require encrypted media")
+}
+
+const MEDIA_REDIRECT_LIMIT: usize = 5;
+const MEDIA_REDIRECT_CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
+const MEDIA_REDIRECT_READ_TIMEOUT: Duration = Duration::from_secs(15);
+const MEDIA_REDIRECT_TOTAL_TIMEOUT: Duration = Duration::from_secs(60);
+
+async fn download_media_with_redirect_retry(
+    runtime: MarmotAppRuntime,
+    label: String,
+    group_id: GroupId,
+    reference: MediaAttachmentReference,
+) -> Result<MediaDownloadResult> {
+    match runtime
+        .download_media(&label, &group_id, reference.clone())
+        .await
+    {
+        Ok(download) => Ok(download),
+        Err(err) => {
+            let msg = err.to_string();
+            if !is_media_redirect_error(&msg) {
+                return Err(anyhow!("download_media: {err}"));
+            }
+
+            tracing::warn!(
+                target: "backend::download_media",
+                error = %msg,
+                "encrypted-media download hit a Blossom redirect; resolving locator and retrying"
+            );
+            match resolve_media_reference_redirects(reference).await {
+                Ok(Some(resolved_reference)) => runtime
+                    .download_media(&label, &group_id, resolved_reference)
+                    .await
+                    .map_err(|retry| {
+                        anyhow!("download_media (after redirect resolution): {retry}")
+                    }),
+                Ok(None) => Err(anyhow!("download_media: {err}")),
+                Err(resolve_err) => Err(anyhow!(
+                    "download_media: {err}; redirect resolution failed: {resolve_err:#}"
+                )),
+            }
+        }
+    }
+}
+
+fn is_media_redirect_error(msg: &str) -> bool {
+    msg.contains("download returned HTTP")
+        && ["HTTP 301", "HTTP 302", "HTTP 303", "HTTP 307", "HTTP 308"]
+            .iter()
+            .any(|status| msg.contains(status))
+}
+
+async fn resolve_media_reference_redirects(
+    mut reference: MediaAttachmentReference,
+) -> Result<Option<MediaAttachmentReference>> {
+    let expected_hash = reference.ciphertext_sha256.to_ascii_lowercase();
+    let mut changed = false;
+    let mut last_error = None;
+    for locator in &mut reference.locators {
+        if locator.kind != BLOSSOM_LOCATOR_KIND_V1 {
+            continue;
+        }
+        match resolve_media_locator_redirects(&locator.value, &expected_hash).await {
+            Ok(resolved) => {
+                if resolved != locator.value {
+                    locator.value = resolved;
+                    changed = true;
+                }
+            }
+            Err(err) => {
+                tracing::warn!(
+                    target: "backend::download_media",
+                    locator = %locator.value,
+                    error = %err,
+                    "could not resolve media locator redirect"
+                );
+                last_error = Some(err);
+            }
+        }
+    }
+    if changed {
+        Ok(Some(reference))
+    } else if let Some(err) = last_error {
+        Err(err)
+    } else {
+        Ok(None)
+    }
+}
+
+async fn resolve_media_locator_redirects(value: &str, expected_hash: &str) -> Result<String> {
+    let mut current = reqwest::Url::parse(value).context("parse media locator URL")?;
+    validate_media_fetch_url(&current).map_err(|err| anyhow!("unsafe Blossom URL: {err}"))?;
+
+    for _ in 0..MEDIA_REDIRECT_LIMIT {
+        let client = media_redirect_client_for_url(&current).await?;
+        let response = client
+            .get(current.clone())
+            .send()
+            .await
+            .context("request media locator")?;
+        if !response.status().is_redirection() {
+            return Ok(current.to_string());
+        }
+
+        let location = response
+            .headers()
+            .get(reqwest::header::LOCATION)
+            .ok_or_else(|| anyhow!("redirect response did not include Location"))?
+            .to_str()
+            .context("redirect Location header is not UTF-8")?;
+        let next = current
+            .join(location)
+            .context("redirect Location header is not a valid URL")?;
+        validate_media_fetch_url(&next)
+            .map_err(|err| anyhow!("unsafe Blossom redirect URL: {err}"))?;
+        if !media_url_contains_hash(&next, expected_hash) {
+            return Err(anyhow!(
+                "redirect URL does not include the expected encrypted blob hash"
+            ));
+        }
+        current = next;
+    }
+
+    Err(anyhow!(
+        "media redirect chain exceeded {MEDIA_REDIRECT_LIMIT} hops"
+    ))
+}
+
+async fn media_redirect_client_for_url(url: &reqwest::Url) -> Result<reqwest::Client> {
+    let mut builder = reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::none())
+        .connect_timeout(MEDIA_REDIRECT_CONNECT_TIMEOUT)
+        .read_timeout(MEDIA_REDIRECT_READ_TIMEOUT)
+        .timeout(MEDIA_REDIRECT_TOTAL_TIMEOUT)
+        .no_proxy();
+    if let Some((domain, addrs)) = resolve_media_host(url).await? {
+        builder = builder.resolve_to_addrs(&domain, &addrs);
+    }
+    builder.build().context("build media redirect HTTP client")
+}
+
+async fn resolve_media_host(url: &reqwest::Url) -> Result<Option<(String, Vec<SocketAddr>)>> {
+    let host = url
+        .host_str()
+        .ok_or_else(|| anyhow!("Blossom URL is missing a host"))?;
+    let allow_loopback = url.scheme() == "http" && cfg!(debug_assertions) && is_loopback_host(host);
+    if let Ok(ip) = host.parse::<IpAddr>() {
+        reject_non_public_ip(ip, allow_loopback)
+            .map_err(|err| anyhow!("unsafe media host address: {err}"))?;
+        return Ok(None);
+    }
+
+    let port = url
+        .port_or_known_default()
+        .ok_or_else(|| anyhow!("Blossom URL is missing a fetch port"))?;
+    let addrs = tokio::net::lookup_host((host, port))
+        .await
+        .context("media host DNS lookup failed")?
+        .collect::<Vec<_>>();
+    if addrs.is_empty() {
+        return Err(anyhow!("media host DNS lookup returned no addresses"));
+    }
+    for addr in &addrs {
+        reject_non_public_ip(addr.ip(), allow_loopback)
+            .map_err(|err| anyhow!("unsafe media host address: {err}"))?;
+    }
+    Ok(Some((host.to_ascii_lowercase(), addrs)))
+}
+
+fn validate_media_fetch_url(url: &reqwest::Url) -> std::result::Result<(), String> {
+    if !url.username().is_empty() || url.password().is_some() {
+        return Err("URL must not include credentials".into());
+    }
+    if url.fragment().is_some() {
+        return Err("URL must not include a fragment".into());
+    }
+    let host = url.host_str().ok_or("URL must include a host")?;
+    match url.scheme() {
+        "https" => validate_public_or_allowed_loopback_host(host, false),
+        "http" if cfg!(debug_assertions) && is_loopback_host(host) => Ok(()),
+        "http" => Err("URL scheme must be https".into()),
+        _ => Err("URL scheme must be https".into()),
+    }
+}
+
+fn validate_public_or_allowed_loopback_host(
+    host: &str,
+    allow_loopback: bool,
+) -> std::result::Result<(), String> {
+    if let Ok(ip) = host.parse::<IpAddr>() {
+        return reject_non_public_ip(ip, allow_loopback);
+    }
+    if is_loopback_host(host) {
+        if allow_loopback {
+            Ok(())
+        } else {
+            Err("URL must not point at localhost".into())
+        }
+    } else {
+        Ok(())
+    }
+}
+
+fn is_loopback_host(host: &str) -> bool {
+    let lowered = host.to_ascii_lowercase();
+    lowered == "localhost"
+        || lowered.ends_with(".localhost")
+        || host.parse::<IpAddr>().is_ok_and(|addr| match addr {
+            IpAddr::V4(addr) => addr.is_loopback(),
+            IpAddr::V6(addr) => addr.is_loopback(),
+        })
+}
+
+fn reject_non_public_ip(addr: IpAddr, allow_loopback: bool) -> std::result::Result<(), String> {
+    match addr {
+        IpAddr::V4(addr) if allow_loopback && addr.is_loopback() => Ok(()),
+        IpAddr::V6(addr) if allow_loopback && addr.is_loopback() => Ok(()),
+        IpAddr::V4(addr) if is_public_ipv4(addr) => Ok(()),
+        IpAddr::V6(addr) if is_public_ipv6(addr) => Ok(()),
+        _ => Err("URL must not point at a non-public address".into()),
+    }
+}
+
+fn is_public_ipv4(addr: Ipv4Addr) -> bool {
+    let [a, b, c, d] = addr.octets();
+    !matches!(
+        (a, b, c, d),
+        (0, _, _, _)
+            | (10, _, _, _)
+            | (100, 64..=127, _, _)
+            | (127, _, _, _)
+            | (169, 254, _, _)
+            | (172, 16..=31, _, _)
+            | (192, 0, 0, _)
+            | (192, 0, 2, _)
+            | (192, 88, 99, _)
+            | (192, 168, _, _)
+            | (198, 18..=19, _, _)
+            | (198, 51, 100, _)
+            | (203, 0, 113, _)
+            | (224..=255, _, _, _)
+    )
+}
+
+fn is_public_ipv6(addr: Ipv6Addr) -> bool {
+    if let Some(mapped) = addr.to_ipv4_mapped() {
+        return is_public_ipv4(mapped);
+    }
+    if addr.is_loopback() || addr.is_unspecified() || addr.is_multicast() {
+        return false;
+    }
+    let segments = addr.segments();
+    let first = segments[0];
+    let second = segments[1];
+    if (first & 0xfe00) == 0xfc00 || (first & 0xffc0) == 0xfe80 {
+        return false;
+    }
+    if first == 0x2001 && second == 0x0db8 {
+        return false;
+    }
+    (first & 0xe000) == 0x2000
+}
+
+fn media_url_contains_hash(url: &reqwest::Url, expected_hash: &str) -> bool {
+    url.path().as_bytes().windows(64).any(|window| {
+        std::str::from_utf8(window)
+            .ok()
+            .is_some_and(|candidate| candidate.eq_ignore_ascii_case(expected_hash))
+    })
 }
 
 /// Run an `upload_media` request, transparently self-healing a group whose
