@@ -52,6 +52,9 @@ export component IncomingRow inherits VerticalLayout {
     in property <string> att-size-label;
     in property <bool> att-is-image: false;
     in property <bool> att-is-video: false;
+    in property <bool> att-is-audio: false;
+    in property <bool> att-audio-playing: false;
+    in property <float> att-audio-progress: 0.0;
     in property <string> att-duration;
     in property <image> att-image;
     in property <bool> att-has-image: false;
@@ -71,6 +74,8 @@ export component IncomingRow inherits VerticalLayout {
     callback request-context-menu(string, string, string, bool, length, length);
     callback show-history(string); // message_id
     callback attachment-clicked(string); // message_id
+    callback audio-play-clicked(string); // message_id
+    callback audio-seek-clicked(string, float); // message_id, fraction
 
     spacing: 0;
 
@@ -156,6 +161,9 @@ export component IncomingRow inherits VerticalLayout {
                     att-size-label: root.att-size-label;
                     att-is-image: root.att-is-image;
                     att-is-video: root.att-is-video;
+                    att-is-audio: root.att-is-audio;
+                    att-audio-playing: root.att-audio-playing;
+                    att-audio-progress: root.att-audio-progress;
                     att-duration: root.att-duration;
                     att-image: root.att-image;
                     att-has-image: root.att-has-image;
@@ -167,6 +175,8 @@ export component IncomingRow inherits VerticalLayout {
                     edited: root.edited;
                     edit-count: root.edit-count;
                     attachment-clicked => { root.attachment-clicked(root.message-id); }
+                    audio-play-clicked => { root.audio-play-clicked(root.message-id); }
+                    audio-seek-clicked(fraction) => { root.audio-seek-clicked(root.message-id, fraction); }
                     album-cell-clicked(key) => { root.album-cell-clicked(key); }
                     show-history-clicked => { root.show-history(root.message-id); }
                     context-menu-requested(ax, ay) => {

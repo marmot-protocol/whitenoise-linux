@@ -395,6 +395,12 @@ export struct ChatMessage {
     // when known, an `att-duration` badge ("1:23"). Tapping opens the in-app
     // libmpv viewer instead of the image lightbox.
     att-is-video: bool,
+    // Audio attachment (mime `audio/*`). Renders an inline player with
+    // play/pause, a progress bar, and the current/total time. Tapping the
+    // play button or the progress bar routes back to Rust.
+    att-is-audio: bool,
+    att-audio-playing: bool,
+    att-audio-progress: float,
     att-duration: string,
     // Cached decoded preview pixels. Populated lazily on first tap; empty
     // (default) image otherwise.

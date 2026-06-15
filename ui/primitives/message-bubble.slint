@@ -210,6 +210,9 @@ export component MessageBubble inherits Rectangle {
     in property <bool> att-is-image: false;
     // Video attachment: poster tile + ▶ overlay, opens the in-app libmpv viewer.
     in property <bool> att-is-video: false;
+    in property <bool> att-is-audio: false;
+    in property <bool> att-audio-playing: false;
+    in property <float> att-audio-progress: 0.0;
     in property <string> att-duration;
     in property <image> att-image;
     in property <bool> att-has-image: false;
@@ -247,6 +250,8 @@ export component MessageBubble inherits Rectangle {
     out property <bool> hovered: hover-sensor.has-hover;
     callback retry-clicked();
     callback attachment-clicked();
+    callback audio-play-clicked();
+    callback audio-seek-clicked(float);
     callback show-history-clicked();
     // Plain background tap — the row uses it to replay the message effect.
     callback body-clicked();
@@ -478,6 +483,130 @@ export component MessageBubble inherits Rectangle {
             }
         }
 
+        // Audio attachment — inline player: play/pause, filename, scrubber,
+        // size + duration. Height tracks the row's content so the bubble only
+        // grows the extra rows when there's a filename to show.
+        if root.has-attachment && root.att-is-audio : aud := Rectangle {
+            property <length> audio-w: min(280px, max(180px, root.text-budget));
+            // Width left for the text column: player width minus padding,
+            // play button, and inter-column spacing (10 + 36 + 10 + 12).
+            property <length> col-w: max(40px, self.audio-w - 68px);
+            width: self.audio-w;
+            height: aud-row.preferred-height;
+            border-radius: (8px) * Theme.r-scale;
+            background: root.outgoing ? #00000022 : (Theme.light ? #E2E8F0 : #ffffff10);
+            border-width: Theme.retro ? Theme.border-w : 0px;
+            border-color: Palette.border-2;
+
+            aud-row := HorizontalLayout {
+                padding-left: 10px;
+                padding-right: 12px;
+                padding-top: 9px;
+                padding-bottom: 9px;
+                spacing: 10px;
+                alignment: stretch;
+
+                // Play / pause button. Fixed size, so the HorizontalLayout
+                // centers it vertically on the cross axis automatically — an
+                // explicit `y` here would take it out of the layout flow.
+                Rectangle {
+                    width: 36px;
+                    height: 36px;
+                    border-radius: (18px) * Theme.r-scale;
+                    background: play-touch.has-hover
+                        ? (root.outgoing ? Palette.text-hi : Palette.mint-hi)
+                        : (root.outgoing ? Palette.bubble-out-fg : Palette.mint);
+                    animate background { duration: 100ms; }
+                    Text {
+                        x: parent.width / 2 - self.width / 2
+                            + (root.att-audio-playing || root.att-loading || root.att-failed ? 0px : 2px);
+                        // Loading → ellipsis, failed → retry, else play/pause.
+                        text: root.att-loading ? "…"
+                            : (root.att-failed ? "↻"
+                                : (root.att-audio-playing ? "⏸" : "▶"));
+                        color: root.outgoing ? Palette.mint : Palette.bg;
+                        font-size: (14px) * Theme.fs-scale;
+                        font-family: Theme.font;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                    play-touch := TouchArea {
+                        enabled: !root.att-loading;
+                        mouse-cursor: pointer;
+                        clicked => { root.audio-play-clicked(); }
+                    }
+                }
+
+                // Text column. `horizontal-stretch` makes it absorb the
+                // remaining player width; setting `y` would detach it from that
+                // flow and collapse the children to their preferred sizes.
+                VerticalLayout {
+                    spacing: 4px;
+                    horizontal-stretch: 1;
+                    alignment: center;
+
+                    // Filename — only when the attachment carries one.
+                    if root.att-name != "" : Text {
+                        text: root.att-name;
+                        width: aud.col-w;
+                        overflow: elide;
+                        color: root.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
+                        font-size: (11px) * Theme.fs-scale;
+                        font-family: Theme.font;
+                        font-weight: 600;
+                    }
+
+                    // Scrubber. The visible track is 5px, but a taller
+                    // transparent wrapper hosts the seek TouchArea so the hit
+                    // target is comfortable.
+                    Rectangle {
+                        height: 16px;
+                        bar-bg := Rectangle {
+                            y: (parent.height - self.height) / 2;
+                            width: 100%;
+                            height: 5px;
+                            border-radius: 2.5px * Theme.r-scale;
+                            background: root.outgoing ? #00000022 : (Theme.light ? #CBD5E1 : #00000044);
+                            Rectangle {
+                                x: 0;
+                                width: parent.width * clamp(root.att-audio-progress, 0.0, 1.0);
+                                height: 100%;
+                                border-radius: 2.5px * Theme.r-scale;
+                                background: root.outgoing ? Palette.bubble-out-fg : Palette.mint;
+                            }
+                        }
+                        seek-touch := TouchArea {
+                            mouse-cursor: pointer;
+                            clicked => { root.audio-seek-clicked(self.mouse-x / self.width); }
+                        }
+                    }
+
+                    // Meta row: size on the left, elapsed/total on the right.
+                    HorizontalLayout {
+                        spacing: 6px;
+                        Text {
+                            text: root.att-failed ? @tr("failed · tap to retry") : root.att-size-label;
+                            horizontal-stretch: 1;
+                            overflow: elide;
+                            color: root.att-failed
+                                ? (root.outgoing ? Palette.danger-on-bubble : Palette.danger)
+                                : (root.outgoing ? Palette.bubble-out-fg : Palette.text-mid);
+                            font-size: (10px) * Theme.fs-scale;
+                            font-family: Theme.font;
+                            opacity: root.att-failed ? 1.0 : (root.outgoing ? 0.75 : 0.9);
+                        }
+                        Text {
+                            text: root.att-duration;
+                            color: root.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
+                            font-size: (10px) * Theme.fs-scale;
+                            font-family: Theme.font;
+                            horizontal-alignment: right;
+                        }
+                    }
+                }
+            }
+        }
+
         if root.has-attachment && root.att-is-image : img-tile := Rectangle {
             property <length> img-w: min(280px, max(120px, root.text-budget));
             property <length> img-h: 180px;
@@ -523,7 +652,7 @@ export component MessageBubble inherits Rectangle {
             }
         }
 
-        if root.has-attachment && !root.att-is-image && !root.att-is-video : Rectangle {
+        if root.has-attachment && !root.att-is-image && !root.att-is-video && !root.att-is-audio : Rectangle {
             background: root.outgoing ? #00000022 : (Theme.light ? #F1F5F9 : #ffffff0e);
             border-radius: (6px) * Theme.r-scale;
             border-width: Theme.retro ? Theme.border-w : 0px;

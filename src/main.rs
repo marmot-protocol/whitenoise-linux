@@ -13,6 +13,7 @@ use slint::{Color, Model, ModelRc, SharedString, VecModel, Weak};
 use tokio::task::JoinHandle;
 
 mod animal_avatar;
+mod audio;
 mod backend;
 mod blossom;
 mod media_cache;
@@ -77,6 +78,7 @@ struct PendingMedia {
     size_bytes: u64,
     is_image: bool,
     is_video: bool,
+    is_audio: bool,
     // Local pixels for instant image preview while the upload is in flight.
     // None for non-image attachments.
     local_preview: Option<PicturePixels>,
@@ -157,6 +159,56 @@ fn next_temp_id() -> String {
     static N: AtomicU64 = AtomicU64::new(0);
     let v = N.fetch_add(1, Ordering::Relaxed);
     format!("pending:{v}")
+}
+
+// ─── Voice-message state ───────────────────────────────────────────────────
+
+// The active cpal recorder and the currently-playing rodio audio player are
+// !Send, so they live in thread-locals on the Slint UI thread. The timer
+// thread only reads the monotonic start instant; it never touches the
+// recorder. The monitor thread only touches the rodio Sink (Send + Sync).
+thread_local! {
+    static ACTIVE_AUDIO_RECORDER: RefCell<Option<audio::AudioRecorder>> = RefCell::new(None);
+    static ACTIVE_AUDIO_PLAYER: RefCell<Option<audio::AudioPlayer>> = RefCell::new(None);
+}
+
+fn with_active_recorder<R>(f: impl FnOnce(&mut Option<audio::AudioRecorder>) -> R) -> R {
+    ACTIVE_AUDIO_RECORDER.with(|r| f(&mut *r.borrow_mut()))
+}
+
+fn with_active_player<R>(f: impl FnOnce(&mut Option<audio::AudioPlayer>) -> R) -> R {
+    ACTIVE_AUDIO_PLAYER.with(|p| f(&mut *p.borrow_mut()))
+}
+
+/// Start instant of the current recording, shared with the timer thread.
+fn recording_start() -> &'static Mutex<Option<std::time::Instant>> {
+    use std::sync::OnceLock;
+    static S: OnceLock<Mutex<Option<std::time::Instant>>> = OnceLock::new();
+    S.get_or_init(|| Mutex::new(None))
+}
+
+/// The message id of the currently-playing voice message.
+fn current_audio_message_id() -> &'static Mutex<Option<String>> {
+    use std::sync::OnceLock;
+    static M: OnceLock<Mutex<Option<String>>> = OnceLock::new();
+    M.get_or_init(|| Mutex::new(None))
+}
+
+/// Last-known playback progress per message id (0..1). Kept so rows that
+/// scroll out and back in show the correct progress without re-querying the
+/// player.
+fn audio_progress() -> &'static Mutex<HashMap<String, f32>> {
+    use std::sync::OnceLock;
+    static M: OnceLock<Mutex<HashMap<String, f32>>> = OnceLock::new();
+    M.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// Duration label per audio message id (e.g. "0:42"), captured the first
+/// time the clip is decoded.
+fn audio_meta() -> &'static Mutex<HashMap<String, String>> {
+    use std::sync::OnceLock;
+    static M: OnceLock<Mutex<HashMap<String, String>>> = OnceLock::new();
+    M.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
 fn rgb(hex: u32) -> Color {
@@ -3557,6 +3609,7 @@ fn main() -> Result<(), slint::PlatformError> {
                     size_bytes,
                     is_image,
                     is_video: mime_is_video(&media_type_u),
+                    is_audio: mime_is_audio(&media_type_u),
                     local_preview: local_preview.clone(),
                 }],
             };
@@ -3762,6 +3815,7 @@ fn main() -> Result<(), slint::PlatformError> {
                     size_bytes: f.bytes.len() as u64,
                     is_image: true,
                     is_video: false,
+                    is_audio: false,
                     local_preview: f.preview.clone(),
                 })
                 .collect();
@@ -4087,6 +4141,7 @@ fn main() -> Result<(), slint::PlatformError> {
             };
             let is_image = mime_is_image(&reference.media_type);
             let is_video = mime_is_video(&reference.media_type);
+            let is_audio = mime_is_audio(&reference.media_type);
             let _ = slint::invoke_from_event_loop(move || {
             let Some(ui) = weak.upgrade() else { return };
             let chats_messages = ui.get_chats_messages();
@@ -4101,6 +4156,52 @@ fn main() -> Result<(), slint::PlatformError> {
                     &mid,
                     &all,
                 );
+            }
+
+            // Audio → decrypt + play inline via rodio. No save dialog; the
+            // encrypted disk cache is read-through just like images/videos.
+            if is_audio {
+                attachment_in_flight().lock().ok().map(|mut s| s.remove(&mid));
+                let hash = reference.ciphertext_sha256.clone();
+                let b2 = b.clone();
+                let vault2 = vault.clone();
+                let weak2 = weak.clone();
+                let backend_cell2 = backend_cell.clone();
+                let group_ids2 = group_ids.clone();
+                let pending_state2 = pending_state.clone();
+                let group_hex2 = group_hex.clone();
+                let mid2 = mid.clone();
+                b.tokio_handle().spawn(async move {
+                    if let Some(bytes) = vault2.as_ref().and_then(|v| media_cache::get(v, &hash)) {
+                        let _ = slint::invoke_from_event_loop(move || {
+                            start_audio_playback(
+                                weak2, backend_cell2, group_ids2, pending_state2,
+                                group_hex2, mid2, bytes,
+                            );
+                        });
+                        return;
+                    }
+                    let group_hex3 = group_hex2.clone();
+                    b2.download_media_async(&group_hex2, reference, move |result| {
+                        match result {
+                            Ok(dl) => {
+                                if let Some(v) = &vault2 {
+                                    media_cache::put(v, &hash, &dl.plaintext);
+                                }
+                                let _ = slint::invoke_from_event_loop(move || {
+                                    start_audio_playback(
+                                        weak2, backend_cell2, group_ids2, pending_state2,
+                                        group_hex3, mid2, dl.plaintext,
+                                    );
+                                });
+                            }
+                            Err(e) => {
+                                eprintln!("[audio] download {mid2}: {e:#}");
+                            }
+                        }
+                    });
+                });
+                return;
             }
 
             // Video → open the in-app libmpv viewer and start playback. The
@@ -4337,6 +4438,235 @@ fn main() -> Result<(), slint::PlatformError> {
             }
             }); // end invoke_from_event_loop (UI-thread dispatch)
             }); // end backend-runtime record resolution
+        }
+    });
+
+    // ─── Audio play / seek (inline voice-message player) ───────────────
+    //
+    // The bubble's audio player routes play/pause and progress-bar taps here.
+    // Play toggles the current clip; seek jumps to a fraction of the duration.
+    // Both operate on the per-message encrypted cache just like images/videos.
+    ui.on_audio_play_clicked({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let group_ids = group_ids.clone();
+        let pending_state = pending_state.clone();
+        let vault_cell = vault_cell.clone();
+        move |message_id| {
+            let Some(ui) = weak.upgrade() else { return };
+            let mid = message_id.to_string();
+            if mid.is_empty() || mid.starts_with("pending:") {
+                return;
+            }
+            // Toggle if this message is already the active player.
+            let is_current = current_audio_message_id()
+                .lock()
+                .unwrap()
+                .as_ref()
+                .map(|id| id == &mid)
+                .unwrap_or(false);
+            if is_current {
+                with_active_player(|p| {
+                    if let Some(player) = p.as_ref() {
+                        player.toggle();
+                    }
+                });
+                return;
+            }
+
+            let idx = ui.get_active_chat() as usize;
+            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
+                return;
+            };
+            let Some(backend) = backend_cell.lock().unwrap().clone() else { return };
+            let vault = vault_cell.lock().unwrap().clone();
+            let weak2 = weak.clone();
+            let backend_cell2 = backend_cell.clone();
+            let group_ids2 = group_ids.clone();
+            let pending_state2 = pending_state.clone();
+            let b = backend.clone();
+            backend.tokio_handle().spawn(async move {
+                let all = b.messages(&group_hex, Some(msg_window_for(&group_hex))).unwrap_or_default();
+                let Some(rec) = all.iter().find(|m| m.message_id_hex == mid).cloned() else { return };
+                let Some(reference) = parse_media_reference_from_tags(&rec.tags, rec.source_epoch) else { return };
+                let hash = reference.ciphertext_sha256.clone();
+                if let Some(bytes) = vault.as_ref().and_then(|v| media_cache::get(v, &hash)) {
+                    let weak3 = weak2.clone();
+                    let backend_cell3 = backend_cell2.clone();
+                    let group_ids3 = group_ids2.clone();
+                    let pending_state3 = pending_state2.clone();
+                    let group_hex3 = group_hex.clone();
+                    let mid3 = mid.clone();
+                    let _ = slint::invoke_from_event_loop(move || {
+                        start_audio_playback(
+                            weak3, backend_cell3, group_ids3, pending_state3,
+                            group_hex3, mid3, bytes,
+                        );
+                    });
+                    return;
+                }
+                let weak4 = weak2.clone();
+                let backend_cell4 = backend_cell2.clone();
+                let group_ids4 = group_ids2.clone();
+                let pending_state4 = pending_state2.clone();
+                let group_hex4 = group_hex.clone();
+                let mid4 = mid.clone();
+                let vault4 = vault.clone();
+                let hash4 = hash.clone();
+                b.download_media_async(&group_hex, reference, move |result| {
+                    match result {
+                        Ok(dl) => {
+                            if let Some(v) = &vault4 {
+                                media_cache::put(v, &hash4, &dl.plaintext);
+                            }
+                            let _ = slint::invoke_from_event_loop(move || {
+                                start_audio_playback(
+                                    weak4, backend_cell4, group_ids4, pending_state4,
+                                    group_hex4, mid4, dl.plaintext,
+                                );
+                            });
+                        }
+                        Err(e) => eprintln!("[audio] download {mid}: {e:#}"),
+                    }
+                });
+            });
+        }
+    });
+
+    ui.on_audio_seek_clicked({
+        move |message_id, fraction| {
+            let mid = message_id.to_string();
+            let is_current = current_audio_message_id()
+                .lock()
+                .unwrap()
+                .as_ref()
+                .map(|id| id == &mid)
+                .unwrap_or(false);
+            if is_current {
+                with_active_player(|p| {
+                    if let Some(player) = p.as_ref() {
+                        let dur = player.state().duration;
+                        player.seek(fraction as f64 * dur);
+                    }
+                });
+            }
+        }
+    });
+
+    // ─── Voice message recording (composer mic) ────────────────────────
+    ui.on_record_clicked({
+        let weak = ui.as_weak();
+        move || {
+            let recorder = match audio::AudioRecorder::start() {
+                Ok(r) => r,
+                Err(e) => {
+                    eprintln!("[audio] start recording: {e:#}");
+                    return;
+                }
+            };
+            with_active_recorder(|r| {
+                *r = Some(recorder);
+            });
+            *recording_start().lock().unwrap() = Some(std::time::Instant::now());
+            let weak_t = weak.clone();
+            std::thread::spawn(move || {
+                for secs in 1.. {
+                    std::thread::sleep(std::time::Duration::from_secs(1));
+                    let still_recording = recording_start().lock().unwrap().is_some();
+                    if !still_recording {
+                        break;
+                    }
+                    let _ = slint::invoke_from_event_loop({
+                        let weak = weak_t.clone();
+                        move || {
+                            if let Some(ui) = weak.upgrade() {
+                                ui.set_composer_recording_secs(secs as i32);
+                            }
+                        }
+                    });
+                    // Auto-stop at the maximum clip length.
+                    if secs >= 120 {
+                        let _ = slint::invoke_from_event_loop({
+                            let weak = weak_t.clone();
+                            move || {
+                                if let Some(ui) = weak.upgrade() {
+                                    ui.invoke_stop_recording();
+                                }
+                            }
+                        });
+                        break;
+                    }
+                }
+            });
+            let weak_i = weak.clone();
+            let _ = slint::invoke_from_event_loop(move || {
+                if let Some(ui) = weak_i.upgrade() {
+                    ui.set_composer_recording(true);
+                    ui.set_composer_recording_secs(0);
+                }
+            });
+        }
+    });
+
+    ui.on_stop_recording({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let group_ids = group_ids.clone();
+        let pending_state = pending_state.clone();
+        move || {
+            let recorder = with_active_recorder(|r| r.take());
+            let Some(recorder) = recorder else { return };
+            *recording_start().lock().unwrap() = None;
+
+            // Stop/encode on the UI thread because the cpal Stream is !Send.
+            // Encoding a short WAV clip is fast, so this keeps the code simple.
+            let bytes = match recorder.stop() {
+                Ok(b) => b,
+                Err(e) => {
+                    eprintln!("[audio] stop recording: {e:#}");
+                    if let Some(ui) = weak.upgrade() {
+                        ui.set_composer_recording(false);
+                    }
+                    return;
+                }
+            };
+            if let Some(ui) = weak.upgrade() {
+                ui.set_composer_recording(false);
+            }
+            let Some(ui) = weak.upgrade() else { return };
+            let idx = ui.get_active_chat() as usize;
+            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else { return };
+            let guard = backend_cell.lock().unwrap();
+            let Some(_backend) = guard.as_ref() else { return };
+            drop(guard);
+            spawn_attachment_send(
+                weak.clone(),
+                backend_cell.clone(),
+                group_ids.clone(),
+                pending_state.clone(),
+                group_hex,
+                "voice-message.wav".to_string(),
+                "audio/wav".to_string(),
+                bytes,
+                false,
+                None,
+            );
+        }
+    });
+
+    ui.on_cancel_recording({
+        let weak = ui.as_weak();
+        move || {
+            with_active_recorder(|r| {
+                *r = None;
+            });
+            *recording_start().lock().unwrap() = None;
+            let weak_i = weak.clone();
+            let _ = slint::invoke_from_event_loop(move || {
+                if let Some(ui) = weak_i.upgrade() {
+                    ui.set_composer_recording(false);
+                }
+            });
         }
     });
 
@@ -5834,6 +6164,10 @@ fn mime_is_video(mime: &str) -> bool {
     mime.starts_with("video/")
 }
 
+fn mime_is_audio(mime: &str) -> bool {
+    mime.starts_with("audio/")
+}
+
 /// Attachment-image-cache key for a video's poster frame. Distinct from the
 /// bare message id (which the image path uses) so a video never trips the
 /// image lightbox's "already decoded → open viewer" shortcut in
@@ -6031,6 +6365,113 @@ fn spawn_video_player(weak: Weak<DarkMatterLinux>, mid: String, bytes: Vec<u8>) 
             });
         }
     }
+}
+
+// ─── Voice-message playback helpers ─────────────────────────────────────────
+
+/// Stop any active voice-message playback. Must be called from the Slint UI
+/// thread because the player is !Send.
+fn stop_current_audio() {
+    with_active_player(|p| {
+        *p = None;
+    });
+    *current_audio_message_id().lock().unwrap() = None;
+}
+
+/// Start playing an audio attachment. `bytes` are the decrypted WAV data.
+/// A monitor thread keeps the playing message's bubble refreshed with
+/// position/duration. When playback finishes or another message is started,
+/// the bubble is updated accordingly.
+fn start_audio_playback(
+    weak: Weak<DarkMatterLinux>,
+    backend_cell: Arc<Mutex<Option<Arc<Backend>>>>,
+    group_ids: Arc<Mutex<Vec<String>>>,
+    pending_state: Arc<Mutex<PendingState>>,
+    group_hex: String,
+    message_id: String,
+    bytes: Vec<u8>,
+) {
+    stop_current_audio();
+    let player = match audio::AudioPlayer::play(bytes) {
+        Ok(p) => p,
+        Err(e) => {
+            eprintln!("[audio] play {message_id}: {e:#}");
+            return;
+        }
+    };
+
+    let mid = message_id.clone();
+    let weak2 = weak.clone();
+    let backend_cell_c = backend_cell.clone();
+    let group_ids_c = group_ids.clone();
+    let pending_state_c = pending_state.clone();
+    let group_hex_c = group_hex.clone();
+    player.spawn_monitor(move |st: audio::PlaybackState| {
+        let progress = if st.duration > 0.0 {
+            (st.position / st.duration).clamp(0.0, 1.0) as f32
+        } else {
+            0.0
+        };
+        {
+            let mut cache = audio_progress().lock().unwrap();
+            if st.finished {
+                cache.insert(mid.clone(), 0.0);
+            } else {
+                cache.insert(mid.clone(), progress);
+            }
+        }
+        if st.duration > 0.0 {
+            if let Ok(mut m) = audio_meta().lock() {
+                m.insert(mid.clone(), fmt_dur(st.duration));
+            }
+        }
+        let finished = st.finished;
+        let mid_i = mid.clone();
+        let mid_fin = mid.clone();
+        let weak_i = weak2.clone();
+        let backend_cell_i = backend_cell_c.clone();
+        let group_ids_i = group_ids_c.clone();
+        let pending_state_i = pending_state_c.clone();
+        let group_hex_i = group_hex_c.clone();
+        let _ = slint::invoke_from_event_loop(move || {
+            // A drained clip is no longer the active player. Drop it (only if it
+            // is still the current one — a newer clip may have started) so the
+            // next play-button press restarts from the top instead of toggling
+            // an empty sink, which does nothing.
+            let still_current = finished
+                && current_audio_message_id().lock().unwrap().as_deref() == Some(mid_fin.as_str());
+            if still_current {
+                stop_current_audio();
+            }
+            if let Some(ui) = weak_i.upgrade() {
+                // Refresh the bubble so the play button / progress bar updates.
+                let idx = ui.get_active_chat() as usize;
+                let group_opt = {
+                    let ids = group_ids_i.lock().unwrap();
+                    ids.get(idx).cloned()
+                };
+                if let Some(g) = group_opt {
+                    if g == group_hex_i {
+                        if let Some(backend) = backend_cell_i.lock().unwrap().clone() {
+                            refresh_one_message_row_async(
+                                &backend,
+                                weak_i,
+                                pending_state_i,
+                                group_ids_i,
+                                group_hex_i,
+                                mid_i,
+                            );
+                        }
+                    }
+                }
+            }
+        });
+    });
+
+    with_active_player(|p| {
+        *p = Some(player);
+    });
+    *current_audio_message_id().lock().unwrap() = Some(message_id);
 }
 
 // ─── Album (multi-image) layout + cells ────────────────────────────────────
@@ -7570,8 +8011,38 @@ fn chat_message_from_with_reactions(
     } else {
         (att_image, att_has_image)
     };
+    // Audio attachment: inline player state. Progress + duration are cached
+    // once the clip has been played; before that the duration is empty.
+    let att_is_audio = has_attachment && !att_is_video && mime_is_audio(&att_mime);
+    let (att_audio_playing, att_audio_progress) = if att_is_audio {
+        let playing = current_audio_message_id()
+            .lock()
+            .unwrap()
+            .as_ref()
+            .map(|id| id == &record.message_id_hex)
+            .unwrap_or(false)
+            && with_active_player(|p| {
+                p.as_ref().map(|player| player.state().playing).unwrap_or(false)
+            });
+        let progress = audio_progress()
+            .lock()
+            .unwrap()
+            .get(&record.message_id_hex)
+            .copied()
+            .unwrap_or(0.0);
+        (playing, progress)
+    } else {
+        (false, 0.0)
+    };
     let att_duration = if att_is_video {
         video_duration_label(&record.message_id_hex)
+    } else if att_is_audio {
+        audio_meta()
+            .lock()
+            .unwrap()
+            .get(&record.message_id_hex)
+            .cloned()
+            .unwrap_or_default()
     } else {
         String::new()
     };
@@ -7621,6 +8092,9 @@ fn chat_message_from_with_reactions(
         att_size_label: s(&att_size_label),
         att_is_image,
         att_is_video,
+        att_is_audio,
+        att_audio_playing,
+        att_audio_progress,
         att_duration: s(&att_duration),
         att_image,
         att_has_image,
@@ -7773,12 +8247,19 @@ fn pending_chat_message(
         ),
     };
 
-    // Optimistic video bubble: poster placeholder (▶ tile) until first play.
+    // Optimistic video / audio bubble flags.
     let att_is_video = has_attachment
         && pending
             .media
             .first()
             .map(|m| m.is_video)
+            .unwrap_or(false);
+    let att_is_audio = has_attachment
+        && !att_is_video
+        && pending
+            .media
+            .first()
+            .map(|m| m.is_audio)
             .unwrap_or(false);
 
     let jumbo_emoji = !has_attachment
@@ -7829,6 +8310,9 @@ fn pending_chat_message(
         att_size_label: s(&att_size_label),
         att_is_image,
         att_is_video,
+        att_is_audio,
+        att_audio_playing: false,
+        att_audio_progress: 0.0,
         att_duration: s(""),
         att_image,
         att_has_image,

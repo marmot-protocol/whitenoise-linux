@@ -43,6 +43,8 @@ export component MessagesArea inherits Rectangle {
     callback show-history(string);
     callback retry(string);
     callback attachment-clicked(string);
+    callback audio-play-clicked(string);
+    callback audio-seek-clicked(string, float);
     callback album-cell-clicked(string);
     property <length> content-w: max(120px, root.available-w - 36px);
 
@@ -200,6 +202,9 @@ export component MessagesArea inherits Rectangle {
                     att-size-label: msg.att-size-label;
                     att-is-image: msg.att-is-image;
                     att-is-video: msg.att-is-video;
+                    att-is-audio: msg.att-is-audio;
+                    att-audio-playing: msg.att-audio-playing;
+                    att-audio-progress: msg.att-audio-progress;
                     att-duration: msg.att-duration;
                     att-image: msg.att-image;
                     att-has-image: msg.att-has-image;
@@ -217,6 +222,8 @@ export component MessagesArea inherits Rectangle {
                     request-context-menu(id, text, author, can-edit, ax, ay) => { root.request-context-menu(id, text, author, can-edit, ax, ay); }
                     show-history(id) => { root.show-history(id); }
                     attachment-clicked(id) => { root.attachment-clicked(id); }
+                    audio-play-clicked(id) => { root.audio-play-clicked(id); }
+                    audio-seek-clicked(id, fraction) => { root.audio-seek-clicked(id, fraction); }
                     album-cell-clicked(key) => { root.album-cell-clicked(key); }
                     play-effect(eid, cx, cy, ax, ay, w, h) => { root.stage-effect(eid, cx, cy, ax, ay, w, h); }
                 }
@@ -255,6 +262,9 @@ export component MessagesArea inherits Rectangle {
                     att-size-label: msg.att-size-label;
                     att-is-image: msg.att-is-image;
                     att-is-video: msg.att-is-video;
+                    att-is-audio: msg.att-is-audio;
+                    att-audio-playing: msg.att-audio-playing;
+                    att-audio-progress: msg.att-audio-progress;
                     att-duration: msg.att-duration;
                     att-image: msg.att-image;
                     att-has-image: msg.att-has-image;
@@ -276,6 +286,8 @@ export component MessagesArea inherits Rectangle {
                     show-history(id) => { root.show-history(id); }
                     retry => { root.retry(msg.message-id); }
                     attachment-clicked(id) => { root.attachment-clicked(id); }
+                    audio-play-clicked(id) => { root.audio-play-clicked(id); }
+                    audio-seek-clicked(id, fraction) => { root.audio-seek-clicked(id, fraction); }
                     play-effect(eid, cx, cy, ax, ay, w, h) => { root.stage-effect(eid, cx, cy, ax, ay, w, h); }
                 }
             }

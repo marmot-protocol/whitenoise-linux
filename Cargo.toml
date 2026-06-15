@@ -63,6 +63,12 @@ resvg = { version = "0.45", default-features = false }
 # Local-timezone rendering of message/KP timestamps. Reads the system tz
 # database (Linux/macOS/FreeBSD), so DST offsets are right per-timestamp.
 jiff = "0.2"
+# Audio capture (voice messages) — cross-platform input stream.
+cpal = "0.15"
+# WAV encoding for recorded voice messages (simple, royalty-free, mpv/rodio decode).
+hound = "3.5"
+# In-memory audio playback for received voice messages.
+rodio = { version = "0.19", default-features = false, features = ["wav"] }
 # Pinned to PR #849 (add-markdown-text-effects) for the `{big}…{/big}` inline
 # text-effect syntax (Inline::Effect). Drop the rev once it merges to master.
 whitenoise-markdown = { git = "https://github.com/marmot-protocol/whitenoise-rs", rev = "973f3ab65bf410c35e401935cdf4374b77770901" }

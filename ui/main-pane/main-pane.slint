@@ -72,7 +72,15 @@ export component MainPane inherits Rectangle {
     callback remove-staged(int);
     callback emoji-clicked(length, length);
     callback attachment-clicked(string);
+    callback audio-play-clicked(string);
+    callback audio-seek-clicked(string, float);
     callback album-cell-clicked(string);
+    // Voice message recording state, driven by Rust.
+    in-out property <bool> recording: false;
+    in property <int> recording-secs: 0;
+    callback record-clicked();
+    callback stop-recording();
+    callback cancel-recording();
     callback react(string, string);
     callback unreact(string);
     callback request-picker(string, length, length);
@@ -141,6 +149,8 @@ export component MainPane inherits Rectangle {
                 show-history(id) => { root.show-history(id); }
                 retry(id) => { root.retry(id); }
                 attachment-clicked(id) => { root.attachment-clicked(id); }
+                audio-play-clicked(id) => { root.audio-play-clicked(id); }
+                audio-seek-clicked(id, fraction) => { root.audio-seek-clicked(id, fraction); }
                 album-cell-clicked(key) => { root.album-cell-clicked(key); }
             }
             composer := Composer {
@@ -161,6 +171,11 @@ export component MainPane inherits Rectangle {
                 mention-nav(d) => { root.mention-nav(d); }
                 mention-commit => { root.mention-commit(); }
                 mention-dismiss => { root.mention-dismiss(); }
+                recording: root.recording;
+                recording-secs: root.recording-secs;
+                record-clicked => { root.record-clicked(); }
+                stop-recording => { root.stop-recording(); }
+                cancel-recording => { root.cancel-recording(); }
             }
         }
 

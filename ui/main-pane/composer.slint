@@ -1,5 +1,6 @@
 import { Palette , Theme, StagedAttachment, EmojiSheet, EffectCatalog, EffectChoice } from "../tokens.slint";
 import { PaperclipIcon } from "../icons/paperclip-icon.slint";
+import { MicIcon } from "../icons/mic-icon.slint";
 import { SmileyIcon } from "../icons/smiley-icon.slint";
 import { SendIcon } from "../icons/send-icon.slint";
 import { LineInput } from "../primitives/line-input.slint";
@@ -30,8 +31,16 @@ export component Composer inherits Rectangle {
     // Paste shortcut pressed in the input — Rust probes the clipboard and
     // stages an image attachment if one is there (text paste stays native).
     callback paste-image();
-    // Attachments queued for the next send. They render as a chip row above
-    // the input (thumbnail for images) so the user confirms what goes out by
+    // Voice message recording. While `recording` is true the composer switches
+    // to a red recording row; `recording-secs` is the live clip length in
+    // seconds. Stop finishes + sends; cancel discards.
+    in property <bool> recording: false;
+    in property <int> recording-secs: 0;
+    callback record-clicked();
+    callback stop-recording();
+    callback cancel-recording();
+    // Attachments queued for the next send. They render as a chip row above the
+    // input (thumbnail for images) so the user confirms what goes out by
     // pressing Send; ✕ on a chip drops it before anything is uploaded.
     in property <[StagedAttachment]> staged: [];
     callback remove-staged(int);
@@ -270,14 +279,15 @@ export component Composer inherits Rectangle {
             border-radius: (10px) * Theme.r-scale;
             background: Palette.panel;
             border-width: 1px;
-            border-color: composer-input.has-focus
-                ? Palette.mint-dim
-                : Palette.border-2;
-            drop-shadow-blur: composer-input.has-focus && !Theme.retro ? 12px : 0px;
-            drop-shadow-color: Palette.mint-glow;
+            border-color: root.recording
+                ? Palette.danger
+                : (composer-input.has-focus ? Palette.mint-dim : Palette.border-2);
+            drop-shadow-blur: !root.recording && composer-input.has-focus && !Theme.retro ? 12px : 0px;
+            drop-shadow-color: root.recording ? Palette.danger-soft : Palette.mint-glow;
             animate border-color { duration: 160ms; easing: ease-out; }
             animate drop-shadow-blur { duration: 160ms; easing: ease-out; }
 
+            // Normal composer: paperclip, mic, text input, emoji, send.
             HorizontalLayout {
                 padding-left: 16px; padding-right: 8px;
                 spacing: 12px;
@@ -296,6 +306,22 @@ export component Composer inherits Rectangle {
                     attach-touch := TouchArea {
                         mouse-cursor: pointer;
                         clicked => { root.attach-clicked(); }
+                    }
+                }
+                // Microphone — tap to start recording.
+                Rectangle {
+                    width: 22px;
+                    height: parent.height;
+                    border-radius: (4px) * Theme.r-scale;
+                    background: mic-touch.has-hover ? Palette.panel-2 : transparent;
+                    animate background { duration: 100ms; }
+                    MicIcon {
+                        stroke: mic-touch.has-hover ? Palette.text-hi : Palette.text-lo;
+                        y: (parent.height - self.height) / 2;
+                    }
+                    mic-touch := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => { root.record-clicked(); }
                     }
                 }
                 composer-input := LineInput {
@@ -374,6 +400,86 @@ export component Composer inherits Rectangle {
                             x: 0;
                             y: (parent.height - self.height) / 2;
                             animate fill-color { duration: 100ms; }
+                        }
+                    }
+                }
+            }
+
+            // Recording overlay: red indicator, live timer, stop (send) + cancel.
+            // Painted on top of the normal composer when `recording` is true.
+            if root.recording : Rectangle {
+                x: 0; y: 0;
+                width: 100%; height: 100%;
+                background: Palette.panel;
+                border-radius: (10px) * Theme.r-scale;
+
+                HorizontalLayout {
+                    padding-left: 16px; padding-right: 8px;
+                    spacing: 12px;
+                    alignment: stretch;
+
+                    Rectangle {
+                        width: 22px;
+                        height: parent.height;
+                        // Red record dot (steady; avoids continuous repaints).
+                        Rectangle {
+                            width: 12px;
+                            height: 12px;
+                            border-radius: 6px;
+                            background: Palette.danger;
+                            y: (parent.height - self.height) / 2;
+                            x: (parent.width - self.width) / 2;
+                        }
+                    }
+
+                    Text {
+                        text: @tr("{}s", root.recording-secs);
+                        color: Palette.text-hi;
+                        font-size: (Theme.retro ? 16px : 13px) * Theme.fs-scale;
+                        font-family: Theme.font;
+                        vertical-alignment: center;
+                        horizontal-stretch: 1;
+                    }
+
+                    // Stop — finishes the clip and sends it.
+                    Button {
+                        label: @tr("Send");
+                        button-width: 92px;
+                        button-height: 36px;
+                        y: (parent.height - self.height) / 2;
+                        radius: 8px;
+                        pad-left: 12px;
+                        pad-right: 14px;
+                        spacing: 8px;
+                        use-hover: true;
+                        bg-color: Palette.danger;
+                        hover-bg: Palette.danger-soft-hover;
+                        outline: Palette.danger;
+                        hover-outline: Palette.danger;
+                        fg: #FFFFFF;
+                        hover-fg: #FFFFFF;
+                        clicked => { root.stop-recording(); }
+                    }
+
+                    // Cancel — discards the clip.
+                    Rectangle {
+                        width: 36px;
+                        height: 36px;
+                        y: (parent.height - self.height) / 2;
+                        border-radius: (8px) * Theme.r-scale;
+                        background: rec-cancel-touch.has-hover ? Palette.panel-2 : transparent;
+                        animate background { duration: 100ms; }
+                        Text {
+                            text: "✕";
+                            color: rec-cancel-touch.has-hover ? Palette.text-hi : Palette.text-mid;
+                            font-size: (14px) * Theme.fs-scale;
+                            font-family: Theme.font;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+                        rec-cancel-touch := TouchArea {
+                            mouse-cursor: pointer;
+                            clicked => { root.cancel-recording(); }
                         }
                     }
                 }

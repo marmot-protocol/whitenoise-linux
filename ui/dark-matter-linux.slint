@@ -121,7 +121,17 @@ export component DarkMatterLinux inherits Window {
     callback dismiss-edit-history();
     callback attach-file(); // composer paperclip → open file picker
     callback paste-image(); // composer paste shortcut → probe clipboard for an image, send it
+    // Voice message recording. The mic button toggles recording; Rust drives
+    // `recording` and `recording-secs` so the composer can show a red pulsing
+    // indicator and a live timer.
+    in-out property <bool> composer-recording: false;
+    in property <int> composer-recording-secs: 0;
+    callback record-clicked();
+    callback stop-recording();
+    callback cancel-recording();
     callback attachment-clicked(string); // bubble attachment tapped (message_id)
+    callback audio-play-clicked(string); // bubble audio play/pause tapped
+    callback audio-seek-clicked(string, float); // bubble audio progress tapped
     callback album-cell-clicked(string); // album grid cell tapped (image key) → slideshow
 
     // Image lightbox — opened by Rust when an already-decoded image attachment
@@ -614,7 +624,14 @@ export component DarkMatterLinux inherits Window {
                             // the composer draft instead of a kind-7 reaction.
                             emoji-clicked(ax, ay) => { root.emoji-picker-requested("\u{1}composer", ax, ay); }
                             attachment-clicked(id) => { root.attachment-clicked(id); }
+                            audio-play-clicked(id) => { root.audio-play-clicked(id); }
+                            audio-seek-clicked(id, fraction) => { root.audio-seek-clicked(id, fraction); }
                             album-cell-clicked(key) => { root.album-cell-clicked(key); }
+                            recording <=> root.composer-recording;
+                            recording-secs: root.composer-recording-secs;
+                            record-clicked => { root.record-clicked(); }
+                            stop-recording => { root.stop-recording(); }
+                            cancel-recording => { root.cancel-recording(); }
                             is-group: root.chat-is-group;
                             can-show-members: root.chat-can-show-members;
                             encryption-banner-first-show: root.encryption-banner-first-show;
