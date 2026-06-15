@@ -64,6 +64,10 @@ struct PendingSend {
     // The optimistic bubble renders straight from the local previews while the
     // encrypt+blossom+publish round-trip resolves.
     media: Vec<PendingMedia>,
+    // Armed message effect (Telegram-style burst), 0 = none. Plays once on the
+    // optimistic outgoing row; the wire body carries the matching marker so the
+    // recipient replays it. Attachment sends leave this 0.
+    effect: i32,
 }
 
 #[derive(Clone)]
@@ -118,7 +122,7 @@ struct PendingState {
     reactions: HashMap<(String, String), PendingReactionOp>,
     /// (group_hex, target_message_id_hex) → the replacement text of my
     /// not-yet-confirmed edit of that message. Mirrors `reactions`: a single
-    /// in-flight op per target; cleared when the kind-1010 send resolves.
+    /// in-flight op per target; cleared when the kind-1009 send resolves.
     edits: HashMap<(String, String), String>,
 }
 
@@ -3133,7 +3137,7 @@ fn main() -> Result<(), slint::PlatformError> {
     // ─── Edit dispatch (optimistic, surgical) ─────────────────────────
     //
     // Same shape as `react_op`: stamp the overlay, rewrite ONLY the target
-    // bubble's text locally, publish the kind-1010 in the background, then on
+    // bubble's text locally, publish the kind-1009 in the background, then on
     // ack drop the overlay and refresh ONLY that row from the snapshot (which
     // now carries the confirmed edit). On failure the overlay is dropped too,
     // so the row reverts to its last confirmed text.
@@ -3219,7 +3223,7 @@ fn main() -> Result<(), slint::PlatformError> {
             ui.set_mention_active(false);
             let text = text.trim().to_string();
             // Edit mode: when an edit target is set, this "send" rewrites that
-            // message via a kind-1010 instead of posting a new one. Clear the
+            // message via a kind-1009 instead of posting a new one. Clear the
             // edit state + composer first so the banner drops immediately.
             // (Staged attachments stay queued — an edit never sends them.)
             let editing_id = ui.get_editing_message_id().to_string();
@@ -3246,6 +3250,11 @@ fn main() -> Result<(), slint::PlatformError> {
             };
 
             if !text.is_empty() {
+                // Armed message effect (Telegram-style). Read + disarm it now so
+                // it rides this one send; the marker travels in the wire body so
+                // the recipient replays the same burst.
+                let effect_id = ui.global::<EffectCatalog>().get_selected();
+                ui.global::<EffectCatalog>().set_selected(0);
                 // Snapshot + clear the reply target (if any) so this send goes
                 // out as a reply once and only once. The chip disappears as soon
                 // as the user presses send — matches Telegram / Slack feel.
@@ -3274,6 +3283,7 @@ fn main() -> Result<(), slint::PlatformError> {
                     failed: false,
                     reply_to: reply_to.clone(),
                     media: Vec::new(),
+                    effect: effect_id,
                 };
                 {
                     let mut overlay = pending_state.lock().unwrap();
@@ -3290,9 +3300,16 @@ fn main() -> Result<(), slint::PlatformError> {
                 ui.set_messages_scroll_tick(ui.get_messages_scroll_tick() + 1);
                 drop(guard);
 
-                // 2. Dispatch the real send in the background.
+                // 2. Dispatch the real send in the background. The wire body
+                //    carries the effect marker (if any); the pending row kept the
+                //    clean text.
                 let parent_id = reply_to.as_ref().map(|(id, _, _)| id.clone());
-                dispatch_send(group_hex.clone(), text, temp_id, parent_id);
+                dispatch_send(
+                    group_hex.clone(),
+                    append_effect_marker(&text, effect_id),
+                    temp_id,
+                    parent_id,
+                );
             } else {
                 drop(guard);
             }
@@ -3533,6 +3550,7 @@ fn main() -> Result<(), slint::PlatformError> {
                 text: String::new(),
                 failed: false,
                 reply_to: None,
+                effect: 0,
                 media: vec![PendingMedia {
                     file_name: file_name_u.clone(),
                     media_type: media_type_u.clone(),
@@ -3753,6 +3771,7 @@ fn main() -> Result<(), slint::PlatformError> {
                 failed: false,
                 reply_to: None,
                 media,
+                effect: 0,
             };
             pending_state.lock().unwrap().add_send(&group_hex, send.clone());
             let my_id = backend.account().account_id_hex.clone();
@@ -4375,7 +4394,7 @@ fn main() -> Result<(), slint::PlatformError> {
     // ─── Edit history (visible to anyone) ──────────────────────────────
     //
     // Tapping a bubble's "(edited)" label asks Rust to assemble the full
-    // version list (original + each author-authored kind-1010) and open the
+    // version list (original + each author-authored kind-1009) and open the
     // modal. Empty history (race) just no-ops.
     ui.on_show_edit_history({
         let weak = ui.as_weak();
@@ -5010,6 +5029,22 @@ fn main() -> Result<(), slint::PlatformError> {
     let sheet = ui.global::<EmojiSheet>();
     sheet.set_sprite(emoji_sprite_image());
     sheet.set_tile(emoji_sprite_map::TILE as i32);
+    // Message-effect catalog for the composer's send-button picker. Resolve each
+    // effect's emoji to its sprite tile; drop any the sheet doesn't carry.
+    {
+        let choices: Vec<EffectChoice> = EFFECTS
+            .iter()
+            .filter_map(|(id, _, _)| {
+                effect_clip(*id).map(|(x, y)| EffectChoice {
+                    id: *id,
+                    clip_x: x as i32,
+                    clip_y: y as i32,
+                })
+            })
+            .collect();
+        ui.global::<EffectCatalog>()
+            .set_choices(ModelRc::new(VecModel::from(choices)));
+    }
     refresh_emoji_rows();
 
     // Markdown links/anchors in chat bubbles activate through this global so
@@ -6996,7 +7031,7 @@ fn refresh_chats_from(
                     .cloned()
                     .unwrap_or_default();
                 let e = edits.get(&m.message_id_hex).cloned();
-                chat_message_from_with_reactions(m, &by_id, &my_id, &my_label, r, e, &profiles, is_group)
+                chat_message_from_with_reactions(m, &by_id, &my_id, &my_label, r, e, &profiles, is_group, false)
             })
             .collect();
         messages_outer.push(ModelRc::new(VecModel::from(row)));
@@ -7405,6 +7440,10 @@ fn chat_message_from_with_reactions(
     edit: Option<EditState>,
     profiles: &SenderProfiles,
     is_group: bool,
+    // When true this build may start a one-shot effect burst (live arrival or
+    // single-row refresh). Backfill passes false so opening a chat full of
+    // effect-tagged history doesn't fire a burst storm.
+    play_effects: bool,
 ) -> ChatMessage {
     let outgoing = record.sender.eq_ignore_ascii_case(my_account_id_hex);
     // Edited messages display the latest edit's text in place of the original;
@@ -7412,11 +7451,23 @@ fn chat_message_from_with_reactions(
     // gates the edit affordance to the author's own bubbles.
     let edited = edit.as_ref().map(|e| e.count > 0).unwrap_or(false);
     let edit_count = edit.as_ref().map(|e| e.count as i32).unwrap_or(0);
-    let display_text = edit
+    let raw_display_text = edit
         .as_ref()
         .filter(|e| e.count > 0)
         .map(|e| e.text.as_str())
         .unwrap_or(record.plaintext.as_str());
+    // Strip any trailing message-effect marker so it never reaches the bubble.
+    // `effect_id` is the persistent identity (carried by every effect row so a
+    // tap can replay it). `effect_autoplay` fires the burst by itself only on a
+    // live incoming build — the sender already saw it on the optimistic row, and
+    // backfill marks the id seen-but-quiet so it doesn't storm or replay later.
+    let (display_text, body_effect) = split_effect_marker(raw_display_text);
+    let effect_id = body_effect;
+    let effect_autoplay =
+        !outgoing && effect_should_autoplay(&record.message_id_hex, body_effect, play_effects);
+    let (effect_clip_x, effect_clip_y) = effect_clip(effect_id)
+        .map(|(x, y)| (x as i32, y as i32))
+        .unwrap_or((0, 0));
     // Resolve the sender's directory profile (name + picture) so incoming rows
     // show a real identity rather than a hash of the raw pubkey. The lookup is
     // a cheap map hit — `profiles` was resolved once for the whole rebuild.
@@ -7575,6 +7626,10 @@ fn chat_message_from_with_reactions(
         att_has_image,
         att_loading,
         att_failed: false,
+        effect_id,
+        effect_clip_x,
+        effect_clip_y,
+        effect_autoplay,
     }
 }
 
@@ -7608,7 +7663,7 @@ fn reply_preview_for(
             } else {
                 avatar_for(&p.sender).2
             };
-            (author, truncate_preview(&p.plaintext, 160))
+            (author, truncate_preview(split_effect_marker(&p.plaintext).0, 160))
         }
         None => (String::new(), String::new()),
     };
@@ -7658,6 +7713,17 @@ fn pending_chat_message(
         .unwrap_or_default();
     let bubble_max = 440.0_f32;
     let lines = build_message_lines(&pending.text, bubble_max);
+
+    // Armed effect: `effect_id` is the persistent identity (so the row is
+    // tap-to-replay), `effect_autoplay` fires it once on the optimistic row (a
+    // failed send doesn't celebrate). pending.text is already clean — the marker
+    // is only appended to the wire body, never stored here.
+    let effect_id = pending.effect;
+    let effect_autoplay =
+        !pending.failed && effect_should_autoplay(&pending.temp_id, pending.effect, true);
+    let (effect_clip_x, effect_clip_y) = effect_clip(effect_id)
+        .map(|(x, y)| (x as i32, y as i32))
+        .unwrap_or((0, 0));
 
     // Pending media optimistic-render. While the upload is in flight we render
     // the chip / image preview / album grid straight from the local bytes the
@@ -7768,6 +7834,10 @@ fn pending_chat_message(
         att_has_image,
         att_loading,
         att_failed: pending.failed && has_attachment,
+        effect_id,
+        effect_clip_x,
+        effect_clip_y,
+        effect_autoplay,
     }
 }
 
@@ -7896,7 +7966,7 @@ fn apply_reaction_to_model_row(
 
 /// Surgically rewrite one bubble's body to `new_text` and flag it edited.
 /// The optimistic counterpart to [`apply_reaction_to_model_row`] — used the
-/// instant the user confirms an edit, before the kind-1010 echoes back.
+/// instant the user confirms an edit, before the kind-1009 echoes back.
 fn apply_edit_to_model_row(
     chats_messages: &ModelRc<ModelRc<ChatMessage>>,
     idx: usize,
@@ -8044,7 +8114,7 @@ fn build_one_message_row(
         .iter()
         .map(|m| (m.message_id_hex.as_str(), m))
         .collect();
-    chat_message_from_with_reactions(record, &by_id, my_id, my_label, r, e, &profiles, is_group)
+    chat_message_from_with_reactions(record, &by_id, my_id, my_label, r, e, &profiles, is_group, true)
 }
 
 /// Rebuild one chat's message row from `(backend snapshot ∪ pending overlay)`.
@@ -8187,7 +8257,7 @@ fn rebuild_chat_messages_from(
                 .cloned()
                 .unwrap_or_default();
             let e = edits.get(&m.message_id_hex).cloned();
-            chat_message_from_with_reactions(m, &by_id, &my_id, &my_label, r, e, &profiles, is_group)
+            chat_message_from_with_reactions(m, &by_id, &my_id, &my_label, r, e, &profiles, is_group, false)
         })
         .collect();
 
@@ -8278,12 +8348,12 @@ struct EditState {
     count: usize,
 }
 
-/// Walk all records and resolve kind-1010 edits per target message.
+/// Walk all records and resolve kind-1009 edits per target message.
 ///
 /// Authorship is enforced here: an edit is only honored when its authenticated
 /// author (the inner event's `sender`, which marmot guarantees equals the
 /// MLS-authenticated sender) matches the *original* message's author. A
-/// kind-1010 from anyone else referencing your message is ignored. Edits are
+/// kind-1009 from anyone else referencing your message is ignored. Edits are
 /// ordered by `(recorded_at, id)` and the newest wins as the displayed text.
 fn aggregate_edits(records: &[AppMessageRecord]) -> std::collections::HashMap<String, EditState> {
     use std::collections::HashMap;
@@ -8297,7 +8367,7 @@ fn aggregate_edits(records: &[AppMessageRecord]) -> std::collections::HashMap<St
     // target_id → ordered (recorded_at, id, content) edits.
     let mut by_target: HashMap<String, Vec<(u64, String, String)>> = HashMap::new();
     for r in records {
-        if r.kind != 1010 {
+        if r.kind != 1009 {
             continue;
         }
         let Some(target) = r
@@ -8336,7 +8406,7 @@ fn aggregate_edits(records: &[AppMessageRecord]) -> std::collections::HashMap<St
 }
 
 /// Layer the pending-edit overlay onto an aggregated edit map, so an
-/// optimistic edit shows before its kind-1010 echoes back. Mirrors
+/// optimistic edit shows before its kind-1009 echoes back. Mirrors
 /// [`apply_reaction_overlay`].
 fn apply_edit_overlay(
     aggregate: &mut std::collections::HashMap<String, EditState>,
@@ -8365,7 +8435,7 @@ fn build_edit_history(records: &[AppMessageRecord], message_id: &str) -> Vec<Edi
     };
     let mut edits: Vec<&AppMessageRecord> = records
         .iter()
-        .filter(|r| r.kind == 1010)
+        .filter(|r| r.kind == 1009)
         .filter(|r| r.sender.eq_ignore_ascii_case(&original.sender))
         .filter(|r| {
             r.tags
@@ -8502,6 +8572,115 @@ fn emoji_position_index() -> &'static std::collections::HashMap<&'static str, (u
     })
 }
 
+// ── Message effects (Telegram-style bursts) ─────────────────────────────────
+//
+// A small catalog of one-shot particle effects. Each is (catalog-id, wire-key,
+// emoji). The id drives the Slint motion switch in message-effect-layer.slint;
+// the wire-key is what travels in the body marker; the emoji is rendered as the
+// flying particle (resolved to a sprite-sheet tile via the inline-emoji index).
+const EFFECTS: &[(i32, &str, &str)] = &[
+    (1, "love", "❤️"),
+    (2, "fire", "🔥"),
+    (3, "party", "🎉"),
+    (4, "star", "⭐"),
+    (5, "like", "👍"),
+];
+
+/// Invisible delimiter wrapping the body effect marker. U+2063 (INVISIBLE
+/// SEPARATOR) renders as nothing in conformant clients, so a non-DM client that
+/// doesn't understand the marker just shows the clean body with a trailing
+/// zero-width char.
+const FX_MARK: char = '\u{2063}';
+
+fn effect_key(id: i32) -> Option<&'static str> {
+    EFFECTS.iter().find(|e| e.0 == id).map(|e| e.1)
+}
+fn effect_emoji(id: i32) -> Option<&'static str> {
+    EFFECTS.iter().find(|e| e.0 == id).map(|e| e.2)
+}
+fn effect_id_from_key(key: &str) -> i32 {
+    EFFECTS.iter().find(|e| e.1 == key).map(|e| e.0).unwrap_or(0)
+}
+
+/// Resolve an effect's emoji to its (x, y) tile in the Twemoji sheet, tolerating
+/// the presence/absence of a trailing U+FE0F variation selector (the sprite
+/// index and the catalog string can disagree on it).
+fn effect_clip(id: i32) -> Option<(u32, u32)> {
+    let emoji = effect_emoji(id)?;
+    let idx = emoji_position_index();
+    if let Some(p) = idx.get(emoji) {
+        return Some(*p);
+    }
+    let stripped = emoji.trim_end_matches('\u{FE0F}');
+    if let Some(p) = idx.get(stripped) {
+        return Some(*p);
+    }
+    let with_vs = format!("{stripped}\u{FE0F}");
+    idx.get(with_vs.as_str()).copied()
+}
+
+/// Append the wire marker for `effect_id` to an outgoing body. No-op for 0 or an
+/// unknown id. The marker sits at the very end so stripping is a cheap suffix
+/// check on receipt.
+fn append_effect_marker(text: &str, effect_id: i32) -> String {
+    match effect_key(effect_id) {
+        Some(key) => format!("{text}{FX_MARK}dmfx:{key}{FX_MARK}"),
+        None => text.to_string(),
+    }
+}
+
+/// Split a trailing effect marker off a raw body, returning (clean_body,
+/// effect_id). Returns the input untouched (effect 0) when there's no valid
+/// marker, so it's safe to run on every body unconditionally.
+fn split_effect_marker(raw: &str) -> (&str, i32) {
+    let m = FX_MARK.len_utf8();
+    if !raw.ends_with(FX_MARK) {
+        return (raw, 0);
+    }
+    let head = &raw[..raw.len() - m];
+    let Some(pos) = head.rfind(FX_MARK) else {
+        return (raw, 0);
+    };
+    let inner = &head[pos + m..];
+    let Some(key) = inner.strip_prefix("dmfx:") else {
+        return (raw, 0);
+    };
+    let id = effect_id_from_key(key);
+    if id == 0 {
+        return (raw, 0);
+    }
+    (&head[..pos], id)
+}
+
+/// Set of message-ids whose effect has already been claimed for autoplay (or
+/// marked seen-during-backfill). Rows rebuild from scratch (reactions, picture
+/// loads, full rebuilds recreate components and re-run `init`), so the
+/// fire-exactly-once decision can't live in Slint state — it lives here.
+fn effect_seen_ids() -> &'static std::sync::Mutex<std::collections::HashSet<String>> {
+    use std::sync::OnceLock;
+    static S: OnceLock<std::sync::Mutex<std::collections::HashSet<String>>> = OnceLock::new();
+    S.get_or_init(|| std::sync::Mutex::new(std::collections::HashSet::new()))
+}
+
+/// Whether this build should AUTOPLAY the effect for `message_id`. True only on
+/// the very first time the id is ever built, and only if that first build is
+/// `live` (a watcher arrival or optimistic send). Every later build — including
+/// a full rebuild that recreates the row component and re-runs its `init`, or a
+/// chat reopen — returns false, so a playing burst is never re-fired or
+/// interrupted. Backfill (`live == false`) just claims the id as seen-but-quiet.
+/// (Tap-to-replay is independent of this — it fires straight from the bubble.)
+fn effect_should_autoplay(message_id: &str, raw_effect: i32, live: bool) -> bool {
+    if raw_effect == 0 {
+        return false;
+    }
+    let mut seen = effect_seen_ids().lock().unwrap();
+    if !seen.insert(message_id.to_string()) {
+        // Already present → already handled once; never autoplay again.
+        return false;
+    }
+    live
+}
+
 // ── Markdown rendering ──────────────────────────────────────────────────────
 //
 // Chat bodies are parsed with `whitenoise_markdown` (the same CommonMark + GFM +
@@ -8527,6 +8706,36 @@ struct MdStyle {
     italic: bool,
     strike: bool,
     code: bool,
+    /// iMessage text effects as a bitmask, so any number of effects stack on
+    /// the same glyph (each acts on an independent visual axis). Bits:
+    /// 1 big, 2 small, 4 explode, 8 bloom, 16 shake, 32 nod, 64 ripple,
+    /// 128 jitter. The RunCell decodes the bits and composes the transforms.
+    fx: u8,
+}
+
+/// OR the `{name}…{/name}` effect into the style's bitmask. Effects compose, so
+/// nesting (`{big}{explode}…`) keeps both. Unknown names set no bit, so the
+/// span passes through as literal styled text.
+fn apply_effect(style: &mut MdStyle, name: &str) {
+    let bit: u8 = match name.to_ascii_lowercase().as_str() {
+        "big" => 1,
+        "small" => 2,
+        "explode" => 4,
+        "bloom" => 8,
+        "shake" => 16,
+        "nod" => 32,
+        "ripple" => 64,
+        "jitter" => 128,
+        _ => 0,
+    };
+    style.fx |= bit;
+}
+
+impl MdStyle {
+    /// True when any effect bit is set — drives per-letter splitting.
+    fn has_fx(&self) -> bool {
+        self.fx != 0
+    }
 }
 
 /// One atomic token in the inline stream feeding the greedy wrapper.
@@ -8544,6 +8753,7 @@ enum MdTok {
     Emoji {
         x: u32,
         y: u32,
+        fx: u8,
     },
     Break,
 }
@@ -8580,10 +8790,13 @@ fn md_run_text(text: &str, style: MdStyle, link: &Option<String>) -> MessageRun 
             .as_deref()
             .map(SharedString::from)
             .unwrap_or_default(),
+        fx: style.fx as i32,
+        // Assigned in a second pass over the finished runs (md_assign_phases).
+        phase: 0.0,
     }
 }
 
-fn md_run_emoji(x: u32, y: u32) -> MessageRun {
+fn md_run_emoji(x: u32, y: u32, fx: u8) -> MessageRun {
     MessageRun {
         is_emoji: true,
         text: SharedString::new(),
@@ -8594,6 +8807,8 @@ fn md_run_emoji(x: u32, y: u32) -> MessageRun {
         strike: false,
         code: false,
         link: SharedString::new(),
+        fx: fx as i32,
+        phase: 0.0,
     }
 }
 
@@ -8660,7 +8875,7 @@ fn md_push_text(
             }
             if let Some((end, x, y)) = matched {
                 flush(&mut buf, &mut buf_space, out);
-                out.push(MdTok::Emoji { x, y });
+                out.push(MdTok::Emoji { x, y, fx: style.fx });
                 i = end;
                 continue;
             }
@@ -8678,6 +8893,12 @@ fn md_push_text(
                 flush(&mut buf, &mut buf_space, out);
             }
             buf.push(c);
+            // Effect runs render per-letter so motion effects (ripple, jitter,
+            // shake…) animate each glyph independently, like iMessage. Flush
+            // after every visible character so each becomes its own run/cell.
+            if style.has_fx() {
+                flush(&mut buf, &mut buf_space, out);
+            }
         }
         i += clen;
     }
@@ -8748,6 +8969,14 @@ fn md_walk_inlines(
             }
             Inline::NostrMention(e) => md_push_nostr(out, e, style, true),
             Inline::NostrUri(e) => md_push_nostr(out, e, style, false),
+            Inline::Effect { name, children } => {
+                // Set the matching channel (size or motion) on top of the
+                // inherited style, so nesting stacks instead of overwriting.
+                // Unknown names leave both channels untouched → pass-through.
+                let mut st = style;
+                apply_effect(&mut st, name);
+                md_walk_inlines(out, children, st, link.clone(), positions);
+            }
         }
     }
 }
@@ -8822,12 +9051,12 @@ fn md_wrap(
                 x += text.chars().count() as f32 * char_w;
                 cur.push(md_run_text(&text, style, &link));
             }
-            MdTok::Emoji { x: ex, y: ey } => {
+            MdTok::Emoji { x: ex, y: ey, fx } => {
                 if x > 0.0 && x + emoji_w > avail {
                     flush(out, &mut cur);
                     x = 0.0;
                 }
-                cur.push(md_run_emoji(ex, ey));
+                cur.push(md_run_emoji(ex, ey, fx));
                 x += emoji_w;
             }
             MdTok::Word { text, style, link } => {
@@ -9060,6 +9289,25 @@ fn md_walk_blocks(
 }
 
 /// Parse a chat-message body as Markdown and flatten it into pre-wrapped lines.
+/// Second pass over finished runs: stagger each effect run's `phase` so motion
+/// effects animate per-letter rather than in lockstep. The counter advances
+/// once per effect cell (giving Ripple its travelling crest and Jitter its
+/// decorrelated wobble) and resets on any non-effect run so each contiguous
+/// span starts its wave fresh.
+fn md_assign_phases(lines: &mut [MdLine]) {
+    let mut step: u32 = 0;
+    for line in lines.iter_mut() {
+        for run in line.runs.iter_mut() {
+            if run.fx != 0 {
+                run.phase = step as f32 * 0.12;
+                step += 1;
+            } else {
+                step = 0;
+            }
+        }
+    }
+}
+
 fn tokenize_message_lines(text: &str, max_width: f32, base_fs: f32) -> Vec<MessageLine> {
     let positions = emoji_position_index();
     let doc = whitenoise_markdown::parse(text);
@@ -9072,6 +9320,7 @@ fn tokenize_message_lines(text: &str, max_width: f32, base_fs: f32) -> Vec<Messa
         base_fs,
         positions,
     );
+    md_assign_phases(&mut lines);
     lines
         .into_iter()
         .map(|l| MessageLine {
@@ -10656,7 +10905,7 @@ fn install_message_watcher(
         // Three interesting wire kinds. Each one becomes a surgical model
         // update so neighbouring bubbles don't remount.
         let kind = received.kind;
-        if !matches!(kind, 9 | 7 | 5 | 1010) {
+        if !matches!(kind, 9 | 7 | 5 | 1009) {
             return;
         }
         let weak = weak.clone();
@@ -10664,7 +10913,7 @@ fn install_message_watcher(
         let pending_state = pending_state.clone();
         let group_hex_inner = group_hex_for_filter.clone();
         let msg_id = received.message_id_hex.clone();
-        let target_id_for_reaction: Option<String> = if kind == 7 || kind == 5 || kind == 1010 {
+        let target_id_for_reaction: Option<String> = if kind == 7 || kind == 5 || kind == 1009 {
             received
                 .tags
                 .iter()
@@ -10716,10 +10965,10 @@ fn install_message_watcher(
                         spawn_message_avatar_fetches(&ui, &b, &all);
                     }
                 }
-                7 | 5 | 1010 => {
+                7 | 5 | 1009 => {
                     // Reaction, delete, or edit — surgical refresh of the
                     // target row. For an edit the snapshot now carries the
-                    // kind-1010, so the rebuilt row picks up the new text.
+                    // kind-1009, so the rebuilt row picks up the new text.
                     let Some(target) = target_id_for_reaction else { return };
                     refresh_one_message_row_from(
                         &b,

@@ -6,6 +6,10 @@ import { Palette, Theme } from "../tokens.slint";
 
 export component Button inherits Rectangle {
     callback clicked;
+    // Secondary affordance — fires on right-click or a ~450ms long-press.
+    // Used by the composer Send button to open the message-effect picker
+    // Telegram-style without a second overlapping TouchArea.
+    callback alt-action;
     in property <string> label;
     in property <length> button-height: 32px;
     in property <length> button-width: 0px;   // 0 = auto (preferred-width)
@@ -101,9 +105,39 @@ export component Button inherits Rectangle {
         }
     }
 
+    // `alt-fired` suppresses the trailing left-`clicked` after a long-press, and
+    // is reset on the next left-down so a click following a right-click still
+    // sends (the right-press sets it true with no `clicked` to clear it).
+    property <bool> pressing: false;
+    property <bool> alt-fired: false;
     touch := TouchArea {
         enabled: root.enabled;
-        clicked => { root.clicked(); }
+        pointer-event(ev) => {
+            if ev.button == PointerEventButton.right {
+                if ev.kind == PointerEventKind.down {
+                    root.alt-fired = true;
+                    root.alt-action();
+                }
+            } else if ev.button == PointerEventButton.left {
+                if ev.kind == PointerEventKind.down {
+                    root.alt-fired = false;
+                    root.pressing = true;
+                } else if ev.kind == PointerEventKind.up {
+                    root.pressing = false;
+                }
+            }
+        }
+        clicked => { if !root.alt-fired { root.clicked(); } }
+    }
+    longpress := Timer {
+        interval: 450ms;
+        running: root.pressing;
+        triggered => {
+            root.pressing = false;
+            self.running = false;
+            root.alt-fired = true;
+            root.alt-action();
+        }
     }
 
     // Zero-size FocusScope: participates in the Tab chain but never receives

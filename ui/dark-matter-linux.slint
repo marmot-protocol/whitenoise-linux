@@ -30,7 +30,7 @@ import { LoginScreen } from "login/login-screen.slint";
 import { SplashScreen } from "splash.slint";
 import { EmojiPicker } from "emoji-picker.slint";
 import { MessageContextMenu } from "primitives/context-menu.slint";
-import { EmojiEntry, EmojiSheet, Linkout, ProfileSink } from "tokens.slint";
+import { EmojiEntry, EmojiSheet, Linkout, ProfileSink, EffectCatalog } from "tokens.slint";
 import { EditVersion } from "tokens.slint";
 import { AuditLogEntry } from "tokens.slint";
 import { StagedAttachment } from "tokens.slint";
@@ -41,6 +41,8 @@ export { EmojiSheet }
 // Same for the Markdown link sink, bound once in Rust to open URLs externally.
 export { Linkout }
 export { ProfileSink }
+// Message-effect catalog + armed selection, read/cleared by Rust on send.
+export { EffectCatalog }
 
 export component DarkMatterLinux inherits Window {
     title: "darkmatter";

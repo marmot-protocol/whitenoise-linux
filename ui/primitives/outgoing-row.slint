@@ -4,6 +4,22 @@ import { MessageBubble } from "message-bubble.slint";
 import { ReactionChips, HoverActions } from "reactions-row.slint";
 
 export component OutgoingRow inherits VerticalLayout {
+    in property <int> effect-id: 0;
+    in property <int> effect-clip-x: 0;
+    in property <int> effect-clip-y: 0;
+    in property <bool> effect-autoplay: false;
+    // Fire the burst in the shared overlay (above all bubbles). See IncomingRow.
+    callback play-effect(int, int, int, length, length, length, length);
+    function fire-effect() {
+        root.play-effect(root.effect-id, root.effect-clip-x, root.effect-clip-y,
+            bubble.absolute-position.x, bubble.absolute-position.y, bubble.width, bubble.height);
+    }
+    init => { if (root.effect-autoplay && root.effect-id > 0) { fx-timer.running = true; } }
+    fx-timer := Timer {
+        interval: 120ms;
+        running: false;
+        triggered => { self.running = false; root.fire-effect(); }
+    }
     in property <string> text;
     in property <[MessageLine]> lines;
     in property <string> stamp;
@@ -104,6 +120,9 @@ export component OutgoingRow inherits VerticalLayout {
                 bubble := MessageBubble {
                     x: 0; y: 0;
                     message: root.text;
+                    effect-id: root.effect-id;
+                    effect-clip-x: root.effect-clip-x;
+                    effect-clip-y: root.effect-clip-y;
                     lines: root.lines;
                     stamp: root.stamp;
                     outgoing: true;
@@ -143,6 +162,7 @@ export component OutgoingRow inherits VerticalLayout {
                             root.request-context-menu(root.message-id, root.text, @tr("You"), root.can-edit, ax, ay);
                         }
                     }
+                    body-clicked => { if (root.effect-id > 0) { root.fire-effect(); } }
                 }
 
                 acts := HoverActions {

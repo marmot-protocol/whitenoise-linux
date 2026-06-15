@@ -8586,7 +8586,7 @@ checksum = "a28ac98ddc8b9274cb41bb4d9d4d5c425b6020c50c46f25559911905610b4a88"
 [[package]]
 name = "whitenoise-markdown"
 version = "0.1.0"
-source = "git+https://github.com/marmot-protocol/whitenoise-rs#cd6e78efcf58856fa2547454c22f988298c0edb7"
+source = "git+https://github.com/marmot-protocol/whitenoise-rs?rev=973f3ab65bf410c35e401935cdf4374b77770901#973f3ab65bf410c35e401935cdf4374b77770901"
 dependencies = [
  "serde",
 ]

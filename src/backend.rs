@@ -1136,7 +1136,7 @@ impl Backend {
         });
     }
 
-    /// Publish a kind-1010 edit of `message_id_hex` with replacement text
+    /// Publish a kind-1009 edit of `message_id_hex` with replacement text
     /// `content`. Same optimistic-reconciliation shape as [`react_async`] — the
     /// UI overlay rewrites the bubble immediately and the ack/echo reconciles.
     pub fn edit_message_async<F>(

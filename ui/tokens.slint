@@ -241,6 +241,16 @@ export struct MessageRun {
     strike: bool,
     code: bool,
     link: string,
+    // iMessage-style inline text effects, resolved from `{name}…{/name}`
+    // markup, as a bitmask so any effects stack on one glyph (each acts on an
+    // independent visual axis — e.g. `{big}{explode}` or `{jitter}{ripple}`):
+    //   1 Big, 2 Small, 4 Explode, 8 Bloom, 16 Shake, 32 Nod, 64 Ripple,
+    //   128 Jitter. The bubble's RunCell decodes the bits and composes them.
+    // `phase` staggers the per-letter animation across a span (a travelling
+    // crest for Ripple, decorrelated wobble for Jitter); it increments per
+    // effect run and resets between spans.
+    fx: int,
+    phase: float,
 }
 
 // One wrapped line of a chat-message body. Beyond its runs a line carries
@@ -281,6 +291,25 @@ export global ProfileSink {
 export global EmojiSheet {
     in property <image> sprite;
     in property <int> tile;
+}
+
+// One pickable message effect (Telegram-style burst). `clip-x`/`clip-y` index
+// the chosen emoji's tile in the shared Twemoji sheet, supplied by Rust at
+// startup. The composer's send-button picker iterates these; the per-message
+// playback reads its own clip coords off `ChatMessage`.
+export struct EffectChoice {
+    id: int,
+    clip-x: int,
+    clip-y: int,
+}
+
+// Catalog + current composer selection for message effects. `selected` is the
+// effect that rides along with the next send (0 = none); Rust reads and clears
+// it in on_send_message. A global keeps the composer popover and the send
+// wiring talking without threading a window property through the whole tree.
+export global EffectCatalog {
+    in property <[EffectChoice]> choices;
+    in-out property <int> selected: 0;
 }
 
 // One image in a multi-image album (Telegram-style grid). Rust computes the
@@ -382,6 +411,16 @@ export struct ChatMessage {
     // Emoji-only body (1–3 emoji, no attachment/album/reply): renders jumbo and
     // bubble-less, Telegram-style, with the timestamp floating on hover.
     jumbo-emoji: bool,
+    // Message effect (Telegram-style particle burst). `effect-id` is the
+    // persistent catalog identity (0 = none, 1..5) carried by every row whose
+    // body had the marker, so a tap can replay it; `effect-clip-x/y` index the
+    // chosen emoji's tile in the shared Twemoji sheet. `effect-autoplay` is the
+    // transient one-shot trigger Rust sets only on the build where the burst
+    // should fire by itself (live incoming arrival / optimistic outgoing row).
+    effect-id: int,
+    effect-clip-x: int,
+    effect-clip-y: int,
+    effect-autoplay: bool,
 }
 
 // One entry in a message's edit history (original + each subsequent edit),

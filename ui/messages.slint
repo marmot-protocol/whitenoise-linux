@@ -3,7 +3,22 @@ import { Palette, Theme, ChatMessage } from "tokens.slint";
 import { IncomingRow } from "primitives/incoming-row.slint";
 import { OutgoingRow } from "primitives/outgoing-row.slint";
 import { CypherScroll } from "primitives/cypher-scroll.slint";
+import { MessageEffectLayer } from "primitives/message-effect-layer.slint";
 import { ChevronDownIcon } from "icons/chevron-down-icon.slint";
+
+// One slot in the effect-burst pool. `gen` is a per-slot generation counter —
+// bumping it (re)fires that slot's layer; the position/effect fields say where
+// and what. Default (all-zero, gen 0) = an idle slot that never plays.
+struct EffectBurst {
+    x: length,
+    y: length,
+    w: length,
+    h: length,
+    id: int,
+    cx: int,
+    cy: int,
+    gen: int,
+}
 
 export component MessagesArea inherits Rectangle {
     in property <[ChatMessage]> messages;
@@ -30,6 +45,29 @@ export component MessagesArea inherits Rectangle {
     callback attachment-clicked(string);
     callback album-cell-clicked(string);
     property <length> content-w: max(120px, root.available-w - 36px);
+
+    // Message-effect stage. A pool of overlay layers (declared after the scroll,
+    // so they paint above every bubble) plays bursts. Rows report their bubble's
+    // window position + size via `play-effect`; we convert to overlay-local
+    // coords, write the next round-robin slot, and bump that slot's `gen` to
+    // fire. Each layer binds to its own slot, so a new burst STACKS instead of
+    // interrupting the ones already playing (Telegram-style). 8 concurrent.
+    property <[EffectBurst]> bursts: [{}, {}, {}, {}, {}, {}, {}, {}];
+    property <int> burst-next: 0;
+    function stage-effect(eid: int, cx: int, cy: int, ax: length, ay: length, w: length, h: length) {
+        root.bursts[root.burst-next] = {
+            // Window coords → overlay-local (the clip wrapper fills root at 0,0).
+            x: ax - fx-clip.absolute-position.x,
+            y: ay - fx-clip.absolute-position.y,
+            w: w,
+            h: h,
+            id: eid,
+            cx: cx,
+            cy: cy,
+            gen: root.bursts[root.burst-next].gen + 1,
+        };
+        root.burst-next = root.burst-next + 1 < 8 ? root.burst-next + 1 : 0;
+    }
     // Subtle vertical lift — keeps the chat canvas from feeling flat.
     background: Theme.retro
         ? Palette.bg
@@ -149,6 +187,10 @@ export component MessagesArea inherits Rectangle {
                     first-in-group: msg.first-in-group;
                     last-in-group: msg.last-in-group;
                     jumbo-emoji: msg.jumbo-emoji;
+                    effect-id: msg.effect-id;
+                    effect-clip-x: msg.effect-clip-x;
+                    effect-clip-y: msg.effect-clip-y;
+                    effect-autoplay: msg.effect-autoplay;
                     reply-to-id: msg.reply-to-id;
                     reply-to-text: msg.reply-to-text;
                     reply-to-author: msg.reply-to-author;
@@ -176,6 +218,7 @@ export component MessagesArea inherits Rectangle {
                     show-history(id) => { root.show-history(id); }
                     attachment-clicked(id) => { root.attachment-clicked(id); }
                     album-cell-clicked(key) => { root.album-cell-clicked(key); }
+                    play-effect(eid, cx, cy, ax, ay, w, h) => { root.stage-effect(eid, cx, cy, ax, ay, w, h); }
                 }
 
                 if msg.outgoing : OutgoingRow {
@@ -197,6 +240,10 @@ export component MessagesArea inherits Rectangle {
                     first-in-group: msg.first-in-group;
                     last-in-group: msg.last-in-group;
                     jumbo-emoji: msg.jumbo-emoji;
+                    effect-id: msg.effect-id;
+                    effect-clip-x: msg.effect-clip-x;
+                    effect-clip-y: msg.effect-clip-y;
+                    effect-autoplay: msg.effect-autoplay;
                     pending: msg.pending;
                     failed: msg.failed;
                     reply-to-id: msg.reply-to-id;
@@ -229,8 +276,33 @@ export component MessagesArea inherits Rectangle {
                     show-history(id) => { root.show-history(id); }
                     retry => { root.retry(msg.message-id); }
                     attachment-clicked(id) => { root.attachment-clicked(id); }
+                    play-effect(eid, cx, cy, ax, ay, w, h) => { root.stage-effect(eid, cx, cy, ax, ay, w, h); }
                 }
             }
+        }
+    }
+
+    // Effect overlay — above all bubbles (declared after the scroll), below the
+    // jump-pill. Fills the viewport and clips so particles don't spill into the
+    // header / composer. Transparent to input (no TouchArea).
+    fx-clip := Rectangle {
+        x: 0; y: 0;
+        width: parent.width;
+        height: parent.height;
+        clip: true;
+        // One layer per pool slot. Only the slot whose `gen` changed re-fires;
+        // the rest keep playing — so bursts stack instead of interrupting.
+        for b in root.bursts : MessageEffectLayer {
+            x: b.x;
+            y: b.y;
+            width: b.w;
+            height: b.h;
+            effect-id: b.id;
+            clip-x: b.cx;
+            clip-y: b.cy;
+            origin-w: b.w;
+            origin-h: b.h;
+            trigger: b.gen;
         }
     }
 

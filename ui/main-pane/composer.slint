@@ -1,4 +1,4 @@
-import { Palette , Theme, StagedAttachment } from "../tokens.slint";
+import { Palette , Theme, StagedAttachment, EmojiSheet, EffectCatalog, EffectChoice } from "../tokens.slint";
 import { PaperclipIcon } from "../icons/paperclip-icon.slint";
 import { SmileyIcon } from "../icons/smiley-icon.slint";
 import { SendIcon } from "../icons/send-icon.slint";
@@ -45,6 +45,10 @@ export component Composer inherits Rectangle {
     property <length> chip-h: (root.reply-target-id == "" && root.editing-message-id == "") ? 0px : 30px;
     property <length> staged-h: root.staged.length == 0 ? 0px : 58px;
     property <bool> can-send: root.draft != "" || root.staged.length > 0;
+    // Message-effect picker (Telegram-style): opened by right-click / long-press
+    // on Send. The chosen effect lives in EffectCatalog.selected and rides the
+    // next send; Rust reads + clears it. The popover only toggles visibility.
+    property <bool> show-effects: false;
 
     height: root.row-h + 26px + root.chip-h + root.staged-h;
     background: Palette.bg;
@@ -343,6 +347,8 @@ export component Composer inherits Rectangle {
                     enabled: root.can-send;
                     focusable: true;
                     clicked => { root.send-clicked(); }
+                    // Right-click / long-press opens the effect picker.
+                    alt-action => { root.show-effects = !root.show-effects; }
                     button-width: 92px;
                     button-height: 36px;
                     y: (parent.height - self.height) / 2;
@@ -374,5 +380,114 @@ export component Composer inherits Rectangle {
             }
         }
     }
+    }
+
+    // Badge: the chosen effect's emoji over the top-right of Send, when an
+    // effect is armed. Lives at the composer root (not in the Button's layout
+    // slot, which ignores explicit x/y) and floats over the button corner.
+    if EffectCatalog.selected > 0 : Rectangle {
+        x: send-button.absolute-position.x - root.absolute-position.x + send-button.width - self.width + 4px;
+        y: send-button.absolute-position.y - root.absolute-position.y - 4px;
+        width: 18px;
+        height: 18px;
+        border-radius: 9px;
+        background: Palette.bg;
+        border-width: 1.5px;
+        border-color: Palette.mint;
+        for c in EffectCatalog.choices : Rectangle {
+            if c.id == EffectCatalog.selected : Image {
+                width: 14px;
+                height: 14px;
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
+                source: EmojiSheet.sprite;
+                source-clip-x: c.clip-x;
+                source-clip-y: c.clip-y;
+                source-clip-width: EmojiSheet.tile;
+                source-clip-height: EmojiSheet.tile;
+            }
+        }
+    }
+
+    // Effect picker popover — floats just above the Send button. Non-modal; a
+    // light backdrop over the composer closes it on an outside tap. Choosing an
+    // effect arms it (persists into the next send) and closes; the ✕ clears.
+    if root.show-effects : TouchArea {
+        x: 0; y: 0;
+        width: root.width;
+        height: root.height;
+        clicked => { root.show-effects = false; }
+    }
+    if root.show-effects : Rectangle {
+        x: min(root.width - self.width - 12px,
+               send-button.absolute-position.x - root.absolute-position.x
+               + send-button.width - self.width);
+        y: send-button.absolute-position.y - root.absolute-position.y - self.height - 8px;
+        width: effect-row.preferred-width + 16px;
+        height: 44px;
+        border-radius: (12px) * Theme.r-scale;
+        background: Palette.panel;
+        border-width: Theme.border-w;
+        border-color: Palette.border-2;
+        drop-shadow-color: Palette.shadow;
+        drop-shadow-blur: 16px;
+        drop-shadow-offset-y: 4px;
+        effect-row := HorizontalLayout {
+            padding-left: 8px;
+            padding-right: 8px;
+            spacing: 4px;
+            alignment: center;
+            // Clear / none.
+            Rectangle {
+                width: 30px;
+                height: 30px;
+                y: (parent.height - self.height) / 2;
+                border-radius: (8px) * Theme.r-scale;
+                background: none-touch.has-hover ? Palette.panel-2 : transparent;
+                border-width: EffectCatalog.selected == 0 ? 1.5px : 0px;
+                border-color: Palette.mint;
+                animate background { duration: 100ms; }
+                Text {
+                    text: "✕";
+                    color: Palette.text-mid;
+                    font-size: (13px) * Theme.fs-scale;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+                none-touch := TouchArea {
+                    clicked => {
+                        EffectCatalog.selected = 0;
+                        root.show-effects = false;
+                    }
+                }
+            }
+            for c in EffectCatalog.choices : Rectangle {
+                width: 34px;
+                height: 30px;
+                y: (parent.height - self.height) / 2;
+                border-radius: (8px) * Theme.r-scale;
+                background: fx-touch.has-hover ? Palette.panel-2 : transparent;
+                border-width: EffectCatalog.selected == c.id ? 1.5px : 0px;
+                border-color: Palette.mint;
+                animate background { duration: 100ms; }
+                Image {
+                    width: 24px;
+                    height: 24px;
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    source: EmojiSheet.sprite;
+                    source-clip-x: c.clip-x;
+                    source-clip-y: c.clip-y;
+                    source-clip-width: EmojiSheet.tile;
+                    source-clip-height: EmojiSheet.tile;
+                }
+                fx-touch := TouchArea {
+                    clicked => {
+                        EffectCatalog.selected = c.id;
+                        root.show-effects = false;
+                    }
+                }
+            }
+        }
     }
 }
