@@ -233,6 +233,69 @@ fn validate_new_password(pw: &str, confirm: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// Map a low-level backend error into approachable, action-oriented UI copy.
+///
+/// User-facing error surfaces must never show raw `anyhow` context strings,
+/// Rust debug formatting, or internal module/concept names. The full technical
+/// error is still logged at every call site (`eprintln!("[op] {e:#}")`) and
+/// stays available for diagnosis — this governs only what the *user* reads.
+///
+/// Classification is two-tier: first we inspect the flattened error chain for
+/// signals that point at a specific, fixable user action (a malformed key, an
+/// unreachable relay); failing that we fall back to a reassuring, operation-
+/// specific message. `op` is the short internal label already used at the call
+/// site (e.g. "sync", "switch account", "send").
+fn friendly_error(op: &str, e: &anyhow::Error) -> String {
+    // Flatten the whole error chain once for case-insensitive keyword matching.
+    let detail = format!("{e:#}").to_lowercase();
+
+    // Tier 1 — content-based classification. These conditions name a concrete
+    // thing the user can fix, so they take priority over the op default.
+    if detail.contains("npub") || detail.contains("pubkey") || detail.contains("public key") {
+        return "That doesn't look like a valid npub or public key. Double-check it and try again."
+            .to_string();
+    }
+    if detail.contains("timed out")
+        || detail.contains("timeout")
+        || detail.contains("connection")
+        || detail.contains("connect")
+        || detail.contains("network")
+        || detail.contains("relay")
+        || detail.contains("offline")
+        || detail.contains("unreachable")
+        || detail.contains("dns")
+    {
+        return "Can't reach your relays right now. Check your network and relay settings, then try again."
+            .to_string();
+    }
+
+    // Tier 2 — operation-specific fallback. Reassuring, names no internals.
+    match op {
+        "sync" => {
+            "Couldn't finish syncing. We'll keep retrying — check your relay settings if this keeps happening."
+        }
+        "backend" => "Couldn't start up. Check your network and relay settings, then try again.",
+        "switch account" => "Couldn't switch accounts. Please try again in a moment.",
+        "accept" => "Couldn't accept the invitation. Please try again in a moment.",
+        "block" => "Couldn't decline the invitation. Please try again in a moment.",
+        "archive" => "Couldn't archive this chat. Please try again.",
+        "unarchive" => "Couldn't restore this chat. Please try again.",
+        "send" => "Couldn't send your message. Check your connection and try again.",
+        "edit" => "Couldn't save your edit. Check your connection and try again.",
+        "react" => "Couldn't add your reaction. Please try again.",
+        "unreact" => "Couldn't remove your reaction. Please try again.",
+        "kp_publish" => {
+            "Couldn't publish your key package. Check your relay settings and try again."
+        }
+        "kp_rotate" => "Couldn't rotate your key package. Check your relay settings and try again.",
+        "kp_refresh" => {
+            "Couldn't refresh your key packages. Check your relay settings and try again."
+        }
+        _ => "Something went wrong. Please try again.",
+    }
+    .to_string()
+}
+
 fn model<T: Clone + 'static>(v: Vec<T>) -> ModelRc<T> {
     ModelRc::new(VecModel::from(v))
 }
@@ -600,7 +663,7 @@ fn main() -> Result<(), slint::PlatformError> {
                         let Some(ui) = weak_for_sync.upgrade() else { return };
                         if let Err(e) = sync_result {
                             eprintln!("[backend] background sync failed: {e:#}");
-                            ui.set_backend_error(format!("sync: {e:#}").into());
+                            ui.set_backend_error(friendly_error("sync", &e).into());
                             return;
                         }
                         let Some(b) = backend_cell_for_sync.lock().unwrap().clone() else {
@@ -750,7 +813,7 @@ fn main() -> Result<(), slint::PlatformError> {
                         }
                         Err(e) => {
                             eprintln!("[backend] boot failed: {e:#}");
-                            ui.set_backend_error(format!("backend: {e:#}").into());
+                            ui.set_backend_error(friendly_error("backend", &e).into());
                             ui.set_booting(false);
                         }
                     }
@@ -797,7 +860,7 @@ fn main() -> Result<(), slint::PlatformError> {
                 Ok(s) => s,
                 Err(e) => {
                     eprintln!("[accounts] switch failed: {e:#}");
-                    ui.set_backend_error(format!("switch account: {e:#}").into());
+                    ui.set_backend_error(friendly_error("switch account", &e).into());
                     return;
                 }
             };
@@ -1706,16 +1769,17 @@ fn main() -> Result<(), slint::PlatformError> {
             }
             let mut list: Vec<String> = vec_string_from_model(&ui.get_network_relays());
             if list.iter().any(|u| u.eq_ignore_ascii_case(&trimmed)) {
-                ui.set_network_status("Already in the list.".into());
+                ui.set_network_status("That relay is already in your list.".into());
                 return;
             }
             list.push(trimmed);
             if let Err(e) = backend::save_relays(&list) {
-                ui.set_network_status(format!("Save failed: {e}").into());
+                eprintln!("[network] save relays failed: {e}");
+                ui.set_network_status("Couldn't save your relay list. Please try again.".into());
                 return;
             }
             push_network_relays(&ui, &list);
-            ui.set_network_status("Saved.".into());
+            ui.set_network_status("Relay added.".into());
             // First-run: connect the freshly-added relay live (no-op otherwise).
             reboot();
         }
@@ -1733,11 +1797,12 @@ fn main() -> Result<(), slint::PlatformError> {
                 return;
             }
             if let Err(e) = backend::save_relays(&list) {
-                ui.set_network_status(format!("Save failed: {e}").into());
+                eprintln!("[network] save relays failed: {e}");
+                ui.set_network_status("Couldn't save your relay list. Please try again.".into());
                 return;
             }
             push_network_relays(&ui, &list);
-            ui.set_network_status("Removed.".into());
+            ui.set_network_status("Relay removed.".into());
             // First-run: re-boot so the live transport drops the removed relay.
             reboot();
         }
@@ -1764,7 +1829,7 @@ fn main() -> Result<(), slint::PlatformError> {
                             // We just polled the relay pool — that's a real sync.
                             ui.set_sync_secs(0);
                         }
-                        None => ui.set_network_status("Backend not ready yet.".into()),
+                        None => ui.set_network_status("Not connected yet. Please wait a moment and try again.".into()),
                     }
                 });
             });
@@ -1785,8 +1850,10 @@ fn main() -> Result<(), slint::PlatformError> {
                 // the relay publish.
                 let b = backend_cell.lock().unwrap().clone();
                 let result = match b {
-                    None => Err("Backend not ready.".to_string()),
-                    Some(b) => b.republish_relay_lists().map_err(|e| format!("{e:#}")),
+                    None => Err("Not connected yet. Please wait a moment and try again.".to_string()),
+                    Some(b) => b
+                        .republish_relay_lists()
+                        .map_err(|e| friendly_error("republish", &e)),
                 };
                 let _ = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak.upgrade() else { return };
@@ -1795,7 +1862,7 @@ fn main() -> Result<(), slint::PlatformError> {
                             format!("Republished to {n} relay{}.", if n == 1 { "" } else { "s" })
                                 .into(),
                         ),
-                        Err(e) => ui.set_network_status(format!("Republish failed: {e}").into()),
+                        Err(e) => ui.set_network_status(e.into()),
                     }
                 });
             });
@@ -1823,7 +1890,7 @@ fn main() -> Result<(), slint::PlatformError> {
             std::thread::spawn(move || {
                 let result: Result<String, String> = {
                     match b.as_deref() {
-                        None => Err("backend not ready".to_string()),
+                        None => Err("Not connected yet. Please wait a moment and try again.".to_string()),
                         Some(b) => match op_kind {
                             // NOTE: the SDK returns the key-package size in bytes,
                             // not a relay-ack count — so we don't surface the number
@@ -1831,16 +1898,16 @@ fn main() -> Result<(), slint::PlatformError> {
                             "publish" => b
                                 .publish_key_package()
                                 .map(|_| "published · your key package is live".to_string())
-                                .map_err(|e| format!("publish failed: {e:#}")),
+                                .map_err(|e| friendly_error("kp_publish", &e)),
                             "rotate" => b
                                 .rotate_key_package()
                                 .map(|_| "rotated · published a fresh key package".to_string())
-                                .map_err(|e| format!("rotate failed: {e:#}")),
+                                .map_err(|e| friendly_error("kp_rotate", &e)),
                             "refresh" => b
                                 .key_packages_fetch()
                                 .map(|recs| format!("fetched · {} record{}", recs.len(), if recs.len() == 1 { "" } else { "s" }))
-                                .map_err(|e| format!("fetch failed: {e:#}")),
-                            _ => Err(format!("unknown op: {op_kind}")),
+                                .map_err(|e| friendly_error("kp_refresh", &e)),
+                            _ => Err("Something went wrong. Please try again.".to_string()),
                         },
                     }
                 };
@@ -2847,7 +2914,7 @@ fn main() -> Result<(), slint::PlatformError> {
             let Some(ui) = weak.upgrade() else { return };
             let Some(group_hex) = resolve() else { return };
             let Some(b) = backend_cell.lock().unwrap().clone() else {
-                ui.set_backend_error(s("backend not ready"));
+                ui.set_backend_error(s("Not connected yet. Please wait a moment and try again."));
                 return;
             };
             // Accepting publishes to relays — worker; `refresh` captures only
@@ -2860,7 +2927,7 @@ fn main() -> Result<(), slint::PlatformError> {
                     let Some(ui) = weak.upgrade() else { return };
                     if let Err(e) = result {
                         eprintln!("[accept] {e:#}");
-                        ui.set_backend_error(format!("accept: {e:#}").into());
+                        ui.set_backend_error(friendly_error("accept", &e).into());
                         return;
                     }
                     refresh();
@@ -2878,7 +2945,7 @@ fn main() -> Result<(), slint::PlatformError> {
             let Some(ui) = weak.upgrade() else { return };
             let Some(group_hex) = resolve() else { return };
             let Some(b) = backend_cell.lock().unwrap().clone() else {
-                ui.set_backend_error(s("backend not ready"));
+                ui.set_backend_error(s("Not connected yet. Please wait a moment and try again."));
                 return;
             };
             let weak = weak.clone();
@@ -2889,7 +2956,7 @@ fn main() -> Result<(), slint::PlatformError> {
                     let Some(ui) = weak.upgrade() else { return };
                     if let Err(e) = result {
                         eprintln!("[block] {e:#}");
-                        ui.set_backend_error(format!("block: {e:#}").into());
+                        ui.set_backend_error(friendly_error("block", &e).into());
                         return;
                     }
                     refresh();
@@ -2987,7 +3054,7 @@ fn main() -> Result<(), slint::PlatformError> {
                     let refresh_cb = refresh_cb.clone();
                     let _ = slint::invoke_from_event_loop(move || {
                         let Some(ui) = weak_cb.upgrade() else { return };
-                        ui.set_backend_error(format!("archive: {e:#}").into());
+                        ui.set_backend_error(friendly_error("archive", &e).into());
                         refresh_cb();
                     });
                 }
@@ -3004,7 +3071,7 @@ fn main() -> Result<(), slint::PlatformError> {
             let Some(ui) = weak.upgrade() else { return };
             let idx = ui.get_active_archived() as usize;
             let Some(b) = backend_cell.lock().unwrap().clone() else {
-                ui.set_backend_error(s("backend not ready"));
+                ui.set_backend_error(s("Not connected yet. Please wait a moment and try again."));
                 return;
             };
 
@@ -3075,7 +3142,7 @@ fn main() -> Result<(), slint::PlatformError> {
                             let refresh_cb = refresh_cb.clone();
                             let _ = slint::invoke_from_event_loop(move || {
                                 let Some(ui) = weak_cb.upgrade() else { return };
-                                ui.set_backend_error(format!("unarchive: {e:#}").into());
+                                ui.set_backend_error(friendly_error("unarchive", &e).into());
                                 refresh_cb();
                             });
                         }
@@ -3281,7 +3348,7 @@ fn main() -> Result<(), slint::PlatformError> {
                         }
                         Err(e) => {
                             eprintln!("[send] {e:#}");
-                            ui.set_backend_error(format!("send: {e:#}").into());
+                            ui.set_backend_error(friendly_error("send", &e).into());
                             // Mark failed in place — the bubble flips to red
                             // without disturbing its neighbours.
                             let mut overlay = pending_state.lock().unwrap();
@@ -3367,7 +3434,7 @@ fn main() -> Result<(), slint::PlatformError> {
                         let mut overlay = pending_state.lock().unwrap();
                         if let Err(e) = &result {
                             eprintln!("[edit] {e:#}");
-                            ui.set_backend_error(format!("edit: {e:#}").into());
+                            ui.set_backend_error(friendly_error("edit", e).into());
                         }
                         overlay.edits.remove(&(group_hex.clone(), target.clone()));
                     }
@@ -3427,7 +3494,7 @@ fn main() -> Result<(), slint::PlatformError> {
             };
             let guard = backend_cell.lock().unwrap();
             let Some(backend) = guard.as_ref() else {
-                ui.set_backend_error(s("backend not ready"));
+                ui.set_backend_error(s("Not connected yet. Please wait a moment and try again."));
                 return;
             };
 
@@ -5235,7 +5302,7 @@ fn main() -> Result<(), slint::PlatformError> {
                         let mut overlay = pending_state.lock().unwrap();
                         if let Err(e) = &result {
                             eprintln!("[{label}] {e:#}");
-                            ui.set_backend_error(format!("{label}: {e:#}").into());
+                            ui.set_backend_error(friendly_error(label, e).into());
                         }
                         overlay
                             .reactions
