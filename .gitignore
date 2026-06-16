@@ -2,3 +2,6 @@
 .stignore
 .syncthing.*
 *.sync-conflict*
+
+# gettext msgmerge backups — regenerated on every catalog update
+*.po~
