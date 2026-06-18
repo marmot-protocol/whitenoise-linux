@@ -85,6 +85,7 @@ export component ArchivedListItem inherits Rectangle {
     }
 
     touch := TouchArea {
+        mouse-cursor: pointer;
         clicked => { root.clicked(); }
     }
 }

@@ -75,6 +75,7 @@ export component GroupMemberRow inherits Rectangle {
         // row is a promotable (non-self, non-admin) member.
         if root.data.can-promote : Rectangle {
             promote-ta := TouchArea {
+                mouse-cursor: pointer;
                 clicked => { root.promote-admin(root.data.member-id); }
             }
             width: badge.preferred-width + 20px;
@@ -94,6 +95,7 @@ export component GroupMemberRow inherits Rectangle {
         // "Remove admin" — strip admin from another admin member.
         if root.data.can-demote : Rectangle {
             demote-ta := TouchArea {
+                mouse-cursor: pointer;
                 clicked => { root.demote-admin(root.data.member-id); }
             }
             width: demote-badge.preferred-width + 20px;
@@ -113,6 +115,7 @@ export component GroupMemberRow inherits Rectangle {
         // "Step down" — the viewer relinquishes their own admin rights.
         if root.data.can-self-demote : Rectangle {
             self-demote-ta := TouchArea {
+                mouse-cursor: pointer;
                 clicked => { root.self-demote-admin(); }
             }
             width: self-demote-badge.preferred-width + 20px;

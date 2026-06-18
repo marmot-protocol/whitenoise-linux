@@ -40,7 +40,10 @@ component ReactionChip inherits Rectangle {
         }
     }
 
-    touch := TouchArea { clicked => { root.clicked(); } }
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
 }
 
 // In-flow row of reaction chips, rendered directly under a bubble (only when
