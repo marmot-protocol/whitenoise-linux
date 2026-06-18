@@ -95,11 +95,13 @@ export component Modal inherits Rectangle {
             height: root.card-h;
             border-radius: root.bare ? 0px : (14px) * Theme.r-scale;
             clip: !root.bare;
+            // Token-driven so every theme resolves correctly — not just the
+            // hardcoded light/dark pair (that branch left Sketch/Synthwave with a
+            // wrong-palette dark card). Flat in retro; a subtle elevated→bg
+            // gradient elsewhere reads as a lit card on any palette.
             background: root.bare ? transparent
-                : (Theme.retro ? Palette.elevated
-                    : (Theme.light
-                        ? @linear-gradient(180deg, #FFFFFF 0%, #FDFAF4 100%)
-                        : @linear-gradient(180deg, #151B23 0%, #0F1318 45%, #0C0F13 100%)));
+                : (Theme.hard-shadow ? Palette.elevated
+                    : @linear-gradient(180deg, Palette.elevated 0%, Palette.bg 100%));
             border-width: root.bare ? 0px : Theme.border-w;
             border-color: Palette.elevated-border;
             // With no backdrop layers, the shadow alone sells the elevation —
@@ -201,8 +203,7 @@ export component Modal inherits Rectangle {
                     }
                     if root.has-footer : Rectangle {
                         height: 62px;
-                        background: Theme.retro ? Palette.rail
-                            : (Theme.light ? #FBF8F2 : #0B0E12);
+                        background: Theme.retro ? Palette.rail : Palette.panel-2;
                         HorizontalLayout {
                             padding-left: 16px;
                             padding-right: 16px;

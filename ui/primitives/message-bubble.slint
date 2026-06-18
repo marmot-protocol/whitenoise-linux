@@ -1,5 +1,6 @@
 import { Palette, Theme, MessageLine, EmojiSheet, Linkout, AlbumCell } from "../tokens.slint";
 import { CheckMark } from "../icons/check-mark.slint";
+import { SketchOutline } from "sketch-outline.slint";
 
 // One inline run inside a wrapped chat line. The Text element is always
 // instantiated (empty string when emoji) so the wrapper can bind to its
@@ -189,6 +190,12 @@ export component MessageBubble inherits Rectangle {
     in property <[MessageLine]> lines;
     in property <string> stamp;
     in property <bool> outgoing: false;
+    // Which screen edge the bubble hugs. Outgoing bubbles can be placed on the
+    // left (when "own messages on the right" is off), so the tail + tight corner
+    // must follow the actual alignment, not the outgoing flag. Incoming always
+    // hugs the left (avatar side).
+    in property <bool> align-right: true;
+    property <bool> hug-right: root.outgoing && root.align-right;
     in property <length> max-w: 640px;
     in property <length> min-w: 56px;
     in property <length> available-w: 9999px;
@@ -277,14 +284,21 @@ export component MessageBubble inherits Rectangle {
     property <length> pop-y: Theme.bubble-bounce ? (1.0 - root.enter) * -6px : 0px;
     animate pop-scale, pop-y { duration: Theme.bubble-bounce ? 120ms : 0ms; easing: ease-out; }
 
-    property <length> r-lg: (16px) * Theme.r-scale;
-    property <length> r-sm: (5px) * Theme.r-scale;
+    // Sketch (hand-drawn) bubbles round the body more, but keep the tail-side
+    // corner nearly square so the speech tail meets a straight edge (a rounded
+    // corner there leaves a gap and the tail reads as a detached spike).
+    property <length> r-lg: (Theme.sketch-bubbles ? 13px : 16px) * Theme.r-scale;
+    property <length> r-sm: (Theme.sketch-bubbles ? 3px : 5px) * Theme.r-scale;
 
     // Outgoing bubbles get a vertical mint gradient for a bit of depth; retro
     // stays flat for the pixel aesthetic. Incoming stays on the flat surface.
-    background: root.jumbo-emoji
+    // Sketch bubbles paint their fill + outline as a hand-drawn path
+    // (SketchOutline, mounted below), so the rectangle itself stays transparent.
+    background: (root.jumbo-emoji || Theme.sketch-bubbles)
         ? transparent
         : (root.outgoing
+            // Retro bubbles use a flat fill; modern themes get a subtle vertical
+            // accent gradient for depth.
             ? (Theme.retro
                 ? Palette.mint
                 : @linear-gradient(180deg, Palette.mint-hi 0%, Palette.mint 92%))
@@ -292,13 +306,29 @@ export component MessageBubble inherits Rectangle {
     // Chat-style asymmetric corners. The tail corner (bottom, avatar side)
     // stays tight; within a group the top corner on the avatar side also
     // tightens so consecutive bubbles read as one stacked column.
-    border-top-left-radius: root.outgoing ? root.r-lg : (root.first-in-group ? root.r-lg : root.r-sm);
-    border-top-right-radius: root.outgoing ? (root.first-in-group ? root.r-lg : root.r-sm) : root.r-lg;
-    border-bottom-left-radius: root.outgoing ? root.r-lg : root.r-sm;
-    border-bottom-right-radius: root.outgoing ? root.r-sm : root.r-lg;
-    border-width: root.jumbo-emoji ? 0px : (root.failed ? 1.5px : Theme.border-w);
-    border-color: root.failed ? Palette.danger-on-bubble : (root.outgoing ? transparent : Palette.border-2);
-    drop-shadow-color: root.jumbo-emoji
+    // Sketch bubbles square the TOP hug-side corner (where the up-pointing tail
+    // attaches) and round the other three; standard bubbles keep the chat
+    // asymmetric-corner grouping (tight bottom tail corner + continuation tuck).
+    border-top-left-radius: Theme.sketch-bubbles
+        ? (root.hug-right ? root.r-lg : root.r-sm)
+        : (root.hug-right ? root.r-lg : (root.first-in-group ? root.r-lg : root.r-sm));
+    border-top-right-radius: Theme.sketch-bubbles
+        ? (root.hug-right ? root.r-sm : root.r-lg)
+        : (root.hug-right ? (root.first-in-group ? root.r-lg : root.r-sm) : root.r-lg);
+    border-bottom-left-radius: Theme.sketch-bubbles ? root.r-lg : (root.hug-right ? root.r-lg : root.r-sm);
+    border-bottom-right-radius: Theme.sketch-bubbles ? root.r-lg : (root.hug-right ? root.r-sm : root.r-lg);
+    border-width: (root.jumbo-emoji || Theme.sketch-bubbles) ? 0px : (root.failed ? 1.5px : Theme.border-w);
+    // Sketch bubbles get a dark "ink" outline on BOTH sides (outgoing included,
+    // which is borderless in modern themes) — the comic/hand-drawn signature.
+    // text-hi is the page's pencil-ink colour, so outlines match the body text.
+    border-color: root.failed
+        ? Palette.danger-on-bubble
+        : (Theme.sketch-bubbles
+            ? Palette.text-hi
+            : (root.outgoing ? transparent : Palette.border-2));
+    // Sketch bubbles stay shadowless — the ink outline defines the edge; a soft
+    // blur underneath just muddies the flat hand-drawn look.
+    drop-shadow-color: (root.jumbo-emoji || Theme.sketch-bubbles)
         ? transparent
         : (Theme.hard-shadow
             ? Palette.shadow
@@ -311,6 +341,22 @@ export component MessageBubble inherits Rectangle {
     height: layout.preferred-height * root.pop-scale;
     opacity: root.pending ? root.enter * 0.62 : root.enter;
     animate opacity { duration: 180ms; easing: ease-out; }
+
+    // Hand-drawn fill + ink outline for sketch bubbles, painted behind the
+    // content (the rectangle's own background/border are transparent in sketch
+    // mode). Tracks the bubble's runtime size so it reflows with the content.
+    if Theme.sketch-bubbles && !root.jumbo-emoji : SketchOutline {
+        x: 0;
+        y: 0;
+        w: root.width;
+        h: root.height;
+        radius: root.r-lg;
+        fill: root.outgoing ? Palette.mint : Palette.bubble-in;
+        ink: root.failed ? Palette.danger-on-bubble : Palette.text-hi;
+        // Tail on the first bubble of a group, curling toward the avatar: top-left
+        // normally, top-right when own messages are placed on the right.
+        tail: root.first-in-group ? (root.hug-right ? 2 : 1) : 0;
+    }
 
     // Bottom-most hover sensor. No click handler, so taps fall through to the
     // attachment / retry areas declared above it; it reports `has-hover` so
@@ -872,6 +918,9 @@ export component MessageBubble inherits Rectangle {
             }
         }
     }
+
+    // (The speech tail is part of the SketchOutline path above, so it's a single
+    // connected, filled silhouette — see sketch-outline.slint.)
 
     // Message-effect indicator: a small emoji chip on the top-outer corner,
     // showing which effect this bubble carries (and hinting that a tap replays

@@ -649,6 +649,9 @@ fn normalize_theme_mode(mode: &str) -> &'static str {
         "light" => "light",
         "retro" => "retro",
         "terminal" => "terminal",
+        "crayon" => "crayon",
+        "synthwave" => "synthwave",
+        "chalkboard" => "chalkboard",
         _ => "dark",
     }
 }
@@ -678,6 +681,9 @@ fn apply_theme_mode(ui: &DarkMatterLinux, mode: &str) {
     ui.set_light_theme(mode == "light");
     ui.set_retro_mode(mode == "retro");
     ui.set_terminal_mode(mode == "terminal");
+    ui.set_crayon_mode(mode == "crayon");
+    ui.set_synthwave_mode(mode == "synthwave");
+    ui.set_chalkboard_mode(mode == "chalkboard");
 }
 
 fn locale_display(code: &str) -> &'static str {

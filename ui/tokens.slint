@@ -58,11 +58,17 @@ export struct ThemeStyle {
     skin-message: int, skin-button: int, skin-list: int,
     skin-avatar: int, skin-modal: int, shell: int,
     bracket-labels: bool,        // wrap button labels in [ ... ] (terminal/TUI look)
+    // ── Hand-drawn / "doodle" capabilities ──────────────────────────────────
+    paper-doodles: bool,         // scatter faint cute shapes across the chat canvas
+    sketch-bubbles: bool,        // soft ink-outlined, flat-filled bubbles with a speech tail
+    // ── Synthwave capability ─────────────────────────────────────────────────
+    synth-grid: bool,            // neon perspective grid + sunset glow on the chat canvas
 }
 
 export global Theme {
-    // Active theme id: 0=dark, 1=light, 2=retro. The single value Rust sets to
-    // pick a theme (mapped from the root light-theme/retro-mode props).
+    // Active theme id: 0=dark, 1=light, 2=retro, 3=terminal, 4=crayon,
+    // 5=synthwave. The single value Rust sets to pick a theme (mapped from the
+    // root light-theme/retro-mode/terminal-mode/crayon-mode/synthwave-mode props).
     in-out property <int> id: 0;
     // 0=mint, 1=ocean, 2=berry, 3=coral, 4=lavender — orthogonal to the theme id.
     in-out property <int> accent: 0;
@@ -170,6 +176,76 @@ export global Theme {
             accent-glow:    [#33FF6618, #33CCFF18, #FF66AA18, #FFAA3318, #BB88FF18],
             accent-surface: [#0E2614, #0A1E2E, #2E0E1E, #2E200A, #1A0E2E],
         },
+        // ── 4: Sketch (hand-drawn ink on paper) ──
+        // Warm craft-paper canvas, graphite "pencil" text, dark-ink outlined
+        // bubbles + pencil doodles. Neutral, NOT pastel — the look is a
+        // sketchbook page, not a kawaii sticker pack. The ink outline (text-hi)
+        // is the signature; sketch-bubbles + paper-doodles in the style pack do
+        // the rest.
+        {
+            bg: #F4EEDF, panel: #FBF6EA, panel-2: #EFE8D6, rail: #ECE4D0, banner: #EFE8D6,
+            border: #C7B894, border-2: #D8CCAE, bubble-in: #FCF8EE,
+            text-hi: #33302B, text-mid: #6E6657, text-lo: #968B76, text-vlo: #BBB199,
+            hover: #EBE3CF, bubble-out-fg: #FFFFFF,
+            bevel-hi: #FFFFFF, bevel-lo: #D8CCAE,
+            danger: #C4453B, danger-soft: #C4453B1A, danger-border: #D8A99A,
+            danger-soft-hover: #C4453B2E, danger-border-hover: #C89283,
+            warning: #C8821F, warning-soft: #C8821F1A, warning-border: #DEC79A,
+            field: #FBF6EA, field-hover: #F4EEDF, field-border: #C7B894, field-border-hover: #B0A07C,
+            divider: #DED2B6, elevated: #FBF6EA, elevated-border: #C7B894,
+            top-glint: #FFFFFFAA, canvas-top: #FAF5E8, banner-edge: #F4EEDF, card-border: #C7B894,
+            selected-uses-base: false,
+            accent-base:    [#3E9E7A, #4A8FC0, #D45C86, #E08544, #9B7BC0],
+            accent-hi:      [#52B891, #62A6D2, #E0789F, #EE9C62, #B193D2],
+            accent-dim:     [#2E7E60, #387098, #B0476C, #B86836, #7C5FA0],
+            accent-glow:    [#3E9E7A22, #4A8FC022, #D45C8622, #E0854422, #9B7BC022],
+            accent-surface: [#DCEDE3, #DEEAF3, #F6E2EA, #F8EADD, #EDE5F4],
+        },
+        // ── 5: Synthwave (neon Miami sunset) ──
+        // Deep indigo night, hot-magenta/cyan neon accents, glow on focus. The
+        // grid-and-sunset palette: dark bubble-out-fg so text reads on bright neon.
+        {
+            bg: #0E0420, panel: #170A2E, panel-2: #1F1040, rail: #0A0318, banner: #170A2E,
+            border: #3A1E66, border-2: #271145, bubble-in: #1C0E38,
+            text-hi: #F5E9FF, text-mid: #C9A8E8, text-lo: #9A78C0, text-vlo: #6B4F8E,
+            hover: #1F1040, bubble-out-fg: #1A0726,
+            bevel-hi: #FF6AD5, bevel-lo: #0E0420,
+            danger: #FF4D6D, danger-soft: #FF4D6D26, danger-border: #6B2440,
+            danger-soft-hover: #FF4D6D3D, danger-border-hover: #8A2E52,
+            warning: #FFC857, warning-soft: #FFC85726, warning-border: #5A4520,
+            field: #130826, field-hover: #1F1040, field-border: #3A1E66, field-border-hover: #5A2E9E,
+            divider: #271145, elevated: #170A2E, elevated-border: #3A1E66,
+            top-glint: #FF6AD518, canvas-top: #130826, banner-edge: #0E0420, card-border: #271145,
+            selected-uses-base: false,
+            accent-base:    [#2DE2C0, #36C5FF, #FF49B0, #FF7E5F, #B66BFF],
+            accent-hi:      [#5BF0D4, #6BD7FF, #FF74C4, #FF9B82, #C98FFF],
+            accent-dim:     [#1FB89C, #2897C4, #C92E84, #C95E45, #8A4FCC],
+            accent-glow:    [#2DE2C033, #36C5FF33, #FF49B033, #FF7E5F33, #B66BFF33],
+            accent-surface: [#0E2E2A, #0E2435, #2E0E22, #2E160E, #1E0E2E],
+        },
+        // ── 6: Chalkboard (dark Sketch — chalk on a blackboard) ──
+        // Dark slate-green board, warm chalk-white "ink" (text-hi) for outlines +
+        // text, dusty chalk-pastel accents. Reuses every Sketch capability
+        // (sketch-bubbles + paper-doodles); only the palette inverts to dark.
+        {
+            bg: #243029, panel: #2A382F, panel-2: #1E2A23, rail: #1B2620, banner: #2A382F,
+            border: #4C594F, border-2: #3A473F, bubble-in: #2C3A32,
+            text-hi: #ECE9D8, text-mid: #B6B8A8, text-lo: #889084, text-vlo: #5C665E,
+            hover: #2E3C33, bubble-out-fg: #1E2A23,
+            bevel-hi: #ECE9D8, bevel-lo: #1B2620,
+            danger: #E27A6E, danger-soft: #E27A6E20, danger-border: #6E3A34,
+            danger-soft-hover: #E27A6E33, danger-border-hover: #8A4840,
+            warning: #E8C57F, warning-soft: #E8C57F20, warning-border: #5E4F2A,
+            field: #1E2A23, field-hover: #2A382F, field-border: #4C594F, field-border-hover: #5E6C60,
+            divider: #3A473F, elevated: #2A382F, elevated-border: #4C594F,
+            top-glint: #FFFFFF0C, canvas-top: #283529, banner-edge: #243029, card-border: #4C594F,
+            selected-uses-base: false,
+            accent-base:    [#7FD1A8, #7FB4E0, #E89BB8, #E8B97F, #B49BD6],
+            accent-hi:      [#9BDDBC, #9BC6EA, #EFB0C7, #EFC99B, #C6B0E2],
+            accent-dim:     [#5BAE86, #5B90BC, #C47894, #C4955B, #9078B2],
+            accent-glow:    [#7FD1A828, #7FB4E028, #E89BB828, #E8B97F28, #B49BD628],
+            accent-surface: [#1E3329, #1E2C38, #331E29, #332B1E, #291E33],
+        },
     ];
     // The active theme's resolved color set — read by Palette below.
     out property <ThemeColors> c: root.color-packs[root.id];
@@ -182,21 +258,21 @@ export global Theme {
           selected-inverts-text: false, pixel-select-marker: false, pixel-metrics: false,
           outline-surfaces: false,
           skin-message: 0, skin-button: 0, skin-list: 0, skin-avatar: 0, skin-modal: 0, shell: 0,
-          bracket-labels: false },
+          bracket-labels: false, paper-doodles: false, sketch-bubbles: false, synth-grid: false },
         // 1: Light — same structural personality as dark.
         { hard-shadow: false, focus-glow: true, char-wrap: false, motion-fast: false,
           bubble-bounce: false, bevel: false, pixel-icons: false,
           selected-inverts-text: false, pixel-select-marker: false, pixel-metrics: false,
           outline-surfaces: false,
           skin-message: 0, skin-button: 0, skin-list: 0, skin-avatar: 0, skin-modal: 0, shell: 0,
-          bracket-labels: false },
+          bracket-labels: false, paper-doodles: false, sketch-bubbles: false, synth-grid: false },
         // 2: Retro — hard pixel shadows, bevels, pixel icons, snappy motion, pixel metrics.
         { hard-shadow: true, focus-glow: false, char-wrap: true, motion-fast: true,
           bubble-bounce: true, bevel: true, pixel-icons: true,
           selected-inverts-text: true, pixel-select-marker: true, pixel-metrics: true,
           outline-surfaces: true,
           skin-message: 0, skin-button: 0, skin-list: 0, skin-avatar: 0, skin-modal: 0, shell: 0,
-          bracket-labels: false },
+          bracket-labels: false, paper-doodles: false, sketch-bubbles: false, synth-grid: false },
         // 3: Terminal — flat (no shadows/bevels), monospace, drastic skins: terminal
         // message lines + IRC chat list + bracketed buttons. 3-pane shell kept.
         { hard-shadow: false, focus-glow: false, char-wrap: false, motion-fast: true,
@@ -204,7 +280,35 @@ export global Theme {
           selected-inverts-text: false, pixel-select-marker: true, pixel-metrics: false,
           outline-surfaces: false,
           skin-message: 1, skin-button: 0, skin-list: 1, skin-avatar: 0, skin-modal: 0, shell: 0,
-          bracket-labels: true },
+          bracket-labels: true, paper-doodles: false, sketch-bubbles: false, synth-grid: false },
+        // 4: Sketch — the hand-drawn one. Outlined paper surfaces
+        // (outline-surfaces), springy bubbles (bubble-bounce), plus the doodle
+        // capabilities: a paper canvas scattered with pencil doodles
+        // (paper-doodles) and dark-ink-outlined, flat-filled speech bubbles with
+        // tails (sketch-bubbles). Vector icons, focus glow, word-wrap.
+        { hard-shadow: false, focus-glow: true, char-wrap: false, motion-fast: false,
+          bubble-bounce: true, bevel: false, pixel-icons: false,
+          selected-inverts-text: false, pixel-select-marker: false, pixel-metrics: false,
+          outline-surfaces: true,
+          skin-message: 0, skin-button: 0, skin-list: 0, skin-avatar: 0, skin-modal: 0, shell: 0,
+          bracket-labels: false, paper-doodles: true, sketch-bubbles: true, synth-grid: false },
+        // 5: Synthwave — modern dark personality (soft shadows, focus glow,
+        // vector icons) plus the synth-grid capability: a neon perspective grid +
+        // sunset glow on the chat canvas. The neon palette + grid carry the look.
+        { hard-shadow: false, focus-glow: true, char-wrap: false, motion-fast: false,
+          bubble-bounce: false, bevel: false, pixel-icons: false,
+          selected-inverts-text: false, pixel-select-marker: false, pixel-metrics: false,
+          outline-surfaces: false,
+          skin-message: 0, skin-button: 0, skin-list: 0, skin-avatar: 0, skin-modal: 0, shell: 0,
+          bracket-labels: false, paper-doodles: false, sketch-bubbles: false, synth-grid: true },
+        // 6: Chalkboard — identical structural personality to Sketch (the
+        // hand-drawn capabilities), just a dark blackboard palette.
+        { hard-shadow: false, focus-glow: true, char-wrap: false, motion-fast: false,
+          bubble-bounce: true, bevel: false, pixel-icons: false,
+          selected-inverts-text: false, pixel-select-marker: false, pixel-metrics: false,
+          outline-surfaces: true,
+          skin-message: 0, skin-button: 0, skin-list: 0, skin-avatar: 0, skin-modal: 0, shell: 0,
+          bracket-labels: false, paper-doodles: true, sketch-bubbles: true, synth-grid: false },
     ];
     out property <ThemeStyle> s: root.style-packs[root.id];
 
@@ -228,6 +332,9 @@ export global Theme {
     out property <int>  skin-modal:            root.s.skin-modal;
     out property <int>  shell:                 root.s.shell;
     out property <bool> bracket-labels:        root.s.bracket-labels;
+    out property <bool> paper-doodles:         root.s.paper-doodles;
+    out property <bool> sketch-bubbles:        root.s.sketch-bubbles;
+    out property <bool> synth-grid:            root.s.synth-grid;
 
     // Font-size helpers. A call site declares both metrics; the active theme's
     // `pixel-metrics` flag picks one. `fs` applies fs-scale (for the former

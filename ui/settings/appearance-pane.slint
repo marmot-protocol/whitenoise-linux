@@ -13,6 +13,9 @@ export component AppearancePane inherits DetailPage {
     in-out property <bool> light-theme: false;
     in-out property <bool> retro-mode: false;
     in-out property <bool> terminal-mode: false;
+    in-out property <bool> crayon-mode: false;
+    in-out property <bool> synthwave-mode: false;
+    in-out property <bool> chalkboard-mode: false;
     in-out property <int> accent-color: 0;
     in-out property <bool> outgoing-on-right: true;
     callback theme-mode-selected(string);
@@ -40,7 +43,7 @@ export component AppearancePane inherits DetailPage {
                 label: @tr("Theme");
                 sublabel: @tr("Pick the whole app's look.");
                 ThemePicker {
-                    selected-id: root.terminal-mode ? 3 : (root.retro-mode ? 2 : (root.light-theme ? 1 : 0));
+                    selected-id: root.chalkboard-mode ? 6 : (root.synthwave-mode ? 5 : (root.crayon-mode ? 4 : (root.terminal-mode ? 3 : (root.retro-mode ? 2 : (root.light-theme ? 1 : 0)))));
                     theme-mode-selected(mode) => { root.theme-mode-selected(mode); }
                 }
             }

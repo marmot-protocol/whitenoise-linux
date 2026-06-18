@@ -1,0 +1,102 @@
+// Synthwave chat-canvas backdrop (the synth-grid capability). A retro-futuristic
+// scene mounted behind the message list, gated on Theme.synth-grid so it costs
+// nothing on other themes: a sunset glow, a banded "retro sun" on the horizon,
+// and a neon perspective floor grid (rails converging to a vanishing point +
+// perspective-spaced rungs). Grid colour follows the active accent (Palette.mint).
+import { Palette, Theme } from "../tokens.slint";
+
+// One converging rail of the floor: from the horizon vanishing point straight
+// down to a point on the bottom edge. Viewbox pinned to the canvas so the line
+// maps 1:1 px (see project_slint_path_viewbox).
+component VLine inherits Path {
+    in property <float> cx;   // vanishing-point x (px)
+    in property <float> cy;   // horizon y (px)
+    in property <float> bx;   // bottom-edge x (px)
+    in property <float> vw;   // viewbox width  (canvas px)
+    in property <float> vh;   // viewbox height (canvas px)
+    in property <color> tint;
+    viewbox-x: 0;
+    viewbox-y: 0;
+    viewbox-width: root.vw;
+    viewbox-height: root.vh;
+    stroke: root.tint;
+    stroke-width: 1.5px;
+    fill: transparent;
+    commands: "M \{root.cx} \{root.cy} L \{root.bx} \{root.vh}";
+}
+
+export component SynthGrid inherits Rectangle {
+    clip: true;
+    property <float> horizon: 0.58;
+    property <length> hy: self.height * root.horizon;
+    property <float> Wf: self.width / 1px;
+    property <float> Hf: self.height / 1px;
+    property <float> HYf: self.hy / 1px;
+
+    // ── 1. Sunset sky glow (magenta band around the horizon) ──
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        background: @linear-gradient(180deg,
+            #1A0A3E00 0%, #3A1A6618 36%, #FF49B03A 55%,
+            #B66BFF1E 61%, #0E042000 72%);
+    }
+
+    // ── 2. Retro sun on the horizon (behind the grid) ──
+    sun := Rectangle {
+        width: 156px;
+        height: 156px;
+        x: (parent.width - self.width) / 2;
+        y: root.hy - self.height * 0.6;
+        border-radius: self.width / 2;
+        clip: true;
+        background: @linear-gradient(180deg,
+            #FFE66B 0%, #FF9F45 36%, #FF4D8F 66%, #C740A8 100%);
+        // Horizontal band gaps across the lower half — the classic sun stripes.
+        for band in [
+            { yy: 0.52, hh: 3.0 }, { yy: 0.62, hh: 4.0 }, { yy: 0.72, hh: 5.0 },
+            { yy: 0.82, hh: 7.0 }, { yy: 0.92, hh: 9.0 },
+        ] : Rectangle {
+            x: 0;
+            y: parent.height * band.yy;
+            width: 100%;
+            height: band.hh * 1px;
+            background: #0E0420;
+        }
+    }
+
+    // ── 3. Neon floor grid ──
+    // Rails fan from the horizon centre (vanishing point) to the bottom edge.
+    for frac in [-0.95, -0.6, -0.36, -0.18, -0.06, 0.06, 0.18, 0.36, 0.6, 0.95] : VLine {
+        width: 100%;
+        height: 100%;
+        cx: root.Wf / 2;
+        cy: root.HYf;
+        bx: root.Wf * (0.5 + frac);
+        vw: root.Wf;
+        vh: root.Hf;
+        tint: Palette.mint;
+        opacity: 0.5;
+    }
+    // Perspective-spaced rungs (denser near the horizon), with a soft neon glow.
+    for t in [0.0, 0.05, 0.11, 0.18, 0.27, 0.38, 0.51, 0.66, 0.83, 1.0] : Rectangle {
+        x: 0;
+        y: root.hy + (parent.height - root.hy) * t;
+        width: 100%;
+        height: 1.5px;
+        background: Palette.mint;
+        opacity: 0.28 + t * 0.5;
+        drop-shadow-color: Palette.mint-glow;
+        drop-shadow-blur: 5px;
+    }
+    // Bright horizon glow line.
+    Rectangle {
+        x: 0;
+        y: root.hy - self.height / 2;
+        width: 100%;
+        height: 2px;
+        background: Palette.mint-hi;
+        drop-shadow-color: Palette.mint-hi;
+        drop-shadow-blur: 10px;
+    }
+}

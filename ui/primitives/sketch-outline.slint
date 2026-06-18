@@ -1,0 +1,75 @@
+// Hand-drawn bubble silhouette for the sketch capability. Draws the bubble fill
+// + ink outline as ONE organic path whose straight edges bow out slightly (so no
+// edge is perfectly uniform), and whose top hug-corner optionally curls up into a
+// speech tail that points toward the avatar. Because the tail is part of the same
+// closed path, it's genuinely connected to the body and filled with the same
+// colour — no floating sliver, no seam. Sized from the bubble's runtime
+// width/height via string interpolation, so it tracks content reflow.
+import { Theme } from "../tokens.slint";
+
+export component SketchOutline inherits Rectangle {
+    in property <length> w;
+    in property <length> h;
+    in property <color> fill;
+    in property <color> ink;
+    in property <length> radius: 13px;
+    in property <length> ink-width: 2px;
+    // 0 = no tail, 1 = tail at top-left (curls up-left), 2 = tail at top-right.
+    in property <int> tail: 0;
+
+    // Numeric (px) views for path interpolation.
+    property <float> W: root.w / 1px;
+    property <float> H: root.h / 1px;
+    property <float> R: min(root.radius / 1px, min(root.W, root.H) / 2 - 1);
+    // How far each edge bows outward at its midpoint — the "not-a-ruler" wobble.
+    property <float> b: 2.0;
+    // Tail reach: how far the top hug-corner is pulled OUT (sideways, toward the
+    // avatar in the gutter) and its slight vertical lift. The tail points toward
+    // the avatar — which sits to the side, not above — so it reaches sideways.
+    property <float> ax: 13.0;
+    property <float> ay: -1.0;
+
+    // The top-right corner: normally a clean round; for a right-side tail
+    // (own messages on the right) it pulls out to the right toward the avatar.
+    property <string> tr-corner:
+        root.tail == 2
+            ? ("Q \{root.W} \{-2} \{root.W + root.ax} \{root.ay} "
+               + "Q \{root.W} \{root.R * 0.35} \{root.W} \{root.R} ")
+            : "Q \{root.W} 0 \{root.W} \{root.R} ";
+
+    // The top-left corner (closing segment): normally round; for a left-side tail
+    // it pulls out to the left toward the avatar.
+    property <string> tl-corner:
+        root.tail == 1
+            ? ("Q 0 \{root.ay} \{-root.ax} \{root.ay} "
+               + "Q \{root.R * 0.35} \{-2} \{root.R} 0 Z")
+            : "Q 0 0 \{root.R} 0 Z";
+
+    property <string> d:
+        "M \{root.R} 0 "
+        + "Q \{root.W / 2} \{-root.b} \{root.W - root.R} 0 "          // top edge
+        + root.tr-corner                                             // TR corner (± right tail)
+        + "Q \{root.W + root.b} \{root.H / 2} \{root.W} \{root.H - root.R} " // right bows out
+        + "Q \{root.W} \{root.H} \{root.W - root.R} \{root.H} "       // BR corner
+        + "Q \{root.W / 2} \{root.H + root.b} \{root.R} \{root.H} "   // bottom bows down
+        + "Q 0 \{root.H} 0 \{root.H - root.R} "                       // BL corner
+        + "Q \{-root.b} \{root.H / 2} 0 \{root.R} "                   // left bows out
+        + root.tl-corner;                                            // TL corner (± left tail)
+
+    Path {
+        width: 100%;
+        height: 100%;
+        // Pin the coordinate system to the bubble rect (1:1 px). WITHOUT this,
+        // Slint auto-fits the path's bounding box to the element — so the tail's
+        // negative-y apex would rescale and offset the whole silhouette. With it,
+        // body coords map exactly and the tail just overflows above the top edge.
+        viewbox-x: 0;
+        viewbox-y: 0;
+        viewbox-width: root.W;
+        viewbox-height: root.H;
+        fill: root.fill;
+        stroke: root.ink;
+        stroke-width: root.ink-width;
+        commands: root.d;
+    }
+}

@@ -1,0 +1,129 @@
+// Faint pencil doodles scattered across the chat canvas — the backdrop half of
+// the hand-drawn look (paired with sketch-bubbles). Mounted behind the message
+// list and gated on Theme.paper-doodles, so it costs nothing on themes that
+// don't opt in. Shapes are thin INK OUTLINES (not filled stickers) in graphite
+// tones, so they read as sketchbook scribbles, not a kawaii sticker pack.
+// Positions are fractions of the canvas, so they spread on any window size;
+// everything is low-opacity so messages always stay legible.
+import { Palette, Theme } from "../tokens.slint";
+
+// Generic stroked-outline doodle, authored in a 12×12 viewbox and scaled to `s`.
+component Ink inherits Path {
+    in property <length> s: 14px;
+    in property <color> tint;
+    in property <string> path;
+    width: root.s;
+    height: root.s;
+    viewbox-width: 12;
+    viewbox-height: 12;
+    stroke: root.tint;
+    stroke-width: 1.8px;
+    fill: transparent;
+    commands: root.path;
+}
+
+// Hollow circle (a clean ring is easier as a bordered Rectangle than an arc path).
+component Ring inherits Rectangle {
+    in property <length> s: 13px;
+    in property <color> tint;
+    width: root.s;
+    height: root.s;
+    border-radius: root.s / 2;
+    border-width: 1.8px;
+    border-color: root.tint;
+}
+
+// Small solid pencil dot.
+component Dot inherits Rectangle {
+    in property <length> s: 5px;
+    in property <color> tint;
+    width: root.s;
+    height: root.s;
+    border-radius: root.s / 2;
+    background: root.tint;
+}
+
+// A swishy ruled line — a gentle hand-drawn wave across the width rather than a
+// perfectly straight rule, so the "paper" never looks machine-printed. `amp`
+// varies per line (from the caller) to break uniformity.
+component WavyLine inherits Path {
+    in property <length> w;
+    in property <float> amp: 2.0;
+    in property <color> tint;
+    property <float> W: root.w / 1px;
+    width: root.w;
+    height: (root.amp * 2 + 2) * 1px;
+    // 1:1 coordinate pin (see SketchOutline) so the wave isn't auto-scaled to fit.
+    viewbox-x: 0;
+    viewbox-y: 0;
+    viewbox-width: root.W;
+    viewbox-height: (root.amp * 2 + 2);
+    stroke: root.tint;
+    stroke-width: 1.3px;
+    fill: transparent;
+    commands:
+        "M 0 \{root.amp} "
+        + "Q \{root.W * 0.125} 0 \{root.W * 0.25} \{root.amp} "
+        + "Q \{root.W * 0.375} \{root.amp * 2} \{root.W * 0.5} \{root.amp} "
+        + "Q \{root.W * 0.625} 0 \{root.W * 0.75} \{root.amp} "
+        + "Q \{root.W * 0.875} \{root.amp * 2} \{root.W} \{root.amp} ";
+}
+
+export component PaperDoodles inherits Rectangle {
+    clip: true;
+    property <float> dim: 0.62;
+
+    // Faint swishy "notebook paper" lines behind everything — the paper texture.
+    // amp varies per line so no two waves are identical.
+    property <[float]> rules: [0.12, 0.19, 0.26, 0.33, 0.40, 0.47, 0.54, 0.61, 0.68, 0.75, 0.82, 0.89, 0.96];
+    for f in root.rules : WavyLine {
+        x: 0;
+        y: parent.height * f;
+        w: parent.width;
+        amp: 1.5 + f * 2.4;
+        tint: Palette.border;
+        opacity: 0.4;
+    }
+
+    // Path strings (12×12 box).
+    property <string> star: "M 6 1 L 7.4 4.6 L 11 4.8 L 8.2 7.2 L 9.1 11 L 6 8.9 L 2.9 11 L 3.8 7.2 L 1 4.8 L 4.6 4.6 Z";
+    property <string> spark: "M 6 0.5 C 6.4 4 8 5.6 11.5 6 C 8 6.4 6.4 8 6 11.5 C 5.6 8 4 6.4 0.5 6 C 4 5.6 5.6 4 6 0.5 Z";
+    property <string> heart: "M 6 10.6 C 2 7.6 1 5.8 1 4 C 1 2.3 2.3 1.2 3.7 1.2 C 4.8 1.2 5.6 1.9 6 2.7 C 6.4 1.9 7.2 1.2 8.3 1.2 C 9.7 1.2 11 2.3 11 4 C 11 5.8 10 7.6 6 10.6 Z";
+    property <string> asterisk: "M 6 1 L 6 11 M 2 3 L 10 9 M 10 3 L 2 9";
+    property <string> swirl: "M 3 8.5 C 3 5.5 5 4.2 7 5 C 9 5.8 9.2 8.8 6.6 9.2 C 4.5 9.5 3.8 7 6 6.2";
+
+    Ink { x: parent.width * 0.07; y: parent.height * 0.12; s: 18px;
+          tint: Palette.text-mid; path: root.spark; opacity: root.dim; }
+    Ink { x: parent.width * 0.20; y: parent.height * 0.05; s: 13px;
+          tint: Palette.text-lo; path: root.star; opacity: root.dim * 0.9; }
+    Ink { x: parent.width * 0.88; y: parent.height * 0.07; s: 15px;
+          tint: Palette.text-mid; path: root.heart; opacity: root.dim; }
+    Ring { x: parent.width * 0.72; y: parent.height * 0.16; s: 12px;
+           tint: Palette.text-lo; opacity: root.dim * 0.85; }
+    Dot { x: parent.width * 0.50; y: parent.height * 0.07; s: 5px;
+          tint: Palette.text-mid; opacity: root.dim; }
+    Ink { x: parent.width * 0.94; y: parent.height * 0.30; s: 16px;
+          tint: Palette.mint; path: root.spark; opacity: root.dim * 0.9; }
+    Ink { x: parent.width * 0.04; y: parent.height * 0.40; s: 14px;
+          tint: Palette.text-lo; path: root.asterisk; opacity: root.dim; }
+    Ink { x: parent.width * 0.90; y: parent.height * 0.52; s: 17px;
+          tint: Palette.text-mid; path: root.star; opacity: root.dim * 0.8; }
+    Ink { x: parent.width * 0.10; y: parent.height * 0.62; s: 16px;
+          tint: Palette.warning; path: root.swirl; opacity: root.dim; }
+    Ink { x: parent.width * 0.55; y: parent.height * 0.55; s: 12px;
+          tint: Palette.text-lo; path: root.spark; opacity: root.dim * 0.7; }
+    Dot { x: parent.width * 0.82; y: parent.height * 0.72; s: 6px;
+          tint: Palette.text-mid; opacity: root.dim; }
+    Ink { x: parent.width * 0.30; y: parent.height * 0.80; s: 14px;
+          tint: Palette.text-mid; path: root.heart; opacity: root.dim; }
+    Ink { x: parent.width * 0.06; y: parent.height * 0.88; s: 18px;
+          tint: Palette.text-lo; path: root.star; opacity: root.dim * 0.85; }
+    Ink { x: parent.width * 0.66; y: parent.height * 0.90; s: 15px;
+          tint: Palette.mint; path: root.asterisk; opacity: root.dim * 0.8; }
+    Ring { x: parent.width * 0.46; y: parent.height * 0.93; s: 11px;
+           tint: Palette.text-lo; opacity: root.dim * 0.8; }
+    Ink { x: parent.width * 0.95; y: parent.height * 0.95; s: 13px;
+          tint: Palette.text-mid; path: root.spark; opacity: root.dim * 0.9; }
+    Ink { x: parent.width * 0.34; y: parent.height * 0.32; s: 12px;
+          tint: Palette.text-vlo; path: root.swirl; opacity: root.dim * 0.7; }
+}
