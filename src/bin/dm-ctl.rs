@@ -31,6 +31,8 @@
 //!   send <group_hex> <text...>          -> SendSummary
 //!   messages <group_hex> [limit]
 //!   react <group_hex> <msg_hex> <emoji>
+//!   promote <group_hex> <member_ref>    -> grant admin (caller must be admin)
+//!   demote <group_hex> <member_ref>     -> revoke admin (caller must be admin)
 //!   relays
 //!   settings-get ; settings-set k=v ... (theme, locale, accent_color, debug_enabled, …)
 //!   shutdown                            -> stop the daemon
@@ -618,6 +620,18 @@ fn dispatch(backend: &Backend, cmd: &str, args: &[String]) -> Result<Value> {
             let m = arg(args, 1, "message_hex")?;
             let emoji = arg(args, 2, "emoji")?;
             Ok(send_json(backend.react(g, m, emoji)?))
+        }
+
+        "promote" => {
+            let g = arg(args, 0, "group_hex")?;
+            let member = arg(args, 1, "member_ref")?;
+            Ok(send_json(backend.promote_admin(g, member)?))
+        }
+
+        "demote" => {
+            let g = arg(args, 0, "group_hex")?;
+            let member = arg(args, 1, "member_ref")?;
+            Ok(send_json(backend.demote_admin(g, member)?))
         }
 
         "relays" => Ok(json!(backend.booted_relays())),
