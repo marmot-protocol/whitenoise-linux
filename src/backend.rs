@@ -456,7 +456,7 @@ impl Backend {
                 endpoint: Some(cfg.goggles_audit_endpoint.clone()),
                 authorization_bearer_token: Some(cfg.goggles_token.clone()),
                 source: AuditLogUploadSource {
-                    account_label: Some(self.active_label()),
+                    device_label: Some(self.active_label()),
                     platform: Some("linux".to_string()),
                     app_version: Some(env!("CARGO_PKG_VERSION").to_string()),
                     ..AuditLogUploadSource::default()
@@ -1578,18 +1578,16 @@ impl Backend {
         let missing = status.missing.clone();
         self.tokio.block_on(async move {
             for kind in &missing {
-                if kind != "nip65" && kind != "inbox" {
-                    continue;
-                }
+                let token = kind.token();
                 runtime
                     .publish_account_relay_list_kind(
                         &label,
-                        kind,
+                        token,
                         endpoints.clone(),
                         endpoints.clone(),
                     )
                     .await
-                    .map_err(|e| anyhow!("publish_account_relay_list_kind({kind}): {e}"))?;
+                    .map_err(|e| anyhow!("publish_account_relay_list_kind({token}): {e}"))?;
             }
             Ok::<_, anyhow::Error>(())
         })
@@ -2117,7 +2115,10 @@ impl Backend {
         let runtime = self.runtime.clone();
         async move {
             runtime
-                .set_audit_log_settings(AuditLogSettings { enabled: on })
+                .set_audit_log_settings(AuditLogSettings {
+                    enabled: on,
+                    ..AuditLogSettings::default()
+                })
                 .await
                 .map_err(|e| anyhow!("set_audit_log_settings: {e}"))?;
             Ok(())
@@ -2251,7 +2252,7 @@ impl Backend {
         };
         self.tokio.spawn(async move {
             let mut sub: RuntimeMessagesSubscription =
-                match runtime.subscribe_messages(&label, query) {
+                match runtime.subscribe_messages(&label, query).await {
                     Ok(s) => s,
                     Err(e) => {
                         eprintln!("[backend] subscribe_messages failed: {e}");
