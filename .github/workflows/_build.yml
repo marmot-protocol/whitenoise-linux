@@ -1,4 +1,4 @@
-# Reusable build workflow: compiles darkmatter-linux for every supported
+# Reusable build workflow: compiles whitenoise-linux for every supported
 # platform (Linux x86_64/arm64, macOS arm64). Called by ci.yml (debug, no
 # artifacts) and release.yml (release, uploads artifacts).
 # (FreeBSD x86_64 and Intel-macOS x86_64 builds temporarily disabled.)
@@ -83,15 +83,15 @@ jobs:
         if: inputs.release
         shell: bash
         run: |
-          dist="darkmatter-linux-${{ matrix.triple }}"
+          dist="whitenoise-linux-${{ matrix.triple }}"
           mkdir -p "$dist"
-          cp "target/release/darkmatter-linux" "$dist/"
+          cp "target/release/whitenoise-linux" "$dist/"
           cp README.md AGENTS.md "$dist/" 2>/dev/null || true
           tar -czf "$dist.tar.gz" "$dist"
 
       - uses: actions/upload-artifact@v4
         if: inputs.release
         with:
-          name: darkmatter-linux-${{ matrix.triple }}
-          path: darkmatter-linux-${{ matrix.triple }}.tar.gz
+          name: whitenoise-linux-${{ matrix.triple }}
+          path: whitenoise-linux-${{ matrix.triple }}.tar.gz
           if-no-files-found: error

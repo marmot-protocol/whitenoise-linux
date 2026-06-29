@@ -1679,47 +1679,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "darkmatter-linux"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "arboard",
- "argon2",
- "cgka-traits",
- "chacha20poly1305",
- "cpal",
- "directories",
- "dm-ui",
- "emojis",
- "getrandom 0.2.17",
- "hex",
- "hound",
- "image",
- "jiff",
- "marmot-account",
- "marmot-app",
- "mime_guess",
- "nostr",
- "notify-rust",
- "pkg-config",
- "qrcode",
- "reqwest",
- "resvg 0.45.1",
- "rfd",
- "rodio",
- "serde",
- "serde_json",
- "sha2",
- "slint",
- "tokio",
- "toml 0.9.12+spec-1.1.0",
- "tracing",
- "tracing-subscriber",
- "whitenoise-markdown",
- "zeroize",
-]
-
-[[package]]
 name = "dasp_sample"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8929,6 +8888,47 @@ name = "weezl"
 version = "0.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a28ac98ddc8b9274cb41bb4d9d4d5c425b6020c50c46f25559911905610b4a88"
+
+[[package]]
+name = "whitenoise-linux"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "arboard",
+ "argon2",
+ "cgka-traits",
+ "chacha20poly1305",
+ "cpal",
+ "directories",
+ "dm-ui",
+ "emojis",
+ "getrandom 0.2.17",
+ "hex",
+ "hound",
+ "image",
+ "jiff",
+ "marmot-account",
+ "marmot-app",
+ "mime_guess",
+ "nostr",
+ "notify-rust",
+ "pkg-config",
+ "qrcode",
+ "reqwest",
+ "resvg 0.45.1",
+ "rfd",
+ "rodio",
+ "serde",
+ "serde_json",
+ "sha2",
+ "slint",
+ "tokio",
+ "toml 0.9.12+spec-1.1.0",
+ "tracing",
+ "tracing-subscriber",
+ "whitenoise-markdown",
+ "zeroize",
+]
 
 [[package]]
 name = "whitenoise-markdown"

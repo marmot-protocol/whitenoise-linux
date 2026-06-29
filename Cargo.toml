@@ -2,10 +2,10 @@
 members = ["dm-ui"]
 
 [package]
-name = "darkmatter-linux"
+name = "whitenoise-linux"
 version = "0.1.0"
 edition = "2024"
-default-run = "darkmatter-linux"
+default-run = "whitenoise-linux"
 license = "AGPL-3.0-or-later"
 
 [dependencies]
