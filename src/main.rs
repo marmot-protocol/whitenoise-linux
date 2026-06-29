@@ -232,7 +232,10 @@ fn hidden_insert(account_hex: &str, message_id: &str) -> bool {
 }
 
 fn is_hidden_message(message_id: &str) -> bool {
-    let account = hidden_account().lock().map(|a| a.clone()).unwrap_or_default();
+    let account = hidden_account()
+        .lock()
+        .map(|a| a.clone())
+        .unwrap_or_default();
     hidden_messages()
         .lock()
         .map(|m| m.get(&account).is_some_and(|s| s.contains(message_id)))
@@ -6065,9 +6068,7 @@ fn main() -> Result<(), slint::PlatformError> {
             // 1. Optimistic overlay + tombstone the row now.
             {
                 let mut overlay = pending_state.lock().unwrap();
-                overlay
-                    .deletes
-                    .insert((group_hex.clone(), target.clone()));
+                overlay.deletes.insert((group_hex.clone(), target.clone()));
             }
             let guard = backend_cell.lock().unwrap();
             let Some(backend) = guard.as_ref() else {
@@ -6175,7 +6176,14 @@ fn main() -> Result<(), slint::PlatformError> {
                     drop(ids);
                     let chats_messages = ui.get_chats_messages();
                     let overlay = pending_state.lock().unwrap();
-                    rebuild_chat_messages_from(&b, &overlay, &chats_messages, idx, &group_hex, &msgs);
+                    rebuild_chat_messages_from(
+                        &b,
+                        &overlay,
+                        &chats_messages,
+                        idx,
+                        &group_hex,
+                        &msgs,
+                    );
                 });
             });
         }
@@ -10211,7 +10219,11 @@ fn chat_message_from_with_reactions(
         // row hides its toolbar/reaction chips. We still null out the model
         // fields so nothing leaks (e.g. a reaction chip row, an edit badge).
         text: if deleted { s("") } else { s(display_text) },
-        lines: if deleted { ModelRc::new(VecModel::from(Vec::<MessageLine>::new())) } else { lines },
+        lines: if deleted {
+            ModelRc::new(VecModel::from(Vec::<MessageLine>::new()))
+        } else {
+            lines
+        },
         jumbo_emoji: !deleted && jumbo_emoji,
         deleted,
         stamp: s(&format_unix(record.recorded_at)),
