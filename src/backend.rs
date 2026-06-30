@@ -43,6 +43,13 @@ type StatusCallback = Arc<dyn Fn(&str) + Send + Sync>;
 /// Default account label used when we bootstrap from a single stored nsec.
 pub const DEFAULT_ACCOUNT_LABEL: &str = "default";
 
+/// Sentinel group-profile name for the built-in "Saved Messages" notes-to-self
+/// chat. Used as the chat's identity because it rides in [`AppGroupRecord`]'s
+/// profile (cache-independent, unlike the member list, which is empty until the
+/// member cache warms), so the self-chat is found by name across reboots
+/// without ever creating a duplicate.
+pub const SAVED_MESSAGES_NAME: &str = "Saved Messages";
+
 /// Well-known relays we *always* consult when discovering a peer's relay list
 /// and key package, on top of the user's own configured relays. A peer may have
 /// published their NIP-65 list to relays the user doesn't write to (this is the

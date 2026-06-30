@@ -52,6 +52,7 @@ mod wiring;
 pub(crate) use wiring::*;
 
 pub(crate) use backend::Backend;
+pub(crate) use backend::SAVED_MESSAGES_NAME;
 pub(crate) use settings::Settings;
 pub(crate) use vault::Vault;
 
@@ -673,6 +674,16 @@ fn main() -> Result<(), slint::PlatformError> {
                         on_synced,
                         Some(on_status),
                     );
+                    // Ensure the built-in "Saved Messages" notes-to-self chat
+                    // exists before the first chat-list paint. Runs here on the
+                    // boot worker (not the UI thread) so the local MLS create
+                    // never blocks the event loop, and so the self-chat is
+                    // already in the snapshot `populate_models_for_active` reads.
+                    if let Ok(b) = &result
+                        && let Err(e) = b.ensure_self_chat()
+                    {
+                        eprintln!("[self-chat] ensure failed: {e:#}");
+                    }
                     let _ = slint::invoke_from_event_loop(move || {
                         let Some(ui) = weak_for_worker.upgrade() else {
                             return;

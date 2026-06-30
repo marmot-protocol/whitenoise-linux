@@ -146,6 +146,9 @@ pub(crate) fn wire_panes(
             refresh_breadcrumb_now(&ui);
             // Rebuild from the new account's snapshots and re-subscribe.
             populate_models_for_active(&ui, &backend, &group_ids, &archived_group_ids);
+            // Backfill the built-in "Saved Messages" chat for accounts that have
+            // never had one (off-thread; pins itself in once created).
+            ensure_self_chat_async(&ui, &backend, &group_ids);
             install_chat_watcher(
                 &backend,
                 ui.as_weak(),

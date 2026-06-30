@@ -51,6 +51,46 @@ impl Backend {
         })
     }
 
+    /// Find the active account's "Saved Messages" self-chat by its sentinel
+    /// group-profile name ([`SAVED_MESSAGES_NAME`]). Scans the full group set
+    /// (archived included). Detection is by profile name rather than member
+    /// list because the member cache is empty until it warms — keying off it
+    /// would miss the self-chat right after boot and create a duplicate.
+    pub fn find_self_chat(&self) -> Option<String> {
+        self.app
+            .groups(&self.active_label())
+            .ok()?
+            .into_iter()
+            .find(|g| g.profile.name == SAVED_MESSAGES_NAME)
+            .map(|g| g.group_id_hex)
+    }
+
+    /// Ensure the active account has a built-in "Saved Messages" notes-to-self
+    /// chat, returning its group id hex. Idempotent: returns the existing
+    /// self-chat when one is present, otherwise creates a solo MLS group with
+    /// no other members. A solo group is valid MLS (the creator is its only
+    /// member), so notes/links/media saved here stay private to the account and
+    /// gain cross-device sync for free once multi-device lands.
+    pub fn ensure_self_chat(&self) -> Result<String> {
+        if let Some(hex) = self.find_self_chat() {
+            return Ok(hex);
+        }
+        // marmot rejects group creation when the account has never published a
+        // NIP-65 list (same precondition as `create_group`); backfill it. With
+        // no members there are no welcomes to publish, so there's no per-peer
+        // relay round-trip — just the local MLS group create.
+        self.ensure_account_relay_lists()?;
+        let label = self.active_label();
+        let runtime = self.runtime.clone();
+        let id = self.tokio.block_on(async move {
+            runtime
+                .create_group(&label, SAVED_MESSAGES_NAME, &[], None)
+                .await
+                .map_err(|e| anyhow!("create self-chat: {e}"))
+        })?;
+        Ok(hex::encode(id.as_slice()))
+    }
+
     /// Invite additional members into an existing group. Caller must be an
     /// admin of the group (the runtime enforces this; non-admins get an error).
     /// `members` are npub or hex pubkey strings; the runtime fetches each

@@ -386,17 +386,35 @@ pub(crate) struct ChatListSnapshot {
     pub(crate) latest: Vec<Option<AppMessageRecord>>,
     /// Parallel to `records`: per-chat unread count at snapshot time.
     pub(crate) unread: Vec<u32>,
+    /// Eagerly-loaded message window for the default-shown chat. Paired with
+    /// [`Self::default_idx`] — that chat renders instantly at boot without a
+    /// selection click.
     pub(crate) first_msgs: Vec<AppMessageRecord>,
+    /// Index (into `records`) of the chat to show by default. The pinned
+    /// "Saved Messages" self-chat sits at 0, so this is the first real chat
+    /// when one exists, otherwise 0.
+    pub(crate) default_idx: usize,
 }
 
 pub(crate) fn fetch_chat_list_snapshot(backend: &Backend) -> Option<ChatListSnapshot> {
-    let records = match backend.chats() {
+    let mut records = match backend.chats() {
         Ok(v) => v,
         Err(e) => {
             eprintln!("[backend] chats snapshot failed: {e:#}");
             return None;
         }
     };
+    // Pin the built-in "Saved Messages" self-chat to the top of the rail.
+    // Detected by its sentinel profile name (cache-independent), so this is
+    // stable on the very first post-boot snapshot before member lists warm.
+    if let Some(i) = records
+        .iter()
+        .position(|r| r.profile.name == SAVED_MESSAGES_NAME)
+        && i != 0
+    {
+        let pinned = records.remove(i);
+        records.insert(0, pinned);
+    }
     let latest: Vec<Option<AppMessageRecord>> = records
         .iter()
         .map(|r| backend.latest_message(&r.group_id_hex))
@@ -418,8 +436,15 @@ pub(crate) fn fetch_chat_list_snapshot(backend: &Backend) -> Option<ChatListSnap
             n
         })
         .collect();
+    // Eagerly load the default-shown chat's window: the first real chat, since
+    // "Saved Messages" is pinned at 0 and usually empty. Falls back to 0 when
+    // it's the only conversation.
+    let default_idx = records
+        .iter()
+        .position(|r| r.profile.name != SAVED_MESSAGES_NAME)
+        .unwrap_or(0);
     let first_msgs = records
-        .first()
+        .get(default_idx)
         .map(|r| {
             backend
                 .messages(&r.group_id_hex, Some(msg_window_for(&r.group_id_hex)))
@@ -431,6 +456,7 @@ pub(crate) fn fetch_chat_list_snapshot(backend: &Backend) -> Option<ChatListSnap
         latest,
         unread,
         first_msgs,
+        default_idx,
     })
 }
 
@@ -535,11 +561,11 @@ pub(crate) fn refresh_chats_from(
         .collect();
     let mut messages_outer: Vec<ModelRc<ChatMessage>> = Vec::with_capacity(records.len());
     let mut ids: Vec<String> = Vec::with_capacity(records.len());
-    for record in records {
+    for (i, record) in records.iter().enumerate() {
         ids.push(record.group_id_hex.clone());
-        // Only the first chat's window was eagerly fetched; the others get
-        // filled on selection. Keeps boot fast for users with many groups.
-        let msgs: &[AppMessageRecord] = if messages_outer.is_empty() {
+        // Only the default-shown chat's window was eagerly fetched; the others
+        // get filled on selection. Keeps boot fast for users with many groups.
+        let msgs: &[AppMessageRecord] = if i == snap.default_idx {
             &snap.first_msgs
         } else {
             &[]
@@ -674,10 +700,17 @@ pub(crate) fn populate_models_for_active(
     archived_group_ids: &Arc<Mutex<Vec<String>>>,
 ) {
     refresh_chats_async(ui, backend, group_ids, move |ui, b, snap| {
-        // The first chat's extras (members panel, has-older, avatar fetches)
-        // ride the chat-list continuation since they need the snapshot.
-        if let Some(first) = snap.records.first() {
-            push_group_members_to_ui_async(ui, b, &first.group_id_hex);
+        // "Saved Messages" is pinned at index 0; show the first real chat by
+        // default (`default_idx`) so boot doesn't always land in the (usually
+        // empty) self-chat. This is display-only — it deliberately does *not*
+        // go through `chat_selected`, so the chat isn't auto-marked-read at
+        // boot. The default chat's extras (members panel, has-older, avatar
+        // fetches) ride this continuation since they need the snapshot.
+        if snap.default_idx != 0 {
+            ui.set_active_chat(snap.default_idx as i32);
+        }
+        if let Some(rec) = snap.records.get(snap.default_idx) {
+            push_group_members_to_ui_async(ui, b, &rec.group_id_hex);
             ui.set_messages_has_older(snap.first_msgs.len() >= MESSAGE_WINDOW);
             spawn_message_avatar_fetches(ui, b, &snap.first_msgs);
         }
@@ -703,6 +736,37 @@ pub(crate) fn populate_models_for_active(
         });
     }
     refresh_audit_files(ui, backend);
+}
+
+/// Ensure the active account's "Saved Messages" self-chat exists, off the UI
+/// thread. A no-op when it's already present (the common case — it's created
+/// at boot). When a switched-to account has never had one, this creates it and
+/// triggers a full refresh so it pins into the rail. [`Backend::ensure_self_chat`]
+/// blocks on the backend runtime internally, so it runs on a plain OS thread —
+/// never the UI thread (would block the event loop) nor a tokio worker (would
+/// nest `block_on`).
+pub(crate) fn ensure_self_chat_async(
+    ui: &DarkMatterLinux,
+    backend: &Arc<Backend>,
+    group_ids: &Arc<Mutex<Vec<String>>>,
+) {
+    let weak = ui.as_weak();
+    let b = backend.clone();
+    let group_ids = group_ids.clone();
+    std::thread::spawn(move || {
+        // Already present → the caller's own refresh has already pinned it.
+        if b.find_self_chat().is_some() {
+            return;
+        }
+        if let Err(e) = b.ensure_self_chat() {
+            eprintln!("[self-chat] ensure failed: {e:#}");
+            return;
+        }
+        let _ = slint::invoke_from_event_loop(move || {
+            let Some(ui) = weak.upgrade() else { return };
+            refresh_chats_async(&ui, &b, &group_ids, |_, _, _| {});
+        });
+    });
 }
 
 /// Rebuild the account-switcher model: one row per local account. Names and
