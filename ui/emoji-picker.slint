@@ -192,7 +192,9 @@ export component EmojiPicker inherits Rectangle {
                     if grid-frame.total == 0 : Text {
                         x: (parent.width - self.width) / 2;
                         y: root.grid-pad;
-                        text: @tr("no matches");
+                        text: root.query == ""
+                            ? @tr("no matches")
+                            : @tr("no matches for \"{}\"", root.query);
                         color: Palette.text-lo;
                         font-size: (11px) * Theme.fs-scale;
                     }

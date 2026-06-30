@@ -1969,6 +1969,10 @@ msgctxt "EmojiPicker"
 msgid "no matches"
 msgstr ""
 
+msgctxt "EmojiPicker"
+msgid "no matches for \"{}\""
+msgstr ""
+
 msgctxt "EncryptionBanner"
 msgid "post-compromise secure"
 msgstr ""

@@ -2043,6 +2043,10 @@ msgctxt "EmojiPicker"
 msgid "no matches"
 msgstr "nessun risultato"
 
+msgctxt "EmojiPicker"
+msgid "no matches for \"{}\""
+msgstr "nessun risultato per \"{}\""
+
 msgctxt "EncryptionBanner"
 msgid "post-compromise secure"
 msgstr "sicuro dopo compromissione"
