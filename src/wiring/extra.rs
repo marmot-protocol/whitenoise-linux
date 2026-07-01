@@ -974,10 +974,10 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 // before the previous exit. Only meaningful for entries not yet
                 // shown this session (in-session offline failures are guaranteed
                 // rolled back by marmot, so never duplicates).
-                if !in_overlay
-                    && let offline_queue::QueuedKind::Text { text, effect, .. } = &entry.kind
-                {
-                    let bodies = vec![text.clone(), append_effect_marker(text, *effect)];
+                if !in_overlay && let offline_queue::QueuedKind::Text { text, .. } = &entry.kind {
+                    // The wire body is the clean text now (the effect rides a
+                    // kind-9 tag), so there's a single candidate body to match.
+                    let bodies = vec![text.clone()];
                     if looks_already_sent(&backend, &group_hex, &my_id, &bodies, entry.enqueued_at)
                     {
                         offline_queue::remove(&temp_id);
@@ -1077,12 +1077,9 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                         effect,
                     } => {
                         let parent_id = reply_to.as_ref().map(|(id, _, _)| id.clone());
-                        dispatch_send(
-                            group_hex,
-                            append_effect_marker(&text, effect),
-                            temp_id,
-                            parent_id,
-                        );
+                        // Clean body; the effect rides as an out-of-band kind-9
+                        // tag, reconstructed from `effect` inside `dispatch_send`.
+                        dispatch_send(group_hex, text, temp_id, parent_id, effect);
                     }
                     offline_queue::QueuedKind::Attachment(m) => {
                         spawn_attachment_send(

@@ -56,9 +56,11 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     //
     // The UI never blocks on the network. The pending bubble dims + shows
     // a single check; once confirmed it flips to the regular double-check.
-    // Signature: (group_hex, text, temp_id, Option<parent_id_hex>). When the
-    // parent id is `Some`, the dispatch routes through `reply_text_async` so
-    // the wire event carries `e`+`q` tags; otherwise it's a vanilla send.
+    // Signature: (group_hex, clean_text, temp_id, Option<parent_id_hex>,
+    // effect_id). When the parent id is `Some`, the dispatch routes through
+    // `reply_text_async` so the wire event carries `e`+`q` tags; otherwise it's
+    // a vanilla send. A non-zero effect_id adds an out-of-band `["effect", key]`
+    // tag; the body is always sent clean.
 
     // ─── Edit dispatch (optimistic, surgical) ─────────────────────────
     //
@@ -113,8 +115,8 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
 
             if !text.is_empty() {
                 // Armed message effect (Telegram-style). Read + disarm it now so
-                // it rides this one send; the marker travels in the wire body so
-                // the recipient replays the same burst.
+                // it rides this one send; it travels as an out-of-band kind-9
+                // `["effect", key]` tag so the recipient replays the same burst.
                 let effect_id = ui.global::<EffectCatalog>().get_selected();
                 ui.global::<EffectCatalog>().set_selected(0);
                 // Snapshot + clear the reply target (if any) so this send goes
@@ -154,9 +156,8 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 let my_id = backend.account().account_id_hex.clone();
                 let my_label = my_avatar_label(backend, &my_id);
                 // Durably queue this send so it survives a restart and auto-flushes
-                // on reconnect. The disk entry carries the *clean* text +
-                // effect id; the wire body's effect marker is reconstructed at
-                // (re)dispatch time.
+                // on reconnect. The disk entry carries the clean text + effect id;
+                // the effect tag is reconstructed from the id at (re)dispatch time.
                 offline_persist(
                     &vault_cell,
                     &offline_queue::QueuedSend {
@@ -190,15 +191,16 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 ui.set_messages_scroll_tick(ui.get_messages_scroll_tick() + 1);
                 drop(guard);
 
-                // 2. Dispatch the real send in the background. The wire body
-                //    carries the effect marker (if any); the pending row kept the
-                //    clean text.
+                // 2. Dispatch the real send in the background. The body goes out
+                //    clean; the effect (if any) rides as an out-of-band kind-9
+                //    tag, reconstructed from `effect_id` at dispatch time.
                 let parent_id = reply_to.as_ref().map(|(id, _, _)| id.clone());
                 dispatch_send(
                     group_hex.clone(),
-                    append_effect_marker(&text, effect_id),
+                    text.clone(),
                     temp_id,
                     parent_id,
+                    effect_id,
                 );
             } else {
                 drop(guard);
@@ -322,7 +324,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             if send.media.is_empty() {
                 offline_inflight_insert(&temp_id);
                 let parent_id = send.reply_to.as_ref().map(|(id, _, _)| id.clone());
-                dispatch_send(group_hex, send.text, temp_id, parent_id);
+                dispatch_send(group_hex, send.text, temp_id, parent_id, send.effect);
             } else {
                 let entry = vault_cell
                     .lock()

@@ -128,15 +128,16 @@ pub(crate) fn chat_message_from_with_reactions(
         .filter(|e| e.count > 0)
         .map(|e| e.text.as_str())
         .unwrap_or(record.plaintext.as_str());
-    // Strip any trailing message-effect marker so it never reaches the bubble.
-    // `effect_id` is the persistent identity (carried by every effect row so a
-    // tap can replay it). `effect_autoplay` fires the burst by itself only on a
-    // live incoming build — the sender already saw it on the optimistic row, and
-    // backfill marks the id seen-but-quiet so it doesn't storm or replay later.
-    let (display_text, body_effect) = split_effect_marker(raw_display_text);
-    let effect_id = body_effect;
+    // Resolve the message effect. It rides as an out-of-band `["effect", <key>]`
+    // tag on the kind-9, so the body needs no stripping. `effect_id` is the
+    // persistent identity (carried by every effect row so a tap can replay it).
+    // `effect_autoplay` fires the burst by itself only on a live incoming build —
+    // the sender already saw it on the optimistic row, and backfill marks the id
+    // seen-but-quiet so it doesn't storm or replay later.
+    let display_text = raw_display_text;
+    let effect_id = effect_from_tags(&record.tags);
     let effect_autoplay =
-        !outgoing && effect_should_autoplay(&record.message_id_hex, body_effect, play_effects);
+        !outgoing && effect_should_autoplay(&record.message_id_hex, effect_id, play_effects);
     let (effect_clip_x, effect_clip_y) = effect_clip(effect_id)
         .map(|(x, y)| (x as i32, y as i32))
         .unwrap_or((0, 0));
@@ -381,10 +382,7 @@ pub(crate) fn reply_preview_for(
             } else {
                 avatar_for(&p.sender).2
             };
-            (
-                author,
-                truncate_preview(split_effect_marker(&p.plaintext).0, 160),
-            )
+            (author, truncate_preview(&p.plaintext, 160))
         }
         None => (String::new(), String::new()),
     };

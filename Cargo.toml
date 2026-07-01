@@ -76,9 +76,10 @@ rodio = { version = "0.19", default-features = false, features = ["wav"] }
 # Pinned to PR #849 (add-markdown-text-effects) for the `{big}…{/big}` inline
 # text-effect syntax (Inline::Effect). Drop the rev once it merges to master.
 whitenoise-markdown = { git = "https://github.com/marmot-protocol/whitenoise-rs", rev = "973f3ab65bf410c35e401935cdf4374b77770901" }
-marmot-app = { git = "https://github.com/marmot-protocol/darkmatter.git", branch = "master", features = ["otlp-export"] }
-marmot-account = { git = "https://github.com/marmot-protocol/darkmatter.git", branch = "master" }
-cgka-traits = { git = "https://github.com/marmot-protocol/darkmatter.git", branch = "master" }
+# TEMP: track the kind-9 extra-tags branch until PR #767 merges, then revert to master.
+marmot-app = { git = "https://github.com/marmot-protocol/darkmatter.git", branch = "feat/kind9-extra-tags", features = ["otlp-export"] }
+marmot-account = { git = "https://github.com/marmot-protocol/darkmatter.git", branch = "feat/kind9-extra-tags" }
+cgka-traits = { git = "https://github.com/marmot-protocol/darkmatter.git", branch = "feat/kind9-extra-tags" }
 
 [build-dependencies]
 # Resolves libmpv's link flags for build.rs (see src/mpv.rs FFI core).

@@ -79,8 +79,9 @@ pub(crate) fn emoji_position_index() -> &'static std::collections::HashMap<&'sta
 //
 // A small catalog of one-shot particle effects. Each is (catalog-id, wire-key,
 // emoji). The id drives the Slint motion switch in message-effect-layer.slint;
-// the wire-key is what travels in the body marker; the emoji is rendered as the
-// flying particle (resolved to a sprite-sheet tile via the inline-emoji index).
+// the wire-key is what travels in the kind-9 `["effect", <key>]` tag; the emoji
+// is rendered as the flying particle (resolved to a sprite-sheet tile via the
+// inline-emoji index).
 pub(crate) const EFFECTS: &[(i32, &str, &str)] = &[
     (1, "love", "❤️"),
     (2, "fire", "🔥"),
@@ -89,11 +90,9 @@ pub(crate) const EFFECTS: &[(i32, &str, &str)] = &[
     (5, "like", "👍"),
 ];
 
-/// Invisible delimiter wrapping the body effect marker. U+2063 (INVISIBLE
-/// SEPARATOR) renders as nothing in conformant clients, so a non-DM client that
-/// doesn't understand the marker just shows the clean body with a trailing
-/// zero-width char.
-pub(crate) const FX_MARK: char = '\u{2063}';
+/// Name of the out-of-band nostr tag that carries a message effect on the
+/// kind-9 chat event: `["effect", <wire-key>]`.
+pub(crate) const EFFECT_TAG: &str = "effect";
 
 pub(crate) fn effect_key(id: i32) -> Option<&'static str> {
     EFFECTS.iter().find(|e| e.0 == id).map(|e| e.1)
@@ -126,37 +125,24 @@ pub(crate) fn effect_clip(id: i32) -> Option<(u32, u32)> {
     idx.get(with_vs.as_str()).copied()
 }
 
-/// Append the wire marker for `effect_id` to an outgoing body. No-op for 0 or an
-/// unknown id. The marker sits at the very end so stripping is a cheap suffix
-/// check on receipt.
-pub(crate) fn append_effect_marker(text: &str, effect_id: i32) -> String {
+/// The out-of-band tag(s) to attach to an outgoing kind-9 for `effect_id`:
+/// `[["effect", <key>]]`, or empty for effect 0 / an unknown id. This is how an
+/// effect travels now — as a real nostr tag, leaving the body untouched.
+pub(crate) fn effect_tag(effect_id: i32) -> Vec<Vec<String>> {
     match effect_key(effect_id) {
-        Some(key) => format!("{text}{FX_MARK}dmfx:{key}{FX_MARK}"),
-        None => text.to_string(),
+        Some(key) => vec![vec![EFFECT_TAG.to_owned(), key.to_owned()]],
+        None => Vec::new(),
     }
 }
 
-/// Split a trailing effect marker off a raw body, returning (clean_body,
-/// effect_id). Returns the input untouched (effect 0) when there's no valid
-/// marker, so it's safe to run on every body unconditionally.
-pub(crate) fn split_effect_marker(raw: &str) -> (&str, i32) {
-    let m = FX_MARK.len_utf8();
-    if !raw.ends_with(FX_MARK) {
-        return (raw, 0);
-    }
-    let head = &raw[..raw.len() - m];
-    let Some(pos) = head.rfind(FX_MARK) else {
-        return (raw, 0);
-    };
-    let inner = &head[pos + m..];
-    let Some(key) = inner.strip_prefix("dmfx:") else {
-        return (raw, 0);
-    };
-    let id = effect_id_from_key(key);
-    if id == 0 {
-        return (raw, 0);
-    }
-    (&head[..pos], id)
+/// Read a message effect off a kind-9's tags (`["effect", <key>]`). Returns the
+/// catalog id, or 0 when there's no effect tag (or its key is unknown).
+pub(crate) fn effect_from_tags(tags: &[Vec<String>]) -> i32 {
+    tags.iter()
+        .find(|t| t.first().map(|n| n == EFFECT_TAG).unwrap_or(false))
+        .and_then(|t| t.get(1))
+        .map(|key| effect_id_from_key(key))
+        .unwrap_or(0)
 }
 
 /// Set of message-ids whose effect has already been claimed for autoplay (or

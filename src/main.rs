@@ -278,7 +278,11 @@ fn main() -> Result<(), slint::PlatformError> {
         let group_ids = group_ids.clone();
         let pending_state = pending_state.clone();
         Rc::new(
-            move |group_hex: String, text: String, temp_id: String, parent_id: Option<String>| {
+            move |group_hex: String,
+                  text: String,
+                  temp_id: String,
+                  parent_id: Option<String>,
+                  effect_id: i32| {
                 let guard = backend_cell.lock().unwrap();
                 let Some(backend) = guard.as_ref() else {
                     return;
@@ -437,12 +441,15 @@ fn main() -> Result<(), slint::PlatformError> {
                         }
                     });
                 };
+                // The effect (if any) rides as an out-of-band `["effect", key]`
+                // tag on the kind-9, never in the body. Empty for a plain send.
+                let extra_tags = effect_tag(effect_id);
                 match parent_id {
                     Some(parent) => {
-                        backend.reply_text_async(&group_hex, &parent, &text, on_done);
+                        backend.reply_text_async(&group_hex, &parent, &text, extra_tags, on_done);
                     }
                     None => {
-                        backend.send_text_async(&group_hex, &text, on_done);
+                        backend.send_text_async(&group_hex, &text, extra_tags, on_done);
                     }
                 }
             },

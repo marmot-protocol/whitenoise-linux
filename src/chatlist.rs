@@ -1076,8 +1076,7 @@ pub(crate) fn notification_body(
     if !preview {
         return "New message".to_string();
     }
-    let (text, _) = split_effect_marker(&msg.plaintext);
-    let text = text.trim();
+    let text = msg.plaintext.trim();
     let text = if text.is_empty() {
         "Sent an attachment".to_string()
     } else {
