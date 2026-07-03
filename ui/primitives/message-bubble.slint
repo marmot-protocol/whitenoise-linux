@@ -210,6 +210,8 @@ export component MessageBubble inherits Rectangle {
     in property <string> reply-to-id;
     in property <string> reply-to-text;
     in property <string> reply-to-author;
+    in property <image> reply-to-image;
+    in property <bool> reply-to-has-image: false;
     // Attachment block — rendered when has-attachment is true. Tapping the
     // chip (or the image placeholder) fires attachment-clicked(); for images
     // this kicks off decrypt+decode; for files it opens a save dialog.
@@ -411,6 +413,7 @@ export component MessageBubble inherits Rectangle {
                 VerticalLayout {
                     spacing: 1px;
                     horizontal-stretch: 1;
+                    alignment: center;
                     Text {
                         text: root.reply-to-author == "" ? @tr("Original message") : root.reply-to-author;
                         color: root.outgoing ? Palette.bubble-out-fg : Palette.mint;
@@ -419,7 +422,7 @@ export component MessageBubble inherits Rectangle {
                         font-weight: 700;
                         overflow: elide;
                         opacity: root.outgoing ? 0.85 : 1.0;
-                        width: max(40px, root.text-budget - 18px);
+                        width: max(40px, root.text-budget - 18px - (root.reply-to-has-image ? 41px : 0px));
                     }
                     Text {
                         text: root.reply-to-text == "" ? @tr("(message unavailable)") : root.reply-to-text;
@@ -428,7 +431,21 @@ export component MessageBubble inherits Rectangle {
                         font-family: Theme.font;
                         overflow: elide;
                         opacity: root.outgoing ? 0.65 : 0.9;
-                        width: max(40px, root.text-budget - 18px);
+                        width: max(40px, root.text-budget - 18px - (root.reply-to-has-image ? 41px : 0px));
+                    }
+                }
+                // Signal-style media thumbnail of the quoted parent, at the
+                // right edge of the plate.
+                if root.reply-to-has-image : Rectangle {
+                    width: 34px;
+                    height: 34px;
+                    border-radius: (4px) * Theme.r-scale;
+                    clip: true;
+                    Image {
+                        source: root.reply-to-image;
+                        width: parent.width;
+                        height: parent.height;
+                        image-fit: cover;
                     }
                 }
             }

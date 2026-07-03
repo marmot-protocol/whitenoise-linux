@@ -47,6 +47,8 @@ export component IncomingRow inherits VerticalLayout {
     in property <string> reply-to-id;
     in property <string> reply-to-text;
     in property <string> reply-to-author;
+    in property <image> reply-to-image;
+    in property <bool> reply-to-has-image: false;
     in property <bool> has-attachment: false;
     in property <string> att-name;
     in property <string> att-mime;
@@ -158,6 +160,8 @@ export component IncomingRow inherits VerticalLayout {
                     reply-to-id: root.reply-to-id;
                     reply-to-text: root.reply-to-text;
                     reply-to-author: root.reply-to-author;
+                    reply-to-image: root.reply-to-image;
+                    reply-to-has-image: root.reply-to-has-image;
                     has-attachment: root.has-attachment;
                     att-name: root.att-name;
                     att-mime: root.att-mime;

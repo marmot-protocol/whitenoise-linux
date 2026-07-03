@@ -760,6 +760,12 @@ export struct ChatMessage {
     reply-to-id: string,
     reply-to-text: string,
     reply-to-author: string,
+    // Thumbnail of the parent's media (single image, first album cell, or
+    // captured video poster), rendered at the right edge of the quoted block.
+    // False on cache miss — the text label carries the quote until the
+    // parent's media has been downloaded.
+    reply-to-image: image,
+    reply-to-has-image: bool,
     // Attachment (NIP-92 imeta payload, parsed in Rust). When `has-attachment`
     // is true the bubble renders a chip / image preview block above the body.
     has-attachment: bool,
