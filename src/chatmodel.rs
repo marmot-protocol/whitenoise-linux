@@ -386,11 +386,85 @@ pub(crate) fn reply_preview_for(
             } else {
                 avatar_for(&p.sender).2
             };
-            (author, truncate_preview(&p.plaintext, 160))
+            // Attachment-only parents (photo/video/voice/file) have an empty
+            // body; synthesize a media label so the quoted block doesn't fall
+            // into the "(message unavailable)" branch reserved for parents
+            // that are genuinely missing from the loaded slice.
+            let mut preview = truncate_preview(&p.plaintext, 160);
+            if preview.is_empty()
+                && let Some(label) = media_reply_label(p)
+            {
+                preview = label;
+            }
+            (author, preview)
         }
         None => (String::new(), String::new()),
     };
     (parent_id, author, preview)
+}
+
+/// Human-readable stand-in for an attachment-only message body: "📷 Photo",
+/// "🎞 Video", "🎤 Voice message", or "📎 <filename>". Rust-side English by
+/// design — the project keeps i18n to the Slint `@tr` catalogs (same policy
+/// as `notification_body`).
+pub(crate) fn media_kind_label(mime: &str, file_name: &str, image_count: usize) -> String {
+    if image_count >= 2 {
+        return format!("📷 {image_count} photos");
+    }
+    if mime_is_image(mime) {
+        "📷 Photo".to_string()
+    } else if mime_is_video(mime) {
+        "🎞 Video".to_string()
+    } else if mime_is_audio(mime) {
+        "🎤 Voice message".to_string()
+    } else if !file_name.is_empty() {
+        truncate_preview(&format!("📎 {file_name}"), 160)
+    } else {
+        "📎 Attachment".to_string()
+    }
+}
+
+/// Media label for a record that carries attachment references, or None when
+/// it has none (then the caller keeps whatever preview it already had).
+pub(crate) fn media_reply_label(record: &AppMessageRecord) -> Option<String> {
+    let refs = parse_all_media_references(&record.tags, record.source_epoch);
+    let first = refs.first()?;
+    let image_count = refs.iter().filter(|r| mime_is_image(&r.media_type)).count();
+    Some(media_kind_label(
+        &first.media_type,
+        &first.file_name,
+        image_count,
+    ))
+}
+
+/// Find `message_id` across the loaded chat rows and synthesize its media
+/// label. Backs the composer reply banner: the `request-reply` callback
+/// carries the row's body text as the preview, which is empty for
+/// attachment-only messages.
+pub(crate) fn media_label_for_row(
+    chats: &ModelRc<ModelRc<ChatMessage>>,
+    message_id: &str,
+) -> Option<String> {
+    for chat in chats.iter() {
+        for row in chat.iter() {
+            if row.message_id != message_id {
+                continue;
+            }
+            let album_count = row.album.row_count();
+            if album_count >= 2 {
+                return Some(media_kind_label("", "", album_count));
+            }
+            if row.has_attachment {
+                return Some(media_kind_label(
+                    row.att_mime.as_str(),
+                    row.att_name.as_str(),
+                    0,
+                ));
+            }
+            return None;
+        }
+    }
+    None
 }
 
 /// Single-line, length-capped quote preview. Newlines collapse to spaces and
