@@ -586,6 +586,7 @@ pub(crate) fn wire_panes(
                 ui.set_show_language_picker(false);
                 // Re-snapshot the now-localized error/status copy for worker threads.
                 refresh_error_copy(&ui);
+                refresh_time_copy(&ui);
             }
         }
     });

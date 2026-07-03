@@ -114,6 +114,7 @@ fn main() -> Result<(), slint::PlatformError> {
     // Snapshot the localized error/status copy off the Slint `ErrorCopy` global
     // now that the locale is applied, so worker threads have it from the start.
     refresh_error_copy(&ui);
+    refresh_time_copy(&ui);
     apply_theme_mode(&ui, &theme_mode);
     ui.set_accent_color(accent_color_idx(accent_color));
     ui.set_outgoing_on_right(initial_settings.outgoing_on_right);

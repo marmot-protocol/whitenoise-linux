@@ -23,6 +23,7 @@ export component OutgoingRow inherits VerticalLayout {
     in property <string> text;
     in property <[MessageLine]> lines;
     in property <string> stamp;
+    in property <string> stamp-full;
     in property <length> bubble-max: 440px;
     in property <length> row-w: 9999px;
     in property <bool> show-avatar: true;
@@ -131,6 +132,7 @@ export component OutgoingRow inherits VerticalLayout {
                     effect-clip-y: root.effect-clip-y;
                     lines: root.lines;
                     stamp: root.stamp;
+                    stamp-full: root.stamp-full;
                     outgoing: true;
                     align-right: root.align-right;
                     max-w: root.bubble-max;

@@ -11,6 +11,35 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
+msgctxt "date, %1 = day, %2 = month"
+msgid "%1 %2"
+msgstr ""
+
+#. Japanese "%1%2日"). %1/%2/%3 keep the slot meaning named in the context.
+msgctxt "date, %1 = month, %2 = day"
+msgid "%1 %2"
+msgstr ""
+
+msgctxt "date, %1 = day, %2 = month, %3 = year"
+msgid "%1 %2 %3"
+msgstr ""
+
+msgctxt "date, %1 = month, %2 = day, %3 = year"
+msgid "%1 %2 %3"
+msgstr ""
+
+msgctxt "relative time, %1 = days"
+msgid "%1d ago"
+msgstr ""
+
+msgctxt "relative time, %1 = hours"
+msgid "%1h ago"
+msgstr ""
+
+msgctxt "relative time, %1 = minutes"
+msgid "%1m ago"
+msgstr ""
+
 msgctxt "MessageBubble"
 msgid "(message unavailable)"
 msgstr ""
@@ -216,6 +245,10 @@ msgctxt "SettingsSidebar"
 msgid "Appearance"
 msgstr ""
 
+msgctxt "month"
+msgid "Apr"
+msgstr ""
+
 msgctxt "ChatHeader"
 msgid "Archive"
 msgstr ""
@@ -230,6 +263,10 @@ msgstr ""
 
 msgctxt "AdvancedPane"
 msgid "Audit logs"
+msgstr ""
+
+msgctxt "month"
+msgid "Aug"
 msgstr ""
 
 msgctxt "ImportBackupModal"
@@ -657,6 +694,10 @@ msgctxt "SettingsSidebar"
 msgid "Debug"
 msgstr ""
 
+msgctxt "month"
+msgid "Dec"
+msgstr ""
+
 msgctxt "AboutPane"
 msgid "Decentralized network"
 msgstr ""
@@ -753,6 +794,10 @@ msgctxt "LoginScreen"
 msgid "Enter your password to unlock"
 msgstr ""
 
+msgctxt "month"
+msgid "Feb"
+msgstr ""
+
 msgctxt "MessageContextMenu"
 msgid "Forward"
 msgstr ""
@@ -763,6 +808,10 @@ msgstr ""
 
 msgctxt "ForwardPickerModal"
 msgid "Forward to…"
+msgstr ""
+
+msgctxt "weekday"
+msgid "Fri"
 msgstr ""
 
 msgctxt "StartNewChatModal"
@@ -877,6 +926,18 @@ msgctxt "ArchivedDetail"
 msgid "It stays end-to-end encrypted. Unarchiving returns it to your main list and resumes notifications."
 msgstr ""
 
+msgctxt "month"
+msgid "Jan"
+msgstr ""
+
+msgctxt "month"
+msgid "Jul"
+msgstr ""
+
+msgctxt "month"
+msgid "Jun"
+msgstr ""
+
 msgctxt "KeysPage"
 msgid "KEY PACKAGES"
 msgstr ""
@@ -981,6 +1042,14 @@ msgctxt "GroupMemberRow"
 msgid "Make admin"
 msgstr ""
 
+msgctxt "month"
+msgid "Mar"
+msgstr ""
+
+msgctxt "month"
+msgid "May"
+msgstr ""
+
 msgctxt "ArchivedDetail"
 msgid "Members"
 msgstr ""
@@ -1003,6 +1072,10 @@ msgstr ""
 
 msgctxt "AppearancePane"
 msgid "Mint"
+msgstr ""
+
+msgctxt "weekday"
+msgid "Mon"
 msgstr ""
 
 msgctxt "ChatContextMenu"
@@ -1127,6 +1200,10 @@ msgctxt "SettingsSidebar"
 msgid "Notifications"
 msgstr ""
 
+msgctxt "month"
+msgid "Nov"
+msgstr ""
+
 msgctxt "StatusBar"
 msgid "OFFLINE"
 msgstr ""
@@ -1141,6 +1218,10 @@ msgstr ""
 
 msgctxt "AppearancePane"
 msgid "Ocean"
+msgstr ""
+
+msgctxt "month"
+msgid "Oct"
 msgstr ""
 
 msgctxt "NotificationsPane"
@@ -1471,6 +1552,10 @@ msgctxt "KeysPage"
 msgid "Safe to share. This is how people find you."
 msgstr ""
 
+msgctxt "weekday"
+msgid "Sat"
+msgstr ""
+
 msgctxt "NicknameModal"
 msgid "Save"
 msgstr ""
@@ -1541,6 +1626,10 @@ msgstr ""
 
 msgctxt "Composer"
 msgid "Send message"
+msgstr ""
+
+msgctxt "month"
+msgid "Sep"
 msgstr ""
 
 msgctxt "ProfilePage"
@@ -1623,6 +1712,10 @@ msgctxt "StoragePane"
 msgid "Storage"
 msgstr ""
 
+msgctxt "weekday"
+msgid "Sun"
+msgstr ""
+
 msgctxt "ThemePicker"
 msgid "Synthwave"
 msgstr ""
@@ -1692,8 +1785,20 @@ msgctxt "GetStartedScreen"
 msgid "Three quick steps and you're ready to message — end-to-end encrypted, no servers in the middle."
 msgstr ""
 
+msgctxt "weekday"
+msgid "Thu"
+msgstr ""
+
 msgctxt "GeneralPane"
 msgid "Time format"
+msgstr ""
+
+msgctxt "TimeCopy"
+msgid "Today"
+msgstr ""
+
+msgctxt "weekday"
+msgid "Tue"
 msgstr ""
 
 msgctxt "CommandPalette"
@@ -1772,6 +1877,10 @@ msgctxt "AboutPane"
 msgid "WHAT IT IS"
 msgstr ""
 
+msgctxt "weekday"
+msgid "Wed"
+msgstr ""
+
 msgctxt "GetStartedScreen"
 msgid "Welcome to darkmatter"
 msgstr ""
@@ -1786,6 +1895,10 @@ msgstr ""
 
 msgctxt "LoginScreen"
 msgid "YOUR DISPLAY NAME"
+msgstr ""
+
+msgctxt "TimeCopy"
+msgid "Yesterday"
 msgstr ""
 
 msgctxt "OutgoingRow"
@@ -1838,6 +1951,10 @@ msgstr ""
 
 msgctxt "PictureField"
 msgid "https://… or upload a file →"
+msgstr ""
+
+msgctxt "TimeCopy"
+msgid "just now"
 msgstr ""
 
 msgctxt "KeysPage"

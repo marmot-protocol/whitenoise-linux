@@ -1,6 +1,7 @@
 import { Palette, Theme, MessageLine, EmojiSheet, Linkout, AlbumCell } from "../tokens.slint";
 import { CheckMark } from "../icons/check-mark.slint";
 import { SketchOutline } from "sketch-outline.slint";
+import { Tooltip } from "tooltip.slint";
 
 // One inline run inside a wrapped chat line. The Text element is always
 // instantiated (empty string when emoji) so the wrapper can bind to its
@@ -189,6 +190,8 @@ export component MessageBubble inherits Rectangle {
     // a plain `Text` so synthetic / programmatic uses still work.
     in property <[MessageLine]> lines;
     in property <string> stamp;
+    // Full localized date+time for the stamp's hover tooltip; empty hides it.
+    in property <string> stamp-full;
     in property <bool> outgoing: false;
     // Which screen edge the bubble hugs. Outgoing bubbles can be placed on the
     // left (when "own messages on the right" is off), so the tail + tight corner
@@ -875,13 +878,47 @@ export component MessageBubble inherits Rectangle {
                         clicked => { root.show-history-clicked(); }
                     }
                 }
-                Text {
-                    text: root.failed ? @tr("failed · tap to retry") : root.stamp;
-                    color: root.failed ? Palette.danger-on-bubble : (root.outgoing ? Palette.bubble-out-fg : Palette.text-lo);
-                    font-size: (10px) * Theme.fs-scale;
-                    font-family: Theme.font;
-                    vertical-alignment: bottom;
-                    opacity: root.outgoing && !root.failed ? 0.7 : 1;
+                stamp-rect := Rectangle {
+                    height: stamp-label.preferred-height;
+                    width: stamp-label.preferred-width;
+                    y: parent.height - self.height;
+                    stamp-label := Text {
+                        text: root.failed ? @tr("failed · tap to retry") : root.stamp;
+                        color: root.failed ? Palette.danger-on-bubble : (root.outgoing ? Palette.bubble-out-fg : Palette.text-lo);
+                        font-size: (10px) * Theme.fs-scale;
+                        font-family: Theme.font;
+                        vertical-alignment: bottom;
+                        opacity: root.outgoing && !root.failed ? 0.7 : 1;
+                    }
+                    // Hover sensor for the datetime tooltip. Sits above the
+                    // whole-bubble TouchAreas, so it forwards clicks (retry /
+                    // effect replay) and right-clicks (context menu) to keep
+                    // the stamp region behaving exactly like the rest of the
+                    // bubble — same reason `edited-touch` above swallows.
+                    stamp-touch := TouchArea {
+                        pointer-event(e) => {
+                            if (e.kind == PointerEventKind.down && e.button == PointerEventButton.right) {
+                                root.context-menu-requested(
+                                    self.absolute-position.x + self.mouse-x,
+                                    self.absolute-position.y + self.mouse-y);
+                            }
+                        }
+                        clicked => {
+                            if (root.failed) {
+                                root.retry-clicked();
+                            } else {
+                                root.body-clicked();
+                            }
+                        }
+                    }
+                    // Floats above the stamp, right-aligned; the bubble root
+                    // doesn't clip, so it can overflow into the previous row.
+                    if stamp-touch.has-hover && !root.failed && root.stamp-full != "" : Tooltip {
+                        x: parent.width - self.width;
+                        y: -self.height - 6px;
+                        label: root.stamp-full;
+                        is-visible: true;
+                    }
                 }
                 // Status indicator: confirmed = double check, pending = single
                 // (lighter, animates), failed = "!" in red. Only on outgoing.
@@ -934,6 +971,32 @@ export component MessageBubble inherits Rectangle {
                 double: !root.pending;
                 opacity: root.pending ? 0.55 : 1.0;
             }
+        }
+        // Datetime tooltip for the pill. The pill is always mounted (opacity-
+        // gated), so this TouchArea covers its region even while invisible —
+        // clicks and right-clicks are forwarded like `stamp-touch` above so
+        // the jumbo glyph region keeps its retry/replay/context-menu behavior.
+        pill-touch := TouchArea {
+            pointer-event(e) => {
+                if (e.kind == PointerEventKind.down && e.button == PointerEventButton.right) {
+                    root.context-menu-requested(
+                        self.absolute-position.x + self.mouse-x,
+                        self.absolute-position.y + self.mouse-y);
+                }
+            }
+            clicked => {
+                if (root.failed) {
+                    root.retry-clicked();
+                } else {
+                    root.body-clicked();
+                }
+            }
+        }
+        if pill-touch.has-hover && !root.failed && root.stamp-full != "" : Tooltip {
+            x: parent.width - self.width;
+            y: -self.height - 6px;
+            label: root.stamp-full;
+            is-visible: true;
         }
     }
 

@@ -6,6 +6,7 @@ import { MessageEffectLayer } from "primitives/message-effect-layer.slint";
 import { PaperDoodles } from "primitives/paper-doodles.slint";
 import { SynthGrid } from "primitives/synth-grid.slint";
 import { ChevronDownIcon } from "icons/chevron-down-icon.slint";
+import { SessionDivider } from "main-pane/session-divider.slint";
 
 // One slot in the effect-burst pool. `gen` is a per-slot generation counter —
 // bumping it (re)fires that slot's layer; the position/effect fields say where
@@ -183,6 +184,9 @@ export component MessagesArea inherits Rectangle {
 
             for msg in root.messages : VerticalLayout {
                 spacing: 0;
+                // Date divider above the first message of each local day, so
+                // multi-day history stays orientable (bubbles only stamp HH:MM).
+                if msg.day-label != "" : SessionDivider { label: msg.day-label; }
                 if msg.gap-before > 0px : Rectangle { height: msg.gap-before; }
 
                 // One skin slot per message. Theme.skin-message picks the render

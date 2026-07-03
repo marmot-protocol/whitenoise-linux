@@ -305,6 +305,7 @@ pub(crate) fn chat_message_from_with_reactions(
         jumbo_emoji: !deleted && jumbo_emoji,
         deleted,
         stamp: s(&format_unix(record.recorded_at)),
+        stamp_full: s(&format_full_stamp(record.recorded_at)),
         outgoing,
         edited: !deleted && edited,
         edit_count: if deleted { 0 } else { edit_count },
@@ -322,6 +323,8 @@ pub(crate) fn chat_message_from_with_reactions(
         gap_before: 0.0,
         first_in_group: true,
         last_in_group: true,
+        day_key: day_key_of(record.recorded_at),
+        day_label: s(""),
         message_id: s(&record.message_id_hex),
         reactions: ModelRc::new(VecModel::from(if deleted { Vec::new() } else { reactions })),
         pending: false,
@@ -503,6 +506,9 @@ pub(crate) fn pending_chat_message(
         lines,
         jumbo_emoji,
         stamp: s(&stamp),
+        // No confirmed timestamp yet — the empty string suppresses the
+        // datetime tooltip on pending/failed rows.
+        stamp_full: s(""),
         outgoing: true,
         edited: false,
         edit_count: 0,
@@ -524,6 +530,10 @@ pub(crate) fn pending_chat_message(
         gap_before: 0.0,
         first_in_group: true,
         last_in_group: true,
+        // A pending row was composed just now, so it's always on today's side
+        // of any day boundary.
+        day_key: today_day_key(),
+        day_label: s(""),
         // Carry the temp_id in `message_id` so the retry callback can find
         // the entry. The visual layer keys off `pending`/`failed`, not on
         // the id string being empty.
@@ -862,15 +872,34 @@ pub(crate) fn keys_grouped(a: &GroupKey, b: &GroupKey) -> bool {
 /// rows. `keys` must be in the same order and length as `rows`.
 pub(crate) fn apply_grouping(rows: &mut [ChatMessage], keys: &[GroupKey]) {
     let n = rows.len();
+    let today = today_day_key();
     for i in 0..n {
-        let first = i == 0 || !keys_grouped(&keys[i - 1], &keys[i]);
-        let last = i + 1 == n || !keys_grouped(&keys[i], &keys[i + 1]);
+        // A day boundary always breaks the visual group — a date divider
+        // renders between the bubbles, so they can't share corners/avatar.
+        let day_break = i > 0 && rows[i].day_key != rows[i - 1].day_key;
+        let first = i == 0 || day_break || !keys_grouped(&keys[i - 1], &keys[i]);
+        let last = i + 1 == n
+            || rows[i + 1].day_key != rows[i].day_key
+            || !keys_grouped(&keys[i], &keys[i + 1]);
         rows[i].first_in_group = first;
         rows[i].last_in_group = last;
         // Avatar rides the bottom of a stack; the name label tops it.
         rows[i].show_avatar = last;
         rows[i].show_sender_name = rows[i].show_sender_name && first;
         rows[i].gap_before = if first && i != 0 { 10.0 } else { 0.0 };
+        // Date divider above the first message of each local day. The window's
+        // first row gets one too unless it's from today (a fresh chat already
+        // has the session divider at the top of the pane).
+        let want_label = if i == 0 {
+            rows[0].day_key != 0 && rows[0].day_key != today
+        } else {
+            day_break
+        };
+        rows[i].day_label = if want_label {
+            s(&format_day_label(rows[i].day_key))
+        } else {
+            s("")
+        };
     }
 }
 
@@ -908,17 +937,22 @@ pub(crate) fn grouping_keys(
 pub(crate) fn push_message_grouped(vm: &VecModel<ChatMessage>, mut row: ChatMessage) {
     let n = vm.row_count();
     let mut grouped = false;
+    // Day of the previous row, to detect a live arrival crossing midnight.
+    // 0 = no previous row.
+    let mut prev_day = 0;
     if n > 0
         && let Some(mut prev) = vm.row_data(n - 1)
     {
-        let same = (row.outgoing && prev.outgoing)
-            || (!row.outgoing
-                && !prev.outgoing
-                && !row.sender_id.is_empty()
-                && prev
-                    .sender_id
-                    .as_str()
-                    .eq_ignore_ascii_case(row.sender_id.as_str()));
+        prev_day = prev.day_key;
+        let same = prev.day_key == row.day_key
+            && ((row.outgoing && prev.outgoing)
+                || (!row.outgoing
+                    && !prev.outgoing
+                    && !row.sender_id.is_empty()
+                    && prev
+                        .sender_id
+                        .as_str()
+                        .eq_ignore_ascii_case(row.sender_id.as_str())));
         if same {
             grouped = true;
             prev.last_in_group = false;
@@ -926,6 +960,18 @@ pub(crate) fn push_message_grouped(vm: &VecModel<ChatMessage>, mut row: ChatMess
             vm.set_row_data(n - 1, prev);
         }
     }
+    // Date divider when this row starts a new local day (same rule as
+    // `apply_grouping`: an empty chat only gets one for a non-today row).
+    let day_boundary = if n == 0 {
+        row.day_key != 0 && row.day_key != today_day_key()
+    } else {
+        row.day_key != prev_day
+    };
+    row.day_label = if day_boundary {
+        s(&format_day_label(row.day_key))
+    } else {
+        s("")
+    };
     row.first_in_group = !grouped;
     row.last_in_group = true;
     row.show_avatar = true;
@@ -952,6 +998,7 @@ pub(crate) fn preserve_grouping_flags(
         row.show_avatar = old.show_avatar;
         row.show_sender_name = old.show_sender_name;
         row.gap_before = old.gap_before;
+        row.day_label = old.day_label.clone();
     }
 }
 

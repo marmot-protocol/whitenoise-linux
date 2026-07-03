@@ -35,7 +35,7 @@ import { SplashScreen } from "splash.slint";
 import { EmojiPicker } from "emoji-picker.slint";
 import { MessageContextMenu } from "primitives/context-menu.slint";
 import { ChatContextMenu } from "primitives/chat-context-menu.slint";
-import { EmojiEntry, EmojiSheet, Linkout, ProfileSink, EffectCatalog, ErrorCopy, NativeDialogStrings } from "tokens.slint";
+import { EmojiEntry, EmojiSheet, Linkout, ProfileSink, EffectCatalog, ErrorCopy, TimeCopy, NativeDialogStrings } from "tokens.slint";
 import { EditVersion } from "tokens.slint";
 import { AuditLogEntry } from "tokens.slint";
 import { StagedAttachment } from "tokens.slint";
@@ -53,6 +53,9 @@ export { EffectCatalog }
 // User-facing error/status copy. Rust reads these `@tr()` properties on the UI
 // thread to localize the strings it sets on status fields / the error banner.
 export { ErrorCopy }
+// Localized time/date vocabulary for the Rust-side stamp formatters, snapshot
+// on the UI thread at startup and on locale change (same bridge as ErrorCopy).
+export { TimeCopy }
 
 export component DarkMatterLinux inherits Window {
     // Window/taskbar title. Rust prefixes the total unread count — `(3) darkmatter`

@@ -21,7 +21,134 @@ pub(crate) fn apply_stamp_formats(settings: &Settings) {
     DATE_FORMAT_KIND.store(kind, Ordering::Relaxed);
 }
 
-/// Clock part of a stamp, honoring the 12h/24h preference.
+// ─── Localized time/date vocabulary ─────────────────────────────────────
+// The stamp formatters below run on worker threads (chat-list rebuilds, row
+// builds), so they can't read Slint `@tr()` properties directly. Mirroring
+// the `ErrorCopy` pattern in state.rs, the `TimeCopy` global is snapshot into
+// this process-wide cell on the UI thread at startup and on locale change.
+
+#[derive(Clone)]
+pub(crate) struct TimeCopySnapshot {
+    pub today: String,
+    pub yesterday: String,
+    pub just_now: String,
+    /// "%1m ago" — %1 is the number.
+    pub minutes_ago: String,
+    pub hours_ago: String,
+    pub days_ago: String,
+    /// Monday-first abbreviations.
+    pub weekdays: [String; 7],
+    pub months: [String; 12],
+    /// Date templates: %1/%2/%3 slots per the names ("md" = month, day).
+    pub date_md: String,
+    pub date_dm: String,
+    pub date_mdy: String,
+    pub date_dmy: String,
+}
+
+impl Default for TimeCopySnapshot {
+    fn default() -> Self {
+        // English mirrors of the `TimeCopy` @tr sources, so stamps rendered
+        // before the first snapshot (or on a headless path) stay sane.
+        Self {
+            today: "Today".into(),
+            yesterday: "Yesterday".into(),
+            just_now: "just now".into(),
+            minutes_ago: "%1m ago".into(),
+            hours_ago: "%1h ago".into(),
+            days_ago: "%1d ago".into(),
+            weekdays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(String::from),
+            months: [
+                "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+            ]
+            .map(String::from),
+            date_md: "%1 %2".into(),
+            date_dm: "%1 %2".into(),
+            date_mdy: "%1 %2 %3".into(),
+            date_dmy: "%1 %2 %3".into(),
+        }
+    }
+}
+
+pub(crate) fn time_copy_cell() -> &'static Mutex<TimeCopySnapshot> {
+    use std::sync::OnceLock;
+    static C: OnceLock<Mutex<TimeCopySnapshot>> = OnceLock::new();
+    C.get_or_init(|| Mutex::new(TimeCopySnapshot::default()))
+}
+
+/// Snapshot the localized `TimeCopy` strings off the Slint global. MUST be
+/// called on the UI/event-loop thread; call at startup and after every locale
+/// change so worker-thread stamps follow the active language.
+pub(crate) fn refresh_time_copy(ui: &DarkMatterLinux) {
+    let g = ui.global::<TimeCopy>();
+    let snap = TimeCopySnapshot {
+        today: g.get_today().to_string(),
+        yesterday: g.get_yesterday().to_string(),
+        just_now: g.get_just_now().to_string(),
+        minutes_ago: g.get_minutes_ago().to_string(),
+        hours_ago: g.get_hours_ago().to_string(),
+        days_ago: g.get_days_ago().to_string(),
+        weekdays: [
+            g.get_wd_mon(),
+            g.get_wd_tue(),
+            g.get_wd_wed(),
+            g.get_wd_thu(),
+            g.get_wd_fri(),
+            g.get_wd_sat(),
+            g.get_wd_sun(),
+        ]
+        .map(|s| s.to_string()),
+        months: [
+            g.get_mo_jan(),
+            g.get_mo_feb(),
+            g.get_mo_mar(),
+            g.get_mo_apr(),
+            g.get_mo_may(),
+            g.get_mo_jun(),
+            g.get_mo_jul(),
+            g.get_mo_aug(),
+            g.get_mo_sep(),
+            g.get_mo_oct(),
+            g.get_mo_nov(),
+            g.get_mo_dec(),
+        ]
+        .map(|s| s.to_string()),
+        date_md: g.get_date_md().to_string(),
+        date_dm: g.get_date_dm().to_string(),
+        date_mdy: g.get_date_mdy().to_string(),
+        date_dmy: g.get_date_dmy().to_string(),
+    };
+    *time_copy_cell().lock().unwrap() = snap;
+}
+
+/// Read the current localized `TimeCopy` snapshot. Safe from any thread.
+pub(crate) fn time_copy() -> TimeCopySnapshot {
+    time_copy_cell().lock().unwrap().clone()
+}
+
+/// Substitute `%1`, `%2`, `%3` in a translated date/relative-time template.
+/// Descending order so `%1` doesn't eat the prefix of a later placeholder.
+fn tmpl(template: &str, args: &[&str]) -> String {
+    let mut out = template.to_string();
+    for (i, a) in args.iter().enumerate().rev() {
+        out = out.replace(&format!("%{}", i + 1), a);
+    }
+    out
+}
+
+/// Monday-first index for [`TimeCopySnapshot::weekdays`].
+fn weekday_index(w: jiff::civil::Weekday) -> usize {
+    use jiff::civil::Weekday;
+    match w {
+        Weekday::Monday => 0,
+        Weekday::Tuesday => 1,
+        Weekday::Wednesday => 2,
+        Weekday::Thursday => 3,
+        Weekday::Friday => 4,
+        Weekday::Saturday => 5,
+        Weekday::Sunday => 6,
+    }
+}
 pub(crate) fn format_clock(z: &jiff::Zoned) -> String {
     if TIME_FORMAT_12H.load(std::sync::atomic::Ordering::Relaxed) {
         let (h, half) = match z.hour() {
@@ -38,25 +165,32 @@ pub(crate) fn format_clock(z: &jiff::Zoned) -> String {
 
 /// Date part of a stamp, honoring the mdy/dmy/iso preference. `with_year`
 /// is advisory for the named-month styles; ISO always carries the year.
+/// Month names and slot composition come from the localized `TimeCopy`
+/// snapshot, so the output follows the active locale.
 pub(crate) fn format_date_part(z: &jiff::Zoned, with_year: bool) -> String {
-    let months = [
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-    ];
-    let mi = (z.month() as usize).saturating_sub(1).min(11);
+    format_date_civil(z.date(), with_year)
+}
+
+pub(crate) fn format_date_civil(d: jiff::civil::Date, with_year: bool) -> String {
+    let t = time_copy();
+    let mi = (d.month() as usize).saturating_sub(1).min(11);
+    let month = t.months[mi].as_str();
+    let day = d.day().to_string();
+    let year = d.year().to_string();
     match DATE_FORMAT_KIND.load(std::sync::atomic::Ordering::Relaxed) {
         1 => {
             if with_year {
-                format!("{} {} {}", z.day(), months[mi], z.year())
+                tmpl(&t.date_dmy, &[&day, month, &year])
             } else {
-                format!("{} {}", z.day(), months[mi])
+                tmpl(&t.date_dm, &[&day, month])
             }
         }
-        2 => format!("{:04}-{:02}-{:02}", z.year(), z.month(), z.day()),
+        2 => format!("{:04}-{:02}-{:02}", d.year(), d.month(), d.day()),
         _ => {
             if with_year {
-                format!("{} {} {}", months[mi], z.day(), z.year())
+                tmpl(&t.date_mdy, &[month, &day, &year])
             } else {
-                format!("{} {}", months[mi], z.day())
+                tmpl(&t.date_md, &[month, &day])
             }
         }
     }
@@ -77,12 +211,22 @@ pub(crate) fn format_unix(secs: u64) -> String {
     format_clock(&z)
 }
 
+/// Unabbreviated stamp for the bubble-timestamp hover tooltip: the full date
+/// (year always included) plus the clock, both honoring the user's format
+/// preferences and locale.
+pub(crate) fn format_full_stamp(secs: u64) -> String {
+    if secs == 0 {
+        return String::new();
+    }
+    let z = local_time(secs);
+    format!("{} · {}", format_date_part(&z, true), format_clock(&z))
+}
+
 /// Friendly chat-list stamp: `HH:MM` for today, "Yesterday", the weekday
 /// within the last week, `Mon DD` within the year, `Mon DD YYYY` beyond.
 /// Date-granular on purpose — labels only go stale at midnight, so the
 /// refresh is a once-a-day model rebuild instead of a per-minute tick.
-/// (English like the month names in `format_date_unix`; gettext only covers
-/// .slint strings today.)
+/// All words come from the localized `TimeCopy` snapshot.
 pub(crate) fn format_chat_stamp(secs: u64) -> String {
     if secs == 0 {
         return String::new();
@@ -100,22 +244,52 @@ pub(crate) fn format_chat_stamp(secs: u64) -> String {
         return format_clock(&z);
     }
     if days == 1 {
-        return "Yesterday".to_string();
+        return time_copy().yesterday;
     }
     if days < 7 {
-        use jiff::civil::Weekday;
-        return match z.weekday() {
-            Weekday::Monday => "Mon",
-            Weekday::Tuesday => "Tue",
-            Weekday::Wednesday => "Wed",
-            Weekday::Thursday => "Thu",
-            Weekday::Friday => "Fri",
-            Weekday::Saturday => "Sat",
-            Weekday::Sunday => "Sun",
-        }
-        .to_string();
+        return time_copy().weekdays[weekday_index(z.weekday())].clone();
     }
     format_date_part(&z, z.year() != now.year())
+}
+
+/// Local-day identity of a unix-seconds timestamp: `yyyymmdd` as an int, 0
+/// for a missing stamp. Message rows carry this so day boundaries are a cheap
+/// integer comparison between consecutive rows.
+pub(crate) fn day_key_of(secs: u64) -> i32 {
+    if secs == 0 {
+        return 0;
+    }
+    let d = local_time(secs).date();
+    d.year() as i32 * 10_000 + d.month() as i32 * 100 + d.day() as i32
+}
+
+pub(crate) fn today_day_key() -> i32 {
+    let d = jiff::Zoned::now().date();
+    d.year() as i32 * 10_000 + d.month() as i32 * 100 + d.day() as i32
+}
+
+/// Label for an in-chat date divider, from a `day_key_of` value: "TODAY",
+/// "YESTERDAY", the weekday within the last week, else the date. Uppercased
+/// to match the SessionDivider's small-caps styling; words are localized via
+/// the `TimeCopy` snapshot.
+pub(crate) fn format_day_label(day_key: i32) -> String {
+    let (y, m, d) = (day_key / 10_000, (day_key / 100) % 100, day_key % 100);
+    let Ok(date) = jiff::civil::Date::new(y as i16, m as i8, d as i8) else {
+        return String::new();
+    };
+    let today = jiff::Zoned::now().date();
+    let days = date.until(today).map(|span| span.get_days()).unwrap_or(0);
+    let t = time_copy();
+    let label = if days <= 0 {
+        t.today
+    } else if days == 1 {
+        t.yesterday
+    } else if days < 7 {
+        t.weekdays[weekday_index(date.weekday())].clone()
+    } else {
+        format_date_civil(date, date.year() != today.year())
+    };
+    label.to_uppercase()
 }
 
 /// Epoch seconds → civil time in the system timezone. Conversion happens
@@ -177,22 +351,22 @@ pub(crate) fn relay_host(url: &str) -> String {
     h.trim_end_matches('/').to_string()
 }
 
-/// Coarse "N units ago" for a unix-seconds timestamp. English on purpose, like
-/// the other Rust-side stamps (`format_chat_stamp`) — gettext only covers the
-/// .slint catalogs today.
+/// Coarse "N units ago" for a unix-seconds timestamp, localized via the
+/// `TimeCopy` snapshot like the other Rust-side stamps.
 pub(crate) fn relative_since(secs: u64) -> String {
     if secs == 0 {
         return String::new();
     }
+    let t = time_copy();
     let d = now_unix_secs().saturating_sub(secs);
     if d < 60 {
-        "just now".to_string()
+        t.just_now
     } else if d < 3600 {
-        format!("{}m ago", d / 60)
+        tmpl(&t.minutes_ago, &[&(d / 60).to_string()])
     } else if d < 86_400 {
-        format!("{}h ago", d / 3600)
+        tmpl(&t.hours_ago, &[&(d / 3600).to_string()])
     } else {
-        format!("{}d ago", d / 86_400)
+        tmpl(&t.days_ago, &[&(d / 86_400).to_string()])
     }
 }
 

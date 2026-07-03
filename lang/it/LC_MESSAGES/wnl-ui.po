@@ -1,15 +1,34 @@
-#
 msgid ""
-msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
-"PO-Revision-Date: 2026-05-27 13:20+0000\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
-"Language: it\n"
-"MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+msgstr "Content-Type: text/plain; charset=UTF-8\n"
+
+msgctxt "date, %1 = day, %2 = month"
+msgid "%1 %2"
+msgstr "%1 %2"
+
+#. Japanese "%1%2日"). %1/%2/%3 keep the slot meaning named in the context.
+msgctxt "date, %1 = month, %2 = day"
+msgid "%1 %2"
+msgstr "%1 %2"
+
+msgctxt "date, %1 = day, %2 = month, %3 = year"
+msgid "%1 %2 %3"
+msgstr "%1 %2 %3"
+
+msgctxt "date, %1 = month, %2 = day, %3 = year"
+msgid "%1 %2 %3"
+msgstr "%1 %2 %3"
+
+msgctxt "relative time, %1 = days"
+msgid "%1d ago"
+msgstr "%1 g fa"
+
+msgctxt "relative time, %1 = hours"
+msgid "%1h ago"
+msgstr "%1 h fa"
+
+msgctxt "relative time, %1 = minutes"
+msgid "%1m ago"
+msgstr "%1 min fa"
 
 msgctxt "MessageBubble"
 msgid "(message unavailable)"
@@ -228,6 +247,10 @@ msgctxt "SettingsSidebar"
 msgid "Appearance"
 msgstr "Aspetto"
 
+msgctxt "month"
+msgid "Apr"
+msgstr "Apr"
+
 msgctxt "ChatHeader"
 msgid "Archive"
 msgstr "Archivia"
@@ -244,6 +267,10 @@ msgstr "Archivia chat"
 msgctxt "AdvancedPane"
 msgid "Audit logs"
 msgstr "Log di audit"
+
+msgctxt "month"
+msgid "Aug"
+msgstr "Ago"
 
 msgctxt "ImportBackupModal"
 msgid "BACKUP FILE"
@@ -689,6 +716,10 @@ msgctxt "SettingsSidebar"
 msgid "Debug"
 msgstr "Debug"
 
+msgctxt "month"
+msgid "Dec"
+msgstr "Dic"
+
 msgctxt "AboutPane"
 msgid "Decentralized network"
 msgstr "Rete decentralizzata"
@@ -794,6 +825,10 @@ msgctxt "LoginScreen"
 msgid "Enter your password to unlock"
 msgstr "Inserisci la password per sbloccare"
 
+msgctxt "month"
+msgid "Feb"
+msgstr "Feb"
+
 msgctxt "MessageContextMenu"
 msgid "Forward"
 msgstr "Inoltra"
@@ -805,6 +840,10 @@ msgstr "Segreto forward"
 msgctxt "ForwardPickerModal"
 msgid "Forward to…"
 msgstr "Inoltra a…"
+
+msgctxt "weekday"
+msgid "Fri"
+msgstr "Ven"
 
 msgctxt "StartNewChatModal"
 msgid "GROUP NAME (OPTIONAL)"
@@ -923,6 +962,18 @@ msgctxt "ArchivedDetail"
 msgid "It stays end-to-end encrypted. Unarchiving returns it to your main list and resumes notifications."
 msgstr "Resta crittografata end-to-end. Ripristinandola torna nell'elenco principale e riprendono le notifiche."
 
+msgctxt "month"
+msgid "Jan"
+msgstr "Gen"
+
+msgctxt "month"
+msgid "Jul"
+msgstr "Lug"
+
+msgctxt "month"
+msgid "Jun"
+msgstr "Giu"
+
 msgctxt "KeysPage"
 msgid "KEY PACKAGES"
 msgstr "PACCHETTI CHIAVE"
@@ -1031,6 +1082,14 @@ msgctxt "GroupMemberRow"
 msgid "Make admin"
 msgstr "Rendi admin"
 
+msgctxt "month"
+msgid "Mar"
+msgstr "Mar"
+
+msgctxt "month"
+msgid "May"
+msgstr "Mag"
+
 msgctxt "ArchivedDetail"
 msgid "Members"
 msgstr "Membri"
@@ -1055,6 +1114,10 @@ msgstr "Unisci gli account di un backup crittografato a questa installazione. Us
 msgctxt "AppearancePane"
 msgid "Mint"
 msgstr "Menta"
+
+msgctxt "weekday"
+msgid "Mon"
+msgstr "Lun"
 
 #, fuzzy
 msgctxt "ChatContextMenu"
@@ -1185,6 +1248,10 @@ msgctxt "SettingsSidebar"
 msgid "Notifications"
 msgstr "Notifiche"
 
+msgctxt "month"
+msgid "Nov"
+msgstr "Nov"
+
 #, fuzzy
 msgctxt "StatusBar"
 msgid "OFFLINE"
@@ -1201,6 +1268,10 @@ msgstr "ONLINE"
 msgctxt "AppearancePane"
 msgid "Ocean"
 msgstr "Oceano"
+
+msgctxt "month"
+msgid "Oct"
+msgstr "Ott"
 
 msgctxt "NotificationsPane"
 msgid "Off shows only \"New message\" without the text."
@@ -1542,6 +1613,10 @@ msgctxt "KeysPage"
 msgid "Safe to share. This is how people find you."
 msgstr "Sicura da condividere. Così ti trovano gli altri."
 
+msgctxt "weekday"
+msgid "Sat"
+msgstr "Sab"
+
 #, fuzzy
 msgctxt "NicknameModal"
 msgid "Save"
@@ -1619,6 +1694,10 @@ msgstr "Ultimo messaggio"
 msgctxt "Composer"
 msgid "Send message"
 msgstr "Invia messaggio"
+
+msgctxt "month"
+msgid "Sep"
+msgstr "Set"
 
 msgctxt "ProfilePage"
 msgid "Set"
@@ -1704,6 +1783,10 @@ msgctxt "StoragePane"
 msgid "Storage"
 msgstr "Archiviazione"
 
+msgctxt "weekday"
+msgid "Sun"
+msgstr "Dom"
+
 msgctxt "ThemePicker"
 msgid "Synthwave"
 msgstr ""
@@ -1773,9 +1856,21 @@ msgctxt "GetStartedScreen"
 msgid "Three quick steps and you're ready to message — end-to-end encrypted, no servers in the middle."
 msgstr "Tre rapidi passaggi e sei pronto a messaggiare — crittografia end-to-end, nessun server di mezzo."
 
+msgctxt "weekday"
+msgid "Thu"
+msgstr "Gio"
+
 msgctxt "GeneralPane"
 msgid "Time format"
 msgstr "Formato ora"
+
+msgctxt "TimeCopy"
+msgid "Today"
+msgstr "Oggi"
+
+msgctxt "weekday"
+msgid "Tue"
+msgstr "Mar"
 
 msgctxt "CommandPalette"
 msgid "Type a command…"
@@ -1856,6 +1951,10 @@ msgctxt "AboutPane"
 msgid "WHAT IT IS"
 msgstr "COS'È"
 
+msgctxt "weekday"
+msgid "Wed"
+msgstr "Mer"
+
 msgctxt "GetStartedScreen"
 msgid "Welcome to darkmatter"
 msgstr "Benvenuto in darkmatter"
@@ -1871,6 +1970,10 @@ msgstr "TU"
 msgctxt "LoginScreen"
 msgid "YOUR DISPLAY NAME"
 msgstr "IL TUO NOME VISUALIZZATO"
+
+msgctxt "TimeCopy"
+msgid "Yesterday"
+msgstr "Ieri"
 
 msgctxt "OutgoingRow"
 msgid "You"
@@ -1923,6 +2026,10 @@ msgstr "fallito · tocca per riprovare"
 msgctxt "PictureField"
 msgid "https://… or upload a file →"
 msgstr "https://… o carica un file →"
+
+msgctxt "TimeCopy"
+msgid "just now"
+msgstr "proprio ora"
 
 msgctxt "KeysPage"
 msgid "local only"
@@ -2065,9 +2172,18 @@ msgstr "✓ VERIFICATO"
 #~ msgid "Start chat"
 #~ msgstr "Avvia chat"
 
+#~ msgid "Today"
+#~ msgstr "Oggi"
+
 #~ msgctxt "AppearancePane"
 #~ msgid "Turn the whole app into SNES style."
 #~ msgstr "Trasforma tutta l'app in stile SNES."
+
+#~ msgid "Yesterday"
+#~ msgstr "Ieri"
+
+#~ msgid "just now"
+#~ msgstr "proprio ora"
 
 #~ msgctxt "StartNewChatModal"
 #~ msgid "or"

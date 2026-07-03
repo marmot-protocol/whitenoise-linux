@@ -9,6 +9,7 @@
 import { Palette, Theme, ChatMessage } from "../tokens.slint";
 import { IncomingRow } from "incoming-row.slint";
 import { OutgoingRow } from "outgoing-row.slint";
+import { Tooltip } from "tooltip.slint";
 
 export component MessageView inherits VerticalLayout {
     spacing: 0;
@@ -42,6 +43,7 @@ export component MessageView inherits VerticalLayout {
         text: root.msg.text;
         lines: root.msg.lines;
         stamp: root.msg.stamp;
+        stamp-full: root.msg.stamp-full;
         show-avatar: root.msg.show-avatar;
         bubble-max: root.msg.bubble-max;
         av-initials: root.msg.av-initials;
@@ -103,6 +105,7 @@ export component MessageView inherits VerticalLayout {
         text: root.msg.text;
         lines: root.msg.lines;
         stamp: root.msg.stamp;
+        stamp-full: root.msg.stamp-full;
         show-avatar: root.msg.show-avatar;
         av-initials: root.msg.av-initials;
         av-a: root.msg.av-a;
@@ -224,12 +227,36 @@ export component MessageView inherits VerticalLayout {
                     wrap: word-wrap;
                 }
             }
-            if root.msg.stamp != "" : Text {
-                text: root.msg.stamp;
-                color: Palette.text-vlo;
-                font-family: Theme.font;
-                font-size: 11px * Theme.fs-scale;
-                vertical-alignment: top;
+            if root.msg.stamp != "" : Rectangle {
+                width: term-stamp.preferred-width;
+                term-stamp := Text {
+                    text: root.msg.stamp;
+                    color: Palette.text-vlo;
+                    font-family: Theme.font;
+                    font-size: 11px * Theme.fs-scale;
+                    vertical-alignment: top;
+                }
+                // Hover tooltip with the full datetime. Forwards clicks to the
+                // same handler as `term-touch` (which it sits on top of) so the
+                // whole-line click target keeps working over the stamp.
+                term-stamp-touch := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        if (line.is-album) {
+                            root.album-cell-clicked(root.msg.album[0].key);
+                        } else if (root.msg.has-attachment) {
+                            root.attachment-clicked(root.msg.message-id);
+                        } else {
+                            root.request-reply(root.msg.message-id, root.msg.text, root.msg.outgoing ? "you" : root.msg.sender-name);
+                        }
+                    }
+                }
+                if term-stamp-touch.has-hover && root.msg.stamp-full != "" : Tooltip {
+                    x: parent.width - self.width;
+                    y: -self.height - 4px;
+                    label: root.msg.stamp-full;
+                    is-visible: true;
+                }
             }
         }
         // One TouchArea for the whole line; the action is chosen in the handler

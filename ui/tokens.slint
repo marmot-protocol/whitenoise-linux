@@ -590,6 +590,48 @@ export global ErrorCopy {
     out property <string> republishing: @tr("Republishing…");
 }
 
+// Localized time/date vocabulary for the Rust-side stamp formatters
+// (`format_chat_stamp`, `relative_since`, date parts, day dividers). Same
+// bridge as `ErrorCopy`: the strings live here as `@tr()` properties so the
+// gettext catalogs cover them, and Rust snapshots them on the UI thread at
+// startup and on every locale change. `%1`/`%2`/`%3` are substituted by Rust
+// (number, month/day/year) — they are placeholders for translators, not Slint
+// format args.
+export global TimeCopy {
+    out property <string> today: @tr("Today");
+    out property <string> yesterday: @tr("Yesterday");
+    out property <string> just-now: @tr("just now");
+    out property <string> minutes-ago: @tr("relative time, %1 = minutes" => "%1m ago");
+    out property <string> hours-ago: @tr("relative time, %1 = hours" => "%1h ago");
+    out property <string> days-ago: @tr("relative time, %1 = days" => "%1d ago");
+    out property <string> wd-mon: @tr("weekday" => "Mon");
+    out property <string> wd-tue: @tr("weekday" => "Tue");
+    out property <string> wd-wed: @tr("weekday" => "Wed");
+    out property <string> wd-thu: @tr("weekday" => "Thu");
+    out property <string> wd-fri: @tr("weekday" => "Fri");
+    out property <string> wd-sat: @tr("weekday" => "Sat");
+    out property <string> wd-sun: @tr("weekday" => "Sun");
+    out property <string> mo-jan: @tr("month" => "Jan");
+    out property <string> mo-feb: @tr("month" => "Feb");
+    out property <string> mo-mar: @tr("month" => "Mar");
+    out property <string> mo-apr: @tr("month" => "Apr");
+    out property <string> mo-may: @tr("month" => "May");
+    out property <string> mo-jun: @tr("month" => "Jun");
+    out property <string> mo-jul: @tr("month" => "Jul");
+    out property <string> mo-aug: @tr("month" => "Aug");
+    out property <string> mo-sep: @tr("month" => "Sep");
+    out property <string> mo-oct: @tr("month" => "Oct");
+    out property <string> mo-nov: @tr("month" => "Nov");
+    out property <string> mo-dec: @tr("month" => "Dec");
+    // Date composition templates. Which one applies is the user's date-format
+    // setting (mdy/dmy); the translation controls separators/suffixes (e.g.
+    // Japanese "%1%2日"). %1/%2/%3 keep the slot meaning named in the context.
+    out property <string> date-md: @tr("date, %1 = month, %2 = day" => "%1 %2");
+    out property <string> date-dm: @tr("date, %1 = day, %2 = month" => "%1 %2");
+    out property <string> date-mdy: @tr("date, %1 = month, %2 = day, %3 = year" => "%1 %2 %3");
+    out property <string> date-dmy: @tr("date, %1 = day, %2 = month, %3 = year" => "%1 %2 %3");
+}
+
 // Link activation sink. Chat bubbles render Markdown anchors deep inside the
 // IncomingRow/OutgoingRow → MessageBubble → RunCell chain; rather than thread a
 // callback through every level, the leaf RunCell invokes `Linkout.open(url)`
@@ -665,6 +707,10 @@ export struct ChatMessage {
     // synthetic rows; the bubble falls back to plain `Text` when empty.
     lines: [MessageLine],
     stamp: string,
+    // Full localized date+time ("Jun 12 2026 · 14:32", honoring the user's
+    // date/time format settings) shown as a tooltip when hovering the stamp.
+    // Empty for pending rows (no confirmed timestamp yet).
+    stamp-full: string,
     outgoing: bool,
     show-avatar: bool,
     av-initials: string,
@@ -691,6 +737,12 @@ export struct ChatMessage {
     // that carries the avatar + tail. A standalone message is both true.
     first-in-group: bool,
     last-in-group: bool,
+    // Local-day identity of the message's timestamp (yyyymmdd as an int, 0 =
+    // unknown). Rust compares consecutive rows' keys to find day boundaries.
+    day-key: int,
+    // Non-empty on the first message of a new local day: the list renders a
+    // date divider (reusing SessionDivider) above this row with this label.
+    day-label: string,
     // Stable id of the underlying Marmot inner event (kind-9 chat). Empty
     // when the message hasn't been confirmed yet. Needed to send / aggregate
     // reactions which target this id.
