@@ -51,10 +51,10 @@ export component Composer inherits Rectangle {
     // Open the emoji picker anchored at (x, y) in window coords; the picked
     // emoji is appended to the draft rather than sent as a reaction.
     callback emoji-clicked(length, length);
-    // While the open chat is a pending request the composer is locked: the
-    // input row is covered by an "Accept to start messaging" prompt and the
-    // inner TextInput is disabled. `accept-clicked` routes to the same
-    // handler as the header's Accept button.
+    // While the open chat is a pending request the input pill and its
+    // controls are hidden and a flat "Accept to start messaging" action bar
+    // takes their place in the composer slot. `accept-clicked` routes to the
+    // same handler as the header's Accept button.
     in property <bool> chat-request: false;
     callback accept-clicked();
 
@@ -287,8 +287,11 @@ export component Composer inherits Rectangle {
             horizontal-stretch: 1;
             height: root.row-h;
             border-radius: (10px) * Theme.r-scale;
-            background: Palette.panel;
-            border-width: 1px;
+            // While the chat is a pending request the pill chrome drops away
+            // entirely — the action bar below replaces the input rather than
+            // graying it out.
+            background: root.chat-request ? transparent : Palette.panel;
+            border-width: root.chat-request ? 0px : 1px;
             border-color: root.recording
                 ? Palette.danger
                 : (composer-input.has-focus ? Palette.mint-dim : Palette.border-2);
@@ -298,7 +301,11 @@ export component Composer inherits Rectangle {
             animate drop-shadow-blur { duration: 160ms; easing: ease-out; }
 
             // Normal composer: paperclip, mic, text input, emoji, send.
+            // Hidden (not just disabled) while the chat is a pending request;
+            // the elements stay instantiated because `composer-input` and
+            // `send-button` anchor the floating hint/badge/popover elements.
             HorizontalLayout {
+                visible: !root.chat-request;
                 padding-left: 16px; padding-right: 8px;
                 spacing: 12px;
                 alignment: stretch;
@@ -366,9 +373,9 @@ export component Composer inherits Rectangle {
                 // effect badge/popover anchor math below is unchanged.
                 send-button := Button {
                     focusable: true;
-                    // The chat-request lock overlay blocks the pointer but
-                    // not Tab focus; disable so Enter/Space can't reach the
-                    // covered button and start a recording.
+                    // Hidden while a chat request is pending; also disabled
+                    // so Tab focus can't reach it and Enter/Space start a
+                    // recording.
                     enabled: !root.chat-request;
                     accessible-label: root.primary-action-label;
                     clicked => {
@@ -481,24 +488,21 @@ export component Composer inherits Rectangle {
                 }
             }
 
-            // Chat-request lock: painted over the input row while the chat is
-            // a pending request (same pattern as the recording overlay, so
-            // `composer-input` / `send-button` references stay valid). The
-            // TouchArea absorbs clicks aimed at the covered controls; Accept
-            // routes to the same handler as the header button.
+            // Chat-request action bar: replaces the composer while the chat
+            // is a pending request. The input pill and its controls are
+            // hidden above, so this renders as a flat centered bar in the
+            // composer slot (Signal swaps the composer for the request
+            // actions the same way). The TouchArea absorbs clicks aimed at
+            // the hidden controls; Accept routes to the same handler as the
+            // header button.
             if root.chat-request : Rectangle {
                 x: 0; y: 0;
                 width: 100%; height: 100%;
-                background: Palette.panel;
-                border-radius: (10px) * Theme.r-scale;
-                border-width: 1px;
-                border-color: Palette.border-2;
                 TouchArea { }
 
                 HorizontalLayout {
-                    padding-left: 16px; padding-right: 8px;
                     spacing: 12px;
-                    alignment: stretch;
+                    alignment: center;
 
                     Text {
                         text: @tr("Accept the request to start messaging");
@@ -506,8 +510,6 @@ export component Composer inherits Rectangle {
                         font-size: Theme.fs(13px, 16px);
                         font-family: Theme.font;
                         vertical-alignment: center;
-                        overflow: elide;
-                        horizontal-stretch: 1;
                     }
 
                     Button {
