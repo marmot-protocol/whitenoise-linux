@@ -11,6 +11,10 @@ export component LineInput inherits Rectangle {
     in property <color> fg: Palette.text-hi;
     in property <color> placeholder-color: Palette.text-vlo;
     in property <bool> single-line: true;
+    // When false the inner TextInput ignores focus and key events — used by
+    // the composer while a chat request is pending, so a stale focus can't
+    // keep typing into a locked input.
+    in property <bool> enabled: true;
     // When true the inner TextInput masks its glyphs (vault password fields).
     in property <bool> password: false;
     // Enter fires `submit` (Shift+Enter for a newline). Set false on
@@ -71,6 +75,7 @@ export component LineInput inherits Rectangle {
             width: parent.width;
             height: max(parent.height, self.preferred-height);
             text <=> root.text;
+            enabled: root.enabled;
             color: root.fg;
             font-size: (root.font-size) * Theme.fs-scale;
             font-family: Theme.font;

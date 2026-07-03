@@ -118,6 +118,17 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 return;
             }
             let idx = ui.get_active_chat() as usize;
+            // Chat requests are read-only until accepted. The composer is
+            // locked in the UI, but a shortcut or stale focus could still
+            // fire this callback; drop the send rather than messaging a peer
+            // the user has not admitted.
+            if ui
+                .get_chats()
+                .row_data(idx)
+                .is_some_and(|c| c.is_chat_request)
+            {
+                return;
+            }
             let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
                 return;
             };
@@ -1112,6 +1123,17 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     ui.on_record_clicked({
         let weak = ui.as_weak();
         move || {
+            // Chat requests are read-only until accepted (same gate as
+            // on_send_message): don't start a recording whose only
+            // destination would be the unaccepted chat.
+            if let Some(ui) = weak.upgrade()
+                && ui
+                    .get_chats()
+                    .row_data(ui.get_active_chat() as usize)
+                    .is_some_and(|c| c.is_chat_request)
+            {
+                return;
+            }
             let recorder = match audio::AudioRecorder::start() {
                 Ok(r) => r,
                 Err(e) => {
@@ -1191,6 +1213,16 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             }
             let Some(ui) = weak.upgrade() else { return };
             let idx = ui.get_active_chat() as usize;
+            // Gate the dispatch too: the 120s auto-stop can fire after the
+            // user has switched to a pending request chat. The clip is
+            // recorded but never sent.
+            if ui
+                .get_chats()
+                .row_data(idx)
+                .is_some_and(|c| c.is_chat_request)
+            {
+                return;
+            }
             let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
                 return;
             };
