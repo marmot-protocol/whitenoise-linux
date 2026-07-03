@@ -299,6 +299,10 @@ export component DarkMatterLinux inherits Window {
     // is open).
     in-out property <string> forward-src-id;
     property <bool> forward-picker-open: false;
+    // Per-row name-match flags for the picker's search field — recomputed by
+    // Rust on every `forward-filter-changed` (Slint lacks substring matching).
+    in-out property <[bool]> forward-match-flags;
+    callback forward-filter-changed(string);
     // Rail chat-row context menu (pin / mute). Rust fills the state on
     // `request-chat-context` (it knows the pin + mute sets) and opens the menu;
     // the items dispatch back by the captured row index.
@@ -1143,6 +1147,12 @@ export component DarkMatterLinux inherits Window {
         height: root.height;
         chats: root.chats;
         active-chat: root.active-chat;
+        // The picker only opens from the message context menu, so the menu's
+        // captured author/text still describe the message being forwarded.
+        source-author: root.ctx-menu-author;
+        source-text: root.ctx-menu-text;
+        match-flags: root.forward-match-flags;
+        query-changed(q) => { root.forward-filter-changed(q); }
         select(dest) => {
             root.forward-picker-open = false;
             root.request-forward(dest);

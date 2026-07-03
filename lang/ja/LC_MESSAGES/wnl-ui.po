@@ -1,5 +1,6 @@
 msgid ""
-msgstr "Content-Type: text/plain; charset=UTF-8\n"
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
 
 msgctxt "date, %1 = day, %2 = month"
 msgid "%1 %2"
@@ -29,6 +30,10 @@ msgstr "%1時間前"
 msgctxt "relative time, %1 = minutes"
 msgid "%1m ago"
 msgstr "%1分前"
+
+msgctxt "ForwardPickerModal"
+msgid "(attachment)"
+msgstr "（添付ファイル）"
 
 msgctxt "MessageBubble"
 msgid "(message unavailable)"
@@ -839,6 +844,14 @@ msgctxt "ForwardPickerModal"
 msgid "Forward to…"
 msgstr "転送先…"
 
+msgctxt "ForwardPickerModal"
+msgid "Forwarding from {}:"
+msgstr "{} から転送:"
+
+msgctxt "ForwardPickerModal"
+msgid "Forwarding:"
+msgstr "転送:"
+
 msgctxt "weekday"
 msgid "Fri"
 msgstr "金曜日"
@@ -1189,6 +1202,10 @@ msgctxt "AdvancedPane"
 msgid "No audit log files on disk."
 msgstr "ディスク上に監査ログファイルはありません。"
 
+msgctxt "ForwardPickerModal"
+msgid "No chats match your search."
+msgstr "検索に一致するチャットはありません。"
+
 #, fuzzy
 msgctxt "ContactsPage"
 msgid "No contacts yet"
@@ -1205,6 +1222,10 @@ msgstr "キーパッケージがありません"
 msgctxt "CommandPalette"
 msgid "No matches"
 msgstr "一致なし"
+
+msgctxt "ForwardPickerModal"
+msgid "No other chats to forward to."
+msgstr "転送できる他のチャットはありません。"
 
 msgctxt "ProfileModal"
 msgid "No profile found on relays."
@@ -1665,6 +1686,10 @@ msgid "Sealed with your password on this device. Keep your own copy of the nsec 
 msgstr "このデバイスでパスワードにより封印されます。nsec のコピーも自分で保管してください。両方を失うとこの ID は失われます。"
 
 msgctxt "ChatListPanel"
+msgid "Search chats…"
+msgstr "チャットを検索…"
+
+msgctxt "ForwardPickerModal"
 msgid "Search chats…"
 msgstr "チャットを検索…"
 
