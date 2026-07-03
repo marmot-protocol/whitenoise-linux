@@ -43,6 +43,9 @@ component FieldRow inherits Rectangle {
                     horizontal-stretch: 1;
                     placeholder: root.placeholder;
                     single-line: root.single-line;
+                    // Multi-line rows (About) need plain Enter to insert a
+                    // newline instead of firing the unbound submit callback.
+                    enter-submits: root.single-line;
                     fg: Palette.text-hi;
                     placeholder-color: Palette.text-lo;
                 }
