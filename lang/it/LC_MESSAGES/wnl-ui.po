@@ -1,5 +1,6 @@
 msgid ""
-msgstr "Content-Type: text/plain; charset=UTF-8\n"
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
 
 msgctxt "date, %1 = day, %2 = month"
 msgid "%1 %2"
@@ -29,6 +30,10 @@ msgstr "%1 h fa"
 msgctxt "relative time, %1 = minutes"
 msgid "%1m ago"
 msgstr "%1 min fa"
+
+msgctxt "ForwardPickerModal"
+msgid "(attachment)"
+msgstr "(allegato)"
 
 msgctxt "MessageBubble"
 msgid "(message unavailable)"
@@ -841,6 +846,14 @@ msgctxt "ForwardPickerModal"
 msgid "Forward to…"
 msgstr "Inoltra a…"
 
+msgctxt "ForwardPickerModal"
+msgid "Forwarding from {}:"
+msgstr "Inoltro da {}:"
+
+msgctxt "ForwardPickerModal"
+msgid "Forwarding:"
+msgstr "Inoltro:"
+
 msgctxt "weekday"
 msgid "Fri"
 msgstr "Ven"
@@ -1191,6 +1204,10 @@ msgctxt "AdvancedPane"
 msgid "No audit log files on disk."
 msgstr "Nessun file di log di audit su disco."
 
+msgctxt "ForwardPickerModal"
+msgid "No chats match your search."
+msgstr "Nessuna chat corrisponde alla ricerca."
+
 #, fuzzy
 msgctxt "ContactsPage"
 msgid "No contacts yet"
@@ -1207,6 +1224,10 @@ msgstr "Nessun pacchetto chiave"
 msgctxt "CommandPalette"
 msgid "No matches"
 msgstr "Nessun risultato"
+
+msgctxt "ForwardPickerModal"
+msgid "No other chats to forward to."
+msgstr "Nessun'altra chat a cui inoltrare."
 
 msgctxt "ProfileModal"
 msgid "No profile found on relays."
@@ -1667,6 +1688,10 @@ msgid "Sealed with your password on this device. Keep your own copy of the nsec 
 msgstr "Sigillato con la tua password su questo dispositivo. Tieni anche una tua copia del nsec — se perdi entrambi, questa identità è persa."
 
 msgctxt "ChatListPanel"
+msgid "Search chats…"
+msgstr "Cerca chat…"
+
+msgctxt "ForwardPickerModal"
 msgid "Search chats…"
 msgstr "Cerca chat…"
 

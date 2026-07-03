@@ -24,6 +24,22 @@ pub(crate) fn wire_forward(ui: &DarkMatterLinux, cx: &Cx) {
         ..
     } = cx.clone();
 
+    // The picker's search field: recompute one case-insensitive name-match
+    // flag per chat row. The modal overlays these on its own active-chat skip.
+    ui.on_forward_filter_changed({
+        let weak = ui.as_weak();
+        move |query| {
+            let Some(ui) = weak.upgrade() else { return };
+            let q = query.to_lowercase();
+            let flags: Vec<bool> = ui
+                .get_chats()
+                .iter()
+                .map(|c| q.is_empty() || c.name.to_lowercase().contains(&q))
+                .collect();
+            ui.set_forward_match_flags(model(flags));
+        }
+    });
+
     ui.on_request_forward({
         let weak = ui.as_weak();
         move |dest_idx| {

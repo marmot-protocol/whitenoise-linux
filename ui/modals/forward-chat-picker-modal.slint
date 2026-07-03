@@ -1,15 +1,36 @@
 import { Palette, Theme, ChatMeta } from "../tokens.slint";
-import { Modal } from "modal.slint";
+import { Modal, ModalField } from "modal.slint";
 import { Avatar } from "../primitives/avatar.slint";
 
 // Forward picker. Opened from a message's context menu: pick a destination
 // chat and the selected message's content is re-sent there (text + any
 // attachments, re-encrypted for the target group — the Rust side owns that).
 // The current chat is skipped: forwarding back into the same thread is a no-op.
+// A quoted chip shows which message is about to be forwarded, and the search
+// field narrows the destination list by chat name.
 export component ForwardPickerModal inherits Modal {
     callback select(int);   // destination chat index (into `chats`)
     in property <[ChatMeta]> chats;
     in property <int> active-chat: -1;
+    // The message about to be forwarded — same author/preview pair the reply
+    // chip uses (initials for peers, "You" for own messages).
+    in property <string> source-author;
+    in property <string> source-text;
+    // Rust filters chat names on `query-changed` (Slint has no substring
+    // match) and pushes one match flag per `chats` row. Only consulted while
+    // the query is non-empty, so a stale array from a previous open is inert.
+    in property <[bool]> match-flags;
+    callback query-changed(string);
+
+    property <string> query;
+    changed query => { root.query-changed(root.query); }
+    // Rows stack with zero layout spacing (the 6px gap lives inside each shown
+    // row), so the list's preferred height is 0 exactly when no row is visible.
+    property <bool> any-visible: list.preferred-height > 0px;
+    // How many chats are eligible at all (ignoring the query) — distinguishes
+    // "nothing matches your search" from "there is nowhere to forward to".
+    property <int> forwardable-count: root.chats.length
+        - (root.active-chat >= 0 && root.active-chat < root.chats.length ? 1 : 0);
 
     card-width: 440px;
     card-height: 520px;
@@ -17,66 +38,145 @@ export component ForwardPickerModal inherits Modal {
     subtitle: @tr("Pick a chat to forward this message to.");
     secondary-label: @tr("Cancel");
 
-    Flickable {
-        viewport-width: self.width;
-        viewport-height: list.preferred-height;
-        list := VerticalLayout {
-            spacing: 6px;
-            for chat[idx] in root.chats : Rectangle {
-                // Skip the chat the message is already in.
-                property <bool> shown: idx != root.active-chat;
-                height: shown ? 56px : 0px;
-                visible: shown;
-                border-radius: (10px) * Theme.r-scale;
-                background: row-touch.has-hover ? Palette.hover : transparent;
-                animate background { duration: 100ms; easing: ease-out; }
+    // Quoted preview of the source message, same accent-bar chip language as
+    // the composer's reply chip.
+    Rectangle {
+        height: 48px;
+        background: Palette.panel;
+        border-width: 1px;
+        border-color: Palette.border-2;
+        border-radius: (6px) * Theme.r-scale;
+        HorizontalLayout {
+            padding-left: 12px;
+            padding-right: 12px;
+            spacing: 8px;
+            Rectangle {
+                width: 3px;
+                height: 26px;
+                y: (parent.height - self.height) / 2;
+                background: Palette.mint;
+                border-radius: 1.5px;
+            }
+            VerticalLayout {
+                alignment: center;
+                spacing: 2px;
+                horizontal-stretch: 1;
+                Text {
+                    text: root.source-author == ""
+                        ? @tr("Forwarding:")
+                        : @tr("Forwarding from {}:", root.source-author);
+                    color: Palette.mint;
+                    font-size: (10px) * Theme.fs-scale;
+                    font-weight: 700;
+                    font-family: Theme.font;
+                    overflow: elide;
+                }
+                Text {
+                    text: root.source-text == "" ? @tr("(attachment)") : root.source-text;
+                    color: Palette.text-mid;
+                    font-size: (11px) * Theme.fs-scale;
+                    font-family: Theme.font;
+                    overflow: elide;
+                }
+            }
+        }
+    }
 
-                // Wraps the row content so it wins the hit-test over the card's
-                // click-swallower (nested TouchAreas beat outer ones).
-                row-touch := TouchArea {
-                    enabled: shown;
-                    mouse-cursor: pointer;
-                    clicked => { root.select(idx); }
+    ModalField {
+        placeholder: @tr("Search chats…");
+        text <=> root.query;
+        autofocus: true;
+    }
 
-                    HorizontalLayout {
-                        padding-left: 10px;
-                        padding-right: 14px;
-                        spacing: 12px;
+    Rectangle {
+        vertical-stretch: 1;
 
-                        VerticalLayout {
-                            alignment: center;
-                            Avatar {
-                                size: 36px;
-                                initials: chat.av-initials;
-                                color-a: chat.av-a;
-                                color-b: chat.av-b;
-                                picture: chat.picture;
-                                has-picture: chat.has-picture;
-                            }
-                        }
+        Flickable {
+            width: 100%;
+            height: 100%;
+            viewport-width: self.width;
+            viewport-height: list.preferred-height;
+            list := VerticalLayout {
+                spacing: 0;
+                for chat[idx] in root.chats : Rectangle {
+                    // Skip the chat the message is already in; the query
+                    // filters the rest by chat name (flags computed in Rust).
+                    property <bool> shown: idx != root.active-chat
+                        && (root.query == ""
+                            || (idx < root.match-flags.length && root.match-flags[idx]));
+                    height: shown ? 62px : 0px;
+                    visible: shown;
 
-                        VerticalLayout {
-                            alignment: center;
-                            spacing: 3px;
-                            horizontal-stretch: 1;
-                            Text {
-                                text: chat.name;
-                                color: Palette.text-hi;
-                                font-size: (12px) * Theme.fs-scale;
-                                font-weight: 700;
-                                font-family: Theme.font;
-                                overflow: elide;
-                            }
-                            Text {
-                                text: chat.preview;
-                                color: Palette.text-lo;
-                                font-size: (10px) * Theme.fs-scale;
-                                font-family: Theme.font;
-                                overflow: elide;
+                    Rectangle {
+                        x: 0; y: 0;
+                        width: parent.width;
+                        height: 56px;
+                        border-radius: (10px) * Theme.r-scale;
+                        background: row-touch.has-hover ? Palette.hover : transparent;
+                        animate background { duration: 100ms; easing: ease-out; }
+
+                        // Wraps the row content so it wins the hit-test over the card's
+                        // click-swallower (nested TouchAreas beat outer ones).
+                        row-touch := TouchArea {
+                            enabled: shown;
+                            mouse-cursor: pointer;
+                            clicked => { root.select(idx); }
+
+                            HorizontalLayout {
+                                padding-left: 10px;
+                                padding-right: 14px;
+                                spacing: 12px;
+
+                                VerticalLayout {
+                                    alignment: center;
+                                    Avatar {
+                                        size: 36px;
+                                        initials: chat.av-initials;
+                                        color-a: chat.av-a;
+                                        color-b: chat.av-b;
+                                        picture: chat.picture;
+                                        has-picture: chat.has-picture;
+                                    }
+                                }
+
+                                VerticalLayout {
+                                    alignment: center;
+                                    spacing: 3px;
+                                    horizontal-stretch: 1;
+                                    Text {
+                                        text: chat.name;
+                                        color: Palette.text-hi;
+                                        font-size: (12px) * Theme.fs-scale;
+                                        font-weight: 700;
+                                        font-family: Theme.font;
+                                        overflow: elide;
+                                    }
+                                    Text {
+                                        text: chat.preview;
+                                        color: Palette.text-lo;
+                                        font-size: (10px) * Theme.fs-scale;
+                                        font-family: Theme.font;
+                                        overflow: elide;
+                                    }
+                                }
                             }
                         }
                     }
                 }
+            }
+        }
+
+        if !root.any-visible : VerticalLayout {
+            alignment: center;
+            Text {
+                text: root.forwardable-count == 0
+                    ? @tr("No other chats to forward to.")
+                    : @tr("No chats match your search.");
+                color: Palette.text-lo;
+                font-size: (11px) * Theme.fs-scale;
+                font-family: Theme.font;
+                horizontal-alignment: center;
+                wrap: word-wrap;
             }
         }
     }

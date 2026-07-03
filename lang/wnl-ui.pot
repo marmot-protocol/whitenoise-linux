@@ -40,6 +40,10 @@ msgctxt "relative time, %1 = minutes"
 msgid "%1m ago"
 msgstr ""
 
+msgctxt "ForwardPickerModal"
+msgid "(attachment)"
+msgstr ""
+
 msgctxt "MessageBubble"
 msgid "(message unavailable)"
 msgstr ""
@@ -810,6 +814,14 @@ msgctxt "ForwardPickerModal"
 msgid "Forward to…"
 msgstr ""
 
+msgctxt "ForwardPickerModal"
+msgid "Forwarding from {}:"
+msgstr ""
+
+msgctxt "ForwardPickerModal"
+msgid "Forwarding:"
+msgstr ""
+
 msgctxt "weekday"
 msgid "Fri"
 msgstr ""
@@ -1147,6 +1159,10 @@ msgctxt "AdvancedPane"
 msgid "No audit log files on disk."
 msgstr ""
 
+msgctxt "ForwardPickerModal"
+msgid "No chats match your search."
+msgstr ""
+
 msgctxt "ContactsPage"
 msgid "No contacts yet"
 msgstr ""
@@ -1161,6 +1177,10 @@ msgstr ""
 
 msgctxt "CommandPalette"
 msgid "No matches"
+msgstr ""
+
+msgctxt "ForwardPickerModal"
+msgid "No other chats to forward to."
 msgstr ""
 
 msgctxt "ProfileModal"
@@ -1601,6 +1621,10 @@ msgid "Sealed with your password on this device. Keep your own copy of the nsec 
 msgstr ""
 
 msgctxt "ChatListPanel"
+msgid "Search chats…"
+msgstr ""
+
+msgctxt "ForwardPickerModal"
 msgid "Search chats…"
 msgstr ""
 
