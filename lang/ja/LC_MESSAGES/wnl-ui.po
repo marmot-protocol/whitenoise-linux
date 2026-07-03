@@ -2041,6 +2041,10 @@ msgctxt "EmojiPicker"
 msgid "no matches"
 msgstr "一致なし"
 
+msgctxt "EmojiPicker"
+msgid "no matches for \"{}\""
+msgstr "\"{}\" に一致なし"
+
 msgctxt "EncryptionBanner"
 msgid "post-compromise secure"
 msgstr "侵害後も安全"
