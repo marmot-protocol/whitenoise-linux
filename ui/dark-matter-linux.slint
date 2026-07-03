@@ -588,14 +588,35 @@ export component DarkMatterLinux inherits Window {
     // gated behind a confirm; Archive stays one-click because it's reversible.
     in-out property <bool> show-block-confirm: false;
 
-    // Top-level FocusScope captures Ctrl+K globally. When a modal mounts and
-    // calls focus() on its own scope, focus leaves here; on dismiss, focus comes back.
+    // Ctrl +/-/0 zoom. Rust owns the level (it changes the window scale factor,
+    // which scales the whole rendered UI like browser zoom) and persists it.
+    // Direction: 1 = zoom in, -1 = zoom out, 0 = reset to 100%.
+    callback zoom-adjust(int);
+
+    // Top-level FocusScope captures Ctrl+K and the zoom shortcuts globally. When
+    // a modal mounts and calls focus() on its own scope, focus leaves here; on
+    // dismiss, focus comes back.
     global-keys := FocusScope {
         init => { self.focus(); }
         key-pressed(event) => {
-            if (root.logged-in && event.text == "k" && event.modifiers.control) {
-                root.palette-requested();
-                return accept;
+            if (event.modifiers.control) {
+                if (root.logged-in && event.text == "k") {
+                    root.palette-requested();
+                    return accept;
+                }
+                // "+" needs shift on most layouts, so accept the bare "=" too.
+                if (event.text == "+" || event.text == "=") {
+                    root.zoom-adjust(1);
+                    return accept;
+                }
+                if (event.text == "-") {
+                    root.zoom-adjust(-1);
+                    return accept;
+                }
+                if (event.text == "0") {
+                    root.zoom-adjust(0);
+                    return accept;
+                }
             }
             return reject;
         }

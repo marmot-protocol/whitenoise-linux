@@ -24,6 +24,10 @@ pub struct Settings {
     pub accent_color: String,
     #[serde(default = "default_outgoing_on_right")]
     pub outgoing_on_right: bool,
+    /// UI zoom level (Ctrl +/-/0): multiplies the window scale factor so the
+    /// whole UI scales like browser zoom. Clamped to [0.5, 3.0]; 1.0 is 100%.
+    #[serde(default = "default_zoom")]
+    pub zoom: f32,
     /// Clock style for all visible timestamps. One of `24h`, `12h`.
     #[serde(default = "default_time_format")]
     pub time_format: String,
@@ -131,6 +135,10 @@ fn default_outgoing_on_right() -> bool {
     true
 }
 
+fn default_zoom() -> f32 {
+    1.0
+}
+
 fn default_time_format() -> String {
     "24h".into()
 }
@@ -151,6 +159,7 @@ impl Default for Settings {
             theme: default_theme(),
             accent_color: default_accent(),
             outgoing_on_right: default_outgoing_on_right(),
+            zoom: default_zoom(),
             time_format: default_time_format(),
             date_format: default_date_format(),
             nicknames: BTreeMap::new(),

@@ -860,6 +860,76 @@ fn main() -> Result<(), slint::PlatformError> {
     wire_forward(&ui, &cx);
     wire_extra(&ui, &cx, &h);
 
+    // ── UI zoom (Ctrl +/-/0) ─────────────────────────────────────────────
+    // Browser-style zoom: change the window's scale factor so the *entire*
+    // rendered UI scales — fonts, spacing, images, borders — not just text.
+    // `base_scale` is the windowing system's own factor (e.g. 2.0 on HiDPI),
+    // captured lazily the first time we touch it so `base * zoom` stays the
+    // effective factor. The level is persisted in settings.
+    const ZOOM_MIN: f32 = 0.5;
+    const ZOOM_MAX: f32 = 3.0;
+    let zoom_level = Rc::new(std::cell::Cell::new(
+        settings_cell.borrow().zoom.clamp(ZOOM_MIN, ZOOM_MAX),
+    ));
+    let base_scale = Rc::new(std::cell::Cell::new(0.0f32));
+    let apply_zoom = {
+        let ui_weak = ui.as_weak();
+        let base_scale = base_scale.clone();
+        let zoom_level = zoom_level.clone();
+        move || {
+            let Some(ui) = ui_weak.upgrade() else {
+                return;
+            };
+            let win = ui.window();
+            let mut base = base_scale.get();
+            if base <= 0.0 {
+                base = win.scale_factor();
+                if base <= 0.0 {
+                    base = 1.0;
+                }
+                base_scale.set(base);
+            }
+            let sf = base * zoom_level.get();
+            win.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged {
+                scale_factor: sf,
+            });
+            // Changing the scale factor alone doesn't update the root's logical
+            // size, so the layout would keep its old dimensions and clip. The OS
+            // window keeps its physical size, so re-derive the logical size from
+            // it at the new factor and feed it back as a resize to reflow.
+            let phys = win.size();
+            if sf > 0.0 && phys.width > 0 && phys.height > 0 {
+                win.dispatch_event(slint::platform::WindowEvent::Resized {
+                    size: slint::LogicalSize::new(phys.width as f32 / sf, phys.height as f32 / sf),
+                });
+            }
+        }
+    };
+    ui.on_zoom_adjust({
+        let zoom_level = zoom_level.clone();
+        let settings_cell = settings_cell.clone();
+        let apply_zoom = apply_zoom.clone();
+        move |dir| {
+            let next = if dir == 0 {
+                1.0
+            } else {
+                (zoom_level.get() + 0.1 * dir as f32).clamp(ZOOM_MIN, ZOOM_MAX)
+            };
+            // Snap to a clean 0.1 grid so repeated steps don't accumulate drift.
+            let next = (next * 10.0).round() / 10.0;
+            zoom_level.set(next);
+            apply_zoom();
+            let mut s = settings_cell.borrow_mut();
+            s.zoom = next;
+            s.save();
+        }
+    });
+    // Re-apply a persisted non-default zoom once the loop is running and the
+    // window's real scale factor is known.
+    if (zoom_level.get() - 1.0).abs() > f32::EPSILON {
+        slint::Timer::single_shot(std::time::Duration::from_millis(0), apply_zoom);
+    }
+
     ui.run()?;
 
     // The window is closed but `ui` is still alive: flush the on-screen chat's
