@@ -50,6 +50,8 @@ export component MainPane inherits Rectangle {
     in property <string> reply-target-id;
     in property <string> reply-target-author;
     in property <string> reply-target-preview;
+    in property <image> reply-target-image;
+    in property <bool> reply-target-has-image: false;
     in property <string> editing-message-id;
     // Mention autocomplete.
     in property <bool> mention-active: false;
@@ -161,6 +163,8 @@ export component MainPane inherits Rectangle {
                 reply-target-id: root.reply-target-id;
                 reply-target-author: root.reply-target-author;
                 reply-target-preview: root.reply-target-preview;
+                reply-target-image: root.reply-target-image;
+                reply-target-has-image: root.reply-target-has-image;
                 editing-message-id: root.editing-message-id;
                 mention-active: root.mention-active;
                 send-clicked => { root.send-clicked(); }

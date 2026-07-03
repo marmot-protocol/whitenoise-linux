@@ -164,6 +164,7 @@ pub(crate) fn chat_message_from_with_reactions(
     let (picture, has_picture) = bind_cached_picture(picture_url.as_deref());
     let (reply_id, reply_author, reply_text) =
         reply_preview_for(record, records_by_id, my_account_id_hex);
+    let (reply_to_image, reply_to_has_image) = reply_thumbnail_for(&reply_id);
     let bubble_max = if outgoing { 440.0 } else { 560.0 };
     let lines = build_message_lines(display_text, bubble_max);
 
@@ -332,6 +333,8 @@ pub(crate) fn chat_message_from_with_reactions(
         reply_to_id: s(&reply_id),
         reply_to_text: s(&reply_text),
         reply_to_author: s(&reply_author),
+        reply_to_image,
+        reply_to_has_image,
         has_attachment,
         album,
         album_w,
@@ -437,6 +440,27 @@ pub(crate) fn media_reply_label(record: &AppMessageRecord) -> Option<String> {
     ))
 }
 
+/// Thumbnail of a quoted parent's media for the Signal-style reply preview:
+/// the parent's cached decoded image (single attachment), its first album
+/// cell, or its captured video poster. Cache misses return `(default, false)`
+/// — the text label carries the quote until the media has been downloaded.
+/// UI-thread only: `slint::Image` is `!Send`.
+pub(crate) fn reply_thumbnail_for(parent_id: &str) -> (slint::Image, bool) {
+    if parent_id.is_empty() {
+        return (slint::Image::default(), false);
+    }
+    if let Some(img) = cached_attachment_image(parent_id) {
+        return (img, true);
+    }
+    if let Some(px) = attachment_image_cache_get(&att_key(parent_id, 0)) {
+        return (image_from_pixels(&px), true);
+    }
+    if let Some(px) = attachment_image_cache_get(&vidposter_key(parent_id)) {
+        return (image_from_pixels(&px), true);
+    }
+    (slint::Image::default(), false)
+}
+
 /// Find `message_id` across the loaded chat rows and synthesize its media
 /// label. Backs the composer reply banner: the `request-reply` callback
 /// carries the row's body text as the preview, which is empty for
@@ -504,6 +528,7 @@ pub(crate) fn pending_chat_message(
         "sending…".to_string()
     };
     let (reply_id, reply_author, reply_text) = pending.reply_to.clone().unwrap_or_default();
+    let (reply_to_image, reply_to_has_image) = reply_thumbnail_for(&reply_id);
     let bubble_max = 440.0_f32;
     let lines = build_message_lines(&pending.text, bubble_max);
 
@@ -618,6 +643,8 @@ pub(crate) fn pending_chat_message(
         reply_to_id: s(&reply_id),
         reply_to_text: s(&reply_text),
         reply_to_author: s(&reply_author),
+        reply_to_image,
+        reply_to_has_image,
         has_attachment,
         album,
         album_w,

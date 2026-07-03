@@ -163,6 +163,8 @@ export component DarkMatterLinux inherits Window {
     in-out property <string> reply-target-id;
     in-out property <string> reply-target-author;
     in-out property <string> reply-target-preview;
+    in-out property <image> reply-target-image;
+    in-out property <bool> reply-target-has-image: false;
     // Edit state — set by Rust when the user taps a bubble's edit pencil,
     // cleared on save or cancel. Drives the composer's "Editing message" banner
     // and tells Rust the next send is a kind-1010 edit of this message.
@@ -744,6 +746,8 @@ export component DarkMatterLinux inherits Window {
                             reply-target-id: root.reply-target-id;
                             reply-target-author: root.reply-target-author;
                             reply-target-preview: root.reply-target-preview;
+                            reply-target-image: root.reply-target-image;
+                            reply-target-has-image: root.reply-target-has-image;
                             editing-message-id: root.editing-message-id;
                             send-clicked => { root.send-message(root.composer-draft); }
                             cancel-reply => { root.cancel-reply(); }

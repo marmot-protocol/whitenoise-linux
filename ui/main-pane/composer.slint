@@ -14,6 +14,8 @@ export component Composer inherits Rectangle {
     in property <string> reply-target-id;
     in property <string> reply-target-author;
     in property <string> reply-target-preview;
+    in property <image> reply-target-image;
+    in property <bool> reply-target-has-image: false;
     // When non-empty the composer is in edit mode: a banner shows and the next
     // send rewrites that message instead of posting a new one.
     in property <string> editing-message-id;
@@ -153,6 +155,21 @@ export component Composer inherits Rectangle {
                         horizontal-stretch: 1;
                         vertical-alignment: center;
                     }
+                }
+            }
+            // Signal-style thumbnail of the quoted media, right before the
+            // cancel affordance.
+            if root.reply-target-has-image : Rectangle {
+                width: 26px;
+                height: 26px;
+                y: (parent.height - self.height) / 2;
+                border-radius: (4px) * Theme.r-scale;
+                clip: true;
+                Image {
+                    source: root.reply-target-image;
+                    width: parent.width;
+                    height: parent.height;
+                    image-fit: cover;
                 }
             }
             MicroButton {

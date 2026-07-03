@@ -20,9 +20,12 @@ pub(crate) fn wire_reply_target(ui: &DarkMatterLinux) {
             {
                 trimmed = label;
             }
+            let (thumb, has_thumb) = reply_thumbnail_for(message_id.as_str());
             ui.set_reply_target_id(message_id);
             ui.set_reply_target_author(author);
             ui.set_reply_target_preview(s(&trimmed));
+            ui.set_reply_target_image(thumb);
+            ui.set_reply_target_has_image(has_thumb);
         }
     });
     ui.on_cancel_reply({
@@ -32,6 +35,8 @@ pub(crate) fn wire_reply_target(ui: &DarkMatterLinux) {
             ui.set_reply_target_id(s(""));
             ui.set_reply_target_author(s(""));
             ui.set_reply_target_preview(s(""));
+            ui.set_reply_target_image(slint::Image::default());
+            ui.set_reply_target_has_image(false);
         }
     });
 }
@@ -145,6 +150,8 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     ui.set_reply_target_id(s(""));
                     ui.set_reply_target_author(s(""));
                     ui.set_reply_target_preview(s(""));
+                    ui.set_reply_target_image(slint::Image::default());
+                    ui.set_reply_target_has_image(false);
                 }
 
                 // 1. Insert pending bubble + clear the composer. Surgical push —
