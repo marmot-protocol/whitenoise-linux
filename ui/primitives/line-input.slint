@@ -21,6 +21,9 @@ export component LineInput inherits Rectangle {
     // multi-line fields where Enter should just insert a newline — e.g. the
     // "one npub per line" members box, which otherwise swallows the key.
     in property <bool> enter-submits: true;
+    // While `capture-nav` is on, Tab commits like Enter — the mention picker's
+    // affordance. List pickers set false so Tab stays focus traversal.
+    in property <bool> nav-tab-commits: true;
     out property <bool> has-focus: input.has-focus;
     callback submit;
     // ── Mention autocomplete hooks ──────────────────────────────────────────
@@ -96,7 +99,8 @@ export component LineInput inherits Rectangle {
                 if (root.capture-nav) {
                     if (event.text == Key.UpArrow) { root.nav(-1); return accept; }
                     if (event.text == Key.DownArrow) { root.nav(1); return accept; }
-                    if (event.text == Key.Return || event.text == Key.Tab) {
+                    if (event.text == Key.Return
+                        || (event.text == Key.Tab && root.nav-tab-commits)) {
                         root.commit-mention();
                         return accept;
                     }

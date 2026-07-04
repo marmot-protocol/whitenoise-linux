@@ -25,18 +25,27 @@ pub(crate) fn wire_forward(ui: &DarkMatterLinux, cx: &Cx) {
     } = cx.clone();
 
     // The picker's search field: recompute one case-insensitive name-match
-    // flag per chat row. The modal overlays these on its own active-chat skip.
+    // flag per chat row (the modal overlays these on its own active-chat skip)
+    // plus the ordered list of visible chat indices, which the modal's
+    // keyboard cursor walks. The picker also fires this on open with the
+    // empty query, so both arrays are fresh for the current active chat.
     ui.on_forward_filter_changed({
         let weak = ui.as_weak();
         move |query| {
             let Some(ui) = weak.upgrade() else { return };
             let q = query.to_lowercase();
-            let flags: Vec<bool> = ui
-                .get_chats()
-                .iter()
-                .map(|c| q.is_empty() || c.name.to_lowercase().contains(&q))
-                .collect();
+            let active = ui.get_active_chat();
+            let mut flags: Vec<bool> = Vec::new();
+            let mut visible: Vec<i32> = Vec::new();
+            for (idx, c) in ui.get_chats().iter().enumerate() {
+                let matches = q.is_empty() || c.name.to_lowercase().contains(&q);
+                flags.push(matches);
+                if matches && idx as i32 != active {
+                    visible.push(idx as i32);
+                }
+            }
             ui.set_forward_match_flags(model(flags));
+            ui.set_forward_visible_rows(model(visible));
         }
     });
 

@@ -305,6 +305,15 @@ export component ModalField inherits VerticalLayout {
     in property <bool> autofocus: false;
     in property <length> field-height: root.multiline ? 120px : 38px;
     callback submitted;
+    // Forwarded LineInput nav-capture hooks: a list-picker modal sets
+    // `capture-nav` so ↑/↓ drive its cursor (`nav`) while focus stays in this
+    // field. A focused TextInput otherwise consumes arrow keys as caret moves,
+    // so they never bubble to an outer FocusScope. While captured, Enter
+    // fires `submitted` and Esc fires `nav-dismissed` instead of editing
+    // keys; Tab keeps its focus-traversal role.
+    in property <bool> capture-nav: false;
+    callback nav(int);
+    callback nav-dismissed;
 
     spacing: 7px;
 
@@ -348,6 +357,11 @@ export component ModalField inherits VerticalLayout {
                 fg: Palette.text-hi;
                 placeholder-color: Palette.text-vlo;
                 submit => { root.submitted(); }
+                capture-nav: root.capture-nav;
+                nav-tab-commits: false;
+                nav(delta) => { root.nav(delta); }
+                commit-mention => { root.submitted(); }
+                dismiss-mention => { root.nav-dismissed(); }
             }
         }
     }
