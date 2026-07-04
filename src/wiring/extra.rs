@@ -1,5 +1,28 @@
 use crate::*;
 
+/// Resolve a message's (line, run, fraction) document position to its word
+/// span through the active chat's row model. `None` when the id or position
+/// is stale.
+fn word_span_for(
+    ui: &DarkMatterLinux,
+    message_id: &str,
+    line: i32,
+    run: i32,
+    frac: f32,
+) -> Option<(f32, f32)> {
+    let idx = ui.get_active_chat();
+    if idx < 0 || message_id.is_empty() {
+        return None;
+    }
+    let chats_messages = ui.get_chats_messages();
+    with_inner_messages(&chats_messages, idx as usize, |vm| {
+        find_message_row(vm, message_id)
+            .and_then(|pos| vm.row_data(pos))
+            .and_then(|row| word_span_at(&row.lines, line, run, frac))
+    })
+    .flatten()
+}
+
 pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     let Cx {
         settings_cell,
@@ -83,32 +106,66 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // ─── Word selection (double-click on a bubble) ─────────────────────
     //
     // The bubble resolved the clicked document position; expand it to word
-    // boundaries within the run and write the endpoints back into the
-    // TextSelection global, which the run cells render directly.
+    // boundaries within the run, remember it as the anchor word, and write
+    // the endpoints back into the TextSelection global, which the run cells
+    // render directly.
     ui.global::<TextSelection>().on_request_word({
         let weak = ui.as_weak();
         move |message_id, line, run, frac| {
             let Some(ui) = weak.upgrade() else { return };
-            let idx = ui.get_active_chat();
-            if idx < 0 || message_id.is_empty() {
+            let Some((from, to)) = word_span_for(&ui, &message_id, line, run, frac) else {
                 return;
-            }
-            let chats_messages = ui.get_chats_messages();
-            let span = with_inner_messages(&chats_messages, idx as usize, |vm| {
-                find_message_row(vm, &message_id)
-                    .and_then(|pos| vm.row_data(pos))
-                    .and_then(|row| word_span_at(&row.lines, line, run, frac))
-            })
-            .flatten();
-            let Some((from, to)) = span else { return };
+            };
             let sel = ui.global::<TextSelection>();
             sel.set_owner(message_id);
+            sel.set_word_mode(true);
+            sel.set_wa_line(line);
+            sel.set_wa_run(run);
+            sel.set_wa_from(from);
+            sel.set_wa_to(to);
             sel.set_a_line(line);
             sel.set_a_run(run);
             sel.set_a_frac(from);
             sel.set_b_line(line);
             sel.set_b_run(run);
             sel.set_b_frac(to);
+            sel.set_active(true);
+        }
+    });
+
+    // ─── Word-mode drag (extend / retract by whole words) ──────────────
+    //
+    // While word mode is active, every drag movement re-derives the
+    // endpoints as the union of the stored anchor word and the word under
+    // the pointer, so the selection grows and shrinks a word at a time on
+    // either side.
+    ui.global::<TextSelection>().on_request_word_extend({
+        let weak = ui.as_weak();
+        move |message_id, line, run, frac| {
+            let Some(ui) = weak.upgrade() else { return };
+            let Some((from, to)) = word_span_for(&ui, &message_id, line, run, frac) else {
+                return;
+            };
+            let sel = ui.global::<TextSelection>();
+            let (wa_line, wa_run) = (sel.get_wa_line(), sel.get_wa_run());
+            let (wa_from, wa_to) = (sel.get_wa_from(), sel.get_wa_to());
+            let cursor_before = (line, run) < (wa_line, wa_run)
+                || ((line, run) == (wa_line, wa_run) && from < wa_from);
+            if cursor_before {
+                sel.set_a_line(wa_line);
+                sel.set_a_run(wa_run);
+                sel.set_a_frac(wa_to);
+                sel.set_b_line(line);
+                sel.set_b_run(run);
+                sel.set_b_frac(from);
+            } else {
+                sel.set_a_line(wa_line);
+                sel.set_a_run(wa_run);
+                sel.set_a_frac(wa_from);
+                sel.set_b_line(line);
+                sel.set_b_run(run);
+                sel.set_b_frac(to);
+            }
             sel.set_active(true);
         }
     });

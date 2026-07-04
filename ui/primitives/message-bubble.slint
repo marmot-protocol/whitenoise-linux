@@ -177,16 +177,28 @@ component RunCell inherits Rectangle {
     property <float> sel-b-claim: root.sel-mine ? claim-frac(TextSelection.cursor-x, TextSelection.cursor-y) : -1.0;
     changed sel-a-claim => {
         if (self.sel-a-claim >= 0) {
-            TextSelection.a-line = root.sel-line-idx;
-            TextSelection.a-run = root.sel-run-idx;
-            TextSelection.a-frac = self.sel-a-claim;
+            // The press cache is written unconditionally; the `a` endpoint
+            // only outside word mode, where Rust owns it (a late claim would
+            // otherwise drag the word selection's edge back to the click
+            // point).
+            TextSelection.p-line = root.sel-line-idx;
+            TextSelection.p-run = root.sel-run-idx;
+            TextSelection.p-frac = self.sel-a-claim;
+            if (!TextSelection.word-mode) {
+                TextSelection.a-line = root.sel-line-idx;
+                TextSelection.a-run = root.sel-run-idx;
+                TextSelection.a-frac = self.sel-a-claim;
+            }
         }
     }
     changed sel-b-claim => {
+        // Cursor claims land in the RAW pointer position (`c`), not the `b`
+        // endpoint: the drag handler copies `c` into `b` in character mode
+        // and lets Rust derive word-snapped endpoints from `c` in word mode.
         if (self.sel-b-claim >= 0) {
-            TextSelection.b-line = root.sel-line-idx;
-            TextSelection.b-run = root.sel-run-idx;
-            TextSelection.b-frac = self.sel-b-claim;
+            TextSelection.c-line = root.sel-line-idx;
+            TextSelection.c-run = root.sel-run-idx;
+            TextSelection.c-frac = self.sel-b-claim;
         }
     }
 
@@ -366,21 +378,21 @@ export component MessageBubble inherits Rectangle {
     out property <bool> hovered: hover-sensor.has-hover || root.sel-hover;
     property <bool> sel-hover: false;
 
-    // Multi-click chain on the body text: 1 = plain click (clear selection /
-    // tap-through), 2 = select the word under the pointer, 3 = select the
-    // whole bubble. The timer forgets the chain after a pause so two slow
-    // clicks stay two plain clicks. Lives on the bubble root (not inside the
-    // conditional text block): the Slint compiler cannot lower
-    // `Timer.restart()` for a timer mounted in an `if` subtree.
-    property <int> click-chain: 0;
-    chain-timer := Timer {
-        interval: 450ms;
-        running: false;
-        triggered => {
-            root.click-chain = 0;
-            self.running = false;
-        }
-    }
+    // Multi-press chain on the body text: press 1 anchors a drag (release
+    // without drag = plain click), press 2 selects the word under the pointer
+    // and enters word mode (dragging then extends by whole words), press 3
+    // selects the whole bubble. A press continues the chain when it lands
+    // within 225ms of the previous press or release. The window is measured
+    // by comparing `animation-tick()` timestamps rather than a `Timer`
+    // element: a Timer with a `running: false` binding is never started, so
+    // its `restart()` is a no-op and `running` never turns true.
+    property <int> press-chain: 0;
+    property <duration> now-tick: animation-tick();
+    property <duration> last-press-tick: -1000ms;
+    // Where the previous press landed (text-block space) — a chained press
+    // must land nearby, like native double-click slop.
+    property <length> last-press-x: -10000px;
+    property <length> last-press-y: -10000px;
 
     callback retry-clicked();
     callback attachment-clicked();
@@ -948,7 +960,40 @@ export component MessageBubble inherits Rectangle {
                     }
                     if (e.kind == PointerEventKind.down && e.button == PointerEventButton.left && root.msg-id != "") {
                         self.dragging = false;
-                        TextSelection.begin(root.msg-id, self.mouse-x, self.mouse-y);
+                        root.press-chain = (root.now-tick - root.last-press-tick <= 225ms
+                            && abs(self.mouse-x - root.last-press-x) <= 6px
+                            && abs(self.mouse-y - root.last-press-y) <= 6px) ? root.press-chain + 1 : 1;
+                        root.last-press-tick = root.now-tick;
+                        root.last-press-x = self.mouse-x;
+                        root.last-press-y = self.mouse-y;
+                        if (root.press-chain == 1) {
+                            TextSelection.begin(root.msg-id, self.mouse-x, self.mouse-y);
+                        } else if (root.press-chain == 2) {
+                            // The first press resolved this spot into the
+                            // press cache (which survives the plain-click
+                            // clear in between); Rust expands it to a word,
+                            // stores the anchor word, and activates.
+                            if (TextSelection.p-line >= 0 && TextSelection.p-run >= 0) {
+                                TextSelection.request-word(root.msg-id, TextSelection.p-line, TextSelection.p-run, TextSelection.p-frac);
+                            }
+                        } else {
+                            // Third press: select everything in the bubble.
+                            // The end run is an open-ended sentinel rather
+                            // than the last line's run count — a trailing
+                            // rule or empty line has zero runs, and both the
+                            // highlight comparisons and the extractor treat
+                            // "past every run" as full coverage.
+                            root.press-chain = 0;
+                            TextSelection.owner = root.msg-id;
+                            TextSelection.word-mode = false;
+                            TextSelection.a-line = 0;
+                            TextSelection.a-run = 0;
+                            TextSelection.a-frac = 0;
+                            TextSelection.b-line = root.lines.length - 1;
+                            TextSelection.b-run = 1000000;
+                            TextSelection.b-frac = 1.0;
+                            TextSelection.active = true;
+                        }
                     }
                 }
                 moved => {
@@ -960,48 +1005,53 @@ export component MessageBubble inherits Rectangle {
                         TextSelection.cursor-y = self.mouse-y;
                         if (!self.dragging && (abs(self.mouse-x - self.pressed-x) > 3px || abs(self.mouse-y - self.pressed-y) > 3px)) {
                             self.dragging = true;
-                            TextSelection.active = true;
+                            if (!TextSelection.word-mode) {
+                                TextSelection.active = true;
+                            }
+                        }
+                        if (self.dragging && TextSelection.c-line >= 0 && TextSelection.c-run >= 0) {
+                            if (TextSelection.word-mode) {
+                                // Word mode: Rust snaps the endpoints to the
+                                // union of the anchor word and the word under
+                                // the pointer, extending or retracting whole
+                                // words on either side.
+                                TextSelection.request-word-extend(root.msg-id, TextSelection.c-line, TextSelection.c-run, TextSelection.c-frac);
+                            } else {
+                                // Character mode: the end endpoint follows the
+                                // pointer's claimed position directly.
+                                TextSelection.b-line = TextSelection.c-line;
+                                TextSelection.b-run = TextSelection.c-run;
+                                TextSelection.b-frac = TextSelection.c-frac;
+                            }
                         }
                     }
                 }
                 clicked => {
+                    // The release re-arms the chain window, like native
+                    // double-click detection.
+                    root.last-press-tick = root.now-tick;
                     if (self.dragging) {
-                        // A drag-select release is not part of a click chain.
+                        // Commit the final pointer position: the cursor
+                        // claims flush a frame behind the drag handler, so
+                        // the release re-syncs the end endpoint.
                         self.dragging = false;
-                        root.click-chain = 0;
-                    } else {
-                        root.click-chain += 1;
-                        chain-timer.restart();
-                        if (root.click-chain == 1) {
-                            TextSelection.clear();
-                            if (root.failed) {
-                                root.retry-clicked();
+                        if (TextSelection.owner == root.msg-id && TextSelection.c-line >= 0 && TextSelection.c-run >= 0) {
+                            if (TextSelection.word-mode) {
+                                TextSelection.request-word-extend(root.msg-id, TextSelection.c-line, TextSelection.c-run, TextSelection.c-frac);
                             } else {
-                                root.body-clicked();
+                                TextSelection.b-line = TextSelection.c-line;
+                                TextSelection.b-run = TextSelection.c-run;
+                                TextSelection.b-frac = TextSelection.c-frac;
                             }
-                        } else if (root.click-chain == 2) {
-                            // The press already resolved the clicked document
-                            // position into the anchor claims; Rust expands it
-                            // to word boundaries and activates the selection.
-                            if (TextSelection.owner == root.msg-id && TextSelection.a-line >= 0 && TextSelection.a-run >= 0) {
-                                TextSelection.request-word(root.msg-id, TextSelection.a-line, TextSelection.a-run, TextSelection.a-frac);
-                            }
+                        }
+                    } else if (root.press-chain == 1) {
+                        // A plain click clears the selection and keeps the
+                        // old tap behavior (retry / effect replay).
+                        TextSelection.clear();
+                        if (root.failed) {
+                            root.retry-clicked();
                         } else {
-                            // Third click: select everything in the bubble.
-                            // The end run is an open-ended sentinel rather
-                            // than the last line's run count — a trailing
-                            // rule or empty line has zero runs, and both the
-                            // highlight comparisons and the extractor treat
-                            // "past every run" as full coverage.
-                            root.click-chain = 0;
-                            TextSelection.owner = root.msg-id;
-                            TextSelection.a-line = 0;
-                            TextSelection.a-run = 0;
-                            TextSelection.a-frac = 0;
-                            TextSelection.b-line = root.lines.length - 1;
-                            TextSelection.b-run = 1000000;
-                            TextSelection.b-frac = 1.0;
-                            TextSelection.active = true;
+                            root.body-clicked();
                         }
                     }
                 }

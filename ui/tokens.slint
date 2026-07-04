@@ -890,24 +890,51 @@ export global TextSelection {
     in-out property <length> anchor-y;
     in-out property <length> cursor-x;
     in-out property <length> cursor-y;
-    // Document endpoints resolved by the run cells; -1 = not yet claimed.
-    // a = anchor, b = cursor — unordered, the extractor sorts them.
+    // Selection endpoints in document space; -1 = not yet resolved.
+    // a = anchor, b = end — unordered, the extractor sorts them.
     in-out property <int> a-line: -1;
     in-out property <int> a-run: -1;
     in-out property <float> a-frac;
     in-out property <int> b-line: -1;
     in-out property <int> b-run: -1;
     in-out property <float> b-frac;
+    // Raw document position of the pointer, claimed continuously by the run
+    // cells while a selection is owned. The drag handler copies it into `b`
+    // in character mode, or feeds it to `request-word-extend` in word mode —
+    // keeping it separate lets Rust snap `a`/`b` to word boundaries without
+    // the cursor claims overwriting them a frame later.
+    in-out property <int> c-line: -1;
+    in-out property <int> c-run: -1;
+    in-out property <float> c-frac;
+    // Document position of the last press, cached alongside the anchor
+    // claims. `clear()` leaves it alone: the plain-click release between the
+    // presses of a double-click clears the selection, and the second press
+    // still needs the first press's position to pick the word.
+    in-out property <int> p-line: -1;
+    in-out property <int> p-run: -1;
+    in-out property <float> p-frac;
+    // Word mode (entered by double-click): dragging extends or retracts the
+    // selection by whole words around the fixed anchor word below.
+    in-out property <bool> word-mode;
+    in-out property <int> wa-line;
+    in-out property <int> wa-run;
+    in-out property <float> wa-from;
+    in-out property <float> wa-to;
 
     // Double-click word selection. The bubble passes the clicked document
     // position (already resolved by the run cells); Rust expands it to word
-    // boundaries within the run and writes the endpoints back into this
-    // global (bound in src/wiring/extra.rs).
+    // boundaries, stores the anchor word, and writes the endpoints back into
+    // this global (bound in src/wiring/extra.rs).
     callback request-word(string, int, int, float);
+    // Word-mode drag: the bubble passes the pointer's document position and
+    // Rust re-derives the endpoints as the union of the anchor word and the
+    // word under the pointer.
+    callback request-word-extend(string, int, int, float);
 
     public function begin(id: string, x: length, y: length) {
         self.owner = id;
         self.active = false;
+        self.word-mode = false;
         self.anchor-x = x;
         self.anchor-y = y;
         self.cursor-x = x;
@@ -918,14 +945,23 @@ export global TextSelection {
         self.b-line = -1;
         self.b-run = -1;
         self.b-frac = 0;
+        self.c-line = -1;
+        self.c-run = -1;
+        self.c-frac = 0;
+        self.p-line = -1;
+        self.p-run = -1;
+        self.p-frac = 0;
     }
     public function clear() {
         self.owner = "";
         self.active = false;
+        self.word-mode = false;
         self.a-line = -1;
         self.a-run = -1;
         self.b-line = -1;
         self.b-run = -1;
+        self.c-line = -1;
+        self.c-run = -1;
     }
 }
 
