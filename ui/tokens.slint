@@ -812,6 +812,9 @@ export struct StagedAttachment {
     is-image: bool,
     thumb: image,
     has-thumb: bool,
+    // Per-type emoji for thumb-less chips (📄/📊/📦/…); empty falls back to
+    // the paperclip stroke icon.
+    icon: string,
 }
 
 // One inline cell inside a wrapped line of a chat-message body. Slint's
@@ -1197,6 +1200,11 @@ export struct ChatMessage {
     album-h: length,
     att-name: string,
     att-mime: string,
+    // Generic-file chip presentation, precomputed in Rust: `att-icon` is the
+    // per-type emoji (📄/📊/📦/…) and `att-type-label` the short type name
+    // ("PDF", "ZIP") the chip's meta line shows instead of the raw mime.
+    att-icon: string,
+    att-type-label: string,
     att-size-label: string,
     att-is-image: bool,
     // Video attachment (mime `video/*`). Renders a poster tile (reusing

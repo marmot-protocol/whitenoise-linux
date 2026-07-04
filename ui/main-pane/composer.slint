@@ -254,7 +254,17 @@ export component Composer inherits Rectangle {
                                     source: att.thumb;
                                     image-fit: cover;
                                 }
-                                if !att.has-thumb: PaperclipIcon {
+                                if !att.has-thumb && att.icon != "": Text {
+                                    text: att.icon;
+                                    color: Palette.text-lo;
+                                    font-size: (14px) * Theme.fs-scale;
+                                    font-family: Theme.font;
+                                    horizontal-alignment: center;
+                                    vertical-alignment: center;
+                                    width: parent.width;
+                                    height: parent.height;
+                                }
+                                if !att.has-thumb && att.icon == "": PaperclipIcon {
                                     stroke: Palette.text-lo;
                                     x: (parent.width - self.width) / 2;
                                     y: (parent.height - self.height) / 2;

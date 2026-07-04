@@ -64,7 +64,8 @@ export component OutgoingRow inherits VerticalLayout {
     in property <bool> reply-to-has-image: false;
     in property <bool> has-attachment: false;
     in property <string> att-name;
-    in property <string> att-mime;
+    in property <string> att-icon;
+    in property <string> att-type-label;
     in property <string> att-size-label;
     in property <bool> att-is-image: false;
     in property <bool> att-is-video: false;
@@ -176,7 +177,8 @@ export component OutgoingRow inherits VerticalLayout {
                     reply-to-has-image: root.reply-to-has-image;
                     has-attachment: root.has-attachment;
                     att-name: root.att-name;
-                    att-mime: root.att-mime;
+                    att-icon: root.att-icon;
+                    att-type-label: root.att-type-label;
                     att-size-label: root.att-size-label;
                     att-is-image: root.att-is-image;
                     att-is-video: root.att-is-video;
