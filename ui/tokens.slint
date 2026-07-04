@@ -859,6 +859,110 @@ export struct MessageLine {
     quote: int,
     code-block: bool,
     rule: bool,
+    // True when this visual line starts a new logical line (explicit break or
+    // block boundary); false when it continues the previous one via wrapping.
+    // Not rendered — the selection-copy extractor reads it to decide whether
+    // two visual lines join with a newline or with nothing (the inter-word
+    // space survives at the end of the previous line when the wrapper breaks).
+    hard-break: bool,
+    // Marks the first / last line that actually has run cells. Selection edge
+    // claims hang off these (not off index 0 / length-1) so points above or
+    // below the text block still resolve when the outermost line is a rule
+    // or an empty line, which renders no cells.
+    first-content: bool,
+    last-content: bool,
+}
+
+// Signal-style in-bubble text selection. Exactly one message can hold a
+// selection at a time: `owner` is its message id ("" = none). The anchor and
+// cursor points live in the owner bubble's text-block coordinate space; the
+// run cells hit-test themselves against those points, paint their own slice
+// of the highlight, and claim the resolved document endpoints (line / run /
+// fraction-within-run) back into this global (see RunCell in
+// message-bubble.slint). The context menu's "Copy selection" reads the
+// claimed endpoints and hands them to Rust for text extraction.
+export global TextSelection {
+    in-out property <string> owner;
+    // True once the drag travelled far enough to count as a selection (a
+    // plain click keeps `active` false and clears the previous selection).
+    in-out property <bool> active;
+    in-out property <length> anchor-x;
+    in-out property <length> anchor-y;
+    in-out property <length> cursor-x;
+    in-out property <length> cursor-y;
+    // Selection endpoints in document space; -1 = not yet resolved.
+    // a = anchor, b = end — unordered, the extractor sorts them.
+    in-out property <int> a-line: -1;
+    in-out property <int> a-run: -1;
+    in-out property <float> a-frac;
+    in-out property <int> b-line: -1;
+    in-out property <int> b-run: -1;
+    in-out property <float> b-frac;
+    // Raw document position of the pointer, claimed continuously by the run
+    // cells while a selection is owned. The drag handler copies it into `b`
+    // in character mode, or feeds it to `request-word-extend` in word mode —
+    // keeping it separate lets Rust snap `a`/`b` to word boundaries without
+    // the cursor claims overwriting them a frame later.
+    in-out property <int> c-line: -1;
+    in-out property <int> c-run: -1;
+    in-out property <float> c-frac;
+    // Document position of the last press, cached alongside the anchor
+    // claims. `clear()` leaves it alone: the plain-click release between the
+    // presses of a double-click clears the selection, and the second press
+    // still needs the first press's position to pick the word.
+    in-out property <int> p-line: -1;
+    in-out property <int> p-run: -1;
+    in-out property <float> p-frac;
+    // Word mode (entered by double-click): dragging extends or retracts the
+    // selection by whole words around the fixed anchor word below.
+    in-out property <bool> word-mode;
+    in-out property <int> wa-line;
+    in-out property <int> wa-run;
+    in-out property <float> wa-from;
+    in-out property <float> wa-to;
+
+    // Double-click word selection. The bubble passes the clicked document
+    // position (already resolved by the run cells); Rust expands it to word
+    // boundaries, stores the anchor word, and writes the endpoints back into
+    // this global (bound in src/wiring/extra.rs).
+    callback request-word(string, int, int, float);
+    // Word-mode drag: the bubble passes the pointer's document position and
+    // Rust re-derives the endpoints as the union of the anchor word and the
+    // word under the pointer.
+    callback request-word-extend(string, int, int, float);
+
+    public function begin(id: string, x: length, y: length) {
+        self.owner = id;
+        self.active = false;
+        self.word-mode = false;
+        self.anchor-x = x;
+        self.anchor-y = y;
+        self.cursor-x = x;
+        self.cursor-y = y;
+        self.a-line = -1;
+        self.a-run = -1;
+        self.a-frac = 0;
+        self.b-line = -1;
+        self.b-run = -1;
+        self.b-frac = 0;
+        self.c-line = -1;
+        self.c-run = -1;
+        self.c-frac = 0;
+        self.p-line = -1;
+        self.p-run = -1;
+        self.p-frac = 0;
+    }
+    public function clear() {
+        self.owner = "";
+        self.active = false;
+        self.word-mode = false;
+        self.a-line = -1;
+        self.a-run = -1;
+        self.b-line = -1;
+        self.b-run = -1;
+        self.c-line = -1;
+        self.c-run = -1;
+    }
 }
 
 // User-facing error / status copy shown by the Rust glue layer. These strings

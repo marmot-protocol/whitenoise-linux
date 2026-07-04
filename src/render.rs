@@ -244,6 +244,10 @@ pub(crate) enum MdTok {
         link: Option<String>,
     },
     Emoji {
+        /// The source emoji string (possibly a multi-scalar ZWJ sequence).
+        /// Rendered from the sprite sheet, but kept on the run so
+        /// selection-copy can reproduce the character.
+        text: String,
         x: u32,
         y: u32,
         fx: u8,
@@ -260,6 +264,10 @@ pub(crate) struct MdLine {
     quote: i32,
     code_block: bool,
     rule: bool,
+    /// False only for wrap-continuation lines produced inside `md_wrap`; every
+    /// block boundary, explicit break, code line, spacer, and rule starts a
+    /// new logical line. See `MessageLine.hard-break` in tokens.slint.
+    hard_break: bool,
 }
 
 /// Block-walk context: accumulated left inset and current blockquote depth.
@@ -297,10 +305,10 @@ pub(crate) fn md_run_text(text: &str, style: MdStyle, link: &Option<String>) -> 
     }
 }
 
-pub(crate) fn md_run_emoji(x: u32, y: u32, fx: u8) -> MessageRun {
+pub(crate) fn md_run_emoji(text: &str, x: u32, y: u32, fx: u8) -> MessageRun {
     MessageRun {
         is_emoji: true,
-        text: SharedString::new(),
+        text: SharedString::from(text),
         clip_x: x as i32,
         clip_y: y as i32,
         bold: false,
@@ -376,7 +384,12 @@ pub(crate) fn md_push_text(
             }
             if let Some((end, x, y)) = matched {
                 flush(&mut buf, &mut buf_space, out);
-                out.push(MdTok::Emoji { x, y, fx: style.fx });
+                out.push(MdTok::Emoji {
+                    text: text[i..end].to_string(),
+                    x,
+                    y,
+                    fx: style.fx,
+                });
                 i = end;
                 continue;
             }
@@ -525,6 +538,7 @@ pub(crate) fn md_spacer(ctx: MdCtx) -> MdLine {
         quote: ctx.quote,
         code_block: false,
         rule: false,
+        hard_break: true,
     }
 }
 
@@ -547,7 +561,11 @@ pub(crate) fn md_wrap(
 
     let mut cur: Vec<MessageRun> = Vec::new();
     let mut x = 0.0f32;
-    let flush = |out: &mut Vec<MdLine>, cur: &mut Vec<MessageRun>| {
+    // Whether the line currently accumulating in `cur` starts a new logical
+    // line. The first line of the block does; a line opened by a width-driven
+    // wrap (or a hard-split chunk) is a continuation of the previous one.
+    let mut hard = true;
+    let flush = |out: &mut Vec<MdLine>, cur: &mut Vec<MessageRun>, hard: &mut bool, next: bool| {
         out.push(MdLine {
             runs: std::mem::take(cur),
             indent,
@@ -555,13 +573,15 @@ pub(crate) fn md_wrap(
             quote,
             code_block,
             rule: false,
+            hard_break: *hard,
         });
+        *hard = next;
     };
 
     for tok in toks {
         match tok {
             MdTok::Break => {
-                flush(out, &mut cur);
+                flush(out, &mut cur, &mut hard, true);
                 x = 0.0;
             }
             MdTok::Space { text, style, link } => {
@@ -573,12 +593,17 @@ pub(crate) fn md_wrap(
                 x += text.chars().count() as f32 * char_w;
                 cur.push(md_run_text(&text, style, &link));
             }
-            MdTok::Emoji { x: ex, y: ey, fx } => {
+            MdTok::Emoji {
+                text,
+                x: ex,
+                y: ey,
+                fx,
+            } => {
                 if x > 0.0 && x + emoji_w > avail {
-                    flush(out, &mut cur);
+                    flush(out, &mut cur, &mut hard, false);
                     x = 0.0;
                 }
-                cur.push(md_run_emoji(ex, ey, fx));
+                cur.push(md_run_emoji(&text, ex, ey, fx));
                 x += emoji_w;
             }
             MdTok::Word { text, style, link } => {
@@ -586,7 +611,7 @@ pub(crate) fn md_wrap(
                 let w = n as f32 * char_w;
                 if w <= avail {
                     if x > 0.0 && x + w > avail {
-                        flush(out, &mut cur);
+                        flush(out, &mut cur, &mut hard, false);
                         x = 0.0;
                     }
                     cur.push(md_run_text(&text, style, &link));
@@ -597,7 +622,7 @@ pub(crate) fn md_wrap(
                     let mut start = 0;
                     while start < chars.len() {
                         if x > 0.0 {
-                            flush(out, &mut cur);
+                            flush(out, &mut cur, &mut hard, false);
                             x = 0.0;
                         }
                         let end = (start + max_chars).min(chars.len());
@@ -611,7 +636,7 @@ pub(crate) fn md_wrap(
         }
     }
     if !cur.is_empty() {
-        flush(out, &mut cur);
+        flush(out, &mut cur, &mut hard, true);
     }
 }
 
@@ -700,6 +725,7 @@ pub(crate) fn md_walk_list(
                 quote: ctx.quote,
                 code_block: false,
                 rule: false,
+                hard_break: true,
             });
         }
         // The marker sits at the item's own indent; content trails after it.
@@ -752,6 +778,7 @@ pub(crate) fn md_walk_blocks(out: &mut Vec<MdLine>, blocks: &[Block], ctx: MdCtx
                 quote: ctx.quote,
                 code_block: false,
                 rule: true,
+                hard_break: true,
             }),
             Block::CodeBlock { content, .. } => {
                 let body = content.strip_suffix('\n').unwrap_or(content);
@@ -768,6 +795,7 @@ pub(crate) fn md_walk_blocks(out: &mut Vec<MdLine>, blocks: &[Block], ctx: MdCtx
                             quote: ctx.quote,
                             code_block: true,
                             rule: false,
+                            hard_break: true,
                         });
                         continue;
                     }
@@ -847,17 +875,169 @@ pub(crate) fn tokenize_message_lines(text: &str, max_width: f32, base_fs: f32) -
         env,
     );
     md_assign_phases(&mut lines);
+    // The selection edge claims live on the outermost lines that render run
+    // cells; rules and empty lines render none (see MessageLine in
+    // tokens.slint).
+    let first_content = lines.iter().position(|l| !l.runs.is_empty());
+    let last_content = lines.iter().rposition(|l| !l.runs.is_empty());
     lines
         .into_iter()
-        .map(|l| MessageLine {
+        .enumerate()
+        .map(|(i, l)| MessageLine {
             runs: ModelRc::new(VecModel::from(l.runs)),
             indent: l.indent,
             scale: l.scale,
             quote: l.quote,
             code_block: l.code_block,
             rule: l.rule,
+            hard_break: l.hard_break,
+            first_content: Some(i) == first_content,
+            last_content: Some(i) == last_content,
         })
         .collect()
+}
+
+/// Expand a document position (line, run, fraction of the run's width) to the
+/// word around it, returned as a (start, end) fraction pair within the same
+/// run. Word boundaries come from ICU segmentation, whose dictionary/LSTM
+/// models segment unspaced scripts (Japanese, Chinese, Thai) that character
+/// classes cannot; an emoji run is one atomic word. `None` when the position
+/// does not resolve to a non-empty run.
+pub(crate) fn word_span_at(
+    lines: &ModelRc<MessageLine>,
+    line: i32,
+    run: i32,
+    frac: f32,
+) -> Option<(f32, f32)> {
+    if line < 0 || run < 0 {
+        return None;
+    }
+    let l = lines.row_data(line as usize)?;
+    let r = l.runs.row_data(run as usize)?;
+    if r.is_emoji {
+        return Some((0.0, 1.0));
+    }
+    let text = r.text.as_str();
+    let n = text.chars().count();
+    if n == 0 {
+        return None;
+    }
+    // The fraction maps to a character with the wrapper's uniform-advance
+    // assumption; the segmenter works in byte offsets.
+    let idx = ((frac * n as f32).floor() as usize).min(n - 1);
+    let byte_idx = text
+        .char_indices()
+        .nth(idx)
+        .map(|(b, _)| b)
+        .unwrap_or_default();
+    // Borrowed segmenter over compiled data: construction is free, so no
+    // caching is needed for a per-double-click call.
+    let seg = icu_segmenter::WordSegmenter::new_auto(Default::default());
+    let mut start_b = 0usize;
+    let mut end_b = text.len();
+    for boundary in seg.segment_str(text) {
+        if boundary <= byte_idx {
+            start_b = boundary;
+        } else {
+            end_b = boundary;
+            break;
+        }
+    }
+    let start = text[..start_b].chars().count();
+    let end = text[..end_b].chars().count();
+    Some((start as f32 / n as f32, end as f32 / n as f32))
+}
+
+/// Character count of a run in selection units. Emoji runs are atomic: one
+/// unit covering the whole (possibly multi-scalar ZWJ) sequence.
+fn run_char_count(run: &MessageRun) -> usize {
+    if run.is_emoji {
+        1
+    } else {
+        run.text.chars().count()
+    }
+}
+
+/// Slice `[from, to)` selection units out of a run's text.
+fn run_slice(run: &MessageRun, from: usize, to: usize) -> String {
+    if from >= to {
+        return String::new();
+    }
+    if run.is_emoji {
+        return run.text.to_string();
+    }
+    run.text.chars().skip(from).take(to - from).collect()
+}
+
+/// Extract the text between two document endpoints of a message's pre-wrapped
+/// line model. An endpoint is (visual line index, run index, fraction of the
+/// run's width); the fraction maps to a character boundary with the same
+/// uniform-advance assumption the wrapper uses, so the copied range tracks the
+/// painted highlight. Endpoints arrive unordered (anchor vs cursor); a
+/// negative index means the endpoint was never resolved — nothing to copy.
+pub(crate) fn extract_selection(
+    lines: &ModelRc<MessageLine>,
+    a: (i32, i32, f32),
+    b: (i32, i32, f32),
+) -> String {
+    if a.0 < 0 || a.1 < 0 || b.0 < 0 || b.1 < 0 {
+        return String::new();
+    }
+    let key = |p: (i32, i32, f32)| (p.0, p.1, (p.2 * 1e6) as i64);
+    let (start, end) = if key(a) <= key(b) { (a, b) } else { (b, a) };
+    let last_line = match lines.row_count() {
+        0 => return String::new(),
+        n => n - 1,
+    };
+    let mut out = String::new();
+    for li in (start.0.max(0) as usize)..=(end.0.max(0) as usize).min(last_line) {
+        let Some(line) = lines.row_data(li) else {
+            continue;
+        };
+        // Separator before this visual line: a newline when it starts a new
+        // logical line, nothing for a soft wrap (the inter-word space already
+        // sits at the end of the previous visual line).
+        if li as i32 > start.0 && line.hard_break {
+            out.push('\n');
+        }
+        if line.rule {
+            continue;
+        }
+        let mut line_text = String::new();
+        let n_runs = line.runs.row_count();
+        for ri in 0..n_runs {
+            let Some(run) = line.runs.row_data(ri) else {
+                continue;
+            };
+            let n = run_char_count(&run);
+            let mut from = 0usize;
+            let mut to = n;
+            if li as i32 == start.0 {
+                if (ri as i32) < start.1 {
+                    continue;
+                }
+                if ri as i32 == start.1 {
+                    from = ((start.2 * n as f32).round() as usize).min(n);
+                }
+            }
+            if li as i32 == end.0 {
+                if (ri as i32) > end.1 {
+                    break;
+                }
+                if ri as i32 == end.1 {
+                    to = ((end.2 * n as f32).round() as usize).min(n);
+                }
+            }
+            line_text.push_str(&run_slice(&run, from, to));
+        }
+        // Whitespace-only lines are the spacer rows between blocks (and blank
+        // code lines); they contribute their newline but no padding chars.
+        // Content lines keep trailing spaces — significant inside code blocks.
+        if !line_text.trim().is_empty() {
+            out.push_str(&line_text);
+        }
+    }
+    out.trim_matches('\n').to_string()
 }
 
 /// Open a URL (or `mailto:` / `nostr:` URI) with the platform's default

@@ -5,6 +5,7 @@ import {
     EmojiSheet,
     Linkout,
     AlbumCell,
+    TextSelection,
 } from "../tokens.slint";
 import { CheckMark } from "../icons/check-mark.slint";
 import { SketchOutline } from "sketch-outline.slint";
@@ -105,6 +106,102 @@ component RunCell inherits Rectangle {
     property <length> dy:
         (root.f-explode ? root.exp-dy : 0px) + (root.f-nod ? root.nod-dy : 0px) + (root.f-ripple ? root.ripple-dy : 0px) + (root.f-jitter ? root.jitter-dy : 0px);
 
+    // Text-selection plumbing (see TextSelection in tokens.slint). Each cell
+    // hit-tests itself against the selection points: `sel-origin-x` is the
+    // text block's window-x (points live in text-block space), `band-t/b` the
+    // y-band of the cell's line, and the first/last flags let edge cells
+    // claim points that fall beyond the line or the whole block.
+    in property <string> sel-msg-id;
+    in property <int> sel-line-idx;
+    in property <int> sel-run-idx;
+    in property <bool> sel-first-run;
+    in property <bool> sel-last-run;
+    in property <bool> sel-first-line;
+    in property <bool> sel-last-line;
+    in property <length> sel-origin-x;
+    in property <length> band-t;
+    in property <length> band-b;
+    in property <color> sel-bg;
+
+    property <bool> sel-mine: root.sel-msg-id != "" && TextSelection.owner == root.sel-msg-id;
+    property <length> cell-l: self.absolute-position.x - root.sel-origin-x;
+    property <length> cell-r: root.cell-l + root.width;
+
+    // Highlight from the RESOLVED endpoints (line, run, fraction) — the same
+    // values the extractor copies, so painted and copied text agree; it also
+    // lets word / whole-bubble selections set endpoints directly without
+    // synthesizing pointer coordinates. Endpoints arrive unordered (a =
+    // anchor, b = cursor); order them lexicographically first.
+    property <bool> sel-on: root.sel-mine && TextSelection.active
+        && TextSelection.a-line >= 0 && TextSelection.a-run >= 0
+        && TextSelection.b-line >= 0 && TextSelection.b-run >= 0;
+    property <bool> sel-a-first: TextSelection.a-line < TextSelection.b-line
+        || (TextSelection.a-line == TextSelection.b-line && (TextSelection.a-run < TextSelection.b-run
+        || (TextSelection.a-run == TextSelection.b-run && TextSelection.a-frac <= TextSelection.b-frac)));
+    property <int> sel-s-line: root.sel-a-first ? TextSelection.a-line : TextSelection.b-line;
+    property <int> sel-s-run: root.sel-a-first ? TextSelection.a-run : TextSelection.b-run;
+    property <float> sel-s-frac: root.sel-a-first ? TextSelection.a-frac : TextSelection.b-frac;
+    property <int> sel-e-line: root.sel-a-first ? TextSelection.b-line : TextSelection.a-line;
+    property <int> sel-e-run: root.sel-a-first ? TextSelection.b-run : TextSelection.a-run;
+    property <float> sel-e-frac: root.sel-a-first ? TextSelection.b-frac : TextSelection.a-frac;
+    // My covered slice: empty (from 1, to 0) when I sit outside the range.
+    property <float> sel-from: !root.sel-on ? 1.0
+        : (root.sel-line-idx > root.sel-s-line || (root.sel-line-idx == root.sel-s-line && root.sel-run-idx > root.sel-s-run)) ? 0.0
+        : (root.sel-line-idx == root.sel-s-line && root.sel-run-idx == root.sel-s-run) ? root.sel-s-frac : 1.0;
+    property <float> sel-to: !root.sel-on ? 0.0
+        : (root.sel-line-idx < root.sel-e-line || (root.sel-line-idx == root.sel-e-line && root.sel-run-idx < root.sel-e-run)) ? 1.0
+        : (root.sel-line-idx == root.sel-e-line && root.sel-run-idx == root.sel-e-run) ? root.sel-e-frac : 0.0;
+
+    // Endpoint claims. For any point exactly one cell resolves it to a
+    // document position (line, run, fraction): the cell containing it, the
+    // first/last cell of its line for points in the indent zone or past the
+    // line end, or the first/last cell of the block for points above/below
+    // all lines. -1 = not mine. Claims land in the global through `changed`
+    // callbacks (bindings must stay pure).
+    pure function claim-frac(px: length, py: length) -> float {
+        if (py < root.band-t) {
+            return (root.sel-first-line && root.sel-first-run) ? 0.0 : -1.0;
+        }
+        if (py >= root.band-b) {
+            return (root.sel-last-line && root.sel-last-run) ? 1.0 : -1.0;
+        }
+        if (px < root.cell-l) {
+            return root.sel-first-run ? 0.0 : -1.0;
+        }
+        if (px >= root.cell-r) {
+            return root.sel-last-run ? 1.0 : -1.0;
+        }
+        return (px - root.cell-l) / max(root.width, 1px);
+    }
+    property <float> sel-a-claim: root.sel-mine ? claim-frac(TextSelection.anchor-x, TextSelection.anchor-y) : -1.0;
+    property <float> sel-b-claim: root.sel-mine ? claim-frac(TextSelection.cursor-x, TextSelection.cursor-y) : -1.0;
+    changed sel-a-claim => {
+        if (self.sel-a-claim >= 0) {
+            // The press cache is written unconditionally; the `a` endpoint
+            // only outside word mode, where Rust owns it (a late claim would
+            // otherwise drag the word selection's edge back to the click
+            // point).
+            TextSelection.p-line = root.sel-line-idx;
+            TextSelection.p-run = root.sel-run-idx;
+            TextSelection.p-frac = self.sel-a-claim;
+            if (!TextSelection.word-mode) {
+                TextSelection.a-line = root.sel-line-idx;
+                TextSelection.a-run = root.sel-run-idx;
+                TextSelection.a-frac = self.sel-a-claim;
+            }
+        }
+    }
+    changed sel-b-claim => {
+        // Cursor claims land in the RAW pointer position (`c`), not the `b`
+        // endpoint: the drag handler copies `c` into `b` in character mode
+        // and lets Rust derive word-snapped endpoints from `c` in word mode.
+        if (self.sel-b-claim >= 0) {
+            TextSelection.c-line = root.sel-line-idx;
+            TextSelection.c-run = root.sel-run-idx;
+            TextSelection.c-frac = self.sel-b-claim;
+        }
+    }
+
     property <bool> is-link: root.link != "";
     // Layout size. The box reserves the persistent Big/Small size (so the line
     // reflows for those, like iMessage); the animated explode/bloom scale is
@@ -122,6 +219,15 @@ component RunCell inherits Rectangle {
         height: 100%;
         background: root.code-bg;
         border-radius: (2px) * Theme.r-scale;
+    }
+
+    // Selection highlight — the cell's own slice of the selected range,
+    // painted behind the glyph. Width collapses to 0 for uncovered cells.
+    if root.sel-mine: Rectangle {
+        x: root.width * clamp(root.sel-from, 0.0, 1.0);
+        width: root.width * max(0.0, root.sel-to - root.sel-from);
+        height: 100%;
+        background: root.sel-bg;
     }
 
     t := Text {
@@ -183,6 +289,10 @@ component RunCell inherits Rectangle {
 }
 
 export component MessageBubble inherits Rectangle {
+    // Stable id of the underlying message. Empty for pending rows — text
+    // selection needs a non-empty id to key the selection and to find the
+    // row again at copy time.
+    in property <string> msg-id;
     in property <string> message;
     // Pre-tokenized + pre-wrapped body, one MessageLine per visual line.
     // The body renders as a VerticalLayout-of-HorizontalLayouts so each
@@ -261,9 +371,29 @@ export component MessageBubble inherits Rectangle {
     in property <int> effect-clip-x: 0;
     in property <int> effect-clip-y: 0;
     // True while the pointer is anywhere over the bubble. Read by the row to
-    // reveal the floating action toolbar. Sourced from a bottom-most sensor so
-    // it never steals taps from the attachment / retry areas above it.
-    out property <bool> hovered: hover-sensor.has-hover;
+    // reveal the floating action toolbar. Sourced from a bottom-most sensor
+    // (which never steals taps from the attachment / retry areas above it)
+    // plus the text-selection area, which sits over the body lines and would
+    // otherwise starve the sensor of hover while the pointer is on text.
+    out property <bool> hovered: hover-sensor.has-hover || root.sel-hover;
+    property <bool> sel-hover: false;
+
+    // Multi-press chain on the body text: press 1 anchors a drag (release
+    // without drag = plain click), press 2 selects the word under the pointer
+    // and enters word mode (dragging then extends by whole words), press 3
+    // selects the whole bubble. A press continues the chain when it lands
+    // within 225ms of the previous press or release. The window is measured
+    // by comparing `animation-tick()` timestamps rather than a `Timer`
+    // element: a Timer with a `running: false` binding is never started, so
+    // its `restart()` is a no-op and `running` never turns true.
+    property <int> press-chain: 0;
+    property <duration> now-tick: animation-tick();
+    property <duration> last-press-tick: -1000ms;
+    // Where the previous press landed (text-block space) — a chained press
+    // must land nearby, like native double-click slop.
+    property <length> last-press-x: -10000px;
+    property <length> last-press-y: -10000px;
+
     callback retry-clicked();
     callback attachment-clicked();
     callback audio-play-clicked();
@@ -805,60 +935,195 @@ export component MessageBubble inherits Rectangle {
                 wrap: word-wrap;
                 width: min(self.preferred-width, root.text-budget);
             }
-            if root.lines.length > 0 && !root.deleted: VerticalLayout {
-                spacing: 0;
-                alignment: start;
-                for line in root.lines: Rectangle {
+            // Body lines, wrapped in the text-selection TouchArea. Wrapping
+            // (rather than overlaying) keeps the nested link cells winning
+            // the hit-test, exactly like the context-menu panel. The area
+            // owns the Signal-style select-to-copy drag: press anchors a
+            // selection in TextSelection, drag extends it (the run cells
+            // hit-test themselves against the points), and a plain click
+            // clears it while keeping the old tap behavior (retry / effect
+            // replay) that the hover-sensor below used to catch.
+            if root.lines.length > 0 && !root.deleted: sel-touch := TouchArea {
+                horizontal-stretch: 0;
+                // Text cursor over the body; nested link cells override it
+                // with a pointer via their own TouchArea.
+                mouse-cursor: text;
+                property <bool> dragging: false;
+                changed has-hover => {
+                    root.sel-hover = self.has-hover;
+                }
+                pointer-event(e) => {
+                    if (e.kind == PointerEventKind.down && e.button == PointerEventButton.right) {
+                        root.context-menu-requested(
+                            self.absolute-position.x + self.mouse-x,
+                            self.absolute-position.y + self.mouse-y);
+                    }
+                    if (e.kind == PointerEventKind.down && e.button == PointerEventButton.left && root.msg-id != "") {
+                        self.dragging = false;
+                        root.press-chain = (root.now-tick - root.last-press-tick <= 225ms
+                            && abs(self.mouse-x - root.last-press-x) <= 6px
+                            && abs(self.mouse-y - root.last-press-y) <= 6px) ? root.press-chain + 1 : 1;
+                        root.last-press-tick = root.now-tick;
+                        root.last-press-x = self.mouse-x;
+                        root.last-press-y = self.mouse-y;
+                        if (root.press-chain == 1) {
+                            TextSelection.begin(root.msg-id, self.mouse-x, self.mouse-y);
+                        } else if (root.press-chain == 2) {
+                            // The first press resolved this spot into the
+                            // press cache (which survives the plain-click
+                            // clear in between); Rust expands it to a word,
+                            // stores the anchor word, and activates.
+                            if (TextSelection.p-line >= 0 && TextSelection.p-run >= 0) {
+                                TextSelection.request-word(root.msg-id, TextSelection.p-line, TextSelection.p-run, TextSelection.p-frac);
+                            }
+                        } else {
+                            // Third press: select everything in the bubble.
+                            // The end run is an open-ended sentinel rather
+                            // than the last line's run count — a trailing
+                            // rule or empty line has zero runs, and both the
+                            // highlight comparisons and the extractor treat
+                            // "past every run" as full coverage.
+                            root.press-chain = 0;
+                            TextSelection.owner = root.msg-id;
+                            TextSelection.word-mode = false;
+                            TextSelection.a-line = 0;
+                            TextSelection.a-run = 0;
+                            TextSelection.a-frac = 0;
+                            TextSelection.b-line = root.lines.length - 1;
+                            TextSelection.b-run = 1000000;
+                            TextSelection.b-frac = 1.0;
+                            TextSelection.active = true;
+                        }
+                    }
+                }
+                moved => {
+                    // `pressed` filters to left-button drags — `moved` also
+                    // fires while a right-button press holds the grab, and
+                    // that must not disturb an existing selection.
+                    if (self.pressed && root.msg-id != "" && TextSelection.owner == root.msg-id) {
+                        TextSelection.cursor-x = self.mouse-x;
+                        TextSelection.cursor-y = self.mouse-y;
+                        if (!self.dragging && (abs(self.mouse-x - self.pressed-x) > 3px || abs(self.mouse-y - self.pressed-y) > 3px)) {
+                            self.dragging = true;
+                            if (!TextSelection.word-mode) {
+                                TextSelection.active = true;
+                            }
+                        }
+                        if (self.dragging && TextSelection.c-line >= 0 && TextSelection.c-run >= 0) {
+                            if (TextSelection.word-mode) {
+                                // Word mode: Rust snaps the endpoints to the
+                                // union of the anchor word and the word under
+                                // the pointer, extending or retracting whole
+                                // words on either side.
+                                TextSelection.request-word-extend(root.msg-id, TextSelection.c-line, TextSelection.c-run, TextSelection.c-frac);
+                            } else {
+                                // Character mode: the end endpoint follows the
+                                // pointer's claimed position directly.
+                                TextSelection.b-line = TextSelection.c-line;
+                                TextSelection.b-run = TextSelection.c-run;
+                                TextSelection.b-frac = TextSelection.c-frac;
+                            }
+                        }
+                    }
+                }
+                clicked => {
+                    // The release re-arms the chain window, like native
+                    // double-click detection.
+                    root.last-press-tick = root.now-tick;
+                    if (self.dragging) {
+                        // Commit the final pointer position: the cursor
+                        // claims flush a frame behind the drag handler, so
+                        // the release re-syncs the end endpoint.
+                        self.dragging = false;
+                        if (TextSelection.owner == root.msg-id && TextSelection.c-line >= 0 && TextSelection.c-run >= 0) {
+                            if (TextSelection.word-mode) {
+                                TextSelection.request-word-extend(root.msg-id, TextSelection.c-line, TextSelection.c-run, TextSelection.c-frac);
+                            } else {
+                                TextSelection.b-line = TextSelection.c-line;
+                                TextSelection.b-run = TextSelection.c-run;
+                                TextSelection.b-frac = TextSelection.c-frac;
+                            }
+                        }
+                    } else if (root.press-chain == 1) {
+                        // A plain click clears the selection and keeps the
+                        // old tap behavior (retry / effect replay).
+                        TextSelection.clear();
+                        if (root.failed) {
+                            root.retry-clicked();
+                        } else {
+                            root.body-clicked();
+                        }
+                    }
+                }
+                VerticalLayout {
+                    spacing: 0;
+                    alignment: start;
+                    for line[li] in root.lines: line-r := Rectangle {
                 // Fenced/indented code lines get a subtle monospace plate that
                 // hugs their content.
                 background: line.code-block ? (root.outgoing ? #00000022 : (Theme.light ? #0000000d : #ffffff10)) : transparent;
-                    border-radius: line.code-block ? (3px) * Theme.r-scale : 0;
-                    HorizontalLayout {
-                        spacing: 0;
-                        alignment: start;
-                    // Blockquote accent bar.
-                    if line.quote > 0: Rectangle {
-                            width: 2.5px;
-                            background: root.outgoing ? Palette.bubble-out-fg : Palette.mint;
-                            border-radius: 1.25px;
-                        }
-                    // List / blockquote nesting inset.
-                    if line.indent > 0px: Rectangle {
-                            width: line.indent;
-                        }
-                    // Thematic break — a horizontal divider, no runs.
-                    if line.rule: Rectangle {
-                            height: 11px;
-                            width: root.text-budget;
-                            Rectangle {
-                                y: parent.height / 2;
-                                width: 100%;
-                                height: 1px;
-                                opacity: 0.5;
-                                background: root.outgoing ? Palette.bubble-out-fg : Palette.border-2;
-                            }
-                        }
-                        if !line.rule: HorizontalLayout {
+                        border-radius: line.code-block ? (3px) * Theme.r-scale : 0;
+                    // This line's y-band in text-block space, for the run
+                    // cells' selection hit-tests.
+                    property <length> band-top: self.absolute-position.y - sel-touch.absolute-position.y;
+                        HorizontalLayout {
                             spacing: 0;
                             alignment: start;
-                            for r in line.runs: RunCell {
-                                is-emoji: r.is-emoji;
-                                text: r.text;
-                                clip-x: r.clip-x;
-                                clip-y: r.clip-y;
-                                body-fs: root.body-fs;
-                                emoji-px: root.emoji-px;
-                                scale: line.scale;
-                                fg: root.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
-                                bold: r.bold;
-                                italic: r.italic;
-                                strike: r.strike;
-                                code: r.code;
-                                link: r.link;
-                                fx: r.fx;
-                                phase: r.phase;
-                                link-color: root.outgoing ? Palette.bubble-out-fg : Palette.mint;
-                                code-bg: root.outgoing ? #00000022 : (Theme.light ? #0000000d : #ffffff14);
+                    // Blockquote accent bar.
+                    if line.quote > 0: Rectangle {
+                                width: 2.5px;
+                                background: root.outgoing ? Palette.bubble-out-fg : Palette.mint;
+                                border-radius: 1.25px;
+                            }
+                    // List / blockquote nesting inset.
+                    if line.indent > 0px: Rectangle {
+                                width: line.indent;
+                            }
+                    // Thematic break — a horizontal divider, no runs.
+                    if line.rule: Rectangle {
+                                height: 11px;
+                                width: root.text-budget;
+                                Rectangle {
+                                    y: parent.height / 2;
+                                    width: 100%;
+                                    height: 1px;
+                                    opacity: 0.5;
+                                    background: root.outgoing ? Palette.bubble-out-fg : Palette.border-2;
+                                }
+                            }
+                            if !line.rule: HorizontalLayout {
+                                spacing: 0;
+                                alignment: start;
+                                for r[ri] in line.runs: RunCell {
+                                    is-emoji: r.is-emoji;
+                                    text: r.text;
+                                    clip-x: r.clip-x;
+                                    clip-y: r.clip-y;
+                                    body-fs: root.body-fs;
+                                    emoji-px: root.emoji-px;
+                                    scale: line.scale;
+                                    fg: root.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
+                                    bold: r.bold;
+                                    italic: r.italic;
+                                    strike: r.strike;
+                                    code: r.code;
+                                    link: r.link;
+                                    fx: r.fx;
+                                    phase: r.phase;
+                                    link-color: root.outgoing ? Palette.bubble-out-fg : Palette.mint;
+                                    code-bg: root.outgoing ? #00000022 : (Theme.light ? #0000000d : #ffffff14);
+                                    sel-msg-id: root.msg-id;
+                                    sel-line-idx: li;
+                                    sel-run-idx: ri;
+                                    sel-first-run: ri == 0;
+                                    sel-last-run: ri == line.runs.length - 1;
+                                    sel-first-line: line.first-content;
+                                    sel-last-line: line.last-content;
+                                    sel-origin-x: sel-touch.absolute-position.x;
+                                    band-t: line-r.band-top;
+                                    band-b: line-r.band-top + line-r.height;
+                                    sel-bg: root.outgoing ? #00000038 : Palette.mint.transparentize(0.7);
+                                }
                             }
                         }
                     }

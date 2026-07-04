@@ -565,6 +565,14 @@ msgctxt "DebugPane"
 msgid "Copy JSON"
 msgstr "JSON kopieren"
 
+msgctxt "MessageContextMenu"
+msgid "Copy selection"
+msgstr "Auswahl kopieren"
+
+msgctxt "MessageContextMenu"
+msgid "Copy text"
+msgstr "Text kopieren"
+
 msgctxt "AppearancePane"
 msgid "Coral"
 msgstr "Koralle"

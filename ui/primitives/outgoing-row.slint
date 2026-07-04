@@ -152,6 +152,7 @@ export component OutgoingRow inherits VerticalLayout {
                 bubble := MessageBubble {
                     x: 0;
                     y: 0;
+                    msg-id: root.message-id;
                     message: root.text;
                     effect-id: root.effect-id;
                     effect-clip-x: root.effect-clip-x;
@@ -232,8 +233,11 @@ export component OutgoingRow inherits VerticalLayout {
                     reply-preview-text: root.text;
                     reply-author: @tr("You");
                     can-edit: root.can-edit;
-                    visible: root.message-id != "" && !root.pending && !root.failed && !root.deleted && (hover.has-hover || self.hovered);
-                    opacity: (hover.has-hover || self.hovered) ? 1.0 : 0.0;
+                    // `bubble.hovered` joins in because the selection area
+                    // inside the bubble consumes hover while the pointer is
+                    // over body text, which starves the row-level sensor.
+                    visible: root.message-id != "" && !root.pending && !root.failed && !root.deleted && (hover.has-hover || self.hovered || bubble.hovered);
+                    opacity: (hover.has-hover || self.hovered || bubble.hovered) ? 1.0 : 0.0;
                     animate opacity { duration: 100ms; }
                     request-picker(id, ax, ay) => {
                         root.request-picker(id, ax, ay);
