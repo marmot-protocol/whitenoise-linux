@@ -1,7 +1,13 @@
 # Reusable build workflow: compiles whitenoise-linux for every supported
-# platform (Linux x86_64/arm64, macOS arm64). Called by ci.yml (debug, no
-# artifacts) and release.yml (release, uploads artifacts).
+# platform (Linux x86_64/arm64, macOS arm64). Called by ci.yml (release build,
+# no artifacts) and release.yml (release build, uploads artifacts).
 # (FreeBSD x86_64 and Intel-macOS x86_64 builds temporarily disabled.)
+#
+# Both callers build with `--release --no-default-features`: that drops the
+# default `live-reload` feature so the binary embeds the statically compiled
+# Slint UI (the interpreter/live-reload path is dev-only — see wnl-ui/build.rs).
+# A debug build (`release: false`) would instead produce the interpreter shim,
+# which is not shippable and depends on ui/*.slint at its build-time path.
 #
 # The marmot crates are a public https git dependency
 # (https://github.com/marmot-protocol/darkmatter.git), so cargo fetches them
@@ -12,7 +18,11 @@ on:
   workflow_call:
     inputs:
       release:
-        description: "Build with --release and upload packaged artifacts"
+        description: "Build with --release --no-default-features (compiled UI). When false, builds the dev debug/interpreter shim."
+        type: boolean
+        default: false
+      package:
+        description: "Tar the release binary and upload it as an artifact (requires release: true). CI leaves this off to build without publishing."
         type: boolean
         default: false
 
@@ -57,8 +67,9 @@ jobs:
           cache-on-failure: true
 
       # rust-cache (above) cleans workspace-member artifacts before saving, so
-      # the ~345k-line generated wnl-ui Slint crate (~25s to compile) recompiles
-      # every run. This content-addressed cache restores it directly. Keyed on
+      # the ~580k-line generated wnl-ui Slint crate (the compiled UI these
+      # release builds embed; tens of seconds to compile) recompiles every run.
+      # This content-addressed cache restores it directly. Keyed on
       # everything that changes its output — UI/lang/wnl-ui sources, locked dep
       # ABIs, toolchain, plus the triple and profile (release vs debug artifacts
       # differ). Defined AFTER rust-cache so its restore overlays target/ and its
@@ -77,10 +88,10 @@ jobs:
           key: wnlui-${{ matrix.triple }}-${{ inputs.release && 'rel' || 'dev' }}-${{ env.RUSTC_VER }}-${{ hashFiles('ui/**', 'lang/**', 'wnl-ui/**', 'Cargo.lock') }}
 
       - name: Build
-        run: cargo build --locked ${{ inputs.release && '--release' || '' }}
+        run: cargo build --locked ${{ inputs.release && '--release --no-default-features' || '' }}
 
       - name: Package
-        if: inputs.release
+        if: inputs.package
         shell: bash
         run: |
           dist="whitenoise-linux-${{ matrix.triple }}"
@@ -90,7 +101,7 @@ jobs:
           tar -czf "$dist.tar.gz" "$dist"
 
       - uses: actions/upload-artifact@v4
-        if: inputs.release
+        if: inputs.package
         with:
           name: whitenoise-linux-${{ matrix.triple }}
           path: whitenoise-linux-${{ matrix.triple }}.tar.gz

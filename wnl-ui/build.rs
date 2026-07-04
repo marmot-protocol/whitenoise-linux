@@ -27,6 +27,30 @@ fn main() {
     let sprite_path = out_dir.join("twemoji_sprite.png");
     let map_path = out_dir.join("emoji_sprite_map.rs");
 
+    // Pick Slint's Rust codegen per build profile:
+    //   • `--release`          → compiled module (self-contained, shippable)
+    //   • any non-release build → interpreter-backed shim that loads ui/*.slint
+    //                             from disk at runtime and hot-reloads on edit
+    //                             (no recompile of the ~580k-line module)
+    // `slint_build::compile_*` runs the compiler in-process and its generator
+    // reads SLINT_LIVE_PREVIEW, so setting the var here (before that call)
+    // selects the shim. It requires the `live-reload` feature (on by default)
+    // for the interpreter module; the guard below keeps codegen and feature in
+    // sync so `--no-default-features` can't emit a shim it can't compile.
+    // Escape hatch: DM_COMPILED_UI=1 forces the compiled path in a debug build
+    // (e.g. the VM test harness, which has no ui/*.slint at the build-time path,
+    // or to exercise bundled translations).
+    println!("cargo:rerun-if-env-changed=PROFILE");
+    println!("cargo:rerun-if-env-changed=DM_COMPILED_UI");
+    println!("cargo:rerun-if-env-changed=SLINT_LIVE_PREVIEW");
+    let feature_on = env::var_os("CARGO_FEATURE_LIVE_RELOAD").is_some();
+    let is_release = env::var("PROFILE").as_deref() == Ok("release");
+    let force_compiled = env::var_os("DM_COMPILED_UI").is_some();
+    if feature_on && !is_release && !force_compiled && env::var_os("SLINT_LIVE_PREVIEW").is_none() {
+        // SAFETY: build scripts are single-threaded; set before any threads spawn.
+        unsafe { env::set_var("SLINT_LIVE_PREVIEW", "1") };
+    }
+
     // Compile the UI with bundled gettext translations from lang/.
     let config = slint_build::CompilerConfiguration::new().with_bundled_translations("../lang");
     slint_build::compile_with_config("../ui/dark-matter-linux.slint", config).unwrap();

@@ -13,6 +13,7 @@ jobs:
     uses: ./.github/workflows/_build.yml
     with:
       release: true
+      package: true
 
   publish:
     name: publish GitHub Release

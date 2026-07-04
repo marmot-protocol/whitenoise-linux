@@ -9,6 +9,22 @@ license = "AGPL-3.0-or-later"
 # Rust code in the root crate doesn't recompile the whole UI tree. Only
 # .slint / lang/ changes rebuild this crate.
 
+[features]
+# On by default: makes Slint's `live-preview` (interpreter) module available so
+# build.rs can emit an interpreter-backed shim instead of the ~580k-line
+# generated module. The shim exposes the *same* strongly-typed API
+# (`DarkMatterLinux`, `ChatMessage`, callbacks…) but loads ui/*.slint from disk
+# at runtime, so a .slint edit hot-reloads with no recompile of the generated
+# tree.
+#
+# The feature being on does NOT by itself pick the shim — build.rs only
+# activates it for non-release profiles (see build.rs). So `cargo build` gets
+# hot-reload automatically and `cargo build --release` gets the compiled UI,
+# both with the feature on. Drop the feature (`--no-default-features`) for a
+# release that also omits the interpreter crate entirely.
+default = ["live-reload"]
+live-reload = ["slint/live-preview"]
+
 [dependencies]
 slint = "1.8"
 

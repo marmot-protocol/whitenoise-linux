@@ -8,11 +8,24 @@ edition = "2024"
 default-run = "whitenoise-linux"
 license = "AGPL-3.0-or-later"
 
+[features]
+# On by default so ordinary `cargo build`/`cargo run` get UI hot-reload with no
+# extra flags: it enables Slint's `live-preview` module, and wnl-ui/build.rs
+# activates the interpreter shim only for non-release profiles. `cargo build
+# --release` keeps the feature on but compiles the UI in (self-contained,
+# shippable). For a release that also drops the interpreter crate, build with
+# `--no-default-features`. See wnl-ui/build.rs.
+default = ["live-reload"]
+live-reload = ["wnl-ui/live-reload", "slint/live-preview"]
+
 [dependencies]
 slint = "1.8"
 # Owns the Slint compilation + the huge generated UI module, so Rust edits
 # here don't recompile the whole UI tree. See wnl-ui/src/lib.rs.
-wnl-ui = { path = "wnl-ui" }
+# default-features off so the root `live-reload` feature (above) is the single
+# switch that drives wnl-ui's live-preview — lets `--no-default-features`
+# produce a fully interpreter-free release.
+wnl-ui = { path = "wnl-ui", default-features = false }
 nostr = { version = "0.44.2", default-features = false, features = [
   "std",
   "nip59",

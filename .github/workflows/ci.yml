@@ -1,6 +1,8 @@
 # CI: runs on every push to master and every PR. A fast formatting gate and a
-# clippy gate run on x86_64 Linux, then a debug build of all four target
-# platforms via the reusable build workflow.
+# clippy gate run on x86_64 Linux, then a release build (compiled Slint UI, no
+# live-reload) of every target platform via the reusable build workflow — the
+# same build release.yml ships, minus packaging, so a broken compiled UI fails
+# CI instead of only surfacing at tag time.
 name: CI
 
 on:
@@ -73,13 +75,16 @@ jobs:
           cache-on-failure: true
 
       # rust-cache (above) cleans workspace-member artifacts before saving, so
-      # the ~345k-line generated wnl-ui Slint crate (~25s to compile) is NOT in
-      # that cache and would recompile every run. This content-addressed cache
-      # restores it directly. The key covers everything that changes its output
-      # (UI/lang/wnl-ui sources, the locked dep ABIs, and the toolchain), so a hit
-      # means the inputs are identical; cargo's own fingerprint check is the
-      # backstop if anything is stale. Defined AFTER rust-cache so its restore
-      # overlays rust-cache's target/ and its save runs before rust-cache cleans.
+      # the generated wnl-ui Slint crate is NOT in that cache and would recompile
+      # every run. This content-addressed cache restores it directly. Clippy is a
+      # debug build, so wnl-ui here is the interpreter shim (live-reload is on by
+      # default in debug — see wnl-ui/build.rs); that's fine, clippy lints our
+      # src/ against the same public API either way, and the shim compiles fast.
+      # The key covers everything that changes its output (UI/lang/wnl-ui
+      # sources, the locked dep ABIs, and the toolchain), so a hit means the
+      # inputs are identical; cargo's own fingerprint check is the backstop if
+      # anything is stale. Defined AFTER rust-cache so its restore overlays
+      # rust-cache's target/ and its save runs before rust-cache cleans.
       - name: Record toolchain version
         shell: bash
         run: echo "RUSTC_VER=$(rustc -V | tr ' .()' '----')" >> "$GITHUB_ENV"
@@ -100,4 +105,6 @@ jobs:
     name: build
     uses: ./.github/workflows/_build.yml
     with:
-      release: false
+      # Release-profile compiled UI, but no packaging/upload on PRs.
+      release: true
+      package: false
