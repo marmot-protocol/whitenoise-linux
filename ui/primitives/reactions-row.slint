@@ -17,13 +17,22 @@ component ReactionChip inherits Rectangle {
     // Pop-in: when a new chip appears (optimistic add, or relay echo), it
     // fades in. Colors animate too so toggling `mine` glides between states.
     property <float> enter: 0;
-    init => { self.enter = 1; }
-    animate enter { duration: 160ms; easing: ease-out; }
+    init => {
+        self.enter = 1;
+    }
+    animate enter {
+        duration: 160ms;
+        easing: ease-out;
+    }
     opacity: root.enter;
-    animate background, border-color { duration: 140ms; easing: ease-out; }
+    animate background, border-color {
+        duration: 140ms;
+        easing: ease-out;
+    }
 
     HorizontalLayout {
-        padding-left: 8px; padding-right: 8px;
+        padding-left: 8px;
+        padding-right: 8px;
         spacing: 4px;
         alignment: center;
         Text {
@@ -31,7 +40,8 @@ component ReactionChip inherits Rectangle {
             font-size: (12px) * Theme.fs-scale;
             vertical-alignment: center;
         }
-        if root.count > 1 : Text {
+
+        if root.count > 1: Text {
             text: root.count;
             color: root.mine ? Palette.text-hi : Palette.text-mid;
             font-size: (11px) * Theme.fs-scale;
@@ -42,7 +52,9 @@ component ReactionChip inherits Rectangle {
 
     touch := TouchArea {
         mouse-cursor: pointer;
-        clicked => { root.clicked(); }
+        clicked => {
+            root.clicked();
+        }
     }
 }
 
@@ -59,7 +71,7 @@ export component ReactionChips inherits HorizontalLayout {
     spacing: 6px;
     alignment: root.align-right ? end : start;
 
-    for r in root.reactions : ReactionChip {
+    for r in root.reactions: ReactionChip {
         emoji: r.emoji;
         count: r.count;
         mine: r.mine;
@@ -96,9 +108,12 @@ component ActionButton inherits Rectangle {
         horizontal-alignment: center;
         vertical-alignment: center;
     }
+
     touch := TouchArea {
         mouse-cursor: pointer;
-        clicked => { root.clicked(); }
+        clicked => {
+            root.clicked();
+        }
     }
 }
 
@@ -140,12 +155,14 @@ export component HoverActions inherits Rectangle {
                 );
             }
         }
+
         reply-btn := ActionButton {
             glyph: "↩";
             clicked => {
                 root.request-reply(root.message-id, root.reply-preview-text, root.reply-author);
             }
         }
+
         edit-btn := ActionButton {
             glyph: "✎";
             shown: root.can-edit;

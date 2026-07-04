@@ -25,16 +25,17 @@ export component ChatListItem inherits Rectangle {
     in property <bool> has-picture: false;
 
     height: 64px;
-    background: root.selected
-        ? Palette.selected
-        : (touch.has-hover ? Palette.hover : transparent);
+    background: root.selected ? Palette.selected : (touch.has-hover ? Palette.hover : transparent);
     border-radius: (8px) * Theme.r-scale;
     border-width: Theme.selected-inverts-text && root.selected ? Theme.border-w : (root.selected && !Theme.selected-inverts-text ? 1px : 0px);
     border-color: root.selected && !Theme.selected-inverts-text ? Palette.mint-glow : Palette.border;
-    animate background, border-color { duration: 140ms; easing: ease-out; }
+    animate background, border-color {
+        duration: 140ms;
+        easing: ease-out;
+    }
 
     // Animated mint selection bar — grows from center when selected.
-    if !Theme.pixel-select-marker : Rectangle {
+    if !Theme.pixel-select-marker: Rectangle {
         x: 0px;
         width: 3px;
         height: root.selected ? 40px : 0px;
@@ -44,11 +45,17 @@ export component ChatListItem inherits Rectangle {
         drop-shadow-blur: root.selected ? 6px : 0px;
         drop-shadow-color: Palette.mint-glow;
         opacity: root.selected ? 1.0 : 0.0;
-        animate height { duration: 220ms; easing: ease-in-out; }
-        animate opacity { duration: 160ms; easing: ease-out; }
+        animate height {
+            duration: 220ms;
+            easing: ease-in-out;
+        }
+        animate opacity {
+            duration: 160ms;
+            easing: ease-out;
+        }
     }
     // SNES selection chevron — slides in from outside the edge.
-    if Theme.pixel-select-marker : Text {
+    if Theme.pixel-select-marker: Text {
         x: root.selected ? 2px : -14px;
         y: (parent.height - self.height) / 2;
         text: "▶";
@@ -57,13 +64,18 @@ export component ChatListItem inherits Rectangle {
         font-family: Theme.font;
         vertical-alignment: center;
         opacity: root.selected ? 1.0 : 0.0;
-        animate x { duration: 140ms; easing: ease-out; }
+        animate x {
+            duration: 140ms;
+            easing: ease-out;
+        }
         animate opacity { duration: 100ms; }
     }
 
     HorizontalLayout {
-        padding-left: 12px; padding-right: 12px;
-        padding-top: 14px; padding-bottom: 14px;
+        padding-left: 12px;
+        padding-right: 12px;
+        padding-top: 14px;
+        padding-bottom: 14px;
         spacing: 12px;
         Avatar {
             size: 36px;
@@ -74,6 +86,7 @@ export component ChatListItem inherits Rectangle {
             has-picture: root.has-picture;
             font-size: Theme.fs(11px, 16px);
         }
+
         VerticalLayout {
             horizontal-stretch: 1;
             spacing: 4px;
@@ -88,7 +101,8 @@ export component ChatListItem inherits Rectangle {
                     horizontal-stretch: 1;
                     overflow: elide;
                 }
-                if root.pinned : PinIcon {
+
+                if root.pinned: PinIcon {
                     fill: Theme.selected-inverts-text && root.selected ? Palette.bubble-out-fg : Palette.mint;
                     y: 2px;
                 }
@@ -101,6 +115,7 @@ export component ChatListItem inherits Rectangle {
                     horizontal-alignment: right;
                 }
             }
+
             HorizontalLayout {
                 spacing: 6px;
                 Text {
@@ -112,16 +127,18 @@ export component ChatListItem inherits Rectangle {
                     overflow: elide;
                     vertical-alignment: center;
                 }
-                if root.badge != "" : UnreadBadge {
+
+                if root.badge != "": UnreadBadge {
                     count: root.badge;
                 }
-                if root.badge == "" && root.read : CheckMark {
+                if root.badge == "" && root.read: CheckMark {
                     stroke: Palette.text-lo;
                     double: true;
                     y: 4px;
                 }
-                if root.badge == "" && root.sending : Rectangle {
-                    width: 12px; height: 12px;
+                if root.badge == "" && root.sending: Rectangle {
+                    width: 12px;
+                    height: 12px;
                     y: 3px;
                     border-radius: (6px) * Theme.r-scale;
                     border-width: 1px;
@@ -132,7 +149,9 @@ export component ChatListItem inherits Rectangle {
     }
 
     touch := TouchArea {
-        clicked => { root.clicked(); }
+        clicked => {
+            root.clicked();
+        }
         pointer-event(e) => {
             if (e.kind == PointerEventKind.down && e.button == PointerEventButton.right) {
                 root.context-menu(

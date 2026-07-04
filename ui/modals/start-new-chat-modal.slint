@@ -17,8 +17,12 @@ export component StartNewChatModal inherits Modal {
     primary-label: @tr("Create");
     primary-busy-label: @tr("Creating…");
     primary-busy: root.busy;
-    primary => { root.start-chat(root.chat-name, root.members-text); }
-    secondary => { root.cancel(); }
+    primary => {
+        root.start-chat(root.chat-name, root.members-text);
+    }
+    secondary => {
+        root.cancel();
+    }
 
     ModalField {
         label: @tr("GROUP NAME (OPTIONAL)");
@@ -26,7 +30,9 @@ export component StartNewChatModal inherits Modal {
         text <=> root.chat-name;
         autofocus: true;
         submitted => {
-            if (!root.busy) { root.start-chat(root.chat-name, root.members-text); }
+            if (!root.busy) {
+                root.start-chat(root.chat-name, root.members-text);
+            }
         }
     }
 

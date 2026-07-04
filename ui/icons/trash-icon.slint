@@ -2,15 +2,48 @@ import { Palette } from "../tokens.slint";
 
 export component TrashIcon inherits Rectangle {
     in property <color> stroke: Palette.text-mid;
-    width: 14px; height: 14px;
-    Rectangle { x: 1px; y: 2.5px; width: 12px; height: 1.2px; background: root.stroke; }
-    Rectangle { x: 4px; y: 0; width: 6px; height: 2.5px; border-width: 1.2px; border-color: root.stroke; }
+    width: 14px;
+    height: 14px;
     Rectangle {
-        x: 2.5px; y: 3.5px;
-        width: 9px; height: 10px;
-        border-radius: 1px;
-        border-width: 1.2px; border-color: root.stroke;
+        x: 1px;
+        y: 2.5px;
+        width: 12px;
+        height: 1.2px;
+        background: root.stroke;
     }
-    Rectangle { x: 5px; y: 5.5px; width: 1px; height: 6px; background: root.stroke; }
-    Rectangle { x: 8px; y: 5.5px; width: 1px; height: 6px; background: root.stroke; }
+
+    Rectangle {
+        x: 4px;
+        y: 0;
+        width: 6px;
+        height: 2.5px;
+        border-width: 1.2px;
+        border-color: root.stroke;
+    }
+
+    Rectangle {
+        x: 2.5px;
+        y: 3.5px;
+        width: 9px;
+        height: 10px;
+        border-radius: 1px;
+        border-width: 1.2px;
+        border-color: root.stroke;
+    }
+
+    Rectangle {
+        x: 5px;
+        y: 5.5px;
+        width: 1px;
+        height: 6px;
+        background: root.stroke;
+    }
+
+    Rectangle {
+        x: 8px;
+        y: 5.5px;
+        width: 1px;
+        height: 6px;
+        background: root.stroke;
+    }
 }

@@ -2,11 +2,16 @@ import { Palette } from "../tokens.slint";
 
 export component UnarchiveIcon inherits Rectangle {
     in property <color> stroke: Palette.text-mid;
-    width: 14px; height: 14px;
+    width: 14px;
+    height: 14px;
     Path {
-        width: 14px; height: 14px;
-        viewbox-width: 14; viewbox-height: 14;
+        width: 14px;
+        height: 14px;
+        viewbox-width: 14;
+        viewbox-height: 14;
         commands: "M 3 7 L 7 3 L 11 7 M 7 3 L 7 12";
-        stroke: root.stroke; stroke-width: 1.3px; fill: transparent;
+        stroke: root.stroke;
+        stroke-width: 1.3px;
+        fill: transparent;
     }
 }

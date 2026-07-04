@@ -1,4 +1,4 @@
-import { Palette , Theme} from "../tokens.slint";
+import { Palette, Theme } from "../tokens.slint";
 import { SearchIcon } from "../icons/search-icon.slint";
 import { AddUserIcon } from "../icons/add-user-icon.slint";
 import { LineInput } from "../primitives/line-input.slint";
@@ -24,13 +24,16 @@ export component SidePanel inherits Rectangle {
 
     Rectangle {
         x: parent.width - 1px;
-        width: 1px; height: parent.height;
+        width: 1px;
+        height: parent.height;
         background: Palette.border-2;
     }
 
     VerticalLayout {
-        padding-left: 14px; padding-right: 14px;
-        padding-top: 14px; padding-bottom: 14px;
+        padding-left: 14px;
+        padding-right: 14px;
+        padding-top: 14px;
+        padding-bottom: 14px;
         spacing: 0;
 
         HorizontalLayout {
@@ -47,12 +50,14 @@ export component SidePanel inherits Rectangle {
                     letter-spacing: 1.4px;
                     vertical-alignment: center;
                 }
+
                 Text {
                     text: "·";
                     color: Palette.text-vlo;
                     font-size: (11px) * Theme.fs-scale;
                     vertical-alignment: center;
                 }
+
                 Text {
                     text: root.count;
                     color: Palette.text-mid;
@@ -61,8 +66,12 @@ export component SidePanel inherits Rectangle {
                     vertical-alignment: center;
                 }
             }
-            Rectangle { horizontal-stretch: 1; }
-            if root.show-add : Button {
+
+            Rectangle {
+                horizontal-stretch: 1;
+            }
+
+            if root.show-add: Button {
                 label: root.add-label;
                 button-height: 24px;
                 radius: 5px;
@@ -71,14 +80,21 @@ export component SidePanel inherits Rectangle {
                 spacing: 5px;
                 font-size: (10px) * Theme.fs-scale;
                 bg-color: transparent;
-                AddUserIcon { stroke: Palette.text-mid; }
-                clicked => { root.add-clicked(); }
+                AddUserIcon {
+                    stroke: Palette.text-mid;
+                }
+
+                clicked => {
+                    root.add-clicked();
+                }
             }
         }
 
-        Rectangle { height: 12px; }
+        Rectangle {
+            height: 12px;
+        }
 
-        if root.show-search : Rectangle {
+        if root.show-search: Rectangle {
             height: 34px;
             border-radius: (8px) * Theme.r-scale;
             background: Palette.panel;
@@ -86,10 +102,14 @@ export component SidePanel inherits Rectangle {
             border-color: search-input.has-focus ? Palette.mint-dim : Palette.border-2;
             drop-shadow-blur: search-input.has-focus && Theme.focus-glow ? 10px : 0px;
             drop-shadow-color: Palette.mint-glow;
-            animate border-color { duration: 140ms; easing: ease-out; }
+            animate border-color {
+                duration: 140ms;
+                easing: ease-out;
+            }
 
             HorizontalLayout {
-                padding-left: 10px; padding-right: 8px;
+                padding-left: 10px;
+                padding-right: 8px;
                 spacing: 8px;
                 SearchIcon {
                     stroke: search-input.has-focus ? Palette.mint-dim : Palette.text-vlo;
@@ -97,6 +117,7 @@ export component SidePanel inherits Rectangle {
                     y: (parent.height - self.height) / 2;
                     animate stroke { duration: 140ms; }
                 }
+
                 search-input := LineInput {
                     placeholder: root.search-placeholder;
                     font-size: Theme.fs(12px, 16px);
@@ -104,8 +125,10 @@ export component SidePanel inherits Rectangle {
                     placeholder-color: Palette.text-vlo;
                     horizontal-stretch: 1;
                 }
-                if root.show-search-shortcut : Rectangle {
-                    width: 44px; height: 18px;
+
+                if root.show-search-shortcut: Rectangle {
+                    width: 44px;
+                    height: 18px;
                     y: (parent.height - self.height) / 2;
                     border-radius: (3px) * Theme.r-scale;
                     background: Palette.panel-2;
@@ -121,7 +144,9 @@ export component SidePanel inherits Rectangle {
                 }
             }
         }
-        if root.show-search : Rectangle { height: 10px; }
+        if root.show-search: Rectangle {
+            height: 10px;
+        }
 
         CypherScroll {
             vertical-stretch: 1;
@@ -133,17 +158,21 @@ export component SidePanel inherits Rectangle {
             }
         }
 
-        if root.footer-text != "" : Rectangle { height: 6px; }
-        if root.footer-text != "" : HorizontalLayout {
+        if root.footer-text != "": Rectangle {
+            height: 6px;
+        }
+        if root.footer-text != "": HorizontalLayout {
             height: 20px;
             spacing: 8px;
             alignment: start;
             Rectangle {
-                width: 8px; height: 8px;
+                width: 8px;
+                height: 8px;
                 y: (parent.height - self.height) / 2;
                 border-radius: (4px) * Theme.r-scale;
                 background: Palette.mint-dim;
             }
+
             Text {
                 text: root.footer-text;
                 color: Palette.text-mid;
@@ -152,7 +181,8 @@ export component SidePanel inherits Rectangle {
                 letter-spacing: 1.0px;
                 vertical-alignment: center;
             }
-            if root.footer-trail != "" : Text {
+
+            if root.footer-trail != "": Text {
                 text: root.footer-trail;
                 color: Palette.text-vlo;
                 font-size: (10px) * Theme.fs-scale;

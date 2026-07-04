@@ -12,8 +12,10 @@ export component DeviceRow inherits Rectangle {
     height: 56px;
 
     HorizontalLayout {
-        padding-left: 16px; padding-right: 16px;
-        padding-top: 10px; padding-bottom: 10px;
+        padding-left: 16px;
+        padding-right: 16px;
+        padding-top: 10px;
+        padding-bottom: 10px;
         spacing: 12px;
         alignment: stretch;
 
@@ -27,6 +29,7 @@ export component DeviceRow inherits Rectangle {
                 font-size: (12px) * Theme.fs-scale;
                 font-weight: 700;
             }
+
             Text {
                 text: root.detail;
                 color: Palette.text-lo;
@@ -40,7 +43,7 @@ export component DeviceRow inherits Rectangle {
             HorizontalLayout {
                 alignment: end;
                 spacing: 10px;
-                if root.status != "" : Text {
+                if root.status != "": Text {
                     text: root.status;
                     color: root.status == "active" ? Palette.mint : Palette.text-lo;
                     font-size: (10px) * Theme.fs-scale;
@@ -64,9 +67,10 @@ export component DeviceRow inherits Rectangle {
         }
     }
 
-    if root.show-divider : Rectangle {
+    if root.show-divider: Rectangle {
         y: parent.height - 1px;
-        width: parent.width; height: 1px;
+        width: parent.width;
+        height: 1px;
         background: Palette.border-2;
     }
 }

@@ -1,4 +1,4 @@
-import { Palette, ChatMeta , Theme} from "../tokens.slint";
+import { Palette, ChatMeta, Theme } from "../tokens.slint";
 import { ArchiveIcon } from "../icons/archive-icon.slint";
 import { BanIcon } from "../icons/ban-icon.slint";
 import { CheckMark } from "../icons/check-mark.slint";
@@ -29,13 +29,16 @@ export component ChatHeader inherits Rectangle {
 
     Rectangle {
         y: parent.height - 1px;
-        width: parent.width; height: 1px;
+        width: parent.width;
+        height: 1px;
         background: Palette.border-2;
     }
 
     HorizontalLayout {
-        padding-left: 18px; padding-right: 18px;
-        padding-top: 14px; padding-bottom: 14px;
+        padding-left: 18px;
+        padding-right: 18px;
+        padding-top: 14px;
+        padding-bottom: 14px;
         spacing: 14px;
         alignment: stretch;
 
@@ -50,14 +53,17 @@ export component ChatHeader inherits Rectangle {
                 has-picture: root.is-group ? root.group-has-picture : root.chat.has-picture;
                 font-size: Theme.fs(12px, 17px);
             }
+
             Rectangle {
                 x: parent.width / 2 + 10px;
                 y: parent.height / 2 + 8px;
-                width: 11px; height: 11px;
+                width: 11px;
+                height: 11px;
                 border-radius: (5.5px) * Theme.r-scale;
                 background: Palette.mint-dim;
                 Rectangle {
-                    width: 11px; height: 11px;
+                    width: 11px;
+                    height: 11px;
                     border-radius: (5.5px) * Theme.r-scale;
                     border-width: 1.6px;
                     border-color: Palette.bg;
@@ -79,6 +85,7 @@ export component ChatHeader inherits Rectangle {
                     font-weight: 700;
                     vertical-alignment: center;
                 }
+
                 Pill {
                     label: "MLS";
                     has-lock: true;
@@ -86,10 +93,9 @@ export component ChatHeader inherits Rectangle {
                     fg: Palette.bubble-out-fg;
                 }
             }
+
             Text {
-                text: root.is-group
-                    ? @tr("1 member" | "{n} members" % root.member-count)
-                    : root.chat.last-seen;
+                text: root.is-group ? @tr("1 member" | "{n} members" % root.member-count) : root.chat.last-seen;
                 color: Palette.text-lo;
                 font-size: (11px) * Theme.fs-scale;
             }
@@ -97,7 +103,7 @@ export component ChatHeader inherits Rectangle {
 
         // Mute toggle — silences this chat's desktop notifications. Shown for
         // any established chat (not pending requests). Muted = mint bell-off.
-        if !root.chat.is-chat-request : Rectangle {
+        if !root.chat.is-chat-request: Rectangle {
             width: 36px;
             height: 36px;
             y: (parent.height - self.height) / 2;
@@ -107,13 +113,15 @@ export component ChatHeader inherits Rectangle {
             border-color: Palette.border-2;
             animate background { duration: 100ms; }
             mute-touch := TouchArea {
-                clicked => { root.mute-toggle-clicked(); }
-                if root.muted : MuteIcon {
+                clicked => {
+                    root.mute-toggle-clicked();
+                }
+                if root.muted: MuteIcon {
                     stroke: Palette.mint;
                     x: (parent.width - self.width) / 2;
                     y: (parent.height - self.height) / 2;
                 }
-                if !root.muted : BellIcon {
+                if !root.muted: BellIcon {
                     stroke: Palette.text-mid;
                     x: (parent.width - self.width) / 2;
                     y: (parent.height - self.height) / 2;
@@ -121,7 +129,7 @@ export component ChatHeader inherits Rectangle {
             }
         }
 
-        if root.can-show-members && !root.chat.is-chat-request : Rectangle {
+        if root.can-show-members && !root.chat.is-chat-request: Rectangle {
             width: 36px;
             height: 36px;
             y: (parent.height - self.height) / 2;
@@ -130,7 +138,9 @@ export component ChatHeader inherits Rectangle {
             border-width: root.members-open ? 1px : 0px;
             border-color: Palette.border-2;
             TouchArea {
-                clicked => { root.members-toggle-clicked(); }
+                clicked => {
+                    root.members-toggle-clicked();
+                }
                 PeopleIcon {
                     stroke: root.members-open ? Palette.mint : Palette.text-mid;
                     x: (parent.width - self.width) / 2;
@@ -139,7 +149,7 @@ export component ChatHeader inherits Rectangle {
             }
         }
 
-        if root.chat.is-chat-request : HorizontalLayout {
+        if root.chat.is-chat-request: HorizontalLayout {
             spacing: 8px;
             alignment: end;
 
@@ -147,16 +157,27 @@ export component ChatHeader inherits Rectangle {
                 label: @tr("Block");
                 focusable: true;
                 y: (parent.height - self.height) / 2;
-                clicked => { root.block-clicked(); }
-                BanIcon { stroke: Palette.text-mid; size: 13px; }
+                clicked => {
+                    root.block-clicked();
+                }
+                BanIcon {
+                    stroke: Palette.text-mid;
+                    size: 13px;
+                }
             }
+
             Button {
                 label: @tr("Archive");
                 focusable: true;
                 y: (parent.height - self.height) / 2;
-                clicked => { root.archive-clicked(); }
-                ArchiveIcon { stroke: Palette.text-mid; }
+                clicked => {
+                    root.archive-clicked();
+                }
+                ArchiveIcon {
+                    stroke: Palette.text-mid;
+                }
             }
+
             Button {
                 label: @tr("Accept");
                 focusable: true;
@@ -166,7 +187,9 @@ export component ChatHeader inherits Rectangle {
                 hover-bg: Palette.mint-hi;
                 hover-outline: Palette.mint-hi;
                 y: (parent.height - self.height) / 2;
-                clicked => { root.accept-clicked(); }
+                clicked => {
+                    root.accept-clicked();
+                }
                 CheckMark {
                     stroke: Palette.bubble-out-fg;
                     double: false;

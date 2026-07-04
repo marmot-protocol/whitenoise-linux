@@ -21,7 +21,9 @@ export component QrModal inherits Modal {
     copy-reset := Timer {
         interval: 1.4s;
         running: root.copied;
-        triggered => { root.copied = false; }
+        triggered => {
+            root.copied = false;
+        }
     }
 
     VerticalLayout {
@@ -71,11 +73,15 @@ export component QrModal inherits Modal {
                         font-family: Theme.font;
                         vertical-alignment: center;
                     }
-                    if !root.copied : VerticalLayout {
+
+                    if !root.copied: VerticalLayout {
                         alignment: center;
-                        CopyIcon { stroke: Palette.text-lo; }
+                        CopyIcon {
+                            stroke: Palette.text-lo;
+                        }
                     }
                 }
+
                 chip-touch := TouchArea {
                     mouse-cursor: pointer;
                     clicked => {

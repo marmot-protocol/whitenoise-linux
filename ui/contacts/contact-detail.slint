@@ -1,4 +1,4 @@
-import { Palette, Contact , Theme} from "../tokens.slint";
+import { Palette, Contact, Theme } from "../tokens.slint";
 import { StartChatIcon } from "../icons/start-chat-icon.slint";
 import { CopyIcon } from "../icons/copy-icon.slint";
 import { RefreshIcon } from "../icons/refresh-icon.slint";
@@ -29,7 +29,9 @@ export component ContactDetail inherits DetailPage {
     PageHeader {
         title: @tr("Contact");
         caption: @tr("ADDED {}  ·  {} RELAYS", root.contact.added, root.contact.relays);
-        PeopleIcon { stroke: Palette.text-mid; }
+        PeopleIcon {
+            stroke: Palette.text-mid;
+        }
     }
 
     HorizontalLayout {
@@ -47,20 +49,24 @@ export component ContactDetail inherits DetailPage {
                 has-picture: root.contact.has-picture;
                 font-size: (22px) * Theme.fs-scale;
             }
-            if root.contact.online : Rectangle {
+
+            if root.contact.online: Rectangle {
                 x: parent.width - 18px;
                 y: parent.height - 18px;
-                width: 16px; height: 16px;
+                width: 16px;
+                height: 16px;
                 border-radius: (8px) * Theme.r-scale;
                 background: Palette.mint-dim;
                 Rectangle {
-                    width: 16px; height: 16px;
+                    width: 16px;
+                    height: 16px;
                     border-radius: (8px) * Theme.r-scale;
                     border-width: 2px;
                     border-color: Palette.bg;
                 }
             }
         }
+
         VerticalLayout {
             horizontal-stretch: 1;
             spacing: 6px;
@@ -77,13 +83,13 @@ export component ContactDetail inherits DetailPage {
                 }
                 // When a private nickname is shown above, keep the published
                 // name visible so the identity stays unambiguous.
-                if root.contact.nickname != "" : Text {
+                if root.contact.nickname != "": Text {
                     text: @tr("aka {}", root.contact.real-name);
                     color: Palette.text-lo;
                     font-size: (12px) * Theme.fs-scale;
                     vertical-alignment: center;
                 }
-                if root.contact.verified : Pill {
+                if root.contact.verified: Pill {
                     label: @tr("✓ VERIFIED");
                     bg-color: Palette.mint;
                     fg: Palette.bubble-out-fg;
@@ -92,11 +98,17 @@ export component ContactDetail inherits DetailPage {
                     alignment: center;
                     MicroButton {
                         label: @tr("Nickname");
-                        PencilIcon { stroke: Palette.text-mid; }
-                        clicked => { root.edit-nickname(); }
+                        PencilIcon {
+                            stroke: Palette.text-mid;
+                        }
+
+                        clicked => {
+                            root.edit-nickname();
+                        }
                     }
                 }
             }
+
             Text {
                 text: @tr("{} RELAYS", root.contact.relays);
                 color: Palette.text-lo;
@@ -105,6 +117,7 @@ export component ContactDetail inherits DetailPage {
                 letter-spacing: 1.2px;
             }
         }
+
         VerticalLayout {
             alignment: center;
             Button {
@@ -120,8 +133,12 @@ export component ContactDetail inherits DetailPage {
                 hover-fg: Palette.bubble-out-fg;
                 font-size: 13px;
                 focusable: true;
-                clicked => { root.start-chat(); }
-                StartChatIcon { stroke: Palette.bubble-out-fg; }
+                clicked => {
+                    root.start-chat();
+                }
+                StartChatIcon {
+                    stroke: Palette.bubble-out-fg;
+                }
             }
         }
     }
@@ -135,36 +152,56 @@ export component ContactDetail inherits DetailPage {
                 value: root.contact.npub-short;
                 MicroButton {
                     label: @tr("Copy");
-                    CopyIcon { stroke: Palette.text-mid; }
-                    clicked => { root.copy-npub(); }
+                    CopyIcon {
+                        stroke: Palette.text-mid;
+                    }
+
+                    clicked => {
+                        root.copy-npub();
+                    }
                 }
             }
+
             InfoRow {
                 label: @tr("Key package");
                 sublabel: root.contact.kp-detail;
                 value: root.contact.kp-status;
                 MicroButton {
                     label: @tr("Refresh");
-                    RefreshIcon { stroke: Palette.text-mid; }
-                    clicked => { root.refresh-key-package(); }
+                    RefreshIcon {
+                        stroke: Palette.text-mid;
+                    }
+
+                    clicked => {
+                        root.refresh-key-package();
+                    }
                 }
             }
+
             InfoRow {
                 label: @tr("Mutual relays");
                 sublabel: @tr("Used to deliver messages between you.");
                 value: @tr("{} relays", root.contact.relays);
                 show-divider: false;
             }
+
             Rectangle {
                 height: 56px;
                 HorizontalLayout {
-                    padding-left: 16px; padding-right: 16px;
-                    padding-top: 12px; padding-bottom: 14px;
+                    padding-left: 16px;
+                    padding-right: 16px;
+                    padding-top: 12px;
+                    padding-bottom: 14px;
                     alignment: start;
                     MicroButton {
                         label: @tr("Show as QR");
-                        QRIcon { stroke: Palette.text-mid; }
-                        clicked => { root.show-qr(); }
+                        QRIcon {
+                            stroke: Palette.text-mid;
+                        }
+
+                        clicked => {
+                            root.show-qr();
+                        }
                     }
                 }
             }
@@ -178,13 +215,22 @@ export component ContactDetail inherits DetailPage {
             alignment: start;
             MicroButton {
                 label: @tr("Mute");
-                MuteIcon { stroke: Palette.text-mid; }
+                MuteIcon {
+                    stroke: Palette.text-mid;
+                }
             }
+
             MicroButton {
                 label: @tr("Archive chat");
-                ArchiveIcon { stroke: Palette.text-mid; }
+                ArchiveIcon {
+                    stroke: Palette.text-mid;
+                }
             }
-            Rectangle { width: 16px; }
+
+            Rectangle {
+                width: 16px;
+            }
+
             MicroButton {
                 label: @tr("Block");
                 fg: Palette.danger;
@@ -192,8 +238,11 @@ export component ContactDetail inherits DetailPage {
                 hover-bg: Palette.danger-soft-hover;
                 outline: Palette.danger-border;
                 hover-outline: Palette.danger-border-hover;
-                BanIcon { stroke: Palette.danger; }
+                BanIcon {
+                    stroke: Palette.danger;
+                }
             }
+
             MicroButton {
                 label: @tr("Remove contact");
                 fg: Palette.danger;
@@ -201,7 +250,9 @@ export component ContactDetail inherits DetailPage {
                 hover-bg: Palette.danger-soft-hover;
                 outline: Palette.danger-border;
                 hover-outline: Palette.danger-border-hover;
-                TrashIcon { stroke: Palette.danger; }
+                TrashIcon {
+                    stroke: Palette.danger;
+                }
             }
         }
     }

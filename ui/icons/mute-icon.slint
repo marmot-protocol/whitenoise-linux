@@ -2,11 +2,16 @@ import { Palette } from "../tokens.slint";
 
 export component MuteIcon inherits Rectangle {
     in property <color> stroke: Palette.text-mid;
-    width: 16px; height: 14px;
+    width: 16px;
+    height: 14px;
     Path {
-        width: 16px; height: 14px;
-        viewbox-width: 16; viewbox-height: 14;
+        width: 16px;
+        height: 14px;
+        viewbox-width: 16;
+        viewbox-height: 14;
         commands: "M 1 5 L 4 5 L 8 1.5 L 8 12.5 L 4 9 L 1 9 Z M 11 4 L 15 10 M 15 4 L 11 10";
-        stroke: root.stroke; stroke-width: 1.3px; fill: transparent;
+        stroke: root.stroke;
+        stroke-width: 1.3px;
+        fill: transparent;
     }
 }

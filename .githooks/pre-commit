@@ -4,7 +4,9 @@
 #
 #   1. Normalize every staged PO/POT catalog in place, then re-stage it, so the
 #      working tree matches what the po-clean filter writes to the index.
-#   2. Gate any Rust/Slint/Cargo change on `cargo fmt --check` and
+#   2. Format every staged .slint file in place with `slint-lsp format`, then
+#      re-stage it, so committed UI files are always canonically formatted.
+#   3. Gate any Rust/Slint/Cargo change on `cargo fmt --check` and
 #      `cargo clippy -D warnings`.
 #
 # Emergency bypass:  git commit --no-verify
@@ -30,7 +32,37 @@ while IFS= read -r -d '' f; do
 done < <(staged -- '*.po' '*.pot')
 [ "$po_changed" = 1 ] && echo "pre-commit: normalized staged PO/POT catalogs."
 
-# --- 2. File-length gate ------------------------------------------------
+# --- 2. Format staged Slint files ---------------------------------------
+# `slint-lsp format -i` rewrites a .slint file into its canonical form. Format
+# a copy of each staged file, and only when that differs do we write it back and
+# re-stage — so the index (and working tree) always match the formatter's output.
+if staged -- '*.slint' | grep -qz .; then
+    if ! command -v slint-lsp >/dev/null 2>&1; then
+        echo "✗ slint-lsp not found — needed to format staged .slint files." >&2
+        echo "  Install it with: cargo install slint-lsp" >&2
+        exit 1
+    fi
+    slint_changed=0
+    while IFS= read -r -d '' f; do
+        [ -f "$f" ] || continue          # skip deletions
+        tmp="$(mktemp --suffix=.slint)"
+        cp "$f" "$tmp"
+        if ! slint-lsp format -i "$tmp" 2>/dev/null; then
+            rm -f "$tmp"
+            echo "✗ slint-lsp format failed on $f" >&2
+            exit 1
+        fi
+        if ! cmp -s "$f" "$tmp"; then
+            cat "$tmp" > "$f"
+            git add -- "$f"
+            slint_changed=1
+        fi
+        rm -f "$tmp"
+    done < <(staged -- '*.slint')
+    [ "$slint_changed" = 1 ] && echo "pre-commit: formatted staged Slint files."
+fi
+
+# --- 3. File-length gate ------------------------------------------------
 # Hard rule: no Rust source may exceed 2000 lines. Keeps files readable and
 # rebuilds fast (the UI tree already lives in its own crate). Checks the staged
 # content, so a commit can't sneak an over-long file past `wc` on the worktree.
@@ -47,7 +79,7 @@ if [ -n "$oversized" ]; then
     exit 1
 fi
 
-# --- 3. Rust gate -------------------------------------------------------
+# --- 4. Rust gate -------------------------------------------------------
 # Only run the (heavier) compile-based checks when staged changes can affect
 # the build: Rust sources (incl. build.rs), Cargo manifests, or the Slint UI
 # they compile. Pure translation/docs commits skip straight through.

@@ -12,8 +12,10 @@ export component GroupMemberRow inherits Rectangle {
     height: 52px;
 
     HorizontalLayout {
-        padding-left: 14px; padding-right: 14px;
-        padding-top: 8px; padding-bottom: 8px;
+        padding-left: 14px;
+        padding-right: 14px;
+        padding-top: 8px;
+        padding-bottom: 8px;
         spacing: 12px;
         alignment: stretch;
 
@@ -21,7 +23,11 @@ export component GroupMemberRow inherits Rectangle {
             width: 36px;
             height: 36px;
             mouse-cursor: pointer;
-            clicked => { if (root.data.member-id != "") { ProfileSink.open(root.data.member-id); } }
+            clicked => {
+                if (root.data.member-id != "") {
+                    ProfileSink.open(root.data.member-id);
+                }
+            }
             Avatar {
                 size: 36px;
                 y: 0;
@@ -50,19 +56,21 @@ export component GroupMemberRow inherits Rectangle {
                     horizontal-stretch: 1;
                     overflow: elide;
                 }
-                if root.data.is-self : Pill {
+
+                if root.data.is-self: Pill {
                     label: @tr("YOU");
                     bg-color: Palette.mint;
                     fg: Palette.bubble-out-fg;
                     font-size: Theme.fsr(10px, 12px);
                 }
-                if root.data.is-admin : Pill {
+                if root.data.is-admin: Pill {
                     label: @tr("ADMIN");
                     bg-color: Palette.mint-surface;
                     fg: Palette.mint;
                     font-size: Theme.fsr(10px, 12px);
                 }
             }
+
             Text {
                 text: root.data.npub-short;
                 color: Palette.text-lo;
@@ -73,11 +81,14 @@ export component GroupMemberRow inherits Rectangle {
 
         // "Make admin" affordance — only when the viewer is an admin and this
         // row is a promotable (non-self, non-admin) member.
-        if root.data.can-promote : Rectangle {
+        if root.data.can-promote: Rectangle {
             promote-ta := TouchArea {
                 mouse-cursor: pointer;
-                clicked => { root.promote-admin(root.data.member-id); }
+                clicked => {
+                    root.promote-admin(root.data.member-id);
+                }
             }
+
             width: badge.preferred-width + 20px;
             border-radius: (6px) * Theme.r-scale;
             background: promote-ta.has-hover ? Palette.mint-surface : transparent;
@@ -93,11 +104,14 @@ export component GroupMemberRow inherits Rectangle {
         }
 
         // "Remove admin" — strip admin from another admin member.
-        if root.data.can-demote : Rectangle {
+        if root.data.can-demote: Rectangle {
             demote-ta := TouchArea {
                 mouse-cursor: pointer;
-                clicked => { root.demote-admin(root.data.member-id); }
+                clicked => {
+                    root.demote-admin(root.data.member-id);
+                }
             }
+
             width: demote-badge.preferred-width + 20px;
             border-radius: (6px) * Theme.r-scale;
             background: demote-ta.has-hover ? Palette.danger-soft : transparent;
@@ -113,11 +127,14 @@ export component GroupMemberRow inherits Rectangle {
         }
 
         // "Step down" — the viewer relinquishes their own admin rights.
-        if root.data.can-self-demote : Rectangle {
+        if root.data.can-self-demote: Rectangle {
             self-demote-ta := TouchArea {
                 mouse-cursor: pointer;
-                clicked => { root.self-demote-admin(); }
+                clicked => {
+                    root.self-demote-admin();
+                }
             }
+
             width: self-demote-badge.preferred-width + 20px;
             border-radius: (6px) * Theme.r-scale;
             background: self-demote-ta.has-hover ? Palette.danger-soft : transparent;
@@ -133,7 +150,7 @@ export component GroupMemberRow inherits Rectangle {
         }
     }
 
-    if root.show-divider : Rectangle {
+    if root.show-divider: Rectangle {
         y: parent.height - 1px;
         width: parent.width;
         height: 1px;

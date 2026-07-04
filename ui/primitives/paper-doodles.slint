@@ -61,12 +61,7 @@ component WavyLine inherits Path {
     stroke: root.tint;
     stroke-width: 1.3px;
     fill: transparent;
-    commands:
-        "M 0 \{root.amp} "
-        + "Q \{root.W * 0.125} 0 \{root.W * 0.25} \{root.amp} "
-        + "Q \{root.W * 0.375} \{root.amp * 2} \{root.W * 0.5} \{root.amp} "
-        + "Q \{root.W * 0.625} 0 \{root.W * 0.75} \{root.amp} "
-        + "Q \{root.W * 0.875} \{root.amp * 2} \{root.W} \{root.amp} ";
+    commands: "M 0 \{root.amp} " + "Q \{root.W * 0.125} 0 \{root.W * 0.25} \{root.amp} " + "Q \{root.W * 0.375} \{root.amp * 2} \{root.W * 0.5} \{root.amp} " + "Q \{root.W * 0.625} 0 \{root.W * 0.75} \{root.amp} " + "Q \{root.W * 0.875} \{root.amp * 2} \{root.W} \{root.amp} ";
 }
 
 export component PaperDoodles inherits Rectangle {
@@ -76,7 +71,7 @@ export component PaperDoodles inherits Rectangle {
     // Faint swishy "notebook paper" lines behind everything — the paper texture.
     // amp varies per line so no two waves are identical.
     property <[float]> rules: [0.12, 0.19, 0.26, 0.33, 0.40, 0.47, 0.54, 0.61, 0.68, 0.75, 0.82, 0.89, 0.96];
-    for f in root.rules : WavyLine {
+    for f in root.rules: WavyLine {
         x: 0;
         y: parent.height * f;
         w: parent.width;
@@ -92,38 +87,152 @@ export component PaperDoodles inherits Rectangle {
     property <string> asterisk: "M 6 1 L 6 11 M 2 3 L 10 9 M 10 3 L 2 9";
     property <string> swirl: "M 3 8.5 C 3 5.5 5 4.2 7 5 C 9 5.8 9.2 8.8 6.6 9.2 C 4.5 9.5 3.8 7 6 6.2";
 
-    Ink { x: parent.width * 0.07; y: parent.height * 0.12; s: 18px;
-          tint: Palette.text-mid; path: root.spark; opacity: root.dim; }
-    Ink { x: parent.width * 0.20; y: parent.height * 0.05; s: 13px;
-          tint: Palette.text-lo; path: root.star; opacity: root.dim * 0.9; }
-    Ink { x: parent.width * 0.88; y: parent.height * 0.07; s: 15px;
-          tint: Palette.text-mid; path: root.heart; opacity: root.dim; }
-    Ring { x: parent.width * 0.72; y: parent.height * 0.16; s: 12px;
-           tint: Palette.text-lo; opacity: root.dim * 0.85; }
-    Dot { x: parent.width * 0.50; y: parent.height * 0.07; s: 5px;
-          tint: Palette.text-mid; opacity: root.dim; }
-    Ink { x: parent.width * 0.94; y: parent.height * 0.30; s: 16px;
-          tint: Palette.mint; path: root.spark; opacity: root.dim * 0.9; }
-    Ink { x: parent.width * 0.04; y: parent.height * 0.40; s: 14px;
-          tint: Palette.text-lo; path: root.asterisk; opacity: root.dim; }
-    Ink { x: parent.width * 0.90; y: parent.height * 0.52; s: 17px;
-          tint: Palette.text-mid; path: root.star; opacity: root.dim * 0.8; }
-    Ink { x: parent.width * 0.10; y: parent.height * 0.62; s: 16px;
-          tint: Palette.warning; path: root.swirl; opacity: root.dim; }
-    Ink { x: parent.width * 0.55; y: parent.height * 0.55; s: 12px;
-          tint: Palette.text-lo; path: root.spark; opacity: root.dim * 0.7; }
-    Dot { x: parent.width * 0.82; y: parent.height * 0.72; s: 6px;
-          tint: Palette.text-mid; opacity: root.dim; }
-    Ink { x: parent.width * 0.30; y: parent.height * 0.80; s: 14px;
-          tint: Palette.text-mid; path: root.heart; opacity: root.dim; }
-    Ink { x: parent.width * 0.06; y: parent.height * 0.88; s: 18px;
-          tint: Palette.text-lo; path: root.star; opacity: root.dim * 0.85; }
-    Ink { x: parent.width * 0.66; y: parent.height * 0.90; s: 15px;
-          tint: Palette.mint; path: root.asterisk; opacity: root.dim * 0.8; }
-    Ring { x: parent.width * 0.46; y: parent.height * 0.93; s: 11px;
-           tint: Palette.text-lo; opacity: root.dim * 0.8; }
-    Ink { x: parent.width * 0.95; y: parent.height * 0.95; s: 13px;
-          tint: Palette.text-mid; path: root.spark; opacity: root.dim * 0.9; }
-    Ink { x: parent.width * 0.34; y: parent.height * 0.32; s: 12px;
-          tint: Palette.text-vlo; path: root.swirl; opacity: root.dim * 0.7; }
+    Ink {
+        x: parent.width * 0.07;
+        y: parent.height * 0.12;
+        s: 18px;
+        tint: Palette.text-mid;
+        path: root.spark;
+        opacity: root.dim;
+    }
+
+    Ink {
+        x: parent.width * 0.20;
+        y: parent.height * 0.05;
+        s: 13px;
+        tint: Palette.text-lo;
+        path: root.star;
+        opacity: root.dim * 0.9;
+    }
+
+    Ink {
+        x: parent.width * 0.88;
+        y: parent.height * 0.07;
+        s: 15px;
+        tint: Palette.text-mid;
+        path: root.heart;
+        opacity: root.dim;
+    }
+
+    Ring {
+        x: parent.width * 0.72;
+        y: parent.height * 0.16;
+        s: 12px;
+        tint: Palette.text-lo;
+        opacity: root.dim * 0.85;
+    }
+
+    Dot {
+        x: parent.width * 0.50;
+        y: parent.height * 0.07;
+        s: 5px;
+        tint: Palette.text-mid;
+        opacity: root.dim;
+    }
+
+    Ink {
+        x: parent.width * 0.94;
+        y: parent.height * 0.30;
+        s: 16px;
+        tint: Palette.mint;
+        path: root.spark;
+        opacity: root.dim * 0.9;
+    }
+
+    Ink {
+        x: parent.width * 0.04;
+        y: parent.height * 0.40;
+        s: 14px;
+        tint: Palette.text-lo;
+        path: root.asterisk;
+        opacity: root.dim;
+    }
+
+    Ink {
+        x: parent.width * 0.90;
+        y: parent.height * 0.52;
+        s: 17px;
+        tint: Palette.text-mid;
+        path: root.star;
+        opacity: root.dim * 0.8;
+    }
+
+    Ink {
+        x: parent.width * 0.10;
+        y: parent.height * 0.62;
+        s: 16px;
+        tint: Palette.warning;
+        path: root.swirl;
+        opacity: root.dim;
+    }
+
+    Ink {
+        x: parent.width * 0.55;
+        y: parent.height * 0.55;
+        s: 12px;
+        tint: Palette.text-lo;
+        path: root.spark;
+        opacity: root.dim * 0.7;
+    }
+
+    Dot {
+        x: parent.width * 0.82;
+        y: parent.height * 0.72;
+        s: 6px;
+        tint: Palette.text-mid;
+        opacity: root.dim;
+    }
+
+    Ink {
+        x: parent.width * 0.30;
+        y: parent.height * 0.80;
+        s: 14px;
+        tint: Palette.text-mid;
+        path: root.heart;
+        opacity: root.dim;
+    }
+
+    Ink {
+        x: parent.width * 0.06;
+        y: parent.height * 0.88;
+        s: 18px;
+        tint: Palette.text-lo;
+        path: root.star;
+        opacity: root.dim * 0.85;
+    }
+
+    Ink {
+        x: parent.width * 0.66;
+        y: parent.height * 0.90;
+        s: 15px;
+        tint: Palette.mint;
+        path: root.asterisk;
+        opacity: root.dim * 0.8;
+    }
+
+    Ring {
+        x: parent.width * 0.46;
+        y: parent.height * 0.93;
+        s: 11px;
+        tint: Palette.text-lo;
+        opacity: root.dim * 0.8;
+    }
+
+    Ink {
+        x: parent.width * 0.95;
+        y: parent.height * 0.95;
+        s: 13px;
+        tint: Palette.text-mid;
+        path: root.spark;
+        opacity: root.dim * 0.9;
+    }
+
+    Ink {
+        x: parent.width * 0.34;
+        y: parent.height * 0.32;
+        s: 12px;
+        tint: Palette.text-vlo;
+        path: root.swirl;
+        opacity: root.dim * 0.7;
+    }
 }

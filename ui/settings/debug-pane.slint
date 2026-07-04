@@ -13,7 +13,9 @@ export component DebugPane inherits DetailPage {
     PageHeader {
         title: @tr("Debug");
         caption: @tr("Account / key packages / groups");
-        TerminalIcon { stroke: Palette.mint; }
+        TerminalIcon {
+            stroke: Palette.mint;
+        }
     }
 
     Section {
@@ -24,11 +26,16 @@ export component DebugPane inherits DetailPage {
             alignment: start;
             Button {
                 label: @tr("Refresh");
-                clicked => { root.refresh-clicked(); }
+                clicked => {
+                    root.refresh-clicked();
+                }
             }
+
             Button {
                 label: @tr("Copy JSON");
-                clicked => { root.copy-clicked(); }
+                clicked => {
+                    root.copy-clicked();
+                }
             }
         }
 
@@ -42,14 +49,16 @@ export component DebugPane inherits DetailPage {
             clip: true;
 
             Flickable {
-                x: 0; y: 0;
+                x: 0;
+                y: 0;
                 width: parent.width;
                 height: parent.height;
                 viewport-width: parent.width;
                 viewport-height: dump-text.preferred-height + 24px;
 
                 dump-text := Text {
-                    x: 12px; y: 12px;
+                    x: 12px;
+                    y: 12px;
                     width: parent.width - 24px;
                     text: root.dump != "" ? root.dump : @tr("(no snapshot yet — click Refresh)");
                     color: Palette.text-hi;

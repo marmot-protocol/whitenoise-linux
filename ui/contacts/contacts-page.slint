@@ -29,27 +29,43 @@ export component ContactsPage inherits Rectangle {
         ContactsSidebar {
             contacts: root.contacts;
             active-contact: root.active-contact;
-            contact-clicked(idx) => { root.contact-clicked(idx); }
-            add-clicked => { root.add-contact-clicked(); }
+            contact-clicked(idx) => {
+                root.contact-clicked(idx);
+            }
+            add-clicked => {
+                root.add-contact-clicked();
+            }
         }
 
         // No contacts → friendly empty state; otherwise the selected detail.
-        if root.contacts.length == 0 : EmptyState {
+        if root.contacts.length == 0: EmptyState {
             horizontal-stretch: 1;
             preferred-width: 0px;
             title: @tr("No contacts yet");
             description: @tr("People you start chats with will show up here.");
-            PeopleIcon { stroke: Palette.text-mid; }
+            PeopleIcon {
+                stroke: Palette.text-mid;
+            }
         }
-        if root.contacts.length > 0 : ContactDetail {
+        if root.contacts.length > 0: ContactDetail {
             horizontal-stretch: 1;
             preferred-width: 0px;
             contact: root.contacts[root.active-contact];
-            edit-nickname => { root.edit-nickname-clicked(); }
-            copy-npub => { root.copy-npub-clicked(); }
-            refresh-key-package => { root.refresh-key-package-clicked(); }
-            show-qr => { root.show-qr-clicked(); }
-            start-chat => { root.start-chat-clicked(); }
+            edit-nickname => {
+                root.edit-nickname-clicked();
+            }
+            copy-npub => {
+                root.copy-npub-clicked();
+            }
+            refresh-key-package => {
+                root.refresh-key-package-clicked();
+            }
+            show-qr => {
+                root.show-qr-clicked();
+            }
+            start-chat => {
+                root.start-chat-clicked();
+            }
         }
     }
 }

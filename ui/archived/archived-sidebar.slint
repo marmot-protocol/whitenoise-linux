@@ -10,9 +10,11 @@ export component ArchivedSidebar inherits SidePanel {
     title: @tr("ARCHIVED");
     count: root.archives.length;
 
-    for a[idx] in root.archives : ArchivedListItem {
+    for a[idx] in root.archives: ArchivedListItem {
         data: a;
         selected: idx == root.active-archived;
-        clicked => { root.archive-clicked(idx); }
+        clicked => {
+            root.archive-clicked(idx);
+        }
     }
 }

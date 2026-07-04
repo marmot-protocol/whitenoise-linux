@@ -34,7 +34,9 @@ export component VideoViewerModal inherits Modal {
         key-scope := FocusScope {
             width: 100%;
             height: 100%;
-            init => { self.focus(); }
+            init => {
+                self.focus();
+            }
             key-pressed(event) => {
                 if (event.text == " ") {
                     root.toggle-play();
@@ -56,7 +58,7 @@ export component VideoViewerModal inherits Modal {
             }
 
             // The video frame.
-            if root.has-frame : Image {
+            if root.has-frame: Image {
                 x: (parent.width - self.width) / 2;
                 y: (parent.height - self.height) / 2 - 24px;
                 width: parent.width * 0.88;
@@ -64,12 +66,16 @@ export component VideoViewerModal inherits Modal {
                 source: root.frame;
                 image-fit: contain;
                 // Tap the video to toggle play; swallow so it doesn't dismiss.
-                TouchArea { clicked => { root.toggle-play(); } }
+                TouchArea {
+                    clicked => {
+                        root.toggle-play();
+                    }
+                }
             }
         }
 
         // "Loading…" pill while the first frame decodes.
-        if root.loading && !root.has-frame : Rectangle {
+        if root.loading && !root.has-frame: Rectangle {
             x: (parent.width - self.width) / 2;
             y: (parent.height - self.height) / 2;
             width: load-text.preferred-width + 32px;
@@ -120,9 +126,12 @@ export component VideoViewerModal inherits Modal {
                         horizontal-alignment: center;
                         vertical-alignment: center;
                     }
+
                     play-touch := TouchArea {
                         mouse-cursor: pointer;
-                        clicked => { root.toggle-play(); }
+                        clicked => {
+                            root.toggle-play();
+                        }
                     }
                 }
 
@@ -164,6 +173,7 @@ export component VideoViewerModal inherits Modal {
                             background: #FFFFFF;
                         }
                     }
+
                     seek-touch := TouchArea {
                         mouse-cursor: pointer;
                         clicked => {
@@ -197,9 +207,12 @@ export component VideoViewerModal inherits Modal {
                         horizontal-alignment: center;
                         vertical-alignment: center;
                     }
+
                     fs-touch := TouchArea {
                         mouse-cursor: pointer;
-                        clicked => { root.fullscreen(); }
+                        clicked => {
+                            root.fullscreen();
+                        }
                     }
                 }
             }

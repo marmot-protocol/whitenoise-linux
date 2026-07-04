@@ -26,24 +26,30 @@ export component ArchivedPage inherits Rectangle {
         ArchivedSidebar {
             archives: root.archives;
             active-archived: root.active-archived;
-            archive-clicked(idx) => { root.archive-clicked(idx); }
+            archive-clicked(idx) => {
+                root.archive-clicked(idx);
+            }
         }
 
         // No archived chats → empty state; otherwise the selected detail.
-        if root.archives.length == 0 : EmptyState {
+        if root.archives.length == 0: EmptyState {
             horizontal-stretch: 1;
             preferred-width: 0px;
             title: @tr("No archived chats");
             description: @tr("Chats you archive are kept here, out of your main list.");
-            ArchiveIcon { stroke: Palette.text-mid; }
+            ArchiveIcon {
+                stroke: Palette.text-mid;
+            }
         }
-        if root.archives.length > 0 : ArchivedDetail {
+        if root.archives.length > 0: ArchivedDetail {
             horizontal-stretch: 1;
             preferred-width: 0px;
             data: root.archives[root.active-archived];
             members: root.members;
             is-group: root.is-group;
-            unarchive-clicked => { root.unarchive-clicked(); }
+            unarchive-clicked => {
+                root.unarchive-clicked();
+            }
         }
     }
 }

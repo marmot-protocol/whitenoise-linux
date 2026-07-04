@@ -14,9 +14,10 @@ export component Pill inherits Rectangle {
     border-radius: (4px) * Theme.r-scale;
     HorizontalLayout {
         alignment: center;
-        padding-left: 7px; padding-right: 8px;
+        padding-left: 7px;
+        padding-right: 8px;
         spacing: 5px;
-        if root.has-lock : LockIcon {
+        if root.has-lock: LockIcon {
             stroke: root.fg;
         }
         Text {

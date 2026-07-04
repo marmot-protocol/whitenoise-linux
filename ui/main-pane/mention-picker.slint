@@ -35,12 +35,10 @@ export component MentionPicker inherits Rectangle {
         VerticalLayout {
             spacing: 0;
             alignment: start;
-            for c[i] in root.candidates : Rectangle {
+            for c[i] in root.candidates: Rectangle {
                 height: root.row-h;
                 border-radius: (6px) * Theme.r-scale;
-                background: i == root.selected
-                    ? Palette.panel-2
-                    : (row-touch.has-hover ? Palette.panel-2 : transparent);
+                background: i == root.selected ? Palette.panel-2 : (row-touch.has-hover ? Palette.panel-2 : transparent);
                 animate background { duration: 80ms; }
                 HorizontalLayout {
                     padding-left: 8px;
@@ -57,6 +55,7 @@ export component MentionPicker inherits Rectangle {
                         font-size: Theme.fs(10px, 13px);
                         y: (parent.height - self.height) / 2;
                     }
+
                     VerticalLayout {
                         alignment: center;
                         horizontal-stretch: 1;
@@ -69,6 +68,7 @@ export component MentionPicker inherits Rectangle {
                             font-weight: 600;
                             overflow: elide;
                         }
+
                         Text {
                             text: c.npub-short;
                             color: Palette.text-lo;
@@ -78,9 +78,12 @@ export component MentionPicker inherits Rectangle {
                         }
                     }
                 }
+
                 row-touch := TouchArea {
                     mouse-cursor: pointer;
-                    clicked => { root.choose(i); }
+                    clicked => {
+                        root.choose(i);
+                    }
                 }
             }
         }

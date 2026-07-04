@@ -1,4 +1,4 @@
-import { Palette , Theme} from "../tokens.slint";
+import { Palette, Theme } from "../tokens.slint";
 
 export component SectionHeader inherits HorizontalLayout {
     in property <string> label;
@@ -16,13 +16,20 @@ export component SectionHeader inherits HorizontalLayout {
         letter-spacing: 1.4px;
         vertical-alignment: center;
     }
-    if root.note != "" : Text {
+
+    if root.note != "": Text {
         text: root.note;
         color: Palette.text-lo;
         font-size: (10px) * Theme.fs-scale;
         font-weight: 600;
         vertical-alignment: center;
     }
-    Rectangle { horizontal-stretch: 1; }
-    VerticalLayout { alignment: center; @children }
+    Rectangle {
+        horizontal-stretch: 1;
+    }
+
+    VerticalLayout {
+        alignment: center;
+        @children
+    }
 }

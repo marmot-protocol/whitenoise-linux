@@ -16,7 +16,7 @@ export component EditHistoryModal inherits Modal {
     // above the full text of that revision.
     ListView {
         vertical-stretch: 1;
-        for v in root.versions : Rectangle {
+        for v in root.versions: Rectangle {
             background: Palette.panel;
             border-width: Theme.border-w;
             border-color: Palette.border-2;
@@ -40,6 +40,7 @@ export component EditHistoryModal inherits Modal {
                         font-weight: 700;
                         horizontal-stretch: 1;
                     }
+
                     Text {
                         text: v.stamp;
                         color: Palette.text-lo;
@@ -48,6 +49,7 @@ export component EditHistoryModal inherits Modal {
                         vertical-alignment: center;
                     }
                 }
+
                 Text {
                     text: v.text;
                     color: Palette.text-hi;

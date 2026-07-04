@@ -51,8 +51,9 @@ export component LineInput inherits Rectangle {
     preferred-height: root.single-line ? 0px : input.preferred-height;
     min-height: root.single-line ? 0px : input.font-size * 1.4;
 
-    if root.text == "" : Text {
-        x: 0; y: 0;
+    if root.text == "": Text {
+        x: 0;
+        y: 0;
         width: parent.width;
         height: parent.height;
         text: root.placeholder;
@@ -66,7 +67,8 @@ export component LineInput inherits Rectangle {
     }
 
     flick := Flickable {
-        x: 0; y: 0;
+        x: 0;
+        y: 0;
         width: parent.width;
         height: parent.height;
         viewport-width: self.width;
@@ -74,7 +76,8 @@ export component LineInput inherits Rectangle {
         interactive: false;
 
         input := TextInput {
-            x: 0; y: 0;
+            x: 0;
+            y: 0;
             width: parent.width;
             height: max(parent.height, self.preferred-height);
             text <=> root.text;
@@ -91,20 +94,32 @@ export component LineInput inherits Rectangle {
             selection-background-color: Palette.mint;
             selection-foreground-color: Palette.bubble-out-fg;
 
-            edited => { root.caret-moved(self.cursor-position-byte-offset); }
-            cursor-position-changed(p) => { root.caret-moved(self.cursor-position-byte-offset); }
+            edited => {
+                root.caret-moved(self.cursor-position-byte-offset);
+            }
+            cursor-position-changed(p) => {
+                root.caret-moved(self.cursor-position-byte-offset);
+            }
 
             key-pressed(event) => {
                 // While the mention picker is open, steer it instead of editing.
                 if (root.capture-nav) {
-                    if (event.text == Key.UpArrow) { root.nav(-1); return accept; }
-                    if (event.text == Key.DownArrow) { root.nav(1); return accept; }
-                    if (event.text == Key.Return
-                        || (event.text == Key.Tab && root.nav-tab-commits)) {
+                    if (event.text == Key.UpArrow) {
+                        root.nav(-1);
+                        return accept;
+                    }
+                    if (event.text == Key.DownArrow) {
+                        root.nav(1);
+                        return accept;
+                    }
+                    if (event.text == Key.Return || (event.text == Key.Tab && root.nav-tab-commits)) {
                         root.commit-mention();
                         return accept;
                     }
-                    if (event.text == Key.Escape) { root.dismiss-mention(); return accept; }
+                    if (event.text == Key.Escape) {
+                        root.dismiss-mention();
+                        return accept;
+                    }
                 }
                 if (root.enter-submits && event.text == Key.Return && !event.modifiers.shift) {
                     root.submit();
@@ -113,8 +128,7 @@ export component LineInput inherits Rectangle {
                 // Paste shortcut: notify the owner so it can probe for image
                 // content, but reject so the built-in text paste still runs
                 // (it is a no-op when the clipboard holds no text).
-                if (((event.text == "v" || event.text == "V") && (event.modifiers.control || event.modifiers.meta))
-                    || (event.text == Key.Insert && event.modifiers.shift)) {
+                if (((event.text == "v" || event.text == "V") && (event.modifiers.control || event.modifiers.meta)) || (event.text == Key.Insert && event.modifiers.shift)) {
                     root.paste-image();
                     return reject;
                 }

@@ -1,4 +1,11 @@
-import { Palette, Theme, Reaction, MessageLine, ProfileSink, AlbumCell } from "../tokens.slint";
+import {
+    Palette,
+    Theme,
+    Reaction,
+    MessageLine,
+    ProfileSink,
+    AlbumCell,
+} from "../tokens.slint";
 import { Avatar } from "avatar.slint";
 import { MessageBubble } from "message-bubble.slint";
 import { ReactionChips, HoverActions } from "reactions-row.slint";
@@ -14,12 +21,20 @@ export component OutgoingRow inherits VerticalLayout {
         root.play-effect(root.effect-id, root.effect-clip-x, root.effect-clip-y,
             bubble.absolute-position.x, bubble.absolute-position.y, bubble.width, bubble.height);
     }
-    init => { if (root.effect-autoplay && root.effect-id > 0) { fx-timer.running = true; } }
+    init => {
+        if (root.effect-autoplay && root.effect-id > 0) {
+            fx-timer.running = true;
+        }
+    }
     fx-timer := Timer {
         interval: 120ms;
         running: false;
-        triggered => { self.running = false; root.fire-effect(); }
+        triggered => {
+            self.running = false;
+            root.fire-effect();
+        }
     }
+
     in property <string> text;
     in property <[MessageLine]> lines;
     in property <string> stamp;
@@ -88,13 +103,19 @@ export component OutgoingRow inherits VerticalLayout {
         spacing: 10px;
         alignment: root.align-right ? end : start;
 
-        if root.align-right : Rectangle { horizontal-stretch: 1; }
+        if root.align-right: Rectangle {
+            horizontal-stretch: 1;
+        }
 
-        if !root.align-right && root.show-avatar : TouchArea {
+        if !root.align-right && root.show-avatar: TouchArea {
             width: 28px;
             height: 28px;
             mouse-cursor: pointer;
-            clicked => { if (root.sender-id != "") { ProfileSink.open(root.sender-id); } }
+            clicked => {
+                if (root.sender-id != "") {
+                    ProfileSink.open(root.sender-id);
+                }
+            }
             Avatar {
                 size: 28px;
                 y: 0;
@@ -106,7 +127,9 @@ export component OutgoingRow inherits VerticalLayout {
                 font-size: Theme.fs(9px, 14px);
             }
         }
-        if !root.align-right && !root.show-avatar : Rectangle { width: 28px; }
+        if !root.align-right && !root.show-avatar: Rectangle {
+            width: 28px;
+        }
 
         VerticalLayout {
             spacing: 2px;
@@ -127,7 +150,8 @@ export component OutgoingRow inherits VerticalLayout {
                 }
 
                 bubble := MessageBubble {
-                    x: 0; y: 0;
+                    x: 0;
+                    y: 0;
                     message: root.text;
                     effect-id: root.effect-id;
                     effect-clip-x: root.effect-clip-x;
@@ -169,12 +193,24 @@ export component OutgoingRow inherits VerticalLayout {
                     edited: root.edited;
                     edit-count: root.edit-count;
                     deleted: root.deleted;
-                    retry-clicked => { root.retry(); }
-                    attachment-clicked => { root.attachment-clicked(root.message-id); }
-                    audio-play-clicked => { root.audio-play-clicked(root.message-id); }
-                    audio-seek-clicked(fraction) => { root.audio-seek-clicked(root.message-id, fraction); }
-                    album-cell-clicked(key) => { root.album-cell-clicked(key); }
-                    show-history-clicked => { root.show-history(root.message-id); }
+                    retry-clicked => {
+                        root.retry();
+                    }
+                    attachment-clicked => {
+                        root.attachment-clicked(root.message-id);
+                    }
+                    audio-play-clicked => {
+                        root.audio-play-clicked(root.message-id);
+                    }
+                    audio-seek-clicked(fraction) => {
+                        root.audio-seek-clicked(root.message-id, fraction);
+                    }
+                    album-cell-clicked(key) => {
+                        root.album-cell-clicked(key);
+                    }
+                    show-history-clicked => {
+                        root.show-history(root.message-id);
+                    }
                     context-menu-requested(ax, ay) => {
                         // Same gate as the hover toolbar: confirmed rows only,
                         // and never on a retracted tombstone.
@@ -182,7 +218,11 @@ export component OutgoingRow inherits VerticalLayout {
                             root.request-context-menu(root.message-id, root.text, @tr("You"), root.can-edit, ax, ay);
                         }
                     }
-                    body-clicked => { if (root.effect-id > 0) { root.fire-effect(); } }
+                    body-clicked => {
+                        if (root.effect-id > 0) {
+                            root.fire-effect();
+                        }
+                    }
                 }
 
                 acts := HoverActions {
@@ -192,30 +232,43 @@ export component OutgoingRow inherits VerticalLayout {
                     reply-preview-text: root.text;
                     reply-author: @tr("You");
                     can-edit: root.can-edit;
-                    visible: root.message-id != "" && !root.pending && !root.failed && !root.deleted
-                        && (hover.has-hover || self.hovered);
+                    visible: root.message-id != "" && !root.pending && !root.failed && !root.deleted && (hover.has-hover || self.hovered);
                     opacity: (hover.has-hover || self.hovered) ? 1.0 : 0.0;
                     animate opacity { duration: 100ms; }
-                    request-picker(id, ax, ay) => { root.request-picker(id, ax, ay); }
-                    request-reply(id, preview, author) => { root.request-reply(id, preview, author); }
-                    request-edit(id, current) => { root.request-edit(id, current); }
+                    request-picker(id, ax, ay) => {
+                        root.request-picker(id, ax, ay);
+                    }
+                    request-reply(id, preview, author) => {
+                        root.request-reply(id, preview, author);
+                    }
+                    request-edit(id, current) => {
+                        root.request-edit(id, current);
+                    }
                 }
             }
 
-            if root.message-id != "" && !root.pending && !root.failed && root.reactions.length > 0 : ReactionChips {
+            if root.message-id != "" && !root.pending && !root.failed && root.reactions.length > 0: ReactionChips {
                 message-id: root.message-id;
                 reactions: root.reactions;
                 align-right: root.align-right;
-                react(id, emoji) => { root.react(id, emoji); }
-                unreact(id) => { root.unreact(id); }
+                react(id, emoji) => {
+                    root.react(id, emoji);
+                }
+                unreact(id) => {
+                    root.unreact(id);
+                }
             }
         }
 
-        if root.align-right && root.show-avatar : TouchArea {
+        if root.align-right && root.show-avatar: TouchArea {
             width: 28px;
             height: 28px;
             mouse-cursor: pointer;
-            clicked => { if (root.sender-id != "") { ProfileSink.open(root.sender-id); } }
+            clicked => {
+                if (root.sender-id != "") {
+                    ProfileSink.open(root.sender-id);
+                }
+            }
             Avatar {
                 size: 28px;
                 y: 0;
@@ -227,8 +280,12 @@ export component OutgoingRow inherits VerticalLayout {
                 font-size: Theme.fs(9px, 14px);
             }
         }
-        if root.align-right && !root.show-avatar : Rectangle { width: 28px; }
+        if root.align-right && !root.show-avatar: Rectangle {
+            width: 28px;
+        }
 
-        if !root.align-right : Rectangle { horizontal-stretch: 1; }
+        if !root.align-right: Rectangle {
+            horizontal-stretch: 1;
+        }
     }
 }

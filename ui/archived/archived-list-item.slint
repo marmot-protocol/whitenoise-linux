@@ -11,9 +11,12 @@ export component ArchivedListItem inherits Rectangle {
     border-radius: (8px) * Theme.r-scale;
     border-width: Theme.selected-inverts-text && root.selected ? Theme.border-w : (root.selected && !Theme.selected-inverts-text ? 1px : 0px);
     border-color: root.selected && !Theme.selected-inverts-text ? Palette.mint-glow : Palette.border;
-    animate background, border-color { duration: 140ms; easing: ease-out; }
+    animate background, border-color {
+        duration: 140ms;
+        easing: ease-out;
+    }
 
-    if !Theme.pixel-select-marker : Rectangle {
+    if !Theme.pixel-select-marker: Rectangle {
         x: 0;
         width: 3px;
         height: root.selected ? 40px : 0px;
@@ -23,10 +26,16 @@ export component ArchivedListItem inherits Rectangle {
         drop-shadow-blur: root.selected ? 6px : 0px;
         drop-shadow-color: Palette.mint-glow;
         opacity: root.selected ? 1.0 : 0.0;
-        animate height { duration: 220ms; easing: ease-in-out; }
-        animate opacity { duration: 160ms; easing: ease-out; }
+        animate height {
+            duration: 220ms;
+            easing: ease-in-out;
+        }
+        animate opacity {
+            duration: 160ms;
+            easing: ease-out;
+        }
     }
-    if Theme.pixel-select-marker : Text {
+    if Theme.pixel-select-marker: Text {
         x: root.selected ? 2px : -14px;
         y: (parent.height - self.height) / 2;
         text: "▶";
@@ -35,13 +44,18 @@ export component ArchivedListItem inherits Rectangle {
         font-family: Theme.font;
         vertical-alignment: center;
         opacity: root.selected ? 1.0 : 0.0;
-        animate x { duration: 140ms; easing: ease-out; }
+        animate x {
+            duration: 140ms;
+            easing: ease-out;
+        }
         animate opacity { duration: 100ms; }
     }
 
     HorizontalLayout {
-        padding-left: 12px; padding-right: 12px;
-        padding-top: 14px; padding-bottom: 14px;
+        padding-left: 12px;
+        padding-right: 12px;
+        padding-top: 14px;
+        padding-bottom: 14px;
         spacing: 12px;
         Avatar {
             size: 36px;
@@ -52,6 +66,7 @@ export component ArchivedListItem inherits Rectangle {
             has-picture: root.data.has-picture;
             font-size: Theme.fs(11px, 16px);
         }
+
         VerticalLayout {
             horizontal-stretch: 1;
             spacing: 4px;
@@ -66,6 +81,7 @@ export component ArchivedListItem inherits Rectangle {
                     horizontal-stretch: 1;
                     overflow: elide;
                 }
+
                 Text {
                     text: root.data.last-date;
                     color: Theme.selected-inverts-text && root.selected ? Palette.bubble-out-fg : Palette.text-lo;
@@ -74,6 +90,7 @@ export component ArchivedListItem inherits Rectangle {
                     vertical-alignment: center;
                 }
             }
+
             Text {
                 text: root.data.last-msg;
                 color: Theme.selected-inverts-text && root.selected ? Palette.bubble-out-fg : Palette.text-lo;
@@ -86,6 +103,8 @@ export component ArchivedListItem inherits Rectangle {
 
     touch := TouchArea {
         mouse-cursor: pointer;
-        clicked => { root.clicked(); }
+        clicked => {
+            root.clicked();
+        }
     }
 }

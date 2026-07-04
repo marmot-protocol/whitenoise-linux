@@ -26,15 +26,17 @@ component NavItem inherits Rectangle {
 
     height: 36px;
     width: root.rail-width;
-    background: root.selected
-        ? Palette.selected
-        : (touch.has-hover ? Palette.hover : transparent);
+    background: root.selected ? Palette.selected : (touch.has-hover ? Palette.hover : transparent);
     border-radius: (6px) * Theme.r-scale;
-    animate background { duration: 100ms; easing: ease-out; }
+    animate background {
+        duration: 100ms;
+        easing: ease-out;
+    }
 
     // Glow ring for active-chat indicator (when not on Chats page).
-    if root.show-glow : Rectangle {
-        x: 4px; y: 4px;
+    if root.show-glow: Rectangle {
+        x: 4px;
+        y: 4px;
         width: parent.width - 8px;
         height: parent.height - 8px;
         border-radius: (6px) * Theme.r-scale;
@@ -51,7 +53,8 @@ component NavItem inherits Rectangle {
 
         // Icon container — fixed 36px square so icons stay centered when collapsed.
         Rectangle {
-            width: 36px; height: 36px;
+            width: 36px;
+            height: 36px;
             VerticalLayout {
                 alignment: center;
                 HorizontalLayout {
@@ -64,26 +67,27 @@ component NavItem inherits Rectangle {
         // Label — fades in when expanded.
         Text {
             text: root.label;
-            color: root.selected
-                ? (Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.mint)
-                : Palette.text-mid;
+            color: root.selected ? (Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.mint) : Palette.text-mid;
             font-size: (11px) * Theme.fs-scale;
             font-weight: 600;
             font-family: Theme.font;
             vertical-alignment: center;
             opacity: root.rail-expanded ? 1.0 : 0.0;
-            animate opacity { duration: 120ms; easing: ease-out; }
+            animate opacity {
+                duration: 120ms;
+                easing: ease-out;
+            }
         }
     }
 
     // Badge dot — top-right of the icon.
-    if root.has-badge : MiniBadge {
+    if root.has-badge: MiniBadge {
         x: 28px;
         y: 4px;
     }
 
     // Tooltip when collapsed and hovered.
-    if !root.rail-expanded && touch.has-hover && root.label != "" : Tooltip {
+    if !root.rail-expanded && touch.has-hover && root.label != "": Tooltip {
         x: root.width + 8px;
         y: touch.mouse-y - 14px;
         label: root.label;
@@ -92,7 +96,9 @@ component NavItem inherits Rectangle {
     }
 
     touch := TouchArea {
-        clicked => { root.clicked(); }
+        clicked => {
+            root.clicked();
+        }
     }
 }
 
@@ -111,11 +117,12 @@ component ProfileTile inherits Rectangle {
 
     height: root.rail-expanded ? 56px : 36px;
     width: root.rail-width;
-    background: root.selected
-        ? Palette.selected
-        : (touch.has-hover ? Palette.hover : transparent);
+    background: root.selected ? Palette.selected : (touch.has-hover ? Palette.hover : transparent);
     border-radius: (6px) * Theme.r-scale;
-    animate background, height { duration: 100ms; easing: ease-out; }
+    animate background, height {
+        duration: 100ms;
+        easing: ease-out;
+    }
 
     // Avatar container — full width minus padding, centered.
     Rectangle {
@@ -125,10 +132,11 @@ component ProfileTile inherits Rectangle {
         y: (parent.height - self.height) / 2;
         border-radius: (8px) * Theme.r-scale;
         border-width: 1px;
-        border-color: root.selected
-            ? Palette.mint
-            : (touch.has-hover ? Palette.mint-dim : transparent);
-        animate border-color { duration: 100ms; easing: ease-out; }
+        border-color: root.selected ? Palette.mint : (touch.has-hover ? Palette.mint-dim : transparent);
+        animate border-color {
+            duration: 100ms;
+            easing: ease-out;
+        }
 
         Avatar {
             size: root.rail-expanded ? 44px : 28px;
@@ -142,7 +150,7 @@ component ProfileTile inherits Rectangle {
     }
 
     // Tooltip when collapsed and hovered.
-    if !root.rail-expanded && touch.has-hover : Tooltip {
+    if !root.rail-expanded && touch.has-hover: Tooltip {
         x: root.width + 8px;
         y: touch.mouse-y - 14px;
         label: @tr("Profile");
@@ -151,7 +159,9 @@ component ProfileTile inherits Rectangle {
     }
 
     touch := TouchArea {
-        clicked => { root.clicked(); }
+        clicked => {
+            root.clicked();
+        }
     }
 }
 
@@ -186,12 +196,16 @@ export component LeftRail inherits Rectangle {
     // Width driven by hover state — the rail itself detects hover.
     width: root.is-hovered ? root.expanded-width : root.collapsed-width;
     background: Palette.rail;
-    animate width { duration: 180ms; easing: ease-out; }
+    animate width {
+        duration: 180ms;
+        easing: ease-out;
+    }
 
     // Right border.
     Rectangle {
         x: parent.width - 1px;
-        width: 1px; height: parent.height;
+        width: 1px;
+        height: parent.height;
         background: Palette.border-2;
     }
 
@@ -204,15 +218,7 @@ export component LeftRail inherits Rectangle {
     }
 
     property <bool> is-hovered:
-        hover-area.has-hover
-        || nav0.item-hovered
-        || nav1.item-hovered
-        || nav2.item-hovered
-        || nav3.item-hovered
-        || nav-new.item-hovered
-        || nav-settings.item-hovered
-        || nav-accounts.item-hovered
-        || profile.item-hovered;
+        hover-area.has-hover || nav0.item-hovered || nav1.item-hovered || nav2.item-hovered || nav3.item-hovered || nav-new.item-hovered || nav-settings.item-hovered || nav-accounts.item-hovered || profile.item-hovered;
 
     // Content.
     VerticalLayout {
@@ -224,9 +230,15 @@ export component LeftRail inherits Rectangle {
         // ── Logo ──
         Rectangle {
             height: 44px;
-            LogoMark { size: 18px; color: Palette.text-hi; }
+            LogoMark {
+                size: 18px;
+                color: Palette.text-hi;
+            }
         }
-        Rectangle { height: 4px; }
+
+        Rectangle {
+            height: 4px;
+        }
 
         // ── Primary nav ──
         nav0 := NavItem {
@@ -240,8 +252,12 @@ export component LeftRail inherits Rectangle {
                 stroke: root.selected-index == 0 ? root.selected-glyph : Palette.text-mid;
                 filled: root.selected-index == 0;
             }
-            clicked => { root.nav-clicked(0); }
+
+            clicked => {
+                root.nav-clicked(0);
+            }
         }
+
         nav1 := NavItem {
             label: @tr("Contacts");
             selected: root.selected-index == 1;
@@ -251,8 +267,12 @@ export component LeftRail inherits Rectangle {
             PeopleIcon {
                 stroke: root.selected-index == 1 ? root.selected-glyph : Palette.text-mid;
             }
-            clicked => { root.nav-clicked(1); }
+
+            clicked => {
+                root.nav-clicked(1);
+            }
         }
+
         nav2 := NavItem {
             label: @tr("Archive");
             selected: root.selected-index == 2;
@@ -262,8 +282,12 @@ export component LeftRail inherits Rectangle {
             ArchiveIcon {
                 stroke: root.selected-index == 2 ? root.selected-glyph : Palette.text-mid;
             }
-            clicked => { root.nav-clicked(2); }
+
+            clicked => {
+                root.nav-clicked(2);
+            }
         }
+
         nav3 := NavItem {
             label: @tr("Keys");
             selected: root.selected-index == 3;
@@ -273,7 +297,10 @@ export component LeftRail inherits Rectangle {
             KeyIcon {
                 stroke: root.selected-index == 3 ? root.selected-glyph : Palette.text-mid;
             }
-            clicked => { root.nav-clicked(3); }
+
+            clicked => {
+                root.nav-clicked(3);
+            }
         }
 
         // New chat — same style as nav items, accent icon.
@@ -285,18 +312,27 @@ export component LeftRail inherits Rectangle {
                 stroke: Palette.mint;
                 size: 14px;
             }
-            clicked => { root.plus-clicked(); }
+
+            clicked => {
+                root.plus-clicked();
+            }
         }
 
         // ── Divider ──
-        Rectangle { height: 8px; }
+        Rectangle {
+            height: 8px;
+        }
+
         Rectangle {
             width: root.width;
             height: 1px;
             background: Palette.border-2;
             opacity: 0.4;
         }
-        Rectangle { height: 8px; }
+
+        Rectangle {
+            height: 8px;
+        }
 
         // ── Meta ──
         nav-settings := NavItem {
@@ -307,7 +343,10 @@ export component LeftRail inherits Rectangle {
             SettingsIcon {
                 stroke: root.selected-index == 4 ? root.selected-glyph : Palette.text-mid;
             }
-            clicked => { root.settings-clicked(); }
+
+            clicked => {
+                root.settings-clicked();
+            }
         }
 
         // Account switcher — all accounts stay connected; this picks the
@@ -319,10 +358,15 @@ export component LeftRail inherits Rectangle {
             AccountsIcon {
                 stroke: Palette.text-mid;
             }
-            clicked => { root.accounts-clicked(); }
+
+            clicked => {
+                root.accounts-clicked();
+            }
         }
 
-        Rectangle { vertical-stretch: 1; }
+        Rectangle {
+            vertical-stretch: 1;
+        }
 
         // ── Profile ──
         profile := ProfileTile {
@@ -334,7 +378,9 @@ export component LeftRail inherits Rectangle {
             selected: root.selected-index == 5;
             rail-expanded: root.is-hovered;
             rail-width: root.width;
-            clicked => { root.profile-clicked(); }
+            clicked => {
+                root.profile-clicked();
+            }
         }
     }
 }

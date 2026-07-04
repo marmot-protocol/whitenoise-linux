@@ -28,7 +28,8 @@ export component EmptyState inherits Rectangle {
                 HorizontalLayout {
                     alignment: center;
                     Rectangle {
-                        width: 56px; height: 56px;
+                        width: 56px;
+                        height: 56px;
                         border-radius: (28px) * Theme.r-scale;
                         background: Palette.panel;
                         border-width: Theme.border-w;
@@ -53,6 +54,7 @@ export component EmptyState inherits Rectangle {
                     font-weight: 700;
                     horizontal-alignment: center;
                 }
+
                 Text {
                     text: root.description;
                     color: Palette.text-lo;

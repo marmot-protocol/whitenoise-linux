@@ -2,11 +2,56 @@ import { Palette } from "../tokens.slint";
 
 export component QRIcon inherits Rectangle {
     in property <color> stroke: Palette.text-mid;
-    width: 14px; height: 14px;
-    Rectangle { x: 0; y: 0; width: 5px; height: 5px; border-width: 1.2px; border-color: root.stroke; }
-    Rectangle { x: 9px; y: 0; width: 5px; height: 5px; border-width: 1.2px; border-color: root.stroke; }
-    Rectangle { x: 0; y: 9px; width: 5px; height: 5px; border-width: 1.2px; border-color: root.stroke; }
-    Rectangle { x: 9px; y: 9px; width: 2px; height: 2px; background: root.stroke; }
-    Rectangle { x: 12px; y: 9px; width: 2px; height: 2px; background: root.stroke; }
-    Rectangle { x: 9px; y: 12px; width: 2px; height: 2px; background: root.stroke; }
+    width: 14px;
+    height: 14px;
+    Rectangle {
+        x: 0;
+        y: 0;
+        width: 5px;
+        height: 5px;
+        border-width: 1.2px;
+        border-color: root.stroke;
+    }
+
+    Rectangle {
+        x: 9px;
+        y: 0;
+        width: 5px;
+        height: 5px;
+        border-width: 1.2px;
+        border-color: root.stroke;
+    }
+
+    Rectangle {
+        x: 0;
+        y: 9px;
+        width: 5px;
+        height: 5px;
+        border-width: 1.2px;
+        border-color: root.stroke;
+    }
+
+    Rectangle {
+        x: 9px;
+        y: 9px;
+        width: 2px;
+        height: 2px;
+        background: root.stroke;
+    }
+
+    Rectangle {
+        x: 12px;
+        y: 9px;
+        width: 2px;
+        height: 2px;
+        background: root.stroke;
+    }
+
+    Rectangle {
+        x: 9px;
+        y: 12px;
+        width: 2px;
+        height: 2px;
+        background: root.stroke;
+    }
 }

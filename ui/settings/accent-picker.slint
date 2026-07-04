@@ -26,9 +26,7 @@ export component AccentPicker inherits Rectangle {
         #C9A0DC,
     ];
 
-    property <[color]> swatches: Theme.retro
-        ? swatches-retro
-        : (Theme.light ? swatches-light : swatches-dark);
+    property <[color]> swatches: Theme.retro ? swatches-retro : (Theme.light ? swatches-light : swatches-dark);
 
     // Keyboard-navigation cursor (independent of the committed `selected`).
     // Reset to the active swatch whenever the picker gains focus so Tab-in
@@ -41,13 +39,13 @@ export component AccentPicker inherits Rectangle {
     // Mirrors the command-palette list-navigation pattern.
     fs := FocusScope {
         changed has-focus => {
-            if (self.has-focus) { root.focus-idx = root.selected; }
+            if (self.has-focus) {
+                root.focus-idx = root.selected;
+            }
         }
         key-pressed(event) => {
             if (event.text == Key.LeftArrow) {
-                root.focus-idx = root.focus-idx == 0
-                    ? root.swatches.length - 1
-                    : root.focus-idx - 1;
+                root.focus-idx = root.focus-idx == 0 ? root.swatches.length - 1 : root.focus-idx - 1;
                 return accept;
             }
             if (event.text == Key.RightArrow) {
@@ -67,7 +65,8 @@ export component AccentPicker inherits Rectangle {
             alignment: start;
 
             for color[idx] in root.swatches: Rectangle {
-                width: 24px; height: 24px;
+                width: 24px;
+                height: 24px;
                 border-radius: (12px) * Theme.r-scale;
                 background: color;
                 border-width: root.selected == idx ? 2px : (touch.has-hover ? 1px : 0px);
@@ -75,8 +74,9 @@ export component AccentPicker inherits Rectangle {
                 animate border-width { duration: 100ms; }
 
                 // Accent focus ring just outside the swatch (keyboard only).
-                if fs.has-focus && root.focus-idx == idx : Rectangle {
-                    x: -3px; y: -3px;
+                if fs.has-focus && root.focus-idx == idx: Rectangle {
+                    x: -3px;
+                    y: -3px;
                     width: parent.width + 6px;
                     height: parent.height + 6px;
                     border-radius: (15px) * Theme.r-scale;

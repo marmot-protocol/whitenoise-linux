@@ -25,16 +25,23 @@ export component ArchivedDetail inherits DetailPage {
             horizontal-stretch: 1;
             title: root.data.name;
             caption: @tr("ARCHIVED  ·  {} MEMBERS  ·  {}", root.data.members, root.data.group-id);
-            ArchiveIcon { stroke: Palette.text-mid; }
+            ArchiveIcon {
+                stroke: Palette.text-mid;
+            }
         }
 
         Button {
             label: @tr("Unarchive");
             button-height: 36px;
             y: (parent.height - self.height) / 2;
-            clicked => { root.unarchive-clicked(); }
-            UnarchiveIcon { stroke: Palette.text-mid; }
+            clicked => {
+                root.unarchive-clicked();
+            }
+            UnarchiveIcon {
+                stroke: Palette.text-mid;
+            }
         }
+
         Button {
             label: @tr("Delete");
             button-height: 36px;
@@ -44,7 +51,9 @@ export component ArchivedDetail inherits DetailPage {
             outline: Palette.danger-border;
             hover-outline: Palette.danger-border-hover;
             y: (parent.height - self.height) / 2;
-            TrashIcon { stroke: Palette.danger; }
+            TrashIcon {
+                stroke: Palette.danger;
+            }
         }
     }
 
@@ -55,19 +64,27 @@ export component ArchivedDetail inherits DetailPage {
         border-width: 1px;
         border-color: Palette.border-2;
         Rectangle {
-            x: 0; y: 0;
-            width: 3px; height: parent.height;
+            x: 0;
+            y: 0;
+            width: 3px;
+            height: parent.height;
             background: Palette.mint-dim;
         }
+
         HorizontalLayout {
-            padding-left: 18px; padding-right: 18px;
-            padding-top: 12px; padding-bottom: 12px;
+            padding-left: 18px;
+            padding-right: 18px;
+            padding-top: 12px;
+            padding-bottom: 12px;
             spacing: 12px;
             alignment: start;
             VerticalLayout {
                 alignment: center;
-                ArchiveIcon { stroke: Palette.mint; }
+                ArchiveIcon {
+                    stroke: Palette.mint;
+                }
             }
+
             VerticalLayout {
                 spacing: 4px;
                 alignment: center;
@@ -77,6 +94,7 @@ export component ArchivedDetail inherits DetailPage {
                     font-size: (13px) * Theme.fs-scale;
                     font-weight: 600;
                 }
+
                 Text {
                     text: @tr("It stays end-to-end encrypted. Unarchiving returns it to your main list and resumes notifications.");
                     color: Palette.text-lo;
@@ -95,10 +113,12 @@ export component ArchivedDetail inherits DetailPage {
                 sublabel: root.data.last-msg;
                 value: root.data.last-date;
             }
+
             MetaRow {
                 label: @tr("Members");
                 value: root.data.members;
             }
+
             MetaRow {
                 label: @tr("Group id");
                 value: root.data.group-id;
@@ -107,10 +127,10 @@ export component ArchivedDetail inherits DetailPage {
         }
     }
 
-    if root.is-group : Section {
+    if root.is-group: Section {
         label: @tr("MEMBER LIST");
         GroupCard {
-            for m[i] in root.members : GroupMemberRow {
+            for m[i] in root.members: GroupMemberRow {
                 data: m;
                 show-divider: i < root.members.length - 1;
             }

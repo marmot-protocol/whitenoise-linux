@@ -21,7 +21,9 @@ export component NotificationsPane inherits DetailPage {
     PageHeader {
         title: @tr("Notifications");
         caption: @tr("DESKTOP ALERTS");
-        BellIcon { stroke: Palette.mint; }
+        BellIcon {
+            stroke: Palette.mint;
+        }
     }
 
     Section {
@@ -32,17 +34,23 @@ export component NotificationsPane inherits DetailPage {
                 sublabel: @tr("Alert me about messages in chats I'm not viewing.");
                 Toggle {
                     on <=> root.enabled;
-                    toggled => { root.enabled-toggled(self.on); }
+                    toggled => {
+                        root.enabled-toggled(self.on);
+                    }
                 }
             }
+
             PrefRow {
                 label: @tr("Play a sound");
                 Toggle {
                     on <=> root.sound;
                     enabled: root.enabled;
-                    toggled => { root.sound-toggled(self.on); }
+                    toggled => {
+                        root.sound-toggled(self.on);
+                    }
                 }
             }
+
             PrefRow {
                 label: @tr("Show message preview");
                 sublabel: @tr("Off shows only \"New message\" without the text.");
@@ -50,7 +58,9 @@ export component NotificationsPane inherits DetailPage {
                 Toggle {
                     on <=> root.preview;
                     enabled: root.enabled;
-                    toggled => { root.preview-toggled(self.on); }
+                    toggled => {
+                        root.preview-toggled(self.on);
+                    }
                 }
             }
         }

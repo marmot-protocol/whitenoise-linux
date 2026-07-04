@@ -1,4 +1,4 @@
-import { Palette , Theme} from "../tokens.slint";
+import { Palette, Theme } from "../tokens.slint";
 import { SettingsIcon } from "../icons/settings-icon.slint";
 import { DetailPage } from "../shells/detail-page.slint";
 import { PageHeader } from "../shells/page-header.slint";
@@ -9,8 +9,11 @@ export component PlaceholderPane inherits DetailPage {
     PageHeader {
         title: root.title;
         caption: "";
-        SettingsIcon { stroke: Palette.text-mid; }
+        SettingsIcon {
+            stroke: Palette.text-mid;
+        }
     }
+
     Text {
         text: root.body;
         color: Palette.text-lo;

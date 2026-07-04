@@ -1,4 +1,4 @@
-import { Palette , Theme} from "../tokens.slint";
+import { Palette, Theme } from "../tokens.slint";
 import { LockIcon } from "../icons/lock-icon.slint";
 
 export component EncryptionBanner inherits Rectangle {
@@ -8,9 +8,7 @@ export component EncryptionBanner inherits Rectangle {
     in property <bool> first-show: false;
 
     height: 56px;
-    background: Theme.retro
-        ? Palette.banner
-        : @linear-gradient(90deg, Palette.banner-edge 0%, Palette.banner 40%, Palette.banner-edge 100%);
+    background: Theme.retro ? Palette.banner : @linear-gradient(90deg, Palette.banner-edge 0%, Palette.banner 40%, Palette.banner-edge 100%);
 
     property <float> reveal: 1;
     property <float> shimmer: 1.0;
@@ -22,12 +20,19 @@ export component EncryptionBanner inherits Rectangle {
             self.shimmer = 1.0;
         }
     }
-    animate reveal { duration: Theme.motion-fast ? 200ms : 420ms; easing: ease-out; }
-    animate shimmer { duration: 480ms; easing: ease-in-out; }
+    animate reveal {
+        duration: Theme.motion-fast ? 200ms : 420ms;
+        easing: ease-out;
+    }
+    animate shimmer {
+        duration: 480ms;
+        easing: ease-in-out;
+    }
 
     // Left accent stripe — draws in on first show; shimmer via opacity pulse.
     Rectangle {
-        x: 0; y: 0;
+        x: 0;
+        y: 0;
         width: 3px * root.reveal;
         height: parent.height;
         background: Palette.mint;
@@ -36,13 +41,16 @@ export component EncryptionBanner inherits Rectangle {
 
     Rectangle {
         y: parent.height - 1px;
-        width: parent.width; height: 1px;
+        width: parent.width;
+        height: 1px;
         background: Palette.border-2;
     }
 
     HorizontalLayout {
-        padding-left: 22px; padding-right: 22px;
-        padding-top: 8px; padding-bottom: 8px;
+        padding-left: 22px;
+        padding-right: 22px;
+        padding-top: 8px;
+        padding-bottom: 8px;
         spacing: 12px;
 
         Rectangle {
@@ -71,13 +79,15 @@ export component EncryptionBanner inherits Rectangle {
                     font-weight: 600;
                     vertical-alignment: center;
                 }
-                if Theme.pixel-icons : Rectangle {
+
+                if Theme.pixel-icons: Rectangle {
                     height: 18px;
                     border-width: Theme.border-w;
                     border-color: Palette.bevel-hi;
                     background: Palette.mint;
                     HorizontalLayout {
-                        padding-left: 5px; padding-right: 5px;
+                        padding-left: 5px;
+                        padding-right: 5px;
                         Text {
                             text: "MLS";
                             color: Palette.bubble-out-fg;
@@ -87,7 +97,7 @@ export component EncryptionBanner inherits Rectangle {
                         }
                     }
                 }
-                if !Theme.pixel-icons : Text {
+                if !Theme.pixel-icons: Text {
                     text: "MLS";
                     color: Palette.mint;
                     font-size: (13px) * Theme.fs-scale;
@@ -101,10 +111,34 @@ export component EncryptionBanner inherits Rectangle {
             // keep their natural width.
             HorizontalLayout {
                 spacing: 8px;
-                Text { text: @tr("Forward secret"); color: Palette.text-lo; font-size: (11px) * Theme.fs-scale; vertical-alignment: center; }
-                Text { text: "·"; color: Palette.text-vlo; font-size: (11px) * Theme.fs-scale; vertical-alignment: center; }
-                Text { text: @tr("post-compromise secure"); color: Palette.text-lo; font-size: (11px) * Theme.fs-scale; vertical-alignment: center; }
-                Text { text: "·"; color: Palette.text-vlo; font-size: (11px) * Theme.fs-scale; vertical-alignment: center; }
+                Text {
+                    text: @tr("Forward secret");
+                    color: Palette.text-lo;
+                    font-size: (11px) * Theme.fs-scale;
+                    vertical-alignment: center;
+                }
+
+                Text {
+                    text: "·";
+                    color: Palette.text-vlo;
+                    font-size: (11px) * Theme.fs-scale;
+                    vertical-alignment: center;
+                }
+
+                Text {
+                    text: @tr("post-compromise secure");
+                    color: Palette.text-lo;
+                    font-size: (11px) * Theme.fs-scale;
+                    vertical-alignment: center;
+                }
+
+                Text {
+                    text: "·";
+                    color: Palette.text-vlo;
+                    font-size: (11px) * Theme.fs-scale;
+                    vertical-alignment: center;
+                }
+
                 Text {
                     text: root.npub;
                     color: Palette.mint;

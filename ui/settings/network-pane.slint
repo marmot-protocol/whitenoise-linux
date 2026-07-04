@@ -20,8 +20,10 @@ component RelayRow inherits Rectangle {
     height: 44px;
 
     HorizontalLayout {
-        padding-left: 16px; padding-right: 12px;
-        padding-top: 8px; padding-bottom: 8px;
+        padding-left: 16px;
+        padding-right: 12px;
+        padding-top: 8px;
+        padding-bottom: 8px;
         spacing: 10px;
         alignment: stretch;
 
@@ -43,15 +45,21 @@ component RelayRow inherits Rectangle {
                 label: "";
                 pad-left: 8px;
                 pad-right: 8px;
-                TrashIcon { stroke: Palette.text-mid; }
-                clicked => { root.remove-clicked(); }
+                TrashIcon {
+                    stroke: Palette.text-mid;
+                }
+
+                clicked => {
+                    root.remove-clicked();
+                }
             }
         }
     }
 
-    if root.show-divider : Rectangle {
+    if root.show-divider: Rectangle {
         y: parent.height - 1px;
-        width: parent.width; height: 1px;
+        width: parent.width;
+        height: 1px;
         background: Palette.border-2;
     }
 }
@@ -81,7 +89,9 @@ export component NetworkPane inherits DetailPage {
     PageHeader {
         title: @tr("Network & relays");
         caption: @tr("Where your messages land.");
-        MonitorIcon { stroke: Palette.mint; }
+        MonitorIcon {
+            stroke: Palette.mint;
+        }
     }
 
     Section {
@@ -90,17 +100,18 @@ export component NetworkPane inherits DetailPage {
             Rectangle {
                 height: 56px;
                 HorizontalLayout {
-                    padding-left: 16px; padding-right: 12px;
-                    padding-top: 10px; padding-bottom: 10px;
+                    padding-left: 16px;
+                    padding-right: 12px;
+                    padding-top: 10px;
+                    padding-bottom: 10px;
                     spacing: 14px;
 
                     Rectangle {
-                        width: 10px; height: 10px;
+                        width: 10px;
+                        height: 10px;
                         y: (parent.height - self.height) / 2;
                         border-radius: (5px) * Theme.r-scale;
-                        background: root.connected > 0
-                            ? Palette.mint
-                            : (root.total > 0 ? Palette.warning : Palette.text-vlo);
+                        background: root.connected > 0 ? Palette.mint : (root.total > 0 ? Palette.warning : Palette.text-vlo);
                     }
 
                     VerticalLayout {
@@ -108,19 +119,14 @@ export component NetworkPane inherits DetailPage {
                         spacing: 3px;
                         alignment: center;
                         Text {
-                            text: root.total == 0
-                                ? @tr("No relays configured")
-                                : (root.connected == root.total
-                                    ? @tr("Connected · {}/{}", root.connected, root.total)
-                                    : @tr("Partial · {}/{} connected", root.connected, root.total));
+                            text: root.total == 0 ? @tr("No relays configured") : (root.connected == root.total ? @tr("Connected · {}/{}", root.connected, root.total) : @tr("Partial · {}/{} connected", root.connected, root.total));
                             color: Palette.text-hi;
                             font-size: (12px) * Theme.fs-scale;
                             font-weight: 700;
                         }
+
                         Text {
-                            text: root.total == 0
-                                ? @tr("Add a relay below — nothing publishes until you do.")
-                                : @tr("Aggregate connection counter from the relay pool.");
+                            text: root.total == 0 ? @tr("Add a relay below — nothing publishes until you do.") : @tr("Aggregate connection counter from the relay pool.");
                             color: Palette.text-lo;
                             font-size: (11px) * Theme.fs-scale;
                         }
@@ -130,8 +136,13 @@ export component NetworkPane inherits DetailPage {
                         alignment: center;
                         MicroButton {
                             label: @tr("Refresh");
-                            RefreshIcon { stroke: Palette.text-mid; }
-                            clicked => { root.refresh-health(); }
+                            RefreshIcon {
+                                stroke: Palette.text-mid;
+                            }
+
+                            clicked => {
+                                root.refresh-health();
+                            }
                         }
                     }
                 }
@@ -146,8 +157,10 @@ export component NetworkPane inherits DetailPage {
             Rectangle {
                 height: 56px;
                 HorizontalLayout {
-                    padding-left: 12px; padding-right: 12px;
-                    padding-top: 10px; padding-bottom: 10px;
+                    padding-left: 12px;
+                    padding-right: 12px;
+                    padding-top: 10px;
+                    padding-bottom: 10px;
                     spacing: 8px;
 
                     Rectangle {
@@ -158,7 +171,8 @@ export component NetworkPane inherits DetailPage {
                         background: Palette.panel-2;
                         animate border-color { duration: 120ms; }
                         input := LineInput {
-                            x: 10px; y: 0;
+                            x: 10px;
+                            y: 0;
                             width: parent.width - 20px;
                             height: parent.height;
                             placeholder: "wss://relay.example.com";
@@ -171,13 +185,17 @@ export component NetworkPane inherits DetailPage {
                             }
                         }
                     }
+
                     VerticalLayout {
                         alignment: center;
                         Button {
                             label: @tr("Add");
                             bg-color: Palette.mint;
                             fg: Palette.bubble-out-fg;
-                            PlusIcon { stroke: Palette.bubble-out-fg; }
+                            PlusIcon {
+                                stroke: Palette.bubble-out-fg;
+                            }
+
                             clicked => {
                                 if (root.draft != "") {
                                     root.add-relay(root.draft);
@@ -187,15 +205,17 @@ export component NetworkPane inherits DetailPage {
                         }
                     }
                 }
+
                 Rectangle {
                     y: parent.height - 1px;
-                    width: parent.width; height: 1px;
+                    width: parent.width;
+                    height: 1px;
                     background: Palette.border-2;
                 }
             }
 
             // Saved relay list, or empty placeholder.
-            if root.relays.length == 0 : Rectangle {
+            if root.relays.length == 0: Rectangle {
                 height: 56px;
                 Text {
                     x: 16px;
@@ -207,34 +227,39 @@ export component NetworkPane inherits DetailPage {
                     vertical-alignment: center;
                 }
             }
-            for url[i] in root.relays : RelayRow {
+            for url[i] in root.relays: RelayRow {
                 url: url;
                 show-divider: i < root.relays.length - 1;
-                remove-clicked => { root.remove-relay(url); }
+                remove-clicked => {
+                    root.remove-relay(url);
+                }
             }
         }
 
         // Restart-required banner. Only shown when the saved list diverges
         // from the booted set — the running runtime can't be re-wired in
         // place, so the truthful signal is "edits queued, apply on restart".
-        if root.restart-required : Rectangle {
+        if root.restart-required: Rectangle {
             height: 36px;
             border-radius: (6px) * Theme.r-scale;
             border-width: 1px;
             border-color: Palette.warning-border;
             background: Palette.warning-soft;
             HorizontalLayout {
-                padding-left: 12px; padding-right: 12px;
+                padding-left: 12px;
+                padding-right: 12px;
                 alignment: start;
                 spacing: 8px;
                 VerticalLayout {
                     alignment: center;
                     Rectangle {
-                        width: 6px; height: 6px;
+                        width: 6px;
+                        height: 6px;
                         border-radius: (3px) * Theme.r-scale;
                         background: Palette.warning;
                     }
                 }
+
                 Text {
                     text: @tr("Restart darkmatter to apply relay changes.");
                     color: Palette.text-hi;
@@ -252,10 +277,16 @@ export component NetworkPane inherits DetailPage {
             alignment: start;
             Button {
                 label: @tr("Republish relay list");
-                RefreshIcon { stroke: Palette.text-hi; }
-                clicked => { root.republish-relay-list(); }
+                RefreshIcon {
+                    stroke: Palette.text-hi;
+                }
+
+                clicked => {
+                    root.republish-relay-list();
+                }
             }
         }
+
         Text {
             text: @tr("Re-broadcasts your relay lists to every relay above. Use this if peers can't find you.");
             color: Palette.text-lo;
@@ -263,7 +294,7 @@ export component NetworkPane inherits DetailPage {
             wrap: word-wrap;
         }
 
-        if root.status != "" : Text {
+        if root.status != "": Text {
             text: root.status;
             color: Palette.text-lo;
             font-size: (11px) * Theme.fs-scale;

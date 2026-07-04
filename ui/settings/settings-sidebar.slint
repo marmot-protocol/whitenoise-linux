@@ -1,4 +1,4 @@
-import { Palette , Theme} from "../tokens.slint";
+import { Palette, Theme } from "../tokens.slint";
 import { SettingsIcon } from "../icons/settings-icon.slint";
 import { ArchiveIcon } from "../icons/archive-icon.slint";
 import { ChatBubbleIcon } from "../icons/chat-bubble-icon.slint";
@@ -16,13 +16,16 @@ export component SettingsSidebar inherits Rectangle {
 
     Rectangle {
         x: parent.width - 1px;
-        width: 1px; height: parent.height;
+        width: 1px;
+        height: parent.height;
         background: Palette.border-2;
     }
 
     VerticalLayout {
-        padding-left: 14px; padding-right: 14px;
-        padding-top: 14px; padding-bottom: 14px;
+        padding-left: 14px;
+        padding-right: 14px;
+        padding-top: 14px;
+        padding-bottom: 14px;
         spacing: 2px;
 
         HorizontalLayout {
@@ -38,58 +41,111 @@ export component SettingsSidebar inherits Rectangle {
                 vertical-alignment: center;
             }
         }
-        Rectangle { height: 12px; }
+
+        Rectangle {
+            height: 12px;
+        }
 
         SettingsNavItem {
             label: @tr("General");
             selected: root.active-tab == 0;
-            SettingsIcon { stroke: root.active-tab == 0 ? Palette.mint : Palette.text-mid; }
-            clicked => { root.active-tab = 0; }
+            SettingsIcon {
+                stroke: root.active-tab == 0 ? Palette.mint : Palette.text-mid;
+            }
+
+            clicked => {
+                root.active-tab = 0;
+            }
         }
+
         SettingsNavItem {
             label: @tr("Network & relays");
             selected: root.active-tab == 1;
-            MonitorIcon { stroke: root.active-tab == 1 ? Palette.mint : Palette.text-mid; }
-            clicked => { root.active-tab = 1; }
+            MonitorIcon {
+                stroke: root.active-tab == 1 ? Palette.mint : Palette.text-mid;
+            }
+
+            clicked => {
+                root.active-tab = 1;
+            }
         }
+
         SettingsNavItem {
             label: @tr("Appearance");
             selected: root.active-tab == 2;
-            ChatBubbleIcon { stroke: root.active-tab == 2 ? Palette.mint : Palette.text-mid; }
-            clicked => { root.active-tab = 2; }
+            ChatBubbleIcon {
+                stroke: root.active-tab == 2 ? Palette.mint : Palette.text-mid;
+            }
+
+            clicked => {
+                root.active-tab = 2;
+            }
         }
+
         SettingsNavItem {
             label: @tr("Notifications");
             selected: root.active-tab == 3;
-            BellIcon { stroke: root.active-tab == 3 ? Palette.mint : Palette.text-mid; }
-            clicked => { root.active-tab = 3; }
+            BellIcon {
+                stroke: root.active-tab == 3 ? Palette.mint : Palette.text-mid;
+            }
+
+            clicked => {
+                root.active-tab = 3;
+            }
         }
+
         SettingsNavItem {
             label: @tr("Storage");
             selected: root.active-tab == 4;
-            ArchiveIcon { stroke: root.active-tab == 4 ? Palette.mint : Palette.text-mid; }
-            clicked => { root.active-tab = 4; }
+            ArchiveIcon {
+                stroke: root.active-tab == 4 ? Palette.mint : Palette.text-mid;
+            }
+
+            clicked => {
+                root.active-tab = 4;
+            }
         }
+
         SettingsNavItem {
             label: @tr("Advanced");
             selected: root.active-tab == 5;
             dim: true;
-            TerminalIcon { stroke: root.active-tab == 5 ? Palette.mint : Palette.text-mid; }
-            clicked => { root.active-tab = 5; }
+            TerminalIcon {
+                stroke: root.active-tab == 5 ? Palette.mint : Palette.text-mid;
+            }
+
+            clicked => {
+                root.active-tab = 5;
+            }
         }
+
         SettingsNavItem {
             label: @tr("About");
             selected: root.active-tab == 6;
-            InfoIcon { stroke: root.active-tab == 6 ? Palette.mint : Palette.text-mid; size: 14px; }
-            clicked => { root.active-tab = 6; }
-        }
-        if root.debug-enabled : SettingsNavItem {
-            label: @tr("Debug");
-            selected: root.active-tab == 7;
-            TerminalIcon { stroke: root.active-tab == 7 ? Palette.mint : Palette.text-mid; }
-            clicked => { root.active-tab = 7; }
+            InfoIcon {
+                stroke: root.active-tab == 6 ? Palette.mint : Palette.text-mid;
+                size: 14px;
+            }
+
+            clicked => {
+                root.active-tab = 6;
+            }
         }
 
-        Rectangle { vertical-stretch: 1; }
+        if root.debug-enabled: SettingsNavItem {
+            label: @tr("Debug");
+            selected: root.active-tab == 7;
+            TerminalIcon {
+                stroke: root.active-tab == 7 ? Palette.mint : Palette.text-mid;
+            }
+
+            clicked => {
+                root.active-tab = 7;
+            }
+        }
+
+        Rectangle {
+            vertical-stretch: 1;
+        }
     }
 }

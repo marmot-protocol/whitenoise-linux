@@ -38,8 +38,16 @@ export component MessageEffectLayer inherits Rectangle {
         life.running = false;
         life.running = true;
     }
-    init => { if (root.trigger > 0) { root.fire(); } }
-    changed trigger => { if (root.trigger > 0) { root.fire(); } }
+    init => {
+        if (root.trigger > 0) {
+            root.fire();
+        }
+    }
+    changed trigger => {
+        if (root.trigger > 0) {
+            root.fire();
+        }
+    }
     // Elapsed seconds since the last fire while playing; frozen at 99 once the
     // burst ends so the tick is no longer read and repaints stop.
     property <float> tsec: root.playing ? (animation-tick() - root.t0) / 1s : 99;
@@ -55,22 +63,13 @@ export component MessageEffectLayer inherits Rectangle {
     // Particle count + tile size by effect — confetti wants a dense burst,
     // hearts/thumbs a sparser stream.
     property <int> pcount:
-        root.effect-id == 4 ? 28
-        : root.effect-id == 3 ? 24
-        : root.effect-id == 2 ? 22
-        : root.effect-id == 1 ? 13
-        : root.effect-id == 5 ? 11
-        : 16;
+        root.effect-id == 4 ? 28 : root.effect-id == 3 ? 24 : root.effect-id == 2 ? 22 : root.effect-id == 1 ? 13 : root.effect-id == 5 ? 11 : 16;
     property <length> ox: root.origin-w / 2;
     // Risers emit low on the bubble; bursts from the middle.
-    property <length> oy: root.origin-h * (
-        root.effect-id == 1 ? 0.62
-        : root.effect-id == 2 ? 0.88
-        : root.effect-id == 5 ? 0.76
-        : 0.5);
+    property <length> oy: root.origin-h * (root.effect-id == 1 ? 0.62 : root.effect-id == 2 ? 0.88 : root.effect-id == 5 ? 0.76 : 0.5);
     property <length> tile: 26px;
 
-    for i in root.pcount : Image {
+    for i in root.pcount: Image {
         // Per-particle fract(sin) seeds in [0,1) — independent axes, deterministic.
         property <float> r-dir-raw: sin((i + 1) * 137.5deg) * 731.7;
         property <float> r-spd-raw: sin((i + 1) * 71.3deg + 19deg) * 419.2;
@@ -79,24 +78,15 @@ export component MessageEffectLayer inherits Rectangle {
         property <float> r-spin-raw: sin((i + 1) * 53.7deg + 11deg) * 311.9;
         property <float> seed-dir: r-dir-raw - floor(r-dir-raw);
         property <float> seed-spd: r-spd-raw - floor(r-spd-raw);
-        property <float> seed-sz:  r-sz-raw  - floor(r-sz-raw);
+        property <float> seed-sz:  r-sz-raw - floor(r-sz-raw);
         property <float> seed-stg: r-stg-raw - floor(r-stg-raw);
         property <float> seed-spin: r-spin-raw - floor(r-spin-raw);
 
         // Local clock in SECONDS — physics below is real velocity/gravity, not a
         // normalised lerp, so particles keep moving until they fade (no freeze).
         property <float> dur:
-            root.effect-id == 1 ? 1.7
-            : root.effect-id == 2 ? 1.0
-            : root.effect-id == 3 ? 1.9
-            : root.effect-id == 4 ? 1.5
-            : 1.4;
-        property <float> stg: seed-stg * (
-            root.effect-id == 1 ? 0.8
-            : root.effect-id == 2 ? 0.8
-            : root.effect-id == 3 ? 0.12
-            : root.effect-id == 4 ? 0.12
-            : 0.35);
+            root.effect-id == 1 ? 1.7 : root.effect-id == 2 ? 1.0 : root.effect-id == 3 ? 1.9 : root.effect-id == 4 ? 1.5 : 1.4;
+        property <float> stg: seed-stg * (root.effect-id == 1 ? 0.8 : root.effect-id == 2 ? 0.8 : root.effect-id == 3 ? 0.12 : root.effect-id == 4 ? 0.12 : 0.35);
         property <float> t: clamp(root.tsec - stg, 0, dur);
         property <bool> alive: root.tsec > stg;
         property <float> p-life: clamp(t / dur, 0, 1);
@@ -145,12 +135,10 @@ export component MessageEffectLayer inherits Rectangle {
         property <float> sc-mul:
             root.effect-id == 1 ? (0.55 + 0.45 * clamp(t / 0.4, 0, 1))                                                 // grow in
             // fire: big & hot at the base, shrinks to a tip, hard flicker
-            : root.effect-id == 2 ? ((1.35 - 0.85 * p-life) * (1 + 0.22 * sin((root.tsec * 26 + seed-dir * 6.283) * 1rad)))
-            : root.effect-id == 3 ? back
+            : root.effect-id == 2 ? ((1.35 - 0.85 * p-life) * (1 + 0.22 * sin((root.tsec * 26 + seed-dir * 6.283) * 1rad))) : root.effect-id == 3 ? back
             // stars: pop in, then HOLD at size with a twinkle pulse (so the whole
             // field stays visible and sparkles, rather than flying away).
-            : root.effect-id == 4 ? (clamp(t / 0.14, 0, 1) * (0.72 + 0.42 * abs(sin((root.tsec * 6 + i * 0.6 + seed-spin * 6.283) * 1rad))))
-            : back;
+            : root.effect-id == 4 ? (clamp(t / 0.14, 0, 1) * (0.72 + 0.42 * abs(sin((root.tsec * 6 + i * 0.6 + seed-spin * 6.283) * 1rad)))) : back;
         property <length> sz: root.tile * base-scale * max(0, sc-mul);
 
         // ── Rotation ──
@@ -168,11 +156,7 @@ export component MessageEffectLayer inherits Rectangle {
         property <float> op-fire-out: (1 - p-life * p-life) * (0.78 + 0.22 * abs(sin((root.tsec * 24 + seed-dir * 6.283) * 1rad)));
         // stars: hold bright (twinkling) most of the life, fade over the last 0.6s.
         property <float> op-star-out: (1 - clamp((t - (dur - 0.6)) / 0.6, 0, 1)) * (0.5 + 0.5 * abs(sin((root.tsec * 7 + i * 1.0 + seed-spin * 6.283) * 1rad)));
-        opacity: alive
-            ? (op-in * (root.effect-id == 2 ? op-fire-out
-                : (root.effect-id == 4 ? op-star-out
-                : op-gen-out)))
-            : 0;
+        opacity: alive ? (op-in * (root.effect-id == 2 ? op-fire-out : (root.effect-id == 4 ? op-star-out : op-gen-out))) : 0;
 
         source: EmojiSheet.sprite;
         source-clip-x: root.clip-x;

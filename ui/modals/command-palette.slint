@@ -31,7 +31,9 @@ export component CommandPalette inherits Modal {
     // Key handling — Esc dismiss, arrows navigate, Enter execute. Wraps the
     // content so rejected keys from the search input bubble up to it.
     focus-scope := FocusScope {
-        init => { self.focus(); }
+        init => {
+            self.focus();
+        }
         key-pressed(event) => {
             if (event.text == Key.Escape) {
                 root.dismissed();
@@ -39,9 +41,7 @@ export component CommandPalette inherits Modal {
             }
             if (event.text == Key.UpArrow) {
                 if (root.actions.length > 0) {
-                    root.selected = root.selected == 0
-                        ? root.actions.length - 1
-                        : root.selected - 1;
+                    root.selected = root.selected == 0 ? root.actions.length - 1 : root.selected - 1;
                 }
                 return accept;
             }
@@ -69,13 +69,18 @@ export component CommandPalette inherits Modal {
                 height: 52px;
                 background: transparent;
                 HorizontalLayout {
-                    padding-left: 18px; padding-right: 18px;
+                    padding-left: 18px;
+                    padding-right: 18px;
                     spacing: 12px;
                     alignment: stretch;
                     VerticalLayout {
                         alignment: center;
-                        SearchIcon { size: 16px; stroke: Palette.text-mid; }
+                        SearchIcon {
+                            size: 16px;
+                            stroke: Palette.text-mid;
+                        }
                     }
+
                     LineInput {
                         placeholder: @tr("Type a command…");
                         text <=> root.query;
@@ -83,6 +88,7 @@ export component CommandPalette inherits Modal {
                         fg: Palette.text-hi;
                         placeholder-color: Palette.text-vlo;
                     }
+
                     VerticalLayout {
                         alignment: center;
                         Rectangle {
@@ -103,7 +109,8 @@ export component CommandPalette inherits Modal {
                                 font-family: Theme.font;
                                 vertical-alignment: center;
                                 horizontal-alignment: center;
-                                x: 7px; y: 0;
+                                x: 7px;
+                                y: 0;
                                 width: parent.width - 14px;
                                 height: parent.height;
                             }
@@ -123,17 +130,19 @@ export component CommandPalette inherits Modal {
                 height: min(380px, list-layout.preferred-height + 8px);
                 clip: true;
                 list-layout := VerticalLayout {
-                    padding-top: 6px; padding-bottom: 6px;
+                    padding-top: 6px;
+                    padding-bottom: 6px;
                     spacing: 0;
-                    for action[i] in root.actions : Rectangle {
+                    for action[i] in root.actions: Rectangle {
                         height: row-stack.preferred-height;
                         row-stack := VerticalLayout {
                             spacing: 0;
                             // Group header — only when this row's group differs from the previous row's.
-                            if i == 0 || root.actions[i - 1].group != action.group : Rectangle {
+                            if i == 0 || root.actions[i - 1].group != action.group: Rectangle {
                                 height: 24px;
                                 HorizontalLayout {
-                                    padding-left: 18px; padding-right: 18px;
+                                    padding-left: 18px;
+                                    padding-right: 18px;
                                     padding-top: 8px;
                                     Text {
                                         text: action.group;
@@ -148,24 +157,28 @@ export component CommandPalette inherits Modal {
                             // Row body.
                             Rectangle {
                                 height: 36px;
-                                background: i == root.selected
-                                    ? (Theme.retro ? Palette.selected : Palette.bubble-in)
-                                    : (row-touch.has-hover ? Palette.hover : transparent);
+                                background: i == root.selected ? (Theme.retro ? Palette.selected : Palette.bubble-in) : (row-touch.has-hover ? Palette.hover : transparent);
                                 border-radius: (5px) * Theme.r-scale;
-                                animate background { duration: 90ms; easing: ease-out; }
+                                animate background {
+                                    duration: 90ms;
+                                    easing: ease-out;
+                                }
 
                                 // Mint accent bar on selected row (normal mode).
-                                if !Theme.pixel-select-marker : Rectangle {
+                                if !Theme.pixel-select-marker: Rectangle {
                                     x: 8px;
                                     width: 2px;
                                     y: (parent.height - self.height) / 2;
                                     height: i == root.selected ? 18px : 0px;
                                     background: Palette.mint;
                                     border-radius: 1px;
-                                    animate height { duration: 160ms; easing: ease-in-out; }
+                                    animate height {
+                                        duration: 160ms;
+                                        easing: ease-in-out;
+                                    }
                                 }
                                 // Retro selection chevron.
-                                if Theme.pixel-select-marker && i == root.selected : Text {
+                                if Theme.pixel-select-marker && i == root.selected: Text {
                                     x: 6px;
                                     y: (parent.height - self.height) / 2;
                                     text: "▶";
@@ -176,29 +189,27 @@ export component CommandPalette inherits Modal {
                                 }
 
                                 HorizontalLayout {
-                                    padding-left: 22px; padding-right: 18px;
+                                    padding-left: 22px;
+                                    padding-right: 18px;
                                     spacing: 12px;
                                     alignment: stretch;
                                     Text {
                                         text: action.label;
-                                        color: Theme.pixel-select-marker && i == root.selected
-                                            ? Palette.bubble-out-fg
-                                            : Palette.text-hi;
+                                        color: Theme.pixel-select-marker && i == root.selected ? Palette.bubble-out-fg : Palette.text-hi;
                                         font-size: Theme.fs(12px, 13px);
                                         font-weight: i == root.selected ? 700 : 500;
                                         font-family: Theme.font;
                                         vertical-alignment: center;
                                         horizontal-stretch: 1;
                                     }
-                                    if action.kbd != "" : Rectangle {
+
+                                    if action.kbd != "": Rectangle {
                                         height: 20px;
                                         min-width: kbd-pill-text.preferred-width + 12px;
                                         border-radius: (4px) * Theme.r-scale;
                                         border-width: Theme.border-w;
                                         border-color: Palette.border-2;
-                                        background: i == root.selected && !Theme.pixel-select-marker
-                                            ? Palette.panel
-                                            : Palette.panel-2;
+                                        background: i == root.selected && !Theme.pixel-select-marker ? Palette.panel : Palette.panel-2;
                                         y: (parent.height - self.height) / 2;
                                         kbd-pill-text := Text {
                                             text: action.kbd;
@@ -206,7 +217,8 @@ export component CommandPalette inherits Modal {
                                             font-size: (9px) * Theme.fs-scale;
                                             font-weight: 700;
                                             font-family: Theme.font;
-                                            x: 6px; y: 0;
+                                            x: 6px;
+                                            y: 0;
                                             width: parent.width - 12px;
                                             height: parent.height;
                                             vertical-alignment: center;
@@ -226,7 +238,7 @@ export component CommandPalette inherits Modal {
                         }
                     }
 
-                    if root.actions.length == 0 : Rectangle {
+                    if root.actions.length == 0: Rectangle {
                         height: 60px;
                         Text {
                             text: @tr("No matches");
@@ -247,11 +259,13 @@ export component CommandPalette inherits Modal {
                 height: Theme.border-w;
                 background: Theme.retro ? Palette.border : Palette.divider;
             }
+
             Rectangle {
                 height: 28px;
                 background: Theme.retro ? Palette.rail : Palette.field;
                 HorizontalLayout {
-                    padding-left: 16px; padding-right: 16px;
+                    padding-left: 16px;
+                    padding-right: 16px;
                     spacing: 16px;
                     alignment: start;
                     VerticalLayout {
@@ -267,6 +281,7 @@ export component CommandPalette inherits Modal {
                             font-family: Theme.font;
                         }
                     }
+
                     VerticalLayout {
                         alignment: center;
                         Text {
@@ -278,6 +293,7 @@ export component CommandPalette inherits Modal {
                             font-family: Theme.font;
                         }
                     }
+
                     VerticalLayout {
                         alignment: center;
                         Text {
@@ -289,7 +305,10 @@ export component CommandPalette inherits Modal {
                             font-family: Theme.font;
                         }
                     }
-                    Rectangle { horizontal-stretch: 1; }
+
+                    Rectangle {
+                        horizontal-stretch: 1;
+                    }
                 }
             }
         }

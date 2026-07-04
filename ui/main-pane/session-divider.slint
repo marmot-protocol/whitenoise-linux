@@ -1,10 +1,11 @@
-import { Palette , Theme} from "../tokens.slint";
+import { Palette, Theme } from "../tokens.slint";
 
 export component SessionDivider inherits Rectangle {
     in property <string> label;
     height: 40px;
     HorizontalLayout {
-        padding-left: 18px; padding-right: 18px;
+        padding-left: 18px;
+        padding-right: 18px;
         spacing: 0;
         alignment: stretch;
 
@@ -17,12 +18,17 @@ export component SessionDivider inherits Rectangle {
                 background: @linear-gradient(90deg, transparent 0%, Palette.border 100%);
             }
         }
-        Rectangle { width: 10px; }
+
+        Rectangle {
+            width: 10px;
+        }
+
         HorizontalLayout {
             spacing: 8px;
             alignment: center;
-            if !Theme.retro : Rectangle {
-                width: 5px; height: 5px;
+            if !Theme.retro: Rectangle {
+                width: 5px;
+                height: 5px;
                 border-radius: 2.5px;
                 background: Palette.mint-dim;
                 y: (parent.height - self.height) / 2;
@@ -36,15 +42,21 @@ export component SessionDivider inherits Rectangle {
                 letter-spacing: 1.4px;
                 vertical-alignment: center;
             }
-            if !Theme.retro : Rectangle {
-                width: 5px; height: 5px;
+
+            if !Theme.retro: Rectangle {
+                width: 5px;
+                height: 5px;
                 border-radius: 2.5px;
                 background: Palette.mint-dim;
                 y: (parent.height - self.height) / 2;
                 opacity: 0.7;
             }
         }
-        Rectangle { width: 10px; }
+
+        Rectangle {
+            width: 10px;
+        }
+
         Rectangle {
             horizontal-stretch: 1;
             Rectangle {

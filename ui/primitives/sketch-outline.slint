@@ -32,22 +32,15 @@ export component SketchOutline inherits Rectangle {
     // The top-right corner: normally a clean round; for a right-side tail
     // (own messages on the right) it pulls out to the right toward the avatar.
     property <string> tr-corner:
-        root.tail == 2
-            ? ("Q \{root.W} \{-2} \{root.W + root.ax} \{root.ay} "
-               + "Q \{root.W} \{root.R * 0.35} \{root.W} \{root.R} ")
-            : "Q \{root.W} 0 \{root.W} \{root.R} ";
+        root.tail == 2 ? ("Q \{root.W} \{-2} \{root.W + root.ax} \{root.ay} " + "Q \{root.W} \{root.R * 0.35} \{root.W} \{root.R} ") : "Q \{root.W} 0 \{root.W} \{root.R} ";
 
     // The top-left corner (closing segment): normally round; for a left-side tail
     // it pulls out to the left toward the avatar.
     property <string> tl-corner:
-        root.tail == 1
-            ? ("Q 0 \{root.ay} \{-root.ax} \{root.ay} "
-               + "Q \{root.R * 0.35} \{-2} \{root.R} 0 Z")
-            : "Q 0 0 \{root.R} 0 Z";
+        root.tail == 1 ? ("Q 0 \{root.ay} \{-root.ax} \{root.ay} " + "Q \{root.R * 0.35} \{-2} \{root.R} 0 Z") : "Q 0 0 \{root.R} 0 Z";
 
     property <string> d:
-        "M \{root.R} 0 "
-        + "Q \{root.W / 2} \{-root.b} \{root.W - root.R} 0 "          // top edge
+        "M \{root.R} 0 " + "Q \{root.W / 2} \{-root.b} \{root.W - root.R} 0 "          // top edge
         + root.tr-corner                                             // TR corner (± right tail)
         + "Q \{root.W + root.b} \{root.H / 2} \{root.W} \{root.H - root.R} " // right bows out
         + "Q \{root.W} \{root.H} \{root.W - root.R} \{root.H} "       // BR corner

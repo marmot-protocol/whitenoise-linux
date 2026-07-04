@@ -17,7 +17,9 @@ export component ChatListPanel inherits SidePanel {
     in property <int> relays-total;
     in property <int> sync-secs: -1;
 
-    add-clicked => { root.new-chat-clicked(); }
+    add-clicked => {
+        root.new-chat-clicked();
+    }
 
     title: @tr("CHATS");
     count: root.chats.length;
@@ -25,17 +27,17 @@ export component ChatListPanel inherits SidePanel {
     search-placeholder: @tr("Search chats…");
     show-search-shortcut: true;
     show-add: true;
-    footer-text: root.relays-total > 0
-        ? root.relays-connected + "/" + root.relays-total + " " + @tr("RELAYS")
-        : @tr("NO RELAYS");
-    footer-trail: root.sync-secs < 0
-        ? "· " + @tr("SYNCING…")
-        : "· " + @tr("SYNCED") + " " + root.sync-secs + "S " + @tr("AGO");
+    footer-text: root.relays-total > 0 ? root.relays-connected + "/" + root.relays-total + " " + @tr("RELAYS") : @tr("NO RELAYS");
+    footer-trail: root.sync-secs < 0 ? "· " + @tr("SYNCING…") : "· " + @tr("SYNCED") + " " + root.sync-secs + "S " + @tr("AGO");
 
-    for chat[idx] in root.chats : ChatListEntry {
+    for chat[idx] in root.chats: ChatListEntry {
         chat: chat;
         selected: idx == root.active-chat;
-        clicked => { root.chat-clicked(idx); }
-        context-menu(ax, ay) => { root.chat-context-menu(idx, ax, ay); }
+        clicked => {
+            root.chat-clicked(idx);
+        }
+        context-menu(ax, ay) => {
+            root.chat-context-menu(idx, ax, ay);
+        }
     }
 }

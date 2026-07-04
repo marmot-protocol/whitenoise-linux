@@ -25,8 +25,10 @@ export component GroupSettingsCard inherits Section {
 
     GroupCard {
         VerticalLayout {
-            padding-left: 12px; padding-right: 12px;
-            padding-top: 12px; padding-bottom: 12px;
+            padding-left: 12px;
+            padding-right: 12px;
+            padding-top: 12px;
+            padding-bottom: 12px;
             spacing: 10px;
 
             HorizontalLayout {
@@ -41,6 +43,7 @@ export component GroupSettingsCard inherits Section {
                     has-picture: root.group-has-picture;
                     font-size: Theme.fs(18px, 20px);
                 }
+
                 VerticalLayout {
                     alignment: center;
                     spacing: 6px;
@@ -51,10 +54,13 @@ export component GroupSettingsCard inherits Section {
                         pad-right: 10px;
                         font-size: Theme.fsr(11px, 14px);
                         clicked => {
-                            if (!root.image-busy) { root.change-image(); }
+                            if (!root.image-busy) {
+                                root.change-image();
+                            }
                         }
                     }
-                    if root.group-has-picture && !root.image-busy : Button {
+
+                    if root.group-has-picture && !root.image-busy: Button {
                         label: @tr("Remove image");
                         button-height: 26px;
                         pad-left: 10px;
@@ -67,7 +73,9 @@ export component GroupSettingsCard inherits Section {
                         hover-bg: Palette.hover;
                         fg: Palette.text-mid;
                         hover-fg: Palette.text-hi;
-                        clicked => { root.clear-image(); }
+                        clicked => {
+                            root.clear-image();
+                        }
                     }
                 }
             }
@@ -80,6 +88,7 @@ export component GroupSettingsCard inherits Section {
                     font-size: (12px) * Theme.fs-scale;
                     font-weight: 700;
                 }
+
                 Rectangle {
                     height: 36px;
                     border-radius: (6px) * Theme.r-scale;
@@ -88,9 +97,13 @@ export component GroupSettingsCard inherits Section {
                     border-color: rename-input.has-focus ? Palette.mint-dim : Palette.field-border;
                     drop-shadow-blur: rename-input.has-focus && Theme.focus-glow ? 10px : 0px;
                     drop-shadow-color: Palette.mint-glow;
-                    animate border-color { duration: 140ms; easing: ease-out; }
+                    animate border-color {
+                        duration: 140ms;
+                        easing: ease-out;
+                    }
                     HorizontalLayout {
-                        padding-left: 10px; padding-right: 10px;
+                        padding-left: 10px;
+                        padding-right: 10px;
                         rename-input := LineInput {
                             placeholder: @tr("Group name");
                             text <=> root.rename-draft;
@@ -105,6 +118,7 @@ export component GroupSettingsCard inherits Section {
                         }
                     }
                 }
+
                 HorizontalLayout {
                     spacing: 8px;
                     alignment: start;
@@ -124,14 +138,16 @@ export component GroupSettingsCard inherits Section {
                             }
                         }
                     }
-                    if root.group-status != "" : Rectangle {
+
+                    if root.group-status != "": Rectangle {
                         height: 28px;
                         border-radius: (4px) * Theme.r-scale;
                         background: Palette.panel-2;
                         border-width: Theme.border-w;
                         border-color: Palette.border-2;
                         HorizontalLayout {
-                            padding-left: 8px; padding-right: 8px;
+                            padding-left: 8px;
+                            padding-right: 8px;
                             Text {
                                 text: root.group-status;
                                 color: Palette.text-lo;

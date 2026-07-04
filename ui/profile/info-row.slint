@@ -8,8 +8,10 @@ export component InfoRow inherits Rectangle {
 
     height: 56px;
     HorizontalLayout {
-        padding-left: 16px; padding-right: 16px;
-        padding-top: 10px; padding-bottom: 10px;
+        padding-left: 16px;
+        padding-right: 16px;
+        padding-top: 10px;
+        padding-bottom: 10px;
         spacing: 14px;
         alignment: stretch;
         VerticalLayout {
@@ -22,18 +24,20 @@ export component InfoRow inherits Rectangle {
                 font-size: (12px) * Theme.fs-scale;
                 font-weight: 700;
             }
-            if root.sublabel != "" : Text {
+
+            if root.sublabel != "": Text {
                 text: root.sublabel;
                 color: Palette.text-lo;
                 font-size: (11px) * Theme.fs-scale;
             }
         }
+
         VerticalLayout {
             alignment: center;
             HorizontalLayout {
                 alignment: end;
                 spacing: 10px;
-                if root.value != "" : Text {
+                if root.value != "": Text {
                     text: root.value;
                     color: Palette.text-hi;
                     font-size: (12px) * Theme.fs-scale;
@@ -44,7 +48,8 @@ export component InfoRow inherits Rectangle {
             }
         }
     }
-    if root.show-divider : Rectangle {
+
+    if root.show-divider: Rectangle {
         y: parent.height - 1px;
         width: parent.width;
         height: 1px;

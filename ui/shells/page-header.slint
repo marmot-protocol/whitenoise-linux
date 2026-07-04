@@ -1,4 +1,4 @@
-import { Palette , Theme} from "../tokens.slint";
+import { Palette, Theme } from "../tokens.slint";
 
 export component PageHeader inherits Rectangle {
     in property <string> title;
@@ -11,7 +11,8 @@ export component PageHeader inherits Rectangle {
         alignment: start;
 
         Rectangle {
-            width: 36px; height: 36px;
+            width: 36px;
+            height: 36px;
             y: (parent.height - self.height) / 2;
             border-radius: (6px) * Theme.r-scale;
             border-width: 1px;
@@ -29,6 +30,7 @@ export component PageHeader inherits Rectangle {
                 font-size: (16px) * Theme.fs-scale;
                 font-weight: 700;
             }
+
             Text {
                 text: root.caption;
                 color: Palette.text-lo;

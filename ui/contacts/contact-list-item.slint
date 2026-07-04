@@ -12,11 +12,14 @@ export component ContactListItem inherits Rectangle {
     border-radius: (8px) * Theme.r-scale;
     border-width: Theme.selected-inverts-text && root.selected ? Theme.border-w : (root.selected && !Theme.selected-inverts-text ? 1px : 0px);
     border-color: root.selected && !Theme.selected-inverts-text ? Palette.mint-glow : Palette.border;
-    animate background, border-color { duration: 140ms; easing: ease-out; }
+    animate background, border-color {
+        duration: 140ms;
+        easing: ease-out;
+    }
 
     // Mint accent bar — only in normal mode; in retro the yellow bar would vanish
     // against the yellow selected tile.
-    if !Theme.pixel-select-marker : Rectangle {
+    if !Theme.pixel-select-marker: Rectangle {
         x: 0;
         width: 3px;
         height: root.selected ? 40px : 0px;
@@ -26,11 +29,17 @@ export component ContactListItem inherits Rectangle {
         drop-shadow-blur: root.selected ? 6px : 0px;
         drop-shadow-color: Palette.mint-glow;
         opacity: root.selected ? 1.0 : 0.0;
-        animate height { duration: 220ms; easing: ease-in-out; }
-        animate opacity { duration: 160ms; easing: ease-out; }
+        animate height {
+            duration: 220ms;
+            easing: ease-in-out;
+        }
+        animate opacity {
+            duration: 160ms;
+            easing: ease-out;
+        }
     }
     // Retro selection chevron — slides in from outside.
-    if Theme.pixel-select-marker : Text {
+    if Theme.pixel-select-marker: Text {
         x: root.selected ? 2px : -14px;
         y: (parent.height - self.height) / 2;
         text: "▶";
@@ -39,13 +48,18 @@ export component ContactListItem inherits Rectangle {
         font-family: Theme.font;
         vertical-alignment: center;
         opacity: root.selected ? 1.0 : 0.0;
-        animate x { duration: 140ms; easing: ease-out; }
+        animate x {
+            duration: 140ms;
+            easing: ease-out;
+        }
         animate opacity { duration: 100ms; }
     }
 
     HorizontalLayout {
-        padding-left: 12px; padding-right: 12px;
-        padding-top: 14px; padding-bottom: 14px;
+        padding-left: 12px;
+        padding-right: 12px;
+        padding-top: 14px;
+        padding-bottom: 14px;
         spacing: 12px;
         Rectangle {
             width: 36px;
@@ -58,20 +72,24 @@ export component ContactListItem inherits Rectangle {
                 has-picture: root.data.has-picture;
                 font-size: Theme.fs(11px, 16px);
             }
-            if root.data.online : Rectangle {
+
+            if root.data.online: Rectangle {
                 x: parent.width - 10px;
                 y: parent.height - 10px;
-                width: 10px; height: 10px;
+                width: 10px;
+                height: 10px;
                 border-radius: (5px) * Theme.r-scale;
                 background: Palette.mint-dim;
                 Rectangle {
-                    width: 10px; height: 10px;
+                    width: 10px;
+                    height: 10px;
                     border-radius: (5px) * Theme.r-scale;
                     border-width: 1.5px;
                     border-color: Palette.bg;
                 }
             }
         }
+
         VerticalLayout {
             horizontal-stretch: 1;
             spacing: 4px;
@@ -87,13 +105,15 @@ export component ContactListItem inherits Rectangle {
                     font-family: Theme.font;
                     vertical-alignment: center;
                 }
-                if root.data.verified : CheckMark {
+
+                if root.data.verified: CheckMark {
                     // Yellow check on yellow tile is invisible — go indigo when selected in retro.
                     stroke: Theme.selected-inverts-text && root.selected ? Palette.bubble-out-fg : Palette.mint;
                     double: false;
                     y: 4px;
                 }
             }
+
             Text {
                 text: root.data.npub-short;
                 color: Theme.selected-inverts-text && root.selected ? Palette.bubble-out-fg : Palette.text-lo;
@@ -105,6 +125,8 @@ export component ContactListItem inherits Rectangle {
     }
 
     touch := TouchArea {
-        clicked => { root.clicked(); }
+        clicked => {
+            root.clicked();
+        }
     }
 }

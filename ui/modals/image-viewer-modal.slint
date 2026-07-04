@@ -39,7 +39,9 @@ export component ImageViewerModal inherits Modal {
         nav-scope := FocusScope {
             width: 100%;
             height: 100%;
-            init => { self.focus(); }
+            init => {
+                self.focus();
+            }
             key-pressed(event) => {
                 if (event.text == Key.LeftArrow && root.has-prev) {
                     root.prev();
@@ -65,7 +67,7 @@ export component ImageViewerModal inherits Modal {
         }
 
         // "Loading…" pill while a navigated-to image downloads.
-        if root.loading : Rectangle {
+        if root.loading: Rectangle {
             x: (parent.width - self.width) / 2;
             y: (parent.height - self.height) / 2;
             width: load-text.preferred-width + 32px;
@@ -83,7 +85,7 @@ export component ImageViewerModal inherits Modal {
         }
 
         // Prev chevron.
-        if root.count > 1 && root.has-prev : Rectangle {
+        if root.count > 1 && root.has-prev: Rectangle {
             x: 24px;
             y: (parent.height - self.height) / 2;
             width: 48px;
@@ -101,14 +103,17 @@ export component ImageViewerModal inherits Modal {
                 horizontal-alignment: center;
                 vertical-alignment: center;
             }
+
             prev-touch := TouchArea {
                 mouse-cursor: pointer;
-                clicked => { root.prev(); }
+                clicked => {
+                    root.prev();
+                }
             }
         }
 
         // Next chevron.
-        if root.count > 1 && root.has-next : Rectangle {
+        if root.count > 1 && root.has-next: Rectangle {
             x: parent.width - self.width - 24px;
             y: (parent.height - self.height) / 2;
             width: 48px;
@@ -126,14 +131,17 @@ export component ImageViewerModal inherits Modal {
                 horizontal-alignment: center;
                 vertical-alignment: center;
             }
+
             next-touch := TouchArea {
                 mouse-cursor: pointer;
-                clicked => { root.next(); }
+                clicked => {
+                    root.next();
+                }
             }
         }
 
         // "n / N" counter pill, bottom-center.
-        if root.count > 1 : Rectangle {
+        if root.count > 1: Rectangle {
             x: (parent.width - self.width) / 2;
             y: parent.height - self.height - 30px;
             width: counter-text.preferred-width + 26px;

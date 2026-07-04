@@ -40,7 +40,9 @@ export component ChatContextMenu inherits Rectangle {
 
     // Backdrop — invisible, dismisses on a click or another right-click.
     TouchArea {
-        clicked => { root.dismissed(); }
+        clicked => {
+            root.dismissed();
+        }
         pointer-event(e) => {
             if (e.kind == PointerEventKind.down && e.button == PointerEventButton.right) {
                 root.dismissed();
@@ -65,8 +67,14 @@ export component ChatContextMenu inherits Rectangle {
         width: max(160px, col.preferred-width);
         height: col.preferred-height;
         opacity: root.opened ? 1.0 : 0.0;
-        animate opacity { duration: 120ms; easing: ease-out; }
-        animate y { duration: 120ms; easing: ease-out; }
+        animate opacity {
+            duration: 120ms;
+            easing: ease-out;
+        }
+        animate y {
+            duration: 120ms;
+            easing: ease-out;
+        }
         background: Palette.elevated;
         border-radius: (10px) * Theme.r-scale;
         border-width: Theme.border-w;
@@ -84,15 +92,24 @@ export component ChatContextMenu inherits Rectangle {
                     glyph: root.pinned ? "▽" : "▲";
                     label: root.pinned ? @tr("Unpin") : @tr("Pin to top");
                     selected: root.selected-index == 0;
-                    activated => { root.toggle-pin(); }
-                    hovered => { root.selected-index = 0; }
+                    activated => {
+                        root.toggle-pin();
+                    }
+                    hovered => {
+                        root.selected-index = 0;
+                    }
                 }
+
                 MenuItem {
                     glyph: root.muted ? "♪" : "♩";
                     label: root.muted ? @tr("Unmute") : @tr("Mute");
                     selected: root.selected-index == 1;
-                    activated => { root.toggle-mute(); }
-                    hovered => { root.selected-index = 1; }
+                    activated => {
+                        root.toggle-mute();
+                    }
+                    hovered => {
+                        root.selected-index = 1;
+                    }
                 }
             }
         }

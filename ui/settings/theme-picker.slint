@@ -19,18 +19,27 @@ component ThemeSwatch inherits Rectangle {
     border-color: Theme.color-packs[root.pack-id].border;
     // Side panel strip.
     Rectangle {
-        x: 0; y: 0; width: 15px; height: parent.height;
+        x: 0;
+        y: 0;
+        width: 15px;
+        height: parent.height;
         background: Theme.color-packs[root.pack-id].panel;
     }
     // Accent dot.
     Rectangle {
-        x: 22px; y: 7px; width: 8px; height: 8px;
+        x: 22px;
+        y: 7px;
+        width: 8px;
+        height: 8px;
         border-radius: 4px * Theme.r-scale;
         background: Theme.color-packs[root.pack-id].accent-base[Theme.accent];
     }
     // Text bar.
     Rectangle {
-        x: 22px; y: 19px; width: 17px; height: 4px;
+        x: 22px;
+        y: 19px;
+        width: 17px;
+        height: 4px;
         border-radius: 2px * Theme.r-scale;
         background: Theme.color-packs[root.pack-id].text-hi;
     }
@@ -42,7 +51,15 @@ export component ThemePicker inherits Rectangle {
     in property <int> selected-id: 0;
     callback theme-mode-selected(string);
 
-    property <[string]> names: [@tr("Dark"), @tr("Light"), @tr("Retro"), @tr("Terminal"), @tr("Sketch"), @tr("Synthwave"), @tr("Chalkboard")];
+    property <[string]> names: [
+        @tr("Dark"),
+        @tr("Light"),
+        @tr("Retro"),
+        @tr("Terminal"),
+        @tr("Sketch"),
+        @tr("Synthwave"),
+        @tr("Chalkboard")
+    ];
     property <[string]> modes: ["dark", "light", "retro", "terminal", "crayon", "synthwave", "chalkboard"];
 
     // Keyboard cursor inside the open dropdown; reset to the active theme each
@@ -65,13 +82,15 @@ export component ThemePicker inherits Rectangle {
         border-radius: 8px * Theme.r-scale;
         animate background, border-color { duration: 120ms; }
         HorizontalLayout {
-            padding-left: 8px; padding-right: 10px;
+            padding-left: 8px;
+            padding-right: 10px;
             spacing: 9px;
             alignment: start;
             ThemeSwatch {
                 pack-id: root.selected-id;
                 y: (parent.height - self.height) / 2;
             }
+
             Text {
                 text: root.names[root.selected-id];
                 color: Palette.text-hi;
@@ -81,6 +100,7 @@ export component ThemePicker inherits Rectangle {
                 vertical-alignment: center;
                 horizontal-stretch: 1;
             }
+
             Text {
                 text: "▾";
                 color: Palette.text-lo;
@@ -89,18 +109,21 @@ export component ThemePicker inherits Rectangle {
                 vertical-alignment: center;
             }
         }
+
         trig-touch := TouchArea {
             mouse-cursor: pointer;
-            clicked => { root.open-popup(); }
+            clicked => {
+                root.open-popup();
+            }
         }
 
         // Zero-size FocusScope so the trigger joins the Tab chain without
         // stealing pointer focus. Enter/Space/Down/Up open the dropdown.
         trig-fs := FocusScope {
-            width: 0px; height: 0px;
+            width: 0px;
+            height: 0px;
             key-pressed(event) => {
-                if (event.text == Key.Return || event.text == " "
-                    || event.text == Key.DownArrow || event.text == Key.UpArrow) {
+                if (event.text == Key.Return || event.text == " " || event.text == Key.DownArrow || event.text == Key.UpArrow) {
                     root.open-popup();
                     return accept;
                 }
@@ -109,8 +132,9 @@ export component ThemePicker inherits Rectangle {
         }
 
         // Accent focus ring on the trigger when Tab-focused.
-        if trig-fs.has-focus : Rectangle {
-            x: -3px; y: -3px;
+        if trig-fs.has-focus: Rectangle {
+            x: -3px;
+            y: -3px;
             width: parent.width + 6px;
             height: parent.height + 6px;
             border-radius: (11px) * Theme.r-scale;
@@ -140,16 +164,16 @@ export component ThemePicker inherits Rectangle {
             // FocusScope owns the keyboard while the dropdown is open:
             // ↑/↓ move the cursor, Enter/Space commit, Esc closes.
             pop-fs := FocusScope {
-                init => { self.focus(); }
+                init => {
+                    self.focus();
+                }
                 key-pressed(event) => {
                     if (event.text == Key.Escape) {
                         popup.close();
                         return accept;
                     }
                     if (event.text == Key.UpArrow) {
-                        root.focus-idx = root.focus-idx == 0
-                            ? root.names.length - 1
-                            : root.focus-idx - 1;
+                        root.focus-idx = root.focus-idx == 0 ? root.names.length - 1 : root.focus-idx - 1;
                         return accept;
                     }
                     if (event.text == Key.DownArrow) {
@@ -167,23 +191,21 @@ export component ThemePicker inherits Rectangle {
                 VerticalLayout {
                     padding: 5px;
                     spacing: 2px;
-                    for name[i] in root.names : Rectangle {
+                    for name[i] in root.names: Rectangle {
                         height: 44px;
                         border-radius: 7px * Theme.r-scale;
-                        background: i == root.selected-id
-                            ? Palette.selected
-                            : (i == root.focus-idx
-                                ? Palette.hover
-                                : (row-touch.has-hover ? Palette.hover : transparent));
+                        background: i == root.selected-id ? Palette.selected : (i == root.focus-idx ? Palette.hover : (row-touch.has-hover ? Palette.hover : transparent));
                         animate background { duration: 80ms; }
                         HorizontalLayout {
-                            padding-left: 8px; padding-right: 10px;
+                            padding-left: 8px;
+                            padding-right: 10px;
                             spacing: 10px;
                             alignment: start;
                             ThemeSwatch {
                                 pack-id: i;
                                 y: (parent.height - self.height) / 2;
                             }
+
                             Text {
                                 text: name;
                                 color: Palette.text-hi;
@@ -193,7 +215,8 @@ export component ThemePicker inherits Rectangle {
                                 vertical-alignment: center;
                                 horizontal-stretch: 1;
                             }
-                            if i == root.selected-id : Text {
+
+                            if i == root.selected-id: Text {
                                 text: "✓";
                                 color: Palette.mint;
                                 font-family: Theme.font;
@@ -202,6 +225,7 @@ export component ThemePicker inherits Rectangle {
                                 vertical-alignment: center;
                             }
                         }
+
                         row-touch := TouchArea {
                             mouse-cursor: pointer;
                             clicked => {

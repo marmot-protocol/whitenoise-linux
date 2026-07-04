@@ -9,8 +9,10 @@ export component PrefRow inherits Rectangle {
     height: 48px;
 
     HorizontalLayout {
-        padding-left: 16px; padding-right: 16px;
-        padding-top: 10px; padding-bottom: 10px;
+        padding-left: 16px;
+        padding-right: 16px;
+        padding-top: 10px;
+        padding-bottom: 10px;
         spacing: 14px;
         alignment: stretch;
 
@@ -24,7 +26,8 @@ export component PrefRow inherits Rectangle {
                 font-size: (12px) * Theme.fs-scale;
                 font-weight: 700;
             }
-            if root.sublabel != "" : Text {
+
+            if root.sublabel != "": Text {
                 text: root.sublabel;
                 color: Palette.text-lo;
                 font-size: (11px) * Theme.fs-scale;
@@ -36,7 +39,7 @@ export component PrefRow inherits Rectangle {
             HorizontalLayout {
                 alignment: end;
                 spacing: 10px;
-                if root.value != "" : Text {
+                if root.value != "": Text {
                     text: root.value;
                     color: Palette.text-hi;
                     font-size: (12px) * Theme.fs-scale;
@@ -47,9 +50,11 @@ export component PrefRow inherits Rectangle {
             }
         }
     }
-    if root.show-divider : Rectangle {
+
+    if root.show-divider: Rectangle {
         y: parent.height - 1px;
-        width: parent.width; height: 1px;
+        width: parent.width;
+        height: 1px;
         background: Palette.border-2;
     }
 }

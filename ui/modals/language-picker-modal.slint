@@ -10,13 +10,13 @@ component LanguageRow inherits Rectangle {
     callback clicked;
 
     height: 44px;
-    background: ta.pressed ? Palette.hover
-        : (root.focused ? Palette.hover
-            : (root.selected ? Palette.mint-surface : transparent));
+    background: ta.pressed ? Palette.hover : (root.focused ? Palette.hover : (root.selected ? Palette.mint-surface : transparent));
     animate background { duration: 80ms; }
 
     ta := TouchArea {
-        clicked => { root.clicked(); }
+        clicked => {
+            root.clicked();
+        }
     }
 
     HorizontalLayout {
@@ -36,12 +36,14 @@ component LanguageRow inherits Rectangle {
 
         VerticalLayout {
             alignment: center;
-            if root.selected : CheckMark { stroke: Palette.mint; }
+            if root.selected: CheckMark {
+                stroke: Palette.mint;
+            }
         }
     }
 
     // Accent focus bar on the keyboard-focused row.
-    if root.focused : Rectangle {
+    if root.focused: Rectangle {
         x: 0;
         width: 2px;
         y: (parent.height - self.height) / 2;
@@ -50,7 +52,7 @@ component LanguageRow inherits Rectangle {
         border-radius: 1px;
     }
 
-    if root.show-divider : Rectangle {
+    if root.show-divider: Rectangle {
         y: parent.height - 1px;
         width: parent.width;
         height: 1px;
@@ -94,11 +96,7 @@ export component LanguagePickerModal inherits Modal {
         nav := FocusScope {
             init => {
                 // Start the cursor on the active locale.
-                root.focus-idx =
-                    root.active-locale == "it" ? 1
-                    : root.active-locale == "de" ? 2
-                    : root.active-locale == "ja" ? 3
-                    : 0;
+                root.focus-idx = root.active-locale == "it" ? 1 : root.active-locale == "de" ? 2 : root.active-locale == "ja" ? 3 : 0;
                 self.focus();
             }
             key-pressed(event) => {
@@ -107,9 +105,7 @@ export component LanguagePickerModal inherits Modal {
                     return accept;
                 }
                 if (event.text == Key.UpArrow) {
-                    root.focus-idx = root.focus-idx == 0
-                        ? root.labels.length - 1
-                        : root.focus-idx - 1;
+                    root.focus-idx = root.focus-idx == 0 ? root.labels.length - 1 : root.focus-idx - 1;
                     return accept;
                 }
                 if (event.text == Key.DownArrow) {
@@ -126,7 +122,7 @@ export component LanguagePickerModal inherits Modal {
             rows-layout := VerticalLayout {
                 padding: 0;
 
-                for label[i] in root.labels : LanguageRow {
+                for label[i] in root.labels: LanguageRow {
                     label: label;
                     selected: root.active-locale == root.locales[i];
                     focused: nav.has-focus && root.focus-idx == i;

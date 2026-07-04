@@ -1,10 +1,11 @@
-import { Palette , Theme} from "../tokens.slint";
+import { Palette, Theme } from "../tokens.slint";
 
 export component Toggle inherits Rectangle {
     in-out property <bool> on: false;
     in property <bool> enabled: true;
     callback toggled;
-    width: Theme.retro ? 44px : 34px; height: Theme.retro ? 22px : 18px;
+    width: Theme.retro ? 44px : 34px;
+    height: Theme.retro ? 22px : 18px;
     opacity: root.enabled ? 1.0 : 0.45;
     animate opacity { duration: 120ms; }
     border-radius: (9px) * Theme.r-scale;
@@ -18,15 +19,19 @@ export component Toggle inherits Rectangle {
     animate background { duration: 120ms; }
 
     Rectangle {
-        width: Theme.retro ? 14px : 14px; height: Theme.retro ? 14px : 14px;
+        width: Theme.retro ? 14px : 14px;
+        height: Theme.retro ? 14px : 14px;
         x: root.on ? parent.width - self.width - (Theme.retro ? 4px : 2px) : (Theme.retro ? 4px : 2px);
         y: (parent.height - self.height) / 2;
         border-radius: (7px) * Theme.r-scale;
         background: root.on ? Palette.bubble-out-fg : Palette.text-mid;
-        animate x { duration: 120ms; easing: ease-in-out; }
+        animate x {
+            duration: 120ms;
+            easing: ease-in-out;
+        }
     }
 
-    if Theme.retro : Text {
+    if Theme.retro: Text {
         x: root.on ? 6px : parent.width - self.width - 6px;
         y: (parent.height - self.height) / 2;
         text: root.on ? "ON" : "OFF";
@@ -40,6 +45,9 @@ export component Toggle inherits Rectangle {
 
     TouchArea {
         enabled: root.enabled;
-        clicked => { root.on = !root.on; root.toggled(); }
+        clicked => {
+            root.on = !root.on;
+            root.toggled();
+        }
     }
 }

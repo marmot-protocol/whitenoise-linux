@@ -2,20 +2,44 @@ import { Palette } from "../tokens.slint";
 
 export component UserPlusIcon inherits Rectangle {
     in property <color> stroke: Palette.text-mid;
-    width: 18px; height: 16px;
+    width: 18px;
+    height: 16px;
     Rectangle {
-        x: 1.5px; y: 0px;
-        width: 7px; height: 7px;
+        x: 1.5px;
+        y: 0px;
+        width: 7px;
+        height: 7px;
         border-radius: 3.5px;
-        border-width: 1.3px; border-color: root.stroke;
+        border-width: 1.3px;
+        border-color: root.stroke;
     }
+
     Path {
-        x: 0px; y: 7px;
-        width: 11px; height: 9px;
-        viewbox-width: 11; viewbox-height: 9;
+        x: 0px;
+        y: 7px;
+        width: 11px;
+        height: 9px;
+        viewbox-width: 11;
+        viewbox-height: 9;
         commands: "M 0.5 8.5 C 1 4.5 3 3 5.5 3 C 8 3 10 4.5 10.5 8.5";
-        stroke: root.stroke; stroke-width: 1.3px; fill: transparent;
+        stroke: root.stroke;
+        stroke-width: 1.3px;
+        fill: transparent;
     }
-    Rectangle { x: 12px; y: 6.4px; width: 5px; height: 1.2px; background: root.stroke; }
-    Rectangle { x: 13.9px; y: 4.5px; width: 1.2px; height: 5px; background: root.stroke; }
+
+    Rectangle {
+        x: 12px;
+        y: 6.4px;
+        width: 5px;
+        height: 1.2px;
+        background: root.stroke;
+    }
+
+    Rectangle {
+        x: 13.9px;
+        y: 4.5px;
+        width: 1.2px;
+        height: 5px;
+        background: root.stroke;
+    }
 }

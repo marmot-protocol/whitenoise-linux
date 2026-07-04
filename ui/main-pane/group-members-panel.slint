@@ -37,22 +37,28 @@ export component GroupMembersPanel inherits Rectangle {
     background: Palette.panel;
 
     Rectangle {
-        x: 0; y: 0;
-        width: 1px; height: parent.height;
+        x: 0;
+        y: 0;
+        width: 1px;
+        height: parent.height;
         background: Palette.border-2;
     }
 
     VerticalLayout {
-        padding-left: 16px; padding-right: 16px;
-        padding-top: 16px; padding-bottom: 16px;
+        padding-left: 16px;
+        padding-right: 16px;
+        padding-top: 16px;
+        padding-bottom: 16px;
         spacing: 12px;
 
         GroupMembersHeader {
             member-count: root.member-count;
-            close-clicked => { root.close-clicked(); }
+            close-clicked => {
+                root.close-clicked();
+            }
         }
 
-        if root.can-add-members : GroupSettingsCard {
+        if root.can-add-members: GroupSettingsCard {
             group-picture: root.group-picture;
             group-has-picture: root.group-has-picture;
             group-av-a: root.group-av-a;
@@ -62,9 +68,15 @@ export component GroupMembersPanel inherits Rectangle {
             image-busy: root.image-busy;
             group-status: root.group-status;
             rename-draft <=> root.rename-draft;
-            rename-group(name) => { root.rename-group(name); }
-            change-image => { root.change-image(); }
-            clear-image => { root.clear-image(); }
+            rename-group(name) => {
+                root.rename-group(name);
+            }
+            change-image => {
+                root.change-image();
+            }
+            clear-image => {
+                root.clear-image();
+            }
         }
 
         // ── Members list ─────────────────────────────────────
@@ -77,22 +89,30 @@ export component GroupMembersPanel inherits Rectangle {
                 viewport-width: self.visible-width;
                 list := GroupCard {
                     background: Palette.panel-2;
-                    for m[i] in root.members : GroupMemberRow {
+                    for m[i] in root.members: GroupMemberRow {
                         data: m;
                         show-divider: i < root.members.length - 1;
-                        promote-admin(id) => { root.promote-admin(id); }
-                        demote-admin(id) => { root.demote-admin(id); }
-                        self-demote-admin => { root.self-demote-admin(); }
+                        promote-admin(id) => {
+                            root.promote-admin(id);
+                        }
+                        demote-admin(id) => {
+                            root.demote-admin(id);
+                        }
+                        self-demote-admin => {
+                            root.self-demote-admin();
+                        }
                     }
                 }
             }
         }
 
-        if root.can-add-members : AddMemberCard {
+        if root.can-add-members: AddMemberCard {
             add-busy: root.add-busy;
             add-status: root.add-status;
             add-draft <=> root.add-draft;
-            add-member(npub) => { root.add-member(npub); }
+            add-member(npub) => {
+                root.add-member(npub);
+            }
         }
     }
 }

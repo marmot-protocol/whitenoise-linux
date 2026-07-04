@@ -17,14 +17,18 @@ export component AddAccountModal inherits Modal {
     secondary-label: @tr("Cancel");
     primary-label: @tr("Add account");
     primary-busy-label: @tr("Adding…");
-    primary => { root.add(root.nsec-text); }
+    primary => {
+        root.add(root.nsec-text);
+    }
 
     ModalField {
         label: @tr("SECRET KEY (NSEC)");
         placeholder: "nsec1…";
         text <=> root.nsec-text;
         autofocus: true;
-        submitted => { root.add(root.nsec-text); }
+        submitted => {
+            root.add(root.nsec-text);
+        }
     }
 
     HorizontalLayout {
@@ -37,12 +41,15 @@ export component AddAccountModal inherits Modal {
             font-family: Theme.font;
             vertical-alignment: center;
         }
+
         Rectangle {
             width: gen-label.preferred-width;
             height: gen-label.preferred-height;
             gen-touch := TouchArea {
                 mouse-cursor: pointer;
-                clicked => { root.generate(); }
+                clicked => {
+                    root.generate();
+                }
                 gen-label := Text {
                     text: @tr("Generate a new key");
                     color: gen-touch.has-hover ? Palette.mint-hi : Palette.mint;
@@ -55,7 +62,7 @@ export component AddAccountModal inherits Modal {
         }
     }
 
-    if root.generated : Text {
+    if root.generated: Text {
         text: @tr("This key was just generated and exists nowhere else yet. Copy it somewhere safe before adding it — there is no recovery.");
         color: Palette.danger;
         font-size: (10px) * Theme.fs-scale;

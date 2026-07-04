@@ -15,25 +15,30 @@ export component AccountSwitcherModal inherits Modal {
     subtitle: @tr("All accounts stay connected. Switching only changes which one you're looking at.");
     secondary-label: @tr("Close");
     primary-label: @tr("Add account");
-    primary => { root.add-account(); }
+    primary => {
+        root.add-account();
+    }
 
     VerticalLayout {
         spacing: 6px;
-        for acc in root.accounts : Rectangle {
+        for acc in root.accounts: Rectangle {
             height: 56px;
             border-radius: (10px) * Theme.r-scale;
-            background: acc.active
-                ? Palette.selected
-                : (row-touch.has-hover ? Palette.hover : transparent);
+            background: acc.active ? Palette.selected : (row-touch.has-hover ? Palette.hover : transparent);
             border-width: acc.active ? Theme.border-w : 0px;
             border-color: Palette.mint;
-            animate background { duration: 100ms; easing: ease-out; }
+            animate background {
+                duration: 100ms;
+                easing: ease-out;
+            }
 
             // Wraps the row content so it wins the hit-test over the card's
             // click-swallower (nested TouchAreas beat outer ones).
             row-touch := TouchArea {
                 mouse-cursor: pointer;
-                clicked => { root.select(acc.id); }
+                clicked => {
+                    root.select(acc.id);
+                }
 
                 HorizontalLayout {
                     padding-left: 10px;
@@ -64,6 +69,7 @@ export component AccountSwitcherModal inherits Modal {
                             font-family: Theme.font;
                             overflow: elide;
                         }
+
                         Text {
                             text: acc.npub-short;
                             color: Palette.text-lo;
@@ -73,7 +79,7 @@ export component AccountSwitcherModal inherits Modal {
                         }
                     }
 
-                    if acc.active : VerticalLayout {
+                    if acc.active: VerticalLayout {
                         alignment: center;
                         Text {
                             text: @tr("ACTIVE");

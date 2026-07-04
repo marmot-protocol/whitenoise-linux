@@ -16,8 +16,9 @@ export component UnreadBadge inherits Rectangle {
     opacity: root.pulse;
 
     // Soft halo ring in normal mode that breathes with the pulse.
-    if !Theme.retro : Rectangle {
-        x: -3px; y: -3px;
+    if !Theme.retro: Rectangle {
+        x: -3px;
+        y: -3px;
         width: parent.width + 6px;
         height: parent.height + 6px;
         border-radius: (13px) * Theme.r-scale;
@@ -27,7 +28,8 @@ export component UnreadBadge inherits Rectangle {
     }
 
     HorizontalLayout {
-        padding-left: 8px; padding-right: 8px;
+        padding-left: 8px;
+        padding-right: 8px;
         alignment: center;
         Text {
             text: root.count;
@@ -48,7 +50,8 @@ export component MiniBadge inherits Rectangle {
     property <float> phase-blink: mod(self.tick / 1ms, 900) < 450 ? 1.0 : 0.55;
     property <float> pulse: Theme.retro ? self.phase-blink : (0.78 + self.phase-sin * 0.22);
 
-    width: 6px; height: 6px;
+    width: 6px;
+    height: 6px;
     border-radius: (3px) * Theme.r-scale;
     background: Palette.mint;
     opacity: root.pulse;

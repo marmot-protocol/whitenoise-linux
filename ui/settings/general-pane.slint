@@ -21,7 +21,9 @@ export component GeneralPane inherits DetailPage {
     PageHeader {
         title: @tr("General");
         caption: "";
-        SettingsIcon { stroke: Palette.mint; }
+        SettingsIcon {
+            stroke: Palette.mint;
+        }
     }
 
     Section {
@@ -29,16 +31,24 @@ export component GeneralPane inherits DetailPage {
         GroupCard {
             PrefRow {
                 label: @tr("Launch at login");
-                Toggle { on: true; }
+                Toggle {
+                    on: true;
+                }
             }
+
             PrefRow {
                 label: @tr("Start minimized to tray");
-                Toggle { on: false; }
+                Toggle {
+                    on: false;
+                }
             }
+
             PrefRow {
                 label: @tr("Restore last selected chat on launch");
                 show-divider: false;
-                Toggle { on: true; }
+                Toggle {
+                    on: true;
+                }
             }
         }
     }
@@ -51,25 +61,37 @@ export component GeneralPane inherits DetailPage {
                 value: root.locale-display;
                 MicroButton {
                     label: @tr("language picker button" => "Change");
-                    ChevronRightIcon { stroke: Palette.text-mid; }
-                    clicked => { root.change-language-clicked(); }
+                    ChevronRightIcon {
+                        stroke: Palette.text-mid;
+                    }
+
+                    clicked => {
+                        root.change-language-clicked();
+                    }
                 }
             }
+
             PrefRow {
                 label: @tr("Time format");
                 MicroButton {
                     label: @tr("24-hour");
                     selected: root.time-format == "24h";
                     fg: root.time-format == "24h" && Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.text-hi;
-                    clicked => { root.time-format-selected("24h"); }
+                    clicked => {
+                        root.time-format-selected("24h");
+                    }
                 }
+
                 MicroButton {
                     label: @tr("12-hour");
                     selected: root.time-format == "12h";
                     fg: root.time-format == "12h" && Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.text-hi;
-                    clicked => { root.time-format-selected("12h"); }
+                    clicked => {
+                        root.time-format-selected("12h");
+                    }
                 }
             }
+
             PrefRow {
                 label: @tr("Date format");
                 show-divider: false;
@@ -78,19 +100,27 @@ export component GeneralPane inherits DetailPage {
                     label: "Jun 12";
                     selected: root.date-format == "mdy";
                     fg: root.date-format == "mdy" && Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.text-hi;
-                    clicked => { root.date-format-selected("mdy"); }
+                    clicked => {
+                        root.date-format-selected("mdy");
+                    }
                 }
+
                 MicroButton {
                     label: "12 Jun";
                     selected: root.date-format == "dmy";
                     fg: root.date-format == "dmy" && Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.text-hi;
-                    clicked => { root.date-format-selected("dmy"); }
+                    clicked => {
+                        root.date-format-selected("dmy");
+                    }
                 }
+
                 MicroButton {
                     label: "2026-06-12";
                     selected: root.date-format == "iso";
                     fg: root.date-format == "iso" && Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.text-hi;
-                    clicked => { root.date-format-selected("iso"); }
+                    clicked => {
+                        root.date-format-selected("iso");
+                    }
                 }
             }
         }

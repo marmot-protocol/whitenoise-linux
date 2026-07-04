@@ -1,4 +1,10 @@
-import { Palette, ChatMeta, ChatMessage, GroupMember, StagedAttachment } from "../tokens.slint";
+import {
+    Palette,
+    ChatMeta,
+    ChatMessage,
+    GroupMember,
+    StagedAttachment,
+} from "../tokens.slint";
 import { MessagesArea } from "../messages.slint";
 import { ChatHeader } from "chat-header.slint";
 import { EncryptionBanner } from "encryption-banner.slint";
@@ -66,7 +72,9 @@ export component MainPane inherits Rectangle {
     // `caret-pos` even when the offset is unchanged.
     in property <int> caret-pos: 0;
     in property <int> caret-tick: 0;
-    changed caret-tick => { composer.set-cursor(self.caret-pos); }
+    changed caret-tick => {
+        composer.set-cursor(self.caret-pos);
+    }
     callback send-clicked();
     callback cancel-reply();
     callback cancel-edit();
@@ -118,50 +126,88 @@ export component MainPane inherits Rectangle {
                 member-count: root.member-count;
                 members-open: root.show-members;
                 muted: root.chat-muted;
-                accept-clicked => { root.accept-clicked(); }
-                block-clicked => { root.block-clicked(); }
-                archive-clicked => { root.archive-clicked(); }
-                members-toggle-clicked => { root.members-toggle-clicked(); }
-                mute-toggle-clicked => { root.mute-toggle-clicked(); }
+                accept-clicked => {
+                    root.accept-clicked();
+                }
+                block-clicked => {
+                    root.block-clicked();
+                }
+                archive-clicked => {
+                    root.archive-clicked();
+                }
+                members-toggle-clicked => {
+                    root.members-toggle-clicked();
+                }
+                mute-toggle-clicked => {
+                    root.mute-toggle-clicked();
+                }
             }
 
-            if root.chat.is-chat-request : ChatRequestBanner { }
-            if !root.chat.is-chat-request : EncryptionBanner {
+            if root.chat.is-chat-request: ChatRequestBanner { }
+            if !root.chat.is-chat-request: EncryptionBanner {
                 npub: root.chat.npub;
                 first-show: root.encryption-banner-first-show;
             }
 
             SessionDivider {
-                label: root.chat.is-chat-request
-                    ? @tr("CHAT REQUEST") + " · " + root.chat.session-time
-                    : "MLS · " + @tr("SESSION ESTABLISHED") + " · " + root.chat.session-time;
+                label: root.chat.is-chat-request ? @tr("CHAT REQUEST") + " · " + root.chat.session-time : "MLS · " + @tr("SESSION ESTABLISHED") + " · " + root.chat.session-time;
             }
+
             MessagesArea {
                 vertical-stretch: 1;
                 messages: root.messages;
                 scroll-tick: root.scroll-tick;
                 has-older: root.has-older;
-                request-older => { root.request-older(); }
+                request-older => {
+                    root.request-older();
+                }
                 available-w: parent.width;
                 outgoing-on-right: root.outgoing-on-right;
                 my-picture: root.my-picture;
                 my-has-picture: root.my-has-picture;
-                react(id, emoji) => { root.react(id, emoji); }
-                unreact(id) => { root.unreact(id); }
-                request-picker(id, ax, ay) => { root.request-picker(id, ax, ay); }
-                request-reply(id, preview, author) => { root.request-reply(id, preview, author); }
-                request-edit(id, current) => { root.request-edit(id, current); }
-                request-context-menu(id, text, author, can-edit, ax, ay) => { root.request-context-menu(id, text, author, can-edit, ax, ay); }
-                show-history(id) => { root.show-history(id); }
-                retry(id) => { root.retry(id); }
-                attachment-clicked(id) => { root.attachment-clicked(id); }
-                audio-play-clicked(id) => { root.audio-play-clicked(id); }
-                audio-seek-clicked(id, fraction) => { root.audio-seek-clicked(id, fraction); }
-                album-cell-clicked(key) => { root.album-cell-clicked(key); }
+                react(id, emoji) => {
+                    root.react(id, emoji);
+                }
+                unreact(id) => {
+                    root.unreact(id);
+                }
+                request-picker(id, ax, ay) => {
+                    root.request-picker(id, ax, ay);
+                }
+                request-reply(id, preview, author) => {
+                    root.request-reply(id, preview, author);
+                }
+                request-edit(id, current) => {
+                    root.request-edit(id, current);
+                }
+                request-context-menu(id, text, author, can-edit, ax, ay) => {
+                    root.request-context-menu(id, text, author, can-edit, ax, ay);
+                }
+                show-history(id) => {
+                    root.show-history(id);
+                }
+                retry(id) => {
+                    root.retry(id);
+                }
+                attachment-clicked(id) => {
+                    root.attachment-clicked(id);
+                }
+                audio-play-clicked(id) => {
+                    root.audio-play-clicked(id);
+                }
+                audio-seek-clicked(id, fraction) => {
+                    root.audio-seek-clicked(id, fraction);
+                }
+                album-cell-clicked(key) => {
+                    root.album-cell-clicked(key);
+                }
             }
+
             composer := Composer {
                 chat-request: root.chat.is-chat-request;
-                accept-clicked => { root.accept-clicked(); }
+                accept-clicked => {
+                    root.accept-clicked();
+                }
                 reply-target-id: root.reply-target-id;
                 reply-target-author: root.reply-target-author;
                 reply-target-preview: root.reply-target-preview;
@@ -169,27 +215,55 @@ export component MainPane inherits Rectangle {
                 reply-target-has-image: root.reply-target-has-image;
                 editing-message-id: root.editing-message-id;
                 mention-active: root.mention-active;
-                send-clicked => { root.send-clicked(); }
-                cancel-reply => { root.cancel-reply(); }
-                cancel-edit => { root.cancel-edit(); }
-                attach-clicked => { root.attach-clicked(); }
-                paste-image => { root.paste-image(); }
+                send-clicked => {
+                    root.send-clicked();
+                }
+                cancel-reply => {
+                    root.cancel-reply();
+                }
+                cancel-edit => {
+                    root.cancel-edit();
+                }
+                attach-clicked => {
+                    root.attach-clicked();
+                }
+                paste-image => {
+                    root.paste-image();
+                }
                 staged: root.staged;
-                remove-staged(i) => { root.remove-staged(i); }
-                emoji-clicked(ax, ay) => { root.emoji-clicked(ax, ay); }
-                caret-moved(c) => { root.caret-moved(c); }
-                mention-nav(d) => { root.mention-nav(d); }
-                mention-commit => { root.mention-commit(); }
-                mention-dismiss => { root.mention-dismiss(); }
+                remove-staged(i) => {
+                    root.remove-staged(i);
+                }
+                emoji-clicked(ax, ay) => {
+                    root.emoji-clicked(ax, ay);
+                }
+                caret-moved(c) => {
+                    root.caret-moved(c);
+                }
+                mention-nav(d) => {
+                    root.mention-nav(d);
+                }
+                mention-commit => {
+                    root.mention-commit();
+                }
+                mention-dismiss => {
+                    root.mention-dismiss();
+                }
                 recording: root.recording;
                 recording-secs: root.recording-secs;
-                record-clicked => { root.record-clicked(); }
-                stop-recording => { root.stop-recording(); }
-                cancel-recording => { root.cancel-recording(); }
+                record-clicked => {
+                    root.record-clicked();
+                }
+                stop-recording => {
+                    root.stop-recording();
+                }
+                cancel-recording => {
+                    root.cancel-recording();
+                }
             }
         }
 
-        if root.can-show-members && root.show-members : GroupMembersPanel {
+        if root.can-show-members && root.show-members: GroupMembersPanel {
             members: root.members;
             member-count: root.member-count;
             can-add-members: root.can-add-members;
@@ -205,25 +279,43 @@ export component MainPane inherits Rectangle {
             image-busy: root.group-image-busy;
             group-status: root.group-status;
             rename-draft <=> root.group-rename-draft;
-            close-clicked => { root.members-toggle-clicked(); }
-            add-member(npub) => { root.add-member(npub); }
-            promote-admin(id) => { root.promote-admin(id); }
-            demote-admin(id) => { root.demote-admin(id); }
-            self-demote-admin => { root.self-demote-admin(); }
-            rename-group(name) => { root.rename-group(name); }
-            change-image => { root.change-group-image(); }
-            clear-image => { root.clear-group-image(); }
+            close-clicked => {
+                root.members-toggle-clicked();
+            }
+            add-member(npub) => {
+                root.add-member(npub);
+            }
+            promote-admin(id) => {
+                root.promote-admin(id);
+            }
+            demote-admin(id) => {
+                root.demote-admin(id);
+            }
+            self-demote-admin => {
+                root.self-demote-admin();
+            }
+            rename-group(name) => {
+                root.rename-group(name);
+            }
+            change-image => {
+                root.change-group-image();
+            }
+            clear-image => {
+                root.clear-group-image();
+            }
         }
     }
 
     // Mention autocomplete popup, floated just above the composer's text field.
     // A direct child of the root Rectangle (not the layout) so it can be
     // free-positioned and overlay the messages area.
-    if root.mention-active && root.mention-candidates.length > 0 : MentionPicker {
+    if root.mention-active && root.mention-candidates.length > 0: MentionPicker {
         candidates: root.mention-candidates;
         selected: root.mention-selected;
         x: composer.absolute-position.x - root.absolute-position.x + 46px;
         y: composer.absolute-position.y - root.absolute-position.y - self.height - 2px;
-        choose(i) => { root.mention-choose(i); }
+        choose(i) => {
+            root.mention-choose(i);
+        }
     }
 }

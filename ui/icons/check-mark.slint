@@ -3,18 +3,32 @@ import { Palette } from "../tokens.slint";
 export component CheckMark inherits Rectangle {
     in property <color> stroke: Palette.text-mid;
     in property <bool> double: true;
-    width: 14px; height: 8px;
+    width: 14px;
+    height: 8px;
     Path {
-        x: 0px; y: 0px; width: 8px; height: 8px;
-        viewbox-width: 8; viewbox-height: 8;
+        x: 0px;
+        y: 0px;
+        width: 8px;
+        height: 8px;
+        viewbox-width: 8;
+        viewbox-height: 8;
         commands: "M 0.8 4.2 L 3 6.4 L 7.2 1.6";
-        stroke: root.stroke; stroke-width: 1.3px; fill: transparent;
+        stroke: root.stroke;
+        stroke-width: 1.3px;
+        fill: transparent;
     }
+
     Path {
-        x: 4px; y: 0px; width: 8px; height: 8px;
-        viewbox-width: 8; viewbox-height: 8;
+        x: 4px;
+        y: 0px;
+        width: 8px;
+        height: 8px;
+        viewbox-width: 8;
+        viewbox-height: 8;
         commands: "M 0.8 4.2 L 3 6.4 L 7.2 1.6";
-        stroke: root.stroke; stroke-width: 1.3px; fill: transparent;
+        stroke: root.stroke;
+        stroke-width: 1.3px;
+        fill: transparent;
         visible: root.double;
     }
 }

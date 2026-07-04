@@ -21,8 +21,10 @@ component AuditFileRow inherits Rectangle {
     height: 48px;
 
     HorizontalLayout {
-        padding-left: 16px; padding-right: 12px;
-        padding-top: 8px; padding-bottom: 8px;
+        padding-left: 16px;
+        padding-right: 12px;
+        padding-top: 8px;
+        padding-bottom: 8px;
         spacing: 10px;
         alignment: stretch;
 
@@ -37,6 +39,7 @@ component AuditFileRow inherits Rectangle {
                 font-weight: 500;
                 overflow: elide;
             }
+
             Text {
                 text: root.meta;
                 color: Palette.text-lo;
@@ -51,15 +54,21 @@ component AuditFileRow inherits Rectangle {
                 label: "";
                 pad-left: 8px;
                 pad-right: 8px;
-                TrashIcon { stroke: Palette.text-mid; }
-                clicked => { root.delete-clicked(); }
+                TrashIcon {
+                    stroke: Palette.text-mid;
+                }
+
+                clicked => {
+                    root.delete-clicked();
+                }
             }
         }
     }
 
-    if root.show-divider : Rectangle {
+    if root.show-divider: Rectangle {
         y: parent.height - 1px;
-        width: parent.width; height: 1px;
+        width: parent.width;
+        height: 1px;
         background: Palette.border-2;
     }
 }
@@ -79,7 +88,9 @@ export component AdvancedPane inherits DetailPage {
     PageHeader {
         title: @tr("Advanced");
         caption: @tr("Privacy & developer flags");
-        TerminalIcon { stroke: Palette.text-mid; }
+        TerminalIcon {
+            stroke: Palette.text-mid;
+        }
     }
 
     Section {
@@ -90,21 +101,26 @@ export component AdvancedPane inherits DetailPage {
                 sublabel: @tr("Share relay connection telemetry.");
                 Toggle {
                     on <=> root.telemetry-enabled;
-                    toggled => { root.telemetry-toggled(self.on); }
+                    toggled => {
+                        root.telemetry-toggled(self.on);
+                    }
                 }
             }
+
             PrefRow {
                 label: @tr("Audit logs");
                 sublabel: @tr("Create and send group audit log files. Applies immediately.");
                 show-divider: false;
                 Toggle {
                     on <=> root.audit-enabled;
-                    toggled => { root.audit-toggled(self.on); }
+                    toggled => {
+                        root.audit-toggled(self.on);
+                    }
                 }
             }
         }
 
-        if root.audit-status != "" : Text {
+        if root.audit-status != "": Text {
             text: root.audit-status;
             color: Palette.text-mid;
             font-family: Theme.font;
@@ -116,7 +132,7 @@ export component AdvancedPane inherits DetailPage {
     Section {
         label: @tr("AUDIT LOG FILES");
         GroupCard {
-            if root.audit-files.length == 0 : Rectangle {
+            if root.audit-files.length == 0: Rectangle {
                 height: 48px;
                 Text {
                     x: 16px;
@@ -128,11 +144,13 @@ export component AdvancedPane inherits DetailPage {
                     vertical-alignment: center;
                 }
             }
-            for f[i] in root.audit-files : AuditFileRow {
+            for f[i] in root.audit-files: AuditFileRow {
                 name: f.name;
                 meta: f.meta;
                 show-divider: i < root.audit-files.length - 1;
-                delete-clicked => { root.audit-delete-file(f.path); }
+                delete-clicked => {
+                    root.audit-delete-file(f.path);
+                }
             }
         }
 
@@ -140,10 +158,16 @@ export component AdvancedPane inherits DetailPage {
             alignment: start;
             MicroButton {
                 label: @tr("Refresh");
-                RefreshIcon { stroke: Palette.text-mid; }
-                clicked => { root.audit-refresh-files(); }
+                RefreshIcon {
+                    stroke: Palette.text-mid;
+                }
+
+                clicked => {
+                    root.audit-refresh-files();
+                }
             }
         }
+
         Text {
             text: @tr("Deleting the file being recorded rotates it — recording continues in a fresh file.");
             color: Palette.text-lo;
@@ -161,7 +185,9 @@ export component AdvancedPane inherits DetailPage {
                 show-divider: false;
                 Toggle {
                     on <=> root.debug-enabled;
-                    toggled => { root.debug-toggled(self.on); }
+                    toggled => {
+                        root.debug-toggled(self.on);
+                    }
                 }
             }
         }

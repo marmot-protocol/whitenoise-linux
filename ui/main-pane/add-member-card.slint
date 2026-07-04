@@ -16,8 +16,10 @@ export component AddMemberCard inherits Section {
 
     GroupCard {
         VerticalLayout {
-            padding-left: 12px; padding-right: 12px;
-            padding-top: 12px; padding-bottom: 12px;
+            padding-left: 12px;
+            padding-right: 12px;
+            padding-top: 12px;
+            padding-bottom: 12px;
             spacing: 8px;
 
             Rectangle {
@@ -28,9 +30,13 @@ export component AddMemberCard inherits Section {
                 border-color: add-input.has-focus ? Palette.mint-dim : Palette.field-border;
                 drop-shadow-blur: add-input.has-focus && Theme.focus-glow ? 10px : 0px;
                 drop-shadow-color: Palette.mint-glow;
-                animate border-color { duration: 140ms; easing: ease-out; }
+                animate border-color {
+                    duration: 140ms;
+                    easing: ease-out;
+                }
                 HorizontalLayout {
-                    padding-left: 10px; padding-right: 10px;
+                    padding-left: 10px;
+                    padding-right: 10px;
                     add-input := LineInput {
                         placeholder: "npub1…";
                         text <=> root.add-draft;
@@ -65,14 +71,16 @@ export component AddMemberCard inherits Section {
                         }
                     }
                 }
-                if root.add-status != "" : Rectangle {
+
+                if root.add-status != "": Rectangle {
                     height: 28px;
                     border-radius: (4px) * Theme.r-scale;
                     background: Palette.panel-2;
                     border-width: Theme.border-w;
                     border-color: Palette.border-2;
                     HorizontalLayout {
-                        padding-left: 8px; padding-right: 8px;
+                        padding-left: 8px;
+                        padding-right: 8px;
                         Text {
                             text: root.add-status;
                             color: Palette.text-lo;

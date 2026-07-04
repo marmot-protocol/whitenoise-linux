@@ -2,11 +2,16 @@ import { Palette } from "../tokens.slint";
 
 export component MicIcon inherits Rectangle {
     in property <color> stroke: Palette.text-mid;
-    width: 16px; height: 16px;
+    width: 16px;
+    height: 16px;
     Path {
-        width: 16px; height: 16px;
-        viewbox-width: 16; viewbox-height: 16;
+        width: 16px;
+        height: 16px;
+        viewbox-width: 16;
+        viewbox-height: 16;
         commands: "M 8 11 C 9.7 11 11 9.7 11 8 V 4 C 11 2.3 9.7 1 8 1 C 6.3 1 5 2.3 5 4 V 8 C 5 9.7 6.3 11 8 11 Z M 3 7 V 8 C 3 10.8 5.2 13 8 13 C 10.8 13 13 10.8 13 8 V 7 M 8 13 V 15";
-        stroke: root.stroke; stroke-width: 1.4px; fill: transparent;
+        stroke: root.stroke;
+        stroke-width: 1.4px;
+        fill: transparent;
     }
 }

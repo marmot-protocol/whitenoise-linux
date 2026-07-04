@@ -36,19 +36,22 @@ component VaultField inherits VerticalLayout {
         font-weight: 700;
         letter-spacing: 1.6px;
     }
+
     Rectangle {
         height: 44px;
         border-radius: (7px) * Theme.r-scale;
         background: root.error ? Palette.danger-soft : Palette.field;
         border-width: 1px;
-        border-color: root.error
-            ? Palette.danger-border
-            : (vf-input.has-focus ? Palette.mint-dim : Palette.field-border);
+        border-color: root.error ? Palette.danger-border : (vf-input.has-focus ? Palette.mint-dim : Palette.field-border);
         drop-shadow-blur: vf-input.has-focus && !root.error && Theme.focus-glow ? 10px : 0px;
         drop-shadow-color: Palette.mint-glow;
-        animate border-color { duration: 140ms; easing: ease-out; }
+        animate border-color {
+            duration: 140ms;
+            easing: ease-out;
+        }
         HorizontalLayout {
-            padding-left: 14px; padding-right: 14px;
+            padding-left: 14px;
+            padding-right: 14px;
             vf-input := LineInput {
                 placeholder: root.placeholder;
                 text <=> root.text;
@@ -57,7 +60,9 @@ component VaultField inherits VerticalLayout {
                 font-size: Theme.fsr(13px, 14px);
                 fg: Palette.text-hi;
                 placeholder-color: Palette.text-vlo;
-                submit => { root.submit(); }
+                submit => {
+                    root.submit();
+                }
             }
         }
     }
@@ -98,7 +103,10 @@ export component LoginScreen inherits Rectangle {
             self.avatar-reveal = 1;
         }
     }
-    animate name-reveal, avatar-reveal { duration: 300ms; easing: ease-out; }
+    animate name-reveal, avatar-reveal {
+        duration: 300ms;
+        easing: ease-out;
+    }
 
     callback login-with-nsec(string, string, string); // nsec, password, confirm
     callback generate-requested();
@@ -115,20 +123,23 @@ export component LoginScreen inherits Rectangle {
         }
     }
     function save-generated() {
-        if (!root.busy) { root.confirm-saved(root.password-input, root.password-confirm); }
+        if (!root.busy) {
+            root.confirm-saved(root.password-input, root.password-confirm);
+        }
     }
     function do-unlock() {
-        if (!root.busy) { root.unlock(root.password-input); }
+        if (!root.busy) {
+            root.unlock(root.password-input);
+        }
     }
 
     background: Palette.bg;
 
     // Subtle vignette so the card pops.
     Rectangle {
-        width: parent.width; height: parent.height;
-        background: Theme.light && !Theme.retro
-            ? @radial-gradient(circle, #FFFFFF00 0%, #D8CFBF80 100%)
-            : @radial-gradient(circle, #0F141A00 0%, #00000080 100%);
+        width: parent.width;
+        height: parent.height;
+        background: Theme.light && !Theme.retro ? @radial-gradient(circle, #FFFFFF00 0%, #D8CFBF80 100%) : @radial-gradient(circle, #0F141A00 0%, #00000080 100%);
     }
 
     // Centered card.
@@ -148,19 +159,25 @@ export component LoginScreen inherits Rectangle {
         drop-shadow-color: Theme.hard-shadow ? Palette.shadow : #000000C0;
         drop-shadow-offset-x: Theme.hard-shadow ? 6px : 0px;
         drop-shadow-offset-y: Theme.hard-shadow ? 6px : 10px;
-        animate height { duration: 200ms; easing: ease-in-out; }
+        animate height {
+            duration: 200ms;
+            easing: ease-in-out;
+        }
 
         // Top bevel highlight (matches the Modal card convention).
         Rectangle {
-            x: 1px; y: 1px;
+            x: 1px;
+            y: 1px;
             width: parent.width - 2px;
             height: 1px;
             background: Palette.top-glint;
         }
 
         card-content := VerticalLayout {
-            padding-left: 32px; padding-right: 32px;
-            padding-top: 32px; padding-bottom: 24px;
+            padding-left: 32px;
+            padding-right: 32px;
+            padding-top: 32px;
+            padding-bottom: 24px;
             spacing: 22px;
 
             // Header — logo + title + caption.
@@ -171,6 +188,7 @@ export component LoginScreen inherits Rectangle {
                     size: 48px;
                     color: Palette.mint;
                 }
+
                 Text {
                     text: "darkmatter";
                     color: Palette.text-hi;
@@ -178,14 +196,9 @@ export component LoginScreen inherits Rectangle {
                     font-weight: 700;
                     horizontal-alignment: center;
                 }
+
                 Text {
-                    text: root.mode == 0
-                        ? @tr("Sign in to your Nostr identity")
-                        : root.mode == 1
-                            ? @tr("Import a key & set a password")
-                            : root.mode == 3
-                                ? @tr("Enter your password to unlock")
-                                : @tr("Save your new key");
+                    text: root.mode == 0 ? @tr("Sign in to your Nostr identity") : root.mode == 1 ? @tr("Import a key & set a password") : root.mode == 3 ? @tr("Enter your password to unlock") : @tr("Save your new key");
                     color: Palette.text-lo;
                     font-size: (12px) * Theme.fs-scale;
                     horizontal-alignment: center;
@@ -193,7 +206,7 @@ export component LoginScreen inherits Rectangle {
             }
 
             // === MODE 0: choose ===
-            if root.mode == 0 : VerticalLayout {
+            if root.mode == 0: VerticalLayout {
                 spacing: 12px;
 
                 Button {
@@ -206,7 +219,10 @@ export component LoginScreen inherits Rectangle {
                     hover-bg: Palette.mint-hi;
                     hover-outline: Palette.mint-hi;
                     fg: Palette.bubble-out-fg;
-                    KeyIcon { stroke: Palette.bubble-out-fg; }
+                    KeyIcon {
+                        stroke: Palette.bubble-out-fg;
+                    }
+
                     clicked => {
                         root.error = "";
                         root.nsec-input = "";
@@ -225,7 +241,11 @@ export component LoginScreen inherits Rectangle {
                     outline: Palette.field-border;
                     hover-bg: Palette.field-hover;
                     hover-outline: Palette.field-border-hover;
-                    PlusIcon { stroke: Palette.text-mid; size: 12px; }
+                    PlusIcon {
+                        stroke: Palette.text-mid;
+                        size: 12px;
+                    }
+
                     clicked => {
                         root.error = "";
                         root.password-input = "";
@@ -249,7 +269,9 @@ export component LoginScreen inherits Rectangle {
                     }
                 }
 
-                Rectangle { vertical-stretch: 1; }
+                Rectangle {
+                    vertical-stretch: 1;
+                }
 
                 Text {
                     text: @tr("Your key never leaves this device.");
@@ -260,7 +282,7 @@ export component LoginScreen inherits Rectangle {
             }
 
             // === MODE 1: enter existing nsec + set vault password ===
-            if root.mode == 1 : VerticalLayout {
+            if root.mode == 1: VerticalLayout {
                 spacing: 12px;
 
                 VaultField {
@@ -268,31 +290,41 @@ export component LoginScreen inherits Rectangle {
                     placeholder: "nsec1…";
                     text <=> root.nsec-input;
                     error: root.error != "";
-                    submit => { root.create-account(); }
+                    submit => {
+                        root.create-account();
+                    }
                 }
+
                 VaultField {
                     label: @tr("VAULT PASSWORD");
                     placeholder: @tr("Choose a password");
                     text <=> root.password-input;
                     password: true;
-                    submit => { root.create-account(); }
+                    submit => {
+                        root.create-account();
+                    }
                 }
+
                 VaultField {
                     label: @tr("CONFIRM PASSWORD");
                     placeholder: @tr("Re-enter password");
                     text <=> root.password-confirm;
                     password: true;
-                    submit => { root.create-account(); }
+                    submit => {
+                        root.create-account();
+                    }
                 }
 
-                if root.error != "" : Text {
+                if root.error != "": Text {
                     text: root.error;
                     color: Palette.danger;
                     font-size: (11px) * Theme.fs-scale;
                     wrap: word-wrap;
                 }
 
-                Rectangle { vertical-stretch: 1; }
+                Rectangle {
+                    vertical-stretch: 1;
+                }
 
                 HorizontalLayout {
                     spacing: 10px;
@@ -305,7 +337,11 @@ export component LoginScreen inherits Rectangle {
                             root.mode = 0;
                         }
                     }
-                    Rectangle { horizontal-stretch: 1; }
+
+                    Rectangle {
+                        horizontal-stretch: 1;
+                    }
+
                     Button {
                         label: root.busy ? @tr("Signing in…") : @tr("Continue");
                         button-height: 38px;
@@ -315,27 +351,31 @@ export component LoginScreen inherits Rectangle {
                         hover-bg: Palette.mint-hi;
                         hover-outline: Palette.mint-hi;
                         fg: Palette.bubble-out-fg;
-                        clicked => { root.create-account(); }
+                        clicked => {
+                            root.create-account();
+                        }
                     }
                 }
             }
 
             // === MODE 2: show generated key + set vault password ===
-            if root.mode == 2 : VerticalLayout {
+            if root.mode == 2: VerticalLayout {
                 spacing: 14px;
 
-                if root.generated-display-name != "" : Rectangle {
+                if root.generated-display-name != "": Rectangle {
                     height: 72px;
                     border-radius: (8px) * Theme.r-scale;
                     background: Palette.field;
                     border-width: 1px;
                     border-color: Palette.field-border;
                     HorizontalLayout {
-                        padding-left: 14px; padding-right: 14px;
+                        padding-left: 14px;
+                        padding-right: 14px;
                         spacing: 14px;
                         alignment: center;
-                        if root.generated-has-avatar : Rectangle {
-                            width: 48px; height: 48px;
+                        if root.generated-has-avatar: Rectangle {
+                            width: 48px;
+                            height: 48px;
                             opacity: root.avatar-reveal;
                             Avatar {
                                 size: 48px;
@@ -358,6 +398,7 @@ export component LoginScreen inherits Rectangle {
                                 font-weight: 700;
                                 letter-spacing: 1.6px;
                             }
+
                             Text {
                                 text: root.generated-display-name;
                                 color: Palette.text-hi;
@@ -377,13 +418,18 @@ export component LoginScreen inherits Rectangle {
                     border-width: 1px;
                     border-color: Palette.warning-border;
                     HorizontalLayout {
-                        padding-left: 14px; padding-right: 14px;
-                        padding-top: 10px; padding-bottom: 10px;
+                        padding-left: 14px;
+                        padding-right: 14px;
+                        padding-top: 10px;
+                        padding-bottom: 10px;
                         spacing: 12px;
                         VerticalLayout {
                             alignment: center;
-                            LockIcon { stroke: Palette.warning; }
+                            LockIcon {
+                                stroke: Palette.warning;
+                            }
                         }
+
                         VerticalLayout {
                             spacing: 3px;
                             alignment: center;
@@ -394,6 +440,7 @@ export component LoginScreen inherits Rectangle {
                                 font-size: (12px) * Theme.fs-scale;
                                 font-weight: 700;
                             }
+
                             Text {
                                 text: @tr("Sealed with your password on this device. Keep your own copy of the nsec too — lose both and this identity is gone.");
                                 color: Palette.text-lo;
@@ -414,6 +461,7 @@ export component LoginScreen inherits Rectangle {
                         font-weight: 700;
                         letter-spacing: 1.6px;
                     }
+
                     Rectangle {
                         height: 38px;
                         border-radius: (7px) * Theme.r-scale;
@@ -421,7 +469,8 @@ export component LoginScreen inherits Rectangle {
                         border-width: 1px;
                         border-color: Palette.field-border;
                         HorizontalLayout {
-                            padding-left: 14px; padding-right: 14px;
+                            padding-left: 14px;
+                            padding-right: 14px;
                             Text {
                                 text: root.generated-npub;
                                 color: Palette.text-hi;
@@ -444,6 +493,7 @@ export component LoginScreen inherits Rectangle {
                         font-weight: 700;
                         letter-spacing: 1.6px;
                     }
+
                     Rectangle {
                         height: 38px;
                         border-radius: (7px) * Theme.r-scale;
@@ -451,7 +501,8 @@ export component LoginScreen inherits Rectangle {
                         border-width: 1px;
                         border-color: Palette.field-border;
                         HorizontalLayout {
-                            padding-left: 14px; padding-right: 14px;
+                            padding-left: 14px;
+                            padding-right: 14px;
                             Text {
                                 text: root.generated-nsec;
                                 color: Palette.text-hi;
@@ -461,6 +512,7 @@ export component LoginScreen inherits Rectangle {
                             }
                         }
                     }
+
                     HorizontalLayout {
                         spacing: 8px;
                         Button {
@@ -470,10 +522,19 @@ export component LoginScreen inherits Rectangle {
                             pad-left: 10px;
                             pad-right: 12px;
                             font-size: Theme.fs(11px, 12px);
-                            RefreshIcon { stroke: Palette.text-mid; }
-                            clicked => { root.generate-requested(); }
+                            RefreshIcon {
+                                stroke: Palette.text-mid;
+                            }
+
+                            clicked => {
+                                root.generate-requested();
+                            }
                         }
-                        Rectangle { horizontal-stretch: 1; }
+
+                        Rectangle {
+                            horizontal-stretch: 1;
+                        }
+
                         Button {
                             label: @tr("Copy");
                             button-height: 30px;
@@ -481,8 +542,13 @@ export component LoginScreen inherits Rectangle {
                             pad-left: 10px;
                             pad-right: 12px;
                             font-size: Theme.fs(11px, 12px);
-                            CopyIcon { stroke: Palette.text-mid; }
-                            clicked => { root.copy-nsec(root.generated-nsec); }
+                            CopyIcon {
+                                stroke: Palette.text-mid;
+                            }
+
+                            clicked => {
+                                root.copy-nsec(root.generated-nsec);
+                            }
                         }
                     }
                 }
@@ -493,24 +559,31 @@ export component LoginScreen inherits Rectangle {
                     placeholder: @tr("Choose a password");
                     text <=> root.password-input;
                     password: true;
-                    submit => { root.save-generated(); }
+                    submit => {
+                        root.save-generated();
+                    }
                 }
+
                 VaultField {
                     label: @tr("CONFIRM PASSWORD");
                     placeholder: @tr("Re-enter password");
                     text <=> root.password-confirm;
                     password: true;
-                    submit => { root.save-generated(); }
+                    submit => {
+                        root.save-generated();
+                    }
                 }
 
-                if root.error != "" : Text {
+                if root.error != "": Text {
                     text: root.error;
                     color: Palette.danger;
                     font-size: (11px) * Theme.fs-scale;
                     wrap: word-wrap;
                 }
 
-                Rectangle { vertical-stretch: 1; }
+                Rectangle {
+                    vertical-stretch: 1;
+                }
 
                 HorizontalLayout {
                     spacing: 10px;
@@ -518,9 +591,15 @@ export component LoginScreen inherits Rectangle {
                         label: @tr("Back");
                         button-height: 38px;
                         min-w: 96px;
-                        clicked => { root.mode = 0; }
+                        clicked => {
+                            root.mode = 0;
+                        }
                     }
-                    Rectangle { horizontal-stretch: 1; }
+
+                    Rectangle {
+                        horizontal-stretch: 1;
+                    }
+
                     Button {
                         label: root.busy ? @tr("Saving…") : @tr("Create vault");
                         button-height: 38px;
@@ -530,13 +609,15 @@ export component LoginScreen inherits Rectangle {
                         hover-bg: Palette.mint-hi;
                         hover-outline: Palette.mint-hi;
                         fg: Palette.bubble-out-fg;
-                        clicked => { root.save-generated(); }
+                        clicked => {
+                            root.save-generated();
+                        }
                     }
                 }
             }
 
             // === MODE 3: unlock an existing vault ===
-            if root.mode == 3 : VerticalLayout {
+            if root.mode == 3: VerticalLayout {
                 spacing: 14px;
 
                 VaultField {
@@ -545,17 +626,21 @@ export component LoginScreen inherits Rectangle {
                     text <=> root.password-input;
                     password: true;
                     error: root.error != "";
-                    submit => { root.do-unlock(); }
+                    submit => {
+                        root.do-unlock();
+                    }
                 }
 
-                if root.error != "" : Text {
+                if root.error != "": Text {
                     text: root.error;
                     color: Palette.danger;
                     font-size: (11px) * Theme.fs-scale;
                     wrap: word-wrap;
                 }
 
-                Rectangle { vertical-stretch: 1; }
+                Rectangle {
+                    vertical-stretch: 1;
+                }
 
                 HorizontalLayout {
                     spacing: 10px;
@@ -563,9 +648,15 @@ export component LoginScreen inherits Rectangle {
                         label: @tr("Use another key");
                         button-height: 38px;
                         min-w: 140px;
-                        clicked => { root.reset-vault(); }
+                        clicked => {
+                            root.reset-vault();
+                        }
                     }
-                    Rectangle { horizontal-stretch: 1; }
+
+                    Rectangle {
+                        horizontal-stretch: 1;
+                    }
+
                     Button {
                         label: root.busy ? @tr("Unlocking…") : @tr("Unlock");
                         button-height: 38px;
@@ -575,7 +666,9 @@ export component LoginScreen inherits Rectangle {
                         hover-bg: Palette.mint-hi;
                         hover-outline: Palette.mint-hi;
                         fg: Palette.bubble-out-fg;
-                        clicked => { root.do-unlock(); }
+                        clicked => {
+                            root.do-unlock();
+                        }
                     }
                 }
             }

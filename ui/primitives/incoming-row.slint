@@ -1,4 +1,11 @@
-import { Palette, Theme, Reaction, MessageLine, ProfileSink, AlbumCell } from "../tokens.slint";
+import {
+    Palette,
+    Theme,
+    Reaction,
+    MessageLine,
+    ProfileSink,
+    AlbumCell,
+} from "../tokens.slint";
 import { Avatar } from "avatar.slint";
 import { MessageBubble } from "message-bubble.slint";
 import { ReactionChips, HoverActions } from "reactions-row.slint";
@@ -16,12 +23,20 @@ export component IncomingRow inherits VerticalLayout {
         root.play-effect(root.effect-id, root.effect-clip-x, root.effect-clip-y,
             bubble.absolute-position.x, bubble.absolute-position.y, bubble.width, bubble.height);
     }
-    init => { if (root.effect-autoplay && root.effect-id > 0) { fx-timer.running = true; } }
+    init => {
+        if (root.effect-autoplay && root.effect-id > 0) {
+            fx-timer.running = true;
+        }
+    }
     fx-timer := Timer {
         interval: 120ms;
         running: false;
-        triggered => { self.running = false; root.fire-effect(); }
+        triggered => {
+            self.running = false;
+            root.fire-effect();
+        }
     }
+
     in property <string> text;
     in property <[MessageLine]> lines;
     in property <string> stamp;
@@ -87,11 +102,15 @@ export component IncomingRow inherits VerticalLayout {
         spacing: 10px;
         alignment: start;
 
-        if root.show-avatar : TouchArea {
+        if root.show-avatar: TouchArea {
             width: 28px;
             height: 28px;
             mouse-cursor: pointer;
-            clicked => { if (root.sender-id != "") { ProfileSink.open(root.sender-id); } }
+            clicked => {
+                if (root.sender-id != "") {
+                    ProfileSink.open(root.sender-id);
+                }
+            }
             Avatar {
                 size: 28px;
                 y: 0;
@@ -103,17 +122,23 @@ export component IncomingRow inherits VerticalLayout {
                 font-size: Theme.fs(9px, 14px);
             }
         }
-        if !root.show-avatar : Rectangle { width: 28px; }
+        if !root.show-avatar: Rectangle {
+            width: 28px;
+        }
 
         VerticalLayout {
             spacing: 2px;
             // Sender label above the bubble — only on the first bubble of a
             // group (group chats only), so a stack doesn't repeat the name.
-            if root.show-sender-name && root.sender-name != "" : HorizontalLayout {
+            if root.show-sender-name && root.sender-name != "": HorizontalLayout {
                 alignment: start;
                 name-touch := TouchArea {
                     mouse-cursor: pointer;
-                    clicked => { if (root.sender-id != "") { ProfileSink.open(root.sender-id); } }
+                    clicked => {
+                        if (root.sender-id != "") {
+                            ProfileSink.open(root.sender-id);
+                        }
+                    }
                     Text {
                         text: root.sender-name;
                         color: name-touch.has-hover ? Palette.text-mid : Palette.text-lo;
@@ -143,7 +168,8 @@ export component IncomingRow inherits VerticalLayout {
                 }
 
                 bubble := MessageBubble {
-                    x: 0; y: 0;
+                    x: 0;
+                    y: 0;
                     message: root.text;
                     effect-id: root.effect-id;
                     effect-clip-x: root.effect-clip-x;
@@ -182,11 +208,21 @@ export component IncomingRow inherits VerticalLayout {
                     edited: root.edited;
                     edit-count: root.edit-count;
                     deleted: root.deleted;
-                    attachment-clicked => { root.attachment-clicked(root.message-id); }
-                    audio-play-clicked => { root.audio-play-clicked(root.message-id); }
-                    audio-seek-clicked(fraction) => { root.audio-seek-clicked(root.message-id, fraction); }
-                    album-cell-clicked(key) => { root.album-cell-clicked(key); }
-                    show-history-clicked => { root.show-history(root.message-id); }
+                    attachment-clicked => {
+                        root.attachment-clicked(root.message-id);
+                    }
+                    audio-play-clicked => {
+                        root.audio-play-clicked(root.message-id);
+                    }
+                    audio-seek-clicked(fraction) => {
+                        root.audio-seek-clicked(root.message-id, fraction);
+                    }
+                    album-cell-clicked(key) => {
+                        root.album-cell-clicked(key);
+                    }
+                    show-history-clicked => {
+                        root.show-history(root.message-id);
+                    }
                     context-menu-requested(ax, ay) => {
                         // A retracted tombstone offers no actions, so suppress
                         // its menu entirely (matches the hover toolbar gate).
@@ -194,7 +230,11 @@ export component IncomingRow inherits VerticalLayout {
                             root.request-context-menu(root.message-id, root.text, root.av-initials, false, ax, ay);
                         }
                     }
-                    body-clicked => { if (root.effect-id > 0) { root.fire-effect(); } }
+                    body-clicked => {
+                        if (root.effect-id > 0) {
+                            root.fire-effect();
+                        }
+                    }
                 }
 
                 acts := HoverActions {
@@ -207,21 +247,32 @@ export component IncomingRow inherits VerticalLayout {
                     visible: root.message-id != "" && !root.deleted && (hover.has-hover || self.hovered);
                     opacity: (hover.has-hover || self.hovered) ? 1.0 : 0.0;
                     animate opacity { duration: 100ms; }
-                    request-picker(id, ax, ay) => { root.request-picker(id, ax, ay); }
-                    request-reply(id, preview, author) => { root.request-reply(id, preview, author); }
+                    request-picker(id, ax, ay) => {
+                        root.request-picker(id, ax, ay);
+                    }
+                    request-reply(id, preview, author) => {
+                        root.request-reply(id, preview, author);
+                    }
                 }
             }
 
             // Reaction chips — only present when the message has reactions, so
             // empty messages stack tightly.
-            if root.message-id != "" && root.reactions.length > 0 : ReactionChips {
+            if root.message-id != "" && root.reactions.length > 0: ReactionChips {
                 message-id: root.message-id;
                 reactions: root.reactions;
                 align-right: false;
-                react(id, emoji) => { root.react(id, emoji); }
-                unreact(id) => { root.unreact(id); }
+                react(id, emoji) => {
+                    root.react(id, emoji);
+                }
+                unreact(id) => {
+                    root.unreact(id);
+                }
             }
         }
-        Rectangle { horizontal-stretch: 1; }
+
+        Rectangle {
+            horizontal-stretch: 1;
+        }
     }
 }

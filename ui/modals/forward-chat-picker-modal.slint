@@ -40,23 +40,25 @@ export component ForwardPickerModal inherits Modal {
     // Prime `visible-rows`/`match-flags` for the empty query on open: the root
     // arrays outlive the modal and would otherwise be stale from a previous
     // open (different active chat).
-    init => { root.query-changed(root.query); }
+    init => {
+        root.query-changed(root.query);
+    }
     // Chats can be re-pushed while the picker is open (a new message re-sorts
     // the list); re-derive the visible set so the cursor tracks fresh indices.
-    changed chats => { root.query-changed(root.query); }
+    changed chats => {
+        root.query-changed(root.query);
+    }
 
     // Keyboard cursor: a position in `visible-rows`, resolved to a chat index
     // for row highlighting and Enter. -1 = nothing selectable.
     property <int> cursor: 0;
-    property <int> cursor-chat: root.visible-rows.length == 0 ? -1
-        : root.visible-rows[min(root.cursor, root.visible-rows.length - 1)];
+    property <int> cursor-chat: root.visible-rows.length == 0 ? -1 : root.visible-rows[min(root.cursor, root.visible-rows.length - 1)];
 
     function commit() {
         // Bounds re-check besides the -1 guard: `visible-rows` may lag a
         // `chats` mutation by one frame, and forwarding must never target the
         // source chat or a vanished index.
-        if (root.cursor-chat >= 0 && root.cursor-chat < root.chats.length
-            && root.cursor-chat != root.active-chat) {
+        if (root.cursor-chat >= 0 && root.cursor-chat < root.chats.length && root.cursor-chat != root.active-chat) {
             root.select(root.cursor-chat);
         }
     }
@@ -64,9 +66,7 @@ export component ForwardPickerModal inherits Modal {
     function move-cursor(delta: int) {
         if (root.visible-rows.length > 0) {
             if (delta < 0) {
-                root.cursor = root.cursor <= 0 || root.cursor >= root.visible-rows.length
-                    ? root.visible-rows.length - 1
-                    : root.cursor - 1;
+                root.cursor = root.cursor <= 0 || root.cursor >= root.visible-rows.length ? root.visible-rows.length - 1 : root.cursor - 1;
             } else {
                 root.cursor = mod(root.cursor + 1, root.visible-rows.length);
             }
@@ -88,8 +88,7 @@ export component ForwardPickerModal inherits Modal {
     property <bool> any-visible: list.preferred-height > 0px;
     // How many chats are eligible at all (ignoring the query) — distinguishes
     // "nothing matches your search" from "there is nowhere to forward to".
-    property <int> forwardable-count: root.chats.length
-        - (root.active-chat >= 0 && root.active-chat < root.chats.length ? 1 : 0);
+    property <int> forwardable-count: root.chats.length - (root.active-chat >= 0 && root.active-chat < root.chats.length ? 1 : 0);
 
     card-width: 440px;
     card-height: 520px;
@@ -116,20 +115,20 @@ export component ForwardPickerModal inherits Modal {
                 background: Palette.mint;
                 border-radius: 1.5px;
             }
+
             VerticalLayout {
                 alignment: center;
                 spacing: 2px;
                 horizontal-stretch: 1;
                 Text {
-                    text: root.source-author == ""
-                        ? @tr("Forwarding:")
-                        : @tr("Forwarding from {}:", root.source-author);
+                    text: root.source-author == "" ? @tr("Forwarding:") : @tr("Forwarding from {}:", root.source-author);
                     color: Palette.mint;
                     font-size: (10px) * Theme.fs-scale;
                     font-weight: 700;
                     font-family: Theme.font;
                     overflow: elide;
                 }
+
                 Text {
                     text: root.source-text == "" ? @tr("(attachment)") : root.source-text;
                     color: Palette.text-mid;
@@ -146,9 +145,15 @@ export component ForwardPickerModal inherits Modal {
         text <=> root.query;
         autofocus: true;
         capture-nav: true;
-        nav(delta) => { root.move-cursor(delta); }
-        submitted => { root.commit(); }
-        nav-dismissed => { root.dismissed(); }
+        nav(delta) => {
+            root.move-cursor(delta);
+        }
+        submitted => {
+            root.commit();
+        }
+        nav-dismissed => {
+            root.dismissed();
+        }
     }
 
     Rectangle {
@@ -161,28 +166,30 @@ export component ForwardPickerModal inherits Modal {
             viewport-height: list.preferred-height;
             list := VerticalLayout {
                 spacing: 0;
-                for chat[idx] in root.chats : Rectangle {
+                for chat[idx] in root.chats: Rectangle {
                     // Skip the chat the message is already in; the query
                     // filters the rest by chat name (flags computed in Rust).
-                    property <bool> shown: idx != root.active-chat
-                        && (root.query == ""
-                            || (idx < root.match-flags.length && root.match-flags[idx]));
+                    property <bool> shown: idx != root.active-chat && (root.query == "" || (idx < root.match-flags.length && root.match-flags[idx]));
                     // Keyboard cursor on this row (mouse hover is independent).
                     property <bool> cursored: idx == root.cursor-chat;
                     height: shown ? 62px : 0px;
                     visible: shown;
 
                     Rectangle {
-                        x: 0; y: 0;
+                        x: 0;
+                        y: 0;
                         width: parent.width;
                         height: 56px;
                         border-radius: (10px) * Theme.r-scale;
                         background: cursored || row-touch.has-hover ? Palette.hover : transparent;
-                        animate background { duration: 100ms; easing: ease-out; }
+                        animate background {
+                            duration: 100ms;
+                            easing: ease-out;
+                        }
 
                         // Accent focus bar on the cursored row, same treatment
                         // as the language picker's rows.
-                        if cursored : Rectangle {
+                        if cursored: Rectangle {
                             x: 0;
                             width: 2px;
                             y: (parent.height - self.height) / 2;
@@ -196,7 +203,9 @@ export component ForwardPickerModal inherits Modal {
                         row-touch := TouchArea {
                             enabled: shown;
                             mouse-cursor: pointer;
-                            clicked => { root.select(idx); }
+                            clicked => {
+                                root.select(idx);
+                            }
 
                             HorizontalLayout {
                                 padding-left: 10px;
@@ -227,6 +236,7 @@ export component ForwardPickerModal inherits Modal {
                                         font-family: Theme.font;
                                         overflow: elide;
                                     }
+
                                     Text {
                                         text: chat.preview;
                                         color: Palette.text-lo;
@@ -242,12 +252,10 @@ export component ForwardPickerModal inherits Modal {
             }
         }
 
-        if !root.any-visible : VerticalLayout {
+        if !root.any-visible: VerticalLayout {
             alignment: center;
             Text {
-                text: root.forwardable-count == 0
-                    ? @tr("No other chats to forward to.")
-                    : @tr("No chats match your search.");
+                text: root.forwardable-count == 0 ? @tr("No other chats to forward to.") : @tr("No chats match your search.");
                 color: Palette.text-lo;
                 font-size: (11px) * Theme.fs-scale;
                 font-family: Theme.font;

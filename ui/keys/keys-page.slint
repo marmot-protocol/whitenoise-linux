@@ -1,4 +1,4 @@
-import { Palette , Theme} from "../tokens.slint";
+import { Palette, Theme } from "../tokens.slint";
 import { KeyIcon } from "../icons/key-icon.slint";
 import { LockIcon } from "../icons/lock-icon.slint";
 import { CopyIcon } from "../icons/copy-icon.slint";
@@ -38,14 +38,18 @@ export component KeysPage inherits Rectangle {
         viewport-width: self.visible-width;
 
         page := VerticalLayout {
-            padding-left: 28px; padding-right: 28px;
-            padding-top: 16px; padding-bottom: 24px;
+            padding-left: 28px;
+            padding-right: 28px;
+            padding-top: 16px;
+            padding-bottom: 24px;
             spacing: 20px;
 
             PageHeader {
                 title: @tr("Keys & identity");
                 caption: @tr("MLS  ·  YOUR KEY MATERIAL");
-                KeyIcon { stroke: Palette.mint; }
+                KeyIcon {
+                    stroke: Palette.mint;
+                }
             }
 
             Rectangle {
@@ -55,14 +59,19 @@ export component KeysPage inherits Rectangle {
                 border-width: 1px;
                 border-color: Palette.border-2;
                 HorizontalLayout {
-                    padding-left: 18px; padding-right: 18px;
-                    padding-top: 12px; padding-bottom: 12px;
+                    padding-left: 18px;
+                    padding-right: 18px;
+                    padding-top: 12px;
+                    padding-bottom: 12px;
                     spacing: 12px;
                     alignment: start;
                     VerticalLayout {
                         alignment: center;
-                        LockIcon { stroke: Palette.mint; }
+                        LockIcon {
+                            stroke: Palette.mint;
+                        }
                     }
+
                     VerticalLayout {
                         spacing: 4px;
                         alignment: center;
@@ -72,13 +81,17 @@ export component KeysPage inherits Rectangle {
                             font-size: (13px) * Theme.fs-scale;
                             font-weight: 700;
                         }
+
                         Text {
                             text: @tr("Dark Matter never sees your private key. It lives only on this device and any signer you connect.");
                             color: Palette.text-lo;
                             font-size: (11px) * Theme.fs-scale;
                         }
                     }
-                    Rectangle { horizontal-stretch: 1; }
+
+                    Rectangle {
+                        horizontal-stretch: 1;
+                    }
                 }
             }
 
@@ -88,6 +101,7 @@ export component KeysPage inherits Rectangle {
                     label: @tr("IDENTITY");
                     note: "";
                 }
+
                 GroupCard {
                     KVRow {
                         label: @tr("Public key (npub)");
@@ -96,8 +110,13 @@ export component KeysPage inherits Rectangle {
                         show-divider: false;
                         MicroButton {
                             label: @tr("Copy");
-                            CopyIcon { stroke: Palette.text-mid; }
-                            clicked => { root.copy-npub-clicked(); }
+                            CopyIcon {
+                                stroke: Palette.text-mid;
+                            }
+
+                            clicked => {
+                                root.copy-npub-clicked();
+                            }
                         }
                     }
                 }
@@ -107,24 +126,32 @@ export component KeysPage inherits Rectangle {
                 spacing: 10px;
                 SectionHeader {
                     label: @tr("KEY PACKAGES");
-                    note: root.kp-relays.length > 0
-                        ? @tr("(published to your kind-10051 relay list)")
-                        : @tr("(no key-package relays configured)");
+                    note: root.kp-relays.length > 0 ? @tr("(published to your kind-10051 relay list)") : @tr("(no key-package relays configured)");
                     MicroButton {
                         label: root.kp-busy ? @tr("…") : @tr("Refresh");
-                        RefreshIcon { stroke: Palette.text-mid; }
-                        clicked => { if (!root.kp-busy) { root.refresh-clicked(); } }
+                        RefreshIcon {
+                            stroke: Palette.text-mid;
+                        }
+
+                        clicked => {
+                            if (!root.kp-busy) {
+                                root.refresh-clicked();
+                            }
+                        }
                     }
                 }
-                if root.key-packages.length == 0 : Rectangle {
+
+                if root.key-packages.length == 0: Rectangle {
                     height: 60px;
                     border-radius: (8px) * Theme.r-scale;
                     background: Palette.panel-2;
                     border-width: 1px;
                     border-color: Palette.border-2;
                     HorizontalLayout {
-                        padding-left: 16px; padding-right: 16px;
-                        padding-top: 12px; padding-bottom: 12px;
+                        padding-left: 16px;
+                        padding-right: 16px;
+                        padding-top: 12px;
+                        padding-bottom: 12px;
                         spacing: 12px;
                         VerticalLayout {
                             horizontal-stretch: 1;
@@ -135,37 +162,38 @@ export component KeysPage inherits Rectangle {
                                 font-size: (12px) * Theme.fs-scale;
                                 font-weight: 700;
                             }
+
                             Text {
-                                text: root.kp-relays.length > 0
-                                    ? @tr("Publish one so other users can invite you to groups.")
-                                    : @tr("Configure key-package relays first.");
+                                text: root.kp-relays.length > 0 ? @tr("Publish one so other users can invite you to groups.") : @tr("Configure key-package relays first.");
                                 color: Palette.text-lo;
                                 font-size: (11px) * Theme.fs-scale;
                             }
                         }
+
                         VerticalLayout {
                             alignment: center;
                             MicroButton {
                                 label: root.kp-busy ? @tr("Publishing…") : @tr("Publish");
-                                clicked => { if (!root.kp-busy) { root.publish-clicked(); } }
+                                clicked => {
+                                    if (!root.kp-busy) {
+                                        root.publish-clicked();
+                                    }
+                                }
                             }
                         }
                     }
                 }
-                if root.key-packages.length > 0 : GroupCard {
-                    for kp[i] in root.key-packages : KVRow {
+                if root.key-packages.length > 0: GroupCard {
+                    for kp[i] in root.key-packages: KVRow {
                         label: "0x" + kp.key-package-ref;
-                        sublabel: (kp.published-at != "" ? (kp.published-at + " · ") : "")
-                            + (kp.on-relay
-                                ? @tr("{n} relay" | "{n} relays" % kp.relay-count, kp.relay-count)
-                                : @tr("local only"));
+                        sublabel: (kp.published-at != "" ? (kp.published-at + " · ") : "") + (kp.on-relay ? @tr("{n} relay" | "{n} relays" % kp.relay-count, kp.relay-count) : @tr("local only"));
                         value: kp.local ? "LOCAL" : "REMOTE";
                         show-divider: i < root.key-packages.length - 1;
                     }
                 }
             }
 
-            if root.kp-status != "" : Rectangle {
+            if root.kp-status != "": Rectangle {
                 height: 32px;
                 background: Palette.panel-2;
                 border-radius: (6px) * Theme.r-scale;
@@ -187,8 +215,9 @@ export component KeysPage inherits Rectangle {
                     label: @tr("LINKED DEVICES");
                     note: @tr("(other Dark Matter instances signed into this identity)");
                 }
+
                 GroupCard {
-                    for d[i] in root.devices : DeviceRow {
+                    for d[i] in root.devices: DeviceRow {
                         name: d.name;
                         detail: d.detail;
                         status: d.current ? @tr("current") : "";
@@ -205,6 +234,7 @@ export component KeysPage inherits Rectangle {
                     label: @tr("DANGER ZONE");
                     note: "";
                 }
+
                 Rectangle {
                     height: 60px;
                     border-radius: (8px) * Theme.r-scale;
@@ -212,8 +242,10 @@ export component KeysPage inherits Rectangle {
                     border-width: 1px;
                     border-color: Palette.danger-border;
                     HorizontalLayout {
-                        padding-left: 16px; padding-right: 16px;
-                        padding-top: 12px; padding-bottom: 12px;
+                        padding-left: 16px;
+                        padding-right: 16px;
+                        padding-top: 12px;
+                        padding-bottom: 12px;
                         spacing: 12px;
                         alignment: stretch;
                         VerticalLayout {
@@ -226,12 +258,14 @@ export component KeysPage inherits Rectangle {
                                 font-size: (12px) * Theme.fs-scale;
                                 font-weight: 700;
                             }
+
                             Text {
                                 text: @tr("Invalidates the current package and uploads a fresh one to your relays.");
                                 color: Palette.text-lo;
                                 font-size: (11px) * Theme.fs-scale;
                             }
                         }
+
                         VerticalLayout {
                             alignment: center;
                             MicroButton {
@@ -241,8 +275,15 @@ export component KeysPage inherits Rectangle {
                                 hover-bg: Palette.danger-soft-hover;
                                 outline: Palette.danger-border;
                                 hover-outline: Palette.danger-border-hover;
-                                RefreshIcon { stroke: Palette.danger; }
-                                clicked => { if (!root.kp-busy) { root.rotate-clicked(); } }
+                                RefreshIcon {
+                                    stroke: Palette.danger;
+                                }
+
+                                clicked => {
+                                    if (!root.kp-busy) {
+                                        root.rotate-clicked();
+                                    }
+                                }
                             }
                         }
                     }

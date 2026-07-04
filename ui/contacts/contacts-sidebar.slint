@@ -13,9 +13,11 @@ export component ContactsSidebar inherits SidePanel {
     search-placeholder: @tr("Search contacts…");
     show-add: true;
 
-    for c[idx] in root.contacts : ContactListItem {
+    for c[idx] in root.contacts: ContactListItem {
         data: c;
         selected: idx == root.active-contact;
-        clicked => { root.contact-clicked(idx); }
+        clicked => {
+            root.contact-clicked(idx);
+        }
     }
 }

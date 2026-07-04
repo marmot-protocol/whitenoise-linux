@@ -29,17 +29,13 @@ export component StatusBar inherits Rectangle {
                 height: 8px;
                 y: (parent.height - self.height) / 2;
                 border-radius: (4px) * Theme.r-scale;
-                background: root.relaysConnected > 0
-                    ? Palette.mint-dim
-                    : (root.relaysTotal > 0 ? Palette.warning : Palette.text-vlo);
+                background: root.relaysConnected > 0 ? Palette.mint-dim : (root.relaysTotal > 0 ? Palette.warning : Palette.text-vlo);
                 drop-shadow-blur: Theme.hard-shadow ? 0px : 4px;
                 drop-shadow-color: root.relaysConnected > 0 ? Palette.mint-glow : transparent;
             }
 
             Text {
-                text: root.relaysConnected > 0
-                    ? @tr("ONLINE")
-                    : (root.relaysTotal > 0 ? @tr("CONNECTING") : @tr("OFFLINE"));
+                text: root.relaysConnected > 0 ? @tr("ONLINE") : (root.relaysTotal > 0 ? @tr("CONNECTING") : @tr("OFFLINE"));
                 color: Palette.text-hi;
                 font-size: Theme.fs(10px, 14px);
                 font-weight: 700;

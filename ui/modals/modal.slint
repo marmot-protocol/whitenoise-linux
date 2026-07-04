@@ -47,12 +47,9 @@ export component Modal inherits Rectangle {
 
     property <bool> has-footer: root.primary-label != "" || root.secondary-label != "";
     property <length> card-w: root.bare ? root.width : root.card-width;
-    property <length> card-h: root.bare ? root.height
-        : (root.card-height > 0px ? root.card-height : main-column.preferred-height);
+    property <length> card-h: root.bare ? root.height : (root.card-height > 0px ? root.card-height : main-column.preferred-height);
     property <length> card-x: root.bare ? 0px : (root.width - root.card-w) / 2;
-    property <length> card-y: (root.bare ? 0px
-        : (root.v-pos < 0 ? (root.height - root.card-h) / 2 : root.height * root.v-pos))
-        + root.y-offset;
+    property <length> card-y: (root.bare ? 0px : (root.v-pos < 0 ? (root.height - root.card-h) / 2 : root.height * root.v-pos)) + root.y-offset;
 
     // Entrance progress 0 → 1. Defaults to 0; init flips to 1, which animates.
     // Retro snaps in with a punchy short ease; normal glides in slower.
@@ -60,26 +57,37 @@ export component Modal inherits Rectangle {
     property <duration> ease-dur: Theme.motion-fast ? 140ms : 220ms;
     init => {
         self.open = 1;
-        if (root.grab-focus) { esc-scope.focus(); }
+        if (root.grab-focus) {
+            esc-scope.focus();
+        }
     }
 
     opacity: root.open;
-    animate opacity { duration: root.ease-dur; easing: ease-out; }
+    animate opacity {
+        duration: root.ease-dur;
+        easing: ease-out;
+    }
 
     // Slide-up offset: card starts below its final position, animates to 0.
     property <length> y-offset: (1 - root.open) * (Theme.motion-fast ? 32px : 18px);
-    animate y-offset { duration: root.ease-dur; easing: ease-out; }
+    animate y-offset {
+        duration: root.ease-dur;
+        easing: ease-out;
+    }
 
     background: Theme.light && !Theme.retro ? #1F293740 : #00000073;
 
     backdrop-touch := TouchArea {
-        clicked => { root.dismissed(); }
+        clicked => {
+            root.dismissed();
+        }
     }
 
     // Esc dismisses from anywhere — the scope wraps the card so key events
     // rejected by inner inputs bubble up to it.
     esc-scope := FocusScope {
-        width: 100%; height: 100%;
+        width: 100%;
+        height: 100%;
         key-pressed(event) => {
             if (event.text == Key.Escape) {
                 root.dismissed();
@@ -99,16 +107,13 @@ export component Modal inherits Rectangle {
             // hardcoded light/dark pair (that branch left Sketch/Synthwave with a
             // wrong-palette dark card). Flat in retro; a subtle elevated→bg
             // gradient elsewhere reads as a lit card on any palette.
-            background: root.bare ? transparent
-                : (Theme.hard-shadow ? Palette.elevated
-                    : @linear-gradient(180deg, Palette.elevated 0%, Palette.bg 100%));
+            background: root.bare ? transparent : (Theme.hard-shadow ? Palette.elevated : @linear-gradient(180deg, Palette.elevated 0%, Palette.bg 100%));
             border-width: root.bare ? 0px : Theme.border-w;
             border-color: Palette.elevated-border;
             // With no backdrop layers, the shadow alone sells the elevation —
             // wide, soft, and offset down.
             drop-shadow-blur: root.bare ? 0px : (Theme.hard-shadow ? 0px : 56px);
-            drop-shadow-color: root.bare ? transparent
-                : (Theme.hard-shadow ? Palette.shadow : (Theme.light ? #1F293755 : #000000D0));
+            drop-shadow-color: root.bare ? transparent : (Theme.hard-shadow ? Palette.shadow : (Theme.light ? #1F293755 : #000000D0));
             drop-shadow-offset-x: Theme.hard-shadow ? 6px : 0px;
             drop-shadow-offset-y: Theme.hard-shadow ? 6px : 14px;
 
@@ -123,7 +128,7 @@ export component Modal inherits Rectangle {
                 main-column := VerticalLayout {
                     spacing: 0;
 
-                    if root.title != "" : HorizontalLayout {
+                    if root.title != "": HorizontalLayout {
                         padding-left: 24px;
                         padding-right: 18px;
                         padding-top: 20px;
@@ -140,7 +145,8 @@ export component Modal inherits Rectangle {
                                 font-weight: 800;
                                 font-family: Theme.font;
                             }
-                            if root.subtitle != "" : Text {
+
+                            if root.subtitle != "": Text {
                                 text: root.subtitle;
                                 color: Palette.text-lo;
                                 font-size: (11px) * Theme.fs-scale;
@@ -149,7 +155,7 @@ export component Modal inherits Rectangle {
                             }
                         }
 
-                        if root.show-close : VerticalLayout {
+                        if root.show-close: VerticalLayout {
                             alignment: start;
                             Rectangle {
                                 width: 28px;
@@ -165,9 +171,12 @@ export component Modal inherits Rectangle {
                                     horizontal-alignment: center;
                                     vertical-alignment: center;
                                 }
+
                                 header-close := TouchArea {
                                     mouse-cursor: pointer;
-                                    clicked => { root.dismissed(); }
+                                    clicked => {
+                                        root.dismissed();
+                                    }
                                 }
                             }
                         }
@@ -176,15 +185,14 @@ export component Modal inherits Rectangle {
                     VerticalLayout {
                         padding-left: root.bare ? 0px : root.content-padding;
                         padding-right: root.bare ? 0px : root.content-padding;
-                        padding-top: root.bare ? 0px
-                            : (root.title == "" ? root.content-padding : min(root.content-padding, 16px));
+                        padding-top: root.bare ? 0px : (root.title == "" ? root.content-padding : min(root.content-padding, 16px));
                         padding-bottom: root.bare ? 0px : root.content-padding;
                         spacing: 14px;
                         vertical-stretch: 1;
                         @children
                     }
 
-                    if root.status != "" : HorizontalLayout {
+                    if root.status != "": HorizontalLayout {
                         padding-left: 24px;
                         padding-right: 24px;
                         padding-bottom: 14px;
@@ -197,11 +205,11 @@ export component Modal inherits Rectangle {
                         }
                     }
 
-                    if root.has-footer : Rectangle {
+                    if root.has-footer: Rectangle {
                         height: Theme.border-w;
                         background: Theme.retro ? Palette.border : Palette.divider;
                     }
-                    if root.has-footer : Rectangle {
+                    if root.has-footer: Rectangle {
                         height: 62px;
                         background: Theme.retro ? Palette.rail : Palette.panel-2;
                         HorizontalLayout {
@@ -211,22 +219,27 @@ export component Modal inherits Rectangle {
                             alignment: stretch;
                             VerticalLayout {
                                 alignment: center;
-                                if root.secondary-label != "" : Button {
+                                if root.secondary-label != "": Button {
                                     label: root.secondary-label;
                                     focusable: true;
                                     button-height: 34px;
                                     pad-left: 14px;
                                     min-w: 96px;
-                                    clicked => { root.secondary(); root.dismissed(); }
+                                    clicked => {
+                                        root.secondary();
+                                        root.dismissed();
+                                    }
                                 }
                             }
-                            Rectangle { horizontal-stretch: 1; }
+
+                            Rectangle {
+                                horizontal-stretch: 1;
+                            }
+
                             VerticalLayout {
                                 alignment: center;
-                                if root.primary-label != "" : Button {
-                                    label: root.primary-busy && root.primary-busy-label != ""
-                                        ? root.primary-busy-label
-                                        : root.primary-label;
+                                if root.primary-label != "": Button {
+                                    label: root.primary-busy && root.primary-busy-label != "" ? root.primary-busy-label : root.primary-label;
                                     enabled: !root.primary-busy;
                                     focusable: true;
                                     button-height: 34px;
@@ -238,7 +251,9 @@ export component Modal inherits Rectangle {
                                     hover-outline: root.primary-danger ? Palette.danger.brighter(0.12) : Palette.mint-hi;
                                     fg: Palette.bubble-out-fg;
                                     clicked => {
-                                        if (!root.primary-busy) { root.primary(); }
+                                        if (!root.primary-busy) {
+                                            root.primary();
+                                        }
                                     }
                                 }
                             }
@@ -250,23 +265,18 @@ export component Modal inherits Rectangle {
             // Accent "aurora" hairline along the card's top edge — gradient in
             // modern, a solid SNES title strip in retro. Drawn last so it sits
             // above the header; the card's clip rounds its corners.
-            if !root.bare : Rectangle {
-                x: 0; y: 0;
+            if !root.bare: Rectangle {
+                x: 0;
+                y: 0;
                 width: parent.width;
                 height: Theme.retro ? 4px : 2px;
-                background: Theme.retro ? Palette.mint
-                    : @linear-gradient(90deg,
-                        transparent 0%,
-                        Palette.mint 28%,
-                        Palette.mint-hi 50%,
-                        Palette.mint 72%,
-                        transparent 100%);
+                background: Theme.retro ? Palette.mint : @linear-gradient(90deg, transparent 0%, Palette.mint 28%, Palette.mint-hi 50%, Palette.mint 72%, transparent 100%);
             }
         }
     }
 
     // Floating close button for bare (lightbox) mode, top-right of the window.
-    if root.bare && root.show-close : Rectangle {
+    if root.bare && root.show-close: Rectangle {
         x: parent.width - self.width - 24px;
         y: 24px;
         width: 40px;
@@ -286,9 +296,12 @@ export component Modal inherits Rectangle {
             horizontal-alignment: center;
             vertical-alignment: center;
         }
+
         bare-close := TouchArea {
             mouse-cursor: pointer;
-            clicked => { root.dismissed(); }
+            clicked => {
+                root.dismissed();
+            }
         }
     }
 }
@@ -318,10 +331,12 @@ export component ModalField inherits VerticalLayout {
     spacing: 7px;
 
     init => {
-        if (root.autofocus) { inner.set-cursor(0); }
+        if (root.autofocus) {
+            inner.set-cursor(0);
+        }
     }
 
-    if root.label != "" : Text {
+    if root.label != "": Text {
         text: root.label;
         color: Palette.text-mid;
         font-size: (9px) * Theme.fs-scale;
@@ -338,7 +353,10 @@ export component ModalField inherits VerticalLayout {
         border-color: inner.has-focus ? Palette.mint : Palette.field-border;
         drop-shadow-blur: inner.has-focus && Theme.focus-glow ? 10px : 0px;
         drop-shadow-color: inner.has-focus && Theme.focus-glow ? Palette.mint-glow : transparent;
-        animate border-color { duration: 120ms; easing: ease-out; }
+        animate border-color {
+            duration: 120ms;
+            easing: ease-out;
+        }
 
         HorizontalLayout {
             padding-left: 14px;
@@ -356,12 +374,20 @@ export component ModalField inherits VerticalLayout {
                 font-size: Theme.fsr(12px, 14px);
                 fg: Palette.text-hi;
                 placeholder-color: Palette.text-vlo;
-                submit => { root.submitted(); }
+                submit => {
+                    root.submitted();
+                }
                 capture-nav: root.capture-nav;
                 nav-tab-commits: false;
-                nav(delta) => { root.nav(delta); }
-                commit-mention => { root.submitted(); }
-                dismiss-mention => { root.nav-dismissed(); }
+                nav(delta) => {
+                    root.nav(delta);
+                }
+                commit-mention => {
+                    root.submitted();
+                }
+                dismiss-mention => {
+                    root.nav-dismissed();
+                }
             }
         }
     }

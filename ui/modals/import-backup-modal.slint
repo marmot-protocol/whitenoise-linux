@@ -20,13 +20,13 @@ export component ImportBackupModal inherits Modal {
 
     card-width: 460px;
     title: @tr("Import backup");
-    subtitle: root.restore-mode
-        ? @tr("Restore everything from an encrypted backup. Use the password the backup was created with.")
-        : @tr("Merge the accounts from an encrypted backup into this install. Use the password the backup was created with.");
+    subtitle: root.restore-mode ? @tr("Restore everything from an encrypted backup. Use the password the backup was created with.") : @tr("Merge the accounts from an encrypted backup into this install. Use the password the backup was created with.");
     secondary-label: @tr("Cancel");
     primary-label: root.restore-mode ? @tr("Restore") : @tr("Import");
     primary-busy-label: root.restore-mode ? @tr("Restoring…") : @tr("Importing…");
-    primary => { root.import(root.password-text); }
+    primary => {
+        root.import(root.password-text);
+    }
 
     // File chooser row: a button plus the chosen filename.
     VerticalLayout {
@@ -39,14 +39,18 @@ export component ImportBackupModal inherits Modal {
             font-family: Theme.font;
             letter-spacing: 1.6px;
         }
+
         HorizontalLayout {
             spacing: 10px;
             Button {
                 label: @tr("Choose file…");
                 button-height: 38px;
                 min-w: 120px;
-                clicked => { root.pick-file(); }
+                clicked => {
+                    root.pick-file();
+                }
             }
+
             Rectangle {
                 horizontal-stretch: 1;
                 Text {
@@ -68,6 +72,8 @@ export component ImportBackupModal inherits Modal {
         text <=> root.password-text;
         password: true;
         autofocus: true;
-        submitted => { root.import(root.password-text); }
+        submitted => {
+            root.import(root.password-text);
+        }
     }
 }

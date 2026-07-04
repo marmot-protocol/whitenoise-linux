@@ -31,7 +31,9 @@ export component EmojiPicker inherits Rectangle {
 
     // Backdrop — invisible but eats clicks for dismissal.
     TouchArea {
-        clicked => { root.dismissed(); }
+        clicked => {
+            root.dismissed();
+        }
     }
 
     // Clamp the popover inside the window with a small inset.
@@ -42,7 +44,9 @@ export component EmojiPicker inherits Rectangle {
     // Open animation. `opened` flips true right after mount so the bound
     // properties animate from their pre-open values to the final ones.
     property <bool> opened: false;
-    init => { root.opened = true; }
+    init => {
+        root.opened = true;
+    }
 
     panel := Rectangle {
         x: root.px;
@@ -51,8 +55,14 @@ export component EmojiPicker inherits Rectangle {
         height: root.panel-h;
         opacity: root.opened ? 1.0 : 0.0;
         background: Palette.panel;
-        animate opacity { duration: 140ms; easing: ease-out; }
-        animate y { duration: 140ms; easing: ease-out; }
+        animate opacity {
+            duration: 140ms;
+            easing: ease-out;
+        }
+        animate y {
+            duration: 140ms;
+            easing: ease-out;
+        }
         border-radius: (8px) * Theme.r-scale;
         border-width: 1px;
         border-color: Palette.border;
@@ -69,83 +79,87 @@ export component EmojiPicker inherits Rectangle {
         // TouchArea got a chance.
         TouchArea {
 
-        VerticalLayout {
-            padding: 8px;
-            spacing: 8px;
+            VerticalLayout {
+                padding: 8px;
+                spacing: 8px;
 
-            // ── Search bar ─────────────────────────────────────────────
+                // ── Search bar ─────────────────────────────────────────────
             Rectangle {
-                height: 28px;
-                background: Palette.bg;
-                border-radius: (5px) * Theme.r-scale;
-                border-width: 1px;
-                border-color: search.has-focus ? Palette.mint-dim : Palette.border-2;
-                animate border-color { duration: 140ms; easing: ease-out; }
-                HorizontalLayout {
-                    padding-left: 8px; padding-right: 8px;
-                    spacing: 6px;
-                    search := LineInput {
-                        horizontal-stretch: 1;
-                        text <=> root.query;
-                        placeholder: @tr("search…");
-                        fg: Palette.text-hi;
-                        placeholder-color: Palette.text-lo;
+                    height: 28px;
+                    background: Palette.bg;
+                    border-radius: (5px) * Theme.r-scale;
+                    border-width: 1px;
+                    border-color: search.has-focus ? Palette.mint-dim : Palette.border-2;
+                    animate border-color {
+                        duration: 140ms;
+                        easing: ease-out;
+                    }
+                    HorizontalLayout {
+                        padding-left: 8px;
+                        padding-right: 8px;
+                        spacing: 6px;
+                        search := LineInput {
+                            horizontal-stretch: 1;
+                            text <=> root.query;
+                            placeholder: @tr("search…");
+                            fg: Palette.text-hi;
+                            placeholder-color: Palette.text-lo;
                         // LineInput multiplies by fs-scale internally.
                         font-size: 12px;
+                        }
                     }
                 }
-            }
 
-            // ── Grid ───────────────────────────────────────────────────
+                // ── Grid ───────────────────────────────────────────────────
             grid-frame := Rectangle {
-                vertical-stretch: 1;
-                background: Palette.bg;
-                border-radius: (5px) * Theme.r-scale;
-                border-width: 1px;
-                border-color: Palette.border-2;
-                clip: true;
+                    vertical-stretch: 1;
+                    background: Palette.bg;
+                    border-radius: (5px) * Theme.r-scale;
+                    border-width: 1px;
+                    border-color: Palette.border-2;
+                    clip: true;
 
-                property <int> total: emoji-list.length;
-                property <int> total-rows: (self.total + root.cols - 1) / root.cols;
-                property <length> content-h: self.total-rows * root.row-h - root.cell-spacing + 2 * root.grid-pad;
+                    property <int> total: emoji-list.length;
+                    property <int> total-rows: (self.total + root.cols - 1) / root.cols;
+                    property <length> content-h: self.total-rows * root.row-h - root.cell-spacing + 2 * root.grid-pad;
 
-                // Fixed row pool — enough to cover the popover height plus
+                    // Fixed row pool — enough to cover the popover height plus
                 // an overscan margin. row-h≈32, panel-grid≈220 → ~7 rows
                 // visible. 12 covers it with headroom.
                 property <int> pool-rows: 12;
 
-                scroll := CypherScroll {
-                    width: parent.width;
-                    height: parent.height;
-                    viewport-width: self.width;
-                    viewport-height: grid-frame.content-h;
+                    scroll := CypherScroll {
+                        width: parent.width;
+                        height: parent.height;
+                        viewport-width: self.width;
+                        viewport-height: grid-frame.content-h;
 
-                    property <int> first-row: max(0, floor((-self.viewport-y - root.grid-pad) / root.row-h));
+                        property <int> first-row: max(0, floor((-self.viewport-y - root.grid-pad) / root.row-h));
 
-                    for r[idx] in grid-frame.pool-rows : row := Rectangle {
-                        property <int> row-index: scroll.first-row + idx;
-                        property <bool> row-active: self.row-index >= 0 && self.row-index < grid-frame.total-rows;
+                        for r[idx] in grid-frame.pool-rows: row := Rectangle {
+                            property <int> row-index: scroll.first-row + idx;
+                            property <bool> row-active: self.row-index >= 0 && self.row-index < grid-frame.total-rows;
 
-                        x: root.grid-pad;
-                        y: root.grid-pad + self.row-index * root.row-h;
-                        width: parent.width - 2 * root.grid-pad;
-                        height: root.cell-size;
-                        visible: self.row-active;
+                            x: root.grid-pad;
+                            y: root.grid-pad + self.row-index * root.row-h;
+                            width: parent.width - 2 * root.grid-pad;
+                            height: root.cell-size;
+                            visible: self.row-active;
 
-                        if row.row-active : Rectangle {
-                            width: 100%;
-                            height: 100%;
-                            for c[ci] in root.cols : cell-slot := Rectangle {
-                                property <int> flat-idx: row.row-index * root.cols + ci;
-                                property <bool> active: self.flat-idx < grid-frame.total;
+                            if row.row-active: Rectangle {
+                                width: 100%;
+                                height: 100%;
+                                for c[ci] in root.cols: cell-slot := Rectangle {
+                                    property <int> flat-idx: row.row-index * root.cols + ci;
+                                    property <bool> active: self.flat-idx < grid-frame.total;
 
-                                x: ci * (root.cell-size + root.cell-spacing);
-                                y: 0;
-                                width: root.cell-size;
-                                height: root.cell-size;
-                                visible: self.active;
+                                    x: ci * (root.cell-size + root.cell-spacing);
+                                    y: 0;
+                                    width: root.cell-size;
+                                    height: root.cell-size;
+                                    visible: self.active;
 
-                                // Always-mounted background + image + cell
+                                    // Always-mounted background + image + cell
                                 // TouchArea. `if`-guarded mounting used to
                                 // race the first user click — by the time
                                 // the inner Rectangle had instantiated, the
@@ -154,53 +168,55 @@ export component EmojiPicker inherits Rectangle {
                                 // Keeping everything live with `visible` and
                                 // `enabled` gating fixes that.
                                 Rectangle {
-                                    width: 100%;
-                                    height: 100%;
-                                    visible: cell-slot.active;
-                                    border-radius: (4px) * Theme.r-scale;
-                                    background: cell.has-hover ? Palette.hover : transparent;
-
-                                    Image {
-                                        x: (parent.width - self.width) / 2;
-                                        y: (parent.height - self.height) / 2;
+                                        width: 100%;
+                                        height: 100%;
                                         visible: cell-slot.active;
-                                        source: root.sprite;
-                                        source-clip-x: cell-slot.active ? emoji-list[cell-slot.flat-idx].clip-x : 0;
-                                        source-clip-y: cell-slot.active ? emoji-list[cell-slot.flat-idx].clip-y : 0;
-                                        source-clip-width: root.tile;
-                                        source-clip-height: root.tile;
+                                        border-radius: (4px) * Theme.r-scale;
+                                        background: cell.has-hover ? Palette.hover : transparent;
+
+                                        Image {
+                                            x: (parent.width - self.width) / 2;
+                                            y: (parent.height - self.height) / 2;
+                                            visible: cell-slot.active;
+                                            source: root.sprite;
+                                            source-clip-x: cell-slot.active ? emoji-list[cell-slot.flat-idx].clip-x : 0;
+                                            source-clip-y: cell-slot.active ? emoji-list[cell-slot.flat-idx].clip-y : 0;
+                                            source-clip-width: root.tile;
+                                            source-clip-height: root.tile;
                                         // Slight pop on hover so the glyph responds
                                         // along with the cell highlight.
                                         width: cell.has-hover ? 26px : 22px;
-                                        height: cell.has-hover ? 26px : 22px;
-                                        animate width, height { duration: 80ms; easing: ease-out; }
-                                        image-fit: contain;
-                                    }
-                                    cell := TouchArea {
-                                        enabled: cell-slot.active;
-                                        clicked => {
-                                            if (cell-slot.active) {
-                                                root.picked(emoji-list[cell-slot.flat-idx].emoji);
+                                            height: cell.has-hover ? 26px : 22px;
+                                            animate width, height {
+                                                duration: 80ms;
+                                                easing: ease-out;
+                                            }
+                                            image-fit: contain;
+                                        }
+
+                                        cell := TouchArea {
+                                            enabled: cell-slot.active;
+                                            clicked => {
+                                                if (cell-slot.active) {
+                                                    root.picked(emoji-list[cell-slot.flat-idx].emoji);
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
                         }
-                    }
 
-                    if grid-frame.total == 0 : Text {
-                        x: (parent.width - self.width) / 2;
-                        y: root.grid-pad;
-                        text: root.query == ""
-                            ? @tr("no matches")
-                            : @tr("no matches for \"{}\"", root.query);
-                        color: Palette.text-lo;
-                        font-size: (11px) * Theme.fs-scale;
+                        if grid-frame.total == 0: Text {
+                            x: (parent.width - self.width) / 2;
+                            y: root.grid-pad;
+                            text: root.query == "" ? @tr("no matches") : @tr("no matches for \"{}\"", root.query);
+                            color: Palette.text-lo;
+                            font-size: (11px) * Theme.fs-scale;
+                        }
                     }
                 }
             }
-        }
         } // close swallow TouchArea wrapping VerticalLayout
 
         // Esc dismiss.

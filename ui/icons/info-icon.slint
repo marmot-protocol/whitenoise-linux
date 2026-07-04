@@ -1,17 +1,23 @@
-import { Palette , Theme} from "../tokens.slint";
+import { Palette, Theme } from "../tokens.slint";
 
 export component InfoIcon inherits Rectangle {
     in property <color> stroke: Palette.text-mid;
     in property <length> size: 16px;
-    width: root.size; height: root.size;
+    width: root.size;
+    height: root.size;
     Rectangle {
-        width: root.size; height: root.size;
+        width: root.size;
+        height: root.size;
         border-radius: root.size / 2;
-        border-width: 1.4px; border-color: root.stroke;
+        border-width: 1.4px;
+        border-color: root.stroke;
     }
+
     Text {
-        text: "i"; color: root.stroke;
-        font-size: (11px) * Theme.fs-scale; font-weight: 600;
+        text: "i";
+        color: root.stroke;
+        font-size: (11px) * Theme.fs-scale;
+        font-weight: 600;
         font-family: "Space Grotesk";
         horizontal-alignment: center;
         vertical-alignment: center;

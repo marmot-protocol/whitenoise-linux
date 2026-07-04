@@ -56,7 +56,7 @@ export component MessagesArea inherits Rectangle {
     // coords, write the next round-robin slot, and bump that slot's `gen` to
     // fire. Each layer binds to its own slot, so a new burst STACKS instead of
     // interrupting the ones already playing (Telegram-style). 8 concurrent.
-    property <[EffectBurst]> bursts: [{}, {}, {}, {}, {}, {}, {}, {}];
+    property <[EffectBurst]> bursts: [{ }, { }, { }, { }, { }, { }, { }, { }];
     property <int> burst-next: 0;
     function stage-effect(eid: int, cx: int, cy: int, ax: length, ay: length, w: length, h: length) {
         root.bursts[root.burst-next] = {
@@ -73,21 +73,21 @@ export component MessagesArea inherits Rectangle {
         root.burst-next = root.burst-next + 1 < 8 ? root.burst-next + 1 : 0;
     }
     // Subtle vertical lift — keeps the chat canvas from feeling flat.
-    background: Theme.retro
-        ? Palette.bg
-        : @linear-gradient(180deg, Palette.canvas-top 0%, Palette.bg 28%);
+    background: Theme.retro ? Palette.bg : @linear-gradient(180deg, Palette.canvas-top 0%, Palette.bg 28%);
 
     // Hand-drawn paper backdrop: faint cute shapes scattered behind the message
     // list. Declared before `cs` so it sits behind the (transparent) scroll;
     // fixed to the viewport, so it reads as paper rather than scrolling content.
-    if Theme.paper-doodles : PaperDoodles {
-        x: 0; y: 0;
+    if Theme.paper-doodles: PaperDoodles {
+        x: 0;
+        y: 0;
         width: parent.width;
         height: parent.height;
     }
     // Synthwave neon grid + sunset backdrop, same fixed-to-viewport placement.
-    if Theme.synth-grid : SynthGrid {
-        x: 0; y: 0;
+    if Theme.synth-grid: SynthGrid {
+        x: 0;
+        y: 0;
         width: parent.width;
         height: parent.height;
     }
@@ -137,8 +137,10 @@ export component MessagesArea inherits Rectangle {
 
         inner := VerticalLayout {
             width: parent.width;
-            padding-left: 18px; padding-right: 18px;
-            padding-top: 18px; padding-bottom: 18px;
+            padding-left: 18px;
+            padding-right: 18px;
+            padding-top: 18px;
+            padding-bottom: 18px;
             // Tight within a group; Rust adds `gap-before` between groups.
             spacing: 3px;
 
@@ -172,6 +174,7 @@ export component MessagesArea inherits Rectangle {
                         vertical-alignment: center;
                         horizontal-alignment: center;
                     }
+
                     pill-touch := TouchArea {
                         clicked => {
                             root.anchor-h = inner.preferred-height;
@@ -182,12 +185,16 @@ export component MessagesArea inherits Rectangle {
                 }
             }
 
-            for msg in root.messages : VerticalLayout {
+            for msg in root.messages: VerticalLayout {
                 spacing: 0;
                 // Date divider above the first message of each local day, so
                 // multi-day history stays orientable (bubbles only stamp HH:MM).
-                if msg.day-label != "" : SessionDivider { label: msg.day-label; }
-                if msg.gap-before > 0px : Rectangle { height: msg.gap-before; }
+                if msg.day-label != "": SessionDivider {
+                    label: msg.day-label;
+                }
+                if msg.gap-before > 0px: Rectangle {
+                    height: msg.gap-before;
+                }
 
                 // One skin slot per message. Theme.skin-message picks the render
                 // body (skin 0 = standard incoming/outgoing bubble rows).
@@ -197,19 +204,45 @@ export component MessagesArea inherits Rectangle {
                     outgoing-on-right: root.outgoing-on-right;
                     my-picture: root.my-picture;
                     my-has-picture: root.my-has-picture;
-                    react(id, emoji) => { root.react(id, emoji); }
-                    unreact(id) => { root.unreact(id); }
-                    request-picker(id, ax, ay) => { root.request-picker(id, ax, ay); }
-                    request-reply(id, preview, author) => { root.request-reply(id, preview, author); }
-                    request-edit(id, current) => { root.request-edit(id, current); }
-                    request-context-menu(id, text, author, can-edit, ax, ay) => { root.request-context-menu(id, text, author, can-edit, ax, ay); }
-                    show-history(id) => { root.show-history(id); }
-                    retry(id) => { root.retry(id); }
-                    attachment-clicked(id) => { root.attachment-clicked(id); }
-                    audio-play-clicked(id) => { root.audio-play-clicked(id); }
-                    audio-seek-clicked(id, fraction) => { root.audio-seek-clicked(id, fraction); }
-                    album-cell-clicked(key) => { root.album-cell-clicked(key); }
-                    play-effect(eid, cx, cy, ax, ay, w, h) => { root.stage-effect(eid, cx, cy, ax, ay, w, h); }
+                    react(id, emoji) => {
+                        root.react(id, emoji);
+                    }
+                    unreact(id) => {
+                        root.unreact(id);
+                    }
+                    request-picker(id, ax, ay) => {
+                        root.request-picker(id, ax, ay);
+                    }
+                    request-reply(id, preview, author) => {
+                        root.request-reply(id, preview, author);
+                    }
+                    request-edit(id, current) => {
+                        root.request-edit(id, current);
+                    }
+                    request-context-menu(id, text, author, can-edit, ax, ay) => {
+                        root.request-context-menu(id, text, author, can-edit, ax, ay);
+                    }
+                    show-history(id) => {
+                        root.show-history(id);
+                    }
+                    retry(id) => {
+                        root.retry(id);
+                    }
+                    attachment-clicked(id) => {
+                        root.attachment-clicked(id);
+                    }
+                    audio-play-clicked(id) => {
+                        root.audio-play-clicked(id);
+                    }
+                    audio-seek-clicked(id, fraction) => {
+                        root.audio-seek-clicked(id, fraction);
+                    }
+                    album-cell-clicked(key) => {
+                        root.album-cell-clicked(key);
+                    }
+                    play-effect(eid, cx, cy, ax, ay, w, h) => {
+                        root.stage-effect(eid, cx, cy, ax, ay, w, h);
+                    }
                 }
             }
         }
@@ -219,13 +252,14 @@ export component MessagesArea inherits Rectangle {
     // jump-pill. Fills the viewport and clips so particles don't spill into the
     // header / composer. Transparent to input (no TouchArea).
     fx-clip := Rectangle {
-        x: 0; y: 0;
+        x: 0;
+        y: 0;
         width: parent.width;
         height: parent.height;
         clip: true;
         // One layer per pool slot. Only the slot whose `gen` changed re-fires;
         // the rest keep playing — so bursts stack instead of interrupting.
-        for b in root.bursts : MessageEffectLayer {
+        for b in root.bursts: MessageEffectLayer {
             x: b.x;
             y: b.y;
             width: b.w;
@@ -258,7 +292,10 @@ export component MessagesArea inherits Rectangle {
         drop-shadow-offset-x: Theme.hard-shadow ? 3px : 0px;
         drop-shadow-offset-y: Theme.hard-shadow ? 3px : 6px;
         opacity: root.at-bottom ? 0 : 1;
-        animate opacity { duration: 160ms; easing: ease-out; }
+        animate opacity {
+            duration: 160ms;
+            easing: ease-out;
+        }
         animate background { duration: 100ms; }
 
         ChevronDownIcon {
@@ -272,7 +309,9 @@ export component MessagesArea inherits Rectangle {
         jump-touch := TouchArea {
             enabled: !root.at-bottom;
             mouse-cursor: pointer;
-            clicked => { cs.viewport-y = root.bottom-y; }
+            clicked => {
+                cs.viewport-y = root.bottom-y;
+            }
         }
     }
 }

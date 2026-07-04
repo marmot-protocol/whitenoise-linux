@@ -9,7 +9,10 @@ export component GroupMembersHeader inherits HorizontalLayout {
     height: 28px;
     spacing: 8px;
     alignment: stretch;
-    PeopleIcon { stroke: Palette.mint; }
+    PeopleIcon {
+        stroke: Palette.mint;
+    }
+
     VerticalLayout {
         horizontal-stretch: 1;
         spacing: 2px;
@@ -20,6 +23,7 @@ export component GroupMembersHeader inherits HorizontalLayout {
             font-size: (13px) * Theme.fs-scale;
             font-weight: 700;
         }
+
         Text {
             text: @tr("1 in this group" | "{n} in this group" % root.member-count);
             color: Palette.text-lo;
@@ -27,9 +31,13 @@ export component GroupMembersHeader inherits HorizontalLayout {
             letter-spacing: 0.8px;
         }
     }
+
     TouchArea {
-        width: 28px; height: 28px;
-        clicked => { root.close-clicked(); }
+        width: 28px;
+        height: 28px;
+        clicked => {
+            root.close-clicked();
+        }
         Text {
             text: "✕";
             color: Palette.text-mid;

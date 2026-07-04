@@ -38,7 +38,7 @@ export component MessageView inherits VerticalLayout {
     callback play-effect(int, int, int, length, length, length, length);
 
     // ── Skin 0: standard bubble rows ──
-    if Theme.skin-message == 0 && !root.msg.outgoing : IncomingRow {
+    if Theme.skin-message == 0 && !root.msg.outgoing: IncomingRow {
         row-w: root.row-w;
         text: root.msg.text;
         lines: root.msg.lines;
@@ -88,20 +88,42 @@ export component MessageView inherits VerticalLayout {
         edited: root.msg.edited;
         edit-count: root.msg.edit-count;
         deleted: root.msg.deleted;
-        react(id, emoji) => { root.react(id, emoji); }
-        unreact(id) => { root.unreact(id); }
-        request-picker(id, ax, ay) => { root.request-picker(id, ax, ay); }
-        request-reply(id, preview, author) => { root.request-reply(id, preview, author); }
-        request-context-menu(id, t, author, ce, ax, ay) => { root.request-context-menu(id, t, author, ce, ax, ay); }
-        show-history(id) => { root.show-history(id); }
-        attachment-clicked(id) => { root.attachment-clicked(id); }
-        audio-play-clicked(id) => { root.audio-play-clicked(id); }
-        audio-seek-clicked(id, fraction) => { root.audio-seek-clicked(id, fraction); }
-        album-cell-clicked(key) => { root.album-cell-clicked(key); }
-        play-effect(eid, cx, cy, ax, ay, w, h) => { root.play-effect(eid, cx, cy, ax, ay, w, h); }
+        react(id, emoji) => {
+            root.react(id, emoji);
+        }
+        unreact(id) => {
+            root.unreact(id);
+        }
+        request-picker(id, ax, ay) => {
+            root.request-picker(id, ax, ay);
+        }
+        request-reply(id, preview, author) => {
+            root.request-reply(id, preview, author);
+        }
+        request-context-menu(id, t, author, ce, ax, ay) => {
+            root.request-context-menu(id, t, author, ce, ax, ay);
+        }
+        show-history(id) => {
+            root.show-history(id);
+        }
+        attachment-clicked(id) => {
+            root.attachment-clicked(id);
+        }
+        audio-play-clicked(id) => {
+            root.audio-play-clicked(id);
+        }
+        audio-seek-clicked(id, fraction) => {
+            root.audio-seek-clicked(id, fraction);
+        }
+        album-cell-clicked(key) => {
+            root.album-cell-clicked(key);
+        }
+        play-effect(eid, cx, cy, ax, ay, w, h) => {
+            root.play-effect(eid, cx, cy, ax, ay, w, h);
+        }
     }
 
-    if Theme.skin-message == 0 && root.msg.outgoing : OutgoingRow {
+    if Theme.skin-message == 0 && root.msg.outgoing: OutgoingRow {
         align-right: root.outgoing-on-right;
         row-w: root.row-w;
         text: root.msg.text;
@@ -153,23 +175,49 @@ export component MessageView inherits VerticalLayout {
         edit-count: root.msg.edit-count;
         can-edit: root.msg.can-edit;
         deleted: root.msg.deleted;
-        album-cell-clicked(key) => { root.album-cell-clicked(key); }
-        react(id, emoji) => { root.react(id, emoji); }
-        unreact(id) => { root.unreact(id); }
-        request-picker(id, ax, ay) => { root.request-picker(id, ax, ay); }
-        request-reply(id, preview, author) => { root.request-reply(id, preview, author); }
-        request-edit(id, current) => { root.request-edit(id, current); }
-        request-context-menu(id, t, author, ce, ax, ay) => { root.request-context-menu(id, t, author, ce, ax, ay); }
-        show-history(id) => { root.show-history(id); }
-        retry => { root.retry(root.msg.message-id); }
-        attachment-clicked(id) => { root.attachment-clicked(id); }
-        audio-play-clicked(id) => { root.audio-play-clicked(id); }
-        audio-seek-clicked(id, fraction) => { root.audio-seek-clicked(id, fraction); }
-        play-effect(eid, cx, cy, ax, ay, w, h) => { root.play-effect(eid, cx, cy, ax, ay, w, h); }
+        album-cell-clicked(key) => {
+            root.album-cell-clicked(key);
+        }
+        react(id, emoji) => {
+            root.react(id, emoji);
+        }
+        unreact(id) => {
+            root.unreact(id);
+        }
+        request-picker(id, ax, ay) => {
+            root.request-picker(id, ax, ay);
+        }
+        request-reply(id, preview, author) => {
+            root.request-reply(id, preview, author);
+        }
+        request-edit(id, current) => {
+            root.request-edit(id, current);
+        }
+        request-context-menu(id, t, author, ce, ax, ay) => {
+            root.request-context-menu(id, t, author, ce, ax, ay);
+        }
+        show-history(id) => {
+            root.show-history(id);
+        }
+        retry => {
+            root.retry(root.msg.message-id);
+        }
+        attachment-clicked(id) => {
+            root.attachment-clicked(id);
+        }
+        audio-play-clicked(id) => {
+            root.audio-play-clicked(id);
+        }
+        audio-seek-clicked(id, fraction) => {
+            root.audio-seek-clicked(id, fraction);
+        }
+        play-effect(eid, cx, cy, ax, ay, w, h) => {
+            root.play-effect(eid, cx, cy, ax, ay, w, h);
+        }
     }
 
     // ── Skin 1: terminal line — `<sender> message text` (no bubbles/avatars) ──
-    if Theme.skin-message == 1 : line := Rectangle {
+    if Theme.skin-message == 1: line := Rectangle {
         // Attachment state. Albums carry their cells in `album`; single
         // attachments use the `att-*` fields. A line with media routes its tap to
         // the same viewer/slideshow the bubble uses (attachment-clicked /
@@ -177,11 +225,7 @@ export component MessageView inherits VerticalLayout {
         property <bool> is-album: root.msg.album.length > 0;
         property <bool> has-media: self.is-album || root.msg.has-attachment;
         property <string> media-label:
-            self.is-album ? ("[" + root.msg.album.length + " images — click to view]")
-            : (root.msg.att-is-image ? ("[image: " + root.msg.att-name + " — click to view]")
-            : (root.msg.att-is-video ? ("[video: " + root.msg.att-name + " — click to play]")
-            : (root.msg.att-is-audio ? ("[audio: " + root.msg.att-name + "]")
-            : ("[file: " + root.msg.att-name + "]"))));
+            self.is-album ? ("[" + root.msg.album.length + " images — click to view]") : (root.msg.att-is-image ? ("[image: " + root.msg.att-name + " — click to view]") : (root.msg.att-is-video ? ("[video: " + root.msg.att-name + " — click to play]") : (root.msg.att-is-audio ? ("[audio: " + root.msg.att-name + "]") : ("[file: " + root.msg.att-name + "]"))));
 
         background: term-touch.has-hover ? Palette.hover : transparent;
         HorizontalLayout {
@@ -192,20 +236,19 @@ export component MessageView inherits VerticalLayout {
             spacing: 6px;
             alignment: start;
             Text {
-                text: "<" + (root.msg.outgoing
-                    ? "you"
-                    : (root.msg.sender-name == "" ? root.msg.av-initials : root.msg.sender-name)) + ">";
+                text: "<" + (root.msg.outgoing ? "you" : (root.msg.sender-name == "" ? root.msg.av-initials : root.msg.sender-name)) + ">";
                 color: root.msg.outgoing ? Palette.mint-dim : Palette.mint;
                 font-family: Theme.font;
                 font-size: 13px * Theme.fs-scale;
                 font-weight: 700;
                 vertical-alignment: top;
             }
+
             VerticalLayout {
                 horizontal-stretch: 1;
                 alignment: start;
                 spacing: 1px;
-                if root.msg.deleted : Text {
+                if root.msg.deleted: Text {
                     text: @tr("This message was deleted");
                     color: Palette.text-mid;
                     font-family: Theme.font;
@@ -213,7 +256,7 @@ export component MessageView inherits VerticalLayout {
                     font-italic: true;
                     wrap: word-wrap;
                 }
-                if root.msg.text != "" && !root.msg.deleted : Text {
+                if root.msg.text != "" && !root.msg.deleted: Text {
                     text: root.msg.text;
                     color: root.msg.failed ? Palette.danger : Palette.text-hi;
                     font-family: Theme.font;
@@ -222,7 +265,7 @@ export component MessageView inherits VerticalLayout {
                 }
                 // Accent-colored, clickable attachment label (the whole line is
                 // the click target — see term-touch below).
-                if line.has-media && !root.msg.deleted : Text {
+                if line.has-media && !root.msg.deleted: Text {
                     text: line.media-label;
                     color: Palette.mint;
                     font-family: Theme.font;
@@ -231,7 +274,8 @@ export component MessageView inherits VerticalLayout {
                     wrap: word-wrap;
                 }
             }
-            if root.msg.stamp != "" : Rectangle {
+
+            if root.msg.stamp != "": Rectangle {
                 width: term-stamp.preferred-width;
                 term-stamp := Text {
                     text: root.msg.stamp;
@@ -255,7 +299,8 @@ export component MessageView inherits VerticalLayout {
                         }
                     }
                 }
-                if term-stamp-touch.has-hover && root.msg.stamp-full != "" : Tooltip {
+
+                if term-stamp-touch.has-hover && root.msg.stamp-full != "": Tooltip {
                     x: parent.width - self.width;
                     y: -self.height - 4px;
                     label: root.msg.stamp-full;

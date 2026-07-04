@@ -14,13 +14,17 @@ export component NicknameModal inherits Modal {
     subtitle: @tr("A private name for {}. Only you see it — leave empty to use their published name.", root.contact-name);
     secondary-label: @tr("Cancel");
     primary-label: @tr("Save");
-    primary => { root.save(root.nickname-text); }
+    primary => {
+        root.save(root.nickname-text);
+    }
 
     ModalField {
         label: @tr("NICKNAME");
         placeholder: root.contact-name;
         text <=> root.nickname-text;
         autofocus: true;
-        submitted => { root.save(root.nickname-text); }
+        submitted => {
+            root.save(root.nickname-text);
+        }
     }
 }

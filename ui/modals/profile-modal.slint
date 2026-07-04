@@ -38,14 +38,18 @@ export component ProfileModal inherits Modal {
     primary-label: root.is-self || root.is-contact ? "" : @tr("Add contact");
     primary-busy-label: @tr("Adding…");
     primary-busy: root.adding;
-    primary => { root.add-contact(); }
+    primary => {
+        root.add-contact();
+    }
 
     // Transient "Copied ✓" feedback on the npub chip.
     property <bool> copied: false;
     copy-reset := Timer {
         interval: 1.4s;
         running: root.copied;
-        triggered => { root.copied = false; }
+        triggered => {
+            root.copied = false;
+        }
     }
 
     // Skeleton pulse while the relay fetch is in flight.
@@ -53,8 +57,11 @@ export component ProfileModal inherits Modal {
     pulse-timer := Timer {
         interval: 750ms;
         running: root.loading;
-        triggered => { root.pulse = !root.pulse; }
+        triggered => {
+            root.pulse = !root.pulse;
+        }
     }
+
     property <float> skeleton-opacity: root.pulse ? 0.35 : 0.85;
 
     VerticalLayout {
@@ -63,17 +70,18 @@ export component ProfileModal inherits Modal {
         // ── Banner — the user's avatar gradient, full bleed ─────────────
         banner := Rectangle {
             height: 88px;
-            background: Theme.retro ? root.av-a
-                : @linear-gradient(135deg, root.av-a 0%, root.av-b 100%);
+            background: Theme.retro ? root.av-a : @linear-gradient(135deg, root.av-a 0%, root.av-b 100%);
 
             // Soft darken toward the bottom so the avatar ring pops.
-            if !Theme.retro : Rectangle {
-                width: parent.width; height: parent.height;
+            if !Theme.retro: Rectangle {
+                width: parent.width;
+                height: parent.height;
                 background: @linear-gradient(180deg, #00000000 30%, #00000038 100%);
             }
-            if Theme.retro : Rectangle {
+            if Theme.retro: Rectangle {
                 y: parent.height - 2px;
-                width: parent.width; height: 2px;
+                width: parent.width;
+                height: 2px;
                 background: Palette.border;
             }
 
@@ -95,9 +103,12 @@ export component ProfileModal inherits Modal {
                     horizontal-alignment: center;
                     vertical-alignment: center;
                 }
+
                 close-touch := TouchArea {
                     mouse-cursor: pointer;
-                    clicked => { root.dismissed(); }
+                    clicked => {
+                        root.dismissed();
+                    }
                 }
             }
         }
@@ -113,7 +124,8 @@ export component ProfileModal inherits Modal {
                 border-radius: (48px) * Theme.r-scale;
                 background: Palette.elevated;
                 Avatar {
-                    x: 4px; y: 4px;
+                    x: 4px;
+                    y: 4px;
                     size: 88px;
                     initials: root.av-initials;
                     color-a: root.av-a;
@@ -134,7 +146,7 @@ export component ProfileModal inherits Modal {
             spacing: 10px;
 
             // Name (or skeleton bar while loading).
-            if !root.loading : Text {
+            if !root.loading: Text {
                 text: root.display-name;
                 color: Palette.text-hi;
                 font-size: (18px) * Theme.fs-scale;
@@ -143,7 +155,7 @@ export component ProfileModal inherits Modal {
                 horizontal-alignment: center;
                 overflow: elide;
             }
-            if root.loading : HorizontalLayout {
+            if root.loading: HorizontalLayout {
                 alignment: center;
                 Rectangle {
                     width: 150px;
@@ -151,18 +163,24 @@ export component ProfileModal inherits Modal {
                     border-radius: (5px) * Theme.r-scale;
                     background: Palette.panel-2;
                     opacity: root.skeleton-opacity;
-                    animate opacity { duration: 700ms; easing: ease-in-out; }
+                    animate opacity {
+                        duration: 700ms;
+                        easing: ease-in-out;
+                    }
                 }
             }
 
             // nip05 verification line.
-            if !root.loading && root.nip05 != "" : HorizontalLayout {
+            if !root.loading && root.nip05 != "": HorizontalLayout {
                 alignment: center;
                 spacing: 6px;
                 VerticalLayout {
                     alignment: center;
-                    CheckMark { stroke: Palette.mint; }
+                    CheckMark {
+                        stroke: Palette.mint;
+                    }
                 }
+
                 Text {
                     text: root.nip05;
                     color: Palette.mint;
@@ -197,11 +215,15 @@ export component ProfileModal inherits Modal {
                             font-family: Theme.font;
                             vertical-alignment: center;
                         }
-                        if !root.copied : VerticalLayout {
+
+                        if !root.copied: VerticalLayout {
                             alignment: center;
-                            CopyIcon { stroke: Palette.text-lo; }
+                            CopyIcon {
+                                stroke: Palette.text-lo;
+                            }
                         }
                     }
+
                     chip-touch := TouchArea {
                         mouse-cursor: pointer;
                         clicked => {
@@ -213,7 +235,7 @@ export component ProfileModal inherits Modal {
             }
 
             // Contact badge.
-            if !root.loading && root.is-contact && !root.is-self : HorizontalLayout {
+            if !root.loading && root.is-contact && !root.is-self: HorizontalLayout {
                 alignment: center;
                 Rectangle {
                     height: 22px;
@@ -235,7 +257,7 @@ export component ProfileModal inherits Modal {
             }
 
             // About / bio.
-            if !root.loading && root.about != "" : Rectangle {
+            if !root.loading && root.about != "": Rectangle {
                 max-height: 120px;
                 clip: true;
                 Text {
@@ -248,32 +270,41 @@ export component ProfileModal inherits Modal {
                     wrap: word-wrap;
                 }
             }
-            if root.loading : VerticalLayout {
+            if root.loading: VerticalLayout {
                 spacing: 6px;
                 HorizontalLayout {
                     alignment: center;
                     Rectangle {
-                        width: 220px; height: 11px;
+                        width: 220px;
+                        height: 11px;
                         border-radius: (4px) * Theme.r-scale;
                         background: Palette.panel-2;
                         opacity: root.skeleton-opacity;
-                        animate opacity { duration: 700ms; easing: ease-in-out; }
+                        animate opacity {
+                            duration: 700ms;
+                            easing: ease-in-out;
+                        }
                     }
                 }
+
                 HorizontalLayout {
                     alignment: center;
                     Rectangle {
-                        width: 170px; height: 11px;
+                        width: 170px;
+                        height: 11px;
                         border-radius: (4px) * Theme.r-scale;
                         background: Palette.panel-2;
                         opacity: root.skeleton-opacity;
-                        animate opacity { duration: 700ms; easing: ease-in-out; }
+                        animate opacity {
+                            duration: 700ms;
+                            easing: ease-in-out;
+                        }
                     }
                 }
             }
 
             // Lightning address.
-            if !root.loading && root.lud16 != "" : Text {
+            if !root.loading && root.lud16 != "": Text {
                 text: "⚡ " + root.lud16;
                 color: Palette.text-lo;
                 font-size: (10.5px) * Theme.fs-scale;
@@ -283,14 +314,14 @@ export component ProfileModal inherits Modal {
             }
 
             // Relay-lookup status lines.
-            if root.loading : Text {
+            if root.loading: Text {
                 text: @tr("Contacting relays…");
                 color: Palette.text-vlo;
                 font-size: (10.5px) * Theme.fs-scale;
                 font-family: Theme.font;
                 horizontal-alignment: center;
             }
-            if root.not-found : Text {
+            if root.not-found: Text {
                 text: @tr("No profile found on relays.");
                 color: Palette.text-vlo;
                 font-size: (10.5px) * Theme.fs-scale;

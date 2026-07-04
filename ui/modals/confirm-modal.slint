@@ -12,5 +12,7 @@ export component ConfirmModal inherits Modal {
     secondary-label: @tr("Cancel");
     primary-label: root.confirm-label;
     primary-danger: true;
-    primary => { root.confirm(); }
+    primary => {
+        root.confirm();
+    }
 }

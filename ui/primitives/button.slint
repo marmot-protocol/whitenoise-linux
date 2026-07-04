@@ -19,25 +19,25 @@ export component Button inherits Rectangle {
     in property <length> pad-right: 14px;
     in property <length> spacing: 8px;
     in property <length> font-size: Theme.fsr(12px, 16px);
-    in property <int>    font-weight: 700;
-    in property <color>  fg: Palette.text-hi;
-    in property <color>  bg-color: Palette.panel-2;
-    in property <color>  outline: Palette.border;
+    in property <int> font-weight: 700;
+    in property <color> fg: Palette.text-hi;
+    in property <color> bg-color: Palette.panel-2;
+    in property <color> outline: Palette.border;
     in property <length> border-w: Theme.border-w;
-    in property <bool>   selected: false;
-    in property <color>  selected-bg: Palette.selected;
-    in property <color>  hover-bg: Palette.bubble-in;
-    in property <color>  hover-fg: root.fg;
-    in property <color>  hover-outline: root.outline;
-    in property <bool>   use-hover: true;
-    in property <bool>   has-fill: true;
+    in property <bool> selected: false;
+    in property <color> selected-bg: Palette.selected;
+    in property <color> hover-bg: Palette.bubble-in;
+    in property <color> hover-fg: root.fg;
+    in property <color> hover-outline: root.outline;
+    in property <bool> use-hover: true;
+    in property <bool> has-fill: true;
     // When false the button dims, drops its hover styling, and swallows no
     // clicks — callers gate "send with empty draft", "primary while busy", etc.
-    in property <bool>   enabled: true;
+    in property <bool> enabled: true;
     // Opt-in Tab focusability (modal footers, chat-request actions, Send).
     // Opt-in rather than default so the tab chain only contains buttons
     // that make sense to reach from the keyboard.
-    in property <bool>   focusable: false;
+    in property <bool> focusable: false;
     out property <bool> has-hover: touch.has-hover;
     out property <bool> is-primary: root.bg-color == Palette.mint;
 
@@ -49,38 +49,46 @@ export component Button inherits Rectangle {
     border-radius: (root.radius) * Theme.r-scale;
     border-width: root.border-w;
     border-color: root.hovered ? root.hover-outline : root.outline;
-    background: root.selected
-        ? root.selected-bg
-        : (root.hovered ? root.hover-bg : root.bg-color);
+    background: root.selected ? root.selected-bg : (root.hovered ? root.hover-bg : root.bg-color);
     opacity: root.enabled ? 1.0 : 0.5;
-    animate opacity { duration: 120ms; easing: ease-out; }
+    animate opacity {
+        duration: 120ms;
+        easing: ease-out;
+    }
     accessible-role: button;
     accessible-enabled: root.enabled;
     accessible-label: root.label;
-    accessible-action-default => { if root.enabled { root.clicked(); } }
-    drop-shadow-color: Theme.hard-shadow && root.has-fill ? Palette.shadow
-        : (root.is-primary && root.has-fill ? Palette.mint-glow : transparent);
+    accessible-action-default => {
+        if root.enabled {
+            root.clicked();
+        }
+    }
+    drop-shadow-color: Theme.hard-shadow && root.has-fill ? Palette.shadow : (root.is-primary && root.has-fill ? Palette.mint-glow : transparent);
     // In retro: hover pushes the shadow further (3px) for a "lifted" SNES-button feel.
-    drop-shadow-offset-x: Theme.hard-shadow && root.has-fill
-        ? (root.hovered ? 3px : 2px)
-        : (root.is-primary && root.has-fill && root.hovered ? 0px : 0px);
-    drop-shadow-offset-y: Theme.hard-shadow && root.has-fill
-        ? (root.hovered ? 3px : 2px)
-        : (root.is-primary && root.has-fill ? 2px : 0px);
+    drop-shadow-offset-x: Theme.hard-shadow && root.has-fill ? (root.hovered ? 3px : 2px) : (root.is-primary && root.has-fill && root.hovered ? 0px : 0px);
+    drop-shadow-offset-y: Theme.hard-shadow && root.has-fill ? (root.hovered ? 3px : 2px) : (root.is-primary && root.has-fill ? 2px : 0px);
     drop-shadow-blur: Theme.hard-shadow && root.has-fill ? 0px : (root.is-primary && root.has-fill ? 12px : 0px);
-    animate background, border-color { duration: 120ms; easing: ease-out; }
-    animate drop-shadow-offset-x, drop-shadow-offset-y { duration: 90ms; easing: ease-out; }
+    animate background, border-color {
+        duration: 120ms;
+        easing: ease-out;
+    }
+    animate drop-shadow-offset-x, drop-shadow-offset-y {
+        duration: 90ms;
+        easing: ease-out;
+    }
 
     // SNES bevel: bright pixel highlight on top edge, dark shade on bottom.
-    if Theme.bevel && root.has-fill && !root.hovered : Rectangle {
-        x: root.border-w; y: root.border-w;
+    if Theme.bevel && root.has-fill && !root.hovered: Rectangle {
+        x: root.border-w;
+        y: root.border-w;
         width: parent.width - root.border-w * 2;
         height: 2px;
         background: Palette.bevel-hi;
         opacity: root.selected ? 0.6 : 0.35;
     }
-    if Theme.bevel && root.has-fill && !root.hovered : Rectangle {
-        x: root.border-w; y: parent.height - root.border-w - 2px;
+    if Theme.bevel && root.has-fill && !root.hovered: Rectangle {
+        x: root.border-w;
+        y: parent.height - root.border-w - 2px;
         width: parent.width - root.border-w * 2;
         height: 2px;
         background: Palette.bevel-lo;
@@ -98,7 +106,7 @@ export component Button inherits Rectangle {
             @children
         }
 
-        if root.label != "" : Text {
+        if root.label != "": Text {
             // Terminal/TUI themes bracket button labels: [ Send ].
             text: Theme.bracket-labels ? "[ " + root.label + " ]" : root.label;
             color: root.hovered ? root.hover-fg : root.fg;
@@ -106,7 +114,10 @@ export component Button inherits Rectangle {
             font-weight: root.font-weight;
             font-family: Theme.font;
             vertical-alignment: center;
-            animate color { duration: 120ms; easing: ease-out; }
+            animate color {
+                duration: 120ms;
+                easing: ease-out;
+            }
         }
     }
 
@@ -132,8 +143,13 @@ export component Button inherits Rectangle {
                 }
             }
         }
-        clicked => { if !root.alt-fired { root.clicked(); } }
+        clicked => {
+            if !root.alt-fired {
+                root.clicked();
+            }
+        }
     }
+
     longpress := Timer {
         interval: 450ms;
         running: root.pressing;
@@ -149,7 +165,8 @@ export component Button inherits Rectangle {
     // pointer events, so clicking the button can't pull keyboard focus away
     // from the composer (a full-size scope grabs focus on click).
     fs := FocusScope {
-        width: 0px; height: 0px;
+        width: 0px;
+        height: 0px;
         enabled: root.focusable && root.enabled;
         key-pressed(event) => {
             if (event.text == Key.Return || event.text == " ") {
@@ -162,8 +179,9 @@ export component Button inherits Rectangle {
 
     // Focus ring just outside the bounds. Accent for regular buttons; primary
     // buttons are already accent-filled, so their ring flips to text-hi.
-    if fs.has-focus : Rectangle {
-        x: -3px; y: -3px;
+    if fs.has-focus: Rectangle {
+        x: -3px;
+        y: -3px;
         width: parent.width + 6px;
         height: parent.height + 6px;
         background: transparent;

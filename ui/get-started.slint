@@ -21,8 +21,10 @@ component MiniRelayRow inherits Rectangle {
     height: 40px;
 
     HorizontalLayout {
-        padding-left: 14px; padding-right: 10px;
-        padding-top: 6px; padding-bottom: 6px;
+        padding-left: 14px;
+        padding-right: 10px;
+        padding-top: 6px;
+        padding-bottom: 6px;
         spacing: 8px;
         VerticalLayout {
             horizontal-stretch: 1;
@@ -35,19 +37,28 @@ component MiniRelayRow inherits Rectangle {
                 overflow: elide;
             }
         }
+
         VerticalLayout {
             alignment: center;
             MicroButton {
                 label: "";
-                pad-left: 8px; pad-right: 8px;
-                TrashIcon { stroke: Palette.text-mid; }
-                clicked => { root.remove-clicked(); }
+                pad-left: 8px;
+                pad-right: 8px;
+                TrashIcon {
+                    stroke: Palette.text-mid;
+                }
+
+                clicked => {
+                    root.remove-clicked();
+                }
             }
         }
     }
-    if root.show-divider : Rectangle {
+
+    if root.show-divider: Rectangle {
         y: parent.height - 1px;
-        width: parent.width; height: 1px;
+        width: parent.width;
+        height: 1px;
         background: Palette.border-2;
     }
 }
@@ -64,9 +75,7 @@ component StepCard inherits Rectangle {
     background: Palette.panel;
     border-radius: (12px) * Theme.r-scale;
     border-width: Theme.border-w;
-    border-color: root.done
-        ? Palette.mint
-        : (Palette.card-border);
+    border-color: root.done ? Palette.mint : (Palette.card-border);
     drop-shadow-color: Theme.hard-shadow ? Palette.shadow : transparent;
     drop-shadow-offset-x: Theme.hard-shadow ? 4px : 0px;
     drop-shadow-offset-y: Theme.hard-shadow ? 4px : 0px;
@@ -81,12 +90,13 @@ component StepCard inherits Rectangle {
         VerticalLayout {
             alignment: start;
             Rectangle {
-                width: 34px; height: 34px;
+                width: 34px;
+                height: 34px;
                 border-radius: root.done ? (17px) : (9px) * Theme.r-scale;
                 background: root.done ? Palette.mint : Palette.panel-2;
                 border-width: root.done ? 0px : 1px;
                 border-color: Palette.border-2;
-                if !root.done : Text {
+                if !root.done: Text {
                     text: root.step-no;
                     color: Palette.text-mid;
                     font-size: (13px) * Theme.fs-scale;
@@ -94,7 +104,7 @@ component StepCard inherits Rectangle {
                     horizontal-alignment: center;
                     vertical-alignment: center;
                 }
-                if root.done : CheckMark {
+                if root.done: CheckMark {
                     x: (parent.width - self.width) / 2;
                     y: (parent.height - self.height) / 2;
                     stroke: Palette.bubble-out-fg;
@@ -112,6 +122,7 @@ component StepCard inherits Rectangle {
                 font-size: (15px) * Theme.fs-scale;
                 font-weight: 700;
             }
+
             Text {
                 text: root.desc;
                 color: Palette.text-lo;
@@ -119,7 +130,10 @@ component StepCard inherits Rectangle {
                 wrap: word-wrap;
             }
             // Action area, padded off the description.
-            Rectangle { height: 6px; }
+            Rectangle {
+                height: 6px;
+            }
+
             @children
         }
     }
@@ -148,14 +162,17 @@ export component GetStartedScreen inherits Rectangle {
     background: Palette.bg;
 
     Flickable {
-        x: 0; y: 0;
-        width: parent.width; height: parent.height;
+        x: 0;
+        y: 0;
+        width: parent.width;
+        height: parent.height;
         viewport-width: self.width;
         viewport-height: max(self.height, body.preferred-height);
 
         body := VerticalLayout {
             width: root.width;
-            padding-top: 40px; padding-bottom: 40px;
+            padding-top: 40px;
+            padding-bottom: 40px;
 
             HorizontalLayout {
                 alignment: center;
@@ -168,7 +185,11 @@ export component GetStartedScreen inherits Rectangle {
                     VerticalLayout {
                         spacing: 10px;
                         alignment: center;
-                        LogoMark { size: 52px; color: Palette.mint; }
+                        LogoMark {
+                            size: 52px;
+                            color: Palette.mint;
+                        }
+
                         Text {
                             text: @tr("Welcome to darkmatter");
                             color: Palette.text-hi;
@@ -176,6 +197,7 @@ export component GetStartedScreen inherits Rectangle {
                             font-weight: 700;
                             horizontal-alignment: center;
                         }
+
                         Text {
                             text: @tr("Three quick steps and you're ready to message — end-to-end encrypted, no servers in the middle.");
                             color: Palette.text-lo;
@@ -196,19 +218,15 @@ export component GetStartedScreen inherits Rectangle {
                         HorizontalLayout {
                             spacing: 8px;
                             Rectangle {
-                                width: 8px; height: 8px;
+                                width: 8px;
+                                height: 8px;
                                 y: (parent.height - self.height) / 2;
                                 border-radius: (4px) * Theme.r-scale;
-                                background: root.connected > 0
-                                    ? Palette.mint
-                                    : (root.total > 0 ? Palette.warning : Palette.text-vlo);
+                                background: root.connected > 0 ? Palette.mint : (root.total > 0 ? Palette.warning : Palette.text-vlo);
                             }
+
                             Text {
-                                text: root.total == 0
-                                    ? @tr("No relays yet")
-                                    : (root.connected == root.total
-                                        ? @tr("Connected · {}/{}", root.connected, root.total)
-                                        : @tr("Partial · {}/{} connected", root.connected, root.total));
+                                text: root.total == 0 ? @tr("No relays yet") : (root.connected == root.total ? @tr("Connected · {}/{}", root.connected, root.total) : @tr("Partial · {}/{} connected", root.connected, root.total));
                                 color: Palette.text-mid;
                                 font-size: (11px) * Theme.fs-scale;
                                 font-weight: 600;
@@ -216,7 +234,9 @@ export component GetStartedScreen inherits Rectangle {
                             }
                         }
 
-                        Rectangle { height: 4px; }
+                        Rectangle {
+                            height: 4px;
+                        }
 
                         // Add row.
                         HorizontalLayout {
@@ -230,9 +250,13 @@ export component GetStartedScreen inherits Rectangle {
                                 background: Palette.field;
                                 drop-shadow-blur: relay-input.has-focus && Theme.focus-glow ? 10px : 0px;
                                 drop-shadow-color: Palette.mint-glow;
-                                animate border-color { duration: 140ms; easing: ease-out; }
+                                animate border-color {
+                                    duration: 140ms;
+                                    easing: ease-out;
+                                }
                                 relay-input := LineInput {
-                                    x: 12px; y: 0;
+                                    x: 12px;
+                                    y: 0;
                                     width: parent.width - 24px;
                                     height: parent.height;
                                     placeholder: "wss://relay.example.com";
@@ -247,6 +271,7 @@ export component GetStartedScreen inherits Rectangle {
                                     }
                                 }
                             }
+
                             Button {
                                 label: @tr("Add");
                                 button-height: 40px;
@@ -255,7 +280,11 @@ export component GetStartedScreen inherits Rectangle {
                                 hover-bg: Palette.mint-hi;
                                 hover-outline: Palette.mint-hi;
                                 fg: Palette.bubble-out-fg;
-                                PlusIcon { stroke: Palette.bubble-out-fg; size: 12px; }
+                                PlusIcon {
+                                    stroke: Palette.bubble-out-fg;
+                                    size: 12px;
+                                }
+
                                 clicked => {
                                     if (root.relay-draft != "") {
                                         root.add-relay(root.relay-draft);
@@ -266,7 +295,7 @@ export component GetStartedScreen inherits Rectangle {
                         }
 
                         // One-click suggested relays (hidden once added).
-                        if root.suggested.length > 0 : VerticalLayout {
+                        if root.suggested.length > 0: VerticalLayout {
                             spacing: 7px;
                             Text {
                                 text: @tr("SUGGESTED");
@@ -275,10 +304,11 @@ export component GetStartedScreen inherits Rectangle {
                                 font-weight: 700;
                                 letter-spacing: 1.4px;
                             }
+
                             HorizontalLayout {
                                 spacing: 8px;
                                 alignment: start;
-                                for url in root.suggested : Button {
+                                for url in root.suggested: Button {
                                     label: url;
                                     button-height: 32px;
                                     radius: 8px;
@@ -288,15 +318,23 @@ export component GetStartedScreen inherits Rectangle {
                                     hover-bg: Palette.mint-surface;
                                     hover-outline: Palette.mint;
                                     fg: Palette.text-hi;
-                                    PlusIcon { stroke: Palette.mint; size: 11px; }
-                                    clicked => { root.add-relay(url); }
+                                    PlusIcon {
+                                        stroke: Palette.mint;
+                                        size: 11px;
+                                    }
+
+                                    clicked => {
+                                        root.add-relay(url);
+                                    }
                                 }
-                                Rectangle { horizontal-stretch: 1; }
+                                Rectangle {
+                                    horizontal-stretch: 1;
+                                }
                             }
                         }
 
                         // Saved relay list.
-                        if root.relays.length > 0 : Rectangle {
+                        if root.relays.length > 0: Rectangle {
                             height: root.relays.length * 40px;
                             border-radius: (7px) * Theme.r-scale;
                             border-width: 1px;
@@ -304,15 +342,17 @@ export component GetStartedScreen inherits Rectangle {
                             background: Palette.panel-2;
                             VerticalLayout {
                                 spacing: 0;
-                                for url[i] in root.relays : MiniRelayRow {
+                                for url[i] in root.relays: MiniRelayRow {
                                     url: url;
                                     show-divider: i < root.relays.length - 1;
-                                    remove-clicked => { root.remove-relay(url); }
+                                    remove-clicked => {
+                                        root.remove-relay(url);
+                                    }
                                 }
                             }
                         }
 
-                        if root.network-status != "" : Text {
+                        if root.network-status != "": Text {
                             text: root.network-status;
                             color: Palette.text-lo;
                             font-size: (11px) * Theme.fs-scale;
@@ -335,29 +375,25 @@ export component GetStartedScreen inherits Rectangle {
                             // muted and inert — publishing needs somewhere to land.
                             Button {
                                 property <bool> ready: root.total > 0 && !root.kp-published;
-                                label: root.kp-published
-                                    ? @tr("Published")
-                                    : (root.kp-busy ? @tr("Publishing…") : @tr("Publish key package"));
+                                label: root.kp-published ? @tr("Published") : (root.kp-busy ? @tr("Publishing…") : @tr("Publish key package"));
                                 button-height: 38px;
                                 bg-color: self.ready ? Palette.mint : Palette.panel-2;
                                 outline: self.ready ? Palette.mint : Palette.border-2;
                                 hover-bg: self.ready ? Palette.mint-hi : Palette.panel-2;
                                 hover-outline: self.ready ? Palette.mint-hi : Palette.border-2;
-                                fg: root.kp-published
-                                    ? Palette.text-mid
-                                    : (root.total > 0 ? Palette.bubble-out-fg : Palette.text-vlo);
+                                fg: root.kp-published ? Palette.text-mid : (root.total > 0 ? Palette.bubble-out-fg : Palette.text-vlo);
                                 KeyIcon {
-                                    stroke: root.kp-published
-                                        ? Palette.text-mid
-                                        : (root.total > 0 ? Palette.bubble-out-fg : Palette.text-vlo);
+                                    stroke: root.kp-published ? Palette.text-mid : (root.total > 0 ? Palette.bubble-out-fg : Palette.text-vlo);
                                 }
+
                                 clicked => {
                                     if (root.total > 0 && !root.kp-busy && !root.kp-published) {
                                         root.publish-kp();
                                     }
                                 }
                             }
-                            if root.total == 0 && !root.kp-published : VerticalLayout {
+
+                            if root.total == 0 && !root.kp-published: VerticalLayout {
                                 alignment: center;
                                 Text {
                                     text: @tr("Add a relay first.");
@@ -368,7 +404,7 @@ export component GetStartedScreen inherits Rectangle {
                             }
                         }
 
-                        if root.kp-status != "" : Text {
+                        if root.kp-status != "": Text {
                             text: root.kp-status;
                             color: Palette.text-lo;
                             font-size: (11px) * Theme.fs-scale;
@@ -393,13 +429,20 @@ export component GetStartedScreen inherits Rectangle {
                                 hover-bg: Palette.mint-hi;
                                 hover-outline: Palette.mint-hi;
                                 fg: Palette.bubble-out-fg;
-                                StartChatIcon { stroke: Palette.bubble-out-fg; }
-                                clicked => { root.start-chat(); }
+                                StartChatIcon {
+                                    stroke: Palette.bubble-out-fg;
+                                }
+
+                                clicked => {
+                                    root.start-chat();
+                                }
                             }
                         }
                     }
 
-                    Rectangle { height: 8px; }
+                    Rectangle {
+                        height: 8px;
+                    }
                 }
             }
         }

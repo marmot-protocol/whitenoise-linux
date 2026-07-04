@@ -11,7 +11,8 @@ export component Avatar inherits Rectangle {
     // shows the palette underneath). Rust sets both together.
     in property <image> picture;
     in property <bool> has-picture: false;
-    width: root.size; height: root.size;
+    width: root.size;
+    height: root.size;
     border-radius: (root.size / 2) * Theme.r-scale;
     background: Theme.retro ? root.color-a : @linear-gradient(135deg, root.color-a 0%, root.color-b 100%);
     border-width: Theme.retro ? Theme.border-w : 1.5px;
@@ -21,7 +22,7 @@ export component Avatar inherits Rectangle {
     drop-shadow-offset-x: Theme.hard-shadow ? 2px : 0px;
     drop-shadow-offset-y: Theme.hard-shadow ? 2px : 2px;
     drop-shadow-blur: Theme.hard-shadow ? 0px : 6px;
-    if !root.has-picture : Text {
+    if !root.has-picture: Text {
         text: root.initials;
         color: white;
         font-size: (root.font-size) * Theme.fs-scale;
@@ -30,7 +31,7 @@ export component Avatar inherits Rectangle {
         horizontal-alignment: center;
         vertical-alignment: center;
     }
-    if root.has-picture : Image {
+    if root.has-picture: Image {
         source: root.picture;
         width: 100%;
         height: 100%;

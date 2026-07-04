@@ -93,29 +93,46 @@ export component SettingsPage inherits Rectangle {
             horizontal-stretch: 1;
             background: Palette.bg;
 
-            if root.active-tab == 0 : GeneralPane {
-                width: parent.width; height: parent.height;
+            if root.active-tab == 0: GeneralPane {
+                width: parent.width;
+                height: parent.height;
                 locale-display: root.locale-display;
-                change-language-clicked => { root.change-language-clicked(); }
+                change-language-clicked => {
+                    root.change-language-clicked();
+                }
                 time-format: root.time-format;
                 date-format: root.date-format;
-                time-format-selected(f) => { root.time-format-selected(f); }
-                date-format-selected(f) => { root.date-format-selected(f); }
+                time-format-selected(f) => {
+                    root.time-format-selected(f);
+                }
+                date-format-selected(f) => {
+                    root.date-format-selected(f);
+                }
             }
-            if root.active-tab == 1 : NetworkPane {
-                width: parent.width; height: parent.height;
+            if root.active-tab == 1: NetworkPane {
+                width: parent.width;
+                height: parent.height;
                 relays: root.network-relays;
                 booted-relays: root.network-booted-relays;
                 connected: root.network-connected;
                 total: root.network-total;
                 status: root.network-status;
-                add-relay(u) => { root.network-add-relay(u); }
-                remove-relay(u) => { root.network-remove-relay(u); }
-                refresh-health => { root.network-refresh-health(); }
-                republish-relay-list => { root.network-republish-relay-list(); }
+                add-relay(u) => {
+                    root.network-add-relay(u);
+                }
+                remove-relay(u) => {
+                    root.network-remove-relay(u);
+                }
+                refresh-health => {
+                    root.network-refresh-health();
+                }
+                republish-relay-list => {
+                    root.network-republish-relay-list();
+                }
             }
-            if root.active-tab == 2 : AppearancePane {
-                width: parent.width; height: parent.height;
+            if root.active-tab == 2: AppearancePane {
+                width: parent.width;
+                height: parent.height;
                 light-theme <=> root.light-theme;
                 retro-mode <=> root.retro-mode;
                 terminal-mode <=> root.terminal-mode;
@@ -124,51 +141,89 @@ export component SettingsPage inherits Rectangle {
                 chalkboard-mode <=> root.chalkboard-mode;
                 accent-color <=> root.accent-color;
                 outgoing-on-right <=> root.outgoing-on-right;
-                theme-mode-selected(mode) => { root.theme-mode-selected(mode); }
-                accent-selected(idx) => { root.accent-selected(idx); }
-                outgoing-on-right-toggled(v) => { root.outgoing-on-right-toggled(v); }
+                theme-mode-selected(mode) => {
+                    root.theme-mode-selected(mode);
+                }
+                accent-selected(idx) => {
+                    root.accent-selected(idx);
+                }
+                outgoing-on-right-toggled(v) => {
+                    root.outgoing-on-right-toggled(v);
+                }
             }
-            if root.active-tab == 3 : NotificationsPane {
-                width: parent.width; height: parent.height;
+            if root.active-tab == 3: NotificationsPane {
+                width: parent.width;
+                height: parent.height;
                 enabled <=> root.notifications-enabled;
                 sound <=> root.notification-sound;
                 preview <=> root.notification-preview;
-                enabled-toggled(v) => { root.notifications-toggled(v); }
-                sound-toggled(v) => { root.notification-sound-toggled(v); }
-                preview-toggled(v) => { root.notification-preview-toggled(v); }
+                enabled-toggled(v) => {
+                    root.notifications-toggled(v);
+                }
+                sound-toggled(v) => {
+                    root.notification-sound-toggled(v);
+                }
+                preview-toggled(v) => {
+                    root.notification-preview-toggled(v);
+                }
             }
-            if root.active-tab == 4 : StoragePane {
-                width: parent.width; height: parent.height;
+            if root.active-tab == 4: StoragePane {
+                width: parent.width;
+                height: parent.height;
                 cache-size: root.storage-cache-size;
                 clearing: root.storage-clearing;
-                clear-cache => { root.storage-clear-cache(); }
+                clear-cache => {
+                    root.storage-clear-cache();
+                }
                 vault-dir: root.storage-vault-dir;
-                open-vault-folder => { root.storage-open-vault-folder(); }
-                create-backup => { root.storage-create-backup(); }
-                import-backup => { root.storage-import-backup(); }
+                open-vault-folder => {
+                    root.storage-open-vault-folder();
+                }
+                create-backup => {
+                    root.storage-create-backup();
+                }
+                import-backup => {
+                    root.storage-import-backup();
+                }
             }
-            if root.active-tab == 5 : AdvancedPane {
-                width: parent.width; height: parent.height;
+            if root.active-tab == 5: AdvancedPane {
+                width: parent.width;
+                height: parent.height;
                 debug-enabled <=> root.debug-enabled;
-                debug-toggled(v) => { root.debug-toggled(v); }
+                debug-toggled(v) => {
+                    root.debug-toggled(v);
+                }
                 telemetry-enabled <=> root.telemetry-enabled;
-                telemetry-toggled(v) => { root.telemetry-toggled(v); }
+                telemetry-toggled(v) => {
+                    root.telemetry-toggled(v);
+                }
                 audit-enabled <=> root.audit-enabled;
-                audit-toggled(v) => { root.audit-toggled(v); }
+                audit-toggled(v) => {
+                    root.audit-toggled(v);
+                }
                 audit-status: root.audit-status;
                 audit-files: root.audit-files;
-                audit-delete-file(p) => { root.audit-delete-file(p); }
-                audit-refresh-files => { root.audit-refresh-files(); }
+                audit-delete-file(p) => {
+                    root.audit-delete-file(p);
+                }
+                audit-refresh-files => {
+                    root.audit-refresh-files();
+                }
             }
-            if root.active-tab == 6 : AboutPane {
+            if root.active-tab == 6: AboutPane {
                 width: parent.width;
                 height: parent.height;
             }
-            if root.active-tab == 7 : DebugPane {
-                width: parent.width; height: parent.height;
+            if root.active-tab == 7: DebugPane {
+                width: parent.width;
+                height: parent.height;
                 dump: root.debug-dump;
-                refresh-clicked => { root.debug-refresh-clicked(); }
-                copy-clicked => { root.debug-copy-clicked(); }
+                refresh-clicked => {
+                    root.debug-refresh-clicked();
+                }
+                copy-clicked => {
+                    root.debug-copy-clicked();
+                }
             }
         }
     }

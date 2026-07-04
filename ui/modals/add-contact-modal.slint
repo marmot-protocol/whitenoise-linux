@@ -14,7 +14,9 @@ export component AddContactModal inherits Modal {
     primary-label: @tr("Add contact");
     primary-busy-label: @tr("Adding…");
     primary-busy: root.busy;
-    primary => { root.add-contact(root.npub-text); }
+    primary => {
+        root.add-contact(root.npub-text);
+    }
 
     ModalField {
         label: @tr("PUBLIC KEY");
@@ -22,7 +24,9 @@ export component AddContactModal inherits Modal {
         text <=> root.npub-text;
         autofocus: true;
         submitted => {
-            if (!root.busy) { root.add-contact(root.npub-text); }
+            if (!root.busy) {
+                root.add-contact(root.npub-text);
+            }
         }
     }
 }

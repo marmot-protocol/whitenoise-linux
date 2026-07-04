@@ -55,6 +55,7 @@ component AboutFeatureRow inherits Rectangle {
                 font-size: (12px) * Theme.fs-scale;
                 font-weight: 700;
             }
+
             Text {
                 text: root.detail;
                 color: Palette.text-lo;
@@ -64,7 +65,7 @@ component AboutFeatureRow inherits Rectangle {
         }
     }
 
-    if root.show-divider : Rectangle {
+    if root.show-divider: Rectangle {
         y: parent.height - 1px;
         width: parent.width;
         height: 1px;
@@ -93,7 +94,10 @@ export component AboutPane inherits Rectangle {
             PageHeader {
                 title: @tr("About");
                 caption: @tr("Encrypted group chat on Nostr");
-                InfoIcon { stroke: Palette.mint; size: 14px; }
+                InfoIcon {
+                    stroke: Palette.mint;
+                    size: 14px;
+                }
             }
 
             // Hero artwork — SNES lab scene in a framed card.
@@ -215,18 +219,26 @@ export component AboutPane inherits Rectangle {
                     AboutFeatureRow {
                         title: @tr("End-to-end encryption");
                         detail: @tr("MLS group keys; no server in the trust path.");
-                        LockIcon { stroke: Palette.mint; }
+                        LockIcon {
+                            stroke: Palette.mint;
+                        }
                     }
+
                     AboutFeatureRow {
                         title: @tr("Decentralized network");
                         detail: @tr("Connect to Nostr relays you choose.");
-                        MonitorIcon { stroke: Palette.mint; }
+                        MonitorIcon {
+                            stroke: Palette.mint;
+                        }
                     }
+
                     AboutFeatureRow {
                         title: @tr("Local key custody");
                         detail: @tr("Private material lives in your OS keychain or encrypted store.");
                         show-divider: false;
-                        KeyIcon { stroke: Palette.mint; }
+                        KeyIcon {
+                            stroke: Palette.mint;
+                        }
                     }
                 }
             }

@@ -1,7 +1,16 @@
 // darkmatter — the whole system on one page.
 // Root composition: owns state + data, wires sections together.
 
-import { Palette, Theme, ChatMeta, ChatMessage, Contact, ArchivedChat, GroupMember, AccountEntry } from "tokens.slint";
+import {
+    Palette,
+    Theme,
+    ChatMeta,
+    ChatMessage,
+    Contact,
+    ArchivedChat,
+    GroupMember,
+    AccountEntry,
+} from "tokens.slint";
 import { TitleBar } from "title-bar.slint";
 import { LeftRail } from "left-rail/left-rail.slint";
 import { ChatListPanel } from "chat-list.slint";
@@ -35,7 +44,16 @@ import { SplashScreen } from "splash.slint";
 import { EmojiPicker } from "emoji-picker.slint";
 import { MessageContextMenu } from "primitives/context-menu.slint";
 import { ChatContextMenu } from "primitives/chat-context-menu.slint";
-import { EmojiEntry, EmojiSheet, Linkout, ProfileSink, EffectCatalog, ErrorCopy, TimeCopy, NativeDialogStrings } from "tokens.slint";
+import {
+    EmojiEntry,
+    EmojiSheet,
+    Linkout,
+    ProfileSink,
+    EffectCatalog,
+    ErrorCopy,
+    TimeCopy,
+    NativeDialogStrings,
+} from "tokens.slint";
 import { EditVersion } from "tokens.slint";
 import { AuditLogEntry } from "tokens.slint";
 import { StagedAttachment } from "tokens.slint";
@@ -521,21 +539,32 @@ export component DarkMatterLinux inherits Window {
     // 2=retro, 3=terminal, 4=crayon, 5=synthwave). Precedence:
     // synthwave > crayon > terminal > retro > light > dark.
     function theme-id() -> int {
-        root.chalkboard-mode ? 6
-            : (root.synthwave-mode ? 5
-            : (root.crayon-mode ? 4
-            : (root.terminal-mode ? 3
-            : (root.retro-mode ? 2
-            : (root.light-theme ? 1 : 0)))));
+        root.chalkboard-mode ? 6 : (root.synthwave-mode ? 5 : (root.crayon-mode ? 4 : (root.terminal-mode ? 3 : (root.retro-mode ? 2 : (root.light-theme ? 1 : 0)))));
     }
-    changed light-theme => { Theme.id = root.theme-id(); }
-    changed retro-mode => { Theme.id = root.theme-id(); }
-    changed terminal-mode => { Theme.id = root.theme-id(); }
-    changed crayon-mode => { Theme.id = root.theme-id(); }
-    changed synthwave-mode => { Theme.id = root.theme-id(); }
-    changed chalkboard-mode => { Theme.id = root.theme-id(); }
-    changed accent-color => { Theme.accent = root.accent-color; }
-    changed is-macos => { Theme.is-mac = root.is-macos; }
+    changed light-theme => {
+        Theme.id = root.theme-id();
+    }
+    changed retro-mode => {
+        Theme.id = root.theme-id();
+    }
+    changed terminal-mode => {
+        Theme.id = root.theme-id();
+    }
+    changed crayon-mode => {
+        Theme.id = root.theme-id();
+    }
+    changed synthwave-mode => {
+        Theme.id = root.theme-id();
+    }
+    changed chalkboard-mode => {
+        Theme.id = root.theme-id();
+    }
+    changed accent-color => {
+        Theme.accent = root.accent-color;
+    }
+    changed is-macos => {
+        Theme.is-mac = root.is-macos;
+    }
 
     // New-chat modal state. `new-chat-status` surfaces validation errors
     // inline ("invalid npub", "you can't invite yourself", etc.) — Rust
@@ -609,7 +638,9 @@ export component DarkMatterLinux inherits Window {
     // a modal mounts and calls focus() on its own scope, focus leaves here; on
     // dismiss, focus comes back.
     global-keys := FocusScope {
-        init => { self.focus(); }
+        init => {
+            self.focus();
+        }
         key-pressed(event) => {
             if (event.modifiers.control) {
                 if (root.logged-in && event.text == "k") {
@@ -634,7 +665,7 @@ export component DarkMatterLinux inherits Window {
         }
     }
 
-    if root.logged-in && !root.booting : VerticalLayout {
+    if root.logged-in && !root.booting: VerticalLayout {
         spacing: 0;
 
         TitleBar {
@@ -653,7 +684,8 @@ export component DarkMatterLinux inherits Window {
 
             // left rail — expandable on hover (56px → 160px)
             rail := LeftRail {
-                x: 0; y: 0;
+                x: 0;
+                y: 0;
                 height: parent.height;
                 selected-index: root.active-page;
                 my-initials: root.my-av-initials;
@@ -667,32 +699,48 @@ export component DarkMatterLinux inherits Window {
                 badge-archive: root.rail-badge-archive;
                 badge-keys: root.rail-badge-keys;
                 has-active-chat: root.active-chat >= 0 && root.chats.length > 0;
-                nav-clicked(idx) => { root.nav-requested(idx); }
-                plus-clicked => { root.new-chat-requested(); }
-                settings-clicked => { root.nav-requested(4); }
-                profile-clicked => { root.profile-requested(); }
-                accounts-clicked => { root.account-switcher-requested(); }
+                nav-clicked(idx) => {
+                    root.nav-requested(idx);
+                }
+                plus-clicked => {
+                    root.new-chat-requested();
+                }
+                settings-clicked => {
+                    root.nav-requested(4);
+                }
+                profile-clicked => {
+                    root.profile-requested();
+                }
+                accounts-clicked => {
+                    root.account-switcher-requested();
+                }
             }
 
             // page slot — fills the rest, tracks rail width
             Rectangle {
-                x: rail.width; y: 0;
+                x: rail.width;
+                y: 0;
                 width: parent.width - rail.width;
                 height: parent.height;
 
                 // chats: side panel + main pane laid out side-by-side.
                 // Each page is wrapped in a fade-in Rectangle so navigation feels smooth.
-                if root.active-page == 0 : Rectangle {
+                if root.active-page == 0: Rectangle {
                     width: parent.width;
                     height: parent.height;
                     property <float> enter: 0;
-                    init => { self.enter = 1; }
+                    init => {
+                        self.enter = 1;
+                    }
                     opacity: self.enter;
-                    animate enter { duration: Theme.motion-fast ? 100ms : 180ms; easing: ease-out; }
+                    animate enter {
+                        duration: Theme.motion-fast ? 100ms : 180ms;
+                        easing: ease-out;
+                    }
 
                     // No chats yet → first-run get-started screen (with live relay
                     // setup). Once a chat exists, the normal list + pane shell.
-                    if root.chats.length == 0 : GetStartedScreen {
+                    if root.chats.length == 0: GetStartedScreen {
                         width: parent.width;
                         height: parent.height;
                         relays: root.network-relays;
@@ -700,16 +748,24 @@ export component DarkMatterLinux inherits Window {
                         connected: root.network-connected;
                         total: root.network-total;
                         network-status: root.network-status;
-                        add-relay(u) => { root.network-add-relay(u); }
-                        remove-relay(u) => { root.network-remove-relay(u); }
+                        add-relay(u) => {
+                            root.network-add-relay(u);
+                        }
+                        remove-relay(u) => {
+                            root.network-remove-relay(u);
+                        }
                         kp-published: root.kp-published;
                         kp-busy: root.kp-busy;
                         kp-status: root.kp-status;
-                        publish-kp => { root.kp-publish-clicked(); }
-                        start-chat => { root.new-chat-requested(); }
+                        publish-kp => {
+                            root.kp-publish-clicked();
+                        }
+                        start-chat => {
+                            root.new-chat-requested();
+                        }
                     }
 
-                    if root.chats.length > 0 : HorizontalLayout {
+                    if root.chats.length > 0: HorizontalLayout {
                         width: parent.width;
                         height: parent.height;
                         spacing: 0;
@@ -719,10 +775,17 @@ export component DarkMatterLinux inherits Window {
                             relays-connected: root.network-connected;
                             relays-total: root.network-total;
                             sync-secs: root.sync-secs;
-                            chat-clicked(idx) => { root.chat-selected(idx); }
-                            chat-context-menu(idx, ax, ay) => { root.request-chat-context(idx, ax, ay); }
-                            new-chat-clicked => { root.new-chat-requested(); }
+                            chat-clicked(idx) => {
+                                root.chat-selected(idx);
+                            }
+                            chat-context-menu(idx, ax, ay) => {
+                                root.request-chat-context(idx, ax, ay);
+                            }
+                            new-chat-clicked => {
+                                root.new-chat-requested();
+                            }
                         }
+
                         main-pane := MainPane {
                             horizontal-stretch: 1;
                             preferred-width: 0px;
@@ -733,18 +796,30 @@ export component DarkMatterLinux inherits Window {
                             mention-selected: root.mention-selected;
                             caret-pos: root.composer-caret-pos;
                             caret-tick: root.composer-caret-tick;
-                            caret-moved(c) => { root.composer-input-changed(c); }
-                            mention-nav(d) => { root.mention-nav(d); }
-                            mention-commit => { root.mention-commit(); }
-                            mention-choose(i) => { root.mention-choose(i); }
-                            mention-dismiss => { root.mention-dismiss(); }
+                            caret-moved(c) => {
+                                root.composer-input-changed(c);
+                            }
+                            mention-nav(d) => {
+                                root.mention-nav(d);
+                            }
+                            mention-commit => {
+                                root.mention-commit();
+                            }
+                            mention-choose(i) => {
+                                root.mention-choose(i);
+                            }
+                            mention-dismiss => {
+                                root.mention-dismiss();
+                            }
                             outgoing-on-right: root.outgoing-on-right;
                             my-picture: root.my-av-picture;
                             my-has-picture: root.my-av-has-picture;
                             messages: root.chats-messages[root.active-chat];
                             scroll-tick: root.messages-scroll-tick;
                             has-older: root.messages-has-older;
-                            request-older => { root.messages-request-older(); }
+                            request-older => {
+                                root.messages-request-older();
+                            }
                             draft <=> root.composer-draft;
                             reply-target-id: root.reply-target-id;
                             reply-target-author: root.reply-target-author;
@@ -752,14 +827,30 @@ export component DarkMatterLinux inherits Window {
                             reply-target-image: root.reply-target-image;
                             reply-target-has-image: root.reply-target-has-image;
                             editing-message-id: root.editing-message-id;
-                            send-clicked => { root.send-message(root.composer-draft); }
-                            cancel-reply => { root.cancel-reply(); }
-                            cancel-edit => { root.cancel-edit(); }
-                            react(id, emoji) => { root.react-message(id, emoji); }
-                            unreact(id) => { root.unreact-message(id); }
-                            request-picker(id, ax, ay) => { root.emoji-picker-requested(id, ax, ay); }
-                            request-reply(id, preview, author) => { root.request-reply(id, preview, author); }
-                            request-edit(id, current) => { root.request-edit(id, current); }
+                            send-clicked => {
+                                root.send-message(root.composer-draft);
+                            }
+                            cancel-reply => {
+                                root.cancel-reply();
+                            }
+                            cancel-edit => {
+                                root.cancel-edit();
+                            }
+                            react(id, emoji) => {
+                                root.react-message(id, emoji);
+                            }
+                            unreact(id) => {
+                                root.unreact-message(id);
+                            }
+                            request-picker(id, ax, ay) => {
+                                root.emoji-picker-requested(id, ax, ay);
+                            }
+                            request-reply(id, preview, author) => {
+                                root.request-reply(id, preview, author);
+                            }
+                            request-edit(id, current) => {
+                                root.request-edit(id, current);
+                            }
                             request-context-menu(id, text, author, can-edit, ax, ay) => {
                                 root.ctx-menu-id = id;
                                 root.ctx-menu-text = text;
@@ -769,41 +860,79 @@ export component DarkMatterLinux inherits Window {
                                 root.ctx-menu-y = ay;
                                 root.ctx-menu-open = true;
                             }
-                            show-history(id) => { root.show-edit-history(id); }
-                            retry(id) => { root.retry-message(id); }
-                            attach-clicked => { root.attach-file(); }
-                            paste-image => { root.paste-image(); }
+                            show-history(id) => {
+                                root.show-edit-history(id);
+                            }
+                            retry(id) => {
+                                root.retry-message(id);
+                            }
+                            attach-clicked => {
+                                root.attach-file();
+                            }
+                            paste-image => {
+                                root.paste-image();
+                            }
                             staged: root.composer-staged;
-                            remove-staged(i) => { root.remove-staged(i); }
+                            remove-staged(i) => {
+                                root.remove-staged(i);
+                            }
                             // Sentinel target id routes the picked emoji into
                             // the composer draft instead of a kind-7 reaction.
-                            emoji-clicked(ax, ay) => { root.emoji-picker-requested("\u{1}composer", ax, ay); }
-                            attachment-clicked(id) => { root.attachment-clicked(id); }
-                            audio-play-clicked(id) => { root.audio-play-clicked(id); }
-                            audio-seek-clicked(id, fraction) => { root.audio-seek-clicked(id, fraction); }
-                            album-cell-clicked(key) => { root.album-cell-clicked(key); }
+                            emoji-clicked(ax, ay) => {
+                                root.emoji-picker-requested("\u{1}composer", ax, ay);
+                            }
+                            attachment-clicked(id) => {
+                                root.attachment-clicked(id);
+                            }
+                            audio-play-clicked(id) => {
+                                root.audio-play-clicked(id);
+                            }
+                            audio-seek-clicked(id, fraction) => {
+                                root.audio-seek-clicked(id, fraction);
+                            }
+                            album-cell-clicked(key) => {
+                                root.album-cell-clicked(key);
+                            }
                             recording <=> root.composer-recording;
                             recording-secs: root.composer-recording-secs;
-                            record-clicked => { root.record-clicked(); }
-                            stop-recording => { root.stop-recording(); }
-                            cancel-recording => { root.cancel-recording(); }
+                            record-clicked => {
+                                root.record-clicked();
+                            }
+                            stop-recording => {
+                                root.stop-recording();
+                            }
+                            cancel-recording => {
+                                root.cancel-recording();
+                            }
                             is-group: root.chat-is-group;
                             can-show-members: root.chat-can-show-members;
                             chat-muted: root.active-chat-muted;
-                            mute-toggle-clicked => { root.toggle-mute-chat(); }
+                            mute-toggle-clicked => {
+                                root.toggle-mute-chat();
+                            }
                             encryption-banner-first-show: root.encryption-banner-first-show;
                             member-count: root.chat-member-count;
                             members: root.chat-members;
                             show-members <=> root.show-chat-members;
-                            members-toggle-clicked => { root.members-toggle-clicked(); }
+                            members-toggle-clicked => {
+                                root.members-toggle-clicked();
+                            }
                             can-add-members: root.chat-can-add-members;
                             add-member-busy: root.add-member-busy;
                             add-member-status: root.add-member-status;
                             add-member-draft <=> root.add-member-draft;
-                            add-member(npub) => { root.add-member(npub); }
-                            promote-admin(id) => { root.promote-admin(id); }
-                            demote-admin(id) => { root.demote-admin(id); }
-                            self-demote-admin => { root.self-demote-admin(); }
+                            add-member(npub) => {
+                                root.add-member(npub);
+                            }
+                            promote-admin(id) => {
+                                root.promote-admin(id);
+                            }
+                            demote-admin(id) => {
+                                root.demote-admin(id);
+                            }
+                            self-demote-admin => {
+                                root.self-demote-admin();
+                            }
                             group-picture: root.chat-group-picture;
                             group-has-picture: root.chat-group-has-picture;
                             group-av-a: root.chat-group-av-a;
@@ -813,45 +942,81 @@ export component DarkMatterLinux inherits Window {
                             group-image-busy: root.group-image-busy;
                             group-status: root.group-settings-status;
                             group-rename-draft <=> root.group-rename-draft;
-                            rename-group(name) => { root.rename-group(name); }
-                            change-group-image => { root.change-group-image(); }
-                            clear-group-image => { root.clear-group-image(); }
-                            accept-clicked => { root.accept-chat-request(); }
-                            block-clicked => { root.show-block-confirm = true; }
-                            archive-clicked => { root.archive-chat(); }
+                            rename-group(name) => {
+                                root.rename-group(name);
+                            }
+                            change-group-image => {
+                                root.change-group-image();
+                            }
+                            clear-group-image => {
+                                root.clear-group-image();
+                            }
+                            accept-clicked => {
+                                root.accept-chat-request();
+                            }
+                            block-clicked => {
+                                root.show-block-confirm = true;
+                            }
+                            archive-clicked => {
+                                root.archive-chat();
+                            }
                         }
                     }
                 }
 
-                if root.active-page == 1 : Rectangle {
+                if root.active-page == 1: Rectangle {
                     width: parent.width;
                     height: parent.height;
                     property <float> enter: 0;
-                    init => { self.enter = 1; }
+                    init => {
+                        self.enter = 1;
+                    }
                     opacity: self.enter;
-                    animate enter { duration: Theme.motion-fast ? 100ms : 180ms; easing: ease-out; }
+                    animate enter {
+                        duration: Theme.motion-fast ? 100ms : 180ms;
+                        easing: ease-out;
+                    }
                     ContactsPage {
                         width: parent.width;
                         height: parent.height;
                         contacts: root.contacts;
                         active-contact: root.active-contact;
-                        contact-clicked(idx) => { root.contact-selected(idx); }
-                        add-contact-clicked => { root.add-contact-requested(); }
-                        edit-nickname-clicked => { root.contact-nickname-requested(); }
-                        copy-npub-clicked => { root.copy-to-clipboard(root.contacts[root.active-contact].npub-full); }
-                        refresh-key-package-clicked => { root.contact-refresh-key-package(); }
-                        show-qr-clicked => { root.contact-show-qr(); }
-                        start-chat-clicked => { root.start-chat-with-contact(); }
+                        contact-clicked(idx) => {
+                            root.contact-selected(idx);
+                        }
+                        add-contact-clicked => {
+                            root.add-contact-requested();
+                        }
+                        edit-nickname-clicked => {
+                            root.contact-nickname-requested();
+                        }
+                        copy-npub-clicked => {
+                            root.copy-to-clipboard(root.contacts[root.active-contact].npub-full);
+                        }
+                        refresh-key-package-clicked => {
+                            root.contact-refresh-key-package();
+                        }
+                        show-qr-clicked => {
+                            root.contact-show-qr();
+                        }
+                        start-chat-clicked => {
+                            root.start-chat-with-contact();
+                        }
                     }
                 }
 
-                if root.active-page == 2 : Rectangle {
+                if root.active-page == 2: Rectangle {
                     width: parent.width;
                     height: parent.height;
                     property <float> enter: 0;
-                    init => { self.enter = 1; }
+                    init => {
+                        self.enter = 1;
+                    }
                     opacity: self.enter;
-                    animate enter { duration: Theme.motion-fast ? 100ms : 180ms; easing: ease-out; }
+                    animate enter {
+                        duration: Theme.motion-fast ? 100ms : 180ms;
+                        easing: ease-out;
+                    }
                     ArchivedPage {
                         width: parent.width;
                         height: parent.height;
@@ -859,18 +1024,27 @@ export component DarkMatterLinux inherits Window {
                         active-archived: root.active-archived;
                         members: root.chat-members;
                         is-group: root.chat-is-group;
-                        archive-clicked(idx) => { root.archive-selected(idx); }
-                        unarchive-clicked => { root.unarchive-chat(); }
+                        archive-clicked(idx) => {
+                            root.archive-selected(idx);
+                        }
+                        unarchive-clicked => {
+                            root.unarchive-chat();
+                        }
                     }
                 }
 
-                if root.active-page == 3 : Rectangle {
+                if root.active-page == 3: Rectangle {
                     width: parent.width;
                     height: parent.height;
                     property <float> enter: 0;
-                    init => { self.enter = 1; }
+                    init => {
+                        self.enter = 1;
+                    }
                     opacity: self.enter;
-                    animate enter { duration: Theme.motion-fast ? 100ms : 180ms; easing: ease-out; }
+                    animate enter {
+                        duration: Theme.motion-fast ? 100ms : 180ms;
+                        easing: ease-out;
+                    }
                     KeysPage {
                         width: parent.width;
                         height: parent.height;
@@ -879,51 +1053,92 @@ export component DarkMatterLinux inherits Window {
                         kp-relays: root.kp-relays;
                         kp-status: root.kp-status;
                         kp-busy: root.kp-busy;
-                        copy-npub-clicked => { root.copy-to-clipboard(root.my-npub); }
-                        publish-clicked => { root.kp-publish-clicked(); }
-                        rotate-clicked => { root.kp-rotate-clicked(); }
-                        refresh-clicked => { root.kp-refresh-clicked(); }
+                        copy-npub-clicked => {
+                            root.copy-to-clipboard(root.my-npub);
+                        }
+                        publish-clicked => {
+                            root.kp-publish-clicked();
+                        }
+                        rotate-clicked => {
+                            root.kp-rotate-clicked();
+                        }
+                        refresh-clicked => {
+                            root.kp-refresh-clicked();
+                        }
                     }
                 }
 
-                if root.active-page == 4 : Rectangle {
+                if root.active-page == 4: Rectangle {
                     width: parent.width;
                     height: parent.height;
                     property <float> enter: 0;
-                    init => { self.enter = 1; }
+                    init => {
+                        self.enter = 1;
+                    }
                     opacity: self.enter;
-                    animate enter { duration: Theme.motion-fast ? 100ms : 180ms; easing: ease-out; }
+                    animate enter {
+                        duration: Theme.motion-fast ? 100ms : 180ms;
+                        easing: ease-out;
+                    }
                     SettingsPage {
                         width: parent.width;
                         height: parent.height;
                         debug-enabled <=> root.debug-enabled;
                         debug-dump: root.debug-dump;
-                        debug-toggled(v) => { root.debug-toggled(v); }
-                        debug-refresh-clicked => { root.debug-refresh-clicked(); }
-                        debug-copy-clicked => { root.debug-copy-clicked(); }
+                        debug-toggled(v) => {
+                            root.debug-toggled(v);
+                        }
+                        debug-refresh-clicked => {
+                            root.debug-refresh-clicked();
+                        }
+                        debug-copy-clicked => {
+                            root.debug-copy-clicked();
+                        }
                         telemetry-enabled <=> root.telemetry-enabled;
-                        telemetry-toggled(v) => { root.telemetry-toggled(v); }
+                        telemetry-toggled(v) => {
+                            root.telemetry-toggled(v);
+                        }
                         audit-enabled <=> root.audit-enabled;
-                        audit-toggled(v) => { root.audit-toggled(v); }
+                        audit-toggled(v) => {
+                            root.audit-toggled(v);
+                        }
                         audit-status: root.audit-status;
                         audit-files: root.audit-files;
-                        audit-delete-file(p) => { root.audit-delete-file(p); }
-                        audit-refresh-files => { root.audit-refresh-files(); }
+                        audit-delete-file(p) => {
+                            root.audit-delete-file(p);
+                        }
+                        audit-refresh-files => {
+                            root.audit-refresh-files();
+                        }
                         network-relays: root.network-relays;
                         network-booted-relays: root.network-booted-relays;
                         network-connected: root.network-connected;
                         network-total: root.network-total;
                         network-status: root.network-status;
-                        network-add-relay(u) => { root.network-add-relay(u); }
-                        network-remove-relay(u) => { root.network-remove-relay(u); }
-                        network-refresh-health => { root.network-refresh-health(); }
-                        network-republish-relay-list => { root.network-republish-relay-list(); }
+                        network-add-relay(u) => {
+                            root.network-add-relay(u);
+                        }
+                        network-remove-relay(u) => {
+                            root.network-remove-relay(u);
+                        }
+                        network-refresh-health => {
+                            root.network-refresh-health();
+                        }
+                        network-republish-relay-list => {
+                            root.network-republish-relay-list();
+                        }
                         locale-display: root.locale-display;
-                        change-language-clicked => { root.change-language-clicked(); }
+                        change-language-clicked => {
+                            root.change-language-clicked();
+                        }
                         time-format: root.time-format;
                         date-format: root.date-format;
-                        time-format-selected(f) => { root.time-format-selected(f); }
-                        date-format-selected(f) => { root.date-format-selected(f); }
+                        time-format-selected(f) => {
+                            root.time-format-selected(f);
+                        }
+                        date-format-selected(f) => {
+                            root.date-format-selected(f);
+                        }
                         light-theme <=> root.light-theme;
                         retro-mode <=> root.retro-mode;
                         terminal-mode <=> root.terminal-mode;
@@ -932,32 +1147,57 @@ export component DarkMatterLinux inherits Window {
                         chalkboard-mode <=> root.chalkboard-mode;
                         accent-color <=> root.accent-color;
                         outgoing-on-right <=> root.outgoing-on-right;
-                        theme-mode-selected(mode) => { root.theme-mode-selected(mode); }
-                        accent-selected(idx) => { root.accent-selected(idx); }
-                        outgoing-on-right-toggled(v) => { root.outgoing-on-right-toggled(v); }
+                        theme-mode-selected(mode) => {
+                            root.theme-mode-selected(mode);
+                        }
+                        accent-selected(idx) => {
+                            root.accent-selected(idx);
+                        }
+                        outgoing-on-right-toggled(v) => {
+                            root.outgoing-on-right-toggled(v);
+                        }
                         storage-cache-size: root.storage-cache-size;
                         storage-clearing: root.storage-clearing;
-                        storage-clear-cache => { root.storage-clear-cache(); }
+                        storage-clear-cache => {
+                            root.storage-clear-cache();
+                        }
                         storage-vault-dir: root.storage-vault-dir;
-                        storage-open-vault-folder => { root.storage-open-vault-folder(); }
-                        storage-create-backup => { root.storage-create-backup(); }
-                        storage-import-backup => { root.storage-import-backup(); }
+                        storage-open-vault-folder => {
+                            root.storage-open-vault-folder();
+                        }
+                        storage-create-backup => {
+                            root.storage-create-backup();
+                        }
+                        storage-import-backup => {
+                            root.storage-import-backup();
+                        }
                         notifications-enabled <=> root.notifications-enabled;
                         notification-sound <=> root.notification-sound;
                         notification-preview <=> root.notification-preview;
-                        notifications-toggled(v) => { root.notifications-toggled(v); }
-                        notification-sound-toggled(v) => { root.notification-sound-toggled(v); }
-                        notification-preview-toggled(v) => { root.notification-preview-toggled(v); }
+                        notifications-toggled(v) => {
+                            root.notifications-toggled(v);
+                        }
+                        notification-sound-toggled(v) => {
+                            root.notification-sound-toggled(v);
+                        }
+                        notification-preview-toggled(v) => {
+                            root.notification-preview-toggled(v);
+                        }
                     }
                 }
 
-                if root.active-page == 5 : Rectangle {
+                if root.active-page == 5: Rectangle {
                     width: parent.width;
                     height: parent.height;
                     property <float> enter: 0;
-                    init => { self.enter = 1; }
+                    init => {
+                        self.enter = 1;
+                    }
                     opacity: self.enter;
-                    animate enter { duration: Theme.motion-fast ? 100ms : 180ms; easing: ease-out; }
+                    animate enter {
+                        duration: Theme.motion-fast ? 100ms : 180ms;
+                        easing: ease-out;
+                    }
                     ProfilePage {
                         width: parent.width;
                         height: parent.height;
@@ -975,11 +1215,21 @@ export component DarkMatterLinux inherits Window {
                         has-picture: root.my-av-has-picture;
                         nip05 <=> root.profile-nip05;
                         lud16 <=> root.profile-lud16;
-                        edit-clicked => { root.start-edit-profile(); }
-                        save-clicked => { root.save-profile(); }
-                        cancel-clicked => { root.cancel-edit-profile(); }
-                        copy-npub-clicked => { root.copy-to-clipboard(root.my-npub); }
-                        upload-picture-clicked => { root.upload-profile-picture(); }
+                        edit-clicked => {
+                            root.start-edit-profile();
+                        }
+                        save-clicked => {
+                            root.save-profile();
+                        }
+                        cancel-clicked => {
+                            root.cancel-edit-profile();
+                        }
+                        copy-npub-clicked => {
+                            root.copy-to-clipboard(root.my-npub);
+                        }
+                        upload-picture-clicked => {
+                            root.upload-profile-picture();
+                        }
                     }
                 }
             }
@@ -991,63 +1241,93 @@ export component DarkMatterLinux inherits Window {
         }
     }
 
-    if root.show-language-picker : LanguagePickerModal {
-        x: 0; y: 0;
+    if root.show-language-picker: LanguagePickerModal {
+        x: 0;
+        y: 0;
         width: root.width;
         height: root.height;
         active-locale: root.locale;
-        locale-selected(code) => { root.locale-selected(code); }
-        dismissed => { root.show-language-picker = false; }
+        locale-selected(code) => {
+            root.locale-selected(code);
+        }
+        dismissed => {
+            root.show-language-picker = false;
+        }
     }
 
-    if root.show-new-chat : StartNewChatModal {
-        x: 0; y: 0;
+    if root.show-new-chat: StartNewChatModal {
+        x: 0;
+        y: 0;
         width: root.width;
         height: root.height;
         chat-name <=> root.new-chat-name;
         members-text <=> root.new-chat-members;
         busy: root.new-chat-busy;
         status: root.new-chat-status;
-        start-chat(n, m) => { root.start-chat(n, m); }
-        dismissed => { root.modal-dismissed(); }
+        start-chat(n, m) => {
+            root.start-chat(n, m);
+        }
+        dismissed => {
+            root.modal-dismissed();
+        }
     }
 
-    if root.show-add-contact : AddContactModal {
-        x: 0; y: 0;
+    if root.show-add-contact: AddContactModal {
+        x: 0;
+        y: 0;
         width: root.width;
         height: root.height;
         npub-text <=> root.add-contact-input;
         busy: root.add-contact-busy;
         status: root.add-contact-status;
-        add-contact(n) => { root.add-contact(n); }
-        dismissed => { root.add-contact-dismissed(); }
+        add-contact(n) => {
+            root.add-contact(n);
+        }
+        dismissed => {
+            root.add-contact-dismissed();
+        }
     }
 
-    if root.show-account-switcher : AccountSwitcherModal {
-        x: 0; y: 0;
+    if root.show-account-switcher: AccountSwitcherModal {
+        x: 0;
+        y: 0;
         width: root.width;
         height: root.height;
         accounts: root.accounts;
-        select(id) => { root.switch-account(id); }
-        add-account => { root.add-account-requested(); }
-        dismissed => { root.show-account-switcher = false; }
+        select(id) => {
+            root.switch-account(id);
+        }
+        add-account => {
+            root.add-account-requested();
+        }
+        dismissed => {
+            root.show-account-switcher = false;
+        }
     }
 
-    if root.show-add-account : AddAccountModal {
-        x: 0; y: 0;
+    if root.show-add-account: AddAccountModal {
+        x: 0;
+        y: 0;
         width: root.width;
         height: root.height;
         nsec-text <=> root.add-account-nsec;
         generated: root.add-account-generated;
         primary-busy: root.add-account-busy;
         status: root.add-account-status;
-        add(nsec) => { root.add-account(nsec); }
-        generate => { root.generate-add-account-key(); }
-        dismissed => { root.add-account-dismissed(); }
+        add(nsec) => {
+            root.add-account(nsec);
+        }
+        generate => {
+            root.generate-add-account-key();
+        }
+        dismissed => {
+            root.add-account-dismissed();
+        }
     }
 
-    if root.show-import-backup : ImportBackupModal {
-        x: 0; y: 0;
+    if root.show-import-backup: ImportBackupModal {
+        x: 0;
+        y: 0;
         width: root.width;
         height: root.height;
         file-name: root.import-backup-file;
@@ -1055,34 +1335,51 @@ export component DarkMatterLinux inherits Window {
         password-text <=> root.import-backup-password;
         primary-busy: root.import-backup-busy;
         status: root.import-backup-status;
-        pick-file => { root.import-backup-pick-file(); }
-        import(pw) => { root.import-backup-submit(pw); }
-        dismissed => { root.import-backup-dismissed(); }
+        pick-file => {
+            root.import-backup-pick-file();
+        }
+        import(pw) => {
+            root.import-backup-submit(pw);
+        }
+        dismissed => {
+            root.import-backup-dismissed();
+        }
     }
 
-    if root.show-create-backup : BackupCreateModal {
-        x: 0; y: 0;
+    if root.show-create-backup: BackupCreateModal {
+        x: 0;
+        y: 0;
         width: root.width;
         height: root.height;
         password-text <=> root.create-backup-password;
         primary-busy: root.create-backup-busy;
         status: root.create-backup-status;
-        create(pw) => { root.create-backup-submit(pw); }
-        dismissed => { root.create-backup-dismissed(); }
+        create(pw) => {
+            root.create-backup-submit(pw);
+        }
+        dismissed => {
+            root.create-backup-dismissed();
+        }
     }
 
-    if root.show-nickname-modal : NicknameModal {
-        x: 0; y: 0;
+    if root.show-nickname-modal: NicknameModal {
+        x: 0;
+        y: 0;
         width: root.width;
         height: root.height;
         nickname-text <=> root.nickname-input;
         contact-name: root.nickname-contact-name;
-        save(n) => { root.set-contact-nickname(n); }
-        dismissed => { root.nickname-modal-dismissed(); }
+        save(n) => {
+            root.set-contact-nickname(n);
+        }
+        dismissed => {
+            root.nickname-modal-dismissed();
+        }
     }
 
-    if root.show-block-confirm : ConfirmModal {
-        x: 0; y: 0;
+    if root.show-block-confirm: ConfirmModal {
+        x: 0;
+        y: 0;
         width: root.width;
         height: root.height;
         title: @tr("Block this chat request?");
@@ -1092,24 +1389,34 @@ export component DarkMatterLinux inherits Window {
             root.show-block-confirm = false;
             root.block-chat-request();
         }
-        dismissed => { root.show-block-confirm = false; }
+        dismissed => {
+            root.show-block-confirm = false;
+        }
     }
 
-    if root.show-palette : CommandPalette {
-        x: 0; y: 0;
+    if root.show-palette: CommandPalette {
+        x: 0;
+        y: 0;
         width: root.width;
         height: root.height;
         actions: root.palette-actions;
         query <=> root.palette-query;
-        dismissed => { root.palette-dismissed(); }
-        execute(id) => { root.palette-execute(id); }
-        query-changed(q) => { root.palette-query-changed(q); }
+        dismissed => {
+            root.palette-dismissed();
+        }
+        execute(id) => {
+            root.palette-execute(id);
+        }
+        query-changed(q) => {
+            root.palette-query-changed(q);
+        }
     }
 
     // Right-click message context menu. Items re-fire the same callbacks the
     // hover toolbar uses, so the Rust side is untouched.
-    if root.ctx-menu-open : MessageContextMenu {
-        x: 0; y: 0;
+    if root.ctx-menu-open: MessageContextMenu {
+        x: 0;
+        y: 0;
         width: root.width;
         height: root.height;
         anchor-x: root.ctx-menu-x;
@@ -1142,14 +1449,17 @@ export component DarkMatterLinux inherits Window {
             root.delete-confirm-everyone = false;
             root.show-delete-confirm = true;
         }
-        dismissed => { root.ctx-menu-open = false; }
+        dismissed => {
+            root.ctx-menu-open = false;
+        }
     }
 
     // Forward destination picker — lists chats (minus the current one); a pick
     // hands the chosen index to Rust, which re-sends `forward-src-id`'s content
     // (text + re-encrypted attachments) into that chat.
-    if root.forward-picker-open : ForwardPickerModal {
-        x: 0; y: 0;
+    if root.forward-picker-open: ForwardPickerModal {
+        x: 0;
+        y: 0;
         width: root.width;
         height: root.height;
         chats: root.chats;
@@ -1160,18 +1470,23 @@ export component DarkMatterLinux inherits Window {
         source-text: root.ctx-menu-text;
         match-flags: root.forward-match-flags;
         visible-rows: root.forward-visible-rows;
-        query-changed(q) => { root.forward-filter-changed(q); }
+        query-changed(q) => {
+            root.forward-filter-changed(q);
+        }
         select(dest) => {
             root.forward-picker-open = false;
             root.request-forward(dest);
         }
-        dismissed => { root.forward-picker-open = false; }
+        dismissed => {
+            root.forward-picker-open = false;
+        }
     }
 
     // Right-click rail chat-row context menu — pin/unpin and mute/unmute the
     // row that was clicked (by captured index), independent of the open chat.
-    if root.chat-ctx-open : ChatContextMenu {
-        x: 0; y: 0;
+    if root.chat-ctx-open: ChatContextMenu {
+        x: 0;
+        y: 0;
         width: root.width;
         height: root.height;
         anchor-x: root.chat-ctx-x;
@@ -1186,17 +1501,18 @@ export component DarkMatterLinux inherits Window {
             root.chat-ctx-open = false;
             root.toggle-mute-chat-at(root.chat-ctx-idx);
         }
-        dismissed => { root.chat-ctx-open = false; }
+        dismissed => {
+            root.chat-ctx-open = false;
+        }
     }
 
-    if root.show-delete-confirm : ConfirmModal {
-        x: 0; y: 0;
+    if root.show-delete-confirm: ConfirmModal {
+        x: 0;
+        y: 0;
         width: root.width;
         height: root.height;
         title: root.delete-confirm-everyone ? @tr("Delete for everyone?") : @tr("Delete for me?");
-        subtitle: root.delete-confirm-everyone
-            ? @tr("This removes the message for everyone in the chat. This can't be undone.")
-            : @tr("This hides the message on this device only. Other people will still see it.");
+        subtitle: root.delete-confirm-everyone ? @tr("This removes the message for everyone in the chat. This can't be undone.") : @tr("This hides the message on this device only. Other people will still see it.");
         confirm-label: @tr("Delete");
         confirm => {
             root.show-delete-confirm = false;
@@ -1206,12 +1522,15 @@ export component DarkMatterLinux inherits Window {
                 root.request-delete-me(root.ctx-menu-id);
             }
         }
-        dismissed => { root.show-delete-confirm = false; }
+        dismissed => {
+            root.show-delete-confirm = false;
+        }
     }
 
     // `if`-mounted so the (expensive) emoji grid doesn't paint when closed.
-    if root.show-emoji-picker : EmojiPicker {
-        x: 0; y: 0;
+    if root.show-emoji-picker: EmojiPicker {
+        x: 0;
+        y: 0;
         width: root.width;
         height: root.height;
         anchor-x: root.emoji-anchor-x;
@@ -1221,36 +1540,51 @@ export component DarkMatterLinux inherits Window {
         tile: root.emoji-tile;
         total-shown: root.emoji-shown;
         query <=> root.emoji-query;
-        query-changed(q) => { root.emoji-query-changed(q); }
+        query-changed(q) => {
+            root.emoji-query-changed(q);
+        }
         picked(emoji) => {
             root.emoji-picked(root.emoji-target-message-id, emoji);
         }
-        dismissed => { root.emoji-picker-dismissed(); }
+        dismissed => {
+            root.emoji-picker-dismissed();
+        }
     }
 
-    if root.edit-history-open : EditHistoryModal {
-        x: 0; y: 0;
+    if root.edit-history-open: EditHistoryModal {
+        x: 0;
+        y: 0;
         width: root.width;
         height: root.height;
         versions: root.edit-history;
-        dismissed => { root.dismiss-edit-history(); }
+        dismissed => {
+            root.dismiss-edit-history();
+        }
     }
 
-    if root.image-viewer-open : ImageViewerModal {
-        x: 0; y: 0;
+    if root.image-viewer-open: ImageViewerModal {
+        x: 0;
+        y: 0;
         width: root.width;
         height: root.height;
         source: root.image-viewer-image;
         count: root.image-viewer-count;
         index: root.image-viewer-index;
         loading: root.image-viewer-loading;
-        dismissed => { root.dismiss-image-viewer(); }
-        prev => { root.image-viewer-prev(); }
-        next => { root.image-viewer-next(); }
+        dismissed => {
+            root.dismiss-image-viewer();
+        }
+        prev => {
+            root.image-viewer-prev();
+        }
+        next => {
+            root.image-viewer-next();
+        }
     }
 
-    if root.video-viewer-open : VideoViewerModal {
-        x: 0; y: 0;
+    if root.video-viewer-open: VideoViewerModal {
+        x: 0;
+        y: 0;
         width: root.width;
         height: root.height;
         frame: root.video-viewer-frame;
@@ -1260,15 +1594,26 @@ export component DarkMatterLinux inherits Window {
         progress: root.video-viewer-progress;
         pos-label: root.video-viewer-pos;
         dur-label: root.video-viewer-dur;
-        dismissed => { root.dismiss-video-viewer(); }
-        toggle-play => { root.video-viewer-toggle-play(); }
-        seek(f) => { root.video-viewer-seek(f); }
-        seek-relative(s) => { root.video-viewer-seek-relative(s); }
-        fullscreen => { root.video-viewer-fullscreen(); }
+        dismissed => {
+            root.dismiss-video-viewer();
+        }
+        toggle-play => {
+            root.video-viewer-toggle-play();
+        }
+        seek(f) => {
+            root.video-viewer-seek(f);
+        }
+        seek-relative(s) => {
+            root.video-viewer-seek-relative(s);
+        }
+        fullscreen => {
+            root.video-viewer-fullscreen();
+        }
     }
 
-    if root.peer-profile-open : ProfileModal {
-        x: 0; y: 0;
+    if root.peer-profile-open: ProfileModal {
+        x: 0;
+        y: 0;
         width: root.width;
         height: root.height;
         display-name: root.peer-profile-name;
@@ -1287,24 +1632,36 @@ export component DarkMatterLinux inherits Window {
         av-initials: root.peer-profile-av-initials;
         av-picture: root.peer-profile-picture;
         av-has-picture: root.peer-profile-has-picture;
-        copy-npub => { root.copy-to-clipboard(root.peer-profile-npub); }
-        add-contact => { root.peer-profile-add-contact(); }
-        dismissed => { root.peer-profile-dismissed(); }
+        copy-npub => {
+            root.copy-to-clipboard(root.peer-profile-npub);
+        }
+        add-contact => {
+            root.peer-profile-add-contact();
+        }
+        dismissed => {
+            root.peer-profile-dismissed();
+        }
     }
 
-    if root.contact-qr-open : QrModal {
-        x: 0; y: 0;
+    if root.contact-qr-open: QrModal {
+        x: 0;
+        y: 0;
         width: root.width;
         height: root.height;
         qr: root.contact-qr;
         npub-short: root.contact-qr-npub-short;
         name: root.contact-qr-name;
-        copy-npub => { root.copy-to-clipboard(root.contact-qr-npub); }
-        dismissed => { root.contact-qr-dismissed(); }
+        copy-npub => {
+            root.copy-to-clipboard(root.contact-qr-npub);
+        }
+        dismissed => {
+            root.contact-qr-dismissed();
+        }
     }
 
-    if root.logged-in && root.booting : SplashScreen {
-        x: 0; y: 0;
+    if root.logged-in && root.booting: SplashScreen {
+        x: 0;
+        y: 0;
         width: root.width;
         height: root.height;
         status: root.booting-status;
@@ -1331,8 +1688,9 @@ export component DarkMatterLinux inherits Window {
         }
     }
 
-    if !root.logged-in : LoginScreen {
-        x: 0; y: 0;
+    if !root.logged-in: LoginScreen {
+        x: 0;
+        y: 0;
         width: root.width;
         height: root.height;
         mode <=> root.login-mode;
@@ -1346,13 +1704,27 @@ export component DarkMatterLinux inherits Window {
         generated-has-avatar: root.generated-has-avatar;
         error: root.login-error;
         busy: root.login-busy;
-        login-with-nsec(n, p, c) => { root.login-with-nsec(n, p, c); }
-        generate-requested => { root.generate-key-requested(); }
-        confirm-saved(p, c) => { root.confirm-saved-key(p, c); }
-        unlock(p) => { root.unlock(p); }
-        reset-vault => { root.reset-vault(); }
-        copy-nsec(s) => { root.copy-nsec(s); }
-        import-backup => { root.storage-import-backup(); }
+        login-with-nsec(n, p, c) => {
+            root.login-with-nsec(n, p, c);
+        }
+        generate-requested => {
+            root.generate-key-requested();
+        }
+        confirm-saved(p, c) => {
+            root.confirm-saved-key(p, c);
+        }
+        unlock(p) => {
+            root.unlock(p);
+        }
+        reset-vault => {
+            root.reset-vault();
+        }
+        copy-nsec(s) => {
+            root.copy-nsec(s);
+        }
+        import-backup => {
+            root.storage-import-backup();
+        }
     }
 
     // Emoji glyph pre-paint. This Text contains every emoji in the catalog

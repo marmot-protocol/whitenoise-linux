@@ -10,7 +10,8 @@ export component SplashScreen inherits Rectangle {
     background: Palette.bg;
 
     VerticalLayout {
-        x: 0; y: 0;
+        x: 0;
+        y: 0;
         width: parent.width;
         height: parent.height;
         alignment: center;
@@ -20,12 +21,15 @@ export component SplashScreen inherits Rectangle {
         HorizontalLayout {
             alignment: center;
             spacing: 8px;
-            for i in 4 : Rectangle {
+            for i in 4: Rectangle {
                 width: i <= root.phase ? 28px : 10px;
                 height: 4px;
                 border-radius: (2px) * Theme.r-scale;
                 background: i <= root.phase ? Palette.mint : Palette.field-border;
-                animate width, background { duration: 220ms; easing: ease-out; }
+                animate width, background {
+                    duration: 220ms;
+                    easing: ease-out;
+                }
             }
         }
 
@@ -40,6 +44,7 @@ export component SplashScreen inherits Rectangle {
                 font-weight: 700;
                 font-family: Theme.font;
             }
+
             Rectangle {
                 height: 18px;
                 status-text := Text {
@@ -51,14 +56,17 @@ export component SplashScreen inherits Rectangle {
                     x: (parent.width - self.width) / 2;
                     y: 0;
                 }
-                if Theme.pixel-icons : Rectangle {
+
+                if Theme.pixel-icons: Rectangle {
                     width: 8px;
                     height: (12px) * Theme.fs-scale;
                     x: status-text.x + status-text.width + 2px;
                     y: 2px;
                     background: Palette.mint;
                     property <float> blink: 1.0;
-                    init => { self.blink = 0.0; }
+                    init => {
+                        self.blink = 0.0;
+                    }
                     opacity: self.blink;
                     animate blink {
                         duration: 600ms;

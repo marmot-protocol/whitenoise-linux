@@ -20,7 +20,10 @@ export component Tooltip inherits Rectangle {
     drop-shadow-offset-x: Theme.hard-shadow ? 2px : 0px;
     drop-shadow-offset-y: Theme.hard-shadow ? 2px : 1px;
     drop-shadow-blur: Theme.hard-shadow ? 0px : 4px;
-    animate opacity { duration: 120ms; easing: ease-out; }
+    animate opacity {
+        duration: 120ms;
+        easing: ease-out;
+    }
 
     HorizontalLayout {
         padding-left: 10px;

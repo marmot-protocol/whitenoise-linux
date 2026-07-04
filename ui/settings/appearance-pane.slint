@@ -33,7 +33,9 @@ export component AppearancePane inherits DetailPage {
     PageHeader {
         title: @tr("Appearance");
         caption: "";
-        MonitorIcon { stroke: Palette.mint; }
+        MonitorIcon {
+            stroke: Palette.mint;
+        }
     }
 
     Section {
@@ -44,16 +46,21 @@ export component AppearancePane inherits DetailPage {
                 sublabel: @tr("Pick the whole app's look.");
                 ThemePicker {
                     selected-id: root.chalkboard-mode ? 6 : (root.synthwave-mode ? 5 : (root.crayon-mode ? 4 : (root.terminal-mode ? 3 : (root.retro-mode ? 2 : (root.light-theme ? 1 : 0)))));
-                    theme-mode-selected(mode) => { root.theme-mode-selected(mode); }
+                    theme-mode-selected(mode) => {
+                        root.theme-mode-selected(mode);
+                    }
                 }
             }
+
             PrefRow {
                 label: @tr("Accent color");
                 value: accent-names[root.accent-color];
                 show-divider: false;
                 AccentPicker {
                     selected <=> root.accent-color;
-                    accent-selected(idx) => { root.accent-selected(idx); }
+                    accent-selected(idx) => {
+                        root.accent-selected(idx);
+                    }
                 }
             }
         }
@@ -68,7 +75,9 @@ export component AppearancePane inherits DetailPage {
                 show-divider: false;
                 Toggle {
                     on <=> root.outgoing-on-right;
-                    toggled => { root.outgoing-on-right-toggled(root.outgoing-on-right); }
+                    toggled => {
+                        root.outgoing-on-right-toggled(root.outgoing-on-right);
+                    }
                 }
             }
         }

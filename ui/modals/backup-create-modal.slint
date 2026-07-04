@@ -15,7 +15,9 @@ export component BackupCreateModal inherits Modal {
     secondary-label: @tr("Cancel");
     primary-label: @tr("Choose location…");
     primary-busy-label: @tr("Saving…");
-    primary => { root.create(root.password-text); }
+    primary => {
+        root.create(root.password-text);
+    }
 
     ModalField {
         label: @tr("VAULT PASSWORD");
@@ -23,6 +25,8 @@ export component BackupCreateModal inherits Modal {
         text <=> root.password-text;
         password: true;
         autofocus: true;
-        submitted => { root.create(root.password-text); }
+        submitted => {
+            root.create(root.password-text);
+        }
     }
 }
