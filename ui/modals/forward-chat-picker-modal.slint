@@ -7,7 +7,10 @@ import { Avatar } from "../primitives/avatar.slint";
 // attachments, re-encrypted for the target group — the Rust side owns that).
 // The current chat is skipped: forwarding back into the same thread is a no-op.
 // A quoted chip shows which message is about to be forwarded, and the search
-// field narrows the destination list by chat name.
+// field narrows the destination list by chat name. The search field owns the
+// keyboard: typing filters, ↑/↓ move the row cursor, Enter forwards to the
+// cursored row (`capture-nav` on the field routes those keys here before the
+// TextInput can swallow them as caret moves).
 export component ForwardPickerModal inherits Modal {
     callback select(int);   // destination chat index (into `chats`)
     in property <[ChatMeta]> chats;
@@ -20,10 +23,66 @@ export component ForwardPickerModal inherits Modal {
     // match) and pushes one match flag per `chats` row. Only consulted while
     // the query is non-empty, so a stale array from a previous open is inert.
     in property <[bool]> match-flags;
+    // Chat indices of the rows currently shown, in list order — recomputed by
+    // Rust alongside `match-flags` (active chat skipped, query applied). The
+    // keyboard cursor walks this array so hidden rows are never focusable.
+    in property <[int]> visible-rows;
     callback query-changed(string);
 
     property <string> query;
-    changed query => { root.query-changed(root.query); }
+    changed query => {
+        // A new query reorders the visible set, so the cursor restarts at the
+        // top match and the list scrolls back up to show it.
+        root.cursor = 0;
+        flick.viewport-y = 0;
+        root.query-changed(root.query);
+    }
+    // Prime `visible-rows`/`match-flags` for the empty query on open: the root
+    // arrays outlive the modal and would otherwise be stale from a previous
+    // open (different active chat).
+    init => { root.query-changed(root.query); }
+    // Chats can be re-pushed while the picker is open (a new message re-sorts
+    // the list); re-derive the visible set so the cursor tracks fresh indices.
+    changed chats => { root.query-changed(root.query); }
+
+    // Keyboard cursor: a position in `visible-rows`, resolved to a chat index
+    // for row highlighting and Enter. -1 = nothing selectable.
+    property <int> cursor: 0;
+    property <int> cursor-chat: root.visible-rows.length == 0 ? -1
+        : root.visible-rows[min(root.cursor, root.visible-rows.length - 1)];
+
+    function commit() {
+        // Bounds re-check besides the -1 guard: `visible-rows` may lag a
+        // `chats` mutation by one frame, and forwarding must never target the
+        // source chat or a vanished index.
+        if (root.cursor-chat >= 0 && root.cursor-chat < root.chats.length
+            && root.cursor-chat != root.active-chat) {
+            root.select(root.cursor-chat);
+        }
+    }
+    // ↑/↓ step the cursor through the visible rows, wrapping at both ends.
+    function move-cursor(delta: int) {
+        if (root.visible-rows.length > 0) {
+            if (delta < 0) {
+                root.cursor = root.cursor <= 0 || root.cursor >= root.visible-rows.length
+                    ? root.visible-rows.length - 1
+                    : root.cursor - 1;
+            } else {
+                root.cursor = mod(root.cursor + 1, root.visible-rows.length);
+            }
+            root.scroll-to-cursor();
+        }
+    }
+    // Nudge the flickable just enough to keep the cursored row (62px pitch)
+    // fully in view; no-op while everything already fits.
+    function scroll-to-cursor() {
+        if (62px * root.cursor < -flick.viewport-y) {
+            flick.viewport-y = -62px * root.cursor;
+        } else if (62px * (root.cursor + 1) > flick.height - flick.viewport-y) {
+            flick.viewport-y = flick.height - 62px * (root.cursor + 1);
+        }
+    }
+
     // Rows stack with zero layout spacing (the 6px gap lives inside each shown
     // row), so the list's preferred height is 0 exactly when no row is visible.
     property <bool> any-visible: list.preferred-height > 0px;
@@ -86,12 +145,16 @@ export component ForwardPickerModal inherits Modal {
         placeholder: @tr("Search chats…");
         text <=> root.query;
         autofocus: true;
+        capture-nav: true;
+        nav(delta) => { root.move-cursor(delta); }
+        submitted => { root.commit(); }
+        nav-dismissed => { root.dismissed(); }
     }
 
     Rectangle {
         vertical-stretch: 1;
 
-        Flickable {
+        flick := Flickable {
             width: 100%;
             height: 100%;
             viewport-width: self.width;
@@ -104,6 +167,8 @@ export component ForwardPickerModal inherits Modal {
                     property <bool> shown: idx != root.active-chat
                         && (root.query == ""
                             || (idx < root.match-flags.length && root.match-flags[idx]));
+                    // Keyboard cursor on this row (mouse hover is independent).
+                    property <bool> cursored: idx == root.cursor-chat;
                     height: shown ? 62px : 0px;
                     visible: shown;
 
@@ -112,8 +177,19 @@ export component ForwardPickerModal inherits Modal {
                         width: parent.width;
                         height: 56px;
                         border-radius: (10px) * Theme.r-scale;
-                        background: row-touch.has-hover ? Palette.hover : transparent;
+                        background: cursored || row-touch.has-hover ? Palette.hover : transparent;
                         animate background { duration: 100ms; easing: ease-out; }
+
+                        // Accent focus bar on the cursored row, same treatment
+                        // as the language picker's rows.
+                        if cursored : Rectangle {
+                            x: 0;
+                            width: 2px;
+                            y: (parent.height - self.height) / 2;
+                            height: 26px;
+                            background: Palette.mint;
+                            border-radius: 1px;
+                        }
 
                         // Wraps the row content so it wins the hit-test over the card's
                         // click-swallower (nested TouchAreas beat outer ones).
