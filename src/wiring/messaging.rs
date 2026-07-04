@@ -109,8 +109,13 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 if text.is_empty() {
                     return;
                 }
+                let draft = {
+                    let groups = group_ids.lock().unwrap();
+                    let st = settings_cell.borrow();
+                    draft_for_chat_index(&st, &groups, ui.get_active_chat())
+                };
                 ui.set_editing_message_id(s(""));
-                ui.set_composer_draft(s(""));
+                ui.set_composer_draft(s(&draft));
                 edit_op(editing_id, text);
                 return;
             }

@@ -46,8 +46,29 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // `edit_op`. Entering edit mode clears any pending reply target.
     ui.on_request_edit({
         let weak = ui.as_weak();
+        let settings_cell = settings_cell.clone();
+        let group_ids = group_ids.clone();
         move |message_id, current_text| {
             let Some(ui) = weak.upgrade() else { return };
+            // Preserve the unsent draft before the composer is repurposed for
+            // the edit body. Normal chat-switch/quit persistence intentionally
+            // skips while editing because the composer no longer contains a
+            // draft at that point.
+            {
+                let draft = ui.get_composer_draft().to_string();
+                let editing_id = ui.get_editing_message_id().to_string();
+                let groups = group_ids.lock().unwrap();
+                let mut st = settings_cell.borrow_mut();
+                if stash_pre_edit_draft_for_chat_index(
+                    &mut st,
+                    &groups,
+                    ui.get_active_chat(),
+                    &editing_id,
+                    &draft,
+                ) {
+                    st.save();
+                }
+            }
             ui.set_reply_target_id(s(""));
             ui.set_reply_target_author(s(""));
             ui.set_reply_target_preview(s(""));
@@ -59,10 +80,17 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     });
     ui.on_cancel_edit({
         let weak = ui.as_weak();
+        let settings_cell = settings_cell.clone();
+        let group_ids = group_ids.clone();
         move || {
             let Some(ui) = weak.upgrade() else { return };
+            let draft = {
+                let groups = group_ids.lock().unwrap();
+                let st = settings_cell.borrow();
+                draft_for_chat_index(&st, &groups, ui.get_active_chat())
+            };
             ui.set_editing_message_id(s(""));
-            ui.set_composer_draft(s(""));
+            ui.set_composer_draft(s(&draft));
         }
     });
 
@@ -1295,5 +1323,40 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 }
             },
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn edit_draft_stash_round_trips_active_chat_draft() {
+        let mut settings = Settings::default();
+        let group_ids = vec!["chat-a".to_string(), "chat-b".to_string()];
+
+        assert!(stash_draft_for_chat_index(
+            &mut settings,
+            &group_ids,
+            1,
+            "draft before edit"
+        ));
+
+        assert_eq!(
+            draft_for_chat_index(&settings, &group_ids, 1),
+            "draft before edit"
+        );
+        assert_eq!(draft_for_chat_index(&settings, &group_ids, 0), "");
+    }
+
+    #[test]
+    fn edit_draft_stash_clears_existing_draft_when_composer_empty() {
+        let mut settings = Settings::default();
+        let group_ids = vec!["chat-a".to_string()];
+        assert!(settings.set_draft("chat-a", "old draft"));
+
+        assert!(stash_draft_for_chat_index(&mut settings, &group_ids, 0, ""));
+
+        assert_eq!(draft_for_chat_index(&settings, &group_ids, 0), "");
     }
 }
