@@ -1405,8 +1405,8 @@ msgid "Privacy & developer flags"
 msgstr "Flag sviluppatore"
 
 msgctxt "AboutPane"
-msgid "Private material lives in your OS keychain or encrypted store."
-msgstr "Il materiale privato risiede nel portachiavi del sistema operativo o in un archivio crittografato."
+msgid "Private material lives in a password-encrypted vault on this device."
+msgstr "Il materiale privato risiede in una cassaforte crittografata con password su questo dispositivo."
 
 #, fuzzy
 msgctxt "ProfileTile"

@@ -1403,8 +1403,8 @@ msgid "Privacy & developer flags"
 msgstr "開発者フラグ"
 
 msgctxt "AboutPane"
-msgid "Private material lives in your OS keychain or encrypted store."
-msgstr "秘密情報は OS のキーチェーンまたは暗号化ストアに保管されます。"
+msgid "Private material lives in a password-encrypted vault on this device."
+msgstr "秘密情報はこのデバイス上のパスワードで暗号化された保管庫に保存されます。"
 
 #, fuzzy
 msgctxt "ProfileTile"

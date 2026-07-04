@@ -1353,7 +1353,7 @@ msgid "Privacy & developer flags"
 msgstr ""
 
 msgctxt "AboutPane"
-msgid "Private material lives in your OS keychain or encrypted store."
+msgid "Private material lives in a password-encrypted vault on this device."
 msgstr ""
 
 msgctxt "ProfileTile"
