@@ -6,6 +6,7 @@ import { SendIcon } from "../icons/send-icon.slint";
 import { LineInput } from "../primitives/line-input.slint";
 import { Button, MicroButton } from "../primitives/button.slint";
 import { Tooltip } from "../primitives/tooltip.slint";
+import { CheckMark } from "../icons/check-mark.slint";
 
 export component Composer inherits Rectangle {
     in-out property <string> draft <=> composer-input.text;
@@ -50,6 +51,12 @@ export component Composer inherits Rectangle {
     // Open the emoji picker anchored at (x, y) in window coords; the picked
     // emoji is appended to the draft rather than sent as a reaction.
     callback emoji-clicked(length, length);
+    // While the open chat is a pending request the input pill and its
+    // controls are hidden and a flat "Accept to start messaging" action bar
+    // takes their place in the composer slot. `accept-clicked` routes to the
+    // same handler as the header's Accept button.
+    in property <bool> chat-request: false;
+    callback accept-clicked();
 
     property <length> min-row-h: 52px;
     property <length> max-row-h: 132px;
@@ -280,8 +287,11 @@ export component Composer inherits Rectangle {
             horizontal-stretch: 1;
             height: root.row-h;
             border-radius: (10px) * Theme.r-scale;
-            background: Palette.panel;
-            border-width: 1px;
+            // While the chat is a pending request the pill chrome drops away
+            // entirely — the action bar below replaces the input rather than
+            // graying it out.
+            background: root.chat-request ? transparent : Palette.panel;
+            border-width: root.chat-request ? 0px : 1px;
             border-color: root.recording
                 ? Palette.danger
                 : (composer-input.has-focus ? Palette.mint-dim : Palette.border-2);
@@ -291,7 +301,11 @@ export component Composer inherits Rectangle {
             animate drop-shadow-blur { duration: 160ms; easing: ease-out; }
 
             // Normal composer: paperclip, mic, text input, emoji, send.
+            // Hidden (not just disabled) while the chat is a pending request;
+            // the elements stay instantiated because `composer-input` and
+            // `send-button` anchor the floating hint/badge/popover elements.
             HorizontalLayout {
+                visible: !root.chat-request;
                 padding-left: 16px; padding-right: 8px;
                 spacing: 12px;
                 alignment: stretch;
@@ -317,6 +331,7 @@ export component Composer inherits Rectangle {
                     fg: Palette.text-hi;
                     placeholder-color: Palette.text-lo;
                     single-line: false;
+                    enabled: !root.chat-request;
                     horizontal-stretch: 1;
                     capture-nav: root.mention-active;
                     submit => { root.send-clicked(); }
@@ -358,6 +373,10 @@ export component Composer inherits Rectangle {
                 // effect badge/popover anchor math below is unchanged.
                 send-button := Button {
                     focusable: true;
+                    // Hidden while a chat request is pending; also disabled
+                    // so Tab focus can't reach it and Enter/Space start a
+                    // recording.
+                    enabled: !root.chat-request;
                     accessible-label: root.primary-action-label;
                     clicked => {
                         if (root.can-send) { root.send-clicked(); }
@@ -468,6 +487,48 @@ export component Composer inherits Rectangle {
                     }
                 }
             }
+
+            // Chat-request action bar: replaces the composer while the chat
+            // is a pending request. The input pill and its controls are
+            // hidden above, so this renders as a flat centered bar in the
+            // composer slot (Signal swaps the composer for the request
+            // actions the same way). The TouchArea absorbs clicks aimed at
+            // the hidden controls; Accept routes to the same handler as the
+            // header button.
+            if root.chat-request : Rectangle {
+                x: 0; y: 0;
+                width: 100%; height: 100%;
+                TouchArea { }
+
+                HorizontalLayout {
+                    spacing: 12px;
+                    alignment: center;
+
+                    Text {
+                        text: @tr("Accept the request to start messaging");
+                        color: Palette.text-lo;
+                        font-size: Theme.fs(13px, 16px);
+                        font-family: Theme.font;
+                        vertical-alignment: center;
+                    }
+
+                    Button {
+                        label: @tr("Accept");
+                        focusable: true;
+                        y: (parent.height - self.height) / 2;
+                        bg-color: Palette.mint;
+                        fg: Palette.bubble-out-fg;
+                        outline: Palette.mint;
+                        hover-bg: Palette.mint-hi;
+                        hover-outline: Palette.mint-hi;
+                        clicked => { root.accept-clicked(); }
+                        CheckMark {
+                            stroke: Palette.bubble-out-fg;
+                            double: false;
+                        }
+                    }
+                }
+            }
         }
     }
     }
@@ -475,7 +536,7 @@ export component Composer inherits Rectangle {
     // Badge: the chosen effect's emoji over the top-right of Send, when an
     // effect is armed. Lives at the composer root (not in the Button's layout
     // slot, which ignores explicit x/y) and floats over the button corner.
-    if EffectCatalog.selected > 0 && root.can-send : Rectangle {
+    if EffectCatalog.selected > 0 && root.can-send && !root.chat-request : Rectangle {
         x: send-button.absolute-position.x - root.absolute-position.x + send-button.width - self.width + 4px;
         y: send-button.absolute-position.y - root.absolute-position.y - 4px;
         width: 18px;

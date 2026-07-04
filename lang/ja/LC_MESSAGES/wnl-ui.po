@@ -143,6 +143,14 @@ msgctxt "ChatHeader"
 msgid "Accept"
 msgstr "承認"
 
+msgctxt "Composer"
+msgid "Accept"
+msgstr "承認"
+
+msgctxt "Composer"
+msgid "Accept the request to start messaging"
+msgstr "リクエストを承認するとメッセージを送信できます"
+
 msgctxt "DebugPane"
 msgid "Account / key packages / groups"
 msgstr "アカウント / キーパッケージ / グループ"

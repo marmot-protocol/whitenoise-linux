@@ -152,6 +152,14 @@ msgctxt "ChatHeader"
 msgid "Accept"
 msgstr ""
 
+msgctxt "Composer"
+msgid "Accept"
+msgstr ""
+
+msgctxt "Composer"
+msgid "Accept the request to start messaging"
+msgstr ""
+
 msgctxt "DebugPane"
 msgid "Account / key packages / groups"
 msgstr ""

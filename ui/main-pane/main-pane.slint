@@ -160,6 +160,8 @@ export component MainPane inherits Rectangle {
                 album-cell-clicked(key) => { root.album-cell-clicked(key); }
             }
             composer := Composer {
+                chat-request: root.chat.is-chat-request;
+                accept-clicked => { root.accept-clicked(); }
                 reply-target-id: root.reply-target-id;
                 reply-target-author: root.reply-target-author;
                 reply-target-preview: root.reply-target-preview;
