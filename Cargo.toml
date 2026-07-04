@@ -20,6 +20,10 @@ live-reload = ["wnl-ui/live-reload", "slint/live-preview"]
 
 [dependencies]
 slint = "1.8"
+# Word boundaries for double-click text selection. Dictionary/LSTM segmentation
+# handles unspaced scripts (Japanese, Chinese, Thai) that char-class scanning
+# cannot; already in the tree as a transitive dependency of Slint's parley.
+icu_segmenter = "2"
 # Owns the Slint compilation + the huge generated UI module, so Rust edits
 # here don't recompile the whole UI tree. See wnl-ui/src/lib.rs.
 # default-features off so the root `live-reload` feature (above) is the single

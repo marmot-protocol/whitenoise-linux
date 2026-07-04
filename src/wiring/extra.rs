@@ -80,6 +80,39 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
+    // ─── Word selection (double-click on a bubble) ─────────────────────
+    //
+    // The bubble resolved the clicked document position; expand it to word
+    // boundaries within the run and write the endpoints back into the
+    // TextSelection global, which the run cells render directly.
+    ui.global::<TextSelection>().on_request_word({
+        let weak = ui.as_weak();
+        move |message_id, line, run, frac| {
+            let Some(ui) = weak.upgrade() else { return };
+            let idx = ui.get_active_chat();
+            if idx < 0 || message_id.is_empty() {
+                return;
+            }
+            let chats_messages = ui.get_chats_messages();
+            let span = with_inner_messages(&chats_messages, idx as usize, |vm| {
+                find_message_row(vm, &message_id)
+                    .and_then(|pos| vm.row_data(pos))
+                    .and_then(|row| word_span_at(&row.lines, line, run, frac))
+            })
+            .flatten();
+            let Some((from, to)) = span else { return };
+            let sel = ui.global::<TextSelection>();
+            sel.set_owner(message_id);
+            sel.set_a_line(line);
+            sel.set_a_run(run);
+            sel.set_a_frac(from);
+            sel.set_b_line(line);
+            sel.set_b_run(run);
+            sel.set_b_frac(to);
+            sel.set_active(true);
+        }
+    });
+
     // ─── Delete for everyone (kind-5 retraction, optimistic) ───────────
     //
     // Same optimistic shape as `edit_op`: stamp the overlay, tombstone the row

@@ -84,7 +84,12 @@ export {
 }
 // Localized time/date vocabulary for the Rust-side stamp formatters, snapshot
 // on the UI thread at startup and on locale change (same bridge as ErrorCopy).
-export { TimeCopy }
+export {
+    TimeCopy,
+}
+// In-bubble text-selection state. Rust binds `request-word` (double-click word
+// selection) and writes the resolved endpoints back into the global.
+export { TextSelection }
 export component DarkMatterLinux inherits Window {
     // Window/taskbar title. Rust prefixes the total unread count — `(3) darkmatter`
     // — so the count shows wherever the OS surfaces the title (taskbar/tray/Alt-Tab).

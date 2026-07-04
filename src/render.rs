@@ -875,9 +875,15 @@ pub(crate) fn tokenize_message_lines(text: &str, max_width: f32, base_fs: f32) -
         env,
     );
     md_assign_phases(&mut lines);
+    // The selection edge claims live on the outermost lines that render run
+    // cells; rules and empty lines render none (see MessageLine in
+    // tokens.slint).
+    let first_content = lines.iter().position(|l| !l.runs.is_empty());
+    let last_content = lines.iter().rposition(|l| !l.runs.is_empty());
     lines
         .into_iter()
-        .map(|l| MessageLine {
+        .enumerate()
+        .map(|(i, l)| MessageLine {
             runs: ModelRc::new(VecModel::from(l.runs)),
             indent: l.indent,
             scale: l.scale,
@@ -885,8 +891,61 @@ pub(crate) fn tokenize_message_lines(text: &str, max_width: f32, base_fs: f32) -
             code_block: l.code_block,
             rule: l.rule,
             hard_break: l.hard_break,
+            first_content: Some(i) == first_content,
+            last_content: Some(i) == last_content,
         })
         .collect()
+}
+
+/// Expand a document position (line, run, fraction of the run's width) to the
+/// word around it, returned as a (start, end) fraction pair within the same
+/// run. Word boundaries come from ICU segmentation, whose dictionary/LSTM
+/// models segment unspaced scripts (Japanese, Chinese, Thai) that character
+/// classes cannot; an emoji run is one atomic word. `None` when the position
+/// does not resolve to a non-empty run.
+pub(crate) fn word_span_at(
+    lines: &ModelRc<MessageLine>,
+    line: i32,
+    run: i32,
+    frac: f32,
+) -> Option<(f32, f32)> {
+    if line < 0 || run < 0 {
+        return None;
+    }
+    let l = lines.row_data(line as usize)?;
+    let r = l.runs.row_data(run as usize)?;
+    if r.is_emoji {
+        return Some((0.0, 1.0));
+    }
+    let text = r.text.as_str();
+    let n = text.chars().count();
+    if n == 0 {
+        return None;
+    }
+    // The fraction maps to a character with the wrapper's uniform-advance
+    // assumption; the segmenter works in byte offsets.
+    let idx = ((frac * n as f32).floor() as usize).min(n - 1);
+    let byte_idx = text
+        .char_indices()
+        .nth(idx)
+        .map(|(b, _)| b)
+        .unwrap_or_default();
+    // Borrowed segmenter over compiled data: construction is free, so no
+    // caching is needed for a per-double-click call.
+    let seg = icu_segmenter::WordSegmenter::new_auto(Default::default());
+    let mut start_b = 0usize;
+    let mut end_b = text.len();
+    for boundary in seg.segment_str(text) {
+        if boundary <= byte_idx {
+            start_b = boundary;
+        } else {
+            end_b = boundary;
+            break;
+        }
+    }
+    let start = text[..start_b].chars().count();
+    let end = text[..end_b].chars().count();
+    Some((start as f32 / n as f32, end as f32 / n as f32))
 }
 
 /// Character count of a run in selection units. Emoji runs are atomic: one

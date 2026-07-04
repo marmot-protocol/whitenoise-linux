@@ -865,6 +865,12 @@ export struct MessageLine {
     // two visual lines join with a newline or with nothing (the inter-word
     // space survives at the end of the previous line when the wrapper breaks).
     hard-break: bool,
+    // Marks the first / last line that actually has run cells. Selection edge
+    // claims hang off these (not off index 0 / length-1) so points above or
+    // below the text block still resolve when the outermost line is a rule
+    // or an empty line, which renders no cells.
+    first-content: bool,
+    last-content: bool,
 }
 
 // Signal-style in-bubble text selection. Exactly one message can hold a
@@ -892,6 +898,12 @@ export global TextSelection {
     in-out property <int> b-line: -1;
     in-out property <int> b-run: -1;
     in-out property <float> b-frac;
+
+    // Double-click word selection. The bubble passes the clicked document
+    // position (already resolved by the run cells); Rust expands it to word
+    // boundaries within the run and writes the endpoints back into this
+    // global (bound in src/wiring/extra.rs).
+    callback request-word(string, int, int, float);
 
     public function begin(id: string, x: length, y: length) {
         self.owner = id;
