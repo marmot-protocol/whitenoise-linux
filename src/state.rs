@@ -349,6 +349,41 @@ pub(crate) fn s(v: &str) -> SharedString {
     v.into()
 }
 
+/// Persist the composer draft for the currently active chat index.
+///
+/// Entering edit mode temporarily reuses the composer for the edited message,
+/// so the pre-edit draft must be saved before the edit text is loaded. The UI's
+/// active-chat index is signed; invalid/stale indexes are ignored.
+pub(crate) fn stash_draft_for_chat_index(
+    settings: &mut Settings,
+    group_ids: &[String],
+    active_chat: i32,
+    draft: &str,
+) -> bool {
+    let Ok(idx) = usize::try_from(active_chat) else {
+        return false;
+    };
+    let Some(group_hex) = group_ids.get(idx) else {
+        return false;
+    };
+    settings.set_draft(group_hex, draft)
+}
+
+/// Return the saved composer draft for the currently active chat index.
+pub(crate) fn draft_for_chat_index(
+    settings: &Settings,
+    group_ids: &[String],
+    active_chat: i32,
+) -> String {
+    let Ok(idx) = usize::try_from(active_chat) else {
+        return String::new();
+    };
+    group_ids
+        .get(idx)
+        .map(|group_hex| settings.draft(group_hex).to_string())
+        .unwrap_or_default()
+}
+
 /// Gate for setting a brand-new vault password. This password is the only thing
 /// protecting every stored secret, and there is no recovery — so we require a
 /// minimum length and a matching confirmation.
