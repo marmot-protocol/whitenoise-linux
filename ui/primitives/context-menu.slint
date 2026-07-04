@@ -69,11 +69,19 @@ export component MessageContextMenu inherits Rectangle {
     in property <length> anchor-x;
     in property <length> anchor-y;
     in property <bool> can-edit: false;
+    // True when the message has body text to copy (attachment-only messages
+    // don't). Gates the "Copy text" row.
+    in property <bool> can-copy: false;
+    // True when this message holds the active text selection. Gates the
+    // "Copy selection" row; implies can-copy (a selection needs body lines).
+    in property <bool> has-selection: false;
     // Fired with the panel's clamped position so the emoji picker can open
     // where the menu was.
     callback add-reaction(length, length);
     callback reply();
     callback forward();
+    callback copy-text();
+    callback copy-selection();
     callback edit();
     // "Delete for everyone" (kind-5 retraction) — author-only, so gated by
     // can-edit. "Delete for me" is a local-only hide, available on any message.
@@ -81,11 +89,19 @@ export component MessageContextMenu inherits Rectangle {
     callback delete-for-me();
     callback dismissed();
 
-    // Keyboard navigation. The always-shown rows come first so the selectable
-    // range stays the contiguous [0, count-1] regardless of can-edit:
-    //   0 = Add reaction, 1 = Reply, 2 = Forward, 3 = Delete for me  (always)
-    //   4 = Edit, 5 = Delete for everyone                            (author-only)
-    property <int> item-count: root.can-edit ? 6 : 4;
+    // Keyboard navigation. Rows are ordered so the visible set is always the
+    // contiguous [0, count-1]: the two copy rows sit between Forward and
+    // Delete for me and shift the tail indices when shown, and the
+    // author-only rows close the list:
+    //   0 = Add reaction, 1 = Reply, 2 = Forward             (always)
+    //   3 = Copy text                                        (can-copy)
+    //   4 = Copy selection                                   (has-selection)
+    //   idx-del-me = Delete for me                           (always)
+    //   idx-del-me + 1 = Edit, + 2 = Delete for everyone     (author-only)
+    property <int> n-copy: root.can-copy ? 1 : 0;
+    property <int> n-sel: root.has-selection ? 1 : 0;
+    property <int> idx-del-me: 3 + root.n-copy + root.n-sel;
+    property <int> item-count: 4 + root.n-copy + root.n-sel + (root.can-edit ? 2 : 0);
     property <int> selected-index: 0;
 
     function move-selection(delta: int) {
@@ -109,11 +125,15 @@ export component MessageContextMenu inherits Rectangle {
             root.reply();
         } else if (root.selected-index == 2) {
             root.forward();
-        } else if (root.selected-index == 3) {
+        } else if (root.selected-index == 3 && root.can-copy) {
+            root.copy-text();
+        } else if (root.selected-index == 4 && root.has-selection) {
+            root.copy-selection();
+        } else if (root.selected-index == root.idx-del-me) {
             root.delete-for-me();
-        } else if (root.selected-index == 4 && root.can-edit) {
+        } else if (root.selected-index == root.idx-del-me + 1 && root.can-edit) {
             root.edit();
-        } else if (root.selected-index == 5 && root.can-edit) {
+        } else if (root.selected-index == root.idx-del-me + 2 && root.can-edit) {
             root.delete-for-everyone();
         }
     }
@@ -211,11 +231,12 @@ export component MessageContextMenu inherits Rectangle {
                 }
 
                 MenuItem {
-                    glyph: "⌫";
-                    label: @tr("Delete for me");
-                    selected: root.selected-index == 3;
+                    glyph: "⧉";
+                    label: @tr("Copy text");
+                    shown: root.can-copy;
+                    selected: root.can-copy && root.selected-index == 3;
                     activated => {
-                        root.delete-for-me();
+                        root.copy-text();
                     }
                     hovered => {
                         root.selected-index = 3;
@@ -223,12 +244,12 @@ export component MessageContextMenu inherits Rectangle {
                 }
 
                 MenuItem {
-                    glyph: "✎";
-                    label: @tr("Edit message");
-                    shown: root.can-edit;
-                    selected: root.selected-index == 4;
+                    glyph: "⧉";
+                    label: @tr("Copy selection");
+                    shown: root.has-selection;
+                    selected: root.has-selection && root.selected-index == 4;
                     activated => {
-                        root.edit();
+                        root.copy-selection();
                     }
                     hovered => {
                         root.selected-index = 4;
@@ -236,15 +257,40 @@ export component MessageContextMenu inherits Rectangle {
                 }
 
                 MenuItem {
+                    glyph: "⌫";
+                    label: @tr("Delete for me");
+                    selected: root.selected-index == root.idx-del-me;
+                    activated => {
+                        root.delete-for-me();
+                    }
+                    hovered => {
+                        root.selected-index = root.idx-del-me;
+                    }
+                }
+
+                MenuItem {
+                    glyph: "✎";
+                    label: @tr("Edit message");
+                    shown: root.can-edit;
+                    selected: root.selected-index == root.idx-del-me + 1;
+                    activated => {
+                        root.edit();
+                    }
+                    hovered => {
+                        root.selected-index = root.idx-del-me + 1;
+                    }
+                }
+
+                MenuItem {
                     glyph: "⊘";
                     label: @tr("Delete for everyone");
                     shown: root.can-edit;
-                    selected: root.selected-index == 5;
+                    selected: root.selected-index == root.idx-del-me + 2;
                     activated => {
                         root.delete-for-everyone();
                     }
                     hovered => {
-                        root.selected-index = 5;
+                        root.selected-index = root.idx-del-me + 2;
                     }
                 }
             }

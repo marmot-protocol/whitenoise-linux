@@ -859,6 +859,62 @@ export struct MessageLine {
     quote: int,
     code-block: bool,
     rule: bool,
+    // True when this visual line starts a new logical line (explicit break or
+    // block boundary); false when it continues the previous one via wrapping.
+    // Not rendered — the selection-copy extractor reads it to decide whether
+    // two visual lines join with a newline or with nothing (the inter-word
+    // space survives at the end of the previous line when the wrapper breaks).
+    hard-break: bool,
+}
+
+// Signal-style in-bubble text selection. Exactly one message can hold a
+// selection at a time: `owner` is its message id ("" = none). The anchor and
+// cursor points live in the owner bubble's text-block coordinate space; the
+// run cells hit-test themselves against those points, paint their own slice
+// of the highlight, and claim the resolved document endpoints (line / run /
+// fraction-within-run) back into this global (see RunCell in
+// message-bubble.slint). The context menu's "Copy selection" reads the
+// claimed endpoints and hands them to Rust for text extraction.
+export global TextSelection {
+    in-out property <string> owner;
+    // True once the drag travelled far enough to count as a selection (a
+    // plain click keeps `active` false and clears the previous selection).
+    in-out property <bool> active;
+    in-out property <length> anchor-x;
+    in-out property <length> anchor-y;
+    in-out property <length> cursor-x;
+    in-out property <length> cursor-y;
+    // Document endpoints resolved by the run cells; -1 = not yet claimed.
+    // a = anchor, b = cursor — unordered, the extractor sorts them.
+    in-out property <int> a-line: -1;
+    in-out property <int> a-run: -1;
+    in-out property <float> a-frac;
+    in-out property <int> b-line: -1;
+    in-out property <int> b-run: -1;
+    in-out property <float> b-frac;
+
+    public function begin(id: string, x: length, y: length) {
+        self.owner = id;
+        self.active = false;
+        self.anchor-x = x;
+        self.anchor-y = y;
+        self.cursor-x = x;
+        self.cursor-y = y;
+        self.a-line = -1;
+        self.a-run = -1;
+        self.a-frac = 0;
+        self.b-line = -1;
+        self.b-run = -1;
+        self.b-frac = 0;
+    }
+    public function clear() {
+        self.owner = "";
+        self.active = false;
+        self.a-line = -1;
+        self.a-run = -1;
+        self.b-line = -1;
+        self.b-run = -1;
+    }
 }
 
 // User-facing error / status copy shown by the Rust glue layer. These strings

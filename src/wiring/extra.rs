@@ -43,6 +43,43 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
+    // ─── Copy selection (context menu on a text-selected bubble) ───────
+    //
+    // The bubble's run cells resolved the drag into two (line, run, fraction)
+    // endpoints; re-read the row's line model and extract the covered text.
+    ui.on_copy_selection({
+        let weak = ui.as_weak();
+        move |message_id, a_line, a_run, a_frac, b_line, b_run, b_frac| {
+            let Some(ui) = weak.upgrade() else { return };
+            let idx = ui.get_active_chat();
+            if idx < 0 || message_id.is_empty() {
+                return;
+            }
+            let chats_messages = ui.get_chats_messages();
+            let text = with_inner_messages(&chats_messages, idx as usize, |vm| {
+                find_message_row(vm, &message_id)
+                    .and_then(|pos| vm.row_data(pos))
+                    .map(|row| {
+                        extract_selection(
+                            &row.lines,
+                            (a_line, a_run, a_frac),
+                            (b_line, b_run, b_frac),
+                        )
+                    })
+            })
+            .flatten()
+            .unwrap_or_default();
+            if text.is_empty() {
+                return;
+            }
+            copy_to_clipboard_async(text, |result| {
+                if let Err(e) = result {
+                    eprintln!("[clipboard] copy selection failed: {e}");
+                }
+            });
+        }
+    });
+
     // ─── Delete for everyone (kind-5 retraction, optimistic) ───────────
     //
     // Same optimistic shape as `edit_op`: stamp the overlay, tombstone the row

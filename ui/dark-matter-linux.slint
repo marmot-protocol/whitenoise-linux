@@ -10,6 +10,7 @@ import {
     ArchivedChat,
     GroupMember,
     AccountEntry,
+    TextSelection,
 } from "tokens.slint";
 import { TitleBar } from "title-bar.slint";
 import { LeftRail } from "left-rail/left-rail.slint";
@@ -60,21 +61,30 @@ import { StagedAttachment } from "tokens.slint";
 // Re-export so Rust can do `ui.global::<EmojiSheet>().set_sprite(...)`.
 // Slint only generates a Rust binding for a global when the entry file
 // exports it (or names it in the component tree).
-export { EmojiSheet }
+export {
+    EmojiSheet,
+}
 // Same for the Markdown link sink, bound once in Rust to open URLs externally.
 export { Linkout }
-export { ProfileSink }
+export {
+    ProfileSink,
+}
 // File-dialog titles localized via @tr, read by Rust before opening the rfd picker.
-export { NativeDialogStrings }
+export {
+    NativeDialogStrings,
+}
 // Message-effect catalog + armed selection, read/cleared by Rust on send.
-export { EffectCatalog }
+export {
+    EffectCatalog,
+}
 // User-facing error/status copy. Rust reads these `@tr()` properties on the UI
 // thread to localize the strings it sets on status fields / the error banner.
-export { ErrorCopy }
+export {
+    ErrorCopy,
+}
 // Localized time/date vocabulary for the Rust-side stamp formatters, snapshot
 // on the UI thread at startup and on locale change (same bridge as ErrorCopy).
 export { TimeCopy }
-
 export component DarkMatterLinux inherits Window {
     // Window/taskbar title. Rust prefixes the total unread count — `(3) darkmatter`
     // — so the count shows wherever the OS surfaces the title (taskbar/tray/Alt-Tab).
@@ -469,6 +479,11 @@ export component DarkMatterLinux inherits Window {
     callback cancel-edit-profile();
     callback upload-profile-picture();
     callback copy-to-clipboard(string);
+    // Copy the selected slice of a message's body: message id, then the two
+    // selection endpoints as (line, run, fraction-within-run) triples in
+    // document order or reversed (Rust sorts them). Rust re-reads the row's
+    // line model, extracts the text, and hands it to the clipboard.
+    callback copy-selection(string, int, int, float, int, int, float);
     // Filtered command palette items — Rust owns the source list & filtering.
     in property <[PaletteAction]> palette-actions;
     in-out property <string> palette-query;
@@ -776,6 +791,9 @@ export component DarkMatterLinux inherits Window {
                             relays-total: root.network-total;
                             sync-secs: root.sync-secs;
                             chat-clicked(idx) => {
+                                // A leftover selection belongs to the chat
+                                // being left behind; drop it.
+                                TextSelection.clear();
                                 root.chat-selected(idx);
                             }
                             chat-context-menu(idx, ax, ay) => {
@@ -1422,6 +1440,8 @@ export component DarkMatterLinux inherits Window {
         anchor-x: root.ctx-menu-x;
         anchor-y: root.ctx-menu-y;
         can-edit: root.ctx-menu-can-edit;
+        can-copy: root.ctx-menu-text != "";
+        has-selection: TextSelection.active && TextSelection.owner == root.ctx-menu-id && TextSelection.a-line >= 0 && TextSelection.b-line >= 0;
         add-reaction(ax, ay) => {
             root.ctx-menu-open = false;
             root.emoji-picker-requested(root.ctx-menu-id, ax, ay);
@@ -1429,6 +1449,16 @@ export component DarkMatterLinux inherits Window {
         reply => {
             root.ctx-menu-open = false;
             root.request-reply(root.ctx-menu-id, root.ctx-menu-text, root.ctx-menu-author);
+        }
+        copy-text => {
+            root.ctx-menu-open = false;
+            root.copy-to-clipboard(root.ctx-menu-text);
+        }
+        copy-selection => {
+            root.ctx-menu-open = false;
+            root.copy-selection(root.ctx-menu-id,
+                TextSelection.a-line, TextSelection.a-run, TextSelection.a-frac,
+                TextSelection.b-line, TextSelection.b-run, TextSelection.b-frac);
         }
         forward => {
             root.ctx-menu-open = false;

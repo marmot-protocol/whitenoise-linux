@@ -563,6 +563,14 @@ msgctxt "DebugPane"
 msgid "Copy JSON"
 msgstr "JSON をコピー"
 
+msgctxt "MessageContextMenu"
+msgid "Copy selection"
+msgstr "選択範囲をコピー"
+
+msgctxt "MessageContextMenu"
+msgid "Copy text"
+msgstr "テキストをコピー"
+
 msgctxt "AppearancePane"
 msgid "Coral"
 msgstr "コーラル"
