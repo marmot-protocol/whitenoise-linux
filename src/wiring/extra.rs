@@ -56,9 +56,16 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             // draft at that point.
             {
                 let draft = ui.get_composer_draft().to_string();
+                let editing_id = ui.get_editing_message_id().to_string();
                 let groups = group_ids.lock().unwrap();
                 let mut st = settings_cell.borrow_mut();
-                if stash_draft_for_chat_index(&mut st, &groups, ui.get_active_chat(), &draft) {
+                if stash_pre_edit_draft_for_chat_index(
+                    &mut st,
+                    &groups,
+                    ui.get_active_chat(),
+                    &editing_id,
+                    &draft,
+                ) {
                     st.save();
                 }
             }

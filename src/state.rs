@@ -369,6 +369,20 @@ pub(crate) fn stash_draft_for_chat_index(
     settings.set_draft(group_hex, draft)
 }
 
+/// Persist the pre-edit composer draft only when entering edit mode.
+pub(crate) fn stash_pre_edit_draft_for_chat_index(
+    settings: &mut Settings,
+    group_ids: &[String],
+    active_chat: i32,
+    current_editing_message_id: &str,
+    draft: &str,
+) -> bool {
+    if !current_editing_message_id.is_empty() {
+        return false;
+    }
+    stash_draft_for_chat_index(settings, group_ids, active_chat, draft)
+}
+
 /// Return the saved composer draft for the currently active chat index.
 pub(crate) fn draft_for_chat_index(
     settings: &Settings,
@@ -769,5 +783,37 @@ pub(crate) fn apply_locale(locale: &str) {
     if let Err(e) = slint::select_bundled_translation(code) {
         eprintln!("[i18n] select_bundled_translation({code}): {e}");
         let _ = slint::select_bundled_translation("en");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn edit_draft_stash_does_not_overwrite_when_already_editing() {
+        let mut settings = Settings::default();
+        let group_ids = vec!["chat-a".to_string()];
+
+        assert!(stash_pre_edit_draft_for_chat_index(
+            &mut settings,
+            &group_ids,
+            0,
+            "",
+            "draft before edit"
+        ));
+
+        assert!(!stash_pre_edit_draft_for_chat_index(
+            &mut settings,
+            &group_ids,
+            0,
+            "message-being-edited",
+            "first edit body"
+        ));
+
+        assert_eq!(
+            draft_for_chat_index(&settings, &group_ids, 0),
+            "draft before edit"
+        );
     }
 }
