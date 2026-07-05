@@ -328,7 +328,10 @@ export component MessageBubble inherits Rectangle {
     // this kicks off decrypt+decode; for files it opens a save dialog.
     in property <bool> has-attachment: false;
     in property <string> att-name;
-    in property <string> att-mime;
+    // Per-type emoji + short type name ("PDF", "ZIP"), precomputed in Rust,
+    // shown on the generic (non image/video/audio) file chip.
+    in property <string> att-icon;
+    in property <string> att-type-label;
     in property <string> att-size-label;
     in property <bool> att-is-image: false;
     // Video attachment: poster tile + ▶ overlay, opens the in-app libmpv viewer.
@@ -872,7 +875,7 @@ export component MessageBubble inherits Rectangle {
                 spacing: 10px;
                 alignment: stretch;
                 Text {
-                    text: root.att-loading ? "…" : "📎";
+                    text: root.att-loading ? "…" : (root.att-icon == "" ? "📎" : root.att-icon);
                     color: root.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
                     font-size: (16px) * Theme.fs-scale;
                     font-family: Theme.font;
@@ -893,7 +896,7 @@ export component MessageBubble inherits Rectangle {
                     }
 
                     Text {
-                        text: root.att-failed ? @tr("failed · tap to retry") : (root.att-size-label != "" && root.att-mime != "" ? root.att-size-label + "  ·  " + root.att-mime : root.att-size-label + root.att-mime);
+                        text: root.att-failed ? @tr("failed · tap to retry") : (root.att-size-label != "" && root.att-type-label != "" ? root.att-size-label + "  ·  " + root.att-type-label : root.att-size-label + root.att-type-label);
                         color: root.att-failed ? (root.outgoing ? Palette.danger-on-bubble : Palette.danger) : (root.outgoing ? Palette.bubble-out-fg : Palette.text-mid);
                         font-size: (10px) * Theme.fs-scale;
                         font-family: Theme.font;

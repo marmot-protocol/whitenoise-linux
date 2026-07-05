@@ -36,10 +36,16 @@ pub(crate) fn chat_meta_from(
             } else {
                 String::new()
             };
-            (
-                format!("{prefix}{}", m.plaintext),
-                format_chat_stamp(m.recorded_at),
-            )
+            // Attachment-only messages have an empty body; synthesize the
+            // media label ("📷 Photo", "📄 report.pdf") so the rail preview
+            // isn't blank.
+            let mut body = m.plaintext.clone();
+            if body.trim().is_empty()
+                && let Some(label) = media_reply_label(m)
+            {
+                body = label;
+            }
+            (format!("{prefix}{body}"), format_chat_stamp(m.recorded_at))
         }
         None => (record.profile.description.clone(), String::new()),
     };
@@ -218,7 +224,7 @@ pub(crate) fn chat_message_from_with_reactions(
                 true,
                 refp.file_name.clone(),
                 refp.media_type.clone(),
-                String::new(),
+                attachment_size_label(&record.message_id_hex),
                 is_image,
                 image,
                 has_image,
@@ -287,6 +293,18 @@ pub(crate) fn chat_message_from_with_reactions(
         String::new()
     };
 
+    // Generic-file chip presentation (per-type emoji + short type name).
+    // Computed for every attachment; the bubble only renders them on the
+    // non image/video/audio chip.
+    let (att_icon, att_type_label) = if has_attachment {
+        (
+            file_type_icon(&att_mime, &att_name).to_string(),
+            file_type_label(&att_mime, &att_name),
+        )
+    } else {
+        (String::new(), String::new())
+    };
+
     // Jumbo only for a bare emoji body — a reply/attachment/album wants its
     // normal bubble chrome around the block.
     let jumbo_emoji =
@@ -341,6 +359,8 @@ pub(crate) fn chat_message_from_with_reactions(
         album_h,
         att_name: s(&att_name),
         att_mime: s(&att_mime),
+        att_icon: s(&att_icon),
+        att_type_label: s(&att_type_label),
         att_size_label: s(&att_size_label),
         att_is_image,
         att_is_video,
@@ -421,9 +441,12 @@ pub(crate) fn media_kind_label(mime: &str, file_name: &str, image_count: usize) 
     } else if mime_is_audio(mime) {
         "🎤 Voice message".to_string()
     } else if !file_name.is_empty() {
-        truncate_preview(&format!("📎 {file_name}"), 160)
+        truncate_preview(
+            &format!("{} {file_name}", file_type_icon(mime, file_name)),
+            160,
+        )
     } else {
-        "📎 Attachment".to_string()
+        format!("{} Attachment", file_type_icon(mime, ""))
     }
 }
 
@@ -597,6 +620,17 @@ pub(crate) fn pending_chat_message(
         && !att_is_video
         && pending.media.first().map(|m| m.is_audio).unwrap_or(false);
 
+    // Same per-type chip presentation as confirmed rows, from the local
+    // staged metadata.
+    let (att_icon, att_type_label) = if has_attachment {
+        (
+            file_type_icon(&att_mime, &att_name).to_string(),
+            file_type_label(&att_mime, &att_name),
+        )
+    } else {
+        (String::new(), String::new())
+    };
+
     let jumbo_emoji =
         !has_attachment && !is_album && reply_id.is_empty() && jumbo_emoji_count(&pending.text) > 0;
 
@@ -651,6 +685,8 @@ pub(crate) fn pending_chat_message(
         album_h,
         att_name: s(&att_name),
         att_mime: s(&att_mime),
+        att_icon: s(&att_icon),
+        att_type_label: s(&att_type_label),
         att_size_label: s(&att_size_label),
         att_is_image,
         att_is_video,

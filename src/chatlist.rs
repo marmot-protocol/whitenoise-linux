@@ -1210,7 +1210,9 @@ pub(crate) fn notification_body(
     }
     let text = msg.plaintext.trim();
     let text = if text.is_empty() {
-        "Sent an attachment".to_string()
+        // Attachment-only message: name what was sent ("📄 report.pdf",
+        // "📷 Photo") instead of a generic line.
+        media_reply_label(msg).unwrap_or_else(|| "Sent an attachment".to_string())
     } else {
         text.to_string()
     };

@@ -720,6 +720,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                             if let Some(bytes) =
                                 vault2.as_ref().and_then(|v| media_cache::get(v, &hash))
                             {
+                                attachment_size_put(&mid2, bytes.len() as u64);
                                 let _ = slint::invoke_from_event_loop(move || {
                                     start_audio_playback(
                                         weak2,
@@ -740,6 +741,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                                         if let Some(v) = &vault2 {
                                             media_cache::put(v, &hash, &dl.plaintext);
                                         }
+                                        attachment_size_put(&mid2, dl.plaintext.len() as u64);
                                         let _ = slint::invoke_from_event_loop(move || {
                                             start_audio_playback(
                                                 weak2,
@@ -834,14 +836,18 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                                     let mid = mid.clone();
                                     match result {
                                         Ok(dl) => {
+                                            // Persist the decrypted original bytes to
+                                            // the encrypted disk cache so this
+                                            // attachment (image or generic file)
+                                            // survives a restart without another
+                                            // Blossom round-trip + decrypt, and record
+                                            // the now-known plaintext size for the
+                                            // bubble's size label.
+                                            if let Some(v) = &vault {
+                                                media_cache::put(v, &cache_hash, &dl.plaintext);
+                                            }
+                                            attachment_size_put(&mid, dl.plaintext.len() as u64);
                                             if is_image {
-                                                // Persist the decrypted original bytes to
-                                                // the encrypted disk cache so this image
-                                                // survives a restart without another
-                                                // Blossom round-trip + decrypt.
-                                                if let Some(v) = &vault {
-                                                    media_cache::put(v, &cache_hash, &dl.plaintext);
-                                                }
                                                 match image::load_from_memory(&dl.plaintext) {
                                                     Ok(img) => {
                                                         let rgba = img.to_rgba8();
@@ -951,6 +957,8 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                         }
                     } else {
                         let default_name = reference.file_name.clone();
+                        let cache_hash = reference.ciphertext_sha256.clone();
+                        let vault_hit = vault.clone();
                         let weak_clear = weak.clone();
                         let group_ids_clear = group_ids.clone();
                         let backend_cell_clear = backend_cell.clone();
@@ -967,6 +975,48 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                             .await
                             .ok()
                             .flatten();
+                            // Encrypted-cache read-through: a file downloaded
+                            // before (this session or a previous one) writes
+                            // straight from disk, no Blossom round-trip. Same
+                            // pattern as the image/audio paths; a miss falls
+                            // through to the live download below.
+                            if let Some(path) = &chosen
+                                && let Some(bytes) = vault_hit
+                                    .as_ref()
+                                    .and_then(|v| media_cache::get(v, &cache_hash))
+                            {
+                                attachment_size_put(&mid_clear, bytes.len() as u64);
+                                // Large-file write off the runtime worker.
+                                let write_path = path.clone();
+                                match tokio::task::spawn_blocking(move || {
+                                    std::fs::write(&write_path, &bytes)
+                                })
+                                .await
+                                {
+                                    Ok(Err(e)) => {
+                                        eprintln!("[attach] write {}: {e:#}", path.display())
+                                    }
+                                    Err(e) => eprintln!("[attach] write join: {e:#}"),
+                                    Ok(Ok(())) => {}
+                                }
+                                attachment_in_flight()
+                                    .lock()
+                                    .ok()
+                                    .map(|mut s| s.remove(&mid_clear));
+                                let Some(backend) = backend_cell_clear.lock().unwrap().clone()
+                                else {
+                                    return;
+                                };
+                                refresh_one_message_row_async(
+                                    &backend,
+                                    weak_clear,
+                                    pending_state_clear,
+                                    group_ids_clear,
+                                    group_hex_clear,
+                                    mid_clear,
+                                );
+                                return;
+                            }
                             let _ = slint::invoke_from_event_loop(move || match chosen {
                                 Some(path) => dispatch_download(Some(path)),
                                 None => {
@@ -1450,6 +1500,13 @@ pub(crate) fn spawn_attachment_send(
                                 .sent
                                 .as_ref()
                                 .and_then(|s| s.message_ids.first().cloned());
+                            if let Some(id) = real_id.as_ref() {
+                                // The uploader knows the plaintext size; the
+                                // imeta tag doesn't carry one, so seed the
+                                // session size cache before the confirmed row
+                                // is built below.
+                                attachment_size_put(id, size_bytes);
+                            }
                             if let (Some(id), Some(p)) = (real_id.as_ref(), local_preview.as_ref())
                                 && is_image
                             {

@@ -730,6 +730,84 @@ pub(crate) fn mime_is_audio(mime: &str) -> bool {
     mime.starts_with("audio/")
 }
 
+/// Lowercased extension of `file_name`, if it has one.
+fn file_ext(file_name: &str) -> Option<String> {
+    std::path::Path::new(file_name)
+        .extension()
+        .map(|e| e.to_string_lossy().to_ascii_lowercase())
+}
+
+/// Per-type emoji for a generic (non image/video/audio) attachment chip,
+/// keyed by file extension with a mime-subtype fallback. Coarse buckets on
+/// purpose — the point is telling a PDF from an archive at a glance, not a
+/// full type table. Unknown types keep the paperclip.
+pub(crate) fn file_type_icon(mime: &str, file_name: &str) -> &'static str {
+    let ext = file_ext(file_name).unwrap_or_default();
+    let sub = mime.split('/').nth(1).unwrap_or_default();
+    let key = if ext.is_empty() { sub } else { ext.as_str() };
+    match key {
+        "pdf" | "doc" | "docx" | "odt" | "rtf" | "epub" => "📄",
+        "txt" | "md" | "log" | "plain" => "📃",
+        "xls" | "xlsx" | "ods" | "csv" | "tsv" => "📊",
+        "ppt" | "pptx" | "odp" => "📽",
+        "zip" | "tar" | "gz" | "tgz" | "bz2" | "xz" | "7z" | "rar" | "zst" | "gzip" => "📦",
+        "json" | "xml" | "yaml" | "yml" | "toml" | "html" | "css" | "js" | "ts" | "rs" | "py"
+        | "sh" | "c" | "h" | "cpp" | "go" | "java" => "💻",
+        _ => "📎",
+    }
+}
+
+/// Short type name for the chip's meta line: the uppercased extension
+/// ("PDF", "DOCX") when the file name carries one, else a short mime
+/// subtype, else the raw mime. Keeps `application/vnd.openxmlformats-…`
+/// off the bubble. Rust-side English by design (same policy as
+/// `media_kind_label`).
+pub(crate) fn file_type_label(mime: &str, file_name: &str) -> String {
+    if let Some(ext) = file_ext(file_name)
+        && !ext.is_empty()
+        && ext.len() <= 5
+        && ext.chars().all(|c| c.is_ascii_alphanumeric())
+    {
+        return ext.to_ascii_uppercase();
+    }
+    let sub = mime.split('/').nth(1).unwrap_or(mime);
+    if !sub.is_empty() && sub.len() <= 5 && sub.chars().all(|c| c.is_ascii_alphanumeric()) {
+        return sub.to_ascii_uppercase();
+    }
+    if mime == "application/octet-stream" {
+        return "File".to_string();
+    }
+    mime.to_string()
+}
+
+/// Plaintext byte size per attachment message id. The `imeta` tag carries no
+/// size field, so this is best-effort session knowledge: populated at
+/// send-ack (the uploader knows what it sent) and whenever a download or
+/// encrypted-cache hit reveals the bytes. Rows built before an entry exists
+/// render the chip without a size.
+pub(crate) fn attachment_size_cache() -> &'static Mutex<HashMap<String, u64>> {
+    use std::sync::OnceLock;
+    static M: OnceLock<Mutex<HashMap<String, u64>>> = OnceLock::new();
+    M.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+pub(crate) fn attachment_size_put(message_id: &str, bytes: u64) {
+    if let Ok(mut m) = attachment_size_cache().lock() {
+        m.insert(message_id.to_string(), bytes);
+    }
+}
+
+/// Human-readable size label for a confirmed attachment row, or "" when the
+/// size is unknown this session.
+pub(crate) fn attachment_size_label(message_id: &str) -> String {
+    attachment_size_cache()
+        .lock()
+        .ok()
+        .and_then(|m| m.get(message_id).copied())
+        .map(human_bytes)
+        .unwrap_or_default()
+}
+
 /// Attachment-image-cache key for a video's poster frame. Distinct from the
 /// bare message id (which the image path uses) so a video never trips the
 /// image lightbox's "already decoded → open viewer" shortcut in
@@ -1494,6 +1572,13 @@ pub(crate) fn refresh_staged_ui(ui: &DarkMatterLinux, staged: &[StagedFile]) {
             is_image: f.is_image,
             thumb: f.thumb.as_ref().map(image_from_pixels).unwrap_or_default(),
             has_thumb: f.thumb.is_some(),
+            // Images keep the paperclip fallback (empty icon) when their
+            // thumbnail failed to decode; files get the per-type emoji.
+            icon: if f.is_image {
+                "".into()
+            } else {
+                file_type_icon(&f.media_type, &f.file_name).into()
+            },
         })
         .collect();
     ui.set_composer_staged(ModelRc::new(VecModel::from(rows)));
