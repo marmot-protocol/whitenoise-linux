@@ -1,30 +1,30 @@
 import {
     Palette,
     Theme,
-    Reaction,
-    MessageLine,
+    ChatMessage,
     ProfileSink,
-    AlbumCell,
 } from "../tokens.slint";
 import { Avatar } from "avatar.slint";
 import { MessageBubble } from "message-bubble.slint";
 import { ReactionChips, HoverActions } from "reactions-row.slint";
 
 export component IncomingRow inherits VerticalLayout {
-    in property <int> effect-id: 0;
-    in property <int> effect-clip-x: 0;
-    in property <int> effect-clip-y: 0;
-    in property <bool> effect-autoplay: false;
+    // The whole message — fields render via `root.msg.*` (see ChatMessage in
+    // tokens.slint for per-field docs). Only row context that is not carried
+    // on the message stays a scalar property.
+    in property <ChatMessage> msg;
+    in property <length> row-w: 9999px;
+
     // Fire the burst in the shared overlay (which paints above all bubbles),
     // reporting this bubble's window position + size. Autoplay is deferred a
     // beat so layout/scroll settle before the position is snapshotted.
     callback play-effect(int, int, int, length, length, length, length);
     function fire-effect() {
-        root.play-effect(root.effect-id, root.effect-clip-x, root.effect-clip-y,
+        root.play-effect(root.msg.effect-id, root.msg.effect-clip-x, root.msg.effect-clip-y,
             bubble.absolute-position.x, bubble.absolute-position.y, bubble.width, bubble.height);
     }
     init => {
-        if (root.effect-autoplay && root.effect-id > 0) {
+        if (root.msg.effect-autoplay && root.msg.effect-id > 0) {
             fx-timer.running = true;
         }
     }
@@ -37,54 +37,6 @@ export component IncomingRow inherits VerticalLayout {
         }
     }
 
-    in property <string> text;
-    in property <[MessageLine]> lines;
-    in property <string> stamp;
-    in property <string> stamp-full;
-    in property <bool> show-avatar: true;
-    in property <length> bubble-max: 640px;
-    in property <length> row-w: 9999px;
-    in property <color> av-a;
-    in property <color> av-b;
-    in property <string> av-initials;
-    in property <image> av-picture;
-    in property <bool> av-has-picture: false;
-    in property <string> sender-name;
-    in property <bool> show-sender-name: false;
-    // Sender account-id hex — fires the profile modal via ProfileSink when
-    // the avatar or sender name is tapped.
-    in property <string> sender-id;
-    in property <string> message-id;
-    in property <[Reaction]> reactions;
-    in property <bool> first-in-group: true;
-    in property <bool> last-in-group: true;
-    in property <bool> jumbo-emoji: false;
-    in property <string> reply-to-id;
-    in property <string> reply-to-text;
-    in property <string> reply-to-author;
-    in property <image> reply-to-image;
-    in property <bool> reply-to-has-image: false;
-    in property <bool> has-attachment: false;
-    in property <string> att-name;
-    in property <string> att-icon;
-    in property <string> att-type-label;
-    in property <string> att-size-label;
-    in property <bool> att-is-image: false;
-    in property <bool> att-is-video: false;
-    in property <bool> att-is-audio: false;
-    in property <bool> att-audio-playing: false;
-    in property <float> att-audio-progress: 0.0;
-    in property <string> att-duration;
-    in property <image> att-image;
-    in property <bool> att-has-image: false;
-    in property <bool> att-loading: false;
-    in property <bool> att-failed: false;
-    in property <[AlbumCell]> album: [];
-    in property <length> album-w;
-    in property <length> album-h;
-    in property <bool> edited: false;
-    in property <int> edit-count: 0;
-    in property <bool> deleted: false;
     callback album-cell-clicked(string);
     callback react(string, string);
     callback unreact(string);
@@ -103,27 +55,27 @@ export component IncomingRow inherits VerticalLayout {
         spacing: 10px;
         alignment: start;
 
-        if root.show-avatar: TouchArea {
+        if root.msg.show-avatar: TouchArea {
             width: 28px;
             height: 28px;
             mouse-cursor: pointer;
             clicked => {
-                if (root.sender-id != "") {
-                    ProfileSink.open(root.sender-id);
+                if (root.msg.sender-id != "") {
+                    ProfileSink.open(root.msg.sender-id);
                 }
             }
             Avatar {
                 size: 28px;
                 y: 0;
-                initials: root.av-initials;
-                color-a: root.av-a;
-                color-b: root.av-b;
-                picture: root.av-picture;
-                has-picture: root.av-has-picture;
+                initials: root.msg.av-initials;
+                color-a: root.msg.av-a;
+                color-b: root.msg.av-b;
+                picture: root.msg.picture;
+                has-picture: root.msg.has-picture;
                 font-size: Theme.fs(9px, 14px);
             }
         }
-        if !root.show-avatar: Rectangle {
+        if !root.msg.show-avatar: Rectangle {
             width: 28px;
         }
 
@@ -131,17 +83,17 @@ export component IncomingRow inherits VerticalLayout {
             spacing: 2px;
             // Sender label above the bubble — only on the first bubble of a
             // group (group chats only), so a stack doesn't repeat the name.
-            if root.show-sender-name && root.sender-name != "": HorizontalLayout {
+            if root.msg.show-sender-name && root.msg.sender-name != "": HorizontalLayout {
                 alignment: start;
                 name-touch := TouchArea {
                     mouse-cursor: pointer;
                     clicked => {
-                        if (root.sender-id != "") {
-                            ProfileSink.open(root.sender-id);
+                        if (root.msg.sender-id != "") {
+                            ProfileSink.open(root.msg.sender-id);
                         }
                     }
                     Text {
-                        text: root.sender-name;
+                        text: root.msg.sender-name;
                         color: name-touch.has-hover ? Palette.text-mid : Palette.text-lo;
                         animate color { duration: 100ms; }
                         font-size: Theme.fs(11px, 12px);
@@ -171,70 +123,32 @@ export component IncomingRow inherits VerticalLayout {
                 bubble := MessageBubble {
                     x: 0;
                     y: 0;
-                    msg-id: root.message-id;
-                    message: root.text;
-                    effect-id: root.effect-id;
-                    effect-clip-x: root.effect-clip-x;
-                    effect-clip-y: root.effect-clip-y;
-                    lines: root.lines;
-                    stamp: root.stamp;
-                    stamp-full: root.stamp-full;
-                    outgoing: false;
-                    max-w: root.bubble-max;
+                    msg: root.msg;
                     available-w: max(80px, root.row-w - 28px - 10px - 10px);
-                    first-in-group: root.first-in-group;
-                    last-in-group: root.last-in-group;
-                    jumbo-emoji: root.jumbo-emoji;
-                    reply-to-id: root.reply-to-id;
-                    reply-to-text: root.reply-to-text;
-                    reply-to-author: root.reply-to-author;
-                    reply-to-image: root.reply-to-image;
-                    reply-to-has-image: root.reply-to-has-image;
-                    has-attachment: root.has-attachment;
-                    att-name: root.att-name;
-                    att-icon: root.att-icon;
-                    att-type-label: root.att-type-label;
-                    att-size-label: root.att-size-label;
-                    att-is-image: root.att-is-image;
-                    att-is-video: root.att-is-video;
-                    att-is-audio: root.att-is-audio;
-                    att-audio-playing: root.att-audio-playing;
-                    att-audio-progress: root.att-audio-progress;
-                    att-duration: root.att-duration;
-                    att-image: root.att-image;
-                    att-has-image: root.att-has-image;
-                    att-loading: root.att-loading;
-                    att-failed: root.att-failed;
-                    album: root.album;
-                    album-w: root.album-w;
-                    album-h: root.album-h;
-                    edited: root.edited;
-                    edit-count: root.edit-count;
-                    deleted: root.deleted;
                     attachment-clicked => {
-                        root.attachment-clicked(root.message-id);
+                        root.attachment-clicked(root.msg.message-id);
                     }
                     audio-play-clicked => {
-                        root.audio-play-clicked(root.message-id);
+                        root.audio-play-clicked(root.msg.message-id);
                     }
                     audio-seek-clicked(fraction) => {
-                        root.audio-seek-clicked(root.message-id, fraction);
+                        root.audio-seek-clicked(root.msg.message-id, fraction);
                     }
                     album-cell-clicked(key) => {
                         root.album-cell-clicked(key);
                     }
                     show-history-clicked => {
-                        root.show-history(root.message-id);
+                        root.show-history(root.msg.message-id);
                     }
                     context-menu-requested(ax, ay) => {
                         // A retracted tombstone offers no actions, so suppress
                         // its menu entirely (matches the hover toolbar gate).
-                        if (root.message-id != "" && !root.deleted) {
-                            root.request-context-menu(root.message-id, root.text, root.av-initials, false, ax, ay);
+                        if (root.msg.message-id != "" && !root.msg.deleted) {
+                            root.request-context-menu(root.msg.message-id, root.msg.text, root.msg.av-initials, false, ax, ay);
                         }
                     }
                     body-clicked => {
-                        if (root.effect-id > 0) {
+                        if (root.msg.effect-id > 0) {
                             root.fire-effect();
                         }
                     }
@@ -243,14 +157,14 @@ export component IncomingRow inherits VerticalLayout {
                 acts := HoverActions {
                     x: bubble.width + 6px;
                     y: (parent.height - self.height) / 2;
-                    message-id: root.message-id;
-                    reply-preview-text: root.text;
-                    reply-author: root.av-initials;
+                    message-id: root.msg.message-id;
+                    reply-preview-text: root.msg.text;
+                    reply-author: root.msg.av-initials;
                     can-edit: false;
                     // `bubble.hovered` joins in because the selection area
                     // inside the bubble consumes hover while the pointer is
                     // over body text, which starves the row-level sensor.
-                    visible: root.message-id != "" && !root.deleted && (hover.has-hover || self.hovered || bubble.hovered);
+                    visible: root.msg.message-id != "" && !root.msg.deleted && (hover.has-hover || self.hovered || bubble.hovered);
                     opacity: (hover.has-hover || self.hovered || bubble.hovered) ? 1.0 : 0.0;
                     animate opacity { duration: 100ms; }
                     request-picker(id, ax, ay) => {
@@ -264,9 +178,9 @@ export component IncomingRow inherits VerticalLayout {
 
             // Reaction chips — only present when the message has reactions, so
             // empty messages stack tightly.
-            if root.message-id != "" && root.reactions.length > 0: ReactionChips {
-                message-id: root.message-id;
-                reactions: root.reactions;
+            if root.msg.message-id != "" && root.msg.reactions.length > 0: ReactionChips {
+                message-id: root.msg.message-id;
+                reactions: root.msg.reactions;
                 align-right: false;
                 react(id, emoji) => {
                     root.react(id, emoji);
