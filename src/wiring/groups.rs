@@ -41,7 +41,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                         }
                         Err(e) => {
                             tracing::warn!(target: "invite", "{e:#}");
-                            ui.set_add_member_status(friendly_error("add member", &e).into());
+                            ui.set_add_member_status(friendly_error(ErrorOp::AddMember, &e).into());
                         }
                     }
                 });
@@ -81,7 +81,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                         Err(e) => {
                             tracing::warn!(target: "promote", "{e:#}");
                             ui.set_group_settings_status(
-                                friendly_error("group settings", &e).into(),
+                                friendly_error(ErrorOp::GroupSettings, &e).into(),
                             );
                         }
                     }
@@ -121,7 +121,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                         Err(e) => {
                             tracing::warn!(target: "demote", "{e:#}");
                             ui.set_group_settings_status(
-                                friendly_error("group settings", &e).into(),
+                                friendly_error(ErrorOp::GroupSettings, &e).into(),
                             );
                         }
                     }
@@ -157,7 +157,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                         Err(e) => {
                             tracing::warn!(target: "self_demote", "{e:#}");
                             ui.set_group_settings_status(
-                                friendly_error("group settings", &e).into(),
+                                friendly_error(ErrorOp::GroupSettings, &e).into(),
                             );
                         }
                     }
@@ -203,7 +203,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                         Err(e) => {
                             tracing::warn!(target: "rename", "{e:#}");
                             ui.set_group_settings_status(
-                                friendly_error("group settings", &e).into(),
+                                friendly_error(ErrorOp::GroupSettings, &e).into(),
                             );
                         }
                     }
@@ -252,7 +252,9 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                         }
                         Err(e) => {
                             tracing::warn!(target: "group_image", "clear failed: {e:#}");
-                            ui.set_group_settings_status(friendly_error("group image", &e).into());
+                            ui.set_group_settings_status(
+                                friendly_error(ErrorOp::GroupImage, &e).into(),
+                            );
                         }
                     }
                 });
@@ -372,7 +374,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                             Err(e) => {
                                 tracing::warn!(target: "group_image", "upload failed: {e:#}");
                                 ui.set_group_settings_status(
-                                    friendly_error("group image", &e).into(),
+                                    friendly_error(ErrorOp::GroupImage, &e).into(),
                                 );
                             }
                         }

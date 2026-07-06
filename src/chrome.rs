@@ -27,103 +27,35 @@ pub(crate) fn apply_stamp_formats(settings: &Settings) {
 // the `ErrorCopy` pattern in state.rs, the `TimeCopy` global is snapshot into
 // this process-wide cell on the UI thread at startup and on locale change.
 
-#[derive(Clone)]
-pub(crate) struct TimeCopySnapshot {
-    pub today: String,
-    pub yesterday: String,
-    pub just_now: String,
+copy_snapshot! {
+    /// Localized time/date vocabulary snapshot (see the note above).
+    pub(crate) struct TimeCopySnapshot from TimeCopy;
+    /// Snapshot the localized `TimeCopy` strings off the Slint global. MUST be
+    /// called on the UI/event-loop thread; call at startup and after every locale
+    /// change so worker-thread stamps follow the active language.
+    refresh fn refresh_time_copy, cell fn time_copy_cell;
+    /// Read the current localized `TimeCopy` snapshot. Safe from any thread.
+    read fn time_copy;
+    today: String = get_today => "Today";
+    yesterday: String = get_yesterday => "Yesterday";
+    just_now: String = get_just_now => "just now";
     /// "%1m ago" — %1 is the number.
-    pub minutes_ago: String,
-    pub hours_ago: String,
-    pub days_ago: String,
+    minutes_ago: String = get_minutes_ago => "%1m ago";
+    hours_ago: String = get_hours_ago => "%1h ago";
+    days_ago: String = get_days_ago => "%1d ago";
     /// Monday-first abbreviations.
-    pub weekdays: [String; 7],
-    pub months: [String; 12],
+    weekdays: [String; 7] =
+        [get_wd_mon, get_wd_tue, get_wd_wed, get_wd_thu, get_wd_fri, get_wd_sat, get_wd_sun]
+        => ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    months: [String; 12] =
+        [get_mo_jan, get_mo_feb, get_mo_mar, get_mo_apr, get_mo_may, get_mo_jun,
+         get_mo_jul, get_mo_aug, get_mo_sep, get_mo_oct, get_mo_nov, get_mo_dec]
+        => ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     /// Date templates: %1/%2/%3 slots per the names ("md" = month, day).
-    pub date_md: String,
-    pub date_dm: String,
-    pub date_mdy: String,
-    pub date_dmy: String,
-}
-
-impl Default for TimeCopySnapshot {
-    fn default() -> Self {
-        // English mirrors of the `TimeCopy` @tr sources, so stamps rendered
-        // before the first snapshot (or on a headless path) stay sane.
-        Self {
-            today: "Today".into(),
-            yesterday: "Yesterday".into(),
-            just_now: "just now".into(),
-            minutes_ago: "%1m ago".into(),
-            hours_ago: "%1h ago".into(),
-            days_ago: "%1d ago".into(),
-            weekdays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(String::from),
-            months: [
-                "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-            ]
-            .map(String::from),
-            date_md: "%1 %2".into(),
-            date_dm: "%1 %2".into(),
-            date_mdy: "%1 %2 %3".into(),
-            date_dmy: "%1 %2 %3".into(),
-        }
-    }
-}
-
-pub(crate) fn time_copy_cell() -> &'static Mutex<TimeCopySnapshot> {
-    use std::sync::OnceLock;
-    static C: OnceLock<Mutex<TimeCopySnapshot>> = OnceLock::new();
-    C.get_or_init(|| Mutex::new(TimeCopySnapshot::default()))
-}
-
-/// Snapshot the localized `TimeCopy` strings off the Slint global. MUST be
-/// called on the UI/event-loop thread; call at startup and after every locale
-/// change so worker-thread stamps follow the active language.
-pub(crate) fn refresh_time_copy(ui: &DarkMatterLinux) {
-    let g = ui.global::<TimeCopy>();
-    let snap = TimeCopySnapshot {
-        today: g.get_today().to_string(),
-        yesterday: g.get_yesterday().to_string(),
-        just_now: g.get_just_now().to_string(),
-        minutes_ago: g.get_minutes_ago().to_string(),
-        hours_ago: g.get_hours_ago().to_string(),
-        days_ago: g.get_days_ago().to_string(),
-        weekdays: [
-            g.get_wd_mon(),
-            g.get_wd_tue(),
-            g.get_wd_wed(),
-            g.get_wd_thu(),
-            g.get_wd_fri(),
-            g.get_wd_sat(),
-            g.get_wd_sun(),
-        ]
-        .map(|s| s.to_string()),
-        months: [
-            g.get_mo_jan(),
-            g.get_mo_feb(),
-            g.get_mo_mar(),
-            g.get_mo_apr(),
-            g.get_mo_may(),
-            g.get_mo_jun(),
-            g.get_mo_jul(),
-            g.get_mo_aug(),
-            g.get_mo_sep(),
-            g.get_mo_oct(),
-            g.get_mo_nov(),
-            g.get_mo_dec(),
-        ]
-        .map(|s| s.to_string()),
-        date_md: g.get_date_md().to_string(),
-        date_dm: g.get_date_dm().to_string(),
-        date_mdy: g.get_date_mdy().to_string(),
-        date_dmy: g.get_date_dmy().to_string(),
-    };
-    *time_copy_cell().lock().unwrap() = snap;
-}
-
-/// Read the current localized `TimeCopy` snapshot. Safe from any thread.
-pub(crate) fn time_copy() -> TimeCopySnapshot {
-    time_copy_cell().lock().unwrap().clone()
+    date_md: String = get_date_md => "%1 %2";
+    date_dm: String = get_date_dm => "%1 %2";
+    date_mdy: String = get_date_mdy => "%1 %2 %3";
+    date_dmy: String = get_date_dmy => "%1 %2 %3";
 }
 
 /// Substitute `%1`, `%2`, `%3` in a translated date/relative-time template.

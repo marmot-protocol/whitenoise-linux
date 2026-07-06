@@ -258,7 +258,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                         let mut overlay = pending_state.lock().unwrap();
                         if let Err(e) = &result {
                             tracing::warn!(target: "delete", "{e:#}");
-                            ui.set_backend_error(friendly_error("delete", e).into());
+                            ui.set_backend_error(friendly_error(ErrorOp::Delete, e).into());
                         }
                         overlay.deletes.remove(&(group_hex.clone(), target.clone()));
                     }
@@ -730,9 +730,9 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             let backend_cell_cb = backend_cell.clone();
             let group_hex_cb = group_hex.clone();
             let target_cb = target.clone();
-            let label = match &op {
-                PendingReactionOp::Add(_) => "react",
-                PendingReactionOp::Remove => "unreact",
+            let (label, err_op) = match &op {
+                PendingReactionOp::Add(_) => ("react", ErrorOp::React),
+                PendingReactionOp::Remove => ("unreact", ErrorOp::Unreact),
             };
             let on_done = move |result: anyhow::Result<marmot_app::SendSummary>| {
                 let weak = weak_cb.clone();
@@ -748,7 +748,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                         let mut overlay = pending_state.lock().unwrap();
                         if let Err(e) = &result {
                             tracing::warn!("[{label}] {e:#}");
-                            ui.set_backend_error(friendly_error(label, e).into());
+                            ui.set_backend_error(friendly_error(err_op, e).into());
                         }
                         overlay
                             .reactions
@@ -863,7 +863,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                         }
                         Err(e) => {
                             tracing::warn!(target: "profile", "save failed: {e:#}");
-                            ui.set_profile_status(friendly_error("save profile", &e).into());
+                            ui.set_profile_status(friendly_error(ErrorOp::SaveProfile, &e).into());
                         }
                     }
                 });
@@ -990,7 +990,9 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                             }
                             Err(e) => {
                                 tracing::warn!(target: "profile", "picture upload failed: {e:#}");
-                                ui.set_profile_status(friendly_error("upload picture", &e).into());
+                                ui.set_profile_status(
+                                    friendly_error(ErrorOp::UploadPicture, &e).into(),
+                                );
                             }
                         }
                     });

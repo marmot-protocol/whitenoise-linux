@@ -75,7 +75,9 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                         }
                         Err(e) => {
                             tracing::warn!(target: "add_contact", "{e:#}");
-                            ui.set_add_contact_status(friendly_error("add contact", &e).into());
+                            ui.set_add_contact_status(
+                                friendly_error(ErrorOp::AddContact, &e).into(),
+                            );
                         }
                     }
                 });
@@ -112,7 +114,9 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                         }
                         Err(e) => {
                             tracing::warn!(target: "profile_add_contact", "{e:#}");
-                            ui.set_peer_profile_status(friendly_error("add contact", &e).into());
+                            ui.set_peer_profile_status(
+                                friendly_error(ErrorOp::AddContact, &e).into(),
+                            );
                         }
                     }
                 });
@@ -332,7 +336,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                             ui.set_new_chat_name(s(""));
                             ui.set_new_chat_members(s(&npub));
                             ui.set_new_chat_busy(false);
-                            ui.set_new_chat_status(friendly_error("create chat", &e).into());
+                            ui.set_new_chat_status(friendly_error(ErrorOp::CreateChat, &e).into());
                             ui.set_show_new_chat(true);
                         }
                     }

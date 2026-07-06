@@ -439,7 +439,7 @@ pub(crate) fn spawn_text_forward(
                             // Offline: leave the bubble pending + queued for flush.
                             return;
                         }
-                        ui.set_backend_error(friendly_error("forward", &e).into());
+                        ui.set_backend_error(friendly_error(ErrorOp::Forward, &e).into());
                         let mut overlay = pending_state.lock().unwrap();
                         overlay.mark_send_failed(&group_hex, &temp_id);
                         let failed_send = overlay.find_send(&group_hex, &temp_id);
