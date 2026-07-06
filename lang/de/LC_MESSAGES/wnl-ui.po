@@ -91,6 +91,10 @@ msgctxt "NicknameModal"
 msgid "A private name for {}. Only you see it — leave empty to use their published name."
 msgstr "Ein privater Name für {}. Nur du siehst ihn — leer lassen, um den veröffentlichten Namen zu verwenden."
 
+msgctxt "ErrorCopy"
+msgid "A relay address starts with wss:// — for example wss://relay.example.com."
+msgstr "Eine Relay-Adresse beginnt mit wss:// — zum Beispiel wss://relay.example.com."
+
 msgctxt "ContactDetail"
 msgid "ACTIONS"
 msgstr "AKTIONEN"
@@ -215,6 +219,10 @@ msgstr "1 Mitglied"
 msgctxt "MessageContextMenu"
 msgid "Add reaction"
 msgstr "Reaktion hinzufügen"
+
+msgctxt "ErrorCopy"
+msgid "Add the relay's address after wss://."
+msgstr "Füge nach wss:// die Adresse des Relays hinzu."
 
 #, fuzzy
 msgctxt "AddAccountModal"
@@ -755,6 +763,14 @@ msgctxt "DarkMatterLinux"
 msgid "Delete"
 msgstr "Löschen"
 
+msgctxt "SettingsPage"
+msgid "Delete audit log file?"
+msgstr "Audit-Protokolldatei löschen?"
+
+msgctxt "SettingsPage"
+msgid "Delete file"
+msgstr "Datei löschen"
+
 msgctxt "MessageContextMenu"
 msgid "Delete for everyone"
 msgstr ""
@@ -834,6 +850,10 @@ msgstr "Ende-zu-Ende-verschlüsselt mit"
 msgctxt "AboutPane"
 msgid "End-to-end encryption"
 msgstr "Ende-zu-Ende-verschlüsselt mit"
+
+msgctxt "ErrorCopy"
+msgid "Enter a relay address."
+msgstr "Gib eine Relay-Adresse ein."
 
 msgctxt "LoginScreen"
 msgid "Enter your password"
@@ -933,6 +953,10 @@ msgstr "IDENTITÄT"
 msgctxt "NotificationsPane"
 msgid "INCOMING MESSAGES"
 msgstr "EINGEHENDE NACHRICHTEN"
+
+msgctxt "ImageViewerModal"
+msgid "Image didn't load. Tap to retry."
+msgstr "Bild nicht geladen. Zum Wiederholen tippen."
 
 msgctxt "ImportBackupModal"
 msgid "Import"
@@ -1073,10 +1097,6 @@ msgstr "Letzte Nachricht"
 msgctxt "ImageViewerModal"
 msgid "Loading…"
 msgstr "Speichere…"
-
-msgctxt "ImageViewerModal"
-msgid "Image didn't load. Tap to retry."
-msgstr "Bild nicht geladen. Zum Wiederholen tippen."
 
 #, fuzzy
 msgctxt "VideoViewerModal"
@@ -1554,6 +1574,10 @@ msgctxt "Composer"
 msgid "Remove"
 msgstr "Entfernen"
 
+msgctxt "DarkMatterLinux"
+msgid "Remove"
+msgstr "Entfernen"
+
 msgctxt "GroupMemberRow"
 msgid "Remove admin"
 msgstr "Adminrechte entziehen"
@@ -1570,6 +1594,10 @@ msgstr "Bild entfernen"
 msgctxt "LoginScreen"
 msgid "Remove key"
 msgstr "Schlüssel entfernen"
+
+msgctxt "DarkMatterLinux"
+msgid "Remove this relay?"
+msgstr "Dieses Relay entfernen?"
 
 msgctxt "MessageContextMenu"
 msgid "Reply"
@@ -1882,6 +1910,10 @@ msgid "That doesn't look like a valid npub or public key. Double-check it and tr
 msgstr "Das sieht nicht nach einem gültigen npub oder öffentlichen Schlüssel aus. Bitte überprüfen und erneut versuchen."
 
 msgctxt "ErrorCopy"
+msgid "That doesn't look like a valid relay address."
+msgstr "Das sieht nicht nach einer gültigen Relay-Adresse aus."
+
+msgctxt "ErrorCopy"
 msgid "That relay is already in your list."
 msgstr "Dieses Relay ist bereits in deiner Liste."
 
@@ -1920,6 +1952,10 @@ msgstr ""
 msgctxt "MessageView"
 msgid "This message was deleted"
 msgstr ""
+
+msgctxt "SettingsPage"
+msgid "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log."
+msgstr "Diese Audit-Protokolldatei wird dauerhaft vom Datenträger gelöscht. Wenn dies das aktive Protokoll ist, wird die Aufzeichnung in einer neuen Datei fortgesetzt."
 
 #, fuzzy
 msgctxt "LoginScreen"
@@ -2156,6 +2192,10 @@ msgctxt "ContactDetail"
 msgid "{} relays"
 msgstr "{} Relays"
 
+msgctxt "DarkMatterLinux"
+msgid "{} will stop carrying your messages. You can add it back anytime."
+msgstr "{} überträgt deine Nachrichten dann nicht mehr. Du kannst es jederzeit wieder hinzufügen."
+
 msgctxt "Composer"
 msgid "{}s"
 msgstr "{}s"
@@ -2171,18 +2211,6 @@ msgstr "✓ In deinen Kontakten"
 msgctxt "ContactDetail"
 msgid "✓ VERIFIED"
 msgstr "✓ VERIFIZIERT"
-
-msgctxt "SettingsPage"
-msgid "Delete audit log file?"
-msgstr "Audit-Protokolldatei löschen?"
-
-msgctxt "SettingsPage"
-msgid "Delete file"
-msgstr "Datei löschen"
-
-msgctxt "SettingsPage"
-msgid "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log."
-msgstr "Diese Audit-Protokolldatei wird dauerhaft vom Datenträger gelöscht. Wenn dies das aktive Protokoll ist, wird die Aufzeichnung in einer neuen Datei fortgesetzt."
 
 #~ msgctxt "ProfilePage"
 #~ msgid "(no nip-05)"

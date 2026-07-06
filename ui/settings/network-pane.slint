@@ -71,12 +71,26 @@ export component NetworkPane inherits DetailPage {
     in property <int> connected;
     in property <int> total;
     in property <string> status;
-    callback add-relay(string);
+    // Inline error under the add row. Set by Rust when an add is rejected
+    // (add-relay returned false); cleared here as the user edits the draft.
+    in-out property <string> add-error;
+    callback add-relay(string) -> bool;
     callback remove-relay(string);
     callback refresh-health();
     callback republish-relay-list();
 
     property <string> draft;
+
+    // The error belongs to the draft, and the draft dies with this pane (it
+    // is recreated on every tab switch) — drop a stale error from a previous
+    // incarnation (the bound root property outlives us), and clear it as the
+    // user edits.
+    init => {
+        root.add-error = "";
+    }
+    changed draft => {
+        root.add-error = "";
+    }
 
     PageHeader {
         title: @tr("Network & relays");
@@ -158,9 +172,9 @@ export component NetworkPane inherits DetailPage {
                     Rectangle {
                         horizontal-stretch: 1;
                         border-width: 1px;
-                        border-color: input.has-focus ? Palette.mint : Palette.border-2;
+                        border-color: root.add-error != "" ? Palette.danger-border : (input.has-focus ? Palette.mint : Palette.border-2);
                         border-radius: (6px) * Theme.r-scale;
-                        background: Palette.panel-2;
+                        background: root.add-error != "" ? Palette.danger-soft : Palette.panel-2;
                         animate border-color { duration: 120ms; }
                         input := LineInput {
                             x: 10px;
@@ -170,8 +184,7 @@ export component NetworkPane inherits DetailPage {
                             placeholder: "wss://relay.example.com";
                             text <=> root.draft;
                             submit => {
-                                if (root.draft != "") {
-                                    root.add-relay(root.draft);
+                                if (root.add-relay(root.draft)) {
                                     root.draft = "";
                                 }
                             }
@@ -189,8 +202,7 @@ export component NetworkPane inherits DetailPage {
                             }
 
                             clicked => {
-                                if (root.draft != "") {
-                                    root.add-relay(root.draft);
+                                if (root.add-relay(root.draft)) {
                                     root.draft = "";
                                 }
                             }
@@ -203,6 +215,19 @@ export component NetworkPane inherits DetailPage {
                     width: parent.width;
                     height: 1px;
                     background: Palette.border-2;
+                }
+            }
+
+            if root.add-error != "": HorizontalLayout {
+                padding-left: 16px;
+                padding-right: 16px;
+                padding-top: 8px;
+                padding-bottom: 8px;
+                Text {
+                    text: root.add-error;
+                    color: Palette.danger;
+                    font-size: (11px) * Theme.fs-scale;
+                    wrap: word-wrap;
                 }
             }
 

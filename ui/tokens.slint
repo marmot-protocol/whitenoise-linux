@@ -1013,6 +1013,10 @@ export global ErrorCopy {
     // Network-pane status copy (also Rust-set).
     out property <string> not-connected: @tr("Not connected yet. Please wait a moment and try again.");
     out property <string> relay-already-listed: @tr("That relay is already in your list.");
+    out property <string> relay-url-empty: @tr("Enter a relay address.");
+    out property <string> relay-url-scheme: @tr("A relay address starts with wss:// — for example wss://relay.example.com.");
+    out property <string> relay-url-no-host: @tr("Add the relay's address after wss://.");
+    out property <string> relay-url-invalid: @tr("That doesn't look like a valid relay address.");
     out property <string> save-relays-failed: @tr("Couldn't save your relay list. Please try again.");
     out property <string> relay-added: @tr("Relay added.");
     out property <string> relay-removed: @tr("Relay removed.");

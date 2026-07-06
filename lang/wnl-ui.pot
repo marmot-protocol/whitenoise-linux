@@ -100,6 +100,10 @@ msgctxt "NicknameModal"
 msgid "A private name for {}. Only you see it — leave empty to use their published name."
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "A relay address starts with wss:// — for example wss://relay.example.com."
+msgstr ""
+
 msgctxt "ContactDetail"
 msgid "ACTIONS"
 msgstr ""
@@ -215,6 +219,10 @@ msgstr ""
 
 msgctxt "MessageContextMenu"
 msgid "Add reaction"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Add the relay's address after wss://."
 msgstr ""
 
 msgctxt "AddAccountModal"
@@ -730,6 +738,14 @@ msgctxt "DarkMatterLinux"
 msgid "Delete"
 msgstr ""
 
+msgctxt "SettingsPage"
+msgid "Delete audit log file?"
+msgstr ""
+
+msgctxt "SettingsPage"
+msgid "Delete file"
+msgstr ""
+
 msgctxt "MessageContextMenu"
 msgid "Delete for everyone"
 msgstr ""
@@ -800,6 +816,10 @@ msgstr ""
 
 msgctxt "AboutPane"
 msgid "End-to-end encryption"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Enter a relay address."
 msgstr ""
 
 msgctxt "LoginScreen"
@@ -896,6 +916,10 @@ msgstr ""
 
 msgctxt "NotificationsPane"
 msgid "INCOMING MESSAGES"
+msgstr ""
+
+msgctxt "ImageViewerModal"
+msgid "Image didn't load. Tap to retry."
 msgstr ""
 
 msgctxt "ImportBackupModal"
@@ -1032,10 +1056,6 @@ msgstr ""
 
 msgctxt "ImageViewerModal"
 msgid "Loading…"
-msgstr ""
-
-msgctxt "ImageViewerModal"
-msgid "Image didn't load. Tap to retry."
 msgstr ""
 
 msgctxt "VideoViewerModal"
@@ -1488,6 +1508,10 @@ msgctxt "Composer"
 msgid "Remove"
 msgstr ""
 
+msgctxt "DarkMatterLinux"
+msgid "Remove"
+msgstr ""
+
 msgctxt "GroupMemberRow"
 msgid "Remove admin"
 msgstr ""
@@ -1502,6 +1526,10 @@ msgstr ""
 
 msgctxt "LoginScreen"
 msgid "Remove key"
+msgstr ""
+
+msgctxt "DarkMatterLinux"
+msgid "Remove this relay?"
 msgstr ""
 
 msgctxt "MessageContextMenu"
@@ -1802,6 +1830,10 @@ msgid "That doesn't look like a valid npub or public key. Double-check it and tr
 msgstr ""
 
 msgctxt "ErrorCopy"
+msgid "That doesn't look like a valid relay address."
+msgstr ""
+
+msgctxt "ErrorCopy"
 msgid "That relay is already in your list."
 msgstr ""
 
@@ -1839,6 +1871,10 @@ msgstr ""
 
 msgctxt "MessageView"
 msgid "This message was deleted"
+msgstr ""
+
+msgctxt "SettingsPage"
+msgid "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log."
 msgstr ""
 
 msgctxt "LoginScreen"
@@ -2071,6 +2107,10 @@ msgctxt "ContactDetail"
 msgid "{} relays"
 msgstr ""
 
+msgctxt "DarkMatterLinux"
+msgid "{} will stop carrying your messages. You can add it back anytime."
+msgstr ""
+
 msgctxt "Composer"
 msgid "{}s"
 msgstr ""
@@ -2085,16 +2125,4 @@ msgstr ""
 
 msgctxt "ContactDetail"
 msgid "✓ VERIFIED"
-msgstr ""
-
-msgctxt "SettingsPage"
-msgid "Delete audit log file?"
-msgstr ""
-
-msgctxt "SettingsPage"
-msgid "Delete file"
-msgstr ""
-
-msgctxt "SettingsPage"
-msgid "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log."
 msgstr ""

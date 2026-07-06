@@ -1638,16 +1638,30 @@ pub(crate) fn vec_string_from_model(model: &ModelRc<SharedString>) -> Vec<String
     model.iter().map(|s| s.to_string()).collect()
 }
 
-/// Validate a user-entered relay URL. Trim is the caller's job.
+/// Validate a user-entered relay URL. Trim is the caller's job. Returns the
+/// localized message for the first problem found, surfaced inline under the
+/// add-relay field.
 pub(crate) fn validate_relay_url(url: &str) -> Result<(), String> {
+    let copy = error_copy();
     if url.is_empty() {
-        return Err("Enter a relay URL.".to_string());
+        return Err(copy.relay_url_empty);
     }
-    if !(url.starts_with("wss://") || url.starts_with("ws://")) {
-        return Err("Must start with wss:// or ws://".to_string());
+    let rest = ["wss://", "ws://"]
+        .iter()
+        .find(|scheme| {
+            url.get(..scheme.len())
+                .is_some_and(|p| p.eq_ignore_ascii_case(scheme))
+        })
+        .map(|scheme| &url[scheme.len()..]);
+    let Some(rest) = rest else {
+        return Err(copy.relay_url_scheme);
+    };
+    let host = rest.split(['/', '?', '#']).next().unwrap_or("");
+    if host.is_empty() {
+        return Err(copy.relay_url_no_host);
     }
-    if url.len() < 8 {
-        return Err("Relay URL looks too short.".to_string());
+    if url.contains(char::is_whitespace) {
+        return Err(copy.relay_url_invalid);
     }
     Ok(())
 }

@@ -1066,28 +1066,37 @@ pub(crate) fn wire_panes(
     ui.on_network_add_relay({
         let weak = ui.as_weak();
         let reboot = reboot_relays_first_run.clone();
+        // Returns whether the relay was accepted — the add-relay fields keep
+        // their draft on a rejection so the user can correct it in place.
         move |raw| {
-            let Some(ui) = weak.upgrade() else { return };
+            let Some(ui) = weak.upgrade() else {
+                return false;
+            };
             let trimmed = raw.trim().to_string();
             if let Err(msg) = validate_relay_url(&trimmed) {
-                ui.set_network_status(msg.into());
-                return;
+                ui.set_network_add_error(msg.into());
+                ui.set_network_status(SharedString::default());
+                return false;
             }
             let mut list: Vec<String> = vec_string_from_model(&ui.get_network_relays());
             if list.iter().any(|u| u.eq_ignore_ascii_case(&trimmed)) {
-                ui.set_network_status(error_copy().relay_already_listed.into());
-                return;
+                ui.set_network_add_error(error_copy().relay_already_listed.into());
+                ui.set_network_status(SharedString::default());
+                return false;
             }
             list.push(trimmed);
             if let Err(e) = backend::save_relays(&list) {
                 eprintln!("[network] save relays failed: {e}");
-                ui.set_network_status(error_copy().save_relays_failed.into());
-                return;
+                ui.set_network_add_error(error_copy().save_relays_failed.into());
+                ui.set_network_status(SharedString::default());
+                return false;
             }
+            ui.set_network_add_error(SharedString::default());
             push_network_relays(&ui, &list);
             ui.set_network_status(error_copy().relay_added.into());
             // First-run: connect the freshly-added relay live (no-op otherwise).
             reboot();
+            true
         }
     });
 

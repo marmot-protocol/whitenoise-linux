@@ -421,7 +421,17 @@ export component DarkMatterLinux inherits Window {
     in property <int> network-connected;
     in property <int> network-total;
     in property <string> network-status;
-    callback network-add-relay(string);
+    // Inline error for the add-relay fields (get-started and the network pane
+    // share it). Rust sets it when an add is rejected; the fields clear it as
+    // the user edits the draft.
+    in-out property <string> network-add-error;
+    // Relay pending removal — non-empty while the confirm dialog is up. Both
+    // trash buttons route here; the ConfirmModal below fires the actual
+    // network-remove-relay.
+    property <string> relay-remove-target: "";
+    // Returns false when the relay was rejected (invalid or duplicate), so the
+    // add-relay fields keep the draft for correction.
+    callback network-add-relay(string) -> bool;
     callback network-remove-relay(string);
     callback network-refresh-health();
     callback network-republish-relay-list();
@@ -774,11 +784,12 @@ export component DarkMatterLinux inherits Window {
                         connected: root.network-connected;
                         total: root.network-total;
                         network-status: root.network-status;
+                        add-error <=> root.network-add-error;
                         add-relay(u) => {
-                            root.network-add-relay(u);
+                            return root.network-add-relay(u);
                         }
                         remove-relay(u) => {
-                            root.network-remove-relay(u);
+                            root.relay-remove-target = u;
                         }
                         kp-published: root.kp-published;
                         kp-busy: root.kp-busy;
@@ -1146,11 +1157,12 @@ export component DarkMatterLinux inherits Window {
                         network-connected: root.network-connected;
                         network-total: root.network-total;
                         network-status: root.network-status;
+                        network-add-error <=> root.network-add-error;
                         network-add-relay(u) => {
-                            root.network-add-relay(u);
+                            return root.network-add-relay(u);
                         }
                         network-remove-relay(u) => {
-                            root.network-remove-relay(u);
+                            root.relay-remove-target = u;
                         }
                         network-refresh-health => {
                             root.network-refresh-health();
@@ -1441,6 +1453,23 @@ export component DarkMatterLinux inherits Window {
         dismissed => {
             root.show-audit-delete-confirm = false;
             root.pending-audit-delete-path = "";
+        }
+    }
+
+    if root.relay-remove-target != "": ConfirmModal {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        title: @tr("Remove this relay?");
+        subtitle: @tr("{} will stop carrying your messages. You can add it back anytime.", root.relay-remove-target);
+        confirm-label: @tr("Remove");
+        confirm => {
+            root.network-remove-relay(root.relay-remove-target);
+            root.relay-remove-target = "";
+        }
+        dismissed => {
+            root.relay-remove-target = "";
         }
     }
 

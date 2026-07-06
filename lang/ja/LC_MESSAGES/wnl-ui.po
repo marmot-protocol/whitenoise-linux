@@ -89,6 +89,10 @@ msgctxt "NicknameModal"
 msgid "A private name for {}. Only you see it — leave empty to use their published name."
 msgstr "{} 用の非公開の名前です。あなただけに表示されます。空欄にすると相手の公開名が使われます。"
 
+msgctxt "ErrorCopy"
+msgid "A relay address starts with wss:// — for example wss://relay.example.com."
+msgstr "リレーのアドレスは wss:// で始まります。例: wss://relay.example.com"
+
 msgctxt "ContactDetail"
 msgid "ACTIONS"
 msgstr "操作"
@@ -213,6 +217,10 @@ msgstr "1 メンバー"
 msgctxt "MessageContextMenu"
 msgid "Add reaction"
 msgstr "リアクションを追加"
+
+msgctxt "ErrorCopy"
+msgid "Add the relay's address after wss://."
+msgstr "wss:// に続けてリレーのアドレスを入力してください。"
 
 #, fuzzy
 msgctxt "AddAccountModal"
@@ -753,6 +761,14 @@ msgctxt "DarkMatterLinux"
 msgid "Delete"
 msgstr "削除"
 
+msgctxt "SettingsPage"
+msgid "Delete audit log file?"
+msgstr "監査ログファイルを削除しますか？"
+
+msgctxt "SettingsPage"
+msgid "Delete file"
+msgstr "ファイルを削除"
+
 msgctxt "MessageContextMenu"
 msgid "Delete for everyone"
 msgstr ""
@@ -832,6 +848,10 @@ msgstr "エンドツーエンド暗号化:"
 msgctxt "AboutPane"
 msgid "End-to-end encryption"
 msgstr "エンドツーエンド暗号化:"
+
+msgctxt "ErrorCopy"
+msgid "Enter a relay address."
+msgstr "リレーのアドレスを入力してください。"
 
 msgctxt "LoginScreen"
 msgid "Enter your password"
@@ -931,6 +951,10 @@ msgstr "ID"
 msgctxt "NotificationsPane"
 msgid "INCOMING MESSAGES"
 msgstr "受信メッセージ"
+
+msgctxt "ImageViewerModal"
+msgid "Image didn't load. Tap to retry."
+msgstr "画像を読み込めませんでした。タップして再試行。"
 
 msgctxt "ImportBackupModal"
 msgid "Import"
@@ -1071,10 +1095,6 @@ msgstr "最後のメッセージ"
 msgctxt "ImageViewerModal"
 msgid "Loading…"
 msgstr "保存中…"
-
-msgctxt "ImageViewerModal"
-msgid "Image didn't load. Tap to retry."
-msgstr "画像を読み込めませんでした。タップして再試行。"
 
 #, fuzzy
 msgctxt "VideoViewerModal"
@@ -1552,6 +1572,10 @@ msgctxt "Composer"
 msgid "Remove"
 msgstr "削除"
 
+msgctxt "DarkMatterLinux"
+msgid "Remove"
+msgstr "削除"
+
 msgctxt "GroupMemberRow"
 msgid "Remove admin"
 msgstr "管理者から外す"
@@ -1568,6 +1592,10 @@ msgstr "画像を削除"
 msgctxt "LoginScreen"
 msgid "Remove key"
 msgstr "鍵を削除"
+
+msgctxt "DarkMatterLinux"
+msgid "Remove this relay?"
+msgstr "このリレーを削除しますか？"
 
 msgctxt "MessageContextMenu"
 msgid "Reply"
@@ -1880,6 +1908,10 @@ msgid "That doesn't look like a valid npub or public key. Double-check it and tr
 msgstr "有効な npub または公開鍵ではないようです。確認してもう一度お試しください。"
 
 msgctxt "ErrorCopy"
+msgid "That doesn't look like a valid relay address."
+msgstr "有効なリレーのアドレスではないようです。"
+
+msgctxt "ErrorCopy"
 msgid "That relay is already in your list."
 msgstr "そのリレーは既にリストにあります。"
 
@@ -1918,6 +1950,10 @@ msgstr ""
 msgctxt "MessageView"
 msgid "This message was deleted"
 msgstr ""
+
+msgctxt "SettingsPage"
+msgid "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log."
+msgstr "監査ログファイルはディスクから完全に削除されます。これが現在記録中のログの場合、記録は新しいファイルに続きます。"
 
 #, fuzzy
 msgctxt "LoginScreen"
@@ -2153,6 +2189,10 @@ msgctxt "ContactDetail"
 msgid "{} relays"
 msgstr "{} リレー"
 
+msgctxt "DarkMatterLinux"
+msgid "{} will stop carrying your messages. You can add it back anytime."
+msgstr "{} はメッセージの中継に使われなくなります。いつでも追加し直せます。"
+
 msgctxt "Composer"
 msgid "{}s"
 msgstr "{}秒"
@@ -2168,18 +2208,6 @@ msgstr "✓ 連絡先に登録済み"
 msgctxt "ContactDetail"
 msgid "✓ VERIFIED"
 msgstr "✓ 確認済み"
-
-msgctxt "SettingsPage"
-msgid "Delete audit log file?"
-msgstr "監査ログファイルを削除しますか？"
-
-msgctxt "SettingsPage"
-msgid "Delete file"
-msgstr "ファイルを削除"
-
-msgctxt "SettingsPage"
-msgid "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log."
-msgstr "監査ログファイルはディスクから完全に削除されます。これが現在記録中のログの場合、記録は新しいファイルに続きます。"
 
 #~ msgctxt "ProfilePage"
 #~ msgid "(no nip-05)"

@@ -147,7 +147,10 @@ export component GetStartedScreen inherits Rectangle {
     in property <int> connected;
     in property <int> total;
     in property <string> network-status;
-    callback add-relay(string);
+    // Inline error under the add row. Set by Rust when an add is rejected
+    // (add-relay returned false); cleared here as the user edits the draft.
+    in-out property <string> add-error;
+    callback add-relay(string) -> bool;
     callback remove-relay(string);
     // Key package (live).
     in property <bool> kp-published: false;
@@ -158,6 +161,16 @@ export component GetStartedScreen inherits Rectangle {
     callback start-chat();
 
     property <string> relay-draft;
+
+    // The error belongs to the draft, and the draft dies with this screen —
+    // drop a stale error from a previous incarnation (the bound root property
+    // outlives us), and clear it as the user edits.
+    init => {
+        root.add-error = "";
+    }
+    changed relay-draft => {
+        root.add-error = "";
+    }
 
     background: Palette.bg;
 
@@ -245,10 +258,10 @@ export component GetStartedScreen inherits Rectangle {
                                 horizontal-stretch: 1;
                                 height: 40px;
                                 border-width: 1px;
-                                border-color: relay-input.has-focus ? Palette.mint : Palette.border-2;
+                                border-color: root.add-error != "" ? Palette.danger-border : (relay-input.has-focus ? Palette.mint : Palette.border-2);
                                 border-radius: (7px) * Theme.r-scale;
-                                background: Palette.field;
-                                drop-shadow-blur: relay-input.has-focus && Theme.focus-glow ? 10px : 0px;
+                                background: root.add-error != "" ? Palette.danger-soft : Palette.field;
+                                drop-shadow-blur: relay-input.has-focus && root.add-error == "" && Theme.focus-glow ? 10px : 0px;
                                 drop-shadow-color: Palette.mint-glow;
                                 animate border-color {
                                     duration: 140ms;
@@ -264,8 +277,7 @@ export component GetStartedScreen inherits Rectangle {
                                     fg: Palette.text-hi;
                                     placeholder-color: Palette.text-vlo;
                                     submit => {
-                                        if (root.relay-draft != "") {
-                                            root.add-relay(root.relay-draft);
+                                        if (root.add-relay(root.relay-draft)) {
                                             root.relay-draft = "";
                                         }
                                     }
@@ -286,12 +298,18 @@ export component GetStartedScreen inherits Rectangle {
                                 }
 
                                 clicked => {
-                                    if (root.relay-draft != "") {
-                                        root.add-relay(root.relay-draft);
+                                    if (root.add-relay(root.relay-draft)) {
                                         root.relay-draft = "";
                                     }
                                 }
                             }
+                        }
+
+                        if root.add-error != "": Text {
+                            text: root.add-error;
+                            color: Palette.danger;
+                            font-size: (11px) * Theme.fs-scale;
+                            wrap: word-wrap;
                         }
 
                         // One-click suggested relays (hidden once added).
