@@ -71,6 +71,8 @@ export struct ThemeColors {
     // highlight); otherwise the soft accent-surface wash (modern themes).
     selected-uses-base: bool,
     // Accent lookup tables, indexed by Theme.accent (0..4 = mint/ocean/berry/coral/lavender).
+    // Column order must match the ACCENTS table in src/state.rs, the single
+    // Rust-side source of the name-to-index mapping.
     accent-base: [color],
     accent-hi: [color],
     accent-dim: [color],

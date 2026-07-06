@@ -623,20 +623,14 @@ pub(crate) fn wire_panes(
         let weak = ui.as_weak();
         let settings_cell = settings_cell.clone();
         move |idx| {
-            let color = match idx {
-                1 => "ocean",
-                2 => "berry",
-                3 => "coral",
-                4 => "lavender",
-                _ => "mint",
-            };
+            let color = accent_color_name(idx);
             {
                 let mut s = settings_cell.borrow_mut();
                 s.accent_color = color.to_string();
                 s.save();
             }
             if let Some(ui) = weak.upgrade() {
-                ui.set_accent_color(idx);
+                set_accent_index(&ui, accent_color_idx(color));
             }
         }
     });

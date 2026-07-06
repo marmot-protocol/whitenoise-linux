@@ -771,46 +771,72 @@ pub(crate) fn normalize_locale(code: &str) -> &'static str {
     }
 }
 
+/// The one theme-mode registry: each non-default mode's name paired with the
+/// root flag setter that turns it on. `normalize_theme_mode` and
+/// `apply_theme_mode` both derive from this list, so adding a theme mode is
+/// one new row here (plus the Slint side).
+type ThemeFlagSetter = fn(&DarkMatterLinux, bool);
+const THEME_MODE_FLAGS: [(&str, ThemeFlagSetter); 6] = [
+    ("light", DarkMatterLinux::set_light_theme),
+    ("retro", DarkMatterLinux::set_retro_mode),
+    ("terminal", DarkMatterLinux::set_terminal_mode),
+    ("crayon", DarkMatterLinux::set_crayon_mode),
+    ("synthwave", DarkMatterLinux::set_synthwave_mode),
+    ("chalkboard", DarkMatterLinux::set_chalkboard_mode),
+];
+
 pub(crate) fn normalize_theme_mode(mode: &str) -> &'static str {
-    match mode {
-        "light" => "light",
-        "retro" => "retro",
-        "terminal" => "terminal",
-        "crayon" => "crayon",
-        "synthwave" => "synthwave",
-        "chalkboard" => "chalkboard",
-        _ => "dark",
-    }
+    THEME_MODE_FLAGS
+        .iter()
+        .map(|(name, _)| *name)
+        .find(|name| *name == mode)
+        .unwrap_or("dark")
 }
 
+/// The one accent registry: position i names column i of every `accent-*`
+/// lookup array in the `ui/tokens.slint` theme packs (`Theme.accent` indexes
+/// them). `normalize_accent_color`, `accent_color_idx`, and
+/// `accent_color_name` all derive from this table; keep its order in sync
+/// with the Slint arrays.
+pub(crate) const ACCENTS: [&str; 5] = ["mint", "ocean", "berry", "coral", "lavender"];
+
 pub(crate) fn normalize_accent_color(color: &str) -> &'static str {
-    match color {
-        "ocean" => "ocean",
-        "berry" => "berry",
-        "coral" => "coral",
-        "lavender" => "lavender",
-        _ => "mint",
-    }
+    ACCENTS
+        .iter()
+        .copied()
+        .find(|name| *name == color)
+        .unwrap_or(ACCENTS[0])
 }
 
 pub(crate) fn accent_color_idx(color: &str) -> i32 {
-    match color {
-        "ocean" => 1,
-        "berry" => 2,
-        "coral" => 3,
-        "lavender" => 4,
-        _ => 0,
-    }
+    ACCENTS.iter().position(|name| *name == color).unwrap_or(0) as i32
+}
+
+pub(crate) fn accent_color_name(idx: i32) -> &'static str {
+    usize::try_from(idx)
+        .ok()
+        .and_then(|i| ACCENTS.get(i))
+        .copied()
+        .unwrap_or(ACCENTS[0])
+}
+
+/// Every Rust-side accent push goes through here so an index the Slint
+/// accent arrays cannot resolve fails loudly in dev builds instead of
+/// silently painting the wrong swatch.
+pub(crate) fn set_accent_index(ui: &DarkMatterLinux, idx: i32) {
+    debug_assert!(
+        (0..ACCENTS.len() as i32).contains(&idx),
+        "accent index {idx} outside the ACCENTS table (len {})",
+        ACCENTS.len()
+    );
+    ui.set_accent_color(idx);
 }
 
 pub(crate) fn apply_theme_mode(ui: &DarkMatterLinux, mode: &str) {
     let mode = normalize_theme_mode(mode);
-    ui.set_light_theme(mode == "light");
-    ui.set_retro_mode(mode == "retro");
-    ui.set_terminal_mode(mode == "terminal");
-    ui.set_crayon_mode(mode == "crayon");
-    ui.set_synthwave_mode(mode == "synthwave");
-    ui.set_chalkboard_mode(mode == "chalkboard");
+    for (name, set_flag) in THEME_MODE_FLAGS {
+        set_flag(ui, mode == name);
+    }
 }
 
 pub(crate) fn locale_display(code: &str) -> &'static str {
