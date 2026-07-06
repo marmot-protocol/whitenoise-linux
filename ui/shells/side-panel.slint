@@ -19,8 +19,37 @@ export component SidePanel inherits Rectangle {
     in property <string> footer-text: "";
     in property <string> footer-trail: "";
 
-    width: 304px;
+    // Narrow-window collapse: the host page binds `window-width`; below the
+    // threshold the panel reserves only a slim avatar strip and floats the
+    // full-width list over the neighbouring pane on hover. The host must lay
+    // the pane out against `reserved-width` (not `width`) so the hover
+    // expansion overlays instead of reflowing. The large default keeps panels
+    // whose host doesn't opt in permanently expanded.
+    in property <length> window-width: 100000px;
+    property <length> collapse-threshold: 1100px;
+    property <length> strip-width: 72px;
+    property <length> full-width: 304px;
+    out property <bool> collapsed: root.window-width < root.collapse-threshold;
+    out property <length> reserved-width: root.collapsed ? root.strip-width : root.full-width;
+    property <bool> expanded: !root.collapsed || hover.has-hover;
+    // Rows bind this to their `compact` property to drop their text columns
+    // in the strip. Event-driven (hover/window size), deliberately NOT derived
+    // from the row's own width: a width-derived flag that adds or removes
+    // layout children is a binding loop through the scroll viewport.
+    out property <bool> strip: !root.expanded;
+
+    width: root.expanded ? root.full-width : root.strip-width;
+    clip: true;
+    animate width, reserved-width {
+        duration: Theme.motion-fast ? 100ms : 180ms;
+        easing: ease-out;
+    }
     background: Palette.bg;
+    // Depth cue while the expanded list floats over the main pane.
+    drop-shadow-blur: root.collapsed && root.expanded && !Theme.hard-shadow ? 22px : 0px;
+    drop-shadow-offset-x: root.collapsed && root.expanded && Theme.hard-shadow ? 6px : 0px;
+    drop-shadow-offset-y: root.collapsed && root.expanded && Theme.hard-shadow ? 6px : 0px;
+    drop-shadow-color: root.collapsed && root.expanded ? Palette.shadow.transparentize(Theme.hard-shadow ? 0.0 : 0.2) : transparent;
 
     Rectangle {
         x: parent.width - 1px;
@@ -29,166 +58,178 @@ export component SidePanel inherits Rectangle {
         background: Palette.border-2;
     }
 
-    VerticalLayout {
-        padding-left: 14px;
-        padding-right: 14px;
-        padding-top: 14px;
-        padding-bottom: 14px;
-        spacing: 0;
-
-        HorizontalLayout {
-            height: 24px;
-            alignment: stretch;
-            HorizontalLayout {
-                spacing: 7px;
-                alignment: start;
-                Text {
-                    text: root.title;
-                    color: Palette.text-mid;
-                    font-size: (11px) * Theme.fs-scale;
-                    font-weight: 700;
-                    letter-spacing: 1.4px;
-                    vertical-alignment: center;
-                }
-
-                Text {
-                    text: "·";
-                    color: Palette.text-vlo;
-                    font-size: (11px) * Theme.fs-scale;
-                    vertical-alignment: center;
-                }
-
-                Text {
-                    text: root.count;
-                    color: Palette.text-mid;
-                    font-size: (11px) * Theme.fs-scale;
-                    font-weight: 700;
-                    vertical-alignment: center;
-                }
-            }
-
-            Rectangle {
-                horizontal-stretch: 1;
-            }
-
-            if root.show-add: Button {
-                label: root.add-label;
-                button-height: 24px;
-                radius: 5px;
-                pad-left: 6px;
-                pad-right: 8px;
-                spacing: 5px;
-                font-size: (10px) * Theme.fs-scale;
-                bg-color: transparent;
-                AddUserIcon {
-                    stroke: Palette.text-mid;
-                }
-
-                clicked => {
-                    root.add-clicked();
-                }
-            }
-        }
-
-        Rectangle {
-            height: 12px;
-        }
-
-        if root.show-search: Rectangle {
-            height: 34px;
-            border-radius: (8px) * Theme.r-scale;
-            background: Palette.panel;
-            border-width: 1px;
-            border-color: search-input.has-focus ? Palette.mint-dim : Palette.border-2;
-            drop-shadow-blur: search-input.has-focus && Theme.focus-glow ? 10px : 0px;
-            drop-shadow-color: Palette.mint-glow;
-            animate border-color {
-                duration: 140ms;
+    // Ancestor TouchArea: `has-hover` stays true while the pointer is over any
+    // descendant row's TouchArea (the input filter sets hover on the way down
+    // the tree), which is what lets a panel with repeater children
+    // hover-expand. Clicks still land on the rows first.
+    hover := TouchArea {
+        VerticalLayout {
+            padding-left: root.expanded ? 14px : 6px;
+            padding-right: root.expanded ? 14px : 6px;
+            padding-top: 14px;
+            padding-bottom: 14px;
+            spacing: 0;
+            animate padding-left, padding-right {
+                duration: Theme.motion-fast ? 100ms : 180ms;
                 easing: ease-out;
             }
 
-            HorizontalLayout {
-                padding-left: 10px;
-                padding-right: 8px;
-                spacing: 8px;
-                SearchIcon {
-                    stroke: search-input.has-focus ? Palette.mint-dim : Palette.text-vlo;
-                    size: 12px;
-                    y: (parent.height - self.height) / 2;
-                    animate stroke { duration: 140ms; }
-                }
-
-                search-input := LineInput {
-                    placeholder: root.search-placeholder;
-                    font-size: Theme.fs(12px, 16px);
-                    fg: Palette.text-hi;
-                    placeholder-color: Palette.text-vlo;
-                    horizontal-stretch: 1;
-                }
-
-                if root.show-search-shortcut: Rectangle {
-                    width: 44px;
-                    height: 18px;
-                    y: (parent.height - self.height) / 2;
-                    border-radius: (3px) * Theme.r-scale;
-                    background: Palette.panel-2;
-                    border-width: 1px;
-                    border-color: Palette.border;
+            // Header, search, and footer only exist while the window is wide;
+            // the collapsed strip (and its hover overlay) is purely the list.
+            if !root.collapsed: HorizontalLayout {
+                height: 24px;
+                alignment: stretch;
+                HorizontalLayout {
+                    spacing: 7px;
+                    alignment: start;
                     Text {
-                        text: root.search-shortcut-label;
-                        color: Palette.text-lo;
-                        font-size: (9px) * Theme.fs-scale;
-                        horizontal-alignment: center;
+                        text: root.title;
+                        color: Palette.text-mid;
+                        font-size: (11px) * Theme.fs-scale;
+                        font-weight: 700;
+                        letter-spacing: 1.4px;
+                        vertical-alignment: center;
+                    }
+
+                    Text {
+                        text: "·";
+                        color: Palette.text-vlo;
+                        font-size: (11px) * Theme.fs-scale;
+                        vertical-alignment: center;
+                    }
+
+                    Text {
+                        text: root.count;
+                        color: Palette.text-mid;
+                        font-size: (11px) * Theme.fs-scale;
+                        font-weight: 700;
                         vertical-alignment: center;
                     }
                 }
-            }
-        }
-        if root.show-search: Rectangle {
-            height: 10px;
-        }
 
-        CypherScroll {
-            vertical-stretch: 1;
-            viewport-height: list-layout.preferred-height;
-            viewport-width: self.visible-width;
-            list-layout := VerticalLayout {
-                spacing: 2px;
-                @children
-            }
-        }
+                Rectangle {
+                    horizontal-stretch: 1;
+                }
 
-        if root.footer-text != "": Rectangle {
-            height: 6px;
-        }
-        if root.footer-text != "": HorizontalLayout {
-            height: 20px;
-            spacing: 8px;
-            alignment: start;
-            Rectangle {
-                width: 8px;
-                height: 8px;
-                y: (parent.height - self.height) / 2;
-                border-radius: (4px) * Theme.r-scale;
-                background: Palette.mint-dim;
+                if root.show-add: Button {
+                    label: root.add-label;
+                    button-height: 24px;
+                    radius: 5px;
+                    pad-left: 6px;
+                    pad-right: 8px;
+                    spacing: 5px;
+                    font-size: (10px) * Theme.fs-scale;
+                    bg-color: transparent;
+                    AddUserIcon {
+                        stroke: Palette.text-mid;
+                    }
+
+                    clicked => {
+                        root.add-clicked();
+                    }
+                }
             }
 
-            Text {
-                text: root.footer-text;
-                color: Palette.text-mid;
-                font-size: (10px) * Theme.fs-scale;
-                font-weight: 700;
-                letter-spacing: 1.0px;
-                vertical-alignment: center;
+            if !root.collapsed: Rectangle {
+                height: 12px;
             }
 
-            if root.footer-trail != "": Text {
-                text: root.footer-trail;
-                color: Palette.text-vlo;
-                font-size: (10px) * Theme.fs-scale;
-                font-weight: 600;
-                letter-spacing: 1.0px;
-                vertical-alignment: center;
+            if root.show-search && !root.collapsed: Rectangle {
+                height: 34px;
+                border-radius: (8px) * Theme.r-scale;
+                background: Palette.panel;
+                border-width: 1px;
+                border-color: search-input.has-focus ? Palette.mint-dim : Palette.border-2;
+                drop-shadow-blur: search-input.has-focus && Theme.focus-glow ? 10px : 0px;
+                drop-shadow-color: Palette.mint-glow;
+                animate border-color {
+                    duration: 140ms;
+                    easing: ease-out;
+                }
+
+                HorizontalLayout {
+                    padding-left: 10px;
+                    padding-right: 8px;
+                    spacing: 8px;
+                    SearchIcon {
+                        stroke: search-input.has-focus ? Palette.mint-dim : Palette.text-vlo;
+                        size: 12px;
+                        y: (parent.height - self.height) / 2;
+                        animate stroke { duration: 140ms; }
+                    }
+
+                    search-input := LineInput {
+                        placeholder: root.search-placeholder;
+                        font-size: Theme.fs(12px, 16px);
+                        fg: Palette.text-hi;
+                        placeholder-color: Palette.text-vlo;
+                        horizontal-stretch: 1;
+                    }
+
+                    if root.show-search-shortcut: Rectangle {
+                        width: 44px;
+                        height: 18px;
+                        y: (parent.height - self.height) / 2;
+                        border-radius: (3px) * Theme.r-scale;
+                        background: Palette.panel-2;
+                        border-width: 1px;
+                        border-color: Palette.border;
+                        Text {
+                            text: root.search-shortcut-label;
+                            color: Palette.text-lo;
+                            font-size: (9px) * Theme.fs-scale;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+            }
+            if root.show-search && !root.collapsed: Rectangle {
+                height: 10px;
+            }
+
+            CypherScroll {
+                vertical-stretch: 1;
+                viewport-height: list-layout.preferred-height;
+                viewport-width: self.visible-width;
+                list-layout := VerticalLayout {
+                    spacing: 2px;
+                    @children
+                }
+            }
+
+            if root.footer-text != "" && !root.collapsed: Rectangle {
+                height: 6px;
+            }
+            if root.footer-text != "" && !root.collapsed: HorizontalLayout {
+                height: 20px;
+                spacing: 8px;
+                alignment: start;
+                Rectangle {
+                    width: 8px;
+                    height: 8px;
+                    y: (parent.height - self.height) / 2;
+                    border-radius: (4px) * Theme.r-scale;
+                    background: Palette.mint-dim;
+                }
+
+                Text {
+                    text: root.footer-text;
+                    color: Palette.text-mid;
+                    font-size: (10px) * Theme.fs-scale;
+                    font-weight: 700;
+                    letter-spacing: 1.0px;
+                    vertical-alignment: center;
+                }
+
+                if root.footer-trail != "": Text {
+                    text: root.footer-trail;
+                    color: Palette.text-vlo;
+                    font-size: (10px) * Theme.fs-scale;
+                    font-weight: 600;
+                    letter-spacing: 1.0px;
+                    vertical-alignment: center;
+                }
             }
         }
     }

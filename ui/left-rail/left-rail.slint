@@ -191,7 +191,9 @@ export component LeftRail inherits Rectangle {
 
     property <color> selected-glyph: Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.mint;
 
-    property <length> collapsed-width: 56px;
+    // Exposed so the shell can reserve exactly this much and let the hover
+    // expansion overlay the page slot instead of reflowing it.
+    out property <length> collapsed-width: 56px;
     property <length> expanded-width: 160px;
     // Width driven by hover state — the rail itself detects hover.
     width: root.is-hovered ? root.expanded-width : root.collapsed-width;

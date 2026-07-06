@@ -15,6 +15,7 @@ export component ContactsSidebar inherits SidePanel {
 
     for c[idx] in root.contacts: ContactListItem {
         data: c;
+        compact: root.strip;
         selected: idx == root.active-contact;
         clicked => {
             root.contact-clicked(idx);

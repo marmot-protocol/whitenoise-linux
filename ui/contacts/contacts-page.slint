@@ -14,6 +14,8 @@ export component ContactsPage inherits Rectangle {
     callback start-chat-clicked();
     in property <[Contact]> contacts;
     in property <int> active-contact;
+    // Bound by the shell; drives the sidebar's narrow-window collapse.
+    in property <length> window-width: 100000px;
 
     horizontal-stretch: 1;
     vertical-stretch: 1;
@@ -21,51 +23,56 @@ export component ContactsPage inherits Rectangle {
     preferred-height: 0px;
     background: Palette.bg;
 
-    HorizontalLayout {
-        width: parent.width;
+    // Absolute layout: the detail sits against the sidebar's *reserved*
+    // width, so the sidebar's hover expansion (painted later, on top)
+    // overlays it without reflowing.
+    // No contacts → friendly empty state; otherwise the selected detail.
+    if root.contacts.length == 0: EmptyState {
+        x: sidebar.reserved-width;
+        y: 0;
+        width: parent.width - sidebar.reserved-width;
         height: parent.height;
-        spacing: 0;
-
-        ContactsSidebar {
-            contacts: root.contacts;
-            active-contact: root.active-contact;
-            contact-clicked(idx) => {
-                root.contact-clicked(idx);
-            }
-            add-clicked => {
-                root.add-contact-clicked();
-            }
+        title: @tr("No contacts yet");
+        description: @tr("People you start chats with will show up here.");
+        PeopleIcon {
+            stroke: Palette.text-mid;
         }
-
-        // No contacts → friendly empty state; otherwise the selected detail.
-        if root.contacts.length == 0: EmptyState {
-            horizontal-stretch: 1;
-            preferred-width: 0px;
-            title: @tr("No contacts yet");
-            description: @tr("People you start chats with will show up here.");
-            PeopleIcon {
-                stroke: Palette.text-mid;
-            }
+    }
+    if root.contacts.length > 0: ContactDetail {
+        x: sidebar.reserved-width;
+        y: 0;
+        width: parent.width - sidebar.reserved-width;
+        height: parent.height;
+        contact: root.contacts[root.active-contact];
+        edit-nickname => {
+            root.edit-nickname-clicked();
         }
-        if root.contacts.length > 0: ContactDetail {
-            horizontal-stretch: 1;
-            preferred-width: 0px;
-            contact: root.contacts[root.active-contact];
-            edit-nickname => {
-                root.edit-nickname-clicked();
-            }
-            copy-npub => {
-                root.copy-npub-clicked();
-            }
-            refresh-key-package => {
-                root.refresh-key-package-clicked();
-            }
-            show-qr => {
-                root.show-qr-clicked();
-            }
-            start-chat => {
-                root.start-chat-clicked();
-            }
+        copy-npub => {
+            root.copy-npub-clicked();
+        }
+        refresh-key-package => {
+            root.refresh-key-package-clicked();
+        }
+        show-qr => {
+            root.show-qr-clicked();
+        }
+        start-chat => {
+            root.start-chat-clicked();
+        }
+    }
+
+    sidebar := ContactsSidebar {
+        x: 0;
+        y: 0;
+        height: parent.height;
+        window-width: root.window-width;
+        contacts: root.contacts;
+        active-contact: root.active-contact;
+        contact-clicked(idx) => {
+            root.contact-clicked(idx);
+        }
+        add-clicked => {
+            root.add-contact-clicked();
         }
     }
 }

@@ -11,6 +11,8 @@ export component ArchivedPage inherits Rectangle {
     in property <int> active-archived;
     in property <[GroupMember]> members;
     in property <bool> is-group: false;
+    // Bound by the shell; drives the sidebar's narrow-window collapse.
+    in property <length> window-width: 100000px;
 
     horizontal-stretch: 1;
     vertical-stretch: 1;
@@ -18,38 +20,43 @@ export component ArchivedPage inherits Rectangle {
     preferred-height: 0px;
     background: Palette.bg;
 
-    HorizontalLayout {
-        width: parent.width;
+    // Absolute layout: the detail sits against the sidebar's *reserved*
+    // width, so the sidebar's hover expansion (painted later, on top)
+    // overlays it without reflowing.
+    // No archived chats → empty state; otherwise the selected detail.
+    if root.archives.length == 0: EmptyState {
+        x: sidebar.reserved-width;
+        y: 0;
+        width: parent.width - sidebar.reserved-width;
         height: parent.height;
-        spacing: 0;
-
-        ArchivedSidebar {
-            archives: root.archives;
-            active-archived: root.active-archived;
-            archive-clicked(idx) => {
-                root.archive-clicked(idx);
-            }
+        title: @tr("No archived chats");
+        description: @tr("Chats you archive are kept here, out of your main list.");
+        ArchiveIcon {
+            stroke: Palette.text-mid;
         }
-
-        // No archived chats → empty state; otherwise the selected detail.
-        if root.archives.length == 0: EmptyState {
-            horizontal-stretch: 1;
-            preferred-width: 0px;
-            title: @tr("No archived chats");
-            description: @tr("Chats you archive are kept here, out of your main list.");
-            ArchiveIcon {
-                stroke: Palette.text-mid;
-            }
+    }
+    if root.archives.length > 0: ArchivedDetail {
+        x: sidebar.reserved-width;
+        y: 0;
+        width: parent.width - sidebar.reserved-width;
+        height: parent.height;
+        data: root.archives[root.active-archived];
+        members: root.members;
+        is-group: root.is-group;
+        unarchive-clicked => {
+            root.unarchive-clicked();
         }
-        if root.archives.length > 0: ArchivedDetail {
-            horizontal-stretch: 1;
-            preferred-width: 0px;
-            data: root.archives[root.active-archived];
-            members: root.members;
-            is-group: root.is-group;
-            unarchive-clicked => {
-                root.unarchive-clicked();
-            }
+    }
+
+    sidebar := ArchivedSidebar {
+        x: 0;
+        y: 0;
+        height: parent.height;
+        window-width: root.window-width;
+        archives: root.archives;
+        active-archived: root.active-archived;
+        archive-clicked(idx) => {
+            root.archive-clicked(idx);
         }
     }
 }

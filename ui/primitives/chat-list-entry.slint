@@ -16,6 +16,9 @@ component ChatListItemIrc inherits Rectangle {
     callback clicked;
     callback context-menu(length, length);
 
+    // Collapsed-strip mode: only the `#` marker and the unread count fit.
+    in property <bool> compact: false;
+
     height: 26px;
     background: root.selected ? Palette.selected : (touch.has-hover ? Palette.hover : transparent);
 
@@ -36,7 +39,7 @@ component ChatListItemIrc inherits Rectangle {
             vertical-alignment: center;
         }
 
-        Text {
+        if !root.compact: Text {
             text: root.chat.name;
             color: root.selected ? Palette.text-hi : (root.chat.read ? Palette.text-mid : Palette.text-hi);
             font-family: Theme.font;
@@ -74,10 +77,13 @@ component ChatListItemIrc inherits Rectangle {
 export component ChatListEntry inherits VerticalLayout {
     in property <ChatMeta> chat;
     in property <bool> selected: false;
+    // Forwarded to the skins: true while the side panel is a collapsed strip.
+    in property <bool> compact: false;
     callback clicked;
     callback context-menu(length, length);
 
     if Theme.skin-list == 0: ChatListItem {
+        compact: root.compact;
         selected: root.selected;
         name: root.chat.name;
         preview: root.chat.preview;
@@ -99,6 +105,7 @@ export component ChatListEntry inherits VerticalLayout {
         }
     }
     if Theme.skin-list == 1: ChatListItemIrc {
+        compact: root.compact;
         chat: root.chat;
         selected: root.selected;
         clicked => {
