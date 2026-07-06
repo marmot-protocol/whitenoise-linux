@@ -233,7 +233,8 @@ impl Backend {
                 .update_group_image(&label, &group_id, bytes, media_type)
                 .await
                 .map_err(|e| anyhow!("set_group_image: {e}"));
-            if result.is_ok() && clear_url_avatar
+            if result.is_ok()
+                && clear_url_avatar
                 && let Err(e) = runtime
                     .update_group_avatar_url(&label, &group_id, None, None, None)
                     .await
