@@ -47,6 +47,8 @@ mod media;
 pub(crate) use media::*;
 mod mentions;
 pub(crate) use mentions::*;
+mod profiles;
+pub(crate) use profiles::*;
 mod render;
 pub(crate) use render::*;
 mod state;

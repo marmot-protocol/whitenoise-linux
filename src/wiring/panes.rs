@@ -1345,3 +1345,49 @@ pub(crate) fn wire_panes(
         open_external(&vault::vault_dir().display().to_string());
     });
 }
+
+// ─── Audit-log file rows (Settings → Advanced) ─────────────────────────────
+
+/// Map on-disk audit-log files into UI rows (newest first) and push the model.
+pub(crate) fn push_audit_files(ui: &DarkMatterLinux, mut files: Vec<AuditLogFile>) {
+    files.sort_by(|a, b| {
+        b.modified_at_ms
+            .unwrap_or(0)
+            .cmp(&a.modified_at_ms.unwrap_or(0))
+    });
+    let rows: Vec<AuditLogEntry> = files
+        .iter()
+        .map(|f| AuditLogEntry {
+            path: f.path.clone().into(),
+            name: f.file_name.clone().into(),
+            meta: match f.modified_at_ms {
+                Some(ms) => format!(
+                    "{} · {}",
+                    human_bytes(f.size_bytes),
+                    format_date_unix(ms / 1000)
+                )
+                .into(),
+                None => human_bytes(f.size_bytes).into(),
+            },
+        })
+        .collect();
+    ui.set_audit_files(ModelRc::new(VecModel::from(rows)));
+}
+
+/// List audit-log files off the UI thread (disk IO) and push the rows back
+/// through the event loop.
+pub(crate) fn refresh_audit_files(ui: &DarkMatterLinux, backend: &Arc<Backend>) {
+    let weak = ui.as_weak();
+    let b = backend.clone();
+    backend.tokio_handle().spawn(async move {
+        let files = b.audit_log_files().unwrap_or_else(|e| {
+            tracing::warn!(target: "settings", "list audit logs failed: {e:#}");
+            Vec::new()
+        });
+        let _ = slint::invoke_from_event_loop(move || {
+            if let Some(ui) = weak.upgrade() {
+                push_audit_files(&ui, files);
+            }
+        });
+    });
+}

@@ -291,6 +291,53 @@ pub(crate) fn looks_already_sent(
     })
 }
 
+// ─── Message-window paging ─────────────────────────────────────────────────
+
+/// How many recent records (all kinds — chat, reactions, edits) are loaded
+/// per chat by default. The messages view instantiates a full bubble
+/// component tree per visible row (the Slint `for` is eager, not
+/// virtualized), so this window is the main lever on chat-switch latency.
+/// "Load earlier messages" grows it per chat via [`msg_window_expand`].
+pub(crate) const MESSAGE_WINDOW: usize = 80;
+
+/// Per-chat message-window overrides (group_id_hex → record limit). Only
+/// chats expanded via "Load earlier messages" have an entry; everything else
+/// uses [`MESSAGE_WINDOW`]. Process-wide like the picture caches so the many
+/// callback closures don't all need another captured handle.
+pub(crate) fn msg_windows() -> &'static Mutex<HashMap<String, usize>> {
+    use std::sync::OnceLock;
+    static MAP: OnceLock<Mutex<HashMap<String, usize>>> = OnceLock::new();
+    MAP.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// Current record limit for a chat (default [`MESSAGE_WINDOW`]).
+pub(crate) fn msg_window_for(group_hex: &str) -> usize {
+    msg_windows()
+        .lock()
+        .ok()
+        .and_then(|m| m.get(group_hex).copied())
+        .unwrap_or(MESSAGE_WINDOW)
+}
+
+/// Grow a chat's window by one [`MESSAGE_WINDOW`] step; returns the new limit.
+pub(crate) fn msg_window_expand(group_hex: &str) -> usize {
+    let mut map = match msg_windows().lock() {
+        Ok(m) => m,
+        Err(_) => return MESSAGE_WINDOW,
+    };
+    let w = map.entry(group_hex.to_string()).or_insert(MESSAGE_WINDOW);
+    *w += MESSAGE_WINDOW;
+    *w
+}
+
+/// Drop a chat's expanded window (back to the default). Called on chat
+/// select so re-entering a chat is always the fast path.
+pub(crate) fn msg_window_reset(group_hex: &str) {
+    if let Ok(mut m) = msg_windows().lock() {
+        m.remove(group_hex);
+    }
+}
+
 // ─── Voice-message state ───────────────────────────────────────────────────
 
 // The active cpal recorder and the currently-playing rodio audio player are
