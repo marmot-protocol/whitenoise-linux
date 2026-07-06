@@ -10,84 +10,144 @@ export component AccountSwitcherModal inherits Modal {
     callback add-account();
     in property <[AccountEntry]> accounts;
 
+    // Keyboard cursor. Starts on the active account when rows mount.
+    property <int> focus-idx: 0;
+
     card-width: 440px;
     title: @tr("Accounts");
     subtitle: @tr("All accounts stay connected. Switching only changes which one you're looking at.");
     secondary-label: @tr("Close");
     primary-label: @tr("Add account");
+    // Let the row FocusScope own arrows/Enter instead of the modal's Esc scope.
+    grab-focus: false;
     primary => {
         root.add-account();
     }
 
-    VerticalLayout {
-        spacing: 6px;
-        for acc in root.accounts: Rectangle {
-            height: 56px;
-            border-radius: (10px) * Theme.r-scale;
-            background: acc.active ? Palette.selected : (row-touch.has-hover ? Palette.hover : transparent);
-            border-width: acc.active ? Theme.border-w : 0px;
-            border-color: Palette.mint;
-            animate background {
-                duration: 100ms;
-                easing: ease-out;
-            }
+    function commit() {
+        if (root.accounts.length > 0) {
+            root.select(root.accounts[min(root.focus-idx, root.accounts.length - 1)].id);
+        }
+    }
 
-            // Wraps the row content so it wins the hit-test over the card's
-            // click-swallower (nested TouchAreas beat outer ones).
-            row-touch := TouchArea {
-                mouse-cursor: pointer;
-                clicked => {
-                    root.select(acc.id);
+    // ↑/↓ move the cursor, Enter/Space switches, Esc dismisses.
+    nav := FocusScope {
+        init => {
+            self.focus();
+        }
+        key-pressed(event) => {
+            if (event.text == Key.Escape) {
+                root.dismissed();
+                return accept;
+            }
+            if (event.text == Key.UpArrow) {
+                if (root.accounts.length > 0) {
+                    root.focus-idx = root.focus-idx == 0 ? root.accounts.length - 1 : root.focus-idx - 1;
+                }
+                return accept;
+            }
+            if (event.text == Key.DownArrow) {
+                if (root.accounts.length > 0) {
+                    root.focus-idx = mod(root.focus-idx + 1, root.accounts.length);
+                }
+                return accept;
+            }
+            if (event.text == Key.Return || event.text == " ") {
+                root.commit();
+                return accept;
+            }
+            return reject;
+        }
+
+        VerticalLayout {
+            spacing: 6px;
+            for acc[i] in root.accounts: Rectangle {
+                property <bool> keyboard-focused: nav.has-focus && root.focus-idx == i;
+
+                init => {
+                    if (acc.active) {
+                        root.focus-idx = i;
+                    }
                 }
 
-                HorizontalLayout {
-                    padding-left: 10px;
-                    padding-right: 14px;
-                    spacing: 12px;
+                height: 56px;
+                border-radius: (10px) * Theme.r-scale;
+                background: keyboard-focused ? Palette.hover : (acc.active ? Palette.selected : (row-touch.has-hover ? Palette.hover : transparent));
+                border-width: acc.active ? Theme.border-w : 0px;
+                border-color: Palette.mint;
+                animate background {
+                    duration: 100ms;
+                    easing: ease-out;
+                }
 
-                    VerticalLayout {
-                        alignment: center;
-                        Avatar {
-                            size: 36px;
-                            initials: acc.av-initials;
-                            color-a: acc.av-a;
-                            color-b: acc.av-b;
-                            picture: acc.picture;
-                            has-picture: acc.has-picture;
-                        }
+                // Accent focus bar on the keyboard-focused row, matching the language picker.
+                if keyboard-focused: Rectangle {
+                    x: 0;
+                    width: 2px;
+                    y: (parent.height - self.height) / 2;
+                    height: 26px;
+                    background: Palette.mint;
+                    border-radius: 1px;
+                }
+
+                // Wraps the row content so it wins the hit-test over the card's
+                // click-swallower (nested TouchAreas beat outer ones).
+                row-touch := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        root.focus-idx = i;
+                        root.select(acc.id);
                     }
 
-                    VerticalLayout {
-                        alignment: center;
-                        spacing: 3px;
-                        horizontal-stretch: 1;
-                        Text {
-                            text: acc.name;
-                            color: Palette.text-hi;
-                            font-size: (12px) * Theme.fs-scale;
-                            font-weight: 700;
-                            font-family: Theme.font;
-                            overflow: elide;
+                    HorizontalLayout {
+                        padding-left: 10px;
+                        padding-right: 14px;
+                        spacing: 12px;
+
+                        VerticalLayout {
+                            alignment: center;
+                            Avatar {
+                                size: 36px;
+                                initials: acc.av-initials;
+                                color-a: acc.av-a;
+                                color-b: acc.av-b;
+                                picture: acc.picture;
+                                has-picture: acc.has-picture;
+                            }
                         }
 
-                        Text {
-                            text: acc.npub-short;
-                            color: Palette.text-lo;
-                            font-size: (10px) * Theme.fs-scale;
-                            font-family: Theme.font;
-                            overflow: elide;
-                        }
-                    }
+                        VerticalLayout {
+                            alignment: center;
+                            spacing: 3px;
+                            horizontal-stretch: 1;
+                            Text {
+                                text: acc.name;
+                                color: Palette.text-hi;
+                                font-size: (12px) * Theme.fs-scale;
+                                font-weight: 700;
+                                font-family: Theme.font;
+                                overflow: elide;
+                            }
 
-                    if acc.active: VerticalLayout {
-                        alignment: center;
-                        Text {
-                            text: @tr("ACTIVE");
-                            color: Theme.retro ? Palette.bubble-out-fg : Palette.mint;
-                            font-size: (9px) * Theme.fs-scale;
-                            font-weight: 800;
-                            font-family: Theme.font;
-                            letter-spacing: 1.2px;
+                            Text {
+                                text: acc.npub-short;
+                                color: Palette.text-lo;
+                                font-size: (10px) * Theme.fs-scale;
+                                font-family: Theme.font;
+                                overflow: elide;
+                            }
+                        }
+
+                        if acc.active: VerticalLayout {
+                            alignment: center;
+                            Text {
+                                text: @tr("ACTIVE");
+                                color: Theme.retro ? Palette.bubble-out-fg : Palette.mint;
+                                font-size: (9px) * Theme.fs-scale;
+                                font-weight: 800;
+                                font-family: Theme.font;
+                                letter-spacing: 1.2px;
+                            }
                         }
                     }
                 }
