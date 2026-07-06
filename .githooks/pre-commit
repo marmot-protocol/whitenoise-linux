@@ -32,6 +32,25 @@ while IFS= read -r -d '' f; do
 done < <(staged -- '*.po' '*.pot')
 [ "$po_changed" = 1 ] && echo "pre-commit: normalized staged PO/POT catalogs."
 
+# Validate staged catalogs with msgfmt. --check makes malformed entries fatal;
+# treating any stderr output as a failure also catches the non-fatal header
+# warnings (missing/placeholder fields) so they can't creep back in.
+if staged -- '*.po' '*.pot' | grep -qz .; then
+    if ! command -v msgfmt >/dev/null 2>&1; then
+        echo "✗ msgfmt not found — needed to validate staged PO/POT catalogs." >&2
+        echo "  Install gettext (e.g. apt install gettext / pacman -S gettext)" >&2
+        exit 1
+    fi
+    while IFS= read -r -d '' f; do
+        [ -f "$f" ] || continue          # skip deletions
+        if ! err="$(msgfmt --check -o /dev/null "$f" 2>&1)" || [ -n "$err" ]; then
+            printf '✗ msgfmt --check failed on %s:\n%s\n' "$f" "$err" >&2
+            exit 1
+        fi
+    done < <(staged -- '*.po' '*.pot')
+    echo "pre-commit: msgfmt --check passed on staged catalogs."
+fi
+
 # --- 2. Format staged Slint files ---------------------------------------
 # `slint-lsp format -i` rewrites a .slint file into its canonical form. Format
 # a copy of each staged file, and only when that differs do we write it back and

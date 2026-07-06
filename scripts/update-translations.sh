@@ -19,6 +19,20 @@ mkdir -p lang/{en,it,de,ja}/LC_MESSAGES
 
 find ui -name '*.slint' -print0 | sort -z | xargs -0 slint-tr-extractor -o "$POT"
 
+# slint-tr-extractor rewrites the POT header with xgettext's placeholder
+# values on every run; msgfmt -c (enforced by the pre-commit hook) warns on
+# those, so pin the real values here. English is the source language, hence
+# the Germanic plural rule. The revision date stays fixed to keep the output
+# byte-stable (the same reason po-clean.sh drops POT-Creation-Date).
+sed -i \
+    -e 's/^"Project-Id-Version: PACKAGE VERSION\\n"$/"Project-Id-Version: wnl-ui\\n"/' \
+    -e 's/^"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\\n"$/"PO-Revision-Date: 2026-07-06 00:00+0000\\n"/' \
+    -e 's/^"Last-Translator: FULL NAME <EMAIL@ADDRESS>\\n"$/"Last-Translator: Automatically generated\\n"/' \
+    -e 's/^"Language-Team: LANGUAGE <LL@li.org>\\n"$/"Language-Team: none\\n"/' \
+    -e 's/^"Language: \\n"$/"Language: en\\n"/' \
+    -e 's/^"Plural-Forms: nplurals=1; plural=0;\\n"$/"Plural-Forms: nplurals=2; plural=(n != 1);\\n"/' \
+    "$POT"
+
 if ! command -v msgmerge >/dev/null 2>&1; then
     echo "msgmerge not found — install gettext (e.g. pacman -S gettext)" >&2
     exit 1
