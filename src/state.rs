@@ -349,6 +349,15 @@ pub(crate) fn s(v: &str) -> SharedString {
     v.into()
 }
 
+pub(crate) fn set_clipboard_feedback(
+    ui: &DarkMatterLinux,
+    message: impl Into<SharedString>,
+    is_error: bool,
+) {
+    ui.set_clipboard_status(message.into());
+    ui.set_clipboard_status_error(is_error);
+}
+
 /// Persist the composer draft for the currently active chat index.
 ///
 /// Entering edit mode temporarily reuses the composer for the edited message,

@@ -7,6 +7,8 @@ export component StatusBar inherits Rectangle {
 
     in property <int> relaysConnected;
     in property <int> relaysTotal;
+    in property <string> message;
+    in property <bool> messageIsError: false;
 
     Rectangle {
         y: 0;
@@ -55,6 +57,20 @@ export component StatusBar inherits Rectangle {
 
         Rectangle {
             horizontal-stretch: 1;
+            preferred-width: 0px;
+            clip: true;
+
+            Text {
+                width: parent.width;
+                height: parent.height;
+                text: root.message;
+                color: root.messageIsError ? Palette.danger : Palette.mint;
+                font-size: Theme.fs(10px, 14px);
+                font-weight: 700;
+                overflow: elide;
+                horizontal-alignment: right;
+                vertical-alignment: center;
+            }
         }
 
         Text {
