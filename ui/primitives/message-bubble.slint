@@ -543,7 +543,7 @@ export component MessageBubble inherits Rectangle {
         // bar on the left. For outgoing (mint) bubbles the accent is dark so
         // it actually shows up; for incoming (dark) bubbles it's mint.
         if root.reply-to-id != "" && !root.deleted: Rectangle {
-            background: root.outgoing ? #00000018 : (Theme.light ? #F8FAFC : #ffffff0c);
+            background: root.outgoing ? #00000018 : Palette.bubble-inset;
             border-radius: (3px) * Theme.r-scale;
             HorizontalLayout {
                 padding-left: 8px;
@@ -610,7 +610,7 @@ export component MessageBubble inherits Rectangle {
                 width: cell.w;
                 height: cell.h;
                 border-radius: (6px) * Theme.r-scale;
-                background: root.outgoing ? #00000022 : (Theme.light ? #E2E8F0 : #ffffff10);
+                background: root.outgoing ? #00000022 : Palette.bubble-inset;
                 clip: true;
                 border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
                 border-color: Palette.border-2;
@@ -649,7 +649,7 @@ export component MessageBubble inherits Rectangle {
             width: self.vid-w;
             height: 180px;
             border-radius: (8px) * Theme.r-scale;
-            background: root.outgoing ? #00000033 : (Theme.light ? #1E293B : #00000044);
+            background: root.outgoing ? #00000033 : Palette.media-backdrop;
             clip: true;
             border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
             border-color: Palette.border-2;
@@ -716,7 +716,7 @@ export component MessageBubble inherits Rectangle {
             width: self.audio-w;
             height: aud-row.preferred-height;
             border-radius: (8px) * Theme.r-scale;
-            background: root.outgoing ? #00000022 : (Theme.light ? #E2E8F0 : #ffffff10);
+            background: root.outgoing ? #00000022 : Palette.bubble-inset;
             border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
             border-color: Palette.border-2;
 
@@ -786,7 +786,7 @@ export component MessageBubble inherits Rectangle {
                             width: 100%;
                             height: 5px;
                             border-radius: 2.5px * Theme.r-scale;
-                            background: root.outgoing ? #00000022 : (Theme.light ? #CBD5E1 : #00000044);
+                            background: root.outgoing ? #00000022 : Palette.bubble-inset-strong;
                             Rectangle {
                                 x: 0;
                                 width: parent.width * clamp(root.att-audio-progress, 0.0, 1.0);
@@ -835,7 +835,7 @@ export component MessageBubble inherits Rectangle {
             width: self.img-w;
             height: self.img-h;
             border-radius: (8px) * Theme.r-scale;
-            background: root.outgoing ? #00000022 : (Theme.light ? #E2E8F0 : #ffffff10);
+            background: root.outgoing ? #00000022 : Palette.bubble-inset;
             clip: true;
             border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
             border-color: Palette.border-2;
@@ -874,7 +874,7 @@ export component MessageBubble inherits Rectangle {
         }
 
         if root.has-attachment && !root.att-is-image && !root.att-is-video && !root.att-is-audio && !root.deleted: Rectangle {
-            background: root.outgoing ? #00000022 : (Theme.light ? #F1F5F9 : #ffffff0e);
+            background: root.outgoing ? #00000022 : Palette.bubble-inset;
             border-radius: (6px) * Theme.r-scale;
             border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
             border-color: Palette.border-2;
@@ -1074,7 +1074,7 @@ export component MessageBubble inherits Rectangle {
                     for line[li] in root.lines: line-r := Rectangle {
                 // Fenced/indented code lines get a subtle monospace plate that
                 // hugs their content.
-                background: line.code-block ? (root.outgoing ? #00000022 : (Theme.light ? #0000000d : #ffffff10)) : transparent;
+                background: line.code-block ? (root.outgoing ? #00000022 : Palette.code-plate) : transparent;
                         border-radius: line.code-block ? (3px) * Theme.r-scale : 0;
                     // This line's y-band in text-block space, for the run
                     // cells' selection hit-tests.
@@ -1127,7 +1127,7 @@ export component MessageBubble inherits Rectangle {
                                     mention-a: r.mention-a;
                                     mention-b: r.mention-b;
                                     link-color: root.outgoing ? Palette.bubble-out-fg : Palette.mint;
-                                    code-bg: root.outgoing ? #00000022 : (Theme.light ? #0000000d : #ffffff14);
+                                    code-bg: root.outgoing ? #00000022 : Palette.code-plate;
                                     sel-msg-id: root.msg-id;
                                     sel-line-idx: li;
                                     sel-run-idx: ri;

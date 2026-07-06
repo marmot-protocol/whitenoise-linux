@@ -20,6 +20,19 @@ export struct ThemeColors {
     border: color,
     border-2: color,
     bubble-in: color,
+    // Recessed surfaces *inside* a received bubble, drawn over bubble-in.
+    // `bubble-inset` is the standard plate (reply quote, attachment tiles and
+    // chips, audio player); `bubble-inset-strong` is the deeper recess drawn on
+    // top of an inset plate (audio scrubber track). (Were
+    // `Theme.light ? #E2E8F0 : #ffffff10`-style two-way hexes in message-bubble.)
+    bubble-inset: color,
+    bubble-inset-strong: color,
+    // Code background inside a received bubble: the fenced-block plate and
+    // inline-code chips.
+    code-plate: color,
+    // Letterbox behind video posters — dark in every theme so the white play
+    // badge and duration chip stay readable over it.
+    media-backdrop: color,
     text-hi: color,
     text-mid: color,
     text-lo: color,
@@ -157,6 +170,10 @@ export global Theme {
             border: #1C2128,
             border-2: #14181D,
             bubble-in: #141A21,
+            bubble-inset: #FFFFFF10,
+            bubble-inset-strong: #00000044,
+            code-plate: #FFFFFF12,
+            media-backdrop: #00000044,
             text-hi: #E4E7EC,
             text-mid: #9CA3AF,
             text-lo: #6B7280,
@@ -208,6 +225,10 @@ export global Theme {
             border: #D7D0C3,
             border-2: #E7DFD2,
             bubble-in: #FFFFFF,
+            bubble-inset: #E2E8F0,
+            bubble-inset-strong: #CBD5E1,
+            code-plate: #0000000D,
+            media-backdrop: #1E293B,
             text-hi: #1F2937,
             text-mid: #4B5563,
             text-lo: #6B7280,
@@ -259,6 +280,10 @@ export global Theme {
             border: #E8E0C4,
             border-2: #9090E0,
             bubble-in: #1F1F6E,
+            bubble-inset: #2B2B7F,
+            bubble-inset-strong: #0E0E36,
+            code-plate: #0E0E36,
+            media-backdrop: #0D0D28,
             text-hi: #F4EFDD,
             text-mid: #DDDAEE,
             text-lo: #B5B5E8,
@@ -310,6 +335,10 @@ export global Theme {
             border: #1B3A1B,
             border-2: #142814,
             bubble-in: #0C120C,
+            bubble-inset: #33FF6612,
+            bubble-inset-strong: #00000066,
+            code-plate: #33FF660F,
+            media-backdrop: #050A05,
             text-hi: #33FF66,
             text-mid: #2BCC52,
             text-lo: #1F9E3E,
@@ -366,6 +395,10 @@ export global Theme {
             border: #C7B894,
             border-2: #D8CCAE,
             bubble-in: #FCF8EE,
+            bubble-inset: #EFE8D6,
+            bubble-inset-strong: #D8CCAE,
+            code-plate: #0000000D,
+            media-backdrop: #33302B,
             text-hi: #33302B,
             text-mid: #6E6657,
             text-lo: #968B76,
@@ -419,6 +452,10 @@ export global Theme {
             border: #3A1E66,
             border-2: #271145,
             bubble-in: #1C0E38,
+            bubble-inset: #FFFFFF12,
+            bubble-inset-strong: #00000044,
+            code-plate: #FFFFFF10,
+            media-backdrop: #0A0318,
             text-hi: #F5E9FF,
             text-mid: #C9A8E8,
             text-lo: #9A78C0,
@@ -473,6 +510,10 @@ export global Theme {
             border: #4C594F,
             border-2: #3A473F,
             bubble-in: #2C3A32,
+            bubble-inset: #FFFFFF12,
+            bubble-inset-strong: #00000044,
+            code-plate: #FFFFFF10,
+            media-backdrop: #1B2620,
             text-hi: #ECE9D8,
             text-mid: #B6B8A8,
             text-lo: #889084,
@@ -752,6 +793,10 @@ export global Palette {
     out property <color> border:    Theme.c.border;
     out property <color> border-2:  Theme.c.border-2;
     out property <color> bubble-in: Theme.c.bubble-in;
+    out property <color> bubble-inset: Theme.c.bubble-inset;
+    out property <color> bubble-inset-strong: Theme.c.bubble-inset-strong;
+    out property <color> code-plate: Theme.c.code-plate;
+    out property <color> media-backdrop: Theme.c.media-backdrop;
 
     // Accent resolution: active pack's table indexed by the orthogonal accent.
     out property <color> mint:      Theme.c.accent-base[Theme.accent];
