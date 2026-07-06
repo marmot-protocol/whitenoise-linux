@@ -131,6 +131,7 @@ export component LoginScreen inherits Rectangle {
     // error from last attempt (empty = no error). in-out so the component can also
     // clear it locally when the user navigates between modes.
     in-out property <string> error: "";
+    in-out property <string> status: "";
     // disable actions while Rust is working (deriving the key, booting).
     in property <bool> busy: false;
     // Reset confirmation: "Use another key" deletes the vault and there is no
@@ -639,6 +640,13 @@ export component LoginScreen inherits Rectangle {
                     if root.error != "": Text {
                         text: root.error;
                         color: Palette.danger;
+                        font-size: (11px) * Theme.fs-scale;
+                        wrap: word-wrap;
+                    }
+
+                    if root.status != "": Text {
+                        text: root.status;
+                        color: Palette.mint;
                         font-size: (11px) * Theme.fs-scale;
                         wrap: word-wrap;
                     }

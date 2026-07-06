@@ -90,9 +90,15 @@ pub(crate) fn wire_nav(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 "act.new-chat" => ui.set_show_new_chat(true),
                 "act.copy-npub" => {
                     let npub = ui.get_my_npub();
-                    copy_to_clipboard_async(npub.to_string(), |result| {
-                        if let Err(e) = result {
-                            tracing::warn!(target: "clipboard", "copy npub failed: {e}");
+                    let weak = weak.clone();
+                    copy_to_clipboard_async(npub.to_string(), move |result| {
+                        let Some(ui) = weak.upgrade() else { return };
+                        match result {
+                            Ok(()) => set_clipboard_feedback(&ui, s("npub copied"), false),
+                            Err(e) => {
+                                tracing::warn!(target: "clipboard", "copy npub failed: {e}");
+                                set_clipboard_feedback(&ui, s("Couldn't access clipboard."), true);
+                            }
                         }
                     });
                 }

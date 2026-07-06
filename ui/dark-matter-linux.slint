@@ -176,6 +176,7 @@ export component DarkMatterLinux inherits Window {
     in property <image> generated-avatar;
     in property <bool> generated-has-avatar: false;
     in property <string> login-error;
+    in property <string> login-status;
     in property <bool> login-busy;
     callback login-with-nsec(string, string, string); // nsec, password, confirm
     callback generate-key-requested();
@@ -493,6 +494,9 @@ export component DarkMatterLinux inherits Window {
 
     in property <string> backend-error;
     in property <bool> backend-ready;
+    // Transient copy confirmations and clipboard failures shown in the status bar.
+    in-out property <string> clipboard-status;
+    in-out property <bool> clipboard-status-error: false;
     // When true, the marmot runtime is booting on a worker thread; we show
     // the splash overlay instead of the (empty, useless) main shell.
     in property <bool> booting;
@@ -1312,6 +1316,8 @@ export component DarkMatterLinux inherits Window {
         StatusBar {
             relaysConnected: root.network-connected;
             relaysTotal: root.network-total;
+            message: root.clipboard-status;
+            messageIsError: root.clipboard-status-error;
         }
     }
 
@@ -1838,6 +1844,21 @@ export component DarkMatterLinux inherits Window {
         }
     }
 
+    clipboard-status-reset := Timer {
+        interval: 3s;
+        running: root.clipboard-status != "";
+        triggered => {
+            root.clipboard-status = "";
+            root.clipboard-status-error = false;
+        }
+    }
+
+    changed clipboard-status => {
+        if (root.clipboard-status != "") {
+            clipboard-status-reset.restart();
+        }
+    }
+
     if !root.logged-in: LoginScreen {
         x: 0;
         y: 0;
@@ -1853,6 +1874,7 @@ export component DarkMatterLinux inherits Window {
         generated-avatar: root.generated-avatar;
         generated-has-avatar: root.generated-has-avatar;
         error: root.login-error;
+        status: root.login-status;
         busy: root.login-busy;
         login-with-nsec(n, p, c) => {
             root.login-with-nsec(n, p, c);

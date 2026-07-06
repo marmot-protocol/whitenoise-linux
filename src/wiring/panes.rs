@@ -468,6 +468,7 @@ pub(crate) fn wire_panes(
             ui.set_generated_nsec(nsec.into());
             ui.set_generated_npub(npub.into());
             ui.set_login_error(s(""));
+            ui.set_login_status(s(""));
             ui.set_login_mode(2);
         }
     });
@@ -487,6 +488,7 @@ pub(crate) fn wire_panes(
                 return;
             };
             let password = password.to_string();
+            ui.set_login_status(s(""));
             ui.set_login_busy(true);
             // Vault creation runs the Argon2id KDF — off the UI thread.
             let weak = weak.clone();
@@ -544,12 +546,20 @@ pub(crate) fn wire_panes(
         move |nsec| {
             let weak = weak.clone();
             copy_to_clipboard_async(nsec.to_string(), move |result| {
-                if let Err(e) = result {
-                    tracing::warn!(target: "clipboard", "copy nsec failed: {e}");
-                    return;
-                }
-                if let Some(ui) = weak.upgrade() {
-                    ui.set_profile_status(s("nsec copied"));
+                let Some(ui) = weak.upgrade() else { return };
+                match result {
+                    Ok(()) => {
+                        ui.set_login_error(s(""));
+                        ui.set_login_status(s("nsec copied"));
+                        set_clipboard_feedback(&ui, s("nsec copied"), false);
+                    }
+                    Err(e) => {
+                        tracing::warn!(target: "clipboard", "copy nsec failed: {e}");
+                        let msg = s("Couldn't access clipboard. Your nsec was not copied.");
+                        ui.set_login_status(s(""));
+                        ui.set_login_error(msg.clone());
+                        set_clipboard_feedback(&ui, msg, true);
+                    }
                 }
             });
         }
@@ -879,11 +889,18 @@ pub(crate) fn wire_panes(
             let Some(ui) = weak.upgrade() else { return };
             let text = ui.get_debug_dump();
             if text.is_empty() {
+                set_clipboard_feedback(&ui, s("No debug snapshot to copy."), false);
                 return;
             }
-            copy_to_clipboard_async(text.to_string(), |result| {
-                if let Err(e) = result {
-                    tracing::warn!(target: "clipboard", "copy debug dump failed: {e}");
+            let weak = weak.clone();
+            copy_to_clipboard_async(text.to_string(), move |result| {
+                let Some(ui) = weak.upgrade() else { return };
+                match result {
+                    Ok(()) => set_clipboard_feedback(&ui, s("debug dump copied"), false),
+                    Err(e) => {
+                        tracing::warn!(target: "clipboard", "copy debug dump failed: {e}");
+                        set_clipboard_feedback(&ui, s("Couldn't access clipboard."), true);
+                    }
                 }
             });
         }
@@ -1288,16 +1305,21 @@ pub(crate) fn wire_panes(
             let Some(ui) = weak.upgrade() else { return };
             if text.is_empty() {
                 ui.set_profile_status(s("nothing to copy (npub empty)"));
+                set_clipboard_feedback(&ui, s("nothing to copy (npub empty)"), false);
                 return;
             }
             let weak = weak.clone();
             copy_to_clipboard_async(text.to_string(), move |result| {
                 let Some(ui) = weak.upgrade() else { return };
                 match result {
-                    Ok(()) => ui.set_profile_status(s("npub copied")),
+                    Ok(()) => {
+                        ui.set_profile_status(s("npub copied"));
+                        set_clipboard_feedback(&ui, s("npub copied"), false);
+                    }
                     Err(e) => {
                         tracing::warn!(target: "clipboard", "copy failed: {e}");
-                        ui.set_profile_status(format!("clipboard error: {e}").into());
+                        ui.set_profile_status(s("Couldn't access clipboard."));
+                        set_clipboard_feedback(&ui, s("Couldn't access clipboard."), true);
                     }
                 }
             });
