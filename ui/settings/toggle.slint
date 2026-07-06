@@ -43,11 +43,37 @@ export component Toggle inherits Rectangle {
         vertical-alignment: center;
     }
 
-    TouchArea {
+    // FocusScope owns the keyboard: Tab reaches the toggle, Enter/Space flip
+    // it. Mirrors AccentPicker's key handling in accent-picker.slint.
+    fs := FocusScope {
         enabled: root.enabled;
-        clicked => {
-            root.on = !root.on;
-            root.toggled();
+        key-pressed(event) => {
+            if (event.text == Key.Return || event.text == " ") {
+                root.on = !root.on;
+                root.toggled();
+                return accept;
+            }
+            return reject;
         }
+
+        TouchArea {
+            enabled: root.enabled;
+            clicked => {
+                root.on = !root.on;
+                root.toggled();
+            }
+        }
+    }
+
+    // Accent focus ring just outside the track (mirrors AccentPicker's).
+    if fs.has-focus: Rectangle {
+        x: -3px;
+        y: -3px;
+        width: parent.width + 6px;
+        height: parent.height + 6px;
+        border-radius: (12px) * Theme.r-scale;
+        border-width: 2px;
+        border-color: Palette.mint;
+        background: transparent;
     }
 }
