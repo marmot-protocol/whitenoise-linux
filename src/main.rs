@@ -54,6 +54,7 @@ mod wiring;
 pub(crate) use wiring::*;
 
 pub(crate) use backend::Backend;
+pub(crate) use backend::CHAT_MESSAGE_KIND;
 pub(crate) use backend::SAVED_MESSAGES_NAME;
 pub(crate) use settings::Settings;
 pub(crate) use vault::Vault;
@@ -223,6 +224,11 @@ fn main() -> Result<(), slint::PlatformError> {
             warm_unresolved_mentions(backend, unknown);
         }
     }));
+    // Backend::latest_message (chat-list previews, notifications) filters
+    // with this hook; installing the bubble stream's own predicate keeps the
+    // preview and the chat in lockstep — a message hidden via delete-for-me
+    // never surfaces as its chat's preview.
+    backend::set_visible_message_filter(is_visible_chat_message);
     // When a background relay fetch resolves a mentioned profile's name after
     // the bubbles already rendered, re-tokenize the visible rows IN PLACE.
     // Deliberately no snapshot re-read: a repaint built from a fresh
