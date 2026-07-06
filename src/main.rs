@@ -919,7 +919,11 @@ fn main() -> Result<(), slint::PlatformError> {
         &pending_profile_seed,
         &pending_profile_name,
     );
-    wire_backup(&ui, &cx, &h, &encryption_banner_seen);
+    wire_backup(&ui, &cx, &h);
+    wire_chats(&ui, &cx, &h, &encryption_banner_seen);
+    wire_nav(&ui, &cx, &h);
+    wire_contacts(&ui, &cx, &h);
+    wire_groups(&ui, &cx);
     wire_messaging(&ui, &cx, &h);
     wire_forward(&ui, &cx);
     wire_extra(&ui, &cx, &h);

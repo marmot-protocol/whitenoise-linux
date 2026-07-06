@@ -1,0 +1,384 @@
+use crate::*;
+
+pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
+    let Cx {
+        backend_cell,
+        group_ids,
+        ..
+    } = cx.clone();
+    ui.on_add_member({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let group_ids = group_ids.clone();
+        move |npub| {
+            let Some(ui) = weak.upgrade() else { return };
+            let npub = npub.trim().to_string();
+            if npub.is_empty() {
+                return;
+            }
+            let idx = ui.get_active_chat() as usize;
+            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
+                return;
+            };
+            let Some(b) = backend_cell.lock().unwrap().clone() else {
+                ui.set_add_member_status(s("Backend not ready."));
+                return;
+            };
+            ui.set_add_member_busy(true);
+            ui.set_add_member_status(s(""));
+            // Inviting publishes an MLS commit + welcome to relays — worker.
+            let weak = weak.clone();
+            std::thread::spawn(move || {
+                let result = b.invite_members(&group_hex, std::slice::from_ref(&npub));
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    ui.set_add_member_busy(false);
+                    match result {
+                        Ok(_) => {
+                            push_group_members_to_ui_async(&ui, &b, &group_hex);
+                            ui.set_add_member_draft(s(""));
+                            ui.set_add_member_status(s("Invited."));
+                        }
+                        Err(e) => {
+                            tracing::warn!(target: "invite", "{e:#}");
+                            ui.set_add_member_status(friendly_error("add member", &e).into());
+                        }
+                    }
+                });
+            });
+        }
+    });
+    ui.on_promote_admin({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let group_ids = group_ids.clone();
+        move |member_id| {
+            let Some(ui) = weak.upgrade() else { return };
+            let member_id = member_id.trim().to_string();
+            if member_id.is_empty() {
+                return;
+            }
+            let idx = ui.get_active_chat() as usize;
+            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
+                return;
+            };
+            ui.set_group_settings_status(s(""));
+            let Some(b) = backend_cell.lock().unwrap().clone() else {
+                ui.set_group_settings_status(s("Backend not ready."));
+                return;
+            };
+            // Admin changes publish an MLS commit to relays — worker.
+            let weak = weak.clone();
+            std::thread::spawn(move || {
+                let result = b.promote_admin(&group_hex, &member_id);
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    match result {
+                        Ok(_) => {
+                            push_group_members_to_ui_async(&ui, &b, &group_hex);
+                            ui.set_group_settings_status(s("Admin added."));
+                        }
+                        Err(e) => {
+                            tracing::warn!(target: "promote", "{e:#}");
+                            ui.set_group_settings_status(
+                                friendly_error("group settings", &e).into(),
+                            );
+                        }
+                    }
+                });
+            });
+        }
+    });
+    ui.on_demote_admin({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let group_ids = group_ids.clone();
+        move |member_id| {
+            let Some(ui) = weak.upgrade() else { return };
+            let member_id = member_id.trim().to_string();
+            if member_id.is_empty() {
+                return;
+            }
+            let idx = ui.get_active_chat() as usize;
+            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
+                return;
+            };
+            ui.set_group_settings_status(s(""));
+            let Some(b) = backend_cell.lock().unwrap().clone() else {
+                ui.set_group_settings_status(s("Backend not ready."));
+                return;
+            };
+            let weak = weak.clone();
+            std::thread::spawn(move || {
+                let result = b.demote_admin(&group_hex, &member_id);
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    match result {
+                        Ok(_) => {
+                            push_group_members_to_ui_async(&ui, &b, &group_hex);
+                            ui.set_group_settings_status(s("Admin removed."));
+                        }
+                        Err(e) => {
+                            tracing::warn!(target: "demote", "{e:#}");
+                            ui.set_group_settings_status(
+                                friendly_error("group settings", &e).into(),
+                            );
+                        }
+                    }
+                });
+            });
+        }
+    });
+    ui.on_self_demote_admin({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let group_ids = group_ids.clone();
+        move || {
+            let Some(ui) = weak.upgrade() else { return };
+            let idx = ui.get_active_chat() as usize;
+            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
+                return;
+            };
+            ui.set_group_settings_status(s(""));
+            let Some(b) = backend_cell.lock().unwrap().clone() else {
+                ui.set_group_settings_status(s("Backend not ready."));
+                return;
+            };
+            let weak = weak.clone();
+            std::thread::spawn(move || {
+                let result = b.self_demote_admin(&group_hex);
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    match result {
+                        Ok(_) => {
+                            push_group_members_to_ui_async(&ui, &b, &group_hex);
+                            ui.set_group_settings_status(s("You stepped down."));
+                        }
+                        Err(e) => {
+                            tracing::warn!(target: "self_demote", "{e:#}");
+                            ui.set_group_settings_status(
+                                friendly_error("group settings", &e).into(),
+                            );
+                        }
+                    }
+                });
+            });
+        }
+    });
+    ui.on_rename_group({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let group_ids = group_ids.clone();
+        move |name| {
+            let Some(ui) = weak.upgrade() else { return };
+            let name = name.trim().to_string();
+            if name.is_empty() {
+                ui.set_group_settings_status(s("Name can't be empty."));
+                return;
+            }
+            let idx = ui.get_active_chat() as usize;
+            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
+                return;
+            };
+            let Some(b) = backend_cell.lock().unwrap().clone() else {
+                ui.set_group_settings_status(s("Backend not ready."));
+                return;
+            };
+            ui.set_group_rename_busy(true);
+            ui.set_group_settings_status(s(""));
+            // Renaming publishes an MLS commit to relays — worker.
+            let weak = weak.clone();
+            let group_ids = group_ids.clone();
+            std::thread::spawn(move || {
+                let result = b.rename_group(&group_hex, &name);
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    ui.set_group_rename_busy(false);
+                    match result {
+                        Ok(_) => {
+                            refresh_chats_async(&ui, &b, &group_ids, |_, _, _| {});
+                            push_group_members_to_ui_async(&ui, &b, &group_hex);
+                            ui.set_group_settings_status(s("Renamed."));
+                        }
+                        Err(e) => {
+                            tracing::warn!(target: "rename", "{e:#}");
+                            ui.set_group_settings_status(
+                                friendly_error("group settings", &e).into(),
+                            );
+                        }
+                    }
+                });
+            });
+        }
+    });
+    ui.on_clear_group_image({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let group_ids = group_ids.clone();
+        move || {
+            let Some(ui) = weak.upgrade() else { return };
+            if ui.get_group_image_busy() {
+                return;
+            }
+            let idx = ui.get_active_chat() as usize;
+            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
+                return;
+            };
+            ui.set_group_image_busy(true);
+            ui.set_group_settings_status(s("removing image…"));
+            let weak_done = ui.as_weak();
+            let backend_cell_done = backend_cell.clone();
+            let group_ids = group_ids.clone();
+            let group_hex_done = group_hex.clone();
+            let guard = backend_cell.lock().unwrap();
+            let Some(b) = guard.as_ref() else {
+                ui.set_group_image_busy(false);
+                ui.set_group_settings_status(s("Backend not ready."));
+                return;
+            };
+            b.set_group_image_async(&group_hex, Vec::new(), String::new(), move |result| {
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak_done.upgrade() else {
+                        return;
+                    };
+                    ui.set_group_image_busy(false);
+                    match result {
+                        Ok(_) => {
+                            ui.set_group_settings_status(s("image removed"));
+                            if let Some(b) = backend_cell_done.lock().unwrap().as_ref() {
+                                refresh_chats_async(&ui, b, &group_ids, |_, _, _| {});
+                                push_group_members_to_ui_async(&ui, b, &group_hex_done);
+                            }
+                        }
+                        Err(e) => {
+                            tracing::warn!(target: "group_image", "clear failed: {e:#}");
+                            ui.set_group_settings_status(friendly_error("group image", &e).into());
+                        }
+                    }
+                });
+            });
+        }
+    });
+    ui.on_change_group_image({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let group_ids = group_ids.clone();
+        move || {
+            let Some(ui) = weak.upgrade() else { return };
+            if ui.get_group_image_busy() {
+                return;
+            }
+            let idx = ui.get_active_chat() as usize;
+            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
+                return;
+            };
+            let tokio_handle = {
+                let guard = backend_cell.lock().unwrap();
+                match guard.as_ref() {
+                    Some(b) => b.tokio_handle(),
+                    None => {
+                        ui.set_group_settings_status(s("backend not ready"));
+                        return;
+                    }
+                }
+            };
+            ui.set_group_image_busy(true);
+            ui.set_group_settings_status(s("choosing image…"));
+            let weak = ui.as_weak();
+            let backend_cell = backend_cell.clone();
+            let group_ids = group_ids.clone();
+            tokio_handle.spawn(async move {
+                let chosen = tokio::task::spawn_blocking(|| {
+                    rfd::FileDialog::new()
+                        .set_title("Choose a group image")
+                        .add_filter("Images", &["png", "jpg", "jpeg", "gif", "webp"])
+                        .pick_file()
+                })
+                .await
+                .ok()
+                .flatten();
+
+                let Some(path) = chosen else {
+                    let weak = weak.clone();
+                    let _ = slint::invoke_from_event_loop(move || {
+                        if let Some(ui) = weak.upgrade() {
+                            ui.set_group_image_busy(false);
+                            ui.set_group_settings_status(s(""));
+                        }
+                    });
+                    return;
+                };
+
+                let bytes = match std::fs::read(&path) {
+                    Ok(b) => b,
+                    Err(e) => {
+                        let msg = format!("could not read file: {e}");
+                        let _ = slint::invoke_from_event_loop(move || {
+                            if let Some(ui) = weak.upgrade() {
+                                ui.set_group_image_busy(false);
+                                ui.set_group_settings_status(msg.into());
+                            }
+                        });
+                        return;
+                    }
+                };
+                let content_type = mime_guess::from_path(&path)
+                    .first_or_octet_stream()
+                    .essence_str()
+                    .to_string();
+
+                {
+                    let weak = weak.clone();
+                    let _ = slint::invoke_from_event_loop(move || {
+                        if let Some(ui) = weak.upgrade() {
+                            ui.set_group_settings_status(s("uploading to Blossom…"));
+                        }
+                    });
+                }
+
+                let weak_done = weak.clone();
+                let backend_cell_done = backend_cell.clone();
+                let group_ids_done = group_ids.clone();
+                let group_hex_done = group_hex.clone();
+                let guard = backend_cell.lock().unwrap();
+                let Some(backend) = guard.as_ref() else {
+                    let _ = slint::invoke_from_event_loop(move || {
+                        if let Some(ui) = weak_done.upgrade() {
+                            ui.set_group_image_busy(false);
+                            ui.set_group_settings_status(s("backend not ready"));
+                        }
+                    });
+                    return;
+                };
+                backend.set_group_image_async(&group_hex, bytes, content_type, move |result| {
+                    let _ = slint::invoke_from_event_loop(move || {
+                        let Some(ui) = weak_done.upgrade() else {
+                            return;
+                        };
+                        ui.set_group_image_busy(false);
+                        match result {
+                            Ok(_) => {
+                                ui.set_group_settings_status(s("group image updated"));
+                                if let Some(backend) = backend_cell_done.lock().unwrap().as_ref() {
+                                    refresh_chats_async(
+                                        &ui,
+                                        backend,
+                                        &group_ids_done,
+                                        |_, _, _| {},
+                                    );
+                                    push_group_members_to_ui_async(&ui, backend, &group_hex_done);
+                                }
+                            }
+                            Err(e) => {
+                                tracing::warn!(target: "group_image", "upload failed: {e:#}");
+                                ui.set_group_settings_status(
+                                    friendly_error("group image", &e).into(),
+                                );
+                            }
+                        }
+                    });
+                });
+            });
+        }
+    });
+}
