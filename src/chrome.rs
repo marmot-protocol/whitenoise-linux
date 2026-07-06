@@ -557,23 +557,74 @@ pub(crate) fn push_group_settings_to_ui_from(
     }
 }
 
+/// Fetch + decode `url` on the tokio runtime (via [`fetch_picture_pixels`],
+/// which fills the process-wide pixel cache), then run `bind` on the UI
+/// thread with the upgraded window and the decoded pixels. Every plain-URL
+/// avatar fetch below goes through this one fetch-and-hop shape.
+pub(crate) fn spawn_picture_fetch(
+    weak: Weak<DarkMatterLinux>,
+    handle: tokio::runtime::Handle,
+    url: String,
+    bind: impl FnOnce(&DarkMatterLinux, &PicturePixels) + Send + 'static,
+) {
+    handle.spawn(async move {
+        let Some(pixels) = fetch_picture_pixels(&url).await else {
+            return;
+        };
+        let _ = slint::invoke_from_event_loop(move || {
+            if let Some(ui) = weak.upgrade() {
+                bind(&ui, &pixels);
+            }
+        });
+    });
+}
+
+/// Bind a decoded picture onto every row of `model` that `matches` accepts
+/// (`first_only` stops after the first hit). The typed `update_*_picture`
+/// updaters below are thin wrappers over this scan; they differ only in row
+/// type, key field, and match rule. Must run on the UI thread (it builds a
+/// `slint::Image`).
+pub(crate) fn bind_picture_to_rows<Row: Clone + 'static>(
+    model: &ModelRc<Row>,
+    pixels: &PicturePixels,
+    first_only: bool,
+    matches: impl Fn(&Row) -> bool,
+    bind: impl Fn(&mut Row, slint::Image),
+) {
+    let Some(vm) = model.as_any().downcast_ref::<VecModel<Row>>() else {
+        return;
+    };
+    let img = image_from_pixels(pixels);
+    for i in 0..vm.row_count() {
+        let Some(mut row) = vm.row_data(i) else {
+            continue;
+        };
+        if !matches(&row) {
+            continue;
+        }
+        bind(&mut row, img.clone());
+        vm.set_row_data(i, row);
+        if first_only {
+            break;
+        }
+    }
+}
+
 /// Fetch + decode the active group's plain-URL avatar
 /// (`marmot.group.avatar-url.v1`) on the tokio runtime, then bind it on the
-/// UI thread — but only if the user is still viewing this group. The pixel
-/// cache is filled by `fetch_picture_pixels` itself (keyed by URL).
+/// UI thread — but only if the user is still viewing this group.
 pub(crate) fn spawn_group_avatar_url_fetch(
     ui: &DarkMatterLinux,
     backend: &Backend,
     group_hex: &str,
     url: String,
 ) {
-    let weak = ui.as_weak();
     let group_hex = group_hex.to_string();
-    backend.tokio_handle().spawn(async move {
-        let Some(pixels) = fetch_picture_pixels(&url).await else {
-            return;
-        };
-        let _ = slint::invoke_from_event_loop(move || {
+    spawn_picture_fetch(
+        ui.as_weak(),
+        backend.tokio_handle(),
+        url,
+        move |ui, pixels| {
             // Ignore if the user navigated away before the fetch finished.
             let still_active = active_group_slot()
                 .lock()
@@ -582,12 +633,10 @@ pub(crate) fn spawn_group_avatar_url_fetch(
             if !still_active {
                 return;
             }
-            if let Some(ui) = weak.upgrade() {
-                ui.set_chat_group_picture(rgba_to_slint_image(&pixels));
-                ui.set_chat_group_has_picture(true);
-            }
-        });
-    });
+            ui.set_chat_group_picture(image_from_pixels(pixels));
+            ui.set_chat_group_has_picture(true);
+        },
+    );
 }
 
 /// Fetch + decrypt + decode the active group's avatar on the tokio runtime,
@@ -627,7 +676,7 @@ pub(crate) fn spawn_group_image_fetch(
                 return;
             }
             if let Some(ui) = weak.upgrade() {
-                ui.set_chat_group_picture(rgba_to_slint_image(&pixels));
+                ui.set_chat_group_picture(image_from_pixels(&pixels));
                 ui.set_chat_group_has_picture(true);
             }
         });
@@ -776,17 +825,12 @@ pub(crate) fn spawn_message_avatar_fetches(
         })
         .collect();
     for (sender_id, url) in targets {
-        let weak = ui.as_weak();
-        backend.tokio_handle().spawn(async move {
-            let Some(pixels) = fetch_picture_pixels(&url).await else {
-                return;
-            };
-            let _ = slint::invoke_from_event_loop(move || {
-                if let Some(ui) = weak.upgrade() {
-                    update_bubble_pictures(&ui, &sender_id, &pixels);
-                }
-            });
-        });
+        spawn_picture_fetch(
+            ui.as_weak(),
+            backend.tokio_handle(),
+            url,
+            move |ui, pixels| update_bubble_pictures(ui, &sender_id, pixels),
+        );
     }
 }
 
@@ -808,21 +852,16 @@ pub(crate) fn update_bubble_pictures(
     let Some(inner) = outer_vm.row_data(idx) else {
         return;
     };
-    let Some(vm) = inner.as_any().downcast_ref::<VecModel<ChatMessage>>() else {
-        return;
-    };
-    let img = rgba_to_slint_image(pixels);
-    for i in 0..vm.row_count() {
-        let Some(mut row) = vm.row_data(i) else {
-            continue;
-        };
-        if row.outgoing || row.sender_id.as_str() != sender_id {
-            continue;
-        }
-        row.picture = img.clone();
-        row.has_picture = true;
-        vm.set_row_data(i, row);
-    }
+    bind_picture_to_rows(
+        &inner,
+        pixels,
+        false,
+        |row: &ChatMessage| !row.outgoing && row.sender_id.as_str() == sender_id,
+        |row, img| {
+            row.picture = img;
+            row.has_picture = true;
+        },
+    );
 }
 
 /// Spawn async avatar fetches for the 1:1 peers in the chat list. On decode the
@@ -845,17 +884,12 @@ pub(crate) fn spawn_chat_list_avatar_fetches(ui: &DarkMatterLinux, backend: &Arc
                     let url = record.avatar_url.url.trim().to_string();
                     if !picture_cache_has(&url) {
                         let npub = format!("mls:0x{}", short_hex(&record.group_id_hex));
-                        let weak = weak_outer.clone();
-                        b.tokio_handle().spawn(async move {
-                            let Some(pixels) = fetch_picture_pixels(&url).await else {
-                                return;
-                            };
-                            let _ = slint::invoke_from_event_loop(move || {
-                                if let Some(ui) = weak.upgrade() {
-                                    update_chat_picture(&ui, &npub, &pixels);
-                                }
-                            });
-                        });
+                        spawn_picture_fetch(
+                            weak_outer.clone(),
+                            b.tokio_handle(),
+                            url,
+                            move |ui, pixels| update_chat_picture(ui, &npub, pixels),
+                        );
                     }
                     continue;
                 }
@@ -902,40 +936,28 @@ pub(crate) fn spawn_chat_list_avatar_fetches(ui: &DarkMatterLinux, backend: &Arc
                 continue;
             }
             let npub = format!("mls:0x{}", short_hex(&record.group_id_hex));
-            let weak = weak_outer.clone();
-            b.tokio_handle().spawn(async move {
-                let Some(pixels) = fetch_picture_pixels(&url).await else {
-                    return;
-                };
-                let _ = slint::invoke_from_event_loop(move || {
-                    if let Some(ui) = weak.upgrade() {
-                        update_chat_picture(&ui, &npub, &pixels);
-                    }
-                });
-            });
+            spawn_picture_fetch(
+                weak_outer.clone(),
+                b.tokio_handle(),
+                url,
+                move |ui, pixels| update_chat_picture(ui, &npub, pixels),
+            );
         }
     });
 }
 
 /// Bind a decoded picture onto the chat-list row identified by `npub`.
 pub(crate) fn update_chat_picture(ui: &DarkMatterLinux, npub: &str, pixels: &PicturePixels) {
-    let chats = ui.get_chats();
-    let Some(vm) = chats.as_any().downcast_ref::<VecModel<ChatMeta>>() else {
-        return;
-    };
-    let img = rgba_to_slint_image(pixels);
-    for i in 0..vm.row_count() {
-        let Some(mut row) = vm.row_data(i) else {
-            continue;
-        };
-        if row.npub.as_str() != npub {
-            continue;
-        }
-        row.picture = img.clone();
-        row.has_picture = true;
-        vm.set_row_data(i, row);
-        break;
-    }
+    bind_picture_to_rows(
+        &ui.get_chats(),
+        pixels,
+        true,
+        |row: &ChatMeta| row.npub.as_str() == npub,
+        |row, img| {
+            row.picture = img;
+            row.has_picture = true;
+        },
+    );
 }
 
 /// Queue async fetches for contact-list avatars whose picture URL isn't in
@@ -963,17 +985,12 @@ pub(crate) fn spawn_contact_avatar_fetches(ui: &DarkMatterLinux, backend: &Arc<B
                 continue;
             }
             let account_id = record.account_id_hex.clone();
-            let weak = weak_outer.clone();
-            b.tokio_handle().spawn(async move {
-                let Some(pixels) = fetch_picture_pixels(&url).await else {
-                    return;
-                };
-                let _ = slint::invoke_from_event_loop(move || {
-                    if let Some(ui) = weak.upgrade() {
-                        update_contact_picture(&ui, &account_id, &pixels);
-                    }
-                });
-            });
+            spawn_picture_fetch(
+                weak_outer.clone(),
+                b.tokio_handle(),
+                url,
+                move |ui, pixels| update_contact_picture(ui, &account_id, pixels),
+            );
         }
     });
 }
@@ -984,23 +1001,16 @@ pub(crate) fn update_contact_picture(
     account_id: &str,
     pixels: &PicturePixels,
 ) {
-    let contacts = ui.get_contacts();
-    let Some(vm) = contacts.as_any().downcast_ref::<VecModel<Contact>>() else {
-        return;
-    };
-    let img = rgba_to_slint_image(pixels);
-    for i in 0..vm.row_count() {
-        let Some(mut row) = vm.row_data(i) else {
-            continue;
-        };
-        if !row.account_id.as_str().eq_ignore_ascii_case(account_id) {
-            continue;
-        }
-        row.picture = img.clone();
-        row.has_picture = true;
-        vm.set_row_data(i, row);
-        break;
-    }
+    bind_picture_to_rows(
+        &ui.get_contacts(),
+        pixels,
+        true,
+        |row: &Contact| row.account_id.as_str().eq_ignore_ascii_case(account_id),
+        |row, img| {
+            row.picture = img;
+            row.has_picture = true;
+        },
+    );
 }
 
 /// Queue async fetches for archived-chat avatars (1:1 peers only) whose
@@ -1029,17 +1039,12 @@ pub(crate) fn spawn_archived_avatar_fetches(ui: &DarkMatterLinux, backend: &Arc<
                 continue;
             }
             let group_id = format!("mls:0x{}", short_hex(&record.group_id_hex));
-            let weak = weak_outer.clone();
-            b.tokio_handle().spawn(async move {
-                let Some(pixels) = fetch_picture_pixels(&url).await else {
-                    return;
-                };
-                let _ = slint::invoke_from_event_loop(move || {
-                    if let Some(ui) = weak.upgrade() {
-                        update_archived_picture(&ui, &group_id, &pixels);
-                    }
-                });
-            });
+            spawn_picture_fetch(
+                weak_outer.clone(),
+                b.tokio_handle(),
+                url,
+                move |ui, pixels| update_archived_picture(ui, &group_id, pixels),
+            );
         }
     });
 }
@@ -1050,23 +1055,16 @@ pub(crate) fn update_archived_picture(
     group_id: &str,
     pixels: &PicturePixels,
 ) {
-    let archived = ui.get_archived_chats();
-    let Some(vm) = archived.as_any().downcast_ref::<VecModel<ArchivedChat>>() else {
-        return;
-    };
-    let img = rgba_to_slint_image(pixels);
-    for i in 0..vm.row_count() {
-        let Some(mut row) = vm.row_data(i) else {
-            continue;
-        };
-        if row.group_id.as_str() != group_id {
-            continue;
-        }
-        row.picture = img.clone();
-        row.has_picture = true;
-        vm.set_row_data(i, row);
-        break;
-    }
+    bind_picture_to_rows(
+        &ui.get_archived_chats(),
+        pixels,
+        true,
+        |row: &ArchivedChat| row.group_id.as_str() == group_id,
+        |row, img| {
+            row.picture = img;
+            row.has_picture = true;
+        },
+    );
 }
 
 pub(crate) fn spawn_member_picture_fetch(
@@ -1075,45 +1073,31 @@ pub(crate) fn spawn_member_picture_fetch(
     npub_short: String,
     url: String,
 ) {
-    let weak = ui.as_weak();
-    backend.tokio_handle().spawn(async move {
-        let pixels = match fetch_picture_pixels(&url).await {
-            Some(p) => p,
-            None => return,
-        };
-        let _ = slint::invoke_from_event_loop(move || {
-            let Some(ui) = weak.upgrade() else { return };
-            update_member_picture(&ui, &npub_short, &pixels);
-        });
-    });
+    spawn_picture_fetch(
+        ui.as_weak(),
+        backend.tokio_handle(),
+        url,
+        move |ui, pixels| update_member_picture(ui, &npub_short, pixels),
+    );
 }
 
+/// Bind a decoded picture onto the members-panel row identified by
+/// `npub_short`.
 pub(crate) fn update_member_picture(
     ui: &DarkMatterLinux,
     npub_short: &str,
     pixels: &PicturePixels,
 ) {
-    let members = ui.get_chat_members();
-    let Some(vm) = members.as_any().downcast_ref::<VecModel<GroupMember>>() else {
-        return;
-    };
-    for i in 0..vm.row_count() {
-        let Some(mut row) = vm.row_data(i) else {
-            continue;
-        };
-        if row.npub_short.as_str() != npub_short {
-            continue;
-        }
-        let buffer = slint::SharedPixelBuffer::<slint::Rgba8Pixel>::clone_from_slice(
-            &pixels.rgba,
-            pixels.w,
-            pixels.h,
-        );
-        row.picture = slint::Image::from_rgba8(buffer);
-        row.has_picture = true;
-        vm.set_row_data(i, row);
-        break;
-    }
+    bind_picture_to_rows(
+        &ui.get_chat_members(),
+        pixels,
+        true,
+        |row: &GroupMember| row.npub_short.as_str() == npub_short,
+        |row, img| {
+            row.picture = img;
+            row.has_picture = true;
+        },
+    );
 }
 
 /// Shared async fetch + decode for an arbitrary image URL. Returns the
@@ -1220,15 +1204,6 @@ pub(crate) fn decode_avatar_pixels(bytes: &[u8]) -> Result<PicturePixels, image:
         h,
         rgba: img.into_raw(),
     })
-}
-
-pub(crate) fn rgba_to_slint_image(pixels: &PicturePixels) -> slint::Image {
-    let buffer = slint::SharedPixelBuffer::<slint::Rgba8Pixel>::clone_from_slice(
-        &pixels.rgba,
-        pixels.w,
-        pixels.h,
-    );
-    slint::Image::from_rgba8(buffer)
 }
 
 // ─── Archived ──────────────────────────────────────────────────────────
