@@ -4,29 +4,9 @@ export component AccentPicker inherits Rectangle {
     in-out property <int> selected: 0;
     callback accent-selected(int);
 
-    property <[color]> swatches-dark: [
-        #72F0B0,
-        #4AA8FF,
-        #FF6B9D,
-        #FF8C42,
-        #B8A1E6,
-    ];
-    property <[color]> swatches-light: [
-        #16855F,
-        #0D5AA0,
-        #C73E6E,
-        #C45C1A,
-        #7B5FB0,
-    ];
-    property <[color]> swatches-retro: [
-        #FFD93D,
-        #6B8CFF,
-        #FF6B9D,
-        #FF8C42,
-        #C9A0DC,
-    ];
-
-    property <[color]> swatches: Theme.retro ? swatches-retro : (Theme.light ? swatches-light : swatches-dark);
+    // Swatches come from the active theme pack so the color shown is the
+    // color applied, in every theme (mirrors ThemeSwatch in theme-picker.slint).
+    property <[color]> swatches: Theme.c.accent-base;
 
     // Keyboard-navigation cursor (independent of the committed `selected`).
     // Reset to the active swatch whenever the picker gains focus so Tab-in
