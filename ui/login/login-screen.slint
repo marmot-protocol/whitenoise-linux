@@ -189,7 +189,7 @@ export component LoginScreen inherits Rectangle {
     Rectangle {
         width: parent.width;
         height: parent.height;
-        background: Theme.light && !Theme.retro ? @radial-gradient(circle, #FFFFFF00 0%, #D8CFBF80 100%) : @radial-gradient(circle, #0F141A00 0%, #00000080 100%);
+        background: @radial-gradient(circle, Palette.vignette.with-alpha(0) 0%, Palette.vignette 100%);
     }
 
     // Centered card. Clamp to the available window height; mode 2 can exceed

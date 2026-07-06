@@ -4,13 +4,13 @@ export component Toggle inherits Rectangle {
     in-out property <bool> on: false;
     in property <bool> enabled: true;
     callback toggled;
-    width: Theme.retro ? 44px : 34px;
-    height: Theme.retro ? 22px : 18px;
+    width: Theme.pixel-metrics ? 44px : 34px;
+    height: Theme.pixel-metrics ? 22px : 18px;
     opacity: root.enabled ? 1.0 : 0.45;
     animate opacity { duration: 120ms; }
     border-radius: (9px) * Theme.r-scale;
     background: root.on ? Palette.mint : Palette.field;
-    border-width: Theme.retro ? Theme.border-w : (root.on ? 0px : 1px);
+    border-width: Theme.outline-surfaces ? Theme.border-w : (root.on ? 0px : 1px);
     border-color: Palette.border;
     drop-shadow-color: Theme.hard-shadow ? Palette.shadow : transparent;
     drop-shadow-offset-x: Theme.hard-shadow ? 2px : 0px;
@@ -19,9 +19,9 @@ export component Toggle inherits Rectangle {
     animate background { duration: 120ms; }
 
     Rectangle {
-        width: Theme.retro ? 14px : 14px;
-        height: Theme.retro ? 14px : 14px;
-        x: root.on ? parent.width - self.width - (Theme.retro ? 4px : 2px) : (Theme.retro ? 4px : 2px);
+        width: 14px;
+        height: 14px;
+        x: root.on ? parent.width - self.width - (Theme.pixel-metrics ? 4px : 2px) : (Theme.pixel-metrics ? 4px : 2px);
         y: (parent.height - self.height) / 2;
         border-radius: (7px) * Theme.r-scale;
         background: root.on ? Palette.bubble-out-fg : Palette.text-mid;
@@ -31,7 +31,7 @@ export component Toggle inherits Rectangle {
         }
     }
 
-    if Theme.retro: Text {
+    if Theme.pixel-icons: Text {
         x: root.on ? 6px : parent.width - self.width - 6px;
         y: (parent.height - self.height) / 2;
         text: root.on ? "ON" : "OFF";

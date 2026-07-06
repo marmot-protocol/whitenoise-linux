@@ -73,7 +73,7 @@ export component MessagesArea inherits Rectangle {
         root.burst-next = root.burst-next + 1 < 8 ? root.burst-next + 1 : 0;
     }
     // Subtle vertical lift — keeps the chat canvas from feeling flat.
-    background: Theme.retro ? Palette.bg : @linear-gradient(180deg, Palette.canvas-top 0%, Palette.bg 28%);
+    background: Theme.soft-decor ? @linear-gradient(180deg, Palette.canvas-top 0%, Palette.bg 28%) : Palette.bg;
 
     // Hand-drawn paper backdrop: faint cute shapes scattered behind the message
     // list. Declared before `cs` so it sits behind the (transparent) scroll;
@@ -288,7 +288,7 @@ export component MessagesArea inherits Rectangle {
         border-width: Theme.border-w;
         border-color: Palette.elevated-border;
         drop-shadow-blur: Theme.hard-shadow ? 0px : 16px;
-        drop-shadow-color: Theme.hard-shadow ? Palette.shadow : (Theme.light ? #1F293744 : #000000A0);
+        drop-shadow-color: Theme.hard-shadow ? Palette.shadow : Palette.shadow-soft;
         drop-shadow-offset-x: Theme.hard-shadow ? 3px : 0px;
         drop-shadow-offset-y: Theme.hard-shadow ? 3px : 6px;
         opacity: root.at-bottom ? 0 : 1;

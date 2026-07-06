@@ -70,15 +70,15 @@ export component ProfileModal inherits Modal {
         // ── Banner — the user's avatar gradient, full bleed ─────────────
         banner := Rectangle {
             height: 88px;
-            background: Theme.retro ? root.av-a : @linear-gradient(135deg, root.av-a 0%, root.av-b 100%);
+            background: Theme.soft-decor ? @linear-gradient(135deg, root.av-a 0%, root.av-b 100%) : root.av-a;
 
             // Soft darken toward the bottom so the avatar ring pops.
-            if !Theme.retro: Rectangle {
+            if Theme.soft-decor: Rectangle {
                 width: parent.width;
                 height: parent.height;
                 background: @linear-gradient(180deg, #00000000 30%, #00000038 100%);
             }
-            if Theme.retro: Rectangle {
+            if !Theme.soft-decor: Rectangle {
                 y: parent.height - 2px;
                 width: parent.width;
                 height: 2px;

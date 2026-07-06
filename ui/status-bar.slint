@@ -2,8 +2,8 @@
 import { Palette, Theme } from "tokens.slint";
 
 export component StatusBar inherits Rectangle {
-    height: Theme.retro ? 36px : 30px;
-    background: Theme.retro ? Palette.rail : Palette.panel;
+    height: Theme.pixel-metrics ? 36px : 30px;
+    background: Palette.status-bar;
 
     in property <int> relaysConnected;
     in property <int> relaysTotal;

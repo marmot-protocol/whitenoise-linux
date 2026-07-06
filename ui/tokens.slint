@@ -49,6 +49,24 @@ export struct ThemeColors {
     // Card/well outline color: the cream border in retro, the dimmer border-2 in
     // modern themes. (Was `Theme.retro ? Palette.border : Palette.border-2`.)
     card-border: color,
+    // Window-chrome bar background (status bar): the dark rail tone in retro,
+    // panel in modern themes. (Was `Theme.retro ? Palette.rail : Palette.panel`.)
+    status-bar: color,
+    // Recessed strip inside a modal card (footer row).
+    // (Was `Theme.retro ? Palette.rail : Palette.panel-2`.)
+    card-well: color,
+    // Modal backdrop wash behind the card.
+    overlay: color,
+    // Soft (blurred) drop-shadow tints; hard-shadow themes use Palette.shadow
+    // instead. `shadow-soft` is the weak floating-control shadow (jump pill),
+    // `shadow-card` the stronger modal-card shadow.
+    shadow-soft: color,
+    shadow-card: color,
+    // Edge color of the login screen's radial vignette (the center is this
+    // color at alpha 0).
+    vignette: color,
+    // Hairline ring around avatars.
+    avatar-ring: color,
     // When true the "selected" surface uses the solid accent (retro's SNES
     // highlight); otherwise the soft accent-surface wash (modern themes).
     selected-uses-base: bool,
@@ -74,8 +92,9 @@ export struct ThemeStyle {
     pixel-icons: bool,           // pixel-art icon glyphs vs vector paths
     selected-inverts-text: bool, // selected list rows invert text onto a solid fill
     pixel-select-marker: bool,   // ▶ text marker for selection vs a slim bar
-    pixel-metrics: bool,         // use the larger pixel-font size at every fs() call site
+    pixel-metrics: bool,         // pixel-grid metrics: the larger pixel-font size at every fs() call site, chunkier fixed geometry
     outline-surfaces: bool,      // draw a border on surfaces modern themes leave borderless
+    soft-decor: bool,            // gradient washes, glows, halos, shimmer, accent tints; false = flat fills + hard separators (pixel look)
     // ── Layer 1: per-family skin selectors ──────────────────────────────────
     // Each picks which render body a dispatch slot mounts for that component
     // family. 0 = the standard/modern body. A drastic theme bumps these to
@@ -163,6 +182,13 @@ export global Theme {
             canvas-top: #0E1216,
             banner-edge: #0E1418,
             card-border: #14181D,
+            status-bar: #0B0D0F,
+            card-well: #101316,
+            overlay: #00000073,
+            shadow-soft: #000000A0,
+            shadow-card: #000000D0,
+            vignette: #00000080,
+            avatar-ring: #FFFFFF20,
             selected-uses-base: false,
             accent-base:    [#72F0B0, #4AA8FF, #FF6B9D, #FF8C42, #B8A1E6],
             accent-hi:      [#8AF7C0, #6BC4FF, #FF8CB5, #FFAB6B, #D4BFF2],
@@ -207,6 +233,13 @@ export global Theme {
             canvas-top: #FFFDF7,
             banner-edge: #F6F2EA,
             card-border: #E7DFD2,
+            status-bar: #FFFFFF,
+            card-well: #F8FAFC,
+            overlay: #1F293740,
+            shadow-soft: #1F293744,
+            shadow-card: #1F293755,
+            vignette: #D8CFBF80,
+            avatar-ring: #00000015,
             selected-uses-base: false,
             accent-base:    [#16855F, #0D5AA0, #C73E6E, #C45C1A, #7B5FB0],
             accent-hi:      [#1EA875, #1A70B8, #E05585, #D4712E, #9678C9],
@@ -251,6 +284,13 @@ export global Theme {
             canvas-top: #0E1216,
             banner-edge: #0E1418,
             card-border: #E8E0C4,
+            status-bar: #0E0E36,
+            card-well: #0E0E36,
+            overlay: #00000073,
+            shadow-soft: #000000A0,
+            shadow-card: #000000D0,
+            vignette: #00000080,
+            avatar-ring: #F4EFDD,
             selected-uses-base: true,
             accent-base:    [#FFD93D, #6B8CFF, #FF6B9D, #FF8C42, #C9A0DC],
             accent-hi:      [#FFE873, #8CA5FF, #FF8CB5, #FFAB6B, #DEB8F0],
@@ -295,6 +335,13 @@ export global Theme {
             canvas-top: #0A0E0A,
             banner-edge: #0A0E0A,
             card-border: #1B3A1B,
+            status-bar: #0C120C,
+            card-well: #0F160F,
+            overlay: #00000073,
+            shadow-soft: #000000A0,
+            shadow-card: #000000D0,
+            vignette: #00000080,
+            avatar-ring: #FFFFFF20,
             selected-uses-base: false,
             accent-base:    [#33FF66, #33CCFF, #FF66AA, #FFAA33, #BB88FF],
             accent-hi:      [#66FF99, #66DDFF, #FF99CC, #FFCC66, #CCAAFF],
@@ -344,6 +391,13 @@ export global Theme {
             canvas-top: #FAF5E8,
             banner-edge: #F4EEDF,
             card-border: #C7B894,
+            status-bar: #FBF6EA,
+            card-well: #EFE8D6,
+            overlay: #33302B40,
+            shadow-soft: #33302B44,
+            shadow-card: #33302B55,
+            vignette: #D8CCAE80,
+            avatar-ring: #00000015,
             selected-uses-base: false,
             accent-base:    [#3E9E7A, #4A8FC0, #D45C86, #E08544, #9B7BC0],
             accent-hi:      [#52B891, #62A6D2, #E0789F, #EE9C62, #B193D2],
@@ -390,6 +444,13 @@ export global Theme {
             canvas-top: #130826,
             banner-edge: #0E0420,
             card-border: #271145,
+            status-bar: #170A2E,
+            card-well: #1F1040,
+            overlay: #00000073,
+            shadow-soft: #000000A0,
+            shadow-card: #000000D0,
+            vignette: #00000080,
+            avatar-ring: #FFFFFF20,
             selected-uses-base: false,
             accent-base:    [#2DE2C0, #36C5FF, #FF49B0, #FF7E5F, #B66BFF],
             accent-hi:      [#5BF0D4, #6BD7FF, #FF74C4, #FF9B82, #C98FFF],
@@ -437,6 +498,13 @@ export global Theme {
             canvas-top: #283529,
             banner-edge: #243029,
             card-border: #4C594F,
+            status-bar: #2A382F,
+            card-well: #1E2A23,
+            overlay: #00000073,
+            shadow-soft: #000000A0,
+            shadow-card: #000000D0,
+            vignette: #00000080,
+            avatar-ring: #FFFFFF20,
             selected-uses-base: false,
             accent-base:    [#7FD1A8, #7FB4E0, #E89BB8, #E8B97F, #B49BD6],
             accent-hi:      [#9BDDBC, #9BC6EA, #EFB0C7, #EFC99B, #C6B0E2],
@@ -463,6 +531,7 @@ export global Theme {
             pixel-select-marker: false,
             pixel-metrics: false,
             outline-surfaces: false,
+            soft-decor: true,
             skin-message: 0,
             skin-button: 0,
             skin-list: 0,
@@ -487,6 +556,7 @@ export global Theme {
             pixel-select-marker: false,
             pixel-metrics: false,
             outline-surfaces: false,
+            soft-decor: true,
             skin-message: 0,
             skin-button: 0,
             skin-list: 0,
@@ -511,6 +581,7 @@ export global Theme {
             pixel-select-marker: true,
             pixel-metrics: true,
             outline-surfaces: true,
+            soft-decor: false,
             skin-message: 0,
             skin-button: 0,
             skin-list: 0,
@@ -536,6 +607,7 @@ export global Theme {
             pixel-select-marker: true,
             pixel-metrics: false,
             outline-surfaces: false,
+            soft-decor: true,
             skin-message: 1,
             skin-button: 0,
             skin-list: 1,
@@ -564,6 +636,7 @@ export global Theme {
             pixel-select-marker: false,
             pixel-metrics: false,
             outline-surfaces: true,
+            soft-decor: true,
             skin-message: 0,
             skin-button: 0,
             skin-list: 0,
@@ -590,6 +663,7 @@ export global Theme {
             pixel-select-marker: false,
             pixel-metrics: false,
             outline-surfaces: false,
+            soft-decor: true,
             skin-message: 0,
             skin-button: 0,
             skin-list: 0,
@@ -615,6 +689,7 @@ export global Theme {
             pixel-select-marker: false,
             pixel-metrics: false,
             outline-surfaces: true,
+            soft-decor: true,
             skin-message: 0,
             skin-button: 0,
             skin-list: 0,
@@ -642,6 +717,7 @@ export global Theme {
     out property <bool> pixel-select-marker:   root.s.pixel-select-marker;
     out property <bool> pixel-metrics:         root.s.pixel-metrics;
     out property <bool> outline-surfaces:      root.s.outline-surfaces;
+    out property <bool> soft-decor:            root.s.soft-decor;
     out property <int> skin-message:          root.s.skin-message;
     out property <int> skin-button:           root.s.skin-button;
     out property <int> skin-list:             root.s.skin-list;
@@ -718,6 +794,13 @@ export global Palette {
     out property <color> canvas-top: Theme.c.canvas-top;
     out property <color> banner-edge: Theme.c.banner-edge;
     out property <color> card-border: Theme.c.card-border;
+    out property <color> status-bar: Theme.c.status-bar;
+    out property <color> card-well: Theme.c.card-well;
+    out property <color> overlay: Theme.c.overlay;
+    out property <color> shadow-soft: Theme.c.shadow-soft;
+    out property <color> shadow-card: Theme.c.shadow-card;
+    out property <color> vignette: Theme.c.vignette;
+    out property <color> avatar-ring: Theme.c.avatar-ring;
 }
 
 // One signed-in account in the account switcher. All accounts stay connected

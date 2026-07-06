@@ -147,10 +147,10 @@ component MetaChip inherits Rectangle {
     in property <string> glyph;
     in property <color> tint: Palette.mint;
     height: 22px;
-    background: Theme.retro ? Palette.panel-2 : Palette.mint-surface;
+    background: Theme.soft-decor ? Palette.mint-surface : Palette.panel-2;
     border-radius: (11px) * Theme.r-scale;
     border-width: Theme.border-w;
-    border-color: Theme.retro ? Palette.border : transparent;
+    border-color: Theme.outline-surfaces ? Palette.card-border : transparent;
     HorizontalLayout {
         padding-left: 9px;
         padding-right: 10px;
@@ -166,7 +166,7 @@ component MetaChip inherits Rectangle {
 
         Text {
             text: root.text;
-            color: Theme.retro ? Palette.text-hi : root.tint;
+            color: Theme.soft-decor ? root.tint : Palette.text-hi;
             font-size: (11px) * Theme.fs-scale;
             font-weight: 600;
             font-family: Theme.font;
@@ -382,8 +382,8 @@ export component ProfilePage inherits Rectangle {
                     y: 0;
                     width: parent.width;
                     height: 96px;
-                    background: Theme.retro ? Palette.panel-2 : @linear-gradient(120deg, Palette.mint 0%, Palette.mint-dim 100%);
-                    opacity: Theme.retro ? 1.0 : 0.92;
+                    background: Theme.soft-decor ? @linear-gradient(120deg, Palette.mint 0%, Palette.mint-dim 100%) : Palette.panel-2;
+                    opacity: Theme.soft-decor ? 0.92 : 1.0;
                     Rectangle {
                         y: parent.height - 1px;
                         width: parent.width;

@@ -145,7 +145,7 @@ export component CommandPalette inherits Modal {
             // ── Divider ─────────────────────────────────────────────────
             Rectangle {
                 height: Theme.border-w;
-                background: Theme.retro ? Palette.border : Palette.divider;
+                background: Palette.divider;
             }
 
             // ── Action list ─────────────────────────────────────────────
@@ -180,7 +180,7 @@ export component CommandPalette inherits Modal {
                             // Row body.
                             Rectangle {
                                 height: 36px;
-                                background: i == root.selected ? (Theme.retro ? Palette.selected : Palette.bubble-in) : (row-touch.has-hover ? Palette.hover : transparent);
+                                background: i == root.selected ? (Theme.selected-inverts-text ? Palette.selected : Palette.bubble-in) : (row-touch.has-hover ? Palette.hover : transparent);
                                 border-radius: (5px) * Theme.r-scale;
                                 animate background {
                                     duration: 90ms;
@@ -280,12 +280,12 @@ export component CommandPalette inherits Modal {
             // ── Footer hint strip ───────────────────────────────────────
             Rectangle {
                 height: Theme.border-w;
-                background: Theme.retro ? Palette.border : Palette.divider;
+                background: Palette.divider;
             }
 
             Rectangle {
                 height: 28px;
-                background: Theme.retro ? Palette.rail : Palette.field;
+                background: Palette.field;
                 HorizontalLayout {
                     padding-left: 16px;
                     padding-right: 16px;

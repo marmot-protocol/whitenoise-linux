@@ -71,7 +71,7 @@ There is no OS keyring, no `pass`, no plaintext key on disk. All secrets (the us
 
 ### Settings (`settings.rs`)
 
-UI prefs as a tiny JSON blob in XDG config: `debug_enabled`, `locale` (`en`/`it`/`de`/`ja`), `theme` (`dark`/`light`/`retro`), `accent_color` (`mint`/`ocean`/`berry`/`coral`/`lavender`), `outgoing_on_right`, and `nicknames` (private per-contact nicknames keyed by account hex, local-only and never published to relays). All load/save failures are swallowed; defaults keep the app booting.
+UI prefs as a tiny JSON blob in XDG config: `debug_enabled`, `locale` (`en`/`it`/`de`/`ja`), `theme` (`dark`/`light`/`retro`/`terminal`/`crayon`/`synthwave`/`chalkboard`), `accent_color` (`mint`/`ocean`/`berry`/`coral`/`lavender`), `outgoing_on_right`, and `nicknames` (private per-contact nicknames keyed by account hex, local-only and never published to relays). All load/save failures are swallowed; defaults keep the app booting.
 
 ### Optimistic overlay model
 
@@ -117,9 +117,9 @@ All user-visible Slint strings use `@tr("…")`. `wnl-ui/build.rs` bundles the g
 
 ### Slint conventions specific to this repo
 
-- **Three-way theme** (`Theme` global in `ui/tokens.slint`): `Theme.retro` flips the whole UI to a SNES-era palette plus the `Zpix` pixel font with pixel-sharp corners (`r-scale: 0`, chunky 2px borders); `Theme.light` switches the modern UI to a warm light palette. Every color token branches `Theme.retro ? … : (Theme.light ? … : …)`. When adding a component, provide all three modes, and never hard-code colors the retro/light/modern split would otherwise change.
-- **Accent system:** `Theme.accent` is an index (0..4 = mint/ocean/berry/coral/lavender) into per-theme lookup tables (`accent-base` / `accent-hi` / `accent-dim`). Read accent colors from `Theme`, never hardcode mint.
-- **Font sizes** are written as `font-size: 12px * Theme.fs-scale`, never a bare `font-size: 12px`. (`fs-scale` is currently 1.0 everywhere, but the multiplier is the established pattern and may change with fonts.)
+- **Data-driven themes** (`Theme` global in `ui/tokens.slint`; see `ui/CONTRACT.md` for the engine's layering and rules): a theme is a pair of registry entries indexed by `Theme.id` (0=dark, 1=light, 2=retro, 3=terminal, 4=sketch/`crayon`, 5=synthwave, 6=chalkboard) — a `ThemeColors` pack (every color the UI reads, exposed as `Palette.*`) and a `ThemeStyle` pack (capability flags such as `hard-shadow`, `bevel`, `soft-decor`, `outline-surfaces`, `pixel-metrics`, plus per-family skin selectors). **Never branch on theme identity for styling** — `Theme.retro` / `Theme.light` are back-compat shims and `Theme.id == N` is equally banned. Branch on the capability flags, read colors from `Palette`, and when a component needs a themed value no token covers, add a `ThemeColors` field or `ThemeStyle` flag and set it in every pack instead of writing an inline identity ternary.
+- **Accent system:** `Theme.accent` is an index (0..4 = mint/ocean/berry/coral/lavender) into the active pack's `accent-*` tables. Read the resolved colors from `Palette.mint` / `mint-hi` / `mint-dim` / `mint-glow` / `mint-surface`, never hardcode an accent.
+- **Font sizes** go through the theme helpers: `font-size: Theme.fs(12px, 14px)` declares the modern and pixel-grid sizes and lets the active theme's `pixel-metrics` flag pick one (`Theme.fsr(…)` is the unscaled variant). Never write a bare `font-size: 12px`; older `12px * Theme.fs-scale` sites remain, but new code uses the helpers.
 - **Border radius** is scaled by `Theme.r-scale` so retro mode can zero it.
 - **Avatars** on the left-rail / outgoing-bubble / profile-page / members-list all read from a common `my-av-*` set of root properties on `DarkMatterLinux`, pushed from Rust on profile load. Don't reintroduce hardcoded initials/colors at the leaf; wire the property through.
 

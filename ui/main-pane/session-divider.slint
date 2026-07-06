@@ -26,7 +26,7 @@ export component SessionDivider inherits Rectangle {
         HorizontalLayout {
             spacing: 8px;
             alignment: center;
-            if !Theme.retro: Rectangle {
+            if Theme.soft-decor: Rectangle {
                 width: 5px;
                 height: 5px;
                 border-radius: 2.5px;
@@ -43,7 +43,7 @@ export component SessionDivider inherits Rectangle {
                 vertical-alignment: center;
             }
 
-            if !Theme.retro: Rectangle {
+            if Theme.soft-decor: Rectangle {
                 width: 5px;
                 height: 5px;
                 border-radius: 2.5px;
