@@ -340,4 +340,14 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             });
         }
     });
+    ui.on_contact_selected({
+        let weak = ui.as_weak();
+        let refresh = refresh_breadcrumb.clone();
+        move |idx| {
+            if let Some(ui) = weak.upgrade() {
+                ui.set_active_contact(idx);
+                refresh();
+            }
+        }
+    });
 }
