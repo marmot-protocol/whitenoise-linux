@@ -19,6 +19,7 @@ import { RefreshIcon } from "../icons/refresh-icon.slint";
 import { EyeIcon } from "../icons/eye-icon.slint";
 import { Avatar } from "../primitives/avatar.slint";
 import { CypherScroll } from "../primitives/cypher-scroll.slint";
+import { ConfirmModal } from "../modals/confirm-modal.slint";
 
 // A labeled field box matching the login card style. Used directly for the
 // nsec input; PasswordField below layers the masked mode + reveal toggle on
@@ -132,6 +133,10 @@ export component LoginScreen inherits Rectangle {
     in-out property <string> error: "";
     // disable actions while Rust is working (deriving the key, booting).
     in property <bool> busy: false;
+    // Reset confirmation: "Use another key" deletes the vault and there is no
+    // password recovery, so the button arms this modal instead of firing
+    // reset-vault() directly.
+    property <bool> show-reset-confirm: false;
     // Mode-2 name/avatar reveal progress (0 → 1).
     property <float> name-reveal: 0;
     property <float> avatar-reveal: 0;
@@ -708,7 +713,13 @@ export component LoginScreen inherits Rectangle {
                             button-height: 38px;
                             min-w: 140px;
                             clicked => {
-                                root.reset-vault();
+                            // Guarded like do-unlock(): while an unlock is in
+                            // flight, deleting the vault would race the worker,
+                            // which still boots the destroyed identity on a
+                            // correct password.
+                            if (!root.busy) {
+                                    root.show-reset-confirm = true;
+                                }
                             }
                         }
 
@@ -732,6 +743,26 @@ export component LoginScreen inherits Rectangle {
                     }
                 }
             }
+        }
+    }
+
+    // Destructive-action gate for "Use another key". Deleting the vault is
+    // irreversible: without a separately saved nsec the identity is gone, so
+    // the consequence is spelled out before reset-vault() fires.
+    if root.show-reset-confirm: ConfirmModal {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        title: @tr("Use another key?");
+        subtitle: @tr("This deletes the encrypted vault on this device. You'll need your backed-up nsec to use this identity again. This can't be undone.");
+        confirm-label: @tr("Delete vault");
+        confirm => {
+            root.show-reset-confirm = false;
+            root.reset-vault();
+        }
+        dismissed => {
+            root.show-reset-confirm = false;
         }
     }
 }

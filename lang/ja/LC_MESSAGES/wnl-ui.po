@@ -774,6 +774,10 @@ msgctxt "DarkMatterLinux"
 msgid "Delete for me?"
 msgstr "日付形式"
 
+msgctxt "LoginScreen"
+msgid "Delete vault"
+msgstr "保管庫を削除"
+
 msgctxt "AdvancedPane"
 msgid "Deleting the file being recorded rotates it — recording continues in a fresh file."
 msgstr "記録中のファイルを削除するとローテーションされ、新しいファイルに記録が続きます。"
@@ -1870,6 +1874,10 @@ msgctxt "DarkMatterLinux"
 msgid "This declines the invite from {}. It can't be restored unless they invite you again."
 msgstr "{} からの招待を辞退します。相手がもう一度招待しない限り、元に戻すことはできません。"
 
+msgctxt "LoginScreen"
+msgid "This deletes the encrypted vault on this device. You'll need your backed-up nsec to use this identity again. This can't be undone."
+msgstr "このデバイスの暗号化された保管庫を削除します。この ID を再び使うには、保管しておいた nsec が必要です。この操作は取り消せません。"
+
 msgctxt "DarkMatterLinux"
 msgid "This hides the message on this device only. Other people will still see it."
 msgstr ""
@@ -1968,6 +1976,10 @@ msgstr "保存中…"
 msgctxt "LoginScreen"
 msgid "Use another key"
 msgstr "別の鍵を使う"
+
+msgctxt "LoginScreen"
+msgid "Use another key?"
+msgstr "別の鍵を使いますか？"
 
 msgctxt "ContactDetail"
 msgid "Used to deliver messages between you."
