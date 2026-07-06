@@ -398,6 +398,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             if let Some(ui) = weak.upgrade() {
                 ui.set_image_viewer_open(false);
                 ui.set_image_viewer_loading(false);
+                ui.set_image_viewer_failed(false);
             }
             VIEWER_SLIDESHOW.with(|s| *s.borrow_mut() = ViewerSlideshow::default());
         }
@@ -520,6 +521,21 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             });
             if let Some((pos, item)) = target {
                 ui.set_image_viewer_index((pos + 1) as i32);
+                load_viewer_image(&ui, &backend_cell, &group_ids, pos, item);
+            }
+        }
+    });
+    ui.on_image_viewer_retry({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let group_ids = group_ids.clone();
+        move || {
+            let Some(ui) = weak.upgrade() else { return };
+            let target = VIEWER_SLIDESHOW.with(|s| {
+                let s = s.borrow();
+                s.items.get(s.pos).map(|it| (s.pos, it.clone()))
+            });
+            if let Some((pos, item)) = target {
                 load_viewer_image(&ui, &backend_cell, &group_ids, pos, item);
             }
         }

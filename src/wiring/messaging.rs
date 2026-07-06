@@ -573,8 +573,12 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 Some(px) => {
                     ui.set_image_viewer_image(image_from_pixels(&px));
                     ui.set_image_viewer_loading(false);
+                    ui.set_image_viewer_failed(false);
                 }
-                None => ui.set_image_viewer_loading(true),
+                None => {
+                    ui.set_image_viewer_loading(true);
+                    ui.set_image_viewer_failed(false);
+                }
             }
             ui.set_image_viewer_count(1);
             ui.set_image_viewer_index(1);
@@ -613,6 +617,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             if let Some(img) = cached_attachment_image(&mid) {
                 ui.set_image_viewer_image(img);
                 ui.set_image_viewer_loading(false);
+                ui.set_image_viewer_failed(false);
                 ui.set_image_viewer_count(1);
                 ui.set_image_viewer_index(1);
                 ui.set_image_viewer_open(true);

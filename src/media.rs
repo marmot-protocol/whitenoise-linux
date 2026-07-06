@@ -577,6 +577,7 @@ pub(crate) fn build_viewer_slideshow(
                 load_viewer_image(&ui, &backend_cell, &group_ids, pos, item);
             } else {
                 ui.set_image_viewer_loading(false);
+                ui.set_image_viewer_failed(true);
             }
         });
     });
@@ -597,14 +598,20 @@ pub(crate) fn load_viewer_image(
     if let Some(pixels) = attachment_image_cache_get(&item.cache_key) {
         ui.set_image_viewer_image(image_from_pixels(&pixels));
         ui.set_image_viewer_loading(false);
+        ui.set_image_viewer_failed(false);
         return;
     }
     ui.set_image_viewer_loading(true);
+    ui.set_image_viewer_failed(false);
     let idx = ui.get_active_chat() as usize;
     let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
+        ui.set_image_viewer_loading(false);
+        ui.set_image_viewer_failed(true);
         return;
     };
     let Some(backend) = backend_cell.lock().unwrap().clone() else {
+        ui.set_image_viewer_loading(false);
+        ui.set_image_viewer_failed(true);
         return;
     };
     let weak = ui.as_weak();
@@ -613,14 +620,20 @@ pub(crate) fn load_viewer_image(
         // Runs on the backend runtime. Decode here, hop to the UI thread to
         // build the (!Send) Image and apply it.
         let pixels = match result {
-            Ok(dl) => image::load_from_memory(&dl.plaintext).ok().map(|img| {
-                let rgba = img.to_rgba8();
-                PicturePixels {
-                    w: rgba.width(),
-                    h: rgba.height(),
-                    rgba: rgba.into_raw(),
+            Ok(dl) => match image::load_from_memory(&dl.plaintext) {
+                Ok(img) => {
+                    let rgba = img.to_rgba8();
+                    Some(PicturePixels {
+                        w: rgba.width(),
+                        h: rgba.height(),
+                        rgba: rgba.into_raw(),
+                    })
                 }
-            }),
+                Err(e) => {
+                    eprintln!("[viewer] decode {mid}: {e:#}");
+                    None
+                }
+            },
             Err(e) => {
                 eprintln!("[viewer] download {mid}: {e:#}");
                 None
@@ -639,8 +652,12 @@ pub(crate) fn load_viewer_image(
             if !still_current {
                 return;
             }
-            if let Some(px) = pixels {
-                ui.set_image_viewer_image(image_from_pixels(&px));
+            match pixels {
+                Some(px) => {
+                    ui.set_image_viewer_image(image_from_pixels(&px));
+                    ui.set_image_viewer_failed(false);
+                }
+                None => ui.set_image_viewer_failed(true),
             }
             ui.set_image_viewer_loading(false);
         });

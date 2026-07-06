@@ -9,8 +9,8 @@ import { Palette, Theme } from "../tokens.slint";
 //
 // Slideshow: when the chat holds more than one image attachment, `count` > 1
 // turns on the prev/next chevrons, a "n / N" counter, and ←/→ key navigation.
-// Rust owns the ordered list and swaps `source` (and toggles `loading` while a
-// not-yet-decoded image downloads).
+// Rust owns the ordered list and swaps `source` (and toggles `loading`/`failed`
+// while a not-yet-decoded image downloads).
 export component ImageViewerModal inherits Modal {
     in property <image> source;
     // Total image attachments in the chat, and the 1-based position of the
@@ -19,8 +19,12 @@ export component ImageViewerModal inherits Modal {
     in property <int> index: 1;
     // True while the next/prev target is still downloading + decoding.
     in property <bool> loading: false;
+    // True when the current target failed to download/decode. The failure pill
+    // is clickable so Rust can retry the same slideshow item.
+    in property <bool> failed: false;
     callback prev;
     callback next;
+    callback retry;
 
     property <bool> has-prev: root.index > 1;
     property <bool> has-next: root.index < root.count;
@@ -59,6 +63,7 @@ export component ImageViewerModal inherits Modal {
                 y: (parent.height - self.height) / 2;
                 width: parent.width * 0.9;
                 height: parent.height * 0.9;
+                visible: !root.failed;
                 source: root.source;
                 image-fit: contain;
                 // Swallow taps on the image so they don't reach the backdrop.
@@ -81,6 +86,34 @@ export component ImageViewerModal inherits Modal {
                 font-family: Theme.font;
                 horizontal-alignment: center;
                 vertical-alignment: center;
+            }
+        }
+
+        // Failure pill when the selected image could not be downloaded/decoded.
+        if root.failed && !root.loading: Rectangle {
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            width: error-text.preferred-width + 32px;
+            height: 42px;
+            border-radius: (10px) * Theme.r-scale;
+            background: error-touch.has-hover ? #000000CC : #000000AA;
+            border-width: Theme.outline-surfaces ? Theme.border-w : 1px;
+            border-color: Palette.danger;
+
+            error-text := Text {
+                text: @tr("Image didn't load. Tap to retry.");
+                color: #FFFFFF;
+                font-size: (13px) * Theme.fs-scale;
+                font-family: Theme.font;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+
+            error-touch := TouchArea {
+                mouse-cursor: pointer;
+                clicked => {
+                    root.retry();
+                }
             }
         }
 

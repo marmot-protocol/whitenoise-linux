@@ -1034,6 +1034,10 @@ msgctxt "ImageViewerModal"
 msgid "Loading…"
 msgstr ""
 
+msgctxt "ImageViewerModal"
+msgid "Image didn't load. Tap to retry."
+msgstr ""
+
 msgctxt "VideoViewerModal"
 msgid "Loading…"
 msgstr ""
