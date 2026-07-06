@@ -97,7 +97,11 @@ export component DarkMatterLinux inherits Window {
     title: root.window-title;
     preferred-width: 1920px;
     preferred-height: 1080px;
-    min-width: Theme.retro ? 1200px : 960px;
+    // Kept low so the app fits half-screen tiles; below ~1100px the chat-list
+    // sidebar collapses to a slim strip (see shells/side-panel.slint). Tiling
+    // window managers ignore minimum sizes anyway, so the layout has to
+    // survive narrow widths rather than forbid them.
+    min-width: Theme.retro ? 720px : 640px;
     min-height: Theme.retro ? 760px : 650px;
     background: Palette.bg;
     default-font-family: Theme.font;
@@ -737,7 +741,7 @@ export component DarkMatterLinux inherits Window {
 
         TitleBar {
             breadcrumb: root.breadcrumb;
-            rail-width: rail.width;
+            rail-width: rail.collapsed-width;
         }
 
         // Middle area is a Rectangle (absolute children) instead of a HorizontalLayout
@@ -749,45 +753,13 @@ export component DarkMatterLinux inherits Window {
             preferred-height: 0px;
             background: Palette.bg;
 
-            // left rail — expandable on hover (56px → 160px)
-            rail := LeftRail {
-                x: 0;
-                y: 0;
-                height: parent.height;
-                selected-index: root.active-page;
-                my-initials: root.my-av-initials;
-                my-color-a: root.my-av-a;
-                my-color-b: root.my-av-b;
-                my-picture: root.my-av-picture;
-                my-has-picture: root.my-av-has-picture;
-                my-display-name: root.my-display-name;
-                badge-chats: root.rail-badge-chats;
-                badge-contacts: root.rail-badge-contacts;
-                badge-archive: root.rail-badge-archive;
-                badge-keys: root.rail-badge-keys;
-                has-active-chat: root.active-chat >= 0 && root.chats.length > 0;
-                nav-clicked(idx) => {
-                    root.nav-requested(idx);
-                }
-                plus-clicked => {
-                    root.new-chat-requested();
-                }
-                settings-clicked => {
-                    root.nav-requested(4);
-                }
-                profile-clicked => {
-                    root.profile-requested();
-                }
-                accounts-clicked => {
-                    root.account-switcher-requested();
-                }
-            }
-
-            // page slot — fills the rest, tracks rail width
+            // page slot — pinned at the rail's collapsed width; the
+            // hover-expanded rail (declared below, so painted on top)
+            // overlays this slot instead of squeezing the content.
             Rectangle {
-                x: rail.width;
+                x: rail.collapsed-width;
                 y: 0;
-                width: parent.width - rail.width;
+                width: parent.width - rail.collapsed-width;
                 height: parent.height;
 
                 // chats: side panel + main pane laid out side-by-side.
@@ -833,33 +805,19 @@ export component DarkMatterLinux inherits Window {
                         }
                     }
 
-                    if root.chats.length > 0: HorizontalLayout {
+                    // Absolute layout instead of a HorizontalLayout: the pane
+                    // sits against the panel's *reserved* width, so the panel's
+                    // hover expansion (painted later, on top) overlays it
+                    // without reflowing the conversation.
+                    if root.chats.length > 0: Rectangle {
                         width: parent.width;
                         height: parent.height;
-                        spacing: 0;
-                        ChatListPanel {
-                            chats: root.chats;
-                            active-chat: root.active-chat;
-                            relays-connected: root.network-connected;
-                            relays-total: root.network-total;
-                            sync-secs: root.sync-secs;
-                            chat-clicked(idx) => {
-                                // A leftover selection belongs to the chat
-                                // being left behind; drop it.
-                                TextSelection.clear();
-                                root.chat-selected(idx);
-                            }
-                            chat-context-menu(idx, ax, ay) => {
-                                root.request-chat-context(idx, ax, ay);
-                            }
-                            new-chat-clicked => {
-                                root.new-chat-requested();
-                            }
-                        }
 
                         main-pane := MainPane {
-                            horizontal-stretch: 1;
-                            preferred-width: 0px;
+                            x: chat-list.reserved-width;
+                            y: 0;
+                            width: parent.width - chat-list.reserved-width;
+                            height: parent.height;
                             chat: root.chats[root.active-chat];
                             active-chat: root.active-chat;
                             mention-active: root.mention-active;
@@ -1032,6 +990,30 @@ export component DarkMatterLinux inherits Window {
                                 root.archive-chat();
                             }
                         }
+
+                        chat-list := ChatListPanel {
+                            x: 0;
+                            y: 0;
+                            height: parent.height;
+                            window-width: root.width;
+                            chats: root.chats;
+                            active-chat: root.active-chat;
+                            relays-connected: root.network-connected;
+                            relays-total: root.network-total;
+                            sync-secs: root.sync-secs;
+                            chat-clicked(idx) => {
+                                // A leftover selection belongs to the chat
+                                // being left behind; drop it.
+                                TextSelection.clear();
+                                root.chat-selected(idx);
+                            }
+                            chat-context-menu(idx, ax, ay) => {
+                                root.request-chat-context(idx, ax, ay);
+                            }
+                            new-chat-clicked => {
+                                root.new-chat-requested();
+                            }
+                        }
                     }
                 }
 
@@ -1050,6 +1032,7 @@ export component DarkMatterLinux inherits Window {
                     ContactsPage {
                         width: parent.width;
                         height: parent.height;
+                        window-width: root.width;
                         contacts: root.contacts;
                         active-contact: root.active-contact;
                         contact-clicked(idx) => {
@@ -1091,6 +1074,7 @@ export component DarkMatterLinux inherits Window {
                     ArchivedPage {
                         width: parent.width;
                         height: parent.height;
+                        window-width: root.width;
                         archives: root.archived-chats;
                         active-archived: root.active-archived;
                         members: root.chat-members;
@@ -1305,6 +1289,41 @@ export component DarkMatterLinux inherits Window {
                             root.upload-profile-picture();
                         }
                     }
+                }
+            }
+
+            // left rail — expandable on hover (56px → 160px); declared after
+            // the page slot so the expansion paints over it.
+            rail := LeftRail {
+                x: 0;
+                y: 0;
+                height: parent.height;
+                selected-index: root.active-page;
+                my-initials: root.my-av-initials;
+                my-color-a: root.my-av-a;
+                my-color-b: root.my-av-b;
+                my-picture: root.my-av-picture;
+                my-has-picture: root.my-av-has-picture;
+                my-display-name: root.my-display-name;
+                badge-chats: root.rail-badge-chats;
+                badge-contacts: root.rail-badge-contacts;
+                badge-archive: root.rail-badge-archive;
+                badge-keys: root.rail-badge-keys;
+                has-active-chat: root.active-chat >= 0 && root.chats.length > 0;
+                nav-clicked(idx) => {
+                    root.nav-requested(idx);
+                }
+                plus-clicked => {
+                    root.new-chat-requested();
+                }
+                settings-clicked => {
+                    root.nav-requested(4);
+                }
+                profile-clicked => {
+                    root.profile-requested();
+                }
+                accounts-clicked => {
+                    root.account-switcher-requested();
                 }
             }
         }

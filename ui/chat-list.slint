@@ -32,6 +32,7 @@ export component ChatListPanel inherits SidePanel {
 
     for chat[idx] in root.chats: ChatListEntry {
         chat: chat;
+        compact: root.strip;
         selected: idx == root.active-chat;
         clicked => {
             root.chat-clicked(idx);

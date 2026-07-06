@@ -7,6 +7,9 @@ export component ContactListItem inherits Rectangle {
     in property <Contact> data;
     in property <bool> selected: false;
 
+    // Collapsed-strip mode: avatar (with its online dot) only.
+    in property <bool> compact: false;
+
     height: 64px;
     background: root.selected ? Palette.selected : (touch.has-hover ? Palette.hover : transparent);
     border-radius: (8px) * Theme.r-scale;
@@ -90,7 +93,7 @@ export component ContactListItem inherits Rectangle {
             }
         }
 
-        VerticalLayout {
+        if !root.compact: VerticalLayout {
             horizontal-stretch: 1;
             spacing: 4px;
             HorizontalLayout {

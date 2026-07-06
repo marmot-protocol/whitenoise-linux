@@ -24,6 +24,11 @@ export component ChatListItem inherits Rectangle {
     in property <image> picture;
     in property <bool> has-picture: false;
 
+    // Collapsed-strip mode: on narrow windows the side panel hands rows only
+    // ~60px, so drop the text columns and float the unread badge over the
+    // avatar. The avatar keeps the exact spot it has when expanded.
+    in property <bool> compact: false;
+
     height: 64px;
     background: root.selected ? Palette.selected : (touch.has-hover ? Palette.hover : transparent);
     border-radius: (8px) * Theme.r-scale;
@@ -87,7 +92,7 @@ export component ChatListItem inherits Rectangle {
             font-size: Theme.fs(11px, 16px);
         }
 
-        VerticalLayout {
+        if !root.compact: VerticalLayout {
             horizontal-stretch: 1;
             spacing: 4px;
             HorizontalLayout {
@@ -146,6 +151,12 @@ export component ChatListItem inherits Rectangle {
                 }
             }
         }
+    }
+
+    if root.compact && root.badge != "": UnreadBadge {
+        x: parent.width - self.width - 3px;
+        y: 3px;
+        count: root.badge;
     }
 
     touch := TouchArea {

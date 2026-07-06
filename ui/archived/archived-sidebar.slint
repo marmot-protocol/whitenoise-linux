@@ -12,6 +12,7 @@ export component ArchivedSidebar inherits SidePanel {
 
     for a[idx] in root.archives: ArchivedListItem {
         data: a;
+        compact: root.strip;
         selected: idx == root.active-archived;
         clicked => {
             root.archive-clicked(idx);

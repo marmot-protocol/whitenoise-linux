@@ -6,6 +6,9 @@ export component ArchivedListItem inherits Rectangle {
     in property <ArchivedChat> data;
     in property <bool> selected: false;
 
+    // Collapsed-strip mode: avatar only.
+    in property <bool> compact: false;
+
     height: 64px;
     background: root.selected ? Palette.selected : (touch.has-hover ? Palette.hover : transparent);
     border-radius: (8px) * Theme.r-scale;
@@ -67,7 +70,7 @@ export component ArchivedListItem inherits Rectangle {
             font-size: Theme.fs(11px, 16px);
         }
 
-        VerticalLayout {
+        if !root.compact: VerticalLayout {
             horizontal-stretch: 1;
             spacing: 4px;
             HorizontalLayout {
