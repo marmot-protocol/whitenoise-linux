@@ -268,7 +268,7 @@ pub(crate) fn fetch_peer_profile_picture(
             {
                 return;
             }
-            ui.set_peer_profile_picture(rgba_to_slint_image(&pixels));
+            ui.set_peer_profile_picture(image_from_pixels(&pixels));
             ui.set_peer_profile_has_picture(true);
         });
     });
@@ -329,7 +329,7 @@ pub(crate) fn cached_picture_image(url: &str) -> Option<slint::Image> {
             return Some(img.clone());
         }
         let pixels = picture_cache_get(url)?;
-        let img = rgba_to_slint_image(&pixels);
+        let img = image_from_pixels(&pixels);
         cache.borrow_mut().insert(url.to_string(), img.clone());
         Some(img)
     })
