@@ -753,6 +753,14 @@ msgctxt "DarkMatterLinux"
 msgid "Delete"
 msgstr "削除"
 
+msgctxt "SettingsPage"
+msgid "Delete audit log file?"
+msgstr "監査ログファイルを削除しますか？"
+
+msgctxt "SettingsPage"
+msgid "Delete file"
+msgstr "ファイルを削除"
+
 msgctxt "MessageContextMenu"
 msgid "Delete for everyone"
 msgstr ""
@@ -932,6 +940,10 @@ msgctxt "NotificationsPane"
 msgid "INCOMING MESSAGES"
 msgstr "受信メッセージ"
 
+msgctxt "ImageViewerModal"
+msgid "Image didn't load. Tap to retry."
+msgstr "画像を読み込めませんでした。タップして再試行。"
+
 msgctxt "ImportBackupModal"
 msgid "Import"
 msgstr "インポート"
@@ -1071,10 +1083,6 @@ msgstr "最後のメッセージ"
 msgctxt "ImageViewerModal"
 msgid "Loading…"
 msgstr "保存中…"
-
-msgctxt "ImageViewerModal"
-msgid "Image didn't load. Tap to retry."
-msgstr "画像を読み込めませんでした。タップして再試行。"
 
 #, fuzzy
 msgctxt "VideoViewerModal"
@@ -1919,6 +1927,10 @@ msgctxt "MessageView"
 msgid "This message was deleted"
 msgstr ""
 
+msgctxt "SettingsPage"
+msgid "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log."
+msgstr "監査ログファイルはディスクから完全に削除されます。これが現在記録中のログの場合、記録は新しいファイルに続きます。"
+
 #, fuzzy
 msgctxt "LoginScreen"
 msgid "This removes the key stored on this device. You'll need the nsec you backed up to use this identity again. This can't be undone."
@@ -2168,18 +2180,6 @@ msgstr "✓ 連絡先に登録済み"
 msgctxt "ContactDetail"
 msgid "✓ VERIFIED"
 msgstr "✓ 確認済み"
-
-msgctxt "SettingsPage"
-msgid "Delete audit log file?"
-msgstr "監査ログファイルを削除しますか？"
-
-msgctxt "SettingsPage"
-msgid "Delete file"
-msgstr "ファイルを削除"
-
-msgctxt "SettingsPage"
-msgid "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log."
-msgstr "監査ログファイルはディスクから完全に削除されます。これが現在記録中のログの場合、記録は新しいファイルに続きます。"
 
 #~ msgctxt "ProfilePage"
 #~ msgid "(no nip-05)"

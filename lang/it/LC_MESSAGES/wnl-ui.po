@@ -755,6 +755,14 @@ msgctxt "DarkMatterLinux"
 msgid "Delete"
 msgstr "Elimina"
 
+msgctxt "SettingsPage"
+msgid "Delete audit log file?"
+msgstr "Eliminare il file di log di audit?"
+
+msgctxt "SettingsPage"
+msgid "Delete file"
+msgstr "Elimina file"
+
 msgctxt "MessageContextMenu"
 msgid "Delete for everyone"
 msgstr ""
@@ -934,6 +942,10 @@ msgctxt "NotificationsPane"
 msgid "INCOMING MESSAGES"
 msgstr "MESSAGGI IN ARRIVO"
 
+msgctxt "ImageViewerModal"
+msgid "Image didn't load. Tap to retry."
+msgstr "Immagine non caricata. Tocca per riprovare."
+
 msgctxt "ImportBackupModal"
 msgid "Import"
 msgstr "Importa"
@@ -1073,10 +1085,6 @@ msgstr "Ultimo messaggio"
 msgctxt "ImageViewerModal"
 msgid "Loading…"
 msgstr "Salvataggio…"
-
-msgctxt "ImageViewerModal"
-msgid "Image didn't load. Tap to retry."
-msgstr "Immagine non caricata. Tocca per riprovare."
 
 #, fuzzy
 msgctxt "VideoViewerModal"
@@ -1921,6 +1929,10 @@ msgctxt "MessageView"
 msgid "This message was deleted"
 msgstr ""
 
+msgctxt "SettingsPage"
+msgid "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log."
+msgstr "Questo elimina definitivamente il file di log di audit dal disco. Se è il log attivo, la registrazione continua in un nuovo file."
+
 #, fuzzy
 msgctxt "LoginScreen"
 msgid "This removes the key stored on this device. You'll need the nsec you backed up to use this identity again. This can't be undone."
@@ -2171,18 +2183,6 @@ msgstr "✓ Nei tuoi contatti"
 msgctxt "ContactDetail"
 msgid "✓ VERIFIED"
 msgstr "✓ VERIFICATO"
-
-msgctxt "SettingsPage"
-msgid "Delete audit log file?"
-msgstr "Eliminare il file di log di audit?"
-
-msgctxt "SettingsPage"
-msgid "Delete file"
-msgstr "Elimina file"
-
-msgctxt "SettingsPage"
-msgid "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log."
-msgstr "Questo elimina definitivamente il file di log di audit dal disco. Se è il log attivo, la registrazione continua in un nuovo file."
 
 #~ msgctxt "ProfilePage"
 #~ msgid "(no nip-05)"

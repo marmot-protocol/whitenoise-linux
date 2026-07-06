@@ -755,6 +755,14 @@ msgctxt "DarkMatterLinux"
 msgid "Delete"
 msgstr "Löschen"
 
+msgctxt "SettingsPage"
+msgid "Delete audit log file?"
+msgstr "Audit-Protokolldatei löschen?"
+
+msgctxt "SettingsPage"
+msgid "Delete file"
+msgstr "Datei löschen"
+
 msgctxt "MessageContextMenu"
 msgid "Delete for everyone"
 msgstr ""
@@ -934,6 +942,10 @@ msgctxt "NotificationsPane"
 msgid "INCOMING MESSAGES"
 msgstr "EINGEHENDE NACHRICHTEN"
 
+msgctxt "ImageViewerModal"
+msgid "Image didn't load. Tap to retry."
+msgstr "Bild nicht geladen. Zum Wiederholen tippen."
+
 msgctxt "ImportBackupModal"
 msgid "Import"
 msgstr "Importieren"
@@ -1073,10 +1085,6 @@ msgstr "Letzte Nachricht"
 msgctxt "ImageViewerModal"
 msgid "Loading…"
 msgstr "Speichere…"
-
-msgctxt "ImageViewerModal"
-msgid "Image didn't load. Tap to retry."
-msgstr "Bild nicht geladen. Zum Wiederholen tippen."
 
 #, fuzzy
 msgctxt "VideoViewerModal"
@@ -1921,6 +1929,10 @@ msgctxt "MessageView"
 msgid "This message was deleted"
 msgstr ""
 
+msgctxt "SettingsPage"
+msgid "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log."
+msgstr "Diese Audit-Protokolldatei wird dauerhaft vom Datenträger gelöscht. Wenn dies das aktive Protokoll ist, wird die Aufzeichnung in einer neuen Datei fortgesetzt."
+
 #, fuzzy
 msgctxt "LoginScreen"
 msgid "This removes the key stored on this device. You'll need the nsec you backed up to use this identity again. This can't be undone."
@@ -2171,18 +2183,6 @@ msgstr "✓ In deinen Kontakten"
 msgctxt "ContactDetail"
 msgid "✓ VERIFIED"
 msgstr "✓ VERIFIZIERT"
-
-msgctxt "SettingsPage"
-msgid "Delete audit log file?"
-msgstr "Audit-Protokolldatei löschen?"
-
-msgctxt "SettingsPage"
-msgid "Delete file"
-msgstr "Datei löschen"
-
-msgctxt "SettingsPage"
-msgid "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log."
-msgstr "Diese Audit-Protokolldatei wird dauerhaft vom Datenträger gelöscht. Wenn dies das aktive Protokoll ist, wird die Aufzeichnung in einer neuen Datei fortgesetzt."
 
 #~ msgctxt "ProfilePage"
 #~ msgid "(no nip-05)"
