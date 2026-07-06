@@ -48,6 +48,39 @@ pub fn set_messages_snapshot_observer(observer: MessagesSnapshotObserver) {
     let _ = MESSAGES_SNAPSHOT_OBSERVER.set(observer);
 }
 
+/// Nostr `kind` of the inner Marmot app event carrying a plain chat message —
+/// the only kind rendered as a bubble. Reactions are 7, deletes 5, edits
+/// 1009, push-token gossip 447/448/449 (see `is_visible_chat_message` in
+/// `chatmodel.rs` for the full allow-list rationale).
+pub const CHAT_MESSAGE_KIND: u64 = 9;
+
+/// Kind-and-payload half of the message-visibility rule: a plain chat record
+/// (kind [`CHAT_MESSAGE_KIND`]) whose plaintext is not a MIP-05 token-gossip
+/// envelope, in either spelling seen on the wire (`{"v":"mip05` and
+/// `{"v": "mip05`). The UI's `is_visible_chat_message` composes this with the
+/// local delete-for-me hidden set, which lives in the UI-glue modules that
+/// backend.rs (shared with the staged dm-ctl / bootbench bins) cannot see.
+pub fn is_plain_chat_message(record: &AppMessageRecord) -> bool {
+    if record.kind != CHAT_MESSAGE_KIND {
+        return false;
+    }
+    let t = record.plaintext.trim_start();
+    !(t.starts_with(r#"{"v":"mip05"#) || t.starts_with(r#"{"v": "mip05"#))
+}
+
+/// Visibility filter consulted by [`Backend::latest_message`]. Installed once
+/// at startup by the main binary (it installs `is_visible_chat_message`, the
+/// same predicate the bubble stream renders with) — a hook rather than a
+/// direct call for the same reason as [`MESSAGES_SNAPSHOT_OBSERVER`]. The
+/// staged dm-ctl / bootbench bins never install one and fall back to
+/// [`is_plain_chat_message`].
+static VISIBLE_MESSAGE_FILTER: std::sync::OnceLock<fn(&AppMessageRecord) -> bool> =
+    std::sync::OnceLock::new();
+
+pub fn set_visible_message_filter(filter: fn(&AppMessageRecord) -> bool) {
+    let _ = VISIBLE_MESSAGE_FILTER.set(filter);
+}
+
 /// account_id (lowercase) → (display name, picture URL), shared behind a mutex
 /// so the background sync and UI-thread reads share one warmed map.
 type ProfileCache = Arc<Mutex<HashMap<String, (String, Option<String>)>>>;
@@ -727,9 +760,12 @@ impl Backend {
     }
 
     /// Most recent **user-visible** message in a group, if any. Pulls a small
-    /// recent window and returns the newest record whose kind is a normal
-    /// chat (9). Push-token gossip (MIP-05 kinds 447/448/449), reactions,
-    /// deletes, etc. are skipped so chat-list previews stay clean.
+    /// recent window and returns the newest record that passes the filter
+    /// installed via [`set_visible_message_filter`] — in the app that is
+    /// `is_visible_chat_message`, so chat-list previews and notifications
+    /// apply the exact rule the bubble stream renders with (chat kind only,
+    /// no MIP-05 token gossip, and the local delete-for-me hidden set: a
+    /// message hidden in the chat never surfaces as its preview).
     pub fn latest_message(&self, group_hex: &str) -> Option<AppMessageRecord> {
         let query = AppMessageQuery {
             group_id_hex: Some(group_hex.to_string()),
@@ -739,10 +775,14 @@ impl Backend {
             .runtime
             .messages_with_query(&self.active_label(), query)
             .ok()?;
+        let visible = VISIBLE_MESSAGE_FILTER
+            .get()
+            .copied()
+            .unwrap_or(is_plain_chat_message);
         // snapshot is oldest-first; walk back to find the most recent visible
         // entry.
         while let Some(record) = snapshot.pop() {
-            if record.kind == 9 && !record.plaintext.trim_start().starts_with(r#"{"v":"mip05"#) {
+            if visible(&record) {
                 return Some(record);
             }
         }

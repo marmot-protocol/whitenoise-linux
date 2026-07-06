@@ -93,26 +93,22 @@ pub(crate) fn chat_meta_from(
 /// `spec/features/push-notifications.md` (kinds 447 / 448 / 449), and the
 /// MIP-05 `{"v":"mip05-v1",…}` payload signature we saw on the wire.
 pub(crate) fn is_visible_chat_message(record: &AppMessageRecord) -> bool {
-    // Strict allow-list: only the chat kind. Reactions/deletes/streams/etc.
-    // need their own renderers; until they have one, hide them rather than
-    // dump raw JSON into the chat scroll.
-    if record.kind != 9 {
+    // Strict allow-list: only the chat kind, and never a token-gossip
+    // envelope even inside a kind-9 (some clients misbehave). The kind and
+    // payload checks live in `backend::is_plain_chat_message`, shared with
+    // `Backend::latest_message` so chat-list previews cannot drift from this
+    // rule again. Reactions/deletes/streams/etc. need their own renderers;
+    // until they have one, hide them rather than dump raw JSON into the chat
+    // scroll.
+    if !backend::is_plain_chat_message(record) {
         return false;
     }
     // "Delete for me" — locally hidden, never rendered (the message stays on
     // the wire for everyone else). Checked here so every render path (full
-    // rebuild, grouping keys, live append) honours it uniformly.
-    if is_hidden_message(&record.message_id_hex) {
-        return false;
-    }
-    // Belt-and-suspenders: even if some other client is misbehaving and
-    // shoving a token-gossip envelope into a kind-9 chat, filter it out by
-    // signature.
-    let t = record.plaintext.trim_start();
-    if t.starts_with(r#"{"v":"mip05"#) || t.starts_with(r#"{"v": "mip05"#) {
-        return false;
-    }
-    true
+    // rebuild, grouping keys, live append) honours it uniformly. Previews
+    // honour it too: main.rs installs this whole predicate as the backend's
+    // visible-message filter.
+    !is_hidden_message(&record.message_id_hex)
 }
 
 // Builds a confirmed message row; legitimately needs the full record context
@@ -1302,7 +1298,7 @@ pub(crate) fn aggregate_edits(
     // message_id → original author, for kind-9 chat messages only.
     let mut author_of: HashMap<&str, &str> = HashMap::new();
     for r in records {
-        if r.kind == 9 {
+        if r.kind == CHAT_MESSAGE_KIND {
             author_of.insert(r.message_id_hex.as_str(), r.sender.as_str());
         }
     }
@@ -1359,7 +1355,7 @@ pub(crate) fn aggregate_deletes(records: &[AppMessageRecord]) -> std::collection
     // message_id → original author, for kind-9 chat messages only.
     let mut author_of: HashMap<&str, &str> = HashMap::new();
     for r in records {
-        if r.kind == 9 {
+        if r.kind == CHAT_MESSAGE_KIND {
             author_of.insert(r.message_id_hex.as_str(), r.sender.as_str());
         }
     }
@@ -1429,7 +1425,7 @@ pub(crate) fn build_edit_history(
 ) -> Vec<EditVersion> {
     let Some(original) = records
         .iter()
-        .find(|r| r.kind == 9 && r.message_id_hex == message_id)
+        .find(|r| r.kind == CHAT_MESSAGE_KIND && r.message_id_hex == message_id)
     else {
         return Vec::new();
     };

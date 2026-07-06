@@ -284,7 +284,7 @@ pub(crate) fn looks_already_sent(
         return false;
     };
     msgs.iter().any(|m| {
-        m.kind == 9
+        m.kind == CHAT_MESSAGE_KIND
             && m.sender.eq_ignore_ascii_case(my_id)
             && bodies.iter().any(|b| &m.plaintext == b)
             && m.recorded_at.abs_diff(enqueued_at) <= 600
