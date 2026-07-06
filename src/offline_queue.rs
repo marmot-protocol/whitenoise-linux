@@ -95,7 +95,7 @@ pub fn put(vault: &Arc<Mutex<Vault>>, send: &QueuedSend) {
     let plaintext = match serde_json::to_vec(send) {
         Ok(b) => b,
         Err(e) => {
-            eprintln!("[offline-queue] encode {}: {e}", send.temp_id);
+            tracing::warn!(target: "offline_queue", "encode {}: {e}", send.temp_id);
             return;
         }
     };
@@ -104,14 +104,14 @@ pub fn put(vault: &Arc<Mutex<Vault>>, send: &QueuedSend) {
         match v.seal_blob(&plaintext) {
             Ok(s) => s,
             Err(e) => {
-                eprintln!("[offline-queue] seal {}: {e}", send.temp_id);
+                tracing::warn!(target: "offline_queue", "seal {}: {e}", send.temp_id);
                 return;
             }
         }
     };
     let dir = queue_dir();
     if let Err(e) = std::fs::create_dir_all(&dir) {
-        eprintln!("[offline-queue] mkdir: {e}");
+        tracing::warn!(target: "offline_queue", "mkdir: {e}");
         return;
     }
     set_owner_only_dir(&dir);
@@ -120,12 +120,12 @@ pub fn put(vault: &Arc<Mutex<Vault>>, send: &QueuedSend) {
     // fails the auth tag forever after.
     let tmp = path.with_extension("bin.tmp");
     if let Err(e) = std::fs::write(&tmp, &sealed) {
-        eprintln!("[offline-queue] write {}: {e}", send.temp_id);
+        tracing::warn!(target: "offline_queue", "write {}: {e}", send.temp_id);
         return;
     }
     set_owner_only(&tmp);
     if let Err(e) = std::fs::rename(&tmp, &path) {
-        eprintln!("[offline-queue] rename {}: {e}", send.temp_id);
+        tracing::warn!(target: "offline_queue", "rename {}: {e}", send.temp_id);
         let _ = std::fs::remove_file(&tmp);
         return;
     }
@@ -159,7 +159,7 @@ pub fn load_all(vault: &Arc<Mutex<Vault>>) -> Vec<QueuedSend> {
             match v.open_blob(&sealed) {
                 Ok(p) => p,
                 Err(e) => {
-                    eprintln!("[offline-queue] open {path:?}: {e}; evicting");
+                    tracing::warn!(target: "offline_queue", "open {path:?}: {e}; evicting");
                     let _ = std::fs::remove_file(&path);
                     continue;
                 }
@@ -168,7 +168,7 @@ pub fn load_all(vault: &Arc<Mutex<Vault>>) -> Vec<QueuedSend> {
         match serde_json::from_slice::<QueuedSend>(&plain) {
             Ok(s) => out.push(s),
             Err(e) => {
-                eprintln!("[offline-queue] decode {path:?}: {e}; evicting");
+                tracing::warn!(target: "offline_queue", "decode {path:?}: {e}; evicting");
                 let _ = std::fs::remove_file(&path);
             }
         }

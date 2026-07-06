@@ -56,7 +56,7 @@ impl AudioRecorder {
         }));
 
         let state_c = state.clone();
-        let err_fn = |e| eprintln!("[audio] capture error: {e}");
+        let err_fn = |e| tracing::warn!(target: "audio", "capture error: {e}");
 
         let stream = if config.sample_format() == cpal::SampleFormat::F32 {
             device.build_input_stream(

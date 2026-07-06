@@ -40,13 +40,13 @@ impl ObservabilityConfig {
         match std::fs::read_to_string(&override_path) {
             Ok(text) => match toml::from_str(&text) {
                 Ok(cfg) => return cfg,
-                Err(e) => eprintln!(
-                    "[observability] {} is invalid ({e}); using embedded default",
+                Err(e) => tracing::warn!(
+                    target: "observability", "{} is invalid ({e}); using embedded default",
                     override_path.display()
                 ),
             },
-            Err(e) if e.kind() != std::io::ErrorKind::NotFound => eprintln!(
-                "[observability] could not read {} ({e}); using embedded default",
+            Err(e) if e.kind() != std::io::ErrorKind::NotFound => tracing::warn!(
+                target: "observability", "could not read {} ({e}); using embedded default",
                 override_path.display()
             ),
             Err(_) => {}

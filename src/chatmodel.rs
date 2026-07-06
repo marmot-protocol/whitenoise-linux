@@ -1157,13 +1157,13 @@ pub(crate) fn rebuild_chat_messages_from(
     let my_id = backend.account().account_id_hex.clone();
     let my_label = my_avatar_label(backend, &my_id);
     let t_label = t0.elapsed();
-    let t_msgs = t0.elapsed();
     let mut reactions = aggregate_reactions(msgs, &my_id);
     apply_reaction_overlay(&mut reactions, group_hex, pending);
     let mut edits = aggregate_edits(msgs);
     apply_edit_overlay(&mut edits, group_hex, pending);
     let mut deletes = aggregate_deletes(msgs);
     apply_delete_overlay(&mut deletes, group_hex, pending);
+    let t_msgs = t0.elapsed();
     let profiles = build_sender_profiles(backend, msgs, &my_id);
     let t_profiles = t0.elapsed();
     let is_group = backend.group_member_count(group_hex) > 2;
@@ -1201,8 +1201,8 @@ pub(crate) fn rebuild_chat_messages_from(
     let t_rows = t0.elapsed();
 
     replace_message_row(chats_messages, idx, rows);
-    eprintln!(
-        "[switch-timing]   detail: label={t_label:?} msgs={:?} profiles={:?} rows={:?} replace={:?}",
+    tracing::debug!(
+        target: "switch_timing", "detail: label={t_label:?} msgs={:?} profiles={:?} rows={:?} replace={:?}",
         t_msgs - t_label,
         t_profiles - t_msgs,
         t_rows - t_profiles,

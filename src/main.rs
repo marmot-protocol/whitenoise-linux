@@ -465,12 +465,12 @@ fn main() -> Result<(), slint::PlatformError> {
                                 }
                             }
                             Err(e) => {
-                                eprintln!("[send] {e:#}");
+                                tracing::warn!(target: "send", "{e:#}");
                                 if !online {
                                     // Offline: leave the bubble pending ("sending…")
                                     // and the durable entry queued. The reconnect
                                     // flush re-dispatches it automatically.
-                                    eprintln!("[send] offline — left queued for flush");
+                                    tracing::warn!(target: "send", "offline — left queued for flush");
                                     return;
                                 }
                                 ui.set_backend_error(friendly_error("send", &e).into());
@@ -565,7 +565,7 @@ fn main() -> Result<(), slint::PlatformError> {
                     {
                         let mut overlay = pending_state.lock().unwrap();
                         if let Err(e) = &result {
-                            eprintln!("[edit] {e:#}");
+                            tracing::warn!(target: "edit", "{e:#}");
                             ui.set_backend_error(friendly_error("edit", e).into());
                         }
                         overlay.edits.remove(&(group_hex.clone(), target.clone()));
@@ -698,7 +698,7 @@ fn main() -> Result<(), slint::PlatformError> {
                                 return;
                             };
                             if let Err(e) = sync_result {
-                                eprintln!("[backend] background sync failed: {e:#}");
+                                tracing::warn!(target: "backend", "background sync failed: {e:#}");
                                 ui.set_backend_error(friendly_error("sync", &e).into());
                                 return;
                             }
@@ -753,7 +753,7 @@ fn main() -> Result<(), slint::PlatformError> {
                     if let Ok(b) = &result
                         && let Err(e) = b.ensure_self_chat()
                     {
-                        eprintln!("[self-chat] ensure failed: {e:#}");
+                        tracing::warn!(target: "self_chat", "ensure failed: {e:#}");
                     }
                     let _ = slint::invoke_from_event_loop(move || {
                         let Some(ui) = weak_for_worker.upgrade() else {
@@ -834,7 +834,7 @@ fn main() -> Result<(), slint::PlatformError> {
                                         if !v.has(&key)
                                             && let Err(e) = v.set(&key, &nsec)
                                         {
-                                            eprintln!("[vault] migrate {key} failed: {e}");
+                                            tracing::warn!(target: "vault", "migrate {key} failed: {e}");
                                         }
                                     });
                                 }
@@ -899,7 +899,7 @@ fn main() -> Result<(), slint::PlatformError> {
                                 }
                             }
                             Err(e) => {
-                                eprintln!("[backend] boot failed: {e:#}");
+                                tracing::warn!(target: "backend", "boot failed: {e:#}");
                                 ui.set_backend_error(friendly_error("backend", &e).into());
                                 ui.set_booting(false);
                             }

@@ -64,7 +64,7 @@ pub(crate) fn wire_panes(
             let summary = match backend.set_active_account(&account_id) {
                 Ok(s) => s,
                 Err(e) => {
-                    eprintln!("[accounts] switch failed: {e:#}");
+                    tracing::warn!(target: "accounts", "switch failed: {e:#}");
                     ui.set_backend_error(friendly_error("switch account", &e).into());
                     return;
                 }
@@ -289,7 +289,7 @@ pub(crate) fn wire_panes(
                             do_switch(summary.account_id_hex);
                         }
                         Err(e) => {
-                            eprintln!("[add-account] {e:#}");
+                            tracing::warn!(target: "add_account", "{e:#}");
                             ui.set_add_account_status(friendly_error("add account", &e).into());
                         }
                     }
@@ -422,7 +422,7 @@ pub(crate) fn wire_panes(
         move || {
             let Some(ui) = weak.upgrade() else { return };
             if let Err(e) = vault::delete() {
-                eprintln!("[login] vault reset failed: {e}");
+                tracing::warn!(target: "login", "vault reset failed: {e}");
             }
             // Queued sends were sealed under the old vault key — unreadable now.
             offline_queue::clear();
@@ -438,7 +438,7 @@ pub(crate) fn wire_panes(
         let pending = pending_generated.clone();
         let pending_name = pending_profile_name.clone();
         move || {
-            eprintln!("[login] generate_key_requested fired");
+            tracing::debug!(target: "login", "generate_key_requested fired");
             let Some(ui) = weak.upgrade() else { return };
             let keys = Keys::generate();
             let nsec = match keys.secret_key().to_bech32() {
@@ -478,10 +478,10 @@ pub(crate) fn wire_panes(
         let pending_seed = pending_profile_seed.clone();
         let boot = boot_backend.clone();
         move |password, confirm| {
-            eprintln!("[login] confirm_saved_key fired");
+            tracing::debug!(target: "login", "confirm_saved_key fired");
             let Some(ui) = weak.upgrade() else { return };
             let Some(nsec) = pending.lock().unwrap().clone() else {
-                eprintln!("[login] no pending generated key");
+                tracing::warn!(target: "login", "no pending generated key");
                 ui.set_login_error(s("No generated key to save. Try again."));
                 ui.set_login_mode(0);
                 return;
@@ -512,7 +512,7 @@ pub(crate) fn wire_panes(
                     ui.set_login_busy(false);
                     match result {
                         Ok((npub, id_hex, vault)) => {
-                            eprintln!("[login] sealed nsec into vault, logging in as {npub}");
+                            tracing::debug!(target: "login", "sealed nsec into vault, logging in as {npub}");
                             *pending.lock().unwrap() = None;
                             // Freshly generated key: have boot seed a random
                             // starter profile once it comes up.
@@ -530,7 +530,7 @@ pub(crate) fn wire_panes(
                             boot(nsec, vault, None);
                         }
                         Err(err) => {
-                            eprintln!("[login] save failed: {err}");
+                            tracing::warn!(target: "login", "save failed: {err}");
                             ui.set_login_error(err.into());
                         }
                     }
@@ -545,7 +545,7 @@ pub(crate) fn wire_panes(
             let weak = weak.clone();
             copy_to_clipboard_async(nsec.to_string(), move |result| {
                 if let Err(e) = result {
-                    eprintln!("[clipboard] copy nsec failed: {e}");
+                    tracing::warn!(target: "clipboard", "copy nsec failed: {e}");
                     return;
                 }
                 if let Some(ui) = weak.upgrade() {
@@ -883,7 +883,7 @@ pub(crate) fn wire_panes(
             }
             copy_to_clipboard_async(text.to_string(), |result| {
                 if let Err(e) = result {
-                    eprintln!("[clipboard] copy debug dump failed: {e}");
+                    tracing::warn!(target: "clipboard", "copy debug dump failed: {e}");
                 }
             });
         }
@@ -907,7 +907,7 @@ pub(crate) fn wire_panes(
                 let _ = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak.upgrade() else { return };
                     if let Err(e) = result {
-                        eprintln!("[settings] set telemetry failed: {e}");
+                        tracing::warn!(target: "settings", "set telemetry failed: {e}");
                         ui.set_telemetry_enabled(!on);
                     }
                 });
@@ -946,7 +946,7 @@ pub(crate) fn wire_panes(
                             .into(),
                         ),
                         Err(e) => {
-                            eprintln!("[settings] set audit logs failed: {e:#}");
+                            tracing::warn!(target: "settings", "set audit logs failed: {e:#}");
                             ui.set_audit_enabled(!on);
                             ui.set_audit_status("Couldn't change audit logging.".into());
                         }
@@ -992,7 +992,7 @@ pub(crate) fn wire_panes(
                         ),
                         Ok(false) => ui.set_audit_status("Audit log deleted.".into()),
                         Err(e) => {
-                            eprintln!("[settings] delete audit log failed: {e:#}");
+                            tracing::warn!(target: "settings", "delete audit log failed: {e:#}");
                             ui.set_audit_status("Couldn't delete audit log.".into());
                         }
                     }
@@ -1086,7 +1086,7 @@ pub(crate) fn wire_panes(
             }
             list.push(trimmed);
             if let Err(e) = backend::save_relays(&list) {
-                eprintln!("[network] save relays failed: {e}");
+                tracing::warn!(target: "network", "save relays failed: {e}");
                 ui.set_network_add_error(error_copy().save_relays_failed.into());
                 ui.set_network_status(SharedString::default());
                 return false;
@@ -1112,7 +1112,7 @@ pub(crate) fn wire_panes(
                 return;
             }
             if let Err(e) = backend::save_relays(&list) {
-                eprintln!("[network] save relays failed: {e}");
+                tracing::warn!(target: "network", "save relays failed: {e}");
                 ui.set_network_status(error_copy().save_relays_failed.into());
                 return;
             }
@@ -1281,8 +1281,8 @@ pub(crate) fn wire_panes(
     ui.on_copy_to_clipboard({
         let weak = ui.as_weak();
         move |text| {
-            eprintln!(
-                "[ui] copy-to-clipboard fired, text empty={}",
+            tracing::debug!(
+                target: "ui", "copy-to-clipboard fired, text empty={}",
                 text.is_empty()
             );
             let Some(ui) = weak.upgrade() else { return };
@@ -1296,7 +1296,7 @@ pub(crate) fn wire_panes(
                 match result {
                     Ok(()) => ui.set_profile_status(s("npub copied")),
                     Err(e) => {
-                        eprintln!("[clipboard] copy failed: {e}");
+                        tracing::warn!(target: "clipboard", "copy failed: {e}");
                         ui.set_profile_status(format!("clipboard error: {e}").into());
                     }
                 }

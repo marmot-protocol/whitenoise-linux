@@ -392,7 +392,7 @@ pub(crate) fn wire_backup(
                             ui.set_show_new_chat(false);
                         }
                         Err(e) => {
-                            eprintln!("[create-group] {e:#}");
+                            tracing::warn!(target: "create_group", "{e:#}");
                             ui.set_new_chat_status(friendly_error("create chat", &e).into());
                         }
                     }
@@ -463,7 +463,7 @@ pub(crate) fn wire_backup(
                             refresh_breadcrumb_now(&ui);
                         }
                         Err(e) => {
-                            eprintln!("[add-contact] {e:#}");
+                            tracing::warn!(target: "add_contact", "{e:#}");
                             ui.set_add_contact_status(friendly_error("add contact", &e).into());
                         }
                     }
@@ -500,7 +500,7 @@ pub(crate) fn wire_backup(
                             refresh_breadcrumb_now(&ui);
                         }
                         Err(e) => {
-                            eprintln!("[profile-add-contact] {e:#}");
+                            tracing::warn!(target: "profile_add_contact", "{e:#}");
                             ui.set_peer_profile_status(friendly_error("add contact", &e).into());
                         }
                     }
@@ -626,7 +626,7 @@ pub(crate) fn wire_backup(
                 let (status, detail) = match result {
                     Ok((created_at, relays)) => kp_labels(created_at, &relays),
                     Err(e) => {
-                        eprintln!("[backend] fetch_contact_key_package failed: {e:#}");
+                        tracing::warn!(target: "backend", "fetch_contact_key_package failed: {e:#}");
                         (
                             "Not found".to_string(),
                             "No key package on relays yet".to_string(),
@@ -713,7 +713,7 @@ pub(crate) fn wire_backup(
                             });
                         }
                         Err(e) => {
-                            eprintln!("[start-chat-with-contact] {e:#}");
+                            tracing::warn!(target: "start_chat_with_contact", "{e:#}");
                             // No status line on the contact page, so surface
                             // the error in the new-chat modal (pre-filled
                             // with the member) where the user can adjust or
@@ -763,7 +763,7 @@ pub(crate) fn wire_backup(
                             ui.set_add_member_status(s("Invited."));
                         }
                         Err(e) => {
-                            eprintln!("[invite] {e:#}");
+                            tracing::warn!(target: "invite", "{e:#}");
                             ui.set_add_member_status(friendly_error("add member", &e).into());
                         }
                     }
@@ -802,7 +802,7 @@ pub(crate) fn wire_backup(
                             ui.set_group_settings_status(s("Admin added."));
                         }
                         Err(e) => {
-                            eprintln!("[promote] {e:#}");
+                            tracing::warn!(target: "promote", "{e:#}");
                             ui.set_group_settings_status(
                                 friendly_error("group settings", &e).into(),
                             );
@@ -842,7 +842,7 @@ pub(crate) fn wire_backup(
                             ui.set_group_settings_status(s("Admin removed."));
                         }
                         Err(e) => {
-                            eprintln!("[demote] {e:#}");
+                            tracing::warn!(target: "demote", "{e:#}");
                             ui.set_group_settings_status(
                                 friendly_error("group settings", &e).into(),
                             );
@@ -878,7 +878,7 @@ pub(crate) fn wire_backup(
                             ui.set_group_settings_status(s("You stepped down."));
                         }
                         Err(e) => {
-                            eprintln!("[self-demote] {e:#}");
+                            tracing::warn!(target: "self_demote", "{e:#}");
                             ui.set_group_settings_status(
                                 friendly_error("group settings", &e).into(),
                             );
@@ -924,7 +924,7 @@ pub(crate) fn wire_backup(
                             ui.set_group_settings_status(s("Renamed."));
                         }
                         Err(e) => {
-                            eprintln!("[rename] {e:#}");
+                            tracing::warn!(target: "rename", "{e:#}");
                             ui.set_group_settings_status(
                                 friendly_error("group settings", &e).into(),
                             );
@@ -974,7 +974,7 @@ pub(crate) fn wire_backup(
                             }
                         }
                         Err(e) => {
-                            eprintln!("[group-image] clear failed: {e:#}");
+                            tracing::warn!(target: "group_image", "clear failed: {e:#}");
                             ui.set_group_settings_status(friendly_error("group image", &e).into());
                         }
                     }
@@ -1093,7 +1093,7 @@ pub(crate) fn wire_backup(
                                 }
                             }
                             Err(e) => {
-                                eprintln!("[group-image] upload failed: {e:#}");
+                                tracing::warn!(target: "group_image", "upload failed: {e:#}");
                                 ui.set_group_settings_status(
                                     friendly_error("group image", &e).into(),
                                 );
@@ -1211,8 +1211,8 @@ pub(crate) fn wire_backup(
                                 );
                             }
                             spawn_message_avatar_fetches(&ui, &b, &msgs);
-                            eprintln!(
-                                "[switch-timing] chat {idx}: {} records rebuilt in {:?}",
+                            tracing::debug!(
+                                target: "switch_timing", "chat {idx}: {} records rebuilt in {:?}",
                                 msgs.len(),
                                 t_switch.elapsed()
                             );
@@ -1380,7 +1380,7 @@ pub(crate) fn wire_backup(
                 let _ = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak.upgrade() else { return };
                     if let Err(e) = result {
-                        eprintln!("[accept] {e:#}");
+                        tracing::warn!(target: "accept", "{e:#}");
                         ui.set_backend_error(friendly_error("accept", &e).into());
                         return;
                     }
@@ -1409,7 +1409,7 @@ pub(crate) fn wire_backup(
                 let _ = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak.upgrade() else { return };
                     if let Err(e) = result {
-                        eprintln!("[block] {e:#}");
+                        tracing::warn!(target: "block", "{e:#}");
                         ui.set_backend_error(friendly_error("block", &e).into());
                         return;
                     }
@@ -1507,7 +1507,7 @@ pub(crate) fn wire_backup(
                         .map(|b| b.set_group_archived(&group_hex_cb, true))
                 };
                 if let Some(Err(e)) = res {
-                    eprintln!("[archive] {e:#}");
+                    tracing::warn!(target: "archive", "{e:#}");
                     let refresh_cb = refresh_cb.clone();
                     let _ = slint::invoke_from_event_loop(move || {
                         let Some(ui) = weak_cb.upgrade() else { return };
@@ -1601,7 +1601,7 @@ pub(crate) fn wire_backup(
                                 .map(|b| b.set_group_archived(&group_hex_cb, false))
                         };
                         if let Some(Err(e)) = res {
-                            eprintln!("[unarchive] {e:#}");
+                            tracing::warn!(target: "unarchive", "{e:#}");
                             let refresh_cb = refresh_cb.clone();
                             let _ = slint::invoke_from_event_loop(move || {
                                 let Some(ui) = weak_cb.upgrade() else { return };
@@ -1667,7 +1667,7 @@ pub(crate) fn wire_backup(
                     let npub = ui.get_my_npub();
                     copy_to_clipboard_async(npub.to_string(), |result| {
                         if let Err(e) = result {
-                            eprintln!("[clipboard] copy npub failed: {e}");
+                            tracing::warn!(target: "clipboard", "copy npub failed: {e}");
                         }
                     });
                 }

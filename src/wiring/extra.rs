@@ -125,7 +125,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             }
             copy_to_clipboard_async(text, |result| {
                 if let Err(e) = result {
-                    eprintln!("[clipboard] copy selection failed: {e}");
+                    tracing::warn!(target: "clipboard", "copy selection failed: {e}");
                 }
             });
         }
@@ -257,7 +257,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     {
                         let mut overlay = pending_state.lock().unwrap();
                         if let Err(e) = &result {
-                            eprintln!("[delete] {e:#}");
+                            tracing::warn!(target: "delete", "{e:#}");
                             ui.set_backend_error(friendly_error("delete", e).into());
                         }
                         overlay.deletes.remove(&(group_hex.clone(), target.clone()));
@@ -747,7 +747,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     {
                         let mut overlay = pending_state.lock().unwrap();
                         if let Err(e) = &result {
-                            eprintln!("[{label}] {e:#}");
+                            tracing::warn!("[{label}] {e:#}");
                             ui.set_backend_error(friendly_error(label, e).into());
                         }
                         overlay
@@ -862,7 +862,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                             ui.set_profile_status(s("profile published"));
                         }
                         Err(e) => {
-                            eprintln!("[profile] save failed: {e:#}");
+                            tracing::warn!(target: "profile", "save failed: {e:#}");
                             ui.set_profile_status(friendly_error("save profile", &e).into());
                         }
                     }
@@ -989,7 +989,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                                 }
                             }
                             Err(e) => {
-                                eprintln!("[profile] picture upload failed: {e:#}");
+                                tracing::warn!(target: "profile", "picture upload failed: {e:#}");
                                 ui.set_profile_status(friendly_error("upload picture", &e).into());
                             }
                         }
