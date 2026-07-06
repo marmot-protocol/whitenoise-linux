@@ -412,6 +412,7 @@ export component DarkMatterLinux inherits Window {
     // Well-known relays not yet added — one-click suggestions on get-started.
     in property <[string]> suggested-relays;
     in property <[string]> network-booted-relays;
+    in property <bool> network-restart-required;
     in property <int> network-connected;
     in property <int> network-total;
     in property <string> network-status;
@@ -1135,6 +1136,7 @@ export component DarkMatterLinux inherits Window {
                         }
                         network-relays: root.network-relays;
                         network-booted-relays: root.network-booted-relays;
+                        network-restart-required: root.network-restart-required;
                         network-connected: root.network-connected;
                         network-total: root.network-total;
                         network-status: root.network-status;

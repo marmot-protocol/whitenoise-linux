@@ -67,6 +67,7 @@ component RelayRow inherits Rectangle {
 export component NetworkPane inherits DetailPage {
     in property <[string]> relays;
     in property <[string]> booted-relays;
+    in property <bool> restart-required;
     in property <int> connected;
     in property <int> total;
     in property <string> status;
@@ -76,15 +77,6 @@ export component NetworkPane inherits DetailPage {
     callback republish-relay-list();
 
     property <string> draft;
-    // A relay edit is "pending restart" when the saved set differs from the
-    // set the backend booted with. Order matters here — same relays in a
-    // different order shouldn't trigger the banner, so compare as sets via
-    // mutual length + containment is overkill at this scale; equal-when-
-    // sorted is what we want, but Slint can't sort. Approximation: same
-    // length AND every booted entry appears in `relays`. With a few entries
-    // the false-negative on "swap one for another, same count" is fine —
-    // length-mismatch covers add/remove, the common case.
-    property <bool> restart-required: root.relays.length != root.booted-relays.length;
 
     PageHeader {
         title: @tr("Network & relays");

@@ -1610,6 +1610,7 @@ pub(crate) fn push_network_relays(ui: &DarkMatterLinux, list: &[String]) {
     ui.set_network_relays(ModelRc::new(VecModel::from(rows)));
     // Keep the one-click suggestions in sync: only offer ones not already added.
     push_suggested_relays(ui, list);
+    refresh_network_restart_required(ui);
 }
 
 /// Well-known public relays offered as one-click adds on the get-started screen.
@@ -1651,6 +1652,20 @@ pub(crate) fn validate_relay_url(url: &str) -> Result<(), String> {
     Ok(())
 }
 
+pub(crate) fn relay_sets_differ(current: &[String], booted: &[String]) -> bool {
+    use std::collections::BTreeSet;
+
+    let current: BTreeSet<&str> = current.iter().map(String::as_str).collect();
+    let booted: BTreeSet<&str> = booted.iter().map(String::as_str).collect();
+    current != booted
+}
+
+pub(crate) fn refresh_network_restart_required(ui: &DarkMatterLinux) {
+    let current = vec_string_from_model(&ui.get_network_relays());
+    let booted = vec_string_from_model(&ui.get_network_booted_relays());
+    ui.set_network_restart_required(relay_sets_differ(&current, &booted));
+}
+
 /// Push the booted-relays list + current health into the UI. Called after
 /// the backend finishes booting.
 pub(crate) fn refresh_network_post_boot(backend: &Arc<Backend>, ui: &DarkMatterLinux) {
@@ -1661,6 +1676,7 @@ pub(crate) fn refresh_network_post_boot(backend: &Arc<Backend>, ui: &DarkMatterL
         .map(SharedString::from)
         .collect();
     ui.set_network_booted_relays(ModelRc::new(VecModel::from(booted)));
+    refresh_network_restart_required(ui);
     // `relay_health` does a `block_on` into the relay plane — poll it from a
     // worker so this post-boot UI pass never stalls the event loop.
     let weak = ui.as_weak();
@@ -1676,4 +1692,29 @@ pub(crate) fn refresh_network_post_boot(backend: &Arc<Backend>, ui: &DarkMatterL
             ui.set_sync_secs(0);
         });
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn strings(values: &[&str]) -> Vec<String> {
+        values.iter().map(|value| value.to_string()).collect()
+    }
+
+    #[test]
+    fn relay_sets_differ_when_same_count_but_membership_changed() {
+        let current = strings(&["wss://relay-a.example", "wss://relay-c.example"]);
+        let booted = strings(&["wss://relay-a.example", "wss://relay-b.example"]);
+
+        assert!(relay_sets_differ(&current, &booted));
+    }
+
+    #[test]
+    fn relay_sets_do_not_differ_when_members_match_in_different_order() {
+        let current = strings(&["wss://relay-b.example", "wss://relay-a.example"]);
+        let booted = strings(&["wss://relay-a.example", "wss://relay-b.example"]);
+
+        assert!(!relay_sets_differ(&current, &booted));
+    }
 }
