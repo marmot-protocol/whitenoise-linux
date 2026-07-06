@@ -238,15 +238,18 @@ export component DarkMatterLinux inherits Window {
     // is tapped; shows it full-window over a darkened backdrop. When the chat
     // holds more than one image attachment it becomes a slideshow: `count`/
     // `index` drive the chevrons + counter and `prev`/`next` ask Rust to swap
-    // `image-viewer-image` (toggling `loading` while a fresh one downloads).
+    // `image-viewer-image` (toggling `loading`/`failed` while a fresh one
+    // downloads). `retry` asks Rust to re-download the selected slideshow item.
     in-out property <bool> image-viewer-open: false;
     in property <image> image-viewer-image;
     in property <int> image-viewer-count: 1;
     in property <int> image-viewer-index: 1;
     in property <bool> image-viewer-loading: false;
+    in property <bool> image-viewer-failed: false;
     callback dismiss-image-viewer();
     callback image-viewer-prev();
     callback image-viewer-next();
+    callback image-viewer-retry();
 
     // In-app video player — opened by Rust when a `video/*` attachment is
     // tapped. Rust owns the libmpv instance, pushes decoded frames into
@@ -1608,6 +1611,7 @@ export component DarkMatterLinux inherits Window {
         count: root.image-viewer-count;
         index: root.image-viewer-index;
         loading: root.image-viewer-loading;
+        failed: root.image-viewer-failed;
         dismissed => {
             root.dismiss-image-viewer();
         }
@@ -1616,6 +1620,9 @@ export component DarkMatterLinux inherits Window {
         }
         next => {
             root.image-viewer-next();
+        }
+        retry => {
+            root.image-viewer-retry();
         }
     }
 

@@ -1072,6 +1072,10 @@ msgctxt "ImageViewerModal"
 msgid "Loading…"
 msgstr "保存中…"
 
+msgctxt "ImageViewerModal"
+msgid "Image didn't load. Tap to retry."
+msgstr "画像を読み込めませんでした。タップして再試行。"
+
 #, fuzzy
 msgctxt "VideoViewerModal"
 msgid "Loading…"

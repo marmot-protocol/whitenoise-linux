@@ -1074,6 +1074,10 @@ msgctxt "ImageViewerModal"
 msgid "Loading…"
 msgstr "Salvataggio…"
 
+msgctxt "ImageViewerModal"
+msgid "Image didn't load. Tap to retry."
+msgstr "Immagine non caricata. Tocca per riprovare."
+
 #, fuzzy
 msgctxt "VideoViewerModal"
 msgid "Loading…"
