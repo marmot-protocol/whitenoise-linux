@@ -57,7 +57,7 @@ pub(crate) fn wire_forward(ui: &DarkMatterLinux, cx: &Cx) {
             let src_id = ui.get_forward_src_id().to_string();
             // A still-optimistic (unconfirmed) message has no backend record to
             // forward from; ignore until it lands.
-            if src_id.is_empty() || src_id.starts_with("pending:") {
+            if src_id.is_empty() || is_temp_id(&src_id) {
                 return;
             }
             let src_idx = ui.get_active_chat() as usize;

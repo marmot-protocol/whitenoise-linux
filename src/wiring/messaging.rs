@@ -551,8 +551,8 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     });
 
     // ─── Album cell tapped → open the slideshow at that image ──────────
-    // The key is `message_id#index`. Pending album cells (temp ids start with
-    // "pending:") aren't sent yet, so they don't open the viewer. Otherwise we
+    // The key is `message_id#index`. Pending album cells (temp-id keys, per
+    // `is_temp_id`) aren't sent yet, so they don't open the viewer. Otherwise we
     // open the lightbox and let the slideshow builder load the tapped image
     // (cache hit → instant; miss → downloads) and wire up prev/next.
     ui.on_album_cell_clicked({
@@ -562,7 +562,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         move |key| {
             let Some(ui) = weak.upgrade() else { return };
             let key = key.to_string();
-            if key.is_empty() || key.starts_with("pending:") {
+            if key.is_empty() || is_temp_id(&key) {
                 return;
             }
             let idx = ui.get_active_chat() as usize;
@@ -610,7 +610,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         move |message_id| {
             let Some(ui) = weak.upgrade() else { return };
             let mid = message_id.to_string();
-            if mid.is_empty() || mid.starts_with("pending:") {
+            if mid.is_empty() || is_temp_id(&mid) {
                 return;
             }
             // Already decoded → tapping expands it into the full-window
@@ -1070,7 +1070,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         move |message_id| {
             let Some(ui) = weak.upgrade() else { return };
             let mid = message_id.to_string();
-            if mid.is_empty() || mid.starts_with("pending:") {
+            if mid.is_empty() || is_temp_id(&mid) {
                 return;
             }
             // Toggle if this message is already the active player.

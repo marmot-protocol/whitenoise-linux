@@ -112,13 +112,40 @@ impl PendingState {
     }
 }
 
+// Marks an id minted by `next_temp_id`. Only `next_temp_id` and `is_temp_id`
+// may reference the literal; everything else asks `is_temp_id`.
+const TEMP_ID_PREFIX: &str = "pending:";
+
 // Monotonic temp-id source. Survives the lifetime of the process; we only
 // need uniqueness within a session.
 pub(crate) fn next_temp_id() -> String {
     use std::sync::atomic::{AtomicU64, Ordering};
     static N: AtomicU64 = AtomicU64::new(0);
     let v = N.fetch_add(1, Ordering::Relaxed);
-    format!("pending:{v}")
+    format!("{TEMP_ID_PREFIX}{v}")
+}
+
+/// True when `id` was minted by [`next_temp_id`] — an optimistic row with no
+/// confirmed backend record yet. Also matches callback keys that embed a temp
+/// id at the front (the album grid's `message_id#index` keys), so those guards
+/// need no extra parsing.
+pub(crate) fn is_temp_id(id: &str) -> bool {
+    id.starts_with(TEMP_ID_PREFIX)
+}
+
+#[cfg(test)]
+mod temp_id_tests {
+    use super::*;
+
+    #[test]
+    fn minted_ids_round_trip_through_is_temp_id() {
+        assert!(is_temp_id(&next_temp_id()));
+        assert!(is_temp_id(&format!("{}#2", next_temp_id())));
+        assert!(!is_temp_id(""));
+        assert!(!is_temp_id(
+            "5b8e2f0a1c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8091a2b3c4d5e6f708192a3b"
+        ));
+    }
 }
 
 // ─── Delete-for-me (local-only hidden messages) ──────────────────────────────
