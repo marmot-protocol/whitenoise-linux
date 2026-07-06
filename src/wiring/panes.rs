@@ -335,8 +335,7 @@ pub(crate) fn wire_panes(
                 let result = (|| -> Result<(String, String, Arc<Mutex<Vault>>), String> {
                     let npub = keys.public_key().to_bech32().map_err(|e| e.to_string())?;
                     let nsec = keys.secret_key().to_bech32().map_err(|e| e.to_string())?;
-                    let mut v =
-                        Vault::create(&password).map_err(|e| format!("create vault: {e}"))?;
+                    let mut v = Vault::create(&password).map_err(|e| format!("save key: {e}"))?;
                     v.set(vault::NSEC_KEY, &nsec)
                         .map_err(|e| format!("seal nsec: {e}"))?;
                     Ok((npub, nsec, Arc::new(Mutex::new(v))))
@@ -385,7 +384,7 @@ pub(crate) fn wire_panes(
                         other => format!("{other}"),
                     })?;
                     let nsec = v.nsec().ok_or_else(|| {
-                        "Vault has no key. Reset and re-enter your nsec.".to_string()
+                        "No key stored on this device. Reset and re-enter your nsec.".to_string()
                     })?;
                     let keys =
                         Keys::parse(&nsec).map_err(|_| "Stored key is invalid.".to_string())?;
@@ -503,8 +502,7 @@ pub(crate) fn wire_panes(
                         .to_bech32()
                         .map_err(|e| format!("npub encode: {e}"))?;
                     let id_hex = keys.public_key().to_hex();
-                    let mut v =
-                        Vault::create(&password).map_err(|e| format!("create vault: {e}"))?;
+                    let mut v = Vault::create(&password).map_err(|e| format!("save key: {e}"))?;
                     v.set(vault::NSEC_KEY, &nsec)
                         .map_err(|e| format!("seal nsec: {e}"))?;
                     Ok((npub, id_hex, Arc::new(Mutex::new(v))))

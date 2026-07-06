@@ -484,9 +484,10 @@ msgctxt "KeysPage"
 msgid "Configure key-package relays first."
 msgstr "Configura prima i relay per i pacchetti chiave."
 
+#, fuzzy
 msgctxt "BackupCreateModal"
-msgid "Confirm your vault password"
-msgstr "Conferma la password della cassaforte"
+msgid "Confirm your password"
+msgstr "Conferma la tua password"
 
 #, fuzzy
 msgctxt "GetStartedScreen"
@@ -690,10 +691,6 @@ msgctxt "StoragePane"
 msgid "Create backup…"
 msgstr "Crea backup…"
 
-msgctxt "LoginScreen"
-msgid "Create vault"
-msgstr "Crea cassaforte"
-
 #, fuzzy
 msgctxt "StartNewChatModal"
 msgid "Creating…"
@@ -744,9 +741,10 @@ msgctxt "AboutPane"
 msgid "Decentralized network"
 msgstr "Rete decentralizzata"
 
+#, fuzzy
 msgctxt "StoragePane"
-msgid "Decrypted images and files, sealed with your vault key."
-msgstr "Immagini e file decifrati, sigillati con la chiave della tua cassaforte."
+msgid "Decrypted images and files, stored encrypted on this device."
+msgstr "Immagini e file decifrati, salvati cifrati su questo dispositivo."
 
 msgctxt "ArchivedDetail"
 msgid "Delete"
@@ -1010,6 +1008,10 @@ msgctxt "KeysPage"
 msgid "KEY PACKAGES"
 msgstr "PACCHETTI CHIAVE"
 
+msgctxt "StoragePane"
+msgid "KEYS & BACKUPS"
+msgstr "CHIAVI E BACKUP"
+
 msgctxt "ContactDetail"
 msgid "Key package"
 msgstr "Pacchetto chiavi"
@@ -1080,6 +1082,11 @@ msgstr "Salvataggio…"
 msgctxt "AboutPane"
 msgid "Local key custody"
 msgstr "Custodia locale delle chiavi"
+
+#, fuzzy
+msgctxt "StoragePane"
+msgid "Location"
+msgstr "Posizione"
 
 msgctxt "StoragePane"
 msgid "MEDIA CACHE"
@@ -1329,6 +1336,16 @@ msgctxt "AppearancePane"
 msgid "Own messages on the right"
 msgstr "I tuoi messaggi a destra"
 
+#, fuzzy
+msgctxt "BackupCreateModal"
+msgid "PASSWORD"
+msgstr "PASSWORD"
+
+#, fuzzy
+msgctxt "LoginScreen"
+msgid "PASSWORD"
+msgstr "PASSWORD"
+
 msgctxt "ProfilePage"
 msgid "PROFILE"
 msgstr "PROFILO"
@@ -1345,9 +1362,10 @@ msgctxt "StoragePane"
 msgid "Pack accounts, chats, and settings into one encrypted file."
 msgstr "Racchiudi account, chat e impostazioni in un unico file crittografato."
 
+#, fuzzy
 msgctxt "BackupCreateModal"
-msgid "Pack everything — accounts, chats, settings — into one encrypted file, sealed with your vault password. The media cache is left out."
-msgstr "Racchiudi tutto — account, chat, impostazioni — in un unico file crittografato, sigillato con la password della cassaforte. La cache dei media è esclusa."
+msgid "Pack everything — accounts, chats, settings — into one encrypted file, sealed with your password. The media cache is left out."
+msgstr "Racchiudi tutto — account, chat, impostazioni — in un unico file cifrato, protetto dalla tua password. La cache dei media è esclusa."
 
 #, fuzzy
 msgctxt "GetStartedScreen"
@@ -1362,9 +1380,10 @@ msgctxt "ImportBackupModal"
 msgid "Password the backup was sealed with"
 msgstr "Password con cui è stato sigillato il backup"
 
+#, fuzzy
 msgctxt "AddAccountModal"
-msgid "Paste another secret key, or generate a fresh one. It's sealed into the same vault and stays signed in alongside your other accounts."
-msgstr "Incolla un'altra chiave segreta, o generane una nuova. Viene sigillata nella stessa cassaforte e resta connessa insieme agli altri account."
+msgid "Paste another secret key, or generate a fresh one. It's encrypted with your password and stays signed in alongside your other accounts."
+msgstr "Incolla un'altra chiave segreta, o generane una nuova. Viene cifrata con la tua password e resta connessa insieme agli altri account."
 
 msgctxt "StartNewChatModal"
 msgid "Paste one npub for a direct chat, or several (one per line) plus a group name."
@@ -1417,8 +1436,8 @@ msgid "Privacy & developer flags"
 msgstr "Flag sviluppatore"
 
 msgctxt "AboutPane"
-msgid "Private material lives in a password-encrypted vault on this device."
-msgstr "Il materiale privato risiede in una cassaforte crittografata con password su questo dispositivo."
+msgid "Private material is stored on this device, encrypted with your password."
+msgstr "I dati privati restano su questo dispositivo, cifrati con la tua password."
 
 #, fuzzy
 msgctxt "ProfileTile"
@@ -1543,6 +1562,11 @@ msgctxt "GroupSettingsCard"
 msgid "Remove image"
 msgstr "Rimuovi immagine"
 
+#, fuzzy
+msgctxt "LoginScreen"
+msgid "Remove key"
+msgstr "Rimuovi chiave"
+
 msgctxt "MessageContextMenu"
 msgid "Reply"
 msgstr "Rispondi"
@@ -1609,10 +1633,6 @@ msgctxt "LoginScreen"
 msgid "SECRET KEY (NSEC)"
 msgstr "CHIAVE SEGRETA (NSEC)"
 
-msgctxt "StoragePane"
-msgid "SECRET VAULT"
-msgstr "CASSAFORTE SEGRETA"
-
 msgctxt "AdvancedPane"
 msgid "SECURITY & PRIVACY"
 msgstr "SICUREZZA E PRIVACY"
@@ -1665,6 +1685,11 @@ msgstr "Salva"
 msgctxt "ProfilePage"
 msgid "Save"
 msgstr "Salva"
+
+#, fuzzy
+msgctxt "LoginScreen"
+msgid "Save key"
+msgstr "Salva chiave"
 
 #, fuzzy
 msgctxt "GroupSettingsCard"
@@ -1892,6 +1917,11 @@ msgctxt "MessageView"
 msgid "This message was deleted"
 msgstr ""
 
+#, fuzzy
+msgctxt "LoginScreen"
+msgid "This removes the key stored on this device. You'll need the nsec you backed up to use this identity again. This can't be undone."
+msgstr "La chiave salvata su questo dispositivo verrà rimossa. Per usare di nuovo questa identità ti servirà l'nsec che hai salvato. Questa operazione non può essere annullata."
+
 msgctxt "DarkMatterLinux"
 msgid "This removes the message for everyone in the chat. This can't be undone."
 msgstr ""
@@ -1971,6 +2001,10 @@ msgctxt "LoginScreen"
 msgid "Use another key"
 msgstr "Usa un'altra chiave"
 
+msgctxt "LoginScreen"
+msgid "Use another key?"
+msgstr "Usare un'altra chiave?"
+
 msgctxt "ContactDetail"
 msgid "Used to deliver messages between you."
 msgstr "Usati per consegnare i messaggi tra voi."
@@ -1979,21 +2013,9 @@ msgctxt "ProfilePage"
 msgid "Username"
 msgstr "Nome utente"
 
-msgctxt "BackupCreateModal"
-msgid "VAULT PASSWORD"
-msgstr "PASSWORD CASSAFORTE"
-
-msgctxt "LoginScreen"
-msgid "VAULT PASSWORD"
-msgstr "PASSWORD CASSAFORTE"
-
 msgctxt "ProfilePage"
 msgid "VISIBLE TO ANYONE YOU CHAT WITH"
 msgstr "VISIBILE A CHIUNQUE CHATTI"
-
-msgctxt "StoragePane"
-msgid "Vault location"
-msgstr "Posizione cassaforte"
 
 msgctxt "AboutPane"
 msgid "WHAT IT IS"
@@ -2163,9 +2185,17 @@ msgstr "✓ VERIFICATO"
 #~ msgid "Coming soon — per-chat notification rules, sounds, and focus mode."
 #~ msgstr "Regole notifiche per chat, suoni, modalità focus."
 
+#~ msgctxt "LoginScreen"
+#~ msgid "Create vault"
+#~ msgstr "Crea cassaforte"
+
 #~ msgctxt "SettingsPage"
 #~ msgid "Dark Matter v0.1.0"
 #~ msgstr "Dark Matter v0.1.0"
+
+#~ msgctxt "LoginScreen"
+#~ msgid "Delete vault"
+#~ msgstr "Elimina cassaforte"
 
 #~ msgctxt "AppearancePane"
 #~ msgid "Density"
@@ -2195,9 +2225,17 @@ msgstr "✓ VERIFICATO"
 #~ msgid "Picture URL"
 #~ msgstr "URL immagine"
 
+#~ msgctxt "AboutPane"
+#~ msgid "Private material lives in a password-encrypted vault on this device."
+#~ msgstr "Il materiale privato risiede in una cassaforte crittografata con password su questo dispositivo."
+
 #~ msgctxt "AppearancePane"
 #~ msgid "Retro mode"
 #~ msgstr "Modalità retro"
+
+#~ msgctxt "StoragePane"
+#~ msgid "SECRET VAULT"
+#~ msgstr "CASSAFORTE SEGRETA"
 
 #~ msgctxt "AppearancePane"
 #~ msgid "SNES yellow"
@@ -2230,6 +2268,10 @@ msgstr "✓ VERIFICATO"
 #~ msgctxt "AppearancePane"
 #~ msgid "Turn the whole app into SNES style."
 #~ msgstr "Trasforma tutta l'app in stile SNES."
+
+#~ msgctxt "StoragePane"
+#~ msgid "Vault location"
+#~ msgstr "Posizione cassaforte"
 
 #~ msgid "Yesterday"
 #~ msgstr "Ieri"

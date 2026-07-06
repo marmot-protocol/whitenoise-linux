@@ -57,7 +57,7 @@ pub(crate) fn wire_backup(
             let Some(ui) = weak.upgrade() else { return };
             let password = password.to_string();
             if password.is_empty() {
-                ui.set_create_backup_status(s("Enter your vault password."));
+                ui.set_create_backup_status(s("Enter your password."));
                 return;
             }
             ui.set_create_backup_busy(true);
@@ -87,7 +87,7 @@ pub(crate) fn wire_backup(
                             ui.set_create_backup_password(s(""));
                         }
                         Err(backup::BackupError::WrongPassword) => {
-                            ui.set_create_backup_status(s("Wrong vault password."));
+                            ui.set_create_backup_status(s("Wrong password."));
                         }
                         Err(e) => {
                             ui.set_create_backup_status(format!("Backup failed: {e}").into());
@@ -184,7 +184,7 @@ pub(crate) fn wire_backup(
             // clobber an identity that came to exist while the modal was open.
             if restoring && vault::exists() {
                 ui.set_import_backup_status(s(
-                    "Full restore is only available before unlocking an existing vault.",
+                    "Full restore is only available from the lock screen, before unlocking.",
                 ));
                 return;
             }
