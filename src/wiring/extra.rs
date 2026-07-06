@@ -1031,18 +1031,27 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
 
     // Markdown links/anchors in chat bubbles activate through this global so
     // they don't have to be plumbed through every row component. nostr: profile
-    // references (@mentions render as `nostr:npub…` anchors) open the in-app
-    // profile modal; everything else goes to the platform handler (xdg-open).
+    // references (@mentions render as `nostr:npub…` anchors) and marmot://
+    // profile deep links open the in-app profile modal; everything else goes
+    // to the platform handler (xdg-open).
     ui.global::<Linkout>().on_open({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         move |url| {
             let url = url.as_str();
-            if let Some(reference) = url.strip_prefix("nostr:")
+            if let Some(reference) = url
+                .strip_prefix("nostr:")
+                .or_else(|| deeplink::profile_link_ref(url))
                 && let Some(hex) = nostr_ref_to_hex(reference)
                 && let Some(ui) = weak.upgrade()
             {
                 open_profile_modal(&ui, &backend_cell, &hex);
+                return;
+            }
+            // We are the OS handler for marmot:// — handing an unresolvable
+            // link to xdg-open would just relaunch this app.
+            if deeplink::is_marmot_url(url) {
+                tracing::warn!(target: "deeplink", "unhandled marmot:// link: {url}");
                 return;
             }
             open_external(url);

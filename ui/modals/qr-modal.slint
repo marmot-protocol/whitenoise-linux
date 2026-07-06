@@ -3,7 +3,7 @@ import { Modal } from "modal.slint";
 import { CopyIcon } from "../icons/copy-icon.slint";
 
 // Contact QR card — opened from the contact detail "Show as QR" action. Shows
-// the contact's `nostr:npub` rasterized into a QR (see `qr_image` in main.rs)
+// the contact's `marmot://profile/<npub>` deep link rasterized into a QR
 // on a permanently white plate so it scans in every theme, plus a tap-to-copy
 // npub chip. Single-purpose picker → compact 360px width.
 export component QrModal inherits Modal {

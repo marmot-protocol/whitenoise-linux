@@ -137,7 +137,7 @@ pub(crate) fn wire_panes(
             }
             // Identity-bound chrome for the new account.
             if let Ok(npub) = npub_for_account_id(&summary.account_id_hex) {
-                ui.set_my_qr(qr_image(&format!("nostr:{npub}")));
+                ui.set_my_qr(qr_image(&deeplink::profile_qr_url(&npub)));
                 ui.set_my_npub(npub.into());
             }
             // Reset the avatar to the new account's deterministic fallback;
@@ -346,7 +346,7 @@ pub(crate) fn wire_panes(
                     match result {
                         Ok((npub, nsec, vault)) => {
                             ui.set_login_error(s(""));
-                            ui.set_my_qr(qr_image(&format!("nostr:{npub}")));
+                            ui.set_my_qr(qr_image(&deeplink::profile_qr_url(&npub)));
                             ui.set_my_npub(npub.into());
                             ui.set_login_nsec_input(s(""));
                             ui.set_password_input(s(""));
@@ -401,7 +401,7 @@ pub(crate) fn wire_panes(
                         Ok((npub, nsec, vault, active)) => {
                             ui.set_login_error(s(""));
                             ui.set_password_input(s(""));
-                            ui.set_my_qr(qr_image(&format!("nostr:{npub}")));
+                            ui.set_my_qr(qr_image(&deeplink::profile_qr_url(&npub)));
                             ui.set_my_npub(npub.into());
                             ui.set_logged_in(true);
                             boot(nsec, vault, active);
@@ -520,7 +520,7 @@ pub(crate) fn wire_panes(
                             // starter profile once it comes up.
                             *pending_seed.lock().unwrap() = Some(id_hex);
                             ui.set_login_error(s(""));
-                            ui.set_my_qr(qr_image(&format!("nostr:{npub}")));
+                            ui.set_my_qr(qr_image(&deeplink::profile_qr_url(&npub)));
                             ui.set_my_npub(npub.into());
                             ui.set_generated_nsec(s(""));
                             ui.set_generated_npub(s(""));

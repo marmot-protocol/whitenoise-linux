@@ -114,6 +114,16 @@ A few environment variables matter at runtime:
 
 UI preferences (theme, accent, locale, which side your own messages sit on, nicknames) live in a small JSON file in your XDG config directory. Telemetry and audit-log endpoints are configured in `observability.toml`, but nothing is ever sent until you enable the toggles under **Settings**, in the **Advanced** section.
 
+### Deep links (`marmot://`)
+
+Profile QR codes encode `marmot://profile/<npub>?from=qr`, the scheme shared by all Marmot clients. The app handles these links when they arrive as a command-line argument or are pasted into **Add contact**, and `marmot://profile/…` anchors inside chats open the in-app profile view. To have your desktop hand `marmot://` links to White Noise, install the bundled desktop entry (edit `Exec=` if the binary isn't on your `PATH`):
+
+```sh
+install -Dm644 assets/whitenoise-linux.desktop ~/.local/share/applications/whitenoise-linux.desktop
+update-desktop-database ~/.local/share/applications
+xdg-mime default whitenoise-linux.desktop x-scheme-handler/marmot
+```
+
 ## Architecture
 
 Top to bottom:

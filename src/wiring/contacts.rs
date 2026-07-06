@@ -40,6 +40,10 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 ui.set_add_contact_status(s("Paste an npub or hex pubkey."));
                 return;
             }
+            // Accept a pasted `marmot://profile/<npub>` deep link too.
+            let input = deeplink::profile_link_ref(&input)
+                .map(str::to_owned)
+                .unwrap_or(input);
             let Some(b) = backend_cell.lock().unwrap().clone() else {
                 ui.set_add_contact_status(s("Backend not ready."));
                 return;
@@ -177,8 +181,9 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             refresh();
         }
     });
-    // Contact detail → "Show as QR": rasterize the contact's nostr:npub and
-    // open the QrModal. Reuses `qr_image` (UI-thread only — Image is !Send).
+    // Contact detail → "Show as QR": rasterize the contact's marmot://
+    // profile deep link and open the QrModal. Reuses `qr_image` (UI-thread
+    // only — Image is !Send).
     ui.on_contact_show_qr({
         let weak = ui.as_weak();
         let contacts = contacts.clone();
@@ -191,7 +196,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             if npub.is_empty() {
                 return;
             }
-            ui.set_contact_qr(qr_image(&format!("nostr:{npub}")));
+            ui.set_contact_qr(qr_image(&deeplink::profile_qr_url(&npub)));
             ui.set_contact_qr_npub(s(&npub));
             ui.set_contact_qr_npub_short(row.npub_short.clone());
             ui.set_contact_qr_name(row.name.clone());

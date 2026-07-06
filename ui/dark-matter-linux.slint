@@ -164,7 +164,7 @@ export component DarkMatterLinux inherits Window {
     callback notification-preview-toggled(bool);
     in-out property <int> accent-color: 0;
     in property <string> my-npub;
-    // QR of the nostr:npub URI, rasterized Rust-side on login.
+    // QR of the marmot://profile deep link, rasterized Rust-side on login.
     in property <image> my-qr;
     // Login gate. When false the LoginScreen replaces the entire app shell.
     in-out property <bool> logged-in: false;
@@ -694,7 +694,7 @@ export component DarkMatterLinux inherits Window {
     callback contact-show-qr();
     callback contact-qr-dismissed();
     in-out property <bool> contact-qr-open: false;
-    in property <image> contact-qr;            // rasterized nostr:npub QR
+    in property <image> contact-qr;            // rasterized marmot:// profile QR
     in property <string> contact-qr-npub-short;
     in property <string> contact-qr-npub;      // full npub (copy target)
     in property <string> contact-qr-name;

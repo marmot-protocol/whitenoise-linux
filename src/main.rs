@@ -23,6 +23,7 @@ mod audio;
 mod backend;
 mod backup;
 mod blossom;
+mod deeplink;
 mod media_cache;
 mod mpv;
 mod notify;
@@ -98,6 +99,10 @@ fn main() -> Result<(), slint::PlatformError> {
         )
         .with_writer(std::io::stderr)
         .try_init();
+
+    // A `marmot://` URL from the OS scheme handler arrives as argv; park it
+    // until the backend boots and the profile modal can resolve it.
+    deeplink::stash_from_args();
 
     let ui = DarkMatterLinux::new()?;
 
@@ -818,7 +823,7 @@ fn main() -> Result<(), slint::PlatformError> {
                                 // backend's actual active account.
                                 let active = b.account();
                                 if let Ok(npub) = npub_for_account_id(&active.account_id_hex) {
-                                    ui.set_my_qr(qr_image(&format!("nostr:{npub}")));
+                                    ui.set_my_qr(qr_image(&deeplink::profile_qr_url(&npub)));
                                     ui.set_my_npub(npub.into());
                                 }
                                 refresh_accounts_model(&ui, &b);
@@ -850,6 +855,14 @@ fn main() -> Result<(), slint::PlatformError> {
                                 *backend_cell.lock().unwrap() = Some(b.clone());
                                 ui.set_backend_ready(true);
                                 ui.set_booting(false);
+                                // A deep link parked at startup can resolve now
+                                // that the backend is up — open the profile.
+                                if let Some(url) = deeplink::take_pending()
+                                    && let Some(hex) =
+                                        deeplink::profile_link_ref(&url).and_then(nostr_ref_to_hex)
+                                {
+                                    open_profile_modal(&ui, &backend_cell, &hex);
+                                }
                                 // A key generated this session has no kind-0 yet —
                                 // seed it with a random "[Adjective] [Animal]"
                                 // name so the user shows up as something

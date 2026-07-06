@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=White Noise
+GenericName=Secure Messenger
+Comment=End-to-end encrypted group chat over Nostr
+Exec=whitenoise-linux %u
+Icon=whitenoise-linux
+Terminal=false
+Categories=Network;InstantMessaging;Chat;
+MimeType=x-scheme-handler/marmot;
+StartupWMClass=whitenoise-linux

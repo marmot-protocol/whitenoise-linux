@@ -252,7 +252,7 @@ export component ProfilePage inherits Rectangle {
 
     // Display props (always visible — also surface what was last saved).
     in property <string> npub;
-    // QR of the nostr:npub URI, rasterized Rust-side (see qr_image in main.rs).
+    // QR of the marmot://profile deep link, rasterized Rust-side (see qr_image).
     in property <image> qr;
     // Editable props — two-way bound to root in dark-matter-linux.slint.
     in-out property <string> display-name;
@@ -499,7 +499,7 @@ export component ProfilePage inherits Rectangle {
                             }
                         }
                     }
-                    // QR of the nostr:npub URI. The plate stays white in every
+                    // QR of the marmot://profile deep link. The plate stays white in every
                     // theme — phone cameras need real contrast, and the image's
                     // baked-in quiet zone merges with the white plate.
                     VerticalLayout {
