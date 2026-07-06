@@ -117,7 +117,7 @@ pub(crate) fn wire_chats(
                         }
                         Err(e) => {
                             tracing::warn!(target: "create_group", "{e:#}");
-                            ui.set_new_chat_status(friendly_error("create chat", &e).into());
+                            ui.set_new_chat_status(friendly_error(ErrorOp::CreateChat, &e).into());
                         }
                     }
                 });
@@ -391,7 +391,7 @@ pub(crate) fn wire_chats(
                     let Some(ui) = weak.upgrade() else { return };
                     if let Err(e) = result {
                         tracing::warn!(target: "accept", "{e:#}");
-                        ui.set_backend_error(friendly_error("accept", &e).into());
+                        ui.set_backend_error(friendly_error(ErrorOp::Accept, &e).into());
                         return;
                     }
                     refresh();
@@ -420,7 +420,7 @@ pub(crate) fn wire_chats(
                     let Some(ui) = weak.upgrade() else { return };
                     if let Err(e) = result {
                         tracing::warn!(target: "block", "{e:#}");
-                        ui.set_backend_error(friendly_error("block", &e).into());
+                        ui.set_backend_error(friendly_error(ErrorOp::Block, &e).into());
                         return;
                     }
                     refresh();
@@ -521,7 +521,7 @@ pub(crate) fn wire_chats(
                     let refresh_cb = refresh_cb.clone();
                     let _ = slint::invoke_from_event_loop(move || {
                         let Some(ui) = weak_cb.upgrade() else { return };
-                        ui.set_backend_error(friendly_error("archive", &e).into());
+                        ui.set_backend_error(friendly_error(ErrorOp::Archive, &e).into());
                         refresh_cb();
                     });
                 }
@@ -615,7 +615,7 @@ pub(crate) fn wire_chats(
                             let refresh_cb = refresh_cb.clone();
                             let _ = slint::invoke_from_event_loop(move || {
                                 let Some(ui) = weak_cb.upgrade() else { return };
-                                ui.set_backend_error(friendly_error("unarchive", &e).into());
+                                ui.set_backend_error(friendly_error(ErrorOp::Unarchive, &e).into());
                                 refresh_cb();
                             });
                         }

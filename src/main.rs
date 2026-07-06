@@ -484,7 +484,7 @@ fn main() -> Result<(), slint::PlatformError> {
                                     tracing::warn!(target: "send", "offline — left queued for flush");
                                     return;
                                 }
-                                ui.set_backend_error(friendly_error("send", &e).into());
+                                ui.set_backend_error(friendly_error(ErrorOp::Send, &e).into());
                                 // Online failure: a real error. Mark failed in place
                                 // — the bubble flips to red without disturbing its
                                 // neighbours.
@@ -577,7 +577,7 @@ fn main() -> Result<(), slint::PlatformError> {
                         let mut overlay = pending_state.lock().unwrap();
                         if let Err(e) = &result {
                             tracing::warn!(target: "edit", "{e:#}");
-                            ui.set_backend_error(friendly_error("edit", e).into());
+                            ui.set_backend_error(friendly_error(ErrorOp::Edit, e).into());
                         }
                         overlay.edits.remove(&(group_hex.clone(), target.clone()));
                     }
@@ -710,7 +710,7 @@ fn main() -> Result<(), slint::PlatformError> {
                             };
                             if let Err(e) = sync_result {
                                 tracing::warn!(target: "backend", "background sync failed: {e:#}");
-                                ui.set_backend_error(friendly_error("sync", &e).into());
+                                ui.set_backend_error(friendly_error(ErrorOp::Sync, &e).into());
                                 return;
                             }
                             let Some(b) = backend_cell_for_sync.lock().unwrap().clone() else {
@@ -919,7 +919,7 @@ fn main() -> Result<(), slint::PlatformError> {
                             }
                             Err(e) => {
                                 tracing::warn!(target: "backend", "boot failed: {e:#}");
-                                ui.set_backend_error(friendly_error("backend", &e).into());
+                                ui.set_backend_error(friendly_error(ErrorOp::Backend, &e).into());
                                 ui.set_booting(false);
                             }
                         }

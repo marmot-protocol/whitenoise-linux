@@ -420,156 +420,179 @@ pub(crate) fn validate_new_password(pw: &str, confirm: &str) -> Result<(), Strin
     Ok(())
 }
 
-/// Localized snapshot of the user-facing error/status copy.
-///
-/// The strings themselves are authored as `@tr()` properties on the Slint
-/// `ErrorCopy` global so they flow through the same gettext catalogs as the
-/// rest of the UI (the project keeps *all* i18n in the Slint `@tr` catalogs —
-/// see the `notification_body` note). But `friendly_error` and the relay-pane
-/// status setters run on worker threads, where touching a Slint getter is
-/// unsound. So we snapshot the translated strings on the UI thread (at startup
-/// and on every locale change) into this process-global, and worker threads
-/// read the snapshot instead.
-#[derive(Clone)]
-pub(crate) struct ErrorCopySnapshot {
-    pub(crate) invalid_key: String,
-    pub(crate) network: String,
-    pub(crate) sync: String,
-    pub(crate) backend: String,
-    pub(crate) switch_account: String,
-    pub(crate) accept: String,
-    pub(crate) block: String,
-    pub(crate) archive: String,
-    pub(crate) unarchive: String,
-    pub(crate) send: String,
-    pub(crate) edit: String,
-    pub(crate) react: String,
-    pub(crate) unreact: String,
-    pub(crate) kp_publish: String,
-    pub(crate) kp_rotate: String,
-    pub(crate) kp_refresh: String,
-    pub(crate) republish: String,
-    pub(crate) add_account: String,
-    pub(crate) create_chat: String,
-    pub(crate) add_contact: String,
-    pub(crate) add_member: String,
-    pub(crate) group_settings: String,
-    pub(crate) group_image: String,
-    pub(crate) save_profile: String,
-    pub(crate) upload_picture: String,
-    pub(crate) generic: String,
-    pub(crate) not_connected: String,
-    pub(crate) relay_already_listed: String,
-    pub(crate) relay_url_empty: String,
-    pub(crate) relay_url_scheme: String,
-    pub(crate) relay_url_no_host: String,
-    pub(crate) relay_url_invalid: String,
-    pub(crate) save_relays_failed: String,
-    pub(crate) relay_added: String,
-    pub(crate) relay_removed: String,
-    pub(crate) republishing: String,
-}
+// ─── Localized copy snapshots ────────────────────────────────────────────
+//
+// `ErrorCopySnapshot` (below) and `TimeCopySnapshot` (`chrome.rs`) mirror
+// Slint `@tr()` globals into process-wide cells so worker threads can read
+// localized copy without touching Slint property getters (unsound off the UI
+// thread). Each snapshot keeps three things in lockstep per string: the
+// struct field, the English `Default`, and the getter call in the refresh
+// function. `copy_snapshot!` derives all three from one field list, so adding
+// a string is one line in the invocation plus the `@tr()` property on the
+// Slint global.
 
-impl Default for ErrorCopySnapshot {
-    /// English fallback, identical to the `@tr()` source strings. Used before
-    /// the first UI-thread snapshot lands (and as a belt-and-braces default).
-    fn default() -> Self {
-        Self {
-            invalid_key: "That doesn't look like a valid npub or public key. Double-check it and try again.".into(),
-            network: "Can't reach your relays right now. Check your network and relay settings, then try again.".into(),
-            sync: "Couldn't finish syncing. We'll keep retrying — check your relay settings if this keeps happening.".into(),
-            backend: "Couldn't start up. Check your network and relay settings, then try again.".into(),
-            switch_account: "Couldn't switch accounts. Please try again in a moment.".into(),
-            accept: "Couldn't accept the invitation. Please try again in a moment.".into(),
-            block: "Couldn't decline the invitation. Please try again in a moment.".into(),
-            archive: "Couldn't archive this chat. Please try again.".into(),
-            unarchive: "Couldn't restore this chat. Please try again.".into(),
-            send: "Couldn't send your message. Check your connection and try again.".into(),
-            edit: "Couldn't save your edit. Check your connection and try again.".into(),
-            react: "Couldn't add your reaction. Please try again.".into(),
-            unreact: "Couldn't remove your reaction. Please try again.".into(),
-            kp_publish: "Couldn't publish your key package. Check your relay settings and try again.".into(),
-            kp_rotate: "Couldn't rotate your key package. Check your relay settings and try again.".into(),
-            kp_refresh: "Couldn't refresh your key packages. Check your relay settings and try again.".into(),
-            republish: "Couldn't republish to your relays. Check your relay settings and try again.".into(),
-            add_account: "Couldn't add that account. Please check the key and try again.".into(),
-            create_chat: "Couldn't create the chat. Please try again.".into(),
-            add_contact: "Couldn't add that contact. Please try again.".into(),
-            add_member: "Couldn't add that member. Please try again.".into(),
-            group_settings: "Couldn't update the group settings. Please try again.".into(),
-            group_image: "Couldn't update the group image. Please try again.".into(),
-            save_profile: "Couldn't save your profile. Check your connection and try again.".into(),
-            upload_picture: "Couldn't upload your picture. Please try again.".into(),
-            generic: "Something went wrong. Please try again.".into(),
-            not_connected: "Not connected yet. Please wait a moment and try again.".into(),
-            relay_already_listed: "That relay is already in your list.".into(),
-            relay_url_empty: "Enter a relay address.".into(),
-            relay_url_scheme: "A relay address starts with wss:// — for example wss://relay.example.com.".into(),
-            relay_url_no_host: "Add the relay's address after wss://.".into(),
-            relay_url_invalid: "That doesn't look like a valid relay address.".into(),
-            save_relays_failed: "Couldn't save your relay list. Please try again.".into(),
-            relay_added: "Relay added.".into(),
-            relay_removed: "Relay removed.".into(),
-            republishing: "Republishing…".into(),
+/// Per-field helper for [`copy_snapshot!`]: build the English fallback value
+/// (a single string literal, or a bracketed list for array fields).
+macro_rules! copy_field_default {
+    ([$($d:expr),+ $(,)?]) => { [$($d),+].map(String::from) };
+    ($d:expr) => { ($d).into() };
+}
+pub(crate) use copy_field_default;
+
+/// Per-field helper for [`copy_snapshot!`]: read the localized value off the
+/// Slint global (a single getter, or a bracketed list for array fields).
+macro_rules! copy_field_read {
+    ($g:ident, [$($getter:ident),+ $(,)?]) => { [$($g.$getter()),+].map(|s| s.to_string()) };
+    ($g:ident, $getter:ident) => { $g.$getter().to_string() };
+}
+pub(crate) use copy_field_read;
+
+/// Generate a localized-copy snapshot from one field list: the struct, its
+/// English `Default`, the process-wide cell, the UI-thread refresh function,
+/// and the any-thread reader. Field syntax is
+/// `name: String = getter => "English default";` or, for array fields,
+/// `name: [String; N] = [getter, …] => ["default", …];`.
+macro_rules! copy_snapshot {
+    (
+        $(#[$smeta:meta])*
+        $vis:vis struct $name:ident from $global:ident;
+        $(#[$rmeta:meta])*
+        refresh fn $refresh:ident, cell fn $cell:ident;
+        $(#[$dmeta:meta])*
+        read fn $read:ident;
+        $(
+            $(#[$fmeta:meta])*
+            $field:ident : $fty:ty = $getter:tt => $default:tt
+        );+ $(;)?
+    ) => {
+        $(#[$smeta])*
+        #[derive(Clone)]
+        $vis struct $name {
+            $( $(#[$fmeta])* pub(crate) $field: $fty, )+
         }
-    }
-}
 
-pub(crate) fn error_copy_cell() -> &'static Mutex<ErrorCopySnapshot> {
-    static C: OnceLock<Mutex<ErrorCopySnapshot>> = OnceLock::new();
-    C.get_or_init(|| Mutex::new(ErrorCopySnapshot::default()))
-}
+        impl Default for $name {
+            /// English fallback, identical to the `@tr()` source strings. Used
+            /// before the first UI-thread snapshot lands (and as a
+            /// belt-and-braces default).
+            fn default() -> Self {
+                Self { $( $field: $crate::copy_field_default!($default), )+ }
+            }
+        }
 
-/// Snapshot the localized `ErrorCopy` strings off the Slint global into the
-/// process-global cache. MUST be called on the UI/event-loop thread (it reads
-/// Slint property getters). Call at startup and after every locale change so
-/// worker-thread error copy follows the active language.
-pub(crate) fn refresh_error_copy(ui: &DarkMatterLinux) {
-    let g = ui.global::<ErrorCopy>();
-    let snap = ErrorCopySnapshot {
-        invalid_key: g.get_invalid_key().to_string(),
-        network: g.get_network().to_string(),
-        sync: g.get_sync().to_string(),
-        backend: g.get_backend().to_string(),
-        switch_account: g.get_switch_account().to_string(),
-        accept: g.get_accept().to_string(),
-        block: g.get_block().to_string(),
-        archive: g.get_archive().to_string(),
-        unarchive: g.get_unarchive().to_string(),
-        send: g.get_send().to_string(),
-        edit: g.get_edit().to_string(),
-        react: g.get_react().to_string(),
-        unreact: g.get_unreact().to_string(),
-        kp_publish: g.get_kp_publish().to_string(),
-        kp_rotate: g.get_kp_rotate().to_string(),
-        kp_refresh: g.get_kp_refresh().to_string(),
-        republish: g.get_republish().to_string(),
-        add_account: g.get_add_account().to_string(),
-        create_chat: g.get_create_chat().to_string(),
-        add_contact: g.get_add_contact().to_string(),
-        add_member: g.get_add_member().to_string(),
-        group_settings: g.get_group_settings().to_string(),
-        group_image: g.get_group_image().to_string(),
-        save_profile: g.get_save_profile().to_string(),
-        upload_picture: g.get_upload_picture().to_string(),
-        generic: g.get_generic().to_string(),
-        not_connected: g.get_not_connected().to_string(),
-        relay_already_listed: g.get_relay_already_listed().to_string(),
-        relay_url_empty: g.get_relay_url_empty().to_string(),
-        relay_url_scheme: g.get_relay_url_scheme().to_string(),
-        relay_url_no_host: g.get_relay_url_no_host().to_string(),
-        relay_url_invalid: g.get_relay_url_invalid().to_string(),
-        save_relays_failed: g.get_save_relays_failed().to_string(),
-        relay_added: g.get_relay_added().to_string(),
-        relay_removed: g.get_relay_removed().to_string(),
-        republishing: g.get_republishing().to_string(),
+        $vis fn $cell() -> &'static ::std::sync::Mutex<$name> {
+            static C: ::std::sync::OnceLock<::std::sync::Mutex<$name>> =
+                ::std::sync::OnceLock::new();
+            C.get_or_init(|| ::std::sync::Mutex::new(<$name>::default()))
+        }
+
+        $(#[$rmeta])*
+        $vis fn $refresh(ui: &DarkMatterLinux) {
+            let g = ui.global::<$global>();
+            *$cell().lock().unwrap() = $name {
+                $( $field: $crate::copy_field_read!(g, $getter), )+
+            };
+        }
+
+        $(#[$dmeta])*
+        $vis fn $read() -> $name {
+            $cell().lock().unwrap().clone()
+        }
     };
-    *error_copy_cell().lock().unwrap() = snap;
+}
+pub(crate) use copy_snapshot;
+
+copy_snapshot! {
+    /// Localized snapshot of the user-facing error/status copy.
+    ///
+    /// The strings themselves are authored as `@tr()` properties on the Slint
+    /// `ErrorCopy` global so they flow through the same gettext catalogs as the
+    /// rest of the UI (the project keeps *all* i18n in the Slint `@tr` catalogs —
+    /// see the `notification_body` note). But `friendly_error` and the relay-pane
+    /// status setters run on worker threads, where touching a Slint getter is
+    /// unsound. So we snapshot the translated strings on the UI thread (at startup
+    /// and on every locale change) into this process-global, and worker threads
+    /// read the snapshot instead.
+    pub(crate) struct ErrorCopySnapshot from ErrorCopy;
+    /// Snapshot the localized `ErrorCopy` strings off the Slint global into the
+    /// process-global cache. MUST be called on the UI/event-loop thread (it reads
+    /// Slint property getters). Call at startup and after every locale change so
+    /// worker-thread error copy follows the active language.
+    refresh fn refresh_error_copy, cell fn error_copy_cell;
+    /// Read the current localized `ErrorCopy` snapshot. Safe from any thread.
+    read fn error_copy;
+    invalid_key: String = get_invalid_key => "That doesn't look like a valid npub or public key. Double-check it and try again.";
+    network: String = get_network => "Can't reach your relays right now. Check your network and relay settings, then try again.";
+    sync: String = get_sync => "Couldn't finish syncing. We'll keep retrying — check your relay settings if this keeps happening.";
+    backend: String = get_backend => "Couldn't start up. Check your network and relay settings, then try again.";
+    switch_account: String = get_switch_account => "Couldn't switch accounts. Please try again in a moment.";
+    accept: String = get_accept => "Couldn't accept the invitation. Please try again in a moment.";
+    block: String = get_block => "Couldn't decline the invitation. Please try again in a moment.";
+    archive: String = get_archive => "Couldn't archive this chat. Please try again.";
+    unarchive: String = get_unarchive => "Couldn't restore this chat. Please try again.";
+    send: String = get_send => "Couldn't send your message. Check your connection and try again.";
+    edit: String = get_edit => "Couldn't save your edit. Check your connection and try again.";
+    react: String = get_react => "Couldn't add your reaction. Please try again.";
+    unreact: String = get_unreact => "Couldn't remove your reaction. Please try again.";
+    kp_publish: String = get_kp_publish => "Couldn't publish your key package. Check your relay settings and try again.";
+    kp_rotate: String = get_kp_rotate => "Couldn't rotate your key package. Check your relay settings and try again.";
+    kp_refresh: String = get_kp_refresh => "Couldn't refresh your key packages. Check your relay settings and try again.";
+    republish: String = get_republish => "Couldn't republish to your relays. Check your relay settings and try again.";
+    add_account: String = get_add_account => "Couldn't add that account. Please check the key and try again.";
+    create_chat: String = get_create_chat => "Couldn't create the chat. Please try again.";
+    add_contact: String = get_add_contact => "Couldn't add that contact. Please try again.";
+    add_member: String = get_add_member => "Couldn't add that member. Please try again.";
+    group_settings: String = get_group_settings => "Couldn't update the group settings. Please try again.";
+    group_image: String = get_group_image => "Couldn't update the group image. Please try again.";
+    save_profile: String = get_save_profile => "Couldn't save your profile. Check your connection and try again.";
+    upload_picture: String = get_upload_picture => "Couldn't upload your picture. Please try again.";
+    generic: String = get_generic => "Something went wrong. Please try again.";
+    not_connected: String = get_not_connected => "Not connected yet. Please wait a moment and try again.";
+    relay_already_listed: String = get_relay_already_listed => "That relay is already in your list.";
+    relay_url_empty: String = get_relay_url_empty => "Enter a relay address.";
+    relay_url_scheme: String = get_relay_url_scheme => "A relay address starts with wss:// — for example wss://relay.example.com.";
+    relay_url_no_host: String = get_relay_url_no_host => "Add the relay's address after wss://.";
+    relay_url_invalid: String = get_relay_url_invalid => "That doesn't look like a valid relay address.";
+    save_relays_failed: String = get_save_relays_failed => "Couldn't save your relay list. Please try again.";
+    relay_added: String = get_relay_added => "Relay added.";
+    relay_removed: String = get_relay_removed => "Relay removed.";
+    republishing: String = get_republishing => "Republishing…";
 }
 
-/// Read the current localized `ErrorCopy` snapshot. Safe from any thread.
-pub(crate) fn error_copy() -> ErrorCopySnapshot {
-    error_copy_cell().lock().unwrap().clone()
+/// The operation behind a [`friendly_error`] call. Each variant selects the
+/// operation-specific fallback message from [`ErrorCopySnapshot`]; because the
+/// match in `friendly_error` is exhaustive, adding a variant forces a copy
+/// decision at compile time, and a call site can no longer misspell a string
+/// key and silently fall through to the generic message.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub(crate) enum ErrorOp {
+    Sync,
+    Backend,
+    SwitchAccount,
+    Accept,
+    Block,
+    Archive,
+    Unarchive,
+    Send,
+    Edit,
+    React,
+    Unreact,
+    KpPublish,
+    KpRotate,
+    KpRefresh,
+    Republish,
+    AddAccount,
+    CreateChat,
+    AddContact,
+    AddMember,
+    GroupSettings,
+    GroupImage,
+    SaveProfile,
+    UploadPicture,
+    /// No dedicated copy yet — maps to the generic message.
+    Delete,
+    /// No dedicated copy yet — maps to the generic message.
+    Forward,
 }
 
 /// Map a low-level backend error into approachable, action-oriented UI copy.
@@ -582,12 +605,11 @@ pub(crate) fn error_copy() -> ErrorCopySnapshot {
 /// Classification is two-tier: first we inspect the flattened error chain for
 /// signals that point at a specific, fixable user action (a malformed key, an
 /// unreachable relay); failing that we fall back to a reassuring, operation-
-/// specific message. `op` is the short internal label already used at the call
-/// site (e.g. "sync", "switch account", "send").
+/// specific message selected by `op`.
 ///
 /// The returned text is localized: it comes from the `ErrorCopy` snapshot which
 /// mirrors the Slint `@tr()` catalogs for the active locale.
-pub(crate) fn friendly_error(op: &str, e: &anyhow::Error) -> String {
+pub(crate) fn friendly_error(op: ErrorOp, e: &anyhow::Error) -> String {
     let copy = error_copy();
     // Flatten the whole error chain once for case-insensitive keyword matching.
     let detail = format!("{e:#}").to_lowercase();
@@ -611,31 +633,32 @@ pub(crate) fn friendly_error(op: &str, e: &anyhow::Error) -> String {
     }
 
     // Tier 2 — operation-specific fallback. Reassuring, names no internals.
+    // Exhaustive on purpose: a new `ErrorOp` variant must pick its copy here.
     match op {
-        "sync" => copy.sync,
-        "backend" => copy.backend,
-        "switch account" => copy.switch_account,
-        "accept" => copy.accept,
-        "block" => copy.block,
-        "archive" => copy.archive,
-        "unarchive" => copy.unarchive,
-        "send" => copy.send,
-        "edit" => copy.edit,
-        "react" => copy.react,
-        "unreact" => copy.unreact,
-        "kp_publish" => copy.kp_publish,
-        "kp_rotate" => copy.kp_rotate,
-        "kp_refresh" => copy.kp_refresh,
-        "republish" => copy.republish,
-        "add account" => copy.add_account,
-        "create chat" => copy.create_chat,
-        "add contact" => copy.add_contact,
-        "add member" => copy.add_member,
-        "group settings" => copy.group_settings,
-        "group image" => copy.group_image,
-        "save profile" => copy.save_profile,
-        "upload picture" => copy.upload_picture,
-        _ => copy.generic,
+        ErrorOp::Sync => copy.sync,
+        ErrorOp::Backend => copy.backend,
+        ErrorOp::SwitchAccount => copy.switch_account,
+        ErrorOp::Accept => copy.accept,
+        ErrorOp::Block => copy.block,
+        ErrorOp::Archive => copy.archive,
+        ErrorOp::Unarchive => copy.unarchive,
+        ErrorOp::Send => copy.send,
+        ErrorOp::Edit => copy.edit,
+        ErrorOp::React => copy.react,
+        ErrorOp::Unreact => copy.unreact,
+        ErrorOp::KpPublish => copy.kp_publish,
+        ErrorOp::KpRotate => copy.kp_rotate,
+        ErrorOp::KpRefresh => copy.kp_refresh,
+        ErrorOp::Republish => copy.republish,
+        ErrorOp::AddAccount => copy.add_account,
+        ErrorOp::CreateChat => copy.create_chat,
+        ErrorOp::AddContact => copy.add_contact,
+        ErrorOp::AddMember => copy.add_member,
+        ErrorOp::GroupSettings => copy.group_settings,
+        ErrorOp::GroupImage => copy.group_image,
+        ErrorOp::SaveProfile => copy.save_profile,
+        ErrorOp::UploadPicture => copy.upload_picture,
+        ErrorOp::Delete | ErrorOp::Forward => copy.generic,
     }
 }
 

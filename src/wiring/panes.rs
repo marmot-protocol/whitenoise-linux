@@ -65,7 +65,7 @@ pub(crate) fn wire_panes(
                 Ok(s) => s,
                 Err(e) => {
                     tracing::warn!(target: "accounts", "switch failed: {e:#}");
-                    ui.set_backend_error(friendly_error("switch account", &e).into());
+                    ui.set_backend_error(friendly_error(ErrorOp::SwitchAccount, &e).into());
                     return;
                 }
             };
@@ -290,7 +290,9 @@ pub(crate) fn wire_panes(
                         }
                         Err(e) => {
                             tracing::warn!(target: "add_account", "{e:#}");
-                            ui.set_add_account_status(friendly_error("add account", &e).into());
+                            ui.set_add_account_status(
+                                friendly_error(ErrorOp::AddAccount, &e).into(),
+                            );
                         }
                     }
                 });
@@ -1185,7 +1187,7 @@ pub(crate) fn wire_panes(
                     None => Err(error_copy().not_connected),
                     Some(b) => b
                         .republish_relay_lists()
-                        .map_err(|e| friendly_error("republish", &e)),
+                        .map_err(|e| friendly_error(ErrorOp::Republish, &e)),
                 };
                 let _ = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak.upgrade() else { return };
@@ -1230,11 +1232,11 @@ pub(crate) fn wire_panes(
                             "publish" => b
                                 .publish_key_package()
                                 .map(|_| "published · your key package is live".to_string())
-                                .map_err(|e| friendly_error("kp_publish", &e)),
+                                .map_err(|e| friendly_error(ErrorOp::KpPublish, &e)),
                             "rotate" => b
                                 .rotate_key_package()
                                 .map(|_| "rotated · published a fresh key package".to_string())
-                                .map_err(|e| friendly_error("kp_rotate", &e)),
+                                .map_err(|e| friendly_error(ErrorOp::KpRotate, &e)),
                             "refresh" => b
                                 .key_packages_fetch()
                                 .map(|recs| {
@@ -1244,7 +1246,7 @@ pub(crate) fn wire_panes(
                                         if recs.len() == 1 { "" } else { "s" }
                                     )
                                 })
-                                .map_err(|e| friendly_error("kp_refresh", &e)),
+                                .map_err(|e| friendly_error(ErrorOp::KpRefresh, &e)),
                             _ => Err("Something went wrong. Please try again.".to_string()),
                         },
                     }
