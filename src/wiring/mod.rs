@@ -3,13 +3,17 @@ use crate::*;
 // Callback-wiring sections. Each is one logical layer split out only to stay
 // under the 2000-line file limit; re-exported so callers see `wire_*` flat.
 mod backup;
+mod contacts;
 mod extra;
 mod forward;
+mod groups;
 mod messaging;
 mod panes;
 pub(crate) use backup::*;
+pub(crate) use contacts::*;
 pub(crate) use extra::*;
 pub(crate) use forward::*;
+pub(crate) use groups::*;
 pub(crate) use messaging::*;
 pub(crate) use panes::*;
 
