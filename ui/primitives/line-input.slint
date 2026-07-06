@@ -48,6 +48,12 @@ export component LineInput inherits Rectangle {
         input.focus();
     }
 
+    // Focus the inner TextInput — used by owners that autofocus a field
+    // (e.g. the login screen's nsec/password fields).
+    public function take-focus() {
+        input.focus();
+    }
+
     preferred-height: root.single-line ? 0px : input.preferred-height;
     min-height: root.single-line ? 0px : input.font-size * 1.4;
 
