@@ -750,10 +750,6 @@ msgctxt "DarkMatterLinux"
 msgid "Delete for me?"
 msgstr ""
 
-msgctxt "LoginScreen"
-msgid "Delete vault"
-msgstr ""
-
 msgctxt "AdvancedPane"
 msgid "Deleting the file being recorded rotates it — recording continues in a fresh file."
 msgstr ""
@@ -1488,6 +1484,10 @@ msgctxt "GroupSettingsCard"
 msgid "Remove image"
 msgstr ""
 
+msgctxt "LoginScreen"
+msgid "Remove key"
+msgstr ""
+
 msgctxt "MessageContextMenu"
 msgid "Reply"
 msgstr ""
@@ -1805,10 +1805,6 @@ msgctxt "DarkMatterLinux"
 msgid "This declines the invite from {}. It can't be restored unless they invite you again."
 msgstr ""
 
-msgctxt "LoginScreen"
-msgid "This deletes the encrypted vault on this device. You'll need your backed-up nsec to use this identity again. This can't be undone."
-msgstr ""
-
 msgctxt "DarkMatterLinux"
 msgid "This hides the message on this device only. Other people will still see it."
 msgstr ""
@@ -1827,6 +1823,10 @@ msgstr ""
 
 msgctxt "MessageView"
 msgid "This message was deleted"
+msgstr ""
+
+msgctxt "LoginScreen"
+msgid "This removes the key stored on this device. You'll need the nsec you backed up to use this identity again. This can't be undone."
 msgstr ""
 
 msgctxt "DarkMatterLinux"

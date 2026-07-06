@@ -774,10 +774,6 @@ msgctxt "DarkMatterLinux"
 msgid "Delete for me?"
 msgstr "日付形式"
 
-msgctxt "LoginScreen"
-msgid "Delete vault"
-msgstr "保管庫を削除"
-
 msgctxt "AdvancedPane"
 msgid "Deleting the file being recorded rotates it — recording continues in a fresh file."
 msgstr "記録中のファイルを削除するとローテーションされ、新しいファイルに記録が続きます。"
@@ -1545,6 +1541,11 @@ msgctxt "GroupSettingsCard"
 msgid "Remove image"
 msgstr "画像を削除"
 
+#, fuzzy
+msgctxt "LoginScreen"
+msgid "Remove key"
+msgstr "鍵を削除"
+
 msgctxt "MessageContextMenu"
 msgid "Reply"
 msgstr "返信"
@@ -1874,10 +1875,6 @@ msgctxt "DarkMatterLinux"
 msgid "This declines the invite from {}. It can't be restored unless they invite you again."
 msgstr "{} からの招待を辞退します。相手がもう一度招待しない限り、元に戻すことはできません。"
 
-msgctxt "LoginScreen"
-msgid "This deletes the encrypted vault on this device. You'll need your backed-up nsec to use this identity again. This can't be undone."
-msgstr "このデバイスの暗号化された保管庫を削除します。この ID を再び使うには、保管しておいた nsec が必要です。この操作は取り消せません。"
-
 msgctxt "DarkMatterLinux"
 msgid "This hides the message on this device only. Other people will still see it."
 msgstr ""
@@ -1897,6 +1894,11 @@ msgstr ""
 msgctxt "MessageView"
 msgid "This message was deleted"
 msgstr ""
+
+#, fuzzy
+msgctxt "LoginScreen"
+msgid "This removes the key stored on this device. You'll need the nsec you backed up to use this identity again. This can't be undone."
+msgstr "この端末から鍵を削除します。この ID をもう一度使うには、控えておいた nsec が必要です。この操作は元に戻せません。"
 
 msgctxt "DarkMatterLinux"
 msgid "This removes the message for everyone in the chat. This can't be undone."
@@ -2175,6 +2177,10 @@ msgstr "✓ 確認済み"
 #~ msgctxt "SettingsPage"
 #~ msgid "Dark Matter v0.1.0"
 #~ msgstr "Dark Matter v0.1.0"
+
+#~ msgctxt "LoginScreen"
+#~ msgid "Delete vault"
+#~ msgstr "保管庫を削除"
 
 #~ msgctxt "AppearancePane"
 #~ msgid "Density"

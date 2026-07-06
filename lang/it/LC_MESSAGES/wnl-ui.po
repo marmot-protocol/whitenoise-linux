@@ -776,10 +776,6 @@ msgctxt "DarkMatterLinux"
 msgid "Delete for me?"
 msgstr "Formato data"
 
-msgctxt "LoginScreen"
-msgid "Delete vault"
-msgstr "Elimina cassaforte"
-
 msgctxt "AdvancedPane"
 msgid "Deleting the file being recorded rotates it — recording continues in a fresh file."
 msgstr "Eliminare il file in registrazione lo ruota — la registrazione continua in un nuovo file."
@@ -1547,6 +1543,11 @@ msgctxt "GroupSettingsCard"
 msgid "Remove image"
 msgstr "Rimuovi immagine"
 
+#, fuzzy
+msgctxt "LoginScreen"
+msgid "Remove key"
+msgstr "Rimuovi chiave"
+
 msgctxt "MessageContextMenu"
 msgid "Reply"
 msgstr "Rispondi"
@@ -1876,10 +1877,6 @@ msgctxt "DarkMatterLinux"
 msgid "This declines the invite from {}. It can't be restored unless they invite you again."
 msgstr "Questo rifiuta l'invito di {}. Non potrà essere ripristinato a meno che non ti invitino di nuovo."
 
-msgctxt "LoginScreen"
-msgid "This deletes the encrypted vault on this device. You'll need your backed-up nsec to use this identity again. This can't be undone."
-msgstr "Questo elimina la cassaforte crittografata da questo dispositivo. Per usare di nuovo questa identità ti servirà la tua copia del nsec. Non può essere annullato."
-
 msgctxt "DarkMatterLinux"
 msgid "This hides the message on this device only. Other people will still see it."
 msgstr ""
@@ -1899,6 +1896,11 @@ msgstr ""
 msgctxt "MessageView"
 msgid "This message was deleted"
 msgstr ""
+
+#, fuzzy
+msgctxt "LoginScreen"
+msgid "This removes the key stored on this device. You'll need the nsec you backed up to use this identity again. This can't be undone."
+msgstr "La chiave salvata su questo dispositivo verrà rimossa. Per usare di nuovo questa identità ti servirà l'nsec che hai salvato. Questa operazione non può essere annullata."
 
 msgctxt "DarkMatterLinux"
 msgid "This removes the message for everyone in the chat. This can't be undone."
@@ -2178,6 +2180,10 @@ msgstr "✓ VERIFICATO"
 #~ msgctxt "SettingsPage"
 #~ msgid "Dark Matter v0.1.0"
 #~ msgstr "Dark Matter v0.1.0"
+
+#~ msgctxt "LoginScreen"
+#~ msgid "Delete vault"
+#~ msgstr "Elimina cassaforte"
 
 #~ msgctxt "AppearancePane"
 #~ msgid "Density"

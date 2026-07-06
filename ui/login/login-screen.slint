@@ -755,8 +755,8 @@ export component LoginScreen inherits Rectangle {
         width: root.width;
         height: root.height;
         title: @tr("Use another key?");
-        subtitle: @tr("This deletes the encrypted vault on this device. You'll need your backed-up nsec to use this identity again. This can't be undone.");
-        confirm-label: @tr("Delete vault");
+        subtitle: @tr("This removes the key stored on this device. You'll need the nsec you backed up to use this identity again. This can't be undone.");
+        confirm-label: @tr("Remove key");
         confirm => {
             root.show-reset-confirm = false;
             root.reset-vault();
