@@ -16,11 +16,13 @@ import { LockIcon } from "../icons/lock-icon.slint";
 import { CopyIcon } from "../icons/copy-icon.slint";
 import { PlusIcon } from "../icons/plus-icon.slint";
 import { RefreshIcon } from "../icons/refresh-icon.slint";
+import { EyeIcon } from "../icons/eye-icon.slint";
 import { Avatar } from "../primitives/avatar.slint";
 import { CypherScroll } from "../primitives/cypher-scroll.slint";
 
-// A labeled field box matching the login card style. Used for the nsec input
-// and the password / confirm-password fields.
+// A labeled field box matching the login card style. Used directly for the
+// nsec input; PasswordField below layers the masked mode + reveal toggle on
+// top for the password / confirm-password fields.
 component VaultField inherits VerticalLayout {
     in property <string> label;
     in property <string> placeholder;
@@ -59,6 +61,7 @@ component VaultField inherits VerticalLayout {
         HorizontalLayout {
             padding-left: 14px;
             padding-right: 14px;
+            spacing: 8px;
             vf-input := LineInput {
                 placeholder: root.placeholder;
                 text <=> root.text;
@@ -71,6 +74,40 @@ component VaultField inherits VerticalLayout {
                     root.submit();
                 }
             }
+
+            // PasswordField drops its eye button in here.
+            @children
+        }
+    }
+}
+
+// A VaultField that is always a password entry: masked by default, with an
+// eye button inside the box that reveals the typed characters. Reveal state
+// is per instance, so leaving a login mode resets every field to masked.
+component PasswordField inherits VaultField {
+    property <bool> revealed: false;
+    password: !root.revealed;
+    function toggle-reveal() {
+        root.revealed = !root.revealed;
+    }
+
+    Rectangle {
+        width: 22px;
+        reveal-touch := TouchArea {
+            mouse-cursor: pointer;
+            accessible-role: button;
+            accessible-label: root.revealed ? @tr("Hide password") : @tr("Show password");
+            accessible-action-default => {
+                root.toggle-reveal();
+            }
+            clicked => {
+                root.toggle-reveal();
+            }
+        }
+
+        EyeIcon {
+            stroke: reveal-touch.has-hover ? Palette.text-hi : Palette.text-mid;
+            crossed: root.revealed;
         }
     }
 }
@@ -316,21 +353,19 @@ export component LoginScreen inherits Rectangle {
                         }
                     }
 
-                    VaultField {
+                    PasswordField {
                         label: @tr("VAULT PASSWORD");
                         placeholder: @tr("Choose a password");
                         text <=> root.password-input;
-                        password: true;
                         submit => {
                             root.create-account();
                         }
                     }
 
-                    VaultField {
+                    PasswordField {
                         label: @tr("CONFIRM PASSWORD");
                         placeholder: @tr("Re-enter password");
                         text <=> root.password-confirm;
-                        password: true;
                         submit => {
                             root.create-account();
                         }
@@ -575,11 +610,10 @@ export component LoginScreen inherits Rectangle {
                     }
 
                     // Vault password + confirm.
-                VaultField {
+                PasswordField {
                         label: @tr("VAULT PASSWORD");
                         placeholder: @tr("Choose a password");
                         text <=> root.password-input;
-                        password: true;
                         init => {
                             self.take-focus();
                         }
@@ -588,11 +622,10 @@ export component LoginScreen inherits Rectangle {
                         }
                     }
 
-                    VaultField {
+                    PasswordField {
                         label: @tr("CONFIRM PASSWORD");
                         placeholder: @tr("Re-enter password");
                         text <=> root.password-confirm;
-                        password: true;
                         submit => {
                             root.save-generated();
                         }
@@ -644,11 +677,10 @@ export component LoginScreen inherits Rectangle {
             if root.mode == 3: VerticalLayout {
                     spacing: 14px;
 
-                    VaultField {
+                    PasswordField {
                         label: @tr("VAULT PASSWORD");
                         placeholder: @tr("Enter your password");
                         text <=> root.password-input;
-                        password: true;
                         error: root.error != "";
                         init => {
                             self.take-focus();

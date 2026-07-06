@@ -908,6 +908,10 @@ msgctxt "GroupSettingsCard"
 msgid "Group settings"
 msgstr "Gruppen-ID"
 
+msgctxt "PasswordField"
+msgid "Hide password"
+msgstr "Passwort verbergen"
+
 msgctxt "ProfilePage"
 msgid "How your name appears in chats"
 msgstr "Wie dein Name in Chats erscheint"
@@ -1771,6 +1775,10 @@ msgstr "Als QR anzeigen"
 msgctxt "NotificationsPane"
 msgid "Show message preview"
 msgstr "Nachrichtenvorschau anzeigen"
+
+msgctxt "PasswordField"
+msgid "Show password"
+msgstr "Passwort anzeigen"
 
 #, fuzzy
 msgctxt "AdvancedPane"
