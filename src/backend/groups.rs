@@ -210,6 +210,22 @@ impl Backend {
                 return;
             }
         };
+        // A URL avatar (marmot.group.avatar-url.v1, what Android publishes)
+        // takes render precedence over the Blossom image, so setting a new
+        // image while one is present would be invisible everywhere. Clear it
+        // after a successful image commit; the spec's fallback then lands on
+        // the fresh image.
+        let clear_url_avatar = !bytes.is_empty()
+            && self
+                .chats()
+                .ok()
+                .and_then(|chats| {
+                    chats
+                        .iter()
+                        .find(|g| g.group_id_hex.eq_ignore_ascii_case(group_hex))
+                        .map(|g| g.avatar_url.present)
+                })
+                .unwrap_or(false);
         let label = self.active_label();
         let runtime = self.runtime.clone();
         self.tokio.spawn(async move {
@@ -217,6 +233,13 @@ impl Backend {
                 .update_group_image(&label, &group_id, bytes, media_type)
                 .await
                 .map_err(|e| anyhow!("set_group_image: {e}"));
+            if result.is_ok() && clear_url_avatar
+                && let Err(e) = runtime
+                    .update_group_avatar_url(&label, &group_id, None, None, None)
+                    .await
+            {
+                tracing::warn!(target: "group_avatar", "clear url avatar failed: {e:#}");
+            }
             on_done(result);
         });
     }

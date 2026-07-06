@@ -519,6 +519,20 @@ pub(crate) fn push_group_settings_to_ui_from(
     ui.set_chat_group_av_initials(s(&init));
     ui.set_group_rename_draft(s(&name));
 
+    // URL avatar (marmot.group.avatar-url.v1, what Android publishes) takes
+    // precedence over the encrypted Blossom image, per spec.
+    if rec.avatar_url.present && !rec.avatar_url.url.trim().is_empty() {
+        let url = rec.avatar_url.url.trim().to_string();
+        if let Some(img) = cached_picture_image(&url) {
+            ui.set_chat_group_picture(img);
+            ui.set_chat_group_has_picture(true);
+        } else {
+            ui.set_chat_group_has_picture(false);
+            ui.set_chat_group_picture(slint::Image::default());
+            spawn_group_avatar_url_fetch(ui, backend, group_hex, url);
+        }
+        return;
+    }
     let image_hash = if rec.image.present && !rec.image.image_hash_hex.is_empty() {
         Some(rec.image.image_hash_hex.clone())
     } else {
@@ -541,6 +555,39 @@ pub(crate) fn push_group_settings_to_ui_from(
             ui.set_chat_group_picture(slint::Image::default());
         }
     }
+}
+
+/// Fetch + decode the active group's plain-URL avatar
+/// (`marmot.group.avatar-url.v1`) on the tokio runtime, then bind it on the
+/// UI thread — but only if the user is still viewing this group. The pixel
+/// cache is filled by `fetch_picture_pixels` itself (keyed by URL).
+pub(crate) fn spawn_group_avatar_url_fetch(
+    ui: &DarkMatterLinux,
+    backend: &Backend,
+    group_hex: &str,
+    url: String,
+) {
+    let weak = ui.as_weak();
+    let group_hex = group_hex.to_string();
+    backend.tokio_handle().spawn(async move {
+        let Some(pixels) = fetch_picture_pixels(&url).await else {
+            return;
+        };
+        let _ = slint::invoke_from_event_loop(move || {
+            // Ignore if the user navigated away before the fetch finished.
+            let still_active = active_group_slot()
+                .lock()
+                .map(|slot| slot.eq_ignore_ascii_case(&group_hex))
+                .unwrap_or(false);
+            if !still_active {
+                return;
+            }
+            if let Some(ui) = weak.upgrade() {
+                ui.set_chat_group_picture(rgba_to_slint_image(&pixels));
+                ui.set_chat_group_has_picture(true);
+            }
+        });
+    });
 }
 
 /// Fetch + decrypt + decode the active group's avatar on the tokio runtime,
@@ -791,6 +838,60 @@ pub(crate) fn spawn_chat_list_avatar_fetches(ui: &DarkMatterLinux, backend: &Arc
         };
         for record in chats {
             let Some(peer) = b.direct_chat_peer(&record.group_id_hex) else {
+                // Real group. A URL avatar (marmot.group.avatar-url.v1, what
+                // Android publishes) wins over the encrypted Blossom image
+                // per spec and fetches like any profile picture.
+                if record.avatar_url.present && !record.avatar_url.url.trim().is_empty() {
+                    let url = record.avatar_url.url.trim().to_string();
+                    if !picture_cache_has(&url) {
+                        let npub = format!("mls:0x{}", short_hex(&record.group_id_hex));
+                        let weak = weak_outer.clone();
+                        b.tokio_handle().spawn(async move {
+                            let Some(pixels) = fetch_picture_pixels(&url).await else {
+                                return;
+                            };
+                            let _ = slint::invoke_from_event_loop(move || {
+                                if let Some(ui) = weak.upgrade() {
+                                    update_chat_picture(&ui, &npub, &pixels);
+                                }
+                            });
+                        });
+                    }
+                    continue;
+                }
+                // Otherwise fetch + decrypt the Blossom avatar into the same
+                // content-addressed cache key the header path uses, then bind
+                // it onto the row. Content addressing means an image change
+                // is a new key, so no invalidation is needed.
+                if record.image.present && !record.image.image_hash_hex.is_empty() {
+                    let key = format!("group-image:{}", record.image.image_hash_hex);
+                    if !picture_cache_has(&key) {
+                        let npub = format!("mls:0x{}", short_hex(&record.group_id_hex));
+                        let weak = weak_outer.clone();
+                        b.fetch_group_image_async(&record.group_id_hex, move |result| {
+                            let bytes = match result {
+                                Ok(b) => b,
+                                Err(e) => {
+                                    tracing::warn!(target: "group_avatar", "list fetch failed: {e:#}");
+                                    return;
+                                }
+                            };
+                            let pixels = match decode_avatar_pixels(&bytes) {
+                                Ok(p) => p,
+                                Err(e) => {
+                                    tracing::warn!(target: "group_avatar", "list decode failed: {e}");
+                                    return;
+                                }
+                            };
+                            picture_cache_put(key, pixels.clone());
+                            let _ = slint::invoke_from_event_loop(move || {
+                                if let Some(ui) = weak.upgrade() {
+                                    update_chat_picture(&ui, &npub, &pixels);
+                                }
+                            });
+                        });
+                    }
+                }
                 continue;
             };
             let (_, url) = b.account_name_and_picture(&peer);

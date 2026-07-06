@@ -23,7 +23,19 @@ pub(crate) fn chat_meta_from(
             } else {
                 record.profile.name.clone()
             };
-            (group_name, None)
+            // Group avatars resolve through the picture cache; the list
+            // avatar worker fills it on a miss and a later rebuild binds it
+            // here. A URL avatar (marmot.group.avatar-url.v1, what Android
+            // publishes) takes precedence over the encrypted Blossom image
+            // per spec; the Blossom image uses the same content-addressed
+            // `group-image:{hash}` key as the conversation header.
+            let url = if record.avatar_url.present && !record.avatar_url.url.trim().is_empty() {
+                Some(record.avatar_url.url.trim().to_string())
+            } else {
+                (record.image.present && !record.image.image_hash_hex.is_empty())
+                    .then(|| format!("group-image:{}", record.image.image_hash_hex))
+            };
+            (group_name, url)
         }
     };
     let (a, b, init) = avatar_for(&name);
