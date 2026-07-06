@@ -5,9 +5,9 @@ import { Pill } from "../primitives/pill.slint";
 export component GroupMemberRow inherits Rectangle {
     in property <GroupMember> data;
     in property <bool> show-divider: true;
-    callback promote-admin(string);
-    callback demote-admin(string);
-    callback self-demote-admin();
+    callback promote-admin(string, string);
+    callback demote-admin(string, string);
+    callback self-demote-admin(string);
 
     height: 52px;
 
@@ -85,7 +85,7 @@ export component GroupMemberRow inherits Rectangle {
             promote-ta := TouchArea {
                 mouse-cursor: pointer;
                 clicked => {
-                    root.promote-admin(root.data.member-id);
+                    root.promote-admin(root.data.member-id, root.data.name);
                 }
             }
 
@@ -108,7 +108,7 @@ export component GroupMemberRow inherits Rectangle {
             demote-ta := TouchArea {
                 mouse-cursor: pointer;
                 clicked => {
-                    root.demote-admin(root.data.member-id);
+                    root.demote-admin(root.data.member-id, root.data.name);
                 }
             }
 
@@ -131,7 +131,7 @@ export component GroupMemberRow inherits Rectangle {
             self-demote-ta := TouchArea {
                 mouse-cursor: pointer;
                 clicked => {
-                    root.self-demote-admin();
+                    root.self-demote-admin(root.data.name);
                 }
             }
 

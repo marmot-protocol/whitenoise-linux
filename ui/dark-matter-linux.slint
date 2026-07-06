@@ -362,6 +362,37 @@ export component DarkMatterLinux inherits Window {
     // still `ctx-menu-id` (kept from when the menu opened).
     property <bool> show-delete-confirm: false;
     property <bool> delete-confirm-everyone: false;
+    // Admin role changes alter group governance, so the inline member badges
+    // only arm this modal. The existing Rust callbacks fire after confirmation.
+    property <bool> show-admin-confirm: false;
+    property <int> admin-confirm-action: 0; // 1=promote, 2=demote, 3=self-demote
+    property <string> admin-confirm-member-id: "";
+    property <string> admin-confirm-member-name: "";
+    function arm-admin-confirm(action: int, id: string, name: string) {
+        root.admin-confirm-action = action;
+        root.admin-confirm-member-id = id;
+        root.admin-confirm-member-name = name;
+        root.show-admin-confirm = true;
+    }
+    function clear-admin-confirm() {
+        root.show-admin-confirm = false;
+        root.admin-confirm-action = 0;
+        root.admin-confirm-member-id = "";
+        root.admin-confirm-member-name = "";
+    }
+    function request-promote-admin(id: string, name: string) {
+        if (id != "") {
+            root.arm-admin-confirm(1, id, name);
+        }
+    }
+    function request-demote-admin(id: string, name: string) {
+        if (id != "") {
+            root.arm-admin-confirm(2, id, name);
+        }
+    }
+    function request-self-demote-admin(name: string) {
+        root.arm-admin-confirm(3, "", name);
+    }
     // ── Mention autocomplete ────────────────────────────────────────────────
     // Driven from Rust: as the user types, `composer-input-changed` reports the
     // caret offset, Rust detects the active `@query`, and fills `mention-*`.
@@ -964,14 +995,14 @@ export component DarkMatterLinux inherits Window {
                             add-member(npub) => {
                                 root.add-member(npub);
                             }
-                            promote-admin(id) => {
-                                root.promote-admin(id);
+                            promote-admin(id, name) => {
+                                root.request-promote-admin(id, name);
                             }
-                            demote-admin(id) => {
-                                root.demote-admin(id);
+                            demote-admin(id, name) => {
+                                root.request-demote-admin(id, name);
                             }
-                            self-demote-admin => {
-                                root.self-demote-admin();
+                            self-demote-admin(name) => {
+                                root.request-self-demote-admin(name);
                             }
                             group-picture: root.chat-group-picture;
                             group-has-picture: root.chat-group-has-picture;
@@ -1470,6 +1501,30 @@ export component DarkMatterLinux inherits Window {
         }
         dismissed => {
             root.relay-remove-target = "";
+        }
+    }
+
+    if root.show-admin-confirm: ConfirmModal {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        title: root.admin-confirm-action == 1 ? @tr("Make {} an admin?", root.admin-confirm-member-name) : (root.admin-confirm-action == 2 ? @tr("Remove admin rights from {}?", root.admin-confirm-member-name) : @tr("Step down as admin?"));
+        subtitle: root.admin-confirm-action == 1 ? @tr("{} will be able to add members, change group settings, and manage other admins.", root.admin-confirm-member-name) : (root.admin-confirm-action == 2 ? @tr("{} will stay in the group, but won't be able to manage members or group settings.", root.admin-confirm-member-name) : @tr("This removes your admin rights. You can't restore them yourself unless another admin promotes you again."));
+        confirm-label: root.admin-confirm-action == 1 ? @tr("Make admin") : (root.admin-confirm-action == 2 ? @tr("Remove admin") : @tr("Step down"));
+        confirm => {
+            root.show-admin-confirm = false;
+            if (root.admin-confirm-action == 1) {
+                root.promote-admin(root.admin-confirm-member-id);
+            } else if (root.admin-confirm-action == 2) {
+                root.demote-admin(root.admin-confirm-member-id);
+            } else if (root.admin-confirm-action == 3) {
+                root.self-demote-admin();
+            }
+            root.clear-admin-confirm();
+        }
+        dismissed => {
+            root.clear-admin-confirm();
         }
     }
 
