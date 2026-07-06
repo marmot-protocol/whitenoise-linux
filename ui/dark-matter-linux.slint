@@ -24,6 +24,7 @@ import { SettingsPage } from "settings/settings-page.slint";
 import { ProfilePage } from "profile/profile-page.slint";
 import { KeyPackageInfo } from "keys/types.slint";
 import { StatusBar } from "status-bar.slint";
+import { FadeInPage } from "shells/fade-in-page.slint";
 import { StartNewChatModal } from "modals/start-new-chat-modal.slint";
 import { AddContactModal } from "modals/add-contact-modal.slint";
 import { NicknameModal } from "modals/nickname-modal.slint";
@@ -611,8 +612,8 @@ export component DarkMatterLinux inherits Window {
     callback self-demote-admin();
 
     // Map the boolean theme toggles onto the single Theme.id (0=dark, 1=light,
-    // 2=retro, 3=terminal, 4=crayon, 5=synthwave). Precedence:
-    // synthwave > crayon > terminal > retro > light > dark.
+    // 2=retro, 3=terminal, 4=crayon, 5=synthwave, 6=chalkboard). Precedence:
+    // chalkboard > synthwave > crayon > terminal > retro > light > dark.
     function theme-id() -> int {
         root.chalkboard-mode ? 6 : (root.synthwave-mode ? 5 : (root.crayon-mode ? 4 : (root.terminal-mode ? 3 : (root.retro-mode ? 2 : (root.light-theme ? 1 : 0)))));
     }
@@ -767,20 +768,9 @@ export component DarkMatterLinux inherits Window {
                 height: parent.height;
 
                 // chats: side panel + main pane laid out side-by-side.
-                // Each page is wrapped in a fade-in Rectangle so navigation feels smooth.
-                if root.active-page == 0: Rectangle {
-                    width: parent.width;
-                    height: parent.height;
-                    property <float> enter: 0;
-                    init => {
-                        self.enter = 1;
-                    }
-                    opacity: self.enter;
-                    animate enter {
-                        duration: Theme.motion-fast ? 100ms : 180ms;
-                        easing: ease-out;
-                    }
-
+                // Each page mounts inside a FadeInPage (shells/fade-in-page.slint)
+                // so navigation feels smooth.
+                if root.active-page == 0: FadeInPage {
                     // No chats yet → first-run get-started screen (with live relay
                     // setup). Once a chat exists, the normal list + pane shell.
                     if root.chats.length == 0: GetStartedScreen {
@@ -1021,18 +1011,7 @@ export component DarkMatterLinux inherits Window {
                     }
                 }
 
-                if root.active-page == 1: Rectangle {
-                    width: parent.width;
-                    height: parent.height;
-                    property <float> enter: 0;
-                    init => {
-                        self.enter = 1;
-                    }
-                    opacity: self.enter;
-                    animate enter {
-                        duration: Theme.motion-fast ? 100ms : 180ms;
-                        easing: ease-out;
-                    }
+                if root.active-page == 1: FadeInPage {
                     ContactsPage {
                         width: parent.width;
                         height: parent.height;
@@ -1063,18 +1042,7 @@ export component DarkMatterLinux inherits Window {
                     }
                 }
 
-                if root.active-page == 2: Rectangle {
-                    width: parent.width;
-                    height: parent.height;
-                    property <float> enter: 0;
-                    init => {
-                        self.enter = 1;
-                    }
-                    opacity: self.enter;
-                    animate enter {
-                        duration: Theme.motion-fast ? 100ms : 180ms;
-                        easing: ease-out;
-                    }
+                if root.active-page == 2: FadeInPage {
                     ArchivedPage {
                         width: parent.width;
                         height: parent.height;
@@ -1092,18 +1060,7 @@ export component DarkMatterLinux inherits Window {
                     }
                 }
 
-                if root.active-page == 3: Rectangle {
-                    width: parent.width;
-                    height: parent.height;
-                    property <float> enter: 0;
-                    init => {
-                        self.enter = 1;
-                    }
-                    opacity: self.enter;
-                    animate enter {
-                        duration: Theme.motion-fast ? 100ms : 180ms;
-                        easing: ease-out;
-                    }
+                if root.active-page == 3: FadeInPage {
                     KeysPage {
                         width: parent.width;
                         height: parent.height;
@@ -1127,18 +1084,7 @@ export component DarkMatterLinux inherits Window {
                     }
                 }
 
-                if root.active-page == 4: Rectangle {
-                    width: parent.width;
-                    height: parent.height;
-                    property <float> enter: 0;
-                    init => {
-                        self.enter = 1;
-                    }
-                    opacity: self.enter;
-                    animate enter {
-                        duration: Theme.motion-fast ? 100ms : 180ms;
-                        easing: ease-out;
-                    }
+                if root.active-page == 4: FadeInPage {
                     SettingsPage {
                         width: parent.width;
                         height: parent.height;
@@ -1248,18 +1194,7 @@ export component DarkMatterLinux inherits Window {
                     }
                 }
 
-                if root.active-page == 5: Rectangle {
-                    width: parent.width;
-                    height: parent.height;
-                    property <float> enter: 0;
-                    init => {
-                        self.enter = 1;
-                    }
-                    opacity: self.enter;
-                    animate enter {
-                        duration: Theme.motion-fast ? 100ms : 180ms;
-                        easing: ease-out;
-                    }
+                if root.active-page == 5: FadeInPage {
                     ProfilePage {
                         width: parent.width;
                         height: parent.height;
@@ -1340,11 +1275,11 @@ export component DarkMatterLinux inherits Window {
         }
     }
 
+    // ── Overlay stack ── Every mount below (modals, context menus, pickers,
+    // splash, login) is a Rectangle-rooted component outside any layout, so
+    // Slint defaults each one to its parent's geometry: the full window at
+    // x/y 0. No per-mount positioning needed.
     if root.show-language-picker: LanguagePickerModal {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
         active-locale: root.locale;
         locale-selected(code) => {
             root.locale-selected(code);
@@ -1355,10 +1290,6 @@ export component DarkMatterLinux inherits Window {
     }
 
     if root.show-new-chat: StartNewChatModal {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
         chat-name <=> root.new-chat-name;
         members-text <=> root.new-chat-members;
         busy: root.new-chat-busy;
@@ -1372,10 +1303,6 @@ export component DarkMatterLinux inherits Window {
     }
 
     if root.show-add-contact: AddContactModal {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
         npub-text <=> root.add-contact-input;
         busy: root.add-contact-busy;
         status: root.add-contact-status;
@@ -1388,10 +1315,6 @@ export component DarkMatterLinux inherits Window {
     }
 
     if root.show-account-switcher: AccountSwitcherModal {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
         accounts: root.accounts;
         select(id) => {
             root.switch-account(id);
@@ -1405,10 +1328,6 @@ export component DarkMatterLinux inherits Window {
     }
 
     if root.show-add-account: AddAccountModal {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
         nsec-text <=> root.add-account-nsec;
         generated: root.add-account-generated;
         primary-busy: root.add-account-busy;
@@ -1425,10 +1344,6 @@ export component DarkMatterLinux inherits Window {
     }
 
     if root.show-import-backup: ImportBackupModal {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
         file-name: root.import-backup-file;
         restore-mode: root.import-backup-restore-mode;
         password-text <=> root.import-backup-password;
@@ -1446,10 +1361,6 @@ export component DarkMatterLinux inherits Window {
     }
 
     if root.show-create-backup: BackupCreateModal {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
         password-text <=> root.create-backup-password;
         primary-busy: root.create-backup-busy;
         status: root.create-backup-status;
@@ -1462,10 +1373,6 @@ export component DarkMatterLinux inherits Window {
     }
 
     if root.show-nickname-modal: NicknameModal {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
         nickname-text <=> root.nickname-input;
         contact-name: root.nickname-contact-name;
         save(n) => {
@@ -1477,10 +1384,6 @@ export component DarkMatterLinux inherits Window {
     }
 
     if root.show-block-confirm: ConfirmModal {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
         title: @tr("Block this chat request?");
         subtitle: @tr("This declines the invite from {}. It can't be restored unless they invite you again.", root.chats[root.active-chat].name);
         confirm-label: @tr("Block");
@@ -1494,10 +1397,6 @@ export component DarkMatterLinux inherits Window {
     }
 
     if root.show-audit-delete-confirm: ConfirmModal {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
         title: @tr("SettingsPage" => "Delete audit log file?");
         subtitle: @tr("SettingsPage" => "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log.");
         confirm-label: @tr("SettingsPage" => "Delete file");
@@ -1513,10 +1412,6 @@ export component DarkMatterLinux inherits Window {
     }
 
     if root.relay-remove-target != "": ConfirmModal {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
         title: @tr("Remove this relay?");
         subtitle: @tr("{} will stop carrying your messages. You can add it back anytime.", root.relay-remove-target);
         confirm-label: @tr("Remove");
@@ -1530,10 +1425,6 @@ export component DarkMatterLinux inherits Window {
     }
 
     if root.show-admin-confirm: ConfirmModal {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
         title: root.admin-confirm-action == 1 ? @tr("Make {} an admin?", root.admin-confirm-member-name) : (root.admin-confirm-action == 2 ? @tr("Remove admin rights from {}?", root.admin-confirm-member-name) : @tr("Step down as admin?"));
         subtitle: root.admin-confirm-action == 1 ? @tr("{} will be able to add members, change group settings, and manage other admins.", root.admin-confirm-member-name) : (root.admin-confirm-action == 2 ? @tr("{} will stay in the group, but won't be able to manage members or group settings.", root.admin-confirm-member-name) : @tr("This removes your admin rights. You can't restore them yourself unless another admin promotes you again."));
         confirm-label: root.admin-confirm-action == 1 ? @tr("Make admin") : (root.admin-confirm-action == 2 ? @tr("Remove admin") : @tr("Step down"));
@@ -1554,10 +1445,6 @@ export component DarkMatterLinux inherits Window {
     }
 
     if root.show-palette: CommandPalette {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
         actions: root.palette-actions;
         query <=> root.palette-query;
         dismissed => {
@@ -1574,10 +1461,6 @@ export component DarkMatterLinux inherits Window {
     // Right-click message context menu. Items re-fire the same callbacks the
     // hover toolbar uses, so the Rust side is untouched.
     if root.ctx-menu-open: MessageContextMenu {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
         anchor-x: root.ctx-menu-x;
         anchor-y: root.ctx-menu-y;
         can-edit: root.ctx-menu-can-edit;
@@ -1629,10 +1512,6 @@ export component DarkMatterLinux inherits Window {
     // hands the chosen index to Rust, which re-sends `forward-src-id`'s content
     // (text + re-encrypted attachments) into that chat.
     if root.forward-picker-open: ForwardPickerModal {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
         chats: root.chats;
         active-chat: root.active-chat;
         // The picker only opens from the message context menu, so the menu's
@@ -1656,10 +1535,6 @@ export component DarkMatterLinux inherits Window {
     // Right-click rail chat-row context menu — pin/unpin and mute/unmute the
     // row that was clicked (by captured index), independent of the open chat.
     if root.chat-ctx-open: ChatContextMenu {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
         anchor-x: root.chat-ctx-x;
         anchor-y: root.chat-ctx-y;
         pinned: root.chat-ctx-pinned;
@@ -1678,10 +1553,6 @@ export component DarkMatterLinux inherits Window {
     }
 
     if root.show-delete-confirm: ConfirmModal {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
         title: root.delete-confirm-everyone ? @tr("Delete for everyone?") : @tr("Delete for me?");
         subtitle: root.delete-confirm-everyone ? @tr("This removes the message for everyone in the chat. This can't be undone.") : @tr("This hides the message on this device only. Other people will still see it.");
         confirm-label: @tr("Delete");
@@ -1700,10 +1571,6 @@ export component DarkMatterLinux inherits Window {
 
     // `if`-mounted so the (expensive) emoji grid doesn't paint when closed.
     if root.show-emoji-picker: EmojiPicker {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
         anchor-x: root.emoji-anchor-x;
         anchor-y: root.emoji-anchor-y;
         emoji-list: root.emoji-list;
@@ -1723,10 +1590,6 @@ export component DarkMatterLinux inherits Window {
     }
 
     if root.edit-history-open: EditHistoryModal {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
         versions: root.edit-history;
         dismissed => {
             root.dismiss-edit-history();
@@ -1734,10 +1597,6 @@ export component DarkMatterLinux inherits Window {
     }
 
     if root.image-viewer-open: ImageViewerModal {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
         source: root.image-viewer-image;
         count: root.image-viewer-count;
         index: root.image-viewer-index;
@@ -1758,10 +1617,6 @@ export component DarkMatterLinux inherits Window {
     }
 
     if root.video-viewer-open: VideoViewerModal {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
         frame: root.video-viewer-frame;
         has-frame: root.video-viewer-has-frame;
         playing: root.video-viewer-playing;
@@ -1787,10 +1642,6 @@ export component DarkMatterLinux inherits Window {
     }
 
     if root.peer-profile-open: ProfileModal {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
         display-name: root.peer-profile-name;
         npub-short: root.peer-profile-npub-short;
         nip05: root.peer-profile-nip05;
@@ -1819,10 +1670,6 @@ export component DarkMatterLinux inherits Window {
     }
 
     if root.contact-qr-open: QrModal {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
         qr: root.contact-qr;
         npub-short: root.contact-qr-npub-short;
         name: root.contact-qr-name;
@@ -1835,10 +1682,6 @@ export component DarkMatterLinux inherits Window {
     }
 
     if root.logged-in && root.booting: SplashScreen {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
         status: root.booting-status;
         phase: root.booting-phase;
         phase-count: root.booting-phase-count;
@@ -1879,10 +1722,6 @@ export component DarkMatterLinux inherits Window {
     }
 
     if !root.logged-in: LoginScreen {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
         mode <=> root.login-mode;
         nsec-input <=> root.login-nsec-input;
         password-input <=> root.password-input;
@@ -1917,10 +1756,4 @@ export component DarkMatterLinux inherits Window {
             root.storage-import-backup();
         }
     }
-
-    // Emoji glyph pre-paint. This Text contains every emoji in the catalog
-    // joined by spaces; the renderer paints them at near-zero opacity so
-    // they're invisible to the user, but the OS font cache and Slint's
-    // glyph-texture cache fill up. Without this, the picker freezes on
-    // first open while ~120 first-time emojis rasterize one at a time.
 }

@@ -1,0 +1,20 @@
+import { Theme } from "../tokens.slint";
+
+// Fade-in wrapper for the top-level pages: mounts transparent and eases to
+// opaque so tab navigation feels smooth. Fills the page slot it is mounted in
+// (a Rectangle-rooted component outside a layout defaults to its parent's
+// geometry), so mounts need no positioning; children size against it with
+// `parent.width` / `parent.height`.
+export component FadeInPage inherits Rectangle {
+    property <float> enter: 0;
+    init => {
+        self.enter = 1;
+    }
+    opacity: self.enter;
+    animate enter {
+        duration: Theme.motion-fast ? 100ms : 180ms;
+        easing: ease-out;
+    }
+
+    @children
+}
