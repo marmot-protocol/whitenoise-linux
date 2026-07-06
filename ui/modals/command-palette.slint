@@ -19,6 +19,23 @@ export component CommandPalette inherits Modal {
     in-out property <string> query;
     in-out property <int> selected: 0;
 
+    function move-selection(delta: int) {
+        if (root.actions.length > 0) {
+            if (delta < 0) {
+                root.selected = root.selected == 0 ? root.actions.length - 1 : root.selected - 1;
+            } else {
+                root.selected = mod(root.selected + 1, root.actions.length);
+            }
+        }
+    }
+
+    function activate-selected() {
+        if (root.actions.length > 0) {
+            root.execute(root.actions[root.selected].id);
+            root.dismissed();
+        }
+    }
+
     // Top-anchored frameless card: the palette brings its own search header,
     // list, and hint strip, plus a FocusScope that owns the keyboard.
     card-width: min(560px, root.width - 64px);
@@ -28,11 +45,12 @@ export component CommandPalette inherits Modal {
     content-padding: 0px;
     grab-focus: false;
 
-    // Key handling — Esc dismiss, arrows navigate, Enter execute. Wraps the
-    // content so rejected keys from the search input bubble up to it.
+    // Key handling — Esc dismiss, arrows navigate, Enter execute. Focus the
+    // search field so type-to-search works immediately; LineInput captures
+    // nav/Enter/Esc while focused because TextInput consumes arrows as caret moves.
     focus-scope := FocusScope {
         init => {
-            self.focus();
+            query-input.take-focus();
         }
         key-pressed(event) => {
             if (event.text == Key.Escape) {
@@ -40,22 +58,15 @@ export component CommandPalette inherits Modal {
                 return accept;
             }
             if (event.text == Key.UpArrow) {
-                if (root.actions.length > 0) {
-                    root.selected = root.selected == 0 ? root.actions.length - 1 : root.selected - 1;
-                }
+                root.move-selection(-1);
                 return accept;
             }
             if (event.text == Key.DownArrow) {
-                if (root.actions.length > 0) {
-                    root.selected = mod(root.selected + 1, root.actions.length);
-                }
+                root.move-selection(1);
                 return accept;
             }
             if (event.text == Key.Return) {
-                if (root.actions.length > 0) {
-                    root.execute(root.actions[root.selected].id);
-                    root.dismissed();
-                }
+                root.activate-selected();
                 return accept;
             }
             return reject;
@@ -81,9 +92,21 @@ export component CommandPalette inherits Modal {
                         }
                     }
 
-                    LineInput {
+                    query-input := LineInput {
                         placeholder: @tr("Type a command…");
                         text <=> root.query;
+                        enter-submits: false;
+                        capture-nav: true;
+                        nav-tab-commits: false;
+                        nav(delta) => {
+                            root.move-selection(delta);
+                        }
+                        commit-mention => {
+                            root.activate-selected();
+                        }
+                        dismiss-mention => {
+                            root.dismissed();
+                        }
                         font-size: Theme.fsr(14px, 16px);
                         fg: Palette.text-hi;
                         placeholder-color: Palette.text-vlo;
