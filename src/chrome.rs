@@ -415,6 +415,55 @@ pub(crate) fn shorten_npub(npub: &str) -> String {
     format!("{}…{}", &npub[..10], &npub[npub.len() - 6..])
 }
 
+// ─── Keys & key packages ───────────────────────────────────────────────
+
+pub(crate) fn kp_to_ui(rec: &marmot_app::AccountKeyPackageRecord) -> KeyPackageInfo {
+    let short_ref: String = rec.key_package_ref_hex.chars().take(16).collect();
+    let short_ref = if rec.key_package_ref_hex.len() > 16 {
+        format!("{short_ref}…")
+    } else {
+        short_ref
+    };
+    KeyPackageInfo {
+        key_package_id: s(&rec.key_package_id),
+        key_package_ref: s(&short_ref),
+        event_id: s(&rec.key_package_event_id),
+        published_at: s(&format_date_unix(rec.published_at)),
+        relay_count: rec.source_relays.len() as i32,
+        local: rec.local,
+        on_relay: rec.relay,
+    }
+}
+
+/// Populate the Keys page from local-only KP state (no relay round-trip).
+/// Used at boot and after publish/rotate so the UI reflects what's on disk
+/// immediately, while a relay refresh runs in the background.
+/// Read the local key packages (on-disk JSON) + relay list on the backend
+/// runtime, then push the rows on the UI thread.
+pub(crate) fn refresh_kp_local_async(ui: &DarkMatterLinux, backend: &Arc<Backend>) {
+    let weak = ui.as_weak();
+    let b = backend.clone();
+    backend.tokio_handle().spawn(async move {
+        let local = b.key_packages_local();
+        let relays = b.key_package_relays();
+        let _ = slint::invoke_from_event_loop(move || {
+            let Some(ui) = weak.upgrade() else { return };
+            // "Published" means actually out on the network — a KP with a
+            // published event id, or one we've observed on a relay. A purely
+            // local KP (which always exists once the account boots) does NOT
+            // count.
+            let published = local
+                .iter()
+                .any(|kp| !kp.key_package_event_id.is_empty() || kp.relay);
+            ui.set_kp_published(published);
+            let rows: Vec<KeyPackageInfo> = local.iter().map(kp_to_ui).collect();
+            ui.set_key_packages(ModelRc::new(VecModel::from(rows)));
+            let relays: Vec<SharedString> = relays.into_iter().map(SharedString::from).collect();
+            ui.set_kp_relays(ModelRc::new(VecModel::from(relays)));
+        });
+    });
+}
+
 // ─── Group members ─────────────────────────────────────────────────────
 
 /// Process-wide record of which group is currently shown, so async group-avatar
