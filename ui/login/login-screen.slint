@@ -359,7 +359,7 @@ export component LoginScreen inherits Rectangle {
                     }
 
                     PasswordField {
-                        label: @tr("VAULT PASSWORD");
+                        label: @tr("PASSWORD");
                         placeholder: @tr("Choose a password");
                         text <=> root.password-input;
                         submit => {
@@ -616,7 +616,7 @@ export component LoginScreen inherits Rectangle {
 
                     // Vault password + confirm.
                 PasswordField {
-                        label: @tr("VAULT PASSWORD");
+                        label: @tr("PASSWORD");
                         placeholder: @tr("Choose a password");
                         text <=> root.password-input;
                         init => {
@@ -663,7 +663,7 @@ export component LoginScreen inherits Rectangle {
                         }
 
                         Button {
-                            label: root.busy ? @tr("Saving…") : @tr("Create vault");
+                            label: root.busy ? @tr("Saving…") : @tr("Save key");
                             button-height: 38px;
                             min-w: 160px;
                             bg-color: Palette.mint;
@@ -683,7 +683,7 @@ export component LoginScreen inherits Rectangle {
                     spacing: 14px;
 
                     PasswordField {
-                        label: @tr("VAULT PASSWORD");
+                        label: @tr("PASSWORD");
                         placeholder: @tr("Enter your password");
                         text <=> root.password-input;
                         error: root.error != "";

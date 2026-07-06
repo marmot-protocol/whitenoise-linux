@@ -11,7 +11,7 @@ export component BackupCreateModal inherits Modal {
 
     card-width: 460px;
     title: @tr("Create backup");
-    subtitle: @tr("Pack everything — accounts, chats, settings — into one encrypted file, sealed with your vault password. The media cache is left out.");
+    subtitle: @tr("Pack everything — accounts, chats, settings — into one encrypted file, sealed with your password. The media cache is left out.");
     secondary-label: @tr("Cancel");
     primary-label: @tr("Choose location…");
     primary-busy-label: @tr("Saving…");
@@ -20,8 +20,8 @@ export component BackupCreateModal inherits Modal {
     }
 
     ModalField {
-        label: @tr("VAULT PASSWORD");
-        placeholder: @tr("Confirm your vault password");
+        label: @tr("PASSWORD");
+        placeholder: @tr("Confirm your password");
         text <=> root.password-text;
         password: true;
         autofocus: true;

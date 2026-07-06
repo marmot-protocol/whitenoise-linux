@@ -470,7 +470,7 @@ msgid "Configure key-package relays first."
 msgstr ""
 
 msgctxt "BackupCreateModal"
-msgid "Confirm your vault password"
+msgid "Confirm your password"
 msgstr ""
 
 msgctxt "GetStartedScreen"
@@ -670,10 +670,6 @@ msgctxt "StoragePane"
 msgid "Create backup…"
 msgstr ""
 
-msgctxt "LoginScreen"
-msgid "Create vault"
-msgstr ""
-
 msgctxt "StartNewChatModal"
 msgid "Creating…"
 msgstr ""
@@ -723,7 +719,7 @@ msgid "Decentralized network"
 msgstr ""
 
 msgctxt "StoragePane"
-msgid "Decrypted images and files, sealed with your vault key."
+msgid "Decrypted images and files, stored encrypted on this device."
 msgstr ""
 
 msgctxt "ArchivedDetail"
@@ -974,6 +970,10 @@ msgctxt "KeysPage"
 msgid "KEY PACKAGES"
 msgstr ""
 
+msgctxt "StoragePane"
+msgid "KEYS & BACKUPS"
+msgstr ""
+
 msgctxt "ContactDetail"
 msgid "Key package"
 msgstr ""
@@ -1040,6 +1040,10 @@ msgstr ""
 
 msgctxt "AboutPane"
 msgid "Local key custody"
+msgstr ""
+
+msgctxt "StoragePane"
+msgid "Location"
 msgstr ""
 
 msgctxt "StoragePane"
@@ -1280,6 +1284,14 @@ msgctxt "AppearancePane"
 msgid "Own messages on the right"
 msgstr ""
 
+msgctxt "BackupCreateModal"
+msgid "PASSWORD"
+msgstr ""
+
+msgctxt "LoginScreen"
+msgid "PASSWORD"
+msgstr ""
+
 msgctxt "ProfilePage"
 msgid "PROFILE"
 msgstr ""
@@ -1297,7 +1309,7 @@ msgid "Pack accounts, chats, and settings into one encrypted file."
 msgstr ""
 
 msgctxt "BackupCreateModal"
-msgid "Pack everything — accounts, chats, settings — into one encrypted file, sealed with your vault password. The media cache is left out."
+msgid "Pack everything — accounts, chats, settings — into one encrypted file, sealed with your password. The media cache is left out."
 msgstr ""
 
 msgctxt "GetStartedScreen"
@@ -1313,7 +1325,7 @@ msgid "Password the backup was sealed with"
 msgstr ""
 
 msgctxt "AddAccountModal"
-msgid "Paste another secret key, or generate a fresh one. It's sealed into the same vault and stays signed in alongside your other accounts."
+msgid "Paste another secret key, or generate a fresh one. It's encrypted with your password and stays signed in alongside your other accounts."
 msgstr ""
 
 msgctxt "StartNewChatModal"
@@ -1365,7 +1377,7 @@ msgid "Privacy & developer flags"
 msgstr ""
 
 msgctxt "AboutPane"
-msgid "Private material lives in a password-encrypted vault on this device."
+msgid "Private material is stored on this device, encrypted with your password."
 msgstr ""
 
 msgctxt "ProfileTile"
@@ -1552,10 +1564,6 @@ msgctxt "LoginScreen"
 msgid "SECRET KEY (NSEC)"
 msgstr ""
 
-msgctxt "StoragePane"
-msgid "SECRET VAULT"
-msgstr ""
-
 msgctxt "AdvancedPane"
 msgid "SECURITY & PRIVACY"
 msgstr ""
@@ -1606,6 +1614,10 @@ msgstr ""
 
 msgctxt "ProfilePage"
 msgid "Save"
+msgstr ""
+
+msgctxt "LoginScreen"
+msgid "Save key"
 msgstr ""
 
 msgctxt "GroupSettingsCard"
@@ -1917,20 +1929,8 @@ msgctxt "ProfilePage"
 msgid "Username"
 msgstr ""
 
-msgctxt "BackupCreateModal"
-msgid "VAULT PASSWORD"
-msgstr ""
-
-msgctxt "LoginScreen"
-msgid "VAULT PASSWORD"
-msgstr ""
-
 msgctxt "ProfilePage"
 msgid "VISIBLE TO ANYONE YOU CHAT WITH"
-msgstr ""
-
-msgctxt "StoragePane"
-msgid "Vault location"
 msgstr ""
 
 msgctxt "AboutPane"

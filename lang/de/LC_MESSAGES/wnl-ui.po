@@ -484,9 +484,10 @@ msgctxt "KeysPage"
 msgid "Configure key-package relays first."
 msgstr "Konfiguriere zuerst Schlüsselpaket-Relays."
 
+#, fuzzy
 msgctxt "BackupCreateModal"
-msgid "Confirm your vault password"
-msgstr "Bestätige dein Tresor-Passwort"
+msgid "Confirm your password"
+msgstr "Bestätige dein Passwort"
 
 #, fuzzy
 msgctxt "GetStartedScreen"
@@ -690,10 +691,6 @@ msgctxt "StoragePane"
 msgid "Create backup…"
 msgstr "Backup erstellen…"
 
-msgctxt "LoginScreen"
-msgid "Create vault"
-msgstr "Tresor erstellen"
-
 #, fuzzy
 msgctxt "StartNewChatModal"
 msgid "Creating…"
@@ -744,9 +741,10 @@ msgctxt "AboutPane"
 msgid "Decentralized network"
 msgstr "Dezentrales Netzwerk"
 
+#, fuzzy
 msgctxt "StoragePane"
-msgid "Decrypted images and files, sealed with your vault key."
-msgstr "Entschlüsselte Bilder und Dateien, versiegelt mit deinem Tresor-Schlüssel."
+msgid "Decrypted images and files, stored encrypted on this device."
+msgstr "Entschlüsselte Bilder und Dateien, verschlüsselt auf diesem Gerät gespeichert."
 
 msgctxt "ArchivedDetail"
 msgid "Delete"
@@ -1010,6 +1008,10 @@ msgctxt "KeysPage"
 msgid "KEY PACKAGES"
 msgstr "SCHLÜSSELPAKETE"
 
+msgctxt "StoragePane"
+msgid "KEYS & BACKUPS"
+msgstr "SCHLÜSSEL & BACKUPS"
+
 msgctxt "ContactDetail"
 msgid "Key package"
 msgstr "Schlüsselpaket"
@@ -1080,6 +1082,11 @@ msgstr "Speichere…"
 msgctxt "AboutPane"
 msgid "Local key custody"
 msgstr "Lokale Schlüsselverwahrung"
+
+#, fuzzy
+msgctxt "StoragePane"
+msgid "Location"
+msgstr "Speicherort"
 
 msgctxt "StoragePane"
 msgid "MEDIA CACHE"
@@ -1329,6 +1336,16 @@ msgctxt "AppearancePane"
 msgid "Own messages on the right"
 msgstr "Eigene Nachrichten rechts"
 
+#, fuzzy
+msgctxt "BackupCreateModal"
+msgid "PASSWORD"
+msgstr "PASSWORT"
+
+#, fuzzy
+msgctxt "LoginScreen"
+msgid "PASSWORD"
+msgstr "PASSWORT"
+
 msgctxt "ProfilePage"
 msgid "PROFILE"
 msgstr "PROFIL"
@@ -1345,9 +1362,10 @@ msgctxt "StoragePane"
 msgid "Pack accounts, chats, and settings into one encrypted file."
 msgstr "Packe Konten, Chats und Einstellungen in eine verschlüsselte Datei."
 
+#, fuzzy
 msgctxt "BackupCreateModal"
-msgid "Pack everything — accounts, chats, settings — into one encrypted file, sealed with your vault password. The media cache is left out."
-msgstr "Packe alles — Konten, Chats, Einstellungen — in eine verschlüsselte Datei, versiegelt mit deinem Tresor-Passwort. Der Medien-Cache wird ausgelassen."
+msgid "Pack everything — accounts, chats, settings — into one encrypted file, sealed with your password. The media cache is left out."
+msgstr "Packe alles — Konten, Chats, Einstellungen — in eine verschlüsselte Datei, gesichert mit deinem Passwort. Der Medien-Cache wird ausgelassen."
 
 #, fuzzy
 msgctxt "GetStartedScreen"
@@ -1362,9 +1380,10 @@ msgctxt "ImportBackupModal"
 msgid "Password the backup was sealed with"
 msgstr "Passwort, mit dem das Backup versiegelt wurde"
 
+#, fuzzy
 msgctxt "AddAccountModal"
-msgid "Paste another secret key, or generate a fresh one. It's sealed into the same vault and stays signed in alongside your other accounts."
-msgstr "Füge einen weiteren geheimen Schlüssel ein oder generiere einen neuen. Er wird im selben Tresor versiegelt und bleibt neben deinen anderen Konten angemeldet."
+msgid "Paste another secret key, or generate a fresh one. It's encrypted with your password and stays signed in alongside your other accounts."
+msgstr "Füge einen weiteren geheimen Schlüssel ein oder generiere einen neuen. Er wird mit deinem Passwort verschlüsselt und bleibt neben deinen anderen Konten angemeldet."
 
 msgctxt "StartNewChatModal"
 msgid "Paste one npub for a direct chat, or several (one per line) plus a group name."
@@ -1417,8 +1436,8 @@ msgid "Privacy & developer flags"
 msgstr "Entwickler-Flags"
 
 msgctxt "AboutPane"
-msgid "Private material lives in a password-encrypted vault on this device."
-msgstr "Private Daten liegen in einem passwortverschlüsselten Tresor auf diesem Gerät."
+msgid "Private material is stored on this device, encrypted with your password."
+msgstr "Private Daten bleiben auf diesem Gerät und werden mit deinem Passwort verschlüsselt."
 
 #, fuzzy
 msgctxt "ProfileTile"
@@ -1614,10 +1633,6 @@ msgctxt "LoginScreen"
 msgid "SECRET KEY (NSEC)"
 msgstr "GEHEIMER SCHLÜSSEL (NSEC)"
 
-msgctxt "StoragePane"
-msgid "SECRET VAULT"
-msgstr "GEHEIMER TRESOR"
-
 msgctxt "AdvancedPane"
 msgid "SECURITY & PRIVACY"
 msgstr "SICHERHEIT & DATENSCHUTZ"
@@ -1670,6 +1685,11 @@ msgstr "Speichern"
 msgctxt "ProfilePage"
 msgid "Save"
 msgstr "Speichern"
+
+#, fuzzy
+msgctxt "LoginScreen"
+msgid "Save key"
+msgstr "Schlüssel speichern"
 
 #, fuzzy
 msgctxt "GroupSettingsCard"
@@ -1993,21 +2013,9 @@ msgctxt "ProfilePage"
 msgid "Username"
 msgstr "Benutzername"
 
-msgctxt "BackupCreateModal"
-msgid "VAULT PASSWORD"
-msgstr "TRESOR-PASSWORT"
-
-msgctxt "LoginScreen"
-msgid "VAULT PASSWORD"
-msgstr "TRESOR-PASSWORT"
-
 msgctxt "ProfilePage"
 msgid "VISIBLE TO ANYONE YOU CHAT WITH"
 msgstr "SICHTBAR FÜR ALLE CHAT-PARTNER"
-
-msgctxt "StoragePane"
-msgid "Vault location"
-msgstr "Tresor-Speicherort"
 
 msgctxt "AboutPane"
 msgid "WHAT IT IS"
@@ -2177,6 +2185,10 @@ msgstr "✓ VERIFIZIERT"
 #~ msgid "Coming soon — per-chat notification rules, sounds, and focus mode."
 #~ msgstr "Benachrichtigungsregeln pro Chat, Töne, Fokusmodus."
 
+#~ msgctxt "LoginScreen"
+#~ msgid "Create vault"
+#~ msgstr "Tresor erstellen"
+
 #~ msgctxt "SettingsPage"
 #~ msgid "Dark Matter v0.1.0"
 #~ msgstr "Dark Matter v0.1.0"
@@ -2213,9 +2225,17 @@ msgstr "✓ VERIFIZIERT"
 #~ msgid "Picture URL"
 #~ msgstr "Bild-URL"
 
+#~ msgctxt "AboutPane"
+#~ msgid "Private material lives in a password-encrypted vault on this device."
+#~ msgstr "Private Daten liegen in einem passwortverschlüsselten Tresor auf diesem Gerät."
+
 #~ msgctxt "AppearancePane"
 #~ msgid "Retro mode"
 #~ msgstr "Retro-Modus"
+
+#~ msgctxt "StoragePane"
+#~ msgid "SECRET VAULT"
+#~ msgstr "GEHEIMER TRESOR"
 
 #~ msgctxt "AppearancePane"
 #~ msgid "SNES yellow"
@@ -2248,6 +2268,10 @@ msgstr "✓ VERIFIZIERT"
 #~ msgctxt "AppearancePane"
 #~ msgid "Turn the whole app into SNES style."
 #~ msgstr "Verwandelt die ganze App in SNES-Stil."
+
+#~ msgctxt "StoragePane"
+#~ msgid "Vault location"
+#~ msgstr "Tresor-Speicherort"
 
 #~ msgid "Yesterday"
 #~ msgstr "Gestern"

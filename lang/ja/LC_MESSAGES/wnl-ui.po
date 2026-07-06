@@ -482,9 +482,10 @@ msgctxt "KeysPage"
 msgid "Configure key-package relays first."
 msgstr "先にキーパッケージ用リレーを設定してください。"
 
+#, fuzzy
 msgctxt "BackupCreateModal"
-msgid "Confirm your vault password"
-msgstr "保管庫のパスワードを確認"
+msgid "Confirm your password"
+msgstr "パスワードを確認"
 
 #, fuzzy
 msgctxt "GetStartedScreen"
@@ -688,10 +689,6 @@ msgctxt "StoragePane"
 msgid "Create backup…"
 msgstr "バックアップを作成…"
 
-msgctxt "LoginScreen"
-msgid "Create vault"
-msgstr "保管庫を作成"
-
 #, fuzzy
 msgctxt "StartNewChatModal"
 msgid "Creating…"
@@ -742,9 +739,10 @@ msgctxt "AboutPane"
 msgid "Decentralized network"
 msgstr "分散型ネットワーク"
 
+#, fuzzy
 msgctxt "StoragePane"
-msgid "Decrypted images and files, sealed with your vault key."
-msgstr "復号された画像やファイルを、保管庫の鍵で封入して保存します。"
+msgid "Decrypted images and files, stored encrypted on this device."
+msgstr "復号した画像やファイルを、この端末に暗号化して保存します。"
 
 msgctxt "ArchivedDetail"
 msgid "Delete"
@@ -1008,6 +1006,10 @@ msgctxt "KeysPage"
 msgid "KEY PACKAGES"
 msgstr "キーパッケージ"
 
+msgctxt "StoragePane"
+msgid "KEYS & BACKUPS"
+msgstr "鍵とバックアップ"
+
 msgctxt "ContactDetail"
 msgid "Key package"
 msgstr "キーパッケージ"
@@ -1078,6 +1080,11 @@ msgstr "保存中…"
 msgctxt "AboutPane"
 msgid "Local key custody"
 msgstr "鍵のローカル管理"
+
+#, fuzzy
+msgctxt "StoragePane"
+msgid "Location"
+msgstr "保存場所"
 
 msgctxt "StoragePane"
 msgid "MEDIA CACHE"
@@ -1327,6 +1334,16 @@ msgctxt "AppearancePane"
 msgid "Own messages on the right"
 msgstr "自分のメッセージを右側に表示"
 
+#, fuzzy
+msgctxt "BackupCreateModal"
+msgid "PASSWORD"
+msgstr "パスワード"
+
+#, fuzzy
+msgctxt "LoginScreen"
+msgid "PASSWORD"
+msgstr "パスワード"
+
 msgctxt "ProfilePage"
 msgid "PROFILE"
 msgstr "プロフィール"
@@ -1343,9 +1360,10 @@ msgctxt "StoragePane"
 msgid "Pack accounts, chats, and settings into one encrypted file."
 msgstr "アカウント、チャット、設定を1つの暗号化ファイルにまとめます。"
 
+#, fuzzy
 msgctxt "BackupCreateModal"
-msgid "Pack everything — accounts, chats, settings — into one encrypted file, sealed with your vault password. The media cache is left out."
-msgstr "アカウント、チャット、設定のすべてを、保管庫のパスワードで封入した1つの暗号化ファイルにまとめます。メディアキャッシュは含まれません。"
+msgid "Pack everything — accounts, chats, settings — into one encrypted file, sealed with your password. The media cache is left out."
+msgstr "アカウント、チャット、設定のすべてを、パスワードで保護されたひとつの暗号化ファイルにまとめます。メディアキャッシュは含まれません。"
 
 #, fuzzy
 msgctxt "GetStartedScreen"
@@ -1360,9 +1378,10 @@ msgctxt "ImportBackupModal"
 msgid "Password the backup was sealed with"
 msgstr "バックアップを封入したパスワード"
 
+#, fuzzy
 msgctxt "AddAccountModal"
-msgid "Paste another secret key, or generate a fresh one. It's sealed into the same vault and stays signed in alongside your other accounts."
-msgstr "別の秘密鍵を貼り付けるか、新しく生成してください。同じ保管庫に封入され、他のアカウントと並んでサインインしたままになります。"
+msgid "Paste another secret key, or generate a fresh one. It's encrypted with your password and stays signed in alongside your other accounts."
+msgstr "別の秘密鍵を貼り付けるか、新しく生成してください。パスワードで暗号化され、他のアカウントと一緒にサインインしたままになります。"
 
 msgctxt "StartNewChatModal"
 msgid "Paste one npub for a direct chat, or several (one per line) plus a group name."
@@ -1415,8 +1434,8 @@ msgid "Privacy & developer flags"
 msgstr "開発者フラグ"
 
 msgctxt "AboutPane"
-msgid "Private material lives in a password-encrypted vault on this device."
-msgstr "秘密情報はこのデバイス上のパスワードで暗号化された保管庫に保存されます。"
+msgid "Private material is stored on this device, encrypted with your password."
+msgstr "秘密のデータはこの端末に保存され、パスワードで暗号化されます。"
 
 #, fuzzy
 msgctxt "ProfileTile"
@@ -1612,10 +1631,6 @@ msgctxt "LoginScreen"
 msgid "SECRET KEY (NSEC)"
 msgstr "秘密鍵 (NSEC)"
 
-msgctxt "StoragePane"
-msgid "SECRET VAULT"
-msgstr "秘密保管庫"
-
 msgctxt "AdvancedPane"
 msgid "SECURITY & PRIVACY"
 msgstr "セキュリティとプライバシー"
@@ -1668,6 +1683,11 @@ msgstr "保存"
 msgctxt "ProfilePage"
 msgid "Save"
 msgstr "保存"
+
+#, fuzzy
+msgctxt "LoginScreen"
+msgid "Save key"
+msgstr "鍵を保存"
 
 #, fuzzy
 msgctxt "GroupSettingsCard"
@@ -1991,21 +2011,9 @@ msgctxt "ProfilePage"
 msgid "Username"
 msgstr "ユーザー名"
 
-msgctxt "BackupCreateModal"
-msgid "VAULT PASSWORD"
-msgstr "保管庫のパスワード"
-
-msgctxt "LoginScreen"
-msgid "VAULT PASSWORD"
-msgstr "保管庫のパスワード"
-
 msgctxt "ProfilePage"
 msgid "VISIBLE TO ANYONE YOU CHAT WITH"
 msgstr "チャット相手全員に公開"
-
-msgctxt "StoragePane"
-msgid "Vault location"
-msgstr "保管庫の場所"
 
 msgctxt "AboutPane"
 msgid "WHAT IT IS"
@@ -2174,6 +2182,10 @@ msgstr "✓ 確認済み"
 #~ msgid "Coming soon — per-chat notification rules, sounds, and focus mode."
 #~ msgstr "チャットごとの通知ルール、サウンド、フォーカスモード。"
 
+#~ msgctxt "LoginScreen"
+#~ msgid "Create vault"
+#~ msgstr "保管庫を作成"
+
 #~ msgctxt "SettingsPage"
 #~ msgid "Dark Matter v0.1.0"
 #~ msgstr "Dark Matter v0.1.0"
@@ -2210,9 +2222,17 @@ msgstr "✓ 確認済み"
 #~ msgid "Picture URL"
 #~ msgstr "画像 URL"
 
+#~ msgctxt "AboutPane"
+#~ msgid "Private material lives in a password-encrypted vault on this device."
+#~ msgstr "秘密情報はこのデバイス上のパスワードで暗号化された保管庫に保存されます。"
+
 #~ msgctxt "AppearancePane"
 #~ msgid "Retro mode"
 #~ msgstr "レトロモード"
+
+#~ msgctxt "StoragePane"
+#~ msgid "SECRET VAULT"
+#~ msgstr "秘密保管庫"
 
 #~ msgctxt "AppearancePane"
 #~ msgid "SNES yellow"
@@ -2245,6 +2265,10 @@ msgstr "✓ 確認済み"
 #~ msgctxt "AppearancePane"
 #~ msgid "Turn the whole app into SNES style."
 #~ msgstr "アプリ全体を SNES スタイルにします。"
+
+#~ msgctxt "StoragePane"
+#~ msgid "Vault location"
+#~ msgstr "保管庫の場所"
 
 #~ msgid "Yesterday"
 #~ msgstr "昨日"

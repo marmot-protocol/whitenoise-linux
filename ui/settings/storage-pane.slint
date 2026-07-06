@@ -37,7 +37,7 @@ export component StoragePane inherits DetailPage {
         GroupCard {
             PrefRow {
                 label: @tr("Cached attachments");
-                sublabel: @tr("Decrypted images and files, sealed with your vault key.");
+                sublabel: @tr("Decrypted images and files, stored encrypted on this device.");
                 value: root.cache-size;
                 show-divider: false;
                 MicroButton {
@@ -52,10 +52,10 @@ export component StoragePane inherits DetailPage {
     }
 
     Section {
-        label: @tr("SECRET VAULT");
+        label: @tr("KEYS & BACKUPS");
         GroupCard {
             PrefRow {
-                label: @tr("Vault location");
+                label: @tr("Location");
                 sublabel: root.vault-dir;
                 show-divider: true;
                 MicroButton {

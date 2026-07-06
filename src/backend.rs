@@ -199,7 +199,7 @@ impl Backend {
             }
         };
         let t_boot = std::time::Instant::now();
-        status("Opening vault…");
+        status("Unlocking…");
         let home = default_home();
         std::fs::create_dir_all(&home).context("create dm home")?;
 
