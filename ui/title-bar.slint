@@ -16,7 +16,7 @@ export component TitleBar inherits Rectangle {
     }
 
     // Faint mint wash under the brand mark.
-    if !Theme.retro: Rectangle {
+    if Theme.soft-decor: Rectangle {
         x: root.rail-width + 8px;
         width: 140px;
         height: parent.height;

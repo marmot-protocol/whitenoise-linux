@@ -8,7 +8,7 @@ export component EncryptionBanner inherits Rectangle {
     in property <bool> first-show: false;
 
     height: 56px;
-    background: Theme.retro ? Palette.banner : @linear-gradient(90deg, Palette.banner-edge 0%, Palette.banner 40%, Palette.banner-edge 100%);
+    background: Theme.soft-decor ? @linear-gradient(90deg, Palette.banner-edge 0%, Palette.banner 40%, Palette.banner-edge 100%) : Palette.banner;
 
     property <float> reveal: 1;
     property <float> shimmer: 1.0;
@@ -36,7 +36,7 @@ export component EncryptionBanner inherits Rectangle {
         width: 3px * root.reveal;
         height: parent.height;
         background: Palette.mint;
-        opacity: Theme.retro ? 1.0 : root.shimmer;
+        opacity: Theme.soft-decor ? root.shimmer : 1.0;
     }
 
     Rectangle {

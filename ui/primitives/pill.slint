@@ -9,7 +9,7 @@ export component Pill inherits Rectangle {
     // so the chunky SNES controls don't dwarf the labels.
     in property <length> font-size: Theme.fsr(10px, 12px);
     in property <bool> has-lock: false;
-    height: Theme.retro ? 24px : 20px;
+    height: Theme.pixel-metrics ? 24px : 20px;
     background: root.bg-color;
     border-radius: (4px) * Theme.r-scale;
     HorizontalLayout {

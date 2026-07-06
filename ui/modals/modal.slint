@@ -75,7 +75,7 @@ export component Modal inherits Rectangle {
         easing: ease-out;
     }
 
-    background: Theme.light && !Theme.retro ? #1F293740 : #00000073;
+    background: Palette.overlay;
 
     backdrop-touch := TouchArea {
         clicked => {
@@ -113,7 +113,7 @@ export component Modal inherits Rectangle {
             // With no backdrop layers, the shadow alone sells the elevation —
             // wide, soft, and offset down.
             drop-shadow-blur: root.bare ? 0px : (Theme.hard-shadow ? 0px : 56px);
-            drop-shadow-color: root.bare ? transparent : (Theme.hard-shadow ? Palette.shadow : (Theme.light ? #1F293755 : #000000D0));
+            drop-shadow-color: root.bare ? transparent : (Theme.hard-shadow ? Palette.shadow : Palette.shadow-card);
             drop-shadow-offset-x: Theme.hard-shadow ? 6px : 0px;
             drop-shadow-offset-y: Theme.hard-shadow ? 6px : 14px;
 
@@ -207,11 +207,11 @@ export component Modal inherits Rectangle {
 
                     if root.has-footer: Rectangle {
                         height: Theme.border-w;
-                        background: Theme.retro ? Palette.border : Palette.divider;
+                        background: Palette.divider;
                     }
                     if root.has-footer: Rectangle {
                         height: 62px;
-                        background: Theme.retro ? Palette.rail : Palette.panel-2;
+                        background: Palette.card-well;
                         HorizontalLayout {
                             padding-left: 16px;
                             padding-right: 16px;
@@ -263,14 +263,14 @@ export component Modal inherits Rectangle {
             }
 
             // Accent "aurora" hairline along the card's top edge — gradient in
-            // modern, a solid SNES title strip in retro. Drawn last so it sits
+            // soft-decor themes, a solid title strip in flat ones. Drawn last so it sits
             // above the header; the card's clip rounds its corners.
             if !root.bare: Rectangle {
                 x: 0;
                 y: 0;
                 width: parent.width;
-                height: Theme.retro ? 4px : 2px;
-                background: Theme.retro ? Palette.mint : @linear-gradient(90deg, transparent 0%, Palette.mint 28%, Palette.mint-hi 50%, Palette.mint 72%, transparent 100%);
+                height: Theme.pixel-metrics ? 4px : 2px;
+                background: Theme.soft-decor ? @linear-gradient(90deg, transparent 0%, Palette.mint 28%, Palette.mint-hi 50%, Palette.mint 72%, transparent 100%) : Palette.mint;
             }
         }
     }

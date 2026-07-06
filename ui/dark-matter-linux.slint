@@ -102,8 +102,8 @@ export component DarkMatterLinux inherits Window {
     // sidebar collapses to a slim strip (see shells/side-panel.slint). Tiling
     // window managers ignore minimum sizes anyway, so the layout has to
     // survive narrow widths rather than forbid them.
-    min-width: Theme.retro ? 720px : 640px;
-    min-height: Theme.retro ? 760px : 650px;
+    min-width: Theme.pixel-metrics ? 720px : 640px;
+    min-height: Theme.pixel-metrics ? 760px : 650px;
     background: Palette.bg;
     default-font-family: Theme.font;
 

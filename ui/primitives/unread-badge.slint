@@ -4,10 +4,10 @@ export component UnreadBadge inherits Rectangle {
     in property <string> count;
     // Free-running clock used for the attention pulse.
     property <duration> tick: animation-tick();
-    // ~1800ms cycle: smooth sine in normal, square-ish blink in retro.
+    // ~1800ms cycle: smooth sine breathing with soft decor, square-ish blink in flat themes.
     property <float> phase-sin: 0.5 + 0.5 * sin(self.tick / 1ms * 0.2deg);
     property <float> phase-blink: mod(self.tick / 1ms, 900) < 450 ? 1.0 : 0.55;
-    property <float> pulse: Theme.retro ? self.phase-blink : (0.78 + self.phase-sin * 0.22);
+    property <float> pulse: Theme.soft-decor ? (0.78 + self.phase-sin * 0.22) : self.phase-blink;
 
     width: self.preferred-width;
     height: 20px;
@@ -16,7 +16,7 @@ export component UnreadBadge inherits Rectangle {
     opacity: root.pulse;
 
     // Soft halo ring in normal mode that breathes with the pulse.
-    if !Theme.retro: Rectangle {
+    if Theme.soft-decor: Rectangle {
         x: -3px;
         y: -3px;
         width: parent.width + 6px;
@@ -48,7 +48,7 @@ export component MiniBadge inherits Rectangle {
     property <duration> tick: animation-tick();
     property <float> phase-sin: 0.5 + 0.5 * sin(self.tick / 1ms * 0.2deg);
     property <float> phase-blink: mod(self.tick / 1ms, 900) < 450 ? 1.0 : 0.55;
-    property <float> pulse: Theme.retro ? self.phase-blink : (0.78 + self.phase-sin * 0.22);
+    property <float> pulse: Theme.soft-decor ? (0.78 + self.phase-sin * 0.22) : self.phase-blink;
 
     width: 6px;
     height: 6px;
