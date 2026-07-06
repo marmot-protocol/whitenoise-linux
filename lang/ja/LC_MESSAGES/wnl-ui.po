@@ -906,6 +906,10 @@ msgctxt "GroupSettingsCard"
 msgid "Group settings"
 msgstr "グループ ID"
 
+msgctxt "VaultField"
+msgid "Hide password"
+msgstr "パスワードを隠す"
+
 msgctxt "ProfilePage"
 msgid "How your name appears in chats"
 msgstr "チャットでの表示名"
@@ -1769,6 +1773,10 @@ msgstr "QR コードで表示"
 msgctxt "NotificationsPane"
 msgid "Show message preview"
 msgstr "メッセージのプレビューを表示"
+
+msgctxt "VaultField"
+msgid "Show password"
+msgstr "パスワードを表示"
 
 #, fuzzy
 msgctxt "AdvancedPane"

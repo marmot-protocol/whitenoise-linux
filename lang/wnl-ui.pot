@@ -874,6 +874,10 @@ msgctxt "GroupSettingsCard"
 msgid "Group settings"
 msgstr ""
 
+msgctxt "VaultField"
+msgid "Hide password"
+msgstr ""
+
 msgctxt "ProfilePage"
 msgid "How your name appears in chats"
 msgstr ""
@@ -1702,6 +1706,10 @@ msgstr ""
 
 msgctxt "NotificationsPane"
 msgid "Show message preview"
+msgstr ""
+
+msgctxt "VaultField"
+msgid "Show password"
 msgstr ""
 
 msgctxt "AdvancedPane"

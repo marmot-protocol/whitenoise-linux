@@ -1,0 +1,40 @@
+import { Palette } from "../tokens.slint";
+
+// Password-reveal glyph: an open eye with an iris ring; `crossed` adds the
+// diagonal strike used while the field is revealed ("click to hide").
+export component EyeIcon inherits Rectangle {
+    in property <color> stroke: Palette.text-mid;
+    in property <bool> crossed: false;
+    width: 16px;
+    height: 12px;
+    Path {
+        width: 16px;
+        height: 12px;
+        viewbox-width: 16;
+        viewbox-height: 12;
+        commands: "M 1 6 C 4.5 1.6 11.5 1.6 15 6 C 11.5 10.4 4.5 10.4 1 6 Z";
+        stroke: root.stroke;
+        stroke-width: 1.3px;
+        fill: transparent;
+    }
+
+    Rectangle {
+        x: 5.8px;
+        y: 3.8px;
+        width: 4.4px;
+        height: 4.4px;
+        border-radius: 2.2px;
+        border-width: 1.3px;
+        border-color: root.stroke;
+    }
+
+    if root.crossed: Path {
+        width: 16px;
+        height: 12px;
+        viewbox-width: 16;
+        viewbox-height: 12;
+        commands: "M 3 11.5 L 13 0.5";
+        stroke: root.stroke;
+        stroke-width: 1.3px;
+    }
+}

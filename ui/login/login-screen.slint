@@ -16,6 +16,7 @@ import { LockIcon } from "../icons/lock-icon.slint";
 import { CopyIcon } from "../icons/copy-icon.slint";
 import { PlusIcon } from "../icons/plus-icon.slint";
 import { RefreshIcon } from "../icons/refresh-icon.slint";
+import { EyeIcon } from "../icons/eye-icon.slint";
 import { Avatar } from "../primitives/avatar.slint";
 import { CypherScroll } from "../primitives/cypher-scroll.slint";
 
@@ -27,7 +28,13 @@ component VaultField inherits VerticalLayout {
     in-out property <string> text;
     in property <bool> password: false;
     in property <bool> error: false;
+    // Password fields start masked; the eye button flips this to show the
+    // typed characters. Per-instance state, so it resets with the mode subtree.
+    property <bool> revealed: false;
     callback submit;
+    function toggle-reveal() {
+        root.revealed = !root.revealed;
+    }
     spacing: 6px;
 
     // Focus the inner input — lets the login screen autofocus the first
@@ -59,16 +66,37 @@ component VaultField inherits VerticalLayout {
         HorizontalLayout {
             padding-left: 14px;
             padding-right: 14px;
+            spacing: 8px;
             vf-input := LineInput {
                 placeholder: root.placeholder;
                 text <=> root.text;
-                password: root.password;
+                password: root.password && !root.revealed;
                 // LineInput multiplies by fs-scale internally.
                 font-size: Theme.fsr(13px, 14px);
                 fg: Palette.text-hi;
                 placeholder-color: Palette.text-vlo;
                 submit => {
                     root.submit();
+                }
+            }
+
+            if root.password: Rectangle {
+                width: 22px;
+                reveal-touch := TouchArea {
+                    mouse-cursor: pointer;
+                    accessible-role: button;
+                    accessible-label: root.revealed ? @tr("Hide password") : @tr("Show password");
+                    accessible-action-default => {
+                        root.toggle-reveal();
+                    }
+                    clicked => {
+                        root.toggle-reveal();
+                    }
+                }
+
+                EyeIcon {
+                    stroke: reveal-touch.has-hover ? Palette.text-hi : Palette.text-mid;
+                    crossed: root.revealed;
                 }
             }
         }
