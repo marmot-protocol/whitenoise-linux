@@ -34,6 +34,11 @@ component RunCell inherits Rectangle {
     in property <float> scale: 1.0;
     in property <color> link-color;
     in property <color> code-bg;
+    // Profile-mention chip: text on a rounded avatar-gradient plate. The run
+    // still carries its nostr: link, so the tap-to-profile path is unchanged.
+    in property <bool> mention;
+    in property <color> mention-a;
+    in property <color> mention-b;
     // iMessage inline text effects, packed as a bitmask (see MessageRun.fx) so
     // any effects stack on one glyph. Slint has no bitwise ops, so each bit is
     // decoded with mod(floor(fx / 2^n), 2). `phase` is the per-letter index
@@ -132,12 +137,8 @@ component RunCell inherits Rectangle {
     // lets word / whole-bubble selections set endpoints directly without
     // synthesizing pointer coordinates. Endpoints arrive unordered (a =
     // anchor, b = cursor); order them lexicographically first.
-    property <bool> sel-on: root.sel-mine && TextSelection.active
-        && TextSelection.a-line >= 0 && TextSelection.a-run >= 0
-        && TextSelection.b-line >= 0 && TextSelection.b-run >= 0;
-    property <bool> sel-a-first: TextSelection.a-line < TextSelection.b-line
-        || (TextSelection.a-line == TextSelection.b-line && (TextSelection.a-run < TextSelection.b-run
-        || (TextSelection.a-run == TextSelection.b-run && TextSelection.a-frac <= TextSelection.b-frac)));
+    property <bool> sel-on: root.sel-mine && TextSelection.active && TextSelection.a-line >= 0 && TextSelection.a-run >= 0 && TextSelection.b-line >= 0 && TextSelection.b-run >= 0;
+    property <bool> sel-a-first: TextSelection.a-line < TextSelection.b-line || (TextSelection.a-line == TextSelection.b-line && (TextSelection.a-run < TextSelection.b-run || (TextSelection.a-run == TextSelection.b-run && TextSelection.a-frac <= TextSelection.b-frac)));
     property <int> sel-s-line: root.sel-a-first ? TextSelection.a-line : TextSelection.b-line;
     property <int> sel-s-run: root.sel-a-first ? TextSelection.a-run : TextSelection.b-run;
     property <float> sel-s-frac: root.sel-a-first ? TextSelection.a-frac : TextSelection.b-frac;
@@ -145,12 +146,8 @@ component RunCell inherits Rectangle {
     property <int> sel-e-run: root.sel-a-first ? TextSelection.b-run : TextSelection.a-run;
     property <float> sel-e-frac: root.sel-a-first ? TextSelection.b-frac : TextSelection.a-frac;
     // My covered slice: empty (from 1, to 0) when I sit outside the range.
-    property <float> sel-from: !root.sel-on ? 1.0
-        : (root.sel-line-idx > root.sel-s-line || (root.sel-line-idx == root.sel-s-line && root.sel-run-idx > root.sel-s-run)) ? 0.0
-        : (root.sel-line-idx == root.sel-s-line && root.sel-run-idx == root.sel-s-run) ? root.sel-s-frac : 1.0;
-    property <float> sel-to: !root.sel-on ? 0.0
-        : (root.sel-line-idx < root.sel-e-line || (root.sel-line-idx == root.sel-e-line && root.sel-run-idx < root.sel-e-run)) ? 1.0
-        : (root.sel-line-idx == root.sel-e-line && root.sel-run-idx == root.sel-e-run) ? root.sel-e-frac : 0.0;
+    property <float> sel-from: !root.sel-on ? 1.0 : (root.sel-line-idx > root.sel-s-line || (root.sel-line-idx == root.sel-s-line && root.sel-run-idx > root.sel-s-run)) ? 0.0 : (root.sel-line-idx == root.sel-s-line && root.sel-run-idx == root.sel-s-run) ? root.sel-s-frac : 1.0;
+    property <float> sel-to: !root.sel-on ? 0.0 : (root.sel-line-idx < root.sel-e-line || (root.sel-line-idx == root.sel-e-line && root.sel-run-idx < root.sel-e-run)) ? 1.0 : (root.sel-line-idx == root.sel-e-line && root.sel-run-idx == root.sel-e-run) ? root.sel-e-frac : 0.0;
 
     // Endpoint claims. For any point exactly one cell resolves it to a
     // document position (line, run, fraction): the cell containing it, the
@@ -209,7 +206,10 @@ component RunCell inherits Rectangle {
     // reflowing the line frame to frame.
     property <length> em-px: root.emoji-px * root.scale * root.base-sz;
     horizontal-stretch: 0;
-    width: root.is-emoji ? root.em-px : t.preferred-width / max(root.anim-sz, 0.01);
+    // Mention chips reserve extra width for the plate's side padding — the
+    // 10px must match MD_MENTION_PAD in src/render.rs (the Rust wrapper
+    // budgets it when picking break points).
+    width: root.is-emoji ? root.em-px : t.preferred-width / max(root.anim-sz, 0.01) + (root.mention ? 10px : 0px);
     height: root.is-emoji ? root.em-px : t.preferred-height / max(root.anim-sz, 0.01);
 
     // Inline-code plate — flush to the cell so adjacent code runs read as one
@@ -219,6 +219,16 @@ component RunCell inherits Rectangle {
         height: 100%;
         background: root.code-bg;
         border-radius: (2px) * Theme.r-scale;
+    }
+
+    // Mention chip plate — the resolved name sits on the account's stable
+    // avatar gradient, same hue the reader knows from its avatar. Painted
+    // under the selection highlight so selecting across a chip stays visible.
+    if root.mention && !root.is-emoji: Rectangle {
+        width: 100%;
+        height: 100%;
+        background: @linear-gradient(135deg, root.mention-a 0%, root.mention-b 100%);
+        border-radius: min((6px) * Theme.r-scale, self.height / 2);
     }
 
     // Selection highlight — the cell's own slice of the selected range,
@@ -237,7 +247,9 @@ component RunCell inherits Rectangle {
         x: root.dx + (root.width - self.preferred-width) / 2;
         y: root.dy + (root.height - self.preferred-height) / 2;
         text: root.is-emoji ? "" : root.text;
-        color: root.is-link ? root.link-color : root.fg;
+        // Chip text renders white over the gradient plate, like avatar
+        // initials (the plate's hue range keeps the contrast readable).
+        color: root.mention ? white : (root.is-link ? root.link-color : root.fg);
         font-size: root.body-fs * root.scale * root.sz;
         font-family: Theme.font;
         // Bloom rolls a bold crest across the glyphs; otherwise plain weight.
@@ -269,8 +281,8 @@ component RunCell inherits Rectangle {
         height: 1px;
         background: root.is-link ? root.link-color : root.fg;
     }
-    // Link underline.
-    if root.is-link && !root.is-emoji: Rectangle {
+    // Link underline. Mention chips skip it — the plate is the affordance.
+    if root.is-link && !root.is-emoji && !root.mention: Rectangle {
         y: parent.height - 1px;
         width: 100%;
         height: 1px;
@@ -963,9 +975,7 @@ export component MessageBubble inherits Rectangle {
                     }
                     if (e.kind == PointerEventKind.down && e.button == PointerEventButton.left && root.msg-id != "") {
                         self.dragging = false;
-                        root.press-chain = (root.now-tick - root.last-press-tick <= 225ms
-                            && abs(self.mouse-x - root.last-press-x) <= 6px
-                            && abs(self.mouse-y - root.last-press-y) <= 6px) ? root.press-chain + 1 : 1;
+                        root.press-chain = (root.now-tick - root.last-press-tick <= 225ms && abs(self.mouse-x - root.last-press-x) <= 6px && abs(self.mouse-y - root.last-press-y) <= 6px) ? root.press-chain + 1 : 1;
                         root.last-press-tick = root.now-tick;
                         root.last-press-x = self.mouse-x;
                         root.last-press-y = self.mouse-y;
@@ -1113,6 +1123,9 @@ export component MessageBubble inherits Rectangle {
                                     link: r.link;
                                     fx: r.fx;
                                     phase: r.phase;
+                                    mention: r.mention;
+                                    mention-a: r.mention-a;
+                                    mention-b: r.mention-b;
                                     link-color: root.outgoing ? Palette.bubble-out-fg : Palette.mint;
                                     code-bg: root.outgoing ? #00000022 : (Theme.light ? #0000000d : #ffffff14);
                                     sel-msg-id: root.msg-id;

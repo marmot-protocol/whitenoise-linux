@@ -965,6 +965,7 @@ pub(crate) fn build_one_message_row(
     overlay: &PendingState,
     backend: &Backend,
 ) -> ChatMessage {
+    mention_render_group(group_hex);
     maybe_autoload_album(group_hex, record);
     let mut reactions = aggregate_reactions(all_records, my_id);
     apply_reaction_overlay(&mut reactions, group_hex, overlay);
@@ -1152,6 +1153,7 @@ pub(crate) fn rebuild_chat_messages_from(
     msgs: &[AppMessageRecord],
 ) {
     let t0 = std::time::Instant::now();
+    mention_render_group(group_hex);
     let my_id = backend.account().account_id_hex.clone();
     let my_label = my_avatar_label(backend, &my_id);
     let t_label = t0.elapsed();

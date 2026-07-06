@@ -551,6 +551,7 @@ pub(crate) fn wire_backup(
                         .insert(row.account_id.to_string(), nick.clone());
                 }
                 st.save();
+                mention_set_nicknames(&st.nicknames);
             }
             // Patch the one row in place — no relay round-trip involved.
             row.name = if nick.is_empty() {
@@ -1185,6 +1186,13 @@ pub(crate) fn wire_backup(
                     let active_watcher = active_watcher.clone();
                     let b = backend.clone();
                     backend.tokio_handle().spawn(async move {
+                        // Membership first: the rebuild below resolves mention
+                        // chips (name + member "@") from this registration, and
+                        // the concurrent members-panel fetch may land later.
+                        // Membership first: the rebuild below resolves the
+                        // member "@" prefix from this registration, and the
+                        // concurrent members-panel fetch may land later.
+                        warm_group_mentions(&b, &group_hex);
                         let msgs = b
                             .messages(&group_hex, Some(msg_window_for(&group_hex)))
                             .unwrap_or_default();

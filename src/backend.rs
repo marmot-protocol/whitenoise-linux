@@ -34,6 +34,20 @@ pub(crate) use tokio::task::JoinHandle;
 
 pub(crate) use crate::observability::ObservabilityConfig;
 
+/// Observer invoked with every [`Backend::messages`] snapshot. Installed once
+/// at startup by the main binary (the mention resolver); the staged dm-ctl /
+/// bootbench bins never install one. MUST be cheap and non-blocking — it runs
+/// on the caller's thread, which can be the UI thread (and some callers hold
+/// locks across `messages()`, so it must not take unrelated locks either;
+/// the backend handle arrives as a parameter for exactly that reason).
+type MessagesSnapshotObserver = Box<dyn Fn(&Backend, &[AppMessageRecord]) + Send + Sync>;
+static MESSAGES_SNAPSHOT_OBSERVER: std::sync::OnceLock<MessagesSnapshotObserver> =
+    std::sync::OnceLock::new();
+
+pub fn set_messages_snapshot_observer(observer: MessagesSnapshotObserver) {
+    let _ = MESSAGES_SNAPSHOT_OBSERVER.set(observer);
+}
+
 /// account_id (lowercase) → (display name, picture URL), shared behind a mutex
 /// so the background sync and UI-thread reads share one warmed map.
 type ProfileCache = Arc<Mutex<HashMap<String, (String, Option<String>)>>>;
@@ -913,9 +927,76 @@ impl Backend {
             group_id_hex: Some(group_hex.to_string()),
             limit,
         };
-        self.runtime
+        let msgs = self
+            .runtime
             .messages_with_query(&self.active_label(), query)
-            .map_err(|e| anyhow!("messages_with_query: {e}"))
+            .map_err(|e| anyhow!("messages_with_query: {e}"))?;
+        // Every row-rebuild path funnels its window read through here, so
+        // this is the one choke point where an observer sees all rendered
+        // text no matter which flow (open/edit/forward/watcher/…) surfaced
+        // it. The mention resolver hangs off it — via a hook, not a direct
+        // call, because backend.rs is shared with the staged dm-ctl /
+        // bootbench bins that don't carry the UI-glue modules.
+        if let Some(observer) = MESSAGES_SNAPSHOT_OBSERVER.get() {
+            observer(self, &msgs);
+        }
+        Ok(msgs)
+    }
+
+    /// Resolve an account's published display name asynchronously: the local
+    /// directory first, then kind-0 relay fetches (configured + discovery
+    /// relays) with a directory re-read after each. Fetches retry with
+    /// backoff — a transient relay failure must not strand the caller until
+    /// some unrelated event re-asks (that stranding was visible as mention
+    /// chips resolving only "on the next edit"). `on_done` runs on the
+    /// backend runtime with the name, or `None` once every attempt is spent.
+    /// Neutral plumbing — the mention resolver drives it via the
+    /// messages-snapshot observer, but nothing here is mention-specific.
+    pub fn resolve_display_name_async(
+        &self,
+        account_id_hex: &str,
+        on_done: impl FnOnce(Option<String>) + Send + 'static,
+    ) {
+        let app = self.app.clone();
+        let relays = self.discovery_relays();
+        let id = account_id_hex.to_string();
+        self.tokio.spawn(async move {
+            let directory_name = |app: &MarmotApp| -> Option<String> {
+                let p = app
+                    .directory_entry_for_account_id(&id)
+                    .ok()
+                    .flatten()
+                    .and_then(|e| e.profile)?;
+                p.display_name
+                    .filter(|n| !n.trim().is_empty())
+                    .or(p.name)
+                    .filter(|n| !n.trim().is_empty())
+            };
+            let mut attempt = 0u32;
+            let name = loop {
+                // Re-read the directory each pass — it also catches a fetch
+                // whose write landed but wasn't readable on the previous pass.
+                if let Some(name) = directory_name(&app) {
+                    tracing::info!(target: "mentions", account = %id, %name, attempt, "resolved from directory");
+                    break Some(name);
+                }
+                attempt += 1;
+                if attempt > 3 {
+                    break None;
+                }
+                if attempt > 1 {
+                    tokio::time::sleep(Duration::from_secs(2u64 << (attempt - 2))).await;
+                }
+                tracing::info!(target: "mentions", account = %id, attempt, "not in directory — fetching kind-0 from relays");
+                if let Err(e) = app
+                    .refresh_profile_for_account_id(&id, relays.clone())
+                    .await
+                {
+                    tracing::warn!(target: "mentions", account = %id, attempt, error = %e, "relay profile fetch failed");
+                }
+            };
+            on_done(name);
+        });
     }
 
     /// Synchronously send a text message — blocks the UI thread for the
@@ -1429,6 +1510,25 @@ impl Backend {
     /// Best-effort display name for an account id (cache, then hex tail).
     pub fn account_display_name(&self, account_id_hex: &str) -> String {
         self.account_name_and_picture(account_id_hex).0
+    }
+
+    /// Published display name for ANY account, read synchronously from the
+    /// directory storage (a disk read — never call on the UI thread). Unlike
+    /// [`Self::account_name_and_picture`] this doesn't depend on the boot-time
+    /// cache warm, so it resolves keys outside the user's groups/contacts —
+    /// the mention warm paths (src/mentions.rs) use it for arbitrary npubs.
+    /// `None` when the directory has no profile (or no name) for the key.
+    pub fn directory_display_name(&self, account_id_hex: &str) -> Option<String> {
+        let entry = self
+            .app
+            .directory_entry_for_account_id(account_id_hex)
+            .ok()??;
+        let profile = entry.profile?;
+        profile
+            .display_name
+            .filter(|n| !n.trim().is_empty())
+            .or(profile.name)
+            .filter(|n| !n.trim().is_empty())
     }
 
     /// Display name + picture URL for an account id, served from the

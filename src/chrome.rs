@@ -324,6 +324,18 @@ pub(crate) fn refresh_contacts_async(
             }
         };
         let nicknames = Settings::load().nicknames;
+        // Feed the mention resolver: contacts are how out-of-group mentions
+        // (people not in the open chat's member list) get a name.
+        mention_set_nicknames(&nicknames);
+        for r in &records {
+            if let Some(name) = r
+                .profile
+                .as_ref()
+                .and_then(|p| p.display_name.clone().or_else(|| p.name.clone()))
+            {
+                mention_note_profile(&r.account_id_hex, &name);
+            }
+        }
         let _ = slint::invoke_from_event_loop(move || {
             let Some(ui) = weak.upgrade() else { return };
             let contacts = ui.get_contacts();
@@ -602,6 +614,9 @@ pub(crate) fn fetch_members_snapshot(backend: &Backend, group_hex: &str) -> Memb
         eprintln!("[members] {e:#}");
         Vec::new()
     });
+    // Keep the mention resolver's membership in sync — this snapshot rides
+    // every chat open and every member add/remove/promote flow.
+    mention_set_group_members(backend, group_hex, &members);
     MembersSnapshot {
         count: backend.group_member_count(group_hex),
         group_rec,

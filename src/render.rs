@@ -191,6 +191,9 @@ use whitenoise_markdown::{Block, Inline, ListItem, ListKind, NostrEntity};
 pub(crate) const MD_CHAR_W: f32 = 0.62;
 /// Approximate inline-emoji advance as a fraction of font-size.
 pub(crate) const MD_EMOJI_W: f32 = 1.25;
+/// Extra horizontal pixels a mention chip's plate adds around its text (must
+/// match the RunCell's mention padding so the wrapper doesn't overshoot).
+pub(crate) const MD_MENTION_PAD: f32 = 10.0;
 
 /// Inline styling resolved for a single run while walking the AST.
 #[derive(Clone, Copy, Default)]
@@ -204,6 +207,11 @@ pub(crate) struct MdStyle {
     /// 1 big, 2 small, 4 explode, 8 bloom, 16 shake, 32 nod, 64 ripple,
     /// 128 jitter. The RunCell decodes the bits and composes the transforms.
     fx: u8,
+    /// Profile-mention chip: the run renders its text on a rounded plate
+    /// tinted with the account's avatar gradient (`mention_a`/`mention_b`).
+    mention: bool,
+    mention_a: Color,
+    mention_b: Color,
 }
 
 /// OR the `{name}…{/name}` effect into the style's bitmask. Effects compose, so
@@ -302,6 +310,9 @@ pub(crate) fn md_run_text(text: &str, style: MdStyle, link: &Option<String>) -> 
         fx: style.fx as i32,
         // Assigned in a second pass over the finished runs (md_assign_phases).
         phase: 0.0,
+        mention: style.mention,
+        mention_a: style.mention_a,
+        mention_b: style.mention_b,
     }
 }
 
@@ -318,6 +329,9 @@ pub(crate) fn md_run_emoji(text: &str, x: u32, y: u32, fx: u8) -> MessageRun {
         link: SharedString::new(),
         fx: fx as i32,
         phase: 0.0,
+        mention: false,
+        mention_a: Color::default(),
+        mention_b: Color::default(),
     }
 }
 
@@ -419,8 +433,36 @@ pub(crate) fn md_push_text(
     flush(&mut buf, &mut buf_space, out);
 }
 
-/// Emit a nostr entity as a single shortened, linkified word.
+/// Emit a nostr entity as a single linkified word. Profile entities
+/// (npub/nprofile) resolve to a name chip: the nickname or published name on
+/// an avatar-gradient plate, "@"-prefixed only when the account is a member
+/// of the group being rendered (so readers can tell members from outsiders).
+/// Unresolvable names — and every non-profile entity — fall back to the
+/// shortened bech32. The `nostr:` link is emitted unchanged either way, so a
+/// tap still opens the in-app profile modal.
 pub(crate) fn md_push_nostr(out: &mut Vec<MdTok>, e: &NostrEntity, style: MdStyle, mention: bool) {
+    if let Some(chip) = mention_chip_for(&e.bech32) {
+        let name = chip.name.unwrap_or_else(|| md_shorten(&e.bech32));
+        let display = if chip.in_group {
+            format!("@{name}")
+        } else {
+            name
+        };
+        out.push(MdTok::Word {
+            text: display,
+            style: MdStyle {
+                mention: true,
+                // Bold like the sender-name label: the name is the payload
+                // and it thickens the white glyphs over the tinted plate.
+                bold: true,
+                mention_a: chip.color_a,
+                mention_b: chip.color_b,
+                ..style
+            },
+            link: Some(format!("nostr:{}", e.bech32)),
+        });
+        return;
+    }
     let mut display = md_shorten(&e.bech32);
     if mention {
         display = format!("@{display}");
@@ -608,7 +650,8 @@ pub(crate) fn md_wrap(
             }
             MdTok::Word { text, style, link } => {
                 let n = text.chars().count();
-                let w = n as f32 * char_w;
+                let pad = if style.mention { MD_MENTION_PAD } else { 0.0 };
+                let w = n as f32 * char_w + pad;
                 if w <= avail {
                     if x > 0.0 && x + w > avail {
                         flush(out, &mut cur, &mut hard, false);

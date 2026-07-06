@@ -187,6 +187,10 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 }
                 let my_id = backend.account().account_id_hex.clone();
                 let my_label = my_avatar_label(backend, &my_id);
+                // Start resolving any newly-mentioned profile right away
+                // (cheap scan here, IO on the runtime) so the chip usually
+                // flips to a name by the time the send confirms.
+                warm_unresolved_mentions(backend, mention_unresolved_keys_in_text(&text));
                 // Durably queue this send so it survives a restart and auto-flushes
                 // on reconnect. The disk entry carries the clean text + effect id;
                 // the effect tag is reconstructed from the id at (re)dispatch time.

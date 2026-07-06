@@ -44,6 +44,8 @@ mod chrome;
 pub(crate) use chrome::*;
 mod media;
 pub(crate) use media::*;
+mod mentions;
+pub(crate) use mentions::*;
 mod render;
 pub(crate) use render::*;
 mod state;
@@ -137,6 +139,9 @@ fn main() -> Result<(), slint::PlatformError> {
                 .collect(),
         );
     }
+    // Seed the mention resolver's nickname map so chat bodies rendered before
+    // the first contacts refresh already prefer private nicknames.
+    mention_set_nicknames(&initial_settings.nicknames);
     apply_stamp_formats(&initial_settings);
     ui.set_time_format(s(&initial_settings.time_format));
     ui.set_date_format(s(&initial_settings.date_format));
@@ -206,6 +211,60 @@ fn main() -> Result<(), slint::PlatformError> {
         vault_cell: vault_cell.clone(),
         group_ids: group_ids.clone(),
         pending_state: pending_state.clone(),
+    });
+    // Mention-resolution catch-all: every row rebuild reads its window
+    // through Backend::messages, so an observer there sees all rendered text
+    // regardless of which flow (open/edit/forward/watcher/send) surfaced it.
+    // The scan is pure in-memory (the observer can run on the UI thread);
+    // unresolved keys hand off to the runtime for directory/relay IO.
+    backend::set_messages_snapshot_observer(Box::new(|backend, msgs| {
+        let unknown = mention_unresolved_keys(msgs);
+        if !unknown.is_empty() {
+            warm_unresolved_mentions(backend, unknown);
+        }
+    }));
+    // When a background relay fetch resolves a mentioned profile's name after
+    // the bubbles already rendered, re-tokenize the visible rows IN PLACE.
+    // Deliberately no snapshot re-read: a repaint built from a fresh
+    // `messages()` read races whatever send/edit is in flight (the resolve
+    // often finishes before the edit's kind-1009 is queryable, so the re-read
+    // rendered stale text and the chip never updated). The row's `text` is
+    // already exactly what the user sees — re-running the tokenizer over it
+    // picks up the now-registered name, no IO, no races, on the UI thread.
+    mention_set_refresh({
+        let weak = ui.as_weak();
+        let group_ids = group_ids.clone();
+        Box::new(move || {
+            let weak = weak.clone();
+            let group_ids = group_ids.clone();
+            let _ = slint::invoke_from_event_loop(move || {
+                let Some(ui) = weak.upgrade() else { return };
+                let idx = ui.get_active_chat() as usize;
+                let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
+                    tracing::warn!(target: "mentions", idx, "repaint hook: no group for active chat");
+                    return;
+                };
+                // The member "@" prefix resolves against the rendered group.
+                mention_render_group(&group_hex);
+                let chats_messages = ui.get_chats_messages();
+                let mut patched = 0usize;
+                with_inner_messages(&chats_messages, idx, |vm| {
+                    for i in 0..vm.row_count() {
+                        let Some(mut row) = vm.row_data(i) else {
+                            continue;
+                        };
+                        let text = row.text.to_string();
+                        if !(text.contains("npub1") || text.contains("nprofile1")) {
+                            continue;
+                        }
+                        row.lines = build_message_lines(&text, row.bubble_max);
+                        vm.set_row_data(i, row);
+                        patched += 1;
+                    }
+                });
+                tracing::info!(target: "mentions", idx, %group_hex, patched, "repatched mention rows in place");
+            });
+        })
     });
     // Currently-active per-chat message watcher. Aborted and replaced when the
     // user switches chats so we never leak background tasks.
@@ -484,6 +543,10 @@ fn main() -> Result<(), slint::PlatformError> {
             let Some(backend) = guard.as_ref() else {
                 return;
             };
+            // Start resolving any newly-mentioned profile right away (cheap
+            // scan here, IO on the runtime) — waiting for the edit ack's
+            // snapshot read would delay the chip by ack + fetch.
+            warm_unresolved_mentions(backend, mention_unresolved_keys_in_text(&text));
             let weak_cb = weak.clone();
             let group_ids_cb = group_ids.clone();
             let pending_state_cb = pending_state.clone();

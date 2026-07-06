@@ -847,6 +847,12 @@ export struct MessageRun {
     // effect run and resets between spans.
     fx: int,
     phase: float,
+    // Profile-mention chip: `mention` renders the run's text on a rounded
+    // plate whose gradient (`mention-a` → `mention-b`) is the account's
+    // stable avatar palette, resolved Rust-side (see src/mentions.rs).
+    mention: bool,
+    mention-a: color,
+    mention-b: color,
 }
 
 // One wrapped line of a chat-message body. Beyond its runs a line carries

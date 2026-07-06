@@ -455,6 +455,9 @@ pub(crate) fn fetch_chat_list_snapshot(backend: &Backend) -> Option<ChatListSnap
     let first_msgs = records
         .get(default_idx)
         .map(|r| {
+            // Register the default chat's membership before its rows build,
+            // so mention chips resolve names and the member "@" on first paint.
+            warm_group_mentions(backend, &r.group_id_hex);
             backend
                 .messages(&r.group_id_hex, Some(msg_window_for(&r.group_id_hex)))
                 .unwrap_or_default()
@@ -575,6 +578,7 @@ pub(crate) fn refresh_chats_from(
         // Only the default-shown chat's window was eagerly fetched; the others
         // get filled on selection. Keeps boot fast for users with many groups.
         let msgs: &[AppMessageRecord] = if i == snap.default_idx {
+            mention_render_group(&record.group_id_hex);
             &snap.first_msgs
         } else {
             &[]
