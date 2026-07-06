@@ -10,8 +10,10 @@ export component AccountSwitcherModal inherits Modal {
     callback add-account();
     in property <[AccountEntry]> accounts;
 
-    // Keyboard cursor. Starts on the active account when rows mount.
+    // Keyboard cursor. Starts on the active account once per modal open, then
+    // stays user-owned while avatar/profile refreshes rebuild the row model.
     property <int> focus-idx: 0;
+    property <bool> cursor-set: false;
 
     card-width: 440px;
     title: @tr("Accounts");
@@ -65,8 +67,9 @@ export component AccountSwitcherModal inherits Modal {
                 property <bool> keyboard-focused: nav.has-focus && root.focus-idx == i;
 
                 init => {
-                    if (acc.active) {
+                    if (!root.cursor-set && acc.active) {
                         root.focus-idx = i;
+                        root.cursor-set = true;
                     }
                 }
 
