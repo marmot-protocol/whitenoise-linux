@@ -246,6 +246,10 @@ msgctxt "ProfileModal"
 msgid "Adding…"
 msgstr "保存中…"
 
+msgctxt "GroupSettingsCard"
+msgid "Admins must step down before leaving."
+msgstr "管理者は退出前に管理者権限を外す必要があります。"
+
 msgctxt "AdvancedPane"
 msgid "Advanced"
 msgstr "詳細"
@@ -1078,6 +1082,26 @@ msgstr "ログイン時に起動"
 msgctxt "AppearancePane"
 msgid "Lavender"
 msgstr "ラベンダー"
+
+msgctxt "DarkMatterLinux"
+msgid "Leave group"
+msgstr "グループを退出"
+
+msgctxt "GroupSettingsCard"
+msgid "Leave group"
+msgstr "グループを退出"
+
+msgctxt "GroupSettingsCard"
+msgid "Leave this group and stop receiving new messages. The chat moves to Archive."
+msgstr "このグループを退出し、新しいメッセージの受信を停止します。チャットはアーカイブに移動します。"
+
+msgctxt "DarkMatterLinux"
+msgid "Leave {}?"
+msgstr "{}を退出しますか？"
+
+msgctxt "GroupSettingsCard"
+msgid "Leaving…"
+msgstr "退出中…"
 
 msgctxt "ThemePicker"
 msgid "Light"
@@ -2129,6 +2153,10 @@ msgstr "昨日"
 msgctxt "OutgoingRow"
 msgid "You"
 msgstr "あなた"
+
+msgctxt "DarkMatterLinux"
+msgid "You will stop receiving new messages from this group. The chat moves to Archive."
+msgstr "このグループからの新しいメッセージの受信を停止します。チャットはアーカイブに移動します。"
 
 msgctxt "KeysPage"
 msgid "Your identity is sovereign"

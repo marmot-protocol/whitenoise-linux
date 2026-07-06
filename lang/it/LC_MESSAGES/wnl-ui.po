@@ -248,6 +248,10 @@ msgctxt "ProfileModal"
 msgid "Adding…"
 msgstr "Salvataggio…"
 
+msgctxt "GroupSettingsCard"
+msgid "Admins must step down before leaving."
+msgstr "Gli amministratori devono rinunciare al ruolo prima di uscire."
+
 msgctxt "AdvancedPane"
 msgid "Advanced"
 msgstr "Avanzate"
@@ -1080,6 +1084,26 @@ msgstr "Avvia all'accesso"
 msgctxt "AppearancePane"
 msgid "Lavender"
 msgstr "Lavanda"
+
+msgctxt "DarkMatterLinux"
+msgid "Leave group"
+msgstr "Lascia il gruppo"
+
+msgctxt "GroupSettingsCard"
+msgid "Leave group"
+msgstr "Lascia il gruppo"
+
+msgctxt "GroupSettingsCard"
+msgid "Leave this group and stop receiving new messages. The chat moves to Archive."
+msgstr "Lascia questo gruppo e smetti di ricevere nuovi messaggi. La chat viene spostata nell'Archivio."
+
+msgctxt "DarkMatterLinux"
+msgid "Leave {}?"
+msgstr "Lasciare {}?"
+
+msgctxt "GroupSettingsCard"
+msgid "Leaving…"
+msgstr "Uscita in corso…"
 
 msgctxt "ThemePicker"
 msgid "Light"
@@ -2131,6 +2155,10 @@ msgstr "Ieri"
 msgctxt "OutgoingRow"
 msgid "You"
 msgstr "Tu"
+
+msgctxt "DarkMatterLinux"
+msgid "You will stop receiving new messages from this group. The chat moves to Archive."
+msgstr "Smetterai di ricevere nuovi messaggi da questo gruppo. La chat viene spostata nell'Archivio."
 
 msgctxt "KeysPage"
 msgid "Your identity is sovereign"

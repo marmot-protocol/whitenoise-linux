@@ -4,6 +4,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
     let Cx {
         backend_cell,
         group_ids,
+        archived_group_ids,
         ..
     } = cx.clone();
     ui.on_add_member({
@@ -156,6 +157,64 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                         }
                         Err(e) => {
                             tracing::warn!(target: "self_demote", "{e:#}");
+                            ui.set_group_settings_status(
+                                friendly_error(ErrorOp::GroupSettings, &e).into(),
+                            );
+                        }
+                    }
+                });
+            });
+        }
+    });
+    ui.on_leave_group_at({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let group_ids = group_ids.clone();
+        let archived_group_ids = archived_group_ids.clone();
+        move |remove_idx| {
+            let Some(ui) = weak.upgrade() else { return };
+            if ui.get_group_leave_busy() || remove_idx < 0 {
+                return;
+            }
+            let Some(group_hex) = group_ids.lock().unwrap().get(remove_idx as usize).cloned()
+            else {
+                return;
+            };
+            ui.set_group_leave_busy(true);
+            ui.set_group_settings_status(s("Leaving group…"));
+            let Some(b) = backend_cell.lock().unwrap().clone() else {
+                ui.set_group_leave_busy(false);
+                ui.set_group_settings_status(s("Backend not ready."));
+                return;
+            };
+            let weak = weak.clone();
+            let group_ids = group_ids.clone();
+            let archived_group_ids = archived_group_ids.clone();
+            std::thread::spawn(move || {
+                let result = b.leave_group(&group_hex);
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    ui.set_group_leave_busy(false);
+                    match result {
+                        Ok(_) => {
+                            ui.set_group_settings_status(s(""));
+                            ui.set_show_chat_members(false);
+                            let current_idx = ui.get_active_chat();
+                            refresh_archived_async(&ui, &b, &archived_group_ids);
+                            refresh_chats_async(&ui, &b, &group_ids, move |ui, _b, snap| {
+                                let next = active_chat_after_row_removed(
+                                    current_idx,
+                                    remove_idx,
+                                    snap.records.len(),
+                                );
+                                ui.set_active_chat(next);
+                                if !snap.records.is_empty() {
+                                    ui.invoke_chat_selected(next);
+                                }
+                            });
+                        }
+                        Err(e) => {
+                            tracing::warn!(target: "leave_group", "{e:#}");
                             ui.set_group_settings_status(
                                 friendly_error(ErrorOp::GroupSettings, &e).into(),
                             );
@@ -383,4 +442,49 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
             });
         }
     });
+}
+
+fn active_chat_after_row_removed(current: i32, removed: i32, remaining_rows: usize) -> i32 {
+    if remaining_rows == 0 {
+        return 0;
+    }
+    let last = remaining_rows.saturating_sub(1) as i32;
+    let next = if current == removed {
+        removed
+    } else if current > removed {
+        current - 1
+    } else {
+        current
+    };
+    next.min(last).max(0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn active_chat_after_removed_tail_moves_to_previous_row() {
+        assert_eq!(active_chat_after_row_removed(3, 3, 3), 2);
+    }
+
+    #[test]
+    fn active_chat_after_removed_middle_keeps_same_index() {
+        assert_eq!(active_chat_after_row_removed(1, 1, 3), 1);
+    }
+
+    #[test]
+    fn active_chat_after_last_row_removed_stays_at_zero() {
+        assert_eq!(active_chat_after_row_removed(0, 0, 0), 0);
+    }
+
+    #[test]
+    fn active_chat_after_removed_row_before_current_shifts_left() {
+        assert_eq!(active_chat_after_row_removed(3, 1, 4), 2);
+    }
+
+    #[test]
+    fn active_chat_after_removed_row_after_current_keeps_current() {
+        assert_eq!(active_chat_after_row_removed(1, 3, 4), 1);
+    }
 }

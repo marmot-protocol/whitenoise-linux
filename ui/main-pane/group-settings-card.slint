@@ -5,8 +5,9 @@ import { LineInput } from "../primitives/line-input.slint";
 import { Button } from "../primitives/button.slint";
 import { Avatar } from "../primitives/avatar.slint";
 
-// Admin-only group-settings surface: avatar + image controls and rename.
+// Group settings surface: admin-only avatar/name controls plus the member leave action.
 export component GroupSettingsCard inherits Section {
+    in property <bool> can-manage: false;
     in property <image> group-picture;
     in property <bool> group-has-picture: false;
     in property <color> group-av-a;
@@ -14,11 +15,13 @@ export component GroupSettingsCard inherits Section {
     in property <string> group-av-initials;
     in property <bool> rename-busy: false;
     in property <bool> image-busy: false;
+    in property <bool> leave-busy: false;
     in property <string> group-status;
     in-out property <string> rename-draft;
     callback rename-group(string);
     callback change-image();
     callback clear-image();
+    callback leave-group();
 
     vertical-stretch: 0;
     label: @tr("Group settings");
@@ -31,7 +34,7 @@ export component GroupSettingsCard inherits Section {
             padding-bottom: 12px;
             spacing: 10px;
 
-            HorizontalLayout {
+            if root.can-manage: HorizontalLayout {
                 spacing: 12px;
                 alignment: start;
                 Avatar {
@@ -80,7 +83,7 @@ export component GroupSettingsCard inherits Section {
                 }
             }
 
-            VerticalLayout {
+            if root.can-manage: VerticalLayout {
                 spacing: 6px;
                 Text {
                     text: @tr("Group name");
@@ -138,23 +141,65 @@ export component GroupSettingsCard inherits Section {
                             }
                         }
                     }
+                }
+            }
 
-                    if root.group-status != "": Rectangle {
-                        height: 28px;
-                        border-radius: (4px) * Theme.r-scale;
-                        background: Palette.panel-2;
-                        border-width: Theme.border-w;
-                        border-color: Palette.border-2;
-                        HorizontalLayout {
-                            padding-left: 8px;
-                            padding-right: 8px;
-                            Text {
-                                text: root.group-status;
-                                color: Palette.text-lo;
-                                font-size: (10px) * Theme.fs-scale;
-                                vertical-alignment: center;
-                                overflow: elide;
-                            }
+            if root.group-status != "": Rectangle {
+                height: 28px;
+                border-radius: (4px) * Theme.r-scale;
+                background: Palette.panel-2;
+                border-width: Theme.border-w;
+                border-color: Palette.border-2;
+                HorizontalLayout {
+                    padding-left: 8px;
+                    padding-right: 8px;
+                    Text {
+                        text: root.group-status;
+                        color: Palette.text-lo;
+                        font-size: (10px) * Theme.fs-scale;
+                        vertical-alignment: center;
+                        overflow: elide;
+                    }
+                }
+            }
+
+            if root.can-manage: Rectangle {
+                height: 1px;
+                background: Palette.border-2;
+            }
+
+            VerticalLayout {
+                spacing: 6px;
+                Text {
+                    text: @tr("Leave group");
+                    color: Palette.danger;
+                    font-size: (12px) * Theme.fs-scale;
+                    font-weight: 700;
+                }
+
+                Text {
+                    text: root.can-manage ? @tr("Admins must step down before leaving.") : @tr("Leave this group and stop receiving new messages. The chat moves to Archive.");
+                    color: Palette.text-lo;
+                    font-size: (10px) * Theme.fs-scale;
+                    wrap: word-wrap;
+                }
+
+                if !root.can-manage: HorizontalLayout {
+                    alignment: start;
+                    Button {
+                        label: root.leave-busy ? @tr("Leaving…") : @tr("Leave group");
+                        enabled: !root.leave-busy;
+                        button-height: 28px;
+                        pad-left: 10px;
+                        pad-right: 10px;
+                        font-size: Theme.fsr(11px, 14px);
+                        fg: Palette.danger;
+                        bg-color: Palette.danger-soft;
+                        hover-bg: Palette.danger-soft-hover;
+                        outline: Palette.danger-border;
+                        hover-outline: Palette.danger-border-hover;
+                        clicked => {
+                            root.leave-group();
                         }
                     }
                 }
