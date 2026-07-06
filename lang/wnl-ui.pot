@@ -100,6 +100,10 @@ msgctxt "NicknameModal"
 msgid "A private name for {}. Only you see it — leave empty to use their published name."
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "A relay address starts with wss:// — for example wss://relay.example.com."
+msgstr ""
+
 msgctxt "ContactDetail"
 msgid "ACTIONS"
 msgstr ""
@@ -215,6 +219,10 @@ msgstr ""
 
 msgctxt "MessageContextMenu"
 msgid "Add reaction"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Add the relay's address after wss://."
 msgstr ""
 
 msgctxt "AddAccountModal"
@@ -808,6 +816,10 @@ msgstr ""
 
 msgctxt "AboutPane"
 msgid "End-to-end encryption"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Enter a relay address."
 msgstr ""
 
 msgctxt "LoginScreen"
@@ -1496,6 +1508,10 @@ msgctxt "Composer"
 msgid "Remove"
 msgstr ""
 
+msgctxt "DarkMatterLinux"
+msgid "Remove"
+msgstr ""
+
 msgctxt "GroupMemberRow"
 msgid "Remove admin"
 msgstr ""
@@ -1510,6 +1526,10 @@ msgstr ""
 
 msgctxt "LoginScreen"
 msgid "Remove key"
+msgstr ""
+
+msgctxt "DarkMatterLinux"
+msgid "Remove this relay?"
 msgstr ""
 
 msgctxt "MessageContextMenu"
@@ -1810,6 +1830,10 @@ msgid "That doesn't look like a valid npub or public key. Double-check it and tr
 msgstr ""
 
 msgctxt "ErrorCopy"
+msgid "That doesn't look like a valid relay address."
+msgstr ""
+
+msgctxt "ErrorCopy"
 msgid "That relay is already in your list."
 msgstr ""
 
@@ -2081,6 +2105,10 @@ msgstr ""
 
 msgctxt "ContactDetail"
 msgid "{} relays"
+msgstr ""
+
+msgctxt "DarkMatterLinux"
+msgid "{} will stop carrying your messages. You can add it back anytime."
 msgstr ""
 
 msgctxt "Composer"

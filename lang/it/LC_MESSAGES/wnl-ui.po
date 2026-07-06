@@ -91,6 +91,10 @@ msgctxt "NicknameModal"
 msgid "A private name for {}. Only you see it — leave empty to use their published name."
 msgstr "Un nome privato per {}. Lo vedi solo tu — lascia vuoto per usare il nome che hanno pubblicato."
 
+msgctxt "ErrorCopy"
+msgid "A relay address starts with wss:// — for example wss://relay.example.com."
+msgstr "Un indirizzo relay inizia con wss:// — per esempio wss://relay.example.com."
+
 msgctxt "ContactDetail"
 msgid "ACTIONS"
 msgstr "AZIONI"
@@ -215,6 +219,10 @@ msgstr "1 membro"
 msgctxt "MessageContextMenu"
 msgid "Add reaction"
 msgstr "Aggiungi reazione"
+
+msgctxt "ErrorCopy"
+msgid "Add the relay's address after wss://."
+msgstr "Aggiungi l'indirizzo del relay dopo wss://."
 
 #, fuzzy
 msgctxt "AddAccountModal"
@@ -842,6 +850,10 @@ msgstr "Crittografato end-to-end con"
 msgctxt "AboutPane"
 msgid "End-to-end encryption"
 msgstr "Crittografato end-to-end con"
+
+msgctxt "ErrorCopy"
+msgid "Enter a relay address."
+msgstr "Inserisci l'indirizzo di un relay."
 
 msgctxt "LoginScreen"
 msgid "Enter your password"
@@ -1562,6 +1574,10 @@ msgctxt "Composer"
 msgid "Remove"
 msgstr "Rimuovi"
 
+msgctxt "DarkMatterLinux"
+msgid "Remove"
+msgstr "Rimuovi"
+
 msgctxt "GroupMemberRow"
 msgid "Remove admin"
 msgstr "Rimuovi ruolo admin"
@@ -1578,6 +1594,10 @@ msgstr "Rimuovi immagine"
 msgctxt "LoginScreen"
 msgid "Remove key"
 msgstr "Rimuovi chiave"
+
+msgctxt "DarkMatterLinux"
+msgid "Remove this relay?"
+msgstr "Rimuovere questo relay?"
 
 msgctxt "MessageContextMenu"
 msgid "Reply"
@@ -1890,6 +1910,10 @@ msgid "That doesn't look like a valid npub or public key. Double-check it and tr
 msgstr "Non sembra un npub o una chiave pubblica valida. Controllala e riprova."
 
 msgctxt "ErrorCopy"
+msgid "That doesn't look like a valid relay address."
+msgstr "Non sembra un indirizzo relay valido."
+
+msgctxt "ErrorCopy"
 msgid "That relay is already in your list."
 msgstr "Questo relay è già nella tua lista."
 
@@ -2167,6 +2191,10 @@ msgstr "{} RELAY"
 msgctxt "ContactDetail"
 msgid "{} relays"
 msgstr "{} relay"
+
+msgctxt "DarkMatterLinux"
+msgid "{} will stop carrying your messages. You can add it back anytime."
+msgstr "{} non trasporterà più i tuoi messaggi. Puoi aggiungerlo di nuovo quando vuoi."
 
 msgctxt "Composer"
 msgid "{}s"
