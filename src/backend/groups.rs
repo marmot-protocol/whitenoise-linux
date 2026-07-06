@@ -567,7 +567,7 @@ impl Backend {
             let mut sub = match runtime.subscribe_chats(&label, false) {
                 Ok(s) => s,
                 Err(e) => {
-                    eprintln!("[backend] subscribe_chats failed: {e}");
+                    tracing::warn!(target: "backend", "subscribe_chats failed: {e}");
                     return;
                 }
             };
@@ -603,7 +603,7 @@ impl Backend {
                 match runtime.subscribe_messages(&label, query).await {
                     Ok(s) => s,
                     Err(e) => {
-                        eprintln!("[backend] subscribe_messages failed: {e}");
+                        tracing::warn!(target: "backend", "subscribe_messages failed: {e}");
                         return;
                     }
                 };

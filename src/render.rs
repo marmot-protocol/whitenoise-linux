@@ -1321,8 +1321,8 @@ pub(crate) fn copy_to_clipboard_async(
 /// skipped entirely). arboard stays as a final fallback everywhere.
 pub(crate) fn copy_to_clipboard(text: &str) -> Result<(), String> {
     let preview: String = text.chars().take(24).collect();
-    eprintln!(
-        "[clipboard] copy len={} preview={:?}{} WAYLAND_DISPLAY={:?} DISPLAY={:?}",
+    tracing::debug!(
+        target: "clipboard", "copy len={} preview={:?}{} WAYLAND_DISPLAY={:?} DISPLAY={:?}",
         text.len(),
         preview,
         if text.len() > 24 { "…" } else { "" },
@@ -1334,10 +1334,10 @@ pub(crate) fn copy_to_clipboard(text: &str) -> Result<(), String> {
     {
         match copy_via_command("pbcopy", &[], text) {
             Ok(()) => {
-                eprintln!("[clipboard] via pbcopy ok");
+                tracing::debug!(target: "clipboard", "via pbcopy ok");
                 return Ok(());
             }
-            Err(e) => eprintln!("[clipboard] pbcopy failed: {e}"),
+            Err(e) => tracing::warn!(target: "clipboard", "pbcopy failed: {e}"),
         }
     }
 
@@ -1347,10 +1347,10 @@ pub(crate) fn copy_to_clipboard(text: &str) -> Result<(), String> {
         if std::env::var_os("WAYLAND_DISPLAY").is_some() {
             match copy_via_command("wl-copy", &[], text) {
                 Ok(()) => {
-                    eprintln!("[clipboard] via wl-copy ok");
+                    tracing::debug!(target: "clipboard", "via wl-copy ok");
                     return Ok(());
                 }
-                Err(e) => eprintln!("[clipboard] wl-copy failed: {e}"),
+                Err(e) => tracing::warn!(target: "clipboard", "wl-copy failed: {e}"),
             }
         }
 
@@ -1362,10 +1362,10 @@ pub(crate) fn copy_to_clipboard(text: &str) -> Result<(), String> {
             ] {
                 match copy_via_command(cmd, args, text) {
                     Ok(()) => {
-                        eprintln!("[clipboard] via {cmd} ok");
+                        tracing::debug!(target: "clipboard", "via {cmd} ok");
                         return Ok(());
                     }
-                    Err(e) => eprintln!("[clipboard] {cmd} failed: {e}"),
+                    Err(e) => tracing::warn!(target: "clipboard", "{cmd} failed: {e}"),
                 }
             }
         }
@@ -1381,11 +1381,11 @@ pub(crate) fn copy_to_clipboard(text: &str) -> Result<(), String> {
     let mut guard = cb.lock().map_err(|e| e.to_string())?;
     match guard.set_text(text.to_string()) {
         Ok(()) => {
-            eprintln!("[clipboard] via arboard ok");
+            tracing::debug!(target: "clipboard", "via arboard ok");
             Ok(())
         }
         Err(e) => {
-            eprintln!("[clipboard] arboard failed: {e}");
+            tracing::warn!(target: "clipboard", "arboard failed: {e}");
             Err(e.to_string())
         }
     }
@@ -1404,7 +1404,7 @@ pub(crate) fn copy_to_clipboard(text: &str) -> Result<(), String> {
 pub(crate) fn copy_via_command(cmd: &str, args: &[&str], text: &str) -> Result<(), String> {
     use std::io::Write;
     use std::process::{Command, Stdio};
-    eprintln!("[clipboard] spawning: {cmd} {args:?}");
+    tracing::debug!(target: "clipboard", "spawning: {cmd} {args:?}");
     let mut child = Command::new(cmd)
         .args(args)
         .stdin(Stdio::piped())
@@ -1467,20 +1467,20 @@ pub(crate) fn paste_image_from_clipboard() -> Option<(Vec<u8>, String)> {
                     let mime = pick_image_target(&types)?;
                     return match paste_via_command("wl-paste", &["--no-newline", "--type", &mime]) {
                         Ok(bytes) if !bytes.is_empty() => {
-                            eprintln!(
-                                "[clipboard] image via wl-paste ({mime}, {} bytes)",
+                            tracing::debug!(
+                                target: "clipboard", "image via wl-paste ({mime}, {} bytes)",
                                 bytes.len()
                             );
                             Some((bytes, mime))
                         }
                         Ok(_) => None,
                         Err(e) => {
-                            eprintln!("[clipboard] wl-paste read failed: {e}");
+                            tracing::warn!(target: "clipboard", "wl-paste read failed: {e}");
                             None
                         }
                     };
                 }
-                Err(e) => eprintln!("[clipboard] wl-paste list-types failed: {e}"),
+                Err(e) => tracing::warn!(target: "clipboard", "wl-paste list-types failed: {e}"),
             }
         }
         if std::env::var_os("DISPLAY").is_some() {
@@ -1494,20 +1494,20 @@ pub(crate) fn paste_image_from_clipboard() -> Option<(Vec<u8>, String)> {
                         &["-selection", "clipboard", "-t", &mime, "-o"],
                     ) {
                         Ok(bytes) if !bytes.is_empty() => {
-                            eprintln!(
-                                "[clipboard] image via xclip ({mime}, {} bytes)",
+                            tracing::debug!(
+                                target: "clipboard", "image via xclip ({mime}, {} bytes)",
                                 bytes.len()
                             );
                             Some((bytes, mime))
                         }
                         Ok(_) => None,
                         Err(e) => {
-                            eprintln!("[clipboard] xclip read failed: {e}");
+                            tracing::warn!(target: "clipboard", "xclip read failed: {e}");
                             None
                         }
                     };
                 }
-                Err(e) => eprintln!("[clipboard] xclip targets failed: {e}"),
+                Err(e) => tracing::warn!(target: "clipboard", "xclip targets failed: {e}"),
             }
         }
     }
@@ -1517,7 +1517,7 @@ pub(crate) fn paste_image_from_clipboard() -> Option<(Vec<u8>, String)> {
     let mut cb = match arboard::Clipboard::new() {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("[clipboard] arboard init failed: {e}");
+            tracing::warn!(target: "clipboard", "arboard init failed: {e}");
             return None;
         }
     };
@@ -1531,10 +1531,10 @@ pub(crate) fn paste_image_from_clipboard() -> Option<(Vec<u8>, String)> {
     if let Err(e) = image::DynamicImage::ImageRgba8(rgba)
         .write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png)
     {
-        eprintln!("[clipboard] png encode failed: {e}");
+        tracing::warn!(target: "clipboard", "png encode failed: {e}");
         return None;
     }
-    eprintln!("[clipboard] image via arboard ({w}x{h})");
+    tracing::debug!(target: "clipboard", "image via arboard ({w}x{h})");
     Some((png, "image/png".to_string()))
 }
 

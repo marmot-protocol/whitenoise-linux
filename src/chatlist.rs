@@ -216,7 +216,7 @@ pub(crate) fn publish_random_profile_async(
         };
         match backend.save_profile_for_label(&label, profile) {
             Ok(_) => {
-                eprintln!("[profile] seeded fresh account {label} as \"{name}\"");
+                tracing::debug!(target: "profile", "seeded fresh account {label} as \"{name}\"");
                 on_published();
                 backend.refresh_profile_cache_async(&account_id_hex);
                 let _ = slint::invoke_from_event_loop(move || {
@@ -225,7 +225,7 @@ pub(crate) fn publish_random_profile_async(
                 });
             }
             Err(e) => {
-                eprintln!("[profile] seeding starter profile for {label} failed: {e:#}")
+                tracing::warn!(target: "profile", "seeding starter profile for {label} failed: {e:#}")
             }
         }
     });
@@ -254,7 +254,7 @@ pub(crate) fn seed_profile_picture(
     ) {
         Ok(png) => png,
         Err(e) => {
-            eprintln!("[profile] render starter avatar for {animal}: {e:#}");
+            tracing::warn!(target: "profile", "render starter avatar for {animal}: {e:#}");
             return None;
         }
     };
@@ -265,11 +265,11 @@ pub(crate) fn seed_profile_picture(
     match rx.recv_timeout(std::time::Duration::from_secs(30)) {
         Ok(Ok(url)) => Some(url),
         Ok(Err(e)) => {
-            eprintln!("[profile] starter avatar upload failed: {e:#}");
+            tracing::warn!(target: "profile", "starter avatar upload failed: {e:#}");
             None
         }
         Err(_) => {
-            eprintln!("[profile] starter avatar upload timed out");
+            tracing::warn!(target: "profile", "starter avatar upload timed out");
             None
         }
     }
@@ -400,7 +400,7 @@ pub(crate) fn fetch_chat_list_snapshot(backend: &Backend) -> Option<ChatListSnap
     let mut records = match backend.chats() {
         Ok(v) => v,
         Err(e) => {
-            eprintln!("[backend] chats snapshot failed: {e:#}");
+            tracing::warn!(target: "backend", "chats snapshot failed: {e:#}");
             return None;
         }
     };
@@ -555,10 +555,10 @@ pub(crate) fn refresh_chats_from(
     group_ids: &Arc<Mutex<Vec<String>>>,
 ) {
     let records = &snap.records;
-    eprintln!(
-        "[refresh_chats] snapshot has {} records (archived flags: {:?})",
-        records.len(),
-        records.iter().map(|r| r.archived).collect::<Vec<_>>()
+    tracing::debug!(
+        target: "refresh_chats",
+        records = records.len(),
+        "snapshot received"
     );
     let my_id = backend.account().account_id_hex.clone();
     let my_label = my_avatar_label(backend, &my_id);
@@ -772,7 +772,7 @@ pub(crate) fn ensure_self_chat_async(
             return;
         }
         if let Err(e) = b.ensure_self_chat() {
-            eprintln!("[self-chat] ensure failed: {e:#}");
+            tracing::warn!(target: "self_chat", "ensure failed: {e:#}");
             return;
         }
         let _ = slint::invoke_from_event_loop(move || {
@@ -881,7 +881,7 @@ pub(crate) fn vault_set_async(vault: &Arc<Mutex<Vault>>, key: String, value: Str
     std::thread::spawn(move || {
         let mut v = vault.lock().unwrap();
         if let Err(e) = v.set(&key, &value) {
-            eprintln!("[vault] set {key} failed: {e}");
+            tracing::warn!(target: "vault", "set {key} failed: {e}");
         }
     });
 }
@@ -963,7 +963,7 @@ pub(crate) fn merge_imported_accounts(
                     g.0 += 1;
                 } else {
                     if let Err(e) = &result {
-                        eprintln!("[import] add account {id} failed: {e:#}");
+                        tracing::warn!(target: "import", "add account {id} failed: {e:#}");
                     }
                     g.1 += 1;
                 }

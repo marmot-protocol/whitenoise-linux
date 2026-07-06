@@ -193,7 +193,7 @@ fn forward_media(
                     });
                 }
                 Err(e) => {
-                    eprintln!("[forward] attachment {i} download failed: {e:#}");
+                    tracing::warn!(target: "forward", "attachment {i} download failed: {e:#}");
                 }
             }
             // Last download in → flush the collected attachments to the target.
@@ -434,7 +434,7 @@ pub(crate) fn spawn_text_forward(
                         }
                     }
                     Err(e) => {
-                        eprintln!("[forward] {e:#}");
+                        tracing::warn!(target: "forward", "{e:#}");
                         if !online {
                             // Offline: leave the bubble pending + queued for flush.
                             return;

@@ -90,6 +90,6 @@ pub fn show(summary: &str, body: &str, play_sound: bool) {
         n.sound_name("message-new-instant");
     }
     if let Err(e) = n.show() {
-        eprintln!("[notify] show failed: {e}");
+        tracing::warn!(target: "notify", "show failed: {e}");
     }
 }

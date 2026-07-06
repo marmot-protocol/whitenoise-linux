@@ -319,7 +319,7 @@ pub(crate) fn refresh_contacts_async(
         let records = match b.follow_list() {
             Ok(v) => v,
             Err(e) => {
-                eprintln!("[backend] follow_list failed: {e:#}");
+                tracing::warn!(target: "backend", "follow_list failed: {e:#}");
                 return;
             }
         };
@@ -558,14 +558,14 @@ pub(crate) fn spawn_group_image_fetch(
         let bytes = match result {
             Ok(b) => b,
             Err(e) => {
-                eprintln!("[group-avatar] fetch failed: {e:#}");
+                tracing::warn!(target: "group_avatar", "fetch failed: {e:#}");
                 return;
             }
         };
         let pixels = match decode_avatar_pixels(&bytes) {
             Ok(p) => p,
             Err(e) => {
-                eprintln!("[group-avatar] decode failed: {e}");
+                tracing::warn!(target: "group_avatar", "decode failed: {e}");
                 return;
             }
         };
@@ -611,7 +611,7 @@ pub(crate) fn fetch_members_snapshot(backend: &Backend, group_hex: &str) -> Memb
     let me = &backend.account().account_id_hex;
     let viewer_is_admin = admins.iter().any(|a| a.eq_ignore_ascii_case(me));
     let members = backend.group_members(group_hex).unwrap_or_else(|e| {
-        eprintln!("[members] {e:#}");
+        tracing::warn!(target: "members", "{e:#}");
         Vec::new()
     });
     // Keep the mention resolver's membership in sync — this snapshot rides
@@ -1027,19 +1027,19 @@ pub(crate) async fn fetch_picture_pixels(url: &str) -> Option<PicturePixels> {
         Ok(resp) => match resp.bytes().await {
             Ok(b) => b,
             Err(e) => {
-                eprintln!("[avatar] download failed for {url}: {e}");
+                tracing::warn!(target: "avatar", "download failed for {url}: {e}");
                 return None;
             }
         },
         Err(e) => {
-            eprintln!("[avatar] request failed for {url}: {e}");
+            tracing::warn!(target: "avatar", "request failed for {url}: {e}");
             return None;
         }
     };
     let pixels = match decode_avatar_pixels(&bytes) {
         Ok(p) => p,
         Err(e) => {
-            eprintln!("[avatar] decode failed for {url}: {e}");
+            tracing::warn!(target: "avatar", "decode failed for {url}: {e}");
             return None;
         }
     };
@@ -1143,7 +1143,7 @@ pub(crate) fn fetch_archived_snapshot(backend: &Backend) -> Option<ArchivedSnaps
     let records = match backend.archived_chats() {
         Ok(v) => v,
         Err(e) => {
-            eprintln!("[backend] archived_chats failed: {e:#}");
+            tracing::warn!(target: "backend", "archived_chats failed: {e:#}");
             return None;
         }
     };

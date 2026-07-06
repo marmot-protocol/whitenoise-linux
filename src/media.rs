@@ -29,7 +29,7 @@ pub(crate) fn populate_profile_from(
             url
         }
         Err(e) => {
-            eprintln!("[backend] load_profile failed: {e:#}");
+            tracing::warn!(target: "backend", "load_profile failed: {e:#}");
             apply_profile(ui, None);
             String::new()
         }
@@ -66,19 +66,19 @@ pub(crate) fn fetch_profile_picture(ui: &DarkMatterLinux, backend: &Backend, url
             Ok(resp) => match resp.bytes().await {
                 Ok(b) => b,
                 Err(e) => {
-                    eprintln!("[avatar] download failed for {url_for_task}: {e}");
+                    tracing::warn!(target: "avatar", "download failed for {url_for_task}: {e}");
                     return;
                 }
             },
             Err(e) => {
-                eprintln!("[avatar] request failed for {url_for_task}: {e}");
+                tracing::warn!(target: "avatar", "request failed for {url_for_task}: {e}");
                 return;
             }
         };
         let pixels = match decode_avatar_pixels(&bytes) {
             Ok(p) => p,
             Err(e) => {
-                eprintln!("[avatar] decode failed for {url_for_task}: {e}");
+                tracing::warn!(target: "avatar", "decode failed for {url_for_task}: {e}");
                 return;
             }
         };
@@ -630,12 +630,12 @@ pub(crate) fn load_viewer_image(
                     })
                 }
                 Err(e) => {
-                    eprintln!("[viewer] decode {mid}: {e:#}");
+                    tracing::warn!(target: "viewer", "decode {mid}: {e:#}");
                     None
                 }
             },
             Err(e) => {
-                eprintln!("[viewer] download {mid}: {e:#}");
+                tracing::warn!(target: "viewer", "download {mid}: {e:#}");
                 None
             }
         };
@@ -937,7 +937,7 @@ pub(crate) fn start_video_playback(
                 spawn_video_player(weak, mid_dl, dl.plaintext);
             }
             Err(e) => {
-                eprintln!("[video] download {mid_dl}: {e:#}");
+                tracing::warn!(target: "video", "download {mid_dl}: {e:#}");
                 let _ = slint::invoke_from_event_loop(move || {
                     if let Some(ui) = weak_fail.upgrade() {
                         ui.set_video_viewer_loading(false);
@@ -1014,7 +1014,7 @@ pub(crate) fn spawn_video_player(weak: Weak<DarkMatterLinux>, mid: String, bytes
             *current_player().lock().unwrap() = Some(player);
         }
         None => {
-            eprintln!("[video] mpv player failed to start");
+            tracing::warn!(target: "video", "mpv player failed to start");
             let _ = slint::invoke_from_event_loop(move || {
                 if let Some(ui) = weak.upgrade() {
                     ui.set_video_viewer_loading(false);
@@ -1052,7 +1052,7 @@ pub(crate) fn start_audio_playback(
     let player = match audio::AudioPlayer::play(bytes) {
         Ok(p) => p,
         Err(e) => {
-            eprintln!("[audio] play {message_id}: {e:#}");
+            tracing::warn!(target: "audio", "play {message_id}: {e:#}");
             return;
         }
     };
@@ -1506,7 +1506,7 @@ pub(crate) fn autoload_album_cells(
                             decode_avatar_pixels(&dl.plaintext).ok()
                         }
                         Err(e) => {
-                            eprintln!("[album] autoload {key}: {e:#}");
+                            tracing::warn!(target: "album", "autoload {key}: {e:#}");
                             None
                         }
                     };
@@ -1635,7 +1635,7 @@ pub(crate) fn refresh_audit_files(ui: &DarkMatterLinux, backend: &Arc<Backend>) 
     let b = backend.clone();
     backend.tokio_handle().spawn(async move {
         let files = b.audit_log_files().unwrap_or_else(|e| {
-            eprintln!("[settings] list audit logs failed: {e:#}");
+            tracing::warn!(target: "settings", "list audit logs failed: {e:#}");
             Vec::new()
         });
         let _ = slint::invoke_from_event_loop(move || {

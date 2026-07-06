@@ -412,7 +412,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     _ => {
                         // No durable bytes to retry with (e.g. an entry from before
                         // this feature). Leave the bubble as-is.
-                        eprintln!("[retry] no durable media for {temp_id}");
+                        tracing::warn!(target: "retry", "no durable media for {temp_id}");
                     }
                 }
             }
@@ -457,7 +457,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     Ok(Some(p)) => p,
                     Ok(None) => return,
                     Err(e) => {
-                        eprintln!("[attach] picker join: {e:#}");
+                        tracing::warn!(target: "attach", "picker join: {e:#}");
                         return;
                     }
                 };
@@ -481,8 +481,10 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     .await
                     {
                         Ok(Ok(f)) => new_files.push(f),
-                        Ok(Err(e)) => eprintln!("[attach] read {}: {e:#}", path.display()),
-                        Err(e) => eprintln!("[attach] read join: {e:#}"),
+                        Ok(Err(e)) => {
+                            tracing::warn!(target: "attach", "read {}: {e:#}", path.display())
+                        }
+                        Err(e) => tracing::warn!(target: "attach", "read join: {e:#}"),
                     }
                 }
                 if new_files.is_empty() {
@@ -764,7 +766,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                                         });
                                     }
                                     Err(e) => {
-                                        eprintln!("[audio] download {mid2}: {e:#}");
+                                        tracing::warn!(target: "audio", "download {mid2}: {e:#}");
                                     }
                                 }
                             });
@@ -871,19 +873,19 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                                                         );
                                                     }
                                                     Err(e) => {
-                                                        eprintln!("[attach] decode {mid}: {e:#}")
+                                                        tracing::warn!(target: "attach", "decode {mid}: {e:#}")
                                                     }
                                                 }
                                             } else if let Some(path) = &target_path
                                                 && let Err(e) = std::fs::write(path, &dl.plaintext)
                                             {
-                                                eprintln!(
-                                                    "[attach] write {}: {e:#}",
+                                                tracing::warn!(
+                                                    target: "attach", "write {}: {e:#}",
                                                     path.display()
                                                 );
                                             }
                                         }
-                                        Err(e) => eprintln!("[attach] download {mid}: {e:#}"),
+                                        Err(e) => tracing::warn!(target: "attach", "download {mid}: {e:#}"),
                                     }
                                     // This completion already runs on the backend
                                     // runtime; the async refresh keeps the snapshot
@@ -1003,9 +1005,9 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                                 .await
                                 {
                                     Ok(Err(e)) => {
-                                        eprintln!("[attach] write {}: {e:#}", path.display())
+                                        tracing::warn!(target: "attach", "write {}: {e:#}", path.display())
                                     }
-                                    Err(e) => eprintln!("[attach] write join: {e:#}"),
+                                    Err(e) => tracing::warn!(target: "attach", "write join: {e:#}"),
                                     Ok(Ok(())) => {}
                                 }
                                 attachment_in_flight()
@@ -1157,7 +1159,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                             );
                         });
                     }
-                    Err(e) => eprintln!("[audio] download {mid}: {e:#}"),
+                    Err(e) => tracing::warn!(target: "audio", "download {mid}: {e:#}"),
                 });
             });
         }
@@ -1201,7 +1203,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             let recorder = match audio::AudioRecorder::start() {
                 Ok(r) => r,
                 Err(e) => {
-                    eprintln!("[audio] start recording: {e:#}");
+                    tracing::warn!(target: "audio", "start recording: {e:#}");
                     return;
                 }
             };
@@ -1265,7 +1267,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             let bytes = match recorder.stop() {
                 Ok(b) => b,
                 Err(e) => {
-                    eprintln!("[audio] stop recording: {e:#}");
+                    tracing::warn!(target: "audio", "stop recording: {e:#}");
                     if let Some(ui) = weak.upgrade() {
                         ui.set_composer_recording(false);
                     }
@@ -1558,11 +1560,11 @@ pub(crate) fn spawn_attachment_send(
                             }
                         }
                         Err(e) => {
-                            eprintln!("[attach] upload: {e:#}");
+                            tracing::warn!(target: "attach", "upload: {e:#}");
                             if !online {
                                 // Offline: keep the bubble pending + the entry
                                 // queued for the reconnect flush.
-                                eprintln!("[attach] offline — left queued for flush");
+                                tracing::warn!(target: "attach", "offline — left queued for flush");
                                 return;
                             }
                             let mut overlay = pending_state.lock().unwrap();
@@ -1807,9 +1809,9 @@ pub(crate) fn spawn_album_send(
                         }
                     }
                     Err(e) => {
-                        eprintln!("[album] upload: {e:#}");
+                        tracing::warn!(target: "album", "upload: {e:#}");
                         if !online {
-                            eprintln!("[album] offline — left queued for flush");
+                            tracing::warn!(target: "album", "offline — left queued for flush");
                             return;
                         }
                         let mut overlay = pending_state.lock().unwrap();

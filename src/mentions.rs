@@ -118,7 +118,7 @@ pub(crate) fn mention_set_group_members(
 pub(crate) fn warm_group_mentions(backend: &Backend, group_hex: &str) {
     match backend.group_members(group_hex) {
         Ok(members) => mention_set_group_members(backend, group_hex, &members),
-        Err(e) => eprintln!("[mentions] group_members({group_hex}): {e:#}"),
+        Err(e) => tracing::warn!(target: "mentions", "group_members({group_hex}): {e:#}"),
     }
 }
 

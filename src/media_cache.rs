@@ -45,7 +45,7 @@ pub fn get(vault: &Arc<Mutex<Vault>>, hash_hex: &str) -> Option<Vec<u8>> {
     match v.open_blob(&sealed) {
         Ok(plain) => Some(plain),
         Err(e) => {
-            eprintln!("[media-cache] open {hash_hex}: {e}; evicting");
+            tracing::warn!(target: "media_cache", "open {hash_hex}: {e}; evicting");
             let _ = std::fs::remove_file(&path);
             None
         }
@@ -64,14 +64,14 @@ pub fn put(vault: &Arc<Mutex<Vault>>, hash_hex: &str, plaintext: &[u8]) {
         match v.seal_blob(plaintext) {
             Ok(s) => s,
             Err(e) => {
-                eprintln!("[media-cache] seal {hash_hex}: {e}");
+                tracing::warn!(target: "media_cache", "seal {hash_hex}: {e}");
                 return;
             }
         }
     };
     let dir = cache_dir();
     if let Err(e) = std::fs::create_dir_all(&dir) {
-        eprintln!("[media-cache] mkdir: {e}");
+        tracing::warn!(target: "media_cache", "mkdir: {e}");
         return;
     }
     set_owner_only_dir(&dir);
@@ -79,12 +79,12 @@ pub fn put(vault: &Arc<Mutex<Vault>>, hash_hex: &str, plaintext: &[u8]) {
     // would fail the auth tag (and waste a re-download) every time after.
     let tmp = path.with_extension("bin.tmp");
     if let Err(e) = std::fs::write(&tmp, &sealed) {
-        eprintln!("[media-cache] write {hash_hex}: {e}");
+        tracing::warn!(target: "media_cache", "write {hash_hex}: {e}");
         return;
     }
     set_owner_only(&tmp);
     if let Err(e) = std::fs::rename(&tmp, &path) {
-        eprintln!("[media-cache] rename {hash_hex}: {e}");
+        tracing::warn!(target: "media_cache", "rename {hash_hex}: {e}");
         let _ = std::fs::remove_file(&tmp);
         return;
     }

@@ -567,7 +567,7 @@ pub(crate) fn error_copy() -> ErrorCopySnapshot {
 ///
 /// User-facing error surfaces must never show raw `anyhow` context strings,
 /// Rust debug formatting, or internal module/concept names. The full technical
-/// error is still logged at every call site (`eprintln!("[op] {e:#}")`) and
+/// error is still logged at every call site (`tracing::warn!(target: "op", "{e:#}")`) and
 /// stays available for diagnosis — this governs only what the *user* reads.
 ///
 /// Classification is two-tier: first we inspect the flattened error chain for
@@ -793,7 +793,7 @@ pub(crate) fn locale_display(code: &str) -> &'static str {
 pub(crate) fn apply_locale(locale: &str) {
     let code = normalize_locale(locale);
     if let Err(e) = slint::select_bundled_translation(code) {
-        eprintln!("[i18n] select_bundled_translation({code}): {e}");
+        tracing::warn!(target: "i18n", "select_bundled_translation({code}): {e}");
         let _ = slint::select_bundled_translation("en");
     }
 }

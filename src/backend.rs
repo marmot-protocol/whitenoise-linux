@@ -232,8 +232,8 @@ impl Backend {
             .into_iter()
             .any(|a| a.account_id_hex == target_id);
         status("Deriving keys…");
-        eprintln!(
-            "[boot-timing] local setup done at {:?} (already_present={already_present})",
+        tracing::debug!(
+            target: "boot_timing", "local setup done at {:?} (already_present={already_present})",
             t_boot.elapsed()
         );
         if !already_present {
@@ -243,13 +243,13 @@ impl Backend {
             // start() will fail. We wipe and retry once, then re-import via
             // the proper path.
             Self::start_with_self_heal(&tokio, &runtime, &account_home)?;
-            eprintln!(
-                "[boot-timing] first-run start done at {:?}",
+            tracing::debug!(
+                target: "boot_timing", "first-run start done at {:?}",
                 t_boot.elapsed()
             );
             Self::login_account(tokio.handle(), &runtime, nsec, &relays)?;
-            eprintln!(
-                "[boot-timing] first-run login done at {:?}",
+            tracing::debug!(
+                target: "boot_timing", "first-run login done at {:?}",
                 t_boot.elapsed()
             );
         }
@@ -286,7 +286,7 @@ impl Backend {
                 loop {
                     tick.tick().await;
                     if let Err(e) = rt.catch_up_accounts().await {
-                        eprintln!("[backend] periodic catch_up_accounts failed: {e}");
+                        tracing::warn!(target: "backend", "periodic catch_up_accounts failed: {e}");
                     }
                 }
             });
@@ -333,7 +333,7 @@ impl Backend {
         );
 
         status("Connecting to relays…");
-        eprintln!("[boot-timing] boot returning at {:?}", t_boot.elapsed());
+        tracing::debug!(target: "boot_timing", "boot returning at {:?}", t_boot.elapsed());
         Ok(backend)
     }
 
@@ -373,18 +373,18 @@ impl Backend {
                 if needs_start {
                     let rt = runtime.clone();
                     let first = handle.block_on(async move { rt.start().await });
-                    eprintln!(
-                        "[boot-timing] background runtime.start done at {:?} (ok={})",
+                    tracing::debug!(
+                        target: "boot_timing", "background runtime.start done at {:?} (ok={})",
                         t_sync.elapsed(),
                         first.is_ok()
                     );
                     if let Err(err) = first {
-                        eprintln!(
-                            "[backend] runtime.start failed ({err}); wiping local accounts and retrying"
+                        tracing::warn!(
+                            target: "backend", "runtime.start failed ({err}); wiping local accounts and retrying"
                         );
                         for acc in account_home.accounts().unwrap_or_default() {
                             if let Err(e) = account_home.remove_account(&acc.label) {
-                                eprintln!("[backend] remove_account({}) failed: {e}", acc.label);
+                                tracing::warn!(target: "backend", "remove_account({}) failed: {e}", acc.label);
                             }
                         }
                         let rt = runtime.clone();
@@ -405,20 +405,20 @@ impl Backend {
                     let rt = runtime.clone();
                     let l = label.clone();
                     match handle.block_on(async move { rt.publish_key_package(&l).await }) {
-                        Ok(acks) => eprintln!(
-                            "[backend] bootstrap-published key package ({acks} relay acks)"
+                        Ok(acks) => tracing::debug!(
+                            target: "backend", "bootstrap-published key package ({acks} relay acks)"
                         ),
                         Err(e) => {
-                            eprintln!("[backend] bootstrap publish_key_package failed: {e}")
+                            tracing::warn!(target: "backend", "bootstrap publish_key_package failed: {e}")
                         }
                     }
                 }
                 let rt = runtime.clone();
                 if let Err(e) = handle.block_on(async move { rt.catch_up_accounts().await }) {
-                    eprintln!("[backend] initial catch_up_accounts failed: {e}");
+                    tracing::warn!(target: "backend", "initial catch_up_accounts failed: {e}");
                 }
-                eprintln!(
-                    "[boot-timing] background sync finished at {:?}",
+                tracing::debug!(
+                    target: "boot_timing", "background sync finished at {:?}",
                     t_sync.elapsed()
                 );
                 Ok(())
@@ -468,7 +468,7 @@ impl Backend {
                     resource: Some(resource),
                 })
         {
-            eprintln!("[backend] telemetry runtime config rejected: {e}");
+            tracing::warn!(target: "backend", "telemetry runtime config rejected: {e}");
         }
 
         if let Err(e) = self
@@ -483,7 +483,7 @@ impl Backend {
                 },
             })
         {
-            eprintln!("[backend] audit-log tracker config rejected: {e}");
+            tracing::warn!(target: "backend", "audit-log tracker config rejected: {e}");
         }
     }
 
@@ -503,10 +503,10 @@ impl Backend {
             return Ok(());
         }
         let err = first.err().unwrap();
-        eprintln!("[backend] runtime.start failed ({err}); wiping local accounts and retrying");
+        tracing::warn!(target: "backend", "runtime.start failed ({err}); wiping local accounts and retrying");
         for acc in account_home.accounts().unwrap_or_default() {
             if let Err(e) = account_home.remove_account(&acc.label) {
-                eprintln!("[backend] remove_account({}) failed: {e}", acc.label);
+                tracing::warn!(target: "backend", "remove_account({}) failed: {e}", acc.label);
             }
         }
         let rt = runtime.clone();
@@ -624,7 +624,7 @@ impl Backend {
                             .insert(g.group_id_hex.clone(), members);
                     }
                     Err(e) => {
-                        eprintln!("[backend] rewarm members ({}) failed: {e}", g.group_id_hex)
+                        tracing::warn!(target: "backend", "rewarm members ({}) failed: {e}", g.group_id_hex)
                     }
                 }
             }
@@ -1008,8 +1008,8 @@ impl Backend {
         let label = self.active_label();
         let runtime = self.runtime.clone();
         let payload = text.as_bytes().to_vec();
-        eprintln!(
-            "[send] -> group={} label={} len={}",
+        tracing::debug!(
+            target: "send", "-> group={} label={} len={}",
             group_hex,
             label,
             payload.len()
@@ -1021,11 +1021,11 @@ impl Backend {
                 .map_err(|e| anyhow!("send_message: {e}"))
         });
         match &result {
-            Ok(summary) => eprintln!(
-                "[send] <- ok published={} ids={:?}",
+            Ok(summary) => tracing::debug!(
+                target: "send", "<- ok published={} ids={:?}",
                 summary.published, summary.message_ids
             ),
-            Err(e) => eprintln!("[send] <- err {e:#}"),
+            Err(e) => tracing::warn!(target: "send", "<- err {e:#}"),
         }
         result
     }
@@ -1447,7 +1447,7 @@ impl Backend {
                 Ok(members) => {
                     cache.lock().unwrap().insert(key, members);
                 }
-                Err(e) => eprintln!("[backend] members refresh ({key}) failed: {e}"),
+                Err(e) => tracing::warn!(target: "backend", "members refresh ({key}) failed: {e}"),
             }
         });
     }
@@ -1478,12 +1478,12 @@ impl Backend {
                         .insert(g.group_id_hex.clone(), members);
                 }
                 Err(e) => {
-                    eprintln!("[backend] warm members ({}) failed: {e}", g.group_id_hex)
+                    tracing::warn!(target: "backend", "warm members ({}) failed: {e}", g.group_id_hex)
                 }
             }
         }
-        eprintln!(
-            "[boot-timing] members cache warmed for {} groups in {:?}",
+        tracing::debug!(
+            target: "boot_timing", "members cache warmed for {} groups in {:?}",
             groups.len(),
             t.elapsed()
         );
@@ -1636,8 +1636,8 @@ impl Backend {
             let v = Self::name_and_picture_direct(&self.app, &self.active_id(), &id);
             self.profile_cache.lock().unwrap().insert(id, v);
         }
-        eprintln!(
-            "[boot-timing] profile cache warmed for {count} accounts in {:?}",
+        tracing::debug!(
+            target: "boot_timing", "profile cache warmed for {count} accounts in {:?}",
             t.elapsed()
         );
     }
