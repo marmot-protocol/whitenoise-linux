@@ -906,7 +906,7 @@ msgctxt "GroupSettingsCard"
 msgid "Group settings"
 msgstr "グループ ID"
 
-msgctxt "VaultField"
+msgctxt "PasswordField"
 msgid "Hide password"
 msgstr "パスワードを隠す"
 
@@ -1774,7 +1774,7 @@ msgctxt "NotificationsPane"
 msgid "Show message preview"
 msgstr "メッセージのプレビューを表示"
 
-msgctxt "VaultField"
+msgctxt "PasswordField"
 msgid "Show password"
 msgstr "パスワードを表示"
 

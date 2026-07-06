@@ -20,21 +20,16 @@ import { EyeIcon } from "../icons/eye-icon.slint";
 import { Avatar } from "../primitives/avatar.slint";
 import { CypherScroll } from "../primitives/cypher-scroll.slint";
 
-// A labeled field box matching the login card style. Used for the nsec input
-// and the password / confirm-password fields.
+// A labeled field box matching the login card style. Used directly for the
+// nsec input; PasswordField below layers the masked mode + reveal toggle on
+// top for the password / confirm-password fields.
 component VaultField inherits VerticalLayout {
     in property <string> label;
     in property <string> placeholder;
     in-out property <string> text;
     in property <bool> password: false;
     in property <bool> error: false;
-    // Password fields start masked; the eye button flips this to show the
-    // typed characters. Per-instance state, so it resets with the mode subtree.
-    property <bool> revealed: false;
     callback submit;
-    function toggle-reveal() {
-        root.revealed = !root.revealed;
-    }
     spacing: 6px;
 
     // Focus the inner input — lets the login screen autofocus the first
@@ -70,7 +65,7 @@ component VaultField inherits VerticalLayout {
             vf-input := LineInput {
                 placeholder: root.placeholder;
                 text <=> root.text;
-                password: root.password && !root.revealed;
+                password: root.password;
                 // LineInput multiplies by fs-scale internally.
                 font-size: Theme.fsr(13px, 14px);
                 fg: Palette.text-hi;
@@ -80,25 +75,39 @@ component VaultField inherits VerticalLayout {
                 }
             }
 
-            if root.password: Rectangle {
-                width: 22px;
-                reveal-touch := TouchArea {
-                    mouse-cursor: pointer;
-                    accessible-role: button;
-                    accessible-label: root.revealed ? @tr("Hide password") : @tr("Show password");
-                    accessible-action-default => {
-                        root.toggle-reveal();
-                    }
-                    clicked => {
-                        root.toggle-reveal();
-                    }
-                }
+            // PasswordField drops its eye button in here.
+            @children
+        }
+    }
+}
 
-                EyeIcon {
-                    stroke: reveal-touch.has-hover ? Palette.text-hi : Palette.text-mid;
-                    crossed: root.revealed;
-                }
+// A VaultField that is always a password entry: masked by default, with an
+// eye button inside the box that reveals the typed characters. Reveal state
+// is per instance, so leaving a login mode resets every field to masked.
+component PasswordField inherits VaultField {
+    property <bool> revealed: false;
+    password: !root.revealed;
+    function toggle-reveal() {
+        root.revealed = !root.revealed;
+    }
+
+    Rectangle {
+        width: 22px;
+        reveal-touch := TouchArea {
+            mouse-cursor: pointer;
+            accessible-role: button;
+            accessible-label: root.revealed ? @tr("Hide password") : @tr("Show password");
+            accessible-action-default => {
+                root.toggle-reveal();
             }
+            clicked => {
+                root.toggle-reveal();
+            }
+        }
+
+        EyeIcon {
+            stroke: reveal-touch.has-hover ? Palette.text-hi : Palette.text-mid;
+            crossed: root.revealed;
         }
     }
 }
@@ -344,21 +353,19 @@ export component LoginScreen inherits Rectangle {
                         }
                     }
 
-                    VaultField {
+                    PasswordField {
                         label: @tr("VAULT PASSWORD");
                         placeholder: @tr("Choose a password");
                         text <=> root.password-input;
-                        password: true;
                         submit => {
                             root.create-account();
                         }
                     }
 
-                    VaultField {
+                    PasswordField {
                         label: @tr("CONFIRM PASSWORD");
                         placeholder: @tr("Re-enter password");
                         text <=> root.password-confirm;
-                        password: true;
                         submit => {
                             root.create-account();
                         }
@@ -603,11 +610,10 @@ export component LoginScreen inherits Rectangle {
                     }
 
                     // Vault password + confirm.
-                VaultField {
+                PasswordField {
                         label: @tr("VAULT PASSWORD");
                         placeholder: @tr("Choose a password");
                         text <=> root.password-input;
-                        password: true;
                         init => {
                             self.take-focus();
                         }
@@ -616,11 +622,10 @@ export component LoginScreen inherits Rectangle {
                         }
                     }
 
-                    VaultField {
+                    PasswordField {
                         label: @tr("CONFIRM PASSWORD");
                         placeholder: @tr("Re-enter password");
                         text <=> root.password-confirm;
-                        password: true;
                         submit => {
                             root.save-generated();
                         }
@@ -672,11 +677,10 @@ export component LoginScreen inherits Rectangle {
             if root.mode == 3: VerticalLayout {
                     spacing: 14px;
 
-                    VaultField {
+                    PasswordField {
                         label: @tr("VAULT PASSWORD");
                         placeholder: @tr("Enter your password");
                         text <=> root.password-input;
-                        password: true;
                         error: root.error != "";
                         init => {
                             self.take-focus();

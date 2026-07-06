@@ -908,7 +908,7 @@ msgctxt "GroupSettingsCard"
 msgid "Group settings"
 msgstr "ID gruppo"
 
-msgctxt "VaultField"
+msgctxt "PasswordField"
 msgid "Hide password"
 msgstr "Nascondi password"
 
@@ -1776,7 +1776,7 @@ msgctxt "NotificationsPane"
 msgid "Show message preview"
 msgstr "Mostra anteprima del messaggio"
 
-msgctxt "VaultField"
+msgctxt "PasswordField"
 msgid "Show password"
 msgstr "Mostra password"
 
