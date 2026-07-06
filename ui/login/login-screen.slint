@@ -30,6 +30,12 @@ component VaultField inherits VerticalLayout {
     callback submit;
     spacing: 6px;
 
+    // Focus the inner input — lets the login screen autofocus the first
+    // useful field of each mode so typing works without a mouse click.
+    public function take-focus() {
+        vf-input.take-focus();
+    }
+
     Text {
         text: root.label;
         color: Palette.text-mid;
@@ -192,354 +198,164 @@ export component LoginScreen inherits Rectangle {
                 padding-bottom: 24px;
                 spacing: 22px;
 
-            // Header — logo + title + caption.
+                // Header — logo + title + caption.
             VerticalLayout {
-                spacing: 12px;
-                alignment: center;
-                LogoMark {
-                    size: 48px;
-                    color: Palette.mint;
+                    spacing: 12px;
+                    alignment: center;
+                    LogoMark {
+                        size: 48px;
+                        color: Palette.mint;
+                    }
+
+                    Text {
+                        text: "darkmatter";
+                        color: Palette.text-hi;
+                        font-size: (22px) * Theme.fs-scale;
+                        font-weight: 700;
+                        horizontal-alignment: center;
+                    }
+
+                    Text {
+                        text: root.mode == 0 ? @tr("Sign in to your Nostr identity") : root.mode == 1 ? @tr("Import a key & set a password") : root.mode == 3 ? @tr("Enter your password to unlock") : @tr("Save your new key");
+                        color: Palette.text-lo;
+                        font-size: (12px) * Theme.fs-scale;
+                        horizontal-alignment: center;
+                    }
                 }
 
-                Text {
-                    text: "darkmatter";
-                    color: Palette.text-hi;
-                    font-size: (22px) * Theme.fs-scale;
-                    font-weight: 700;
-                    horizontal-alignment: center;
-                }
-
-                Text {
-                    text: root.mode == 0 ? @tr("Sign in to your Nostr identity") : root.mode == 1 ? @tr("Import a key & set a password") : root.mode == 3 ? @tr("Enter your password to unlock") : @tr("Save your new key");
-                    color: Palette.text-lo;
-                    font-size: (12px) * Theme.fs-scale;
-                    horizontal-alignment: center;
-                }
-            }
-
-            // === MODE 0: choose ===
+                // === MODE 0: choose ===
             if root.mode == 0: VerticalLayout {
-                spacing: 12px;
-
-                Button {
-                    label: @tr("I have an nsec");
-                    button-height: 44px;
-                    radius: 8px;
-                    font-size: Theme.fs(13px, 16px);
-                    bg-color: Palette.mint;
-                    outline: Palette.mint;
-                    hover-bg: Palette.mint-hi;
-                    hover-outline: Palette.mint-hi;
-                    fg: Palette.bubble-out-fg;
-                    KeyIcon {
-                        stroke: Palette.bubble-out-fg;
-                    }
-
-                    clicked => {
-                        root.error = "";
-                        root.nsec-input = "";
-                        root.password-input = "";
-                        root.password-confirm = "";
-                        root.mode = 1;
-                    }
-                }
-
-                Button {
-                    label: @tr("Generate a new key");
-                    button-height: 44px;
-                    radius: 8px;
-                    font-size: Theme.fs(13px, 16px);
-                    bg-color: Palette.field;
-                    outline: Palette.field-border;
-                    hover-bg: Palette.field-hover;
-                    hover-outline: Palette.field-border-hover;
-                    PlusIcon {
-                        stroke: Palette.text-mid;
-                        size: 12px;
-                    }
-
-                    clicked => {
-                        root.error = "";
-                        root.password-input = "";
-                        root.password-confirm = "";
-                        root.generate-requested();
-                    }
-                }
-
-                Button {
-                    label: @tr("Import a backup");
-                    button-height: 44px;
-                    radius: 8px;
-                    font-size: Theme.fs(13px, 16px);
-                    bg-color: Palette.field;
-                    outline: Palette.field-border;
-                    hover-bg: Palette.field-hover;
-                    hover-outline: Palette.field-border-hover;
-                    clicked => {
-                        root.error = "";
-                        root.import-backup();
-                    }
-                }
-
-                Rectangle {
-                    vertical-stretch: 1;
-                }
-
-                Text {
-                    text: @tr("Your key never leaves this device.");
-                    color: Palette.text-vlo;
-                    font-size: (10px) * Theme.fs-scale;
-                    horizontal-alignment: center;
-                }
-            }
-
-            // === MODE 1: enter existing nsec + set vault password ===
-            if root.mode == 1: VerticalLayout {
-                spacing: 12px;
-
-                VaultField {
-                    label: @tr("NSEC");
-                    placeholder: "nsec1…";
-                    text <=> root.nsec-input;
-                    error: root.error != "";
-                    submit => {
-                        root.create-account();
-                    }
-                }
-
-                VaultField {
-                    label: @tr("VAULT PASSWORD");
-                    placeholder: @tr("Choose a password");
-                    text <=> root.password-input;
-                    password: true;
-                    submit => {
-                        root.create-account();
-                    }
-                }
-
-                VaultField {
-                    label: @tr("CONFIRM PASSWORD");
-                    placeholder: @tr("Re-enter password");
-                    text <=> root.password-confirm;
-                    password: true;
-                    submit => {
-                        root.create-account();
-                    }
-                }
-
-                if root.error != "": Text {
-                    text: root.error;
-                    color: Palette.danger;
-                    font-size: (11px) * Theme.fs-scale;
-                    wrap: word-wrap;
-                }
-
-                Rectangle {
-                    vertical-stretch: 1;
-                }
-
-                HorizontalLayout {
-                    spacing: 10px;
-                    Button {
-                        label: @tr("Back");
-                        button-height: 38px;
-                        min-w: 96px;
-                        clicked => {
-                            root.error = "";
-                            root.mode = 0;
-                        }
-                    }
-
-                    Rectangle {
-                        horizontal-stretch: 1;
-                    }
+                    spacing: 12px;
 
                     Button {
-                        label: root.busy ? @tr("Signing in…") : @tr("Continue");
-                        button-height: 38px;
-                        min-w: 120px;
+                        label: @tr("I have an nsec");
+                        button-height: 44px;
+                        radius: 8px;
+                        font-size: Theme.fs(13px, 16px);
                         bg-color: Palette.mint;
                         outline: Palette.mint;
                         hover-bg: Palette.mint-hi;
                         hover-outline: Palette.mint-hi;
                         fg: Palette.bubble-out-fg;
+                        KeyIcon {
+                            stroke: Palette.bubble-out-fg;
+                        }
+
                         clicked => {
+                            root.error = "";
+                            root.nsec-input = "";
+                            root.password-input = "";
+                            root.password-confirm = "";
+                            root.mode = 1;
+                        }
+                    }
+
+                    Button {
+                        label: @tr("Generate a new key");
+                        button-height: 44px;
+                        radius: 8px;
+                        font-size: Theme.fs(13px, 16px);
+                        bg-color: Palette.field;
+                        outline: Palette.field-border;
+                        hover-bg: Palette.field-hover;
+                        hover-outline: Palette.field-border-hover;
+                        PlusIcon {
+                            stroke: Palette.text-mid;
+                            size: 12px;
+                        }
+
+                        clicked => {
+                            root.error = "";
+                            root.password-input = "";
+                            root.password-confirm = "";
+                            root.generate-requested();
+                        }
+                    }
+
+                    Button {
+                        label: @tr("Import a backup");
+                        button-height: 44px;
+                        radius: 8px;
+                        font-size: Theme.fs(13px, 16px);
+                        bg-color: Palette.field;
+                        outline: Palette.field-border;
+                        hover-bg: Palette.field-hover;
+                        hover-outline: Palette.field-border-hover;
+                        clicked => {
+                            root.error = "";
+                            root.import-backup();
+                        }
+                    }
+
+                    Rectangle {
+                        vertical-stretch: 1;
+                    }
+
+                    Text {
+                        text: @tr("Your key never leaves this device.");
+                        color: Palette.text-vlo;
+                        font-size: (10px) * Theme.fs-scale;
+                        horizontal-alignment: center;
+                    }
+                }
+
+                // === MODE 1: enter existing nsec + set vault password ===
+            if root.mode == 1: VerticalLayout {
+                    spacing: 12px;
+
+                    VaultField {
+                        label: @tr("NSEC");
+                        placeholder: "nsec1…";
+                        text <=> root.nsec-input;
+                        error: root.error != "";
+                        init => {
+                            self.take-focus();
+                        }
+                        submit => {
                             root.create-account();
                         }
                     }
-                }
-            }
 
-            // === MODE 2: show generated key + set vault password ===
-            if root.mode == 2: VerticalLayout {
-                spacing: 14px;
-
-                if root.generated-display-name != "": Rectangle {
-                    height: 72px;
-                    border-radius: (8px) * Theme.r-scale;
-                    background: Palette.field;
-                    border-width: 1px;
-                    border-color: Palette.field-border;
-                    HorizontalLayout {
-                        padding-left: 14px;
-                        padding-right: 14px;
-                        spacing: 14px;
-                        alignment: center;
-                        if root.generated-has-avatar: Rectangle {
-                            width: 48px;
-                            height: 48px;
-                            opacity: root.avatar-reveal;
-                            Avatar {
-                                size: 48px;
-                                picture: root.generated-avatar;
-                                has-picture: true;
-                                initials: "";
-                                color-a: Palette.mint;
-                                color-b: Palette.mint-dim;
-                                font-size: 16px;
-                            }
-                        }
-                        VerticalLayout {
-                            spacing: 4px;
-                            alignment: center;
-                            horizontal-stretch: 1;
-                            Text {
-                                text: @tr("YOUR DISPLAY NAME");
-                                color: Palette.text-mid;
-                                font-size: (9px) * Theme.fs-scale;
-                                font-weight: 700;
-                                letter-spacing: 1.6px;
-                            }
-
-                            Text {
-                                text: root.generated-display-name;
-                                color: Palette.text-hi;
-                                font-size: Theme.fs(16px, 18px);
-                                font-weight: 700;
-                                opacity: root.name-reveal;
-                            }
+                    VaultField {
+                        label: @tr("VAULT PASSWORD");
+                        placeholder: @tr("Choose a password");
+                        text <=> root.password-input;
+                        password: true;
+                        submit => {
+                            root.create-account();
                         }
                     }
-                }
 
-                // Warning banner.
-                Rectangle {
-                    height: 64px;
-                    background: Palette.warning-soft;
-                    border-radius: (8px) * Theme.r-scale;
-                    border-width: 1px;
-                    border-color: Palette.warning-border;
-                    HorizontalLayout {
-                        padding-left: 14px;
-                        padding-right: 14px;
-                        padding-top: 10px;
-                        padding-bottom: 10px;
-                        spacing: 12px;
-                        VerticalLayout {
-                            alignment: center;
-                            LockIcon {
-                                stroke: Palette.warning;
-                            }
-                        }
-
-                        VerticalLayout {
-                            spacing: 3px;
-                            alignment: center;
-                            horizontal-stretch: 1;
-                            Text {
-                                text: @tr("Back up your nsec before saving");
-                                color: Palette.warning;
-                                font-size: (12px) * Theme.fs-scale;
-                                font-weight: 700;
-                            }
-
-                            Text {
-                                text: @tr("Sealed with your password on this device. Keep your own copy of the nsec too — lose both and this identity is gone.");
-                                color: Palette.text-lo;
-                                font-size: (10px) * Theme.fs-scale;
-                                wrap: word-wrap;
-                            }
+                    VaultField {
+                        label: @tr("CONFIRM PASSWORD");
+                        placeholder: @tr("Re-enter password");
+                        text <=> root.password-confirm;
+                        password: true;
+                        submit => {
+                            root.create-account();
                         }
                     }
-                }
 
-                // npub readout.
-                VerticalLayout {
-                    spacing: 6px;
-                    Text {
-                        text: @tr("PUBLIC KEY (NPUB)");
-                        color: Palette.text-mid;
-                        font-size: (9px) * Theme.fs-scale;
-                        font-weight: 700;
-                        letter-spacing: 1.6px;
+                    if root.error != "": Text {
+                        text: root.error;
+                        color: Palette.danger;
+                        font-size: (11px) * Theme.fs-scale;
+                        wrap: word-wrap;
                     }
 
                     Rectangle {
-                        height: 38px;
-                        border-radius: (7px) * Theme.r-scale;
-                        background: Palette.field;
-                        border-width: 1px;
-                        border-color: Palette.field-border;
-                        HorizontalLayout {
-                            padding-left: 14px;
-                            padding-right: 14px;
-                            Text {
-                                text: root.generated-npub;
-                                color: Palette.text-hi;
-                                font-size: Theme.fs(12px, 12px);
-                                vertical-alignment: center;
-                                overflow: elide;
-                            }
-                        }
-                    }
-                }
-
-                // nsec readout + action row below (split prevents the elided text
-                // from overlapping the buttons when the row gets tight).
-                VerticalLayout {
-                    spacing: 6px;
-                    Text {
-                        text: @tr("SECRET KEY (NSEC)");
-                        color: Palette.text-mid;
-                        font-size: (9px) * Theme.fs-scale;
-                        font-weight: 700;
-                        letter-spacing: 1.6px;
-                    }
-
-                    Rectangle {
-                        height: 38px;
-                        border-radius: (7px) * Theme.r-scale;
-                        background: Palette.field;
-                        border-width: 1px;
-                        border-color: Palette.field-border;
-                        HorizontalLayout {
-                            padding-left: 14px;
-                            padding-right: 14px;
-                            Text {
-                                text: root.generated-nsec;
-                                color: Palette.text-hi;
-                                font-size: Theme.fs(12px, 12px);
-                                vertical-alignment: center;
-                                overflow: elide;
-                            }
-                        }
+                        vertical-stretch: 1;
                     }
 
                     HorizontalLayout {
-                        spacing: 8px;
+                        spacing: 10px;
                         Button {
-                            label: @tr("Regenerate");
-                            button-height: 30px;
-                            radius: 5px;
-                            pad-left: 10px;
-                            pad-right: 12px;
-                            font-size: Theme.fs(11px, 12px);
-                            RefreshIcon {
-                                stroke: Palette.text-mid;
-                            }
-
+                            label: @tr("Back");
+                            button-height: 38px;
+                            min-w: 96px;
                             clicked => {
-                                root.generate-requested();
+                                root.error = "";
+                                root.mode = 0;
                             }
                         }
 
@@ -548,142 +364,341 @@ export component LoginScreen inherits Rectangle {
                         }
 
                         Button {
-                            label: @tr("Copy");
-                            button-height: 30px;
-                            radius: 5px;
-                            pad-left: 10px;
-                            pad-right: 12px;
-                            font-size: Theme.fs(11px, 12px);
-                            CopyIcon {
-                                stroke: Palette.text-mid;
-                            }
-
+                            label: root.busy ? @tr("Signing in…") : @tr("Continue");
+                            button-height: 38px;
+                            min-w: 120px;
+                            bg-color: Palette.mint;
+                            outline: Palette.mint;
+                            hover-bg: Palette.mint-hi;
+                            hover-outline: Palette.mint-hi;
+                            fg: Palette.bubble-out-fg;
                             clicked => {
-                                root.copy-nsec(root.generated-nsec);
+                                root.create-account();
                             }
                         }
                     }
                 }
 
-                // Vault password + confirm.
-                VaultField {
-                    label: @tr("VAULT PASSWORD");
-                    placeholder: @tr("Choose a password");
-                    text <=> root.password-input;
-                    password: true;
-                    submit => {
-                        root.save-generated();
-                    }
-                }
+                // === MODE 2: show generated key + set vault password ===
+            if root.mode == 2: VerticalLayout {
+                    spacing: 14px;
 
-                VaultField {
-                    label: @tr("CONFIRM PASSWORD");
-                    placeholder: @tr("Re-enter password");
-                    text <=> root.password-confirm;
-                    password: true;
-                    submit => {
-                        root.save-generated();
-                    }
-                }
+                    if root.generated-display-name != "": Rectangle {
+                        height: 72px;
+                        border-radius: (8px) * Theme.r-scale;
+                        background: Palette.field;
+                        border-width: 1px;
+                        border-color: Palette.field-border;
+                        HorizontalLayout {
+                            padding-left: 14px;
+                            padding-right: 14px;
+                            spacing: 14px;
+                            alignment: center;
+                            if root.generated-has-avatar: Rectangle {
+                                width: 48px;
+                                height: 48px;
+                                opacity: root.avatar-reveal;
+                                Avatar {
+                                    size: 48px;
+                                    picture: root.generated-avatar;
+                                    has-picture: true;
+                                    initials: "";
+                                    color-a: Palette.mint;
+                                    color-b: Palette.mint-dim;
+                                    font-size: 16px;
+                                }
+                            }
+                            VerticalLayout {
+                                spacing: 4px;
+                                alignment: center;
+                                horizontal-stretch: 1;
+                                Text {
+                                    text: @tr("YOUR DISPLAY NAME");
+                                    color: Palette.text-mid;
+                                    font-size: (9px) * Theme.fs-scale;
+                                    font-weight: 700;
+                                    letter-spacing: 1.6px;
+                                }
 
-                if root.error != "": Text {
-                    text: root.error;
-                    color: Palette.danger;
-                    font-size: (11px) * Theme.fs-scale;
-                    wrap: word-wrap;
-                }
-
-                Rectangle {
-                    vertical-stretch: 1;
-                }
-
-                HorizontalLayout {
-                    spacing: 10px;
-                    Button {
-                        label: @tr("Back");
-                        button-height: 38px;
-                        min-w: 96px;
-                        clicked => {
-                            root.mode = 0;
+                                Text {
+                                    text: root.generated-display-name;
+                                    color: Palette.text-hi;
+                                    font-size: Theme.fs(16px, 18px);
+                                    font-weight: 700;
+                                    opacity: root.name-reveal;
+                                }
+                            }
                         }
                     }
 
-                    Rectangle {
-                        horizontal-stretch: 1;
+                    // Warning banner.
+                Rectangle {
+                        height: 64px;
+                        background: Palette.warning-soft;
+                        border-radius: (8px) * Theme.r-scale;
+                        border-width: 1px;
+                        border-color: Palette.warning-border;
+                        HorizontalLayout {
+                            padding-left: 14px;
+                            padding-right: 14px;
+                            padding-top: 10px;
+                            padding-bottom: 10px;
+                            spacing: 12px;
+                            VerticalLayout {
+                                alignment: center;
+                                LockIcon {
+                                    stroke: Palette.warning;
+                                }
+                            }
+
+                            VerticalLayout {
+                                spacing: 3px;
+                                alignment: center;
+                                horizontal-stretch: 1;
+                                Text {
+                                    text: @tr("Back up your nsec before saving");
+                                    color: Palette.warning;
+                                    font-size: (12px) * Theme.fs-scale;
+                                    font-weight: 700;
+                                }
+
+                                Text {
+                                    text: @tr("Sealed with your password on this device. Keep your own copy of the nsec too — lose both and this identity is gone.");
+                                    color: Palette.text-lo;
+                                    font-size: (10px) * Theme.fs-scale;
+                                    wrap: word-wrap;
+                                }
+                            }
+                        }
                     }
 
-                    Button {
-                        label: root.busy ? @tr("Saving…") : @tr("Create vault");
-                        button-height: 38px;
-                        min-w: 160px;
-                        bg-color: Palette.mint;
-                        outline: Palette.mint;
-                        hover-bg: Palette.mint-hi;
-                        hover-outline: Palette.mint-hi;
-                        fg: Palette.bubble-out-fg;
-                        clicked => {
+                    // npub readout.
+                VerticalLayout {
+                        spacing: 6px;
+                        Text {
+                            text: @tr("PUBLIC KEY (NPUB)");
+                            color: Palette.text-mid;
+                            font-size: (9px) * Theme.fs-scale;
+                            font-weight: 700;
+                            letter-spacing: 1.6px;
+                        }
+
+                        Rectangle {
+                            height: 38px;
+                            border-radius: (7px) * Theme.r-scale;
+                            background: Palette.field;
+                            border-width: 1px;
+                            border-color: Palette.field-border;
+                            HorizontalLayout {
+                                padding-left: 14px;
+                                padding-right: 14px;
+                                Text {
+                                    text: root.generated-npub;
+                                    color: Palette.text-hi;
+                                    font-size: Theme.fs(12px, 12px);
+                                    vertical-alignment: center;
+                                    overflow: elide;
+                                }
+                            }
+                        }
+                    }
+
+                    // nsec readout + action row below (split prevents the elided text
+                // from overlapping the buttons when the row gets tight).
+                VerticalLayout {
+                        spacing: 6px;
+                        Text {
+                            text: @tr("SECRET KEY (NSEC)");
+                            color: Palette.text-mid;
+                            font-size: (9px) * Theme.fs-scale;
+                            font-weight: 700;
+                            letter-spacing: 1.6px;
+                        }
+
+                        Rectangle {
+                            height: 38px;
+                            border-radius: (7px) * Theme.r-scale;
+                            background: Palette.field;
+                            border-width: 1px;
+                            border-color: Palette.field-border;
+                            HorizontalLayout {
+                                padding-left: 14px;
+                                padding-right: 14px;
+                                Text {
+                                    text: root.generated-nsec;
+                                    color: Palette.text-hi;
+                                    font-size: Theme.fs(12px, 12px);
+                                    vertical-alignment: center;
+                                    overflow: elide;
+                                }
+                            }
+                        }
+
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Button {
+                                label: @tr("Regenerate");
+                                button-height: 30px;
+                                radius: 5px;
+                                pad-left: 10px;
+                                pad-right: 12px;
+                                font-size: Theme.fs(11px, 12px);
+                                RefreshIcon {
+                                    stroke: Palette.text-mid;
+                                }
+
+                                clicked => {
+                                    root.generate-requested();
+                                }
+                            }
+
+                            Rectangle {
+                                horizontal-stretch: 1;
+                            }
+
+                            Button {
+                                label: @tr("Copy");
+                                button-height: 30px;
+                                radius: 5px;
+                                pad-left: 10px;
+                                pad-right: 12px;
+                                font-size: Theme.fs(11px, 12px);
+                                CopyIcon {
+                                    stroke: Palette.text-mid;
+                                }
+
+                                clicked => {
+                                    root.copy-nsec(root.generated-nsec);
+                                }
+                            }
+                        }
+                    }
+
+                    // Vault password + confirm.
+                VaultField {
+                        label: @tr("VAULT PASSWORD");
+                        placeholder: @tr("Choose a password");
+                        text <=> root.password-input;
+                        password: true;
+                        init => {
+                            self.take-focus();
+                        }
+                        submit => {
                             root.save-generated();
                         }
                     }
-                }
-            }
 
-            // === MODE 3: unlock an existing vault ===
-            if root.mode == 3: VerticalLayout {
-                spacing: 14px;
-
-                VaultField {
-                    label: @tr("VAULT PASSWORD");
-                    placeholder: @tr("Enter your password");
-                    text <=> root.password-input;
-                    password: true;
-                    error: root.error != "";
-                    submit => {
-                        root.do-unlock();
-                    }
-                }
-
-                if root.error != "": Text {
-                    text: root.error;
-                    color: Palette.danger;
-                    font-size: (11px) * Theme.fs-scale;
-                    wrap: word-wrap;
-                }
-
-                Rectangle {
-                    vertical-stretch: 1;
-                }
-
-                HorizontalLayout {
-                    spacing: 10px;
-                    Button {
-                        label: @tr("Use another key");
-                        button-height: 38px;
-                        min-w: 140px;
-                        clicked => {
-                            root.reset-vault();
+                    VaultField {
+                        label: @tr("CONFIRM PASSWORD");
+                        placeholder: @tr("Re-enter password");
+                        text <=> root.password-confirm;
+                        password: true;
+                        submit => {
+                            root.save-generated();
                         }
+                    }
+
+                    if root.error != "": Text {
+                        text: root.error;
+                        color: Palette.danger;
+                        font-size: (11px) * Theme.fs-scale;
+                        wrap: word-wrap;
                     }
 
                     Rectangle {
-                        horizontal-stretch: 1;
+                        vertical-stretch: 1;
                     }
 
-                    Button {
-                        label: root.busy ? @tr("Unlocking…") : @tr("Unlock");
-                        button-height: 38px;
-                        min-w: 120px;
-                        bg-color: Palette.mint;
-                        outline: Palette.mint;
-                        hover-bg: Palette.mint-hi;
-                        hover-outline: Palette.mint-hi;
-                        fg: Palette.bubble-out-fg;
-                        clicked => {
-                            root.do-unlock();
+                    HorizontalLayout {
+                        spacing: 10px;
+                        Button {
+                            label: @tr("Back");
+                            button-height: 38px;
+                            min-w: 96px;
+                            clicked => {
+                                root.mode = 0;
+                            }
+                        }
+
+                        Rectangle {
+                            horizontal-stretch: 1;
+                        }
+
+                        Button {
+                            label: root.busy ? @tr("Saving…") : @tr("Create vault");
+                            button-height: 38px;
+                            min-w: 160px;
+                            bg-color: Palette.mint;
+                            outline: Palette.mint;
+                            hover-bg: Palette.mint-hi;
+                            hover-outline: Palette.mint-hi;
+                            fg: Palette.bubble-out-fg;
+                            clicked => {
+                                root.save-generated();
+                            }
                         }
                     }
                 }
-            }
+
+                // === MODE 3: unlock an existing vault ===
+            if root.mode == 3: VerticalLayout {
+                    spacing: 14px;
+
+                    VaultField {
+                        label: @tr("VAULT PASSWORD");
+                        placeholder: @tr("Enter your password");
+                        text <=> root.password-input;
+                        password: true;
+                        error: root.error != "";
+                        init => {
+                            self.take-focus();
+                        }
+                        submit => {
+                            root.do-unlock();
+                        }
+                    }
+
+                    if root.error != "": Text {
+                        text: root.error;
+                        color: Palette.danger;
+                        font-size: (11px) * Theme.fs-scale;
+                        wrap: word-wrap;
+                    }
+
+                    Rectangle {
+                        vertical-stretch: 1;
+                    }
+
+                    HorizontalLayout {
+                        spacing: 10px;
+                        Button {
+                            label: @tr("Use another key");
+                            button-height: 38px;
+                            min-w: 140px;
+                            clicked => {
+                                root.reset-vault();
+                            }
+                        }
+
+                        Rectangle {
+                            horizontal-stretch: 1;
+                        }
+
+                        Button {
+                            label: root.busy ? @tr("Unlocking…") : @tr("Unlock");
+                            button-height: 38px;
+                            min-w: 120px;
+                            bg-color: Palette.mint;
+                            outline: Palette.mint;
+                            hover-bg: Palette.mint-hi;
+                            hover-outline: Palette.mint-hi;
+                            fg: Palette.bubble-out-fg;
+                            clicked => {
+                                root.do-unlock();
+                            }
+                        }
+                    }
+                }
             }
         }
     }
