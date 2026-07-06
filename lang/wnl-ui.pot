@@ -1098,8 +1098,16 @@ msgctxt "AboutPane"
 msgid "Made with marmots, math, and a little purple liquid."
 msgstr ""
 
+msgctxt "DarkMatterLinux"
+msgid "Make admin"
+msgstr ""
+
 msgctxt "GroupMemberRow"
 msgid "Make admin"
+msgstr ""
+
+msgctxt "DarkMatterLinux"
+msgid "Make {} an admin?"
 msgstr ""
 
 msgctxt "month"
@@ -1512,8 +1520,16 @@ msgctxt "DarkMatterLinux"
 msgid "Remove"
 msgstr ""
 
+msgctxt "DarkMatterLinux"
+msgid "Remove admin"
+msgstr ""
+
 msgctxt "GroupMemberRow"
 msgid "Remove admin"
+msgstr ""
+
+msgctxt "DarkMatterLinux"
+msgid "Remove admin rights from {}?"
 msgstr ""
 
 msgctxt "ContactDetail"
@@ -1796,8 +1812,16 @@ msgctxt "GetStartedScreen"
 msgid "Start your first chat"
 msgstr ""
 
+msgctxt "DarkMatterLinux"
+msgid "Step down"
+msgstr ""
+
 msgctxt "GroupMemberRow"
 msgid "Step down"
+msgstr ""
+
+msgctxt "DarkMatterLinux"
+msgid "Step down as admin?"
 msgstr ""
 
 msgctxt "SettingsSidebar"
@@ -1883,6 +1907,10 @@ msgstr ""
 
 msgctxt "DarkMatterLinux"
 msgid "This removes the message for everyone in the chat. This can't be undone."
+msgstr ""
+
+msgctxt "DarkMatterLinux"
+msgid "This removes your admin rights. You can't restore them yourself unless another admin promotes you again."
 msgstr ""
 
 msgctxt "ChatRequestBanner"
@@ -2105,6 +2133,14 @@ msgstr ""
 
 msgctxt "ContactDetail"
 msgid "{} relays"
+msgstr ""
+
+msgctxt "DarkMatterLinux"
+msgid "{} will be able to add members, change group settings, and manage other admins."
+msgstr ""
+
+msgctxt "DarkMatterLinux"
+msgid "{} will stay in the group, but won't be able to manage members or group settings."
 msgstr ""
 
 msgctxt "DarkMatterLinux"

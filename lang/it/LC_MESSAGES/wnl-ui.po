@@ -1150,8 +1150,18 @@ msgctxt "AboutPane"
 msgid "Made with marmots, math, and a little purple liquid."
 msgstr "Fatto con marmotte, matematica e un po' di liquido viola."
 
+#, fuzzy
+msgctxt "DarkMatterLinux"
+msgid "Make admin"
+msgstr "Rendi admin"
+
 msgctxt "GroupMemberRow"
 msgid "Make admin"
+msgstr "Rendi admin"
+
+#, fuzzy
+msgctxt "DarkMatterLinux"
+msgid "Make {} an admin?"
 msgstr "Rendi admin"
 
 msgctxt "month"
@@ -1587,9 +1597,18 @@ msgctxt "DarkMatterLinux"
 msgid "Remove"
 msgstr "Rimuovi"
 
+#, fuzzy
+msgctxt "DarkMatterLinux"
+msgid "Remove admin"
+msgstr "Rimuovi ruolo admin"
+
 msgctxt "GroupMemberRow"
 msgid "Remove admin"
 msgstr "Rimuovi ruolo admin"
+
+msgctxt "DarkMatterLinux"
+msgid "Remove admin rights from {}?"
+msgstr ""
 
 msgctxt "ContactDetail"
 msgid "Remove contact"
@@ -1884,8 +1903,18 @@ msgctxt "GetStartedScreen"
 msgid "Start your first chat"
 msgstr "Avvia una nuova chat"
 
+#, fuzzy
+msgctxt "DarkMatterLinux"
+msgid "Step down"
+msgstr "Rinuncia"
+
 msgctxt "GroupMemberRow"
 msgid "Step down"
+msgstr "Rinuncia"
+
+#, fuzzy
+msgctxt "DarkMatterLinux"
+msgid "Step down as admin?"
 msgstr "Rinuncia"
 
 msgctxt "SettingsSidebar"
@@ -1974,6 +2003,11 @@ msgstr "La chiave salvata su questo dispositivo verrà rimossa. Per usare di nuo
 msgctxt "DarkMatterLinux"
 msgid "This removes the message for everyone in the chat. This can't be undone."
 msgstr ""
+
+#, fuzzy
+msgctxt "DarkMatterLinux"
+msgid "This removes your admin rights. You can't restore them yourself unless another admin promotes you again."
+msgstr "Questo rifiuta l'invito di {}. Non potrà essere ripristinato a meno che non ti invitino di nuovo."
 
 msgctxt "ChatRequestBanner"
 msgid "This sender isn't in your contacts. Accept to start an"
@@ -2200,6 +2234,14 @@ msgstr "{} RELAY"
 msgctxt "ContactDetail"
 msgid "{} relays"
 msgstr "{} relay"
+
+msgctxt "DarkMatterLinux"
+msgid "{} will be able to add members, change group settings, and manage other admins."
+msgstr ""
+
+msgctxt "DarkMatterLinux"
+msgid "{} will stay in the group, but won't be able to manage members or group settings."
+msgstr ""
 
 msgctxt "DarkMatterLinux"
 msgid "{} will stop carrying your messages. You can add it back anytime."
