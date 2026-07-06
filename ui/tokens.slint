@@ -1358,6 +1358,9 @@ export struct ChatMessage {
     att-is-audio: bool,
     att-audio-playing: bool,
     att-audio-progress: float,
+    // Decode failure (unsupported codec / corrupt data): the player swaps its
+    // size label for a "Can't play this audio format" notice.
+    att-audio-failed: bool,
     att-duration: string,
     // Cached decoded preview pixels. Populated lazily on first tap; empty
     // (default) image otherwise.

@@ -84,12 +84,22 @@ resvg = { version = "0.45", default-features = false }
 # Local-timezone rendering of message/KP timestamps. Reads the system tz
 # database (Linux/macOS/FreeBSD), so DST offsets are right per-timestamp.
 jiff = "0.2"
-# Audio capture (voice messages) — cross-platform input stream.
-cpal = "0.15"
+# Audio capture (voice messages) — cross-platform input stream. Kept on the
+# same major as rodio's cpal so the two share one backend build.
+cpal = "0.16"
 # WAV encoding for recorded voice messages (simple, royalty-free, mpv/rodio decode).
 hound = "3.5"
-# In-memory audio playback for received voice messages.
-rodio = { version = "0.19", default-features = false, features = ["wav"] }
+# In-memory audio playback for received voice messages. `wav` covers our own
+# recordings; `mp4` (isomp4 + AAC) and `mp3` decode the voice notes other
+# clients send. 0.21 is the first release whose decoder can take a byte-len
+# hint — symphonia's isomp4 reader requires one on seekable streams, and
+# older rodio panicked (0.19/0.20) on every m4a because of it.
+rodio = { version = "0.21", default-features = false, features = [
+    "playback",
+    "wav",
+    "mp3",
+    "mp4",
+] }
 # Pinned to PR #849 (add-markdown-text-effects) for the `{big}…{/big}` inline
 # text-effect syntax (Inline::Effect). Drop the rev once it merges to master.
 whitenoise-markdown = { git = "https://github.com/marmot-protocol/whitenoise-rs", rev = "973f3ab65bf410c35e401935cdf4374b77770901" }

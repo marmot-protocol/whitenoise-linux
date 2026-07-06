@@ -380,6 +380,10 @@ msgctxt "StoragePane"
 msgid "Cached attachments"
 msgstr "Allegati in cache"
 
+msgctxt "MessageBubble"
+msgid "Can't play this audio format"
+msgstr "Impossibile riprodurre questo formato audio"
+
 msgctxt "ErrorCopy"
 msgid "Can't reach your relays right now. Check your network and relay settings, then try again."
 msgstr "Non riesco a raggiungere i tuoi relay in questo momento. Controlla la rete e le impostazioni dei relay, poi riprova."

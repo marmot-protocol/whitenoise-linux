@@ -415,6 +415,16 @@ pub(crate) fn audio_meta() -> &'static Mutex<HashMap<String, String>> {
     M.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
+/// Message ids whose audio attachment downloaded and decrypted fine but failed
+/// to decode (unsupported codec or corrupt data). The bubble swaps its size
+/// label for a "Can't play this audio format" notice. An entry is cleared when
+/// a later play attempt on the same message succeeds.
+pub(crate) fn audio_decode_failed() -> &'static Mutex<std::collections::HashSet<String>> {
+    use std::sync::OnceLock;
+    static SET: OnceLock<Mutex<std::collections::HashSet<String>>> = OnceLock::new();
+    SET.get_or_init(|| Mutex::new(std::collections::HashSet::new()))
+}
+
 pub(crate) fn rgb(hex: u32) -> Color {
     Color::from_rgb_u8((hex >> 16) as u8, (hex >> 8) as u8, hex as u8)
 }

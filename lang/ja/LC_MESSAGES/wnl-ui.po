@@ -378,6 +378,10 @@ msgctxt "StoragePane"
 msgid "Cached attachments"
 msgstr "キャッシュされた添付ファイル"
 
+msgctxt "MessageBubble"
+msgid "Can't play this audio format"
+msgstr "この音声形式は再生できません"
+
 msgctxt "ErrorCopy"
 msgid "Can't reach your relays right now. Check your network and relay settings, then try again."
 msgstr "現在リレーに接続できません。ネットワークとリレーの設定を確認して、もう一度お試しください。"

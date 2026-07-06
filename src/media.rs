@@ -615,10 +615,13 @@ pub(crate) fn stop_current_audio() {
     *current_audio_message_id().lock().unwrap() = None;
 }
 
-/// Start playing an audio attachment. `bytes` are the decrypted WAV data.
-/// A monitor thread keeps the playing message's bubble refreshed with
-/// position/duration. When playback finishes or another message is started,
-/// the bubble is updated accordingly.
+/// Start playing an audio attachment. `bytes` are the decrypted audio data
+/// (any format rodio decodes: WAV from our own recorder, m4a/mp3 from other
+/// clients). A monitor thread keeps the playing message's bubble refreshed
+/// with position/duration. When playback finishes or another message is
+/// started, the bubble is updated accordingly. A decode failure lands in
+/// [`audio_decode_failed`] and repaints the bubble so the player shows a
+/// "Can't play this audio format" notice instead of silently doing nothing.
 pub(crate) fn start_audio_playback(
     weak: Weak<DarkMatterLinux>,
     backend_cell: Arc<Mutex<Option<Arc<Backend>>>>,
@@ -631,11 +634,38 @@ pub(crate) fn start_audio_playback(
     stop_current_audio();
     let player = match audio::AudioPlayer::play(bytes) {
         Ok(p) => p,
-        Err(e) => {
-            tracing::warn!(target: "audio", "play {message_id}: {e:#}");
+        Err(e @ audio::PlayError::Output(_)) => {
+            // Environmental (no usable output device) — the clip itself is
+            // fine, so don't brand the bubble unplayable.
+            tracing::warn!(target: "audio", "play {message_id}: {e}");
+            return;
+        }
+        Err(e @ audio::PlayError::Decode(_)) => {
+            tracing::warn!(target: "audio", "play {message_id}: {e}");
+            audio_decode_failed()
+                .lock()
+                .unwrap()
+                .insert(message_id.clone());
+            let still_active = {
+                let ids = group_ids.lock().unwrap();
+                weak.upgrade()
+                    .map(|ui| ids.get(ui.get_active_chat() as usize) == Some(&group_hex))
+                    .unwrap_or(false)
+            };
+            if still_active && let Some(backend) = backend_cell.lock().unwrap().clone() {
+                refresh_one_message_row_async(
+                    &backend,
+                    weak,
+                    pending_state,
+                    group_ids,
+                    group_hex,
+                    message_id,
+                );
+            }
             return;
         }
     };
+    audio_decode_failed().lock().unwrap().remove(&message_id);
 
     let mid = message_id.clone();
     let weak2 = weak.clone();
