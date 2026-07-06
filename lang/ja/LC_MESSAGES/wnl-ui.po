@@ -2165,6 +2165,18 @@ msgctxt "ContactDetail"
 msgid "✓ VERIFIED"
 msgstr "✓ 確認済み"
 
+msgctxt "SettingsPage"
+msgid "Delete audit log file?"
+msgstr "監査ログファイルを削除しますか？"
+
+msgctxt "SettingsPage"
+msgid "Delete file"
+msgstr "ファイルを削除"
+
+msgctxt "SettingsPage"
+msgid "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log."
+msgstr "監査ログファイルはディスクから完全に削除されます。これが現在記録中のログの場合、記録は新しいファイルに続きます。"
+
 #~ msgctxt "ProfilePage"
 #~ msgid "(no nip-05)"
 #~ msgstr "(nip-05 なし)"

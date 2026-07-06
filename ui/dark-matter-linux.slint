@@ -398,6 +398,8 @@ export component DarkMatterLinux inherits Window {
     in-out property <bool> audit-enabled: false;
     in property <string> audit-status;
     in property <[AuditLogEntry]> audit-files;
+    property <bool> show-audit-delete-confirm: false;
+    property <string> pending-audit-delete-path;
     callback telemetry-toggled(bool);
     callback audit-toggled(bool);
     callback audit-delete-file(string);
@@ -1129,7 +1131,8 @@ export component DarkMatterLinux inherits Window {
                         audit-status: root.audit-status;
                         audit-files: root.audit-files;
                         audit-delete-file(p) => {
-                            root.audit-delete-file(p);
+                            root.pending-audit-delete-path = p;
+                            root.show-audit-delete-confirm = true;
                         }
                         audit-refresh-files => {
                             root.audit-refresh-files();
@@ -1416,6 +1419,25 @@ export component DarkMatterLinux inherits Window {
         }
         dismissed => {
             root.show-block-confirm = false;
+        }
+    }
+
+    if root.show-audit-delete-confirm: ConfirmModal {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        title: @tr("SettingsPage" => "Delete audit log file?");
+        subtitle: @tr("SettingsPage" => "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log.");
+        confirm-label: @tr("SettingsPage" => "Delete file");
+        confirm => {
+            root.show-audit-delete-confirm = false;
+            root.audit-delete-file(root.pending-audit-delete-path);
+            root.pending-audit-delete-path = "";
+        }
+        dismissed => {
+            root.show-audit-delete-confirm = false;
+            root.pending-audit-delete-path = "";
         }
     }
 

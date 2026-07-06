@@ -2168,6 +2168,18 @@ msgctxt "ContactDetail"
 msgid "✓ VERIFIED"
 msgstr "✓ VERIFIZIERT"
 
+msgctxt "SettingsPage"
+msgid "Delete audit log file?"
+msgstr "Audit-Protokolldatei löschen?"
+
+msgctxt "SettingsPage"
+msgid "Delete file"
+msgstr "Datei löschen"
+
+msgctxt "SettingsPage"
+msgid "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log."
+msgstr "Diese Audit-Protokolldatei wird dauerhaft vom Datenträger gelöscht. Wenn dies das aktive Protokoll ist, wird die Aufzeichnung in einer neuen Datei fortgesetzt."
+
 #~ msgctxt "ProfilePage"
 #~ msgid "(no nip-05)"
 #~ msgstr "(kein nip-05)"

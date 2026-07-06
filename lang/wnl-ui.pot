@@ -2082,3 +2082,15 @@ msgstr ""
 msgctxt "ContactDetail"
 msgid "✓ VERIFIED"
 msgstr ""
+
+msgctxt "SettingsPage"
+msgid "Delete audit log file?"
+msgstr ""
+
+msgctxt "SettingsPage"
+msgid "Delete file"
+msgstr ""
+
+msgctxt "SettingsPage"
+msgid "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log."
+msgstr ""
