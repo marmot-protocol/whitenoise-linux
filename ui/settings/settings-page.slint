@@ -65,6 +65,7 @@ export component SettingsPage inherits Rectangle {
     // Network & relays — forwarded straight to NetworkPane.
     in property <[string]> network-relays;
     in property <[string]> network-booted-relays;
+    in property <bool> network-restart-required;
     in property <int> network-connected;
     in property <int> network-total;
     in property <string> network-status;
@@ -114,6 +115,7 @@ export component SettingsPage inherits Rectangle {
                 height: parent.height;
                 relays: root.network-relays;
                 booted-relays: root.network-booted-relays;
+                restart-required: root.network-restart-required;
                 connected: root.network-connected;
                 total: root.network-total;
                 status: root.network-status;
