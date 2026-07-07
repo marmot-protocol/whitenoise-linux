@@ -51,6 +51,8 @@ mod mentions;
 pub(crate) use mentions::*;
 mod profiles;
 pub(crate) use profiles::*;
+mod qr;
+pub(crate) use qr::*;
 mod relays;
 pub(crate) use relays::*;
 mod render;
