@@ -6,6 +6,21 @@
 
 use super::*;
 
+/// The published name to show for a profile: `display_name` when it has
+/// non-whitespace content, otherwise `name` when it does, otherwise `None`.
+/// This is the one place the display-name preference rule lives; both
+/// candidates are tested with `trim()` so a whitespace-only field never wins.
+/// The chosen string is returned as stored (untrimmed); only the emptiness
+/// test trims.
+fn best_display_name(profile: &UserProfileMetadata) -> Option<String> {
+    profile
+        .display_name
+        .clone()
+        .filter(|n| !n.trim().is_empty())
+        .or_else(|| profile.name.clone())
+        .filter(|n| !n.trim().is_empty())
+}
+
 impl Backend {
     /// Resolve an account's published display name asynchronously: the local
     /// directory first, then kind-0 relay fetches (configured + discovery
@@ -31,10 +46,7 @@ impl Backend {
                     .ok()
                     .flatten()
                     .and_then(|e| e.profile)?;
-                p.display_name
-                    .filter(|n| !n.trim().is_empty())
-                    .or(p.name)
-                    .filter(|n| !n.trim().is_empty())
+                best_display_name(&p)
             };
             let mut attempt = 0u32;
             let name = loop {
@@ -86,11 +98,7 @@ impl Backend {
             .directory_entry_for_account_id(account_id_hex)
             .ok()??;
         let profile = entry.profile?;
-        profile
-            .display_name
-            .filter(|n| !n.trim().is_empty())
-            .or(profile.name)
-            .filter(|n| !n.trim().is_empty())
+        best_display_name(&profile)
     }
 
     /// Display name + picture URL for an account id, served from the
@@ -126,12 +134,7 @@ impl Backend {
             .ok()
             .flatten();
         let profile = entry.and_then(|e| e.profile);
-        let name = profile.as_ref().and_then(|p| {
-            p.display_name
-                .clone()
-                .filter(|s| !s.is_empty())
-                .or_else(|| p.name.clone().filter(|s| !s.is_empty()))
-        });
+        let name = profile.as_ref().and_then(best_display_name);
         let pic = profile
             .as_ref()
             .and_then(|p| p.picture.clone().filter(|s| !s.is_empty()));
