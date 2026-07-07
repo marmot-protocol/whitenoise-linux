@@ -39,56 +39,8 @@ export component MessageView inherits VerticalLayout {
 
     // ── Skin 0: standard bubble rows ──
     if Theme.skin-message == 0 && !root.msg.outgoing: IncomingRow {
+        msg: root.msg;
         row-w: root.row-w;
-        text: root.msg.text;
-        lines: root.msg.lines;
-        stamp: root.msg.stamp;
-        stamp-full: root.msg.stamp-full;
-        show-avatar: root.msg.show-avatar;
-        bubble-max: root.msg.bubble-max;
-        av-initials: root.msg.av-initials;
-        av-a: root.msg.av-a;
-        av-b: root.msg.av-b;
-        av-picture: root.msg.picture;
-        av-has-picture: root.msg.has-picture;
-        sender-name: root.msg.sender-name;
-        show-sender-name: root.msg.show-sender-name;
-        sender-id: root.msg.sender-id;
-        message-id: root.msg.message-id;
-        reactions: root.msg.reactions;
-        first-in-group: root.msg.first-in-group;
-        last-in-group: root.msg.last-in-group;
-        jumbo-emoji: root.msg.jumbo-emoji;
-        effect-id: root.msg.effect-id;
-        effect-clip-x: root.msg.effect-clip-x;
-        effect-clip-y: root.msg.effect-clip-y;
-        effect-autoplay: root.msg.effect-autoplay;
-        reply-to-id: root.msg.reply-to-id;
-        reply-to-text: root.msg.reply-to-text;
-        reply-to-author: root.msg.reply-to-author;
-        reply-to-image: root.msg.reply-to-image;
-        reply-to-has-image: root.msg.reply-to-has-image;
-        has-attachment: root.msg.has-attachment;
-        att-name: root.msg.att-name;
-        att-icon: root.msg.att-icon;
-        att-type-label: root.msg.att-type-label;
-        att-size-label: root.msg.att-size-label;
-        att-is-image: root.msg.att-is-image;
-        att-is-video: root.msg.att-is-video;
-        att-is-audio: root.msg.att-is-audio;
-        att-audio-playing: root.msg.att-audio-playing;
-        att-audio-progress: root.msg.att-audio-progress;
-        att-duration: root.msg.att-duration;
-        att-image: root.msg.att-image;
-        att-has-image: root.msg.att-has-image;
-        att-loading: root.msg.att-loading;
-        att-failed: root.msg.att-failed;
-        album: root.msg.album;
-        album-w: root.msg.album-w;
-        album-h: root.msg.album-h;
-        edited: root.msg.edited;
-        edit-count: root.msg.edit-count;
-        deleted: root.msg.deleted;
         react(id, emoji) => {
             root.react(id, emoji);
         }
@@ -125,58 +77,11 @@ export component MessageView inherits VerticalLayout {
     }
 
     if Theme.skin-message == 0 && root.msg.outgoing: OutgoingRow {
-        align-right: root.outgoing-on-right;
+        msg: root.msg;
         row-w: root.row-w;
-        text: root.msg.text;
-        lines: root.msg.lines;
-        stamp: root.msg.stamp;
-        stamp-full: root.msg.stamp-full;
-        show-avatar: root.msg.show-avatar;
-        av-initials: root.msg.av-initials;
-        av-a: root.msg.av-a;
-        av-b: root.msg.av-b;
+        align-right: root.outgoing-on-right;
         av-picture: root.my-picture;
         av-has-picture: root.my-has-picture;
-        bubble-max: root.msg.bubble-max;
-        sender-id: root.msg.sender-id;
-        message-id: root.msg.message-id;
-        reactions: root.msg.reactions;
-        first-in-group: root.msg.first-in-group;
-        last-in-group: root.msg.last-in-group;
-        jumbo-emoji: root.msg.jumbo-emoji;
-        effect-id: root.msg.effect-id;
-        effect-clip-x: root.msg.effect-clip-x;
-        effect-clip-y: root.msg.effect-clip-y;
-        effect-autoplay: root.msg.effect-autoplay;
-        pending: root.msg.pending;
-        failed: root.msg.failed;
-        reply-to-id: root.msg.reply-to-id;
-        reply-to-text: root.msg.reply-to-text;
-        reply-to-author: root.msg.reply-to-author;
-        reply-to-image: root.msg.reply-to-image;
-        reply-to-has-image: root.msg.reply-to-has-image;
-        has-attachment: root.msg.has-attachment;
-        att-name: root.msg.att-name;
-        att-icon: root.msg.att-icon;
-        att-type-label: root.msg.att-type-label;
-        att-size-label: root.msg.att-size-label;
-        att-is-image: root.msg.att-is-image;
-        att-is-video: root.msg.att-is-video;
-        att-is-audio: root.msg.att-is-audio;
-        att-audio-playing: root.msg.att-audio-playing;
-        att-audio-progress: root.msg.att-audio-progress;
-        att-duration: root.msg.att-duration;
-        att-image: root.msg.att-image;
-        att-has-image: root.msg.att-has-image;
-        att-loading: root.msg.att-loading;
-        att-failed: root.msg.att-failed;
-        album: root.msg.album;
-        album-w: root.msg.album-w;
-        album-h: root.msg.album-h;
-        edited: root.msg.edited;
-        edit-count: root.msg.edit-count;
-        can-edit: root.msg.can-edit;
-        deleted: root.msg.deleted;
         album-cell-clicked(key) => {
             root.album-cell-clicked(key);
         }

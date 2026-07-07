@@ -1,10 +1,9 @@
 import {
     Palette,
     Theme,
-    MessageLine,
+    ChatMessage,
     EmojiSheet,
     Linkout,
-    AlbumCell,
     TextSelection,
 } from "../tokens.slint";
 import { CheckMark } from "../icons/check-mark.slint";
@@ -301,90 +300,20 @@ component RunCell inherits Rectangle {
 }
 
 export component MessageBubble inherits Rectangle {
-    // Stable id of the underlying message. Empty for pending rows — text
-    // selection needs a non-empty id to key the selection and to find the
-    // row again at copy time.
-    in property <string> msg-id;
-    in property <string> message;
-    // Pre-tokenized + pre-wrapped body, one MessageLine per visual line.
-    // The body renders as a VerticalLayout-of-HorizontalLayouts so each
-    // Text cell is sized by Slint's real text metrics (no width estimation
-    // in Rust — that produced huge inter-word gaps). Empty falls back to
-    // a plain `Text` so synthetic / programmatic uses still work.
-    in property <[MessageLine]> lines;
-    in property <string> stamp;
-    // Full localized date+time for the stamp's hover tooltip; empty hides it.
-    in property <string> stamp-full;
-    in property <bool> outgoing: false;
+    // The whole message — the body, stamp, reply/attachment/album blocks, and
+    // state flags all read `root.msg.*` (see ChatMessage in tokens.slint for
+    // per-field docs). Row context that is not carried on the message stays a
+    // scalar property below.
+    in property <ChatMessage> msg;
     // Which screen edge the bubble hugs. Outgoing bubbles can be placed on the
     // left (when "own messages on the right" is off), so the tail + tight corner
     // must follow the actual alignment, not the outgoing flag. Incoming always
     // hugs the left (avatar side).
     in property <bool> align-right: true;
-    property <bool> hug-right: root.outgoing && root.align-right;
-    in property <length> max-w: 640px;
+    property <bool> hug-right: root.msg.outgoing && root.align-right;
     in property <length> min-w: 56px;
     in property <length> available-w: 9999px;
-    // Optimistic-send states. `pending` = inserted locally, waiting on relay
-    // ack; `failed` = the send raised an error and the row sits in retry state.
-    in property <bool> pending: false;
-    in property <bool> failed: false;
-    // Quoted-parent preview. Empty `reply-to-id` => not a reply, no block.
-    in property <string> reply-to-id;
-    in property <string> reply-to-text;
-    in property <string> reply-to-author;
-    in property <image> reply-to-image;
-    in property <bool> reply-to-has-image: false;
-    // Attachment block — rendered when has-attachment is true. Tapping the
-    // chip (or the image placeholder) fires attachment-clicked(); for images
-    // this kicks off decrypt+decode; for files it opens a save dialog.
-    in property <bool> has-attachment: false;
-    in property <string> att-name;
-    // Per-type emoji + short type name ("PDF", "ZIP"), precomputed in Rust,
-    // shown on the generic (non image/video/audio) file chip.
-    in property <string> att-icon;
-    in property <string> att-type-label;
-    in property <string> att-size-label;
-    in property <bool> att-is-image: false;
-    // Video attachment: poster tile + ▶ overlay, opens the in-app libmpv viewer.
-    in property <bool> att-is-video: false;
-    in property <bool> att-is-audio: false;
-    in property <bool> att-audio-playing: false;
-    in property <float> att-audio-progress: 0.0;
-    in property <string> att-duration;
-    in property <image> att-image;
-    in property <bool> att-has-image: false;
-    in property <bool> att-loading: false;
-    in property <bool> att-failed: false;
-    // Album block — 2+ images sent together, rendered as an aspect-aware grid
-    // (rects precomputed in Rust). Tapping a cell fires album-cell-clicked(key)
-    // which opens the lightbox slideshow at that image.
-    in property <[AlbumCell]> album: [];
-    in property <length> album-w;
-    in property <length> album-h;
     callback album-cell-clicked(string);
-    // Edit state. When `edited` is true an "(edited)" affordance renders next
-    // to the timestamp; tapping it asks the root to open the history modal.
-    in property <bool> edited: false;
-    in property <int> edit-count: 0;
-    // Retracted ("delete for everyone"): drop the body/attachments/reactions
-    // and render a muted italic tombstone, keeping only the timestamp.
-    in property <bool> deleted: false;
-    // Visual grouping. `first-in-group` controls whether the top corner on the
-    // avatar side is rounded (group head) or tightened (continuation). A
-    // standalone bubble is the head, so it defaults true.
-    in property <bool> first-in-group: true;
-    in property <bool> last-in-group: true;
-    // Emoji-only message: drop the bubble chrome, render the glyphs large, and
-    // float the timestamp pill on hover (Telegram-style). The `lines` model is
-    // unchanged — only the per-emoji size and the surrounding chrome differ.
-    in property <bool> jumbo-emoji: false;
-    // Message-effect indicator: when `effect-id > 0` a small emoji chip in the
-    // top-corner shows which effect this bubble carries (and that tapping it
-    // replays). `effect-clip-x/y` index the emoji in the shared Twemoji sheet.
-    in property <int> effect-id: 0;
-    in property <int> effect-clip-x: 0;
-    in property <int> effect-clip-y: 0;
     // True while the pointer is anywhere over the bubble. Read by the row to
     // reveal the floating action toolbar. Sourced from a bottom-most sensor
     // (which never steals taps from the attachment / retry areas above it)
@@ -423,12 +352,12 @@ export component MessageBubble inherits Rectangle {
     property <length> pad-h: 14px;
     property <length> pad-v: 10px;
     property <length> gap: 12px;
-    property <length> effective-max: min(root.max-w, root.available-w);
+    property <length> effective-max: min(root.msg.bubble-max, root.available-w);
     property <length> text-budget: max(40px, root.effective-max - root.pad-h * 2 - root.gap - meta.preferred-width);
     // Body typography. Emoji glyphs are sized off `body-fs` so they ride
     // the text line cleanly.
     property <length> body-fs: (13px) * Theme.fs-scale;
-    property <length> emoji-px: root.jumbo-emoji ? (66px) * Theme.fs-scale : root.body-fs * 1.2;
+    property <length> emoji-px: root.msg.jumbo-emoji ? (66px) * Theme.fs-scale : root.body-fs * 1.2;
 
     property <float> enter: 0;
     init => {
@@ -456,7 +385,7 @@ export component MessageBubble inherits Rectangle {
     // stays flat for the pixel aesthetic. Incoming stays on the flat surface.
     // Sketch bubbles paint their fill + outline as a hand-drawn path
     // (SketchOutline, mounted below), so the rectangle itself stays transparent.
-    background: (root.jumbo-emoji || Theme.sketch-bubbles) ? transparent : (root.outgoing
+    background: (root.msg.jumbo-emoji || Theme.sketch-bubbles) ? transparent : (root.msg.outgoing
             // Retro bubbles use a flat fill; modern themes get a subtle vertical
             // accent gradient for depth.
             ? (Theme.retro ? Palette.mint : @linear-gradient(180deg, Palette.mint-hi 0%, Palette.mint 92%)) : Palette.bubble-in);
@@ -466,25 +395,25 @@ export component MessageBubble inherits Rectangle {
     // Sketch bubbles square the TOP hug-side corner (where the up-pointing tail
     // attaches) and round the other three; standard bubbles keep the chat
     // asymmetric-corner grouping (tight bottom tail corner + continuation tuck).
-    border-top-left-radius: Theme.sketch-bubbles ? (root.hug-right ? root.r-lg : root.r-sm) : (root.hug-right ? root.r-lg : (root.first-in-group ? root.r-lg : root.r-sm));
-    border-top-right-radius: Theme.sketch-bubbles ? (root.hug-right ? root.r-sm : root.r-lg) : (root.hug-right ? (root.first-in-group ? root.r-lg : root.r-sm) : root.r-lg);
+    border-top-left-radius: Theme.sketch-bubbles ? (root.hug-right ? root.r-lg : root.r-sm) : (root.hug-right ? root.r-lg : (root.msg.first-in-group ? root.r-lg : root.r-sm));
+    border-top-right-radius: Theme.sketch-bubbles ? (root.hug-right ? root.r-sm : root.r-lg) : (root.hug-right ? (root.msg.first-in-group ? root.r-lg : root.r-sm) : root.r-lg);
     border-bottom-left-radius: Theme.sketch-bubbles ? root.r-lg : (root.hug-right ? root.r-lg : root.r-sm);
     border-bottom-right-radius: Theme.sketch-bubbles ? root.r-lg : (root.hug-right ? root.r-sm : root.r-lg);
-    border-width: (root.jumbo-emoji || Theme.sketch-bubbles) ? 0px : (root.failed ? 1.5px : Theme.border-w);
+    border-width: (root.msg.jumbo-emoji || Theme.sketch-bubbles) ? 0px : (root.msg.failed ? 1.5px : Theme.border-w);
     // Sketch bubbles get a dark "ink" outline on BOTH sides (outgoing included,
     // which is borderless in modern themes) — the comic/hand-drawn signature.
     // text-hi is the page's pencil-ink colour, so outlines match the body text.
-    border-color: root.failed ? Palette.danger-on-bubble : (Theme.sketch-bubbles ? Palette.text-hi : (root.outgoing ? transparent : Palette.border-2));
+    border-color: root.msg.failed ? Palette.danger-on-bubble : (Theme.sketch-bubbles ? Palette.text-hi : (root.msg.outgoing ? transparent : Palette.border-2));
     // Sketch bubbles stay shadowless — the ink outline defines the edge; a soft
     // blur underneath just muddies the flat hand-drawn look.
-    drop-shadow-color: (root.jumbo-emoji || Theme.sketch-bubbles) ? transparent : (Theme.hard-shadow ? Palette.shadow : (root.outgoing ? Palette.mint-glow : (Theme.light ? #00000018 : #00000050)));
+    drop-shadow-color: (root.msg.jumbo-emoji || Theme.sketch-bubbles) ? transparent : (Theme.hard-shadow ? Palette.shadow : (root.msg.outgoing ? Palette.mint-glow : (Theme.light ? #00000018 : #00000050)));
     drop-shadow-offset-x: Theme.hard-shadow ? 2px : 0px;
-    drop-shadow-offset-y: Theme.hard-shadow ? 2px : (root.outgoing ? 3px : 2px);
-    drop-shadow-blur: root.jumbo-emoji ? 0px : (Theme.hard-shadow ? 0px : (root.outgoing ? 14px : 8px));
+    drop-shadow-offset-y: Theme.hard-shadow ? 2px : (root.msg.outgoing ? 3px : 2px);
+    drop-shadow-blur: root.msg.jumbo-emoji ? 0px : (Theme.hard-shadow ? 0px : (root.msg.outgoing ? 14px : 8px));
     y: root.pop-y;
-    width: (root.jumbo-emoji ? layout.preferred-width : max(root.min-w, layout.preferred-width)) * root.pop-scale;
+    width: (root.msg.jumbo-emoji ? layout.preferred-width : max(root.min-w, layout.preferred-width)) * root.pop-scale;
     height: layout.preferred-height * root.pop-scale;
-    opacity: root.pending ? root.enter * 0.62 : root.enter;
+    opacity: root.msg.pending ? root.enter * 0.62 : root.enter;
     animate opacity {
         duration: 180ms;
         easing: ease-out;
@@ -493,17 +422,17 @@ export component MessageBubble inherits Rectangle {
     // Hand-drawn fill + ink outline for sketch bubbles, painted behind the
     // content (the rectangle's own background/border are transparent in sketch
     // mode). Tracks the bubble's runtime size so it reflows with the content.
-    if Theme.sketch-bubbles && !root.jumbo-emoji: SketchOutline {
+    if Theme.sketch-bubbles && !root.msg.jumbo-emoji: SketchOutline {
         x: 0;
         y: 0;
         w: root.width;
         h: root.height;
         radius: root.r-lg;
-        fill: root.outgoing ? Palette.mint : Palette.bubble-in;
-        ink: root.failed ? Palette.danger-on-bubble : Palette.text-hi;
+        fill: root.msg.outgoing ? Palette.mint : Palette.bubble-in;
+        ink: root.msg.failed ? Palette.danger-on-bubble : Palette.text-hi;
         // Tail on the first bubble of a group, curling toward the avatar: top-left
         // normally, top-right when own messages are placed on the right.
-        tail: root.first-in-group ? (root.hug-right ? 2 : 1) : 0;
+        tail: root.msg.first-in-group ? (root.hug-right ? 2 : 1) : 0;
     }
 
     // Bottom-most hover sensor. No click handler, so taps fall through to the
@@ -525,25 +454,25 @@ export component MessageBubble inherits Rectangle {
         }
     }
 
-    if root.failed: TouchArea {
+    if root.msg.failed: TouchArea {
         clicked => {
             root.retry-clicked();
         }
     }
 
     layout := VerticalLayout {
-        padding-left: root.jumbo-emoji ? 0px : root.pad-h;
-        padding-right: root.jumbo-emoji ? 0px : root.pad-h;
-        padding-top: root.jumbo-emoji ? 0px : root.pad-v;
-        padding-bottom: root.jumbo-emoji ? 0px : root.pad-v;
+        padding-left: root.msg.jumbo-emoji ? 0px : root.pad-h;
+        padding-right: root.msg.jumbo-emoji ? 0px : root.pad-h;
+        padding-top: root.msg.jumbo-emoji ? 0px : root.pad-v;
+        padding-bottom: root.msg.jumbo-emoji ? 0px : root.pad-v;
         spacing: 6px;
         alignment: stretch;
 
         // Quoted parent — a recessed plate inside the bubble with an accent
         // bar on the left. For outgoing (mint) bubbles the accent is dark so
         // it actually shows up; for incoming (dark) bubbles it's mint.
-        if root.reply-to-id != "" && !root.deleted: Rectangle {
-            background: root.outgoing ? #00000018 : Palette.bubble-inset;
+        if root.msg.reply-to-id != "" && !root.msg.deleted: Rectangle {
+            background: root.msg.outgoing ? #00000018 : Palette.bubble-inset;
             border-radius: (3px) * Theme.r-scale;
             HorizontalLayout {
                 padding-left: 8px;
@@ -553,7 +482,7 @@ export component MessageBubble inherits Rectangle {
                 spacing: 7px;
                 Rectangle {
                     width: 2.5px;
-                    background: root.outgoing ? Palette.bubble-out-fg : Palette.mint;
+                    background: root.msg.outgoing ? Palette.bubble-out-fg : Palette.mint;
                     border-radius: 1.25px;
                 }
 
@@ -562,35 +491,35 @@ export component MessageBubble inherits Rectangle {
                     horizontal-stretch: 1;
                     alignment: center;
                     Text {
-                        text: root.reply-to-author == "" ? @tr("Original message") : root.reply-to-author;
-                        color: root.outgoing ? Palette.bubble-out-fg : Palette.mint;
+                        text: root.msg.reply-to-author == "" ? @tr("Original message") : root.msg.reply-to-author;
+                        color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.mint;
                         font-size: (10px) * Theme.fs-scale;
                         font-family: Theme.font;
                         font-weight: 700;
                         overflow: elide;
-                        opacity: root.outgoing ? 0.85 : 1.0;
-                        width: max(40px, root.text-budget - 18px - (root.reply-to-has-image ? 41px : 0px));
+                        opacity: root.msg.outgoing ? 0.85 : 1.0;
+                        width: max(40px, root.text-budget - 18px - (root.msg.reply-to-has-image ? 41px : 0px));
                     }
 
                     Text {
-                        text: root.reply-to-text == "" ? @tr("(message unavailable)") : root.reply-to-text;
-                        color: root.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
+                        text: root.msg.reply-to-text == "" ? @tr("(message unavailable)") : root.msg.reply-to-text;
+                        color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
                         font-size: (11px) * Theme.fs-scale;
                         font-family: Theme.font;
                         overflow: elide;
-                        opacity: root.outgoing ? 0.65 : 0.9;
-                        width: max(40px, root.text-budget - 18px - (root.reply-to-has-image ? 41px : 0px));
+                        opacity: root.msg.outgoing ? 0.65 : 0.9;
+                        width: max(40px, root.text-budget - 18px - (root.msg.reply-to-has-image ? 41px : 0px));
                     }
                 }
                 // Signal-style media thumbnail of the quoted parent, at the
                 // right edge of the plate.
-                if root.reply-to-has-image: Rectangle {
+                if root.msg.reply-to-has-image: Rectangle {
                     width: 34px;
                     height: 34px;
                     border-radius: (4px) * Theme.r-scale;
                     clip: true;
                     Image {
-                        source: root.reply-to-image;
+                        source: root.msg.reply-to-image;
                         width: parent.width;
                         height: parent.height;
                         image-fit: cover;
@@ -601,16 +530,16 @@ export component MessageBubble inherits Rectangle {
 
         // Album grid. Each cell's rect is precomputed in Rust; we absolute-
         // position a clipped image (or a subtle placeholder until it decodes).
-        if root.album.length > 0 && !root.deleted: Rectangle {
-            width: root.album-w;
-            height: root.album-h;
-            for cell[i] in root.album: Rectangle {
+        if root.msg.album.length > 0 && !root.msg.deleted: Rectangle {
+            width: root.msg.album-w;
+            height: root.msg.album-h;
+            for cell[i] in root.msg.album: Rectangle {
                 x: cell.x;
                 y: cell.y;
                 width: cell.w;
                 height: cell.h;
                 border-radius: (6px) * Theme.r-scale;
-                background: root.outgoing ? #00000022 : Palette.bubble-inset;
+                background: root.msg.outgoing ? #00000022 : Palette.bubble-inset;
                 clip: true;
                 border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
                 border-color: Palette.border-2;
@@ -622,7 +551,7 @@ export component MessageBubble inherits Rectangle {
                 }
                 if !cell.has-image: Text {
                     text: cell.loading ? "…" : "🖼";
-                    color: root.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
+                    color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
                     font-size: (22px) * Theme.fs-scale;
                     font-family: Theme.font;
                     x: (parent.width - self.width) / 2;
@@ -644,19 +573,19 @@ export component MessageBubble inherits Rectangle {
         // filename + size. Both fire `attachment-clicked` on tap.
         // Video attachment — poster frame (decoded first frame or imeta thumb)
         // with a ▶ play badge + optional duration. Tap opens the in-app viewer.
-        if root.has-attachment && root.att-is-video && !root.deleted: vid-tile := Rectangle {
+        if root.msg.has-attachment && root.msg.att-is-video && !root.msg.deleted: vid-tile := Rectangle {
             property <length> vid-w: min(280px, max(120px, root.text-budget));
             width: self.vid-w;
             height: 180px;
             border-radius: (8px) * Theme.r-scale;
-            background: root.outgoing ? #00000033 : Palette.media-backdrop;
+            background: root.msg.outgoing ? #00000033 : Palette.media-backdrop;
             clip: true;
             border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
             border-color: Palette.border-2;
-            if root.att-has-image: Image {
+            if root.msg.att-has-image: Image {
                 width: parent.width;
                 height: parent.height;
-                source: root.att-image;
+                source: root.msg.att-image;
                 image-fit: cover;
             }
             // Play badge (always shown over the poster / placeholder).
@@ -670,7 +599,7 @@ export component MessageBubble inherits Rectangle {
                 Text {
                     // Nudge the glyph optically-center inside the circle.
                     x: parent.width / 2 - self.width / 2 + 3px;
-                    text: root.att-loading ? "…" : (root.att-failed ? "!" : "▶");
+                    text: root.msg.att-loading ? "…" : (root.msg.att-failed ? "!" : "▶");
                     color: #FFFFFF;
                     font-size: (24px) * Theme.fs-scale;
                     font-family: Theme.font;
@@ -679,7 +608,7 @@ export component MessageBubble inherits Rectangle {
                 }
             }
             // Duration badge, bottom-right.
-            if root.att-duration != "": Rectangle {
+            if root.msg.att-duration != "": Rectangle {
                 x: parent.width - self.width - 6px;
                 y: parent.height - self.height - 6px;
                 width: dur-text.preferred-width + 12px;
@@ -687,7 +616,7 @@ export component MessageBubble inherits Rectangle {
                 border-radius: (4px) * Theme.r-scale;
                 background: #000000AA;
                 dur-text := Text {
-                    text: root.att-duration;
+                    text: root.msg.att-duration;
                     color: #FFFFFF;
                     font-size: (10px) * Theme.fs-scale;
                     font-family: Theme.font;
@@ -697,7 +626,7 @@ export component MessageBubble inherits Rectangle {
                 }
             }
             TouchArea {
-                enabled: !root.att-loading;
+                enabled: !root.msg.att-loading;
                 mouse-cursor: pointer;
                 clicked => {
                     root.attachment-clicked();
@@ -708,7 +637,7 @@ export component MessageBubble inherits Rectangle {
         // Audio attachment — inline player: play/pause, filename, scrubber,
         // size + duration. Height tracks the row's content so the bubble only
         // grows the extra rows when there's a filename to show.
-        if root.has-attachment && root.att-is-audio && !root.deleted: aud := Rectangle {
+        if root.msg.has-attachment && root.msg.att-is-audio && !root.msg.deleted: aud := Rectangle {
             property <length> audio-w: min(280px, max(180px, root.text-budget));
             // Width left for the text column: player width minus padding,
             // play button, and inter-column spacing (10 + 36 + 10 + 12).
@@ -716,7 +645,7 @@ export component MessageBubble inherits Rectangle {
             width: self.audio-w;
             height: aud-row.preferred-height;
             border-radius: (8px) * Theme.r-scale;
-            background: root.outgoing ? #00000022 : Palette.bubble-inset;
+            background: root.msg.outgoing ? #00000022 : Palette.bubble-inset;
             border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
             border-color: Palette.border-2;
 
@@ -735,13 +664,13 @@ export component MessageBubble inherits Rectangle {
                     width: 36px;
                     height: 36px;
                     border-radius: (18px) * Theme.r-scale;
-                    background: play-touch.has-hover ? (root.outgoing ? Palette.text-hi : Palette.mint-hi) : (root.outgoing ? Palette.bubble-out-fg : Palette.mint);
+                    background: play-touch.has-hover ? (root.msg.outgoing ? Palette.text-hi : Palette.mint-hi) : (root.msg.outgoing ? Palette.bubble-out-fg : Palette.mint);
                     animate background { duration: 100ms; }
                     Text {
-                        x: parent.width / 2 - self.width / 2 + (root.att-audio-playing || root.att-loading || root.att-failed ? 0px : 2px);
+                        x: parent.width / 2 - self.width / 2 + (root.msg.att-audio-playing || root.msg.att-loading || root.msg.att-failed ? 0px : 2px);
                         // Loading → ellipsis, failed → retry, else play/pause.
-                        text: root.att-loading ? "…" : (root.att-failed ? "↻" : (root.att-audio-playing ? "⏸" : "▶"));
-                        color: root.outgoing ? Palette.mint : Palette.bg;
+                        text: root.msg.att-loading ? "…" : (root.msg.att-failed ? "↻" : (root.msg.att-audio-playing ? "⏸" : "▶"));
+                        color: root.msg.outgoing ? Palette.mint : Palette.bg;
                         font-size: (14px) * Theme.fs-scale;
                         font-family: Theme.font;
                         horizontal-alignment: center;
@@ -749,7 +678,7 @@ export component MessageBubble inherits Rectangle {
                     }
 
                     play-touch := TouchArea {
-                        enabled: !root.att-loading;
+                        enabled: !root.msg.att-loading;
                         mouse-cursor: pointer;
                         clicked => {
                             root.audio-play-clicked();
@@ -766,11 +695,11 @@ export component MessageBubble inherits Rectangle {
                     alignment: center;
 
                     // Filename — only when the attachment carries one.
-                    if root.att-name != "": Text {
-                        text: root.att-name;
+                    if root.msg.att-name != "": Text {
+                        text: root.msg.att-name;
                         width: aud.col-w;
                         overflow: elide;
-                        color: root.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
+                        color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
                         font-size: (11px) * Theme.fs-scale;
                         font-family: Theme.font;
                         font-weight: 600;
@@ -786,13 +715,13 @@ export component MessageBubble inherits Rectangle {
                             width: 100%;
                             height: 5px;
                             border-radius: 2.5px * Theme.r-scale;
-                            background: root.outgoing ? #00000022 : Palette.bubble-inset-strong;
+                            background: root.msg.outgoing ? #00000022 : Palette.bubble-inset-strong;
                             Rectangle {
                                 x: 0;
-                                width: parent.width * clamp(root.att-audio-progress, 0.0, 1.0);
+                                width: parent.width * clamp(root.msg.att-audio-progress, 0.0, 1.0);
                                 height: 100%;
                                 border-radius: 2.5px * Theme.r-scale;
-                                background: root.outgoing ? Palette.bubble-out-fg : Palette.mint;
+                                background: root.msg.outgoing ? Palette.bubble-out-fg : Palette.mint;
                             }
                         }
 
@@ -808,18 +737,18 @@ export component MessageBubble inherits Rectangle {
                     HorizontalLayout {
                         spacing: 6px;
                         Text {
-                            text: root.att-failed ? @tr("failed · tap to retry") : root.att-size-label;
+                            text: root.msg.att-failed ? @tr("failed · tap to retry") : root.msg.att-size-label;
                             horizontal-stretch: 1;
                             overflow: elide;
-                            color: root.att-failed ? (root.outgoing ? Palette.danger-on-bubble : Palette.danger) : (root.outgoing ? Palette.bubble-out-fg : Palette.text-mid);
+                            color: root.msg.att-failed ? (root.msg.outgoing ? Palette.danger-on-bubble : Palette.danger) : (root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid);
                             font-size: (10px) * Theme.fs-scale;
                             font-family: Theme.font;
-                            opacity: root.att-failed ? 1.0 : (root.outgoing ? 0.75 : 0.9);
+                            opacity: root.msg.att-failed ? 1.0 : (root.msg.outgoing ? 0.75 : 0.9);
                         }
 
                         Text {
-                            text: root.att-duration;
-                            color: root.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
+                            text: root.msg.att-duration;
+                            color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
                             font-size: (10px) * Theme.fs-scale;
                             font-family: Theme.font;
                             horizontal-alignment: right;
@@ -829,36 +758,36 @@ export component MessageBubble inherits Rectangle {
             }
         }
 
-        if root.has-attachment && root.att-is-image && !root.deleted: img-tile := Rectangle {
+        if root.msg.has-attachment && root.msg.att-is-image && !root.msg.deleted: img-tile := Rectangle {
             property <length> img-w: min(280px, max(120px, root.text-budget));
             property <length> img-h: 180px;
             width: self.img-w;
             height: self.img-h;
             border-radius: (8px) * Theme.r-scale;
-            background: root.outgoing ? #00000022 : Palette.bubble-inset;
+            background: root.msg.outgoing ? #00000022 : Palette.bubble-inset;
             clip: true;
             border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
             border-color: Palette.border-2;
-            if root.att-has-image: Image {
+            if root.msg.att-has-image: Image {
                 width: parent.width;
                 height: parent.height;
-                source: root.att-image;
+                source: root.msg.att-image;
                 image-fit: cover;
             }
-            if !root.att-has-image: VerticalLayout {
+            if !root.msg.att-has-image: VerticalLayout {
                 alignment: center;
                 spacing: 4px;
                 Text {
-                    text: root.att-loading ? "…" : (root.att-failed ? "!" : "🖼");
-                    color: root.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
+                    text: root.msg.att-loading ? "…" : (root.msg.att-failed ? "!" : "🖼");
+                    color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
                     font-size: (28px) * Theme.fs-scale;
                     font-family: Theme.font;
                     horizontal-alignment: center;
                 }
 
                 Text {
-                    text: root.att-loading ? @tr("decrypting…") : (root.att-failed ? @tr("tap to retry") : @tr("tap to load"));
-                    color: root.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
+                    text: root.msg.att-loading ? @tr("decrypting…") : (root.msg.att-failed ? @tr("tap to retry") : @tr("tap to load"));
+                    color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
                     font-size: (10px) * Theme.fs-scale;
                     font-family: Theme.font;
                     horizontal-alignment: center;
@@ -866,15 +795,15 @@ export component MessageBubble inherits Rectangle {
                 }
             }
             TouchArea {
-                enabled: !root.att-loading;
+                enabled: !root.msg.att-loading;
                 clicked => {
                     root.attachment-clicked();
                 }
             }
         }
 
-        if root.has-attachment && !root.att-is-image && !root.att-is-video && !root.att-is-audio && !root.deleted: Rectangle {
-            background: root.outgoing ? #00000022 : Palette.bubble-inset;
+        if root.msg.has-attachment && !root.msg.att-is-image && !root.msg.att-is-video && !root.msg.att-is-audio && !root.msg.deleted: Rectangle {
+            background: root.msg.outgoing ? #00000022 : Palette.bubble-inset;
             border-radius: (6px) * Theme.r-scale;
             border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
             border-color: Palette.border-2;
@@ -887,8 +816,8 @@ export component MessageBubble inherits Rectangle {
                 spacing: 10px;
                 alignment: stretch;
                 Text {
-                    text: root.att-loading ? "…" : (root.att-icon == "" ? "📎" : root.att-icon);
-                    color: root.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
+                    text: root.msg.att-loading ? "…" : (root.msg.att-icon == "" ? "📎" : root.msg.att-icon);
+                    color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
                     font-size: (16px) * Theme.fs-scale;
                     font-family: Theme.font;
                     vertical-alignment: center;
@@ -898,8 +827,8 @@ export component MessageBubble inherits Rectangle {
                     spacing: 1px;
                     horizontal-stretch: 1;
                     Text {
-                        text: root.att-name;
-                        color: root.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
+                        text: root.msg.att-name;
+                        color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
                         font-size: (12px) * Theme.fs-scale;
                         font-family: Theme.font;
                         font-weight: 600;
@@ -908,11 +837,11 @@ export component MessageBubble inherits Rectangle {
                     }
 
                     Text {
-                        text: root.att-failed ? @tr("failed · tap to retry") : (root.att-size-label != "" && root.att-type-label != "" ? root.att-size-label + "  ·  " + root.att-type-label : root.att-size-label + root.att-type-label);
-                        color: root.att-failed ? (root.outgoing ? Palette.danger-on-bubble : Palette.danger) : (root.outgoing ? Palette.bubble-out-fg : Palette.text-mid);
+                        text: root.msg.att-failed ? @tr("failed · tap to retry") : (root.msg.att-size-label != "" && root.msg.att-type-label != "" ? root.msg.att-size-label + "  ·  " + root.msg.att-type-label : root.msg.att-size-label + root.msg.att-type-label);
+                        color: root.msg.att-failed ? (root.msg.outgoing ? Palette.danger-on-bubble : Palette.danger) : (root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid);
                         font-size: (10px) * Theme.fs-scale;
                         font-family: Theme.font;
-                        opacity: root.att-failed ? 1.0 : (root.outgoing ? 0.75 : 0.9);
+                        opacity: root.msg.att-failed ? 1.0 : (root.msg.outgoing ? 0.75 : 0.9);
                         overflow: elide;
                         width: max(40px, root.text-budget - 32px);
                     }
@@ -920,7 +849,7 @@ export component MessageBubble inherits Rectangle {
             }
 
             TouchArea {
-                enabled: !root.att-loading;
+                enabled: !root.msg.att-loading;
                 clicked => {
                     root.attachment-clicked();
                 }
@@ -928,7 +857,7 @@ export component MessageBubble inherits Rectangle {
         }
 
         HorizontalLayout {
-            spacing: root.jumbo-emoji ? 0px : root.gap;
+            spacing: root.msg.jumbo-emoji ? 0px : root.gap;
             alignment: stretch;
 
             // Runs renderer — one HorizontalLayout per line of pre-wrapped runs.
@@ -939,13 +868,13 @@ export component MessageBubble inherits Rectangle {
         // Retraction tombstone — replaces the body (and all the blocks gated
         // off above) with a muted italic placeholder. The timestamp in `meta`
         // still renders so the deleted row keeps its place in the timeline.
-        if root.deleted: Text {
+        if root.msg.deleted: Text {
                 text: @tr("This message was deleted");
-                color: root.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
+                color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
                 font-size: root.body-fs;
                 font-family: Theme.font;
                 font-italic: true;
-                opacity: root.outgoing ? 0.7 : 0.85;
+                opacity: root.msg.outgoing ? 0.7 : 0.85;
                 vertical-alignment: top;
                 wrap: word-wrap;
                 width: min(self.preferred-width, root.text-budget);
@@ -958,7 +887,7 @@ export component MessageBubble inherits Rectangle {
             // hit-test themselves against the points), and a plain click
             // clears it while keeping the old tap behavior (retry / effect
             // replay) that the hover-sensor below used to catch.
-            if root.lines.length > 0 && !root.deleted: sel-touch := TouchArea {
+            if root.msg.lines.length > 0 && !root.msg.deleted: sel-touch := TouchArea {
                 horizontal-stretch: 0;
                 // Text cursor over the body; nested link cells override it
                 // with a pointer via their own TouchArea.
@@ -973,21 +902,21 @@ export component MessageBubble inherits Rectangle {
                             self.absolute-position.x + self.mouse-x,
                             self.absolute-position.y + self.mouse-y);
                     }
-                    if (e.kind == PointerEventKind.down && e.button == PointerEventButton.left && root.msg-id != "") {
+                    if (e.kind == PointerEventKind.down && e.button == PointerEventButton.left && root.msg.message-id != "") {
                         self.dragging = false;
                         root.press-chain = (root.now-tick - root.last-press-tick <= 225ms && abs(self.mouse-x - root.last-press-x) <= 6px && abs(self.mouse-y - root.last-press-y) <= 6px) ? root.press-chain + 1 : 1;
                         root.last-press-tick = root.now-tick;
                         root.last-press-x = self.mouse-x;
                         root.last-press-y = self.mouse-y;
                         if (root.press-chain == 1) {
-                            TextSelection.begin(root.msg-id, self.mouse-x, self.mouse-y);
+                            TextSelection.begin(root.msg.message-id, self.mouse-x, self.mouse-y);
                         } else if (root.press-chain == 2) {
                             // The first press resolved this spot into the
                             // press cache (which survives the plain-click
                             // clear in between); Rust expands it to a word,
                             // stores the anchor word, and activates.
                             if (TextSelection.p-line >= 0 && TextSelection.p-run >= 0) {
-                                TextSelection.request-word(root.msg-id, TextSelection.p-line, TextSelection.p-run, TextSelection.p-frac);
+                                TextSelection.request-word(root.msg.message-id, TextSelection.p-line, TextSelection.p-run, TextSelection.p-frac);
                             }
                         } else {
                             // Third press: select everything in the bubble.
@@ -997,12 +926,12 @@ export component MessageBubble inherits Rectangle {
                             // highlight comparisons and the extractor treat
                             // "past every run" as full coverage.
                             root.press-chain = 0;
-                            TextSelection.owner = root.msg-id;
+                            TextSelection.owner = root.msg.message-id;
                             TextSelection.word-mode = false;
                             TextSelection.a-line = 0;
                             TextSelection.a-run = 0;
                             TextSelection.a-frac = 0;
-                            TextSelection.b-line = root.lines.length - 1;
+                            TextSelection.b-line = root.msg.lines.length - 1;
                             TextSelection.b-run = 1000000;
                             TextSelection.b-frac = 1.0;
                             TextSelection.active = true;
@@ -1013,7 +942,7 @@ export component MessageBubble inherits Rectangle {
                     // `pressed` filters to left-button drags — `moved` also
                     // fires while a right-button press holds the grab, and
                     // that must not disturb an existing selection.
-                    if (self.pressed && root.msg-id != "" && TextSelection.owner == root.msg-id) {
+                    if (self.pressed && root.msg.message-id != "" && TextSelection.owner == root.msg.message-id) {
                         TextSelection.cursor-x = self.mouse-x;
                         TextSelection.cursor-y = self.mouse-y;
                         if (!self.dragging && (abs(self.mouse-x - self.pressed-x) > 3px || abs(self.mouse-y - self.pressed-y) > 3px)) {
@@ -1028,7 +957,7 @@ export component MessageBubble inherits Rectangle {
                                 // union of the anchor word and the word under
                                 // the pointer, extending or retracting whole
                                 // words on either side.
-                                TextSelection.request-word-extend(root.msg-id, TextSelection.c-line, TextSelection.c-run, TextSelection.c-frac);
+                                TextSelection.request-word-extend(root.msg.message-id, TextSelection.c-line, TextSelection.c-run, TextSelection.c-frac);
                             } else {
                                 // Character mode: the end endpoint follows the
                                 // pointer's claimed position directly.
@@ -1048,9 +977,9 @@ export component MessageBubble inherits Rectangle {
                         // claims flush a frame behind the drag handler, so
                         // the release re-syncs the end endpoint.
                         self.dragging = false;
-                        if (TextSelection.owner == root.msg-id && TextSelection.c-line >= 0 && TextSelection.c-run >= 0) {
+                        if (TextSelection.owner == root.msg.message-id && TextSelection.c-line >= 0 && TextSelection.c-run >= 0) {
                             if (TextSelection.word-mode) {
-                                TextSelection.request-word-extend(root.msg-id, TextSelection.c-line, TextSelection.c-run, TextSelection.c-frac);
+                                TextSelection.request-word-extend(root.msg.message-id, TextSelection.c-line, TextSelection.c-run, TextSelection.c-frac);
                             } else {
                                 TextSelection.b-line = TextSelection.c-line;
                                 TextSelection.b-run = TextSelection.c-run;
@@ -1061,7 +990,7 @@ export component MessageBubble inherits Rectangle {
                         // A plain click clears the selection and keeps the
                         // old tap behavior (retry / effect replay).
                         TextSelection.clear();
-                        if (root.failed) {
+                        if (root.msg.failed) {
                             root.retry-clicked();
                         } else {
                             root.body-clicked();
@@ -1071,10 +1000,10 @@ export component MessageBubble inherits Rectangle {
                 VerticalLayout {
                     spacing: 0;
                     alignment: start;
-                    for line[li] in root.lines: line-r := Rectangle {
+                    for line[li] in root.msg.lines: line-r := Rectangle {
                 // Fenced/indented code lines get a subtle monospace plate that
                 // hugs their content.
-                background: line.code-block ? (root.outgoing ? #00000022 : Palette.code-plate) : transparent;
+                background: line.code-block ? (root.msg.outgoing ? #00000022 : Palette.code-plate) : transparent;
                         border-radius: line.code-block ? (3px) * Theme.r-scale : 0;
                     // This line's y-band in text-block space, for the run
                     // cells' selection hit-tests.
@@ -1085,7 +1014,7 @@ export component MessageBubble inherits Rectangle {
                     // Blockquote accent bar.
                     if line.quote > 0: Rectangle {
                                 width: 2.5px;
-                                background: root.outgoing ? Palette.bubble-out-fg : Palette.mint;
+                                background: root.msg.outgoing ? Palette.bubble-out-fg : Palette.mint;
                                 border-radius: 1.25px;
                             }
                     // List / blockquote nesting inset.
@@ -1101,7 +1030,7 @@ export component MessageBubble inherits Rectangle {
                                     width: 100%;
                                     height: 1px;
                                     opacity: 0.5;
-                                    background: root.outgoing ? Palette.bubble-out-fg : Palette.border-2;
+                                    background: root.msg.outgoing ? Palette.bubble-out-fg : Palette.border-2;
                                 }
                             }
                             if !line.rule: HorizontalLayout {
@@ -1115,7 +1044,7 @@ export component MessageBubble inherits Rectangle {
                                     body-fs: root.body-fs;
                                     emoji-px: root.emoji-px;
                                     scale: line.scale;
-                                    fg: root.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
+                                    fg: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
                                     bold: r.bold;
                                     italic: r.italic;
                                     strike: r.strike;
@@ -1126,9 +1055,9 @@ export component MessageBubble inherits Rectangle {
                                     mention: r.mention;
                                     mention-a: r.mention-a;
                                     mention-b: r.mention-b;
-                                    link-color: root.outgoing ? Palette.bubble-out-fg : Palette.mint;
-                                    code-bg: root.outgoing ? #00000022 : Palette.code-plate;
-                                    sel-msg-id: root.msg-id;
+                                    link-color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.mint;
+                                    code-bg: root.msg.outgoing ? #00000022 : Palette.code-plate;
+                                    sel-msg-id: root.msg.message-id;
                                     sel-line-idx: li;
                                     sel-run-idx: ri;
                                     sel-first-run: ri == 0;
@@ -1138,16 +1067,16 @@ export component MessageBubble inherits Rectangle {
                                     sel-origin-x: sel-touch.absolute-position.x;
                                     band-t: line-r.band-top;
                                     band-b: line-r.band-top + line-r.height;
-                                    sel-bg: root.outgoing ? #00000038 : Palette.mint.transparentize(0.7);
+                                    sel-bg: root.msg.outgoing ? #00000038 : Palette.mint.transparentize(0.7);
                                 }
                             }
                         }
                     }
                 }
             }
-            if root.lines.length == 0 && !root.deleted: Text {
-                text: root.message;
-                color: root.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
+            if root.msg.lines.length == 0 && !root.msg.deleted: Text {
+                text: root.msg.text;
+                color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
                 font-size: root.body-fs;
                 font-family: Theme.font;
                 vertical-alignment: top;
@@ -1159,23 +1088,23 @@ export component MessageBubble inherits Rectangle {
                 alignment: end;
             // Hidden for jumbo emoji — the timestamp floats as a pill instead
             // (see `stamp-pill` below), so it doesn't reserve inline width.
-            if !root.jumbo-emoji: HorizontalLayout {
+            if !root.msg.jumbo-emoji: HorizontalLayout {
                     spacing: 4px;
                     alignment: end;
                 // "(edited)" affordance — opens the history modal on tap. Sits
                 // before the timestamp so the stamp + check stay rightmost.
-                if root.edited && !root.failed && !root.deleted: edited-rect := Rectangle {
+                if root.msg.edited && !root.msg.failed && !root.msg.deleted: edited-rect := Rectangle {
                         height: edited-label.preferred-height;
                         width: edited-label.preferred-width;
                         y: parent.height - self.height;
                         edited-label := Text {
                             text: @tr("edited");
-                            color: root.outgoing ? Palette.bubble-out-fg : Palette.mint;
+                            color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.mint;
                             font-size: (10px) * Theme.fs-scale;
                             font-family: Theme.font;
                             font-weight: 600;
                             vertical-alignment: bottom;
-                            opacity: edited-touch.has-hover ? 1.0 : (root.outgoing ? 0.7 : 0.85);
+                            opacity: edited-touch.has-hover ? 1.0 : (root.msg.outgoing ? 0.7 : 0.85);
                             animate opacity { duration: 100ms; }
                         }
 
@@ -1191,12 +1120,12 @@ export component MessageBubble inherits Rectangle {
                         width: stamp-label.preferred-width;
                         y: parent.height - self.height;
                         stamp-label := Text {
-                            text: root.failed ? @tr("failed · tap to retry") : root.stamp;
-                            color: root.failed ? Palette.danger-on-bubble : (root.outgoing ? Palette.bubble-out-fg : Palette.text-lo);
+                            text: root.msg.failed ? @tr("failed · tap to retry") : root.msg.stamp;
+                            color: root.msg.failed ? Palette.danger-on-bubble : (root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-lo);
                             font-size: (10px) * Theme.fs-scale;
                             font-family: Theme.font;
                             vertical-alignment: bottom;
-                            opacity: root.outgoing && !root.failed ? 0.7 : 1;
+                            opacity: root.msg.outgoing && !root.msg.failed ? 0.7 : 1;
                         }
                     // Hover sensor for the datetime tooltip. Sits above the
                     // whole-bubble TouchAreas, so it forwards clicks (retry /
@@ -1212,7 +1141,7 @@ export component MessageBubble inherits Rectangle {
                                 }
                             }
                             clicked => {
-                                if (root.failed) {
+                                if (root.msg.failed) {
                                     root.retry-clicked();
                                 } else {
                                     root.body-clicked();
@@ -1221,22 +1150,22 @@ export component MessageBubble inherits Rectangle {
                         }
                     // Floats above the stamp, right-aligned; the bubble root
                     // doesn't clip, so it can overflow into the previous row.
-                    if stamp-touch.has-hover && !root.failed && root.stamp-full != "": Tooltip {
+                    if stamp-touch.has-hover && !root.msg.failed && root.msg.stamp-full != "": Tooltip {
                             x: parent.width - self.width;
                             y: -self.height - 6px;
-                            label: root.stamp-full;
+                            label: root.msg.stamp-full;
                             is-visible: true;
                         }
                     }
                 // Status indicator: confirmed = double check, pending = single
                 // (lighter, animates), failed = "!" in red. Only on outgoing.
-                if root.outgoing && !root.failed: CheckMark {
+                if root.msg.outgoing && !root.msg.failed: CheckMark {
                         stroke: Palette.bubble-out-fg;
-                        double: !root.pending;
-                        opacity: root.pending ? 0.55 : 1.0;
+                        double: !root.msg.pending;
+                        opacity: root.msg.pending ? 0.55 : 1.0;
                         animate opacity { duration: 180ms; }
                     }
-                    if root.outgoing && root.failed: Text {
+                    if root.msg.outgoing && root.msg.failed: Text {
                         text: "!";
                         color: Palette.danger-on-bubble;
                         font-size: (11px) * Theme.fs-scale;
@@ -1253,14 +1182,14 @@ export component MessageBubble inherits Rectangle {
     // pill overlapping the bottom of the glyphs, revealed on hover — or kept up
     // while a send is pending/failed so state is never hidden. Anchored inside
     // the bubble bounds so it never overlaps the neighbouring row.
-    if root.jumbo-emoji: Rectangle {
+    if root.msg.jumbo-emoji: Rectangle {
         x: parent.width - self.width;
         y: parent.height - self.height;
         height: pill-row.preferred-height;
         width: pill-row.preferred-width;
         background: #00000088;
         border-radius: (10px) * Theme.r-scale;
-        opacity: (hover-sensor.has-hover || root.pending || root.failed) ? 1.0 : 0.0;
+        opacity: (hover-sensor.has-hover || root.msg.pending || root.msg.failed) ? 1.0 : 0.0;
         animate opacity {
             duration: 120ms;
             easing: ease-out;
@@ -1273,17 +1202,17 @@ export component MessageBubble inherits Rectangle {
             spacing: 4px;
             alignment: end;
             Text {
-                text: root.failed ? @tr("failed · tap to retry") : root.stamp;
-                color: root.failed ? Palette.danger-on-bubble : #FFFFFF;
+                text: root.msg.failed ? @tr("failed · tap to retry") : root.msg.stamp;
+                color: root.msg.failed ? Palette.danger-on-bubble : #FFFFFF;
                 font-size: (10px) * Theme.fs-scale;
                 font-family: Theme.font;
                 vertical-alignment: center;
             }
 
-            if root.outgoing && !root.failed: CheckMark {
+            if root.msg.outgoing && !root.msg.failed: CheckMark {
                 stroke: #FFFFFF;
-                double: !root.pending;
-                opacity: root.pending ? 0.55 : 1.0;
+                double: !root.msg.pending;
+                opacity: root.msg.pending ? 0.55 : 1.0;
             }
         }
         // Datetime tooltip for the pill. The pill is always mounted (opacity-
@@ -1299,7 +1228,7 @@ export component MessageBubble inherits Rectangle {
                 }
             }
             clicked => {
-                if (root.failed) {
+                if (root.msg.failed) {
                     root.retry-clicked();
                 } else {
                     root.body-clicked();
@@ -1307,10 +1236,10 @@ export component MessageBubble inherits Rectangle {
             }
         }
 
-        if pill-touch.has-hover && !root.failed && root.stamp-full != "": Tooltip {
+        if pill-touch.has-hover && !root.msg.failed && root.msg.stamp-full != "": Tooltip {
             x: parent.width - self.width;
             y: -self.height - 6px;
-            label: root.stamp-full;
+            label: root.msg.stamp-full;
             is-visible: true;
         }
     }
@@ -1322,8 +1251,8 @@ export component MessageBubble inherits Rectangle {
     // showing which effect this bubble carries (and hinting that a tap replays
     // it). Sits on the corner away from the tail; never clipped (the bubble root
     // doesn't clip).
-    if root.effect-id > 0: Rectangle {
-        x: root.outgoing ? -7px : parent.width - self.width + 7px;
+    if root.msg.effect-id > 0: Rectangle {
+        x: root.msg.outgoing ? -7px : parent.width - self.width + 7px;
         y: -7px;
         width: 20px;
         height: 20px;
@@ -1341,8 +1270,8 @@ export component MessageBubble inherits Rectangle {
             x: (parent.width - self.width) / 2;
             y: (parent.height - self.height) / 2;
             source: EmojiSheet.sprite;
-            source-clip-x: root.effect-clip-x;
-            source-clip-y: root.effect-clip-y;
+            source-clip-x: root.msg.effect-clip-x;
+            source-clip-y: root.msg.effect-clip-y;
             source-clip-width: EmojiSheet.tile;
             source-clip-height: EmojiSheet.tile;
         }
