@@ -365,6 +365,10 @@ msgctxt "StoragePane"
 msgid "Cached attachments"
 msgstr ""
 
+msgctxt "MessageBubble"
+msgid "Can't play this audio format"
+msgstr ""
+
 msgctxt "ErrorCopy"
 msgid "Can't reach your relays right now. Check your network and relay settings, then try again."
 msgstr ""

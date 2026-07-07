@@ -667,9 +667,10 @@ export component MessageBubble inherits Rectangle {
                     background: play-touch.has-hover ? (root.msg.outgoing ? Palette.text-hi : Palette.mint-hi) : (root.msg.outgoing ? Palette.bubble-out-fg : Palette.mint);
                     animate background { duration: 100ms; }
                     Text {
-                        x: parent.width / 2 - self.width / 2 + (root.msg.att-audio-playing || root.msg.att-loading || root.msg.att-failed ? 0px : 2px);
-                        // Loading → ellipsis, failed → retry, else play/pause.
-                        text: root.msg.att-loading ? "…" : (root.msg.att-failed ? "↻" : (root.msg.att-audio-playing ? "⏸" : "▶"));
+                        x: parent.width / 2 - self.width / 2 + (root.msg.att-audio-playing || root.msg.att-loading || root.msg.att-failed || root.msg.att-audio-failed ? 0px : 2px);
+                        // Loading → ellipsis, send-failed → retry, decode-failed
+                        // → bang, else play/pause.
+                        text: root.msg.att-loading ? "…" : (root.msg.att-failed ? "↻" : (root.msg.att-audio-failed ? "!" : (root.msg.att-audio-playing ? "⏸" : "▶")));
                         color: root.msg.outgoing ? Palette.mint : Palette.bg;
                         font-size: (14px) * Theme.fs-scale;
                         font-family: Theme.font;
@@ -737,13 +738,13 @@ export component MessageBubble inherits Rectangle {
                     HorizontalLayout {
                         spacing: 6px;
                         Text {
-                            text: root.msg.att-failed ? @tr("failed · tap to retry") : root.msg.att-size-label;
+                            text: root.msg.att-failed ? @tr("failed · tap to retry") : (root.msg.att-audio-failed ? @tr("Can't play this audio format") : root.msg.att-size-label);
                             horizontal-stretch: 1;
                             overflow: elide;
-                            color: root.msg.att-failed ? (root.msg.outgoing ? Palette.danger-on-bubble : Palette.danger) : (root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid);
+                            color: root.msg.att-failed || root.msg.att-audio-failed ? (root.msg.outgoing ? Palette.danger-on-bubble : Palette.danger) : (root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid);
                             font-size: (10px) * Theme.fs-scale;
                             font-family: Theme.font;
-                            opacity: root.msg.att-failed ? 1.0 : (root.msg.outgoing ? 0.75 : 0.9);
+                            opacity: root.msg.att-failed || root.msg.att-audio-failed ? 1.0 : (root.msg.outgoing ? 0.75 : 0.9);
                         }
 
                         Text {

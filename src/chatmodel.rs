@@ -312,6 +312,13 @@ pub(crate) fn chat_message_from_with_reactions(
     } else {
         (false, 0.0)
     };
+    // Decode failure (unsupported codec / corrupt data) recorded by
+    // start_audio_playback; the bubble renders the "can't play" notice.
+    let att_audio_failed = att_is_audio
+        && audio_decode_failed()
+            .lock()
+            .map(|s| s.contains(&record.message_id_hex))
+            .unwrap_or(false);
     let att_duration = if att_is_video {
         video_duration_label(&record.message_id_hex)
     } else if att_is_audio {
@@ -393,6 +400,7 @@ pub(crate) fn chat_message_from_with_reactions(
         att_is_audio,
         att_audio_playing,
         att_audio_progress,
+        att_audio_failed,
         att_duration: s(&att_duration),
         att_image,
         att_has_image,
@@ -720,6 +728,7 @@ pub(crate) fn pending_chat_message(
         att_is_audio,
         att_audio_playing: false,
         att_audio_progress: 0.0,
+        att_audio_failed: false,
         att_duration: s(""),
         att_image,
         att_has_image,

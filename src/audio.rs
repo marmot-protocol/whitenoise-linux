@@ -8,7 +8,7 @@
 // cpal's Stream and rodio's OutputStream are !Send, so AudioRecorder and
 // AudioPlayer are confined to the Slint UI thread and stored in thread-locals
 // by the caller. Only the rodio Sink is shared with a background monitor
-// thread (it is Send + Sync in rodio 0.19).
+// thread (it is Send + Sync).
 
 use std::io::Cursor;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -172,6 +172,26 @@ pub struct PlaybackState {
     pub finished: bool,
 }
 
+/// Why [`AudioPlayer::play`] failed. Callers surface `Decode` on the bubble
+/// (the clip itself is unplayable) but treat `Output` as environmental (no
+/// usable audio device) — retrying the same bytes could succeed later.
+#[derive(Debug)]
+pub enum PlayError {
+    /// The bytes could not be decoded: unsupported codec or corrupt data.
+    Decode(anyhow::Error),
+    /// The output device could not be opened.
+    Output(anyhow::Error),
+}
+
+impl std::fmt::Display for PlayError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PlayError::Decode(e) => write!(f, "decode audio: {e:#}"),
+            PlayError::Output(e) => write!(f, "audio output: {e:#}"),
+        }
+    }
+}
+
 /// A rodio-backed player for one in-memory audio clip. Created and driven from
 /// the Slint UI thread (the underlying OutputStream is !Send). The [`Sink`] is
 /// shared with a background monitor thread via an [`Arc<Mutex<Sink>>`].
@@ -184,15 +204,29 @@ pub struct AudioPlayer {
 }
 
 impl AudioPlayer {
-    /// Decode `bytes` and start playback immediately.
-    pub fn play(bytes: Vec<u8>) -> Result<Self> {
-        let (_stream, handle) =
-            rodio::OutputStream::try_default().map_err(|e| anyhow!("audio output: {e}"))?;
-        let sink = rodio::Sink::try_new(&handle).map_err(|e| anyhow!("audio sink: {e}"))?;
-
-        let cursor = Cursor::new(bytes);
-        let source = rodio::Decoder::new(cursor).map_err(|e| anyhow!("decode audio: {e}"))?;
+    /// Decode `bytes` (WAV from our own recorder, m4a/AAC or mp3 from other
+    /// clients) and start playback immediately.
+    pub fn play(bytes: Vec<u8>) -> Result<Self, PlayError> {
+        // Decode before opening the output device, so an unsupported format
+        // fails fast without claiming an audio stream. The explicit byte-len
+        // + seekable hints matter: symphonia's isomp4 reader refuses seekable
+        // streams of unknown length, so m4a decoding fails without them.
+        let byte_len = bytes.len() as u64;
+        let source = rodio::Decoder::builder()
+            .with_data(Cursor::new(bytes))
+            .with_byte_len(byte_len)
+            .with_seekable(true)
+            .build()
+            .map_err(|e| PlayError::Decode(anyhow!(e)))?;
         let duration = source.total_duration().unwrap_or_default();
+
+        let mut _stream = rodio::OutputStreamBuilder::open_default_stream()
+            .map_err(|e| PlayError::Output(anyhow!(e)))?;
+        // Dropping the stream when playback ends is deliberate — don't let
+        // rodio warn about it on stderr every time a voice message finishes.
+        _stream.log_on_drop(false);
+        let sink = rodio::Sink::connect_new(_stream.mixer());
+
         let shared = Arc::new(Mutex::new(PlaybackState {
             playing: true,
             position: 0.0,
