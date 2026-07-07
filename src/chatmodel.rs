@@ -1,5 +1,29 @@
 use crate::*;
 
+/// Presentation for the generic-file chip: a per-type emoji plus a short type
+/// name. Shared by the confirmed and pending row builders so the two stay in
+/// lockstep (CLAUDE.md requires changing them together). Callers guard on
+/// `has_attachment` before calling.
+pub(crate) fn file_chip_labels(mime: &str, name: &str) -> (String, String) {
+    (
+        file_type_icon(mime, name).to_string(),
+        file_type_label(mime, name),
+    )
+}
+
+/// The single jumbo-emoji rule: a bare emoji body renders oversized, but a
+/// reply, an attachment, or an album wants normal bubble chrome around the
+/// block. Called from both row builders and the optimistic edit path so an
+/// edited message classifies the same way a fresh one does.
+pub(crate) fn jumbo_emoji_for(
+    has_attachment: bool,
+    is_album: bool,
+    has_reply: bool,
+    text: &str,
+) -> bool {
+    !has_attachment && !is_album && !has_reply && jumbo_emoji_count(text) > 0
+}
+
 pub(crate) fn chat_meta_from(
     record: &AppGroupRecord,
     last_message: Option<&AppMessageRecord>,
@@ -305,18 +329,12 @@ pub(crate) fn chat_message_from_with_reactions(
     // Computed for every attachment; the bubble only renders them on the
     // non image/video/audio chip.
     let (att_icon, att_type_label) = if has_attachment {
-        (
-            file_type_icon(&att_mime, &att_name).to_string(),
-            file_type_label(&att_mime, &att_name),
-        )
+        file_chip_labels(&att_mime, &att_name)
     } else {
         (String::new(), String::new())
     };
 
-    // Jumbo only for a bare emoji body — a reply/attachment/album wants its
-    // normal bubble chrome around the block.
-    let jumbo_emoji =
-        !has_attachment && !is_album && reply_id.is_empty() && jumbo_emoji_count(display_text) > 0;
+    let jumbo_emoji = jumbo_emoji_for(has_attachment, is_album, !reply_id.is_empty(), display_text);
 
     ChatMessage {
         // A tombstone carries no body, reactions, attachments, or affordances —
@@ -631,16 +649,17 @@ pub(crate) fn pending_chat_message(
     // Same per-type chip presentation as confirmed rows, from the local
     // staged metadata.
     let (att_icon, att_type_label) = if has_attachment {
-        (
-            file_type_icon(&att_mime, &att_name).to_string(),
-            file_type_label(&att_mime, &att_name),
-        )
+        file_chip_labels(&att_mime, &att_name)
     } else {
         (String::new(), String::new())
     };
 
-    let jumbo_emoji =
-        !has_attachment && !is_album && reply_id.is_empty() && jumbo_emoji_count(&pending.text) > 0;
+    let jumbo_emoji = jumbo_emoji_for(
+        has_attachment,
+        is_album,
+        !reply_id.is_empty(),
+        &pending.text,
+    );
 
     ChatMessage {
         text: s(&pending.text),
@@ -858,10 +877,12 @@ pub(crate) fn apply_edit_to_model_row(
         };
         row.text = s(new_text);
         row.lines = build_message_lines(new_text, row.bubble_max);
-        row.jumbo_emoji = !row.has_attachment
-            && row.album.row_count() == 0
-            && row.reply_to_id.is_empty()
-            && jumbo_emoji_count(new_text) > 0;
+        row.jumbo_emoji = jumbo_emoji_for(
+            row.has_attachment,
+            row.album.row_count() != 0,
+            !row.reply_to_id.is_empty(),
+            new_text,
+        );
         row.edited = true;
         row.edit_count += 1;
         vm.set_row_data(pos, row);
