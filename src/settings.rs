@@ -152,27 +152,12 @@ fn default_true() -> bool {
 }
 
 impl Default for Settings {
+    // Deserialize an empty JSON object so every field takes its
+    // `#[serde(default …)]` value. That attribute is the single source of truth
+    // for defaults; a hand-written struct literal here would duplicate all 18 of
+    // them and silently drift when a field is added or a default changes.
     fn default() -> Self {
-        Self {
-            debug_enabled: false,
-            locale: default_locale(),
-            theme: default_theme(),
-            accent_color: default_accent(),
-            outgoing_on_right: default_outgoing_on_right(),
-            zoom: default_zoom(),
-            time_format: default_time_format(),
-            date_format: default_date_format(),
-            nicknames: BTreeMap::new(),
-            notifications_enabled: true,
-            notification_sound: true,
-            notification_preview: true,
-            muted_chats: BTreeSet::new(),
-            pinned_chats: BTreeSet::new(),
-            last_read: BTreeMap::new(),
-            composer_drafts: BTreeMap::new(),
-            hidden_messages_by_account: BTreeMap::new(),
-            hidden_messages_legacy: BTreeSet::new(),
-        }
+        serde_json::from_str("{}").expect("every Settings field has a serde default")
     }
 }
 
