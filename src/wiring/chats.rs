@@ -155,11 +155,7 @@ pub(crate) fn wire_chats(
                 // threads should not leak a stale "Replying to …" / "Editing …"
                 // banner across conversations (and the abandoned edit must clear
                 // so the restored draft below isn't masked by it).
-                ui.set_reply_target_id(s(""));
-                ui.set_reply_target_author(s(""));
-                ui.set_reply_target_preview(s(""));
-                ui.set_reply_target_image(slint::Image::default());
-                ui.set_reply_target_has_image(false);
+                clear_reply_target(&ui);
                 ui.set_editing_message_id(s(""));
                 refresh();
                 let Some(backend) = backend_cell.lock().unwrap().clone() else {
