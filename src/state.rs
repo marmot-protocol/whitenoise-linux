@@ -796,26 +796,83 @@ pub(crate) enum Page {
     Profile = 5,
 }
 
-// Master list of palette actions. Each has an id (used by Rust to dispatch),
-// a label (shown), a group header, and an optional keyboard hint chip.
-pub(crate) fn all_palette_actions() -> Vec<PaletteAction> {
-    let mk = |id: &str, label: &str, group: &str, kbd: &str| PaletteAction {
-        id: s(id),
-        label: s(label),
-        group: s(group),
-        kbd: s(kbd),
+macro_rules! palette_commands {
+    ($($variant:ident => ($id:literal, $label:literal, $group:literal, $kbd:literal)),+ $(,)?) => {
+        #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+        pub(crate) enum PaletteCommand {
+            $($variant,)+
+        }
+
+        impl PaletteCommand {
+            pub(crate) const ALL: [Self; palette_commands!(@count $($variant),+)] = [
+                $(Self::$variant,)+
+            ];
+
+            pub(crate) fn from_id(id: &str) -> Option<Self> {
+                Self::ALL.iter().copied().find(|command| command.id() == id)
+            }
+
+            fn id(self) -> &'static str {
+                match self {
+                    $(Self::$variant => $id,)+
+                }
+            }
+
+            fn label(self) -> &'static str {
+                match self {
+                    $(Self::$variant => $label,)+
+                }
+            }
+
+            fn group(self) -> &'static str {
+                match self {
+                    $(Self::$variant => $group,)+
+                }
+            }
+
+            fn kbd(self) -> &'static str {
+                match self {
+                    $(Self::$variant => $kbd,)+
+                }
+            }
+
+            fn action(self) -> PaletteAction {
+                PaletteAction {
+                    id: s(self.id()),
+                    label: s(self.label()),
+                    group: s(self.group()),
+                    kbd: s(self.kbd()),
+                }
+            }
+        }
     };
-    vec![
-        mk("nav.chats", "Go to Chats", "NAVIGATE", "1"),
-        mk("nav.contacts", "Go to Contacts", "NAVIGATE", "2"),
-        mk("nav.archived", "Go to Archived", "NAVIGATE", "3"),
-        mk("nav.keys", "Go to Keys", "NAVIGATE", "4"),
-        mk("nav.settings", "Go to Settings", "NAVIGATE", "5"),
-        mk("nav.profile", "Go to Profile", "NAVIGATE", ""),
-        mk("act.new-chat", "New chat", "ACTIONS", "Ctrl N"),
-        mk("act.copy-npub", "Copy your npub", "ACTIONS", ""),
-        mk("act.toggle-retro", "Toggle retro mode", "ACTIONS", ""),
-    ]
+    (@count $($variant:ident),+ $(,)?) => {
+        <[()]>::len(&[$(palette_commands!(@unit $variant)),+])
+    };
+    (@unit $variant:ident) => { () };
+}
+
+palette_commands! {
+    NavChats => ("nav.chats", "Go to Chats", "NAVIGATE", "1"),
+    NavContacts => ("nav.contacts", "Go to Contacts", "NAVIGATE", "2"),
+    NavArchived => ("nav.archived", "Go to Archived", "NAVIGATE", "3"),
+    NavKeys => ("nav.keys", "Go to Keys", "NAVIGATE", "4"),
+    NavSettings => ("nav.settings", "Go to Settings", "NAVIGATE", "5"),
+    NavProfile => ("nav.profile", "Go to Profile", "NAVIGATE", ""),
+    NewChat => ("act.new-chat", "New chat", "ACTIONS", "Ctrl N"),
+    CopyNpub => ("act.copy-npub", "Copy your npub", "ACTIONS", ""),
+    ToggleRetro => ("act.toggle-retro", "Toggle retro mode", "ACTIONS", ""),
+}
+
+// Master list of palette actions. The single `palette_commands!` table declares
+// the variants and row metadata together; the executor matches the generated
+// enum exhaustively, so adding a row without a handler becomes a compiler error
+// instead of a silent no-op.
+pub(crate) fn all_palette_actions() -> Vec<PaletteAction> {
+    PaletteCommand::ALL
+        .into_iter()
+        .map(PaletteCommand::action)
+        .collect()
 }
 
 pub(crate) fn filter_palette(all: &[PaletteAction], query: &str) -> Vec<PaletteAction> {
@@ -933,6 +990,41 @@ pub(crate) fn apply_locale(locale: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn palette_actions_round_trip_through_command_registry() {
+        let expected = [
+            ("nav.chats", "Go to Chats", "NAVIGATE", "1"),
+            ("nav.contacts", "Go to Contacts", "NAVIGATE", "2"),
+            ("nav.archived", "Go to Archived", "NAVIGATE", "3"),
+            ("nav.keys", "Go to Keys", "NAVIGATE", "4"),
+            ("nav.settings", "Go to Settings", "NAVIGATE", "5"),
+            ("nav.profile", "Go to Profile", "NAVIGATE", ""),
+            ("act.new-chat", "New chat", "ACTIONS", "Ctrl N"),
+            ("act.copy-npub", "Copy your npub", "ACTIONS", ""),
+            ("act.toggle-retro", "Toggle retro mode", "ACTIONS", ""),
+        ];
+        let actions = all_palette_actions();
+        assert_eq!(actions.len(), expected.len());
+        assert_eq!(PaletteCommand::ALL.len(), expected.len());
+
+        let mut ids = HashSet::new();
+        for ((action, command), (id, label, group, kbd)) in
+            actions.iter().zip(PaletteCommand::ALL).zip(expected)
+        {
+            assert_eq!(action.id.as_str(), id);
+            assert_eq!(action.label.as_str(), label);
+            assert_eq!(action.group.as_str(), group);
+            assert_eq!(action.kbd.as_str(), kbd);
+            assert_eq!(command.id(), id);
+            assert!(
+                ids.insert(action.id.to_string()),
+                "duplicate palette action id {id}"
+            );
+            assert_eq!(PaletteCommand::from_id(id), Some(command));
+        }
+        assert_eq!(PaletteCommand::from_id("missing.action"), None);
+    }
 
     #[test]
     fn edit_draft_stash_does_not_overwrite_when_already_editing() {

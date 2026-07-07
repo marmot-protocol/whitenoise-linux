@@ -80,15 +80,19 @@ pub(crate) fn wire_nav(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         let settings_cell = settings_cell.clone();
         move |id| {
             let Some(ui) = weak.upgrade() else { return };
-            match id.as_str() {
-                "nav.chats" => go(Page::Chats),
-                "nav.contacts" => go(Page::Contacts),
-                "nav.archived" => go(Page::Archived),
-                "nav.keys" => go(Page::Keys),
-                "nav.settings" => go(Page::Settings),
-                "nav.profile" => go(Page::Profile),
-                "act.new-chat" => ui.set_show_new_chat(true),
-                "act.copy-npub" => {
+            let Some(command) = PaletteCommand::from_id(id.as_str()) else {
+                tracing::warn!(target: "command_palette", "unknown palette action id: {}", id);
+                return;
+            };
+            match command {
+                PaletteCommand::NavChats => go(Page::Chats),
+                PaletteCommand::NavContacts => go(Page::Contacts),
+                PaletteCommand::NavArchived => go(Page::Archived),
+                PaletteCommand::NavKeys => go(Page::Keys),
+                PaletteCommand::NavSettings => go(Page::Settings),
+                PaletteCommand::NavProfile => go(Page::Profile),
+                PaletteCommand::NewChat => ui.set_show_new_chat(true),
+                PaletteCommand::CopyNpub => {
                     let npub = ui.get_my_npub();
                     let weak = weak.clone();
                     copy_to_clipboard_async(npub.to_string(), move |result| {
@@ -102,7 +106,7 @@ pub(crate) fn wire_nav(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                         }
                     });
                 }
-                "act.toggle-retro" => {
+                PaletteCommand::ToggleRetro => {
                     let mode = if ui.get_retro_mode() { "dark" } else { "retro" };
                     {
                         let mut s = settings_cell.borrow_mut();
@@ -111,7 +115,6 @@ pub(crate) fn wire_nav(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     }
                     apply_theme_mode(&ui, mode);
                 }
-                _ => {}
             }
         }
     });
