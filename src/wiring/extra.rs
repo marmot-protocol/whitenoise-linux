@@ -69,11 +69,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     st.save();
                 }
             }
-            ui.set_reply_target_id(s(""));
-            ui.set_reply_target_author(s(""));
-            ui.set_reply_target_preview(s(""));
-            ui.set_reply_target_image(slint::Image::default());
-            ui.set_reply_target_has_image(false);
+            clear_reply_target(&ui);
             ui.set_editing_message_id(message_id);
             ui.set_composer_draft(current_text);
         }

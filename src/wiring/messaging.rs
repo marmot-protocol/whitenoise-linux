@@ -1,5 +1,17 @@
 use crate::*;
 
+/// Reset the reply banner to its empty state. The banner is backed by five
+/// parallel root properties (`reply_target_id/author/preview/image/has_image`);
+/// this is the single owner that clears them, so a new field only has to be
+/// added here rather than at every call site that dismisses the banner.
+pub(crate) fn clear_reply_target(ui: &DarkMatterLinux) {
+    ui.set_reply_target_id(s(""));
+    ui.set_reply_target_author(s(""));
+    ui.set_reply_target_preview(s(""));
+    ui.set_reply_target_image(slint::Image::default());
+    ui.set_reply_target_has_image(false);
+}
+
 pub(crate) fn wire_reply_target(ui: &DarkMatterLinux) {
     // ─── Reply target (set / cancel) ───────────────────────────────────
     //
@@ -32,11 +44,7 @@ pub(crate) fn wire_reply_target(ui: &DarkMatterLinux) {
         let weak = ui.as_weak();
         move || {
             let Some(ui) = weak.upgrade() else { return };
-            ui.set_reply_target_id(s(""));
-            ui.set_reply_target_author(s(""));
-            ui.set_reply_target_preview(s(""));
-            ui.set_reply_target_image(slint::Image::default());
-            ui.set_reply_target_has_image(false);
+            clear_reply_target(&ui);
         }
     });
 }
@@ -163,11 +171,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     ))
                 };
                 if reply_to.is_some() {
-                    ui.set_reply_target_id(s(""));
-                    ui.set_reply_target_author(s(""));
-                    ui.set_reply_target_preview(s(""));
-                    ui.set_reply_target_image(slint::Image::default());
-                    ui.set_reply_target_has_image(false);
+                    clear_reply_target(&ui);
                 }
 
                 // 1. Insert pending bubble + clear the composer. Surgical push —

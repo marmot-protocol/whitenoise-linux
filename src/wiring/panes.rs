@@ -126,11 +126,7 @@ pub(crate) fn wire_panes(
             ui.set_composer_draft(s(""));
             staged_files.lock().unwrap().clear();
             refresh_staged_ui(&ui, &[]);
-            ui.set_reply_target_id(s(""));
-            ui.set_reply_target_author(s(""));
-            ui.set_reply_target_preview(s(""));
-            ui.set_reply_target_image(slint::Image::default());
-            ui.set_reply_target_has_image(false);
+            clear_reply_target(&ui);
             ui.set_editing_message_id(s(""));
             if let Ok(mut slot) = active_group_slot().lock() {
                 slot.clear();
