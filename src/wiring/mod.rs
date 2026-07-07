@@ -2,6 +2,7 @@ use crate::*;
 
 // Callback-wiring sections. Each is one logical layer split out only to stay
 // under the 2000-line file limit; re-exported so callers see `wire_*` flat.
+mod attach;
 mod backup;
 mod chats;
 mod contacts;
@@ -11,6 +12,7 @@ mod groups;
 mod messaging;
 mod nav;
 mod panes;
+pub(crate) use attach::*;
 pub(crate) use backup::*;
 pub(crate) use chats::*;
 pub(crate) use contacts::*;

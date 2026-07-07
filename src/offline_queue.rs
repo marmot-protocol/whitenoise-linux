@@ -40,8 +40,9 @@ pub struct QueuedMedia {
     pub is_image: bool,
 }
 
-/// What kind of send this is — mirrors the three dispatch paths in `main.rs`
-/// (`dispatch_send`, `spawn_attachment_send`, `spawn_album_send`).
+/// What kind of send this is — mirrors the three dispatch paths
+/// (`dispatch_send` in `main.rs`, `spawn_attachment_send` and
+/// `spawn_album_send` in `src/wiring/attach.rs`).
 #[derive(Clone, Serialize, Deserialize)]
 pub enum QueuedKind {
     /// Plain text or a reply. `reply_to` is the (parent_id, author_label,
