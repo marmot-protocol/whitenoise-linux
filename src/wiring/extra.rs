@@ -783,7 +783,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     ui.on_react_message({
         let react_op = react_op.clone();
         move |message_id, emoji| {
-            if message_id.as_str().starts_with("pending:") {
+            if is_temp_id(message_id.as_str()) {
                 return;
             }
             react_op(
@@ -796,7 +796,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     ui.on_unreact_message({
         let react_op = react_op.clone();
         move |message_id| {
-            if message_id.as_str().starts_with("pending:") {
+            if is_temp_id(message_id.as_str()) {
                 return;
             }
             react_op(PendingReactionOp::Remove, message_id.to_string());

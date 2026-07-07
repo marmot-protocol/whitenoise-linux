@@ -83,8 +83,9 @@ fn queue_dir() -> PathBuf {
     crate::backend::default_home().join("offline-queue")
 }
 
-/// Filesystem-safe filename for a temp id. The id format (`pending:N`) carries a
-/// colon, which is fine on unix but not on every filesystem, so hex-encode it.
+/// Filesystem-safe filename for a temp id. The format minted by
+/// `state::next_temp_id` carries a colon, which is fine on unix but not on
+/// every filesystem, so hex-encode it.
 fn path_for(temp_id: &str) -> PathBuf {
     queue_dir().join(format!("{}.bin", hex::encode(temp_id.as_bytes())))
 }
