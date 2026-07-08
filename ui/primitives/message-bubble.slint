@@ -386,9 +386,9 @@ export component MessageBubble inherits Rectangle {
     // Sketch bubbles paint their fill + outline as a hand-drawn path
     // (SketchOutline, mounted below), so the rectangle itself stays transparent.
     background: (root.msg.jumbo-emoji || Theme.sketch-bubbles) ? transparent : (root.msg.outgoing
-            // Retro bubbles use a flat fill; modern themes get a subtle vertical
-            // accent gradient for depth.
-            ? (Theme.retro ? Palette.mint : @linear-gradient(180deg, Palette.mint-hi 0%, Palette.mint 92%)) : Palette.bubble-in);
+            // Flat-capability themes use a solid fill; soft-decor themes get a
+            // subtle vertical accent gradient for depth.
+            ? (Theme.soft-decor ? @linear-gradient(180deg, Palette.mint-hi 0%, Palette.mint 92%) : Palette.mint) : Palette.bubble-in);
     // Chat-style asymmetric corners. The tail corner (bottom, avatar side)
     // stays tight; within a group the top corner on the avatar side also
     // tightens so consecutive bubbles read as one stacked column.
@@ -406,7 +406,7 @@ export component MessageBubble inherits Rectangle {
     border-color: root.msg.failed ? Palette.danger-on-bubble : (Theme.sketch-bubbles ? Palette.text-hi : (root.msg.outgoing ? transparent : Palette.border-2));
     // Sketch bubbles stay shadowless — the ink outline defines the edge; a soft
     // blur underneath just muddies the flat hand-drawn look.
-    drop-shadow-color: (root.msg.jumbo-emoji || Theme.sketch-bubbles) ? transparent : (Theme.hard-shadow ? Palette.shadow : (root.msg.outgoing ? Palette.mint-glow : (Theme.light ? #00000018 : #00000050)));
+    drop-shadow-color: (root.msg.jumbo-emoji || Theme.sketch-bubbles) ? transparent : (Theme.hard-shadow ? Palette.shadow : (root.msg.outgoing ? Palette.mint-glow : Palette.shadow-bubble-in));
     drop-shadow-offset-x: Theme.hard-shadow ? 2px : 0px;
     drop-shadow-offset-y: Theme.hard-shadow ? 2px : (root.msg.outgoing ? 3px : 2px);
     drop-shadow-blur: root.msg.jumbo-emoji ? 0px : (Theme.hard-shadow ? 0px : (root.msg.outgoing ? 14px : 8px));
@@ -472,7 +472,7 @@ export component MessageBubble inherits Rectangle {
         // bar on the left. For outgoing (mint) bubbles the accent is dark so
         // it actually shows up; for incoming (dark) bubbles it's mint.
         if root.msg.reply-to-id != "" && !root.msg.deleted: Rectangle {
-            background: root.msg.outgoing ? #00000018 : Palette.bubble-inset;
+            background: root.msg.outgoing ? Palette.bubble-inset-out : Palette.bubble-inset;
             border-radius: (3px) * Theme.r-scale;
             HorizontalLayout {
                 padding-left: 8px;
@@ -539,7 +539,7 @@ export component MessageBubble inherits Rectangle {
                 width: cell.w;
                 height: cell.h;
                 border-radius: (6px) * Theme.r-scale;
-                background: root.msg.outgoing ? #00000022 : Palette.bubble-inset;
+                background: root.msg.outgoing ? Palette.bubble-inset-out : Palette.bubble-inset;
                 clip: true;
                 border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
                 border-color: Palette.border-2;
@@ -578,7 +578,7 @@ export component MessageBubble inherits Rectangle {
             width: self.vid-w;
             height: 180px;
             border-radius: (8px) * Theme.r-scale;
-            background: root.msg.outgoing ? #00000033 : Palette.media-backdrop;
+            background: root.msg.outgoing ? Palette.media-backdrop-out : Palette.media-backdrop;
             clip: true;
             border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
             border-color: Palette.border-2;
@@ -645,7 +645,7 @@ export component MessageBubble inherits Rectangle {
             width: self.audio-w;
             height: aud-row.preferred-height;
             border-radius: (8px) * Theme.r-scale;
-            background: root.msg.outgoing ? #00000022 : Palette.bubble-inset;
+            background: root.msg.outgoing ? Palette.bubble-inset-out : Palette.bubble-inset;
             border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
             border-color: Palette.border-2;
 
@@ -716,7 +716,7 @@ export component MessageBubble inherits Rectangle {
                             width: 100%;
                             height: 5px;
                             border-radius: 2.5px * Theme.r-scale;
-                            background: root.msg.outgoing ? #00000022 : Palette.bubble-inset-strong;
+                            background: root.msg.outgoing ? Palette.bubble-inset-out-strong : Palette.bubble-inset-strong;
                             Rectangle {
                                 x: 0;
                                 width: parent.width * clamp(root.msg.att-audio-progress, 0.0, 1.0);
@@ -765,7 +765,7 @@ export component MessageBubble inherits Rectangle {
             width: self.img-w;
             height: self.img-h;
             border-radius: (8px) * Theme.r-scale;
-            background: root.msg.outgoing ? #00000022 : Palette.bubble-inset;
+            background: root.msg.outgoing ? Palette.bubble-inset-out : Palette.bubble-inset;
             clip: true;
             border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
             border-color: Palette.border-2;
@@ -804,7 +804,7 @@ export component MessageBubble inherits Rectangle {
         }
 
         if root.msg.has-attachment && !root.msg.att-is-image && !root.msg.att-is-video && !root.msg.att-is-audio && !root.msg.deleted: Rectangle {
-            background: root.msg.outgoing ? #00000022 : Palette.bubble-inset;
+            background: root.msg.outgoing ? Palette.bubble-inset-out : Palette.bubble-inset;
             border-radius: (6px) * Theme.r-scale;
             border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
             border-color: Palette.border-2;
@@ -1004,7 +1004,7 @@ export component MessageBubble inherits Rectangle {
                     for line[li] in root.msg.lines: line-r := Rectangle {
                 // Fenced/indented code lines get a subtle monospace plate that
                 // hugs their content.
-                background: line.code-block ? (root.msg.outgoing ? #00000022 : Palette.code-plate) : transparent;
+                background: line.code-block ? (root.msg.outgoing ? Palette.code-plate-out : Palette.code-plate) : transparent;
                         border-radius: line.code-block ? (3px) * Theme.r-scale : 0;
                     // This line's y-band in text-block space, for the run
                     // cells' selection hit-tests.
@@ -1057,7 +1057,7 @@ export component MessageBubble inherits Rectangle {
                                     mention-a: r.mention-a;
                                     mention-b: r.mention-b;
                                     link-color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.mint;
-                                    code-bg: root.msg.outgoing ? #00000022 : Palette.code-plate;
+                                    code-bg: root.msg.outgoing ? Palette.code-plate-out : Palette.code-plate;
                                     sel-msg-id: root.msg.message-id;
                                     sel-line-idx: li;
                                     sel-run-idx: ri;
@@ -1068,7 +1068,7 @@ export component MessageBubble inherits Rectangle {
                                     sel-origin-x: sel-touch.absolute-position.x;
                                     band-t: line-r.band-top;
                                     band-b: line-r.band-top + line-r.height;
-                                    sel-bg: root.msg.outgoing ? #00000038 : Palette.mint.transparentize(0.7);
+                                    sel-bg: root.msg.outgoing ? Palette.bubble-selection-out : Palette.mint.transparentize(0.7);
                                 }
                             }
                         }
@@ -1261,7 +1261,7 @@ export component MessageBubble inherits Rectangle {
         background: Palette.elevated;
         border-width: Theme.border-w;
         border-color: Palette.elevated-border;
-        drop-shadow-color: Theme.hard-shadow ? Palette.shadow : #00000038;
+        drop-shadow-color: Theme.hard-shadow ? Palette.shadow : Palette.shadow-float;
         drop-shadow-blur: Theme.hard-shadow ? 0px : 5px;
         drop-shadow-offset-x: Theme.hard-shadow ? 2px : 0px;
         drop-shadow-offset-y: Theme.hard-shadow ? 2px : 1px;

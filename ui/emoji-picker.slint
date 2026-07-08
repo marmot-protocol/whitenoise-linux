@@ -66,9 +66,10 @@ export component EmojiPicker inherits Rectangle {
         border-radius: (8px) * Theme.r-scale;
         border-width: 1px;
         border-color: Palette.border;
-        drop-shadow-color: #00000080;
-        drop-shadow-blur: 24px;
-        drop-shadow-offset-y: 6px;
+        drop-shadow-color: Theme.hard-shadow ? Palette.shadow : Palette.shadow-popover;
+        drop-shadow-blur: Theme.hard-shadow ? 0px : 24px;
+        drop-shadow-offset-x: Theme.hard-shadow ? 4px : 0px;
+        drop-shadow-offset-y: Theme.hard-shadow ? 4px : 6px;
 
         // Swallow any click that lands inside the panel and isn't claimed
         // by a more-specific TouchArea (search input, emoji cells, etc.).
