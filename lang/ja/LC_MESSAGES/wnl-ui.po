@@ -1711,6 +1711,10 @@ msgctxt "KeysPage"
 msgid "Rotate key package now"
 msgstr "キーパッケージを今すぐローテーション"
 
+msgctxt "KeysPage"
+msgid "Rotate key package?"
+msgstr "キーパッケージをローテーションしますか？"
+
 msgctxt "AddAccountModal"
 msgid "SECRET KEY (NSEC)"
 msgstr "秘密鍵 (nsec)"
@@ -2000,6 +2004,10 @@ msgstr "{} からの招待を辞退します。相手がもう一度招待しな
 msgctxt "DarkMatterLinux"
 msgid "This hides the message on this device only. Other people will still see it."
 msgstr ""
+
+msgctxt "KeysPage"
+msgid "This invalidates your current package. Contacts will use the new one going forward."
+msgstr "現在のパッケージは無効になります。今後、連絡先は新しいパッケージを使用します。"
 
 msgctxt "GetStartedScreen"
 msgid "This is what lets other people start an encrypted chat with you."

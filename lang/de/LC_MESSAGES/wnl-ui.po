@@ -1713,6 +1713,10 @@ msgctxt "KeysPage"
 msgid "Rotate key package now"
 msgstr "Schlüsselpaket jetzt rotieren"
 
+msgctxt "KeysPage"
+msgid "Rotate key package?"
+msgstr "Schlüsselpaket rotieren?"
+
 msgctxt "AddAccountModal"
 msgid "SECRET KEY (NSEC)"
 msgstr "GEHEIMER SCHLÜSSEL (NSEC)"
@@ -2002,6 +2006,10 @@ msgstr "Damit lehnst du die Einladung von {} ab. Sie kann nur wiederhergestellt 
 msgctxt "DarkMatterLinux"
 msgid "This hides the message on this device only. Other people will still see it."
 msgstr ""
+
+msgctxt "KeysPage"
+msgid "This invalidates your current package. Contacts will use the new one going forward."
+msgstr "Dies macht dein aktuelles Paket ungültig. Kontakte verwenden künftig das neue."
 
 msgctxt "GetStartedScreen"
 msgid "This is what lets other people start an encrypted chat with you."
