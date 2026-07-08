@@ -426,6 +426,7 @@ export component DarkMatterLinux inherits Window {
     // True only when a key package is actually published to a relay (not merely
     // present locally). Set by Rust from the live KP records.
     in property <bool> kp-published: false;
+    property <bool> show-rotate-confirm: false;
     callback kp-publish-clicked();
     callback kp-rotate-clicked();
     callback kp-refresh-clicked();
@@ -1086,7 +1087,7 @@ export component DarkMatterLinux inherits Window {
                             root.kp-publish-clicked();
                         }
                         rotate-clicked => {
-                            root.kp-rotate-clicked();
+                            root.show-rotate-confirm = true;
                         }
                         refresh-clicked => {
                             root.kp-refresh-clicked();
@@ -1418,6 +1419,21 @@ export component DarkMatterLinux inherits Window {
         dismissed => {
             root.show-audit-delete-confirm = false;
             root.pending-audit-delete-path = "";
+        }
+    }
+
+    // Rotating invalidates the currently advertised key package, so the page
+    // only emits intent; the window root owns the modal and blocks all chrome.
+    if root.show-rotate-confirm: ConfirmModal {
+        title: @tr("KeysPage" => "Rotate key package?");
+        subtitle: @tr("KeysPage" => "This invalidates your current package. Contacts will use the new one going forward.");
+        confirm-label: @tr("KeysPage" => "Rotate");
+        confirm => {
+            root.show-rotate-confirm = false;
+            root.kp-rotate-clicked();
+        }
+        dismissed => {
+            root.show-rotate-confirm = false;
         }
     }
 

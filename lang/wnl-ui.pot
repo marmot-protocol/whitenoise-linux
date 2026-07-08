@@ -1628,6 +1628,10 @@ msgctxt "KeysPage"
 msgid "Rotate key package now"
 msgstr ""
 
+msgctxt "KeysPage"
+msgid "Rotate key package?"
+msgstr ""
+
 msgctxt "AddAccountModal"
 msgid "SECRET KEY (NSEC)"
 msgstr ""
@@ -1903,6 +1907,10 @@ msgstr ""
 
 msgctxt "DarkMatterLinux"
 msgid "This hides the message on this device only. Other people will still see it."
+msgstr ""
+
+msgctxt "KeysPage"
+msgid "This invalidates your current package. Contacts will use the new one going forward."
 msgstr ""
 
 msgctxt "GetStartedScreen"
