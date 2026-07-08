@@ -1,7 +1,6 @@
 import { Palette, ArchivedChat, GroupMember, Theme } from "../tokens.slint";
 import { ArchiveIcon } from "../icons/archive-icon.slint";
 import { UnarchiveIcon } from "../icons/unarchive-icon.slint";
-import { TrashIcon } from "../icons/trash-icon.slint";
 import { DetailPage } from "../shells/detail-page.slint";
 import { PageHeader } from "../shells/page-header.slint";
 import { Section } from "../shells/section.slint";
@@ -39,20 +38,6 @@ export component ArchivedDetail inherits DetailPage {
             }
             UnarchiveIcon {
                 stroke: Palette.text-mid;
-            }
-        }
-
-        Button {
-            label: @tr("Delete");
-            button-height: 36px;
-            fg: Palette.danger;
-            bg-color: Palette.danger-soft;
-            hover-bg: Palette.danger-soft-hover;
-            outline: Palette.danger-border;
-            hover-outline: Palette.danger-border-hover;
-            y: (parent.height - self.height) / 2;
-            TrashIcon {
-                stroke: Palette.danger;
             }
         }
     }
