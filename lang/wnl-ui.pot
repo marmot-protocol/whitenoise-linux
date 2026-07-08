@@ -237,6 +237,10 @@ msgctxt "ProfileModal"
 msgid "Adding…"
 msgstr ""
 
+msgctxt "GroupSettingsCard"
+msgid "Admins must step down before leaving."
+msgstr ""
+
 msgctxt "AdvancedPane"
 msgid "Advanced"
 msgstr ""
@@ -1036,6 +1040,26 @@ msgstr ""
 
 msgctxt "AppearancePane"
 msgid "Lavender"
+msgstr ""
+
+msgctxt "DarkMatterLinux"
+msgid "Leave group"
+msgstr ""
+
+msgctxt "GroupSettingsCard"
+msgid "Leave group"
+msgstr ""
+
+msgctxt "GroupSettingsCard"
+msgid "Leave this group and stop receiving new messages. The chat moves to Archive."
+msgstr ""
+
+msgctxt "DarkMatterLinux"
+msgid "Leave {}?"
+msgstr ""
+
+msgctxt "GroupSettingsCard"
+msgid "Leaving…"
 msgstr ""
 
 msgctxt "ThemePicker"
@@ -2035,6 +2059,10 @@ msgstr ""
 
 msgctxt "OutgoingRow"
 msgid "You"
+msgstr ""
+
+msgctxt "DarkMatterLinux"
+msgid "You will stop receiving new messages from this group. The chat moves to Archive."
 msgstr ""
 
 msgctxt "KeysPage"

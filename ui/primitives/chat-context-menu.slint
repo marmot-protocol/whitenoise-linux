@@ -3,19 +3,21 @@ import { MenuItem } from "context-menu.slint";
 
 // Right-click context menu for a chat row in the rail. Full-window mount (like
 // MessageContextMenu / EmojiPicker) so the invisible backdrop catches outside
-// clicks; the panel sits at the anchor, clamped inside the window. Two actions:
-// pin/unpin the chat to the top of the rail, and mute/unmute its notifications.
+// clicks; the panel sits at the anchor, clamped inside the window. Actions:
+// pin/unpin, mute/unmute, and leave for group rows the viewer can leave.
 export component ChatContextMenu inherits Rectangle {
     in property <length> anchor-x;
     in property <length> anchor-y;
     // Current state of the target row — picks each item's label.
     in property <bool> pinned: false;
     in property <bool> muted: false;
+    in property <bool> can-leave: false;
     callback toggle-pin();
     callback toggle-mute();
+    callback leave-group();
     callback dismissed();
 
-    property <int> item-count: 2;
+    property <int> item-count: 2 + (root.can-leave ? 1 : 0);
     property <int> selected-index: 0;
 
     function move-selection(delta: int) {
@@ -35,6 +37,8 @@ export component ChatContextMenu inherits Rectangle {
             root.toggle-pin();
         } else if (root.selected-index == 1) {
             root.toggle-mute();
+        } else if (root.selected-index == 2 && root.can-leave) {
+            root.leave-group();
         }
     }
 
@@ -109,6 +113,19 @@ export component ChatContextMenu inherits Rectangle {
                     }
                     hovered => {
                         root.selected-index = 1;
+                    }
+                }
+
+                MenuItem {
+                    shown: root.can-leave;
+                    glyph: "←";
+                    label: @tr("Leave group");
+                    selected: root.selected-index == 2;
+                    activated => {
+                        root.leave-group();
+                    }
+                    hovered => {
+                        root.selected-index = 2;
                     }
                 }
             }

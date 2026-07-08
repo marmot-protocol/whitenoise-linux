@@ -173,6 +173,35 @@ impl Backend {
         })
     }
 
+    /// Leave a group, then hide it from the active chat list locally.
+    pub fn leave_group(&self, group_hex: &str) -> Result<SendSummary> {
+        let group_id = group_id_from_hex(group_hex)?;
+        let group_hex = hex::encode(group_id.as_slice());
+        let label = self.active_label();
+        let runtime = self.runtime.clone();
+        let result = self
+            .tokio
+            .block_on(async move { runtime.leave_group(&label, &group_id).await });
+        match result {
+            Ok(summary) => {
+                self.set_group_archived(&group_hex, true)?;
+                Ok(summary)
+            }
+            Err(e) => {
+                let err = anyhow!("leave_group: {e}");
+                if leave_group_error_hides_chat(&err) {
+                    self.set_group_archived(&group_hex, true)?;
+                    Ok(SendSummary {
+                        published: 0,
+                        message_ids: Vec::new(),
+                    })
+                } else {
+                    Err(err)
+                }
+            }
+        }
+    }
+
     /// Rename a group. Caller must be an admin (the engine enforces this on the
     /// outbound MLS commit; non-admins get an error). Publishes the new name via
     /// the group's `marmot.group.profile.v1` component, leaving the description
@@ -1033,6 +1062,10 @@ pub(crate) async fn upload_media_with_heal(
     }
 }
 
+fn leave_group_error_hides_chat(err: &anyhow::Error) -> bool {
+    format!("{err:#}").contains("UseAfterEviction")
+}
+
 pub(crate) fn short_account_id(account_id_hex: &str) -> String {
     if account_id_hex.len() <= 12 {
         return account_id_hex.to_string();
@@ -1090,4 +1123,24 @@ pub fn save_relays(relays: &[String]) -> Result<(), String> {
     let path = dir.join("relays.json");
     let bytes = serde_json::to_vec_pretty(relays).map_err(|e| e.to_string())?;
     std::fs::write(&path, bytes).map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn use_after_eviction_leave_error_hides_group() {
+        let err =
+            anyhow!("leave_group: backend failure: self_remove: GroupStateError(UseAfterEviction)");
+
+        assert!(leave_group_error_hides_chat(&err));
+    }
+
+    #[test]
+    fn unrelated_leave_error_does_not_hide_group() {
+        let err = anyhow!("leave_group: backend failure: relay publish failed");
+
+        assert!(!leave_group_error_hides_chat(&err));
+    }
 }

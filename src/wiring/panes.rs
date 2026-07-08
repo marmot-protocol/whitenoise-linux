@@ -718,15 +718,27 @@ pub(crate) fn wire_panes(
         let weak = ui.as_weak();
         let group_ids = group_ids.clone();
         let notif = notif.clone();
+        let backend_cell = backend_cell.clone();
         move |idx, ax, ay| {
             let Some(ui) = weak.upgrade() else { return };
             let group_hex = group_ids.lock().unwrap().get(idx as usize).cloned();
             let Some(group_hex) = group_hex else { return };
+            let can_leave = backend_cell
+                .lock()
+                .unwrap()
+                .as_ref()
+                .map(|b| {
+                    let is_group = b.group_member_count(&group_hex) > 2;
+                    let is_admin = b.is_group_admin(&group_hex);
+                    chat_context_can_leave_group(is_group, is_admin)
+                })
+                .unwrap_or(false);
             ui.set_chat_ctx_idx(idx);
             ui.set_chat_ctx_x(ax);
             ui.set_chat_ctx_y(ay);
             ui.set_chat_ctx_pinned(is_pinned(&group_hex));
             ui.set_chat_ctx_muted(notif.is_muted(&group_hex));
+            ui.set_chat_ctx_can_leave(can_leave);
             ui.set_chat_ctx_open(true);
         }
     });
@@ -1380,4 +1392,20 @@ pub(crate) fn refresh_audit_files(ui: &DarkMatterLinux, backend: &Arc<Backend>) 
             }
         });
     });
+}
+
+fn chat_context_can_leave_group(is_group: bool, is_admin: bool) -> bool {
+    is_group && !is_admin
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn chat_context_leave_group_only_for_non_admin_groups() {
+        assert!(chat_context_can_leave_group(true, false));
+        assert!(!chat_context_can_leave_group(false, false));
+        assert!(!chat_context_can_leave_group(true, true));
+    }
 }

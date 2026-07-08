@@ -350,15 +350,16 @@ export component DarkMatterLinux inherits Window {
     // keyboard cursor walks this array. Recomputed with the match flags.
     in-out property <[int]> forward-visible-rows;
     callback forward-filter-changed(string);
-    // Rail chat-row context menu (pin / mute). Rust fills the state on
-    // `request-chat-context` (it knows the pin + mute sets) and opens the menu;
-    // the items dispatch back by the captured row index.
+    // Rail chat-row context menu (pin / mute / leave). Rust fills the state on
+    // `request-chat-context` (it knows the pin + mute sets and group/admin
+    // state) and opens the menu; the items dispatch back by captured row index.
     in-out property <bool> chat-ctx-open: false;
     in-out property <int> chat-ctx-idx: -1;
     in-out property <length> chat-ctx-x;
     in-out property <length> chat-ctx-y;
     in-out property <bool> chat-ctx-pinned: false;
     in-out property <bool> chat-ctx-muted: false;
+    in-out property <bool> chat-ctx-can-leave: false;
     callback request-chat-context(int, length, length);
     callback toggle-pin-chat(int);
     callback toggle-mute-chat-at(int);
@@ -374,6 +375,8 @@ export component DarkMatterLinux inherits Window {
     property <int> admin-confirm-action: 0; // 1=promote, 2=demote, 3=self-demote
     property <string> admin-confirm-member-id: "";
     property <string> admin-confirm-member-name: "";
+    property <bool> show-leave-confirm: false;
+    property <int> leave-confirm-chat-idx: -1;
     function arm-admin-confirm(action: int, id: string, name: string) {
         root.admin-confirm-action = action;
         root.admin-confirm-member-id = id;
@@ -599,11 +602,13 @@ export component DarkMatterLinux inherits Window {
     in property <string> chat-group-av-initials;
     in property <bool> group-rename-busy: false;
     in property <bool> group-image-busy: false;
+    in property <bool> group-leave-busy: false;
     in property <string> group-settings-status;
     in-out property <string> group-rename-draft;
     callback rename-group(string);
     callback change-group-image();
     callback clear-group-image();
+    callback leave-group-at(int);
     in-out property <bool> show-chat-members: false;
     callback members-toggle-clicked();
     callback add-member(string);
@@ -963,6 +968,7 @@ export component DarkMatterLinux inherits Window {
                             group-av-initials: root.chat-group-av-initials;
                             group-rename-busy: root.group-rename-busy;
                             group-image-busy: root.group-image-busy;
+                            group-leave-busy: root.group-leave-busy;
                             group-status: root.group-settings-status;
                             group-rename-draft <=> root.group-rename-draft;
                             rename-group(name) => {
@@ -973,6 +979,10 @@ export component DarkMatterLinux inherits Window {
                             }
                             clear-group-image => {
                                 root.clear-group-image();
+                            }
+                            leave-group => {
+                                root.leave-confirm-chat-idx = root.active-chat;
+                                root.show-leave-confirm = true;
                             }
                             accept-clicked => {
                                 root.accept-chat-request();
@@ -1424,6 +1434,25 @@ export component DarkMatterLinux inherits Window {
         }
     }
 
+    if root.show-leave-confirm: ConfirmModal {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        title: @tr("Leave {}?", root.chats[root.leave-confirm-chat-idx].name);
+        subtitle: @tr("You will stop receiving new messages from this group. The chat moves to Archive.");
+        confirm-label: @tr("Leave group");
+        confirm => {
+            root.show-leave-confirm = false;
+            root.leave-group-at(root.leave-confirm-chat-idx);
+            root.leave-confirm-chat-idx = -1;
+        }
+        dismissed => {
+            root.show-leave-confirm = false;
+            root.leave-confirm-chat-idx = -1;
+        }
+    }
+
     if root.show-admin-confirm: ConfirmModal {
         title: root.admin-confirm-action == 1 ? @tr("Make {} an admin?", root.admin-confirm-member-name) : (root.admin-confirm-action == 2 ? @tr("Remove admin rights from {}?", root.admin-confirm-member-name) : @tr("Step down as admin?"));
         subtitle: root.admin-confirm-action == 1 ? @tr("{} will be able to add members, change group settings, and manage other admins.", root.admin-confirm-member-name) : (root.admin-confirm-action == 2 ? @tr("{} will stay in the group, but won't be able to manage members or group settings.", root.admin-confirm-member-name) : @tr("This removes your admin rights. You can't restore them yourself unless another admin promotes you again."));
@@ -1532,13 +1561,14 @@ export component DarkMatterLinux inherits Window {
         }
     }
 
-    // Right-click rail chat-row context menu — pin/unpin and mute/unmute the
-    // row that was clicked (by captured index), independent of the open chat.
+    // Right-click rail chat-row context menu — pin/unpin, mute/unmute, and
+    // leaving eligible group rows by captured index, independent of open chat.
     if root.chat-ctx-open: ChatContextMenu {
         anchor-x: root.chat-ctx-x;
         anchor-y: root.chat-ctx-y;
         pinned: root.chat-ctx-pinned;
         muted: root.chat-ctx-muted;
+        can-leave: root.chat-ctx-can-leave;
         toggle-pin => {
             root.chat-ctx-open = false;
             root.toggle-pin-chat(root.chat-ctx-idx);
@@ -1546,6 +1576,11 @@ export component DarkMatterLinux inherits Window {
         toggle-mute => {
             root.chat-ctx-open = false;
             root.toggle-mute-chat-at(root.chat-ctx-idx);
+        }
+        leave-group => {
+            root.chat-ctx-open = false;
+            root.leave-confirm-chat-idx = root.chat-ctx-idx;
+            root.show-leave-confirm = true;
         }
         dismissed => {
             root.chat-ctx-open = false;
