@@ -23,6 +23,7 @@ export component MainPane inherits Rectangle {
     callback mute-toggle-clicked();
     in property <bool> encryption-banner-first-show: false;
     in property <int> member-count: 0;
+    in property <string> group-description;
     in property <[GroupMember]> members;
     in property <bool> can-add-members: false;
     in property <bool> add-member-busy: false;
@@ -38,11 +39,14 @@ export component MainPane inherits Rectangle {
     in property <color> group-av-b;
     in property <string> group-av-initials;
     in property <bool> group-rename-busy: false;
+    in property <bool> group-description-busy: false;
     in property <bool> group-image-busy: false;
     in property <bool> group-leave-busy: false;
     in property <string> group-status;
     in-out property <string> group-rename-draft;
+    in-out property <string> group-description-draft;
     callback rename-group(string);
+    callback set-group-description(string);
     callback change-group-image();
     callback clear-group-image();
     callback leave-group();
@@ -126,6 +130,7 @@ export component MainPane inherits Rectangle {
                 group-has-picture: root.group-has-picture;
                 can-show-members: root.can-show-members;
                 member-count: root.member-count;
+                group-description: root.group-description;
                 members-open: root.show-members;
                 muted: root.chat-muted;
                 accept-clicked => {
@@ -268,6 +273,7 @@ export component MainPane inherits Rectangle {
         if root.can-show-members && root.show-members: GroupMembersPanel {
             members: root.members;
             member-count: root.member-count;
+            group-description: root.group-description;
             is-group: root.is-group;
             can-add-members: root.can-add-members;
             add-busy: root.add-member-busy;
@@ -279,10 +285,12 @@ export component MainPane inherits Rectangle {
             group-av-b: root.group-av-b;
             group-av-initials: root.group-av-initials;
             rename-busy: root.group-rename-busy;
+            description-busy: root.group-description-busy;
             image-busy: root.group-image-busy;
             leave-busy: root.group-leave-busy;
             group-status: root.group-status;
             rename-draft <=> root.group-rename-draft;
+            description-draft <=> root.group-description-draft;
             close-clicked => {
                 root.members-toggle-clicked();
             }
@@ -300,6 +308,9 @@ export component MainPane inherits Rectangle {
             }
             rename-group(name) => {
                 root.rename-group(name);
+            }
+            set-group-description(description) => {
+                root.set-group-description(description);
             }
             change-image => {
                 root.change-group-image();

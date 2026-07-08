@@ -270,6 +270,51 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
             });
         }
     });
+    ui.on_set_group_description({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let group_ids = group_ids.clone();
+        move |description| {
+            let Some(ui) = weak.upgrade() else { return };
+            if ui.get_group_description_busy() {
+                return;
+            }
+            let description = description.trim().to_string();
+            let idx = ui.get_active_chat() as usize;
+            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
+                return;
+            };
+            let Some(b) = backend_cell.lock().unwrap().clone() else {
+                ui.set_group_settings_status(s("Backend not ready."));
+                return;
+            };
+            ui.set_group_description_busy(true);
+            ui.set_group_settings_status(s(""));
+            // Description edits publish an MLS commit to relays — worker.
+            let weak = weak.clone();
+            std::thread::spawn(move || {
+                let result = b.set_group_description(&group_hex, &description);
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    ui.set_group_description_busy(false);
+                    match result {
+                        Ok(_) => {
+                            ui.set_chat_group_description(s(&description));
+                            ui.set_group_description_draft(s(&description));
+                            push_group_members_to_ui_async(&ui, &b, &group_hex);
+                            ui.set_group_settings_status(s("Description saved."));
+                        }
+                        Err(e) => {
+                            tracing::warn!(target: "group_description", "{e:#}");
+                            ui.set_group_settings_status(
+                                friendly_error(ErrorOp::GroupSettings, &e).into(),
+                            );
+                        }
+                    }
+                });
+            });
+        }
+    });
     ui.on_clear_group_image({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();

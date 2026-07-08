@@ -16,6 +16,7 @@ export component ChatHeader inherits Rectangle {
     in property <bool> group-has-picture: false;
     in property <bool> can-show-members: false;
     in property <int> member-count: 0;
+    in property <string> group-description;
     in property <bool> members-open: false;
     in property <bool> muted: false;
     callback accept-clicked();
@@ -23,6 +24,8 @@ export component ChatHeader inherits Rectangle {
     callback archive-clicked();
     callback members-toggle-clicked();
     callback mute-toggle-clicked();
+
+    property <string> member-label: @tr("1 member" | "{n} members" % root.member-count);
 
     height: 72px;
     background: Palette.bg;
@@ -95,9 +98,10 @@ export component ChatHeader inherits Rectangle {
             }
 
             Text {
-                text: root.is-group ? @tr("1 member" | "{n} members" % root.member-count) : root.chat.last-seen;
+                text: root.is-group ? (root.group-description == "" ? root.member-label : root.member-label + " · " + root.group-description) : root.chat.last-seen;
                 color: Palette.text-lo;
                 font-size: (11px) * Theme.fs-scale;
+                overflow: elide;
             }
         }
 

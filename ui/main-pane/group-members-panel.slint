@@ -10,6 +10,7 @@ import { AddMemberCard } from "add-member-card.slint";
 export component GroupMembersPanel inherits Rectangle {
     in property <[GroupMember]> members;
     in property <int> member-count;
+    in property <string> group-description;
     in property <bool> is-group: false;
     in property <bool> can-add-members: false;
     in property <bool> add-busy: false;
@@ -23,16 +24,19 @@ export component GroupMembersPanel inherits Rectangle {
     in property <color> group-av-b;
     in property <string> group-av-initials;
     in property <bool> rename-busy: false;
+    in property <bool> description-busy: false;
     in property <bool> image-busy: false;
     in property <bool> leave-busy: false;
     in property <string> group-status;
     in-out property <string> rename-draft;
+    in-out property <string> description-draft;
     callback close-clicked();
     callback add-member(string);
     callback promote-admin(string, string);
     callback demote-admin(string, string);
     callback self-demote-admin(string);
     callback rename-group(string);
+    callback set-group-description(string);
     callback change-image();
     callback clear-image();
     callback leave-group();
@@ -57,6 +61,7 @@ export component GroupMembersPanel inherits Rectangle {
 
         GroupMembersHeader {
             member-count: root.member-count;
+            group-description: root.group-description;
             close-clicked => {
                 root.close-clicked();
             }
@@ -70,12 +75,17 @@ export component GroupMembersPanel inherits Rectangle {
             group-av-b: root.group-av-b;
             group-av-initials: root.group-av-initials;
             rename-busy: root.rename-busy;
+            description-busy: root.description-busy;
             image-busy: root.image-busy;
             leave-busy: root.leave-busy;
             group-status: root.group-status;
             rename-draft <=> root.rename-draft;
+            description-draft <=> root.description-draft;
             rename-group(name) => {
                 root.rename-group(name);
+            }
+            set-group-description(description) => {
+                root.set-group-description(description);
             }
             change-image => {
                 root.change-image();
