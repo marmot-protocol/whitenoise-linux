@@ -769,10 +769,6 @@ msgctxt "StoragePane"
 msgid "Decrypted images and files, stored encrypted on this device."
 msgstr "復号した画像やファイルを、この端末に暗号化して保存します。"
 
-msgctxt "ArchivedDetail"
-msgid "Delete"
-msgstr "削除"
-
 #, fuzzy
 msgctxt "DarkMatterLinux"
 msgid "Delete"

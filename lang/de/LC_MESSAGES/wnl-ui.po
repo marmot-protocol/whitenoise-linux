@@ -771,10 +771,6 @@ msgctxt "StoragePane"
 msgid "Decrypted images and files, stored encrypted on this device."
 msgstr "Entschlüsselte Bilder und Dateien, verschlüsselt auf diesem Gerät gespeichert."
 
-msgctxt "ArchivedDetail"
-msgid "Delete"
-msgstr "Löschen"
-
 #, fuzzy
 msgctxt "DarkMatterLinux"
 msgid "Delete"
