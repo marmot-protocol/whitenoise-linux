@@ -73,13 +73,16 @@ export component ContactDetail inherits DetailPage {
             alignment: center;
             HorizontalLayout {
                 spacing: 12px;
-                alignment: start;
+                alignment: stretch;
                 Text {
                     text: root.contact.name;
                     color: Palette.text-hi;
                     font-size: (22px) * Theme.fs-scale;
                     font-weight: 700;
                     vertical-alignment: center;
+                    horizontal-stretch: 1;
+                    min-width: 0px;
+                    overflow: elide;
                 }
                 // When a private nickname is shown above, keep the published
                 // name visible so the identity stays unambiguous.
@@ -88,6 +91,9 @@ export component ContactDetail inherits DetailPage {
                     color: Palette.text-lo;
                     font-size: (12px) * Theme.fs-scale;
                     vertical-alignment: center;
+                    horizontal-stretch: 0;
+                    min-width: 0px;
+                    overflow: elide;
                 }
                 if root.contact.verified: Pill {
                     label: @tr("✓ VERIFIED");
