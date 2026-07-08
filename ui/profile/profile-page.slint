@@ -338,6 +338,7 @@ export component ProfilePage inherits Rectangle {
                         spacing: 8px;
                         Button {
                             label: root.busy ? @tr("Saving…") : @tr("Save");
+                            enabled: !root.busy;
                             bg-color: Palette.mint;
                             fg: Palette.bubble-out-fg;
                             hover-bg: Palette.mint-hi;
