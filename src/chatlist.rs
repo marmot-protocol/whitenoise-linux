@@ -1388,7 +1388,7 @@ pub(crate) fn fallback_chat_meta(record: &AppGroupRecord) -> ChatMeta {
         preview: s(&record.profile.description),
         stamp: s(""),
         last_seen: s(""),
-        npub: s(&format!("mls:0x{}", short_hex(&record.group_id_hex))),
+        npub: s(&mls_row_key(&record.group_id_hex)),
         session_time: s(""),
         badge: s(""),
         read: true,

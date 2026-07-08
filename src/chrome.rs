@@ -864,7 +864,7 @@ pub(crate) fn spawn_chat_list_avatar_fetches(ui: &DarkMatterLinux, backend: &Arc
                 if record.avatar_url.present && !record.avatar_url.url.trim().is_empty() {
                     let url = record.avatar_url.url.trim().to_string();
                     if !picture_cache_has(&url) {
-                        let npub = format!("mls:0x{}", short_hex(&record.group_id_hex));
+                        let npub = mls_row_key(&record.group_id_hex);
                         spawn_picture_fetch(
                             weak_outer.clone(),
                             b.tokio_handle(),
@@ -881,7 +881,7 @@ pub(crate) fn spawn_chat_list_avatar_fetches(ui: &DarkMatterLinux, backend: &Arc
                 if record.image.present && !record.image.image_hash_hex.is_empty() {
                     let key = format!("group-image:{}", record.image.image_hash_hex);
                     if !picture_cache_has(&key) {
-                        let npub = format!("mls:0x{}", short_hex(&record.group_id_hex));
+                        let npub = mls_row_key(&record.group_id_hex);
                         let weak = weak_outer.clone();
                         b.fetch_group_image_async(&record.group_id_hex, move |result| {
                             let bytes = match result {
@@ -916,7 +916,7 @@ pub(crate) fn spawn_chat_list_avatar_fetches(ui: &DarkMatterLinux, backend: &Arc
             if picture_cache_has(&url) {
                 continue;
             }
-            let npub = format!("mls:0x{}", short_hex(&record.group_id_hex));
+            let npub = mls_row_key(&record.group_id_hex);
             spawn_picture_fetch(
                 weak_outer.clone(),
                 b.tokio_handle(),
@@ -1019,7 +1019,7 @@ pub(crate) fn spawn_archived_avatar_fetches(ui: &DarkMatterLinux, backend: &Arc<
             if picture_cache_has(&url) {
                 continue;
             }
-            let group_id = format!("mls:0x{}", short_hex(&record.group_id_hex));
+            let group_id = mls_row_key(&record.group_id_hex);
             spawn_picture_fetch(
                 weak_outer.clone(),
                 b.tokio_handle(),
@@ -1297,7 +1297,7 @@ pub(crate) fn archived_from(
         av_b: b,
         av_initials: s(&init),
         members: backend.group_member_count(&record.group_id_hex) as i32,
-        group_id: s(&format!("mls:0x{}", short_hex(&record.group_id_hex))),
+        group_id: s(&mls_row_key(&record.group_id_hex)),
         picture,
         has_picture,
     }

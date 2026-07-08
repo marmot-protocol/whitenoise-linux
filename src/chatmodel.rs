@@ -90,7 +90,7 @@ pub(crate) fn chat_meta_from(
         preview: s(&preview),
         stamp: s(&stamp),
         last_seen: s(""),
-        npub: s(&format!("mls:0x{}", short_hex(&record.group_id_hex))),
+        npub: s(&mls_row_key(&record.group_id_hex)),
         session_time: s(""),
         badge: s(&unread::format_unread(unread)),
         // `read` drives the rail's sent-checkmark, shown only when there's no

@@ -30,6 +30,15 @@ pub(crate) fn short_hex(s: &str) -> String {
     }
 }
 
+/// The synthetic row key that stands in for a group chat's npub. `chat_meta_from`
+/// and `archived_from` stamp it into `ChatMeta.npub` / `ArchivedChat.group_id`, and
+/// the avatar-fetch completions in `chrome.rs` rebuild it to find the same row again
+/// through `update_chat_picture`. Every producer and consumer of the key must call
+/// this one helper so the two sides cannot diverge on prefix or truncation.
+pub(crate) fn mls_row_key(group_id_hex: &str) -> String {
+    format!("mls:0x{}", short_hex(group_id_hex))
+}
+
 // ─── Emoji catalog ──────────────────────────────────────────────────────
 
 // `emoji_sprite_map` and `EMOJI_SPRITE_PNG` come from wnl-ui (via the glob

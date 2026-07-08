@@ -540,7 +540,7 @@ pub(crate) fn wire_chats(
 
             // Resolve the real group id via the backend's archived snapshot
             // (a sqlite read — runtime, not UI thread). ArchivedChat.group_id
-            // is rendered as "mls:0x<short>", hence the round-trip.
+            // is `mls_row_key(group_id_hex)`, not the full hex, hence the round-trip.
             let weak = weak.clone();
             let group_ids = group_ids.clone();
             let refresh = refresh.clone();
