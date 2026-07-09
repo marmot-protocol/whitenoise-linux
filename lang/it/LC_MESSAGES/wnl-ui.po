@@ -1198,10 +1198,25 @@ msgctxt "ProfilePage"
 msgid "Lightning address (LUD-16)"
 msgstr "Indirizzo Lightning (LUD-16)"
 
-#, fuzzy
 msgctxt "MessagesArea"
 msgid "Load earlier messages"
-msgstr "Ultimo messaggio"
+msgstr "Carica messaggi precedenti"
+
+msgctxt "MessagesArea"
+msgid "Loading messages…"
+msgstr "Caricamento dei messaggi…"
+
+msgctxt "MessagesArea"
+msgid "No messages yet"
+msgstr "Ancora nessun messaggio"
+
+msgctxt "MessagesArea"
+msgid "Fetching the latest conversation history."
+msgstr "Recupero della cronologia più recente della conversazione."
+
+msgctxt "MessagesArea"
+msgid "Say hello to start the conversation."
+msgstr "Saluta per iniziare la conversazione."
 
 #, fuzzy
 msgctxt "ImageViewerModal"

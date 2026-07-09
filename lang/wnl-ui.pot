@@ -1152,6 +1152,22 @@ msgctxt "MessagesArea"
 msgid "Load earlier messages"
 msgstr ""
 
+msgctxt "MessagesArea"
+msgid "Loading messages…"
+msgstr ""
+
+msgctxt "MessagesArea"
+msgid "No messages yet"
+msgstr ""
+
+msgctxt "MessagesArea"
+msgid "Fetching the latest conversation history."
+msgstr ""
+
+msgctxt "MessagesArea"
+msgid "Say hello to start the conversation."
+msgstr ""
+
 msgctxt "ImageViewerModal"
 msgid "Loading…"
 msgstr ""

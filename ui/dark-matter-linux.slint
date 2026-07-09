@@ -325,6 +325,9 @@ export component DarkMatterLinux inherits Window {
     // messages view shows a "load earlier messages" pill that fires
     // messages-request-older.
     in property <bool> messages-has-older: false;
+    // True while the active chat's message window is being fetched on the
+    // backend runtime; distinguishes an empty conversation from a loading one.
+    in property <bool> messages-loading: false;
     callback messages-request-older();
 
     // Emoji picker (full-window modal).
@@ -870,6 +873,7 @@ export component DarkMatterLinux inherits Window {
                             my-picture: root.my-av-picture;
                             my-has-picture: root.my-av-has-picture;
                             messages: root.chats-messages[root.active-chat];
+                            messages-loading: root.messages-loading;
                             scroll-tick: root.messages-scroll-tick;
                             has-older: root.messages-has-older;
                             request-older => {

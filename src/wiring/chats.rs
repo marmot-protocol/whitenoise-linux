@@ -159,6 +159,8 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 // Reflect this chat's mute state in the header bell.
                 ui.set_active_chat_muted(group_hex.as_deref().is_some_and(|g| notif.is_muted(g)));
                 if let Some(group_hex) = group_hex {
+                    ui.set_messages_loading(true);
+                    ui.set_messages_has_older(false);
                     let t_switch = std::time::Instant::now();
                     // Restore this chat's saved draft (empty if none), so a
                     // half-written message reappears exactly where it was left.
@@ -230,6 +232,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                             // this fetch; the rows above still land in the
                             // right per-chat slot either way).
                             if ui.get_active_chat() as usize == idx {
+                                ui.set_messages_loading(false);
                                 ui.set_messages_has_older(msgs.len() >= MESSAGE_WINDOW);
                                 // Opening a chat should land you at the most
                                 // recent message, not the top of the history.
@@ -254,6 +257,8 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                             }
                         });
                     });
+                } else {
+                    ui.set_messages_loading(false);
                 }
             }
         }

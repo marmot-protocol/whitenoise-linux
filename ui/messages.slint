@@ -6,7 +6,9 @@ import { MessageEffectLayer } from "primitives/message-effect-layer.slint";
 import { PaperDoodles } from "primitives/paper-doodles.slint";
 import { SynthGrid } from "primitives/synth-grid.slint";
 import { ChevronDownIcon } from "icons/chevron-down-icon.slint";
+import { ChatBubbleIcon } from "icons/chat-bubble-icon.slint";
 import { SessionDivider } from "main-pane/session-divider.slint";
+import { EmptyState } from "shells/empty-state.slint";
 
 // One slot in the effect-burst pool. `gen` is a per-slot generation counter —
 // bumping it (re)fires that slot's layer; the position/effect fields say where
@@ -28,6 +30,7 @@ export component MessagesArea inherits Rectangle {
     in property <bool> outgoing-on-right: true;
     in property <image> my-picture;
     in property <bool> my-has-picture: false;
+    in property <bool> loading: false;
     // Bumped by Rust whenever a fresh outgoing message lands. The `changed`
     // handler below jumps the viewport to the bottom — with animation — so
     // the user always sees the message they just sent.
@@ -182,6 +185,17 @@ export component MessagesArea inherits Rectangle {
                             root.request-older();
                         }
                     }
+                }
+            }
+
+            if root.messages.length == 0: EmptyState {
+                width: parent.width;
+                height: max(220px, root.height - 72px);
+                title: root.loading ? @tr("Loading messages…") : @tr("No messages yet");
+                description: root.loading ? @tr("Fetching the latest conversation history.") : @tr("Say hello to start the conversation.");
+                ChatBubbleIcon {
+                    stroke: Palette.text-mid;
+                    filled: !root.loading;
                 }
             }
 
