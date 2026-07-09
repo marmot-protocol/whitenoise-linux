@@ -607,6 +607,10 @@ msgctxt "ContactDetail"
 msgid "Copy"
 msgstr "コピー"
 
+msgctxt "ImageViewerModal"
+msgid "Copy"
+msgstr "コピー"
+
 msgctxt "KeysPage"
 msgid "Copy"
 msgstr "コピー"
@@ -1857,6 +1861,10 @@ msgstr "土曜日"
 
 #, fuzzy
 msgctxt "NicknameModal"
+msgid "Save"
+msgstr "保存"
+
+msgctxt "ImageViewerModal"
 msgid "Save"
 msgstr "保存"
 

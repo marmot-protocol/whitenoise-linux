@@ -23,6 +23,140 @@ fn word_span_for(
     .flatten()
 }
 
+#[derive(Clone)]
+enum ViewerImageAction {
+    Copy,
+    Save(std::path::PathBuf),
+}
+
+type ViewerImageContext = (Arc<Backend>, String, Option<Arc<Mutex<Vault>>>, ViewerItem);
+
+fn current_viewer_item() -> Option<ViewerItem> {
+    VIEWER_SLIDESHOW.with(|s| {
+        let s = s.borrow();
+        s.items.get(s.pos).cloned()
+    })
+}
+
+fn finish_viewer_image_action(
+    weak: Weak<DarkMatterLinux>,
+    action: ViewerImageAction,
+    bytes: Vec<u8>,
+    media_type: String,
+) {
+    match action {
+        ViewerImageAction::Copy => {
+            copy_image_to_clipboard_async(bytes, media_type, move |result| {
+                let Some(ui) = weak.upgrade() else { return };
+                match result {
+                    Ok(()) => set_clipboard_feedback(&ui, s("image copied"), false),
+                    Err(e) => {
+                        tracing::warn!(target: "clipboard", "copy image failed: {e}");
+                        set_clipboard_feedback(&ui, s("Couldn't copy image."), true);
+                    }
+                }
+            });
+        }
+        ViewerImageAction::Save(path) => {
+            std::thread::spawn(move || {
+                let result = std::fs::write(&path, &bytes).map_err(|e| e.to_string());
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    match result {
+                        Ok(()) => set_clipboard_feedback(&ui, s("image saved"), false),
+                        Err(e) => {
+                            tracing::warn!(target: "attach", "save image {}: {e}", path.display());
+                            set_clipboard_feedback(&ui, s("Couldn't save image."), true);
+                        }
+                    }
+                });
+            });
+        }
+    }
+}
+
+fn fetch_viewer_image_bytes(
+    weak: Weak<DarkMatterLinux>,
+    backend: Arc<Backend>,
+    group_hex: String,
+    vault: Option<Arc<Mutex<Vault>>>,
+    item: ViewerItem,
+    action: ViewerImageAction,
+) {
+    let hash = item.reference.ciphertext_sha256.clone();
+    let media_type = item.reference.media_type.clone();
+    if let Some(bytes) = vault.as_ref().and_then(|v| media_cache::get(v, &hash)) {
+        finish_viewer_image_action(weak, action, bytes, media_type);
+        return;
+    }
+
+    backend.download_media_async(&group_hex, item.reference, move |result| match result {
+        Ok(dl) => {
+            if let Some(v) = &vault {
+                media_cache::put(v, &hash, &dl.plaintext);
+            }
+            finish_viewer_image_action(weak, action, dl.plaintext, dl.media_type);
+        }
+        Err(e) => {
+            tracing::warn!(target: "attach", "viewer image download failed: {e:#}");
+            let _ = slint::invoke_from_event_loop(move || {
+                if let Some(ui) = weak.upgrade() {
+                    set_clipboard_feedback(&ui, s("Couldn't download image."), true);
+                }
+            });
+        }
+    });
+}
+
+fn viewer_image_context(
+    ui: &DarkMatterLinux,
+    backend_cell: &BackendCell,
+    group_ids: &Arc<Mutex<Vec<String>>>,
+    vault_cell: &VaultCell,
+) -> Option<ViewerImageContext> {
+    if ui.get_image_viewer_loading()
+        || ui.get_image_viewer_failed()
+        || !ui.get_image_viewer_actions_ready()
+    {
+        set_clipboard_feedback(ui, s("Image isn't ready yet."), false);
+        return None;
+    }
+    let Some(item) = current_viewer_item() else {
+        set_clipboard_feedback(ui, s("No image selected."), true);
+        return None;
+    };
+    let idx = ui.get_active_chat();
+    if idx < 0 {
+        set_clipboard_feedback(ui, s("No chat selected."), true);
+        return None;
+    }
+    let Some(group_hex) = group_ids.lock().unwrap().get(idx as usize).cloned() else {
+        set_clipboard_feedback(ui, s("No chat selected."), true);
+        return None;
+    };
+    let Some(backend) = backend_cell.lock().unwrap().clone() else {
+        set_clipboard_feedback(ui, s("Backend not ready."), true);
+        return None;
+    };
+    let vault = vault_cell.lock().unwrap().clone();
+    Some((backend, group_hex, vault, item))
+}
+
+fn run_viewer_image_action(
+    ui: &DarkMatterLinux,
+    backend_cell: BackendCell,
+    group_ids: Arc<Mutex<Vec<String>>>,
+    vault_cell: VaultCell,
+    action: ViewerImageAction,
+) {
+    let Some((backend, group_hex, vault, item)) =
+        viewer_image_context(ui, &backend_cell, &group_ids, &vault_cell)
+    else {
+        return;
+    };
+    fetch_viewer_image_bytes(ui.as_weak(), backend, group_hex, vault, item, action);
+}
+
 pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     let Cx {
         settings_cell,
@@ -395,8 +529,61 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 ui.set_image_viewer_open(false);
                 ui.set_image_viewer_loading(false);
                 ui.set_image_viewer_failed(false);
+                ui.set_image_viewer_actions_ready(false);
             }
             VIEWER_SLIDESHOW.with(|s| *s.borrow_mut() = ViewerSlideshow::default());
+        }
+    });
+
+    ui.on_image_viewer_copy({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let group_ids = group_ids.clone();
+        let vault_cell = vault_cell.clone();
+        move || {
+            let Some(ui) = weak.upgrade() else { return };
+            run_viewer_image_action(
+                &ui,
+                backend_cell.clone(),
+                group_ids.clone(),
+                vault_cell.clone(),
+                ViewerImageAction::Copy,
+            );
+        }
+    });
+
+    ui.on_image_viewer_save({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let group_ids = group_ids.clone();
+        let vault_cell = vault_cell.clone();
+        move || {
+            let Some(ui) = weak.upgrade() else { return };
+            let Some((backend, group_hex, vault, item)) =
+                viewer_image_context(&ui, &backend_cell, &group_ids, &vault_cell)
+            else {
+                return;
+            };
+            let file_name =
+                attachment_save_name(&item.reference.file_name, &item.reference.media_type);
+            let weak_dialog = weak.clone();
+            std::thread::spawn(move || {
+                let chosen = rfd::FileDialog::new()
+                    .set_title("Save image")
+                    .set_file_name(&file_name)
+                    .save_file();
+                let Some(path) = chosen else { return };
+                let _ = slint::invoke_from_event_loop(move || {
+                    fetch_viewer_image_bytes(
+                        weak_dialog,
+                        backend,
+                        group_hex,
+                        vault,
+                        item,
+                        ViewerImageAction::Save(path),
+                    );
+                });
+            });
         }
     });
 

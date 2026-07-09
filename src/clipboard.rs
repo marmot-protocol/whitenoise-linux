@@ -19,6 +19,20 @@ pub(crate) fn copy_to_clipboard_async(
     });
 }
 
+/// Run [`copy_image_to_clipboard`] off the UI thread and report back on the
+/// event loop. Image clipboard helpers may block on the compositor just like
+/// text helpers.
+pub(crate) fn copy_image_to_clipboard_async(
+    bytes: Vec<u8>,
+    media_type: String,
+    on_done: impl FnOnce(Result<(), String>) + Send + 'static,
+) {
+    std::thread::spawn(move || {
+        let result = copy_image_to_clipboard(&bytes, &media_type);
+        let _ = slint::invoke_from_event_loop(move || on_done(result));
+    });
+}
+
 /// Push `text` to the system clipboard. Blocking — see
 /// [`copy_to_clipboard_async`] for the only form UI callbacks may use.
 ///
@@ -113,6 +127,10 @@ pub(crate) fn copy_to_clipboard(text: &str) -> Result<(), String> {
 /// lost — which freezes the UI thread. stderr is inherited instead, so any
 /// helper diagnostics still land in our own stderr log.
 pub(crate) fn copy_via_command(cmd: &str, args: &[&str], text: &str) -> Result<(), String> {
+    copy_bytes_via_command(cmd, args, text.as_bytes())
+}
+
+fn copy_bytes_via_command(cmd: &str, args: &[&str], bytes: &[u8]) -> Result<(), String> {
     use std::io::Write;
     use std::process::{Command, Stdio};
     tracing::debug!(target: "clipboard", "spawning: {cmd} {args:?}");
@@ -125,7 +143,7 @@ pub(crate) fn copy_via_command(cmd: &str, args: &[&str], text: &str) -> Result<(
         .map_err(|e| format!("spawn: {e}"))?;
     if let Some(mut stdin) = child.stdin.take() {
         stdin
-            .write_all(text.as_bytes())
+            .write_all(bytes)
             .map_err(|e| format!("write stdin: {e}"))?;
         // dropping stdin closes the pipe so the helper sees EOF
     }
@@ -134,6 +152,67 @@ pub(crate) fn copy_via_command(cmd: &str, args: &[&str], text: &str) -> Result<(
         return Err(format!("{cmd} exited {status} (stderr passed through)"));
     }
     Ok(())
+}
+
+/// Push image bytes to the system clipboard. Prefer native CLI helpers when
+/// the desktop session advertises Wayland/X11 so the MIME type is preserved;
+/// fall back to arboard by decoding to RGBA.
+pub(crate) fn copy_image_to_clipboard(bytes: &[u8], media_type: &str) -> Result<(), String> {
+    let mime = image_clipboard_mime(media_type);
+    #[cfg(not(target_os = "macos"))]
+    {
+        if std::env::var_os("WAYLAND_DISPLAY").is_some() {
+            match copy_bytes_via_command("wl-copy", &["--type", &mime], bytes) {
+                Ok(()) => {
+                    tracing::debug!(target: "clipboard", "image via wl-copy ({mime}) ok");
+                    return Ok(());
+                }
+                Err(e) => tracing::warn!(target: "clipboard", "wl-copy image failed: {e}"),
+            }
+        }
+        if std::env::var_os("DISPLAY").is_some() {
+            match copy_bytes_via_command("xclip", &["-selection", "clipboard", "-t", &mime], bytes)
+            {
+                Ok(()) => {
+                    tracing::debug!(target: "clipboard", "image via xclip ({mime}) ok");
+                    return Ok(());
+                }
+                Err(e) => tracing::warn!(target: "clipboard", "xclip image failed: {e}"),
+            }
+        }
+    }
+
+    let decoded = image::load_from_memory(bytes).map_err(|e| format!("decode image: {e}"))?;
+    let rgba = decoded.to_rgba8();
+    let image = arboard::ImageData {
+        width: rgba.width() as usize,
+        height: rgba.height() as usize,
+        bytes: std::borrow::Cow::Owned(rgba.into_raw()),
+    };
+    use std::sync::{Mutex, OnceLock};
+    static CLIPBOARD: OnceLock<Result<Mutex<arboard::Clipboard>, String>> = OnceLock::new();
+    let cb = CLIPBOARD.get_or_init(|| {
+        arboard::Clipboard::new()
+            .map(Mutex::new)
+            .map_err(|e| e.to_string())
+    });
+    let cb = cb.as_ref().map_err(|e| e.clone())?;
+    let mut guard = cb.lock().map_err(|e| e.to_string())?;
+    guard.set_image(image).map_err(|e| e.to_string())
+}
+
+fn image_clipboard_mime(media_type: &str) -> String {
+    let mime = media_type
+        .split(';')
+        .next()
+        .unwrap_or(media_type)
+        .trim()
+        .to_ascii_lowercase();
+    if mime.starts_with("image/") {
+        mime
+    } else {
+        "image/png".to_string()
+    }
 }
 
 /// Choose an image MIME target from a clipboard target list, applying the
@@ -264,4 +343,25 @@ pub(crate) fn paste_via_command(cmd: &str, args: &[&str]) -> Result<Vec<u8>, Str
         return Err(format!("{cmd} exited {}", out.status));
     }
     Ok(out.stdout)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn image_clipboard_mime_keeps_image_type_and_strips_params() {
+        assert_eq!(
+            image_clipboard_mime("image/jpeg; charset=binary"),
+            "image/jpeg"
+        );
+    }
+
+    #[test]
+    fn image_clipboard_mime_defaults_non_image_to_png() {
+        assert_eq!(
+            image_clipboard_mime("application/octet-stream"),
+            "image/png"
+        );
+    }
 }

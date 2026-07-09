@@ -579,6 +579,10 @@ msgctxt "ContactDetail"
 msgid "Copy"
 msgstr ""
 
+msgctxt "ImageViewerModal"
+msgid "Copy"
+msgstr ""
+
 msgctxt "KeysPage"
 msgid "Copy"
 msgstr ""
@@ -1775,6 +1779,10 @@ msgid "Sat"
 msgstr ""
 
 msgctxt "NicknameModal"
+msgid "Save"
+msgstr ""
+
+msgctxt "ImageViewerModal"
 msgid "Save"
 msgstr ""
 
