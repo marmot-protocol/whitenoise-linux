@@ -1,5 +1,18 @@
 use super::*;
 
+/// One group the local account shares with another account: the group's id,
+/// display name, and member count. Returned by [`Backend::shared_groups`] and
+/// turned into `SharedGroup` UI rows by the contact/profile glue.
+pub struct SharedGroupInfo {
+    pub group_id_hex: String,
+    pub name: String,
+    pub member_count: usize,
+    /// Avatar cache key for the group, resolved with the same precedence the
+    /// chat list uses: a `marmot.group.avatar-url.v1` URL when present, else
+    /// the encrypted Blossom image as `group-image:{hash}`, else `None`.
+    pub avatar_key: Option<String>,
+}
+
 impl Backend {
     /// Create a 1:1 or group chat with the listed members (npub or hex pubkey).
     pub fn create_group(&self, name: &str, members: &[String]) -> Result<GroupId> {
@@ -125,6 +138,58 @@ impl Backend {
                 .await
                 .map_err(|e| anyhow!("invite_members: {e}"))
         })
+    }
+
+    /// Groups the local account has in common with `account_id_hex`: every
+    /// visible group whose cached member list includes that account. 1:1 DMs
+    /// (two members) are excluded — they aren't a "group in common" — as is
+    /// any group the account isn't a member of. The join is `chats()` against
+    /// the members cache, so it stays a cheap in-memory scan; the cache is
+    /// warmed at boot and refreshed on group events, and any group still cold
+    /// reads as empty and is skipped (a re-open picks it up once warmed).
+    pub fn shared_groups(&self, account_id_hex: &str) -> Vec<SharedGroupInfo> {
+        let groups = match self.chats() {
+            Ok(g) => g,
+            Err(e) => {
+                tracing::warn!(target: "backend", "shared_groups: chats() failed: {e:#}");
+                return Vec::new();
+            }
+        };
+        let mut out: Vec<SharedGroupInfo> = groups
+            .iter()
+            .filter_map(|g| {
+                let members = self.group_members(&g.group_id_hex).unwrap_or_default();
+                if members.len() <= 2 {
+                    return None;
+                }
+                let is_member = members
+                    .iter()
+                    .any(|m| m.member_id_hex.eq_ignore_ascii_case(account_id_hex));
+                if !is_member {
+                    return None;
+                }
+                let name = if g.profile.name.trim().is_empty() {
+                    g.group_id_hex.clone()
+                } else {
+                    g.profile.name.clone()
+                };
+                let avatar_key = if g.avatar_url.present && !g.avatar_url.url.trim().is_empty() {
+                    Some(g.avatar_url.url.trim().to_string())
+                } else if g.image.present && !g.image.image_hash_hex.is_empty() {
+                    Some(format!("group-image:{}", g.image.image_hash_hex))
+                } else {
+                    None
+                };
+                Some(SharedGroupInfo {
+                    group_id_hex: g.group_id_hex.clone(),
+                    name,
+                    member_count: members.len(),
+                    avatar_key,
+                })
+            })
+            .collect();
+        out.sort_by_key(|g| g.name.to_lowercase());
+        out
     }
 
     /// Promote a group member to admin. Caller must already be an admin (the

@@ -7,6 +7,7 @@ import {
     ChatMeta,
     ChatMessage,
     Contact,
+    SharedGroup,
     ArchivedChat,
     GroupMember,
     AccountEntry,
@@ -307,8 +308,15 @@ export component DarkMatterLinux inherits Window {
     in property <string> peer-profile-av-initials;
     in property <image> peer-profile-picture;
     in property <bool> peer-profile-has-picture: false;
+    // Groups the local account shares with the profiled person. Recomputed
+    // Rust-side each time the modal opens; the contact detail page keeps its
+    // own copy in `contact-shared-groups`.
+    in property <[SharedGroup]> peer-profile-shared-groups;
     callback peer-profile-dismissed();
     callback peer-profile-add-contact();
+    // A "groups in common" row was tapped (contact detail or profile modal):
+    // Rust switches to Chats and opens that group by its group-id-hex.
+    callback open-shared-group(string);
     // Bumped by Rust after a send to force the MessagesArea to scroll to
     // the bottom. Plain integer counter — content doesn't matter, only the
     // edge — picked up via a Slint `changed` handler.
@@ -583,6 +591,9 @@ export component DarkMatterLinux inherits Window {
     callback palette-dismissed();
 
     in property <[Contact]> contacts;
+
+    // "Groups in common" rows for the active contact (contacts page detail).
+    in property <[SharedGroup]> contact-shared-groups;
 
     in property <[ArchivedChat]> archived-chats;
 
@@ -1048,9 +1059,13 @@ export component DarkMatterLinux inherits Window {
                         height: parent.height;
                         window-width: root.width;
                         contacts: root.contacts;
+                        shared-groups: root.contact-shared-groups;
                         active-contact: root.active-contact;
                         contact-clicked(idx) => {
                             root.contact-selected(idx);
+                        }
+                        open-shared-group(id) => {
+                            root.open-shared-group(id);
                         }
                         add-contact-clicked => {
                             root.add-contact-requested();
@@ -1729,11 +1744,15 @@ export component DarkMatterLinux inherits Window {
         av-initials: root.peer-profile-av-initials;
         av-picture: root.peer-profile-picture;
         av-has-picture: root.peer-profile-has-picture;
+        shared-groups: root.peer-profile-shared-groups;
         copy-npub => {
             root.copy-to-clipboard(root.peer-profile-npub);
         }
         add-contact => {
             root.peer-profile-add-contact();
+        }
+        open-shared-group(id) => {
+            root.open-shared-group(id);
         }
         dismissed => {
             root.peer-profile-dismissed();

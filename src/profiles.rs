@@ -133,6 +133,14 @@ pub(crate) fn open_profile_modal(
     ui.set_peer_profile_not_found(false);
     ui.set_peer_profile_picture(slint::Image::default());
     ui.set_peer_profile_has_picture(false);
+    // Groups in common — meaningless for one's own profile, so leave it empty
+    // there (the modal hides the section for self anyway).
+    let shared = if is_self {
+        Vec::new()
+    } else {
+        shared_groups_rows(ui, backend, &id)
+    };
+    ui.set_peer_profile_shared_groups(model(shared));
 
     // Paint the loading skeleton immediately; follow-list membership and the
     // cached profile are sqlite reads, so they resolve on the runtime and
