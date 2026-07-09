@@ -1441,6 +1441,17 @@ pub(crate) struct EditState {
     count: usize,
 }
 
+impl EditState {
+    /// Latest edited text (newest edit wins).
+    pub(crate) fn text(&self) -> &str {
+        &self.text
+    }
+    /// Number of edits applied; `0` means the message is unedited.
+    pub(crate) fn count(&self) -> usize {
+        self.count
+    }
+}
+
 /// Walk all records and resolve kind-1009 edits per target message.
 ///
 /// Authorship is enforced here: an edit is only honored when its authenticated

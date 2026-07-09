@@ -804,6 +804,77 @@ pub(crate) fn wire_panes(
         }
     });
 
+    // Export the right-clicked chat's transcript to an HTML (default) or
+    // Markdown file. Reading the history and resolving each message is a pair of
+    // UI-thread reads (`Backend::messages` + the name cache), so it runs here;
+    // the native save dialog, the image download/decrypt, and the file write go
+    // to a blocking task, the same split as the "Save attachment" path. The
+    // final extension picks the format: `.md` for Markdown, otherwise HTML.
+    ui.on_export_chat_at({
+        let weak = ui.as_weak();
+        let group_ids = group_ids.clone();
+        let backend_cell = backend_cell.clone();
+        let vault_cell = vault_cell.clone();
+        move |idx| {
+            let Some(ui) = weak.upgrade() else { return };
+            let group_hex = group_ids.lock().unwrap().get(idx as usize).cloned();
+            let Some(group_hex) = group_hex else { return };
+            let Some(backend) = backend_cell.lock().unwrap().clone() else {
+                return;
+            };
+            let chat_name = ui
+                .get_chats()
+                .row_data(idx as usize)
+                .map(|c| c.name.to_string())
+                .unwrap_or_default();
+            let transcript = build_transcript(&backend, &group_hex, &chat_name);
+            if transcript.is_empty() {
+                tracing::info!(target: "export", "no messages to export for {group_hex}");
+                return;
+            }
+            let default_name = format!("{}.html", safe_file_stem(&chat_name));
+            let vault = vault_cell.lock().unwrap().clone();
+            backend.tokio_handle().spawn(async move {
+                let chosen = tokio::task::spawn_blocking(move || {
+                    rfd::FileDialog::new()
+                        .set_title("Export chat transcript")
+                        .set_file_name(&default_name)
+                        .add_filter("HTML", &["html", "htm"])
+                        .add_filter("Markdown", &["md"])
+                        .save_file()
+                })
+                .await
+                .ok()
+                .flatten();
+                let Some(path) = chosen else { return };
+                let format = ExportFormat::from_path(&path);
+                // HTML embeds each image inline, so decrypt them off the UI
+                // thread first; Markdown keeps images as notes and needs none.
+                let images = if format == ExportFormat::Html {
+                    collect_image_data(
+                        &backend,
+                        vault.as_ref(),
+                        transcript.group_hex(),
+                        &transcript.image_references(),
+                    )
+                    .await
+                } else {
+                    ImageData::new()
+                };
+                let contents = render(&transcript, format, &images);
+                match tokio::task::spawn_blocking(move || {
+                    std::fs::write(&path, contents.as_bytes())
+                })
+                .await
+                {
+                    Ok(Err(e)) => tracing::warn!(target: "export", "write: {e:#}"),
+                    Err(e) => tracing::warn!(target: "export", "write join: {e:#}"),
+                    Ok(Ok(())) => {}
+                }
+            });
+        }
+    });
+
     ui.on_time_format_selected({
         let weak = ui.as_weak();
         let settings_cell = settings_cell.clone();

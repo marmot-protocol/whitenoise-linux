@@ -378,6 +378,9 @@ export component DarkMatterLinux inherits Window {
     callback request-chat-context(int, length, length);
     callback toggle-pin-chat(int);
     callback toggle-mute-chat-at(int);
+    // Export the right-clicked chat's transcript to a Markdown or HTML file
+    // (Rust opens the save dialog and writes it).
+    callback export-chat-at(int);
     // Delete confirmation: deletes are destructive, so the context-menu items
     // arm this modal instead of firing immediately. `delete-confirm-everyone`
     // picks the wording + which callback the confirm dispatches; the target is
@@ -1627,6 +1630,10 @@ export component DarkMatterLinux inherits Window {
         toggle-mute => {
             root.chat-ctx-open = false;
             root.toggle-mute-chat-at(root.chat-ctx-idx);
+        }
+        export-chat => {
+            root.chat-ctx-open = false;
+            root.export-chat-at(root.chat-ctx-idx);
         }
         leave-group => {
             root.chat-ctx-open = false;

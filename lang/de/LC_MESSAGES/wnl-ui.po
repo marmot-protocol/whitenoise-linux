@@ -920,6 +920,10 @@ msgctxt "EncryptionInfoModal"
 msgid "Even if a key leaks later on, the messages you already sent can't be unlocked with it."
 msgstr ""
 
+msgctxt "ChatContextMenu"
+msgid "Export transcript…"
+msgstr "Verlauf exportieren…"
+
 msgctxt "month"
 msgid "Feb"
 msgstr "Feb"

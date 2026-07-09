@@ -917,6 +917,10 @@ msgctxt "EncryptionInfoModal"
 msgid "Even if a key leaks later on, the messages you already sent can't be unlocked with it."
 msgstr ""
 
+msgctxt "ChatContextMenu"
+msgid "Export transcript…"
+msgstr "履歴を書き出す…"
+
 msgctxt "month"
 msgid "Feb"
 msgstr "2月"
