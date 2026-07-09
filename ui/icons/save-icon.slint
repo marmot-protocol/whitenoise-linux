@@ -1,0 +1,31 @@
+import { Palette } from "../tokens.slint";
+
+export component SaveIcon inherits Rectangle {
+    in property <color> stroke: Palette.text-mid;
+    width: 14px;
+    height: 14px;
+
+    // Down arrow.
+    Path {
+        width: 14px;
+        height: 14px;
+        viewbox-width: 14;
+        viewbox-height: 14;
+        commands: "M 7 1.5 L 7 8.5 M 3.5 5 L 7 8.5 L 10.5 5";
+        stroke: root.stroke;
+        stroke-width: 1.4px;
+        fill: transparent;
+    }
+
+    // Tray.
+    Path {
+        width: 14px;
+        height: 14px;
+        viewbox-width: 14;
+        viewbox-height: 14;
+        commands: "M 2.5 9 L 2.5 12 L 11.5 12 L 11.5 9";
+        stroke: root.stroke;
+        stroke-width: 1.4px;
+        fill: transparent;
+    }
+}

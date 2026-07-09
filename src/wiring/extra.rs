@@ -85,26 +85,29 @@ fn fetch_viewer_image_bytes(
 ) {
     let hash = item.reference.ciphertext_sha256.clone();
     let media_type = item.reference.media_type.clone();
-    if let Some(bytes) = vault.as_ref().and_then(|v| media_cache::get(v, &hash)) {
-        finish_viewer_image_action(weak, action, bytes, media_type);
-        return;
-    }
+    let tokio_handle = backend.tokio_handle();
+    tokio_handle.spawn(async move {
+        if let Some(bytes) = vault.as_ref().and_then(|v| media_cache::get(v, &hash)) {
+            finish_viewer_image_action(weak, action, bytes, media_type);
+            return;
+        }
 
-    backend.download_media_async(&group_hex, item.reference, move |result| match result {
-        Ok(dl) => {
-            if let Some(v) = &vault {
-                media_cache::put(v, &hash, &dl.plaintext);
-            }
-            finish_viewer_image_action(weak, action, dl.plaintext, dl.media_type);
-        }
-        Err(e) => {
-            tracing::warn!(target: "attach", "viewer image download failed: {e:#}");
-            let _ = slint::invoke_from_event_loop(move || {
-                if let Some(ui) = weak.upgrade() {
-                    set_clipboard_feedback(&ui, s("Couldn't download image."), true);
+        backend.download_media_async(&group_hex, item.reference, move |result| match result {
+            Ok(dl) => {
+                if let Some(v) = &vault {
+                    media_cache::put(v, &hash, &dl.plaintext);
                 }
-            });
-        }
+                finish_viewer_image_action(weak, action, dl.plaintext, dl.media_type);
+            }
+            Err(e) => {
+                tracing::warn!(target: "attach", "viewer image download failed: {e:#}");
+                let _ = slint::invoke_from_event_loop(move || {
+                    if let Some(ui) = weak.upgrade() {
+                        set_clipboard_feedback(&ui, s("Couldn't download image."), true);
+                    }
+                });
+            }
+        });
     });
 }
 

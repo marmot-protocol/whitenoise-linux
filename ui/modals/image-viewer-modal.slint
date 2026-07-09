@@ -1,6 +1,126 @@
 import { Modal } from "modal.slint";
 import { Palette, Theme } from "../tokens.slint";
-import { MicroButton } from "../primitives/button.slint";
+import { Button } from "../primitives/button.slint";
+import { MenuItem } from "../primitives/context-menu.slint";
+import { CopyIcon } from "../icons/copy-icon.slint";
+import { SaveIcon } from "../icons/save-icon.slint";
+
+component ImageActionContextMenu inherits Rectangle {
+    in property <length> anchor-x;
+    in property <length> anchor-y;
+    callback copy();
+    callback save();
+    callback dismissed();
+
+    property <int> selected-index: 0;
+    property <length> inset: 8px;
+    property <length> px: min(max(root.inset, root.anchor-x), root.width - panel.width - root.inset);
+    property <length> py: min(max(root.inset, root.anchor-y), root.height - panel.height - root.inset);
+    property <bool> opened: false;
+
+    function move-selection(delta: int) {
+        root.selected-index = min(max(0, root.selected-index + delta), 1);
+    }
+    function activate-selected() {
+        if (root.selected-index == 0) {
+            root.copy();
+        } else {
+            root.save();
+        }
+    }
+
+    init => {
+        root.opened = true;
+        keys.focus();
+    }
+
+    TouchArea {
+        clicked => {
+            root.dismissed();
+        }
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down && e.button == PointerEventButton.right) {
+                root.dismissed();
+            }
+        }
+    }
+
+    panel := Rectangle {
+        x: root.px;
+        y: root.py + (root.opened ? 0px : -4px);
+        width: max(130px, col.preferred-width);
+        height: col.preferred-height;
+        opacity: root.opened ? 1.0 : 0.0;
+        animate opacity {
+            duration: 120ms;
+            easing: ease-out;
+        }
+        animate y {
+            duration: 120ms;
+            easing: ease-out;
+        }
+        background: Palette.elevated;
+        border-radius: (10px) * Theme.r-scale;
+        border-width: Theme.border-w;
+        border-color: Palette.elevated-border;
+        drop-shadow-color: Theme.hard-shadow ? Palette.shadow : Palette.shadow-popover;
+        drop-shadow-offset-x: Theme.hard-shadow ? 2px : 0px;
+        drop-shadow-offset-y: 2px;
+        drop-shadow-blur: Theme.hard-shadow ? 0px : 14px;
+
+        TouchArea {
+            col := VerticalLayout {
+                padding: 4px;
+                spacing: 1px;
+                MenuItem {
+                    glyph: "⧉";
+                    label: @tr("ImageViewerModal" => "Copy");
+                    selected: root.selected-index == 0;
+                    activated => {
+                        root.copy();
+                    }
+                    hovered => {
+                        root.selected-index = 0;
+                    }
+                }
+
+                MenuItem {
+                    glyph: "⭳";
+                    label: @tr("ImageViewerModal" => "Save");
+                    selected: root.selected-index == 1;
+                    activated => {
+                        root.save();
+                    }
+                    hovered => {
+                        root.selected-index = 1;
+                    }
+                }
+            }
+        }
+    }
+
+    keys := FocusScope {
+        key-pressed(e) => {
+            if (e.text == Key.Escape) {
+                root.dismissed();
+                return accept;
+            }
+            if (e.text == Key.UpArrow) {
+                root.move-selection(-1);
+                return accept;
+            }
+            if (e.text == Key.DownArrow) {
+                root.move-selection(1);
+                return accept;
+            }
+            if (e.text == Key.Return || e.text == " ") {
+                root.activate-selected();
+                return accept;
+            }
+            return reject;
+        }
+    }
+}
 
 // Full-window lightbox for image attachments, built on Modal's bare mode:
 // the backdrop darkens the whole app and the image is letterboxed
@@ -33,6 +153,10 @@ export component ImageViewerModal inherits Modal {
 
     property <bool> has-prev: root.index > 1;
     property <bool> has-next: root.index < root.count;
+    property <bool> actions-enabled: root.actions-ready && !root.loading && !root.failed;
+    property <bool> action-context-open: false;
+    property <length> action-context-x: 0px;
+    property <length> action-context-y: 0px;
 
     bare: true;
     // Lightboxes want a real darken, unlike the subtle scrim card modals use.
@@ -71,8 +195,17 @@ export component ImageViewerModal inherits Modal {
                 visible: !root.failed;
                 source: root.source;
                 image-fit: contain;
-                // Swallow taps on the image so they don't reach the backdrop.
-                TouchArea { }
+                // Swallow taps on the image so they don't reach the backdrop;
+                // right-click opens the lightbox action menu at the pointer.
+                TouchArea {
+                    pointer-event(e) => {
+                        if (e.kind == PointerEventKind.down && e.button == PointerEventButton.right && root.actions-enabled) {
+                            root.action-context-x = self.absolute-position.x + self.mouse-x;
+                            root.action-context-y = self.absolute-position.y + self.mouse-y;
+                            root.action-context-open = true;
+                        }
+                    }
+                }
             }
         }
 
@@ -129,29 +262,46 @@ export component ImageViewerModal inherits Modal {
             x: 24px;
             y: 24px;
             spacing: 8px;
-            MicroButton {
+            Button {
                 label: @tr("Copy");
-                enabled: root.actions-ready && !root.loading && !root.failed;
+                enabled: root.actions-enabled;
+                button-height: 34px;
+                min-w: 86px;
+                radius: 8px;
+                border-w: 1px;
                 fg: #FFFFFF;
                 hover-fg: #FFFFFF;
-                bg-color: #00000040;
-                hover-bg: #00000066;
-                outline: Theme.outline-surfaces ? Palette.border-2 : transparent;
-                hover-outline: Palette.border-2;
+                bg-color: #000000B8;
+                hover-bg: #000000E0;
+                outline: #FFFFFF66;
+                hover-outline: #FFFFFFCC;
+                CopyIcon {
+                    stroke: #FFFFFF;
+                    fill: #000000B8;
+                }
+
                 clicked => {
                     root.copy();
                 }
             }
 
-            MicroButton {
+            Button {
                 label: @tr("Save");
-                enabled: root.actions-ready && !root.loading && !root.failed;
+                enabled: root.actions-enabled;
+                button-height: 34px;
+                min-w: 84px;
+                radius: 8px;
+                border-w: 1px;
                 fg: #FFFFFF;
                 hover-fg: #FFFFFF;
-                bg-color: #00000040;
-                hover-bg: #00000066;
-                outline: Theme.outline-surfaces ? Palette.border-2 : transparent;
-                hover-outline: Palette.border-2;
+                bg-color: #000000B8;
+                hover-bg: #000000E0;
+                outline: #FFFFFF66;
+                hover-outline: #FFFFFFCC;
+                SaveIcon {
+                    stroke: #FFFFFF;
+                }
+
                 clicked => {
                     root.save();
                 }
@@ -232,6 +382,22 @@ export component ImageViewerModal inherits Modal {
                 font-weight: 700;
                 horizontal-alignment: center;
                 vertical-alignment: center;
+            }
+        }
+
+        if root.action-context-open: ImageActionContextMenu {
+            anchor-x: root.action-context-x;
+            anchor-y: root.action-context-y;
+            copy => {
+                root.action-context-open = false;
+                root.copy();
+            }
+            save => {
+                root.action-context-open = false;
+                root.save();
+            }
+            dismissed => {
+                root.action-context-open = false;
             }
         }
     }

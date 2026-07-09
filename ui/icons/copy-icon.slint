@@ -2,6 +2,7 @@ import { Palette } from "../tokens.slint";
 
 export component CopyIcon inherits Rectangle {
     in property <color> stroke: Palette.text-mid;
+    in property <color> fill: Palette.bg;
     width: 14px;
     height: 14px;
     Rectangle {
@@ -20,7 +21,7 @@ export component CopyIcon inherits Rectangle {
         width: 10px;
         height: 11px;
         border-radius: 1.5px;
-        background: Palette.bg;
+        background: root.fill;
         border-width: 1.2px;
         border-color: root.stroke;
     }
