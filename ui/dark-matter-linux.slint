@@ -1395,6 +1395,7 @@ export component DarkMatterLinux inherits Window {
         StatusBar {
             relaysConnected: root.network-connected;
             relaysTotal: root.network-total;
+            syncSecs: root.sync-secs;
             message: root.clipboard-status;
             messageIsError: root.clipboard-status-error;
         }

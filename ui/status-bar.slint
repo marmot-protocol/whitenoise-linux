@@ -7,8 +7,19 @@ export component StatusBar inherits Rectangle {
 
     in property <int> relaysConnected;
     in property <int> relaysTotal;
+    // Seconds since the last successful relay-health/sync poll. -1 means the
+    // boot/post-connect sync has not completed yet, so keep showing SYNCING.
+    in property <int> syncSecs: -1;
     in property <string> message;
     in property <bool> messageIsError: false;
+
+    property <bool> hasRelays: root.relaysTotal > 0;
+    property <bool> hasConnection: root.relaysConnected > 0;
+    property <bool> isSyncing: root.hasConnection && root.syncSecs < 0;
+    property <string> connectionLabel:
+        !root.hasRelays ? @tr("OFFLINE") : (!root.hasConnection ? @tr("CONNECTING") : @tr("ONLINE"));
+    property <string> syncLabel:
+        !root.hasConnection ? "" : (root.syncSecs < 0 ? @tr("SYNCING…") : @tr("SYNCED") + " " + root.syncSecs + "S " + @tr("AGO"));
 
     Rectangle {
         y: 0;
@@ -31,13 +42,13 @@ export component StatusBar inherits Rectangle {
                 height: 8px;
                 y: (parent.height - self.height) / 2;
                 border-radius: (4px) * Theme.r-scale;
-                background: root.relaysConnected > 0 ? Palette.mint-dim : (root.relaysTotal > 0 ? Palette.warning : Palette.text-vlo);
+                background: root.isSyncing ? Palette.warning : (root.hasConnection ? Palette.mint-dim : (root.hasRelays ? Palette.warning : Palette.text-vlo));
                 drop-shadow-blur: Theme.hard-shadow ? 0px : 4px;
-                drop-shadow-color: root.relaysConnected > 0 ? Palette.mint-glow : transparent;
+                drop-shadow-color: root.hasConnection && !root.isSyncing ? Palette.mint-glow : transparent;
             }
 
             Text {
-                text: root.relaysConnected > 0 ? @tr("ONLINE") : (root.relaysTotal > 0 ? @tr("CONNECTING") : @tr("OFFLINE"));
+                text: root.connectionLabel;
                 color: Palette.text-hi;
                 font-size: Theme.fs(10px, 14px);
                 font-weight: 700;
@@ -49,6 +60,15 @@ export component StatusBar inherits Rectangle {
         Text {
             text: root.relaysConnected + "/" + root.relaysTotal + " " + @tr("RELAYS");
             color: Palette.text-mid;
+            font-size: Theme.fs(10px, 14px);
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            vertical-alignment: center;
+        }
+
+        if root.syncLabel != "": Text {
+            text: root.syncLabel;
+            color: root.syncSecs < 0 ? Palette.warning : Palette.text-mid;
             font-size: Theme.fs(10px, 14px);
             font-weight: 700;
             letter-spacing: 1.2px;
