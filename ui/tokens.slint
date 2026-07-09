@@ -1010,12 +1010,26 @@ export struct ArchivedChat {
     has-picture: bool,
 }
 
+// One person who used a reaction emoji, rendered as a mention chip in the chip's
+// hover popover. `id` is the account hex handed to `ProfileSink.open` so the
+// profile opens the same way tapping any @mention or avatar does; `a`/`b` are
+// the account's mention-plate gradient (already shaded for white text).
+export struct Reactor {
+    name: string,
+    id: string,
+    a: color,
+    b: color,
+}
+
 // One aggregated reaction on a message: an emoji, how many people used it,
-// and whether *I* am one of them (drives the highlight chip).
+// and whether *I* am one of them (drives the highlight chip). `reactors` is the
+// people who used the emoji (yourself first), shown as mention chips in the
+// chip's hover popover so you can see who reacted and open their profiles.
 export struct Reaction {
     emoji: string,
     count: int,
     mine: bool,
+    reactors: [Reactor],
 }
 
 // One emoji in the picker grid. `clip-x`/`clip-y` are pixel coordinates
