@@ -7,7 +7,6 @@ import {
 } from "../tokens.slint";
 import { MessagesArea } from "../messages.slint";
 import { ChatHeader } from "chat-header.slint";
-import { EncryptionBanner } from "encryption-banner.slint";
 import { ChatRequestBanner } from "chat-request-banner.slint";
 import { SessionDivider } from "session-divider.slint";
 import { Composer } from "composer.slint";
@@ -21,7 +20,6 @@ export component MainPane inherits Rectangle {
     in property <bool> can-show-members: false;
     in property <bool> chat-muted: false;
     callback mute-toggle-clicked();
-    in property <bool> encryption-banner-first-show: false;
     in property <int> member-count: 0;
     in property <string> group-description;
     in property <[GroupMember]> members;
@@ -111,6 +109,7 @@ export component MainPane inherits Rectangle {
     callback block-clicked();
     callback archive-clicked();
     callback members-toggle-clicked();
+    callback badge-clicked();
 
     horizontal-stretch: 1;
     background: Palette.bg;
@@ -148,13 +147,12 @@ export component MainPane inherits Rectangle {
                 mute-toggle-clicked => {
                     root.mute-toggle-clicked();
                 }
+                badge-clicked => {
+                    root.badge-clicked();
+                }
             }
 
             if root.chat.is-chat-request: ChatRequestBanner { }
-            if !root.chat.is-chat-request: EncryptionBanner {
-                npub: root.chat.npub;
-                first-show: root.encryption-banner-first-show;
-            }
 
             SessionDivider {
                 label: root.chat.is-chat-request ? @tr("CHAT REQUEST") + " · " + root.chat.session-time : "MLS · " + @tr("SESSION ESTABLISHED") + " · " + root.chat.session-time;

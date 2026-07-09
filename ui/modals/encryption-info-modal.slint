@@ -1,0 +1,179 @@
+import { Palette, Theme } from "../tokens.slint";
+import { Modal } from "modal.slint";
+import { LockIcon } from "../icons/lock-icon.slint";
+import { RefreshIcon } from "../icons/refresh-icon.slint";
+import { CopyIcon } from "../icons/copy-icon.slint";
+
+// The "what is this?" explainer opened by tapping the MLS badge in the chat
+// header. Purely informational — spells out what end-to-end MLS encryption
+// buys the user in plain language, and surfaces the chat's group id (the same
+// value shown in the badge) as a tap-to-copy chip.
+export component EncryptionInfoModal inherits Modal {
+    in property <string> group-id;
+    callback copy-group-id;
+
+    card-width: 440px;
+    title: @tr("End-to-end encrypted");
+    subtitle: @tr("Only the people in this chat can read it.");
+    secondary-label: @tr("Got it");
+
+    // Transient "Copied ✓" feedback on the group-id chip.
+    property <bool> copied: false;
+    copy-reset := Timer {
+        interval: 1.4s;
+        running: root.copied;
+        triggered => {
+            root.copied = false;
+        }
+    }
+
+    VerticalLayout {
+        spacing: 18px;
+
+        // Lock crest over an accent wash — a small visual anchor for the card.
+        HorizontalLayout {
+            alignment: center;
+            Rectangle {
+                width: 48px;
+                height: 48px;
+                border-radius: (16px) * Theme.r-scale;
+                background: Palette.mint-surface;
+                border-width: Theme.border-w;
+                border-color: Palette.mint-dim;
+                LockIcon {
+                    stroke: Palette.mint;
+                }
+            }
+        }
+
+        Text {
+            text: @tr("Whatever you send in this chat is encrypted on your device before it goes out. The relays that pass it along can't read it, and we can't either.");
+            color: Palette.text-mid;
+            font-size: (12.5px) * Theme.fs-scale;
+            font-family: Theme.font;
+            wrap: word-wrap;
+            horizontal-alignment: center;
+        }
+
+        // Two plain-language guarantees, replacing the old jargon strip. Icons
+        // are vector components (not emoji) so they render in every font/theme.
+        VerticalLayout {
+            spacing: 14px;
+
+            HorizontalLayout {
+                spacing: 12px;
+                VerticalLayout {
+                    alignment: start;
+                    padding-top: 1px;
+                    LockIcon {
+                        stroke: Palette.mint;
+                    }
+                }
+
+                VerticalLayout {
+                    spacing: 2px;
+                    horizontal-stretch: 1;
+                    Text {
+                        text: @tr("Old messages stay safe");
+                        color: Palette.text-hi;
+                        font-size: (12px) * Theme.fs-scale;
+                        font-weight: 700;
+                        font-family: Theme.font;
+                    }
+
+                    Text {
+                        text: @tr("Even if a key leaks later on, the messages you already sent can't be unlocked with it.");
+                        color: Palette.text-lo;
+                        font-size: (11px) * Theme.fs-scale;
+                        font-family: Theme.font;
+                        wrap: word-wrap;
+                    }
+                }
+            }
+
+            HorizontalLayout {
+                spacing: 12px;
+                VerticalLayout {
+                    alignment: start;
+                    padding-top: 1px;
+                    RefreshIcon {
+                        stroke: Palette.mint;
+                    }
+                }
+
+                VerticalLayout {
+                    spacing: 2px;
+                    horizontal-stretch: 1;
+                    Text {
+                        text: @tr("It recovers on its own");
+                        color: Palette.text-hi;
+                        font-size: (12px) * Theme.fs-scale;
+                        font-weight: 700;
+                        font-family: Theme.font;
+                    }
+
+                    Text {
+                        text: @tr("If someone's device gets compromised, the group quietly swaps in fresh keys so what you send next is private again.");
+                        color: Palette.text-lo;
+                        font-size: (11px) * Theme.fs-scale;
+                        font-family: Theme.font;
+                        wrap: word-wrap;
+                    }
+                }
+            }
+        }
+
+        // Group id — tap to copy, flashes "Copied ✓".
+        VerticalLayout {
+            spacing: 7px;
+            Text {
+                text: @tr("GROUP ID");
+                color: Palette.text-mid;
+                font-size: (9px) * Theme.fs-scale;
+                font-weight: 700;
+                font-family: Theme.font;
+                letter-spacing: 1.6px;
+            }
+
+            chip := Rectangle {
+                height: 36px;
+                border-radius: (8px) * Theme.r-scale;
+                background: chip-touch.has-hover ? Palette.field-hover : Palette.field;
+                border-width: Theme.border-w;
+                border-color: root.copied ? Palette.mint : Palette.field-border;
+                animate background, border-color { duration: 120ms; }
+                HorizontalLayout {
+                    padding-left: 14px;
+                    padding-right: 14px;
+                    spacing: 8px;
+                    alignment: stretch;
+                    Text {
+                        text: root.copied ? @tr("Copied ✓") : root.group-id;
+                        color: root.copied ? Palette.mint : Palette.text-hi;
+                        font-size: (12px) * Theme.fs-scale;
+                        font-weight: 600;
+                        font-family: Theme.font;
+                        vertical-alignment: center;
+                        horizontal-stretch: 1;
+                        overflow: elide;
+                    }
+
+                    if !root.copied: VerticalLayout {
+                        alignment: center;
+                        CopyIcon {
+                            stroke: Palette.text-lo;
+                        }
+                    }
+                }
+
+                chip-touch := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        root.copy-group-id();
+                        root.copied = true;
+                    }
+                }
+            }
+        }
+    }
+}

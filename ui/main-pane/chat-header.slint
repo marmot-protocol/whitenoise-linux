@@ -24,6 +24,8 @@ export component ChatHeader inherits Rectangle {
     callback archive-clicked();
     callback members-toggle-clicked();
     callback mute-toggle-clicked();
+    // Tapping the encryption badge opens the "what is this?" explainer modal.
+    callback badge-clicked();
 
     property <string> member-label: @tr("1 member" | "{n} members" % root.member-count);
 
@@ -89,11 +91,19 @@ export component ChatHeader inherits Rectangle {
                     vertical-alignment: center;
                 }
 
-                Pill {
-                    label: "MLS";
-                    has-lock: true;
-                    bg-color: Palette.mint;
-                    fg: Palette.bubble-out-fg;
+                // The badge now surfaces the chat's MLS group id. Tap it to
+                // learn what end-to-end MLS encryption means.
+                badge-touch := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        root.badge-clicked();
+                    }
+                    Pill {
+                        label: root.chat.npub;
+                        has-lock: true;
+                        bg-color: badge-touch.has-hover ? Palette.mint-hi : Palette.mint;
+                        fg: Palette.bubble-out-fg;
+                    }
                 }
             }
 

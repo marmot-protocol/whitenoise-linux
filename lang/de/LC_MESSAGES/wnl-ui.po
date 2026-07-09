@@ -558,6 +558,11 @@ msgctxt "LoginScreen"
 msgid "Continue"
 msgstr "Weiter"
 
+#, fuzzy
+msgctxt "EncryptionInfoModal"
+msgid "Copied ✓"
+msgstr "Kopiert ✓"
+
 msgctxt "ProfileModal"
 msgid "Copied ✓"
 msgstr "Kopiert ✓"
@@ -851,12 +856,13 @@ msgid "Encrypted group chat on Nostr"
 msgstr "Verschlüsselter Gruppenchat über Nostr"
 
 #, fuzzy
-msgctxt "AboutPane"
-msgid "End-to-end encrypted group messaging for Linux."
+msgctxt "EncryptionInfoModal"
+msgid "End-to-end encrypted"
 msgstr "Ende-zu-Ende-verschlüsselt mit"
 
-msgctxt "EncryptionBanner"
-msgid "End-to-end encrypted with"
+#, fuzzy
+msgctxt "AboutPane"
+msgid "End-to-end encrypted group messaging for Linux."
 msgstr "Ende-zu-Ende-verschlüsselt mit"
 
 #, fuzzy
@@ -876,6 +882,10 @@ msgctxt "LoginScreen"
 msgid "Enter your password to unlock"
 msgstr "Gib dein Passwort zum Entsperren ein"
 
+msgctxt "EncryptionInfoModal"
+msgid "Even if a key leaks later on, the messages you already sent can't be unlocked with it."
+msgstr ""
+
 msgctxt "month"
 msgid "Feb"
 msgstr "Feb"
@@ -883,10 +893,6 @@ msgstr "Feb"
 msgctxt "MessageContextMenu"
 msgid "Forward"
 msgstr "Weiterleiten"
-
-msgctxt "EncryptionBanner"
-msgid "Forward secret"
-msgstr "Forward Secret"
 
 msgctxt "ForwardPickerModal"
 msgid "Forward to…"
@@ -903,6 +909,10 @@ msgstr "Weiterleitung:"
 msgctxt "weekday"
 msgid "Fri"
 msgstr "Fr"
+
+msgctxt "EncryptionInfoModal"
+msgid "GROUP ID"
+msgstr ""
 
 msgctxt "StartNewChatModal"
 msgid "GROUP NAME (OPTIONAL)"
@@ -925,13 +935,17 @@ msgctxt "LoginScreen"
 msgid "Generate a new key"
 msgstr "Neuen Schlüssel generieren"
 
-msgctxt "ArchivedDetail"
-msgid "Group id"
-msgstr "Gruppen-ID"
+msgctxt "EncryptionInfoModal"
+msgid "Got it"
+msgstr ""
 
 msgctxt "GroupSettingsCard"
 msgid "Group description"
 msgstr "Gruppenbeschreibung"
+
+msgctxt "ArchivedDetail"
+msgid "Group id"
+msgstr "Gruppen-ID"
 
 #, fuzzy
 msgctxt "GroupSettingsCard"
@@ -970,6 +984,10 @@ msgstr "IDENTITÄT"
 msgctxt "NotificationsPane"
 msgid "INCOMING MESSAGES"
 msgstr "EINGEHENDE NACHRICHTEN"
+
+msgctxt "EncryptionInfoModal"
+msgid "If someone's device gets compromised, the group quietly swaps in fresh keys so what you send next is private again."
+msgstr ""
 
 msgctxt "ImageViewerModal"
 msgid "Image didn't load. Tap to retry."
@@ -1028,6 +1046,10 @@ msgstr "Lade jemanden über seinen npub ein und sag Hallo."
 msgctxt "AddMemberCard"
 msgid "Inviting…"
 msgstr "Speichere…"
+
+msgctxt "EncryptionInfoModal"
+msgid "It recovers on its own"
+msgstr ""
 
 msgctxt "ArchivedDetail"
 msgid "It stays end-to-end encrypted. Unarchiving returns it to your main list and resumes notifications."
@@ -1088,6 +1110,11 @@ msgstr "Beim Anmelden starten"
 msgctxt "AppearancePane"
 msgid "Lavender"
 msgstr "Lavendel"
+
+#, fuzzy
+msgctxt "ChatContextMenu"
+msgid "Leave group"
+msgstr "Gruppe verlassen"
 
 msgctxt "DarkMatterLinux"
 msgid "Leave group"
@@ -1394,6 +1421,14 @@ msgstr "Okt"
 msgctxt "NotificationsPane"
 msgid "Off shows only \"New message\" without the text."
 msgstr "Aus zeigt nur „Neue Nachricht“ ohne den Text."
+
+msgctxt "EncryptionInfoModal"
+msgid "Old messages stay safe"
+msgstr ""
+
+msgctxt "EncryptionInfoModal"
+msgid "Only the people in this chat can read it."
+msgstr ""
 
 msgctxt "StoragePane"
 msgid "Open folder"
@@ -2156,6 +2191,10 @@ msgctxt "GetStartedScreen"
 msgid "Welcome to darkmatter"
 msgstr "Willkommen bei darkmatter"
 
+msgctxt "EncryptionInfoModal"
+msgid "Whatever you send in this chat is encrypted on your device before it goes out. The relays that pass it along can't read it, and we can't either."
+msgstr ""
+
 msgctxt "NetworkPane"
 msgid "Where your messages land."
 msgstr "Wo deine Nachrichten ankommen."
@@ -2247,10 +2286,6 @@ msgstr "keine Treffer"
 msgctxt "EmojiPicker"
 msgid "no matches for \"{}\""
 msgstr "keine Treffer für \"{}\""
-
-msgctxt "EncryptionBanner"
-msgid "post-compromise secure"
-msgstr "post-kompromiss-sicher"
 
 msgctxt "EmojiPicker"
 msgid "search…"
@@ -2352,6 +2387,10 @@ msgstr "✓ VERIFIZIERT"
 #~ msgid "Fetched from relay.damus.io · refreshed 4m ago"
 #~ msgstr "Von relay.damus.io abgerufen · vor 4 Min. aktualisiert"
 
+#~ msgctxt "EncryptionBanner"
+#~ msgid "Forward secret"
+#~ msgstr "Forward Secret"
+
 #~ msgctxt "SettingsPage"
 #~ msgid "Local cache, message retention, attachments."
 #~ msgstr "Lokaler Cache, Nachrichtenaufbewahrung, Anhänge."
@@ -2425,6 +2464,10 @@ msgstr "✓ VERIFIZIERT"
 #~ msgctxt "StartNewChatModal"
 #~ msgid "or"
 #~ msgstr "oder"
+
+#~ msgctxt "EncryptionBanner"
+#~ msgid "post-compromise secure"
+#~ msgstr "post-kompromiss-sicher"
 
 #~ msgctxt "ContactDetail"
 #~ msgid "up to date"

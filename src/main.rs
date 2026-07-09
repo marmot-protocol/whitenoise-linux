@@ -629,9 +629,6 @@ fn main() -> Result<(), slint::PlatformError> {
     // Display name picked at key-generation time — reused when seeding the
     // kind-0 so the login preview matches the published profile.
     let pending_profile_name: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
-    // Chats whose encryption banner entrance has already played.
-    let encryption_banner_seen: Arc<Mutex<std::collections::HashSet<String>>> =
-        Arc::new(Mutex::new(std::collections::HashSet::new()));
 
     // Boot the backend from an nsec and populate the chat models. Errors are
     // surfaced on the UI's backend-error property; the UI stays logged-in
@@ -650,7 +647,6 @@ fn main() -> Result<(), slint::PlatformError> {
         let notif = notif.clone();
         let pending_profile_seed = pending_profile_seed.clone();
         let pending_profile_name = pending_profile_name.clone();
-        let encryption_banner_seen = encryption_banner_seen.clone();
         // `active_hint` names the account (id hex) to display first — the
         // vault-recorded last-active account on unlock, `None` on first run.
         Arc::new(
@@ -677,7 +673,6 @@ fn main() -> Result<(), slint::PlatformError> {
                 let notif = notif.clone();
                 let pending_profile_seed = pending_profile_seed.clone();
                 let pending_profile_name = pending_profile_name.clone();
-                let encryption_banner_seen = encryption_banner_seen.clone();
                 std::thread::spawn(move || {
                     let relays = backend::load_relays();
                     // Kept aside for the per-account nsec migration write below —
@@ -797,11 +792,10 @@ fn main() -> Result<(), slint::PlatformError> {
                                     &group_ids,
                                     &archived_group_ids,
                                 );
-                                // First chat may already be visible — play the
-                                // encryption-banner entrance once its key is known.
+                                // First chat may already be visible at boot —
+                                // restore its saved draft once its key is known.
                                 let weak_banner = ui.as_weak();
                                 let group_ids_banner = group_ids.clone();
-                                let banner_seen_boot = encryption_banner_seen.clone();
                                 slint::Timer::single_shot(
                                     std::time::Duration::from_millis(350),
                                     move || {
@@ -811,11 +805,6 @@ fn main() -> Result<(), slint::PlatformError> {
                                         let idx = ui.get_active_chat() as usize;
                                         let key =
                                             group_ids_banner.lock().unwrap().get(idx).cloned();
-                                        trigger_encryption_banner_entrance(
-                                            &ui,
-                                            key.as_deref(),
-                                            &banner_seen_boot,
-                                        );
                                         // The default-selected chat is shown at
                                         // boot without a `chat-selected` click, so
                                         // restore its saved draft here. Only when
@@ -947,7 +936,7 @@ fn main() -> Result<(), slint::PlatformError> {
         &pending_profile_name,
     );
     wire_backup(&ui, &cx, &h);
-    wire_chats(&ui, &cx, &h, &encryption_banner_seen);
+    wire_chats(&ui, &cx, &h);
     wire_nav(&ui, &cx, &h);
     wire_contacts(&ui, &cx, &h);
     wire_groups(&ui, &cx);

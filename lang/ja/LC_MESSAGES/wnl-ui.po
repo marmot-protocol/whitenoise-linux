@@ -556,6 +556,11 @@ msgctxt "LoginScreen"
 msgid "Continue"
 msgstr "続行"
 
+#, fuzzy
+msgctxt "EncryptionInfoModal"
+msgid "Copied ✓"
+msgstr "コピーしました ✓"
+
 msgctxt "ProfileModal"
 msgid "Copied ✓"
 msgstr "コピーしました ✓"
@@ -849,12 +854,13 @@ msgid "Encrypted group chat on Nostr"
 msgstr "Nostr 上の暗号化グループチャット"
 
 #, fuzzy
-msgctxt "AboutPane"
-msgid "End-to-end encrypted group messaging for Linux."
+msgctxt "EncryptionInfoModal"
+msgid "End-to-end encrypted"
 msgstr "エンドツーエンド暗号化:"
 
-msgctxt "EncryptionBanner"
-msgid "End-to-end encrypted with"
+#, fuzzy
+msgctxt "AboutPane"
+msgid "End-to-end encrypted group messaging for Linux."
 msgstr "エンドツーエンド暗号化:"
 
 #, fuzzy
@@ -874,6 +880,10 @@ msgctxt "LoginScreen"
 msgid "Enter your password to unlock"
 msgstr "パスワードを入力してロックを解除"
 
+msgctxt "EncryptionInfoModal"
+msgid "Even if a key leaks later on, the messages you already sent can't be unlocked with it."
+msgstr ""
+
 msgctxt "month"
 msgid "Feb"
 msgstr "2月"
@@ -881,10 +891,6 @@ msgstr "2月"
 msgctxt "MessageContextMenu"
 msgid "Forward"
 msgstr "転送"
-
-msgctxt "EncryptionBanner"
-msgid "Forward secret"
-msgstr "フォワードシークレット"
 
 msgctxt "ForwardPickerModal"
 msgid "Forward to…"
@@ -901,6 +907,10 @@ msgstr "転送:"
 msgctxt "weekday"
 msgid "Fri"
 msgstr "金曜日"
+
+msgctxt "EncryptionInfoModal"
+msgid "GROUP ID"
+msgstr ""
 
 msgctxt "StartNewChatModal"
 msgid "GROUP NAME (OPTIONAL)"
@@ -923,13 +933,17 @@ msgctxt "LoginScreen"
 msgid "Generate a new key"
 msgstr "新しい鍵を生成"
 
-msgctxt "ArchivedDetail"
-msgid "Group id"
-msgstr "グループ ID"
+msgctxt "EncryptionInfoModal"
+msgid "Got it"
+msgstr ""
 
 msgctxt "GroupSettingsCard"
 msgid "Group description"
 msgstr "グループの説明"
+
+msgctxt "ArchivedDetail"
+msgid "Group id"
+msgstr "グループ ID"
 
 #, fuzzy
 msgctxt "GroupSettingsCard"
@@ -968,6 +982,10 @@ msgstr "ID"
 msgctxt "NotificationsPane"
 msgid "INCOMING MESSAGES"
 msgstr "受信メッセージ"
+
+msgctxt "EncryptionInfoModal"
+msgid "If someone's device gets compromised, the group quietly swaps in fresh keys so what you send next is private again."
+msgstr ""
 
 msgctxt "ImageViewerModal"
 msgid "Image didn't load. Tap to retry."
@@ -1026,6 +1044,10 @@ msgstr "npub で誰かを招待して、挨拶してみましょう。"
 msgctxt "AddMemberCard"
 msgid "Inviting…"
 msgstr "保存中…"
+
+msgctxt "EncryptionInfoModal"
+msgid "It recovers on its own"
+msgstr ""
 
 msgctxt "ArchivedDetail"
 msgid "It stays end-to-end encrypted. Unarchiving returns it to your main list and resumes notifications."
@@ -1086,6 +1108,11 @@ msgstr "ログイン時に起動"
 msgctxt "AppearancePane"
 msgid "Lavender"
 msgstr "ラベンダー"
+
+#, fuzzy
+msgctxt "ChatContextMenu"
+msgid "Leave group"
+msgstr "グループを退出"
 
 msgctxt "DarkMatterLinux"
 msgid "Leave group"
@@ -1392,6 +1419,14 @@ msgstr "10月"
 msgctxt "NotificationsPane"
 msgid "Off shows only \"New message\" without the text."
 msgstr "オフにすると、本文を表示せず「新着メッセージ」とだけ表示します。"
+
+msgctxt "EncryptionInfoModal"
+msgid "Old messages stay safe"
+msgstr ""
+
+msgctxt "EncryptionInfoModal"
+msgid "Only the people in this chat can read it."
+msgstr ""
 
 msgctxt "StoragePane"
 msgid "Open folder"
@@ -2154,6 +2189,10 @@ msgctxt "GetStartedScreen"
 msgid "Welcome to darkmatter"
 msgstr "darkmatter へようこそ"
 
+msgctxt "EncryptionInfoModal"
+msgid "Whatever you send in this chat is encrypted on your device before it goes out. The relays that pass it along can't read it, and we can't either."
+msgstr ""
+
 msgctxt "NetworkPane"
 msgid "Where your messages land."
 msgstr "メッセージの配信先。"
@@ -2245,10 +2284,6 @@ msgstr "一致なし"
 msgctxt "EmojiPicker"
 msgid "no matches for \"{}\""
 msgstr "\"{}\" に一致なし"
-
-msgctxt "EncryptionBanner"
-msgid "post-compromise secure"
-msgstr "侵害後も安全"
 
 msgctxt "EmojiPicker"
 msgid "search…"
@@ -2349,6 +2384,10 @@ msgstr "✓ 確認済み"
 #~ msgid "Fetched from relay.damus.io · refreshed 4m ago"
 #~ msgstr "relay.damus.io から取得 · 4分前に更新"
 
+#~ msgctxt "EncryptionBanner"
+#~ msgid "Forward secret"
+#~ msgstr "フォワードシークレット"
+
 #~ msgctxt "SettingsPage"
 #~ msgid "Local cache, message retention, attachments."
 #~ msgstr "ローカルキャッシュ、メッセージ保持、添付ファイル。"
@@ -2422,6 +2461,10 @@ msgstr "✓ 確認済み"
 #~ msgctxt "StartNewChatModal"
 #~ msgid "or"
 #~ msgstr "または"
+
+#~ msgctxt "EncryptionBanner"
+#~ msgid "post-compromise secure"
+#~ msgstr "侵害後も安全"
 
 #~ msgctxt "ContactDetail"
 #~ msgid "up to date"

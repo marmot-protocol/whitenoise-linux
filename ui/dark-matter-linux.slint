@@ -41,6 +41,7 @@ import { ImageViewerModal } from "modals/image-viewer-modal.slint";
 import { VideoViewerModal } from "modals/video-viewer-modal.slint";
 import { ProfileModal } from "modals/profile-modal.slint";
 import { QrModal } from "modals/qr-modal.slint";
+import { EncryptionInfoModal } from "modals/encryption-info-modal.slint";
 import { LoginScreen } from "login/login-screen.slint";
 import { SplashScreen } from "splash.slint";
 import { EmojiPicker } from "emoji-picker.slint";
@@ -512,8 +513,9 @@ export component DarkMatterLinux inherits Window {
     in property <string> booting-status: @tr("Connecting to relays…");
     in property <int> booting-phase: 0;
     in property <int> booting-phase-count: 4;
-    // One-time encryption-banner entrance per chat (Rust clears after first show).
-    in property <bool> encryption-banner-first-show: false;
+    // Open state for the "what is MLS encryption?" explainer, opened from the
+    // chat-header badge. Purely UI-side — no Rust involvement beyond clipboard.
+    property <bool> encryption-info-open: false;
 
     // Profile editor state (kind-0 metadata via marmot-app).
     // Derived in Rust from the profile (display name → initials + palette).
@@ -943,7 +945,9 @@ export component DarkMatterLinux inherits Window {
                             mute-toggle-clicked => {
                                 root.toggle-mute-chat();
                             }
-                            encryption-banner-first-show: root.encryption-banner-first-show;
+                            badge-clicked => {
+                                root.encryption-info-open = true;
+                            }
                             member-count: root.chat-member-count;
                             group-description: root.chat-group-description;
                             members: root.chat-members;
@@ -1727,6 +1731,16 @@ export component DarkMatterLinux inherits Window {
         }
         dismissed => {
             root.peer-profile-dismissed();
+        }
+    }
+
+    if root.encryption-info-open: EncryptionInfoModal {
+        group-id: root.chats[root.active-chat].npub;
+        copy-group-id => {
+            root.copy-to-clipboard(root.chats[root.active-chat].npub);
+        }
+        dismissed => {
+            root.encryption-info-open = false;
         }
     }
 

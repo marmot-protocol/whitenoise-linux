@@ -529,6 +529,10 @@ msgctxt "LoginScreen"
 msgid "Continue"
 msgstr ""
 
+msgctxt "EncryptionInfoModal"
+msgid "Copied ✓"
+msgstr ""
+
 msgctxt "ProfileModal"
 msgid "Copied ✓"
 msgstr ""
@@ -810,12 +814,12 @@ msgctxt "AboutPane"
 msgid "Encrypted group chat on Nostr"
 msgstr ""
 
-msgctxt "AboutPane"
-msgid "End-to-end encrypted group messaging for Linux."
+msgctxt "EncryptionInfoModal"
+msgid "End-to-end encrypted"
 msgstr ""
 
-msgctxt "EncryptionBanner"
-msgid "End-to-end encrypted with"
+msgctxt "AboutPane"
+msgid "End-to-end encrypted group messaging for Linux."
 msgstr ""
 
 msgctxt "AboutPane"
@@ -834,16 +838,16 @@ msgctxt "LoginScreen"
 msgid "Enter your password to unlock"
 msgstr ""
 
+msgctxt "EncryptionInfoModal"
+msgid "Even if a key leaks later on, the messages you already sent can't be unlocked with it."
+msgstr ""
+
 msgctxt "month"
 msgid "Feb"
 msgstr ""
 
 msgctxt "MessageContextMenu"
 msgid "Forward"
-msgstr ""
-
-msgctxt "EncryptionBanner"
-msgid "Forward secret"
 msgstr ""
 
 msgctxt "ForwardPickerModal"
@@ -860,6 +864,10 @@ msgstr ""
 
 msgctxt "weekday"
 msgid "Fri"
+msgstr ""
+
+msgctxt "EncryptionInfoModal"
+msgid "GROUP ID"
 msgstr ""
 
 msgctxt "StartNewChatModal"
@@ -882,12 +890,16 @@ msgctxt "LoginScreen"
 msgid "Generate a new key"
 msgstr ""
 
-msgctxt "ArchivedDetail"
-msgid "Group id"
+msgctxt "EncryptionInfoModal"
+msgid "Got it"
 msgstr ""
 
 msgctxt "GroupSettingsCard"
 msgid "Group description"
+msgstr ""
+
+msgctxt "ArchivedDetail"
+msgid "Group id"
 msgstr ""
 
 msgctxt "GroupSettingsCard"
@@ -924,6 +936,10 @@ msgstr ""
 
 msgctxt "NotificationsPane"
 msgid "INCOMING MESSAGES"
+msgstr ""
+
+msgctxt "EncryptionInfoModal"
+msgid "If someone's device gets compromised, the group quietly swaps in fresh keys so what you send next is private again."
 msgstr ""
 
 msgctxt "ImageViewerModal"
@@ -980,6 +996,10 @@ msgstr ""
 
 msgctxt "AddMemberCard"
 msgid "Inviting…"
+msgstr ""
+
+msgctxt "EncryptionInfoModal"
+msgid "It recovers on its own"
 msgstr ""
 
 msgctxt "ArchivedDetail"
@@ -1040,6 +1060,10 @@ msgstr ""
 
 msgctxt "AppearancePane"
 msgid "Lavender"
+msgstr ""
+
+msgctxt "ChatContextMenu"
+msgid "Leave group"
 msgstr ""
 
 msgctxt "DarkMatterLinux"
@@ -1330,6 +1354,14 @@ msgstr ""
 
 msgctxt "NotificationsPane"
 msgid "Off shows only \"New message\" without the text."
+msgstr ""
+
+msgctxt "EncryptionInfoModal"
+msgid "Old messages stay safe"
+msgstr ""
+
+msgctxt "EncryptionInfoModal"
+msgid "Only the people in this chat can read it."
 msgstr ""
 
 msgctxt "StoragePane"
@@ -2057,6 +2089,10 @@ msgctxt "GetStartedScreen"
 msgid "Welcome to darkmatter"
 msgstr ""
 
+msgctxt "EncryptionInfoModal"
+msgid "Whatever you send in this chat is encrypted on your device before it goes out. The relays that pass it along can't read it, and we can't either."
+msgstr ""
+
 msgctxt "NetworkPane"
 msgid "Where your messages land."
 msgstr ""
@@ -2147,10 +2183,6 @@ msgstr ""
 
 msgctxt "EmojiPicker"
 msgid "no matches for \"{}\""
-msgstr ""
-
-msgctxt "EncryptionBanner"
-msgid "post-compromise secure"
 msgstr ""
 
 msgctxt "EmojiPicker"

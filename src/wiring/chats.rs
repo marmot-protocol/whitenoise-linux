@@ -4,7 +4,6 @@ pub(crate) fn wire_chats(
     ui: &DarkMatterLinux,
     cx: &Cx,
     h: &Handlers,
-    encryption_banner_seen: &Arc<Mutex<std::collections::HashSet<String>>>,
 ) {
     let Cx {
         notif,
@@ -131,7 +130,6 @@ pub(crate) fn wire_chats(
         let group_ids = group_ids.clone();
         let active_watcher = active_message_watcher.clone();
         let pending_state = pending_state.clone();
-        let banner_seen = encryption_banner_seen.clone();
         let notif = notif.clone();
         let settings_cell = settings_cell.clone();
         move |idx| {
@@ -164,7 +162,6 @@ pub(crate) fn wire_chats(
                 let group_hex = group_ids.lock().unwrap().get(idx as usize).cloned();
                 // Reflect this chat's mute state in the header bell.
                 ui.set_active_chat_muted(group_hex.as_deref().is_some_and(|g| notif.is_muted(g)));
-                trigger_encryption_banner_entrance(&ui, group_hex.as_deref(), &banner_seen);
                 if let Some(group_hex) = group_hex {
                     let t_switch = std::time::Instant::now();
                     // Restore this chat's saved draft (empty if none), so a

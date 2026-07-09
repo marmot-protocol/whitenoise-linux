@@ -59,36 +59,6 @@ pub(crate) fn my_avatar_label(backend: &Backend, my_id: &str) -> String {
     }
 }
 
-/// One-time encryption-banner entrance when a chat is opened for the first time.
-pub(crate) fn trigger_encryption_banner_entrance(
-    ui: &DarkMatterLinux,
-    chat_key: Option<&str>,
-    banner_seen: &Arc<Mutex<std::collections::HashSet<String>>>,
-) {
-    let Some(chat_key) = chat_key else {
-        ui.set_encryption_banner_first_show(false);
-        return;
-    };
-    let first_show = {
-        let mut seen = banner_seen.lock().unwrap();
-        if seen.contains(chat_key) {
-            false
-        } else {
-            seen.insert(chat_key.to_string());
-            true
-        }
-    };
-    ui.set_encryption_banner_first_show(first_show);
-    if first_show {
-        let weak = ui.as_weak();
-        slint::Timer::single_shot(std::time::Duration::from_millis(520), move || {
-            if let Some(ui) = weak.upgrade() {
-                ui.set_encryption_banner_first_show(false);
-            }
-        });
-    }
-}
-
 /// Splash step index for a boot status line.
 pub(crate) fn boot_phase_for_status(status: &str) -> i32 {
     if status.contains("Opening") {
