@@ -1195,10 +1195,25 @@ msgctxt "ProfilePage"
 msgid "Lightning address (LUD-16)"
 msgstr "Lightning アドレス (LUD-16)"
 
-#, fuzzy
 msgctxt "MessagesArea"
 msgid "Load earlier messages"
-msgstr "最後のメッセージ"
+msgstr "以前のメッセージを読み込む"
+
+msgctxt "MessagesArea"
+msgid "Loading messages…"
+msgstr "メッセージを読み込み中…"
+
+msgctxt "MessagesArea"
+msgid "No messages yet"
+msgstr "まだメッセージはありません"
+
+msgctxt "MessagesArea"
+msgid "Fetching the latest conversation history."
+msgstr "最新の会話履歴を取得しています。"
+
+msgctxt "MessagesArea"
+msgid "Say hello to start the conversation."
+msgstr "挨拶して会話を始めましょう。"
 
 #, fuzzy
 msgctxt "ImageViewerModal"

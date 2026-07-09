@@ -53,6 +53,7 @@ export component MainPane inherits Rectangle {
     in property <image> my-picture;
     in property <bool> my-has-picture: false;
     in property <[ChatMessage]> messages;
+    in property <bool> messages-loading: false;
     in property <int> scroll-tick: 0;
     in property <bool> has-older: false;
     callback request-older();
@@ -161,6 +162,7 @@ export component MainPane inherits Rectangle {
             MessagesArea {
                 vertical-stretch: 1;
                 messages: root.messages;
+                loading: root.messages-loading;
                 scroll-tick: root.scroll-tick;
                 has-older: root.has-older;
                 request-older => {
