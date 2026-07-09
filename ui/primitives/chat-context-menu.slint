@@ -14,10 +14,11 @@ export component ChatContextMenu inherits Rectangle {
     in property <bool> can-leave: false;
     callback toggle-pin();
     callback toggle-mute();
+    callback export-chat();
     callback leave-group();
     callback dismissed();
 
-    property <int> item-count: 2 + (root.can-leave ? 1 : 0);
+    property <int> item-count: 3 + (root.can-leave ? 1 : 0);
     property <int> selected-index: 0;
 
     function move-selection(delta: int) {
@@ -37,7 +38,9 @@ export component ChatContextMenu inherits Rectangle {
             root.toggle-pin();
         } else if (root.selected-index == 1) {
             root.toggle-mute();
-        } else if (root.selected-index == 2 && root.can-leave) {
+        } else if (root.selected-index == 2) {
+            root.export-chat();
+        } else if (root.selected-index == 3 && root.can-leave) {
             root.leave-group();
         }
     }
@@ -117,15 +120,27 @@ export component ChatContextMenu inherits Rectangle {
                 }
 
                 MenuItem {
+                    glyph: "⭳";
+                    label: @tr("Export transcript…");
+                    selected: root.selected-index == 2;
+                    activated => {
+                        root.export-chat();
+                    }
+                    hovered => {
+                        root.selected-index = 2;
+                    }
+                }
+
+                MenuItem {
                     shown: root.can-leave;
                     glyph: "←";
                     label: @tr("Leave group");
-                    selected: root.selected-index == 2;
+                    selected: root.selected-index == 3;
                     activated => {
                         root.leave-group();
                     }
                     hovered => {
-                        root.selected-index = 2;
+                        root.selected-index = 3;
                     }
                 }
             }
