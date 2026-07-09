@@ -1,0 +1,81 @@
+import { Palette, Theme, SharedGroup } from "../tokens.slint";
+import { Avatar } from "../primitives/avatar.slint";
+
+// The groups the viewer shares with a contact, one tappable row each. Tapping
+// a row opens that group's chat (via `open-group`). When the set is empty it
+// renders a single plain line so the section never looks broken.
+export component SharedGroupsList inherits VerticalLayout {
+    in property <[SharedGroup]> groups;
+    in property <string> empty-text: @tr("No groups in common");
+    callback open-group(string);
+    spacing: 0;
+
+    if root.groups.length == 0: Rectangle {
+        height: 52px;
+        Text {
+            text: root.empty-text;
+            color: Palette.text-lo;
+            font-size: (12px) * Theme.fs-scale;
+            font-family: Theme.font;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+    }
+
+    for group[idx] in root.groups: Rectangle {
+        height: 56px;
+        background: touch.has-hover ? Palette.field-hover : transparent;
+        animate background { duration: 100ms; }
+        HorizontalLayout {
+            padding-left: 14px;
+            padding-right: 14px;
+            spacing: 12px;
+            alignment: stretch;
+            VerticalLayout {
+                alignment: center;
+                Avatar {
+                    size: 38px;
+                    initials: group.av-initials;
+                    color-a: group.av-a;
+                    color-b: group.av-b;
+                    font-size: Theme.fs(13px, 13px);
+                }
+            }
+
+            VerticalLayout {
+                horizontal-stretch: 1;
+                alignment: center;
+                spacing: 2px;
+                Text {
+                    text: group.name;
+                    color: Palette.text-hi;
+                    font-size: (13px) * Theme.fs-scale;
+                    font-weight: 700;
+                    font-family: Theme.font;
+                    overflow: elide;
+                }
+
+                Text {
+                    text: @tr("1 member" | "{n} members" % group.members);
+                    color: Palette.text-lo;
+                    font-size: (11px) * Theme.fs-scale;
+                    font-family: Theme.font;
+                }
+            }
+        }
+
+        touch := TouchArea {
+            mouse-cursor: pointer;
+            clicked => {
+                root.open-group(group.group-id);
+            }
+        }
+
+        if idx < root.groups.length - 1: Rectangle {
+            y: parent.height - 1px;
+            width: parent.width;
+            height: 1px;
+            background: Palette.border-2;
+        }
+    }
+}

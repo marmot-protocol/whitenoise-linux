@@ -967,6 +967,18 @@ export struct Contact {
     kp-detail: string,
 }
 
+// One group the viewer has in common with a contact, rendered as a tappable
+// row in the contact detail page and the profile modal. `group-id` is the
+// group_id_hex handed back to open that chat.
+export struct SharedGroup {
+    name: string,
+    group-id: string,
+    members: int,
+    av-a: color,
+    av-b: color,
+    av-initials: string,
+}
+
 // One on-disk forensic audit-log file (Settings → Advanced). `path` is the
 // opaque key handed back to the delete callback; `meta` is the preformatted
 // "size · date" line (formatting stays Rust-side).

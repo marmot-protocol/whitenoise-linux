@@ -112,6 +112,12 @@ msgid_plural "{n} members"
 msgstr[0] ""
 msgstr[1] ""
 
+msgctxt "SharedGroupsList"
+msgid "1 member"
+msgid_plural "{n} members"
+msgstr[0] ""
+msgstr[1] ""
+
 msgctxt "GeneralPane"
 msgid "12-hour"
 msgstr ""
@@ -902,6 +908,14 @@ msgctxt "StartNewChatModal"
 msgid "GROUP NAME (OPTIONAL)"
 msgstr ""
 
+msgctxt "ContactDetail"
+msgid "GROUPS IN COMMON"
+msgstr ""
+
+msgctxt "ProfileModal"
+msgid "GROUPS IN COMMON"
+msgstr ""
+
 msgctxt "GeneralPane"
 msgid "General"
 msgstr ""
@@ -1305,6 +1319,10 @@ msgstr ""
 
 msgctxt "ImportBackupModal"
 msgid "No file selected"
+msgstr ""
+
+msgctxt "SharedGroupsList"
+msgid "No groups in common"
 msgstr ""
 
 msgctxt "KeysPage"

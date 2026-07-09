@@ -280,6 +280,8 @@ pub(crate) fn refresh_contacts_async(
                 vm.set_vec(rows);
             }
             spawn_contact_avatar_fetches(&ui, &b);
+            // Groups-in-common for whichever contact the detail pane shows.
+            push_contact_shared_groups(&ui, &b);
             then(&ui);
         });
     });
@@ -395,6 +397,44 @@ pub(crate) fn contact_from(
         kp_status: s(&kp_status),
         kp_detail: s(&kp_detail),
     }
+}
+
+/// Build the `SharedGroup` rows for `account_id_hex`: the groups the local
+/// account has in common with that person, each with a deterministic gradient
+/// avatar. Ordering (by name) is done backend-side.
+pub(crate) fn shared_groups_model(backend: &Backend, account_id_hex: &str) -> Vec<SharedGroup> {
+    backend
+        .shared_groups(account_id_hex)
+        .into_iter()
+        .map(|g| {
+            let (a, b, init) = avatar_for(&g.name);
+            SharedGroup {
+                name: s(&g.name),
+                group_id: s(&g.group_id_hex),
+                members: g.member_count as i32,
+                av_a: a,
+                av_b: b,
+                av_initials: s(&init),
+            }
+        })
+        .collect()
+}
+
+/// Recompute and push the active contact's "groups in common" list. Reads the
+/// contact's account id from the current contacts model row; a cold members
+/// cache just yields fewer rows until it warms.
+pub(crate) fn push_contact_shared_groups(ui: &DarkMatterLinux, backend: &Backend) {
+    let account_id = ui
+        .get_contacts()
+        .row_data(ui.get_active_contact().max(0) as usize)
+        .map(|c| c.account_id.to_string())
+        .unwrap_or_default();
+    let rows = if account_id.is_empty() {
+        Vec::new()
+    } else {
+        shared_groups_model(backend, &account_id)
+    };
+    ui.set_contact_shared_groups(model(rows));
 }
 
 /// Split the new-chat modal's members textarea into individual npubs/hex

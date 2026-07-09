@@ -1,10 +1,6 @@
 use crate::*;
 
-pub(crate) fn wire_chats(
-    ui: &DarkMatterLinux,
-    cx: &Cx,
-    h: &Handlers,
-) {
+pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     let Cx {
         notif,
         settings_cell,

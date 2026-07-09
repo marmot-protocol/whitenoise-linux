@@ -1,4 +1,4 @@
-import { Palette, Contact, Theme } from "../tokens.slint";
+import { Palette, Contact, SharedGroup, Theme } from "../tokens.slint";
 import { StartChatIcon } from "../icons/start-chat-icon.slint";
 import { CopyIcon } from "../icons/copy-icon.slint";
 import { RefreshIcon } from "../icons/refresh-icon.slint";
@@ -15,6 +15,7 @@ import { PageHeader } from "../shells/page-header.slint";
 import { Section } from "../shells/section.slint";
 import { GroupCard } from "../shells/group-card.slint";
 import { InfoRow } from "info-row.slint";
+import { SharedGroupsList } from "../shells/shared-groups.slint";
 import { Button, MicroButton } from "../primitives/button.slint";
 import { PencilIcon } from "../icons/pencil-icon.slint";
 
@@ -24,7 +25,9 @@ export component ContactDetail inherits DetailPage {
     callback refresh-key-package();
     callback show-qr();
     callback start-chat();
+    callback open-shared-group(string);
     in property <Contact> contact;
+    in property <[SharedGroup]> shared-groups;
 
     PageHeader {
         title: @tr("Contact");
@@ -209,6 +212,18 @@ export component ContactDetail inherits DetailPage {
                             root.show-qr();
                         }
                     }
+                }
+            }
+        }
+    }
+
+    Section {
+        label: @tr("GROUPS IN COMMON");
+        GroupCard {
+            SharedGroupsList {
+                groups: root.shared-groups;
+                open-group(id) => {
+                    root.open-shared-group(id);
                 }
             }
         }

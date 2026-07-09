@@ -1,4 +1,4 @@
-import { Palette, Contact } from "../tokens.slint";
+import { Palette, Contact, SharedGroup } from "../tokens.slint";
 import { ContactsSidebar } from "contacts-sidebar.slint";
 import { ContactDetail } from "contact-detail.slint";
 import { EmptyState } from "../shells/empty-state.slint";
@@ -12,7 +12,9 @@ export component ContactsPage inherits Rectangle {
     callback refresh-key-package-clicked();
     callback show-qr-clicked();
     callback start-chat-clicked();
+    callback open-shared-group(string);
     in property <[Contact]> contacts;
+    in property <[SharedGroup]> shared-groups;
     in property <int> active-contact;
     // Bound by the shell; drives the sidebar's narrow-window collapse.
     in property <length> window-width: 100000px;
@@ -44,6 +46,10 @@ export component ContactsPage inherits Rectangle {
         width: parent.width - sidebar.reserved-width;
         height: parent.height;
         contact: root.contacts[root.active-contact];
+        shared-groups: root.shared-groups;
+        open-shared-group(id) => {
+            root.open-shared-group(id);
+        }
         edit-nickname => {
             root.edit-nickname-clicked();
         }

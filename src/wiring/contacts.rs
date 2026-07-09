@@ -352,11 +352,62 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     ui.on_contact_selected({
         let weak = ui.as_weak();
         let refresh = refresh_breadcrumb.clone();
+        let backend_cell = backend_cell.clone();
         move |idx| {
             if let Some(ui) = weak.upgrade() {
                 ui.set_active_contact(idx);
+                if let Some(b) = backend_cell.lock().unwrap().clone() {
+                    push_contact_shared_groups(&ui, &b);
+                }
                 refresh();
             }
+        }
+    });
+    // A "groups in common" row was tapped (contact detail or profile modal):
+    // switch to Chats and open that group. It's a visible group the local
+    // account is in, so its hex is already in `group_ids`; a snapshot refresh
+    // is the fallback if the ordering shifted since the list was built.
+    ui.on_open_shared_group({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let group_ids = group_ids.clone();
+        move |group_hex| {
+            let Some(ui) = weak.upgrade() else { return };
+            let group_hex = group_hex.to_string();
+            if group_hex.is_empty() {
+                return;
+            }
+            // The row can be tapped from the profile modal, which overlays any
+            // page; close it so the chat it opens is visible.
+            ui.set_peer_profile_open(false);
+            let pos = group_ids
+                .lock()
+                .unwrap()
+                .iter()
+                .position(|g| g.eq_ignore_ascii_case(&group_hex));
+            if let Some(pos) = pos {
+                ui.set_active_page(Page::Chats as i32);
+                refresh_breadcrumb_now(&ui);
+                ui.set_active_chat(pos as i32);
+                ui.invoke_chat_selected(pos as i32);
+                return;
+            }
+            let Some(b) = backend_cell.lock().unwrap().clone() else {
+                return;
+            };
+            refresh_chats_async(&ui, &b, &group_ids, move |ui, _b, snap| {
+                let Some(pos) = snap
+                    .records
+                    .iter()
+                    .position(|r| r.group_id_hex.eq_ignore_ascii_case(&group_hex))
+                else {
+                    return;
+                };
+                ui.set_active_page(Page::Chats as i32);
+                refresh_breadcrumb_now(ui);
+                ui.set_active_chat(pos as i32);
+                ui.invoke_chat_selected(pos as i32);
+            });
         }
     });
 }

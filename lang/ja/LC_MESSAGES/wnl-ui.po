@@ -110,6 +110,11 @@ msgid "1 member"
 msgid_plural "{n} members"
 msgstr[0] "{n} メンバー"
 
+msgctxt "SharedGroupsList"
+msgid "1 member"
+msgid_plural "{n} members"
+msgstr[0] "{n} メンバー"
+
 msgctxt "GeneralPane"
 msgid "12-hour"
 msgstr "12時間表示"
@@ -944,6 +949,14 @@ msgctxt "StartNewChatModal"
 msgid "GROUP NAME (OPTIONAL)"
 msgstr "グループ名（任意）"
 
+msgctxt "ContactDetail"
+msgid "GROUPS IN COMMON"
+msgstr "共通のグループ"
+
+msgctxt "ProfileModal"
+msgid "GROUPS IN COMMON"
+msgstr "共通のグループ"
+
 msgctxt "GeneralPane"
 msgid "General"
 msgstr "一般"
@@ -1366,6 +1379,10 @@ msgstr "連絡先を削除"
 msgctxt "ImportBackupModal"
 msgid "No file selected"
 msgstr "ファイルが選択されていません"
+
+msgctxt "SharedGroupsList"
+msgid "No groups in common"
+msgstr "共通のグループはありません"
 
 msgctxt "KeysPage"
 msgid "No key packages yet"

@@ -1,6 +1,7 @@
-import { Palette, Theme } from "../tokens.slint";
+import { Palette, Theme, SharedGroup } from "../tokens.slint";
 import { Modal } from "modal.slint";
 import { Avatar } from "../primitives/avatar.slint";
+import { SharedGroupsList } from "../shells/shared-groups.slint";
 import { CopyIcon } from "../icons/copy-icon.slint";
 import { CheckMark } from "../icons/check-mark.slint";
 
@@ -25,8 +26,10 @@ export component ProfileModal inherits Modal {
     in property <string> av-initials;
     in property <image> av-picture;
     in property <bool> av-has-picture: false;
+    in property <[SharedGroup]> shared-groups;
     callback copy-npub;
     callback add-contact;
+    callback open-shared-group(string);
 
     card-width: 380px;
     title: "";
@@ -311,6 +314,35 @@ export component ProfileModal inherits Modal {
                 font-family: Theme.font;
                 horizontal-alignment: center;
                 overflow: elide;
+            }
+
+            // Groups in common — only when there are any and this isn't the
+            // user's own profile (you can't share a group with yourself). The
+            // full list with its empty state lives on the contact detail page;
+            // the modal stays a quick-glance card.
+            if !root.loading && !root.is-self && root.shared-groups.length > 0: VerticalLayout {
+                spacing: 8px;
+                Rectangle {
+                    height: 1px;
+                    background: Palette.border-2;
+                }
+
+                Text {
+                    text: @tr("GROUPS IN COMMON");
+                    color: Palette.text-mid;
+                    font-size: (9.5px) * Theme.fs-scale;
+                    font-weight: 700;
+                    letter-spacing: 1.4px;
+                    font-family: Theme.font;
+                    horizontal-alignment: center;
+                }
+
+                SharedGroupsList {
+                    groups: root.shared-groups;
+                    open-group(id) => {
+                        root.open-shared-group(id);
+                    }
+                }
             }
 
             // Relay-lookup status lines.
