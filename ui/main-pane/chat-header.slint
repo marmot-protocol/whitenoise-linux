@@ -19,11 +19,13 @@ export component ChatHeader inherits Rectangle {
     in property <string> group-description;
     in property <bool> members-open: false;
     in property <bool> muted: false;
+    in property <bool> mentions-filter-active: false;
     callback accept-clicked();
     callback block-clicked();
     callback archive-clicked();
     callback members-toggle-clicked();
     callback mute-toggle-clicked();
+    callback mentions-filter-toggle-clicked();
     // Tapping the encryption badge opens the "what is this?" explainer modal.
     callback badge-clicked();
 
@@ -112,6 +114,33 @@ export component ChatHeader inherits Rectangle {
                 color: Palette.text-lo;
                 font-size: (11px) * Theme.fs-scale;
                 overflow: elide;
+            }
+        }
+
+        // Mentions filter — turns the open thread into a lightweight mentions
+        // inbox for messages that address the local user.
+        if !root.chat.is-chat-request: Rectangle {
+            width: 36px;
+            height: 36px;
+            y: (parent.height - self.height) / 2;
+            background: root.mentions-filter-active ? Palette.selected : (mention-filter-touch.has-hover ? Palette.hover : transparent);
+            border-radius: (6px) * Theme.r-scale;
+            border-width: root.mentions-filter-active ? 1px : 0px;
+            border-color: Palette.border-2;
+            animate background { duration: 100ms; }
+            mention-filter-touch := TouchArea {
+                clicked => {
+                    root.mentions-filter-toggle-clicked();
+                }
+                Text {
+                    text: "@";
+                    color: root.mentions-filter-active ? Palette.mint : Palette.text-mid;
+                    font-family: Theme.font;
+                    font-size: 17px * Theme.fs-scale;
+                    font-weight: 800;
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                }
             }
         }
 

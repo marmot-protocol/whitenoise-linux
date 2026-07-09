@@ -391,6 +391,7 @@ pub(crate) fn chat_message_from_with_reactions(
         sender_id: s(&record.sender),
         sender_name: s(if outgoing { "" } else { &sender_name }),
         show_sender_name: is_group && !outgoing,
+        mentioned: !outgoing && text_mentions_account(display_text, my_account_id_hex),
         picture,
         has_picture,
         bubble_max,
@@ -807,6 +808,7 @@ pub(crate) fn pending_chat_message(
         sender_id: s(my_account_id_hex),
         sender_name: s(""),
         show_sender_name: false,
+        mentioned: false,
         picture: slint::Image::default(),
         has_picture: false,
         bubble_max,
@@ -1048,6 +1050,14 @@ pub(crate) fn refresh_one_message_row_from(
         return;
     };
     let mut row = build_one_message_row(&rec, all, &my_id, &my_label, group_hex, overlay, backend);
+    if mentions_filter_active() && !row.mentioned {
+        with_inner_messages(chats_messages, idx, |vm| {
+            if let Some(pos) = find_message_row(vm, target_id) {
+                vm.remove(pos);
+            }
+        });
+        return;
+    }
     with_inner_messages(chats_messages, idx, |vm| {
         if let Some(pos) = find_message_row(vm, target_id) {
             preserve_grouping_flags(vm, pos, &mut row);
@@ -1221,31 +1231,12 @@ pub(crate) fn apply_grouping(rows: &mut [ChatMessage], keys: &[GroupKey]) {
     }
 }
 
-/// Build the grouping keys for a chat in display order: visible records first,
-/// then any pending sends (which are always my own, appended at the end).
-pub(crate) fn grouping_keys(
-    msgs: &[AppMessageRecord],
-    my_id: &str,
-    pending_count: usize,
-) -> Vec<GroupKey> {
-    let mut keys: Vec<GroupKey> = msgs
-        .iter()
-        .filter(|m| is_visible_chat_message(m))
-        .map(|m| {
-            (
-                m.sender.to_ascii_lowercase(),
-                m.sender.eq_ignore_ascii_case(my_id),
-                m.recorded_at,
-            )
-        })
-        .collect();
-    // Pending rows inherit the latest timestamp so they group with the most
-    // recent confirmed run from me.
-    let pend_t = keys.last().map(|k| k.2).unwrap_or(0);
-    for _ in 0..pending_count {
-        keys.push((my_id.to_ascii_lowercase(), true, pend_t));
-    }
-    keys
+fn grouping_key_for(m: &AppMessageRecord, my_id: &str) -> GroupKey {
+    (
+        m.sender.to_ascii_lowercase(),
+        m.sender.eq_ignore_ascii_case(my_id),
+        m.recorded_at,
+    )
 }
 
 /// Append `row` to the chat model, folding it into the previous row's visual
@@ -1356,34 +1347,49 @@ pub(crate) fn rebuild_chat_messages_from(
         .map(|m| (m.message_id_hex.as_str(), m))
         .collect();
 
-    let mut rows: Vec<ChatMessage> = msgs
-        .iter()
-        .filter(|m| is_visible_chat_message(m))
-        .map(|m| {
-            if let Some(ev) = backend::group_system_event(m) {
-                return system_chat_message(m, &ev, backend);
+    let mentions_only = mentions_filter_active();
+    let mut rows: Vec<ChatMessage> = Vec::new();
+    let mut keys: Vec<GroupKey> = Vec::new();
+    for m in msgs.iter().filter(|m| is_visible_chat_message(m)) {
+        let key = grouping_key_for(m, &my_id);
+        if let Some(ev) = backend::group_system_event(m) {
+            if !mentions_only {
+                rows.push(system_chat_message(m, &ev, backend));
+                keys.push(key);
             }
-            maybe_autoload_album(group_hex, m);
-            let r = reactions
-                .get(&m.message_id_hex)
-                .cloned()
-                .unwrap_or_default();
-            let e = edits.get(&m.message_id_hex).cloned();
-            let deleted = deletes.contains(&m.message_id_hex);
-            chat_message_from_with_reactions(
-                m, &by_id, &my_id, &my_label, r, e, deleted, &profiles, is_group, false,
-            )
-        })
-        .collect();
+            continue;
+        }
+        let e = edits.get(&m.message_id_hex).cloned();
+        let display_text = e
+            .as_ref()
+            .filter(|e| e.count > 0)
+            .map(|e| e.text.as_str())
+            .unwrap_or(m.plaintext.as_str());
+        if mentions_only && !text_mentions_account(display_text, &my_id) {
+            continue;
+        }
+        maybe_autoload_album(group_hex, m);
+        let r = reactions
+            .get(&m.message_id_hex)
+            .cloned()
+            .unwrap_or_default();
+        let deleted = deletes.contains(&m.message_id_hex);
+        rows.push(chat_message_from_with_reactions(
+            m, &by_id, &my_id, &my_label, r, e, deleted, &profiles, is_group, false,
+        ));
+        keys.push(key);
+    }
 
-    let pending_count = pending.sends.get(group_hex).map(|p| p.len()).unwrap_or(0);
     if let Some(pendings) = pending.sends.get(group_hex) {
+        let pend_t = keys.last().map(|k| k.2).unwrap_or(0);
         for p in pendings {
-            rows.push(pending_chat_message(p, &my_id, &my_label));
+            if !mentions_only || text_mentions_account(&p.text, &my_id) {
+                rows.push(pending_chat_message(p, &my_id, &my_label));
+                keys.push((my_id.to_ascii_lowercase(), true, pend_t));
+            }
         }
     }
 
-    let keys = grouping_keys(msgs, &my_id, pending_count);
     apply_grouping(&mut rows, &keys);
     let t_rows = t0.elapsed();
 

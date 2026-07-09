@@ -91,6 +91,22 @@ pub(crate) fn mention_set_nicknames(nicknames: &std::collections::BTreeMap<Strin
     }
 }
 
+fn mentions_filter_flag() -> &'static AtomicBool {
+    static ACTIVE: OnceLock<AtomicBool> = OnceLock::new();
+    ACTIVE.get_or_init(|| AtomicBool::new(false))
+}
+
+/// Whether the active chat is in the mentions-only review mode. Stored outside
+/// Slint so every row rebuild path (including live watchers) applies the same
+/// filter.
+pub(crate) fn mentions_filter_active() -> bool {
+    mentions_filter_flag().load(AtomicOrdering::Relaxed)
+}
+
+pub(crate) fn set_mentions_filter_active(active: bool) {
+    mentions_filter_flag().store(active, AtomicOrdering::Relaxed);
+}
+
 /// Replace one group's member set and note each member's published name.
 /// Callable from any thread — `account_display_name` is a non-blocking
 /// in-process cache read.
@@ -217,6 +233,22 @@ fn collect_profile_refs(text: &str, out: &mut HashSet<String>) {
     }
 }
 
+/// True when `text` contains an npub/nprofile mention that resolves to
+/// `account_hex`. Plain hex is deliberately ignored: composer mentions are
+/// profile-bearing Nostr bech32 tokens, and matching raw hex would create false
+/// positives in logs or pasted ids.
+pub(crate) fn text_mentions_account(text: &str, account_hex: &str) -> bool {
+    if account_hex.is_empty() {
+        return false;
+    }
+    let want = account_hex.to_ascii_lowercase();
+    let mut refs = HashSet::new();
+    collect_profile_refs(text, &mut refs);
+    refs.iter()
+        .filter_map(|b| mention_pubkey_hex(b))
+        .any(|hex| hex == want)
+}
+
 /// Cheap scan for `Backend::messages`' catch-all warm: the pubkey hexes
 /// mentioned anywhere in `msgs` that the registry can't name yet. Pure
 /// in-memory work (string scan + map lookups) — safe on any thread,
@@ -308,5 +340,27 @@ pub(crate) fn warm_unresolved_mentions(backend: &Backend, hexes: Vec<String>) {
                 mention_fetch_clear(&hex_done);
             }
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const ME: &str = "0000000000000000000000000000000000000000000000000000000000000001";
+    const OTHER: &str = "0000000000000000000000000000000000000000000000000000000000000002";
+
+    #[test]
+    fn text_mentions_account_detects_local_npub_only() {
+        let me = npub_for_account_id(ME).unwrap();
+        let other = npub_for_account_id(OTHER).unwrap();
+
+        assert!(text_mentions_account(&format!("ping {me}"), ME));
+        assert!(text_mentions_account(
+            &format!("ping {me}"),
+            &ME.to_ascii_uppercase()
+        ));
+        assert!(!text_mentions_account(&format!("ping {other}"), ME));
+        assert!(!text_mentions_account(ME, ME));
     }
 }

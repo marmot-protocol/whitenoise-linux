@@ -165,6 +165,8 @@ export component DarkMatterLinux inherits Window {
     in-out property <int> active-page: 0;
     in-out property <int> active-contact: 0;
     in-out property <int> active-archived: 0;
+    in-out property <bool> mentions-filter-active: false;
+    callback mentions-filter-toggle-clicked();
     in-out property <bool> show-new-chat: false;
     in-out property <bool> show-add-contact: false;
     in-out property <bool> show-palette: false;
@@ -1083,8 +1085,12 @@ export component DarkMatterLinux inherits Window {
                                 is-group: root.chat-is-group;
                                 can-show-members: root.chat-can-show-members;
                                 chat-muted: root.active-chat-muted;
+                                mentions-filter-active <=> root.mentions-filter-active;
                                 mute-toggle-clicked => {
                                     root.toggle-mute-chat();
+                                }
+                                mentions-filter-toggle-clicked => {
+                                    root.mentions-filter-toggle-clicked();
                                 }
                                 badge-clicked => {
                                     root.encryption-info-open = true;

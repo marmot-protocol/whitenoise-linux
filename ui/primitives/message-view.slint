@@ -142,7 +142,7 @@ export component MessageView inherits VerticalLayout {
         property <string> media-label:
             self.is-album ? ("[" + root.msg.album.length + " images — click to view]") : (root.msg.att-is-image ? ("[image: " + root.msg.att-name + " — click to view]") : (root.msg.att-is-video ? ("[video: " + root.msg.att-name + " — click to play]") : (root.msg.att-is-audio ? ("[audio: " + root.msg.att-name + "]") : ("[file: " + root.msg.att-name + "]"))));
 
-        background: term-touch.has-hover ? Palette.hover : transparent;
+        background: root.msg.mentioned ? Palette.selected : (term-touch.has-hover ? Palette.hover : transparent);
         HorizontalLayout {
             padding-left: 12px;
             padding-right: 12px;

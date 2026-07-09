@@ -1562,6 +1562,9 @@ pub(crate) fn install_message_watcher(
                         &overlay,
                         &b,
                     );
+                    if mentions_filter_active() && !row.mentioned {
+                        return;
+                    }
                     let pushed = with_inner_messages(&chats_messages, chat_idx, |vm| {
                         if find_message_row(vm, &msg_id).is_none() {
                             push_message_grouped(vm, row);

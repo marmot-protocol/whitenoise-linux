@@ -167,6 +167,8 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     }
                 }
                 ui.set_active_chat(idx);
+                ui.set_mentions_filter_active(false);
+                set_mentions_filter_active(false);
                 // Reply targets and an in-progress edit are per-chat; switching
                 // threads should not leak a stale "Replying to …" / "Editing …"
                 // banner across conversations (and the abandoned edit must clear
@@ -368,6 +370,53 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             if let Some(ui) = weak.upgrade() {
                 ui.set_show_chat_members(!ui.get_show_chat_members());
             }
+        }
+    });
+
+    ui.on_mentions_filter_toggle_clicked({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let group_ids = group_ids.clone();
+        let pending_state = pending_state.clone();
+        move || {
+            let Some(ui) = weak.upgrade() else { return };
+            let idx = ui.get_active_chat() as usize;
+            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
+                return;
+            };
+            let Some(backend) = backend_cell.lock().unwrap().clone() else {
+                return;
+            };
+            let active = !ui.get_mentions_filter_active();
+            ui.set_mentions_filter_active(active);
+            set_mentions_filter_active(active);
+            let weak = ui.as_weak();
+            let pending_state = pending_state.clone();
+            let b = backend.clone();
+            backend.tokio_handle().spawn(async move {
+                let msgs = b
+                    .messages(&group_hex, Some(msg_window_for(&group_hex)))
+                    .unwrap_or_default();
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    if ui.get_active_chat() as usize != idx {
+                        return;
+                    }
+                    let chats_messages = ui.get_chats_messages();
+                    let overlay = pending_state.lock().unwrap();
+                    rebuild_chat_messages_from(
+                        &b,
+                        &overlay,
+                        &chats_messages,
+                        idx,
+                        &group_hex,
+                        &msgs,
+                    );
+                    spawn_message_avatar_fetches(&ui, &b, &msgs);
+                    ui.set_messages_has_older(msgs.len() >= msg_window_for(&group_hex));
+                    ui.set_messages_scroll_tick(ui.get_messages_scroll_tick() + 1);
+                });
+            });
         }
     });
 

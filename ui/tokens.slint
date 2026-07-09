@@ -837,6 +837,9 @@ export struct ChatMessage {
     // it so 1:1 chats and outgoing rows don't repeat the obvious.
     sender-name: string,
     show-sender-name: bool,
+    // Incoming row whose body mentions the local user's npub/nprofile. Drives
+    // the accent outline and the mentions-only review filter.
+    mentioned: bool,
     // Sender profile picture. When `has-picture` is true the avatar renders the
     // decoded image instead of initials. Populated lazily from the picture
     // cache, same as the members list.
