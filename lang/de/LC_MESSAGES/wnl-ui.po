@@ -27,6 +27,34 @@ msgctxt "date, %1 = month, %2 = day, %3 = year"
 msgid "%1 %2 %3"
 msgstr "%1 %2 %3"
 
+msgctxt "group system line, %1 = actor, %2 = added member"
+msgid "%1 added %2"
+msgstr "%1 hat %2 hinzugefügt"
+
+msgctxt "group system line, %1 = actor"
+msgid "%1 changed the group photo"
+msgstr "%1 hat das Gruppenbild geändert"
+
+msgctxt "group system line, %1 = actor, %2 = former admin"
+msgid "%1 dismissed %2 as admin"
+msgstr "%1 hat %2 als Admin entfernt"
+
+msgctxt "group system line, %1 = the member who left"
+msgid "%1 left the group"
+msgstr "%1 hat die Gruppe verlassen"
+
+msgctxt "group system line, %1 = actor, %2 = new admin"
+msgid "%1 made %2 an admin"
+msgstr "%1 hat %2 zum Admin gemacht"
+
+msgctxt "group system line, %1 = actor, %2 = removed member"
+msgid "%1 removed %2"
+msgstr "%1 hat %2 entfernt"
+
+msgctxt "group system line, %1 = actor, %2 = new group name"
+msgid "%1 renamed the group to %2"
+msgstr "%1 hat die Gruppe in %2 umbenannt"
+
 msgctxt "relative time, %1 = days"
 msgid "%1d ago"
 msgstr "vor %1 Tg."

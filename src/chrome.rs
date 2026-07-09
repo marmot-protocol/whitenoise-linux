@@ -58,9 +58,10 @@ copy_snapshot! {
     date_dmy: String = get_date_dmy => "%1 %2 %3";
 }
 
-/// Substitute `%1`, `%2`, `%3` in a translated date/relative-time template.
-/// Descending order so `%1` doesn't eat the prefix of a later placeholder.
-fn tmpl(template: &str, args: &[&str]) -> String {
+/// Substitute `%1`, `%2`, `%3` in a translated template (date/relative-time
+/// stamps, group system lines). Descending order so `%1` doesn't eat the prefix
+/// of a later placeholder.
+pub(crate) fn tmpl(template: &str, args: &[&str]) -> String {
     let mut out = template.to_string();
     for (i, a) in args.iter().enumerate().rev() {
         out = out.replace(&format!("%{}", i + 1), a);
@@ -1328,10 +1329,11 @@ pub(crate) fn install_message_watcher(
         if event_group != group_hex_for_filter {
             return;
         }
-        // Three interesting wire kinds. Each one becomes a surgical model
-        // update so neighbouring bubbles don't remount.
+        // Interesting wire kinds: chat (9), reaction/delete/edit (7/5/1009),
+        // and group-system rows (1210). Each becomes a surgical model update so
+        // neighbouring bubbles don't remount.
         let kind = received.kind;
-        if !matches!(kind, 9 | 7 | 5 | 1009) {
+        if !matches!(kind, 9 | 7 | 5 | 1009 | 1210) {
             return;
         }
         let weak = weak.clone();
@@ -1363,10 +1365,13 @@ pub(crate) fn install_message_watcher(
             let chats_messages = ui.get_chats_messages();
 
             match kind {
-                9 => {
-                    // Chat message echo. If the row already exists (because
-                    // we just reconciled our own send), do nothing. Otherwise
-                    // append it surgically — no full rebuild.
+                9 | 1210 => {
+                    // Chat message echo, or a group-system row (member/admin/
+                    // rename change). If the row already exists (because we
+                    // just reconciled our own send, or the event was
+                    // redelivered), do nothing. Otherwise append it surgically
+                    // — no full rebuild. `build_one_message_row` returns a
+                    // centered system line for kind-1210 and a bubble for kind-9.
                     let my_id = b.account().account_id_hex.clone();
                     let my_label = my_avatar_label(&b, &my_id);
                     let Some(rec) = all.iter().find(|m| m.message_id_hex == msg_id).cloned() else {

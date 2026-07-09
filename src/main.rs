@@ -10,8 +10,9 @@ pub(crate) use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering as AtomicOr
 pub(crate) use std::sync::{Arc, Mutex, OnceLock};
 
 pub(crate) use marmot_app::{
-    AppGroupMemberRecord, AppGroupRecord, AppMessageRecord, AuditLogFile, MediaAttachmentReference,
-    MediaLocator, UserDirectoryRecord, UserProfileMetadata, npub_for_account_id,
+    AppGroupMemberRecord, AppGroupRecord, AppGroupSystemEvent, AppMessageRecord, AuditLogFile,
+    MediaAttachmentReference, MediaLocator, UserDirectoryRecord, UserProfileMetadata,
+    npub_for_account_id,
 };
 pub(crate) use nostr::Keys;
 pub(crate) use nostr::nips::nip19::ToBech32;
@@ -131,6 +132,7 @@ fn main() -> Result<(), slint::PlatformError> {
     // now that the locale is applied, so worker threads have it from the start.
     refresh_error_copy(&ui);
     refresh_time_copy(&ui);
+    refresh_system_copy(&ui);
     apply_theme_mode(&ui, &theme_mode);
     set_accent_index(&ui, accent_color_idx(accent_color));
     ui.set_outgoing_on_right(initial_settings.outgoing_on_right);
