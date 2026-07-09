@@ -1050,7 +1050,8 @@ pub(crate) fn refresh_one_message_row_from(
         return;
     };
     let mut row = build_one_message_row(&rec, all, &my_id, &my_label, group_hex, overlay, backend);
-    if mentions_filter_active() && !row.mentioned {
+    let mentions_only = mentions_filter_active();
+    if mentions_only && !row.mentioned {
         with_inner_messages(chats_messages, idx, |vm| {
             if let Some(pos) = find_message_row(vm, target_id) {
                 vm.remove(pos);
@@ -1058,12 +1059,23 @@ pub(crate) fn refresh_one_message_row_from(
         });
         return;
     }
+
+    let mut needs_filtered_rebuild = false;
     with_inner_messages(chats_messages, idx, |vm| {
         if let Some(pos) = find_message_row(vm, target_id) {
             preserve_grouping_flags(vm, pos, &mut row);
             vm.set_row_data(pos, row);
+        } else if missing_filtered_mention_needs_rebuild(mentions_only, row.mentioned) {
+            needs_filtered_rebuild = true;
         }
     });
+    if needs_filtered_rebuild {
+        rebuild_chat_messages_from(backend, overlay, chats_messages, idx, group_hex, all);
+    }
+}
+
+fn missing_filtered_mention_needs_rebuild(mentions_only: bool, row_mentioned: bool) -> bool {
+    mentions_only && row_mentioned
 }
 
 /// Read the message window for `group_hex` on the backend runtime, then hop
@@ -1847,5 +1859,18 @@ mod tests {
             message_row_refresh_target(5, Some("message".to_string()), &records),
             Some("message".to_string())
         );
+    }
+
+    #[test]
+    fn hidden_row_that_becomes_mentioned_triggers_filtered_rebuild() {
+        assert!(missing_filtered_mention_needs_rebuild(true, true));
+    }
+
+    #[test]
+    fn visible_or_unmentioned_rows_stay_surgical() {
+        assert!(!missing_filtered_mention_needs_rebuild(false, true));
+        assert!(!missing_filtered_mention_needs_rebuild(true, false));
+    }
+}
     }
 }

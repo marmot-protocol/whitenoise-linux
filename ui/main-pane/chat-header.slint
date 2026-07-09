@@ -136,7 +136,7 @@ export component ChatHeader inherits Rectangle {
                     text: "@";
                     color: root.mentions-filter-active ? Palette.mint : Palette.text-mid;
                     font-family: Theme.font;
-                    font-size: 17px * Theme.fs-scale;
+                    font-size: Theme.fs(12px, 17px);
                     font-weight: 800;
                     x: (parent.width - self.width) / 2;
                     y: (parent.height - self.height) / 2;
