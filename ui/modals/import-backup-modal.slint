@@ -17,6 +17,14 @@ export component ImportBackupModal inherits Modal {
     callback import(string); // password the backup was sealed with
 
     in-out property <string> password-text;
+    property <bool> import-ready: root.file-name != "" && root.password-text != "";
+    property <bool> can-import: root.import-ready && !root.primary-busy;
+
+    function submit-import() {
+        if (root.can-import) {
+            root.import(root.password-text);
+        }
+    }
 
     card-width: 460px;
     title: @tr("Import backup");
@@ -24,8 +32,9 @@ export component ImportBackupModal inherits Modal {
     secondary-label: @tr("Cancel");
     primary-label: root.restore-mode ? @tr("Restore") : @tr("Import");
     primary-busy-label: root.restore-mode ? @tr("Restoring…") : @tr("Importing…");
+    primary-enabled: root.import-ready;
     primary => {
-        root.import(root.password-text);
+        root.submit-import();
     }
 
     // File chooser row: a button plus the chosen filename.
@@ -73,7 +82,7 @@ export component ImportBackupModal inherits Modal {
         password: true;
         autofocus: true;
         submitted => {
-            root.import(root.password-text);
+            root.submit-import();
         }
     }
 }

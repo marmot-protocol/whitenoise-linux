@@ -19,7 +19,8 @@ import { LineInput } from "../primitives/line-input.slint";
 export component Modal inherits Rectangle {
     callback dismissed;
     // Footer actions. The secondary button always dismisses after firing
-    // `secondary()` (cleanup hook); the primary is gated on `primary-busy`.
+    // `secondary()` (cleanup hook); the primary is gated on readiness and busy
+    // state.
     callback primary;
     callback secondary;
 
@@ -27,6 +28,7 @@ export component Modal inherits Rectangle {
     in property <string> subtitle;
     in property <string> primary-label;        // "" = no primary button
     in property <string> primary-busy-label;   // label swap while busy
+    in property <bool> primary-enabled: true;
     in property <bool> primary-busy: false;
     in property <bool> primary-danger: false;  // red primary for destructive confirms
     in property <string> secondary-label;      // "" = no secondary button
@@ -240,7 +242,7 @@ export component Modal inherits Rectangle {
                                 alignment: center;
                                 if root.primary-label != "": Button {
                                     label: root.primary-busy && root.primary-busy-label != "" ? root.primary-busy-label : root.primary-label;
-                                    enabled: !root.primary-busy;
+                                    enabled: root.primary-enabled && !root.primary-busy;
                                     focusable: true;
                                     button-height: 34px;
                                     pad-left: 14px;
@@ -251,7 +253,7 @@ export component Modal inherits Rectangle {
                                     hover-outline: root.primary-danger ? Palette.danger.brighter(0.12) : Palette.mint-hi;
                                     fg: Palette.bubble-out-fg;
                                     clicked => {
-                                        if (!root.primary-busy) {
+                                        if (root.primary-enabled && !root.primary-busy) {
                                             root.primary();
                                         }
                                     }
