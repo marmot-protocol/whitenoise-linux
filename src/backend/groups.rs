@@ -219,6 +219,20 @@ impl Backend {
         })
     }
 
+    /// Update a group's description without changing its name.
+    pub fn set_group_description(&self, group_hex: &str, description: &str) -> Result<SendSummary> {
+        let group_id = group_id_from_hex(group_hex)?;
+        let label = self.active_label();
+        let description = description.to_string();
+        let runtime = self.runtime.clone();
+        self.tokio.block_on(async move {
+            runtime
+                .update_group_profile(&label, &group_id, None, Some(description))
+                .await
+                .map_err(|e| anyhow!("set_group_description: {e}"))
+        })
+    }
+
     /// Encrypt + upload a new group avatar to Blossom and publish the group image
     /// component (admin-only, enforced by the engine). Non-blocking: runs on the
     /// tokio runtime and fires `on_done` on a worker thread. Passing empty `bytes`

@@ -927,6 +927,10 @@ msgctxt "ArchivedDetail"
 msgid "Group id"
 msgstr "グループ ID"
 
+msgctxt "GroupSettingsCard"
+msgid "Group description"
+msgstr "グループの説明"
+
 #, fuzzy
 msgctxt "GroupSettingsCard"
 msgid "Group name"
@@ -1549,6 +1553,10 @@ msgctxt "KeysPage"
 msgid "Publishing…"
 msgstr "公開中…"
 
+msgctxt "GroupSettingsCard"
+msgid "Purpose, rules, or invite blurb"
+msgstr "目的、ルール、招待文"
+
 #, fuzzy
 msgctxt "ChatListPanel"
 msgid "RELAYS"
@@ -1771,6 +1779,10 @@ msgstr "保存"
 msgctxt "ProfilePage"
 msgid "Save"
 msgstr "保存"
+
+msgctxt "GroupSettingsCard"
+msgid "Save description"
+msgstr "説明を保存"
 
 #, fuzzy
 msgctxt "LoginScreen"

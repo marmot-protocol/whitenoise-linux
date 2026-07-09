@@ -887,6 +887,10 @@ msgid "Group id"
 msgstr ""
 
 msgctxt "GroupSettingsCard"
+msgid "Group description"
+msgstr ""
+
+msgctxt "GroupSettingsCard"
 msgid "Group name"
 msgstr ""
 
@@ -1476,6 +1480,10 @@ msgctxt "KeysPage"
 msgid "Publishing…"
 msgstr ""
 
+msgctxt "GroupSettingsCard"
+msgid "Purpose, rules, or invite blurb"
+msgstr ""
+
 msgctxt "ChatListPanel"
 msgid "RELAYS"
 msgstr ""
@@ -1690,6 +1698,10 @@ msgstr ""
 
 msgctxt "ProfilePage"
 msgid "Save"
+msgstr ""
+
+msgctxt "GroupSettingsCard"
+msgid "Save description"
 msgstr ""
 
 msgctxt "LoginScreen"

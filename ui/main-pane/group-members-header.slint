@@ -4,9 +4,10 @@ import { PeopleIcon } from "../icons/people-icon.slint";
 // Members panel title row: people icon, count, and close button.
 export component GroupMembersHeader inherits HorizontalLayout {
     in property <int> member-count;
+    in property <string> group-description;
     callback close-clicked();
 
-    height: 28px;
+    height: root.group-description == "" ? 28px : 64px;
     spacing: 8px;
     alignment: stretch;
     PeopleIcon {
@@ -29,6 +30,14 @@ export component GroupMembersHeader inherits HorizontalLayout {
             color: Palette.text-lo;
             font-size: (10px) * Theme.fs-scale;
             letter-spacing: 0.8px;
+        }
+
+        if root.group-description != "": Text {
+            text: root.group-description;
+            color: Palette.text-lo;
+            font-size: (10px) * Theme.fs-scale;
+            wrap: word-wrap;
+            overflow: elide;
         }
     }
 

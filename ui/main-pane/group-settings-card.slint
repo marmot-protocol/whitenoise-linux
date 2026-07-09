@@ -5,7 +5,7 @@ import { LineInput } from "../primitives/line-input.slint";
 import { Button } from "../primitives/button.slint";
 import { Avatar } from "../primitives/avatar.slint";
 
-// Group settings surface: admin-only avatar/name controls plus the member leave action.
+// Group settings surface: admin-only avatar/name/description controls plus the member leave action.
 export component GroupSettingsCard inherits Section {
     in property <bool> can-manage: false;
     in property <image> group-picture;
@@ -14,11 +14,14 @@ export component GroupSettingsCard inherits Section {
     in property <color> group-av-b;
     in property <string> group-av-initials;
     in property <bool> rename-busy: false;
+    in property <bool> description-busy: false;
     in property <bool> image-busy: false;
     in property <bool> leave-busy: false;
     in property <string> group-status;
     in-out property <string> rename-draft;
+    in-out property <string> description-draft;
     callback rename-group(string);
+    callback set-group-description(string);
     callback change-image();
     callback clear-image();
     callback leave-group();
@@ -138,6 +141,66 @@ export component GroupSettingsCard inherits Section {
                         clicked => {
                             if (!root.rename-busy && root.rename-draft != "") {
                                 root.rename-group(root.rename-draft);
+                            }
+                        }
+                    }
+                }
+
+                Text {
+                    text: @tr("Group description");
+                    color: Palette.text-hi;
+                    font-size: (12px) * Theme.fs-scale;
+                    font-weight: 700;
+                }
+
+                Rectangle {
+                    height: 84px;
+                    border-radius: (6px) * Theme.r-scale;
+                    background: Palette.field;
+                    border-width: Theme.border-w;
+                    border-color: description-input.has-focus ? Palette.mint-dim : Palette.field-border;
+                    drop-shadow-blur: description-input.has-focus && Theme.focus-glow ? 10px : 0px;
+                    drop-shadow-color: Palette.mint-glow;
+                    animate border-color {
+                        duration: 140ms;
+                        easing: ease-out;
+                    }
+                    HorizontalLayout {
+                        padding-left: 10px;
+                        padding-right: 10px;
+                        padding-top: 8px;
+                        padding-bottom: 8px;
+                        description-input := LineInput {
+                            horizontal-stretch: 1;
+                            vertical-stretch: 1;
+                            placeholder: @tr("Purpose, rules, or invite blurb");
+                            text <=> root.description-draft;
+                            single-line: false;
+                            enter-submits: false;
+                            font-size: Theme.fsr(12px, 14px);
+                            fg: Palette.text-hi;
+                            placeholder-color: Palette.text-vlo;
+                        }
+                    }
+                }
+
+                HorizontalLayout {
+                    spacing: 8px;
+                    alignment: start;
+                    Button {
+                        label: root.description-busy ? @tr("Saving…") : @tr("Save description");
+                        enabled: !root.description-busy;
+                        button-height: 28px;
+                        pad-left: 10px;
+                        pad-right: 10px;
+                        font-size: Theme.fsr(11px, 14px);
+                        bg-color: Palette.mint-surface;
+                        fg: Palette.mint;
+                        outline: Palette.mint;
+                        hover-bg: Palette.mint-surface;
+                        clicked => {
+                            if (!root.description-busy) {
+                                root.set-group-description(root.description-draft);
                             }
                         }
                     }

@@ -929,6 +929,10 @@ msgctxt "ArchivedDetail"
 msgid "Group id"
 msgstr "Gruppen-ID"
 
+msgctxt "GroupSettingsCard"
+msgid "Group description"
+msgstr "Gruppenbeschreibung"
+
 #, fuzzy
 msgctxt "GroupSettingsCard"
 msgid "Group name"
@@ -1551,6 +1555,10 @@ msgctxt "KeysPage"
 msgid "Publishing…"
 msgstr "Veröffentliche…"
 
+msgctxt "GroupSettingsCard"
+msgid "Purpose, rules, or invite blurb"
+msgstr "Zweck, Regeln oder Einladungstext"
+
 #, fuzzy
 msgctxt "ChatListPanel"
 msgid "RELAYS"
@@ -1773,6 +1781,10 @@ msgstr "Speichern"
 msgctxt "ProfilePage"
 msgid "Save"
 msgstr "Speichern"
+
+msgctxt "GroupSettingsCard"
+msgid "Save description"
+msgstr "Beschreibung speichern"
 
 #, fuzzy
 msgctxt "LoginScreen"

@@ -591,6 +591,7 @@ export component DarkMatterLinux inherits Window {
     in property <bool> active-chat-muted: false;
     callback toggle-mute-chat();
     in property <int> chat-member-count: 0;
+    in property <string> chat-group-description;
     in property <bool> chat-can-add-members: false;
     in property <bool> add-member-busy: false;
     in property <string> add-member-status;
@@ -602,11 +603,14 @@ export component DarkMatterLinux inherits Window {
     in property <color> chat-group-av-b;
     in property <string> chat-group-av-initials;
     in property <bool> group-rename-busy: false;
+    in property <bool> group-description-busy: false;
     in property <bool> group-image-busy: false;
     in property <bool> group-leave-busy: false;
     in property <string> group-settings-status;
     in-out property <string> group-rename-draft;
+    in-out property <string> group-description-draft;
     callback rename-group(string);
+    callback set-group-description(string);
     callback change-group-image();
     callback clear-group-image();
     callback leave-group-at(int);
@@ -941,6 +945,7 @@ export component DarkMatterLinux inherits Window {
                             }
                             encryption-banner-first-show: root.encryption-banner-first-show;
                             member-count: root.chat-member-count;
+                            group-description: root.chat-group-description;
                             members: root.chat-members;
                             show-members <=> root.show-chat-members;
                             members-toggle-clicked => {
@@ -968,12 +973,17 @@ export component DarkMatterLinux inherits Window {
                             group-av-b: root.chat-group-av-b;
                             group-av-initials: root.chat-group-av-initials;
                             group-rename-busy: root.group-rename-busy;
+                            group-description-busy: root.group-description-busy;
                             group-image-busy: root.group-image-busy;
                             group-leave-busy: root.group-leave-busy;
                             group-status: root.group-settings-status;
                             group-rename-draft <=> root.group-rename-draft;
+                            group-description-draft <=> root.group-description-draft;
                             rename-group(name) => {
                                 root.rename-group(name);
+                            }
+                            set-group-description(description) => {
+                                root.set-group-description(description);
                             }
                             change-group-image => {
                                 root.change-group-image();

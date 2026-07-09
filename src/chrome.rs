@@ -489,6 +489,8 @@ pub(crate) fn push_group_settings_to_ui_from(
     if count <= 2 || rec.is_none() {
         ui.set_chat_group_has_picture(false);
         ui.set_chat_group_picture(slint::Image::default());
+        ui.set_chat_group_description(s(""));
+        ui.set_group_description_draft(s(""));
         return;
     }
     let rec = rec.unwrap();
@@ -499,6 +501,8 @@ pub(crate) fn push_group_settings_to_ui_from(
     ui.set_chat_group_av_b(b);
     ui.set_chat_group_av_initials(s(&init));
     ui.set_group_rename_draft(s(&name));
+    ui.set_chat_group_description(s(&rec.profile.description));
+    ui.set_group_description_draft(s(&rec.profile.description));
 
     // URL avatar (marmot.group.avatar-url.v1, what Android publishes) takes
     // precedence over the encrypted Blossom image, per spec.
