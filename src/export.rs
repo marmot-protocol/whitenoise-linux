@@ -1,21 +1,28 @@
 //! Chat-transcript export.
 //!
-//! Turns a group's message history into a readable, self-contained document a
-//! user can keep for a record, a dispute, or a move to another tool. Two
-//! formats: Markdown (plain archival, re-imports elsewhere) and HTML (the
-//! threaded look preserved for sharing or printing).
+//! Turns a group's message history into a document a user can keep for a
+//! record, a dispute, or a move to another tool. HTML is the primary format:
+//! it rebuilds the threaded look, embeds each image attachment inline as a
+//! `data:` URI, and carries a per-message "Raw event" panel with the event
+//! JSON for debugging. Markdown is the plain-text alternative for archival and
+//! re-import elsewhere.
 //!
-//! The whole pipeline is pure once the records are in hand: [`build_transcript`]
-//! reads the backend snapshot on the UI thread (message query + name cache are
-//! both UI-thread reads), and the two renderers below take only owned data, so
-//! the caller can hand the [`Transcript`] to a blocking file-write task.
+//! Two phases. [`build_transcript`] reads the backend snapshot on the UI thread
+//! (the message query and name cache are both UI-thread reads) and resolves
+//! every message into owned data. The caller then hands the [`Transcript`] to a
+//! blocking task, which downloads and decrypts the image attachments off the UI
+//! thread ([`collect_image_data`]) before rendering.
 //!
 //! Message bodies are Markdown already, so the Markdown export embeds them
-//! verbatim. For HTML we reparse each body with `whitenoise_markdown` — the
-//! same CommonMark + GFM parser the chat bubbles use — and walk the AST into
-//! HTML so bold, lists, links, and code survive the export.
+//! verbatim. For HTML we reparse each body with `whitenoise_markdown`, the same
+//! CommonMark + GFM parser the chat bubbles use, and walk the AST into HTML so
+//! bold, lists, links, and code survive.
 
 use crate::*;
+use nostr::base64::Engine as _;
+use nostr::base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 use whitenoise_markdown::{Block, Inline, ListItem, ListKind, NostrEntity, TableCell};
 
 /// Output document format, chosen from the save dialog's file extension.
@@ -26,8 +33,8 @@ pub(crate) enum ExportFormat {
 }
 
 impl ExportFormat {
-    /// Pick a format from a save path's extension; anything but `.htm`/`.html`
-    /// falls back to Markdown, matching the default filename.
+    /// Pick a format from a save path's extension; anything but `.md` falls
+    /// back to HTML, matching the default filename.
     pub(crate) fn from_path(path: &std::path::Path) -> Self {
         match path
             .extension()
@@ -35,10 +42,22 @@ impl ExportFormat {
             .map(str::to_ascii_lowercase)
             .as_deref()
         {
-            Some("html") | Some("htm") => ExportFormat::Html,
-            _ => ExportFormat::Markdown,
+            Some("md") | Some("markdown") => ExportFormat::Markdown,
+            _ => ExportFormat::Html,
         }
     }
+}
+
+/// Decrypted image bytes ready to inline, keyed by the attachment's
+/// `ciphertext_sha256`. The value is a full `data:` URI.
+pub(crate) type ImageData = HashMap<String, String>;
+
+/// One attachment on a message. Images carry their reference so the export task
+/// can download and embed them; other files render as a name/type note.
+struct AttachmentInfo {
+    note: String,
+    file_name: String,
+    image: Option<MediaAttachmentReference>,
 }
 
 /// One rendered message in the transcript, resolved to display-ready fields.
@@ -49,23 +68,45 @@ struct TranscriptEntry {
     body: String,
     edited: bool,
     deleted: bool,
-    /// One "name (type)" note per attachment; the bytes stay encrypted in the
-    /// group, so a note is the honest record — there is no shareable link.
-    attachments: Vec<String>,
+    attachments: Vec<AttachmentInfo>,
     /// `(emoji, count)`, most-used first.
     reactions: Vec<(String, i32)>,
+    /// Pretty-printed nostr event JSON for the debug panel.
+    event_json: String,
 }
 
 /// A whole conversation ready to render, plus the metadata the header needs.
 pub(crate) struct Transcript {
     chat_name: String,
     exported_at: String,
+    group_hex: String,
     entries: Vec<TranscriptEntry>,
 }
 
 impl Transcript {
     pub(crate) fn is_empty(&self) -> bool {
         self.entries.is_empty()
+    }
+
+    pub(crate) fn group_hex(&self) -> &str {
+        &self.group_hex
+    }
+
+    /// Every image attachment across the transcript, deduplicated by ciphertext
+    /// hash so a blob repeated across messages downloads once.
+    pub(crate) fn image_references(&self) -> Vec<MediaAttachmentReference> {
+        let mut seen = std::collections::HashSet::new();
+        let mut refs = Vec::new();
+        for entry in &self.entries {
+            for att in &entry.attachments {
+                if let Some(r) = &att.image
+                    && seen.insert(r.ciphertext_sha256.clone())
+                {
+                    refs.push(r.clone());
+                }
+            }
+        }
+        refs
     }
 }
 
@@ -97,7 +138,16 @@ pub(crate) fn build_transcript(backend: &Backend, group_hex: &str, chat_name: &s
         } else {
             parse_all_media_references(&r.tags, r.source_epoch)
                 .into_iter()
-                .map(|m| format!("{} ({})", m.file_name, m.media_type))
+                .map(|m| {
+                    let note = format!("{} ({})", m.file_name, m.media_type);
+                    let file_name = m.file_name.clone();
+                    let image = mime_is_image(&m.media_type).then_some(m);
+                    AttachmentInfo {
+                        note,
+                        file_name,
+                        image,
+                    }
+                })
                 .collect()
         };
         let msg_reactions = if deleted {
@@ -120,21 +170,83 @@ pub(crate) fn build_transcript(backend: &Backend, group_hex: &str, chat_name: &s
             deleted,
             attachments,
             reactions: msg_reactions,
+            event_json: event_json(r),
         });
     }
 
     Transcript {
         chat_name: chat_name.to_string(),
         exported_at: format_full_stamp(now_unix()),
+        group_hex: group_hex.to_string(),
         entries,
     }
 }
 
-/// Render the transcript to the requested format.
-pub(crate) fn render(transcript: &Transcript, format: ExportFormat) -> String {
+/// The decrypted inner nostr event of a record, shaped like the wire event and
+/// pretty-printed for the debug panel.
+fn event_json(r: &AppMessageRecord) -> String {
+    let value = serde_json::json!({
+        "id": r.message_id_hex,
+        "pubkey": r.sender,
+        "created_at": r.recorded_at,
+        "kind": r.kind,
+        "tags": r.tags,
+        "content": r.plaintext,
+    });
+    serde_json::to_string_pretty(&value).unwrap_or_default()
+}
+
+/// Download and decrypt each image attachment (off the UI thread), returning a
+/// `ciphertext_sha256` to `data:` URI map for [`render`] to inline. Reads the
+/// encrypted media cache first so an already-viewed image skips the network. A
+/// download that fails is left out of the map, and the renderer falls back to a
+/// note for it.
+pub(crate) async fn collect_image_data(
+    backend: &Backend,
+    vault: Option<&Arc<Mutex<Vault>>>,
+    group_hex: &str,
+    refs: &[MediaAttachmentReference],
+) -> ImageData {
+    let mut map = ImageData::new();
+    for r in refs {
+        if map.contains_key(&r.ciphertext_sha256) {
+            continue;
+        }
+        let cached = vault.and_then(|v| crate::media_cache::get(v, &r.ciphertext_sha256));
+        let bytes = match cached {
+            Some(b) => Some(b),
+            None => download_attachment(backend, group_hex, r.clone()).await,
+        };
+        if let Some(bytes) = bytes {
+            let uri = format!(
+                "data:{};base64,{}",
+                r.media_type,
+                BASE64_STANDARD.encode(&bytes)
+            );
+            map.insert(r.ciphertext_sha256.clone(), uri);
+        }
+    }
+    map
+}
+
+async fn download_attachment(
+    backend: &Backend,
+    group_hex: &str,
+    reference: MediaAttachmentReference,
+) -> Option<Vec<u8>> {
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    backend.download_media_async(group_hex, reference, move |res| {
+        let _ = tx.send(res);
+    });
+    rx.await.ok().and_then(Result::ok).map(|d| d.plaintext)
+}
+
+/// Render the transcript to the requested format. `images` is only consulted
+/// for HTML; pass an empty map for Markdown.
+pub(crate) fn render(transcript: &Transcript, format: ExportFormat, images: &ImageData) -> String {
     match format {
         ExportFormat::Markdown => render_markdown(transcript),
-        ExportFormat::Html => render_html(transcript),
+        ExportFormat::Html => render_html(transcript, images),
     }
 }
 
@@ -197,7 +309,7 @@ fn render_markdown(t: &Transcript) -> String {
         }
 
         for att in &e.attachments {
-            out.push_str(&format!("\n- 📎 {att}"));
+            out.push_str(&format!("\n- 📎 {}", att.note));
         }
         if !e.attachments.is_empty() {
             out.push('\n');
@@ -211,6 +323,12 @@ fn render_markdown(t: &Transcript) -> String {
                 .collect();
             out.push_str(&format!("\nReactions: {}\n", chips.join(" · ")));
         }
+
+        if !e.event_json.is_empty() {
+            out.push_str("\n<details><summary>Raw event</summary>\n\n```json\n");
+            out.push_str(&e.event_json);
+            out.push_str("\n```\n\n</details>\n");
+        }
     }
 
     out
@@ -220,7 +338,7 @@ fn render_markdown(t: &Transcript) -> String {
 // HTML
 // ---------------------------------------------------------------------------
 
-fn render_html(t: &Transcript) -> String {
+fn render_html(t: &Transcript, images: &ImageData) -> String {
     let mut out = String::new();
     out.push_str("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n");
     out.push_str("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n");
@@ -256,13 +374,7 @@ fn render_html(t: &Transcript) -> String {
             out.push_str("</div>\n");
         }
 
-        if !e.attachments.is_empty() {
-            out.push_str("<ul class=\"attachments\">");
-            for att in &e.attachments {
-                out.push_str(&format!("<li>📎 {}</li>", esc(att)));
-            }
-            out.push_str("</ul>\n");
-        }
+        html_attachments(&mut out, &e.attachments, images);
 
         if !e.reactions.is_empty() {
             out.push_str("<div class=\"reactions\">");
@@ -276,11 +388,49 @@ fn render_html(t: &Transcript) -> String {
             out.push_str("</div>\n");
         }
 
+        if !e.event_json.is_empty() {
+            out.push_str("<details class=\"debug\"><summary>Raw event</summary><pre><code>");
+            out.push_str(&esc(&e.event_json));
+            out.push_str("</code></pre></details>\n");
+        }
+
         out.push_str("</article>\n");
     }
 
     out.push_str("</main>\n</body>\n</html>\n");
     out
+}
+
+/// Embed image attachments inline (from the decrypted `images` map) and list
+/// everything else, plus any image whose download failed, as a note.
+fn html_attachments(out: &mut String, attachments: &[AttachmentInfo], images: &ImageData) {
+    for att in attachments {
+        if let Some(img) = &att.image
+            && let Some(uri) = images.get(&img.ciphertext_sha256)
+        {
+            out.push_str(&format!(
+                "<img class=\"attachment-img\" src=\"{}\" alt=\"{}\">\n",
+                esc_attr(uri),
+                esc(&att.file_name)
+            ));
+        }
+    }
+
+    let notes: Vec<&AttachmentInfo> = attachments
+        .iter()
+        .filter(|att| {
+            att.image
+                .as_ref()
+                .is_none_or(|img| !images.contains_key(&img.ciphertext_sha256))
+        })
+        .collect();
+    if !notes.is_empty() {
+        out.push_str("<ul class=\"attachments\">");
+        for att in notes {
+            out.push_str(&format!("<li>📎 {}</li>", esc(&att.note)));
+        }
+        out.push_str("</ul>\n");
+    }
 }
 
 const HTML_STYLE: &str = r#"
@@ -308,14 +458,20 @@ h1 { font-size: 22px; margin: 0 0 4px; }
 .body table { border-collapse: collapse; }
 .body th, .body td { border: 1px solid #e4e4e7; padding: 4px 8px; }
 .deleted { color: #a1a1aa; font-style: italic; margin: 6px 0; }
+.attachment-img { max-width: 100%; height: auto; border-radius: 8px;
+  margin: 6px 0; display: block; }
 .attachments { margin: 8px 0 0; padding-left: 18px; }
 .reactions { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
 .chip { background: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 12px;
   padding: 1px 8px; font-size: 13px; }
+.debug { margin-top: 8px; }
+.debug summary { cursor: pointer; color: #71717a; font-size: 12px; }
+.debug pre { margin-top: 6px; background: #f4f4f5; border-radius: 8px;
+  padding: 10px 12px; overflow-x: auto; font-size: 12px; }
 @media (prefers-color-scheme: dark) {
   body { background: #18181b; color: #e4e4e7; }
   .msg { background: #27272a; border-color: #3f3f46; }
-  .body pre, .body code, .chip { background: #3f3f46; }
+  .body pre, .body code, .chip, .debug pre { background: #3f3f46; }
   .chip { border-color: #52525b; }
   .body blockquote { border-left-color: #52525b; color: #a1a1aa; }
   .body th, .body td { border-color: #3f3f46; }
@@ -558,16 +714,13 @@ mod tests {
             ExportFormat::Html
         );
         assert_eq!(
-            ExportFormat::from_path(std::path::Path::new("t.HTM")),
-            ExportFormat::Html
-        );
-        assert_eq!(
             ExportFormat::from_path(std::path::Path::new("t.md")),
             ExportFormat::Markdown
         );
+        // Anything unrecognized (including no extension) defaults to HTML.
         assert_eq!(
             ExportFormat::from_path(std::path::Path::new("noext")),
-            ExportFormat::Markdown
+            ExportFormat::Html
         );
     }
 
@@ -608,5 +761,37 @@ mod tests {
         }
         assert!(!out.contains("javascript:"));
         assert!(out.contains("<a>x</a>"));
+    }
+
+    #[test]
+    fn image_embedded_when_present_note_when_missing() {
+        let img = |hash: &str| AttachmentInfo {
+            note: "photo.jpg (image/jpeg)".to_string(),
+            file_name: "photo.jpg".to_string(),
+            image: Some(MediaAttachmentReference {
+                locators: vec![],
+                ciphertext_sha256: hash.to_string(),
+                plaintext_sha256: String::new(),
+                nonce_hex: String::new(),
+                file_name: "photo.jpg".to_string(),
+                media_type: "image/jpeg".to_string(),
+                version: String::new(),
+                source_epoch: 0,
+                dim: None,
+                thumbhash: None,
+            }),
+        };
+        let mut images = ImageData::new();
+        images.insert("have".to_string(), "data:image/jpeg;base64,AAA".to_string());
+
+        let mut out = String::new();
+        html_attachments(&mut out, &[img("have")], &images);
+        assert!(out.contains("<img class=\"attachment-img\" src=\"data:image/jpeg;base64,AAA\""));
+        assert!(!out.contains("<ul"));
+
+        let mut miss = String::new();
+        html_attachments(&mut miss, &[img("missing")], &images);
+        assert!(!miss.contains("<img"));
+        assert!(miss.contains("📎 photo.jpg (image/jpeg)"));
     }
 }
