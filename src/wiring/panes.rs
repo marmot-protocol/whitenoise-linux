@@ -1117,6 +1117,7 @@ pub(crate) fn wire_panes(
         ui.set_network_connected(0);
         ui.set_network_total(0);
         ui.set_network_status(s(""));
+        ui.set_network_republish_busy(false);
     }
 
     // On the first-run get-started screen the backend is booted *before* the
@@ -1221,6 +1222,7 @@ pub(crate) fn wire_panes(
         let backend_cell = backend_cell.clone();
         move || {
             let Some(ui) = weak.upgrade() else { return };
+            let allow_status_update = !ui.get_network_republish_busy();
             let weak = weak.clone();
             let backend_cell = backend_cell.clone();
             std::thread::spawn(move || {
@@ -1237,11 +1239,16 @@ pub(crate) fn wire_panes(
                             // We just polled the relay pool — that's a real sync.
                             ui.set_sync_secs(0);
                         }
-                        None => ui.set_network_status(error_copy().not_connected.into()),
+                        None if allow_status_update && !ui.get_network_republish_busy() => {
+                            ui.set_network_status(error_copy().not_connected.into())
+                        }
+                        None => {}
                     }
                 });
             });
-            ui.set_network_status(s(""));
+            if allow_status_update {
+                ui.set_network_status(s(""));
+            }
         }
     });
 
@@ -1250,7 +1257,11 @@ pub(crate) fn wire_panes(
         let backend_cell = backend_cell.clone();
         move || {
             let Some(ui) = weak.upgrade() else { return };
+            if ui.get_network_republish_busy() {
+                return;
+            }
             ui.set_network_status(error_copy().republishing.into());
+            ui.set_network_republish_busy(true);
             let weak = weak.clone();
             let backend_cell = backend_cell.clone();
             std::thread::spawn(move || {
@@ -1265,6 +1276,7 @@ pub(crate) fn wire_panes(
                 };
                 let _ = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak.upgrade() else { return };
+                    ui.set_network_republish_busy(false);
                     match result {
                         Ok(n) => ui.set_network_status(
                             format!("Republished to {n} relay{}.", if n == 1 { "" } else { "s" })

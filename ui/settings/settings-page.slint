@@ -69,6 +69,7 @@ export component SettingsPage inherits Rectangle {
     in property <int> network-connected;
     in property <int> network-total;
     in property <string> network-status;
+    in property <bool> network-republish-busy: false;
     in-out property <string> network-add-error;
     callback network-add-relay(string) -> bool;
     callback network-remove-relay(string);
@@ -120,6 +121,7 @@ export component SettingsPage inherits Rectangle {
                 connected: root.network-connected;
                 total: root.network-total;
                 status: root.network-status;
+                republish-busy: root.network-republish-busy;
                 add-error <=> root.network-add-error;
                 add-relay(u) => {
                     return root.network-add-relay(u);
