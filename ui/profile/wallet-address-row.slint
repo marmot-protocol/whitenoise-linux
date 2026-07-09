@@ -1,12 +1,12 @@
 import { Palette, Theme } from "../tokens.slint";
-import { InfoRow } from "./info-row.slint";
+import { KVRow } from "../shells/kv-row.slint";
 import { MicroButton } from "../primitives/button.slint";
 import { CopyIcon } from "../icons/copy-icon.slint";
 
 export component WalletAddressRow inherits Rectangle {
     in property <string> address;
 
-    InfoRow {
+    KVRow {
         label: @tr("Lightning address");
         sublabel: @tr("People can zap you via this address.");
         value: address;

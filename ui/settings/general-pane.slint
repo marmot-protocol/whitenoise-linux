@@ -5,7 +5,7 @@ import { DetailPage } from "../shells/detail-page.slint";
 import { PageHeader } from "../shells/page-header.slint";
 import { Section } from "../shells/section.slint";
 import { GroupCard } from "../shells/group-card.slint";
-import { PrefRow } from "pref-row.slint";
+import { KVRow } from "../shells/kv-row.slint";
 import { Toggle } from "toggle.slint";
 import { MicroButton } from "../primitives/button.slint";
 
@@ -29,21 +29,24 @@ export component GeneralPane inherits DetailPage {
     Section {
         label: @tr("STARTUP");
         GroupCard {
-            PrefRow {
+            KVRow {
+                row-height: 48px;
                 label: @tr("Launch at login");
                 Toggle {
                     on: true;
                 }
             }
 
-            PrefRow {
+            KVRow {
+                row-height: 48px;
                 label: @tr("Start minimized to tray");
                 Toggle {
                     on: false;
                 }
             }
 
-            PrefRow {
+            KVRow {
+                row-height: 48px;
                 label: @tr("Restore last selected chat on launch");
                 show-divider: false;
                 Toggle {
@@ -56,7 +59,8 @@ export component GeneralPane inherits DetailPage {
     Section {
         label: @tr("LANGUAGE");
         GroupCard {
-            PrefRow {
+            KVRow {
+                row-height: 48px;
                 label: @tr("Interface language");
                 value: root.locale-display;
                 MicroButton {
@@ -71,7 +75,8 @@ export component GeneralPane inherits DetailPage {
                 }
             }
 
-            PrefRow {
+            KVRow {
+                row-height: 48px;
                 label: @tr("Time format");
                 MicroButton {
                     label: @tr("24-hour");
@@ -92,7 +97,8 @@ export component GeneralPane inherits DetailPage {
                 }
             }
 
-            PrefRow {
+            KVRow {
+                row-height: 48px;
                 label: @tr("Date format");
                 show-divider: false;
                 // Labels are example renderings, not prose — keep untranslated.

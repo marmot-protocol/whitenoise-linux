@@ -4,7 +4,7 @@ import { DetailPage } from "../shells/detail-page.slint";
 import { PageHeader } from "../shells/page-header.slint";
 import { Section } from "../shells/section.slint";
 import { GroupCard } from "../shells/group-card.slint";
-import { PrefRow } from "pref-row.slint";
+import { KVRow } from "../shells/kv-row.slint";
 import { Toggle } from "toggle.slint";
 
 // Desktop-notification preferences. The master toggle gates the two detail
@@ -29,7 +29,8 @@ export component NotificationsPane inherits DetailPage {
     Section {
         label: @tr("INCOMING MESSAGES");
         GroupCard {
-            PrefRow {
+            KVRow {
+                row-height: 48px;
                 label: @tr("Desktop notifications");
                 sublabel: @tr("Alert me about messages in chats I'm not viewing.");
                 Toggle {
@@ -40,7 +41,8 @@ export component NotificationsPane inherits DetailPage {
                 }
             }
 
-            PrefRow {
+            KVRow {
+                row-height: 48px;
                 label: @tr("Play a sound");
                 Toggle {
                     on <=> root.sound;
@@ -51,7 +53,8 @@ export component NotificationsPane inherits DetailPage {
                 }
             }
 
-            PrefRow {
+            KVRow {
+                row-height: 48px;
                 label: @tr("Show message preview");
                 sublabel: @tr("Off shows only \"New message\" without the text.");
                 show-divider: false;

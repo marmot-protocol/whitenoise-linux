@@ -14,7 +14,7 @@ import { DetailPage } from "../shells/detail-page.slint";
 import { PageHeader } from "../shells/page-header.slint";
 import { Section } from "../shells/section.slint";
 import { GroupCard } from "../shells/group-card.slint";
-import { InfoRow } from "info-row.slint";
+import { KVRow } from "../shells/kv-row.slint";
 import { SharedGroupsList } from "../shells/shared-groups.slint";
 import { Button, MicroButton } from "../primitives/button.slint";
 import { PencilIcon } from "../icons/pencil-icon.slint";
@@ -155,7 +155,8 @@ export component ContactDetail inherits DetailPage {
     Section {
         label: @tr("IDENTITY");
         GroupCard {
-            InfoRow {
+            KVRow {
+                row-height: 60px;
                 label: "npub";
                 sublabel: @tr("Public key, safe to share.");
                 value: root.contact.npub-short;
@@ -171,7 +172,8 @@ export component ContactDetail inherits DetailPage {
                 }
             }
 
-            InfoRow {
+            KVRow {
+                row-height: 60px;
                 label: @tr("Key package");
                 sublabel: root.contact.kp-detail;
                 value: root.contact.kp-status;
@@ -189,7 +191,8 @@ export component ContactDetail inherits DetailPage {
                 }
             }
 
-            InfoRow {
+            KVRow {
+                row-height: 60px;
                 label: @tr("Mutual relays");
                 sublabel: @tr("Used to deliver messages between you.");
                 value: @tr("{} relays", root.contact.relays);

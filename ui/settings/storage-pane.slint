@@ -4,7 +4,7 @@ import { DetailPage } from "../shells/detail-page.slint";
 import { PageHeader } from "../shells/page-header.slint";
 import { Section } from "../shells/section.slint";
 import { GroupCard } from "../shells/group-card.slint";
-import { PrefRow } from "pref-row.slint";
+import { KVRow } from "../shells/kv-row.slint";
 import { MicroButton } from "../primitives/button.slint";
 
 // Storage settings. The only on-disk store the user can act on today is the
@@ -35,7 +35,8 @@ export component StoragePane inherits DetailPage {
     Section {
         label: @tr("MEDIA CACHE");
         GroupCard {
-            PrefRow {
+            KVRow {
+                row-height: 48px;
                 label: @tr("Cached attachments");
                 sublabel: @tr("Decrypted images and files, stored encrypted on this device.");
                 value: root.cache-size;
@@ -54,7 +55,8 @@ export component StoragePane inherits DetailPage {
     Section {
         label: @tr("KEYS & BACKUPS");
         GroupCard {
-            PrefRow {
+            KVRow {
+                row-height: 48px;
                 label: @tr("Location");
                 sublabel: root.vault-dir;
                 show-divider: true;
@@ -66,7 +68,8 @@ export component StoragePane inherits DetailPage {
                 }
             }
 
-            PrefRow {
+            KVRow {
+                row-height: 48px;
                 label: @tr("Back up everything");
                 sublabel: @tr("Pack accounts, chats, and settings into one encrypted file.");
                 show-divider: true;
@@ -78,7 +81,8 @@ export component StoragePane inherits DetailPage {
                 }
             }
 
-            PrefRow {
+            KVRow {
+                row-height: 48px;
                 label: @tr("Import a backup");
                 sublabel: @tr("Merge the accounts from a backup file into this install.");
                 show-divider: false;

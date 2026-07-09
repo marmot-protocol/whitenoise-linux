@@ -7,7 +7,7 @@ import { PageHeader } from "../shells/page-header.slint";
 import { GroupCard } from "../shells/group-card.slint";
 import { CypherScroll } from "../primitives/cypher-scroll.slint";
 import { Signer, LinkedDevice, KeyPackageInfo } from "types.slint";
-import { KVRow } from "kv-row.slint";
+import { KVRow } from "../shells/kv-row.slint";
 import { MicroButton } from "../primitives/button.slint";
 import { SectionHeader } from "section-header.slint";
 import { DeviceRow } from "device-row.slint";
@@ -104,6 +104,7 @@ export component KeysPage inherits Rectangle {
 
                 GroupCard {
                     KVRow {
+                        row-height: 64px;
                         label: @tr("Public key (npub)");
                         sublabel: @tr("Safe to share. This is how people find you.");
                         value: root.npub;
@@ -185,6 +186,7 @@ export component KeysPage inherits Rectangle {
                 }
                 if root.key-packages.length > 0: GroupCard {
                     for kp[i] in root.key-packages: KVRow {
+                        row-height: 64px;
                         label: "0x" + kp.key-package-ref;
                         sublabel: (kp.published-at != "" ? (kp.published-at + " · ") : "") + (kp.on-relay ? @tr("{n} relay" | "{n} relays" % kp.relay-count, kp.relay-count) : @tr("local only"));
                         value: kp.local ? "LOCAL" : "REMOTE";

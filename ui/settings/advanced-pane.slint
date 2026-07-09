@@ -6,7 +6,7 @@ import { DetailPage } from "../shells/detail-page.slint";
 import { PageHeader } from "../shells/page-header.slint";
 import { Section } from "../shells/section.slint";
 import { GroupCard } from "../shells/group-card.slint";
-import { PrefRow } from "pref-row.slint";
+import { KVRow } from "../shells/kv-row.slint";
 import { Toggle } from "toggle.slint";
 import { MicroButton } from "../primitives/button.slint";
 
@@ -96,7 +96,8 @@ export component AdvancedPane inherits DetailPage {
     Section {
         label: @tr("SECURITY & PRIVACY");
         GroupCard {
-            PrefRow {
+            KVRow {
+                row-height: 48px;
                 label: @tr("Share anonymous app telemetry");
                 sublabel: @tr("Share relay connection telemetry.");
                 Toggle {
@@ -107,7 +108,8 @@ export component AdvancedPane inherits DetailPage {
                 }
             }
 
-            PrefRow {
+            KVRow {
+                row-height: 48px;
                 label: @tr("Audit logs");
                 sublabel: @tr("Create and send group audit log files. Applies immediately.");
                 show-divider: false;
@@ -179,7 +181,8 @@ export component AdvancedPane inherits DetailPage {
     Section {
         label: @tr("DEVELOPER");
         GroupCard {
-            PrefRow {
+            KVRow {
+                row-height: 48px;
                 label: @tr("Developer mode");
                 sublabel: @tr("Shows diagnostics and MLS internals. Adds a Debug entry with account, key-packages, and group state.");
                 show-divider: false;
