@@ -1271,6 +1271,22 @@ export global TimeCopy {
     out property <string> date-dmy: @tr("date, %1 = day, %2 = month, %3 = year" => "%1 %2 %3");
 }
 
+// Group system-line templates (marmot kind-1210 rows). Authored as `@tr()` so
+// they flow through the gettext catalogs, then composed Rust-side in
+// `system_event_text` (via the `SystemCopySnapshot` + `tmpl` %1/%2 substitution,
+// the same pattern as `TimeCopy`), so the sentence stays translatable while
+// `SystemLine` is a dumb presenter. %1 = actor, %2 = subject/name — except
+// member-left, where %1 is the member who left.
+export global SystemCopy {
+    out property <string> member-added: @tr("group system line, %1 = actor, %2 = added member" => "%1 added %2");
+    out property <string> member-removed: @tr("group system line, %1 = actor, %2 = removed member" => "%1 removed %2");
+    out property <string> member-left: @tr("group system line, %1 = the member who left" => "%1 left the group");
+    out property <string> admin-added: @tr("group system line, %1 = actor, %2 = new admin" => "%1 made %2 an admin");
+    out property <string> admin-removed: @tr("group system line, %1 = actor, %2 = former admin" => "%1 dismissed %2 as admin");
+    out property <string> group-renamed: @tr("group system line, %1 = actor, %2 = new group name" => "%1 renamed the group to %2");
+    out property <string> group-avatar-changed: @tr("group system line, %1 = actor" => "%1 changed the group photo");
+}
+
 // Link activation sink. Chat bubbles render Markdown anchors deep inside the
 // IncomingRow/OutgoingRow → MessageBubble → RunCell chain; rather than thread a
 // callback through every level, the leaf RunCell invokes `Linkout.open(url)`
@@ -1467,6 +1483,11 @@ export struct ChatMessage {
     effect-clip-x: int,
     effect-clip-y: int,
     effect-autoplay: bool,
+    // Group system row (marmot kind-1210: member added/removed/left, admin
+    // added/removed, group renamed/avatar-changed). When `system-line` is true
+    // the row renders as a centered system line (from `text`), never a bubble,
+    // and carries no reply/react/edit affordances.
+    system-line: bool,
 }
 
 // One entry in a message's edit history (original + each subsequent edit),

@@ -566,6 +566,9 @@ pub(crate) fn refresh_chats_from(
             .iter()
             .filter(|m| is_visible_chat_message(m))
             .map(|m| {
+                if let Some(ev) = backend::group_system_event(m) {
+                    return system_chat_message(m, &ev, backend);
+                }
                 let r = reactions
                     .get(&m.message_id_hex)
                     .cloned()
@@ -1148,6 +1151,10 @@ pub(crate) fn count_unread(
                     m.recorded_at as i64 > marker
                         && !m.sender.eq_ignore_ascii_case(my_id)
                         && is_visible_chat_message(m)
+                        // Group-system rows (member/admin/rename changes) render
+                        // in the timeline but aren't messages, so they don't add
+                        // to the unread count.
+                        && backend::group_system_event(m).is_none()
                 })
                 .count() as u32
         }
@@ -1320,6 +1327,9 @@ pub(crate) fn install_chat_watcher(
                     && recent
                     && !notif.is_muted(&id)
                     && is_visible_chat_message(&m)
+                    // A group-system row isn't a message — no desktop toast (its
+                    // plaintext is the raw event JSON, not readable body text).
+                    && backend::group_system_event(&m).is_none()
                     && notif.note_latest(&id, &m.message_id_hex)
                     && !viewing
                 {

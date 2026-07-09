@@ -65,6 +65,14 @@ pub(crate) fn chat_meta_from(
     let (a, b, init) = avatar_for(&name);
     let (picture, has_picture) = bind_cached_picture(picture_url.as_deref());
     let (preview, stamp) = match last_message {
+        // A group-system row (member added, renamed, …) previews as its own
+        // localized line with no "You:" prefix — it isn't a message anyone sent.
+        Some(m) if backend::group_system_event(m).is_some() => {
+            let text = backend::group_system_event(m)
+                .map(|ev| system_line_text(&ev, backend))
+                .unwrap_or_default();
+            (text, format_chat_stamp(m.recorded_at))
+        }
         Some(m) => {
             let mine = m.sender.eq_ignore_ascii_case(my_account_id_hex);
             let prefix = if mine {
@@ -124,7 +132,11 @@ pub(crate) fn is_visible_chat_message(record: &AppMessageRecord) -> bool {
     // rule again. Reactions/deletes/streams/etc. need their own renderers;
     // until they have one, hide them rather than dump raw JSON into the chat
     // scroll.
-    if !backend::is_plain_chat_message(record) {
+    // Plain kind-9 chat, plus kind-1210 group-system rows (member/admin/rename
+    // changes) which render as centered system lines. Everything else stays
+    // hidden. The staged dm-ctl / bootbench bins keep the narrower
+    // `is_plain_chat_message` fallback, so system rows only surface in the UI.
+    if !backend::is_plain_chat_message(record) && backend::group_system_event(record).is_none() {
         return false;
     }
     // "Delete for me" — locally hidden, never rendered (the message stays on
@@ -410,6 +422,99 @@ pub(crate) fn chat_message_from_with_reactions(
         effect_clip_x,
         effect_clip_y,
         effect_autoplay: !deleted && effect_autoplay,
+        // Not a system line: this is a real chat bubble.
+        system_line: false,
+    }
+}
+
+copy_snapshot! {
+    /// Localized snapshot of the group system-line templates (kind-1210 rows).
+    ///
+    /// The `%1`/`%2` templates are authored as `@tr()` properties on the Slint
+    /// `SystemCopy` global, so they flow through the gettext catalogs like the
+    /// rest of the UI; [`system_event_text`] substitutes the resolved names with
+    /// [`tmpl`]. Snapshotted here because a row build can run off the UI thread
+    /// (chat-list rebuilds), where touching a Slint getter is unsound — same
+    /// reasoning as [`ErrorCopySnapshot`] / [`TimeCopySnapshot`].
+    pub(crate) struct SystemCopySnapshot from SystemCopy;
+    /// Snapshot the localized `SystemCopy` templates. MUST run on the UI thread;
+    /// call at startup and after every locale change so system lines follow the
+    /// active language.
+    refresh fn refresh_system_copy, cell fn system_copy_cell;
+    /// Read the current `SystemCopy` snapshot. Safe from any thread.
+    read fn system_copy;
+    member_added: String = get_member_added => "%1 added %2";
+    member_removed: String = get_member_removed => "%1 removed %2";
+    member_left: String = get_member_left => "%1 left the group";
+    admin_added: String = get_admin_added => "%1 made %2 an admin";
+    admin_removed: String = get_admin_removed => "%1 dismissed %2 as admin";
+    group_renamed: String = get_group_renamed => "%1 renamed the group to %2";
+    group_avatar_changed: String = get_group_avatar_changed => "%1 changed the group photo";
+}
+
+/// Compose the localized group-system line text for a kind-1210 record: resolve
+/// the actor and subject ids to display names, then fill the translated template
+/// from [`system_copy`]. Shared by the timeline row builder and the chat-list
+/// preview so both read the same wording.
+pub(crate) fn system_line_text(event: &AppGroupSystemEvent, backend: &Backend) -> String {
+    let actor = event
+        .actor_account_id_hex
+        .as_deref()
+        .map(|id| backend.account_display_name(id))
+        .unwrap_or_default();
+    let subject = event
+        .subject_account_id_hex
+        .as_deref()
+        .map(|id| backend.account_display_name(id))
+        .unwrap_or_default();
+    system_event_text(event, &actor, &subject)
+}
+
+/// Build a centered system-line row for a marmot kind-1210 group-system record
+/// (member added/removed/left, admin added/removed, group renamed/avatar
+/// changed). The line text (`SystemLine` renders it verbatim) is the localized
+/// sentence from [`system_line_text`]. The row carries no reply/react/edit
+/// affordances (those live on the bubble rows the render path guards out), so it
+/// can safely keep its real `message_id`: the id only serves the live-append
+/// dedup (`find_message_row`) and never matches a reaction/edit target, which
+/// point at kind-9 ids.
+pub(crate) fn system_chat_message(
+    record: &AppMessageRecord,
+    event: &AppGroupSystemEvent,
+    backend: &Backend,
+) -> ChatMessage {
+    ChatMessage {
+        system_line: true,
+        text: s(&system_line_text(event, backend)),
+        stamp: s(&format_unix(record.recorded_at)),
+        stamp_full: s(&format_full_stamp(record.recorded_at)),
+        day_key: day_key_of(record.recorded_at),
+        message_id: s(&record.message_id_hex),
+        show_avatar: false,
+        first_in_group: true,
+        last_in_group: true,
+        ..Default::default()
+    }
+}
+
+/// Fill the translated group-system template for `event`'s type with the
+/// already-resolved actor/subject display names (via [`tmpl`]'s `%1`/`%2`
+/// substitution). Falls back to marmot's own `text` (e.g. "Member added") for a
+/// type this doesn't phrase — the disappearing-message timer — or when a needed
+/// name is missing.
+fn system_event_text(event: &AppGroupSystemEvent, actor: &str, subject: &str) -> String {
+    let c = system_copy();
+    let name = event.name.as_deref().unwrap_or("");
+    let (has_actor, has_subject) = (!actor.is_empty(), !subject.is_empty());
+    match event.system_type.as_str() {
+        "member_added" if has_actor && has_subject => tmpl(&c.member_added, &[actor, subject]),
+        "member_removed" if has_actor && has_subject => tmpl(&c.member_removed, &[actor, subject]),
+        "member_left" if has_subject => tmpl(&c.member_left, &[subject]),
+        "admin_added" if has_actor && has_subject => tmpl(&c.admin_added, &[actor, subject]),
+        "admin_removed" if has_actor && has_subject => tmpl(&c.admin_removed, &[actor, subject]),
+        "group_renamed" if has_actor && !name.is_empty() => tmpl(&c.group_renamed, &[actor, name]),
+        "group_avatar_changed" if has_actor => tmpl(&c.group_avatar_changed, &[actor]),
+        _ => event.text.clone(),
     }
 }
 
@@ -738,6 +843,8 @@ pub(crate) fn pending_chat_message(
         effect_clip_x,
         effect_clip_y,
         effect_autoplay,
+        // A pending send is always a real chat bubble, never a system line.
+        system_line: false,
     }
 }
 
@@ -1004,6 +1111,11 @@ pub(crate) fn build_one_message_row(
     backend: &Backend,
 ) -> ChatMessage {
     mention_render_group(group_hex);
+    // Group-system rows (kind-1210) render as centered system lines and skip the
+    // whole reaction/edit/attachment pipeline below.
+    if let Some(ev) = backend::group_system_event(record) {
+        return system_chat_message(record, &ev, backend);
+    }
     maybe_autoload_album(group_hex, record);
     let mut reactions = aggregate_reactions(all_records, my_id);
     apply_reaction_overlay(&mut reactions, group_hex, overlay);
@@ -1053,14 +1165,22 @@ pub(crate) fn apply_grouping(rows: &mut [ChatMessage], keys: &[GroupKey]) {
         // A day boundary always breaks the visual group — a date divider
         // renders between the bubbles, so they can't share corners/avatar.
         let day_break = i > 0 && rows[i].day_key != rows[i - 1].day_key;
-        let first = i == 0 || day_break || !keys_grouped(&keys[i - 1], &keys[i]);
+        // A system line is always standalone and also breaks its neighbours'
+        // groups: it can't share an avatar/corner run with a bubble.
+        let sys = rows[i].system_line;
+        let sys_prev = i > 0 && rows[i - 1].system_line;
+        let sys_next = i + 1 < n && rows[i + 1].system_line;
+        let first = i == 0 || day_break || sys || sys_prev || !keys_grouped(&keys[i - 1], &keys[i]);
         let last = i + 1 == n
             || rows[i + 1].day_key != rows[i].day_key
+            || sys
+            || sys_next
             || !keys_grouped(&keys[i], &keys[i + 1]);
         rows[i].first_in_group = first;
         rows[i].last_in_group = last;
-        // Avatar rides the bottom of a stack; the name label tops it.
-        rows[i].show_avatar = last;
+        // Avatar rides the bottom of a stack; the name label tops it. System
+        // lines never show one.
+        rows[i].show_avatar = last && !sys;
         rows[i].show_sender_name = rows[i].show_sender_name && first;
         rows[i].gap_before = if first && i != 0 { 10.0 } else { 0.0 };
         // Date divider above the first message of each local day. The window's
@@ -1120,7 +1240,11 @@ pub(crate) fn push_message_grouped(vm: &VecModel<ChatMessage>, mut row: ChatMess
         && let Some(mut prev) = vm.row_data(n - 1)
     {
         prev_day = prev.day_key;
-        let same = prev.day_key == row.day_key
+        // A system line (either side) is always standalone — never fold it into
+        // a bubble run or fold a bubble into it.
+        let same = !row.system_line
+            && !prev.system_line
+            && prev.day_key == row.day_key
             && ((row.outgoing && prev.outgoing)
                 || (!row.outgoing
                     && !prev.outgoing
@@ -1214,6 +1338,9 @@ pub(crate) fn rebuild_chat_messages_from(
         .iter()
         .filter(|m| is_visible_chat_message(m))
         .map(|m| {
+            if let Some(ev) = backend::group_system_event(m) {
+                return system_chat_message(m, &ev, backend);
+            }
             maybe_autoload_album(group_hex, m);
             let r = reactions
                 .get(&m.message_id_hex)

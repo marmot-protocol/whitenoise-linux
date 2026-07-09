@@ -55,6 +55,7 @@ import {
     EffectCatalog,
     ErrorCopy,
     TimeCopy,
+    SystemCopy,
     NativeDialogStrings,
 } from "tokens.slint";
 import { EditVersion } from "tokens.slint";
@@ -88,6 +89,11 @@ export {
 // on the UI thread at startup and on locale change (same bridge as ErrorCopy).
 export {
     TimeCopy,
+}
+// Group system-line templates (kind-1210 rows), snapshot on the UI thread and
+// filled Rust-side in `system_event_text` (same bridge as ErrorCopy/TimeCopy).
+export {
+    SystemCopy,
 }
 // In-bubble text-selection state. Rust binds `request-word` (double-click word
 // selection) and writes the resolved endpoints back into the global.

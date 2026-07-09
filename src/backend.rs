@@ -22,12 +22,13 @@ pub(crate) use cgka_traits::app_components::BLOSSOM_LOCATOR_KIND_V1;
 pub(crate) use marmot_account::{AccountHome, AccountSecretStore, AccountSummary};
 pub(crate) use marmot_app::{
     AccountRelayListBootstrap, AccountSetupRequest, AppBlobEndpoint, AppGroupMemberRecord,
-    AppGroupMlsState, AppGroupRecord, AppMessageQuery, AppMessageRecord, AuditLogFile,
-    AuditLogSettings, AuditLogTrackerConfig, AuditLogUploadSource, DEFAULT_BLOSSOM_SERVER_URL,
-    MarmotApp, MarmotAppRuntime, MediaAttachmentReference, MediaDownloadResult,
-    MediaUploadAttachmentRequest, MediaUploadRequest, MediaUploadResult, RelayTelemetryResource,
-    RelayTelemetryRuntimeConfig, RelayTelemetrySettings, RuntimeMessageUpdate,
-    RuntimeMessagesSubscription, SendSummary, UserDirectoryRecord, UserProfileMetadata,
+    AppGroupMlsState, AppGroupRecord, AppGroupSystemEvent, AppMessageQuery, AppMessageRecord,
+    AuditLogFile, AuditLogSettings, AuditLogTrackerConfig, AuditLogUploadSource,
+    DEFAULT_BLOSSOM_SERVER_URL, MarmotApp, MarmotAppRuntime, MediaAttachmentReference,
+    MediaDownloadResult, MediaUploadAttachmentRequest, MediaUploadRequest, MediaUploadResult,
+    RelayTelemetryResource, RelayTelemetryRuntimeConfig, RelayTelemetrySettings,
+    RuntimeMessageUpdate, RuntimeMessagesSubscription, SendSummary, UserDirectoryRecord,
+    UserProfileMetadata, group_system_event_from_message,
 };
 pub(crate) use tokio::runtime::Runtime as TokioRuntime;
 pub(crate) use tokio::task::JoinHandle;
@@ -66,6 +67,16 @@ pub fn is_plain_chat_message(record: &AppMessageRecord) -> bool {
     }
     let t = record.plaintext.trim_start();
     !(t.starts_with(r#"{"v":"mip05"#) || t.starts_with(r#"{"v": "mip05"#))
+}
+
+/// Parse a record as a marmot group-system event (kind-1210: membership, admin,
+/// rename, avatar, and retention changes) if it is one. Returns the decoded
+/// [`AppGroupSystemEvent`] (system_type + resolved actor/subject ids + name)
+/// so the UI can render it as a centered system line instead of a chat bubble;
+/// `None` for a plain chat message or any other kind. Wraps
+/// [`group_system_event_from_message`] so callers don't repeat the kind check.
+pub fn group_system_event(record: &AppMessageRecord) -> Option<AppGroupSystemEvent> {
+    group_system_event_from_message(record.kind, &record.plaintext)
 }
 
 /// Visibility filter consulted by [`Backend::latest_message`]. Installed once

@@ -1,0 +1,39 @@
+import { Palette, Theme, ChatMessage } from "../tokens.slint";
+
+// Centered system line for marmot kind-1210 group-system rows (member added,
+// removed, left; admin added/removed; group renamed/avatar-changed). The line
+// text is composed Rust-side (`system_chat_message` in `src/chatmodel.rs`, with
+// actor/subject names resolved) and carried on `msg.text`, so this component is
+// a pure presenter: a muted centered pill, never a bubble, with no reply/react/
+// edit chrome.
+export component SystemLine inherits Rectangle {
+    in property <ChatMessage> msg;
+
+    horizontal-stretch: 1;
+    HorizontalLayout {
+        alignment: center;
+        padding-top: 4px;
+        padding-bottom: 4px;
+        Rectangle {
+            background: Palette.panel-2;
+            border-radius: 11px * Theme.r-scale;
+            border-width: Theme.border-w;
+            border-color: Palette.border;
+            HorizontalLayout {
+                padding-left: 12px;
+                padding-right: 12px;
+                padding-top: 4px;
+                padding-bottom: 4px;
+                Text {
+                    text: root.msg.text;
+                    color: Palette.text-lo;
+                    font-family: Theme.font;
+                    font-size: Theme.fs(11px, 12px);
+                    font-weight: 500;
+                    horizontal-alignment: center;
+                    wrap: word-wrap;
+                }
+            }
+        }
+    }
+}

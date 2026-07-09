@@ -9,6 +9,7 @@
 import { Palette, Theme, ChatMessage } from "../tokens.slint";
 import { IncomingRow } from "incoming-row.slint";
 import { OutgoingRow } from "outgoing-row.slint";
+import { SystemLine } from "system-line.slint";
 import { Tooltip } from "tooltip.slint";
 
 export component MessageView inherits VerticalLayout {
@@ -37,8 +38,15 @@ export component MessageView inherits VerticalLayout {
     callback album-cell-clicked(string);
     callback play-effect(int, int, int, length, length, length, length);
 
+    // ── Group system row: a centered system line, shared across every skin.
+    // Rendered before the skins and guarded out of them below so a kind-1210
+    // record never falls into a bubble or terminal line. ──
+    if root.msg.system-line: SystemLine {
+        msg: root.msg;
+    }
+
     // ── Skin 0: standard bubble rows ──
-    if Theme.skin-message == 0 && !root.msg.outgoing: IncomingRow {
+    if Theme.skin-message == 0 && !root.msg.system-line && !root.msg.outgoing: IncomingRow {
         msg: root.msg;
         row-w: root.row-w;
         react(id, emoji) => {
@@ -76,7 +84,7 @@ export component MessageView inherits VerticalLayout {
         }
     }
 
-    if Theme.skin-message == 0 && root.msg.outgoing: OutgoingRow {
+    if Theme.skin-message == 0 && !root.msg.system-line && root.msg.outgoing: OutgoingRow {
         msg: root.msg;
         row-w: root.row-w;
         align-right: root.outgoing-on-right;
@@ -124,7 +132,7 @@ export component MessageView inherits VerticalLayout {
     }
 
     // ── Skin 1: terminal line — `<sender> message text` (no bubbles/avatars) ──
-    if Theme.skin-message == 1: line := Rectangle {
+    if Theme.skin-message == 1 && !root.msg.system-line: line := Rectangle {
         // Attachment state. Albums carry their cells in `album`; single
         // attachments use the `att-*` fields. A line with media routes its tap to
         // the same viewer/slideshow the bubble uses (attachment-clicked /

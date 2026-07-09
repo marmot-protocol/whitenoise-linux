@@ -27,6 +27,34 @@ msgctxt "date, %1 = month, %2 = day, %3 = year"
 msgid "%1 %2 %3"
 msgstr "%3年%1%2日"
 
+msgctxt "group system line, %1 = actor, %2 = added member"
+msgid "%1 added %2"
+msgstr "%1が%2を追加しました"
+
+msgctxt "group system line, %1 = actor"
+msgid "%1 changed the group photo"
+msgstr "%1がグループの写真を変更しました"
+
+msgctxt "group system line, %1 = actor, %2 = former admin"
+msgid "%1 dismissed %2 as admin"
+msgstr "%1が%2の管理者権限を解除しました"
+
+msgctxt "group system line, %1 = the member who left"
+msgid "%1 left the group"
+msgstr "%1がグループを退出しました"
+
+msgctxt "group system line, %1 = actor, %2 = new admin"
+msgid "%1 made %2 an admin"
+msgstr "%1が%2を管理者にしました"
+
+msgctxt "group system line, %1 = actor, %2 = removed member"
+msgid "%1 removed %2"
+msgstr "%1が%2を削除しました"
+
+msgctxt "group system line, %1 = actor, %2 = new group name"
+msgid "%1 renamed the group to %2"
+msgstr "%1がグループ名を%2に変更しました"
+
 msgctxt "relative time, %1 = days"
 msgid "%1d ago"
 msgstr "%1日前"
