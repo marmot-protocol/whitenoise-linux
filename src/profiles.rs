@@ -138,7 +138,7 @@ pub(crate) fn open_profile_modal(
     let shared = if is_self {
         Vec::new()
     } else {
-        shared_groups_model(backend, &id)
+        shared_groups_rows(ui, backend, &id)
     };
     ui.set_peer_profile_shared_groups(model(shared));
 

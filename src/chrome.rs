@@ -400,14 +400,21 @@ pub(crate) fn contact_from(
 }
 
 /// Build the `SharedGroup` rows for `account_id_hex`: the groups the local
-/// account has in common with that person, each with a deterministic gradient
-/// avatar. Ordering (by name) is done backend-side.
-pub(crate) fn shared_groups_model(backend: &Backend, account_id_hex: &str) -> Vec<SharedGroup> {
-    backend
-        .shared_groups(account_id_hex)
-        .into_iter()
+/// account has in common with that person. Each row binds its group avatar
+/// from the picture cache; misses trigger a background fetch (via
+/// [`spawn_shared_group_avatar_fetches`]) that rebinds the row when it decodes.
+/// Ordering (by name) is done backend-side.
+pub(crate) fn shared_groups_rows(
+    ui: &DarkMatterLinux,
+    backend: &Backend,
+    account_id_hex: &str,
+) -> Vec<SharedGroup> {
+    let infos = backend.shared_groups(account_id_hex);
+    let rows: Vec<SharedGroup> = infos
+        .iter()
         .map(|g| {
             let (a, b, init) = avatar_for(&g.name);
+            let (picture, has_picture) = bind_cached_picture(g.avatar_key.as_deref());
             SharedGroup {
                 name: s(&g.name),
                 group_id: s(&g.group_id_hex),
@@ -415,9 +422,91 @@ pub(crate) fn shared_groups_model(backend: &Backend, account_id_hex: &str) -> Ve
                 av_a: a,
                 av_b: b,
                 av_initials: s(&init),
+                picture,
+                has_picture,
             }
         })
-        .collect()
+        .collect();
+    spawn_shared_group_avatar_fetches(ui, backend, &infos);
+    rows
+}
+
+/// Bind a decoded group avatar onto the matching `SharedGroup` row wherever it
+/// is shown — the contact page list and the profile modal share the row type,
+/// so update both models (each is a no-op when it holds no matching row).
+pub(crate) fn update_shared_group_pictures(
+    ui: &DarkMatterLinux,
+    group_id_hex: &str,
+    pixels: &PicturePixels,
+) {
+    for m in [
+        ui.get_contact_shared_groups(),
+        ui.get_peer_profile_shared_groups(),
+    ] {
+        bind_picture_to_rows(
+            &m,
+            pixels,
+            false,
+            |r| r.group_id.as_str().eq_ignore_ascii_case(group_id_hex),
+            |r, img| {
+                r.picture = img;
+                r.has_picture = true;
+            },
+        );
+    }
+}
+
+/// Fetch every shared group's avatar that isn't already cached, then rebind the
+/// row(s) on the UI thread. A URL avatar goes through the plain picture fetch;
+/// an encrypted Blossom image (`group-image:{hash}`) downloads and decrypts via
+/// the backend, mirroring the conversation-header avatar path.
+pub(crate) fn spawn_shared_group_avatar_fetches(
+    ui: &DarkMatterLinux,
+    backend: &Backend,
+    infos: &[backend::SharedGroupInfo],
+) {
+    for info in infos {
+        let Some(key) = info.avatar_key.as_deref() else {
+            continue;
+        };
+        if cached_picture_image(key).is_some() {
+            continue;
+        }
+        let group_id = info.group_id_hex.clone();
+        if key.starts_with("group-image:") {
+            let cache_key = key.to_string();
+            let weak = ui.as_weak();
+            backend.fetch_group_image_async(&info.group_id_hex, move |result| {
+                let bytes = match result {
+                    Ok(b) => b,
+                    Err(e) => {
+                        tracing::warn!(target: "group_avatar", "shared-group fetch failed: {e:#}");
+                        return;
+                    }
+                };
+                let pixels = match decode_avatar_pixels(&bytes) {
+                    Ok(p) => p,
+                    Err(e) => {
+                        tracing::warn!(target: "group_avatar", "shared-group decode failed: {e}");
+                        return;
+                    }
+                };
+                picture_cache_put(cache_key, pixels.clone());
+                let _ = slint::invoke_from_event_loop(move || {
+                    if let Some(ui) = weak.upgrade() {
+                        update_shared_group_pictures(&ui, &group_id, &pixels);
+                    }
+                });
+            });
+        } else {
+            spawn_picture_fetch(
+                ui.as_weak(),
+                backend.tokio_handle(),
+                key.to_string(),
+                move |ui, pixels| update_shared_group_pictures(ui, &group_id, pixels),
+            );
+        }
+    }
 }
 
 /// Recompute and push the active contact's "groups in common" list. Reads the
@@ -432,7 +521,7 @@ pub(crate) fn push_contact_shared_groups(ui: &DarkMatterLinux, backend: &Backend
     let rows = if account_id.is_empty() {
         Vec::new()
     } else {
-        shared_groups_model(backend, &account_id)
+        shared_groups_rows(ui, backend, &account_id)
     };
     ui.set_contact_shared_groups(model(rows));
 }

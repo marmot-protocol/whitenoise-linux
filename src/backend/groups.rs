@@ -7,6 +7,10 @@ pub struct SharedGroupInfo {
     pub group_id_hex: String,
     pub name: String,
     pub member_count: usize,
+    /// Avatar cache key for the group, resolved with the same precedence the
+    /// chat list uses: a `marmot.group.avatar-url.v1` URL when present, else
+    /// the encrypted Blossom image as `group-image:{hash}`, else `None`.
+    pub avatar_key: Option<String>,
 }
 
 impl Backend {
@@ -169,10 +173,18 @@ impl Backend {
                 } else {
                     g.profile.name.clone()
                 };
+                let avatar_key = if g.avatar_url.present && !g.avatar_url.url.trim().is_empty() {
+                    Some(g.avatar_url.url.trim().to_string())
+                } else if g.image.present && !g.image.image_hash_hex.is_empty() {
+                    Some(format!("group-image:{}", g.image.image_hash_hex))
+                } else {
+                    None
+                };
                 Some(SharedGroupInfo {
                     group_id_hex: g.group_id_hex.clone(),
                     name,
                     member_count: members.len(),
+                    avatar_key,
                 })
             })
             .collect();

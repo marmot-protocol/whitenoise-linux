@@ -977,6 +977,10 @@ export struct SharedGroup {
     av-a: color,
     av-b: color,
     av-initials: string,
+    // Group avatar image, bound lazily from the picture cache (same pipeline
+    // as the chat list). Falls back to the gradient when absent.
+    picture: image,
+    has-picture: bool,
 }
 
 // One on-disk forensic audit-log file (Settings → Advanced). `path` is the
