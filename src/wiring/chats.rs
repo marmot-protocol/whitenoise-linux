@@ -175,6 +175,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     unread_state().set_count(&group_hex, 0);
                     {
                         let mut st = settings_cell.borrow_mut();
+                        st.last_selected_chat = Some(group_hex.clone());
                         st.last_read.insert(group_hex.clone(), now);
                         st.save();
                     }

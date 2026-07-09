@@ -650,6 +650,53 @@ pub(crate) fn wire_panes(
         }
     });
 
+    ui.on_launch_at_login_toggled({
+        let weak = ui.as_weak();
+        let settings_cell = settings_cell.clone();
+        move |on| {
+            if let Err(e) = startup::set_launch_at_login(on) {
+                tracing::warn!(target: "startup", on, "set launch-at-login failed: {e}");
+                if let Some(ui) = weak.upgrade() {
+                    ui.set_launch_at_login(!on);
+                }
+                return;
+            }
+            let mut s = settings_cell.borrow_mut();
+            s.launch_at_login = on;
+            s.save();
+        }
+    });
+
+    ui.on_start_minimized_to_tray_toggled({
+        let settings_cell = settings_cell.clone();
+        move |on| {
+            let mut s = settings_cell.borrow_mut();
+            s.start_minimized_to_tray = on;
+            s.save();
+        }
+    });
+
+    ui.on_restore_last_selected_chat_toggled({
+        let weak = ui.as_weak();
+        let settings_cell = settings_cell.clone();
+        let group_ids = group_ids.clone();
+        move |on| {
+            let current = weak.upgrade().and_then(|ui| {
+                group_ids
+                    .lock()
+                    .unwrap()
+                    .get(ui.get_active_chat() as usize)
+                    .cloned()
+            });
+            let mut s = settings_cell.borrow_mut();
+            s.restore_last_selected_chat = on;
+            if on && current.is_some() {
+                s.last_selected_chat = current;
+            }
+            s.save();
+        }
+    });
+
     ui.on_notifications_toggled({
         let settings_cell = settings_cell.clone();
         let notif = notif.clone();

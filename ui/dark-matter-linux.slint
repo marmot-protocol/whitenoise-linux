@@ -99,6 +99,37 @@ export {
 // In-bubble text-selection state. Rust binds `request-word` (double-click word
 // selection) and writes the resolved endpoints back into the global.
 export { TextSelection }
+export component DarkMatterTray inherits SystemTrayIcon {
+    icon: @image-url("../assets/svg/logo.svg");
+    tooltip: @tr("White Noise");
+    title: @tr("White Noise");
+
+    callback show-window();
+    callback quit();
+
+    clicked => {
+        root.show-window();
+    }
+
+    Menu {
+        MenuItem {
+            title: @tr("Show White Noise");
+            activated => {
+                root.show-window();
+            }
+        }
+
+        MenuSeparator { }
+
+        MenuItem {
+            title: @tr("Quit");
+            activated => {
+                root.quit();
+            }
+        }
+    }
+}
+
 export component DarkMatterLinux inherits Window {
     // Window/taskbar title. Rust prefixes the total unread count — `(3) darkmatter`
     // — so the count shows wherever the OS surfaces the title (taskbar/tray/Alt-Tab).
@@ -527,6 +558,14 @@ export component DarkMatterLinux inherits Window {
     in-out property <string> date-format: "mdy";
     callback time-format-selected(string);
     callback date-format-selected(string);
+    // Startup preferences (Settings → General). Rust persists these; launch at
+    // login writes the desktop autostart file, while tray/restore apply at boot.
+    in-out property <bool> launch-at-login: false;
+    in-out property <bool> start-minimized-to-tray: false;
+    in-out property <bool> restore-last-selected-chat: false;
+    callback launch-at-login-toggled(bool);
+    callback start-minimized-to-tray-toggled(bool);
+    callback restore-last-selected-chat-toggled(bool);
 
     in property <string> backend-error;
     in property <bool> backend-ready;
@@ -1201,11 +1240,23 @@ export component DarkMatterLinux inherits Window {
                         }
                         time-format: root.time-format;
                         date-format: root.date-format;
+                        launch-at-login <=> root.launch-at-login;
+                        start-minimized-to-tray <=> root.start-minimized-to-tray;
+                        restore-last-selected-chat <=> root.restore-last-selected-chat;
                         time-format-selected(f) => {
                             root.time-format-selected(f);
                         }
                         date-format-selected(f) => {
                             root.date-format-selected(f);
+                        }
+                        launch-at-login-toggled(v) => {
+                            root.launch-at-login-toggled(v);
+                        }
+                        start-minimized-to-tray-toggled(v) => {
+                            root.start-minimized-to-tray-toggled(v);
+                        }
+                        restore-last-selected-chat-toggled(v) => {
+                            root.restore-last-selected-chat-toggled(v);
                         }
                         light-theme <=> root.light-theme;
                         retro-mode <=> root.retro-mode;

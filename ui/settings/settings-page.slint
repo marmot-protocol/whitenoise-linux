@@ -31,8 +31,14 @@ export component SettingsPage inherits Rectangle {
     callback change-language-clicked();
     in property <string> time-format: "24h";
     in property <string> date-format: "mdy";
+    in-out property <bool> launch-at-login: false;
+    in-out property <bool> start-minimized-to-tray: false;
+    in-out property <bool> restore-last-selected-chat: false;
     callback time-format-selected(string);
     callback date-format-selected(string);
+    callback launch-at-login-toggled(bool);
+    callback start-minimized-to-tray-toggled(bool);
+    callback restore-last-selected-chat-toggled(bool);
     in-out property <bool> light-theme: false;
     in-out property <bool> retro-mode: false;
     in-out property <bool> terminal-mode: false;
@@ -105,11 +111,23 @@ export component SettingsPage inherits Rectangle {
                 }
                 time-format: root.time-format;
                 date-format: root.date-format;
+                launch-at-login <=> root.launch-at-login;
+                start-minimized-to-tray <=> root.start-minimized-to-tray;
+                restore-last-selected-chat <=> root.restore-last-selected-chat;
                 time-format-selected(f) => {
                     root.time-format-selected(f);
                 }
                 date-format-selected(f) => {
                     root.date-format-selected(f);
+                }
+                launch-at-login-toggled(v) => {
+                    root.launch-at-login-toggled(v);
+                }
+                start-minimized-to-tray-toggled(v) => {
+                    root.start-minimized-to-tray-toggled(v);
+                }
+                restore-last-selected-chat-toggled(v) => {
+                    root.restore-last-selected-chat-toggled(v);
                 }
             }
             if root.active-tab == 1: NetworkPane {

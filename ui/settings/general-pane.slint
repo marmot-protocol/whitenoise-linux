@@ -15,8 +15,14 @@ export component GeneralPane inherits DetailPage {
     // `24h` | `12h` and `mdy` | `dmy` | `iso` — mirrors Settings in Rust.
     in property <string> time-format: "24h";
     in property <string> date-format: "mdy";
+    in-out property <bool> launch-at-login: false;
+    in-out property <bool> start-minimized-to-tray: false;
+    in-out property <bool> restore-last-selected-chat: false;
     callback time-format-selected(string);
     callback date-format-selected(string);
+    callback launch-at-login-toggled(bool);
+    callback start-minimized-to-tray-toggled(bool);
+    callback restore-last-selected-chat-toggled(bool);
 
     PageHeader {
         title: @tr("General");
@@ -33,7 +39,10 @@ export component GeneralPane inherits DetailPage {
                 row-height: 48px;
                 label: @tr("Launch at login");
                 Toggle {
-                    on: true;
+                    on <=> root.launch-at-login;
+                    toggled => {
+                        root.launch-at-login-toggled(self.on);
+                    }
                 }
             }
 
@@ -41,7 +50,10 @@ export component GeneralPane inherits DetailPage {
                 row-height: 48px;
                 label: @tr("Start minimized to tray");
                 Toggle {
-                    on: false;
+                    on <=> root.start-minimized-to-tray;
+                    toggled => {
+                        root.start-minimized-to-tray-toggled(self.on);
+                    }
                 }
             }
 
@@ -50,7 +62,10 @@ export component GeneralPane inherits DetailPage {
                 label: @tr("Restore last selected chat on launch");
                 show-divider: false;
                 Toggle {
-                    on: true;
+                    on <=> root.restore-last-selected-chat;
+                    toggled => {
+                        root.restore-last-selected-chat-toggled(self.on);
+                    }
                 }
             }
         }

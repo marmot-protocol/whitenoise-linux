@@ -31,6 +31,7 @@ mod notify;
 mod observability;
 mod offline_queue;
 mod settings;
+mod startup;
 mod unread;
 mod vault;
 
@@ -166,9 +167,18 @@ fn main() -> Result<(), slint::PlatformError> {
     ui.set_notifications_enabled(initial_settings.notifications_enabled);
     ui.set_notification_sound(initial_settings.notification_sound);
     ui.set_notification_preview(initial_settings.notification_preview);
+    ui.set_launch_at_login(initial_settings.launch_at_login);
+    ui.set_start_minimized_to_tray(initial_settings.start_minimized_to_tray);
+    ui.set_restore_last_selected_chat(initial_settings.restore_last_selected_chat);
+    if initial_settings.launch_at_login
+        && let Err(e) = startup::set_launch_at_login(true)
+    {
+        tracing::warn!(target: "startup", "sync autostart entry failed: {e}");
+    }
     // Live notification state shared with the chat watcher (which runs on the
     // tokio thread, so it can't reach the Rc<RefCell<Settings>>). The toggle
     // callbacks keep both in sync.
+    let start_minimized_to_tray = initial_settings.start_minimized_to_tray;
     let notif = Arc::new(notify::NotifState::new(
         initial_settings.notifications_enabled,
         initial_settings.notification_sound,
@@ -1018,7 +1028,45 @@ fn main() -> Result<(), slint::PlatformError> {
         slint::Timer::single_shot(std::time::Duration::from_millis(0), apply_zoom);
     }
 
-    ui.run()?;
+    let tray = if start_minimized_to_tray {
+        match DarkMatterTray::new() {
+            Ok(tray) => {
+                tray.on_show_window({
+                    let weak = ui.as_weak();
+                    move || {
+                        if let Some(ui) = weak.upgrade() {
+                            if let Err(e) = ui.show() {
+                                tracing::warn!(target: "startup", "show from tray failed: {e}");
+                            }
+                            ui.window().set_minimized(false);
+                        }
+                    }
+                });
+                tray.on_quit(|| {
+                    let _ = slint::quit_event_loop();
+                });
+                match tray.show() {
+                    Ok(()) => Some(tray),
+                    Err(e) => {
+                        tracing::warn!(target: "startup", "show tray failed; starting normally: {e}");
+                        None
+                    }
+                }
+            }
+            Err(e) => {
+                tracing::warn!(target: "startup", "create tray failed; starting normally: {e}");
+                None
+            }
+        }
+    } else {
+        None
+    };
+
+    if tray.is_none() {
+        ui.show()?;
+    }
+    slint::run_event_loop()?;
+    drop(tray);
 
     // The window is closed but `ui` is still alive: flush the on-screen chat's
     // unsent draft so quitting (without a chat switch or send to trigger the
