@@ -1536,9 +1536,12 @@ pub(crate) fn install_message_watcher(
                 }
                 7 | 5 | 1009 => {
                     // Reaction, delete, or edit — surgical refresh of the
-                    // target row. For an edit the snapshot now carries the
-                    // kind-1009, so the rebuilt row picks up the new text.
-                    let Some(target) = target_id_for_reaction else {
+                    // visible target row. Reaction deletes target the kind-7
+                    // reaction event, so resolve those back to the original
+                    // message row before refreshing.
+                    let Some(target) =
+                        message_row_refresh_target(kind, target_id_for_reaction, &all)
+                    else {
                         return;
                     };
                     refresh_one_message_row_from(
