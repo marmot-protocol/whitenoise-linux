@@ -1739,6 +1739,10 @@ msgctxt "DarkMatterLinux"
 msgid "Remove"
 msgstr "Entfernen"
 
+msgctxt "GroupMemberRow"
+msgid "Remove"
+msgstr "Entfernen"
+
 #, fuzzy
 msgctxt "DarkMatterLinux"
 msgid "Remove admin"
@@ -1768,6 +1772,10 @@ msgstr "Schlüssel entfernen"
 msgctxt "DarkMatterLinux"
 msgid "Remove this relay?"
 msgstr "Dieses Relay entfernen?"
+
+msgctxt "DarkMatterLinux"
+msgid "Remove {} from the group?"
+msgstr "{} aus der Gruppe entfernen?"
 
 msgctxt "MessageContextMenu"
 msgid "Reply"
@@ -2433,6 +2441,10 @@ msgstr "{} Relays"
 msgctxt "DarkMatterLinux"
 msgid "{} will be able to add members, change group settings, and manage other admins."
 msgstr ""
+
+msgctxt "DarkMatterLinux"
+msgid "{} will lose access to this group and stop receiving its messages. You'll need to invite them again to bring them back."
+msgstr "{} verliert den Zugang zu dieser Gruppe und erhält keine Nachrichten mehr. Du musst die Person erneut einladen, um sie zurückzuholen."
 
 msgctxt "DarkMatterLinux"
 msgid "{} will stay in the group, but won't be able to manage members or group settings."

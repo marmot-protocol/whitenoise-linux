@@ -35,6 +35,7 @@ export component GroupMembersPanel inherits Rectangle {
     callback promote-admin(string, string);
     callback demote-admin(string, string);
     callback self-demote-admin(string);
+    callback remove-member(string, string);
     callback rename-group(string);
     callback set-group-description(string);
     callback change-image();
@@ -119,6 +120,9 @@ export component GroupMembersPanel inherits Rectangle {
                         }
                         self-demote-admin(name) => {
                             root.self-demote-admin(name);
+                        }
+                        remove-member(id, name) => {
+                            root.remove-member(id, name);
                         }
                     }
                 }

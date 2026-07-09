@@ -1736,6 +1736,10 @@ msgctxt "DarkMatterLinux"
 msgid "Remove"
 msgstr "削除"
 
+msgctxt "GroupMemberRow"
+msgid "Remove"
+msgstr "削除"
+
 #, fuzzy
 msgctxt "DarkMatterLinux"
 msgid "Remove admin"
@@ -1765,6 +1769,10 @@ msgstr "鍵を削除"
 msgctxt "DarkMatterLinux"
 msgid "Remove this relay?"
 msgstr "このリレーを削除しますか？"
+
+msgctxt "DarkMatterLinux"
+msgid "Remove {} from the group?"
+msgstr "{}をグループから削除しますか？"
 
 msgctxt "MessageContextMenu"
 msgid "Reply"
@@ -2429,6 +2437,10 @@ msgstr "{} リレー"
 msgctxt "DarkMatterLinux"
 msgid "{} will be able to add members, change group settings, and manage other admins."
 msgstr ""
+
+msgctxt "DarkMatterLinux"
+msgid "{} will lose access to this group and stop receiving its messages. You'll need to invite them again to bring them back."
+msgstr "{}はこのグループにアクセスできなくなり、メッセージを受信しなくなります。再び追加するには、もう一度招待する必要があります。"
 
 msgctxt "DarkMatterLinux"
 msgid "{} will stay in the group, but won't be able to manage members or group settings."

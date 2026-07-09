@@ -166,6 +166,47 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
             });
         }
     });
+    ui.on_remove_member({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let group_ids = group_ids.clone();
+        move |member_id| {
+            let Some(ui) = weak.upgrade() else { return };
+            let member_id = member_id.trim().to_string();
+            if member_id.is_empty() {
+                return;
+            }
+            let idx = ui.get_active_chat() as usize;
+            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
+                return;
+            };
+            ui.set_group_settings_status(s(""));
+            let Some(b) = backend_cell.lock().unwrap().clone() else {
+                ui.set_group_settings_status(s("Backend not ready."));
+                return;
+            };
+            // Removal publishes an MLS commit to relays — worker.
+            let weak = weak.clone();
+            std::thread::spawn(move || {
+                let result = b.remove_member(&group_hex, &member_id);
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    match result {
+                        Ok(_) => {
+                            push_group_members_to_ui_async(&ui, &b, &group_hex);
+                            ui.set_group_settings_status(s("Member removed."));
+                        }
+                        Err(e) => {
+                            tracing::warn!(target: "remove_member", "{e:#}");
+                            ui.set_group_settings_status(
+                                friendly_error(ErrorOp::GroupSettings, &e).into(),
+                            );
+                        }
+                    }
+                });
+            });
+        }
+    });
     ui.on_leave_group_at({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();

@@ -31,6 +31,7 @@ export component MainPane inherits Rectangle {
     callback promote-admin(string, string);
     callback demote-admin(string, string);
     callback self-demote-admin(string);
+    callback remove-member(string, string);
     in property <image> group-picture;
     in property <bool> group-has-picture: false;
     in property <color> group-av-a;
@@ -307,6 +308,9 @@ export component MainPane inherits Rectangle {
             }
             self-demote-admin(name) => {
                 root.self-demote-admin(name);
+            }
+            remove-member(id, name) => {
+                root.remove-member(id, name);
             }
             rename-group(name) => {
                 root.rename-group(name);

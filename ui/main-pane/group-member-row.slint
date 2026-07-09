@@ -8,6 +8,7 @@ export component GroupMemberRow inherits Rectangle {
     callback promote-admin(string, string);
     callback demote-admin(string, string);
     callback self-demote-admin(string);
+    callback remove-member(string, string);
 
     height: 52px;
 
@@ -143,6 +144,29 @@ export component GroupMemberRow inherits Rectangle {
             self-demote-badge := Text {
                 text: @tr("Step down");
                 color: self-demote-ta.has-hover ? Palette.danger : Palette.text-mid;
+                font-size: Theme.fs(10px, 11px);
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+        }
+
+        // "Remove from group" — an admin evicts another member (any role).
+        if root.data.can-remove: Rectangle {
+            remove-ta := TouchArea {
+                mouse-cursor: pointer;
+                clicked => {
+                    root.remove-member(root.data.member-id, root.data.name);
+                }
+            }
+
+            width: remove-badge.preferred-width + 20px;
+            border-radius: (6px) * Theme.r-scale;
+            background: remove-ta.has-hover ? Palette.danger-soft : transparent;
+            border-width: Theme.border-w;
+            border-color: remove-ta.has-hover ? Palette.danger : Palette.border-2;
+            remove-badge := Text {
+                text: @tr("Remove");
+                color: remove-ta.has-hover ? Palette.danger : Palette.text-mid;
                 font-size: Theme.fs(10px, 11px);
                 horizontal-alignment: center;
                 vertical-alignment: center;
