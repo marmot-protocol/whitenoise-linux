@@ -5,7 +5,7 @@ import { DetailPage } from "../shells/detail-page.slint";
 import { PageHeader } from "../shells/page-header.slint";
 import { Section } from "../shells/section.slint";
 import { GroupCard } from "../shells/group-card.slint";
-import { MetaRow } from "meta-row.slint";
+import { KVRow } from "../shells/kv-row.slint";
 import { Button } from "../primitives/button.slint";
 import { GroupMemberRow } from "../main-pane/group-member-row.slint";
 
@@ -93,18 +93,18 @@ export component ArchivedDetail inherits DetailPage {
     Section {
         label: @tr("LAST ACTIVITY");
         GroupCard {
-            MetaRow {
+            KVRow {
                 label: @tr("Last message");
                 sublabel: root.data.last-msg;
                 value: root.data.last-date;
             }
 
-            MetaRow {
+            KVRow {
                 label: @tr("Members");
                 value: root.data.members;
             }
 
-            MetaRow {
+            KVRow {
                 label: @tr("Group id");
                 value: root.data.group-id;
                 show-divider: root.is-group;

@@ -1,12 +1,18 @@
 import { Palette, Theme } from "../tokens.slint";
 
-export component InfoRow inherits Rectangle {
+// One label/value row: a bold label with an optional sublabel on the left, a
+// right-aligned value plus any @children (buttons, toggles) on the right, and a
+// 1px bottom divider. `row-height` is the only knob families vary; empty
+// sublabel/value are gated so a row collapses cleanly to a single line.
+export component KVRow inherits Rectangle {
     in property <string> label;
     in property <string> sublabel;
     in property <string> value;
     in property <bool> show-divider: true;
+    in property <length> row-height: 56px;
 
-    height: 56px;
+    height: root.row-height;
+
     HorizontalLayout {
         padding-left: 16px;
         padding-right: 16px;
@@ -14,6 +20,7 @@ export component InfoRow inherits Rectangle {
         padding-bottom: 10px;
         spacing: 14px;
         alignment: stretch;
+
         VerticalLayout {
             horizontal-stretch: 1;
             spacing: 3px;
@@ -44,6 +51,7 @@ export component InfoRow inherits Rectangle {
                     font-family: Theme.font;
                     vertical-alignment: center;
                 }
+
                 @children
             }
         }

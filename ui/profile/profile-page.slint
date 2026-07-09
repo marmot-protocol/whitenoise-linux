@@ -6,7 +6,7 @@ import { CypherScroll } from "../primitives/cypher-scroll.slint";
 import { LineInput } from "../primitives/line-input.slint";
 import { Section } from "../shells/section.slint";
 import { GroupCard } from "../shells/group-card.slint";
-import { InfoRow } from "info-row.slint";
+import { KVRow } from "../shells/kv-row.slint";
 import { Button, MicroButton } from "../primitives/button.slint";
 
 // Single editable field row used by the edit form.
@@ -486,7 +486,7 @@ export component ProfilePage inherits Rectangle {
             Section {
                 label: @tr("IDENTITY");
                 GroupCard {
-                    InfoRow {
+                    KVRow {
                         label: "npub";
                         sublabel: @tr("Your public key. Safe to share.");
                         value: npub;
@@ -584,22 +584,22 @@ export component ProfilePage inherits Rectangle {
             if !root.editing: Section {
                 label: @tr("PROFILE");
                 GroupCard {
-                    InfoRow {
+                    KVRow {
                         label: @tr("Username");
                         value: root.username == "" ? "—" : "@" + root.username;
                     }
 
-                    InfoRow {
+                    KVRow {
                         label: @tr("NIP-05");
                         value: root.nip05 == "" ? "—" : root.nip05;
                     }
 
-                    InfoRow {
+                    KVRow {
                         label: @tr("Lightning");
                         value: root.lud16 == "" ? "—" : root.lud16;
                     }
 
-                    InfoRow {
+                    KVRow {
                         label: @tr("Picture");
                         value: root.picture-url == "" ? @tr("Not set") : @tr("Set");
                         show-divider: false;

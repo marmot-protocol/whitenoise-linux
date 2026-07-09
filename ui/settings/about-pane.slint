@@ -7,7 +7,7 @@ import { MonitorIcon } from "../icons/monitor-icon.slint";
 import { PageHeader } from "../shells/page-header.slint";
 import { Section } from "../shells/section.slint";
 import { GroupCard } from "../shells/group-card.slint";
-import { PrefRow } from "pref-row.slint";
+import { KVRow } from "../shells/kv-row.slint";
 import { CypherScroll } from "../primitives/cypher-scroll.slint";
 
 // Compact feature row with a tinted icon tile on the left.
@@ -247,7 +247,8 @@ export component AboutPane inherits Rectangle {
                 label: @tr("CREDITS");
 
                 GroupCard {
-                    PrefRow {
+                    KVRow {
+                        row-height: 48px;
                         label: @tr("Built with");
                         value: "Rust · Nostr · MLS · Slint";
                         show-divider: false;

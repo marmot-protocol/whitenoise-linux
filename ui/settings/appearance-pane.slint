@@ -4,7 +4,7 @@ import { DetailPage } from "../shells/detail-page.slint";
 import { PageHeader } from "../shells/page-header.slint";
 import { Section } from "../shells/section.slint";
 import { GroupCard } from "../shells/group-card.slint";
-import { PrefRow } from "pref-row.slint";
+import { KVRow } from "../shells/kv-row.slint";
 import { Toggle } from "toggle.slint";
 import { AccentPicker } from "accent-picker.slint";
 import { ThemePicker } from "theme-picker.slint";
@@ -41,7 +41,8 @@ export component AppearancePane inherits DetailPage {
     Section {
         label: @tr("THEME");
         GroupCard {
-            PrefRow {
+            KVRow {
+                row-height: 48px;
                 label: @tr("Theme");
                 sublabel: @tr("Pick the whole app's look.");
                 ThemePicker {
@@ -52,7 +53,8 @@ export component AppearancePane inherits DetailPage {
                 }
             }
 
-            PrefRow {
+            KVRow {
+                row-height: 48px;
                 label: @tr("Accent color");
                 value: accent-names[root.accent-color];
                 show-divider: false;
@@ -69,7 +71,8 @@ export component AppearancePane inherits DetailPage {
     Section {
         label: @tr("MESSAGES");
         GroupCard {
-            PrefRow {
+            KVRow {
+                row-height: 48px;
                 label: @tr("Own messages on the right");
                 sublabel: @tr("Place your sent messages on the right side.");
                 show-divider: false;
