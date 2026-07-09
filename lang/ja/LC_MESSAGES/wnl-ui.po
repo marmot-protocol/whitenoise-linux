@@ -1667,10 +1667,6 @@ msgctxt "AdvancedPane"
 msgid "Refresh"
 msgstr "更新"
 
-msgctxt "ContactDetail"
-msgid "Refresh"
-msgstr "更新"
-
 msgctxt "DebugPane"
 msgid "Refresh"
 msgstr "更新"
@@ -1782,6 +1778,10 @@ msgstr "保存中…"
 msgctxt "ThemePicker"
 msgid "Retro"
 msgstr "レトロモード"
+
+msgctxt "ContactDetail"
+msgid "Retry"
+msgstr "再試行"
 
 msgctxt "DeviceRow"
 msgid "Revoke"
@@ -2452,6 +2452,10 @@ msgstr "✓ 確認済み"
 #~ msgctxt "AboutPane"
 #~ msgid "Private material lives in a password-encrypted vault on this device."
 #~ msgstr "秘密情報はこのデバイス上のパスワードで暗号化された保管庫に保存されます。"
+
+#~ msgctxt "ContactDetail"
+#~ msgid "Refresh"
+#~ msgstr "更新"
 
 #~ msgctxt "AppearancePane"
 #~ msgid "Retro mode"

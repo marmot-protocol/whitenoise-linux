@@ -1670,10 +1670,6 @@ msgctxt "AdvancedPane"
 msgid "Refresh"
 msgstr "Aktualisieren"
 
-msgctxt "ContactDetail"
-msgid "Refresh"
-msgstr "Aktualisieren"
-
 msgctxt "DebugPane"
 msgid "Refresh"
 msgstr "Aktualisieren"
@@ -1785,6 +1781,10 @@ msgstr "Speichere…"
 msgctxt "ThemePicker"
 msgid "Retro"
 msgstr "Retro-Modus"
+
+msgctxt "ContactDetail"
+msgid "Retry"
+msgstr "Wiederholen"
 
 msgctxt "DeviceRow"
 msgid "Revoke"
@@ -2456,6 +2456,10 @@ msgstr "✓ VERIFIZIERT"
 #~ msgctxt "AboutPane"
 #~ msgid "Private material lives in a password-encrypted vault on this device."
 #~ msgstr "Private Daten liegen in einem passwortverschlüsselten Tresor auf diesem Gerät."
+
+#~ msgctxt "ContactDetail"
+#~ msgid "Refresh"
+#~ msgstr "Aktualisieren"
 
 #~ msgctxt "AppearancePane"
 #~ msgid "Retro mode"

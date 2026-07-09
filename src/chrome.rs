@@ -396,6 +396,9 @@ pub(crate) fn contact_from(
         has_picture,
         kp_status: s(&kp_status),
         kp_detail: s(&kp_detail),
+        // No cached key package means the detail page can offer a Retry until
+        // the automatic on-open fetch settles the state.
+        kp_can_retry: record.key_package.is_none(),
     }
 }
 
