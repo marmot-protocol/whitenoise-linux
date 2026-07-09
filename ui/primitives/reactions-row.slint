@@ -195,7 +195,7 @@ export component ReactionChips inherits HorizontalLayout {
     in property <[Reaction]> reactions;
     in property <bool> align-right: false;
     callback react(string, string);
-    callback unreact(string);
+    callback unreact(string, string);
 
     spacing: 6px;
     alignment: root.align-right ? end : start;
@@ -209,7 +209,7 @@ export component ReactionChips inherits HorizontalLayout {
         reactors: r.reactors;
         clicked => {
             if (r.mine) {
-                root.unreact(root.message-id);
+                root.unreact(root.message-id, r.emoji);
             } else {
                 root.react(root.message-id, r.emoji);
             }

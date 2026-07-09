@@ -898,12 +898,12 @@ pub(crate) fn apply_reaction_overlay(
                     });
                 }
             }
-            PendingReactionOp::Remove => {
-                for chip in entry.iter_mut() {
-                    if chip.mine {
-                        chip.count = (chip.count - 1).max(0);
-                        chip.mine = false;
-                    }
+            PendingReactionOp::Remove(emoji) => {
+                if let Some(chip) = entry.iter_mut().find(|r| r.emoji.as_str() == emoji)
+                    && chip.mine
+                {
+                    chip.count = (chip.count - 1).max(0);
+                    chip.mine = false;
                 }
                 entry.retain(|r| r.count > 0);
             }
@@ -977,12 +977,12 @@ pub(crate) fn apply_reaction_to_model_row(
                     });
                 }
             }
-            PendingReactionOp::Remove => {
-                for chip in chips.iter_mut() {
-                    if chip.mine {
-                        chip.count = (chip.count - 1).max(0);
-                        chip.mine = false;
-                    }
+            PendingReactionOp::Remove(emoji) => {
+                if let Some(chip) = chips.iter_mut().find(|c| c.emoji.as_str() == emoji)
+                    && chip.mine
+                {
+                    chip.count = (chip.count - 1).max(0);
+                    chip.mine = false;
                 }
                 chips.retain(|c| c.count > 0);
             }

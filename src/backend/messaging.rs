@@ -5,6 +5,38 @@
 
 use super::*;
 
+const REACTION_MESSAGE_KIND: u64 = 7;
+
+fn first_event_ref(tags: &[Vec<String>]) -> Option<&str> {
+    tags.iter()
+        .find(|tag| tag.len() >= 2 && tag[0] == "e")
+        .map(|tag| tag[1].as_str())
+}
+
+fn own_reaction_event_id_for_emoji(
+    messages: &[AppMessageRecord],
+    sender: &str,
+    target_message_id: &str,
+    emoji: &str,
+) -> Option<String> {
+    let emoji = emoji.trim();
+    if emoji.is_empty() {
+        return None;
+    }
+    messages
+        .iter()
+        .rev()
+        .find(|message| {
+            message.kind == REACTION_MESSAGE_KIND
+                && message.sender.eq_ignore_ascii_case(sender)
+                && first_event_ref(&message.tags)
+                    .is_some_and(|target| target.eq_ignore_ascii_case(target_message_id))
+                && message.plaintext.trim() == emoji
+                && !message.message_id_hex.is_empty()
+        })
+        .map(|message| message.message_id_hex.clone())
+}
+
 impl Backend {
     /// Synchronously send a text message — blocks the UI thread for the
     /// duration of the network round-trip. Acceptable for the v1 wiring;
@@ -302,7 +334,7 @@ impl Backend {
     }
 
     /// Non-blocking variant of [`unreact`].
-    pub fn unreact_async<F>(&self, group_hex: &str, message_id_hex: &str, on_done: F)
+    pub fn unreact_async<F>(&self, group_hex: &str, message_id_hex: &str, emoji: &str, on_done: F)
     where
         F: FnOnce(Result<SendSummary>) + Send + 'static,
     {
@@ -314,13 +346,32 @@ impl Backend {
             }
         };
         let label = self.active_label();
+        let sender = self.active_id();
+        let app = self.app.clone();
         let runtime = self.runtime.clone();
+        let group_hex = group_hex.to_string();
         let target = message_id_hex.to_string();
+        let emoji = emoji.to_string();
         self.tokio.spawn(async move {
-            let res = runtime
-                .unreact_from_message(&label, &group_id, &target)
-                .await
-                .map_err(|e| anyhow!("unreact_from_message: {e}"));
+            let res = async {
+                let messages = app
+                    .messages_with_query(
+                        &label,
+                        AppMessageQuery {
+                            group_id_hex: Some(group_hex),
+                            limit: None,
+                        },
+                    )
+                    .map_err(|e| anyhow!("messages_with_query: {e}"))?;
+                let reaction_id =
+                    own_reaction_event_id_for_emoji(&messages, &sender, &target, &emoji)
+                        .ok_or_else(|| anyhow!("reaction not found for tapped emoji"))?;
+                runtime
+                    .delete_message(&label, &group_id, &reaction_id)
+                    .await
+                    .map_err(|e| anyhow!("delete reaction: {e}"))
+            }
+            .await;
             on_done(res);
         });
     }
@@ -340,18 +391,91 @@ impl Backend {
         })
     }
 
-    /// Remove **all** of my reactions from a message (marmot-app semantics —
-    /// there's no per-emoji unreact, just a blanket clear).
-    pub fn unreact(&self, group_hex: &str, message_id_hex: &str) -> Result<SendSummary> {
+    /// Remove my reaction with `emoji` from `message_id_hex` by publishing a
+    /// kind-5 delete for the matching kind-7 reaction event.
+    pub fn unreact(
+        &self,
+        group_hex: &str,
+        message_id_hex: &str,
+        emoji: &str,
+    ) -> Result<SendSummary> {
         let group_id = group_id_from_hex(group_hex)?;
         let label = self.active_label();
+        let sender = self.active_id();
+        let messages = self
+            .app
+            .messages_with_query(
+                &label,
+                AppMessageQuery {
+                    group_id_hex: Some(group_hex.to_string()),
+                    limit: None,
+                },
+            )
+            .map_err(|e| anyhow!("messages_with_query: {e}"))?;
+        let reaction_id =
+            own_reaction_event_id_for_emoji(&messages, &sender, message_id_hex, emoji)
+                .ok_or_else(|| anyhow!("reaction not found for tapped emoji"))?;
         let runtime = self.runtime.clone();
-        let target = message_id_hex.to_string();
         self.tokio.block_on(async move {
             runtime
-                .unreact_from_message(&label, &group_id, &target)
+                .delete_message(&label, &group_id, &reaction_id)
                 .await
-                .map_err(|e| anyhow!("unreact_from_message: {e}"))
+                .map_err(|e| anyhow!("delete reaction: {e}"))
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn reaction(
+        id: &str,
+        sender: &str,
+        target: &str,
+        emoji: &str,
+        recorded_at: u64,
+    ) -> AppMessageRecord {
+        AppMessageRecord {
+            message_id_hex: id.to_string(),
+            direction: "in".to_string(),
+            group_id_hex: "group".to_string(),
+            sender: sender.to_string(),
+            plaintext: emoji.to_string(),
+            kind: 7,
+            tags: vec![vec!["e".to_string(), target.to_string()]],
+            source_epoch: None,
+            recorded_at,
+            received_at: recorded_at,
+            insert_order: recorded_at as i64,
+        }
+    }
+
+    #[test]
+    fn own_reaction_lookup_filters_by_tapped_emoji() {
+        let messages = vec![
+            reaction("own-heart", "me", "target", "❤️", 1),
+            reaction("own-fire", "me", "target", "🔥", 2),
+            reaction("other-fire", "other", "target", "🔥", 3),
+            reaction("own-heart-newer", "me", "target", "❤️", 4),
+        ];
+
+        assert_eq!(
+            own_reaction_event_id_for_emoji(&messages, "me", "target", "🔥"),
+            Some("own-fire".to_string())
+        );
+    }
+
+    #[test]
+    fn own_reaction_lookup_uses_latest_matching_emoji() {
+        let messages = vec![
+            reaction("old-heart", "me", "target", "❤️", 1),
+            reaction("new-heart", "me", "target", "❤️", 2),
+        ];
+
+        assert_eq!(
+            own_reaction_event_id_for_emoji(&messages, "me", "target", "❤️"),
+            Some("new-heart".to_string())
+        );
     }
 }

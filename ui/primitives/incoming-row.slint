@@ -39,7 +39,7 @@ export component IncomingRow inherits VerticalLayout {
 
     callback album-cell-clicked(string);
     callback react(string, string);
-    callback unreact(string);
+    callback unreact(string, string);
     callback request-picker(string, length, length);
     callback request-reply(string, string, string); // message_id, preview_text, author
     // message_id, text, author, can_edit, window-abs x, y
@@ -185,8 +185,8 @@ export component IncomingRow inherits VerticalLayout {
                 react(id, emoji) => {
                     root.react(id, emoji);
                 }
-                unreact(id) => {
-                    root.unreact(id);
+                unreact(id, emoji) => {
+                    root.unreact(id, emoji);
                 }
             }
         }
