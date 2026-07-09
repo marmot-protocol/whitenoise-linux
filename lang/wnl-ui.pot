@@ -1590,10 +1590,6 @@ msgctxt "AdvancedPane"
 msgid "Refresh"
 msgstr ""
 
-msgctxt "ContactDetail"
-msgid "Refresh"
-msgstr ""
-
 msgctxt "DebugPane"
 msgid "Refresh"
 msgstr ""
@@ -1700,6 +1696,10 @@ msgstr ""
 
 msgctxt "ThemePicker"
 msgid "Retro"
+msgstr ""
+
+msgctxt "ContactDetail"
+msgid "Retry"
 msgstr ""
 
 msgctxt "DeviceRow"

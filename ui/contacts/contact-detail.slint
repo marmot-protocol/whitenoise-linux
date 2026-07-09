@@ -175,8 +175,10 @@ export component ContactDetail inherits DetailPage {
                 label: @tr("Key package");
                 sublabel: root.contact.kp-detail;
                 value: root.contact.kp-status;
-                MicroButton {
-                    label: @tr("Refresh");
+                // The status refreshes on its own when the page opens; the
+                // Retry button only appears if that fetch found nothing.
+                if root.contact.kp-can-retry: MicroButton {
+                    label: @tr("Retry");
                     RefreshIcon {
                         stroke: Palette.text-mid;
                     }

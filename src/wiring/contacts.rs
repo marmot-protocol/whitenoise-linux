@@ -215,64 +215,16 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             }
         }
     });
-    // Contact detail → "Refresh" key package: re-fetch the peer's latest key
-    // package from their relays off-thread, then patch the row with the real
-    // freshness state (matched by account-id, since the index may have moved).
+    // Contact detail → "Retry" key package: re-fetch the peer's latest key
+    // package from their relays. The automatic on-open fetch already covers the
+    // common case, so this button only surfaces after a fetch comes up empty.
     ui.on_contact_refresh_key_package({
         let weak = ui.as_weak();
-        let contacts = contacts.clone();
         let backend_cell = backend_cell.clone();
         move || {
             let Some(ui) = weak.upgrade() else { return };
             let idx = ui.get_active_contact() as usize;
-            let Some(mut row) = contacts.row_data(idx) else {
-                return;
-            };
-            let account_id = row.account_id.to_string();
-            if account_id.is_empty() {
-                return;
-            }
-            let Some(b) = backend_cell.lock().unwrap().clone() else {
-                return;
-            };
-            // Honest in-flight state instead of a frozen placeholder.
-            row.kp_status = s("Checking…");
-            row.kp_detail = s("Contacting relays…");
-            contacts.set_row_data(idx, row);
-
-            let weak = ui.as_weak();
-            std::thread::spawn(move || {
-                let result = b.fetch_contact_key_package(&account_id);
-                let (status, detail) = match result {
-                    Ok((created_at, relays)) => kp_labels(created_at, &relays),
-                    Err(e) => {
-                        tracing::warn!(target: "backend", "fetch_contact_key_package failed: {e:#}");
-                        (
-                            "Not found".to_string(),
-                            "No key package on relays yet".to_string(),
-                        )
-                    }
-                };
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
-                    let contacts = ui.get_contacts();
-                    let Some(vm) = contacts.as_any().downcast_ref::<VecModel<Contact>>() else {
-                        return;
-                    };
-                    for i in 0..vm.row_count() {
-                        let Some(mut r) = vm.row_data(i) else {
-                            continue;
-                        };
-                        if r.account_id != account_id {
-                            continue;
-                        }
-                        r.kp_status = s(&status);
-                        r.kp_detail = s(&detail);
-                        vm.set_row_data(i, r);
-                        break;
-                    }
-                });
-            });
+            spawn_contact_key_package_fetch(&ui, &backend_cell, idx);
         }
     });
     // Contact detail → "Start chat": create a 1:1 conversation with the
@@ -360,6 +312,9 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     push_contact_shared_groups(&ui, &b);
                 }
                 refresh();
+                // Freshen the key-package status the moment the detail page
+                // opens, so the readout is trustworthy without a manual press.
+                spawn_contact_key_package_fetch(&ui, &backend_cell, idx as usize);
             }
         }
     });
@@ -409,5 +364,74 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 ui.invoke_chat_selected(pos as i32);
             });
         }
+    });
+}
+
+/// Re-fetch the peer at `idx`'s latest key package from their relays off-thread,
+/// showing the "Checking…" in-flight state while it runs, then patch every row
+/// that matches the account id (the index may have moved) with the real
+/// freshness state. Shared by the automatic fetch on contact-detail open and
+/// the failure-only Retry button. On a miss or error the row keeps `kp-can-retry`
+/// set, so the detail page keeps offering a Retry.
+pub(crate) fn spawn_contact_key_package_fetch(
+    ui: &DarkMatterLinux,
+    backend_cell: &BackendCell,
+    idx: usize,
+) {
+    let contacts = ui.get_contacts();
+    let Some(mut row) = contacts.row_data(idx) else {
+        return;
+    };
+    let account_id = row.account_id.to_string();
+    if account_id.is_empty() {
+        return;
+    }
+    let Some(b) = backend_cell.lock().unwrap().clone() else {
+        return;
+    };
+    // Honest in-flight state instead of a frozen placeholder; hide the Retry
+    // button while the fetch is outstanding.
+    row.kp_status = s("Checking…");
+    row.kp_detail = s("Contacting relays…");
+    row.kp_can_retry = false;
+    contacts.set_row_data(idx, row);
+
+    let weak = ui.as_weak();
+    std::thread::spawn(move || {
+        let result = b.fetch_contact_key_package(&account_id);
+        let (status, detail, can_retry) = match result {
+            Ok((created_at, relays)) => {
+                let (status, detail) = kp_labels(created_at, &relays);
+                (status, detail, false)
+            }
+            Err(e) => {
+                tracing::warn!(target: "backend", "fetch_contact_key_package failed: {e:#}");
+                (
+                    "Not found".to_string(),
+                    "No key package on relays yet".to_string(),
+                    true,
+                )
+            }
+        };
+        let _ = slint::invoke_from_event_loop(move || {
+            let Some(ui) = weak.upgrade() else { return };
+            let contacts = ui.get_contacts();
+            let Some(vm) = contacts.as_any().downcast_ref::<VecModel<Contact>>() else {
+                return;
+            };
+            for i in 0..vm.row_count() {
+                let Some(mut r) = vm.row_data(i) else {
+                    continue;
+                };
+                if r.account_id != account_id {
+                    continue;
+                }
+                r.kp_status = s(&status);
+                r.kp_detail = s(&detail);
+                r.kp_can_retry = can_retry;
+                vm.set_row_data(i, r);
+                break;
+            }
+        });
     });
 }

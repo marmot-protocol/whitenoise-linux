@@ -965,6 +965,10 @@ export struct Contact {
     // ("From <relay> · <when>" or an honest empty/loading line).
     kp-status: string,
     kp-detail: string,
+    // True when the last fetch found no key package (or failed), so the detail
+    // page offers a quiet Retry. False while a key package is present or a
+    // fetch is in flight, keeping the row button-free in the common case.
+    kp-can-retry: bool,
 }
 
 // One group the viewer has in common with a contact, rendered as a tappable
