@@ -16,6 +16,28 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         refresh_all_chat_models,
         ..
     } = h.clone();
+    // Live chat-list filter: recompute one case-insensitive match flag per chat
+    // row as the user types in the header search field (Slint has no substring
+    // match). Matches on the chat name only. The flags are only consulted while
+    // the query is non-empty, so the empty-query case (which shows everything)
+    // needn't clear the array.
+    ui.on_chat_search_changed({
+        let weak = ui.as_weak();
+        move |query| {
+            let Some(ui) = weak.upgrade() else { return };
+            let q = query.trim().to_lowercase();
+            if q.is_empty() {
+                ui.set_chat_match_flags(model(Vec::<bool>::new()));
+                return;
+            }
+            let flags: Vec<bool> = ui
+                .get_chats()
+                .iter()
+                .map(|c| c.name.to_lowercase().contains(&q))
+                .collect();
+            ui.set_chat_match_flags(model(flags));
+        }
+    });
     ui.on_new_chat_requested({
         let weak = ui.as_weak();
         move || {

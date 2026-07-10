@@ -18,6 +18,13 @@ export component SidePanel inherits Rectangle {
     in property <string> add-label: @tr("Add");
     in property <string> footer-text: "";
     in property <string> footer-trail: "";
+    // Live search text, echoed on every keystroke so hosts can filter their
+    // `@children` rows as the user types.
+    callback search-edited(string);
+    // Inter-row spacing for the list. Lists that filter rows in place (collapse
+    // hidden rows to 0px height) set this to 0 and bake their own gap into each
+    // shown row, so hidden rows don't leave stacked blank gaps.
+    in property <length> list-spacing: 2px;
 
     // Narrow-window collapse: the host page binds `window-width`; below the
     // threshold the panel reserves only a slim avatar strip and floats the
@@ -164,6 +171,9 @@ export component SidePanel inherits Rectangle {
                         fg: Palette.text-hi;
                         placeholder-color: Palette.text-vlo;
                         horizontal-stretch: 1;
+                        changed text => {
+                            root.search-edited(self.text);
+                        }
                     }
 
                     if root.show-search-shortcut: Rectangle {
@@ -193,7 +203,7 @@ export component SidePanel inherits Rectangle {
                 viewport-height: list-layout.preferred-height;
                 viewport-width: self.visible-width;
                 list-layout := VerticalLayout {
-                    spacing: 2px;
+                    spacing: root.list-spacing;
                     @children
                 }
             }
