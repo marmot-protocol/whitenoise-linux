@@ -627,6 +627,10 @@ export component DarkMatterLinux inherits Window {
     callback new-chat-requested();
     callback start-chat-with-contact();
     callback chat-selected(int);
+    // Chat-list search: Rust recomputes `chat-match-flags` (one flag per chat)
+    // for the live query so the list filters as the user types.
+    callback chat-search-changed(string);
+    in property <[bool]> chat-match-flags;
     callback contact-selected(int);
     callback archive-selected(int);
     // Chat-request + archive actions — operate on the active chat / active archived row.
@@ -1089,6 +1093,10 @@ export component DarkMatterLinux inherits Window {
                             relays-connected: root.network-connected;
                             relays-total: root.network-total;
                             sync-secs: root.sync-secs;
+                            match-flags: root.chat-match-flags;
+                            search-changed(q) => {
+                                root.chat-search-changed(q);
+                            }
                             chat-clicked(idx) => {
                                 // A leftover selection belongs to the chat
                                 // being left behind; drop it.

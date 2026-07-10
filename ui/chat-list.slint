@@ -16,9 +16,31 @@ export component ChatListPanel inherits SidePanel {
     in property <int> relays-connected;
     in property <int> relays-total;
     in property <int> sync-secs: -1;
+    // One match flag per `chats` row, computed by Rust on `search-changed`
+    // (Slint has no substring match). Only consulted while `query` is non-empty,
+    // so a stale array is inert until the next keystroke.
+    in property <[bool]> match-flags;
+    callback search-changed(string);
+
+    property <string> query;
 
     add-clicked => {
         root.new-chat-clicked();
+    }
+
+    // Typing in the header search field filters the rows below in place. Echo
+    // the query to Rust so it recomputes `match-flags` for the current chats.
+    search-edited(q) => {
+        root.query = q;
+        root.search-changed(q);
+    }
+    // The chat list is re-pushed on new messages / re-sorts; re-derive the
+    // match set so filtered rows track the fresh order (mirrors the forward
+    // picker). No-op while the query is empty.
+    changed chats => {
+        if (root.query != "") {
+            root.search-changed(root.query);
+        }
     }
 
     title: @tr("CHATS");
@@ -29,16 +51,30 @@ export component ChatListPanel inherits SidePanel {
     show-add: true;
     footer-text: root.relays-total > 0 ? root.relays-connected + "/" + root.relays-total + " " + @tr("RELAYS") : @tr("NO RELAYS");
     footer-trail: root.sync-secs < 0 ? "· " + @tr("SYNCING…") : "· " + @tr("SYNCED") + " " + root.sync-secs + "S " + @tr("AGO");
+    // Rows filter in place, so drop the layout's inter-row spacing and bake the
+    // 2px gap into each shown wrapper — hidden rows then collapse to nothing.
+    list-spacing: 0;
 
-    for chat[idx] in root.chats: ChatListEntry {
-        chat: chat;
-        compact: root.strip;
-        selected: idx == root.active-chat;
-        clicked => {
-            root.chat-clicked(idx);
-        }
-        context-menu(ax, ay) => {
-            root.chat-context-menu(idx, ax, ay);
+    for chat[idx] in root.chats: Rectangle {
+        // Shown when the query is empty or this row matched (flags from Rust).
+        property <bool> shown: root.query == "" || (idx < root.match-flags.length && root.match-flags[idx]);
+        height: shown ? entry.preferred-height + 2px : 0px;
+        clip: true;
+        visible: shown;
+
+        entry := ChatListEntry {
+            x: 0;
+            y: 0;
+            width: 100%;
+            chat: chat;
+            compact: root.strip;
+            selected: idx == root.active-chat;
+            clicked => {
+                root.chat-clicked(idx);
+            }
+            context-menu(ax, ay) => {
+                root.chat-context-menu(idx, ax, ay);
+            }
         }
     }
 }
