@@ -65,6 +65,15 @@ jobs:
       - name: Run pre-commit hook against the proposal
         run: |
           set -euo pipefail
+          # ngit-ci's checkout materializes the proposal tree WITHOUT a .git
+          # dir, so `git add -A` would die with "not a git repository". The
+          # hook only needs a staging index, not real history, so initialize a
+          # throwaway repo in place when one isn't present.
+          if ! git rev-parse --git-dir >/dev/null 2>&1; then
+            git init -q
+            git config user.email ci@ngit.local
+            git config user.name  ngit-ci
+          fi
           # Present the whole checked-out tree as staged so the hook's
           # `git diff --cached` gates see every file in the proposal.
           git add -A
