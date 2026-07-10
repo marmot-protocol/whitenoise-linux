@@ -488,6 +488,7 @@ export component DarkMatterLinux inherits Window {
     in property <int> network-connected;
     in property <int> network-total;
     in property <string> network-status;
+    in property <bool> network-republish-busy: false;
     // Inline error for the add-relay fields (get-started and the network pane
     // share it). Rust sets it when an add is rejected; the fields clear it as
     // the user edits the draft.
@@ -1180,6 +1181,7 @@ export component DarkMatterLinux inherits Window {
                         network-connected: root.network-connected;
                         network-total: root.network-total;
                         network-status: root.network-status;
+                        network-republish-busy: root.network-republish-busy;
                         network-add-error <=> root.network-add-error;
                         network-add-relay(u) => {
                             return root.network-add-relay(u);

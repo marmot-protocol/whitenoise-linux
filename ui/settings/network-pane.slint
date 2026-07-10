@@ -71,6 +71,7 @@ export component NetworkPane inherits DetailPage {
     in property <int> connected;
     in property <int> total;
     in property <string> status;
+    in property <bool> republish-busy: false;
     // Inline error under the add row. Set by Rust when an add is rejected
     // (add-relay returned false); cleared here as the user edits the draft.
     in-out property <string> add-error;
@@ -293,13 +294,16 @@ export component NetworkPane inherits DetailPage {
         HorizontalLayout {
             alignment: start;
             Button {
-                label: @tr("Republish relay list");
+                label: root.republish-busy ? @tr("Republishing…") : @tr("Republish relay list");
+                enabled: !root.republish-busy;
                 RefreshIcon {
                     stroke: Palette.text-hi;
                 }
 
                 clicked => {
-                    root.republish-relay-list();
+                    if (!root.republish-busy) {
+                        root.republish-relay-list();
+                    }
                 }
             }
         }
