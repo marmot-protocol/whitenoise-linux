@@ -58,7 +58,18 @@ jobs:
           echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
       - name: Build release binary (compiled UI)
-        run: cargo build --locked --release --no-default-features
+        # `wnl-ui` compiles the ~580k-line generated Slint module in one crate;
+        # at the release profile's opt-level=3 a single rustc/LLVM process peaks
+        # high enough that the ngit-ci act container's OOM killer SIGKILLs it
+        # (signal 9). Drop just that crate to opt-level=1 and split it into many
+        # codegen-units so LLVM never holds the whole module in memory at once.
+        # CI-local via --config: the committed release profile and the shipped
+        # binary's optimization are untouched, and it's only generated UI-
+        # construction code (no hot compute), so the staging AppImage is fine.
+        run: >
+          cargo build --locked --release --no-default-features
+          --config 'profile.release.package.wnl-ui.opt-level=1'
+          --config 'profile.release.package.wnl-ui.codegen-units=256'
 
       - name: Assemble AppDir
         run: |
