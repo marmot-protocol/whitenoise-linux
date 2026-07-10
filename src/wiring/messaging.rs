@@ -523,11 +523,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 let Some((bytes, media_type)) = paste_image_from_clipboard() else {
                     return;
                 };
-                let ext = media_type
-                    .strip_prefix("image/")
-                    .and_then(|s| s.split('+').next())
-                    .unwrap_or("png")
-                    .to_string();
+                let ext = media_extension(&media_type);
                 let file = staged_file_from_bytes(format!("pasted-image.{ext}"), media_type, bytes);
                 let _ = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak.upgrade() else { return };
@@ -588,6 +584,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             }
             ui.set_image_viewer_count(1);
             ui.set_image_viewer_index(1);
+            ui.set_image_viewer_actions_ready(false);
             ui.set_image_viewer_open(true);
             build_viewer_slideshow(
                 ui.as_weak(),
@@ -626,6 +623,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 ui.set_image_viewer_failed(false);
                 ui.set_image_viewer_count(1);
                 ui.set_image_viewer_index(1);
+                ui.set_image_viewer_actions_ready(false);
                 ui.set_image_viewer_open(true);
                 let idx = ui.get_active_chat() as usize;
                 if let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() {

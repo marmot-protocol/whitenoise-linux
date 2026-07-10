@@ -610,6 +610,10 @@ msgctxt "ContactDetail"
 msgid "Copy"
 msgstr "Kopieren"
 
+msgctxt "ImageViewerModal"
+msgid "Copy"
+msgstr "Kopieren"
+
 msgctxt "KeysPage"
 msgid "Copy"
 msgstr "Kopieren"
@@ -1875,6 +1879,10 @@ msgstr "Sa"
 
 #, fuzzy
 msgctxt "NicknameModal"
+msgid "Save"
+msgstr "Speichern"
+
+msgctxt "ImageViewerModal"
 msgid "Save"
 msgstr "Speichern"
 

@@ -260,10 +260,15 @@ export component DarkMatterLinux inherits Window {
     in property <int> image-viewer-index: 1;
     in property <bool> image-viewer-loading: false;
     in property <bool> image-viewer-failed: false;
+    // True after Rust has resolved the selected attachment reference behind
+    // the visible lightbox image; Copy/Save are disabled until then.
+    in property <bool> image-viewer-actions-ready: false;
     callback dismiss-image-viewer();
     callback image-viewer-prev();
     callback image-viewer-next();
     callback image-viewer-retry();
+    callback image-viewer-copy();
+    callback image-viewer-save();
 
     // In-app video player — opened by Rust when a `video/*` attachment is
     // tapped. Rust owns the libmpv instance, pushes decoded frames into
@@ -1699,6 +1704,7 @@ export component DarkMatterLinux inherits Window {
         index: root.image-viewer-index;
         loading: root.image-viewer-loading;
         failed: root.image-viewer-failed;
+        actions-ready: root.image-viewer-actions-ready;
         dismissed => {
             root.dismiss-image-viewer();
         }
@@ -1710,6 +1716,12 @@ export component DarkMatterLinux inherits Window {
         }
         retry => {
             root.image-viewer-retry();
+        }
+        copy => {
+            root.image-viewer-copy();
+        }
+        save => {
+            root.image-viewer-save();
         }
     }
 

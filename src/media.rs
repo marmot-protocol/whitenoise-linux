@@ -70,8 +70,8 @@ pub(crate) fn image_from_pixels(pixels: &PicturePixels) -> slint::Image {
 /// so prev/next never re-reads sqlite to find what to download.
 #[derive(Clone)]
 pub(crate) struct ViewerItem {
-    cache_key: String,
-    reference: MediaAttachmentReference,
+    pub(crate) cache_key: String,
+    pub(crate) reference: MediaAttachmentReference,
 }
 
 /// Every image in the chat window as an ordered slideshow list — one item per
@@ -153,6 +153,7 @@ pub(crate) fn build_viewer_slideshow(
             });
             ui.set_image_viewer_count(count as i32);
             ui.set_image_viewer_index((pos + 1) as i32);
+            ui.set_image_viewer_actions_ready(current.is_some());
             if let Some(item) = current {
                 load_viewer_image(&ui, &backend_cell, &group_ids, pos, item);
             } else {
@@ -332,6 +333,53 @@ fn file_ext(file_name: &str) -> Option<String> {
     std::path::Path::new(file_name)
         .extension()
         .map(|e| e.to_string_lossy().to_ascii_lowercase())
+}
+
+/// Conservative extension for saved/downloaded media when the attachment's
+/// `imeta` lacks a filename. Keeps the save dialog useful without guessing a
+/// random suffix from the ciphertext hash.
+pub(crate) fn media_extension(media_type: &str) -> String {
+    let essence = media_type
+        .split(';')
+        .next()
+        .unwrap_or(media_type)
+        .trim()
+        .to_ascii_lowercase();
+    let subtype = essence.split('/').nth(1).unwrap_or_default();
+    let ext = match subtype {
+        "jpeg" | "pjpeg" => "jpg",
+        "svg+xml" => "svg",
+        "x-icon" | "vnd.microsoft.icon" => "ico",
+        other => other.split('+').next().unwrap_or_default(),
+    };
+    if !ext.is_empty() && ext.len() <= 8 && ext.chars().all(|c| c.is_ascii_alphanumeric()) {
+        ext.to_string()
+    } else {
+        "bin".to_string()
+    }
+}
+
+/// Default filename for a Save Attachment dialog. Remote `filename` tags are
+/// treated as untrusted display names: keep only the basename and strip control
+/// characters/path separators before handing the value to the native dialog.
+pub(crate) fn attachment_save_name(file_name: &str, media_type: &str) -> String {
+    let normalized = file_name.trim().replace('\\', "/");
+    let basename = normalized.rsplit('/').next().unwrap_or_default().trim();
+    let clean: String = basename
+        .chars()
+        .map(|c| {
+            if c.is_control() || c == '/' || c == '\\' {
+                '_'
+            } else {
+                c
+            }
+        })
+        .collect();
+    if !clean.is_empty() && clean != "." && clean != ".." {
+        clean
+    } else {
+        format!("attachment.{}", media_extension(media_type))
+    }
 }
 
 /// Per-type emoji for a generic (non image/video/audio) attachment chip,
@@ -1224,5 +1272,33 @@ pub(crate) fn human_bytes(n: u64) -> String {
         format!("{:.1} MB", n as f64 / MB as f64)
     } else {
         format!("{:.2} GB", n as f64 / GB as f64)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn attachment_save_name_keeps_real_filename() {
+        assert_eq!(attachment_save_name("photo.JPG", "image/png"), "photo.JPG");
+    }
+
+    #[test]
+    fn attachment_save_name_uses_mime_extension_without_filename() {
+        assert_eq!(attachment_save_name("", "image/jpeg"), "attachment.jpg");
+        assert_eq!(attachment_save_name(" ", "image/svg+xml"), "attachment.svg");
+    }
+
+    #[test]
+    fn attachment_save_name_strips_path_components_and_controls() {
+        assert_eq!(
+            attachment_save_name("../Screenshots/shot\u{7}.png", "image/png"),
+            "shot_.png"
+        );
+        assert_eq!(
+            attachment_save_name("C:\\tmp\\photo.jpg", "image/jpeg"),
+            "photo.jpg"
+        );
     }
 }
