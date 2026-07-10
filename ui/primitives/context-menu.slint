@@ -210,9 +210,11 @@ export component MessageContextMenu inherits Rectangle {
                     spacing: 1px;
                     alignment: start;
                     for e in QuickReact.list: QuickReactCell {
-                        emoji: e;
+                        emoji: e.emoji;
+                        clip-x: e.clip-x;
+                        clip-y: e.clip-y;
                         clicked => {
-                            QuickReact.react(root.message-id, e);
+                            QuickReact.react(root.message-id, e.emoji);
                             root.dismissed();
                         }
                     }

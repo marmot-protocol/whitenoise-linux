@@ -160,7 +160,9 @@ export component GeneralPane inherits DetailPage {
                     spacing: 1px;
                     alignment: end;
                     for e[i] in QuickReact.list: QuickReactCell {
-                        emoji: e;
+                        emoji: e.emoji;
+                        clip-x: e.clip-x;
+                        clip-y: e.clip-y;
                         removable: true;
                         clicked => {
                             QuickReact.remove(i);

@@ -1030,6 +1030,11 @@ export struct Reaction {
     count: int,
     mine: bool,
     reactors: [Reactor],
+    // Tile in the shared Twemoji sprite sheet, so a reaction chip draws the
+    // same colour glyph the quick-reaction row and chat bubbles do. clip-x < 0
+    // falls back to the text glyph. Filled Rust-side via `emoji_clip`.
+    clip-x: int,
+    clip-y: int,
 }
 
 // One emoji in the picker grid. `clip-x`/`clip-y` are pixel coordinates
@@ -1337,14 +1342,33 @@ export global ProfileSink {
     callback open(string);
 }
 
+// One entry in the quick-reaction row: the emoji plus its resolved tile in the
+// shared Twemoji sprite sheet, so a cell draws the same colour glyph the chat
+// bubbles do. `clip-x < 0` means the sheet carries no tile for it, so the cell
+// falls back to the raw text glyph (also how the "+" add cell renders). Rust
+// fills clip-x/clip-y from the build-time sprite map when it pushes the list.
+export struct QuickReaction {
+    emoji: string,
+    clip-x: int,
+    clip-y: int,
+}
+
 // Quick-reaction hub. One place holds the customizable one-tap emoji set and
 // every action on it, so neither the message-row tree (HoverActions, the
 // context menu) nor the Settings pane threads a callback through five layers
 // — they read `list` and fire the callbacks directly, the way `ProfileSink`
 // centralizes profile opens. Rust pushes `list` at startup and after each
-// edit; the default here seeds the picker in live-preview before Rust runs.
+// edit; the default here seeds the picker in live-preview before Rust runs
+// (clip -1, so the shim shows text glyphs until Rust resolves sprite tiles).
 export global QuickReact {
-    in property <[string]> list: ["👍", "❤️", "😂", "😮", "😢", "🙏"];
+    in property <[QuickReaction]> list: [
+        { emoji: "👍", clip-x: -1, clip-y: -1 },
+        { emoji: "❤️", clip-x: -1, clip-y: -1 },
+        { emoji: "😂", clip-x: -1, clip-y: -1 },
+        { emoji: "😮", clip-x: -1, clip-y: -1 },
+        { emoji: "😢", clip-x: -1, clip-y: -1 },
+        { emoji: "🙏", clip-x: -1, clip-y: -1 },
+    ];
     // React to a message in one tap. message-id, emoji.
     callback react(string, string);
     // Settings editor: open the full picker (anchored at x, y) to append one…

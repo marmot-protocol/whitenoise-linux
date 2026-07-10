@@ -163,7 +163,23 @@ fn run_viewer_image_action(
 /// Push the user's quick-reaction set into the `QuickReact` global, the single
 /// source the hover toolbar, context menu, and Settings editor all read.
 pub(crate) fn push_quick_reactions(ui: &DarkMatterLinux, list: &[String]) {
-    let rows: Vec<SharedString> = list.iter().cloned().map(SharedString::from).collect();
+    // Resolve each emoji to its tile in the shared Twemoji sprite sheet (the
+    // same texture and resolver the chat bubbles draw inline emoji from) so the
+    // cells render in colour; clip -1 tells the cell to fall back to the text
+    // glyph.
+    let rows: Vec<QuickReaction> = list
+        .iter()
+        .map(|emoji| {
+            let (clip_x, clip_y) = emoji_clip(emoji)
+                .map(|(x, y)| (x as i32, y as i32))
+                .unwrap_or((-1, -1));
+            QuickReaction {
+                emoji: SharedString::from(emoji),
+                clip_x,
+                clip_y,
+            }
+        })
+        .collect();
     ui.global::<QuickReact>()
         .set_list(ModelRc::new(VecModel::from(rows)));
 }

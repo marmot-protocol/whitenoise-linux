@@ -66,7 +66,16 @@ fn ensure_emoji_sprite(sprite_path: &Path, map_path: &Path) {
     // Compose the sprite sheet.
     let mut entries: Vec<(String, &[u8])> = Vec::new();
     for e in emojis::iter() {
-        if let Some(asset) = PngTwemojiAsset::from_emoji(e.as_str()) {
+        // Twemoji files are keyed by the unqualified codepoints, but the
+        // `emojis` crate yields the fully-qualified form (with a trailing
+        // U+FE0F variation selector for e.g. ❤️). A direct lookup then misses
+        // those, so a handful of very common emoji — the standard red heart
+        // among them — were silently absent from the sheet. Retry with FE0F
+        // stripped so they get a tile. The entry is still keyed by the
+        // qualified string the app looks up.
+        let asset = PngTwemojiAsset::from_emoji(e.as_str())
+            .or_else(|| PngTwemojiAsset::from_emoji(e.as_str().trim_end_matches('\u{FE0F}')));
+        if let Some(asset) = asset {
             let bytes: &[u8] = asset;
             entries.push((e.as_str().to_string(), bytes));
         }

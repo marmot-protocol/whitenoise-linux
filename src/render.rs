@@ -114,11 +114,11 @@ pub(crate) fn effect_id_from_key(key: &str) -> i32 {
         .unwrap_or(0)
 }
 
-/// Resolve an effect's emoji to its (x, y) tile in the Twemoji sheet, tolerating
-/// the presence/absence of a trailing U+FE0F variation selector (the sprite
-/// index and the catalog string can disagree on it).
-pub(crate) fn effect_clip(id: i32) -> Option<(u32, u32)> {
-    let emoji = effect_emoji(id)?;
+/// Resolve an emoji to its (x, y) tile in the Twemoji sheet, tolerating the
+/// presence/absence of a trailing U+FE0F variation selector (the sprite index
+/// and a caller's string can disagree on it). The shared resolver behind inline
+/// emoji, message effects, and the quick-reaction row.
+pub(crate) fn emoji_clip(emoji: &str) -> Option<(u32, u32)> {
     let idx = emoji_position_index();
     if let Some(p) = idx.get(emoji) {
         return Some(*p);
@@ -129,6 +129,11 @@ pub(crate) fn effect_clip(id: i32) -> Option<(u32, u32)> {
     }
     let with_vs = format!("{stripped}\u{FE0F}");
     idx.get(with_vs.as_str()).copied()
+}
+
+/// Resolve an effect's emoji to its sprite tile (see [`emoji_clip`]).
+pub(crate) fn effect_clip(id: i32) -> Option<(u32, u32)> {
+    emoji_clip(effect_emoji(id)?)
 }
 
 /// Read a message effect off a kind-9's tags (`["effect", <key>]`). Returns the

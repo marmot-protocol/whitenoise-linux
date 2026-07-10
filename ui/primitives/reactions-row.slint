@@ -5,11 +5,15 @@ import {
     Reactor,
     ProfileSink,
     QuickReact,
+    EmojiSheet,
 } from "../tokens.slint";
 
 // A single emoji + count chip. `mine` controls the highlight style.
 component ReactionChip inherits Rectangle {
     in property <string> emoji;
+    // Sprite-sheet tile for `emoji`; clip-x < 0 falls back to the text glyph.
+    in property <int> clip-x: -1;
+    in property <int> clip-y: -1;
     in property <int> count;
     in property <bool> mine: false;
     // Everyone who used this emoji, shown as mention chips in the hover popover
@@ -62,7 +66,18 @@ component ReactionChip inherits Rectangle {
         padding-right: 8px;
         spacing: 4px;
         alignment: center;
-        Text {
+        // Colour tile from the shared Twemoji sheet (matching the quick-reaction
+        // row and inline bubble emoji); text glyph when the sheet lacks it.
+        if root.clip-x >= 0: Image {
+            width: 15px;
+            height: 15px;
+            source: EmojiSheet.sprite;
+            source-clip-x: root.clip-x;
+            source-clip-y: root.clip-y;
+            source-clip-width: EmojiSheet.tile;
+            source-clip-height: EmojiSheet.tile;
+        }
+        if root.clip-x < 0: Text {
             text: root.emoji;
             font-size: (12px) * Theme.fs-scale;
             vertical-alignment: center;
@@ -187,6 +202,8 @@ export component ReactionChips inherits HorizontalLayout {
 
     for r in root.reactions: ReactionChip {
         emoji: r.emoji;
+        clip-x: r.clip-x;
+        clip-y: r.clip-y;
         count: r.count;
         mine: r.mine;
         reactors: r.reactors;
@@ -206,6 +223,9 @@ export component ReactionChips inherits HorizontalLayout {
 // delete control in the Settings editor, where a tap removes the emoji.
 export component QuickReactCell inherits Rectangle {
     in property <string> emoji;
+    // Sprite-sheet tile for `emoji`; clip-x < 0 falls back to the text glyph.
+    in property <int> clip-x: -1;
+    in property <int> clip-y: -1;
     in property <bool> removable: false;
     callback clicked();
 
@@ -215,7 +235,25 @@ export component QuickReactCell inherits Rectangle {
     background: touch.has-hover ? Palette.hover : transparent;
     animate background { duration: 100ms; }
 
-    Text {
+    // A tile from the shared Twemoji sheet — the same texture the chat bubbles
+    // draw inline emoji from, so a quick reaction looks identical to the emoji
+    // it posts.
+    if root.clip-x >= 0: Image {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: 18px;
+        height: 18px;
+        source: EmojiSheet.sprite;
+        source-clip-x: root.clip-x;
+        source-clip-y: root.clip-y;
+        source-clip-width: EmojiSheet.tile;
+        source-clip-height: EmojiSheet.tile;
+    }
+
+    // Fallback glyph: the "+" add cell, or an emoji the sheet doesn't carry.
+    if root.clip-x < 0: Text {
+        width: 100%;
+        height: 100%;
         text: root.emoji;
         font-size: (15px) * Theme.fs-scale;
         horizontal-alignment: center;
@@ -317,9 +355,11 @@ export component HoverActions inherits Rectangle {
             spacing: 2px;
             // One-tap quick reactions, then a "+" that opens the full picker.
             for e in QuickReact.list: QuickReactCell {
-                emoji: e;
+                emoji: e.emoji;
+                clip-x: e.clip-x;
+                clip-y: e.clip-y;
                 clicked => {
-                    QuickReact.react(root.message-id, e);
+                    QuickReact.react(root.message-id, e.emoji);
                 }
             }
 
