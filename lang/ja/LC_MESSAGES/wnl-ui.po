@@ -883,8 +883,8 @@ msgid "Edit profile"
 msgstr "プロフィールを編集"
 
 msgctxt "Composer"
-msgid "Editing message  ·  Enter to save"
-msgstr "メッセージを編集中  ·  Enter で保存"
+msgid "Editing:"
+msgstr "編集中:"
 
 msgctxt "AboutPane"
 msgid "Encrypted group chat on Nostr"
@@ -2486,6 +2486,10 @@ msgstr "✓ 確認済み"
 #~ msgctxt "AppearancePane"
 #~ msgid "Density"
 #~ msgstr "密度"
+
+#~ msgctxt "Composer"
+#~ msgid "Editing message  ·  Enter to save"
+#~ msgstr "メッセージを編集中  ·  Enter で保存"
 
 #~ msgctxt "AppearancePane"
 #~ msgid "FUN"

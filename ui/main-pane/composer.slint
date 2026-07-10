@@ -27,6 +27,9 @@ export component Composer inherits Rectangle {
     // When non-empty the composer is in edit mode: a banner shows and the next
     // send rewrites that message instead of posting a new one.
     in property <string> editing-message-id;
+    // Elided preview of the message body being edited, so the banner points at
+    // a specific bubble the way the reply banner below does.
+    in property <string> editing-message-preview;
     // Mention-autocomplete passthrough (see MentionPicker). `mention-active`
     // makes the input capture nav keys; the callbacks bubble up to Rust.
     in property <bool> mention-active: false;
@@ -107,13 +110,26 @@ export component Composer inherits Rectangle {
                 VerticalLayout {
                     alignment: center;
                     horizontal-stretch: 1;
-                    Text {
-                        text: @tr("Editing message  ·  Enter to save");
-                        color: Palette.mint;
-                        font-size: (11px) * Theme.fs-scale;
-                        font-family: Theme.font;
-                        font-weight: 700;
-                        vertical-alignment: center;
+                    HorizontalLayout {
+                        spacing: 6px;
+                        Text {
+                            text: @tr("Editing:");
+                            color: Palette.mint;
+                            font-size: (11px) * Theme.fs-scale;
+                            font-family: Theme.font;
+                            font-weight: 700;
+                            vertical-alignment: center;
+                        }
+
+                        Text {
+                            text: root.editing-message-preview;
+                            color: Palette.text-mid;
+                            font-size: (11px) * Theme.fs-scale;
+                            font-family: Theme.font;
+                            overflow: elide;
+                            horizontal-stretch: 1;
+                            vertical-alignment: center;
+                        }
                     }
                 }
 
