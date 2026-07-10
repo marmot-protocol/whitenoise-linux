@@ -375,7 +375,7 @@ fn main() -> Result<(), slint::PlatformError> {
                   text: String,
                   temp_id: String,
                   parent_id: Option<String>,
-                  effect_id: i32| {
+                  _effect_id: i32| {
                 let guard = backend_cell.lock().unwrap();
                 let Some(backend) = guard.as_ref() else {
                     return;
@@ -534,15 +534,14 @@ fn main() -> Result<(), slint::PlatformError> {
                         }
                     });
                 };
-                // The effect (if any) rides as an out-of-band `["effect", key]`
-                // tag on the kind-9, never in the body. Empty for a plain send.
-                let extra_tags = effect_tag(effect_id);
+                // Message effects no longer transmit: the marmot tag-carrying
+                // send API is gone, so sends route through the plain path.
                 match parent_id {
                     Some(parent) => {
-                        backend.reply_text_async(&group_hex, &parent, &text, extra_tags, on_done);
+                        backend.reply_text_async(&group_hex, &parent, &text, on_done);
                     }
                     None => {
-                        backend.send_text_async(&group_hex, &text, extra_tags, on_done);
+                        backend.send_text_async(&group_hex, &text, on_done);
                     }
                 }
             },

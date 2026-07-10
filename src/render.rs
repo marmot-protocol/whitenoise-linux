@@ -103,9 +103,6 @@ pub(crate) const EFFECTS: &[(i32, &str, &str)] = &[
 /// kind-9 chat event: `["effect", <wire-key>]`.
 pub(crate) const EFFECT_TAG: &str = "effect";
 
-pub(crate) fn effect_key(id: i32) -> Option<&'static str> {
-    EFFECTS.iter().find(|e| e.0 == id).map(|e| e.1)
-}
 pub(crate) fn effect_emoji(id: i32) -> Option<&'static str> {
     EFFECTS.iter().find(|e| e.0 == id).map(|e| e.2)
 }
@@ -132,16 +129,6 @@ pub(crate) fn effect_clip(id: i32) -> Option<(u32, u32)> {
     }
     let with_vs = format!("{stripped}\u{FE0F}");
     idx.get(with_vs.as_str()).copied()
-}
-
-/// The out-of-band tag(s) to attach to an outgoing kind-9 for `effect_id`:
-/// `[["effect", <key>]]`, or empty for effect 0 / an unknown id. This is how an
-/// effect travels now — as a real nostr tag, leaving the body untouched.
-pub(crate) fn effect_tag(effect_id: i32) -> Vec<Vec<String>> {
-    match effect_key(effect_id) {
-        Some(key) => vec![vec![EFFECT_TAG.to_owned(), key.to_owned()]],
-        None => Vec::new(),
-    }
 }
 
 /// Read a message effect off a kind-9's tags (`["effect", <key>]`). Returns the

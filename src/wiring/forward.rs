@@ -463,6 +463,6 @@ pub(crate) fn spawn_text_forward(
                 }
             });
         };
-        backend.send_text_async(&group_hex, &text, Vec::new(), on_done);
+        backend.send_text_async(&group_hex, &text, on_done);
     });
 }

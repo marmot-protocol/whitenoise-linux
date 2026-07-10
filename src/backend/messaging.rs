@@ -44,13 +44,8 @@ impl Backend {
     ///
     /// This is the engine behind optimistic-rendering — the UI inserts a
     /// pending bubble first, then calls this, then reconciles on done.
-    pub fn send_text_async<F>(
-        &self,
-        group_hex: &str,
-        text: &str,
-        extra_tags: Vec<Vec<String>>,
-        on_done: F,
-    ) where
+    pub fn send_text_async<F>(&self, group_hex: &str, text: &str, on_done: F)
+    where
         F: FnOnce(Result<SendSummary>) + Send + 'static,
     {
         let group_id = match group_id_from_hex(group_hex) {
@@ -64,17 +59,10 @@ impl Backend {
         let runtime = self.runtime.clone();
         let payload = text.as_bytes().to_vec();
         self.tokio.spawn(async move {
-            // Plain sends keep the original `send_message` path (matching audit
-            // label + worker command); only when there are out-of-band tags
-            // (e.g. a message effect) do we route through the tag-carrying API.
-            let res = if extra_tags.is_empty() {
-                runtime.send_message(&label, &group_id, payload).await
-            } else {
-                runtime
-                    .send_message_with_tags(&label, &group_id, payload, extra_tags)
-                    .await
-            }
-            .map_err(|e| anyhow!("send_message: {e}"));
+            let res = runtime
+                .send_message(&label, &group_id, payload)
+                .await
+                .map_err(|e| anyhow!("send_message: {e}"));
             on_done(res);
         });
     }
@@ -202,7 +190,6 @@ impl Backend {
         group_hex: &str,
         parent_message_id_hex: &str,
         text: &str,
-        extra_tags: Vec<Vec<String>>,
         on_done: F,
     ) where
         F: FnOnce(Result<SendSummary>) + Send + 'static,
@@ -219,16 +206,10 @@ impl Backend {
         let parent = parent_message_id_hex.to_string();
         let text = text.to_string();
         self.tokio.spawn(async move {
-            let res = if extra_tags.is_empty() {
-                runtime
-                    .reply_to_message(&label, &group_id, &parent, &text)
-                    .await
-            } else {
-                runtime
-                    .reply_to_message_with_tags(&label, &group_id, &parent, &text, extra_tags)
-                    .await
-            }
-            .map_err(|e| anyhow!("reply_to_message: {e}"));
+            let res = runtime
+                .reply_to_message(&label, &group_id, &parent, &text)
+                .await
+                .map_err(|e| anyhow!("reply_to_message: {e}"));
             on_done(res);
         });
     }

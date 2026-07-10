@@ -95,17 +95,19 @@ hound = "3.5"
 # hint — symphonia's isomp4 reader requires one on seekable streams, and
 # older rodio panicked (0.19/0.20) on every m4a because of it.
 rodio = { version = "0.21", default-features = false, features = [
-    "playback",
-    "wav",
-    "mp3",
-    "mp4",
+  "playback",
+  "wav",
+  "mp3",
+  "mp4",
 ] }
 # Pinned to PR #849 (add-markdown-text-effects) for the `{big}…{/big}` inline
 # text-effect syntax (Inline::Effect). Drop the rev once it merges to master.
 whitenoise-markdown = { git = "https://github.com/marmot-protocol/whitenoise-rs", rev = "973f3ab65bf410c35e401935cdf4374b77770901" }
-marmot-app = { git = "https://github.com/marmot-protocol/darkmatter.git", branch = "master", features = ["otlp-export"] }
-marmot-account = { git = "https://github.com/marmot-protocol/darkmatter.git", branch = "master" }
-cgka-traits = { git = "https://github.com/marmot-protocol/darkmatter.git", branch = "master" }
+marmot-app = { git = "https://github.com/marmot-protocol/mdk.git", branch = "master", features = [
+  "otlp-export",
+] }
+marmot-account = { git = "https://github.com/marmot-protocol/mdk.git", branch = "master" }
+cgka-traits = { git = "https://github.com/marmot-protocol/mdk.git", branch = "master" }
 
 [build-dependencies]
 # Resolves libmpv's link flags for build.rs (see src/mpv.rs FFI core).

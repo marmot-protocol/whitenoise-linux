@@ -371,7 +371,7 @@ impl Backend {
         let runtime = self.runtime.clone();
         self.tokio.spawn(async move {
             let result = runtime
-                .download_group_image(&label, &group_id)
+                .download_group_blossom_image(&label, &group_id)
                 .await
                 .map_err(|e| anyhow!("fetch_group_image: {e}"));
             on_done(result);

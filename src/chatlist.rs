@@ -183,6 +183,7 @@ pub(crate) fn publish_random_profile_async(
             lud16: None,
             created_at: 0,
             source_relays: Vec::new(),
+            extra: Default::default(),
         };
         match backend.save_profile_for_label(&label, profile) {
             Ok(_) => {
@@ -281,6 +282,7 @@ pub(crate) fn profile_from_ui(ui: &DarkMatterLinux) -> UserProfileMetadata {
         lud16: opt(ui.get_profile_lud16()),
         created_at: 0,
         source_relays: Vec::new(),
+        extra: Default::default(),
     }
 }
 

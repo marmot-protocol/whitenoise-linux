@@ -577,6 +577,7 @@ impl Backend {
             identity: None, // runtime.login() fills this from the `identity` arg
             default_relays: endpoints.clone(),
             bootstrap_relays: endpoints,
+            discovery_relays: Vec::new(),
             // Only attempt relay-list / key-package publishing when we have
             // somewhere to publish to. Otherwise the login round-trip times
             // out instead of giving the user a working local identity.
@@ -714,6 +715,7 @@ impl Backend {
             identity: None, // runtime.login() fills this from the nsec
             default_relays: endpoints.clone(),
             bootstrap_relays: endpoints,
+            discovery_relays: Vec::new(),
             // Same rationale as login_account: only publish when there is
             // somewhere to publish to.
             publish_missing_relay_lists: !self.relays.is_empty(),
