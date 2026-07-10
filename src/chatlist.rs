@@ -366,6 +366,28 @@ pub(crate) struct ChatListSnapshot {
     pub(crate) default_idx: usize,
 }
 
+pub(crate) fn choose_startup_chat_idx<'a>(
+    rows: impl IntoIterator<Item = (&'a str, &'a str)>,
+    restore_last_selected_chat: bool,
+    last_selected_chat: Option<&str>,
+) -> usize {
+    let rows: Vec<(&str, &str)> = rows.into_iter().collect();
+    if rows.is_empty() {
+        return 0;
+    }
+    if restore_last_selected_chat
+        && let Some(last) = last_selected_chat
+        && let Some(idx) = rows
+            .iter()
+            .position(|(group_id, _)| group_id.eq_ignore_ascii_case(last))
+    {
+        return idx;
+    }
+    rows.iter()
+        .position(|(_, name)| *name != SAVED_MESSAGES_NAME)
+        .unwrap_or(0)
+}
+
 pub(crate) fn fetch_chat_list_snapshot(backend: &Backend) -> Option<ChatListSnapshot> {
     let mut records = match backend.chats() {
         Ok(v) => v,
@@ -415,13 +437,17 @@ pub(crate) fn fetch_chat_list_snapshot(backend: &Backend) -> Option<ChatListSnap
             n
         })
         .collect();
-    // Eagerly load the default-shown chat's window: the first real chat, since
-    // "Saved Messages" is pinned at 0 and usually empty. Falls back to 0 when
-    // it's the only conversation.
-    let default_idx = records
-        .iter()
-        .position(|r| r.profile.name != SAVED_MESSAGES_NAME)
-        .unwrap_or(0);
+    // Eagerly load the startup chat's window. Normally this is the first real
+    // chat because "Saved Messages" is pinned at 0 and usually empty; when the
+    // user opts in, restore the last selected chat if it still exists.
+    let startup_settings = Settings::load();
+    let default_idx = choose_startup_chat_idx(
+        records
+            .iter()
+            .map(|r| (r.group_id_hex.as_str(), r.profile.name.as_str())),
+        startup_settings.restore_last_selected_chat,
+        startup_settings.last_selected_chat.as_deref(),
+    );
     let first_msgs = records
         .get(default_idx)
         .map(|r| {
@@ -1380,5 +1406,42 @@ pub(crate) fn fallback_chat_meta(record: &AppGroupRecord) -> ChatMeta {
         has_picture: false,
         is_chat_request: record.pending_confirmation,
         pinned: is_pinned(&record.group_id_hex),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn startup_restore_prefers_saved_chat_when_enabled() {
+        let rows = [
+            ("self", SAVED_MESSAGES_NAME),
+            ("group-a", "Alice"),
+            ("group-b", "Bob"),
+        ];
+
+        assert_eq!(
+            choose_startup_chat_idx(rows.iter().copied(), true, Some("group-b")),
+            2
+        );
+    }
+
+    #[test]
+    fn startup_restore_falls_back_to_first_real_chat_when_missing_or_disabled() {
+        let rows = [
+            ("self", SAVED_MESSAGES_NAME),
+            ("group-a", "Alice"),
+            ("group-b", "Bob"),
+        ];
+
+        assert_eq!(
+            choose_startup_chat_idx(rows.iter().copied(), true, Some("gone")),
+            1
+        );
+        assert_eq!(
+            choose_startup_chat_idx(rows.iter().copied(), false, Some("group-b")),
+            1
+        );
     }
 }

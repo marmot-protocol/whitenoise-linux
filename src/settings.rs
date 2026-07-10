@@ -49,6 +49,19 @@ pub struct Settings {
     /// Include the message text in the notification body (off = "New message").
     #[serde(default = "default_true")]
     pub notification_preview: bool,
+    /// Register a freedesktop autostart entry so the app launches at login.
+    #[serde(default)]
+    pub launch_at_login: bool,
+    /// Start with the window hidden and a tray icon visible; the tray can reopen
+    /// the main window. Applied on next launch.
+    #[serde(default)]
+    pub start_minimized_to_tray: bool,
+    /// Reopen the last selected chat instead of the first real chat at boot.
+    #[serde(default)]
+    pub restore_last_selected_chat: bool,
+    /// Last selected visible chat group id (hex). Local-only.
+    #[serde(default)]
+    pub last_selected_chat: Option<String>,
     /// Chats (group_id_hex) the user has muted — suppresses their desktop
     /// notifications. Local-only, like nicknames.
     #[serde(default)]
@@ -154,8 +167,8 @@ fn default_true() -> bool {
 impl Default for Settings {
     // Deserialize an empty JSON object so every field takes its
     // `#[serde(default …)]` value. That attribute is the single source of truth
-    // for defaults; a hand-written struct literal here would duplicate all 18 of
-    // them and silently drift when a field is added or a default changes.
+    // for defaults; a hand-written struct literal here would duplicate the
+    // fields and silently drift when a field is added or a default changes.
     fn default() -> Self {
         serde_json::from_str("{}").expect("every Settings field has a serde default")
     }
@@ -200,5 +213,38 @@ impl Settings {
     fn path() -> Option<PathBuf> {
         directories::ProjectDirs::from("", "", "darkmatter-linux")
             .map(|d| d.config_dir().join("settings.json"))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn startup_preferences_default_to_safe_values() {
+        let settings: Settings = serde_json::from_str("{}").unwrap();
+
+        assert!(!settings.launch_at_login);
+        assert!(!settings.start_minimized_to_tray);
+        assert!(!settings.restore_last_selected_chat);
+        assert_eq!(settings.last_selected_chat, None);
+    }
+
+    #[test]
+    fn startup_preferences_deserialize_from_existing_file() {
+        let settings: Settings = serde_json::from_str(
+            r#"{
+                "launch_at_login": true,
+                "start_minimized_to_tray": true,
+                "restore_last_selected_chat": true,
+                "last_selected_chat": "group-123"
+            }"#,
+        )
+        .unwrap();
+
+        assert!(settings.launch_at_login);
+        assert!(settings.start_minimized_to_tray);
+        assert!(settings.restore_last_selected_chat);
+        assert_eq!(settings.last_selected_chat.as_deref(), Some("group-123"));
     }
 }

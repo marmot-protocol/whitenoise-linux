@@ -1659,6 +1659,10 @@ msgctxt "GroupSettingsCard"
 msgid "Purpose, rules, or invite blurb"
 msgstr "Zweck, Regeln oder Einladungstext"
 
+msgctxt "DarkMatterTray"
+msgid "Quit"
+msgstr "Beenden"
+
 #, fuzzy
 msgctxt "ChatListPanel"
 msgid "RELAYS"
@@ -2006,6 +2010,10 @@ msgctxt "ProfilePage"
 msgid "Short handle (no spaces)"
 msgstr "Kurzer Handle (ohne Leerzeichen)"
 
+msgctxt "DarkMatterTray"
+msgid "Show White Noise"
+msgstr "White Noise anzeigen"
+
 msgctxt "ContactDetail"
 msgid "Show as QR"
 msgstr "Als QR anzeigen"
@@ -2276,6 +2284,10 @@ msgstr ""
 msgctxt "NetworkPane"
 msgid "Where your messages land."
 msgstr "Wo deine Nachrichten ankommen."
+
+msgctxt "DarkMatterTray"
+msgid "White Noise"
+msgstr "White Noise"
 
 msgctxt "GroupMemberRow"
 msgid "YOU"

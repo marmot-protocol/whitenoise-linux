@@ -1656,6 +1656,10 @@ msgctxt "GroupSettingsCard"
 msgid "Purpose, rules, or invite blurb"
 msgstr "目的、ルール、招待文"
 
+msgctxt "DarkMatterTray"
+msgid "Quit"
+msgstr "終了"
+
 #, fuzzy
 msgctxt "ChatListPanel"
 msgid "RELAYS"
@@ -2003,6 +2007,10 @@ msgctxt "ProfilePage"
 msgid "Short handle (no spaces)"
 msgstr "短いハンドル（スペース不可）"
 
+msgctxt "DarkMatterTray"
+msgid "Show White Noise"
+msgstr "White Noiseを表示"
+
 msgctxt "ContactDetail"
 msgid "Show as QR"
 msgstr "QR コードで表示"
@@ -2273,6 +2281,10 @@ msgstr ""
 msgctxt "NetworkPane"
 msgid "Where your messages land."
 msgstr "メッセージの配信先。"
+
+msgctxt "DarkMatterTray"
+msgid "White Noise"
+msgstr "White Noise"
 
 msgctxt "GroupMemberRow"
 msgid "YOU"

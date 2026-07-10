@@ -9,3 +9,5 @@ Terminal=false
 Categories=Network;InstantMessaging;Chat;
 MimeType=x-scheme-handler/marmot;
 StartupWMClass=whitenoise-linux
+X-GNOME-Autostart-enabled=true
+X-WhitenoiseLinux-Autostart=true
