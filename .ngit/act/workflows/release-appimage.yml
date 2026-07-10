@@ -1,0 +1,109 @@
+# ngit-ci: staging AppImage build, published to Blossom.
+#
+# Fires on every push to master. Under ngit-ci a "push" is a change to the
+# repo's Nostr state event (kind 30618) for a ref — which is exactly what
+# happens both on a direct push to master and when a proposal (PR) is merged,
+# so this one trigger covers "push to master OR PR merge".
+#
+# It builds an optimized x86_64 Linux binary (compiled Slint UI, no
+# live-reload — `--no-default-features`, mirroring release.yml / _build.yml),
+# bundles it into a self-contained AppImage, and hands it to the runner with
+# `actions/upload-artifact@v4`. When the watching coordinator has Blossom
+# enabled, ngit-ci uploads that artifact to its Blossom server(s) and attaches
+# the resulting Blossom URL(s) as `artifact` tags on the signed Job Result
+# (kind 9841) — i.e. `upload-artifact` IS "publish to Blossom" here. Nothing
+# else is needed from this repo; there is no forge token and no secrets.
+#
+# Notes / operator dependencies:
+#   * Blossom publishing requires the coordinator to be started with
+#     --blossom-servers (NGIT_CI_BLOSSOM_SERVERS). Without it the build still
+#     runs and passes, but no artifact is uploaded.
+#   * The default per-artifact Blossom cap is 64 MiB
+#     (--blossom-max-artifact-bytes); a fully-bundled AppImage with libmpv can
+#     approach that. If the artifact is skipped as oversized, the operator must
+#     raise that limit.
+
+name: staging-appimage
+
+on:
+  push:
+    branches: [master]
+
+# APPIMAGE_EXTRACT_AND_RUN lets the linuxdeploy / appimagetool AppImages run
+# inside a container that has no FUSE, by self-extracting instead of mounting.
+env:
+  APPIMAGE_EXTRACT_AND_RUN: "1"
+
+jobs:
+  appimage:
+    name: build staging AppImage (x86_64)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      # Build deps for the app (libmpv/fontconfig/ALSA/dbus) plus the tools that
+      # assemble the AppImage: rsvg + ImageMagick to rasterize the SVG logo into
+      # a PNG icon, and file/desktop-file utils linuxdeploy expects.
+      - name: Install system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config libmpv-dev libfontconfig-dev libasound2-dev libdbus-1-dev \
+            librsvg2-bin imagemagick file desktop-file-utils wget ca-certificates git
+
+      - name: Install Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+            | sh -s -- -y --default-toolchain stable --profile minimal
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+      - name: Build release binary (compiled UI)
+        run: cargo build --locked --release --no-default-features
+
+      - name: Assemble AppDir
+        run: |
+          set -euo pipefail
+          rm -rf AppDir
+          mkdir -p AppDir/usr/bin
+          cp target/release/whitenoise-linux AppDir/usr/bin/
+          # Desktop entry (Icon=whitenoise-linux, matching the PNG basename).
+          cp assets/whitenoise-linux.desktop AppDir/
+          # The logo is white-on-transparent; render it onto the app's dark
+          # surface colour and pad to a square 256x256 PNG so it's visible in
+          # launchers.
+          rsvg-convert -b '#0e1116' -w 200 assets/svg/logo.svg -o /tmp/logo.png
+          convert /tmp/logo.png -background '#0e1116' -gravity center \
+            -extent 256x256 AppDir/whitenoise-linux.png
+
+      - name: Fetch AppImage tooling
+        run: |
+          set -euo pipefail
+          base="https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous"
+          wget -q "$base/linuxdeploy-x86_64.AppImage" -O linuxdeploy
+          wget -q "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage" \
+            -O appimagetool
+          chmod +x linuxdeploy appimagetool
+
+      - name: Build AppImage
+        run: |
+          set -euo pipefail
+          # linuxdeploy copies the binary's shared-library dependencies
+          # (libmpv and its ffmpeg/codec deps, fontconfig, ALSA, …) into the
+          # AppDir and writes AppRun + the .DirIcon.
+          ./linuxdeploy --appdir AppDir \
+            --executable AppDir/usr/bin/whitenoise-linux \
+            --desktop-file AppDir/whitenoise-linux.desktop \
+            --icon-file AppDir/whitenoise-linux.png
+          # Short commit for a recognizable staging filename. act sets GITHUB_SHA.
+          short="${GITHUB_SHA:-unknown}"; short="${short:0:8}"
+          out="WhiteNoise-staging-${short}-x86_64.AppImage"
+          ./appimagetool AppDir "$out"
+          echo "APPIMAGE_NAME=$out" >> "$GITHUB_ENV"
+
+      # Handed to the runner; the coordinator uploads it to Blossom and records
+      # the Blossom URL as an `artifact` tag on the signed Job Result.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: whitenoise-linux-staging-x86_64
+          path: ${{ env.APPIMAGE_NAME }}
+          if-no-files-found: error

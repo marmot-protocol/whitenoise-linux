@@ -1,0 +1,81 @@
+# ngit-ci: pre-commit gate for proposals (PRs).
+#
+# ngit-ci watches this repo over Nostr and runs the workflows under
+# .ngit/act/workflows/ with `act` (GitHub Actions-compatible syntax, each job
+# in its own Linux container). This one fires on every Nostr PR / PR update
+# (kinds 1618/1619) and runs the project's own pre-commit hook against the
+# proposal, so a proposal that wouldn't pass `git commit` locally is marked
+# failed on gitworkshop.dev.
+#
+# Why run the actual hook (.githooks/pre-commit) instead of re-listing its
+# gates: it is the single source of truth (fmt --check, clippy -D warnings, the
+# 2000-line file cap, PO/POT msgfmt validation + normalization, and slint-lsp
+# formatting). Re-implementing it here would let the two drift apart.
+#
+# The hook operates on *staged* files (git diff --cached), and a fresh
+# actions/checkout stages nothing — so we `git add -A` first to present the
+# whole proposal tree as staged, then run the hook. The hook's normalization
+# steps (po-clean, slint format) auto-fix in place and re-stage rather than
+# failing; we turn any such fix into a failure with a final drift check, so
+# "the hook had to change something" is treated as "not clean" — matching the
+# intent that only an already-clean tree passes.
+#
+# No secrets are available under ngit-ci (${{ secrets.* }} is empty, there is
+# no GITHUB_TOKEN); every tool below is installed from anonymous sources.
+
+name: pre-commit
+
+on:
+  pull_request:
+
+jobs:
+  pre-commit:
+    name: pre-commit hook
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      # Same system deps the clippy build needs (libmpv/fontconfig/ALSA/dbus),
+      # plus gettext for the hook's msgfmt/msgcat catalog checks.
+      - name: Install system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config libmpv-dev libfontconfig-dev libasound2-dev libdbus-1-dev \
+            gettext git
+
+      # Install Rust explicitly (don't rely on the act image shipping rustup),
+      # with the components the hook invokes: rustfmt for `cargo fmt --check`
+      # and clippy for `cargo clippy -D warnings`.
+      - name: Install Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+            | sh -s -- -y --default-toolchain stable --profile minimal \
+                --component rustfmt --component clippy
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+      # The hook formats staged .slint files with `slint-lsp format`; it aborts
+      # if slint-lsp is missing. Install the pinned version so the container has
+      # it on PATH. (This compiles the Slint toolchain and is the slow part of
+      # this job — see the note in the response / README if you want to trade
+      # exactness for speed.)
+      - name: Install slint-lsp
+        run: cargo install slint-lsp --locked
+
+      - name: Run pre-commit hook against the proposal
+        run: |
+          set -euo pipefail
+          # Present the whole checked-out tree as staged so the hook's
+          # `git diff --cached` gates see every file in the proposal.
+          git add -A
+          # The hook enforces fmt/clippy/file-length/catalog gates and exits
+          # non-zero on any real failure (which fails this step directly).
+          bash .githooks/pre-commit
+          # If the hook's normalizers (po-clean / slint format) rewrote and
+          # re-staged anything, the tree wasn't clean — fail with the diff.
+          if ! git diff --cached --quiet; then
+            echo "::error::pre-commit normalized files — the proposal is not clean." >&2
+            echo "Run scripts/install-hooks.sh once, then commit; the hook will fix these locally:" >&2
+            git --no-pager diff --cached --stat >&2
+            exit 1
+          fi
