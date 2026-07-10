@@ -48,6 +48,7 @@ import { SplashScreen } from "splash.slint";
 import { EmojiPicker } from "emoji-picker.slint";
 import { MessageContextMenu } from "primitives/context-menu.slint";
 import { ChatContextMenu } from "primitives/chat-context-menu.slint";
+import { GroupMemberMenu } from "main-pane/group-member-menu.slint";
 import {
     EmojiEntry,
     EmojiSheet,
@@ -399,6 +400,18 @@ export component DarkMatterLinux inherits Window {
     property <bool> ctx-menu-can-edit: false;
     property <length> ctx-menu-x;
     property <length> ctx-menu-y;
+    // Group member action menu — opened from a member row's "⋯"; its items
+    // re-fire the existing request-*-admin functions (which arm the admin
+    // confirm modal), so the confirm/Rust path is unchanged.
+    property <bool> member-menu-open: false;
+    property <string> member-menu-id;
+    property <string> member-menu-name;
+    property <bool> member-menu-can-promote: false;
+    property <bool> member-menu-can-demote: false;
+    property <bool> member-menu-can-self-demote: false;
+    property <bool> member-menu-can-remove: false;
+    property <length> member-menu-x;
+    property <length> member-menu-y;
     // Forward flow: the context-menu "Forward" item stashes the source message
     // id here and opens the chat picker; picking a destination fires
     // `request-forward(dest_idx)`, which the Rust side resolves against
@@ -1051,17 +1064,16 @@ export component DarkMatterLinux inherits Window {
                             add-member(npub) => {
                                 root.add-member(npub);
                             }
-                            promote-admin(id, name) => {
-                                root.request-promote-admin(id, name);
-                            }
-                            demote-admin(id, name) => {
-                                root.request-demote-admin(id, name);
-                            }
-                            self-demote-admin(name) => {
-                                root.request-self-demote-admin(name);
-                            }
-                            remove-member(id, name) => {
-                                root.request-remove-member(id, name);
+                            request-member-menu(id, name, cp, cd, csd, cr, ax, ay) => {
+                                root.member-menu-id = id;
+                                root.member-menu-name = name;
+                                root.member-menu-can-promote = cp;
+                                root.member-menu-can-demote = cd;
+                                root.member-menu-can-self-demote = csd;
+                                root.member-menu-can-remove = cr;
+                                root.member-menu-x = ax;
+                                root.member-menu-y = ay;
+                                root.member-menu-open = true;
                             }
                             group-picture: root.chat-group-picture;
                             group-has-picture: root.chat-group-has-picture;
@@ -1634,6 +1646,35 @@ export component DarkMatterLinux inherits Window {
 
     // Right-click message context menu. Items re-fire the same callbacks the
     // hover toolbar uses, so the Rust side is untouched.
+    if root.member-menu-open: GroupMemberMenu {
+        anchor-x: root.member-menu-x;
+        anchor-y: root.member-menu-y;
+        member-name: root.member-menu-name;
+        can-promote: root.member-menu-can-promote;
+        can-demote: root.member-menu-can-demote;
+        can-self-demote: root.member-menu-can-self-demote;
+        can-remove: root.member-menu-can-remove;
+        promote => {
+            root.member-menu-open = false;
+            root.request-promote-admin(root.member-menu-id, root.member-menu-name);
+        }
+        demote => {
+            root.member-menu-open = false;
+            root.request-demote-admin(root.member-menu-id, root.member-menu-name);
+        }
+        self-demote => {
+            root.member-menu-open = false;
+            root.request-self-demote-admin(root.member-menu-name);
+        }
+        remove => {
+            root.member-menu-open = false;
+            root.request-remove-member(root.member-menu-id, root.member-menu-name);
+        }
+        dismissed => {
+            root.member-menu-open = false;
+        }
+    }
+
     if root.ctx-menu-open: MessageContextMenu {
         anchor-x: root.ctx-menu-x;
         anchor-y: root.ctx-menu-y;

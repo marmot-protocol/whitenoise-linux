@@ -1212,7 +1212,7 @@ msgctxt "DarkMatterLinux"
 msgid "Make admin"
 msgstr ""
 
-msgctxt "GroupMemberRow"
+msgctxt "GroupMemberMenu"
 msgid "Make admin"
 msgstr ""
 
@@ -1658,15 +1658,11 @@ msgctxt "DarkMatterLinux"
 msgid "Remove"
 msgstr ""
 
-msgctxt "GroupMemberRow"
-msgid "Remove"
-msgstr ""
-
 msgctxt "DarkMatterLinux"
 msgid "Remove admin"
 msgstr ""
 
-msgctxt "GroupMemberRow"
+msgctxt "GroupMemberMenu"
 msgid "Remove admin"
 msgstr ""
 
@@ -1676,6 +1672,10 @@ msgstr ""
 
 msgctxt "ContactDetail"
 msgid "Remove contact"
+msgstr ""
+
+msgctxt "GroupMemberMenu"
+msgid "Remove from group"
 msgstr ""
 
 msgctxt "GroupSettingsCard"
@@ -2002,7 +2002,7 @@ msgctxt "DarkMatterLinux"
 msgid "Step down"
 msgstr ""
 
-msgctxt "GroupMemberRow"
+msgctxt "GroupMemberMenu"
 msgid "Step down"
 msgstr ""
 

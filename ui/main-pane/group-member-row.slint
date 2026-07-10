@@ -5,19 +5,22 @@ import { Pill } from "../primitives/pill.slint";
 export component GroupMemberRow inherits Rectangle {
     in property <GroupMember> data;
     in property <bool> show-divider: true;
-    callback promote-admin(string, string);
-    callback demote-admin(string, string);
-    callback self-demote-admin(string);
-    callback remove-member(string, string);
+    // Fired when the viewer taps this row's "⋯" — the root opens the member
+    // action menu at (ax, ay) with the flags describing which actions apply.
+    callback request-menu(string, string, bool, bool, bool, bool, length, length);
+
+    // The "⋯" affordance shows only when the viewer can act on this row.
+    property <bool> has-actions: root.data.can-promote || root.data.can-demote
+        || root.data.can-self-demote || root.data.can-remove;
 
     height: 52px;
 
     HorizontalLayout {
         padding-left: 14px;
-        padding-right: 14px;
+        padding-right: 10px;
         padding-top: 8px;
         padding-bottom: 8px;
-        spacing: 12px;
+        spacing: 10px;
         alignment: stretch;
 
         TouchArea {
@@ -80,96 +83,39 @@ export component GroupMemberRow inherits Rectangle {
             }
         }
 
-        // "Make admin" affordance — only when the viewer is an admin and this
-        // row is a promotable (non-self, non-admin) member.
-        if root.data.can-promote: Rectangle {
-            promote-ta := TouchArea {
+        // "⋯" — opens the per-member admin action menu. One tidy trigger keeps
+        // the row compact and readable however many actions the member has.
+        if root.has-actions: Rectangle {
+            width: 30px;
+            menu-ta := TouchArea {
                 mouse-cursor: pointer;
                 clicked => {
-                    root.promote-admin(root.data.member-id, root.data.name);
+                    root.request-menu(
+                        root.data.member-id,
+                        root.data.name,
+                        root.data.can-promote,
+                        root.data.can-demote,
+                        root.data.can-self-demote,
+                        root.data.can-remove,
+                        self.absolute-position.x + self.width,
+                        self.absolute-position.y + self.height);
                 }
             }
 
-            width: badge.preferred-width + 20px;
-            border-radius: (6px) * Theme.r-scale;
-            background: promote-ta.has-hover ? Palette.mint-surface : transparent;
-            border-width: Theme.border-w;
-            border-color: promote-ta.has-hover ? Palette.mint : Palette.border-2;
-            badge := Text {
-                text: @tr("Make admin");
-                color: promote-ta.has-hover ? Palette.mint : Palette.text-mid;
-                font-size: Theme.fs(10px, 11px);
-                horizontal-alignment: center;
-                vertical-alignment: center;
-            }
-        }
-
-        // "Remove admin" — strip admin from another admin member.
-        if root.data.can-demote: Rectangle {
-            demote-ta := TouchArea {
-                mouse-cursor: pointer;
-                clicked => {
-                    root.demote-admin(root.data.member-id, root.data.name);
+            dot := Rectangle {
+                width: 28px;
+                height: 28px;
+                y: (parent.height - self.height) / 2;
+                border-radius: (6px) * Theme.r-scale;
+                background: menu-ta.has-hover ? Palette.hover : transparent;
+                Text {
+                    text: "⋯";
+                    color: menu-ta.has-hover ? Palette.text-hi : Palette.text-mid;
+                    font-size: (16px) * Theme.fs-scale;
+                    font-family: Theme.font;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
                 }
-            }
-
-            width: demote-badge.preferred-width + 20px;
-            border-radius: (6px) * Theme.r-scale;
-            background: demote-ta.has-hover ? Palette.danger-soft : transparent;
-            border-width: Theme.border-w;
-            border-color: demote-ta.has-hover ? Palette.danger : Palette.border-2;
-            demote-badge := Text {
-                text: @tr("Remove admin");
-                color: demote-ta.has-hover ? Palette.danger : Palette.text-mid;
-                font-size: Theme.fs(10px, 11px);
-                horizontal-alignment: center;
-                vertical-alignment: center;
-            }
-        }
-
-        // "Step down" — the viewer relinquishes their own admin rights.
-        if root.data.can-self-demote: Rectangle {
-            self-demote-ta := TouchArea {
-                mouse-cursor: pointer;
-                clicked => {
-                    root.self-demote-admin(root.data.name);
-                }
-            }
-
-            width: self-demote-badge.preferred-width + 20px;
-            border-radius: (6px) * Theme.r-scale;
-            background: self-demote-ta.has-hover ? Palette.danger-soft : transparent;
-            border-width: Theme.border-w;
-            border-color: self-demote-ta.has-hover ? Palette.danger : Palette.border-2;
-            self-demote-badge := Text {
-                text: @tr("Step down");
-                color: self-demote-ta.has-hover ? Palette.danger : Palette.text-mid;
-                font-size: Theme.fs(10px, 11px);
-                horizontal-alignment: center;
-                vertical-alignment: center;
-            }
-        }
-
-        // "Remove from group" — an admin evicts another member (any role).
-        if root.data.can-remove: Rectangle {
-            remove-ta := TouchArea {
-                mouse-cursor: pointer;
-                clicked => {
-                    root.remove-member(root.data.member-id, root.data.name);
-                }
-            }
-
-            width: remove-badge.preferred-width + 20px;
-            border-radius: (6px) * Theme.r-scale;
-            background: remove-ta.has-hover ? Palette.danger-soft : transparent;
-            border-width: Theme.border-w;
-            border-color: remove-ta.has-hover ? Palette.danger : Palette.border-2;
-            remove-badge := Text {
-                text: @tr("Remove");
-                color: remove-ta.has-hover ? Palette.danger : Palette.text-mid;
-                font-size: Theme.fs(10px, 11px);
-                horizontal-alignment: center;
-                vertical-alignment: center;
             }
         }
     }

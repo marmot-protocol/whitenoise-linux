@@ -1264,7 +1264,7 @@ msgctxt "DarkMatterLinux"
 msgid "Make admin"
 msgstr "管理者にする"
 
-msgctxt "GroupMemberRow"
+msgctxt "GroupMemberMenu"
 msgid "Make admin"
 msgstr "管理者にする"
 
@@ -1736,16 +1736,12 @@ msgctxt "DarkMatterLinux"
 msgid "Remove"
 msgstr "削除"
 
-msgctxt "GroupMemberRow"
-msgid "Remove"
-msgstr "削除"
-
 #, fuzzy
 msgctxt "DarkMatterLinux"
 msgid "Remove admin"
 msgstr "管理者から外す"
 
-msgctxt "GroupMemberRow"
+msgctxt "GroupMemberMenu"
 msgid "Remove admin"
 msgstr "管理者から外す"
 
@@ -1756,6 +1752,10 @@ msgstr ""
 msgctxt "ContactDetail"
 msgid "Remove contact"
 msgstr "連絡先を削除"
+
+msgctxt "GroupMemberMenu"
+msgid "Remove from group"
+msgstr "グループから削除"
 
 msgctxt "GroupSettingsCard"
 msgid "Remove image"
@@ -2096,7 +2096,7 @@ msgctxt "DarkMatterLinux"
 msgid "Step down"
 msgstr "管理者を辞める"
 
-msgctxt "GroupMemberRow"
+msgctxt "GroupMemberMenu"
 msgid "Step down"
 msgstr "管理者を辞める"
 
@@ -2465,138 +2465,3 @@ msgstr "✓ 連絡先に登録済み"
 msgctxt "ContactDetail"
 msgid "✓ VERIFIED"
 msgstr "✓ 確認済み"
-
-#~ msgctxt "ProfilePage"
-#~ msgid "(no nip-05)"
-#~ msgstr "(nip-05 なし)"
-
-#~ msgctxt "SettingsPage"
-#~ msgid "About"
-#~ msgstr "自己紹介"
-
-#~ msgctxt "AppearancePane"
-#~ msgid "Comfortable"
-#~ msgstr "快適"
-
-#, fuzzy
-#~ msgctxt "SettingsPage"
-#~ msgid "Coming soon — per-chat notification rules, sounds, and focus mode."
-#~ msgstr "チャットごとの通知ルール、サウンド、フォーカスモード。"
-
-#~ msgctxt "LoginScreen"
-#~ msgid "Create vault"
-#~ msgstr "保管庫を作成"
-
-#~ msgctxt "SettingsPage"
-#~ msgid "Dark Matter v0.1.0"
-#~ msgstr "Dark Matter v0.1.0"
-
-#~ msgctxt "LoginScreen"
-#~ msgid "Delete vault"
-#~ msgstr "保管庫を削除"
-
-#~ msgctxt "AppearancePane"
-#~ msgid "Density"
-#~ msgstr "密度"
-
-#~ msgctxt "Composer"
-#~ msgid "Editing message  ·  Enter to save"
-#~ msgstr "メッセージを編集中  ·  Enter で保存"
-
-#~ msgctxt "AppearancePane"
-#~ msgid "FUN"
-#~ msgstr "お楽しみ"
-
-#~ msgctxt "ContactDetail"
-#~ msgid "Fetched from relay.damus.io · refreshed 4m ago"
-#~ msgstr "relay.damus.io から取得 · 4分前に更新"
-
-#~ msgctxt "EncryptionBanner"
-#~ msgid "Forward secret"
-#~ msgstr "フォワードシークレット"
-
-#~ msgctxt "SettingsPage"
-#~ msgid "Local cache, message retention, attachments."
-#~ msgstr "ローカルキャッシュ、メッセージ保持、添付ファイル。"
-
-#~ msgctxt "StartNewChatModal"
-#~ msgid "Paste an npub or scan a QR. A key package will be fetched from your relays."
-#~ msgstr "npub を貼り付けるか QR をスキャンしてください。キーパッケージがリレーから取得されます。"
-
-#~ msgctxt "LoginScreen"
-#~ msgid "Paste your nsec"
-#~ msgstr "nsec を貼り付け"
-
-#~ msgctxt "ProfilePage"
-#~ msgid "Picture URL"
-#~ msgstr "画像 URL"
-
-#~ msgctxt "AboutPane"
-#~ msgid "Private material lives in a password-encrypted vault on this device."
-#~ msgstr "秘密情報はこのデバイス上のパスワードで暗号化された保管庫に保存されます。"
-
-#~ msgctxt "ContactDetail"
-#~ msgid "Refresh"
-#~ msgstr "更新"
-
-#~ msgctxt "AppearancePane"
-#~ msgid "Retro mode"
-#~ msgstr "レトロモード"
-
-#~ msgctxt "StoragePane"
-#~ msgid "SECRET VAULT"
-#~ msgstr "秘密保管庫"
-
-#~ msgctxt "AppearancePane"
-#~ msgid "SNES yellow"
-#~ msgstr "SNES イエロー"
-
-#~ msgctxt "LoginScreen"
-#~ msgid "Save to keyring"
-#~ msgstr "キーリングに保存"
-
-#, fuzzy
-#~ msgctxt "GroupMembersPanel"
-#~ msgid "Saving…"
-#~ msgstr "保存中…"
-
-#~ msgctxt "Composer"
-#~ msgid "Send a message  ·  encrypted with"
-#~ msgstr "メッセージを送信  ·  暗号化:"
-
-#~ msgctxt "AdvancedPane"
-#~ msgid "Show debug pane"
-#~ msgstr "デバッグペインを表示"
-
-#~ msgctxt "StartNewChatModal"
-#~ msgid "Start chat"
-#~ msgstr "チャットを開始"
-
-#~ msgid "Today"
-#~ msgstr "今日"
-
-#~ msgctxt "AppearancePane"
-#~ msgid "Turn the whole app into SNES style."
-#~ msgstr "アプリ全体を SNES スタイルにします。"
-
-#~ msgctxt "StoragePane"
-#~ msgid "Vault location"
-#~ msgstr "保管庫の場所"
-
-#~ msgid "Yesterday"
-#~ msgstr "昨日"
-
-#~ msgid "just now"
-#~ msgstr "たった今"
-
-#~ msgctxt "StartNewChatModal"
-#~ msgid "or"
-#~ msgstr "または"
-
-#~ msgctxt "EncryptionBanner"
-#~ msgid "post-compromise secure"
-#~ msgstr "侵害後も安全"
-
-#~ msgctxt "ContactDetail"
-#~ msgid "up to date"
-#~ msgstr "最新"
