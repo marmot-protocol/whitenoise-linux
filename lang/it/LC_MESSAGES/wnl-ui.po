@@ -932,6 +932,10 @@ msgctxt "month"
 msgid "Feb"
 msgstr "Feb"
 
+msgctxt "MessagesArea"
+msgid "Fetching the latest conversation history."
+msgstr "Recupero della cronologia più recente della conversazione."
+
 msgctxt "MessageContextMenu"
 msgid "Forward"
 msgstr "Inoltra"
@@ -1210,18 +1214,6 @@ msgctxt "MessagesArea"
 msgid "Loading messages…"
 msgstr "Caricamento dei messaggi…"
 
-msgctxt "MessagesArea"
-msgid "No messages yet"
-msgstr "Ancora nessun messaggio"
-
-msgctxt "MessagesArea"
-msgid "Fetching the latest conversation history."
-msgstr "Recupero della cronologia più recente della conversazione."
-
-msgctxt "MessagesArea"
-msgid "Say hello to start the conversation."
-msgstr "Saluta per iniziare la conversazione."
-
 #, fuzzy
 msgctxt "ImageViewerModal"
 msgid "Loading…"
@@ -1417,6 +1409,10 @@ msgstr "Nessun pacchetto chiave"
 msgctxt "CommandPalette"
 msgid "No matches"
 msgstr "Nessun risultato"
+
+msgctxt "MessagesArea"
+msgid "No messages yet"
+msgstr "Ancora nessun messaggio"
 
 msgctxt "ForwardPickerModal"
 msgid "No other chats to forward to."
@@ -1779,6 +1775,11 @@ msgctxt "ErrorCopy"
 msgid "Republishing…"
 msgstr "Ripubblicazione…"
 
+#, fuzzy
+msgctxt "NetworkPane"
+msgid "Republishing…"
+msgstr "Ripubblicazione…"
+
 msgctxt "NetworkPane"
 msgid "Restart darkmatter to apply relay changes."
 msgstr "Riavvia darkmatter per applicare le modifiche ai relay."
@@ -1877,12 +1878,12 @@ msgctxt "weekday"
 msgid "Sat"
 msgstr "Sab"
 
-#, fuzzy
-msgctxt "NicknameModal"
+msgctxt "ImageViewerModal"
 msgid "Save"
 msgstr "Salva"
 
-msgctxt "ImageViewerModal"
+#, fuzzy
+msgctxt "NicknameModal"
 msgid "Save"
 msgstr "Salva"
 
@@ -1925,6 +1926,10 @@ msgstr "Salvataggio…"
 msgctxt "ProfilePage"
 msgid "Saving…"
 msgstr "Salvataggio…"
+
+msgctxt "MessagesArea"
+msgid "Say hello to start the conversation."
+msgstr "Saluta per iniziare la conversazione."
 
 msgctxt "ProfilePage"
 msgid "Scan to add me from another device"

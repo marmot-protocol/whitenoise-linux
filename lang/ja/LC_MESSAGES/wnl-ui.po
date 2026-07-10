@@ -929,6 +929,10 @@ msgctxt "month"
 msgid "Feb"
 msgstr "2月"
 
+msgctxt "MessagesArea"
+msgid "Fetching the latest conversation history."
+msgstr "最新の会話履歴を取得しています。"
+
 msgctxt "MessageContextMenu"
 msgid "Forward"
 msgstr "転送"
@@ -1207,18 +1211,6 @@ msgctxt "MessagesArea"
 msgid "Loading messages…"
 msgstr "メッセージを読み込み中…"
 
-msgctxt "MessagesArea"
-msgid "No messages yet"
-msgstr "まだメッセージはありません"
-
-msgctxt "MessagesArea"
-msgid "Fetching the latest conversation history."
-msgstr "最新の会話履歴を取得しています。"
-
-msgctxt "MessagesArea"
-msgid "Say hello to start the conversation."
-msgstr "挨拶して会話を始めましょう。"
-
 #, fuzzy
 msgctxt "ImageViewerModal"
 msgid "Loading…"
@@ -1414,6 +1406,10 @@ msgstr "キーパッケージがありません"
 msgctxt "CommandPalette"
 msgid "No matches"
 msgstr "一致なし"
+
+msgctxt "MessagesArea"
+msgid "No messages yet"
+msgstr "まだメッセージはありません"
 
 msgctxt "ForwardPickerModal"
 msgid "No other chats to forward to."
@@ -1776,6 +1772,11 @@ msgctxt "ErrorCopy"
 msgid "Republishing…"
 msgstr "再公開中…"
 
+#, fuzzy
+msgctxt "NetworkPane"
+msgid "Republishing…"
+msgstr "再公開中…"
+
 msgctxt "NetworkPane"
 msgid "Restart darkmatter to apply relay changes."
 msgstr "リレー変更を適用するには darkmatter を再起動してください。"
@@ -1874,12 +1875,12 @@ msgctxt "weekday"
 msgid "Sat"
 msgstr "土曜日"
 
-#, fuzzy
-msgctxt "NicknameModal"
+msgctxt "ImageViewerModal"
 msgid "Save"
 msgstr "保存"
 
-msgctxt "ImageViewerModal"
+#, fuzzy
+msgctxt "NicknameModal"
 msgid "Save"
 msgstr "保存"
 
@@ -1922,6 +1923,10 @@ msgstr "保存中…"
 msgctxt "ProfilePage"
 msgid "Saving…"
 msgstr "保存中…"
+
+msgctxt "MessagesArea"
+msgid "Say hello to start the conversation."
+msgstr "挨拶して会話を始めましょう。"
 
 msgctxt "ProfilePage"
 msgid "Scan to add me from another device"

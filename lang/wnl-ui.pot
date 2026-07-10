@@ -888,6 +888,10 @@ msgctxt "month"
 msgid "Feb"
 msgstr ""
 
+msgctxt "MessagesArea"
+msgid "Fetching the latest conversation history."
+msgstr ""
+
 msgctxt "MessageContextMenu"
 msgid "Forward"
 msgstr ""
@@ -1160,18 +1164,6 @@ msgctxt "MessagesArea"
 msgid "Loading messages…"
 msgstr ""
 
-msgctxt "MessagesArea"
-msgid "No messages yet"
-msgstr ""
-
-msgctxt "MessagesArea"
-msgid "Fetching the latest conversation history."
-msgstr ""
-
-msgctxt "MessagesArea"
-msgid "Say hello to start the conversation."
-msgstr ""
-
 msgctxt "ImageViewerModal"
 msgid "Loading…"
 msgstr ""
@@ -1355,6 +1347,10 @@ msgstr ""
 
 msgctxt "CommandPalette"
 msgid "No matches"
+msgstr ""
+
+msgctxt "MessagesArea"
+msgid "No messages yet"
 msgstr ""
 
 msgctxt "ForwardPickerModal"
@@ -1699,6 +1695,10 @@ msgid "Republishing…"
 msgstr ""
 
 msgctxt "NetworkPane"
+msgid "Republishing…"
+msgstr ""
+
+msgctxt "NetworkPane"
 msgid "Restart darkmatter to apply relay changes."
 msgstr ""
 
@@ -1794,11 +1794,11 @@ msgctxt "weekday"
 msgid "Sat"
 msgstr ""
 
-msgctxt "NicknameModal"
+msgctxt "ImageViewerModal"
 msgid "Save"
 msgstr ""
 
-msgctxt "ImageViewerModal"
+msgctxt "NicknameModal"
 msgid "Save"
 msgstr ""
 
@@ -1836,6 +1836,10 @@ msgstr ""
 
 msgctxt "ProfilePage"
 msgid "Saving…"
+msgstr ""
+
+msgctxt "MessagesArea"
+msgid "Say hello to start the conversation."
 msgstr ""
 
 msgctxt "ProfilePage"
