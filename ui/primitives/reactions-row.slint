@@ -4,6 +4,7 @@ import {
     Reaction,
     Reactor,
     ProfileSink,
+    QuickReact,
 } from "../tokens.slint";
 
 // A single emoji + count chip. `mine` controls the highlight style.
@@ -199,6 +200,55 @@ export component ReactionChips inherits HorizontalLayout {
     }
 }
 
+// One tappable emoji in the quick-reaction row (the hover toolbar, the context
+// menu, and the Settings editor). Renders the glyph over a hover highlight.
+// `removable` overlays a small ✕ on hover so the same cell doubles as the
+// delete control in the Settings editor, where a tap removes the emoji.
+export component QuickReactCell inherits Rectangle {
+    in property <string> emoji;
+    in property <bool> removable: false;
+    callback clicked();
+
+    width: 28px;
+    height: 28px;
+    border-radius: (8px) * Theme.r-scale;
+    background: touch.has-hover ? Palette.hover : transparent;
+    animate background { duration: 100ms; }
+
+    Text {
+        text: root.emoji;
+        font-size: (15px) * Theme.fs-scale;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+
+    // Delete affordance for the editor: a red ✕ badge that only shows on hover,
+    // so the row reads as emoji until the user reaches for one to remove.
+    if root.removable && touch.has-hover: Rectangle {
+        x: parent.width - self.width + 3px;
+        y: -3px;
+        width: 14px;
+        height: 14px;
+        border-radius: 7px;
+        background: Palette.danger;
+        Text {
+            text: "✕";
+            color: white;
+            font-size: (8px) * Theme.fs-scale;
+            font-weight: 700;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+    }
+
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+
 // One round icon button inside the floating toolbar.
 component ActionButton inherits Rectangle {
     in property <string> glyph;
@@ -231,11 +281,12 @@ component ActionButton inherits Rectangle {
     }
 }
 
-// Floating action toolbar — react / reply / (author-only) edit. Positioned by
-// the row to the side of the bubble and shown on hover. It's a self-contained
-// card so it reads as a hovering control rather than chrome baked into the row.
-// `hovered` is the union of all button hovers so the row can keep it open while
-// the pointer is on a button (which steals hover from the bubble sensor).
+// Floating action toolbar — a one-tap quick-reaction row (👍 ❤️ … + "+" into
+// the full picker), then reply and (author-only) edit. Positioned by the row to
+// the side of the bubble and shown on hover. It's a self-contained card so it
+// reads as a hovering control rather than chrome baked into the row. `hovered`
+// tracks the whole bar (via the ancestor TouchArea) so the row can keep it open
+// while the pointer is on a cell (which steals hover from the bubble sensor).
 export component HoverActions inherits Rectangle {
     in property <string> message-id;
     in property <string> reply-preview-text;
@@ -244,7 +295,11 @@ export component HoverActions inherits Rectangle {
     callback request-picker(string, length, length);
     callback request-reply(string, string, string);
     callback request-edit(string, string);
-    out property <bool> hovered: plus-btn.hovered || reply-btn.hovered || edit-btn.hovered;
+    // A single ancestor TouchArea reports the hover for the whole bar (it stays
+    // hovered while the pointer is over any nested cell/button, so the row can
+    // keep the toolbar open), and nested cell TouchAreas still win their own
+    // clicks — the wrapping pattern the emoji picker and context menu rely on.
+    out property <bool> hovered: bar-touch.has-hover;
 
     width: bar.preferred-width;
     height: bar.preferred-height;
@@ -256,32 +311,54 @@ export component HoverActions inherits Rectangle {
     drop-shadow-offset-y: Theme.hard-shadow ? 2px : 2px;
     drop-shadow-blur: Theme.hard-shadow ? 0px : 10px;
 
-    bar := HorizontalLayout {
-        padding: 3px;
-        spacing: 2px;
-        plus-btn := ActionButton {
-            glyph: "☺";
-            clicked => {
-                root.request-picker(
-                    root.message-id,
-                    self.absolute-position.x,
-                    self.absolute-position.y + self.height,
-                );
+    bar-touch := TouchArea {
+        bar := HorizontalLayout {
+            padding: 3px;
+            spacing: 2px;
+            // One-tap quick reactions, then a "+" that opens the full picker.
+            for e in QuickReact.list: QuickReactCell {
+                emoji: e;
+                clicked => {
+                    QuickReact.react(root.message-id, e);
+                }
             }
-        }
 
-        reply-btn := ActionButton {
-            glyph: "↩";
-            clicked => {
-                root.request-reply(root.message-id, root.reply-preview-text, root.reply-author);
+            plus-btn := ActionButton {
+                glyph: "+";
+                clicked => {
+                    root.request-picker(
+                        root.message-id,
+                        self.absolute-position.x,
+                        self.absolute-position.y + self.height,
+                    );
+                }
             }
-        }
 
-        edit-btn := ActionButton {
-            glyph: "✎";
-            shown: root.can-edit;
-            clicked => {
-                root.request-edit(root.message-id, root.reply-preview-text);
+            // Divider between the reactions and the message actions.
+            Rectangle {
+                width: 7px;
+                Rectangle {
+                    x: 3px;
+                    y: 6px;
+                    width: 1px;
+                    height: parent.height - 12px;
+                    background: Palette.border-2;
+                }
+            }
+
+            reply-btn := ActionButton {
+                glyph: "↩";
+                clicked => {
+                    root.request-reply(root.message-id, root.reply-preview-text, root.reply-author);
+                }
+            }
+
+            edit-btn := ActionButton {
+                glyph: "✎";
+                shown: root.can-edit;
+                clicked => {
+                    root.request-edit(root.message-id, root.reply-preview-text);
+                }
             }
         }
     }

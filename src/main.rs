@@ -139,6 +139,7 @@ fn main() -> Result<(), slint::PlatformError> {
     apply_theme_mode(&ui, &theme_mode);
     set_accent_index(&ui, accent_color_idx(accent_color));
     ui.set_outgoing_on_right(initial_settings.outgoing_on_right);
+    push_quick_reactions(&ui, &initial_settings.quick_reactions);
     // Drives ⌘-vs-Ctrl shortcut hints (command palette badge, etc.).
     ui.set_is_macos(cfg!(target_os = "macos"));
     // Seed the in-memory per-account "delete for me" sets so locally-hidden

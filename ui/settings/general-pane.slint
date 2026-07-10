@@ -1,4 +1,5 @@
-import { Palette, Theme } from "../tokens.slint";
+import { Palette, Theme, QuickReact } from "../tokens.slint";
+import { QuickReactCell } from "../primitives/reactions-row.slint";
 import { SettingsIcon } from "../icons/settings-icon.slint";
 import { ChevronRightIcon } from "../icons/chevron-right-icon.slint";
 import { DetailPage } from "../shells/detail-page.slint";
@@ -141,6 +142,51 @@ export component GeneralPane inherits DetailPage {
                     fg: root.date-format == "iso" && Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.text-hi;
                     clicked => {
                         root.date-format-selected("iso");
+                    }
+                }
+            }
+        }
+    }
+
+    Section {
+        label: @tr("QUICK REACTIONS");
+        GroupCard {
+            KVRow {
+                row-height: 60px;
+                label: @tr("One-tap reactions");
+                sublabel: @tr("Shown on the message toolbar and menu. Tap one to remove it.");
+                show-divider: true;
+                HorizontalLayout {
+                    spacing: 1px;
+                    alignment: end;
+                    for e[i] in QuickReact.list: QuickReactCell {
+                        emoji: e;
+                        removable: true;
+                        clicked => {
+                            QuickReact.remove(i);
+                        }
+                    }
+
+                    add-cell := QuickReactCell {
+                        emoji: "+";
+                        clicked => {
+                            QuickReact.add-clicked(
+                                self.absolute-position.x,
+                                self.absolute-position.y + self.height,
+                            );
+                        }
+                    }
+                }
+            }
+
+            KVRow {
+                row-height: 48px;
+                label: @tr("Restore the default reactions");
+                show-divider: false;
+                MicroButton {
+                    label: @tr("Reset");
+                    clicked => {
+                        QuickReact.reset();
                     }
                 }
             }

@@ -39,6 +39,12 @@ pub struct Settings {
     /// Local-only — never published to relays.
     #[serde(default)]
     pub nicknames: BTreeMap<String, String>,
+    /// The emoji shown in the one-tap quick-reaction row on the message hover
+    /// toolbar and the right-click menu; a trailing "+" always opens the full
+    /// picker. Ordered as the user arranged them, editable in Settings. Local-
+    /// only, like nicknames — never published to relays.
+    #[serde(default = "default_quick_reactions")]
+    pub quick_reactions: Vec<String>,
     /// Fire a desktop notification for incoming messages in chats you aren't
     /// currently viewing. Master switch for the two below.
     #[serde(default = "default_true")]
@@ -162,6 +168,16 @@ fn default_date_format() -> String {
 
 fn default_true() -> bool {
     true
+}
+
+/// The default quick-reaction set: the six reactions Telegram, WhatsApp,
+/// Signal, and iMessage all seed their one-tap row with. The Settings "Reset"
+/// button restores exactly this list (see `wire_quick_reactions`).
+pub fn default_quick_reactions() -> Vec<String> {
+    ["👍", "❤️", "😂", "😮", "😢", "🙏"]
+        .into_iter()
+        .map(str::to_string)
+        .collect()
 }
 
 impl Default for Settings {
