@@ -879,6 +879,9 @@ pub(crate) fn apply_reaction_overlay(
                         emoji: s(emoji),
                         count: 1,
                         mine: true,
+                        // Names resolve on the next real rebuild; the optimistic
+                        // window shows the count without the tooltip list.
+                        reactors: Default::default(),
                     });
                 }
             }
@@ -952,6 +955,9 @@ pub(crate) fn apply_reaction_to_model_row(
                         emoji: s(emoji),
                         count: 1,
                         mine: true,
+                        // Names resolve on the next real rebuild; the optimistic
+                        // window shows the count without the tooltip list.
+                        reactors: Default::default(),
                     });
                 }
             }
@@ -1117,7 +1123,7 @@ pub(crate) fn build_one_message_row(
         return system_chat_message(record, &ev, backend);
     }
     maybe_autoload_album(group_hex, record);
-    let mut reactions = aggregate_reactions(all_records, my_id);
+    let mut reactions = aggregate_reactions(all_records, my_id, backend);
     apply_reaction_overlay(&mut reactions, group_hex, overlay);
     let r = reactions
         .get(&record.message_id_hex)
@@ -1319,7 +1325,7 @@ pub(crate) fn rebuild_chat_messages_from(
     let my_id = backend.account().account_id_hex.clone();
     let my_label = my_avatar_label(backend, &my_id);
     let t_label = t0.elapsed();
-    let mut reactions = aggregate_reactions(msgs, &my_id);
+    let mut reactions = aggregate_reactions(msgs, &my_id, backend);
     apply_reaction_overlay(&mut reactions, group_hex, pending);
     let mut edits = aggregate_edits(msgs);
     apply_edit_overlay(&mut edits, group_hex, pending);
@@ -1380,10 +1386,14 @@ pub(crate) fn rebuild_chat_messages_from(
 pub(crate) fn aggregate_reactions(
     records: &[AppMessageRecord],
     my_account_id_hex: &str,
+    backend: &Backend,
 ) -> std::collections::HashMap<String, Vec<Reaction>> {
-    use std::collections::HashMap;
-    // target_id → (emoji → (count, mine))
-    let mut by_target: HashMap<String, HashMap<String, (i32, bool)>> = HashMap::new();
+    use std::collections::{HashMap, HashSet};
+    // target_id → (emoji → (mine, ordered unique reactor hexes)). A person is
+    // counted once per emoji, so the chip count matches the reactor list even if
+    // two kind-7 with the same emoji slipped through.
+    let mut by_target: HashMap<String, HashMap<String, (bool, Vec<String>)>> = HashMap::new();
+    let mut seen: HashSet<(String, String, String)> = HashSet::new();
     for r in records {
         if r.kind != 7 {
             continue;
@@ -1401,24 +1411,28 @@ pub(crate) fn aggregate_reactions(
         if emoji.is_empty() || emoji == "-" {
             continue;
         }
+        if !seen.insert((target.clone(), emoji.clone(), r.sender.to_ascii_lowercase())) {
+            continue;
+        }
         let mine = r.sender.eq_ignore_ascii_case(my_account_id_hex);
         let entry = by_target
             .entry(target)
             .or_default()
             .entry(emoji)
-            .or_insert((0, false));
-        entry.0 += 1;
-        entry.1 = entry.1 || mine;
+            .or_insert((false, Vec::new()));
+        entry.0 = entry.0 || mine;
+        entry.1.push(r.sender.clone());
     }
     by_target
         .into_iter()
         .map(|(target, emojis)| {
             let mut list: Vec<Reaction> = emojis
                 .into_iter()
-                .map(|(emoji, (count, mine))| Reaction {
+                .map(|(emoji, (mine, senders))| Reaction {
                     emoji: s(&emoji),
-                    count,
+                    count: senders.len() as i32,
                     mine,
+                    reactors: build_reactors(&senders, my_account_id_hex, backend),
                 })
                 .collect();
             // Most-used first; deterministic tiebreak by emoji.
@@ -1430,6 +1444,45 @@ pub(crate) fn aggregate_reactions(
             (target, list)
         })
         .collect()
+}
+
+/// Resolve reactor account hexes into `Reactor` mention chips for the chip's
+/// hover popover: yourself first, the rest alphabetical, each carrying the same
+/// name and shaded avatar gradient a real @mention of that account would, plus
+/// the hex `ProfileSink.open` needs to show the profile.
+fn build_reactors(
+    senders: &[String],
+    my_account_id_hex: &str,
+    backend: &Backend,
+) -> ModelRc<Reactor> {
+    let mut people: Vec<(bool, String, String)> = senders
+        .iter()
+        .map(|hex| {
+            (
+                hex.eq_ignore_ascii_case(my_account_id_hex),
+                backend.account_display_name(hex),
+                hex.clone(),
+            )
+        })
+        .collect();
+    people.sort_by(|a, b| match (a.0, b.0) {
+        (true, false) => std::cmp::Ordering::Less,
+        (false, true) => std::cmp::Ordering::Greater,
+        _ => a.1.cmp(&b.1),
+    });
+    let rows: Vec<Reactor> = people
+        .into_iter()
+        .map(|(_, name, hex)| {
+            let (a, b, _) = avatar_for(&name);
+            Reactor {
+                name: s(&name),
+                id: s(&hex),
+                a: chip_shade(a),
+                b: chip_shade(b),
+            }
+        })
+        .collect();
+    ModelRc::new(VecModel::from(rows))
 }
 
 /// Resolved edit state for one message: the text to display (latest edit's

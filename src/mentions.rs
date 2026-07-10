@@ -152,7 +152,7 @@ fn rel_luminance(c: Color) -> f32 {
 /// so the account's hue survives — only the lightness drops. The avatar
 /// gradient's light end (`avatar_for` hue_a starts at 0x808080) is unreadable
 /// under white glyphs without this.
-fn chip_shade(c: Color) -> Color {
+pub(crate) fn chip_shade(c: Color) -> Color {
     let (mut r, mut g, mut b) = (c.red() as f32, c.green() as f32, c.blue() as f32);
     let mut guard = 0;
     while rel_luminance(Color::from_rgb_u8(r as u8, g as u8, b as u8)) > 0.175 && guard < 32 {

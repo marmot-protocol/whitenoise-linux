@@ -553,7 +553,7 @@ pub(crate) fn refresh_chats_from(
         } else {
             &[]
         };
-        let reactions = aggregate_reactions(msgs, &my_id);
+        let reactions = aggregate_reactions(msgs, &my_id, backend);
         let edits = aggregate_edits(msgs);
         let deletes = aggregate_deletes(msgs);
         let profiles = build_sender_profiles(backend, msgs, &my_id);

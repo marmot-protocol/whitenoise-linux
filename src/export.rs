@@ -116,7 +116,7 @@ impl Transcript {
 pub(crate) fn build_transcript(backend: &Backend, group_hex: &str, chat_name: &str) -> Transcript {
     let records = backend.messages(group_hex, None).unwrap_or_default();
     let my_id = backend.account().account_id_hex;
-    let reactions = aggregate_reactions(&records, &my_id);
+    let reactions = aggregate_reactions(&records, &my_id, backend);
     let edits = aggregate_edits(&records);
     let deletes = aggregate_deletes(&records);
 
