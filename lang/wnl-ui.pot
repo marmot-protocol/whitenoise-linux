@@ -88,6 +88,10 @@ msgctxt "DebugPane"
 msgid "(no snapshot yet — click Refresh)"
 msgstr ""
 
+msgctxt "DebugJsonModal"
+msgid "(nothing to show)"
+msgstr ""
+
 msgctxt "KeysPage"
 msgid "(other Dark Matter instances signed into this identity)"
 msgstr ""
@@ -200,10 +204,6 @@ msgstr ""
 
 msgctxt "Composer"
 msgid "Accept the request to start messaging"
-msgstr ""
-
-msgctxt "DebugPane"
-msgid "Account / key packages / groups"
 msgstr ""
 
 msgctxt "AccountSwitcherModal"
@@ -520,6 +520,10 @@ msgctxt "AccountSwitcherModal"
 msgid "Close"
 msgstr ""
 
+msgctxt "DebugJsonModal"
+msgid "Close"
+msgstr ""
+
 msgctxt "command palette footer"
 msgid "Close"
 msgstr ""
@@ -614,6 +618,10 @@ msgstr ""
 
 msgctxt "WalletAddressRow"
 msgid "Copy"
+msgstr ""
+
+msgctxt "DebugJsonModal"
+msgid "Copy JSON"
 msgstr ""
 
 msgctxt "DebugPane"
@@ -1102,6 +1110,10 @@ msgctxt "month"
 msgid "Jun"
 msgstr ""
 
+msgctxt "DebugPane"
+msgid "KEY PACKAGES"
+msgstr ""
+
 msgctxt "KeysPage"
 msgid "KEY PACKAGES"
 msgstr ""
@@ -1112,6 +1124,10 @@ msgstr ""
 
 msgctxt "ContactDetail"
 msgid "Key package"
+msgstr ""
+
+msgctxt "DebugPane"
+msgid "Key packages"
 msgstr ""
 
 msgctxt "LeftRail"
@@ -1192,6 +1208,10 @@ msgstr ""
 
 msgctxt "MessagesArea"
 msgid "Loading messages…"
+msgstr ""
+
+msgctxt "DebugJsonModal"
+msgid "Loading…"
 msgstr ""
 
 msgctxt "ImageViewerModal"
@@ -1624,6 +1644,10 @@ msgctxt "DarkMatterTray"
 msgid "Quit"
 msgstr ""
 
+msgctxt "DebugPane"
+msgid "RAW EVENTS"
+msgstr ""
+
 msgctxt "ChatListPanel"
 msgid "RELAYS"
 msgstr ""
@@ -1634,6 +1658,10 @@ msgstr ""
 
 msgctxt "StatusBar"
 msgid "RELAYS"
+msgstr ""
+
+msgctxt "DebugPane"
+msgid "Raw events"
 msgstr ""
 
 msgctxt "NetworkPane"
@@ -2060,6 +2088,14 @@ msgctxt "GetStartedScreen"
 msgid "Start your first chat"
 msgstr ""
 
+msgctxt "DebugPane"
+msgid "State"
+msgstr ""
+
+msgctxt "DebugPane"
+msgid "State / raw events / key packages"
+msgstr ""
+
 msgctxt "DarkMatterLinux"
 msgid "Step down"
 msgstr ""
@@ -2267,6 +2303,14 @@ msgstr ""
 
 msgctxt "RevealNsecModal"
 msgid "Verifying…"
+msgstr ""
+
+msgctxt "ContactDetail"
+msgid "View"
+msgstr ""
+
+msgctxt "MessageContextMenu"
+msgid "View raw event"
 msgstr ""
 
 msgctxt "AboutPane"

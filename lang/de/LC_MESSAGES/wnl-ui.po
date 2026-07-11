@@ -87,6 +87,10 @@ msgctxt "DebugPane"
 msgid "(no snapshot yet — click Refresh)"
 msgstr "(noch kein Snapshot — Aktualisieren klicken)"
 
+msgctxt "DebugJsonModal"
+msgid "(nothing to show)"
+msgstr ""
+
 msgctxt "KeysPage"
 msgid "(other Dark Matter instances signed into this identity)"
 msgstr "(andere Dark Matter-Instanzen mit dieser Identität angemeldet)"
@@ -203,10 +207,6 @@ msgstr "Annehmen"
 msgctxt "Composer"
 msgid "Accept the request to start messaging"
 msgstr "Anfrage annehmen, um Nachrichten zu senden"
-
-msgctxt "DebugPane"
-msgid "Account / key packages / groups"
-msgstr "Konto / Schlüsselpakete / Gruppen"
 
 msgctxt "AccountSwitcherModal"
 msgid "Accounts"
@@ -545,6 +545,11 @@ msgctxt "AccountSwitcherModal"
 msgid "Close"
 msgstr "Schließen"
 
+#, fuzzy
+msgctxt "DebugJsonModal"
+msgid "Close"
+msgstr "Schließen"
+
 msgctxt "command palette footer"
 msgid "Close"
 msgstr "Schließen"
@@ -648,6 +653,11 @@ msgstr "Kopieren"
 msgctxt "WalletAddressRow"
 msgid "Copy"
 msgstr "Kopieren"
+
+#, fuzzy
+msgctxt "DebugJsonModal"
+msgid "Copy JSON"
+msgstr "JSON kopieren"
 
 msgctxt "DebugPane"
 msgid "Copy JSON"
@@ -1153,6 +1163,11 @@ msgctxt "month"
 msgid "Jun"
 msgstr "Jun"
 
+#, fuzzy
+msgctxt "DebugPane"
+msgid "KEY PACKAGES"
+msgstr "SCHLÜSSELPAKETE"
+
 msgctxt "KeysPage"
 msgid "KEY PACKAGES"
 msgstr "SCHLÜSSELPAKETE"
@@ -1163,6 +1178,11 @@ msgstr "SCHLÜSSEL & BACKUPS"
 
 msgctxt "ContactDetail"
 msgid "Key package"
+msgstr "Schlüsselpaket"
+
+#, fuzzy
+msgctxt "DebugPane"
+msgid "Key packages"
 msgstr "Schlüsselpaket"
 
 msgctxt "LeftRail"
@@ -1245,6 +1265,11 @@ msgstr "Frühere Nachrichten laden"
 msgctxt "MessagesArea"
 msgid "Loading messages…"
 msgstr "Nachrichten werden geladen…"
+
+#, fuzzy
+msgctxt "DebugJsonModal"
+msgid "Loading…"
+msgstr "Speichere…"
 
 #, fuzzy
 msgctxt "ImageViewerModal"
@@ -1705,6 +1730,10 @@ msgctxt "DarkMatterTray"
 msgid "Quit"
 msgstr "Beenden"
 
+msgctxt "DebugPane"
+msgid "RAW EVENTS"
+msgstr ""
+
 #, fuzzy
 msgctxt "ChatListPanel"
 msgid "RELAYS"
@@ -1717,6 +1746,10 @@ msgstr "RELAYS"
 msgctxt "StatusBar"
 msgid "RELAYS"
 msgstr "RELAYS"
+
+msgctxt "DebugPane"
+msgid "Raw events"
+msgstr ""
 
 msgctxt "NetworkPane"
 msgid "Re-broadcasts your relay lists to every relay above. Use this if peers can't find you."
@@ -2161,6 +2194,16 @@ msgid "Start your first chat"
 msgstr "Neuen Chat starten"
 
 #, fuzzy
+msgctxt "DebugPane"
+msgid "State"
+msgstr "Rotieren"
+
+#, fuzzy
+msgctxt "DebugPane"
+msgid "State / raw events / key packages"
+msgstr "Schlüsselpaket rotieren?"
+
+#, fuzzy
 msgctxt "DarkMatterLinux"
 msgid "Step down"
 msgstr "Admin-Rolle abgeben"
@@ -2378,6 +2421,14 @@ msgstr "SICHTBAR FÜR ALLE CHAT-PARTNER"
 msgctxt "RevealNsecModal"
 msgid "Verifying…"
 msgstr "entschlüssele…"
+
+msgctxt "ContactDetail"
+msgid "View"
+msgstr ""
+
+msgctxt "MessageContextMenu"
+msgid "View raw event"
+msgstr ""
 
 msgctxt "AboutPane"
 msgid "WHAT IT IS"

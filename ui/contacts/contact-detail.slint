@@ -23,11 +23,15 @@ export component ContactDetail inherits DetailPage {
     callback edit-nickname();
     callback copy-npub();
     callback refresh-key-package();
+    callback view-key-packages();
     callback show-qr();
     callback start-chat();
     callback open-shared-group(string);
     in property <Contact> contact;
     in property <[SharedGroup]> shared-groups;
+    // Developer mode: adds a "View" button that dumps this contact's key
+    // package as raw JSON.
+    in property <bool> debug-enabled: false;
 
     PageHeader {
         title: @tr("Contact");
@@ -177,6 +181,13 @@ export component ContactDetail inherits DetailPage {
                 label: @tr("Key package");
                 sublabel: root.contact.kp-detail;
                 value: root.contact.kp-status;
+                // Developer mode: dump this contact's key package as raw JSON.
+                if root.debug-enabled: MicroButton {
+                    label: @tr("View");
+                    clicked => {
+                        root.view-key-packages();
+                    }
+                }
                 // The status refreshes on its own when the page opens; the
                 // Retry button only appears if that fetch found nothing.
                 if root.contact.kp-can-retry: MicroButton {

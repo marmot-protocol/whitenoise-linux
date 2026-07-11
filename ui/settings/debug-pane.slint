@@ -7,27 +7,56 @@ import { Button } from "../primitives/button.slint";
 
 export component DebugPane inherits DetailPage {
     in property <string> dump;
-    callback refresh-clicked;
+    // Which view is loaded into the dump area: 0 = state snapshot,
+    // 1 = raw events, 2 = key packages. Rust reads it back in `load`.
+    property <int> mode: 0;
+    // Fires with the mode to (re)load; Rust collects the matching dump on a
+    // worker thread and sets `dump`.
+    callback load(int);
     callback copy-clicked;
 
     PageHeader {
         title: @tr("Debug");
-        caption: @tr("Account / key packages / groups");
+        caption: @tr("State / raw events / key packages");
         TerminalIcon {
             stroke: Palette.mint;
         }
     }
 
     Section {
-        label: @tr("STATE SNAPSHOT");
+        label: root.mode == 1 ? @tr("RAW EVENTS") : root.mode == 2 ? @tr("KEY PACKAGES") : @tr("STATE SNAPSHOT");
 
         HorizontalLayout {
             spacing: 8px;
             alignment: start;
             Button {
+                label: @tr("State");
+                clicked => {
+                    root.mode = 0;
+                    root.load(0);
+                }
+            }
+
+            Button {
+                label: @tr("Raw events");
+                clicked => {
+                    root.mode = 1;
+                    root.load(1);
+                }
+            }
+
+            Button {
+                label: @tr("Key packages");
+                clicked => {
+                    root.mode = 2;
+                    root.load(2);
+                }
+            }
+
+            Button {
                 label: @tr("Refresh");
                 clicked => {
-                    root.refresh-clicked();
+                    root.load(root.mode);
                 }
             }
 

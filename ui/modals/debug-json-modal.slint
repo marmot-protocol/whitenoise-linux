@@ -1,0 +1,50 @@
+import { Palette, Theme } from "../tokens.slint";
+import { Modal } from "modal.slint";
+
+// Reusable read-only JSON viewer for developer/debug dumps (a message's raw
+// event, a contact's key packages, …). The opener fills `title`/`subtitle`
+// and pushes the pretty-printed JSON into `json`; `busy` shows a placeholder
+// while the (blocking) collector runs on a worker. "Copy JSON" fires
+// `copy-clicked`; "Close" dismisses (Modal's secondary always does).
+export component DebugJsonModal inherits Modal {
+    in property <string> json;
+    in property <bool> busy: false;
+    callback copy-clicked;
+
+    card-width: 460px;
+    card-height: 520px;
+    primary-label: @tr("Copy JSON");
+    secondary-label: @tr("Close");
+    primary => {
+        root.copy-clicked();
+    }
+
+    Rectangle {
+        vertical-stretch: 1;
+        border-width: Theme.border-w;
+        border-color: Palette.border-2;
+        border-radius: (8px) * Theme.r-scale;
+        background: Palette.panel-2;
+        clip: true;
+
+        Flickable {
+            x: 0;
+            y: 0;
+            width: parent.width;
+            height: parent.height;
+            viewport-width: parent.width;
+            viewport-height: body.preferred-height + 24px;
+
+            body := Text {
+                x: 12px;
+                y: 12px;
+                width: parent.width - 24px;
+                text: root.busy ? @tr("Loading…") : (root.json != "" ? root.json : @tr("(nothing to show)"));
+                color: Palette.text-hi;
+                font-family: Theme.font;
+                font-size: (11px) * Theme.fs-scale;
+                wrap: word-wrap;
+            }
+        }
+    }
+}

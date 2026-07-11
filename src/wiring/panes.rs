@@ -982,21 +982,26 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_debug_refresh_clicked({
+    ui.on_debug_load({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
-        move || {
+        // mode: 0 = state snapshot, 1 = raw events, 2 = key packages.
+        move |mode| {
             // Liveness check only — the dump lands via the completion below.
             if weak.upgrade().is_none() {
                 return;
             }
-            // `debug_snapshot` does a `block_on` per group for MLS state —
-            // collect it on a worker.
+            // Every collector reads group/message/MLS snapshots that `block_on`
+            // the marmot runtime — gather them on a worker, never the UI thread.
             let b = backend_cell.lock().unwrap().clone();
             let weak = weak.clone();
             std::thread::spawn(move || {
                 let snap = b
-                    .map(|b| b.debug_snapshot())
+                    .map(|b| match mode {
+                        1 => b.debug_raw_events(),
+                        2 => b.debug_key_packages(),
+                        _ => b.debug_snapshot(),
+                    })
                     .unwrap_or_else(|| "(backend not booted)".to_string());
                 let _ = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak.upgrade() else { return };

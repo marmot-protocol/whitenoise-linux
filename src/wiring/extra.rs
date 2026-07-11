@@ -617,6 +617,65 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
+    // ─── Developer mode: "View raw event" ──────────────────────────────
+    // Opens the shared JSON viewer with this message's raw event. Collecting
+    // it reads the group's window snapshot on the marmot runtime — worker
+    // thread only, per the no-UI-thread-blocking rule.
+    ui.on_view_raw_event({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let group_ids = group_ids.clone();
+        move |message_id| {
+            let Some(ui) = weak.upgrade() else { return };
+            let idx = ui.get_active_chat() as usize;
+            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
+                return;
+            };
+            let Some(backend) = backend_cell.lock().unwrap().clone() else {
+                return;
+            };
+            ui.set_debug_view_title(s("Raw event"));
+            ui.set_debug_view_subtitle(s(&shorten_npub(message_id.as_str())));
+            ui.set_debug_view_json(s(""));
+            ui.set_debug_view_busy(true);
+            ui.set_debug_view_open(true);
+            let weak = ui.as_weak();
+            let message_id = message_id.to_string();
+            backend.tokio_handle().spawn(async move {
+                let json = backend.debug_message_event(&group_hex, &message_id);
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    ui.set_debug_view_busy(false);
+                    ui.set_debug_view_json(json.into());
+                });
+            });
+        }
+    });
+
+    // Copy whatever the debug JSON viewer is currently showing.
+    ui.on_debug_view_copy({
+        let weak = ui.as_weak();
+        move || {
+            let Some(ui) = weak.upgrade() else { return };
+            let text = ui.get_debug_view_json();
+            if text.is_empty() {
+                set_clipboard_feedback(&ui, s("Nothing to copy."), false);
+                return;
+            }
+            let weak = weak.clone();
+            copy_to_clipboard_async(text.to_string(), move |result| {
+                let Some(ui) = weak.upgrade() else { return };
+                match result {
+                    Ok(()) => set_clipboard_feedback(&ui, s("JSON copied"), false),
+                    Err(e) => {
+                        tracing::warn!(target: "clipboard", "copy debug json failed: {e}");
+                        set_clipboard_feedback(&ui, s("Couldn't access clipboard."), true);
+                    }
+                }
+            });
+        }
+    });
+
     ui.on_dismiss_image_viewer({
         let weak = ui.as_weak();
         move || {

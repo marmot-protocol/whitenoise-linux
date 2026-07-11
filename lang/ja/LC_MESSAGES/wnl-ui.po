@@ -87,6 +87,10 @@ msgctxt "DebugPane"
 msgid "(no snapshot yet — click Refresh)"
 msgstr "(スナップショットなし — 更新をクリック)"
 
+msgctxt "DebugJsonModal"
+msgid "(nothing to show)"
+msgstr ""
+
 msgctxt "KeysPage"
 msgid "(other Dark Matter instances signed into this identity)"
 msgstr "(この ID でサインインしている他の Dark Matter インスタンス)"
@@ -200,10 +204,6 @@ msgstr "承認"
 msgctxt "Composer"
 msgid "Accept the request to start messaging"
 msgstr "リクエストを承認するとメッセージを送信できます"
-
-msgctxt "DebugPane"
-msgid "Account / key packages / groups"
-msgstr "アカウント / キーパッケージ / グループ"
 
 msgctxt "AccountSwitcherModal"
 msgid "Accounts"
@@ -542,6 +542,11 @@ msgctxt "AccountSwitcherModal"
 msgid "Close"
 msgstr "閉じる"
 
+#, fuzzy
+msgctxt "DebugJsonModal"
+msgid "Close"
+msgstr "閉じる"
+
 msgctxt "command palette footer"
 msgid "Close"
 msgstr "閉じる"
@@ -645,6 +650,11 @@ msgstr "コピー"
 msgctxt "WalletAddressRow"
 msgid "Copy"
 msgstr "コピー"
+
+#, fuzzy
+msgctxt "DebugJsonModal"
+msgid "Copy JSON"
+msgstr "JSON をコピー"
 
 msgctxt "DebugPane"
 msgid "Copy JSON"
@@ -1150,6 +1160,11 @@ msgctxt "month"
 msgid "Jun"
 msgstr "6月"
 
+#, fuzzy
+msgctxt "DebugPane"
+msgid "KEY PACKAGES"
+msgstr "キーパッケージ"
+
 msgctxt "KeysPage"
 msgid "KEY PACKAGES"
 msgstr "キーパッケージ"
@@ -1160,6 +1175,11 @@ msgstr "鍵とバックアップ"
 
 msgctxt "ContactDetail"
 msgid "Key package"
+msgstr "キーパッケージ"
+
+#, fuzzy
+msgctxt "DebugPane"
+msgid "Key packages"
 msgstr "キーパッケージ"
 
 msgctxt "LeftRail"
@@ -1242,6 +1262,11 @@ msgstr "以前のメッセージを読み込む"
 msgctxt "MessagesArea"
 msgid "Loading messages…"
 msgstr "メッセージを読み込み中…"
+
+#, fuzzy
+msgctxt "DebugJsonModal"
+msgid "Loading…"
+msgstr "保存中…"
 
 #, fuzzy
 msgctxt "ImageViewerModal"
@@ -1702,6 +1727,10 @@ msgctxt "DarkMatterTray"
 msgid "Quit"
 msgstr "終了"
 
+msgctxt "DebugPane"
+msgid "RAW EVENTS"
+msgstr ""
+
 #, fuzzy
 msgctxt "ChatListPanel"
 msgid "RELAYS"
@@ -1714,6 +1743,10 @@ msgstr "リレー"
 msgctxt "StatusBar"
 msgid "RELAYS"
 msgstr "リレー"
+
+msgctxt "DebugPane"
+msgid "Raw events"
+msgstr ""
 
 msgctxt "NetworkPane"
 msgid "Re-broadcasts your relay lists to every relay above. Use this if peers can't find you."
@@ -2158,6 +2191,16 @@ msgid "Start your first chat"
 msgstr "新しいチャットを開始"
 
 #, fuzzy
+msgctxt "DebugPane"
+msgid "State"
+msgstr "ローテーション"
+
+#, fuzzy
+msgctxt "DebugPane"
+msgid "State / raw events / key packages"
+msgstr "キーパッケージをローテーションしますか？"
+
+#, fuzzy
 msgctxt "DarkMatterLinux"
 msgid "Step down"
 msgstr "管理者を辞める"
@@ -2375,6 +2418,14 @@ msgstr "チャット相手全員に公開"
 msgctxt "RevealNsecModal"
 msgid "Verifying…"
 msgstr "復号中…"
+
+msgctxt "ContactDetail"
+msgid "View"
+msgstr ""
+
+msgctxt "MessageContextMenu"
+msgid "View raw event"
+msgstr ""
 
 msgctxt "AboutPane"
 msgid "WHAT IT IS"

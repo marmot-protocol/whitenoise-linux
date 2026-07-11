@@ -714,6 +714,112 @@ impl Backend {
         serde_json::to_string_pretty(&dump).unwrap_or_else(|e| format!("serialize error: {e}"))
     }
 
+    /// Developer/debug dump of the raw message events for every visible +
+    /// archived group. Each entry is the inner Marmot app event as marmot
+    /// projects it — kind, tags, sender, plaintext, timestamps — the closest
+    /// thing to the on-the-wire event this client keeps. Capped per group so a
+    /// large history can't produce an unbounded string. Reads snapshots only
+    /// (no relay round-trip), but still blocking: call from a worker thread.
+    pub fn debug_raw_events(&self) -> String {
+        use serde_json::json;
+        const PER_GROUP_LIMIT: usize = 200;
+        let mut groups = self.chats().unwrap_or_default();
+        groups.extend(self.archived_chats().unwrap_or_default());
+        let dumped: Vec<_> = groups
+            .iter()
+            .map(|g| {
+                let events = self
+                    .messages(&g.group_id_hex, Some(PER_GROUP_LIMIT))
+                    .unwrap_or_default();
+                json!({
+                    "group_id_hex": g.group_id_hex,
+                    "name": g.profile.name,
+                    "archived": g.archived,
+                    "event_count": events.len(),
+                    "events": events,
+                })
+            })
+            .collect();
+        let dump = json!({
+            "per_group_limit": PER_GROUP_LIMIT,
+            "groups": dumped,
+        });
+        serde_json::to_string_pretty(&dump).unwrap_or_else(|e| format!("serialize error: {e}"))
+    }
+
+    /// Developer/debug view of the active account's key packages: the local
+    /// on-disk records plus the raw key-package JSON files next to the account
+    /// home. Local-only (no relay round-trip), so it's cheap to call and safe
+    /// to show whatever the network state is.
+    pub fn debug_key_packages(&self) -> String {
+        use serde_json::json;
+        let records: Vec<_> = self.key_packages_local().iter().map(kp_record_to_json).collect();
+        let dump = json!({
+            "account_id_hex": self.account().account_id_hex,
+            "record_count": records.len(),
+            "records": records,
+            "on_disk": read_key_packages_dir(&self.home),
+        });
+        serde_json::to_string_pretty(&dump).unwrap_or_else(|e| format!("serialize error: {e}"))
+    }
+
+    /// Developer/debug dump of a single message's raw event — the inner Marmot
+    /// app event (kind, tags, sender, plaintext, timestamps) as marmot projects
+    /// it. Reads the group's window snapshot and picks the matching record;
+    /// blocking, so call from a worker thread.
+    pub fn debug_message_event(&self, group_hex: &str, message_id_hex: &str) -> String {
+        let record = self
+            .messages(group_hex, None)
+            .unwrap_or_default()
+            .into_iter()
+            .find(|m| m.message_id_hex.eq_ignore_ascii_case(message_id_hex));
+        match record {
+            Some(rec) => serde_json::to_string_pretty(&rec)
+                .unwrap_or_else(|e| format!("serialize error: {e}")),
+            None => format!("(no message with id {message_id_hex} in this chat's window)"),
+        }
+    }
+
+    /// Developer/debug view of a *contact's* latest published key package,
+    /// fetched from the broad discovery relay set. Dumps the fetch metadata as
+    /// pretty JSON — the MLS key-package blob itself is summarized by its ref,
+    /// not spelled out. Blocking network call: worker thread only. Accepts npub
+    /// or hex.
+    pub fn debug_contact_key_packages(&self, account_id: &str) -> String {
+        use serde_json::json;
+        let account_id_hex = match nostr::PublicKey::parse(account_id) {
+            Ok(pk) => pk.to_hex(),
+            Err(_) => return format!("not a valid npub or hex pubkey: {account_id}"),
+        };
+        let broad = self.discovery_relays();
+        let app = self.app.clone();
+        let query_id = account_id_hex.clone();
+        let fetched = self.tokio.block_on(async move {
+            app.fetch_latest_key_package_for_account_id(&query_id, broad)
+                .await
+        });
+        match fetched {
+            Ok(kp) => {
+                let dump = json!({
+                    "account_id_hex": kp.account_id_hex,
+                    "key_package_id": kp.key_package_id,
+                    "key_package_ref_hex": kp.key_package_ref_hex,
+                    "key_package_event_id": kp.key_package_event_id,
+                    "created_at": kp.created_at,
+                    "source_relays": kp.source_relays,
+                    "relay_lists": kp.relay_lists,
+                    // The decomposed MLS KeyPackage: a readable summary of the
+                    // ciphersuite/leaf/capabilities up front, plus the complete
+                    // serde structure for anything the summary doesn't name.
+                    "key_package": decompose_key_package(&kp.key_package),
+                });
+                serde_json::to_string_pretty(&dump)
+                    .unwrap_or_else(|e| format!("serialize error: {e}"))
+            }
+            Err(e) => format!("No key package found for {account_id_hex}:\n{e}"),
+        }
+    }
+
     /// Pump live chat-list updates for the active account onto the Slint
     /// event loop.
     ///
@@ -779,6 +885,103 @@ impl Backend {
             }
         })
     }
+}
+
+/// Serialize a key-package record for the debug view. `AccountKeyPackageRecord`
+/// isn't `Serialize`, so spell the fields out; `key_package_bytes` is a length,
+/// never the private key material itself.
+pub(crate) fn kp_record_to_json(rec: &marmot_app::AccountKeyPackageRecord) -> serde_json::Value {
+    serde_json::json!({
+        "account_label": rec.account_label,
+        "account_id_hex": rec.account_id_hex,
+        "key_package_id": rec.key_package_id,
+        "key_package_ref_hex": rec.key_package_ref_hex,
+        "key_package_event_id": rec.key_package_event_id,
+        "published_at": rec.published_at,
+        "key_package_bytes": rec.key_package_bytes,
+        "source_relays": rec.source_relays,
+        "local": rec.local,
+        "relay": rec.relay,
+    })
+}
+
+/// Decode an opaque transported `KeyPackage` (TLS wire bytes) and decompose it
+/// into a debug-friendly JSON value: a curated `summary` (ciphersuite,
+/// lifetime, HPKE init key, leaf node + the leaf's advertised capabilities —
+/// the "supported stuff") plus `raw`, the complete serde structure of the
+/// decoded package. Enum values are rendered via their `Debug` name (e.g.
+/// `MLS_128_…`, `Ed25519`), key material as hex.
+///
+/// Mirrors cgka-engine's `key_package_metadata` decode path
+/// (`MlsMessageIn` → `KeyPackageIn` → `validate`), then reads the OpenMLS
+/// accessors. On a decode/validate failure we surface the error and the raw
+/// bytes rather than dropping everything.
+fn decompose_key_package(kp: &cgka_traits::engine::KeyPackage) -> serde_json::Value {
+    use openmls::prelude::{
+        KeyPackage as MlsKeyPackage, MlsMessageBodyIn, MlsMessageIn, ProtocolVersion,
+    };
+    use openmls_rust_crypto::RustCrypto;
+    use serde_json::json;
+    use tls_codec::Deserialize as _;
+
+    let bytes = kp.bytes();
+    let decoded: Result<MlsKeyPackage, String> = (|| {
+        let msg = MlsMessageIn::tls_deserialize_exact(bytes)
+            .map_err(|e| format!("tls_deserialize: {e:?}"))?;
+        let kp_in = match msg.extract() {
+            MlsMessageBodyIn::KeyPackage(k) => k,
+            _ => return Err("MLS message did not carry a KeyPackage".to_string()),
+        };
+        kp_in
+            .validate(&RustCrypto::default(), ProtocolVersion::Mls10)
+            .map_err(|e| format!("validate: {e:?}"))
+    })();
+
+    let mls = match decoded {
+        Ok(m) => m,
+        Err(e) => {
+            return json!({
+                "decode_error": e,
+                "wire_bytes": bytes.len(),
+                "wire_hex": hex::encode(bytes),
+            });
+        }
+    };
+
+    let names = |v: &mut dyn Iterator<Item = String>| -> Vec<String> { v.collect() };
+    let leaf = mls.leaf_node();
+    let caps = leaf.capabilities();
+    let credential = leaf.credential();
+    let summary = json!({
+        "ciphersuite": format!("{:?}", mls.ciphersuite()),
+        "last_resort": mls.last_resort(),
+        "lifetime": {
+            "not_before": mls.life_time().not_before(),
+            "not_after": mls.life_time().not_after(),
+        },
+        "hpke_init_key": hex::encode(mls.hpke_init_key().as_slice()),
+        "leaf_node": {
+            "source": format!("{:?}", leaf.leaf_node_source()),
+            "signature_key": hex::encode(leaf.signature_key().as_slice()),
+            "credential": {
+                "type": format!("{:?}", credential.credential_type()),
+                "serialized_content_hex": hex::encode(credential.serialized_content()),
+            },
+            // The leaf's advertised MLS capabilities — what this client says it
+            // supports. Names via Debug so they read as MLS identifiers.
+            "capabilities": {
+                "versions": names(&mut caps.versions().iter().map(|v| format!("{v:?}"))),
+                "ciphersuites": names(&mut caps.ciphersuites().iter().map(|c| format!("{c:?}"))),
+                "extensions": names(&mut caps.extensions().iter().map(|e| format!("{e:?}"))),
+                "proposals": names(&mut caps.proposals().iter().map(|p| format!("{p:?}"))),
+                "credentials": names(&mut caps.credentials().iter().map(|c| format!("{c:?}"))),
+            },
+        },
+    });
+    json!({
+        "summary": summary,
+        "raw": serde_json::to_value(&mls).unwrap_or(serde_json::Value::Null),
+    })
 }
 
 /// Best-effort dump of the `key-packages/` directory next to the account home.

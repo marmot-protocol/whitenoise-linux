@@ -255,6 +255,45 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             spawn_contact_key_package_fetch(&ui, &backend_cell, idx);
         }
     });
+
+    // Developer mode: dump the selected contact's latest key package as raw
+    // JSON in the shared viewer. The fetch hits discovery relays — worker
+    // thread only.
+    ui.on_view_contact_key_packages({
+        let weak = ui.as_weak();
+        let contacts = contacts.clone();
+        let backend_cell = backend_cell.clone();
+        move || {
+            let Some(ui) = weak.upgrade() else { return };
+            let Some(row) = contacts.row_data(ui.get_active_contact() as usize) else {
+                return;
+            };
+            let account_id = row.account_id.to_string();
+            if account_id.is_empty() {
+                return;
+            }
+            let Some(b) = backend_cell.lock().unwrap().clone() else {
+                return;
+            };
+            ui.set_debug_view_title(s("Key package"));
+            ui.set_debug_view_subtitle(row.name.clone());
+            ui.set_debug_view_json(s(""));
+            ui.set_debug_view_busy(true);
+            ui.set_debug_view_open(true);
+            let weak = ui.as_weak();
+            // `debug_contact_key_packages` does a `block_on` on the backend's
+            // tokio runtime — run it on a plain thread, never a runtime worker
+            // (that panics: "Cannot start a runtime from within a runtime").
+            std::thread::spawn(move || {
+                let json = b.debug_contact_key_packages(&account_id);
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    ui.set_debug_view_busy(false);
+                    ui.set_debug_view_json(json.into());
+                });
+            });
+        }
+    });
     // Contact detail → "Start chat": create a 1:1 conversation with the
     // selected contact and drop the user into it. Mirrors the new-chat
     // modal's single-member path (`create_group` with one npub, empty

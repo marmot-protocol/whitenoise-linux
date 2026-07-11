@@ -108,6 +108,12 @@ marmot-app = { git = "https://github.com/marmot-protocol/mdk.git", branch = "mas
 ] }
 marmot-account = { git = "https://github.com/marmot-protocol/mdk.git", branch = "master" }
 cgka-traits = { git = "https://github.com/marmot-protocol/mdk.git", branch = "master" }
+# Decode + inspect fetched MLS KeyPackages for the developer-mode KP viewer.
+# Pinned to the exact versions/features mdk's workspace uses so cargo unifies
+# on one openmls instance (see `Backend::debug_contact_key_packages`).
+openmls = { version = "~0.8.1", features = ["extensions-draft-08"] }
+openmls_rust_crypto = "0.5.1"
+tls_codec = "0.4.2"
 
 [build-dependencies]
 # Resolves libmpv's link flags for build.rs (see src/mpv.rs FFI core).

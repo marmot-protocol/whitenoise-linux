@@ -49,6 +49,7 @@ import { SplashScreen } from "splash.slint";
 import { EmojiPicker } from "emoji-picker.slint";
 import { MessageContextMenu } from "primitives/context-menu.slint";
 import { ChatContextMenu } from "primitives/chat-context-menu.slint";
+import { DebugJsonModal } from "modals/debug-json-modal.slint";
 import { GroupMemberMenu } from "main-pane/group-member-menu.slint";
 import {
     EmojiEntry,
@@ -533,8 +534,22 @@ export component DarkMatterLinux inherits Window {
     in-out property <bool> debug-enabled: false;
     in property <string> debug-dump;
     callback debug-toggled(bool);
-    callback debug-refresh-clicked();
+    callback debug-load(int);
     callback debug-copy-clicked();
+
+    // Developer-mode raw JSON viewer (message raw event / contact key package).
+    // Openers set title/subtitle + busy, then Rust fills `debug-view-json`.
+    in-out property <bool> debug-view-open: false;
+    in-out property <string> debug-view-title;
+    in-out property <string> debug-view-subtitle;
+    in property <string> debug-view-json;
+    in-out property <bool> debug-view-busy: false;
+    // Fires with the message id whose raw event to show.
+    callback view-raw-event(string);
+    // Shows the currently-selected contact's key package (no arg — Rust reads
+    // `active-contact`).
+    callback view-contact-key-packages();
+    callback debug-view-copy();
 
     in-out property <bool> telemetry-enabled: false;
     in-out property <bool> audit-enabled: false;
@@ -1175,6 +1190,10 @@ export component DarkMatterLinux inherits Window {
                         shared-groups: root.contact-shared-groups;
                         active-contact: root.active-contact;
                         match-flags: root.contact-match-flags;
+                        debug-enabled: root.debug-enabled;
+                        view-key-packages-clicked => {
+                            root.view-contact-key-packages();
+                        }
                         search-changed(q) => {
                             root.contact-search-changed(q);
                         }
@@ -1261,8 +1280,8 @@ export component DarkMatterLinux inherits Window {
                         debug-toggled(v) => {
                             root.debug-toggled(v);
                         }
-                        debug-refresh-clicked => {
-                            root.debug-refresh-clicked();
+                        debug-load(m) => {
+                            root.debug-load(m);
                         }
                         debug-copy-clicked => {
                             root.debug-copy-clicked();
@@ -1732,6 +1751,7 @@ export component DarkMatterLinux inherits Window {
         can-edit: root.ctx-menu-can-edit;
         can-copy: root.ctx-menu-text != "";
         has-selection: TextSelection.active && TextSelection.owner == root.ctx-menu-id && TextSelection.a-line >= 0 && TextSelection.b-line >= 0;
+        debug-enabled: root.debug-enabled;
         add-reaction(ax, ay) => {
             root.ctx-menu-open = false;
             root.emoji-picker-requested(root.ctx-menu-id, ax, ay);
@@ -1769,8 +1789,27 @@ export component DarkMatterLinux inherits Window {
             root.delete-confirm-everyone = false;
             root.show-delete-confirm = true;
         }
+        view-raw => {
+            root.ctx-menu-open = false;
+            root.view-raw-event(root.ctx-menu-id);
+        }
         dismissed => {
             root.ctx-menu-open = false;
+        }
+    }
+
+    // Developer-mode raw JSON viewer, shared by "View raw event" (message
+    // context menu) and "View" key packages (contact detail).
+    if root.debug-view-open: DebugJsonModal {
+        title: root.debug-view-title;
+        subtitle: root.debug-view-subtitle;
+        json: root.debug-view-json;
+        busy: root.debug-view-busy;
+        copy-clicked => {
+            root.debug-view-copy();
+        }
+        dismissed => {
+            root.debug-view-open = false;
         }
     }
 

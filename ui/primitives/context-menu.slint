@@ -79,6 +79,8 @@ export component MessageContextMenu inherits Rectangle {
     // True when this message holds the active text selection. Gates the
     // "Copy selection" row; implies can-copy (a selection needs body lines).
     in property <bool> has-selection: false;
+    // Developer mode: reveals a "View raw event" row at the tail of the menu.
+    in property <bool> debug-enabled: false;
     // Fired with the panel's clamped position so the emoji picker can open
     // where the menu was.
     callback add-reaction(length, length);
@@ -91,6 +93,8 @@ export component MessageContextMenu inherits Rectangle {
     // can-edit. "Delete for me" is a local-only hide, available on any message.
     callback delete-for-everyone();
     callback delete-for-me();
+    // Developer-mode "View raw event" (debug-enabled only).
+    callback view-raw();
     callback dismissed();
 
     // Keyboard navigation. Rows are ordered so the visible set is always the
@@ -102,10 +106,14 @@ export component MessageContextMenu inherits Rectangle {
     //   4 = Copy selection                                   (has-selection)
     //   idx-del-me = Delete for me                           (always)
     //   idx-del-me + 1 = Edit, + 2 = Delete for everyone     (author-only)
+    //   idx-view-raw = View raw event                        (debug-enabled)
     property <int> n-copy: root.can-copy ? 1 : 0;
     property <int> n-sel: root.has-selection ? 1 : 0;
+    property <int> n-edit: root.can-edit ? 2 : 0;
+    property <int> n-debug: root.debug-enabled ? 1 : 0;
     property <int> idx-del-me: 3 + root.n-copy + root.n-sel;
-    property <int> item-count: 4 + root.n-copy + root.n-sel + (root.can-edit ? 2 : 0);
+    property <int> idx-view-raw: root.idx-del-me + 1 + root.n-edit;
+    property <int> item-count: 4 + root.n-copy + root.n-sel + root.n-edit + root.n-debug;
     property <int> selected-index: 0;
 
     function move-selection(delta: int) {
@@ -139,6 +147,8 @@ export component MessageContextMenu inherits Rectangle {
             root.edit();
         } else if (root.selected-index == root.idx-del-me + 2 && root.can-edit) {
             root.delete-for-everyone();
+        } else if (root.selected-index == root.idx-view-raw && root.debug-enabled) {
+            root.view-raw();
         }
     }
 
@@ -336,6 +346,19 @@ export component MessageContextMenu inherits Rectangle {
                     }
                     hovered => {
                         root.selected-index = root.idx-del-me + 2;
+                    }
+                }
+
+                MenuItem {
+                    glyph: "{ }";
+                    label: @tr("View raw event");
+                    shown: root.debug-enabled;
+                    selected: root.selected-index == root.idx-view-raw;
+                    activated => {
+                        root.view-raw();
+                    }
+                    hovered => {
+                        root.selected-index = root.idx-view-raw;
                     }
                 }
             }

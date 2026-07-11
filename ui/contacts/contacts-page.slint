@@ -10,6 +10,7 @@ export component ContactsPage inherits Rectangle {
     callback edit-nickname-clicked();
     callback copy-npub-clicked();
     callback refresh-key-package-clicked();
+    callback view-key-packages-clicked();
     callback show-qr-clicked();
     callback start-chat-clicked();
     callback open-shared-group(string);
@@ -20,6 +21,7 @@ export component ContactsPage inherits Rectangle {
     in property <[Contact]> contacts;
     in property <[SharedGroup]> shared-groups;
     in property <int> active-contact;
+    in property <bool> debug-enabled: false;
     // Bound by the shell; drives the sidebar's narrow-window collapse.
     in property <length> window-width: 100000px;
 
@@ -51,8 +53,12 @@ export component ContactsPage inherits Rectangle {
         height: parent.height;
         contact: root.contacts[root.active-contact];
         shared-groups: root.shared-groups;
+        debug-enabled: root.debug-enabled;
         open-shared-group(id) => {
             root.open-shared-group(id);
+        }
+        view-key-packages => {
+            root.view-key-packages-clicked();
         }
         edit-nickname => {
             root.edit-nickname-clicked();
