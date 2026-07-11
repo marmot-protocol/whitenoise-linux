@@ -167,6 +167,10 @@ msgctxt "StatusBar"
 msgid "AGO"
 msgstr "VOR"
 
+msgctxt "ThemePicker"
+msgid "AMOLED"
+msgstr ""
+
 msgctxt "ArchivedSidebar"
 msgid "ARCHIVED"
 msgstr "ARCHIVIERT"

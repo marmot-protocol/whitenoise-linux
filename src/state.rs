@@ -926,13 +926,14 @@ pub(crate) fn normalize_locale(code: &str) -> &'static str {
 /// `apply_theme_mode` both derive from this list, so adding a theme mode is
 /// one new row here (plus the Slint side).
 type ThemeFlagSetter = fn(&DarkMatterLinux, bool);
-const THEME_MODE_FLAGS: [(&str, ThemeFlagSetter); 6] = [
+const THEME_MODE_FLAGS: [(&str, ThemeFlagSetter); 7] = [
     ("light", DarkMatterLinux::set_light_theme),
     ("retro", DarkMatterLinux::set_retro_mode),
     ("terminal", DarkMatterLinux::set_terminal_mode),
     ("crayon", DarkMatterLinux::set_crayon_mode),
     ("synthwave", DarkMatterLinux::set_synthwave_mode),
     ("chalkboard", DarkMatterLinux::set_chalkboard_mode),
+    ("amoled", DarkMatterLinux::set_amoled_mode),
 ];
 
 pub(crate) fn normalize_theme_mode(mode: &str) -> &'static str {

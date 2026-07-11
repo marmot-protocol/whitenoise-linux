@@ -45,6 +45,7 @@ export component SettingsPage inherits Rectangle {
     in-out property <bool> crayon-mode: false;
     in-out property <bool> synthwave-mode: false;
     in-out property <bool> chalkboard-mode: false;
+    in-out property <bool> amoled-mode: false;
     in-out property <int> accent-color: 0;
     in-out property <bool> outgoing-on-right: true;
     callback theme-mode-selected(string);
@@ -163,6 +164,7 @@ export component SettingsPage inherits Rectangle {
                 crayon-mode <=> root.crayon-mode;
                 synthwave-mode <=> root.synthwave-mode;
                 chalkboard-mode <=> root.chalkboard-mode;
+                amoled-mode <=> root.amoled-mode;
                 accent-color <=> root.accent-color;
                 outgoing-on-right <=> root.outgoing-on-right;
                 theme-mode-selected(mode) => {

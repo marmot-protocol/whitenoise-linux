@@ -143,8 +143,8 @@ export struct ThemeStyle {
 
 export global Theme {
     // Active theme id: 0=dark, 1=light, 2=retro, 3=terminal, 4=crayon,
-    // 5=synthwave. The single value Rust sets to pick a theme (mapped from the
-    // root light-theme/retro-mode/terminal-mode/crayon-mode/synthwave-mode props).
+    // 5=synthwave, 6=chalkboard, 7=amoled. The single value Rust sets to pick a
+    // theme (mapped from the root light-theme/retro-mode/…/amoled-mode props).
     in-out property <int> id: 0;
     // 0=mint, 1=ocean, 2=berry, 3=coral, 4=lavender — orthogonal to the theme id.
     in-out property <int> accent: 0;
@@ -623,6 +623,73 @@ export global Theme {
             accent-glow:    [#7FD1A828, #7FB4E028, #E89BB828, #E8B97F28, #B49BD628],
             accent-surface: [#1E3329, #1E2C38, #331E29, #332B1E, #291E33],
         },
+        // ── 7: AMOLED (true-black dark) ──
+        // The Dark theme pushed to pure black: bg/rail/panels are #000000 so OLED
+        // pixels switch fully off. Because surfaces are black, borders/fields are
+        // nudged a shade brighter than Dark for separation, and the modal overlay
+        // is darker. Accents are Dark's — they already read well on black.
+        {
+            bg: #000000,
+            panel: #000000,
+            panel-2: #0A0B0D,
+            rail: #000000,
+            banner: #05070A,
+            border: #262B33,
+            border-2: #1A1F26,
+            bubble-in: #12181F,
+            bubble-inset: #FFFFFF10,
+            bubble-inset-strong: #00000044,
+            code-plate: #FFFFFF12,
+            media-backdrop: #00000044,
+            bubble-inset-out: #00000022,
+            bubble-inset-out-strong: #00000038,
+            code-plate-out: #00000022,
+            media-backdrop-out: #00000033,
+            bubble-selection-out: #00000038,
+            text-hi: #E4E7EC,
+            text-mid: #9CA3AF,
+            text-lo: #6B7280,
+            text-vlo: #4B5563,
+            hover: #0C0E11,
+            bubble-out-fg: #0A1410,
+            bevel-hi: #FFFFFF,
+            bevel-lo: #0A0A2A,
+            danger: #FF5A5A,
+            danger-soft: #FF5A5A20,
+            danger-border: #5A2429,
+            danger-soft-hover: #FF5A5A33,
+            danger-border-hover: #7A2E36,
+            warning: #F59E0B,
+            warning-soft: #F59E0B20,
+            warning-border: #5A3F1A,
+            field: #060809,
+            field-hover: #101418,
+            field-border: #2A3038,
+            field-border-hover: #363E47,
+            divider: #16191E,
+            elevated: #0A0C0F,
+            elevated-border: #2C333B,
+            top-glint: #FFFFFF0A,
+            canvas-top: #050608,
+            banner-edge: #05070A,
+            card-border: #1A1F26,
+            status-bar: #000000,
+            card-well: #0A0B0D,
+            overlay: #000000A6,
+            shadow-soft: #000000A0,
+            shadow-card: #000000D0,
+            shadow-popover: #00000066,
+            shadow-float: #00000040,
+            shadow-bubble-in: #00000050,
+            vignette: #00000080,
+            avatar-ring: #FFFFFF20,
+            selected-uses-base: false,
+            accent-base:    [#72F0B0, #4AA8FF, #FF6B9D, #FF8C42, #B8A1E6],
+            accent-hi:      [#8AF7C0, #6BC4FF, #FF8CB5, #FFAB6B, #D4BFF2],
+            accent-dim:     [#3DD68A, #2A7ACC, #CC3E6E, #CC6B2A, #8C75B8],
+            accent-glow:    [#72F0B018, #4AA8FF18, #FF6B9D18, #FF8C4218, #B8A1E618],
+            accent-surface: [#122820, #0F1A2E, #2E0F18, #2E150F, #1A0F2E],
+        },
     ];
     // The active theme's resolved color set — read by Palette below.
     out property <ThemeColors> c: root.color-packs[root.id];
@@ -810,6 +877,32 @@ export global Theme {
             bracket-labels: false,
             paper-doodles: true,
             sketch-bubbles: true,
+            synth-grid: false
+        },
+        // 7: AMOLED — identical structural personality to Dark (modern soft
+        // shadows, vector icons, glow on focus); only the palette goes true-black.
+        {
+            hard-shadow: false,
+            focus-glow: true,
+            char-wrap: false,
+            motion-fast: false,
+            bubble-bounce: false,
+            bevel: false,
+            pixel-icons: false,
+            selected-inverts-text: false,
+            pixel-select-marker: false,
+            pixel-metrics: false,
+            outline-surfaces: false,
+            soft-decor: true,
+            skin-message: 0,
+            skin-button: 0,
+            skin-list: 0,
+            skin-avatar: 0,
+            skin-modal: 0,
+            shell: 0,
+            bracket-labels: false,
+            paper-doodles: false,
+            sketch-bubbles: false,
             synth-grid: false
         },
     ];
