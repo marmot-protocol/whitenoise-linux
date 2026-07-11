@@ -810,6 +810,11 @@ pub(crate) struct MembersSnapshot {
     viewer_is_admin: bool,
     admins: Vec<String>,
     members: Vec<AppGroupMemberRecord>,
+    /// Lowercased account-id hex of every member seen active in the group (they
+    /// authored at least one record). Drives the invited/accepted split: marmot
+    /// exposes no per-member join-state on the inviter side, so authorship is
+    /// the interim signal that someone has processed their welcome and joined.
+    authored: std::collections::HashSet<String>,
 }
 
 pub(crate) fn fetch_members_snapshot(backend: &Backend, group_hex: &str) -> MembersSnapshot {
@@ -831,12 +836,23 @@ pub(crate) fn fetch_members_snapshot(backend: &Backend, group_hex: &str) -> Memb
     // Keep the mention resolver's membership in sync — this snapshot rides
     // every chat open and every member add/remove/promote flow.
     mention_set_group_members(backend, group_hex, &members);
+    // Everyone who has authored any record in the group has demonstrably
+    // joined (they processed their welcome to send it). A full-history scan is
+    // fine here: this runs off the UI thread and only on panel open / member
+    // events.
+    let authored = backend
+        .messages(group_hex, None)
+        .unwrap_or_default()
+        .iter()
+        .map(|m| m.sender.to_ascii_lowercase())
+        .collect();
     MembersSnapshot {
         count: backend.group_member_count(group_hex),
         group_rec,
         viewer_is_admin,
         admins,
         members,
+        authored,
     }
 }
 
@@ -885,6 +901,7 @@ pub(crate) fn push_group_members_to_ui_from(
     ui.set_chat_member_count(count as i32);
     if !can_show_members {
         ui.set_chat_members(model(Vec::new()));
+        ui.set_chat_invited_members(model(Vec::new()));
         ui.set_show_chat_members(false);
         ui.set_chat_can_add_members(false);
         return;
@@ -899,15 +916,27 @@ pub(crate) fn push_group_members_to_ui_from(
     let mut pairs: Vec<(GroupMember, Option<String>)> = snap
         .members
         .iter()
-        .map(|m| group_member_from(backend, m, &my_id, &admins, viewer_is_admin))
+        .map(|m| group_member_from(backend, m, &my_id, &admins, viewer_is_admin, &snap.authored))
         .collect();
     pairs.sort_by(|(a, _), (b, _)| match (a.is_self, b.is_self) {
         (true, false) => std::cmp::Ordering::Less,
         (false, true) => std::cmp::Ordering::Greater,
         _ => a.name.cmp(&b.name),
     });
-    let rows: Vec<GroupMember> = pairs.iter().map(|(r, _)| r.clone()).collect();
-    ui.set_chat_members(model(rows));
+    // Split active members from invited-but-not-yet-active ones; each renders
+    // under its own section in the panel.
+    let active_rows: Vec<GroupMember> = pairs
+        .iter()
+        .filter(|(r, _)| !r.is_invited)
+        .map(|(r, _)| r.clone())
+        .collect();
+    let invited_rows: Vec<GroupMember> = pairs
+        .iter()
+        .filter(|(r, _)| r.is_invited)
+        .map(|(r, _)| r.clone())
+        .collect();
+    ui.set_chat_members(model(active_rows));
+    ui.set_chat_invited_members(model(invited_rows));
 
     // Spawn fetches for any row that has a picture URL and isn't already
     // bound to a cached image. We key the row back up by `npub_short` since
@@ -1206,16 +1235,20 @@ pub(crate) fn update_member_picture(
     npub_short: &str,
     pixels: &PicturePixels,
 ) {
-    bind_picture_to_rows(
-        &ui.get_chat_members(),
-        pixels,
-        true,
-        |row: &GroupMember| row.npub_short.as_str() == npub_short,
-        |row, img| {
-            row.picture = img;
-            row.has_picture = true;
-        },
-    );
+    // The row can live in either the active or the invited section, so bind
+    // into both models — whichever holds it picks the picture up.
+    for members in [ui.get_chat_members(), ui.get_chat_invited_members()] {
+        bind_picture_to_rows(
+            &members,
+            pixels,
+            true,
+            |row: &GroupMember| row.npub_short.as_str() == npub_short,
+            |row, img| {
+                row.picture = img;
+                row.has_picture = true;
+            },
+        );
+    }
 }
 
 /// Shared async fetch + decode for an arbitrary image URL. Returns the
@@ -1256,11 +1289,17 @@ pub(crate) fn group_member_from(
     my_account_id_hex: &str,
     admins: &[String],
     viewer_is_admin: bool,
+    authored: &std::collections::HashSet<String>,
 ) -> (GroupMember, Option<String>) {
     let is_self = record.member_id_hex.eq_ignore_ascii_case(my_account_id_hex);
     let is_admin = admins
         .iter()
         .any(|a| a.eq_ignore_ascii_case(&record.member_id_hex));
+    // Invited-but-not-yet-active: in the roster, but never seen speak. Self and
+    // admins are always treated as active (an admin created the group or was
+    // promoted by a commit — showing them as pending would be wrong).
+    let is_invited =
+        !is_self && !is_admin && !authored.contains(&record.member_id_hex.to_ascii_lowercase());
     // The viewer can hand out admin only to other members who aren't admins yet.
     let can_promote = viewer_is_admin && !is_self && !is_admin;
     // Demote another admin, or step down from one's own admin role.
@@ -1300,6 +1339,7 @@ pub(crate) fn group_member_from(
         can_demote,
         can_self_demote,
         can_remove,
+        is_invited,
     };
     (row, picture_url)
 }

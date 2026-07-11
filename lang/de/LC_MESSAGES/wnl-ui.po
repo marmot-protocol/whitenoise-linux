@@ -1043,6 +1043,10 @@ msgctxt "NotificationsPane"
 msgid "INCOMING MESSAGES"
 msgstr "EINGEHENDE NACHRICHTEN"
 
+msgctxt "GroupMemberRow"
+msgid "INVITED"
+msgstr "EINGELADEN"
+
 msgctxt "EncryptionInfoModal"
 msgid "If someone's device gets compromised, the group quietly swaps in fresh keys so what you send next is private again."
 msgstr ""
@@ -1099,6 +1103,10 @@ msgstr "Einladen"
 msgctxt "GetStartedScreen"
 msgid "Invite someone by their npub and say hello."
 msgstr "Lade jemanden über seinen npub ein und sag Hallo."
+
+msgctxt "GroupMembersPanel"
+msgid "Invited"
+msgstr "Eingeladen"
 
 #, fuzzy
 msgctxt "AddMemberCard"
@@ -2379,7 +2387,6 @@ msgctxt "KeysPage"
 msgid "current"
 msgstr "aktuell"
 
-
 msgctxt "MessageBubble"
 msgid "decrypting…"
 msgstr "entschlüssele…"
@@ -2411,7 +2418,6 @@ msgstr "nur lokal"
 msgctxt "ProfilePage"
 msgid "no handle yet"
 msgstr "noch kein Handle"
-
 
 msgctxt "EmojiPicker"
 msgid "no matches"

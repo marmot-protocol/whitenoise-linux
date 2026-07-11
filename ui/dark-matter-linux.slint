@@ -690,6 +690,8 @@ export component DarkMatterLinux inherits Window {
 
     // Active group membership (refreshed when the selected chat/archive changes).
     in property <[GroupMember]> chat-members;
+    // Roster entries invited but not yet seen active in the group.
+    in property <[GroupMember]> chat-invited-members;
     in property <bool> chat-is-group: false;
     in property <bool> chat-can-show-members: false;
     // Mute state of the currently-open chat (Rust sets it on chat switch /
@@ -1058,6 +1060,7 @@ export component DarkMatterLinux inherits Window {
                             member-count: root.chat-member-count;
                             group-description: root.chat-group-description;
                             members: root.chat-members;
+                            invited-members: root.chat-invited-members;
                             show-members <=> root.show-chat-members;
                             members-toggle-clicked => {
                                 root.members-toggle-clicked();

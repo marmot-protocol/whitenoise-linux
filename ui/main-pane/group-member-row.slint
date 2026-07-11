@@ -14,6 +14,8 @@ export component GroupMemberRow inherits Rectangle {
         || root.data.can-self-demote || root.data.can-remove;
 
     height: 52px;
+    // Invited-but-not-yet-active members read as pending, so dim the row.
+    opacity: root.data.is-invited ? 0.55 : 1.0;
 
     HorizontalLayout {
         padding-left: 14px;
@@ -71,6 +73,12 @@ export component GroupMemberRow inherits Rectangle {
                     label: @tr("ADMIN");
                     bg-color: Palette.mint-surface;
                     fg: Palette.mint;
+                    font-size: Theme.fsr(10px, 12px);
+                }
+                if root.data.is-invited: Pill {
+                    label: @tr("INVITED");
+                    bg-color: Palette.panel-2;
+                    fg: Palette.text-lo;
                     font-size: Theme.fsr(10px, 12px);
                 }
             }

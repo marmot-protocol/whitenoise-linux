@@ -132,12 +132,20 @@ impl Backend {
         let label = self.active_label();
         let members = members.to_vec();
         let runtime = self.runtime.clone();
-        self.tokio.block_on(async move {
+        let summary = self.tokio.block_on(async move {
             runtime
                 .invite_members(&label, &group_id, &members)
                 .await
                 .map_err(|e| anyhow!("invite_members: {e}"))
-        })
+        })?;
+        // The invite commits an MLS Add, so the invitee is in the roster right
+        // away (before they accept). But `group_members` is served from
+        // `members_cache`, which this invite did not touch, so the immediate UI
+        // push would repaint the pre-invite list and the new member (under the
+        // "Invited" section) would not show until a later async refresh landed.
+        // Refresh the cache synchronously here, mirroring `remove_member`.
+        self.refresh_members_blocking(group_hex);
+        Ok(summary)
     }
 
     /// Groups the local account has in common with `account_id_hex`: every

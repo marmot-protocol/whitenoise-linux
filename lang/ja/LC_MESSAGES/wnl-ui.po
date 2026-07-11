@@ -1040,6 +1040,10 @@ msgctxt "NotificationsPane"
 msgid "INCOMING MESSAGES"
 msgstr "受信メッセージ"
 
+msgctxt "GroupMemberRow"
+msgid "INVITED"
+msgstr "招待済み"
+
 msgctxt "EncryptionInfoModal"
 msgid "If someone's device gets compromised, the group quietly swaps in fresh keys so what you send next is private again."
 msgstr ""
@@ -1096,6 +1100,10 @@ msgstr "招待"
 msgctxt "GetStartedScreen"
 msgid "Invite someone by their npub and say hello."
 msgstr "npub で誰かを招待して、挨拶してみましょう。"
+
+msgctxt "GroupMembersPanel"
+msgid "Invited"
+msgstr "招待済み"
 
 #, fuzzy
 msgctxt "AddMemberCard"
@@ -2376,7 +2384,6 @@ msgctxt "KeysPage"
 msgid "current"
 msgstr "現在"
 
-
 msgctxt "MessageBubble"
 msgid "decrypting…"
 msgstr "復号中…"
@@ -2408,7 +2415,6 @@ msgstr "ローカルのみ"
 msgctxt "ProfilePage"
 msgid "no handle yet"
 msgstr "ハンドルはまだありません"
-
 
 msgctxt "EmojiPicker"
 msgid "no matches"
