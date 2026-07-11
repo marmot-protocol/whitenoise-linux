@@ -54,11 +54,14 @@ properties (e.g. `composer-draft`, `chats`, `messages`, `reply-target-*`).
 
 ### 4. Theme-selection properties (managed by the engine, set from `settings.rs`)
 
-The only theme state Rust sets. Today: `light-theme: bool`, `retro-mode: bool`,
-`accent-color: int`. **Phase B generalizes these into a single `theme-id: int`** (plus
-`accent-color`), which selects a `ThemeTokens` pack and, transitively, the per-family
-skin ids and shell id. Rust's job shrinks to "set the active theme id + accent"; all
-resolution happens in Slint.
+The only theme state Rust sets: `theme-id: int` and `accent-color: int`. The root
+folds `theme-id` straight onto `Theme.id`, which selects a `ThemeColors`/`ThemeStyle`
+pack and, transitively, the per-family skin ids and shell id. Rust's job is just "set
+the active theme id + accent"; all resolution happens in Slint. The persisted string
+mode name maps to the id through the `THEME_MODES` table in `state.rs` (index = id),
+exactly as `ACCENTS` maps accent names to `accent-color`. There are no per-theme
+boolean flags — the old `light-theme`/`retro-mode`/… props and the ternary that folded
+them back into an id are gone.
 
 ## What a skin is allowed to do
 
@@ -82,29 +85,40 @@ Theme (id + accent)          ← Rust sets only this
   └─ Tokens (ThemeTokens)    ← L0: colors/type/geometry/motion/flags  (Phase B)
   └─ component skin slots    ← L1: dispatch to a skin body per family  (Phase C)
   └─ shell variant slot      ← L2: dispatch to a shell skeleton        (Phase D)
-  └─ (future) runtime plugins via slint-interpreter — contract permits, not built
+  └─ theme files (built + user)  ← ThemeColors/ThemeStyle packs loaded at startup
 ```
+
+Every theme, built-in or user, is a `.toml` file loaded through one path
+(`src/themes.rs`). The built-ins are embedded (`themes/<mode>.toml`, `include_str!`);
+user themes are read from `$DM_HOME/themes/*.toml`. Rust builds the whole pack list and
+fills `Theme.color-packs` / `style-packs`; the Slint side holds no theme data and just
+renders whatever id it is handed. Runtime *skin bodies* (new Slint via
+slint-interpreter) remain the not-built extension the contract still permits.
 
 ## How to add a theme
 
-Everything lives in `ui/tokens.slint` + two tiny selection sites. A recolor is one
-struct; a drastic theme additionally writes skin bodies and bumps the selectors.
+A theme is a `.toml` file, `[colors]` + `[style]`, optionally starting from a `base`.
+A pure recolor overrides a handful of fields; a drastic theme additionally writes skin
+bodies and bumps the selectors.
 
-1. **Colors** — append a `ThemeColors` literal to `Theme.color-packs` (the new
-   index is the theme id).
-2. **Personality** — append a parallel `ThemeStyle` literal to `Theme.style-packs`:
-   the capability flags (`hard-shadow`, `bevel`, `pixel-icons`, `bracket-labels`, …)
-   and the per-family **skin selectors** (`skin-message`, `skin-list`, … `shell`).
-   For a pure recolor, copy an existing pack's flags and keep all selectors `0`.
-3. **Skins (only if a selector is non-zero)** — add the alternate body to that
-   family's slot, guarded by its selector value, reading the contract structs:
+1. **Write the file** — a built-in goes in `themes/<mode>.toml`, a user theme in
+   `$DM_HOME/themes/<mode>.toml` (same format). Name a `base` (another theme by mode)
+   and override any `ThemeColors` field or `ThemeStyle` flag by its kebab-case name;
+   everything unspecified inherits the base. A file with no `base` is a complete
+   definition (the eight built-ins are authored this way).
+2. **Skins (only if a `[style]` selector is non-zero)** — add the alternate body to
+   that family's slot, guarded by its selector value, reading the contract structs:
    - messages → `ui/primitives/message-view.slint` (`if Theme.skin-message == N`)
    - chat list → `ui/primitives/chat-list-entry.slint` (`if Theme.skin-list == N`)
    - shell → inline `if Theme.shell == N` skeleton in `ui/dark-matter-linux.slint`
-4. **Make it selectable** — add the mode string in `normalize_theme_mode` /
-   `apply_theme_mode` (`src/main.rs`), a matching `*-mode` bool threaded
-   root → `settings-page.slint` → `appearance-pane.slint`, the `Theme.id` mapping
-   in the root's `changed` handlers, and a toggle in the appearance pane.
+3. **Make a built-in selectable** — add the file to `BUILTIN_THEME_FILES` in
+   `src/themes.rs`, append its mode name to `THEME_MODES` in `src/state.rs` (its
+   position is the theme id), and add a matching `names`/`modes` entry in
+   `ui/settings/theme-picker.slint`. A **user** theme needs none of this: it appears in
+   the picker automatically. No Rust setter, no per-theme bool, no `changed` handler.
+
+A file that fails to read or parse, or whose mode name collides, is logged and skipped,
+matching how `settings.rs` swallows bad input.
 
 The worked example is theme id 3, **Terminal** (terminal message lines + IRC chat
 list + bracketed buttons): it required **zero** changes to message/list/button

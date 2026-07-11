@@ -16,7 +16,9 @@ pub struct Settings {
     /// BCP-47 language tag without region, e.g. `en`, `it`, `de`, `ja`.
     #[serde(default = "default_locale")]
     pub locale: String,
-    /// One of `dark`, `light`, or `retro`.
+    /// Stable theme mode name — one of `THEME_MODES` in `state.rs` (`dark`,
+    /// `light`, `retro`, `terminal`, `crayon`, `synthwave`, `chalkboard`,
+    /// `amoled`). Its index in that table is the `Theme.id` the UI selects.
     #[serde(default = "default_theme")]
     pub theme: String,
     /// Accent color name. One of `mint`, `ocean`, `berry`, `coral`, `lavender`.

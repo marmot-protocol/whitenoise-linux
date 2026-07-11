@@ -753,7 +753,11 @@ impl Backend {
     /// to show whatever the network state is.
     pub fn debug_key_packages(&self) -> String {
         use serde_json::json;
-        let records: Vec<_> = self.key_packages_local().iter().map(kp_record_to_json).collect();
+        let records: Vec<_> = self
+            .key_packages_local()
+            .iter()
+            .map(kp_record_to_json)
+            .collect();
         let dump = json!({
             "account_id_hex": self.account().account_id_hex,
             "record_count": records.len(),

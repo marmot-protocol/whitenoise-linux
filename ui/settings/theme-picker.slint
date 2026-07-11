@@ -1,29 +1,33 @@
 // Theme dropdown with live previews (Settings → Appearance).
 //
-// Replaces the old per-theme toggles. Lists every registered theme; each row
-// shows a mini preview built from that theme's actual ThemeColors data
-// (Theme.color-packs[id]) so the swatch always matches the real palette. Picking
-// a row emits theme-mode-selected(mode) — the same callback the toggles used, so
-// no Rust changes. Add a theme → just append a name+mode pair below.
-import { Palette, Theme } from "../tokens.slint";
+// Lists every registered theme, the built-ins first and then whatever Rust
+// loaded from `$DM_HOME/themes/`. Each row shows a mini preview built from that
+// theme's actual ThemeColors data (Theme.colors-at(id)) so the swatch always
+// matches the real palette, user themes included. Picking a row emits
+// theme-mode-selected(mode). Add a built-in theme by appending a name+mode pair
+// below; user themes need no edit here, they arrive via Theme.user-theme-names.
+import { Palette, Theme, ThemeColors } from "../tokens.slint";
 
 // Mini app-preview chip for one theme id: canvas + side panel + accent dot + text bar.
 component ThemeSwatch inherits Rectangle {
     in property <int> pack-id: 0;
+    // Fold built-in and user packs so a user theme id (>= built-in count)
+    // previews from its real ThemeColors, same as the built-ins.
+    property <ThemeColors> pack: Theme.colors-at(root.pack-id);
     width: 46px;
     height: 30px;
     border-radius: 5px * Theme.r-scale;
     clip: true;
-    background: Theme.color-packs[root.pack-id].bg;
+    background: root.pack.bg;
     border-width: 1px;
-    border-color: Theme.color-packs[root.pack-id].border;
+    border-color: root.pack.border;
     // Side panel strip.
     Rectangle {
         x: 0;
         y: 0;
         width: 15px;
         height: parent.height;
-        background: Theme.color-packs[root.pack-id].panel;
+        background: root.pack.panel;
     }
     // Accent dot.
     Rectangle {
@@ -32,7 +36,7 @@ component ThemeSwatch inherits Rectangle {
         width: 8px;
         height: 8px;
         border-radius: 4px * Theme.r-scale;
-        background: Theme.color-packs[root.pack-id].accent-base[Theme.accent];
+        background: root.pack.accent-base[Theme.accent];
     }
     // Text bar.
     Rectangle {
@@ -41,7 +45,57 @@ component ThemeSwatch inherits Rectangle {
         width: 17px;
         height: 4px;
         border-radius: 2px * Theme.r-scale;
-        background: Theme.color-packs[root.pack-id].text-hi;
+        background: root.pack.text-hi;
+    }
+}
+
+// One dropdown row. Extracted so the built-in and user-theme loops share the
+// same body without duplicating the swatch/label/check markup.
+component ThemeRow inherits Rectangle {
+    in property <int> pack-id: 0;
+    in property <string> label;
+    in property <bool> is-selected: false;
+    in property <bool> is-focused: false;
+    callback chosen();
+    height: 44px;
+    border-radius: 7px * Theme.r-scale;
+    background: root.is-selected ? Palette.selected : ((root.is-focused || row-touch.has-hover) ? Palette.hover : transparent);
+    animate background { duration: 80ms; }
+    HorizontalLayout {
+        padding-left: 8px;
+        padding-right: 10px;
+        spacing: 10px;
+        alignment: start;
+        ThemeSwatch {
+            pack-id: root.pack-id;
+            y: (parent.height - self.height) / 2;
+        }
+
+        Text {
+            text: root.label;
+            color: Palette.text-hi;
+            font-family: Theme.font;
+            font-size: 12px * Theme.fs-scale;
+            font-weight: root.is-selected ? 700 : 500;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+        }
+
+        if root.is-selected: Text {
+            text: "✓";
+            color: Palette.mint;
+            font-family: Theme.font;
+            font-size: 13px * Theme.fs-scale;
+            font-weight: 700;
+            vertical-alignment: center;
+        }
+    }
+
+    row-touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            root.chosen();
+        }
     }
 }
 
@@ -61,7 +115,30 @@ export component ThemePicker inherits Rectangle {
         @tr("Chalkboard"),
         @tr("AMOLED")
     ];
-    property <[string]> modes: ["dark", "light", "retro", "terminal", "crayon", "synthwave", "chalkboard", "amoled"];
+    property <[string]> modes: [
+        "dark",
+        "light",
+        "retro",
+        "terminal",
+        "crayon",
+        "synthwave",
+        "chalkboard",
+        "amoled"
+    ];
+
+    // Total selectable themes = built-ins plus whatever Rust loaded from
+    // `$DM_HOME/themes/`. The two fold helpers below map a row id onto the
+    // built-in arrays for the first `names.length` ids and onto the
+    // Rust-provided user arrays beyond that, so one id space spans both.
+    function theme-count() -> int {
+        return root.names.length + Theme.user-theme-names.length;
+    }
+    function name-at(i: int) -> string {
+        return i < root.names.length ? root.names[i] : Theme.user-theme-names[i - root.names.length];
+    }
+    function mode-at(i: int) -> string {
+        return i < root.modes.length ? root.modes[i] : Theme.user-theme-modes[i - root.modes.length];
+    }
 
     // Keyboard cursor inside the open dropdown; reset to the active theme each
     // time the popup opens.
@@ -93,7 +170,7 @@ export component ThemePicker inherits Rectangle {
             }
 
             Text {
-                text: root.names[root.selected-id];
+                text: root.name-at(root.selected-id);
                 color: Palette.text-hi;
                 font-family: Theme.font;
                 font-size: 12px * Theme.fs-scale;
@@ -174,15 +251,15 @@ export component ThemePicker inherits Rectangle {
                         return accept;
                     }
                     if (event.text == Key.UpArrow) {
-                        root.focus-idx = root.focus-idx == 0 ? root.names.length - 1 : root.focus-idx - 1;
+                        root.focus-idx = root.focus-idx == 0 ? root.theme-count() - 1 : root.focus-idx - 1;
                         return accept;
                     }
                     if (event.text == Key.DownArrow) {
-                        root.focus-idx = mod(root.focus-idx + 1, root.names.length);
+                        root.focus-idx = mod(root.focus-idx + 1, root.theme-count());
                         return accept;
                     }
                     if (event.text == Key.Return || event.text == " ") {
-                        root.theme-mode-selected(root.modes[root.focus-idx]);
+                        root.theme-mode-selected(root.mode-at(root.focus-idx));
                         popup.close();
                         return accept;
                     }
@@ -192,47 +269,24 @@ export component ThemePicker inherits Rectangle {
                 VerticalLayout {
                     padding: 5px;
                     spacing: 2px;
-                    for name[i] in root.names: Rectangle {
-                        height: 44px;
-                        border-radius: 7px * Theme.r-scale;
-                        background: i == root.selected-id ? Palette.selected : (i == root.focus-idx ? Palette.hover : (row-touch.has-hover ? Palette.hover : transparent));
-                        animate background { duration: 80ms; }
-                        HorizontalLayout {
-                            padding-left: 8px;
-                            padding-right: 10px;
-                            spacing: 10px;
-                            alignment: start;
-                            ThemeSwatch {
-                                pack-id: i;
-                                y: (parent.height - self.height) / 2;
-                            }
-
-                            Text {
-                                text: name;
-                                color: Palette.text-hi;
-                                font-family: Theme.font;
-                                font-size: 12px * Theme.fs-scale;
-                                font-weight: i == root.selected-id ? 700 : 500;
-                                vertical-alignment: center;
-                                horizontal-stretch: 1;
-                            }
-
-                            if i == root.selected-id: Text {
-                                text: "✓";
-                                color: Palette.mint;
-                                font-family: Theme.font;
-                                font-size: 13px * Theme.fs-scale;
-                                font-weight: 700;
-                                vertical-alignment: center;
-                            }
+                    for name[i] in root.names: ThemeRow {
+                        pack-id: i;
+                        label: name;
+                        is-selected: i == root.selected-id;
+                        is-focused: i == root.focus-idx;
+                        chosen => {
+                            root.theme-mode-selected(root.modes[i]);
+                            popup.close();
                         }
-
-                        row-touch := TouchArea {
-                            mouse-cursor: pointer;
-                            clicked => {
-                                root.theme-mode-selected(root.modes[i]);
-                                popup.close();
-                            }
+                    }
+                    for uname[j] in Theme.user-theme-names: ThemeRow {
+                        pack-id: root.names.length + j;
+                        label: uname;
+                        is-selected: (root.names.length + j) == root.selected-id;
+                        is-focused: (root.names.length + j) == root.focus-idx;
+                        chosen => {
+                            root.theme-mode-selected(Theme.user-theme-modes[j]);
+                            popup.close();
                         }
                     }
                 }

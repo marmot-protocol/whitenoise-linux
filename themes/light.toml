@@ -1,0 +1,117 @@
+name = "Light"
+
+[colors]
+bg = "#f6f2eaff"
+panel = "#ffffffff"
+panel-2 = "#f8fafcff"
+rail = "#ece6daff"
+banner = "#ecfdf3ff"
+border = "#d7d0c3ff"
+border-2 = "#e7dfd2ff"
+bubble-in = "#ffffffff"
+bubble-inset = "#e2e8f0ff"
+bubble-inset-strong = "#cbd5e1ff"
+code-plate = "#0000000d"
+media-backdrop = "#1e293bff"
+bubble-inset-out = "#1f293722"
+bubble-inset-out-strong = "#1f293738"
+code-plate-out = "#1f293722"
+media-backdrop-out = "#1f293733"
+bubble-selection-out = "#1f293738"
+text-hi = "#1f2937ff"
+text-mid = "#4b5563ff"
+text-lo = "#6b7280ff"
+text-vlo = "#9ca3afff"
+hover = "#f0eadfff"
+bubble-out-fg = "#ffffffff"
+bevel-hi = "#ffffffff"
+bevel-lo = "#d8cfbfff"
+danger = "#c62828ff"
+danger-soft = "#c628281a"
+danger-border = "#e3b8b8ff"
+danger-soft-hover = "#c628282e"
+danger-border-hover = "#d49c9cff"
+warning = "#b45309ff"
+warning-soft = "#b453091a"
+warning-border = "#e2c9a4ff"
+field = "#ffffffff"
+field-hover = "#f8fafcff"
+field-border = "#d7d0c3ff"
+field-border-hover = "#c5bcadff"
+divider = "#e7dfd2ff"
+elevated = "#ffffffff"
+elevated-border = "#d7d0c3ff"
+top-glint = "#ffffffb8"
+canvas-top = "#fffdf7ff"
+banner-edge = "#f6f2eaff"
+card-border = "#e7dfd2ff"
+status-bar = "#ffffffff"
+card-well = "#f8fafcff"
+overlay = "#1f293740"
+shadow-soft = "#1f293744"
+shadow-card = "#1f293755"
+shadow-popover = "#1f293755"
+shadow-float = "#1f293733"
+shadow-bubble-in = "#1f293718"
+vignette = "#d8cfbf80"
+avatar-ring = "#00000015"
+selected-uses-base = false
+accent-base = [
+    "#16855fff",
+    "#0d5aa0ff",
+    "#c73e6eff",
+    "#c45c1aff",
+    "#7b5fb0ff",
+]
+accent-hi = [
+    "#1ea875ff",
+    "#1a70b8ff",
+    "#e05585ff",
+    "#d4712eff",
+    "#9678c9ff",
+]
+accent-dim = [
+    "#0f6b4bff",
+    "#084578ff",
+    "#9e2e56ff",
+    "#9e4710ff",
+    "#5e4696ff",
+]
+accent-glow = [
+    "#16855f22",
+    "#0d5aa022",
+    "#c73e6e22",
+    "#c45c1a22",
+    "#7b5fb022",
+]
+accent-surface = [
+    "#dff5eaff",
+    "#e0f0ffff",
+    "#ffe0ecff",
+    "#fff0e0ff",
+    "#f0e8ffff",
+]
+
+[style]
+hard-shadow = false
+focus-glow = true
+char-wrap = false
+motion-fast = false
+bubble-bounce = false
+bevel = false
+pixel-icons = false
+selected-inverts-text = false
+pixel-select-marker = false
+pixel-metrics = false
+outline-surfaces = false
+soft-decor = true
+skin-message = 0
+skin-button = 0
+skin-list = 0
+skin-avatar = 0
+skin-modal = 0
+shell = 0
+bracket-labels = false
+paper-doodles = false
+sketch-bubbles = false
+synth-grid = false

@@ -39,13 +39,7 @@ export component SettingsPage inherits Rectangle {
     callback launch-at-login-toggled(bool);
     callback start-minimized-to-tray-toggled(bool);
     callback restore-last-selected-chat-toggled(bool);
-    in-out property <bool> light-theme: false;
-    in-out property <bool> retro-mode: false;
-    in-out property <bool> terminal-mode: false;
-    in-out property <bool> crayon-mode: false;
-    in-out property <bool> synthwave-mode: false;
-    in-out property <bool> chalkboard-mode: false;
-    in-out property <bool> amoled-mode: false;
+    in-out property <int> theme-id: 0;
     in-out property <int> accent-color: 0;
     in-out property <bool> outgoing-on-right: true;
     callback theme-mode-selected(string);
@@ -158,13 +152,7 @@ export component SettingsPage inherits Rectangle {
             if root.active-tab == 2: AppearancePane {
                 width: parent.width;
                 height: parent.height;
-                light-theme <=> root.light-theme;
-                retro-mode <=> root.retro-mode;
-                terminal-mode <=> root.terminal-mode;
-                crayon-mode <=> root.crayon-mode;
-                synthwave-mode <=> root.synthwave-mode;
-                chalkboard-mode <=> root.chalkboard-mode;
-                amoled-mode <=> root.amoled-mode;
+                theme-id <=> root.theme-id;
                 accent-color <=> root.accent-color;
                 outgoing-on-right <=> root.outgoing-on-right;
                 theme-mode-selected(mode) => {

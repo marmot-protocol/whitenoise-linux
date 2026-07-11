@@ -921,27 +921,58 @@ pub(crate) fn normalize_locale(code: &str) -> &'static str {
     }
 }
 
-/// The one theme-mode registry: each non-default mode's name paired with the
-/// root flag setter that turns it on. `normalize_theme_mode` and
-/// `apply_theme_mode` both derive from this list, so adding a theme mode is
-/// one new row here (plus the Slint side).
-type ThemeFlagSetter = fn(&DarkMatterLinux, bool);
-const THEME_MODE_FLAGS: [(&str, ThemeFlagSetter); 7] = [
-    ("light", DarkMatterLinux::set_light_theme),
-    ("retro", DarkMatterLinux::set_retro_mode),
-    ("terminal", DarkMatterLinux::set_terminal_mode),
-    ("crayon", DarkMatterLinux::set_crayon_mode),
-    ("synthwave", DarkMatterLinux::set_synthwave_mode),
-    ("chalkboard", DarkMatterLinux::set_chalkboard_mode),
-    ("amoled", DarkMatterLinux::set_amoled_mode),
+/// The built-in theme registry: position i is the id-i theme's stable mode name
+/// (0=dark, 1=light, 2=retro, 3=terminal, 4=crayon, 5=synthwave, 6=chalkboard,
+/// 7=amoled), matching the color/style packs in `ui/tokens.slint` (indexed by
+/// `Theme.id`) and the picker's built-in `modes` array. User themes loaded from
+/// disk extend this at runtime through `set_theme_registry`. Adding a built-in
+/// theme is one new entry here (plus the Slint packs + picker). This mirrors the
+/// `ACCENTS` name↔index table below.
+pub(crate) const THEME_MODES: [&str; 8] = [
+    "dark",
+    "light",
+    "retro",
+    "terminal",
+    "crayon",
+    "synthwave",
+    "chalkboard",
+    "amoled",
 ];
 
-pub(crate) fn normalize_theme_mode(mode: &str) -> &'static str {
-    THEME_MODE_FLAGS
-        .iter()
-        .map(|(name, _)| *name)
-        .find(|name| *name == mode)
-        .unwrap_or("dark")
+/// The full theme registry — the built-ins plus the user themes loaded from
+/// `$DM_HOME/themes/` at startup, in id order. Set once by `set_theme_registry`
+/// after `themes::load_themes`. A read before it is set sees only the
+/// built-ins, which is correct: no user theme can be active before the load.
+static THEME_REGISTRY: OnceLock<Vec<String>> = OnceLock::new();
+
+/// Record the user theme modes (as returned by `themes::load_themes`) so
+/// that name↔id resolution spans the built-ins and the user themes. Called once
+/// at startup, before the persisted theme is resolved.
+pub(crate) fn set_theme_registry(user_modes: Vec<String>) {
+    let mut all: Vec<String> = THEME_MODES.iter().map(|s| s.to_string()).collect();
+    all.extend(user_modes);
+    let _ = THEME_REGISTRY.set(all);
+}
+
+/// Every registered mode name in id order (built-ins alone until the registry
+/// is set).
+pub(crate) fn theme_modes() -> Vec<String> {
+    THEME_REGISTRY
+        .get()
+        .cloned()
+        .unwrap_or_else(|| THEME_MODES.iter().map(|s| s.to_string()).collect())
+}
+
+pub(crate) fn normalize_theme_mode(mode: &str) -> String {
+    if theme_modes().iter().any(|m| m == mode) {
+        mode.to_string()
+    } else {
+        THEME_MODES[0].to_string()
+    }
+}
+
+pub(crate) fn theme_mode_idx(mode: &str) -> i32 {
+    theme_modes().iter().position(|m| m == mode).unwrap_or(0) as i32
 }
 
 /// The one accent registry: position i names column i of every `accent-*`
@@ -983,11 +1014,18 @@ pub(crate) fn set_accent_index(ui: &DarkMatterLinux, idx: i32) {
     ui.set_accent_color(idx);
 }
 
+/// Every Rust-side theme push goes through here so an id the Slint theme packs
+/// cannot resolve fails loudly in dev builds instead of silently indexing out
+/// of range. Sets the single `theme-id` the root folds onto `Theme.id`; the
+/// old per-theme boolean flags are gone.
 pub(crate) fn apply_theme_mode(ui: &DarkMatterLinux, mode: &str) {
-    let mode = normalize_theme_mode(mode);
-    for (name, set_flag) in THEME_MODE_FLAGS {
-        set_flag(ui, mode == name);
-    }
+    let idx = theme_mode_idx(&normalize_theme_mode(mode));
+    let n = theme_modes().len() as i32;
+    debug_assert!(
+        (0..n).contains(&idx),
+        "theme id {idx} outside the theme registry (len {n})"
+    );
+    ui.set_theme_id(idx);
 }
 
 pub(crate) fn locale_display(code: &str) -> &'static str {

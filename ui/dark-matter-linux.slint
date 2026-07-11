@@ -72,6 +72,12 @@ import { StagedAttachment } from "tokens.slint";
 export {
     EmojiSheet,
 }
+// Theme registry. Rust fills `color-packs`/`style-packs` at startup from the
+// embedded built-in theme files and any user themes under `$DM_HOME/themes/`
+// (plus the picker name/mode lists) — see src/themes.rs.
+export {
+    Theme,
+}
 // Same for the Markdown link sink, bound once in Rust to open URLs externally.
 export { Linkout }
 export {
@@ -163,13 +169,11 @@ export component DarkMatterLinux inherits Window {
     in-out property <bool> show-add-contact: false;
     in-out property <bool> show-palette: false;
     in-out property <bool> outgoing-on-right: true;
-    in-out property <bool> light-theme: false;
-    in-out property <bool> retro-mode: false;
-    in-out property <bool> terminal-mode: false;
-    in-out property <bool> crayon-mode: false;
-    in-out property <bool> synthwave-mode: false;
-    in-out property <bool> chalkboard-mode: false;
-    in-out property <bool> amoled-mode: false;
+    // Active theme id, set from Rust (mapped from the persisted mode name via
+    // `THEME_MODES` in state.rs): 0=dark, 1=light, 2=retro, 3=terminal,
+    // 4=crayon, 5=synthwave, 6=chalkboard, 7=amoled. Folded straight onto
+    // `Theme.id` — no per-theme boolean flags.
+    in-out property <int> theme-id: 0;
     // Set once from Rust (cfg!(target_os = "macos")); drives ⌘-vs-Ctrl hints.
     in property <bool> is-macos: false;
     // Storage settings pane (Settings → Storage). `storage-cache-size` is a
@@ -760,33 +764,14 @@ export component DarkMatterLinux inherits Window {
     callback self-demote-admin();
     callback remove-member(string);
 
-    // Map the boolean theme toggles onto the single Theme.id (0=dark, 1=light,
-    // 2=retro, 3=terminal, 4=crayon, 5=synthwave, 6=chalkboard, 7=amoled).
-    // Precedence: amoled > chalkboard > synthwave > crayon > terminal > retro >
-    // light > dark.
-    function theme-id() -> int {
-        root.amoled-mode ? 7 : (root.chalkboard-mode ? 6 : (root.synthwave-mode ? 5 : (root.crayon-mode ? 4 : (root.terminal-mode ? 3 : (root.retro-mode ? 2 : (root.light-theme ? 1 : 0))))));
+    // The active theme id drives `Theme.id` directly; Rust sets `theme-id` and
+    // the whole palette/style resolution follows. `init` covers first paint
+    // (a `changed` handler never fires at construction).
+    init => {
+        Theme.id = root.theme-id;
     }
-    changed light-theme => {
-        Theme.id = root.theme-id();
-    }
-    changed retro-mode => {
-        Theme.id = root.theme-id();
-    }
-    changed terminal-mode => {
-        Theme.id = root.theme-id();
-    }
-    changed crayon-mode => {
-        Theme.id = root.theme-id();
-    }
-    changed synthwave-mode => {
-        Theme.id = root.theme-id();
-    }
-    changed chalkboard-mode => {
-        Theme.id = root.theme-id();
-    }
-    changed amoled-mode => {
-        Theme.id = root.theme-id();
+    changed theme-id => {
+        Theme.id = root.theme-id;
     }
     changed accent-color => {
         Theme.accent = root.accent-color;
@@ -1352,13 +1337,7 @@ export component DarkMatterLinux inherits Window {
                         restore-last-selected-chat-toggled(v) => {
                             root.restore-last-selected-chat-toggled(v);
                         }
-                        light-theme <=> root.light-theme;
-                        retro-mode <=> root.retro-mode;
-                        terminal-mode <=> root.terminal-mode;
-                        crayon-mode <=> root.crayon-mode;
-                        synthwave-mode <=> root.synthwave-mode;
-                        chalkboard-mode <=> root.chalkboard-mode;
-                        amoled-mode <=> root.amoled-mode;
+                        theme-id <=> root.theme-id;
                         accent-color <=> root.accent-color;
                         outgoing-on-right <=> root.outgoing-on-right;
                         theme-mode-selected(mode) => {
