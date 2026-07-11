@@ -447,6 +447,11 @@ msgctxt "ProfilePage"
 msgid "Cancel"
 msgstr ""
 
+#. control lives inline next to the key) and the footer just closes.
+msgctxt "RevealNsecModal"
+msgid "Cancel"
+msgstr ""
+
 msgctxt "StartNewChatModal"
 msgid "Cancel"
 msgstr ""
@@ -527,6 +532,10 @@ msgctxt "BackupCreateModal"
 msgid "Confirm your password"
 msgstr ""
 
+msgctxt "RevealNsecModal"
+msgid "Confirm your vault password to reveal the secret key (nsec) for your active account."
+msgstr ""
+
 msgctxt "GetStartedScreen"
 msgid "Connect a relay"
 msgstr ""
@@ -596,6 +605,10 @@ msgid "Copy"
 msgstr ""
 
 msgctxt "ProfilePage"
+msgid "Copy"
+msgstr ""
+
+msgctxt "RevealNsecModal"
 msgid "Copy"
 msgstr ""
 
@@ -826,6 +839,11 @@ msgstr ""
 
 msgctxt "ProfilePage"
 msgid "Display name"
+msgstr ""
+
+#. control lives inline next to the key) and the footer just closes.
+msgctxt "RevealNsecModal"
+msgid "Done"
 msgstr ""
 
 msgctxt "ProfilePage"
@@ -1766,6 +1784,22 @@ msgctxt "ContactDetail"
 msgid "Retry"
 msgstr ""
 
+msgctxt "KeysPage"
+msgid "Reveal"
+msgstr ""
+
+msgctxt "RevealNsecModal"
+msgid "Reveal key"
+msgstr ""
+
+msgctxt "RevealNsecModal"
+msgid "Reveal private key"
+msgstr ""
+
+msgctxt "KeysPage"
+msgid "Reveal private key (nsec)"
+msgstr ""
+
 msgctxt "DeviceRow"
 msgid "Revoke"
 msgstr ""
@@ -1787,6 +1821,10 @@ msgid "SECRET KEY (NSEC)"
 msgstr ""
 
 msgctxt "LoginScreen"
+msgid "SECRET KEY (NSEC)"
+msgstr ""
+
+msgctxt "RevealNsecModal"
 msgid "SECRET KEY (NSEC)"
 msgstr ""
 
@@ -1986,6 +2024,10 @@ msgctxt "AdvancedPane"
 msgid "Shows diagnostics and MLS internals. Adds a Debug entry with account, key-packages, and group state."
 msgstr ""
 
+msgctxt "KeysPage"
+msgid "Shows your secret key after you confirm your vault password. Never share it — it is your identity."
+msgstr ""
+
 msgctxt "LoginScreen"
 msgid "Sign in to your Nostr identity"
 msgstr ""
@@ -2036,6 +2078,10 @@ msgstr ""
 
 msgctxt "StoragePane"
 msgid "Storage"
+msgstr ""
+
+msgctxt "RevealNsecModal"
+msgid "Store it somewhere safe and close this dialog. Dark Matter keeps it encrypted in your vault — this is the only place it's shown in the clear."
 msgstr ""
 
 msgctxt "weekday"
@@ -2089,6 +2135,10 @@ msgstr ""
 
 msgctxt "KeysPage"
 msgid "This invalidates your current package. Contacts will use the new one going forward."
+msgstr ""
+
+msgctxt "RevealNsecModal"
+msgid "This is the secret key for your active account. Anyone with it controls your identity — never share it."
 msgstr ""
 
 msgctxt "GetStartedScreen"
@@ -2207,8 +2257,16 @@ msgctxt "ProfilePage"
 msgid "Username"
 msgstr ""
 
+msgctxt "RevealNsecModal"
+msgid "VAULT PASSWORD"
+msgstr ""
+
 msgctxt "ProfilePage"
 msgid "VISIBLE TO ANYONE YOU CHAT WITH"
+msgstr ""
+
+msgctxt "RevealNsecModal"
+msgid "Verifying…"
 msgstr ""
 
 msgctxt "AboutPane"
@@ -2265,6 +2323,10 @@ msgstr ""
 
 msgctxt "AboutPane"
 msgid "Your keys stay on this device — we never see them."
+msgstr ""
+
+msgctxt "RevealNsecModal"
+msgid "Your password"
 msgstr ""
 
 msgctxt "ProfilePage"

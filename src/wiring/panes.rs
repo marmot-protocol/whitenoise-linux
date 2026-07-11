@@ -1461,6 +1461,74 @@ pub(crate) fn wire_panes(
         }
     });
 
+    // ─── Reveal nsec (Keys → Danger zone) ──────────────────────────────
+    // The private key is only ever shown after the user re-confirms their
+    // vault password. Verification re-opens the vault file from disk with the
+    // supplied password — the same WrongPassword-on-bad-tag path as unlock —
+    // which runs the deliberately-slow Argon2id KDF, so it goes on a worker
+    // thread. On success we reveal the *active* account's nsec, not blindly the
+    // primary key. Nothing decrypted is held anywhere but the UI property,
+    // which the dismiss handler clears.
+    ui.on_reveal_nsec_confirm({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        move |password| {
+            let Some(ui) = weak.upgrade() else { return };
+            let password = password.to_string();
+            let Some(backend) = backend_cell.lock().unwrap().clone() else {
+                ui.set_reveal_nsec_status(s("Backend isn't ready yet."));
+                ui.set_reveal_nsec_status_error(true);
+                return;
+            };
+            let account_hex = backend.account().account_id_hex;
+            ui.set_reveal_nsec_busy(true);
+            ui.set_reveal_nsec_status(s(""));
+            ui.set_reveal_nsec_status_error(false);
+            let weak = weak.clone();
+            std::thread::spawn(move || {
+                let result: Result<String, String> = (|| {
+                    let v = Vault::open(&password).map_err(|e| match e {
+                        vault::VaultError::WrongPassword => "Wrong password.".to_string(),
+                        other => format!("{other}"),
+                    })?;
+                    v.nsec_for_pubkey(&account_hex).ok_or_else(|| {
+                        "No secret key for this account is stored on this device.".to_string()
+                    })
+                })();
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    ui.set_reveal_nsec_busy(false);
+                    match result {
+                        Ok(nsec) => {
+                            ui.set_reveal_nsec_password(s(""));
+                            ui.set_reveal_nsec_status(s(""));
+                            ui.set_reveal_nsec_status_error(false);
+                            ui.set_reveal_nsec_value(nsec.into());
+                        }
+                        Err(err) => {
+                            ui.set_reveal_nsec_status(err.into());
+                            ui.set_reveal_nsec_status_error(true);
+                        }
+                    }
+                });
+            });
+        }
+    });
+
+    ui.on_reveal_nsec_dismissed({
+        let weak = ui.as_weak();
+        move || {
+            let Some(ui) = weak.upgrade() else { return };
+            // Drop the revealed key and the typed password the moment the
+            // dialog closes — don't leave either lingering in UI state.
+            ui.set_reveal_nsec_password(s(""));
+            ui.set_reveal_nsec_value(s(""));
+            ui.set_reveal_nsec_status(s(""));
+            ui.set_reveal_nsec_status_error(false);
+            ui.set_reveal_nsec_busy(false);
+        }
+    });
+
     // After any selection mutation, refresh the breadcrumb so the title bar matches state.
     // Captures only the weak handle, so clones are `Send` and can ride
     // through worker threads into completion closures.

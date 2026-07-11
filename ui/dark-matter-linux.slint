@@ -31,6 +31,7 @@ import { AddContactModal } from "modals/add-contact-modal.slint";
 import { NicknameModal } from "modals/nickname-modal.slint";
 import { AccountSwitcherModal } from "modals/account-switcher-modal.slint";
 import { AddAccountModal } from "modals/add-account-modal.slint";
+import { RevealNsecModal } from "modals/reveal-nsec-modal.slint";
 import { ImportBackupModal } from "modals/import-backup-modal.slint";
 import { BackupCreateModal } from "modals/backup-create-modal.slint";
 import { ConfirmModal } from "modals/confirm-modal.slint";
@@ -514,6 +515,19 @@ export component DarkMatterLinux inherits Window {
     callback kp-publish-clicked();
     callback kp-rotate-clicked();
     callback kp-refresh-clicked();
+
+    // Reveal-nsec danger-zone flow. The keys page emits intent; the window root
+    // owns the modal (blocking all chrome) as with the rotate confirm. Rust
+    // verifies `reveal-nsec-confirm`'s password off the UI thread and, on
+    // success, fills `reveal-nsec-value`; dismissing clears both.
+    property <bool> show-reveal-nsec: false;
+    in-out property <string> reveal-nsec-password;
+    in-out property <string> reveal-nsec-value;
+    in property <bool> reveal-nsec-busy: false;
+    in property <string> reveal-nsec-status;
+    in property <bool> reveal-nsec-status-error: false;
+    callback reveal-nsec-confirm(string);   // vault password
+    callback reveal-nsec-dismissed();
 
     // Debug pane (gated by Settings → Advanced toggle).
     in-out property <bool> debug-enabled: false;
@@ -1230,6 +1244,11 @@ export component DarkMatterLinux inherits Window {
                         refresh-clicked => {
                             root.kp-refresh-clicked();
                         }
+                        reveal-nsec-clicked => {
+                            root.reveal-nsec-password = "";
+                            root.reveal-nsec-value = "";
+                            root.show-reveal-nsec = true;
+                        }
                     }
                 }
 
@@ -1586,6 +1605,24 @@ export component DarkMatterLinux inherits Window {
         }
         dismissed => {
             root.show-rotate-confirm = false;
+        }
+    }
+
+    if root.show-reveal-nsec: RevealNsecModal {
+        password <=> root.reveal-nsec-password;
+        nsec-value: root.reveal-nsec-value;
+        primary-busy: root.reveal-nsec-busy;
+        status: root.reveal-nsec-status;
+        status-color: root.reveal-nsec-status-error ? Palette.danger : Palette.text-lo;
+        confirm(password) => {
+            root.reveal-nsec-confirm(password);
+        }
+        copy(nsec) => {
+            root.copy-to-clipboard(nsec);
+        }
+        dismissed => {
+            root.show-reveal-nsec = false;
+            root.reveal-nsec-dismissed();
         }
     }
 

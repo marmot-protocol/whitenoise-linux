@@ -3,6 +3,7 @@ import { KeyIcon } from "../icons/key-icon.slint";
 import { LockIcon } from "../icons/lock-icon.slint";
 import { CopyIcon } from "../icons/copy-icon.slint";
 import { RefreshIcon } from "../icons/refresh-icon.slint";
+import { EyeIcon } from "../icons/eye-icon.slint";
 import { PageHeader } from "../shells/page-header.slint";
 import { GroupCard } from "../shells/group-card.slint";
 import { CypherScroll } from "../primitives/cypher-scroll.slint";
@@ -28,6 +29,7 @@ export component KeysPage inherits Rectangle {
     callback publish-clicked;
     callback rotate-clicked;
     callback refresh-clicked;
+    callback reveal-nsec-clicked;
 
     in property <[LinkedDevice]> devices: [
         { name: @tr("This computer"), detail: "Linux · darkmatter v0.1.4", current: true },
@@ -285,6 +287,58 @@ export component KeysPage inherits Rectangle {
                                     if (!root.kp-busy) {
                                         root.rotate-clicked();
                                     }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    height: 60px;
+                    border-radius: (8px) * Theme.r-scale;
+                    background: Palette.danger-soft;
+                    border-width: 1px;
+                    border-color: Palette.danger-border;
+                    HorizontalLayout {
+                        padding-left: 16px;
+                        padding-right: 16px;
+                        padding-top: 12px;
+                        padding-bottom: 12px;
+                        spacing: 12px;
+                        alignment: stretch;
+                        VerticalLayout {
+                            horizontal-stretch: 1;
+                            spacing: 4px;
+                            alignment: center;
+                            Text {
+                                text: @tr("Reveal private key (nsec)");
+                                color: Palette.danger;
+                                font-size: (12px) * Theme.fs-scale;
+                                font-weight: 700;
+                            }
+
+                            Text {
+                                text: @tr("Shows your secret key after you confirm your vault password. Never share it — it is your identity.");
+                                color: Palette.text-lo;
+                                font-size: (11px) * Theme.fs-scale;
+                            }
+                        }
+
+                        VerticalLayout {
+                            alignment: center;
+                            MicroButton {
+                                label: @tr("Reveal");
+                                fg: Palette.danger;
+                                bg-color: Palette.danger-soft;
+                                hover-bg: Palette.danger-soft-hover;
+                                outline: Palette.danger-border;
+                                hover-outline: Palette.danger-border-hover;
+                                EyeIcon {
+                                    stroke: Palette.danger;
+                                }
+
+                                clicked => {
+                                    root.reveal-nsec-clicked();
                                 }
                             }
                         }

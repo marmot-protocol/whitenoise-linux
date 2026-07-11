@@ -465,6 +465,12 @@ msgctxt "ProfilePage"
 msgid "Cancel"
 msgstr "キャンセル"
 
+#. control lives inline next to the key) and the footer just closes.
+#, fuzzy
+msgctxt "RevealNsecModal"
+msgid "Cancel"
+msgstr "キャンセル"
+
 msgctxt "StartNewChatModal"
 msgid "Cancel"
 msgstr "キャンセル"
@@ -549,6 +555,10 @@ msgctxt "BackupCreateModal"
 msgid "Confirm your password"
 msgstr "パスワードを確認"
 
+msgctxt "RevealNsecModal"
+msgid "Confirm your vault password to reveal the secret key (nsec) for your active account."
+msgstr ""
+
 #, fuzzy
 msgctxt "GetStartedScreen"
 msgid "Connect a relay"
@@ -624,6 +634,11 @@ msgid "Copy"
 msgstr "コピー"
 
 msgctxt "ProfilePage"
+msgid "Copy"
+msgstr "コピー"
+
+#, fuzzy
+msgctxt "RevealNsecModal"
 msgid "Copy"
 msgstr "コピー"
 
@@ -864,6 +879,11 @@ msgstr "開発者フラグ"
 msgctxt "ProfilePage"
 msgid "Display name"
 msgstr "表示名"
+
+#. control lives inline next to the key) and the footer just closes.
+msgctxt "RevealNsecModal"
+msgid "Done"
+msgstr ""
 
 msgctxt "ProfilePage"
 msgid "EDIT"
@@ -1849,6 +1869,23 @@ msgctxt "ContactDetail"
 msgid "Retry"
 msgstr "再試行"
 
+msgctxt "KeysPage"
+msgid "Reveal"
+msgstr ""
+
+#, fuzzy
+msgctxt "RevealNsecModal"
+msgid "Reveal key"
+msgstr "鍵を削除"
+
+msgctxt "RevealNsecModal"
+msgid "Reveal private key"
+msgstr ""
+
+msgctxt "KeysPage"
+msgid "Reveal private key (nsec)"
+msgstr ""
+
 msgctxt "DeviceRow"
 msgid "Revoke"
 msgstr "取り消し"
@@ -1872,6 +1909,11 @@ msgstr "秘密鍵 (nsec)"
 msgctxt "LoginScreen"
 msgid "SECRET KEY (NSEC)"
 msgstr "秘密鍵 (NSEC)"
+
+#, fuzzy
+msgctxt "RevealNsecModal"
+msgid "SECRET KEY (NSEC)"
+msgstr "秘密鍵 (nsec)"
 
 msgctxt "AdvancedPane"
 msgid "SECURITY & PRIVACY"
@@ -2078,6 +2120,10 @@ msgctxt "AdvancedPane"
 msgid "Shows diagnostics and MLS internals. Adds a Debug entry with account, key-packages, and group state."
 msgstr "下に Debug 項目を追加。アカウント、キーパッケージ、グループ状態を表示します。"
 
+msgctxt "KeysPage"
+msgid "Shows your secret key after you confirm your vault password. Never share it — it is your identity."
+msgstr ""
+
 msgctxt "LoginScreen"
 msgid "Sign in to your Nostr identity"
 msgstr "Nostr ID でサインイン"
@@ -2134,6 +2180,10 @@ msgctxt "StoragePane"
 msgid "Storage"
 msgstr "ストレージ"
 
+msgctxt "RevealNsecModal"
+msgid "Store it somewhere safe and close this dialog. Dark Matter keeps it encrypted in your vault — this is the only place it's shown in the clear."
+msgstr ""
+
 msgctxt "weekday"
 msgid "Sun"
 msgstr "日曜日"
@@ -2186,6 +2236,10 @@ msgstr ""
 msgctxt "KeysPage"
 msgid "This invalidates your current package. Contacts will use the new one going forward."
 msgstr "現在のパッケージは無効になります。今後、連絡先は新しいパッケージを使用します。"
+
+msgctxt "RevealNsecModal"
+msgid "This is the secret key for your active account. Anyone with it controls your identity — never share it."
+msgstr ""
 
 msgctxt "GetStartedScreen"
 msgid "This is what lets other people start an encrypted chat with you."
@@ -2308,9 +2362,19 @@ msgctxt "ProfilePage"
 msgid "Username"
 msgstr "ユーザー名"
 
+#, fuzzy
+msgctxt "RevealNsecModal"
+msgid "VAULT PASSWORD"
+msgstr "バックアップのパスワード"
+
 msgctxt "ProfilePage"
 msgid "VISIBLE TO ANYONE YOU CHAT WITH"
 msgstr "チャット相手全員に公開"
+
+#, fuzzy
+msgctxt "RevealNsecModal"
+msgid "Verifying…"
+msgstr "復号中…"
 
 msgctxt "AboutPane"
 msgid "WHAT IT IS"
@@ -2367,6 +2431,11 @@ msgstr "鍵がこのデバイス外に出ることはありません。"
 msgctxt "AboutPane"
 msgid "Your keys stay on this device — we never see them."
 msgstr "あなたの鍵はこのデバイスに留まり、私たちが見ることはありません。"
+
+#, fuzzy
+msgctxt "RevealNsecModal"
+msgid "Your password"
+msgstr "パスワードを表示"
 
 msgctxt "ProfilePage"
 msgid "Your profile"

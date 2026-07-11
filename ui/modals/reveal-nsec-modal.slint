@@ -1,0 +1,114 @@
+import { Palette, Theme } from "../tokens.slint";
+import { Modal, ModalField } from "modal.slint";
+import { Button } from "../primitives/button.slint";
+import { CopyIcon } from "../icons/copy-icon.slint";
+
+// Danger-zone affordance: reveal the *active* account's private key (nsec),
+// gated behind the vault password. Two phases in one dialog, keyed on whether
+// `nsec-value` has been filled in by Rust:
+//
+//   1. Confirm — the user re-enters their vault password. `confirm(password)`
+//      verifies it (re-deriving the KDF off the UI thread) and, on success,
+//      fills `nsec-value`.
+//   2. Reveal — the nsec is shown with a copy button and a stark warning.
+//
+// The root owns `show-reveal-nsec`; dismissing clears the password + value.
+export component RevealNsecModal inherits Modal {
+    callback confirm(string);   // vault password → verify + reveal
+    callback copy(string);      // copy the revealed nsec
+
+    in-out property <string> password;
+    in property <string> nsec-value;        // "" until revealed
+    property <bool> revealed: root.nsec-value != "";
+
+    card-width: 460px;
+    title: @tr("Reveal private key");
+    subtitle: root.revealed
+        ? @tr("This is the secret key for your active account. Anyone with it controls your identity — never share it.")
+        : @tr("Confirm your vault password to reveal the secret key (nsec) for your active account.");
+    // Phase 1 shows a danger-styled Reveal; phase 2 drops the primary (the copy
+    // control lives inline next to the key) and the footer just closes.
+    secondary-label: root.revealed ? @tr("Done") : @tr("Cancel");
+    primary-label: root.revealed ? "" : @tr("Reveal key");
+    primary-busy-label: @tr("Verifying…");
+    primary-danger: true;
+    primary-enabled: root.password != "";
+    primary => {
+        root.confirm(root.password);
+    }
+
+    if !root.revealed: ModalField {
+        label: @tr("VAULT PASSWORD");
+        placeholder: @tr("Your password");
+        text <=> root.password;
+        password: true;
+        autofocus: true;
+        submitted => {
+            if (root.password != "") {
+                root.confirm(root.password);
+            }
+        }
+    }
+
+    if root.revealed: VerticalLayout {
+        spacing: 6px;
+        Text {
+            text: @tr("SECRET KEY (NSEC)");
+            color: Palette.text-mid;
+            font-size: (9px) * Theme.fs-scale;
+            font-weight: 700;
+            letter-spacing: 1.6px;
+            font-family: Theme.font;
+        }
+
+        Rectangle {
+            height: 38px;
+            border-radius: (7px) * Theme.r-scale;
+            background: Palette.field;
+            border-width: 1px;
+            border-color: Palette.field-border;
+            HorizontalLayout {
+                padding-left: 14px;
+                padding-right: 14px;
+                Text {
+                    text: root.nsec-value;
+                    color: Palette.text-hi;
+                    font-size: Theme.fs(12px, 12px);
+                    font-family: Theme.font;
+                    vertical-alignment: center;
+                    overflow: elide;
+                }
+            }
+        }
+
+        HorizontalLayout {
+            Rectangle {
+                horizontal-stretch: 1;
+            }
+
+            Button {
+                label: @tr("Copy");
+                button-height: 30px;
+                radius: 5px;
+                pad-left: 10px;
+                pad-right: 12px;
+                font-size: Theme.fs(11px, 12px);
+                CopyIcon {
+                    stroke: Palette.text-mid;
+                }
+
+                clicked => {
+                    root.copy(root.nsec-value);
+                }
+            }
+        }
+    }
+
+    if root.revealed: Text {
+        text: @tr("Store it somewhere safe and close this dialog. Dark Matter keeps it encrypted in your vault — this is the only place it's shown in the clear.");
+        color: Palette.danger;
+        font-size: (10px) * Theme.fs-scale;
+        font-family: Theme.font;
+        wrap: word-wrap;
+    }
+}

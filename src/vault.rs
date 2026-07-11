@@ -259,6 +259,31 @@ impl Vault {
         self.get(NSEC_KEY).map(|s| s.to_string())
     }
 
+    /// Return the canonical bech32 nsec for the account whose public key is
+    /// `pubkey_hex`, if this vault holds its secret. Backs the "reveal my
+    /// private key" affordance, which reveals the *active* account's key rather
+    /// than blindly the primary `nsec`. Checks every stored secret (the primary
+    /// `nsec`, per-account `nsec:<hex>` backups, and marmot `account:<label>`
+    /// secret-hex) and returns the first whose public key matches — so it works
+    /// no matter which encoding a given account landed under.
+    pub fn nsec_for_pubkey(&self, pubkey_hex: &str) -> Option<String> {
+        use nostr::ToBech32;
+        let want = pubkey_hex.to_ascii_lowercase();
+        for (k, val) in &self.data {
+            let is_secret = k == NSEC_KEY || k.starts_with("nsec:") || k.starts_with("account:");
+            if !is_secret {
+                continue;
+            }
+            let Ok(keys) = nostr::Keys::parse(val) else {
+                continue;
+            };
+            if keys.public_key().to_hex() == want {
+                return keys.secret_key().to_bech32().ok();
+            }
+        }
+        None
+    }
+
     /// Subkey used to seal cached media blobs (see `media_cache.rs`). Derived
     /// from the vault's data key but domain-separated so the two uses can never
     /// interfere. The vault key is already a high-entropy 32-byte key, so a
