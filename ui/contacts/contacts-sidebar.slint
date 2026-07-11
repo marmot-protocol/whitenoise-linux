@@ -6,19 +6,55 @@ export component ContactsSidebar inherits SidePanel {
     callback contact-clicked(int);
     in property <[Contact]> contacts;
     in property <int> active-contact;
+    // One match flag per `contacts` row, computed by Rust on `search-changed`
+    // (Slint has no substring match). Only consulted while `query` is non-empty,
+    // so a stale array is inert until the next keystroke.
+    in property <[bool]> match-flags;
+    callback search-changed(string);
+
+    property <string> query;
 
     title: @tr("CONTACTS");
     count: root.contacts.length;
     show-search: true;
     search-placeholder: @tr("Search contacts…");
     show-add: true;
+    // Rows filter in place, so drop the layout's inter-row spacing and bake the
+    // 2px gap into each shown wrapper — hidden rows then collapse to nothing.
+    list-spacing: 0;
 
-    for c[idx] in root.contacts: ContactListItem {
-        data: c;
-        compact: root.strip;
-        selected: idx == root.active-contact;
-        clicked => {
-            root.contact-clicked(idx);
+    // Typing in the header search field filters the rows below in place. Echo
+    // the query to Rust so it recomputes `match-flags` for the current contacts.
+    search-edited(q) => {
+        root.query = q;
+        root.search-changed(q);
+    }
+    // The contacts list is re-pushed on refresh; re-derive the match set so
+    // filtered rows track the fresh order (mirrors the chat list). No-op while
+    // the query is empty.
+    changed contacts => {
+        if (root.query != "") {
+            root.search-changed(root.query);
+        }
+    }
+
+    for c[idx] in root.contacts: Rectangle {
+        // Shown when the query is empty or this row matched (flags from Rust).
+        property <bool> shown: root.query == "" || (idx < root.match-flags.length && root.match-flags[idx]);
+        height: shown ? item.height + 2px : 0px;
+        clip: true;
+        visible: shown;
+
+        item := ContactListItem {
+            x: 0;
+            y: 0;
+            width: 100%;
+            data: c;
+            compact: root.strip;
+            selected: idx == root.active-contact;
+            clicked => {
+                root.contact-clicked(idx);
+            }
         }
     }
 }

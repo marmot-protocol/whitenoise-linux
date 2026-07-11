@@ -11,6 +11,34 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     let Handlers {
         refresh_breadcrumb, ..
     } = h.clone();
+    // Live contacts-list filter: recompute one case-insensitive match flag per
+    // contact row as the user types in the sidebar search field (Slint has no
+    // substring match), mirroring the chat-list filter. Matches on the resolved
+    // display name, the published real name, and the short npub so a contact is
+    // findable by nickname, published name, or key prefix. The flags are only
+    // consulted while the query is non-empty, so the empty-query case (which
+    // shows everything) needn't clear the array.
+    ui.on_contact_search_changed({
+        let weak = ui.as_weak();
+        move |query| {
+            let Some(ui) = weak.upgrade() else { return };
+            let q = query.trim().to_lowercase();
+            if q.is_empty() {
+                ui.set_contact_match_flags(model(Vec::<bool>::new()));
+                return;
+            }
+            let flags: Vec<bool> = ui
+                .get_contacts()
+                .iter()
+                .map(|c| {
+                    c.name.to_lowercase().contains(&q)
+                        || c.real_name.to_lowercase().contains(&q)
+                        || c.npub_short.to_lowercase().contains(&q)
+                })
+                .collect();
+            ui.set_contact_match_flags(model(flags));
+        }
+    });
     ui.on_add_contact_requested({
         let weak = ui.as_weak();
         move || {

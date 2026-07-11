@@ -13,6 +13,10 @@ export component ContactsPage inherits Rectangle {
     callback show-qr-clicked();
     callback start-chat-clicked();
     callback open-shared-group(string);
+    // Live contacts-list search: Rust recomputes one match flag per `contacts`
+    // row on `search-changed`; the sidebar hides non-matching rows in place.
+    callback search-changed(string);
+    in property <[bool]> match-flags;
     in property <[Contact]> contacts;
     in property <[SharedGroup]> shared-groups;
     in property <int> active-contact;
@@ -74,6 +78,10 @@ export component ContactsPage inherits Rectangle {
         window-width: root.window-width;
         contacts: root.contacts;
         active-contact: root.active-contact;
+        match-flags: root.match-flags;
+        search-changed(q) => {
+            root.search-changed(q);
+        }
         contact-clicked(idx) => {
             root.contact-clicked(idx);
         }
