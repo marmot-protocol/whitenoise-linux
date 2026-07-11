@@ -1491,6 +1491,11 @@ msgctxt "EncryptionInfoModal"
 msgid "Old messages stay safe"
 msgstr ""
 
+#, fuzzy
+msgctxt "GeneralPane"
+msgid "One-tap reactions"
+msgstr "Ein-Tipp-Reaktionen"
+
 msgctxt "EncryptionInfoModal"
 msgid "Only the people in this chat can read it."
 msgstr ""
@@ -1659,6 +1664,11 @@ msgctxt "GroupSettingsCard"
 msgid "Purpose, rules, or invite blurb"
 msgstr "Zweck, Regeln oder Einladungstext"
 
+#, fuzzy
+msgctxt "GeneralPane"
+msgid "QUICK REACTIONS"
+msgstr "SCHNELLREAKTIONEN"
+
 msgctxt "DarkMatterTray"
 msgid "Quit"
 msgstr "Beenden"
@@ -1784,6 +1794,10 @@ msgctxt "NetworkPane"
 msgid "Republishing…"
 msgstr "Erneut veröffentlichen…"
 
+msgctxt "GeneralPane"
+msgid "Reset"
+msgstr "Zurücksetzen"
+
 msgctxt "NetworkPane"
 msgid "Restart darkmatter to apply relay changes."
 msgstr "Starte darkmatter neu, um Relay-Änderungen anzuwenden."
@@ -1799,6 +1813,10 @@ msgstr "Stelle alles aus einem verschlüsselten Backup wieder her. Verwende das 
 msgctxt "GeneralPane"
 msgid "Restore last selected chat on launch"
 msgstr "Letzten Chat beim Start wiederherstellen"
+
+msgctxt "GeneralPane"
+msgid "Restore the default reactions"
+msgstr "Standardreaktionen wiederherstellen"
 
 #, fuzzy
 msgctxt "ImportBackupModal"
@@ -2025,6 +2043,10 @@ msgstr "Nachrichtenvorschau anzeigen"
 msgctxt "PasswordField"
 msgid "Show password"
 msgstr "Passwort anzeigen"
+
+msgctxt "GeneralPane"
+msgid "Shown on the message toolbar and menu. Tap one to remove it."
+msgstr "Wird in der Nachrichtenleiste und im Menü angezeigt. Zum Entfernen antippen."
 
 #, fuzzy
 msgctxt "AdvancedPane"

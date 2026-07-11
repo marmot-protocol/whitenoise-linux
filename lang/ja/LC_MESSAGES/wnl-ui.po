@@ -1488,6 +1488,11 @@ msgctxt "EncryptionInfoModal"
 msgid "Old messages stay safe"
 msgstr ""
 
+#, fuzzy
+msgctxt "GeneralPane"
+msgid "One-tap reactions"
+msgstr "ワンタップリアクション"
+
 msgctxt "EncryptionInfoModal"
 msgid "Only the people in this chat can read it."
 msgstr ""
@@ -1656,6 +1661,11 @@ msgctxt "GroupSettingsCard"
 msgid "Purpose, rules, or invite blurb"
 msgstr "目的、ルール、招待文"
 
+#, fuzzy
+msgctxt "GeneralPane"
+msgid "QUICK REACTIONS"
+msgstr "クイックリアクション"
+
 msgctxt "DarkMatterTray"
 msgid "Quit"
 msgstr "終了"
@@ -1781,6 +1791,10 @@ msgctxt "NetworkPane"
 msgid "Republishing…"
 msgstr "再公開中…"
 
+msgctxt "GeneralPane"
+msgid "Reset"
+msgstr "リセット"
+
 msgctxt "NetworkPane"
 msgid "Restart darkmatter to apply relay changes."
 msgstr "リレー変更を適用するには darkmatter を再起動してください。"
@@ -1796,6 +1810,10 @@ msgstr "暗号化されたバックアップからすべてを復元します。
 msgctxt "GeneralPane"
 msgid "Restore last selected chat on launch"
 msgstr "起動時に最後のチャットを復元"
+
+msgctxt "GeneralPane"
+msgid "Restore the default reactions"
+msgstr "デフォルトのリアクションに戻す"
 
 #, fuzzy
 msgctxt "ImportBackupModal"
@@ -2022,6 +2040,10 @@ msgstr "メッセージのプレビューを表示"
 msgctxt "PasswordField"
 msgid "Show password"
 msgstr "パスワードを表示"
+
+msgctxt "GeneralPane"
+msgid "Shown on the message toolbar and menu. Tap one to remove it."
+msgstr "メッセージのツールバーとメニューに表示されます。タップすると削除できます。"
 
 #, fuzzy
 msgctxt "AdvancedPane"

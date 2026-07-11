@@ -1,5 +1,15 @@
 use crate::*;
 
+/// Sprite-sheet tile for a reaction emoji as `(clip_x, clip_y)`, or `(-1, -1)`
+/// when the sheet has no tile for it (the chip then draws the text glyph). Same
+/// resolver the quick-reaction row and inline bubble emoji use, so a reaction
+/// looks identical everywhere it appears.
+fn reaction_clip(emoji: &str) -> (i32, i32) {
+    emoji_clip(emoji)
+        .map(|(x, y)| (x as i32, y as i32))
+        .unwrap_or((-1, -1))
+}
+
 /// Presentation for the generic-file chip: a per-type emoji plus a short type
 /// name. Shared by the confirmed and pending row builders so the two stay in
 /// lockstep (CLAUDE.md requires changing them together). Callers guard on
@@ -875,10 +885,13 @@ pub(crate) fn apply_reaction_overlay(
                         chip.mine = true;
                     }
                 } else {
+                    let (clip_x, clip_y) = reaction_clip(emoji);
                     entry.push(Reaction {
                         emoji: s(emoji),
                         count: 1,
                         mine: true,
+                        clip_x,
+                        clip_y,
                         // Names resolve on the next real rebuild; the optimistic
                         // window shows the count without the tooltip list.
                         reactors: Default::default(),
@@ -951,10 +964,13 @@ pub(crate) fn apply_reaction_to_model_row(
                         chip.mine = true;
                     }
                 } else {
+                    let (clip_x, clip_y) = reaction_clip(emoji);
                     chips.push(Reaction {
                         emoji: s(emoji),
                         count: 1,
                         mine: true,
+                        clip_x,
+                        clip_y,
                         // Names resolve on the next real rebuild; the optimistic
                         // window shows the count without the tooltip list.
                         reactors: Default::default(),
@@ -1428,11 +1444,16 @@ pub(crate) fn aggregate_reactions(
         .map(|(target, emojis)| {
             let mut list: Vec<Reaction> = emojis
                 .into_iter()
-                .map(|(emoji, (mine, senders))| Reaction {
-                    emoji: s(&emoji),
-                    count: senders.len() as i32,
-                    mine,
-                    reactors: build_reactors(&senders, my_account_id_hex, backend),
+                .map(|(emoji, (mine, senders))| {
+                    let (clip_x, clip_y) = reaction_clip(&emoji);
+                    Reaction {
+                        emoji: s(&emoji),
+                        count: senders.len() as i32,
+                        mine,
+                        clip_x,
+                        clip_y,
+                        reactors: build_reactors(&senders, my_account_id_hex, backend),
+                    }
                 })
                 .collect();
             // Most-used first; deterministic tiebreak by emoji.

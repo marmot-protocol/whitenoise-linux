@@ -53,6 +53,7 @@ import {
     EmojiSheet,
     Linkout,
     ProfileSink,
+    QuickReact,
     EffectCatalog,
     ErrorCopy,
     TimeCopy,
@@ -72,6 +73,11 @@ export {
 export { Linkout }
 export {
     ProfileSink,
+}
+// Quick-reaction hub. Rust pushes the emoji set into `list` and binds the
+// react/add/remove/reset callbacks.
+export {
+    QuickReact,
 }
 // File-dialog titles localized via @tr, read by Rust before opening the rfd picker.
 export {
@@ -1616,6 +1622,7 @@ export component DarkMatterLinux inherits Window {
     if root.ctx-menu-open: MessageContextMenu {
         anchor-x: root.ctx-menu-x;
         anchor-y: root.ctx-menu-y;
+        message-id: root.ctx-menu-id;
         can-edit: root.ctx-menu-can-edit;
         can-copy: root.ctx-menu-text != "";
         has-selection: TextSelection.active && TextSelection.owner == root.ctx-menu-id && TextSelection.a-line >= 0 && TextSelection.b-line >= 0;

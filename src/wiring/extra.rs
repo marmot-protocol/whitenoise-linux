@@ -160,6 +160,87 @@ fn run_viewer_image_action(
     fetch_viewer_image_bytes(ui.as_weak(), backend, group_hex, vault, item, action);
 }
 
+/// Push the user's quick-reaction set into the `QuickReact` global, the single
+/// source the hover toolbar, context menu, and Settings editor all read.
+pub(crate) fn push_quick_reactions(ui: &DarkMatterLinux, list: &[String]) {
+    // Resolve each emoji to its tile in the shared Twemoji sprite sheet (the
+    // same texture and resolver the chat bubbles draw inline emoji from) so the
+    // cells render in colour; clip -1 tells the cell to fall back to the text
+    // glyph.
+    let rows: Vec<QuickReaction> = list
+        .iter()
+        .map(|emoji| {
+            let (clip_x, clip_y) = emoji_clip(emoji)
+                .map(|(x, y)| (x as i32, y as i32))
+                .unwrap_or((-1, -1));
+            QuickReaction {
+                emoji: SharedString::from(emoji),
+                clip_x,
+                clip_y,
+            }
+        })
+        .collect();
+    ui.global::<QuickReact>()
+        .set_list(ModelRc::new(VecModel::from(rows)));
+}
+
+/// Bind the `QuickReact` global: a one-tap `react` (any message row), plus the
+/// Settings-editor actions that add, remove, or reset the set and re-push it.
+fn wire_quick_reactions(ui: &DarkMatterLinux, settings_cell: &Rc<RefCell<Settings>>) {
+    let qr = ui.global::<QuickReact>();
+
+    qr.on_react({
+        let weak = ui.as_weak();
+        move |message_id, emoji| {
+            if let Some(ui) = weak.upgrade() {
+                ui.invoke_react_message(message_id, emoji);
+            }
+        }
+    });
+
+    // The editor "+" opens the shared picker with the quick-add sentinel; the
+    // pick lands back in `on_emoji_picked`, which appends and re-pushes.
+    qr.on_add_clicked({
+        let weak = ui.as_weak();
+        move |anchor_x, anchor_y| {
+            if let Some(ui) = weak.upgrade() {
+                ui.invoke_emoji_picker_requested(
+                    SharedString::from("\u{1}quickadd"),
+                    anchor_x,
+                    anchor_y,
+                );
+            }
+        }
+    });
+
+    qr.on_remove({
+        let weak = ui.as_weak();
+        let settings_cell = settings_cell.clone();
+        move |index| {
+            let Some(ui) = weak.upgrade() else { return };
+            let mut s = settings_cell.borrow_mut();
+            let idx = index as usize;
+            if idx < s.quick_reactions.len() {
+                s.quick_reactions.remove(idx);
+                s.save();
+                push_quick_reactions(&ui, &s.quick_reactions);
+            }
+        }
+    });
+
+    qr.on_reset({
+        let weak = ui.as_weak();
+        let settings_cell = settings_cell.clone();
+        move || {
+            let Some(ui) = weak.upgrade() else { return };
+            let mut s = settings_cell.borrow_mut();
+            s.quick_reactions = crate::settings::default_quick_reactions();
+            s.save();
+            push_quick_reactions(&ui, &s.quick_reactions);
+        }
+    });
+}
+
 pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     let Cx {
         settings_cell,
@@ -781,6 +862,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
 
     ui.on_emoji_picked({
         let weak = ui.as_weak();
+        let settings_cell = settings_cell.clone();
         move |message_id, emoji| {
             let Some(ui) = weak.upgrade() else { return };
             ui.set_show_emoji_picker(false);
@@ -792,9 +874,23 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 ui.set_composer_draft(draft.into());
                 return;
             }
+            // Sentinel target: append to the customizable quick-reaction set
+            // (Settings → General "+"), skipping emoji already in the row.
+            if message_id == "\u{1}quickadd" {
+                let mut s = settings_cell.borrow_mut();
+                let picked = emoji.to_string();
+                if !s.quick_reactions.contains(&picked) {
+                    s.quick_reactions.push(picked);
+                    s.save();
+                    push_quick_reactions(&ui, &s.quick_reactions);
+                }
+                return;
+            }
             ui.invoke_react_message(message_id, emoji);
         }
     });
+
+    wire_quick_reactions(ui, &settings_cell);
 
     // ─── Mention autocomplete (@npub) ─────────────────────────────────
     // As the user types we look back from the caret for an active `@token`; if

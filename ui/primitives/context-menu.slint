@@ -1,4 +1,5 @@
-import { Palette, Theme } from "../tokens.slint";
+import { Palette, Theme, QuickReact } from "../tokens.slint";
+import { QuickReactCell } from "reactions-row.slint";
 
 // One row in the message context menu. `shown` collapses the row (rather than
 // `if`-mounting it) so the TouchArea is always live — `if`-mounted TouchAreas
@@ -68,6 +69,9 @@ export component MessageContextMenu inherits Rectangle {
     // Anchor point (top-left of the panel, in window coords).
     in property <length> anchor-x;
     in property <length> anchor-y;
+    // The message this menu acts on, so the quick-reaction strip can fire
+    // `QuickReact.react` directly without a callback per emoji.
+    in property <string> message-id;
     in property <bool> can-edit: false;
     // True when the message has body text to copy (attachment-only messages
     // don't). Gates the "Copy text" row.
@@ -194,6 +198,47 @@ export component MessageContextMenu inherits Rectangle {
             col := VerticalLayout {
                 padding: 4px;
                 spacing: 1px;
+                // One-tap quick reactions, ending in a "+" to the full picker.
+                // Mouse-first; keyboard users reach the same picker through the
+                // "Add reaction" item below (the strip skips the arrow-key
+                // index model, which stays a single vertical list).
+                HorizontalLayout {
+                    padding-left: 6px;
+                    padding-right: 6px;
+                    padding-top: 2px;
+                    padding-bottom: 2px;
+                    spacing: 1px;
+                    alignment: start;
+                    for e in QuickReact.list: QuickReactCell {
+                        emoji: e.emoji;
+                        clip-x: e.clip-x;
+                        clip-y: e.clip-y;
+                        clicked => {
+                            QuickReact.react(root.message-id, e.emoji);
+                            root.dismissed();
+                        }
+                    }
+
+                    QuickReactCell {
+                        emoji: "+";
+                        clicked => {
+                            root.add-reaction(root.px, root.py);
+                        }
+                    }
+                }
+
+                // Divider under the strip.
+                Rectangle {
+                    height: 7px;
+                    Rectangle {
+                        x: 6px;
+                        y: 3px;
+                        width: parent.width - 12px;
+                        height: 1px;
+                        background: Palette.border-2;
+                    }
+                }
+
                 MenuItem {
                     glyph: "☺";
                     label: @tr("Add reaction");

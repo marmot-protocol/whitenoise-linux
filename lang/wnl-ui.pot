@@ -1426,6 +1426,10 @@ msgctxt "EncryptionInfoModal"
 msgid "Old messages stay safe"
 msgstr ""
 
+msgctxt "GeneralPane"
+msgid "One-tap reactions"
+msgstr ""
+
 msgctxt "EncryptionInfoModal"
 msgid "Only the people in this chat can read it."
 msgstr ""
@@ -1582,6 +1586,10 @@ msgctxt "GroupSettingsCard"
 msgid "Purpose, rules, or invite blurb"
 msgstr ""
 
+msgctxt "GeneralPane"
+msgid "QUICK REACTIONS"
+msgstr ""
+
 msgctxt "DarkMatterTray"
 msgid "Quit"
 msgstr ""
@@ -1702,6 +1710,10 @@ msgctxt "NetworkPane"
 msgid "Republishing…"
 msgstr ""
 
+msgctxt "GeneralPane"
+msgid "Reset"
+msgstr ""
+
 msgctxt "NetworkPane"
 msgid "Restart darkmatter to apply relay changes."
 msgstr ""
@@ -1716,6 +1728,10 @@ msgstr ""
 
 msgctxt "GeneralPane"
 msgid "Restore last selected chat on launch"
+msgstr ""
+
+msgctxt "GeneralPane"
+msgid "Restore the default reactions"
 msgstr ""
 
 msgctxt "ImportBackupModal"
@@ -1932,6 +1948,10 @@ msgstr ""
 
 msgctxt "PasswordField"
 msgid "Show password"
+msgstr ""
+
+msgctxt "GeneralPane"
+msgid "Shown on the message toolbar and menu. Tap one to remove it."
 msgstr ""
 
 msgctxt "AdvancedPane"
