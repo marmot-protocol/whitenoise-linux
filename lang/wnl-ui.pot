@@ -1216,7 +1216,7 @@ msgctxt "DarkMatterLinux"
 msgid "Make admin"
 msgstr ""
 
-msgctxt "GroupMemberRow"
+msgctxt "GroupMemberMenu"
 msgid "Make admin"
 msgstr ""
 
@@ -1666,7 +1666,7 @@ msgctxt "DarkMatterLinux"
 msgid "Remove admin"
 msgstr ""
 
-msgctxt "GroupMemberRow"
+msgctxt "GroupMemberMenu"
 msgid "Remove admin"
 msgstr ""
 
@@ -1676,6 +1676,10 @@ msgstr ""
 
 msgctxt "ContactDetail"
 msgid "Remove contact"
+msgstr ""
+
+msgctxt "GroupMemberMenu"
+msgid "Remove from group"
 msgstr ""
 
 msgctxt "GroupSettingsCard"
@@ -1688,6 +1692,10 @@ msgstr ""
 
 msgctxt "DarkMatterLinux"
 msgid "Remove this relay?"
+msgstr ""
+
+msgctxt "DarkMatterLinux"
+msgid "Remove {} from the group?"
 msgstr ""
 
 msgctxt "MessageContextMenu"
@@ -2006,7 +2014,7 @@ msgctxt "DarkMatterLinux"
 msgid "Step down"
 msgstr ""
 
-msgctxt "GroupMemberRow"
+msgctxt "GroupMemberMenu"
 msgid "Step down"
 msgstr ""
 
@@ -2341,6 +2349,10 @@ msgstr ""
 
 msgctxt "DarkMatterLinux"
 msgid "{} will be able to add members, change group settings, and manage other admins."
+msgstr ""
+
+msgctxt "DarkMatterLinux"
+msgid "{} will lose access to this group and stop receiving its messages. You'll need to invite them again to bring them back."
 msgstr ""
 
 msgctxt "DarkMatterLinux"

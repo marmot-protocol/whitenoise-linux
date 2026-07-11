@@ -32,9 +32,7 @@ export component GroupMembersPanel inherits Rectangle {
     in-out property <string> description-draft;
     callback close-clicked();
     callback add-member(string);
-    callback promote-admin(string, string);
-    callback demote-admin(string, string);
-    callback self-demote-admin(string);
+    callback request-member-menu(string, string, bool, bool, bool, bool, length, length);
     callback rename-group(string);
     callback set-group-description(string);
     callback change-image();
@@ -111,14 +109,8 @@ export component GroupMembersPanel inherits Rectangle {
                     for m[i] in root.members: GroupMemberRow {
                         data: m;
                         show-divider: i < root.members.length - 1;
-                        promote-admin(id, name) => {
-                            root.promote-admin(id, name);
-                        }
-                        demote-admin(id, name) => {
-                            root.demote-admin(id, name);
-                        }
-                        self-demote-admin(name) => {
-                            root.self-demote-admin(name);
+                        request-menu(id, name, cp, cd, csd, cr, ax, ay) => {
+                            root.request-member-menu(id, name, cp, cd, csd, cr, ax, ay);
                         }
                     }
                 }

@@ -28,9 +28,7 @@ export component MainPane inherits Rectangle {
     in property <string> add-member-status;
     in-out property <string> add-member-draft;
     callback add-member(string);
-    callback promote-admin(string, string);
-    callback demote-admin(string, string);
-    callback self-demote-admin(string);
+    callback request-member-menu(string, string, bool, bool, bool, bool, length, length);
     in property <image> group-picture;
     in property <bool> group-has-picture: false;
     in property <color> group-av-a;
@@ -299,14 +297,8 @@ export component MainPane inherits Rectangle {
             add-member(npub) => {
                 root.add-member(npub);
             }
-            promote-admin(id, name) => {
-                root.promote-admin(id, name);
-            }
-            demote-admin(id, name) => {
-                root.demote-admin(id, name);
-            }
-            self-demote-admin(name) => {
-                root.self-demote-admin(name);
+            request-member-menu(id, name, cp, cd, csd, cr, ax, ay) => {
+                root.request-member-menu(id, name, cp, cd, csd, cr, ax, ay);
             }
             rename-group(name) => {
                 root.rename-group(name);

@@ -1271,7 +1271,7 @@ msgctxt "DarkMatterLinux"
 msgid "Make admin"
 msgstr "Rendi admin"
 
-msgctxt "GroupMemberRow"
+msgctxt "GroupMemberMenu"
 msgid "Make admin"
 msgstr "Rendi admin"
 
@@ -1748,7 +1748,7 @@ msgctxt "DarkMatterLinux"
 msgid "Remove admin"
 msgstr "Rimuovi ruolo admin"
 
-msgctxt "GroupMemberRow"
+msgctxt "GroupMemberMenu"
 msgid "Remove admin"
 msgstr "Rimuovi ruolo admin"
 
@@ -1759,6 +1759,10 @@ msgstr ""
 msgctxt "ContactDetail"
 msgid "Remove contact"
 msgstr "Rimuovi contatto"
+
+msgctxt "GroupMemberMenu"
+msgid "Remove from group"
+msgstr "Rimuovi dal gruppo"
 
 msgctxt "GroupSettingsCard"
 msgid "Remove image"
@@ -1772,6 +1776,10 @@ msgstr "Rimuovi chiave"
 msgctxt "DarkMatterLinux"
 msgid "Remove this relay?"
 msgstr "Rimuovere questo relay?"
+
+msgctxt "DarkMatterLinux"
+msgid "Remove {} from the group?"
+msgstr "Rimuovere {} dal gruppo?"
 
 msgctxt "MessageContextMenu"
 msgid "Reply"
@@ -2103,7 +2111,7 @@ msgctxt "DarkMatterLinux"
 msgid "Step down"
 msgstr "Rinuncia"
 
-msgctxt "GroupMemberRow"
+msgctxt "GroupMemberMenu"
 msgid "Step down"
 msgstr "Rinuncia"
 
@@ -2449,6 +2457,10 @@ msgid "{} will be able to add members, change group settings, and manage other a
 msgstr ""
 
 msgctxt "DarkMatterLinux"
+msgid "{} will lose access to this group and stop receiving its messages. You'll need to invite them again to bring them back."
+msgstr "{} perderà l'accesso a questo gruppo e smetterà di riceverne i messaggi. Dovrai invitarlo di nuovo per riportarlo nel gruppo."
+
+msgctxt "DarkMatterLinux"
 msgid "{} will stay in the group, but won't be able to manage members or group settings."
 msgstr ""
 
@@ -2471,138 +2483,3 @@ msgstr "✓ Nei tuoi contatti"
 msgctxt "ContactDetail"
 msgid "✓ VERIFIED"
 msgstr "✓ VERIFICATO"
-
-#~ msgctxt "ProfilePage"
-#~ msgid "(no nip-05)"
-#~ msgstr "(nessun nip-05)"
-
-#~ msgctxt "SettingsPage"
-#~ msgid "About"
-#~ msgstr "Informazioni"
-
-#~ msgctxt "AppearancePane"
-#~ msgid "Comfortable"
-#~ msgstr "Comoda"
-
-#, fuzzy
-#~ msgctxt "SettingsPage"
-#~ msgid "Coming soon — per-chat notification rules, sounds, and focus mode."
-#~ msgstr "Regole notifiche per chat, suoni, modalità focus."
-
-#~ msgctxt "LoginScreen"
-#~ msgid "Create vault"
-#~ msgstr "Crea cassaforte"
-
-#~ msgctxt "SettingsPage"
-#~ msgid "Dark Matter v0.1.0"
-#~ msgstr "Dark Matter v0.1.0"
-
-#~ msgctxt "LoginScreen"
-#~ msgid "Delete vault"
-#~ msgstr "Elimina cassaforte"
-
-#~ msgctxt "AppearancePane"
-#~ msgid "Density"
-#~ msgstr "Densità"
-
-#~ msgctxt "Composer"
-#~ msgid "Editing message  ·  Enter to save"
-#~ msgstr "Modifica messaggio  ·  Invio per salvare"
-
-#~ msgctxt "AppearancePane"
-#~ msgid "FUN"
-#~ msgstr "DIVERTIMENTO"
-
-#~ msgctxt "ContactDetail"
-#~ msgid "Fetched from relay.damus.io · refreshed 4m ago"
-#~ msgstr "Recuperato da relay.damus.io · aggiornato 4 min fa"
-
-#~ msgctxt "EncryptionBanner"
-#~ msgid "Forward secret"
-#~ msgstr "Segreto forward"
-
-#~ msgctxt "SettingsPage"
-#~ msgid "Local cache, message retention, attachments."
-#~ msgstr "Cache locale, conservazione messaggi, allegati."
-
-#~ msgctxt "StartNewChatModal"
-#~ msgid "Paste an npub or scan a QR. A key package will be fetched from your relays."
-#~ msgstr "Incolla un npub o scansiona un QR. Un pacchetto chiavi verrà recuperato dai tuoi relay."
-
-#~ msgctxt "LoginScreen"
-#~ msgid "Paste your nsec"
-#~ msgstr "Incolla il tuo nsec"
-
-#~ msgctxt "ProfilePage"
-#~ msgid "Picture URL"
-#~ msgstr "URL immagine"
-
-#~ msgctxt "AboutPane"
-#~ msgid "Private material lives in a password-encrypted vault on this device."
-#~ msgstr "Il materiale privato risiede in una cassaforte crittografata con password su questo dispositivo."
-
-#~ msgctxt "ContactDetail"
-#~ msgid "Refresh"
-#~ msgstr "Aggiorna"
-
-#~ msgctxt "AppearancePane"
-#~ msgid "Retro mode"
-#~ msgstr "Modalità retro"
-
-#~ msgctxt "StoragePane"
-#~ msgid "SECRET VAULT"
-#~ msgstr "CASSAFORTE SEGRETA"
-
-#~ msgctxt "AppearancePane"
-#~ msgid "SNES yellow"
-#~ msgstr "Giallo SNES"
-
-#~ msgctxt "LoginScreen"
-#~ msgid "Save to keyring"
-#~ msgstr "Salva nel portachiavi"
-
-#, fuzzy
-#~ msgctxt "GroupMembersPanel"
-#~ msgid "Saving…"
-#~ msgstr "Salvataggio…"
-
-#~ msgctxt "Composer"
-#~ msgid "Send a message  ·  encrypted with"
-#~ msgstr "Invia un messaggio  ·  crittografato con"
-
-#~ msgctxt "AdvancedPane"
-#~ msgid "Show debug pane"
-#~ msgstr "Mostra pannello debug"
-
-#~ msgctxt "StartNewChatModal"
-#~ msgid "Start chat"
-#~ msgstr "Avvia chat"
-
-#~ msgid "Today"
-#~ msgstr "Oggi"
-
-#~ msgctxt "AppearancePane"
-#~ msgid "Turn the whole app into SNES style."
-#~ msgstr "Trasforma tutta l'app in stile SNES."
-
-#~ msgctxt "StoragePane"
-#~ msgid "Vault location"
-#~ msgstr "Posizione cassaforte"
-
-#~ msgid "Yesterday"
-#~ msgstr "Ieri"
-
-#~ msgid "just now"
-#~ msgstr "proprio ora"
-
-#~ msgctxt "StartNewChatModal"
-#~ msgid "or"
-#~ msgstr "oppure"
-
-#~ msgctxt "EncryptionBanner"
-#~ msgid "post-compromise secure"
-#~ msgstr "sicuro dopo compromissione"
-
-#~ msgctxt "ContactDetail"
-#~ msgid "up to date"
-#~ msgstr "aggiornato"

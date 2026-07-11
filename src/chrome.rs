@@ -1266,6 +1266,9 @@ pub(crate) fn group_member_from(
     // Demote another admin, or step down from one's own admin role.
     let can_demote = viewer_is_admin && is_admin && !is_self;
     let can_self_demote = viewer_is_admin && is_admin && is_self;
+    // Evict any other member from the group (regardless of their role); an
+    // admin can't remove themselves — that's "leave group", not removal.
+    let can_remove = viewer_is_admin && !is_self;
     let mut name = backend.account_display_name(&record.member_id_hex);
     if let Some(label) = record.account.as_ref().filter(|s| !s.is_empty())
         && name.starts_with("0x")
@@ -1296,6 +1299,7 @@ pub(crate) fn group_member_from(
         can_promote,
         can_demote,
         can_self_demote,
+        can_remove,
     };
     (row, picture_url)
 }

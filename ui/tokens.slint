@@ -1594,6 +1594,9 @@ export struct GroupMember {
     can-demote: bool,
     // The viewer is an admin and this is their own admin row — "Step down".
     can-self-demote: bool,
+    // The viewer is an admin and this row is another member (any role) —
+    // "Remove from group".
+    can-remove: bool,
 }
 
 export struct ChatMeta {

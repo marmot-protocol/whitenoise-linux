@@ -48,6 +48,7 @@ import { SplashScreen } from "splash.slint";
 import { EmojiPicker } from "emoji-picker.slint";
 import { MessageContextMenu } from "primitives/context-menu.slint";
 import { ChatContextMenu } from "primitives/chat-context-menu.slint";
+import { GroupMemberMenu } from "main-pane/group-member-menu.slint";
 import {
     EmojiEntry,
     EmojiSheet,
@@ -399,6 +400,18 @@ export component DarkMatterLinux inherits Window {
     property <bool> ctx-menu-can-edit: false;
     property <length> ctx-menu-x;
     property <length> ctx-menu-y;
+    // Group member action menu — opened from a member row's "⋯"; its items
+    // re-fire the existing request-*-admin functions (which arm the admin
+    // confirm modal), so the confirm/Rust path is unchanged.
+    property <bool> member-menu-open: false;
+    property <string> member-menu-id;
+    property <string> member-menu-name;
+    property <bool> member-menu-can-promote: false;
+    property <bool> member-menu-can-demote: false;
+    property <bool> member-menu-can-self-demote: false;
+    property <bool> member-menu-can-remove: false;
+    property <length> member-menu-x;
+    property <length> member-menu-y;
     // Forward flow: the context-menu "Forward" item stashes the source message
     // id here and opens the chat picker; picking a destination fires
     // `request-forward(dest_idx)`, which the Rust side resolves against
@@ -438,7 +451,7 @@ export component DarkMatterLinux inherits Window {
     // Admin role changes alter group governance, so the inline member badges
     // only arm this modal. The existing Rust callbacks fire after confirmation.
     property <bool> show-admin-confirm: false;
-    property <int> admin-confirm-action: 0; // 1=promote, 2=demote, 3=self-demote
+    property <int> admin-confirm-action: 0; // 1=promote, 2=demote, 3=self-demote, 4=remove
     property <string> admin-confirm-member-id: "";
     property <string> admin-confirm-member-name: "";
     property <bool> show-leave-confirm: false;
@@ -467,6 +480,11 @@ export component DarkMatterLinux inherits Window {
     }
     function request-self-demote-admin(name: string) {
         root.arm-admin-confirm(3, "", name);
+    }
+    function request-remove-member(id: string, name: string) {
+        if (id != "") {
+            root.arm-admin-confirm(4, id, name);
+        }
     }
     // ── Mention autocomplete ────────────────────────────────────────────────
     // Driven from Rust: as the user types, `composer-input-changed` reports the
@@ -708,6 +726,7 @@ export component DarkMatterLinux inherits Window {
     callback promote-admin(string);
     callback demote-admin(string);
     callback self-demote-admin();
+    callback remove-member(string);
 
     // Map the boolean theme toggles onto the single Theme.id (0=dark, 1=light,
     // 2=retro, 3=terminal, 4=crayon, 5=synthwave, 6=chalkboard). Precedence:
@@ -1050,14 +1069,16 @@ export component DarkMatterLinux inherits Window {
                             add-member(npub) => {
                                 root.add-member(npub);
                             }
-                            promote-admin(id, name) => {
-                                root.request-promote-admin(id, name);
-                            }
-                            demote-admin(id, name) => {
-                                root.request-demote-admin(id, name);
-                            }
-                            self-demote-admin(name) => {
-                                root.request-self-demote-admin(name);
+                            request-member-menu(id, name, cp, cd, csd, cr, ax, ay) => {
+                                root.member-menu-id = id;
+                                root.member-menu-name = name;
+                                root.member-menu-can-promote = cp;
+                                root.member-menu-can-demote = cd;
+                                root.member-menu-can-self-demote = csd;
+                                root.member-menu-can-remove = cr;
+                                root.member-menu-x = ax;
+                                root.member-menu-y = ay;
+                                root.member-menu-open = true;
                             }
                             group-picture: root.chat-group-picture;
                             group-has-picture: root.chat-group-has-picture;
@@ -1598,9 +1619,9 @@ export component DarkMatterLinux inherits Window {
     }
 
     if root.show-admin-confirm: ConfirmModal {
-        title: root.admin-confirm-action == 1 ? @tr("Make {} an admin?", root.admin-confirm-member-name) : (root.admin-confirm-action == 2 ? @tr("Remove admin rights from {}?", root.admin-confirm-member-name) : @tr("Step down as admin?"));
-        subtitle: root.admin-confirm-action == 1 ? @tr("{} will be able to add members, change group settings, and manage other admins.", root.admin-confirm-member-name) : (root.admin-confirm-action == 2 ? @tr("{} will stay in the group, but won't be able to manage members or group settings.", root.admin-confirm-member-name) : @tr("This removes your admin rights. You can't restore them yourself unless another admin promotes you again."));
-        confirm-label: root.admin-confirm-action == 1 ? @tr("Make admin") : (root.admin-confirm-action == 2 ? @tr("Remove admin") : @tr("Step down"));
+        title: root.admin-confirm-action == 1 ? @tr("Make {} an admin?", root.admin-confirm-member-name) : (root.admin-confirm-action == 2 ? @tr("Remove admin rights from {}?", root.admin-confirm-member-name) : (root.admin-confirm-action == 4 ? @tr("Remove {} from the group?", root.admin-confirm-member-name) : @tr("Step down as admin?")));
+        subtitle: root.admin-confirm-action == 1 ? @tr("{} will be able to add members, change group settings, and manage other admins.", root.admin-confirm-member-name) : (root.admin-confirm-action == 2 ? @tr("{} will stay in the group, but won't be able to manage members or group settings.", root.admin-confirm-member-name) : (root.admin-confirm-action == 4 ? @tr("{} will lose access to this group and stop receiving its messages. You'll need to invite them again to bring them back.", root.admin-confirm-member-name) : @tr("This removes your admin rights. You can't restore them yourself unless another admin promotes you again.")));
+        confirm-label: root.admin-confirm-action == 1 ? @tr("Make admin") : (root.admin-confirm-action == 2 ? @tr("Remove admin") : (root.admin-confirm-action == 4 ? @tr("Remove") : @tr("Step down")));
         confirm => {
             root.show-admin-confirm = false;
             if (root.admin-confirm-action == 1) {
@@ -1609,6 +1630,8 @@ export component DarkMatterLinux inherits Window {
                 root.demote-admin(root.admin-confirm-member-id);
             } else if (root.admin-confirm-action == 3) {
                 root.self-demote-admin();
+            } else if (root.admin-confirm-action == 4) {
+                root.remove-member(root.admin-confirm-member-id);
             }
             root.clear-admin-confirm();
         }
@@ -1633,6 +1656,35 @@ export component DarkMatterLinux inherits Window {
 
     // Right-click message context menu. Items re-fire the same callbacks the
     // hover toolbar uses, so the Rust side is untouched.
+    if root.member-menu-open: GroupMemberMenu {
+        anchor-x: root.member-menu-x;
+        anchor-y: root.member-menu-y;
+        member-name: root.member-menu-name;
+        can-promote: root.member-menu-can-promote;
+        can-demote: root.member-menu-can-demote;
+        can-self-demote: root.member-menu-can-self-demote;
+        can-remove: root.member-menu-can-remove;
+        promote => {
+            root.member-menu-open = false;
+            root.request-promote-admin(root.member-menu-id, root.member-menu-name);
+        }
+        demote => {
+            root.member-menu-open = false;
+            root.request-demote-admin(root.member-menu-id, root.member-menu-name);
+        }
+        self-demote => {
+            root.member-menu-open = false;
+            root.request-self-demote-admin(root.member-menu-name);
+        }
+        remove => {
+            root.member-menu-open = false;
+            root.request-remove-member(root.member-menu-id, root.member-menu-name);
+        }
+        dismissed => {
+            root.member-menu-open = false;
+        }
+    }
+
     if root.ctx-menu-open: MessageContextMenu {
         anchor-x: root.ctx-menu-x;
         anchor-y: root.ctx-menu-y;

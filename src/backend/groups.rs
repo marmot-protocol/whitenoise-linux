@@ -225,6 +225,33 @@ impl Backend {
         })
     }
 
+    /// Remove a member from a group. Caller must be an admin (the engine
+    /// enforces this on the outbound MLS commit; non-admins get an error).
+    /// `member_ref` is an npub, hex pubkey, or known account label —
+    /// `member_id_hex` from a group-member record works directly. Marmot's
+    /// `remove_members` takes a slice; we pass the single target.
+    pub fn remove_member(&self, group_hex: &str, member_ref: &str) -> Result<SendSummary> {
+        let group_id = group_id_from_hex(group_hex)?;
+        let label = self.active_label();
+        let members = vec![member_ref.to_string()];
+        let runtime = self.runtime.clone();
+        let summary = self.tokio.block_on(async move {
+            runtime
+                .remove_members(&label, &group_id, &members)
+                .await
+                .map_err(|e| anyhow!("remove_member: {e}"))
+        })?;
+        // The eviction mutated the roster, but `group_members` is served from
+        // `members_cache`, which the removal did not touch — so the immediate
+        // UI push would repaint the pre-removal list and look like nothing
+        // happened. Refresh the cache synchronously here so the next read (the
+        // panel rebuild) reflects the departed member. Role changes (promote/
+        // demote) do not need this: their badges come from `chats()`, a fresh
+        // source, not this cache.
+        self.refresh_members_blocking(group_hex);
+        Ok(summary)
+    }
+
     /// Relinquish the active account's own admin rights on `group_hex`.
     pub fn self_demote_admin(&self, group_hex: &str) -> Result<SendSummary> {
         let group_id = group_id_from_hex(group_hex)?;
