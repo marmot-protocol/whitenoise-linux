@@ -253,6 +253,9 @@ export component DarkMatterLinux inherits Window {
     // cleared on save or cancel. Drives the composer's "Editing message" banner
     // and tells Rust the next send is a kind-1010 edit of this message.
     in-out property <string> editing-message-id;
+    // Elided preview of the message body being edited (set by Rust alongside
+    // editing-message-id), shown in the composer's edit banner.
+    in-out property <string> editing-message-preview;
     // Edit-history modal — populated + shown when a bubble's "(edited)" label
     // is tapped. Read-only; visible to anyone in the chat.
     in property <[EditVersion]> edit-history;
@@ -941,6 +944,7 @@ export component DarkMatterLinux inherits Window {
                             reply-target-image: root.reply-target-image;
                             reply-target-has-image: root.reply-target-has-image;
                             editing-message-id: root.editing-message-id;
+                            editing-message-preview: root.editing-message-preview;
                             send-clicked => {
                                 root.send-message(root.composer-draft);
                             }

@@ -288,6 +288,17 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 }
             }
             clear_reply_target(&ui);
+            // Preview of the target body for the edit banner. Mirrors the reply
+            // banner: flatten + elide the body, and fall back to the media label
+            // when the message is attachment-only.
+            let mut preview = truncate_preview(current_text.as_str(), 160);
+            if preview.is_empty()
+                && let Some(label) =
+                    media_label_for_row(&ui.get_chats_messages(), message_id.as_str())
+            {
+                preview = label;
+            }
+            ui.set_editing_message_preview(s(&preview));
             ui.set_editing_message_id(message_id);
             ui.set_composer_draft(current_text);
         }

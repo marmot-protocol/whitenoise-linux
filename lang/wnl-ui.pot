@@ -845,7 +845,7 @@ msgid "Edit profile"
 msgstr ""
 
 msgctxt "Composer"
-msgid "Editing message  ·  Enter to save"
+msgid "Editing:"
 msgstr ""
 
 msgctxt "AboutPane"

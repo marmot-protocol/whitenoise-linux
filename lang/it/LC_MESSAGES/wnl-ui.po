@@ -886,8 +886,8 @@ msgid "Edit profile"
 msgstr "Modifica profilo"
 
 msgctxt "Composer"
-msgid "Editing message  ·  Enter to save"
-msgstr "Modifica messaggio  ·  Invio per salvare"
+msgid "Editing:"
+msgstr "Modifica:"
 
 msgctxt "AboutPane"
 msgid "Encrypted group chat on Nostr"
@@ -2490,6 +2490,10 @@ msgstr "✓ VERIFICATO"
 #~ msgctxt "AppearancePane"
 #~ msgid "Density"
 #~ msgstr "Densità"
+
+#~ msgctxt "Composer"
+#~ msgid "Editing message  ·  Enter to save"
+#~ msgstr "Modifica messaggio  ·  Invio per salvare"
 
 #~ msgctxt "AppearancePane"
 #~ msgid "FUN"
