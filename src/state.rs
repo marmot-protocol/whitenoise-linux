@@ -606,6 +606,7 @@ copy_snapshot! {
     /// Read the current localized `ErrorCopy` snapshot. Safe from any thread.
     read fn error_copy;
     invalid_key: String = get_invalid_key => "That doesn't look like a valid npub or public key. Double-check it and try again.";
+    nip05_not_found: String = get_nip05_not_found => "We couldn't find anyone with that username. Double-check the name@domain and try again.";
     network: String = get_network => "Can't reach your relays right now. Check your network and relay settings, then try again.";
     sync: String = get_sync => "Couldn't finish syncing. We'll keep retrying — check your relay settings if this keeps happening.";
     backend: String = get_backend => "Couldn't start up. Check your network and relay settings, then try again.";
@@ -700,6 +701,14 @@ pub(crate) fn friendly_error(op: ErrorOp, e: &anyhow::Error) -> String {
 
     // Tier 1 — content-based classification. These conditions name a concrete
     // thing the user can fix, so they take priority over the op default.
+    // NIP-05 resolution misses are tagged with a `nip05:` marker (a bad handle,
+    // a 404, or a name absent from the domain's list) so they read as "couldn't
+    // find that username" rather than the generic add-contact fallback. A raw
+    // network failure during the lookup carries no marker, so it still routes to
+    // the network copy below.
+    if detail.contains("nip05:") {
+        return copy.nip05_not_found;
+    }
     if detail.contains("npub") || detail.contains("pubkey") || detail.contains("public key") {
         return copy.invalid_key;
     }

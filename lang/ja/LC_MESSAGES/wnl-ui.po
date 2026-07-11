@@ -913,6 +913,10 @@ msgctxt "ErrorCopy"
 msgid "Enter a relay address."
 msgstr "リレーのアドレスを入力してください。"
 
+msgctxt "AddContactModal"
+msgid "Enter their username (name@domain), npub, or hex public key. They'll appear in your contacts on every device."
+msgstr "相手のユーザー名（name@domain）、npub、または16進数の公開鍵を入力してください。すべてのデバイスの連絡先に表示されます。"
+
 msgctxt "LoginScreen"
 msgid "Enter your password"
 msgstr "パスワードを入力"
@@ -1535,10 +1539,6 @@ msgctxt "ProfilePage"
 msgid "PROFILE"
 msgstr "プロフィール"
 
-msgctxt "AddContactModal"
-msgid "PUBLIC KEY"
-msgstr "公開鍵"
-
 msgctxt "LoginScreen"
 msgid "PUBLIC KEY (NPUB)"
 msgstr "公開鍵 (NPUB)"
@@ -1573,10 +1573,6 @@ msgstr "別の秘密鍵を貼り付けるか、新しく生成してください
 msgctxt "StartNewChatModal"
 msgid "Paste one npub for a direct chat, or several (one per line) plus a group name."
 msgstr "ダイレクトチャットには npub を1つ、グループには複数（1行に1つ）とグループ名を貼り付けてください。"
-
-msgctxt "AddContactModal"
-msgid "Paste their npub or hex public key. They'll appear in your contacts on every device."
-msgstr "相手の npub または16進数の公開鍵を貼り付けてください。すべてのデバイスの連絡先に表示されます。"
 
 msgctxt "WalletAddressRow"
 msgid "People can zap you via this address."
@@ -2253,6 +2249,10 @@ msgctxt "AboutPane"
 msgid "UNDER THE HOOD"
 msgstr "仕組み"
 
+msgctxt "AddContactModal"
+msgid "USERNAME OR KEY"
+msgstr "ユーザー名または鍵"
+
 msgctxt "ArchivedDetail"
 msgid "Unarchive"
 msgstr "アーカイブ解除"
@@ -2315,6 +2315,10 @@ msgstr "チャット相手全員に公開"
 msgctxt "AboutPane"
 msgid "WHAT IT IS"
 msgstr "概要"
+
+msgctxt "ErrorCopy"
+msgid "We couldn't find anyone with that username. Double-check the name@domain and try again."
+msgstr "そのユーザー名の相手が見つかりませんでした。name@domain を確認して、もう一度お試しください。"
 
 msgctxt "weekday"
 msgid "Wed"

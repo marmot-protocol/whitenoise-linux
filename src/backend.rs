@@ -915,12 +915,18 @@ impl Backend {
 
     /// Follow a new contact: append them to the account's kind-3 follow list,
     /// republish it, then re-sync the directory so [`Backend::follow_list`]
-    /// reflects the change immediately. Accepts npub or hex; returns the
-    /// contact's account id (hex) so the caller can select the new row.
+    /// reflects the change immediately. Accepts npub, hex, or a NIP-05 username
+    /// (`name@domain`, resolved against the domain's `.well-known/nostr.json`);
+    /// returns the contact's account id (hex) so the caller can select the new
+    /// row.
     pub fn add_contact(&self, who: &str) -> Result<String> {
-        let account_id_hex = nostr::PublicKey::parse(who)
-            .map_err(|_| anyhow!("not a valid npub or hex pubkey"))?
-            .to_hex();
+        let account_id_hex = match nostr::PublicKey::parse(who) {
+            Ok(pk) => pk.to_hex(),
+            // A pubkey never contains `@`, so an `@` means the user typed a
+            // NIP-05 username — resolve it to a key before following.
+            Err(_) if who.contains('@') => self.resolve_nip05(who)?,
+            Err(_) => return Err(anyhow!("not a valid npub or hex pubkey")),
+        };
         if account_id_hex.eq_ignore_ascii_case(&self.active_id()) {
             return Err(anyhow!("that's your own key"));
         }
@@ -969,6 +975,46 @@ impl Backend {
             .block_on(async move { app.refresh_user_directory_for_account_id(&me, broad).await })
             .map_err(|e| anyhow!("refresh_directory: {e}"))?;
         Ok(account_id_hex)
+    }
+
+    /// Resolve a NIP-05 username (`name@domain`, or a bare `domain` meaning
+    /// `_@domain`) to a hex public key by fetching the domain's
+    /// `https://<domain>/.well-known/nostr.json?name=<name>` and reading
+    /// `names[name]`. The username is lowercased first, since NIP-05 local parts
+    /// are case-insensitive and served under their lowercase key by convention.
+    /// Errors are worded so [`friendly_error`](crate::friendly_error) tells a
+    /// resolution miss (`nip05:` marker → "couldn't find that username") apart
+    /// from a network failure.
+    fn resolve_nip05(&self, handle: &str) -> Result<String> {
+        use nostr::nips::nip05::{Nip05Address, Nip05Profile};
+        let handle = handle.trim().to_lowercase();
+        let address = Nip05Address::parse(&handle).map_err(|_| {
+            anyhow!("nip05: '{handle}' isn't a valid username (expected name@domain)")
+        })?;
+        let url = address.url().as_str().to_string();
+        let body = self.tokio.block_on(async move {
+            let client = reqwest::Client::builder()
+                .timeout(Duration::from_secs(10))
+                .build()
+                .map_err(|e| anyhow!("http client: {e}"))?;
+            let resp = client
+                .get(&url)
+                .send()
+                .await
+                .map_err(|e| anyhow!("connecting to that domain failed: {e}"))?;
+            if !resp.status().is_success() {
+                return Err(anyhow!(
+                    "nip05: that domain returned HTTP {}",
+                    resp.status().as_u16()
+                ));
+            }
+            resp.text()
+                .await
+                .map_err(|e| anyhow!("reading the response failed: {e}"))
+        })?;
+        let profile = Nip05Profile::from_raw_json(&address, &body)
+            .map_err(|_| anyhow!("nip05: no account is registered as {handle}"))?;
+        Ok(profile.public_key.to_hex())
     }
 
     /// Snapshot of messages for a group, newest-last.

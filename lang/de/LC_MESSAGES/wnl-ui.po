@@ -916,6 +916,10 @@ msgctxt "ErrorCopy"
 msgid "Enter a relay address."
 msgstr "Gib eine Relay-Adresse ein."
 
+msgctxt "AddContactModal"
+msgid "Enter their username (name@domain), npub, or hex public key. They'll appear in your contacts on every device."
+msgstr "Gib ihren Benutzernamen (name@domain), npub oder hexadezimalen öffentlichen Schlüssel ein. Sie erscheinen auf jedem Gerät in deinen Kontakten."
+
 msgctxt "LoginScreen"
 msgid "Enter your password"
 msgstr "Gib dein Passwort ein"
@@ -1538,10 +1542,6 @@ msgctxt "ProfilePage"
 msgid "PROFILE"
 msgstr "PROFIL"
 
-msgctxt "AddContactModal"
-msgid "PUBLIC KEY"
-msgstr "ÖFFENTLICHER SCHLÜSSEL"
-
 msgctxt "LoginScreen"
 msgid "PUBLIC KEY (NPUB)"
 msgstr "ÖFFENTLICHER SCHLÜSSEL (NPUB)"
@@ -1576,10 +1576,6 @@ msgstr "Füge einen weiteren geheimen Schlüssel ein oder generiere einen neuen.
 msgctxt "StartNewChatModal"
 msgid "Paste one npub for a direct chat, or several (one per line) plus a group name."
 msgstr "Füge einen npub für einen Direktchat ein oder mehrere (einen pro Zeile) plus einen Gruppennamen."
-
-msgctxt "AddContactModal"
-msgid "Paste their npub or hex public key. They'll appear in your contacts on every device."
-msgstr "Füge ihren npub oder hexadezimalen öffentlichen Schlüssel ein. Sie erscheinen auf jedem Gerät in deinen Kontakten."
 
 msgctxt "WalletAddressRow"
 msgid "People can zap you via this address."
@@ -2256,6 +2252,10 @@ msgctxt "AboutPane"
 msgid "UNDER THE HOOD"
 msgstr "UNTER DER HAUBE"
 
+msgctxt "AddContactModal"
+msgid "USERNAME OR KEY"
+msgstr "BENUTZERNAME ODER SCHLÜSSEL"
+
 msgctxt "ArchivedDetail"
 msgid "Unarchive"
 msgstr "Wiederherstellen"
@@ -2318,6 +2318,10 @@ msgstr "SICHTBAR FÜR ALLE CHAT-PARTNER"
 msgctxt "AboutPane"
 msgid "WHAT IT IS"
 msgstr "WAS ES IST"
+
+msgctxt "ErrorCopy"
+msgid "We couldn't find anyone with that username. Double-check the name@domain and try again."
+msgstr "Wir konnten niemanden mit diesem Benutzernamen finden. Überprüfe name@domain und versuche es erneut."
 
 msgctxt "weekday"
 msgid "Wed"
