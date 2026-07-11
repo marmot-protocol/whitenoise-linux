@@ -59,9 +59,9 @@ pub(crate) enum PendingReactionOp {
     /// I just clicked an emoji on a confirmed message — add a chip with
     /// `mine: true` unless the snapshot already shows my reaction.
     Add(String),
-    /// I just unreacted — drop the `mine` flag and count from any chips on
-    /// this target while the network catches up.
-    Remove,
+    /// I just unreacted — drop the `mine` flag and count from the tapped emoji
+    /// chip while the network catches up.
+    Remove(String),
 }
 
 #[derive(Default)]

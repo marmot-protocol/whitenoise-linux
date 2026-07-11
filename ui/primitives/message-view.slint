@@ -25,7 +25,7 @@ export component MessageView inherits VerticalLayout {
 
     // Union of the row callbacks, forwarded up to messages.slint unchanged.
     callback react(string, string);
-    callback unreact(string);
+    callback unreact(string, string);
     callback request-picker(string, length, length);
     callback request-reply(string, string, string);
     callback request-edit(string, string);
@@ -52,8 +52,8 @@ export component MessageView inherits VerticalLayout {
         react(id, emoji) => {
             root.react(id, emoji);
         }
-        unreact(id) => {
-            root.unreact(id);
+        unreact(id, emoji) => {
+            root.unreact(id, emoji);
         }
         request-picker(id, ax, ay) => {
             root.request-picker(id, ax, ay);
@@ -96,8 +96,8 @@ export component MessageView inherits VerticalLayout {
         react(id, emoji) => {
             root.react(id, emoji);
         }
-        unreact(id) => {
-            root.unreact(id);
+        unreact(id, emoji) => {
+            root.unreact(id, emoji);
         }
         request-picker(id, ax, ay) => {
             root.request-picker(id, ax, ay);

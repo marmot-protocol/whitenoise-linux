@@ -1025,7 +1025,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             let target_cb = target.clone();
             let (label, err_op) = match &op {
                 PendingReactionOp::Add(_) => ("react", ErrorOp::React),
-                PendingReactionOp::Remove => ("unreact", ErrorOp::Unreact),
+                PendingReactionOp::Remove(_) => ("unreact", ErrorOp::Unreact),
             };
             let on_done = move |result: anyhow::Result<marmot_app::SendSummary>| {
                 let weak = weak_cb.clone();
@@ -1066,8 +1066,8 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 PendingReactionOp::Add(emoji) => {
                     backend.react_async(&group_hex, &target, &emoji, on_done);
                 }
-                PendingReactionOp::Remove => {
-                    backend.unreact_async(&group_hex, &target, on_done);
+                PendingReactionOp::Remove(emoji) => {
+                    backend.unreact_async(&group_hex, &target, &emoji, on_done);
                 }
             }
         })
@@ -1088,11 +1088,14 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
 
     ui.on_unreact_message({
         let react_op = react_op.clone();
-        move |message_id| {
+        move |message_id, emoji| {
             if is_temp_id(message_id.as_str()) {
                 return;
             }
-            react_op(PendingReactionOp::Remove, message_id.to_string());
+            react_op(
+                PendingReactionOp::Remove(emoji.to_string()),
+                message_id.to_string(),
+            );
         }
     });
 

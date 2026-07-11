@@ -898,12 +898,12 @@ pub(crate) fn apply_reaction_overlay(
                     });
                 }
             }
-            PendingReactionOp::Remove => {
-                for chip in entry.iter_mut() {
-                    if chip.mine {
-                        chip.count = (chip.count - 1).max(0);
-                        chip.mine = false;
-                    }
+            PendingReactionOp::Remove(emoji) => {
+                if let Some(chip) = entry.iter_mut().find(|r| r.emoji.as_str() == emoji)
+                    && chip.mine
+                {
+                    chip.count = (chip.count - 1).max(0);
+                    chip.mine = false;
                 }
                 entry.retain(|r| r.count > 0);
             }
@@ -977,12 +977,12 @@ pub(crate) fn apply_reaction_to_model_row(
                     });
                 }
             }
-            PendingReactionOp::Remove => {
-                for chip in chips.iter_mut() {
-                    if chip.mine {
-                        chip.count = (chip.count - 1).max(0);
-                        chip.mine = false;
-                    }
+            PendingReactionOp::Remove(emoji) => {
+                if let Some(chip) = chips.iter_mut().find(|c| c.emoji.as_str() == emoji)
+                    && chip.mine
+                {
+                    chip.count = (chip.count - 1).max(0);
+                    chip.mine = false;
                 }
                 chips.retain(|c| c.count > 0);
             }
@@ -1397,30 +1397,93 @@ pub(crate) fn rebuild_chat_messages_from(
     );
 }
 
-/// Walk all message records and group kind-7 reactions by target id.
+fn first_event_ref(tags: &[Vec<String>]) -> Option<&str> {
+    tags.iter()
+        .find(|tag| tag.len() >= 2 && tag[0] == "e")
+        .map(|tag| tag[1].as_str())
+}
+
+fn deleted_reaction_ids(records: &[AppMessageRecord]) -> std::collections::HashSet<&str> {
+    use std::collections::{HashMap, HashSet};
+
+    let reactions_by_id: HashMap<&str, &AppMessageRecord> = records
+        .iter()
+        .filter(|record| record.kind == 7 && !record.message_id_hex.is_empty())
+        .map(|record| (record.message_id_hex.as_str(), record))
+        .collect();
+    let mut deleted = HashSet::new();
+    for record in records {
+        if record.kind != 5 {
+            continue;
+        }
+        let Some(target) = first_event_ref(&record.tags) else {
+            continue;
+        };
+        let Some(reaction) = reactions_by_id.get(target) else {
+            continue;
+        };
+        if record.sender.eq_ignore_ascii_case(&reaction.sender) {
+            deleted.insert(reaction.message_id_hex.as_str());
+        }
+    }
+    deleted
+}
+
+/// Resolve the visible message row that should refresh after a wire event.
+/// Kind-5 deletes usually target a visible kind-9 message directly, but unreact
+/// publishes a kind-5 targeting the kind-7 reaction event. In that case refresh
+/// the original reacted-to message so the chip model rebuilds from the tombstone.
+pub(crate) fn message_row_refresh_target(
+    kind: u64,
+    target_id: Option<String>,
+    records: &[AppMessageRecord],
+) -> Option<String> {
+    let target = target_id?;
+    if kind == 5
+        && let Some(reaction) = records
+            .iter()
+            .find(|record| record.kind == 7 && record.message_id_hex.eq_ignore_ascii_case(&target))
+        && let Some(message_id) = first_event_ref(&reaction.tags)
+    {
+        return Some(message_id.to_string());
+    }
+    Some(target)
+}
+
+/// Walk all message records and group non-deleted kind-7 reactions by target id.
 /// Returns a map from target message_id → ordered `Reaction` chips.
 pub(crate) fn aggregate_reactions(
     records: &[AppMessageRecord],
     my_account_id_hex: &str,
     backend: &Backend,
 ) -> std::collections::HashMap<String, Vec<Reaction>> {
+    aggregate_reactions_with_reactors(records, my_account_id_hex, |senders| {
+        build_reactors(senders, my_account_id_hex, backend)
+    })
+}
+
+fn aggregate_reactions_with_reactors<F>(
+    records: &[AppMessageRecord],
+    my_account_id_hex: &str,
+    mut reactors_for: F,
+) -> std::collections::HashMap<String, Vec<Reaction>>
+where
+    F: FnMut(&[String]) -> ModelRc<Reactor>,
+{
     use std::collections::{HashMap, HashSet};
+
+    let deleted_reactions = deleted_reaction_ids(records);
     // target_id → (emoji → (mine, ordered unique reactor hexes)). A person is
     // counted once per emoji, so the chip count matches the reactor list even if
     // two kind-7 with the same emoji slipped through.
     let mut by_target: HashMap<String, HashMap<String, (bool, Vec<String>)>> = HashMap::new();
     let mut seen: HashSet<(String, String, String)> = HashSet::new();
     for r in records {
-        if r.kind != 7 {
+        if r.kind != 7 || deleted_reactions.contains(r.message_id_hex.as_str()) {
             continue;
         }
         // The first `e` tag points at the target. Skip if missing.
-        let Some(target) = r
-            .tags
-            .iter()
-            .find(|t| t.len() >= 2 && t[0] == "e")
-            .map(|t| t[1].clone())
-        else {
+        let Some(target) = first_event_ref(&r.tags).map(str::to_string) else {
             continue;
         };
         let emoji = r.plaintext.trim().to_string();
@@ -1452,7 +1515,7 @@ pub(crate) fn aggregate_reactions(
                         mine,
                         clip_x,
                         clip_y,
-                        reactors: build_reactors(&senders, my_account_id_hex, backend),
+                        reactors: reactors_for(&senders),
                     }
                 })
                 .collect();
@@ -1704,4 +1767,79 @@ pub(crate) fn build_edit_history(
         });
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn record(
+        id: &str,
+        sender: &str,
+        kind: u64,
+        target: Option<&str>,
+        plaintext: &str,
+        recorded_at: u64,
+    ) -> AppMessageRecord {
+        AppMessageRecord {
+            message_id_hex: id.to_string(),
+            direction: "in".to_string(),
+            group_id_hex: "group".to_string(),
+            sender: sender.to_string(),
+            plaintext: plaintext.to_string(),
+            kind,
+            tags: target
+                .map(|target| vec![vec!["e".to_string(), target.to_string()]])
+                .unwrap_or_default(),
+            source_epoch: None,
+            recorded_at,
+            received_at: recorded_at,
+            insert_order: recorded_at as i64,
+        }
+    }
+
+    fn reaction_chip<'a>(chips: &'a [Reaction], emoji: &str) -> Option<&'a Reaction> {
+        chips
+            .iter()
+            .find(|reaction| reaction.emoji.as_str() == emoji)
+    }
+
+    #[test]
+    fn aggregate_reactions_honors_same_sender_deletes_of_reaction_events() {
+        let records = vec![
+            record("message", "me", CHAT_MESSAGE_KIND, None, "hello", 1),
+            record("own-heart", "me", 7, Some("message"), "❤️", 2),
+            record("own-fire", "me", 7, Some("message"), "🔥", 3),
+            record("other-fire", "other", 7, Some("message"), "🔥", 4),
+            record("delete-own-fire", "me", 5, Some("own-fire"), "", 5),
+        ];
+
+        let reactions = aggregate_reactions_with_reactors(&records, "me", |_| Default::default());
+        let chips = reactions.get("message").expect("message reactions");
+
+        let heart = reaction_chip(chips, "❤️").expect("heart chip");
+        assert_eq!(heart.count, 1);
+        assert!(heart.mine);
+
+        let fire = reaction_chip(chips, "🔥").expect("fire chip");
+        assert_eq!(fire.count, 1);
+        assert!(!fire.mine);
+    }
+
+    #[test]
+    fn message_row_refresh_target_resolves_reaction_deletes_to_original_message() {
+        let records = vec![
+            record("message", "me", CHAT_MESSAGE_KIND, None, "hello", 1),
+            record("own-fire", "me", 7, Some("message"), "🔥", 2),
+        ];
+
+        assert_eq!(
+            message_row_refresh_target(5, Some("own-fire".to_string()), &records),
+            Some("message".to_string())
+        );
+        assert_eq!(
+            message_row_refresh_target(5, Some("message".to_string()), &records),
+            Some("message".to_string())
+        );
+    }
 }

@@ -264,7 +264,7 @@ export component DarkMatterLinux inherits Window {
     callback cancel-reply();
     callback cancel-edit();
     callback react-message(string, string);
-    callback unreact-message(string);
+    callback unreact-message(string, string);
     callback retry-message(string);
     callback request-reply(string, string, string); // message_id, preview, author
     callback request-forward(int);                    // destination chat index; source is `forward-src-id`
@@ -962,8 +962,8 @@ export component DarkMatterLinux inherits Window {
                             react(id, emoji) => {
                                 root.react-message(id, emoji);
                             }
-                            unreact(id) => {
-                                root.unreact-message(id);
+                            unreact(id, emoji) => {
+                                root.unreact-message(id, emoji);
                             }
                             request-picker(id, ax, ay) => {
                                 root.emoji-picker-requested(id, ax, ay);

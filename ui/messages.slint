@@ -40,7 +40,7 @@ export component MessagesArea inherits Rectangle {
     in property <bool> has-older: false;
     callback request-older();
     callback react(string, string);
-    callback unreact(string);
+    callback unreact(string, string);
     callback request-picker(string, length, length);
     callback request-reply(string, string, string);
     callback request-edit(string, string);
@@ -221,8 +221,8 @@ export component MessagesArea inherits Rectangle {
                     react(id, emoji) => {
                         root.react(id, emoji);
                     }
-                    unreact(id) => {
-                        root.unreact(id);
+                    unreact(id, emoji) => {
+                        root.unreact(id, emoji);
                     }
                     request-picker(id, ax, ay) => {
                         root.request-picker(id, ax, ay);

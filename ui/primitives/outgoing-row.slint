@@ -42,7 +42,7 @@ export component OutgoingRow inherits VerticalLayout {
 
     callback album-cell-clicked(string);
     callback react(string, string);
-    callback unreact(string);
+    callback unreact(string, string);
     callback request-picker(string, length, length);
     callback request-reply(string, string, string);
     callback request-edit(string, string);
@@ -176,8 +176,8 @@ export component OutgoingRow inherits VerticalLayout {
                 react(id, emoji) => {
                     root.react(id, emoji);
                 }
-                unreact(id) => {
-                    root.unreact(id);
+                unreact(id, emoji) => {
+                    root.unreact(id, emoji);
                 }
             }
         }
