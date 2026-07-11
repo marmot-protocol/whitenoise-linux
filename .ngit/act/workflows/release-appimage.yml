@@ -57,15 +57,41 @@ jobs:
             | sh -s -- -y --default-toolchain stable --profile minimal
           echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
+      # Headroom for the wnl-ui compile (below). Compiling the ~580k-line
+      # generated Slint module in one crate has a large single-rustc front-end
+      # peak (monomorphization/borrowck) that opt-level/codegen-units can't
+      # shrink; a swapfile lets that peak spill instead of tripping the
+      # container OOM killer. Best-effort: if the container disallows swapon
+      # (unprivileged), we log and continue — CARGO_BUILD_JOBS=1 below is the
+      # privilege-free half of the fix.
+      - name: Add swap headroom
+        run: |
+          if sudo fallocate -l 8G /swapfile 2>/dev/null || sudo dd if=/dev/zero of=/swapfile bs=1M count=8192 2>/dev/null; then
+            sudo chmod 600 /swapfile
+            sudo mkswap /swapfile >/dev/null
+            sudo swapon /swapfile && echo "swap enabled:" && free -h || echo "swapon not permitted; relying on serialized build"
+          else
+            echo "could not allocate swapfile; relying on serialized build"
+          fi
+
       - name: Build release binary (compiled UI)
-        # `wnl-ui` compiles the ~580k-line generated Slint module in one crate;
-        # at the release profile's opt-level=3 a single rustc/LLVM process peaks
-        # high enough that the ngit-ci act container's OOM killer SIGKILLs it
-        # (signal 9). Drop just that crate to opt-level=1 and split it into many
-        # codegen-units so LLVM never holds the whole module in memory at once.
-        # CI-local via --config: the committed release profile and the shipped
-        # binary's optimization are untouched, and it's only generated UI-
-        # construction code (no hot compute), so the staging AppImage is fine.
+        # `wnl-ui` compiles the ~580k-line generated Slint module in one crate.
+        # Its peak is rustc's single-threaded FRONT-END (MIR/monomorphization/
+        # borrowck of that one huge module), which opt-level and codegen-units
+        # do NOT reduce — that's why the earlier opt-level=1/codegen-units=256
+        # mitigation alone still got SIGKILLed (signal 9) by the act container's
+        # OOM killer. So we also cut the memory demand two ways that don't need
+        # container privileges:
+        #   * CARGO_BUILD_JOBS=1 serializes compilation so no other rustc runs
+        #     alongside the wnl-ui whale — the log's "waiting for other jobs to
+        #     finish" showed concurrent processes stacking onto the same peak.
+        #   * opt-level=1/codegen-units=256 (kept) trim the LLVM half.
+        # Plus the best-effort swapfile above for extra headroom. CI-local via
+        # --config: the committed release profile and the shipped binary's
+        # optimization are untouched, and it's only generated UI-construction
+        # code (no hot compute), so the staging AppImage is fine.
+        env:
+          CARGO_BUILD_JOBS: "1"
         run: >
           cargo build --locked --release --no-default-features
           --config 'profile.release.package.wnl-ui.opt-level=1'
