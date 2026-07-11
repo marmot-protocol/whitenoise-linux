@@ -1,18 +1,31 @@
 import { Palette } from "../tokens.slint";
+import { CypherScroll } from "../primitives/cypher-scroll.slint";
 
 export component DetailPage inherits Rectangle {
     horizontal-stretch: 1;
     background: Palette.bg;
 
-    VerticalLayout {
-        padding-left: 28px;
-        padding-right: 28px;
-        padding-top: 16px;
-        padding-bottom: 16px;
-        spacing: 20px;
-        @children
-        Rectangle {
-            vertical-stretch: 1;
+    CypherScroll {
+        width: parent.width;
+        height: parent.height;
+        viewport-width: self.visible-width;
+        // Fill the viewport when the content fits (so a `vertical-stretch`
+        // child such as the Debug dump still expands); grow past it and let
+        // the scrollbar appear once the content is taller, instead of the
+        // window edge clipping the lower rows.
+        viewport-height: max(content.preferred-height, self.visible-height);
+
+        content := VerticalLayout {
+            width: parent.width;
+            padding-left: 28px;
+            padding-right: 28px;
+            padding-top: 16px;
+            padding-bottom: 16px;
+            spacing: 20px;
+            @children
+            Rectangle {
+                vertical-stretch: 1;
+            }
         }
     }
 }
