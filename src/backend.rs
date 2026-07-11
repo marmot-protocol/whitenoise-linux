@@ -1081,6 +1081,34 @@ impl Backend {
         });
     }
 
+    /// Synchronously re-query one group's roster and overwrite its cache entry.
+    /// Unlike `refresh_members_async`, this blocks until the fresh list is
+    /// stored, so a caller that just mutated membership (add/remove) can
+    /// guarantee the next `group_members` read reflects the change instead of
+    /// the stale pre-mutation list. Must run on a worker thread, never the UI
+    /// thread or the account worker (it drives the runtime like `remove_member`).
+    pub(crate) fn refresh_members_blocking(&self, group_hex: &str) {
+        let Ok(group_id) = group_id_from_hex(group_hex) else {
+            return;
+        };
+        let label = self.active_label();
+        let runtime = self.runtime.clone();
+        match self
+            .tokio
+            .block_on(async move { runtime.group_members(&label, &group_id).await })
+        {
+            Ok(members) => {
+                self.members_cache
+                    .lock()
+                    .unwrap()
+                    .insert(group_hex.to_string(), members);
+            }
+            Err(e) => {
+                tracing::warn!(target: "backend", "members refresh ({group_hex}) failed: {e}")
+            }
+        }
+    }
+
     /// Synchronously fill the members cache for every known group (visible +
     /// archived). Called from boot — which runs on a worker thread, never the
     /// UI thread — while the account worker is still idle, before the

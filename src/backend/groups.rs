@@ -235,12 +235,21 @@ impl Backend {
         let label = self.active_label();
         let members = vec![member_ref.to_string()];
         let runtime = self.runtime.clone();
-        self.tokio.block_on(async move {
+        let summary = self.tokio.block_on(async move {
             runtime
                 .remove_members(&label, &group_id, &members)
                 .await
                 .map_err(|e| anyhow!("remove_member: {e}"))
-        })
+        })?;
+        // The eviction mutated the roster, but `group_members` is served from
+        // `members_cache`, which the removal did not touch — so the immediate
+        // UI push would repaint the pre-removal list and look like nothing
+        // happened. Refresh the cache synchronously here so the next read (the
+        // panel rebuild) reflects the departed member. Role changes (promote/
+        // demote) do not need this: their badges come from `chats()`, a fresh
+        // source, not this cache.
+        self.refresh_members_blocking(group_hex);
+        Ok(summary)
     }
 
     /// Relinquish the active account's own admin rights on `group_hex`.
