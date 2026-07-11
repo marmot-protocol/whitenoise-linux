@@ -26,44 +26,54 @@ export component DebugPane inherits DetailPage {
     Section {
         label: root.mode == 1 ? @tr("RAW EVENTS") : root.mode == 2 ? @tr("KEY PACKAGES") : @tr("STATE SNAPSHOT");
 
-        HorizontalLayout {
+        // Split into a view selector and an actions row so the five buttons
+        // never overrun a narrow pane and clip at the edge; each row fits on
+        // its own and stays fully visible at any window width.
+        VerticalLayout {
             spacing: 8px;
-            alignment: start;
-            Button {
-                label: @tr("State");
-                clicked => {
-                    root.mode = 0;
-                    root.load(0);
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: start;
+                Button {
+                    label: @tr("State");
+                    clicked => {
+                        root.mode = 0;
+                        root.load(0);
+                    }
+                }
+
+                Button {
+                    label: @tr("Raw events");
+                    clicked => {
+                        root.mode = 1;
+                        root.load(1);
+                    }
+                }
+
+                Button {
+                    label: @tr("Key packages");
+                    clicked => {
+                        root.mode = 2;
+                        root.load(2);
+                    }
                 }
             }
 
-            Button {
-                label: @tr("Raw events");
-                clicked => {
-                    root.mode = 1;
-                    root.load(1);
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: start;
+                Button {
+                    label: @tr("Refresh");
+                    clicked => {
+                        root.load(root.mode);
+                    }
                 }
-            }
 
-            Button {
-                label: @tr("Key packages");
-                clicked => {
-                    root.mode = 2;
-                    root.load(2);
-                }
-            }
-
-            Button {
-                label: @tr("Refresh");
-                clicked => {
-                    root.load(root.mode);
-                }
-            }
-
-            Button {
-                label: @tr("Copy JSON");
-                clicked => {
-                    root.copy-clicked();
+                Button {
+                    label: @tr("Copy JSON");
+                    clicked => {
+                        root.copy-clicked();
+                    }
                 }
             }
         }

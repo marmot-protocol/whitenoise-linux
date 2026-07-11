@@ -123,6 +123,7 @@ export component NetworkPane inherits DetailPage {
 
                     VerticalLayout {
                         horizontal-stretch: 1;
+                        min-width: 0px;
                         spacing: 3px;
                         alignment: center;
                         Text {
@@ -130,12 +131,14 @@ export component NetworkPane inherits DetailPage {
                             color: Palette.text-hi;
                             font-size: (12px) * Theme.fs-scale;
                             font-weight: 700;
+                            overflow: elide;
                         }
 
                         Text {
                             text: root.total == 0 ? @tr("Add a relay below — nothing publishes until you do.") : @tr("Aggregate connection counter from the relay pool.");
                             color: Palette.text-lo;
                             font-size: (11px) * Theme.fs-scale;
+                            overflow: elide;
                         }
                     }
 
