@@ -152,6 +152,11 @@ export global Theme {
     // true on macOS — lets shortcut hints render ⌘ instead of Ctrl. Set from
     // Rust at startup via the root `is-macos` property.
     in-out property <bool> is-mac: false;
+    // Display names and stable mode ids of the user-defined themes, in the same
+    // order as `user-color-packs`, so the picker can list them after the
+    // built-ins. Rust fills both from the theme files at startup.
+    in property <[string]> user-theme-names: [];
+    in property <[string]> user-theme-modes: [];
 
     // Back-compat identity flags, derived from id. Components still branching on
     // these (structural retro-isms) read them until Phase B2/B3 tokenizes those.
@@ -692,11 +697,24 @@ export global Theme {
             accent-surface: [#122820, #0F1A2E, #2E0F18, #2E150F, #1A0F2E],
         },
     ];
+    // User-defined color packs, appended after the built-ins. Rust fills this
+    // from theme files under `$DM_HOME/themes/` at startup (see src/themes.rs);
+    // ids `color-packs.length ..` select into it. Empty when no user theme
+    // loaded, so a stock build indexes only the built-in registry above.
+    in property <[ThemeColors]> user-color-packs: [];
+    // Resolve any theme id to its color pack, folding the built-in and user
+    // registries so a leaf never has to know which side an id lives on.
+    public pure function colors-at(i: int) -> ThemeColors {
+        return i < root.color-packs.length
+            ? root.color-packs[i]
+            : root.user-color-packs[i - root.color-packs.length];
+    }
     // The active theme's resolved color set — read by Palette below.
-    out property <ThemeColors> c: root.color-packs[root.id];
+    out property <ThemeColors> c: root.colors-at(root.id);
 
     // Structural personality registry. Index = Theme.id, parallel to color-packs.
-    property <[ThemeStyle]> style-packs: [
+    // `out` so Rust can read a base pack when overlaying a user theme's style.
+    out property <[ThemeStyle]> style-packs: [
         // 0: Dark — modern soft shadows, vector icons, glow on focus.
         {
             hard-shadow: false,
@@ -907,7 +925,16 @@ export global Theme {
             synth-grid: false
         },
     ];
-    out property <ThemeStyle> s: root.style-packs[root.id];
+    // User-defined style packs, parallel to `user-color-packs`. Rust fills this
+    // from the same theme files; a file that overrides no style flags inherits
+    // its base built-in's pack unchanged.
+    in property <[ThemeStyle]> user-style-packs: [];
+    public pure function style-at(i: int) -> ThemeStyle {
+        return i < root.style-packs.length
+            ? root.style-packs[i]
+            : root.user-style-packs[i - root.style-packs.length];
+    }
+    out property <ThemeStyle> s: root.style-at(root.id);
 
     // Flat capability flags — what components actually read. Never branch on
     // `Theme.retro`/`Theme.light` for styling; branch on these.

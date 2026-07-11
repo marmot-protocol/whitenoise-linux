@@ -85,8 +85,13 @@ Theme (id + accent)          ← Rust sets only this
   └─ Tokens (ThemeTokens)    ← L0: colors/type/geometry/motion/flags  (Phase B)
   └─ component skin slots    ← L1: dispatch to a skin body per family  (Phase C)
   └─ shell variant slot      ← L2: dispatch to a shell skeleton        (Phase D)
-  └─ (future) runtime plugins via slint-interpreter — contract permits, not built
+  └─ user themes from disk   ← ThemeColors/ThemeStyle packs loaded at startup
 ```
+
+User themes are the data half of that last layer, built now (`src/themes.rs`):
+Rust loads recolor/flag packs from `$DM_HOME/themes/*.toml` and appends them to the
+registry, so a user adds a theme without a rebuild. Runtime *skin bodies* (new Slint
+via slint-interpreter) remain the not-built extension the contract still permits.
 
 ## How to add a theme
 
@@ -109,6 +114,14 @@ struct; a drastic theme additionally writes skin bodies and bumps the selectors.
    `ui/settings/theme-picker.slint`. No Rust setter, no per-theme bool, no `changed`
    handler: `theme-id` is threaded root → `settings-page.slint` → `appearance-pane.slint`
    once, for every theme.
+
+**Or skip the rebuild entirely (user themes).** Drop a `<mode>.toml` in
+`$DM_HOME/themes/` naming a `base` built-in and overriding any `ThemeColors` field or
+`ThemeStyle` flag by its kebab-case name. `src/themes.rs` reads the base pack from the
+compiled registry at startup, overlays the file, and appends the result to
+`Theme.user-color-packs` / `user-style-packs` (with the picker names/modes), so the
+theme shows up in the Appearance picker with no code change. A malformed file is
+skipped with a log line, matching how `settings.rs` swallows bad input.
 
 The worked example is theme id 3, **Terminal** (terminal message lines + IRC chat
 list + bracketed buttons): it required **zero** changes to message/list/button

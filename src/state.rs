@@ -921,13 +921,13 @@ pub(crate) fn normalize_locale(code: &str) -> &'static str {
     }
 }
 
-/// The one theme registry: position i is the id-i theme's stable mode name
+/// The built-in theme registry: position i is the id-i theme's stable mode name
 /// (0=dark, 1=light, 2=retro, 3=terminal, 4=crayon, 5=synthwave, 6=chalkboard,
 /// 7=amoled), matching the color/style packs in `ui/tokens.slint` (indexed by
-/// `Theme.id`) and the picker's `modes` array. `normalize_theme_mode`,
-/// `theme_mode_idx`, and `apply_theme_mode` all derive from this table, so
-/// adding a theme is one new entry here (plus the Slint packs + picker). This
-/// mirrors the `ACCENTS` name↔index table below.
+/// `Theme.id`) and the picker's built-in `modes` array. User themes loaded from
+/// disk extend this at runtime through `set_theme_registry`. Adding a built-in
+/// theme is one new entry here (plus the Slint packs + picker). This mirrors the
+/// `ACCENTS` name↔index table below.
 pub(crate) const THEME_MODES: [&str; 8] = [
     "dark",
     "light",
@@ -939,19 +939,40 @@ pub(crate) const THEME_MODES: [&str; 8] = [
     "amoled",
 ];
 
-pub(crate) fn normalize_theme_mode(mode: &str) -> &'static str {
-    THEME_MODES
-        .iter()
-        .copied()
-        .find(|name| *name == mode)
-        .unwrap_or(THEME_MODES[0])
+/// The full theme registry — the built-ins plus the user themes loaded from
+/// `$DM_HOME/themes/` at startup, in id order. Set once by `set_theme_registry`
+/// after `themes::load_user_themes`. A read before it is set sees only the
+/// built-ins, which is correct: no user theme can be active before the load.
+static THEME_REGISTRY: OnceLock<Vec<String>> = OnceLock::new();
+
+/// Record the user theme modes (as returned by `themes::load_user_themes`) so
+/// that name↔id resolution spans the built-ins and the user themes. Called once
+/// at startup, before the persisted theme is resolved.
+pub(crate) fn set_theme_registry(user_modes: Vec<String>) {
+    let mut all: Vec<String> = THEME_MODES.iter().map(|s| s.to_string()).collect();
+    all.extend(user_modes);
+    let _ = THEME_REGISTRY.set(all);
+}
+
+/// Every registered mode name in id order (built-ins alone until the registry
+/// is set).
+pub(crate) fn theme_modes() -> Vec<String> {
+    THEME_REGISTRY
+        .get()
+        .cloned()
+        .unwrap_or_else(|| THEME_MODES.iter().map(|s| s.to_string()).collect())
+}
+
+pub(crate) fn normalize_theme_mode(mode: &str) -> String {
+    if theme_modes().iter().any(|m| m == mode) {
+        mode.to_string()
+    } else {
+        THEME_MODES[0].to_string()
+    }
 }
 
 pub(crate) fn theme_mode_idx(mode: &str) -> i32 {
-    THEME_MODES
-        .iter()
-        .position(|name| *name == mode)
-        .unwrap_or(0) as i32
+    theme_modes().iter().position(|m| m == mode).unwrap_or(0) as i32
 }
 
 /// The one accent registry: position i names column i of every `accent-*`
@@ -998,11 +1019,11 @@ pub(crate) fn set_accent_index(ui: &DarkMatterLinux, idx: i32) {
 /// of range. Sets the single `theme-id` the root folds onto `Theme.id`; the
 /// old per-theme boolean flags are gone.
 pub(crate) fn apply_theme_mode(ui: &DarkMatterLinux, mode: &str) {
-    let idx = theme_mode_idx(normalize_theme_mode(mode));
+    let idx = theme_mode_idx(&normalize_theme_mode(mode));
+    let n = theme_modes().len() as i32;
     debug_assert!(
-        (0..THEME_MODES.len() as i32).contains(&idx),
-        "theme id {idx} outside the THEME_MODES table (len {})",
-        THEME_MODES.len()
+        (0..n).contains(&idx),
+        "theme id {idx} outside the theme registry (len {n})"
     );
     ui.set_theme_id(idx);
 }
