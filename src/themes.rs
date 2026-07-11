@@ -1,23 +1,38 @@
-// User-defined themes loaded from disk.
+// The theming engine's data loader.
 //
-// A user drops a TOML file at `$DM_HOME/themes/<mode>.toml`. Each file names a
-// `base` built-in theme and overrides only the fields it cares about, so a
-// whole theme can be a few lines and still render coherently: everything left
-// unspecified inherits the base pack. At startup [`load_user_themes`] scans the
-// directory, reads the base `ThemeColors`/`ThemeStyle` straight from the
-// compiled Slint registry, overlays the file, and pushes the result back into
-// `Theme.user-color-packs` / `Theme.user-style-packs` (plus the picker's
-// name/mode lists). Ids at and beyond the built-in count select into those,
-// so a user theme is a first-class pick with no rebuild.
+// Every theme — the eight that ship with the app and any a user adds — is a
+// `.toml` file in the same format, loaded through the same path. The built-ins
+// are embedded in the binary with `include_str!` (`themes/<mode>.toml`); user
+// themes are read from `$DM_HOME/themes/*.toml` at startup. Each file names an
+// optional `base` (another theme by mode name) and overrides `ThemeColors`
+// fields and `ThemeStyle` flags by their kebab-case names; everything left
+// unspecified inherits the base, so a whole theme can be a few lines. A file
+// with no `base` is a complete definition (the built-ins are authored this way).
 //
-// Defensive by construction, matching how `settings.rs` swallows bad input: a
-// file that fails to read, parse, or that collides with an existing mode is
-// logged and skipped, never blocking the others.
-
+// [`load_themes`] builds the full pack list and hands it to the `Theme` global
+// (`color-packs` / `style-packs`), which no longer hardcodes any theme data and
+// just renders whatever id it is given. Defensive by construction, matching how
+// `settings.rs` swallows bad input: a file that fails to read, parse, or whose
+// mode name collides is logged and skipped, never blocking the others.
+//
 // Color, Model, ModelRc, SharedString, VecModel, Rc, and the generated Theme /
-// ThemeColors / ThemeStyle / DarkMatterLinux types all come from the crate
-// prelude re-exports in main.rs.
+// ThemeColors / ThemeStyle / DarkMatterLinux types come from the crate prelude.
+
 use crate::*;
+
+/// The built-in themes, embedded in `THEME_MODES` order (index = theme id). The
+/// files live in `themes/` at the repo root and were generated from the packs
+/// that used to be Slint literals, so the built-ins render unchanged.
+const BUILTIN_THEME_FILES: [(&str, &str); 8] = [
+    ("dark", include_str!("../themes/dark.toml")),
+    ("light", include_str!("../themes/light.toml")),
+    ("retro", include_str!("../themes/retro.toml")),
+    ("terminal", include_str!("../themes/terminal.toml")),
+    ("crayon", include_str!("../themes/crayon.toml")),
+    ("synthwave", include_str!("../themes/synthwave.toml")),
+    ("chalkboard", include_str!("../themes/chalkboard.toml")),
+    ("amoled", include_str!("../themes/amoled.toml")),
+];
 
 /// The directory scanned for user theme files: `$DM_HOME/themes/`.
 fn themes_dir() -> std::path::PathBuf {
@@ -288,11 +303,25 @@ fn apply_style(base: &mut ThemeStyle, ov: &StyleOverlay) {
     );
 }
 
-/// Scan `$DM_HOME/themes/`, build the user packs, push them into the `Theme`
-/// global, and return the loaded modes' stable names in id order (empty when
-/// the directory is missing or holds no valid theme). The returned names extend
-/// the built-in `THEME_MODES` registry in [`crate::state`].
-pub(crate) fn load_user_themes(ui: &DarkMatterLinux) -> Vec<String> {
+/// Build a theme's packs by cloning its `base` (an already-loaded theme, or an
+/// empty pack when the file names none) and applying the file's overrides.
+fn build_pack(
+    file: &ThemeFile,
+    by_name: &HashMap<String, (ThemeColors, ThemeStyle)>,
+) -> (ThemeColors, ThemeStyle) {
+    let (mut c, mut s) = file
+        .base
+        .as_ref()
+        .and_then(|b| by_name.get(b).cloned())
+        .unwrap_or_default();
+    apply_colors(&mut c, &file.colors);
+    apply_style(&mut s, &file.style);
+    (c, s)
+}
+
+/// The user theme files in `$DM_HOME/themes/`, sorted so ids stay stable across
+/// restarts. Missing directory or a read error yields an empty list.
+fn user_theme_paths() -> Vec<std::path::PathBuf> {
     let dir = themes_dir();
     let mut entries: Vec<std::path::PathBuf> = match std::fs::read_dir(&dir) {
         Ok(rd) => rd
@@ -305,21 +334,39 @@ pub(crate) fn load_user_themes(ui: &DarkMatterLinux) -> Vec<String> {
             return Vec::new();
         }
     };
-    // Stable order so ids stay put across restarts (a persisted user theme
-    // keeps its id as long as the same files are present).
     entries.sort();
+    entries
+}
 
-    let theme = ui.global::<Theme>();
-    let base_packs = theme.get_color_packs();
-    let base_styles = theme.get_style_packs();
-    let builtin_count = base_packs.row_count();
-
+/// Load every theme — embedded built-ins then `$DM_HOME/themes/` user files —
+/// through one path, push the full `ThemeColors`/`ThemeStyle` registry (and the
+/// user themes' picker names/modes) into the `Theme` global, and return the
+/// user modes in id order so [`crate::state`] can extend `THEME_MODES`.
+pub(crate) fn load_themes(ui: &DarkMatterLinux) -> Vec<String> {
+    let mut by_name: HashMap<String, (ThemeColors, ThemeStyle)> = HashMap::new();
     let mut colors: Vec<ThemeColors> = Vec::new();
     let mut styles: Vec<ThemeStyle> = Vec::new();
-    let mut names: Vec<SharedString> = Vec::new();
-    let mut modes: Vec<String> = Vec::new();
 
-    for path in &entries {
+    // Built-ins first: their index is the theme id, matching THEME_MODES and the
+    // picker's built-in name list. A parse failure here is an authoring bug in an
+    // embedded file; fall back to an empty pack rather than panicking at launch.
+    for (mode, text) in BUILTIN_THEME_FILES {
+        let (c, s) = match toml::from_str::<ThemeFile>(text) {
+            Ok(file) => build_pack(&file, &by_name),
+            Err(e) => {
+                tracing::error!(target: "themes", "built-in {mode} is invalid ({e})");
+                (ThemeColors::default(), ThemeStyle::default())
+            }
+        };
+        by_name.insert(mode.to_string(), (c.clone(), s.clone()));
+        colors.push(c);
+        styles.push(s);
+    }
+
+    // User themes append after the built-ins, keeping their own picker labels.
+    let mut user_names: Vec<SharedString> = Vec::new();
+    let mut user_modes: Vec<String> = Vec::new();
+    for path in user_theme_paths() {
         let Some(mode) = path
             .file_stem()
             .and_then(|s| s.to_str())
@@ -327,11 +374,11 @@ pub(crate) fn load_user_themes(ui: &DarkMatterLinux) -> Vec<String> {
         else {
             continue;
         };
-        if crate::state::THEME_MODES.contains(&mode.as_str()) || modes.contains(&mode) {
+        if by_name.contains_key(&mode) {
             tracing::warn!(target: "themes", "skipping {}: mode name '{mode}' already in use", path.display());
             continue;
         }
-        let text = match std::fs::read_to_string(path) {
+        let text = match std::fs::read_to_string(&path) {
             Ok(t) => t,
             Err(e) => {
                 tracing::warn!(target: "themes", "cannot read {} ({e}); skipped", path.display());
@@ -345,42 +392,31 @@ pub(crate) fn load_user_themes(ui: &DarkMatterLinux) -> Vec<String> {
                 continue;
             }
         };
-
-        let base_id = file
-            .base
-            .as_deref()
-            .map(crate::state::theme_mode_idx)
-            .filter(|id| (0..builtin_count as i32).contains(id))
-            .unwrap_or(0) as usize;
-        let (Some(mut c), Some(mut s)) =
-            (base_packs.row_data(base_id), base_styles.row_data(base_id))
-        else {
-            continue;
-        };
-        apply_colors(&mut c, &file.colors);
-        apply_style(&mut s, &file.style);
-
+        let (c, s) = build_pack(&file, &by_name);
         let display = file
             .name
             .filter(|n| !n.trim().is_empty())
             .unwrap_or_else(|| mode.clone());
+        by_name.insert(mode.clone(), (c.clone(), s.clone()));
         colors.push(c);
         styles.push(s);
-        names.push(display.into());
-        modes.push(mode);
+        user_names.push(display.into());
+        user_modes.push(mode);
     }
 
-    if !colors.is_empty() {
-        tracing::info!(target: "themes", "loaded {} user theme(s) from {}", colors.len(), dir.display());
+    if !user_modes.is_empty() {
+        tracing::info!(target: "themes", "loaded {} user theme(s)", user_modes.len());
     }
-    theme.set_user_color_packs(ModelRc::from(Rc::new(VecModel::from(colors))));
-    theme.set_user_style_packs(ModelRc::from(Rc::new(VecModel::from(styles))));
-    theme.set_user_theme_names(ModelRc::from(Rc::new(VecModel::from(names))));
+
+    let theme = ui.global::<Theme>();
+    theme.set_color_packs(ModelRc::from(Rc::new(VecModel::from(colors))));
+    theme.set_style_packs(ModelRc::from(Rc::new(VecModel::from(styles))));
+    theme.set_user_theme_names(ModelRc::from(Rc::new(VecModel::from(user_names))));
     theme.set_user_theme_modes(ModelRc::from(Rc::new(VecModel::from(
-        modes
+        user_modes
             .iter()
             .map(|m| SharedString::from(m.as_str()))
             .collect::<Vec<_>>(),
     ))));
-    modes
+    user_modes
 }

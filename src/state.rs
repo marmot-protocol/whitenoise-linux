@@ -941,11 +941,11 @@ pub(crate) const THEME_MODES: [&str; 8] = [
 
 /// The full theme registry — the built-ins plus the user themes loaded from
 /// `$DM_HOME/themes/` at startup, in id order. Set once by `set_theme_registry`
-/// after `themes::load_user_themes`. A read before it is set sees only the
+/// after `themes::load_themes`. A read before it is set sees only the
 /// built-ins, which is correct: no user theme can be active before the load.
 static THEME_REGISTRY: OnceLock<Vec<String>> = OnceLock::new();
 
-/// Record the user theme modes (as returned by `themes::load_user_themes`) so
+/// Record the user theme modes (as returned by `themes::load_themes`) so
 /// that name↔id resolution spans the built-ins and the user themes. Called once
 /// at startup, before the persisted theme is resolved.
 pub(crate) fn set_theme_registry(user_modes: Vec<String>) {

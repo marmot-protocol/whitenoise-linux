@@ -85,43 +85,40 @@ Theme (id + accent)          ← Rust sets only this
   └─ Tokens (ThemeTokens)    ← L0: colors/type/geometry/motion/flags  (Phase B)
   └─ component skin slots    ← L1: dispatch to a skin body per family  (Phase C)
   └─ shell variant slot      ← L2: dispatch to a shell skeleton        (Phase D)
-  └─ user themes from disk   ← ThemeColors/ThemeStyle packs loaded at startup
+  └─ theme files (built + user)  ← ThemeColors/ThemeStyle packs loaded at startup
 ```
 
-User themes are the data half of that last layer, built now (`src/themes.rs`):
-Rust loads recolor/flag packs from `$DM_HOME/themes/*.toml` and appends them to the
-registry, so a user adds a theme without a rebuild. Runtime *skin bodies* (new Slint
-via slint-interpreter) remain the not-built extension the contract still permits.
+Every theme, built-in or user, is a `.toml` file loaded through one path
+(`src/themes.rs`). The built-ins are embedded (`themes/<mode>.toml`, `include_str!`);
+user themes are read from `$DM_HOME/themes/*.toml`. Rust builds the whole pack list and
+fills `Theme.color-packs` / `style-packs`; the Slint side holds no theme data and just
+renders whatever id it is handed. Runtime *skin bodies* (new Slint via
+slint-interpreter) remain the not-built extension the contract still permits.
 
 ## How to add a theme
 
-Everything lives in `ui/tokens.slint` + two tiny selection sites. A recolor is one
-struct; a drastic theme additionally writes skin bodies and bumps the selectors.
+A theme is a `.toml` file, `[colors]` + `[style]`, optionally starting from a `base`.
+A pure recolor overrides a handful of fields; a drastic theme additionally writes skin
+bodies and bumps the selectors.
 
-1. **Colors** — append a `ThemeColors` literal to `Theme.color-packs` (the new
-   index is the theme id).
-2. **Personality** — append a parallel `ThemeStyle` literal to `Theme.style-packs`:
-   the capability flags (`hard-shadow`, `bevel`, `pixel-icons`, `bracket-labels`, …)
-   and the per-family **skin selectors** (`skin-message`, `skin-list`, … `shell`).
-   For a pure recolor, copy an existing pack's flags and keep all selectors `0`.
-3. **Skins (only if a selector is non-zero)** — add the alternate body to that
-   family's slot, guarded by its selector value, reading the contract structs:
+1. **Write the file** — a built-in goes in `themes/<mode>.toml`, a user theme in
+   `$DM_HOME/themes/<mode>.toml` (same format). Name a `base` (another theme by mode)
+   and override any `ThemeColors` field or `ThemeStyle` flag by its kebab-case name;
+   everything unspecified inherits the base. A file with no `base` is a complete
+   definition (the eight built-ins are authored this way).
+2. **Skins (only if a `[style]` selector is non-zero)** — add the alternate body to
+   that family's slot, guarded by its selector value, reading the contract structs:
    - messages → `ui/primitives/message-view.slint` (`if Theme.skin-message == N`)
    - chat list → `ui/primitives/chat-list-entry.slint` (`if Theme.skin-list == N`)
    - shell → inline `if Theme.shell == N` skeleton in `ui/dark-matter-linux.slint`
-4. **Make it selectable** — append the mode name to `THEME_MODES` in `src/state.rs`
-   (its position is the new theme id) and add a matching `names`/`modes` entry in
-   `ui/settings/theme-picker.slint`. No Rust setter, no per-theme bool, no `changed`
-   handler: `theme-id` is threaded root → `settings-page.slint` → `appearance-pane.slint`
-   once, for every theme.
+3. **Make a built-in selectable** — add the file to `BUILTIN_THEME_FILES` in
+   `src/themes.rs`, append its mode name to `THEME_MODES` in `src/state.rs` (its
+   position is the theme id), and add a matching `names`/`modes` entry in
+   `ui/settings/theme-picker.slint`. A **user** theme needs none of this: it appears in
+   the picker automatically. No Rust setter, no per-theme bool, no `changed` handler.
 
-**Or skip the rebuild entirely (user themes).** Drop a `<mode>.toml` in
-`$DM_HOME/themes/` naming a `base` built-in and overriding any `ThemeColors` field or
-`ThemeStyle` flag by its kebab-case name. `src/themes.rs` reads the base pack from the
-compiled registry at startup, overlays the file, and appends the result to
-`Theme.user-color-packs` / `user-style-packs` (with the picker names/modes), so the
-theme shows up in the Appearance picker with no code change. A malformed file is
-skipped with a log line, matching how `settings.rs` swallows bad input.
+A file that fails to read or parse, or whose mode name collides, is logged and skipped,
+matching how `settings.rs` swallows bad input.
 
 The worked example is theme id 3, **Terminal** (terminal message lines + IRC chat
 list + bracketed buttons): it required **zero** changes to message/list/button

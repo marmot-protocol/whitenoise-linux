@@ -72,9 +72,9 @@ import { StagedAttachment } from "tokens.slint";
 export {
     EmojiSheet,
 }
-// Theme registry. Rust reads the built-in packs and pushes user-defined themes
-// loaded from `$DM_HOME/themes/` into `user-color-packs`/`user-style-packs`
-// (plus the picker name/mode lists) at startup — see src/themes.rs.
+// Theme registry. Rust fills `color-packs`/`style-packs` at startup from the
+// embedded built-in theme files and any user themes under `$DM_HOME/themes/`
+// (plus the picker name/mode lists) — see src/themes.rs.
 export {
     Theme,
 }

@@ -1,0 +1,117 @@
+name = "Sketch"
+
+[colors]
+bg = "#f4eedfff"
+panel = "#fbf6eaff"
+panel-2 = "#efe8d6ff"
+rail = "#ece4d0ff"
+banner = "#efe8d6ff"
+border = "#c7b894ff"
+border-2 = "#d8ccaeff"
+bubble-in = "#fcf8eeff"
+bubble-inset = "#efe8d6ff"
+bubble-inset-strong = "#d8ccaeff"
+code-plate = "#0000000d"
+media-backdrop = "#33302bff"
+bubble-inset-out = "#33302b22"
+bubble-inset-out-strong = "#33302b38"
+code-plate-out = "#33302b22"
+media-backdrop-out = "#33302b33"
+bubble-selection-out = "#33302b38"
+text-hi = "#33302bff"
+text-mid = "#6e6657ff"
+text-lo = "#968b76ff"
+text-vlo = "#bbb199ff"
+hover = "#ebe3cfff"
+bubble-out-fg = "#ffffffff"
+bevel-hi = "#ffffffff"
+bevel-lo = "#d8ccaeff"
+danger = "#c4453bff"
+danger-soft = "#c4453b1a"
+danger-border = "#d8a99aff"
+danger-soft-hover = "#c4453b2e"
+danger-border-hover = "#c89283ff"
+warning = "#c8821fff"
+warning-soft = "#c8821f1a"
+warning-border = "#dec79aff"
+field = "#fbf6eaff"
+field-hover = "#f4eedfff"
+field-border = "#c7b894ff"
+field-border-hover = "#b0a07cff"
+divider = "#ded2b6ff"
+elevated = "#fbf6eaff"
+elevated-border = "#c7b894ff"
+top-glint = "#ffffffaa"
+canvas-top = "#faf5e8ff"
+banner-edge = "#f4eedfff"
+card-border = "#c7b894ff"
+status-bar = "#fbf6eaff"
+card-well = "#efe8d6ff"
+overlay = "#33302b40"
+shadow-soft = "#33302b44"
+shadow-card = "#33302b55"
+shadow-popover = "#33302b55"
+shadow-float = "#33302b33"
+shadow-bubble-in = "#33302b44"
+vignette = "#d8ccae80"
+avatar-ring = "#00000015"
+selected-uses-base = false
+accent-base = [
+    "#3e9e7aff",
+    "#4a8fc0ff",
+    "#d45c86ff",
+    "#e08544ff",
+    "#9b7bc0ff",
+]
+accent-hi = [
+    "#52b891ff",
+    "#62a6d2ff",
+    "#e0789fff",
+    "#ee9c62ff",
+    "#b193d2ff",
+]
+accent-dim = [
+    "#2e7e60ff",
+    "#387098ff",
+    "#b0476cff",
+    "#b86836ff",
+    "#7c5fa0ff",
+]
+accent-glow = [
+    "#3e9e7a22",
+    "#4a8fc022",
+    "#d45c8622",
+    "#e0854422",
+    "#9b7bc022",
+]
+accent-surface = [
+    "#dcede3ff",
+    "#deeaf3ff",
+    "#f6e2eaff",
+    "#f8eaddff",
+    "#ede5f4ff",
+]
+
+[style]
+hard-shadow = false
+focus-glow = true
+char-wrap = false
+motion-fast = false
+bubble-bounce = true
+bevel = false
+pixel-icons = false
+selected-inverts-text = false
+pixel-select-marker = false
+pixel-metrics = false
+outline-surfaces = true
+soft-decor = true
+skin-message = 0
+skin-button = 0
+skin-list = 0
+skin-avatar = 0
+skin-modal = 0
+shell = 0
+bracket-labels = false
+paper-doodles = true
+sketch-bubbles = true
+synth-grid = false

@@ -125,10 +125,10 @@ fn main() -> Result<(), slint::PlatformError> {
     let mut initial_settings = Settings::load();
     let locale = normalize_locale(&initial_settings.locale).to_string();
     initial_settings.locale = locale.clone();
-    // Load any user themes from `$DM_HOME/themes/` into the Slint pack registry
-    // and record their modes, so a persisted user theme resolves to its own id
-    // below instead of falling back to Dark.
-    set_theme_registry(themes::load_user_themes(&ui));
+    // Load every theme — the embedded built-ins and any user themes from
+    // `$DM_HOME/themes/` — into the Slint pack registry and record the user
+    // modes, so a persisted user theme resolves to its own id below.
+    set_theme_registry(themes::load_themes(&ui));
     let theme_mode = normalize_theme_mode(&initial_settings.theme);
     initial_settings.theme = theme_mode.clone();
     let accent_color = normalize_accent_color(&initial_settings.accent_color);
