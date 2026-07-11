@@ -54,11 +54,14 @@ properties (e.g. `composer-draft`, `chats`, `messages`, `reply-target-*`).
 
 ### 4. Theme-selection properties (managed by the engine, set from `settings.rs`)
 
-The only theme state Rust sets. Today: `light-theme: bool`, `retro-mode: bool`,
-`accent-color: int`. **Phase B generalizes these into a single `theme-id: int`** (plus
-`accent-color`), which selects a `ThemeTokens` pack and, transitively, the per-family
-skin ids and shell id. Rust's job shrinks to "set the active theme id + accent"; all
-resolution happens in Slint.
+The only theme state Rust sets: `theme-id: int` and `accent-color: int`. The root
+folds `theme-id` straight onto `Theme.id`, which selects a `ThemeColors`/`ThemeStyle`
+pack and, transitively, the per-family skin ids and shell id. Rust's job is just "set
+the active theme id + accent"; all resolution happens in Slint. The persisted string
+mode name maps to the id through the `THEME_MODES` table in `state.rs` (index = id),
+exactly as `ACCENTS` maps accent names to `accent-color`. There are no per-theme
+boolean flags — the old `light-theme`/`retro-mode`/… props and the ternary that folded
+them back into an id are gone.
 
 ## What a skin is allowed to do
 
@@ -101,10 +104,11 @@ struct; a drastic theme additionally writes skin bodies and bumps the selectors.
    - messages → `ui/primitives/message-view.slint` (`if Theme.skin-message == N`)
    - chat list → `ui/primitives/chat-list-entry.slint` (`if Theme.skin-list == N`)
    - shell → inline `if Theme.shell == N` skeleton in `ui/dark-matter-linux.slint`
-4. **Make it selectable** — add the mode string in `normalize_theme_mode` /
-   `apply_theme_mode` (`src/main.rs`), a matching `*-mode` bool threaded
-   root → `settings-page.slint` → `appearance-pane.slint`, the `Theme.id` mapping
-   in the root's `changed` handlers, and a toggle in the appearance pane.
+4. **Make it selectable** — append the mode name to `THEME_MODES` in `src/state.rs`
+   (its position is the new theme id) and add a matching `names`/`modes` entry in
+   `ui/settings/theme-picker.slint`. No Rust setter, no per-theme bool, no `changed`
+   handler: `theme-id` is threaded root → `settings-page.slint` → `appearance-pane.slint`
+   once, for every theme.
 
 The worked example is theme id 3, **Terminal** (terminal message lines + IRC chat
 list + bracketed buttons): it required **zero** changes to message/list/button

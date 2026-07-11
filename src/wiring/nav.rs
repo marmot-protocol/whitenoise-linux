@@ -107,7 +107,11 @@ pub(crate) fn wire_nav(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     });
                 }
                 PaletteCommand::ToggleRetro => {
-                    let mode = if ui.get_retro_mode() { "dark" } else { "retro" };
+                    let mode = if ui.get_theme_id() == theme_mode_idx("retro") {
+                        "dark"
+                    } else {
+                        "retro"
+                    };
                     {
                         let mut s = settings_cell.borrow_mut();
                         s.theme = mode.into();

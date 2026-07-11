@@ -921,27 +921,37 @@ pub(crate) fn normalize_locale(code: &str) -> &'static str {
     }
 }
 
-/// The one theme-mode registry: each non-default mode's name paired with the
-/// root flag setter that turns it on. `normalize_theme_mode` and
-/// `apply_theme_mode` both derive from this list, so adding a theme mode is
-/// one new row here (plus the Slint side).
-type ThemeFlagSetter = fn(&DarkMatterLinux, bool);
-const THEME_MODE_FLAGS: [(&str, ThemeFlagSetter); 7] = [
-    ("light", DarkMatterLinux::set_light_theme),
-    ("retro", DarkMatterLinux::set_retro_mode),
-    ("terminal", DarkMatterLinux::set_terminal_mode),
-    ("crayon", DarkMatterLinux::set_crayon_mode),
-    ("synthwave", DarkMatterLinux::set_synthwave_mode),
-    ("chalkboard", DarkMatterLinux::set_chalkboard_mode),
-    ("amoled", DarkMatterLinux::set_amoled_mode),
+/// The one theme registry: position i is the id-i theme's stable mode name
+/// (0=dark, 1=light, 2=retro, 3=terminal, 4=crayon, 5=synthwave, 6=chalkboard,
+/// 7=amoled), matching the color/style packs in `ui/tokens.slint` (indexed by
+/// `Theme.id`) and the picker's `modes` array. `normalize_theme_mode`,
+/// `theme_mode_idx`, and `apply_theme_mode` all derive from this table, so
+/// adding a theme is one new entry here (plus the Slint packs + picker). This
+/// mirrors the `ACCENTS` name↔index table below.
+pub(crate) const THEME_MODES: [&str; 8] = [
+    "dark",
+    "light",
+    "retro",
+    "terminal",
+    "crayon",
+    "synthwave",
+    "chalkboard",
+    "amoled",
 ];
 
 pub(crate) fn normalize_theme_mode(mode: &str) -> &'static str {
-    THEME_MODE_FLAGS
+    THEME_MODES
         .iter()
-        .map(|(name, _)| *name)
+        .copied()
         .find(|name| *name == mode)
-        .unwrap_or("dark")
+        .unwrap_or(THEME_MODES[0])
+}
+
+pub(crate) fn theme_mode_idx(mode: &str) -> i32 {
+    THEME_MODES
+        .iter()
+        .position(|name| *name == mode)
+        .unwrap_or(0) as i32
 }
 
 /// The one accent registry: position i names column i of every `accent-*`
@@ -983,11 +993,18 @@ pub(crate) fn set_accent_index(ui: &DarkMatterLinux, idx: i32) {
     ui.set_accent_color(idx);
 }
 
+/// Every Rust-side theme push goes through here so an id the Slint theme packs
+/// cannot resolve fails loudly in dev builds instead of silently indexing out
+/// of range. Sets the single `theme-id` the root folds onto `Theme.id`; the
+/// old per-theme boolean flags are gone.
 pub(crate) fn apply_theme_mode(ui: &DarkMatterLinux, mode: &str) {
-    let mode = normalize_theme_mode(mode);
-    for (name, set_flag) in THEME_MODE_FLAGS {
-        set_flag(ui, mode == name);
-    }
+    let idx = theme_mode_idx(normalize_theme_mode(mode));
+    debug_assert!(
+        (0..THEME_MODES.len() as i32).contains(&idx),
+        "theme id {idx} outside the THEME_MODES table (len {})",
+        THEME_MODES.len()
+    );
+    ui.set_theme_id(idx);
 }
 
 pub(crate) fn locale_display(code: &str) -> &'static str {
