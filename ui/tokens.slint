@@ -1229,6 +1229,7 @@ export global TextSelection {
 export global ErrorCopy {
     // Tier 1 — content-based classification.
     out property <string> invalid-key: @tr("That doesn't look like a valid npub or public key. Double-check it and try again.");
+    out property <string> nip05-not-found: @tr("We couldn't find anyone with that username. Double-check the name@domain and try again.");
     out property <string> network: @tr("Can't reach your relays right now. Check your network and relay settings, then try again.");
     // Tier 2 — operation-specific fallbacks.
     out property <string> sync: @tr("Couldn't finish syncing. We'll keep retrying — check your relay settings if this keeps happening.");

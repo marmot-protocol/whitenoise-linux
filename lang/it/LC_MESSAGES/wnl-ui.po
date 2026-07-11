@@ -946,6 +946,10 @@ msgctxt "ErrorCopy"
 msgid "Enter a relay address."
 msgstr "Inserisci l'indirizzo di un relay."
 
+msgctxt "AddContactModal"
+msgid "Enter their username (name@domain), npub, or hex public key. They'll appear in your contacts on every device."
+msgstr "Inserisci il loro nome utente (name@domain), npub o chiave pubblica esadecimale. Compariranno tra i tuoi contatti su ogni dispositivo."
+
 msgctxt "LoginScreen"
 msgid "Enter your password"
 msgstr "Inserisci la tua password"
@@ -1583,10 +1587,6 @@ msgctxt "ProfilePage"
 msgid "PROFILE"
 msgstr "PROFILO"
 
-msgctxt "AddContactModal"
-msgid "PUBLIC KEY"
-msgstr "CHIAVE PUBBLICA"
-
 msgctxt "LoginScreen"
 msgid "PUBLIC KEY (NPUB)"
 msgstr "CHIAVE PUBBLICA (NPUB)"
@@ -1621,10 +1621,6 @@ msgstr "Incolla un'altra chiave segreta, o generane una nuova. Viene cifrata con
 msgctxt "StartNewChatModal"
 msgid "Paste one npub for a direct chat, or several (one per line) plus a group name."
 msgstr "Incolla un npub per una chat diretta, o diversi (uno per riga) più un nome per il gruppo."
-
-msgctxt "AddContactModal"
-msgid "Paste their npub or hex public key. They'll appear in your contacts on every device."
-msgstr "Incolla il loro npub o la chiave pubblica esadecimale. Compariranno tra i tuoi contatti su ogni dispositivo."
 
 msgctxt "WalletAddressRow"
 msgid "People can zap you via this address."
@@ -2353,6 +2349,10 @@ msgctxt "AboutPane"
 msgid "UNDER THE HOOD"
 msgstr "SOTTO IL COFANO"
 
+msgctxt "AddContactModal"
+msgid "USERNAME OR KEY"
+msgstr "NOME UTENTE O CHIAVE"
+
 msgctxt "ArchivedDetail"
 msgid "Unarchive"
 msgstr "Ripristina"
@@ -2433,6 +2433,10 @@ msgstr ""
 msgctxt "AboutPane"
 msgid "WHAT IT IS"
 msgstr "COS'È"
+
+msgctxt "ErrorCopy"
+msgid "We couldn't find anyone with that username. Double-check the name@domain and try again."
+msgstr "Non abbiamo trovato nessuno con quel nome utente. Ricontrolla name@domain e riprova."
 
 msgctxt "weekday"
 msgid "Wed"

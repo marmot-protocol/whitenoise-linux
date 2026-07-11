@@ -898,6 +898,10 @@ msgctxt "ErrorCopy"
 msgid "Enter a relay address."
 msgstr ""
 
+msgctxt "AddContactModal"
+msgid "Enter their username (name@domain), npub, or hex public key. They'll appear in your contacts on every device."
+msgstr ""
+
 msgctxt "LoginScreen"
 msgid "Enter your password"
 msgstr ""
@@ -1508,10 +1512,6 @@ msgctxt "ProfilePage"
 msgid "PROFILE"
 msgstr ""
 
-msgctxt "AddContactModal"
-msgid "PUBLIC KEY"
-msgstr ""
-
 msgctxt "LoginScreen"
 msgid "PUBLIC KEY (NPUB)"
 msgstr ""
@@ -1542,10 +1542,6 @@ msgstr ""
 
 msgctxt "StartNewChatModal"
 msgid "Paste one npub for a direct chat, or several (one per line) plus a group name."
-msgstr ""
-
-msgctxt "AddContactModal"
-msgid "Paste their npub or hex public key. They'll appear in your contacts on every device."
 msgstr ""
 
 msgctxt "WalletAddressRow"
@@ -2241,6 +2237,10 @@ msgctxt "AboutPane"
 msgid "UNDER THE HOOD"
 msgstr ""
 
+msgctxt "AddContactModal"
+msgid "USERNAME OR KEY"
+msgstr ""
+
 msgctxt "ArchivedDetail"
 msgid "Unarchive"
 msgstr ""
@@ -2315,6 +2315,10 @@ msgstr ""
 
 msgctxt "AboutPane"
 msgid "WHAT IT IS"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "We couldn't find anyone with that username. Double-check the name@domain and try again."
 msgstr ""
 
 msgctxt "weekday"

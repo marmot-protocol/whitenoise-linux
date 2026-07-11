@@ -65,7 +65,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             let Some(ui) = weak.upgrade() else { return };
             let input = input.trim().to_string();
             if input.is_empty() {
-                ui.set_add_contact_status(s("Paste an npub or hex pubkey."));
+                ui.set_add_contact_status(s("Enter a username, npub, or hex public key."));
                 return;
             }
             // Accept a pasted `marmot://profile/<npub>` deep link too.
