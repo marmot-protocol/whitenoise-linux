@@ -156,6 +156,10 @@ msgctxt "ChatListPanel"
 msgid "AGO"
 msgstr "前"
 
+msgctxt "StatusBar"
+msgid "AGO"
+msgstr "前"
+
 msgctxt "ArchivedSidebar"
 msgid "ARCHIVED"
 msgstr "アーカイブ"
@@ -1885,7 +1889,15 @@ msgctxt "ChatListPanel"
 msgid "SYNCED"
 msgstr "同期済み"
 
+msgctxt "StatusBar"
+msgid "SYNCED"
+msgstr "同期済み"
+
 msgctxt "ChatListPanel"
+msgid "SYNCING…"
+msgstr "同期中…"
+
+msgctxt "StatusBar"
 msgid "SYNCING…"
 msgstr "同期中…"
 
@@ -2356,6 +2368,7 @@ msgctxt "KeysPage"
 msgid "current"
 msgstr "現在"
 
+
 msgctxt "MessageBubble"
 msgid "decrypting…"
 msgstr "復号中…"
@@ -2387,6 +2400,7 @@ msgstr "ローカルのみ"
 msgctxt "ProfilePage"
 msgid "no handle yet"
 msgstr "ハンドルはまだありません"
+
 
 msgctxt "EmojiPicker"
 msgid "no matches"

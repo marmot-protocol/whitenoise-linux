@@ -354,6 +354,8 @@ export component MessageBubble inherits Rectangle {
     property <length> gap: 12px;
     property <length> effective-max: min(root.msg.bubble-max, root.available-w);
     property <length> text-budget: max(40px, root.effective-max - root.pad-h * 2 - root.gap - meta.preferred-width);
+    property <string> stamp-with-delivery:
+        root.msg.failed ? @tr("failed · tap to retry") : root.msg.stamp;
     // Body typography. Emoji glyphs are sized off `body-fs` so they ride
     // the text line cleanly.
     property <length> body-fs: (13px) * Theme.fs-scale;
@@ -1121,7 +1123,7 @@ export component MessageBubble inherits Rectangle {
                         width: stamp-label.preferred-width;
                         y: parent.height - self.height;
                         stamp-label := Text {
-                            text: root.msg.failed ? @tr("failed · tap to retry") : root.msg.stamp;
+                            text: root.stamp-with-delivery;
                             color: root.msg.failed ? Palette.danger-on-bubble : (root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-lo);
                             font-size: (10px) * Theme.fs-scale;
                             font-family: Theme.font;
@@ -1203,7 +1205,7 @@ export component MessageBubble inherits Rectangle {
             spacing: 4px;
             alignment: end;
             Text {
-                text: root.msg.failed ? @tr("failed · tap to retry") : root.msg.stamp;
+                text: root.stamp-with-delivery;
                 color: root.msg.failed ? Palette.danger-on-bubble : #FFFFFF;
                 font-size: (10px) * Theme.fs-scale;
                 font-family: Theme.font;

@@ -158,6 +158,10 @@ msgctxt "ChatListPanel"
 msgid "AGO"
 msgstr ""
 
+msgctxt "StatusBar"
+msgid "AGO"
+msgstr ""
+
 msgctxt "ArchivedSidebar"
 msgid "ARCHIVED"
 msgstr ""
@@ -1802,7 +1806,15 @@ msgctxt "ChatListPanel"
 msgid "SYNCED"
 msgstr ""
 
+msgctxt "StatusBar"
+msgid "SYNCED"
+msgstr ""
+
 msgctxt "ChatListPanel"
+msgid "SYNCING…"
+msgstr ""
+
+msgctxt "StatusBar"
 msgid "SYNCING…"
 msgstr ""
 
@@ -2255,6 +2267,7 @@ msgctxt "KeysPage"
 msgid "current"
 msgstr ""
 
+
 msgctxt "MessageBubble"
 msgid "decrypting…"
 msgstr ""
@@ -2286,6 +2299,7 @@ msgstr ""
 msgctxt "ProfilePage"
 msgid "no handle yet"
 msgstr ""
+
 
 msgctxt "EmojiPicker"
 msgid "no matches"
