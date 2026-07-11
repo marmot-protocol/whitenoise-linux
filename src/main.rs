@@ -970,10 +970,14 @@ fn main() -> Result<(), slint::PlatformError> {
         settings_cell.borrow().zoom.clamp(ZOOM_MIN, ZOOM_MAX),
     ));
     let base_scale = Rc::new(std::cell::Cell::new(0.0f32));
+    // The effective scale factor we last pushed to the window, so the reapply
+    // watcher below can tell an external (compositor) change from our own.
+    let applied_sf = Rc::new(std::cell::Cell::new(0.0f32));
     let apply_zoom = {
         let ui_weak = ui.as_weak();
         let base_scale = base_scale.clone();
         let zoom_level = zoom_level.clone();
+        let applied_sf = applied_sf.clone();
         move || {
             let Some(ui) = ui_weak.upgrade() else {
                 return;
@@ -988,6 +992,7 @@ fn main() -> Result<(), slint::PlatformError> {
                 base_scale.set(base);
             }
             let sf = base * zoom_level.get();
+            applied_sf.set(sf);
             win.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged {
                 scale_factor: sf,
             });
@@ -1022,10 +1027,54 @@ fn main() -> Result<(), slint::PlatformError> {
             s.save();
         }
     });
-    // Re-apply a persisted non-default zoom once the loop is running and the
-    // window's real scale factor is known.
-    if (zoom_level.get() - 1.0).abs() > f32::EPSILON {
-        slint::Timer::single_shot(std::time::Duration::from_millis(0), apply_zoom);
+    // Re-apply a persisted zoom once the window's *real* scale factor is known.
+    //
+    // The compositor reports the window's true scale factor only after the
+    // window is mapped, which normally happens after this point in startup. A
+    // one-shot 0ms timer therefore latched `base_scale` from the placeholder
+    // factor of an unmapped window (win.scale_factor() not yet real, win.size()
+    // still zero, so the reflow was skipped too), and the compositor's own
+    // ScaleFactorChanged then reset the effective factor to the bare base,
+    // dropping the persisted zoom. The same reset happens later if the window
+    // moves to a monitor with a different DPI.
+    //
+    // Watch the effective factor instead: once the window is genuinely mapped,
+    // treat any value the compositor set that differs from what we last pushed
+    // as the new base and multiply the persisted zoom back in on top of it, so
+    // a restored zoom survives the initial map and later DPI changes.
+    {
+        let ui_weak = ui.as_weak();
+        let base_scale = base_scale.clone();
+        let applied_sf = applied_sf.clone();
+        let apply_zoom = apply_zoom.clone();
+        let watch = slint::Timer::default();
+        watch.start(
+            slint::TimerMode::Repeated,
+            std::time::Duration::from_millis(200),
+            move || {
+                let Some(ui) = ui_weak.upgrade() else {
+                    return;
+                };
+                let win = ui.window();
+                let cur = win.scale_factor();
+                // An unmapped window reports a placeholder factor and a zero
+                // size; reapplying then would just re-latch the placeholder,
+                // which is the original bug. Wait for a real mapped window.
+                if cur <= 0.0 || win.size().width == 0 {
+                    return;
+                }
+                // A factor matching what we last pushed means nothing external
+                // moved it, so there is nothing to reapply.
+                if (cur - applied_sf.get()).abs() <= f32::EPSILON {
+                    return;
+                }
+                base_scale.set(cur);
+                apply_zoom();
+            },
+        );
+        // The timer must outlive this scope to keep firing; it lives for the
+        // process (there is exactly one window).
+        std::mem::forget(watch);
     }
 
     let tray = if start_minimized_to_tray {
