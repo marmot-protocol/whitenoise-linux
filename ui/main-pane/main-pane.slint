@@ -2,6 +2,7 @@ import {
     Palette,
     ChatMeta,
     ChatMessage,
+    MentionInboxItem,
     GroupMember,
     StagedAttachment,
 } from "../tokens.slint";
@@ -19,9 +20,11 @@ export component MainPane inherits Rectangle {
     in property <bool> is-group: false;
     in property <bool> can-show-members: false;
     in property <bool> chat-muted: false;
-    in-out property <bool> mentions-filter-active: false;
+    in property <[MentionInboxItem]> mention-items;
+    in property <bool> mentions-loading: false;
     callback mute-toggle-clicked();
-    callback mentions-filter-toggle-clicked();
+    callback mentions-inbox-opened();
+    callback mention-inbox-item-selected(string, string);
     in property <int> member-count: 0;
     in property <string> group-description;
     in property <[GroupMember]> members;
@@ -56,6 +59,8 @@ export component MainPane inherits Rectangle {
     in property <[ChatMessage]> messages;
     in property <bool> messages-loading: false;
     in property <int> scroll-tick: 0;
+    in-out property <string> jump-message-id;
+    in property <int> jump-tick: 0;
     in property <bool> has-older: false;
     callback request-older();
     in-out property <string> draft <=> composer.draft;
@@ -135,7 +140,8 @@ export component MainPane inherits Rectangle {
                 group-description: root.group-description;
                 members-open: root.show-members;
                 muted: root.chat-muted;
-                mentions-filter-active: root.mentions-filter-active;
+                mention-items: root.mention-items;
+                mentions-loading: root.mentions-loading;
                 accept-clicked => {
                     root.accept-clicked();
                 }
@@ -151,8 +157,11 @@ export component MainPane inherits Rectangle {
                 mute-toggle-clicked => {
                     root.mute-toggle-clicked();
                 }
-                mentions-filter-toggle-clicked => {
-                    root.mentions-filter-toggle-clicked();
+                mentions-inbox-opened => {
+                    root.mentions-inbox-opened();
+                }
+                mention-inbox-item-selected(group-id, message-id) => {
+                    root.mention-inbox-item-selected(group-id, message-id);
                 }
                 badge-clicked => {
                     root.badge-clicked();
@@ -170,6 +179,8 @@ export component MainPane inherits Rectangle {
                 messages: root.messages;
                 loading: root.messages-loading;
                 scroll-tick: root.scroll-tick;
+                jump-message-id <=> root.jump-message-id;
+                jump-tick: root.jump-tick;
                 has-older: root.has-older;
                 request-older => {
                     root.request-older();

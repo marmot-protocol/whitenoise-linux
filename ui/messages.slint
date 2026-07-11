@@ -35,6 +35,11 @@ export component MessagesArea inherits Rectangle {
     // handler below jumps the viewport to the bottom — with animation — so
     // the user always sees the message they just sent.
     in property <int> scroll-tick: 0;
+    in-out property <string> jump-message-id;
+    in property <int> jump-tick: 0;
+    property <int> jump-layout-tick: 0;
+    property <bool> jump-layout-pending: false;
+    property <bool> jump-reset-pending: false;
     // True when older history exists beyond the loaded window; shows the
     // "load earlier messages" pill at the top of the list.
     in property <bool> has-older: false;
@@ -116,6 +121,34 @@ export component MessagesArea inherits Rectangle {
     // the user had paged up. This is "I just hit send, take me there."
     changed scroll-tick => {
         cs.viewport-y = root.bottom-y;
+    }
+    // Model replacement and repeater layout happen after the Rust callback.
+    // Defer the scroll edge one frame so every target row exists and has final
+    // geometry before it computes the centered viewport position.
+    jump-layout := Timer {
+        interval: 30ms;
+        running: root.jump-layout-pending;
+        triggered => {
+            root.jump-layout-pending = false;
+            root.jump-layout-tick += 1;
+            root.jump-reset-pending = true;
+        }
+    }
+
+    jump-reset := Timer {
+        interval: 1.8s;
+        running: root.jump-reset-pending;
+        triggered => {
+            root.jump-reset-pending = false;
+            root.jump-message-id = "";
+        }
+    }
+
+    changed jump-tick => {
+        if (root.jump-message-id != "") {
+            root.jump-reset-pending = false;
+            root.jump-layout-pending = true;
+        }
     }
     // Content-driven scroll: when new rows append (preferred-height grows),
     // only follow if we were already near the bottom. Prevents the scroll
@@ -201,6 +234,14 @@ export component MessagesArea inherits Rectangle {
 
             for msg in root.messages: VerticalLayout {
                 spacing: 0;
+                property <int> jump-generation: root.jump-layout-tick;
+                changed jump-generation => {
+                    if (root.jump-message-id == msg.message-id) {
+                        cs.viewport-y = -max(0px, min(
+                            max(0px, inner.preferred-height - cs.visible-height),
+                            self.y + self.height / 2 - cs.visible-height / 2));
+                    }
+                }
                 // Date divider above the first message of each local day, so
                 // multi-day history stays orientable (bubbles only stamp HH:MM).
                 if msg.day-label != "": SessionDivider {
@@ -214,6 +255,7 @@ export component MessagesArea inherits Rectangle {
                 // body (skin 0 = standard incoming/outgoing bubble rows).
                 MessageView {
                     msg: msg;
+                    highlighted: root.jump-message-id == msg.message-id;
                     row-w: root.content-w;
                     outgoing-on-right: root.outgoing-on-right;
                     my-picture: root.my-picture;

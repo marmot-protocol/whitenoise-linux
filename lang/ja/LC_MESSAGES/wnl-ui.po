@@ -1267,6 +1267,10 @@ msgctxt "MessagesArea"
 msgid "Load earlier messages"
 msgstr "以前のメッセージを読み込む"
 
+msgctxt "MentionsInbox"
+msgid "Loading mentions…"
+msgstr "メンションを読み込み中…"
+
 msgctxt "MessagesArea"
 msgid "Loading messages…"
 msgstr "メッセージを読み込み中…"
@@ -1358,6 +1362,10 @@ msgstr "メンバー"
 msgctxt "GroupMembersPanel"
 msgid "Members"
 msgstr "メンバー"
+
+msgctxt "MentionsInbox"
+msgid "Mentions"
+msgstr "メンション"
 
 msgctxt "StoragePane"
 msgid "Merge the accounts from a backup file into this install."
@@ -1471,6 +1479,10 @@ msgstr "キーパッケージがありません"
 msgctxt "CommandPalette"
 msgid "No matches"
 msgstr "一致なし"
+
+msgctxt "MentionsInbox"
+msgid "No mentions yet"
+msgstr "メンションはまだありません"
 
 msgctxt "MessagesArea"
 msgid "No messages yet"

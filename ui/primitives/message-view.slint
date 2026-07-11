@@ -17,6 +17,7 @@ export component MessageView inherits VerticalLayout {
 
     // The whole message (skins read whatever fields they render).
     in property <ChatMessage> msg;
+    in property <bool> highlighted: false;
     // Row context not carried on the message.
     in property <length> row-w: 9999px;
     in property <bool> outgoing-on-right: true;
@@ -48,6 +49,7 @@ export component MessageView inherits VerticalLayout {
     // ── Skin 0: standard bubble rows ──
     if Theme.skin-message == 0 && !root.msg.system-line && !root.msg.outgoing: IncomingRow {
         msg: root.msg;
+        highlighted: root.highlighted;
         row-w: root.row-w;
         react(id, emoji) => {
             root.react(id, emoji);
@@ -86,6 +88,7 @@ export component MessageView inherits VerticalLayout {
 
     if Theme.skin-message == 0 && !root.msg.system-line && root.msg.outgoing: OutgoingRow {
         msg: root.msg;
+        highlighted: root.highlighted;
         row-w: root.row-w;
         align-right: root.outgoing-on-right;
         av-picture: root.my-picture;
@@ -142,7 +145,7 @@ export component MessageView inherits VerticalLayout {
         property <string> media-label:
             self.is-album ? ("[" + root.msg.album.length + " images — click to view]") : (root.msg.att-is-image ? ("[image: " + root.msg.att-name + " — click to view]") : (root.msg.att-is-video ? ("[video: " + root.msg.att-name + " — click to play]") : (root.msg.att-is-audio ? ("[audio: " + root.msg.att-name + "]") : ("[file: " + root.msg.att-name + "]"))));
 
-        background: root.msg.mentioned ? Palette.selected : (term-touch.has-hover ? Palette.hover : transparent);
+        background: root.highlighted ? Palette.mint-glow : (root.msg.mentioned ? Palette.selected : (term-touch.has-hover ? Palette.hover : transparent));
         HorizontalLayout {
             padding-left: 12px;
             padding-right: 12px;

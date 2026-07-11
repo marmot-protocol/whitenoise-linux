@@ -141,6 +141,11 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             });
         }
     });
+    // One-shot target used by the global mentions inbox. The normal chat
+    // selection path consumes it, loads the full target chat so old mentions
+    // are not excluded by MESSAGE_WINDOW, then asks Slint to center the row.
+    let pending_message_jump: Arc<Mutex<Option<(String, String)>>> = Arc::new(Mutex::new(None));
+    let chat_load_generation = Arc::new(AtomicUsize::new(0));
     ui.on_chat_selected({
         let weak = ui.as_weak();
         let refresh = refresh_breadcrumb.clone();
@@ -150,7 +155,12 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         let pending_state = pending_state.clone();
         let notif = notif.clone();
         let settings_cell = settings_cell.clone();
+        let pending_message_jump = pending_message_jump.clone();
+        let chat_load_generation = chat_load_generation.clone();
         move |idx| {
+            let generation =
+                chat_load_generation.fetch_add(1, AtomicOrdering::Relaxed) + 1;
+            let identity_epoch = account_epoch();
             if let Some(ui) = weak.upgrade() {
                 // Persist the outgoing chat's half-written draft before the
                 // switch, so it's there when the user comes back (and, via the
@@ -167,8 +177,6 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     }
                 }
                 ui.set_active_chat(idx);
-                ui.set_mentions_filter_active(false);
-                set_mentions_filter_active(false);
                 // Reply targets and an in-progress edit are per-chat; switching
                 // threads should not leak a stale "Replying to …" / "Editing …"
                 // banner across conversations (and the abandoned edit must clear
@@ -183,6 +191,17 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 // Reflect this chat's mute state in the header bell.
                 ui.set_active_chat_muted(group_hex.as_deref().is_some_and(|g| notif.is_muted(g)));
                 if let Some(group_hex) = group_hex {
+                    let jump_message_id = {
+                        let mut pending = pending_message_jump.lock().unwrap();
+                        if pending
+                            .as_ref()
+                            .is_some_and(|(group, _)| group.eq_ignore_ascii_case(&group_hex))
+                        {
+                            pending.take().map(|(_, message)| message)
+                        } else {
+                            None
+                        }
+                    };
                     ui.set_messages_loading(true);
                     ui.set_messages_has_older(false);
                     let t_switch = std::time::Instant::now();
@@ -205,35 +224,75 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     }
                     clear_chat_unread_row(&ui, idx as usize);
                     refresh_unread_chrome(&ui);
-                    // Re-entering a chat always starts from the default
-                    // window — expanded history is per-visit.
-                    msg_window_reset(&group_hex);
+                    // Re-entering a normal chat starts from the default window.
+                    // A mention jump deliberately loads full history so even an
+                    // old target can be centered without repeated pagination.
+                    if jump_message_id.is_none() {
+                        msg_window_reset(&group_hex);
+                    }
                     ui.set_show_chat_members(false);
                     push_group_members_to_ui_async(&ui, &backend, &group_hex);
                     // Snapshot read rides the backend runtime (sqlite can
                     // stall behind sync writes or a slow disk); rows are
                     // built back on the UI thread, merged with any pending
                     // overlay so chat switching doesn't drop pending bubbles.
-                    let idx = idx as usize;
                     let my_id = backend.account().account_id_hex.clone();
                     let weak = ui.as_weak();
                     let backend_cell = backend_cell.clone();
                     let pending_state = pending_state.clone();
                     let active_watcher = active_watcher.clone();
+                    let current_group_ids = group_ids.clone();
+                    let chat_load_generation = chat_load_generation.clone();
                     let b = backend.clone();
                     backend.tokio_handle().spawn(async move {
-                        // Membership first: the rebuild below resolves mention
-                        // chips (name + member "@") from this registration, and
-                        // the concurrent members-panel fetch may land later.
-                        // Membership first: the rebuild below resolves the
-                        // member "@" prefix from this registration, and the
-                        // concurrent members-panel fetch may land later.
+                        // The rebuild resolves mention chips and member "@"
+                        // prefixes from this registration; the concurrent
+                        // members-panel fetch may land later.
                         warm_group_mentions(&b, &group_hex);
-                        let msgs = b
-                            .messages(&group_hex, Some(msg_window_for(&group_hex)))
-                            .unwrap_or_default();
+                        let limit = jump_message_id
+                            .as_ref()
+                            .map_or_else(|| Some(msg_window_for(&group_hex)), |_| None);
+                        let result = b.messages(&group_hex, limit);
                         let _ = slint::invoke_from_event_loop(move || {
                             let Some(ui) = weak.upgrade() else { return };
+                            if chat_load_generation.load(AtomicOrdering::Relaxed) != generation
+                                || account_epoch() != identity_epoch
+                                || !b.account().account_id_hex.eq_ignore_ascii_case(&my_id)
+                            {
+                                return;
+                            }
+                            let current_idx = current_group_ids
+                                .lock()
+                                .unwrap()
+                                .iter()
+                                .position(|group| group.eq_ignore_ascii_case(&group_hex));
+                            let Some(current_idx) = current_idx else { return };
+                            if ui.get_active_chat() as usize != current_idx {
+                                return;
+                            }
+                            let msgs = match result {
+                                Ok(msgs) => msgs,
+                                Err(error) => {
+                                    tracing::warn!(target: "mentions", %group_hex, "mention target load failed: {error:#}");
+                                    let chats_messages = ui.get_chats_messages();
+                                    with_inner_messages(&chats_messages, current_idx, |messages| {
+                                        messages.set_vec(Vec::new());
+                                    });
+                                    ui.set_messages_loading(false);
+                                    return;
+                                }
+                            };
+                            let deleted_messages = aggregate_deletes(&msgs);
+                            let jump_target_exists = jump_message_id.as_ref().is_some_and(|id| {
+                                msgs.iter().any(|message| {
+                                    message.message_id_hex.eq_ignore_ascii_case(id)
+                                        && is_visible_chat_message(message)
+                                        && !deleted_messages.contains(&message.message_id_hex)
+                                })
+                            });
+                            if jump_target_exists {
+                                msg_window_pin_all(&group_hex);
+                            }
                             let chats_messages = ui.get_chats_messages();
                             {
                                 let overlay = pending_state.lock().unwrap();
@@ -241,45 +300,48 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                                     &b,
                                     &overlay,
                                     &chats_messages,
-                                    idx,
+                                    current_idx,
                                     &group_hex,
                                     &msgs,
                                 );
                             }
                             spawn_message_avatar_fetches(&ui, &b, &msgs);
                             tracing::debug!(
-                                target: "switch_timing", "chat {idx}: {} records rebuilt in {:?}",
+                                target: "switch_timing", "chat {current_idx}: {} records rebuilt in {:?}",
                                 msgs.len(),
                                 t_switch.elapsed()
                             );
-                            // Global affordances only if this chat is still
-                            // the active one (rapid switches can supersede
-                            // this fetch; the rows above still land in the
-                            // right per-chat slot either way).
-                            if ui.get_active_chat() as usize == idx {
-                                ui.set_messages_loading(false);
-                                ui.set_messages_has_older(msgs.len() >= MESSAGE_WINDOW);
-                                // Opening a chat should land you at the most
-                                // recent message, not the top of the history.
-                                ui.set_messages_scroll_tick(ui.get_messages_scroll_tick() + 1);
-                                // Then attach a live watcher for new arrivals
-                                // (after the rebuild, so no echo lands in the
-                                // gap and gets overwritten). Abort any
-                                // previous one so we don't pile them up.
-                                if let Some(prev) = active_watcher.lock().unwrap().take() {
-                                    prev.abort();
+                            ui.set_messages_loading(false);
+                            ui.set_messages_has_older(
+                                jump_message_id.is_none() && msgs.len() >= MESSAGE_WINDOW,
+                            );
+                            if jump_target_exists {
+                                let message_id = jump_message_id.as_ref().unwrap();
+                                ui.set_message_jump_id(s(message_id));
+                                ui.set_message_jump_tick(ui.get_message_jump_tick() + 1);
+                            } else {
+                                if let Some(message_id) = jump_message_id.as_ref() {
+                                    tracing::warn!(target: "mentions", %group_hex, %message_id, "mention target no longer exists");
                                 }
-                                let handle = install_message_watcher(
-                                    &b,
-                                    ui.as_weak(),
-                                    backend_cell.clone(),
-                                    pending_state.clone(),
-                                    group_hex,
-                                    idx,
-                                    my_id,
-                                );
-                                *active_watcher.lock().unwrap() = Some(handle);
+                                // Normal opens and stale mention targets land on
+                                // the most recent message.
+                                ui.set_messages_scroll_tick(ui.get_messages_scroll_tick() + 1);
                             }
+                            // Attach a live watcher after the rebuild. Abort the
+                            // previous one so rapid switches cannot stack them.
+                            if let Some(prev) = active_watcher.lock().unwrap().take() {
+                                prev.abort();
+                            }
+                            let handle = install_message_watcher(
+                                &b,
+                                ui.as_weak(),
+                                backend_cell.clone(),
+                                pending_state.clone(),
+                                group_hex,
+                                current_idx,
+                                my_id,
+                            );
+                            *active_watcher.lock().unwrap() = Some(handle);
                         });
                     });
                 } else {
@@ -288,6 +350,47 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             }
         }
     });
+
+    // Refresh on demand when the popup opens. Keeping this lazy avoids one
+    // full-history query per chat during normal message traffic.
+    ui.on_mention_inbox_opened({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let group_ids = group_ids.clone();
+        move || {
+            let Some(ui) = weak.upgrade() else { return };
+            let Some(backend) = backend_cell.lock().unwrap().clone() else {
+                ui.set_mention_inbox_loading(false);
+                return;
+            };
+            crate::mentions::refresh_mention_inbox_async(&ui, &backend, &group_ids);
+        }
+    });
+
+    ui.on_mention_inbox_selected({
+        let weak = ui.as_weak();
+        let group_ids = group_ids.clone();
+        let pending_message_jump = pending_message_jump.clone();
+        move |group_id, message_id| {
+            let Some(ui) = weak.upgrade() else { return };
+            let group_id = group_id.to_string();
+            let message_id = message_id.to_string();
+            let idx = group_ids
+                .lock()
+                .unwrap()
+                .iter()
+                .position(|group| group.eq_ignore_ascii_case(&group_id));
+            let Some(idx) = idx else {
+                tracing::warn!(target: "mentions", %group_id, "mention target chat is no longer visible");
+                return;
+            };
+            *pending_message_jump.lock().unwrap() = Some((group_id, message_id));
+            ui.set_message_jump_id(s(""));
+            ui.set_active_page(Page::Chats as i32);
+            ui.invoke_chat_selected(idx as i32);
+        }
+    });
+
     // "Load earlier messages" at the top of the messages view: grow the
     // active chat's record window one MESSAGE_WINDOW step and rebuild. The
     // Slint side anchors the scroll so the content the user was reading
@@ -370,53 +473,6 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             if let Some(ui) = weak.upgrade() {
                 ui.set_show_chat_members(!ui.get_show_chat_members());
             }
-        }
-    });
-
-    ui.on_mentions_filter_toggle_clicked({
-        let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        let group_ids = group_ids.clone();
-        let pending_state = pending_state.clone();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            let idx = ui.get_active_chat() as usize;
-            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
-                return;
-            };
-            let Some(backend) = backend_cell.lock().unwrap().clone() else {
-                return;
-            };
-            let active = !ui.get_mentions_filter_active();
-            ui.set_mentions_filter_active(active);
-            set_mentions_filter_active(active);
-            let weak = ui.as_weak();
-            let pending_state = pending_state.clone();
-            let b = backend.clone();
-            backend.tokio_handle().spawn(async move {
-                let msgs = b
-                    .messages(&group_hex, Some(msg_window_for(&group_hex)))
-                    .unwrap_or_default();
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
-                    if ui.get_active_chat() as usize != idx {
-                        return;
-                    }
-                    let chats_messages = ui.get_chats_messages();
-                    let overlay = pending_state.lock().unwrap();
-                    rebuild_chat_messages_from(
-                        &b,
-                        &overlay,
-                        &chats_messages,
-                        idx,
-                        &group_hex,
-                        &msgs,
-                    );
-                    spawn_message_avatar_fetches(&ui, &b, &msgs);
-                    ui.set_messages_has_older(msgs.len() >= msg_window_for(&group_hex));
-                    ui.set_messages_scroll_tick(ui.get_messages_scroll_tick() + 1);
-                });
-            });
         }
     });
 

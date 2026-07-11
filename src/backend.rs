@@ -1024,7 +1024,8 @@ impl Backend {
         // pay for a forwarder task + full-history dedup set per call.
         let query = AppMessageQuery {
             group_id_hex: Some(group_hex.to_string()),
-            limit,
+            // usize::MAX is the UI's per-chat "full history" sentinel.
+            limit: limit.filter(|value| *value != usize::MAX),
         };
         let msgs = self
             .runtime

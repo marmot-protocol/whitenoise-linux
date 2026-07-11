@@ -6,6 +6,7 @@ import {
     Theme,
     ChatMeta,
     ChatMessage,
+    MentionInboxItem,
     Contact,
     SharedGroup,
     ArchivedChat,
@@ -165,8 +166,10 @@ export component DarkMatterLinux inherits Window {
     in-out property <int> active-page: 0;
     in-out property <int> active-contact: 0;
     in-out property <int> active-archived: 0;
-    in-out property <bool> mentions-filter-active: false;
-    callback mentions-filter-toggle-clicked();
+    in property <[MentionInboxItem]> mention-inbox-items;
+    in property <bool> mention-inbox-loading: false;
+    callback mention-inbox-opened();
+    callback mention-inbox-selected(string, string);
     in-out property <bool> show-new-chat: false;
     in-out property <bool> show-add-contact: false;
     in-out property <bool> show-palette: false;
@@ -377,6 +380,8 @@ export component DarkMatterLinux inherits Window {
     // the bottom. Plain integer counter — content doesn't matter, only the
     // edge — picked up via a Slint `changed` handler.
     in property <int> messages-scroll-tick: 0;
+    in-out property <string> message-jump-id;
+    in property <int> message-jump-tick: 0;
     // True when the active chat has history beyond the loaded window; the
     // messages view shows a "load earlier messages" pill that fires
     // messages-request-older.
@@ -993,6 +998,8 @@ export component DarkMatterLinux inherits Window {
                                 messages: root.chats-messages[root.active-chat];
                                 messages-loading: root.messages-loading;
                                 scroll-tick: root.messages-scroll-tick;
+                                jump-message-id <=> root.message-jump-id;
+                                jump-tick: root.message-jump-tick;
                                 has-older: root.messages-has-older;
                                 request-older => {
                                     root.messages-request-older();
@@ -1054,6 +1061,7 @@ export component DarkMatterLinux inherits Window {
                                 remove-staged(i) => {
                                     root.remove-staged(i);
                                 }
+
                             // Sentinel target id routes the picked emoji into
                             // the composer draft instead of a kind-7 reaction.
                             emoji-clicked(ax, ay) => {
@@ -1085,12 +1093,16 @@ export component DarkMatterLinux inherits Window {
                                 is-group: root.chat-is-group;
                                 can-show-members: root.chat-can-show-members;
                                 chat-muted: root.active-chat-muted;
-                                mentions-filter-active <=> root.mentions-filter-active;
+                                mention-items: root.mention-inbox-items;
+                                mentions-loading: root.mention-inbox-loading;
                                 mute-toggle-clicked => {
                                     root.toggle-mute-chat();
                                 }
-                                mentions-filter-toggle-clicked => {
-                                    root.mentions-filter-toggle-clicked();
+                                mentions-inbox-opened => {
+                                    root.mention-inbox-opened();
+                                }
+                                mention-inbox-item-selected(group-id, message-id) => {
+                                    root.mention-inbox-selected(group-id, message-id);
                                 }
                                 badge-clicked => {
                                     root.encryption-info-open = true;
@@ -1159,6 +1171,7 @@ export component DarkMatterLinux inherits Window {
                                     root.archive-chat();
                                 }
                             }
+
 
                             chat-list := ChatListPanel {
                                 x: 0;

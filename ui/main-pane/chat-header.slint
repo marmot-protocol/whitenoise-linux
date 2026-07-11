@@ -1,4 +1,4 @@
-import { Palette, ChatMeta, Theme } from "../tokens.slint";
+import { Palette, ChatMeta, MentionInboxItem, Theme } from "../tokens.slint";
 import { ArchiveIcon } from "../icons/archive-icon.slint";
 import { BanIcon } from "../icons/ban-icon.slint";
 import { CheckMark } from "../icons/check-mark.slint";
@@ -8,6 +8,7 @@ import { MuteIcon } from "../icons/mute-icon.slint";
 import { Avatar } from "../primitives/avatar.slint";
 import { Pill } from "../primitives/pill.slint";
 import { Button } from "../primitives/button.slint";
+import { MentionsInbox } from "mentions-inbox.slint";
 
 export component ChatHeader inherits Rectangle {
     in property <ChatMeta> chat;
@@ -19,13 +20,15 @@ export component ChatHeader inherits Rectangle {
     in property <string> group-description;
     in property <bool> members-open: false;
     in property <bool> muted: false;
-    in property <bool> mentions-filter-active: false;
+    in property <[MentionInboxItem]> mention-items;
+    in property <bool> mentions-loading: false;
     callback accept-clicked();
     callback block-clicked();
     callback archive-clicked();
     callback members-toggle-clicked();
     callback mute-toggle-clicked();
-    callback mentions-filter-toggle-clicked();
+    callback mentions-inbox-opened();
+    callback mention-inbox-item-selected(string, string);
     // Tapping the encryption badge opens the "what is this?" explainer modal.
     callback badge-clicked();
 
@@ -117,29 +120,37 @@ export component ChatHeader inherits Rectangle {
             }
         }
 
-        // Mentions filter — turns the open thread into a lightweight mentions
-        // inbox for messages that address the local user.
+        // Global mentions inbox, anchored to the header like Discord's inbox.
         if !root.chat.is-chat-request: Rectangle {
             width: 36px;
             height: 36px;
             y: (parent.height - self.height) / 2;
-            background: root.mentions-filter-active ? Palette.selected : (mention-filter-touch.has-hover ? Palette.hover : transparent);
+            background: mention-inbox-touch.has-hover ? Palette.hover : transparent;
             border-radius: (6px) * Theme.r-scale;
-            border-width: root.mentions-filter-active ? 1px : 0px;
-            border-color: Palette.border-2;
             animate background { duration: 100ms; }
-            mention-filter-touch := TouchArea {
+            mention-inbox-touch := TouchArea {
                 clicked => {
-                    root.mentions-filter-toggle-clicked();
+                    root.mentions-inbox-opened();
+                    mention-inbox.open();
                 }
                 Text {
                     text: "@";
-                    color: root.mentions-filter-active ? Palette.mint : Palette.text-mid;
+                    color: mention-inbox-touch.has-hover ? Palette.mint : Palette.text-mid;
                     font-family: Theme.font;
                     font-size: Theme.fs(12px, 17px);
                     font-weight: 800;
                     x: (parent.width - self.width) / 2;
                     y: (parent.height - self.height) / 2;
+                }
+            }
+
+            mention-inbox := MentionsInbox {
+                x: parent.width;
+                y: 0px;
+                items: root.mention-items;
+                loading: root.mentions-loading;
+                selected(group-id, message-id) => {
+                    root.mention-inbox-item-selected(group-id, message-id);
                 }
             }
         }

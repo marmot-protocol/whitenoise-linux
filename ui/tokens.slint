@@ -813,6 +813,18 @@ export struct AlbumCell {
     key: string,
 }
 
+export struct MentionInboxItem {
+    group-id: string,
+    message-id: string,
+    chat-name: string,
+    sender-name: string,
+    sender-initials: string,
+    sender-a: color,
+    sender-b: color,
+    text: string,
+    stamp: string,
+}
+
 export struct ChatMessage {
     text: string,
     // Pre-tokenized + pre-wrapped body, grouped into lines. Empty for

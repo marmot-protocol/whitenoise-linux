@@ -64,6 +64,18 @@ pub(crate) enum PendingReactionOp {
     Remove(String),
 }
 
+/// Monotonic identity epoch. Async UI jobs capture it and reject completions
+/// from an earlier account session, including an A → B → A switch.
+static ACCOUNT_EPOCH: AtomicUsize = AtomicUsize::new(0);
+
+pub(crate) fn account_epoch() -> usize {
+    ACCOUNT_EPOCH.load(AtomicOrdering::Relaxed)
+}
+
+pub(crate) fn advance_account_epoch() {
+    ACCOUNT_EPOCH.fetch_add(1, AtomicOrdering::Relaxed);
+}
+
 #[derive(Default)]
 pub(crate) struct PendingState {
     /// group_hex → ordered list of pending outgoing messages. Append-only;
@@ -353,8 +365,17 @@ pub(crate) fn msg_window_expand(group_hex: &str) -> usize {
         Err(_) => return MESSAGE_WINDOW,
     };
     let w = map.entry(group_hex.to_string()).or_insert(MESSAGE_WINDOW);
-    *w += MESSAGE_WINDOW;
+    *w = w.saturating_add(MESSAGE_WINDOW);
     *w
+}
+
+/// Keep the complete history loaded for a chat until the next normal select.
+/// Mention navigation uses this so actions and watcher-driven rebuilds keep an
+/// old target in the model after the initial jump.
+pub(crate) fn msg_window_pin_all(group_hex: &str) {
+    if let Ok(mut map) = msg_windows().lock() {
+        map.insert(group_hex.to_string(), usize::MAX);
+    }
 }
 
 /// Drop a chat's expanded window (back to the default). Called on chat

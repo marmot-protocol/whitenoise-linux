@@ -69,6 +69,7 @@ pub(crate) fn wire_panes(
                     return;
                 }
             };
+            advance_account_epoch();
             // Remember the choice for the next unlock.
             if let Some(vault) = vault_cell.lock().unwrap().clone() {
                 vault_set_async(
@@ -120,9 +121,13 @@ pub(crate) fn wire_panes(
             ui.set_active_chat(0);
             ui.set_active_contact(0);
             ui.set_active_archived(0);
+            ui.set_mention_inbox_items(model(Vec::<MentionInboxItem>::new()));
+            ui.set_mention_inbox_loading(false);
+            ui.set_message_jump_id(s(""));
             ui.set_active_page(0);
             ui.set_show_chat_members(false);
             ui.set_messages_has_older(false);
+            ui.set_messages_loading(false);
             ui.set_composer_draft(s(""));
             staged_files.lock().unwrap().clear();
             refresh_staged_ui(&ui, &[]);

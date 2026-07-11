@@ -91,22 +91,6 @@ pub(crate) fn mention_set_nicknames(nicknames: &std::collections::BTreeMap<Strin
     }
 }
 
-fn mentions_filter_flag() -> &'static AtomicBool {
-    static ACTIVE: OnceLock<AtomicBool> = OnceLock::new();
-    ACTIVE.get_or_init(|| AtomicBool::new(false))
-}
-
-/// Whether the active chat is in the mentions-only review mode. Stored outside
-/// Slint so every row rebuild path (including live watchers) applies the same
-/// filter.
-pub(crate) fn mentions_filter_active() -> bool {
-    mentions_filter_flag().load(AtomicOrdering::Relaxed)
-}
-
-pub(crate) fn set_mentions_filter_active(active: bool) {
-    mentions_filter_flag().store(active, AtomicOrdering::Relaxed);
-}
-
 /// Replace one group's member set and note each member's published name.
 /// Callable from any thread — `account_display_name` is a non-blocking
 /// in-process cache read.
@@ -249,6 +233,146 @@ pub(crate) fn text_mentions_account(text: &str, account_hex: &str) -> bool {
         .any(|hex| hex == want)
 }
 
+/// One current message body considered for the global mentions inbox. The
+/// caller resolves edits/deletes before constructing this value, keeping the
+/// filtering and ordering rule independent of storage/backend details.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct MentionInboxSource {
+    pub(crate) group_id: String,
+    pub(crate) message_id: String,
+    pub(crate) sender_id: String,
+    pub(crate) text: String,
+    pub(crate) recorded_at: u64,
+}
+
+/// Keep incoming messages that currently mention the local account, newest
+/// first across every chat. A stable id tie-break makes refreshes deterministic.
+pub(crate) fn filter_and_sort_mention_sources(
+    mut sources: Vec<MentionInboxSource>,
+    my_account_id_hex: &str,
+) -> Vec<MentionInboxSource> {
+    sources.retain(|item| {
+        !item.sender_id.eq_ignore_ascii_case(my_account_id_hex)
+            && text_mentions_account(&item.text, my_account_id_hex)
+    });
+    sources.sort_by(|a, b| {
+        b.recorded_at
+            .cmp(&a.recorded_at)
+            .then_with(|| b.message_id.cmp(&a.message_id))
+    });
+    sources
+}
+
+/// Resolve all visible, non-archived chat histories into current mention
+/// candidates. Edits replace the original text; deleted messages are omitted.
+/// The resulting global list is capped because Slint repeaters are eager rather
+/// than virtual. A failed chat query fails the refresh instead of silently
+/// presenting a partial inbox as complete.
+pub(crate) fn collect_global_mention_sources(
+    backend: &Backend,
+    group_ids: &[String],
+) -> anyhow::Result<Vec<MentionInboxSource>> {
+    const INBOX_LIMIT: usize = 100;
+
+    let my_id = backend.account().account_id_hex;
+    let mut sources = Vec::new();
+    for group_hex in group_ids {
+        let records = backend.messages(group_hex, None)?;
+        let edits = aggregate_edits(&records);
+        let deletes = aggregate_deletes(&records);
+        for message in records.iter().filter(|m| is_visible_chat_message(m)) {
+            if deletes.contains(&message.message_id_hex) {
+                continue;
+            }
+            let text = edits
+                .get(&message.message_id_hex)
+                .filter(|edit| edit.count() > 0)
+                .map(|edit| edit.text().to_string())
+                .unwrap_or_else(|| message.plaintext.clone());
+            sources.push(MentionInboxSource {
+                group_id: group_hex.clone(),
+                message_id: message.message_id_hex.clone(),
+                sender_id: message.sender.clone(),
+                text,
+                recorded_at: message.recorded_at,
+            });
+        }
+    }
+    let mut sources = filter_and_sort_mention_sources(sources, &my_id);
+    sources.truncate(INBOX_LIMIT);
+    Ok(sources)
+}
+
+static MENTION_INBOX_GENERATION: AtomicUsize = AtomicUsize::new(0);
+
+/// Refresh the global inbox without blocking Slint on full-history sqlite reads.
+/// Chat display metadata is joined by stable group id on the UI thread. The
+/// generation and account checks prevent stale scans from crossing popup opens
+/// or account switches.
+pub(crate) fn refresh_mention_inbox_async(
+    ui: &DarkMatterLinux,
+    backend: &Arc<Backend>,
+    group_ids: &Arc<Mutex<Vec<String>>>,
+) {
+    let generation = MENTION_INBOX_GENERATION.fetch_add(1, AtomicOrdering::Relaxed) + 1;
+    let identity_epoch = account_epoch();
+    let account_id = backend.account().account_id_hex;
+    ui.set_mention_inbox_items(model(Vec::<MentionInboxItem>::new()));
+    ui.set_mention_inbox_loading(true);
+    let weak = ui.as_weak();
+    let b = backend.clone();
+    let ids = group_ids.lock().unwrap().clone();
+    let current_group_ids = group_ids.clone();
+    backend.tokio_handle().spawn(async move {
+        let sources = match collect_global_mention_sources(&b, &ids) {
+            Ok(sources) => Some(sources),
+            Err(error) => {
+                tracing::warn!(target: "mentions", "mention inbox refresh failed: {error:#}");
+                None
+            }
+        };
+        let _ = slint::invoke_from_event_loop(move || {
+            let Some(ui) = weak.upgrade() else { return };
+            if MENTION_INBOX_GENERATION.load(AtomicOrdering::Relaxed) != generation
+                || account_epoch() != identity_epoch
+                || !b.account().account_id_hex.eq_ignore_ascii_case(&account_id)
+            {
+                return;
+            }
+            let Some(sources) = sources else {
+                ui.set_mention_inbox_loading(false);
+                return;
+            };
+            let current_ids = current_group_ids.lock().unwrap().clone();
+            let chats = ui.get_chats();
+            let items: Vec<MentionInboxItem> = sources
+                .into_iter()
+                .filter_map(|source| {
+                    let chat_index = current_ids
+                        .iter()
+                        .position(|group| group.eq_ignore_ascii_case(&source.group_id))?;
+                    let chat = chats.row_data(chat_index)?;
+                    let sender_name = b.account_display_name(&source.sender_id);
+                    let (sender_a, sender_b, sender_initials) = avatar_for(&sender_name);
+                    Some(MentionInboxItem {
+                        group_id: s(&source.group_id),
+                        message_id: s(&source.message_id),
+                        chat_name: chat.name,
+                        sender_name: s(&sender_name),
+                        sender_initials: s(&sender_initials),
+                        sender_a,
+                        sender_b,
+                        text: s(&source.text),
+                        stamp: s(&format_date_unix(source.recorded_at)),
+                    })
+                })
+                .collect();
+            ui.set_mention_inbox_items(model(items));
+            ui.set_mention_inbox_loading(false);
+        });
+    });
+}
+
 /// Cheap scan for `Backend::messages`' catch-all warm: the pubkey hexes
 /// mentioned anywhere in `msgs` that the registry can't name yet. Pure
 /// in-memory work (string scan + map lookups) — safe on any thread,
@@ -362,5 +486,67 @@ mod tests {
         ));
         assert!(!text_mentions_account(&format!("ping {other}"), ME));
         assert!(!text_mentions_account(ME, ME));
+    }
+
+    #[test]
+    fn mention_inbox_collects_across_chats_and_sorts_newest_first() {
+        let me = npub_for_account_id(ME).unwrap();
+        let sources = vec![
+            MentionInboxSource {
+                group_id: "chat-0".into(),
+                message_id: "older".into(),
+                sender_id: OTHER.into(),
+                text: format!("older ping {me}"),
+                recorded_at: 10,
+            },
+            MentionInboxSource {
+                group_id: "chat-1".into(),
+                message_id: "newer".into(),
+                sender_id: OTHER.into(),
+                text: format!("newer ping {me}"),
+                recorded_at: 20,
+            },
+            MentionInboxSource {
+                group_id: "chat-2".into(),
+                message_id: "outgoing".into(),
+                sender_id: ME.into(),
+                text: format!("I mentioned myself {me}"),
+                recorded_at: 30,
+            },
+            MentionInboxSource {
+                group_id: "chat-0".into(),
+                message_id: "not-a-mention".into(),
+                sender_id: OTHER.into(),
+                text: "ordinary message".into(),
+                recorded_at: 40,
+            },
+        ];
+
+        let items = filter_and_sort_mention_sources(sources, ME);
+        assert_eq!(
+            items
+                .iter()
+                .map(|item| (item.group_id.as_str(), item.message_id.as_str()))
+                .collect::<Vec<_>>(),
+            vec![("chat-1", "newer"), ("chat-0", "older")]
+        );
+    }
+
+    #[test]
+    fn mention_inbox_uses_current_edited_text() {
+        let me = npub_for_account_id(ME).unwrap();
+        let items = filter_and_sort_mention_sources(
+            vec![MentionInboxSource {
+                group_id: "chat-0".into(),
+                message_id: "edited".into(),
+                sender_id: OTHER.into(),
+                text: format!("edited to mention {me}"),
+                recorded_at: 10,
+            }],
+            ME,
+        );
+
+        assert_eq!(items.len(), 1);
+        assert!(items[0].text.contains("edited to mention"));
     }
 }
