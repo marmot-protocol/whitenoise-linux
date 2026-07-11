@@ -1597,6 +1597,10 @@ export struct GroupMember {
     // The viewer is an admin and this row is another member (any role) —
     // "Remove from group".
     can-remove: bool,
+    // This member is in the MLS roster but has not been seen active in the
+    // group yet (no message, reaction, or admin action). Rendered under a
+    // separate "Invited" section, dimmed, until they show up.
+    is-invited: bool,
 }
 
 export struct ChatMeta {

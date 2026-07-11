@@ -23,6 +23,7 @@ export component MainPane inherits Rectangle {
     in property <int> member-count: 0;
     in property <string> group-description;
     in property <[GroupMember]> members;
+    in property <[GroupMember]> invited-members;
     in property <bool> can-add-members: false;
     in property <bool> add-member-busy: false;
     in property <string> add-member-status;
@@ -272,6 +273,7 @@ export component MainPane inherits Rectangle {
 
         if root.can-show-members && root.show-members: GroupMembersPanel {
             members: root.members;
+            invited-members: root.invited-members;
             member-count: root.member-count;
             group-description: root.group-description;
             is-group: root.is-group;

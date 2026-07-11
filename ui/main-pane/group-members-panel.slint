@@ -9,6 +9,9 @@ import { AddMemberCard } from "add-member-card.slint";
 
 export component GroupMembersPanel inherits Rectangle {
     in property <[GroupMember]> members;
+    // Roster entries that are invited but not yet seen active in the group.
+    // Rendered under a separate "Invited" section below the members.
+    in property <[GroupMember]> invited-members;
     in property <int> member-count;
     in property <string> group-description;
     in property <bool> is-group: false;
@@ -97,20 +100,41 @@ export component GroupMembersPanel inherits Rectangle {
         }
 
         // ── Members list ─────────────────────────────────────
-        Section {
+        // Active members and invited-but-not-yet-accepted members share one
+        // scroll, split into two labelled sections.
+        Rectangle {
             vertical-stretch: 1;
-            label: @tr("Members");
             CypherScroll {
                 vertical-stretch: 1;
-                viewport-height: list.preferred-height;
+                viewport-height: memcol.preferred-height;
                 viewport-width: self.visible-width;
-                list := GroupCard {
-                    background: Palette.panel-2;
-                    for m[i] in root.members: GroupMemberRow {
-                        data: m;
-                        show-divider: i < root.members.length - 1;
-                        request-menu(id, name, cp, cd, csd, cr, ax, ay) => {
-                            root.request-member-menu(id, name, cp, cd, csd, cr, ax, ay);
+                memcol := VerticalLayout {
+                    spacing: 12px;
+                    Section {
+                        label: @tr("Members");
+                        GroupCard {
+                            background: Palette.panel-2;
+                            for m[i] in root.members: GroupMemberRow {
+                                data: m;
+                                show-divider: i < root.members.length - 1;
+                                request-menu(id, name, cp, cd, csd, cr, ax, ay) => {
+                                    root.request-member-menu(id, name, cp, cd, csd, cr, ax, ay);
+                                }
+                            }
+                        }
+                    }
+
+                    if root.invited-members.length > 0: Section {
+                        label: @tr("Invited");
+                        GroupCard {
+                            background: Palette.panel-2;
+                            for m[i] in root.invited-members: GroupMemberRow {
+                                data: m;
+                                show-divider: i < root.invited-members.length - 1;
+                                request-menu(id, name, cp, cd, csd, cr, ax, ay) => {
+                                    root.request-member-menu(id, name, cp, cd, csd, cr, ax, ay);
+                                }
+                            }
                         }
                     }
                 }
