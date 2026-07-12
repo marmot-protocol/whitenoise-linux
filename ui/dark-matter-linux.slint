@@ -848,9 +848,22 @@ export component DarkMatterLinux inherits Window {
     // Direction: 1 = zoom in, -1 = zoom out, 0 = reset to 100%.
     callback zoom-adjust(int);
 
-    // Top-level FocusScope captures Ctrl+K and the zoom shortcuts globally. When
-    // a modal mounts and calls focus() on its own scope, focus leaves here; on
-    // dismiss, focus comes back.
+    // Resetting the clipboard-status toast lives at root level: a `changed`
+    // handler must sit in the body of the element that declares the property,
+    // so it can't move inside global-keys with the visual content below.
+    changed clipboard-status => {
+        if (root.clipboard-status != "") {
+            clipboard-status-reset.restart();
+        }
+    }
+
+    // Ctrl+K and the zoom shortcuts are handled here for the whole app. A key
+    // event only reaches an ancestor FocusScope by bubbling up from the focused
+    // element, so this scope WRAPS the entire body (main content, every modal,
+    // splash, login) as their ancestor: whichever widget holds focus — the
+    // composer, a settings control, a modal's own scope — its unhandled Ctrl
+    // keys bubble here instead of dying at the focused leaf. init() grabs focus
+    // on startup so the shortcuts also work before anything else is focused.
     global-keys := FocusScope {
         init => {
             self.focus();
@@ -877,1204 +890,1198 @@ export component DarkMatterLinux inherits Window {
             }
             return reject;
         }
-    }
 
-    if root.logged-in && !root.booting: VerticalLayout {
-        spacing: 0;
+        if root.logged-in && !root.booting: VerticalLayout {
+            spacing: 0;
 
-        TitleBar {
-            breadcrumb: root.breadcrumb;
-            rail-width: rail.collapsed-width;
-        }
+            TitleBar {
+                breadcrumb: root.breadcrumb;
+                rail-width: rail.collapsed-width;
+            }
 
-        // Middle area is a Rectangle (absolute children) instead of a HorizontalLayout
+            // Middle area is a Rectangle (absolute children) instead of a HorizontalLayout
         // so that the conditional page contents NEVER drive the outer preferred size.
         // The window stays the size the user picked across tab switches.
         Rectangle {
-            vertical-stretch: 1;
-            preferred-width: 0px;
-            preferred-height: 0px;
-            background: Palette.bg;
+                vertical-stretch: 1;
+                preferred-width: 0px;
+                preferred-height: 0px;
+                background: Palette.bg;
 
-            // page slot — pinned at the rail's collapsed width; the
+                // page slot — pinned at the rail's collapsed width; the
             // hover-expanded rail (declared below, so painted on top)
             // overlays this slot instead of squeezing the content.
             Rectangle {
-                x: rail.collapsed-width;
-                y: 0;
-                width: parent.width - rail.collapsed-width;
-                height: parent.height;
+                    x: rail.collapsed-width;
+                    y: 0;
+                    width: parent.width - rail.collapsed-width;
+                    height: parent.height;
 
-                // chats: side panel + main pane laid out side-by-side.
+                    // chats: side panel + main pane laid out side-by-side.
                 // Each page mounts inside a FadeInPage (shells/fade-in-page.slint)
                 // so navigation feels smooth.
                 if root.active-page == 0: FadeInPage {
                     // No chats yet → first-run get-started screen (with live relay
                     // setup). Once a chat exists, the normal list + pane shell.
                     if root.chats.length == 0: GetStartedScreen {
-                        width: parent.width;
-                        height: parent.height;
-                        relays: root.network-relays;
-                        suggested: root.suggested-relays;
-                        connected: root.network-connected;
-                        total: root.network-total;
-                        network-status: root.network-status;
-                        add-error <=> root.network-add-error;
-                        add-relay(u) => {
-                            return root.network-add-relay(u);
+                            width: parent.width;
+                            height: parent.height;
+                            relays: root.network-relays;
+                            suggested: root.suggested-relays;
+                            connected: root.network-connected;
+                            total: root.network-total;
+                            network-status: root.network-status;
+                            add-error <=> root.network-add-error;
+                            add-relay(u) => {
+                                return root.network-add-relay(u);
+                            }
+                            remove-relay(u) => {
+                                root.relay-remove-target = u;
+                            }
+                            kp-published: root.kp-published;
+                            kp-busy: root.kp-busy;
+                            kp-status: root.kp-status;
+                            publish-kp => {
+                                root.kp-publish-clicked();
+                            }
+                            start-chat => {
+                                root.new-chat-requested();
+                            }
                         }
-                        remove-relay(u) => {
-                            root.relay-remove-target = u;
-                        }
-                        kp-published: root.kp-published;
-                        kp-busy: root.kp-busy;
-                        kp-status: root.kp-status;
-                        publish-kp => {
-                            root.kp-publish-clicked();
-                        }
-                        start-chat => {
-                            root.new-chat-requested();
-                        }
-                    }
 
-                    // Absolute layout instead of a HorizontalLayout: the pane
+                        // Absolute layout instead of a HorizontalLayout: the pane
                     // sits against the panel's *reserved* width, so the panel's
                     // hover expansion (painted later, on top) overlays it
                     // without reflowing the conversation.
                     if root.chats.length > 0: Rectangle {
-                        width: parent.width;
-                        height: parent.height;
-
-                        main-pane := MainPane {
-                            x: chat-list.reserved-width;
-                            y: 0;
-                            width: parent.width - chat-list.reserved-width;
+                            width: parent.width;
                             height: parent.height;
-                            chat: root.chats[root.active-chat];
-                            active-chat: root.active-chat;
-                            mention-active: root.mention-active;
-                            mention-candidates: root.mention-candidates;
-                            mention-selected: root.mention-selected;
-                            caret-pos: root.composer-caret-pos;
-                            caret-tick: root.composer-caret-tick;
-                            caret-moved(c) => {
-                                root.composer-input-changed(c);
-                            }
-                            mention-nav(d) => {
-                                root.mention-nav(d);
-                            }
-                            mention-commit => {
-                                root.mention-commit();
-                            }
-                            mention-choose(i) => {
-                                root.mention-choose(i);
-                            }
-                            mention-dismiss => {
-                                root.mention-dismiss();
-                            }
-                            outgoing-on-right: root.outgoing-on-right;
-                            my-picture: root.my-av-picture;
-                            my-has-picture: root.my-av-has-picture;
-                            messages: root.chats-messages[root.active-chat];
-                            messages-loading: root.messages-loading;
-                            scroll-tick: root.messages-scroll-tick;
-                            has-older: root.messages-has-older;
-                            request-older => {
-                                root.messages-request-older();
-                            }
-                            draft <=> root.composer-draft;
-                            reply-target-id: root.reply-target-id;
-                            reply-target-author: root.reply-target-author;
-                            reply-target-preview: root.reply-target-preview;
-                            reply-target-image: root.reply-target-image;
-                            reply-target-has-image: root.reply-target-has-image;
-                            editing-message-id: root.editing-message-id;
-                            editing-message-preview: root.editing-message-preview;
-                            send-clicked => {
-                                root.send-message(root.composer-draft);
-                            }
-                            cancel-reply => {
-                                root.cancel-reply();
-                            }
-                            cancel-edit => {
-                                root.cancel-edit();
-                            }
-                            react(id, emoji) => {
-                                root.react-message(id, emoji);
-                            }
-                            unreact(id, emoji) => {
-                                root.unreact-message(id, emoji);
-                            }
-                            request-picker(id, ax, ay) => {
-                                root.emoji-picker-requested(id, ax, ay);
-                            }
-                            request-reply(id, preview, author) => {
-                                root.request-reply(id, preview, author);
-                            }
-                            request-edit(id, current) => {
-                                root.request-edit(id, current);
-                            }
-                            request-context-menu(id, text, author, can-edit, ax, ay) => {
-                                root.ctx-menu-id = id;
-                                root.ctx-menu-text = text;
-                                root.ctx-menu-author = author;
-                                root.ctx-menu-can-edit = can-edit;
-                                root.ctx-menu-x = ax;
-                                root.ctx-menu-y = ay;
-                                root.ctx-menu-open = true;
-                            }
-                            show-history(id) => {
-                                root.show-edit-history(id);
-                            }
-                            retry(id) => {
-                                root.retry-message(id);
-                            }
-                            attach-clicked => {
-                                root.attach-file();
-                            }
-                            paste-image => {
-                                root.paste-image();
-                            }
-                            staged: root.composer-staged;
-                            remove-staged(i) => {
-                                root.remove-staged(i);
-                            }
+
+                            main-pane := MainPane {
+                                x: chat-list.reserved-width;
+                                y: 0;
+                                width: parent.width - chat-list.reserved-width;
+                                height: parent.height;
+                                chat: root.chats[root.active-chat];
+                                active-chat: root.active-chat;
+                                mention-active: root.mention-active;
+                                mention-candidates: root.mention-candidates;
+                                mention-selected: root.mention-selected;
+                                caret-pos: root.composer-caret-pos;
+                                caret-tick: root.composer-caret-tick;
+                                caret-moved(c) => {
+                                    root.composer-input-changed(c);
+                                }
+                                mention-nav(d) => {
+                                    root.mention-nav(d);
+                                }
+                                mention-commit => {
+                                    root.mention-commit();
+                                }
+                                mention-choose(i) => {
+                                    root.mention-choose(i);
+                                }
+                                mention-dismiss => {
+                                    root.mention-dismiss();
+                                }
+                                outgoing-on-right: root.outgoing-on-right;
+                                my-picture: root.my-av-picture;
+                                my-has-picture: root.my-av-has-picture;
+                                messages: root.chats-messages[root.active-chat];
+                                messages-loading: root.messages-loading;
+                                scroll-tick: root.messages-scroll-tick;
+                                has-older: root.messages-has-older;
+                                request-older => {
+                                    root.messages-request-older();
+                                }
+                                draft <=> root.composer-draft;
+                                reply-target-id: root.reply-target-id;
+                                reply-target-author: root.reply-target-author;
+                                reply-target-preview: root.reply-target-preview;
+                                reply-target-image: root.reply-target-image;
+                                reply-target-has-image: root.reply-target-has-image;
+                                editing-message-id: root.editing-message-id;
+                                editing-message-preview: root.editing-message-preview;
+                                send-clicked => {
+                                    root.send-message(root.composer-draft);
+                                }
+                                cancel-reply => {
+                                    root.cancel-reply();
+                                }
+                                cancel-edit => {
+                                    root.cancel-edit();
+                                }
+                                react(id, emoji) => {
+                                    root.react-message(id, emoji);
+                                }
+                                unreact(id, emoji) => {
+                                    root.unreact-message(id, emoji);
+                                }
+                                request-picker(id, ax, ay) => {
+                                    root.emoji-picker-requested(id, ax, ay);
+                                }
+                                request-reply(id, preview, author) => {
+                                    root.request-reply(id, preview, author);
+                                }
+                                request-edit(id, current) => {
+                                    root.request-edit(id, current);
+                                }
+                                request-context-menu(id, text, author, can-edit, ax, ay) => {
+                                    root.ctx-menu-id = id;
+                                    root.ctx-menu-text = text;
+                                    root.ctx-menu-author = author;
+                                    root.ctx-menu-can-edit = can-edit;
+                                    root.ctx-menu-x = ax;
+                                    root.ctx-menu-y = ay;
+                                    root.ctx-menu-open = true;
+                                }
+                                show-history(id) => {
+                                    root.show-edit-history(id);
+                                }
+                                retry(id) => {
+                                    root.retry-message(id);
+                                }
+                                attach-clicked => {
+                                    root.attach-file();
+                                }
+                                paste-image => {
+                                    root.paste-image();
+                                }
+                                staged: root.composer-staged;
+                                remove-staged(i) => {
+                                    root.remove-staged(i);
+                                }
                             // Sentinel target id routes the picked emoji into
                             // the composer draft instead of a kind-7 reaction.
                             emoji-clicked(ax, ay) => {
-                                root.emoji-picker-requested("\u{1}composer", ax, ay);
+                                    root.emoji-picker-requested("\u{1}composer", ax, ay);
+                                }
+                                attachment-clicked(id) => {
+                                    root.attachment-clicked(id);
+                                }
+                                audio-play-clicked(id) => {
+                                    root.audio-play-clicked(id);
+                                }
+                                audio-seek-clicked(id, fraction) => {
+                                    root.audio-seek-clicked(id, fraction);
+                                }
+                                album-cell-clicked(key) => {
+                                    root.album-cell-clicked(key);
+                                }
+                                recording <=> root.composer-recording;
+                                recording-secs: root.composer-recording-secs;
+                                record-clicked => {
+                                    root.record-clicked();
+                                }
+                                stop-recording => {
+                                    root.stop-recording();
+                                }
+                                cancel-recording => {
+                                    root.cancel-recording();
+                                }
+                                is-group: root.chat-is-group;
+                                can-show-members: root.chat-can-show-members;
+                                chat-muted: root.active-chat-muted;
+                                mute-toggle-clicked => {
+                                    root.toggle-mute-chat();
+                                }
+                                badge-clicked => {
+                                    root.encryption-info-open = true;
+                                }
+                                member-count: root.chat-member-count;
+                                group-description: root.chat-group-description;
+                                members: root.chat-members;
+                                invited-members: root.chat-invited-members;
+                                show-members <=> root.show-chat-members;
+                                members-toggle-clicked => {
+                                    root.members-toggle-clicked();
+                                }
+                                can-add-members: root.chat-can-add-members;
+                                add-member-busy: root.add-member-busy;
+                                add-member-status: root.add-member-status;
+                                add-member-draft <=> root.add-member-draft;
+                                add-member(npub) => {
+                                    root.add-member(npub);
+                                }
+                                request-member-menu(id, name, cp, cd, csd, cr, ax, ay) => {
+                                    root.member-menu-id = id;
+                                    root.member-menu-name = name;
+                                    root.member-menu-can-promote = cp;
+                                    root.member-menu-can-demote = cd;
+                                    root.member-menu-can-self-demote = csd;
+                                    root.member-menu-can-remove = cr;
+                                    root.member-menu-x = ax;
+                                    root.member-menu-y = ay;
+                                    root.member-menu-open = true;
+                                }
+                                group-picture: root.chat-group-picture;
+                                group-has-picture: root.chat-group-has-picture;
+                                group-av-a: root.chat-group-av-a;
+                                group-av-b: root.chat-group-av-b;
+                                group-av-initials: root.chat-group-av-initials;
+                                group-rename-busy: root.group-rename-busy;
+                                group-description-busy: root.group-description-busy;
+                                group-image-busy: root.group-image-busy;
+                                group-leave-busy: root.group-leave-busy;
+                                group-status: root.group-settings-status;
+                                group-rename-draft <=> root.group-rename-draft;
+                                group-description-draft <=> root.group-description-draft;
+                                rename-group(name) => {
+                                    root.rename-group(name);
+                                }
+                                set-group-description(description) => {
+                                    root.set-group-description(description);
+                                }
+                                change-group-image => {
+                                    root.change-group-image();
+                                }
+                                clear-group-image => {
+                                    root.clear-group-image();
+                                }
+                                leave-group => {
+                                    root.leave-confirm-chat-idx = root.active-chat;
+                                    root.show-leave-confirm = true;
+                                }
+                                accept-clicked => {
+                                    root.accept-chat-request();
+                                }
+                                block-clicked => {
+                                    root.show-block-confirm = true;
+                                }
+                                archive-clicked => {
+                                    root.archive-chat();
+                                }
                             }
-                            attachment-clicked(id) => {
-                                root.attachment-clicked(id);
-                            }
-                            audio-play-clicked(id) => {
-                                root.audio-play-clicked(id);
-                            }
-                            audio-seek-clicked(id, fraction) => {
-                                root.audio-seek-clicked(id, fraction);
-                            }
-                            album-cell-clicked(key) => {
-                                root.album-cell-clicked(key);
-                            }
-                            recording <=> root.composer-recording;
-                            recording-secs: root.composer-recording-secs;
-                            record-clicked => {
-                                root.record-clicked();
-                            }
-                            stop-recording => {
-                                root.stop-recording();
-                            }
-                            cancel-recording => {
-                                root.cancel-recording();
-                            }
-                            is-group: root.chat-is-group;
-                            can-show-members: root.chat-can-show-members;
-                            chat-muted: root.active-chat-muted;
-                            mute-toggle-clicked => {
-                                root.toggle-mute-chat();
-                            }
-                            badge-clicked => {
-                                root.encryption-info-open = true;
-                            }
-                            member-count: root.chat-member-count;
-                            group-description: root.chat-group-description;
-                            members: root.chat-members;
-                            invited-members: root.chat-invited-members;
-                            show-members <=> root.show-chat-members;
-                            members-toggle-clicked => {
-                                root.members-toggle-clicked();
-                            }
-                            can-add-members: root.chat-can-add-members;
-                            add-member-busy: root.add-member-busy;
-                            add-member-status: root.add-member-status;
-                            add-member-draft <=> root.add-member-draft;
-                            add-member(npub) => {
-                                root.add-member(npub);
-                            }
-                            request-member-menu(id, name, cp, cd, csd, cr, ax, ay) => {
-                                root.member-menu-id = id;
-                                root.member-menu-name = name;
-                                root.member-menu-can-promote = cp;
-                                root.member-menu-can-demote = cd;
-                                root.member-menu-can-self-demote = csd;
-                                root.member-menu-can-remove = cr;
-                                root.member-menu-x = ax;
-                                root.member-menu-y = ay;
-                                root.member-menu-open = true;
-                            }
-                            group-picture: root.chat-group-picture;
-                            group-has-picture: root.chat-group-has-picture;
-                            group-av-a: root.chat-group-av-a;
-                            group-av-b: root.chat-group-av-b;
-                            group-av-initials: root.chat-group-av-initials;
-                            group-rename-busy: root.group-rename-busy;
-                            group-description-busy: root.group-description-busy;
-                            group-image-busy: root.group-image-busy;
-                            group-leave-busy: root.group-leave-busy;
-                            group-status: root.group-settings-status;
-                            group-rename-draft <=> root.group-rename-draft;
-                            group-description-draft <=> root.group-description-draft;
-                            rename-group(name) => {
-                                root.rename-group(name);
-                            }
-                            set-group-description(description) => {
-                                root.set-group-description(description);
-                            }
-                            change-group-image => {
-                                root.change-group-image();
-                            }
-                            clear-group-image => {
-                                root.clear-group-image();
-                            }
-                            leave-group => {
-                                root.leave-confirm-chat-idx = root.active-chat;
-                                root.show-leave-confirm = true;
-                            }
-                            accept-clicked => {
-                                root.accept-chat-request();
-                            }
-                            block-clicked => {
-                                root.show-block-confirm = true;
-                            }
-                            archive-clicked => {
-                                root.archive-chat();
-                            }
-                        }
 
-                        chat-list := ChatListPanel {
-                            x: 0;
-                            y: 0;
-                            height: parent.height;
-                            window-width: root.width;
-                            chats: root.chats;
-                            active-chat: root.active-chat;
-                            relays-connected: root.network-connected;
-                            relays-total: root.network-total;
-                            sync-secs: root.sync-secs;
-                            match-flags: root.chat-match-flags;
-                            search-changed(q) => {
-                                root.chat-search-changed(q);
-                            }
-                            chat-clicked(idx) => {
+                            chat-list := ChatListPanel {
+                                x: 0;
+                                y: 0;
+                                height: parent.height;
+                                window-width: root.width;
+                                chats: root.chats;
+                                active-chat: root.active-chat;
+                                relays-connected: root.network-connected;
+                                relays-total: root.network-total;
+                                sync-secs: root.sync-secs;
+                                match-flags: root.chat-match-flags;
+                                search-changed(q) => {
+                                    root.chat-search-changed(q);
+                                }
+                                chat-clicked(idx) => {
                                 // A leftover selection belongs to the chat
                                 // being left behind; drop it.
                                 TextSelection.clear();
-                                root.chat-selected(idx);
+                                    root.chat-selected(idx);
+                                }
+                                chat-context-menu(idx, ax, ay) => {
+                                    root.request-chat-context(idx, ax, ay);
+                                }
+                                new-chat-clicked => {
+                                    root.new-chat-requested();
+                                }
                             }
-                            chat-context-menu(idx, ax, ay) => {
-                                root.request-chat-context(idx, ax, ay);
+                        }
+                    }
+
+                    if root.active-page == 1: FadeInPage {
+                        ContactsPage {
+                            width: parent.width;
+                            height: parent.height;
+                            window-width: root.width;
+                            contacts: root.contacts;
+                            shared-groups: root.contact-shared-groups;
+                            active-contact: root.active-contact;
+                            match-flags: root.contact-match-flags;
+                            debug-enabled: root.debug-enabled;
+                            view-key-packages-clicked => {
+                                root.view-contact-key-packages();
                             }
-                            new-chat-clicked => {
-                                root.new-chat-requested();
+                            search-changed(q) => {
+                                root.contact-search-changed(q);
+                            }
+                            contact-clicked(idx) => {
+                                root.contact-selected(idx);
+                            }
+                            open-shared-group(id) => {
+                                root.open-shared-group(id);
+                            }
+                            add-contact-clicked => {
+                                root.add-contact-requested();
+                            }
+                            edit-nickname-clicked => {
+                                root.contact-nickname-requested();
+                            }
+                            copy-npub-clicked => {
+                                root.copy-to-clipboard(root.contacts[root.active-contact].npub-full);
+                            }
+                            refresh-key-package-clicked => {
+                                root.contact-refresh-key-package();
+                            }
+                            show-qr-clicked => {
+                                root.contact-show-qr();
+                            }
+                            start-chat-clicked => {
+                                root.start-chat-with-contact();
+                            }
+                        }
+                    }
+
+                    if root.active-page == 2: FadeInPage {
+                        ArchivedPage {
+                            width: parent.width;
+                            height: parent.height;
+                            window-width: root.width;
+                            archives: root.archived-chats;
+                            active-archived: root.active-archived;
+                            members: root.chat-members;
+                            is-group: root.chat-is-group;
+                            archive-clicked(idx) => {
+                                root.archive-selected(idx);
+                            }
+                            unarchive-clicked => {
+                                root.unarchive-chat();
+                            }
+                        }
+                    }
+
+                    if root.active-page == 3: FadeInPage {
+                        KeysPage {
+                            width: parent.width;
+                            height: parent.height;
+                            npub: root.my-npub;
+                            key-packages: root.key-packages;
+                            kp-relays: root.kp-relays;
+                            kp-status: root.kp-status;
+                            kp-busy: root.kp-busy;
+                            copy-npub-clicked => {
+                                root.copy-to-clipboard(root.my-npub);
+                            }
+                            publish-clicked => {
+                                root.kp-publish-clicked();
+                            }
+                            rotate-clicked => {
+                                root.show-rotate-confirm = true;
+                            }
+                            refresh-clicked => {
+                                root.kp-refresh-clicked();
+                            }
+                            reveal-nsec-clicked => {
+                                root.reveal-nsec-password = "";
+                                root.reveal-nsec-value = "";
+                                root.show-reveal-nsec = true;
+                            }
+                        }
+                    }
+
+                    if root.active-page == 4: FadeInPage {
+                        SettingsPage {
+                            width: parent.width;
+                            height: parent.height;
+                            debug-enabled <=> root.debug-enabled;
+                            debug-dump: root.debug-dump;
+                            debug-toggled(v) => {
+                                root.debug-toggled(v);
+                            }
+                            debug-load(m) => {
+                                root.debug-load(m);
+                            }
+                            debug-copy-clicked => {
+                                root.debug-copy-clicked();
+                            }
+                            telemetry-enabled <=> root.telemetry-enabled;
+                            telemetry-toggled(v) => {
+                                root.telemetry-toggled(v);
+                            }
+                            audit-enabled <=> root.audit-enabled;
+                            audit-toggled(v) => {
+                                root.audit-toggled(v);
+                            }
+                            audit-status: root.audit-status;
+                            audit-files: root.audit-files;
+                            audit-delete-file(p) => {
+                                root.pending-audit-delete-path = p;
+                                root.show-audit-delete-confirm = true;
+                            }
+                            audit-refresh-files => {
+                                root.audit-refresh-files();
+                            }
+                            network-relays: root.network-relays;
+                            network-booted-relays: root.network-booted-relays;
+                            network-restart-required: root.network-restart-required;
+                            network-connected: root.network-connected;
+                            network-total: root.network-total;
+                            network-status: root.network-status;
+                            network-republish-busy: root.network-republish-busy;
+                            network-add-error <=> root.network-add-error;
+                            network-add-relay(u) => {
+                                return root.network-add-relay(u);
+                            }
+                            network-remove-relay(u) => {
+                                root.relay-remove-target = u;
+                            }
+                            network-refresh-health => {
+                                root.network-refresh-health();
+                            }
+                            network-republish-relay-list => {
+                                root.network-republish-relay-list();
+                            }
+                            locale-display: root.locale-display;
+                            change-language-clicked => {
+                                root.change-language-clicked();
+                            }
+                            time-format: root.time-format;
+                            date-format: root.date-format;
+                            launch-at-login <=> root.launch-at-login;
+                            start-minimized-to-tray <=> root.start-minimized-to-tray;
+                            restore-last-selected-chat <=> root.restore-last-selected-chat;
+                            time-format-selected(f) => {
+                                root.time-format-selected(f);
+                            }
+                            date-format-selected(f) => {
+                                root.date-format-selected(f);
+                            }
+                            launch-at-login-toggled(v) => {
+                                root.launch-at-login-toggled(v);
+                            }
+                            start-minimized-to-tray-toggled(v) => {
+                                root.start-minimized-to-tray-toggled(v);
+                            }
+                            restore-last-selected-chat-toggled(v) => {
+                                root.restore-last-selected-chat-toggled(v);
+                            }
+                            theme-id <=> root.theme-id;
+                            accent-color <=> root.accent-color;
+                            outgoing-on-right <=> root.outgoing-on-right;
+                            theme-mode-selected(mode) => {
+                                root.theme-mode-selected(mode);
+                            }
+                            accent-selected(idx) => {
+                                root.accent-selected(idx);
+                            }
+                            outgoing-on-right-toggled(v) => {
+                                root.outgoing-on-right-toggled(v);
+                            }
+                            storage-cache-size: root.storage-cache-size;
+                            storage-clearing: root.storage-clearing;
+                            storage-clear-cache => {
+                                root.storage-clear-cache();
+                            }
+                            storage-vault-dir: root.storage-vault-dir;
+                            storage-open-vault-folder => {
+                                root.storage-open-vault-folder();
+                            }
+                            storage-create-backup => {
+                                root.storage-create-backup();
+                            }
+                            storage-import-backup => {
+                                root.storage-import-backup();
+                            }
+                            notifications-enabled <=> root.notifications-enabled;
+                            notification-sound <=> root.notification-sound;
+                            notification-preview <=> root.notification-preview;
+                            notifications-toggled(v) => {
+                                root.notifications-toggled(v);
+                            }
+                            notification-sound-toggled(v) => {
+                                root.notification-sound-toggled(v);
+                            }
+                            notification-preview-toggled(v) => {
+                                root.notification-preview-toggled(v);
+                            }
+                        }
+                    }
+
+                    if root.active-page == 5: FadeInPage {
+                        ProfilePage {
+                            width: parent.width;
+                            height: parent.height;
+                            npub: root.my-npub;
+                            qr: root.my-qr;
+                            editing: root.profile-editing;
+                            busy: root.profile-busy;
+                            uploading: root.profile-uploading;
+                            status: root.profile-status;
+                            display-name <=> root.profile-display-name;
+                            username <=> root.profile-name;
+                            about <=> root.profile-about;
+                            picture-url <=> root.profile-picture;
+                            picture: root.my-av-picture;
+                            has-picture: root.my-av-has-picture;
+                            nip05 <=> root.profile-nip05;
+                            lud16 <=> root.profile-lud16;
+                            edit-clicked => {
+                                root.start-edit-profile();
+                            }
+                            save-clicked => {
+                                root.save-profile();
+                            }
+                            cancel-clicked => {
+                                root.cancel-edit-profile();
+                            }
+                            copy-npub-clicked => {
+                                root.copy-to-clipboard(root.my-npub);
+                            }
+                            upload-picture-clicked => {
+                                root.upload-profile-picture();
                             }
                         }
                     }
                 }
 
-                if root.active-page == 1: FadeInPage {
-                    ContactsPage {
-                        width: parent.width;
-                        height: parent.height;
-                        window-width: root.width;
-                        contacts: root.contacts;
-                        shared-groups: root.contact-shared-groups;
-                        active-contact: root.active-contact;
-                        match-flags: root.contact-match-flags;
-                        debug-enabled: root.debug-enabled;
-                        view-key-packages-clicked => {
-                            root.view-contact-key-packages();
-                        }
-                        search-changed(q) => {
-                            root.contact-search-changed(q);
-                        }
-                        contact-clicked(idx) => {
-                            root.contact-selected(idx);
-                        }
-                        open-shared-group(id) => {
-                            root.open-shared-group(id);
-                        }
-                        add-contact-clicked => {
-                            root.add-contact-requested();
-                        }
-                        edit-nickname-clicked => {
-                            root.contact-nickname-requested();
-                        }
-                        copy-npub-clicked => {
-                            root.copy-to-clipboard(root.contacts[root.active-contact].npub-full);
-                        }
-                        refresh-key-package-clicked => {
-                            root.contact-refresh-key-package();
-                        }
-                        show-qr-clicked => {
-                            root.contact-show-qr();
-                        }
-                        start-chat-clicked => {
-                            root.start-chat-with-contact();
-                        }
-                    }
-                }
-
-                if root.active-page == 2: FadeInPage {
-                    ArchivedPage {
-                        width: parent.width;
-                        height: parent.height;
-                        window-width: root.width;
-                        archives: root.archived-chats;
-                        active-archived: root.active-archived;
-                        members: root.chat-members;
-                        is-group: root.chat-is-group;
-                        archive-clicked(idx) => {
-                            root.archive-selected(idx);
-                        }
-                        unarchive-clicked => {
-                            root.unarchive-chat();
-                        }
-                    }
-                }
-
-                if root.active-page == 3: FadeInPage {
-                    KeysPage {
-                        width: parent.width;
-                        height: parent.height;
-                        npub: root.my-npub;
-                        key-packages: root.key-packages;
-                        kp-relays: root.kp-relays;
-                        kp-status: root.kp-status;
-                        kp-busy: root.kp-busy;
-                        copy-npub-clicked => {
-                            root.copy-to-clipboard(root.my-npub);
-                        }
-                        publish-clicked => {
-                            root.kp-publish-clicked();
-                        }
-                        rotate-clicked => {
-                            root.show-rotate-confirm = true;
-                        }
-                        refresh-clicked => {
-                            root.kp-refresh-clicked();
-                        }
-                        reveal-nsec-clicked => {
-                            root.reveal-nsec-password = "";
-                            root.reveal-nsec-value = "";
-                            root.show-reveal-nsec = true;
-                        }
-                    }
-                }
-
-                if root.active-page == 4: FadeInPage {
-                    SettingsPage {
-                        width: parent.width;
-                        height: parent.height;
-                        debug-enabled <=> root.debug-enabled;
-                        debug-dump: root.debug-dump;
-                        debug-toggled(v) => {
-                            root.debug-toggled(v);
-                        }
-                        debug-load(m) => {
-                            root.debug-load(m);
-                        }
-                        debug-copy-clicked => {
-                            root.debug-copy-clicked();
-                        }
-                        telemetry-enabled <=> root.telemetry-enabled;
-                        telemetry-toggled(v) => {
-                            root.telemetry-toggled(v);
-                        }
-                        audit-enabled <=> root.audit-enabled;
-                        audit-toggled(v) => {
-                            root.audit-toggled(v);
-                        }
-                        audit-status: root.audit-status;
-                        audit-files: root.audit-files;
-                        audit-delete-file(p) => {
-                            root.pending-audit-delete-path = p;
-                            root.show-audit-delete-confirm = true;
-                        }
-                        audit-refresh-files => {
-                            root.audit-refresh-files();
-                        }
-                        network-relays: root.network-relays;
-                        network-booted-relays: root.network-booted-relays;
-                        network-restart-required: root.network-restart-required;
-                        network-connected: root.network-connected;
-                        network-total: root.network-total;
-                        network-status: root.network-status;
-                        network-republish-busy: root.network-republish-busy;
-                        network-add-error <=> root.network-add-error;
-                        network-add-relay(u) => {
-                            return root.network-add-relay(u);
-                        }
-                        network-remove-relay(u) => {
-                            root.relay-remove-target = u;
-                        }
-                        network-refresh-health => {
-                            root.network-refresh-health();
-                        }
-                        network-republish-relay-list => {
-                            root.network-republish-relay-list();
-                        }
-                        locale-display: root.locale-display;
-                        change-language-clicked => {
-                            root.change-language-clicked();
-                        }
-                        time-format: root.time-format;
-                        date-format: root.date-format;
-                        launch-at-login <=> root.launch-at-login;
-                        start-minimized-to-tray <=> root.start-minimized-to-tray;
-                        restore-last-selected-chat <=> root.restore-last-selected-chat;
-                        time-format-selected(f) => {
-                            root.time-format-selected(f);
-                        }
-                        date-format-selected(f) => {
-                            root.date-format-selected(f);
-                        }
-                        launch-at-login-toggled(v) => {
-                            root.launch-at-login-toggled(v);
-                        }
-                        start-minimized-to-tray-toggled(v) => {
-                            root.start-minimized-to-tray-toggled(v);
-                        }
-                        restore-last-selected-chat-toggled(v) => {
-                            root.restore-last-selected-chat-toggled(v);
-                        }
-                        theme-id <=> root.theme-id;
-                        accent-color <=> root.accent-color;
-                        outgoing-on-right <=> root.outgoing-on-right;
-                        theme-mode-selected(mode) => {
-                            root.theme-mode-selected(mode);
-                        }
-                        accent-selected(idx) => {
-                            root.accent-selected(idx);
-                        }
-                        outgoing-on-right-toggled(v) => {
-                            root.outgoing-on-right-toggled(v);
-                        }
-                        storage-cache-size: root.storage-cache-size;
-                        storage-clearing: root.storage-clearing;
-                        storage-clear-cache => {
-                            root.storage-clear-cache();
-                        }
-                        storage-vault-dir: root.storage-vault-dir;
-                        storage-open-vault-folder => {
-                            root.storage-open-vault-folder();
-                        }
-                        storage-create-backup => {
-                            root.storage-create-backup();
-                        }
-                        storage-import-backup => {
-                            root.storage-import-backup();
-                        }
-                        notifications-enabled <=> root.notifications-enabled;
-                        notification-sound <=> root.notification-sound;
-                        notification-preview <=> root.notification-preview;
-                        notifications-toggled(v) => {
-                            root.notifications-toggled(v);
-                        }
-                        notification-sound-toggled(v) => {
-                            root.notification-sound-toggled(v);
-                        }
-                        notification-preview-toggled(v) => {
-                            root.notification-preview-toggled(v);
-                        }
-                    }
-                }
-
-                if root.active-page == 5: FadeInPage {
-                    ProfilePage {
-                        width: parent.width;
-                        height: parent.height;
-                        npub: root.my-npub;
-                        qr: root.my-qr;
-                        editing: root.profile-editing;
-                        busy: root.profile-busy;
-                        uploading: root.profile-uploading;
-                        status: root.profile-status;
-                        display-name <=> root.profile-display-name;
-                        username <=> root.profile-name;
-                        about <=> root.profile-about;
-                        picture-url <=> root.profile-picture;
-                        picture: root.my-av-picture;
-                        has-picture: root.my-av-has-picture;
-                        nip05 <=> root.profile-nip05;
-                        lud16 <=> root.profile-lud16;
-                        edit-clicked => {
-                            root.start-edit-profile();
-                        }
-                        save-clicked => {
-                            root.save-profile();
-                        }
-                        cancel-clicked => {
-                            root.cancel-edit-profile();
-                        }
-                        copy-npub-clicked => {
-                            root.copy-to-clipboard(root.my-npub);
-                        }
-                        upload-picture-clicked => {
-                            root.upload-profile-picture();
-                        }
-                    }
-                }
-            }
-
-            // left rail — expandable on hover (56px → 160px); declared after
+                // left rail — expandable on hover (56px → 160px); declared after
             // the page slot so the expansion paints over it.
             rail := LeftRail {
-                x: 0;
-                y: 0;
-                height: parent.height;
-                selected-index: root.active-page;
-                my-initials: root.my-av-initials;
-                my-color-a: root.my-av-a;
-                my-color-b: root.my-av-b;
-                my-picture: root.my-av-picture;
-                my-has-picture: root.my-av-has-picture;
-                my-display-name: root.my-display-name;
-                badge-chats: root.rail-badge-chats;
-                badge-contacts: root.rail-badge-contacts;
-                badge-archive: root.rail-badge-archive;
-                badge-keys: root.rail-badge-keys;
-                has-active-chat: root.active-chat >= 0 && root.chats.length > 0;
-                nav-clicked(idx) => {
-                    root.nav-requested(idx);
+                    x: 0;
+                    y: 0;
+                    height: parent.height;
+                    selected-index: root.active-page;
+                    my-initials: root.my-av-initials;
+                    my-color-a: root.my-av-a;
+                    my-color-b: root.my-av-b;
+                    my-picture: root.my-av-picture;
+                    my-has-picture: root.my-av-has-picture;
+                    my-display-name: root.my-display-name;
+                    badge-chats: root.rail-badge-chats;
+                    badge-contacts: root.rail-badge-contacts;
+                    badge-archive: root.rail-badge-archive;
+                    badge-keys: root.rail-badge-keys;
+                    has-active-chat: root.active-chat >= 0 && root.chats.length > 0;
+                    nav-clicked(idx) => {
+                        root.nav-requested(idx);
+                    }
+                    plus-clicked => {
+                        root.new-chat-requested();
+                    }
+                    settings-clicked => {
+                        root.nav-requested(4);
+                    }
+                    profile-clicked => {
+                        root.profile-requested();
+                    }
+                    accounts-clicked => {
+                        root.account-switcher-requested();
+                    }
                 }
-                plus-clicked => {
-                    root.new-chat-requested();
-                }
-                settings-clicked => {
-                    root.nav-requested(4);
-                }
-                profile-clicked => {
-                    root.profile-requested();
-                }
-                accounts-clicked => {
-                    root.account-switcher-requested();
-                }
+            }
+
+            StatusBar {
+                relaysConnected: root.network-connected;
+                relaysTotal: root.network-total;
+                syncSecs: root.sync-secs;
+                message: root.clipboard-status;
+                messageIsError: root.clipboard-status-error;
             }
         }
 
-        StatusBar {
-            relaysConnected: root.network-connected;
-            relaysTotal: root.network-total;
-            syncSecs: root.sync-secs;
-            message: root.clipboard-status;
-            messageIsError: root.clipboard-status-error;
-        }
-    }
-
-    // ── Overlay stack ── Every mount below (modals, context menus, pickers,
+        // ── Overlay stack ── Every mount below (modals, context menus, pickers,
     // splash, login) is a Rectangle-rooted component outside any layout, so
     // Slint defaults each one to its parent's geometry: the full window at
     // x/y 0. No per-mount positioning needed.
     if root.show-language-picker: LanguagePickerModal {
-        active-locale: root.locale;
-        locale-selected(code) => {
-            root.locale-selected(code);
+            active-locale: root.locale;
+            locale-selected(code) => {
+                root.locale-selected(code);
+            }
+            dismissed => {
+                root.show-language-picker = false;
+            }
         }
-        dismissed => {
-            root.show-language-picker = false;
-        }
-    }
 
-    if root.show-new-chat: StartNewChatModal {
-        chat-name <=> root.new-chat-name;
-        members-text <=> root.new-chat-members;
-        busy: root.new-chat-busy;
-        status: root.new-chat-status;
-        start-chat(n, m) => {
-            root.start-chat(n, m);
+        if root.show-new-chat: StartNewChatModal {
+            chat-name <=> root.new-chat-name;
+            members-text <=> root.new-chat-members;
+            busy: root.new-chat-busy;
+            status: root.new-chat-status;
+            start-chat(n, m) => {
+                root.start-chat(n, m);
+            }
+            dismissed => {
+                root.modal-dismissed();
+            }
         }
-        dismissed => {
-            root.modal-dismissed();
-        }
-    }
 
-    if root.show-add-contact: AddContactModal {
-        npub-text <=> root.add-contact-input;
-        busy: root.add-contact-busy;
-        status: root.add-contact-status;
-        add-contact(n) => {
-            root.add-contact(n);
+        if root.show-add-contact: AddContactModal {
+            npub-text <=> root.add-contact-input;
+            busy: root.add-contact-busy;
+            status: root.add-contact-status;
+            add-contact(n) => {
+                root.add-contact(n);
+            }
+            dismissed => {
+                root.add-contact-dismissed();
+            }
         }
-        dismissed => {
-            root.add-contact-dismissed();
-        }
-    }
 
-    if root.show-account-switcher: AccountSwitcherModal {
-        accounts: root.accounts;
-        select(id) => {
-            root.switch-account(id);
+        if root.show-account-switcher: AccountSwitcherModal {
+            accounts: root.accounts;
+            select(id) => {
+                root.switch-account(id);
+            }
+            add-account => {
+                root.add-account-requested();
+            }
+            dismissed => {
+                root.show-account-switcher = false;
+            }
         }
-        add-account => {
-            root.add-account-requested();
-        }
-        dismissed => {
-            root.show-account-switcher = false;
-        }
-    }
 
-    if root.show-add-account: AddAccountModal {
-        nsec-text <=> root.add-account-nsec;
-        generated: root.add-account-generated;
-        primary-busy: root.add-account-busy;
-        status: root.add-account-status;
-        add(nsec) => {
-            root.add-account(nsec);
+        if root.show-add-account: AddAccountModal {
+            nsec-text <=> root.add-account-nsec;
+            generated: root.add-account-generated;
+            primary-busy: root.add-account-busy;
+            status: root.add-account-status;
+            add(nsec) => {
+                root.add-account(nsec);
+            }
+            generate => {
+                root.generate-add-account-key();
+            }
+            dismissed => {
+                root.add-account-dismissed();
+            }
         }
-        generate => {
-            root.generate-add-account-key();
-        }
-        dismissed => {
-            root.add-account-dismissed();
-        }
-    }
 
-    if root.show-import-backup: ImportBackupModal {
-        file-name: root.import-backup-file;
-        restore-mode: root.import-backup-restore-mode;
-        password-text <=> root.import-backup-password;
-        primary-busy: root.import-backup-busy;
-        status: root.import-backup-status;
-        pick-file => {
-            root.import-backup-pick-file();
+        if root.show-import-backup: ImportBackupModal {
+            file-name: root.import-backup-file;
+            restore-mode: root.import-backup-restore-mode;
+            password-text <=> root.import-backup-password;
+            primary-busy: root.import-backup-busy;
+            status: root.import-backup-status;
+            pick-file => {
+                root.import-backup-pick-file();
+            }
+            import(pw) => {
+                root.import-backup-submit(pw);
+            }
+            dismissed => {
+                root.import-backup-dismissed();
+            }
         }
-        import(pw) => {
-            root.import-backup-submit(pw);
-        }
-        dismissed => {
-            root.import-backup-dismissed();
-        }
-    }
 
-    if root.show-create-backup: BackupCreateModal {
-        password-text <=> root.create-backup-password;
-        primary-busy: root.create-backup-busy;
-        status: root.create-backup-status;
-        create(pw) => {
-            root.create-backup-submit(pw);
+        if root.show-create-backup: BackupCreateModal {
+            password-text <=> root.create-backup-password;
+            primary-busy: root.create-backup-busy;
+            status: root.create-backup-status;
+            create(pw) => {
+                root.create-backup-submit(pw);
+            }
+            dismissed => {
+                root.create-backup-dismissed();
+            }
         }
-        dismissed => {
-            root.create-backup-dismissed();
-        }
-    }
 
-    if root.show-nickname-modal: NicknameModal {
-        nickname-text <=> root.nickname-input;
-        contact-name: root.nickname-contact-name;
-        save(n) => {
-            root.set-contact-nickname(n);
+        if root.show-nickname-modal: NicknameModal {
+            nickname-text <=> root.nickname-input;
+            contact-name: root.nickname-contact-name;
+            save(n) => {
+                root.set-contact-nickname(n);
+            }
+            dismissed => {
+                root.nickname-modal-dismissed();
+            }
         }
-        dismissed => {
-            root.nickname-modal-dismissed();
-        }
-    }
 
-    if root.show-block-confirm: ConfirmModal {
-        title: @tr("Block this chat request?");
-        subtitle: @tr("This declines the invite from {}. It can't be restored unless they invite you again.", root.chats[root.active-chat].name);
-        confirm-label: @tr("Block");
-        confirm => {
-            root.show-block-confirm = false;
-            root.block-chat-request();
+        if root.show-block-confirm: ConfirmModal {
+            title: @tr("Block this chat request?");
+            subtitle: @tr("This declines the invite from {}. It can't be restored unless they invite you again.", root.chats[root.active-chat].name);
+            confirm-label: @tr("Block");
+            confirm => {
+                root.show-block-confirm = false;
+                root.block-chat-request();
+            }
+            dismissed => {
+                root.show-block-confirm = false;
+            }
         }
-        dismissed => {
-            root.show-block-confirm = false;
-        }
-    }
 
-    if root.show-audit-delete-confirm: ConfirmModal {
-        title: @tr("SettingsPage" => "Delete audit log file?");
-        subtitle: @tr("SettingsPage" => "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log.");
-        confirm-label: @tr("SettingsPage" => "Delete file");
-        confirm => {
-            root.show-audit-delete-confirm = false;
-            root.audit-delete-file(root.pending-audit-delete-path);
-            root.pending-audit-delete-path = "";
+        if root.show-audit-delete-confirm: ConfirmModal {
+            title: @tr("SettingsPage" => "Delete audit log file?");
+            subtitle: @tr("SettingsPage" => "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log.");
+            confirm-label: @tr("SettingsPage" => "Delete file");
+            confirm => {
+                root.show-audit-delete-confirm = false;
+                root.audit-delete-file(root.pending-audit-delete-path);
+                root.pending-audit-delete-path = "";
+            }
+            dismissed => {
+                root.show-audit-delete-confirm = false;
+                root.pending-audit-delete-path = "";
+            }
         }
-        dismissed => {
-            root.show-audit-delete-confirm = false;
-            root.pending-audit-delete-path = "";
-        }
-    }
 
-    // Rotating invalidates the currently advertised key package, so the page
+        // Rotating invalidates the currently advertised key package, so the page
     // only emits intent; the window root owns the modal and blocks all chrome.
     if root.show-rotate-confirm: ConfirmModal {
-        title: @tr("KeysPage" => "Rotate key package?");
-        subtitle: @tr("KeysPage" => "This invalidates your current package. Contacts will use the new one going forward.");
-        confirm-label: @tr("KeysPage" => "Rotate");
-        confirm => {
-            root.show-rotate-confirm = false;
-            root.kp-rotate-clicked();
-        }
-        dismissed => {
-            root.show-rotate-confirm = false;
-        }
-    }
-
-    if root.show-reveal-nsec: RevealNsecModal {
-        password <=> root.reveal-nsec-password;
-        nsec-value: root.reveal-nsec-value;
-        primary-busy: root.reveal-nsec-busy;
-        status: root.reveal-nsec-status;
-        status-color: root.reveal-nsec-status-error ? Palette.danger : Palette.text-lo;
-        confirm(password) => {
-            root.reveal-nsec-confirm(password);
-        }
-        copy(nsec) => {
-            root.copy-to-clipboard(nsec);
-        }
-        dismissed => {
-            root.show-reveal-nsec = false;
-            root.reveal-nsec-dismissed();
-        }
-    }
-
-    if root.relay-remove-target != "": ConfirmModal {
-        title: @tr("Remove this relay?");
-        subtitle: @tr("{} will stop carrying your messages. You can add it back anytime.", root.relay-remove-target);
-        confirm-label: @tr("Remove");
-        confirm => {
-            root.network-remove-relay(root.relay-remove-target);
-            root.relay-remove-target = "";
-        }
-        dismissed => {
-            root.relay-remove-target = "";
-        }
-    }
-
-    if root.show-leave-confirm: ConfirmModal {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
-        title: @tr("Leave {}?", root.chats[root.leave-confirm-chat-idx].name);
-        subtitle: @tr("You will stop receiving new messages from this group. The chat moves to Archive.");
-        confirm-label: @tr("Leave group");
-        confirm => {
-            root.show-leave-confirm = false;
-            root.leave-group-at(root.leave-confirm-chat-idx);
-            root.leave-confirm-chat-idx = -1;
-        }
-        dismissed => {
-            root.show-leave-confirm = false;
-            root.leave-confirm-chat-idx = -1;
-        }
-    }
-
-    if root.show-admin-confirm: ConfirmModal {
-        title: root.admin-confirm-action == 1 ? @tr("Make {} an admin?", root.admin-confirm-member-name) : (root.admin-confirm-action == 2 ? @tr("Remove admin rights from {}?", root.admin-confirm-member-name) : (root.admin-confirm-action == 4 ? @tr("Remove {} from the group?", root.admin-confirm-member-name) : @tr("Step down as admin?")));
-        subtitle: root.admin-confirm-action == 1 ? @tr("{} will be able to add members, change group settings, and manage other admins.", root.admin-confirm-member-name) : (root.admin-confirm-action == 2 ? @tr("{} will stay in the group, but won't be able to manage members or group settings.", root.admin-confirm-member-name) : (root.admin-confirm-action == 4 ? @tr("{} will lose access to this group and stop receiving its messages. You'll need to invite them again to bring them back.", root.admin-confirm-member-name) : @tr("This removes your admin rights. You can't restore them yourself unless another admin promotes you again.")));
-        confirm-label: root.admin-confirm-action == 1 ? @tr("Make admin") : (root.admin-confirm-action == 2 ? @tr("Remove admin") : (root.admin-confirm-action == 4 ? @tr("Remove") : @tr("Step down")));
-        confirm => {
-            root.show-admin-confirm = false;
-            if (root.admin-confirm-action == 1) {
-                root.promote-admin(root.admin-confirm-member-id);
-            } else if (root.admin-confirm-action == 2) {
-                root.demote-admin(root.admin-confirm-member-id);
-            } else if (root.admin-confirm-action == 3) {
-                root.self-demote-admin();
-            } else if (root.admin-confirm-action == 4) {
-                root.remove-member(root.admin-confirm-member-id);
+            title: @tr("KeysPage" => "Rotate key package?");
+            subtitle: @tr("KeysPage" => "This invalidates your current package. Contacts will use the new one going forward.");
+            confirm-label: @tr("KeysPage" => "Rotate");
+            confirm => {
+                root.show-rotate-confirm = false;
+                root.kp-rotate-clicked();
             }
-            root.clear-admin-confirm();
+            dismissed => {
+                root.show-rotate-confirm = false;
+            }
         }
-        dismissed => {
-            root.clear-admin-confirm();
-        }
-    }
 
-    if root.show-palette: CommandPalette {
-        actions: root.palette-actions;
-        query <=> root.palette-query;
-        dismissed => {
-            root.palette-dismissed();
+        if root.show-reveal-nsec: RevealNsecModal {
+            password <=> root.reveal-nsec-password;
+            nsec-value: root.reveal-nsec-value;
+            primary-busy: root.reveal-nsec-busy;
+            status: root.reveal-nsec-status;
+            status-color: root.reveal-nsec-status-error ? Palette.danger : Palette.text-lo;
+            confirm(password) => {
+                root.reveal-nsec-confirm(password);
+            }
+            copy(nsec) => {
+                root.copy-to-clipboard(nsec);
+            }
+            dismissed => {
+                root.show-reveal-nsec = false;
+                root.reveal-nsec-dismissed();
+            }
         }
-        execute(id) => {
-            root.palette-execute(id);
-        }
-        query-changed(q) => {
-            root.palette-query-changed(q);
-        }
-    }
 
-    // Right-click message context menu. Items re-fire the same callbacks the
+        if root.relay-remove-target != "": ConfirmModal {
+            title: @tr("Remove this relay?");
+            subtitle: @tr("{} will stop carrying your messages. You can add it back anytime.", root.relay-remove-target);
+            confirm-label: @tr("Remove");
+            confirm => {
+                root.network-remove-relay(root.relay-remove-target);
+                root.relay-remove-target = "";
+            }
+            dismissed => {
+                root.relay-remove-target = "";
+            }
+        }
+
+        if root.show-leave-confirm: ConfirmModal {
+            x: 0;
+            y: 0;
+            width: root.width;
+            height: root.height;
+            title: @tr("Leave {}?", root.chats[root.leave-confirm-chat-idx].name);
+            subtitle: @tr("You will stop receiving new messages from this group. The chat moves to Archive.");
+            confirm-label: @tr("Leave group");
+            confirm => {
+                root.show-leave-confirm = false;
+                root.leave-group-at(root.leave-confirm-chat-idx);
+                root.leave-confirm-chat-idx = -1;
+            }
+            dismissed => {
+                root.show-leave-confirm = false;
+                root.leave-confirm-chat-idx = -1;
+            }
+        }
+
+        if root.show-admin-confirm: ConfirmModal {
+            title: root.admin-confirm-action == 1 ? @tr("Make {} an admin?", root.admin-confirm-member-name) : (root.admin-confirm-action == 2 ? @tr("Remove admin rights from {}?", root.admin-confirm-member-name) : (root.admin-confirm-action == 4 ? @tr("Remove {} from the group?", root.admin-confirm-member-name) : @tr("Step down as admin?")));
+            subtitle: root.admin-confirm-action == 1 ? @tr("{} will be able to add members, change group settings, and manage other admins.", root.admin-confirm-member-name) : (root.admin-confirm-action == 2 ? @tr("{} will stay in the group, but won't be able to manage members or group settings.", root.admin-confirm-member-name) : (root.admin-confirm-action == 4 ? @tr("{} will lose access to this group and stop receiving its messages. You'll need to invite them again to bring them back.", root.admin-confirm-member-name) : @tr("This removes your admin rights. You can't restore them yourself unless another admin promotes you again.")));
+            confirm-label: root.admin-confirm-action == 1 ? @tr("Make admin") : (root.admin-confirm-action == 2 ? @tr("Remove admin") : (root.admin-confirm-action == 4 ? @tr("Remove") : @tr("Step down")));
+            confirm => {
+                root.show-admin-confirm = false;
+                if (root.admin-confirm-action == 1) {
+                    root.promote-admin(root.admin-confirm-member-id);
+                } else if (root.admin-confirm-action == 2) {
+                    root.demote-admin(root.admin-confirm-member-id);
+                } else if (root.admin-confirm-action == 3) {
+                    root.self-demote-admin();
+                } else if (root.admin-confirm-action == 4) {
+                    root.remove-member(root.admin-confirm-member-id);
+                }
+                root.clear-admin-confirm();
+            }
+            dismissed => {
+                root.clear-admin-confirm();
+            }
+        }
+
+        if root.show-palette: CommandPalette {
+            actions: root.palette-actions;
+            query <=> root.palette-query;
+            dismissed => {
+                root.palette-dismissed();
+            }
+            execute(id) => {
+                root.palette-execute(id);
+            }
+            query-changed(q) => {
+                root.palette-query-changed(q);
+            }
+        }
+
+        // Right-click message context menu. Items re-fire the same callbacks the
     // hover toolbar uses, so the Rust side is untouched.
     if root.member-menu-open: GroupMemberMenu {
-        anchor-x: root.member-menu-x;
-        anchor-y: root.member-menu-y;
-        member-name: root.member-menu-name;
-        can-promote: root.member-menu-can-promote;
-        can-demote: root.member-menu-can-demote;
-        can-self-demote: root.member-menu-can-self-demote;
-        can-remove: root.member-menu-can-remove;
-        promote => {
-            root.member-menu-open = false;
-            root.request-promote-admin(root.member-menu-id, root.member-menu-name);
+            anchor-x: root.member-menu-x;
+            anchor-y: root.member-menu-y;
+            member-name: root.member-menu-name;
+            can-promote: root.member-menu-can-promote;
+            can-demote: root.member-menu-can-demote;
+            can-self-demote: root.member-menu-can-self-demote;
+            can-remove: root.member-menu-can-remove;
+            promote => {
+                root.member-menu-open = false;
+                root.request-promote-admin(root.member-menu-id, root.member-menu-name);
+            }
+            demote => {
+                root.member-menu-open = false;
+                root.request-demote-admin(root.member-menu-id, root.member-menu-name);
+            }
+            self-demote => {
+                root.member-menu-open = false;
+                root.request-self-demote-admin(root.member-menu-name);
+            }
+            remove => {
+                root.member-menu-open = false;
+                root.request-remove-member(root.member-menu-id, root.member-menu-name);
+            }
+            dismissed => {
+                root.member-menu-open = false;
+            }
         }
-        demote => {
-            root.member-menu-open = false;
-            root.request-demote-admin(root.member-menu-id, root.member-menu-name);
-        }
-        self-demote => {
-            root.member-menu-open = false;
-            root.request-self-demote-admin(root.member-menu-name);
-        }
-        remove => {
-            root.member-menu-open = false;
-            root.request-remove-member(root.member-menu-id, root.member-menu-name);
-        }
-        dismissed => {
-            root.member-menu-open = false;
-        }
-    }
 
-    if root.ctx-menu-open: MessageContextMenu {
-        anchor-x: root.ctx-menu-x;
-        anchor-y: root.ctx-menu-y;
-        message-id: root.ctx-menu-id;
-        can-edit: root.ctx-menu-can-edit;
-        can-copy: root.ctx-menu-text != "";
-        has-selection: TextSelection.active && TextSelection.owner == root.ctx-menu-id && TextSelection.a-line >= 0 && TextSelection.b-line >= 0;
-        debug-enabled: root.debug-enabled;
-        add-reaction(ax, ay) => {
-            root.ctx-menu-open = false;
-            root.emoji-picker-requested(root.ctx-menu-id, ax, ay);
-        }
-        reply => {
-            root.ctx-menu-open = false;
-            root.request-reply(root.ctx-menu-id, root.ctx-menu-text, root.ctx-menu-author);
-        }
-        copy-text => {
-            root.ctx-menu-open = false;
-            root.copy-to-clipboard(root.ctx-menu-text);
-        }
-        copy-selection => {
-            root.ctx-menu-open = false;
-            root.copy-selection(root.ctx-menu-id,
+        if root.ctx-menu-open: MessageContextMenu {
+            anchor-x: root.ctx-menu-x;
+            anchor-y: root.ctx-menu-y;
+            message-id: root.ctx-menu-id;
+            can-edit: root.ctx-menu-can-edit;
+            can-copy: root.ctx-menu-text != "";
+            has-selection: TextSelection.active && TextSelection.owner == root.ctx-menu-id && TextSelection.a-line >= 0 && TextSelection.b-line >= 0;
+            debug-enabled: root.debug-enabled;
+            add-reaction(ax, ay) => {
+                root.ctx-menu-open = false;
+                root.emoji-picker-requested(root.ctx-menu-id, ax, ay);
+            }
+            reply => {
+                root.ctx-menu-open = false;
+                root.request-reply(root.ctx-menu-id, root.ctx-menu-text, root.ctx-menu-author);
+            }
+            copy-text => {
+                root.ctx-menu-open = false;
+                root.copy-to-clipboard(root.ctx-menu-text);
+            }
+            copy-selection => {
+                root.ctx-menu-open = false;
+                root.copy-selection(root.ctx-menu-id,
                 TextSelection.a-line, TextSelection.a-run, TextSelection.a-frac,
                 TextSelection.b-line, TextSelection.b-run, TextSelection.b-frac);
+            }
+            forward => {
+                root.ctx-menu-open = false;
+                root.forward-src-id = root.ctx-menu-id;
+                root.forward-picker-open = true;
+            }
+            edit => {
+                root.ctx-menu-open = false;
+                root.request-edit(root.ctx-menu-id, root.ctx-menu-text);
+            }
+            delete-for-everyone => {
+                root.ctx-menu-open = false;
+                root.delete-confirm-everyone = true;
+                root.show-delete-confirm = true;
+            }
+            delete-for-me => {
+                root.ctx-menu-open = false;
+                root.delete-confirm-everyone = false;
+                root.show-delete-confirm = true;
+            }
+            view-raw => {
+                root.ctx-menu-open = false;
+                root.view-raw-event(root.ctx-menu-id);
+            }
+            dismissed => {
+                root.ctx-menu-open = false;
+            }
         }
-        forward => {
-            root.ctx-menu-open = false;
-            root.forward-src-id = root.ctx-menu-id;
-            root.forward-picker-open = true;
-        }
-        edit => {
-            root.ctx-menu-open = false;
-            root.request-edit(root.ctx-menu-id, root.ctx-menu-text);
-        }
-        delete-for-everyone => {
-            root.ctx-menu-open = false;
-            root.delete-confirm-everyone = true;
-            root.show-delete-confirm = true;
-        }
-        delete-for-me => {
-            root.ctx-menu-open = false;
-            root.delete-confirm-everyone = false;
-            root.show-delete-confirm = true;
-        }
-        view-raw => {
-            root.ctx-menu-open = false;
-            root.view-raw-event(root.ctx-menu-id);
-        }
-        dismissed => {
-            root.ctx-menu-open = false;
-        }
-    }
 
-    // Developer-mode raw JSON viewer, shared by "View raw event" (message
+        // Developer-mode raw JSON viewer, shared by "View raw event" (message
     // context menu) and "View" key packages (contact detail).
     if root.debug-view-open: DebugJsonModal {
-        title: root.debug-view-title;
-        subtitle: root.debug-view-subtitle;
-        json: root.debug-view-json;
-        busy: root.debug-view-busy;
-        copy-clicked => {
-            root.debug-view-copy();
+            title: root.debug-view-title;
+            subtitle: root.debug-view-subtitle;
+            json: root.debug-view-json;
+            busy: root.debug-view-busy;
+            copy-clicked => {
+                root.debug-view-copy();
+            }
+            dismissed => {
+                root.debug-view-open = false;
+            }
         }
-        dismissed => {
-            root.debug-view-open = false;
-        }
-    }
 
-    // Forward destination picker — lists chats (minus the current one); a pick
+        // Forward destination picker — lists chats (minus the current one); a pick
     // hands the chosen index to Rust, which re-sends `forward-src-id`'s content
     // (text + re-encrypted attachments) into that chat.
     if root.forward-picker-open: ForwardPickerModal {
-        chats: root.chats;
-        active-chat: root.active-chat;
+            chats: root.chats;
+            active-chat: root.active-chat;
         // The picker only opens from the message context menu, so the menu's
         // captured author/text still describe the message being forwarded.
         source-author: root.ctx-menu-author;
-        source-text: root.ctx-menu-text;
-        match-flags: root.forward-match-flags;
-        visible-rows: root.forward-visible-rows;
-        query-changed(q) => {
-            root.forward-filter-changed(q);
-        }
-        select(dest) => {
-            root.forward-picker-open = false;
-            root.request-forward(dest);
-        }
-        dismissed => {
-            root.forward-picker-open = false;
-        }
-    }
-
-    // Right-click rail chat-row context menu — pin/unpin, mute/unmute, and
-    // leaving eligible group rows by captured index, independent of open chat.
-    if root.chat-ctx-open: ChatContextMenu {
-        anchor-x: root.chat-ctx-x;
-        anchor-y: root.chat-ctx-y;
-        pinned: root.chat-ctx-pinned;
-        muted: root.chat-ctx-muted;
-        can-leave: root.chat-ctx-can-leave;
-        toggle-pin => {
-            root.chat-ctx-open = false;
-            root.toggle-pin-chat(root.chat-ctx-idx);
-        }
-        toggle-mute => {
-            root.chat-ctx-open = false;
-            root.toggle-mute-chat-at(root.chat-ctx-idx);
-        }
-        export-chat => {
-            root.chat-ctx-open = false;
-            root.export-chat-at(root.chat-ctx-idx);
-        }
-        leave-group => {
-            root.chat-ctx-open = false;
-            root.leave-confirm-chat-idx = root.chat-ctx-idx;
-            root.show-leave-confirm = true;
-        }
-        dismissed => {
-            root.chat-ctx-open = false;
-        }
-    }
-
-    if root.show-delete-confirm: ConfirmModal {
-        title: root.delete-confirm-everyone ? @tr("Delete for everyone?") : @tr("Delete for me?");
-        subtitle: root.delete-confirm-everyone ? @tr("This removes the message for everyone in the chat. This can't be undone.") : @tr("This hides the message on this device only. Other people will still see it.");
-        confirm-label: @tr("Delete");
-        confirm => {
-            root.show-delete-confirm = false;
-            if (root.delete-confirm-everyone) {
-                root.request-delete-everyone(root.ctx-menu-id);
-            } else {
-                root.request-delete-me(root.ctx-menu-id);
+            source-text: root.ctx-menu-text;
+            match-flags: root.forward-match-flags;
+            visible-rows: root.forward-visible-rows;
+            query-changed(q) => {
+                root.forward-filter-changed(q);
+            }
+            select(dest) => {
+                root.forward-picker-open = false;
+                root.request-forward(dest);
+            }
+            dismissed => {
+                root.forward-picker-open = false;
             }
         }
-        dismissed => {
-            root.show-delete-confirm = false;
-        }
-    }
 
-    // `if`-mounted so the (expensive) emoji grid doesn't paint when closed.
+        // Right-click rail chat-row context menu — pin/unpin, mute/unmute, and
+    // leaving eligible group rows by captured index, independent of open chat.
+    if root.chat-ctx-open: ChatContextMenu {
+            anchor-x: root.chat-ctx-x;
+            anchor-y: root.chat-ctx-y;
+            pinned: root.chat-ctx-pinned;
+            muted: root.chat-ctx-muted;
+            can-leave: root.chat-ctx-can-leave;
+            toggle-pin => {
+                root.chat-ctx-open = false;
+                root.toggle-pin-chat(root.chat-ctx-idx);
+            }
+            toggle-mute => {
+                root.chat-ctx-open = false;
+                root.toggle-mute-chat-at(root.chat-ctx-idx);
+            }
+            export-chat => {
+                root.chat-ctx-open = false;
+                root.export-chat-at(root.chat-ctx-idx);
+            }
+            leave-group => {
+                root.chat-ctx-open = false;
+                root.leave-confirm-chat-idx = root.chat-ctx-idx;
+                root.show-leave-confirm = true;
+            }
+            dismissed => {
+                root.chat-ctx-open = false;
+            }
+        }
+
+        if root.show-delete-confirm: ConfirmModal {
+            title: root.delete-confirm-everyone ? @tr("Delete for everyone?") : @tr("Delete for me?");
+            subtitle: root.delete-confirm-everyone ? @tr("This removes the message for everyone in the chat. This can't be undone.") : @tr("This hides the message on this device only. Other people will still see it.");
+            confirm-label: @tr("Delete");
+            confirm => {
+                root.show-delete-confirm = false;
+                if (root.delete-confirm-everyone) {
+                    root.request-delete-everyone(root.ctx-menu-id);
+                } else {
+                    root.request-delete-me(root.ctx-menu-id);
+                }
+            }
+            dismissed => {
+                root.show-delete-confirm = false;
+            }
+        }
+
+        // `if`-mounted so the (expensive) emoji grid doesn't paint when closed.
     if root.show-emoji-picker: EmojiPicker {
-        anchor-x: root.emoji-anchor-x;
-        anchor-y: root.emoji-anchor-y;
-        emoji-list: root.emoji-list;
-        sprite: root.emoji-sprite;
-        tile: root.emoji-tile;
-        total-shown: root.emoji-shown;
-        query <=> root.emoji-query;
-        query-changed(q) => {
-            root.emoji-query-changed(q);
+            anchor-x: root.emoji-anchor-x;
+            anchor-y: root.emoji-anchor-y;
+            emoji-list: root.emoji-list;
+            sprite: root.emoji-sprite;
+            tile: root.emoji-tile;
+            total-shown: root.emoji-shown;
+            query <=> root.emoji-query;
+            query-changed(q) => {
+                root.emoji-query-changed(q);
+            }
+            picked(emoji) => {
+                root.emoji-picked(root.emoji-target-message-id, emoji);
+            }
+            dismissed => {
+                root.emoji-picker-dismissed();
+            }
         }
-        picked(emoji) => {
-            root.emoji-picked(root.emoji-target-message-id, emoji);
-        }
-        dismissed => {
-            root.emoji-picker-dismissed();
-        }
-    }
 
-    if root.edit-history-open: EditHistoryModal {
-        versions: root.edit-history;
-        dismissed => {
-            root.dismiss-edit-history();
+        if root.edit-history-open: EditHistoryModal {
+            versions: root.edit-history;
+            dismissed => {
+                root.dismiss-edit-history();
+            }
         }
-    }
 
-    if root.image-viewer-open: ImageViewerModal {
-        source: root.image-viewer-image;
-        count: root.image-viewer-count;
-        index: root.image-viewer-index;
-        loading: root.image-viewer-loading;
-        failed: root.image-viewer-failed;
-        actions-ready: root.image-viewer-actions-ready;
-        dismissed => {
-            root.dismiss-image-viewer();
+        if root.image-viewer-open: ImageViewerModal {
+            source: root.image-viewer-image;
+            count: root.image-viewer-count;
+            index: root.image-viewer-index;
+            loading: root.image-viewer-loading;
+            failed: root.image-viewer-failed;
+            actions-ready: root.image-viewer-actions-ready;
+            dismissed => {
+                root.dismiss-image-viewer();
+            }
+            prev => {
+                root.image-viewer-prev();
+            }
+            next => {
+                root.image-viewer-next();
+            }
+            retry => {
+                root.image-viewer-retry();
+            }
+            copy => {
+                root.image-viewer-copy();
+            }
+            save => {
+                root.image-viewer-save();
+            }
         }
-        prev => {
-            root.image-viewer-prev();
-        }
-        next => {
-            root.image-viewer-next();
-        }
-        retry => {
-            root.image-viewer-retry();
-        }
-        copy => {
-            root.image-viewer-copy();
-        }
-        save => {
-            root.image-viewer-save();
-        }
-    }
 
-    if root.video-viewer-open: VideoViewerModal {
-        frame: root.video-viewer-frame;
-        has-frame: root.video-viewer-has-frame;
-        playing: root.video-viewer-playing;
-        loading: root.video-viewer-loading;
-        progress: root.video-viewer-progress;
-        pos-label: root.video-viewer-pos;
-        dur-label: root.video-viewer-dur;
-        dismissed => {
-            root.dismiss-video-viewer();
+        if root.video-viewer-open: VideoViewerModal {
+            frame: root.video-viewer-frame;
+            has-frame: root.video-viewer-has-frame;
+            playing: root.video-viewer-playing;
+            loading: root.video-viewer-loading;
+            progress: root.video-viewer-progress;
+            pos-label: root.video-viewer-pos;
+            dur-label: root.video-viewer-dur;
+            dismissed => {
+                root.dismiss-video-viewer();
+            }
+            toggle-play => {
+                root.video-viewer-toggle-play();
+            }
+            seek(f) => {
+                root.video-viewer-seek(f);
+            }
+            seek-relative(s) => {
+                root.video-viewer-seek-relative(s);
+            }
+            fullscreen => {
+                root.video-viewer-fullscreen();
+            }
         }
-        toggle-play => {
-            root.video-viewer-toggle-play();
-        }
-        seek(f) => {
-            root.video-viewer-seek(f);
-        }
-        seek-relative(s) => {
-            root.video-viewer-seek-relative(s);
-        }
-        fullscreen => {
-            root.video-viewer-fullscreen();
-        }
-    }
 
-    if root.peer-profile-open: ProfileModal {
-        display-name: root.peer-profile-name;
-        npub-short: root.peer-profile-npub-short;
-        nip05: root.peer-profile-nip05;
-        about: root.peer-profile-about;
-        lud16: root.peer-profile-lud16;
-        loading: root.peer-profile-loading;
-        not-found: root.peer-profile-not-found;
-        is-contact: root.peer-profile-is-contact;
-        is-self: root.peer-profile-is-self;
-        adding: root.peer-profile-adding;
-        status: root.peer-profile-status;
-        av-a: root.peer-profile-av-a;
-        av-b: root.peer-profile-av-b;
-        av-initials: root.peer-profile-av-initials;
-        av-picture: root.peer-profile-picture;
-        av-has-picture: root.peer-profile-has-picture;
-        shared-groups: root.peer-profile-shared-groups;
-        copy-npub => {
-            root.copy-to-clipboard(root.peer-profile-npub);
+        if root.peer-profile-open: ProfileModal {
+            display-name: root.peer-profile-name;
+            npub-short: root.peer-profile-npub-short;
+            nip05: root.peer-profile-nip05;
+            about: root.peer-profile-about;
+            lud16: root.peer-profile-lud16;
+            loading: root.peer-profile-loading;
+            not-found: root.peer-profile-not-found;
+            is-contact: root.peer-profile-is-contact;
+            is-self: root.peer-profile-is-self;
+            adding: root.peer-profile-adding;
+            status: root.peer-profile-status;
+            av-a: root.peer-profile-av-a;
+            av-b: root.peer-profile-av-b;
+            av-initials: root.peer-profile-av-initials;
+            av-picture: root.peer-profile-picture;
+            av-has-picture: root.peer-profile-has-picture;
+            shared-groups: root.peer-profile-shared-groups;
+            copy-npub => {
+                root.copy-to-clipboard(root.peer-profile-npub);
+            }
+            add-contact => {
+                root.peer-profile-add-contact();
+            }
+            open-shared-group(id) => {
+                root.open-shared-group(id);
+            }
+            dismissed => {
+                root.peer-profile-dismissed();
+            }
         }
-        add-contact => {
-            root.peer-profile-add-contact();
-        }
-        open-shared-group(id) => {
-            root.open-shared-group(id);
-        }
-        dismissed => {
-            root.peer-profile-dismissed();
-        }
-    }
 
-    if root.encryption-info-open: EncryptionInfoModal {
-        group-id: root.chats[root.active-chat].npub;
-        copy-group-id => {
-            root.copy-to-clipboard(root.chats[root.active-chat].npub);
+        if root.encryption-info-open: EncryptionInfoModal {
+            group-id: root.chats[root.active-chat].npub;
+            copy-group-id => {
+                root.copy-to-clipboard(root.chats[root.active-chat].npub);
+            }
+            dismissed => {
+                root.encryption-info-open = false;
+            }
         }
-        dismissed => {
-            root.encryption-info-open = false;
-        }
-    }
 
-    if root.contact-qr-open: QrModal {
-        qr: root.contact-qr;
-        npub-short: root.contact-qr-npub-short;
-        name: root.contact-qr-name;
-        copy-npub => {
-            root.copy-to-clipboard(root.contact-qr-npub);
+        if root.contact-qr-open: QrModal {
+            qr: root.contact-qr;
+            npub-short: root.contact-qr-npub-short;
+            name: root.contact-qr-name;
+            copy-npub => {
+                root.copy-to-clipboard(root.contact-qr-npub);
+            }
+            dismissed => {
+                root.contact-qr-dismissed();
+            }
         }
-        dismissed => {
-            root.contact-qr-dismissed();
+
+        if root.logged-in && root.booting: SplashScreen {
+            status: root.booting-status;
+            phase: root.booting-phase;
+            phase-count: root.booting-phase-count;
         }
-    }
 
-    if root.logged-in && root.booting: SplashScreen {
-        status: root.booting-status;
-        phase: root.booting-phase;
-        phase-count: root.booting-phase-count;
-    }
-
-    // Drives the chat-list "SYNCED Ns AGO" footer and keeps relay health live.
+        // Drives the chat-list "SYNCED Ns AGO" footer and keeps relay health live.
     // Ticks once per second while signed in; counts up `sync-secs` and, every
     // ~15s, re-polls relay health (the Rust handler resets sync-secs to 0 on a
     // successful poll). Non-visual — does not affect layout.
     sync-timer := Timer {
-        interval: 1s;
-        running: root.logged-in && !root.booting;
-        triggered => {
-            if (root.sync-secs >= 0) {
-                root.sync-secs += 1;
+            interval: 1s;
+            running: root.logged-in && !root.booting;
+            triggered => {
+                if (root.sync-secs >= 0) {
+                    root.sync-secs += 1;
+                }
+                root.sync-refresh-countdown -= 1;
+                if (root.sync-refresh-countdown <= 0) {
+                    root.sync-refresh-countdown = 15;
+                    root.network-refresh-health();
+                }
             }
-            root.sync-refresh-countdown -= 1;
-            if (root.sync-refresh-countdown <= 0) {
-                root.sync-refresh-countdown = 15;
-                root.network-refresh-health();
+        }
+
+        clipboard-status-reset := Timer {
+            interval: 3s;
+            running: root.clipboard-status != "";
+            triggered => {
+                root.clipboard-status = "";
+                root.clipboard-status-error = false;
             }
         }
-    }
 
-    clipboard-status-reset := Timer {
-        interval: 3s;
-        running: root.clipboard-status != "";
-        triggered => {
-            root.clipboard-status = "";
-            root.clipboard-status-error = false;
-        }
-    }
-
-    changed clipboard-status => {
-        if (root.clipboard-status != "") {
-            clipboard-status-reset.restart();
-        }
-    }
-
-    if !root.logged-in: LoginScreen {
-        mode <=> root.login-mode;
-        nsec-input <=> root.login-nsec-input;
-        password-input <=> root.password-input;
-        password-confirm <=> root.password-confirm;
-        generated-nsec: root.generated-nsec;
-        generated-npub: root.generated-npub;
-        generated-display-name: root.generated-display-name;
-        generated-avatar: root.generated-avatar;
-        generated-has-avatar: root.generated-has-avatar;
-        error: root.login-error;
-        status: root.login-status;
-        busy: root.login-busy;
-        login-with-nsec(n, p, c) => {
-            root.login-with-nsec(n, p, c);
-        }
-        generate-requested => {
-            root.generate-key-requested();
-        }
-        confirm-saved(p, c) => {
-            root.confirm-saved-key(p, c);
-        }
-        unlock(p) => {
-            root.unlock(p);
-        }
-        reset-vault => {
-            root.reset-vault();
-        }
-        copy-nsec(s) => {
-            root.copy-nsec(s);
-        }
-        import-backup => {
-            root.storage-import-backup();
+        if !root.logged-in: LoginScreen {
+            mode <=> root.login-mode;
+            nsec-input <=> root.login-nsec-input;
+            password-input <=> root.password-input;
+            password-confirm <=> root.password-confirm;
+            generated-nsec: root.generated-nsec;
+            generated-npub: root.generated-npub;
+            generated-display-name: root.generated-display-name;
+            generated-avatar: root.generated-avatar;
+            generated-has-avatar: root.generated-has-avatar;
+            error: root.login-error;
+            status: root.login-status;
+            busy: root.login-busy;
+            login-with-nsec(n, p, c) => {
+                root.login-with-nsec(n, p, c);
+            }
+            generate-requested => {
+                root.generate-key-requested();
+            }
+            confirm-saved(p, c) => {
+                root.confirm-saved-key(p, c);
+            }
+            unlock(p) => {
+                root.unlock(p);
+            }
+            reset-vault => {
+                root.reset-vault();
+            }
+            copy-nsec(s) => {
+                root.copy-nsec(s);
+            }
+            import-backup => {
+                root.storage-import-backup();
+            }
         }
     }
 }
