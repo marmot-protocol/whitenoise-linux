@@ -78,6 +78,9 @@ export struct ThemeColors {
     card-well: color,
     // Modal backdrop wash behind the card.
     overlay: color,
+    // Stronger full-screen scrim for media lightboxes (image/video viewer).
+    // Darker than `overlay` so the media is the only bright thing on screen.
+    overlay-strong: color,
     // Soft (blurred) drop-shadow tints; hard-shadow themes use Palette.shadow
     // instead. `shadow-soft` is the in-canvas lift (jump pill), `shadow-card`
     // the strongest modal/login card shadow, `shadow-popover` menu/dropdown
@@ -294,6 +297,7 @@ export global Palette {
     out property <color> status-bar: Theme.c.status-bar;
     out property <color> card-well: Theme.c.card-well;
     out property <color> overlay: Theme.c.overlay;
+    out property <color> overlay-strong: Theme.c.overlay-strong;
     out property <color> shadow-soft: Theme.c.shadow-soft;
     out property <color> shadow-card: Theme.c.shadow-card;
     out property <color> shadow-popover: Theme.c.shadow-popover;

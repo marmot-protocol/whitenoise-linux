@@ -8,109 +8,21 @@
 // Rust owns validation, generation, encryption, and persistence. This is dumb.
 
 import { Palette, Theme } from "../tokens.slint";
-import { LineInput } from "../primitives/line-input.slint";
 import { Button } from "../primitives/button.slint";
+import { SectionLabel } from "../primitives/section-label.slint";
+import { Avatar } from "../primitives/avatar.slint";
+import { CypherScroll } from "../primitives/cypher-scroll.slint";
+import { VaultField } from "vault-field.slint";
+import { PasswordField } from "password-field.slint";
+import { ReadoutBox } from "readout-box.slint";
+import { FormMessages } from "form-messages.slint";
 import { LogoMark } from "../icons/logo-mark.slint";
 import { KeyIcon } from "../icons/key-icon.slint";
 import { LockIcon } from "../icons/lock-icon.slint";
 import { CopyIcon } from "../icons/copy-icon.slint";
 import { PlusIcon } from "../icons/plus-icon.slint";
 import { RefreshIcon } from "../icons/refresh-icon.slint";
-import { EyeIcon } from "../icons/eye-icon.slint";
-import { Avatar } from "../primitives/avatar.slint";
-import { CypherScroll } from "../primitives/cypher-scroll.slint";
 import { ConfirmModal } from "../modals/confirm-modal.slint";
-
-// A labeled field box matching the login card style. Used directly for the
-// nsec input; PasswordField below layers the masked mode + reveal toggle on
-// top for the password / confirm-password fields.
-component VaultField inherits VerticalLayout {
-    in property <string> label;
-    in property <string> placeholder;
-    in-out property <string> text;
-    in property <bool> password: false;
-    in property <bool> error: false;
-    callback submit;
-    spacing: 6px;
-
-    // Focus the inner input — lets the login screen autofocus the first
-    // useful field of each mode so typing works without a mouse click.
-    public function take-focus() {
-        vf-input.take-focus();
-    }
-
-    Text {
-        text: root.label;
-        color: Palette.text-mid;
-        font-size: Theme.fs(9px, 12px);
-        font-weight: 700;
-        letter-spacing: 1.6px;
-    }
-
-    Rectangle {
-        height: 44px;
-        border-radius: (7px) * Theme.r-scale;
-        background: root.error ? Palette.danger-soft : Palette.field;
-        border-width: 1px;
-        border-color: root.error ? Palette.danger-border : (vf-input.has-focus ? Palette.mint-dim : Palette.field-border);
-        drop-shadow-blur: vf-input.has-focus && !root.error && Theme.focus-glow ? 10px : 0px;
-        drop-shadow-color: Palette.mint-glow;
-        animate border-color {
-            duration: 140ms;
-            easing: ease-out;
-        }
-        HorizontalLayout {
-            padding-left: 14px;
-            padding-right: 14px;
-            spacing: 8px;
-            vf-input := LineInput {
-                placeholder: root.placeholder;
-                text <=> root.text;
-                password: root.password;
-                font-size: Theme.fsr(13px, 14px);
-                fg: Palette.text-hi;
-                placeholder-color: Palette.text-vlo;
-                submit => {
-                    root.submit();
-                }
-            }
-
-            // PasswordField drops its eye button in here.
-            @children
-        }
-    }
-}
-
-// A VaultField that is always a password entry: masked by default, with an
-// eye button inside the box that reveals the typed characters. Reveal state
-// is per instance, so leaving a login mode resets every field to masked.
-component PasswordField inherits VaultField {
-    property <bool> revealed: false;
-    password: !root.revealed;
-    function toggle-reveal() {
-        root.revealed = !root.revealed;
-    }
-
-    Rectangle {
-        width: 22px;
-        reveal-touch := TouchArea {
-            mouse-cursor: pointer;
-            accessible-role: button;
-            accessible-label: root.revealed ? @tr("Hide password") : @tr("Show password");
-            accessible-action-default => {
-                root.toggle-reveal();
-            }
-            clicked => {
-                root.toggle-reveal();
-            }
-        }
-
-        EyeIcon {
-            stroke: reveal-touch.has-hover ? Palette.text-hi : Palette.text-mid;
-            crossed: root.revealed;
-        }
-    }
-}
 
 export component LoginScreen inherits Rectangle {
     // 0 = choose, 1 = enter nsec, 2 = show generated, 3 = unlock existing vault.
@@ -388,18 +300,9 @@ export component LoginScreen inherits Rectangle {
                         }
                     }
 
-                    if root.password-mismatch(): Text {
-                        text: @tr("Passwords don't match.");
-                        color: Palette.danger;
-                        font-size: Theme.fs(11px, 14px);
-                        wrap: word-wrap;
-                    }
-
-                    if root.error != "": Text {
-                        text: root.error;
-                        color: Palette.danger;
-                        font-size: Theme.fs(11px, 14px);
-                        wrap: word-wrap;
+                    FormMessages {
+                        show-mismatch: root.password-mismatch();
+                        error: root.error;
                     }
 
                     Rectangle {
@@ -472,12 +375,8 @@ export component LoginScreen inherits Rectangle {
                                 spacing: 4px;
                                 alignment: center;
                                 horizontal-stretch: 1;
-                                Text {
+                                SectionLabel {
                                     text: @tr("YOUR DISPLAY NAME");
-                                    color: Palette.text-mid;
-                                    font-size: Theme.fs(9px, 12px);
-                                    font-weight: 700;
-                                    letter-spacing: 1.6px;
                                 }
 
                                 Text {
@@ -535,31 +434,9 @@ export component LoginScreen inherits Rectangle {
                     // npub readout.
                 VerticalLayout {
                         spacing: 6px;
-                        Text {
-                            text: @tr("PUBLIC KEY (NPUB)");
-                            color: Palette.text-mid;
-                            font-size: Theme.fs(9px, 12px);
-                            font-weight: 700;
-                            letter-spacing: 1.6px;
-                        }
-
-                        Rectangle {
-                            height: 38px;
-                            border-radius: (7px) * Theme.r-scale;
-                            background: Palette.field;
-                            border-width: 1px;
-                            border-color: Palette.field-border;
-                            HorizontalLayout {
-                                padding-left: 14px;
-                                padding-right: 14px;
-                                Text {
-                                    text: root.generated-npub;
-                                    color: Palette.text-hi;
-                                    font-size: Theme.fs(12px, 12px);
-                                    vertical-alignment: center;
-                                    overflow: elide;
-                                }
-                            }
+                        ReadoutBox {
+                            label: @tr("PUBLIC KEY (NPUB)");
+                            value: root.generated-npub;
                         }
                     }
 
@@ -567,31 +444,9 @@ export component LoginScreen inherits Rectangle {
                 // from overlapping the buttons when the row gets tight).
                 VerticalLayout {
                         spacing: 6px;
-                        Text {
-                            text: @tr("SECRET KEY (NSEC)");
-                            color: Palette.text-mid;
-                            font-size: Theme.fs(9px, 12px);
-                            font-weight: 700;
-                            letter-spacing: 1.6px;
-                        }
-
-                        Rectangle {
-                            height: 38px;
-                            border-radius: (7px) * Theme.r-scale;
-                            background: Palette.field;
-                            border-width: 1px;
-                            border-color: Palette.field-border;
-                            HorizontalLayout {
-                                padding-left: 14px;
-                                padding-right: 14px;
-                                Text {
-                                    text: root.generated-nsec;
-                                    color: Palette.text-hi;
-                                    font-size: Theme.fs(12px, 12px);
-                                    vertical-alignment: center;
-                                    overflow: elide;
-                                }
-                            }
+                        ReadoutBox {
+                            label: @tr("SECRET KEY (NSEC)");
+                            value: root.generated-nsec;
                         }
 
                         HorizontalLayout {
@@ -657,25 +512,10 @@ export component LoginScreen inherits Rectangle {
                         }
                     }
 
-                    if root.password-mismatch(): Text {
-                        text: @tr("Passwords don't match.");
-                        color: Palette.danger;
-                        font-size: Theme.fs(11px, 14px);
-                        wrap: word-wrap;
-                    }
-
-                    if root.error != "": Text {
-                        text: root.error;
-                        color: Palette.danger;
-                        font-size: Theme.fs(11px, 14px);
-                        wrap: word-wrap;
-                    }
-
-                    if root.status != "": Text {
-                        text: root.status;
-                        color: Palette.mint;
-                        font-size: Theme.fs(11px, 14px);
-                        wrap: word-wrap;
+                    FormMessages {
+                        show-mismatch: root.password-mismatch();
+                        error: root.error;
+                        status: root.status;
                     }
 
                     Rectangle {
@@ -731,11 +571,8 @@ export component LoginScreen inherits Rectangle {
                         }
                     }
 
-                    if root.error != "": Text {
-                        text: root.error;
-                        color: Palette.danger;
-                        font-size: Theme.fs(11px, 14px);
-                        wrap: word-wrap;
+                    FormMessages {
+                        error: root.error;
                     }
 
                     Rectangle {

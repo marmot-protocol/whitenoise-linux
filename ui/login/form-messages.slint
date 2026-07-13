@@ -1,0 +1,31 @@
+import { Palette, Theme } from "../tokens.slint";
+
+// Form validation/error/status messages shared by login modes 1, 2, and 3.
+// Conditionally renders password-mismatch, error, and status lines.
+export component FormMessages inherits VerticalLayout {
+    in property <bool> show-mismatch;
+    in property <string> error;
+    in property <string> status;
+    spacing: 4px;
+
+    if root.show-mismatch: Text {
+        text: @tr("Passwords don't match.");
+        color: Palette.danger;
+        font-size: Theme.fs(11px, 14px);
+        wrap: word-wrap;
+    }
+
+    if root.error != "": Text {
+        text: root.error;
+        color: Palette.danger;
+        font-size: Theme.fs(11px, 14px);
+        wrap: word-wrap;
+    }
+
+    if root.status != "": Text {
+        text: root.status;
+        color: Palette.mint;
+        font-size: Theme.fs(11px, 14px);
+        wrap: word-wrap;
+    }
+}

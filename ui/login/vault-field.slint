@@ -1,0 +1,59 @@
+import { Palette, Theme } from "../tokens.slint";
+import { LineInput } from "../primitives/line-input.slint";
+import { SectionLabel } from "../primitives/section-label.slint";
+
+// A labeled field box matching the login card style. Used directly for the
+// nsec input; PasswordField below layers the masked mode + reveal toggle on
+// top for the password / confirm-password fields.
+export component VaultField inherits VerticalLayout {
+    in property <string> label;
+    in property <string> placeholder;
+    in-out property <string> text;
+    in property <bool> password: false;
+    in property <bool> error: false;
+    callback submit;
+    spacing: 6px;
+
+    // Focus the inner input — lets the login screen autofocus the first
+    // useful field of each mode so typing works without a mouse click.
+    public function take-focus() {
+        vf-input.take-focus();
+    }
+
+    SectionLabel {
+        text: root.label;
+    }
+
+    Rectangle {
+        height: 44px;
+        border-radius: (7px) * Theme.r-scale;
+        background: root.error ? Palette.danger-soft : Palette.field;
+        border-width: 1px;
+        border-color: root.error ? Palette.danger-border : (vf-input.has-focus ? Palette.mint-dim : Palette.field-border);
+        drop-shadow-blur: vf-input.has-focus && !root.error && Theme.focus-glow ? 10px : 0px;
+        drop-shadow-color: Palette.mint-glow;
+        animate border-color {
+            duration: 140ms;
+            easing: ease-out;
+        }
+        HorizontalLayout {
+            padding-left: 14px;
+            padding-right: 14px;
+            spacing: 8px;
+            vf-input := LineInput {
+                placeholder: root.placeholder;
+                text <=> root.text;
+                password: root.password;
+                font-size: Theme.fsr(13px, 14px);
+                fg: Palette.text-hi;
+                placeholder-color: Palette.text-vlo;
+                submit => {
+                    root.submit();
+                }
+            }
+
+            // PasswordField drops its eye button in here.
+            @children
+        }
+    }
+}

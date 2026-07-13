@@ -160,7 +160,7 @@ export component ImageViewerModal inherits Modal {
 
     bare: true;
     // Lightboxes want a real darken, unlike the subtle scrim card modals use.
-    background: #000000E6;
+    background: Palette.overlay-strong;
     // Own the keyboard via the nested FocusScope below (←/→ navigation); the
     // base Modal otherwise grabs focus for Esc. Esc still works: keys this
     // scope rejects bubble up to the base esc-scope.

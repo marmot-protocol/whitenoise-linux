@@ -1,6 +1,7 @@
 import { Palette, Theme } from "../tokens.slint";
 import { Modal, ModalField } from "modal.slint";
 import { Button } from "../primitives/button.slint";
+import { SectionLabel } from "../primitives/section-label.slint";
 import { CopyIcon } from "../icons/copy-icon.slint";
 
 // Danger-zone affordance: reveal the *active* account's private key (nsec),
@@ -52,13 +53,8 @@ export component RevealNsecModal inherits Modal {
 
     if root.revealed: VerticalLayout {
         spacing: 6px;
-        Text {
+        SectionLabel {
             text: @tr("SECRET KEY (NSEC)");
-            color: Palette.text-mid;
-            font-size: Theme.fs(9px, 12px);
-            font-weight: 700;
-            letter-spacing: 1.6px;
-            font-family: Theme.font;
         }
 
         Rectangle {

@@ -1,0 +1,33 @@
+import { Palette, Theme } from "../tokens.slint";
+import { SectionLabel } from "../primitives/section-label.slint";
+
+// Read-only elided value box (npub/nsec readouts in mode 2). A SectionLabel
+// above a 38px field-styled rectangle with centered elided text.
+export component ReadoutBox inherits VerticalLayout {
+    in property <string> label;
+    in property <string> value;
+    spacing: 6px;
+
+    SectionLabel {
+        text: root.label;
+    }
+
+    Rectangle {
+        height: 38px;
+        border-radius: (7px) * Theme.r-scale;
+        background: Palette.field;
+        border-width: 1px;
+        border-color: Palette.field-border;
+        HorizontalLayout {
+            padding-left: 14px;
+            padding-right: 14px;
+            Text {
+                text: root.value;
+                color: Palette.text-hi;
+                font-size: Theme.fs(12px, 12px);
+                vertical-alignment: center;
+                overflow: elide;
+            }
+        }
+    }
+}

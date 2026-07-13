@@ -1,5 +1,6 @@
 import { Palette, Theme } from "../tokens.slint";
 import { Modal } from "modal.slint";
+import { SectionLabel } from "../primitives/section-label.slint";
 import { LockIcon } from "../icons/lock-icon.slint";
 import { RefreshIcon } from "../icons/refresh-icon.slint";
 import { CopyIcon } from "../icons/copy-icon.slint";
@@ -126,13 +127,8 @@ export component EncryptionInfoModal inherits Modal {
         // Group id — tap to copy, flashes "Copied ✓".
         VerticalLayout {
             spacing: 7px;
-            Text {
+            SectionLabel {
                 text: @tr("GROUP ID");
-                color: Palette.text-mid;
-                font-size: Theme.fs(9px, 12px);
-                font-weight: 700;
-                font-family: Theme.font;
-                letter-spacing: 1.6px;
             }
 
             chip := Rectangle {

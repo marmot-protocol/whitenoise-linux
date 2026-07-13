@@ -1,6 +1,7 @@
 import { Palette, Theme } from "../tokens.slint";
 import { Button } from "../primitives/button.slint";
 import { LineInput } from "../primitives/line-input.slint";
+import { SectionLabel } from "../primitives/section-label.slint";
 
 // The one modal. Every dialog in the app inherits this — it owns the backdrop,
 // entrance animation, Esc/click-outside dismissal, header (title/subtitle/✕),
@@ -338,13 +339,8 @@ export component ModalField inherits VerticalLayout {
         }
     }
 
-    if root.label != "": Text {
+    if root.label != "": SectionLabel {
         text: root.label;
-        color: Palette.text-mid;
-        font-size: Theme.fs(9px, 12px);
-        font-weight: 700;
-        font-family: Theme.font;
-        letter-spacing: 1.6px;
     }
 
     frame := Rectangle {
