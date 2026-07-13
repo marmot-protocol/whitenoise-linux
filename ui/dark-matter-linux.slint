@@ -905,6 +905,14 @@ export component DarkMatterLinux inherits Window {
             TitleBar {
                 breadcrumb: root.breadcrumb;
                 rail-width: rail.collapsed-width;
+                mention-items: root.mention-inbox-items;
+                mentions-loading: root.mention-inbox-loading;
+                mentions-inbox-opened => {
+                    root.mention-inbox-opened();
+                }
+                mention-inbox-item-selected(group-id, message-id) => {
+                    root.mention-inbox-selected(group-id, message-id);
+                }
             }
 
             // Middle area is a Rectangle (absolute children) instead of a HorizontalLayout
@@ -1093,16 +1101,8 @@ export component DarkMatterLinux inherits Window {
                                 is-group: root.chat-is-group;
                                 can-show-members: root.chat-can-show-members;
                                 chat-muted: root.active-chat-muted;
-                                mention-items: root.mention-inbox-items;
-                                mentions-loading: root.mention-inbox-loading;
                                 mute-toggle-clicked => {
                                     root.toggle-mute-chat();
-                                }
-                                mentions-inbox-opened => {
-                                    root.mention-inbox-opened();
-                                }
-                                mention-inbox-item-selected(group-id, message-id) => {
-                                    root.mention-inbox-selected(group-id, message-id);
                                 }
                                 badge-clicked => {
                                     root.encryption-info-open = true;
@@ -1171,7 +1171,6 @@ export component DarkMatterLinux inherits Window {
                                     root.archive-chat();
                                 }
                             }
-
 
                             chat-list := ChatListPanel {
                                 x: 0;

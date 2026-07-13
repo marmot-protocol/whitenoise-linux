@@ -2,7 +2,6 @@ import {
     Palette,
     ChatMeta,
     ChatMessage,
-    MentionInboxItem,
     GroupMember,
     StagedAttachment,
 } from "../tokens.slint";
@@ -20,11 +19,7 @@ export component MainPane inherits Rectangle {
     in property <bool> is-group: false;
     in property <bool> can-show-members: false;
     in property <bool> chat-muted: false;
-    in property <[MentionInboxItem]> mention-items;
-    in property <bool> mentions-loading: false;
     callback mute-toggle-clicked();
-    callback mentions-inbox-opened();
-    callback mention-inbox-item-selected(string, string);
     in property <int> member-count: 0;
     in property <string> group-description;
     in property <[GroupMember]> members;
@@ -140,8 +135,6 @@ export component MainPane inherits Rectangle {
                 group-description: root.group-description;
                 members-open: root.show-members;
                 muted: root.chat-muted;
-                mention-items: root.mention-items;
-                mentions-loading: root.mentions-loading;
                 accept-clicked => {
                     root.accept-clicked();
                 }
@@ -156,12 +149,6 @@ export component MainPane inherits Rectangle {
                 }
                 mute-toggle-clicked => {
                     root.mute-toggle-clicked();
-                }
-                mentions-inbox-opened => {
-                    root.mentions-inbox-opened();
-                }
-                mention-inbox-item-selected(group-id, message-id) => {
-                    root.mention-inbox-item-selected(group-id, message-id);
                 }
                 badge-clicked => {
                     root.badge-clicked();

@@ -2,7 +2,7 @@ import { Palette, Theme, MentionInboxItem } from "../tokens.slint";
 import { Avatar } from "../primitives/avatar.slint";
 import { CypherScroll } from "../primitives/cypher-scroll.slint";
 
-// Discord-style global mentions inbox. The trigger lives in ChatHeader; this
+// Discord-style global mentions inbox. The trigger lives in TitleBar; this
 // zero-size component owns an anchored PopupWindow and reports the chosen chat
 // + message back to Rust for navigation.
 export component MentionsInbox inherits Rectangle {
