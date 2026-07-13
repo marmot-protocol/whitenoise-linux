@@ -1,6 +1,6 @@
 // title bar — DARKMATTER mark, breadcrumb, and global actions.
 import { MentionInboxItem, Palette, Theme } from "tokens.slint";
-import { MentionsInbox } from "main-pane/mentions-inbox.slint";
+import { MentionsIcon } from "title-bar/mentions-icon.slint";
 
 export component TitleBar inherits Rectangle {
     in property <string> breadcrumb;
@@ -10,17 +10,8 @@ export component TitleBar inherits Rectangle {
     callback mentions-inbox-opened();
     callback mention-inbox-item-selected(string, string);
 
-    height: 40px;
-    background: Palette.bg;
+    height: 30px;
 
-    Rectangle {
-        y: parent.height - 1px;
-        width: parent.width;
-        height: 1px;
-        background: Palette.border-2;
-    }
-
-    // Faint mint wash under the brand mark.
     if Theme.soft-decor: Rectangle {
         x: root.rail-width + 8px;
         width: 140px;
@@ -30,19 +21,20 @@ export component TitleBar inherits Rectangle {
     }
 
     HorizontalLayout {
-        spacing: 0;
-        alignment: center;
+        spacing: 0px;
+        padding-left: 8px;
+        padding-right: 8px;
 
-        // empty column — width matches the LeftRail so the content
-        // below the title bar starts in the same horizontal slot.
         Rectangle {
-            width: root.rail-width + 8px;
+            horizontal-stretch: 1;
+            background: transparent;
         }
 
         HorizontalLayout {
             horizontal-stretch: 1;
-            spacing: 0;
-            alignment: start;
+            spacing: 14px;
+            alignment: center;
+
             Text {
                 text: "DARKMATTER";
                 color: Palette.text-hi;
@@ -53,18 +45,10 @@ export component TitleBar inherits Rectangle {
             }
 
             Rectangle {
-                width: 20px;
-            }
-
-            Rectangle {
                 width: 1px;
                 height: 14px;
                 y: (parent.height - 14px) / 2;
                 background: Palette.border;
-            }
-
-            Rectangle {
-                width: 14px;
             }
 
             Text {
@@ -78,47 +62,20 @@ export component TitleBar inherits Rectangle {
             }
         }
 
-        // Global inbox belongs in the app chrome, not in the active chat.
-        // Keep it as the far-right title-bar action, matching Discord's inbox.
         Rectangle {
-            width: 32px;
-            height: 32px;
-            y: (parent.height - self.height) / 2;
-            background: mention-inbox-touch.has-hover ? Palette.hover : transparent;
-            border-radius: (6px) * Theme.r-scale;
-            animate background { duration: 100ms; }
-
-            mention-inbox-touch := TouchArea {
-                mouse-cursor: pointer;
-                clicked => {
-                    root.mentions-inbox-opened();
-                    mention-inbox.open();
-                }
-
-                Text {
-                    text: "@";
-                    color: mention-inbox-touch.has-hover ? Palette.mint : Palette.text-mid;
-                    font-family: Theme.font;
-                    font-size: Theme.fs(12px, 17px);
-                    font-weight: 800;
-                    x: (parent.width - self.width) / 2;
-                    y: (parent.height - self.height) / 2;
-                }
-            }
-
-            mention-inbox := MentionsInbox {
-                x: parent.width;
-                y: 0px;
-                items: root.mention-items;
-                loading: root.mentions-loading;
-                selected(group-id, message-id) => {
-                    root.mention-inbox-item-selected(group-id, message-id);
-                }
-            }
+            horizontal-stretch: 1;
+            background: transparent;
         }
 
-        Rectangle {
-            width: 8px;
+        MentionsIcon {
+            mention-items: root.mention-items;
+            mentions-loading: root.mentions-loading;
+            mentions-inbox-opened => {
+                root.mentions-inbox-opened()
+            }
+            mention-inbox-item-selected(group-id, message-id) => {
+                root.mention-inbox-item-selected(group-id, message-id)
+            }
         }
     }
 }
