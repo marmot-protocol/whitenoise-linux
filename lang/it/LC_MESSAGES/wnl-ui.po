@@ -1617,6 +1617,10 @@ msgctxt "ImportBackupModal"
 msgid "Password the backup was sealed with"
 msgstr "Password con cui è stato sigillato il backup"
 
+msgctxt "LoginScreen"
+msgid "Passwords don't match."
+msgstr ""
+
 #, fuzzy
 msgctxt "AddAccountModal"
 msgid "Paste another secret key, or generate a fresh one. It's encrypted with your password and stays signed in alongside your other accounts."
