@@ -74,7 +74,7 @@ them back into an id are gone.
 
 - Add a new property/callback that only it consumes (→ contract change instead).
 - Reach into `MarmotApp`/`Backend` or assume anything about data production.
-- Branch on theme *identity* (`Theme.retro`, `theme-id == 3`) for styling. Style comes
+- Branch on theme *identity* (`theme-id == 3`, `Theme.id == N`) for styling. Style comes
   from `Tokens.*`; structure comes from being *selected* as the active skin. (A skin
   body is chosen by the dispatch slot — it never asks "am I the active theme?".)
 

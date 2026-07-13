@@ -148,6 +148,9 @@ struct StyleOverlay {
     paper_doodles: Option<bool>,
     sketch_bubbles: Option<bool>,
     synth_grid: Option<bool>,
+    font: Option<String>,
+    r_scale: Option<f32>,
+    border_w: Option<f32>,
 }
 
 /// Parse `#rgb`, `#rrggbb`, or `#rrggbbaa` into a Slint color. Returns None on
@@ -300,7 +303,13 @@ fn apply_style(base: &mut ThemeStyle, ov: &StyleOverlay) {
         paper_doodles,
         sketch_bubbles,
         synth_grid,
+        r_scale,
+        border_w,
     );
+    // String → SharedString needs an explicit conversion.
+    if let Some(ref s) = ov.font {
+        base.font = s.clone().into();
+    }
 }
 
 /// Build a theme's packs by cloning its `base` (an already-loaded theme, or an

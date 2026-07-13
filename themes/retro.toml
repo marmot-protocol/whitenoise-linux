@@ -115,3 +115,7 @@ bracket-labels = false
 paper-doodles = false
 sketch-bubbles = false
 synth-grid = false
+
+font = "Zpix"
+r-scale = 0.0
+border-w = 2.0

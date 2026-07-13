@@ -115,3 +115,7 @@ bracket-labels = false
 paper-doodles = true
 sketch-bubbles = true
 synth-grid = false
+
+font = "JetBrains Mono"
+r-scale = 1.0
+border-w = 1.0

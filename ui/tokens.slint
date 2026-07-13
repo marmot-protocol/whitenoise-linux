@@ -108,8 +108,9 @@ export struct ThemeColors {
 
 // Structural / non-color personality of a theme (Layer 0, the part that lets a
 // theme change *how* things are drawn, not just their color). Components read
-// these capability flags instead of branching on theme identity (`Theme.retro`),
-// so a new theme opts into bevels / hard shadows / pixel icons purely as data.
+// these capability flags and structural metrics instead of branching on theme
+// identity, so a new theme opts into bevels / hard shadows / pixel icons /
+// its own font and border widths purely as data.
 export struct ThemeStyle {
     hard-shadow: bool,           // hard pixel drop-shadow vs soft blur
     focus-glow: bool,            // accent glow ring on focused inputs
@@ -140,6 +141,10 @@ export struct ThemeStyle {
     sketch-bubbles: bool,        // soft ink-outlined, flat-filled bubbles with a speech tail
     // ── Synthwave capability ─────────────────────────────────────────────────
     synth-grid: bool,            // neon perspective grid + sunset glow on the chat canvas
+    // ── Structural metrics (theme-file-driven, not identity-branched) ────────
+    font: string,                // font family name (e.g. "JetBrains Mono", "Zpix")
+    r-scale: float,              // multiplier applied to every border-radius (0 = pixel-sharp)
+    border-w: length,            // base border width (chunkier in pixel themes)
 }
 
 export global Theme {
@@ -159,19 +164,13 @@ export global Theme {
     in property <[string]> user-theme-names: [];
     in property <[string]> user-theme-modes: [];
 
-    // Back-compat identity flags, derived from id. Components still branching on
-    // these (structural retro-isms) read them until Phase B2/B3 tokenizes those.
-    out property <bool> retro: root.id == 2;
-    out property <bool> light: root.id == 1;
-
-    // Retro uses Zpix — a 12px-grid bitmap pixel font with full CJK coverage;
-    // the `pixel-metrics` flag (set only by retro) drives the `Theme.fs()`
-    // size picks below so body text lands on readable sizes for it.
-    out property <string> font: root.retro ? "Zpix" : "JetBrains Mono";
-    // multiplier applied to every border-radius — 0 in retro for pixel-sharp corners.
-    out property <float> r-scale: root.retro ? 0.0 : 1.0;
-    // base border width — chunky 2px outlines in retro.
-    out property <length> border-w: root.retro ? 2px : 1px;
+    // Font family, border-radius scale, and base border width — all driven by
+    // the active theme's `ThemeStyle` pack, so each `.toml` owns them. No
+    // identity branching; a theme that wants chunky borders or a different
+    // font family just sets the values in its `[style]` section.
+    out property <string> font: root.s.font;
+    out property <float> r-scale: root.s.r-scale;
+    out property <length> border-w: root.s.border-w;
 
     // The theme registry, index = Theme.id. Rust fills this at startup from the
     // embedded built-in theme files and any user themes (src/themes.rs), in id
@@ -194,7 +193,7 @@ export global Theme {
     out property <ThemeStyle> s: root.style-at(root.id);
 
     // Flat capability flags — what components actually read. Never branch on
-    // `Theme.retro`/`Theme.light` for styling; branch on these.
+    // theme identity (`Theme.id == N`) for styling; branch on these.
     out property <bool> hard-shadow:           root.s.hard-shadow;
     out property <bool> focus-glow:            root.s.focus-glow;
     out property <bool> char-wrap:             root.s.char-wrap;

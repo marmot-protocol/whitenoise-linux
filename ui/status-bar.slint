@@ -5,21 +5,21 @@ export component StatusBar inherits Rectangle {
     height: Theme.pixel-metrics ? 36px : 30px;
     background: Palette.status-bar;
 
-    in property <int> relaysConnected;
-    in property <int> relaysTotal;
+    in property <int> relays-connected;
+    in property <int> relays-total;
     // Seconds since the last successful relay-health/sync poll. -1 means the
     // boot/post-connect sync has not completed yet, so keep showing SYNCING.
-    in property <int> syncSecs: -1;
+    in property <int> sync-secs: -1;
     in property <string> message;
-    in property <bool> messageIsError: false;
+    in property <bool> message-is-error: false;
 
-    property <bool> hasRelays: root.relaysTotal > 0;
-    property <bool> hasConnection: root.relaysConnected > 0;
-    property <bool> isSyncing: root.hasConnection && root.syncSecs < 0;
-    property <string> connectionLabel:
-        !root.hasRelays ? @tr("OFFLINE") : (!root.hasConnection ? @tr("CONNECTING") : @tr("ONLINE"));
-    property <string> syncLabel:
-        !root.hasConnection ? "" : (root.syncSecs < 0 ? @tr("SYNCING…") : @tr("SYNCED") + " " + root.syncSecs + "S " + @tr("AGO"));
+    property <bool> has-relays: root.relays-total > 0;
+    property <bool> has-connection: root.relays-connected > 0;
+    property <bool> is-syncing: root.has-connection && root.sync-secs < 0;
+    property <string> connection-label:
+        !root.has-relays ? @tr("OFFLINE") : (!root.has-connection ? @tr("CONNECTING") : @tr("ONLINE"));
+    property <string> sync-label:
+        !root.has-connection ? "" : (root.sync-secs < 0 ? @tr("SYNCING…") : @tr("SYNCED") + " " + root.sync-secs + "S " + @tr("AGO"));
 
     Rectangle {
         y: 0;
@@ -42,13 +42,13 @@ export component StatusBar inherits Rectangle {
                 height: 8px;
                 y: (parent.height - self.height) / 2;
                 border-radius: (4px) * Theme.r-scale;
-                background: root.isSyncing ? Palette.warning : (root.hasConnection ? Palette.mint-dim : (root.hasRelays ? Palette.warning : Palette.text-vlo));
+                background: root.is-syncing ? Palette.warning : (root.has-connection ? Palette.mint-dim : (root.has-relays ? Palette.warning : Palette.text-vlo));
                 drop-shadow-blur: Theme.hard-shadow ? 0px : 4px;
-                drop-shadow-color: root.hasConnection && !root.isSyncing ? Palette.mint-glow : transparent;
+                drop-shadow-color: root.has-connection && !root.is-syncing ? Palette.mint-glow : transparent;
             }
 
             Text {
-                text: root.connectionLabel;
+                text: root.connection-label;
                 color: Palette.text-hi;
                 font-size: Theme.fs(10px, 14px);
                 font-weight: 700;
@@ -58,7 +58,7 @@ export component StatusBar inherits Rectangle {
         }
 
         Text {
-            text: root.relaysConnected + "/" + root.relaysTotal + " " + @tr("RELAYS");
+            text: root.relays-connected + "/" + root.relays-total + " " + @tr("RELAYS");
             color: Palette.text-mid;
             font-size: Theme.fs(10px, 14px);
             font-weight: 700;
@@ -66,9 +66,9 @@ export component StatusBar inherits Rectangle {
             vertical-alignment: center;
         }
 
-        if root.syncLabel != "": Text {
-            text: root.syncLabel;
-            color: root.syncSecs < 0 ? Palette.warning : Palette.text-mid;
+        if root.sync-label != "": Text {
+            text: root.sync-label;
+            color: root.sync-secs < 0 ? Palette.warning : Palette.text-mid;
             font-size: Theme.fs(10px, 14px);
             font-weight: 700;
             letter-spacing: 1.2px;
@@ -84,7 +84,7 @@ export component StatusBar inherits Rectangle {
                 width: parent.width;
                 height: parent.height;
                 text: root.message;
-                color: root.messageIsError ? Palette.danger : Palette.mint;
+                color: root.message-is-error ? Palette.danger : Palette.mint;
                 font-size: Theme.fs(10px, 14px);
                 font-weight: 700;
                 overflow: elide;
