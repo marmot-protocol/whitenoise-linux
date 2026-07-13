@@ -142,8 +142,8 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
     // One-shot target used by the global mentions inbox. The normal chat
-    // selection path consumes it, loads the full target chat so old mentions
-    // are not excluded by MESSAGE_WINDOW, then asks Slint to center the row.
+    // selection path consumes it, scans that chat off the UI thread, then asks
+    // Slint to render a MESSAGE_WINDOW-sized slice around the target row.
     let pending_message_jump: Arc<Mutex<Option<(String, String)>>> = Arc::new(Mutex::new(None));
     let chat_load_generation = Arc::new(AtomicUsize::new(0));
     ui.on_chat_selected({
@@ -225,7 +225,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     clear_chat_unread_row(&ui, idx as usize);
                     refresh_unread_chrome(&ui);
                     // Re-entering a normal chat starts from the default window.
-                    // A mention jump deliberately loads full history so even an
+                    // A mention jump deliberately scans full history so even an
                     // old target can be centered without repeated pagination.
                     if jump_message_id.is_none() {
                         msg_window_reset(&group_hex);
@@ -270,7 +270,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                             if ui.get_active_chat() as usize != current_idx {
                                 return;
                             }
-                            let msgs = match result {
+                            let mut msgs = match result {
                                 Ok(msgs) => msgs,
                                 Err(error) => {
                                     tracing::warn!(target: "mentions", %group_hex, "mention target load failed: {error:#}");
@@ -283,15 +283,22 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                                 }
                             };
                             let deleted_messages = aggregate_deletes(&msgs);
-                            let jump_target_exists = jump_message_id.as_ref().is_some_and(|id| {
+                            let mut jump_target_exists = jump_message_id.as_ref().is_some_and(|id| {
                                 msgs.iter().any(|message| {
                                     message.message_id_hex.eq_ignore_ascii_case(id)
                                         && is_visible_chat_message(message)
                                         && !deleted_messages.contains(&message.message_id_hex)
                                 })
                             });
-                            if jump_target_exists {
-                                msg_window_pin_all(&group_hex);
+                            if let Some(message_id) = jump_message_id.as_ref().filter(|_| jump_target_exists) {
+                                if let Some((window, recent_limit)) =
+                                    mention_navigation_window(&msgs, message_id, MESSAGE_WINDOW)
+                                {
+                                    msg_window_set(&group_hex, recent_limit);
+                                    msgs = window;
+                                } else {
+                                    jump_target_exists = false;
+                                }
                             }
                             let chats_messages = ui.get_chats_messages();
                             {

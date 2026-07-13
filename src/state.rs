@@ -369,12 +369,11 @@ pub(crate) fn msg_window_expand(group_hex: &str) -> usize {
     *w
 }
 
-/// Keep the complete history loaded for a chat until the next normal select.
-/// Mention navigation uses this so actions and watcher-driven rebuilds keep an
-/// old target in the model after the initial jump.
-pub(crate) fn msg_window_pin_all(group_hex: &str) {
+/// Keep enough recent records loaded for surgical actions on a mention target
+/// until the next normal select. The caller supplies a bounded limit.
+pub(crate) fn msg_window_set(group_hex: &str, limit: usize) {
     if let Ok(mut map) = msg_windows().lock() {
-        map.insert(group_hex.to_string(), usize::MAX);
+        map.insert(group_hex.to_string(), limit.max(MESSAGE_WINDOW));
     }
 }
 
