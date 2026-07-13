@@ -165,6 +165,17 @@ export component LoginScreen inherits Rectangle {
     callback reset-vault();
     callback copy-nsec(string);
     callback import-backup();                            // restore from an encrypted backup
+    pure callback login-password-valid(string, string) -> bool; // password, confirm
+
+    // Local password-validation state used to fail fast in the UI before the
+    // Argon2id round-trip. `password-ok` gates the primary action;
+    // `password-mismatch` drives error styling on the confirm field.
+    pure function password-mismatch() -> bool {
+        root.password-confirm != "" && root.password-confirm != root.password-input
+    }
+    pure function password-ok() -> bool {
+        root.login-password-valid(root.password-input, root.password-confirm)
+    }
 
     // Guarded action helpers so submit-on-Enter and button clicks share a path.
     function create-account() {
@@ -372,9 +383,17 @@ export component LoginScreen inherits Rectangle {
                         label: @tr("CONFIRM PASSWORD");
                         placeholder: @tr("Re-enter password");
                         text <=> root.password-confirm;
+                        error: root.password-mismatch();
                         submit => {
                             root.create-account();
                         }
+                    }
+
+                    if root.password-mismatch(): Text {
+                        text: @tr("Passwords don't match.");
+                        color: Palette.danger;
+                        font-size: (11px) * Theme.fs-scale;
+                        wrap: word-wrap;
                     }
 
                     if root.error != "": Text {
@@ -408,6 +427,7 @@ export component LoginScreen inherits Rectangle {
                             label: root.busy ? @tr("Signing in…") : @tr("Continue");
                             button-height: 38px;
                             min-w: 120px;
+                            enabled: !root.busy && root.nsec-input != "" && root.password-ok();
                             bg-color: Palette.mint;
                             outline: Palette.mint;
                             hover-bg: Palette.mint-hi;
@@ -632,9 +652,17 @@ export component LoginScreen inherits Rectangle {
                         label: @tr("CONFIRM PASSWORD");
                         placeholder: @tr("Re-enter password");
                         text <=> root.password-confirm;
+                        error: root.password-mismatch();
                         submit => {
                             root.save-generated();
                         }
+                    }
+
+                    if root.password-mismatch(): Text {
+                        text: @tr("Passwords don't match.");
+                        color: Palette.danger;
+                        font-size: (11px) * Theme.fs-scale;
+                        wrap: word-wrap;
                     }
 
                     if root.error != "": Text {
@@ -674,6 +702,7 @@ export component LoginScreen inherits Rectangle {
                             label: root.busy ? @tr("Saving…") : @tr("Save key");
                             button-height: 38px;
                             min-w: 160px;
+                            enabled: !root.busy && root.password-ok();
                             bg-color: Palette.mint;
                             outline: Palette.mint;
                             hover-bg: Palette.mint-hi;

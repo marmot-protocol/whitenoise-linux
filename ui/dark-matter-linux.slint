@@ -242,6 +242,7 @@ export component DarkMatterLinux inherits Window {
     callback unlock(string);                            // vault password
     callback reset-vault();                             // delete vault, start over
     callback copy-nsec(string);
+    pure callback login-password-valid(string, string) -> bool; // password, confirm
 
     // Composer state + send wiring (real chat send through marmot-app).
     in-out property <string> composer-draft;
@@ -2081,6 +2082,9 @@ export component DarkMatterLinux inherits Window {
             }
             import-backup => {
                 root.storage-import-backup();
+            }
+            login-password-valid(p, c) => {
+                return root.login-password-valid(p, c);
             }
         }
     }

@@ -306,6 +306,13 @@ pub(crate) fn wire_panes(
         ui.set_login_mode(0);
     }
 
+    // Mirror the vault-password gate into the UI so the primary action can be
+    // disabled until the password + confirm are valid, without duplicating the
+    // rules in Slint. Returns true when `validate_new_password` accepts them.
+    ui.on_login_password_valid(|password, confirm| {
+        validate_new_password(password.as_str(), confirm.as_str()).is_ok()
+    });
+
     // First run, existing nsec: validate the key + new password, create the vault,
     // seal the nsec into it, then boot.
     ui.on_login_with_nsec({
