@@ -18,10 +18,12 @@ export component MentionsInbox inherits Rectangle {
     }
 
     popup := PopupWindow {
-        x: -500px;
+        // Keep the panel compact enough to fit below the header in narrow or
+        // tiled windows. Its right edge stays pinned to the trigger.
+        x: -self.width;
         y: 41px;
-        width: 500px;
-        height: 520px;
+        width: 420px;
+        height: 420px;
         close-policy: close-on-click-outside;
 
         Rectangle {
@@ -39,7 +41,7 @@ export component MentionsInbox inherits Rectangle {
                 spacing: 0;
 
                 Rectangle {
-                    height: 62px;
+                    height: 48px;
                     background: Palette.panel;
 
                     Rectangle {
@@ -53,7 +55,7 @@ export component MentionsInbox inherits Rectangle {
                         padding-left: 18px;
                         padding-right: 18px;
                         spacing: 10px;
-                        alignment: center;
+                        alignment: start;
 
                         Text {
                             text: "@";
@@ -61,6 +63,7 @@ export component MentionsInbox inherits Rectangle {
                             font-family: Theme.font;
                             font-size: Theme.fs(15px, 20px);
                             font-weight: 800;
+                            vertical-alignment: center;
                         }
 
                         Text {
@@ -70,6 +73,7 @@ export component MentionsInbox inherits Rectangle {
                             font-size: Theme.fs(13px, 16px);
                             font-weight: 800;
                             horizontal-stretch: 1;
+                            vertical-alignment: center;
                         }
 
                         if !root.loading: Text {
@@ -77,6 +81,7 @@ export component MentionsInbox inherits Rectangle {
                             color: Palette.text-lo;
                             font-family: Theme.font;
                             font-size: Theme.fs(10px, 12px);
+                            vertical-alignment: center;
                         }
                     }
                 }
@@ -116,7 +121,7 @@ export component MentionsInbox inherits Rectangle {
                         spacing: 4px;
 
                         for item in root.items: card := Rectangle {
-                            height: 94px;
+                            height: 108px;
                             background: card-touch.has-hover ? Palette.hover : transparent;
                             border-radius: 8px * Theme.r-scale;
                             border-width: Theme.border-w;
@@ -175,6 +180,8 @@ export component MentionsInbox inherits Rectangle {
                                         color: Palette.text-mid;
                                         font-family: Theme.font;
                                         font-size: Theme.fs(10px, 12px);
+                                        height: Theme.fs(28px, 34px);
+                                        wrap: word-wrap;
                                         overflow: elide;
                                     }
                                 }

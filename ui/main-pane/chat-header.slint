@@ -120,41 +120,6 @@ export component ChatHeader inherits Rectangle {
             }
         }
 
-        // Global mentions inbox, anchored to the header like Discord's inbox.
-        if !root.chat.is-chat-request: Rectangle {
-            width: 36px;
-            height: 36px;
-            y: (parent.height - self.height) / 2;
-            background: mention-inbox-touch.has-hover ? Palette.hover : transparent;
-            border-radius: (6px) * Theme.r-scale;
-            animate background { duration: 100ms; }
-            mention-inbox-touch := TouchArea {
-                clicked => {
-                    root.mentions-inbox-opened();
-                    mention-inbox.open();
-                }
-                Text {
-                    text: "@";
-                    color: mention-inbox-touch.has-hover ? Palette.mint : Palette.text-mid;
-                    font-family: Theme.font;
-                    font-size: Theme.fs(12px, 17px);
-                    font-weight: 800;
-                    x: (parent.width - self.width) / 2;
-                    y: (parent.height - self.height) / 2;
-                }
-            }
-
-            mention-inbox := MentionsInbox {
-                x: parent.width;
-                y: 0px;
-                items: root.mention-items;
-                loading: root.mentions-loading;
-                selected(group-id, message-id) => {
-                    root.mention-inbox-item-selected(group-id, message-id);
-                }
-            }
-        }
-
         // Mute toggle — silences this chat's desktop notifications. Shown for
         // any established chat (not pending requests). Muted = mint bell-off.
         if !root.chat.is-chat-request: Rectangle {
@@ -199,6 +164,43 @@ export component ChatHeader inherits Rectangle {
                     stroke: root.members-open ? Palette.mint : Palette.text-mid;
                     x: (parent.width - self.width) / 2;
                     y: (parent.height - self.height) / 2;
+                }
+            }
+        }
+
+        // Keep the global mentions inbox as the right-most header action,
+        // matching Discord's inbox placement. The popup aligns its right edge
+        // with this button, so controls cannot peek out beside it.
+        if !root.chat.is-chat-request: Rectangle {
+            width: 36px;
+            height: 36px;
+            y: (parent.height - self.height) / 2;
+            background: mention-inbox-touch.has-hover ? Palette.hover : transparent;
+            border-radius: (6px) * Theme.r-scale;
+            animate background { duration: 100ms; }
+            mention-inbox-touch := TouchArea {
+                clicked => {
+                    root.mentions-inbox-opened();
+                    mention-inbox.open();
+                }
+                Text {
+                    text: "@";
+                    color: mention-inbox-touch.has-hover ? Palette.mint : Palette.text-mid;
+                    font-family: Theme.font;
+                    font-size: Theme.fs(12px, 17px);
+                    font-weight: 800;
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                }
+            }
+
+            mention-inbox := MentionsInbox {
+                x: parent.width;
+                y: 0px;
+                items: root.mention-items;
+                loading: root.mentions-loading;
+                selected(group-id, message-id) => {
+                    root.mention-inbox-item-selected(group-id, message-id);
                 }
             }
         }
