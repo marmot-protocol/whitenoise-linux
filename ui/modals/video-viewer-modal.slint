@@ -85,7 +85,7 @@ export component VideoViewerModal inherits Modal {
             load-text := Text {
                 text: @tr("Loading…");
                 color: #FFFFFF;
-                font-size: (13px) * Theme.fs-scale;
+                font-size: Theme.fs(13px, 16px);
                 font-family: Theme.font;
                 horizontal-alignment: center;
                 vertical-alignment: center;
@@ -121,7 +121,7 @@ export component VideoViewerModal inherits Modal {
                         x: parent.width / 2 - self.width / 2 + (root.playing ? 0px : 2px);
                         text: root.playing ? "⏸" : "▶";
                         color: #FFFFFF;
-                        font-size: (16px) * Theme.fs-scale;
+                        font-size: Theme.fs(16px, 18px);
                         font-family: Theme.font;
                         horizontal-alignment: center;
                         vertical-alignment: center;
@@ -138,7 +138,7 @@ export component VideoViewerModal inherits Modal {
                 Text {
                     text: root.pos-label;
                     color: #FFFFFFCC;
-                    font-size: (12px) * Theme.fs-scale;
+                    font-size: Theme.fs(12px, 16px);
                     font-family: Theme.font;
                     vertical-alignment: center;
                     horizontal-alignment: right;
@@ -185,7 +185,7 @@ export component VideoViewerModal inherits Modal {
                 Text {
                     text: root.dur-label;
                     color: #FFFFFFCC;
-                    font-size: (12px) * Theme.fs-scale;
+                    font-size: Theme.fs(12px, 16px);
                     font-family: Theme.font;
                     vertical-alignment: center;
                     width: 42px;
@@ -202,7 +202,7 @@ export component VideoViewerModal inherits Modal {
                     Text {
                         text: "⛶";
                         color: #FFFFFF;
-                        font-size: (17px) * Theme.fs-scale;
+                        font-size: Theme.fs(17px, 20px);
                         font-family: Theme.font;
                         horizontal-alignment: center;
                         vertical-alignment: center;

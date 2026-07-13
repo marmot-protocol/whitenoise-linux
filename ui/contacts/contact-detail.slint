@@ -54,7 +54,7 @@ export component ContactDetail inherits DetailPage {
                 color-b: root.contact.av-b;
                 picture: root.contact.picture;
                 has-picture: root.contact.has-picture;
-                font-size: (22px) * Theme.fs-scale;
+                font-size: Theme.fs(22px, 26px);
             }
 
             if root.contact.online: Rectangle {
@@ -84,7 +84,7 @@ export component ContactDetail inherits DetailPage {
                 Text {
                     text: root.contact.name;
                     color: Palette.text-hi;
-                    font-size: (22px) * Theme.fs-scale;
+                    font-size: Theme.fs(22px, 26px);
                     font-weight: 700;
                     vertical-alignment: center;
                     horizontal-stretch: 1;
@@ -96,7 +96,7 @@ export component ContactDetail inherits DetailPage {
                 if root.contact.nickname != "": Text {
                     text: @tr("aka {}", root.contact.real-name);
                     color: Palette.text-lo;
-                    font-size: (12px) * Theme.fs-scale;
+                    font-size: Theme.fs(12px, 16px);
                     vertical-alignment: center;
                     horizontal-stretch: 0;
                     min-width: 0px;
@@ -125,7 +125,7 @@ export component ContactDetail inherits DetailPage {
             Text {
                 text: @tr("{} RELAYS", root.contact.relays);
                 color: Palette.text-lo;
-                font-size: (10px) * Theme.fs-scale;
+                font-size: Theme.fs(10px, 14px);
                 font-weight: 700;
                 letter-spacing: 1.2px;
             }

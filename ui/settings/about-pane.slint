@@ -52,14 +52,14 @@ component AboutFeatureRow inherits Rectangle {
             Text {
                 text: root.title;
                 color: Palette.text-hi;
-                font-size: (12px) * Theme.fs-scale;
+                font-size: Theme.fs(12px, 16px);
                 font-weight: 700;
             }
 
             Text {
                 text: root.detail;
                 color: Palette.text-lo;
-                font-size: (11px) * Theme.fs-scale;
+                font-size: Theme.fs(11px, 14px);
                 wrap: word-wrap;
             }
         }
@@ -143,7 +143,7 @@ export component AboutPane inherits Rectangle {
                                 Text {
                                     text: "darkmatter";
                                     color: Palette.text-hi;
-                                    font-size: (18px) * Theme.fs-scale;
+                                    font-size: Theme.fs(18px, 20px);
                                     font-weight: 700;
                                     font-family: Theme.font;
                                     vertical-alignment: center;
@@ -163,7 +163,7 @@ export component AboutPane inherits Rectangle {
                                         Text {
                                             text: "v0.1.0";
                                             color: Palette.mint;
-                                            font-size: (10px) * Theme.fs-scale;
+                                            font-size: Theme.fs(10px, 14px);
                                             font-weight: 700;
                                             font-family: Theme.font;
                                             letter-spacing: 0.6px;
@@ -175,7 +175,7 @@ export component AboutPane inherits Rectangle {
                             Text {
                                 text: @tr("End-to-end encrypted group messaging for Linux.");
                                 color: Palette.text-mid;
-                                font-size: (11px) * Theme.fs-scale;
+                                font-size: Theme.fs(11px, 14px);
                                 wrap: word-wrap;
                             }
                         }
@@ -197,14 +197,14 @@ export component AboutPane inherits Rectangle {
                         Text {
                             text: @tr("Dark Matter is a native desktop client for private group chat. Messages are encrypted with MLS before they leave your machine, routed over Nostr relays, and decrypted only for the people in the room.");
                             color: Palette.text-mid;
-                            font-size: (12px) * Theme.fs-scale;
+                            font-size: Theme.fs(12px, 16px);
                             wrap: word-wrap;
                         }
 
                         Text {
                             text: @tr("Your keys stay on this device — we never see them.");
                             color: Palette.mint;
-                            font-size: (11px) * Theme.fs-scale;
+                            font-size: Theme.fs(11px, 14px);
                             font-weight: 700;
                             wrap: word-wrap;
                         }
@@ -259,7 +259,7 @@ export component AboutPane inherits Rectangle {
             Text {
                 text: @tr("Made with marmots, math, and a little purple liquid.");
                 color: Palette.text-vlo;
-                font-size: (10px) * Theme.fs-scale;
+                font-size: Theme.fs(10px, 14px);
                 font-weight: 600;
                 letter-spacing: 0.4px;
                 horizontal-alignment: center;

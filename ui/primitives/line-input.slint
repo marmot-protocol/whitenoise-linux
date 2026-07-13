@@ -64,7 +64,7 @@ export component LineInput inherits Rectangle {
         height: parent.height;
         text: root.placeholder;
         color: root.placeholder-color;
-        font-size: (root.font-size) * Theme.fs-scale;
+        font-size: root.font-size;
         font-family: Theme.font;
         font-weight: root.font-weight;
         vertical-alignment: center;
@@ -89,7 +89,7 @@ export component LineInput inherits Rectangle {
             text <=> root.text;
             enabled: root.enabled;
             color: root.fg;
-            font-size: (root.font-size) * Theme.fs-scale;
+            font-size: root.font-size;
             font-family: Theme.font;
             font-weight: root.font-weight;
             single-line: root.single-line;

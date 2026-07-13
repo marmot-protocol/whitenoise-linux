@@ -164,16 +164,14 @@ export global Theme {
     out property <bool> retro: root.id == 2;
     out property <bool> light: root.id == 1;
 
+    // Retro uses Zpix — a 12px-grid bitmap pixel font with full CJK coverage;
+    // the `pixel-metrics` flag (set only by retro) drives the `Theme.fs()`
+    // size picks below so body text lands on readable sizes for it.
     out property <string> font: root.retro ? "Zpix" : "JetBrains Mono";
     // multiplier applied to every border-radius — 0 in retro for pixel-sharp corners.
     out property <float> r-scale: root.retro ? 0.0 : 1.0;
     // base border width — chunky 2px outlines in retro.
     out property <length> border-w: root.retro ? 2px : 1px;
-    // Zpix is a bitmap pixel font — it renders crisply only at integer
-    // multiples of its native 12px grid and looks blurry/tiny at fractional
-    // sizes. Identity scale in both modes; per-call-site `font-size` values
-    // are authoritative.
-    out property <float> fs-scale: 1.0;
 
     // The theme registry, index = Theme.id. Rust fills this at startup from the
     // embedded built-in theme files and any user themes (src/themes.rs), in id
@@ -221,11 +219,11 @@ export global Theme {
     out property <bool> synth-grid:            root.s.synth-grid;
 
     // Font-size helpers. A call site declares both metrics; the active theme's
-    // `pixel-metrics` flag picks one. `fs` applies fs-scale (for the former
-    // `(... ) * Theme.fs-scale` sites); `fsr` is the raw, unscaled variant.
-    // Replaces every `(Theme.retro ? PIXEL : MODERN) [* Theme.fs-scale]` ternary.
+    // `pixel-metrics` flag picks one (retro is the only pixel-metrics theme).
+    // `fs` is the render-site helper; `fsr` is the convention for primitive
+    // property defaults consumed through `root.font-size`.
     public pure function fs(modern: length, pixel: length) -> length {
-        (root.pixel-metrics ? pixel : modern) * root.fs-scale
+        root.pixel-metrics ? pixel : modern
     }
     public pure function fsr(modern: length, pixel: length) -> length {
         root.pixel-metrics ? pixel : modern

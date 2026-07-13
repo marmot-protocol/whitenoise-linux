@@ -28,7 +28,7 @@ export component MenuItem inherits Rectangle {
         Text {
             text: root.glyph;
             color: root.highlighted ? Palette.text-hi : Palette.text-mid;
-            font-size: (13px) * Theme.fs-scale;
+            font-size: Theme.fs(13px, 16px);
             font-family: Theme.font;
             width: 16px;
             horizontal-alignment: center;
@@ -38,7 +38,7 @@ export component MenuItem inherits Rectangle {
         Text {
             text: root.label;
             color: Palette.text-hi;
-            font-size: (12px) * Theme.fs-scale;
+            font-size: Theme.fs(12px, 16px);
             font-family: Theme.font;
             vertical-alignment: center;
         }

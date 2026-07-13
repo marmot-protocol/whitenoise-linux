@@ -11,7 +11,7 @@ export component SectionHeader inherits HorizontalLayout {
     Text {
         text: root.label;
         color: Palette.text-mid;
-        font-size: (10px) * Theme.fs-scale;
+        font-size: Theme.fs(10px, 14px);
         font-weight: 700;
         letter-spacing: 1.4px;
         vertical-alignment: center;
@@ -20,7 +20,7 @@ export component SectionHeader inherits HorizontalLayout {
     if root.note != "": Text {
         text: root.note;
         color: Palette.text-lo;
-        font-size: (10px) * Theme.fs-scale;
+        font-size: Theme.fs(10px, 14px);
         font-weight: 600;
         vertical-alignment: center;
     }

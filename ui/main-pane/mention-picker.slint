@@ -63,7 +63,7 @@ export component MentionPicker inherits Rectangle {
                         Text {
                             text: c.is-self ? c.name + " " + @tr("(you)") : c.name;
                             color: Palette.text-hi;
-                            font-size: (12px) * Theme.fs-scale;
+                            font-size: Theme.fs(12px, 16px);
                             font-family: Theme.font;
                             font-weight: 600;
                             overflow: elide;
@@ -72,7 +72,7 @@ export component MentionPicker inherits Rectangle {
                         Text {
                             text: c.npub-short;
                             color: Palette.text-lo;
-                            font-size: (10px) * Theme.fs-scale;
+                            font-size: Theme.fs(10px, 14px);
                             font-family: Theme.font;
                             overflow: elide;
                         }

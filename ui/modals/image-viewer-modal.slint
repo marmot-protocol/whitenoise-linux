@@ -220,7 +220,7 @@ export component ImageViewerModal inherits Modal {
             load-text := Text {
                 text: @tr("Loading…");
                 color: #FFFFFF;
-                font-size: (13px) * Theme.fs-scale;
+                font-size: Theme.fs(13px, 16px);
                 font-family: Theme.font;
                 horizontal-alignment: center;
                 vertical-alignment: center;
@@ -241,7 +241,7 @@ export component ImageViewerModal inherits Modal {
             error-text := Text {
                 text: @tr("Image didn't load. Tap to retry.");
                 color: #FFFFFF;
-                font-size: (13px) * Theme.fs-scale;
+                font-size: Theme.fs(13px, 16px);
                 font-family: Theme.font;
                 horizontal-alignment: center;
                 vertical-alignment: center;
@@ -322,7 +322,7 @@ export component ImageViewerModal inherits Modal {
             Text {
                 text: "‹";
                 color: #FFFFFF;
-                font-size: (34px) * Theme.fs-scale;
+                font-size: Theme.fs(34px, 40px);
                 font-family: Theme.font;
                 horizontal-alignment: center;
                 vertical-alignment: center;
@@ -350,7 +350,7 @@ export component ImageViewerModal inherits Modal {
             Text {
                 text: "›";
                 color: #FFFFFF;
-                font-size: (34px) * Theme.fs-scale;
+                font-size: Theme.fs(34px, 40px);
                 font-family: Theme.font;
                 horizontal-alignment: center;
                 vertical-alignment: center;
@@ -377,7 +377,7 @@ export component ImageViewerModal inherits Modal {
             counter-text := Text {
                 text: root.index + " / " + root.count;
                 color: #FFFFFF;
-                font-size: (12px) * Theme.fs-scale;
+                font-size: Theme.fs(12px, 16px);
                 font-family: Theme.font;
                 font-weight: 700;
                 horizontal-alignment: center;

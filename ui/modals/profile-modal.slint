@@ -101,7 +101,7 @@ export component ProfileModal inherits Modal {
                 Text {
                     text: "✕";
                     color: #FFFFFFE6;
-                    font-size: (14px) * Theme.fs-scale;
+                    font-size: Theme.fs(14px, 18px);
                     font-family: Theme.font;
                     horizontal-alignment: center;
                     vertical-alignment: center;
@@ -152,7 +152,7 @@ export component ProfileModal inherits Modal {
             if !root.loading: Text {
                 text: root.display-name;
                 color: Palette.text-hi;
-                font-size: (18px) * Theme.fs-scale;
+                font-size: Theme.fs(18px, 20px);
                 font-weight: 800;
                 font-family: Theme.font;
                 horizontal-alignment: center;
@@ -187,7 +187,7 @@ export component ProfileModal inherits Modal {
                 Text {
                     text: root.nip05;
                     color: Palette.mint;
-                    font-size: (11px) * Theme.fs-scale;
+                    font-size: Theme.fs(11px, 14px);
                     font-weight: 700;
                     font-family: Theme.font;
                     overflow: elide;
@@ -213,7 +213,7 @@ export component ProfileModal inherits Modal {
                         Text {
                             text: root.copied ? @tr("Copied ✓") : root.npub-short;
                             color: root.copied ? Palette.mint : Palette.text-mid;
-                            font-size: (10.5px) * Theme.fs-scale;
+                            font-size: Theme.fs(10.5px, 14px);
                             font-weight: 700;
                             font-family: Theme.font;
                             vertical-alignment: center;
@@ -250,7 +250,7 @@ export component ProfileModal inherits Modal {
                         height: parent.height;
                         text: @tr("✓ In your contacts");
                         color: Palette.mint;
-                        font-size: (9.5px) * Theme.fs-scale;
+                        font-size: Theme.fs(9.5px, 12px);
                         font-weight: 700;
                         font-family: Theme.font;
                         horizontal-alignment: center;
@@ -267,7 +267,7 @@ export component ProfileModal inherits Modal {
                     width: parent.width;
                     text: root.about;
                     color: Palette.text-mid;
-                    font-size: (12px) * Theme.fs-scale;
+                    font-size: Theme.fs(12px, 16px);
                     font-family: Theme.font;
                     horizontal-alignment: center;
                     wrap: word-wrap;
@@ -310,7 +310,7 @@ export component ProfileModal inherits Modal {
             if !root.loading && root.lud16 != "": Text {
                 text: "⚡ " + root.lud16;
                 color: Palette.text-lo;
-                font-size: (10.5px) * Theme.fs-scale;
+                font-size: Theme.fs(10.5px, 14px);
                 font-family: Theme.font;
                 horizontal-alignment: center;
                 overflow: elide;
@@ -330,7 +330,7 @@ export component ProfileModal inherits Modal {
                 Text {
                     text: @tr("GROUPS IN COMMON");
                     color: Palette.text-mid;
-                    font-size: (9.5px) * Theme.fs-scale;
+                    font-size: Theme.fs(9.5px, 12px);
                     font-weight: 700;
                     letter-spacing: 1.4px;
                     font-family: Theme.font;
@@ -349,14 +349,14 @@ export component ProfileModal inherits Modal {
             if root.loading: Text {
                 text: @tr("Contacting relays…");
                 color: Palette.text-vlo;
-                font-size: (10.5px) * Theme.fs-scale;
+                font-size: Theme.fs(10.5px, 14px);
                 font-family: Theme.font;
                 horizontal-alignment: center;
             }
             if root.not-found: Text {
                 text: @tr("No profile found on relays.");
                 color: Palette.text-vlo;
-                font-size: (10.5px) * Theme.fs-scale;
+                font-size: Theme.fs(10.5px, 14px);
                 font-family: Theme.font;
                 horizontal-alignment: center;
             }

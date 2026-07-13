@@ -55,7 +55,7 @@ export component RevealNsecModal inherits Modal {
         Text {
             text: @tr("SECRET KEY (NSEC)");
             color: Palette.text-mid;
-            font-size: (9px) * Theme.fs-scale;
+            font-size: Theme.fs(9px, 12px);
             font-weight: 700;
             letter-spacing: 1.6px;
             font-family: Theme.font;
@@ -107,7 +107,7 @@ export component RevealNsecModal inherits Modal {
     if root.revealed: Text {
         text: @tr("Store it somewhere safe and close this dialog. Dark Matter keeps it encrypted in your vault — this is the only place it's shown in the clear.");
         color: Palette.danger;
-        font-size: (10px) * Theme.fs-scale;
+        font-size: Theme.fs(10px, 14px);
         font-family: Theme.font;
         wrap: word-wrap;
     }

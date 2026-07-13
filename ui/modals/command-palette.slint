@@ -127,7 +127,7 @@ export component CommandPalette inherits Modal {
                                 // out of @tr().
                                 text: Theme.is-mac ? "⌘ K" : "Ctrl K";
                                 color: Palette.text-mid;
-                                font-size: (10px) * Theme.fs-scale;
+                                font-size: Theme.fs(10px, 14px);
                                 font-weight: 700;
                                 font-family: Theme.font;
                                 vertical-alignment: center;
@@ -170,7 +170,7 @@ export component CommandPalette inherits Modal {
                                     Text {
                                         text: action.group;
                                         color: Palette.text-vlo;
-                                        font-size: (9px) * Theme.fs-scale;
+                                        font-size: Theme.fs(9px, 12px);
                                         font-weight: 700;
                                         letter-spacing: 1.4px;
                                         font-family: Theme.font;
@@ -237,7 +237,7 @@ export component CommandPalette inherits Modal {
                                         kbd-pill-text := Text {
                                             text: action.kbd;
                                             color: Palette.text-mid;
-                                            font-size: (9px) * Theme.fs-scale;
+                                            font-size: Theme.fs(9px, 12px);
                                             font-weight: 700;
                                             font-family: Theme.font;
                                             x: 6px;
@@ -266,7 +266,7 @@ export component CommandPalette inherits Modal {
                         Text {
                             text: @tr("No matches");
                             color: Palette.text-lo;
-                            font-size: (12px) * Theme.fs-scale;
+                            font-size: Theme.fs(12px, 16px);
                             font-family: Theme.font;
                             horizontal-alignment: center;
                             vertical-alignment: center;
@@ -298,7 +298,7 @@ export component CommandPalette inherits Modal {
                             // are translated.
                             text: "↑↓ " + @tr("command palette footer" => "Navigate");
                             color: Palette.text-vlo;
-                            font-size: (9px) * Theme.fs-scale;
+                            font-size: Theme.fs(9px, 12px);
                             font-weight: 700;
                             letter-spacing: 1.0px;
                             font-family: Theme.font;
@@ -310,7 +310,7 @@ export component CommandPalette inherits Modal {
                         Text {
                             text: "⏎ " + @tr("command palette footer" => "Select");
                             color: Palette.text-vlo;
-                            font-size: (9px) * Theme.fs-scale;
+                            font-size: Theme.fs(9px, 12px);
                             font-weight: 700;
                             letter-spacing: 1.0px;
                             font-family: Theme.font;
@@ -322,7 +322,7 @@ export component CommandPalette inherits Modal {
                         Text {
                             text: "Esc " + @tr("command palette footer" => "Close");
                             color: Palette.text-vlo;
-                            font-size: (9px) * Theme.fs-scale;
+                            font-size: Theme.fs(9px, 12px);
                             font-weight: 700;
                             letter-spacing: 1.0px;
                             font-family: Theme.font;

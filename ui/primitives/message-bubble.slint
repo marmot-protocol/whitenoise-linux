@@ -359,8 +359,8 @@ export component MessageBubble inherits Rectangle {
         root.msg.failed ? @tr("failed · tap to retry") : root.msg.stamp;
     // Body typography. Emoji glyphs are sized off `body-fs` so they ride
     // the text line cleanly.
-    property <length> body-fs: (13px) * Theme.fs-scale;
-    property <length> emoji-px: root.msg.jumbo-emoji ? (66px) * Theme.fs-scale : root.body-fs * 1.2;
+    property <length> body-fs: Theme.fs(13px, 16px);
+    property <length> emoji-px: root.msg.jumbo-emoji ? Theme.fs(66px, 72px) : root.body-fs * 1.2;
 
     property <float> enter: 0;
     init => {
@@ -496,7 +496,7 @@ export component MessageBubble inherits Rectangle {
                     Text {
                         text: root.msg.reply-to-author == "" ? @tr("Original message") : root.msg.reply-to-author;
                         color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.mint;
-                        font-size: (10px) * Theme.fs-scale;
+                        font-size: Theme.fs(10px, 14px);
                         font-family: Theme.font;
                         font-weight: 700;
                         overflow: elide;
@@ -507,7 +507,7 @@ export component MessageBubble inherits Rectangle {
                     Text {
                         text: root.msg.reply-to-text == "" ? @tr("(message unavailable)") : root.msg.reply-to-text;
                         color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
-                        font-size: (11px) * Theme.fs-scale;
+                        font-size: Theme.fs(11px, 14px);
                         font-family: Theme.font;
                         overflow: elide;
                         opacity: root.msg.outgoing ? 0.65 : 0.9;
@@ -555,7 +555,7 @@ export component MessageBubble inherits Rectangle {
                 if !cell.has-image: Text {
                     text: cell.loading ? "…" : "🖼";
                     color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
-                    font-size: (22px) * Theme.fs-scale;
+                    font-size: Theme.fs(22px, 26px);
                     font-family: Theme.font;
                     x: (parent.width - self.width) / 2;
                     y: (parent.height - self.height) / 2;
@@ -604,7 +604,7 @@ export component MessageBubble inherits Rectangle {
                     x: parent.width / 2 - self.width / 2 + 3px;
                     text: root.msg.att-loading ? "…" : (root.msg.att-failed ? "!" : "▶");
                     color: #FFFFFF;
-                    font-size: (24px) * Theme.fs-scale;
+                    font-size: Theme.fs(24px, 28px);
                     font-family: Theme.font;
                     horizontal-alignment: center;
                     vertical-alignment: center;
@@ -621,7 +621,7 @@ export component MessageBubble inherits Rectangle {
                 dur-text := Text {
                     text: root.msg.att-duration;
                     color: #FFFFFF;
-                    font-size: (10px) * Theme.fs-scale;
+                    font-size: Theme.fs(10px, 14px);
                     font-family: Theme.font;
                     font-weight: 600;
                     horizontal-alignment: center;
@@ -675,7 +675,7 @@ export component MessageBubble inherits Rectangle {
                         // → bang, else play/pause.
                         text: root.msg.att-loading ? "…" : (root.msg.att-failed ? "↻" : (root.msg.att-audio-failed ? "!" : (root.msg.att-audio-playing ? "⏸" : "▶")));
                         color: root.msg.outgoing ? Palette.mint : Palette.bg;
-                        font-size: (14px) * Theme.fs-scale;
+                        font-size: Theme.fs(14px, 18px);
                         font-family: Theme.font;
                         horizontal-alignment: center;
                         vertical-alignment: center;
@@ -704,7 +704,7 @@ export component MessageBubble inherits Rectangle {
                         width: aud.col-w;
                         overflow: elide;
                         color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
-                        font-size: (11px) * Theme.fs-scale;
+                        font-size: Theme.fs(11px, 14px);
                         font-family: Theme.font;
                         font-weight: 600;
                     }
@@ -745,7 +745,7 @@ export component MessageBubble inherits Rectangle {
                             horizontal-stretch: 1;
                             overflow: elide;
                             color: root.msg.att-failed || root.msg.att-audio-failed ? (root.msg.outgoing ? Palette.danger-on-bubble : Palette.danger) : (root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid);
-                            font-size: (10px) * Theme.fs-scale;
+                            font-size: Theme.fs(10px, 14px);
                             font-family: Theme.font;
                             opacity: root.msg.att-failed || root.msg.att-audio-failed ? 1.0 : (root.msg.outgoing ? 0.75 : 0.9);
                         }
@@ -753,7 +753,7 @@ export component MessageBubble inherits Rectangle {
                         Text {
                             text: root.msg.att-duration;
                             color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
-                            font-size: (10px) * Theme.fs-scale;
+                            font-size: Theme.fs(10px, 14px);
                             font-family: Theme.font;
                             horizontal-alignment: right;
                         }
@@ -784,7 +784,7 @@ export component MessageBubble inherits Rectangle {
                 Text {
                     text: root.msg.att-loading ? "…" : (root.msg.att-failed ? "!" : "🖼");
                     color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
-                    font-size: (28px) * Theme.fs-scale;
+                    font-size: Theme.fs(28px, 34px);
                     font-family: Theme.font;
                     horizontal-alignment: center;
                 }
@@ -792,7 +792,7 @@ export component MessageBubble inherits Rectangle {
                 Text {
                     text: root.msg.att-loading ? @tr("decrypting…") : (root.msg.att-failed ? @tr("tap to retry") : @tr("tap to load"));
                     color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
-                    font-size: (10px) * Theme.fs-scale;
+                    font-size: Theme.fs(10px, 14px);
                     font-family: Theme.font;
                     horizontal-alignment: center;
                     opacity: 0.85;
@@ -822,7 +822,7 @@ export component MessageBubble inherits Rectangle {
                 Text {
                     text: root.msg.att-loading ? "…" : (root.msg.att-icon == "" ? "📎" : root.msg.att-icon);
                     color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
-                    font-size: (16px) * Theme.fs-scale;
+                    font-size: Theme.fs(16px, 18px);
                     font-family: Theme.font;
                     vertical-alignment: center;
                 }
@@ -833,7 +833,7 @@ export component MessageBubble inherits Rectangle {
                     Text {
                         text: root.msg.att-name;
                         color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
-                        font-size: (12px) * Theme.fs-scale;
+                        font-size: Theme.fs(12px, 16px);
                         font-family: Theme.font;
                         font-weight: 600;
                         overflow: elide;
@@ -843,7 +843,7 @@ export component MessageBubble inherits Rectangle {
                     Text {
                         text: root.msg.att-failed ? @tr("failed · tap to retry") : (root.msg.att-size-label != "" && root.msg.att-type-label != "" ? root.msg.att-size-label + "  ·  " + root.msg.att-type-label : root.msg.att-size-label + root.msg.att-type-label);
                         color: root.msg.att-failed ? (root.msg.outgoing ? Palette.danger-on-bubble : Palette.danger) : (root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid);
-                        font-size: (10px) * Theme.fs-scale;
+                        font-size: Theme.fs(10px, 14px);
                         font-family: Theme.font;
                         opacity: root.msg.att-failed ? 1.0 : (root.msg.outgoing ? 0.75 : 0.9);
                         overflow: elide;
@@ -1104,7 +1104,7 @@ export component MessageBubble inherits Rectangle {
                         edited-label := Text {
                             text: @tr("edited");
                             color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.mint;
-                            font-size: (10px) * Theme.fs-scale;
+                            font-size: Theme.fs(10px, 14px);
                             font-family: Theme.font;
                             font-weight: 600;
                             vertical-alignment: bottom;
@@ -1126,7 +1126,7 @@ export component MessageBubble inherits Rectangle {
                         stamp-label := Text {
                             text: root.stamp-with-delivery;
                             color: root.msg.failed ? Palette.danger-on-bubble : (root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-lo);
-                            font-size: (10px) * Theme.fs-scale;
+                            font-size: Theme.fs(10px, 14px);
                             font-family: Theme.font;
                             vertical-alignment: bottom;
                             opacity: root.msg.outgoing && !root.msg.failed ? 0.7 : 1;
@@ -1172,7 +1172,7 @@ export component MessageBubble inherits Rectangle {
                     if root.msg.outgoing && root.msg.failed: Text {
                         text: "!";
                         color: Palette.danger-on-bubble;
-                        font-size: (11px) * Theme.fs-scale;
+                        font-size: Theme.fs(11px, 14px);
                         font-family: Theme.font;
                         vertical-alignment: bottom;
                     }
@@ -1208,7 +1208,7 @@ export component MessageBubble inherits Rectangle {
             Text {
                 text: root.stamp-with-delivery;
                 color: root.msg.failed ? Palette.danger-on-bubble : #FFFFFF;
-                font-size: (10px) * Theme.fs-scale;
+                font-size: Theme.fs(10px, 14px);
                 font-family: Theme.font;
                 vertical-alignment: center;
             }

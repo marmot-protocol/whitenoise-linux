@@ -43,7 +43,7 @@ export component ArchivedListItem inherits Rectangle {
         y: (parent.height - self.height) / 2;
         text: "▶";
         color: Palette.bubble-out-fg;
-        font-size: (14px) * Theme.fs-scale;
+        font-size: Theme.fs(14px, 18px);
         font-family: Theme.font;
         vertical-alignment: center;
         opacity: root.selected ? 1.0 : 0.0;
@@ -78,7 +78,7 @@ export component ArchivedListItem inherits Rectangle {
                 Text {
                     text: root.data.name;
                     color: Theme.selected-inverts-text && root.selected ? Palette.bubble-out-fg : Palette.text-hi;
-                    font-size: (13px) * Theme.fs-scale;
+                    font-size: Theme.fs(13px, 16px);
                     font-weight: 700;
                     font-family: Theme.font;
                     horizontal-stretch: 1;
@@ -88,7 +88,7 @@ export component ArchivedListItem inherits Rectangle {
                 Text {
                     text: root.data.last-date;
                     color: Theme.selected-inverts-text && root.selected ? Palette.bubble-out-fg : Palette.text-lo;
-                    font-size: (10px) * Theme.fs-scale;
+                    font-size: Theme.fs(10px, 14px);
                     font-family: Theme.font;
                     vertical-alignment: center;
                 }

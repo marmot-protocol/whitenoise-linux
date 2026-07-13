@@ -42,7 +42,7 @@ export component DebugJsonModal inherits Modal {
                 text: root.busy ? @tr("Loading…") : (root.json != "" ? root.json : @tr("(nothing to show)"));
                 color: Palette.text-hi;
                 font-family: Theme.font;
-                font-size: (11px) * Theme.fs-scale;
+                font-size: Theme.fs(11px, 14px);
                 wrap: word-wrap;
             }
         }

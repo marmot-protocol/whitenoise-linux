@@ -86,7 +86,7 @@ export component ChatHeader inherits Rectangle {
                 Text {
                     text: root.chat.name;
                     color: Palette.text-hi;
-                    font-size: (14px) * Theme.fs-scale;
+                    font-size: Theme.fs(14px, 18px);
                     font-weight: 700;
                     vertical-alignment: center;
                 }
@@ -110,7 +110,7 @@ export component ChatHeader inherits Rectangle {
             Text {
                 text: root.is-group ? (root.group-description == "" ? root.member-label : root.member-label + " · " + root.group-description) : root.chat.last-seen;
                 color: Palette.text-lo;
-                font-size: (11px) * Theme.fs-scale;
+                font-size: Theme.fs(11px, 14px);
                 overflow: elide;
             }
         }

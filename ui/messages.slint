@@ -204,7 +204,7 @@ export component MessagesArea inherits Rectangle {
                         text: @tr("Load earlier messages");
                         color: pill-touch.has-hover ? Palette.text-hi : Palette.text-lo;
                         animate color { duration: 100ms; }
-                        font-size: 10px * Theme.fs-scale;
+                        font-size: Theme.fs(10px, 14px);
                         font-weight: 600;
                         letter-spacing: 1.1px;
                         vertical-alignment: center;

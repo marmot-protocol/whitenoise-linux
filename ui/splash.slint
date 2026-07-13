@@ -40,7 +40,7 @@ export component SplashScreen inherits Rectangle {
                 text: "darkmatter";
                 horizontal-alignment: center;
                 color: Palette.text-hi;
-                font-size: (22px) * Theme.fs-scale;
+                font-size: Theme.fs(22px, 26px);
                 font-weight: 700;
                 font-family: Theme.font;
             }
@@ -51,7 +51,7 @@ export component SplashScreen inherits Rectangle {
                     text: root.status;
                     horizontal-alignment: center;
                     color: Palette.text-mid;
-                    font-size: (12px) * Theme.fs-scale;
+                    font-size: Theme.fs(12px, 16px);
                     font-family: Theme.font;
                     x: (parent.width - self.width) / 2;
                     y: 0;
@@ -59,7 +59,7 @@ export component SplashScreen inherits Rectangle {
 
                 if Theme.pixel-icons: Rectangle {
                     width: 8px;
-                    height: (12px) * Theme.fs-scale;
+                    height: Theme.fs(12px, 16px);
                     x: status-text.x + status-text.width + 2px;
                     y: 2px;
                     background: Palette.mint;

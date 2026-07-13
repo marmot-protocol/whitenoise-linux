@@ -126,7 +126,7 @@ export component AccountSwitcherModal inherits Modal {
                             Text {
                                 text: acc.name;
                                 color: Palette.text-hi;
-                                font-size: (12px) * Theme.fs-scale;
+                                font-size: Theme.fs(12px, 16px);
                                 font-weight: 700;
                                 font-family: Theme.font;
                                 overflow: elide;
@@ -135,7 +135,7 @@ export component AccountSwitcherModal inherits Modal {
                             Text {
                                 text: acc.npub-short;
                                 color: Palette.text-lo;
-                                font-size: (10px) * Theme.fs-scale;
+                                font-size: Theme.fs(10px, 14px);
                                 font-family: Theme.font;
                                 overflow: elide;
                             }
@@ -146,7 +146,7 @@ export component AccountSwitcherModal inherits Modal {
                             Text {
                                 text: @tr("ACTIVE");
                                 color: Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.mint;
-                                font-size: (9px) * Theme.fs-scale;
+                                font-size: Theme.fs(9px, 12px);
                                 font-weight: 800;
                                 font-family: Theme.font;
                                 letter-spacing: 1.2px;

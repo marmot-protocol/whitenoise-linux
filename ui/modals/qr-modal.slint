@@ -68,7 +68,7 @@ export component QrModal inherits Modal {
                     Text {
                         text: root.copied ? @tr("Copied ✓") : root.npub-short;
                         color: root.copied ? Palette.mint : Palette.text-mid;
-                        font-size: (10.5px) * Theme.fs-scale;
+                        font-size: Theme.fs(10.5px, 14px);
                         font-weight: 700;
                         font-family: Theme.font;
                         vertical-alignment: center;

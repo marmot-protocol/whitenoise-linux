@@ -34,7 +34,7 @@ export component UnreadBadge inherits Rectangle {
         Text {
             text: root.count;
             color: Palette.bg;
-            font-size: (10px) * Theme.fs-scale;
+            font-size: Theme.fs(10px, 14px);
             font-weight: 700;
             font-family: Theme.font;
             vertical-alignment: center;

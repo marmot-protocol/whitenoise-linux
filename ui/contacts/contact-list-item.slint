@@ -47,7 +47,7 @@ export component ContactListItem inherits Rectangle {
         y: (parent.height - self.height) / 2;
         text: "▶";
         color: Palette.bubble-out-fg;
-        font-size: (14px) * Theme.fs-scale;
+        font-size: Theme.fs(14px, 18px);
         font-family: Theme.font;
         vertical-alignment: center;
         opacity: root.selected ? 1.0 : 0.0;
@@ -103,7 +103,7 @@ export component ContactListItem inherits Rectangle {
                     text: root.data.name;
                     // Cream on yellow is invisible in retro — switch to dark indigo when selected.
                     color: Theme.selected-inverts-text && root.selected ? Palette.bubble-out-fg : Palette.text-hi;
-                    font-size: (13px) * Theme.fs-scale;
+                    font-size: Theme.fs(13px, 16px);
                     font-weight: 700;
                     font-family: Theme.font;
                     vertical-alignment: center;
@@ -120,7 +120,7 @@ export component ContactListItem inherits Rectangle {
             Text {
                 text: root.data.npub-short;
                 color: Theme.selected-inverts-text && root.selected ? Palette.bubble-out-fg : Palette.text-lo;
-                font-size: (10px) * Theme.fs-scale;
+                font-size: Theme.fs(10px, 14px);
                 font-family: Theme.font;
                 overflow: elide;
             }

@@ -35,7 +35,7 @@ export component EditHistoryModal inherits Modal {
                     Text {
                         text: v.label;
                         color: Palette.mint;
-                        font-size: (11px) * Theme.fs-scale;
+                        font-size: Theme.fs(11px, 14px);
                         font-family: Theme.font;
                         font-weight: 700;
                         horizontal-stretch: 1;
@@ -44,7 +44,7 @@ export component EditHistoryModal inherits Modal {
                     Text {
                         text: v.stamp;
                         color: Palette.text-lo;
-                        font-size: (10px) * Theme.fs-scale;
+                        font-size: Theme.fs(10px, 14px);
                         font-family: Theme.font;
                         vertical-alignment: center;
                     }
@@ -53,7 +53,7 @@ export component EditHistoryModal inherits Modal {
                 Text {
                     text: v.text;
                     color: Palette.text-hi;
-                    font-size: (13px) * Theme.fs-scale;
+                    font-size: Theme.fs(13px, 16px);
                     font-family: Theme.font;
                     wrap: word-wrap;
                     width: parent.width;

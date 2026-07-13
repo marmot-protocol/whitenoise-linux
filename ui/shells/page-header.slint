@@ -27,14 +27,14 @@ export component PageHeader inherits Rectangle {
             Text {
                 text: root.title;
                 color: Palette.text-hi;
-                font-size: (16px) * Theme.fs-scale;
+                font-size: Theme.fs(16px, 18px);
                 font-weight: 700;
             }
 
             Text {
                 text: root.caption;
                 color: Palette.text-lo;
-                font-size: (10px) * Theme.fs-scale;
+                font-size: Theme.fs(10px, 14px);
                 font-weight: 600;
                 letter-spacing: 1.2px;
             }

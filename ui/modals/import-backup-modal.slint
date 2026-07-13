@@ -43,7 +43,7 @@ export component ImportBackupModal inherits Modal {
         Text {
             text: @tr("BACKUP FILE");
             color: Palette.text-mid;
-            font-size: (9px) * Theme.fs-scale;
+            font-size: Theme.fs(9px, 12px);
             font-weight: 700;
             font-family: Theme.font;
             letter-spacing: 1.6px;
@@ -66,7 +66,7 @@ export component ImportBackupModal inherits Modal {
                     width: 100%;
                     text: root.file-name == "" ? @tr("No file selected") : root.file-name;
                     color: root.file-name == "" ? Palette.text-vlo : Palette.text-hi;
-                    font-size: (12px) * Theme.fs-scale;
+                    font-size: Theme.fs(12px, 16px);
                     font-family: Theme.font;
                     vertical-alignment: center;
                     overflow: elide;

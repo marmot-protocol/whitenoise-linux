@@ -92,7 +92,7 @@ export component SidePanel inherits Rectangle {
                     Text {
                         text: root.title;
                         color: Palette.text-mid;
-                        font-size: (11px) * Theme.fs-scale;
+                        font-size: Theme.fs(11px, 14px);
                         font-weight: 700;
                         letter-spacing: 1.4px;
                         vertical-alignment: center;
@@ -101,14 +101,14 @@ export component SidePanel inherits Rectangle {
                     Text {
                         text: "·";
                         color: Palette.text-vlo;
-                        font-size: (11px) * Theme.fs-scale;
+                        font-size: Theme.fs(11px, 14px);
                         vertical-alignment: center;
                     }
 
                     Text {
                         text: root.count;
                         color: Palette.text-mid;
-                        font-size: (11px) * Theme.fs-scale;
+                        font-size: Theme.fs(11px, 14px);
                         font-weight: 700;
                         vertical-alignment: center;
                     }
@@ -125,7 +125,7 @@ export component SidePanel inherits Rectangle {
                     pad-left: 6px;
                     pad-right: 8px;
                     spacing: 5px;
-                    font-size: (10px) * Theme.fs-scale;
+                    font-size: Theme.fs(10px, 14px);
                     bg-color: transparent;
                     AddUserIcon {
                         stroke: Palette.text-mid;
@@ -187,7 +187,7 @@ export component SidePanel inherits Rectangle {
                         Text {
                             text: root.search-shortcut-label;
                             color: Palette.text-lo;
-                            font-size: (9px) * Theme.fs-scale;
+                            font-size: Theme.fs(9px, 12px);
                             horizontal-alignment: center;
                             vertical-alignment: center;
                         }
@@ -226,7 +226,7 @@ export component SidePanel inherits Rectangle {
                 Text {
                     text: root.footer-text;
                     color: Palette.text-mid;
-                    font-size: (10px) * Theme.fs-scale;
+                    font-size: Theme.fs(10px, 14px);
                     font-weight: 700;
                     letter-spacing: 1.0px;
                     vertical-alignment: center;
@@ -235,7 +235,7 @@ export component SidePanel inherits Rectangle {
                 if root.footer-trail != "": Text {
                     text: root.footer-trail;
                     color: Palette.text-vlo;
-                    font-size: (10px) * Theme.fs-scale;
+                    font-size: Theme.fs(10px, 14px);
                     font-weight: 600;
                     letter-spacing: 1.0px;
                     vertical-alignment: center;

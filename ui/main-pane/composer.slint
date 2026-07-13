@@ -115,7 +115,7 @@ export component Composer inherits Rectangle {
                         Text {
                             text: @tr("Editing:");
                             color: Palette.mint;
-                            font-size: (11px) * Theme.fs-scale;
+                            font-size: Theme.fs(11px, 14px);
                             font-family: Theme.font;
                             font-weight: 700;
                             vertical-alignment: center;
@@ -124,7 +124,7 @@ export component Composer inherits Rectangle {
                         Text {
                             text: root.editing-message-preview;
                             color: Palette.text-mid;
-                            font-size: (11px) * Theme.fs-scale;
+                            font-size: Theme.fs(11px, 14px);
                             font-family: Theme.font;
                             overflow: elide;
                             horizontal-stretch: 1;
@@ -178,7 +178,7 @@ export component Composer inherits Rectangle {
                         Text {
                             text: root.reply-target-author == "" ? @tr("Replying to message:") : @tr("Replying to {}:", root.reply-target-author);
                             color: Palette.mint;
-                            font-size: (11px) * Theme.fs-scale;
+                            font-size: Theme.fs(11px, 14px);
                             font-family: Theme.font;
                             font-weight: 700;
                             vertical-alignment: center;
@@ -187,7 +187,7 @@ export component Composer inherits Rectangle {
                         Text {
                             text: root.reply-target-preview;
                             color: Palette.text-mid;
-                            font-size: (11px) * Theme.fs-scale;
+                            font-size: Theme.fs(11px, 14px);
                             font-family: Theme.font;
                             overflow: elide;
                             horizontal-stretch: 1;
@@ -273,7 +273,7 @@ export component Composer inherits Rectangle {
                                 if !att.has-thumb && att.icon != "": Text {
                                     text: att.icon;
                                     color: Palette.text-lo;
-                                    font-size: (14px) * Theme.fs-scale;
+                                    font-size: Theme.fs(14px, 18px);
                                     font-family: Theme.font;
                                     horizontal-alignment: center;
                                     vertical-alignment: center;
@@ -293,7 +293,7 @@ export component Composer inherits Rectangle {
                                 Text {
                                     text: att.name;
                                     color: Palette.text-hi;
-                                    font-size: (11px) * Theme.fs-scale;
+                                    font-size: Theme.fs(11px, 14px);
                                     font-family: Theme.font;
                                     overflow: elide;
                                 }
@@ -301,7 +301,7 @@ export component Composer inherits Rectangle {
                                 Text {
                                     text: att.size-label;
                                     color: Palette.text-lo;
-                                    font-size: (10px) * Theme.fs-scale;
+                                    font-size: Theme.fs(10px, 14px);
                                     font-family: Theme.font;
                                     overflow: elide;
                                 }
@@ -684,7 +684,7 @@ export component Composer inherits Rectangle {
             Text {
                 text: @tr("Shift+Enter for newline");
                 color: Palette.text-mid;
-                font-size: (10px) * Theme.fs-scale;
+                font-size: Theme.fs(10px, 14px);
                 font-weight: 600;
                 font-family: Theme.font;
                 vertical-alignment: center;
@@ -735,7 +735,7 @@ export component Composer inherits Rectangle {
                 Text {
                     text: "✕";
                     color: Palette.text-mid;
-                    font-size: (13px) * Theme.fs-scale;
+                    font-size: Theme.fs(13px, 16px);
                     horizontal-alignment: center;
                     vertical-alignment: center;
                 }

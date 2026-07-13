@@ -26,7 +26,7 @@ component FieldRow inherits Rectangle {
         Text {
             text: root.label;
             color: Palette.text-hi;
-            font-size: (12px) * Theme.fs-scale;
+            font-size: Theme.fs(12px, 16px);
             font-weight: 700;
         }
 
@@ -85,7 +85,7 @@ component PictureField inherits Rectangle {
         Text {
             text: @tr("Picture");
             color: Palette.text-hi;
-            font-size: (12px) * Theme.fs-scale;
+            font-size: Theme.fs(12px, 16px);
             font-weight: 700;
         }
 
@@ -159,7 +159,7 @@ component MetaChip inherits Rectangle {
         Text {
             text: root.glyph;
             color: root.tint;
-            font-size: (10px) * Theme.fs-scale;
+            font-size: Theme.fs(10px, 14px);
             font-weight: 700;
             vertical-alignment: center;
         }
@@ -167,7 +167,7 @@ component MetaChip inherits Rectangle {
         Text {
             text: root.text;
             color: Theme.soft-decor ? root.tint : Palette.text-hi;
-            font-size: (11px) * Theme.fs-scale;
+            font-size: Theme.fs(11px, 14px);
             font-weight: 600;
             font-family: Theme.font;
             vertical-alignment: center;
@@ -197,7 +197,7 @@ component AvatarEditable inherits Rectangle {
         color-b: Palette.mint-dim;
         picture: root.picture;
         has-picture: root.has-picture;
-        font-size: (34px) * Theme.fs-scale;
+        font-size: Theme.fs(34px, 40px);
     }
 
     // Dim + label while an upload is in flight.
@@ -209,7 +209,7 @@ component AvatarEditable inherits Rectangle {
         Text {
             text: @tr("Uploading…");
             color: white;
-            font-size: (10px) * Theme.fs-scale;
+            font-size: Theme.fs(10px, 14px);
             font-weight: 700;
             horizontal-alignment: center;
             vertical-alignment: center;
@@ -301,14 +301,14 @@ export component ProfilePage inherits Rectangle {
                     Text {
                         text: @tr("Your profile");
                         color: Palette.text-hi;
-                        font-size: (18px) * Theme.fs-scale;
+                        font-size: Theme.fs(18px, 20px);
                         font-weight: 700;
                     }
 
                     Text {
                         text: root.editing ? @tr("EDITING · BROADCAST TO RELAYS ON SAVE") : @tr("VISIBLE TO ANYONE YOU CHAT WITH");
                         color: Palette.text-lo;
-                        font-size: (10px) * Theme.fs-scale;
+                        font-size: Theme.fs(10px, 14px);
                         font-weight: 600;
                         letter-spacing: 1.2px;
                     }
@@ -331,7 +331,7 @@ export component ProfilePage inherits Rectangle {
                         Text {
                             text: "✎";
                             color: Palette.bubble-out-fg;
-                            font-size: (12px) * Theme.fs-scale;
+                            font-size: Theme.fs(12px, 16px);
                         }
                     }
                     if root.editing: HorizontalLayout {
@@ -426,7 +426,7 @@ export component ProfilePage inherits Rectangle {
                     Text {
                         text: root.display-name == "" ? @tr("(no display name)") : root.display-name;
                         color: Palette.text-hi;
-                        font-size: (24px) * Theme.fs-scale;
+                        font-size: Theme.fs(24px, 28px);
                         font-weight: 700;
                         overflow: elide;
                     }
@@ -447,7 +447,7 @@ export component ProfilePage inherits Rectangle {
                         if root.nip05 == "" && root.lud16 == "": Text {
                             text: root.username == "" ? @tr("no handle yet") : "@" + root.username;
                             color: Palette.text-lo;
-                            font-size: (12px) * Theme.fs-scale;
+                            font-size: Theme.fs(12px, 16px);
                             font-family: Theme.font;
                             vertical-alignment: center;
                         }
@@ -456,7 +456,7 @@ export component ProfilePage inherits Rectangle {
                     if root.about != "": Text {
                         text: root.about;
                         color: Palette.text-mid;
-                        font-size: (12px) * Theme.fs-scale;
+                        font-size: Theme.fs(12px, 16px);
                         wrap: word-wrap;
                         overflow: elide;
                     }
@@ -476,7 +476,7 @@ export component ProfilePage inherits Rectangle {
                     Text {
                         text: root.status;
                         color: Palette.text-mid;
-                        font-size: (12px) * Theme.fs-scale;
+                        font-size: Theme.fs(12px, 16px);
                         vertical-alignment: center;
                     }
                 }
@@ -528,7 +528,7 @@ export component ProfilePage inherits Rectangle {
                         Text {
                             text: @tr("Scan to add me from another device");
                             color: Palette.text-lo;
-                            font-size: (11px) * Theme.fs-scale;
+                            font-size: Theme.fs(11px, 14px);
                             horizontal-alignment: center;
                         }
                     }

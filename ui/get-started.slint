@@ -32,7 +32,7 @@ component MiniRelayRow inherits Rectangle {
             Text {
                 text: root.url;
                 color: Palette.text-hi;
-                font-size: (12px) * Theme.fs-scale;
+                font-size: Theme.fs(12px, 16px);
                 font-weight: 500;
                 overflow: elide;
             }
@@ -99,7 +99,7 @@ component StepCard inherits Rectangle {
                 if !root.done: Text {
                     text: root.step-no;
                     color: Palette.text-mid;
-                    font-size: (13px) * Theme.fs-scale;
+                    font-size: Theme.fs(13px, 16px);
                     font-weight: 700;
                     horizontal-alignment: center;
                     vertical-alignment: center;
@@ -119,14 +119,14 @@ component StepCard inherits Rectangle {
             Text {
                 text: root.title;
                 color: Palette.text-hi;
-                font-size: (15px) * Theme.fs-scale;
+                font-size: Theme.fs(15px, 18px);
                 font-weight: 700;
             }
 
             Text {
                 text: root.desc;
                 color: Palette.text-lo;
-                font-size: (12px) * Theme.fs-scale;
+                font-size: Theme.fs(12px, 16px);
                 wrap: word-wrap;
             }
             // Action area, padded off the description.
@@ -206,7 +206,7 @@ export component GetStartedScreen inherits Rectangle {
                         Text {
                             text: @tr("Welcome to darkmatter");
                             color: Palette.text-hi;
-                            font-size: (24px) * Theme.fs-scale;
+                            font-size: Theme.fs(24px, 28px);
                             font-weight: 700;
                             horizontal-alignment: center;
                         }
@@ -214,7 +214,7 @@ export component GetStartedScreen inherits Rectangle {
                         Text {
                             text: @tr("Three quick steps and you're ready to message — end-to-end encrypted, no servers in the middle.");
                             color: Palette.text-lo;
-                            font-size: (13px) * Theme.fs-scale;
+                            font-size: Theme.fs(13px, 16px);
                             horizontal-alignment: center;
                             wrap: word-wrap;
                         }
@@ -241,7 +241,7 @@ export component GetStartedScreen inherits Rectangle {
                             Text {
                                 text: root.total == 0 ? @tr("No relays yet") : (root.connected == root.total ? @tr("Connected · {}/{}", root.connected, root.total) : @tr("Partial · {}/{} connected", root.connected, root.total));
                                 color: Palette.text-mid;
-                                font-size: (11px) * Theme.fs-scale;
+                                font-size: Theme.fs(11px, 14px);
                                 font-weight: 600;
                                 vertical-alignment: center;
                             }
@@ -308,7 +308,7 @@ export component GetStartedScreen inherits Rectangle {
                         if root.add-error != "": Text {
                             text: root.add-error;
                             color: Palette.danger;
-                            font-size: (11px) * Theme.fs-scale;
+                            font-size: Theme.fs(11px, 14px);
                             wrap: word-wrap;
                         }
 
@@ -318,7 +318,7 @@ export component GetStartedScreen inherits Rectangle {
                             Text {
                                 text: @tr("SUGGESTED");
                                 color: Palette.text-mid;
-                                font-size: (9px) * Theme.fs-scale;
+                                font-size: Theme.fs(9px, 12px);
                                 font-weight: 700;
                                 letter-spacing: 1.4px;
                             }
@@ -373,7 +373,7 @@ export component GetStartedScreen inherits Rectangle {
                         if root.network-status != "": Text {
                             text: root.network-status;
                             color: Palette.text-lo;
-                            font-size: (11px) * Theme.fs-scale;
+                            font-size: Theme.fs(11px, 14px);
                             wrap: word-wrap;
                         }
                     }
@@ -416,7 +416,7 @@ export component GetStartedScreen inherits Rectangle {
                                 Text {
                                     text: @tr("Add a relay first.");
                                     color: Palette.warning;
-                                    font-size: (11px) * Theme.fs-scale;
+                                    font-size: Theme.fs(11px, 14px);
                                     font-weight: 600;
                                 }
                             }
@@ -425,7 +425,7 @@ export component GetStartedScreen inherits Rectangle {
                         if root.kp-status != "": Text {
                             text: root.kp-status;
                             color: Palette.text-lo;
-                            font-size: (11px) * Theme.fs-scale;
+                            font-size: Theme.fs(11px, 14px);
                             wrap: word-wrap;
                         }
                     }

@@ -102,7 +102,7 @@ export component DebugPane inherits DetailPage {
                     text: root.dump != "" ? root.dump : @tr("(no snapshot yet — click Refresh)");
                     color: Palette.text-hi;
                     font-family: Theme.font;
-                    font-size: (11px) * Theme.fs-scale;
+                    font-size: Theme.fs(11px, 14px);
                     wrap: word-wrap;
                 }
             }

@@ -143,7 +143,7 @@ export component Modal inherits Rectangle {
                             Text {
                                 text: root.title;
                                 color: Palette.text-hi;
-                                font-size: (17px) * Theme.fs-scale;
+                                font-size: Theme.fs(17px, 20px);
                                 font-weight: 800;
                                 font-family: Theme.font;
                             }
@@ -151,7 +151,7 @@ export component Modal inherits Rectangle {
                             if root.subtitle != "": Text {
                                 text: root.subtitle;
                                 color: Palette.text-lo;
-                                font-size: (11px) * Theme.fs-scale;
+                                font-size: Theme.fs(11px, 14px);
                                 font-family: Theme.font;
                                 wrap: word-wrap;
                             }
@@ -168,7 +168,7 @@ export component Modal inherits Rectangle {
                                 Text {
                                     text: "✕";
                                     color: Palette.text-mid;
-                                    font-size: (14px) * Theme.fs-scale;
+                                    font-size: Theme.fs(14px, 18px);
                                     font-family: Theme.font;
                                     horizontal-alignment: center;
                                     vertical-alignment: center;
@@ -201,7 +201,7 @@ export component Modal inherits Rectangle {
                         Text {
                             text: root.status;
                             color: root.status-color;
-                            font-size: (10px) * Theme.fs-scale;
+                            font-size: Theme.fs(10px, 14px);
                             font-family: Theme.font;
                             wrap: word-wrap;
                         }
@@ -293,7 +293,7 @@ export component Modal inherits Rectangle {
         Text {
             text: "✕";
             color: #FFFFFF;
-            font-size: (18px) * Theme.fs-scale;
+            font-size: Theme.fs(18px, 20px);
             font-family: Theme.font;
             horizontal-alignment: center;
             vertical-alignment: center;
@@ -341,7 +341,7 @@ export component ModalField inherits VerticalLayout {
     if root.label != "": Text {
         text: root.label;
         color: Palette.text-mid;
-        font-size: (9px) * Theme.fs-scale;
+        font-size: Theme.fs(9px, 12px);
         font-weight: 700;
         font-family: Theme.font;
         letter-spacing: 1.6px;

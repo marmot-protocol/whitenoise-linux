@@ -91,7 +91,7 @@ export component GroupSettingsCard inherits Section {
                 Text {
                     text: @tr("Group name");
                     color: Palette.text-hi;
-                    font-size: (12px) * Theme.fs-scale;
+                    font-size: Theme.fs(12px, 16px);
                     font-weight: 700;
                 }
 
@@ -149,7 +149,7 @@ export component GroupSettingsCard inherits Section {
                 Text {
                     text: @tr("Group description");
                     color: Palette.text-hi;
-                    font-size: (12px) * Theme.fs-scale;
+                    font-size: Theme.fs(12px, 16px);
                     font-weight: 700;
                 }
 
@@ -219,7 +219,7 @@ export component GroupSettingsCard inherits Section {
                     Text {
                         text: root.group-status;
                         color: Palette.text-lo;
-                        font-size: (10px) * Theme.fs-scale;
+                        font-size: Theme.fs(10px, 14px);
                         vertical-alignment: center;
                         overflow: elide;
                     }
@@ -236,14 +236,14 @@ export component GroupSettingsCard inherits Section {
                 Text {
                     text: @tr("Leave group");
                     color: Palette.danger;
-                    font-size: (12px) * Theme.fs-scale;
+                    font-size: Theme.fs(12px, 16px);
                     font-weight: 700;
                 }
 
                 Text {
                     text: root.can-manage ? @tr("Admins must step down before leaving.") : @tr("Leave this group and stop receiving new messages. The chat moves to Archive.");
                     color: Palette.text-lo;
-                    font-size: (10px) * Theme.fs-scale;
+                    font-size: Theme.fs(10px, 14px);
                     wrap: word-wrap;
                 }
 

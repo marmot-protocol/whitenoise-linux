@@ -29,7 +29,7 @@ component LanguageRow inherits Rectangle {
             horizontal-stretch: 1;
             text: root.label;
             color: root.selected ? Palette.mint : Palette.text-hi;
-            font-size: (13px) * Theme.fs-scale;
+            font-size: Theme.fs(13px, 16px);
             font-weight: root.selected ? 700 : 500;
             vertical-alignment: center;
         }

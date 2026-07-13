@@ -42,7 +42,7 @@ component VaultField inherits VerticalLayout {
     Text {
         text: root.label;
         color: Palette.text-mid;
-        font-size: (9px) * Theme.fs-scale;
+        font-size: Theme.fs(9px, 12px);
         font-weight: 700;
         letter-spacing: 1.6px;
     }
@@ -67,7 +67,6 @@ component VaultField inherits VerticalLayout {
                 placeholder: root.placeholder;
                 text <=> root.text;
                 password: root.password;
-                // LineInput multiplies by fs-scale internally.
                 font-size: Theme.fsr(13px, 14px);
                 fg: Palette.text-hi;
                 placeholder-color: Palette.text-vlo;
@@ -264,7 +263,7 @@ export component LoginScreen inherits Rectangle {
                     Text {
                         text: "darkmatter";
                         color: Palette.text-hi;
-                        font-size: (22px) * Theme.fs-scale;
+                        font-size: Theme.fs(22px, 26px);
                         font-weight: 700;
                         horizontal-alignment: center;
                     }
@@ -272,7 +271,7 @@ export component LoginScreen inherits Rectangle {
                     Text {
                         text: root.mode == 0 ? @tr("Sign in to your Nostr identity") : root.mode == 1 ? @tr("Import a key & set a password") : root.mode == 3 ? @tr("Enter your password to unlock") : @tr("Save your new key");
                         color: Palette.text-lo;
-                        font-size: (12px) * Theme.fs-scale;
+                        font-size: Theme.fs(12px, 16px);
                         horizontal-alignment: center;
                     }
                 }
@@ -348,7 +347,7 @@ export component LoginScreen inherits Rectangle {
                     Text {
                         text: @tr("Your key never leaves this device.");
                         color: Palette.text-vlo;
-                        font-size: (10px) * Theme.fs-scale;
+                        font-size: Theme.fs(10px, 14px);
                         horizontal-alignment: center;
                     }
                 }
@@ -392,14 +391,14 @@ export component LoginScreen inherits Rectangle {
                     if root.password-mismatch(): Text {
                         text: @tr("Passwords don't match.");
                         color: Palette.danger;
-                        font-size: (11px) * Theme.fs-scale;
+                        font-size: Theme.fs(11px, 14px);
                         wrap: word-wrap;
                     }
 
                     if root.error != "": Text {
                         text: root.error;
                         color: Palette.danger;
-                        font-size: (11px) * Theme.fs-scale;
+                        font-size: Theme.fs(11px, 14px);
                         wrap: word-wrap;
                     }
 
@@ -476,7 +475,7 @@ export component LoginScreen inherits Rectangle {
                                 Text {
                                     text: @tr("YOUR DISPLAY NAME");
                                     color: Palette.text-mid;
-                                    font-size: (9px) * Theme.fs-scale;
+                                    font-size: Theme.fs(9px, 12px);
                                     font-weight: 700;
                                     letter-spacing: 1.6px;
                                 }
@@ -519,14 +518,14 @@ export component LoginScreen inherits Rectangle {
                                 Text {
                                     text: @tr("Back up your nsec before saving");
                                     color: Palette.warning;
-                                    font-size: (12px) * Theme.fs-scale;
+                                    font-size: Theme.fs(12px, 16px);
                                     font-weight: 700;
                                 }
 
                                 Text {
                                     text: @tr("Sealed with your password on this device. Keep your own copy of the nsec too — lose both and this identity is gone.");
                                     color: Palette.text-lo;
-                                    font-size: (10px) * Theme.fs-scale;
+                                    font-size: Theme.fs(10px, 14px);
                                     wrap: word-wrap;
                                 }
                             }
@@ -539,7 +538,7 @@ export component LoginScreen inherits Rectangle {
                         Text {
                             text: @tr("PUBLIC KEY (NPUB)");
                             color: Palette.text-mid;
-                            font-size: (9px) * Theme.fs-scale;
+                            font-size: Theme.fs(9px, 12px);
                             font-weight: 700;
                             letter-spacing: 1.6px;
                         }
@@ -571,7 +570,7 @@ export component LoginScreen inherits Rectangle {
                         Text {
                             text: @tr("SECRET KEY (NSEC)");
                             color: Palette.text-mid;
-                            font-size: (9px) * Theme.fs-scale;
+                            font-size: Theme.fs(9px, 12px);
                             font-weight: 700;
                             letter-spacing: 1.6px;
                         }
@@ -661,21 +660,21 @@ export component LoginScreen inherits Rectangle {
                     if root.password-mismatch(): Text {
                         text: @tr("Passwords don't match.");
                         color: Palette.danger;
-                        font-size: (11px) * Theme.fs-scale;
+                        font-size: Theme.fs(11px, 14px);
                         wrap: word-wrap;
                     }
 
                     if root.error != "": Text {
                         text: root.error;
                         color: Palette.danger;
-                        font-size: (11px) * Theme.fs-scale;
+                        font-size: Theme.fs(11px, 14px);
                         wrap: word-wrap;
                     }
 
                     if root.status != "": Text {
                         text: root.status;
                         color: Palette.mint;
-                        font-size: (11px) * Theme.fs-scale;
+                        font-size: Theme.fs(11px, 14px);
                         wrap: word-wrap;
                     }
 
@@ -735,7 +734,7 @@ export component LoginScreen inherits Rectangle {
                     if root.error != "": Text {
                         text: root.error;
                         color: Palette.danger;
-                        font-size: (11px) * Theme.fs-scale;
+                        font-size: Theme.fs(11px, 14px);
                         wrap: word-wrap;
                     }
 

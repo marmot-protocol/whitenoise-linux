@@ -21,21 +21,21 @@ export component GroupMembersHeader inherits HorizontalLayout {
         Text {
             text: @tr("Members");
             color: Palette.text-hi;
-            font-size: (13px) * Theme.fs-scale;
+            font-size: Theme.fs(13px, 16px);
             font-weight: 700;
         }
 
         Text {
             text: @tr("1 in this group" | "{n} in this group" % root.member-count);
             color: Palette.text-lo;
-            font-size: (10px) * Theme.fs-scale;
+            font-size: Theme.fs(10px, 14px);
             letter-spacing: 0.8px;
         }
 
         if root.group-description != "": Text {
             text: root.group-description;
             color: Palette.text-lo;
-            font-size: (10px) * Theme.fs-scale;
+            font-size: Theme.fs(10px, 14px);
             wrap: word-wrap;
             overflow: elide;
         }
@@ -50,7 +50,7 @@ export component GroupMembersHeader inherits HorizontalLayout {
         Text {
             text: "✕";
             color: Palette.text-mid;
-            font-size: (14px) * Theme.fs-scale;
+            font-size: Theme.fs(14px, 18px);
             horizontal-alignment: center;
             vertical-alignment: center;
         }

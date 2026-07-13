@@ -110,7 +110,7 @@ export component Button inherits Rectangle {
             // Terminal/TUI themes bracket button labels: [ Send ].
             text: Theme.bracket-labels ? "[ " + root.label + " ]" : root.label;
             color: root.hovered ? root.hover-fg : root.fg;
-            font-size: (root.font-size) * Theme.fs-scale;
+            font-size: root.font-size;
             font-weight: root.font-weight;
             font-family: Theme.font;
             vertical-alignment: center;

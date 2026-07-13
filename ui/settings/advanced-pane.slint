@@ -35,7 +35,7 @@ component AuditFileRow inherits Rectangle {
             Text {
                 text: root.name;
                 color: Palette.text-hi;
-                font-size: (12px) * Theme.fs-scale;
+                font-size: Theme.fs(12px, 16px);
                 font-weight: 500;
                 overflow: elide;
             }
@@ -43,7 +43,7 @@ component AuditFileRow inherits Rectangle {
             Text {
                 text: root.meta;
                 color: Palette.text-lo;
-                font-size: (11px) * Theme.fs-scale;
+                font-size: Theme.fs(11px, 14px);
                 overflow: elide;
             }
         }
@@ -126,7 +126,7 @@ export component AdvancedPane inherits DetailPage {
             text: root.audit-status;
             color: Palette.text-mid;
             font-family: Theme.font;
-            font-size: 11px * Theme.fs-scale;
+            font-size: Theme.fs(11px, 14px);
             wrap: word-wrap;
         }
     }
@@ -142,7 +142,7 @@ export component AdvancedPane inherits DetailPage {
                     height: parent.height;
                     text: @tr("No audit log files on disk.");
                     color: Palette.text-lo;
-                    font-size: (12px) * Theme.fs-scale;
+                    font-size: Theme.fs(12px, 16px);
                     vertical-alignment: center;
                 }
             }
@@ -173,7 +173,7 @@ export component AdvancedPane inherits DetailPage {
         Text {
             text: @tr("Deleting the file being recorded rotates it — recording continues in a fresh file.");
             color: Palette.text-lo;
-            font-size: (11px) * Theme.fs-scale;
+            font-size: Theme.fs(11px, 14px);
             wrap: word-wrap;
         }
     }

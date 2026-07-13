@@ -25,7 +25,7 @@ export component Avatar inherits Rectangle {
     if !root.has-picture: Text {
         text: root.initials;
         color: white;
-        font-size: (root.font-size) * Theme.fs-scale;
+        font-size: root.font-size;
         font-weight: 700;
         font-family: Theme.font;
         horizontal-alignment: center;

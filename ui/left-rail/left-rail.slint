@@ -68,7 +68,7 @@ component NavItem inherits Rectangle {
         Text {
             text: root.label;
             color: root.selected ? (Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.mint) : Palette.text-mid;
-            font-size: (11px) * Theme.fs-scale;
+            font-size: Theme.fs(11px, 14px);
             font-weight: 600;
             font-family: Theme.font;
             vertical-alignment: center;

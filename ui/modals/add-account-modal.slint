@@ -37,7 +37,7 @@ export component AddAccountModal inherits Modal {
         Text {
             text: @tr("No second key yet?");
             color: Palette.text-lo;
-            font-size: (11px) * Theme.fs-scale;
+            font-size: Theme.fs(11px, 14px);
             font-family: Theme.font;
             vertical-alignment: center;
         }
@@ -53,7 +53,7 @@ export component AddAccountModal inherits Modal {
                 gen-label := Text {
                     text: @tr("Generate a new key");
                     color: gen-touch.has-hover ? Palette.mint-hi : Palette.mint;
-                    font-size: (11px) * Theme.fs-scale;
+                    font-size: Theme.fs(11px, 14px);
                     font-weight: 700;
                     font-family: Theme.font;
                     vertical-alignment: center;
@@ -65,7 +65,7 @@ export component AddAccountModal inherits Modal {
     if root.generated: Text {
         text: @tr("This key was just generated and exists nowhere else yet. Copy it somewhere safe before adding it — there is no recovery.");
         color: Palette.danger;
-        font-size: (10px) * Theme.fs-scale;
+        font-size: Theme.fs(10px, 14px);
         font-family: Theme.font;
         wrap: word-wrap;
     }

@@ -15,7 +15,7 @@ export component SharedGroupsList inherits VerticalLayout {
         Text {
             text: root.empty-text;
             color: Palette.text-lo;
-            font-size: (12px) * Theme.fs-scale;
+            font-size: Theme.fs(12px, 16px);
             font-family: Theme.font;
             horizontal-alignment: center;
             vertical-alignment: center;
@@ -51,7 +51,7 @@ export component SharedGroupsList inherits VerticalLayout {
                 Text {
                     text: group.name;
                     color: Palette.text-hi;
-                    font-size: (13px) * Theme.fs-scale;
+                    font-size: Theme.fs(13px, 16px);
                     font-weight: 700;
                     font-family: Theme.font;
                     overflow: elide;
@@ -60,7 +60,7 @@ export component SharedGroupsList inherits VerticalLayout {
                 Text {
                     text: @tr("1 member" | "{n} members" % group.members);
                     color: Palette.text-lo;
-                    font-size: (11px) * Theme.fs-scale;
+                    font-size: Theme.fs(11px, 14px);
                     font-family: Theme.font;
                 }
             }

@@ -105,7 +105,6 @@ export component EmojiPicker inherits Rectangle {
                             placeholder: @tr("search…");
                             fg: Palette.text-hi;
                             placeholder-color: Palette.text-lo;
-                        // LineInput multiplies by fs-scale internally.
                         font-size: 12px;
                         }
                     }
@@ -213,7 +212,7 @@ export component EmojiPicker inherits Rectangle {
                             y: root.grid-pad;
                             text: root.query == "" ? @tr("no matches") : @tr("no matches for \"{}\"", root.query);
                             color: Palette.text-lo;
-                            font-size: (11px) * Theme.fs-scale;
+                            font-size: Theme.fs(11px, 14px);
                         }
                     }
                 }
