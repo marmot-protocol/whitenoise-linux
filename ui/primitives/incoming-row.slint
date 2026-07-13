@@ -13,6 +13,7 @@ export component IncomingRow inherits VerticalLayout {
     // tokens.slint for per-field docs). Only row context that is not carried
     // on the message stays a scalar property.
     in property <ChatMessage> msg;
+    in property <bool> highlighted: false;
     in property <length> row-w: 9999px;
 
     // Fire the burst in the shared overlay (which paints above all bubbles),
@@ -124,6 +125,7 @@ export component IncomingRow inherits VerticalLayout {
                     x: 0;
                     y: 0;
                     msg: root.msg;
+                    highlighted: root.highlighted;
                     available-w: max(80px, root.row-w - 28px - 10px - 10px);
                     attachment-clicked => {
                         root.attachment-clicked(root.msg.message-id);

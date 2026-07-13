@@ -1270,6 +1270,10 @@ msgctxt "MessagesArea"
 msgid "Load earlier messages"
 msgstr "Frühere Nachrichten laden"
 
+msgctxt "MentionsInbox"
+msgid "Loading mentions…"
+msgstr "Erwähnungen werden geladen…"
+
 msgctxt "MessagesArea"
 msgid "Loading messages…"
 msgstr "Nachrichten werden geladen…"
@@ -1361,6 +1365,10 @@ msgstr "Mitglieder"
 msgctxt "GroupMembersPanel"
 msgid "Members"
 msgstr "Mitglieder"
+
+msgctxt "MentionsInbox"
+msgid "Mentions"
+msgstr "Erwähnungen"
 
 msgctxt "StoragePane"
 msgid "Merge the accounts from a backup file into this install."
@@ -1474,6 +1482,10 @@ msgstr "Noch keine Schlüsselpakete"
 msgctxt "CommandPalette"
 msgid "No matches"
 msgstr "Keine Treffer"
+
+msgctxt "MentionsInbox"
+msgid "No mentions yet"
+msgstr "Noch keine Erwähnungen"
 
 msgctxt "MessagesArea"
 msgid "No messages yet"

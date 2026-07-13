@@ -1214,6 +1214,10 @@ msgctxt "MessagesArea"
 msgid "Load earlier messages"
 msgstr ""
 
+msgctxt "MentionsInbox"
+msgid "Loading mentions…"
+msgstr ""
+
 msgctxt "MessagesArea"
 msgid "Loading messages…"
 msgstr ""
@@ -1296,6 +1300,10 @@ msgstr ""
 
 msgctxt "GroupMembersPanel"
 msgid "Members"
+msgstr ""
+
+msgctxt "MentionsInbox"
+msgid "Mentions"
 msgstr ""
 
 msgctxt "StoragePane"
@@ -1405,6 +1413,10 @@ msgstr ""
 
 msgctxt "CommandPalette"
 msgid "No matches"
+msgstr ""
+
+msgctxt "MentionsInbox"
+msgid "No mentions yet"
 msgstr ""
 
 msgctxt "MessagesArea"

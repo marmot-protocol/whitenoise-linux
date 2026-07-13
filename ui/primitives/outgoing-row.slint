@@ -13,6 +13,7 @@ export component OutgoingRow inherits VerticalLayout {
     // tokens.slint for per-field docs). Only row context that is not carried
     // on the message stays a scalar property.
     in property <ChatMessage> msg;
+    in property <bool> highlighted: false;
     in property <length> row-w: 9999px;
     in property <bool> align-right: true;
     // Own profile picture. Not on the message — pushed from the root's
@@ -110,6 +111,7 @@ export component OutgoingRow inherits VerticalLayout {
                     x: 0;
                     y: 0;
                     msg: root.msg;
+                    highlighted: root.highlighted;
                     align-right: root.align-right;
                     available-w: max(80px, root.row-w - 28px - 10px - 10px);
                     retry-clicked => {

@@ -1,0 +1,43 @@
+import { MentionInboxItem, Palette, Theme } from "../tokens.slint";
+import { MentionsInbox } from "../main-pane/mentions-inbox.slint";
+
+export component MentionsIcon inherits Rectangle {
+    in property <[MentionInboxItem]> mention-items;
+    in property <bool> mentions-loading: false;
+    callback mentions-inbox-opened();
+    callback mention-inbox-item-selected(string, string);
+
+    width: 30px;
+    height: 30px;
+    background: mention-inbox-touch.has-hover ? Palette.hover : transparent;
+    border-radius: (6px) * Theme.r-scale;
+    animate background { duration: 100ms; }
+
+    mention-inbox-touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            root.mentions-inbox-opened();
+            mention-inbox.open();
+        }
+
+        Text {
+            text: "@";
+            color: mention-inbox-touch.has-hover ? Palette.mint : Palette.text-mid;
+            font-family: Theme.font;
+            font-size: Theme.fs(12px, 17px);
+            font-weight: 800;
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+        }
+    }
+
+    mention-inbox := MentionsInbox {
+        x: parent.width;
+        y: 0px;
+        items: root.mention-items;
+        loading: root.mentions-loading;
+        selected(group-id, message-id) => {
+            root.mention-inbox-item-selected(group-id, message-id);
+        }
+    }
+}

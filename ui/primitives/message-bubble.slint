@@ -305,6 +305,7 @@ export component MessageBubble inherits Rectangle {
     // per-field docs). Row context that is not carried on the message stays a
     // scalar property below.
     in property <ChatMessage> msg;
+    in property <bool> highlighted: false;
     // Which screen edge the bubble hugs. Outgoing bubbles can be placed on the
     // left (when "own messages on the right" is off), so the tail + tight corner
     // must follow the actual alignment, not the outgoing flag. Incoming always
@@ -401,11 +402,11 @@ export component MessageBubble inherits Rectangle {
     border-top-right-radius: Theme.sketch-bubbles ? (root.hug-right ? root.r-sm : root.r-lg) : (root.hug-right ? (root.msg.first-in-group ? root.r-lg : root.r-sm) : root.r-lg);
     border-bottom-left-radius: Theme.sketch-bubbles ? root.r-lg : (root.hug-right ? root.r-lg : root.r-sm);
     border-bottom-right-radius: Theme.sketch-bubbles ? root.r-lg : (root.hug-right ? root.r-sm : root.r-lg);
-    border-width: (root.msg.jumbo-emoji || Theme.sketch-bubbles) ? 0px : (root.msg.failed ? 1.5px : Theme.border-w);
+    border-width: (root.msg.jumbo-emoji || Theme.sketch-bubbles) ? 0px : (root.highlighted ? max(Theme.border-w, 3px) : (root.msg.mentioned ? max(Theme.border-w, 2px) : (root.msg.failed ? 1.5px : Theme.border-w)));
     // Sketch bubbles get a dark "ink" outline on BOTH sides (outgoing included,
     // which is borderless in modern themes) — the comic/hand-drawn signature.
     // text-hi is the page's pencil-ink colour, so outlines match the body text.
-    border-color: root.msg.failed ? Palette.danger-on-bubble : (Theme.sketch-bubbles ? Palette.text-hi : (root.msg.outgoing ? transparent : Palette.border-2));
+    border-color: root.msg.failed ? Palette.danger-on-bubble : (root.highlighted ? Palette.mint-hi : (root.msg.mentioned ? Palette.mint : (Theme.sketch-bubbles ? Palette.text-hi : (root.msg.outgoing ? transparent : Palette.border-2))));
     // Sketch bubbles stay shadowless — the ink outline defines the edge; a soft
     // blur underneath just muddies the flat hand-drawn look.
     drop-shadow-color: (root.msg.jumbo-emoji || Theme.sketch-bubbles) ? transparent : (Theme.hard-shadow ? Palette.shadow : (root.msg.outgoing ? Palette.mint-glow : Palette.shadow-bubble-in));
@@ -431,7 +432,7 @@ export component MessageBubble inherits Rectangle {
         h: root.height;
         radius: root.r-lg;
         fill: root.msg.outgoing ? Palette.mint : Palette.bubble-in;
-        ink: root.msg.failed ? Palette.danger-on-bubble : Palette.text-hi;
+        ink: root.msg.failed ? Palette.danger-on-bubble : (root.highlighted ? Palette.mint-hi : (root.msg.mentioned ? Palette.mint : Palette.text-hi));
         // Tail on the first bubble of a group, curling toward the avatar: top-left
         // normally, top-right when own messages are placed on the right.
         tail: root.msg.first-in-group ? (root.hug-right ? 2 : 1) : 0;

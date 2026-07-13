@@ -1340,7 +1340,8 @@ pub(crate) fn install_chat_watcher(
             // Desktop notification for a fresh incoming message in a chat the
             // user isn't currently viewing. Gates, in order: master toggle →
             // backend ready → there is a latest message → it's incoming →
-            // recent enough (not backlog) → a visible chat message → its id
+            // recent enough (not backlog) → muted chats suppress it unless the
+            // message mentions the local user → a visible chat message → its id
             // changed since we last saw this chat → not the on-screen chat.
             if notif.enabled.load(std::sync::atomic::Ordering::Relaxed)
                 && let Some(b) = guard.as_ref()
@@ -1348,12 +1349,13 @@ pub(crate) fn install_chat_watcher(
             {
                 let incoming = !m.sender.eq_ignore_ascii_case(&my_id);
                 let recent = m.recorded_at.saturating_add(NOTIF_SKEW_SECS) >= since_secs;
+                let mentioned = text_mentions_account(&m.plaintext, &my_id);
                 // `note_latest` runs before the `!viewing` check (it must record
                 // the seen id even while viewing, so switching away later doesn't
                 // re-notify); `&&` short-circuits the notification itself.
                 if incoming
                     && recent
-                    && !notif.is_muted(&id)
+                    && (!notif.is_muted(&id) || mentioned)
                     && is_visible_chat_message(&m)
                     // A group-system row isn't a message — no desktop toast (its
                     // plaintext is the raw event JSON, not readable body text).
@@ -1363,7 +1365,15 @@ pub(crate) fn install_chat_watcher(
                 {
                     let preview = notif.preview.load(std::sync::atomic::Ordering::Relaxed);
                     let sound = notif.sound.load(std::sync::atomic::Ordering::Relaxed);
-                    let body = notification_body(b, &m, &id, preview);
+                    let body = if mentioned {
+                        if preview {
+                            format!("Mentioned you — {}", notification_body(b, &m, &id, true))
+                        } else {
+                            "Mentioned you".to_string()
+                        }
+                    } else {
+                        notification_body(b, &m, &id, preview)
+                    };
                     // dbus IO — keep it off the UI thread.
                     std::thread::spawn(move || {
                         notify::show(&chat_name, &body, sound);

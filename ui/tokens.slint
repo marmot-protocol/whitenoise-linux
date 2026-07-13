@@ -813,6 +813,18 @@ export struct AlbumCell {
     key: string,
 }
 
+export struct MentionInboxItem {
+    group-id: string,
+    message-id: string,
+    chat-name: string,
+    sender-name: string,
+    sender-initials: string,
+    sender-a: color,
+    sender-b: color,
+    text: string,
+    stamp: string,
+}
+
 export struct ChatMessage {
     text: string,
     // Pre-tokenized + pre-wrapped body, grouped into lines. Empty for
@@ -837,6 +849,9 @@ export struct ChatMessage {
     // it so 1:1 chats and outgoing rows don't repeat the obvious.
     sender-name: string,
     show-sender-name: bool,
+    // Incoming row whose body mentions the local user's npub/nprofile. Drives
+    // the accent outline and the mentions-only review filter.
+    mentioned: bool,
     // Sender profile picture. When `has-picture` is true the avatar renders the
     // decoded image instead of initials. Populated lazily from the picture
     // cache, same as the members list.

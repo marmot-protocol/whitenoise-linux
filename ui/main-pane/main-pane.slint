@@ -54,6 +54,8 @@ export component MainPane inherits Rectangle {
     in property <[ChatMessage]> messages;
     in property <bool> messages-loading: false;
     in property <int> scroll-tick: 0;
+    in-out property <string> jump-message-id;
+    in property <int> jump-tick: 0;
     in property <bool> has-older: false;
     callback request-older();
     in-out property <string> draft <=> composer.draft;
@@ -164,6 +166,8 @@ export component MainPane inherits Rectangle {
                 messages: root.messages;
                 loading: root.messages-loading;
                 scroll-tick: root.scroll-tick;
+                jump-message-id <=> root.jump-message-id;
+                jump-tick: root.jump-tick;
                 has-older: root.has-older;
                 request-older => {
                     root.request-older();
