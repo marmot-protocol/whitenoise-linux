@@ -79,7 +79,7 @@ export component ProfileModal inherits Modal {
             if Theme.soft-decor: Rectangle {
                 width: parent.width;
                 height: parent.height;
-                background: @linear-gradient(180deg, #00000000 30%, #00000038 100%);
+                background: @linear-gradient(180deg, transparent 30%, Palette.media-ghost-bg 100%);
             }
             if !Theme.soft-decor: Rectangle {
                 y: parent.height - 2px;
@@ -96,11 +96,11 @@ export component ProfileModal inherits Modal {
                 border-radius: (8px) * Theme.r-scale;
                 // Dark scrim, not white-alpha: the banner can be a bright
                 // picture (or light-theme gradient) where white overlays vanish.
-                background: close-touch.has-hover ? #00000059 : #00000038;
-                animate background { duration: 100ms; }
+                background: close-touch.has-hover ? Palette.media-ghost-bg-hover : Palette.media-ghost-bg;
+                animate background { duration: Theme.hover-dur; }
                 Text {
                     text: "✕";
-                    color: #FFFFFFE6;
+                    color: Palette.media-chip-fg;
                     font-size: Theme.fs(14px, 18px);
                     font-family: Theme.font;
                     horizontal-alignment: center;
@@ -204,7 +204,7 @@ export component ProfileModal inherits Modal {
                     background: chip-touch.has-hover ? Palette.field-hover : Palette.field;
                     border-width: Theme.border-w;
                     border-color: root.copied ? Palette.mint : Palette.field-border;
-                    animate background, border-color { duration: 120ms; }
+                    animate background, border-color { duration: Theme.transition-dur; }
                     chip-row := HorizontalLayout {
                         x: 14px;
                         width: self.preferred-width;

@@ -1,5 +1,6 @@
 import { Modal } from "modal.slint";
 import { Palette, Theme } from "../tokens.slint";
+import { StatusPill } from "../primitives/status-pill.slint";
 
 // Full-window in-app video player, built on Modal's bare mode. `frame` is the
 // latest decoded RGBA frame pushed from Rust (libmpv software render); it's
@@ -75,21 +76,10 @@ export component VideoViewerModal inherits Modal {
         }
 
         // "Loading…" pill while the first frame decodes.
-        if root.loading && !root.has-frame: Rectangle {
+        if root.loading && !root.has-frame: StatusPill {
             x: (parent.width - self.width) / 2;
             y: (parent.height - self.height) / 2;
-            width: load-text.preferred-width + 32px;
-            height: 40px;
-            border-radius: (10px) * Theme.r-scale;
-            background: #000000AA;
-            load-text := Text {
-                text: @tr("Loading…");
-                color: #FFFFFF;
-                font-size: Theme.fs(13px, 16px);
-                font-family: Theme.font;
-                horizontal-alignment: center;
-                vertical-alignment: center;
-            }
+            text: @tr("Loading…");
         }
 
         // Bottom control bar.
@@ -99,7 +89,7 @@ export component VideoViewerModal inherits Modal {
             width: min(720px, parent.width - 96px);
             height: 56px;
             border-radius: (14px) * Theme.r-scale;
-            background: #000000C0;
+            background: Palette.media-chip-bg;
             border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
             border-color: Palette.border-2;
 
@@ -115,12 +105,12 @@ export component VideoViewerModal inherits Modal {
                     height: 36px;
                     y: (parent.height - self.height) / 2;
                     border-radius: (18px) * Theme.r-scale;
-                    background: play-touch.has-hover ? Palette.mint : #FFFFFF22;
-                    animate background { duration: 100ms; }
+                    background: play-touch.has-hover ? Palette.mint : Palette.media-control-bg;
+                    animate background { duration: Theme.hover-dur; }
                     Text {
                         x: parent.width / 2 - self.width / 2 + (root.playing ? 0px : 2px);
                         text: root.playing ? "⏸" : "▶";
-                        color: #FFFFFF;
+                        color: Palette.media-chip-fg;
                         font-size: Theme.fs(16px, 18px);
                         font-family: Theme.font;
                         horizontal-alignment: center;
@@ -137,7 +127,7 @@ export component VideoViewerModal inherits Modal {
 
                 Text {
                     text: root.pos-label;
-                    color: #FFFFFFCC;
+                    color: Palette.media-chip-fg-dim;
                     font-size: Theme.fs(12px, 16px);
                     font-family: Theme.font;
                     vertical-alignment: center;
@@ -154,7 +144,7 @@ export component VideoViewerModal inherits Modal {
                         height: 5px;
                         y: (parent.height - self.height) / 2;
                         border-radius: 2.5px * Theme.r-scale;
-                        background: #FFFFFF33;
+                        background: Palette.media-control-bg;
                         Rectangle {
                             x: 0;
                             width: parent.width * clamp(root.progress, 0.0, 1.0);
@@ -170,7 +160,7 @@ export component VideoViewerModal inherits Modal {
                             height: self.width;
                             animate width { duration: 80ms; }
                             border-radius: self.width / 2;
-                            background: #FFFFFF;
+                            background: Palette.media-chip-fg;
                         }
                     }
 
@@ -184,7 +174,7 @@ export component VideoViewerModal inherits Modal {
 
                 Text {
                     text: root.dur-label;
-                    color: #FFFFFFCC;
+                    color: Palette.media-chip-fg-dim;
                     font-size: Theme.fs(12px, 16px);
                     font-family: Theme.font;
                     vertical-alignment: center;
@@ -197,11 +187,11 @@ export component VideoViewerModal inherits Modal {
                     height: 36px;
                     y: (parent.height - self.height) / 2;
                     border-radius: (18px) * Theme.r-scale;
-                    background: fs-touch.has-hover ? Palette.mint : #FFFFFF22;
-                    animate background { duration: 100ms; }
+                    background: fs-touch.has-hover ? Palette.mint : Palette.media-control-bg;
+                    animate background { duration: Theme.hover-dur; }
                     Text {
                         text: "⛶";
-                        color: #FFFFFF;
+                        color: Palette.media-chip-fg;
                         font-size: Theme.fs(17px, 20px);
                         font-family: Theme.font;
                         horizontal-alignment: center;

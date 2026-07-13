@@ -11,7 +11,7 @@ export component MentionsIcon inherits Rectangle {
     height: 30px;
     background: mention-inbox-touch.has-hover ? Palette.hover : transparent;
     border-radius: (6px) * Theme.r-scale;
-    animate background { duration: 100ms; }
+    animate background { duration: Theme.hover-dur; }
 
     mention-inbox-touch := TouchArea {
         mouse-cursor: pointer;

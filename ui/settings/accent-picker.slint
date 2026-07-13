@@ -51,7 +51,7 @@ export component AccentPicker inherits Rectangle {
                 background: color;
                 border-width: root.selected == idx ? 2px : (touch.has-hover ? 1px : 0px);
                 border-color: Palette.text-hi;
-                animate border-width { duration: 100ms; }
+                animate border-width { duration: Theme.hover-dur; }
 
                 // Accent focus ring just outside the swatch (keyboard only).
                 if fs.has-focus && root.focus-idx == idx: Rectangle {

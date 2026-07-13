@@ -25,7 +25,7 @@ export component SharedGroupsList inherits VerticalLayout {
     for group[idx] in root.groups: Rectangle {
         height: 56px;
         background: touch.has-hover ? Palette.field-hover : transparent;
-        animate background { duration: 100ms; }
+        animate background { duration: Theme.hover-dur; }
         HorizontalLayout {
             padding-left: 14px;
             padding-right: 14px;

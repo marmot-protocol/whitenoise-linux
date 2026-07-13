@@ -179,7 +179,7 @@ export component NetworkPane inherits DetailPage {
                         border-color: root.add-error != "" ? Palette.danger-border : (input.has-focus ? Palette.mint : Palette.border-2);
                         border-radius: (6px) * Theme.r-scale;
                         background: root.add-error != "" ? Palette.danger-soft : Palette.panel-2;
-                        animate border-color { duration: 120ms; }
+                        animate border-color { duration: Theme.transition-dur; }
                         input := LineInput {
                             x: 10px;
                             y: 0;

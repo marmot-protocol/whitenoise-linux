@@ -96,7 +96,7 @@ export component CypherScroll inherits Rectangle {
                 height: root.thumb-h;
                 background: track-touch.pressed ? Palette.mint-hi : (track-touch.has-hover ? Palette.mint : Palette.mint-dim);
                 border-radius: (1px) * Theme.r-scale;
-                animate background { duration: 120ms; }
+                animate background { duration: Theme.transition-dur; }
 
                 Rectangle {
                     x: 2px;

@@ -29,7 +29,7 @@ component NavItem inherits Rectangle {
     background: root.selected ? Palette.selected : (touch.has-hover ? Palette.hover : transparent);
     border-radius: (6px) * Theme.r-scale;
     animate background {
-        duration: 100ms;
+        duration: Theme.hover-dur;
         easing: ease-out;
     }
 
@@ -74,7 +74,7 @@ component NavItem inherits Rectangle {
             vertical-alignment: center;
             opacity: root.rail-expanded ? 1.0 : 0.0;
             animate opacity {
-                duration: 120ms;
+                duration: Theme.transition-dur;
                 easing: ease-out;
             }
         }
@@ -120,7 +120,7 @@ component ProfileTile inherits Rectangle {
     background: root.selected ? Palette.selected : (touch.has-hover ? Palette.hover : transparent);
     border-radius: (6px) * Theme.r-scale;
     animate background, height {
-        duration: 100ms;
+        duration: Theme.hover-dur;
         easing: ease-out;
     }
 
@@ -134,7 +134,7 @@ component ProfileTile inherits Rectangle {
         border-width: 1px;
         border-color: root.selected ? Palette.mint : (touch.has-hover ? Palette.mint-dim : transparent);
         animate border-color {
-            duration: 100ms;
+            duration: Theme.hover-dur;
             easing: ease-out;
         }
 

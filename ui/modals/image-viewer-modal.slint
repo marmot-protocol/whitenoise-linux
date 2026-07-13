@@ -4,6 +4,8 @@ import { Button } from "../primitives/button.slint";
 import { MenuItem } from "../primitives/context-menu.slint";
 import { CopyIcon } from "../icons/copy-icon.slint";
 import { SaveIcon } from "../icons/save-icon.slint";
+import { StatusPill } from "../primitives/status-pill.slint";
+import { NavChevron } from "../primitives/nav-chevron.slint";
 
 component ImageActionContextMenu inherits Rectangle {
     in property <length> anchor-x;
@@ -52,11 +54,11 @@ component ImageActionContextMenu inherits Rectangle {
         height: col.preferred-height;
         opacity: root.opened ? 1.0 : 0.0;
         animate opacity {
-            duration: 120ms;
+            duration: Theme.transition-dur;
             easing: ease-out;
         }
         animate y {
-            duration: 120ms;
+            duration: Theme.transition-dur;
             easing: ease-out;
         }
         background: Palette.elevated;
@@ -210,48 +212,23 @@ export component ImageViewerModal inherits Modal {
         }
 
         // "Loading…" pill while a navigated-to image downloads.
-        if root.loading: Rectangle {
+        if root.loading: StatusPill {
             x: (parent.width - self.width) / 2;
             y: (parent.height - self.height) / 2;
-            width: load-text.preferred-width + 32px;
-            height: 40px;
-            border-radius: (10px) * Theme.r-scale;
-            background: #000000AA;
-            load-text := Text {
-                text: @tr("Loading…");
-                color: #FFFFFF;
-                font-size: Theme.fs(13px, 16px);
-                font-family: Theme.font;
-                horizontal-alignment: center;
-                vertical-alignment: center;
-            }
+            text: @tr("Loading…");
         }
 
         // Failure pill when the selected image could not be downloaded/decoded.
-        if root.failed && !root.loading: Rectangle {
+        if root.failed && !root.loading: StatusPill {
             x: (parent.width - self.width) / 2;
             y: (parent.height - self.height) / 2;
-            width: error-text.preferred-width + 32px;
-            height: 42px;
-            border-radius: (10px) * Theme.r-scale;
-            background: error-touch.has-hover ? #000000CC : #000000AA;
-            border-width: Theme.outline-surfaces ? Theme.border-w : 1px;
+            pill-height: 42px;
+            text: @tr("Image didn't load. Tap to retry.");
+            clickable: true;
             border-color: Palette.danger;
-
-            error-text := Text {
-                text: @tr("Image didn't load. Tap to retry.");
-                color: #FFFFFF;
-                font-size: Theme.fs(13px, 16px);
-                font-family: Theme.font;
-                horizontal-alignment: center;
-                vertical-alignment: center;
-            }
-
-            error-touch := TouchArea {
-                mouse-cursor: pointer;
-                clicked => {
-                    root.retry();
-                }
+            border-width: Theme.outline-surfaces ? Theme.border-w : 1px;
+            clicked => {
+                root.retry();
             }
         }
 
@@ -269,15 +246,15 @@ export component ImageViewerModal inherits Modal {
                 min-w: 86px;
                 radius: 8px;
                 border-w: 1px;
-                fg: #FFFFFF;
-                hover-fg: #FFFFFF;
-                bg-color: #000000B8;
-                hover-bg: #000000E0;
-                outline: #FFFFFF66;
-                hover-outline: #FFFFFFCC;
+                fg: Palette.media-chip-fg;
+                hover-fg: Palette.media-chip-fg;
+                bg-color: Palette.media-chip-bg;
+                hover-bg: Palette.media-chip-bg-hover;
+                outline: Palette.media-chip-outline;
+                hover-outline: Palette.media-chip-fg-dim;
                 CopyIcon {
-                    stroke: #FFFFFF;
-                    fill: #000000B8;
+                    stroke: Palette.media-chip-fg;
+                    fill: Palette.media-chip-bg;
                 }
 
                 clicked => {
@@ -292,14 +269,14 @@ export component ImageViewerModal inherits Modal {
                 min-w: 84px;
                 radius: 8px;
                 border-w: 1px;
-                fg: #FFFFFF;
-                hover-fg: #FFFFFF;
-                bg-color: #000000B8;
-                hover-bg: #000000E0;
-                outline: #FFFFFF66;
-                hover-outline: #FFFFFFCC;
+                fg: Palette.media-chip-fg;
+                hover-fg: Palette.media-chip-fg;
+                bg-color: Palette.media-chip-bg;
+                hover-bg: Palette.media-chip-bg-hover;
+                outline: Palette.media-chip-outline;
+                hover-outline: Palette.media-chip-fg-dim;
                 SaveIcon {
-                    stroke: #FFFFFF;
+                    stroke: Palette.media-chip-fg;
                 }
 
                 clicked => {
@@ -309,58 +286,22 @@ export component ImageViewerModal inherits Modal {
         }
 
         // Prev chevron.
-        if root.count > 1 && root.has-prev: Rectangle {
+        if root.count > 1 && root.has-prev: NavChevron {
             x: 24px;
             y: (parent.height - self.height) / 2;
-            width: 48px;
-            height: 48px;
-            border-radius: (24px) * Theme.r-scale;
-            background: prev-touch.has-hover ? #000000B0 : #00000055;
-            animate background { duration: 100ms; }
-            border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
-            border-color: Palette.border-2;
-            Text {
-                text: "‹";
-                color: #FFFFFF;
-                font-size: Theme.fs(34px, 40px);
-                font-family: Theme.font;
-                horizontal-alignment: center;
-                vertical-alignment: center;
-            }
-
-            prev-touch := TouchArea {
-                mouse-cursor: pointer;
-                clicked => {
-                    root.prev();
-                }
+            glyph: "‹";
+            clicked => {
+                root.prev();
             }
         }
 
         // Next chevron.
-        if root.count > 1 && root.has-next: Rectangle {
+        if root.count > 1 && root.has-next: NavChevron {
             x: parent.width - self.width - 24px;
             y: (parent.height - self.height) / 2;
-            width: 48px;
-            height: 48px;
-            border-radius: (24px) * Theme.r-scale;
-            background: next-touch.has-hover ? #000000B0 : #00000055;
-            animate background { duration: 100ms; }
-            border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
-            border-color: Palette.border-2;
-            Text {
-                text: "›";
-                color: #FFFFFF;
-                font-size: Theme.fs(34px, 40px);
-                font-family: Theme.font;
-                horizontal-alignment: center;
-                vertical-alignment: center;
-            }
-
-            next-touch := TouchArea {
-                mouse-cursor: pointer;
-                clicked => {
-                    root.next();
-                }
+            glyph: "›";
+            clicked => {
+                root.next();
             }
         }
 
@@ -371,12 +312,12 @@ export component ImageViewerModal inherits Modal {
             width: counter-text.preferred-width + 26px;
             height: 30px;
             border-radius: (15px) * Theme.r-scale;
-            background: #000000AA;
+            background: Palette.media-chip-bg;
             border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
             border-color: Palette.border-2;
             counter-text := Text {
                 text: root.index + " / " + root.count;
-                color: #FFFFFF;
+                color: Palette.media-chip-fg;
                 font-size: Theme.fs(12px, 16px);
                 font-family: Theme.font;
                 font-weight: 700;

@@ -158,7 +158,7 @@ export component ThemePicker inherits Rectangle {
         border-width: Theme.border-w;
         border-color: trig-touch.has-hover ? Palette.field-border-hover : Palette.field-border;
         border-radius: 8px * Theme.r-scale;
-        animate background, border-color { duration: 120ms; }
+        animate background, border-color { duration: Theme.transition-dur; }
         HorizontalLayout {
             padding-left: 8px;
             padding-right: 10px;

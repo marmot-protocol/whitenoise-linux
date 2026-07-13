@@ -59,7 +59,7 @@ export component QrModal inherits Modal {
                 background: chip-touch.has-hover ? Palette.field-hover : Palette.field;
                 border-width: Theme.border-w;
                 border-color: root.copied ? Palette.mint : Palette.field-border;
-                animate background, border-color { duration: 120ms; }
+                animate background, border-color { duration: Theme.transition-dur; }
                 chip-row := HorizontalLayout {
                     x: 14px;
                     width: self.preferred-width;

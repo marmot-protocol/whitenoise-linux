@@ -158,7 +158,7 @@ component ReactionChip inherits Rectangle {
                         background: @linear-gradient(135deg, reactor.a 0%, reactor.b 100%);
                         // Subtle outline on hover so the badge reads as clickable.
                         border-width: rt.has-hover ? 1px : 0px;
-                        border-color: #ffffff88;
+                        border-color: Palette.avatar-ring;
                         HorizontalLayout {
                             padding-left: 8px;
                             padding-right: 8px;
@@ -233,7 +233,7 @@ export component QuickReactCell inherits Rectangle {
     height: 28px;
     border-radius: (8px) * Theme.r-scale;
     background: touch.has-hover ? Palette.hover : transparent;
-    animate background { duration: 100ms; }
+    animate background { duration: Theme.hover-dur; }
 
     // A tile from the shared Twemoji sheet — the same texture the chat bubbles
     // draw inline emoji from, so a quick reaction looks identical to the emoji
@@ -302,7 +302,7 @@ component ActionButton inherits Rectangle {
     height: 28px;
     border-radius: (8px) * Theme.r-scale;
     background: touch.has-hover ? Palette.hover : transparent;
-    animate background { duration: 100ms; }
+    animate background { duration: Theme.hover-dur; }
     Text {
         text: root.glyph;
         color: touch.has-hover ? Palette.text-hi : Palette.text-mid;

@@ -19,7 +19,7 @@ export component MenuItem inherits Rectangle {
     height: root.shown ? 32px : 0px;
     border-radius: (6px) * Theme.r-scale;
     background: root.highlighted ? Palette.hover : transparent;
-    animate background { duration: 100ms; }
+    animate background { duration: Theme.hover-dur; }
 
     HorizontalLayout {
         padding-left: 10px;
@@ -185,11 +185,11 @@ export component MessageContextMenu inherits Rectangle {
         height: col.preferred-height;
         opacity: root.opened ? 1.0 : 0.0;
         animate opacity {
-            duration: 120ms;
+            duration: Theme.transition-dur;
             easing: ease-out;
         }
         animate y {
-            duration: 120ms;
+            duration: Theme.transition-dur;
             easing: ease-out;
         }
         background: Palette.elevated;

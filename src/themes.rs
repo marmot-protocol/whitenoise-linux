@@ -107,6 +107,14 @@ struct ColorOverlay {
     card_well: Option<String>,
     overlay: Option<String>,
     overlay_strong: Option<String>,
+    media_chip_bg: Option<String>,
+    media_chip_bg_hover: Option<String>,
+    media_chip_fg: Option<String>,
+    media_chip_fg_dim: Option<String>,
+    media_chip_outline: Option<String>,
+    media_ghost_bg: Option<String>,
+    media_ghost_bg_hover: Option<String>,
+    media_control_bg: Option<String>,
     shadow_soft: Option<String>,
     shadow_card: Option<String>,
     shadow_popover: Option<String>,
@@ -152,6 +160,8 @@ struct StyleOverlay {
     font: Option<String>,
     r_scale: Option<f32>,
     border_w: Option<f32>,
+    hover_dur: Option<i32>,
+    transition_dur: Option<i32>,
 }
 
 /// Parse `#rgb`, `#rrggbb`, or `#rrggbbaa` into a Slint color. Returns None on
@@ -259,6 +269,14 @@ fn apply_colors(base: &mut ThemeColors, ov: &ColorOverlay) {
         card_well,
         overlay,
         overlay_strong,
+        media_chip_bg,
+        media_chip_bg_hover,
+        media_chip_fg,
+        media_chip_fg_dim,
+        media_chip_outline,
+        media_ghost_bg,
+        media_ghost_bg_hover,
+        media_control_bg,
         shadow_soft,
         shadow_card,
         shadow_popover,
@@ -307,6 +325,8 @@ fn apply_style(base: &mut ThemeStyle, ov: &StyleOverlay) {
         synth_grid,
         r_scale,
         border_w,
+        hover_dur,
+        transition_dur,
     );
     // String → SharedString needs an explicit conversion.
     if let Some(ref s) = ov.font {

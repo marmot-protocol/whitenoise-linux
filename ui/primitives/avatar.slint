@@ -2,8 +2,8 @@ import { Palette, Theme } from "../tokens.slint";
 
 export component Avatar inherits Rectangle {
     in property <string> initials;
-    in property <color> color-a: #6B66E4;
-    in property <color> color-b: #4338CA;
+    in property <color> color-a: Palette.mint;
+    in property <color> color-b: Palette.mint-dim;
     in property <length> size: 36px;
     in property <length> font-size: Theme.fsr(11px, 16px);
     // Optional profile picture. When `has-picture` is true, the Image is

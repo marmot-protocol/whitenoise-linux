@@ -199,11 +199,11 @@ export component MessagesArea inherits Rectangle {
                     background: pill-touch.has-hover ? Palette.hover : Palette.panel-2;
                     border-width: Theme.border-w;
                     border-color: pill-touch.has-hover ? Palette.border-2 : Palette.border;
-                    animate background, border-color { duration: 100ms; }
+                    animate background, border-color { duration: Theme.hover-dur; }
                     pill-label := Text {
                         text: @tr("Load earlier messages");
                         color: pill-touch.has-hover ? Palette.text-hi : Palette.text-lo;
-                        animate color { duration: 100ms; }
+                        animate color { duration: Theme.hover-dur; }
                         font-size: Theme.fs(10px, 14px);
                         font-weight: 600;
                         letter-spacing: 1.1px;
@@ -352,14 +352,14 @@ export component MessagesArea inherits Rectangle {
             duration: 160ms;
             easing: ease-out;
         }
-        animate background { duration: 100ms; }
+        animate background { duration: Theme.hover-dur; }
 
         ChevronDownIcon {
             x: (parent.width - self.width) / 2;
             y: (parent.height - self.height) / 2;
             size: 14px;
             stroke: jump-touch.has-hover ? Palette.text-hi : Palette.text-mid;
-            animate stroke { duration: 100ms; }
+            animate stroke { duration: Theme.hover-dur; }
         }
 
         jump-touch := TouchArea {

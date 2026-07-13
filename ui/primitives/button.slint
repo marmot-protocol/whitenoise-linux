@@ -52,7 +52,7 @@ export component Button inherits Rectangle {
     background: root.selected ? root.selected-bg : (root.hovered ? root.hover-bg : root.bg-color);
     opacity: root.enabled ? 1.0 : 0.5;
     animate opacity {
-        duration: 120ms;
+        duration: Theme.transition-dur;
         easing: ease-out;
     }
     accessible-role: button;
@@ -69,7 +69,7 @@ export component Button inherits Rectangle {
     drop-shadow-offset-y: Theme.hard-shadow && root.has-fill ? (root.hovered ? 3px : 2px) : (root.is-primary && root.has-fill ? 2px : 0px);
     drop-shadow-blur: Theme.hard-shadow && root.has-fill ? 0px : (root.is-primary && root.has-fill ? 12px : 0px);
     animate background, border-color {
-        duration: 120ms;
+        duration: Theme.transition-dur;
         easing: ease-out;
     }
     animate drop-shadow-offset-x, drop-shadow-offset-y {
@@ -115,7 +115,7 @@ export component Button inherits Rectangle {
             font-family: Theme.font;
             vertical-alignment: center;
             animate color {
-                duration: 120ms;
+                duration: Theme.transition-dur;
                 easing: ease-out;
             }
         }

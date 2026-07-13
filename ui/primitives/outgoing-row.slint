@@ -158,7 +158,7 @@ export component OutgoingRow inherits VerticalLayout {
                     // over body text, which starves the row-level sensor.
                     visible: root.msg.message-id != "" && !root.msg.pending && !root.msg.failed && !root.msg.deleted && (hover.has-hover || self.hovered || bubble.hovered);
                     opacity: (hover.has-hover || self.hovered || bubble.hovered) ? 1.0 : 0.0;
-                    animate opacity { duration: 100ms; }
+                    animate opacity { duration: Theme.hover-dur; }
                     request-picker(id, ax, ay) => {
                         root.request-picker(id, ax, ay);
                     }

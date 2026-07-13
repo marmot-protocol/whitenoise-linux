@@ -1,0 +1,36 @@
+import { Palette, Theme } from "../tokens.slint";
+
+// Centered status pill for media lightboxes: the "Loading…" / failure / counter
+// overlay that sits on top of `overlay-strong`. Colors come from the media-chip
+// token set so every theme resolves the same dark-on-dark readout. Set
+// `clickable` for the failure retry variant; `border-color` / `border-width`
+// (inherited from Rectangle) for the danger outline.
+export component StatusPill inherits Rectangle {
+    in property <string> text;
+    in property <bool> clickable: false;
+    in property <length> pill-height: 40px;
+    callback clicked;
+
+    width: pill-text.preferred-width + 32px;
+    height: root.pill-height;
+    border-radius: (10px) * Theme.r-scale;
+    background: root.clickable && pill-touch.has-hover ? Palette.media-chip-bg-hover : Palette.media-chip-bg;
+    animate background { duration: Theme.hover-dur; }
+
+    pill-text := Text {
+        text: root.text;
+        color: Palette.media-chip-fg;
+        font-size: Theme.fs(13px, 16px);
+        font-family: Theme.font;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+
+    pill-touch := TouchArea {
+        enabled: root.clickable;
+        mouse-cursor: root.clickable ? pointer : default;
+        clicked => {
+            root.clicked();
+        }
+    }
+}

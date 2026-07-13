@@ -81,6 +81,22 @@ export struct ThemeColors {
     // Stronger full-screen scrim for media lightboxes (image/video viewer).
     // Darker than `overlay` so the media is the only bright thing on screen.
     overlay-strong: color,
+    // Media lightbox control surfaces — chips, pills, buttons, and the video
+    // control bar that sit on top of `overlay-strong`. Same across all themes
+    // because a media lightbox is always a dark environment (the backdrop is
+    // `overlay-strong = #000000e6` everywhere). `ghost` is the low-prominence
+    // tier for close buttons and nav chevrons that only need to be visible on
+    // hover; `chip` is the prominent tier for pills, action buttons, and bars;
+    // `control-bg` is the rest fill for icon buttons (play/fullscreen) that
+    // light up to the accent on hover.
+    media-chip-bg: color,
+    media-chip-bg-hover: color,
+    media-chip-fg: color,
+    media-chip-fg-dim: color,
+    media-chip-outline: color,
+    media-ghost-bg: color,
+    media-ghost-bg-hover: color,
+    media-control-bg: color,
     // Soft (blurred) drop-shadow tints; hard-shadow themes use Palette.shadow
     // instead. `shadow-soft` is the in-canvas lift (jump pill), `shadow-card`
     // the strongest modal/login card shadow, `shadow-popover` menu/dropdown
@@ -148,6 +164,13 @@ export struct ThemeStyle {
     font: string,                // font family name (e.g. "JetBrains Mono", "Zpix")
     r-scale: float,              // multiplier applied to every border-radius (0 = pixel-sharp)
     border-w: length,            // base border width (chunkier in pixel themes)
+    // Motion durations (milliseconds). `hover-dur` drives quick hover-state
+    // feedback (background/color/stroke swaps); `transition-dur` drives slightly
+    // longer state transitions (focus rings, toggles, menu entrance). Tunable
+    // per theme so a snappy pixel theme can set lower values without call-site
+    // ternaries — matching how `motion-fast` already gates the modal entrance.
+    hover-dur: int,
+    transition-dur: int,
 }
 
 export global Theme {
@@ -174,6 +197,8 @@ export global Theme {
     out property <string> font: root.s.font;
     out property <float> r-scale: root.s.r-scale;
     out property <length> border-w: root.s.border-w;
+    out property <duration> hover-dur: root.s.hover-dur * 1ms;
+    out property <duration> transition-dur: root.s.transition-dur * 1ms;
 
     // The theme registry, index = Theme.id. Rust fills this at startup from the
     // embedded built-in theme files and any user themes (src/themes.rs), in id
@@ -298,6 +323,14 @@ export global Palette {
     out property <color> card-well: Theme.c.card-well;
     out property <color> overlay: Theme.c.overlay;
     out property <color> overlay-strong: Theme.c.overlay-strong;
+    out property <color> media-chip-bg: Theme.c.media-chip-bg;
+    out property <color> media-chip-bg-hover: Theme.c.media-chip-bg-hover;
+    out property <color> media-chip-fg: Theme.c.media-chip-fg;
+    out property <color> media-chip-fg-dim: Theme.c.media-chip-fg-dim;
+    out property <color> media-chip-outline: Theme.c.media-chip-outline;
+    out property <color> media-ghost-bg: Theme.c.media-ghost-bg;
+    out property <color> media-ghost-bg-hover: Theme.c.media-ghost-bg-hover;
+    out property <color> media-control-bg: Theme.c.media-control-bg;
     out property <color> shadow-soft: Theme.c.shadow-soft;
     out property <color> shadow-card: Theme.c.shadow-card;
     out property <color> shadow-popover: Theme.c.shadow-popover;

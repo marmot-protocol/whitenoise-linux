@@ -370,7 +370,7 @@ export component Composer inherits Rectangle {
                         height: parent.height;
                         border-radius: (4px) * Theme.r-scale;
                         background: attach-touch.has-hover ? Palette.panel-2 : transparent;
-                        animate background { duration: 100ms; }
+                        animate background { duration: Theme.hover-dur; }
                         PaperclipIcon {
                             stroke: attach-touch.has-hover ? Palette.text-hi : Palette.text-lo;
                             y: (parent.height - self.height) / 2;
@@ -422,7 +422,7 @@ export component Composer inherits Rectangle {
                             y: (parent.height - self.height) / 2;
                             border-radius: (4px) * Theme.r-scale;
                             background: emoji-touch.has-hover ? Palette.panel-2 : transparent;
-                            animate background { duration: 100ms; }
+                            animate background { duration: Theme.hover-dur; }
                             SmileyIcon {
                                 stroke: emoji-touch.has-hover ? Palette.text-hi : Palette.text-lo;
                                 x: (parent.width - self.width) / 2;
@@ -731,7 +731,7 @@ export component Composer inherits Rectangle {
                 background: none-touch.has-hover ? Palette.panel-2 : transparent;
                 border-width: EffectCatalog.selected == 0 ? 1.5px : 0px;
                 border-color: Palette.mint;
-                animate background { duration: 100ms; }
+                animate background { duration: Theme.hover-dur; }
                 Text {
                     text: "✕";
                     color: Palette.text-mid;
@@ -756,7 +756,7 @@ export component Composer inherits Rectangle {
                 background: fx-touch.has-hover ? Palette.panel-2 : transparent;
                 border-width: EffectCatalog.selected == c.id ? 1.5px : 0px;
                 border-color: Palette.mint;
-                animate background { duration: 100ms; }
+                animate background { duration: Theme.hover-dur; }
                 Image {
                     width: 24px;
                     height: 24px;

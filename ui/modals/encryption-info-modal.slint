@@ -137,7 +137,7 @@ export component EncryptionInfoModal inherits Modal {
                 background: chip-touch.has-hover ? Palette.field-hover : Palette.field;
                 border-width: Theme.border-w;
                 border-color: root.copied ? Palette.mint : Palette.field-border;
-                animate background, border-color { duration: 120ms; }
+                animate background, border-color { duration: Theme.transition-dur; }
                 HorizontalLayout {
                     padding-left: 14px;
                     padding-right: 14px;

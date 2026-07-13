@@ -7,7 +7,7 @@ export component Toggle inherits Rectangle {
     width: Theme.pixel-metrics ? 44px : 34px;
     height: Theme.pixel-metrics ? 22px : 18px;
     opacity: root.enabled ? 1.0 : 0.45;
-    animate opacity { duration: 120ms; }
+    animate opacity { duration: Theme.transition-dur; }
     border-radius: (9px) * Theme.r-scale;
     background: root.on ? Palette.mint : Palette.field;
     border-width: Theme.outline-surfaces ? Theme.border-w : (root.on ? 0px : 1px);
@@ -16,7 +16,7 @@ export component Toggle inherits Rectangle {
     drop-shadow-offset-x: Theme.hard-shadow ? 2px : 0px;
     drop-shadow-offset-y: Theme.hard-shadow ? 2px : 0px;
     drop-shadow-blur: 0px;
-    animate background { duration: 120ms; }
+    animate background { duration: Theme.transition-dur; }
 
     Rectangle {
         width: 14px;
@@ -26,7 +26,7 @@ export component Toggle inherits Rectangle {
         border-radius: (7px) * Theme.r-scale;
         background: root.on ? Palette.bubble-out-fg : Palette.text-mid;
         animate x {
-            duration: 120ms;
+            duration: Theme.transition-dur;
             easing: ease-in-out;
         }
     }

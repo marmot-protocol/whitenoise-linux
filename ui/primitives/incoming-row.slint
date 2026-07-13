@@ -96,7 +96,7 @@ export component IncomingRow inherits VerticalLayout {
                     Text {
                         text: root.msg.sender-name;
                         color: name-touch.has-hover ? Palette.text-mid : Palette.text-lo;
-                        animate color { duration: 100ms; }
+                        animate color { duration: Theme.hover-dur; }
                         font-size: Theme.fs(11px, 12px);
                         font-weight: 700;
                         font-family: Theme.font;
@@ -168,7 +168,7 @@ export component IncomingRow inherits VerticalLayout {
                     // over body text, which starves the row-level sensor.
                     visible: root.msg.message-id != "" && !root.msg.deleted && (hover.has-hover || self.hovered || bubble.hovered);
                     opacity: (hover.has-hover || self.hovered || bubble.hovered) ? 1.0 : 0.0;
-                    animate opacity { duration: 100ms; }
+                    animate opacity { duration: Theme.hover-dur; }
                     request-picker(id, ax, ay) => {
                         root.request-picker(id, ax, ay);
                     }

@@ -668,7 +668,7 @@ export component MessageBubble inherits Rectangle {
                     height: 36px;
                     border-radius: (18px) * Theme.r-scale;
                     background: play-touch.has-hover ? (root.msg.outgoing ? Palette.text-hi : Palette.mint-hi) : (root.msg.outgoing ? Palette.bubble-out-fg : Palette.mint);
-                    animate background { duration: 100ms; }
+                    animate background { duration: Theme.hover-dur; }
                     Text {
                         x: parent.width / 2 - self.width / 2 + (root.msg.att-audio-playing || root.msg.att-loading || root.msg.att-failed || root.msg.att-audio-failed ? 0px : 2px);
                         // Loading → ellipsis, send-failed → retry, decode-failed
@@ -1109,7 +1109,7 @@ export component MessageBubble inherits Rectangle {
                             font-weight: 600;
                             vertical-alignment: bottom;
                             opacity: edited-touch.has-hover ? 1.0 : (root.msg.outgoing ? 0.7 : 0.85);
-                            animate opacity { duration: 100ms; }
+                            animate opacity { duration: Theme.hover-dur; }
                         }
 
                         edited-touch := TouchArea {
@@ -1195,7 +1195,7 @@ export component MessageBubble inherits Rectangle {
         border-radius: (10px) * Theme.r-scale;
         opacity: (hover-sensor.has-hover || root.msg.pending || root.msg.failed) ? 1.0 : 0.0;
         animate opacity {
-            duration: 120ms;
+            duration: Theme.transition-dur;
             easing: ease-out;
         }
         pill-row := HorizontalLayout {

@@ -125,7 +125,7 @@ export component ChatHeader inherits Rectangle {
             border-radius: (6px) * Theme.r-scale;
             border-width: root.muted ? 1px : 0px;
             border-color: Palette.border-2;
-            animate background { duration: 100ms; }
+            animate background { duration: Theme.hover-dur; }
             mute-touch := TouchArea {
                 clicked => {
                     root.mute-toggle-clicked();

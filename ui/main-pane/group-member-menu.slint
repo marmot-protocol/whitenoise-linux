@@ -47,11 +47,11 @@ export component GroupMemberMenu inherits Rectangle {
         height: col.preferred-height;
         opacity: root.opened ? 1.0 : 0.0;
         animate opacity {
-            duration: 120ms;
+            duration: Theme.transition-dur;
             easing: ease-out;
         }
         animate y {
-            duration: 120ms;
+            duration: Theme.transition-dur;
             easing: ease-out;
         }
         background: Palette.elevated;
