@@ -8,11 +8,9 @@ import { EyeIcon } from "../icons/eye-icon.slint";
 import { PageHeader } from "../layout/page-header.slint";
 import { GroupCard } from "../layout/group-card.slint";
 import { ScrollView } from "../primitives/scroll-view.slint";
-import { Signer, LinkedDevice } from "types.slint";
 import { KVRow } from "../layout/kv-row.slint";
 import { MicroButton } from "../primitives/button.slint";
 import { SectionHeader } from "../layout/section-header.slint";
-import { DeviceRow } from "device-row.slint";
 import { DangerActionRow } from "danger-action-row.slint";
 import { InfoBanner } from "../layout/info-banner.slint";
 
@@ -22,10 +20,6 @@ export component KeysPage inherits Rectangle {
     preferred-width: 0px;
     preferred-height: 0px;
     background: Palette.bg;
-
-    in property <[LinkedDevice]> devices: [
-        { name: @tr("This computer"), detail: "Linux · darkmatter v0.1.4", current: true },
-    ];
 
     ScrollView {
         viewport-height: page.preferred-height;
@@ -175,17 +169,37 @@ export component KeysPage inherits Rectangle {
                 spacing: 10px;
                 SectionHeader {
                     label: @tr("LINKED DEVICES");
-                    note: @tr("(other Dark Matter instances signed into this identity)");
+                    note: "";
                 }
 
-                GroupCard {
-                    for d[i] in root.devices: DeviceRow {
-                        name: d.name;
-                        detail: d.detail;
-                        status: d.current ? @tr("current") : "";
-                        action-label: d.current ? "" : @tr("Sign out");
-                        dim-action: d.current;
-                        show-divider: i < root.devices.length - 1;
+                Rectangle {
+                    height: 60px;
+                    border-radius: (8px) * Theme.r-scale;
+                    background: Palette.panel-2;
+                    border-width: 1px;
+                    border-color: Palette.border-2;
+                    HorizontalLayout {
+                        padding-left: 16px;
+                        padding-right: 16px;
+                        padding-top: 12px;
+                        padding-bottom: 12px;
+                        spacing: 12px;
+                        VerticalLayout {
+                            horizontal-stretch: 1;
+                            alignment: center;
+                            Text {
+                                text: @tr("Multi-device isn't available yet");
+                                color: Palette.text-hi;
+                                font-size: Theme.fs(12px, 16px);
+                                font-weight: 700;
+                            }
+
+                            Text {
+                                text: @tr("Your identity lives only on this device for now. When device linking ships, the devices signed into your key will appear here.");
+                                color: Palette.text-lo;
+                                font-size: Theme.fs(11px, 14px);
+                            }
+                        }
                     }
                 }
             }

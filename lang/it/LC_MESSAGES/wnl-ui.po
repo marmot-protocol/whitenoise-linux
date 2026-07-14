@@ -92,10 +92,6 @@ msgid "(nothing to show)"
 msgstr ""
 
 msgctxt "KeysPage"
-msgid "(other Dark Matter instances signed into this identity)"
-msgstr "(altre istanze Dark Matter connessi a questa identità)"
-
-msgctxt "KeysPage"
 msgid "(published to your kind-10051 relay list)"
 msgstr "(pubblicato sulla tua lista relay kind-10051)"
 
@@ -1380,6 +1376,10 @@ msgctxt "weekday"
 msgid "Mon"
 msgstr "Lun"
 
+msgctxt "KeysPage"
+msgid "Multi-device isn't available yet"
+msgstr "Multi-dispositivo non ancora disponibile"
+
 #, fuzzy
 msgctxt "ChatContextMenu"
 msgid "Mute"
@@ -2175,10 +2175,6 @@ msgctxt "LoginScreen"
 msgid "Sign in to your Nostr identity"
 msgstr "Accedi alla tua identità Nostr"
 
-msgctxt "KeysPage"
-msgid "Sign out"
-msgstr "Esci"
-
 msgctxt "LoginScreen"
 msgid "Signing in…"
 msgstr "Accesso…"
@@ -2277,10 +2273,6 @@ msgstr "Tema"
 msgctxt "ArchivedDetail"
 msgid "This chat is archived"
 msgstr "Questa chat è archiviata"
-
-msgctxt "KeysPage"
-msgid "This computer"
-msgstr "Questo computer"
 
 msgctxt "ConfirmFlows"
 msgid "This declines the invite from {}. It can't be restored unless they invite you again."
@@ -2497,6 +2489,10 @@ msgctxt "KeysPage"
 msgid "Your identity is sovereign"
 msgstr "La tua identità è sovrana"
 
+msgctxt "KeysPage"
+msgid "Your identity lives only on this device for now. When device linking ships, the devices signed into your key will appear here."
+msgstr "Per ora la tua identità risiede solo su questo dispositivo. Quando il collegamento dei dispositivi sarà disponibile, i dispositivi collegati alla tua chiave appariranno qui."
+
 msgctxt "LoginScreen"
 msgid "Your key never leaves this device."
 msgstr "La tua chiave non lascia mai questo dispositivo."
@@ -2521,10 +2517,6 @@ msgstr "La tua chiave pubblica. Sicura da condividere."
 msgctxt "ContactDetail"
 msgid "aka {}"
 msgstr "alias {}"
-
-msgctxt "KeysPage"
-msgid "current"
-msgstr "attuale"
 
 #, fuzzy
 msgctxt "ImageTile"

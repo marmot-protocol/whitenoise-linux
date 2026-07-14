@@ -92,10 +92,6 @@ msgid "(nothing to show)"
 msgstr ""
 
 msgctxt "KeysPage"
-msgid "(other Dark Matter instances signed into this identity)"
-msgstr "(andere Dark Matter-Instanzen mit dieser Identität angemeldet)"
-
-msgctxt "KeysPage"
 msgid "(published to your kind-10051 relay list)"
 msgstr "(in deiner kind-10051-Relay-Liste veröffentlicht)"
 
@@ -1380,6 +1376,10 @@ msgctxt "weekday"
 msgid "Mon"
 msgstr "Mo"
 
+msgctxt "KeysPage"
+msgid "Multi-device isn't available yet"
+msgstr "Mehrere Geräte sind noch nicht verfügbar"
+
 #, fuzzy
 msgctxt "ChatContextMenu"
 msgid "Mute"
@@ -2175,10 +2175,6 @@ msgctxt "LoginScreen"
 msgid "Sign in to your Nostr identity"
 msgstr "Bei deiner Nostr-Identität anmelden"
 
-msgctxt "KeysPage"
-msgid "Sign out"
-msgstr "Abmelden"
-
 msgctxt "LoginScreen"
 msgid "Signing in…"
 msgstr "Anmeldung…"
@@ -2277,10 +2273,6 @@ msgstr "Thema"
 msgctxt "ArchivedDetail"
 msgid "This chat is archived"
 msgstr "Dieser Chat ist archiviert"
-
-msgctxt "KeysPage"
-msgid "This computer"
-msgstr "Dieser Computer"
 
 msgctxt "ConfirmFlows"
 msgid "This declines the invite from {}. It can't be restored unless they invite you again."
@@ -2497,6 +2489,10 @@ msgctxt "KeysPage"
 msgid "Your identity is sovereign"
 msgstr "Deine Identität ist souverän"
 
+msgctxt "KeysPage"
+msgid "Your identity lives only on this device for now. When device linking ships, the devices signed into your key will appear here."
+msgstr "Deine Identität befindet sich vorerst nur auf diesem Gerät. Sobald die Geräteverknüpfung verfügbar ist, erscheinen hier die mit deinem Schlüssel angemeldeten Geräte."
+
 msgctxt "LoginScreen"
 msgid "Your key never leaves this device."
 msgstr "Dein Schlüssel verlässt nie dieses Gerät."
@@ -2521,10 +2517,6 @@ msgstr "Dein öffentlicher Schlüssel. Sicher zum Teilen."
 msgctxt "ContactDetail"
 msgid "aka {}"
 msgstr "alias {}"
-
-msgctxt "KeysPage"
-msgid "current"
-msgstr "aktuell"
 
 #, fuzzy
 msgctxt "ImageTile"

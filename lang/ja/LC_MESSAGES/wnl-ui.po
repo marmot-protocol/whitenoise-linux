@@ -92,10 +92,6 @@ msgid "(nothing to show)"
 msgstr ""
 
 msgctxt "KeysPage"
-msgid "(other Dark Matter instances signed into this identity)"
-msgstr "(この ID でサインインしている他の Dark Matter インスタンス)"
-
-msgctxt "KeysPage"
 msgid "(published to your kind-10051 relay list)"
 msgstr "(kind-10051 リレーリストに公開)"
 
@@ -1377,6 +1373,10 @@ msgctxt "weekday"
 msgid "Mon"
 msgstr "月曜日"
 
+msgctxt "KeysPage"
+msgid "Multi-device isn't available yet"
+msgstr "マルチデバイスはまだ利用できません"
+
 #, fuzzy
 msgctxt "ChatContextMenu"
 msgid "Mute"
@@ -2172,10 +2172,6 @@ msgctxt "LoginScreen"
 msgid "Sign in to your Nostr identity"
 msgstr "Nostr ID でサインイン"
 
-msgctxt "KeysPage"
-msgid "Sign out"
-msgstr "サインアウト"
-
 msgctxt "LoginScreen"
 msgid "Signing in…"
 msgstr "サインイン中…"
@@ -2274,10 +2270,6 @@ msgstr "テーマ"
 msgctxt "ArchivedDetail"
 msgid "This chat is archived"
 msgstr "このチャットはアーカイブされています"
-
-msgctxt "KeysPage"
-msgid "This computer"
-msgstr "このコンピューター"
 
 msgctxt "ConfirmFlows"
 msgid "This declines the invite from {}. It can't be restored unless they invite you again."
@@ -2494,6 +2486,10 @@ msgctxt "KeysPage"
 msgid "Your identity is sovereign"
 msgstr "あなたの ID は主権的です"
 
+msgctxt "KeysPage"
+msgid "Your identity lives only on this device for now. When device linking ships, the devices signed into your key will appear here."
+msgstr "現在、あなたのアイデンティティはこのデバイスにのみ存在します。デバイス連携が導入されると、あなたの鍵でサインインしたデバイスがここに表示されます。"
+
 msgctxt "LoginScreen"
 msgid "Your key never leaves this device."
 msgstr "鍵がこのデバイス外に出ることはありません。"
@@ -2518,10 +2514,6 @@ msgstr "公開鍵。共有して問題ありません。"
 msgctxt "ContactDetail"
 msgid "aka {}"
 msgstr "別名 {}"
-
-msgctxt "KeysPage"
-msgid "current"
-msgstr "現在"
 
 #, fuzzy
 msgctxt "ImageTile"
