@@ -6,6 +6,10 @@ import { Palette, Theme } from "../tokens.slint";
 // passes the glyph + clicked callback.
 export component NavChevron inherits Rectangle {
     in property <string> glyph;
+    // Screen-reader name for this chevron ("Previous image" / "Next image").
+    // The glyph carries no text, so without this the control is unnamed to
+    // assistive tech; every call site must set it.
+    in property <string> label;
     callback clicked;
 
     width: 48px;
@@ -15,6 +19,11 @@ export component NavChevron inherits Rectangle {
     animate background { duration: Theme.hover-dur; }
     border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
     border-color: Palette.border-2;
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-action-default => {
+        root.clicked();
+    }
 
     Text {
         text: root.glyph;

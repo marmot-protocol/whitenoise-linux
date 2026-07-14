@@ -552,6 +552,10 @@ msgctxt "DebugJsonModal"
 msgid "Close"
 msgstr "閉じる"
 
+msgctxt "Modal"
+msgid "Close"
+msgstr "閉じる"
+
 msgctxt "command palette footer"
 msgid "Close"
 msgstr "閉じる"
@@ -1432,6 +1436,10 @@ msgctxt "StartNewChatModal"
 msgid "New chat or group"
 msgstr "新しいチャットまたはグループ"
 
+msgctxt "ImageViewerModal"
+msgid "Next image"
+msgstr "次の画像"
+
 msgctxt "ContactDetail"
 msgid "Nickname"
 msgstr "ニックネーム"
@@ -1665,6 +1673,10 @@ msgstr "送信したメッセージを右側に配置します。"
 msgctxt "NotificationsPane"
 msgid "Play a sound"
 msgstr "音を鳴らす"
+
+msgctxt "ImageViewerModal"
+msgid "Previous image"
+msgstr "前の画像"
 
 #, fuzzy
 msgctxt "AdvancedPane"

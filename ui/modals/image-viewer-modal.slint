@@ -290,6 +290,7 @@ export component ImageViewerModal inherits Modal {
             x: 24px;
             y: (parent.height - self.height) / 2;
             glyph: "‹";
+            label: @tr("ImageViewerModal" => "Previous image");
             clicked => {
                 root.prev();
             }
@@ -300,6 +301,7 @@ export component ImageViewerModal inherits Modal {
             x: parent.width - self.width - 24px;
             y: (parent.height - self.height) / 2;
             glyph: "›";
+            label: @tr("ImageViewerModal" => "Next image");
             clicked => {
                 root.next();
             }

@@ -166,6 +166,11 @@ export component Modal inherits Rectangle {
                                 border-radius: (6px) * Theme.r-scale;
                                 background: header-close.has-hover ? Palette.panel-2 : transparent;
                                 animate background { duration: Theme.hover-dur; }
+                                accessible-role: button;
+                                accessible-label: @tr("Modal" => "Close");
+                                accessible-action-default => {
+                                    root.dismissed();
+                                }
                                 Text {
                                     text: "✕";
                                     color: Palette.text-mid;
@@ -291,6 +296,11 @@ export component Modal inherits Rectangle {
         animate background { duration: Theme.hover-dur; }
         border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
         border-color: Palette.border-2;
+        accessible-role: button;
+        accessible-label: @tr("Modal" => "Close");
+        accessible-action-default => {
+            root.dismissed();
+        }
         Text {
             text: "✕";
             color: Palette.media-chip-fg;
