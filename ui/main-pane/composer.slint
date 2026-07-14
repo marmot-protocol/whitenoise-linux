@@ -42,13 +42,19 @@ export component Composer inherits Rectangle {
     property <length> chip-h: (AppState.reply-target-id == "" && AppState.editing-message-id == "") ? 0px : 36px;
     property <length> staged-h: AppState.composer-staged.length == 0 ? 0px : 58px;
     property <bool> can-send: AppState.composer-draft != "" || AppState.composer-staged.length > 0;
-    // In edit mode the primary button saves the edit rather than posting a new
-    // message, so the label (which drives both the tooltip and accessible-label)
-    // matches the "Editing message · Enter to save" banner instead of "Send
-    // message". When there's nothing to send it still offers voice recording.
-    property <string> primary-action-label: root.can-send
-        ? (AppState.editing-message-id != "" ? @tr("Save edit") : @tr("Send message"))
-        : @tr("Record voice message");
+    // Editing repurposes the primary button to commit the edit (a kind-1009
+    // rewrite) rather than post a new message. An edit only ever carries body
+    // text — staged attachments never ride it — so it's actionable only when the
+    // draft has text. Crucially the button must stay a Save action while editing
+    // and never fall through to the mic: clearing the text used to flip it into a
+    // voice recorder that fired a stray clip while the edit banner stayed up.
+    property <bool> is-editing: AppState.editing-message-id != "";
+    property <bool> primary-active: root.is-editing ? (AppState.composer-draft != "") : root.can-send;
+    // Drives the tooltip and accessible-label. In edit mode it always reads
+    // "Save edit" (matching the banner), never "Record voice message".
+    property <string> primary-action-label: root.is-editing
+        ? @tr("Save edit")
+        : (root.can-send ? @tr("Send message") : @tr("Record voice message"));
     // Message-effect picker (Telegram-style): opened by right-click / long-press
     // on Send. The chosen effect lives in EffectCatalog.selected and rides the
     // next send; Rust reads + clears it. The popover only toggles visibility.
@@ -205,11 +211,20 @@ export component Composer inherits Rectangle {
                         focusable: true;
                         // Hidden while a chat request is pending; also disabled
                         // so Tab focus can't reach it and Enter/Space start a
-                        // recording.
-                        enabled: !root.chat-request;
+                        // recording. While editing it's disabled until the draft
+                        // has text, so an empty edit can't save nothing or fall
+                        // through to voice recording.
+                        enabled: !root.chat-request && (root.is-editing ? root.primary-active : true);
                         accessible-label: root.primary-action-label;
                         clicked => {
-                            if (root.can-send) {
+                            if (root.is-editing) {
+                                // Only a non-empty draft commits the edit; never
+                                // record. A disabled button won't reach here, but
+                                // guard the action too.
+                                if (root.primary-active) {
+                                    AppState.send-message(AppState.composer-draft);
+                                }
+                            } else if (root.can-send) {
                                 AppState.send-message(AppState.composer-draft);
                             } else {
                                 AppState.record-clicked();
@@ -230,22 +245,24 @@ export component Composer inherits Rectangle {
                         pad-right: 0px;
                         spacing: 0px;
                         use-hover: true;
-                        bg-color: root.can-send ? Palette.mint : Palette.panel-2;
-                        hover-bg: root.can-send ? Palette.mint-hi : Palette.panel-2;
-                        outline: root.can-send ? Palette.mint : Palette.border-2;
-                        hover-outline: root.can-send ? Palette.mint-hi : Palette.border;
+                        bg-color: root.primary-active ? Palette.mint : Palette.panel-2;
+                        hover-bg: root.primary-active ? Palette.mint-hi : Palette.panel-2;
+                        outline: root.primary-active ? Palette.mint : Palette.border-2;
+                        hover-outline: root.primary-active ? Palette.mint-hi : Palette.border;
                         animate bg-color, outline {
                             duration: 140ms;
                             easing: ease-out;
                         }
                         // Edit mode: a checkmark reads as "save this edit",
                         // matching the "Save edit" label; a fresh send keeps the
-                        // arrow glyph.
-                        if root.can-send && AppState.editing-message-id != "": CheckMark {
-                            stroke: Palette.bubble-out-fg;
+                        // arrow glyph. The check stays put while editing even with
+                        // an empty draft (dimmed, disabled) — it never becomes the
+                        // mic below.
+                        if root.is-editing: CheckMark {
+                            stroke: root.primary-active ? Palette.bubble-out-fg : Palette.text-lo;
                             double: false;
                         }
-                        if root.can-send && AppState.editing-message-id == "": Rectangle {
+                        if !root.is-editing && root.can-send: Rectangle {
                             width: 16px;
                             height: 16px;
                             SendIcon {
@@ -256,7 +273,7 @@ export component Composer inherits Rectangle {
                                 y: (parent.height - self.height) / 2;
                             }
                         }
-                        if !root.can-send: MicIcon {
+                        if !root.is-editing && !root.can-send: MicIcon {
                             stroke: send-button.has-hover ? Palette.text-hi : Palette.text-lo;
                         }
                     }
