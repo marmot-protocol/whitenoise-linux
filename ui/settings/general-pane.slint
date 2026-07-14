@@ -1,3 +1,4 @@
+import { AppState } from "../shell/app-state.slint";
 import { Palette, Theme, QuickReact } from "../tokens.slint";
 import { QuickReactCell } from "../messages/quick-react-cell.slint";
 import { SettingsIcon } from "../icons/settings-icon.slint";
@@ -11,19 +12,8 @@ import { Toggle } from "../primitives/toggle.slint";
 import { MicroButton } from "../primitives/button.slint";
 
 export component GeneralPane inherits DetailPage {
-    in property <string> locale-display;
-    callback change-language-clicked();
-    // `24h` | `12h` and `mdy` | `dmy` | `iso` — mirrors Settings in Rust.
-    in property <string> time-format: "24h";
-    in property <string> date-format: "mdy";
-    in-out property <bool> launch-at-login: false;
-    in-out property <bool> start-minimized-to-tray: false;
-    in-out property <bool> restore-last-selected-chat: false;
-    callback time-format-selected(string);
-    callback date-format-selected(string);
-    callback launch-at-login-toggled(bool);
-    callback start-minimized-to-tray-toggled(bool);
-    callback restore-last-selected-chat-toggled(bool);
+    // Reads/writes AppState directly (locale, time/date format, startup
+    // toggles) and invokes its callbacks; the page above passes no bindings.
 
     PageHeader {
         title: @tr("General");
@@ -40,9 +30,9 @@ export component GeneralPane inherits DetailPage {
                 row-height: 48px;
                 label: @tr("Launch at login");
                 Toggle {
-                    on <=> root.launch-at-login;
+                    on <=> AppState.launch-at-login;
                     toggled => {
-                        root.launch-at-login-toggled(self.on);
+                        AppState.launch-at-login-toggled(self.on);
                     }
                 }
             }
@@ -51,9 +41,9 @@ export component GeneralPane inherits DetailPage {
                 row-height: 48px;
                 label: @tr("Start minimized to tray");
                 Toggle {
-                    on <=> root.start-minimized-to-tray;
+                    on <=> AppState.start-minimized-to-tray;
                     toggled => {
-                        root.start-minimized-to-tray-toggled(self.on);
+                        AppState.start-minimized-to-tray-toggled(self.on);
                     }
                 }
             }
@@ -63,9 +53,9 @@ export component GeneralPane inherits DetailPage {
                 label: @tr("Restore last selected chat on launch");
                 show-divider: false;
                 Toggle {
-                    on <=> root.restore-last-selected-chat;
+                    on <=> AppState.restore-last-selected-chat;
                     toggled => {
-                        root.restore-last-selected-chat-toggled(self.on);
+                        AppState.restore-last-selected-chat-toggled(self.on);
                     }
                 }
             }
@@ -78,7 +68,7 @@ export component GeneralPane inherits DetailPage {
             KVRow {
                 row-height: 48px;
                 label: @tr("Interface language");
-                value: root.locale-display;
+                value: AppState.locale-display;
                 MicroButton {
                     label: @tr("language picker button" => "Change");
                     ChevronRightIcon {
@@ -86,7 +76,7 @@ export component GeneralPane inherits DetailPage {
                     }
 
                     clicked => {
-                        root.change-language-clicked();
+                        AppState.change-language-clicked();
                     }
                 }
             }
@@ -96,19 +86,19 @@ export component GeneralPane inherits DetailPage {
                 label: @tr("Time format");
                 MicroButton {
                     label: @tr("24-hour");
-                    selected: root.time-format == "24h";
-                    fg: root.time-format == "24h" && Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.text-hi;
+                    selected: AppState.time-format == "24h";
+                    fg: AppState.time-format == "24h" && Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.text-hi;
                     clicked => {
-                        root.time-format-selected("24h");
+                        AppState.time-format-selected("24h");
                     }
                 }
 
                 MicroButton {
                     label: @tr("12-hour");
-                    selected: root.time-format == "12h";
-                    fg: root.time-format == "12h" && Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.text-hi;
+                    selected: AppState.time-format == "12h";
+                    fg: AppState.time-format == "12h" && Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.text-hi;
                     clicked => {
-                        root.time-format-selected("12h");
+                        AppState.time-format-selected("12h");
                     }
                 }
             }
@@ -120,28 +110,28 @@ export component GeneralPane inherits DetailPage {
                 // Labels are example renderings, not prose — keep untranslated.
                 MicroButton {
                     label: "Jun 12";
-                    selected: root.date-format == "mdy";
-                    fg: root.date-format == "mdy" && Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.text-hi;
+                    selected: AppState.date-format == "mdy";
+                    fg: AppState.date-format == "mdy" && Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.text-hi;
                     clicked => {
-                        root.date-format-selected("mdy");
+                        AppState.date-format-selected("mdy");
                     }
                 }
 
                 MicroButton {
                     label: "12 Jun";
-                    selected: root.date-format == "dmy";
-                    fg: root.date-format == "dmy" && Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.text-hi;
+                    selected: AppState.date-format == "dmy";
+                    fg: AppState.date-format == "dmy" && Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.text-hi;
                     clicked => {
-                        root.date-format-selected("dmy");
+                        AppState.date-format-selected("dmy");
                     }
                 }
 
                 MicroButton {
                     label: "2026-06-12";
-                    selected: root.date-format == "iso";
-                    fg: root.date-format == "iso" && Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.text-hi;
+                    selected: AppState.date-format == "iso";
+                    fg: AppState.date-format == "iso" && Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.text-hi;
                     clicked => {
-                        root.date-format-selected("iso");
+                        AppState.date-format-selected("iso");
                     }
                 }
             }

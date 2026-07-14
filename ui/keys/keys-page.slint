@@ -1,3 +1,4 @@
+import { AppState } from "../shell/app-state.slint";
 import { Palette, Theme } from "../tokens.slint";
 import { KeyIcon } from "../icons/key-icon.slint";
 import { LockIcon } from "../icons/lock-icon.slint";
@@ -7,7 +8,7 @@ import { EyeIcon } from "../icons/eye-icon.slint";
 import { PageHeader } from "../layout/page-header.slint";
 import { GroupCard } from "../layout/group-card.slint";
 import { ScrollView } from "../primitives/scroll-view.slint";
-import { Signer, LinkedDevice, KeyPackageInfo } from "types.slint";
+import { Signer, LinkedDevice } from "types.slint";
 import { KVRow } from "../layout/kv-row.slint";
 import { MicroButton } from "../primitives/button.slint";
 import { SectionHeader } from "../layout/section-header.slint";
@@ -21,17 +22,6 @@ export component KeysPage inherits Rectangle {
     preferred-width: 0px;
     preferred-height: 0px;
     background: Palette.bg;
-
-    in property <string> npub;
-    in property <[KeyPackageInfo]> key-packages;
-    in property <[string]> kp-relays;
-    in property <string> kp-status;     // last action status ("publishing…", "ok · 2/3 relays", "error: …")
-    in property <bool> kp-busy: false;
-    callback copy-npub-clicked;
-    callback publish-clicked;
-    callback rotate-clicked;
-    callback refresh-clicked;
-    callback reveal-nsec-clicked;
 
     in property <[LinkedDevice]> devices: [
         { name: @tr("This computer"), detail: "Linux · darkmatter v0.1.4", current: true },
@@ -77,7 +67,7 @@ export component KeysPage inherits Rectangle {
                         row-height: 64px;
                         label: @tr("Public key (npub)");
                         sublabel: @tr("Safe to share. This is how people find you.");
-                        value: root.npub;
+                        value: AppState.my-npub;
                         show-divider: false;
                         MicroButton {
                             label: @tr("Copy");
@@ -86,7 +76,7 @@ export component KeysPage inherits Rectangle {
                             }
 
                             clicked => {
-                                root.copy-npub-clicked();
+                                AppState.copy-to-clipboard(AppState.my-npub);
                             }
                         }
                     }
@@ -97,22 +87,22 @@ export component KeysPage inherits Rectangle {
                 spacing: 10px;
                 SectionHeader {
                     label: @tr("KEY PACKAGES");
-                    note: root.kp-relays.length > 0 ? @tr("(published to your kind-10051 relay list)") : @tr("(no key-package relays configured)");
+                    note: AppState.kp-relays.length > 0 ? @tr("(published to your kind-10051 relay list)") : @tr("(no key-package relays configured)");
                     MicroButton {
-                        label: root.kp-busy ? @tr("…") : @tr("Refresh");
+                        label: AppState.kp-busy ? @tr("…") : @tr("Refresh");
                         RefreshIcon {
                             stroke: Palette.text-mid;
                         }
 
                         clicked => {
-                            if (!root.kp-busy) {
-                                root.refresh-clicked();
+                            if (!AppState.kp-busy) {
+                                AppState.kp-refresh-clicked();
                             }
                         }
                     }
                 }
 
-                if root.key-packages.length == 0: Rectangle {
+                if AppState.key-packages.length == 0: Rectangle {
                     height: 60px;
                     border-radius: (8px) * Theme.r-scale;
                     background: Palette.panel-2;
@@ -135,7 +125,7 @@ export component KeysPage inherits Rectangle {
                             }
 
                             Text {
-                                text: root.kp-relays.length > 0 ? @tr("Publish one so other users can invite you to groups.") : @tr("Configure key-package relays first.");
+                                text: AppState.kp-relays.length > 0 ? @tr("Publish one so other users can invite you to groups.") : @tr("Configure key-package relays first.");
                                 color: Palette.text-lo;
                                 font-size: Theme.fs(11px, 14px);
                             }
@@ -144,28 +134,28 @@ export component KeysPage inherits Rectangle {
                         VerticalLayout {
                             alignment: center;
                             MicroButton {
-                                label: root.kp-busy ? @tr("Publishing…") : @tr("Publish");
+                                label: AppState.kp-busy ? @tr("Publishing…") : @tr("Publish");
                                 clicked => {
-                                    if (!root.kp-busy) {
-                                        root.publish-clicked();
+                                    if (!AppState.kp-busy) {
+                                        AppState.kp-publish-clicked();
                                     }
                                 }
                             }
                         }
                     }
                 }
-                if root.key-packages.length > 0: GroupCard {
-                    for kp[i] in root.key-packages: KVRow {
+                if AppState.key-packages.length > 0: GroupCard {
+                    for kp[i] in AppState.key-packages: KVRow {
                         row-height: 64px;
                         label: "0x" + kp.key-package-ref;
                         sublabel: (kp.published-at != "" ? (kp.published-at + " · ") : "") + (kp.on-relay ? @tr("{n} relay" | "{n} relays" % kp.relay-count, kp.relay-count) : @tr("local only"));
                         value: kp.local ? "LOCAL" : "REMOTE";
-                        show-divider: i < root.key-packages.length - 1;
+                        show-divider: i < AppState.key-packages.length - 1;
                     }
                 }
             }
 
-            if root.kp-status != "": Rectangle {
+            if AppState.kp-status != "": Rectangle {
                 height: 32px;
                 background: Palette.panel-2;
                 border-radius: (6px) * Theme.r-scale;
@@ -174,7 +164,7 @@ export component KeysPage inherits Rectangle {
                 Text {
                     x: 12px;
                     y: (parent.height - self.height) / 2;
-                    text: root.kp-status;
+                    text: AppState.kp-status;
                     color: Palette.text-mid;
                     font-size: Theme.fs(11px, 14px);
                     font-family: Theme.font;
@@ -211,9 +201,9 @@ export component KeysPage inherits Rectangle {
                     title: @tr("Rotate key package now");
                     detail: @tr("Invalidates the current package and uploads a fresh one to your relays.");
                     action-label: @tr("Rotate");
-                    busy: root.kp-busy;
+                    busy: AppState.kp-busy;
                     triggered => {
-                        root.rotate-clicked();
+                        AppState.show-rotate-confirm = true;
                     }
                     RefreshIcon {
                         stroke: Palette.danger;
@@ -225,7 +215,9 @@ export component KeysPage inherits Rectangle {
                     detail: @tr("Shows your secret key after you confirm your vault password. Never share it — it is your identity.");
                     action-label: @tr("Reveal");
                     triggered => {
-                        root.reveal-nsec-clicked();
+                        AppState.reveal-nsec-password = "";
+                        AppState.reveal-nsec-value = "";
+                        AppState.show-reveal-nsec = true;
                     }
                     EyeIcon {
                         stroke: Palette.danger;

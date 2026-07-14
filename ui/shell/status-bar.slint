@@ -1,25 +1,18 @@
 // status bar — online dot, relays, MLS, cwd, hotkey hint.
+import { AppState } from "app-state.slint";
 import { Palette, Theme } from "../tokens.slint";
 
 export component StatusBar inherits Rectangle {
     height: Theme.pixel-metrics ? 36px : 30px;
     background: Palette.status-bar;
 
-    in property <int> relays-connected;
-    in property <int> relays-total;
-    // Seconds since the last successful relay-health/sync poll. -1 means the
-    // boot/post-connect sync has not completed yet, so keep showing SYNCING.
-    in property <int> sync-secs: -1;
-    in property <string> message;
-    in property <bool> message-is-error: false;
-
-    property <bool> has-relays: root.relays-total > 0;
-    property <bool> has-connection: root.relays-connected > 0;
-    property <bool> is-syncing: root.has-connection && root.sync-secs < 0;
+    property <bool> has-relays: AppState.network-total > 0;
+    property <bool> has-connection: AppState.network-connected > 0;
+    property <bool> is-syncing: root.has-connection && AppState.sync-secs < 0;
     property <string> connection-label:
         !root.has-relays ? @tr("OFFLINE") : (!root.has-connection ? @tr("CONNECTING") : @tr("ONLINE"));
     property <string> sync-label:
-        !root.has-connection ? "" : (root.sync-secs < 0 ? @tr("SYNCING…") : @tr("SYNCED") + " " + root.sync-secs + "S " + @tr("AGO"));
+        !root.has-connection ? "" : (AppState.sync-secs < 0 ? @tr("SYNCING…") : @tr("SYNCED") + " " + AppState.sync-secs + "S " + @tr("AGO"));
 
     Rectangle {
         y: 0;
@@ -58,7 +51,7 @@ export component StatusBar inherits Rectangle {
         }
 
         Text {
-            text: root.relays-connected + "/" + root.relays-total + " " + @tr("RELAYS");
+            text: AppState.network-connected + "/" + AppState.network-total + " " + @tr("RELAYS");
             color: Palette.text-mid;
             font-size: Theme.fs(10px, 14px);
             font-weight: 700;
@@ -68,7 +61,7 @@ export component StatusBar inherits Rectangle {
 
         if root.sync-label != "": Text {
             text: root.sync-label;
-            color: root.sync-secs < 0 ? Palette.warning : Palette.text-mid;
+            color: AppState.sync-secs < 0 ? Palette.warning : Palette.text-mid;
             font-size: Theme.fs(10px, 14px);
             font-weight: 700;
             letter-spacing: 1.2px;
@@ -83,8 +76,8 @@ export component StatusBar inherits Rectangle {
             Text {
                 width: parent.width;
                 height: parent.height;
-                text: root.message;
-                color: root.message-is-error ? Palette.danger : Palette.mint;
+                text: AppState.clipboard-status;
+                color: AppState.clipboard-status-error ? Palette.danger : Palette.mint;
                 font-size: Theme.fs(10px, 14px);
                 font-weight: 700;
                 overflow: elide;

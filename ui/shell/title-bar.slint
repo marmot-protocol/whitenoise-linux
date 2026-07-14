@@ -1,14 +1,10 @@
 // title bar — DARKMATTER mark, breadcrumb, and global actions.
-import { MentionInboxItem, Palette, Theme } from "../tokens.slint";
+import { AppState } from "app-state.slint";
+import { Palette, Theme } from "../tokens.slint";
 import { MentionsIcon } from "mentions-icon.slint";
 
 export component TitleBar inherits Rectangle {
-    in property <string> breadcrumb;
     in property <length> rail-width: 56px;
-    in property <[MentionInboxItem]> mention-items;
-    in property <bool> mentions-loading: false;
-    callback mentions-inbox-opened();
-    callback mention-inbox-item-selected(string, string);
 
     height: 30px;
 
@@ -44,7 +40,7 @@ export component TitleBar inherits Rectangle {
             }
 
             Text {
-                text: root.breadcrumb;
+                text: AppState.breadcrumb;
                 color: Palette.mint-dim;
                 font-size: Theme.fs(10px, 14px);
                 font-weight: 600;
@@ -60,13 +56,13 @@ export component TitleBar inherits Rectangle {
         }
 
         MentionsIcon {
-            mention-items: root.mention-items;
-            mentions-loading: root.mentions-loading;
+            mention-items: AppState.mention-inbox-items;
+            mentions-loading: AppState.mention-inbox-loading;
             mentions-inbox-opened => {
-                root.mentions-inbox-opened();
+                AppState.mention-inbox-opened();
             }
             mention-inbox-item-selected(group-id, message-id) => {
-                root.mention-inbox-item-selected(group-id, message-id);
+                AppState.mention-inbox-selected(group-id, message-id);
             }
         }
     }

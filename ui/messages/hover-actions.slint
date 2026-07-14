@@ -1,3 +1,4 @@
+import { AppState } from "../shell/app-state.slint";
 import { Palette, Theme, QuickReact } from "../tokens.slint";
 import { QuickReactCell } from "quick-react-cell.slint";
 import { ActionButton } from "../primitives/action-button.slint";
@@ -13,9 +14,6 @@ export component HoverActions inherits Rectangle {
     in property <string> reply-preview-text;
     in property <string> reply-author;
     in property <bool> can-edit: false;
-    callback request-picker(string, length, length);
-    callback request-reply(string, string, string);
-    callback request-edit(string, string);
     // A single ancestor TouchArea reports the hover for the whole bar (it stays
     // hovered while the pointer is over any nested cell/button, so the row can
     // keep the toolbar open), and nested cell TouchAreas still win their own
@@ -49,7 +47,7 @@ export component HoverActions inherits Rectangle {
             plus-btn := ActionButton {
                 glyph: "+";
                 clicked => {
-                    root.request-picker(
+                    AppState.emoji-picker-requested(
                         root.message-id,
                         self.absolute-position.x,
                         self.absolute-position.y + self.height,
@@ -72,7 +70,7 @@ export component HoverActions inherits Rectangle {
             reply-btn := ActionButton {
                 glyph: "↩";
                 clicked => {
-                    root.request-reply(root.message-id, root.reply-preview-text, root.reply-author);
+                    AppState.request-reply(root.message-id, root.reply-preview-text, root.reply-author);
                 }
             }
 
@@ -80,7 +78,7 @@ export component HoverActions inherits Rectangle {
                 glyph: "✎";
                 shown: root.can-edit;
                 clicked => {
-                    root.request-edit(root.message-id, root.reply-preview-text);
+                    AppState.request-edit(root.message-id, root.reply-preview-text);
                 }
             }
         }

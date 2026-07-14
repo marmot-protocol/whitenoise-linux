@@ -1,4 +1,5 @@
-import { Palette, Contact, SharedGroup, Theme } from "../tokens.slint";
+import { Palette, Contact, Theme } from "../tokens.slint";
+import { AppState } from "../shell/app-state.slint";
 import { StartChatIcon } from "../icons/start-chat-icon.slint";
 import { CopyIcon } from "../icons/copy-icon.slint";
 import { RefreshIcon } from "../icons/refresh-icon.slint";
@@ -20,18 +21,9 @@ import { Button, MicroButton } from "../primitives/button.slint";
 import { PencilIcon } from "../icons/pencil-icon.slint";
 
 export component ContactDetail inherits DetailPage {
-    callback edit-nickname();
-    callback copy-npub();
-    callback refresh-key-package();
-    callback view-key-packages();
-    callback show-qr();
-    callback start-chat();
-    callback open-shared-group(string);
-    in property <Contact> contact;
-    in property <[SharedGroup]> shared-groups;
-    // Developer mode: adds a "View" button that dumps this contact's key
-    // package as raw JSON.
-    in property <bool> debug-enabled: false;
+    // The selected contact, hoisted once from AppState so the indexed lookup
+    // isn't repeated at every read site.
+    property <Contact> contact: AppState.contacts[AppState.active-contact];
 
     PageHeader {
         title: @tr("Contact");
@@ -116,7 +108,7 @@ export component ContactDetail inherits DetailPage {
                         }
 
                         clicked => {
-                            root.edit-nickname();
+                            AppState.contact-nickname-requested();
                         }
                     }
                 }
@@ -147,7 +139,7 @@ export component ContactDetail inherits DetailPage {
                 font-size: Theme.fsr(13px, 16px);
                 focusable: true;
                 clicked => {
-                    root.start-chat();
+                    AppState.start-chat-with-contact();
                 }
                 StartChatIcon {
                     stroke: Palette.bubble-out-fg;
@@ -171,7 +163,7 @@ export component ContactDetail inherits DetailPage {
                     }
 
                     clicked => {
-                        root.copy-npub();
+                        AppState.copy-to-clipboard(root.contact.npub-full);
                     }
                 }
             }
@@ -182,10 +174,10 @@ export component ContactDetail inherits DetailPage {
                 sublabel: root.contact.kp-detail;
                 value: root.contact.kp-status;
                 // Developer mode: dump this contact's key package as raw JSON.
-                if root.debug-enabled: MicroButton {
+                if AppState.debug-enabled: MicroButton {
                     label: @tr("View");
                     clicked => {
-                        root.view-key-packages();
+                        AppState.view-contact-key-packages();
                     }
                 }
                 // The status refreshes on its own when the page opens; the
@@ -197,7 +189,7 @@ export component ContactDetail inherits DetailPage {
                     }
 
                     clicked => {
-                        root.refresh-key-package();
+                        AppState.contact-refresh-key-package();
                     }
                 }
             }
@@ -225,7 +217,7 @@ export component ContactDetail inherits DetailPage {
                         }
 
                         clicked => {
-                            root.show-qr();
+                            AppState.contact-show-qr();
                         }
                     }
                 }
@@ -237,9 +229,9 @@ export component ContactDetail inherits DetailPage {
         label: @tr("GROUPS IN COMMON");
         GroupCard {
             SharedGroupsList {
-                groups: root.shared-groups;
+                groups: AppState.contact-shared-groups;
                 open-group(id) => {
-                    root.open-shared-group(id);
+                    AppState.open-shared-group(id);
                 }
             }
         }

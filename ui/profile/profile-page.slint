@@ -1,3 +1,4 @@
+import { AppState } from "../shell/app-state.slint";
 import { Palette, Theme } from "../tokens.slint";
 import { CopyIcon } from "../icons/copy-icon.slint";
 import { CameraIcon } from "../icons/camera-icon.slint";
@@ -251,31 +252,10 @@ export component ProfilePage inherits Rectangle {
     preferred-height: 0px;
     background: Palette.bg;
 
-    // Display props (always visible — also surface what was last saved).
-    in property <string> npub;
-    // QR of the marmot://profile deep link, rasterized Rust-side (see qr_image).
-    in property <image> qr;
-    // Editable props — two-way bound to root in dark-matter-linux.slint.
-    in-out property <string> display-name;
-    in property <image> picture;
-    in property <bool> has-picture: false;
-    in-out property <string> username;
-    in-out property <string> about;
-    in-out property <string> picture-url;
-    in-out property <string> nip05;
-    in-out property <string> lud16;
-    // Form state.
-    in property <bool> editing: false;
-    in property <bool> busy: false;
-    in property <bool> uploading: false;
-    in property <string> status;
-
-    callback edit-clicked();
-    callback save-clicked();
-    callback cancel-clicked();
-    callback copy-npub-clicked();
-    callback upload-picture-clicked();
-
+    // Reads/writes AppState directly (profile-* form state, my-npub/my-qr,
+    // my-av-* picture) and invokes its callbacks; the shell passes no bindings.
+    // Leaf children below (FieldRow, PictureField, AvatarEditable, MetaChip,
+    // ProfileQrPlate) stay pure-props.
     ScrollView {
         width: parent.width;
         height: parent.height;
@@ -307,7 +287,7 @@ export component ProfilePage inherits Rectangle {
                     }
 
                     Text {
-                        text: root.editing ? @tr("EDITING · BROADCAST TO RELAYS ON SAVE") : @tr("VISIBLE TO ANYONE YOU CHAT WITH");
+                        text: AppState.profile-editing ? @tr("EDITING · BROADCAST TO RELAYS ON SAVE") : @tr("VISIBLE TO ANYONE YOU CHAT WITH");
                         color: Palette.text-lo;
                         font-size: Theme.fs(10px, 14px);
                         font-weight: 600;
@@ -317,7 +297,7 @@ export component ProfilePage inherits Rectangle {
 
                 VerticalLayout {
                     alignment: center;
-                    if !root.editing: Button {
+                    if !AppState.profile-editing: Button {
                         label: @tr("Edit profile");
                         bg-color: Palette.mint;
                         fg: Palette.bubble-out-fg;
@@ -327,7 +307,7 @@ export component ProfilePage inherits Rectangle {
                         button-width: 128px;
                         button-height: 36px;
                         clicked => {
-                            root.edit-clicked();
+                            AppState.start-edit-profile();
                         }
                         Text {
                             text: "✎";
@@ -335,11 +315,11 @@ export component ProfilePage inherits Rectangle {
                             font-size: Theme.fs(12px, 16px);
                         }
                     }
-                    if root.editing: HorizontalLayout {
+                    if AppState.profile-editing: HorizontalLayout {
                         spacing: 8px;
                         Button {
-                            label: root.busy ? @tr("Saving…") : @tr("Save");
-                            enabled: !root.busy;
+                            label: AppState.profile-busy ? @tr("Saving…") : @tr("Save");
+                            enabled: !AppState.profile-busy;
                             bg-color: Palette.mint;
                             fg: Palette.bubble-out-fg;
                             hover-bg: Palette.mint-hi;
@@ -348,8 +328,8 @@ export component ProfilePage inherits Rectangle {
                             button-width: 96px;
                             button-height: 36px;
                             clicked => {
-                                if (!root.busy) {
-                                    root.save-clicked();
+                                if (!AppState.profile-busy) {
+                                    AppState.save-profile();
                                 }
                             }
                         }
@@ -359,7 +339,7 @@ export component ProfilePage inherits Rectangle {
                             button-width: 80px;
                             button-height: 36px;
                             clicked => {
-                                root.cancel-clicked();
+                                AppState.cancel-edit-profile();
                             }
                         }
                     }
@@ -405,13 +385,13 @@ export component ProfilePage inherits Rectangle {
                     AvatarEditable {
                         x: 4px;
                         y: 4px;
-                        initials: root.display-name;
-                        picture: root.picture;
-                        has-picture: root.has-picture;
-                        editing: root.editing;
-                        uploading: root.uploading;
+                        initials: AppState.profile-display-name;
+                        picture: AppState.my-av-picture;
+                        has-picture: AppState.my-av-has-picture;
+                        editing: AppState.profile-editing;
+                        uploading: AppState.profile-uploading;
                         upload-clicked => {
-                            root.upload-picture-clicked();
+                            AppState.upload-profile-picture();
                         }
                     }
                 }
@@ -425,7 +405,7 @@ export component ProfilePage inherits Rectangle {
                     spacing: 6px;
                     alignment: center;
                     Text {
-                        text: root.display-name == "" ? @tr("(no display name)") : root.display-name;
+                        text: AppState.profile-display-name == "" ? @tr("(no display name)") : AppState.profile-display-name;
                         color: Palette.text-hi;
                         font-size: Theme.fs(24px, 28px);
                         font-weight: 700;
@@ -435,18 +415,18 @@ export component ProfilePage inherits Rectangle {
                     HorizontalLayout {
                         spacing: 8px;
                         alignment: start;
-                        if root.nip05 != "": MetaChip {
+                        if AppState.profile-nip05 != "": MetaChip {
                             glyph: "✓";
-                            text: root.nip05;
+                            text: AppState.profile-nip05;
                             tint: Palette.mint;
                         }
-                        if root.lud16 != "": MetaChip {
+                        if AppState.profile-lud16 != "": MetaChip {
                             glyph: "⚡";
-                            text: root.lud16;
+                            text: AppState.profile-lud16;
                             tint: Palette.mint-dim;
                         }
-                        if root.nip05 == "" && root.lud16 == "": Text {
-                            text: root.username == "" ? @tr("no handle yet") : "@" + root.username;
+                        if AppState.profile-nip05 == "" && AppState.profile-lud16 == "": Text {
+                            text: AppState.profile-name == "" ? @tr("no handle yet") : "@" + AppState.profile-name;
                             color: Palette.text-lo;
                             font-size: Theme.fs(12px, 16px);
                             font-family: Theme.font;
@@ -454,8 +434,8 @@ export component ProfilePage inherits Rectangle {
                         }
                     }
 
-                    if root.about != "": Text {
-                        text: root.about;
+                    if AppState.profile-about != "": Text {
+                        text: AppState.profile-about;
                         color: Palette.text-mid;
                         font-size: Theme.fs(12px, 16px);
                         wrap: word-wrap;
@@ -465,7 +445,7 @@ export component ProfilePage inherits Rectangle {
             }
 
             // ── Status line (errors / publish receipts) ────────────────
-            if root.status != "": Rectangle {
+            if AppState.profile-status != "": Rectangle {
                 height: 36px;
                 background: Palette.panel;
                 border-radius: (6px) * Theme.r-scale;
@@ -475,7 +455,7 @@ export component ProfilePage inherits Rectangle {
                     padding-left: 12px;
                     padding-right: 12px;
                     Text {
-                        text: root.status;
+                        text: AppState.profile-status;
                         color: Palette.text-mid;
                         font-size: Theme.fs(12px, 16px);
                         vertical-alignment: center;
@@ -490,11 +470,11 @@ export component ProfilePage inherits Rectangle {
                     KVRow {
                         label: "npub";
                         sublabel: @tr("Your public key. Safe to share.");
-                        value: npub;
+                        value: AppState.my-npub;
                         MicroButton {
                             label: @tr("Copy");
                             clicked => {
-                                root.copy-npub-clicked();
+                                AppState.copy-to-clipboard(AppState.my-npub);
                             }
                             CopyIcon {
                                 stroke: Palette.text-mid;
@@ -503,78 +483,78 @@ export component ProfilePage inherits Rectangle {
                     }
 
                     ProfileQrPlate {
-                        qr: root.qr;
+                        qr: AppState.my-qr;
                     }
                 }
             }
 
             // ── Edit form OR read-only summary ─────────────────────────
-            if root.editing: Section {
+            if AppState.profile-editing: Section {
                 label: @tr("EDIT");
                 GroupCard {
                     FieldRow {
                         label: @tr("Display name");
                         placeholder: @tr("How your name appears in chats");
-                        text <=> root.display-name;
+                        text <=> AppState.profile-display-name;
                     }
 
                     FieldRow {
                         label: @tr("Username");
                         placeholder: @tr("Short handle (no spaces)");
-                        text <=> root.username;
+                        text <=> AppState.profile-name;
                     }
 
                     FieldRow {
                         label: @tr("About");
                         placeholder: @tr("A line or two about you");
                         single-line: false;
-                        text <=> root.about;
+                        text <=> AppState.profile-about;
                     }
 
                     PictureField {
-                        text <=> root.picture-url;
-                        uploading: root.uploading;
+                        text <=> AppState.profile-picture;
+                        uploading: AppState.profile-uploading;
                         upload-clicked => {
-                            root.upload-picture-clicked();
+                            AppState.upload-profile-picture();
                         }
                     }
 
                     FieldRow {
                         label: @tr("NIP-05");
                         placeholder: "you@example.com";
-                        text <=> root.nip05;
+                        text <=> AppState.profile-nip05;
                     }
 
                     FieldRow {
                         label: @tr("Lightning address (LUD-16)");
                         placeholder: "you@walletofsatoshi.com";
-                        text <=> root.lud16;
+                        text <=> AppState.profile-lud16;
                         show-divider: false;
                     }
                 }
             }
 
-            if !root.editing: Section {
+            if !AppState.profile-editing: Section {
                 label: @tr("PROFILE");
                 GroupCard {
                     KVRow {
                         label: @tr("Username");
-                        value: root.username == "" ? "—" : "@" + root.username;
+                        value: AppState.profile-name == "" ? "—" : "@" + AppState.profile-name;
                     }
 
                     KVRow {
                         label: @tr("NIP-05");
-                        value: root.nip05 == "" ? "—" : root.nip05;
+                        value: AppState.profile-nip05 == "" ? "—" : AppState.profile-nip05;
                     }
 
                     KVRow {
                         label: @tr("Lightning");
-                        value: root.lud16 == "" ? "—" : root.lud16;
+                        value: AppState.profile-lud16 == "" ? "—" : AppState.profile-lud16;
                     }
 
                     KVRow {
                         label: @tr("Picture");
-                        value: root.picture-url == "" ? @tr("Not set") : @tr("Set");
+                        value: AppState.profile-picture == "" ? @tr("Not set") : @tr("Set");
                         show-divider: false;
                     }
                 }

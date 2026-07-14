@@ -3,6 +3,7 @@
 // package, start a chat. All data is live (relays, connection counts, KP state);
 // nothing here is decorative placeholder.
 
+import { AppState } from "../shell/app-state.slint";
 import { Palette, Theme } from "../tokens.slint";
 import { Button, MicroButton } from "../primitives/button.slint";
 import { LineInput } from "../primitives/line-input.slint";
@@ -140,36 +141,18 @@ component StepCard inherits Rectangle {
 }
 
 export component GetStartedScreen inherits Rectangle {
-    // Relay setup (live).
-    in property <[string]> relays;
-    // Well-known relays not yet added — one-click chips.
-    in property <[string]> suggested;
-    in property <int> connected;
-    in property <int> total;
-    in property <string> network-status;
-    // Inline error under the add row. Set by Rust when an add is rejected
-    // (add-relay returned false); cleared here as the user edits the draft.
-    in-out property <string> add-error;
-    callback add-relay(string) -> bool;
-    callback remove-relay(string);
-    // Key package (live).
-    in property <bool> kp-published: false;
-    in property <bool> kp-busy: false;
-    in property <string> kp-status;
-    callback publish-kp();
-    // First chat.
-    callback start-chat();
-
+    // Reads relay/key-package state and invokes setup actions on AppState
+    // directly; the pane above passes no bindings.
     property <string> relay-draft;
 
     // The error belongs to the draft, and the draft dies with this screen —
-    // drop a stale error from a previous incarnation (the bound root property
+    // drop a stale error from a previous incarnation (the AppState property
     // outlives us), and clear it as the user edits.
     init => {
-        root.add-error = "";
+        AppState.network-add-error = "";
     }
     changed relay-draft => {
-        root.add-error = "";
+        AppState.network-add-error = "";
     }
 
     background: Palette.bg;
@@ -225,7 +208,7 @@ export component GetStartedScreen inherits Rectangle {
                         step-no: "1";
                         title: @tr("Connect a relay");
                         desc: @tr("Relays carry your encrypted messages. Add at least one to get online.");
-                        done: root.total > 0;
+                        done: AppState.network-total > 0;
 
                         // Live status line.
                         HorizontalLayout {
@@ -235,11 +218,11 @@ export component GetStartedScreen inherits Rectangle {
                                 height: 8px;
                                 y: (parent.height - self.height) / 2;
                                 border-radius: (4px) * Theme.r-scale;
-                                background: root.connected > 0 ? Palette.mint : (root.total > 0 ? Palette.warning : Palette.text-vlo);
+                                background: AppState.network-connected > 0 ? Palette.mint : (AppState.network-total > 0 ? Palette.warning : Palette.text-vlo);
                             }
 
                             Text {
-                                text: root.total == 0 ? @tr("No relays yet") : (root.connected == root.total ? @tr("Connected · {}/{}", root.connected, root.total) : @tr("Partial · {}/{} connected", root.connected, root.total));
+                                text: AppState.network-total == 0 ? @tr("No relays yet") : (AppState.network-connected == AppState.network-total ? @tr("Connected · {}/{}", AppState.network-connected, AppState.network-total) : @tr("Partial · {}/{} connected", AppState.network-connected, AppState.network-total));
                                 color: Palette.text-mid;
                                 font-size: Theme.fs(11px, 14px);
                                 font-weight: 600;
@@ -258,10 +241,10 @@ export component GetStartedScreen inherits Rectangle {
                                 horizontal-stretch: 1;
                                 height: 40px;
                                 border-width: 1px;
-                                border-color: root.add-error != "" ? Palette.danger-border : (relay-input.has-focus ? Palette.mint : Palette.border-2);
+                                border-color: AppState.network-add-error != "" ? Palette.danger-border : (relay-input.has-focus ? Palette.mint : Palette.border-2);
                                 border-radius: (7px) * Theme.r-scale;
-                                background: root.add-error != "" ? Palette.danger-soft : Palette.field;
-                                drop-shadow-blur: relay-input.has-focus && root.add-error == "" && Theme.focus-glow ? 10px : 0px;
+                                background: AppState.network-add-error != "" ? Palette.danger-soft : Palette.field;
+                                drop-shadow-blur: relay-input.has-focus && AppState.network-add-error == "" && Theme.focus-glow ? 10px : 0px;
                                 drop-shadow-color: Palette.mint-glow;
                                 animate border-color {
                                     duration: 140ms;
@@ -277,7 +260,7 @@ export component GetStartedScreen inherits Rectangle {
                                     fg: Palette.text-hi;
                                     placeholder-color: Palette.text-vlo;
                                     submit => {
-                                        if (root.add-relay(root.relay-draft)) {
+                                        if (AppState.network-add-relay(root.relay-draft)) {
                                             root.relay-draft = "";
                                         }
                                     }
@@ -298,22 +281,22 @@ export component GetStartedScreen inherits Rectangle {
                                 }
 
                                 clicked => {
-                                    if (root.add-relay(root.relay-draft)) {
+                                    if (AppState.network-add-relay(root.relay-draft)) {
                                         root.relay-draft = "";
                                     }
                                 }
                             }
                         }
 
-                        if root.add-error != "": Text {
-                            text: root.add-error;
+                        if AppState.network-add-error != "": Text {
+                            text: AppState.network-add-error;
                             color: Palette.danger;
                             font-size: Theme.fs(11px, 14px);
                             wrap: word-wrap;
                         }
 
                         // One-click suggested relays (hidden once added).
-                        if root.suggested.length > 0: VerticalLayout {
+                        if AppState.suggested-relays.length > 0: VerticalLayout {
                             spacing: 7px;
                             Text {
                                 text: @tr("SUGGESTED");
@@ -326,7 +309,7 @@ export component GetStartedScreen inherits Rectangle {
                             HorizontalLayout {
                                 spacing: 8px;
                                 alignment: start;
-                                for url in root.suggested: Button {
+                                for url in AppState.suggested-relays: Button {
                                     label: url;
                                     button-height: 32px;
                                     radius: 8px;
@@ -342,7 +325,7 @@ export component GetStartedScreen inherits Rectangle {
                                     }
 
                                     clicked => {
-                                        root.add-relay(url);
+                                        AppState.network-add-relay(url);
                                     }
                                 }
                                 Rectangle {
@@ -352,26 +335,26 @@ export component GetStartedScreen inherits Rectangle {
                         }
 
                         // Saved relay list.
-                        if root.relays.length > 0: Rectangle {
-                            height: root.relays.length * 40px;
+                        if AppState.network-relays.length > 0: Rectangle {
+                            height: AppState.network-relays.length * 40px;
                             border-radius: (7px) * Theme.r-scale;
                             border-width: 1px;
                             border-color: Palette.border-2;
                             background: Palette.panel-2;
                             VerticalLayout {
                                 spacing: 0;
-                                for url[i] in root.relays: MiniRelayRow {
+                                for url[i] in AppState.network-relays: MiniRelayRow {
                                     url: url;
-                                    show-divider: i < root.relays.length - 1;
+                                    show-divider: i < AppState.network-relays.length - 1;
                                     remove-clicked => {
-                                        root.remove-relay(url);
+                                        AppState.relay-remove-target = url;
                                     }
                                 }
                             }
                         }
 
-                        if root.network-status != "": Text {
-                            text: root.network-status;
+                        if AppState.network-status != "": Text {
+                            text: AppState.network-status;
                             color: Palette.text-lo;
                             font-size: Theme.fs(11px, 14px);
                             wrap: word-wrap;
@@ -383,7 +366,7 @@ export component GetStartedScreen inherits Rectangle {
                         step-no: "2";
                         title: @tr("Publish your key package");
                         desc: @tr("This is what lets other people start an encrypted chat with you.");
-                        done: root.kp-published;
+                        done: AppState.kp-published;
 
                         HorizontalLayout {
                             spacing: 10px;
@@ -392,26 +375,26 @@ export component GetStartedScreen inherits Rectangle {
                             // published. Until a relay is added, the button is
                             // muted and inert — publishing needs somewhere to land.
                             Button {
-                                property <bool> ready: root.total > 0 && !root.kp-published;
-                                label: root.kp-published ? @tr("Published") : (root.kp-busy ? @tr("Publishing…") : @tr("Publish key package"));
+                                property <bool> ready: AppState.network-total > 0 && !AppState.kp-published;
+                                label: AppState.kp-published ? @tr("Published") : (AppState.kp-busy ? @tr("Publishing…") : @tr("Publish key package"));
                                 button-height: 38px;
                                 bg-color: self.ready ? Palette.mint : Palette.panel-2;
                                 outline: self.ready ? Palette.mint : Palette.border-2;
                                 hover-bg: self.ready ? Palette.mint-hi : Palette.panel-2;
                                 hover-outline: self.ready ? Palette.mint-hi : Palette.border-2;
-                                fg: root.kp-published ? Palette.text-mid : (root.total > 0 ? Palette.bubble-out-fg : Palette.text-vlo);
+                                fg: AppState.kp-published ? Palette.text-mid : (AppState.network-total > 0 ? Palette.bubble-out-fg : Palette.text-vlo);
                                 KeyIcon {
-                                    stroke: root.kp-published ? Palette.text-mid : (root.total > 0 ? Palette.bubble-out-fg : Palette.text-vlo);
+                                    stroke: AppState.kp-published ? Palette.text-mid : (AppState.network-total > 0 ? Palette.bubble-out-fg : Palette.text-vlo);
                                 }
 
                                 clicked => {
-                                    if (root.total > 0 && !root.kp-busy && !root.kp-published) {
-                                        root.publish-kp();
+                                    if (AppState.network-total > 0 && !AppState.kp-busy && !AppState.kp-published) {
+                                        AppState.kp-publish-clicked();
                                     }
                                 }
                             }
 
-                            if root.total == 0 && !root.kp-published: VerticalLayout {
+                            if AppState.network-total == 0 && !AppState.kp-published: VerticalLayout {
                                 alignment: center;
                                 Text {
                                     text: @tr("Add a relay first.");
@@ -422,8 +405,8 @@ export component GetStartedScreen inherits Rectangle {
                             }
                         }
 
-                        if root.kp-status != "": Text {
-                            text: root.kp-status;
+                        if AppState.kp-status != "": Text {
+                            text: AppState.kp-status;
                             color: Palette.text-lo;
                             font-size: Theme.fs(11px, 14px);
                             wrap: word-wrap;
@@ -452,7 +435,7 @@ export component GetStartedScreen inherits Rectangle {
                                 }
 
                                 clicked => {
-                                    root.start-chat();
+                                    AppState.new-chat-requested();
                                 }
                             }
                         }

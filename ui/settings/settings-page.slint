@@ -1,4 +1,4 @@
-import { Palette, AuditLogEntry } from "../tokens.slint";
+import { Palette } from "../tokens.slint";
 import { SettingsSidebar } from "settings-sidebar.slint";
 import { GeneralPane } from "general-pane.slint";
 import { AppearancePane } from "appearance-pane.slint";
@@ -9,72 +9,9 @@ import { AdvancedPane } from "advanced-pane.slint";
 import { DebugPane } from "debug-pane.slint";
 import { AboutPane } from "about-pane.slint";
 
+// Navigation/layout only — the panes read and write AppState themselves.
 export component SettingsPage inherits Rectangle {
     in-out property <int> active-tab: 0;
-    in-out property <bool> debug-enabled: false;
-    in property <string> debug-dump;
-    callback debug-toggled(bool);
-    callback debug-load(int);
-    callback debug-copy-clicked;
-
-    in-out property <bool> telemetry-enabled: false;
-    in-out property <bool> audit-enabled: false;
-    in property <string> audit-status;
-    in property <[AuditLogEntry]> audit-files;
-    callback telemetry-toggled(bool);
-    callback audit-toggled(bool);
-    callback audit-delete-file(string);
-    callback audit-refresh-files();
-
-    in property <string> locale-display;
-    callback change-language-clicked();
-    in property <string> time-format: "24h";
-    in property <string> date-format: "mdy";
-    in-out property <bool> launch-at-login: false;
-    in-out property <bool> start-minimized-to-tray: false;
-    in-out property <bool> restore-last-selected-chat: false;
-    callback time-format-selected(string);
-    callback date-format-selected(string);
-    callback launch-at-login-toggled(bool);
-    callback start-minimized-to-tray-toggled(bool);
-    callback restore-last-selected-chat-toggled(bool);
-    in-out property <int> theme-id: 0;
-    in-out property <int> accent-color: 0;
-    in-out property <bool> outgoing-on-right: true;
-    callback theme-mode-selected(string);
-    callback accent-selected(int);
-    callback outgoing-on-right-toggled(bool);
-
-    // Storage pane — encrypted media-cache size + clear. Forwarded to StoragePane.
-    in property <string> storage-cache-size;
-    in property <bool> storage-clearing: false;
-    callback storage-clear-cache();
-    in property <string> storage-vault-dir;
-    callback storage-open-vault-folder();
-    callback storage-create-backup();
-    callback storage-import-backup();
-
-    // Notifications pane — desktop-alert toggles. Forwarded to NotificationsPane.
-    in-out property <bool> notifications-enabled: true;
-    in-out property <bool> notification-sound: true;
-    in-out property <bool> notification-preview: true;
-    callback notifications-toggled(bool);
-    callback notification-sound-toggled(bool);
-    callback notification-preview-toggled(bool);
-
-    // Network & relays — forwarded straight to NetworkPane.
-    in property <[string]> network-relays;
-    in property <[string]> network-booted-relays;
-    in property <bool> network-restart-required;
-    in property <int> network-connected;
-    in property <int> network-total;
-    in property <string> network-status;
-    in property <bool> network-republish-busy: false;
-    in-out property <string> network-add-error;
-    callback network-add-relay(string) -> bool;
-    callback network-remove-relay(string);
-    callback network-refresh-health();
-    callback network-republish-relay-list();
 
     horizontal-stretch: 1;
     vertical-stretch: 1;
@@ -89,7 +26,6 @@ export component SettingsPage inherits Rectangle {
 
         sidebar := SettingsSidebar {
             active-tab <=> root.active-tab;
-            debug-enabled <=> root.debug-enabled;
         }
 
         Rectangle {
@@ -99,129 +35,26 @@ export component SettingsPage inherits Rectangle {
             if root.active-tab == 0: GeneralPane {
                 width: parent.width;
                 height: parent.height;
-                locale-display: root.locale-display;
-                change-language-clicked => {
-                    root.change-language-clicked();
-                }
-                time-format: root.time-format;
-                date-format: root.date-format;
-                launch-at-login <=> root.launch-at-login;
-                start-minimized-to-tray <=> root.start-minimized-to-tray;
-                restore-last-selected-chat <=> root.restore-last-selected-chat;
-                time-format-selected(f) => {
-                    root.time-format-selected(f);
-                }
-                date-format-selected(f) => {
-                    root.date-format-selected(f);
-                }
-                launch-at-login-toggled(v) => {
-                    root.launch-at-login-toggled(v);
-                }
-                start-minimized-to-tray-toggled(v) => {
-                    root.start-minimized-to-tray-toggled(v);
-                }
-                restore-last-selected-chat-toggled(v) => {
-                    root.restore-last-selected-chat-toggled(v);
-                }
             }
             if root.active-tab == 1: NetworkPane {
                 width: parent.width;
                 height: parent.height;
-                relays: root.network-relays;
-                booted-relays: root.network-booted-relays;
-                restart-required: root.network-restart-required;
-                connected: root.network-connected;
-                total: root.network-total;
-                status: root.network-status;
-                republish-busy: root.network-republish-busy;
-                add-error <=> root.network-add-error;
-                add-relay(u) => {
-                    return root.network-add-relay(u);
-                }
-                remove-relay(u) => {
-                    root.network-remove-relay(u);
-                }
-                refresh-health => {
-                    root.network-refresh-health();
-                }
-                republish-relay-list => {
-                    root.network-republish-relay-list();
-                }
             }
             if root.active-tab == 2: AppearancePane {
                 width: parent.width;
                 height: parent.height;
-                theme-id <=> root.theme-id;
-                accent-color <=> root.accent-color;
-                outgoing-on-right <=> root.outgoing-on-right;
-                theme-mode-selected(mode) => {
-                    root.theme-mode-selected(mode);
-                }
-                accent-selected(idx) => {
-                    root.accent-selected(idx);
-                }
-                outgoing-on-right-toggled(v) => {
-                    root.outgoing-on-right-toggled(v);
-                }
             }
             if root.active-tab == 3: NotificationsPane {
                 width: parent.width;
                 height: parent.height;
-                enabled <=> root.notifications-enabled;
-                sound <=> root.notification-sound;
-                preview <=> root.notification-preview;
-                enabled-toggled(v) => {
-                    root.notifications-toggled(v);
-                }
-                sound-toggled(v) => {
-                    root.notification-sound-toggled(v);
-                }
-                preview-toggled(v) => {
-                    root.notification-preview-toggled(v);
-                }
             }
             if root.active-tab == 4: StoragePane {
                 width: parent.width;
                 height: parent.height;
-                cache-size: root.storage-cache-size;
-                clearing: root.storage-clearing;
-                clear-cache => {
-                    root.storage-clear-cache();
-                }
-                vault-dir: root.storage-vault-dir;
-                open-vault-folder => {
-                    root.storage-open-vault-folder();
-                }
-                create-backup => {
-                    root.storage-create-backup();
-                }
-                import-backup => {
-                    root.storage-import-backup();
-                }
             }
             if root.active-tab == 5: AdvancedPane {
                 width: parent.width;
                 height: parent.height;
-                debug-enabled <=> root.debug-enabled;
-                debug-toggled(v) => {
-                    root.debug-toggled(v);
-                }
-                telemetry-enabled <=> root.telemetry-enabled;
-                telemetry-toggled(v) => {
-                    root.telemetry-toggled(v);
-                }
-                audit-enabled <=> root.audit-enabled;
-                audit-toggled(v) => {
-                    root.audit-toggled(v);
-                }
-                audit-status: root.audit-status;
-                audit-files: root.audit-files;
-                audit-delete-file(p) => {
-                    root.audit-delete-file(p);
-                }
-                audit-refresh-files => {
-                    root.audit-refresh-files();
-                }
             }
             if root.active-tab == 6: AboutPane {
                 width: parent.width;
@@ -230,13 +63,6 @@ export component SettingsPage inherits Rectangle {
             if root.active-tab == 7: DebugPane {
                 width: parent.width;
                 height: parent.height;
-                dump: root.debug-dump;
-                load(m) => {
-                    root.debug-load(m);
-                }
-                copy-clicked => {
-                    root.debug-copy-clicked();
-                }
             }
         }
     }

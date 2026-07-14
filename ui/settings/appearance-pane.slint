@@ -1,3 +1,4 @@
+import { AppState } from "../shell/app-state.slint";
 import { Palette } from "../tokens.slint";
 import { MonitorIcon } from "../icons/monitor-icon.slint";
 import { DetailPage } from "../layout/detail-page.slint";
@@ -10,12 +11,8 @@ import { AccentPicker } from "accent-picker.slint";
 import { ThemePicker } from "theme-picker.slint";
 
 export component AppearancePane inherits DetailPage {
-    in-out property <int> theme-id: 0;
-    in-out property <int> accent-color: 0;
-    in-out property <bool> outgoing-on-right: true;
-    callback theme-mode-selected(string);
-    callback accent-selected(int);
-    callback outgoing-on-right-toggled(bool);
+    // Reads/writes AppState directly (theme, accent, bubble side) and invokes
+    // its callbacks; the page above passes no bindings.
 
     property <[string]> accent-names: [
         @tr("Mint"),
@@ -41,9 +38,9 @@ export component AppearancePane inherits DetailPage {
                 label: @tr("Theme");
                 sublabel: @tr("Pick the whole app's look.");
                 ThemePicker {
-                    selected-id: root.theme-id;
+                    selected-id: AppState.theme-id;
                     theme-mode-selected(mode) => {
-                        root.theme-mode-selected(mode);
+                        AppState.theme-mode-selected(mode);
                     }
                 }
             }
@@ -51,12 +48,12 @@ export component AppearancePane inherits DetailPage {
             KVRow {
                 row-height: 48px;
                 label: @tr("Accent color");
-                value: accent-names[root.accent-color];
+                value: accent-names[AppState.accent-color];
                 show-divider: false;
                 AccentPicker {
-                    selected <=> root.accent-color;
+                    selected <=> AppState.accent-color;
                     accent-selected(idx) => {
-                        root.accent-selected(idx);
+                        AppState.accent-selected(idx);
                     }
                 }
             }
@@ -72,9 +69,9 @@ export component AppearancePane inherits DetailPage {
                 sublabel: @tr("Place your sent messages on the right side.");
                 show-divider: false;
                 Toggle {
-                    on <=> root.outgoing-on-right;
+                    on <=> AppState.outgoing-on-right;
                     toggled => {
-                        root.outgoing-on-right-toggled(root.outgoing-on-right);
+                        AppState.outgoing-on-right-toggled(AppState.outgoing-on-right);
                     }
                 }
             }

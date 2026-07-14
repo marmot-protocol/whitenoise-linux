@@ -1,3 +1,4 @@
+import { AppState } from "../shell/app-state.slint";
 import { Palette, Theme } from "../tokens.slint";
 import { SettingsIcon } from "../icons/settings-icon.slint";
 import { ArchiveIcon } from "../icons/archive-icon.slint";
@@ -10,7 +11,6 @@ import { SettingsNavItem } from "settings-nav-item.slint";
 
 export component SettingsSidebar inherits Rectangle {
     in-out property <int> active-tab: 0;
-    in-out property <bool> debug-enabled: false;
     width: 232px;
     background: Palette.bg;
 
@@ -132,7 +132,7 @@ export component SettingsSidebar inherits Rectangle {
             }
         }
 
-        if root.debug-enabled: SettingsNavItem {
+        if AppState.debug-enabled: SettingsNavItem {
             label: @tr("Debug");
             selected: root.active-tab == 7;
             TerminalIcon {

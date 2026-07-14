@@ -182,6 +182,13 @@ export component ModalHost inherits Rectangle {
             }
         }
 
+        // ── Confirm ladder ─────────────────────────────────────────────────
+        // Seven destructive/irreversible flows share ConfirmModal, each armed
+        // by its own AppState flag: block, audit-delete, rotate, relay-remove,
+        // leave, admin-change, message-delete. Deliberately NOT merged into a
+        // parameterized table: each block is already a minimal mount, and one
+        // combined modal would trade them for a nested-ternary copy/dispatch
+        // knot. Copy + dispatch stay together per flow.
         if AppState.show-block-confirm: ConfirmModal {
             title: @tr("Block this chat request?");
             subtitle: @tr("This declines the invite from {}. It can't be restored unless they invite you again.", AppState.chats[AppState.active-chat].name);

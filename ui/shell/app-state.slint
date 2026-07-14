@@ -282,6 +282,18 @@ export global AppState {
     // edit plumbing above, so Rust never sees the menu itself.
     // (was private on the window root; UI-internal, not part of the Rust contract)
     in-out property <bool> ctx-menu-open: false;
+    // One-call arming used by every site that opens the message context menu
+    // (bubble right-click, hover-actions "more"): fills the fields below and
+    // opens it. Coordinates are window-absolute.
+    public function arm-context-menu(id: string, text: string, author: string, can-edit: bool, ax: length, ay: length) {
+        AppState.ctx-menu-id = id;
+        AppState.ctx-menu-text = text;
+        AppState.ctx-menu-author = author;
+        AppState.ctx-menu-can-edit = can-edit;
+        AppState.ctx-menu-x = ax;
+        AppState.ctx-menu-y = ay;
+        AppState.ctx-menu-open = true;
+    }
     // (was private on the window root; UI-internal, not part of the Rust contract)
     in-out property <string> ctx-menu-id;
     // (was private on the window root; UI-internal, not part of the Rust contract)

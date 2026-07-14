@@ -4,6 +4,7 @@ import {
     ChatMessage,
     ProfileSink,
 } from "../tokens.slint";
+import { AppState } from "../shell/app-state.slint";
 import { Avatar } from "../primitives/avatar.slint";
 import { MessageBubble } from "message-bubble.slint";
 import { ReactionsRow } from "reactions-row.slint";
@@ -39,17 +40,6 @@ export component IncomingRow inherits VerticalLayout {
         }
     }
 
-    callback album-cell-clicked(string);
-    callback react(string, string);
-    callback unreact(string, string);
-    callback request-picker(string, length, length);
-    callback request-reply(string, string, string); // message_id, preview_text, author
-    // message_id, text, author, can_edit, window-abs x, y
-    callback request-context-menu(string, string, string, bool, length, length);
-    callback show-history(string); // message_id
-    callback attachment-clicked(string); // message_id
-    callback audio-play-clicked(string); // message_id
-    callback audio-seek-clicked(string, float); // message_id, fraction
 
     spacing: 0;
 
@@ -129,25 +119,25 @@ export component IncomingRow inherits VerticalLayout {
                     highlighted: root.highlighted;
                     available-w: max(80px, root.row-w - 28px - 10px - 10px);
                     attachment-clicked => {
-                        root.attachment-clicked(root.msg.message-id);
+                        AppState.attachment-clicked(root.msg.message-id);
                     }
                     audio-play-clicked => {
-                        root.audio-play-clicked(root.msg.message-id);
+                        AppState.audio-play-clicked(root.msg.message-id);
                     }
                     audio-seek-clicked(fraction) => {
-                        root.audio-seek-clicked(root.msg.message-id, fraction);
+                        AppState.audio-seek-clicked(root.msg.message-id, fraction);
                     }
                     album-cell-clicked(key) => {
-                        root.album-cell-clicked(key);
+                        AppState.album-cell-clicked(key);
                     }
                     show-history-clicked => {
-                        root.show-history(root.msg.message-id);
+                        AppState.show-edit-history(root.msg.message-id);
                     }
                     context-menu-requested(ax, ay) => {
                         // A retracted tombstone offers no actions, so suppress
                         // its menu entirely (matches the hover toolbar gate).
                         if (root.msg.message-id != "" && !root.msg.deleted) {
-                            root.request-context-menu(root.msg.message-id, root.msg.text, root.msg.av-initials, false, ax, ay);
+                            AppState.arm-context-menu(root.msg.message-id, root.msg.text, root.msg.av-initials, false, ax, ay);
                         }
                     }
                     body-clicked => {
@@ -170,12 +160,6 @@ export component IncomingRow inherits VerticalLayout {
                     visible: root.msg.message-id != "" && !root.msg.deleted && (hover.has-hover || self.hovered || bubble.hovered);
                     opacity: (hover.has-hover || self.hovered || bubble.hovered) ? 1.0 : 0.0;
                     animate opacity { duration: Theme.hover-dur; }
-                    request-picker(id, ax, ay) => {
-                        root.request-picker(id, ax, ay);
-                    }
-                    request-reply(id, preview, author) => {
-                        root.request-reply(id, preview, author);
-                    }
                 }
             }
 
@@ -185,12 +169,6 @@ export component IncomingRow inherits VerticalLayout {
                 message-id: root.msg.message-id;
                 reactions: root.msg.reactions;
                 align-right: false;
-                react(id, emoji) => {
-                    root.react(id, emoji);
-                }
-                unreact(id, emoji) => {
-                    root.unreact(id, emoji);
-                }
             }
         }
 

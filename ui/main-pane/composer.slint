@@ -1,3 +1,4 @@
+import { AppState } from "../shell/app-state.slint";
 import {
     Palette,
     Theme,
@@ -20,66 +21,26 @@ import { ChatRequestBar } from "composer/chat-request-bar.slint";
 import { EffectPicker } from "composer/effect-picker.slint";
 
 export component Composer inherits Rectangle {
-    in-out property <string> draft <=> composer-input.text;
-    // Reply target — when non-empty, the next send goes out as a reply and a
-    // small "Replying to <author>: <preview>" chip renders above the input.
-    in property <string> reply-target-id;
-    in property <string> reply-target-author;
-    in property <string> reply-target-preview;
-    in property <image> reply-target-image;
-    in property <bool> reply-target-has-image: false;
-    // When non-empty the composer is in edit mode: a banner shows and the next
-    // send rewrites that message instead of posting a new one.
-    in property <string> editing-message-id;
-    // Elided preview of the message body being edited, so the banner points at
-    // a specific bubble the way the reply banner below does.
-    in property <string> editing-message-preview;
-    // Mention-autocomplete passthrough (see MentionPicker). `mention-active`
-    // makes the input capture nav keys; the callbacks bubble up to Rust.
-    in property <bool> mention-active: false;
-    callback caret-moved(int);
-    callback mention-nav(int);
-    callback mention-commit();
-    callback mention-dismiss();
-    public function set-cursor(pos: int) {
-        composer-input.set-cursor(pos);
+    // Reads/writes AppState directly (composer-draft, reply/edit targets,
+    // staged attachments, recording state) and invokes its callbacks; the
+    // pane above passes no bindings. Leaf children below stay pure-props.
+    property <bool> chat-request: AppState.chats[AppState.active-chat].is-chat-request;
+
+    // Caret restore after a mention splice — Rust bumps composer-caret-tick to
+    // re-apply composer-caret-pos even when the offset is unchanged. Observed
+    // via a local mirror (a `changed` handler must sit on a property of the
+    // element that declares it).
+    property <int> caret-tick-obs: AppState.composer-caret-tick;
+    changed caret-tick-obs => {
+        composer-input.set-cursor(AppState.composer-caret-pos);
     }
-    callback send-clicked();
-    callback cancel-reply();
-    callback cancel-edit();
-    callback attach-clicked();
-    // Paste shortcut pressed in the input — Rust probes the clipboard and
-    // stages an image attachment if one is there (text paste stays native).
-    callback paste-image();
-    // Voice message recording. While `recording` is true the composer switches
-    // to a red recording row; `recording-secs` is the live clip length in
-    // seconds. Stop finishes + sends; cancel discards.
-    in property <bool> recording: false;
-    in property <int> recording-secs: 0;
-    callback record-clicked();
-    callback stop-recording();
-    callback cancel-recording();
-    // Attachments queued for the next send. They render as a chip row above the
-    // input (thumbnail for images) so the user confirms what goes out by
-    // pressing Send; ✕ on a chip drops it before anything is uploaded.
-    in property <[StagedAttachment]> staged: [];
-    callback remove-staged(int);
-    // Open the emoji picker anchored at (x, y) in window coords; the picked
-    // emoji is appended to the draft rather than sent as a reaction.
-    callback emoji-clicked(length, length);
-    // While the open chat is a pending request the input pill and its
-    // controls are hidden and a flat "Accept to start messaging" action bar
-    // takes their place in the composer slot. `accept-clicked` routes to the
-    // same handler as the header's Accept button.
-    in property <bool> chat-request: false;
-    callback accept-clicked();
 
     property <length> min-row-h: 52px;
     property <length> max-row-h: 132px;
     property <length> row-h: clamp(composer-input.preferred-height + 20px, root.min-row-h, root.max-row-h);
-    property <length> chip-h: (root.reply-target-id == "" && root.editing-message-id == "") ? 0px : 36px;
-    property <length> staged-h: root.staged.length == 0 ? 0px : 58px;
-    property <bool> can-send: root.draft != "" || root.staged.length > 0;
+    property <length> chip-h: (AppState.reply-target-id == "" && AppState.editing-message-id == "") ? 0px : 36px;
+    property <length> staged-h: AppState.composer-staged.length == 0 ? 0px : 58px;
+    property <bool> can-send: AppState.composer-draft != "" || AppState.composer-staged.length > 0;
     property <string> primary-action-label: root.can-send ? @tr("Send message") : @tr("Record voice message");
     // Message-effect picker (Telegram-style): opened by right-click / long-press
     // on Send. The chosen effect lives in EffectCatalog.selected and rides the
@@ -92,27 +53,27 @@ export component Composer inherits Rectangle {
     VerticalLayout {
         spacing: 0;
 
-        if root.editing-message-id != "": EditBanner {
-            editing-message-preview: root.editing-message-preview;
+        if AppState.editing-message-id != "": EditBanner {
+            editing-message-preview: AppState.editing-message-preview;
             cancel-edit => {
-                root.cancel-edit();
+                AppState.cancel-edit();
             }
         }
 
-        if root.reply-target-id != "": ReplyBanner {
-            reply-target-author: root.reply-target-author;
-            reply-target-preview: root.reply-target-preview;
-            reply-target-image: root.reply-target-image;
-            reply-target-has-image: root.reply-target-has-image;
+        if AppState.reply-target-id != "": ReplyBanner {
+            reply-target-author: AppState.reply-target-author;
+            reply-target-preview: AppState.reply-target-preview;
+            reply-target-image: AppState.reply-target-image;
+            reply-target-has-image: AppState.reply-target-has-image;
             cancel-reply => {
-                root.cancel-reply();
+                AppState.cancel-reply();
             }
         }
 
-        if root.staged.length > 0: StagedChips {
-            staged: root.staged;
+        if AppState.composer-staged.length > 0: StagedChips {
+            staged: AppState.composer-staged;
             remove-staged(i) => {
-                root.remove-staged(i);
+                AppState.remove-staged(i);
             }
         }
 
@@ -130,9 +91,9 @@ export component Composer inherits Rectangle {
                 // graying it out.
                 background: root.chat-request ? transparent : Palette.panel;
                 border-width: root.chat-request ? 0px : 1px;
-                border-color: root.recording ? Palette.danger : (composer-input.has-focus ? Palette.mint-dim : Palette.border-2);
-                drop-shadow-blur: !root.recording && composer-input.has-focus && Theme.focus-glow ? 12px : 0px;
-                drop-shadow-color: root.recording ? Palette.danger-soft : Palette.mint-glow;
+                border-color: AppState.composer-recording ? Palette.danger : (composer-input.has-focus ? Palette.mint-dim : Palette.border-2);
+                drop-shadow-blur: !AppState.composer-recording && composer-input.has-focus && Theme.focus-glow ? 12px : 0px;
+                drop-shadow-color: AppState.composer-recording ? Palette.danger-soft : Palette.mint-glow;
                 animate border-color {
                     duration: 160ms;
                     easing: ease-out;
@@ -167,12 +128,13 @@ export component Composer inherits Rectangle {
                         attach-touch := TouchArea {
                             mouse-cursor: pointer;
                             clicked => {
-                                root.attach-clicked();
+                                AppState.attach-file();
                             }
                         }
                     }
 
                     composer-input := LineInput {
+                        text <=> AppState.composer-draft;
                         placeholder: @tr("Send a message…");
                         font-size: Theme.fs(13px, 16px);
                         fg: Palette.text-hi;
@@ -180,24 +142,24 @@ export component Composer inherits Rectangle {
                         single-line: false;
                         enabled: !root.chat-request;
                         horizontal-stretch: 1;
-                        capture-nav: root.mention-active;
+                        capture-nav: AppState.mention-active;
                         submit => {
-                            root.send-clicked();
+                            AppState.send-message(AppState.composer-draft);
                         }
                         paste-image => {
-                            root.paste-image();
+                            AppState.paste-image();
                         }
                         caret-moved(c) => {
-                            root.caret-moved(c);
+                            AppState.composer-input-changed(c);
                         }
                         nav(d) => {
-                            root.mention-nav(d);
+                            AppState.mention-nav(d);
                         }
                         commit-mention => {
-                            root.mention-commit();
+                            AppState.mention-commit();
                         }
                         dismiss-mention => {
-                            root.mention-dismiss();
+                            AppState.mention-dismiss();
                         }
                     }
 
@@ -221,7 +183,7 @@ export component Composer inherits Rectangle {
                         emoji-touch := TouchArea {
                             mouse-cursor: pointer;
                             clicked => {
-                                root.emoji-clicked(
+                                AppState.emoji-picker-requested("\u{1}composer", 
                                 emoji-rect.absolute-position.x,
                                 emoji-rect.absolute-position.y);
                             }
@@ -241,9 +203,9 @@ export component Composer inherits Rectangle {
                         accessible-label: root.primary-action-label;
                         clicked => {
                             if (root.can-send) {
-                                root.send-clicked();
+                                AppState.send-message(AppState.composer-draft);
                             } else {
-                                root.record-clicked();
+                                AppState.record-clicked();
                             }
                         }
                         // Right-click / long-press arms a message effect — only
@@ -288,13 +250,13 @@ export component Composer inherits Rectangle {
 
                 // Recording overlay: red indicator, live timer, stop (send) + cancel.
                 // Painted on top of the normal composer when `recording` is true.
-                if root.recording: RecordingOverlay {
-                    recording-secs: root.recording-secs;
+                if AppState.composer-recording: RecordingOverlay {
+                    recording-secs: AppState.composer-recording-secs;
                     stop-recording => {
-                        root.stop-recording();
+                        AppState.stop-recording();
                     }
                     cancel-recording => {
-                        root.cancel-recording();
+                        AppState.cancel-recording();
                     }
                 }
 
@@ -307,7 +269,7 @@ export component Composer inherits Rectangle {
                 // header button.
                 if root.chat-request: ChatRequestBar {
                     accept-clicked => {
-                        root.accept-clicked();
+                        AppState.accept-chat-request();
                     }
                 }
             }
@@ -352,7 +314,7 @@ export component Composer inherits Rectangle {
     // Newline hint — teaches Shift+Enter on entry, then gets out of the way:
     // shown only while the input is focused and still empty, floating above the
     // pill so it never covers typed text.
-    if composer-input.has-focus && root.draft == "": Rectangle {
+    if composer-input.has-focus && AppState.composer-draft == "": Rectangle {
         x: send-button.absolute-position.x - root.absolute-position.x + send-button.width - self.width;
         y: send-button.absolute-position.y - root.absolute-position.y - self.height - 6px;
         width: hint-row.preferred-width + 16px;

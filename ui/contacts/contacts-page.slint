@@ -1,27 +1,11 @@
-import { Palette, Contact, SharedGroup } from "../tokens.slint";
+import { Palette } from "../tokens.slint";
+import { AppState } from "../shell/app-state.slint";
 import { ContactsSidebar } from "contacts-sidebar.slint";
 import { ContactDetail } from "contact-detail.slint";
 import { EmptyState } from "../layout/empty-state.slint";
 import { PeopleIcon } from "../icons/people-icon.slint";
 
 export component ContactsPage inherits Rectangle {
-    callback contact-clicked(int);
-    callback add-contact-clicked();
-    callback edit-nickname-clicked();
-    callback copy-npub-clicked();
-    callback refresh-key-package-clicked();
-    callback view-key-packages-clicked();
-    callback show-qr-clicked();
-    callback start-chat-clicked();
-    callback open-shared-group(string);
-    // Live contacts-list search: Rust recomputes one match flag per `contacts`
-    // row on `search-changed`; the sidebar hides non-matching rows in place.
-    callback search-changed(string);
-    in property <[bool]> match-flags;
-    in property <[Contact]> contacts;
-    in property <[SharedGroup]> shared-groups;
-    in property <int> active-contact;
-    in property <bool> debug-enabled: false;
     // Bound by the shell; drives the sidebar's narrow-window collapse.
     in property <length> window-width: 100000px;
 
@@ -35,7 +19,7 @@ export component ContactsPage inherits Rectangle {
     // width, so the sidebar's hover expansion (painted later, on top)
     // overlays it without reflowing.
     // No contacts → friendly empty state; otherwise the selected detail.
-    if root.contacts.length == 0: EmptyState {
+    if AppState.contacts.length == 0: EmptyState {
         x: sidebar.reserved-width;
         y: 0;
         width: parent.width - sidebar.reserved-width;
@@ -46,35 +30,11 @@ export component ContactsPage inherits Rectangle {
             stroke: Palette.text-mid;
         }
     }
-    if root.contacts.length > 0: ContactDetail {
+    if AppState.contacts.length > 0: ContactDetail {
         x: sidebar.reserved-width;
         y: 0;
         width: parent.width - sidebar.reserved-width;
         height: parent.height;
-        contact: root.contacts[root.active-contact];
-        shared-groups: root.shared-groups;
-        debug-enabled: root.debug-enabled;
-        open-shared-group(id) => {
-            root.open-shared-group(id);
-        }
-        view-key-packages => {
-            root.view-key-packages-clicked();
-        }
-        edit-nickname => {
-            root.edit-nickname-clicked();
-        }
-        copy-npub => {
-            root.copy-npub-clicked();
-        }
-        refresh-key-package => {
-            root.refresh-key-package-clicked();
-        }
-        show-qr => {
-            root.show-qr-clicked();
-        }
-        start-chat => {
-            root.start-chat-clicked();
-        }
     }
 
     sidebar := ContactsSidebar {
@@ -82,17 +42,5 @@ export component ContactsPage inherits Rectangle {
         y: 0;
         height: parent.height;
         window-width: root.window-width;
-        contacts: root.contacts;
-        active-contact: root.active-contact;
-        match-flags: root.match-flags;
-        search-changed(q) => {
-            root.search-changed(q);
-        }
-        contact-clicked(idx) => {
-            root.contact-clicked(idx);
-        }
-        add-clicked => {
-            root.add-contact-clicked();
-        }
     }
 }

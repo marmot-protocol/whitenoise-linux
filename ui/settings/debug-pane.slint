@@ -1,3 +1,4 @@
+import { AppState } from "../shell/app-state.slint";
 import { Palette, Theme } from "../tokens.slint";
 import { TerminalIcon } from "../icons/terminal-icon.slint";
 import { DetailPage } from "../layout/detail-page.slint";
@@ -6,14 +7,11 @@ import { Section } from "../layout/section.slint";
 import { Button } from "../primitives/button.slint";
 
 export component DebugPane inherits DetailPage {
-    in property <string> dump;
+    // Reads AppState.debug-dump directly and invokes AppState.debug-load /
+    // debug-copy-clicked; the page above passes no bindings.
     // Which view is loaded into the dump area: 0 = state snapshot,
-    // 1 = raw events, 2 = key packages. Rust reads it back in `load`.
+    // 1 = raw events, 2 = key packages. Rust reads it back in `debug-load`.
     property <int> mode: 0;
-    // Fires with the mode to (re)load; Rust collects the matching dump on a
-    // worker thread and sets `dump`.
-    callback load(int);
-    callback copy-clicked;
 
     PageHeader {
         title: @tr("Debug");
@@ -38,7 +36,7 @@ export component DebugPane inherits DetailPage {
                     label: @tr("State");
                     clicked => {
                         root.mode = 0;
-                        root.load(0);
+                        AppState.debug-load(0);
                     }
                 }
 
@@ -46,7 +44,7 @@ export component DebugPane inherits DetailPage {
                     label: @tr("Raw events");
                     clicked => {
                         root.mode = 1;
-                        root.load(1);
+                        AppState.debug-load(1);
                     }
                 }
 
@@ -54,7 +52,7 @@ export component DebugPane inherits DetailPage {
                     label: @tr("Key packages");
                     clicked => {
                         root.mode = 2;
-                        root.load(2);
+                        AppState.debug-load(2);
                     }
                 }
             }
@@ -65,14 +63,14 @@ export component DebugPane inherits DetailPage {
                 Button {
                     label: @tr("Refresh");
                     clicked => {
-                        root.load(root.mode);
+                        AppState.debug-load(root.mode);
                     }
                 }
 
                 Button {
                     label: @tr("Copy JSON");
                     clicked => {
-                        root.copy-clicked();
+                        AppState.debug-copy-clicked();
                     }
                 }
             }
@@ -99,7 +97,7 @@ export component DebugPane inherits DetailPage {
                     x: 12px;
                     y: 12px;
                     width: parent.width - 24px;
-                    text: root.dump != "" ? root.dump : @tr("(no snapshot yet — click Refresh)");
+                    text: AppState.debug-dump != "" ? AppState.debug-dump : @tr("(no snapshot yet — click Refresh)");
                     color: Palette.text-hi;
                     font-family: Theme.font;
                     font-size: Theme.fs(11px, 14px);

@@ -1,4 +1,5 @@
 // messages area — driven by a model fed from Rust.
+import { AppState } from "../shell/app-state.slint";
 import { Palette, Theme, ChatMessage } from "../tokens.slint";
 import { MessageView } from "message-view.slint";
 import { ScrollView } from "../primitives/scroll-view.slint";
@@ -25,37 +26,24 @@ struct EffectBurst {
 }
 
 export component MessagesArea inherits Rectangle {
-    in property <[ChatMessage]> messages;
+    // Reads AppState directly: the open chat's rows, loading flag, and the
+    // scroll/jump ticks. Actions are invoked by the rows themselves (also via
+    // AppState); only per-row data flows down the tree.
+    property <[ChatMessage]> messages: AppState.chats-messages[AppState.active-chat];
     in property <length> available-w: 9999px;
-    in property <bool> outgoing-on-right: true;
-    in property <image> my-picture;
-    in property <bool> my-has-picture: false;
-    in property <bool> loading: false;
+    property <bool> loading: AppState.messages-loading;
     // Bumped by Rust whenever a fresh outgoing message lands. The `changed`
-    // handler below jumps the viewport to the bottom — with animation — so
-    // the user always sees the message they just sent.
-    in property <int> scroll-tick: 0;
-    in-out property <string> jump-message-id;
-    in property <int> jump-tick: 0;
+    // handler below jumps the viewport to the bottom so the user always sees
+    // the message they just sent. (Local mirrors of the AppState ticks — a
+    // `changed` handler must sit on a property of the declaring element.)
+    property <int> scroll-tick: AppState.messages-scroll-tick;
+    property <int> jump-tick: AppState.message-jump-tick;
     property <int> jump-layout-tick: 0;
     property <bool> jump-layout-pending: false;
     property <bool> jump-reset-pending: false;
     // True when older history exists beyond the loaded window; shows the
     // "load earlier messages" pill at the top of the list.
-    in property <bool> has-older: false;
-    callback request-older();
-    callback react(string, string);
-    callback unreact(string, string);
-    callback request-picker(string, length, length);
-    callback request-reply(string, string, string);
-    callback request-edit(string, string);
-    callback request-context-menu(string, string, string, bool, length, length);
-    callback show-history(string);
-    callback retry(string);
-    callback attachment-clicked(string);
-    callback audio-play-clicked(string);
-    callback audio-seek-clicked(string, float);
-    callback album-cell-clicked(string);
+    property <bool> has-older: AppState.messages-has-older;
     property <length> content-w: max(120px, root.available-w - 36px);
 
     // Message-effect stage. A pool of overlay layers (declared after the scroll,
@@ -140,12 +128,12 @@ export component MessagesArea inherits Rectangle {
         running: root.jump-reset-pending;
         triggered => {
             root.jump-reset-pending = false;
-            root.jump-message-id = "";
+            AppState.message-jump-id = "";
         }
     }
 
     changed jump-tick => {
-        if (root.jump-message-id != "") {
+        if (AppState.message-jump-id != "") {
             root.jump-reset-pending = false;
             root.jump-layout-pending = true;
         }
@@ -215,7 +203,7 @@ export component MessagesArea inherits Rectangle {
                         clicked => {
                             root.anchor-h = inner.preferred-height;
                             root.anchor-armed = true;
-                            root.request-older();
+                            AppState.messages-request-older();
                         }
                     }
                 }
@@ -236,7 +224,7 @@ export component MessagesArea inherits Rectangle {
                 spacing: 0;
                 property <int> jump-generation: root.jump-layout-tick;
                 changed jump-generation => {
-                    if (root.jump-message-id == msg.message-id) {
+                    if (AppState.message-jump-id == msg.message-id) {
                         cs.viewport-y = -max(0px, min(
                             max(0px, inner.preferred-height - cs.visible-height),
                             self.y + self.height / 2 - cs.visible-height / 2));
@@ -255,47 +243,8 @@ export component MessagesArea inherits Rectangle {
                 // body (skin 0 = standard incoming/outgoing bubble rows).
                 MessageView {
                     msg: msg;
-                    highlighted: root.jump-message-id == msg.message-id;
+                    highlighted: AppState.message-jump-id == msg.message-id;
                     row-w: root.content-w;
-                    outgoing-on-right: root.outgoing-on-right;
-                    my-picture: root.my-picture;
-                    my-has-picture: root.my-has-picture;
-                    react(id, emoji) => {
-                        root.react(id, emoji);
-                    }
-                    unreact(id, emoji) => {
-                        root.unreact(id, emoji);
-                    }
-                    request-picker(id, ax, ay) => {
-                        root.request-picker(id, ax, ay);
-                    }
-                    request-reply(id, preview, author) => {
-                        root.request-reply(id, preview, author);
-                    }
-                    request-edit(id, current) => {
-                        root.request-edit(id, current);
-                    }
-                    request-context-menu(id, text, author, can-edit, ax, ay) => {
-                        root.request-context-menu(id, text, author, can-edit, ax, ay);
-                    }
-                    show-history(id) => {
-                        root.show-history(id);
-                    }
-                    retry(id) => {
-                        root.retry(id);
-                    }
-                    attachment-clicked(id) => {
-                        root.attachment-clicked(id);
-                    }
-                    audio-play-clicked(id) => {
-                        root.audio-play-clicked(id);
-                    }
-                    audio-seek-clicked(id, fraction) => {
-                        root.audio-seek-clicked(id, fraction);
-                    }
-                    album-cell-clicked(key) => {
-                        root.album-cell-clicked(key);
-                    }
                     play-effect(eid, cx, cy, ax, ay, w, h) => {
                         root.stage-effect(eid, cx, cy, ax, ay, w, h);
                     }

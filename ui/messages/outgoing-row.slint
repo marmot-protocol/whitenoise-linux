@@ -4,6 +4,7 @@ import {
     ChatMessage,
     ProfileSink,
 } from "../tokens.slint";
+import { AppState } from "../shell/app-state.slint";
 import { Avatar } from "../primitives/avatar.slint";
 import { MessageBubble } from "message-bubble.slint";
 import { ReactionsRow } from "reactions-row.slint";
@@ -16,11 +17,11 @@ export component OutgoingRow inherits VerticalLayout {
     in property <ChatMessage> msg;
     in property <bool> highlighted: false;
     in property <length> row-w: 9999px;
-    in property <bool> align-right: true;
-    // Own profile picture. Not on the message — pushed from the root's
+    property <bool> align-right: AppState.outgoing-on-right;
+    // Own profile picture. Not on the message — read from AppState's
     // `my-av-*` set so the outgoing avatar matches the left rail.
-    in property <image> av-picture;
-    in property <bool> av-has-picture: false;
+    property <image> av-picture: AppState.my-av-picture;
+    property <bool> av-has-picture: AppState.my-av-has-picture;
 
     // Fire the burst in the shared overlay (above all bubbles). See IncomingRow.
     callback play-effect(int, int, int, length, length, length, length);
@@ -42,19 +43,6 @@ export component OutgoingRow inherits VerticalLayout {
         }
     }
 
-    callback album-cell-clicked(string);
-    callback react(string, string);
-    callback unreact(string, string);
-    callback request-picker(string, length, length);
-    callback request-reply(string, string, string);
-    callback request-edit(string, string);
-    // message_id, text, author, can_edit, window-abs x, y
-    callback request-context-menu(string, string, string, bool, length, length);
-    callback show-history(string);
-    callback retry();
-    callback attachment-clicked(string);
-    callback audio-play-clicked(string); // message_id
-    callback audio-seek-clicked(string, float); // message_id, fraction
 
     spacing: 0;
 
@@ -116,28 +104,28 @@ export component OutgoingRow inherits VerticalLayout {
                     align-right: root.align-right;
                     available-w: max(80px, root.row-w - 28px - 10px - 10px);
                     retry-clicked => {
-                        root.retry();
+                        AppState.retry-message(root.msg.message-id);
                     }
                     attachment-clicked => {
-                        root.attachment-clicked(root.msg.message-id);
+                        AppState.attachment-clicked(root.msg.message-id);
                     }
                     audio-play-clicked => {
-                        root.audio-play-clicked(root.msg.message-id);
+                        AppState.audio-play-clicked(root.msg.message-id);
                     }
                     audio-seek-clicked(fraction) => {
-                        root.audio-seek-clicked(root.msg.message-id, fraction);
+                        AppState.audio-seek-clicked(root.msg.message-id, fraction);
                     }
                     album-cell-clicked(key) => {
-                        root.album-cell-clicked(key);
+                        AppState.album-cell-clicked(key);
                     }
                     show-history-clicked => {
-                        root.show-history(root.msg.message-id);
+                        AppState.show-edit-history(root.msg.message-id);
                     }
                     context-menu-requested(ax, ay) => {
                         // Same gate as the hover toolbar: confirmed rows only,
                         // and never on a retracted tombstone.
                         if (root.msg.message-id != "" && !root.msg.pending && !root.msg.failed && !root.msg.deleted) {
-                            root.request-context-menu(root.msg.message-id, root.msg.text, @tr("You"), root.msg.can-edit, ax, ay);
+                            AppState.arm-context-menu(root.msg.message-id, root.msg.text, @tr("You"), root.msg.can-edit, ax, ay);
                         }
                     }
                     body-clicked => {
@@ -160,15 +148,6 @@ export component OutgoingRow inherits VerticalLayout {
                     visible: root.msg.message-id != "" && !root.msg.pending && !root.msg.failed && !root.msg.deleted && (hover.has-hover || self.hovered || bubble.hovered);
                     opacity: (hover.has-hover || self.hovered || bubble.hovered) ? 1.0 : 0.0;
                     animate opacity { duration: Theme.hover-dur; }
-                    request-picker(id, ax, ay) => {
-                        root.request-picker(id, ax, ay);
-                    }
-                    request-reply(id, preview, author) => {
-                        root.request-reply(id, preview, author);
-                    }
-                    request-edit(id, current) => {
-                        root.request-edit(id, current);
-                    }
                 }
             }
 
@@ -176,12 +155,6 @@ export component OutgoingRow inherits VerticalLayout {
                 message-id: root.msg.message-id;
                 reactions: root.msg.reactions;
                 align-right: root.align-right;
-                react(id, emoji) => {
-                    root.react(id, emoji);
-                }
-                unreact(id, emoji) => {
-                    root.unreact(id, emoji);
-                }
             }
         }
 

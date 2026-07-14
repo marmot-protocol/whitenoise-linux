@@ -1,21 +1,17 @@
 import { Contact } from "../tokens.slint";
+import { AppState } from "../shell/app-state.slint";
 import { SidePanel } from "../layout/side-panel.slint";
 import { ContactListItem } from "contact-list-item.slint";
 
 export component ContactsSidebar inherits SidePanel {
-    callback contact-clicked(int);
-    in property <[Contact]> contacts;
-    in property <int> active-contact;
-    // One match flag per `contacts` row, computed by Rust on `search-changed`
-    // (Slint has no substring match). Only consulted while `query` is non-empty,
-    // so a stale array is inert until the next keystroke.
-    in property <[bool]> match-flags;
-    callback search-changed(string);
-
+    // Live contacts-list search: Rust recomputes one match flag per contact
+    // row (`AppState.contact-match-flags`) on `contact-search-changed`; the
+    // rows below hide non-matching entries in place. Only consulted while
+    // `query` is non-empty, so a stale array is inert until the next keystroke.
     property <string> query;
 
     title: @tr("CONTACTS");
-    count: root.contacts.length;
+    count: AppState.contacts.length;
     show-search: true;
     search-placeholder: @tr("Search contacts…");
     show-add: true;
@@ -24,23 +20,27 @@ export component ContactsSidebar inherits SidePanel {
     list-spacing: 0;
 
     // Typing in the header search field filters the rows below in place. Echo
-    // the query to Rust so it recomputes `match-flags` for the current contacts.
+    // the query to Rust so it recomputes the match flags for the current contacts.
     search-edited(q) => {
         root.query = q;
-        root.search-changed(q);
+        AppState.contact-search-changed(q);
+    }
+    add-clicked => {
+        AppState.add-contact-requested();
     }
     // The contacts list is re-pushed on refresh; re-derive the match set so
     // filtered rows track the fresh order (mirrors the chat list). No-op while
-    // the query is empty.
-    changed contacts => {
+    // the query is empty. Observed via a local mirror.
+    property <[Contact]> contacts-obs: AppState.contacts;
+    changed contacts-obs => {
         if (root.query != "") {
-            root.search-changed(root.query);
+            AppState.contact-search-changed(root.query);
         }
     }
 
-    for c[idx] in root.contacts: Rectangle {
+    for c[idx] in AppState.contacts: Rectangle {
         // Shown when the query is empty or this row matched (flags from Rust).
-        property <bool> shown: root.query == "" || (idx < root.match-flags.length && root.match-flags[idx]);
+        property <bool> shown: root.query == "" || (idx < AppState.contact-match-flags.length && AppState.contact-match-flags[idx]);
         height: shown ? item.height + 2px : 0px;
         clip: true;
         visible: shown;
@@ -51,9 +51,9 @@ export component ContactsSidebar inherits SidePanel {
             width: 100%;
             data: c;
             compact: root.strip;
-            selected: idx == root.active-contact;
+            selected: idx == AppState.active-contact;
             clicked => {
-                root.contact-clicked(idx);
+                AppState.contact-selected(idx);
             }
         }
     }

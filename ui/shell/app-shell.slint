@@ -1,10 +1,10 @@
 // AppShell — the signed-in window body: title bar, page slot, left rail and
-// status bar. Extracted from the window root; all state flows through the
-// AppState global (see app-state.slint), so nothing is forwarded per-mount.
-// Mounted outside any layout, the Rectangle root defaults to the full window.
+// status bar. Pure composition: every mounted component reads the AppState
+// global itself (see app-state.slint), so the shell passes layout geometry
+// only. Mounted outside any layout, the Rectangle root defaults to the full
+// window.
 
-import { TextSelection } from "../tokens.slint";
-import { Palette, Theme } from "../tokens.slint";
+import { Palette } from "../tokens.slint";
 import { TitleBar } from "title-bar.slint";
 import { LeftRail } from "../left-rail/left-rail.slint";
 import { ChatListPanel } from "../chat-list/chat-list.slint";
@@ -21,598 +21,115 @@ import { AppState } from "app-state.slint";
 
 export component AppShell inherits Rectangle {
     VerticalLayout {
-            spacing: 0;
-            horizontal-stretch: 1;
+        spacing: 0;
+        horizontal-stretch: 1;
 
-            TitleBar {
-                breadcrumb: AppState.breadcrumb;
-                rail-width: rail.collapsed-width;
-                mention-items: AppState.mention-inbox-items;
-                mentions-loading: AppState.mention-inbox-loading;
-                mentions-inbox-opened => {
-                    AppState.mention-inbox-opened();
-                }
-                mention-inbox-item-selected(group-id, message-id) => {
-                    AppState.mention-inbox-selected(group-id, message-id);
-                }
-            }
+        TitleBar {
+            rail-width: rail.collapsed-width;
+        }
 
-            // Middle area is a Rectangle (absolute children) instead of a HorizontalLayout
-        // so that the conditional page contents NEVER drive the outer preferred size.
-        // The window stays the size the user picked across tab switches.
+        // Middle area is a Rectangle (absolute children) instead of a
+        // HorizontalLayout so that the conditional page contents NEVER drive
+        // the outer preferred size. The window stays the size the user picked
+        // across tab switches.
         Rectangle {
-                vertical-stretch: 1;
-                preferred-width: 0px;
-                preferred-height: 0px;
-                background: Palette.bg;
+            vertical-stretch: 1;
+            preferred-width: 0px;
+            preferred-height: 0px;
+            background: Palette.bg;
 
-                // page slot — pinned at the rail's collapsed width; the
-            // hover-expanded rail (declared below, so painted on top)
-            // overlays this slot instead of squeezing the content.
+            // Page slot — pinned at the rail's collapsed width; the
+            // hover-expanded rail (declared below, so painted on top) overlays
+            // this slot instead of squeezing the content.
             Rectangle {
-                    x: rail.collapsed-width;
-                    y: 0;
-                    width: parent.width - rail.collapsed-width;
-                    height: parent.height;
+                x: rail.collapsed-width;
+                y: 0;
+                width: parent.width - rail.collapsed-width;
+                height: parent.height;
 
-                    // Page slot, keyed by AppState.active-page:
+                // Pages keyed by AppState.active-page:
                 // 0=chats, 1=contacts, 2=archive, 3=keys, 4=settings, 5=profile.
-                // Each page mounts inside a FadeInPage (layout/fade-in-page.slint)
-                // so navigation feels smooth. Chats (0) is side panel + main
-                // pane laid out side-by-side.
+                // Each mounts inside a FadeInPage (layout/fade-in-page.slint)
+                // so navigation feels smooth.
                 if AppState.active-page == 0: FadeInPage {
-                    // No chats yet → first-run get-started screen (with live relay
-                    // setup). Once a chat exists, the normal list + pane shell.
+                    // No chats yet → first-run get-started screen (with live
+                    // relay setup). Once a chat exists, the list + pane shell.
                     if AppState.chats.length == 0: GetStartedScreen {
-                            width: parent.width;
-                            height: parent.height;
-                            relays: AppState.network-relays;
-                            suggested: AppState.suggested-relays;
-                            connected: AppState.network-connected;
-                            total: AppState.network-total;
-                            network-status: AppState.network-status;
-                            add-error <=> AppState.network-add-error;
-                            add-relay(u) => {
-                                return AppState.network-add-relay(u);
-                            }
-                            remove-relay(u) => {
-                                AppState.relay-remove-target = u;
-                            }
-                            kp-published: AppState.kp-published;
-                            kp-busy: AppState.kp-busy;
-                            kp-status: AppState.kp-status;
-                            publish-kp => {
-                                AppState.kp-publish-clicked();
-                            }
-                            start-chat => {
-                                AppState.new-chat-requested();
-                            }
-                        }
+                        width: parent.width;
+                        height: parent.height;
+                    }
 
-                        // Absolute layout instead of a HorizontalLayout: the pane
+                    // Absolute layout instead of a HorizontalLayout: the pane
                     // sits against the panel's *reserved* width, so the panel's
                     // hover expansion (painted later, on top) overlays it
                     // without reflowing the conversation.
                     if AppState.chats.length > 0: Rectangle {
-                            width: parent.width;
+                        width: parent.width;
+                        height: parent.height;
+
+                        MainPane {
+                            x: chat-list.reserved-width;
+                            y: 0;
+                            width: parent.width - chat-list.reserved-width;
                             height: parent.height;
-
-                            main-pane := MainPane {
-                                x: chat-list.reserved-width;
-                                y: 0;
-                                width: parent.width - chat-list.reserved-width;
-                                height: parent.height;
-                                chat: AppState.chats[AppState.active-chat];
-                                active-chat: AppState.active-chat;
-                                mention-active: AppState.mention-active;
-                                mention-candidates: AppState.mention-candidates;
-                                mention-selected: AppState.mention-selected;
-                                caret-pos: AppState.composer-caret-pos;
-                                caret-tick: AppState.composer-caret-tick;
-                                caret-moved(c) => {
-                                    AppState.composer-input-changed(c);
-                                }
-                                mention-nav(d) => {
-                                    AppState.mention-nav(d);
-                                }
-                                mention-commit => {
-                                    AppState.mention-commit();
-                                }
-                                mention-choose(i) => {
-                                    AppState.mention-choose(i);
-                                }
-                                mention-dismiss => {
-                                    AppState.mention-dismiss();
-                                }
-                                outgoing-on-right: AppState.outgoing-on-right;
-                                my-picture: AppState.my-av-picture;
-                                my-has-picture: AppState.my-av-has-picture;
-                                messages: AppState.chats-messages[AppState.active-chat];
-                                messages-loading: AppState.messages-loading;
-                                scroll-tick: AppState.messages-scroll-tick;
-                                jump-message-id <=> AppState.message-jump-id;
-                                jump-tick: AppState.message-jump-tick;
-                                has-older: AppState.messages-has-older;
-                                request-older => {
-                                    AppState.messages-request-older();
-                                }
-                                draft <=> AppState.composer-draft;
-                                reply-target-id: AppState.reply-target-id;
-                                reply-target-author: AppState.reply-target-author;
-                                reply-target-preview: AppState.reply-target-preview;
-                                reply-target-image: AppState.reply-target-image;
-                                reply-target-has-image: AppState.reply-target-has-image;
-                                editing-message-id: AppState.editing-message-id;
-                                editing-message-preview: AppState.editing-message-preview;
-                                send-clicked => {
-                                    AppState.send-message(AppState.composer-draft);
-                                }
-                                cancel-reply => {
-                                    AppState.cancel-reply();
-                                }
-                                cancel-edit => {
-                                    AppState.cancel-edit();
-                                }
-                                react(id, emoji) => {
-                                    AppState.react-message(id, emoji);
-                                }
-                                unreact(id, emoji) => {
-                                    AppState.unreact-message(id, emoji);
-                                }
-                                request-picker(id, ax, ay) => {
-                                    AppState.emoji-picker-requested(id, ax, ay);
-                                }
-                                request-reply(id, preview, author) => {
-                                    AppState.request-reply(id, preview, author);
-                                }
-                                request-edit(id, current) => {
-                                    AppState.request-edit(id, current);
-                                }
-                                request-context-menu(id, text, author, can-edit, ax, ay) => {
-                                    AppState.ctx-menu-id = id;
-                                    AppState.ctx-menu-text = text;
-                                    AppState.ctx-menu-author = author;
-                                    AppState.ctx-menu-can-edit = can-edit;
-                                    AppState.ctx-menu-x = ax;
-                                    AppState.ctx-menu-y = ay;
-                                    AppState.ctx-menu-open = true;
-                                }
-                                show-history(id) => {
-                                    AppState.show-edit-history(id);
-                                }
-                                retry(id) => {
-                                    AppState.retry-message(id);
-                                }
-                                attach-clicked => {
-                                    AppState.attach-file();
-                                }
-                                paste-image => {
-                                    AppState.paste-image();
-                                }
-                                staged: AppState.composer-staged;
-                                remove-staged(i) => {
-                                    AppState.remove-staged(i);
-                                }
-
-                            // Sentinel target id routes the picked emoji into
-                            // the composer draft instead of a kind-7 reaction.
-                            emoji-clicked(ax, ay) => {
-                                    AppState.emoji-picker-requested("\u{1}composer", ax, ay);
-                                }
-                                attachment-clicked(id) => {
-                                    AppState.attachment-clicked(id);
-                                }
-                                audio-play-clicked(id) => {
-                                    AppState.audio-play-clicked(id);
-                                }
-                                audio-seek-clicked(id, fraction) => {
-                                    AppState.audio-seek-clicked(id, fraction);
-                                }
-                                album-cell-clicked(key) => {
-                                    AppState.album-cell-clicked(key);
-                                }
-                                recording <=> AppState.composer-recording;
-                                recording-secs: AppState.composer-recording-secs;
-                                record-clicked => {
-                                    AppState.record-clicked();
-                                }
-                                stop-recording => {
-                                    AppState.stop-recording();
-                                }
-                                cancel-recording => {
-                                    AppState.cancel-recording();
-                                }
-                                is-group: AppState.chat-is-group;
-                                can-show-members: AppState.chat-can-show-members;
-                                chat-muted: AppState.active-chat-muted;
-                                mute-toggle-clicked => {
-                                    AppState.toggle-mute-chat();
-                                }
-                                badge-clicked => {
-                                    AppState.encryption-info-open = true;
-                                }
-                                member-count: AppState.chat-member-count;
-                                group-description: AppState.chat-group-description;
-                                members: AppState.chat-members;
-                                invited-members: AppState.chat-invited-members;
-                                show-members <=> AppState.show-chat-members;
-                                members-toggle-clicked => {
-                                    AppState.members-toggle-clicked();
-                                }
-                                can-add-members: AppState.chat-can-add-members;
-                                add-member-busy: AppState.add-member-busy;
-                                add-member-status: AppState.add-member-status;
-                                add-member-draft <=> AppState.add-member-draft;
-                                add-member(npub) => {
-                                    AppState.add-member(npub);
-                                }
-                                request-member-menu(id, name, cp, cd, csd, cr, ax, ay) => {
-                                    AppState.member-menu-id = id;
-                                    AppState.member-menu-name = name;
-                                    AppState.member-menu-can-promote = cp;
-                                    AppState.member-menu-can-demote = cd;
-                                    AppState.member-menu-can-self-demote = csd;
-                                    AppState.member-menu-can-remove = cr;
-                                    AppState.member-menu-x = ax;
-                                    AppState.member-menu-y = ay;
-                                    AppState.member-menu-open = true;
-                                }
-                                group-picture: AppState.chat-group-picture;
-                                group-has-picture: AppState.chat-group-has-picture;
-                                group-av-a: AppState.chat-group-av-a;
-                                group-av-b: AppState.chat-group-av-b;
-                                group-av-initials: AppState.chat-group-av-initials;
-                                group-rename-busy: AppState.group-rename-busy;
-                                group-description-busy: AppState.group-description-busy;
-                                group-image-busy: AppState.group-image-busy;
-                                group-leave-busy: AppState.group-leave-busy;
-                                group-status: AppState.group-settings-status;
-                                group-rename-draft <=> AppState.group-rename-draft;
-                                group-description-draft <=> AppState.group-description-draft;
-                                rename-group(name) => {
-                                    AppState.rename-group(name);
-                                }
-                                set-group-description(description) => {
-                                    AppState.set-group-description(description);
-                                }
-                                change-group-image => {
-                                    AppState.change-group-image();
-                                }
-                                clear-group-image => {
-                                    AppState.clear-group-image();
-                                }
-                                leave-group => {
-                                    AppState.leave-confirm-chat-idx = AppState.active-chat;
-                                    AppState.show-leave-confirm = true;
-                                }
-                                accept-clicked => {
-                                    AppState.accept-chat-request();
-                                }
-                                block-clicked => {
-                                    AppState.show-block-confirm = true;
-                                }
-                                archive-clicked => {
-                                    AppState.archive-chat();
-                                }
-                            }
-
-                            chat-list := ChatListPanel {
-                                x: 0;
-                                y: 0;
-                                height: parent.height;
-                                window-width: root.width;
-                                chats: AppState.chats;
-                                active-chat: AppState.active-chat;
-                                relays-connected: AppState.network-connected;
-                                relays-total: AppState.network-total;
-                                sync-secs: AppState.sync-secs;
-                                match-flags: AppState.chat-match-flags;
-                                search-changed(q) => {
-                                    AppState.chat-search-changed(q);
-                                }
-                                chat-clicked(idx) => {
-                                // A leftover selection belongs to the chat
-                                // being left behind; drop it.
-                                TextSelection.clear();
-                                    AppState.chat-selected(idx);
-                                }
-                                chat-context-menu(idx, ax, ay) => {
-                                    AppState.request-chat-context(idx, ax, ay);
-                                }
-                                new-chat-clicked => {
-                                    AppState.new-chat-requested();
-                                }
-                            }
                         }
-                    }
 
-                    if AppState.active-page == 1: FadeInPage {
-                        ContactsPage {
-                            width: parent.width;
+                        chat-list := ChatListPanel {
+                            x: 0;
+                            y: 0;
                             height: parent.height;
                             window-width: root.width;
-                            contacts: AppState.contacts;
-                            shared-groups: AppState.contact-shared-groups;
-                            active-contact: AppState.active-contact;
-                            match-flags: AppState.contact-match-flags;
-                            debug-enabled: AppState.debug-enabled;
-                            view-key-packages-clicked => {
-                                AppState.view-contact-key-packages();
-                            }
-                            search-changed(q) => {
-                                AppState.contact-search-changed(q);
-                            }
-                            contact-clicked(idx) => {
-                                AppState.contact-selected(idx);
-                            }
-                            open-shared-group(id) => {
-                                AppState.open-shared-group(id);
-                            }
-                            add-contact-clicked => {
-                                AppState.add-contact-requested();
-                            }
-                            edit-nickname-clicked => {
-                                AppState.contact-nickname-requested();
-                            }
-                            copy-npub-clicked => {
-                                AppState.copy-to-clipboard(AppState.contacts[AppState.active-contact].npub-full);
-                            }
-                            refresh-key-package-clicked => {
-                                AppState.contact-refresh-key-package();
-                            }
-                            show-qr-clicked => {
-                                AppState.contact-show-qr();
-                            }
-                            start-chat-clicked => {
-                                AppState.start-chat-with-contact();
-                            }
-                        }
-                    }
-
-                    if AppState.active-page == 2: FadeInPage {
-                        ArchivedPage {
-                            width: parent.width;
-                            height: parent.height;
-                            window-width: root.width;
-                            archives: AppState.archived-chats;
-                            active-archived: AppState.active-archived;
-                            members: AppState.chat-members;
-                            is-group: AppState.chat-is-group;
-                            archive-clicked(idx) => {
-                                AppState.archive-selected(idx);
-                            }
-                            unarchive-clicked => {
-                                AppState.unarchive-chat();
-                            }
-                        }
-                    }
-
-                    if AppState.active-page == 3: FadeInPage {
-                        KeysPage {
-                            width: parent.width;
-                            height: parent.height;
-                            npub: AppState.my-npub;
-                            key-packages: AppState.key-packages;
-                            kp-relays: AppState.kp-relays;
-                            kp-status: AppState.kp-status;
-                            kp-busy: AppState.kp-busy;
-                            copy-npub-clicked => {
-                                AppState.copy-to-clipboard(AppState.my-npub);
-                            }
-                            publish-clicked => {
-                                AppState.kp-publish-clicked();
-                            }
-                            rotate-clicked => {
-                                AppState.show-rotate-confirm = true;
-                            }
-                            refresh-clicked => {
-                                AppState.kp-refresh-clicked();
-                            }
-                            reveal-nsec-clicked => {
-                                AppState.reveal-nsec-password = "";
-                                AppState.reveal-nsec-value = "";
-                                AppState.show-reveal-nsec = true;
-                            }
-                        }
-                    }
-
-                    if AppState.active-page == 4: FadeInPage {
-                        SettingsPage {
-                            width: parent.width;
-                            height: parent.height;
-                            debug-enabled <=> AppState.debug-enabled;
-                            debug-dump: AppState.debug-dump;
-                            debug-toggled(v) => {
-                                AppState.debug-toggled(v);
-                            }
-                            debug-load(m) => {
-                                AppState.debug-load(m);
-                            }
-                            debug-copy-clicked => {
-                                AppState.debug-copy-clicked();
-                            }
-                            telemetry-enabled <=> AppState.telemetry-enabled;
-                            telemetry-toggled(v) => {
-                                AppState.telemetry-toggled(v);
-                            }
-                            audit-enabled <=> AppState.audit-enabled;
-                            audit-toggled(v) => {
-                                AppState.audit-toggled(v);
-                            }
-                            audit-status: AppState.audit-status;
-                            audit-files: AppState.audit-files;
-                            audit-delete-file(p) => {
-                                AppState.pending-audit-delete-path = p;
-                                AppState.show-audit-delete-confirm = true;
-                            }
-                            audit-refresh-files => {
-                                AppState.audit-refresh-files();
-                            }
-                            network-relays: AppState.network-relays;
-                            network-booted-relays: AppState.network-booted-relays;
-                            network-restart-required: AppState.network-restart-required;
-                            network-connected: AppState.network-connected;
-                            network-total: AppState.network-total;
-                            network-status: AppState.network-status;
-                            network-republish-busy: AppState.network-republish-busy;
-                            network-add-error <=> AppState.network-add-error;
-                            network-add-relay(u) => {
-                                return AppState.network-add-relay(u);
-                            }
-                            network-remove-relay(u) => {
-                                AppState.relay-remove-target = u;
-                            }
-                            network-refresh-health => {
-                                AppState.network-refresh-health();
-                            }
-                            network-republish-relay-list => {
-                                AppState.network-republish-relay-list();
-                            }
-                            locale-display: AppState.locale-display;
-                            change-language-clicked => {
-                                AppState.change-language-clicked();
-                            }
-                            time-format: AppState.time-format;
-                            date-format: AppState.date-format;
-                            launch-at-login <=> AppState.launch-at-login;
-                            start-minimized-to-tray <=> AppState.start-minimized-to-tray;
-                            restore-last-selected-chat <=> AppState.restore-last-selected-chat;
-                            time-format-selected(f) => {
-                                AppState.time-format-selected(f);
-                            }
-                            date-format-selected(f) => {
-                                AppState.date-format-selected(f);
-                            }
-                            launch-at-login-toggled(v) => {
-                                AppState.launch-at-login-toggled(v);
-                            }
-                            start-minimized-to-tray-toggled(v) => {
-                                AppState.start-minimized-to-tray-toggled(v);
-                            }
-                            restore-last-selected-chat-toggled(v) => {
-                                AppState.restore-last-selected-chat-toggled(v);
-                            }
-                            theme-id <=> AppState.theme-id;
-                            accent-color <=> AppState.accent-color;
-                            outgoing-on-right <=> AppState.outgoing-on-right;
-                            theme-mode-selected(mode) => {
-                                AppState.theme-mode-selected(mode);
-                            }
-                            accent-selected(idx) => {
-                                AppState.accent-selected(idx);
-                            }
-                            outgoing-on-right-toggled(v) => {
-                                AppState.outgoing-on-right-toggled(v);
-                            }
-                            storage-cache-size: AppState.storage-cache-size;
-                            storage-clearing: AppState.storage-clearing;
-                            storage-clear-cache => {
-                                AppState.storage-clear-cache();
-                            }
-                            storage-vault-dir: AppState.storage-vault-dir;
-                            storage-open-vault-folder => {
-                                AppState.storage-open-vault-folder();
-                            }
-                            storage-create-backup => {
-                                AppState.storage-create-backup();
-                            }
-                            storage-import-backup => {
-                                AppState.storage-import-backup();
-                            }
-                            notifications-enabled <=> AppState.notifications-enabled;
-                            notification-sound <=> AppState.notification-sound;
-                            notification-preview <=> AppState.notification-preview;
-                            notifications-toggled(v) => {
-                                AppState.notifications-toggled(v);
-                            }
-                            notification-sound-toggled(v) => {
-                                AppState.notification-sound-toggled(v);
-                            }
-                            notification-preview-toggled(v) => {
-                                AppState.notification-preview-toggled(v);
-                            }
-                        }
-                    }
-
-                    if AppState.active-page == 5: FadeInPage {
-                        ProfilePage {
-                            width: parent.width;
-                            height: parent.height;
-                            npub: AppState.my-npub;
-                            qr: AppState.my-qr;
-                            editing: AppState.profile-editing;
-                            busy: AppState.profile-busy;
-                            uploading: AppState.profile-uploading;
-                            status: AppState.profile-status;
-                            display-name <=> AppState.profile-display-name;
-                            username <=> AppState.profile-name;
-                            about <=> AppState.profile-about;
-                            picture-url <=> AppState.profile-picture;
-                            picture: AppState.my-av-picture;
-                            has-picture: AppState.my-av-has-picture;
-                            nip05 <=> AppState.profile-nip05;
-                            lud16 <=> AppState.profile-lud16;
-                            edit-clicked => {
-                                AppState.start-edit-profile();
-                            }
-                            save-clicked => {
-                                AppState.save-profile();
-                            }
-                            cancel-clicked => {
-                                AppState.cancel-edit-profile();
-                            }
-                            copy-npub-clicked => {
-                                AppState.copy-to-clipboard(AppState.my-npub);
-                            }
-                            upload-picture-clicked => {
-                                AppState.upload-profile-picture();
-                            }
                         }
                     }
                 }
 
-                // left rail — expandable on hover (56px → 160px); declared after
+                if AppState.active-page == 1: FadeInPage {
+                    ContactsPage {
+                        width: parent.width;
+                        height: parent.height;
+                        window-width: root.width;
+                    }
+                }
+
+                if AppState.active-page == 2: FadeInPage {
+                    ArchivedPage {
+                        width: parent.width;
+                        height: parent.height;
+                        window-width: root.width;
+                    }
+                }
+
+                if AppState.active-page == 3: FadeInPage {
+                    KeysPage {
+                        width: parent.width;
+                        height: parent.height;
+                    }
+                }
+
+                if AppState.active-page == 4: FadeInPage {
+                    SettingsPage {
+                        width: parent.width;
+                        height: parent.height;
+                    }
+                }
+
+                if AppState.active-page == 5: FadeInPage {
+                    ProfilePage {
+                        width: parent.width;
+                        height: parent.height;
+                    }
+                }
+            }
+
+            // Left rail — expandable on hover (56px → 160px); declared after
             // the page slot so the expansion paints over it.
             rail := LeftRail {
-                    x: 0;
-                    y: 0;
-                    height: parent.height;
-                    selected-index: AppState.active-page;
-                    my-initials: AppState.my-av-initials;
-                    my-color-a: AppState.my-av-a;
-                    my-color-b: AppState.my-av-b;
-                    my-picture: AppState.my-av-picture;
-                    my-has-picture: AppState.my-av-has-picture;
-                    my-display-name: AppState.my-display-name;
-                    badge-chats: AppState.rail-badge-chats;
-                    badge-contacts: AppState.rail-badge-contacts;
-                    badge-archive: AppState.rail-badge-archive;
-                    badge-keys: AppState.rail-badge-keys;
-                    has-active-chat: AppState.active-chat >= 0 && AppState.chats.length > 0;
-                    nav-clicked(idx) => {
-                        AppState.nav-requested(idx);
-                    }
-                    plus-clicked => {
-                        AppState.new-chat-requested();
-                    }
-                    settings-clicked => {
-                        AppState.nav-requested(4);
-                    }
-                    profile-clicked => {
-                        AppState.profile-requested();
-                    }
-                    accounts-clicked => {
-                        AppState.account-switcher-requested();
-                    }
-                }
-            }
-
-            StatusBar {
-                relays-connected: AppState.network-connected;
-                relays-total: AppState.network-total;
-                sync-secs: AppState.sync-secs;
-                message: AppState.clipboard-status;
-                message-is-error: AppState.clipboard-status-error;
+                x: 0;
+                y: 0;
+                height: parent.height;
             }
         }
+
+        StatusBar { }
+    }
 }

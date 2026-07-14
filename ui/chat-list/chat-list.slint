@@ -1,63 +1,52 @@
 // chat list panel — a SidePanel populated with chat list items.
-import { ChatMeta } from "../tokens.slint";
+import { AppState } from "../shell/app-state.slint";
+import { ChatMeta, TextSelection } from "../tokens.slint";
 import { ChatListEntry } from "chat-list-entry.slint";
 import { SidePanel } from "../layout/side-panel.slint";
 
 export component ChatListPanel inherits SidePanel {
-    callback chat-clicked(int);
-    // Right-click a chat row: (idx, window-x, window-y) so the caller can open
-    // a context menu (pin / unpin) anchored at the cursor.
-    callback chat-context-menu(int, length, length);
-    callback new-chat-clicked;
-
-    in property <[ChatMeta]> chats;
-    in property <int> active-chat;
-    // Live relay health + seconds since last sync (see DarkMatterLinux.sync-secs).
-    in property <int> relays-connected;
-    in property <int> relays-total;
-    in property <int> sync-secs: -1;
-    // One match flag per `chats` row, computed by Rust on `search-changed`
-    // (Slint has no substring match). Only consulted while `query` is non-empty,
-    // so a stale array is inert until the next keystroke.
-    in property <[bool]> match-flags;
-    callback search-changed(string);
-
+    // Reads the chat list / relay health from AppState and invokes its
+    // callbacks directly; the shell passes no bindings.
     property <string> query;
 
     add-clicked => {
-        root.new-chat-clicked();
+        AppState.new-chat-requested();
     }
 
     // Typing in the header search field filters the rows below in place. Echo
-    // the query to Rust so it recomputes `match-flags` for the current chats.
+    // the query to Rust so it recomputes `chat-match-flags` for the current
+    // chats.
     search-edited(q) => {
         root.query = q;
-        root.search-changed(q);
+        AppState.chat-search-changed(q);
     }
     // The chat list is re-pushed on new messages / re-sorts; re-derive the
     // match set so filtered rows track the fresh order (mirrors the forward
-    // picker). No-op while the query is empty.
-    changed chats => {
+    // picker). No-op while the query is empty. Observed via a local mirror
+    // (a `changed` handler must sit on a property of the element that
+    // declares it).
+    property <[ChatMeta]> chats-obs: AppState.chats;
+    changed chats-obs => {
         if (root.query != "") {
-            root.search-changed(root.query);
+            AppState.chat-search-changed(root.query);
         }
     }
 
     title: @tr("CHATS");
-    count: root.chats.length;
+    count: AppState.chats.length;
     show-search: true;
     search-placeholder: @tr("Search chats…");
     show-search-shortcut: true;
     show-add: true;
-    footer-text: root.relays-total > 0 ? root.relays-connected + "/" + root.relays-total + " " + @tr("RELAYS") : @tr("NO RELAYS");
-    footer-trail: root.sync-secs < 0 ? "· " + @tr("SYNCING…") : "· " + @tr("SYNCED") + " " + root.sync-secs + "S " + @tr("AGO");
+    footer-text: AppState.network-total > 0 ? AppState.network-connected + "/" + AppState.network-total + " " + @tr("RELAYS") : @tr("NO RELAYS");
+    footer-trail: AppState.sync-secs < 0 ? "· " + @tr("SYNCING…") : "· " + @tr("SYNCED") + " " + AppState.sync-secs + "S " + @tr("AGO");
     // Rows filter in place, so drop the layout's inter-row spacing and bake the
     // 2px gap into each shown wrapper — hidden rows then collapse to nothing.
     list-spacing: 0;
 
-    for chat[idx] in root.chats: Rectangle {
+    for chat[idx] in AppState.chats: Rectangle {
         // Shown when the query is empty or this row matched (flags from Rust).
-        property <bool> shown: root.query == "" || (idx < root.match-flags.length && root.match-flags[idx]);
+        property <bool> shown: root.query == "" || (idx < AppState.chat-match-flags.length && AppState.chat-match-flags[idx]);
         height: shown ? entry.preferred-height + 2px : 0px;
         clip: true;
         visible: shown;
@@ -68,12 +57,14 @@ export component ChatListPanel inherits SidePanel {
             width: 100%;
             chat: chat;
             compact: root.strip;
-            selected: idx == root.active-chat;
+            selected: idx == AppState.active-chat;
             clicked => {
-                root.chat-clicked(idx);
+                // A leftover selection belongs to the chat being left behind; drop it.
+                TextSelection.clear();
+                AppState.chat-selected(idx);
             }
             context-menu(ax, ay) => {
-                root.chat-context-menu(idx, ax, ay);
+                AppState.request-chat-context(idx, ax, ay);
             }
         }
     }

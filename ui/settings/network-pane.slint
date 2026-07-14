@@ -1,3 +1,4 @@
+import { AppState } from "../shell/app-state.slint";
 import { Palette, Theme } from "../tokens.slint";
 import { MonitorIcon } from "../icons/monitor-icon.slint";
 import { PlusIcon } from "../icons/plus-icon.slint";
@@ -65,32 +66,20 @@ component RelayRow inherits Rectangle {
 }
 
 export component NetworkPane inherits DetailPage {
-    in property <[string]> relays;
-    in property <[string]> booted-relays;
-    in property <bool> restart-required;
-    in property <int> connected;
-    in property <int> total;
-    in property <string> status;
-    in property <bool> republish-busy: false;
-    // Inline error under the add row. Set by Rust when an add is rejected
-    // (add-relay returned false); cleared here as the user edits the draft.
-    in-out property <string> add-error;
-    callback add-relay(string) -> bool;
-    callback remove-relay(string);
-    callback refresh-health();
-    callback republish-relay-list();
+    // Reads/writes AppState directly (relay list, health counters, add-error)
+    // and invokes its callbacks; the page above passes no bindings.
 
     property <string> draft;
 
     // The error belongs to the draft, and the draft dies with this pane (it
     // is recreated on every tab switch) — drop a stale error from a previous
-    // incarnation (the bound root property outlives us), and clear it as the
+    // incarnation (the AppState property outlives us), and clear it as the
     // user edits.
     init => {
-        root.add-error = "";
+        AppState.network-add-error = "";
     }
     changed draft => {
-        root.add-error = "";
+        AppState.network-add-error = "";
     }
 
     PageHeader {
@@ -118,7 +107,7 @@ export component NetworkPane inherits DetailPage {
                         height: 10px;
                         y: (parent.height - self.height) / 2;
                         border-radius: (5px) * Theme.r-scale;
-                        background: root.connected > 0 ? Palette.mint : (root.total > 0 ? Palette.warning : Palette.text-vlo);
+                        background: AppState.network-connected > 0 ? Palette.mint : (AppState.network-total > 0 ? Palette.warning : Palette.text-vlo);
                     }
 
                     VerticalLayout {
@@ -127,7 +116,7 @@ export component NetworkPane inherits DetailPage {
                         spacing: 3px;
                         alignment: center;
                         Text {
-                            text: root.total == 0 ? @tr("No relays configured") : (root.connected == root.total ? @tr("Connected · {}/{}", root.connected, root.total) : @tr("Partial · {}/{} connected", root.connected, root.total));
+                            text: AppState.network-total == 0 ? @tr("No relays configured") : (AppState.network-connected == AppState.network-total ? @tr("Connected · {}/{}", AppState.network-connected, AppState.network-total) : @tr("Partial · {}/{} connected", AppState.network-connected, AppState.network-total));
                             color: Palette.text-hi;
                             font-size: Theme.fs(12px, 16px);
                             font-weight: 700;
@@ -135,7 +124,7 @@ export component NetworkPane inherits DetailPage {
                         }
 
                         Text {
-                            text: root.total == 0 ? @tr("Add a relay below — nothing publishes until you do.") : @tr("Aggregate connection counter from the relay pool.");
+                            text: AppState.network-total == 0 ? @tr("Add a relay below — nothing publishes until you do.") : @tr("Aggregate connection counter from the relay pool.");
                             color: Palette.text-lo;
                             font-size: Theme.fs(11px, 14px);
                             overflow: elide;
@@ -151,7 +140,7 @@ export component NetworkPane inherits DetailPage {
                             }
 
                             clicked => {
-                                root.refresh-health();
+                                AppState.network-refresh-health();
                             }
                         }
                     }
@@ -176,9 +165,9 @@ export component NetworkPane inherits DetailPage {
                     Rectangle {
                         horizontal-stretch: 1;
                         border-width: 1px;
-                        border-color: root.add-error != "" ? Palette.danger-border : (input.has-focus ? Palette.mint : Palette.border-2);
+                        border-color: AppState.network-add-error != "" ? Palette.danger-border : (input.has-focus ? Palette.mint : Palette.border-2);
                         border-radius: (6px) * Theme.r-scale;
-                        background: root.add-error != "" ? Palette.danger-soft : Palette.panel-2;
+                        background: AppState.network-add-error != "" ? Palette.danger-soft : Palette.panel-2;
                         animate border-color { duration: Theme.transition-dur; }
                         input := LineInput {
                             x: 10px;
@@ -188,7 +177,7 @@ export component NetworkPane inherits DetailPage {
                             placeholder: "wss://relay.example.com";
                             text <=> root.draft;
                             submit => {
-                                if (root.add-relay(root.draft)) {
+                                if (AppState.network-add-relay(root.draft)) {
                                     root.draft = "";
                                 }
                             }
@@ -206,7 +195,7 @@ export component NetworkPane inherits DetailPage {
                             }
 
                             clicked => {
-                                if (root.add-relay(root.draft)) {
+                                if (AppState.network-add-relay(root.draft)) {
                                     root.draft = "";
                                 }
                             }
@@ -222,13 +211,13 @@ export component NetworkPane inherits DetailPage {
                 }
             }
 
-            if root.add-error != "": HorizontalLayout {
+            if AppState.network-add-error != "": HorizontalLayout {
                 padding-left: 16px;
                 padding-right: 16px;
                 padding-top: 8px;
                 padding-bottom: 8px;
                 Text {
-                    text: root.add-error;
+                    text: AppState.network-add-error;
                     color: Palette.danger;
                     font-size: Theme.fs(11px, 14px);
                     wrap: word-wrap;
@@ -236,7 +225,7 @@ export component NetworkPane inherits DetailPage {
             }
 
             // Saved relay list, or empty placeholder.
-            if root.relays.length == 0: Rectangle {
+            if AppState.network-relays.length == 0: Rectangle {
                 height: 56px;
                 Text {
                     x: 16px;
@@ -248,11 +237,11 @@ export component NetworkPane inherits DetailPage {
                     vertical-alignment: center;
                 }
             }
-            for url[i] in root.relays: RelayRow {
+            for url[i] in AppState.network-relays: RelayRow {
                 url: url;
-                show-divider: i < root.relays.length - 1;
+                show-divider: i < AppState.network-relays.length - 1;
                 remove-clicked => {
-                    root.remove-relay(url);
+                    AppState.relay-remove-target = url;
                 }
             }
         }
@@ -260,7 +249,7 @@ export component NetworkPane inherits DetailPage {
         // Restart-required banner. Only shown when the saved list diverges
         // from the booted set — the running runtime can't be re-wired in
         // place, so the truthful signal is "edits queued, apply on restart".
-        if root.restart-required: Rectangle {
+        if AppState.network-restart-required: Rectangle {
             height: 36px;
             border-radius: (6px) * Theme.r-scale;
             border-width: 1px;
@@ -297,15 +286,15 @@ export component NetworkPane inherits DetailPage {
         HorizontalLayout {
             alignment: start;
             Button {
-                label: root.republish-busy ? @tr("Republishing…") : @tr("Republish relay list");
-                enabled: !root.republish-busy;
+                label: AppState.network-republish-busy ? @tr("Republishing…") : @tr("Republish relay list");
+                enabled: !AppState.network-republish-busy;
                 RefreshIcon {
                     stroke: Palette.text-hi;
                 }
 
                 clicked => {
-                    if (!root.republish-busy) {
-                        root.republish-relay-list();
+                    if (!AppState.network-republish-busy) {
+                        AppState.network-republish-relay-list();
                     }
                 }
             }
@@ -318,8 +307,8 @@ export component NetworkPane inherits DetailPage {
             wrap: word-wrap;
         }
 
-        if root.status != "": Text {
-            text: root.status;
+        if AppState.network-status != "": Text {
+            text: AppState.network-status;
             color: Palette.text-lo;
             font-size: Theme.fs(11px, 14px);
         }

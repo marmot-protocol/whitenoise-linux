@@ -1,3 +1,4 @@
+import { AppState } from "../shell/app-state.slint";
 import { Palette, Theme } from "../tokens.slint";
 import { LogoMark } from "../icons/logo-mark.slint";
 import { ChatBubbleIcon } from "../icons/chat-bubble-icon.slint";
@@ -168,27 +169,6 @@ component ProfileTile inherits Rectangle {
 // ─── Main component ───────────────────────────────────────────────────────
 
 export component LeftRail inherits Rectangle {
-    callback nav-clicked(int);
-    callback plus-clicked;
-    callback settings-clicked;
-    callback profile-clicked;
-    callback accounts-clicked;
-
-    in property <int> selected-index: 0;
-    in property <string> my-initials: "?";
-    in property <color> my-color-a: Palette.mint;
-    in property <color> my-color-b: Palette.mint-dim;
-    in property <image> my-picture;
-    in property <bool> my-has-picture: false;
-    in property <string> my-display-name: "";
-
-    in property <int> badge-chats: 0;
-    in property <int> badge-contacts: 0;
-    in property <int> badge-archive: 0;
-    in property <int> badge-keys: 0;
-
-    in property <bool> has-active-chat: false;
-
     property <color> selected-glyph: Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.mint;
 
     // Exposed so the shell can reserve exactly this much and let the hover
@@ -245,63 +225,63 @@ export component LeftRail inherits Rectangle {
         // ── Primary nav ──
         nav0 := NavItem {
             label: @tr("Chats");
-            selected: root.selected-index == 0;
-            has-badge: root.badge-chats > 0;
-            show-glow: root.has-active-chat && root.selected-index != 0;
+            selected: AppState.active-page == 0;
+            has-badge: AppState.rail-badge-chats > 0;
+            show-glow: AppState.active-chat >= 0 && AppState.chats.length > 0 && AppState.active-page != 0;
             rail-expanded: root.is-hovered;
             rail-width: root.width;
             ChatBubbleIcon {
-                stroke: root.selected-index == 0 ? root.selected-glyph : Palette.text-mid;
-                filled: root.selected-index == 0;
+                stroke: AppState.active-page == 0 ? root.selected-glyph : Palette.text-mid;
+                filled: AppState.active-page == 0;
             }
 
             clicked => {
-                root.nav-clicked(0);
+                AppState.nav-requested(0);
             }
         }
 
         nav1 := NavItem {
             label: @tr("Contacts");
-            selected: root.selected-index == 1;
-            has-badge: root.badge-contacts > 0;
+            selected: AppState.active-page == 1;
+            has-badge: AppState.rail-badge-contacts > 0;
             rail-expanded: root.is-hovered;
             rail-width: root.width;
             PeopleIcon {
-                stroke: root.selected-index == 1 ? root.selected-glyph : Palette.text-mid;
+                stroke: AppState.active-page == 1 ? root.selected-glyph : Palette.text-mid;
             }
 
             clicked => {
-                root.nav-clicked(1);
+                AppState.nav-requested(1);
             }
         }
 
         nav2 := NavItem {
             label: @tr("Archive");
-            selected: root.selected-index == 2;
-            has-badge: root.badge-archive > 0;
+            selected: AppState.active-page == 2;
+            has-badge: AppState.rail-badge-archive > 0;
             rail-expanded: root.is-hovered;
             rail-width: root.width;
             ArchiveIcon {
-                stroke: root.selected-index == 2 ? root.selected-glyph : Palette.text-mid;
+                stroke: AppState.active-page == 2 ? root.selected-glyph : Palette.text-mid;
             }
 
             clicked => {
-                root.nav-clicked(2);
+                AppState.nav-requested(2);
             }
         }
 
         nav3 := NavItem {
             label: @tr("Keys");
-            selected: root.selected-index == 3;
-            has-badge: root.badge-keys > 0;
+            selected: AppState.active-page == 3;
+            has-badge: AppState.rail-badge-keys > 0;
             rail-expanded: root.is-hovered;
             rail-width: root.width;
             KeyIcon {
-                stroke: root.selected-index == 3 ? root.selected-glyph : Palette.text-mid;
+                stroke: AppState.active-page == 3 ? root.selected-glyph : Palette.text-mid;
             }
 
             clicked => {
-                root.nav-clicked(3);
+                AppState.nav-requested(3);
             }
         }
 
@@ -316,7 +296,7 @@ export component LeftRail inherits Rectangle {
             }
 
             clicked => {
-                root.plus-clicked();
+                AppState.new-chat-requested();
             }
         }
 
@@ -339,15 +319,15 @@ export component LeftRail inherits Rectangle {
         // ── Meta ──
         nav-settings := NavItem {
             label: @tr("Settings");
-            selected: root.selected-index == 4;
+            selected: AppState.active-page == 4;
             rail-expanded: root.is-hovered;
             rail-width: root.width;
             SettingsIcon {
-                stroke: root.selected-index == 4 ? root.selected-glyph : Palette.text-mid;
+                stroke: AppState.active-page == 4 ? root.selected-glyph : Palette.text-mid;
             }
 
             clicked => {
-                root.settings-clicked();
+                AppState.nav-requested(4);
             }
         }
 
@@ -362,7 +342,7 @@ export component LeftRail inherits Rectangle {
             }
 
             clicked => {
-                root.accounts-clicked();
+                AppState.account-switcher-requested();
             }
         }
 
@@ -372,16 +352,16 @@ export component LeftRail inherits Rectangle {
 
         // ── Profile ──
         profile := ProfileTile {
-            initials: root.my-initials;
-            color-a: root.my-color-a;
-            color-b: root.my-color-b;
-            picture: root.my-picture;
-            has-picture: root.my-has-picture;
-            selected: root.selected-index == 5;
+            initials: AppState.my-av-initials;
+            color-a: AppState.my-av-a;
+            color-b: AppState.my-av-b;
+            picture: AppState.my-av-picture;
+            has-picture: AppState.my-av-has-picture;
+            selected: AppState.active-page == 5;
             rail-expanded: root.is-hovered;
             rail-width: root.width;
             clicked => {
-                root.profile-clicked();
+                AppState.profile-requested();
             }
         }
     }

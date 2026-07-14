@@ -1,3 +1,4 @@
+import { AppState } from "../shell/app-state.slint";
 import { Palette, Theme } from "../tokens.slint";
 import { BellIcon } from "../icons/bell-icon.slint";
 import { DetailPage } from "../layout/detail-page.slint";
@@ -11,12 +12,8 @@ import { Toggle } from "../primitives/toggle.slint";
 // toggles (they dim + stop responding when notifications are off), mirroring
 // how the rest of the app treats dependent settings.
 export component NotificationsPane inherits DetailPage {
-    in-out property <bool> enabled: true;
-    in-out property <bool> sound: true;
-    in-out property <bool> preview: true;
-    callback enabled-toggled(bool);
-    callback sound-toggled(bool);
-    callback preview-toggled(bool);
+    // Reads/writes AppState directly (notification toggles) and invokes its
+    // callbacks; the page above passes no bindings.
 
     PageHeader {
         title: @tr("Notifications");
@@ -34,9 +31,9 @@ export component NotificationsPane inherits DetailPage {
                 label: @tr("Desktop notifications");
                 sublabel: @tr("Alert me about messages in chats I'm not viewing.");
                 Toggle {
-                    on <=> root.enabled;
+                    on <=> AppState.notifications-enabled;
                     toggled => {
-                        root.enabled-toggled(self.on);
+                        AppState.notifications-toggled(self.on);
                     }
                 }
             }
@@ -45,10 +42,10 @@ export component NotificationsPane inherits DetailPage {
                 row-height: 48px;
                 label: @tr("Play a sound");
                 Toggle {
-                    on <=> root.sound;
-                    enabled: root.enabled;
+                    on <=> AppState.notification-sound;
+                    enabled: AppState.notifications-enabled;
                     toggled => {
-                        root.sound-toggled(self.on);
+                        AppState.notification-sound-toggled(self.on);
                     }
                 }
             }
@@ -59,10 +56,10 @@ export component NotificationsPane inherits DetailPage {
                 sublabel: @tr("Off shows only \"New message\" without the text.");
                 show-divider: false;
                 Toggle {
-                    on <=> root.preview;
-                    enabled: root.enabled;
+                    on <=> AppState.notification-preview;
+                    enabled: AppState.notifications-enabled;
                     toggled => {
-                        root.preview-toggled(self.on);
+                        AppState.notification-preview-toggled(self.on);
                     }
                 }
             }

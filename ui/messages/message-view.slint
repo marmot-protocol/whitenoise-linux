@@ -6,7 +6,13 @@
 // outgoing bubble rows. A drastic theme (e.g. terminal) adds skin 1+ here and
 // selects it via its ThemeStyle pack — without any change to messages.slint or
 // the Rust glue. See ui/CONTRACT.md.
+//
+// Actions (react/reply/edit/context/attachment/…) are invoked straight on the
+// AppState contract by whichever element originates them — no callback
+// forwarding through this slot. Only `play-effect` still bubbles up: it is
+// messages-area mechanics (overlay-local burst staging), not contract.
 import { Palette, Theme, ChatMessage } from "../tokens.slint";
+import { AppState } from "../shell/app-state.slint";
 import { IncomingRow } from "incoming-row.slint";
 import { OutgoingRow } from "outgoing-row.slint";
 import { SystemLine } from "system-line.slint";
@@ -20,23 +26,7 @@ export component MessageView inherits VerticalLayout {
     in property <bool> highlighted: false;
     // Row context not carried on the message.
     in property <length> row-w: 9999px;
-    in property <bool> outgoing-on-right: true;
-    in property <image> my-picture;
-    in property <bool> my-has-picture: false;
 
-    // Union of the row callbacks, forwarded up to messages.slint unchanged.
-    callback react(string, string);
-    callback unreact(string, string);
-    callback request-picker(string, length, length);
-    callback request-reply(string, string, string);
-    callback request-edit(string, string);
-    callback request-context-menu(string, string, string, bool, length, length);
-    callback show-history(string);
-    callback retry(string);
-    callback attachment-clicked(string);
-    callback audio-play-clicked(string);
-    callback audio-seek-clicked(string, float);
-    callback album-cell-clicked(string);
     callback play-effect(int, int, int, length, length, length, length);
 
     // ── Group system row: a centered system line, shared across every skin.
@@ -51,36 +41,6 @@ export component MessageView inherits VerticalLayout {
         msg: root.msg;
         highlighted: root.highlighted;
         row-w: root.row-w;
-        react(id, emoji) => {
-            root.react(id, emoji);
-        }
-        unreact(id, emoji) => {
-            root.unreact(id, emoji);
-        }
-        request-picker(id, ax, ay) => {
-            root.request-picker(id, ax, ay);
-        }
-        request-reply(id, preview, author) => {
-            root.request-reply(id, preview, author);
-        }
-        request-context-menu(id, t, author, ce, ax, ay) => {
-            root.request-context-menu(id, t, author, ce, ax, ay);
-        }
-        show-history(id) => {
-            root.show-history(id);
-        }
-        attachment-clicked(id) => {
-            root.attachment-clicked(id);
-        }
-        audio-play-clicked(id) => {
-            root.audio-play-clicked(id);
-        }
-        audio-seek-clicked(id, fraction) => {
-            root.audio-seek-clicked(id, fraction);
-        }
-        album-cell-clicked(key) => {
-            root.album-cell-clicked(key);
-        }
         play-effect(eid, cx, cy, ax, ay, w, h) => {
             root.play-effect(eid, cx, cy, ax, ay, w, h);
         }
@@ -90,45 +50,6 @@ export component MessageView inherits VerticalLayout {
         msg: root.msg;
         highlighted: root.highlighted;
         row-w: root.row-w;
-        align-right: root.outgoing-on-right;
-        av-picture: root.my-picture;
-        av-has-picture: root.my-has-picture;
-        album-cell-clicked(key) => {
-            root.album-cell-clicked(key);
-        }
-        react(id, emoji) => {
-            root.react(id, emoji);
-        }
-        unreact(id, emoji) => {
-            root.unreact(id, emoji);
-        }
-        request-picker(id, ax, ay) => {
-            root.request-picker(id, ax, ay);
-        }
-        request-reply(id, preview, author) => {
-            root.request-reply(id, preview, author);
-        }
-        request-edit(id, current) => {
-            root.request-edit(id, current);
-        }
-        request-context-menu(id, t, author, ce, ax, ay) => {
-            root.request-context-menu(id, t, author, ce, ax, ay);
-        }
-        show-history(id) => {
-            root.show-history(id);
-        }
-        retry => {
-            root.retry(root.msg.message-id);
-        }
-        attachment-clicked(id) => {
-            root.attachment-clicked(id);
-        }
-        audio-play-clicked(id) => {
-            root.audio-play-clicked(id);
-        }
-        audio-seek-clicked(id, fraction) => {
-            root.audio-seek-clicked(id, fraction);
-        }
         play-effect(eid, cx, cy, ax, ay, w, h) => {
             root.play-effect(eid, cx, cy, ax, ay, w, h);
         }
@@ -144,6 +65,16 @@ export component MessageView inherits VerticalLayout {
         property <bool> has-media: self.is-album || root.msg.has-attachment;
         property <string> media-label:
             self.is-album ? ("[" + root.msg.album.length + " images — click to view]") : (root.msg.att-is-image ? ("[image: " + root.msg.att-name + " — click to view]") : (root.msg.att-is-video ? ("[video: " + root.msg.att-name + " — click to play]") : (root.msg.att-is-audio ? ("[audio: " + root.msg.att-name + "]") : ("[file: " + root.msg.att-name + "]"))));
+        // Shared whole-line action: album → attachment → reply.
+        function activate() {
+            if (self.is-album) {
+                AppState.album-cell-clicked(root.msg.album[0].key);
+            } else if (root.msg.has-attachment) {
+                AppState.attachment-clicked(root.msg.message-id);
+            } else {
+                AppState.request-reply(root.msg.message-id, root.msg.text, root.msg.outgoing ? "you" : root.msg.sender-name);
+            }
+        }
 
         background: root.highlighted ? Palette.mint-glow : (root.msg.mentioned ? Palette.selected : (term-touch.has-hover ? Palette.hover : transparent));
         HorizontalLayout {
@@ -208,13 +139,7 @@ export component MessageView inherits VerticalLayout {
                 term-stamp-touch := TouchArea {
                     mouse-cursor: pointer;
                     clicked => {
-                        if (line.is-album) {
-                            root.album-cell-clicked(root.msg.album[0].key);
-                        } else if (root.msg.has-attachment) {
-                            root.attachment-clicked(root.msg.message-id);
-                        } else {
-                            root.request-reply(root.msg.message-id, root.msg.text, root.msg.outgoing ? "you" : root.msg.sender-name);
-                        }
+                        line.activate();
                     }
                 }
 
@@ -231,13 +156,7 @@ export component MessageView inherits VerticalLayout {
         term-touch := TouchArea {
             mouse-cursor: pointer;
             clicked => {
-                if (line.is-album) {
-                    root.album-cell-clicked(root.msg.album[0].key);
-                } else if (root.msg.has-attachment) {
-                    root.attachment-clicked(root.msg.message-id);
-                } else {
-                    root.request-reply(root.msg.message-id, root.msg.text, root.msg.outgoing ? "you" : root.msg.sender-name);
-                }
+                line.activate();
             }
         }
     }

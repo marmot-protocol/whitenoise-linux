@@ -1,3 +1,4 @@
+import { AppState } from "../shell/app-state.slint";
 import { Palette, Theme } from "../tokens.slint";
 import { ArchiveIcon } from "../icons/archive-icon.slint";
 import { DetailPage } from "../layout/detail-page.slint";
@@ -12,17 +13,8 @@ import { MicroButton } from "../primitives/button.slint";
 // Size + a clear action are real and backed by `media_cache` in Rust — no
 // placeholder controls.
 export component StoragePane inherits DetailPage {
-    // Preformatted human size ("12.4 MB"); Rust owns the formatting.
-    in property <string> cache-size;
-    // True while a clear is in flight — disables the button to avoid double-fire.
-    in property <bool> clearing: false;
-    callback clear-cache();
-    // Full path to the directory holding vault.db (shown so a user keeping their
-    // own backup knows where it lives).
-    in property <string> vault-dir;
-    callback open-vault-folder();
-    callback create-backup();
-    callback import-backup();
+    // Reads AppState directly (cache size/clearing, vault dir) and invokes
+    // its callbacks; the page above passes no bindings.
 
     PageHeader {
         title: @tr("Storage");
@@ -39,13 +31,13 @@ export component StoragePane inherits DetailPage {
                 row-height: 48px;
                 label: @tr("Cached attachments");
                 sublabel: @tr("Decrypted images and files, stored encrypted on this device.");
-                value: root.cache-size;
+                value: AppState.storage-cache-size;
                 show-divider: false;
                 MicroButton {
-                    label: root.clearing ? @tr("Clearing…") : @tr("Clear cache");
-                    enabled: !root.clearing;
+                    label: AppState.storage-clearing ? @tr("Clearing…") : @tr("Clear cache");
+                    enabled: !AppState.storage-clearing;
                     clicked => {
-                        root.clear-cache();
+                        AppState.storage-clear-cache();
                     }
                 }
             }
@@ -58,12 +50,12 @@ export component StoragePane inherits DetailPage {
             KVRow {
                 row-height: 48px;
                 label: @tr("Location");
-                sublabel: root.vault-dir;
+                sublabel: AppState.storage-vault-dir;
                 show-divider: true;
                 MicroButton {
                     label: @tr("Open folder");
                     clicked => {
-                        root.open-vault-folder();
+                        AppState.storage-open-vault-folder();
                     }
                 }
             }
@@ -76,7 +68,7 @@ export component StoragePane inherits DetailPage {
                 MicroButton {
                     label: @tr("Create backup…");
                     clicked => {
-                        root.create-backup();
+                        AppState.storage-create-backup();
                     }
                 }
             }
@@ -89,7 +81,7 @@ export component StoragePane inherits DetailPage {
                 MicroButton {
                     label: @tr("Import…");
                     clicked => {
-                        root.import-backup();
+                        AppState.storage-import-backup();
                     }
                 }
             }

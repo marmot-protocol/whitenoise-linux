@@ -1,4 +1,5 @@
-import { Palette, Theme, AuditLogEntry } from "../tokens.slint";
+import { AppState } from "../shell/app-state.slint";
+import { Palette, Theme } from "../tokens.slint";
 import { TerminalIcon } from "../icons/terminal-icon.slint";
 import { TrashIcon } from "../icons/trash-icon.slint";
 import { RefreshIcon } from "../icons/refresh-icon.slint";
@@ -74,16 +75,8 @@ component AuditFileRow inherits Rectangle {
 }
 
 export component AdvancedPane inherits DetailPage {
-    in-out property <bool> debug-enabled: false;
-    in-out property <bool> telemetry-enabled: false;
-    in-out property <bool> audit-enabled: false;
-    in property <string> audit-status;
-    in property <[AuditLogEntry]> audit-files;
-    callback debug-toggled(bool);
-    callback telemetry-toggled(bool);
-    callback audit-toggled(bool);
-    callback audit-delete-file(string);
-    callback audit-refresh-files();
+    // Reads/writes AppState directly (telemetry/audit/debug toggles, audit
+    // file list) and invokes its callbacks; the page above passes no bindings.
 
     PageHeader {
         title: @tr("Advanced");
@@ -101,9 +94,9 @@ export component AdvancedPane inherits DetailPage {
                 label: @tr("Share anonymous app telemetry");
                 sublabel: @tr("Share relay connection telemetry.");
                 Toggle {
-                    on <=> root.telemetry-enabled;
+                    on <=> AppState.telemetry-enabled;
                     toggled => {
-                        root.telemetry-toggled(self.on);
+                        AppState.telemetry-toggled(self.on);
                     }
                 }
             }
@@ -114,16 +107,16 @@ export component AdvancedPane inherits DetailPage {
                 sublabel: @tr("Create and send group audit log files. Applies immediately.");
                 show-divider: false;
                 Toggle {
-                    on <=> root.audit-enabled;
+                    on <=> AppState.audit-enabled;
                     toggled => {
-                        root.audit-toggled(self.on);
+                        AppState.audit-toggled(self.on);
                     }
                 }
             }
         }
 
-        if root.audit-status != "": Text {
-            text: root.audit-status;
+        if AppState.audit-status != "": Text {
+            text: AppState.audit-status;
             color: Palette.text-mid;
             font-family: Theme.font;
             font-size: Theme.fs(11px, 14px);
@@ -134,7 +127,7 @@ export component AdvancedPane inherits DetailPage {
     Section {
         label: @tr("AUDIT LOG FILES");
         GroupCard {
-            if root.audit-files.length == 0: Rectangle {
+            if AppState.audit-files.length == 0: Rectangle {
                 height: 48px;
                 Text {
                     x: 16px;
@@ -146,12 +139,13 @@ export component AdvancedPane inherits DetailPage {
                     vertical-alignment: center;
                 }
             }
-            for f[i] in root.audit-files: AuditFileRow {
+            for f[i] in AppState.audit-files: AuditFileRow {
                 name: f.name;
                 meta: f.meta;
-                show-divider: i < root.audit-files.length - 1;
+                show-divider: i < AppState.audit-files.length - 1;
                 delete-clicked => {
-                    root.audit-delete-file(f.path);
+                    AppState.pending-audit-delete-path = f.path;
+                    AppState.show-audit-delete-confirm = true;
                 }
             }
         }
@@ -165,7 +159,7 @@ export component AdvancedPane inherits DetailPage {
                 }
 
                 clicked => {
-                    root.audit-refresh-files();
+                    AppState.audit-refresh-files();
                 }
             }
         }
@@ -187,9 +181,9 @@ export component AdvancedPane inherits DetailPage {
                 sublabel: @tr("Shows diagnostics and MLS internals. Adds a Debug entry with account, key-packages, and group state.");
                 show-divider: false;
                 Toggle {
-                    on <=> root.debug-enabled;
+                    on <=> AppState.debug-enabled;
                     toggled => {
-                        root.debug-toggled(self.on);
+                        AppState.debug-toggled(self.on);
                     }
                 }
             }

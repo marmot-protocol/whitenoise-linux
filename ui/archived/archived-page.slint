@@ -1,16 +1,11 @@
-import { Palette, ArchivedChat, GroupMember } from "../tokens.slint";
+import { AppState } from "../shell/app-state.slint";
+import { Palette } from "../tokens.slint";
 import { ArchivedSidebar } from "archived-sidebar.slint";
 import { ArchivedDetail } from "archived-detail.slint";
 import { EmptyState } from "../layout/empty-state.slint";
 import { ArchiveIcon } from "../icons/archive-icon.slint";
 
 export component ArchivedPage inherits Rectangle {
-    callback archive-clicked(int);
-    callback unarchive-clicked();
-    in property <[ArchivedChat]> archives;
-    in property <int> active-archived;
-    in property <[GroupMember]> members;
-    in property <bool> is-group: false;
     // Bound by the shell; drives the sidebar's narrow-window collapse.
     in property <length> window-width: 100000px;
 
@@ -24,7 +19,7 @@ export component ArchivedPage inherits Rectangle {
     // width, so the sidebar's hover expansion (painted later, on top)
     // overlays it without reflowing.
     // No archived chats → empty state; otherwise the selected detail.
-    if root.archives.length == 0: EmptyState {
+    if AppState.archived-chats.length == 0: EmptyState {
         x: sidebar.reserved-width;
         y: 0;
         width: parent.width - sidebar.reserved-width;
@@ -35,16 +30,16 @@ export component ArchivedPage inherits Rectangle {
             stroke: Palette.text-mid;
         }
     }
-    if root.archives.length > 0: ArchivedDetail {
+    if AppState.archived-chats.length > 0: ArchivedDetail {
         x: sidebar.reserved-width;
         y: 0;
         width: parent.width - sidebar.reserved-width;
         height: parent.height;
-        data: root.archives[root.active-archived];
-        members: root.members;
-        is-group: root.is-group;
+        data: AppState.archived-chats[AppState.active-archived];
+        members: AppState.chat-members;
+        is-group: AppState.chat-is-group;
         unarchive-clicked => {
-            root.unarchive-clicked();
+            AppState.unarchive-chat();
         }
     }
 
@@ -53,10 +48,10 @@ export component ArchivedPage inherits Rectangle {
         y: 0;
         height: parent.height;
         window-width: root.window-width;
-        archives: root.archives;
-        active-archived: root.active-archived;
+        archives: AppState.archived-chats;
+        active-archived: AppState.active-archived;
         archive-clicked(idx) => {
-            root.archive-clicked(idx);
+            AppState.archive-selected(idx);
         }
     }
 }
