@@ -49,10 +49,10 @@ fn finish_viewer_image_action(
             copy_image_to_clipboard_async(bytes, media_type, move |result| {
                 let Some(ui) = weak.upgrade() else { return };
                 match result {
-                    Ok(()) => set_clipboard_feedback(&ui, s("image copied"), false),
+                    Ok(()) => set_status_feedback(&ui, s("image copied"), false),
                     Err(e) => {
                         tracing::warn!(target: "clipboard", "copy image failed: {e}");
-                        set_clipboard_feedback(&ui, s("Couldn't copy image."), true);
+                        set_status_feedback(&ui, s("Couldn't copy image."), true);
                     }
                 }
             });
@@ -63,10 +63,10 @@ fn finish_viewer_image_action(
                 let _ = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak.upgrade() else { return };
                     match result {
-                        Ok(()) => set_clipboard_feedback(&ui, s("image saved"), false),
+                        Ok(()) => set_status_feedback(&ui, s("image saved"), false),
                         Err(e) => {
                             tracing::warn!(target: "attach", "save image {}: {e}", path.display());
-                            set_clipboard_feedback(&ui, s("Couldn't save image."), true);
+                            set_status_feedback(&ui, s("Couldn't save image."), true);
                         }
                     }
                 });
@@ -103,7 +103,7 @@ fn fetch_viewer_image_bytes(
                 tracing::warn!(target: "attach", "viewer image download failed: {e:#}");
                 let _ = slint::invoke_from_event_loop(move || {
                     if let Some(ui) = weak.upgrade() {
-                        set_clipboard_feedback(&ui, s("Couldn't download image."), true);
+                        set_status_feedback(&ui, s("Couldn't download image."), true);
                     }
                 });
             }
@@ -121,24 +121,24 @@ fn viewer_image_context(
         || ui.get_image_viewer_failed()
         || !ui.get_image_viewer_actions_ready()
     {
-        set_clipboard_feedback(ui, s("Image isn't ready yet."), false);
+        set_status_feedback(ui, s("Image isn't ready yet."), false);
         return None;
     }
     let Some(item) = current_viewer_item() else {
-        set_clipboard_feedback(ui, s("No image selected."), true);
+        set_status_feedback(ui, s("No image selected."), true);
         return None;
     };
     let idx = ui.get_active_chat();
     if idx < 0 {
-        set_clipboard_feedback(ui, s("No chat selected."), true);
+        set_status_feedback(ui, s("No chat selected."), true);
         return None;
     }
     let Some(group_hex) = group_ids.lock().unwrap().get(idx as usize).cloned() else {
-        set_clipboard_feedback(ui, s("No chat selected."), true);
+        set_status_feedback(ui, s("No chat selected."), true);
         return None;
     };
     let Some(backend) = backend_cell.lock().unwrap().clone() else {
-        set_clipboard_feedback(ui, s("Backend not ready."), true);
+        set_status_feedback(ui, s("Backend not ready."), true);
         return None;
     };
     let vault = vault_cell.lock().unwrap().clone();
@@ -193,7 +193,8 @@ fn wire_quick_reactions(ui: &DarkMatterLinux, settings_cell: &Rc<RefCell<Setting
         let weak = ui.as_weak();
         move |message_id, emoji| {
             if let Some(ui) = weak.upgrade() {
-                ui.global::<AppState>().invoke_react_message(message_id, emoji);
+                ui.global::<AppState>()
+                    .invoke_react_message(message_id, emoji);
             }
         }
     });
@@ -659,17 +660,17 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             let Some(ui) = weak.upgrade() else { return };
             let text = ui.get_debug_view_json();
             if text.is_empty() {
-                set_clipboard_feedback(&ui, s("Nothing to copy."), false);
+                set_status_feedback(&ui, s("Nothing to copy."), false);
                 return;
             }
             let weak = weak.clone();
             copy_to_clipboard_async(text.to_string(), move |result| {
                 let Some(ui) = weak.upgrade() else { return };
                 match result {
-                    Ok(()) => set_clipboard_feedback(&ui, s("JSON copied"), false),
+                    Ok(()) => set_status_feedback(&ui, s("JSON copied"), false),
                     Err(e) => {
                         tracing::warn!(target: "clipboard", "copy debug json failed: {e}");
-                        set_clipboard_feedback(&ui, s("Couldn't access clipboard."), true);
+                        set_status_feedback(&ui, s("Couldn't access clipboard."), true);
                     }
                 }
             });
@@ -793,20 +794,22 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.global::<AppState>().on_video_viewer_seek(move |fraction| {
-        let dur = *current_video_duration().lock().unwrap();
-        if dur > 0.0
-            && let Some(player) = current_player().lock().unwrap().as_ref()
-        {
-            player.seek((fraction as f64).clamp(0.0, 1.0) * dur);
-        }
-    });
+    ui.global::<AppState>()
+        .on_video_viewer_seek(move |fraction| {
+            let dur = *current_video_duration().lock().unwrap();
+            if dur > 0.0
+                && let Some(player) = current_player().lock().unwrap().as_ref()
+            {
+                player.seek((fraction as f64).clamp(0.0, 1.0) * dur);
+            }
+        });
 
-    ui.global::<AppState>().on_video_viewer_seek_relative(move |secs| {
-        if let Some(player) = current_player().lock().unwrap().as_ref() {
-            player.seek_relative(secs as f64);
-        }
-    });
+    ui.global::<AppState>()
+        .on_video_viewer_seek_relative(move |secs| {
+            if let Some(player) = current_player().lock().unwrap().as_ref() {
+                player.seek_relative(secs as f64);
+            }
+        });
 
     ui.global::<AppState>().on_video_viewer_fullscreen({
         let weak = ui.as_weak();
@@ -956,7 +959,8 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 }
                 return;
             }
-            ui.global::<AppState>().invoke_react_message(message_id, emoji);
+            ui.global::<AppState>()
+                .invoke_react_message(message_id, emoji);
         }
     });
 

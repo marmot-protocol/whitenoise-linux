@@ -543,7 +543,8 @@ export global AppState {
     in-out property <string> backend-error;
     in-out property <bool> backend-ready;
     // ═══ App chrome: status, splash & breadcrumb ═══════════════════════════
-    // Transient copy confirmations and clipboard failures shown in the status bar.
+    // Transient status-bar feedback. These retain their original clipboard-
+    // specific names because copy feedback was their first use.
     in-out property <string> clipboard-status;
     in-out property <bool> clipboard-status-error: false;
     // When true, the marmot runtime is booting on a worker thread; we show
@@ -688,7 +689,6 @@ export global AppState {
     callback self-demote-admin();
     callback remove-member(string);
 
-
     // ═══ Modals: new chat, contacts & accounts ═════════════════════════════
     // New-chat modal state. `new-chat-status` surfaces validation errors
     // inline ("invalid npub", "you can't invite yourself", etc.) — Rust
@@ -760,7 +760,6 @@ export global AppState {
     // which scales the whole rendered UI like browser zoom) and persists it.
     // Direction: 1 = zoom in, -1 = zoom out, 0 = reset to 100%.
     callback zoom-adjust(int);
-
 
     // ═══ Confirm-flow arming (UI-internal, no root alias) ═══════════════════
     // (was private on the window root; UI-internal, not part of the Rust contract)

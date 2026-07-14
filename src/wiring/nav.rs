@@ -99,10 +99,10 @@ pub(crate) fn wire_nav(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     copy_to_clipboard_async(npub.to_string(), move |result| {
                         let Some(ui) = weak.upgrade() else { return };
                         match result {
-                            Ok(()) => set_clipboard_feedback(&ui, s("npub copied"), false),
+                            Ok(()) => set_status_feedback(&ui, s("npub copied"), false),
                             Err(e) => {
                                 tracing::warn!(target: "clipboard", "copy npub failed: {e}");
-                                set_clipboard_feedback(&ui, s("Couldn't access clipboard."), true);
+                                set_status_feedback(&ui, s("Couldn't access clipboard."), true);
                             }
                         }
                     });

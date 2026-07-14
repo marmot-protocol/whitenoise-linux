@@ -674,6 +674,10 @@ msgid "Couldn't finish syncing. We'll keep retrying — check your relay setting
 msgstr ""
 
 msgctxt "ErrorCopy"
+msgid "Couldn't play audio."
+msgstr ""
+
+msgctxt "ErrorCopy"
 msgid "Couldn't publish your key package. Check your relay settings and try again."
 msgstr ""
 
@@ -1425,6 +1429,10 @@ msgstr ""
 
 msgctxt "MessagesArea"
 msgid "No messages yet"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "No microphone available."
 msgstr ""
 
 msgctxt "ForwardPickerModal"
