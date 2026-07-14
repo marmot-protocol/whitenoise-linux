@@ -189,7 +189,6 @@ fn main() -> Result<(), slint::PlatformError> {
         initial_settings.notifications_enabled,
         initial_settings.notification_sound,
         initial_settings.notification_preview,
-        initial_settings.muted_chats.clone(),
     ));
     let settings_cell: Rc<RefCell<Settings>> = Rc::new(RefCell::new(initial_settings));
 

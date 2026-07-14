@@ -1057,4 +1057,8 @@ export struct ChatMeta {
     is-chat-request: bool,
     // User has pinned this chat to the top of the rail (local ordering).
     pinned: bool,
+    // User has muted this chat: its incoming messages don't notify. Rendered
+    // as a small MuteIcon in the row so a muted chat is distinguishable from an
+    // active one at a glance.
+    muted: bool,
 }

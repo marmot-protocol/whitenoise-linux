@@ -1062,6 +1062,35 @@ pub(crate) fn toggle_pinned(group_hex: &str) -> bool {
     }
 }
 
+/// Process-wide set of muted chats (`group_id_hex`), lazily initialized from
+/// `Settings::muted_chats`. Same singleton shape as [`pinned_state`]: the one
+/// live source both the chat-list rows and the desktop-notification watcher
+/// read (via [`is_muted`]) and the mute toggles write, so a muted chat's rail
+/// indicator and its notification suppression never drift apart. `NotifState`
+/// delegates its mute reads/writes here rather than holding a second copy.
+pub(crate) fn muted_state() -> &'static Mutex<std::collections::BTreeSet<String>> {
+    static MUTED: std::sync::OnceLock<Mutex<std::collections::BTreeSet<String>>> =
+        std::sync::OnceLock::new();
+    MUTED.get_or_init(|| Mutex::new(Settings::load().muted_chats))
+}
+
+/// Whether a chat is muted (its incoming messages don't notify, and the rail
+/// row shows a mute glyph).
+pub(crate) fn is_muted(group_hex: &str) -> bool {
+    muted_state().lock().unwrap().contains(group_hex)
+}
+
+/// Set a chat's muted state on the live singleton. The caller persists to
+/// `Settings` (the disk write), mirroring [`toggle_pinned`]'s split.
+pub(crate) fn set_muted(group_hex: &str, muted: bool) {
+    let mut set = muted_state().lock().unwrap();
+    if muted {
+        set.insert(group_hex.to_string());
+    } else {
+        set.remove(group_hex);
+    }
+}
+
 /// Re-order the rail's chat rows to reflect the current pin set *without*
 /// rebuilding the per-chat message models — a full [`refresh_chats_from`] would
 /// `set_vec` empty message models over every non-default chat and blank the
@@ -1155,6 +1184,28 @@ pub(crate) fn apply_pin_order(
     if let Some(pos) = new_active {
         ui.set_active_chat(pos as i32);
     }
+}
+
+/// Refresh one chat row's `muted` flag in place so the rail's mute glyph
+/// appears/clears the instant the user toggles it — without a full
+/// [`refresh_chats_from`], which would blank the open conversation. Mirrors the
+/// per-row `pinned` refresh [`apply_pin_order`] does after a reorder.
+pub(crate) fn set_chat_row_muted(ui: &DarkMatterLinux, idx: i32, muted: bool) {
+    if idx < 0 {
+        return;
+    }
+    let chats = ui.get_chats();
+    let Some(chats_vm) = chats.as_any().downcast_ref::<VecModel<ChatMeta>>() else {
+        return;
+    };
+    let Some(mut meta) = chats_vm.row_data(idx as usize) else {
+        return;
+    };
+    if meta.muted == muted {
+        return;
+    }
+    meta.muted = muted;
+    chats_vm.set_row_data(idx as usize, meta);
 }
 
 /// Count a chat's unread messages relative to `marker`: incoming, visible chat
@@ -1418,6 +1469,7 @@ pub(crate) fn fallback_chat_meta(record: &AppGroupRecord) -> ChatMeta {
         has_picture: false,
         is_chat_request: record.pending_confirmation,
         pinned: is_pinned(&record.group_id_hex),
+        muted: is_muted(&record.group_id_hex),
     }
 }
 
