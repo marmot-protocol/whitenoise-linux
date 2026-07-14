@@ -10,6 +10,7 @@ import { PaperclipIcon } from "../icons/paperclip-icon.slint";
 import { MicIcon } from "../icons/mic-icon.slint";
 import { SmileyIcon } from "../icons/smiley-icon.slint";
 import { SendIcon } from "../icons/send-icon.slint";
+import { CheckMark } from "../icons/check-mark.slint";
 import { LineInput } from "../primitives/line-input.slint";
 import { Button } from "../primitives/button.slint";
 import { Tooltip } from "../primitives/tooltip.slint";
@@ -41,7 +42,13 @@ export component Composer inherits Rectangle {
     property <length> chip-h: (AppState.reply-target-id == "" && AppState.editing-message-id == "") ? 0px : 36px;
     property <length> staged-h: AppState.composer-staged.length == 0 ? 0px : 58px;
     property <bool> can-send: AppState.composer-draft != "" || AppState.composer-staged.length > 0;
-    property <string> primary-action-label: root.can-send ? @tr("Send message") : @tr("Record voice message");
+    // In edit mode the primary button saves the edit rather than posting a new
+    // message, so the label (which drives both the tooltip and accessible-label)
+    // matches the "Editing message · Enter to save" banner instead of "Send
+    // message". When there's nothing to send it still offers voice recording.
+    property <string> primary-action-label: root.can-send
+        ? (AppState.editing-message-id != "" ? @tr("Save edit") : @tr("Send message"))
+        : @tr("Record voice message");
     // Message-effect picker (Telegram-style): opened by right-click / long-press
     // on Send. The chosen effect lives in EffectCatalog.selected and rides the
     // next send; Rust reads + clears it. The popover only toggles visibility.
@@ -231,7 +238,14 @@ export component Composer inherits Rectangle {
                             duration: 140ms;
                             easing: ease-out;
                         }
-                        if root.can-send: Rectangle {
+                        // Edit mode: a checkmark reads as "save this edit",
+                        // matching the "Save edit" label; a fresh send keeps the
+                        // arrow glyph.
+                        if root.can-send && AppState.editing-message-id != "": CheckMark {
+                            stroke: Palette.bubble-out-fg;
+                            double: false;
+                        }
+                        if root.can-send && AppState.editing-message-id == "": Rectangle {
                             width: 16px;
                             height: 16px;
                             SendIcon {
