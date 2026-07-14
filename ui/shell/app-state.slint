@@ -8,9 +8,10 @@
 // shell-timers) read and write state directly — no per-mount forwarding.
 //
 // Members marked "(was private on the window root)" are UI-internal overlay
-// state shared between the shell and the modal host; they have no root alias
-// and stay invisible to Rust. Purely modal-local state (delete/admin confirm
-// arming) lives on ModalHost instead.
+// state shared between the shell, the menus and the confirm flows; they have
+// no root alias and stay invisible to Rust. The root alias block in
+// dark-matter-linux.slint is GENERATED from this file by
+// scripts/update-root-aliases.sh — run it after adding a Rust-facing property.
 
 import {
     Palette,
@@ -719,4 +720,56 @@ export global AppState {
     // Direction: 1 = zoom in, -1 = zoom out, 0 = reset to 100%.
     callback zoom-adjust(int);
 
+
+    // ═══ Confirm-flow arming (UI-internal, no root alias) ═══════════════════
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <bool> forward-picker-open: false;
+    // Delete confirmation: deletes are destructive, so the context-menu items
+    // arm this modal instead of firing immediately. `delete-confirm-everyone`
+    // picks the wording + which callback the confirm dispatches; the target is
+    // still `ctx-menu-id` (kept from when the menu opened).
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <bool> show-delete-confirm: false;
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <bool> delete-confirm-everyone: false;
+    // Admin role changes alter group governance, so the inline member badges
+    // only arm this modal. The existing Rust callbacks fire after confirmation.
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <bool> show-admin-confirm: false;
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <int> admin-confirm-action: 0; // 1=promote, 2=demote, 3=self-demote, 4=remove
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <string> admin-confirm-member-id: "";
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <string> admin-confirm-member-name: "";
+    function arm-admin-confirm(action: int, id: string, name: string) {
+        AppState.admin-confirm-action = action;
+        AppState.admin-confirm-member-id = id;
+        AppState.admin-confirm-member-name = name;
+        AppState.show-admin-confirm = true;
+    }
+    public function clear-admin-confirm() {
+        AppState.show-admin-confirm = false;
+        AppState.admin-confirm-action = 0;
+        AppState.admin-confirm-member-id = "";
+        AppState.admin-confirm-member-name = "";
+    }
+    public function request-promote-admin(id: string, name: string) {
+        if (id != "") {
+            AppState.arm-admin-confirm(1, id, name);
+        }
+    }
+    public function request-demote-admin(id: string, name: string) {
+        if (id != "") {
+            AppState.arm-admin-confirm(2, id, name);
+        }
+    }
+    public function request-self-demote-admin(name: string) {
+        AppState.arm-admin-confirm(3, "", name);
+    }
+    public function request-remove-member(id: string, name: string) {
+        if (id != "") {
+            AppState.arm-admin-confirm(4, id, name);
+        }
+    }
 }

@@ -1,37 +1,26 @@
 import { Palette, Theme } from "../tokens.slint";
 import { MenuItem } from "../primitives/menu-item.slint";
+import { AppState } from "../shell/app-state.slint";
 
 // Per-member admin action menu, opened from a member row's "⋯" button. Mounted
 // full-window (like MessageContextMenu) so the invisible backdrop catches
 // outside clicks and the panel can sit at the anchor, clamped inside the
-// window. Items are gated by the same can-* flags the row carries; each just
-// re-emits upward, where the root arms the existing admin-confirm modal.
+// window. Items are gated by the same can-* flags the row carries; each closes
+// the menu and calls the AppState request-* function, which arms the existing
+// admin-confirm modal.
 export component GroupMemberMenu inherits Rectangle {
-    // Anchor point (top-left of the panel, in window coords).
-    in property <length> anchor-x;
-    in property <length> anchor-y;
-    in property <string> member-name;
-    in property <bool> can-promote: false;
-    in property <bool> can-demote: false;
-    in property <bool> can-self-demote: false;
-    in property <bool> can-remove: false;
-    callback promote();
-    callback demote();
-    callback self-demote();
-    callback remove();
-    callback dismissed();
-
     // Invisible backdrop — dismisses on any click outside the panel.
     TouchArea {
         clicked => {
-            root.dismissed();
+            AppState.member-menu-open = false;
         }
     }
 
-    // Clamp the panel inside the window with a small inset.
+    // Clamp the panel inside the window with a small inset. The anchor point
+    // (top-left of the panel, in window coords) comes from AppState.
     property <length> inset: 8px;
-    property <length> px: min(max(root.inset, root.anchor-x), root.width - panel.width - root.inset);
-    property <length> py: min(max(root.inset, root.anchor-y), root.height - panel.height - root.inset);
+    property <length> px: min(max(root.inset, AppState.member-menu-x), root.width - panel.width - root.inset);
+    property <length> py: min(max(root.inset, AppState.member-menu-y), root.height - panel.height - root.inset);
 
     // Open animation — flip-after-mount, matching MessageContextMenu.
     property <bool> opened: false;
@@ -77,7 +66,7 @@ export component GroupMemberMenu inherits Rectangle {
                         padding-left: 10px;
                         padding-right: 16px;
                         Text {
-                            text: root.member-name;
+                            text: AppState.member-menu-name;
                             color: Palette.text-lo;
                             font-size: Theme.fs(11px, 14px);
                             font-family: Theme.font;
@@ -96,36 +85,40 @@ export component GroupMemberMenu inherits Rectangle {
                 MenuItem {
                     glyph: "★";
                     label: @tr("Make admin");
-                    shown: root.can-promote;
+                    shown: AppState.member-menu-can-promote;
                     activated => {
-                        root.promote();
+                        AppState.member-menu-open = false;
+                        AppState.request-promote-admin(AppState.member-menu-id, AppState.member-menu-name);
                     }
                 }
 
                 MenuItem {
                     glyph: "☆";
                     label: @tr("Remove admin");
-                    shown: root.can-demote;
+                    shown: AppState.member-menu-can-demote;
                     activated => {
-                        root.demote();
+                        AppState.member-menu-open = false;
+                        AppState.request-demote-admin(AppState.member-menu-id, AppState.member-menu-name);
                     }
                 }
 
                 MenuItem {
                     glyph: "↩";
                     label: @tr("Step down");
-                    shown: root.can-self-demote;
+                    shown: AppState.member-menu-can-self-demote;
                     activated => {
-                        root.self-demote();
+                        AppState.member-menu-open = false;
+                        AppState.request-self-demote-admin(AppState.member-menu-name);
                     }
                 }
 
                 MenuItem {
                     glyph: "⊘";
                     label: @tr("Remove from group");
-                    shown: root.can-remove;
+                    shown: AppState.member-menu-can-remove;
                     activated => {
-                        root.remove();
+                        AppState.member-menu-open = false;
+                        AppState.request-remove-member(AppState.member-menu-id, AppState.member-menu-name);
                     }
                 }
             }
@@ -136,7 +129,7 @@ export component GroupMemberMenu inherits Rectangle {
     keys := FocusScope {
         key-pressed(e) => {
             if (e.text == Key.Escape) {
-                root.dismissed();
+                AppState.member-menu-open = false;
                 return accept;
             }
             return reject;

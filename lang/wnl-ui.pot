@@ -363,15 +363,15 @@ msgctxt "ChatHeader"
 msgid "Block"
 msgstr ""
 
+msgctxt "ConfirmFlows"
+msgid "Block"
+msgstr ""
+
 msgctxt "ContactDetail"
 msgid "Block"
 msgstr ""
 
-msgctxt "ModalHost"
-msgid "Block"
-msgstr ""
-
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Block this chat request?"
 msgstr ""
 
@@ -801,7 +801,7 @@ msgctxt "StoragePane"
 msgid "Decrypted images and files, stored encrypted on this device."
 msgstr ""
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Delete"
 msgstr ""
 
@@ -817,7 +817,7 @@ msgctxt "MessageContextMenu"
 msgid "Delete for everyone"
 msgstr ""
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Delete for everyone?"
 msgstr ""
 
@@ -825,7 +825,7 @@ msgctxt "MessageContextMenu"
 msgid "Delete for me"
 msgstr ""
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Delete for me?"
 msgstr ""
 
@@ -1166,11 +1166,11 @@ msgctxt "ChatContextMenu"
 msgid "Leave group"
 msgstr ""
 
-msgctxt "GroupSettingsCard"
+msgctxt "ConfirmFlows"
 msgid "Leave group"
 msgstr ""
 
-msgctxt "ModalHost"
+msgctxt "GroupSettingsCard"
 msgid "Leave group"
 msgstr ""
 
@@ -1178,7 +1178,7 @@ msgctxt "GroupSettingsCard"
 msgid "Leave this group and stop receiving new messages. The chat moves to Archive."
 msgstr ""
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Leave {}?"
 msgstr ""
 
@@ -1258,15 +1258,15 @@ msgctxt "AboutPane"
 msgid "Made with marmots, math, and a little purple liquid."
 msgstr ""
 
+msgctxt "ConfirmFlows"
+msgid "Make admin"
+msgstr ""
+
 msgctxt "GroupMemberMenu"
 msgid "Make admin"
 msgstr ""
 
-msgctxt "ModalHost"
-msgid "Make admin"
-msgstr ""
-
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Make {} an admin?"
 msgstr ""
 
@@ -1708,7 +1708,7 @@ msgctxt "GetStartedScreen"
 msgid "Relays carry your encrypted messages. Add at least one to get online."
 msgstr ""
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Remove"
 msgstr ""
 
@@ -1716,15 +1716,15 @@ msgctxt "StagedChips"
 msgid "Remove"
 msgstr ""
 
+msgctxt "ConfirmFlows"
+msgid "Remove admin"
+msgstr ""
+
 msgctxt "GroupMemberMenu"
 msgid "Remove admin"
 msgstr ""
 
-msgctxt "ModalHost"
-msgid "Remove admin"
-msgstr ""
-
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Remove admin rights from {}?"
 msgstr ""
 
@@ -1744,11 +1744,11 @@ msgctxt "LoginScreen"
 msgid "Remove key"
 msgstr ""
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Remove this relay?"
 msgstr ""
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Remove {} from the group?"
 msgstr ""
 
@@ -2096,15 +2096,15 @@ msgctxt "DebugPane"
 msgid "State / raw events / key packages"
 msgstr ""
 
+msgctxt "ConfirmFlows"
+msgid "Step down"
+msgstr ""
+
 msgctxt "GroupMemberMenu"
 msgid "Step down"
 msgstr ""
 
-msgctxt "ModalHost"
-msgid "Step down"
-msgstr ""
-
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Step down as admin?"
 msgstr ""
 
@@ -2161,11 +2161,11 @@ msgctxt "KeysPage"
 msgid "This computer"
 msgstr ""
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "This declines the invite from {}. It can't be restored unless they invite you again."
 msgstr ""
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "This hides the message on this device only. Other people will still see it."
 msgstr ""
 
@@ -2201,11 +2201,11 @@ msgctxt "LoginScreen"
 msgid "This removes the key stored on this device. You'll need the nsec you backed up to use this identity again. This can't be undone."
 msgstr ""
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "This removes the message for everyone in the chat. This can't be undone."
 msgstr ""
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "This removes your admin rights. You can't restore them yourself unless another admin promotes you again."
 msgstr ""
 
@@ -2361,7 +2361,7 @@ msgctxt "OutgoingRow"
 msgid "You"
 msgstr ""
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "You will stop receiving new messages from this group. The chat moves to Archive."
 msgstr ""
 
@@ -2475,19 +2475,19 @@ msgctxt "ContactDetail"
 msgid "{} relays"
 msgstr ""
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "{} will be able to add members, change group settings, and manage other admins."
 msgstr ""
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "{} will lose access to this group and stop receiving its messages. You'll need to invite them again to bring them back."
 msgstr ""
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "{} will stay in the group, but won't be able to manage members or group settings."
 msgstr ""
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "{} will stop carrying your messages. You can add it back anytime."
 msgstr ""
 

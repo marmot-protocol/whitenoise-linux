@@ -1,4 +1,5 @@
-import { Palette, Theme, GroupMember } from "../tokens.slint";
+import { Palette } from "../tokens.slint";
+import { AppState } from "../shell/app-state.slint";
 import { GroupCard } from "../layout/group-card.slint";
 import { ScrollView } from "../primitives/scroll-view.slint";
 import { GroupMemberRow } from "group-member-row.slint";
@@ -8,40 +9,9 @@ import { GroupSettingsCard } from "group-settings-card.slint";
 import { AddMemberCard } from "add-member-card.slint";
 
 export component GroupMembersPanel inherits Rectangle {
-    in property <[GroupMember]> members;
-    // Roster entries that are invited but not yet seen active in the group.
-    // Rendered under a separate "Invited" section below the members.
-    in property <[GroupMember]> invited-members;
-    in property <int> member-count;
-    in property <string> group-description;
-    in property <bool> is-group: false;
-    in property <bool> can-add-members: false;
-    in property <bool> add-busy: false;
-    in property <string> add-status;
-    in-out property <string> add-draft;
-    // Group settings surface. Admin-only controls are gated by can-add-members;
-    // leaving is available to regular group members.
-    in property <image> group-picture;
-    in property <bool> group-has-picture: false;
-    in property <color> group-av-a;
-    in property <color> group-av-b;
-    in property <string> group-av-initials;
-    in property <bool> rename-busy: false;
-    in property <bool> description-busy: false;
-    in property <bool> image-busy: false;
-    in property <bool> leave-busy: false;
-    in property <string> group-status;
-    in-out property <string> rename-draft;
-    in-out property <string> description-draft;
-    callback close-clicked();
-    callback add-member(string);
-    callback request-member-menu(string, string, bool, bool, bool, bool, length, length);
-    callback rename-group(string);
-    callback set-group-description(string);
-    callback change-image();
-    callback clear-image();
-    callback leave-group();
-
+    // Reads AppState directly; the pane mounts this bare (the visibility guard
+    // stays in MainPane). Member rows stay pure-props — the "⋯" menu arming
+    // writes AppState at the row's request-menu handler here.
     width: 300px;
     background: Palette.panel;
 
@@ -60,44 +30,9 @@ export component GroupMembersPanel inherits Rectangle {
         padding-bottom: 16px;
         spacing: 12px;
 
-        GroupMembersHeader {
-            member-count: root.member-count;
-            group-description: root.group-description;
-            close-clicked => {
-                root.close-clicked();
-            }
-        }
+        GroupMembersHeader { }
 
-        if root.is-group: GroupSettingsCard {
-            can-manage: root.can-add-members;
-            group-picture: root.group-picture;
-            group-has-picture: root.group-has-picture;
-            group-av-a: root.group-av-a;
-            group-av-b: root.group-av-b;
-            group-av-initials: root.group-av-initials;
-            rename-busy: root.rename-busy;
-            description-busy: root.description-busy;
-            image-busy: root.image-busy;
-            leave-busy: root.leave-busy;
-            group-status: root.group-status;
-            rename-draft <=> root.rename-draft;
-            description-draft <=> root.description-draft;
-            rename-group(name) => {
-                root.rename-group(name);
-            }
-            set-group-description(description) => {
-                root.set-group-description(description);
-            }
-            change-image => {
-                root.change-image();
-            }
-            clear-image => {
-                root.clear-image();
-            }
-            leave-group => {
-                root.leave-group();
-            }
-        }
+        if AppState.chat-is-group: GroupSettingsCard { }
 
         // ── Members list ─────────────────────────────────────
         // Active members and invited-but-not-yet-accepted members share one
@@ -114,25 +49,41 @@ export component GroupMembersPanel inherits Rectangle {
                         label: @tr("Members");
                         GroupCard {
                             background: Palette.panel-2;
-                            for m[i] in root.members: GroupMemberRow {
+                            for m[i] in AppState.chat-members: GroupMemberRow {
                                 data: m;
-                                show-divider: i < root.members.length - 1;
+                                show-divider: i < AppState.chat-members.length - 1;
                                 request-menu(id, name, cp, cd, csd, cr, ax, ay) => {
-                                    root.request-member-menu(id, name, cp, cd, csd, cr, ax, ay);
+                                    AppState.member-menu-id = id;
+                                    AppState.member-menu-name = name;
+                                    AppState.member-menu-can-promote = cp;
+                                    AppState.member-menu-can-demote = cd;
+                                    AppState.member-menu-can-self-demote = csd;
+                                    AppState.member-menu-can-remove = cr;
+                                    AppState.member-menu-x = ax;
+                                    AppState.member-menu-y = ay;
+                                    AppState.member-menu-open = true;
                                 }
                             }
                         }
                     }
 
-                    if root.invited-members.length > 0: Section {
+                    if AppState.chat-invited-members.length > 0: Section {
                         label: @tr("Invited");
                         GroupCard {
                             background: Palette.panel-2;
-                            for m[i] in root.invited-members: GroupMemberRow {
+                            for m[i] in AppState.chat-invited-members: GroupMemberRow {
                                 data: m;
-                                show-divider: i < root.invited-members.length - 1;
+                                show-divider: i < AppState.chat-invited-members.length - 1;
                                 request-menu(id, name, cp, cd, csd, cr, ax, ay) => {
-                                    root.request-member-menu(id, name, cp, cd, csd, cr, ax, ay);
+                                    AppState.member-menu-id = id;
+                                    AppState.member-menu-name = name;
+                                    AppState.member-menu-can-promote = cp;
+                                    AppState.member-menu-can-demote = cd;
+                                    AppState.member-menu-can-self-demote = csd;
+                                    AppState.member-menu-can-remove = cr;
+                                    AppState.member-menu-x = ax;
+                                    AppState.member-menu-y = ay;
+                                    AppState.member-menu-open = true;
                                 }
                             }
                         }
@@ -141,13 +92,6 @@ export component GroupMembersPanel inherits Rectangle {
             }
         }
 
-        if root.can-add-members: AddMemberCard {
-            add-busy: root.add-busy;
-            add-status: root.add-status;
-            add-draft <=> root.add-draft;
-            add-member(npub) => {
-                root.add-member(npub);
-            }
-        }
+        if AppState.chat-can-add-members: AddMemberCard { }
     }
 }

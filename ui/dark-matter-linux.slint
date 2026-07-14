@@ -121,6 +121,7 @@ export component DarkMatterLinux inherits Window {
     // One alias per view-model member; the state itself lives in the AppState
     // global (shell/app-state.slint — the member docs are there too). Keep the
     // names identical on both sides: the alias is what generates the Rust API.
+    // BEGIN GENERATED ALIASES — edit ui/shell/app-state.slint and run scripts/update-root-aliases.sh
     in-out property <int> active-chat <=> AppState.active-chat;
     in-out property <int> active-page <=> AppState.active-page;
     in-out property <int> active-contact <=> AppState.active-contact;
@@ -367,6 +368,7 @@ export component DarkMatterLinux inherits Window {
     in-out property <string> contact-qr-npub <=> AppState.contact-qr-npub;
     in-out property <string> contact-qr-name <=> AppState.contact-qr-name;
     in-out property <bool> show-block-confirm <=> AppState.show-block-confirm;
+    // END GENERATED ALIASES
 
     // The active theme id drives `Theme.id` directly; Rust sets `theme-id` and
     // the whole palette/style resolution follows. `init` covers first paint

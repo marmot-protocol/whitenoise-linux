@@ -1,42 +1,78 @@
-import { Palette, Theme, QuickReact } from "../tokens.slint";
+import { Palette, Theme, QuickReact, TextSelection } from "../tokens.slint";
 import { QuickReactCell } from "quick-react-cell.slint";
 import { MenuItem } from "../primitives/menu-item.slint";
+import { AppState } from "../shell/app-state.slint";
 
 
 // Right-click context menu for a message bubble. Mounted full-window (like
 // EmojiPicker) so the invisible backdrop catches outside clicks; the panel
-// sits at the anchor point, clamped inside the window.
+// sits at the anchor point, clamped inside the window. The message this menu
+// acts on is `AppState.ctx-menu-id`, so the quick-reaction strip can fire
+// `QuickReact.react` directly without a callback per emoji.
 export component MessageContextMenu inherits Rectangle {
-    // Anchor point (top-left of the panel, in window coords).
-    in property <length> anchor-x;
-    in property <length> anchor-y;
-    // The message this menu acts on, so the quick-reaction strip can fire
-    // `QuickReact.react` directly without a callback per emoji.
-    in property <string> message-id;
-    in property <bool> can-edit: false;
+    property <bool> can-edit: AppState.ctx-menu-can-edit;
     // True when the message has body text to copy (attachment-only messages
     // don't). Gates the "Copy text" row.
-    in property <bool> can-copy: false;
+    property <bool> can-copy: AppState.ctx-menu-text != "";
     // True when this message holds the active text selection. Gates the
     // "Copy selection" row; implies can-copy (a selection needs body lines).
-    in property <bool> has-selection: false;
+    property <bool> has-selection: TextSelection.active && TextSelection.owner == AppState.ctx-menu-id && TextSelection.a-line >= 0 && TextSelection.b-line >= 0;
     // Developer mode: reveals a "View raw event" row at the tail of the menu.
-    in property <bool> debug-enabled: false;
-    // Fired with the panel's clamped position so the emoji picker can open
+    property <bool> debug-enabled: AppState.debug-enabled;
+    // Called with the panel's clamped position so the emoji picker can open
     // where the menu was.
-    callback add-reaction(length, length);
-    callback reply();
-    callback forward();
-    callback copy-text();
-    callback copy-selection();
-    callback edit();
+    function add-reaction(ax: length, ay: length) {
+        AppState.ctx-menu-open = false;
+        AppState.emoji-picker-requested(AppState.ctx-menu-id, ax, ay);
+    }
+    function reply() {
+        AppState.ctx-menu-open = false;
+        AppState.request-reply(AppState.ctx-menu-id, AppState.ctx-menu-text, AppState.ctx-menu-author);
+    }
+    // The "Forward" item stashes the source message id in
+    // `AppState.forward-src-id` and opens the forward picker.
+    function forward() {
+        AppState.ctx-menu-open = false;
+        AppState.forward-src-id = AppState.ctx-menu-id;
+        AppState.forward-picker-open = true;
+    }
+    function copy-text() {
+        AppState.ctx-menu-open = false;
+        AppState.copy-to-clipboard(AppState.ctx-menu-text);
+    }
+    function copy-selection() {
+        AppState.ctx-menu-open = false;
+        AppState.copy-selection(AppState.ctx-menu-id,
+            TextSelection.a-line, TextSelection.a-run, TextSelection.a-frac,
+            TextSelection.b-line, TextSelection.b-run, TextSelection.b-frac);
+    }
+    function edit() {
+        AppState.ctx-menu-open = false;
+        AppState.request-edit(AppState.ctx-menu-id, AppState.ctx-menu-text);
+    }
     // "Delete for everyone" (kind-5 retraction) — author-only, so gated by
     // can-edit. "Delete for me" is a local-only hide, available on any message.
-    callback delete-for-everyone();
-    callback delete-for-me();
+    // Deletes are destructive, so both arm the confirm modal instead of firing
+    // immediately; `delete-confirm-everyone` picks the wording + which callback
+    // the confirm dispatches, and the target is still `ctx-menu-id`.
+    function delete-for-everyone() {
+        AppState.ctx-menu-open = false;
+        AppState.delete-confirm-everyone = true;
+        AppState.show-delete-confirm = true;
+    }
+    function delete-for-me() {
+        AppState.ctx-menu-open = false;
+        AppState.delete-confirm-everyone = false;
+        AppState.show-delete-confirm = true;
+    }
     // Developer-mode "View raw event" (debug-enabled only).
-    callback view-raw();
-    callback dismissed();
+    function view-raw() {
+        AppState.ctx-menu-open = false;
+        AppState.view-raw-event(AppState.ctx-menu-id);
+    }
+    function dismissed() {
+        AppState.ctx-menu-open = false;
+    }
 
     // Keyboard navigation. Rows are ordered so the visible set is always the
     // contiguous [0, count-1]: the two copy rows sit between Forward and
@@ -106,10 +142,11 @@ export component MessageContextMenu inherits Rectangle {
         }
     }
 
-    // Clamp the panel inside the window with a small inset.
+    // Clamp the panel inside the window with a small inset. The anchor point
+    // (top-left of the panel, in window coords) comes from AppState.
     property <length> inset: 8px;
-    property <length> px: min(max(root.inset, root.anchor-x), root.width - panel.width - root.inset);
-    property <length> py: min(max(root.inset, root.anchor-y), root.height - panel.height - root.inset);
+    property <length> px: min(max(root.inset, AppState.ctx-menu-x), root.width - panel.width - root.inset);
+    property <length> py: min(max(root.inset, AppState.ctx-menu-y), root.height - panel.height - root.inset);
 
     // Open animation — same flip-after-mount trick as EmojiPicker.
     property <bool> opened: false;
@@ -165,7 +202,7 @@ export component MessageContextMenu inherits Rectangle {
                         clip-x: e.clip-x;
                         clip-y: e.clip-y;
                         clicked => {
-                            QuickReact.react(root.message-id, e.emoji);
+                            QuickReact.react(AppState.ctx-menu-id, e.emoji);
                             root.dismissed();
                         }
                     }

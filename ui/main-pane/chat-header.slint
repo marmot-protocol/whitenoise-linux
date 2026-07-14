@@ -1,4 +1,5 @@
 import { Palette, ChatMeta, Theme } from "../tokens.slint";
+import { AppState } from "../shell/app-state.slint";
 import { ArchiveIcon } from "../icons/archive-icon.slint";
 import { BanIcon } from "../icons/ban-icon.slint";
 import { CheckMark } from "../icons/check-mark.slint";
@@ -10,24 +11,10 @@ import { Pill } from "../primitives/pill.slint";
 import { Button } from "../primitives/button.slint";
 
 export component ChatHeader inherits Rectangle {
-    in property <ChatMeta> chat;
-    in property <bool> is-group: false;
-    in property <image> group-picture;
-    in property <bool> group-has-picture: false;
-    in property <bool> can-show-members: false;
-    in property <int> member-count: 0;
-    in property <string> group-description;
-    in property <bool> members-open: false;
-    in property <bool> muted: false;
-    callback accept-clicked();
-    callback block-clicked();
-    callback archive-clicked();
-    callback members-toggle-clicked();
-    callback mute-toggle-clicked();
-    // Tapping the encryption badge opens the "what is this?" explainer modal.
-    callback badge-clicked();
+    // The open chat's row — reads AppState directly; the pane mounts this bare.
+    property <ChatMeta> chat: AppState.chats[AppState.active-chat];
 
-    property <string> member-label: @tr("1 member" | "{n} members" % root.member-count);
+    property <string> member-label: @tr("1 member" | "{n} members" % AppState.chat-member-count);
 
     height: 72px;
     background: Palette.bg;
@@ -54,8 +41,8 @@ export component ChatHeader inherits Rectangle {
                 initials: root.chat.av-initials;
                 color-a: root.chat.av-a;
                 color-b: root.chat.av-b;
-                picture: root.is-group ? root.group-picture : root.chat.picture;
-                has-picture: root.is-group ? root.group-has-picture : root.chat.has-picture;
+                picture: AppState.chat-is-group ? AppState.chat-group-picture : root.chat.picture;
+                has-picture: AppState.chat-is-group ? AppState.chat-group-has-picture : root.chat.has-picture;
                 font-size: Theme.fs(12px, 17px);
             }
 
@@ -96,7 +83,7 @@ export component ChatHeader inherits Rectangle {
                 badge-touch := TouchArea {
                     mouse-cursor: pointer;
                     clicked => {
-                        root.badge-clicked();
+                        AppState.encryption-info-open = true;
                     }
                     Pill {
                         label: root.chat.npub;
@@ -108,7 +95,7 @@ export component ChatHeader inherits Rectangle {
             }
 
             Text {
-                text: root.is-group ? (root.group-description == "" ? root.member-label : root.member-label + " · " + root.group-description) : root.chat.last-seen;
+                text: AppState.chat-is-group ? (AppState.chat-group-description == "" ? root.member-label : root.member-label + " · " + AppState.chat-group-description) : root.chat.last-seen;
                 color: Palette.text-lo;
                 font-size: Theme.fs(11px, 14px);
                 overflow: elide;
@@ -121,21 +108,21 @@ export component ChatHeader inherits Rectangle {
             width: 36px;
             height: 36px;
             y: (parent.height - self.height) / 2;
-            background: root.muted ? Palette.selected : (mute-touch.has-hover ? Palette.hover : transparent);
+            background: AppState.active-chat-muted ? Palette.selected : (mute-touch.has-hover ? Palette.hover : transparent);
             border-radius: (6px) * Theme.r-scale;
-            border-width: root.muted ? 1px : 0px;
+            border-width: AppState.active-chat-muted ? 1px : 0px;
             border-color: Palette.border-2;
             animate background { duration: Theme.hover-dur; }
             mute-touch := TouchArea {
                 clicked => {
-                    root.mute-toggle-clicked();
+                    AppState.toggle-mute-chat();
                 }
-                if root.muted: MuteIcon {
+                if AppState.active-chat-muted: MuteIcon {
                     stroke: Palette.mint;
                     x: (parent.width - self.width) / 2;
                     y: (parent.height - self.height) / 2;
                 }
-                if !root.muted: BellIcon {
+                if !AppState.active-chat-muted: BellIcon {
                     stroke: Palette.text-mid;
                     x: (parent.width - self.width) / 2;
                     y: (parent.height - self.height) / 2;
@@ -143,20 +130,20 @@ export component ChatHeader inherits Rectangle {
             }
         }
 
-        if root.can-show-members && !root.chat.is-chat-request: Rectangle {
+        if AppState.chat-can-show-members && !root.chat.is-chat-request: Rectangle {
             width: 36px;
             height: 36px;
             y: (parent.height - self.height) / 2;
-            background: root.members-open ? Palette.selected : transparent;
+            background: AppState.show-chat-members ? Palette.selected : transparent;
             border-radius: (6px) * Theme.r-scale;
-            border-width: root.members-open ? 1px : 0px;
+            border-width: AppState.show-chat-members ? 1px : 0px;
             border-color: Palette.border-2;
             TouchArea {
                 clicked => {
-                    root.members-toggle-clicked();
+                    AppState.members-toggle-clicked();
                 }
                 PeopleIcon {
-                    stroke: root.members-open ? Palette.mint : Palette.text-mid;
+                    stroke: AppState.show-chat-members ? Palette.mint : Palette.text-mid;
                     x: (parent.width - self.width) / 2;
                     y: (parent.height - self.height) / 2;
                 }
@@ -172,7 +159,7 @@ export component ChatHeader inherits Rectangle {
                 focusable: true;
                 y: (parent.height - self.height) / 2;
                 clicked => {
-                    root.block-clicked();
+                    AppState.show-block-confirm = true;
                 }
                 BanIcon {
                     stroke: Palette.text-mid;
@@ -185,7 +172,7 @@ export component ChatHeader inherits Rectangle {
                 focusable: true;
                 y: (parent.height - self.height) / 2;
                 clicked => {
-                    root.archive-clicked();
+                    AppState.archive-chat();
                 }
                 ArchiveIcon {
                     stroke: Palette.text-mid;
@@ -202,7 +189,7 @@ export component ChatHeader inherits Rectangle {
                 hover-outline: Palette.mint-hi;
                 y: (parent.height - self.height) / 2;
                 clicked => {
-                    root.accept-clicked();
+                    AppState.accept-chat-request();
                 }
                 CheckMark {
                     stroke: Palette.bubble-out-fg;

@@ -27,35 +27,7 @@ export component MainPane inherits Rectangle {
             horizontal-stretch: 1;
             spacing: 0;
 
-            ChatHeader {
-                chat: root.chat;
-                is-group: AppState.chat-is-group;
-                group-picture: AppState.chat-group-picture;
-                group-has-picture: AppState.chat-group-has-picture;
-                can-show-members: AppState.chat-can-show-members;
-                member-count: AppState.chat-member-count;
-                group-description: AppState.chat-group-description;
-                members-open: AppState.show-chat-members;
-                muted: AppState.active-chat-muted;
-                accept-clicked => {
-                    AppState.accept-chat-request();
-                }
-                block-clicked => {
-                    AppState.show-block-confirm = true;
-                }
-                archive-clicked => {
-                    AppState.archive-chat();
-                }
-                members-toggle-clicked => {
-                    AppState.members-toggle-clicked();
-                }
-                mute-toggle-clicked => {
-                    AppState.toggle-mute-chat();
-                }
-                badge-clicked => {
-                    AppState.encryption-info-open = true;
-                }
-            }
+            ChatHeader { }
 
             if root.chat.is-chat-request: ChatRequestBanner { }
 
@@ -71,62 +43,7 @@ export component MainPane inherits Rectangle {
             composer := Composer { }
         }
 
-        if AppState.chat-can-show-members && AppState.show-chat-members: GroupMembersPanel {
-            members: AppState.chat-members;
-            invited-members: AppState.chat-invited-members;
-            member-count: AppState.chat-member-count;
-            group-description: AppState.chat-group-description;
-            is-group: AppState.chat-is-group;
-            can-add-members: AppState.chat-can-add-members;
-            add-busy: AppState.add-member-busy;
-            add-status: AppState.add-member-status;
-            add-draft <=> AppState.add-member-draft;
-            group-picture: AppState.chat-group-picture;
-            group-has-picture: AppState.chat-group-has-picture;
-            group-av-a: AppState.chat-group-av-a;
-            group-av-b: AppState.chat-group-av-b;
-            group-av-initials: AppState.chat-group-av-initials;
-            rename-busy: AppState.group-rename-busy;
-            description-busy: AppState.group-description-busy;
-            image-busy: AppState.group-image-busy;
-            leave-busy: AppState.group-leave-busy;
-            group-status: AppState.group-settings-status;
-            rename-draft <=> AppState.group-rename-draft;
-            description-draft <=> AppState.group-description-draft;
-            close-clicked => {
-                AppState.members-toggle-clicked();
-            }
-            add-member(npub) => {
-                AppState.add-member(npub);
-            }
-            request-member-menu(id, name, cp, cd, csd, cr, ax, ay) => {
-                AppState.member-menu-id = id;
-                AppState.member-menu-name = name;
-                AppState.member-menu-can-promote = cp;
-                AppState.member-menu-can-demote = cd;
-                AppState.member-menu-can-self-demote = csd;
-                AppState.member-menu-can-remove = cr;
-                AppState.member-menu-x = ax;
-                AppState.member-menu-y = ay;
-                AppState.member-menu-open = true;
-            }
-            rename-group(name) => {
-                AppState.rename-group(name);
-            }
-            set-group-description(description) => {
-                AppState.set-group-description(description);
-            }
-            change-image => {
-                AppState.change-group-image();
-            }
-            clear-image => {
-                AppState.clear-group-image();
-            }
-            leave-group => {
-                AppState.leave-confirm-chat-idx = AppState.active-chat;
-                AppState.show-leave-confirm = true;
-            }
-        }
+        if AppState.chat-can-show-members && AppState.show-chat-members: GroupMembersPanel { }
     }
 
     // Mention autocomplete popup, floated just above the composer's text field.

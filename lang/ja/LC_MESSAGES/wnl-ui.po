@@ -374,17 +374,17 @@ msgctxt "ChatHeader"
 msgid "Block"
 msgstr "ブロック"
 
+#, fuzzy
+msgctxt "ConfirmFlows"
+msgid "Block"
+msgstr "ブロック"
+
 msgctxt "ContactDetail"
 msgid "Block"
 msgstr "ブロック"
 
 #, fuzzy
-msgctxt "ModalHost"
-msgid "Block"
-msgstr "ブロック"
-
-#, fuzzy
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Block this chat request?"
 msgstr "チャットリクエスト"
 
@@ -842,7 +842,7 @@ msgid "Decrypted images and files, stored encrypted on this device."
 msgstr "復号した画像やファイルを、この端末に暗号化して保存します。"
 
 #, fuzzy
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Delete"
 msgstr "削除"
 
@@ -859,7 +859,7 @@ msgid "Delete for everyone"
 msgstr ""
 
 #, fuzzy
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Delete for everyone?"
 msgstr "日付形式"
 
@@ -869,7 +869,7 @@ msgid "Delete for me"
 msgstr "日付形式"
 
 #, fuzzy
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Delete for me?"
 msgstr "日付形式"
 
@@ -1225,11 +1225,11 @@ msgctxt "ChatContextMenu"
 msgid "Leave group"
 msgstr "グループを退出"
 
-msgctxt "GroupSettingsCard"
+msgctxt "ConfirmFlows"
 msgid "Leave group"
 msgstr "グループを退出"
 
-msgctxt "ModalHost"
+msgctxt "GroupSettingsCard"
 msgid "Leave group"
 msgstr "グループを退出"
 
@@ -1237,7 +1237,7 @@ msgctxt "GroupSettingsCard"
 msgid "Leave this group and stop receiving new messages. The chat moves to Archive."
 msgstr "このグループを退出し、新しいメッセージの受信を停止します。チャットはアーカイブに移動します。"
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Leave {}?"
 msgstr "{}を退出しますか？"
 
@@ -1322,17 +1322,17 @@ msgctxt "AboutPane"
 msgid "Made with marmots, math, and a little purple liquid."
 msgstr "マーモットと数学、そして少しの紫色の液体でできています。"
 
+#, fuzzy
+msgctxt "ConfirmFlows"
+msgid "Make admin"
+msgstr "管理者にする"
+
 msgctxt "GroupMemberMenu"
 msgid "Make admin"
 msgstr "管理者にする"
 
 #, fuzzy
-msgctxt "ModalHost"
-msgid "Make admin"
-msgstr "管理者にする"
-
-#, fuzzy
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Make {} an admin?"
 msgstr "管理者にする"
 
@@ -1799,7 +1799,7 @@ msgctxt "GetStartedScreen"
 msgid "Relays carry your encrypted messages. Add at least one to get online."
 msgstr "リレーは暗号化されたメッセージを中継します。オンラインにするには少なくとも1つ追加してください。"
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Remove"
 msgstr "削除"
 
@@ -1808,16 +1808,16 @@ msgctxt "StagedChips"
 msgid "Remove"
 msgstr "削除"
 
+#, fuzzy
+msgctxt "ConfirmFlows"
+msgid "Remove admin"
+msgstr "管理者から外す"
+
 msgctxt "GroupMemberMenu"
 msgid "Remove admin"
 msgstr "管理者から外す"
 
-#, fuzzy
-msgctxt "ModalHost"
-msgid "Remove admin"
-msgstr "管理者から外す"
-
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Remove admin rights from {}?"
 msgstr ""
 
@@ -1838,11 +1838,11 @@ msgctxt "LoginScreen"
 msgid "Remove key"
 msgstr "鍵を削除"
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Remove this relay?"
 msgstr "このリレーを削除しますか？"
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Remove {} from the group?"
 msgstr "{}をグループから削除しますか？"
 
@@ -2211,17 +2211,17 @@ msgctxt "DebugPane"
 msgid "State / raw events / key packages"
 msgstr "キーパッケージをローテーションしますか？"
 
+#, fuzzy
+msgctxt "ConfirmFlows"
+msgid "Step down"
+msgstr "管理者を辞める"
+
 msgctxt "GroupMemberMenu"
 msgid "Step down"
 msgstr "管理者を辞める"
 
 #, fuzzy
-msgctxt "ModalHost"
-msgid "Step down"
-msgstr "管理者を辞める"
-
-#, fuzzy
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Step down as admin?"
 msgstr "管理者を辞める"
 
@@ -2279,11 +2279,11 @@ msgctxt "KeysPage"
 msgid "This computer"
 msgstr "このコンピューター"
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "This declines the invite from {}. It can't be restored unless they invite you again."
 msgstr "{} からの招待を辞退します。相手がもう一度招待しない限り、元に戻すことはできません。"
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "This hides the message on this device only. Other people will still see it."
 msgstr ""
 
@@ -2320,12 +2320,12 @@ msgctxt "LoginScreen"
 msgid "This removes the key stored on this device. You'll need the nsec you backed up to use this identity again. This can't be undone."
 msgstr "この端末から鍵を削除します。この ID をもう一度使うには、控えておいた nsec が必要です。この操作は元に戻せません。"
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "This removes the message for everyone in the chat. This can't be undone."
 msgstr ""
 
 #, fuzzy
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "This removes your admin rights. You can't restore them yourself unless another admin promotes you again."
 msgstr "{} からの招待を辞退します。相手がもう一度招待しない限り、元に戻すことはできません。"
 
@@ -2486,7 +2486,7 @@ msgctxt "OutgoingRow"
 msgid "You"
 msgstr "あなた"
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "You will stop receiving new messages from this group. The chat moves to Archive."
 msgstr "このグループからの新しいメッセージの受信を停止します。チャットはアーカイブに移動します。"
 
@@ -2605,19 +2605,19 @@ msgctxt "ContactDetail"
 msgid "{} relays"
 msgstr "{} リレー"
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "{} will be able to add members, change group settings, and manage other admins."
 msgstr ""
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "{} will lose access to this group and stop receiving its messages. You'll need to invite them again to bring them back."
 msgstr "{}はこのグループにアクセスできなくなり、メッセージを受信しなくなります。再び追加するには、もう一度招待する必要があります。"
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "{} will stay in the group, but won't be able to manage members or group settings."
 msgstr ""
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "{} will stop carrying your messages. You can add it back anytime."
 msgstr "{} はメッセージの中継に使われなくなります。いつでも追加し直せます。"
 

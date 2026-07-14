@@ -1,13 +1,11 @@
 import { Palette, Theme } from "../tokens.slint";
+import { AppState } from "../shell/app-state.slint";
 import { PeopleIcon } from "../icons/people-icon.slint";
 
 // Members panel title row: people icon, count, and close button.
+// Reads AppState directly; mounted bare by GroupMembersPanel.
 export component GroupMembersHeader inherits HorizontalLayout {
-    in property <int> member-count;
-    in property <string> group-description;
-    callback close-clicked();
-
-    height: root.group-description == "" ? 28px : 64px;
+    height: AppState.chat-group-description == "" ? 28px : 64px;
     spacing: 8px;
     alignment: stretch;
     PeopleIcon {
@@ -26,14 +24,14 @@ export component GroupMembersHeader inherits HorizontalLayout {
         }
 
         Text {
-            text: @tr("1 in this group" | "{n} in this group" % root.member-count);
+            text: @tr("1 in this group" | "{n} in this group" % AppState.chat-member-count);
             color: Palette.text-lo;
             font-size: Theme.fs(10px, 14px);
             letter-spacing: 0.8px;
         }
 
-        if root.group-description != "": Text {
-            text: root.group-description;
+        if AppState.chat-group-description != "": Text {
+            text: AppState.chat-group-description;
             color: Palette.text-lo;
             font-size: Theme.fs(10px, 14px);
             wrap: word-wrap;
@@ -45,7 +43,7 @@ export component GroupMembersHeader inherits HorizontalLayout {
         width: 28px;
         height: 28px;
         clicked => {
-            root.close-clicked();
+            AppState.members-toggle-clicked();
         }
         Text {
             text: "✕";

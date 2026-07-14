@@ -377,17 +377,17 @@ msgctxt "ChatHeader"
 msgid "Block"
 msgstr "Blocca"
 
+#, fuzzy
+msgctxt "ConfirmFlows"
+msgid "Block"
+msgstr "Blocca"
+
 msgctxt "ContactDetail"
 msgid "Block"
 msgstr "Blocca"
 
 #, fuzzy
-msgctxt "ModalHost"
-msgid "Block"
-msgstr "Blocca"
-
-#, fuzzy
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Block this chat request?"
 msgstr "Richiesta chat"
 
@@ -845,7 +845,7 @@ msgid "Decrypted images and files, stored encrypted on this device."
 msgstr "Immagini e file decifrati, salvati cifrati su questo dispositivo."
 
 #, fuzzy
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Delete"
 msgstr "Elimina"
 
@@ -862,7 +862,7 @@ msgid "Delete for everyone"
 msgstr ""
 
 #, fuzzy
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Delete for everyone?"
 msgstr "Formato data"
 
@@ -872,7 +872,7 @@ msgid "Delete for me"
 msgstr "Formato data"
 
 #, fuzzy
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Delete for me?"
 msgstr "Formato data"
 
@@ -1228,11 +1228,11 @@ msgctxt "ChatContextMenu"
 msgid "Leave group"
 msgstr "Lascia il gruppo"
 
-msgctxt "GroupSettingsCard"
+msgctxt "ConfirmFlows"
 msgid "Leave group"
 msgstr "Lascia il gruppo"
 
-msgctxt "ModalHost"
+msgctxt "GroupSettingsCard"
 msgid "Leave group"
 msgstr "Lascia il gruppo"
 
@@ -1240,7 +1240,7 @@ msgctxt "GroupSettingsCard"
 msgid "Leave this group and stop receiving new messages. The chat moves to Archive."
 msgstr "Lascia questo gruppo e smetti di ricevere nuovi messaggi. La chat viene spostata nell'Archivio."
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Leave {}?"
 msgstr "Lasciare {}?"
 
@@ -1325,17 +1325,17 @@ msgctxt "AboutPane"
 msgid "Made with marmots, math, and a little purple liquid."
 msgstr "Fatto con marmotte, matematica e un po' di liquido viola."
 
+#, fuzzy
+msgctxt "ConfirmFlows"
+msgid "Make admin"
+msgstr "Rendi admin"
+
 msgctxt "GroupMemberMenu"
 msgid "Make admin"
 msgstr "Rendi admin"
 
 #, fuzzy
-msgctxt "ModalHost"
-msgid "Make admin"
-msgstr "Rendi admin"
-
-#, fuzzy
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Make {} an admin?"
 msgstr "Rendi admin"
 
@@ -1802,7 +1802,7 @@ msgctxt "GetStartedScreen"
 msgid "Relays carry your encrypted messages. Add at least one to get online."
 msgstr "I relay trasportano i tuoi messaggi crittografati. Aggiungine almeno uno per andare online."
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Remove"
 msgstr "Rimuovi"
 
@@ -1811,16 +1811,16 @@ msgctxt "StagedChips"
 msgid "Remove"
 msgstr "Rimuovi"
 
+#, fuzzy
+msgctxt "ConfirmFlows"
+msgid "Remove admin"
+msgstr "Rimuovi ruolo admin"
+
 msgctxt "GroupMemberMenu"
 msgid "Remove admin"
 msgstr "Rimuovi ruolo admin"
 
-#, fuzzy
-msgctxt "ModalHost"
-msgid "Remove admin"
-msgstr "Rimuovi ruolo admin"
-
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Remove admin rights from {}?"
 msgstr ""
 
@@ -1841,11 +1841,11 @@ msgctxt "LoginScreen"
 msgid "Remove key"
 msgstr "Rimuovi chiave"
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Remove this relay?"
 msgstr "Rimuovere questo relay?"
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Remove {} from the group?"
 msgstr "Rimuovere {} dal gruppo?"
 
@@ -2214,17 +2214,17 @@ msgctxt "DebugPane"
 msgid "State / raw events / key packages"
 msgstr "Ruotare il pacchetto chiavi?"
 
+#, fuzzy
+msgctxt "ConfirmFlows"
+msgid "Step down"
+msgstr "Rinuncia"
+
 msgctxt "GroupMemberMenu"
 msgid "Step down"
 msgstr "Rinuncia"
 
 #, fuzzy
-msgctxt "ModalHost"
-msgid "Step down"
-msgstr "Rinuncia"
-
-#, fuzzy
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "Step down as admin?"
 msgstr "Rinuncia"
 
@@ -2282,11 +2282,11 @@ msgctxt "KeysPage"
 msgid "This computer"
 msgstr "Questo computer"
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "This declines the invite from {}. It can't be restored unless they invite you again."
 msgstr "Questo rifiuta l'invito di {}. Non potrà essere ripristinato a meno che non ti invitino di nuovo."
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "This hides the message on this device only. Other people will still see it."
 msgstr ""
 
@@ -2323,12 +2323,12 @@ msgctxt "LoginScreen"
 msgid "This removes the key stored on this device. You'll need the nsec you backed up to use this identity again. This can't be undone."
 msgstr "La chiave salvata su questo dispositivo verrà rimossa. Per usare di nuovo questa identità ti servirà l'nsec che hai salvato. Questa operazione non può essere annullata."
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "This removes the message for everyone in the chat. This can't be undone."
 msgstr ""
 
 #, fuzzy
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "This removes your admin rights. You can't restore them yourself unless another admin promotes you again."
 msgstr "Questo rifiuta l'invito di {}. Non potrà essere ripristinato a meno che non ti invitino di nuovo."
 
@@ -2489,7 +2489,7 @@ msgctxt "OutgoingRow"
 msgid "You"
 msgstr "Tu"
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "You will stop receiving new messages from this group. The chat moves to Archive."
 msgstr "Smetterai di ricevere nuovi messaggi da questo gruppo. La chat viene spostata nell'Archivio."
 
@@ -2609,19 +2609,19 @@ msgctxt "ContactDetail"
 msgid "{} relays"
 msgstr "{} relay"
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "{} will be able to add members, change group settings, and manage other admins."
 msgstr ""
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "{} will lose access to this group and stop receiving its messages. You'll need to invite them again to bring them back."
 msgstr "{} perderà l'accesso a questo gruppo e smetterà di riceverne i messaggi. Dovrai invitarlo di nuovo per riportarlo nel gruppo."
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "{} will stay in the group, but won't be able to manage members or group settings."
 msgstr ""
 
-msgctxt "ModalHost"
+msgctxt "ConfirmFlows"
 msgid "{} will stop carrying your messages. You can add it back anytime."
 msgstr "{} non trasporterà più i tuoi messaggi. Puoi aggiungerlo di nuovo quando vuoi."
 

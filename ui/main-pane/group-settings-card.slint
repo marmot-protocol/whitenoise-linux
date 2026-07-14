@@ -1,31 +1,15 @@
 import { Palette, Theme } from "../tokens.slint";
+import { AppState } from "../shell/app-state.slint";
 import { GroupCard } from "../layout/group-card.slint";
 import { Section } from "../layout/section.slint";
 import { LineInput } from "../primitives/line-input.slint";
 import { Button } from "../primitives/button.slint";
 import { Avatar } from "../primitives/avatar.slint";
 
-// Group settings surface: admin-only avatar/name/description controls plus the member leave action.
+// Group settings surface: admin-only avatar/name/description controls plus the
+// member leave action. Reads AppState directly (admin controls gate on
+// chat-can-add-members); mounted bare by GroupMembersPanel.
 export component GroupSettingsCard inherits Section {
-    in property <bool> can-manage: false;
-    in property <image> group-picture;
-    in property <bool> group-has-picture: false;
-    in property <color> group-av-a;
-    in property <color> group-av-b;
-    in property <string> group-av-initials;
-    in property <bool> rename-busy: false;
-    in property <bool> description-busy: false;
-    in property <bool> image-busy: false;
-    in property <bool> leave-busy: false;
-    in property <string> group-status;
-    in-out property <string> rename-draft;
-    in-out property <string> description-draft;
-    callback rename-group(string);
-    callback set-group-description(string);
-    callback change-image();
-    callback clear-image();
-    callback leave-group();
-
     vertical-stretch: 0;
     label: @tr("Group settings");
 
@@ -37,16 +21,16 @@ export component GroupSettingsCard inherits Section {
             padding-bottom: 12px;
             spacing: 10px;
 
-            if root.can-manage: HorizontalLayout {
+            if AppState.chat-can-add-members: HorizontalLayout {
                 spacing: 12px;
                 alignment: start;
                 Avatar {
                     size: 56px;
-                    initials: root.group-av-initials;
-                    color-a: root.group-av-a;
-                    color-b: root.group-av-b;
-                    picture: root.group-picture;
-                    has-picture: root.group-has-picture;
+                    initials: AppState.chat-group-av-initials;
+                    color-a: AppState.chat-group-av-a;
+                    color-b: AppState.chat-group-av-b;
+                    picture: AppState.chat-group-picture;
+                    has-picture: AppState.chat-group-has-picture;
                     font-size: Theme.fs(18px, 20px);
                 }
 
@@ -54,19 +38,19 @@ export component GroupSettingsCard inherits Section {
                     alignment: center;
                     spacing: 6px;
                     Button {
-                        label: root.image-busy ? @tr("Uploading…") : @tr("Change image");
+                        label: AppState.group-image-busy ? @tr("Uploading…") : @tr("Change image");
                         button-height: 28px;
                         pad-left: 10px;
                         pad-right: 10px;
                         font-size: Theme.fsr(11px, 14px);
                         clicked => {
-                            if (!root.image-busy) {
-                                root.change-image();
+                            if (!AppState.group-image-busy) {
+                                AppState.change-group-image();
                             }
                         }
                     }
 
-                    if root.group-has-picture && !root.image-busy: Button {
+                    if AppState.chat-group-has-picture && !AppState.group-image-busy: Button {
                         label: @tr("Remove image");
                         button-height: 26px;
                         pad-left: 10px;
@@ -80,13 +64,13 @@ export component GroupSettingsCard inherits Section {
                         fg: Palette.text-mid;
                         hover-fg: Palette.text-hi;
                         clicked => {
-                            root.clear-image();
+                            AppState.clear-group-image();
                         }
                     }
                 }
             }
 
-            if root.can-manage: VerticalLayout {
+            if AppState.chat-can-add-members: VerticalLayout {
                 spacing: 6px;
                 Text {
                     text: @tr("Group name");
@@ -112,13 +96,13 @@ export component GroupSettingsCard inherits Section {
                         padding-right: 10px;
                         rename-input := LineInput {
                             placeholder: @tr("Group name");
-                            text <=> root.rename-draft;
+                            text <=> AppState.group-rename-draft;
                             font-size: Theme.fsr(12px, 14px);
                             fg: Palette.text-hi;
                             placeholder-color: Palette.text-vlo;
                             submit => {
-                                if (!root.rename-busy && root.rename-draft != "") {
-                                    root.rename-group(root.rename-draft);
+                                if (!AppState.group-rename-busy && AppState.group-rename-draft != "") {
+                                    AppState.rename-group(AppState.group-rename-draft);
                                 }
                             }
                         }
@@ -129,7 +113,7 @@ export component GroupSettingsCard inherits Section {
                     spacing: 8px;
                     alignment: start;
                     Button {
-                        label: root.rename-busy ? @tr("Saving…") : @tr("Save name");
+                        label: AppState.group-rename-busy ? @tr("Saving…") : @tr("Save name");
                         button-height: 28px;
                         pad-left: 10px;
                         pad-right: 10px;
@@ -139,8 +123,8 @@ export component GroupSettingsCard inherits Section {
                         outline: Palette.mint;
                         hover-bg: Palette.mint-surface;
                         clicked => {
-                            if (!root.rename-busy && root.rename-draft != "") {
-                                root.rename-group(root.rename-draft);
+                            if (!AppState.group-rename-busy && AppState.group-rename-draft != "") {
+                                AppState.rename-group(AppState.group-rename-draft);
                             }
                         }
                     }
@@ -174,7 +158,7 @@ export component GroupSettingsCard inherits Section {
                             horizontal-stretch: 1;
                             vertical-stretch: 1;
                             placeholder: @tr("Purpose, rules, or invite blurb");
-                            text <=> root.description-draft;
+                            text <=> AppState.group-description-draft;
                             single-line: false;
                             enter-submits: false;
                             font-size: Theme.fsr(12px, 14px);
@@ -188,8 +172,8 @@ export component GroupSettingsCard inherits Section {
                     spacing: 8px;
                     alignment: start;
                     Button {
-                        label: root.description-busy ? @tr("Saving…") : @tr("Save description");
-                        enabled: !root.description-busy;
+                        label: AppState.group-description-busy ? @tr("Saving…") : @tr("Save description");
+                        enabled: !AppState.group-description-busy;
                         button-height: 28px;
                         pad-left: 10px;
                         pad-right: 10px;
@@ -199,15 +183,15 @@ export component GroupSettingsCard inherits Section {
                         outline: Palette.mint;
                         hover-bg: Palette.mint-surface;
                         clicked => {
-                            if (!root.description-busy) {
-                                root.set-group-description(root.description-draft);
+                            if (!AppState.group-description-busy) {
+                                AppState.set-group-description(AppState.group-description-draft);
                             }
                         }
                     }
                 }
             }
 
-            if root.group-status != "": Rectangle {
+            if AppState.group-settings-status != "": Rectangle {
                 height: 28px;
                 border-radius: (4px) * Theme.r-scale;
                 background: Palette.panel-2;
@@ -217,7 +201,7 @@ export component GroupSettingsCard inherits Section {
                     padding-left: 8px;
                     padding-right: 8px;
                     Text {
-                        text: root.group-status;
+                        text: AppState.group-settings-status;
                         color: Palette.text-lo;
                         font-size: Theme.fs(10px, 14px);
                         vertical-alignment: center;
@@ -226,7 +210,7 @@ export component GroupSettingsCard inherits Section {
                 }
             }
 
-            if root.can-manage: Rectangle {
+            if AppState.chat-can-add-members: Rectangle {
                 height: 1px;
                 background: Palette.border-2;
             }
@@ -241,17 +225,17 @@ export component GroupSettingsCard inherits Section {
                 }
 
                 Text {
-                    text: root.can-manage ? @tr("Admins must step down before leaving.") : @tr("Leave this group and stop receiving new messages. The chat moves to Archive.");
+                    text: AppState.chat-can-add-members ? @tr("Admins must step down before leaving.") : @tr("Leave this group and stop receiving new messages. The chat moves to Archive.");
                     color: Palette.text-lo;
                     font-size: Theme.fs(10px, 14px);
                     wrap: word-wrap;
                 }
 
-                if !root.can-manage: HorizontalLayout {
+                if !AppState.chat-can-add-members: HorizontalLayout {
                     alignment: start;
                     Button {
-                        label: root.leave-busy ? @tr("Leaving…") : @tr("Leave group");
-                        enabled: !root.leave-busy;
+                        label: AppState.group-leave-busy ? @tr("Leaving…") : @tr("Leave group");
+                        enabled: !AppState.group-leave-busy;
                         button-height: 28px;
                         pad-left: 10px;
                         pad-right: 10px;
@@ -262,7 +246,8 @@ export component GroupSettingsCard inherits Section {
                         outline: Palette.danger-border;
                         hover-outline: Palette.danger-border-hover;
                         clicked => {
-                            root.leave-group();
+                            AppState.leave-confirm-chat-idx = AppState.active-chat;
+                            AppState.show-leave-confirm = true;
                         }
                     }
                 }

@@ -14,7 +14,6 @@ import { AddAccountModal } from "../modals/add-account-modal.slint";
 import { RevealNsecModal } from "../modals/reveal-nsec-modal.slint";
 import { ImportBackupModal } from "../modals/import-backup-modal.slint";
 import { BackupCreateModal } from "../modals/backup-create-modal.slint";
-import { ConfirmModal } from "../modals/confirm-modal.slint";
 import { ForwardPickerModal } from "../modals/forward-chat-picker-modal.slint";
 import { CommandPalette } from "../modals/command-palette.slint";
 import { LanguagePickerModal } from "../modals/language-picker-modal.slint";
@@ -25,6 +24,7 @@ import { ProfileModal } from "../modals/profile-modal.slint";
 import { QrModal } from "../modals/qr-modal.slint";
 import { EncryptionInfoModal } from "../modals/encryption-info-modal.slint";
 import { DebugJsonModal } from "../modals/debug-json-modal.slint";
+import { ConfirmFlows } from "confirm-flows.slint";
 import { EmojiPicker } from "../emoji/emoji-picker.slint";
 import { MessageContextMenu } from "../messages/message-context-menu.slint";
 import { ChatContextMenu } from "../chat-list/chat-context-menu.slint";
@@ -32,51 +32,6 @@ import { GroupMemberMenu } from "../main-pane/group-member-menu.slint";
 import { AppState } from "app-state.slint";
 
 export component ModalHost inherits Rectangle {
-    // Forward flow: the context-menu "Forward" item stashes the source message
-    // id in AppState.forward-src-id and opens this picker.
-    property <bool> forward-picker-open: false;
-    // Delete confirmation: deletes are destructive, so the context-menu items
-    // arm this modal instead of firing immediately. `delete-confirm-everyone`
-    // picks the wording + which callback the confirm dispatches; the target is
-    // still `ctx-menu-id` (kept from when the menu opened).
-    property <bool> show-delete-confirm: false;
-    property <bool> delete-confirm-everyone: false;
-    // Admin role changes alter group governance, so the inline member badges
-    // only arm this modal. The existing Rust callbacks fire after confirmation.
-    property <bool> show-admin-confirm: false;
-    property <int> admin-confirm-action: 0; // 1=promote, 2=demote, 3=self-demote, 4=remove
-    property <string> admin-confirm-member-id: "";
-    property <string> admin-confirm-member-name: "";
-    function arm-admin-confirm(action: int, id: string, name: string) {
-        root.admin-confirm-action = action;
-        root.admin-confirm-member-id = id;
-        root.admin-confirm-member-name = name;
-        root.show-admin-confirm = true;
-    }
-    function clear-admin-confirm() {
-        root.show-admin-confirm = false;
-        root.admin-confirm-action = 0;
-        root.admin-confirm-member-id = "";
-        root.admin-confirm-member-name = "";
-    }
-    function request-promote-admin(id: string, name: string) {
-        if (id != "") {
-            root.arm-admin-confirm(1, id, name);
-        }
-    }
-    function request-demote-admin(id: string, name: string) {
-        if (id != "") {
-            root.arm-admin-confirm(2, id, name);
-        }
-    }
-    function request-self-demote-admin(name: string) {
-        root.arm-admin-confirm(3, "", name);
-    }
-    function request-remove-member(id: string, name: string) {
-        if (id != "") {
-            root.arm-admin-confirm(4, id, name);
-        }
-    }
 
     if AppState.show-language-picker: LanguagePickerModal {
             active-locale: AppState.locale;
@@ -182,56 +137,6 @@ export component ModalHost inherits Rectangle {
             }
         }
 
-        // ── Confirm ladder ─────────────────────────────────────────────────
-        // Seven destructive/irreversible flows share ConfirmModal, each armed
-        // by its own AppState flag: block, audit-delete, rotate, relay-remove,
-        // leave, admin-change, message-delete. Deliberately NOT merged into a
-        // parameterized table: each block is already a minimal mount, and one
-        // combined modal would trade them for a nested-ternary copy/dispatch
-        // knot. Copy + dispatch stay together per flow.
-        if AppState.show-block-confirm: ConfirmModal {
-            title: @tr("Block this chat request?");
-            subtitle: @tr("This declines the invite from {}. It can't be restored unless they invite you again.", AppState.chats[AppState.active-chat].name);
-            confirm-label: @tr("Block");
-            confirm => {
-                AppState.show-block-confirm = false;
-                AppState.block-chat-request();
-            }
-            dismissed => {
-                AppState.show-block-confirm = false;
-            }
-        }
-
-        if AppState.show-audit-delete-confirm: ConfirmModal {
-            title: @tr("SettingsPage" => "Delete audit log file?");
-            subtitle: @tr("SettingsPage" => "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log.");
-            confirm-label: @tr("SettingsPage" => "Delete file");
-            confirm => {
-                AppState.show-audit-delete-confirm = false;
-                AppState.audit-delete-file(AppState.pending-audit-delete-path);
-                AppState.pending-audit-delete-path = "";
-            }
-            dismissed => {
-                AppState.show-audit-delete-confirm = false;
-                AppState.pending-audit-delete-path = "";
-            }
-        }
-
-        // Rotating invalidates the currently advertised key package, so the page
-    // only emits intent; the window root owns the modal and blocks all chrome.
-    if AppState.show-rotate-confirm: ConfirmModal {
-            title: @tr("KeysPage" => "Rotate key package?");
-            subtitle: @tr("KeysPage" => "This invalidates your current package. Contacts will use the new one going forward.");
-            confirm-label: @tr("KeysPage" => "Rotate");
-            confirm => {
-                AppState.show-rotate-confirm = false;
-                AppState.kp-rotate-clicked();
-            }
-            dismissed => {
-                AppState.show-rotate-confirm = false;
-            }
-        }
-
         if AppState.show-reveal-nsec: RevealNsecModal {
             password <=> AppState.reveal-nsec-password;
             nsec-value: AppState.reveal-nsec-value;
@@ -250,59 +155,6 @@ export component ModalHost inherits Rectangle {
             }
         }
 
-        if AppState.relay-remove-target != "": ConfirmModal {
-            title: @tr("Remove this relay?");
-            subtitle: @tr("{} will stop carrying your messages. You can add it back anytime.", AppState.relay-remove-target);
-            confirm-label: @tr("Remove");
-            confirm => {
-                AppState.network-remove-relay(AppState.relay-remove-target);
-                AppState.relay-remove-target = "";
-            }
-            dismissed => {
-                AppState.relay-remove-target = "";
-            }
-        }
-
-        if AppState.show-leave-confirm: ConfirmModal {
-            x: 0;
-            y: 0;
-            width: root.width;
-            height: root.height;
-            title: @tr("Leave {}?", AppState.chats[AppState.leave-confirm-chat-idx].name);
-            subtitle: @tr("You will stop receiving new messages from this group. The chat moves to Archive.");
-            confirm-label: @tr("Leave group");
-            confirm => {
-                AppState.show-leave-confirm = false;
-                AppState.leave-group-at(AppState.leave-confirm-chat-idx);
-                AppState.leave-confirm-chat-idx = -1;
-            }
-            dismissed => {
-                AppState.show-leave-confirm = false;
-                AppState.leave-confirm-chat-idx = -1;
-            }
-        }
-
-        if root.show-admin-confirm: ConfirmModal {
-            title: root.admin-confirm-action == 1 ? @tr("Make {} an admin?", root.admin-confirm-member-name) : (root.admin-confirm-action == 2 ? @tr("Remove admin rights from {}?", root.admin-confirm-member-name) : (root.admin-confirm-action == 4 ? @tr("Remove {} from the group?", root.admin-confirm-member-name) : @tr("Step down as admin?")));
-            subtitle: root.admin-confirm-action == 1 ? @tr("{} will be able to add members, change group settings, and manage other admins.", root.admin-confirm-member-name) : (root.admin-confirm-action == 2 ? @tr("{} will stay in the group, but won't be able to manage members or group settings.", root.admin-confirm-member-name) : (root.admin-confirm-action == 4 ? @tr("{} will lose access to this group and stop receiving its messages. You'll need to invite them again to bring them back.", root.admin-confirm-member-name) : @tr("This removes your admin rights. You can't restore them yourself unless another admin promotes you again.")));
-            confirm-label: root.admin-confirm-action == 1 ? @tr("Make admin") : (root.admin-confirm-action == 2 ? @tr("Remove admin") : (root.admin-confirm-action == 4 ? @tr("Remove") : @tr("Step down")));
-            confirm => {
-                root.show-admin-confirm = false;
-                if (root.admin-confirm-action == 1) {
-                    AppState.promote-admin(root.admin-confirm-member-id);
-                } else if (root.admin-confirm-action == 2) {
-                    AppState.demote-admin(root.admin-confirm-member-id);
-                } else if (root.admin-confirm-action == 3) {
-                    AppState.self-demote-admin();
-                } else if (root.admin-confirm-action == 4) {
-                    AppState.remove-member(root.admin-confirm-member-id);
-                }
-                root.clear-admin-confirm();
-            }
-            dismissed => {
-                root.clear-admin-confirm();
-            }
-        }
 
         if AppState.show-palette: CommandPalette {
             actions: AppState.palette-actions;
@@ -318,90 +170,12 @@ export component ModalHost inherits Rectangle {
             }
         }
 
-        // Right-click message context menu. Items re-fire the same callbacks the
-    // hover toolbar uses, so the Rust side is untouched.
-    if AppState.member-menu-open: GroupMemberMenu {
-            anchor-x: AppState.member-menu-x;
-            anchor-y: AppState.member-menu-y;
-            member-name: AppState.member-menu-name;
-            can-promote: AppState.member-menu-can-promote;
-            can-demote: AppState.member-menu-can-demote;
-            can-self-demote: AppState.member-menu-can-self-demote;
-            can-remove: AppState.member-menu-can-remove;
-            promote => {
-                AppState.member-menu-open = false;
-                root.request-promote-admin(AppState.member-menu-id, AppState.member-menu-name);
-            }
-            demote => {
-                AppState.member-menu-open = false;
-                root.request-demote-admin(AppState.member-menu-id, AppState.member-menu-name);
-            }
-            self-demote => {
-                AppState.member-menu-open = false;
-                root.request-self-demote-admin(AppState.member-menu-name);
-            }
-            remove => {
-                AppState.member-menu-open = false;
-                root.request-remove-member(AppState.member-menu-id, AppState.member-menu-name);
-            }
-            dismissed => {
-                AppState.member-menu-open = false;
-            }
-        }
+        // Right-click menus: both read their AppState.member-menu-* /
+        // ctx-menu-* invocation context directly and re-fire the same AppState
+        // callbacks the hover toolbar uses, so the Rust side is untouched.
+        if AppState.member-menu-open: GroupMemberMenu { }
 
-        if AppState.ctx-menu-open: MessageContextMenu {
-            anchor-x: AppState.ctx-menu-x;
-            anchor-y: AppState.ctx-menu-y;
-            message-id: AppState.ctx-menu-id;
-            can-edit: AppState.ctx-menu-can-edit;
-            can-copy: AppState.ctx-menu-text != "";
-            has-selection: TextSelection.active && TextSelection.owner == AppState.ctx-menu-id && TextSelection.a-line >= 0 && TextSelection.b-line >= 0;
-            debug-enabled: AppState.debug-enabled;
-            add-reaction(ax, ay) => {
-                AppState.ctx-menu-open = false;
-                AppState.emoji-picker-requested(AppState.ctx-menu-id, ax, ay);
-            }
-            reply => {
-                AppState.ctx-menu-open = false;
-                AppState.request-reply(AppState.ctx-menu-id, AppState.ctx-menu-text, AppState.ctx-menu-author);
-            }
-            copy-text => {
-                AppState.ctx-menu-open = false;
-                AppState.copy-to-clipboard(AppState.ctx-menu-text);
-            }
-            copy-selection => {
-                AppState.ctx-menu-open = false;
-                AppState.copy-selection(AppState.ctx-menu-id,
-                TextSelection.a-line, TextSelection.a-run, TextSelection.a-frac,
-                TextSelection.b-line, TextSelection.b-run, TextSelection.b-frac);
-            }
-            forward => {
-                AppState.ctx-menu-open = false;
-                AppState.forward-src-id = AppState.ctx-menu-id;
-                root.forward-picker-open = true;
-            }
-            edit => {
-                AppState.ctx-menu-open = false;
-                AppState.request-edit(AppState.ctx-menu-id, AppState.ctx-menu-text);
-            }
-            delete-for-everyone => {
-                AppState.ctx-menu-open = false;
-                root.delete-confirm-everyone = true;
-                root.show-delete-confirm = true;
-            }
-            delete-for-me => {
-                AppState.ctx-menu-open = false;
-                root.delete-confirm-everyone = false;
-                root.show-delete-confirm = true;
-            }
-            view-raw => {
-                AppState.ctx-menu-open = false;
-                AppState.view-raw-event(AppState.ctx-menu-id);
-            }
-            dismissed => {
-                AppState.ctx-menu-open = false;
-            }
-        }
+        if AppState.ctx-menu-open: MessageContextMenu { }
 
         // Developer-mode raw JSON viewer, shared by "View raw event" (message
     // context menu) and "View" key packages (contact detail).
@@ -421,7 +195,7 @@ export component ModalHost inherits Rectangle {
         // Forward destination picker — lists chats (minus the current one); a pick
     // hands the chosen index to Rust, which re-sends `forward-src-id`'s content
     // (text + re-encrypted attachments) into that chat.
-    if root.forward-picker-open: ForwardPickerModal {
+    if AppState.forward-picker-open: ForwardPickerModal {
             chats: AppState.chats;
             active-chat: AppState.active-chat;
         // The picker only opens from the message context menu, so the menu's
@@ -434,11 +208,11 @@ export component ModalHost inherits Rectangle {
                 AppState.forward-filter-changed(q);
             }
             select(dest) => {
-                root.forward-picker-open = false;
+                AppState.forward-picker-open = false;
                 AppState.request-forward(dest);
             }
             dismissed => {
-                root.forward-picker-open = false;
+                AppState.forward-picker-open = false;
             }
         }
 
@@ -472,22 +246,10 @@ export component ModalHost inherits Rectangle {
             }
         }
 
-        if root.show-delete-confirm: ConfirmModal {
-            title: root.delete-confirm-everyone ? @tr("Delete for everyone?") : @tr("Delete for me?");
-            subtitle: root.delete-confirm-everyone ? @tr("This removes the message for everyone in the chat. This can't be undone.") : @tr("This hides the message on this device only. Other people will still see it.");
-            confirm-label: @tr("Delete");
-            confirm => {
-                root.show-delete-confirm = false;
-                if (root.delete-confirm-everyone) {
-                    AppState.request-delete-everyone(AppState.ctx-menu-id);
-                } else {
-                    AppState.request-delete-me(AppState.ctx-menu-id);
-                }
-            }
-            dismissed => {
-                root.show-delete-confirm = false;
-            }
-        }
+        // Confirm ladder — every destructive/irreversible flow, extracted to
+        // shell/confirm-flows.slint. Mounted late so an armed confirm paints
+        // above the menus and pickers that arm it.
+        ConfirmFlows { }
 
         // `if`-mounted so the (expensive) emoji grid doesn't paint when closed.
     if AppState.show-emoji-picker: EmojiPicker {
