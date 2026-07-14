@@ -555,6 +555,8 @@ export global AppState {
     in-out property <bool> profile-busy: false;
     in-out property <bool> profile-uploading: false;
     in-out property <string> profile-status;
+    // Outcome of profile-status: 0 = pending, 1 = ok, 2 = error (Rust StatusKind).
+    in-out property <int> profile-status-kind: 0;
     callback save-profile();
     callback start-edit-profile();
     callback cancel-edit-profile();
@@ -628,6 +630,8 @@ export global AppState {
     in-out property <bool> chat-can-add-members: false;
     in-out property <bool> add-member-busy: false;
     in-out property <string> add-member-status;
+    // Outcome of add-member-status: 0 = pending, 1 = ok, 2 = error (Rust StatusKind).
+    in-out property <int> add-member-status-kind: 0;
     in-out property <string> add-member-draft;
     // Admin group settings (rename + avatar), surfaced in the members panel.
     in-out property <image> chat-group-picture;
@@ -640,6 +644,8 @@ export global AppState {
     in-out property <bool> group-image-busy: false;
     in-out property <bool> group-leave-busy: false;
     in-out property <string> group-settings-status;
+    // Outcome of group-settings-status: 0 = pending, 1 = ok, 2 = error (Rust StatusKind).
+    in-out property <int> group-settings-status-kind: 0;
     in-out property <string> group-rename-draft;
     in-out property <string> group-description-draft;
     callback rename-group(string);

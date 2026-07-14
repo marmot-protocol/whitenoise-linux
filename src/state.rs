@@ -462,6 +462,52 @@ pub(crate) fn set_clipboard_feedback(
     ui.set_clipboard_status_error(is_error);
 }
 
+/// Outcome of a status/receipt line, so the UI can color a failure red and a
+/// success in the accent instead of rendering every message the same neutral
+/// gray. The discriminants are mirrored as the `int kind` on `StatusLine`
+/// (`ui/primitives/status-line.slint`); keep the two in sync. Pending is 0 so an
+/// unset `*-status-kind` property defaults to the muted, in-flight look.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub(crate) enum StatusKind {
+    /// In-flight or purely informational — muted, no glyph.
+    Pending = 0,
+    /// The action succeeded.
+    Ok = 1,
+    /// The action failed.
+    Error = 2,
+}
+
+/// Set the profile-page status line and its outcome together, so the text and
+/// its color/glyph never drift apart.
+pub(crate) fn show_profile_status(
+    ui: &DarkMatterLinux,
+    message: impl Into<SharedString>,
+    kind: StatusKind,
+) {
+    ui.set_profile_status(message.into());
+    ui.set_profile_status_kind(kind as i32);
+}
+
+/// Set the add-member card status line and its outcome together.
+pub(crate) fn show_add_member_status(
+    ui: &DarkMatterLinux,
+    message: impl Into<SharedString>,
+    kind: StatusKind,
+) {
+    ui.set_add_member_status(message.into());
+    ui.set_add_member_status_kind(kind as i32);
+}
+
+/// Set the group-settings card status line and its outcome together.
+pub(crate) fn show_group_settings_status(
+    ui: &DarkMatterLinux,
+    message: impl Into<SharedString>,
+    kind: StatusKind,
+) {
+    ui.set_group_settings_status(message.into());
+    ui.set_group_settings_status_kind(kind as i32);
+}
+
 /// Persist the composer draft for the currently active chat index.
 ///
 /// Entering edit mode temporarily reuses the composer for the edited message,

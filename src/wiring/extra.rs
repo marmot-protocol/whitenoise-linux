@@ -1196,12 +1196,12 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 } else {
                     format!("backend not ready: {saved}")
                 };
-                ui.set_profile_status(msg.into());
+                show_profile_status(&ui, msg, StatusKind::Error);
                 return;
             };
             let profile = profile_from_ui(&ui);
             ui.set_profile_busy(true);
-            ui.set_profile_status(s("publishing…"));
+            show_profile_status(&ui, s("publishing…"), StatusKind::Pending);
             // Publishing the kind-0 is a relay round-trip — worker thread, so
             // "publishing…" actually shows instead of freezing the window.
             let weak = weak.clone();
@@ -1214,11 +1214,15 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                         Ok(saved) => {
                             apply_profile(&ui, Some(&saved));
                             ui.set_profile_editing(false);
-                            ui.set_profile_status(s("profile published"));
+                            show_profile_status(&ui, s("profile published"), StatusKind::Ok);
                         }
                         Err(e) => {
                             tracing::warn!(target: "profile", "save failed: {e:#}");
-                            ui.set_profile_status(friendly_error(ErrorOp::SaveProfile, &e).into());
+                            show_profile_status(
+                                &ui,
+                                friendly_error(ErrorOp::SaveProfile, &e),
+                                StatusKind::Error,
+                            );
                         }
                     }
                 });
@@ -1246,13 +1250,13 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 match guard.as_ref() {
                     Some(b) => b.tokio_handle(),
                     None => {
-                        ui.set_profile_status(s("backend not ready"));
+                        show_profile_status(&ui, s("backend not ready"), StatusKind::Error);
                         return;
                     }
                 }
             };
             ui.set_profile_uploading(true);
-            ui.set_profile_status(s("choosing image…"));
+            show_profile_status(&ui, s("choosing image…"), StatusKind::Pending);
             // Localized dialog title comes from the Slint @tr catalogs (the
             // project keeps all i18n there); read it here on the UI thread,
             // then move it into the blocking dialog task.
@@ -1292,7 +1296,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                         let _ = slint::invoke_from_event_loop(move || {
                             if let Some(ui) = weak.upgrade() {
                                 ui.set_profile_uploading(false);
-                                ui.set_profile_status(msg.into());
+                                show_profile_status(&ui, msg, StatusKind::Error);
                             }
                         });
                         return;
@@ -1308,7 +1312,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     let weak = weak.clone();
                     let _ = slint::invoke_from_event_loop(move || {
                         if let Some(ui) = weak.upgrade() {
-                            ui.set_profile_status(s("uploading to Blossom…"));
+                            show_profile_status(&ui, s("uploading to Blossom…"), StatusKind::Pending);
                         }
                     });
                 }
@@ -1323,7 +1327,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     let _ = slint::invoke_from_event_loop(move || {
                         if let Some(ui) = weak_done.upgrade() {
                             ui.set_profile_uploading(false);
-                            ui.set_profile_status(s("backend not ready"));
+                            show_profile_status(&ui, s("backend not ready"), StatusKind::Error);
                         }
                     });
                     return;
@@ -1337,7 +1341,11 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                         match result {
                             Ok(url) => {
                                 ui.set_profile_picture(url.clone().into());
-                                ui.set_profile_status(s("picture uploaded — Save to publish"));
+                                show_profile_status(
+                                    &ui,
+                                    s("picture uploaded — Save to publish"),
+                                    StatusKind::Ok,
+                                );
                                 // Refresh the avatar preview from the new URL.
                                 if let Some(backend) = backend_cell_done.lock().unwrap().as_ref() {
                                     fetch_profile_picture(&ui, backend, &url);
@@ -1345,8 +1353,10 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                             }
                             Err(e) => {
                                 tracing::warn!(target: "profile", "picture upload failed: {e:#}");
-                                ui.set_profile_status(
-                                    friendly_error(ErrorOp::UploadPicture, &e).into(),
+                                show_profile_status(
+                                    &ui,
+                                    friendly_error(ErrorOp::UploadPicture, &e),
+                                    StatusKind::Error,
                                 );
                             }
                         }

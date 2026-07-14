@@ -1,0 +1,57 @@
+import { Palette, Theme } from "../tokens.slint";
+
+// A one-line status/receipt strip shown after an action (profile save, member
+// invite, group rename, …). The outcome drives the color and leading glyph so a
+// failure reads as red at a glance and a success as accent, instead of every
+// message sharing one neutral gray.
+//
+// `kind` mirrors the Rust `StatusKind` enum (src/state.rs):
+//   0 = pending / informational (muted, no glyph)
+//   1 = ok      (accent color, "✓")
+//   2 = error   (danger color, "✕")
+//
+// `compact` picks the denser card variant (add-member / group-settings) over
+// the roomier profile-page variant.
+export component StatusLine inherits Rectangle {
+    in property <string> text;
+    in property <int> kind: 0;
+    in property <bool> compact: false;
+
+    // Neutral surface for the pending/informational case; ok and error tint it.
+    property <color> base-bg: root.compact ? Palette.panel-2 : Palette.panel;
+    property <string> glyph: root.kind == 2 ? "✕" : (root.kind == 1 ? "✓" : "");
+    property <color> ink: root.kind == 2
+        ? Palette.danger
+        : (root.kind == 1 ? Palette.mint : (root.compact ? Palette.text-lo : Palette.text-mid));
+
+    height: root.compact ? 28px : 36px;
+    border-radius: (root.compact ? 4px : 6px) * Theme.r-scale;
+    border-width: root.compact ? Theme.border-w : 1px;
+    background: root.kind == 2
+        ? Palette.danger-soft
+        : (root.kind == 1 ? Palette.mint-surface : root.base-bg);
+    border-color: root.kind == 2
+        ? Palette.danger-border
+        : (root.kind == 1 ? Palette.mint-dim : Palette.border-2);
+
+    HorizontalLayout {
+        padding-left: root.compact ? 8px : 12px;
+        padding-right: root.compact ? 8px : 12px;
+        spacing: 6px;
+        alignment: start;
+        if root.glyph != "": Text {
+            text: root.glyph;
+            color: root.ink;
+            font-size: root.compact ? Theme.fs(10px, 14px) : Theme.fs(12px, 16px);
+            font-weight: 700;
+            vertical-alignment: center;
+        }
+        Text {
+            text: root.text;
+            color: root.ink;
+            font-size: root.compact ? Theme.fs(10px, 14px) : Theme.fs(12px, 16px);
+            vertical-alignment: center;
+            overflow: elide;
+        }
+    }
+}

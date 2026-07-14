@@ -9,6 +9,7 @@ import { Section } from "../layout/section.slint";
 import { GroupCard } from "../layout/group-card.slint";
 import { KVRow } from "../layout/kv-row.slint";
 import { Button, MicroButton } from "../primitives/button.slint";
+import { StatusLine } from "../primitives/status-line.slint";
 import { ProfileQrPlate } from "profile-qr-plate.slint";
 
 // Single editable field row used by the edit form.
@@ -445,22 +446,9 @@ export component ProfilePage inherits Rectangle {
             }
 
             // ── Status line (errors / publish receipts) ────────────────
-            if AppState.profile-status != "": Rectangle {
-                height: 36px;
-                background: Palette.panel;
-                border-radius: (6px) * Theme.r-scale;
-                border-width: 1px;
-                border-color: Palette.border-2;
-                HorizontalLayout {
-                    padding-left: 12px;
-                    padding-right: 12px;
-                    Text {
-                        text: AppState.profile-status;
-                        color: Palette.text-mid;
-                        font-size: Theme.fs(12px, 16px);
-                        vertical-alignment: center;
-                    }
-                }
+            if AppState.profile-status != "": StatusLine {
+                text: AppState.profile-status;
+                kind: AppState.profile-status-kind;
             }
 
             // ── Identity (always visible — copyable npub) ──────────────
