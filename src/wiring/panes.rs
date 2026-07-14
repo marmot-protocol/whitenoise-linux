@@ -783,22 +783,26 @@ pub(crate) fn wire_panes(
             let Some(ui) = weak.upgrade() else { return };
             let group_hex = group_ids.lock().unwrap().get(idx as usize).cloned();
             let Some(group_hex) = group_hex else { return };
-            let can_leave = backend_cell
+            let (can_leave, is_self_chat) = backend_cell
                 .lock()
                 .unwrap()
                 .as_ref()
                 .map(|b| {
                     let is_group = b.group_member_count(&group_hex) > 2;
                     let is_admin = b.is_group_admin(&group_hex);
-                    chat_context_can_leave_group(is_group, is_admin)
+                    let is_self = b.find_self_chat().as_deref() == Some(group_hex.as_str());
+                    (chat_context_can_leave_group(is_group, is_admin), is_self)
                 })
-                .unwrap_or(false);
+                .unwrap_or((false, false));
             ui.set_chat_ctx_idx(idx);
             ui.set_chat_ctx_x(ax);
             ui.set_chat_ctx_y(ay);
             ui.set_chat_ctx_pinned(is_pinned(&group_hex));
             ui.set_chat_ctx_muted(notif.is_muted(&group_hex));
             ui.set_chat_ctx_can_leave(can_leave);
+            // The self-chat is permanently pinned to the top; drop the Pin/Unpin
+            // item so it doesn't present a control that reorders nothing.
+            ui.set_chat_ctx_can_pin(!is_self_chat);
             ui.set_chat_ctx_open(true);
         }
     });

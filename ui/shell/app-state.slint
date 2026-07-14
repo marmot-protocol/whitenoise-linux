@@ -356,6 +356,9 @@ export global AppState {
     in-out property <bool> chat-ctx-pinned: false;
     in-out property <bool> chat-ctx-muted: false;
     in-out property <bool> chat-ctx-can-leave: false;
+    // False for the "Saved Messages" self-chat, which is permanently pinned to
+    // the top: it drops the Pin/Unpin item rather than showing a no-op.
+    in-out property <bool> chat-ctx-can-pin: true;
     callback request-chat-context(int, length, length);
     callback toggle-pin-chat(int);
     callback toggle-mute-chat-at(int);
