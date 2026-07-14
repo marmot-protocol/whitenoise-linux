@@ -768,6 +768,7 @@ pub(crate) fn wire_panes(
                 s.save();
             }
             ui.set_active_chat_muted(now_muted);
+            set_chat_row_muted(&ui, idx, now_muted);
         }
     });
 
@@ -864,6 +865,7 @@ pub(crate) fn wire_panes(
             if idx == ui.get_active_chat() {
                 ui.set_active_chat_muted(now_muted);
             }
+            set_chat_row_muted(&ui, idx, now_muted);
         }
     });
 

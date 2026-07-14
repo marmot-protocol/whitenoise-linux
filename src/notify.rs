@@ -9,7 +9,7 @@
 //   * `show` — fires one OS notification. Does dbus IO on Linux, so callers run
 //     it off the UI thread.
 
-use std::collections::{BTreeSet, HashMap};
+use std::collections::HashMap;
 use std::sync::Mutex;
 use std::sync::atomic::AtomicBool;
 
@@ -26,39 +26,27 @@ pub struct NotifState {
     /// suppression is handled separately by a message-recency gate at the call
     /// site, not here.
     seen: Mutex<HashMap<String, String>>,
-    /// group_id_hex of chats the user muted — their incoming messages never
-    /// notify. Mirrors `Settings::muted_chats`; the toggle callback writes both.
-    muted: Mutex<BTreeSet<String>>,
 }
 
 impl NotifState {
-    pub fn new(enabled: bool, sound: bool, preview: bool, muted: BTreeSet<String>) -> Self {
+    pub fn new(enabled: bool, sound: bool, preview: bool) -> Self {
         Self {
             enabled: AtomicBool::new(enabled),
             sound: AtomicBool::new(sound),
             preview: AtomicBool::new(preview),
             seen: Mutex::new(HashMap::new()),
-            muted: Mutex::new(muted),
         }
     }
 
+    /// The muted set lives in one process-wide singleton (`chatlist::muted_state`)
+    /// so the chat-list rows and this watcher read the same source. These two
+    /// methods delegate to it, keeping the watcher's call sites unchanged.
     pub fn is_muted(&self, group_hex: &str) -> bool {
-        match self.muted.lock() {
-            Ok(g) => g.contains(group_hex),
-            Err(p) => p.into_inner().contains(group_hex),
-        }
+        crate::is_muted(group_hex)
     }
 
     pub fn set_muted(&self, group_hex: &str, muted: bool) {
-        let mut g = match self.muted.lock() {
-            Ok(g) => g,
-            Err(p) => p.into_inner(),
-        };
-        if muted {
-            g.insert(group_hex.to_string());
-        } else {
-            g.remove(group_hex);
-        }
+        crate::set_muted(group_hex, muted);
     }
 
     /// Record the latest message id for a group and report whether it changed

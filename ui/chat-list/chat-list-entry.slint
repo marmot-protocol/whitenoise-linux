@@ -8,6 +8,7 @@
 import { Palette, Theme, ChatMeta } from "../tokens.slint";
 import { ChatListItem } from "chat-list-item.slint";
 import { PinIcon } from "../icons/pin-icon.slint";
+import { MuteIcon } from "../icons/mute-icon.slint";
 
 // IRC-style one-line channel row: `# name        (badge)`.
 component ChatListItemIrc inherits Rectangle {
@@ -29,6 +30,9 @@ component ChatListItemIrc inherits Rectangle {
         alignment: start;
         if root.chat.pinned: PinIcon {
             fill: Palette.mint;
+        }
+        if root.chat.muted: MuteIcon {
+            stroke: Palette.text-lo;
         }
         Text {
             text: "#";
@@ -57,6 +61,7 @@ component ChatListItemIrc inherits Rectangle {
             font-size: Theme.fs(12px, 16px);
             font-weight: 700;
             vertical-alignment: center;
+            opacity: root.chat.muted ? 0.5 : 1.0;
         }
     }
 
@@ -92,6 +97,7 @@ export component ChatListEntry inherits VerticalLayout {
         read: root.chat.read;
         sending: root.chat.sending;
         pinned: root.chat.pinned;
+        muted: root.chat.muted;
         av-initials: root.chat.av-initials;
         av-a: root.chat.av-a;
         av-b: root.chat.av-b;

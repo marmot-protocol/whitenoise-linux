@@ -122,6 +122,7 @@ pub(crate) fn chat_meta_from(
         has_picture,
         is_chat_request: record.pending_confirmation,
         pinned: is_pinned(&record.group_id_hex),
+        muted: is_muted(&record.group_id_hex),
     }
 }
 
