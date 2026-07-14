@@ -1,0 +1,708 @@
+// AppState — the app's entire view-model surface as one global singleton.
+//
+// Every Rust-facing property and callback lives here; the window root
+// (dark-matter-linux.slint) re-exposes each member with a two-way alias
+// (`in-out property <T> x <=> AppState.x;` / `callback x <=> AppState.x;`),
+// which keeps the generated Rust API on `DarkMatterLinux` unchanged while
+// letting the shell subcomponents (app-shell / modal-host / login-gate /
+// shell-timers) read and write state directly — no per-mount forwarding.
+//
+// Members marked "(was private on the window root)" are UI-internal overlay
+// state shared between the shell and the modal host; they have no root alias
+// and stay invisible to Rust. Purely modal-local state (delete/admin confirm
+// arming) lives on ModalHost instead.
+
+import {
+    Palette,
+    ChatMeta,
+    ChatMessage,
+    MentionInboxItem,
+    Contact,
+    SharedGroup,
+    ArchivedChat,
+    GroupMember,
+    AccountEntry,
+    EmojiEntry,
+    EditVersion,
+    AuditLogEntry,
+    StagedAttachment,
+} from "../tokens.slint";
+import { KeyPackageInfo } from "../keys/types.slint";
+import { PaletteAction } from "../modals/command-palette.slint";
+
+export global AppState {
+    in-out property <int> active-chat: 0;
+    in-out property <int> active-page: 0;
+    in-out property <int> active-contact: 0;
+    in-out property <int> active-archived: 0;
+    in-out property <[MentionInboxItem]> mention-inbox-items;
+    in-out property <bool> mention-inbox-loading: false;
+    callback mention-inbox-opened();
+    callback mention-inbox-selected(string, string);
+    in-out property <bool> outgoing-on-right: true;
+    // Active theme id, set from Rust (mapped from the persisted mode name via
+    // `THEME_MODES` in state.rs): 0=dark, 1=light, 2=retro, 3=terminal,
+    // 4=crayon, 5=synthwave, 6=chalkboard, 7=amoled. Folded straight onto
+    // `Theme.id` — no per-theme boolean flags.
+    in-out property <int> theme-id: 0;
+    // ═══ Settings: storage, backups & notifications ════════════════════════
+    // Storage settings pane (Settings → Storage). `storage-cache-size` is a
+    // preformatted label like "12.4 MB"; clearing wipes the encrypted media cache.
+    in-out property <string> storage-cache-size;
+    in-out property <bool> storage-clearing: false;
+    callback storage-clear-cache();
+    // Secret-vault affordances (Settings → Storage): the data-dir path, a button
+    // to reveal it in the file manager, plus whole-folder backup / restore.
+    in-out property <string> storage-vault-dir;
+    callback storage-open-vault-folder();
+    callback storage-create-backup();
+    callback storage-import-backup();
+    // Import-backup modal state. `import-backup-file` is the chosen file's display
+    // name; `import-backup-path` round-trips the full path through Slint because
+    // the off-thread picker can't touch a UI-thread Rust cell. `restore-mode`
+    // flips the copy on a fresh install (restore vs merge).
+    in-out property <bool> show-import-backup: false;
+    in-out property <string> import-backup-file;
+    in-out property <string> import-backup-path;
+    in-out property <bool> import-backup-busy: false;
+    in-out property <string> import-backup-status;
+    in-out property <bool> import-backup-restore-mode: false;
+    in-out property <string> import-backup-password;
+    callback import-backup-pick-file();
+    callback import-backup-submit(string);
+    callback import-backup-dismissed();
+    // Create-backup modal state.
+    in-out property <bool> show-create-backup: false;
+    in-out property <bool> create-backup-busy: false;
+    in-out property <string> create-backup-status;
+    in-out property <string> create-backup-password;
+    callback create-backup-submit(string);
+    callback create-backup-dismissed();
+    // Desktop-notification preferences (Settings → Notifications). Rust mirrors
+    // these to settings.json and to the live NotifState the chat watcher reads.
+    in-out property <bool> notifications-enabled: true;
+    in-out property <bool> notification-sound: true;
+    in-out property <bool> notification-preview: true;
+    callback notifications-toggled(bool);
+    callback notification-sound-toggled(bool);
+    callback notification-preview-toggled(bool);
+    in-out property <int> accent-color: 0;
+    in-out property <string> my-npub;
+    // QR of the marmot://profile deep link, rasterized Rust-side on login.
+    in-out property <image> my-qr;
+    // ═══ Login & vault ═════════════════════════════════════════════════════
+    // Login gate. When false the LoginScreen replaces the entire app shell.
+    in-out property <bool> logged-in: false;
+    // 0=choose, 1=enter-nsec, 2=show-generated, 3=unlock-existing-vault.
+    in-out property <int> login-mode: 0;
+    in-out property <string> login-nsec-input;
+    // Vault password fields (set on first run, entered on unlock).
+    in-out property <string> password-input;
+    in-out property <string> password-confirm;
+    in-out property <string> generated-nsec;
+    in-out property <string> generated-npub;
+    in-out property <string> generated-display-name;
+    in-out property <image> generated-avatar;
+    in-out property <bool> generated-has-avatar: false;
+    in-out property <string> login-error;
+    in-out property <string> login-status;
+    in-out property <bool> login-busy;
+    callback login-with-nsec(string, string, string); // nsec, password, confirm
+    callback generate-key-requested();
+    callback confirm-saved-key(string, string);        // password, confirm
+    callback unlock(string);                            // vault password
+    callback reset-vault();                             // delete vault, start over
+    callback copy-nsec(string);
+    pure callback login-password-valid(string, string) -> bool; // password, confirm
+
+    // ═══ Composer & messaging ══════════════════════════════════════════════
+    // Composer state + send wiring (real chat send through marmot-app).
+    in-out property <string> composer-draft;
+    // Attachments staged for the next send (file picker or clipboard paste).
+    // Rust owns the bytes; this model only carries the chip-row display data.
+    in-out property <[StagedAttachment]> composer-staged;
+    callback remove-staged(int); // ✕ on a staged chip (index into composer-staged)
+    // Reply target — set by Rust when the user taps a bubble's reply button,
+    // cleared on send or cancel. Drives the composer's "Replying to …" chip
+    // and tells Rust to send the next message as a kind-9 reply (e+q tags).
+    in-out property <string> reply-target-id;
+    in-out property <string> reply-target-author;
+    in-out property <string> reply-target-preview;
+    in-out property <image> reply-target-image;
+    in-out property <bool> reply-target-has-image: false;
+    // Edit state — set by Rust when the user taps a bubble's edit pencil,
+    // cleared on save or cancel. Drives the composer's "Editing message" banner
+    // and tells Rust the next send is a kind-1010 edit of this message.
+    in-out property <string> editing-message-id;
+    // Elided preview of the message body being edited (set by Rust alongside
+    // editing-message-id), shown in the composer's edit banner.
+    in-out property <string> editing-message-preview;
+    // Edit-history modal — populated + shown when a bubble's "(edited)" label
+    // is tapped. Read-only; visible to anyone in the chat.
+    in-out property <[EditVersion]> edit-history;
+    in-out property <bool> edit-history-open: false;
+    callback send-message(string);
+    callback cancel-reply();
+    callback cancel-edit();
+    callback react-message(string, string);
+    callback unreact-message(string, string);
+    callback retry-message(string);
+    callback request-reply(string, string, string); // message_id, preview, author
+    callback request-forward(int);                    // destination chat index; source is `forward-src-id`
+    callback request-edit(string, string);           // message_id, current_text
+    callback request-delete-everyone(string);        // message_id (kind-5 retraction)
+    callback request-delete-me(string);              // message_id (local-only hide)
+    callback show-edit-history(string);               // message_id
+    callback dismiss-edit-history();
+    callback attach-file(); // composer paperclip → open file picker
+    callback paste-image(); // composer paste shortcut → probe clipboard for an image, send it
+    // Voice message recording. The mic button toggles recording; Rust drives
+    // `recording` and `recording-secs` so the composer can show a red pulsing
+    // indicator and a live timer.
+    in-out property <bool> composer-recording: false;
+    in-out property <int> composer-recording-secs: 0;
+    callback record-clicked();
+    callback stop-recording();
+    callback cancel-recording();
+    callback attachment-clicked(string); // bubble attachment tapped (message_id)
+    callback audio-play-clicked(string); // bubble audio play/pause tapped
+    callback audio-seek-clicked(string, float); // bubble audio progress tapped
+    callback album-cell-clicked(string); // album grid cell tapped (image key) → slideshow
+
+    // ═══ Media viewers ═════════════════════════════════════════════════════
+    // Image lightbox — opened by Rust when an already-decoded image attachment
+    // is tapped; shows it full-window over a darkened backdrop. When the chat
+    // holds more than one image attachment it becomes a slideshow: `count`/
+    // `index` drive the chevrons + counter and `prev`/`next` ask Rust to swap
+    // `image-viewer-image` (toggling `loading`/`failed` while a fresh one
+    // downloads). `retry` asks Rust to re-download the selected slideshow item.
+    in-out property <bool> image-viewer-open: false;
+    in-out property <image> image-viewer-image;
+    in-out property <int> image-viewer-count: 1;
+    in-out property <int> image-viewer-index: 1;
+    in-out property <bool> image-viewer-loading: false;
+    in-out property <bool> image-viewer-failed: false;
+    // True after Rust has resolved the selected attachment reference behind
+    // the visible lightbox image; Copy/Save are disabled until then.
+    in-out property <bool> image-viewer-actions-ready: false;
+    callback dismiss-image-viewer();
+    callback image-viewer-prev();
+    callback image-viewer-next();
+    callback image-viewer-retry();
+    callback image-viewer-copy();
+    callback image-viewer-save();
+
+    // In-app video player — opened by Rust when a `video/*` attachment is
+    // tapped. Rust owns the libmpv instance, pushes decoded frames into
+    // `video-viewer-frame` and playback state into the progress/label props.
+    in-out property <bool> video-viewer-open: false;
+    in-out property <image> video-viewer-frame;
+    in-out property <bool> video-viewer-has-frame: false;
+    in-out property <bool> video-viewer-playing: false;
+    in-out property <bool> video-viewer-loading: false;
+    in-out property <float> video-viewer-progress: 0.0;
+    in-out property <string> video-viewer-pos: "0:00";
+    in-out property <string> video-viewer-dur: "0:00";
+    callback dismiss-video-viewer();
+    callback video-viewer-toggle-play();
+    callback video-viewer-seek(float);
+    callback video-viewer-seek-relative(float);
+    callback video-viewer-fullscreen();
+
+    // ═══ Profiles & shared groups ══════════════════════════════════════════
+    // Peer-profile modal — opened by tapping an @mention or any avatar (Rust
+    // binds ProfileSink.open and the nostr: link interception). The `peer-`
+    // prefix keeps these clear of the own-profile *page* props below.
+    // `peer-profile-account-id` is the stable key async fetch completions
+    // compare against so a late relay/picture response can't repaint a modal
+    // that moved on to another user. Loading drives the skeleton state;
+    // not-found the empty state.
+    in-out property <bool> peer-profile-open: false;
+    in-out property <string> peer-profile-account-id;
+    in-out property <string> peer-profile-name;
+    in-out property <string> peer-profile-npub;        // full npub (copy target)
+    in-out property <string> peer-profile-npub-short;
+    in-out property <string> peer-profile-nip05;
+    in-out property <string> peer-profile-about;
+    in-out property <string> peer-profile-lud16;
+    in-out property <bool> peer-profile-loading: false;
+    in-out property <bool> peer-profile-not-found: false;
+    in-out property <bool> peer-profile-is-contact: false;
+    in-out property <bool> peer-profile-is-self: false;
+    in-out property <bool> peer-profile-adding: false;
+    in-out property <string> peer-profile-status;
+    in-out property <color> peer-profile-av-a;
+    in-out property <color> peer-profile-av-b;
+    in-out property <string> peer-profile-av-initials;
+    in-out property <image> peer-profile-picture;
+    in-out property <bool> peer-profile-has-picture: false;
+    // Groups the local account shares with the profiled person. Recomputed
+    // Rust-side each time the modal opens; the contact detail page keeps its
+    // own copy in `contact-shared-groups`.
+    in-out property <[SharedGroup]> peer-profile-shared-groups;
+    callback peer-profile-dismissed();
+    callback peer-profile-add-contact();
+    // A "groups in common" row was tapped (contact detail or profile modal):
+    // Rust switches to Chats and opens that group by its group-id-hex.
+    callback open-shared-group(string);
+    // Bumped by Rust after a send to force the MessagesArea to scroll to
+    // the bottom. Plain integer counter — content doesn't matter, only the
+    // edge — picked up via a Slint `changed` handler.
+    in-out property <int> messages-scroll-tick: 0;
+    in-out property <string> message-jump-id;
+    in-out property <int> message-jump-tick: 0;
+    // True when the active chat has history beyond the loaded window; the
+    // messages view shows a "load earlier messages" pill that fires
+    // messages-request-older.
+    in-out property <bool> messages-has-older: false;
+    // True while the active chat's message window is being fetched on the
+    // backend runtime; distinguishes an empty conversation from a loading one.
+    in-out property <bool> messages-loading: false;
+    callback messages-request-older();
+
+    // ═══ Pickers, context menus & confirms ═════════════════════════════════
+    // Emoji picker (full-window modal).
+    in-out property <[EmojiEntry]> emoji-list;
+    in-out property <int> emoji-shown;
+    in-out property <image> emoji-sprite;
+    in-out property <int> emoji-tile;
+    in-out property <string> emoji-query;
+    in-out property <bool> show-emoji-picker: false;
+    in-out property <string> emoji-target-message-id;
+    in-out property <length> emoji-anchor-x;
+    in-out property <length> emoji-anchor-y;
+    callback emoji-picker-requested(string, length, length);  // message-id, anchor-x, anchor-y
+    callback emoji-query-changed(string);
+    callback emoji-picked(string, string);    // message-id, emoji
+    callback emoji-picker-dismissed();
+    // Message context menu (right-click on a bubble). Handled entirely in
+    // Slint — the menu items re-fire the existing reaction-picker / reply /
+    // edit plumbing above, so Rust never sees the menu itself.
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <bool> ctx-menu-open: false;
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <string> ctx-menu-id;
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <string> ctx-menu-text;
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <string> ctx-menu-author;
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <bool> ctx-menu-can-edit: false;
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <length> ctx-menu-x;
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <length> ctx-menu-y;
+    // Group member action menu — opened from a member row's "⋯"; its items
+    // re-fire the existing request-*-admin functions (which arm the admin
+    // confirm modal), so the confirm/Rust path is unchanged.
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <bool> member-menu-open: false;
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <string> member-menu-id;
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <string> member-menu-name;
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <bool> member-menu-can-promote: false;
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <bool> member-menu-can-demote: false;
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <bool> member-menu-can-self-demote: false;
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <bool> member-menu-can-remove: false;
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <length> member-menu-x;
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <length> member-menu-y;
+    // Forward flow: the context-menu "Forward" item stashes the source message
+    // id here and opens the chat picker; picking a destination fires
+    // `request-forward(dest_idx)`, which the Rust side resolves against
+    // `forward-src-id` (the source chat is whatever's active while the picker
+    // is open).
+    in-out property <string> forward-src-id;
+    // Per-row name-match flags for the picker's search field — recomputed by
+    // Rust on every `forward-filter-changed` (Slint lacks substring matching).
+    in-out property <[bool]> forward-match-flags;
+    // Chat indices the picker currently shows, in row order — the picker's
+    // keyboard cursor walks this array. Recomputed with the match flags.
+    in-out property <[int]> forward-visible-rows;
+    callback forward-filter-changed(string);
+    // Rail chat-row context menu (pin / mute / leave). Rust fills the state on
+    // `request-chat-context` (it knows the pin + mute sets and group/admin
+    // state) and opens the menu; the items dispatch back by captured row index.
+    in-out property <bool> chat-ctx-open: false;
+    in-out property <int> chat-ctx-idx: -1;
+    in-out property <length> chat-ctx-x;
+    in-out property <length> chat-ctx-y;
+    in-out property <bool> chat-ctx-pinned: false;
+    in-out property <bool> chat-ctx-muted: false;
+    in-out property <bool> chat-ctx-can-leave: false;
+    callback request-chat-context(int, length, length);
+    callback toggle-pin-chat(int);
+    callback toggle-mute-chat-at(int);
+    // Export the right-clicked chat's transcript to a Markdown or HTML file
+    // (Rust opens the save dialog and writes it).
+    callback export-chat-at(int);
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <bool> show-leave-confirm: false;
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <int> leave-confirm-chat-idx: -1;
+    // ── Mention autocomplete ────────────────────────────────────────────────
+    // Driven from Rust: as the user types, `composer-input-changed` reports the
+    // caret offset, Rust detects the active `@query`, and fills `mention-*`.
+    in-out property <bool> mention-active: false;
+    in-out property <[GroupMember]> mention-candidates;
+    in-out property <int> mention-selected: 0;
+    callback composer-input-changed(int);   // caret byte-offset
+    callback mention-nav(int);               // +1 / -1
+    callback mention-commit();               // accept highlighted
+    callback mention-choose(int);            // accept clicked index
+    callback mention-dismiss();
+    // Move the composer caret after Rust splices in a mention. `pos` is the
+    // target byte offset; `tick` is bumped every time so even a repeat offset
+    // re-triggers the `changed` handler down in MainPane.
+    in-out property <int> composer-caret-pos: 0;
+    in-out property <int> composer-caret-tick: 0;
+    // ═══ Keys & identity ═══════════════════════════════════════════════════
+    // Key-package state and management.
+    in-out property <[KeyPackageInfo]> key-packages;
+    in-out property <[string]> kp-relays;
+    in-out property <string> kp-status;
+    in-out property <bool> kp-busy: false;
+    // True only when a key package is actually published to a relay (not merely
+    // present locally). Set by Rust from the live KP records.
+    in-out property <bool> kp-published: false;
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <bool> show-rotate-confirm: false;
+    callback kp-publish-clicked();
+    callback kp-rotate-clicked();
+    callback kp-refresh-clicked();
+
+    // Reveal-nsec danger-zone flow. The keys page emits intent; the window root
+    // owns the modal (blocking all chrome) as with the rotate confirm. Rust
+    // verifies `reveal-nsec-confirm`'s password off the UI thread and, on
+    // success, fills `reveal-nsec-value`; dismissing clears both.
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <bool> show-reveal-nsec: false;
+    in-out property <string> reveal-nsec-password;
+    in-out property <string> reveal-nsec-value;
+    in-out property <bool> reveal-nsec-busy: false;
+    in-out property <string> reveal-nsec-status;
+    in-out property <bool> reveal-nsec-status-error: false;
+    callback reveal-nsec-confirm(string);   // vault password
+    callback reveal-nsec-dismissed();
+
+    // ═══ Debug & developer tools ═══════════════════════════════════════════
+    // Debug pane (gated by Settings → Advanced toggle).
+    in-out property <bool> debug-enabled: false;
+    in-out property <string> debug-dump;
+    callback debug-toggled(bool);
+    callback debug-load(int);
+    callback debug-copy-clicked();
+
+    // Developer-mode raw JSON viewer (message raw event / contact key package).
+    // Openers set title/subtitle + busy, then Rust fills `debug-view-json`.
+    in-out property <bool> debug-view-open: false;
+    in-out property <string> debug-view-title;
+    in-out property <string> debug-view-subtitle;
+    in-out property <string> debug-view-json;
+    in-out property <bool> debug-view-busy: false;
+    // Fires with the message id whose raw event to show.
+    callback view-raw-event(string);
+    // Shows the currently-selected contact's key package (no arg — Rust reads
+    // `active-contact`).
+    callback view-contact-key-packages();
+    callback debug-view-copy();
+
+    in-out property <bool> telemetry-enabled: false;
+    in-out property <bool> audit-enabled: false;
+    in-out property <string> audit-status;
+    in-out property <[AuditLogEntry]> audit-files;
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <bool> show-audit-delete-confirm: false;
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <string> pending-audit-delete-path;
+    callback telemetry-toggled(bool);
+    callback audit-toggled(bool);
+    callback audit-delete-file(string);
+    callback audit-refresh-files();
+
+    // ═══ Network & relays ══════════════════════════════════════════════════
+    // Network & relays settings pane. `network-relays` is the on-disk list
+    // (drives the UI); `network-booted-relays` is what the running backend
+    // was started with — a divergence between the two surfaces the "restart
+    // to apply" banner. Connection counts come from the SDK relay pool's
+    // aggregate health, refreshed on demand and on boot.
+    in-out property <[string]> network-relays;
+    // Well-known relays not yet added — one-click suggestions on get-started.
+    in-out property <[string]> suggested-relays;
+    in-out property <[string]> network-booted-relays;
+    in-out property <bool> network-restart-required;
+    in-out property <int> network-connected;
+    in-out property <int> network-total;
+    in-out property <string> network-status;
+    in-out property <bool> network-republish-busy: false;
+    // Inline error for the add-relay fields (get-started and the network pane
+    // share it). Rust sets it when an add is rejected; the fields clear it as
+    // the user edits the draft.
+    in-out property <string> network-add-error;
+    // Relay pending removal — non-empty while the confirm dialog is up. Both
+    // trash buttons route here; the ConfirmModal below fires the actual
+    // network-remove-relay.
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <string> relay-remove-target: "";
+    // Returns false when the relay was rejected (invalid or duplicate), so the
+    // add-relay fields keep the draft for correction.
+    callback network-add-relay(string) -> bool;
+    callback network-remove-relay(string);
+    callback network-refresh-health();
+    callback network-republish-relay-list();
+    // Seconds since the last successful relay-health sync. Driven by the 1s
+    // Timer below; reset to 0 by Rust on boot and after each health refresh.
+    // -1 means "not synced yet" (shown as SYNCING…). Drives the chat-list
+    // footer's "SYNCED Ns AGO".
+    in-out property <int> sync-secs: -1;
+    // Counts down each second; at 0 we re-poll relay health (~every 15s).
+    in-out property <int> sync-refresh-countdown: 15;
+
+    // ═══ Locale, formats & startup prefs ═══════════════════════════════════
+    // Interface language — persisted in prefs; Slint @tr() catalogs switch via
+    // slint::select_bundled_translation in Rust.
+    in-out property <string> locale: "en";
+    in-out property <string> locale-display;
+    in-out property <bool> show-language-picker: false;
+    callback change-language-clicked();
+    callback locale-selected(string);
+    callback theme-mode-selected(string);
+    callback accent-selected(int);
+    callback outgoing-on-right-toggled(bool);
+    // Stamp formats — `24h`/`12h` and `mdy`/`dmy`/`iso`; Rust persists and
+    // re-renders all visible timestamps on change.
+    in-out property <string> time-format: "24h";
+    in-out property <string> date-format: "mdy";
+    callback time-format-selected(string);
+    callback date-format-selected(string);
+    // Startup preferences (Settings → General). Rust persists these; launch at
+    // login writes the desktop autostart file, while tray/restore apply at boot.
+    in-out property <bool> launch-at-login: false;
+    in-out property <bool> start-minimized-to-tray: false;
+    in-out property <bool> restore-last-selected-chat: false;
+    callback launch-at-login-toggled(bool);
+    callback start-minimized-to-tray-toggled(bool);
+    callback restore-last-selected-chat-toggled(bool);
+
+    in-out property <string> backend-error;
+    in-out property <bool> backend-ready;
+    // ═══ App chrome: status, splash & breadcrumb ═══════════════════════════
+    // Transient copy confirmations and clipboard failures shown in the status bar.
+    in-out property <string> clipboard-status;
+    in-out property <bool> clipboard-status-error: false;
+    // When true, the marmot runtime is booting on a worker thread; we show
+    // the splash overlay instead of the (empty, useless) main shell.
+    in-out property <bool> booting;
+    in-out property <string> booting-status: @tr("Connecting to relays…");
+    in-out property <int> booting-phase: 0;
+    in-out property <int> booting-phase-count: 4;
+    // Open state for the "what is MLS encryption?" explainer, opened from the
+    // chat-header badge. Purely UI-side — no Rust involvement beyond clipboard.
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <bool> encryption-info-open: false;
+
+    // ═══ Own profile & rail badges ═════════════════════════════════════════
+    // Profile editor state (kind-0 metadata via marmot-app).
+    // Derived in Rust from the profile (display name → initials + palette).
+    // Drives the left-rail avatar tile and the outgoing-message sender avatar.
+    in-out property <string> my-av-initials: "?";
+    in-out property <color> my-av-a: Palette.mint;
+    in-out property <color> my-av-b: Palette.mint-dim;
+    in-out property <image> my-av-picture;
+    in-out property <bool> my-av-has-picture: false;
+    in-out property <string> my-display-name: "";
+    // Rail badge counts — aggregated unread/activity per section.
+    in-out property <int> rail-badge-chats: 0;
+    in-out property <int> rail-badge-contacts: 0;
+    in-out property <int> rail-badge-archive: 0;
+    in-out property <int> rail-badge-keys: 0;
+    in-out property <string> profile-display-name;
+    in-out property <string> profile-name;
+    in-out property <string> profile-about;
+    in-out property <string> profile-picture;
+    in-out property <string> profile-nip05;
+    in-out property <string> profile-lud16;
+    in-out property <bool> profile-editing: false;
+    in-out property <bool> profile-busy: false;
+    in-out property <bool> profile-uploading: false;
+    in-out property <string> profile-status;
+    callback save-profile();
+    callback start-edit-profile();
+    callback cancel-edit-profile();
+    callback upload-profile-picture();
+    callback copy-to-clipboard(string);
+    // Copy the selected slice of a message's body: message id, then the two
+    // selection endpoints as (line, run, fraction-within-run) triples in
+    // document order or reversed (Rust sorts them). Rust re-reads the row's
+    // line model, extracts the text, and hands it to the clipboard.
+    callback copy-selection(string, int, int, float, int, int, float);
+    // ═══ Lists, search & command palette ═══════════════════════════════════
+    // Filtered command palette items — Rust owns the source list & filtering.
+    in-out property <bool> show-palette: false;
+    in-out property <[PaletteAction]> palette-actions;
+    in-out property <string> palette-query;
+    // Computed in Rust from active-page + the relevant active-* index. Already upper-cased.
+    in-out property <string> breadcrumb;
+    // Selection callbacks — design is dumb, Rust decides what to do.
+    callback nav-requested(int);             // left-rail icon clicked, 0..3 or 4 (settings)
+    callback profile-requested();
+    callback new-chat-requested();
+    callback start-chat-with-contact();
+    callback chat-selected(int);
+    // Chat-list search: Rust recomputes `chat-match-flags` (one flag per chat)
+    // for the live query so the list filters as the user types.
+    callback chat-search-changed(string);
+    in-out property <[bool]> chat-match-flags;
+    callback contact-selected(int);
+    // Contacts-list search: mirrors the chat-list filter — Rust recomputes
+    // `contact-match-flags` (one flag per contact) for the live query so the
+    // sidebar filters as the user types.
+    callback contact-search-changed(string);
+    in-out property <[bool]> contact-match-flags;
+    callback archive-selected(int);
+    // Chat-request + archive actions — operate on the active chat / active archived row.
+    callback accept-chat-request();
+    callback block-chat-request();
+    callback archive-chat();
+    callback unarchive-chat();
+    callback modal-dismissed();
+    // Command-palette callbacks.
+    callback palette-requested();            // Ctrl+K — Rust populates actions then sets show-palette
+    callback palette-query-changed(string);  // Rust refilters
+    callback palette-execute(string);        // Rust runs the action by id
+    callback palette-dismissed();
+
+    in-out property <[Contact]> contacts;
+
+    // "Groups in common" rows for the active contact (contacts page detail).
+    in-out property <[SharedGroup]> contact-shared-groups;
+
+    in-out property <[ArchivedChat]> archived-chats;
+
+    in-out property <[ChatMeta]> chats;
+
+    in-out property <[[ChatMessage]]> chats-messages;
+
+    // ═══ Group membership & admin ══════════════════════════════════════════
+    // Active group membership (refreshed when the selected chat/archive changes).
+    in-out property <[GroupMember]> chat-members;
+    // Roster entries invited but not yet seen active in the group.
+    in-out property <[GroupMember]> chat-invited-members;
+    in-out property <bool> chat-is-group: false;
+    in-out property <bool> chat-can-show-members: false;
+    // Mute state of the currently-open chat (Rust sets it on chat switch /
+    // toggle); the header bell reflects it and `toggle-mute-chat` flips it.
+    in-out property <bool> active-chat-muted: false;
+    callback toggle-mute-chat();
+    in-out property <int> chat-member-count: 0;
+    in-out property <string> chat-group-description;
+    in-out property <bool> chat-can-add-members: false;
+    in-out property <bool> add-member-busy: false;
+    in-out property <string> add-member-status;
+    in-out property <string> add-member-draft;
+    // Admin group settings (rename + avatar), surfaced in the members panel.
+    in-out property <image> chat-group-picture;
+    in-out property <bool> chat-group-has-picture: false;
+    in-out property <color> chat-group-av-a;
+    in-out property <color> chat-group-av-b;
+    in-out property <string> chat-group-av-initials;
+    in-out property <bool> group-rename-busy: false;
+    in-out property <bool> group-description-busy: false;
+    in-out property <bool> group-image-busy: false;
+    in-out property <bool> group-leave-busy: false;
+    in-out property <string> group-settings-status;
+    in-out property <string> group-rename-draft;
+    in-out property <string> group-description-draft;
+    callback rename-group(string);
+    callback set-group-description(string);
+    callback change-group-image();
+    callback clear-group-image();
+    callback leave-group-at(int);
+    in-out property <bool> show-chat-members: false;
+    callback members-toggle-clicked();
+    callback add-member(string);
+    callback promote-admin(string);
+    callback demote-admin(string);
+    callback self-demote-admin();
+    callback remove-member(string);
+
+
+    // ═══ Modals: new chat, contacts & accounts ═════════════════════════════
+    // New-chat modal state. `new-chat-status` surfaces validation errors
+    // inline ("invalid npub", "you can't invite yourself", etc.) — Rust
+    // owns the string. `new-chat-busy` greys the submit button while the
+    // create_group call is in flight.
+    in-out property <bool> show-new-chat: false;
+    in-out property <string> new-chat-name;
+    in-out property <string> new-chat-members;
+    in-out property <bool> new-chat-busy: false;
+    in-out property <string> new-chat-status;
+    callback start-chat(string, string);
+
+    // Add-contact modal state — same shape as the new-chat modal: Rust owns
+    // the inline error string and the busy flag while the follow-list publish
+    // is in flight.
+    in-out property <bool> show-add-contact: false;
+    in-out property <string> add-contact-input;
+    in-out property <bool> add-contact-busy: false;
+    in-out property <string> add-contact-status;
+    callback add-contact-requested();
+    callback add-contact(string);
+    callback add-contact-dismissed();
+
+    // Multi-account: every account in the vault keeps a live background
+    // session; `accounts` lists them for the switcher modal and
+    // `switch-account` changes which one the UI displays. The add-account
+    // modal imports another nsec into the running runtime — no restart.
+    in-out property <[AccountEntry]> accounts;
+    in-out property <bool> show-account-switcher: false;
+    in-out property <bool> show-add-account: false;
+    in-out property <string> add-account-nsec;
+    in-out property <bool> add-account-busy: false;
+    in-out property <string> add-account-status;
+    in-out property <bool> add-account-generated: false;
+    callback account-switcher-requested();
+    callback switch-account(string);          // account-id hex
+    callback add-account-requested();         // switcher → add-account modal
+    callback add-account(string);             // nsec
+    callback add-account-dismissed();
+    callback generate-add-account-key();
+
+    // Nickname modal state — a private, local-only rename of the active
+    // contact. Rust prefills the input and owns persistence (settings.json).
+    in-out property <bool> show-nickname-modal: false;
+    in-out property <string> nickname-input;
+    in-out property <string> nickname-contact-name;
+    callback contact-nickname-requested();
+    callback set-contact-nickname(string);
+    callback nickname-modal-dismissed();
+
+    // Contact IDENTITY panel actions (contact detail page). Refresh re-fetches
+    // the peer's key package; show-qr opens the QrModal below. Rust owns both.
+    callback contact-refresh-key-package();
+    callback contact-show-qr();
+    callback contact-qr-dismissed();
+    in-out property <bool> contact-qr-open: false;
+    in-out property <image> contact-qr;            // rasterized marmot:// profile QR
+    in-out property <string> contact-qr-npub-short;
+    in-out property <string> contact-qr-npub;      // full npub (copy target)
+    in-out property <string> contact-qr-name;
+
+    // Block-chat-request confirmation. Blocking declines the invite for good
+    // (the welcome can't be restored), so it's the one chat-request action
+    // gated behind a confirm; Archive stays one-click because it's reversible.
+    in-out property <bool> show-block-confirm: false;
+
+    // ═══ Zoom & global shortcuts ═══════════════════════════════════════════
+    // Ctrl +/-/0 zoom. Rust owns the level (it changes the window scale factor,
+    // which scales the whole rendered UI like browser zoom) and persists it.
+    // Direction: 1 = zoom in, -1 = zoom out, 0 = reset to 100%.
+    callback zoom-adjust(int);
+
+}

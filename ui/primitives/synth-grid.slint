@@ -50,6 +50,8 @@ export component SynthGrid inherits Rectangle {
         clip: true;
         background: @linear-gradient(180deg, #FFE66B 0%, #FF9F45 36%, #FF4D8F 66%, #C740A8 100%);
         // Horizontal band gaps across the lower half — the classic sun stripes.
+        // Painted in the canvas color so they read as cut-outs showing the sky
+        // behind the sun, whatever backdrop the active theme uses.
         for band in [
             { yy: 0.52, hh: 3.0 },
             { yy: 0.62, hh: 4.0 },
@@ -61,7 +63,7 @@ export component SynthGrid inherits Rectangle {
             y: parent.height * band.yy;
             width: 100%;
             height: band.hh * 1px;
-            background: #0E0420;
+            background: Palette.bg;
         }
     }
 

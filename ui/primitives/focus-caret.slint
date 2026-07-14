@@ -1,0 +1,11 @@
+// The 2px accent caret marking the keyboard-focused / cursored row in list
+// pickers (language, account switcher, forward picker, command palette).
+// Call sites own the geometry (y-centering, height, any animation); this
+// owns the look so all pickers stay in step.
+import { Palette, Theme } from "../tokens.slint";
+
+export component FocusCaret inherits Rectangle {
+    width: 2px;
+    background: Palette.mint;
+    border-radius: 1px * Theme.r-scale;
+}

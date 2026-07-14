@@ -1,0 +1,83 @@
+import { Palette, Theme, MentionInboxItem } from "../tokens.slint";
+import { Avatar } from "../primitives/avatar.slint";
+
+// One row in the mentions-inbox popover: sender avatar, name + stamp line,
+// the chat it happened in, and a two-line message preview. Tapping fires
+// `selected`; the parent closes the popover and jumps to the message.
+export component MentionCard inherits Rectangle {
+    in property <MentionInboxItem> item;
+    callback selected();
+
+    height: 108px;
+    background: card-touch.has-hover ? Palette.hover : transparent;
+    border-radius: 8px * Theme.r-scale;
+    border-width: Theme.border-w;
+    border-color: card-touch.has-hover ? Palette.border-2 : Palette.border;
+    animate background, border-color { duration: Theme.hover-dur; }
+
+    HorizontalLayout {
+        padding: 12px;
+        spacing: 12px;
+        alignment: start;
+
+        Avatar {
+            size: 36px;
+            initials: root.item.sender-initials;
+            color-a: root.item.sender-a;
+            color-b: root.item.sender-b;
+            font-size: Theme.fs(10px, 13px);
+            y: 1px;
+        }
+
+        VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: 5px;
+
+            HorizontalLayout {
+                spacing: 8px;
+                Text {
+                    text: root.item.sender-name;
+                    color: Palette.text-hi;
+                    font-family: Theme.font;
+                    font-size: Theme.fs(11px, 13px);
+                    font-weight: 700;
+                    overflow: elide;
+                    horizontal-stretch: 1;
+                }
+
+                Text {
+                    text: root.item.stamp;
+                    color: Palette.text-vlo;
+                    font-family: Theme.font;
+                    font-size: Theme.fs(9px, 11px);
+                }
+            }
+
+            Text {
+                text: "# " + root.item.chat-name;
+                color: Palette.mint;
+                font-family: Theme.font;
+                font-size: Theme.fs(9px, 11px);
+                font-weight: 650;
+                overflow: elide;
+            }
+
+            Text {
+                text: root.item.text;
+                color: Palette.text-mid;
+                font-family: Theme.font;
+                font-size: Theme.fs(10px, 12px);
+                height: Theme.fs(28px, 34px);
+                wrap: word-wrap;
+                overflow: elide;
+            }
+        }
+    }
+
+    card-touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            root.selected();
+        }
+    }
+}

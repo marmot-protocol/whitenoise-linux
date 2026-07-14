@@ -1,0 +1,33 @@
+import { Palette, Theme } from "../tokens.slint";
+
+// One round icon button inside the floating hover-actions toolbar.
+export component ActionButton inherits Rectangle {
+    in property <string> glyph;
+    // When false the button collapses to nothing — used to keep the edit
+    // button in the tree (so its id stays referenceable) while hiding it for
+    // non-authors.
+    in property <bool> shown: true;
+    callback clicked();
+    out property <bool> hovered: touch.has-hover;
+
+    visible: root.shown;
+    width: root.shown ? 28px : 0px;
+    height: 28px;
+    border-radius: (8px) * Theme.r-scale;
+    background: touch.has-hover ? Palette.hover : transparent;
+    animate background { duration: Theme.hover-dur; }
+    Text {
+        text: root.glyph;
+        color: touch.has-hover ? Palette.text-hi : Palette.text-mid;
+        font-size: Theme.fs(13px, 16px);
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            root.clicked();
+        }
+    }
+}

@@ -1,6 +1,6 @@
 import { Palette, Theme } from "../tokens.slint";
 import { LineInput } from "../primitives/line-input.slint";
-import { SectionLabel } from "../primitives/section-label.slint";
+import { FormLabel } from "../primitives/form-label.slint";
 
 // A labeled field box matching the login card style. Used directly for the
 // nsec input; PasswordField below layers the masked mode + reveal toggle on
@@ -20,7 +20,7 @@ export component VaultField inherits VerticalLayout {
         vf-input.take-focus();
     }
 
-    SectionLabel {
+    FormLabel {
         text: root.label;
     }
 

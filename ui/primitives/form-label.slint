@@ -3,7 +3,7 @@ import { Palette, Theme } from "../tokens.slint";
 // Small uppercase label above form sections (login fields, modal info rows,
 // key readouts). The shared styling — muted text, 9px, bold, wide tracking —
 // keeps section headers consistent across every surface that uses one.
-export component SectionLabel inherits Text {
+export component FormLabel inherits Text {
     color: Palette.text-mid;
     font-size: Theme.fs(9px, 12px);
     font-weight: 700;

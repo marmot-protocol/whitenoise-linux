@@ -1,0 +1,47 @@
+import { Palette, Theme } from "tokens.slint";
+
+// One emoji tile in the picker grid: hover highlight + sprite-sheet glyph
+// with a slight pop on hover. Stays always-mounted with `visible`/`enabled`
+// gating (an `if`-guarded mount used to race the first user click), so the
+// parent drives `active` instead of conditionally instantiating the cell.
+export component EmojiCell inherits Rectangle {
+    in property <bool> active;
+    in property <image> sprite;
+    in property <int> tile;
+    in property <int> clip-x;
+    in property <int> clip-y;
+    callback picked();
+
+    visible: root.active;
+    border-radius: (4px) * Theme.r-scale;
+    background: cell.has-hover ? Palette.hover : transparent;
+
+    Image {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        visible: root.active;
+        source: root.sprite;
+        source-clip-x: root.clip-x;
+        source-clip-y: root.clip-y;
+        source-clip-width: root.tile;
+        source-clip-height: root.tile;
+        // Slight pop on hover so the glyph responds along with the cell
+        // highlight.
+        width: cell.has-hover ? 26px : 22px;
+        height: cell.has-hover ? 26px : 22px;
+        animate width, height {
+            duration: 80ms;
+            easing: ease-out;
+        }
+        image-fit: contain;
+    }
+
+    cell := TouchArea {
+        enabled: root.active;
+        clicked => {
+            if (root.active) {
+                root.picked();
+            }
+        }
+    }
+}

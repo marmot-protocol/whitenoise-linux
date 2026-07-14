@@ -1,0 +1,45 @@
+// ShellTimers — the app's non-visual clockwork. Ticks the "SYNCED Ns AGO"
+// counter, re-polls relay health every ~15s, and expires the status-bar
+// clipboard toast. Rectangle-rooted but paints nothing and handles no input.
+
+import { AppState } from "app-state.slint";
+
+export component ShellTimers inherits Rectangle {
+    // Ticks once per second while signed in; counts up `sync-secs` and, every
+    // ~15s, re-polls relay health (the Rust handler resets sync-secs to 0 on a
+    // successful poll).
+    sync-timer := Timer {
+        interval: 1s;
+        running: AppState.logged-in && !AppState.booting;
+        triggered => {
+            if (AppState.sync-secs >= 0) {
+                AppState.sync-secs += 1;
+            }
+            AppState.sync-refresh-countdown -= 1;
+            if (AppState.sync-refresh-countdown <= 0) {
+                AppState.sync-refresh-countdown = 15;
+                AppState.network-refresh-health();
+            }
+        }
+    }
+
+    clipboard-status-reset := Timer {
+        interval: 3s;
+        running: AppState.clipboard-status != "";
+        triggered => {
+            AppState.clipboard-status = "";
+            AppState.clipboard-status-error = false;
+        }
+    }
+
+    // Re-arm the 3s toast window when a NEW status lands while one is already
+    // showing. A `changed` handler must sit in the body of the element that
+    // declares the property it observes, so a local mirror of the global
+    // tracks it here.
+    property <string> clipboard-status-obs: AppState.clipboard-status;
+    changed clipboard-status-obs => {
+        if (self.clipboard-status-obs != "") {
+            clipboard-status-reset.restart();
+        }
+    }
+}

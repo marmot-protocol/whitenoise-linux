@@ -1,0 +1,50 @@
+import { Palette, Theme, ChatMessage } from "../../tokens.slint";
+
+// Image attachment — tappable preview tile (placeholder until decoded).
+export component ImageTile inherits Rectangle {
+    in property <ChatMessage> msg;
+    in property <length> text-budget;
+    callback clicked();
+    property <length> img-w: min(280px, max(120px, root.text-budget));
+    property <length> img-h: 180px;
+    width: self.img-w;
+    height: self.img-h;
+    border-radius: (8px) * Theme.r-scale;
+    background: root.msg.outgoing ? Palette.bubble-inset-out : Palette.bubble-inset;
+    clip: true;
+    border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
+    border-color: Palette.border-2;
+    if root.msg.att-has-image: Image {
+        width: parent.width;
+        height: parent.height;
+        source: root.msg.att-image;
+        image-fit: cover;
+    }
+    if !root.msg.att-has-image: VerticalLayout {
+        alignment: center;
+        spacing: 4px;
+        Text {
+            text: root.msg.att-loading ? "…" : (root.msg.att-failed ? "!" : "🖼");
+            color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
+            font-size: Theme.fs(28px, 34px);
+            font-family: Theme.font;
+            horizontal-alignment: center;
+        }
+
+        Text {
+            text: root.msg.att-loading ? @tr("decrypting…") : (root.msg.att-failed ? @tr("tap to retry") : @tr("tap to load"));
+            color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
+            font-size: Theme.fs(10px, 14px);
+            font-family: Theme.font;
+            horizontal-alignment: center;
+            opacity: 0.85;
+        }
+    }
+    TouchArea {
+        enabled: !root.msg.att-loading;
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+

@@ -1,0 +1,68 @@
+import { Palette, Theme, ChatMessage } from "../../tokens.slint";
+
+// Video attachment — poster frame (decoded first frame or imeta thumb) with a
+// ▶ play badge + optional duration. Tap opens the in-app viewer.
+export component VideoTile inherits Rectangle {
+    in property <ChatMessage> msg;
+    in property <length> text-budget;
+    callback clicked();
+    property <length> vid-w: min(280px, max(120px, root.text-budget));
+    width: self.vid-w;
+    height: 180px;
+    border-radius: (8px) * Theme.r-scale;
+    background: root.msg.outgoing ? Palette.media-backdrop-out : Palette.media-backdrop;
+    clip: true;
+    border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
+    border-color: Palette.border-2;
+    if root.msg.att-has-image: Image {
+        width: parent.width;
+        height: parent.height;
+        source: root.msg.att-image;
+        image-fit: cover;
+    }
+    // Play badge (always shown over the poster / placeholder).
+    Rectangle {
+        width: 56px;
+        height: 56px;
+        border-radius: (28px) * Theme.r-scale;
+        background: Palette.media-chip-bg;
+        border-width: Theme.border-w;
+        border-color: Palette.media-chip-fg-dim;
+        Text {
+            // Nudge the glyph optically-center inside the circle.
+            x: parent.width / 2 - self.width / 2 + 3px;
+            text: root.msg.att-loading ? "…" : (root.msg.att-failed ? "!" : "▶");
+            color: Palette.media-chip-fg;
+            font-size: Theme.fs(24px, 28px);
+            font-family: Theme.font;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+    }
+    // Duration badge, bottom-right.
+    if root.msg.att-duration != "": Rectangle {
+        x: parent.width - self.width - 6px;
+        y: parent.height - self.height - 6px;
+        width: dur-text.preferred-width + 12px;
+        height: 18px;
+        border-radius: (4px) * Theme.r-scale;
+        background: Palette.media-chip-bg;
+        dur-text := Text {
+            text: root.msg.att-duration;
+            color: Palette.media-chip-fg;
+            font-size: Theme.fs(10px, 14px);
+            font-family: Theme.font;
+            font-weight: 600;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+    }
+    TouchArea {
+        enabled: !root.msg.att-loading;
+        mouse-cursor: pointer;
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+

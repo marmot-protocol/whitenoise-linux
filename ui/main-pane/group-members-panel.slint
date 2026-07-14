@@ -1,8 +1,8 @@
 import { Palette, Theme, GroupMember } from "../tokens.slint";
-import { GroupCard } from "../shells/group-card.slint";
-import { CypherScroll } from "../primitives/cypher-scroll.slint";
+import { GroupCard } from "../layout/group-card.slint";
+import { ScrollView } from "../primitives/scroll-view.slint";
 import { GroupMemberRow } from "group-member-row.slint";
-import { Section } from "../shells/section.slint";
+import { Section } from "../layout/section.slint";
 import { GroupMembersHeader } from "group-members-header.slint";
 import { GroupSettingsCard } from "group-settings-card.slint";
 import { AddMemberCard } from "add-member-card.slint";
@@ -104,7 +104,7 @@ export component GroupMembersPanel inherits Rectangle {
         // scroll, split into two labelled sections.
         Rectangle {
             vertical-stretch: 1;
-            CypherScroll {
+            ScrollView {
                 vertical-stretch: 1;
                 viewport-height: memcol.preferred-height;
                 viewport-width: self.visible-width;

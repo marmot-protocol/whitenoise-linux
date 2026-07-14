@@ -1,6 +1,7 @@
 import { Palette, Theme } from "../tokens.slint";
 import { Modal } from "modal.slint";
 import { CheckMark } from "../icons/check-mark.slint";
+import { FocusCaret } from "../primitives/focus-caret.slint";
 
 component LanguageRow inherits Rectangle {
     in property <string> label;
@@ -43,13 +44,10 @@ component LanguageRow inherits Rectangle {
     }
 
     // Accent focus bar on the keyboard-focused row.
-    if root.focused: Rectangle {
+    if root.focused: FocusCaret {
         x: 0;
-        width: 2px;
         y: (parent.height - self.height) / 2;
         height: 22px;
-        background: Palette.mint;
-        border-radius: 1px;
     }
 
     if root.show-divider: Rectangle {

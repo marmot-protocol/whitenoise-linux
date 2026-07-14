@@ -1,7 +1,7 @@
 import { Palette, Theme } from "../tokens.slint";
 import { Modal, ModalField } from "modal.slint";
 import { Button } from "../primitives/button.slint";
-import { SectionLabel } from "../primitives/section-label.slint";
+import { FormLabel } from "../primitives/form-label.slint";
 import { CopyIcon } from "../icons/copy-icon.slint";
 
 // Danger-zone affordance: reveal the *active* account's private key (nsec),
@@ -24,9 +24,7 @@ export component RevealNsecModal inherits Modal {
 
     card-width: 460px;
     title: @tr("Reveal private key");
-    subtitle: root.revealed
-        ? @tr("This is the secret key for your active account. Anyone with it controls your identity — never share it.")
-        : @tr("Confirm your vault password to reveal the secret key (nsec) for your active account.");
+    subtitle: root.revealed ? @tr("This is the secret key for your active account. Anyone with it controls your identity — never share it.") : @tr("Confirm your vault password to reveal the secret key (nsec) for your active account.");
     // Phase 1 shows a danger-styled Reveal; phase 2 drops the primary (the copy
     // control lives inline next to the key) and the footer just closes.
     secondary-label: root.revealed ? @tr("Done") : @tr("Cancel");
@@ -53,7 +51,7 @@ export component RevealNsecModal inherits Modal {
 
     if root.revealed: VerticalLayout {
         spacing: 6px;
-        SectionLabel {
+        FormLabel {
             text: @tr("SECRET KEY (NSEC)");
         }
 

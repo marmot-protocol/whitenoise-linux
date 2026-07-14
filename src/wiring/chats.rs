@@ -21,7 +21,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // match). Matches on the chat name only. The flags are only consulted while
     // the query is non-empty, so the empty-query case (which shows everything)
     // needn't clear the array.
-    ui.on_chat_search_changed({
+    ui.global::<AppState>().on_chat_search_changed({
         let weak = ui.as_weak();
         move |query| {
             let Some(ui) = weak.upgrade() else { return };
@@ -38,7 +38,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             ui.set_chat_match_flags(model(flags));
         }
     });
-    ui.on_new_chat_requested({
+    ui.global::<AppState>().on_new_chat_requested({
         let weak = ui.as_weak();
         move || {
             if let Some(ui) = weak.upgrade() {
@@ -46,7 +46,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             }
         }
     });
-    ui.on_modal_dismissed({
+    ui.global::<AppState>().on_modal_dismissed({
         let weak = ui.as_weak();
         move || {
             if let Some(ui) = weak.upgrade() {
@@ -58,7 +58,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             }
         }
     });
-    ui.on_start_chat({
+    ui.global::<AppState>().on_start_chat({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -124,7 +124,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                                     .position(|r| r.group_id_hex.eq_ignore_ascii_case(&group_hex));
                                 if let Some(pos) = pos {
                                     ui.set_active_chat(pos as i32);
-                                    ui.invoke_chat_selected(pos as i32);
+                                    ui.global::<AppState>().invoke_chat_selected(pos as i32);
                                 }
                             });
                             ui.set_new_chat_name(s(""));
@@ -146,7 +146,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // Slint to render a MESSAGE_WINDOW-sized slice around the target row.
     let pending_message_jump: Arc<Mutex<Option<(String, String)>>> = Arc::new(Mutex::new(None));
     let chat_load_generation = Arc::new(AtomicUsize::new(0));
-    ui.on_chat_selected({
+    ui.global::<AppState>().on_chat_selected({
         let weak = ui.as_weak();
         let refresh = refresh_breadcrumb.clone();
         let backend_cell = backend_cell.clone();
@@ -360,7 +360,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
 
     // Refresh on demand when the popup opens. Keeping this lazy avoids one
     // full-history query per chat during normal message traffic.
-    ui.on_mention_inbox_opened({
+    ui.global::<AppState>().on_mention_inbox_opened({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -374,7 +374,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_mention_inbox_selected({
+    ui.global::<AppState>().on_mention_inbox_selected({
         let weak = ui.as_weak();
         let group_ids = group_ids.clone();
         let pending_message_jump = pending_message_jump.clone();
@@ -394,7 +394,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             *pending_message_jump.lock().unwrap() = Some((group_id, message_id));
             ui.set_message_jump_id(s(""));
             ui.set_active_page(Page::Chats as i32);
-            ui.invoke_chat_selected(idx as i32);
+            ui.global::<AppState>().invoke_chat_selected(idx as i32);
         }
     });
 
@@ -402,7 +402,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // active chat's record window one MESSAGE_WINDOW step and rebuild. The
     // Slint side anchors the scroll so the content the user was reading
     // stays put under the newly-prepended history.
-    ui.on_messages_request_older({
+    ui.global::<AppState>().on_messages_request_older({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -451,7 +451,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             });
         }
     });
-    ui.on_archive_selected({
+    ui.global::<AppState>().on_archive_selected({
         let weak = ui.as_weak();
         let refresh = refresh_breadcrumb.clone();
         let backend_cell = backend_cell.clone();
@@ -474,7 +474,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             }
         }
     });
-    ui.on_members_toggle_clicked({
+    ui.global::<AppState>().on_members_toggle_clicked({
         let weak = ui.as_weak();
         move || {
             if let Some(ui) = weak.upgrade() {
@@ -498,7 +498,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     };
 
-    ui.on_accept_chat_request({
+    ui.global::<AppState>().on_accept_chat_request({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let resolve = active_chat_group_hex.clone();
@@ -529,7 +529,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_block_chat_request({
+    ui.global::<AppState>().on_block_chat_request({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let resolve = active_chat_group_hex.clone();
@@ -567,7 +567,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // its parallel `group_ids` list, append an `ArchivedChat` entry to the
     // archived model, then let the backend catch up. On failure we put it
     // back where it was.
-    ui.on_archive_chat({
+    ui.global::<AppState>().on_archive_chat({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let resolve = active_chat_group_hex.clone();
@@ -658,7 +658,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_unarchive_chat({
+    ui.global::<AppState>().on_unarchive_chat({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let refresh = refresh_all_chat_models.clone();

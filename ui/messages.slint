@@ -1,14 +1,14 @@
 // messages area — driven by a model fed from Rust.
 import { Palette, Theme, ChatMessage } from "tokens.slint";
 import { MessageView } from "primitives/message-view.slint";
-import { CypherScroll } from "primitives/cypher-scroll.slint";
+import { ScrollView } from "primitives/scroll-view.slint";
 import { MessageEffectLayer } from "primitives/message-effect-layer.slint";
 import { PaperDoodles } from "primitives/paper-doodles.slint";
 import { SynthGrid } from "primitives/synth-grid.slint";
 import { ChevronDownIcon } from "icons/chevron-down-icon.slint";
 import { ChatBubbleIcon } from "icons/chat-bubble-icon.slint";
 import { SessionDivider } from "main-pane/session-divider.slint";
-import { EmptyState } from "shells/empty-state.slint";
+import { EmptyState } from "layout/empty-state.slint";
 
 // One slot in the effect-burst pool. `gen` is a per-slot generation counter —
 // bumping it (re)fires that slot's layer; the position/effect fields say where
@@ -159,7 +159,7 @@ export component MessagesArea inherits Rectangle {
         }
     }
 
-    cs := CypherScroll {
+    cs := ScrollView {
         width: parent.width;
         height: parent.height;
         viewport-width: self.width;

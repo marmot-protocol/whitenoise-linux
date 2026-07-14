@@ -21,7 +21,7 @@ pub(crate) fn wire_nav(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             }
         }
     };
-    ui.on_nav_requested({
+    ui.global::<AppState>().on_nav_requested({
         let go = go_to_page.clone();
         move |idx| {
             let page = match idx {
@@ -35,7 +35,7 @@ pub(crate) fn wire_nav(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             go(page);
         }
     });
-    ui.on_profile_requested({
+    ui.global::<AppState>().on_profile_requested({
         let go = go_to_page.clone();
         move || go(Page::Profile)
     });
@@ -44,7 +44,7 @@ pub(crate) fn wire_nav(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     let palette_master = all_palette_actions();
 
     // Ctrl+K: populate actions for the empty query and open the palette.
-    ui.on_palette_requested({
+    ui.global::<AppState>().on_palette_requested({
         let weak = ui.as_weak();
         let master = palette_master.clone();
         move || {
@@ -55,7 +55,7 @@ pub(crate) fn wire_nav(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_palette_dismissed({
+    ui.global::<AppState>().on_palette_dismissed({
         let weak = ui.as_weak();
         move || {
             if let Some(ui) = weak.upgrade() {
@@ -64,7 +64,7 @@ pub(crate) fn wire_nav(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_palette_query_changed({
+    ui.global::<AppState>().on_palette_query_changed({
         let weak = ui.as_weak();
         let master = palette_master.clone();
         move |q| {
@@ -74,7 +74,7 @@ pub(crate) fn wire_nav(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_palette_execute({
+    ui.global::<AppState>().on_palette_execute({
         let weak = ui.as_weak();
         let go = go_to_page.clone();
         let settings_cell = settings_cell.clone();

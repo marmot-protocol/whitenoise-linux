@@ -18,7 +18,7 @@ pub(crate) fn wire_reply_target(ui: &DarkMatterLinux) {
     // The bubble's "↩" affordance fires `request-reply(id, preview, author)`.
     // We stash all three on the root so the composer chip renders, then the
     // next send pulls them off and routes through `reply_text_async`.
-    ui.on_request_reply({
+    ui.global::<AppState>().on_request_reply({
         let weak = ui.as_weak();
         move |message_id, preview, author| {
             let Some(ui) = weak.upgrade() else { return };
@@ -40,7 +40,7 @@ pub(crate) fn wire_reply_target(ui: &DarkMatterLinux) {
             ui.set_reply_target_has_image(has_thumb);
         }
     });
-    ui.on_cancel_reply({
+    ui.global::<AppState>().on_cancel_reply({
         let weak = ui.as_weak();
         move || {
             let Some(ui) = weak.upgrade() else { return };
@@ -92,7 +92,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // now carries the confirmed edit). On failure the overlay is dropped too,
     // so the row reverts to its last confirmed text.
 
-    ui.on_send_message({
+    ui.global::<AppState>().on_send_message({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -313,7 +313,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // The bubble owns its retry click. We look up the pending entry by its
     // temp id (carried in `message_id`), flip it back to non-failed, and
     // re-dispatch.
-    ui.on_retry_message({
+    ui.global::<AppState>().on_retry_message({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -430,7 +430,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // off-UI and appended to `staged_files`; the chip row above the input
     // is the user's confirmation, and `on_send_message` flushes the queue
     // through `spawn_attachment_send` when Send is pressed.
-    ui.on_attach_file({
+    ui.global::<AppState>().on_attach_file({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let staged_files = staged_files.clone();
@@ -511,7 +511,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // clipboard off-thread; image-intent content (an image target offered,
     // no plain-text target) is staged as an attachment chip — never
     // auto-sent.
-    ui.on_paste_image({
+    ui.global::<AppState>().on_paste_image({
         let weak = ui.as_weak();
         let staged_files = staged_files.clone();
         move || {
@@ -536,7 +536,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     });
 
     // ─── Remove a staged attachment chip ───────────────────────────────
-    ui.on_remove_staged({
+    ui.global::<AppState>().on_remove_staged({
         let weak = ui.as_weak();
         let staged_files = staged_files.clone();
         move |idx| {
@@ -555,7 +555,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // `is_temp_id`) aren't sent yet, so they don't open the viewer. Otherwise we
     // open the lightbox and let the slideshow builder load the tapped image
     // (cache hit → instant; miss → downloads) and wire up prev/next.
-    ui.on_album_cell_clicked({
+    ui.global::<AppState>().on_album_cell_clicked({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -602,7 +602,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // cache pixels then repaint the row so the preview swaps in. For other
     // files we prompt save-as first (so the user can cancel before any
     // network traffic) then write the decrypted bytes to that path.
-    ui.on_attachment_clicked({
+    ui.global::<AppState>().on_attachment_clicked({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -1063,7 +1063,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // The bubble's audio player routes play/pause and progress-bar taps here.
     // Play toggles the current clip; seek jumps to a fraction of the duration.
     // Both operate on the per-message encrypted cache just like images/videos.
-    ui.on_audio_play_clicked({
+    ui.global::<AppState>().on_audio_play_clicked({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -1167,7 +1167,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_audio_seek_clicked({
+    ui.global::<AppState>().on_audio_seek_clicked({
         move |message_id, fraction| {
             let mid = message_id.to_string();
             let is_current = current_audio_message_id()
@@ -1188,7 +1188,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     });
 
     // ─── Voice message recording (composer mic) ────────────────────────
-    ui.on_record_clicked({
+    ui.global::<AppState>().on_record_clicked({
         let weak = ui.as_weak();
         move || {
             // Chat requests are read-only until accepted (same gate as
@@ -1235,7 +1235,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                             let weak = weak_t.clone();
                             move || {
                                 if let Some(ui) = weak.upgrade() {
-                                    ui.invoke_stop_recording();
+                                    ui.global::<AppState>().invoke_stop_recording();
                                 }
                             }
                         });
@@ -1253,7 +1253,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_stop_recording({
+    ui.global::<AppState>().on_stop_recording({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -1316,7 +1316,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_cancel_recording({
+    ui.global::<AppState>().on_cancel_recording({
         let weak = ui.as_weak();
         move || {
             with_active_recorder(|r| {

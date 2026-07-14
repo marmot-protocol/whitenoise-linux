@@ -1,0 +1,29 @@
+import { Palette, Theme } from "../tokens.slint";
+
+// Keyboard-shortcut pill ("⌘ K", "Ctrl N"): bordered plate around a key
+// label. Modifier glyphs are key labels, not prose, so callers keep them out
+// of @tr(). `bg` is overridable for selected-row contrast.
+export component KbdPill inherits Rectangle {
+    in property <string> label;
+    in property <color> bg: Palette.panel-2;
+
+    height: 20px;
+    min-width: kbd-text.preferred-width + 12px;
+    border-radius: (4px) * Theme.r-scale;
+    border-width: Theme.border-w;
+    border-color: Palette.border-2;
+    background: root.bg;
+    kbd-text := Text {
+        text: root.label;
+        color: Palette.text-mid;
+        font-size: Theme.fs(10px, 13px);
+        font-weight: 700;
+        font-family: Theme.font;
+        x: 6px;
+        y: 0;
+        width: parent.width - 12px;
+        height: parent.height;
+        vertical-alignment: center;
+        horizontal-alignment: center;
+    }
+}

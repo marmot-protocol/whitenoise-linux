@@ -1,0 +1,89 @@
+import { Palette, Theme } from "../../tokens.slint";
+import { MicroButton } from "../../primitives/button.slint";
+
+// Reply banner — shown above the input when replying to a message.
+// A mint accent bar + "Replying to <author>: <preview>" with an optional
+// thumbnail and a Cancel reply button.
+export component ReplyBanner inherits Rectangle {
+    in property <string> reply-target-author;
+    in property <string> reply-target-preview;
+    in property <image> reply-target-image;
+    in property <bool> reply-target-has-image: false;
+    callback cancel-reply();
+
+    height: 36px;
+    background: Palette.panel;
+    border-width: 1px;
+    border-color: Palette.border-2;
+    border-radius: (6px) * Theme.r-scale;
+    HorizontalLayout {
+        padding-left: 18px;
+        padding-right: 18px;
+        spacing: 8px;
+        alignment: stretch;
+        Rectangle {
+            width: 3px;
+            background: Palette.mint;
+            y: (parent.height - self.height) / 2;
+            height: 18px;
+            border-radius: 1.5px * Theme.r-scale;
+        }
+
+        VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 1;
+            HorizontalLayout {
+                spacing: 6px;
+                Text {
+                    text: root.reply-target-author == "" ? @tr("Replying to message:") : @tr("Replying to {}:", root.reply-target-author);
+                    color: Palette.mint;
+                    font-size: Theme.fs(11px, 14px);
+                    font-family: Theme.font;
+                    font-weight: 700;
+                    vertical-alignment: center;
+                }
+
+                Text {
+                    text: root.reply-target-preview;
+                    color: Palette.text-mid;
+                    font-size: Theme.fs(11px, 14px);
+                    font-family: Theme.font;
+                    overflow: elide;
+                    horizontal-stretch: 1;
+                    vertical-alignment: center;
+                }
+            }
+        }
+
+        // Signal-style thumbnail of the quoted media, right before the
+        // cancel affordance.
+        if root.reply-target-has-image: Rectangle {
+            width: 26px;
+            height: 26px;
+            y: (parent.height - self.height) / 2;
+            border-radius: (4px) * Theme.r-scale;
+            clip: true;
+            Image {
+                source: root.reply-target-image;
+                width: parent.width;
+                height: parent.height;
+                image-fit: cover;
+            }
+        }
+        MicroButton {
+            label: @tr("Cancel reply");
+            button-height: 32px;
+            y: (parent.height - self.height) / 2;
+            focusable: true;
+            fg: Palette.text-mid;
+            hover-fg: Palette.text-hi;
+            bg-color: transparent;
+            hover-bg: Palette.panel-2;
+            outline: Palette.border-2;
+            hover-outline: Palette.border;
+            clicked => {
+                root.cancel-reply();
+            }
+        }
+    }
+}

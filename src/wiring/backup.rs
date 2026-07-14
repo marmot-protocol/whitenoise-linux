@@ -13,7 +13,7 @@ pub(crate) fn wire_backup(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // ─── Whole-folder backup & restore ─────────────────────────────────
     // A backup is the entire data dir packed into one file, sealed with the
     // vault password (see backup.rs). Open the create-backup modal.
-    ui.on_storage_create_backup({
+    ui.global::<AppState>().on_storage_create_backup({
         let weak = ui.as_weak();
         move || {
             let Some(ui) = weak.upgrade() else { return };
@@ -24,7 +24,7 @@ pub(crate) fn wire_backup(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_create_backup_dismissed({
+    ui.global::<AppState>().on_create_backup_dismissed({
         let weak = ui.as_weak();
         move || {
             let Some(ui) = weak.upgrade() else { return };
@@ -37,7 +37,7 @@ pub(crate) fn wire_backup(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // Confirm vault password → native save dialog → write the encrypted backup.
     // The picker is sync rfd on a plain thread (no backend needed, and never on
     // the UI thread).
-    ui.on_create_backup_submit({
+    ui.global::<AppState>().on_create_backup_submit({
         let weak = ui.as_weak();
         move |password| {
             let Some(ui) = weak.upgrade() else { return };
@@ -86,7 +86,7 @@ pub(crate) fn wire_backup(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
 
     // Open the import-backup modal. On a fresh install (no vault) it restores the
     // whole folder; otherwise it merges accounts — the modal copy follows suit.
-    ui.on_storage_import_backup({
+    ui.global::<AppState>().on_storage_import_backup({
         let weak = ui.as_weak();
         move || {
             let Some(ui) = weak.upgrade() else { return };
@@ -100,7 +100,7 @@ pub(crate) fn wire_backup(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_import_backup_dismissed({
+    ui.global::<AppState>().on_import_backup_dismissed({
         let weak = ui.as_weak();
         move || {
             let Some(ui) = weak.upgrade() else { return };
@@ -114,7 +114,7 @@ pub(crate) fn wire_backup(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // Native file picker for the backup file. Sync rfd on a plain thread so it
     // works before the backend exists (first-run restore) and never blocks the UI
     // thread. The chosen path round-trips through a Slint property (Send-safe).
-    ui.on_import_backup_pick_file({
+    ui.global::<AppState>().on_import_backup_pick_file({
         let weak = ui.as_weak();
         move || {
             let weak = weak.clone();
@@ -143,7 +143,7 @@ pub(crate) fn wire_backup(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // Submit: decrypt the backup, then either restore the whole folder (fresh
     // install) or merge its accounts (running install). The branch is decided by
     // whether a vault already exists.
-    ui.on_import_backup_submit({
+    ui.global::<AppState>().on_import_backup_submit({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let vault_cell = vault_cell.clone();
@@ -194,7 +194,7 @@ pub(crate) fn wire_backup(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                                 ui.set_import_backup_password(s(""));
                                 // The restored vault.db unlocks with this very
                                 // password — reuse the unlock path to boot.
-                                ui.invoke_unlock(password.into());
+                                ui.global::<AppState>().invoke_unlock(password.into());
                             }
                             Err(e) => {
                                 ui.set_import_backup_busy(false);
@@ -228,7 +228,7 @@ pub(crate) fn wire_backup(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_storage_clear_cache({
+    ui.global::<AppState>().on_storage_clear_cache({
         let weak = ui.as_weak();
         let refresh_storage = refresh_storage_size.clone();
         move || {

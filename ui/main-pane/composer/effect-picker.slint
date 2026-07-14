@@ -1,0 +1,99 @@
+import { Palette, Theme, EmojiSheet, EffectCatalog } from "../../tokens.slint";
+
+// Effect picker popover — floats just above the Send button. Non-modal; a
+// light backdrop over the composer closes it on an outside tap. Choosing an
+// effect arms it (persists into the next send) and closes; the ✕ clears.
+// The anchor point and container width are passed in so the popover can
+// position itself relative to the Send button without reaching into the
+// parent's named elements.
+export component EffectPicker inherits Rectangle {
+    in property <bool> shown: false;
+    in property <length> anchor-x: 0px;
+    in property <length> anchor-y: 0px;
+    in property <length> container-width: 0px;
+    callback dismissed();
+
+    if root.shown: TouchArea {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        clicked => {
+            root.dismissed();
+        }
+    }
+    if root.shown: Rectangle {
+        x: min(root.container-width - self.width - 12px,
+               root.anchor-x - self.width);
+        y: root.anchor-y - self.height - 8px;
+        width: effect-row.preferred-width + 16px;
+        height: 44px;
+        border-radius: (12px) * Theme.r-scale;
+        background: Palette.panel;
+        border-width: Theme.border-w;
+        border-color: Palette.border-2;
+        drop-shadow-color: Palette.shadow;
+        drop-shadow-blur: 16px;
+        drop-shadow-offset-y: 4px;
+        effect-row := HorizontalLayout {
+            padding-left: 8px;
+            padding-right: 8px;
+            spacing: 4px;
+            alignment: center;
+            // Clear / none.
+            Rectangle {
+                width: 30px;
+                height: 30px;
+                y: (parent.height - self.height) / 2;
+                border-radius: (8px) * Theme.r-scale;
+                background: none-touch.has-hover ? Palette.panel-2 : transparent;
+                border-width: EffectCatalog.selected == 0 ? 1.5px : 0px;
+                border-color: Palette.mint;
+                animate background { duration: Theme.hover-dur; }
+                Text {
+                    text: "✕";
+                    color: Palette.text-mid;
+                    font-size: Theme.fs(13px, 16px);
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+
+                none-touch := TouchArea {
+                    clicked => {
+                        EffectCatalog.selected = 0;
+                        root.dismissed();
+                    }
+                }
+            }
+
+            for c in EffectCatalog.choices: Rectangle {
+                width: 34px;
+                height: 30px;
+                y: (parent.height - self.height) / 2;
+                border-radius: (8px) * Theme.r-scale;
+                background: fx-touch.has-hover ? Palette.panel-2 : transparent;
+                border-width: EffectCatalog.selected == c.id ? 1.5px : 0px;
+                border-color: Palette.mint;
+                animate background { duration: Theme.hover-dur; }
+                Image {
+                    width: 24px;
+                    height: 24px;
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    source: EmojiSheet.sprite;
+                    source-clip-x: c.clip-x;
+                    source-clip-y: c.clip-y;
+                    source-clip-width: EmojiSheet.tile;
+                    source-clip-height: EmojiSheet.tile;
+                }
+
+                fx-touch := TouchArea {
+                    clicked => {
+                        EffectCatalog.selected = c.id;
+                        root.dismissed();
+                    }
+                }
+            }
+        }
+    }
+}

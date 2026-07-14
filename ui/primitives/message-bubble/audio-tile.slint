@@ -1,0 +1,131 @@
+import { Palette, Theme, ChatMessage } from "../../tokens.slint";
+
+// Audio attachment — inline player: play/pause, filename, scrubber, size +
+// duration. Height tracks the row's content so the bubble only grows the
+// extra rows when there's a filename to show.
+export component AudioTile inherits Rectangle {
+    in property <ChatMessage> msg;
+    in property <length> text-budget;
+    callback play-clicked();
+    callback seek-clicked(float);
+    property <length> audio-w: min(280px, max(180px, root.text-budget));
+    // Width left for the text column: player width minus padding, play
+    // button, and inter-column spacing (10 + 36 + 10 + 12).
+    property <length> col-w: max(40px, self.audio-w - 68px);
+    width: self.audio-w;
+    height: aud-row.preferred-height;
+    border-radius: (8px) * Theme.r-scale;
+    background: root.msg.outgoing ? Palette.bubble-inset-out : Palette.bubble-inset;
+    border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
+    border-color: Palette.border-2;
+
+    aud-row := HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 12px;
+        padding-top: 9px;
+        padding-bottom: 9px;
+        spacing: 10px;
+        alignment: stretch;
+
+        // Play / pause button. Fixed size, so the HorizontalLayout centers it
+        // vertically on the cross axis automatically — an explicit `y` here
+        // would take it out of the layout flow.
+        Rectangle {
+            width: 36px;
+            height: 36px;
+            border-radius: (18px) * Theme.r-scale;
+            background: play-touch.has-hover ? (root.msg.outgoing ? Palette.text-hi : Palette.mint-hi) : (root.msg.outgoing ? Palette.bubble-out-fg : Palette.mint);
+            animate background { duration: Theme.hover-dur; }
+            Text {
+                x: parent.width / 2 - self.width / 2 + (root.msg.att-audio-playing || root.msg.att-loading || root.msg.att-failed || root.msg.att-audio-failed ? 0px : 2px);
+                // Loading → ellipsis, send-failed → retry, decode-failed
+                // → bang, else play/pause.
+                text: root.msg.att-loading ? "…" : (root.msg.att-failed ? "↻" : (root.msg.att-audio-failed ? "!" : (root.msg.att-audio-playing ? "⏸" : "▶")));
+                color: root.msg.outgoing ? Palette.mint : Palette.bg;
+                font-size: Theme.fs(14px, 18px);
+                font-family: Theme.font;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+
+            play-touch := TouchArea {
+                enabled: !root.msg.att-loading;
+                mouse-cursor: pointer;
+                clicked => {
+                    root.play-clicked();
+                }
+            }
+        }
+
+        // Text column. `horizontal-stretch` makes it absorb the remaining
+        // player width; setting `y` would detach it from that flow and
+        // collapse the children to their preferred sizes.
+        VerticalLayout {
+            spacing: 4px;
+            horizontal-stretch: 1;
+            alignment: center;
+
+            // Filename — only when the attachment carries one.
+            if root.msg.att-name != "": Text {
+                text: root.msg.att-name;
+                width: root.col-w;
+                overflow: elide;
+                color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
+                font-size: Theme.fs(11px, 14px);
+                font-family: Theme.font;
+                font-weight: 600;
+            }
+
+            // Scrubber. The visible track is 5px, but a taller transparent
+            // wrapper hosts the seek TouchArea so the hit target is
+            // comfortable.
+            Rectangle {
+                height: 16px;
+                bar-bg := Rectangle {
+                    y: (parent.height - self.height) / 2;
+                    width: 100%;
+                    height: 5px;
+                    border-radius: 2.5px * Theme.r-scale;
+                    background: root.msg.outgoing ? Palette.bubble-inset-out-strong : Palette.bubble-inset-strong;
+                    Rectangle {
+                        x: 0;
+                        width: parent.width * clamp(root.msg.att-audio-progress, 0.0, 1.0);
+                        height: 100%;
+                        border-radius: 2.5px * Theme.r-scale;
+                        background: root.msg.outgoing ? Palette.bubble-out-fg : Palette.mint;
+                    }
+                }
+
+                seek-touch := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        root.seek-clicked(self.mouse-x / self.width);
+                    }
+                }
+            }
+
+            // Meta row: size on the left, elapsed/total on the right.
+            HorizontalLayout {
+                spacing: 6px;
+                Text {
+                    text: root.msg.att-failed ? @tr("failed · tap to retry") : (root.msg.att-audio-failed ? @tr("Can't play this audio format") : root.msg.att-size-label);
+                    horizontal-stretch: 1;
+                    overflow: elide;
+                    color: root.msg.att-failed || root.msg.att-audio-failed ? (root.msg.outgoing ? Palette.danger-on-bubble : Palette.danger) : (root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid);
+                    font-size: Theme.fs(10px, 14px);
+                    font-family: Theme.font;
+                    opacity: root.msg.att-failed || root.msg.att-audio-failed ? 1.0 : (root.msg.outgoing ? 0.75 : 0.9);
+                }
+
+                Text {
+                    text: root.msg.att-duration;
+                    color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
+                    font-size: Theme.fs(10px, 14px);
+                    font-family: Theme.font;
+                    horizontal-alignment: right;
+                }
+            }
+        }
+    }
+}
+

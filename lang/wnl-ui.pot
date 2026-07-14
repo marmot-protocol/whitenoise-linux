@@ -202,11 +202,11 @@ msgctxt "ChatHeader"
 msgid "Accept"
 msgstr ""
 
-msgctxt "Composer"
+msgctxt "ChatRequestBar"
 msgid "Accept"
 msgstr ""
 
-msgctxt "Composer"
+msgctxt "ChatRequestBar"
 msgid "Accept the request to start messaging"
 msgstr ""
 
@@ -367,11 +367,11 @@ msgctxt "ContactDetail"
 msgid "Block"
 msgstr ""
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "Block"
 msgstr ""
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "Block this chat request?"
 msgstr ""
 
@@ -411,7 +411,7 @@ msgctxt "StoragePane"
 msgid "Cached attachments"
 msgstr ""
 
-msgctxt "MessageBubble"
+msgctxt "AudioTile"
 msgid "Can't play this audio format"
 msgstr ""
 
@@ -460,15 +460,15 @@ msgctxt "StartNewChatModal"
 msgid "Cancel"
 msgstr ""
 
-msgctxt "Composer"
+msgctxt "EditBanner"
 msgid "Cancel edit"
 msgstr ""
 
-msgctxt "Composer"
+msgctxt "RecordingOverlay"
 msgid "Cancel recording"
 msgstr ""
 
-msgctxt "Composer"
+msgctxt "ReplyBanner"
 msgid "Cancel reply"
 msgstr ""
 
@@ -560,7 +560,7 @@ msgctxt "NetworkPane"
 msgid "Connected · {}/{}"
 msgstr ""
 
-msgctxt "DarkMatterLinux"
+msgctxt "AppState"
 msgid "Connecting to relays…"
 msgstr ""
 
@@ -584,15 +584,11 @@ msgctxt "LoginScreen"
 msgid "Continue"
 msgstr ""
 
+msgctxt "CopyChip"
+msgid "Copied ✓"
+msgstr ""
+
 msgctxt "EncryptionInfoModal"
-msgid "Copied ✓"
-msgstr ""
-
-msgctxt "ProfileModal"
-msgid "Copied ✓"
-msgstr ""
-
-msgctxt "QrModal"
 msgid "Copied ✓"
 msgstr ""
 
@@ -617,10 +613,6 @@ msgid "Copy"
 msgstr ""
 
 msgctxt "RevealNsecModal"
-msgid "Copy"
-msgstr ""
-
-msgctxt "WalletAddressRow"
 msgid "Copy"
 msgstr ""
 
@@ -809,7 +801,7 @@ msgctxt "StoragePane"
 msgid "Decrypted images and files, stored encrypted on this device."
 msgstr ""
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "Delete"
 msgstr ""
 
@@ -825,7 +817,7 @@ msgctxt "MessageContextMenu"
 msgid "Delete for everyone"
 msgstr ""
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "Delete for everyone?"
 msgstr ""
 
@@ -833,7 +825,7 @@ msgctxt "MessageContextMenu"
 msgid "Delete for me"
 msgstr ""
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "Delete for me?"
 msgstr ""
 
@@ -878,7 +870,7 @@ msgctxt "ProfilePage"
 msgid "Edit profile"
 msgstr ""
 
-msgctxt "Composer"
+msgctxt "EditBanner"
 msgid "Editing:"
 msgstr ""
 
@@ -890,7 +882,7 @@ msgctxt "EncryptionInfoModal"
 msgid "End-to-end encrypted"
 msgstr ""
 
-msgctxt "AboutPane"
+msgctxt "AboutHeroCard"
 msgid "End-to-end encrypted group messaging for Linux."
 msgstr ""
 
@@ -1174,11 +1166,11 @@ msgctxt "ChatContextMenu"
 msgid "Leave group"
 msgstr ""
 
-msgctxt "DarkMatterLinux"
+msgctxt "GroupSettingsCard"
 msgid "Leave group"
 msgstr ""
 
-msgctxt "GroupSettingsCard"
+msgctxt "ModalHost"
 msgid "Leave group"
 msgstr ""
 
@@ -1186,7 +1178,7 @@ msgctxt "GroupSettingsCard"
 msgid "Leave this group and stop receiving new messages. The chat moves to Archive."
 msgstr ""
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "Leave {}?"
 msgstr ""
 
@@ -1200,10 +1192,6 @@ msgstr ""
 
 msgctxt "ProfilePage"
 msgid "Lightning"
-msgstr ""
-
-msgctxt "WalletAddressRow"
-msgid "Lightning address"
 msgstr ""
 
 msgctxt "ProfilePage"
@@ -1270,15 +1258,15 @@ msgctxt "AboutPane"
 msgid "Made with marmots, math, and a little purple liquid."
 msgstr ""
 
-msgctxt "DarkMatterLinux"
-msgid "Make admin"
-msgstr ""
-
 msgctxt "GroupMemberMenu"
 msgid "Make admin"
 msgstr ""
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
+msgid "Make admin"
+msgstr ""
+
+msgctxt "ModalHost"
 msgid "Make {} an admin?"
 msgstr ""
 
@@ -1552,7 +1540,7 @@ msgctxt "ImportBackupModal"
 msgid "Password the backup was sealed with"
 msgstr ""
 
-msgctxt "LoginScreen"
+msgctxt "FormMessages"
 msgid "Passwords don't match."
 msgstr ""
 
@@ -1562,10 +1550,6 @@ msgstr ""
 
 msgctxt "StartNewChatModal"
 msgid "Paste one npub for a direct chat, or several (one per line) plus a group name."
-msgstr ""
-
-msgctxt "WalletAddressRow"
-msgid "People can zap you via this address."
 msgstr ""
 
 msgctxt "ContactsPage"
@@ -1724,23 +1708,23 @@ msgctxt "GetStartedScreen"
 msgid "Relays carry your encrypted messages. Add at least one to get online."
 msgstr ""
 
-msgctxt "Composer"
+msgctxt "ModalHost"
 msgid "Remove"
 msgstr ""
 
-msgctxt "DarkMatterLinux"
+msgctxt "StagedChips"
 msgid "Remove"
-msgstr ""
-
-msgctxt "DarkMatterLinux"
-msgid "Remove admin"
 msgstr ""
 
 msgctxt "GroupMemberMenu"
 msgid "Remove admin"
 msgstr ""
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
+msgid "Remove admin"
+msgstr ""
+
+msgctxt "ModalHost"
 msgid "Remove admin rights from {}?"
 msgstr ""
 
@@ -1760,11 +1744,11 @@ msgctxt "LoginScreen"
 msgid "Remove key"
 msgstr ""
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "Remove this relay?"
 msgstr ""
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "Remove {} from the group?"
 msgstr ""
 
@@ -1772,11 +1756,11 @@ msgctxt "MessageContextMenu"
 msgid "Reply"
 msgstr ""
 
-msgctxt "Composer"
+msgctxt "ReplyBanner"
 msgid "Replying to message:"
 msgstr ""
 
-msgctxt "Composer"
+msgctxt "ReplyBanner"
 msgid "Replying to {}:"
 msgstr ""
 
@@ -1972,7 +1956,7 @@ msgctxt "MessagesArea"
 msgid "Say hello to start the conversation."
 msgstr ""
 
-msgctxt "ProfilePage"
+msgctxt "ProfileQrPlate"
 msgid "Scan to add me from another device"
 msgstr ""
 
@@ -2004,7 +1988,7 @@ msgctxt "command palette footer"
 msgid "Select"
 msgstr ""
 
-msgctxt "Composer"
+msgctxt "RecordingOverlay"
 msgid "Send"
 msgstr ""
 
@@ -2112,15 +2096,15 @@ msgctxt "DebugPane"
 msgid "State / raw events / key packages"
 msgstr ""
 
-msgctxt "DarkMatterLinux"
-msgid "Step down"
-msgstr ""
-
 msgctxt "GroupMemberMenu"
 msgid "Step down"
 msgstr ""
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
+msgid "Step down"
+msgstr ""
+
+msgctxt "ModalHost"
 msgid "Step down as admin?"
 msgstr ""
 
@@ -2177,11 +2161,11 @@ msgctxt "KeysPage"
 msgid "This computer"
 msgstr ""
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "This declines the invite from {}. It can't be restored unless they invite you again."
 msgstr ""
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "This hides the message on this device only. Other people will still see it."
 msgstr ""
 
@@ -2217,11 +2201,11 @@ msgctxt "LoginScreen"
 msgid "This removes the key stored on this device. You'll need the nsec you backed up to use this identity again. This can't be undone."
 msgstr ""
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "This removes the message for everyone in the chat. This can't be undone."
 msgstr ""
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "This removes your admin rights. You can't restore them yourself unless another admin promotes you again."
 msgstr ""
 
@@ -2377,7 +2361,7 @@ msgctxt "OutgoingRow"
 msgid "You"
 msgstr ""
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "You will stop receiving new messages from this group. The chat moves to Archive."
 msgstr ""
 
@@ -2413,7 +2397,7 @@ msgctxt "KeysPage"
 msgid "current"
 msgstr ""
 
-msgctxt "MessageBubble"
+msgctxt "ImageTile"
 msgid "decrypting…"
 msgstr ""
 
@@ -2423,6 +2407,14 @@ msgstr ""
 
 msgctxt "MessageBubble"
 msgid "edited"
+msgstr ""
+
+msgctxt "AudioTile"
+msgid "failed · tap to retry"
+msgstr ""
+
+msgctxt "FileChip"
+msgid "failed · tap to retry"
 msgstr ""
 
 msgctxt "MessageBubble"
@@ -2461,11 +2453,11 @@ msgctxt "ChatRequestBanner"
 msgid "session."
 msgstr ""
 
-msgctxt "MessageBubble"
+msgctxt "ImageTile"
 msgid "tap to load"
 msgstr ""
 
-msgctxt "MessageBubble"
+msgctxt "ImageTile"
 msgid "tap to retry"
 msgstr ""
 
@@ -2483,24 +2475,28 @@ msgctxt "ContactDetail"
 msgid "{} relays"
 msgstr ""
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "{} will be able to add members, change group settings, and manage other admins."
 msgstr ""
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "{} will lose access to this group and stop receiving its messages. You'll need to invite them again to bring them back."
 msgstr ""
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "{} will stay in the group, but won't be able to manage members or group settings."
 msgstr ""
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "{} will stop carrying your messages. You can add it back anytime."
 msgstr ""
 
-msgctxt "Composer"
+msgctxt "RecordingOverlay"
 msgid "{}s"
+msgstr ""
+
+msgctxt "DangerActionRow"
+msgid "…"
 msgstr ""
 
 msgctxt "KeysPage"

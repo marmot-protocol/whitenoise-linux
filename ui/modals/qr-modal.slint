@@ -1,6 +1,6 @@
 import { Palette, Theme } from "../tokens.slint";
 import { Modal } from "modal.slint";
-import { CopyIcon } from "../icons/copy-icon.slint";
+import { CopyChip } from "../primitives/copy-chip.slint";
 
 // Contact QR card — opened from the contact detail "Show as QR" action. Shows
 // the contact's `marmot://profile/<npub>` deep link rasterized into a QR
@@ -16,16 +16,6 @@ export component QrModal inherits Modal {
     title: root.name;
     subtitle: @tr("Scan to add or message on another device");
 
-    // Transient "Copied ✓" feedback on the npub chip.
-    property <bool> copied: false;
-    copy-reset := Timer {
-        interval: 1.4s;
-        running: root.copied;
-        triggered => {
-            root.copied = false;
-        }
-    }
-
     VerticalLayout {
         spacing: 18px;
         alignment: center;
@@ -36,7 +26,7 @@ export component QrModal inherits Modal {
             Rectangle {
                 width: 224px;
                 height: 224px;
-                background: #FFFFFF;
+                background: Palette.qr-plate;
                 border-radius: (12px) * Theme.r-scale;
                 border-width: Theme.border-w;
                 border-color: Palette.field-border;
@@ -52,42 +42,10 @@ export component QrModal inherits Modal {
         // npub chip — tap to copy, flashes "Copied ✓".
         HorizontalLayout {
             alignment: center;
-            chip := Rectangle {
-                height: 30px;
-                width: chip-row.preferred-width + 28px;
-                border-radius: (15px) * Theme.r-scale;
-                background: chip-touch.has-hover ? Palette.field-hover : Palette.field;
-                border-width: Theme.border-w;
-                border-color: root.copied ? Palette.mint : Palette.field-border;
-                animate background, border-color { duration: Theme.transition-dur; }
-                chip-row := HorizontalLayout {
-                    x: 14px;
-                    width: self.preferred-width;
-                    spacing: 7px;
-                    alignment: center;
-                    Text {
-                        text: root.copied ? @tr("Copied ✓") : root.npub-short;
-                        color: root.copied ? Palette.mint : Palette.text-mid;
-                        font-size: Theme.fs(10.5px, 14px);
-                        font-weight: 700;
-                        font-family: Theme.font;
-                        vertical-alignment: center;
-                    }
-
-                    if !root.copied: VerticalLayout {
-                        alignment: center;
-                        CopyIcon {
-                            stroke: Palette.text-lo;
-                        }
-                    }
-                }
-
-                chip-touch := TouchArea {
-                    mouse-cursor: pointer;
-                    clicked => {
-                        root.copy-npub();
-                        root.copied = true;
-                    }
+            CopyChip {
+                value: root.npub-short;
+                copy-requested => {
+                    root.copy-npub();
                 }
             }
         }

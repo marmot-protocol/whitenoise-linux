@@ -1,0 +1,102 @@
+import { Palette, Theme } from "../tokens.slint";
+import { FocusCaret } from "../primitives/focus-caret.slint";
+import { KbdPill } from "kbd-pill.slint";
+
+// A single row in the palette. Rust supplies the array, filtering & selection logic.
+export struct PaletteAction {
+    id: string,
+    label: string,
+    group: string,
+    kbd: string,
+}
+
+// One palette entry: optional group header (when this row starts a new group)
+// above the selectable body — label, shortcut pill, and the theme's selection
+// marker (accent caret, or retro chevron). `activate` fires on click; the
+// parent owns the selection index and dispatch.
+export component PaletteRow inherits Rectangle {
+    in property <PaletteAction> action;
+    in property <bool> show-group-header: false;
+    in property <bool> is-selected: false;
+    callback activate();
+
+    height: row-stack.preferred-height;
+    row-stack := VerticalLayout {
+        spacing: 0;
+        if root.show-group-header: Rectangle {
+            height: 24px;
+            HorizontalLayout {
+                padding-left: 18px;
+                padding-right: 18px;
+                padding-top: 8px;
+                Text {
+                    text: root.action.group;
+                    color: Palette.text-vlo;
+                    font-size: Theme.fs(9px, 12px);
+                    font-weight: 700;
+                    letter-spacing: 1.4px;
+                    font-family: Theme.font;
+                }
+            }
+        }
+        // Row body.
+        Rectangle {
+            height: 36px;
+            background: root.is-selected ? (Theme.selected-inverts-text ? Palette.selected : Palette.bubble-in) : (row-touch.has-hover ? Palette.hover : transparent);
+            border-radius: (5px) * Theme.r-scale;
+            animate background {
+                duration: 90ms;
+                easing: ease-out;
+            }
+
+            // Mint accent bar on selected row (normal mode).
+            if !Theme.pixel-select-marker: FocusCaret {
+                x: 8px;
+                y: (parent.height - self.height) / 2;
+                height: root.is-selected ? 18px : 0px;
+                animate height {
+                    duration: 160ms;
+                    easing: ease-in-out;
+                }
+            }
+            // Retro selection chevron.
+            if Theme.pixel-select-marker && root.is-selected: Text {
+                x: 6px;
+                y: (parent.height - self.height) / 2;
+                text: "▶";
+                color: Palette.bubble-out-fg;
+                font-size: Theme.fs(12px, 13px);
+                font-family: Theme.font;
+                vertical-alignment: center;
+            }
+
+            HorizontalLayout {
+                padding-left: 22px;
+                padding-right: 18px;
+                spacing: 12px;
+                alignment: stretch;
+                Text {
+                    text: root.action.label;
+                    color: Theme.pixel-select-marker && root.is-selected ? Palette.bubble-out-fg : Palette.text-hi;
+                    font-size: Theme.fs(12px, 13px);
+                    font-weight: root.is-selected ? 700 : 500;
+                    font-family: Theme.font;
+                    vertical-alignment: center;
+                    horizontal-stretch: 1;
+                }
+
+                if root.action.kbd != "": KbdPill {
+                    label: root.action.kbd;
+                    bg: root.is-selected && !Theme.pixel-select-marker ? Palette.panel : Palette.panel-2;
+                    y: (parent.height - self.height) / 2;
+                }
+            }
+
+            row-touch := TouchArea {
+                clicked => {
+                    root.activate();
+                }
+            }
+        }
+    }
+}

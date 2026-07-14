@@ -44,19 +44,26 @@ Leaf-to-Rust channels that bypass callback threading. A skin invokes these direc
 - `EmojiSheet.sprite` / `.tile` — the shared Twemoji texture (read-only).
 - `EffectCatalog.choices` / `.selected` — message-effect catalog + pending selection.
 
-### 3. Root component interface (`ui/dark-matter-linux.slint`)
+### 3. View-model surface (`ui/shell/app-state.slint`)
 
-The `DarkMatterLinux` root exposes ~184 properties and ~113 callbacks that `main.rs`
-binds once. This is the authoritative action/state surface. Skins and shells route
+The `AppState` global holds ~250 properties and ~155 callbacks that `main.rs`
+binds once. This is the authoritative action/state surface. Skins route
 user intent through these callbacks (e.g. `send-message`, `react-message`,
 `request-reply`, `attachment-clicked`, `switch-account`) and read state from these
 properties (e.g. `composer-draft`, `chats`, `messages`, `reply-target-*`).
+Rust binds callbacks on the global (`ui.global::<AppState>().on_*`); properties
+are also re-exposed on the `DarkMatterLinux` root via two-way aliases, so
+property setters/getters stay on the window handle (`ui.set_*` / `ui.get_*`).
+The root component itself is thin: the alias contract plus mounts of the shell
+pieces (`shell/app-shell.slint`, `shell/modal-host.slint`,
+`shell/login-gate.slint`, `shell/shell-timers.slint`), which read `AppState`
+directly instead of having state forwarded per-mount.
 
 ### 4. Theme-selection properties (managed by the engine, set from `settings.rs`)
 
 The only theme state Rust sets: `theme-id: int` and `accent-color: int`. The root
 folds `theme-id` straight onto `Theme.id`, which selects a `ThemeColors`/`ThemeStyle`
-pack and, transitively, the per-family skin ids and shell id. Rust's job is just "set
+pack and, transitively, the per-family skin ids. Rust's job is just "set
 the active theme id + accent"; all resolution happens in Slint. The persisted string
 mode name maps to the id through the `THEME_MODES` table in `state.rs` (index = id),
 exactly as `ACCENTS` maps accent names to `accent-color`. There are no per-theme
@@ -84,7 +91,6 @@ them back into an id are gone.
 Theme (id + accent)          ← Rust sets only this
   └─ Tokens (ThemeTokens)    ← L0: colors/type/geometry/motion/flags  (Phase B)
   └─ component skin slots    ← L1: dispatch to a skin body per family  (Phase C)
-  └─ shell variant slot      ← L2: dispatch to a shell skeleton        (Phase D)
   └─ theme files (built + user)  ← ThemeColors/ThemeStyle packs loaded at startup
 ```
 
@@ -108,9 +114,8 @@ bodies and bumps the selectors.
    definition (the eight built-ins are authored this way).
 2. **Skins (only if a `[style]` selector is non-zero)** — add the alternate body to
    that family's slot, guarded by its selector value, reading the contract structs:
-   - messages → `ui/primitives/message-view.slint` (`if Theme.skin-message == N`)
-   - chat list → `ui/primitives/chat-list-entry.slint` (`if Theme.skin-list == N`)
-   - shell → inline `if Theme.shell == N` skeleton in `ui/dark-matter-linux.slint`
+    - messages → `ui/primitives/message-view.slint` (`if Theme.skin-message == N`)
+    - chat list → `ui/primitives/chat-list-entry.slint` (`if Theme.skin-list == N`)
 3. **Make a built-in selectable** — add the file to `BUILTIN_THEME_FILES` in
    `src/themes.rs`, append its mode name to `THEME_MODES` in `src/state.rs` (its
    position is the theme id), and add a matching `names`/`modes` entry in

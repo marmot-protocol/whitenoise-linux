@@ -1,0 +1,87 @@
+import { Palette, Theme, ChatMeta } from "../tokens.slint";
+import { Avatar } from "../primitives/avatar.slint";
+import { FocusCaret } from "../primitives/focus-caret.slint";
+
+// One destination row in the forward picker: avatar + chat name + preview
+// with hover/keyboard-cursor highlight and the shared focus caret. The parent
+// computes `shown` (source-chat skip + query filter) and `cursored` per index.
+export component ForwardChatRow inherits Rectangle {
+    in property <ChatMeta> chat;
+    in property <bool> shown: true;
+    in property <bool> cursored: false;
+    callback selected();
+
+    height: root.shown ? 62px : 0px;
+    visible: root.shown;
+
+    Rectangle {
+        x: 0;
+        y: 0;
+        width: parent.width;
+        height: 56px;
+        border-radius: (10px) * Theme.r-scale;
+        background: root.cursored || row-touch.has-hover ? Palette.hover : transparent;
+        animate background {
+            duration: Theme.hover-dur;
+            easing: ease-out;
+        }
+
+        // Accent focus bar on the cursored row, same treatment as the
+        // language picker's rows.
+        if root.cursored: FocusCaret {
+            x: 0;
+            y: (parent.height - self.height) / 2;
+            height: 26px;
+        }
+
+        // Wraps the row content so it wins the hit-test over the card's
+        // click-swallower (nested TouchAreas beat outer ones).
+        row-touch := TouchArea {
+            enabled: root.shown;
+            mouse-cursor: pointer;
+            clicked => {
+                root.selected();
+            }
+
+            HorizontalLayout {
+                padding-left: 10px;
+                padding-right: 14px;
+                spacing: 12px;
+
+                VerticalLayout {
+                    alignment: center;
+                    Avatar {
+                        size: 36px;
+                        initials: root.chat.av-initials;
+                        color-a: root.chat.av-a;
+                        color-b: root.chat.av-b;
+                        picture: root.chat.picture;
+                        has-picture: root.chat.has-picture;
+                    }
+                }
+
+                VerticalLayout {
+                    alignment: center;
+                    spacing: 3px;
+                    horizontal-stretch: 1;
+                    Text {
+                        text: root.chat.name;
+                        color: Palette.text-hi;
+                        font-size: Theme.fs(12px, 16px);
+                        font-weight: 700;
+                        font-family: Theme.font;
+                        overflow: elide;
+                    }
+
+                    Text {
+                        text: root.chat.preview;
+                        color: Palette.text-lo;
+                        font-size: Theme.fs(10px, 14px);
+                        font-family: Theme.font;
+                        overflow: elide;
+                    }
+                }
+            }
+        }
+    }
+}

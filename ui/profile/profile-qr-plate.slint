@@ -1,0 +1,36 @@
+import { Palette, Theme } from "../tokens.slint";
+
+// QR of the marmot://profile deep link, over a plate that stays white in
+// every theme — phone cameras need real contrast, and the image's baked-in
+// quiet zone merges with the plate. A short scan hint rides underneath.
+export component ProfileQrPlate inherits VerticalLayout {
+    in property <image> qr;
+
+    padding-top: 16px;
+    padding-bottom: 16px;
+    spacing: 8px;
+    HorizontalLayout {
+        alignment: center;
+        Rectangle {
+            width: 168px;
+            height: 168px;
+            background: Palette.qr-plate;
+            border-radius: (8px) * Theme.r-scale;
+            border-width: Theme.border-w;
+            border-color: Palette.card-border;
+            Image {
+                width: 152px;
+                height: 152px;
+                source: root.qr;
+                image-rendering: pixelated;
+            }
+        }
+    }
+
+    Text {
+        text: @tr("Scan to add me from another device");
+        color: Palette.text-lo;
+        font-size: Theme.fs(11px, 14px);
+        horizontal-alignment: center;
+    }
+}

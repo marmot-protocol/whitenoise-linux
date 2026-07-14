@@ -10,8 +10,7 @@ export component GroupMemberRow inherits Rectangle {
     callback request-menu(string, string, bool, bool, bool, bool, length, length);
 
     // The "⋯" affordance shows only when the viewer can act on this row.
-    property <bool> has-actions: root.data.can-promote || root.data.can-demote
-        || root.data.can-self-demote || root.data.can-remove;
+    property <bool> has-actions: root.data.can-promote || root.data.can-demote || root.data.can-self-demote || root.data.can-remove;
 
     height: 52px;
     // Invited-but-not-yet-active members read as pending, so dim the row.

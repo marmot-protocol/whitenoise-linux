@@ -2,12 +2,13 @@ import { Palette, Theme } from "../tokens.slint";
 import { CopyIcon } from "../icons/copy-icon.slint";
 import { CameraIcon } from "../icons/camera-icon.slint";
 import { Avatar } from "../primitives/avatar.slint";
-import { CypherScroll } from "../primitives/cypher-scroll.slint";
+import { ScrollView } from "../primitives/scroll-view.slint";
 import { LineInput } from "../primitives/line-input.slint";
-import { Section } from "../shells/section.slint";
-import { GroupCard } from "../shells/group-card.slint";
-import { KVRow } from "../shells/kv-row.slint";
+import { Section } from "../layout/section.slint";
+import { GroupCard } from "../layout/group-card.slint";
+import { KVRow } from "../layout/kv-row.slint";
 import { Button, MicroButton } from "../primitives/button.slint";
+import { ProfileQrPlate } from "profile-qr-plate.slint";
 
 // Single editable field row used by the edit form.
 component FieldRow inherits Rectangle {
@@ -205,10 +206,10 @@ component AvatarEditable inherits Rectangle {
         width: 96px;
         height: 96px;
         border-radius: (48px) * Theme.r-scale;
-        background: #000000B0;
+        background: Palette.media-chip-bg;
         Text {
             text: @tr("Uploading…");
-            color: white;
+            color: Palette.media-chip-fg;
             font-size: Theme.fs(10px, 14px);
             font-weight: 700;
             horizontal-alignment: center;
@@ -275,7 +276,7 @@ export component ProfilePage inherits Rectangle {
     callback copy-npub-clicked();
     callback upload-picture-clicked();
 
-    CypherScroll {
+    ScrollView {
         width: parent.width;
         height: parent.height;
         viewport-height: page.preferred-height;
@@ -500,37 +501,9 @@ export component ProfilePage inherits Rectangle {
                             }
                         }
                     }
-                    // QR of the marmot://profile deep link. The plate stays white in every
-                    // theme — phone cameras need real contrast, and the image's
-                    // baked-in quiet zone merges with the white plate.
-                    VerticalLayout {
-                        padding-top: 16px;
-                        padding-bottom: 16px;
-                        spacing: 8px;
-                        HorizontalLayout {
-                            alignment: center;
-                            Rectangle {
-                                width: 168px;
-                                height: 168px;
-                                background: white;
-                                border-radius: (8px) * Theme.r-scale;
-                                border-width: Theme.border-w;
-                                border-color: Palette.card-border;
-                                Image {
-                                    width: 152px;
-                                    height: 152px;
-                                    source: root.qr;
-                                    image-rendering: pixelated;
-                                }
-                            }
-                        }
 
-                        Text {
-                            text: @tr("Scan to add me from another device");
-                            color: Palette.text-lo;
-                            font-size: Theme.fs(11px, 14px);
-                            horizontal-alignment: center;
-                        }
+                    ProfileQrPlate {
+                        qr: root.qr;
                     }
                 }
             }

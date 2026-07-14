@@ -1,0 +1,106 @@
+import { Palette, Theme, StagedAttachment } from "../../tokens.slint";
+import { PaperclipIcon } from "../../icons/paperclip-icon.slint";
+import { MicroButton } from "../../primitives/button.slint";
+
+// Staged-attachment chips — the "are you sure" step. Everything queued here is
+// visible (with a thumbnail for images) and removable before Send fires the
+// uploads.
+export component StagedChips inherits Rectangle {
+    in property <[StagedAttachment]> staged;
+    callback remove-staged(int);
+
+    height: 58px;
+    background: Palette.bg;
+    staged-flick := Flickable {
+        x: 18px;
+        width: parent.width - 36px;
+        height: parent.height;
+        viewport-width: max(self.width, staged-row.preferred-width);
+        viewport-height: self.height;
+        staged-row := HorizontalLayout {
+            padding-top: 9px;
+            padding-bottom: 9px;
+            spacing: 8px;
+            alignment: start;
+            for att[att-i] in root.staged: Rectangle {
+                width: 192px;
+                height: 40px;
+                border-radius: (8px) * Theme.r-scale;
+                background: Palette.panel;
+                border-width: 1px;
+                border-color: Palette.border-2;
+                HorizontalLayout {
+                    padding-left: 6px;
+                    padding-right: 4px;
+                    spacing: 8px;
+                    alignment: stretch;
+                    Rectangle {
+                        width: 28px;
+                        height: 28px;
+                        y: (parent.height - self.height) / 2;
+                        border-radius: (5px) * Theme.r-scale;
+                        background: Palette.panel-2;
+                        clip: true;
+                        if att.has-thumb: Image {
+                            width: parent.width;
+                            height: parent.height;
+                            source: att.thumb;
+                            image-fit: cover;
+                        }
+                        if !att.has-thumb && att.icon != "": Text {
+                            text: att.icon;
+                            color: Palette.text-lo;
+                            font-size: Theme.fs(14px, 18px);
+                            font-family: Theme.font;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                            width: parent.width;
+                            height: parent.height;
+                        }
+                        if !att.has-thumb && att.icon == "": PaperclipIcon {
+                            stroke: Palette.text-lo;
+                            x: (parent.width - self.width) / 2;
+                            y: (parent.height - self.height) / 2;
+                        }
+                    }
+
+                    VerticalLayout {
+                        alignment: center;
+                        horizontal-stretch: 1;
+                        Text {
+                            text: att.name;
+                            color: Palette.text-hi;
+                            font-size: Theme.fs(11px, 14px);
+                            font-family: Theme.font;
+                            overflow: elide;
+                        }
+
+                        Text {
+                            text: att.size-label;
+                            color: Palette.text-lo;
+                            font-size: Theme.fs(10px, 14px);
+                            font-family: Theme.font;
+                            overflow: elide;
+                        }
+                    }
+
+                    MicroButton {
+                        label: @tr("Remove");
+                        button-height: 32px;
+                        y: (parent.height - self.height) / 2;
+                        focusable: true;
+                        fg: Palette.text-mid;
+                        hover-fg: Palette.text-hi;
+                        bg-color: transparent;
+                        hover-bg: Palette.panel-2;
+                        outline: Palette.border-2;
+                        hover-outline: Palette.border;
+                        clicked => {
+                            root.remove-staged(att-i);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

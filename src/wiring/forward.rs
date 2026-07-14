@@ -29,7 +29,7 @@ pub(crate) fn wire_forward(ui: &DarkMatterLinux, cx: &Cx) {
     // plus the ordered list of visible chat indices, which the modal's
     // keyboard cursor walks. The picker also fires this on open with the
     // empty query, so both arrays are fresh for the current active chat.
-    ui.on_forward_filter_changed({
+    ui.global::<AppState>().on_forward_filter_changed({
         let weak = ui.as_weak();
         move |query| {
             let Some(ui) = weak.upgrade() else { return };
@@ -49,7 +49,7 @@ pub(crate) fn wire_forward(ui: &DarkMatterLinux, cx: &Cx) {
         }
     });
 
-    ui.on_request_forward({
+    ui.global::<AppState>().on_request_forward({
         let weak = ui.as_weak();
         move |dest_idx| {
             let Some(ui) = weak.upgrade() else { return };
@@ -81,7 +81,7 @@ pub(crate) fn wire_forward(ui: &DarkMatterLinux, cx: &Cx) {
             // Land the user in the destination so they watch the forward arrive.
             // The optimistic bubbles below reconcile by group hex, so they land
             // in the right chat regardless of this switch's async rebuild.
-            ui.invoke_chat_selected(dest_idx as i32);
+            ui.global::<AppState>().invoke_chat_selected(dest_idx as i32);
 
             let weak = weak.clone();
             let backend_cell = backend_cell.clone();

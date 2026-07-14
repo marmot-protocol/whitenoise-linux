@@ -1,6 +1,7 @@
 import { Palette, Theme, AccountEntry } from "../tokens.slint";
 import { Modal } from "modal.slint";
 import { Avatar } from "../primitives/avatar.slint";
+import { FocusCaret } from "../primitives/focus-caret.slint";
 
 // Account switcher. Every listed account has a live background session —
 // selecting a row only changes which one the UI displays. The primary action
@@ -84,13 +85,10 @@ export component AccountSwitcherModal inherits Modal {
                 }
 
                 // Accent focus bar on the keyboard-focused row, matching the language picker.
-                if keyboard-focused: Rectangle {
+                if keyboard-focused: FocusCaret {
                     x: 0;
-                    width: 2px;
                     y: (parent.height - self.height) / 2;
                     height: 26px;
-                    background: Palette.mint;
-                    border-radius: 1px;
                 }
 
                 // Wraps the row content so it wins the hit-test over the card's

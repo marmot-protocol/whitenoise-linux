@@ -1,0 +1,15 @@
+import { SectionHeader } from "section-header.slint";
+
+// Labelled column of content. The header line is the shared SectionHeader, so
+// the label style has one source; `note` is the optional dimmer suffix.
+export component Section inherits VerticalLayout {
+    in property <string> label;
+    in property <string> note;
+    spacing: 10px;
+    SectionHeader {
+        label: root.label;
+        note: root.note;
+    }
+
+    @children
+}

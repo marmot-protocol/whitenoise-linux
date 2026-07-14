@@ -4,16 +4,20 @@ import {
     StagedAttachment,
     EmojiSheet,
     EffectCatalog,
-    EffectChoice,
 } from "../tokens.slint";
 import { PaperclipIcon } from "../icons/paperclip-icon.slint";
 import { MicIcon } from "../icons/mic-icon.slint";
 import { SmileyIcon } from "../icons/smiley-icon.slint";
 import { SendIcon } from "../icons/send-icon.slint";
 import { LineInput } from "../primitives/line-input.slint";
-import { Button, MicroButton } from "../primitives/button.slint";
+import { Button } from "../primitives/button.slint";
 import { Tooltip } from "../primitives/tooltip.slint";
-import { CheckMark } from "../icons/check-mark.slint";
+import { EditBanner } from "composer/edit-banner.slint";
+import { ReplyBanner } from "composer/reply-banner.slint";
+import { StagedChips } from "composer/staged-chips.slint";
+import { RecordingOverlay } from "composer/recording-overlay.slint";
+import { ChatRequestBar } from "composer/chat-request-bar.slint";
+import { EffectPicker } from "composer/effect-picker.slint";
 
 export component Composer inherits Rectangle {
     in-out property <string> draft <=> composer-input.text;
@@ -88,243 +92,27 @@ export component Composer inherits Rectangle {
     VerticalLayout {
         spacing: 0;
 
-        if root.editing-message-id != "": Rectangle {
-            height: root.chip-h;
-            background: Palette.panel;
-            border-width: 1px;
-            border-color: Palette.border-2;
-            border-radius: (6px) * Theme.r-scale;
-            HorizontalLayout {
-                padding-left: 18px;
-                padding-right: 18px;
-                spacing: 8px;
-                alignment: stretch;
-                Rectangle {
-                    width: 3px;
-                    background: Palette.mint;
-                    y: (parent.height - self.height) / 2;
-                    height: 18px;
-                    border-radius: 1.5px;
-                }
-
-                VerticalLayout {
-                    alignment: center;
-                    horizontal-stretch: 1;
-                    HorizontalLayout {
-                        spacing: 6px;
-                        Text {
-                            text: @tr("Editing:");
-                            color: Palette.mint;
-                            font-size: Theme.fs(11px, 14px);
-                            font-family: Theme.font;
-                            font-weight: 700;
-                            vertical-alignment: center;
-                        }
-
-                        Text {
-                            text: root.editing-message-preview;
-                            color: Palette.text-mid;
-                            font-size: Theme.fs(11px, 14px);
-                            font-family: Theme.font;
-                            overflow: elide;
-                            horizontal-stretch: 1;
-                            vertical-alignment: center;
-                        }
-                    }
-                }
-
-                MicroButton {
-                    label: @tr("Cancel edit");
-                    button-height: 32px;
-                    y: (parent.height - self.height) / 2;
-                    focusable: true;
-                    fg: Palette.text-mid;
-                    hover-fg: Palette.text-hi;
-                    bg-color: transparent;
-                    hover-bg: Palette.panel-2;
-                    outline: Palette.border-2;
-                    hover-outline: Palette.border;
-                    clicked => {
-                        root.cancel-edit();
-                    }
-                }
+        if root.editing-message-id != "": EditBanner {
+            editing-message-preview: root.editing-message-preview;
+            cancel-edit => {
+                root.cancel-edit();
             }
         }
 
-        if root.reply-target-id != "": Rectangle {
-            height: root.chip-h;
-            background: Palette.panel;
-            border-width: 1px;
-            border-color: Palette.border-2;
-            border-radius: (6px) * Theme.r-scale;
-            HorizontalLayout {
-                padding-left: 18px;
-                padding-right: 18px;
-                spacing: 8px;
-                alignment: stretch;
-                Rectangle {
-                    width: 3px;
-                    background: Palette.mint;
-                    y: (parent.height - self.height) / 2;
-                    height: 18px;
-                    border-radius: 1.5px;
-                }
-
-                VerticalLayout {
-                    alignment: center;
-                    horizontal-stretch: 1;
-                    HorizontalLayout {
-                        spacing: 6px;
-                        Text {
-                            text: root.reply-target-author == "" ? @tr("Replying to message:") : @tr("Replying to {}:", root.reply-target-author);
-                            color: Palette.mint;
-                            font-size: Theme.fs(11px, 14px);
-                            font-family: Theme.font;
-                            font-weight: 700;
-                            vertical-alignment: center;
-                        }
-
-                        Text {
-                            text: root.reply-target-preview;
-                            color: Palette.text-mid;
-                            font-size: Theme.fs(11px, 14px);
-                            font-family: Theme.font;
-                            overflow: elide;
-                            horizontal-stretch: 1;
-                            vertical-alignment: center;
-                        }
-                    }
-                }
-            // Signal-style thumbnail of the quoted media, right before the
-            // cancel affordance.
-            if root.reply-target-has-image: Rectangle {
-                    width: 26px;
-                    height: 26px;
-                    y: (parent.height - self.height) / 2;
-                    border-radius: (4px) * Theme.r-scale;
-                    clip: true;
-                    Image {
-                        source: root.reply-target-image;
-                        width: parent.width;
-                        height: parent.height;
-                        image-fit: cover;
-                    }
-                }
-                MicroButton {
-                    label: @tr("Cancel reply");
-                    button-height: 32px;
-                    y: (parent.height - self.height) / 2;
-                    focusable: true;
-                    fg: Palette.text-mid;
-                    hover-fg: Palette.text-hi;
-                    bg-color: transparent;
-                    hover-bg: Palette.panel-2;
-                    outline: Palette.border-2;
-                    hover-outline: Palette.border;
-                    clicked => {
-                        root.cancel-reply();
-                    }
-                }
+        if root.reply-target-id != "": ReplyBanner {
+            reply-target-author: root.reply-target-author;
+            reply-target-preview: root.reply-target-preview;
+            reply-target-image: root.reply-target-image;
+            reply-target-has-image: root.reply-target-has-image;
+            cancel-reply => {
+                root.cancel-reply();
             }
         }
 
-        // Staged-attachment chips — the "are you sure" step. Everything queued
-    // here is visible (with a thumbnail for images) and removable before
-    // Send fires the uploads.
-    if root.staged.length > 0: Rectangle {
-            height: root.staged-h;
-            background: Palette.bg;
-            staged-flick := Flickable {
-                x: 18px;
-                width: parent.width - 36px;
-                height: parent.height;
-                viewport-width: max(self.width, staged-row.preferred-width);
-                viewport-height: self.height;
-                staged-row := HorizontalLayout {
-                    padding-top: 9px;
-                    padding-bottom: 9px;
-                    spacing: 8px;
-                    alignment: start;
-                    for att[att-i] in root.staged: Rectangle {
-                        width: 192px;
-                        height: 40px;
-                        border-radius: (8px) * Theme.r-scale;
-                        background: Palette.panel;
-                        border-width: 1px;
-                        border-color: Palette.border-2;
-                        HorizontalLayout {
-                            padding-left: 6px;
-                            padding-right: 4px;
-                            spacing: 8px;
-                            alignment: stretch;
-                            Rectangle {
-                                width: 28px;
-                                height: 28px;
-                                y: (parent.height - self.height) / 2;
-                                border-radius: (5px) * Theme.r-scale;
-                                background: Palette.panel-2;
-                                clip: true;
-                                if att.has-thumb: Image {
-                                    width: parent.width;
-                                    height: parent.height;
-                                    source: att.thumb;
-                                    image-fit: cover;
-                                }
-                                if !att.has-thumb && att.icon != "": Text {
-                                    text: att.icon;
-                                    color: Palette.text-lo;
-                                    font-size: Theme.fs(14px, 18px);
-                                    font-family: Theme.font;
-                                    horizontal-alignment: center;
-                                    vertical-alignment: center;
-                                    width: parent.width;
-                                    height: parent.height;
-                                }
-                                if !att.has-thumb && att.icon == "": PaperclipIcon {
-                                    stroke: Palette.text-lo;
-                                    x: (parent.width - self.width) / 2;
-                                    y: (parent.height - self.height) / 2;
-                                }
-                            }
-
-                            VerticalLayout {
-                                alignment: center;
-                                horizontal-stretch: 1;
-                                Text {
-                                    text: att.name;
-                                    color: Palette.text-hi;
-                                    font-size: Theme.fs(11px, 14px);
-                                    font-family: Theme.font;
-                                    overflow: elide;
-                                }
-
-                                Text {
-                                    text: att.size-label;
-                                    color: Palette.text-lo;
-                                    font-size: Theme.fs(10px, 14px);
-                                    font-family: Theme.font;
-                                    overflow: elide;
-                                }
-                            }
-
-                            MicroButton {
-                                label: @tr("Remove");
-                                button-height: 32px;
-                                y: (parent.height - self.height) / 2;
-                                focusable: true;
-                                fg: Palette.text-mid;
-                                hover-fg: Palette.text-hi;
-                                bg-color: transparent;
-                                hover-bg: Palette.panel-2;
-                                outline: Palette.border-2;
-                                hover-outline: Palette.border;
-                                clicked => {
-                                    root.remove-staged(att-i);
-                                }
-                            }
-                        }
-                    }
-                }
+        if root.staged.length > 0: StagedChips {
+            staged: root.staged;
+            remove-staged(i) => {
+                root.remove-staged(i);
             }
         }
 
@@ -337,10 +125,10 @@ export component Composer inherits Rectangle {
                 horizontal-stretch: 1;
                 height: root.row-h;
                 border-radius: (10px) * Theme.r-scale;
-            // While the chat is a pending request the pill chrome drops away
-            // entirely — the action bar below replaces the input rather than
-            // graying it out.
-            background: root.chat-request ? transparent : Palette.panel;
+                // While the chat is a pending request the pill chrome drops away
+                // entirely — the action bar below replaces the input rather than
+                // graying it out.
+                background: root.chat-request ? transparent : Palette.panel;
                 border-width: root.chat-request ? 0px : 1px;
                 border-color: root.recording ? Palette.danger : (composer-input.has-focus ? Palette.mint-dim : Palette.border-2);
                 drop-shadow-blur: !root.recording && composer-input.has-focus && Theme.focus-glow ? 12px : 0px;
@@ -355,10 +143,10 @@ export component Composer inherits Rectangle {
                 }
 
                 // Normal composer: paperclip, mic, text input, emoji, send.
-            // Hidden (not just disabled) while the chat is a pending request;
-            // the elements stay instantiated because `composer-input` and
-            // `send-button` anchor the floating hint/badge/popover elements.
-            HorizontalLayout {
+                // Hidden (not just disabled) while the chat is a pending request;
+                // the elements stay instantiated because `composer-input` and
+                // `send-button` anchor the floating hint/badge/popover elements.
+                HorizontalLayout {
                     visible: !root.chat-request;
                     padding-left: 16px;
                     padding-right: 8px;
@@ -439,17 +227,17 @@ export component Composer inherits Rectangle {
                             }
                         }
                     }
-                // Icon-only circular action: with content it's Send (mint);
-                // empty it becomes the mic, so the draft governs which action
-                // sits in the slot. Dropping the 92px "Send" word frees that
-                // width back to the input. Stays named `send-button` so the
-                // effect badge/popover anchor math below is unchanged.
-                send-button := Button {
+                    // Icon-only circular action: with content it's Send (mint);
+                    // empty it becomes the mic, so the draft governs which action
+                    // sits in the slot. Dropping the 92px "Send" word frees that
+                    // width back to the input. Stays named `send-button` so the
+                    // effect badge/popover anchor math below is unchanged.
+                    send-button := Button {
                         focusable: true;
-                    // Hidden while a chat request is pending; also disabled
-                    // so Tab focus can't reach it and Enter/Space start a
-                    // recording.
-                    enabled: !root.chat-request;
+                        // Hidden while a chat request is pending; also disabled
+                        // so Tab focus can't reach it and Enter/Space start a
+                        // recording.
+                        enabled: !root.chat-request;
                         accessible-label: root.primary-action-label;
                         clicked => {
                             if (root.can-send) {
@@ -458,9 +246,9 @@ export component Composer inherits Rectangle {
                                 root.record-clicked();
                             }
                         }
-                    // Right-click / long-press arms a message effect — only
-                    // meaningful when there's actually a message to send.
-                    alt-action => {
+                        // Right-click / long-press arms a message effect — only
+                        // meaningful when there's actually a message to send.
+                        alt-action => {
                             if (root.can-send) {
                                 root.show-effects = !root.show-effects;
                             }
@@ -487,8 +275,8 @@ export component Composer inherits Rectangle {
                             SendIcon {
                                 fill-color: Palette.bubble-out-fg;
                                 size: 16px;
-                            // optical-center the asymmetric arrow in the circle
-                            x: (parent.width - self.width) / 2 - 1px;
+                                // optical-center the asymmetric arrow in the circle
+                                x: (parent.width - self.width) / 2 - 1px;
                                 y: (parent.height - self.height) / 2;
                             }
                         }
@@ -499,128 +287,27 @@ export component Composer inherits Rectangle {
                 }
 
                 // Recording overlay: red indicator, live timer, stop (send) + cancel.
-            // Painted on top of the normal composer when `recording` is true.
-            if root.recording: Rectangle {
-                    x: 0;
-                    y: 0;
-                    width: 100%;
-                    height: 100%;
-                    background: Palette.panel;
-                    border-radius: (10px) * Theme.r-scale;
-
-                    HorizontalLayout {
-                        padding-left: 16px;
-                        padding-right: 8px;
-                        spacing: 12px;
-                        alignment: stretch;
-
-                        Rectangle {
-                            width: 22px;
-                            height: parent.height;
-                        // Red record dot (steady; avoids continuous repaints).
-                        Rectangle {
-                                width: 12px;
-                                height: 12px;
-                                border-radius: 6px;
-                                background: Palette.danger;
-                                y: (parent.height - self.height) / 2;
-                                x: (parent.width - self.width) / 2;
-                            }
-                        }
-
-                        Text {
-                            text: @tr("{}s", root.recording-secs);
-                            color: Palette.text-hi;
-                            font-size: Theme.fs(13px, 16px);
-                            font-family: Theme.font;
-                            vertical-alignment: center;
-                            horizontal-stretch: 1;
-                        }
-
-                        // Stop — finishes the clip and sends it.
-                    Button {
-                            label: @tr("Send");
-                            button-width: 92px;
-                            button-height: 36px;
-                            y: (parent.height - self.height) / 2;
-                            radius: 8px;
-                            pad-left: 12px;
-                            pad-right: 14px;
-                            spacing: 8px;
-                            use-hover: true;
-                            bg-color: Palette.danger;
-                            hover-bg: Palette.danger-soft-hover;
-                            outline: Palette.danger;
-                            hover-outline: Palette.danger;
-                            fg: #FFFFFF;
-                            hover-fg: #FFFFFF;
-                            clicked => {
-                                root.stop-recording();
-                            }
-                        }
-
-                        // Cancel — discards the clip.
-                    MicroButton {
-                            label: @tr("Cancel recording");
-                            button-height: 32px;
-                            y: (parent.height - self.height) / 2;
-                            focusable: true;
-                            fg: Palette.text-mid;
-                            hover-fg: Palette.text-hi;
-                            bg-color: transparent;
-                            hover-bg: Palette.panel-2;
-                            outline: Palette.border-2;
-                            hover-outline: Palette.border;
-                            clicked => {
-                                root.cancel-recording();
-                            }
-                        }
+                // Painted on top of the normal composer when `recording` is true.
+                if root.recording: RecordingOverlay {
+                    recording-secs: root.recording-secs;
+                    stop-recording => {
+                        root.stop-recording();
+                    }
+                    cancel-recording => {
+                        root.cancel-recording();
                     }
                 }
 
                 // Chat-request action bar: replaces the composer while the chat
-            // is a pending request. The input pill and its controls are
-            // hidden above, so this renders as a flat centered bar in the
-            // composer slot (Signal swaps the composer for the request
-            // actions the same way). The TouchArea absorbs clicks aimed at
-            // the hidden controls; Accept routes to the same handler as the
-            // header button.
-            if root.chat-request: Rectangle {
-                    x: 0;
-                    y: 0;
-                    width: 100%;
-                    height: 100%;
-                    TouchArea { }
-
-                    HorizontalLayout {
-                        spacing: 12px;
-                        alignment: center;
-
-                        Text {
-                            text: @tr("Accept the request to start messaging");
-                            color: Palette.text-lo;
-                            font-size: Theme.fs(13px, 16px);
-                            font-family: Theme.font;
-                            vertical-alignment: center;
-                        }
-
-                        Button {
-                            label: @tr("Accept");
-                            focusable: true;
-                            y: (parent.height - self.height) / 2;
-                            bg-color: Palette.mint;
-                            fg: Palette.bubble-out-fg;
-                            outline: Palette.mint;
-                            hover-bg: Palette.mint-hi;
-                            hover-outline: Palette.mint-hi;
-                            clicked => {
-                                root.accept-clicked();
-                            }
-                            CheckMark {
-                                stroke: Palette.bubble-out-fg;
-                                double: false;
-                            }
-                        }
+                // is a pending request. The input pill and its controls are
+                // hidden above, so this renders as a flat centered bar in the
+                // composer slot (Signal swaps the composer for the request
+                // actions the same way). The TouchArea absorbs clicks aimed at
+                // the hidden controls; Accept routes to the same handler as the
+                // header button.
+                if root.chat-request: ChatRequestBar {
+                    accept-clicked => {
+                        root.accept-clicked();
                     }
                 }
             }
@@ -635,7 +322,7 @@ export component Composer inherits Rectangle {
         y: send-button.absolute-position.y - root.absolute-position.y - 4px;
         width: 18px;
         height: 18px;
-        border-radius: 9px;
+        border-radius: (9px) * Theme.r-scale;
         background: Palette.bg;
         border-width: 1.5px;
         border-color: Palette.mint;
@@ -664,7 +351,7 @@ export component Composer inherits Rectangle {
 
     // Newline hint — teaches Shift+Enter on entry, then gets out of the way:
     // shown only while the input is focused and still empty, floating above the
-    // pill so it never covers typed text. Replaces the old crammed placeholder.
+    // pill so it never covers typed text.
     if composer-input.has-focus && root.draft == "": Rectangle {
         x: send-button.absolute-position.x - root.absolute-position.x + send-button.width - self.width;
         y: send-button.absolute-position.y - root.absolute-position.y - self.height - 6px;
@@ -695,87 +382,17 @@ export component Composer inherits Rectangle {
     // Effect picker popover — floats just above the Send button. Non-modal; a
     // light backdrop over the composer closes it on an outside tap. Choosing an
     // effect arms it (persists into the next send) and closes; the ✕ clears.
-    if root.show-effects: TouchArea {
+    EffectPicker {
         x: 0;
         y: 0;
         width: root.width;
         height: root.height;
-        clicked => {
+        shown: root.show-effects;
+        anchor-x: send-button.absolute-position.x - root.absolute-position.x + send-button.width;
+        anchor-y: send-button.absolute-position.y - root.absolute-position.y;
+        container-width: root.width;
+        dismissed => {
             root.show-effects = false;
-        }
-    }
-    if root.show-effects: Rectangle {
-        x: min(root.width - self.width - 12px,
-               send-button.absolute-position.x - root.absolute-position.x + send-button.width - self.width);
-        y: send-button.absolute-position.y - root.absolute-position.y - self.height - 8px;
-        width: effect-row.preferred-width + 16px;
-        height: 44px;
-        border-radius: (12px) * Theme.r-scale;
-        background: Palette.panel;
-        border-width: Theme.border-w;
-        border-color: Palette.border-2;
-        drop-shadow-color: Palette.shadow;
-        drop-shadow-blur: 16px;
-        drop-shadow-offset-y: 4px;
-        effect-row := HorizontalLayout {
-            padding-left: 8px;
-            padding-right: 8px;
-            spacing: 4px;
-            alignment: center;
-            // Clear / none.
-            Rectangle {
-                width: 30px;
-                height: 30px;
-                y: (parent.height - self.height) / 2;
-                border-radius: (8px) * Theme.r-scale;
-                background: none-touch.has-hover ? Palette.panel-2 : transparent;
-                border-width: EffectCatalog.selected == 0 ? 1.5px : 0px;
-                border-color: Palette.mint;
-                animate background { duration: Theme.hover-dur; }
-                Text {
-                    text: "✕";
-                    color: Palette.text-mid;
-                    font-size: Theme.fs(13px, 16px);
-                    horizontal-alignment: center;
-                    vertical-alignment: center;
-                }
-
-                none-touch := TouchArea {
-                    clicked => {
-                        EffectCatalog.selected = 0;
-                        root.show-effects = false;
-                    }
-                }
-            }
-
-            for c in EffectCatalog.choices: Rectangle {
-                width: 34px;
-                height: 30px;
-                y: (parent.height - self.height) / 2;
-                border-radius: (8px) * Theme.r-scale;
-                background: fx-touch.has-hover ? Palette.panel-2 : transparent;
-                border-width: EffectCatalog.selected == c.id ? 1.5px : 0px;
-                border-color: Palette.mint;
-                animate background { duration: Theme.hover-dur; }
-                Image {
-                    width: 24px;
-                    height: 24px;
-                    x: (parent.width - self.width) / 2;
-                    y: (parent.height - self.height) / 2;
-                    source: EmojiSheet.sprite;
-                    source-clip-x: c.clip-x;
-                    source-clip-y: c.clip-y;
-                    source-clip-width: EmojiSheet.tile;
-                    source-clip-height: EmojiSheet.tile;
-                }
-
-                fx-touch := TouchArea {
-                    clicked => {
-                        EffectCatalog.selected = c.id;
-                        root.show-effects = false;
-                    }
-                }
-            }
         }
     }
 }

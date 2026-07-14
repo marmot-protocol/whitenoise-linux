@@ -1,14 +1,14 @@
 import { Palette, Theme } from "../tokens.slint";
-import { SectionLabel } from "../primitives/section-label.slint";
+import { FormLabel } from "../primitives/form-label.slint";
 
-// Read-only elided value box (npub/nsec readouts in mode 2). A SectionLabel
+// Read-only elided value box (npub/nsec readouts in mode 2). A FormLabel
 // above a 38px field-styled rectangle with centered elided text.
 export component ReadoutBox inherits VerticalLayout {
     in property <string> label;
     in property <string> value;
     spacing: 6px;
 
-    SectionLabel {
+    FormLabel {
         text: root.label;
     }
 

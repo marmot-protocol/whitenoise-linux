@@ -1,6 +1,7 @@
 import { Palette, Theme, EmojiEntry } from "tokens.slint";
 import { LineInput } from "primitives/line-input.slint";
-import { CypherScroll } from "primitives/cypher-scroll.slint";
+import { ScrollView } from "primitives/scroll-view.slint";
+import { EmojiCell } from "emoji-cell.slint";
 
 // Popover emoji picker — anchored under the trigger button. Fixed at
 // EMOJI_COLS-wide so geometry never depends on window size (resize is free).
@@ -128,7 +129,7 @@ export component EmojiPicker inherits Rectangle {
                 // visible. 12 covers it with headroom.
                 property <int> pool-rows: 12;
 
-                    scroll := CypherScroll {
+                    scroll := ScrollView {
                         width: parent.width;
                         height: parent.height;
                         viewport-width: self.width;
@@ -159,47 +160,20 @@ export component EmojiPicker inherits Rectangle {
                                     height: root.cell-size;
                                     visible: self.active;
 
-                                    // Always-mounted background + image + cell
-                                // TouchArea. `if`-guarded mounting used to
-                                // race the first user click — by the time
-                                // the inner Rectangle had instantiated, the
-                                // click had already been processed (and
-                                // swallowed by the panel's sibling TouchArea).
-                                // Keeping everything live with `visible` and
-                                // `enabled` gating fixes that.
-                                Rectangle {
+                                    // The cell itself is always mounted (see
+                                    // emoji-cell.slint) — `active` gating, not
+                                    // an `if`, keeps the first click alive.
+                                    EmojiCell {
                                         width: 100%;
                                         height: 100%;
-                                        visible: cell-slot.active;
-                                        border-radius: (4px) * Theme.r-scale;
-                                        background: cell.has-hover ? Palette.hover : transparent;
-
-                                        Image {
-                                            x: (parent.width - self.width) / 2;
-                                            y: (parent.height - self.height) / 2;
-                                            visible: cell-slot.active;
-                                            source: root.sprite;
-                                            source-clip-x: cell-slot.active ? emoji-list[cell-slot.flat-idx].clip-x : 0;
-                                            source-clip-y: cell-slot.active ? emoji-list[cell-slot.flat-idx].clip-y : 0;
-                                            source-clip-width: root.tile;
-                                            source-clip-height: root.tile;
-                                        // Slight pop on hover so the glyph responds
-                                        // along with the cell highlight.
-                                        width: cell.has-hover ? 26px : 22px;
-                                            height: cell.has-hover ? 26px : 22px;
-                                            animate width, height {
-                                                duration: 80ms;
-                                                easing: ease-out;
-                                            }
-                                            image-fit: contain;
-                                        }
-
-                                        cell := TouchArea {
-                                            enabled: cell-slot.active;
-                                            clicked => {
-                                                if (cell-slot.active) {
-                                                    root.picked(emoji-list[cell-slot.flat-idx].emoji);
-                                                }
+                                        active: cell-slot.active;
+                                        sprite: root.sprite;
+                                        tile: root.tile;
+                                        clip-x: cell-slot.active ? emoji-list[cell-slot.flat-idx].clip-x : 0;
+                                        clip-y: cell-slot.active ? emoji-list[cell-slot.flat-idx].clip-y : 0;
+                                        picked => {
+                                            if (cell-slot.active) {
+                                                root.picked(emoji-list[cell-slot.flat-idx].emoji);
                                             }
                                         }
                                     }

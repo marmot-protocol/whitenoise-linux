@@ -1,8 +1,8 @@
 import { Palette, Theme, SharedGroup } from "../tokens.slint";
 import { Modal } from "modal.slint";
 import { Avatar } from "../primitives/avatar.slint";
-import { SharedGroupsList } from "../shells/shared-groups.slint";
-import { CopyIcon } from "../icons/copy-icon.slint";
+import { SharedGroupsList } from "../layout/shared-groups.slint";
+import { CopyChip } from "../primitives/copy-chip.slint";
 import { CheckMark } from "../icons/check-mark.slint";
 
 // User profile card — opened by tapping an @mention or any avatar in the chat
@@ -45,15 +45,6 @@ export component ProfileModal inherits Modal {
         root.add-contact();
     }
 
-    // Transient "Copied ✓" feedback on the npub chip.
-    property <bool> copied: false;
-    copy-reset := Timer {
-        interval: 1.4s;
-        running: root.copied;
-        triggered => {
-            root.copied = false;
-        }
-    }
 
     // Skeleton pulse while the relay fetch is in flight.
     property <bool> pulse: false;
@@ -95,7 +86,7 @@ export component ProfileModal inherits Modal {
                 height: 30px;
                 border-radius: (8px) * Theme.r-scale;
                 // Dark scrim, not white-alpha: the banner can be a bright
-                // picture (or light-theme gradient) where white overlays vanish.
+                // picture (or a bright theme's gradient) where white overlays vanish.
                 background: close-touch.has-hover ? Palette.media-ghost-bg-hover : Palette.media-ghost-bg;
                 animate background { duration: Theme.hover-dur; }
                 Text {
@@ -197,42 +188,10 @@ export component ProfileModal inherits Modal {
             // npub chip — tap to copy, flashes "Copied ✓".
             HorizontalLayout {
                 alignment: center;
-                chip := Rectangle {
-                    height: 30px;
-                    width: chip-row.preferred-width + 28px;
-                    border-radius: (15px) * Theme.r-scale;
-                    background: chip-touch.has-hover ? Palette.field-hover : Palette.field;
-                    border-width: Theme.border-w;
-                    border-color: root.copied ? Palette.mint : Palette.field-border;
-                    animate background, border-color { duration: Theme.transition-dur; }
-                    chip-row := HorizontalLayout {
-                        x: 14px;
-                        width: self.preferred-width;
-                        spacing: 7px;
-                        alignment: center;
-                        Text {
-                            text: root.copied ? @tr("Copied ✓") : root.npub-short;
-                            color: root.copied ? Palette.mint : Palette.text-mid;
-                            font-size: Theme.fs(10.5px, 14px);
-                            font-weight: 700;
-                            font-family: Theme.font;
-                            vertical-alignment: center;
-                        }
-
-                        if !root.copied: VerticalLayout {
-                            alignment: center;
-                            CopyIcon {
-                                stroke: Palette.text-lo;
-                            }
-                        }
-                    }
-
-                    chip-touch := TouchArea {
-                        mouse-cursor: pointer;
-                        clicked => {
-                            root.copy-npub();
-                            root.copied = true;
-                        }
+                CopyChip {
+                    value: root.npub-short;
+                    copy-requested => {
+                        root.copy-npub();
                     }
                 }
             }

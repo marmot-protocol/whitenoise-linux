@@ -7,7 +7,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
         archived_group_ids,
         ..
     } = cx.clone();
-    ui.on_add_member({
+    ui.global::<AppState>().on_add_member({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -49,7 +49,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
             });
         }
     });
-    ui.on_promote_admin({
+    ui.global::<AppState>().on_promote_admin({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -90,7 +90,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
             });
         }
     });
-    ui.on_demote_admin({
+    ui.global::<AppState>().on_demote_admin({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -130,7 +130,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
             });
         }
     });
-    ui.on_self_demote_admin({
+    ui.global::<AppState>().on_self_demote_admin({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -166,7 +166,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
             });
         }
     });
-    ui.on_remove_member({
+    ui.global::<AppState>().on_remove_member({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -207,7 +207,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
             });
         }
     });
-    ui.on_leave_group_at({
+    ui.global::<AppState>().on_leave_group_at({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -250,7 +250,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                                 );
                                 ui.set_active_chat(next);
                                 if !snap.records.is_empty() {
-                                    ui.invoke_chat_selected(next);
+                                    ui.global::<AppState>().invoke_chat_selected(next);
                                 }
                             });
                         }
@@ -265,7 +265,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
             });
         }
     });
-    ui.on_rename_group({
+    ui.global::<AppState>().on_rename_group({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -311,7 +311,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
             });
         }
     });
-    ui.on_set_group_description({
+    ui.global::<AppState>().on_set_group_description({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -356,7 +356,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
             });
         }
     });
-    ui.on_clear_group_image({
+    ui.global::<AppState>().on_clear_group_image({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -406,7 +406,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
             });
         }
     });
-    ui.on_change_group_image({
+    ui.global::<AppState>().on_change_group_image({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();

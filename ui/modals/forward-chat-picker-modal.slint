@@ -1,6 +1,6 @@
 import { Palette, Theme, ChatMeta } from "../tokens.slint";
 import { Modal, ModalField } from "modal.slint";
-import { Avatar } from "../primitives/avatar.slint";
+import { ForwardChatRow } from "forward-chat-row.slint";
 
 // Forward picker. Opened from a message's context menu: pick a destination
 // chat and the selected message's content is re-sent there (text + any
@@ -113,7 +113,7 @@ export component ForwardPickerModal inherits Modal {
                 height: 26px;
                 y: (parent.height - self.height) / 2;
                 background: Palette.mint;
-                border-radius: 1.5px;
+                border-radius: 1.5px * Theme.r-scale;
             }
 
             VerticalLayout {
@@ -166,87 +166,15 @@ export component ForwardPickerModal inherits Modal {
             viewport-height: list.preferred-height;
             list := VerticalLayout {
                 spacing: 0;
-                for chat[idx] in root.chats: Rectangle {
+                for chat[idx] in root.chats: ForwardChatRow {
+                    chat: chat;
                     // Skip the chat the message is already in; the query
                     // filters the rest by chat name (flags computed in Rust).
-                    property <bool> shown: idx != root.active-chat && (root.query == "" || (idx < root.match-flags.length && root.match-flags[idx]));
+                    shown: idx != root.active-chat && (root.query == "" || (idx < root.match-flags.length && root.match-flags[idx]));
                     // Keyboard cursor on this row (mouse hover is independent).
-                    property <bool> cursored: idx == root.cursor-chat;
-                    height: shown ? 62px : 0px;
-                    visible: shown;
-
-                    Rectangle {
-                        x: 0;
-                        y: 0;
-                        width: parent.width;
-                        height: 56px;
-                        border-radius: (10px) * Theme.r-scale;
-                        background: cursored || row-touch.has-hover ? Palette.hover : transparent;
-                        animate background {
-                            duration: Theme.hover-dur;
-                            easing: ease-out;
-                        }
-
-                        // Accent focus bar on the cursored row, same treatment
-                        // as the language picker's rows.
-                        if cursored: Rectangle {
-                            x: 0;
-                            width: 2px;
-                            y: (parent.height - self.height) / 2;
-                            height: 26px;
-                            background: Palette.mint;
-                            border-radius: 1px;
-                        }
-
-                        // Wraps the row content so it wins the hit-test over the card's
-                        // click-swallower (nested TouchAreas beat outer ones).
-                        row-touch := TouchArea {
-                            enabled: shown;
-                            mouse-cursor: pointer;
-                            clicked => {
-                                root.select(idx);
-                            }
-
-                            HorizontalLayout {
-                                padding-left: 10px;
-                                padding-right: 14px;
-                                spacing: 12px;
-
-                                VerticalLayout {
-                                    alignment: center;
-                                    Avatar {
-                                        size: 36px;
-                                        initials: chat.av-initials;
-                                        color-a: chat.av-a;
-                                        color-b: chat.av-b;
-                                        picture: chat.picture;
-                                        has-picture: chat.has-picture;
-                                    }
-                                }
-
-                                VerticalLayout {
-                                    alignment: center;
-                                    spacing: 3px;
-                                    horizontal-stretch: 1;
-                                    Text {
-                                        text: chat.name;
-                                        color: Palette.text-hi;
-                                        font-size: Theme.fs(12px, 16px);
-                                        font-weight: 700;
-                                        font-family: Theme.font;
-                                        overflow: elide;
-                                    }
-
-                                    Text {
-                                        text: chat.preview;
-                                        color: Palette.text-lo;
-                                        font-size: Theme.fs(10px, 14px);
-                                        font-family: Theme.font;
-                                        overflow: elide;
-                                    }
-                                }
-                            }
-                        }
+                    cursored: idx == root.cursor-chat;
+                    selected => {
+                        root.select(idx);
                     }
                 }
             }

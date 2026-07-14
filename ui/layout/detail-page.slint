@@ -1,11 +1,11 @@
 import { Palette } from "../tokens.slint";
-import { CypherScroll } from "../primitives/cypher-scroll.slint";
+import { ScrollView } from "../primitives/scroll-view.slint";
 
 export component DetailPage inherits Rectangle {
     horizontal-stretch: 1;
     background: Palette.bg;
 
-    CypherScroll {
+    ScrollView {
         width: parent.width;
         height: parent.height;
         viewport-width: self.visible-width;

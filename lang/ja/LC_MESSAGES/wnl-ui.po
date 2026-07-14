@@ -201,11 +201,13 @@ msgctxt "ChatHeader"
 msgid "Accept"
 msgstr "承認"
 
-msgctxt "Composer"
+#, fuzzy
+msgctxt "ChatRequestBar"
 msgid "Accept"
 msgstr "承認"
 
-msgctxt "Composer"
+#, fuzzy
+msgctxt "ChatRequestBar"
 msgid "Accept the request to start messaging"
 msgstr "リクエストを承認するとメッセージを送信できます"
 
@@ -377,12 +379,12 @@ msgid "Block"
 msgstr "ブロック"
 
 #, fuzzy
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "Block"
 msgstr "ブロック"
 
 #, fuzzy
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "Block this chat request?"
 msgstr "チャットリクエスト"
 
@@ -423,7 +425,8 @@ msgctxt "StoragePane"
 msgid "Cached attachments"
 msgstr "キャッシュされた添付ファイル"
 
-msgctxt "MessageBubble"
+#, fuzzy
+msgctxt "AudioTile"
 msgid "Can't play this audio format"
 msgstr "この音声形式は再生できません"
 
@@ -479,16 +482,18 @@ msgctxt "StartNewChatModal"
 msgid "Cancel"
 msgstr "キャンセル"
 
-msgctxt "Composer"
+#, fuzzy
+msgctxt "EditBanner"
 msgid "Cancel edit"
 msgstr "編集をキャンセル"
 
 #, fuzzy
-msgctxt "Composer"
+msgctxt "RecordingOverlay"
 msgid "Cancel recording"
 msgstr "編集をキャンセル"
 
-msgctxt "Composer"
+#, fuzzy
+msgctxt "ReplyBanner"
 msgid "Cancel reply"
 msgstr "返信をキャンセル"
 
@@ -586,7 +591,7 @@ msgctxt "NetworkPane"
 msgid "Connected · {}/{}"
 msgstr "接続済み · {}/{}"
 
-msgctxt "DarkMatterLinux"
+msgctxt "AppState"
 msgid "Connecting to relays…"
 msgstr "リレーに接続中…"
 
@@ -613,16 +618,12 @@ msgid "Continue"
 msgstr "続行"
 
 #, fuzzy
-msgctxt "EncryptionInfoModal"
-msgid "Copied ✓"
-msgstr "コピーしました ✓"
-
-msgctxt "ProfileModal"
+msgctxt "CopyChip"
 msgid "Copied ✓"
 msgstr "コピーしました ✓"
 
 #, fuzzy
-msgctxt "QrModal"
+msgctxt "EncryptionInfoModal"
 msgid "Copied ✓"
 msgstr "コピーしました ✓"
 
@@ -648,10 +649,6 @@ msgstr "コピー"
 
 #, fuzzy
 msgctxt "RevealNsecModal"
-msgid "Copy"
-msgstr "コピー"
-
-msgctxt "WalletAddressRow"
 msgid "Copy"
 msgstr "コピー"
 
@@ -845,7 +842,7 @@ msgid "Decrypted images and files, stored encrypted on this device."
 msgstr "復号した画像やファイルを、この端末に暗号化して保存します。"
 
 #, fuzzy
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "Delete"
 msgstr "削除"
 
@@ -862,7 +859,7 @@ msgid "Delete for everyone"
 msgstr ""
 
 #, fuzzy
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "Delete for everyone?"
 msgstr "日付形式"
 
@@ -872,7 +869,7 @@ msgid "Delete for me"
 msgstr "日付形式"
 
 #, fuzzy
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "Delete for me?"
 msgstr "日付形式"
 
@@ -920,7 +917,8 @@ msgctxt "ProfilePage"
 msgid "Edit profile"
 msgstr "プロフィールを編集"
 
-msgctxt "Composer"
+#, fuzzy
+msgctxt "EditBanner"
 msgid "Editing:"
 msgstr "編集中:"
 
@@ -934,7 +932,7 @@ msgid "End-to-end encrypted"
 msgstr "エンドツーエンド暗号化:"
 
 #, fuzzy
-msgctxt "AboutPane"
+msgctxt "AboutHeroCard"
 msgid "End-to-end encrypted group messaging for Linux."
 msgstr "エンドツーエンド暗号化:"
 
@@ -1227,11 +1225,11 @@ msgctxt "ChatContextMenu"
 msgid "Leave group"
 msgstr "グループを退出"
 
-msgctxt "DarkMatterLinux"
+msgctxt "GroupSettingsCard"
 msgid "Leave group"
 msgstr "グループを退出"
 
-msgctxt "GroupSettingsCard"
+msgctxt "ModalHost"
 msgid "Leave group"
 msgstr "グループを退出"
 
@@ -1239,7 +1237,7 @@ msgctxt "GroupSettingsCard"
 msgid "Leave this group and stop receiving new messages. The chat moves to Archive."
 msgstr "このグループを退出し、新しいメッセージの受信を停止します。チャットはアーカイブに移動します。"
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "Leave {}?"
 msgstr "{}を退出しますか？"
 
@@ -1254,10 +1252,6 @@ msgstr "ライト"
 msgctxt "ProfilePage"
 msgid "Lightning"
 msgstr "Lightning"
-
-msgctxt "WalletAddressRow"
-msgid "Lightning address"
-msgstr "Lightning アドレス"
 
 msgctxt "ProfilePage"
 msgid "Lightning address (LUD-16)"
@@ -1328,17 +1322,17 @@ msgctxt "AboutPane"
 msgid "Made with marmots, math, and a little purple liquid."
 msgstr "マーモットと数学、そして少しの紫色の液体でできています。"
 
-#, fuzzy
-msgctxt "DarkMatterLinux"
-msgid "Make admin"
-msgstr "管理者にする"
-
 msgctxt "GroupMemberMenu"
 msgid "Make admin"
 msgstr "管理者にする"
 
 #, fuzzy
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
+msgid "Make admin"
+msgstr "管理者にする"
+
+#, fuzzy
+msgctxt "ModalHost"
 msgid "Make {} an admin?"
 msgstr "管理者にする"
 
@@ -1626,7 +1620,7 @@ msgctxt "ImportBackupModal"
 msgid "Password the backup was sealed with"
 msgstr "バックアップを封入したパスワード"
 
-msgctxt "LoginScreen"
+msgctxt "FormMessages"
 msgid "Passwords don't match."
 msgstr ""
 
@@ -1638,10 +1632,6 @@ msgstr "別の秘密鍵を貼り付けるか、新しく生成してください
 msgctxt "StartNewChatModal"
 msgid "Paste one npub for a direct chat, or several (one per line) plus a group name."
 msgstr "ダイレクトチャットには npub を1つ、グループには複数（1行に1つ）とグループ名を貼り付けてください。"
-
-msgctxt "WalletAddressRow"
-msgid "People can zap you via this address."
-msgstr "このアドレスで Zap できます。"
 
 msgctxt "ContactsPage"
 msgid "People you start chats with will show up here."
@@ -1809,24 +1799,25 @@ msgctxt "GetStartedScreen"
 msgid "Relays carry your encrypted messages. Add at least one to get online."
 msgstr "リレーは暗号化されたメッセージを中継します。オンラインにするには少なくとも1つ追加してください。"
 
-msgctxt "Composer"
-msgid "Remove"
-msgstr "削除"
-
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "Remove"
 msgstr "削除"
 
 #, fuzzy
-msgctxt "DarkMatterLinux"
-msgid "Remove admin"
-msgstr "管理者から外す"
+msgctxt "StagedChips"
+msgid "Remove"
+msgstr "削除"
 
 msgctxt "GroupMemberMenu"
 msgid "Remove admin"
 msgstr "管理者から外す"
 
-msgctxt "DarkMatterLinux"
+#, fuzzy
+msgctxt "ModalHost"
+msgid "Remove admin"
+msgstr "管理者から外す"
+
+msgctxt "ModalHost"
 msgid "Remove admin rights from {}?"
 msgstr ""
 
@@ -1847,11 +1838,11 @@ msgctxt "LoginScreen"
 msgid "Remove key"
 msgstr "鍵を削除"
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "Remove this relay?"
 msgstr "このリレーを削除しますか？"
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "Remove {} from the group?"
 msgstr "{}をグループから削除しますか？"
 
@@ -1859,11 +1850,13 @@ msgctxt "MessageContextMenu"
 msgid "Reply"
 msgstr "返信"
 
-msgctxt "Composer"
+#, fuzzy
+msgctxt "ReplyBanner"
 msgid "Replying to message:"
 msgstr "返信先メッセージ:"
 
-msgctxt "Composer"
+#, fuzzy
+msgctxt "ReplyBanner"
 msgid "Replying to {}:"
 msgstr "{} への返信:"
 
@@ -2069,7 +2062,8 @@ msgctxt "MessagesArea"
 msgid "Say hello to start the conversation."
 msgstr "挨拶して会話を始めましょう。"
 
-msgctxt "ProfilePage"
+#, fuzzy
+msgctxt "ProfileQrPlate"
 msgid "Scan to add me from another device"
 msgstr "別のデバイスからスキャンして追加"
 
@@ -2102,7 +2096,8 @@ msgctxt "command palette footer"
 msgid "Select"
 msgstr "選択"
 
-msgctxt "Composer"
+#, fuzzy
+msgctxt "RecordingOverlay"
 msgid "Send"
 msgstr "送信"
 
@@ -2216,17 +2211,17 @@ msgctxt "DebugPane"
 msgid "State / raw events / key packages"
 msgstr "キーパッケージをローテーションしますか？"
 
-#, fuzzy
-msgctxt "DarkMatterLinux"
-msgid "Step down"
-msgstr "管理者を辞める"
-
 msgctxt "GroupMemberMenu"
 msgid "Step down"
 msgstr "管理者を辞める"
 
 #, fuzzy
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
+msgid "Step down"
+msgstr "管理者を辞める"
+
+#, fuzzy
+msgctxt "ModalHost"
 msgid "Step down as admin?"
 msgstr "管理者を辞める"
 
@@ -2284,11 +2279,11 @@ msgctxt "KeysPage"
 msgid "This computer"
 msgstr "このコンピューター"
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "This declines the invite from {}. It can't be restored unless they invite you again."
 msgstr "{} からの招待を辞退します。相手がもう一度招待しない限り、元に戻すことはできません。"
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "This hides the message on this device only. Other people will still see it."
 msgstr ""
 
@@ -2325,12 +2320,12 @@ msgctxt "LoginScreen"
 msgid "This removes the key stored on this device. You'll need the nsec you backed up to use this identity again. This can't be undone."
 msgstr "この端末から鍵を削除します。この ID をもう一度使うには、控えておいた nsec が必要です。この操作は元に戻せません。"
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "This removes the message for everyone in the chat. This can't be undone."
 msgstr ""
 
 #, fuzzy
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "This removes your admin rights. You can't restore them yourself unless another admin promotes you again."
 msgstr "{} からの招待を辞退します。相手がもう一度招待しない限り、元に戻すことはできません。"
 
@@ -2491,7 +2486,7 @@ msgctxt "OutgoingRow"
 msgid "You"
 msgstr "あなた"
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "You will stop receiving new messages from this group. The chat moves to Archive."
 msgstr "このグループからの新しいメッセージの受信を停止します。チャットはアーカイブに移動します。"
 
@@ -2528,7 +2523,8 @@ msgctxt "KeysPage"
 msgid "current"
 msgstr "現在"
 
-msgctxt "MessageBubble"
+#, fuzzy
+msgctxt "ImageTile"
 msgid "decrypting…"
 msgstr "復号中…"
 
@@ -2539,6 +2535,16 @@ msgstr "例: friday-crew"
 msgctxt "MessageBubble"
 msgid "edited"
 msgstr "編集済み"
+
+#, fuzzy
+msgctxt "AudioTile"
+msgid "failed · tap to retry"
+msgstr "失敗 · タップして再試行"
+
+#, fuzzy
+msgctxt "FileChip"
+msgid "failed · tap to retry"
+msgstr "失敗 · タップして再試行"
 
 msgctxt "MessageBubble"
 msgid "failed · tap to retry"
@@ -2576,12 +2582,13 @@ msgctxt "ChatRequestBanner"
 msgid "session."
 msgstr "セッションを開始。"
 
-msgctxt "MessageBubble"
+#, fuzzy
+msgctxt "ImageTile"
 msgid "tap to load"
 msgstr "タップして読み込む"
 
 #, fuzzy
-msgctxt "MessageBubble"
+msgctxt "ImageTile"
 msgid "tap to retry"
 msgstr "失敗 · タップして再試行"
 
@@ -2598,25 +2605,31 @@ msgctxt "ContactDetail"
 msgid "{} relays"
 msgstr "{} リレー"
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "{} will be able to add members, change group settings, and manage other admins."
 msgstr ""
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "{} will lose access to this group and stop receiving its messages. You'll need to invite them again to bring them back."
 msgstr "{}はこのグループにアクセスできなくなり、メッセージを受信しなくなります。再び追加するには、もう一度招待する必要があります。"
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "{} will stay in the group, but won't be able to manage members or group settings."
 msgstr ""
 
-msgctxt "DarkMatterLinux"
+msgctxt "ModalHost"
 msgid "{} will stop carrying your messages. You can add it back anytime."
 msgstr "{} はメッセージの中継に使われなくなります。いつでも追加し直せます。"
 
-msgctxt "Composer"
+#, fuzzy
+msgctxt "RecordingOverlay"
 msgid "{}s"
 msgstr "{}秒"
+
+#, fuzzy
+msgctxt "DangerActionRow"
+msgid "…"
+msgstr "…"
 
 msgctxt "KeysPage"
 msgid "…"

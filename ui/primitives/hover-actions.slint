@@ -1,0 +1,88 @@
+import { Palette, Theme, QuickReact } from "../tokens.slint";
+import { QuickReactCell } from "quick-react-cell.slint";
+import { ActionButton } from "action-button.slint";
+
+// Floating action toolbar — a one-tap quick-reaction row (👍 ❤️ … + "+" into
+// the full picker), then reply and (author-only) edit. Positioned by the row to
+// the side of the bubble and shown on hover. It's a self-contained card so it
+// reads as a hovering control rather than chrome baked into the row. `hovered`
+// tracks the whole bar (via the ancestor TouchArea) so the row can keep it open
+// while the pointer is on a cell (which steals hover from the bubble sensor).
+export component HoverActions inherits Rectangle {
+    in property <string> message-id;
+    in property <string> reply-preview-text;
+    in property <string> reply-author;
+    in property <bool> can-edit: false;
+    callback request-picker(string, length, length);
+    callback request-reply(string, string, string);
+    callback request-edit(string, string);
+    // A single ancestor TouchArea reports the hover for the whole bar (it stays
+    // hovered while the pointer is over any nested cell/button, so the row can
+    // keep the toolbar open), and nested cell TouchAreas still win their own
+    // clicks — the wrapping pattern the emoji picker and context menu rely on.
+    out property <bool> hovered: bar-touch.has-hover;
+
+    width: bar.preferred-width;
+    height: bar.preferred-height;
+    border-radius: (10px) * Theme.r-scale;
+    background: Palette.elevated;
+    border-width: Theme.border-w;
+    border-color: Palette.elevated-border;
+    drop-shadow-color: Theme.hard-shadow ? Palette.shadow : Palette.shadow-float;
+    drop-shadow-offset-y: Theme.hard-shadow ? 2px : 2px;
+    drop-shadow-blur: Theme.hard-shadow ? 0px : 10px;
+
+    bar-touch := TouchArea {
+        bar := HorizontalLayout {
+            padding: 3px;
+            spacing: 2px;
+            // One-tap quick reactions, then a "+" that opens the full picker.
+            for e in QuickReact.list: QuickReactCell {
+                emoji: e.emoji;
+                clip-x: e.clip-x;
+                clip-y: e.clip-y;
+                clicked => {
+                    QuickReact.react(root.message-id, e.emoji);
+                }
+            }
+
+            plus-btn := ActionButton {
+                glyph: "+";
+                clicked => {
+                    root.request-picker(
+                        root.message-id,
+                        self.absolute-position.x,
+                        self.absolute-position.y + self.height,
+                    );
+                }
+            }
+
+            // Divider between the reactions and the message actions.
+            Rectangle {
+                width: 7px;
+                Rectangle {
+                    x: 3px;
+                    y: 6px;
+                    width: 1px;
+                    height: parent.height - 12px;
+                    background: Palette.border-2;
+                }
+            }
+
+            reply-btn := ActionButton {
+                glyph: "↩";
+                clicked => {
+                    root.request-reply(root.message-id, root.reply-preview-text, root.reply-author);
+                }
+            }
+
+            edit-btn := ActionButton {
+                glyph: "✎";
+                shown: root.can-edit;
+                clicked => {
+                    root.request-edit(root.message-id, root.reply-preview-text);
+                }
+            }
+        }
+    }
+}

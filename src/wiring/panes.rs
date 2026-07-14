@@ -166,7 +166,7 @@ pub(crate) fn wire_panes(
         })
     };
 
-    ui.on_account_switcher_requested({
+    ui.global::<AppState>().on_account_switcher_requested({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         move || {
@@ -179,12 +179,12 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_switch_account({
+    ui.global::<AppState>().on_switch_account({
         let do_switch = do_switch_account.clone();
         move |id| do_switch(id.to_string())
     });
 
-    ui.on_add_account_requested({
+    ui.global::<AppState>().on_add_account_requested({
         let weak = ui.as_weak();
         move || {
             let Some(ui) = weak.upgrade() else { return };
@@ -197,7 +197,7 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_add_account_dismissed({
+    ui.global::<AppState>().on_add_account_dismissed({
         let weak = ui.as_weak();
         move || {
             let Some(ui) = weak.upgrade() else { return };
@@ -208,7 +208,7 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_generate_add_account_key({
+    ui.global::<AppState>().on_generate_add_account_key({
         let weak = ui.as_weak();
         move || {
             let Some(ui) = weak.upgrade() else { return };
@@ -224,7 +224,7 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_add_account({
+    ui.global::<AppState>().on_add_account({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let vault_cell = vault_cell.clone();
@@ -314,13 +314,13 @@ pub(crate) fn wire_panes(
     // Mirror the vault-password gate into the UI so the primary action can be
     // disabled until the password + confirm are valid, without duplicating the
     // rules in Slint. Returns true when `validate_new_password` accepts them.
-    ui.on_login_password_valid(|password, confirm| {
+    ui.global::<AppState>().on_login_password_valid(|password, confirm| {
         validate_new_password(password.as_str(), confirm.as_str()).is_ok()
     });
 
     // First run, existing nsec: validate the key + new password, create the vault,
     // seal the nsec into it, then boot.
-    ui.on_login_with_nsec({
+    ui.global::<AppState>().on_login_with_nsec({
         let weak = ui.as_weak();
         let boot = boot_backend.clone();
         move |input, password, confirm| {
@@ -374,7 +374,7 @@ pub(crate) fn wire_panes(
     });
 
     // Unlock an existing vault: decrypt with the password, pull the nsec, boot.
-    ui.on_unlock({
+    ui.global::<AppState>().on_unlock({
         let weak = ui.as_weak();
         let boot = boot_backend.clone();
         move |password| {
@@ -427,7 +427,7 @@ pub(crate) fn wire_panes(
 
     // "Reset & use another key" on the unlock screen. No password recovery exists,
     // so this deletes the vault and returns to first-run choose.
-    ui.on_reset_vault({
+    ui.global::<AppState>().on_reset_vault({
         let weak = ui.as_weak();
         move || {
             let Some(ui) = weak.upgrade() else { return };
@@ -443,7 +443,7 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_generate_key_requested({
+    ui.global::<AppState>().on_generate_key_requested({
         let weak = ui.as_weak();
         let pending = pending_generated.clone();
         let pending_name = pending_profile_name.clone();
@@ -483,7 +483,7 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_confirm_saved_key({
+    ui.global::<AppState>().on_confirm_saved_key({
         let weak = ui.as_weak();
         let pending = pending_generated.clone();
         let pending_seed = pending_profile_seed.clone();
@@ -551,7 +551,7 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_copy_nsec({
+    ui.global::<AppState>().on_copy_nsec({
         let weak = ui.as_weak();
         move |nsec| {
             let weak = weak.clone();
@@ -580,7 +580,7 @@ pub(crate) fn wire_panes(
     // behind that toggle; when off, the sidebar entry doesn't even render.
     ui.set_debug_enabled(settings_cell.borrow().debug_enabled);
 
-    ui.on_change_language_clicked({
+    ui.global::<AppState>().on_change_language_clicked({
         let weak = ui.as_weak();
         move || {
             if let Some(ui) = weak.upgrade() {
@@ -589,7 +589,7 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_locale_selected({
+    ui.global::<AppState>().on_locale_selected({
         let weak = ui.as_weak();
         let settings_cell = settings_cell.clone();
         move |code| {
@@ -612,7 +612,7 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_theme_mode_selected({
+    ui.global::<AppState>().on_theme_mode_selected({
         let weak = ui.as_weak();
         let settings_cell = settings_cell.clone();
         move |mode| {
@@ -628,7 +628,7 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_accent_selected({
+    ui.global::<AppState>().on_accent_selected({
         let weak = ui.as_weak();
         let settings_cell = settings_cell.clone();
         move |idx| {
@@ -644,7 +644,7 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_debug_toggled({
+    ui.global::<AppState>().on_debug_toggled({
         let settings_cell = settings_cell.clone();
         move |on| {
             let mut s = settings_cell.borrow_mut();
@@ -653,7 +653,7 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_outgoing_on_right_toggled({
+    ui.global::<AppState>().on_outgoing_on_right_toggled({
         let settings_cell = settings_cell.clone();
         move |on| {
             let mut s = settings_cell.borrow_mut();
@@ -662,7 +662,7 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_launch_at_login_toggled({
+    ui.global::<AppState>().on_launch_at_login_toggled({
         let weak = ui.as_weak();
         let settings_cell = settings_cell.clone();
         move |on| {
@@ -679,7 +679,7 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_start_minimized_to_tray_toggled({
+    ui.global::<AppState>().on_start_minimized_to_tray_toggled({
         let settings_cell = settings_cell.clone();
         move |on| {
             let mut s = settings_cell.borrow_mut();
@@ -688,7 +688,7 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_restore_last_selected_chat_toggled({
+    ui.global::<AppState>().on_restore_last_selected_chat_toggled({
         let weak = ui.as_weak();
         let settings_cell = settings_cell.clone();
         let group_ids = group_ids.clone();
@@ -709,7 +709,7 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_notifications_toggled({
+    ui.global::<AppState>().on_notifications_toggled({
         let settings_cell = settings_cell.clone();
         let notif = notif.clone();
         move |on| {
@@ -721,7 +721,7 @@ pub(crate) fn wire_panes(
             s.save();
         }
     });
-    ui.on_notification_sound_toggled({
+    ui.global::<AppState>().on_notification_sound_toggled({
         let settings_cell = settings_cell.clone();
         let notif = notif.clone();
         move |on| {
@@ -731,7 +731,7 @@ pub(crate) fn wire_panes(
             s.save();
         }
     });
-    ui.on_notification_preview_toggled({
+    ui.global::<AppState>().on_notification_preview_toggled({
         let settings_cell = settings_cell.clone();
         let notif = notif.clone();
         move |on| {
@@ -746,7 +746,7 @@ pub(crate) fn wire_panes(
 
     // Mute / unmute the currently-open chat (header bell). Flips the live
     // NotifState set + the persisted settings, and updates the header.
-    ui.on_toggle_mute_chat({
+    ui.global::<AppState>().on_toggle_mute_chat({
         let weak = ui.as_weak();
         let group_ids = group_ids.clone();
         let settings_cell = settings_cell.clone();
@@ -774,7 +774,7 @@ pub(crate) fn wire_panes(
     // Right-click a rail chat row: resolve the row's group id, read its live
     // pin + mute state (Rust owns both sets), and open the context menu at the
     // cursor. The menu itself is Slint; only the state lookup needs Rust.
-    ui.on_request_chat_context({
+    ui.global::<AppState>().on_request_chat_context({
         let weak = ui.as_weak();
         let group_ids = group_ids.clone();
         let notif = notif.clone();
@@ -806,7 +806,7 @@ pub(crate) fn wire_panes(
     // Pin / unpin a chat to the top of the rail. Flips the live pinned set +
     // the persisted settings, then re-sorts the chat list — keeping whatever
     // chat is currently open selected across the reorder.
-    ui.on_toggle_pin_chat({
+    ui.global::<AppState>().on_toggle_pin_chat({
         let weak = ui.as_weak();
         let group_ids = group_ids.clone();
         let settings_cell = settings_cell.clone();
@@ -837,7 +837,7 @@ pub(crate) fn wire_panes(
     // Mute / unmute a specific rail row (from its context menu) — same effect
     // as the header bell, but targets the right-clicked chat by index rather
     // than the open one. Keeps the header in sync when they coincide.
-    ui.on_toggle_mute_chat_at({
+    ui.global::<AppState>().on_toggle_mute_chat_at({
         let weak = ui.as_weak();
         let group_ids = group_ids.clone();
         let settings_cell = settings_cell.clone();
@@ -869,7 +869,7 @@ pub(crate) fn wire_panes(
     // the native save dialog, the image download/decrypt, and the file write go
     // to a blocking task, the same split as the "Save attachment" path. The
     // final extension picks the format: `.md` for Markdown, otherwise HTML.
-    ui.on_export_chat_at({
+    ui.global::<AppState>().on_export_chat_at({
         let weak = ui.as_weak();
         let group_ids = group_ids.clone();
         let backend_cell = backend_cell.clone();
@@ -934,7 +934,7 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_time_format_selected({
+    ui.global::<AppState>().on_time_format_selected({
         let weak = ui.as_weak();
         let settings_cell = settings_cell.clone();
         let backend_cell = backend_cell.clone();
@@ -962,7 +962,7 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_date_format_selected({
+    ui.global::<AppState>().on_date_format_selected({
         let weak = ui.as_weak();
         let settings_cell = settings_cell.clone();
         let backend_cell = backend_cell.clone();
@@ -994,7 +994,7 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_debug_load({
+    ui.global::<AppState>().on_debug_load({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         // mode: 0 = state snapshot, 1 = raw events, 2 = key packages.
@@ -1023,7 +1023,7 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_debug_copy_clicked({
+    ui.global::<AppState>().on_debug_copy_clicked({
         let weak = ui.as_weak();
         move || {
             let Some(ui) = weak.upgrade() else { return };
@@ -1047,7 +1047,7 @@ pub(crate) fn wire_panes(
     });
 
     // ─── Security & privacy toggles ────────────────────────────────────
-    ui.on_telemetry_toggled({
+    ui.global::<AppState>().on_telemetry_toggled({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         move |on| {
@@ -1072,7 +1072,7 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_audit_toggled({
+    ui.global::<AppState>().on_audit_toggled({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         move |on| {
@@ -1114,7 +1114,7 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_audit_refresh_files({
+    ui.global::<AppState>().on_audit_refresh_files({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         move || {
@@ -1126,7 +1126,7 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_audit_delete_file({
+    ui.global::<AppState>().on_audit_delete_file({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         move |path| {
@@ -1221,7 +1221,7 @@ pub(crate) fn wire_panes(
         })
     };
 
-    ui.on_network_add_relay({
+    ui.global::<AppState>().on_network_add_relay({
         let weak = ui.as_weak();
         let reboot = reboot_relays_first_run.clone();
         // Returns whether the relay was accepted — the add-relay fields keep
@@ -1258,7 +1258,7 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_network_remove_relay({
+    ui.global::<AppState>().on_network_remove_relay({
         let weak = ui.as_weak();
         let reboot = reboot_relays_first_run.clone();
         move |url| {
@@ -1281,7 +1281,7 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_network_refresh_health({
+    ui.global::<AppState>().on_network_refresh_health({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         move || {
@@ -1316,7 +1316,7 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_network_republish_relay_list({
+    ui.global::<AppState>().on_network_republish_relay_list({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         move || {
@@ -1434,20 +1434,20 @@ pub(crate) fn wire_panes(
         })
     };
 
-    ui.on_kp_publish_clicked({
+    ui.global::<AppState>().on_kp_publish_clicked({
         let kp_run = kp_run.clone();
         move || kp_run("publish")
     });
-    ui.on_kp_rotate_clicked({
+    ui.global::<AppState>().on_kp_rotate_clicked({
         let kp_run = kp_run.clone();
         move || kp_run("rotate")
     });
-    ui.on_kp_refresh_clicked({
+    ui.global::<AppState>().on_kp_refresh_clicked({
         let kp_run = kp_run.clone();
         move || kp_run("refresh")
     });
 
-    ui.on_copy_to_clipboard({
+    ui.global::<AppState>().on_copy_to_clipboard({
         let weak = ui.as_weak();
         move |text| {
             tracing::debug!(
@@ -1486,7 +1486,7 @@ pub(crate) fn wire_panes(
     // thread. On success we reveal the *active* account's nsec, not blindly the
     // primary key. Nothing decrypted is held anywhere but the UI property,
     // which the dismiss handler clears.
-    ui.on_reveal_nsec_confirm({
+    ui.global::<AppState>().on_reveal_nsec_confirm({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         move |password| {
@@ -1532,7 +1532,7 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.on_reveal_nsec_dismissed({
+    ui.global::<AppState>().on_reveal_nsec_dismissed({
         let weak = ui.as_weak();
         move || {
             let Some(ui) = weak.upgrade() else { return };
@@ -1559,7 +1559,7 @@ pub(crate) fn wire_panes(
 
     // Reveal the folder holding vault.db in the platform file manager. Reuses the
     // same xdg-open/open handler as external links — a directory path is fine.
-    ui.on_storage_open_vault_folder(move || {
+    ui.global::<AppState>().on_storage_open_vault_folder(move || {
         open_external(&vault::vault_dir().display().to_string());
     });
 }

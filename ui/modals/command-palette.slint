@@ -2,14 +2,12 @@ import { Palette, Theme } from "../tokens.slint";
 import { SearchIcon } from "../icons/search-icon.slint";
 import { LineInput } from "../primitives/line-input.slint";
 import { Modal } from "modal.slint";
+import { KbdPill } from "kbd-pill.slint";
+import { PaletteAction, PaletteRow } from "palette-row.slint";
 
-// A single row in the palette. Rust supplies the array, filtering & selection logic.
-export struct PaletteAction {
-    id: string,
-    label: string,
-    group: string,
-    kbd: string,
-}
+// The row struct lives with PaletteRow; re-exported here so the app root's
+// `import { CommandPalette, PaletteAction }` stays a single path.
+export { PaletteAction }
 
 export component CommandPalette inherits Modal {
     callback execute(string);          // id of triggered action
@@ -114,29 +112,9 @@ export component CommandPalette inherits Modal {
 
                     VerticalLayout {
                         alignment: center;
-                        Rectangle {
-                            height: 22px;
-                            min-width: kbd-text.preferred-width + 14px;
-                            border-radius: (4px) * Theme.r-scale;
-                            border-width: Theme.border-w;
-                            border-color: Palette.border-2;
-                            background: Palette.panel-2;
-                            kbd-text := Text {
-                                // macOS uses ⌘; everything else Ctrl. Modifier
-                                // glyphs are key labels, not prose, so they stay
-                                // out of @tr().
-                                text: Theme.is-mac ? "⌘ K" : "Ctrl K";
-                                color: Palette.text-mid;
-                                font-size: Theme.fs(10px, 14px);
-                                font-weight: 700;
-                                font-family: Theme.font;
-                                vertical-alignment: center;
-                                horizontal-alignment: center;
-                                x: 7px;
-                                y: 0;
-                                width: parent.width - 14px;
-                                height: parent.height;
-                            }
+                        KbdPill {
+                            // macOS uses ⌘; everything else Ctrl.
+                            label: Theme.is-mac ? "⌘ K" : "Ctrl K";
                         }
                     }
                 }
@@ -156,108 +134,16 @@ export component CommandPalette inherits Modal {
                     padding-top: 6px;
                     padding-bottom: 6px;
                     spacing: 0;
-                    for action[i] in root.actions: Rectangle {
-                        height: row-stack.preferred-height;
-                        row-stack := VerticalLayout {
-                            spacing: 0;
-                            // Group header — only when this row's group differs from the previous row's.
-                            if i == 0 || root.actions[i - 1].group != action.group: Rectangle {
-                                height: 24px;
-                                HorizontalLayout {
-                                    padding-left: 18px;
-                                    padding-right: 18px;
-                                    padding-top: 8px;
-                                    Text {
-                                        text: action.group;
-                                        color: Palette.text-vlo;
-                                        font-size: Theme.fs(9px, 12px);
-                                        font-weight: 700;
-                                        letter-spacing: 1.4px;
-                                        font-family: Theme.font;
-                                    }
-                                }
-                            }
-                            // Row body.
-                            Rectangle {
-                                height: 36px;
-                                background: i == root.selected ? (Theme.selected-inverts-text ? Palette.selected : Palette.bubble-in) : (row-touch.has-hover ? Palette.hover : transparent);
-                                border-radius: (5px) * Theme.r-scale;
-                                animate background {
-                                    duration: 90ms;
-                                    easing: ease-out;
-                                }
-
-                                // Mint accent bar on selected row (normal mode).
-                                if !Theme.pixel-select-marker: Rectangle {
-                                    x: 8px;
-                                    width: 2px;
-                                    y: (parent.height - self.height) / 2;
-                                    height: i == root.selected ? 18px : 0px;
-                                    background: Palette.mint;
-                                    border-radius: 1px;
-                                    animate height {
-                                        duration: 160ms;
-                                        easing: ease-in-out;
-                                    }
-                                }
-                                // Retro selection chevron.
-                                if Theme.pixel-select-marker && i == root.selected: Text {
-                                    x: 6px;
-                                    y: (parent.height - self.height) / 2;
-                                    text: "▶";
-                                    color: Palette.bubble-out-fg;
-                                    font-size: Theme.fs(12px, 13px);
-                                    font-family: Theme.font;
-                                    vertical-alignment: center;
-                                }
-
-                                HorizontalLayout {
-                                    padding-left: 22px;
-                                    padding-right: 18px;
-                                    spacing: 12px;
-                                    alignment: stretch;
-                                    Text {
-                                        text: action.label;
-                                        color: Theme.pixel-select-marker && i == root.selected ? Palette.bubble-out-fg : Palette.text-hi;
-                                        font-size: Theme.fs(12px, 13px);
-                                        font-weight: i == root.selected ? 700 : 500;
-                                        font-family: Theme.font;
-                                        vertical-alignment: center;
-                                        horizontal-stretch: 1;
-                                    }
-
-                                    if action.kbd != "": Rectangle {
-                                        height: 20px;
-                                        min-width: kbd-pill-text.preferred-width + 12px;
-                                        border-radius: (4px) * Theme.r-scale;
-                                        border-width: Theme.border-w;
-                                        border-color: Palette.border-2;
-                                        background: i == root.selected && !Theme.pixel-select-marker ? Palette.panel : Palette.panel-2;
-                                        y: (parent.height - self.height) / 2;
-                                        kbd-pill-text := Text {
-                                            text: action.kbd;
-                                            color: Palette.text-mid;
-                                            font-size: Theme.fs(9px, 12px);
-                                            font-weight: 700;
-                                            font-family: Theme.font;
-                                            x: 6px;
-                                            y: 0;
-                                            width: parent.width - 12px;
-                                            height: parent.height;
-                                            vertical-alignment: center;
-                                            horizontal-alignment: center;
-                                        }
-                                    }
-                                }
-
-                                row-touch := TouchArea {
-                                    clicked => {
-                                        root.selected = i;
-                                        root.execute(action.id);
-                                        root.dismissed();
-                                    }
-                                }
-                            }
+                    for action[i] in root.actions: PaletteRow {
+                        action: action;
+                        // Group header — only when this row's group differs
+                        // from the previous row's.
+                        show-group-header: i == 0 || root.actions[i - 1].group != action.group;
+                        is-selected: i == root.selected;
+                        activate => {
+                            root.selected = i;
+                            root.execute(action.id);
+                            root.dismissed();
                         }
                     }
 

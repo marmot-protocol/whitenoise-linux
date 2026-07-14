@@ -193,7 +193,7 @@ fn wire_quick_reactions(ui: &DarkMatterLinux, settings_cell: &Rc<RefCell<Setting
         let weak = ui.as_weak();
         move |message_id, emoji| {
             if let Some(ui) = weak.upgrade() {
-                ui.invoke_react_message(message_id, emoji);
+                ui.global::<AppState>().invoke_react_message(message_id, emoji);
             }
         }
     });
@@ -204,7 +204,7 @@ fn wire_quick_reactions(ui: &DarkMatterLinux, settings_cell: &Rc<RefCell<Setting
         let weak = ui.as_weak();
         move |anchor_x, anchor_y| {
             if let Some(ui) = weak.upgrade() {
-                ui.invoke_emoji_picker_requested(
+                ui.global::<AppState>().invoke_emoji_picker_requested(
                     SharedString::from("\u{1}quickadd"),
                     anchor_x,
                     anchor_y,
@@ -262,7 +262,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // `request-edit(id, current_text)`. We load the current text into the
     // composer and stash the target id; the next send routes through
     // `edit_op`. Entering edit mode clears any pending reply target.
-    ui.on_request_edit({
+    ui.global::<AppState>().on_request_edit({
         let weak = ui.as_weak();
         let settings_cell = settings_cell.clone();
         let group_ids = group_ids.clone();
@@ -303,7 +303,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             ui.set_composer_draft(current_text);
         }
     });
-    ui.on_cancel_edit({
+    ui.global::<AppState>().on_cancel_edit({
         let weak = ui.as_weak();
         let settings_cell = settings_cell.clone();
         let group_ids = group_ids.clone();
@@ -323,7 +323,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     //
     // The bubble's run cells resolved the drag into two (line, run, fraction)
     // endpoints; re-read the row's line model and extract the covered text.
-    ui.on_copy_selection({
+    ui.global::<AppState>().on_copy_selection({
         let weak = ui.as_weak();
         move |message_id, a_line, a_run, a_frac, b_line, b_run, b_frac| {
             let Some(ui) = weak.upgrade() else { return };
@@ -429,7 +429,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // immediately, publish the kind-5 in the background, then on ack drop the
     // overlay (the snapshot now carries the delete) and on failure drop it +
     // refresh so the row reverts to its confirmed content.
-    ui.on_request_delete_everyone({
+    ui.global::<AppState>().on_request_delete_everyone({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -509,7 +509,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // Never touches the wire: record the id in the persisted hidden set + the
     // in-memory global the renderer consults, then rebuild the active chat so
     // the row drops out. Works on any message (own or others').
-    ui.on_request_delete_me({
+    ui.global::<AppState>().on_request_delete_me({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -574,7 +574,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // Tapping a bubble's "(edited)" label asks Rust to assemble the full
     // version list (original + each author-authored kind-1009) and open the
     // modal. Empty history (race) just no-ops.
-    ui.on_show_edit_history({
+    ui.global::<AppState>().on_show_edit_history({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -608,7 +608,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             });
         }
     });
-    ui.on_dismiss_edit_history({
+    ui.global::<AppState>().on_dismiss_edit_history({
         let weak = ui.as_weak();
         move || {
             if let Some(ui) = weak.upgrade() {
@@ -621,7 +621,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // Opens the shared JSON viewer with this message's raw event. Collecting
     // it reads the group's window snapshot on the marmot runtime — worker
     // thread only, per the no-UI-thread-blocking rule.
-    ui.on_view_raw_event({
+    ui.global::<AppState>().on_view_raw_event({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -653,7 +653,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     });
 
     // Copy whatever the debug JSON viewer is currently showing.
-    ui.on_debug_view_copy({
+    ui.global::<AppState>().on_debug_view_copy({
         let weak = ui.as_weak();
         move || {
             let Some(ui) = weak.upgrade() else { return };
@@ -676,7 +676,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_dismiss_image_viewer({
+    ui.global::<AppState>().on_dismiss_image_viewer({
         let weak = ui.as_weak();
         move || {
             if let Some(ui) = weak.upgrade() {
@@ -689,7 +689,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_image_viewer_copy({
+    ui.global::<AppState>().on_image_viewer_copy({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -706,7 +706,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_image_viewer_save({
+    ui.global::<AppState>().on_image_viewer_save({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -745,7 +745,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // Dropping the player joins its render/event threads and frees the mpv
     // handle (stopping audio). The first-frame poster + duration captured
     // during playback are now cached, so repaint that bubble's tile.
-    ui.on_dismiss_video_viewer({
+    ui.global::<AppState>().on_dismiss_video_viewer({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let pending_state = pending_state.clone();
@@ -781,7 +781,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_video_viewer_toggle_play({
+    ui.global::<AppState>().on_video_viewer_toggle_play({
         let weak = ui.as_weak();
         move || {
             if let Some(player) = current_player().lock().unwrap().as_ref() {
@@ -793,7 +793,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_video_viewer_seek(move |fraction| {
+    ui.global::<AppState>().on_video_viewer_seek(move |fraction| {
         let dur = *current_video_duration().lock().unwrap();
         if dur > 0.0
             && let Some(player) = current_player().lock().unwrap().as_ref()
@@ -802,13 +802,13 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_video_viewer_seek_relative(move |secs| {
+    ui.global::<AppState>().on_video_viewer_seek_relative(move |secs| {
         if let Some(player) = current_player().lock().unwrap().as_ref() {
             player.seek_relative(secs as f64);
         }
     });
 
-    ui.on_video_viewer_fullscreen({
+    ui.global::<AppState>().on_video_viewer_fullscreen({
         let weak = ui.as_weak();
         move || {
             use std::sync::atomic::Ordering;
@@ -824,7 +824,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // Step the position and load that image (cache hit → instant; miss →
     // download with the loading pill up). `prev`/`next` are no-ops at the
     // ends — the UI hides the chevron there, but a stray ←/→ key is harmless.
-    ui.on_image_viewer_prev({
+    ui.global::<AppState>().on_image_viewer_prev({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -843,7 +843,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             }
         }
     });
-    ui.on_image_viewer_next({
+    ui.global::<AppState>().on_image_viewer_next({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -862,7 +862,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             }
         }
     });
-    ui.on_image_viewer_retry({
+    ui.global::<AppState>().on_image_viewer_retry({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -896,7 +896,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     };
 
-    ui.on_emoji_picker_requested({
+    ui.global::<AppState>().on_emoji_picker_requested({
         let weak = ui.as_weak();
         let emoji_query = emoji_query.clone();
         let refresh = refresh_emoji_rows.clone();
@@ -912,7 +912,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_emoji_query_changed({
+    ui.global::<AppState>().on_emoji_query_changed({
         let emoji_query = emoji_query.clone();
         let refresh = refresh_emoji_rows.clone();
         move |q| {
@@ -921,7 +921,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_emoji_picker_dismissed({
+    ui.global::<AppState>().on_emoji_picker_dismissed({
         let weak = ui.as_weak();
         move || {
             if let Some(ui) = weak.upgrade() {
@@ -930,7 +930,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_emoji_picked({
+    ui.global::<AppState>().on_emoji_picked({
         let weak = ui.as_weak();
         let settings_cell = settings_cell.clone();
         move |message_id, emoji| {
@@ -956,7 +956,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 }
                 return;
             }
-            ui.invoke_react_message(message_id, emoji);
+            ui.global::<AppState>().invoke_react_message(message_id, emoji);
         }
     });
 
@@ -969,7 +969,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // span [at, caret) of the token from a keystroke to its commit.
     let mention_span: Rc<RefCell<Option<(usize, usize)>>> = Rc::new(RefCell::new(None));
 
-    ui.on_composer_input_changed({
+    ui.global::<AppState>().on_composer_input_changed({
         let weak = ui.as_weak();
         let mention_span = mention_span.clone();
         move |cursor| {
@@ -997,7 +997,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_mention_nav({
+    ui.global::<AppState>().on_mention_nav({
         let weak = ui.as_weak();
         move |delta| {
             let Some(ui) = weak.upgrade() else { return };
@@ -1010,7 +1010,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_mention_commit({
+    ui.global::<AppState>().on_mention_commit({
         let weak = ui.as_weak();
         let mention_span = mention_span.clone();
         move || {
@@ -1021,7 +1021,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_mention_choose({
+    ui.global::<AppState>().on_mention_choose({
         let weak = ui.as_weak();
         let mention_span = mention_span.clone();
         move |index| {
@@ -1031,7 +1031,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_mention_dismiss({
+    ui.global::<AppState>().on_mention_dismiss({
         let weak = ui.as_weak();
         let mention_span = mention_span.clone();
         move || {
@@ -1132,7 +1132,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         })
     };
 
-    ui.on_react_message({
+    ui.global::<AppState>().on_react_message({
         let react_op = react_op.clone();
         move |message_id, emoji| {
             if is_temp_id(message_id.as_str()) {
@@ -1145,7 +1145,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_unreact_message({
+    ui.global::<AppState>().on_unreact_message({
         let react_op = react_op.clone();
         move |message_id, emoji| {
             if is_temp_id(message_id.as_str()) {
@@ -1159,7 +1159,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     });
 
     // ─── Edit profile ──────────────────────────────────────────────────
-    ui.on_start_edit_profile({
+    ui.global::<AppState>().on_start_edit_profile({
         let weak = ui.as_weak();
         move || {
             if let Some(ui) = weak.upgrade() {
@@ -1169,7 +1169,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_cancel_edit_profile({
+    ui.global::<AppState>().on_cancel_edit_profile({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         move || {
@@ -1182,7 +1182,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_save_profile({
+    ui.global::<AppState>().on_save_profile({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         move || {
@@ -1233,7 +1233,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // avatar preview. The rfd dialog runs on a blocking task (its xdg-portal
     // backend drives ashpd/zbus); everything that touches the UI bounces back
     // through `invoke_from_event_loop`.
-    ui.on_upload_profile_picture({
+    ui.global::<AppState>().on_upload_profile_picture({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         move || {
@@ -1426,7 +1426,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.on_peer_profile_dismissed({
+    ui.global::<AppState>().on_peer_profile_dismissed({
         let weak = ui.as_weak();
         move || {
             if let Some(ui) = weak.upgrade() {

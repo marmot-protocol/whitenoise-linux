@@ -1,0 +1,185 @@
+import {
+    Palette,
+    Theme,
+    Reactor,
+    ProfileSink,
+    EmojiSheet,
+} from "../tokens.slint";
+
+// A single emoji + count chip. `mine` controls the highlight style.
+export component ReactionChip inherits Rectangle {
+    in property <string> emoji;
+    // Sprite-sheet tile for `emoji`; clip-x < 0 falls back to the text glyph.
+    in property <int> clip-x: -1;
+    in property <int> clip-y: -1;
+    in property <int> count;
+    in property <bool> mine: false;
+    // Everyone who used this emoji, shown as mention chips in the hover popover
+    // below. Empty while a just-added reaction is still optimistic.
+    in property <[Reactor]> reactors;
+    callback clicked();
+    // Popover open-state. `want-open` is the raw hover union (chip or popover);
+    // `pop-open` is what actually mounts the popover and lingers briefly after
+    // the pointer leaves the chip. That grace is the whole point: without it the
+    // popover unmounts the instant the chip loses hover, so the pointer can never
+    // reach the badges above. `pop-hovered` is set from the popover's own
+    // TouchArea (it can't be referenced from the `if` that mounts it).
+    property <bool> pop-hovered: false;
+    property <bool> want-open: touch.has-hover || root.pop-hovered;
+    property <bool> pop-open: false;
+    property <duration> left-at;
+    changed want-open => {
+        if (root.want-open) {
+            root.pop-open = true;
+        } else {
+            root.left-at = animation-tick();
+        }
+    }
+
+    height: 22px;
+    min-width: 36px;
+    border-radius: (11px) * Theme.r-scale;
+    border-width: 1px;
+    border-color: root.mine ? Palette.mint : (touch.has-hover ? Palette.mint-dim : Palette.border-2);
+    background: root.mine ? Palette.mint-surface : (touch.has-hover ? Palette.panel-2 : Palette.panel);
+    horizontal-stretch: 0;
+    // Pop-in: when a new chip appears (optimistic add, or relay echo), it
+    // fades in. Colors animate too so toggling `mine` glides between states.
+    property <float> enter: 0;
+    init => {
+        self.enter = 1;
+    }
+    animate enter {
+        duration: 160ms;
+        easing: ease-out;
+    }
+    opacity: root.enter;
+    animate background, border-color {
+        duration: 140ms;
+        easing: ease-out;
+    }
+
+    HorizontalLayout {
+        padding-left: 8px;
+        padding-right: 8px;
+        spacing: 4px;
+        alignment: center;
+        // Colour tile from the shared Twemoji sheet (matching the quick-reaction
+        // row and inline bubble emoji); text glyph when the sheet lacks it.
+        if root.clip-x >= 0: Image {
+            width: 15px;
+            height: 15px;
+            source: EmojiSheet.sprite;
+            source-clip-x: root.clip-x;
+            source-clip-y: root.clip-y;
+            source-clip-width: EmojiSheet.tile;
+            source-clip-height: EmojiSheet.tile;
+        }
+        if root.clip-x < 0: Text {
+            text: root.emoji;
+            font-size: Theme.fs(12px, 16px);
+            vertical-alignment: center;
+        }
+
+        if root.count > 1: Text {
+            text: root.count;
+            color: root.mine ? Palette.text-hi : Palette.text-mid;
+            font-size: Theme.fs(11px, 14px);
+            font-weight: 600;
+            vertical-alignment: center;
+        }
+    }
+
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            root.clicked();
+        }
+    }
+
+    // Hovering the chip reveals who reacted with this emoji — a non-destructive
+    // way to inspect a reaction that leaves the click-to-toggle intact. Each
+    // reactor is a mention chip (same plate + gradient as an @mention); clicking
+    // one opens their profile through the same `ProfileSink` avatars and
+    // mentions use. The card sits just above the chip; `pop-open` keeps it
+    // mounted for a short grace period after the chip loses hover so the pointer
+    // can travel up onto it (`expired` closes it once the grace lapses and the
+    // pointer is elsewhere). The overlapping bridge below the card closes the
+    // 4px visual gap for hit-testing so the hand-off has no dead zone.
+    if root.pop-open && root.reactors.length > 0: Rectangle {
+        x: 0;
+        y: -self.height;
+        width: pop-col.preferred-width + 16px;
+        height: pop-col.preferred-height + 12px;
+        background: transparent;
+        // Close once the grace window lapses and the pointer is truly gone. The
+        // grace keeps the popover alive long enough to move onto it and click a
+        // badge, even if a badge's own TouchArea briefly takes the hover off
+        // `pop-touch`.
+        property <bool> expired: !root.want-open && (animation-tick() - root.left-at) > 450ms;
+        changed expired => {
+            if (self.expired) {
+                root.pop-open = false;
+            }
+        }
+
+        pop-touch := TouchArea {
+            changed has-hover => {
+                root.pop-hovered = self.has-hover;
+            }
+            // The visible card. Height leaves a 4px bridge at the bottom of the
+            // TouchArea (which spans to y=parent.height, flush with the chip top)
+            // so there is no gap between chip and card for the pointer to fall
+            // through.
+            card := Rectangle {
+                width: 100%;
+                height: parent.height - 4px;
+                background: Palette.elevated;
+                border-radius: (8px) * Theme.r-scale;
+                border-width: Theme.border-w;
+                border-color: Palette.elevated-border;
+                drop-shadow-color: Theme.hard-shadow ? Palette.shadow : Palette.shadow-float;
+                drop-shadow-offset-y: Theme.hard-shadow ? 2px : 1px;
+                drop-shadow-blur: Theme.hard-shadow ? 0px : 6px;
+            }
+
+            pop-col := VerticalLayout {
+                x: 8px;
+                y: 6px;
+                spacing: 4px;
+                for reactor in root.reactors: HorizontalLayout {
+                    alignment: start;
+                    Rectangle {
+                        height: 22px;
+                        border-radius: min((6px) * Theme.r-scale, self.height / 2);
+                        background: @linear-gradient(135deg, reactor.a 0%, reactor.b 100%);
+                        // Subtle outline on hover so the badge reads as clickable.
+                        border-width: rt.has-hover ? 1px : 0px;
+                        border-color: Palette.avatar-ring;
+                        HorizontalLayout {
+                            padding-left: 8px;
+                            padding-right: 8px;
+                            Text {
+                                text: reactor.name;
+                                color: white;
+                                font-size: Theme.fs(11px, 14px);
+                                font-weight: 600;
+                                font-family: Theme.font;
+                                vertical-alignment: center;
+                            }
+                        }
+
+                        // Clicking a reactor opens their profile — the same modal
+                        // `ProfileSink` opens from an @mention or an avatar.
+                        rt := TouchArea {
+                            mouse-cursor: pointer;
+                            clicked => {
+                                ProfileSink.open(reactor.id);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

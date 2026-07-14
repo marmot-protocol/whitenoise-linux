@@ -147,13 +147,12 @@ export struct ThemeStyle {
     // Each picks which render body a dispatch slot mounts for that component
     // family. 0 = the standard/modern body. A drastic theme bumps these to
     // select an alternate skin (e.g. terminal lines, bracketed buttons) WITHOUT
-    // touching main.rs — see ui/CONTRACT.md. Shell is the whole-window skeleton.
+    // touching main.rs — see ui/CONTRACT.md.
     skin-message: int,
     skin-button: int,
     skin-list: int,
     skin-avatar: int,
     skin-modal: int,
-    shell: int,
     bracket-labels: bool,        // wrap button labels in [ ... ] (terminal/TUI look)
     // ── Hand-drawn / "doodle" capabilities ──────────────────────────────────
     paper-doodles: bool,         // scatter faint cute shapes across the chat canvas
@@ -238,8 +237,7 @@ export global Theme {
     out property <int> skin-button:           root.s.skin-button;
     out property <int> skin-list:             root.s.skin-list;
     out property <int> skin-avatar:           root.s.skin-avatar;
-    out property <int> skin-modal:            root.s.skin-modal;
-    out property <int> shell:                 root.s.shell;
+    out property <int> skin-modal:           root.s.skin-modal;
     out property <bool> bracket-labels:        root.s.bracket-labels;
     out property <bool> paper-doodles:         root.s.paper-doodles;
     out property <bool> sketch-bubbles:        root.s.sketch-bubbles;
@@ -292,6 +290,12 @@ export global Palette {
     out property <color> bubble-out-fg: Theme.c.bubble-out-fg;
     // Hard pixel shadow color — constant across themes.
     out property <color> shadow:    #000000;
+    // QR plate — white in every theme so codes keep their light quiet zone
+    // and stay scannable. Constant, like `shadow`.
+    out property <color> qr-plate:  #FFFFFF;
+    // Letterbox plate behind the About-page artwork; matches the background
+    // baked into assets/about.png, so it is asset-locked, not themed.
+    out property <color> artwork-plate: #0a0a14;
     out property <color> bevel-hi:  Theme.c.bevel-hi;
     out property <color> bevel-lo:  Theme.c.bevel-lo;
 

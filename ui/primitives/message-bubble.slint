@@ -9,295 +9,12 @@ import {
 import { CheckMark } from "../icons/check-mark.slint";
 import { SketchOutline } from "sketch-outline.slint";
 import { Tooltip } from "tooltip.slint";
-
-// One inline run inside a wrapped chat line. The Text element is always
-// instantiated (empty string when emoji) so the wrapper can bind to its
-// `preferred-width` — a Rectangle that only conditionally hosts children
-// reports zero preferred-width to its parent HorizontalLayout and all runs
-// collapse onto each other.
-component RunCell inherits Rectangle {
-    in property <bool> is-emoji;
-    in property <string> text;
-    in property <int> clip-x;
-    in property <int> clip-y;
-    in property <length> body-fs;
-    in property <length> emoji-px;
-    in property <color> fg;
-    // Inline Markdown styling, resolved per-run by the Rust AST walker.
-    in property <bool> bold;
-    in property <bool> italic;
-    in property <bool> strike;
-    in property <bool> code;
-    in property <string> link;
-    // Per-line font scale (headings). 1.0 for body text.
-    in property <float> scale: 1.0;
-    in property <color> link-color;
-    in property <color> code-bg;
-    // Profile-mention chip: text on a rounded avatar-gradient plate. The run
-    // still carries its nostr: link, so the tap-to-profile path is unchanged.
-    in property <bool> mention;
-    in property <color> mention-a;
-    in property <color> mention-b;
-    // iMessage inline text effects, packed as a bitmask (see MessageRun.fx) so
-    // any effects stack on one glyph. Slint has no bitwise ops, so each bit is
-    // decoded with mod(floor(fx / 2^n), 2). `phase` is the per-letter index
-    // along a span (Ripple's travelling crest, Jitter's decorrelation).
-    in property <int> fx: 0;
-    in property <float> phase: 0;
-    property <bool> f-big:     mod(floor(root.fx / 1), 2) == 1;
-    property <bool> f-small:   mod(floor(root.fx / 2), 2) == 1;
-    property <bool> f-explode: mod(floor(root.fx / 4), 2) == 1;
-    property <bool> f-bloom:   mod(floor(root.fx / 8), 2) == 1;
-    property <bool> f-shake:   mod(floor(root.fx / 16), 2) == 1;
-    property <bool> f-nod:     mod(floor(root.fx / 32), 2) == 1;
-    property <bool> f-ripple:  mod(floor(root.fx / 64), 2) == 1;
-    property <bool> f-jitter:  mod(floor(root.fx / 128), 2) == 1;
-
-    // Big/Small are a persistent size; everything else animates on a continuous
-    // burst-then-rest loop. animation-tick() is read only when something
-    // animates, so static cells (and plain text) never repaint. `tsec` is
-    // elapsed seconds.
-    property <bool> animated: root.f-explode || root.f-bloom || root.f-shake || root.f-nod || root.f-ripple || root.f-jitter;
-    property <float> tsec: root.animated ? animation-tick() / 1s : 0;
-    property <length> amp: root.body-fs * root.scale;
-
-    property <float> shake-l: mod(root.tsec, 1.6);
-    property <float> nod-l: mod(root.tsec, 1.7);
-
-    // Explode cycle: a readable HOLD (1.3s, text sits still and fully visible),
-    // then the BURST (0.7s, every glyph flings off on its own ballistic arc and
-    // fades out fast), then a short gap before fading back in for the next hold.
-    // `ep` is the burst progress (0 throughout the hold). `vx`/`vy` are
-    // per-glyph launch velocities seeded from `phase` so the letters scatter in
-    // different directions instead of moving as a block.
-    property <float> explode-l: mod(root.tsec, 2.4);
-    property <float> ep: clamp((root.explode-l - 1.3) / 0.7, 0, 1);
-    property <float> vx: sin(root.phase * 6.3 * 1turn) + 0.4 * sin((root.phase * 2.1 + 1.0) * 1turn);
-    property <float> vy: 1.0 + 0.45 * sin(root.phase * 3.7 * 1turn);
-
-    // Bloom: a "rolling bold" — a sharp crest travels letter-to-letter (offset
-    // by per-glyph `phase`), thickening each glyph to bold as it passes.
-    property <float> bloom-w: max(sin((root.tsec * 0.85 - root.phase * 0.85) * 1turn), 0);
-    property <float> bloom-b: root.bloom-w * root.bloom-w * root.bloom-w;
-
-    // Per-effect transforms, composed below. Each is gated by its flag when
-    // summed, so unused ones contribute nothing.
-    property <length> exp-dx: root.amp * 2.6 * root.vx * root.ep;
-    property <length> exp-dy: root.amp * (-3.2 * root.vy * root.ep + 9.0 * root.ep * root.ep);
-    property <length> shake-dx: root.amp * 0.10 * (root.shake-l < 0.6 ? sin(root.shake-l / 0.6 * 0.5turn) : 0) * sin(root.shake-l / 0.6 * 6 * 1turn);
-    property <length> nod-dy: root.amp * 0.22 * (root.nod-l < 0.9 ? sin(root.nod-l / 0.9 * 1turn) : 0);
-    property <length> ripple-dy: root.amp * 0.5 * sin((root.tsec * 1.0 - root.phase * 0.8) * 1turn);
-    property <length> jitter-dx: root.amp * 0.05 * sin((root.tsec * 6 + root.phase * 5) * 1turn);
-    property <length> jitter-dy: root.amp * 0.05 * cos((root.tsec * 7.5 + root.phase * 7) * 1turn);
-
-    // Compose all active effects. Size effects multiply onto `base-sz`; motion
-    // effects (and explode's arc) sum onto the offset.
-    property <float> base-sz: root.f-big ? 1.5 : (root.f-small ? 0.72 : 1.0);
-    // The animated scale multiplier — kept separate from base-sz so the layout
-    // box reserves the persistent (Big/Small) size and the explode/bloom scale
-    // overflows it instead of reflowing the line.
-    property <float> anim-sz:
-        (root.f-explode ? (1 - 0.25 * root.ep) : 1.0) * (root.f-bloom ? (1 + 0.16 * root.bloom-b) : 1.0);
-    property <float> sz: root.base-sz * root.anim-sz;
-    // During the hold the glyph is solid (with a quick fade-in at the very
-    // start); during the burst it fades out fast (gone by ~40% of the arc, so
-    // no half-faded letters drift across the bubble), and stays gone until the
-    // next hold.
-    property <float> fx-opacity:
-        root.f-explode ? (root.explode-l < 1.3 ? clamp(root.explode-l / 0.25, 0, 1) : clamp(1 - root.ep * 1.6, 0, 1)) : 1.0;
-    property <length> dx:
-        (root.f-explode ? root.exp-dx : 0px) + (root.f-shake ? root.shake-dx : 0px) + (root.f-jitter ? root.jitter-dx : 0px);
-    property <length> dy:
-        (root.f-explode ? root.exp-dy : 0px) + (root.f-nod ? root.nod-dy : 0px) + (root.f-ripple ? root.ripple-dy : 0px) + (root.f-jitter ? root.jitter-dy : 0px);
-
-    // Text-selection plumbing (see TextSelection in tokens.slint). Each cell
-    // hit-tests itself against the selection points: `sel-origin-x` is the
-    // text block's window-x (points live in text-block space), `band-t/b` the
-    // y-band of the cell's line, and the first/last flags let edge cells
-    // claim points that fall beyond the line or the whole block.
-    in property <string> sel-msg-id;
-    in property <int> sel-line-idx;
-    in property <int> sel-run-idx;
-    in property <bool> sel-first-run;
-    in property <bool> sel-last-run;
-    in property <bool> sel-first-line;
-    in property <bool> sel-last-line;
-    in property <length> sel-origin-x;
-    in property <length> band-t;
-    in property <length> band-b;
-    in property <color> sel-bg;
-
-    property <bool> sel-mine: root.sel-msg-id != "" && TextSelection.owner == root.sel-msg-id;
-    property <length> cell-l: self.absolute-position.x - root.sel-origin-x;
-    property <length> cell-r: root.cell-l + root.width;
-
-    // Highlight from the RESOLVED endpoints (line, run, fraction) — the same
-    // values the extractor copies, so painted and copied text agree; it also
-    // lets word / whole-bubble selections set endpoints directly without
-    // synthesizing pointer coordinates. Endpoints arrive unordered (a =
-    // anchor, b = cursor); order them lexicographically first.
-    property <bool> sel-on: root.sel-mine && TextSelection.active && TextSelection.a-line >= 0 && TextSelection.a-run >= 0 && TextSelection.b-line >= 0 && TextSelection.b-run >= 0;
-    property <bool> sel-a-first: TextSelection.a-line < TextSelection.b-line || (TextSelection.a-line == TextSelection.b-line && (TextSelection.a-run < TextSelection.b-run || (TextSelection.a-run == TextSelection.b-run && TextSelection.a-frac <= TextSelection.b-frac)));
-    property <int> sel-s-line: root.sel-a-first ? TextSelection.a-line : TextSelection.b-line;
-    property <int> sel-s-run: root.sel-a-first ? TextSelection.a-run : TextSelection.b-run;
-    property <float> sel-s-frac: root.sel-a-first ? TextSelection.a-frac : TextSelection.b-frac;
-    property <int> sel-e-line: root.sel-a-first ? TextSelection.b-line : TextSelection.a-line;
-    property <int> sel-e-run: root.sel-a-first ? TextSelection.b-run : TextSelection.a-run;
-    property <float> sel-e-frac: root.sel-a-first ? TextSelection.b-frac : TextSelection.a-frac;
-    // My covered slice: empty (from 1, to 0) when I sit outside the range.
-    property <float> sel-from: !root.sel-on ? 1.0 : (root.sel-line-idx > root.sel-s-line || (root.sel-line-idx == root.sel-s-line && root.sel-run-idx > root.sel-s-run)) ? 0.0 : (root.sel-line-idx == root.sel-s-line && root.sel-run-idx == root.sel-s-run) ? root.sel-s-frac : 1.0;
-    property <float> sel-to: !root.sel-on ? 0.0 : (root.sel-line-idx < root.sel-e-line || (root.sel-line-idx == root.sel-e-line && root.sel-run-idx < root.sel-e-run)) ? 1.0 : (root.sel-line-idx == root.sel-e-line && root.sel-run-idx == root.sel-e-run) ? root.sel-e-frac : 0.0;
-
-    // Endpoint claims. For any point exactly one cell resolves it to a
-    // document position (line, run, fraction): the cell containing it, the
-    // first/last cell of its line for points in the indent zone or past the
-    // line end, or the first/last cell of the block for points above/below
-    // all lines. -1 = not mine. Claims land in the global through `changed`
-    // callbacks (bindings must stay pure).
-    pure function claim-frac(px: length, py: length) -> float {
-        if (py < root.band-t) {
-            return (root.sel-first-line && root.sel-first-run) ? 0.0 : -1.0;
-        }
-        if (py >= root.band-b) {
-            return (root.sel-last-line && root.sel-last-run) ? 1.0 : -1.0;
-        }
-        if (px < root.cell-l) {
-            return root.sel-first-run ? 0.0 : -1.0;
-        }
-        if (px >= root.cell-r) {
-            return root.sel-last-run ? 1.0 : -1.0;
-        }
-        return (px - root.cell-l) / max(root.width, 1px);
-    }
-    property <float> sel-a-claim: root.sel-mine ? claim-frac(TextSelection.anchor-x, TextSelection.anchor-y) : -1.0;
-    property <float> sel-b-claim: root.sel-mine ? claim-frac(TextSelection.cursor-x, TextSelection.cursor-y) : -1.0;
-    changed sel-a-claim => {
-        if (self.sel-a-claim >= 0) {
-            // The press cache is written unconditionally; the `a` endpoint
-            // only outside word mode, where Rust owns it (a late claim would
-            // otherwise drag the word selection's edge back to the click
-            // point).
-            TextSelection.p-line = root.sel-line-idx;
-            TextSelection.p-run = root.sel-run-idx;
-            TextSelection.p-frac = self.sel-a-claim;
-            if (!TextSelection.word-mode) {
-                TextSelection.a-line = root.sel-line-idx;
-                TextSelection.a-run = root.sel-run-idx;
-                TextSelection.a-frac = self.sel-a-claim;
-            }
-        }
-    }
-    changed sel-b-claim => {
-        // Cursor claims land in the RAW pointer position (`c`), not the `b`
-        // endpoint: the drag handler copies `c` into `b` in character mode
-        // and lets Rust derive word-snapped endpoints from `c` in word mode.
-        if (self.sel-b-claim >= 0) {
-            TextSelection.c-line = root.sel-line-idx;
-            TextSelection.c-run = root.sel-run-idx;
-            TextSelection.c-frac = self.sel-b-claim;
-        }
-    }
-
-    property <bool> is-link: root.link != "";
-    // Layout size. The box reserves the persistent Big/Small size (so the line
-    // reflows for those, like iMessage); the animated explode/bloom scale is
-    // divided back out so it overflows the box (centered, below) without
-    // reflowing the line frame to frame.
-    property <length> em-px: root.emoji-px * root.scale * root.base-sz;
-    horizontal-stretch: 0;
-    // Mention chips reserve extra width for the plate's side padding — the
-    // 10px must match MD_MENTION_PAD in src/render.rs (the Rust wrapper
-    // budgets it when picking break points).
-    width: root.is-emoji ? root.em-px : t.preferred-width / max(root.anim-sz, 0.01) + (root.mention ? 10px : 0px);
-    height: root.is-emoji ? root.em-px : t.preferred-height / max(root.anim-sz, 0.01);
-
-    // Inline-code plate — flush to the cell so adjacent code runs read as one
-    // continuous span.
-    if root.code && !root.is-emoji: Rectangle {
-        width: 100%;
-        height: 100%;
-        background: root.code-bg;
-        border-radius: (2px) * Theme.r-scale;
-    }
-
-    // Mention chip plate — the resolved name sits on the account's stable
-    // avatar gradient, same hue the reader knows from its avatar. Painted
-    // under the selection highlight so selecting across a chip stays visible.
-    if root.mention && !root.is-emoji: Rectangle {
-        width: 100%;
-        height: 100%;
-        background: @linear-gradient(135deg, root.mention-a 0%, root.mention-b 100%);
-        border-radius: min((6px) * Theme.r-scale, self.height / 2);
-    }
-
-    // Selection highlight — the cell's own slice of the selected range,
-    // painted behind the glyph. Width collapses to 0 for uncovered cells.
-    if root.sel-mine: Rectangle {
-        x: root.width * clamp(root.sel-from, 0.0, 1.0);
-        width: root.width * max(0.0, root.sel-to - root.sel-from);
-        height: 100%;
-        background: root.sel-bg;
-    }
-
-    t := Text {
-        // Centre the glyph in its (base-sized) cell so an animated scale grows
-        // symmetrically and overflows instead of pushing neighbours; for static
-        // cells the cell already equals preferred size, so the term is 0.
-        x: root.dx + (root.width - self.preferred-width) / 2;
-        y: root.dy + (root.height - self.preferred-height) / 2;
-        text: root.is-emoji ? "" : root.text;
-        // Chip text renders white over the gradient plate, like avatar
-        // initials (the plate's hue range keeps the contrast readable).
-        color: root.mention ? white : (root.is-link ? root.link-color : root.fg);
-        font-size: root.body-fs * root.scale * root.sz;
-        font-family: Theme.font;
-        // Bloom rolls a bold crest across the glyphs; otherwise plain weight.
-        font-weight: (root.f-bloom && root.bloom-b > 0.3) ? 700 : (root.bold ? 700 : 400);
-        font-italic: root.italic;
-        opacity: root.fx-opacity;
-        visible: !root.is-emoji;
-    }
-
-    if root.is-emoji: Image {
-        x: root.dx + (root.width - self.width) / 2;
-        y: root.dy + (root.height - self.height) / 2;
-        width: root.emoji-px * root.scale * root.sz;
-        height: root.emoji-px * root.scale * root.sz;
-        opacity: root.fx-opacity;
-        source: EmojiSheet.sprite;
-        source-clip-x: root.clip-x;
-        source-clip-y: root.clip-y;
-        source-clip-width: EmojiSheet.tile;
-        source-clip-height: EmojiSheet.tile;
-        image-fit: contain;
-    }
-
-    // Strikethrough — Slint's Text has no strike property, so overlay a rule
-    // across the cell's mid-line.
-    if root.strike && !root.is-emoji: Rectangle {
-        y: parent.height / 2;
-        width: 100%;
-        height: 1px;
-        background: root.is-link ? root.link-color : root.fg;
-    }
-    // Link underline. Mention chips skip it — the plate is the affordance.
-    if root.is-link && !root.is-emoji && !root.mention: Rectangle {
-        y: parent.height - 1px;
-        width: 100%;
-        height: 1px;
-        background: root.link-color;
-    }
-
-    // Always mounted (never `if`-gated) and disabled for non-link runs so it
-    // doesn't intercept hover/clicks meant for the bubble's hover sensor.
-    TouchArea {
-        enabled: root.is-link;
-        mouse-cursor: root.is-link ? pointer : default;
-        clicked => {
-            Linkout.open(root.link);
-        }
-    }
-}
+import { RunCell } from "message-bubble/run-cell.slint";
+import { AlbumGrid } from "message-bubble/album-grid.slint";
+import { VideoTile } from "message-bubble/video-tile.slint";
+import { AudioTile } from "message-bubble/audio-tile.slint";
+import { ImageTile } from "message-bubble/image-tile.slint";
+import { FileChip } from "message-bubble/file-chip.slint";
 
 export component MessageBubble inherits Rectangle {
     // The whole message — the body, stamp, reply/attachment/album blocks, and
@@ -486,7 +203,7 @@ export component MessageBubble inherits Rectangle {
                 Rectangle {
                     width: 2.5px;
                     background: root.msg.outgoing ? Palette.bubble-out-fg : Palette.mint;
-                    border-radius: 1.25px;
+                    border-radius: 1.25px * Theme.r-scale;
                 }
 
                 VerticalLayout {
@@ -531,332 +248,51 @@ export component MessageBubble inherits Rectangle {
             }
         }
 
-        // Album grid. Each cell's rect is precomputed in Rust; we absolute-
-        // position a clipped image (or a subtle placeholder until it decodes).
-        if root.msg.album.length > 0 && !root.msg.deleted: Rectangle {
-            width: root.msg.album-w;
-            height: root.msg.album-h;
-            for cell[i] in root.msg.album: Rectangle {
-                x: cell.x;
-                y: cell.y;
-                width: cell.w;
-                height: cell.h;
-                border-radius: (6px) * Theme.r-scale;
-                background: root.msg.outgoing ? Palette.bubble-inset-out : Palette.bubble-inset;
-                clip: true;
-                border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
-                border-color: Palette.border-2;
-                if cell.has-image: Image {
-                    width: parent.width;
-                    height: parent.height;
-                    source: cell.image;
-                    image-fit: cover;
-                }
-                if !cell.has-image: Text {
-                    text: cell.loading ? "…" : "🖼";
-                    color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
-                    font-size: Theme.fs(22px, 26px);
-                    font-family: Theme.font;
-                    x: (parent.width - self.width) / 2;
-                    y: (parent.height - self.height) / 2;
-                    opacity: 0.7;
-                }
-                TouchArea {
-                    enabled: !cell.loading;
-                    mouse-cursor: pointer;
-                    clicked => {
-                        root.album-cell-clicked(cell.key);
-                    }
-                }
+        // Album grid (message-bubble/album-grid.slint).
+        if root.msg.album.length > 0 && !root.msg.deleted: AlbumGrid {
+            msg: root.msg;
+            cell-clicked(key) => {
+                root.album-cell-clicked(key);
             }
         }
 
         // Attachment block. Image attachments render as a tappable preview
         // tile (placeholder until decoded); other files render as a chip with
-        // filename + size. Both fire `attachment-clicked` on tap.
-        // Video attachment — poster frame (decoded first frame or imeta thumb)
-        // with a ▶ play badge + optional duration. Tap opens the in-app viewer.
-        if root.msg.has-attachment && root.msg.att-is-video && !root.msg.deleted: vid-tile := Rectangle {
-            property <length> vid-w: min(280px, max(120px, root.text-budget));
-            width: self.vid-w;
-            height: 180px;
-            border-radius: (8px) * Theme.r-scale;
-            background: root.msg.outgoing ? Palette.media-backdrop-out : Palette.media-backdrop;
-            clip: true;
-            border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
-            border-color: Palette.border-2;
-            if root.msg.att-has-image: Image {
-                width: parent.width;
-                height: parent.height;
-                source: root.msg.att-image;
-                image-fit: cover;
-            }
-            // Play badge (always shown over the poster / placeholder).
-            Rectangle {
-                width: 56px;
-                height: 56px;
-                border-radius: (28px) * Theme.r-scale;
-                background: #00000099;
-                border-width: Theme.border-w;
-                border-color: #FFFFFFCC;
-                Text {
-                    // Nudge the glyph optically-center inside the circle.
-                    x: parent.width / 2 - self.width / 2 + 3px;
-                    text: root.msg.att-loading ? "…" : (root.msg.att-failed ? "!" : "▶");
-                    color: #FFFFFF;
-                    font-size: Theme.fs(24px, 28px);
-                    font-family: Theme.font;
-                    horizontal-alignment: center;
-                    vertical-alignment: center;
-                }
-            }
-            // Duration badge, bottom-right.
-            if root.msg.att-duration != "": Rectangle {
-                x: parent.width - self.width - 6px;
-                y: parent.height - self.height - 6px;
-                width: dur-text.preferred-width + 12px;
-                height: 18px;
-                border-radius: (4px) * Theme.r-scale;
-                background: #000000AA;
-                dur-text := Text {
-                    text: root.msg.att-duration;
-                    color: #FFFFFF;
-                    font-size: Theme.fs(10px, 14px);
-                    font-family: Theme.font;
-                    font-weight: 600;
-                    horizontal-alignment: center;
-                    vertical-alignment: center;
-                }
-            }
-            TouchArea {
-                enabled: !root.msg.att-loading;
-                mouse-cursor: pointer;
-                clicked => {
-                    root.attachment-clicked();
-                }
+        // filename + size. All fire `attachment-clicked` on tap; the tiles
+        // live in message-bubble/*.slint.
+        if root.msg.has-attachment && root.msg.att-is-video && !root.msg.deleted: VideoTile {
+            msg: root.msg;
+            text-budget: root.text-budget;
+            clicked => {
+                root.attachment-clicked();
             }
         }
 
-        // Audio attachment — inline player: play/pause, filename, scrubber,
-        // size + duration. Height tracks the row's content so the bubble only
-        // grows the extra rows when there's a filename to show.
-        if root.msg.has-attachment && root.msg.att-is-audio && !root.msg.deleted: aud := Rectangle {
-            property <length> audio-w: min(280px, max(180px, root.text-budget));
-            // Width left for the text column: player width minus padding,
-            // play button, and inter-column spacing (10 + 36 + 10 + 12).
-            property <length> col-w: max(40px, self.audio-w - 68px);
-            width: self.audio-w;
-            height: aud-row.preferred-height;
-            border-radius: (8px) * Theme.r-scale;
-            background: root.msg.outgoing ? Palette.bubble-inset-out : Palette.bubble-inset;
-            border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
-            border-color: Palette.border-2;
-
-            aud-row := HorizontalLayout {
-                padding-left: 10px;
-                padding-right: 12px;
-                padding-top: 9px;
-                padding-bottom: 9px;
-                spacing: 10px;
-                alignment: stretch;
-
-                // Play / pause button. Fixed size, so the HorizontalLayout
-                // centers it vertically on the cross axis automatically — an
-                // explicit `y` here would take it out of the layout flow.
-                Rectangle {
-                    width: 36px;
-                    height: 36px;
-                    border-radius: (18px) * Theme.r-scale;
-                    background: play-touch.has-hover ? (root.msg.outgoing ? Palette.text-hi : Palette.mint-hi) : (root.msg.outgoing ? Palette.bubble-out-fg : Palette.mint);
-                    animate background { duration: Theme.hover-dur; }
-                    Text {
-                        x: parent.width / 2 - self.width / 2 + (root.msg.att-audio-playing || root.msg.att-loading || root.msg.att-failed || root.msg.att-audio-failed ? 0px : 2px);
-                        // Loading → ellipsis, send-failed → retry, decode-failed
-                        // → bang, else play/pause.
-                        text: root.msg.att-loading ? "…" : (root.msg.att-failed ? "↻" : (root.msg.att-audio-failed ? "!" : (root.msg.att-audio-playing ? "⏸" : "▶")));
-                        color: root.msg.outgoing ? Palette.mint : Palette.bg;
-                        font-size: Theme.fs(14px, 18px);
-                        font-family: Theme.font;
-                        horizontal-alignment: center;
-                        vertical-alignment: center;
-                    }
-
-                    play-touch := TouchArea {
-                        enabled: !root.msg.att-loading;
-                        mouse-cursor: pointer;
-                        clicked => {
-                            root.audio-play-clicked();
-                        }
-                    }
-                }
-
-                // Text column. `horizontal-stretch` makes it absorb the
-                // remaining player width; setting `y` would detach it from that
-                // flow and collapse the children to their preferred sizes.
-                VerticalLayout {
-                    spacing: 4px;
-                    horizontal-stretch: 1;
-                    alignment: center;
-
-                    // Filename — only when the attachment carries one.
-                    if root.msg.att-name != "": Text {
-                        text: root.msg.att-name;
-                        width: aud.col-w;
-                        overflow: elide;
-                        color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
-                        font-size: Theme.fs(11px, 14px);
-                        font-family: Theme.font;
-                        font-weight: 600;
-                    }
-
-                    // Scrubber. The visible track is 5px, but a taller
-                    // transparent wrapper hosts the seek TouchArea so the hit
-                    // target is comfortable.
-                    Rectangle {
-                        height: 16px;
-                        bar-bg := Rectangle {
-                            y: (parent.height - self.height) / 2;
-                            width: 100%;
-                            height: 5px;
-                            border-radius: 2.5px * Theme.r-scale;
-                            background: root.msg.outgoing ? Palette.bubble-inset-out-strong : Palette.bubble-inset-strong;
-                            Rectangle {
-                                x: 0;
-                                width: parent.width * clamp(root.msg.att-audio-progress, 0.0, 1.0);
-                                height: 100%;
-                                border-radius: 2.5px * Theme.r-scale;
-                                background: root.msg.outgoing ? Palette.bubble-out-fg : Palette.mint;
-                            }
-                        }
-
-                        seek-touch := TouchArea {
-                            mouse-cursor: pointer;
-                            clicked => {
-                                root.audio-seek-clicked(self.mouse-x / self.width);
-                            }
-                        }
-                    }
-
-                    // Meta row: size on the left, elapsed/total on the right.
-                    HorizontalLayout {
-                        spacing: 6px;
-                        Text {
-                            text: root.msg.att-failed ? @tr("failed · tap to retry") : (root.msg.att-audio-failed ? @tr("Can't play this audio format") : root.msg.att-size-label);
-                            horizontal-stretch: 1;
-                            overflow: elide;
-                            color: root.msg.att-failed || root.msg.att-audio-failed ? (root.msg.outgoing ? Palette.danger-on-bubble : Palette.danger) : (root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid);
-                            font-size: Theme.fs(10px, 14px);
-                            font-family: Theme.font;
-                            opacity: root.msg.att-failed || root.msg.att-audio-failed ? 1.0 : (root.msg.outgoing ? 0.75 : 0.9);
-                        }
-
-                        Text {
-                            text: root.msg.att-duration;
-                            color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
-                            font-size: Theme.fs(10px, 14px);
-                            font-family: Theme.font;
-                            horizontal-alignment: right;
-                        }
-                    }
-                }
+        // Audio attachment — inline player (message-bubble/audio-tile.slint).
+        if root.msg.has-attachment && root.msg.att-is-audio && !root.msg.deleted: AudioTile {
+            msg: root.msg;
+            text-budget: root.text-budget;
+            play-clicked => {
+                root.audio-play-clicked();
+            }
+            seek-clicked(frac) => {
+                root.audio-seek-clicked(frac);
             }
         }
 
-        if root.msg.has-attachment && root.msg.att-is-image && !root.msg.deleted: img-tile := Rectangle {
-            property <length> img-w: min(280px, max(120px, root.text-budget));
-            property <length> img-h: 180px;
-            width: self.img-w;
-            height: self.img-h;
-            border-radius: (8px) * Theme.r-scale;
-            background: root.msg.outgoing ? Palette.bubble-inset-out : Palette.bubble-inset;
-            clip: true;
-            border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
-            border-color: Palette.border-2;
-            if root.msg.att-has-image: Image {
-                width: parent.width;
-                height: parent.height;
-                source: root.msg.att-image;
-                image-fit: cover;
-            }
-            if !root.msg.att-has-image: VerticalLayout {
-                alignment: center;
-                spacing: 4px;
-                Text {
-                    text: root.msg.att-loading ? "…" : (root.msg.att-failed ? "!" : "🖼");
-                    color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
-                    font-size: Theme.fs(28px, 34px);
-                    font-family: Theme.font;
-                    horizontal-alignment: center;
-                }
-
-                Text {
-                    text: root.msg.att-loading ? @tr("decrypting…") : (root.msg.att-failed ? @tr("tap to retry") : @tr("tap to load"));
-                    color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
-                    font-size: Theme.fs(10px, 14px);
-                    font-family: Theme.font;
-                    horizontal-alignment: center;
-                    opacity: 0.85;
-                }
-            }
-            TouchArea {
-                enabled: !root.msg.att-loading;
-                clicked => {
-                    root.attachment-clicked();
-                }
+        if root.msg.has-attachment && root.msg.att-is-image && !root.msg.deleted: ImageTile {
+            msg: root.msg;
+            text-budget: root.text-budget;
+            clicked => {
+                root.attachment-clicked();
             }
         }
 
-        if root.msg.has-attachment && !root.msg.att-is-image && !root.msg.att-is-video && !root.msg.att-is-audio && !root.msg.deleted: Rectangle {
-            background: root.msg.outgoing ? Palette.bubble-inset-out : Palette.bubble-inset;
-            border-radius: (6px) * Theme.r-scale;
-            border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
-            border-color: Palette.border-2;
-            height: chip-l.preferred-height;
-            chip-l := HorizontalLayout {
-                padding-left: 10px;
-                padding-right: 10px;
-                padding-top: 8px;
-                padding-bottom: 8px;
-                spacing: 10px;
-                alignment: stretch;
-                Text {
-                    text: root.msg.att-loading ? "…" : (root.msg.att-icon == "" ? "📎" : root.msg.att-icon);
-                    color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
-                    font-size: Theme.fs(16px, 18px);
-                    font-family: Theme.font;
-                    vertical-alignment: center;
-                }
-
-                VerticalLayout {
-                    spacing: 1px;
-                    horizontal-stretch: 1;
-                    Text {
-                        text: root.msg.att-name;
-                        color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
-                        font-size: Theme.fs(12px, 16px);
-                        font-family: Theme.font;
-                        font-weight: 600;
-                        overflow: elide;
-                        width: max(40px, root.text-budget - 32px);
-                    }
-
-                    Text {
-                        text: root.msg.att-failed ? @tr("failed · tap to retry") : (root.msg.att-size-label != "" && root.msg.att-type-label != "" ? root.msg.att-size-label + "  ·  " + root.msg.att-type-label : root.msg.att-size-label + root.msg.att-type-label);
-                        color: root.msg.att-failed ? (root.msg.outgoing ? Palette.danger-on-bubble : Palette.danger) : (root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid);
-                        font-size: Theme.fs(10px, 14px);
-                        font-family: Theme.font;
-                        opacity: root.msg.att-failed ? 1.0 : (root.msg.outgoing ? 0.75 : 0.9);
-                        overflow: elide;
-                        width: max(40px, root.text-budget - 32px);
-                    }
-                }
-            }
-
-            TouchArea {
-                enabled: !root.msg.att-loading;
-                clicked => {
-                    root.attachment-clicked();
-                }
+        if root.msg.has-attachment && !root.msg.att-is-image && !root.msg.att-is-video && !root.msg.att-is-audio && !root.msg.deleted: FileChip {
+            msg: root.msg;
+            text-budget: root.text-budget;
+            clicked => {
+                root.attachment-clicked();
             }
         }
 
@@ -889,8 +325,8 @@ export component MessageBubble inherits Rectangle {
             // owns the Signal-style select-to-copy drag: press anchors a
             // selection in TextSelection, drag extends it (the run cells
             // hit-test themselves against the points), and a plain click
-            // clears it while keeping the old tap behavior (retry / effect
-            // replay) that the hover-sensor below used to catch.
+            // clears it while still delivering the tap actions (retry /
+            // effect replay).
             if root.msg.lines.length > 0 && !root.msg.deleted: sel-touch := TouchArea {
                 horizontal-stretch: 0;
                 // Text cursor over the body; nested link cells override it
@@ -1019,7 +455,7 @@ export component MessageBubble inherits Rectangle {
                     if line.quote > 0: Rectangle {
                                 width: 2.5px;
                                 background: root.msg.outgoing ? Palette.bubble-out-fg : Palette.mint;
-                                border-radius: 1.25px;
+                                border-radius: 1.25px * Theme.r-scale;
                             }
                     // List / blockquote nesting inset.
                     if line.indent > 0px: Rectangle {
@@ -1191,7 +627,7 @@ export component MessageBubble inherits Rectangle {
         y: parent.height - self.height;
         height: pill-row.preferred-height;
         width: pill-row.preferred-width;
-        background: #00000088;
+        background: Palette.media-ghost-bg-hover;
         border-radius: (10px) * Theme.r-scale;
         opacity: (hover-sensor.has-hover || root.msg.pending || root.msg.failed) ? 1.0 : 0.0;
         animate opacity {
@@ -1207,14 +643,14 @@ export component MessageBubble inherits Rectangle {
             alignment: end;
             Text {
                 text: root.stamp-with-delivery;
-                color: root.msg.failed ? Palette.danger-on-bubble : #FFFFFF;
+                color: root.msg.failed ? Palette.danger-on-bubble : Palette.media-chip-fg;
                 font-size: Theme.fs(10px, 14px);
                 font-family: Theme.font;
                 vertical-alignment: center;
             }
 
             if root.msg.outgoing && !root.msg.failed: CheckMark {
-                stroke: #FFFFFF;
+                stroke: Palette.media-chip-fg;
                 double: !root.msg.pending;
                 opacity: root.msg.pending ? 0.55 : 1.0;
             }

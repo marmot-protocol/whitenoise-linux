@@ -2,7 +2,7 @@ import { Palette, Theme } from "../tokens.slint";
 import { SearchIcon } from "../icons/search-icon.slint";
 import { AddUserIcon } from "../icons/add-user-icon.slint";
 import { LineInput } from "../primitives/line-input.slint";
-import { CypherScroll } from "../primitives/cypher-scroll.slint";
+import { ScrollView } from "../primitives/scroll-view.slint";
 import { Button } from "../primitives/button.slint";
 
 export component SidePanel inherits Rectangle {
@@ -198,7 +198,7 @@ export component SidePanel inherits Rectangle {
                 height: 10px;
             }
 
-            CypherScroll {
+            ScrollView {
                 vertical-stretch: 1;
                 viewport-height: list-layout.preferred-height;
                 viewport-width: self.visible-width;

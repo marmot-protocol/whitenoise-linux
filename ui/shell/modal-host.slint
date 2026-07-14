@@ -1,0 +1,617 @@
+// ModalHost — the overlay stack: every modal, context menu and picker that
+// paints over the app shell. Extracted from the window root; shared state
+// flows through the AppState global, while state that never leaves this
+// stack (delete/admin confirm arming, the forward-picker flag) is private
+// here. Each mount below is a Rectangle-rooted component outside any layout,
+// so Slint defaults it to this host's geometry — the full window at x/y 0.
+
+import { Palette, TextSelection } from "../tokens.slint";
+import { StartNewChatModal } from "../modals/start-new-chat-modal.slint";
+import { AddContactModal } from "../modals/add-contact-modal.slint";
+import { NicknameModal } from "../modals/nickname-modal.slint";
+import { AccountSwitcherModal } from "../modals/account-switcher-modal.slint";
+import { AddAccountModal } from "../modals/add-account-modal.slint";
+import { RevealNsecModal } from "../modals/reveal-nsec-modal.slint";
+import { ImportBackupModal } from "../modals/import-backup-modal.slint";
+import { BackupCreateModal } from "../modals/backup-create-modal.slint";
+import { ConfirmModal } from "../modals/confirm-modal.slint";
+import { ForwardPickerModal } from "../modals/forward-chat-picker-modal.slint";
+import { CommandPalette } from "../modals/command-palette.slint";
+import { LanguagePickerModal } from "../modals/language-picker-modal.slint";
+import { EditHistoryModal } from "../modals/edit-history-modal.slint";
+import { ImageViewerModal } from "../modals/image-viewer-modal.slint";
+import { VideoViewerModal } from "../modals/video-viewer-modal.slint";
+import { ProfileModal } from "../modals/profile-modal.slint";
+import { QrModal } from "../modals/qr-modal.slint";
+import { EncryptionInfoModal } from "../modals/encryption-info-modal.slint";
+import { DebugJsonModal } from "../modals/debug-json-modal.slint";
+import { EmojiPicker } from "../emoji-picker.slint";
+import { MessageContextMenu } from "../primitives/context-menu.slint";
+import { ChatContextMenu } from "../primitives/chat-context-menu.slint";
+import { GroupMemberMenu } from "../main-pane/group-member-menu.slint";
+import { AppState } from "app-state.slint";
+
+export component ModalHost inherits Rectangle {
+    // Forward flow: the context-menu "Forward" item stashes the source message
+    // id in AppState.forward-src-id and opens this picker.
+    property <bool> forward-picker-open: false;
+    // Delete confirmation: deletes are destructive, so the context-menu items
+    // arm this modal instead of firing immediately. `delete-confirm-everyone`
+    // picks the wording + which callback the confirm dispatches; the target is
+    // still `ctx-menu-id` (kept from when the menu opened).
+    property <bool> show-delete-confirm: false;
+    property <bool> delete-confirm-everyone: false;
+    // Admin role changes alter group governance, so the inline member badges
+    // only arm this modal. The existing Rust callbacks fire after confirmation.
+    property <bool> show-admin-confirm: false;
+    property <int> admin-confirm-action: 0; // 1=promote, 2=demote, 3=self-demote, 4=remove
+    property <string> admin-confirm-member-id: "";
+    property <string> admin-confirm-member-name: "";
+    function arm-admin-confirm(action: int, id: string, name: string) {
+        root.admin-confirm-action = action;
+        root.admin-confirm-member-id = id;
+        root.admin-confirm-member-name = name;
+        root.show-admin-confirm = true;
+    }
+    function clear-admin-confirm() {
+        root.show-admin-confirm = false;
+        root.admin-confirm-action = 0;
+        root.admin-confirm-member-id = "";
+        root.admin-confirm-member-name = "";
+    }
+    function request-promote-admin(id: string, name: string) {
+        if (id != "") {
+            root.arm-admin-confirm(1, id, name);
+        }
+    }
+    function request-demote-admin(id: string, name: string) {
+        if (id != "") {
+            root.arm-admin-confirm(2, id, name);
+        }
+    }
+    function request-self-demote-admin(name: string) {
+        root.arm-admin-confirm(3, "", name);
+    }
+    function request-remove-member(id: string, name: string) {
+        if (id != "") {
+            root.arm-admin-confirm(4, id, name);
+        }
+    }
+
+    if AppState.show-language-picker: LanguagePickerModal {
+            active-locale: AppState.locale;
+            locale-selected(code) => {
+                AppState.locale-selected(code);
+            }
+            dismissed => {
+                AppState.show-language-picker = false;
+            }
+        }
+
+        if AppState.show-new-chat: StartNewChatModal {
+            chat-name <=> AppState.new-chat-name;
+            members-text <=> AppState.new-chat-members;
+            busy: AppState.new-chat-busy;
+            status: AppState.new-chat-status;
+            start-chat(n, m) => {
+                AppState.start-chat(n, m);
+            }
+            dismissed => {
+                AppState.modal-dismissed();
+            }
+        }
+
+        if AppState.show-add-contact: AddContactModal {
+            npub-text <=> AppState.add-contact-input;
+            busy: AppState.add-contact-busy;
+            status: AppState.add-contact-status;
+            add-contact(n) => {
+                AppState.add-contact(n);
+            }
+            dismissed => {
+                AppState.add-contact-dismissed();
+            }
+        }
+
+        if AppState.show-account-switcher: AccountSwitcherModal {
+            accounts: AppState.accounts;
+            select(id) => {
+                AppState.switch-account(id);
+            }
+            add-account => {
+                AppState.add-account-requested();
+            }
+            dismissed => {
+                AppState.show-account-switcher = false;
+            }
+        }
+
+        if AppState.show-add-account: AddAccountModal {
+            nsec-text <=> AppState.add-account-nsec;
+            generated: AppState.add-account-generated;
+            primary-busy: AppState.add-account-busy;
+            status: AppState.add-account-status;
+            add(nsec) => {
+                AppState.add-account(nsec);
+            }
+            generate => {
+                AppState.generate-add-account-key();
+            }
+            dismissed => {
+                AppState.add-account-dismissed();
+            }
+        }
+
+        if AppState.show-import-backup: ImportBackupModal {
+            file-name: AppState.import-backup-file;
+            restore-mode: AppState.import-backup-restore-mode;
+            password-text <=> AppState.import-backup-password;
+            primary-busy: AppState.import-backup-busy;
+            status: AppState.import-backup-status;
+            pick-file => {
+                AppState.import-backup-pick-file();
+            }
+            import(pw) => {
+                AppState.import-backup-submit(pw);
+            }
+            dismissed => {
+                AppState.import-backup-dismissed();
+            }
+        }
+
+        if AppState.show-create-backup: BackupCreateModal {
+            password-text <=> AppState.create-backup-password;
+            primary-busy: AppState.create-backup-busy;
+            status: AppState.create-backup-status;
+            create(pw) => {
+                AppState.create-backup-submit(pw);
+            }
+            dismissed => {
+                AppState.create-backup-dismissed();
+            }
+        }
+
+        if AppState.show-nickname-modal: NicknameModal {
+            nickname-text <=> AppState.nickname-input;
+            contact-name: AppState.nickname-contact-name;
+            save(n) => {
+                AppState.set-contact-nickname(n);
+            }
+            dismissed => {
+                AppState.nickname-modal-dismissed();
+            }
+        }
+
+        if AppState.show-block-confirm: ConfirmModal {
+            title: @tr("Block this chat request?");
+            subtitle: @tr("This declines the invite from {}. It can't be restored unless they invite you again.", AppState.chats[AppState.active-chat].name);
+            confirm-label: @tr("Block");
+            confirm => {
+                AppState.show-block-confirm = false;
+                AppState.block-chat-request();
+            }
+            dismissed => {
+                AppState.show-block-confirm = false;
+            }
+        }
+
+        if AppState.show-audit-delete-confirm: ConfirmModal {
+            title: @tr("SettingsPage" => "Delete audit log file?");
+            subtitle: @tr("SettingsPage" => "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log.");
+            confirm-label: @tr("SettingsPage" => "Delete file");
+            confirm => {
+                AppState.show-audit-delete-confirm = false;
+                AppState.audit-delete-file(AppState.pending-audit-delete-path);
+                AppState.pending-audit-delete-path = "";
+            }
+            dismissed => {
+                AppState.show-audit-delete-confirm = false;
+                AppState.pending-audit-delete-path = "";
+            }
+        }
+
+        // Rotating invalidates the currently advertised key package, so the page
+    // only emits intent; the window root owns the modal and blocks all chrome.
+    if AppState.show-rotate-confirm: ConfirmModal {
+            title: @tr("KeysPage" => "Rotate key package?");
+            subtitle: @tr("KeysPage" => "This invalidates your current package. Contacts will use the new one going forward.");
+            confirm-label: @tr("KeysPage" => "Rotate");
+            confirm => {
+                AppState.show-rotate-confirm = false;
+                AppState.kp-rotate-clicked();
+            }
+            dismissed => {
+                AppState.show-rotate-confirm = false;
+            }
+        }
+
+        if AppState.show-reveal-nsec: RevealNsecModal {
+            password <=> AppState.reveal-nsec-password;
+            nsec-value: AppState.reveal-nsec-value;
+            primary-busy: AppState.reveal-nsec-busy;
+            status: AppState.reveal-nsec-status;
+            status-color: AppState.reveal-nsec-status-error ? Palette.danger : Palette.text-lo;
+            confirm(password) => {
+                AppState.reveal-nsec-confirm(password);
+            }
+            copy(nsec) => {
+                AppState.copy-to-clipboard(nsec);
+            }
+            dismissed => {
+                AppState.show-reveal-nsec = false;
+                AppState.reveal-nsec-dismissed();
+            }
+        }
+
+        if AppState.relay-remove-target != "": ConfirmModal {
+            title: @tr("Remove this relay?");
+            subtitle: @tr("{} will stop carrying your messages. You can add it back anytime.", AppState.relay-remove-target);
+            confirm-label: @tr("Remove");
+            confirm => {
+                AppState.network-remove-relay(AppState.relay-remove-target);
+                AppState.relay-remove-target = "";
+            }
+            dismissed => {
+                AppState.relay-remove-target = "";
+            }
+        }
+
+        if AppState.show-leave-confirm: ConfirmModal {
+            x: 0;
+            y: 0;
+            width: root.width;
+            height: root.height;
+            title: @tr("Leave {}?", AppState.chats[AppState.leave-confirm-chat-idx].name);
+            subtitle: @tr("You will stop receiving new messages from this group. The chat moves to Archive.");
+            confirm-label: @tr("Leave group");
+            confirm => {
+                AppState.show-leave-confirm = false;
+                AppState.leave-group-at(AppState.leave-confirm-chat-idx);
+                AppState.leave-confirm-chat-idx = -1;
+            }
+            dismissed => {
+                AppState.show-leave-confirm = false;
+                AppState.leave-confirm-chat-idx = -1;
+            }
+        }
+
+        if root.show-admin-confirm: ConfirmModal {
+            title: root.admin-confirm-action == 1 ? @tr("Make {} an admin?", root.admin-confirm-member-name) : (root.admin-confirm-action == 2 ? @tr("Remove admin rights from {}?", root.admin-confirm-member-name) : (root.admin-confirm-action == 4 ? @tr("Remove {} from the group?", root.admin-confirm-member-name) : @tr("Step down as admin?")));
+            subtitle: root.admin-confirm-action == 1 ? @tr("{} will be able to add members, change group settings, and manage other admins.", root.admin-confirm-member-name) : (root.admin-confirm-action == 2 ? @tr("{} will stay in the group, but won't be able to manage members or group settings.", root.admin-confirm-member-name) : (root.admin-confirm-action == 4 ? @tr("{} will lose access to this group and stop receiving its messages. You'll need to invite them again to bring them back.", root.admin-confirm-member-name) : @tr("This removes your admin rights. You can't restore them yourself unless another admin promotes you again.")));
+            confirm-label: root.admin-confirm-action == 1 ? @tr("Make admin") : (root.admin-confirm-action == 2 ? @tr("Remove admin") : (root.admin-confirm-action == 4 ? @tr("Remove") : @tr("Step down")));
+            confirm => {
+                root.show-admin-confirm = false;
+                if (root.admin-confirm-action == 1) {
+                    AppState.promote-admin(root.admin-confirm-member-id);
+                } else if (root.admin-confirm-action == 2) {
+                    AppState.demote-admin(root.admin-confirm-member-id);
+                } else if (root.admin-confirm-action == 3) {
+                    AppState.self-demote-admin();
+                } else if (root.admin-confirm-action == 4) {
+                    AppState.remove-member(root.admin-confirm-member-id);
+                }
+                root.clear-admin-confirm();
+            }
+            dismissed => {
+                root.clear-admin-confirm();
+            }
+        }
+
+        if AppState.show-palette: CommandPalette {
+            actions: AppState.palette-actions;
+            query <=> AppState.palette-query;
+            dismissed => {
+                AppState.palette-dismissed();
+            }
+            execute(id) => {
+                AppState.palette-execute(id);
+            }
+            query-changed(q) => {
+                AppState.palette-query-changed(q);
+            }
+        }
+
+        // Right-click message context menu. Items re-fire the same callbacks the
+    // hover toolbar uses, so the Rust side is untouched.
+    if AppState.member-menu-open: GroupMemberMenu {
+            anchor-x: AppState.member-menu-x;
+            anchor-y: AppState.member-menu-y;
+            member-name: AppState.member-menu-name;
+            can-promote: AppState.member-menu-can-promote;
+            can-demote: AppState.member-menu-can-demote;
+            can-self-demote: AppState.member-menu-can-self-demote;
+            can-remove: AppState.member-menu-can-remove;
+            promote => {
+                AppState.member-menu-open = false;
+                root.request-promote-admin(AppState.member-menu-id, AppState.member-menu-name);
+            }
+            demote => {
+                AppState.member-menu-open = false;
+                root.request-demote-admin(AppState.member-menu-id, AppState.member-menu-name);
+            }
+            self-demote => {
+                AppState.member-menu-open = false;
+                root.request-self-demote-admin(AppState.member-menu-name);
+            }
+            remove => {
+                AppState.member-menu-open = false;
+                root.request-remove-member(AppState.member-menu-id, AppState.member-menu-name);
+            }
+            dismissed => {
+                AppState.member-menu-open = false;
+            }
+        }
+
+        if AppState.ctx-menu-open: MessageContextMenu {
+            anchor-x: AppState.ctx-menu-x;
+            anchor-y: AppState.ctx-menu-y;
+            message-id: AppState.ctx-menu-id;
+            can-edit: AppState.ctx-menu-can-edit;
+            can-copy: AppState.ctx-menu-text != "";
+            has-selection: TextSelection.active && TextSelection.owner == AppState.ctx-menu-id && TextSelection.a-line >= 0 && TextSelection.b-line >= 0;
+            debug-enabled: AppState.debug-enabled;
+            add-reaction(ax, ay) => {
+                AppState.ctx-menu-open = false;
+                AppState.emoji-picker-requested(AppState.ctx-menu-id, ax, ay);
+            }
+            reply => {
+                AppState.ctx-menu-open = false;
+                AppState.request-reply(AppState.ctx-menu-id, AppState.ctx-menu-text, AppState.ctx-menu-author);
+            }
+            copy-text => {
+                AppState.ctx-menu-open = false;
+                AppState.copy-to-clipboard(AppState.ctx-menu-text);
+            }
+            copy-selection => {
+                AppState.ctx-menu-open = false;
+                AppState.copy-selection(AppState.ctx-menu-id,
+                TextSelection.a-line, TextSelection.a-run, TextSelection.a-frac,
+                TextSelection.b-line, TextSelection.b-run, TextSelection.b-frac);
+            }
+            forward => {
+                AppState.ctx-menu-open = false;
+                AppState.forward-src-id = AppState.ctx-menu-id;
+                root.forward-picker-open = true;
+            }
+            edit => {
+                AppState.ctx-menu-open = false;
+                AppState.request-edit(AppState.ctx-menu-id, AppState.ctx-menu-text);
+            }
+            delete-for-everyone => {
+                AppState.ctx-menu-open = false;
+                root.delete-confirm-everyone = true;
+                root.show-delete-confirm = true;
+            }
+            delete-for-me => {
+                AppState.ctx-menu-open = false;
+                root.delete-confirm-everyone = false;
+                root.show-delete-confirm = true;
+            }
+            view-raw => {
+                AppState.ctx-menu-open = false;
+                AppState.view-raw-event(AppState.ctx-menu-id);
+            }
+            dismissed => {
+                AppState.ctx-menu-open = false;
+            }
+        }
+
+        // Developer-mode raw JSON viewer, shared by "View raw event" (message
+    // context menu) and "View" key packages (contact detail).
+    if AppState.debug-view-open: DebugJsonModal {
+            title: AppState.debug-view-title;
+            subtitle: AppState.debug-view-subtitle;
+            json: AppState.debug-view-json;
+            busy: AppState.debug-view-busy;
+            copy-clicked => {
+                AppState.debug-view-copy();
+            }
+            dismissed => {
+                AppState.debug-view-open = false;
+            }
+        }
+
+        // Forward destination picker — lists chats (minus the current one); a pick
+    // hands the chosen index to Rust, which re-sends `forward-src-id`'s content
+    // (text + re-encrypted attachments) into that chat.
+    if root.forward-picker-open: ForwardPickerModal {
+            chats: AppState.chats;
+            active-chat: AppState.active-chat;
+        // The picker only opens from the message context menu, so the menu's
+        // captured author/text still describe the message being forwarded.
+        source-author: AppState.ctx-menu-author;
+            source-text: AppState.ctx-menu-text;
+            match-flags: AppState.forward-match-flags;
+            visible-rows: AppState.forward-visible-rows;
+            query-changed(q) => {
+                AppState.forward-filter-changed(q);
+            }
+            select(dest) => {
+                root.forward-picker-open = false;
+                AppState.request-forward(dest);
+            }
+            dismissed => {
+                root.forward-picker-open = false;
+            }
+        }
+
+        // Right-click rail chat-row context menu — pin/unpin, mute/unmute, and
+    // leaving eligible group rows by captured index, independent of open chat.
+    if AppState.chat-ctx-open: ChatContextMenu {
+            anchor-x: AppState.chat-ctx-x;
+            anchor-y: AppState.chat-ctx-y;
+            pinned: AppState.chat-ctx-pinned;
+            muted: AppState.chat-ctx-muted;
+            can-leave: AppState.chat-ctx-can-leave;
+            toggle-pin => {
+                AppState.chat-ctx-open = false;
+                AppState.toggle-pin-chat(AppState.chat-ctx-idx);
+            }
+            toggle-mute => {
+                AppState.chat-ctx-open = false;
+                AppState.toggle-mute-chat-at(AppState.chat-ctx-idx);
+            }
+            export-chat => {
+                AppState.chat-ctx-open = false;
+                AppState.export-chat-at(AppState.chat-ctx-idx);
+            }
+            leave-group => {
+                AppState.chat-ctx-open = false;
+                AppState.leave-confirm-chat-idx = AppState.chat-ctx-idx;
+                AppState.show-leave-confirm = true;
+            }
+            dismissed => {
+                AppState.chat-ctx-open = false;
+            }
+        }
+
+        if root.show-delete-confirm: ConfirmModal {
+            title: root.delete-confirm-everyone ? @tr("Delete for everyone?") : @tr("Delete for me?");
+            subtitle: root.delete-confirm-everyone ? @tr("This removes the message for everyone in the chat. This can't be undone.") : @tr("This hides the message on this device only. Other people will still see it.");
+            confirm-label: @tr("Delete");
+            confirm => {
+                root.show-delete-confirm = false;
+                if (root.delete-confirm-everyone) {
+                    AppState.request-delete-everyone(AppState.ctx-menu-id);
+                } else {
+                    AppState.request-delete-me(AppState.ctx-menu-id);
+                }
+            }
+            dismissed => {
+                root.show-delete-confirm = false;
+            }
+        }
+
+        // `if`-mounted so the (expensive) emoji grid doesn't paint when closed.
+    if AppState.show-emoji-picker: EmojiPicker {
+            anchor-x: AppState.emoji-anchor-x;
+            anchor-y: AppState.emoji-anchor-y;
+            emoji-list: AppState.emoji-list;
+            sprite: AppState.emoji-sprite;
+            tile: AppState.emoji-tile;
+            total-shown: AppState.emoji-shown;
+            query <=> AppState.emoji-query;
+            query-changed(q) => {
+                AppState.emoji-query-changed(q);
+            }
+            picked(emoji) => {
+                AppState.emoji-picked(AppState.emoji-target-message-id, emoji);
+            }
+            dismissed => {
+                AppState.emoji-picker-dismissed();
+            }
+        }
+
+        if AppState.edit-history-open: EditHistoryModal {
+            versions: AppState.edit-history;
+            dismissed => {
+                AppState.dismiss-edit-history();
+            }
+        }
+
+        if AppState.image-viewer-open: ImageViewerModal {
+            source: AppState.image-viewer-image;
+            count: AppState.image-viewer-count;
+            index: AppState.image-viewer-index;
+            loading: AppState.image-viewer-loading;
+            failed: AppState.image-viewer-failed;
+            actions-ready: AppState.image-viewer-actions-ready;
+            dismissed => {
+                AppState.dismiss-image-viewer();
+            }
+            prev => {
+                AppState.image-viewer-prev();
+            }
+            next => {
+                AppState.image-viewer-next();
+            }
+            retry => {
+                AppState.image-viewer-retry();
+            }
+            copy => {
+                AppState.image-viewer-copy();
+            }
+            save => {
+                AppState.image-viewer-save();
+            }
+        }
+
+        if AppState.video-viewer-open: VideoViewerModal {
+            frame: AppState.video-viewer-frame;
+            has-frame: AppState.video-viewer-has-frame;
+            playing: AppState.video-viewer-playing;
+            loading: AppState.video-viewer-loading;
+            progress: AppState.video-viewer-progress;
+            pos-label: AppState.video-viewer-pos;
+            dur-label: AppState.video-viewer-dur;
+            dismissed => {
+                AppState.dismiss-video-viewer();
+            }
+            toggle-play => {
+                AppState.video-viewer-toggle-play();
+            }
+            seek(f) => {
+                AppState.video-viewer-seek(f);
+            }
+            seek-relative(s) => {
+                AppState.video-viewer-seek-relative(s);
+            }
+            fullscreen => {
+                AppState.video-viewer-fullscreen();
+            }
+        }
+
+        if AppState.peer-profile-open: ProfileModal {
+            display-name: AppState.peer-profile-name;
+            npub-short: AppState.peer-profile-npub-short;
+            nip05: AppState.peer-profile-nip05;
+            about: AppState.peer-profile-about;
+            lud16: AppState.peer-profile-lud16;
+            loading: AppState.peer-profile-loading;
+            not-found: AppState.peer-profile-not-found;
+            is-contact: AppState.peer-profile-is-contact;
+            is-self: AppState.peer-profile-is-self;
+            adding: AppState.peer-profile-adding;
+            status: AppState.peer-profile-status;
+            av-a: AppState.peer-profile-av-a;
+            av-b: AppState.peer-profile-av-b;
+            av-initials: AppState.peer-profile-av-initials;
+            av-picture: AppState.peer-profile-picture;
+            av-has-picture: AppState.peer-profile-has-picture;
+            shared-groups: AppState.peer-profile-shared-groups;
+            copy-npub => {
+                AppState.copy-to-clipboard(AppState.peer-profile-npub);
+            }
+            add-contact => {
+                AppState.peer-profile-add-contact();
+            }
+            open-shared-group(id) => {
+                AppState.open-shared-group(id);
+            }
+            dismissed => {
+                AppState.peer-profile-dismissed();
+            }
+        }
+
+        if AppState.encryption-info-open: EncryptionInfoModal {
+            group-id: AppState.chats[AppState.active-chat].npub;
+            copy-group-id => {
+                AppState.copy-to-clipboard(AppState.chats[AppState.active-chat].npub);
+            }
+            dismissed => {
+                AppState.encryption-info-open = false;
+            }
+        }
+
+        if AppState.contact-qr-open: QrModal {
+            qr: AppState.contact-qr;
+            npub-short: AppState.contact-qr-npub-short;
+            name: AppState.contact-qr-name;
+            copy-npub => {
+                AppState.copy-to-clipboard(AppState.contact-qr-npub);
+            }
+            dismissed => {
+                AppState.contact-qr-dismissed();
+            }
+        }
+}

@@ -1,7 +1,7 @@
 import { Palette, Theme } from "../tokens.slint";
 import { Modal, ModalField } from "modal.slint";
 import { Button } from "../primitives/button.slint";
-import { SectionLabel } from "../primitives/section-label.slint";
+import { FormLabel } from "../primitives/form-label.slint";
 
 // Import an encrypted whole-folder backup. The user picks a `.dmbackup` file and
 // enters the password it was sealed with. On a fresh install (no vault yet) Rust
@@ -41,7 +41,7 @@ export component ImportBackupModal inherits Modal {
     // File chooser row: a button plus the chosen filename.
     VerticalLayout {
         spacing: 7px;
-        SectionLabel {
+        FormLabel {
             text: @tr("BACKUP FILE");
         }
 

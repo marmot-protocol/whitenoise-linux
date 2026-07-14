@@ -1,0 +1,63 @@
+import { Palette, Theme } from "../tokens.slint";
+import { MicroButton } from "../primitives/button.slint";
+
+// One row in the page's DANGER ZONE: a red-tinted plate with title + detail
+// on the left and a danger-styled action button on the right (button icon via
+// @children). `busy` swaps the label for an ellipsis and gates the click.
+export component DangerActionRow inherits Rectangle {
+    in property <string> title;
+    in property <string> detail;
+    in property <string> action-label;
+    in property <bool> busy: false;
+    callback triggered();
+
+    height: 60px;
+    border-radius: (8px) * Theme.r-scale;
+    background: Palette.danger-soft;
+    border-width: 1px;
+    border-color: Palette.danger-border;
+    HorizontalLayout {
+        padding-left: 16px;
+        padding-right: 16px;
+        padding-top: 12px;
+        padding-bottom: 12px;
+        spacing: 12px;
+        alignment: stretch;
+        VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: 4px;
+            alignment: center;
+            Text {
+                text: root.title;
+                color: Palette.danger;
+                font-size: Theme.fs(12px, 16px);
+                font-weight: 700;
+            }
+
+            Text {
+                text: root.detail;
+                color: Palette.text-lo;
+                font-size: Theme.fs(11px, 14px);
+            }
+        }
+
+        VerticalLayout {
+            alignment: center;
+            MicroButton {
+                label: root.busy ? @tr("…") : root.action-label;
+                fg: Palette.danger;
+                bg-color: Palette.danger-soft;
+                hover-bg: Palette.danger-soft-hover;
+                outline: Palette.danger-border;
+                hover-outline: Palette.danger-border-hover;
+                @children
+
+                clicked => {
+                    if (!root.busy) {
+                        root.triggered();
+                    }
+                }
+            }
+        }
+    }
+}

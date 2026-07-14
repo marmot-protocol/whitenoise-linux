@@ -1,0 +1,47 @@
+// LoginGate — the pre-vault-unlock screen. Mounted by the window root when
+// AppState.logged-in is false, replacing the entire app shell (painted last,
+// so it covers everything). State flows through the AppState global.
+
+import { LoginScreen } from "../login/login-screen.slint";
+import { AppState } from "app-state.slint";
+
+export component LoginGate inherits Rectangle {
+    LoginScreen {
+            mode <=> AppState.login-mode;
+            nsec-input <=> AppState.login-nsec-input;
+            password-input <=> AppState.password-input;
+            password-confirm <=> AppState.password-confirm;
+            generated-nsec: AppState.generated-nsec;
+            generated-npub: AppState.generated-npub;
+            generated-display-name: AppState.generated-display-name;
+            generated-avatar: AppState.generated-avatar;
+            generated-has-avatar: AppState.generated-has-avatar;
+            error: AppState.login-error;
+            status: AppState.login-status;
+            busy: AppState.login-busy;
+            login-with-nsec(n, p, c) => {
+                AppState.login-with-nsec(n, p, c);
+            }
+            generate-requested => {
+                AppState.generate-key-requested();
+            }
+            confirm-saved(p, c) => {
+                AppState.confirm-saved-key(p, c);
+            }
+            unlock(p) => {
+                AppState.unlock(p);
+            }
+            reset-vault => {
+                AppState.reset-vault();
+            }
+            copy-nsec(s) => {
+                AppState.copy-nsec(s);
+            }
+            import-backup => {
+                AppState.storage-import-backup();
+            }
+            login-password-valid(p, c) => {
+                return AppState.login-password-valid(p, c);
+            }
+        }
+}

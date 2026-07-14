@@ -1,6 +1,6 @@
 import { Palette, Theme } from "../tokens.slint";
 import { Modal } from "modal.slint";
-import { SectionLabel } from "../primitives/section-label.slint";
+import { FormLabel } from "../primitives/form-label.slint";
 import { LockIcon } from "../icons/lock-icon.slint";
 import { RefreshIcon } from "../icons/refresh-icon.slint";
 import { CopyIcon } from "../icons/copy-icon.slint";
@@ -56,8 +56,8 @@ export component EncryptionInfoModal inherits Modal {
             horizontal-alignment: center;
         }
 
-        // Two plain-language guarantees, replacing the old jargon strip. Icons
-        // are vector components (not emoji) so they render in every font/theme.
+        // Two plain-language guarantees. Icons are vector components (not
+        // emoji) so they render in every font/theme.
         VerticalLayout {
             spacing: 14px;
 
@@ -127,7 +127,7 @@ export component EncryptionInfoModal inherits Modal {
         // Group id — tap to copy, flashes "Copied ✓".
         VerticalLayout {
             spacing: 7px;
-            SectionLabel {
+            FormLabel {
                 text: @tr("GROUP ID");
             }
 

@@ -1,0 +1,70 @@
+import { Palette, Theme } from "../../tokens.slint";
+import { MicroButton } from "../../primitives/button.slint";
+
+// Editing banner — shown above the input when the composer is in edit mode.
+// A mint accent bar + "Editing: <preview>" with a Cancel edit button.
+export component EditBanner inherits Rectangle {
+    in property <string> editing-message-preview;
+    callback cancel-edit();
+
+    height: 36px;
+    background: Palette.panel;
+    border-width: 1px;
+    border-color: Palette.border-2;
+    border-radius: (6px) * Theme.r-scale;
+    HorizontalLayout {
+        padding-left: 18px;
+        padding-right: 18px;
+        spacing: 8px;
+        alignment: stretch;
+        Rectangle {
+            width: 3px;
+            background: Palette.mint;
+            y: (parent.height - self.height) / 2;
+            height: 18px;
+            border-radius: 1.5px * Theme.r-scale;
+        }
+
+        VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 1;
+            HorizontalLayout {
+                spacing: 6px;
+                Text {
+                    text: @tr("Editing:");
+                    color: Palette.mint;
+                    font-size: Theme.fs(11px, 14px);
+                    font-family: Theme.font;
+                    font-weight: 700;
+                    vertical-alignment: center;
+                }
+
+                Text {
+                    text: root.editing-message-preview;
+                    color: Palette.text-mid;
+                    font-size: Theme.fs(11px, 14px);
+                    font-family: Theme.font;
+                    overflow: elide;
+                    horizontal-stretch: 1;
+                    vertical-alignment: center;
+                }
+            }
+        }
+
+        MicroButton {
+            label: @tr("Cancel edit");
+            button-height: 32px;
+            y: (parent.height - self.height) / 2;
+            focusable: true;
+            fg: Palette.text-mid;
+            hover-fg: Palette.text-hi;
+            bg-color: transparent;
+            hover-bg: Palette.panel-2;
+            outline: Palette.border-2;
+            hover-outline: Palette.border;
+            clicked => {
+                root.cancel-edit();
+            }
+        }
+    }
+}

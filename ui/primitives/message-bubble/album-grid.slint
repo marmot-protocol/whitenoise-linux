@@ -1,0 +1,44 @@
+import { Palette, Theme, ChatMessage } from "../../tokens.slint";
+
+// Album grid. Each cell's rect is precomputed in Rust; we absolute-position
+// a clipped image (or a subtle placeholder until it decodes).
+export component AlbumGrid inherits Rectangle {
+    in property <ChatMessage> msg;
+    callback cell-clicked(string);
+    width: root.msg.album-w;
+    height: root.msg.album-h;
+    for cell[i] in root.msg.album: Rectangle {
+        x: cell.x;
+        y: cell.y;
+        width: cell.w;
+        height: cell.h;
+        border-radius: (6px) * Theme.r-scale;
+        background: root.msg.outgoing ? Palette.bubble-inset-out : Palette.bubble-inset;
+        clip: true;
+        border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
+        border-color: Palette.border-2;
+        if cell.has-image: Image {
+            width: parent.width;
+            height: parent.height;
+            source: cell.image;
+            image-fit: cover;
+        }
+        if !cell.has-image: Text {
+            text: cell.loading ? "…" : "🖼";
+            color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
+            font-size: Theme.fs(22px, 26px);
+            font-family: Theme.font;
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            opacity: 0.7;
+        }
+        TouchArea {
+            enabled: !cell.loading;
+            mouse-cursor: pointer;
+            clicked => {
+                root.cell-clicked(cell.key);
+            }
+        }
+    }
+}
+

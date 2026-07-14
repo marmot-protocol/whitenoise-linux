@@ -1,0 +1,296 @@
+import {
+    Theme,
+    EmojiSheet,
+    Linkout,
+    TextSelection,
+} from "../../tokens.slint";
+
+// One inline run inside a wrapped chat line. The Text element is always
+// instantiated (empty string when emoji) so the wrapper can bind to its
+// `preferred-width` — a Rectangle that only conditionally hosts children
+// reports zero preferred-width to its parent HorizontalLayout and all runs
+// collapse onto each other.
+export component RunCell inherits Rectangle {
+    in property <bool> is-emoji;
+    in property <string> text;
+    in property <int> clip-x;
+    in property <int> clip-y;
+    in property <length> body-fs;
+    in property <length> emoji-px;
+    in property <color> fg;
+    // Inline Markdown styling, resolved per-run by the Rust AST walker.
+    in property <bool> bold;
+    in property <bool> italic;
+    in property <bool> strike;
+    in property <bool> code;
+    in property <string> link;
+    // Per-line font scale (headings). 1.0 for body text.
+    in property <float> scale: 1.0;
+    in property <color> link-color;
+    in property <color> code-bg;
+    // Profile-mention chip: text on a rounded avatar-gradient plate. The run
+    // still carries its nostr: link, so the tap-to-profile path is unchanged.
+    in property <bool> mention;
+    in property <color> mention-a;
+    in property <color> mention-b;
+    // iMessage inline text effects, packed as a bitmask (see MessageRun.fx) so
+    // any effects stack on one glyph. Slint has no bitwise ops, so each bit is
+    // decoded with mod(floor(fx / 2^n), 2). `phase` is the per-letter index
+    // along a span (Ripple's travelling crest, Jitter's decorrelation).
+    in property <int> fx: 0;
+    in property <float> phase: 0;
+    property <bool> f-big:     mod(floor(root.fx / 1), 2) == 1;
+    property <bool> f-small:   mod(floor(root.fx / 2), 2) == 1;
+    property <bool> f-explode: mod(floor(root.fx / 4), 2) == 1;
+    property <bool> f-bloom:   mod(floor(root.fx / 8), 2) == 1;
+    property <bool> f-shake:   mod(floor(root.fx / 16), 2) == 1;
+    property <bool> f-nod:     mod(floor(root.fx / 32), 2) == 1;
+    property <bool> f-ripple:  mod(floor(root.fx / 64), 2) == 1;
+    property <bool> f-jitter:  mod(floor(root.fx / 128), 2) == 1;
+
+    // Big/Small are a persistent size; everything else animates on a continuous
+    // burst-then-rest loop. animation-tick() is read only when something
+    // animates, so static cells (and plain text) never repaint. `tsec` is
+    // elapsed seconds.
+    property <bool> animated: root.f-explode || root.f-bloom || root.f-shake || root.f-nod || root.f-ripple || root.f-jitter;
+    property <float> tsec: root.animated ? animation-tick() / 1s : 0;
+    property <length> amp: root.body-fs * root.scale;
+
+    property <float> shake-l: mod(root.tsec, 1.6);
+    property <float> nod-l: mod(root.tsec, 1.7);
+
+    // Explode cycle: a readable HOLD (1.3s, text sits still and fully visible),
+    // then the BURST (0.7s, every glyph flings off on its own ballistic arc and
+    // fades out fast), then a short gap before fading back in for the next hold.
+    // `ep` is the burst progress (0 throughout the hold). `vx`/`vy` are
+    // per-glyph launch velocities seeded from `phase` so the letters scatter in
+    // different directions instead of moving as a block.
+    property <float> explode-l: mod(root.tsec, 2.4);
+    property <float> ep: clamp((root.explode-l - 1.3) / 0.7, 0, 1);
+    property <float> vx: sin(root.phase * 6.3 * 1turn) + 0.4 * sin((root.phase * 2.1 + 1.0) * 1turn);
+    property <float> vy: 1.0 + 0.45 * sin(root.phase * 3.7 * 1turn);
+
+    // Bloom: a "rolling bold" — a sharp crest travels letter-to-letter (offset
+    // by per-glyph `phase`), thickening each glyph to bold as it passes.
+    property <float> bloom-w: max(sin((root.tsec * 0.85 - root.phase * 0.85) * 1turn), 0);
+    property <float> bloom-b: root.bloom-w * root.bloom-w * root.bloom-w;
+
+    // Per-effect transforms, composed below. Each is gated by its flag when
+    // summed, so unused ones contribute nothing.
+    property <length> exp-dx: root.amp * 2.6 * root.vx * root.ep;
+    property <length> exp-dy: root.amp * (-3.2 * root.vy * root.ep + 9.0 * root.ep * root.ep);
+    property <length> shake-dx: root.amp * 0.10 * (root.shake-l < 0.6 ? sin(root.shake-l / 0.6 * 0.5turn) : 0) * sin(root.shake-l / 0.6 * 6 * 1turn);
+    property <length> nod-dy: root.amp * 0.22 * (root.nod-l < 0.9 ? sin(root.nod-l / 0.9 * 1turn) : 0);
+    property <length> ripple-dy: root.amp * 0.5 * sin((root.tsec * 1.0 - root.phase * 0.8) * 1turn);
+    property <length> jitter-dx: root.amp * 0.05 * sin((root.tsec * 6 + root.phase * 5) * 1turn);
+    property <length> jitter-dy: root.amp * 0.05 * cos((root.tsec * 7.5 + root.phase * 7) * 1turn);
+
+    // Compose all active effects. Size effects multiply onto `base-sz`; motion
+    // effects (and explode's arc) sum onto the offset.
+    property <float> base-sz: root.f-big ? 1.5 : (root.f-small ? 0.72 : 1.0);
+    // The animated scale multiplier — kept separate from base-sz so the layout
+    // box reserves the persistent (Big/Small) size and the explode/bloom scale
+    // overflows it instead of reflowing the line.
+    property <float> anim-sz:
+        (root.f-explode ? (1 - 0.25 * root.ep) : 1.0) * (root.f-bloom ? (1 + 0.16 * root.bloom-b) : 1.0);
+    property <float> sz: root.base-sz * root.anim-sz;
+    // During the hold the glyph is solid (with a quick fade-in at the very
+    // start); during the burst it fades out fast (gone by ~40% of the arc, so
+    // no half-faded letters drift across the bubble), and stays gone until the
+    // next hold.
+    property <float> fx-opacity:
+        root.f-explode ? (root.explode-l < 1.3 ? clamp(root.explode-l / 0.25, 0, 1) : clamp(1 - root.ep * 1.6, 0, 1)) : 1.0;
+    property <length> dx:
+        (root.f-explode ? root.exp-dx : 0px) + (root.f-shake ? root.shake-dx : 0px) + (root.f-jitter ? root.jitter-dx : 0px);
+    property <length> dy:
+        (root.f-explode ? root.exp-dy : 0px) + (root.f-nod ? root.nod-dy : 0px) + (root.f-ripple ? root.ripple-dy : 0px) + (root.f-jitter ? root.jitter-dy : 0px);
+
+    // Text-selection plumbing (see TextSelection in tokens.slint). Each cell
+    // hit-tests itself against the selection points: `sel-origin-x` is the
+    // text block's window-x (points live in text-block space), `band-t/b` the
+    // y-band of the cell's line, and the first/last flags let edge cells
+    // claim points that fall beyond the line or the whole block.
+    in property <string> sel-msg-id;
+    in property <int> sel-line-idx;
+    in property <int> sel-run-idx;
+    in property <bool> sel-first-run;
+    in property <bool> sel-last-run;
+    in property <bool> sel-first-line;
+    in property <bool> sel-last-line;
+    in property <length> sel-origin-x;
+    in property <length> band-t;
+    in property <length> band-b;
+    in property <color> sel-bg;
+
+    property <bool> sel-mine: root.sel-msg-id != "" && TextSelection.owner == root.sel-msg-id;
+    property <length> cell-l: self.absolute-position.x - root.sel-origin-x;
+    property <length> cell-r: root.cell-l + root.width;
+
+    // Highlight from the RESOLVED endpoints (line, run, fraction) — the same
+    // values the extractor copies, so painted and copied text agree; it also
+    // lets word / whole-bubble selections set endpoints directly without
+    // synthesizing pointer coordinates. Endpoints arrive unordered (a =
+    // anchor, b = cursor); order them lexicographically first.
+    property <bool> sel-on: root.sel-mine && TextSelection.active && TextSelection.a-line >= 0 && TextSelection.a-run >= 0 && TextSelection.b-line >= 0 && TextSelection.b-run >= 0;
+    property <bool> sel-a-first: TextSelection.a-line < TextSelection.b-line || (TextSelection.a-line == TextSelection.b-line && (TextSelection.a-run < TextSelection.b-run || (TextSelection.a-run == TextSelection.b-run && TextSelection.a-frac <= TextSelection.b-frac)));
+    property <int> sel-s-line: root.sel-a-first ? TextSelection.a-line : TextSelection.b-line;
+    property <int> sel-s-run: root.sel-a-first ? TextSelection.a-run : TextSelection.b-run;
+    property <float> sel-s-frac: root.sel-a-first ? TextSelection.a-frac : TextSelection.b-frac;
+    property <int> sel-e-line: root.sel-a-first ? TextSelection.b-line : TextSelection.a-line;
+    property <int> sel-e-run: root.sel-a-first ? TextSelection.b-run : TextSelection.a-run;
+    property <float> sel-e-frac: root.sel-a-first ? TextSelection.b-frac : TextSelection.a-frac;
+    // My covered slice: empty (from 1, to 0) when I sit outside the range.
+    property <float> sel-from: !root.sel-on ? 1.0 : (root.sel-line-idx > root.sel-s-line || (root.sel-line-idx == root.sel-s-line && root.sel-run-idx > root.sel-s-run)) ? 0.0 : (root.sel-line-idx == root.sel-s-line && root.sel-run-idx == root.sel-s-run) ? root.sel-s-frac : 1.0;
+    property <float> sel-to: !root.sel-on ? 0.0 : (root.sel-line-idx < root.sel-e-line || (root.sel-line-idx == root.sel-e-line && root.sel-run-idx < root.sel-e-run)) ? 1.0 : (root.sel-line-idx == root.sel-e-line && root.sel-run-idx == root.sel-e-run) ? root.sel-e-frac : 0.0;
+
+    // Endpoint claims. For any point exactly one cell resolves it to a
+    // document position (line, run, fraction): the cell containing it, the
+    // first/last cell of its line for points in the indent zone or past the
+    // line end, or the first/last cell of the block for points above/below
+    // all lines. -1 = not mine. Claims land in the global through `changed`
+    // callbacks (bindings must stay pure).
+    pure function claim-frac(px: length, py: length) -> float {
+        if (py < root.band-t) {
+            return (root.sel-first-line && root.sel-first-run) ? 0.0 : -1.0;
+        }
+        if (py >= root.band-b) {
+            return (root.sel-last-line && root.sel-last-run) ? 1.0 : -1.0;
+        }
+        if (px < root.cell-l) {
+            return root.sel-first-run ? 0.0 : -1.0;
+        }
+        if (px >= root.cell-r) {
+            return root.sel-last-run ? 1.0 : -1.0;
+        }
+        return (px - root.cell-l) / max(root.width, 1px);
+    }
+    property <float> sel-a-claim: root.sel-mine ? claim-frac(TextSelection.anchor-x, TextSelection.anchor-y) : -1.0;
+    property <float> sel-b-claim: root.sel-mine ? claim-frac(TextSelection.cursor-x, TextSelection.cursor-y) : -1.0;
+    changed sel-a-claim => {
+        if (self.sel-a-claim >= 0) {
+            // The press cache is written unconditionally; the `a` endpoint
+            // only outside word mode, where Rust owns it (a late claim would
+            // otherwise drag the word selection's edge back to the click
+            // point).
+            TextSelection.p-line = root.sel-line-idx;
+            TextSelection.p-run = root.sel-run-idx;
+            TextSelection.p-frac = self.sel-a-claim;
+            if (!TextSelection.word-mode) {
+                TextSelection.a-line = root.sel-line-idx;
+                TextSelection.a-run = root.sel-run-idx;
+                TextSelection.a-frac = self.sel-a-claim;
+            }
+        }
+    }
+    changed sel-b-claim => {
+        // Cursor claims land in the RAW pointer position (`c`), not the `b`
+        // endpoint: the drag handler copies `c` into `b` in character mode
+        // and lets Rust derive word-snapped endpoints from `c` in word mode.
+        if (self.sel-b-claim >= 0) {
+            TextSelection.c-line = root.sel-line-idx;
+            TextSelection.c-run = root.sel-run-idx;
+            TextSelection.c-frac = self.sel-b-claim;
+        }
+    }
+
+    property <bool> is-link: root.link != "";
+    // Layout size. The box reserves the persistent Big/Small size (so the line
+    // reflows for those, like iMessage); the animated explode/bloom scale is
+    // divided back out so it overflows the box (centered, below) without
+    // reflowing the line frame to frame.
+    property <length> em-px: root.emoji-px * root.scale * root.base-sz;
+    horizontal-stretch: 0;
+    // Mention chips reserve extra width for the plate's side padding — the
+    // 10px must match MD_MENTION_PAD in src/render.rs (the Rust wrapper
+    // budgets it when picking break points).
+    width: root.is-emoji ? root.em-px : t.preferred-width / max(root.anim-sz, 0.01) + (root.mention ? 10px : 0px);
+    height: root.is-emoji ? root.em-px : t.preferred-height / max(root.anim-sz, 0.01);
+
+    // Inline-code plate — flush to the cell so adjacent code runs read as one
+    // continuous span.
+    if root.code && !root.is-emoji: Rectangle {
+        width: 100%;
+        height: 100%;
+        background: root.code-bg;
+        border-radius: (2px) * Theme.r-scale;
+    }
+
+    // Mention chip plate — the resolved name sits on the account's stable
+    // avatar gradient, same hue the reader knows from its avatar. Painted
+    // under the selection highlight so selecting across a chip stays visible.
+    if root.mention && !root.is-emoji: Rectangle {
+        width: 100%;
+        height: 100%;
+        background: @linear-gradient(135deg, root.mention-a 0%, root.mention-b 100%);
+        border-radius: min((6px) * Theme.r-scale, self.height / 2);
+    }
+
+    // Selection highlight — the cell's own slice of the selected range,
+    // painted behind the glyph. Width collapses to 0 for uncovered cells.
+    if root.sel-mine: Rectangle {
+        x: root.width * clamp(root.sel-from, 0.0, 1.0);
+        width: root.width * max(0.0, root.sel-to - root.sel-from);
+        height: 100%;
+        background: root.sel-bg;
+    }
+
+    t := Text {
+        // Centre the glyph in its (base-sized) cell so an animated scale grows
+        // symmetrically and overflows instead of pushing neighbours; for static
+        // cells the cell already equals preferred size, so the term is 0.
+        x: root.dx + (root.width - self.preferred-width) / 2;
+        y: root.dy + (root.height - self.preferred-height) / 2;
+        text: root.is-emoji ? "" : root.text;
+        // Chip text renders white over the gradient plate, like avatar
+        // initials (the plate's hue range keeps the contrast readable).
+        color: root.mention ? white : (root.is-link ? root.link-color : root.fg);
+        font-size: root.body-fs * root.scale * root.sz;
+        font-family: Theme.font;
+        // Bloom rolls a bold crest across the glyphs; otherwise plain weight.
+        font-weight: (root.f-bloom && root.bloom-b > 0.3) ? 700 : (root.bold ? 700 : 400);
+        font-italic: root.italic;
+        opacity: root.fx-opacity;
+        visible: !root.is-emoji;
+    }
+
+    if root.is-emoji: Image {
+        x: root.dx + (root.width - self.width) / 2;
+        y: root.dy + (root.height - self.height) / 2;
+        width: root.emoji-px * root.scale * root.sz;
+        height: root.emoji-px * root.scale * root.sz;
+        opacity: root.fx-opacity;
+        source: EmojiSheet.sprite;
+        source-clip-x: root.clip-x;
+        source-clip-y: root.clip-y;
+        source-clip-width: EmojiSheet.tile;
+        source-clip-height: EmojiSheet.tile;
+        image-fit: contain;
+    }
+
+    // Strikethrough — Slint's Text has no strike property, so overlay a rule
+    // across the cell's mid-line.
+    if root.strike && !root.is-emoji: Rectangle {
+        y: parent.height / 2;
+        width: 100%;
+        height: 1px;
+        background: root.is-link ? root.link-color : root.fg;
+    }
+    // Link underline. Mention chips skip it — the plate is the affordance.
+    if root.is-link && !root.is-emoji && !root.mention: Rectangle {
+        y: parent.height - 1px;
+        width: 100%;
+        height: 1px;
+        background: root.link-color;
+    }
+
+    // Always mounted (never `if`-gated) and disabled for non-link runs so it
+    // doesn't intercept hover/clicks meant for the bubble's hover sensor.
+    TouchArea {
+        enabled: root.is-link;
+        mouse-cursor: root.is-link ? pointer : default;
+        clicked => {
+            Linkout.open(root.link);
+        }
+    }
+}
+

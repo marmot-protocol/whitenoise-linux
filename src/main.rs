@@ -1013,7 +1013,7 @@ fn main() -> Result<(), slint::PlatformError> {
             }
         }
     };
-    ui.on_zoom_adjust({
+    ui.global::<AppState>().on_zoom_adjust({
         let zoom_level = zoom_level.clone();
         let settings_cell = settings_cell.clone();
         let apply_zoom = apply_zoom.clone();

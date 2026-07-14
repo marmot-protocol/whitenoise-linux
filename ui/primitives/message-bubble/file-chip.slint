@@ -1,0 +1,60 @@
+import { Palette, Theme, ChatMessage } from "../../tokens.slint";
+
+// Generic (non-image/video/audio) attachment — a chip with icon, filename,
+// and size/type line.
+export component FileChip inherits Rectangle {
+    in property <ChatMessage> msg;
+    in property <length> text-budget;
+    callback clicked();
+    background: root.msg.outgoing ? Palette.bubble-inset-out : Palette.bubble-inset;
+    border-radius: (6px) * Theme.r-scale;
+    border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
+    border-color: Palette.border-2;
+    height: chip-l.preferred-height;
+    chip-l := HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        padding-top: 8px;
+        padding-bottom: 8px;
+        spacing: 10px;
+        alignment: stretch;
+        Text {
+            text: root.msg.att-loading ? "…" : (root.msg.att-icon == "" ? "📎" : root.msg.att-icon);
+            color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
+            font-size: Theme.fs(16px, 18px);
+            font-family: Theme.font;
+            vertical-alignment: center;
+        }
+
+        VerticalLayout {
+            spacing: 1px;
+            horizontal-stretch: 1;
+            Text {
+                text: root.msg.att-name;
+                color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
+                font-size: Theme.fs(12px, 16px);
+                font-family: Theme.font;
+                font-weight: 600;
+                overflow: elide;
+                width: max(40px, root.text-budget - 32px);
+            }
+
+            Text {
+                text: root.msg.att-failed ? @tr("failed · tap to retry") : (root.msg.att-size-label != "" && root.msg.att-type-label != "" ? root.msg.att-size-label + "  ·  " + root.msg.att-type-label : root.msg.att-size-label + root.msg.att-type-label);
+                color: root.msg.att-failed ? (root.msg.outgoing ? Palette.danger-on-bubble : Palette.danger) : (root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid);
+                font-size: Theme.fs(10px, 14px);
+                font-family: Theme.font;
+                opacity: root.msg.att-failed ? 1.0 : (root.msg.outgoing ? 0.75 : 0.9);
+                overflow: elide;
+                width: max(40px, root.text-budget - 32px);
+            }
+        }
+    }
+
+    TouchArea {
+        enabled: !root.msg.att-loading;
+        clicked => {
+            root.clicked();
+        }
+    }
+}

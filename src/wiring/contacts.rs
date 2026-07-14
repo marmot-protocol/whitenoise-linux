@@ -18,7 +18,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // findable by nickname, published name, or key prefix. The flags are only
     // consulted while the query is non-empty, so the empty-query case (which
     // shows everything) needn't clear the array.
-    ui.on_contact_search_changed({
+    ui.global::<AppState>().on_contact_search_changed({
         let weak = ui.as_weak();
         move |query| {
             let Some(ui) = weak.upgrade() else { return };
@@ -39,7 +39,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             ui.set_contact_match_flags(model(flags));
         }
     });
-    ui.on_add_contact_requested({
+    ui.global::<AppState>().on_add_contact_requested({
         let weak = ui.as_weak();
         move || {
             if let Some(ui) = weak.upgrade() {
@@ -47,7 +47,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             }
         }
     });
-    ui.on_add_contact_dismissed({
+    ui.global::<AppState>().on_add_contact_dismissed({
         let weak = ui.as_weak();
         move || {
             if let Some(ui) = weak.upgrade() {
@@ -58,7 +58,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             }
         }
     });
-    ui.on_add_contact({
+    ui.global::<AppState>().on_add_contact({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         move |input| {
@@ -118,7 +118,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     });
     // "Add contact" from the peer-profile modal — same flow as the add-contact
     // modal, but feedback stays inside the profile modal (badge flip / status).
-    ui.on_peer_profile_add_contact({
+    ui.global::<AppState>().on_peer_profile_add_contact({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         move || {
@@ -155,7 +155,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             });
         }
     });
-    ui.on_contact_nickname_requested({
+    ui.global::<AppState>().on_contact_nickname_requested({
         let weak = ui.as_weak();
         let contacts = contacts.clone();
         move || {
@@ -168,7 +168,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             ui.set_show_nickname_modal(true);
         }
     });
-    ui.on_nickname_modal_dismissed({
+    ui.global::<AppState>().on_nickname_modal_dismissed({
         let weak = ui.as_weak();
         move || {
             if let Some(ui) = weak.upgrade() {
@@ -177,7 +177,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             }
         }
     });
-    ui.on_set_contact_nickname({
+    ui.global::<AppState>().on_set_contact_nickname({
         let weak = ui.as_weak();
         let contacts = contacts.clone();
         let settings_cell = settings_cell.clone();
@@ -216,7 +216,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // Contact detail → "Show as QR": rasterize the contact's marmot://
     // profile deep link and open the QrModal. Reuses `qr_image` (UI-thread
     // only — Image is !Send).
-    ui.on_contact_show_qr({
+    ui.global::<AppState>().on_contact_show_qr({
         let weak = ui.as_weak();
         let contacts = contacts.clone();
         move || {
@@ -235,7 +235,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             ui.set_contact_qr_open(true);
         }
     });
-    ui.on_contact_qr_dismissed({
+    ui.global::<AppState>().on_contact_qr_dismissed({
         let weak = ui.as_weak();
         move || {
             if let Some(ui) = weak.upgrade() {
@@ -246,7 +246,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // Contact detail → "Retry" key package: re-fetch the peer's latest key
     // package from their relays. The automatic on-open fetch already covers the
     // common case, so this button only surfaces after a fetch comes up empty.
-    ui.on_contact_refresh_key_package({
+    ui.global::<AppState>().on_contact_refresh_key_package({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         move || {
@@ -259,7 +259,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // Developer mode: dump the selected contact's latest key package as raw
     // JSON in the shared viewer. The fetch hits discovery relays — worker
     // thread only.
-    ui.on_view_contact_key_packages({
+    ui.global::<AppState>().on_view_contact_key_packages({
         let weak = ui.as_weak();
         let contacts = contacts.clone();
         let backend_cell = backend_cell.clone();
@@ -299,7 +299,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // modal's single-member path (`create_group` with one npub, empty
     // name) but skips the modal on success — failures surface there
     // instead, since the contact page has no inline status line.
-    ui.on_start_chat_with_contact({
+    ui.global::<AppState>().on_start_chat_with_contact({
         let weak = ui.as_weak();
         let contacts = contacts.clone();
         let backend_cell = backend_cell.clone();
@@ -347,7 +347,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                                     ui.set_active_page(Page::Chats as i32);
                                     refresh_breadcrumb_now(ui);
                                     ui.set_active_chat(pos as i32);
-                                    ui.invoke_chat_selected(pos as i32);
+                                    ui.global::<AppState>().invoke_chat_selected(pos as i32);
                                 }
                             });
                         }
@@ -368,7 +368,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             });
         }
     });
-    ui.on_contact_selected({
+    ui.global::<AppState>().on_contact_selected({
         let weak = ui.as_weak();
         let refresh = refresh_breadcrumb.clone();
         let backend_cell = backend_cell.clone();
@@ -389,7 +389,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // switch to Chats and open that group. It's a visible group the local
     // account is in, so its hex is already in `group_ids`; a snapshot refresh
     // is the fallback if the ordering shifted since the list was built.
-    ui.on_open_shared_group({
+    ui.global::<AppState>().on_open_shared_group({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
@@ -411,7 +411,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 ui.set_active_page(Page::Chats as i32);
                 refresh_breadcrumb_now(&ui);
                 ui.set_active_chat(pos as i32);
-                ui.invoke_chat_selected(pos as i32);
+                ui.global::<AppState>().invoke_chat_selected(pos as i32);
                 return;
             }
             let Some(b) = backend_cell.lock().unwrap().clone() else {
@@ -428,7 +428,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 ui.set_active_page(Page::Chats as i32);
                 refresh_breadcrumb_now(ui);
                 ui.set_active_chat(pos as i32);
-                ui.invoke_chat_selected(pos as i32);
+                ui.global::<AppState>().invoke_chat_selected(pos as i32);
             });
         }
     });

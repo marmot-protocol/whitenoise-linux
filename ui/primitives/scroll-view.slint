@@ -1,9 +1,9 @@
 import { Palette, Theme } from "../tokens.slint";
 
-// CypherScroll — vertical scroll container with a phosphor-on-near-black
-// terminal-style scrollbar. Wheel scrolls; thumb is draggable; track click
-// scrubs. No drag-pan on the body (selection / clicks pass through).
-export component CypherScroll inherits Rectangle {
+// ScrollView — vertical scroll container with a styled scrollbar (mint thumb
+// on a panel track). Wheel scrolls; thumb is draggable; track click scrubs.
+// No drag-pan on the body (selection / clicks pass through).
+export component ScrollView inherits Rectangle {
     in-out property <length> viewport-width <=> flick.viewport-width;
     in-out property <length> viewport-height <=> flick.viewport-height;
     in-out property <length> viewport-x <=> flick.viewport-x;

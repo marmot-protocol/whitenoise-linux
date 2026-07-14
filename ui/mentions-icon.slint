@@ -1,6 +1,7 @@
-import { MentionInboxItem, Palette, Theme } from "../tokens.slint";
-import { MentionsInbox } from "../main-pane/mentions-inbox.slint";
+import { MentionInboxItem, Palette, Theme } from "tokens.slint";
+import { MentionsInbox } from "main-pane/mentions-inbox.slint";
 
+// The title bar's "@" button, opening the mentions-inbox popover.
 export component MentionsIcon inherits Rectangle {
     in property <[MentionInboxItem]> mention-items;
     in property <bool> mentions-loading: false;
