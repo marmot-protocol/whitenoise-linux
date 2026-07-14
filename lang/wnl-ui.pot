@@ -93,10 +93,6 @@ msgid "(nothing to show)"
 msgstr ""
 
 msgctxt "KeysPage"
-msgid "(other Dark Matter instances signed into this identity)"
-msgstr ""
-
-msgctxt "KeysPage"
 msgid "(published to your kind-10051 relay list)"
 msgstr ""
 
@@ -1310,6 +1306,10 @@ msgctxt "weekday"
 msgid "Mon"
 msgstr ""
 
+msgctxt "KeysPage"
+msgid "Multi-device isn't available yet"
+msgstr ""
+
 msgctxt "ChatContextMenu"
 msgid "Mute"
 msgstr ""
@@ -2064,10 +2064,6 @@ msgctxt "LoginScreen"
 msgid "Sign in to your Nostr identity"
 msgstr ""
 
-msgctxt "KeysPage"
-msgid "Sign out"
-msgstr ""
-
 msgctxt "LoginScreen"
 msgid "Signing in…"
 msgstr ""
@@ -2159,10 +2155,6 @@ msgstr ""
 
 msgctxt "ArchivedDetail"
 msgid "This chat is archived"
-msgstr ""
-
-msgctxt "KeysPage"
-msgid "This computer"
 msgstr ""
 
 msgctxt "ConfirmFlows"
@@ -2373,6 +2365,10 @@ msgctxt "KeysPage"
 msgid "Your identity is sovereign"
 msgstr ""
 
+msgctxt "KeysPage"
+msgid "Your identity lives only on this device for now. When device linking ships, the devices signed into your key will appear here."
+msgstr ""
+
 msgctxt "LoginScreen"
 msgid "Your key never leaves this device."
 msgstr ""
@@ -2395,10 +2391,6 @@ msgstr ""
 
 msgctxt "ContactDetail"
 msgid "aka {}"
-msgstr ""
-
-msgctxt "KeysPage"
-msgid "current"
 msgstr ""
 
 msgctxt "ImageTile"
