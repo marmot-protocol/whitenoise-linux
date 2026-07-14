@@ -224,6 +224,7 @@ export component ModalHost inherits Rectangle {
             pinned: AppState.chat-ctx-pinned;
             muted: AppState.chat-ctx-muted;
             can-leave: AppState.chat-ctx-can-leave;
+            can-pin: AppState.chat-ctx-can-pin;
             toggle-pin => {
                 AppState.chat-ctx-open = false;
                 AppState.toggle-pin-chat(AppState.chat-ctx-idx);

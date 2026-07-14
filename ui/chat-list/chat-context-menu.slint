@@ -12,13 +12,22 @@ export component ChatContextMenu inherits Rectangle {
     in property <bool> pinned: false;
     in property <bool> muted: false;
     in property <bool> can-leave: false;
+    // The "Saved Messages" self-chat is force-pinned to the top and can't be
+    // reordered, so it offers no Pin/Unpin item (which would be a no-op).
+    in property <bool> can-pin: true;
     callback toggle-pin();
     callback toggle-mute();
     callback export-chat();
     callback leave-group();
     callback dismissed();
 
-    property <int> item-count: 3 + (root.can-leave ? 1 : 0);
+    // Each item's index is derived so hiding the pin row shifts the rest up
+    // rather than leaving a gap in the keyboard-nav sequence.
+    property <int> pin-idx: root.can-pin ? 0 : -1;
+    property <int> mute-idx: root.can-pin ? 1 : 0;
+    property <int> export-idx: root.mute-idx + 1;
+    property <int> leave-idx: root.export-idx + 1;
+    property <int> item-count: (root.can-pin ? 1 : 0) + 2 + (root.can-leave ? 1 : 0);
     property <int> selected-index: 0;
 
     function move-selection(delta: int) {
@@ -34,13 +43,13 @@ export component ChatContextMenu inherits Rectangle {
         }
     }
     function activate-selected() {
-        if (root.selected-index == 0) {
+        if (root.can-pin && root.selected-index == root.pin-idx) {
             root.toggle-pin();
-        } else if (root.selected-index == 1) {
+        } else if (root.selected-index == root.mute-idx) {
             root.toggle-mute();
-        } else if (root.selected-index == 2) {
+        } else if (root.selected-index == root.export-idx) {
             root.export-chat();
-        } else if (root.selected-index == 3 && root.can-leave) {
+        } else if (root.can-leave && root.selected-index == root.leave-idx) {
             root.leave-group();
         }
     }
@@ -96,38 +105,39 @@ export component ChatContextMenu inherits Rectangle {
                 padding: 4px;
                 spacing: 1px;
                 MenuItem {
+                    shown: root.can-pin;
                     glyph: root.pinned ? "▽" : "▲";
                     label: root.pinned ? @tr("Unpin") : @tr("Pin to top");
-                    selected: root.selected-index == 0;
+                    selected: root.selected-index == root.pin-idx;
                     activated => {
                         root.toggle-pin();
                     }
                     hovered => {
-                        root.selected-index = 0;
+                        root.selected-index = root.pin-idx;
                     }
                 }
 
                 MenuItem {
                     glyph: root.muted ? "♪" : "♩";
                     label: root.muted ? @tr("Unmute") : @tr("Mute");
-                    selected: root.selected-index == 1;
+                    selected: root.selected-index == root.mute-idx;
                     activated => {
                         root.toggle-mute();
                     }
                     hovered => {
-                        root.selected-index = 1;
+                        root.selected-index = root.mute-idx;
                     }
                 }
 
                 MenuItem {
                     glyph: "⭳";
                     label: @tr("Export transcript…");
-                    selected: root.selected-index == 2;
+                    selected: root.selected-index == root.export-idx;
                     activated => {
                         root.export-chat();
                     }
                     hovered => {
-                        root.selected-index = 2;
+                        root.selected-index = root.export-idx;
                     }
                 }
 
@@ -135,12 +145,12 @@ export component ChatContextMenu inherits Rectangle {
                     shown: root.can-leave;
                     glyph: "←";
                     label: @tr("Leave group");
-                    selected: root.selected-index == 3;
+                    selected: root.selected-index == root.leave-idx;
                     activated => {
                         root.leave-group();
                     }
                     hovered => {
-                        root.selected-index = 3;
+                        root.selected-index = root.leave-idx;
                     }
                 }
             }
