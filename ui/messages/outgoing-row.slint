@@ -4,22 +4,25 @@ import {
     ChatMessage,
     ProfileSink,
 } from "../tokens.slint";
-import { Avatar } from "avatar.slint";
+import { Avatar } from "../primitives/avatar.slint";
 import { MessageBubble } from "message-bubble.slint";
-import { ReactionChips } from "reactions-row.slint";
+import { ReactionsRow } from "reactions-row.slint";
 import { HoverActions } from "hover-actions.slint";
 
-export component IncomingRow inherits VerticalLayout {
+export component OutgoingRow inherits VerticalLayout {
     // The whole message — fields render via `root.msg.*` (see ChatMessage in
     // tokens.slint for per-field docs). Only row context that is not carried
     // on the message stays a scalar property.
     in property <ChatMessage> msg;
     in property <bool> highlighted: false;
     in property <length> row-w: 9999px;
+    in property <bool> align-right: true;
+    // Own profile picture. Not on the message — pushed from the root's
+    // `my-av-*` set so the outgoing avatar matches the left rail.
+    in property <image> av-picture;
+    in property <bool> av-has-picture: false;
 
-    // Fire the burst in the shared overlay (which paints above all bubbles),
-    // reporting this bubble's window position + size. Autoplay is deferred a
-    // beat so layout/scroll settle before the position is snapshotted.
+    // Fire the burst in the shared overlay (above all bubbles). See IncomingRow.
     callback play-effect(int, int, int, length, length, length, length);
     function fire-effect() {
         root.play-effect(root.msg.effect-id, root.msg.effect-clip-x, root.msg.effect-clip-y,
@@ -43,11 +46,13 @@ export component IncomingRow inherits VerticalLayout {
     callback react(string, string);
     callback unreact(string, string);
     callback request-picker(string, length, length);
-    callback request-reply(string, string, string); // message_id, preview_text, author
+    callback request-reply(string, string, string);
+    callback request-edit(string, string);
     // message_id, text, author, can_edit, window-abs x, y
     callback request-context-menu(string, string, string, bool, length, length);
-    callback show-history(string); // message_id
-    callback attachment-clicked(string); // message_id
+    callback show-history(string);
+    callback retry();
+    callback attachment-clicked(string);
     callback audio-play-clicked(string); // message_id
     callback audio-seek-clicked(string, float); // message_id, fraction
 
@@ -55,9 +60,13 @@ export component IncomingRow inherits VerticalLayout {
 
     HorizontalLayout {
         spacing: 10px;
-        alignment: start;
+        alignment: root.align-right ? end : start;
 
-        if root.msg.show-avatar: TouchArea {
+        if root.align-right: Rectangle {
+            horizontal-stretch: 1;
+        }
+
+        if !root.align-right && root.msg.show-avatar: TouchArea {
             width: 28px;
             height: 28px;
             mouse-cursor: pointer;
@@ -72,51 +81,28 @@ export component IncomingRow inherits VerticalLayout {
                 initials: root.msg.av-initials;
                 color-a: root.msg.av-a;
                 color-b: root.msg.av-b;
-                picture: root.msg.picture;
-                has-picture: root.msg.has-picture;
+                picture: root.av-picture;
+                has-picture: root.av-has-picture;
                 font-size: Theme.fs(9px, 14px);
             }
         }
-        if !root.msg.show-avatar: Rectangle {
+        if !root.align-right && !root.msg.show-avatar: Rectangle {
             width: 28px;
         }
 
         VerticalLayout {
             spacing: 2px;
-            // Sender label above the bubble — only on the first bubble of a
-            // group (group chats only), so a stack doesn't repeat the name.
-            if root.msg.show-sender-name && root.msg.sender-name != "": HorizontalLayout {
-                alignment: start;
-                name-touch := TouchArea {
-                    mouse-cursor: pointer;
-                    clicked => {
-                        if (root.msg.sender-id != "") {
-                            ProfileSink.open(root.msg.sender-id);
-                        }
-                    }
-                    Text {
-                        text: root.msg.sender-name;
-                        color: name-touch.has-hover ? Palette.text-mid : Palette.text-lo;
-                        animate color { duration: Theme.hover-dur; }
-                        font-size: Theme.fs(11px, 12px);
-                        font-weight: 700;
-                        font-family: Theme.font;
-                        overflow: elide;
-                    }
-                }
-            }
 
-            // Bubble + floating action toolbar. The block is exactly the
-            // bubble's size; the toolbar overflows to the right into the gutter.
             block := Rectangle {
                 horizontal-stretch: 0;
                 width: bubble.width;
                 height: bubble.height;
 
-                // Stable hover region spanning bubble → toolbar (declared first
-                // so it sits behind the bubble and the toolbar buttons).
+                // Stable hover region spanning toolbar → bubble. The toolbar
+                // floats on the side opposite the avatar (left when right-
+                // aligned), overflowing into the gutter.
                 hover := TouchArea {
-                    x: 0;
+                    x: root.align-right ? -(acts.width + 6px) : 0px;
                     y: 0;
                     width: bubble.width + 6px + acts.width;
                     height: parent.height;
@@ -127,7 +113,11 @@ export component IncomingRow inherits VerticalLayout {
                     y: 0;
                     msg: root.msg;
                     highlighted: root.highlighted;
+                    align-right: root.align-right;
                     available-w: max(80px, root.row-w - 28px - 10px - 10px);
+                    retry-clicked => {
+                        root.retry();
+                    }
                     attachment-clicked => {
                         root.attachment-clicked(root.msg.message-id);
                     }
@@ -144,10 +134,10 @@ export component IncomingRow inherits VerticalLayout {
                         root.show-history(root.msg.message-id);
                     }
                     context-menu-requested(ax, ay) => {
-                        // A retracted tombstone offers no actions, so suppress
-                        // its menu entirely (matches the hover toolbar gate).
-                        if (root.msg.message-id != "" && !root.msg.deleted) {
-                            root.request-context-menu(root.msg.message-id, root.msg.text, root.msg.av-initials, false, ax, ay);
+                        // Same gate as the hover toolbar: confirmed rows only,
+                        // and never on a retracted tombstone.
+                        if (root.msg.message-id != "" && !root.msg.pending && !root.msg.failed && !root.msg.deleted) {
+                            root.request-context-menu(root.msg.message-id, root.msg.text, @tr("You"), root.msg.can-edit, ax, ay);
                         }
                     }
                     body-clicked => {
@@ -158,16 +148,16 @@ export component IncomingRow inherits VerticalLayout {
                 }
 
                 acts := HoverActions {
-                    x: bubble.width + 6px;
+                    x: root.align-right ? -(self.width + 6px) : (bubble.width + 6px);
                     y: (parent.height - self.height) / 2;
                     message-id: root.msg.message-id;
                     reply-preview-text: root.msg.text;
-                    reply-author: root.msg.av-initials;
-                    can-edit: false;
+                    reply-author: @tr("You");
+                    can-edit: root.msg.can-edit;
                     // `bubble.hovered` joins in because the selection area
                     // inside the bubble consumes hover while the pointer is
                     // over body text, which starves the row-level sensor.
-                    visible: root.msg.message-id != "" && !root.msg.deleted && (hover.has-hover || self.hovered || bubble.hovered);
+                    visible: root.msg.message-id != "" && !root.msg.pending && !root.msg.failed && !root.msg.deleted && (hover.has-hover || self.hovered || bubble.hovered);
                     opacity: (hover.has-hover || self.hovered || bubble.hovered) ? 1.0 : 0.0;
                     animate opacity { duration: Theme.hover-dur; }
                     request-picker(id, ax, ay) => {
@@ -176,15 +166,16 @@ export component IncomingRow inherits VerticalLayout {
                     request-reply(id, preview, author) => {
                         root.request-reply(id, preview, author);
                     }
+                    request-edit(id, current) => {
+                        root.request-edit(id, current);
+                    }
                 }
             }
 
-            // Reaction chips — only present when the message has reactions, so
-            // empty messages stack tightly.
-            if root.msg.message-id != "" && root.msg.reactions.length > 0: ReactionChips {
+            if root.msg.message-id != "" && !root.msg.pending && !root.msg.failed && root.msg.reactions.length > 0: ReactionsRow {
                 message-id: root.msg.message-id;
                 reactions: root.msg.reactions;
-                align-right: false;
+                align-right: root.align-right;
                 react(id, emoji) => {
                     root.react(id, emoji);
                 }
@@ -194,7 +185,31 @@ export component IncomingRow inherits VerticalLayout {
             }
         }
 
-        Rectangle {
+        if root.align-right && root.msg.show-avatar: TouchArea {
+            width: 28px;
+            height: 28px;
+            mouse-cursor: pointer;
+            clicked => {
+                if (root.msg.sender-id != "") {
+                    ProfileSink.open(root.msg.sender-id);
+                }
+            }
+            Avatar {
+                size: 28px;
+                y: 0;
+                initials: root.msg.av-initials;
+                color-a: root.msg.av-a;
+                color-b: root.msg.av-b;
+                picture: root.av-picture;
+                has-picture: root.av-has-picture;
+                font-size: Theme.fs(9px, 14px);
+            }
+        }
+        if root.align-right && !root.msg.show-avatar: Rectangle {
+            width: 28px;
+        }
+
+        if !root.align-right: Rectangle {
             horizontal-stretch: 1;
         }
     }

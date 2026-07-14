@@ -1,8 +1,11 @@
+// The standard chat-list row body (avatar + name + preview + badges).
+// This is skin 0 of the row; ChatListEntry (chat-list-entry.slint) is the
+// Layer-1 skin slot that picks between this and the IRC-style body.
 import { Palette, Theme } from "../tokens.slint";
 import { CheckMark } from "../icons/check-mark.slint";
 import { PinIcon } from "../icons/pin-icon.slint";
-import { Avatar } from "avatar.slint";
-import { UnreadBadge } from "unread-badge.slint";
+import { Avatar } from "../primitives/avatar.slint";
+import { UnreadBadge } from "../primitives/unread-badge.slint";
 
 export component ChatListItem inherits Rectangle {
     callback clicked;

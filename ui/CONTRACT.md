@@ -114,8 +114,8 @@ bodies and bumps the selectors.
    definition (the eight built-ins are authored this way).
 2. **Skins (only if a `[style]` selector is non-zero)** — add the alternate body to
    that family's slot, guarded by its selector value, reading the contract structs:
-    - messages → `ui/primitives/message-view.slint` (`if Theme.skin-message == N`)
-    - chat list → `ui/primitives/chat-list-entry.slint` (`if Theme.skin-list == N`)
+    - messages → `ui/messages/message-view.slint` (`if Theme.skin-message == N`)
+    - chat list → `ui/chat-list/chat-list-entry.slint` (`if Theme.skin-list == N`)
 3. **Make a built-in selectable** — add the file to `BUILTIN_THEME_FILES` in
    `src/themes.rs`, append its mode name to `THEME_MODES` in `src/state.rs` (its
    position is the theme id), and add a matching `names`/`modes` entry in

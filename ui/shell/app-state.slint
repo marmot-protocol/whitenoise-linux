@@ -32,6 +32,8 @@ import { PaletteAction } from "../modals/command-palette.slint";
 
 export global AppState {
     in-out property <int> active-chat: 0;
+    // Page index map (the authoritative one — app-shell mounts by these):
+    // 0=chats, 1=contacts, 2=archive, 3=keys, 4=settings, 5=profile.
     in-out property <int> active-page: 0;
     in-out property <int> active-contact: 0;
     in-out property <int> active-archived: 0;

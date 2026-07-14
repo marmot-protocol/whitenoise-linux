@@ -4,7 +4,7 @@ import { ReactionChip } from "reaction-chip.slint";
 // In-flow row of reaction chips, rendered directly under a bubble (only when
 // the message actually has reactions, so empty messages stay tight). Tapping a
 // chip toggles my reaction on/off.
-export component ReactionChips inherits HorizontalLayout {
+export component ReactionsRow inherits HorizontalLayout {
     in property <string> message-id;
     in property <[Reaction]> reactions;
     in property <bool> align-right: false;

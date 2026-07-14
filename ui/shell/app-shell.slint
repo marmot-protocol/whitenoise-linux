@@ -5,17 +5,17 @@
 
 import { TextSelection } from "../tokens.slint";
 import { Palette, Theme } from "../tokens.slint";
-import { TitleBar } from "../title-bar.slint";
+import { TitleBar } from "title-bar.slint";
 import { LeftRail } from "../left-rail/left-rail.slint";
-import { ChatListPanel } from "../chat-list.slint";
+import { ChatListPanel } from "../chat-list/chat-list.slint";
 import { MainPane } from "../main-pane/main-pane.slint";
-import { GetStartedScreen } from "../get-started.slint";
+import { GetStartedScreen } from "../main-pane/get-started.slint";
 import { ContactsPage } from "../contacts/contacts-page.slint";
 import { ArchivedPage } from "../archived/archived-page.slint";
 import { KeysPage } from "../keys/keys-page.slint";
 import { SettingsPage } from "../settings/settings-page.slint";
 import { ProfilePage } from "../profile/profile-page.slint";
-import { StatusBar } from "../status-bar.slint";
+import { StatusBar } from "status-bar.slint";
 import { FadeInPage } from "../layout/fade-in-page.slint";
 import { AppState } from "app-state.slint";
 
@@ -55,9 +55,11 @@ export component AppShell inherits Rectangle {
                     width: parent.width - rail.collapsed-width;
                     height: parent.height;
 
-                    // chats: side panel + main pane laid out side-by-side.
+                    // Page slot, keyed by AppState.active-page:
+                // 0=chats, 1=contacts, 2=archive, 3=keys, 4=settings, 5=profile.
                 // Each page mounts inside a FadeInPage (layout/fade-in-page.slint)
-                // so navigation feels smooth.
+                // so navigation feels smooth. Chats (0) is side panel + main
+                // pane laid out side-by-side.
                 if AppState.active-page == 0: FadeInPage {
                     // No chats yet → first-run get-started screen (with live relay
                     // setup). Once a chat exists, the normal list + pane shell.

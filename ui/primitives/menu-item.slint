@@ -1,0 +1,63 @@
+import { Palette, Theme } from "../tokens.slint";
+
+// One row in a context/action menu (message, chat-row, member and image-viewer
+// menus all share it). `shown` collapses the row (rather than `if`-mounting
+// it) so the TouchArea is always live — `if`-mounted TouchAreas race the
+// first click (see the cell notes in emoji/emoji-picker.slint).
+export component MenuItem inherits Rectangle {
+    in property <string> glyph;
+    in property <string> label;
+    in property <bool> shown: true;
+    // Keyboard selection — highlighted exactly like hover so arrow-key users
+    // get the same visible focus indicator mouse users get.
+    in property <bool> selected: false;
+    callback activated();
+
+    property <bool> highlighted: touch.has-hover || root.selected;
+
+    visible: root.shown;
+    height: root.shown ? 32px : 0px;
+    border-radius: (6px) * Theme.r-scale;
+    background: root.highlighted ? Palette.hover : transparent;
+    animate background { duration: Theme.hover-dur; }
+
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 16px;
+        spacing: 9px;
+        Text {
+            text: root.glyph;
+            color: root.highlighted ? Palette.text-hi : Palette.text-mid;
+            font-size: Theme.fs(13px, 16px);
+            font-family: Theme.font;
+            width: 16px;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+
+        Text {
+            text: root.label;
+            color: Palette.text-hi;
+            font-size: Theme.fs(12px, 16px);
+            font-family: Theme.font;
+            vertical-alignment: center;
+        }
+    }
+
+    touch := TouchArea {
+        enabled: root.shown;
+        mouse-cursor: pointer;
+        clicked => {
+            root.activated();
+        }
+        // Pointer movement keeps keyboard selection in sync so hovering one
+        // row and then pressing Return acts on the row under the cursor.
+        moved => {
+            root.hovered();
+        }
+    }
+    // Internal hover-sync hook so the parent can mirror the selected index.
+    // Named `hovered` (not `activated-*`) because it fires no action — it only
+    // tells the parent "the pointer is over me, sync your selection index."
+    callback hovered();
+}
