@@ -2029,6 +2029,10 @@ msgctxt "GroupSettingsCard"
 msgid "Save description"
 msgstr "Beschreibung speichern"
 
+msgctxt "Composer"
+msgid "Save edit"
+msgstr "Änderung speichern"
+
 #, fuzzy
 msgctxt "LoginScreen"
 msgid "Save key"

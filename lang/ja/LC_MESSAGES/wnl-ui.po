@@ -2026,6 +2026,10 @@ msgctxt "GroupSettingsCard"
 msgid "Save description"
 msgstr "説明を保存"
 
+msgctxt "Composer"
+msgid "Save edit"
+msgstr "編集を保存"
+
 #, fuzzy
 msgctxt "LoginScreen"
 msgid "Save key"

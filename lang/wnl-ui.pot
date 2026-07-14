@@ -1924,6 +1924,10 @@ msgctxt "GroupSettingsCard"
 msgid "Save description"
 msgstr ""
 
+msgctxt "Composer"
+msgid "Save edit"
+msgstr ""
+
 msgctxt "LoginScreen"
 msgid "Save key"
 msgstr ""
