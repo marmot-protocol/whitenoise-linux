@@ -1,3 +1,4 @@
+import { ListView } from "std-widgets.slint";
 import { Palette, Theme, ChatMeta } from "../tokens.slint";
 import { Modal, ModalField } from "modal.slint";
 import { ForwardChatRow } from "forward-chat-row.slint";
@@ -83,9 +84,9 @@ export component ForwardPickerModal inherits Modal {
         }
     }
 
-    // Rows stack with zero layout spacing (the 6px gap lives inside each shown
-    // row), so the list's preferred height is 0 exactly when no row is visible.
-    property <bool> any-visible: list.preferred-height > 0px;
+    // Hidden rows collapse to 0px, so the list's content height is 0 exactly
+    // when no row is visible.
+    property <bool> any-visible: flick.viewport-height > 0px;
     // How many chats are eligible at all (ignoring the query) — distinguishes
     // "nothing matches your search" from "there is nowhere to forward to".
     property <int> forwardable-count: root.chats.length - (root.active-chat >= 0 && root.active-chat < root.chats.length ? 1 : 0);
@@ -159,23 +160,23 @@ export component ForwardPickerModal inherits Modal {
     Rectangle {
         vertical-stretch: 1;
 
-        flick := Flickable {
+        // Virtualized: only visible rows instantiate. The keyboard
+        // ensure-visible math above keeps working — ListView exposes the same
+        // viewport properties as the Flickable it replaces, and hidden rows
+        // still collapse to 0px so the uniform 62px row arithmetic holds.
+        flick := ListView {
             width: 100%;
             height: 100%;
-            viewport-width: self.width;
-            viewport-height: list.preferred-height;
-            list := VerticalLayout {
-                spacing: 0;
-                for chat[idx] in root.chats: ForwardChatRow {
-                    chat: chat;
-                    // Skip the chat the message is already in; the query
-                    // filters the rest by chat name (flags computed in Rust).
-                    shown: idx != root.active-chat && (root.query == "" || (idx < root.match-flags.length && root.match-flags[idx]));
-                    // Keyboard cursor on this row (mouse hover is independent).
-                    cursored: idx == root.cursor-chat;
-                    selected => {
-                        root.select(idx);
-                    }
+            for chat[idx] in root.chats: ForwardChatRow {
+                width: parent.width;
+                chat: chat;
+                // Skip the chat the message is already in; the query
+                // filters the rest by chat name (flags computed in Rust).
+                shown: idx != root.active-chat && (root.query == "" || (idx < root.match-flags.length && root.match-flags[idx]));
+                // Keyboard cursor on this row (mouse hover is independent).
+                cursored: idx == root.cursor-chat;
+                selected => {
+                    root.select(idx);
                 }
             }
         }

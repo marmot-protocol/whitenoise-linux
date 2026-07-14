@@ -2,7 +2,6 @@ import { Palette, Theme } from "../tokens.slint";
 import { SearchIcon } from "../icons/search-icon.slint";
 import { AddUserIcon } from "../icons/add-user-icon.slint";
 import { LineInput } from "../primitives/line-input.slint";
-import { ScrollView } from "../primitives/scroll-view.slint";
 import { Button } from "../primitives/button.slint";
 
 export component SidePanel inherits Rectangle {
@@ -21,11 +20,6 @@ export component SidePanel inherits Rectangle {
     // Live search text, echoed on every keystroke so hosts can filter their
     // `@children` rows as the user types.
     callback search-edited(string);
-    // Inter-row spacing for the list. Lists that filter rows in place (collapse
-    // hidden rows to 0px height) set this to 0 and bake their own gap into each
-    // shown row, so hidden rows don't leave stacked blank gaps.
-    in property <length> list-spacing: 2px;
-
     // Narrow-window collapse: the host page binds `window-width`; below the
     // threshold the panel reserves only a slim avatar strip and floats the
     // full-width list over the neighbouring pane on hover. The host must lay
@@ -198,14 +192,13 @@ export component SidePanel inherits Rectangle {
                 height: 10px;
             }
 
-            ScrollView {
+            // Body slot. Each sidebar provides its own scroll container — a
+            // ListView owning the row `for`, so long lists virtualize (a
+            // ListView must have the `for` as its direct child, which rules
+            // out wrapping @children in one here).
+            Rectangle {
                 vertical-stretch: 1;
-                viewport-height: list-layout.preferred-height;
-                viewport-width: self.visible-width;
-                list-layout := VerticalLayout {
-                    spacing: root.list-spacing;
-                    @children
-                }
+                @children
             }
 
             if root.footer-text != "" && !root.collapsed: Rectangle {

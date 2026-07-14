@@ -1,3 +1,4 @@
+import { ListView } from "std-widgets.slint";
 import { ArchivedChat } from "../tokens.slint";
 import { SidePanel } from "../layout/side-panel.slint";
 import { ArchivedListItem } from "archived-list-item.slint";
@@ -10,12 +11,31 @@ export component ArchivedSidebar inherits SidePanel {
     title: @tr("ARCHIVED");
     count: root.archives.length;
 
-    for a[idx] in root.archives: ArchivedListItem {
-        data: a;
-        compact: root.strip;
-        selected: idx == root.active-archived;
-        clicked => {
-            root.archive-clicked(idx);
+    // Virtualized: only visible rows instantiate. The wrapper bakes the old
+    // 2px inter-row spacing into each row.
+    ListView {
+        // Anchor + size against the runtime @children slot: `parent.*` here
+        // resolves lexically to the panel root (oversizing the list), and an
+        // oversized child gets default-centered — poking above the slot, over
+        // the search field. x/y 0 + percentages track the actual slot.
+        x: 0;
+        y: 0;
+        width: 100%;
+        height: 100%;
+        for a[idx] in root.archives: Rectangle {
+            width: parent.width;
+            height: item.height + 2px;
+            item := ArchivedListItem {
+                x: 0;
+                y: 0;
+                width: 100%;
+                data: a;
+                compact: root.strip;
+                selected: idx == root.active-archived;
+                clicked => {
+                    root.archive-clicked(idx);
+                }
+            }
         }
     }
 }

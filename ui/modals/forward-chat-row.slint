@@ -11,8 +11,11 @@ export component ForwardChatRow inherits Rectangle {
     in property <bool> cursored: false;
     callback selected();
 
+    // No `visible:` here: binding visible on a ListView delegate root breaks
+    // the ListView's row placement (every delegate lands at y=0); zero height
+    // + clip hides collapsed rows just as well.
     height: root.shown ? 62px : 0px;
-    visible: root.shown;
+    clip: true;
 
     Rectangle {
         x: 0;

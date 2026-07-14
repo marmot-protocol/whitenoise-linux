@@ -254,6 +254,11 @@ export global AppState {
     in-out property <int> messages-scroll-tick: 0;
     in-out property <string> message-jump-id;
     in-out property <int> message-jump-tick: 0;
+    // Row index of the jump target within the loaded window, set by Rust
+    // alongside message-jump-id. The virtualized messages list can't measure
+    // off-screen rows, so it first scrolls near this index (estimated), then
+    // centers exactly once the target row instantiates.
+    in-out property <int> message-jump-index: -1;
     // True when the active chat has history beyond the loaded window; the
     // messages view shows a "load earlier messages" pill that fires
     // messages-request-older.

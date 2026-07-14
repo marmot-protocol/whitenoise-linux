@@ -1,8 +1,18 @@
 // messages area — driven by a model fed from Rust.
+//
+// Virtualized: the rows live in a ListView, so only visible messages are
+// instantiated (opening a chat builds ~a screenful, not the whole 80-row
+// window). Two consequences vs. the old full-materialize ScrollView:
+//   - `viewport-height` is an ESTIMATE that refines as rows instantiate; the
+//     stick-to-bottom logic self-corrects through `changed bottom-y`.
+//   - Off-screen rows have no geometry, so jump-to-message and the
+//     load-older anchor run in two phases: scroll near the target row by
+//     index (estimated), then snap exactly when the target instantiates and
+//     reports its real position (see scroll-target machinery below).
+import { ListView } from "std-widgets.slint";
 import { AppState } from "../shell/app-state.slint";
 import { Palette, Theme, ChatMessage } from "../tokens.slint";
 import { MessageView } from "message-view.slint";
-import { ScrollView } from "../primitives/scroll-view.slint";
 import { MessageEffectLayer } from "message-effect-layer.slint";
 import { PaperDoodles } from "../theme-decor/paper-doodles.slint";
 import { SynthGrid } from "../theme-decor/synth-grid.slint";
@@ -38,9 +48,6 @@ export component MessagesArea inherits Rectangle {
     // `changed` handler must sit on a property of the declaring element.)
     property <int> scroll-tick: AppState.messages-scroll-tick;
     property <int> jump-tick: AppState.message-jump-tick;
-    property <int> jump-layout-tick: 0;
-    property <bool> jump-layout-pending: false;
-    property <bool> jump-reset-pending: false;
     // True when older history exists beyond the loaded window; shows the
     // "load earlier messages" pill at the top of the list.
     property <bool> has-older: AppState.messages-has-older;
@@ -90,39 +97,55 @@ export component MessagesArea inherits Rectangle {
 
     // Computed "stick to bottom" position. We don't bind viewport-y directly
     // to this (that would override manual scrolling) — instead the changed
-    // handlers below imperatively snap to it at the right moments.
-    property <length> bottom-y: -max(0px, inner.preferred-height - cs.visible-height);
+    // handlers below imperatively snap to it at the right moments. With the
+    // ListView, viewport-height is an estimate that refines as rows
+    // instantiate — each refinement re-fires `changed bottom-y`, so a snap to
+    // an estimated bottom converges to the true bottom in a frame or two.
+    property <length> bottom-y: -max(0px, cs.viewport-height - cs.visible-height);
     // True when the user is within 40px of the bottom — used to auto-follow
     // incoming messages without yanking the scroll out from under them if
     // they've explicitly paged up to read history.
     property <bool> at-bottom: (-cs.viewport-y) >= (-root.bottom-y) - 40px;
 
-    // Scroll anchoring for "load earlier messages": content grows at the
-    // TOP, so without correction the viewport would suddenly show the middle
-    // of the newly-loaded history. Armed by the pill's click; the
-    // preferred-height change handler below shifts viewport-y by exactly the
-    // added height so what the user was reading stays put.
-    property <length> anchor-h: 0px;
-    property <bool> anchor-armed: false;
-
-    // Send-driven scroll: any tick bump (from Rust) snaps to bottom even if
-    // the user had paged up. This is "I just hit send, take me there."
-    changed scroll-tick => {
-        cs.viewport-y = root.bottom-y;
-    }
-    // Model replacement and repeater layout happen after the Rust callback.
-    // Defer the scroll edge one frame so every target row exists and has final
-    // geometry before it computes the centered viewport position.
-    jump-layout := Timer {
+    // ── Two-phase scroll targeting (jump-to-message + load-older anchor) ────
+    // Phase 1: the timer scrolls near the target row using the index-fraction
+    // estimate, re-applying every tick as the ListView refines its layout.
+    // Phase 2: once the target delegate is instantiated, the probe handler in
+    // the row answers with its exact geometry and `snap-to-row` finishes.
+    property <int> scroll-target-idx: -1;
+    property <bool> scroll-center: true; // center (jump) vs. top-align (anchor)
+    property <int> scroll-tries: 0;
+    property <int> probe-gen: 0;
+    scroll-timer := Timer {
         interval: 30ms;
-        running: root.jump-layout-pending;
+        running: root.scroll-target-idx >= 0;
         triggered => {
-            root.jump-layout-pending = false;
-            root.jump-layout-tick += 1;
-            root.jump-reset-pending = true;
+            if (root.scroll-tries <= 0) {
+                // Never instantiated (extreme height variance) — the estimate
+                // scroll is as close as it gets; let the highlight fade.
+                root.scroll-target-idx = -1;
+                root.jump-reset-pending = true;
+                return;
+            }
+            root.scroll-tries -= 1;
+            if (root.messages.length > 0) {
+                cs.viewport-y = -clamp(
+                    (root.scroll-target-idx / root.messages.length) * cs.viewport-height - (root.scroll-center ? cs.visible-height / 2 : 0px),
+                    0px, max(0px, cs.viewport-height - cs.visible-height));
+            }
+            root.probe-gen += 1;
         }
     }
+    function snap-to-row(row-y: length, row-h: length) {
+        cs.viewport-y = -clamp(
+            root.scroll-center ? (row-y + row-h / 2 - cs.visible-height / 2) : (row-y - 44px),
+            0px, max(0px, cs.viewport-height - cs.visible-height));
+        // Highlight fade only applies to jumps; the anchor has no highlight.
+        root.jump-reset-pending = root.scroll-center;
+        root.scroll-target-idx = -1;
+    }
 
+    property <bool> jump-reset-pending: false;
     jump-reset := Timer {
         interval: 1.8s;
         running: root.jump-reset-pending;
@@ -133,25 +156,52 @@ export component MessagesArea inherits Rectangle {
     }
 
     changed jump-tick => {
-        if (AppState.message-jump-id != "") {
+        if (AppState.message-jump-id != "" && AppState.message-jump-index >= 0) {
             root.jump-reset-pending = false;
-            root.jump-layout-pending = true;
+            root.scroll-center = true;
+            root.scroll-target-idx = AppState.message-jump-index;
+            root.scroll-tries = 40;
         }
     }
-    // Content-driven scroll: when new rows append (preferred-height grows),
-    // only follow if we were already near the bottom. Prevents the scroll
-    // from yanking when a message arrives mid-history-reading.
+
+    // Scroll anchoring for "load earlier messages": content grows at the TOP,
+    // so without correction the viewport would show the middle of the newly
+    // loaded history. The pill click records the current row count; when the
+    // model grows, the previously-first row (index = new − old) is scrolled
+    // back under the pill, so what the user was reading stays put.
+    property <int> anchor-old-len: 0;
+    property <bool> anchor-armed: false;
+    property <int> msg-count: root.messages.length;
+    changed msg-count => {
+        if (root.anchor-armed && root.msg-count > root.anchor-old-len) {
+            root.anchor-armed = false;
+            root.scroll-center = false;
+            root.scroll-target-idx = root.msg-count - root.anchor-old-len;
+            root.scroll-tries = 40;
+        }
+    }
+
+    // Send-driven scroll: any tick bump (from Rust) snaps to bottom even if
+    // the user had paged up. This is "I just hit send, take me there."
+    changed scroll-tick => {
+        cs.viewport-y = root.bottom-y;
+    }
+    // Content-driven scroll: when new rows append (the content estimate
+    // grows), only follow if we were already near the bottom. Prevents the
+    // scroll from yanking when a message arrives mid-history-reading.
     changed bottom-y => {
-        if (root.at-bottom) {
+        if (root.at-bottom && root.scroll-target-idx < 0) {
             cs.viewport-y = root.bottom-y;
         }
     }
 
-    cs := ScrollView {
+    cs := ListView {
         width: parent.width;
         height: parent.height;
-        viewport-width: self.width;
-        viewport-height: inner.preferred-height;
+        // Drags belong to in-bubble text selection (TextSelection), never to
+        // panning — scrolling is wheel/scrollbar only, like the ScrollView
+        // this replaced.
+        mouse-drag-pan-enabled: false;
         // NO `animate viewport-y` here: viewport-y is a two-way alias of the
         // Flickable's property, so a declared animation applies to EVERY
         // write — including wheel ticks and scrollbar thumb drags, which
@@ -159,27 +209,33 @@ export component MessagesArea inherits Rectangle {
         // laggy. Programmatic snaps (send, chat open, load-older anchor) are
         // instant, which is what a chat wants anyway.
 
-        inner := VerticalLayout {
+        for msg[idx] in root.messages: VerticalLayout {
             width: parent.width;
+            spacing: 0;
+            // The old container padding/spacing, folded per-row: 18px frame at
+            // the top of the first and bottom of the last row, 3px between
+            // rows (tight within a group; Rust adds `gap-before` between
+            // message groups).
             padding-left: 18px;
             padding-right: 18px;
-            padding-top: 18px;
-            padding-bottom: 18px;
-            // Tight within a group; Rust adds `gap-before` between groups.
-            spacing: 3px;
+            padding-top: idx == 0 ? 18px : 3px;
+            padding-bottom: idx == root.messages.length - 1 ? 18px : 0px;
 
-            changed preferred-height => {
-                if (root.anchor-armed) {
-                    root.anchor-armed = false;
-                    cs.viewport-y = cs.viewport-y - (self.preferred-height - root.anchor-h);
+            // Exact-position answer for the two-phase scroll targeting: fires
+            // on the tick after this row instantiates.
+            property <int> probe: root.probe-gen;
+            changed probe => {
+                if (idx == root.scroll-target-idx) {
+                    root.snap-to-row(self.y, self.height);
                 }
             }
 
-            // Always mounted, gated by height/visible — an `if`-mounted
-            // TouchArea swallows its first click when it (re)mounts.
+            // "Load earlier messages" pill, riding the first row. Gated by
+            // height/visible rather than `if` — an `if`-mounted TouchArea
+            // swallows its first click when it (re)mounts.
             Rectangle {
-                height: root.has-older ? 36px : 0px;
-                visible: root.has-older;
+                height: (idx == 0 && root.has-older) ? 36px : 0px;
+                visible: idx == 0 && root.has-older;
                 pill := Rectangle {
                     width: pill-label.preferred-width + 28px;
                     height: 26px;
@@ -201,7 +257,7 @@ export component MessagesArea inherits Rectangle {
 
                     pill-touch := TouchArea {
                         clicked => {
-                            root.anchor-h = inner.preferred-height;
+                            root.anchor-old-len = root.messages.length;
                             root.anchor-armed = true;
                             AppState.messages-request-older();
                         }
@@ -209,47 +265,37 @@ export component MessagesArea inherits Rectangle {
                 }
             }
 
-            if root.messages.length == 0: EmptyState {
-                width: parent.width;
-                height: max(220px, root.height - 72px);
-                title: root.loading ? @tr("Loading messages…") : @tr("No messages yet");
-                description: root.loading ? @tr("Fetching the latest conversation history.") : @tr("Say hello to start the conversation.");
-                ChatBubbleIcon {
-                    stroke: Palette.text-mid;
-                    filled: !root.loading;
-                }
+            // Date divider above the first message of each local day, so
+            // multi-day history stays orientable (bubbles only stamp HH:MM).
+            if msg.day-label != "": SessionDivider {
+                label: msg.day-label;
+            }
+            if msg.gap-before > 0px: Rectangle {
+                height: msg.gap-before;
             }
 
-            for msg in root.messages: VerticalLayout {
-                spacing: 0;
-                property <int> jump-generation: root.jump-layout-tick;
-                changed jump-generation => {
-                    if (AppState.message-jump-id == msg.message-id) {
-                        cs.viewport-y = -max(0px, min(
-                            max(0px, inner.preferred-height - cs.visible-height),
-                            self.y + self.height / 2 - cs.visible-height / 2));
-                    }
-                }
-                // Date divider above the first message of each local day, so
-                // multi-day history stays orientable (bubbles only stamp HH:MM).
-                if msg.day-label != "": SessionDivider {
-                    label: msg.day-label;
-                }
-                if msg.gap-before > 0px: Rectangle {
-                    height: msg.gap-before;
-                }
-
-                // One skin slot per message. Theme.skin-message picks the render
-                // body (skin 0 = standard incoming/outgoing bubble rows).
-                MessageView {
-                    msg: msg;
-                    highlighted: AppState.message-jump-id == msg.message-id;
-                    row-w: root.content-w;
-                    play-effect(eid, cx, cy, ax, ay, w, h) => {
-                        root.stage-effect(eid, cx, cy, ax, ay, w, h);
-                    }
+            // One skin slot per message. Theme.skin-message picks the render
+            // body (skin 0 = standard incoming/outgoing bubble rows).
+            MessageView {
+                msg: msg;
+                highlighted: AppState.message-jump-id == msg.message-id;
+                row-w: root.content-w;
+                play-effect(eid, cx, cy, ax, ay, w, h) => {
+                    root.stage-effect(eid, cx, cy, ax, ay, w, h);
                 }
             }
+        }
+    }
+
+    // Empty / loading state — over the (empty) list, same slot as before.
+    if root.messages.length == 0: EmptyState {
+        width: parent.width;
+        height: max(220px, root.height - 72px);
+        title: root.loading ? @tr("Loading messages…") : @tr("No messages yet");
+        description: root.loading ? @tr("Fetching the latest conversation history.") : @tr("Say hello to start the conversation.");
+        ChatBubbleIcon {
+            stroke: Palette.text-mid;
+            filled: !root.loading;
         }
     }
 

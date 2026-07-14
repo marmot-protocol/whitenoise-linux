@@ -324,6 +324,23 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                             );
                             if jump_target_exists {
                                 let message_id = jump_message_id.as_ref().unwrap();
+                                // Row index within the freshly built row model:
+                                // the virtualized list scrolls near it first,
+                                // then centers exactly once the row
+                                // instantiates. Indexing the rows (not the
+                                // records) keeps visibility filtering and
+                                // pending-overlay rows accounted for.
+                                let jump_index = ui
+                                    .get_chats_messages()
+                                    .row_data(current_idx)
+                                    .and_then(|rows| {
+                                        rows.iter().position(|row| {
+                                            row.message_id.eq_ignore_ascii_case(message_id)
+                                        })
+                                    })
+                                    .map(|idx| idx as i32)
+                                    .unwrap_or(-1);
+                                ui.set_message_jump_index(jump_index);
                                 ui.set_message_jump_id(s(message_id));
                                 ui.set_message_jump_tick(ui.get_message_jump_tick() + 1);
                             } else {
