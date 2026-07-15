@@ -346,123 +346,22 @@ pub(crate) fn spawn_text_forward(
         offline_inflight_insert(&temp_id);
 
         // Dispatch + reconcile by group hex (mirrors main.rs `dispatch_send`).
-        let weak_cb = weak.clone();
-        let group_ids_cb = group_ids.clone();
-        let pending_state_cb = pending_state.clone();
-        let backend_cell_cb = backend_cell.clone();
-        let group_hex_cb = group_hex.clone();
-        let temp_id_cb = temp_id.clone();
+        let ctx = SendReconcileCtx {
+            weak: weak.clone(),
+            backend_cell: backend_cell.clone(),
+            group_ids: group_ids.clone(),
+            pending_state: pending_state.clone(),
+            group_hex: group_hex.clone(),
+            temp_id: temp_id.clone(),
+            label: "forward",
+            error_op: Some(ErrorOp::Forward),
+        };
         let on_done = move |result: anyhow::Result<marmot_app::SendSummary>| {
-            let weak = weak_cb.clone();
-            let group_ids = group_ids_cb.clone();
-            let pending_state = pending_state_cb.clone();
-            let backend_cell = backend_cell_cb.clone();
-            let group_hex = group_hex_cb.clone();
-            let temp_id = temp_id_cb.clone();
-            offline_inflight_remove(&temp_id);
-            let (all, online): (Vec<AppMessageRecord>, bool) = if result.is_ok() {
-                let all = backend_cell
-                    .lock()
-                    .unwrap()
-                    .as_ref()
-                    .map(|b| {
-                        b.messages(&group_hex, Some(msg_window_for(&group_hex)))
-                            .unwrap_or_default()
-                    })
-                    .unwrap_or_default();
-                (all, true)
-            } else {
-                let online = backend_cell
-                    .lock()
-                    .unwrap()
-                    .as_ref()
-                    .map(|b| b.relay_health().0 > 0)
-                    .unwrap_or(false);
-                (Vec::new(), online)
-            };
-            let _ = slint::invoke_from_event_loop(move || {
-                let Some(ui) = weak.upgrade() else { return };
-                let ids = group_ids.lock().unwrap();
-                let Some(idx) = ids.iter().position(|g| g == &group_hex) else {
-                    return;
-                };
-                drop(ids);
-                let chats_messages = ui.get_chats_messages();
-                match result {
-                    Ok(summary) => {
-                        let real_id = summary.message_ids.first().cloned();
-                        pending_state
-                            .lock()
-                            .unwrap()
-                            .drop_send(&group_hex, &temp_id);
-                        offline_queue::remove(&temp_id);
-
-                        let guard = backend_cell.lock().unwrap();
-                        let Some(backend) = guard.as_ref() else {
-                            return;
-                        };
-                        let overlay = pending_state.lock().unwrap();
-                        let my_id = backend.account().account_id_hex.clone();
-                        let my_label = my_avatar_label(backend, &my_id);
-                        let confirmed_row: Option<ChatMessage> =
-                            real_id.as_deref().and_then(|id| {
-                                let rec = all.iter().find(|m| m.message_id_hex == id).cloned()?;
-                                Some(build_one_message_row(
-                                    &rec, &all, &my_id, &my_label, &group_hex, &overlay, backend,
-                                ))
-                            });
-                        let swapped = with_inner_messages(&chats_messages, idx, |vm| {
-                            let Some(pos) = find_message_row(vm, &temp_id) else {
-                                return false;
-                            };
-                            if let Some(mut row) = confirmed_row {
-                                preserve_grouping_flags(vm, pos, &mut row);
-                                vm.set_row_data(pos, row);
-                            } else {
-                                vm.remove(pos);
-                            }
-                            true
-                        });
-                        if swapped != Some(true) {
-                            rebuild_chat_messages_from(
-                                backend,
-                                &overlay,
-                                &chats_messages,
-                                idx,
-                                &group_hex,
-                                &all,
-                            );
-                        }
-                    }
-                    Err(e) => {
-                        tracing::warn!(target: "forward", "{e:#}");
-                        if !online {
-                            // Offline: leave the bubble pending + queued for flush.
-                            return;
-                        }
-                        ui.set_backend_error(friendly_error(ErrorOp::Forward, &e).into());
-                        let mut overlay = pending_state.lock().unwrap();
-                        overlay.mark_send_failed(&group_hex, &temp_id);
-                        let failed_send = overlay.find_send(&group_hex, &temp_id);
-                        drop(overlay);
-                        if let Some(failed) = failed_send {
-                            let guard = backend_cell.lock().unwrap();
-                            let Some(backend) = guard.as_ref() else {
-                                return;
-                            };
-                            let my_id = backend.account().account_id_hex.clone();
-                            let my_label = my_avatar_label(backend, &my_id);
-                            let _ = with_inner_messages(&chats_messages, idx, |vm| {
-                                if let Some(pos) = find_message_row(vm, &temp_id) {
-                                    let mut row = pending_chat_message(&failed, &my_id, &my_label);
-                                    preserve_grouping_flags(vm, pos, &mut row);
-                                    vm.set_row_data(pos, row);
-                                }
-                            });
-                        }
-                    }
-                }
-            });
+            apply_send_result(
+                ctx,
+                result.map(|s| s.message_ids.first().cloned()),
+                |_id| {},
+            );
         };
         backend.send_text_async(&group_hex, &text, on_done);
     });

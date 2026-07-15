@@ -113,13 +113,16 @@ pub(crate) fn spawn_attachment_send(
         }
         offline_inflight_insert(&temp_id);
 
-        let weak3 = weak2.clone();
-        let backend_cell3 = backend_cell2.clone();
-        let group_ids3 = group_ids2.clone();
-        let pending_state3 = pending_state2.clone();
-        let group_hex3 = group_hex2.clone();
-        let temp_id3 = temp_id.clone();
-        let local_preview_done = local_preview.clone();
+        let ctx = SendReconcileCtx {
+            weak: weak2.clone(),
+            backend_cell: backend_cell2.clone(),
+            group_ids: group_ids2.clone(),
+            pending_state: pending_state2.clone(),
+            group_hex: group_hex2.clone(),
+            temp_id: temp_id.clone(),
+            label: "attach",
+            error_op: None,
+        };
         backend.upload_media_async(
             &group_hex2,
             file_name,
@@ -127,142 +130,19 @@ pub(crate) fn spawn_attachment_send(
             bytes,
             None,
             move |result| {
-                let weak = weak3.clone();
-                let backend_cell = backend_cell3.clone();
-                let group_ids = group_ids3.clone();
-                let pending_state = pending_state3.clone();
-                let group_hex = group_hex3.clone();
-                let temp_id = temp_id3.clone();
-                let local_preview = local_preview_done.clone();
-                // This upload has resolved — drop the in-flight guard.
-                offline_inflight_remove(&temp_id);
-                // Tokio worker — read the refreshed window HERE
-                // so the invoke closure never touches sqlite. On failure also
-                // poll connectivity so an offline failure stays queued + pending
-                // rather than flipping the bubble red.
-                let (all, online): (Vec<AppMessageRecord>, bool) = if result.is_ok() {
-                    let all = backend_cell
-                        .lock()
-                        .unwrap()
-                        .as_ref()
-                        .map(|b| {
-                            b.messages(&group_hex, Some(msg_window_for(&group_hex)))
-                                .unwrap_or_default()
-                        })
-                        .unwrap_or_default();
-                    (all, true)
-                } else {
-                    let online = backend_cell
-                        .lock()
-                        .unwrap()
-                        .as_ref()
-                        .map(|b| b.relay_health().0 > 0)
-                        .unwrap_or(false);
-                    (Vec::new(), online)
-                };
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
-                    let chats_messages = ui.get_chats_messages();
-                    let ids = group_ids.lock().unwrap();
-                    let Some(idx) = ids.iter().position(|g| g == &group_hex) else {
-                        return;
-                    };
-                    drop(ids);
-
-                    match result {
-                        Ok(upload) => {
-                            pending_state
-                                .lock()
-                                .unwrap()
-                                .drop_send(&group_hex, &temp_id);
-                            offline_queue::remove(&temp_id);
-                            let guard = backend_cell.lock().unwrap();
-                            let Some(backend) = guard.as_ref() else {
-                                return;
-                            };
-                            let real_id = upload
-                                .sent
-                                .as_ref()
-                                .and_then(|s| s.message_ids.first().cloned());
-                            if let Some(id) = real_id.as_ref() {
-                                // The uploader knows the plaintext size; the
-                                // imeta tag doesn't carry one, so seed the
-                                // session size cache before the confirmed row
-                                // is built below.
-                                attachment_size_put(id, size_bytes);
-                            }
-                            if let (Some(id), Some(p)) = (real_id.as_ref(), local_preview.as_ref())
-                                && is_image
-                            {
-                                attachment_image_cache_put(id.clone(), p.clone());
-                            }
-                            let confirmed_row: Option<ChatMessage> =
-                                real_id.as_deref().and_then(|id| {
-                                    let rec =
-                                        all.iter().find(|m| m.message_id_hex == id).cloned()?;
-                                    let overlay = pending_state.lock().unwrap();
-                                    let my_id = backend.account().account_id_hex.clone();
-                                    let my_label = my_avatar_label(backend, &my_id);
-                                    Some(build_one_message_row(
-                                        &rec, &all, &my_id, &my_label, &group_hex, &overlay,
-                                        backend,
-                                    ))
-                                });
-                            let swapped = with_inner_messages(&chats_messages, idx, |vm| {
-                                let Some(pos) = find_message_row(vm, &temp_id) else {
-                                    return false;
-                                };
-                                if let Some(mut row) = confirmed_row {
-                                    preserve_grouping_flags(vm, pos, &mut row);
-                                    vm.set_row_data(pos, row);
-                                } else {
-                                    vm.remove(pos);
-                                }
-                                true
-                            });
-                            if swapped != Some(true) {
-                                let overlay = pending_state.lock().unwrap();
-                                rebuild_chat_messages_from(
-                                    backend,
-                                    &overlay,
-                                    &chats_messages,
-                                    idx,
-                                    &group_hex,
-                                    &all,
-                                );
-                            }
+                apply_send_result(
+                    ctx,
+                    result.map(|u| u.sent.as_ref().and_then(|s| s.message_ids.first().cloned())),
+                    move |id| {
+                        // The uploader knows the plaintext size; the imeta tag
+                        // doesn't carry one, so seed the session size cache (and
+                        // the local preview) before the confirmed row is built.
+                        attachment_size_put(id, size_bytes);
+                        if is_image && let Some(p) = local_preview.as_ref() {
+                            attachment_image_cache_put(id.to_string(), p.clone());
                         }
-                        Err(e) => {
-                            tracing::warn!(target: "attach", "upload: {e:#}");
-                            if !online {
-                                // Offline: keep the bubble pending + the entry
-                                // queued for the reconnect flush.
-                                tracing::warn!(target: "attach", "offline — left queued for flush");
-                                return;
-                            }
-                            let mut overlay = pending_state.lock().unwrap();
-                            overlay.mark_send_failed(&group_hex, &temp_id);
-                            let failed = overlay.find_send(&group_hex, &temp_id);
-                            drop(overlay);
-                            if let Some(failed) = failed {
-                                let guard = backend_cell.lock().unwrap();
-                                let Some(backend) = guard.as_ref() else {
-                                    return;
-                                };
-                                let my_id = backend.account().account_id_hex.clone();
-                                let my_label = my_avatar_label(backend, &my_id);
-                                let _ = with_inner_messages(&chats_messages, idx, |vm| {
-                                    if let Some(pos) = find_message_row(vm, &temp_id) {
-                                        vm.set_row_data(
-                                            pos,
-                                            pending_chat_message(&failed, &my_id, &my_label),
-                                        );
-                                    }
-                                });
-                            }
-                        }
-                    }
-                });
+                    },
+                );
             },
         );
     });
@@ -380,136 +260,31 @@ pub(crate) fn spawn_album_send(
             })
             .collect();
 
-        let weak3 = weak.clone();
-        let backend_cell3 = backend_cell.clone();
-        let group_ids3 = group_ids.clone();
-        let pending_state3 = pending_state.clone();
-        let group_hex3 = group_hex.clone();
-        let temp_id3 = temp_id.clone();
+        let ctx = SendReconcileCtx {
+            weak: weak.clone(),
+            backend_cell: backend_cell.clone(),
+            group_ids: group_ids.clone(),
+            pending_state: pending_state.clone(),
+            group_hex: group_hex.clone(),
+            temp_id: temp_id.clone(),
+            label: "album",
+            error_op: None,
+        };
         backend.upload_album_async(&group_hex, items, move |result| {
-            let weak = weak3.clone();
-            let backend_cell = backend_cell3.clone();
-            let group_ids = group_ids3.clone();
-            let pending_state = pending_state3.clone();
-            let group_hex = group_hex3.clone();
-            let temp_id = temp_id3.clone();
-            offline_inflight_remove(&temp_id);
-            let (all, online): (Vec<AppMessageRecord>, bool) = if result.is_ok() {
-                let all = backend_cell
-                    .lock()
-                    .unwrap()
-                    .as_ref()
-                    .map(|b| {
-                        b.messages(&group_hex, Some(msg_window_for(&group_hex)))
-                            .unwrap_or_default()
-                    })
-                    .unwrap_or_default();
-                (all, true)
-            } else {
-                let online = backend_cell
-                    .lock()
-                    .unwrap()
-                    .as_ref()
-                    .map(|b| b.relay_health().0 > 0)
-                    .unwrap_or(false);
-                (Vec::new(), online)
-            };
-            let _ = slint::invoke_from_event_loop(move || {
-                let Some(ui) = weak.upgrade() else { return };
-                let chats_messages = ui.get_chats_messages();
-                let Some(idx) = group_ids
-                    .lock()
-                    .unwrap()
-                    .iter()
-                    .position(|g| g == &group_hex)
-                else {
-                    return;
-                };
-                match result {
-                    Ok(upload) => {
-                        pending_state
-                            .lock()
-                            .unwrap()
-                            .drop_send(&group_hex, &temp_id);
-                        offline_queue::remove(&temp_id);
-                        let guard = backend_cell.lock().unwrap();
-                        let Some(backend) = guard.as_ref() else {
-                            return;
-                        };
-                        let real_id = upload
-                            .sent
-                            .as_ref()
-                            .and_then(|s| s.message_ids.first().cloned());
-                        if let Some(id) = real_id.as_ref() {
-                            for (i, p) in previews.iter().enumerate() {
-                                if let Some(px) = p {
-                                    attachment_image_cache_put(att_key(id, i), px.clone());
-                                }
-                            }
-                        }
-                        let confirmed_row: Option<ChatMessage> =
-                            real_id.as_deref().and_then(|id| {
-                                let rec = all.iter().find(|m| m.message_id_hex == id).cloned()?;
-                                let overlay = pending_state.lock().unwrap();
-                                let my_id = backend.account().account_id_hex.clone();
-                                let my_label = my_avatar_label(backend, &my_id);
-                                Some(build_one_message_row(
-                                    &rec, &all, &my_id, &my_label, &group_hex, &overlay, backend,
-                                ))
-                            });
-                        let swapped = with_inner_messages(&chats_messages, idx, |vm| {
-                            let Some(pos) = find_message_row(vm, &temp_id) else {
-                                return false;
-                            };
-                            if let Some(mut row) = confirmed_row {
-                                preserve_grouping_flags(vm, pos, &mut row);
-                                vm.set_row_data(pos, row);
-                            } else {
-                                vm.remove(pos);
-                            }
-                            true
-                        });
-                        if swapped != Some(true) {
-                            let overlay = pending_state.lock().unwrap();
-                            rebuild_chat_messages_from(
-                                backend,
-                                &overlay,
-                                &chats_messages,
-                                idx,
-                                &group_hex,
-                                &all,
-                            );
+            apply_send_result(
+                ctx,
+                result.map(|u| u.sent.as_ref().and_then(|s| s.message_ids.first().cloned())),
+                move |id| {
+                    // Seed each image's preview under the real id (per-index
+                    // `att_key`) so the confirmed grid shows the same pixels
+                    // without a re-download.
+                    for (i, p) in previews.iter().enumerate() {
+                        if let Some(px) = p {
+                            attachment_image_cache_put(att_key(id, i), px.clone());
                         }
                     }
-                    Err(e) => {
-                        tracing::warn!(target: "album", "upload: {e:#}");
-                        if !online {
-                            tracing::warn!(target: "album", "offline — left queued for flush");
-                            return;
-                        }
-                        let mut overlay = pending_state.lock().unwrap();
-                        overlay.mark_send_failed(&group_hex, &temp_id);
-                        let failed = overlay.find_send(&group_hex, &temp_id);
-                        drop(overlay);
-                        if let Some(failed) = failed {
-                            let guard = backend_cell.lock().unwrap();
-                            let Some(backend) = guard.as_ref() else {
-                                return;
-                            };
-                            let my_id = backend.account().account_id_hex.clone();
-                            let my_label = my_avatar_label(backend, &my_id);
-                            let _ = with_inner_messages(&chats_messages, idx, |vm| {
-                                if let Some(pos) = find_message_row(vm, &temp_id) {
-                                    vm.set_row_data(
-                                        pos,
-                                        pending_chat_message(&failed, &my_id, &my_label),
-                                    );
-                                }
-                            });
-                        }
-                    }
-                }
-            });
+                },
+            );
         });
     });
 }
