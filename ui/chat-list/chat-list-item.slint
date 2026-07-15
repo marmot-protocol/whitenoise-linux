@@ -134,18 +134,22 @@ export component ChatListItem inherits Rectangle {
 
             HorizontalLayout {
                 spacing: 6px;
-                Text {
-                    text: root.preview;
-                    color: Theme.selected-inverts-text && root.selected ? Palette.bubble-out-fg : Palette.text-lo;
-                    font-size: Theme.fs(11px, 16px);
-                    font-family: Theme.font;
+                // Wrap the preview but hard-cap it at three lines. Slint's Text
+                // ignores max-height, so clip inside a height-capped box.
+                Rectangle {
                     horizontal-stretch: 1;
-                    // Wrap the preview, but cap it at three lines and elide the
-                    // rest (≈ three line-heights at this font size).
-                    wrap: word-wrap;
-                    overflow: elide;
-                    max-height: Theme.fs(11px, 16px) * 3.8;
-                    vertical-alignment: top;
+                    clip: true;
+                    max-height: Theme.fs(11px, 16px) * 3.75;
+                    Text {
+                        text: root.preview;
+                        color: Theme.selected-inverts-text && root.selected ? Palette.bubble-out-fg : Palette.text-lo;
+                        font-size: Theme.fs(11px, 16px);
+                        font-family: Theme.font;
+                        width: 100%;
+                        y: 0;
+                        wrap: word-wrap;
+                        overflow: elide;
+                    }
                 }
 
                 if root.badge != "": UnreadBadge {

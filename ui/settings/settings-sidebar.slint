@@ -12,14 +12,9 @@ import { SettingsNavItem } from "settings-nav-item.slint";
 export component SettingsSidebar inherits Rectangle {
     in-out property <int> active-tab: 0;
     width: 232px;
-    background: Palette.bg;
-
-    Rectangle {
-        x: parent.width - 1px;
-        width: 1px;
-        height: parent.height;
-        background: Palette.border-2;
-    }
+    // Transparent so it blends with the shell's left card that hosts it (the
+    // gutter, not a border, separates it from the panes).
+    background: transparent;
 
     VerticalLayout {
         padding-left: 14px;
@@ -35,7 +30,7 @@ export component SettingsSidebar inherits Rectangle {
             Text {
                 text: @tr("SETTINGS");
                 color: Palette.text-mid;
-                font-size: Theme.fs(11px, 14px);
+                font-size: Theme.fs(12px, 14px);
                 font-weight: 700;
                 letter-spacing: 1.4px;
                 vertical-alignment: center;
