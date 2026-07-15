@@ -40,14 +40,13 @@ export component GroupSettingsCard inherits Section {
                     spacing: 6px;
                     Button {
                         label: AppState.group-image-busy ? @tr("Uploading…") : @tr("Change image");
+                        enabled: !AppState.group-image-busy;
                         button-height: 28px;
                         pad-left: 10px;
                         pad-right: 10px;
                         font-size: Theme.fsr(11px, 14px);
                         clicked => {
-                            if (!AppState.group-image-busy) {
-                                AppState.change-group-image();
-                            }
+                            AppState.change-group-image();
                         }
                     }
 
@@ -115,6 +114,7 @@ export component GroupSettingsCard inherits Section {
                     alignment: start;
                     Button {
                         label: AppState.group-rename-busy ? @tr("Saving…") : @tr("Save name");
+                        enabled: !AppState.group-rename-busy && AppState.group-rename-draft != "";
                         button-height: 28px;
                         pad-left: 10px;
                         pad-right: 10px;
@@ -124,9 +124,7 @@ export component GroupSettingsCard inherits Section {
                         outline: Palette.mint;
                         hover-bg: Palette.mint-surface;
                         clicked => {
-                            if (!AppState.group-rename-busy && AppState.group-rename-draft != "") {
-                                AppState.rename-group(AppState.group-rename-draft);
-                            }
+                            AppState.rename-group(AppState.group-rename-draft);
                         }
                     }
                 }
