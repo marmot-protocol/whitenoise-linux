@@ -120,6 +120,16 @@ export component AppShell inherits Rectangle {
     // The canvas the cards float on.
     background: Palette.canvas;
 
+    // Responsive left card: below a width threshold it collapses to a slim
+    // strip (compact chat avatars, no header) and expands to the full width
+    // only while hovered, so a narrow window keeps the conversation wide. On a
+    // roomy window it stays at its dragged width and never collapses.
+    property <length> strip-w: 68px;
+    property <bool> narrow: root.width < 860px;
+    property <bool> left-open: left-hover.has-hover;
+    property <bool> strip: root.narrow && !root.left-open;
+    property <length> left-shown: root.strip ? root.strip-w : AppState.shell-chats-width;
+
     // Theme decor as a full-window backdrop (painted first, behind the cards),
     // so a theme's feel spans every section, not just the chat area: the
     // sketch/chalkboard paper texture and the synthwave neon grid.
@@ -146,7 +156,15 @@ export component AppShell inherits Rectangle {
 
             // ── Left card · the prominent chat bar ──
             Card {
-                width: AppState.shell-chats-width;
+                width: root.left-shown;
+                animate width {
+                    duration: Theme.motion-fast ? 110ms : 170ms;
+                    easing: ease-out;
+                }
+                // Ancestor hover detector (declared first so content paints on
+                // top and still receives clicks); keeps the strip expanded while
+                // the pointer is anywhere over the card.
+                left-hover := TouchArea { }
                 VerticalLayout {
                     padding-left: 10px;
                     padding-right: 10px;
@@ -154,8 +172,9 @@ export component AppShell inherits Rectangle {
                     padding-bottom: 11px;
                     spacing: 10px;
 
-                    // Header: account + section nav (no separate rail).
-                    HorizontalLayout {
+                    // Header: account + section nav. Hidden in the collapsed
+                    // strip, revealed when the narrow card expands on hover.
+                    if !root.strip: HorizontalLayout {
                         height: 40px;
                         spacing: 6px;
                         alignment: stretch;
@@ -248,7 +267,7 @@ export component AppShell inherits Rectangle {
                     }
 
                     // Search (global message search) + new chat.
-                    HorizontalLayout {
+                    if !root.strip: HorizontalLayout {
                         height: 38px;
                         spacing: 9px;
                         Rectangle {
@@ -319,6 +338,7 @@ export component AppShell inherits Rectangle {
                             for chat[idx] in AppState.chats: ChatListEntry {
                                 width: 100%;
                                 chat: chat;
+                                compact: root.strip;
                                 selected: idx == AppState.active-chat;
                                 clicked => {
                                     TextSelection.clear();
@@ -360,7 +380,7 @@ export component AppShell inherits Rectangle {
                     }
 
                     // Relay / sync footer.
-                    HorizontalLayout {
+                    if !root.strip: HorizontalLayout {
                         height: 16px;
                         spacing: 8px;
                         Rectangle {
@@ -394,7 +414,9 @@ export component AppShell inherits Rectangle {
                 }
             }
 
-            Gutter {
+            // The drag handle is for the roomy layout; a narrow window uses the
+            // hover-collapse instead, so hide it there.
+            if !root.narrow: Gutter {
                 value <=> AppState.shell-chats-width;
                 min-w: 260px;
                 max-w: 520px;
@@ -408,7 +430,7 @@ export component AppShell inherits Rectangle {
                 horizontal-stretch: 1;
 
                 // Chats page: the conversation, or the first-run screen.
-                if AppState.active-page == 0: Rectangle {
+                if AppState.active-page == 0: FadeInPage {
                     if AppState.chats.length == 0: GetStartedScreen {
                         width: parent.width;
                         height: parent.height;
