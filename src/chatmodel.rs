@@ -1142,25 +1142,22 @@ pub(crate) fn build_one_message_row(
         return system_chat_message(record, &ev, backend);
     }
     maybe_autoload_album(group_hex, record);
-    let mut reactions = aggregate_reactions(all_records, my_id, backend);
-    apply_reaction_overlay(&mut reactions, group_hex, overlay);
+    // Same aggregation preamble the window builders use; the overlay is always
+    // present on the single-row refresh path (react/unreact, kind-7/5 echo).
+    let RowState {
+        reactions,
+        edits,
+        deletes,
+        profiles,
+        is_group,
+        by_id,
+    } = message_row_state(backend, my_id, group_hex, all_records, Some(overlay));
     let r = reactions
         .get(&record.message_id_hex)
         .cloned()
         .unwrap_or_default();
-    let mut edits = aggregate_edits(all_records);
-    apply_edit_overlay(&mut edits, group_hex, overlay);
     let e = edits.get(&record.message_id_hex).cloned();
-    let mut deletes = aggregate_deletes(all_records);
-    apply_delete_overlay(&mut deletes, group_hex, overlay);
     let deleted = deletes.contains(&record.message_id_hex);
-    // Resolve just this record's sender (single-row refresh path).
-    let profiles = build_sender_profiles(backend, std::slice::from_ref(record), my_id);
-    let is_group = backend.group_member_count(group_hex) > 2;
-    let by_id: HashMap<&str, &AppMessageRecord> = all_records
-        .iter()
-        .map(|m| (m.message_id_hex.as_str(), m))
-        .collect();
     chat_message_from_with_reactions(
         record, &by_id, my_id, my_label, r, e, deleted, &profiles, is_group, true,
     )
@@ -1308,6 +1305,106 @@ pub(crate) fn preserve_grouping_flags(
     }
 }
 
+/// The aggregation preamble every row builder shares: reactions/edits/deletes
+/// (with the pending overlay folded in when `overlay` is `Some`), the resolved
+/// sender profiles, the group flag, and the id→record reply-lookup map. `by_id`
+/// borrows `records`, so the struct is scoped to the caller's slice.
+struct RowState<'a> {
+    reactions: std::collections::HashMap<String, Vec<Reaction>>,
+    edits: std::collections::HashMap<String, EditState>,
+    deletes: std::collections::HashSet<String>,
+    profiles: SenderProfiles,
+    is_group: bool,
+    by_id: HashMap<&'a str, &'a AppMessageRecord>,
+}
+
+/// Aggregate the row state for `records`. `None` overlay skips the optimistic
+/// overlays — the boot chat-list snapshot's path, where there is nothing
+/// pending to fold in yet.
+fn message_row_state<'a>(
+    backend: &Backend,
+    my_id: &str,
+    group_hex: &str,
+    records: &'a [AppMessageRecord],
+    overlay: Option<&PendingState>,
+) -> RowState<'a> {
+    let mut reactions = aggregate_reactions(records, my_id, backend);
+    let mut edits = aggregate_edits(records);
+    let mut deletes = aggregate_deletes(records);
+    if let Some(overlay) = overlay {
+        apply_reaction_overlay(&mut reactions, group_hex, overlay);
+        apply_edit_overlay(&mut edits, group_hex, overlay);
+        apply_delete_overlay(&mut deletes, group_hex, overlay);
+    }
+    let profiles = build_sender_profiles(backend, records, my_id);
+    let is_group = backend.group_member_count(group_hex) > 2;
+    let by_id: HashMap<&str, &AppMessageRecord> = records
+        .iter()
+        .map(|m| (m.message_id_hex.as_str(), m))
+        .collect();
+    RowState {
+        reactions,
+        edits,
+        deletes,
+        profiles,
+        is_group,
+        by_id,
+    }
+}
+
+/// Build one chat's rows from a message window plus the parallel grouping keys
+/// (so the caller can fold in optimistic sends before `apply_grouping`). The
+/// single source of truth for the documented row pipeline: `rebuild_chat_messages_from`
+/// (live rebuild) and the boot chat-list snapshot both build through here so
+/// they can no longer drift. `None` overlay is the snapshot path — no optimistic
+/// overlay and no album autoload — reproducing the list's pre-share behavior on
+/// purpose rather than by omission.
+pub(crate) fn build_message_rows(
+    backend: &Backend,
+    my_id: &str,
+    my_label: &str,
+    group_hex: &str,
+    msgs: &[AppMessageRecord],
+    overlay: Option<&PendingState>,
+) -> (Vec<ChatMessage>, Vec<GroupKey>) {
+    mention_render_group(group_hex);
+    let RowState {
+        reactions,
+        edits,
+        deletes,
+        profiles,
+        is_group,
+        by_id,
+    } = message_row_state(backend, my_id, group_hex, msgs, overlay);
+
+    let mut rows: Vec<ChatMessage> = Vec::new();
+    let mut keys: Vec<GroupKey> = Vec::new();
+    for m in msgs.iter().filter(|m| is_visible_chat_message(m)) {
+        let key = grouping_key_for(m, my_id);
+        if let Some(ev) = backend::group_system_event(m) {
+            rows.push(system_chat_message(m, &ev, backend));
+            keys.push(key);
+            continue;
+        }
+        let e = edits.get(&m.message_id_hex).cloned();
+        // Album autoload is an interactive side effect; the passive snapshot
+        // path (`None` overlay) leaves it to the live rebuild that follows.
+        if overlay.is_some() {
+            maybe_autoload_album(group_hex, m);
+        }
+        let r = reactions
+            .get(&m.message_id_hex)
+            .cloned()
+            .unwrap_or_default();
+        let deleted = deletes.contains(&m.message_id_hex);
+        rows.push(chat_message_from_with_reactions(
+            m, &by_id, my_id, my_label, r, e, deleted, &profiles, is_group, false,
+        ));
+        keys.push(key);
+    }
+    (rows, keys)
+}
+
 /// Rebuild one chat's rows from a PREFETCHED window snapshot. `msgs` must be
 /// read off the UI thread (see [`refresh_one_message_row_async`] for why);
 /// the row building itself is pure CPU + cache lookups and stays on the UI
@@ -1321,46 +1418,11 @@ pub(crate) fn rebuild_chat_messages_from(
     msgs: &[AppMessageRecord],
 ) {
     let t0 = std::time::Instant::now();
-    mention_render_group(group_hex);
     let my_id = backend.account().account_id_hex.clone();
     let my_label = my_avatar_label(backend, &my_id);
-    let t_label = t0.elapsed();
-    let mut reactions = aggregate_reactions(msgs, &my_id, backend);
-    apply_reaction_overlay(&mut reactions, group_hex, pending);
-    let mut edits = aggregate_edits(msgs);
-    apply_edit_overlay(&mut edits, group_hex, pending);
-    let mut deletes = aggregate_deletes(msgs);
-    apply_delete_overlay(&mut deletes, group_hex, pending);
-    let t_msgs = t0.elapsed();
-    let profiles = build_sender_profiles(backend, msgs, &my_id);
-    let t_profiles = t0.elapsed();
-    let is_group = backend.group_member_count(group_hex) > 2;
-    let by_id: HashMap<&str, &AppMessageRecord> = msgs
-        .iter()
-        .map(|m| (m.message_id_hex.as_str(), m))
-        .collect();
-
-    let mut rows: Vec<ChatMessage> = Vec::new();
-    let mut keys: Vec<GroupKey> = Vec::new();
-    for m in msgs.iter().filter(|m| is_visible_chat_message(m)) {
-        let key = grouping_key_for(m, &my_id);
-        if let Some(ev) = backend::group_system_event(m) {
-            rows.push(system_chat_message(m, &ev, backend));
-            keys.push(key);
-            continue;
-        }
-        let e = edits.get(&m.message_id_hex).cloned();
-        maybe_autoload_album(group_hex, m);
-        let r = reactions
-            .get(&m.message_id_hex)
-            .cloned()
-            .unwrap_or_default();
-        let deleted = deletes.contains(&m.message_id_hex);
-        rows.push(chat_message_from_with_reactions(
-            m, &by_id, &my_id, &my_label, r, e, deleted, &profiles, is_group, false,
-        ));
-        keys.push(key);
-    }
+    let (mut rows, mut keys) =
+        build_message_rows(backend, &my_id, &my_label, group_hex, msgs, Some(pending));
+    let t_rows = t0.elapsed();
 
     if let Some(pendings) = pending.sends.get(group_hex) {
         let pend_t = keys.last().map(|k| k.2).unwrap_or(0);
@@ -1371,14 +1433,9 @@ pub(crate) fn rebuild_chat_messages_from(
     }
 
     apply_grouping(&mut rows, &keys);
-    let t_rows = t0.elapsed();
-
     replace_message_row(chats_messages, idx, rows);
     tracing::debug!(
-        target: "switch_timing", "detail: label={t_label:?} msgs={:?} profiles={:?} rows={:?} replace={:?}",
-        t_msgs - t_label,
-        t_profiles - t_msgs,
-        t_rows - t_profiles,
+        target: "switch_timing", "detail: rows={t_rows:?} replace={:?}",
         t0.elapsed() - t_rows,
     );
 }
