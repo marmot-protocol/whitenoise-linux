@@ -81,7 +81,11 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                     match result {
                         Ok(_) => {
                             push_group_members_to_ui_async(&ui, &b, &group_hex);
-                            show_group_settings_status(&ui, error_copy().admin_added, StatusKind::Ok);
+                            show_group_settings_status(
+                                &ui,
+                                error_copy().admin_added,
+                                StatusKind::Ok,
+                            );
                         }
                         Err(e) => {
                             tracing::warn!(target: "promote", "{e:#}");
@@ -123,7 +127,11 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                     match result {
                         Ok(_) => {
                             push_group_members_to_ui_async(&ui, &b, &group_hex);
-                            show_group_settings_status(&ui, error_copy().admin_removed, StatusKind::Ok);
+                            show_group_settings_status(
+                                &ui,
+                                error_copy().admin_removed,
+                                StatusKind::Ok,
+                            );
                         }
                         Err(e) => {
                             tracing::warn!(target: "demote", "{e:#}");
@@ -161,7 +169,11 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                     match result {
                         Ok(_) => {
                             push_group_members_to_ui_async(&ui, &b, &group_hex);
-                            show_group_settings_status(&ui, error_copy().stepped_down, StatusKind::Ok);
+                            show_group_settings_status(
+                                &ui,
+                                error_copy().stepped_down,
+                                StatusKind::Ok,
+                            );
                         }
                         Err(e) => {
                             tracing::warn!(target: "self_demote", "{e:#}");
@@ -204,7 +216,11 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                     match result {
                         Ok(_) => {
                             push_group_members_to_ui_async(&ui, &b, &group_hex);
-                            show_group_settings_status(&ui, error_copy().member_removed, StatusKind::Ok);
+                            show_group_settings_status(
+                                &ui,
+                                error_copy().member_removed,
+                                StatusKind::Ok,
+                            );
                         }
                         Err(e) => {
                             tracing::warn!(target: "remove_member", "{e:#}");
@@ -411,7 +427,11 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                     ui.set_group_image_busy(false);
                     match result {
                         Ok(_) => {
-                            show_group_settings_status(&ui, error_copy().image_removed, StatusKind::Ok);
+                            show_group_settings_status(
+                                &ui,
+                                error_copy().image_removed,
+                                StatusKind::Ok,
+                            );
                             if let Some(b) = backend_cell_done.lock().unwrap().as_ref() {
                                 refresh_chats_async(&ui, b, &group_ids, |_, _, _| {});
                                 push_group_members_to_ui_async(&ui, b, &group_hex_done);
@@ -448,7 +468,11 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                 match guard.as_ref() {
                     Some(b) => b.tokio_handle(),
                     None => {
-                        show_group_settings_status(&ui, error_copy().backend_not_ready_lc, StatusKind::Error);
+                        show_group_settings_status(
+                            &ui,
+                            error_copy().backend_not_ready_lc,
+                            StatusKind::Error,
+                        );
                         return;
                     }
                 }

@@ -448,24 +448,26 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // threads and call it back on the event loop.
     let msg_search_jump: Arc<dyn Fn(&DarkMatterLinux, &str, &str) + Send + Sync> = {
         let pending_message_jump = pending_message_jump.clone();
-        Arc::new(move |ui: &DarkMatterLinux, group_hex: &str, message_id: &str| {
-            let chats_messages = ui.get_chats_messages();
-            let idx = ui.get_active_chat();
-            let row = with_inner_messages(&chats_messages, idx as usize, |vm| {
-                find_message_row(vm, message_id)
-            })
-            .flatten();
-            if let Some(row) = row {
-                ui.set_message_jump_index(row as i32);
-                ui.set_message_jump_id(s(message_id));
-                ui.set_message_jump_tick(ui.get_message_jump_tick() + 1);
-            } else {
-                *pending_message_jump.lock().unwrap() =
-                    Some((group_hex.to_string(), message_id.to_string()));
-                ui.set_message_jump_id(s(""));
-                ui.global::<AppState>().invoke_chat_selected(idx);
-            }
-        })
+        Arc::new(
+            move |ui: &DarkMatterLinux, group_hex: &str, message_id: &str| {
+                let chats_messages = ui.get_chats_messages();
+                let idx = ui.get_active_chat();
+                let row = with_inner_messages(&chats_messages, idx as usize, |vm| {
+                    find_message_row(vm, message_id)
+                })
+                .flatten();
+                if let Some(row) = row {
+                    ui.set_message_jump_index(row as i32);
+                    ui.set_message_jump_id(s(message_id));
+                    ui.set_message_jump_tick(ui.get_message_jump_tick() + 1);
+                } else {
+                    *pending_message_jump.lock().unwrap() =
+                        Some((group_hex.to_string(), message_id.to_string()));
+                    ui.set_message_jump_id(s(""));
+                    ui.global::<AppState>().invoke_chat_selected(idx);
+                }
+            },
+        )
     };
 
     ui.global::<AppState>().on_msg_search_query_changed({
@@ -576,11 +578,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 } else {
                     st.pos + 1
                 };
-                (
-                    st.matches[st.pos - 1].clone(),
-                    st.pos,
-                    st.group_hex.clone(),
-                )
+                (st.matches[st.pos - 1].clone(), st.pos, st.group_hex.clone())
             };
             ui.set_msg_search_pos(pos as i32);
             msg_search_jump(&ui, &group_hex, &id);

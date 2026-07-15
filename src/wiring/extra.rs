@@ -1218,7 +1218,11 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                         Ok(saved) => {
                             apply_profile(&ui, Some(&saved));
                             ui.set_profile_editing(false);
-                            show_profile_status(&ui, error_copy().profile_published, StatusKind::Ok);
+                            show_profile_status(
+                                &ui,
+                                error_copy().profile_published,
+                                StatusKind::Ok,
+                            );
                         }
                         Err(e) => {
                             tracing::warn!(target: "profile", "save failed: {e:#}");
@@ -1254,7 +1258,11 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 match guard.as_ref() {
                     Some(b) => b.tokio_handle(),
                     None => {
-                        show_profile_status(&ui, error_copy().backend_not_ready_lc, StatusKind::Error);
+                        show_profile_status(
+                            &ui,
+                            error_copy().backend_not_ready_lc,
+                            StatusKind::Error,
+                        );
                         return;
                     }
                 }
@@ -1316,7 +1324,11 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     let weak = weak.clone();
                     let _ = slint::invoke_from_event_loop(move || {
                         if let Some(ui) = weak.upgrade() {
-                            show_profile_status(&ui, error_copy().uploading_blossom, StatusKind::Pending);
+                            show_profile_status(
+                                &ui,
+                                error_copy().uploading_blossom,
+                                StatusKind::Pending,
+                            );
                         }
                     });
                 }
@@ -1331,7 +1343,11 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     let _ = slint::invoke_from_event_loop(move || {
                         if let Some(ui) = weak_done.upgrade() {
                             ui.set_profile_uploading(false);
-                            show_profile_status(&ui, error_copy().backend_not_ready_lc, StatusKind::Error);
+                            show_profile_status(
+                                &ui,
+                                error_copy().backend_not_ready_lc,
+                                StatusKind::Error,
+                            );
                         }
                     });
                     return;

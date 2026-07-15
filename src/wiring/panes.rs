@@ -219,7 +219,9 @@ pub(crate) fn wire_panes(
                     ui.set_add_account_generated(true);
                     ui.set_add_account_status(s(""));
                 }
-                Err(e) => ui.set_add_account_status(tmpl(&error_copy().encode_key_failed, &[&e.to_string()]).into()),
+                Err(e) => ui.set_add_account_status(
+                    tmpl(&error_copy().encode_key_failed, &[&e.to_string()]).into(),
+                ),
             }
         }
     });
@@ -244,7 +246,9 @@ pub(crate) fn wire_panes(
             let nsec = match keys.secret_key().to_bech32() {
                 Ok(n) => n,
                 Err(e) => {
-                    ui.set_add_account_status(tmpl(&error_copy().encode_key_failed, &[&e.to_string()]).into());
+                    ui.set_add_account_status(
+                        tmpl(&error_copy().encode_key_failed, &[&e.to_string()]).into(),
+                    );
                     return;
                 }
             };
@@ -395,8 +399,7 @@ pub(crate) fn wire_panes(
                         other => format!("{other}"),
                     })?;
                     let nsec = v.nsec().ok_or_else(|| error_copy().no_key_stored)?;
-                    let keys =
-                        Keys::parse(&nsec).map_err(|_| error_copy().stored_key_invalid)?;
+                    let keys = Keys::parse(&nsec).map_err(|_| error_copy().stored_key_invalid)?;
                     let npub = keys.public_key().to_bech32().map_err(|e| e.to_string())?;
                     // The account the user last had active — boot displays it
                     // instead of the primary when it still exists.
@@ -453,14 +456,18 @@ pub(crate) fn wire_panes(
             let nsec = match keys.secret_key().to_bech32() {
                 Ok(v) => v,
                 Err(e) => {
-                    ui.set_login_error(tmpl(&error_copy().encode_key_failed, &[&e.to_string()]).into());
+                    ui.set_login_error(
+                        tmpl(&error_copy().encode_key_failed, &[&e.to_string()]).into(),
+                    );
                     return;
                 }
             };
             let npub = match keys.public_key().to_bech32() {
                 Ok(v) => v,
                 Err(e) => {
-                    ui.set_login_error(tmpl(&error_copy().encode_key_failed, &[&e.to_string()]).into());
+                    ui.set_login_error(
+                        tmpl(&error_copy().encode_key_failed, &[&e.to_string()]).into(),
+                    );
                     return;
                 }
             };
@@ -1148,9 +1155,7 @@ pub(crate) fn wire_panes(
                     match result {
                         // `true` = the live recorder owned that file and
                         // rotated in place rather than going dark.
-                        Ok(true) => ui.set_audit_status(
-                            error_copy().audit_deleted_live.into(),
-                        ),
+                        Ok(true) => ui.set_audit_status(error_copy().audit_deleted_live.into()),
                         Ok(false) => ui.set_audit_status(error_copy().audit_deleted.into()),
                         Err(e) => {
                             tracing::warn!(target: "settings", "delete audit log failed: {e:#}");
@@ -1484,11 +1489,7 @@ pub(crate) fn wire_panes(
                     }
                     Err(e) => {
                         tracing::warn!(target: "clipboard", "copy failed: {e}");
-                        show_profile_status(
-                            &ui,
-                            error_copy().clipboard_failed,
-                            StatusKind::Error,
-                        );
+                        show_profile_status(&ui, error_copy().clipboard_failed, StatusKind::Error);
                         set_status_feedback(&ui, error_copy().clipboard_failed, true);
                     }
                 }
