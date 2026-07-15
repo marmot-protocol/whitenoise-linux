@@ -55,6 +55,7 @@ export component AddMemberCard inherits Section {
                 alignment: start;
                 Button {
                     label: AppState.add-member-busy ? @tr("Inviting…") : @tr("Invite");
+                    enabled: !AppState.add-member-busy && AppState.add-member-draft != "";
                     button-height: 28px;
                     pad-left: 10px;
                     pad-right: 10px;
@@ -64,9 +65,7 @@ export component AddMemberCard inherits Section {
                     outline: Palette.mint;
                     hover-bg: Palette.mint-surface;
                     clicked => {
-                        if (!AppState.add-member-busy && AppState.add-member-draft != "") {
-                            AppState.add-member(AppState.add-member-draft);
-                        }
+                        AppState.add-member(AppState.add-member-draft);
                     }
                 }
 
