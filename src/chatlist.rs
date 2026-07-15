@@ -575,39 +575,22 @@ pub(crate) fn refresh_chats_from(
         ids.push(record.group_id_hex.clone());
         // Only the default-shown chat's window was eagerly fetched; the others
         // get filled on selection. Keeps boot fast for users with many groups.
-        let msgs: &[AppMessageRecord] = if i == snap.default_idx {
-            mention_render_group(&record.group_id_hex);
-            &snap.first_msgs
+        // `None` overlay reproduces the snapshot's behavior on purpose: the boot
+        // list has no optimistic overlay to fold in yet, and it shares the same
+        // row pipeline the live rebuild uses so the two can't drift.
+        let row: Vec<ChatMessage> = if i == snap.default_idx {
+            let (rows, _keys) = build_message_rows(
+                backend,
+                &my_id,
+                &my_label,
+                &record.group_id_hex,
+                &snap.first_msgs,
+                None,
+            );
+            rows
         } else {
-            &[]
+            Vec::new()
         };
-        let reactions = aggregate_reactions(msgs, &my_id, backend);
-        let edits = aggregate_edits(msgs);
-        let deletes = aggregate_deletes(msgs);
-        let profiles = build_sender_profiles(backend, msgs, &my_id);
-        let is_group = backend.group_member_count(&record.group_id_hex) > 2;
-        let by_id: HashMap<&str, &AppMessageRecord> = msgs
-            .iter()
-            .map(|m| (m.message_id_hex.as_str(), m))
-            .collect();
-        let row: Vec<ChatMessage> = msgs
-            .iter()
-            .filter(|m| is_visible_chat_message(m))
-            .map(|m| {
-                if let Some(ev) = backend::group_system_event(m) {
-                    return system_chat_message(m, &ev, backend);
-                }
-                let r = reactions
-                    .get(&m.message_id_hex)
-                    .cloned()
-                    .unwrap_or_default();
-                let e = edits.get(&m.message_id_hex).cloned();
-                let deleted = deletes.contains(&m.message_id_hex);
-                chat_message_from_with_reactions(
-                    m, &by_id, &my_id, &my_label, r, e, deleted, &profiles, is_group, false,
-                )
-            })
-            .collect();
         messages_outer.push(ModelRc::new(VecModel::from(row)));
     }
 
