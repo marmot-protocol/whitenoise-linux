@@ -635,6 +635,33 @@ pub(crate) fn reply_thumbnail_for(parent_id: &str) -> (slint::Image, bool) {
     (slint::Image::default(), false)
 }
 
+/// Find `message_id` across the loaded chat rows and return its sender avatar
+/// (gradient stops, initials, and any resolved profile picture). Backs the
+/// small avatar shown left of the name on the composer reply banner.
+pub(crate) fn reply_avatar_for(
+    chats: &ModelRc<ModelRc<ChatMessage>>,
+    message_id: &str,
+) -> Option<(Color, Color, SharedString, slint::Image, bool)> {
+    if message_id.is_empty() {
+        return None;
+    }
+    for chat in chats.iter() {
+        for row in chat.iter() {
+            if row.message_id != message_id {
+                continue;
+            }
+            return Some((
+                row.av_a,
+                row.av_b,
+                row.av_initials.clone(),
+                row.picture.clone(),
+                row.has_picture,
+            ));
+        }
+    }
+    None
+}
+
 /// Find `message_id` across the loaded chat rows and synthesize its media
 /// label. Backs the composer reply banner: the `request-reply` callback
 /// carries the row's body text as the preview, which is empty for

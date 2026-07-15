@@ -1,15 +1,21 @@
 use crate::*;
 
-/// Reset the reply banner to its empty state. The banner is backed by five
-/// parallel root properties (`reply_target_id/author/preview/image/has_image`);
-/// this is the single owner that clears them, so a new field only has to be
-/// added here rather than at every call site that dismisses the banner.
+/// Reset the reply banner to its empty state. The banner is backed by parallel
+/// root properties (`reply_target_id/author/preview/image/has_image` plus the
+/// author avatar `av_a/av_b/av_initials/picture/has_picture`); this is the
+/// single owner that clears them, so a new field only has to be added here
+/// rather than at every call site that dismisses the banner.
 pub(crate) fn clear_reply_target(ui: &DarkMatterLinux) {
     ui.set_reply_target_id(s(""));
     ui.set_reply_target_author(s(""));
     ui.set_reply_target_preview(s(""));
     ui.set_reply_target_image(slint::Image::default());
     ui.set_reply_target_has_image(false);
+    ui.set_reply_target_av_a(Color::default());
+    ui.set_reply_target_av_b(Color::default());
+    ui.set_reply_target_av_initials(s(""));
+    ui.set_reply_target_picture(slint::Image::default());
+    ui.set_reply_target_has_picture(false);
 }
 
 pub(crate) fn wire_reply_target(ui: &DarkMatterLinux) {
@@ -33,11 +39,18 @@ pub(crate) fn wire_reply_target(ui: &DarkMatterLinux) {
                 trimmed = label;
             }
             let (thumb, has_thumb) = reply_thumbnail_for(message_id.as_str());
+            let (av_a, av_b, av_init, pic, has_pic) =
+                reply_avatar_for(&ui.get_chats_messages(), message_id.as_str()).unwrap_or_default();
             ui.set_reply_target_id(message_id);
             ui.set_reply_target_author(author);
             ui.set_reply_target_preview(s(&trimmed));
             ui.set_reply_target_image(thumb);
             ui.set_reply_target_has_image(has_thumb);
+            ui.set_reply_target_av_a(av_a);
+            ui.set_reply_target_av_b(av_b);
+            ui.set_reply_target_av_initials(av_init);
+            ui.set_reply_target_picture(pic);
+            ui.set_reply_target_has_picture(has_pic);
         }
     });
     ui.global::<AppState>().on_cancel_reply({
