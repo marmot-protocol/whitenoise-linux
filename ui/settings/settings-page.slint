@@ -1,4 +1,5 @@
 import { Palette } from "../tokens.slint";
+import { AppState } from "../shell/app-state.slint";
 import { SettingsSidebar } from "settings-sidebar.slint";
 import { GeneralPane } from "general-pane.slint";
 import { AppearancePane } from "appearance-pane.slint";
@@ -11,7 +12,10 @@ import { AboutPane } from "about-pane.slint";
 
 // Navigation/layout only — the panes read and write AppState themselves.
 export component SettingsPage inherits Rectangle {
-    in-out property <int> active-tab: 0;
+    // The active tab lives on AppState so the shell can host the sidebar in the
+    // left card; `show-sidebar` lets the shell render just the panes here.
+    in-out property <int> active-tab <=> AppState.settings-tab;
+    in property <bool> show-sidebar: true;
 
     horizontal-stretch: 1;
     vertical-stretch: 1;
@@ -24,7 +28,7 @@ export component SettingsPage inherits Rectangle {
         height: parent.height;
         spacing: 0;
 
-        sidebar := SettingsSidebar {
+        if root.show-sidebar: SettingsSidebar {
             active-tab <=> root.active-tab;
         }
 

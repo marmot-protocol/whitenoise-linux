@@ -34,7 +34,9 @@ export component ChatListItem inherits Rectangle {
     // avatar. The avatar keeps the exact spot it has when expanded.
     in property <bool> compact: false;
 
-    height: 64px;
+    // Content-driven so a wrapping preview can grow the row; a short preview
+    // keeps the standard single-line height.
+    min-height: 64px;
     background: root.selected ? Palette.selected : (touch.has-hover ? Palette.hover : transparent);
     border-radius: (8px) * Theme.r-scale;
     border-width: Theme.selected-inverts-text && root.selected ? Theme.border-w : (root.selected && !Theme.selected-inverts-text ? 1px : 0px);
@@ -138,8 +140,12 @@ export component ChatListItem inherits Rectangle {
                     font-size: Theme.fs(11px, 16px);
                     font-family: Theme.font;
                     horizontal-stretch: 1;
+                    // Wrap the preview, but cap it at three lines and elide the
+                    // rest (≈ three line-heights at this font size).
+                    wrap: word-wrap;
                     overflow: elide;
-                    vertical-alignment: center;
+                    max-height: Theme.fs(11px, 16px) * 3.8;
+                    vertical-alignment: top;
                 }
 
                 if root.badge != "": UnreadBadge {

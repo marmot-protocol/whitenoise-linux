@@ -18,6 +18,7 @@ import { Palette, Theme, ChatMeta, TextSelection } from "../tokens.slint";
 import { AppState } from "app-state.slint";
 import { ListView } from "std-widgets.slint";
 import { Avatar } from "../primitives/avatar.slint";
+import { ChatBubbleIcon } from "../icons/chat-bubble-icon.slint";
 import { PeopleIcon } from "../icons/people-icon.slint";
 import { ArchiveIcon } from "../icons/archive-icon.slint";
 import { KeyIcon } from "../icons/key-icon.slint";
@@ -32,6 +33,7 @@ import { ContactsPage } from "../contacts/contacts-page.slint";
 import { ArchivedPage } from "../archived/archived-page.slint";
 import { KeysPage } from "../keys/keys-page.slint";
 import { SettingsPage } from "../settings/settings-page.slint";
+import { SettingsSidebar } from "../settings/settings-sidebar.slint";
 import { ProfilePage } from "../profile/profile-page.slint";
 import { StatusBar } from "status-bar.slint";
 import { FadeInPage } from "../layout/fade-in-page.slint";
@@ -158,6 +160,21 @@ export component AppShell inherits Rectangle {
                             }
                         }
                         Rectangle { horizontal-stretch: 1; }
+                        // Chats — return to the conversation from any page.
+                        IconBtn {
+                            selected: AppState.active-page == 0;
+                            has-badge: AppState.rail-badge-chats > 0;
+                            y: (parent.height - self.height) / 2;
+                            clicked => {
+                                AppState.nav-requested(0);
+                            }
+                            ChatBubbleIcon {
+                                stroke: AppState.active-page == 0 ? Palette.mint : Palette.text-mid;
+                                filled: AppState.active-page == 0;
+                                x: (parent.width - self.width) / 2;
+                                y: (parent.height - self.height) / 2;
+                            }
+                        }
                         IconBtn {
                             selected: AppState.active-page == 1;
                             has-badge: AppState.rail-badge-contacts > 0;
@@ -279,13 +296,15 @@ export component AppShell inherits Rectangle {
                         }
                     }
 
-                    // The chat list — real rows, virtualized. The ListView is
-                    // pinned to fill this bounded slot (x/y/100%) so it scrolls
-                    // instead of growing to its content height.
+                    // The left card's list area is contextual: the chat list on
+                    // the Chats page, or the open page's own sidebar (Settings
+                    // here) so the section nav lives in the left bar. The
+                    // ListView is pinned to fill this bounded slot (x/y/100%) so
+                    // it scrolls instead of growing to its content height.
                     Rectangle {
                         vertical-stretch: 1;
                         clip: true;
-                        ListView {
+                        if AppState.active-page != 4: ListView {
                             x: 0;
                             y: 0;
                             width: 100%;
@@ -302,6 +321,13 @@ export component AppShell inherits Rectangle {
                                     AppState.request-chat-context(idx, ax, ay);
                                 }
                             }
+                        }
+                        if AppState.active-page == 4: SettingsSidebar {
+                            x: 0;
+                            y: 0;
+                            width: 100%;
+                            height: 100%;
+                            active-tab <=> AppState.settings-tab;
                         }
                     }
 
@@ -389,6 +415,8 @@ export component AppShell inherits Rectangle {
                     SettingsPage {
                         width: parent.width;
                         height: parent.height;
+                        // The sidebar is hosted in the left card; render panes only.
+                        show-sidebar: false;
                     }
                 }
                 if AppState.active-page == 5: FadeInPage {
