@@ -37,6 +37,8 @@ import { SettingsSidebar } from "../settings/settings-sidebar.slint";
 import { ProfilePage } from "../profile/profile-page.slint";
 import { StatusBar } from "status-bar.slint";
 import { FadeInPage } from "../layout/fade-in-page.slint";
+import { PaperDoodles } from "../theme-decor/paper-doodles.slint";
+import { SynthGrid } from "../theme-decor/synth-grid.slint";
 
 // A floating bento card, lifted off the canvas by the theme's elevated surface.
 component Card inherits Rectangle {
@@ -117,6 +119,22 @@ component IconBtn inherits Rectangle {
 export component AppShell inherits Rectangle {
     // The canvas the cards float on.
     background: Palette.canvas;
+
+    // Theme decor as a full-window backdrop (painted first, behind the cards),
+    // so a theme's feel spans every section, not just the chat area: the
+    // sketch/chalkboard paper texture and the synthwave neon grid.
+    if Theme.paper-doodles: PaperDoodles {
+        x: 0;
+        y: 0;
+        width: 100%;
+        height: 100%;
+    }
+    if Theme.synth-grid: SynthGrid {
+        x: 0;
+        y: 0;
+        width: 100%;
+        height: 100%;
+    }
 
     VerticalLayout {
         spacing: 0;
