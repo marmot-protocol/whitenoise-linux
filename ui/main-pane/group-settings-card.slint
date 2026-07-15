@@ -5,6 +5,7 @@ import { Section } from "../layout/section.slint";
 import { LineInput } from "../primitives/line-input.slint";
 import { Button } from "../primitives/button.slint";
 import { Avatar } from "../primitives/avatar.slint";
+import { StatusLine } from "../primitives/status-line.slint";
 
 // Group settings surface: admin-only avatar/name/description controls plus the
 // member leave action. Reads AppState directly (admin controls gate on
@@ -191,23 +192,10 @@ export component GroupSettingsCard inherits Section {
                 }
             }
 
-            if AppState.group-settings-status != "": Rectangle {
-                height: 28px;
-                border-radius: (4px) * Theme.r-scale;
-                background: Palette.panel-2;
-                border-width: Theme.border-w;
-                border-color: Palette.border-2;
-                HorizontalLayout {
-                    padding-left: 8px;
-                    padding-right: 8px;
-                    Text {
-                        text: AppState.group-settings-status;
-                        color: Palette.text-lo;
-                        font-size: Theme.fs(10px, 14px);
-                        vertical-alignment: center;
-                        overflow: elide;
-                    }
-                }
+            if AppState.group-settings-status != "": StatusLine {
+                compact: true;
+                text: AppState.group-settings-status;
+                kind: AppState.group-settings-status-kind;
             }
 
             if AppState.chat-can-add-members: Rectangle {

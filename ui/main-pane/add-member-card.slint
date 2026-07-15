@@ -4,6 +4,7 @@ import { GroupCard } from "../layout/group-card.slint";
 import { Section } from "../layout/section.slint";
 import { LineInput } from "../primitives/line-input.slint";
 import { Button } from "../primitives/button.slint";
+import { StatusLine } from "../primitives/status-line.slint";
 
 // Admin-only invite surface: npub input + invite button with status.
 // Reads AppState directly; mounted bare by GroupMembersPanel.
@@ -69,23 +70,10 @@ export component AddMemberCard inherits Section {
                     }
                 }
 
-                if AppState.add-member-status != "": Rectangle {
-                    height: 28px;
-                    border-radius: (4px) * Theme.r-scale;
-                    background: Palette.panel-2;
-                    border-width: Theme.border-w;
-                    border-color: Palette.border-2;
-                    HorizontalLayout {
-                        padding-left: 8px;
-                        padding-right: 8px;
-                        Text {
-                            text: AppState.add-member-status;
-                            color: Palette.text-lo;
-                            font-size: Theme.fs(10px, 14px);
-                            vertical-alignment: center;
-                            overflow: elide;
-                        }
-                    }
+                if AppState.add-member-status != "": StatusLine {
+                    compact: true;
+                    text: AppState.add-member-status;
+                    kind: AppState.add-member-status-kind;
                 }
             }
         }

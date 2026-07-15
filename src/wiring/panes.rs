@@ -1462,7 +1462,7 @@ pub(crate) fn wire_panes(
             );
             let Some(ui) = weak.upgrade() else { return };
             if text.is_empty() {
-                ui.set_profile_status(s("nothing to copy (npub empty)"));
+                show_profile_status(&ui, s("nothing to copy (npub empty)"), StatusKind::Pending);
                 set_clipboard_feedback(&ui, s("nothing to copy (npub empty)"), false);
                 return;
             }
@@ -1471,12 +1471,16 @@ pub(crate) fn wire_panes(
                 let Some(ui) = weak.upgrade() else { return };
                 match result {
                     Ok(()) => {
-                        ui.set_profile_status(s("npub copied"));
+                        show_profile_status(&ui, s("npub copied"), StatusKind::Ok);
                         set_clipboard_feedback(&ui, s("npub copied"), false);
                     }
                     Err(e) => {
                         tracing::warn!(target: "clipboard", "copy failed: {e}");
-                        ui.set_profile_status(s("Couldn't access clipboard."));
+                        show_profile_status(
+                            &ui,
+                            s("Couldn't access clipboard."),
+                            StatusKind::Error,
+                        );
                         set_clipboard_feedback(&ui, s("Couldn't access clipboard."), true);
                     }
                 }

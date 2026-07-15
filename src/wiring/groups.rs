@@ -22,7 +22,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                 return;
             };
             let Some(b) = backend_cell.lock().unwrap().clone() else {
-                ui.set_add_member_status(s("Backend not ready."));
+                show_add_member_status(&ui, s("Backend not ready."), StatusKind::Error);
                 return;
             };
             ui.set_add_member_busy(true);
@@ -38,11 +38,15 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                         Ok(_) => {
                             push_group_members_to_ui_async(&ui, &b, &group_hex);
                             ui.set_add_member_draft(s(""));
-                            ui.set_add_member_status(s("Invited."));
+                            show_add_member_status(&ui, s("Invited."), StatusKind::Ok);
                         }
                         Err(e) => {
                             tracing::warn!(target: "invite", "{e:#}");
-                            ui.set_add_member_status(friendly_error(ErrorOp::AddMember, &e).into());
+                            show_add_member_status(
+                                &ui,
+                                friendly_error(ErrorOp::AddMember, &e),
+                                StatusKind::Error,
+                            );
                         }
                     }
                 });
@@ -65,7 +69,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
             };
             ui.set_group_settings_status(s(""));
             let Some(b) = backend_cell.lock().unwrap().clone() else {
-                ui.set_group_settings_status(s("Backend not ready."));
+                show_group_settings_status(&ui, s("Backend not ready."), StatusKind::Error);
                 return;
             };
             // Admin changes publish an MLS commit to relays — worker.
@@ -77,12 +81,14 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                     match result {
                         Ok(_) => {
                             push_group_members_to_ui_async(&ui, &b, &group_hex);
-                            ui.set_group_settings_status(s("Admin added."));
+                            show_group_settings_status(&ui, s("Admin added."), StatusKind::Ok);
                         }
                         Err(e) => {
                             tracing::warn!(target: "promote", "{e:#}");
-                            ui.set_group_settings_status(
-                                friendly_error(ErrorOp::GroupSettings, &e).into(),
+                            show_group_settings_status(
+                                &ui,
+                                friendly_error(ErrorOp::GroupSettings, &e),
+                                StatusKind::Error,
                             );
                         }
                     }
@@ -106,7 +112,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
             };
             ui.set_group_settings_status(s(""));
             let Some(b) = backend_cell.lock().unwrap().clone() else {
-                ui.set_group_settings_status(s("Backend not ready."));
+                show_group_settings_status(&ui, s("Backend not ready."), StatusKind::Error);
                 return;
             };
             let weak = weak.clone();
@@ -117,12 +123,14 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                     match result {
                         Ok(_) => {
                             push_group_members_to_ui_async(&ui, &b, &group_hex);
-                            ui.set_group_settings_status(s("Admin removed."));
+                            show_group_settings_status(&ui, s("Admin removed."), StatusKind::Ok);
                         }
                         Err(e) => {
                             tracing::warn!(target: "demote", "{e:#}");
-                            ui.set_group_settings_status(
-                                friendly_error(ErrorOp::GroupSettings, &e).into(),
+                            show_group_settings_status(
+                                &ui,
+                                friendly_error(ErrorOp::GroupSettings, &e),
+                                StatusKind::Error,
                             );
                         }
                     }
@@ -142,7 +150,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
             };
             ui.set_group_settings_status(s(""));
             let Some(b) = backend_cell.lock().unwrap().clone() else {
-                ui.set_group_settings_status(s("Backend not ready."));
+                show_group_settings_status(&ui, s("Backend not ready."), StatusKind::Error);
                 return;
             };
             let weak = weak.clone();
@@ -153,12 +161,14 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                     match result {
                         Ok(_) => {
                             push_group_members_to_ui_async(&ui, &b, &group_hex);
-                            ui.set_group_settings_status(s("You stepped down."));
+                            show_group_settings_status(&ui, s("You stepped down."), StatusKind::Ok);
                         }
                         Err(e) => {
                             tracing::warn!(target: "self_demote", "{e:#}");
-                            ui.set_group_settings_status(
-                                friendly_error(ErrorOp::GroupSettings, &e).into(),
+                            show_group_settings_status(
+                                &ui,
+                                friendly_error(ErrorOp::GroupSettings, &e),
+                                StatusKind::Error,
                             );
                         }
                     }
@@ -182,7 +192,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
             };
             ui.set_group_settings_status(s(""));
             let Some(b) = backend_cell.lock().unwrap().clone() else {
-                ui.set_group_settings_status(s("Backend not ready."));
+                show_group_settings_status(&ui, s("Backend not ready."), StatusKind::Error);
                 return;
             };
             // Removal publishes an MLS commit to relays — worker.
@@ -194,12 +204,14 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                     match result {
                         Ok(_) => {
                             push_group_members_to_ui_async(&ui, &b, &group_hex);
-                            ui.set_group_settings_status(s("Member removed."));
+                            show_group_settings_status(&ui, s("Member removed."), StatusKind::Ok);
                         }
                         Err(e) => {
                             tracing::warn!(target: "remove_member", "{e:#}");
-                            ui.set_group_settings_status(
-                                friendly_error(ErrorOp::GroupSettings, &e).into(),
+                            show_group_settings_status(
+                                &ui,
+                                friendly_error(ErrorOp::GroupSettings, &e),
+                                StatusKind::Error,
                             );
                         }
                     }
@@ -222,10 +234,10 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                 return;
             };
             ui.set_group_leave_busy(true);
-            ui.set_group_settings_status(s("Leaving group…"));
+            show_group_settings_status(&ui, s("Leaving group…"), StatusKind::Pending);
             let Some(b) = backend_cell.lock().unwrap().clone() else {
                 ui.set_group_leave_busy(false);
-                ui.set_group_settings_status(s("Backend not ready."));
+                show_group_settings_status(&ui, s("Backend not ready."), StatusKind::Error);
                 return;
             };
             let weak = weak.clone();
@@ -256,8 +268,10 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                         }
                         Err(e) => {
                             tracing::warn!(target: "leave_group", "{e:#}");
-                            ui.set_group_settings_status(
-                                friendly_error(ErrorOp::GroupSettings, &e).into(),
+                            show_group_settings_status(
+                                &ui,
+                                friendly_error(ErrorOp::GroupSettings, &e),
+                                StatusKind::Error,
                             );
                         }
                     }
@@ -273,7 +287,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
             let Some(ui) = weak.upgrade() else { return };
             let name = name.trim().to_string();
             if name.is_empty() {
-                ui.set_group_settings_status(s("Name can't be empty."));
+                show_group_settings_status(&ui, s("Name can't be empty."), StatusKind::Error);
                 return;
             }
             let idx = ui.get_active_chat() as usize;
@@ -281,7 +295,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                 return;
             };
             let Some(b) = backend_cell.lock().unwrap().clone() else {
-                ui.set_group_settings_status(s("Backend not ready."));
+                show_group_settings_status(&ui, s("Backend not ready."), StatusKind::Error);
                 return;
             };
             ui.set_group_rename_busy(true);
@@ -298,12 +312,14 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                         Ok(_) => {
                             refresh_chats_async(&ui, &b, &group_ids, |_, _, _| {});
                             push_group_members_to_ui_async(&ui, &b, &group_hex);
-                            ui.set_group_settings_status(s("Renamed."));
+                            show_group_settings_status(&ui, s("Renamed."), StatusKind::Ok);
                         }
                         Err(e) => {
                             tracing::warn!(target: "rename", "{e:#}");
-                            ui.set_group_settings_status(
-                                friendly_error(ErrorOp::GroupSettings, &e).into(),
+                            show_group_settings_status(
+                                &ui,
+                                friendly_error(ErrorOp::GroupSettings, &e),
+                                StatusKind::Error,
                             );
                         }
                     }
@@ -326,7 +342,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                 return;
             };
             let Some(b) = backend_cell.lock().unwrap().clone() else {
-                ui.set_group_settings_status(s("Backend not ready."));
+                show_group_settings_status(&ui, s("Backend not ready."), StatusKind::Error);
                 return;
             };
             ui.set_group_description_busy(true);
@@ -343,12 +359,18 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                             ui.set_chat_group_description(s(&description));
                             ui.set_group_description_draft(s(&description));
                             push_group_members_to_ui_async(&ui, &b, &group_hex);
-                            ui.set_group_settings_status(s("Description saved."));
+                            show_group_settings_status(
+                                &ui,
+                                s("Description saved."),
+                                StatusKind::Ok,
+                            );
                         }
                         Err(e) => {
                             tracing::warn!(target: "group_description", "{e:#}");
-                            ui.set_group_settings_status(
-                                friendly_error(ErrorOp::GroupSettings, &e).into(),
+                            show_group_settings_status(
+                                &ui,
+                                friendly_error(ErrorOp::GroupSettings, &e),
+                                StatusKind::Error,
                             );
                         }
                     }
@@ -370,7 +392,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                 return;
             };
             ui.set_group_image_busy(true);
-            ui.set_group_settings_status(s("removing image…"));
+            show_group_settings_status(&ui, s("removing image…"), StatusKind::Pending);
             let weak_done = ui.as_weak();
             let backend_cell_done = backend_cell.clone();
             let group_ids = group_ids.clone();
@@ -378,7 +400,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
             let guard = backend_cell.lock().unwrap();
             let Some(b) = guard.as_ref() else {
                 ui.set_group_image_busy(false);
-                ui.set_group_settings_status(s("Backend not ready."));
+                show_group_settings_status(&ui, s("Backend not ready."), StatusKind::Error);
                 return;
             };
             b.set_group_image_async(&group_hex, Vec::new(), String::new(), move |result| {
@@ -389,7 +411,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                     ui.set_group_image_busy(false);
                     match result {
                         Ok(_) => {
-                            ui.set_group_settings_status(s("image removed"));
+                            show_group_settings_status(&ui, s("image removed"), StatusKind::Ok);
                             if let Some(b) = backend_cell_done.lock().unwrap().as_ref() {
                                 refresh_chats_async(&ui, b, &group_ids, |_, _, _| {});
                                 push_group_members_to_ui_async(&ui, b, &group_hex_done);
@@ -397,8 +419,10 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                         }
                         Err(e) => {
                             tracing::warn!(target: "group_image", "clear failed: {e:#}");
-                            ui.set_group_settings_status(
-                                friendly_error(ErrorOp::GroupImage, &e).into(),
+                            show_group_settings_status(
+                                &ui,
+                                friendly_error(ErrorOp::GroupImage, &e),
+                                StatusKind::Error,
                             );
                         }
                     }
@@ -424,13 +448,13 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                 match guard.as_ref() {
                     Some(b) => b.tokio_handle(),
                     None => {
-                        ui.set_group_settings_status(s("backend not ready"));
+                        show_group_settings_status(&ui, s("backend not ready"), StatusKind::Error);
                         return;
                     }
                 }
             };
             ui.set_group_image_busy(true);
-            ui.set_group_settings_status(s("choosing image…"));
+            show_group_settings_status(&ui, s("choosing image…"), StatusKind::Pending);
             let weak = ui.as_weak();
             let backend_cell = backend_cell.clone();
             let group_ids = group_ids.clone();
@@ -463,7 +487,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                         let _ = slint::invoke_from_event_loop(move || {
                             if let Some(ui) = weak.upgrade() {
                                 ui.set_group_image_busy(false);
-                                ui.set_group_settings_status(msg.into());
+                                show_group_settings_status(&ui, msg, StatusKind::Error);
                             }
                         });
                         return;
@@ -478,7 +502,11 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                     let weak = weak.clone();
                     let _ = slint::invoke_from_event_loop(move || {
                         if let Some(ui) = weak.upgrade() {
-                            ui.set_group_settings_status(s("uploading to Blossom…"));
+                            show_group_settings_status(
+                                &ui,
+                                s("uploading to Blossom…"),
+                                StatusKind::Pending,
+                            );
                         }
                     });
                 }
@@ -492,7 +520,11 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                     let _ = slint::invoke_from_event_loop(move || {
                         if let Some(ui) = weak_done.upgrade() {
                             ui.set_group_image_busy(false);
-                            ui.set_group_settings_status(s("backend not ready"));
+                            show_group_settings_status(
+                                &ui,
+                                s("backend not ready"),
+                                StatusKind::Error,
+                            );
                         }
                     });
                     return;
@@ -505,7 +537,11 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                         ui.set_group_image_busy(false);
                         match result {
                             Ok(_) => {
-                                ui.set_group_settings_status(s("group image updated"));
+                                show_group_settings_status(
+                                    &ui,
+                                    s("group image updated"),
+                                    StatusKind::Ok,
+                                );
                                 if let Some(backend) = backend_cell_done.lock().unwrap().as_ref() {
                                     refresh_chats_async(
                                         &ui,
@@ -518,8 +554,10 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                             }
                             Err(e) => {
                                 tracing::warn!(target: "group_image", "upload failed: {e:#}");
-                                ui.set_group_settings_status(
-                                    friendly_error(ErrorOp::GroupImage, &e).into(),
+                                show_group_settings_status(
+                                    &ui,
+                                    friendly_error(ErrorOp::GroupImage, &e),
+                                    StatusKind::Error,
                                 );
                             }
                         }

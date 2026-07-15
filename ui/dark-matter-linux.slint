@@ -317,6 +317,7 @@ export component DarkMatterLinux inherits Window {
     in-out property <bool> profile-busy <=> AppState.profile-busy;
     in-out property <bool> profile-uploading <=> AppState.profile-uploading;
     in-out property <string> profile-status <=> AppState.profile-status;
+    in-out property <int> profile-status-kind <=> AppState.profile-status-kind;
     in-out property <bool> show-palette <=> AppState.show-palette;
     in-out property <[PaletteAction]> palette-actions <=> AppState.palette-actions;
     in-out property <string> palette-query <=> AppState.palette-query;
@@ -338,6 +339,7 @@ export component DarkMatterLinux inherits Window {
     in-out property <bool> chat-can-add-members <=> AppState.chat-can-add-members;
     in-out property <bool> add-member-busy <=> AppState.add-member-busy;
     in-out property <string> add-member-status <=> AppState.add-member-status;
+    in-out property <int> add-member-status-kind <=> AppState.add-member-status-kind;
     in-out property <string> add-member-draft <=> AppState.add-member-draft;
     in-out property <image> chat-group-picture <=> AppState.chat-group-picture;
     in-out property <bool> chat-group-has-picture <=> AppState.chat-group-has-picture;
@@ -349,6 +351,7 @@ export component DarkMatterLinux inherits Window {
     in-out property <bool> group-image-busy <=> AppState.group-image-busy;
     in-out property <bool> group-leave-busy <=> AppState.group-leave-busy;
     in-out property <string> group-settings-status <=> AppState.group-settings-status;
+    in-out property <int> group-settings-status-kind <=> AppState.group-settings-status-kind;
     in-out property <string> group-rename-draft <=> AppState.group-rename-draft;
     in-out property <string> group-description-draft <=> AppState.group-description-draft;
     in-out property <bool> show-chat-members <=> AppState.show-chat-members;
