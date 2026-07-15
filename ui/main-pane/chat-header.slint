@@ -6,6 +6,7 @@ import { CheckMark } from "../icons/check-mark.slint";
 import { PeopleIcon } from "../icons/people-icon.slint";
 import { BellIcon } from "../icons/bell-icon.slint";
 import { MuteIcon } from "../icons/mute-icon.slint";
+import { SearchIcon } from "../icons/search-icon.slint";
 import { Avatar } from "../primitives/avatar.slint";
 import { Pill } from "../primitives/pill.slint";
 import { Button } from "../primitives/button.slint";
@@ -99,6 +100,34 @@ export component ChatHeader inherits Rectangle {
                 color: Palette.text-lo;
                 font-size: Theme.fs(11px, 14px);
                 overflow: elide;
+            }
+        }
+
+        // In-conversation search toggle (Ctrl+F does the same). Active while
+        // the search bar below the header is open.
+        if !root.chat.is-chat-request: Rectangle {
+            width: 36px;
+            height: 36px;
+            y: (parent.height - self.height) / 2;
+            background: AppState.msg-search-open ? Palette.selected : (search-touch.has-hover ? Palette.hover : transparent);
+            border-radius: (6px) * Theme.r-scale;
+            border-width: AppState.msg-search-open ? 1px : 0px;
+            border-color: Palette.border-2;
+            animate background { duration: Theme.hover-dur; }
+            search-touch := TouchArea {
+                clicked => {
+                    if (AppState.msg-search-open) {
+                        AppState.msg-search-open = false;
+                        AppState.msg-search-closed();
+                    } else {
+                        AppState.msg-search-open = true;
+                    }
+                }
+                SearchIcon {
+                    stroke: AppState.msg-search-open ? Palette.mint : Palette.text-mid;
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                }
             }
         }
 

@@ -2,6 +2,7 @@ import { Palette, ChatMeta } from "../tokens.slint";
 import { AppState } from "../shell/app-state.slint";
 import { MessagesArea } from "../messages/messages.slint";
 import { ChatHeader } from "chat-header.slint";
+import { ChatSearchBar } from "chat-search-bar.slint";
 import { ChatRequestBanner } from "chat-request-banner.slint";
 import { SessionDivider } from "session-divider.slint";
 import { Composer } from "composer.slint";
@@ -28,6 +29,11 @@ export component MainPane inherits Rectangle {
             spacing: 0;
 
             ChatHeader { }
+
+            // In-conversation search. Always mounted, height-gated by
+            // msg-search-open inside the component (an `if`-mounted TouchArea
+            // swallows its first click).
+            ChatSearchBar { }
 
             if root.chat.is-chat-request: ChatRequestBanner { }
 

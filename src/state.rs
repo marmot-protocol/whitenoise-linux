@@ -899,6 +899,7 @@ palette_commands! {
     NavSettings => ("nav.settings", "Go to Settings", "NAVIGATE", "5"),
     NavProfile => ("nav.profile", "Go to Profile", "NAVIGATE", ""),
     NewChat => ("act.new-chat", "New chat", "ACTIONS", "Ctrl N"),
+    OpenSearch => ("act.search-messages", "Search all messages", "ACTIONS", ""),
     CopyNpub => ("act.copy-npub", "Copy your npub", "ACTIONS", ""),
     ToggleRetro => ("act.toggle-retro", "Toggle retro mode", "ACTIONS", ""),
 }
@@ -1079,6 +1080,7 @@ mod tests {
             ("nav.settings", "Go to Settings", "NAVIGATE", "5"),
             ("nav.profile", "Go to Profile", "NAVIGATE", ""),
             ("act.new-chat", "New chat", "ACTIONS", "Ctrl N"),
+            ("act.search-messages", "Search all messages", "ACTIONS", ""),
             ("act.copy-npub", "Copy your npub", "ACTIONS", ""),
             ("act.toggle-retro", "Toggle retro mode", "ACTIONS", ""),
         ];

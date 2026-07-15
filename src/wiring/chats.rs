@@ -1,5 +1,17 @@
 use crate::*;
 
+/// Live state of the in-conversation search bar. `matches` holds the message
+/// ids of every hit, newest first (so `pos` 1 is the most recent match — the
+/// counter reads "1/N" when a search lands). Guarded by a generation counter
+/// so a scan that returns after the user kept typing (or closed the bar) is
+/// dropped instead of clobbering the newer state.
+#[derive(Default)]
+struct MsgSearchState {
+    group_hex: String,
+    matches: Vec<String>,
+    pos: usize,
+}
+
 pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     let Cx {
         notif,
@@ -162,6 +174,13 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 chat_load_generation.fetch_add(1, AtomicOrdering::Relaxed) + 1;
             let identity_epoch = account_epoch();
             if let Some(ui) = weak.upgrade() {
+                // Search state is per-conversation: switching threads closes
+                // the bar. A same-chat re-select (the off-window match jump
+                // re-fires chat_selected on the active chat) keeps it open.
+                if ui.get_active_chat() != idx && ui.get_msg_search_open() {
+                    ui.set_msg_search_open(false);
+                    ui.global::<AppState>().invoke_msg_search_closed();
+                }
                 // Persist the outgoing chat's half-written draft before the
                 // switch, so it's there when the user comes back (and, via the
                 // settings file, after a restart). Skipped while editing — the
@@ -412,6 +431,175 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             ui.set_message_jump_id(s(""));
             ui.set_active_page(Page::Chats as i32);
             ui.global::<AppState>().invoke_chat_selected(idx as i32);
+        }
+    });
+
+    // ─── In-conversation search ────────────────────────────────────────
+    // Fuzzy full-history search within the open chat (whitenoise-style
+    // forward-order token matching, see msg_search.rs). Each query edit
+    // rescans off the UI thread; stepping re-fires the message-jump
+    // machinery, and a match outside the loaded window goes through the
+    // same pending-jump + window-recenter path the mentions inbox uses.
+    let msg_search: Arc<Mutex<MsgSearchState>> = Arc::new(Mutex::new(Default::default()));
+    let msg_search_generation = Arc::new(AtomicUsize::new(0));
+    // Center a match: direct jump when the row is in the loaded window,
+    // otherwise reload the chat with a window centered on the target.
+    // Captures no UI handle, so the async query path can carry it across
+    // threads and call it back on the event loop.
+    let msg_search_jump: Arc<dyn Fn(&DarkMatterLinux, &str, &str) + Send + Sync> = {
+        let pending_message_jump = pending_message_jump.clone();
+        Arc::new(move |ui: &DarkMatterLinux, group_hex: &str, message_id: &str| {
+            let chats_messages = ui.get_chats_messages();
+            let idx = ui.get_active_chat();
+            let row = with_inner_messages(&chats_messages, idx as usize, |vm| {
+                find_message_row(vm, message_id)
+            })
+            .flatten();
+            if let Some(row) = row {
+                ui.set_message_jump_index(row as i32);
+                ui.set_message_jump_id(s(message_id));
+                ui.set_message_jump_tick(ui.get_message_jump_tick() + 1);
+            } else {
+                *pending_message_jump.lock().unwrap() =
+                    Some((group_hex.to_string(), message_id.to_string()));
+                ui.set_message_jump_id(s(""));
+                ui.global::<AppState>().invoke_chat_selected(idx);
+            }
+        })
+    };
+
+    ui.global::<AppState>().on_msg_search_query_changed({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let group_ids = group_ids.clone();
+        let msg_search = msg_search.clone();
+        let msg_search_generation = msg_search_generation.clone();
+        let msg_search_jump = msg_search_jump.clone();
+        move |query| {
+            let Some(ui) = weak.upgrade() else { return };
+            let generation = msg_search_generation.fetch_add(1, AtomicOrdering::Relaxed) + 1;
+            let tokens = query_tokens(&query);
+            if tokens.is_empty() {
+                *msg_search.lock().unwrap() = Default::default();
+                ui.set_msg_search_count(0);
+                ui.set_msg_search_pos(0);
+                ui.set_message_jump_id(s(""));
+                return;
+            }
+            let idx = ui.get_active_chat() as usize;
+            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
+                return;
+            };
+            let Some(backend) = backend_cell.lock().unwrap().clone() else {
+                return;
+            };
+            let weak = ui.as_weak();
+            let group_ids = group_ids.clone();
+            let msg_search = msg_search.clone();
+            let msg_search_generation = msg_search_generation.clone();
+            let msg_search_jump = msg_search_jump.clone();
+            let b = backend.clone();
+            backend.tokio_handle().spawn(async move {
+                // Full-history scan (like the mentions inbox) so even an old
+                // match is steppable without manual pagination. Edits replace
+                // the original text; deleted messages never match.
+                let records = b.messages(&group_hex, None).unwrap_or_default();
+                let edits = aggregate_edits(&records);
+                let deletes = aggregate_deletes(&records);
+                let matches: Vec<String> = records
+                    .iter()
+                    .filter(|m| is_visible_chat_message(m))
+                    .filter(|m| !deletes.contains(&m.message_id_hex))
+                    .filter(|m| {
+                        let text = edits
+                            .get(&m.message_id_hex)
+                            .filter(|edit| edit.count() > 0)
+                            .map(|edit| edit.text().to_string())
+                            .unwrap_or_else(|| m.plaintext.clone());
+                        matches_tokens(&text, &tokens)
+                    })
+                    // Newest first: position 1 is the most recent match.
+                    .rev()
+                    .map(|m| m.message_id_hex.clone())
+                    .collect();
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    if msg_search_generation.load(AtomicOrdering::Relaxed) != generation {
+                        return;
+                    }
+                    // The chat may have switched while the scan ran.
+                    let still_active = group_ids
+                        .lock()
+                        .unwrap()
+                        .get(ui.get_active_chat() as usize)
+                        .is_some_and(|g| g.eq_ignore_ascii_case(&group_hex));
+                    if !still_active {
+                        return;
+                    }
+                    let count = matches.len();
+                    let first = matches.first().cloned();
+                    *msg_search.lock().unwrap() = MsgSearchState {
+                        group_hex: group_hex.clone(),
+                        matches,
+                        pos: if count > 0 { 1 } else { 0 },
+                    };
+                    ui.set_msg_search_count(count as i32);
+                    ui.set_msg_search_pos(if count > 0 { 1 } else { 0 });
+                    if let Some(id) = first {
+                        msg_search_jump(&ui, &group_hex, &id);
+                    } else {
+                        ui.set_message_jump_id(s(""));
+                    }
+                });
+            });
+        }
+    });
+
+    ui.global::<AppState>().on_msg_search_step({
+        let weak = ui.as_weak();
+        let msg_search = msg_search.clone();
+        let msg_search_jump = msg_search_jump.clone();
+        move |newer| {
+            let Some(ui) = weak.upgrade() else { return };
+            let (id, pos, group_hex) = {
+                let mut st = msg_search.lock().unwrap();
+                let len = st.matches.len();
+                if len == 0 {
+                    return;
+                }
+                // Matches are newest-first, so "newer" walks toward position
+                // 1 and "older" away from it; both directions wrap.
+                st.pos = if newer {
+                    if st.pos <= 1 { len } else { st.pos - 1 }
+                } else if st.pos >= len {
+                    1
+                } else {
+                    st.pos + 1
+                };
+                (
+                    st.matches[st.pos - 1].clone(),
+                    st.pos,
+                    st.group_hex.clone(),
+                )
+            };
+            ui.set_msg_search_pos(pos as i32);
+            msg_search_jump(&ui, &group_hex, &id);
+        }
+    });
+
+    ui.global::<AppState>().on_msg_search_closed({
+        let weak = ui.as_weak();
+        let msg_search = msg_search.clone();
+        let msg_search_generation = msg_search_generation.clone();
+        move || {
+            let Some(ui) = weak.upgrade() else { return };
+            // Invalidate any in-flight scan before dropping the state.
+            msg_search_generation.fetch_add(1, AtomicOrdering::Relaxed);
+            *msg_search.lock().unwrap() = Default::default();
+            ui.set_msg_search_open(false);
+            ui.set_msg_search_count(0);
+            ui.set_msg_search_pos(0);
+            ui.set_message_jump_id(s(""));
         }
     });
 

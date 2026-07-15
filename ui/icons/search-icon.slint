@@ -5,21 +5,24 @@ export component SearchIcon inherits Rectangle {
     in property <length> size: 14px;
     width: root.size;
     height: root.size;
+    // Geometry is authored on a 14px grid and scaled by `size`, so the
+    // visual bbox always matches the declared box (centering math relies
+    // on that).
     Rectangle {
         x: 0px;
         y: 0px;
-        width: 10px;
-        height: 10px;
-        border-radius: 5px;
+        width: root.size * 10 / 14;
+        height: self.width;
+        border-radius: self.width / 2;
         border-width: 1.4px;
         border-color: root.stroke;
     }
 
     Path {
-        x: 8px;
-        y: 8px;
-        width: 6px;
-        height: 6px;
+        x: root.size * 8 / 14;
+        y: root.size * 8 / 14;
+        width: root.size * 6 / 14;
+        height: self.width;
         viewbox-width: 6;
         viewbox-height: 6;
         commands: "M 0.5 0.5 L 5.5 5.5";

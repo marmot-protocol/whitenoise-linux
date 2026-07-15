@@ -16,6 +16,7 @@ import { ImportBackupModal } from "../modals/import-backup-modal.slint";
 import { BackupCreateModal } from "../modals/backup-create-modal.slint";
 import { ForwardPickerModal } from "../modals/forward-chat-picker-modal.slint";
 import { CommandPalette } from "../modals/command-palette.slint";
+import { GlobalSearchModal } from "../modals/global-search-modal.slint";
 import { LanguagePickerModal } from "../modals/language-picker-modal.slint";
 import { EditHistoryModal } from "../modals/edit-history-modal.slint";
 import { ImageViewerModal } from "../modals/image-viewer-modal.slint";
@@ -155,6 +156,14 @@ export component ModalHost inherits Rectangle {
             }
         }
 
+
+        if AppState.msg-global-open: GlobalSearchModal {
+            dismissed => {
+                AppState.msg-global-open = false;
+                // Clears the results model and cancels any in-flight scan.
+                AppState.msg-global-query-changed("");
+            }
+        }
 
         if AppState.show-palette: CommandPalette {
             actions: AppState.palette-actions;

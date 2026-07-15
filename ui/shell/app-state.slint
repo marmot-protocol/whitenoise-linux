@@ -18,6 +18,7 @@ import {
     ChatMeta,
     ChatMessage,
     MentionInboxItem,
+    SearchHit,
     Contact,
     SharedGroup,
     ArchivedChat,
@@ -267,6 +268,32 @@ export global AppState {
     // backend runtime; distinguishes an empty conversation from a loading one.
     in-out property <bool> messages-loading: false;
     callback messages-request-older();
+
+    // ═══ In-conversation search ═════════════════════════════════════════════
+    // Search within the open chat: Rust scans the chat's full history on each
+    // query edit, publishes the match count and the 1-based current position,
+    // and steps between matches by re-firing the message-jump machinery above
+    // (off-window targets go through the same window-recenter path the
+    // mentions inbox uses).
+    in-out property <bool> msg-search-open: false;
+    in-out property <int> msg-search-count: 0;
+    in-out property <int> msg-search-pos: 0;
+    callback msg-search-query-changed(string);
+    // true = step to a newer match, false = older; wraps at either end.
+    callback msg-search-step(bool);
+    callback msg-search-closed();
+
+    // ═══ Global message search (title-bar modal) ════════════════════════════
+    // Cross-chat message search behind the title bar's search button and the
+    // command palette's "Search all messages" action: the same fuzzy matching
+    // as the in-chat bar, run over every visible chat's history (debounced in
+    // Rust). Hits reuse the mention-inbox row shape/card; selecting one
+    // navigates through the mention-inbox jump path.
+    in-out property <bool> msg-global-open: false;
+    in-out property <[SearchHit]> msg-global-results;
+    in-out property <bool> msg-global-searching: false;
+    callback msg-global-query-changed(string);
+    callback msg-global-result-selected(string, string);  // group-id, message-id
 
     // ═══ Pickers, context menus & confirms ═════════════════════════════════
     // Emoji picker (full-window modal).

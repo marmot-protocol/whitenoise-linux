@@ -1470,6 +1470,10 @@ msgctxt "KeysPage"
 msgid "No key packages yet"
 msgstr "キーパッケージがありません"
 
+msgctxt "ChatSearchBar"
+msgid "No matches"
+msgstr "一致するものがありません"
+
 msgctxt "CommandPalette"
 msgid "No matches"
 msgstr "一致なし"
@@ -1477,6 +1481,10 @@ msgstr "一致なし"
 msgctxt "MentionsInbox"
 msgid "No mentions yet"
 msgstr "メンションはまだありません"
+
+msgctxt "GlobalSearchModal"
+msgid "No messages found"
+msgstr "メッセージが見つかりません"
 
 msgctxt "MessagesArea"
 msgid "No messages yet"
@@ -2080,6 +2088,14 @@ msgctxt "LoginScreen"
 msgid "Sealed with your password on this device. Keep your own copy of the nsec too — lose both and this identity is gone."
 msgstr "このデバイスでパスワードにより封印されます。nsec のコピーも自分で保管してください。両方を失うとこの ID は失われます。"
 
+msgctxt "GlobalSearchModal"
+msgid "Search across every conversation."
+msgstr "すべての会話を横断して検索します。"
+
+msgctxt "GlobalSearchModal"
+msgid "Search all messages…"
+msgstr "すべてのメッセージを検索…"
+
 msgctxt "ChatListPanel"
 msgid "Search chats…"
 msgstr "チャットを検索…"
@@ -2091,6 +2107,14 @@ msgstr "チャットを検索…"
 msgctxt "ContactsSidebar"
 msgid "Search contacts…"
 msgstr "連絡先を検索…"
+
+msgctxt "ChatSearchBar"
+msgid "Search in conversation…"
+msgstr "会話内を検索…"
+
+msgctxt "GlobalSearchModal"
+msgid "Searching…"
+msgstr "検索中…"
 
 msgctxt "SidePanel"
 msgid "Search…"

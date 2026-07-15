@@ -456,6 +456,10 @@ pub(crate) fn refresh_mention_inbox_async(
             };
             let current_ids = current_group_ids.lock().unwrap().clone();
             let chats = ui.get_chats();
+            // Senders whose profile picture isn't cached yet: fetched below
+            // after the rows land, then bound in place by sender id (same
+            // shape as the global-search rows).
+            let mut pending_fetches: HashMap<String, String> = HashMap::new();
             let items: Vec<MentionInboxItem> = sources
                 .into_iter()
                 .filter_map(|source| {
@@ -463,16 +467,31 @@ pub(crate) fn refresh_mention_inbox_async(
                         .iter()
                         .position(|group| group.eq_ignore_ascii_case(&source.group_id))?;
                     let chat = chats.row_data(chat_index)?;
-                    let sender_name = b.account_display_name(&source.sender_id);
+                    let (sender_name, picture_url) = b.account_name_and_picture(&source.sender_id);
                     let (sender_a, sender_b, sender_initials) = avatar_for(&sender_name);
+                    let (picture, has_picture) = bind_cached_picture(picture_url.as_deref());
+                    if !has_picture {
+                        if let Some(url) = picture_url
+                            .as_deref()
+                            .map(str::trim)
+                            .filter(|u| !u.is_empty())
+                        {
+                            pending_fetches
+                                .entry(source.sender_id.clone())
+                                .or_insert_with(|| url.to_string());
+                        }
+                    }
                     Some(MentionInboxItem {
                         group_id: s(&source.group_id),
                         message_id: s(&source.message_id),
+                        sender_id: s(&source.sender_id),
                         chat_name: chat.name,
                         sender_name: s(&sender_name),
                         sender_initials: s(&sender_initials),
                         sender_a,
                         sender_b,
+                        picture,
+                        has_picture,
                         text: s(&source.text),
                         stamp: s(&format_date_unix(source.recorded_at)),
                     })
@@ -480,6 +499,22 @@ pub(crate) fn refresh_mention_inbox_async(
                 .collect();
             ui.set_mention_inbox_items(model(items));
             ui.set_mention_inbox_loading(false);
+            // Fetch the missing pictures and bind each onto every inbox row
+            // from that sender once decoded.
+            for (sender_id, url) in pending_fetches {
+                spawn_picture_fetch(ui.as_weak(), b.tokio_handle(), url, move |ui, pixels| {
+                    bind_picture_to_rows(
+                        &ui.get_mention_inbox_items(),
+                        pixels,
+                        false,
+                        |row: &MentionInboxItem| row.sender_id.as_str() == sender_id,
+                        |row, img| {
+                            row.picture = img;
+                            row.has_picture = true;
+                        },
+                    );
+                });
+            }
         });
     });
 }

@@ -19,6 +19,7 @@ import {
     ChatMeta,
     ChatMessage,
     MentionInboxItem,
+    SearchHit,
     Contact,
     SharedGroup,
     ArchivedChat,
@@ -217,6 +218,12 @@ export component DarkMatterLinux inherits Window {
     in-out property <int> message-jump-index <=> AppState.message-jump-index;
     in-out property <bool> messages-has-older <=> AppState.messages-has-older;
     in-out property <bool> messages-loading <=> AppState.messages-loading;
+    in-out property <bool> msg-search-open <=> AppState.msg-search-open;
+    in-out property <int> msg-search-count <=> AppState.msg-search-count;
+    in-out property <int> msg-search-pos <=> AppState.msg-search-pos;
+    in-out property <bool> msg-global-open <=> AppState.msg-global-open;
+    in-out property <[SearchHit]> msg-global-results <=> AppState.msg-global-results;
+    in-out property <bool> msg-global-searching <=> AppState.msg-global-searching;
     in-out property <[EmojiEntry]> emoji-list <=> AppState.emoji-list;
     in-out property <int> emoji-shown <=> AppState.emoji-shown;
     in-out property <image> emoji-sprite <=> AppState.emoji-sprite;
@@ -406,6 +413,13 @@ export component DarkMatterLinux inherits Window {
                     AppState.palette-requested();
                     return accept;
                 }
+                // In-conversation search: only meaningful with an open chat.
+                if (root.logged-in && event.text == "f") {
+                    if (AppState.active-page == 0 && AppState.chats.length > 0) {
+                        AppState.msg-search-open = true;
+                    }
+                    return accept;
+                }
                 // "+" needs shift on most layouts, so accept the bare "=" too.
                 if (event.text == "+" || event.text == "=") {
                     AppState.zoom-adjust(1);
@@ -419,6 +433,13 @@ export component DarkMatterLinux inherits Window {
                     AppState.zoom-adjust(0);
                     return accept;
                 }
+            }
+            // Close the search bar when Esc bubbles up unconsumed (focus
+            // outside the field; the field's own scope handles Esc itself).
+            if (event.text == Key.Escape && AppState.msg-search-open) {
+                AppState.msg-search-open = false;
+                AppState.msg-search-closed();
+                return accept;
             }
             return reject;
         }

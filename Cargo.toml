@@ -20,6 +20,9 @@ live-reload = ["wnl-ui/live-reload", "slint/live-preview"]
 
 [dependencies]
 slint = "1.8"
+# NFC normalization for in-conversation search (same fold as whitenoise's
+# content search); already in the tree as a transitive dependency.
+unicode-normalization = "0.1"
 # Word boundaries for double-click text selection. Dictionary/LSTM segmentation
 # handles unspaced scripts (Japanese, Chinese, Thai) that char-class scanning
 # cannot; already in the tree as a transitive dependency of Slint's parley.

@@ -148,7 +148,10 @@ export component MessagesArea inherits Rectangle {
     property <bool> jump-reset-pending: false;
     jump-reset := Timer {
         interval: 1.8s;
-        running: root.jump-reset-pending;
+        // While the in-conversation search bar is open the current match
+        // keeps its highlight instead of fading; closing the search clears
+        // message-jump-id from Rust.
+        running: root.jump-reset-pending && !AppState.msg-search-open;
         triggered => {
             root.jump-reset-pending = false;
             AppState.message-jump-id = "";

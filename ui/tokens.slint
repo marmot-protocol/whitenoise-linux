@@ -854,12 +854,36 @@ export struct AlbumCell {
 export struct MentionInboxItem {
     group-id: string,
     message-id: string,
+    // Keys the async profile-picture bind (see src/mentions.rs).
+    sender-id: string,
     chat-name: string,
     sender-name: string,
     sender-initials: string,
     sender-a: color,
     sender-b: color,
+    picture: image,
+    has-picture: bool,
     text: string,
+    stamp: string,
+}
+
+// One global-search hit. Snippet comes pre-split around the first matched
+// token so the row can highlight it as separate text runs; `sender-id` keys
+// the async profile-picture bind (see src/wiring/search.rs).
+export struct SearchHit {
+    group-id: string,
+    message-id: string,
+    sender-id: string,
+    chat-name: string,
+    sender-name: string,
+    sender-initials: string,
+    sender-a: color,
+    sender-b: color,
+    picture: image,
+    has-picture: bool,
+    text-pre: string,
+    text-match: string,
+    text-post: string,
     stamp: string,
 }
 

@@ -92,6 +92,7 @@ pub(crate) fn wire_nav(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 PaletteCommand::NavSettings => go(Page::Settings),
                 PaletteCommand::NavProfile => go(Page::Profile),
                 PaletteCommand::NewChat => ui.set_show_new_chat(true),
+                PaletteCommand::OpenSearch => ui.set_msg_global_open(true),
                 PaletteCommand::CopyNpub => {
                     let npub = ui.get_my_npub();
                     let weak = weak.clone();

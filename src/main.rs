@@ -54,6 +54,8 @@ mod media;
 pub(crate) use media::*;
 mod mentions;
 pub(crate) use mentions::*;
+mod msg_search;
+pub(crate) use msg_search::*;
 mod profiles;
 pub(crate) use profiles::*;
 mod qr;
@@ -955,6 +957,7 @@ fn main() -> Result<(), slint::PlatformError> {
     );
     wire_backup(&ui, &cx, &h);
     wire_chats(&ui, &cx, &h);
+    wire_search(&ui, &cx);
     wire_nav(&ui, &cx, &h);
     wire_contacts(&ui, &cx, &h);
     wire_groups(&ui, &cx);

@@ -12,6 +12,7 @@ mod groups;
 mod messaging;
 mod nav;
 mod panes;
+mod search;
 pub(crate) use attach::*;
 pub(crate) use backup::*;
 pub(crate) use chats::*;
@@ -22,6 +23,7 @@ pub(crate) use groups::*;
 pub(crate) use messaging::*;
 pub(crate) use nav::*;
 pub(crate) use panes::*;
+pub(crate) use search::*;
 
 // Aliases for the handful of boxed-closure / nested-Arc shapes that the wiring
 // split now threads through struct fields and function signatures (positions

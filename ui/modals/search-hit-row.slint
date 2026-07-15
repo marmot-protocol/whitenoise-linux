@@ -1,0 +1,108 @@
+import { Palette, Theme, SearchHit } from "../tokens.slint";
+import { Avatar } from "../primitives/avatar.slint";
+
+// One row in the global-search modal: sender avatar (real profile picture
+// once cached), sender + chat + stamp line, and a one-line snippet with the
+// matched text highlighted as its own accent-colored run.
+export component SearchHitRow inherits Rectangle {
+    in property <SearchHit> hit;
+    callback selected();
+
+    height: 62px;
+    background: touch.has-hover ? Palette.hover : transparent;
+    border-radius: 8px * Theme.r-scale;
+    border-width: Theme.border-w;
+    border-color: touch.has-hover ? Palette.border-2 : transparent;
+    animate background, border-color { duration: Theme.hover-dur; }
+
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        spacing: 12px;
+
+        VerticalLayout {
+            alignment: center;
+            Avatar {
+                size: 36px;
+                initials: root.hit.sender-initials;
+                color-a: root.hit.sender-a;
+                color-b: root.hit.sender-b;
+                picture: root.hit.picture;
+                has-picture: root.hit.has-picture;
+                font-size: Theme.fs(10px, 13px);
+            }
+        }
+
+        VerticalLayout {
+            horizontal-stretch: 1;
+            alignment: center;
+            spacing: 4px;
+
+            HorizontalLayout {
+                spacing: 8px;
+                Text {
+                    text: root.hit.sender-name;
+                    color: Palette.text-hi;
+                    font-family: Theme.font;
+                    font-size: Theme.fs(11px, 13px);
+                    font-weight: 700;
+                    overflow: elide;
+                }
+
+                Text {
+                    text: "· " + root.hit.chat-name;
+                    color: Palette.mint;
+                    font-family: Theme.font;
+                    font-size: Theme.fs(10px, 12px);
+                    font-weight: 650;
+                    overflow: elide;
+                    horizontal-stretch: 1;
+                }
+
+                Text {
+                    text: root.hit.stamp;
+                    color: Palette.text-vlo;
+                    font-family: Theme.font;
+                    font-size: Theme.fs(9px, 11px);
+                }
+            }
+
+            // Snippet as three runs so the matched text can carry its own
+            // styling. `text-pre` arrives pre-trimmed from Rust (the match is
+            // always visible); the tail run absorbs the leftover width.
+            HorizontalLayout {
+                spacing: 0;
+                Text {
+                    text: root.hit.text-pre;
+                    color: Palette.text-mid;
+                    font-family: Theme.font;
+                    font-size: Theme.fs(10px, 12px);
+                }
+
+                Text {
+                    text: root.hit.text-match;
+                    color: Palette.mint;
+                    font-family: Theme.font;
+                    font-size: Theme.fs(10px, 12px);
+                    font-weight: 800;
+                }
+
+                Text {
+                    text: root.hit.text-post;
+                    color: Palette.text-mid;
+                    font-family: Theme.font;
+                    font-size: Theme.fs(10px, 12px);
+                    overflow: elide;
+                    horizontal-stretch: 1;
+                }
+            }
+        }
+    }
+
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            root.selected();
+        }
+    }
+}

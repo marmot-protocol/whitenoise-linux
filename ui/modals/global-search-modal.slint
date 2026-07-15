@@ -1,0 +1,160 @@
+import { Palette, Theme, SearchHit } from "../tokens.slint";
+import { AppState } from "../shell/app-state.slint";
+import { SearchIcon } from "../icons/search-icon.slint";
+import { LineInput } from "../primitives/line-input.slint";
+import { Modal } from "modal.slint";
+import { SearchHitRow } from "search-hit-row.slint";
+import { ScrollView } from "../primitives/scroll-view.slint";
+
+// Global message search — a command-palette-style modal opened from the
+// title bar's search button or the Ctrl+K "Search all messages" action.
+// Typing fires msg-global-query-changed (Rust debounces the cross-chat
+// scan and pushes mention-card rows into msg-global-results); clicking a
+// hit (or Enter for the newest one) navigates to that message.
+export component GlobalSearchModal inherits Modal {
+    property <[SearchHit]> results: AppState.msg-global-results;
+    property <bool> searching: AppState.msg-global-searching;
+    in-out property <string> query;
+
+    function open-hit(group-id: string, message-id: string) {
+        AppState.msg-global-result-selected(group-id, message-id);
+        root.dismissed();
+    }
+
+    // Top-anchored frameless card, same footprint as the command palette.
+    card-width: min(560px, root.width - 64px);
+    v-pos: 0.16;
+    title: "";
+    show-close: false;
+    content-padding: 0px;
+    grab-focus: false;
+
+    focus-scope := FocusScope {
+        init => {
+            query-input.take-focus();
+        }
+        key-pressed(event) => {
+            if (event.text == Key.Escape) {
+                root.dismissed();
+                return accept;
+            }
+            return reject;
+        }
+
+        VerticalLayout {
+            spacing: 0;
+
+            // ── Search row ─────────────────────────────────────────────
+            Rectangle {
+                height: 52px;
+                background: transparent;
+                HorizontalLayout {
+                    padding-left: 18px;
+                    padding-right: 18px;
+                    spacing: 12px;
+                    alignment: stretch;
+                    VerticalLayout {
+                        alignment: center;
+                        SearchIcon {
+                            size: 16px;
+                            stroke: Palette.text-mid;
+                        }
+                    }
+
+                    query-input := LineInput {
+                        placeholder: @tr("Search all messages…");
+                        text <=> root.query;
+                        enter-submits: false;
+                        capture-nav: true;
+                        nav-tab-commits: false;
+                        // Enter opens the newest hit.
+                        commit-mention => {
+                            if (root.results.length > 0) {
+                                root.open-hit(root.results[0].group-id, root.results[0].message-id);
+                            }
+                        }
+                        dismiss-mention => {
+                            root.dismissed();
+                        }
+                        font-size: Theme.fsr(14px, 16px);
+                        fg: Palette.text-hi;
+                        placeholder-color: Palette.text-vlo;
+                    }
+
+                    VerticalLayout {
+                        alignment: center;
+                        Text {
+                            text: root.searching ? @tr("Searching…") : (root.query == "" ? "" : root.results.length);
+                            color: Palette.text-vlo;
+                            font-size: Theme.fs(10px, 12px);
+                            font-family: Theme.font;
+                        }
+                    }
+                }
+            }
+
+            // ── Divider ─────────────────────────────────────────────────
+            Rectangle {
+                height: Theme.border-w;
+                background: Palette.divider;
+            }
+
+            // ── Results ─────────────────────────────────────────────────
+            Rectangle {
+                height: min(440px, max(76px, hits.preferred-height + 16px));
+                clip: true;
+
+                if root.query == "" && root.results.length == 0: Text {
+                    text: @tr("Search across every conversation.");
+                    color: Palette.text-lo;
+                    font-size: Theme.fs(11px, 14px);
+                    font-family: Theme.font;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    width: parent.width;
+                    height: parent.height;
+                }
+
+                if root.query != "" && root.results.length == 0 && !root.searching: Text {
+                    text: @tr("No messages found");
+                    color: Palette.text-lo;
+                    font-size: Theme.fs(11px, 14px);
+                    font-family: Theme.font;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    width: parent.width;
+                    height: parent.height;
+                }
+
+                ScrollView {
+                    width: parent.width;
+                    height: parent.height;
+                    viewport-width: self.visible-width;
+                    viewport-height: hits.preferred-height + 16px;
+
+                    hits := VerticalLayout {
+                        width: parent.width;
+                        padding: 8px;
+                        spacing: 4px;
+
+                        for hit in root.results: SearchHitRow {
+                            hit: hit;
+                            selected => {
+                                root.open-hit(hit.group-id, hit.message-id);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Every edit re-fires the (Rust-debounced) cross-chat scan.
+    property <string> last-query: "";
+    changed query => {
+        if (root.query != root.last-query) {
+            root.last-query = root.query;
+            AppState.msg-global-query-changed(root.query);
+        }
+    }
+}

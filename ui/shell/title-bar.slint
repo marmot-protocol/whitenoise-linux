@@ -2,6 +2,7 @@
 import { AppState } from "app-state.slint";
 import { Palette, Theme } from "../tokens.slint";
 import { MentionsIcon } from "mentions-icon.slint";
+import { SearchIcon } from "../icons/search-icon.slint";
 
 export component TitleBar inherits Rectangle {
     in property <length> rail-width: 56px;
@@ -53,6 +54,34 @@ export component TitleBar inherits Rectangle {
         Rectangle {
             horizontal-stretch: 1;
             background: transparent;
+        }
+
+        // Global message search — opens the cross-chat search modal.
+        Rectangle {
+            width: 30px;
+            height: 30px;
+            background: search-touch.has-hover ? Palette.hover : transparent;
+            border-radius: (6px) * Theme.r-scale;
+            animate background { duration: Theme.hover-dur; }
+
+            search-touch := TouchArea {
+                mouse-cursor: pointer;
+                clicked => {
+                    AppState.msg-global-open = true;
+                }
+
+                SearchIcon {
+                    size: 13px;
+                    stroke: search-touch.has-hover ? Palette.mint : Palette.text-mid;
+                    // Optically center on the lens, not the bbox: the handle
+                    // sticks out bottom-right, so exact bbox centering reads
+                    // high-left next to the "@" glyph. The lens center sits at
+                    // 5/14 of the glyph; the +2/14 shifts it onto the button
+                    // center (7/14).
+                    x: (parent.width - self.width) / 2 + self.size * 2 / 14;
+                    y: (parent.height - self.height) / 2 + self.size * 2 / 14;
+                }
+            }
         }
 
         MentionsIcon {

@@ -1,0 +1,179 @@
+import { Palette, Theme } from "../tokens.slint";
+import { AppState } from "../shell/app-state.slint";
+import { LineInput } from "../primitives/line-input.slint";
+import { SearchIcon } from "../icons/search-icon.slint";
+import { ChevronUpIcon } from "../icons/chevron-up-icon.slint";
+import { ChevronDownIcon } from "../icons/chevron-down-icon.slint";
+
+// In-conversation search bar, mounted between the chat header and the
+// messages area. Always in the tree, height-gated by msg-search-open (an
+// `if`-mounted TouchArea swallows its first click). Typing re-fires
+// msg-search-query-changed on every edit; Enter/↑ step to older matches,
+// ↓ to newer, Esc closes — all captured through LineInput's nav hooks so
+// the keys never leak into the app-wide shortcut scope.
+export component ChatSearchBar inherits Rectangle {
+    height: AppState.msg-search-open ? 46px : 0px;
+    visible: AppState.msg-search-open;
+    clip: true;
+    background: Palette.bg;
+
+    property <bool> has-matches: AppState.msg-search-count > 0;
+
+    // Autofocus the field whenever the bar opens (Ctrl+F or the header
+    // button). Local mirror — a `changed` handler must sit on a property of
+    // the declaring element.
+    property <bool> open-obs: AppState.msg-search-open;
+    changed open-obs => {
+        if (self.open-obs) {
+            input.take-focus();
+        } else {
+            // Cover every close path (✕/Esc here, Rust on chat switch): a
+            // reopened bar always starts from a fresh query. Clearing the
+            // text re-fires query-changed(""), which is a no-op in Rust.
+            input.text = "";
+        }
+    }
+
+    // Live query: re-scan on every edit (the scan runs off the UI thread in
+    // Rust; stale results are generation-guarded there).
+    property <string> query-obs: input.text;
+    changed query-obs => {
+        AppState.msg-search-query-changed(self.query-obs);
+    }
+
+    function close() {
+        AppState.msg-search-open = false;
+        AppState.msg-search-closed();
+    }
+
+    Rectangle {
+        y: parent.height - 1px;
+        width: parent.width;
+        height: 1px;
+        background: Palette.border-2;
+    }
+
+    HorizontalLayout {
+        padding-left: 18px;
+        padding-right: 14px;
+        padding-top: 8px;
+        padding-bottom: 9px;
+        spacing: 10px;
+
+        field := Rectangle {
+            horizontal-stretch: 1;
+            background: Palette.panel-2;
+            border-radius: (6px) * Theme.r-scale;
+            border-width: Theme.border-w == 0px ? 1px : Theme.border-w;
+            border-color: input.has-focus ? Palette.mint-dim : Palette.border;
+            animate border-color { duration: Theme.hover-dur; }
+
+            HorizontalLayout {
+                padding-left: 10px;
+                padding-right: 10px;
+                spacing: 8px;
+
+                SearchIcon {
+                    y: (parent.height - self.height) / 2;
+                    stroke: Palette.text-lo;
+                }
+
+                input := LineInput {
+                    placeholder: @tr("Search in conversation…");
+                    font-size: Theme.fsr(12px, 16px);
+                    // ↑/↓/Enter/Esc drive match stepping instead of editing.
+                    capture-nav: true;
+                    nav-tab-commits: false;
+                    nav(d) => {
+                        AppState.msg-search-step(d > 0);
+                    }
+                    // Enter — convention: walk backwards through history.
+                    commit-mention() => {
+                        AppState.msg-search-step(false);
+                    }
+                    dismiss-mention() => {
+                        root.close();
+                    }
+                }
+            }
+        }
+
+        counter := Text {
+            text: root.has-matches
+                ? "\{AppState.msg-search-pos}/\{AppState.msg-search-count}"
+                : (input.text == "" ? "" : @tr("No matches"));
+            color: root.has-matches ? Palette.text-mid : Palette.text-lo;
+            font-size: Theme.fs(11px, 14px);
+            vertical-alignment: center;
+        }
+
+        up-btn := Rectangle {
+            width: 28px;
+            height: 28px;
+            y: (parent.height - self.height) / 2;
+            border-radius: (6px) * Theme.r-scale;
+            background: up-touch.has-hover && root.has-matches ? Palette.hover : transparent;
+            animate background { duration: Theme.hover-dur; }
+            up-touch := TouchArea {
+                enabled: root.has-matches;
+                mouse-cursor: root.has-matches ? pointer : default;
+                clicked => {
+                    AppState.msg-search-step(false);
+                }
+            }
+
+            ChevronUpIcon {
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
+                size: 12px;
+                stroke: root.has-matches ? Palette.text-mid : Palette.text-vlo;
+            }
+        }
+
+        down-btn := Rectangle {
+            width: 28px;
+            height: 28px;
+            y: (parent.height - self.height) / 2;
+            border-radius: (6px) * Theme.r-scale;
+            background: down-touch.has-hover && root.has-matches ? Palette.hover : transparent;
+            animate background { duration: Theme.hover-dur; }
+            down-touch := TouchArea {
+                enabled: root.has-matches;
+                mouse-cursor: root.has-matches ? pointer : default;
+                clicked => {
+                    AppState.msg-search-step(true);
+                }
+            }
+
+            ChevronDownIcon {
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
+                size: 12px;
+                stroke: root.has-matches ? Palette.text-mid : Palette.text-vlo;
+            }
+        }
+
+        close-btn := Rectangle {
+            width: 28px;
+            height: 28px;
+            y: (parent.height - self.height) / 2;
+            border-radius: (6px) * Theme.r-scale;
+            background: close-touch.has-hover ? Palette.hover : transparent;
+            animate background { duration: Theme.hover-dur; }
+            close-touch := TouchArea {
+                mouse-cursor: pointer;
+                clicked => {
+                    root.close();
+                }
+            }
+
+            Text {
+                text: "✕";
+                color: close-touch.has-hover ? Palette.text-hi : Palette.text-mid;
+                font-size: Theme.fs(12px, 15px);
+                vertical-alignment: center;
+                horizontal-alignment: center;
+            }
+        }
+    }
+}

@@ -1473,6 +1473,10 @@ msgctxt "KeysPage"
 msgid "No key packages yet"
 msgstr "Nessun pacchetto chiave"
 
+msgctxt "ChatSearchBar"
+msgid "No matches"
+msgstr "Nessun risultato"
+
 msgctxt "CommandPalette"
 msgid "No matches"
 msgstr "Nessun risultato"
@@ -1480,6 +1484,10 @@ msgstr "Nessun risultato"
 msgctxt "MentionsInbox"
 msgid "No mentions yet"
 msgstr "Ancora nessuna menzione"
+
+msgctxt "GlobalSearchModal"
+msgid "No messages found"
+msgstr "Nessun messaggio trovato"
 
 msgctxt "MessagesArea"
 msgid "No messages yet"
@@ -2083,6 +2091,14 @@ msgctxt "LoginScreen"
 msgid "Sealed with your password on this device. Keep your own copy of the nsec too — lose both and this identity is gone."
 msgstr "Sigillato con la tua password su questo dispositivo. Tieni anche una tua copia del nsec — se perdi entrambi, questa identità è persa."
 
+msgctxt "GlobalSearchModal"
+msgid "Search across every conversation."
+msgstr "Cerca in tutte le conversazioni."
+
+msgctxt "GlobalSearchModal"
+msgid "Search all messages…"
+msgstr "Cerca in tutti i messaggi…"
+
 msgctxt "ChatListPanel"
 msgid "Search chats…"
 msgstr "Cerca chat…"
@@ -2094,6 +2110,14 @@ msgstr "Cerca chat…"
 msgctxt "ContactsSidebar"
 msgid "Search contacts…"
 msgstr "Cerca contatti…"
+
+msgctxt "ChatSearchBar"
+msgid "Search in conversation…"
+msgstr "Cerca nella conversazione…"
+
+msgctxt "GlobalSearchModal"
+msgid "Searching…"
+msgstr "Ricerca…"
 
 msgctxt "SidePanel"
 msgid "Search…"
