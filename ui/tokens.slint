@@ -848,6 +848,9 @@ export struct AlbumCell {
     image: image,
     has-image: bool,
     loading: bool,
+    // Download/decrypt failed for this cell; renders a distinct error glyph
+    // and stays tappable so the cell can be retried.
+    failed: bool,
     key: string,
 }
 

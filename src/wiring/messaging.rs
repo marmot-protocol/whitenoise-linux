@@ -569,6 +569,12 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
                 return;
             };
+            // A failed cell taps to retry its download in place, not to open
+            // the lightbox on an image that isn't there yet.
+            if attachment_failed_contains(&key) {
+                retry_album_cell(group_hex, key);
+                return;
+            }
             // Show the cached pixels immediately if we have them, else open on
             // the loading pill while the builder fetches the image.
             match attachment_image_cache_get(&key) {
