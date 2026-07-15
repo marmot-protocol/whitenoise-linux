@@ -134,6 +134,14 @@ export global AppState {
     in-out property <string> reply-target-preview;
     in-out property <image> reply-target-image;
     in-out property <bool> reply-target-has-image: false;
+    // Small avatar of the message being replied to, shown left of the name on
+    // the reply banner. Set by Rust from the quoted row (gradient stops +
+    // initials, plus any resolved profile picture); cleared with the target.
+    in-out property <color> reply-target-av-a;
+    in-out property <color> reply-target-av-b;
+    in-out property <string> reply-target-av-initials;
+    in-out property <image> reply-target-picture;
+    in-out property <bool> reply-target-has-picture: false;
     // Edit state — set by Rust when the user taps a bubble's edit pencil,
     // cleared on save or cancel. Drives the composer's "Editing message" banner
     // and tells Rust the next send is a kind-1010 edit of this message.

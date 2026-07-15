@@ -1,14 +1,21 @@
 import { Palette, Theme } from "../../tokens.slint";
 import { MicroButton } from "../../primitives/button.slint";
+import { Avatar } from "../../primitives/avatar.slint";
 
 // Reply banner — shown above the input when replying to a message.
-// A mint accent bar + "Replying to <author>: <preview>" with an optional
-// thumbnail and a Cancel reply button.
+// A mint accent bar, the quoted author's small avatar, then
+// "Replying to <author>: <preview>" with an optional thumbnail and a Cancel
+// reply button.
 export component ReplyBanner inherits Rectangle {
     in property <string> reply-target-author;
     in property <string> reply-target-preview;
     in property <image> reply-target-image;
     in property <bool> reply-target-has-image: false;
+    in property <color> reply-target-av-a;
+    in property <color> reply-target-av-b;
+    in property <string> reply-target-av-initials;
+    in property <image> reply-target-picture;
+    in property <bool> reply-target-has-picture: false;
     callback cancel-reply();
 
     height: 36px;
@@ -27,6 +34,18 @@ export component ReplyBanner inherits Rectangle {
             y: (parent.height - self.height) / 2;
             height: 18px;
             border-radius: 1.5px * Theme.r-scale;
+        }
+
+        // Small avatar of the quoted message's author, left of the name.
+        if root.reply-target-av-initials != "" || root.reply-target-has-picture: Avatar {
+            size: 20px;
+            y: (parent.height - self.height) / 2;
+            color-a: root.reply-target-av-a;
+            color-b: root.reply-target-av-b;
+            initials: root.reply-target-av-initials;
+            picture: root.reply-target-picture;
+            has-picture: root.reply-target-has-picture;
+            font-size: Theme.fs(8px, 11px);
         }
 
         VerticalLayout {
