@@ -737,6 +737,10 @@ msgctxt "ErrorCopy"
 msgid "Couldn't rotate your key package. Check your relay settings and try again."
 msgstr "Dein Key Package konnte nicht erneuert werden. Überprüfe deine Relay-Einstellungen und versuche es erneut."
 
+msgctxt "status toast when saving a file fails, %1 = file name"
+msgid "Couldn't save %1. Check the location has space and permission, then try again."
+msgstr "%1 konnte nicht gespeichert werden. Prüfe, ob am Speicherort genug Platz und die nötige Berechtigung vorhanden sind, und versuche es erneut."
+
 msgctxt "ErrorCopy"
 msgid "Couldn't save your edit. Check your connection and try again."
 msgstr "Änderung konnte nicht gespeichert werden. Überprüfe deine Verbindung und versuche es erneut."
@@ -2066,6 +2070,11 @@ msgstr "Speichern"
 msgctxt "LoginScreen"
 msgid "Save your new key"
 msgstr "Speichere deinen neuen Schlüssel"
+
+#. Save-attachment-to-disk outcomes (status-bar toast; %1 = file name).
+msgctxt "status toast after saving a file, %1 = file name"
+msgid "Saved %1"
+msgstr "%1 gespeichert"
 
 #, fuzzy
 msgctxt "BackupCreateModal"

@@ -462,6 +462,35 @@ pub(crate) fn set_clipboard_feedback(
     ui.set_clipboard_status_error(is_error);
 }
 
+/// Report the outcome of a "Save attachment to disk" write in the status-bar
+/// toast. Safe to call from any thread — the actual write runs on the backend
+/// runtime, so this hops to the event loop before touching the UI. `file_name`
+/// labels which file; `ok` picks the success (mint) vs failure (danger) copy,
+/// both localized through the [`ErrorCopy`] snapshot. Without this the save
+/// completion only logged to stderr, so a failed save looked exactly like a
+/// successful one.
+pub(crate) fn toast_save_attachment(weak: Weak<DarkMatterLinux>, file_name: String, ok: bool) {
+    let _ = slint::invoke_from_event_loop(move || {
+        let Some(ui) = weak.upgrade() else { return };
+        let copy = error_copy();
+        let template = if ok {
+            &copy.save_attachment_ok
+        } else {
+            &copy.save_attachment_failed
+        };
+        set_clipboard_feedback(&ui, tmpl(template, &[&file_name]), !ok);
+    });
+}
+
+/// The user-visible file name for a save destination, for the toast label.
+/// Falls back to the whole path string when the OS path has no final component
+/// (which never happens for a chosen save target, but keeps this total).
+pub(crate) fn save_target_label(path: &std::path::Path) -> String {
+    path.file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_else(|| path.to_string_lossy().into_owned())
+}
+
 /// Outcome of a status/receipt line, so the UI can color a failure red and a
 /// success in the accent instead of rendering every message the same neutral
 /// gray. The discriminants are mirrored as the `int kind` on `StatusLine`
@@ -698,6 +727,8 @@ copy_snapshot! {
     save_profile: String = get_save_profile => "Couldn't save your profile. Check your connection and try again.";
     upload_picture: String = get_upload_picture => "Couldn't upload your picture. Please try again.";
     generic: String = get_generic => "Something went wrong. Please try again.";
+    save_attachment_ok: String = get_save_attachment_ok => "Saved %1";
+    save_attachment_failed: String = get_save_attachment_failed => "Couldn't save %1. Check the location has space and permission, then try again.";
     not_connected: String = get_not_connected => "Not connected yet. Please wait a moment and try again.";
     relay_already_listed: String = get_relay_already_listed => "That relay is already in your list.";
     relay_url_empty: String = get_relay_url_empty => "Enter a relay address.";
