@@ -1344,6 +1344,10 @@ msgctxt "KeysPage"
 msgid "Keys & identity"
 msgstr "Schlüssel & Identität"
 
+msgctxt "SettingsSidebar"
+msgid "Keys & identity"
+msgstr "Schlüssel & Identität"
+
 msgctxt "GeneralPane"
 msgid "LANGUAGE"
 msgstr "SPRACHE"

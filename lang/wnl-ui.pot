@@ -1283,6 +1283,10 @@ msgctxt "KeysPage"
 msgid "Keys & identity"
 msgstr ""
 
+msgctxt "SettingsSidebar"
+msgid "Keys & identity"
+msgstr ""
+
 msgctxt "GeneralPane"
 msgid "LANGUAGE"
 msgstr ""

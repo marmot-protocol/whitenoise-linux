@@ -7,6 +7,7 @@ import { InfoIcon } from "../icons/info-icon.slint";
 import { BellIcon } from "../icons/bell-icon.slint";
 import { MonitorIcon } from "../icons/monitor-icon.slint";
 import { TerminalIcon } from "../icons/terminal-icon.slint";
+import { KeyIcon } from "../icons/key-icon.slint";
 import { SettingsNavItem } from "settings-nav-item.slint";
 
 export component SettingsSidebar inherits Rectangle {
@@ -62,6 +63,18 @@ export component SettingsSidebar inherits Rectangle {
 
             clicked => {
                 root.active-tab = 1;
+            }
+        }
+
+        SettingsNavItem {
+            label: @tr("Keys & identity");
+            selected: root.active-tab == 8;
+            KeyIcon {
+                stroke: root.active-tab == 8 ? Palette.mint : Palette.text-mid;
+            }
+
+            clicked => {
+                root.active-tab = 8;
             }
         }
 

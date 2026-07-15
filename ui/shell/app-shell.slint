@@ -8,9 +8,9 @@
 // gutter between them is a drag handle; the widths persist through settings.rs
 // (`shell-chats-width`). The wordmark bar is gone, so the conversation starts
 // at the top of its card. An Appearance setting (`shell-centered`) constrains
-// the thread to a centred reading measure. Card colours are the derived
-// `Palette.canvas`/`Palette.card` pair (card lifts off the canvas toward
-// white), so every theme gets a bento surface without a new Rust-fed token.
+// the thread to a centred reading measure. The cards use `Palette.card` (the
+// theme's elevated surface) on the `Palette.canvas` background, so every theme
+// lifts the cards correctly (near-black in amoled, white in light).
 //
 // Pure composition: the mounted feature components read AppState themselves.
 
@@ -21,7 +21,6 @@ import { Avatar } from "../primitives/avatar.slint";
 import { ChatBubbleIcon } from "../icons/chat-bubble-icon.slint";
 import { PeopleIcon } from "../icons/people-icon.slint";
 import { ArchiveIcon } from "../icons/archive-icon.slint";
-import { KeyIcon } from "../icons/key-icon.slint";
 import { PlusIcon } from "../icons/plus-icon.slint";
 import { SettingsIcon } from "../icons/settings-icon.slint";
 import { SearchIcon } from "../icons/search-icon.slint";
@@ -31,7 +30,6 @@ import { MainPane } from "../main-pane/main-pane.slint";
 import { GetStartedScreen } from "../main-pane/get-started.slint";
 import { ContactsPage } from "../contacts/contacts-page.slint";
 import { ArchivedPage } from "../archived/archived-page.slint";
-import { KeysPage } from "../keys/keys-page.slint";
 import { SettingsPage } from "../settings/settings-page.slint";
 import { SettingsSidebar } from "../settings/settings-sidebar.slint";
 import { ProfilePage } from "../profile/profile-page.slint";
@@ -201,19 +199,8 @@ export component AppShell inherits Rectangle {
                                 y: (parent.height - self.height) / 2;
                             }
                         }
-                        IconBtn {
-                            selected: AppState.active-page == 3;
-                            has-badge: AppState.rail-badge-keys > 0;
-                            y: (parent.height - self.height) / 2;
-                            clicked => {
-                                AppState.nav-requested(3);
-                            }
-                            KeyIcon {
-                                stroke: AppState.active-page == 3 ? Palette.mint : Palette.text-mid;
-                                x: (parent.width - self.width) / 2;
-                                y: (parent.height - self.height) / 2;
-                            }
-                        }
+                        // Keys & identity now lives inside Settings (no header
+                        // button); see the Settings sidebar's "Keys & identity".
                         IconBtn {
                             selected: AppState.active-page == 4;
                             y: (parent.height - self.height) / 2;
@@ -403,12 +390,6 @@ export component AppShell inherits Rectangle {
                         width: parent.width;
                         height: parent.height;
                         window-width: root.width;
-                    }
-                }
-                if AppState.active-page == 3: FadeInPage {
-                    KeysPage {
-                        width: parent.width;
-                        height: parent.height;
                     }
                 }
                 if AppState.active-page == 4: FadeInPage {

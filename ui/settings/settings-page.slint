@@ -9,6 +9,7 @@ import { NetworkPane } from "network-pane.slint";
 import { AdvancedPane } from "advanced-pane.slint";
 import { DebugPane } from "debug-pane.slint";
 import { AboutPane } from "about-pane.slint";
+import { KeysPage } from "../keys/keys-page.slint";
 
 // Navigation/layout only — the panes read and write AppState themselves.
 export component SettingsPage inherits Rectangle {
@@ -65,6 +66,11 @@ export component SettingsPage inherits Rectangle {
                 height: parent.height;
             }
             if root.active-tab == 7: DebugPane {
+                width: parent.width;
+                height: parent.height;
+            }
+            // Keys & identity, moved in from the old top-level Keys page.
+            if root.active-tab == 8: KeysPage {
                 width: parent.width;
                 height: parent.height;
             }
