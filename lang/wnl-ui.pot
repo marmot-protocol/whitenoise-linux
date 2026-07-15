@@ -522,6 +522,10 @@ msgctxt "ReplyBanner"
 msgid "Cancel reply"
 msgstr ""
 
+msgctxt "AppearancePane"
+msgid "Centred conversation"
+msgstr ""
+
 msgctxt "ThemePicker"
 msgid "Chalkboard"
 msgstr ""
@@ -1259,6 +1263,10 @@ msgctxt "StoragePane"
 msgid "KEYS & BACKUPS"
 msgstr ""
 
+msgctxt "AppearancePane"
+msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
+msgstr ""
+
 msgctxt "ContactDetail"
 msgid "Key package"
 msgstr ""
@@ -1281,6 +1289,10 @@ msgstr ""
 
 msgctxt "ArchivedDetail"
 msgid "LAST ACTIVITY"
+msgstr ""
+
+msgctxt "AppearancePane"
+msgid "LAYOUT"
 msgstr ""
 
 msgctxt "KeysPage"
@@ -1469,6 +1481,10 @@ msgstr ""
 
 msgctxt "ProfilePage"
 msgid "NIP-05"
+msgstr ""
+
+msgctxt "AppShell"
+msgid "NO RELAYS"
 msgstr ""
 
 msgctxt "ChatListPanel"
@@ -1863,6 +1879,10 @@ msgctxt "DebugPane"
 msgid "RAW EVENTS"
 msgstr ""
 
+msgctxt "AppShell"
+msgid "RELAYS"
+msgstr ""
+
 msgctxt "ChatListPanel"
 msgid "RELAYS"
 msgstr ""
@@ -2107,12 +2127,20 @@ msgctxt "GetStartedScreen"
 msgid "SUGGESTED"
 msgstr ""
 
+msgctxt "AppShell"
+msgid "SYNCED"
+msgstr ""
+
 msgctxt "ChatListPanel"
 msgid "SYNCED"
 msgstr ""
 
 msgctxt "StatusBar"
 msgid "SYNCED"
+msgstr ""
+
+msgctxt "AppShell"
+msgid "SYNCING…"
 msgstr ""
 
 msgctxt "ChatListPanel"
@@ -2218,6 +2246,10 @@ msgstr ""
 
 msgctxt "ChatSearchBar"
 msgid "Search in conversation…"
+msgstr ""
+
+msgctxt "AppShell"
+msgid "Search messages…"
 msgstr ""
 
 msgctxt "GlobalSearchModal"

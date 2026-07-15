@@ -551,6 +551,10 @@ msgctxt "ReplyBanner"
 msgid "Cancel reply"
 msgstr "Annulla risposta"
 
+msgctxt "AppearancePane"
+msgid "Centred conversation"
+msgstr "Conversazione centrata"
+
 msgctxt "ThemePicker"
 msgid "Chalkboard"
 msgstr ""
@@ -1319,6 +1323,10 @@ msgctxt "StoragePane"
 msgid "KEYS & BACKUPS"
 msgstr "CHIAVI E BACKUP"
 
+msgctxt "AppearancePane"
+msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
+msgstr "Mantieni la conversazione aperta su una comoda larghezza di lettura invece di riempire tutta la larghezza."
+
 msgctxt "ContactDetail"
 msgid "Key package"
 msgstr "Pacchetto chiavi"
@@ -1343,6 +1351,10 @@ msgstr "LINGUA"
 msgctxt "ArchivedDetail"
 msgid "LAST ACTIVITY"
 msgstr "ULTIMA ATTIVITÀ"
+
+msgctxt "AppearancePane"
+msgid "LAYOUT"
+msgstr "LAYOUT"
 
 msgctxt "KeysPage"
 msgid "LINKED DEVICES"
@@ -1542,6 +1554,10 @@ msgstr "SOPRANNOME"
 msgctxt "ProfilePage"
 msgid "NIP-05"
 msgstr ""
+
+msgctxt "AppShell"
+msgid "NO RELAYS"
+msgstr "NESSUN RELAY"
 
 #, fuzzy
 msgctxt "ChatListPanel"
@@ -1957,6 +1973,10 @@ msgctxt "DebugPane"
 msgid "RAW EVENTS"
 msgstr ""
 
+msgctxt "AppShell"
+msgid "RELAYS"
+msgstr "RELAY"
+
 #, fuzzy
 msgctxt "ChatListPanel"
 msgid "RELAYS"
@@ -2213,6 +2233,10 @@ msgctxt "GetStartedScreen"
 msgid "SUGGESTED"
 msgstr "SUGGERITI"
 
+msgctxt "AppShell"
+msgid "SYNCED"
+msgstr "SINCRONIZZATO"
+
 msgctxt "ChatListPanel"
 msgid "SYNCED"
 msgstr "SINCRONIZZATO"
@@ -2220,6 +2244,10 @@ msgstr "SINCRONIZZATO"
 msgctxt "StatusBar"
 msgid "SYNCED"
 msgstr "SINCRONIZZATO"
+
+msgctxt "AppShell"
+msgid "SYNCING…"
+msgstr "SINCRONIZZAZIONE…"
 
 msgctxt "ChatListPanel"
 msgid "SYNCING…"
@@ -2332,6 +2360,10 @@ msgstr "Cerca contatti…"
 msgctxt "ChatSearchBar"
 msgid "Search in conversation…"
 msgstr "Cerca nella conversazione…"
+
+msgctxt "AppShell"
+msgid "Search messages…"
+msgstr "Cerca messaggi…"
 
 msgctxt "GlobalSearchModal"
 msgid "Searching…"

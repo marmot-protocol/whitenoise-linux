@@ -77,4 +77,22 @@ export component AppearancePane inherits DetailPage {
             }
         }
     }
+
+    Section {
+        label: @tr("LAYOUT");
+        GroupCard {
+            KVRow {
+                row-height: 48px;
+                label: @tr("Centred conversation");
+                sublabel: @tr("Keep the open conversation on a comfortable reading measure instead of filling the width.");
+                show-divider: false;
+                Toggle {
+                    on <=> AppState.shell-centered;
+                    toggled => {
+                        AppState.shell-centered-toggled(AppState.shell-centered);
+                    }
+                }
+            }
+        }
+    }
 }

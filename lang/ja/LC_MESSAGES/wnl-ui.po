@@ -548,6 +548,10 @@ msgctxt "ReplyBanner"
 msgid "Cancel reply"
 msgstr "返信をキャンセル"
 
+msgctxt "AppearancePane"
+msgid "Centred conversation"
+msgstr "会話を中央に配置"
+
 msgctxt "ThemePicker"
 msgid "Chalkboard"
 msgstr ""
@@ -1316,6 +1320,10 @@ msgctxt "StoragePane"
 msgid "KEYS & BACKUPS"
 msgstr "鍵とバックアップ"
 
+msgctxt "AppearancePane"
+msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
+msgstr "開いている会話を全幅にせず、読みやすい幅に保ちます。"
+
 msgctxt "ContactDetail"
 msgid "Key package"
 msgstr "キーパッケージ"
@@ -1340,6 +1348,10 @@ msgstr "言語"
 msgctxt "ArchivedDetail"
 msgid "LAST ACTIVITY"
 msgstr "最終アクティビティ"
+
+msgctxt "AppearancePane"
+msgid "LAYOUT"
+msgstr "レイアウト"
 
 msgctxt "KeysPage"
 msgid "LINKED DEVICES"
@@ -1539,6 +1551,10 @@ msgstr "ニックネーム"
 msgctxt "ProfilePage"
 msgid "NIP-05"
 msgstr ""
+
+msgctxt "AppShell"
+msgid "NO RELAYS"
+msgstr "リレーなし"
 
 #, fuzzy
 msgctxt "ChatListPanel"
@@ -1954,6 +1970,10 @@ msgctxt "DebugPane"
 msgid "RAW EVENTS"
 msgstr ""
 
+msgctxt "AppShell"
+msgid "RELAYS"
+msgstr "リレー"
+
 #, fuzzy
 msgctxt "ChatListPanel"
 msgid "RELAYS"
@@ -2210,6 +2230,10 @@ msgctxt "GetStartedScreen"
 msgid "SUGGESTED"
 msgstr "おすすめ"
 
+msgctxt "AppShell"
+msgid "SYNCED"
+msgstr "同期済み"
+
 msgctxt "ChatListPanel"
 msgid "SYNCED"
 msgstr "同期済み"
@@ -2217,6 +2241,10 @@ msgstr "同期済み"
 msgctxt "StatusBar"
 msgid "SYNCED"
 msgstr "同期済み"
+
+msgctxt "AppShell"
+msgid "SYNCING…"
+msgstr "同期中…"
 
 msgctxt "ChatListPanel"
 msgid "SYNCING…"
@@ -2329,6 +2357,10 @@ msgstr "連絡先を検索…"
 msgctxt "ChatSearchBar"
 msgid "Search in conversation…"
 msgstr "会話内を検索…"
+
+msgctxt "AppShell"
+msgid "Search messages…"
+msgstr "メッセージを検索…"
 
 msgctxt "GlobalSearchModal"
 msgid "Searching…"

@@ -148,6 +148,9 @@ fn main() -> Result<(), slint::PlatformError> {
     apply_theme_mode(&ui, &theme_mode);
     set_accent_index(&ui, accent_color_idx(accent_color));
     ui.set_outgoing_on_right(initial_settings.outgoing_on_right);
+    ui.set_shell_chats_width(initial_settings.shell_chats_width);
+    ui.set_shell_info_width(initial_settings.shell_info_width);
+    ui.set_shell_centered(initial_settings.centered_conversation);
     push_quick_reactions(&ui, &initial_settings.quick_reactions);
     // Drives ⌘-vs-Ctrl shortcut hints (command palette badge, etc.).
     ui.set_is_macos(cfg!(target_os = "macos"));

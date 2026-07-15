@@ -1,13 +1,31 @@
-// AppShell — the signed-in window body: title bar, page slot, left rail and
-// status bar. Pure composition: every mounted component reads the AppState
-// global itself (see app-state.slint), so the shell passes layout geometry
-// only. Mounted outside any layout, the Rectangle root defaults to the full
-// window.
+// AppShell — the signed-in window body, redesigned as a resizable bento shell.
+//
+// The old layout was a 30px wordmark title-bar over a hover-expand nav rail, a
+// width-threshold chat list, and a group-only right panel, none of them under
+// the user's control. This replaces it with two floating cards on a canvas: a
+// prominent left chat bar (B's "chats-first" column, with section nav folded
+// into its header so there is no separate rail) and the conversation card. The
+// gutter between them is a drag handle; the widths persist through settings.rs
+// (`shell-chats-width`). The wordmark bar is gone, so the conversation starts
+// at the top of its card. An Appearance setting (`shell-centered`) constrains
+// the thread to a centred reading measure. Card colours are the derived
+// `Palette.canvas`/`Palette.card` pair (card lifts off the canvas toward
+// white), so every theme gets a bento surface without a new Rust-fed token.
+//
+// Pure composition: the mounted feature components read AppState themselves.
 
-import { Palette } from "../tokens.slint";
-import { TitleBar } from "title-bar.slint";
-import { LeftRail } from "left-rail.slint";
-import { ChatListPanel } from "../chat-list/chat-list.slint";
+import { Palette, Theme, ChatMeta, TextSelection } from "../tokens.slint";
+import { AppState } from "app-state.slint";
+import { ListView } from "std-widgets.slint";
+import { Avatar } from "../primitives/avatar.slint";
+import { PeopleIcon } from "../icons/people-icon.slint";
+import { ArchiveIcon } from "../icons/archive-icon.slint";
+import { KeyIcon } from "../icons/key-icon.slint";
+import { PlusIcon } from "../icons/plus-icon.slint";
+import { SettingsIcon } from "../icons/settings-icon.slint";
+import { SearchIcon } from "../icons/search-icon.slint";
+import { MentionsIcon } from "mentions-icon.slint";
+import { ChatListEntry } from "../chat-list/chat-list-entry.slint";
 import { MainPane } from "../main-pane/main-pane.slint";
 import { GetStartedScreen } from "../main-pane/get-started.slint";
 import { ContactsPage } from "../contacts/contacts-page.slint";
@@ -17,69 +35,326 @@ import { SettingsPage } from "../settings/settings-page.slint";
 import { ProfilePage } from "../profile/profile-page.slint";
 import { StatusBar } from "status-bar.slint";
 import { FadeInPage } from "../layout/fade-in-page.slint";
-import { AppState } from "app-state.slint";
+
+// A floating bento card, lifted off the canvas by the theme's elevated surface.
+component Card inherits Rectangle {
+    border-radius: 16px * Theme.r-scale;
+    background: Palette.card;
+    border-width: max(Theme.border-w, 1px);
+    border-color: Palette.card-border;
+    clip: true;
+    drop-shadow-blur: Theme.hard-shadow ? 0px : 26px;
+    drop-shadow-offset-x: Theme.hard-shadow ? 5px : 0px;
+    drop-shadow-offset-y: Theme.hard-shadow ? 5px : 12px;
+    drop-shadow-color: Palette.shadow-card;
+}
+
+// A gutter between cards that doubles as a drag handle. `value` two-way-binds
+// to the neighbouring column width; releasing the drag persists it.
+component Gutter inherits Rectangle {
+    in-out property <length> value;
+    in property <length> min-w: 240px;
+    in property <length> max-w: 520px;
+    callback committed();
+    property <length> start;
+    width: 12px;
+    Rectangle {
+        width: 4px;
+        height: 32px;
+        border-radius: 2px;
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        background: ta.has-hover ? Palette.mint : Palette.card-border;
+        opacity: ta.has-hover ? 1.0 : 0.6;
+    }
+    ta := TouchArea {
+        mouse-cursor: ew-resize;
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down) {
+                root.start = root.value;
+            }
+            if (e.kind == PointerEventKind.up) {
+                root.committed();
+            }
+        }
+        moved => {
+            root.value = clamp(root.start + (self.mouse-x - self.pressed-x), root.min-w, root.max-w);
+        }
+    }
+}
+
+// A compact icon button for the chat-bar header (nav + global actions).
+component IconBtn inherits Rectangle {
+    in property <bool> selected: false;
+    in property <bool> has-badge: false;
+    width: 34px;
+    height: 34px;
+    border-radius: 9px * Theme.r-scale;
+    background: root.selected ? Palette.selected : (ta.has-hover ? Palette.hover : transparent);
+    animate background { duration: Theme.hover-dur; }
+    @children
+    if root.has-badge: Rectangle {
+        x: parent.width - 11px;
+        y: 6px;
+        width: 7px;
+        height: 7px;
+        border-radius: 3.5px;
+        background: Palette.mint;
+    }
+    ta := TouchArea { }
+}
 
 export component AppShell inherits Rectangle {
+    // The canvas the cards float on.
+    background: Palette.canvas;
+
     VerticalLayout {
         spacing: 0;
-        horizontal-stretch: 1;
 
-        TitleBar {
-            rail-width: rail.collapsed-width;
-        }
-
-        // Middle area is a Rectangle (absolute children) instead of a
-        // HorizontalLayout so that the conditional page contents NEVER drive
-        // the outer preferred size. The window stays the size the user picked
-        // across tab switches.
-        Rectangle {
+        HorizontalLayout {
             vertical-stretch: 1;
-            preferred-width: 0px;
-            preferred-height: 0px;
-            background: Palette.bg;
+            padding: 10px;
+            spacing: 0;
 
-            // Page slot — pinned at the rail's collapsed width; the
-            // hover-expanded rail (declared below, so painted on top) overlays
-            // this slot instead of squeezing the content.
-            Rectangle {
-                x: rail.collapsed-width;
-                y: 0;
-                width: parent.width - rail.collapsed-width;
-                height: parent.height;
+            // ── Left card · the prominent chat bar ──
+            Card {
+                width: AppState.shell-chats-width;
+                VerticalLayout {
+                    padding-left: 10px;
+                    padding-right: 10px;
+                    padding-top: 12px;
+                    padding-bottom: 11px;
+                    spacing: 10px;
 
-                // Pages keyed by AppState.active-page:
-                // 0=chats, 1=contacts, 2=archive, 3=keys, 4=settings, 5=profile.
-                // Each mounts inside a FadeInPage (layout/fade-in-page.slint)
-                // so navigation feels smooth.
-                if AppState.active-page == 0: FadeInPage {
-                    // No chats yet → first-run get-started screen (with live
-                    // relay setup). Once a chat exists, the list + pane shell.
+                    // Header: account + section nav (no separate rail).
+                    HorizontalLayout {
+                        height: 40px;
+                        spacing: 6px;
+                        alignment: stretch;
+                        av-touch := TouchArea {
+                            width: 40px;
+                            mouse-cursor: pointer;
+                            clicked => {
+                                AppState.profile-requested();
+                            }
+                            Avatar {
+                                size: 36px;
+                                initials: AppState.my-av-initials;
+                                color-a: AppState.my-av-a;
+                                color-b: AppState.my-av-b;
+                                picture: AppState.my-av-picture;
+                                has-picture: AppState.my-av-has-picture;
+                                font-size: Theme.fs(12px, 16px);
+                                x: (parent.width - self.width) / 2;
+                                y: (parent.height - self.height) / 2;
+                            }
+                        }
+                        Rectangle { horizontal-stretch: 1; }
+                        IconBtn {
+                            selected: AppState.active-page == 1;
+                            has-badge: AppState.rail-badge-contacts > 0;
+                            y: (parent.height - self.height) / 2;
+                            PeopleIcon {
+                                stroke: AppState.active-page == 1 ? Palette.mint : Palette.text-mid;
+                                x: (parent.width - self.width) / 2;
+                                y: (parent.height - self.height) / 2;
+                            }
+                            TouchArea {
+                                clicked => {
+                                    AppState.nav-requested(1);
+                                }
+                            }
+                        }
+                        IconBtn {
+                            selected: AppState.active-page == 2;
+                            has-badge: AppState.rail-badge-archive > 0;
+                            y: (parent.height - self.height) / 2;
+                            ArchiveIcon {
+                                stroke: AppState.active-page == 2 ? Palette.mint : Palette.text-mid;
+                                x: (parent.width - self.width) / 2;
+                                y: (parent.height - self.height) / 2;
+                            }
+                            TouchArea {
+                                clicked => {
+                                    AppState.nav-requested(2);
+                                }
+                            }
+                        }
+                        IconBtn {
+                            selected: AppState.active-page == 3;
+                            has-badge: AppState.rail-badge-keys > 0;
+                            y: (parent.height - self.height) / 2;
+                            KeyIcon {
+                                stroke: AppState.active-page == 3 ? Palette.mint : Palette.text-mid;
+                                x: (parent.width - self.width) / 2;
+                                y: (parent.height - self.height) / 2;
+                            }
+                            TouchArea {
+                                clicked => {
+                                    AppState.nav-requested(3);
+                                }
+                            }
+                        }
+                        IconBtn {
+                            selected: AppState.active-page == 4;
+                            y: (parent.height - self.height) / 2;
+                            SettingsIcon {
+                                stroke: AppState.active-page == 4 ? Palette.mint : Palette.text-mid;
+                                x: (parent.width - self.width) / 2;
+                                y: (parent.height - self.height) / 2;
+                            }
+                            TouchArea {
+                                clicked => {
+                                    AppState.nav-requested(4);
+                                }
+                            }
+                        }
+                        // Cross-chat mentions inbox (was in the old title bar).
+                        MentionsIcon {
+                            mention-items: AppState.mention-inbox-items;
+                            mentions-loading: AppState.mention-inbox-loading;
+                            y: (parent.height - self.height) / 2;
+                            mentions-inbox-opened => {
+                                AppState.mention-inbox-opened();
+                            }
+                            mention-inbox-item-selected(group-id, message-id) => {
+                                AppState.mention-inbox-selected(group-id, message-id);
+                            }
+                        }
+                    }
+
+                    // Search (global message search) + new chat.
+                    HorizontalLayout {
+                        height: 38px;
+                        spacing: 9px;
+                        Rectangle {
+                            horizontal-stretch: 1;
+                            border-radius: 10px * Theme.r-scale;
+                            background: Palette.field;
+                            border-width: max(Theme.border-w, 1px);
+                            border-color: Palette.field-border;
+                            search-touch := TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => {
+                                    AppState.msg-global-open = true;
+                                }
+                                HorizontalLayout {
+                                    padding-left: 11px;
+                                    padding-right: 10px;
+                                    spacing: 9px;
+                                    SearchIcon {
+                                        stroke: Palette.text-vlo;
+                                        size: 13px;
+                                        y: (parent.height - self.height) / 2;
+                                    }
+                                    Text {
+                                        text: @tr("Search messages…");
+                                        color: Palette.text-vlo;
+                                        font-size: Theme.fs(13px, 16px);
+                                        vertical-alignment: center;
+                                        horizontal-stretch: 1;
+                                    }
+                                }
+                            }
+                        }
+                        Rectangle {
+                            width: 38px;
+                            border-radius: 10px * Theme.r-scale;
+                            background: newchat-touch.has-hover ? Palette.mint-hi : Palette.mint-surface;
+                            border-width: 1px;
+                            border-color: Palette.mint-dim;
+                            animate background { duration: Theme.hover-dur; }
+                            newchat-touch := TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => {
+                                    AppState.new-chat-requested();
+                                }
+                                PlusIcon {
+                                    stroke: Palette.mint;
+                                    size: 15px;
+                                    x: (parent.width - self.width) / 2;
+                                    y: (parent.height - self.height) / 2;
+                                }
+                            }
+                        }
+                    }
+
+                    // The chat list — real rows, virtualized.
+                    Rectangle {
+                        vertical-stretch: 1;
+                        ListView {
+                            for chat[idx] in AppState.chats: ChatListEntry {
+                                width: 100%;
+                                chat: chat;
+                                selected: idx == AppState.active-chat;
+                                clicked => {
+                                    TextSelection.clear();
+                                    AppState.chat-selected(idx);
+                                }
+                                context-menu(ax, ay) => {
+                                    AppState.request-chat-context(idx, ax, ay);
+                                }
+                            }
+                        }
+                    }
+
+                    // Relay / sync footer.
+                    HorizontalLayout {
+                        height: 16px;
+                        spacing: 8px;
+                        Rectangle {
+                            width: 8px;
+                            height: 8px;
+                            y: (parent.height - self.height) / 2;
+                            border-radius: 4px;
+                            background: AppState.network-connected > 0 ? Palette.mint-dim : Palette.text-vlo;
+                        }
+                        Text {
+                            text: AppState.network-total > 0
+                                ? AppState.network-connected + "/" + AppState.network-total + " " + @tr("RELAYS")
+                                : @tr("NO RELAYS");
+                            color: Palette.text-mid;
+                            font-size: Theme.fs(10px, 13px);
+                            font-weight: 700;
+                            letter-spacing: 0.8px;
+                            vertical-alignment: center;
+                        }
+                        Text {
+                            text: AppState.sync-secs < 0
+                                ? "· " + @tr("SYNCING…")
+                                : "· " + @tr("SYNCED");
+                            color: Palette.text-vlo;
+                            font-size: Theme.fs(10px, 13px);
+                            font-weight: 600;
+                            letter-spacing: 0.8px;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+            }
+
+            Gutter {
+                value <=> AppState.shell-chats-width;
+                min-w: 260px;
+                max-w: 520px;
+                committed => {
+                    AppState.shell-widths-changed(AppState.shell-chats-width, AppState.shell-info-width);
+                }
+            }
+
+            // ── Right card · conversation or the active page ──
+            Card {
+                horizontal-stretch: 1;
+
+                // Chats page: the conversation, or the first-run screen.
+                if AppState.active-page == 0: Rectangle {
                     if AppState.chats.length == 0: GetStartedScreen {
                         width: parent.width;
                         height: parent.height;
                     }
-
-                    // Absolute layout instead of a HorizontalLayout: the pane
-                    // sits against the panel's *reserved* width, so the panel's
-                    // hover expansion (painted later, on top) overlays it
-                    // without reflowing the conversation.
-                    if AppState.chats.length > 0: Rectangle {
+                    if AppState.chats.length > 0: MainPane {
                         width: parent.width;
                         height: parent.height;
-
-                        MainPane {
-                            x: chat-list.reserved-width;
-                            y: 0;
-                            width: parent.width - chat-list.reserved-width;
-                            height: parent.height;
-                        }
-
-                        chat-list := ChatListPanel {
-                            x: 0;
-                            y: 0;
-                            height: parent.height;
-                            window-width: root.width;
-                        }
                     }
                 }
 
@@ -90,7 +365,6 @@ export component AppShell inherits Rectangle {
                         window-width: root.width;
                     }
                 }
-
                 if AppState.active-page == 2: FadeInPage {
                     ArchivedPage {
                         width: parent.width;
@@ -98,35 +372,24 @@ export component AppShell inherits Rectangle {
                         window-width: root.width;
                     }
                 }
-
                 if AppState.active-page == 3: FadeInPage {
                     KeysPage {
                         width: parent.width;
                         height: parent.height;
                     }
                 }
-
                 if AppState.active-page == 4: FadeInPage {
                     SettingsPage {
                         width: parent.width;
                         height: parent.height;
                     }
                 }
-
                 if AppState.active-page == 5: FadeInPage {
                     ProfilePage {
                         width: parent.width;
                         height: parent.height;
                     }
                 }
-            }
-
-            // Left rail — expandable on hover (56px → 160px); declared after
-            // the page slot so the expansion paints over it.
-            rail := LeftRail {
-                x: 0;
-                y: 0;
-                height: parent.height;
             }
         }
 

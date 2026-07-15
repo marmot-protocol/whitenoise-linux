@@ -668,6 +668,27 @@ pub(crate) fn wire_panes(
         }
     });
 
+    // Chat-shell bento column widths: persist the dragged sizes so the layout
+    // survives restarts.
+    ui.global::<AppState>().on_shell_widths_changed({
+        let settings_cell = settings_cell.clone();
+        move |chats_w, info_w| {
+            let mut s = settings_cell.borrow_mut();
+            s.shell_chats_width = chats_w;
+            s.shell_info_width = info_w;
+            s.save();
+        }
+    });
+
+    ui.global::<AppState>().on_shell_centered_toggled({
+        let settings_cell = settings_cell.clone();
+        move |on| {
+            let mut s = settings_cell.borrow_mut();
+            s.centered_conversation = on;
+            s.save();
+        }
+    });
+
     ui.global::<AppState>().on_launch_at_login_toggled({
         let weak = ui.as_weak();
         let settings_cell = settings_cell.clone();

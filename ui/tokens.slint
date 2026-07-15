@@ -257,6 +257,13 @@ export global Theme {
 
 export global Palette {
     out property <color> bg:        Theme.c.bg;
+    // Bento chat-shell surfaces, derived from `bg` so every theme gets them
+    // without a new Rust-fed ThemeColors field: the canvas is the window
+    // background, and cards lift off it toward white (raised = lighter, which
+    // reads in both light and dark themes). A follow-up can promote these to
+    // first-class per-theme fields for finer control.
+    out property <color> canvas:      Theme.c.bg;
+    out property <color> card:        Theme.c.bg.mix(#ffffff, 0.86);
     out property <color> panel:     Theme.c.panel;
     out property <color> panel-2:   Theme.c.panel-2;
     out property <color> rail:      Theme.c.rail;
