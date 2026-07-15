@@ -884,16 +884,47 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                                                         tracing::warn!(target: "attach", "decode {mid}: {e:#}")
                                                     }
                                                 }
-                                            } else if let Some(path) = &target_path
-                                                && let Err(e) = std::fs::write(path, &dl.plaintext)
-                                            {
-                                                tracing::warn!(
-                                                    target: "attach", "write {}: {e:#}",
-                                                    path.display()
+                                            } else if let Some(path) = &target_path {
+                                                // Explicit "Save attachment": the
+                                                // outcome must be visible, so report
+                                                // both success and failure in the
+                                                // status-bar toast, not just stderr.
+                                                let label = save_target_label(path);
+                                                match std::fs::write(path, &dl.plaintext) {
+                                                    Ok(()) => {
+                                                        toast_save_attachment(
+                                                            weak.clone(),
+                                                            label,
+                                                            true,
+                                                        )
+                                                    }
+                                                    Err(e) => {
+                                                        tracing::warn!(
+                                                            target: "attach", "write {}: {e:#}",
+                                                            path.display()
+                                                        );
+                                                        toast_save_attachment(
+                                                            weak.clone(),
+                                                            label,
+                                                            false,
+                                                        );
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        Err(e) => {
+                                            tracing::warn!(target: "attach", "download {mid}: {e:#}");
+                                            // A failed download of a save-to-disk
+                                            // request means the file was not saved —
+                                            // tell the user so it isn't silent.
+                                            if let Some(path) = &target_path {
+                                                toast_save_attachment(
+                                                    weak.clone(),
+                                                    save_target_label(path),
+                                                    false,
                                                 );
                                             }
                                         }
-                                        Err(e) => tracing::warn!(target: "attach", "download {mid}: {e:#}"),
                                     }
                                     // This completion already runs on the backend
                                     // runtime; the async refresh keeps the snapshot
@@ -1007,16 +1038,23 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                                 attachment_size_put(&mid_clear, bytes.len() as u64);
                                 // Large-file write off the runtime worker.
                                 let write_path = path.clone();
+                                let label = save_target_label(path);
                                 match tokio::task::spawn_blocking(move || {
                                     std::fs::write(&write_path, &bytes)
                                 })
                                 .await
                                 {
-                                    Ok(Err(e)) => {
-                                        tracing::warn!(target: "attach", "write {}: {e:#}", path.display())
+                                    Ok(Ok(())) => {
+                                        toast_save_attachment(weak_clear.clone(), label, true)
                                     }
-                                    Err(e) => tracing::warn!(target: "attach", "write join: {e:#}"),
-                                    Ok(Ok(())) => {}
+                                    Ok(Err(e)) => {
+                                        tracing::warn!(target: "attach", "write {}: {e:#}", path.display());
+                                        toast_save_attachment(weak_clear.clone(), label, false);
+                                    }
+                                    Err(e) => {
+                                        tracing::warn!(target: "attach", "write join: {e:#}");
+                                        toast_save_attachment(weak_clear.clone(), label, false);
+                                    }
                                 }
                                 attachment_in_flight()
                                     .lock()
