@@ -160,22 +160,24 @@ pub(crate) fn snippet_parts(text: &str, tokens: &[String]) -> (String, String, S
     if let Some(first) = tokens.first() {
         let lower: Vec<char> = flat.to_lowercase().chars().collect();
         let tok: Vec<char> = first.chars().collect();
-        if lower.len() == orig.len() && !tok.is_empty() && tok.len() <= lower.len() {
-            if let Some(pos) = lower.windows(tok.len()).position(|w| w == &tok[..]) {
-                let start = pos.saturating_sub(LEAD);
-                let mut pre = String::new();
-                if start > 0 {
-                    pre.push('…');
-                }
-                pre.extend(orig[start..pos].iter());
-                let matched: String = orig[pos..pos + tok.len()].iter().collect();
-                let after = pos + tok.len();
-                let mut post: String = orig[after..].iter().take(TAIL).collect();
-                if orig.len() - after > TAIL {
-                    post.push('…');
-                }
-                return (pre, matched, post);
+        if lower.len() == orig.len()
+            && !tok.is_empty()
+            && tok.len() <= lower.len()
+            && let Some(pos) = lower.windows(tok.len()).position(|w| w == &tok[..])
+        {
+            let start = pos.saturating_sub(LEAD);
+            let mut pre = String::new();
+            if start > 0 {
+                pre.push('…');
             }
+            pre.extend(orig[start..pos].iter());
+            let matched: String = orig[pos..pos + tok.len()].iter().collect();
+            let after = pos + tok.len();
+            let mut post: String = orig[after..].iter().take(TAIL).collect();
+            if orig.len() - after > TAIL {
+                post.push('…');
+            }
+            return (pre, matched, post);
         }
     }
     let mut head: String = orig.iter().take(TAIL).collect();

@@ -446,7 +446,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     // otherwise reload the chat with a window centered on the target.
     // Captures no UI handle, so the async query path can carry it across
     // threads and call it back on the event loop.
-    let msg_search_jump: Arc<dyn Fn(&DarkMatterLinux, &str, &str) + Send + Sync> = {
+    let msg_search_jump: MessageJumpFn = {
         let pending_message_jump = pending_message_jump.clone();
         Arc::new(
             move |ui: &DarkMatterLinux, group_hex: &str, message_id: &str| {

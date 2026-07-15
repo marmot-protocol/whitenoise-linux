@@ -470,16 +470,15 @@ pub(crate) fn refresh_mention_inbox_async(
                     let (sender_name, picture_url) = b.account_name_and_picture(&source.sender_id);
                     let (sender_a, sender_b, sender_initials) = avatar_for(&sender_name);
                     let (picture, has_picture) = bind_cached_picture(picture_url.as_deref());
-                    if !has_picture {
-                        if let Some(url) = picture_url
+                    if !has_picture
+                        && let Some(url) = picture_url
                             .as_deref()
                             .map(str::trim)
                             .filter(|u| !u.is_empty())
-                        {
-                            pending_fetches
-                                .entry(source.sender_id.clone())
-                                .or_insert_with(|| url.to_string());
-                        }
+                    {
+                        pending_fetches
+                            .entry(source.sender_id.clone())
+                            .or_insert_with(|| url.to_string());
                     }
                     Some(MentionInboxItem {
                         group_id: s(&source.group_id),

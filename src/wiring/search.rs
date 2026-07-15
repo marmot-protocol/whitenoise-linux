@@ -93,7 +93,7 @@ pub(crate) fn wire_search(ui: &DarkMatterLinux, cx: &Cx) {
                         }
                     }
                 }
-                hits.sort_by(|a, b| b.recorded_at.cmp(&a.recorded_at));
+                hits.sort_by_key(|hit| std::cmp::Reverse(hit.recorded_at));
                 hits.truncate(GLOBAL_HIT_LIMIT);
                 let _ = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak.upgrade() else { return };
@@ -123,14 +123,15 @@ pub(crate) fn wire_search(ui: &DarkMatterLinux, cx: &Cx) {
                             let (sender_a, sender_b, sender_initials) = avatar_for(&sender_name);
                             let (picture, has_picture) =
                                 bind_cached_picture(picture_url.as_deref());
-                            if !has_picture {
-                                if let Some(url) =
-                                    picture_url.as_deref().map(str::trim).filter(|u| !u.is_empty())
-                                {
-                                    pending_fetches
-                                        .entry(hit.sender_id.clone())
-                                        .or_insert_with(|| url.to_string());
-                                }
+                            if !has_picture
+                                && let Some(url) = picture_url
+                                    .as_deref()
+                                    .map(str::trim)
+                                    .filter(|u| !u.is_empty())
+                            {
+                                pending_fetches
+                                    .entry(hit.sender_id.clone())
+                                    .or_insert_with(|| url.to_string());
                             }
                             let (text_pre, text_match, text_post) =
                                 snippet_parts(&hit.text, &tokens);
