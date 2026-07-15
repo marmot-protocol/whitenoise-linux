@@ -79,11 +79,11 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             let name = name.to_string();
             let members = parse_member_list(&members_text);
             if members.is_empty() {
-                ui.set_new_chat_status(s("Add at least one npub."));
+                ui.set_new_chat_status(error_copy().add_npub.into());
                 return;
             }
             let Some(b) = backend_cell.lock().unwrap().clone() else {
-                ui.set_new_chat_status(s("Backend not ready."));
+                ui.set_new_chat_status(error_copy().backend_not_ready.into());
                 return;
             };
             // Skip the creator's own npub if it leaked into the input —
@@ -99,7 +99,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 })
                 .collect();
             if members.is_empty() {
-                ui.set_new_chat_status(s("Can't start a chat with only yourself."));
+                ui.set_new_chat_status(error_copy().only_yourself.into());
                 return;
             }
             ui.set_new_chat_busy(true);

@@ -249,6 +249,11 @@ msgctxt "AddAccountModal"
 msgid "Add account"
 msgstr "Kontakt"
 
+#. New-chat / add-contact status copy (src/wiring/chats.rs, contacts.rs).
+msgctxt "ErrorCopy"
+msgid "Add at least one npub."
+msgstr "Füge mindestens ein npub hinzu."
+
 #, fuzzy
 msgctxt "AddContactModal"
 msgid "Add contact"
@@ -287,6 +292,14 @@ msgstr "Speichere…"
 msgctxt "ProfileModal"
 msgid "Adding…"
 msgstr "Speichere…"
+
+msgctxt "ErrorCopy"
+msgid "Admin added."
+msgstr "Admin hinzugefügt."
+
+msgctxt "ErrorCopy"
+msgid "Admin removed."
+msgstr "Admin entfernt."
 
 msgctxt "GroupSettingsCard"
 msgid "Admins must step down before leaving."
@@ -337,6 +350,23 @@ msgctxt "ContactDetail"
 msgid "Archive chat"
 msgstr "Chat archivieren"
 
+msgctxt "ErrorCopy"
+msgid "Audit log deleted — recording continues in a fresh file."
+msgstr "Audit-Log gelöscht — die Aufzeichnung läuft in einer neuen Datei weiter."
+
+msgctxt "ErrorCopy"
+msgid "Audit log deleted."
+msgstr "Audit-Log gelöscht."
+
+msgctxt "ErrorCopy"
+msgid "Audit logging disabled. Existing files stay until you delete them."
+msgstr "Audit-Logging deaktiviert. Vorhandene Dateien bleiben, bis du sie löschst."
+
+#. Audit-log settings feedback (src/wiring/panes.rs).
+msgctxt "ErrorCopy"
+msgid "Audit logging enabled — recording now; logs upload automatically."
+msgstr "Audit-Logging aktiviert — Aufzeichnung läuft; Logs werden automatisch hochgeladen."
+
 msgctxt "AdvancedPane"
 msgid "Audit logs"
 msgstr "Audit-Protokolle"
@@ -344,6 +374,10 @@ msgstr "Audit-Protokolle"
 msgctxt "month"
 msgid "Aug"
 msgstr "Aug"
+
+msgctxt "ErrorCopy"
+msgid "Available"
+msgstr "Verfügbar"
 
 msgctxt "ImportBackupModal"
 msgid "BACKUP FILE"
@@ -364,6 +398,18 @@ msgstr "Alles sichern"
 msgctxt "LoginScreen"
 msgid "Back up your nsec before saving"
 msgstr "Sichere deinen nsec vor dem Speichern"
+
+msgctxt "ErrorCopy"
+msgid "Backend isn't ready yet."
+msgstr "Das Backend ist noch nicht bereit."
+
+msgctxt "ErrorCopy"
+msgid "Backend not ready."
+msgstr "Backend nicht bereit."
+
+msgctxt "status, %1 = error detail"
+msgid "Backup failed: %1"
+msgstr "Backup fehlgeschlagen: %1"
 
 msgctxt "AppearancePane"
 msgid "Berry"
@@ -432,6 +478,10 @@ msgstr "Dieses Audioformat kann nicht abgespielt werden"
 msgctxt "ErrorCopy"
 msgid "Can't reach your relays right now. Check your network and relay settings, then try again."
 msgstr "Deine Relays sind gerade nicht erreichbar. Überprüfe dein Netzwerk und deine Relay-Einstellungen und versuche es erneut."
+
+msgctxt "ErrorCopy"
+msgid "Can't start a chat with only yourself."
+msgstr "Du kannst keinen Chat nur mit dir selbst starten."
 
 #, fuzzy
 msgctxt "AddAccountModal"
@@ -521,6 +571,15 @@ msgctxt "ArchivedPage"
 msgid "Chats you archive are kept here, out of your main list."
 msgstr "Archivierte Chats werden hier aufbewahrt, abseits deiner Hauptliste."
 
+#. relay host and the relative time, filled Rust-side with `tmpl`.
+msgctxt "ErrorCopy"
+msgid "Checking…"
+msgstr "Wird geprüft…"
+
+msgctxt "ErrorCopy"
+msgid "Choose a backup file first."
+msgstr "Wähle zuerst eine Backup-Datei."
+
 msgctxt "LoginScreen"
 msgid "Choose a password"
 msgstr "Wähle ein Passwort"
@@ -606,6 +665,10 @@ msgctxt "ContactDetail"
 msgid "Contact"
 msgstr "Kontakt"
 
+msgctxt "ErrorCopy"
+msgid "Contacting relays…"
+msgstr "Relays werden kontaktiert…"
+
 #, fuzzy
 msgctxt "ProfileModal"
 msgid "Contacting relays…"
@@ -681,6 +744,14 @@ msgid "Couldn't accept the invitation. Please try again in a moment."
 msgstr "Einladung konnte nicht angenommen werden. Bitte versuche es gleich noch einmal."
 
 msgctxt "ErrorCopy"
+msgid "Couldn't access clipboard."
+msgstr "Zugriff auf die Zwischenablage nicht möglich."
+
+msgctxt "ErrorCopy"
+msgid "Couldn't access clipboard. Your nsec was not copied."
+msgstr "Zugriff auf die Zwischenablage nicht möglich. Dein nsec wurde nicht kopiert."
+
+msgctxt "ErrorCopy"
 msgid "Couldn't add that account. Please check the key and try again."
 msgstr "Dieses Konto konnte nicht hinzugefügt werden. Bitte überprüfe den Schlüssel und versuche es erneut."
 
@@ -701,12 +772,28 @@ msgid "Couldn't archive this chat. Please try again."
 msgstr "Dieser Chat konnte nicht archiviert werden. Bitte versuche es erneut."
 
 msgctxt "ErrorCopy"
+msgid "Couldn't change audit logging."
+msgstr "Audit-Logging konnte nicht geändert werden."
+
+msgctxt "ErrorCopy"
+msgid "Couldn't copy image."
+msgstr "Bild konnte nicht kopiert werden."
+
+msgctxt "ErrorCopy"
 msgid "Couldn't create the chat. Please try again."
 msgstr "Chat konnte nicht erstellt werden. Bitte versuche es erneut."
 
 msgctxt "ErrorCopy"
 msgid "Couldn't decline the invitation. Please try again in a moment."
 msgstr "Einladung konnte nicht abgelehnt werden. Bitte versuche es gleich noch einmal."
+
+msgctxt "ErrorCopy"
+msgid "Couldn't delete audit log."
+msgstr "Audit-Log konnte nicht gelöscht werden."
+
+msgctxt "ErrorCopy"
+msgid "Couldn't download image."
+msgstr "Bild konnte nicht heruntergeladen werden."
 
 #. Tier 2 — operation-specific fallbacks.
 msgctxt "ErrorCopy"
@@ -744,6 +831,10 @@ msgstr "Dein Key Package konnte nicht erneuert werden. Überprüfe deine Relay-E
 msgctxt "status toast when saving a file fails, %1 = file name"
 msgid "Couldn't save %1. Check the location has space and permission, then try again."
 msgstr "%1 konnte nicht gespeichert werden. Prüfe, ob am Speicherort genug Platz und die nötige Berechtigung vorhanden sind, und versuche es erneut."
+
+msgctxt "ErrorCopy"
+msgid "Couldn't save image."
+msgstr "Bild konnte nicht gespeichert werden."
 
 msgctxt "ErrorCopy"
 msgid "Couldn't save your edit. Check your connection and try again."
@@ -888,6 +979,10 @@ msgctxt "AdvancedPane"
 msgid "Deleting the file being recorded rotates it — recording continues in a fresh file."
 msgstr "Das Löschen der gerade aufgezeichneten Datei rotiert sie — die Aufzeichnung wird in einer neuen Datei fortgesetzt."
 
+msgctxt "ErrorCopy"
+msgid "Description saved."
+msgstr "Beschreibung gespeichert."
+
 #, fuzzy
 msgctxt "NotificationsPane"
 msgid "Desktop notifications"
@@ -956,6 +1051,14 @@ msgctxt "ErrorCopy"
 msgid "Enter a relay address."
 msgstr "Gib eine Relay-Adresse ein."
 
+msgctxt "ErrorCopy"
+msgid "Enter a username, npub, or hex public key."
+msgstr "Gib einen Benutzernamen, npub oder hex-öffentlichen Schlüssel ein."
+
+msgctxt "ErrorCopy"
+msgid "Enter the backup password."
+msgstr "Gib das Backup-Passwort ein."
+
 msgctxt "AddContactModal"
 msgid "Enter their username (name@domain), npub, or hex public key. They'll appear in your contacts on every device."
 msgstr "Gib ihren Benutzernamen (name@domain), npub oder hexadezimalen öffentlichen Schlüssel ein. Sie erscheinen auf jedem Gerät in deinen Kontakten."
@@ -968,6 +1071,11 @@ msgctxt "LoginScreen"
 msgid "Enter your password to unlock"
 msgstr "Gib dein Passwort zum Entsperren ein"
 
+#. is the underlying error, filled Rust-side with `tmpl`.
+msgctxt "ErrorCopy"
+msgid "Enter your password."
+msgstr "Gib dein Passwort ein."
+
 msgctxt "EncryptionInfoModal"
 msgid "Even if a key leaks later on, the messages you already sent can't be unlocked with it."
 msgstr ""
@@ -975,6 +1083,10 @@ msgstr ""
 msgctxt "ChatContextMenu"
 msgid "Export transcript…"
 msgstr "Verlauf exportieren…"
+
+msgctxt "status, %1 = error detail"
+msgid "Failed to encode key: %1"
+msgstr "Schlüssel konnte nicht kodiert werden: %1"
 
 msgctxt "month"
 msgid "Feb"
@@ -1003,6 +1115,18 @@ msgstr "Weiterleitung:"
 msgctxt "weekday"
 msgid "Fri"
 msgstr "Fr"
+
+msgctxt "key package source, %1 = relay host"
+msgid "From %1"
+msgstr "Von %1"
+
+msgctxt "key package source, %1 = relay host, %2 = relative time"
+msgid "From %1 · %2"
+msgstr "Von %1 · %2"
+
+msgctxt "ErrorCopy"
+msgid "Full restore is only available from the lock screen, before unlocking."
+msgstr "Die vollständige Wiederherstellung ist nur im Sperrbildschirm möglich, vor dem Entsperren."
 
 msgctxt "EncryptionInfoModal"
 msgid "GROUP ID"
@@ -1099,6 +1223,10 @@ msgctxt "ImageViewerModal"
 msgid "Image didn't load. Tap to retry."
 msgstr "Bild nicht geladen. Zum Wiederholen tippen."
 
+msgctxt "ErrorCopy"
+msgid "Image isn't ready yet."
+msgstr "Das Bild ist noch nicht bereit."
+
 msgctxt "ImportBackupModal"
 msgid "Import"
 msgstr "Importieren"
@@ -1152,6 +1280,11 @@ msgctxt "GroupMembersPanel"
 msgid "Invited"
 msgstr "Eingeladen"
 
+#. Group-admin status copy (src/wiring/groups.rs).
+msgctxt "ErrorCopy"
+msgid "Invited."
+msgstr "Eingeladen."
+
 #, fuzzy
 msgctxt "AddMemberCard"
 msgid "Inviting…"
@@ -1164,6 +1297,10 @@ msgstr ""
 msgctxt "ArchivedDetail"
 msgid "It stays end-to-end encrypted. Unarchiving returns it to your main list and resumes notifications."
 msgstr "Sie bleibt Ende-zu-Ende-verschlüsselt. Durch Wiederherstellen kehrt sie in deine Hauptliste zurück und Benachrichtigungen werden fortgesetzt."
+
+msgctxt "ErrorCopy"
+msgid "JSON copied"
+msgstr "JSON kopiert"
 
 msgctxt "month"
 msgid "Jan"
@@ -1251,6 +1388,10 @@ msgstr "Diese Gruppe verlassen und keine neuen Nachrichten mehr erhalten. Der Ch
 msgctxt "ConfirmFlows"
 msgid "Leave {}?"
 msgstr "{} verlassen?"
+
+msgctxt "ErrorCopy"
+msgid "Leaving group…"
+msgstr "Gruppe wird verlassen…"
 
 msgctxt "GroupSettingsCard"
 msgid "Leaving…"
@@ -1355,6 +1496,10 @@ msgctxt "month"
 msgid "May"
 msgstr "Mai"
 
+msgctxt "ErrorCopy"
+msgid "Member removed."
+msgstr "Mitglied entfernt."
+
 msgctxt "ArchivedDetail"
 msgid "Members"
 msgstr "Mitglieder"
@@ -1422,6 +1567,10 @@ msgctxt "LoginScreen"
 msgid "NSEC"
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "Name can't be empty."
+msgstr "Der Name darf nicht leer sein."
+
 #. are translated.
 msgctxt "command palette footer"
 msgid "Navigate"
@@ -1468,6 +1617,10 @@ msgctxt "AdvancedPane"
 msgid "No audit log files on disk."
 msgstr "Keine Audit-Protokolldateien auf dem Datenträger."
 
+msgctxt "ErrorCopy"
+msgid "No chat selected."
+msgstr "Kein Chat ausgewählt."
+
 msgctxt "ForwardPickerModal"
 msgid "No chats match your search."
 msgstr "Keine Chats entsprechen deiner Suche."
@@ -1477,17 +1630,38 @@ msgctxt "ContactsPage"
 msgid "No contacts yet"
 msgstr "Kontakt entfernen"
 
+msgctxt "ErrorCopy"
+msgid "No debug snapshot to copy."
+msgstr "Kein Debug-Snapshot zum Kopieren."
+
 msgctxt "ImportBackupModal"
 msgid "No file selected"
 msgstr "Keine Datei ausgewählt"
+
+msgctxt "ErrorCopy"
+msgid "No generated key to save. Try again."
+msgstr "Kein generierter Schlüssel zum Speichern. Versuche es erneut."
 
 msgctxt "SharedGroupsList"
 msgid "No groups in common"
 msgstr "Keine gemeinsamen Gruppen"
 
+msgctxt "ErrorCopy"
+msgid "No image selected."
+msgstr "Kein Bild ausgewählt."
+
+msgctxt "ErrorCopy"
+msgid "No key package on relays yet"
+msgstr "Noch kein Key Package auf den Relays"
+
 msgctxt "KeysPage"
 msgid "No key packages yet"
 msgstr "Noch keine Schlüsselpakete"
+
+#. the UI thread, so they read from this snapshot like the rest.
+msgctxt "ErrorCopy"
+msgid "No key stored on this device. Reset and re-enter your nsec."
+msgstr "Kein Schlüssel auf diesem Gerät gespeichert. Setze zurück und gib deinen nsec erneut ein."
 
 msgctxt "ChatSearchBar"
 msgid "No matches"
@@ -1539,14 +1713,26 @@ msgctxt "AddAccountModal"
 msgid "No second key yet?"
 msgstr "Kontakt entfernen"
 
+msgctxt "ErrorCopy"
+msgid "No secret key for this account is stored on this device."
+msgstr "Für dieses Konto ist kein geheimer Schlüssel auf diesem Gerät gespeichert."
+
 #. Network-pane status copy (also Rust-set).
 msgctxt "ErrorCopy"
 msgid "Not connected yet. Please wait a moment and try again."
 msgstr "Noch nicht verbunden. Bitte warte einen Moment und versuche es erneut."
 
+msgctxt "ErrorCopy"
+msgid "Not found"
+msgstr "Nicht gefunden"
+
 msgctxt "ProfilePage"
 msgid "Not set"
 msgstr "Nicht festgelegt"
+
+msgctxt "ErrorCopy"
+msgid "Nothing to copy."
+msgstr "Nichts zu kopieren."
 
 #, fuzzy
 msgctxt "NotificationsPane"
@@ -1746,6 +1932,19 @@ msgctxt "GetStartedScreen"
 msgid "Published"
 msgstr "Veröffentlichen"
 
+msgctxt "key package source, published, time unknown"
+msgid "Published"
+msgstr "Veröffentlicht"
+
+msgctxt "key package source, %1 = relative time"
+msgid "Published %1"
+msgstr "Veröffentlicht %1"
+
+#. Key-package progress verbs (src/wiring/panes.rs), one per `op_kind`.
+msgctxt "ErrorCopy"
+msgid "Publishing…"
+msgstr "Wird veröffentlicht…"
+
 #, fuzzy
 msgctxt "GetStartedScreen"
 msgid "Publishing…"
@@ -1818,6 +2017,10 @@ msgctxt "NetworkPane"
 msgid "Refresh"
 msgstr "Aktualisieren"
 
+msgctxt "ErrorCopy"
+msgid "Refreshing…"
+msgstr "Wird aktualisiert…"
+
 msgctxt "LoginScreen"
 msgid "Regenerate"
 msgstr "Neu generieren"
@@ -1880,6 +2083,10 @@ msgstr "Dieses Relay entfernen?"
 msgctxt "ConfirmFlows"
 msgid "Remove {} from the group?"
 msgstr "{} aus der Gruppe entfernen?"
+
+msgctxt "ErrorCopy"
+msgid "Renamed."
+msgstr "Umbenannt."
 
 msgctxt "MessageContextMenu"
 msgid "Reply"
@@ -1978,6 +2185,10 @@ msgstr "Schlüsselpaket jetzt rotieren"
 msgctxt "KeysPage"
 msgid "Rotate key package?"
 msgstr "Schlüsselpaket rotieren?"
+
+msgctxt "ErrorCopy"
+msgid "Rotating…"
+msgstr "Wird rotiert…"
 
 msgctxt "AddAccountModal"
 msgid "SECRET KEY (NSEC)"
@@ -2294,6 +2505,10 @@ msgctxt "RevealNsecModal"
 msgid "Store it somewhere safe and close this dialog. Dark Matter keeps it encrypted in your vault — this is the only place it's shown in the clear."
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "Stored key is invalid."
+msgstr "Der gespeicherte Schlüssel ist ungültig."
+
 msgctxt "weekday"
 msgid "Sun"
 msgstr "So"
@@ -2314,6 +2529,10 @@ msgstr "Terminal"
 msgctxt "ErrorCopy"
 msgid "That doesn't look like a valid npub or public key. Double-check it and try again."
 msgstr "Das sieht nicht nach einem gültigen npub oder öffentlichen Schlüssel aus. Bitte überprüfen und erneut versuchen."
+
+msgctxt "ErrorCopy"
+msgid "That doesn't look like a valid nsec."
+msgstr "Das sieht nicht nach einem gültigen nsec aus."
 
 msgctxt "ErrorCopy"
 msgid "That doesn't look like a valid relay address."
@@ -2425,6 +2644,11 @@ msgctxt "LoginScreen"
 msgid "Unlock"
 msgstr "Entsperren"
 
+#. Rust-side with `tmpl`.
+msgctxt "ErrorCopy"
+msgid "Unlocking…"
+msgstr "Wird entsperrt…"
+
 msgctxt "LoginScreen"
 msgid "Unlocking…"
 msgstr "Entsperre…"
@@ -2522,6 +2746,10 @@ msgctxt "DarkMatterTray"
 msgid "White Noise"
 msgstr "White Noise"
 
+msgctxt "ErrorCopy"
+msgid "Wrong password."
+msgstr "Falsches Passwort."
+
 msgctxt "GroupMemberRow"
 msgid "YOU"
 msgstr "DU"
@@ -2537,6 +2765,10 @@ msgstr "Gestern"
 msgctxt "OutgoingRow"
 msgid "You"
 msgstr "Du"
+
+msgctxt "ErrorCopy"
+msgid "You stepped down."
+msgstr "Du bist zurückgetreten."
 
 msgctxt "ConfirmFlows"
 msgid "You will stop receiving new messages from this group. The chat moves to Archive."
@@ -2575,6 +2807,19 @@ msgctxt "ContactDetail"
 msgid "aka {}"
 msgstr "alias {}"
 
+msgctxt "status, lower-case to match the image-upload flow"
+msgid "backend not ready"
+msgstr "Backend nicht bereit"
+
+#. read lower-case to match their in-flight siblings.
+msgctxt "ErrorCopy"
+msgid "choosing image…"
+msgstr "Bild wird gewählt…"
+
+msgctxt "ErrorCopy"
+msgid "debug dump copied"
+msgstr "Debug-Dump kopiert"
+
 #, fuzzy
 msgctxt "ImageTile"
 msgid "decrypting…"
@@ -2602,9 +2847,33 @@ msgctxt "MessageBubble"
 msgid "failed · tap to retry"
 msgstr "fehlgeschlagen · tippen zum Wiederholen"
 
+msgctxt "result, %1 = record count (always 1)"
+msgid "fetched · %1 record"
+msgstr "abgerufen · %1 Eintrag"
+
+msgctxt "result, %1 = record count"
+msgid "fetched · %1 records"
+msgstr "abgerufen · %1 Einträge"
+
+msgctxt "ErrorCopy"
+msgid "group image updated"
+msgstr "Gruppenbild aktualisiert"
+
 msgctxt "PictureField"
 msgid "https://… or upload a file →"
 msgstr "https://… oder Datei hochladen →"
+
+msgctxt "ErrorCopy"
+msgid "image copied"
+msgstr "Bild kopiert"
+
+msgctxt "ErrorCopy"
+msgid "image removed"
+msgstr "Bild entfernt"
+
+msgctxt "ErrorCopy"
+msgid "image saved"
+msgstr "Bild gespeichert"
 
 msgctxt "TimeCopy"
 msgid "just now"
@@ -2626,6 +2895,45 @@ msgctxt "EmojiPicker"
 msgid "no matches for \"{}\""
 msgstr "keine Treffer für \"{}\""
 
+msgctxt "ErrorCopy"
+msgid "nothing to copy (npub empty)"
+msgstr "nichts zu kopieren (npub leer)"
+
+msgctxt "ErrorCopy"
+msgid "npub copied"
+msgstr "npub kopiert"
+
+#. Clipboard feedback (src/wiring/panes.rs, nav.rs, extra.rs).
+msgctxt "ErrorCopy"
+msgid "nsec copied"
+msgstr "nsec kopiert"
+
+msgctxt "ErrorCopy"
+msgid "picture uploaded — Save to publish"
+msgstr "Bild hochgeladen — Zum Veröffentlichen speichern"
+
+msgctxt "ErrorCopy"
+msgid "profile published"
+msgstr "Profil veröffentlicht"
+
+#. fetched forms is the record count, filled Rust-side with `tmpl`.
+msgctxt "ErrorCopy"
+msgid "published · your key package is live"
+msgstr "veröffentlicht · dein Key Package ist aktiv"
+
+#. Profile publish status copy (src/wiring/extra.rs).
+msgctxt "ErrorCopy"
+msgid "publishing…"
+msgstr "wird veröffentlicht…"
+
+msgctxt "ErrorCopy"
+msgid "removing image…"
+msgstr "Bild wird entfernt…"
+
+msgctxt "ErrorCopy"
+msgid "rotated · published a fresh key package"
+msgstr "rotiert · ein frisches Key Package veröffentlicht"
+
 msgctxt "EmojiPicker"
 msgid "search…"
 msgstr "suchen…"
@@ -2643,6 +2951,10 @@ msgstr "tippen zum Laden"
 msgctxt "ImageTile"
 msgid "tap to retry"
 msgstr "fehlgeschlagen · tippen zum Wiederholen"
+
+msgctxt "ErrorCopy"
+msgid "uploading to Blossom…"
+msgstr "wird zu Blossom hochgeladen…"
 
 msgctxt "KeysPage"
 msgid "{n} relay"

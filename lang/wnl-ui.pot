@@ -242,6 +242,11 @@ msgctxt "AddAccountModal"
 msgid "Add account"
 msgstr ""
 
+#. New-chat / add-contact status copy (src/wiring/chats.rs, contacts.rs).
+msgctxt "ErrorCopy"
+msgid "Add at least one npub."
+msgstr ""
+
 msgctxt "AddContactModal"
 msgid "Add contact"
 msgstr ""
@@ -273,6 +278,14 @@ msgstr ""
 
 msgctxt "ProfileModal"
 msgid "Adding…"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Admin added."
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Admin removed."
 msgstr ""
 
 msgctxt "GroupSettingsCard"
@@ -323,12 +336,33 @@ msgctxt "ContactDetail"
 msgid "Archive chat"
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "Audit log deleted — recording continues in a fresh file."
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Audit log deleted."
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Audit logging disabled. Existing files stay until you delete them."
+msgstr ""
+
+#. Audit-log settings feedback (src/wiring/panes.rs).
+msgctxt "ErrorCopy"
+msgid "Audit logging enabled — recording now; logs upload automatically."
+msgstr ""
+
 msgctxt "AdvancedPane"
 msgid "Audit logs"
 msgstr ""
 
 msgctxt "month"
 msgid "Aug"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Available"
 msgstr ""
 
 msgctxt "ImportBackupModal"
@@ -349,6 +383,18 @@ msgstr ""
 
 msgctxt "LoginScreen"
 msgid "Back up your nsec before saving"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Backend isn't ready yet."
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Backend not ready."
+msgstr ""
+
+msgctxt "status, %1 = error detail"
+msgid "Backup failed: %1"
 msgstr ""
 
 msgctxt "AppearancePane"
@@ -413,6 +459,10 @@ msgstr ""
 
 msgctxt "ErrorCopy"
 msgid "Can't reach your relays right now. Check your network and relay settings, then try again."
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Can't start a chat with only yourself."
 msgstr ""
 
 msgctxt "AddAccountModal"
@@ -490,6 +540,15 @@ msgstr ""
 
 msgctxt "ArchivedPage"
 msgid "Chats you archive are kept here, out of your main list."
+msgstr ""
+
+#. relay host and the relative time, filled Rust-side with `tmpl`.
+msgctxt "ErrorCopy"
+msgid "Checking…"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Choose a backup file first."
 msgstr ""
 
 msgctxt "LoginScreen"
@@ -572,6 +631,10 @@ msgctxt "ContactDetail"
 msgid "Contact"
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "Contacting relays…"
+msgstr ""
+
 msgctxt "ProfileModal"
 msgid "Contacting relays…"
 msgstr ""
@@ -641,6 +704,14 @@ msgid "Couldn't accept the invitation. Please try again in a moment."
 msgstr ""
 
 msgctxt "ErrorCopy"
+msgid "Couldn't access clipboard."
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Couldn't access clipboard. Your nsec was not copied."
+msgstr ""
+
+msgctxt "ErrorCopy"
 msgid "Couldn't add that account. Please check the key and try again."
 msgstr ""
 
@@ -661,11 +732,27 @@ msgid "Couldn't archive this chat. Please try again."
 msgstr ""
 
 msgctxt "ErrorCopy"
+msgid "Couldn't change audit logging."
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Couldn't copy image."
+msgstr ""
+
+msgctxt "ErrorCopy"
 msgid "Couldn't create the chat. Please try again."
 msgstr ""
 
 msgctxt "ErrorCopy"
 msgid "Couldn't decline the invitation. Please try again in a moment."
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Couldn't delete audit log."
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Couldn't download image."
 msgstr ""
 
 #. Tier 2 — operation-specific fallbacks.
@@ -703,6 +790,10 @@ msgstr ""
 
 msgctxt "status toast when saving a file fails, %1 = file name"
 msgid "Couldn't save %1. Check the location has space and permission, then try again."
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Couldn't save image."
 msgstr ""
 
 msgctxt "ErrorCopy"
@@ -841,6 +932,10 @@ msgctxt "AdvancedPane"
 msgid "Deleting the file being recorded rotates it — recording continues in a fresh file."
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "Description saved."
+msgstr ""
+
 msgctxt "NotificationsPane"
 msgid "Desktop notifications"
 msgstr ""
@@ -902,6 +997,14 @@ msgctxt "ErrorCopy"
 msgid "Enter a relay address."
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "Enter a username, npub, or hex public key."
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Enter the backup password."
+msgstr ""
+
 msgctxt "AddContactModal"
 msgid "Enter their username (name@domain), npub, or hex public key. They'll appear in your contacts on every device."
 msgstr ""
@@ -914,12 +1017,21 @@ msgctxt "LoginScreen"
 msgid "Enter your password to unlock"
 msgstr ""
 
+#. is the underlying error, filled Rust-side with `tmpl`.
+msgctxt "ErrorCopy"
+msgid "Enter your password."
+msgstr ""
+
 msgctxt "EncryptionInfoModal"
 msgid "Even if a key leaks later on, the messages you already sent can't be unlocked with it."
 msgstr ""
 
 msgctxt "ChatContextMenu"
 msgid "Export transcript…"
+msgstr ""
+
+msgctxt "status, %1 = error detail"
+msgid "Failed to encode key: %1"
 msgstr ""
 
 msgctxt "month"
@@ -948,6 +1060,18 @@ msgstr ""
 
 msgctxt "weekday"
 msgid "Fri"
+msgstr ""
+
+msgctxt "key package source, %1 = relay host"
+msgid "From %1"
+msgstr ""
+
+msgctxt "key package source, %1 = relay host, %2 = relative time"
+msgid "From %1 · %2"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Full restore is only available from the lock screen, before unlocking."
 msgstr ""
 
 msgctxt "EncryptionInfoModal"
@@ -1042,6 +1166,10 @@ msgctxt "ImageViewerModal"
 msgid "Image didn't load. Tap to retry."
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "Image isn't ready yet."
+msgstr ""
+
 msgctxt "ImportBackupModal"
 msgid "Import"
 msgstr ""
@@ -1094,6 +1222,11 @@ msgctxt "GroupMembersPanel"
 msgid "Invited"
 msgstr ""
 
+#. Group-admin status copy (src/wiring/groups.rs).
+msgctxt "ErrorCopy"
+msgid "Invited."
+msgstr ""
+
 msgctxt "AddMemberCard"
 msgid "Inviting…"
 msgstr ""
@@ -1104,6 +1237,10 @@ msgstr ""
 
 msgctxt "ArchivedDetail"
 msgid "It stays end-to-end encrypted. Unarchiving returns it to your main list and resumes notifications."
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "JSON copied"
 msgstr ""
 
 msgctxt "month"
@@ -1188,6 +1325,10 @@ msgstr ""
 
 msgctxt "ConfirmFlows"
 msgid "Leave {}?"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Leaving group…"
 msgstr ""
 
 msgctxt "GroupSettingsCard"
@@ -1286,6 +1427,10 @@ msgctxt "month"
 msgid "May"
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "Member removed."
+msgstr ""
+
 msgctxt "ArchivedDetail"
 msgid "Members"
 msgstr ""
@@ -1350,6 +1495,10 @@ msgctxt "LoginScreen"
 msgid "NSEC"
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "Name can't be empty."
+msgstr ""
+
 #. are translated.
 msgctxt "command palette footer"
 msgid "Navigate"
@@ -1395,6 +1544,10 @@ msgctxt "AdvancedPane"
 msgid "No audit log files on disk."
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "No chat selected."
+msgstr ""
+
 msgctxt "ForwardPickerModal"
 msgid "No chats match your search."
 msgstr ""
@@ -1403,16 +1556,37 @@ msgctxt "ContactsPage"
 msgid "No contacts yet"
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "No debug snapshot to copy."
+msgstr ""
+
 msgctxt "ImportBackupModal"
 msgid "No file selected"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "No generated key to save. Try again."
 msgstr ""
 
 msgctxt "SharedGroupsList"
 msgid "No groups in common"
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "No image selected."
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "No key package on relays yet"
+msgstr ""
+
 msgctxt "KeysPage"
 msgid "No key packages yet"
+msgstr ""
+
+#. the UI thread, so they read from this snapshot like the rest.
+msgctxt "ErrorCopy"
+msgid "No key stored on this device. Reset and re-enter your nsec."
 msgstr ""
 
 msgctxt "ChatSearchBar"
@@ -1463,13 +1637,25 @@ msgctxt "AddAccountModal"
 msgid "No second key yet?"
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "No secret key for this account is stored on this device."
+msgstr ""
+
 #. Network-pane status copy (also Rust-set).
 msgctxt "ErrorCopy"
 msgid "Not connected yet. Please wait a moment and try again."
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "Not found"
+msgstr ""
+
 msgctxt "ProfilePage"
 msgid "Not set"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Nothing to copy."
 msgstr ""
 
 msgctxt "NotificationsPane"
@@ -1656,6 +1842,19 @@ msgctxt "GetStartedScreen"
 msgid "Published"
 msgstr ""
 
+msgctxt "key package source, published, time unknown"
+msgid "Published"
+msgstr ""
+
+msgctxt "key package source, %1 = relative time"
+msgid "Published %1"
+msgstr ""
+
+#. Key-package progress verbs (src/wiring/panes.rs), one per `op_kind`.
+msgctxt "ErrorCopy"
+msgid "Publishing…"
+msgstr ""
+
 msgctxt "GetStartedScreen"
 msgid "Publishing…"
 msgstr ""
@@ -1724,6 +1923,10 @@ msgctxt "NetworkPane"
 msgid "Refresh"
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "Refreshing…"
+msgstr ""
+
 msgctxt "LoginScreen"
 msgid "Regenerate"
 msgstr ""
@@ -1782,6 +1985,10 @@ msgstr ""
 
 msgctxt "ConfirmFlows"
 msgid "Remove {} from the group?"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Renamed."
 msgstr ""
 
 msgctxt "MessageContextMenu"
@@ -1874,6 +2081,10 @@ msgstr ""
 
 msgctxt "KeysPage"
 msgid "Rotate key package?"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Rotating…"
 msgstr ""
 
 msgctxt "AddAccountModal"
@@ -2173,6 +2384,10 @@ msgctxt "RevealNsecModal"
 msgid "Store it somewhere safe and close this dialog. Dark Matter keeps it encrypted in your vault — this is the only place it's shown in the clear."
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "Stored key is invalid."
+msgstr ""
+
 msgctxt "weekday"
 msgid "Sun"
 msgstr ""
@@ -2192,6 +2407,10 @@ msgstr ""
 #. Tier 1 — content-based classification.
 msgctxt "ErrorCopy"
 msgid "That doesn't look like a valid npub or public key. Double-check it and try again."
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "That doesn't look like a valid nsec."
 msgstr ""
 
 msgctxt "ErrorCopy"
@@ -2302,6 +2521,11 @@ msgctxt "LoginScreen"
 msgid "Unlock"
 msgstr ""
 
+#. Rust-side with `tmpl`.
+msgctxt "ErrorCopy"
+msgid "Unlocking…"
+msgstr ""
+
 msgctxt "LoginScreen"
 msgid "Unlocking…"
 msgstr ""
@@ -2394,6 +2618,10 @@ msgctxt "DarkMatterTray"
 msgid "White Noise"
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "Wrong password."
+msgstr ""
+
 msgctxt "GroupMemberRow"
 msgid "YOU"
 msgstr ""
@@ -2408,6 +2636,10 @@ msgstr ""
 
 msgctxt "OutgoingRow"
 msgid "You"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "You stepped down."
 msgstr ""
 
 msgctxt "ConfirmFlows"
@@ -2446,6 +2678,19 @@ msgctxt "ContactDetail"
 msgid "aka {}"
 msgstr ""
 
+msgctxt "status, lower-case to match the image-upload flow"
+msgid "backend not ready"
+msgstr ""
+
+#. read lower-case to match their in-flight siblings.
+msgctxt "ErrorCopy"
+msgid "choosing image…"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "debug dump copied"
+msgstr ""
+
 msgctxt "ImageTile"
 msgid "decrypting…"
 msgstr ""
@@ -2470,8 +2715,32 @@ msgctxt "MessageBubble"
 msgid "failed · tap to retry"
 msgstr ""
 
+msgctxt "result, %1 = record count (always 1)"
+msgid "fetched · %1 record"
+msgstr ""
+
+msgctxt "result, %1 = record count"
+msgid "fetched · %1 records"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "group image updated"
+msgstr ""
+
 msgctxt "PictureField"
 msgid "https://… or upload a file →"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "image copied"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "image removed"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "image saved"
 msgstr ""
 
 msgctxt "TimeCopy"
@@ -2494,6 +2763,45 @@ msgctxt "EmojiPicker"
 msgid "no matches for \"{}\""
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "nothing to copy (npub empty)"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "npub copied"
+msgstr ""
+
+#. Clipboard feedback (src/wiring/panes.rs, nav.rs, extra.rs).
+msgctxt "ErrorCopy"
+msgid "nsec copied"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "picture uploaded — Save to publish"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "profile published"
+msgstr ""
+
+#. fetched forms is the record count, filled Rust-side with `tmpl`.
+msgctxt "ErrorCopy"
+msgid "published · your key package is live"
+msgstr ""
+
+#. Profile publish status copy (src/wiring/extra.rs).
+msgctxt "ErrorCopy"
+msgid "publishing…"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "removing image…"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "rotated · published a fresh key package"
+msgstr ""
+
 msgctxt "EmojiPicker"
 msgid "search…"
 msgstr ""
@@ -2508,6 +2816,10 @@ msgstr ""
 
 msgctxt "ImageTile"
 msgid "tap to retry"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "uploading to Blossom…"
 msgstr ""
 
 msgctxt "KeysPage"

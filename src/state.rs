@@ -480,7 +480,7 @@ pub(crate) fn toast_save_attachment(weak: Weak<DarkMatterLinux>, file_name: Stri
         } else {
             &copy.save_attachment_failed
         };
-        set_clipboard_feedback(&ui, tmpl(template, &[&file_name]), !ok);
+        set_status_feedback(&ui, tmpl(template, &[&file_name]), !ok);
     });
 }
 
@@ -743,6 +743,95 @@ copy_snapshot! {
     relay_added: String = get_relay_added => "Relay added.";
     relay_removed: String = get_relay_removed => "Relay removed.";
     republishing: String = get_republishing => "Republishing…";
+    // Login / add-account status copy. `encode_key_failed` carries a `%1` slot
+    // filled Rust-side with `tmpl`.
+    unlocking: String = get_unlocking => "Unlocking…";
+    invalid_nsec: String = get_invalid_nsec => "That doesn't look like a valid nsec.";
+    no_generated_key: String = get_no_generated_key => "No generated key to save. Try again.";
+    encode_key_failed: String = get_encode_key_failed => "Failed to encode key: %1";
+    backend_not_ready_yet: String = get_backend_not_ready_yet => "Backend isn't ready yet.";
+    // Backup / import status copy. `backup_failed` carries a `%1` slot.
+    enter_password: String = get_enter_password => "Enter your password.";
+    wrong_password: String = get_wrong_password => "Wrong password.";
+    backup_failed: String = get_backup_failed => "Backup failed: %1";
+    choose_backup_file: String = get_choose_backup_file => "Choose a backup file first.";
+    enter_backup_password: String = get_enter_backup_password => "Enter the backup password.";
+    // New-chat / add-contact status copy.
+    add_npub: String = get_add_npub => "Add at least one npub.";
+    only_yourself: String = get_only_yourself => "Can't start a chat with only yourself.";
+    add_contact_input: String = get_add_contact_input => "Enter a username, npub, or hex public key.";
+    backend_not_ready: String = get_backend_not_ready => "Backend not ready.";
+    // Group-admin status copy.
+    invited: String = get_invited => "Invited.";
+    admin_added: String = get_admin_added => "Admin added.";
+    admin_removed: String = get_admin_removed => "Admin removed.";
+    stepped_down: String = get_stepped_down => "You stepped down.";
+    member_removed: String = get_member_removed => "Member removed.";
+    leaving_group: String = get_leaving_group => "Leaving group…";
+    name_empty: String = get_name_empty => "Name can't be empty.";
+    renamed: String = get_renamed => "Renamed.";
+    description_saved: String = get_description_saved => "Description saved.";
+    // Group / profile image status copy (lower-case to match in-flight siblings).
+    choosing_image: String = get_choosing_image => "choosing image…";
+    uploading_blossom: String = get_uploading_blossom => "uploading to Blossom…";
+    removing_image: String = get_removing_image => "removing image…";
+    image_removed: String = get_image_removed => "image removed";
+    group_image_updated: String = get_group_image_updated => "group image updated";
+    backend_not_ready_lc: String = get_backend_not_ready_lc => "backend not ready";
+    // Profile publish status copy.
+    profile_publishing: String = get_profile_publishing => "publishing…";
+    profile_published: String = get_profile_published => "profile published";
+    picture_uploaded: String = get_picture_uploaded => "picture uploaded — Save to publish";
+    // Clipboard feedback.
+    nsec_copied: String = get_nsec_copied => "nsec copied";
+    npub_copied: String = get_npub_copied => "npub copied";
+    npub_empty_nothing: String = get_npub_empty_nothing => "nothing to copy (npub empty)";
+    clipboard_failed: String = get_clipboard_failed => "Couldn't access clipboard.";
+    nothing_to_copy: String = get_nothing_to_copy => "Nothing to copy.";
+    json_copied: String = get_json_copied => "JSON copied";
+    debug_dump_copied: String = get_debug_dump_copied => "debug dump copied";
+    no_debug_snapshot: String = get_no_debug_snapshot => "No debug snapshot to copy.";
+    image_copied: String = get_image_copied => "image copied";
+    copy_image_failed: String = get_copy_image_failed => "Couldn't copy image.";
+    image_saved: String = get_image_saved => "image saved";
+    save_image_failed: String = get_save_image_failed => "Couldn't save image.";
+    download_image_failed: String = get_download_image_failed => "Couldn't download image.";
+    image_not_ready: String = get_image_not_ready => "Image isn't ready yet.";
+    no_image_selected: String = get_no_image_selected => "No image selected.";
+    no_chat_selected: String = get_no_chat_selected => "No chat selected.";
+    // Audit-log settings feedback.
+    audit_enabled: String = get_audit_enabled => "Audit logging enabled — recording now; logs upload automatically.";
+    audit_disabled: String = get_audit_disabled => "Audit logging disabled. Existing files stay until you delete them.";
+    audit_change_failed: String = get_audit_change_failed => "Couldn't change audit logging.";
+    audit_deleted: String = get_audit_deleted => "Audit log deleted.";
+    audit_delete_failed: String = get_audit_delete_failed => "Couldn't delete audit log.";
+    // Key-package progress verbs (one per `op_kind`).
+    kp_publishing: String = get_kp_publishing => "Publishing…";
+    kp_rotating: String = get_kp_rotating => "Rotating…";
+    kp_refreshing: String = get_kp_refreshing => "Refreshing…";
+    // Key-package op results. The fetched forms carry a `%1` count slot.
+    kp_published: String = get_kp_published => "published · your key package is live";
+    kp_rotated: String = get_kp_rotated => "rotated · published a fresh key package";
+    kp_fetched_one: String = get_kp_fetched_one => "fetched · %1 record";
+    kp_fetched_many: String = get_kp_fetched_many => "fetched · %1 records";
+    audit_deleted_live: String = get_audit_deleted_live => "Audit log deleted — recording continues in a fresh file.";
+    // Vault unlock / reveal-nsec worker errors.
+    no_key_stored: String = get_no_key_stored => "No key stored on this device. Reset and re-enter your nsec.";
+    stored_key_invalid: String = get_stored_key_invalid => "Stored key is invalid.";
+    clipboard_failed_nsec: String = get_clipboard_failed_nsec => "Couldn't access clipboard. Your nsec was not copied.";
+    no_secret_key_account: String = get_no_secret_key_account => "No secret key for this account is stored on this device.";
+    restore_lock_only: String = get_restore_lock_only => "Full restore is only available from the lock screen, before unlocking.";
+    // Contact key-package row (in-flight + `kp_labels` result). The "From"/
+    // "Published" forms carry `%1`/`%2` (relay host, relative time) slots.
+    kp_checking: String = get_kp_checking => "Checking…";
+    kp_contacting: String = get_kp_contacting => "Contacting relays…";
+    kp_not_found: String = get_kp_not_found => "Not found";
+    kp_none_yet: String = get_kp_none_yet => "No key package on relays yet";
+    kp_available: String = get_kp_available => "Available";
+    kp_from_when: String = get_kp_from_when => "From %1 · %2";
+    kp_from: String = get_kp_from => "From %1";
+    kp_published_when: String = get_kp_published_when => "Published %1";
+    kp_published_plain: String = get_kp_published_plain => "Published";
 }
 
 /// The operation behind a [`friendly_error`] call. Each variant selects the

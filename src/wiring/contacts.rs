@@ -65,7 +65,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             let Some(ui) = weak.upgrade() else { return };
             let input = input.trim().to_string();
             if input.is_empty() {
-                ui.set_add_contact_status(s("Enter a username, npub, or hex public key."));
+                ui.set_add_contact_status(error_copy().add_contact_input.into());
                 return;
             }
             // Accept a pasted `marmot://profile/<npub>` deep link too.
@@ -73,7 +73,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 .map(str::to_owned)
                 .unwrap_or(input);
             let Some(b) = backend_cell.lock().unwrap().clone() else {
-                ui.set_add_contact_status(s("Backend not ready."));
+                ui.set_add_contact_status(error_copy().backend_not_ready.into());
                 return;
             };
             ui.set_add_contact_busy(true);
@@ -458,8 +458,8 @@ pub(crate) fn spawn_contact_key_package_fetch(
     };
     // Honest in-flight state instead of a frozen placeholder; hide the Retry
     // button while the fetch is outstanding.
-    row.kp_status = s("Checking…");
-    row.kp_detail = s("Contacting relays…");
+    row.kp_status = error_copy().kp_checking.into();
+    row.kp_detail = error_copy().kp_contacting.into();
     row.kp_can_retry = false;
     contacts.set_row_data(idx, row);
 
@@ -473,11 +473,7 @@ pub(crate) fn spawn_contact_key_package_fetch(
             }
             Err(e) => {
                 tracing::warn!(target: "backend", "fetch_contact_key_package failed: {e:#}");
-                (
-                    "Not found".to_string(),
-                    "No key package on relays yet".to_string(),
-                    true,
-                )
+                (error_copy().kp_not_found, error_copy().kp_none_yet, true)
             }
         };
         let _ = slint::invoke_from_event_loop(move || {

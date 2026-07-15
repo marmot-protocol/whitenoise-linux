@@ -327,13 +327,14 @@ pub(crate) fn kp_labels(created_at: u64, source_relays: &[String]) -> (String, S
         .map(|r| relay_host(r))
         .unwrap_or_default();
     let when = relative_since(created_at);
+    let copy = error_copy();
     let detail = match (relay.is_empty(), when.is_empty()) {
-        (false, false) => format!("From {relay} · {when}"),
-        (false, true) => format!("From {relay}"),
-        (true, false) => format!("Published {when}"),
-        (true, true) => "Published".to_string(),
+        (false, false) => tmpl(&copy.kp_from_when, &[&relay, &when]),
+        (false, true) => tmpl(&copy.kp_from, &[&relay]),
+        (true, false) => tmpl(&copy.kp_published_when, &[&when]),
+        (true, true) => copy.kp_published_plain,
     };
-    ("Available".to_string(), detail)
+    (copy.kp_available, detail)
 }
 
 pub(crate) fn contact_from(

@@ -678,7 +678,7 @@ fn main() -> Result<(), slint::PlatformError> {
                 ui.set_backend_error(s(""));
                 ui.set_booting(true);
                 ui.set_booting_phase(0);
-                ui.set_booting_status(s("Unlocking…"));
+                ui.set_booting_status(error_copy().unlocking.into());
 
                 // Hand the boot off to a worker thread so the Slint event loop
                 // keeps rendering the splash screen. Send the result back via

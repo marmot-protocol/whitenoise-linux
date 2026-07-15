@@ -49,10 +49,10 @@ fn finish_viewer_image_action(
             copy_image_to_clipboard_async(bytes, media_type, move |result| {
                 let Some(ui) = weak.upgrade() else { return };
                 match result {
-                    Ok(()) => set_status_feedback(&ui, s("image copied"), false),
+                    Ok(()) => set_status_feedback(&ui, error_copy().image_copied, false),
                     Err(e) => {
                         tracing::warn!(target: "clipboard", "copy image failed: {e}");
-                        set_status_feedback(&ui, s("Couldn't copy image."), true);
+                        set_status_feedback(&ui, error_copy().copy_image_failed, true);
                     }
                 }
             });
@@ -63,10 +63,10 @@ fn finish_viewer_image_action(
                 let _ = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak.upgrade() else { return };
                     match result {
-                        Ok(()) => set_status_feedback(&ui, s("image saved"), false),
+                        Ok(()) => set_status_feedback(&ui, error_copy().image_saved, false),
                         Err(e) => {
                             tracing::warn!(target: "attach", "save image {}: {e}", path.display());
-                            set_status_feedback(&ui, s("Couldn't save image."), true);
+                            set_status_feedback(&ui, error_copy().save_image_failed, true);
                         }
                     }
                 });
@@ -103,7 +103,7 @@ fn fetch_viewer_image_bytes(
                 tracing::warn!(target: "attach", "viewer image download failed: {e:#}");
                 let _ = slint::invoke_from_event_loop(move || {
                     if let Some(ui) = weak.upgrade() {
-                        set_status_feedback(&ui, s("Couldn't download image."), true);
+                        set_status_feedback(&ui, error_copy().download_image_failed, true);
                     }
                 });
             }
@@ -121,24 +121,24 @@ fn viewer_image_context(
         || ui.get_image_viewer_failed()
         || !ui.get_image_viewer_actions_ready()
     {
-        set_status_feedback(ui, s("Image isn't ready yet."), false);
+        set_status_feedback(ui, error_copy().image_not_ready, false);
         return None;
     }
     let Some(item) = current_viewer_item() else {
-        set_status_feedback(ui, s("No image selected."), true);
+        set_status_feedback(ui, error_copy().no_image_selected, true);
         return None;
     };
     let idx = ui.get_active_chat();
     if idx < 0 {
-        set_status_feedback(ui, s("No chat selected."), true);
+        set_status_feedback(ui, error_copy().no_chat_selected, true);
         return None;
     }
     let Some(group_hex) = group_ids.lock().unwrap().get(idx as usize).cloned() else {
-        set_status_feedback(ui, s("No chat selected."), true);
+        set_status_feedback(ui, error_copy().no_chat_selected, true);
         return None;
     };
     let Some(backend) = backend_cell.lock().unwrap().clone() else {
-        set_status_feedback(ui, s("Backend not ready."), true);
+        set_status_feedback(ui, error_copy().backend_not_ready, true);
         return None;
     };
     let vault = vault_cell.lock().unwrap().clone();
@@ -660,17 +660,17 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             let Some(ui) = weak.upgrade() else { return };
             let text = ui.get_debug_view_json();
             if text.is_empty() {
-                set_status_feedback(&ui, s("Nothing to copy."), false);
+                set_status_feedback(&ui, error_copy().nothing_to_copy, false);
                 return;
             }
             let weak = weak.clone();
             copy_to_clipboard_async(text.to_string(), move |result| {
                 let Some(ui) = weak.upgrade() else { return };
                 match result {
-                    Ok(()) => set_status_feedback(&ui, s("JSON copied"), false),
+                    Ok(()) => set_status_feedback(&ui, error_copy().json_copied, false),
                     Err(e) => {
                         tracing::warn!(target: "clipboard", "copy debug json failed: {e}");
-                        set_status_feedback(&ui, s("Couldn't access clipboard."), true);
+                        set_status_feedback(&ui, error_copy().clipboard_failed, true);
                     }
                 }
             });
@@ -1205,7 +1205,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             };
             let profile = profile_from_ui(&ui);
             ui.set_profile_busy(true);
-            show_profile_status(&ui, s("publishing…"), StatusKind::Pending);
+            show_profile_status(&ui, error_copy().profile_publishing, StatusKind::Pending);
             // Publishing the kind-0 is a relay round-trip — worker thread, so
             // "publishing…" actually shows instead of freezing the window.
             let weak = weak.clone();
@@ -1218,7 +1218,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                         Ok(saved) => {
                             apply_profile(&ui, Some(&saved));
                             ui.set_profile_editing(false);
-                            show_profile_status(&ui, s("profile published"), StatusKind::Ok);
+                            show_profile_status(&ui, error_copy().profile_published, StatusKind::Ok);
                         }
                         Err(e) => {
                             tracing::warn!(target: "profile", "save failed: {e:#}");
@@ -1254,13 +1254,13 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 match guard.as_ref() {
                     Some(b) => b.tokio_handle(),
                     None => {
-                        show_profile_status(&ui, s("backend not ready"), StatusKind::Error);
+                        show_profile_status(&ui, error_copy().backend_not_ready_lc, StatusKind::Error);
                         return;
                     }
                 }
             };
             ui.set_profile_uploading(true);
-            show_profile_status(&ui, s("choosing image…"), StatusKind::Pending);
+            show_profile_status(&ui, error_copy().choosing_image, StatusKind::Pending);
             // Localized dialog title comes from the Slint @tr catalogs (the
             // project keeps all i18n there); read it here on the UI thread,
             // then move it into the blocking dialog task.
@@ -1316,7 +1316,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     let weak = weak.clone();
                     let _ = slint::invoke_from_event_loop(move || {
                         if let Some(ui) = weak.upgrade() {
-                            show_profile_status(&ui, s("uploading to Blossom…"), StatusKind::Pending);
+                            show_profile_status(&ui, error_copy().uploading_blossom, StatusKind::Pending);
                         }
                     });
                 }
@@ -1331,7 +1331,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     let _ = slint::invoke_from_event_loop(move || {
                         if let Some(ui) = weak_done.upgrade() {
                             ui.set_profile_uploading(false);
-                            show_profile_status(&ui, s("backend not ready"), StatusKind::Error);
+                            show_profile_status(&ui, error_copy().backend_not_ready_lc, StatusKind::Error);
                         }
                     });
                     return;
@@ -1347,7 +1347,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                                 ui.set_profile_picture(url.clone().into());
                                 show_profile_status(
                                     &ui,
-                                    s("picture uploaded — Save to publish"),
+                                    error_copy().picture_uploaded,
                                     StatusKind::Ok,
                                 );
                                 // Refresh the avatar preview from the new URL.
