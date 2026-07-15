@@ -29,7 +29,9 @@ import { ChatListEntry } from "../chat-list/chat-list-entry.slint";
 import { MainPane } from "../main-pane/main-pane.slint";
 import { GetStartedScreen } from "../main-pane/get-started.slint";
 import { ContactsPage } from "../contacts/contacts-page.slint";
+import { ContactsSidebar } from "../contacts/contacts-sidebar.slint";
 import { ArchivedPage } from "../archived/archived-page.slint";
+import { ArchivedSidebar } from "../archived/archived-sidebar.slint";
 import { SettingsPage } from "../settings/settings-page.slint";
 import { SettingsSidebar } from "../settings/settings-sidebar.slint";
 import { ProfilePage } from "../profile/profile-page.slint";
@@ -291,7 +293,7 @@ export component AppShell inherits Rectangle {
                     Rectangle {
                         vertical-stretch: 1;
                         clip: true;
-                        if AppState.active-page != 4: ListView {
+                        if AppState.active-page != 1 && AppState.active-page != 2 && AppState.active-page != 4: ListView {
                             x: 0;
                             y: 0;
                             width: 100%;
@@ -307,6 +309,27 @@ export component AppShell inherits Rectangle {
                                 context-menu(ax, ay) => {
                                     AppState.request-chat-context(idx, ax, ay);
                                 }
+                            }
+                        }
+                        if AppState.active-page == 1: ContactsSidebar {
+                            x: 0;
+                            y: 0;
+                            width: 100%;
+                            height: 100%;
+                            background: transparent;
+                            window-width: 100000px;
+                        }
+                        if AppState.active-page == 2: ArchivedSidebar {
+                            x: 0;
+                            y: 0;
+                            width: 100%;
+                            height: 100%;
+                            background: transparent;
+                            window-width: 100000px;
+                            archives: AppState.archived-chats;
+                            active-archived: AppState.active-archived;
+                            archive-clicked(idx) => {
+                                AppState.archive-selected(idx);
                             }
                         }
                         if AppState.active-page == 4: SettingsSidebar {

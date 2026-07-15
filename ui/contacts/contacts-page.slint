@@ -1,28 +1,24 @@
 import { Palette } from "../tokens.slint";
 import { AppState } from "../shell/app-state.slint";
-import { ContactsSidebar } from "contacts-sidebar.slint";
 import { ContactDetail } from "contact-detail.slint";
 import { EmptyState } from "../layout/empty-state.slint";
 import { PeopleIcon } from "../icons/people-icon.slint";
 
+// The contacts detail. The contacts sidebar is hosted by the shell in the left
+// card (like the settings sidebar), so this page renders only the detail and
+// fills the conversation card.
 export component ContactsPage inherits Rectangle {
-    // Bound by the shell; drives the sidebar's narrow-window collapse.
     in property <length> window-width: 100000px;
 
     horizontal-stretch: 1;
     vertical-stretch: 1;
     preferred-width: 0px;
     preferred-height: 0px;
-    background: Palette.bg;
+    background: Palette.card;
 
-    // Absolute layout: the detail sits against the sidebar's *reserved*
-    // width, so the sidebar's hover expansion (painted later, on top)
-    // overlays it without reflowing.
     // No contacts → friendly empty state; otherwise the selected detail.
     if AppState.contacts.length == 0: EmptyState {
-        x: sidebar.reserved-width;
-        y: 0;
-        width: parent.width - sidebar.reserved-width;
+        width: parent.width;
         height: parent.height;
         title: @tr("No contacts yet");
         description: @tr("People you start chats with will show up here.");
@@ -31,16 +27,7 @@ export component ContactsPage inherits Rectangle {
         }
     }
     if AppState.contacts.length > 0: ContactDetail {
-        x: sidebar.reserved-width;
-        y: 0;
-        width: parent.width - sidebar.reserved-width;
+        width: parent.width;
         height: parent.height;
-    }
-
-    sidebar := ContactsSidebar {
-        x: 0;
-        y: 0;
-        height: parent.height;
-        window-width: root.window-width;
     }
 }

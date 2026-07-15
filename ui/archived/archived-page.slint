@@ -1,28 +1,23 @@
 import { AppState } from "../shell/app-state.slint";
 import { Palette } from "../tokens.slint";
-import { ArchivedSidebar } from "archived-sidebar.slint";
 import { ArchivedDetail } from "archived-detail.slint";
 import { EmptyState } from "../layout/empty-state.slint";
 import { ArchiveIcon } from "../icons/archive-icon.slint";
 
+// The archived-chat detail. Its sidebar is hosted by the shell in the left
+// card, so this page renders only the detail and fills the conversation card.
 export component ArchivedPage inherits Rectangle {
-    // Bound by the shell; drives the sidebar's narrow-window collapse.
     in property <length> window-width: 100000px;
 
     horizontal-stretch: 1;
     vertical-stretch: 1;
     preferred-width: 0px;
     preferred-height: 0px;
-    background: Palette.bg;
+    background: Palette.card;
 
-    // Absolute layout: the detail sits against the sidebar's *reserved*
-    // width, so the sidebar's hover expansion (painted later, on top)
-    // overlays it without reflowing.
     // No archived chats → empty state; otherwise the selected detail.
     if AppState.archived-chats.length == 0: EmptyState {
-        x: sidebar.reserved-width;
-        y: 0;
-        width: parent.width - sidebar.reserved-width;
+        width: parent.width;
         height: parent.height;
         title: @tr("No archived chats");
         description: @tr("Chats you archive are kept here, out of your main list.");
@@ -31,27 +26,13 @@ export component ArchivedPage inherits Rectangle {
         }
     }
     if AppState.archived-chats.length > 0: ArchivedDetail {
-        x: sidebar.reserved-width;
-        y: 0;
-        width: parent.width - sidebar.reserved-width;
+        width: parent.width;
         height: parent.height;
         data: AppState.archived-chats[AppState.active-archived];
         members: AppState.chat-members;
         is-group: AppState.chat-is-group;
         unarchive-clicked => {
             AppState.unarchive-chat();
-        }
-    }
-
-    sidebar := ArchivedSidebar {
-        x: 0;
-        y: 0;
-        height: parent.height;
-        window-width: root.window-width;
-        archives: AppState.archived-chats;
-        active-archived: AppState.active-archived;
-        archive-clicked(idx) => {
-            AppState.archive-selected(idx);
         }
     }
 }
