@@ -53,6 +53,33 @@ pub(crate) fn attachment_in_flight() -> &'static Mutex<std::collections::HashSet
     SET.get_or_init(|| Mutex::new(std::collections::HashSet::new()))
 }
 
+/// Album cells whose download/decrypt failed, keyed by `att_key`. Read by
+/// [`build_album_cells`] to render the failed glyph and by the tap handler to
+/// route a tap into a retry instead of the lightbox. Cleared when a fresh
+/// attempt starts or succeeds.
+pub(crate) fn attachment_failed() -> &'static Mutex<std::collections::HashSet<String>> {
+    use std::sync::OnceLock;
+    static SET: OnceLock<Mutex<std::collections::HashSet<String>>> = OnceLock::new();
+    SET.get_or_init(|| Mutex::new(std::collections::HashSet::new()))
+}
+
+pub(crate) fn attachment_failed_contains(key: &str) -> bool {
+    attachment_failed()
+        .lock()
+        .map(|s| s.contains(key))
+        .unwrap_or(false)
+}
+
+fn attachment_failed_mark(key: &str) {
+    if let Ok(mut s) = attachment_failed().lock() {
+        s.insert(key.to_string());
+    }
+}
+
+fn attachment_failed_clear(key: &str) {
+    attachment_failed().lock().ok().map(|mut s| s.remove(key));
+}
+
 /// Convert cached pixels into a Slint `Image`. Must be called on the UI thread —
 /// `slint::Image` is `!Send` (it wraps a `VRc`).
 pub(crate) fn image_from_pixels(pixels: &PicturePixels) -> slint::Image {
@@ -962,6 +989,7 @@ pub(crate) fn build_album_cells(
                 .lock()
                 .map(|s| s.contains(&key))
                 .unwrap_or(false);
+            let failed = !loading && !has_image && attachment_failed_contains(&key);
             let (x, y, w, h) = rects[i];
             AlbumCell {
                 x,
@@ -971,6 +999,7 @@ pub(crate) fn build_album_cells(
                 image,
                 has_image,
                 loading,
+                failed,
                 key: key.into(),
             }
         })
@@ -1013,6 +1042,7 @@ pub(crate) fn pending_album_cells(
                 image,
                 has_image,
                 loading: false,
+                failed: false,
                 key: att_key(temp_id, i).into(),
             }
         })
@@ -1121,6 +1151,9 @@ pub(crate) fn autoload_album_cells(
             }
             set.insert(key.clone());
         }
+        // Fresh attempt in flight — drop any prior failure so the cell shows
+        // the spinner, not the error glyph, while this download runs.
+        attachment_failed_clear(&key);
         let backend = backend.clone();
         let vault = vault.clone();
         let group_hex = group_hex.clone();
@@ -1139,6 +1172,7 @@ pub(crate) fn autoload_album_cells(
                     .and_then(|plain| decode_avatar_pixels(&plain).ok())
                 {
                     attachment_image_cache_put(key.clone(), px);
+                    attachment_failed_clear(&key);
                     attachment_in_flight()
                         .lock()
                         .ok()
@@ -1168,28 +1202,86 @@ pub(crate) fn autoload_album_cells(
                             None
                         }
                     };
-                    let ok = pixels.is_some();
                     if let Some(px) = pixels {
                         attachment_image_cache_put(key.clone(), px);
+                        attachment_failed_clear(&key);
+                    } else {
+                        attachment_failed_mark(&key);
                     }
                     attachment_in_flight()
                         .lock()
                         .ok()
                         .map(|mut s| s.remove(&key));
-                    if ok {
-                        refresh_one_message_row_async(
-                            &backend_cb,
-                            weak,
-                            pending_state,
-                            group_ids,
-                            group_hex_cb,
-                            mid,
-                        );
-                    }
+                    // Refresh either way: success swaps the image in, failure
+                    // clears the spinner and shows the retryable error glyph.
+                    refresh_one_message_row_async(
+                        &backend_cb,
+                        weak,
+                        pending_state,
+                        group_ids,
+                        group_hex_cb,
+                        mid,
+                    );
                 });
             }
         });
     }
+}
+
+/// Retry a single failed album cell. Resolves the record + reference again,
+/// re-enters the shared autoload path for just that cell, and repaints the row
+/// so the grid flips from the error glyph back to the spinner while the retry
+/// runs. No-op if the record or reference can no longer be resolved.
+pub(crate) fn retry_album_cell(group_hex: String, key: String) {
+    let Some((mid, idx)) = key
+        .rsplit_once('#')
+        .and_then(|(m, i)| i.parse::<usize>().ok().map(|i| (m.to_string(), i)))
+    else {
+        return;
+    };
+    let Some(ctx) = ALBUM_LOAD_CTX.with(|c| c.borrow().clone()) else {
+        return;
+    };
+    let Some(backend) = ctx.backend_cell.lock().unwrap().clone() else {
+        return;
+    };
+    let backend_q = backend.clone();
+    backend.tokio_handle().spawn(async move {
+        let all = backend_q
+            .messages(&group_hex, Some(msg_window_for(&group_hex)))
+            .unwrap_or_default();
+        let reference = all
+            .iter()
+            .find(|m| m.message_id_hex == mid)
+            .and_then(|rec| {
+                parse_all_media_references(&rec.tags, rec.source_epoch)
+                    .into_iter()
+                    .filter(|r| mime_is_image(&r.media_type))
+                    .nth(idx)
+            });
+        let Some(reference) = reference else {
+            return;
+        };
+        let _ = slint::invoke_from_event_loop(move || {
+            autoload_album_cells(group_hex.clone(), mid.clone(), vec![(idx, reference)]);
+            // autoload only repaints on completion; repaint now so the failed
+            // glyph gives way to the spinner the moment the tap lands.
+            let Some(ctx) = ALBUM_LOAD_CTX.with(|c| c.borrow().clone()) else {
+                return;
+            };
+            let Some(backend) = ctx.backend_cell.lock().unwrap().clone() else {
+                return;
+            };
+            refresh_one_message_row_async(
+                &backend,
+                ctx.weak,
+                ctx.pending_state,
+                ctx.group_ids,
+                group_hex,
+                mid,
+            );
+        });
+    });
 }
 
 /// Build a [`StagedFile`] from raw bytes: full-resolution decode for the

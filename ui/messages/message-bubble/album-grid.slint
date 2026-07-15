@@ -24,16 +24,22 @@ export component AlbumGrid inherits Rectangle {
             image-fit: cover;
         }
         if !cell.has-image: Text {
-            text: cell.loading ? "…" : "🖼";
-            color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
+            // Three distinct states: failed (⚠, danger colour, tap to retry),
+            // still-loading (…), and the neutral pre-load placeholder (🖼).
+            text: cell.failed ? "⚠" : (cell.loading ? "…" : "🖼");
+            color: cell.failed
+                ? Palette.danger-on-bubble
+                : (root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid);
             font-size: Theme.fs(22px, 26px);
             font-family: Theme.font;
             x: (parent.width - self.width) / 2;
             y: (parent.height - self.height) / 2;
-            opacity: 0.7;
+            opacity: cell.failed ? 1.0 : 0.7;
         }
         TouchArea {
-            enabled: !cell.loading;
+            // Loading cells stay inert, but a failed cell must accept the tap
+            // that retries its download.
+            enabled: !cell.loading || cell.failed;
             mouse-cursor: pointer;
             clicked => {
                 root.cell-clicked(cell.key);
@@ -41,4 +47,3 @@ export component AlbumGrid inherits Rectangle {
         }
     }
 }
-
