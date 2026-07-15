@@ -100,13 +100,13 @@ msgctxt "MentionPicker"
 msgid "(you)"
 msgstr ""
 
-msgctxt "GroupMembersHeader"
-msgid "1 in this group"
-msgid_plural "{n} in this group"
+msgctxt "ChatHeader"
+msgid "1 member"
+msgid_plural "{n} members"
 msgstr[0] ""
 msgstr[1] ""
 
-msgctxt "ChatHeader"
+msgctxt "GroupHero"
 msgid "1 member"
 msgid_plural "{n} members"
 msgstr[0] ""
@@ -148,10 +148,6 @@ msgstr ""
 
 msgctxt "ContactDetail"
 msgid "ADDED {}  ·  {} RELAYS"
-msgstr ""
-
-msgctxt "GroupMemberRow"
-msgid "ADMIN"
 msgstr ""
 
 msgctxt "ChatListPanel"
@@ -256,7 +252,7 @@ msgctxt "ProfileModal"
 msgid "Add contact"
 msgstr ""
 
-msgctxt "AddMemberCard"
+msgctxt "AddMemberRow"
 msgid "Add member"
 msgstr ""
 
@@ -280,6 +276,10 @@ msgctxt "ProfileModal"
 msgid "Adding…"
 msgstr ""
 
+msgctxt "GroupMemberRow"
+msgid "Admin"
+msgstr ""
+
 msgctxt "ErrorCopy"
 msgid "Admin added."
 msgstr ""
@@ -288,7 +288,7 @@ msgctxt "ErrorCopy"
 msgid "Admin removed."
 msgstr ""
 
-msgctxt "GroupSettingsCard"
+msgctxt "GroupLeaveRow"
 msgid "Admins must step down before leaving."
 msgstr ""
 
@@ -485,6 +485,10 @@ msgctxt "ForwardPickerModal"
 msgid "Cancel"
 msgstr ""
 
+msgctxt "HeroEditField"
+msgid "Cancel"
+msgstr ""
+
 msgctxt "ImportBackupModal"
 msgid "Cancel"
 msgstr ""
@@ -524,10 +528,6 @@ msgstr ""
 
 msgctxt "language picker button"
 msgid "Change"
-msgstr ""
-
-msgctxt "GroupSettingsCard"
-msgid "Change image"
 msgstr ""
 
 msgctxt "ChatRequestBanner"
@@ -1110,20 +1110,12 @@ msgctxt "EncryptionInfoModal"
 msgid "Got it"
 msgstr ""
 
-msgctxt "GroupSettingsCard"
-msgid "Group description"
-msgstr ""
-
 msgctxt "ArchivedDetail"
 msgid "Group id"
 msgstr ""
 
-msgctxt "GroupSettingsCard"
+msgctxt "GroupHero"
 msgid "Group name"
-msgstr ""
-
-msgctxt "GroupSettingsCard"
-msgid "Group settings"
 msgstr ""
 
 msgctxt "PasswordField"
@@ -1152,10 +1144,6 @@ msgstr ""
 
 msgctxt "NotificationsPane"
 msgid "INCOMING MESSAGES"
-msgstr ""
-
-msgctxt "GroupMemberRow"
-msgid "INVITED"
 msgstr ""
 
 msgctxt "EncryptionInfoModal"
@@ -1210,8 +1198,12 @@ msgctxt "KeysPage"
 msgid "Invalidates the current package and uploads a fresh one to your relays."
 msgstr ""
 
-msgctxt "AddMemberCard"
+msgctxt "AddMemberRow"
 msgid "Invite"
+msgstr ""
+
+msgctxt "AddMemberRow"
+msgid "Invite by npub"
 msgstr ""
 
 msgctxt "GetStartedScreen"
@@ -1227,7 +1219,7 @@ msgctxt "ErrorCopy"
 msgid "Invited."
 msgstr ""
 
-msgctxt "AddMemberCard"
+msgctxt "AddMemberRow"
 msgid "Inviting…"
 msgstr ""
 
@@ -1315,12 +1307,8 @@ msgctxt "ConfirmFlows"
 msgid "Leave group"
 msgstr ""
 
-msgctxt "GroupSettingsCard"
+msgctxt "GroupLeaveRow"
 msgid "Leave group"
-msgstr ""
-
-msgctxt "GroupSettingsCard"
-msgid "Leave this group and stop receiving new messages. The chat moves to Archive."
 msgstr ""
 
 msgctxt "ConfirmFlows"
@@ -1331,7 +1319,7 @@ msgctxt "ErrorCopy"
 msgid "Leaving group…"
 msgstr ""
 
-msgctxt "GroupSettingsCard"
+msgctxt "GroupLeaveRow"
 msgid "Leaving…"
 msgstr ""
 
@@ -1432,10 +1420,6 @@ msgid "Member removed."
 msgstr ""
 
 msgctxt "ArchivedDetail"
-msgid "Members"
-msgstr ""
-
-msgctxt "GroupMembersHeader"
 msgid "Members"
 msgstr ""
 
@@ -1863,7 +1847,7 @@ msgctxt "KeysPage"
 msgid "Publishing…"
 msgstr ""
 
-msgctxt "GroupSettingsCard"
+msgctxt "GroupHero"
 msgid "Purpose, rules, or invite blurb"
 msgstr ""
 
@@ -1969,10 +1953,6 @@ msgstr ""
 
 msgctxt "GroupMemberMenu"
 msgid "Remove from group"
-msgstr ""
-
-msgctxt "GroupSettingsCard"
-msgid "Remove image"
 msgstr ""
 
 msgctxt "LoginScreen"
@@ -2151,6 +2131,10 @@ msgctxt "weekday"
 msgid "Sat"
 msgstr ""
 
+msgctxt "HeroEditField"
+msgid "Save"
+msgstr ""
+
 msgctxt "ImageViewerModal"
 msgid "Save"
 msgstr ""
@@ -2163,20 +2147,12 @@ msgctxt "ProfilePage"
 msgid "Save"
 msgstr ""
 
-msgctxt "GroupSettingsCard"
-msgid "Save description"
-msgstr ""
-
 msgctxt "Composer"
 msgid "Save edit"
 msgstr ""
 
 msgctxt "LoginScreen"
 msgid "Save key"
-msgstr ""
-
-msgctxt "GroupSettingsCard"
-msgid "Save name"
 msgstr ""
 
 msgctxt "LoginScreen"
@@ -2192,7 +2168,7 @@ msgctxt "BackupCreateModal"
 msgid "Saving…"
 msgstr ""
 
-msgctxt "GroupSettingsCard"
+msgctxt "HeroEditField"
 msgid "Saving…"
 msgstr ""
 
@@ -2546,7 +2522,7 @@ msgctxt "AvatarEditable"
 msgid "Uploading…"
 msgstr ""
 
-msgctxt "GroupSettingsCard"
+msgctxt "GroupHero"
 msgid "Uploading…"
 msgstr ""
 
@@ -2870,4 +2846,8 @@ msgstr ""
 
 msgctxt "ContactDetail"
 msgid "✓ VERIFIED"
+msgstr ""
+
+msgctxt "GroupHero"
+msgid "＋ Add a description"
 msgstr ""

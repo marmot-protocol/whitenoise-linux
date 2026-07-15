@@ -99,14 +99,13 @@ msgctxt "MentionPicker"
 msgid "(you)"
 msgstr "(du)"
 
-#, fuzzy
-msgctxt "GroupMembersHeader"
-msgid "1 in this group"
-msgid_plural "{n} in this group"
-msgstr[0] "1 in dieser Gruppe"
-msgstr[1] "{n} in dieser Gruppe"
-
 msgctxt "ChatHeader"
+msgid "1 member"
+msgid_plural "{n} members"
+msgstr[0] "1 Mitglied"
+msgstr[1] "{n} Mitglieder"
+
+msgctxt "GroupHero"
 msgid "1 member"
 msgid_plural "{n} members"
 msgstr[0] "1 Mitglied"
@@ -150,10 +149,6 @@ msgstr "AKTIONEN"
 msgctxt "ContactDetail"
 msgid "ADDED {}  ·  {} RELAYS"
 msgstr "HINZUGEFÜGT {}  ·  {} RELAYS"
-
-msgctxt "GroupMemberRow"
-msgid "ADMIN"
-msgstr "ADMIN"
 
 msgctxt "ChatListPanel"
 msgid "AGO"
@@ -266,7 +261,7 @@ msgid "Add contact"
 msgstr "Kontakt"
 
 #, fuzzy
-msgctxt "AddMemberCard"
+msgctxt "AddMemberRow"
 msgid "Add member"
 msgstr "1 Mitglied"
 
@@ -293,6 +288,10 @@ msgctxt "ProfileModal"
 msgid "Adding…"
 msgstr "Speichere…"
 
+msgctxt "GroupMemberRow"
+msgid "Admin"
+msgstr "Admin"
+
 msgctxt "ErrorCopy"
 msgid "Admin added."
 msgstr "Admin hinzugefügt."
@@ -301,7 +300,8 @@ msgctxt "ErrorCopy"
 msgid "Admin removed."
 msgstr "Admin entfernt."
 
-msgctxt "GroupSettingsCard"
+#, fuzzy
+msgctxt "GroupLeaveRow"
 msgid "Admins must step down before leaving."
 msgstr "Admins müssen zurücktreten, bevor sie die Gruppe verlassen."
 
@@ -508,6 +508,11 @@ msgid "Cancel"
 msgstr "Abbrechen"
 
 #, fuzzy
+msgctxt "HeroEditField"
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#, fuzzy
 msgctxt "ImportBackupModal"
 msgid "Cancel"
 msgstr "Abbrechen"
@@ -552,11 +557,6 @@ msgstr ""
 
 msgctxt "language picker button"
 msgid "Change"
-msgstr "Ändern"
-
-#, fuzzy
-msgctxt "GroupSettingsCard"
-msgid "Change image"
 msgstr "Ändern"
 
 msgctxt "ChatRequestBanner"
@@ -1165,22 +1165,13 @@ msgctxt "EncryptionInfoModal"
 msgid "Got it"
 msgstr ""
 
-msgctxt "GroupSettingsCard"
-msgid "Group description"
-msgstr "Gruppenbeschreibung"
-
 msgctxt "ArchivedDetail"
 msgid "Group id"
 msgstr "Gruppen-ID"
 
 #, fuzzy
-msgctxt "GroupSettingsCard"
+msgctxt "GroupHero"
 msgid "Group name"
-msgstr "Gruppen-ID"
-
-#, fuzzy
-msgctxt "GroupSettingsCard"
-msgid "Group settings"
 msgstr "Gruppen-ID"
 
 msgctxt "PasswordField"
@@ -1210,10 +1201,6 @@ msgstr "IDENTITÄT"
 msgctxt "NotificationsPane"
 msgid "INCOMING MESSAGES"
 msgstr "EINGEHENDE NACHRICHTEN"
-
-msgctxt "GroupMemberRow"
-msgid "INVITED"
-msgstr "EINGELADEN"
 
 msgctxt "EncryptionInfoModal"
 msgid "If someone's device gets compromised, the group quietly swaps in fresh keys so what you send next is private again."
@@ -1268,9 +1255,14 @@ msgctxt "KeysPage"
 msgid "Invalidates the current package and uploads a fresh one to your relays."
 msgstr "Macht das aktuelle Paket ungültig und lädt ein neues auf deine Relays hoch."
 
-msgctxt "AddMemberCard"
+#, fuzzy
+msgctxt "AddMemberRow"
 msgid "Invite"
 msgstr "Einladen"
+
+msgctxt "AddMemberRow"
+msgid "Invite by npub"
+msgstr "Per npub einladen"
 
 msgctxt "GetStartedScreen"
 msgid "Invite someone by their npub and say hello."
@@ -1286,7 +1278,7 @@ msgid "Invited."
 msgstr "Eingeladen."
 
 #, fuzzy
-msgctxt "AddMemberCard"
+msgctxt "AddMemberRow"
 msgid "Inviting…"
 msgstr "Speichere…"
 
@@ -1377,13 +1369,10 @@ msgctxt "ConfirmFlows"
 msgid "Leave group"
 msgstr "Gruppe verlassen"
 
-msgctxt "GroupSettingsCard"
+#, fuzzy
+msgctxt "GroupLeaveRow"
 msgid "Leave group"
 msgstr "Gruppe verlassen"
-
-msgctxt "GroupSettingsCard"
-msgid "Leave this group and stop receiving new messages. The chat moves to Archive."
-msgstr "Diese Gruppe verlassen und keine neuen Nachrichten mehr erhalten. Der Chat wird ins Archiv verschoben."
 
 msgctxt "ConfirmFlows"
 msgid "Leave {}?"
@@ -1393,7 +1382,8 @@ msgctxt "ErrorCopy"
 msgid "Leaving group…"
 msgstr "Gruppe wird verlassen…"
 
-msgctxt "GroupSettingsCard"
+#, fuzzy
+msgctxt "GroupLeaveRow"
 msgid "Leaving…"
 msgstr "Wird verlassen…"
 
@@ -1501,11 +1491,6 @@ msgid "Member removed."
 msgstr "Mitglied entfernt."
 
 msgctxt "ArchivedDetail"
-msgid "Members"
-msgstr "Mitglieder"
-
-#, fuzzy
-msgctxt "GroupMembersHeader"
 msgid "Members"
 msgstr "Mitglieder"
 
@@ -1954,7 +1939,8 @@ msgctxt "KeysPage"
 msgid "Publishing…"
 msgstr "Veröffentliche…"
 
-msgctxt "GroupSettingsCard"
+#, fuzzy
+msgctxt "GroupHero"
 msgid "Purpose, rules, or invite blurb"
 msgstr "Zweck, Regeln oder Einladungstext"
 
@@ -2066,10 +2052,6 @@ msgstr "Kontakt entfernen"
 msgctxt "GroupMemberMenu"
 msgid "Remove from group"
 msgstr "Aus Gruppe entfernen"
-
-msgctxt "GroupSettingsCard"
-msgid "Remove image"
-msgstr "Bild entfernen"
 
 #, fuzzy
 msgctxt "LoginScreen"
@@ -2255,6 +2237,11 @@ msgctxt "weekday"
 msgid "Sat"
 msgstr "Sa"
 
+#, fuzzy
+msgctxt "HeroEditField"
+msgid "Save"
+msgstr "Speichern"
+
 msgctxt "ImageViewerModal"
 msgid "Save"
 msgstr "Speichern"
@@ -2268,10 +2255,6 @@ msgctxt "ProfilePage"
 msgid "Save"
 msgstr "Speichern"
 
-msgctxt "GroupSettingsCard"
-msgid "Save description"
-msgstr "Beschreibung speichern"
-
 msgctxt "Composer"
 msgid "Save edit"
 msgstr "Änderung speichern"
@@ -2280,11 +2263,6 @@ msgstr "Änderung speichern"
 msgctxt "LoginScreen"
 msgid "Save key"
 msgstr "Schlüssel speichern"
-
-#, fuzzy
-msgctxt "GroupSettingsCard"
-msgid "Save name"
-msgstr "Speichern"
 
 msgctxt "LoginScreen"
 msgid "Save your new key"
@@ -2301,7 +2279,7 @@ msgid "Saving…"
 msgstr "Speichere…"
 
 #, fuzzy
-msgctxt "GroupSettingsCard"
+msgctxt "HeroEditField"
 msgid "Saving…"
 msgstr "Speichere…"
 
@@ -2671,7 +2649,7 @@ msgid "Uploading…"
 msgstr "Speichere…"
 
 #, fuzzy
-msgctxt "GroupSettingsCard"
+msgctxt "GroupHero"
 msgid "Uploading…"
 msgstr "Speichere…"
 
@@ -3007,3 +2985,7 @@ msgstr "✓ In deinen Kontakten"
 msgctxt "ContactDetail"
 msgid "✓ VERIFIED"
 msgstr "✓ VERIFIZIERT"
+
+msgctxt "GroupHero"
+msgid "＋ Add a description"
+msgstr "＋ Beschreibung hinzufügen"

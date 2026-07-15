@@ -2,135 +2,151 @@ import { Palette, Theme, GroupMember, ProfileSink } from "../tokens.slint";
 import { Avatar } from "../primitives/avatar.slint";
 import { Pill } from "../primitives/pill.slint";
 
+// One member in the panel list. The whole row is a profile link (hover paints
+// the row, click opens the profile); admins get a crown badge on the avatar
+// and an accent "Admin" caption instead of a pill so names stay quiet. The
+// "⋯" action trigger is always mounted (collapsed rows race the first click)
+// but only fades in on hover when the viewer can act on this member.
 export component GroupMemberRow inherits Rectangle {
     in property <GroupMember> data;
-    in property <bool> show-divider: true;
     // Fired when the viewer taps this row's "⋯" — the root opens the member
     // action menu at (ax, ay) with the flags describing which actions apply.
     callback request-menu(string, string, bool, bool, bool, bool, length, length);
 
-    // The "⋯" affordance shows only when the viewer can act on this row.
     property <bool> has-actions: root.data.can-promote || root.data.can-demote || root.data.can-self-demote || root.data.can-remove;
+    property <bool> hot: row-ta.has-hover || menu-ta.has-hover;
 
-    height: 52px;
+    height: 48px;
+    border-radius: (8px) * Theme.r-scale;
+    background: root.hot ? Palette.hover : transparent;
+    animate background { duration: Theme.hover-dur; }
     // Invited-but-not-yet-active members read as pending, so dim the row.
-    opacity: root.data.is-invited ? 0.55 : 1.0;
+    opacity: root.data.is-invited ? 0.6 : 1.0;
 
-    HorizontalLayout {
-        padding-left: 14px;
-        padding-right: 10px;
-        padding-top: 8px;
-        padding-bottom: 8px;
-        spacing: 10px;
-        alignment: stretch;
-
-        TouchArea {
-            width: 36px;
-            height: 36px;
-            mouse-cursor: pointer;
-            clicked => {
-                if (root.data.member-id != "") {
-                    ProfileSink.open(root.data.member-id);
-                }
-            }
-            Avatar {
-                size: 36px;
-                y: 0;
-                initials: root.data.av-initials;
-                color-a: root.data.av-a;
-                color-b: root.data.av-b;
-                picture: root.data.picture;
-                has-picture: root.data.has-picture;
-                font-size: Theme.fs(11px, 16px);
+    // The row TouchArea nests around the content (including the "⋯" trigger,
+    // which wins the hit-test as the inner area) — overlapping sibling
+    // TouchAreas race the first click.
+    row-ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            if (root.data.member-id != "") {
+                ProfileSink.open(root.data.member-id);
             }
         }
 
-        VerticalLayout {
-            horizontal-stretch: 1;
-            spacing: 2px;
-            alignment: center;
-            HorizontalLayout {
-                spacing: 8px;
-                alignment: stretch;
+        HorizontalLayout {
+            padding-left: 6px;
+            padding-right: 2px;
+            spacing: 10px;
+
+            Rectangle {
+                width: 38px;
+                Avatar {
+                    x: 0;
+                    y: (parent.height - self.height) / 2;
+                    size: 36px;
+                    initials: root.data.av-initials;
+                    color-a: root.data.av-a;
+                    color-b: root.data.av-b;
+                    picture: root.data.picture;
+                    has-picture: root.data.has-picture;
+                    font-size: Theme.fs(11px, 16px);
+                }
+
+                // Crown badge — the admin marker lives on the avatar, not in
+                // a pill, so the name line stays clean.
+                if root.data.is-admin: Rectangle {
+                    x: 24px;
+                    y: parent.height / 2 + 10px;
+                    width: 15px;
+                    height: 15px;
+                    border-radius: (7.5px) * Theme.r-scale;
+                    background: Palette.mint;
+                    border-width: max(Theme.border-w, 1.5px);
+                    border-color: Palette.panel;
+                    Text {
+                        text: "★";
+                        color: Palette.bubble-out-fg;
+                        font-size: Theme.fs(8px, 10px);
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+
+            VerticalLayout {
+                horizontal-stretch: 1;
+                spacing: 1px;
+                alignment: center;
+                HorizontalLayout {
+                    spacing: 6px;
+                    alignment: stretch;
+                    Text {
+                        text: root.data.name;
+                        color: Palette.text-hi;
+                        font-size: Theme.fs(13px, 16px);
+                        font-weight: 700;
+                        vertical-alignment: center;
+                        horizontal-stretch: 1;
+                        overflow: elide;
+                    }
+
+                    if root.data.is-self: Pill {
+                        label: @tr("YOU");
+                        bg-color: Palette.mint-surface;
+                        fg: Palette.mint;
+                        font-size: Theme.fsr(9px, 12px);
+                    }
+                }
+
                 Text {
-                    text: root.data.name;
-                    color: Palette.text-hi;
-                    font-size: Theme.fs(13px, 16px);
-                    font-weight: 700;
-                    vertical-alignment: center;
-                    horizontal-stretch: 1;
+                    text: root.data.is-admin ? @tr("Admin") : root.data.npub-short;
+                    color: root.data.is-admin ? Palette.mint : Palette.text-lo;
+                    font-size: Theme.fs(10px, 14px);
+                    font-weight: root.data.is-admin ? 700 : 400;
                     overflow: elide;
                 }
-
-                if root.data.is-self: Pill {
-                    label: @tr("YOU");
-                    bg-color: Palette.mint;
-                    fg: Palette.bubble-out-fg;
-                    font-size: Theme.fsr(10px, 12px);
-                }
-                if root.data.is-admin: Pill {
-                    label: @tr("ADMIN");
-                    bg-color: Palette.mint-surface;
-                    fg: Palette.mint;
-                    font-size: Theme.fsr(10px, 12px);
-                }
-                if root.data.is-invited: Pill {
-                    label: @tr("INVITED");
-                    bg-color: Palette.panel-2;
-                    fg: Palette.text-lo;
-                    font-size: Theme.fsr(10px, 12px);
-                }
             }
 
-            Text {
-                text: root.data.npub-short;
-                color: Palette.text-lo;
-                font-size: Theme.fs(10px, 14px);
-                overflow: elide;
-            }
-        }
+            // "⋯" — opens the per-member admin action menu. Always mounted so
+            // the TouchArea never races the first click; fades in on hover.
+            Rectangle {
+                width: 32px;
+                menu-ta := TouchArea {
+                    enabled: root.has-actions;
+                    mouse-cursor: pointer;
+                    clicked => {
+                        root.request-menu(
+                            root.data.member-id,
+                            root.data.name,
+                            root.data.can-promote,
+                            root.data.can-demote,
+                            root.data.can-self-demote,
+                            root.data.can-remove,
+                            self.absolute-position.x + self.width,
+                            self.absolute-position.y + self.height);
+                    }
 
-        // "⋯" — opens the per-member admin action menu. One tidy trigger keeps
-        // the row compact and readable however many actions the member has.
-        if root.has-actions: Rectangle {
-            width: 30px;
-            menu-ta := TouchArea {
-                mouse-cursor: pointer;
-                clicked => {
-                    root.request-menu(
-                        root.data.member-id,
-                        root.data.name,
-                        root.data.can-promote,
-                        root.data.can-demote,
-                        root.data.can-self-demote,
-                        root.data.can-remove,
-                        self.absolute-position.x + self.width,
-                        self.absolute-position.y + self.height);
-                }
-            }
-
-            dot := Rectangle {
-                width: 28px;
-                height: 28px;
-                y: (parent.height - self.height) / 2;
-                border-radius: (6px) * Theme.r-scale;
-                background: menu-ta.has-hover ? Palette.hover : transparent;
-                Text {
-                    text: "⋯";
-                    color: menu-ta.has-hover ? Palette.text-hi : Palette.text-mid;
-                    font-size: Theme.fs(16px, 18px);
-                    font-family: Theme.font;
-                    horizontal-alignment: center;
-                    vertical-alignment: center;
+                    Rectangle {
+                        width: 26px;
+                        height: 26px;
+                        x: (parent.width - self.width) / 2;
+                        y: (parent.height - self.height) / 2;
+                        border-radius: (6px) * Theme.r-scale;
+                        background: menu-ta.has-hover ? Palette.selected : transparent;
+                        opacity: root.has-actions && root.hot ? 1.0 : 0.0;
+                        animate opacity { duration: Theme.hover-dur; }
+                        Text {
+                            text: "⋯";
+                            color: menu-ta.has-hover ? Palette.text-hi : Palette.text-mid;
+                            font-size: Theme.fs(16px, 18px);
+                            font-family: Theme.font;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+                    }
                 }
             }
         }
-    }
-
-    if root.show-divider: Rectangle {
-        y: parent.height - 1px;
-        width: parent.width;
-        height: 1px;
-        background: Palette.border-2;
     }
 }

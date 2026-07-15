@@ -99,13 +99,12 @@ msgctxt "MentionPicker"
 msgid "(you)"
 msgstr "(あなた)"
 
-#, fuzzy
-msgctxt "GroupMembersHeader"
-msgid "1 in this group"
-msgid_plural "{n} in this group"
-msgstr[0] "このグループに {n} 人"
-
 msgctxt "ChatHeader"
+msgid "1 member"
+msgid_plural "{n} members"
+msgstr[0] "{n} メンバー"
+
+msgctxt "GroupHero"
 msgid "1 member"
 msgid_plural "{n} members"
 msgstr[0] "{n} メンバー"
@@ -147,10 +146,6 @@ msgstr "操作"
 msgctxt "ContactDetail"
 msgid "ADDED {}  ·  {} RELAYS"
 msgstr "追加 {}  ·  {} リレー"
-
-msgctxt "GroupMemberRow"
-msgid "ADMIN"
-msgstr "管理者"
 
 msgctxt "ChatListPanel"
 msgid "AGO"
@@ -263,7 +258,7 @@ msgid "Add contact"
 msgstr "連絡先"
 
 #, fuzzy
-msgctxt "AddMemberCard"
+msgctxt "AddMemberRow"
 msgid "Add member"
 msgstr "1 メンバー"
 
@@ -290,6 +285,10 @@ msgctxt "ProfileModal"
 msgid "Adding…"
 msgstr "保存中…"
 
+msgctxt "GroupMemberRow"
+msgid "Admin"
+msgstr "管理者"
+
 msgctxt "ErrorCopy"
 msgid "Admin added."
 msgstr "管理者を追加しました。"
@@ -298,7 +297,8 @@ msgctxt "ErrorCopy"
 msgid "Admin removed."
 msgstr "管理者を削除しました。"
 
-msgctxt "GroupSettingsCard"
+#, fuzzy
+msgctxt "GroupLeaveRow"
 msgid "Admins must step down before leaving."
 msgstr "管理者は退出前に管理者権限を外す必要があります。"
 
@@ -505,6 +505,11 @@ msgid "Cancel"
 msgstr "キャンセル"
 
 #, fuzzy
+msgctxt "HeroEditField"
+msgid "Cancel"
+msgstr "キャンセル"
+
+#, fuzzy
 msgctxt "ImportBackupModal"
 msgid "Cancel"
 msgstr "キャンセル"
@@ -549,11 +554,6 @@ msgstr ""
 
 msgctxt "language picker button"
 msgid "Change"
-msgstr "変更"
-
-#, fuzzy
-msgctxt "GroupSettingsCard"
-msgid "Change image"
 msgstr "変更"
 
 msgctxt "ChatRequestBanner"
@@ -1162,22 +1162,13 @@ msgctxt "EncryptionInfoModal"
 msgid "Got it"
 msgstr ""
 
-msgctxt "GroupSettingsCard"
-msgid "Group description"
-msgstr "グループの説明"
-
 msgctxt "ArchivedDetail"
 msgid "Group id"
 msgstr "グループ ID"
 
 #, fuzzy
-msgctxt "GroupSettingsCard"
+msgctxt "GroupHero"
 msgid "Group name"
-msgstr "グループ ID"
-
-#, fuzzy
-msgctxt "GroupSettingsCard"
-msgid "Group settings"
 msgstr "グループ ID"
 
 msgctxt "PasswordField"
@@ -1207,10 +1198,6 @@ msgstr "ID"
 msgctxt "NotificationsPane"
 msgid "INCOMING MESSAGES"
 msgstr "受信メッセージ"
-
-msgctxt "GroupMemberRow"
-msgid "INVITED"
-msgstr "招待済み"
 
 msgctxt "EncryptionInfoModal"
 msgid "If someone's device gets compromised, the group quietly swaps in fresh keys so what you send next is private again."
@@ -1265,9 +1252,14 @@ msgctxt "KeysPage"
 msgid "Invalidates the current package and uploads a fresh one to your relays."
 msgstr "現在のパッケージを無効化し、新しいものをリレーにアップロードします。"
 
-msgctxt "AddMemberCard"
+#, fuzzy
+msgctxt "AddMemberRow"
 msgid "Invite"
 msgstr "招待"
+
+msgctxt "AddMemberRow"
+msgid "Invite by npub"
+msgstr "npubで招待"
 
 msgctxt "GetStartedScreen"
 msgid "Invite someone by their npub and say hello."
@@ -1283,7 +1275,7 @@ msgid "Invited."
 msgstr "招待しました。"
 
 #, fuzzy
-msgctxt "AddMemberCard"
+msgctxt "AddMemberRow"
 msgid "Inviting…"
 msgstr "保存中…"
 
@@ -1374,13 +1366,10 @@ msgctxt "ConfirmFlows"
 msgid "Leave group"
 msgstr "グループを退出"
 
-msgctxt "GroupSettingsCard"
+#, fuzzy
+msgctxt "GroupLeaveRow"
 msgid "Leave group"
 msgstr "グループを退出"
-
-msgctxt "GroupSettingsCard"
-msgid "Leave this group and stop receiving new messages. The chat moves to Archive."
-msgstr "このグループを退出し、新しいメッセージの受信を停止します。チャットはアーカイブに移動します。"
 
 msgctxt "ConfirmFlows"
 msgid "Leave {}?"
@@ -1390,7 +1379,8 @@ msgctxt "ErrorCopy"
 msgid "Leaving group…"
 msgstr "グループから退出中…"
 
-msgctxt "GroupSettingsCard"
+#, fuzzy
+msgctxt "GroupLeaveRow"
 msgid "Leaving…"
 msgstr "退出中…"
 
@@ -1498,11 +1488,6 @@ msgid "Member removed."
 msgstr "メンバーを削除しました。"
 
 msgctxt "ArchivedDetail"
-msgid "Members"
-msgstr "メンバー"
-
-#, fuzzy
-msgctxt "GroupMembersHeader"
 msgid "Members"
 msgstr "メンバー"
 
@@ -1951,7 +1936,8 @@ msgctxt "KeysPage"
 msgid "Publishing…"
 msgstr "公開中…"
 
-msgctxt "GroupSettingsCard"
+#, fuzzy
+msgctxt "GroupHero"
 msgid "Purpose, rules, or invite blurb"
 msgstr "目的、ルール、招待文"
 
@@ -2063,10 +2049,6 @@ msgstr "連絡先を削除"
 msgctxt "GroupMemberMenu"
 msgid "Remove from group"
 msgstr "グループから削除"
-
-msgctxt "GroupSettingsCard"
-msgid "Remove image"
-msgstr "画像を削除"
 
 #, fuzzy
 msgctxt "LoginScreen"
@@ -2252,6 +2234,11 @@ msgctxt "weekday"
 msgid "Sat"
 msgstr "土曜日"
 
+#, fuzzy
+msgctxt "HeroEditField"
+msgid "Save"
+msgstr "保存"
+
 msgctxt "ImageViewerModal"
 msgid "Save"
 msgstr "保存"
@@ -2265,10 +2252,6 @@ msgctxt "ProfilePage"
 msgid "Save"
 msgstr "保存"
 
-msgctxt "GroupSettingsCard"
-msgid "Save description"
-msgstr "説明を保存"
-
 msgctxt "Composer"
 msgid "Save edit"
 msgstr "編集を保存"
@@ -2277,11 +2260,6 @@ msgstr "編集を保存"
 msgctxt "LoginScreen"
 msgid "Save key"
 msgstr "鍵を保存"
-
-#, fuzzy
-msgctxt "GroupSettingsCard"
-msgid "Save name"
-msgstr "保存"
 
 msgctxt "LoginScreen"
 msgid "Save your new key"
@@ -2298,7 +2276,7 @@ msgid "Saving…"
 msgstr "保存中…"
 
 #, fuzzy
-msgctxt "GroupSettingsCard"
+msgctxt "HeroEditField"
 msgid "Saving…"
 msgstr "保存中…"
 
@@ -2668,7 +2646,7 @@ msgid "Uploading…"
 msgstr "保存中…"
 
 #, fuzzy
-msgctxt "GroupSettingsCard"
+msgctxt "GroupHero"
 msgid "Uploading…"
 msgstr "保存中…"
 
@@ -3003,3 +2981,7 @@ msgstr "✓ 連絡先に登録済み"
 msgctxt "ContactDetail"
 msgid "✓ VERIFIED"
 msgstr "✓ 確認済み"
+
+msgctxt "GroupHero"
+msgid "＋ Add a description"
+msgstr "＋ 説明を追加"

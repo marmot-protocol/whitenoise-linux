@@ -1,18 +1,16 @@
 import { Palette } from "../tokens.slint";
 import { AppState } from "../shell/app-state.slint";
-import { GroupCard } from "../layout/group-card.slint";
 import { ScrollView } from "../primitives/scroll-view.slint";
-import { GroupMemberRow } from "group-member-row.slint";
 import { Section } from "../layout/section.slint";
-import { GroupMembersHeader } from "group-members-header.slint";
-import { GroupSettingsCard } from "group-settings-card.slint";
-import { AddMemberCard } from "add-member-card.slint";
+import { GroupHero } from "group-hero.slint";
+import { GroupMemberRow } from "group-member-row.slint";
+import { AddMemberRow } from "add-member-row.slint";
+import { GroupLeaveRow } from "group-leave-row.slint";
 
 export component GroupMembersPanel inherits Rectangle {
     // Reads AppState directly; the pane mounts this bare (the visibility guard
     // stays in MainPane). Member rows stay pure-props — the "⋯" menu arming
     // writes AppState at the row's request-menu handler here.
-    width: 300px;
     background: Palette.panel;
 
     Rectangle {
@@ -24,19 +22,21 @@ export component GroupMembersPanel inherits Rectangle {
     }
 
     VerticalLayout {
-        padding-left: 16px;
-        padding-right: 16px;
-        padding-top: 16px;
-        padding-bottom: 16px;
-        spacing: 12px;
+        // Group identity + in-place admin editing; owns the close button.
+        GroupHero { }
 
-        GroupMembersHeader { }
-
-        if AppState.chat-is-group: GroupSettingsCard { }
+        // Pinned above the scroll (always reachable in long lists — and a
+        // LineInput inside the ScrollView loops the bar-dependent width
+        // through its own wrap-height).
+        if AppState.chat-can-add-members: VerticalLayout {
+            padding-left: 10px;
+            padding-right: 10px;
+            AddMemberRow { }
+        }
 
         // ── Members list ─────────────────────────────────────
-        // Active members and invited-but-not-yet-accepted members share one
-        // scroll, split into two labelled sections.
+        // Active members (admins sorted first, crown-badged) and
+        // invited-but-not-yet-accepted members share one scroll.
         Rectangle {
             vertical-stretch: 1;
             ScrollView {
@@ -44,14 +44,18 @@ export component GroupMembersPanel inherits Rectangle {
                 viewport-height: memcol.preferred-height;
                 viewport-width: self.visible-width;
                 memcol := VerticalLayout {
-                    spacing: 12px;
+                    padding-left: 10px;
+                    padding-right: 10px;
+                    padding-bottom: 12px;
+                    spacing: 14px;
+
                     Section {
                         label: @tr("Members");
-                        GroupCard {
-                            background: Palette.panel-2;
-                            for m[i] in AppState.chat-members: GroupMemberRow {
+                        note: "\{AppState.chat-members.length}";
+                        VerticalLayout {
+                            spacing: 2px;
+                            for m in AppState.chat-members: GroupMemberRow {
                                 data: m;
-                                show-divider: i < AppState.chat-members.length - 1;
                                 request-menu(id, name, cp, cd, csd, cr, ax, ay) => {
                                     AppState.member-menu-id = id;
                                     AppState.member-menu-name = name;
@@ -69,11 +73,11 @@ export component GroupMembersPanel inherits Rectangle {
 
                     if AppState.chat-invited-members.length > 0: Section {
                         label: @tr("Invited");
-                        GroupCard {
-                            background: Palette.panel-2;
-                            for m[i] in AppState.chat-invited-members: GroupMemberRow {
+                        note: "\{AppState.chat-invited-members.length}";
+                        VerticalLayout {
+                            spacing: 2px;
+                            for m in AppState.chat-invited-members: GroupMemberRow {
                                 data: m;
-                                show-divider: i < AppState.chat-invited-members.length - 1;
                                 request-menu(id, name, cp, cd, csd, cr, ax, ay) => {
                                     AppState.member-menu-id = id;
                                     AppState.member-menu-name = name;
@@ -92,6 +96,6 @@ export component GroupMembersPanel inherits Rectangle {
             }
         }
 
-        if AppState.chat-can-add-members: AddMemberCard { }
+        if AppState.chat-is-group: GroupLeaveRow { }
     }
 }

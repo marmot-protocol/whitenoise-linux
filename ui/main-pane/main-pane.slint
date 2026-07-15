@@ -49,7 +49,22 @@ export component MainPane inherits Rectangle {
             composer := Composer { }
         }
 
-        if AppState.chat-can-show-members && AppState.show-chat-members: GroupMembersPanel { }
+        // Always mounted; open/close animates the clipped wrapper width so
+        // the panel slides in from the right edge instead of popping.
+        members-wrap := Rectangle {
+            property <bool> open: AppState.chat-can-show-members && AppState.show-chat-members;
+            width: self.open ? 320px : 0px;
+            animate width {
+                duration: 170ms;
+                easing: ease-in-out;
+            }
+            clip: true;
+            GroupMembersPanel {
+                x: parent.width - 320px;
+                width: 320px;
+                height: parent.height;
+            }
+        }
     }
 
     // Mention autocomplete popup, floated just above the composer's text field.

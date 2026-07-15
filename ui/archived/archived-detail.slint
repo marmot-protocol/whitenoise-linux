@@ -115,9 +115,8 @@ export component ArchivedDetail inherits DetailPage {
     if root.is-group: Section {
         label: @tr("MEMBER LIST");
         GroupCard {
-            for m[i] in root.members: GroupMemberRow {
+            for m in root.members: GroupMemberRow {
                 data: m;
-                show-divider: i < root.members.length - 1;
             }
         }
     }

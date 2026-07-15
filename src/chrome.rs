@@ -919,10 +919,13 @@ pub(crate) fn push_group_members_to_ui_from(
         .iter()
         .map(|m| group_member_from(backend, m, &my_id, &admins, viewer_is_admin, &snap.authored))
         .collect();
-    pairs.sort_by(|(a, _), (b, _)| match (a.is_self, b.is_self) {
-        (true, false) => std::cmp::Ordering::Less,
-        (false, true) => std::cmp::Ordering::Greater,
-        _ => a.name.cmp(&b.name),
+    // Admins lead the list (the panel renders them crown-badged at the top),
+    // self leads within each tier, then names sort alphabetically.
+    pairs.sort_by(|(a, _), (b, _)| {
+        b.is_admin
+            .cmp(&a.is_admin)
+            .then(b.is_self.cmp(&a.is_self))
+            .then_with(|| a.name.cmp(&b.name))
     });
     // Split active members from invited-but-not-yet-active ones; each renders
     // under its own section in the panel.

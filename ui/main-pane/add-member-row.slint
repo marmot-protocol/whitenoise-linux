@@ -1,0 +1,145 @@
+import { Palette, Theme } from "../tokens.slint";
+import { AppState } from "../shell/app-state.slint";
+import { LineInput } from "../primitives/line-input.slint";
+import { Button } from "../primitives/button.slint";
+import { StatusLine } from "../primitives/status-line.slint";
+
+// Admin-only invite affordance, styled as the first row of the member list:
+// a "＋ Add member" row that expands in place into the npub field + invite
+// button. The expanded body stays mounted (height-clipped) so its inputs
+// never race the first click after opening.
+export component AddMemberRow inherits VerticalLayout {
+    property <bool> expanded: false;
+
+    spacing: 0;
+
+    header-ta := TouchArea {
+        height: 48px;
+        mouse-cursor: pointer;
+        clicked => {
+            root.expanded = !root.expanded;
+        }
+
+        Rectangle {
+            border-radius: (8px) * Theme.r-scale;
+            background: header-ta.has-hover ? Palette.hover : transparent;
+            animate background { duration: Theme.hover-dur; }
+
+            HorizontalLayout {
+                padding-left: 6px;
+                padding-right: 8px;
+                spacing: 10px;
+
+                Rectangle {
+                    width: 38px;
+                    Rectangle {
+                        x: 0;
+                        y: (parent.height - self.height) / 2;
+                        width: 36px;
+                        height: 36px;
+                        border-radius: (18px) * Theme.r-scale;
+                        background: Palette.mint-surface;
+                        border-width: Theme.border-w;
+                        border-color: Palette.mint-dim;
+                        Text {
+                            text: root.expanded ? "–" : "＋";
+                            color: Palette.mint;
+                            font-size: Theme.fs(15px, 18px);
+                            font-family: Theme.font;
+                            font-weight: 700;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+
+                Text {
+                    horizontal-stretch: 1;
+                    text: root.expanded ? @tr("Invite by npub") : @tr("Add member");
+                    color: Palette.mint;
+                    font-size: Theme.fs(13px, 16px);
+                    font-weight: 700;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
+
+    // Expanded body — always mounted, revealed by animated height + clip.
+    // Fixed reveal height (field 34 + button 28 + paddings/spacing): deriving
+    // it from body.preferred-height loops through the scroll-view's
+    // bar-dependent width.
+    Rectangle {
+        clip: true;
+        height: root.expanded ? 82px : 0px;
+        animate height {
+            duration: 160ms;
+            easing: ease-out;
+        }
+
+        body := VerticalLayout {
+            padding-left: 6px;
+            padding-right: 8px;
+            padding-top: 4px;
+            padding-bottom: 8px;
+            spacing: 8px;
+
+            Rectangle {
+                height: 34px;
+                border-radius: (6px) * Theme.r-scale;
+                background: Palette.field;
+                border-width: Theme.border-w;
+                border-color: add-input.has-focus ? Palette.mint-dim : Palette.field-border;
+                drop-shadow-blur: add-input.has-focus && Theme.focus-glow ? 10px : 0px;
+                drop-shadow-color: Palette.mint-glow;
+                animate border-color {
+                    duration: 140ms;
+                    easing: ease-out;
+                }
+                HorizontalLayout {
+                    padding-left: 10px;
+                    padding-right: 10px;
+                    add-input := LineInput {
+                        enabled: root.expanded;
+                        placeholder: "npub1…";
+                        text <=> AppState.add-member-draft;
+                        font-size: Theme.fsr(12px, 14px);
+                        fg: Palette.text-hi;
+                        placeholder-color: Palette.text-vlo;
+                        submit => {
+                            if (!AppState.add-member-busy && AppState.add-member-draft != "") {
+                                AppState.add-member(AppState.add-member-draft);
+                            }
+                        }
+                    }
+                }
+            }
+
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: start;
+                Button {
+                    label: AppState.add-member-busy ? @tr("Inviting…") : @tr("Invite");
+                    enabled: root.expanded && !AppState.add-member-busy && AppState.add-member-draft != "";
+                    button-height: 28px;
+                    pad-left: 12px;
+                    pad-right: 12px;
+                    font-size: Theme.fsr(11px, 14px);
+                    bg-color: Palette.mint-surface;
+                    fg: Palette.mint;
+                    outline: Palette.mint;
+                    hover-bg: Palette.mint-surface;
+                    clicked => {
+                        AppState.add-member(AppState.add-member-draft);
+                    }
+                }
+
+                if AppState.add-member-status != "": StatusLine {
+                    compact: true;
+                    text: AppState.add-member-status;
+                    kind: AppState.add-member-status-kind;
+                }
+            }
+        }
+    }
+}

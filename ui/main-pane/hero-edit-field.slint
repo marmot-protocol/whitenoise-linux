@@ -1,0 +1,90 @@
+import { Palette, Theme } from "../tokens.slint";
+import { LineInput } from "../primitives/line-input.slint";
+import { Button } from "../primitives/button.slint";
+
+// Inline hero editor: a focused field plus a save/cancel pair, shared by the
+// group-name and group-description edit states in GroupHero. The draft
+// two-way binds to whichever AppState draft the caller owns; save/cancel are
+// the caller's to wire (the caller also flips its own edit-mode flag).
+export component HeroEditField inherits VerticalLayout {
+    in-out property <string> text;
+    in property <string> placeholder;
+    in property <bool> multiline: false;
+    in property <bool> busy: false;
+    callback save();
+    callback cancel();
+
+    spacing: 8px;
+
+    Rectangle {
+        height: root.multiline ? 76px : 34px;
+        border-radius: (6px) * Theme.r-scale;
+        background: Palette.field;
+        border-width: Theme.border-w;
+        border-color: input.has-focus ? Palette.mint-dim : Palette.field-border;
+        drop-shadow-blur: input.has-focus && Theme.focus-glow ? 10px : 0px;
+        drop-shadow-color: Palette.mint-glow;
+        animate border-color {
+            duration: 140ms;
+            easing: ease-out;
+        }
+        HorizontalLayout {
+            padding-left: 10px;
+            padding-right: 10px;
+            padding-top: root.multiline ? 8px : 0px;
+            padding-bottom: root.multiline ? 8px : 0px;
+            input := LineInput {
+                text <=> root.text;
+                placeholder: root.placeholder;
+                single-line: !root.multiline;
+                enter-submits: !root.multiline;
+                font-size: Theme.fsr(12px, 14px);
+                fg: Palette.text-hi;
+                placeholder-color: Palette.text-vlo;
+                submit => {
+                    if (!root.busy) {
+                        root.save();
+                    }
+                }
+            }
+        }
+    }
+
+    HorizontalLayout {
+        spacing: 8px;
+        alignment: center;
+        Button {
+            label: root.busy ? @tr("Saving…") : @tr("Save");
+            enabled: !root.busy;
+            button-height: 28px;
+            pad-left: 12px;
+            pad-right: 12px;
+            font-size: Theme.fsr(11px, 14px);
+            bg-color: Palette.mint-surface;
+            fg: Palette.mint;
+            outline: Palette.mint;
+            hover-bg: Palette.mint-surface;
+            clicked => {
+                root.save();
+            }
+        }
+
+        Button {
+            label: @tr("Cancel");
+            button-height: 28px;
+            pad-left: 12px;
+            pad-right: 12px;
+            font-size: Theme.fsr(11px, 14px);
+            bg-color: transparent;
+            outline: transparent;
+            has-fill: false;
+            use-hover: true;
+            hover-bg: Palette.hover;
+            fg: Palette.text-mid;
+            hover-fg: Palette.text-hi;
+            clicked => {
+                root.cancel();
+            }
+        }
+    }
+}

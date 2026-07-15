@@ -1,0 +1,258 @@
+import { Palette, Theme, ChatMeta } from "../tokens.slint";
+import { AppState } from "../shell/app-state.slint";
+import { Avatar } from "../primitives/avatar.slint";
+import { StatusLine } from "../primitives/status-line.slint";
+import { HeroEditField } from "hero-edit-field.slint";
+
+// Identity header of the members panel: centered group avatar, name, member
+// count, and description. Admins edit everything in place — hovering the
+// avatar offers change/remove photo, and the pencil beside the name or
+// description swaps the text for an inline field bound to the AppState drafts
+// (Rust pre-fills those with the current values on chat open). Reads AppState
+// directly; mounted bare by GroupMembersPanel.
+export component GroupHero inherits Rectangle {
+    property <ChatMeta> chat: AppState.chats[AppState.active-chat];
+    property <bool> is-grp: AppState.chat-is-group;
+    property <bool> can-admin: AppState.chat-can-add-members && root.is-grp;
+    property <bool> editing-name: false;
+    property <bool> editing-desc: false;
+
+    height: col.preferred-height;
+
+    col := VerticalLayout {
+        padding-left: 16px;
+        padding-right: 16px;
+        padding-top: 10px;
+        padding-bottom: 14px;
+        spacing: 10px;
+
+        // Close affordance rides its own slim row so the centered hero
+        // content below stays symmetric.
+        HorizontalLayout {
+            height: 26px;
+            Rectangle {
+                horizontal-stretch: 1;
+            }
+
+            close-ta := TouchArea {
+                width: 26px;
+                mouse-cursor: pointer;
+                clicked => {
+                    AppState.members-toggle-clicked();
+                }
+                Rectangle {
+                    border-radius: (6px) * Theme.r-scale;
+                    background: close-ta.has-hover ? Palette.hover : transparent;
+                    animate background { duration: Theme.hover-dur; }
+                    Text {
+                        text: "✕";
+                        color: close-ta.has-hover ? Palette.text-hi : Palette.text-mid;
+                        font-size: Theme.fs(13px, 16px);
+                        font-family: Theme.font;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+
+        HorizontalLayout {
+            alignment: center;
+            Rectangle {
+                width: 80px;
+                height: 80px;
+                Avatar {
+                    size: 80px;
+                    initials: root.is-grp ? AppState.chat-group-av-initials : root.chat.av-initials;
+                    color-a: root.is-grp ? AppState.chat-group-av-a : root.chat.av-a;
+                    color-b: root.is-grp ? AppState.chat-group-av-b : root.chat.av-b;
+                    picture: root.is-grp ? AppState.chat-group-picture : root.chat.picture;
+                    has-picture: root.is-grp ? AppState.chat-group-has-picture : root.chat.has-picture;
+                    font-size: Theme.fs(24px, 26px);
+                }
+
+                // Admin photo actions live on the avatar itself: hover scrim
+                // with a pencil to change, corner badge to remove. The remove
+                // badge nests inside the change TouchArea (nested wins the
+                // hit-test; overlapping siblings would race the first click).
+                if root.can-admin && !AppState.group-image-busy: av-ta := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        AppState.change-group-image();
+                    }
+                    Rectangle {
+                        border-radius: (40px) * Theme.r-scale;
+                        background: Palette.overlay;
+                        opacity: av-ta.has-hover ? 1.0 : 0.0;
+                        animate opacity { duration: Theme.hover-dur; }
+                        Text {
+                            text: "✎";
+                            color: white;
+                            font-size: Theme.fs(20px, 22px);
+                            font-family: Theme.font;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+                        if AppState.chat-group-has-picture: remove-ta := TouchArea {
+                            x: parent.width - 22px;
+                            y: 0px;
+                            width: 20px;
+                            height: 20px;
+                            mouse-cursor: pointer;
+                            clicked => {
+                                AppState.clear-group-image();
+                            }
+                            Rectangle {
+                                border-radius: (10px) * Theme.r-scale;
+                                background: remove-ta.has-hover ? Palette.danger : Palette.elevated;
+                                border-width: Theme.border-w;
+                                border-color: Palette.elevated-border;
+                                Text {
+                                    text: "✕";
+                                    color: remove-ta.has-hover ? white : Palette.text-mid;
+                                    font-size: Theme.fs(10px, 12px);
+                                    font-family: Theme.font;
+                                    horizontal-alignment: center;
+                                    vertical-alignment: center;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if AppState.group-image-busy: Rectangle {
+                    border-radius: (40px) * Theme.r-scale;
+                    background: Palette.overlay;
+                    Text {
+                        text: @tr("Uploading…");
+                        color: white;
+                        font-size: Theme.fs(9px, 12px);
+                        font-family: Theme.font;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+
+        if !root.editing-name: HorizontalLayout {
+            alignment: center;
+            spacing: 6px;
+            Text {
+                text: root.chat.name;
+                color: Palette.text-hi;
+                font-size: Theme.fs(16px, 18px);
+                font-weight: 800;
+                font-family: Theme.font;
+                horizontal-alignment: center;
+                overflow: elide;
+                max-width: 220px;
+            }
+
+            if root.can-admin: edit-name-ta := TouchArea {
+                width: 20px;
+                mouse-cursor: pointer;
+                clicked => {
+                    root.editing-name = true;
+                }
+                Text {
+                    text: "✎";
+                    color: edit-name-ta.has-hover ? Palette.text-hi : Palette.text-vlo;
+                    font-size: Theme.fs(12px, 14px);
+                    font-family: Theme.font;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+        }
+
+        if root.editing-name: HeroEditField {
+            text <=> AppState.group-rename-draft;
+            placeholder: @tr("Group name");
+            busy: AppState.group-rename-busy;
+            save => {
+                if (AppState.group-rename-draft != "") {
+                    AppState.rename-group(AppState.group-rename-draft);
+                    root.editing-name = false;
+                }
+            }
+            cancel => {
+                root.editing-name = false;
+            }
+        }
+
+        Text {
+            text: @tr("1 member" | "{n} members" % AppState.chat-member-count);
+            color: Palette.text-lo;
+            font-size: Theme.fs(10px, 14px);
+            letter-spacing: 1.2px;
+            horizontal-alignment: center;
+        }
+
+        if !root.editing-desc && AppState.chat-group-description != "": HorizontalLayout {
+            alignment: center;
+            spacing: 6px;
+            Text {
+                text: AppState.chat-group-description;
+                color: Palette.text-mid;
+                font-size: Theme.fs(11px, 14px);
+                horizontal-alignment: center;
+                wrap: word-wrap;
+                max-width: 230px;
+            }
+
+            if root.can-admin: edit-desc-ta := TouchArea {
+                width: 20px;
+                mouse-cursor: pointer;
+                clicked => {
+                    root.editing-desc = true;
+                }
+                Text {
+                    text: "✎";
+                    color: edit-desc-ta.has-hover ? Palette.text-hi : Palette.text-vlo;
+                    font-size: Theme.fs(12px, 14px);
+                    font-family: Theme.font;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+        }
+
+        // No description yet: a quiet ghost prompt only admins see.
+        if !root.editing-desc && AppState.chat-group-description == "" && root.can-admin: HorizontalLayout {
+            alignment: center;
+            add-desc-ta := TouchArea {
+                mouse-cursor: pointer;
+                clicked => {
+                    root.editing-desc = true;
+                }
+                Text {
+                    text: @tr("＋ Add a description");
+                    color: add-desc-ta.has-hover ? Palette.text-mid : Palette.text-vlo;
+                    font-size: Theme.fs(11px, 14px);
+                    horizontal-alignment: center;
+                }
+            }
+        }
+
+        if root.editing-desc: HeroEditField {
+            text <=> AppState.group-description-draft;
+            placeholder: @tr("Purpose, rules, or invite blurb");
+            multiline: true;
+            busy: AppState.group-description-busy;
+            save => {
+                AppState.set-group-description(AppState.group-description-draft);
+                root.editing-desc = false;
+            }
+            cancel => {
+                root.editing-desc = false;
+            }
+        }
+
+        if AppState.group-settings-status != "": StatusLine {
+            compact: true;
+            text: AppState.group-settings-status;
+            kind: AppState.group-settings-status-kind;
+        }
+    }
+}
