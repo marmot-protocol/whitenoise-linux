@@ -555,6 +555,10 @@ msgctxt "DebugJsonModal"
 msgid "Close"
 msgstr "Schließen"
 
+msgctxt "Modal"
+msgid "Close"
+msgstr "Schließen"
+
 msgctxt "command palette footer"
 msgid "Close"
 msgstr "Schließen"
@@ -1435,6 +1439,10 @@ msgctxt "StartNewChatModal"
 msgid "New chat or group"
 msgstr "Neuer Chat oder neue Gruppe"
 
+msgctxt "ImageViewerModal"
+msgid "Next image"
+msgstr "Nächstes Bild"
+
 msgctxt "ContactDetail"
 msgid "Nickname"
 msgstr "Spitzname"
@@ -1676,6 +1684,10 @@ msgstr "Platziere deine gesendeten Nachrichten auf der rechten Seite."
 msgctxt "NotificationsPane"
 msgid "Play a sound"
 msgstr "Ton abspielen"
+
+msgctxt "ImageViewerModal"
+msgid "Previous image"
+msgstr "Vorheriges Bild"
 
 #, fuzzy
 msgctxt "AdvancedPane"
