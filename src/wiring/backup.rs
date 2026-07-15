@@ -43,7 +43,7 @@ pub(crate) fn wire_backup(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             let Some(ui) = weak.upgrade() else { return };
             let password = password.to_string();
             if password.is_empty() {
-                ui.set_create_backup_status(s("Enter your password."));
+                ui.set_create_backup_status(error_copy().enter_password.into());
                 return;
             }
             ui.set_create_backup_busy(true);
@@ -73,10 +73,12 @@ pub(crate) fn wire_backup(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                             ui.set_create_backup_password(s(""));
                         }
                         Err(backup::BackupError::WrongPassword) => {
-                            ui.set_create_backup_status(s("Wrong password."));
+                            ui.set_create_backup_status(error_copy().wrong_password.into());
                         }
                         Err(e) => {
-                            ui.set_create_backup_status(format!("Backup failed: {e}").into());
+                            ui.set_create_backup_status(
+                                tmpl(&error_copy().backup_failed, &[&e.to_string()]).into(),
+                            );
                         }
                     }
                 });
@@ -151,11 +153,11 @@ pub(crate) fn wire_backup(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             let Some(ui) = weak.upgrade() else { return };
             let path = ui.get_import_backup_path().to_string();
             if path.is_empty() {
-                ui.set_import_backup_status(s("Choose a backup file first."));
+                ui.set_import_backup_status(error_copy().choose_backup_file.into());
                 return;
             }
             if password.is_empty() {
-                ui.set_import_backup_status(s("Enter the backup password."));
+                ui.set_import_backup_status(error_copy().enter_backup_password.into());
                 return;
             }
             let path = std::path::PathBuf::from(path);
@@ -169,9 +171,7 @@ pub(crate) fn wire_backup(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             // presence now (not just at open time): a full restore must never
             // clobber an identity that came to exist while the modal was open.
             if restoring && vault::exists() {
-                ui.set_import_backup_status(s(
-                    "Full restore is only available from the lock screen, before unlocking.",
-                ));
+                ui.set_import_backup_status(error_copy().restore_lock_only.into());
                 return;
             }
             ui.set_import_backup_busy(true);
@@ -218,7 +218,7 @@ pub(crate) fn wire_backup(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                         };
                         let Some(backend) = backend_cell.lock().unwrap().clone() else {
                             ui.set_import_backup_busy(false);
-                            ui.set_import_backup_status(s("Backend isn't ready yet."));
+                            ui.set_import_backup_status(error_copy().backend_not_ready_yet.into());
                             return;
                         };
                         merge_imported_accounts(&ui, &backend, &vault_cell, nsecs);

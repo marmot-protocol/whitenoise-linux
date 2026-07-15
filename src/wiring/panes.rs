@@ -219,7 +219,7 @@ pub(crate) fn wire_panes(
                     ui.set_add_account_generated(true);
                     ui.set_add_account_status(s(""));
                 }
-                Err(e) => ui.set_add_account_status(format!("Failed to encode key: {e}").into()),
+                Err(e) => ui.set_add_account_status(tmpl(&error_copy().encode_key_failed, &[&e.to_string()]).into()),
             }
         }
     });
@@ -233,18 +233,18 @@ pub(crate) fn wire_panes(
             let Some(ui) = weak.upgrade() else { return };
             let raw = nsec_input.trim().to_string();
             let Ok(keys) = Keys::parse(&raw) else {
-                ui.set_add_account_status(s("That doesn't look like a valid nsec."));
+                ui.set_add_account_status(error_copy().invalid_nsec.into());
                 return;
             };
             let Some(backend) = backend_cell.lock().unwrap().clone() else {
-                ui.set_add_account_status(s("Backend isn't ready yet."));
+                ui.set_add_account_status(error_copy().backend_not_ready_yet.into());
                 return;
             };
             // Canonical bech32 form for vault storage, whatever was pasted.
             let nsec = match keys.secret_key().to_bech32() {
                 Ok(n) => n,
                 Err(e) => {
-                    ui.set_add_account_status(format!("Failed to encode key: {e}").into());
+                    ui.set_add_account_status(tmpl(&error_copy().encode_key_failed, &[&e.to_string()]).into());
                     return;
                 }
             };
@@ -336,7 +336,7 @@ pub(crate) fn wire_panes(
                 return;
             }
             let Ok(keys) = Keys::parse(&trimmed) else {
-                ui.set_login_error(s("That doesn't look like a valid nsec."));
+                ui.set_login_error(error_copy().invalid_nsec.into());
                 return;
             };
             ui.set_login_busy(true);
@@ -391,14 +391,12 @@ pub(crate) fn wire_panes(
                     Result<(String, String, Arc<Mutex<Vault>>, Option<String>), String>;
                 let result = (|| -> UnlockOutcome {
                     let v = Vault::open(&password).map_err(|e| match e {
-                        vault::VaultError::WrongPassword => "Wrong password.".to_string(),
+                        vault::VaultError::WrongPassword => error_copy().wrong_password,
                         other => format!("{other}"),
                     })?;
-                    let nsec = v.nsec().ok_or_else(|| {
-                        "No key stored on this device. Reset and re-enter your nsec.".to_string()
-                    })?;
+                    let nsec = v.nsec().ok_or_else(|| error_copy().no_key_stored)?;
                     let keys =
-                        Keys::parse(&nsec).map_err(|_| "Stored key is invalid.".to_string())?;
+                        Keys::parse(&nsec).map_err(|_| error_copy().stored_key_invalid)?;
                     let npub = keys.public_key().to_bech32().map_err(|e| e.to_string())?;
                     // The account the user last had active — boot displays it
                     // instead of the primary when it still exists.
@@ -455,14 +453,14 @@ pub(crate) fn wire_panes(
             let nsec = match keys.secret_key().to_bech32() {
                 Ok(v) => v,
                 Err(e) => {
-                    ui.set_login_error(format!("Failed to encode key: {e}").into());
+                    ui.set_login_error(tmpl(&error_copy().encode_key_failed, &[&e.to_string()]).into());
                     return;
                 }
             };
             let npub = match keys.public_key().to_bech32() {
                 Ok(v) => v,
                 Err(e) => {
-                    ui.set_login_error(format!("Failed to encode key: {e}").into());
+                    ui.set_login_error(tmpl(&error_copy().encode_key_failed, &[&e.to_string()]).into());
                     return;
                 }
             };
@@ -494,7 +492,7 @@ pub(crate) fn wire_panes(
             let Some(ui) = weak.upgrade() else { return };
             let Some(nsec) = pending.lock().unwrap().clone() else {
                 tracing::warn!(target: "login", "no pending generated key");
-                ui.set_login_error(s("No generated key to save. Try again."));
+                ui.set_login_error(error_copy().no_generated_key.into());
                 ui.set_login_mode(0);
                 return;
             };
@@ -561,12 +559,12 @@ pub(crate) fn wire_panes(
                 match result {
                     Ok(()) => {
                         ui.set_login_error(s(""));
-                        ui.set_login_status(s("nsec copied"));
-                        set_status_feedback(&ui, s("nsec copied"), false);
+                        ui.set_login_status(error_copy().nsec_copied.into());
+                        set_status_feedback(&ui, error_copy().nsec_copied, false);
                     }
                     Err(e) => {
                         tracing::warn!(target: "clipboard", "copy nsec failed: {e}");
-                        let msg = s("Couldn't access clipboard. Your nsec was not copied.");
+                        let msg: SharedString = error_copy().clipboard_failed_nsec.into();
                         ui.set_login_status(s(""));
                         ui.set_login_error(msg.clone());
                         set_status_feedback(&ui, msg, true);
@@ -1037,17 +1035,17 @@ pub(crate) fn wire_panes(
             let Some(ui) = weak.upgrade() else { return };
             let text = ui.get_debug_dump();
             if text.is_empty() {
-                set_status_feedback(&ui, s("No debug snapshot to copy."), false);
+                set_status_feedback(&ui, error_copy().no_debug_snapshot, false);
                 return;
             }
             let weak = weak.clone();
             copy_to_clipboard_async(text.to_string(), move |result| {
                 let Some(ui) = weak.upgrade() else { return };
                 match result {
-                    Ok(()) => set_status_feedback(&ui, s("debug dump copied"), false),
+                    Ok(()) => set_status_feedback(&ui, error_copy().debug_dump_copied, false),
                     Err(e) => {
                         tracing::warn!(target: "clipboard", "copy debug dump failed: {e}");
-                        set_status_feedback(&ui, s("Couldn't access clipboard."), true);
+                        set_status_feedback(&ui, error_copy().clipboard_failed, true);
                     }
                 }
             });
@@ -1102,18 +1100,16 @@ pub(crate) fn wire_panes(
                     match result {
                         Ok(()) => ui.set_audit_status(
                             if on {
-                                "Audit logging enabled — recording now; \
-                                 logs upload automatically."
+                                error_copy().audit_enabled
                             } else {
-                                "Audit logging disabled. Existing files stay \
-                                 until you delete them."
+                                error_copy().audit_disabled
                             }
                             .into(),
                         ),
                         Err(e) => {
                             tracing::warn!(target: "settings", "set audit logs failed: {e:#}");
                             ui.set_audit_enabled(!on);
-                            ui.set_audit_status("Couldn't change audit logging.".into());
+                            ui.set_audit_status(error_copy().audit_change_failed.into());
                         }
                     }
                     push_audit_files(&ui, files);
@@ -1153,12 +1149,12 @@ pub(crate) fn wire_panes(
                         // `true` = the live recorder owned that file and
                         // rotated in place rather than going dark.
                         Ok(true) => ui.set_audit_status(
-                            "Audit log deleted — recording continues in a fresh file.".into(),
+                            error_copy().audit_deleted_live.into(),
                         ),
-                        Ok(false) => ui.set_audit_status("Audit log deleted.".into()),
+                        Ok(false) => ui.set_audit_status(error_copy().audit_deleted.into()),
                         Err(e) => {
                             tracing::warn!(target: "settings", "delete audit log failed: {e:#}");
-                            ui.set_audit_status("Couldn't delete audit log.".into());
+                            ui.set_audit_status(error_copy().audit_delete_failed.into());
                         }
                     }
                     push_audit_files(&ui, files);
@@ -1374,7 +1370,15 @@ pub(crate) fn wire_panes(
         Rc::new(move |op_kind: &'static str| {
             let Some(ui) = weak.upgrade() else { return };
             ui.set_kp_busy(true);
-            ui.set_kp_status(format!("{op_kind}…").into());
+            let copy = error_copy();
+            ui.set_kp_status(
+                match op_kind {
+                    "rotate" => copy.kp_rotating,
+                    "refresh" => copy.kp_refreshing,
+                    _ => copy.kp_publishing,
+                }
+                .into(),
+            );
             let weak = weak.clone();
             // Clone the backend handle and drop the lock before the relay
             // round-trip — other callbacks keep locking this cell freely.
@@ -1389,23 +1393,25 @@ pub(crate) fn wire_panes(
                             // (it was being shown as a nonsensical "N relay acks").
                             "publish" => b
                                 .publish_key_package()
-                                .map(|_| "published · your key package is live".to_string())
+                                .map(|_| error_copy().kp_published)
                                 .map_err(|e| friendly_error(ErrorOp::KpPublish, &e)),
                             "rotate" => b
                                 .rotate_key_package()
-                                .map(|_| "rotated · published a fresh key package".to_string())
+                                .map(|_| error_copy().kp_rotated)
                                 .map_err(|e| friendly_error(ErrorOp::KpRotate, &e)),
                             "refresh" => b
                                 .key_packages_fetch()
                                 .map(|recs| {
-                                    format!(
-                                        "fetched · {} record{}",
-                                        recs.len(),
-                                        if recs.len() == 1 { "" } else { "s" }
-                                    )
+                                    let copy = error_copy();
+                                    let form = if recs.len() == 1 {
+                                        copy.kp_fetched_one
+                                    } else {
+                                        copy.kp_fetched_many
+                                    };
+                                    tmpl(&form, &[&recs.len().to_string()])
                                 })
                                 .map_err(|e| friendly_error(ErrorOp::KpRefresh, &e)),
-                            _ => Err("Something went wrong. Please try again.".to_string()),
+                            _ => Err(error_copy().generic),
                         },
                     }
                 };
@@ -1464,8 +1470,8 @@ pub(crate) fn wire_panes(
             );
             let Some(ui) = weak.upgrade() else { return };
             if text.is_empty() {
-                show_profile_status(&ui, s("nothing to copy (npub empty)"), StatusKind::Pending);
-                set_status_feedback(&ui, s("nothing to copy (npub empty)"), false);
+                show_profile_status(&ui, error_copy().npub_empty_nothing, StatusKind::Pending);
+                set_status_feedback(&ui, error_copy().npub_empty_nothing, false);
                 return;
             }
             let weak = weak.clone();
@@ -1473,17 +1479,17 @@ pub(crate) fn wire_panes(
                 let Some(ui) = weak.upgrade() else { return };
                 match result {
                     Ok(()) => {
-                        show_profile_status(&ui, s("npub copied"), StatusKind::Ok);
-                        set_status_feedback(&ui, s("npub copied"), false);
+                        show_profile_status(&ui, error_copy().npub_copied, StatusKind::Ok);
+                        set_status_feedback(&ui, error_copy().npub_copied, false);
                     }
                     Err(e) => {
                         tracing::warn!(target: "clipboard", "copy failed: {e}");
                         show_profile_status(
                             &ui,
-                            s("Couldn't access clipboard."),
+                            error_copy().clipboard_failed,
                             StatusKind::Error,
                         );
-                        set_status_feedback(&ui, s("Couldn't access clipboard."), true);
+                        set_status_feedback(&ui, error_copy().clipboard_failed, true);
                     }
                 }
             });
@@ -1505,7 +1511,7 @@ pub(crate) fn wire_panes(
             let Some(ui) = weak.upgrade() else { return };
             let password = password.to_string();
             let Some(backend) = backend_cell.lock().unwrap().clone() else {
-                ui.set_reveal_nsec_status(s("Backend isn't ready yet."));
+                ui.set_reveal_nsec_status(error_copy().backend_not_ready_yet.into());
                 ui.set_reveal_nsec_status_error(true);
                 return;
             };
@@ -1517,12 +1523,11 @@ pub(crate) fn wire_panes(
             std::thread::spawn(move || {
                 let result: Result<String, String> = (|| {
                     let v = Vault::open(&password).map_err(|e| match e {
-                        vault::VaultError::WrongPassword => "Wrong password.".to_string(),
+                        vault::VaultError::WrongPassword => error_copy().wrong_password,
                         other => format!("{other}"),
                     })?;
-                    v.nsec_for_pubkey(&account_hex).ok_or_else(|| {
-                        "No secret key for this account is stored on this device.".to_string()
-                    })
+                    v.nsec_for_pubkey(&account_hex)
+                        .ok_or_else(|| error_copy().no_secret_key_account)
                 })();
                 let _ = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak.upgrade() else { return };

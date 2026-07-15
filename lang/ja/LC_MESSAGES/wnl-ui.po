@@ -246,6 +246,11 @@ msgctxt "AddAccountModal"
 msgid "Add account"
 msgstr "連絡先"
 
+#. New-chat / add-contact status copy (src/wiring/chats.rs, contacts.rs).
+msgctxt "ErrorCopy"
+msgid "Add at least one npub."
+msgstr "npubを少なくとも1つ追加してください。"
+
 #, fuzzy
 msgctxt "AddContactModal"
 msgid "Add contact"
@@ -284,6 +289,14 @@ msgstr "保存中…"
 msgctxt "ProfileModal"
 msgid "Adding…"
 msgstr "保存中…"
+
+msgctxt "ErrorCopy"
+msgid "Admin added."
+msgstr "管理者を追加しました。"
+
+msgctxt "ErrorCopy"
+msgid "Admin removed."
+msgstr "管理者を削除しました。"
 
 msgctxt "GroupSettingsCard"
 msgid "Admins must step down before leaving."
@@ -334,6 +347,23 @@ msgctxt "ContactDetail"
 msgid "Archive chat"
 msgstr "チャットをアーカイブ"
 
+msgctxt "ErrorCopy"
+msgid "Audit log deleted — recording continues in a fresh file."
+msgstr "監査ログを削除しました — 新しいファイルで記録を続けます。"
+
+msgctxt "ErrorCopy"
+msgid "Audit log deleted."
+msgstr "監査ログを削除しました。"
+
+msgctxt "ErrorCopy"
+msgid "Audit logging disabled. Existing files stay until you delete them."
+msgstr "監査ログを無効にしました。既存のファイルは削除するまで残ります。"
+
+#. Audit-log settings feedback (src/wiring/panes.rs).
+msgctxt "ErrorCopy"
+msgid "Audit logging enabled — recording now; logs upload automatically."
+msgstr "監査ログを有効にしました — 記録中です。ログは自動的にアップロードされます。"
+
 msgctxt "AdvancedPane"
 msgid "Audit logs"
 msgstr "監査ログ"
@@ -341,6 +371,10 @@ msgstr "監査ログ"
 msgctxt "month"
 msgid "Aug"
 msgstr "8月"
+
+msgctxt "ErrorCopy"
+msgid "Available"
+msgstr "利用可能"
 
 msgctxt "ImportBackupModal"
 msgid "BACKUP FILE"
@@ -361,6 +395,18 @@ msgstr "すべてをバックアップ"
 msgctxt "LoginScreen"
 msgid "Back up your nsec before saving"
 msgstr "保存前に nsec をバックアップ"
+
+msgctxt "ErrorCopy"
+msgid "Backend isn't ready yet."
+msgstr "バックエンドはまだ準備できていません。"
+
+msgctxt "ErrorCopy"
+msgid "Backend not ready."
+msgstr "バックエンドの準備ができていません。"
+
+msgctxt "status, %1 = error detail"
+msgid "Backup failed: %1"
+msgstr "バックアップに失敗しました: %1"
 
 msgctxt "AppearancePane"
 msgid "Berry"
@@ -429,6 +475,10 @@ msgstr "この音声形式は再生できません"
 msgctxt "ErrorCopy"
 msgid "Can't reach your relays right now. Check your network and relay settings, then try again."
 msgstr "現在リレーに接続できません。ネットワークとリレーの設定を確認して、もう一度お試しください。"
+
+msgctxt "ErrorCopy"
+msgid "Can't start a chat with only yourself."
+msgstr "自分だけとのチャットは始められません。"
 
 #, fuzzy
 msgctxt "AddAccountModal"
@@ -518,6 +568,15 @@ msgctxt "ArchivedPage"
 msgid "Chats you archive are kept here, out of your main list."
 msgstr "アーカイブしたチャットは、メインのリストから外してここに保管されます。"
 
+#. relay host and the relative time, filled Rust-side with `tmpl`.
+msgctxt "ErrorCopy"
+msgid "Checking…"
+msgstr "確認中…"
+
+msgctxt "ErrorCopy"
+msgid "Choose a backup file first."
+msgstr "先にバックアップファイルを選んでください。"
+
 msgctxt "LoginScreen"
 msgid "Choose a password"
 msgstr "パスワードを設定"
@@ -603,6 +662,10 @@ msgctxt "ContactDetail"
 msgid "Contact"
 msgstr "連絡先"
 
+msgctxt "ErrorCopy"
+msgid "Contacting relays…"
+msgstr "リレーに接続中…"
+
 #, fuzzy
 msgctxt "ProfileModal"
 msgid "Contacting relays…"
@@ -678,6 +741,14 @@ msgid "Couldn't accept the invitation. Please try again in a moment."
 msgstr "招待を承認できませんでした。しばらくしてからもう一度お試しください。"
 
 msgctxt "ErrorCopy"
+msgid "Couldn't access clipboard."
+msgstr "クリップボードにアクセスできませんでした。"
+
+msgctxt "ErrorCopy"
+msgid "Couldn't access clipboard. Your nsec was not copied."
+msgstr "クリップボードにアクセスできませんでした。nsecはコピーされませんでした。"
+
+msgctxt "ErrorCopy"
 msgid "Couldn't add that account. Please check the key and try again."
 msgstr "そのアカウントを追加できませんでした。鍵を確認して、もう一度お試しください。"
 
@@ -698,12 +769,28 @@ msgid "Couldn't archive this chat. Please try again."
 msgstr "このチャットをアーカイブできませんでした。もう一度お試しください。"
 
 msgctxt "ErrorCopy"
+msgid "Couldn't change audit logging."
+msgstr "監査ログを変更できませんでした。"
+
+msgctxt "ErrorCopy"
+msgid "Couldn't copy image."
+msgstr "画像をコピーできませんでした。"
+
+msgctxt "ErrorCopy"
 msgid "Couldn't create the chat. Please try again."
 msgstr "チャットを作成できませんでした。もう一度お試しください。"
 
 msgctxt "ErrorCopy"
 msgid "Couldn't decline the invitation. Please try again in a moment."
 msgstr "招待を辞退できませんでした。しばらくしてからもう一度お試しください。"
+
+msgctxt "ErrorCopy"
+msgid "Couldn't delete audit log."
+msgstr "監査ログを削除できませんでした。"
+
+msgctxt "ErrorCopy"
+msgid "Couldn't download image."
+msgstr "画像をダウンロードできませんでした。"
 
 #. Tier 2 — operation-specific fallbacks.
 msgctxt "ErrorCopy"
@@ -741,6 +828,10 @@ msgstr "キーパッケージをローテーションできませんでした。
 msgctxt "status toast when saving a file fails, %1 = file name"
 msgid "Couldn't save %1. Check the location has space and permission, then try again."
 msgstr "%1 を保存できませんでした。保存先の空き容量と権限を確認して、もう一度お試しください。"
+
+msgctxt "ErrorCopy"
+msgid "Couldn't save image."
+msgstr "画像を保存できませんでした。"
 
 msgctxt "ErrorCopy"
 msgid "Couldn't save your edit. Check your connection and try again."
@@ -885,6 +976,10 @@ msgctxt "AdvancedPane"
 msgid "Deleting the file being recorded rotates it — recording continues in a fresh file."
 msgstr "記録中のファイルを削除するとローテーションされ、新しいファイルに記録が続きます。"
 
+msgctxt "ErrorCopy"
+msgid "Description saved."
+msgstr "説明を保存しました。"
+
 #, fuzzy
 msgctxt "NotificationsPane"
 msgid "Desktop notifications"
@@ -953,6 +1048,14 @@ msgctxt "ErrorCopy"
 msgid "Enter a relay address."
 msgstr "リレーのアドレスを入力してください。"
 
+msgctxt "ErrorCopy"
+msgid "Enter a username, npub, or hex public key."
+msgstr "ユーザー名、npub、または16進の公開鍵を入力してください。"
+
+msgctxt "ErrorCopy"
+msgid "Enter the backup password."
+msgstr "バックアップのパスワードを入力してください。"
+
 msgctxt "AddContactModal"
 msgid "Enter their username (name@domain), npub, or hex public key. They'll appear in your contacts on every device."
 msgstr "相手のユーザー名（name@domain）、npub、または16進数の公開鍵を入力してください。すべてのデバイスの連絡先に表示されます。"
@@ -965,6 +1068,11 @@ msgctxt "LoginScreen"
 msgid "Enter your password to unlock"
 msgstr "パスワードを入力してロックを解除"
 
+#. is the underlying error, filled Rust-side with `tmpl`.
+msgctxt "ErrorCopy"
+msgid "Enter your password."
+msgstr "パスワードを入力してください。"
+
 msgctxt "EncryptionInfoModal"
 msgid "Even if a key leaks later on, the messages you already sent can't be unlocked with it."
 msgstr ""
@@ -972,6 +1080,10 @@ msgstr ""
 msgctxt "ChatContextMenu"
 msgid "Export transcript…"
 msgstr "履歴を書き出す…"
+
+msgctxt "status, %1 = error detail"
+msgid "Failed to encode key: %1"
+msgstr "鍵のエンコードに失敗しました: %1"
 
 msgctxt "month"
 msgid "Feb"
@@ -1000,6 +1112,18 @@ msgstr "転送:"
 msgctxt "weekday"
 msgid "Fri"
 msgstr "金曜日"
+
+msgctxt "key package source, %1 = relay host"
+msgid "From %1"
+msgstr "%1 から"
+
+msgctxt "key package source, %1 = relay host, %2 = relative time"
+msgid "From %1 · %2"
+msgstr "%1 · %2 から"
+
+msgctxt "ErrorCopy"
+msgid "Full restore is only available from the lock screen, before unlocking."
+msgstr "完全な復元は、ロック解除前のロック画面からのみ行えます。"
 
 msgctxt "EncryptionInfoModal"
 msgid "GROUP ID"
@@ -1096,6 +1220,10 @@ msgctxt "ImageViewerModal"
 msgid "Image didn't load. Tap to retry."
 msgstr "画像を読み込めませんでした。タップして再試行。"
 
+msgctxt "ErrorCopy"
+msgid "Image isn't ready yet."
+msgstr "画像はまだ準備できていません。"
+
 msgctxt "ImportBackupModal"
 msgid "Import"
 msgstr "インポート"
@@ -1149,6 +1277,11 @@ msgctxt "GroupMembersPanel"
 msgid "Invited"
 msgstr "招待済み"
 
+#. Group-admin status copy (src/wiring/groups.rs).
+msgctxt "ErrorCopy"
+msgid "Invited."
+msgstr "招待しました。"
+
 #, fuzzy
 msgctxt "AddMemberCard"
 msgid "Inviting…"
@@ -1161,6 +1294,10 @@ msgstr ""
 msgctxt "ArchivedDetail"
 msgid "It stays end-to-end encrypted. Unarchiving returns it to your main list and resumes notifications."
 msgstr "エンドツーエンド暗号化は維持されます。アーカイブ解除するとメインリストに戻り、通知が再開されます。"
+
+msgctxt "ErrorCopy"
+msgid "JSON copied"
+msgstr "JSONをコピーしました"
 
 msgctxt "month"
 msgid "Jan"
@@ -1248,6 +1385,10 @@ msgstr "このグループを退出し、新しいメッセージの受信を停
 msgctxt "ConfirmFlows"
 msgid "Leave {}?"
 msgstr "{}を退出しますか？"
+
+msgctxt "ErrorCopy"
+msgid "Leaving group…"
+msgstr "グループから退出中…"
 
 msgctxt "GroupSettingsCard"
 msgid "Leaving…"
@@ -1352,6 +1493,10 @@ msgctxt "month"
 msgid "May"
 msgstr "5月"
 
+msgctxt "ErrorCopy"
+msgid "Member removed."
+msgstr "メンバーを削除しました。"
+
 msgctxt "ArchivedDetail"
 msgid "Members"
 msgstr "メンバー"
@@ -1419,6 +1564,10 @@ msgctxt "LoginScreen"
 msgid "NSEC"
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "Name can't be empty."
+msgstr "名前を空にはできません。"
+
 #. are translated.
 msgctxt "command palette footer"
 msgid "Navigate"
@@ -1465,6 +1614,10 @@ msgctxt "AdvancedPane"
 msgid "No audit log files on disk."
 msgstr "ディスク上に監査ログファイルはありません。"
 
+msgctxt "ErrorCopy"
+msgid "No chat selected."
+msgstr "チャットが選択されていません。"
+
 msgctxt "ForwardPickerModal"
 msgid "No chats match your search."
 msgstr "検索に一致するチャットはありません。"
@@ -1474,17 +1627,38 @@ msgctxt "ContactsPage"
 msgid "No contacts yet"
 msgstr "連絡先を削除"
 
+msgctxt "ErrorCopy"
+msgid "No debug snapshot to copy."
+msgstr "コピーするデバッグスナップショットがありません。"
+
 msgctxt "ImportBackupModal"
 msgid "No file selected"
 msgstr "ファイルが選択されていません"
+
+msgctxt "ErrorCopy"
+msgid "No generated key to save. Try again."
+msgstr "保存する生成鍵がありません。もう一度お試しください。"
 
 msgctxt "SharedGroupsList"
 msgid "No groups in common"
 msgstr "共通のグループはありません"
 
+msgctxt "ErrorCopy"
+msgid "No image selected."
+msgstr "画像が選択されていません。"
+
+msgctxt "ErrorCopy"
+msgid "No key package on relays yet"
+msgstr "リレーにキーパッケージがまだありません"
+
 msgctxt "KeysPage"
 msgid "No key packages yet"
 msgstr "キーパッケージがありません"
+
+#. the UI thread, so they read from this snapshot like the rest.
+msgctxt "ErrorCopy"
+msgid "No key stored on this device. Reset and re-enter your nsec."
+msgstr "この端末に鍵が保存されていません。リセットしてnsecを再入力してください。"
 
 msgctxt "ChatSearchBar"
 msgid "No matches"
@@ -1536,14 +1710,26 @@ msgctxt "AddAccountModal"
 msgid "No second key yet?"
 msgstr "連絡先を削除"
 
+msgctxt "ErrorCopy"
+msgid "No secret key for this account is stored on this device."
+msgstr "このアカウントの秘密鍵はこの端末に保存されていません。"
+
 #. Network-pane status copy (also Rust-set).
 msgctxt "ErrorCopy"
 msgid "Not connected yet. Please wait a moment and try again."
 msgstr "まだ接続されていません。少し待ってからもう一度お試しください。"
 
+msgctxt "ErrorCopy"
+msgid "Not found"
+msgstr "見つかりません"
+
 msgctxt "ProfilePage"
 msgid "Not set"
 msgstr "未設定"
+
+msgctxt "ErrorCopy"
+msgid "Nothing to copy."
+msgstr "コピーするものがありません。"
 
 #, fuzzy
 msgctxt "NotificationsPane"
@@ -1743,6 +1929,19 @@ msgctxt "GetStartedScreen"
 msgid "Published"
 msgstr "公開"
 
+msgctxt "key package source, published, time unknown"
+msgid "Published"
+msgstr "公開済み"
+
+msgctxt "key package source, %1 = relative time"
+msgid "Published %1"
+msgstr "%1 に公開"
+
+#. Key-package progress verbs (src/wiring/panes.rs), one per `op_kind`.
+msgctxt "ErrorCopy"
+msgid "Publishing…"
+msgstr "公開中…"
+
 #, fuzzy
 msgctxt "GetStartedScreen"
 msgid "Publishing…"
@@ -1815,6 +2014,10 @@ msgctxt "NetworkPane"
 msgid "Refresh"
 msgstr "更新"
 
+msgctxt "ErrorCopy"
+msgid "Refreshing…"
+msgstr "更新中…"
+
 msgctxt "LoginScreen"
 msgid "Regenerate"
 msgstr "再生成"
@@ -1877,6 +2080,10 @@ msgstr "このリレーを削除しますか？"
 msgctxt "ConfirmFlows"
 msgid "Remove {} from the group?"
 msgstr "{}をグループから削除しますか？"
+
+msgctxt "ErrorCopy"
+msgid "Renamed."
+msgstr "名前を変更しました。"
 
 msgctxt "MessageContextMenu"
 msgid "Reply"
@@ -1975,6 +2182,10 @@ msgstr "キーパッケージを今すぐローテーション"
 msgctxt "KeysPage"
 msgid "Rotate key package?"
 msgstr "キーパッケージをローテーションしますか？"
+
+msgctxt "ErrorCopy"
+msgid "Rotating…"
+msgstr "ローテーション中…"
 
 msgctxt "AddAccountModal"
 msgid "SECRET KEY (NSEC)"
@@ -2291,6 +2502,10 @@ msgctxt "RevealNsecModal"
 msgid "Store it somewhere safe and close this dialog. Dark Matter keeps it encrypted in your vault — this is the only place it's shown in the clear."
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "Stored key is invalid."
+msgstr "保存されている鍵が無効です。"
+
 msgctxt "weekday"
 msgid "Sun"
 msgstr "日曜日"
@@ -2311,6 +2526,10 @@ msgstr "ターミナル"
 msgctxt "ErrorCopy"
 msgid "That doesn't look like a valid npub or public key. Double-check it and try again."
 msgstr "有効な npub または公開鍵ではないようです。確認してもう一度お試しください。"
+
+msgctxt "ErrorCopy"
+msgid "That doesn't look like a valid nsec."
+msgstr "有効なnsecではないようです。"
 
 msgctxt "ErrorCopy"
 msgid "That doesn't look like a valid relay address."
@@ -2422,6 +2641,11 @@ msgctxt "LoginScreen"
 msgid "Unlock"
 msgstr "ロック解除"
 
+#. Rust-side with `tmpl`.
+msgctxt "ErrorCopy"
+msgid "Unlocking…"
+msgstr "ロック解除中…"
+
 msgctxt "LoginScreen"
 msgid "Unlocking…"
 msgstr "ロック解除中…"
@@ -2519,6 +2743,10 @@ msgctxt "DarkMatterTray"
 msgid "White Noise"
 msgstr "White Noise"
 
+msgctxt "ErrorCopy"
+msgid "Wrong password."
+msgstr "パスワードが違います。"
+
 msgctxt "GroupMemberRow"
 msgid "YOU"
 msgstr "あなた"
@@ -2534,6 +2762,10 @@ msgstr "昨日"
 msgctxt "OutgoingRow"
 msgid "You"
 msgstr "あなた"
+
+msgctxt "ErrorCopy"
+msgid "You stepped down."
+msgstr "管理者を降りました。"
 
 msgctxt "ConfirmFlows"
 msgid "You will stop receiving new messages from this group. The chat moves to Archive."
@@ -2572,6 +2804,19 @@ msgctxt "ContactDetail"
 msgid "aka {}"
 msgstr "別名 {}"
 
+msgctxt "status, lower-case to match the image-upload flow"
+msgid "backend not ready"
+msgstr "バックエンドの準備ができていません"
+
+#. read lower-case to match their in-flight siblings.
+msgctxt "ErrorCopy"
+msgid "choosing image…"
+msgstr "画像を選択中…"
+
+msgctxt "ErrorCopy"
+msgid "debug dump copied"
+msgstr "デバッグダンプをコピーしました"
+
 #, fuzzy
 msgctxt "ImageTile"
 msgid "decrypting…"
@@ -2599,9 +2844,33 @@ msgctxt "MessageBubble"
 msgid "failed · tap to retry"
 msgstr "失敗 · タップして再試行"
 
+msgctxt "result, %1 = record count (always 1)"
+msgid "fetched · %1 record"
+msgstr "取得 · %1 件"
+
+msgctxt "result, %1 = record count"
+msgid "fetched · %1 records"
+msgstr "取得 · %1 件"
+
+msgctxt "ErrorCopy"
+msgid "group image updated"
+msgstr "グループ画像を更新しました"
+
 msgctxt "PictureField"
 msgid "https://… or upload a file →"
 msgstr "https://… またはファイルをアップロード →"
+
+msgctxt "ErrorCopy"
+msgid "image copied"
+msgstr "画像をコピーしました"
+
+msgctxt "ErrorCopy"
+msgid "image removed"
+msgstr "画像を削除しました"
+
+msgctxt "ErrorCopy"
+msgid "image saved"
+msgstr "画像を保存しました"
 
 msgctxt "TimeCopy"
 msgid "just now"
@@ -2623,6 +2892,45 @@ msgctxt "EmojiPicker"
 msgid "no matches for \"{}\""
 msgstr "\"{}\" に一致なし"
 
+msgctxt "ErrorCopy"
+msgid "nothing to copy (npub empty)"
+msgstr "コピーするものがありません（npubが空です）"
+
+msgctxt "ErrorCopy"
+msgid "npub copied"
+msgstr "npubをコピーしました"
+
+#. Clipboard feedback (src/wiring/panes.rs, nav.rs, extra.rs).
+msgctxt "ErrorCopy"
+msgid "nsec copied"
+msgstr "nsecをコピーしました"
+
+msgctxt "ErrorCopy"
+msgid "picture uploaded — Save to publish"
+msgstr "画像をアップロードしました — 公開するには保存してください"
+
+msgctxt "ErrorCopy"
+msgid "profile published"
+msgstr "プロフィールを公開しました"
+
+#. fetched forms is the record count, filled Rust-side with `tmpl`.
+msgctxt "ErrorCopy"
+msgid "published · your key package is live"
+msgstr "公開 · キーパッケージが有効になりました"
+
+#. Profile publish status copy (src/wiring/extra.rs).
+msgctxt "ErrorCopy"
+msgid "publishing…"
+msgstr "公開中…"
+
+msgctxt "ErrorCopy"
+msgid "removing image…"
+msgstr "画像を削除中…"
+
+msgctxt "ErrorCopy"
+msgid "rotated · published a fresh key package"
+msgstr "ローテーション · 新しいキーパッケージを公開しました"
+
 msgctxt "EmojiPicker"
 msgid "search…"
 msgstr "検索…"
@@ -2640,6 +2948,10 @@ msgstr "タップして読み込む"
 msgctxt "ImageTile"
 msgid "tap to retry"
 msgstr "失敗 · タップして再試行"
+
+msgctxt "ErrorCopy"
+msgid "uploading to Blossom…"
+msgstr "Blossomにアップロード中…"
 
 msgctxt "KeysPage"
 msgid "{n} relay"

@@ -690,6 +690,101 @@ export global ErrorCopy {
     out property <string> relay-added: @tr("Relay added.");
     out property <string> relay-removed: @tr("Relay removed.");
     out property <string> republishing: @tr("Republishing…");
+    // Login / add-account status copy (Rust-set from src/wiring/panes.rs,
+    // src/main.rs). `%1` in encode-key-failed is the underlying error, filled
+    // Rust-side with `tmpl`.
+    out property <string> unlocking: @tr("Unlocking…");
+    out property <string> invalid-nsec: @tr("That doesn't look like a valid nsec.");
+    out property <string> no-generated-key: @tr("No generated key to save. Try again.");
+    out property <string> encode-key-failed: @tr("status, %1 = error detail" => "Failed to encode key: %1");
+    out property <string> backend-not-ready-yet: @tr("Backend isn't ready yet.");
+    // Backup / import status copy (src/wiring/backup.rs). `%1` in backup-failed
+    // is the underlying error, filled Rust-side with `tmpl`.
+    out property <string> enter-password: @tr("Enter your password.");
+    out property <string> wrong-password: @tr("Wrong password.");
+    out property <string> backup-failed: @tr("status, %1 = error detail" => "Backup failed: %1");
+    out property <string> choose-backup-file: @tr("Choose a backup file first.");
+    out property <string> enter-backup-password: @tr("Enter the backup password.");
+    // New-chat / add-contact status copy (src/wiring/chats.rs, contacts.rs).
+    out property <string> add-npub: @tr("Add at least one npub.");
+    out property <string> only-yourself: @tr("Can't start a chat with only yourself.");
+    out property <string> add-contact-input: @tr("Enter a username, npub, or hex public key.");
+    out property <string> backend-not-ready: @tr("Backend not ready.");
+    // Group-admin status copy (src/wiring/groups.rs).
+    out property <string> invited: @tr("Invited.");
+    out property <string> admin-added: @tr("Admin added.");
+    out property <string> admin-removed: @tr("Admin removed.");
+    out property <string> stepped-down: @tr("You stepped down.");
+    out property <string> member-removed: @tr("Member removed.");
+    out property <string> leaving-group: @tr("Leaving group…");
+    out property <string> name-empty: @tr("Name can't be empty.");
+    out property <string> renamed: @tr("Renamed.");
+    out property <string> description-saved: @tr("Description saved.");
+    // Group / profile image status copy (src/wiring/groups.rs, extra.rs). These
+    // read lower-case to match their in-flight siblings.
+    out property <string> choosing-image: @tr("choosing image…");
+    out property <string> uploading-blossom: @tr("uploading to Blossom…");
+    out property <string> removing-image: @tr("removing image…");
+    out property <string> image-removed: @tr("image removed");
+    out property <string> group-image-updated: @tr("group image updated");
+    out property <string> backend-not-ready-lc: @tr("status, lower-case to match the image-upload flow" => "backend not ready");
+    // Profile publish status copy (src/wiring/extra.rs).
+    out property <string> profile-publishing: @tr("publishing…");
+    out property <string> profile-published: @tr("profile published");
+    out property <string> picture-uploaded: @tr("picture uploaded — Save to publish");
+    // Clipboard feedback (src/wiring/panes.rs, nav.rs, extra.rs).
+    out property <string> nsec-copied: @tr("nsec copied");
+    out property <string> npub-copied: @tr("npub copied");
+    out property <string> npub-empty-nothing: @tr("nothing to copy (npub empty)");
+    out property <string> clipboard-failed: @tr("Couldn't access clipboard.");
+    out property <string> nothing-to-copy: @tr("Nothing to copy.");
+    out property <string> json-copied: @tr("JSON copied");
+    out property <string> debug-dump-copied: @tr("debug dump copied");
+    out property <string> no-debug-snapshot: @tr("No debug snapshot to copy.");
+    out property <string> image-copied: @tr("image copied");
+    out property <string> copy-image-failed: @tr("Couldn't copy image.");
+    out property <string> image-saved: @tr("image saved");
+    out property <string> save-image-failed: @tr("Couldn't save image.");
+    out property <string> download-image-failed: @tr("Couldn't download image.");
+    out property <string> image-not-ready: @tr("Image isn't ready yet.");
+    out property <string> no-image-selected: @tr("No image selected.");
+    out property <string> no-chat-selected: @tr("No chat selected.");
+    // Audit-log settings feedback (src/wiring/panes.rs).
+    out property <string> audit-enabled: @tr("Audit logging enabled — recording now; logs upload automatically.");
+    out property <string> audit-disabled: @tr("Audit logging disabled. Existing files stay until you delete them.");
+    out property <string> audit-change-failed: @tr("Couldn't change audit logging.");
+    out property <string> audit-deleted: @tr("Audit log deleted.");
+    out property <string> audit-delete-failed: @tr("Couldn't delete audit log.");
+    // Key-package progress verbs (src/wiring/panes.rs), one per `op_kind`.
+    out property <string> kp-publishing: @tr("Publishing…");
+    out property <string> kp-rotating: @tr("Rotating…");
+    out property <string> kp-refreshing: @tr("Refreshing…");
+    // Key-package op results (src/wiring/panes.rs Keys page). `%1` in the
+    // fetched forms is the record count, filled Rust-side with `tmpl`.
+    out property <string> kp-published: @tr("published · your key package is live");
+    out property <string> kp-rotated: @tr("rotated · published a fresh key package");
+    out property <string> kp-fetched-one: @tr("result, %1 = record count (always 1)" => "fetched · %1 record");
+    out property <string> kp-fetched-many: @tr("result, %1 = record count" => "fetched · %1 records");
+    out property <string> audit-deleted-live: @tr("Audit log deleted — recording continues in a fresh file.");
+    // Vault unlock / reveal-nsec worker errors (src/wiring/panes.rs). Built off
+    // the UI thread, so they read from this snapshot like the rest.
+    out property <string> no-key-stored: @tr("No key stored on this device. Reset and re-enter your nsec.");
+    out property <string> stored-key-invalid: @tr("Stored key is invalid.");
+    out property <string> clipboard-failed-nsec: @tr("Couldn't access clipboard. Your nsec was not copied.");
+    out property <string> no-secret-key-account: @tr("No secret key for this account is stored on this device.");
+    out property <string> restore-lock-only: @tr("Full restore is only available from the lock screen, before unlocking.");
+    // Contact key-package row (src/wiring/contacts.rs in-flight + src/chrome.rs
+    // `kp_labels` result). `%1`/`%2` in the "From"/"Published" forms are the
+    // relay host and the relative time, filled Rust-side with `tmpl`.
+    out property <string> kp-checking: @tr("Checking…");
+    out property <string> kp-contacting: @tr("Contacting relays…");
+    out property <string> kp-not-found: @tr("Not found");
+    out property <string> kp-none-yet: @tr("No key package on relays yet");
+    out property <string> kp-available: @tr("Available");
+    out property <string> kp-from-when: @tr("key package source, %1 = relay host, %2 = relative time" => "From %1 · %2");
+    out property <string> kp-from: @tr("key package source, %1 = relay host" => "From %1");
+    out property <string> kp-published-when: @tr("key package source, %1 = relative time" => "Published %1");
+    out property <string> kp-published-plain: @tr("key package source, published, time unknown" => "Published");
 }
 
 // Localized time/date vocabulary for the Rust-side stamp formatters
