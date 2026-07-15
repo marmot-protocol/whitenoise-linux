@@ -711,6 +711,10 @@ msgid "Couldn't finish syncing. We'll keep retrying — check your relay setting
 msgstr "同期を完了できませんでした。再試行を続けます。頻発する場合はリレーの設定を確認してください。"
 
 msgctxt "ErrorCopy"
+msgid "Couldn't play audio."
+msgstr "音声を再生できませんでした。"
+
+msgctxt "ErrorCopy"
 msgid "Couldn't publish your key package. Check your relay settings and try again."
 msgstr "キーパッケージを公開できませんでした。リレーの設定を確認して、もう一度お試しください。"
 
@@ -1497,6 +1501,10 @@ msgstr "メッセージが見つかりません"
 msgctxt "MessagesArea"
 msgid "No messages yet"
 msgstr "まだメッセージはありません"
+
+msgctxt "ErrorCopy"
+msgid "No microphone available."
+msgstr "マイクを利用できません。"
 
 msgctxt "ForwardPickerModal"
 msgid "No other chats to forward to."

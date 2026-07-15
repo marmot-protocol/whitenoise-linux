@@ -713,6 +713,9 @@ pub(crate) fn start_audio_playback(
             // Environmental (no usable output device) — the clip itself is
             // fine, so don't brand the bubble unplayable.
             tracing::warn!(target: "audio", "play {message_id}: {e}");
+            if let Some(ui) = weak.upgrade() {
+                set_status_feedback(&ui, error_copy().audio_playback, true);
+            }
             return;
         }
         Err(e @ audio::PlayError::Decode(_)) => {

@@ -1212,6 +1212,9 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 Ok(r) => r,
                 Err(e) => {
                     tracing::warn!(target: "audio", "start recording: {e:#}");
+                    if let Some(ui) = weak.upgrade() {
+                        set_status_feedback(&ui, error_copy().microphone_unavailable, true);
+                    }
                     return;
                 }
             };

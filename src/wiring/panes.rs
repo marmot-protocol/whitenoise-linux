@@ -314,9 +314,10 @@ pub(crate) fn wire_panes(
     // Mirror the vault-password gate into the UI so the primary action can be
     // disabled until the password + confirm are valid, without duplicating the
     // rules in Slint. Returns true when `validate_new_password` accepts them.
-    ui.global::<AppState>().on_login_password_valid(|password, confirm| {
-        validate_new_password(password.as_str(), confirm.as_str()).is_ok()
-    });
+    ui.global::<AppState>()
+        .on_login_password_valid(|password, confirm| {
+            validate_new_password(password.as_str(), confirm.as_str()).is_ok()
+        });
 
     // First run, existing nsec: validate the key + new password, create the vault,
     // seal the nsec into it, then boot.
@@ -561,14 +562,14 @@ pub(crate) fn wire_panes(
                     Ok(()) => {
                         ui.set_login_error(s(""));
                         ui.set_login_status(s("nsec copied"));
-                        set_clipboard_feedback(&ui, s("nsec copied"), false);
+                        set_status_feedback(&ui, s("nsec copied"), false);
                     }
                     Err(e) => {
                         tracing::warn!(target: "clipboard", "copy nsec failed: {e}");
                         let msg = s("Couldn't access clipboard. Your nsec was not copied.");
                         ui.set_login_status(s(""));
                         ui.set_login_error(msg.clone());
-                        set_clipboard_feedback(&ui, msg, true);
+                        set_status_feedback(&ui, msg, true);
                     }
                 }
             });
@@ -688,26 +689,27 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.global::<AppState>().on_restore_last_selected_chat_toggled({
-        let weak = ui.as_weak();
-        let settings_cell = settings_cell.clone();
-        let group_ids = group_ids.clone();
-        move |on| {
-            let current = weak.upgrade().and_then(|ui| {
-                group_ids
-                    .lock()
-                    .unwrap()
-                    .get(ui.get_active_chat() as usize)
-                    .cloned()
-            });
-            let mut s = settings_cell.borrow_mut();
-            s.restore_last_selected_chat = on;
-            if on && current.is_some() {
-                s.last_selected_chat = current;
+    ui.global::<AppState>()
+        .on_restore_last_selected_chat_toggled({
+            let weak = ui.as_weak();
+            let settings_cell = settings_cell.clone();
+            let group_ids = group_ids.clone();
+            move |on| {
+                let current = weak.upgrade().and_then(|ui| {
+                    group_ids
+                        .lock()
+                        .unwrap()
+                        .get(ui.get_active_chat() as usize)
+                        .cloned()
+                });
+                let mut s = settings_cell.borrow_mut();
+                s.restore_last_selected_chat = on;
+                if on && current.is_some() {
+                    s.last_selected_chat = current;
+                }
+                s.save();
             }
-            s.save();
-        }
-    });
+        });
 
     ui.global::<AppState>().on_notifications_toggled({
         let settings_cell = settings_cell.clone();
@@ -1035,17 +1037,17 @@ pub(crate) fn wire_panes(
             let Some(ui) = weak.upgrade() else { return };
             let text = ui.get_debug_dump();
             if text.is_empty() {
-                set_clipboard_feedback(&ui, s("No debug snapshot to copy."), false);
+                set_status_feedback(&ui, s("No debug snapshot to copy."), false);
                 return;
             }
             let weak = weak.clone();
             copy_to_clipboard_async(text.to_string(), move |result| {
                 let Some(ui) = weak.upgrade() else { return };
                 match result {
-                    Ok(()) => set_clipboard_feedback(&ui, s("debug dump copied"), false),
+                    Ok(()) => set_status_feedback(&ui, s("debug dump copied"), false),
                     Err(e) => {
                         tracing::warn!(target: "clipboard", "copy debug dump failed: {e}");
-                        set_clipboard_feedback(&ui, s("Couldn't access clipboard."), true);
+                        set_status_feedback(&ui, s("Couldn't access clipboard."), true);
                     }
                 }
             });
@@ -1463,7 +1465,7 @@ pub(crate) fn wire_panes(
             let Some(ui) = weak.upgrade() else { return };
             if text.is_empty() {
                 show_profile_status(&ui, s("nothing to copy (npub empty)"), StatusKind::Pending);
-                set_clipboard_feedback(&ui, s("nothing to copy (npub empty)"), false);
+                set_status_feedback(&ui, s("nothing to copy (npub empty)"), false);
                 return;
             }
             let weak = weak.clone();
@@ -1472,7 +1474,7 @@ pub(crate) fn wire_panes(
                 match result {
                     Ok(()) => {
                         show_profile_status(&ui, s("npub copied"), StatusKind::Ok);
-                        set_clipboard_feedback(&ui, s("npub copied"), false);
+                        set_status_feedback(&ui, s("npub copied"), false);
                     }
                     Err(e) => {
                         tracing::warn!(target: "clipboard", "copy failed: {e}");
@@ -1481,7 +1483,7 @@ pub(crate) fn wire_panes(
                             s("Couldn't access clipboard."),
                             StatusKind::Error,
                         );
-                        set_clipboard_feedback(&ui, s("Couldn't access clipboard."), true);
+                        set_status_feedback(&ui, s("Couldn't access clipboard."), true);
                     }
                 }
             });
@@ -1569,9 +1571,10 @@ pub(crate) fn wire_panes(
 
     // Reveal the folder holding vault.db in the platform file manager. Reuses the
     // same xdg-open/open handler as external links — a directory path is fine.
-    ui.global::<AppState>().on_storage_open_vault_folder(move || {
-        open_external(&vault::vault_dir().display().to_string());
-    });
+    ui.global::<AppState>()
+        .on_storage_open_vault_folder(move || {
+            open_external(&vault::vault_dir().display().to_string());
+        });
 }
 
 // ─── Audit-log file rows (Settings → Advanced) ─────────────────────────────

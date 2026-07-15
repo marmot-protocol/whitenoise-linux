@@ -714,6 +714,10 @@ msgid "Couldn't finish syncing. We'll keep retrying — check your relay setting
 msgstr "Sincronizzazione non completata. Continueremo a riprovare — se il problema persiste, controlla le impostazioni dei relay."
 
 msgctxt "ErrorCopy"
+msgid "Couldn't play audio."
+msgstr "Impossibile riprodurre l'audio."
+
+msgctxt "ErrorCopy"
 msgid "Couldn't publish your key package. Check your relay settings and try again."
 msgstr "Impossibile pubblicare il tuo key package. Controlla le impostazioni dei relay e riprova."
 
@@ -1500,6 +1504,10 @@ msgstr "Nessun messaggio trovato"
 msgctxt "MessagesArea"
 msgid "No messages yet"
 msgstr "Ancora nessun messaggio"
+
+msgctxt "ErrorCopy"
+msgid "No microphone available."
+msgstr "Nessun microfono disponibile."
 
 msgctxt "ForwardPickerModal"
 msgid "No other chats to forward to."

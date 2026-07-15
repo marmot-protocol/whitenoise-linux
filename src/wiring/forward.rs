@@ -81,7 +81,8 @@ pub(crate) fn wire_forward(ui: &DarkMatterLinux, cx: &Cx) {
             // Land the user in the destination so they watch the forward arrive.
             // The optimistic bubbles below reconcile by group hex, so they land
             // in the right chat regardless of this switch's async rebuild.
-            ui.global::<AppState>().invoke_chat_selected(dest_idx as i32);
+            ui.global::<AppState>()
+                .invoke_chat_selected(dest_idx as i32);
 
             let weak = weak.clone();
             let backend_cell = backend_cell.clone();

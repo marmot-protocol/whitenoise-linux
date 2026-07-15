@@ -453,7 +453,9 @@ pub(crate) fn s(v: &str) -> SharedString {
     v.into()
 }
 
-pub(crate) fn set_clipboard_feedback(
+/// Show transient feedback in the status bar. The underlying Slint properties
+/// retain their original clipboard-specific names for API compatibility.
+pub(crate) fn set_status_feedback(
     ui: &DarkMatterLinux,
     message: impl Into<SharedString>,
     is_error: bool,
@@ -674,6 +676,8 @@ copy_snapshot! {
     invalid_key: String = get_invalid_key => "That doesn't look like a valid npub or public key. Double-check it and try again.";
     nip05_not_found: String = get_nip05_not_found => "We couldn't find anyone with that username. Double-check the name@domain and try again.";
     network: String = get_network => "Can't reach your relays right now. Check your network and relay settings, then try again.";
+    microphone_unavailable: String = get_microphone_unavailable => "No microphone available.";
+    audio_playback: String = get_audio_playback => "Couldn't play audio.";
     sync: String = get_sync => "Couldn't finish syncing. We'll keep retrying — check your relay settings if this keeps happening.";
     backend: String = get_backend => "Couldn't start up. Check your network and relay settings, then try again.";
     switch_account: String = get_switch_account => "Couldn't switch accounts. Please try again in a moment.";
@@ -1115,6 +1119,14 @@ pub(crate) fn apply_locale(locale: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn audio_device_errors_have_actionable_copy() {
+        let copy = ErrorCopySnapshot::default();
+
+        assert_eq!(copy.microphone_unavailable, "No microphone available.");
+        assert_eq!(copy.audio_playback, "Couldn't play audio.");
+    }
 
     #[test]
     fn palette_actions_round_trip_through_command_registry() {
