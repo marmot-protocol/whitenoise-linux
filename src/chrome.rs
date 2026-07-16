@@ -478,30 +478,13 @@ pub(crate) fn spawn_shared_group_avatar_fetches(
         }
         let group_id = info.group_id_hex.clone();
         if key.starts_with("group-image:") {
-            let cache_key = key.to_string();
-            let weak = ui.as_weak();
-            backend.fetch_group_image_async(&info.group_id_hex, move |result| {
-                let bytes = match result {
-                    Ok(b) => b,
-                    Err(e) => {
-                        tracing::warn!(target: "group_avatar", "shared-group fetch failed: {e:#}");
-                        return;
-                    }
-                };
-                let pixels = match decode_avatar_pixels(&bytes) {
-                    Ok(p) => p,
-                    Err(e) => {
-                        tracing::warn!(target: "group_avatar", "shared-group decode failed: {e}");
-                        return;
-                    }
-                };
-                picture_cache_put(cache_key, pixels.clone());
-                let _ = slint::invoke_from_event_loop(move || {
-                    if let Some(ui) = weak.upgrade() {
-                        update_shared_group_pictures(&ui, &group_id, &pixels);
-                    }
-                });
-            });
+            spawn_group_image_pixels_fetch(
+                ui.as_weak(),
+                backend,
+                &info.group_id_hex,
+                key.to_string(),
+                move |ui, pixels| update_shared_group_pictures(ui, &group_id, pixels),
+            );
         } else {
             spawn_picture_fetch(
                 ui.as_weak(),
@@ -758,6 +741,43 @@ pub(crate) fn spawn_group_avatar_url_fetch(
     );
 }
 
+/// Fetch + decrypt + decode a group's encrypted Blossom avatar on the tokio
+/// runtime, cache the RGBA under `cache_key`, then run `bind` on the UI
+/// thread with the upgraded window and the decoded pixels — the encrypted
+/// sibling of [`spawn_picture_fetch`]. Per-call apply guards (e.g. "is this
+/// still the active group") belong in the caller's `bind`.
+pub(crate) fn spawn_group_image_pixels_fetch(
+    weak: Weak<DarkMatterLinux>,
+    backend: &Backend,
+    group_hex: &str,
+    cache_key: String,
+    bind: impl FnOnce(&DarkMatterLinux, &PicturePixels) + Send + 'static,
+) {
+    let group_for_log = group_hex.to_string();
+    backend.fetch_group_image_async(group_hex, move |result| {
+        let bytes = match result {
+            Ok(b) => b,
+            Err(e) => {
+                tracing::warn!(target: "group_avatar", "fetch ({group_for_log}) failed: {e:#}");
+                return;
+            }
+        };
+        let pixels = match decode_avatar_pixels(&bytes) {
+            Ok(p) => p,
+            Err(e) => {
+                tracing::warn!(target: "group_avatar", "decode ({group_for_log}) failed: {e}");
+                return;
+            }
+        };
+        picture_cache_put(cache_key, pixels.clone());
+        let _ = slint::invoke_from_event_loop(move || {
+            if let Some(ui) = weak.upgrade() {
+                bind(&ui, &pixels);
+            }
+        });
+    });
+}
+
 /// Fetch + decrypt + decode the active group's avatar on the tokio runtime,
 /// cache the RGBA under `cache_key`, then bind it on the UI thread — but only
 /// if the user is still viewing this group.
@@ -767,39 +787,25 @@ pub(crate) fn spawn_group_image_fetch(
     group_hex: &str,
     cache_key: String,
 ) {
-    let weak = ui.as_weak();
-    let group_hex = group_hex.to_string();
-    backend.fetch_group_image_async(&group_hex.clone(), move |result| {
-        let bytes = match result {
-            Ok(b) => b,
-            Err(e) => {
-                tracing::warn!(target: "group_avatar", "fetch failed: {e:#}");
-                return;
-            }
-        };
-        let pixels = match decode_avatar_pixels(&bytes) {
-            Ok(p) => p,
-            Err(e) => {
-                tracing::warn!(target: "group_avatar", "decode failed: {e}");
-                return;
-            }
-        };
-        picture_cache_put(cache_key, pixels.clone());
-        let _ = slint::invoke_from_event_loop(move || {
+    let group_hex_owned = group_hex.to_string();
+    spawn_group_image_pixels_fetch(
+        ui.as_weak(),
+        backend,
+        group_hex,
+        cache_key,
+        move |ui, pixels| {
             // Ignore if the user navigated away before the decode finished.
             let still_active = active_group_slot()
                 .lock()
-                .map(|slot| slot.eq_ignore_ascii_case(&group_hex))
+                .map(|slot| slot.eq_ignore_ascii_case(&group_hex_owned))
                 .unwrap_or(false);
             if !still_active {
                 return;
             }
-            if let Some(ui) = weak.upgrade() {
-                ui.set_chat_group_picture(image_from_pixels(&pixels));
-                ui.set_chat_group_has_picture(true);
-            }
-        });
-    });
+            ui.set_chat_group_picture(image_from_pixels(pixels));
+            ui.set_chat_group_has_picture(true);
+        },
+    );
 }
 
 /// Everything the members panel needs from the backend, gathered OFF the UI
@@ -1052,29 +1058,13 @@ pub(crate) fn spawn_chat_list_avatar_fetches(ui: &DarkMatterLinux, backend: &Arc
                     let key = format!("group-image:{}", record.image.image_hash_hex);
                     if !picture_cache_has(&key) {
                         let npub = mls_row_key(&record.group_id_hex);
-                        let weak = weak_outer.clone();
-                        b.fetch_group_image_async(&record.group_id_hex, move |result| {
-                            let bytes = match result {
-                                Ok(b) => b,
-                                Err(e) => {
-                                    tracing::warn!(target: "group_avatar", "list fetch failed: {e:#}");
-                                    return;
-                                }
-                            };
-                            let pixels = match decode_avatar_pixels(&bytes) {
-                                Ok(p) => p,
-                                Err(e) => {
-                                    tracing::warn!(target: "group_avatar", "list decode failed: {e}");
-                                    return;
-                                }
-                            };
-                            picture_cache_put(key, pixels.clone());
-                            let _ = slint::invoke_from_event_loop(move || {
-                                if let Some(ui) = weak.upgrade() {
-                                    update_chat_picture(&ui, &npub, &pixels);
-                                }
-                            });
-                        });
+                        spawn_group_image_pixels_fetch(
+                            weak_outer.clone(),
+                            &b,
+                            &record.group_id_hex,
+                            key,
+                            move |ui, pixels| update_chat_picture(ui, &npub, pixels),
+                        );
                     }
                 }
                 continue;

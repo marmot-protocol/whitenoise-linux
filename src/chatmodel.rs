@@ -888,6 +888,55 @@ pub(crate) fn pending_chat_message(
     }
 }
 
+/// Merge one optimistic reaction op into a chip list — the single copy of
+/// the Add/Remove semantics shared by the overlay pass and the model-row
+/// hot path. Add guards against the confirmed record having already landed:
+/// a chip that is already `mine` for this emoji is left untouched, so the
+/// real kind-7 beating the overlay never double-counts.
+pub(crate) fn merge_reaction(chips: &mut Vec<Reaction>, op: &PendingReactionOp) {
+    match op {
+        PendingReactionOp::Add(emoji) => {
+            if let Some(chip) = chips.iter_mut().find(|c| c.emoji.as_str() == emoji) {
+                if !chip.mine {
+                    chip.count += 1;
+                    chip.mine = true;
+                }
+            } else {
+                let (clip_x, clip_y) = reaction_clip(emoji);
+                chips.push(Reaction {
+                    emoji: s(emoji),
+                    count: 1,
+                    mine: true,
+                    clip_x,
+                    clip_y,
+                    // Names resolve on the next real rebuild; the optimistic
+                    // window shows the count without the tooltip list.
+                    reactors: Default::default(),
+                });
+            }
+        }
+        PendingReactionOp::Remove(emoji) => {
+            if let Some(chip) = chips.iter_mut().find(|c| c.emoji.as_str() == emoji)
+                && chip.mine
+            {
+                chip.count = (chip.count - 1).max(0);
+                chip.mine = false;
+            }
+            chips.retain(|c| c.count > 0);
+        }
+    }
+    sort_reactions(chips);
+}
+
+/// Chip ordering everywhere: most-used first, deterministic tiebreak by emoji.
+pub(crate) fn sort_reactions(chips: &mut [Reaction]) {
+    chips.sort_by(|a, b| {
+        b.count
+            .cmp(&a.count)
+            .then(a.emoji.to_string().cmp(&b.emoji.to_string()))
+    });
+}
+
 /// Apply the pending-reactions overlay onto an already-aggregated map.
 /// Called after `aggregate_reactions` so optimistic clicks are visible
 /// before the relay echoes the kind-7 event back.
@@ -900,50 +949,7 @@ pub(crate) fn apply_reaction_overlay(
         if g != group_hex {
             continue;
         }
-        let entry = aggregate.entry(target.clone()).or_default();
-        match op {
-            PendingReactionOp::Add(emoji) => {
-                // If the snapshot already shows my reaction with this emoji,
-                // the overlay is redundant — the real record beat us here.
-                let already_mine = entry.iter().any(|r| r.mine && r.emoji.as_str() == emoji);
-                if already_mine {
-                    continue;
-                }
-                if let Some(chip) = entry.iter_mut().find(|r| r.emoji.as_str() == emoji) {
-                    if !chip.mine {
-                        chip.count += 1;
-                        chip.mine = true;
-                    }
-                } else {
-                    let (clip_x, clip_y) = reaction_clip(emoji);
-                    entry.push(Reaction {
-                        emoji: s(emoji),
-                        count: 1,
-                        mine: true,
-                        clip_x,
-                        clip_y,
-                        // Names resolve on the next real rebuild; the optimistic
-                        // window shows the count without the tooltip list.
-                        reactors: Default::default(),
-                    });
-                }
-            }
-            PendingReactionOp::Remove(emoji) => {
-                if let Some(chip) = entry.iter_mut().find(|r| r.emoji.as_str() == emoji)
-                    && chip.mine
-                {
-                    chip.count = (chip.count - 1).max(0);
-                    chip.mine = false;
-                }
-                entry.retain(|r| r.count > 0);
-            }
-        }
-        // Re-sort: most-used first, ties broken by emoji.
-        entry.sort_by(|a, b| {
-            b.count
-                .cmp(&a.count)
-                .then(a.emoji.to_string().cmp(&b.emoji.to_string()))
-        });
+        merge_reaction(aggregate.entry(target.clone()).or_default(), op);
     }
 }
 
@@ -986,42 +992,7 @@ pub(crate) fn apply_reaction_to_model_row(
         let mut chips: Vec<Reaction> = (0..row.reactions.row_count())
             .filter_map(|i| row.reactions.row_data(i))
             .collect();
-        match op {
-            PendingReactionOp::Add(emoji) => {
-                if let Some(chip) = chips.iter_mut().find(|c| c.emoji.as_str() == emoji) {
-                    if !chip.mine {
-                        chip.count += 1;
-                        chip.mine = true;
-                    }
-                } else {
-                    let (clip_x, clip_y) = reaction_clip(emoji);
-                    chips.push(Reaction {
-                        emoji: s(emoji),
-                        count: 1,
-                        mine: true,
-                        clip_x,
-                        clip_y,
-                        // Names resolve on the next real rebuild; the optimistic
-                        // window shows the count without the tooltip list.
-                        reactors: Default::default(),
-                    });
-                }
-            }
-            PendingReactionOp::Remove(emoji) => {
-                if let Some(chip) = chips.iter_mut().find(|c| c.emoji.as_str() == emoji)
-                    && chip.mine
-                {
-                    chip.count = (chip.count - 1).max(0);
-                    chip.mine = false;
-                }
-                chips.retain(|c| c.count > 0);
-            }
-        }
-        chips.sort_by(|a, b| {
-            b.count
-                .cmp(&a.count)
-                .then(a.emoji.to_string().cmp(&b.emoji.to_string()))
-        });
+        merge_reaction(&mut chips, op);
         row.reactions = ModelRc::new(VecModel::from(chips));
         vm.set_row_data(pos, row);
     });
@@ -1589,12 +1560,7 @@ where
                     }
                 })
                 .collect();
-            // Most-used first; deterministic tiebreak by emoji.
-            list.sort_by(|a, b| {
-                b.count
-                    .cmp(&a.count)
-                    .then(a.emoji.to_string().cmp(&b.emoji.to_string()))
-            });
+            sort_reactions(&mut list);
             (target, list)
         })
         .collect()

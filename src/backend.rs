@@ -286,7 +286,7 @@ impl Backend {
             // identity proof — which earlier versions of this client wrote),
             // start() will fail. We wipe and retry once, then re-import via
             // the proper path.
-            Self::start_with_self_heal(&tokio, &runtime, &account_home)?;
+            Self::start_with_self_heal(tokio.handle(), &runtime, &account_home)?;
             tracing::debug!(
                 target: "boot_timing", "first-run start done at {:?}",
                 t_boot.elapsed()
@@ -415,26 +415,12 @@ impl Backend {
             let t_sync = std::time::Instant::now();
             let result = (|| -> Result<()> {
                 if needs_start {
-                    let rt = runtime.clone();
-                    let first = handle.block_on(async move { rt.start().await });
+                    let wiped = Self::start_with_self_heal(&handle, &runtime, &account_home)?;
                     tracing::debug!(
-                        target: "boot_timing", "background runtime.start done at {:?} (ok={})",
-                        t_sync.elapsed(),
-                        first.is_ok()
+                        target: "boot_timing", "background runtime.start done at {:?} (wiped={wiped})",
+                        t_sync.elapsed()
                     );
-                    if let Err(err) = first {
-                        tracing::warn!(
-                            target: "backend", "runtime.start failed ({err}); wiping local accounts and retrying"
-                        );
-                        for acc in account_home.accounts().unwrap_or_default() {
-                            if let Err(e) = account_home.remove_account(&acc.label) {
-                                tracing::warn!(target: "backend", "remove_account({}) failed: {e}", acc.label);
-                            }
-                        }
-                        let rt = runtime.clone();
-                        handle
-                            .block_on(async move { rt.start().await })
-                            .context("runtime.start retry after wipe")?;
+                    if wiped {
                         // The wipe removed our account — re-import it. The
                         // account id is derived from the nsec, so the summary
                         // the Backend resolved at boot stays valid.
@@ -533,18 +519,20 @@ impl Backend {
 
     /// Try `runtime.start()`. If it fails with a malformed-account error from
     /// an earlier buggy import path, remove ALL local accounts and retry.
+    /// Returns whether the wipe happened, so callers can re-import accounts
+    /// the wipe removed.
     ///
     /// This is a one-shot migration: per-account state (group records, etc.)
     /// is sacrificed. Acceptable because the data was unusable anyway.
     fn start_with_self_heal(
-        tokio: &TokioRuntime,
+        handle: &tokio::runtime::Handle,
         runtime: &MarmotAppRuntime,
         account_home: &AccountHome,
-    ) -> Result<()> {
+    ) -> Result<bool> {
         let rt = runtime.clone();
-        let first = tokio.block_on(async move { rt.start().await });
+        let first = handle.block_on(async move { rt.start().await });
         if first.is_ok() {
-            return Ok(());
+            return Ok(false);
         }
         let err = first.err().unwrap();
         tracing::warn!(target: "backend", "runtime.start failed ({err}); wiping local accounts and retrying");
@@ -554,27 +542,51 @@ impl Backend {
             }
         }
         let rt = runtime.clone();
-        tokio
+        handle
             .block_on(async move { rt.start().await })
-            .context("runtime.start retry after wipe")
+            .context("runtime.start retry after wipe")?;
+        Ok(true)
     }
 
-    /// Import (or re-import) an account using the runtime's identity-aware
-    /// path. This is what writes the marmot `account-identity-proof v1`
-    /// LeafNode extension that `runtime.start()` validates.
-    fn login_account(
-        tokio: &tokio::runtime::Handle,
-        runtime: &MarmotAppRuntime,
-        nsec: &str,
-        relays: &[String],
-    ) -> Result<()> {
-        let endpoints: Vec<TransportEndpoint> = relays
+    /// Convert relay URLs to transport endpoints — the one place the
+    /// conversion (and any future validation/dedup) lives.
+    fn endpoints_from(relays: &[String]) -> Vec<TransportEndpoint> {
+        relays
             .iter()
             .cloned()
             .map(TransportEndpoint::from)
-            .collect();
-        let request = AccountSetupRequest {
-            identity: None, // runtime.login() fills this from the `identity` arg
+            .collect()
+    }
+
+    /// The booted relay set as transport endpoints.
+    pub(crate) fn relay_endpoints(&self) -> Vec<TransportEndpoint> {
+        Self::endpoints_from(&self.relays)
+    }
+
+    /// The booted relay set as endpoints, or the shared "no relays
+    /// configured" error when the backend was booted without any.
+    fn require_relays(&self) -> Result<Vec<TransportEndpoint>> {
+        if self.relays.is_empty() {
+            return Err(anyhow!(
+                "no relays configured — set ~/.config/darkmatter-linux/relays.json first"
+            ));
+        }
+        Ok(self.relay_endpoints())
+    }
+
+    /// Both-slots relay bootstrap (default + bootstrap = the configured set)
+    /// for the publish APIs; fails with the shared error when no relays are
+    /// configured.
+    fn require_relay_bootstrap(&self) -> Result<AccountRelayListBootstrap> {
+        let endpoints = self.require_relays()?;
+        Ok(AccountRelayListBootstrap::new(endpoints.clone(), endpoints))
+    }
+
+    /// The account-setup request every login/import path uses.
+    fn account_setup_request(relays: &[String]) -> AccountSetupRequest {
+        let endpoints = Self::endpoints_from(relays);
+        AccountSetupRequest {
+            identity: None, // runtime.login() fills this from the nsec
             default_relays: endpoints.clone(),
             bootstrap_relays: endpoints,
             discovery_relays: Vec::new(),
@@ -586,7 +598,19 @@ impl Backend {
             // publishing is disabled — this can't move to the background.)
             publish_missing_relay_lists: !relays.is_empty(),
             publish_initial_key_package: !relays.is_empty(),
-        };
+        }
+    }
+
+    /// Import (or re-import) an account using the runtime's identity-aware
+    /// path. This is what writes the marmot `account-identity-proof v1`
+    /// LeafNode extension that `runtime.start()` validates.
+    fn login_account(
+        tokio: &tokio::runtime::Handle,
+        runtime: &MarmotAppRuntime,
+        nsec: &str,
+        relays: &[String],
+    ) -> Result<()> {
+        let request = Self::account_setup_request(relays);
         let nsec = nsec.to_string();
         let runtime_for_login = runtime.clone();
         tokio
@@ -705,22 +729,7 @@ impl Backend {
             on_done(Err(anyhow!("that account is already added")));
             return;
         }
-        let endpoints: Vec<TransportEndpoint> = self
-            .relays
-            .iter()
-            .cloned()
-            .map(TransportEndpoint::from)
-            .collect();
-        let request = AccountSetupRequest {
-            identity: None, // runtime.login() fills this from the nsec
-            default_relays: endpoints.clone(),
-            bootstrap_relays: endpoints,
-            discovery_relays: Vec::new(),
-            // Same rationale as login_account: only publish when there is
-            // somewhere to publish to.
-            publish_missing_relay_lists: !self.relays.is_empty(),
-            publish_initial_key_package: !self.relays.is_empty(),
-        };
+        let request = Self::account_setup_request(&self.relays);
         let runtime = self.runtime.clone();
         let account_home = self.account_home.clone();
         self.tokio.spawn(async move {
@@ -827,18 +836,7 @@ impl Backend {
         label: &str,
         profile: UserProfileMetadata,
     ) -> Result<UserProfileMetadata> {
-        if self.relays.is_empty() {
-            return Err(anyhow!(
-                "no relays configured — set ~/.config/darkmatter-linux/relays.json first"
-            ));
-        }
-        let endpoints: Vec<TransportEndpoint> = self
-            .relays
-            .iter()
-            .cloned()
-            .map(TransportEndpoint::from)
-            .collect();
-        let bootstrap = AccountRelayListBootstrap::new(endpoints.clone(), endpoints);
+        let bootstrap = self.require_relay_bootstrap()?;
         let label = label.to_string();
         let runtime = self.runtime.clone();
         self.tokio.block_on(async move {
@@ -944,18 +942,7 @@ impl Backend {
         }
         follows.push(account_id_hex.clone());
 
-        if self.relays.is_empty() {
-            return Err(anyhow!(
-                "no relays configured — set ~/.config/darkmatter-linux/relays.json first"
-            ));
-        }
-        let endpoints: Vec<TransportEndpoint> = self
-            .relays
-            .iter()
-            .cloned()
-            .map(TransportEndpoint::from)
-            .collect();
-        let bootstrap = AccountRelayListBootstrap::new(endpoints.clone(), endpoints);
+        let bootstrap = self.require_relay_bootstrap()?;
         let label = self.active_label();
         let runtime = self.runtime.clone();
         self.tokio.block_on(async move {
@@ -1243,12 +1230,7 @@ impl Backend {
         if status.complete {
             return Ok(());
         }
-        let endpoints: Vec<TransportEndpoint> = self
-            .relays
-            .iter()
-            .cloned()
-            .map(TransportEndpoint::from)
-            .collect();
+        let endpoints = self.relay_endpoints();
         let label = self.active_label();
         let runtime = self.runtime.clone();
         let missing = status.missing.clone();
@@ -1282,12 +1264,7 @@ impl Backend {
         if self.relays.is_empty() {
             return Err(anyhow!("No relays configured."));
         }
-        let endpoints: Vec<TransportEndpoint> = self
-            .relays
-            .iter()
-            .cloned()
-            .map(TransportEndpoint::from)
-            .collect();
+        let endpoints = self.relay_endpoints();
         let label = self.active_label();
         let runtime = self.runtime.clone();
         let count = self.relays.len();

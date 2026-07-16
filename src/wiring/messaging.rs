@@ -669,446 +669,68 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
 
             let idx = ui.get_active_chat() as usize;
             let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
-                attachment_in_flight()
-                    .lock()
-                    .ok()
-                    .map(|mut s| s.remove(&mid));
+                clear_attachment_in_flight(&mid);
                 return;
             };
             let Some(backend) = backend_cell.lock().unwrap().clone() else {
-                attachment_in_flight()
-                    .lock()
-                    .ok()
-                    .map(|mut s| s.remove(&mid));
+                clear_attachment_in_flight(&mid);
                 return;
             };
-            // Unlocked vault for this session. Clones of this Arc ride into
-            // the tokio tasks below to seal/unseal the disk cache.
-            let vault = vault_cell.lock().unwrap().clone();
+            let cx = AttachmentTapCx {
+                weak: weak.clone(),
+                b: backend.clone(),
+                backend_cell: backend_cell.clone(),
+                group_ids: group_ids.clone(),
+                pending_state: pending_state.clone(),
+                // Unlocked vault for this session — seals/unseals the disk
+                // cache inside the flows below.
+                vault: vault_cell.lock().unwrap().clone(),
+                group_hex,
+                mid,
+            };
             // Resolving the tapped record means a sqlite read — do it on the
             // backend runtime, then hop back to the UI thread for the
-            // in-flight row repaint and the download/cache dispatch (which
+            // in-flight row repaint and the per-media-type dispatch (which
             // only spawns further async work).
-            let weak = weak.clone();
-            let backend_cell = backend_cell.clone();
-            let group_ids = group_ids.clone();
-            let pending_state = pending_state.clone();
-            let b = backend.clone();
             backend.tokio_handle().spawn(async move {
-                let all = b
-                    .messages(&group_hex, Some(msg_window_for(&group_hex)))
-                    .unwrap_or_default();
-                let Some(rec) = all.iter().find(|m| m.message_id_hex == mid).cloned() else {
-                    attachment_in_flight()
-                        .lock()
-                        .ok()
-                        .map(|mut s| s.remove(&mid));
+                let all =
+                    cx.b.messages(&cx.group_hex, Some(msg_window_for(&cx.group_hex)))
+                        .unwrap_or_default();
+                let Some(rec) = all.iter().find(|m| m.message_id_hex == cx.mid).cloned() else {
+                    clear_attachment_in_flight(&cx.mid);
                     return;
                 };
                 let Some(reference) = parse_media_reference_from_tags(&rec.tags, rec.source_epoch)
                 else {
-                    attachment_in_flight()
-                        .lock()
-                        .ok()
-                        .map(|mut s| s.remove(&mid));
+                    clear_attachment_in_flight(&cx.mid);
                     return;
                 };
                 let is_image = mime_is_image(&reference.media_type);
                 let is_video = mime_is_video(&reference.media_type);
                 let is_audio = mime_is_audio(&reference.media_type);
                 let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+                    let Some(ui) = cx.weak.upgrade() else { return };
                     let chats_messages = ui.get_chats_messages();
                     {
-                        let overlay = pending_state.lock().unwrap();
+                        let overlay = cx.pending_state.lock().unwrap();
                         refresh_one_message_row_from(
-                            &b,
+                            &cx.b,
                             &overlay,
                             &chats_messages,
                             idx,
-                            &group_hex,
-                            &mid,
+                            &cx.group_hex,
+                            &cx.mid,
                             &all,
                         );
                     }
-
-                    // Audio → decrypt + play inline via rodio. No save dialog; the
-                    // encrypted disk cache is read-through just like images/videos.
                     if is_audio {
-                        attachment_in_flight()
-                            .lock()
-                            .ok()
-                            .map(|mut s| s.remove(&mid));
-                        let hash = reference.ciphertext_sha256.clone();
-                        let b2 = b.clone();
-                        let vault2 = vault.clone();
-                        let weak2 = weak.clone();
-                        let backend_cell2 = backend_cell.clone();
-                        let group_ids2 = group_ids.clone();
-                        let pending_state2 = pending_state.clone();
-                        let group_hex2 = group_hex.clone();
-                        let mid2 = mid.clone();
-                        b.tokio_handle().spawn(async move {
-                            if let Some(bytes) =
-                                vault2.as_ref().and_then(|v| media_cache::get(v, &hash))
-                            {
-                                attachment_size_put(&mid2, bytes.len() as u64);
-                                let _ = slint::invoke_from_event_loop(move || {
-                                    start_audio_playback(
-                                        weak2,
-                                        backend_cell2,
-                                        group_ids2,
-                                        pending_state2,
-                                        group_hex2,
-                                        mid2,
-                                        bytes,
-                                    );
-                                });
-                                return;
-                            }
-                            let group_hex3 = group_hex2.clone();
-                            b2.download_media_async(&group_hex2, reference, move |result| {
-                                match result {
-                                    Ok(dl) => {
-                                        if let Some(v) = &vault2 {
-                                            media_cache::put(v, &hash, &dl.plaintext);
-                                        }
-                                        attachment_size_put(&mid2, dl.plaintext.len() as u64);
-                                        let _ = slint::invoke_from_event_loop(move || {
-                                            start_audio_playback(
-                                                weak2,
-                                                backend_cell2,
-                                                group_ids2,
-                                                pending_state2,
-                                                group_hex3,
-                                                mid2,
-                                                dl.plaintext,
-                                            );
-                                        });
-                                    }
-                                    Err(e) => {
-                                        tracing::warn!(target: "audio", "download {mid2}: {e:#}");
-                                    }
-                                }
-                            });
-                        });
-                        return;
-                    }
-
-                    // Video → open the in-app libmpv viewer and start playback. The
-                    // poster (first frame) + duration get cached during playback, so
-                    // the dismiss handler can repaint the bubble tile afterwards.
-                    if is_video {
-                        attachment_in_flight()
-                            .lock()
-                            .ok()
-                            .map(|mut s| s.remove(&mid));
-                        stop_current_player();
-                        *current_video_duration().lock().unwrap() = 0.0;
-                        *current_video_target().lock().unwrap() =
-                            Some((group_hex.clone(), mid.clone()));
-                        ui.set_video_viewer_has_frame(false);
-                        ui.set_video_viewer_playing(false);
-                        ui.set_video_viewer_progress(0.0);
-                        ui.set_video_viewer_pos("0:00".into());
-                        ui.set_video_viewer_dur("0:00".into());
-                        ui.set_video_viewer_loading(true);
-                        ui.set_video_viewer_open(true);
-                        start_video_playback(
-                            weak.clone(),
-                            b.clone(),
-                            group_hex.clone(),
-                            mid.clone(),
-                            reference.clone(),
-                            vault.clone(),
-                        );
-                        return;
-                    }
-
-                    let tokio_handle = b.tokio_handle();
-
-                    // After the (optional) save dialog resolves, kick off the actual
-                    // download on the backend's tokio runtime.
-                    let dispatch_download = {
-                        let weak = weak.clone();
-                        let backend_cell = backend_cell.clone();
-                        let group_ids = group_ids.clone();
-                        let pending_state = pending_state.clone();
-                        let group_hex = group_hex.clone();
-                        let mid = mid.clone();
-                        let reference = reference.clone();
-                        let vault = vault.clone();
-                        move |target_path: Option<std::path::PathBuf>| {
-                            let guard = backend_cell.lock().unwrap();
-                            let Some(backend) = guard.as_ref() else {
-                                attachment_in_flight()
-                                    .lock()
-                                    .ok()
-                                    .map(|mut s| s.remove(&mid));
-                                return;
-                            };
-                            let weak = weak.clone();
-                            let backend_cell = backend_cell.clone();
-                            let group_ids = group_ids.clone();
-                            let pending_state = pending_state.clone();
-                            let group_hex = group_hex.clone();
-                            let mid = mid.clone();
-                            let group_hex_inner = group_hex.clone();
-                            let vault = vault.clone();
-                            let cache_hash = reference.ciphertext_sha256.clone();
-                            backend.download_media_async(
-                                &group_hex,
-                                reference.clone(),
-                                move |result| {
-                                    let weak = weak.clone();
-                                    let backend_cell = backend_cell.clone();
-                                    let group_ids = group_ids.clone();
-                                    let pending_state = pending_state.clone();
-                                    let group_hex = group_hex_inner.clone();
-                                    let mid = mid.clone();
-                                    match result {
-                                        Ok(dl) => {
-                                            // Persist the decrypted original bytes to
-                                            // the encrypted disk cache so this
-                                            // attachment (image or generic file)
-                                            // survives a restart without another
-                                            // Blossom round-trip + decrypt, and record
-                                            // the now-known plaintext size for the
-                                            // bubble's size label.
-                                            if let Some(v) = &vault {
-                                                media_cache::put(v, &cache_hash, &dl.plaintext);
-                                            }
-                                            attachment_size_put(&mid, dl.plaintext.len() as u64);
-                                            if is_image {
-                                                match image::load_from_memory(&dl.plaintext) {
-                                                    Ok(img) => {
-                                                        let rgba = img.to_rgba8();
-                                                        let pixels = PicturePixels {
-                                                            w: rgba.width(),
-                                                            h: rgba.height(),
-                                                            rgba: rgba.into_raw(),
-                                                        };
-                                                        attachment_image_cache_put(
-                                                            mid.clone(),
-                                                            pixels,
-                                                        );
-                                                    }
-                                                    Err(e) => {
-                                                        tracing::warn!(target: "attach", "decode {mid}: {e:#}")
-                                                    }
-                                                }
-                                            } else if let Some(path) = &target_path {
-                                                // Explicit "Save attachment": the
-                                                // outcome must be visible, so report
-                                                // both success and failure in the
-                                                // status-bar toast, not just stderr.
-                                                let label = save_target_label(path);
-                                                match std::fs::write(path, &dl.plaintext) {
-                                                    Ok(()) => {
-                                                        toast_save_attachment(
-                                                            weak.clone(),
-                                                            label,
-                                                            true,
-                                                        )
-                                                    }
-                                                    Err(e) => {
-                                                        tracing::warn!(
-                                                            target: "attach", "write {}: {e:#}",
-                                                            path.display()
-                                                        );
-                                                        toast_save_attachment(
-                                                            weak.clone(),
-                                                            label,
-                                                            false,
-                                                        );
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        Err(e) => {
-                                            tracing::warn!(target: "attach", "download {mid}: {e:#}");
-                                            // A failed download of a save-to-disk
-                                            // request means the file was not saved —
-                                            // tell the user so it isn't silent.
-                                            if let Some(path) = &target_path {
-                                                toast_save_attachment(
-                                                    weak.clone(),
-                                                    save_target_label(path),
-                                                    false,
-                                                );
-                                            }
-                                        }
-                                    }
-                                    // This completion already runs on the backend
-                                    // runtime; the async refresh keeps the snapshot
-                                    // read off the UI thread.
-                                    attachment_in_flight()
-                                        .lock()
-                                        .ok()
-                                        .map(|mut s| s.remove(&mid));
-                                    let Some(backend) = backend_cell.lock().unwrap().clone() else {
-                                        return;
-                                    };
-                                    refresh_one_message_row_async(
-                                        &backend,
-                                        weak,
-                                        pending_state,
-                                        group_ids,
-                                        group_hex,
-                                        mid,
-                                    );
-                                },
-                            );
-                        }
-                    };
-
-                    if is_image {
-                        // Read-through the encrypted disk cache before paying for a
-                        // network round-trip. On a hit we decrypt + decode locally and
-                        // repaint the row; on a miss we fall back to the live download
-                        // (which write-throughs the cache for next time).
-                        match vault.clone() {
-                            Some(vault) => {
-                                let hash = reference.ciphertext_sha256.clone();
-                                let weak = weak.clone();
-                                let backend_cell = backend_cell.clone();
-                                let group_ids = group_ids.clone();
-                                let pending_state = pending_state.clone();
-                                let group_hex = group_hex.clone();
-                                let mid = mid.clone();
-                                tokio_handle.spawn(async move {
-                                    let hit = media_cache::get(&vault, &hash).and_then(|plain| {
-                                        image::load_from_memory(&plain).ok().map(|img| {
-                                            let rgba = img.to_rgba8();
-                                            PicturePixels {
-                                                w: rgba.width(),
-                                                h: rgba.height(),
-                                                rgba: rgba.into_raw(),
-                                            }
-                                        })
-                                    });
-                                    match hit {
-                                        Some(pixels) => {
-                                            // Already on the backend runtime; both
-                                            // caches are plain process-wide mutexes,
-                                            // so no event-loop hop is needed before
-                                            // the async row refresh.
-                                            attachment_image_cache_put(mid.clone(), pixels);
-                                            attachment_in_flight()
-                                                .lock()
-                                                .ok()
-                                                .map(|mut s| s.remove(&mid));
-                                            let Some(backend) =
-                                                backend_cell.lock().unwrap().clone()
-                                            else {
-                                                return;
-                                            };
-                                            refresh_one_message_row_async(
-                                                &backend,
-                                                weak,
-                                                pending_state,
-                                                group_ids,
-                                                group_hex,
-                                                mid,
-                                            );
-                                        }
-                                        None => dispatch_download(None),
-                                    }
-                                });
-                            }
-                            None => dispatch_download(None),
-                        }
+                        open_audio_tap(cx, reference);
+                    } else if is_video {
+                        open_video_tap(&ui, cx, reference);
+                    } else if is_image {
+                        open_image_tap(cx, reference);
                     } else {
-                        let default_name = reference.file_name.clone();
-                        let cache_hash = reference.ciphertext_sha256.clone();
-                        let vault_hit = vault.clone();
-                        let weak_clear = weak.clone();
-                        let group_ids_clear = group_ids.clone();
-                        let backend_cell_clear = backend_cell.clone();
-                        let pending_state_clear = pending_state.clone();
-                        let group_hex_clear = group_hex.clone();
-                        let mid_clear = mid.clone();
-                        tokio_handle.spawn(async move {
-                            let chosen = tokio::task::spawn_blocking(move || {
-                                rfd::FileDialog::new()
-                                    .set_title("Save attachment")
-                                    .set_file_name(&default_name)
-                                    .save_file()
-                            })
-                            .await
-                            .ok()
-                            .flatten();
-                            // Encrypted-cache read-through: a file downloaded
-                            // before (this session or a previous one) writes
-                            // straight from disk, no Blossom round-trip. Same
-                            // pattern as the image/audio paths; a miss falls
-                            // through to the live download below.
-                            if let Some(path) = &chosen
-                                && let Some(bytes) = vault_hit
-                                    .as_ref()
-                                    .and_then(|v| media_cache::get(v, &cache_hash))
-                            {
-                                attachment_size_put(&mid_clear, bytes.len() as u64);
-                                // Large-file write off the runtime worker.
-                                let write_path = path.clone();
-                                let label = save_target_label(path);
-                                match tokio::task::spawn_blocking(move || {
-                                    std::fs::write(&write_path, &bytes)
-                                })
-                                .await
-                                {
-                                    Ok(Ok(())) => {
-                                        toast_save_attachment(weak_clear.clone(), label, true)
-                                    }
-                                    Ok(Err(e)) => {
-                                        tracing::warn!(target: "attach", "write {}: {e:#}", path.display());
-                                        toast_save_attachment(weak_clear.clone(), label, false);
-                                    }
-                                    Err(e) => {
-                                        tracing::warn!(target: "attach", "write join: {e:#}");
-                                        toast_save_attachment(weak_clear.clone(), label, false);
-                                    }
-                                }
-                                attachment_in_flight()
-                                    .lock()
-                                    .ok()
-                                    .map(|mut s| s.remove(&mid_clear));
-                                let Some(backend) = backend_cell_clear.lock().unwrap().clone()
-                                else {
-                                    return;
-                                };
-                                refresh_one_message_row_async(
-                                    &backend,
-                                    weak_clear,
-                                    pending_state_clear,
-                                    group_ids_clear,
-                                    group_hex_clear,
-                                    mid_clear,
-                                );
-                                return;
-                            }
-                            let _ = slint::invoke_from_event_loop(move || match chosen {
-                                Some(path) => dispatch_download(Some(path)),
-                                None => {
-                                    attachment_in_flight()
-                                        .lock()
-                                        .ok()
-                                        .map(|mut s| s.remove(&mid_clear));
-                                    let Some(backend) = backend_cell_clear.lock().unwrap().clone()
-                                    else {
-                                        return;
-                                    };
-                                    refresh_one_message_row_async(
-                                        &backend,
-                                        weak_clear,
-                                        pending_state_clear,
-                                        group_ids_clear,
-                                        group_hex_clear,
-                                        mid_clear,
-                                    );
-                                }
-                            });
-                        });
+                        open_file_tap(cx, reference);
                     }
                 }); // end invoke_from_event_loop (UI-thread dispatch)
             }); // end backend-runtime record resolution
@@ -1390,5 +1012,272 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 }
             });
         }
+    });
+}
+
+// ─── Attachment-tap flows ───────────────────────────────────────────────
+//
+// `on_attachment_clicked` resolves the tapped record, then fans out into
+// one flow per media family. Each flow takes the same context bundle
+// instead of hand-numbered handle clones, and every exit funnels the
+// in-flight guard through `clear_attachment_in_flight` (directly or via
+// `finish_attachment_tap`) so no early return can leak the guard and
+// dead-tap the attachment.
+
+/// Everything an attachment-tap flow needs: the tapped row's coordinates
+/// plus the shared handles the completion refresh takes. Cheap to clone.
+#[derive(Clone)]
+struct AttachmentTapCx {
+    weak: Weak<DarkMatterLinux>,
+    b: Arc<Backend>,
+    backend_cell: BackendCell,
+    group_ids: Arc<Mutex<Vec<String>>>,
+    pending_state: Arc<Mutex<PendingState>>,
+    vault: Option<Arc<Mutex<Vault>>>,
+    group_hex: String,
+    mid: String,
+}
+
+/// Drop the in-flight guard and refresh the tapped row — the shared
+/// completion of every attachment flow.
+fn finish_attachment_tap(cx: AttachmentTapCx) {
+    clear_attachment_in_flight(&cx.mid);
+    let Some(backend) = cx.backend_cell.lock().unwrap().clone() else {
+        return;
+    };
+    refresh_one_message_row_async(
+        &backend,
+        cx.weak,
+        cx.pending_state,
+        cx.group_ids,
+        cx.group_hex,
+        cx.mid,
+    );
+}
+
+/// Audio → decrypt + play inline via rodio. No save dialog; the encrypted
+/// disk cache is read-through just like images/videos.
+fn open_audio_tap(cx: AttachmentTapCx, reference: MediaAttachmentReference) {
+    clear_attachment_in_flight(&cx.mid);
+    let hash = reference.ciphertext_sha256.clone();
+    let b = cx.b.clone();
+    b.tokio_handle().spawn(async move {
+        if let Some(bytes) = cx.vault.as_ref().and_then(|v| media_cache::get(v, &hash)) {
+            attachment_size_put(&cx.mid, bytes.len() as u64);
+            let _ = slint::invoke_from_event_loop(move || {
+                start_audio_playback(
+                    cx.weak,
+                    cx.backend_cell,
+                    cx.group_ids,
+                    cx.pending_state,
+                    cx.group_hex,
+                    cx.mid,
+                    bytes,
+                );
+            });
+            return;
+        }
+        let group_hex = cx.group_hex.clone();
+        let vault = cx.vault.clone();
+        b.download_media_async(&group_hex, reference, move |result| match result {
+            Ok(dl) => {
+                if let Some(v) = &vault {
+                    media_cache::put(v, &hash, &dl.plaintext);
+                }
+                attachment_size_put(&cx.mid, dl.plaintext.len() as u64);
+                let _ = slint::invoke_from_event_loop(move || {
+                    start_audio_playback(
+                        cx.weak,
+                        cx.backend_cell,
+                        cx.group_ids,
+                        cx.pending_state,
+                        cx.group_hex,
+                        cx.mid,
+                        dl.plaintext,
+                    );
+                });
+            }
+            Err(e) => {
+                tracing::warn!(target: "audio", "download {}: {e:#}", cx.mid);
+            }
+        });
+    });
+}
+
+/// Video → open the in-app libmpv viewer and start playback. The poster
+/// (first frame) + duration get cached during playback, so the dismiss
+/// handler can repaint the bubble tile afterwards.
+fn open_video_tap(ui: &DarkMatterLinux, cx: AttachmentTapCx, reference: MediaAttachmentReference) {
+    clear_attachment_in_flight(&cx.mid);
+    stop_current_player();
+    *current_video_duration().lock().unwrap() = 0.0;
+    *current_video_target().lock().unwrap() = Some((cx.group_hex.clone(), cx.mid.clone()));
+    ui.set_video_viewer_has_frame(false);
+    ui.set_video_viewer_playing(false);
+    ui.set_video_viewer_progress(0.0);
+    ui.set_video_viewer_pos("0:00".into());
+    ui.set_video_viewer_dur("0:00".into());
+    ui.set_video_viewer_loading(true);
+    ui.set_video_viewer_open(true);
+    start_video_playback(cx.weak, cx.b, cx.group_hex, cx.mid, reference, cx.vault);
+}
+
+/// Image → read-through the encrypted disk cache before paying for a
+/// network round-trip. On a hit we decrypt + decode locally and repaint the
+/// row; on a miss we fall back to the live download (which write-throughs
+/// the cache for next time).
+fn open_image_tap(cx: AttachmentTapCx, reference: MediaAttachmentReference) {
+    let Some(vault) = cx.vault.clone() else {
+        spawn_attachment_download(cx, reference, true, None);
+        return;
+    };
+    let hash = reference.ciphertext_sha256.clone();
+    let handle = cx.b.tokio_handle();
+    handle.spawn(async move {
+        let hit = media_cache::get(&vault, &hash).and_then(|plain| {
+            image::load_from_memory(&plain).ok().map(|img| {
+                let rgba = img.to_rgba8();
+                PicturePixels {
+                    w: rgba.width(),
+                    h: rgba.height(),
+                    rgba: rgba.into_raw(),
+                }
+            })
+        });
+        match hit {
+            Some(pixels) => {
+                // Already on the backend runtime; both caches are plain
+                // process-wide mutexes, so no event-loop hop is needed
+                // before the async row refresh.
+                attachment_image_cache_put(cx.mid.clone(), pixels);
+                finish_attachment_tap(cx);
+            }
+            None => spawn_attachment_download(cx, reference, true, None),
+        }
+    });
+}
+
+/// Generic file → save-as dialog first (so the user can cancel before any
+/// network traffic), then encrypted-cache read-through, then live download
+/// to the chosen path.
+fn open_file_tap(cx: AttachmentTapCx, reference: MediaAttachmentReference) {
+    let default_name = reference.file_name.clone();
+    let cache_hash = reference.ciphertext_sha256.clone();
+    let handle = cx.b.tokio_handle();
+    handle.spawn(async move {
+        let chosen = tokio::task::spawn_blocking(move || {
+            rfd::FileDialog::new()
+                .set_title("Save attachment")
+                .set_file_name(&default_name)
+                .save_file()
+        })
+        .await
+        .ok()
+        .flatten();
+        // Encrypted-cache read-through: a file downloaded before (this
+        // session or a previous one) writes straight from disk, no Blossom
+        // round-trip. Same pattern as the image/audio paths; a miss falls
+        // through to the live download below.
+        if let Some(path) = &chosen
+            && let Some(bytes) = cx
+                .vault
+                .as_ref()
+                .and_then(|v| media_cache::get(v, &cache_hash))
+        {
+            attachment_size_put(&cx.mid, bytes.len() as u64);
+            // Large-file write off the runtime worker.
+            let write_path = path.clone();
+            let label = save_target_label(path);
+            match tokio::task::spawn_blocking(move || std::fs::write(&write_path, &bytes)).await {
+                Ok(Ok(())) => toast_save_attachment(cx.weak.clone(), label, true),
+                Ok(Err(e)) => {
+                    tracing::warn!(target: "attach", "write {}: {e:#}", path.display());
+                    toast_save_attachment(cx.weak.clone(), label, false);
+                }
+                Err(e) => {
+                    tracing::warn!(target: "attach", "write join: {e:#}");
+                    toast_save_attachment(cx.weak.clone(), label, false);
+                }
+            }
+            finish_attachment_tap(cx);
+            return;
+        }
+        let _ = slint::invoke_from_event_loop(move || match chosen {
+            Some(path) => spawn_attachment_download(cx, reference, false, Some(path)),
+            None => finish_attachment_tap(cx),
+        });
+    });
+}
+
+/// Kick off the real download on the backend runtime. `target_path` is the
+/// resolved save-as destination for generic files (`None` for images, which
+/// cache decoded pixels instead of writing to disk). Write-throughs the
+/// encrypted disk cache, then funnels every outcome through
+/// `finish_attachment_tap`.
+fn spawn_attachment_download(
+    cx: AttachmentTapCx,
+    reference: MediaAttachmentReference,
+    is_image: bool,
+    target_path: Option<std::path::PathBuf>,
+) {
+    let Some(backend) = cx.backend_cell.lock().unwrap().clone() else {
+        clear_attachment_in_flight(&cx.mid);
+        return;
+    };
+    let cache_hash = reference.ciphertext_sha256.clone();
+    let group_hex = cx.group_hex.clone();
+    backend.download_media_async(&group_hex, reference, move |result| {
+        match result {
+            Ok(dl) => {
+                // Persist the decrypted original bytes to the encrypted disk
+                // cache so this attachment (image or generic file) survives a
+                // restart without another Blossom round-trip + decrypt, and
+                // record the now-known plaintext size for the bubble's size
+                // label.
+                if let Some(v) = &cx.vault {
+                    media_cache::put(v, &cache_hash, &dl.plaintext);
+                }
+                attachment_size_put(&cx.mid, dl.plaintext.len() as u64);
+                if is_image {
+                    match image::load_from_memory(&dl.plaintext) {
+                        Ok(img) => {
+                            let rgba = img.to_rgba8();
+                            let pixels = PicturePixels {
+                                w: rgba.width(),
+                                h: rgba.height(),
+                                rgba: rgba.into_raw(),
+                            };
+                            attachment_image_cache_put(cx.mid.clone(), pixels);
+                        }
+                        Err(e) => {
+                            tracing::warn!(target: "attach", "decode {}: {e:#}", cx.mid)
+                        }
+                    }
+                } else if let Some(path) = &target_path {
+                    // Explicit "Save attachment": the outcome must be
+                    // visible, so report both success and failure in the
+                    // status-bar toast, not just stderr.
+                    let label = save_target_label(path);
+                    match std::fs::write(path, &dl.plaintext) {
+                        Ok(()) => toast_save_attachment(cx.weak.clone(), label, true),
+                        Err(e) => {
+                            tracing::warn!(target: "attach", "write {}: {e:#}", path.display());
+                            toast_save_attachment(cx.weak.clone(), label, false);
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                tracing::warn!(target: "attach", "download {}: {e:#}", cx.mid);
+                // A failed download of a save-to-disk request means the file
+                // was not saved — tell the user so it isn't silent.
+                if let Some(path) = &target_path {
+                    toast_save_attachment(cx.weak.clone(), save_target_label(path), false);
+                }
+            }
+        }
+        // This completion already runs on the backend runtime; the async
+        // refresh keeps the snapshot read off the UI thread.
+        finish_attachment_tap(cx);
     });
 }

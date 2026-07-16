@@ -53,6 +53,15 @@ pub(crate) fn attachment_in_flight() -> &'static Mutex<std::collections::HashSet
     SET.get_or_init(|| Mutex::new(std::collections::HashSet::new()))
 }
 
+/// Drop one key from the in-flight set (best-effort under a poisoned lock).
+/// Every exit of an attachment flow must funnel through here — a leaked
+/// guard permanently dead-taps that attachment.
+pub(crate) fn clear_attachment_in_flight(key: &str) {
+    if let Ok(mut set) = attachment_in_flight().lock() {
+        set.remove(key);
+    }
+}
+
 /// Album cells whose download/decrypt failed, keyed by `att_key`. Read by
 /// [`build_album_cells`] to render the failed glyph and by the tap handler to
 /// route a tap into a retry instead of the lightbox. Cleared when a fresh
@@ -1176,10 +1185,7 @@ pub(crate) fn autoload_album_cells(
                 {
                     attachment_image_cache_put(key.clone(), px);
                     attachment_failed_clear(&key);
-                    attachment_in_flight()
-                        .lock()
-                        .ok()
-                        .map(|mut s| s.remove(&key));
+                    clear_attachment_in_flight(&key);
                     refresh_one_message_row_async(
                         &backend,
                         weak,
@@ -1211,10 +1217,7 @@ pub(crate) fn autoload_album_cells(
                     } else {
                         attachment_failed_mark(&key);
                     }
-                    attachment_in_flight()
-                        .lock()
-                        .ok()
-                        .map(|mut s| s.remove(&key));
+                    clear_attachment_in_flight(&key);
                     // Refresh either way: success swaps the image in, failure
                     // clears the spinner and shows the retryable error glyph.
                     refresh_one_message_row_async(

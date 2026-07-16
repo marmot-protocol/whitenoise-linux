@@ -1,5 +1,59 @@
 use crate::*;
 
+/// Shared preamble of the group-settings callbacks: resolve the active chat
+/// row to its group hex and grab the live backend. Shows the not-ready
+/// status and returns `None` when the backend hasn't booted yet.
+fn active_group_backend(
+    ui: &DarkMatterLinux,
+    backend_cell: &BackendCell,
+    group_ids: &Arc<Mutex<Vec<String>>>,
+) -> Option<(String, Arc<Backend>)> {
+    let idx = ui.get_active_chat() as usize;
+    let group_hex = group_ids.lock().unwrap().get(idx).cloned()?;
+    let Some(b) = backend_cell.lock().unwrap().clone() else {
+        show_group_settings_status(ui, error_copy().backend_not_ready, StatusKind::Error);
+        return None;
+    };
+    Some((group_hex, b))
+}
+
+/// Run one group-admin op and land the result — the shared lifecycle of the
+/// promote/demote/self-demote/remove closures. Clears the status line, runs
+/// `op` on a worker thread (admin changes publish an MLS commit to relays),
+/// then on the UI thread refreshes the members panel + shows `ok_msg` on
+/// success or routes the error through `friendly_error`.
+fn spawn_group_admin_op(
+    ui: &DarkMatterLinux,
+    b: Arc<Backend>,
+    group_hex: String,
+    op_name: &'static str,
+    ok_msg: String,
+    op: impl FnOnce(&Backend, &str) -> anyhow::Result<()> + Send + 'static,
+) {
+    ui.set_group_settings_status(s(""));
+    let weak = ui.as_weak();
+    std::thread::spawn(move || {
+        let result = op(&b, &group_hex);
+        let _ = slint::invoke_from_event_loop(move || {
+            let Some(ui) = weak.upgrade() else { return };
+            match result {
+                Ok(()) => {
+                    push_group_members_to_ui_async(&ui, &b, &group_hex);
+                    show_group_settings_status(&ui, ok_msg, StatusKind::Ok);
+                }
+                Err(e) => {
+                    tracing::warn!(target: "group_admin", "{op_name}: {e:#}");
+                    show_group_settings_status(
+                        &ui,
+                        friendly_error(ErrorOp::GroupSettings, &e),
+                        StatusKind::Error,
+                    );
+                }
+            }
+        });
+    });
+}
+
 pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
     let Cx {
         backend_cell,
@@ -63,41 +117,17 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
             if member_id.is_empty() {
                 return;
             }
-            let idx = ui.get_active_chat() as usize;
-            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
+            let Some((group_hex, b)) = active_group_backend(&ui, &backend_cell, &group_ids) else {
                 return;
             };
-            ui.set_group_settings_status(s(""));
-            let Some(b) = backend_cell.lock().unwrap().clone() else {
-                show_group_settings_status(&ui, error_copy().backend_not_ready, StatusKind::Error);
-                return;
-            };
-            // Admin changes publish an MLS commit to relays — worker.
-            let weak = weak.clone();
-            std::thread::spawn(move || {
-                let result = b.promote_admin(&group_hex, &member_id);
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
-                    match result {
-                        Ok(_) => {
-                            push_group_members_to_ui_async(&ui, &b, &group_hex);
-                            show_group_settings_status(
-                                &ui,
-                                error_copy().admin_added,
-                                StatusKind::Ok,
-                            );
-                        }
-                        Err(e) => {
-                            tracing::warn!(target: "promote", "{e:#}");
-                            show_group_settings_status(
-                                &ui,
-                                friendly_error(ErrorOp::GroupSettings, &e),
-                                StatusKind::Error,
-                            );
-                        }
-                    }
-                });
-            });
+            spawn_group_admin_op(
+                &ui,
+                b,
+                group_hex,
+                "promote",
+                error_copy().admin_added,
+                move |b, hex| b.promote_admin(hex, &member_id).map(|_| ()),
+            );
         }
     });
     ui.global::<AppState>().on_demote_admin({
@@ -110,40 +140,17 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
             if member_id.is_empty() {
                 return;
             }
-            let idx = ui.get_active_chat() as usize;
-            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
+            let Some((group_hex, b)) = active_group_backend(&ui, &backend_cell, &group_ids) else {
                 return;
             };
-            ui.set_group_settings_status(s(""));
-            let Some(b) = backend_cell.lock().unwrap().clone() else {
-                show_group_settings_status(&ui, error_copy().backend_not_ready, StatusKind::Error);
-                return;
-            };
-            let weak = weak.clone();
-            std::thread::spawn(move || {
-                let result = b.demote_admin(&group_hex, &member_id);
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
-                    match result {
-                        Ok(_) => {
-                            push_group_members_to_ui_async(&ui, &b, &group_hex);
-                            show_group_settings_status(
-                                &ui,
-                                error_copy().admin_removed,
-                                StatusKind::Ok,
-                            );
-                        }
-                        Err(e) => {
-                            tracing::warn!(target: "demote", "{e:#}");
-                            show_group_settings_status(
-                                &ui,
-                                friendly_error(ErrorOp::GroupSettings, &e),
-                                StatusKind::Error,
-                            );
-                        }
-                    }
-                });
-            });
+            spawn_group_admin_op(
+                &ui,
+                b,
+                group_hex,
+                "demote",
+                error_copy().admin_removed,
+                move |b, hex| b.demote_admin(hex, &member_id).map(|_| ()),
+            );
         }
     });
     ui.global::<AppState>().on_self_demote_admin({
@@ -152,40 +159,17 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
         let group_ids = group_ids.clone();
         move || {
             let Some(ui) = weak.upgrade() else { return };
-            let idx = ui.get_active_chat() as usize;
-            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
+            let Some((group_hex, b)) = active_group_backend(&ui, &backend_cell, &group_ids) else {
                 return;
             };
-            ui.set_group_settings_status(s(""));
-            let Some(b) = backend_cell.lock().unwrap().clone() else {
-                show_group_settings_status(&ui, error_copy().backend_not_ready, StatusKind::Error);
-                return;
-            };
-            let weak = weak.clone();
-            std::thread::spawn(move || {
-                let result = b.self_demote_admin(&group_hex);
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
-                    match result {
-                        Ok(_) => {
-                            push_group_members_to_ui_async(&ui, &b, &group_hex);
-                            show_group_settings_status(
-                                &ui,
-                                error_copy().stepped_down,
-                                StatusKind::Ok,
-                            );
-                        }
-                        Err(e) => {
-                            tracing::warn!(target: "self_demote", "{e:#}");
-                            show_group_settings_status(
-                                &ui,
-                                friendly_error(ErrorOp::GroupSettings, &e),
-                                StatusKind::Error,
-                            );
-                        }
-                    }
-                });
-            });
+            spawn_group_admin_op(
+                &ui,
+                b,
+                group_hex,
+                "self_demote",
+                error_copy().stepped_down,
+                |b, hex| b.self_demote_admin(hex).map(|_| ()),
+            );
         }
     });
     ui.global::<AppState>().on_remove_member({
@@ -198,41 +182,17 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
             if member_id.is_empty() {
                 return;
             }
-            let idx = ui.get_active_chat() as usize;
-            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
+            let Some((group_hex, b)) = active_group_backend(&ui, &backend_cell, &group_ids) else {
                 return;
             };
-            ui.set_group_settings_status(s(""));
-            let Some(b) = backend_cell.lock().unwrap().clone() else {
-                show_group_settings_status(&ui, error_copy().backend_not_ready, StatusKind::Error);
-                return;
-            };
-            // Removal publishes an MLS commit to relays — worker.
-            let weak = weak.clone();
-            std::thread::spawn(move || {
-                let result = b.remove_member(&group_hex, &member_id);
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
-                    match result {
-                        Ok(_) => {
-                            push_group_members_to_ui_async(&ui, &b, &group_hex);
-                            show_group_settings_status(
-                                &ui,
-                                error_copy().member_removed,
-                                StatusKind::Ok,
-                            );
-                        }
-                        Err(e) => {
-                            tracing::warn!(target: "remove_member", "{e:#}");
-                            show_group_settings_status(
-                                &ui,
-                                friendly_error(ErrorOp::GroupSettings, &e),
-                                StatusKind::Error,
-                            );
-                        }
-                    }
-                });
-            });
+            spawn_group_admin_op(
+                &ui,
+                b,
+                group_hex,
+                "remove_member",
+                error_copy().member_removed,
+                move |b, hex| b.remove_member(hex, &member_id).map(|_| ()),
+            );
         }
     });
     ui.global::<AppState>().on_leave_group_at({
@@ -306,12 +266,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                 show_group_settings_status(&ui, error_copy().name_empty, StatusKind::Error);
                 return;
             }
-            let idx = ui.get_active_chat() as usize;
-            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
-                return;
-            };
-            let Some(b) = backend_cell.lock().unwrap().clone() else {
-                show_group_settings_status(&ui, error_copy().backend_not_ready, StatusKind::Error);
+            let Some((group_hex, b)) = active_group_backend(&ui, &backend_cell, &group_ids) else {
                 return;
             };
             ui.set_group_rename_busy(true);
@@ -353,12 +308,7 @@ pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
                 return;
             }
             let description = description.trim().to_string();
-            let idx = ui.get_active_chat() as usize;
-            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
-                return;
-            };
-            let Some(b) = backend_cell.lock().unwrap().clone() else {
-                show_group_settings_status(&ui, error_copy().backend_not_ready, StatusKind::Error);
+            let Some((group_hex, b)) = active_group_backend(&ui, &backend_cell, &group_ids) else {
                 return;
             };
             ui.set_group_description_busy(true);

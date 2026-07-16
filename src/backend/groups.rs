@@ -14,6 +14,16 @@ pub struct SharedGroupInfo {
 }
 
 impl Backend {
+    /// Look up one visible chat by its group-id hex (case-insensitive — the
+    /// invariant every lookup site must honor). Takes a full `chats()`
+    /// snapshot today; centralizing here leaves room for a cheaper query.
+    pub(crate) fn find_chat(&self, group_hex: &str) -> Option<AppGroupRecord> {
+        self.chats()
+            .ok()?
+            .into_iter()
+            .find(|g| g.group_id_hex.eq_ignore_ascii_case(group_hex))
+    }
+
     /// Create a 1:1 or group chat with the listed members (npub or hex pubkey).
     pub fn create_group(&self, name: &str, members: &[String]) -> Result<GroupId> {
         // The account must have a published NIP-65 list before the runtime will
@@ -360,14 +370,8 @@ impl Backend {
         // the fresh image.
         let clear_url_avatar = !bytes.is_empty()
             && self
-                .chats()
-                .ok()
-                .and_then(|chats| {
-                    chats
-                        .iter()
-                        .find(|g| g.group_id_hex.eq_ignore_ascii_case(group_hex))
-                        .map(|g| g.avatar_url.present)
-                })
+                .find_chat(group_hex)
+                .map(|g| g.avatar_url.present)
                 .unwrap_or(false);
         let label = self.active_label();
         let runtime = self.runtime.clone();
@@ -413,30 +417,11 @@ impl Backend {
         });
     }
 
-    /// The group's current image content hash (hex), or `None` when no image is
-    /// set. Doubles as a cache key and presence check for the avatar pipeline.
-    pub fn group_image_hash(&self, group_hex: &str) -> Option<String> {
-        let chats = self.chats().ok()?;
-        let group = chats
-            .iter()
-            .find(|g| g.group_id_hex.eq_ignore_ascii_case(group_hex))?;
-        if group.image.present && !group.image.image_hash_hex.is_empty() {
-            Some(group.image.image_hash_hex.clone())
-        } else {
-            None
-        }
-    }
-
     /// The group's admin set as 32-byte hex pubkeys (same encoding as
     /// `account_id_hex`). Empty when the group is unknown.
     pub fn group_admins(&self, group_hex: &str) -> Vec<String> {
-        let Ok(chats) = self.chats() else {
-            return Vec::new();
-        };
-        chats
-            .iter()
-            .find(|g| g.group_id_hex.eq_ignore_ascii_case(group_hex))
-            .map(|g| g.admin_policy.admins.clone())
+        self.find_chat(group_hex)
+            .map(|g| g.admin_policy.admins)
             .unwrap_or_default()
     }
 
@@ -444,21 +429,15 @@ impl Backend {
     /// group's admin policy component; the admins list contains 32-byte hex
     /// pubkeys, identical encoding to `account_id_hex`.
     pub fn is_group_admin(&self, group_hex: &str) -> bool {
-        let me = &self.active_id();
-        let Ok(chats) = self.chats() else {
-            return false;
-        };
-        let Some(group) = chats
-            .iter()
-            .find(|g| g.group_id_hex.eq_ignore_ascii_case(group_hex))
-        else {
-            return false;
-        };
-        group
-            .admin_policy
-            .admins
-            .iter()
-            .any(|a| a.eq_ignore_ascii_case(me))
+        let me = self.active_id();
+        self.find_chat(group_hex)
+            .map(|g| {
+                g.admin_policy
+                    .admins
+                    .iter()
+                    .any(|a| a.eq_ignore_ascii_case(&me))
+            })
+            .unwrap_or(false)
     }
 
     /// Local key-package records for the active account. Sync — reads the
@@ -476,12 +455,7 @@ impl Backend {
     pub fn key_packages_fetch(&self) -> Result<Vec<marmot_app::AccountKeyPackageRecord>> {
         let label = self.active_label();
         let app = self.app.clone();
-        let bootstrap: Vec<TransportEndpoint> = self
-            .relays
-            .iter()
-            .cloned()
-            .map(TransportEndpoint::from)
-            .collect();
+        let bootstrap = self.relay_endpoints();
         self.tokio.block_on(async move {
             app.account_key_package_records(&label, bootstrap)
                 .await
@@ -553,12 +527,6 @@ impl Backend {
             })
             .map_err(|e| anyhow!("fetch_latest_key_package_for_account_id: {e}"))?;
         Ok((fetched.created_at, fetched.source_relays))
-    }
-
-    /// True when there is at least one locally-recorded key package for the
-    /// active account. Used at boot to decide whether to bootstrap-publish.
-    pub fn has_local_key_package(&self) -> bool {
-        !self.key_packages_local().is_empty()
     }
 
     /// Relay URLs the running backend was booted with. The on-disk list
