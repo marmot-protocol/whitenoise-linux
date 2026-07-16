@@ -125,13 +125,18 @@ export component AppShell inherits Rectangle {
     // only while hovered, so a narrow window keeps the conversation wide. On a
     // roomy window it stays at its dragged width and never collapses.
     property <length> strip-w: 76px;
+    // The collapse-to-strip only makes sense for the chat list (compact
+    // avatars); a page's own sidebar (contacts / archive / settings) has no
+    // sensible strip form, so on those pages the card stays full width and the
+    // page detail simply takes the remaining room on a narrow window.
+    property <bool> collapsible: root.width < 860px && AppState.active-page == 0;
     property <bool> narrow: root.width < 860px;
     property <bool> left-open: left-hover.has-hover;
-    property <bool> strip: root.narrow && !root.left-open;
+    property <bool> strip: root.collapsible && !root.left-open;
     // Layout reserves this (constant per narrow/wide state, so hovering never
     // reflows the conversation); the card itself draws at `left-shown` and
     // floats over the conversation when the narrow strip expands.
-    property <length> left-reserved: root.narrow ? root.strip-w : AppState.shell-chats-width;
+    property <length> left-reserved: root.collapsible ? root.strip-w : AppState.shell-chats-width;
     property <length> left-shown: root.strip ? root.strip-w : AppState.shell-chats-width;
 
     // Theme decor as a full-window backdrop (painted first, behind the cards),
