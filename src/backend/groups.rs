@@ -822,23 +822,36 @@ impl Backend {
         })
     }
 
-    /// Pump live message updates for a single group. The callback receives a
-    /// `RuntimeMessageUpdate`; the caller decides how to project it.
+    /// Pump live message updates for a single group. `on_update` receives each
+    /// live `RuntimeMessageUpdate`; `on_ready` runs once with the subscription
+    /// snapshot after subscribe but before the first live update, so the caller
+    /// can reconcile that snapshot against its own rows.
     ///
     /// Returns a `JoinHandle` so the caller can `.abort()` the watcher when
     /// the user switches chats (otherwise watchers accumulate forever).
-    pub fn watch_messages<F>(&self, group_hex: &str, mut on_update: F) -> JoinHandle<()>
+    pub fn watch_messages<F, R>(
+        &self,
+        group_hex: &str,
+        mut on_update: F,
+        on_ready: R,
+    ) -> JoinHandle<()>
     where
         F: FnMut(RuntimeMessageUpdate) + Send + 'static,
+        R: FnOnce(Vec<AppMessageRecord>) + Send + 'static,
     {
         let label = self.active_label();
         let runtime = self.runtime.clone();
-        // The subscription snapshot only seeds marmot's internal "already
-        // seen" dedup set — we never read it. `limit: None` would decrypt the
-        // group's ENTIRE history on every chat switch just for that set.
-        // Keep it at 1: re-emitted old events slip through marmot's dedup,
-        // but the UI handler is idempotent (find_message_row /
-        // refresh_one_message_row), so duplicates are no-ops there.
+        // The subscription snapshot seeds marmot's internal "already seen"
+        // dedup set, and we ALSO hand it to `on_ready`: a message arriving
+        // between the caller's own snapshot read and this subscribe is seeded
+        // here as "seen" (it is the group's latest) yet is absent from the
+        // caller's rows, so the live stream below never re-emits it. The
+        // reconcile in `on_ready` re-surfaces that one row. `limit: None` would
+        // decrypt the group's ENTIRE history on every chat switch; keep it at 1
+        // — the reconcile only needs the newest row, and re-emitted old events
+        // slip through marmot's dedup but the UI handler is idempotent
+        // (find_message_row / refresh_one_message_row), so duplicates are
+        // no-ops there.
         let query = AppMessageQuery {
             group_id_hex: Some(group_hex.to_string()),
             limit: Some(1),
@@ -852,6 +865,9 @@ impl Backend {
                         return;
                     }
                 };
+            // Reconcile against the subscription snapshot before draining live
+            // updates, closing the switch-read-vs-subscribe gap.
+            on_ready(std::mem::take(&mut sub.snapshot));
             while let Some(update) = sub.recv().await {
                 on_update(update);
             }
