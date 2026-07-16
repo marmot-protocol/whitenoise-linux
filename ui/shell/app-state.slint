@@ -746,6 +746,7 @@ export global AppState {
     in-out property <bool> add-account-generated: false;
     callback account-switcher-requested();
     callback switch-account(string);          // account-id hex
+    callback remove-account(string);          // account-id hex — sign out + erase key
     callback add-account-requested();         // switcher → add-account modal
     callback add-account(string);             // nsec
     callback add-account-dismissed();

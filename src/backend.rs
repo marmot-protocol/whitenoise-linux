@@ -663,6 +663,28 @@ impl Backend {
         Ok(summary)
     }
 
+    /// Permanently remove an account from the home. marmot deletes its stored
+    /// group state and, through `VaultSecretStore`, its signing secret; the
+    /// removal is atomic and idempotent on a missing account. The UI passes a
+    /// lowercased account-id, so resolve the real-case `label` from the summary
+    /// before handing it to marmot. Clears the members/profile caches, which
+    /// encoded the removed account's perspective. The caller must switch away
+    /// first if this is the active account — this does not touch the active
+    /// pointer.
+    pub fn remove_account(&self, account_id_hex: &str) -> Result<()> {
+        let summary = self
+            .accounts()
+            .into_iter()
+            .find(|a| a.account_id_hex.eq_ignore_ascii_case(account_id_hex))
+            .ok_or_else(|| anyhow!("no account {account_id_hex} in the home"))?;
+        self.account_home
+            .remove_account(&summary.label)
+            .map_err(|e| anyhow!("remove account {}: {e}", summary.label))?;
+        self.members_cache.lock().unwrap().clear();
+        self.profile_cache.lock().unwrap().clear();
+        Ok(())
+    }
+
     /// Background refill of the members + profile caches for the active
     /// account — the async sibling of the synchronous boot-time warmers.
     /// Until it lands, cache misses fall back to hex tails and queue their

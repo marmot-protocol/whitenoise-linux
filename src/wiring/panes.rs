@@ -184,6 +184,68 @@ pub(crate) fn wire_panes(
         move |id| do_switch(id.to_string())
     });
 
+    // Sign out of a single account and take its key off the device: marmot drops
+    // the account's group state and (via VaultSecretStore) its signing secret,
+    // then we delete the app-written nsec backup so it can't be re-imported at
+    // boot. Removing the active account switches to a survivor; removing the
+    // last account falls back to the first-run screen, mirroring reset-vault.
+    ui.global::<AppState>().on_remove_account({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let vault_cell = vault_cell.clone();
+        let do_switch = do_switch_account.clone();
+        move |id| {
+            let Some(ui) = weak.upgrade() else { return };
+            let Some(backend) = backend_cell.lock().unwrap().clone() else {
+                return;
+            };
+            let id = id.to_string();
+            let was_active = backend
+                .account()
+                .account_id_hex
+                .eq_ignore_ascii_case(&id);
+            if let Err(e) = backend.remove_account(&id) {
+                tracing::warn!(target: "accounts", "remove failed: {e:#}");
+                ui.set_backend_error(friendly_error(ErrorOp::RemoveAccount, &e).into());
+                return;
+            }
+            // marmot doesn't know about the app's `nsec:<hex>` backup, so drop it
+            // explicitly — otherwise `import_nsecs_from_bytes` re-imports the
+            // account on the next unlock.
+            if let Some(vault) = vault_cell.lock().unwrap().clone() {
+                if let Ok(mut v) = vault.lock() {
+                    let _ = v.remove(&vault::nsec_key_for(&id));
+                }
+            }
+            let survivors = backend.accounts();
+            if survivors.is_empty() {
+                // Nothing left to unlock into. Wipe the vault and return to the
+                // first-run choose screen, the same path "Use another key" takes.
+                if let Err(e) = vault::delete() {
+                    tracing::warn!(target: "accounts", "vault delete after last account: {e}");
+                }
+                offline_queue::clear();
+                ui.set_show_account_switcher(false);
+                ui.set_logged_in(false);
+                ui.set_password_input(s(""));
+                ui.set_password_confirm(s(""));
+                ui.set_login_error(s(""));
+                ui.set_login_mode(0);
+                return;
+            }
+            if was_active {
+                // The active pointer still names the removed account; switch to a
+                // survivor, which rebuilds every model, rewrites the persisted
+                // active-account hint, and closes the switcher.
+                do_switch(survivors[0].account_id_hex.clone());
+            } else {
+                // Active account is untouched — just rebuild the roster in place
+                // so the removed row drops out and the switcher stays open.
+                refresh_accounts_model(&ui, &backend);
+            }
+        }
+    });
+
     ui.global::<AppState>().on_add_account_requested({
         let weak = ui.as_weak();
         move || {
