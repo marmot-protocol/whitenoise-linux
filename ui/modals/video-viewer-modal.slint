@@ -14,6 +14,10 @@ export component VideoViewerModal inherits Modal {
     in property <bool> has-frame: false;
     in property <bool> playing: false;
     in property <bool> loading: false;
+    // The download or libmpv decode failed; show a tap-to-retry pill instead of
+    // a frozen black frame. Mutually exclusive with `loading` (Rust clears one
+    // when it sets the other).
+    in property <bool> failed: false;
     // Playback position as a 0..1 fraction (drives the bar) plus preformatted
     // "m:ss" labels (Rust formats them so we don't duplicate the logic here).
     in property <float> progress: 0.0;
@@ -26,6 +30,8 @@ export component VideoViewerModal inherits Modal {
     callback seek-relative(float);
     // Toggle the app window between fullscreen and windowed.
     callback fullscreen();
+    // Re-attempt the download/decode after a failure (failure-pill tap).
+    callback retry();
 
     bare: true;
     background: Palette.overlay-strong;
@@ -80,6 +86,20 @@ export component VideoViewerModal inherits Modal {
             x: (parent.width - self.width) / 2;
             y: (parent.height - self.height) / 2;
             text: @tr("Loading…");
+        }
+
+        // Failure pill — download/decode failed and no frame ever arrived.
+        // Tap to retry (mirrors the inline video tile's "!" failure glyph).
+        if root.failed && !root.has-frame: StatusPill {
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            text: @tr("Couldn't play video — tap to retry");
+            clickable: true;
+            border-width: Theme.border-w;
+            border-color: Palette.danger-on-bubble;
+            clicked => {
+                root.retry();
+            }
         }
 
         // Bottom control bar.

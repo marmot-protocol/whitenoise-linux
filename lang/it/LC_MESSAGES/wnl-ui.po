@@ -808,6 +808,10 @@ msgctxt "ErrorCopy"
 msgid "Couldn't play audio."
 msgstr "Impossibile riprodurre l'audio."
 
+msgctxt "VideoViewerModal"
+msgid "Couldn't play video — tap to retry"
+msgstr "Impossibile riprodurre il video — tocca per riprovare"
+
 msgctxt "ErrorCopy"
 msgid "Couldn't publish your key package. Check your relay settings and try again."
 msgstr "Impossibile pubblicare il tuo key package. Controlla le impostazioni dei relay e riprova."
