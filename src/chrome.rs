@@ -1480,9 +1480,106 @@ pub(crate) fn archived_from(
 
 // ─── Per-chat live message watcher ─────────────────────────────────────
 
+/// Apply one wire event — a live update or a reconciled snapshot row — to the
+/// open chat's message model on the UI thread. Idempotent: an already-present
+/// row is a no-op (`find_message_row` guard), so the live watcher and the
+/// post-subscribe reconcile can route the same record through here without
+/// duplicating it. `all` is the current window snapshot, already read off the
+/// UI thread by the caller (the event-loop closure must never touch sqlite —
+/// it can stall behind sync writes or a slow disk and freeze the UI).
+#[allow(clippy::too_many_arguments)]
+fn apply_message_event(
+    kind: u64,
+    msg_id: String,
+    target_id_for_reaction: Option<String>,
+    all: Vec<AppMessageRecord>,
+    weak: Weak<DarkMatterLinux>,
+    b: Arc<Backend>,
+    pending_state: Arc<Mutex<PendingState>>,
+    group_hex: String,
+    chat_idx: usize,
+) {
+    let _ = slint::invoke_from_event_loop(move || {
+        let Some(ui) = weak.upgrade() else { return };
+        let overlay = pending_state.lock().unwrap();
+        let chats_messages = ui.get_chats_messages();
+
+        match kind {
+            9 | 1210 => {
+                // Chat message echo, or a group-system row (member/admin/
+                // rename change). If the row already exists (because we just
+                // reconciled our own send, or the event was redelivered), do
+                // nothing. Otherwise append it surgically — no full rebuild.
+                // `build_one_message_row` returns a centered system line for
+                // kind-1210 and a bubble for kind-9.
+                let my_id = b.account().account_id_hex.clone();
+                let my_label = my_avatar_label(&b, &my_id);
+                let Some(rec) = all.iter().find(|m| m.message_id_hex == msg_id).cloned() else {
+                    return;
+                };
+                let row =
+                    build_one_message_row(&rec, &all, &my_id, &my_label, &group_hex, &overlay, &b);
+                let pushed = with_inner_messages(&chats_messages, chat_idx, |vm| {
+                    if find_message_row(vm, &msg_id).is_none() {
+                        push_message_grouped(vm, row);
+                        true
+                    } else {
+                        false
+                    }
+                })
+                .unwrap_or(false);
+                // A brand-new sender's avatar may not be cached yet; fetch it so
+                // the freshly-appended bubble fills in.
+                if pushed && !rec.sender.eq_ignore_ascii_case(&my_id) {
+                    drop(overlay);
+                    spawn_message_avatar_fetches(&ui, &b, &all);
+                }
+            }
+            7 | 5 | 1009 => {
+                // Reaction, delete, or edit — surgical refresh of the visible
+                // target row. Reaction deletes target the kind-7 reaction
+                // event, so resolve those back to the original message row
+                // before refreshing.
+                let Some(target) = message_row_refresh_target(kind, target_id_for_reaction, &all)
+                else {
+                    return;
+                };
+                refresh_one_message_row_from(
+                    &b,
+                    &overlay,
+                    &chats_messages,
+                    chat_idx,
+                    &group_hex,
+                    &target,
+                    &all,
+                );
+            }
+            _ => {}
+        }
+    });
+}
+
+/// Extract the target message id a kind-7/5/1009 event refreshes, if any.
+fn reaction_target_ref(kind: u64, tags: &[Vec<String>]) -> Option<String> {
+    if kind == 7 || kind == 5 || kind == 1009 {
+        tags.iter()
+            .find(|t| t.len() >= 2 && t[0] == "e")
+            .map(|t| t[1].clone())
+    } else {
+        None
+    }
+}
+
 /// Attach a watcher that appends new messages into the inner messages model
 /// for the currently-open chat. Caller is responsible for aborting the
 /// returned `JoinHandle` when the user switches chats.
+///
+/// `snapshot_ids` are the message ids the caller's rebuild rendered; the
+/// watcher reconciles its subscription snapshot against them, re-surfacing a
+/// message that landed between the chat-switch sqlite read and subscribe. Pass
+/// `None` for a mention jump — it shows a historical window, not the tail, so
+/// the group's latest row is not expected on screen and must not be appended.
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn install_message_watcher(
     backend: &Backend,
     weak: Weak<DarkMatterLinux>,
@@ -1491,109 +1588,93 @@ pub(crate) fn install_message_watcher(
     group_hex: String,
     chat_idx: usize,
     _my_id: String,
+    snapshot_ids: Option<std::collections::HashSet<String>>,
 ) -> JoinHandle<()> {
     let group_hex_for_filter = group_hex.clone();
-    backend.watch_messages(&group_hex, move |update| {
-        let received = update.message();
-        let event_group = hex::encode(received.group_id.as_slice());
-        if event_group != group_hex_for_filter {
-            return;
-        }
-        // Interesting wire kinds: chat (9), reaction/delete/edit (7/5/1009),
-        // and group-system rows (1210). Each becomes a surgical model update so
-        // neighbouring bubbles don't remount.
-        let kind = received.kind;
-        if !matches!(kind, 9 | 7 | 5 | 1009 | 1210) {
-            return;
-        }
+    // Reconcile path (runs once, after subscribe, before the live loop): if the
+    // subscription snapshot's newest row never made it into the rebuild, route
+    // it through the same idempotent applier. `snapshot_ids == None` (a mention
+    // jump) skips reconciliation entirely.
+    let on_ready = {
         let weak = weak.clone();
         let backend_cell = backend_cell.clone();
         let pending_state = pending_state.clone();
-        let group_hex_inner = group_hex_for_filter.clone();
-        let msg_id = received.message_id_hex.clone();
-        let target_id_for_reaction: Option<String> = if kind == 7 || kind == 5 || kind == 1009 {
-            received
-                .tags
-                .iter()
-                .find(|t| t.len() >= 2 && t[0] == "e")
-                .map(|t| t[1].clone())
-        } else {
-            None
-        };
-        // This callback runs on the backend runtime. Read the window snapshot
-        // HERE — the event-loop closure below must never touch sqlite (it can
-        // stall behind sync writes or a slow disk and freeze the UI).
-        let Some(b) = backend_cell.lock().unwrap().clone() else {
-            return;
-        };
-        let all = b
-            .messages(&group_hex_inner, Some(msg_window_for(&group_hex_inner)))
-            .unwrap_or_default();
-        let _ = slint::invoke_from_event_loop(move || {
-            let Some(ui) = weak.upgrade() else { return };
-            let overlay = pending_state.lock().unwrap();
-            let chats_messages = ui.get_chats_messages();
-
-            match kind {
-                9 | 1210 => {
-                    // Chat message echo, or a group-system row (member/admin/
-                    // rename change). If the row already exists (because we
-                    // just reconciled our own send, or the event was
-                    // redelivered), do nothing. Otherwise append it surgically
-                    // — no full rebuild. `build_one_message_row` returns a
-                    // centered system line for kind-1210 and a bubble for kind-9.
-                    let my_id = b.account().account_id_hex.clone();
-                    let my_label = my_avatar_label(&b, &my_id);
-                    let Some(rec) = all.iter().find(|m| m.message_id_hex == msg_id).cloned() else {
-                        return;
-                    };
-                    let row = build_one_message_row(
-                        &rec,
-                        &all,
-                        &my_id,
-                        &my_label,
-                        &group_hex_inner,
-                        &overlay,
-                        &b,
-                    );
-                    let pushed = with_inner_messages(&chats_messages, chat_idx, |vm| {
-                        if find_message_row(vm, &msg_id).is_none() {
-                            push_message_grouped(vm, row);
-                            true
-                        } else {
-                            false
-                        }
-                    })
-                    .unwrap_or(false);
-                    // A brand-new sender's avatar may not be cached yet; fetch
-                    // it so the freshly-appended bubble fills in.
-                    if pushed && !rec.sender.eq_ignore_ascii_case(&my_id) {
-                        drop(overlay);
-                        spawn_message_avatar_fetches(&ui, &b, &all);
-                    }
-                }
-                7 | 5 | 1009 => {
-                    // Reaction, delete, or edit — surgical refresh of the
-                    // visible target row. Reaction deletes target the kind-7
-                    // reaction event, so resolve those back to the original
-                    // message row before refreshing.
-                    let Some(target) =
-                        message_row_refresh_target(kind, target_id_for_reaction, &all)
-                    else {
-                        return;
-                    };
-                    refresh_one_message_row_from(
-                        &b,
-                        &overlay,
-                        &chats_messages,
-                        chat_idx,
-                        &group_hex_inner,
-                        &target,
-                        &all,
-                    );
-                }
-                _ => {}
+        let group_hex = group_hex.clone();
+        move |snapshot: Vec<AppMessageRecord>| {
+            let Some(known) = snapshot_ids else { return };
+            // `limit: Some(1)` snapshots carry the single newest row — the exact
+            // record the dedup set would otherwise swallow.
+            let Some(rec) = snapshot.last() else { return };
+            if known.contains(&rec.message_id_hex) {
+                return;
             }
-        });
-    })
+            let kind = rec.kind;
+            if !matches!(kind, 9 | 7 | 5 | 1009 | 1210) {
+                return;
+            }
+            let msg_id = rec.message_id_hex.clone();
+            let target_id_for_reaction = reaction_target_ref(kind, &rec.tags);
+            // On the backend runtime here — read the window before hopping to
+            // the UI thread inside `apply_message_event`.
+            let Some(b) = backend_cell.lock().unwrap().clone() else {
+                return;
+            };
+            let all = b
+                .messages(&group_hex, Some(msg_window_for(&group_hex)))
+                .unwrap_or_default();
+            apply_message_event(
+                kind,
+                msg_id,
+                target_id_for_reaction,
+                all,
+                weak,
+                b,
+                pending_state,
+                group_hex,
+                chat_idx,
+            );
+        }
+    };
+    backend.watch_messages(
+        &group_hex,
+        move |update| {
+            let received = update.message();
+            let event_group = hex::encode(received.group_id.as_slice());
+            if event_group != group_hex_for_filter {
+                return;
+            }
+            // Interesting wire kinds: chat (9), reaction/delete/edit (7/5/1009),
+            // and group-system rows (1210). Each becomes a surgical model update
+            // so neighbouring bubbles don't remount.
+            let kind = received.kind;
+            if !matches!(kind, 9 | 7 | 5 | 1009 | 1210) {
+                return;
+            }
+            let msg_id = received.message_id_hex.clone();
+            let target_id_for_reaction = reaction_target_ref(kind, &received.tags);
+            // This callback runs on the backend runtime. Read the window
+            // snapshot HERE — the event-loop closure must never touch sqlite.
+            let Some(b) = backend_cell.lock().unwrap().clone() else {
+                return;
+            };
+            let all = b
+                .messages(
+                    &group_hex_for_filter,
+                    Some(msg_window_for(&group_hex_for_filter)),
+                )
+                .unwrap_or_default();
+            apply_message_event(
+                kind,
+                msg_id,
+                target_id_for_reaction,
+                all,
+                weak.clone(),
+                b,
+                pending_state.clone(),
+                group_hex_for_filter.clone(),
+                chat_idx,
+            );
+        },
+        on_ready,
+    )
 }

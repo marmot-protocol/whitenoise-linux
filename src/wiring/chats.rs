@@ -375,6 +375,17 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                             if let Some(prev) = active_watcher.lock().unwrap().take() {
                                 prev.abort();
                             }
+                            // The ids the rebuild rendered. The watcher
+                            // reconciles its subscription snapshot against
+                            // these, re-surfacing a message that arrived
+                            // between the sqlite read above and subscribe.
+                            // Only for a normal (tail) open — a mention jump
+                            // shows a historical window, so pass `None`.
+                            let snapshot_ids = jump_message_id.is_none().then(|| {
+                                msgs.iter()
+                                    .map(|m| m.message_id_hex.clone())
+                                    .collect::<std::collections::HashSet<String>>()
+                            });
                             let handle = install_message_watcher(
                                 &b,
                                 ui.as_weak(),
@@ -383,6 +394,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                                 group_hex,
                                 current_idx,
                                 my_id,
+                                snapshot_ids,
                             );
                             *active_watcher.lock().unwrap() = Some(handle);
                         });
