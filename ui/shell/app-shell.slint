@@ -125,11 +125,10 @@ export component AppShell inherits Rectangle {
     // only while hovered, so a narrow window keeps the conversation wide. On a
     // roomy window it stays at its dragged width and never collapses.
     property <length> strip-w: 76px;
-    // The collapse-to-strip only makes sense for the chat list (compact
-    // avatars); a page's own sidebar (contacts / archive / settings) has no
-    // sensible strip form, so on those pages the card stays full width and the
-    // page detail simply takes the remaining room on a narrow window.
-    property <bool> collapsible: root.width < 860px && AppState.active-page == 0;
+    // On a narrow window the left card collapses to a slim strip on every page;
+    // each hosted sidebar shows a tidy compact form there (chat / contact /
+    // archive avatars, settings section icons) rather than a squeezed panel.
+    property <bool> collapsible: root.width < 860px;
     property <bool> narrow: root.width < 860px;
     property <bool> left-open: left-hover.has-hover;
     property <bool> strip: root.collapsible && !root.left-open;
@@ -436,7 +435,7 @@ export component AppShell inherits Rectangle {
                             width: 100%;
                             height: 100%;
                             background: transparent;
-                            window-width: 100000px;
+                            window-width: root.strip ? 200px : 100000px;
                         }
                         if AppState.active-page == 2: ArchivedSidebar {
                             x: 0;
@@ -444,7 +443,7 @@ export component AppShell inherits Rectangle {
                             width: 100%;
                             height: 100%;
                             background: transparent;
-                            window-width: 100000px;
+                            window-width: root.strip ? 200px : 100000px;
                             archives: AppState.archived-chats;
                             active-archived: AppState.active-archived;
                             archive-clicked(idx) => {
@@ -456,6 +455,7 @@ export component AppShell inherits Rectangle {
                             y: 0;
                             width: 100%;
                             height: 100%;
+                            compact: root.strip;
                             active-tab <=> AppState.settings-tab;
                         }
                     }
