@@ -96,16 +96,57 @@ export component MessagesArea inherits Rectangle {
     }
 
     // Computed "stick to bottom" position. We don't bind viewport-y directly
-    // to this (that would override manual scrolling) — instead the changed
-    // handlers below imperatively snap to it at the right moments. With the
-    // ListView, viewport-height is an estimate that refines as rows
-    // instantiate — each refinement re-fires `changed bottom-y`, so a snap to
-    // an estimated bottom converges to the true bottom in a frame or two.
+    // to this (that would override manual scrolling) — instead the auto-follow
+    // below imperatively snaps to it at the right moments.
     property <length> bottom-y: -max(0px, cs.viewport-height - cs.visible-height);
     // True when the user is within 40px of the bottom — used to auto-follow
     // incoming messages without yanking the scroll out from under them if
     // they've explicitly paged up to read history.
     property <bool> at-bottom: (-cs.viewport-y) >= (-root.bottom-y) - 40px;
+
+    // ── Auto-follow (stick-to-bottom) ──────────────────────────────────────
+    // The list is a virtualized ListView whose total height is an ESTIMATE
+    // that refines as rows instantiate, so `bottom-y` jitters while you scroll
+    // and whenever a row re-measures (a wrapped Markdown body, a reaction row).
+    // The follow must NOT chase every `bottom-y` change: doing so re-snapped
+    // the viewport on pure estimate noise (the idle "settling" twitch) and
+    // yanked back a reader who had nudged up inside the band. So it is driven
+    // by REAL content changes only, never by `bottom-y`:
+    //   - `following` latches whether the viewport is pinned to the bottom,
+    //     sampled from user scrolls (`changed vy`). Estimate refinement moves
+    //     `bottom-y`, not `vy`, so it never flips this — that is what removes
+    //     the twitch. Sampling on scroll (before an append lands) also avoids
+    //     reading a `bottom-y` already grown by the new row.
+    //   - a genuine append (send tick, or a new row while pinned) opens a
+    //     short `converge-frames` window that re-snaps to the refreshed bottom
+    //     for a few frames, so a tall new message lands fully in view before
+    //     the window closes. Outside that window nothing snaps on `bottom-y`.
+    property <length> vy: cs.viewport-y;
+    property <bool> following: true;
+    property <int> converge-frames: 0;
+    changed vy => {
+        root.following = root.at-bottom;
+    }
+    converge-timer := Timer {
+        interval: 16ms;
+        running: root.converge-frames > 0;
+        triggered => {
+            root.converge-frames -= 1;
+            // Skip while a jump/anchor owns the viewport (see below).
+            if (root.scroll-target-idx < 0) {
+                cs.viewport-y = root.bottom-y;
+            }
+        }
+    }
+    // Snap to the bottom now and converge onto the appended row's real height
+    // over the next few frames. Yields to an in-flight jump/anchor.
+    function follow-bottom() {
+        if (root.scroll-target-idx < 0) {
+            cs.viewport-y = root.bottom-y;
+            root.following = true;
+            root.converge-frames = 16; // ~256ms
+        }
+    }
 
     // ── Two-phase scroll targeting (jump-to-message + load-older anchor) ────
     // Phase 1: the timer scrolls near the target row using the index-fraction
@@ -136,6 +177,7 @@ export component MessagesArea inherits Rectangle {
             root.probe-gen += 1;
         }
     }
+
     function snap-to-row(row-y: length, row-h: length) {
         cs.viewport-y = -clamp(
             root.scroll-center ? (row-y + row-h / 2 - cs.visible-height / 2) : (row-y - 44px),
@@ -177,25 +219,24 @@ export component MessagesArea inherits Rectangle {
     property <int> msg-count: root.messages.length;
     changed msg-count => {
         if (root.anchor-armed && root.msg-count > root.anchor-old-len) {
+            // "Load earlier": content grew at the TOP — anchor, don't follow.
             root.anchor-armed = false;
             root.scroll-center = false;
             root.scroll-target-idx = root.msg-count - root.anchor-old-len;
             root.scroll-tries = 40;
+        } else if (root.following) {
+            // A new row appended at the bottom while we were pinned there —
+            // follow it. Reading `following` (latched on the last scroll)
+            // rather than a live `at-bottom` avoids the just-grown `bottom-y`.
+            root.follow-bottom();
         }
     }
 
     // Send-driven scroll: any tick bump (from Rust) snaps to bottom even if
-    // the user had paged up. This is "I just hit send, take me there."
+    // the user had paged up. This is "I just hit send / opened the chat, take
+    // me there."
     changed scroll-tick => {
-        cs.viewport-y = root.bottom-y;
-    }
-    // Content-driven scroll: when new rows append (the content estimate
-    // grows), only follow if we were already near the bottom. Prevents the
-    // scroll from yanking when a message arrives mid-history-reading.
-    changed bottom-y => {
-        if (root.at-bottom && root.scroll-target-idx < 0) {
-            cs.viewport-y = root.bottom-y;
-        }
+        root.follow-bottom();
     }
 
     cs := ListView {
