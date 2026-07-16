@@ -116,6 +116,48 @@ component IconBtn inherits Rectangle {
     }
 }
 
+// One avatar tile in a collapsed sidebar strip (contacts / archive), so those
+// SidePanel-based sidebars get a clean strip form controlled entirely by the
+// shell (their own hover-expand fights the shell's, so they are not mounted in
+// the strip state).
+component StripRow inherits Rectangle {
+    in property <color> ca;
+    in property <color> cb;
+    in property <string> initials;
+    in property <image> pic;
+    in property <bool> has-pic: false;
+    in property <bool> selected: false;
+    callback clicked;
+    height: 58px;
+    background: root.selected ? Palette.selected : (ta.has-hover ? Palette.hover : transparent);
+    border-radius: 12px * Theme.r-scale;
+    animate background { duration: Theme.hover-dur; }
+    if root.selected: Rectangle {
+        x: 0;
+        width: 3px;
+        height: 30px;
+        y: (parent.height - self.height) / 2;
+        border-radius: 1.5px;
+        background: Palette.mint;
+    }
+    Avatar {
+        size: 42px;
+        initials: root.initials;
+        color-a: root.ca;
+        color-b: root.cb;
+        picture: root.pic;
+        has-picture: root.has-pic;
+        font-size: Theme.fs(13px, 17px);
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+    }
+    ta := TouchArea {
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+
 export component AppShell inherits Rectangle {
     // The canvas the cards float on.
     background: Palette.canvas;
@@ -429,25 +471,61 @@ export component AppShell inherits Rectangle {
                                 }
                             }
                         }
-                        if AppState.active-page == 1: ContactsSidebar {
+                        if AppState.active-page == 1 && !root.strip: ContactsSidebar {
                             x: 0;
                             y: 0;
                             width: 100%;
                             height: 100%;
                             background: transparent;
-                            window-width: root.strip ? 200px : 100000px;
+                            window-width: 100000px;
                         }
-                        if AppState.active-page == 2: ArchivedSidebar {
+                        if AppState.active-page == 1 && root.strip: ListView {
+                            x: 0;
+                            y: 0;
+                            width: 100%;
+                            height: 100%;
+                            for c[idx] in AppState.contacts: StripRow {
+                                width: 100%;
+                                ca: c.av-a;
+                                cb: c.av-b;
+                                initials: c.av-initials;
+                                pic: c.picture;
+                                has-pic: c.has-picture;
+                                selected: idx == AppState.active-contact;
+                                clicked => {
+                                    AppState.contact-selected(idx);
+                                }
+                            }
+                        }
+                        if AppState.active-page == 2 && !root.strip: ArchivedSidebar {
                             x: 0;
                             y: 0;
                             width: 100%;
                             height: 100%;
                             background: transparent;
-                            window-width: root.strip ? 200px : 100000px;
+                            window-width: 100000px;
                             archives: AppState.archived-chats;
                             active-archived: AppState.active-archived;
                             archive-clicked(idx) => {
                                 AppState.archive-selected(idx);
+                            }
+                        }
+                        if AppState.active-page == 2 && root.strip: ListView {
+                            x: 0;
+                            y: 0;
+                            width: 100%;
+                            height: 100%;
+                            for a[idx] in AppState.archived-chats: StripRow {
+                                width: 100%;
+                                ca: a.av-a;
+                                cb: a.av-b;
+                                initials: a.av-initials;
+                                pic: a.picture;
+                                has-pic: a.has-picture;
+                                selected: idx == AppState.active-archived;
+                                clicked => {
+                                    AppState.archive-selected(idx);
+                                }
                             }
                         }
                         if AppState.active-page == 4: SettingsSidebar {
