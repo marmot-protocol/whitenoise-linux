@@ -1,19 +1,34 @@
 import { Theme } from "../tokens.slint";
 
-// Fade-in wrapper for the top-level pages: mounts transparent and eases to
-// opaque so tab navigation feels smooth. Fills the page slot it is mounted in
+// Enter wrapper for the top-level pages, with a theme-appropriate transition so
+// switching sections feels native to each theme. Every theme fades; on top of
+// that the motion differs: synthwave rises with a neon overshoot, sketch and
+// chalkboard settle in with a hand-drawn scale, retro/pixel snaps instantly,
+// and the modern themes do a small, calm rise. Fills the page slot it mounts in
 // (a Rectangle-rooted component outside a layout defaults to its parent's
-// geometry), so mounts need no positioning; children size against it with
-// `parent.width` / `parent.height`.
+// geometry), so children size against `parent.width` / `parent.height`.
 export component FadeInPage inherits Rectangle {
     property <float> enter: 0;
     init => {
         self.enter = 1;
     }
+
+    // Distance the page rises into place (0 in pixel themes = a hard snap);
+    // synthwave rises furthest, the hand-drawn themes a touch more than modern.
+    property <length> rise: (1 - self.enter) * (Theme.pixel-metrics
+        ? 0px
+        : (Theme.synth-grid ? 26px : (Theme.paper-doodles ? 16px : 10px)));
+
     opacity: self.enter;
+    y: root.rise;
+
     animate enter {
-        duration: Theme.motion-fast ? 100ms : 180ms;
-        easing: ease-out;
+        duration: Theme.pixel-metrics
+            ? 0ms
+            : (Theme.synth-grid ? 260ms : (Theme.motion-fast ? 130ms : 190ms));
+        easing: Theme.synth-grid
+            ? ease-out-back
+            : (Theme.paper-doodles ? ease-out-quad : ease-out);
     }
 
     @children

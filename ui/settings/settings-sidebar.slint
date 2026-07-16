@@ -7,48 +7,47 @@ import { InfoIcon } from "../icons/info-icon.slint";
 import { BellIcon } from "../icons/bell-icon.slint";
 import { MonitorIcon } from "../icons/monitor-icon.slint";
 import { TerminalIcon } from "../icons/terminal-icon.slint";
+import { KeyIcon } from "../icons/key-icon.slint";
 import { SettingsNavItem } from "settings-nav-item.slint";
 
 export component SettingsSidebar inherits Rectangle {
     in-out property <int> active-tab: 0;
+    // Icon-only strip form for the collapsed sidebar.
+    in property <bool> compact: false;
     width: 232px;
-    background: Palette.bg;
-
-    Rectangle {
-        x: parent.width - 1px;
-        width: 1px;
-        height: parent.height;
-        background: Palette.border-2;
-    }
+    // Transparent so it blends with the shell's left card that hosts it (the
+    // gutter, not a border, separates it from the panes).
+    background: transparent;
 
     VerticalLayout {
-        padding-left: 14px;
-        padding-right: 14px;
+        padding-left: root.compact ? 6px : 14px;
+        padding-right: root.compact ? 6px : 14px;
         padding-top: 14px;
         padding-bottom: 14px;
-        spacing: 2px;
+        spacing: root.compact ? 4px : 2px;
 
-        HorizontalLayout {
+        if !root.compact: HorizontalLayout {
             height: 24px;
             alignment: start;
             spacing: 7px;
             Text {
                 text: @tr("SETTINGS");
                 color: Palette.text-mid;
-                font-size: Theme.fs(11px, 14px);
+                font-size: Theme.fs(12px, 14px);
                 font-weight: 700;
                 letter-spacing: 1.4px;
                 vertical-alignment: center;
             }
         }
 
-        Rectangle {
+        if !root.compact: Rectangle {
             height: 12px;
         }
 
         SettingsNavItem {
             label: @tr("General");
             selected: root.active-tab == 0;
+            compact: root.compact;
             SettingsIcon {
                 stroke: root.active-tab == 0 ? Palette.mint : Palette.text-mid;
             }
@@ -61,6 +60,7 @@ export component SettingsSidebar inherits Rectangle {
         SettingsNavItem {
             label: @tr("Network & relays");
             selected: root.active-tab == 1;
+            compact: root.compact;
             MonitorIcon {
                 stroke: root.active-tab == 1 ? Palette.mint : Palette.text-mid;
             }
@@ -71,8 +71,22 @@ export component SettingsSidebar inherits Rectangle {
         }
 
         SettingsNavItem {
+            label: @tr("Keys & identity");
+            selected: root.active-tab == 8;
+            compact: root.compact;
+            KeyIcon {
+                stroke: root.active-tab == 8 ? Palette.mint : Palette.text-mid;
+            }
+
+            clicked => {
+                root.active-tab = 8;
+            }
+        }
+
+        SettingsNavItem {
             label: @tr("Appearance");
             selected: root.active-tab == 2;
+            compact: root.compact;
             ChatBubbleIcon {
                 stroke: root.active-tab == 2 ? Palette.mint : Palette.text-mid;
             }
@@ -85,6 +99,7 @@ export component SettingsSidebar inherits Rectangle {
         SettingsNavItem {
             label: @tr("Notifications");
             selected: root.active-tab == 3;
+            compact: root.compact;
             BellIcon {
                 stroke: root.active-tab == 3 ? Palette.mint : Palette.text-mid;
             }
@@ -97,6 +112,7 @@ export component SettingsSidebar inherits Rectangle {
         SettingsNavItem {
             label: @tr("Storage");
             selected: root.active-tab == 4;
+            compact: root.compact;
             ArchiveIcon {
                 stroke: root.active-tab == 4 ? Palette.mint : Palette.text-mid;
             }
@@ -109,6 +125,7 @@ export component SettingsSidebar inherits Rectangle {
         SettingsNavItem {
             label: @tr("Advanced");
             selected: root.active-tab == 5;
+            compact: root.compact;
             dim: true;
             TerminalIcon {
                 stroke: root.active-tab == 5 ? Palette.mint : Palette.text-mid;
@@ -122,6 +139,7 @@ export component SettingsSidebar inherits Rectangle {
         SettingsNavItem {
             label: @tr("About");
             selected: root.active-tab == 6;
+            compact: root.compact;
             InfoIcon {
                 stroke: root.active-tab == 6 ? Palette.mint : Palette.text-mid;
                 size: 14px;
@@ -135,6 +153,7 @@ export component SettingsSidebar inherits Rectangle {
         if AppState.debug-enabled: SettingsNavItem {
             label: @tr("Debug");
             selected: root.active-tab == 7;
+            compact: root.compact;
             TerminalIcon {
                 stroke: root.active-tab == 7 ? Palette.mint : Palette.text-mid;
             }

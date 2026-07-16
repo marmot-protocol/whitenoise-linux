@@ -44,6 +44,19 @@ export global AppState {
     callback mention-inbox-opened();
     callback mention-inbox-selected(string, string);
     in-out property <bool> outgoing-on-right: true;
+    // Chat-shell bento columns: the user-dragged widths of the left chat-bar
+    // and right info columns, pushed from Rust (settings.rs) and echoed back on
+    // drag via `shell-widths-changed` so the choice persists across restarts.
+    in-out property <length> shell-chats-width: 340px;
+    in-out property <length> shell-info-width: 292px;
+    callback shell-widths-changed(length, length);
+    // Opt-in centred conversation reading measure (Appearance setting).
+    in-out property <bool> shell-centered: false;
+    callback shell-centered-toggled(bool);
+    // Active Settings tab (0=General…7=Debug). Hoisted to AppState so the shell
+    // can host the settings sidebar in the left card while the pane fills the
+    // conversation card.
+    in-out property <int> settings-tab: 0;
     // Active theme id, set from Rust (mapped from the persisted mode name via
     // `THEME_MODES` in state.rs): 0=dark, 1=light, 2=retro, 3=terminal,
     // 4=crayon, 5=synthwave, 6=chalkboard, 7=amoled. Folded straight onto

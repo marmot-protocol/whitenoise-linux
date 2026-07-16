@@ -34,7 +34,9 @@ export component ChatListItem inherits Rectangle {
     // avatar. The avatar keeps the exact spot it has when expanded.
     in property <bool> compact: false;
 
-    height: 64px;
+    // Content-driven so a wrapping preview can grow the row; a short preview
+    // keeps the standard single-line height.
+    min-height: 64px;
     background: root.selected ? Palette.selected : (touch.has-hover ? Palette.hover : transparent);
     border-radius: (8px) * Theme.r-scale;
     border-width: Theme.selected-inverts-text && root.selected ? Theme.border-w : (root.selected && !Theme.selected-inverts-text ? 1px : 0px);
@@ -132,14 +134,22 @@ export component ChatListItem inherits Rectangle {
 
             HorizontalLayout {
                 spacing: 6px;
-                Text {
-                    text: root.preview;
-                    color: Theme.selected-inverts-text && root.selected ? Palette.bubble-out-fg : Palette.text-lo;
-                    font-size: Theme.fs(11px, 16px);
-                    font-family: Theme.font;
+                // Wrap the preview but hard-cap it at three lines. Slint's Text
+                // ignores max-height, so clip inside a height-capped box.
+                Rectangle {
                     horizontal-stretch: 1;
-                    overflow: elide;
-                    vertical-alignment: center;
+                    clip: true;
+                    max-height: Theme.fs(11px, 16px) * 3.75;
+                    Text {
+                        text: root.preview;
+                        color: Theme.selected-inverts-text && root.selected ? Palette.bubble-out-fg : Palette.text-lo;
+                        font-size: Theme.fs(11px, 16px);
+                        font-family: Theme.font;
+                        width: 100%;
+                        y: 0;
+                        wrap: word-wrap;
+                        overflow: elide;
+                    }
                 }
 
                 if root.badge != "": UnreadBadge {

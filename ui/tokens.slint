@@ -257,6 +257,12 @@ export global Theme {
 
 export global Palette {
     out property <color> bg:        Theme.c.bg;
+    // Bento chat-shell surfaces: the canvas is the window background and the
+    // cards use the theme's own elevated surface, so every theme lifts the
+    // cards correctly (near-black in amoled, white in light, a subtle rise in
+    // dark) instead of a fixed nudge toward white that greyed amoled out.
+    out property <color> canvas:      Theme.c.bg;
+    out property <color> card:        Theme.c.elevated;
     out property <color> panel:     Theme.c.panel;
     out property <color> panel-2:   Theme.c.panel-2;
     out property <color> rail:      Theme.c.rail;

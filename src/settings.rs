@@ -104,6 +104,17 @@ pub struct Settings {
     /// the file (not account-attributed on disk) since it predates account scoping.
     #[serde(default, rename = "hidden_messages")]
     pub hidden_messages_legacy: BTreeSet<String>,
+    /// Chat-shell layout: the user-chosen widths (logical px) of the left
+    /// chat-bar column and the right info column, remembered across restarts as
+    /// the bento columns are dragged. Local-only UI prefs.
+    #[serde(default = "default_shell_chats_width")]
+    pub shell_chats_width: f32,
+    #[serde(default = "default_shell_info_width")]
+    pub shell_info_width: f32,
+    /// Chat-shell: constrain the open conversation to a centred reading measure
+    /// instead of filling the column. Opt-in, off by default (Appearance).
+    #[serde(default)]
+    pub centered_conversation: bool,
 }
 
 impl Settings {
@@ -158,6 +169,14 @@ fn default_outgoing_on_right() -> bool {
 
 fn default_zoom() -> f32 {
     1.0
+}
+
+fn default_shell_chats_width() -> f32 {
+    340.0
+}
+
+fn default_shell_info_width() -> f32 {
+    292.0
 }
 
 fn default_time_format() -> String {

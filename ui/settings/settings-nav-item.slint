@@ -4,27 +4,29 @@ export component SettingsNavItem inherits Rectangle {
     in property <string> label;
     in property <bool> selected: false;
     in property <bool> dim: false;
+    // Icon-only tile for the collapsed sidebar strip.
+    in property <bool> compact: false;
     callback clicked;
 
-    height: 30px;
-    border-radius: (5px) * Theme.r-scale;
+    height: root.compact ? 42px : 30px;
+    border-radius: (root.compact ? 10px : 5px) * Theme.r-scale;
     background: root.selected ? Palette.selected : (touch.has-hover ? Palette.hover : transparent);
     animate background { duration: 80ms; }
 
     HorizontalLayout {
-        padding-left: 10px;
-        padding-right: 10px;
-        spacing: 9px;
-        alignment: start;
+        padding-left: root.compact ? 0px : 10px;
+        padding-right: root.compact ? 0px : 10px;
+        spacing: root.compact ? 0px : 9px;
+        alignment: root.compact ? center : start;
         VerticalLayout {
             alignment: center;
             @children
         }
 
-        Text {
+        if !root.compact: Text {
             text: root.label;
             color: root.dim ? Palette.text-mid : (Theme.selected-inverts-text && root.selected ? Palette.bubble-out-fg : Palette.text-hi);
-            font-size: Theme.fs(12px, 16px);
+            font-size: Theme.fs(13px, 16px);
             font-weight: root.selected ? 700 : 500;
             vertical-alignment: center;
         }

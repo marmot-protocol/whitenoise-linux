@@ -18,7 +18,9 @@ export component MainPane inherits Rectangle {
     property <ChatMeta> chat: AppState.chats[AppState.active-chat];
 
     horizontal-stretch: 1;
-    background: Palette.bg;
+    // Sits inside the shell's conversation card, so it takes the elevated card
+    // surface rather than the canvas bg.
+    background: Palette.card;
 
     HorizontalLayout {
         spacing: 0;
@@ -41,9 +43,21 @@ export component MainPane inherits Rectangle {
                 label: root.chat.is-chat-request ? @tr("CHAT REQUEST") + " · " + root.chat.session-time : "MLS · " + @tr("SESSION ESTABLISHED") + " · " + root.chat.session-time;
             }
 
-            MessagesArea {
+            // Full-width thread (default), or the opt-in centred reading
+            // measure (Appearance → Centred conversation).
+            if !AppState.shell-centered: MessagesArea {
                 vertical-stretch: 1;
                 available-w: parent.width;
+            }
+            if AppState.shell-centered: Rectangle {
+                vertical-stretch: 1;
+                HorizontalLayout {
+                    alignment: center;
+                    MessagesArea {
+                        width: 760px;
+                        available-w: 760px;
+                    }
+                }
             }
 
             composer := Composer { }

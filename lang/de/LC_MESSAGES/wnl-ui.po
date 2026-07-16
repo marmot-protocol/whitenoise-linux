@@ -551,6 +551,10 @@ msgctxt "ReplyBanner"
 msgid "Cancel reply"
 msgstr "Antwort abbrechen"
 
+msgctxt "AppearancePane"
+msgid "Centred conversation"
+msgstr "Zentrierte Unterhaltung"
+
 msgctxt "ThemePicker"
 msgid "Chalkboard"
 msgstr ""
@@ -1319,6 +1323,10 @@ msgctxt "StoragePane"
 msgid "KEYS & BACKUPS"
 msgstr "SCHLÜSSEL & BACKUPS"
 
+msgctxt "AppearancePane"
+msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
+msgstr "Hält die geöffnete Unterhaltung auf einer angenehmen Lesebreite, statt die volle Breite auszufüllen."
+
 msgctxt "ContactDetail"
 msgid "Key package"
 msgstr "Schlüsselpaket"
@@ -1336,6 +1344,10 @@ msgctxt "KeysPage"
 msgid "Keys & identity"
 msgstr "Schlüssel & Identität"
 
+msgctxt "SettingsSidebar"
+msgid "Keys & identity"
+msgstr "Schlüssel & Identität"
+
 msgctxt "GeneralPane"
 msgid "LANGUAGE"
 msgstr "SPRACHE"
@@ -1343,6 +1355,10 @@ msgstr "SPRACHE"
 msgctxt "ArchivedDetail"
 msgid "LAST ACTIVITY"
 msgstr "LETZTE AKTIVITÄT"
+
+msgctxt "AppearancePane"
+msgid "LAYOUT"
+msgstr "LAYOUT"
 
 msgctxt "KeysPage"
 msgid "LINKED DEVICES"
@@ -1542,6 +1558,10 @@ msgstr "SPITZNAME"
 msgctxt "ProfilePage"
 msgid "NIP-05"
 msgstr ""
+
+msgctxt "AppShell"
+msgid "NO RELAYS"
+msgstr "KEINE RELAYS"
 
 #, fuzzy
 msgctxt "ChatListPanel"
@@ -1957,6 +1977,10 @@ msgctxt "DebugPane"
 msgid "RAW EVENTS"
 msgstr ""
 
+msgctxt "AppShell"
+msgid "RELAYS"
+msgstr "RELAYS"
+
 #, fuzzy
 msgctxt "ChatListPanel"
 msgid "RELAYS"
@@ -2213,6 +2237,10 @@ msgctxt "GetStartedScreen"
 msgid "SUGGESTED"
 msgstr "VORGESCHLAGEN"
 
+msgctxt "AppShell"
+msgid "SYNCED"
+msgstr "SYNCHRONISIERT"
+
 msgctxt "ChatListPanel"
 msgid "SYNCED"
 msgstr "SYNCHRONISIERT"
@@ -2220,6 +2248,10 @@ msgstr "SYNCHRONISIERT"
 msgctxt "StatusBar"
 msgid "SYNCED"
 msgstr "SYNCHRONISIERT"
+
+msgctxt "AppShell"
+msgid "SYNCING…"
+msgstr "SYNCHRONISIERE…"
 
 msgctxt "ChatListPanel"
 msgid "SYNCING…"
@@ -2332,6 +2364,10 @@ msgstr "Kontakte durchsuchen…"
 msgctxt "ChatSearchBar"
 msgid "Search in conversation…"
 msgstr "In der Unterhaltung suchen…"
+
+msgctxt "AppShell"
+msgid "Search messages…"
+msgstr "Nachrichten durchsuchen…"
 
 msgctxt "GlobalSearchModal"
 msgid "Searching…"
