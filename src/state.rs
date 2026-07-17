@@ -868,6 +868,8 @@ pub(crate) enum ErrorOp {
     Delete,
     /// No dedicated copy yet — maps to the generic message.
     Forward,
+    /// No dedicated copy yet — maps to the generic message.
+    RemoveAccount,
 }
 
 /// Map a low-level backend error into approachable, action-oriented UI copy.
@@ -941,7 +943,7 @@ pub(crate) fn friendly_error(op: ErrorOp, e: &anyhow::Error) -> String {
         ErrorOp::GroupImage => copy.group_image,
         ErrorOp::SaveProfile => copy.save_profile,
         ErrorOp::UploadPicture => copy.upload_picture,
-        ErrorOp::Delete | ErrorOp::Forward => copy.generic,
+        ErrorOp::Delete | ErrorOp::Forward | ErrorOp::RemoveAccount => copy.generic,
     }
 }
 

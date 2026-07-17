@@ -69,16 +69,25 @@ export component ModalHost inherits Rectangle {
             }
         }
 
-        if AppState.show-account-switcher: AccountSwitcherModal {
+        if AppState.show-account-switcher: switcher := AccountSwitcherModal {
             accounts: AppState.accounts;
             select(id) => {
                 AppState.switch-account(id);
             }
+            remove-account(id) => {
+                AppState.remove-account(id);
+            }
             add-account => {
                 AppState.add-account-requested();
             }
+            // While the remove confirm is up, Esc / backdrop / Cancel step back
+            // to the account's detail card rather than closing the switcher.
             dismissed => {
-                AppState.show-account-switcher = false;
+                if (switcher.confirming) {
+                    switcher.confirming = false;
+                } else {
+                    AppState.show-account-switcher = false;
+                }
             }
         }
 

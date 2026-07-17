@@ -23,6 +23,7 @@ import { PeopleIcon } from "../icons/people-icon.slint";
 import { ArchiveIcon } from "../icons/archive-icon.slint";
 import { PlusIcon } from "../icons/plus-icon.slint";
 import { SettingsIcon } from "../icons/settings-icon.slint";
+import { AccountsIcon } from "../icons/accounts-icon.slint";
 import { SearchIcon } from "../icons/search-icon.slint";
 import { MentionsIcon } from "mentions-icon.slint";
 import { ChatListEntry } from "../chat-list/chat-list-entry.slint";
@@ -314,6 +315,27 @@ export component AppShell inherits Rectangle {
                                 picture: AppState.my-av-picture;
                                 has-picture: AppState.my-av-has-picture;
                                 font-size: Theme.fs(12px, 16px);
+                                x: (parent.width - self.width) / 2;
+                                y: (parent.height - self.height) / 2;
+                            }
+                        }
+                        // Account switcher, beside the avatar it acts on. The
+                        // old left rail carried this entry; the shell dropped it
+                        // when it replaced the rail, leaving the switcher (and
+                        // everything in it) unreachable.
+                        IconBtn {
+                            y: (parent.height - self.height) / 2;
+                            accessible-role: button;
+                            accessible-label: @tr("Accounts");
+                            accessible-action-default => {
+                                AppState.account-switcher-requested();
+                            }
+                            clicked => {
+                                AppState.account-switcher-requested();
+                            }
+                            AccountsIcon {
+                                stroke: Palette.text-mid;
+                                fill: Palette.card;
                                 x: (parent.width - self.width) / 2;
                                 y: (parent.height - self.height) / 2;
                             }
