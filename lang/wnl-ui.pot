@@ -142,7 +142,11 @@ msgctxt "ContactDetail"
 msgid "ACTIONS"
 msgstr ""
 
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherDetail"
+msgid "ACTIVE"
+msgstr ""
+
+msgctxt "AccountSwitcherList"
 msgid "ACTIVE"
 msgstr ""
 
@@ -206,7 +210,7 @@ msgctxt "AccountSwitcherModal"
 msgid "Account"
 msgstr ""
 
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherList"
 msgid "Account details"
 msgstr ""
 
@@ -320,7 +324,7 @@ msgctxt "NotificationsPane"
 msgid "Alert me about messages in chats I'm not viewing."
 msgstr ""
 
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherDetail"
 msgid "All accounts"
 msgstr ""
 
@@ -393,7 +397,7 @@ msgctxt "LoginScreen"
 msgid "Back"
 msgstr ""
 
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherConfirm"
 msgid "Back it up first if you'll want to sign in again — this can't be undone."
 msgstr ""
 
@@ -1280,11 +1284,11 @@ msgctxt "ArchivedDetail"
 msgid "It stays end-to-end encrypted. Unarchiving returns it to your main list and resumes notifications."
 msgstr ""
 
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherConfirm"
 msgid "Its background session ends and it leaves the account list."
 msgstr ""
 
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherConfirm"
 msgid "Its secret key is erased from this device's vault."
 msgstr ""
 
@@ -1440,7 +1444,7 @@ msgctxt "StoragePane"
 msgid "Location"
 msgstr ""
 
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherDetail"
 msgid "Log out & remove"
 msgstr ""
 
@@ -2048,7 +2052,7 @@ msgctxt "GroupMemberMenu"
 msgid "Remove from group"
 msgstr ""
 
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherDetail"
 msgid "Remove from this device"
 msgstr ""
 
@@ -2421,7 +2425,7 @@ msgctxt "LoginScreen"
 msgid "Sign in to your Nostr identity"
 msgstr ""
 
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherDetail"
 msgid "Sign this account out here and erase its secret key from your vault. Your other accounts stay signed in."
 msgstr ""
 
@@ -2489,7 +2493,7 @@ msgctxt "weekday"
 msgid "Sun"
 msgstr ""
 
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherDetail"
 msgid "Switch to this account"
 msgstr ""
 

@@ -139,7 +139,12 @@ msgid "ACTIONS"
 msgstr "操作"
 
 #, fuzzy
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherDetail"
+msgid "ACTIVE"
+msgstr "操作"
+
+#, fuzzy
+msgctxt "AccountSwitcherList"
 msgid "ACTIVE"
 msgstr "操作"
 
@@ -208,7 +213,7 @@ msgid "Account"
 msgstr "アカウント"
 
 #, fuzzy
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherList"
 msgid "Account details"
 msgstr "アカウント"
 
@@ -334,7 +339,7 @@ msgid "Alert me about messages in chats I'm not viewing."
 msgstr "表示していないチャットのメッセージを通知します。"
 
 #, fuzzy
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherDetail"
 msgid "All accounts"
 msgstr "アカウント"
 
@@ -408,7 +413,7 @@ msgctxt "LoginScreen"
 msgid "Back"
 msgstr "戻る"
 
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherConfirm"
 msgid "Back it up first if you'll want to sign in again — this can't be undone."
 msgstr ""
 
@@ -1341,12 +1346,12 @@ msgctxt "ArchivedDetail"
 msgid "It stays end-to-end encrypted. Unarchiving returns it to your main list and resumes notifications."
 msgstr "エンドツーエンド暗号化は維持されます。アーカイブ解除するとメインリストに戻り、通知が再開されます。"
 
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherConfirm"
 msgid "Its background session ends and it leaves the account list."
 msgstr ""
 
 #, fuzzy
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherConfirm"
 msgid "Its secret key is erased from this device's vault."
 msgstr "このアカウントの秘密鍵はこの端末に保存されていません。"
 
@@ -1511,7 +1516,7 @@ msgctxt "StoragePane"
 msgid "Location"
 msgstr "保存場所"
 
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherDetail"
 msgid "Log out & remove"
 msgstr ""
 
@@ -2151,7 +2156,7 @@ msgid "Remove from group"
 msgstr "グループから削除"
 
 #, fuzzy
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherDetail"
 msgid "Remove from this device"
 msgstr "このリレーを削除しますか？"
 
@@ -2544,7 +2549,7 @@ msgctxt "LoginScreen"
 msgid "Sign in to your Nostr identity"
 msgstr "Nostr ID でサインイン"
 
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherDetail"
 msgid "Sign this account out here and erase its secret key from your vault. Your other accounts stay signed in."
 msgstr ""
 
@@ -2618,7 +2623,7 @@ msgctxt "weekday"
 msgid "Sun"
 msgstr "日曜日"
 
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherDetail"
 msgid "Switch to this account"
 msgstr ""
 

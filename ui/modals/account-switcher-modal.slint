@@ -1,11 +1,8 @@
-import { Palette, Theme, AccountEntry } from "../tokens.slint";
+import { AccountEntry } from "../tokens.slint";
 import { Modal } from "modal.slint";
-import { Avatar } from "../primitives/avatar.slint";
-import { FocusCaret } from "../primitives/focus-caret.slint";
-import { Button } from "../primitives/button.slint";
-import { ChevronRightIcon } from "../icons/chevron-right-icon.slint";
-import { CopyIcon } from "../icons/copy-icon.slint";
-import { TrashIcon } from "../icons/trash-icon.slint";
+import { AccountSwitcherConfirm } from "account-switcher-confirm.slint";
+import { AccountSwitcherDetail } from "account-switcher-detail.slint";
+import { AccountSwitcherList } from "account-switcher-list.slint";
 
 // Account switcher — converged direction ("Account manager" + confirm). The
 // flat switcher becomes a two-level surface: a row tap switches, a trailing "›"
@@ -13,6 +10,11 @@ import { TrashIcon } from "../icons/trash-icon.slint";
 // switch action, and a fenced danger zone). Removing from the danger zone opens
 // the same in-card confirm phase A and B used — footer + body swap to spell out
 // exactly what leaves the device before anything is erased.
+//
+// This component owns the phase state, the Modal title/subtitle/footer, and the
+// one FocusScope over all three phases; each phase's body lives in its own file
+// (`account-switcher-list`, `-detail`, `-confirm`) and reports intent back
+// through callbacks.
 export component AccountSwitcherModal inherits Modal {
     callback select(string);   // account-id hex
     callback add-account();
@@ -104,392 +106,42 @@ export component AccountSwitcherModal inherits Modal {
             spacing: 14px;
 
             // ── Confirm phase (shared with A and B) ───────────────────────────
-            if root.confirming: VerticalLayout {
-                spacing: 10px;
-
-                Rectangle {
-                    height: 52px;
-                    border-radius: (10px) * Theme.r-scale;
-                    background: Palette.danger-soft;
-                    border-width: Theme.border-w;
-                    border-color: Palette.danger-border;
-                    HorizontalLayout {
-                        padding-left: 12px;
-                        padding-right: 14px;
-                        spacing: 12px;
-                        VerticalLayout {
-                            alignment: center;
-                            Avatar {
-                                size: 34px;
-                                initials: root.accounts[root.detail-idx].av-initials;
-                                color-a: root.accounts[root.detail-idx].av-a;
-                                color-b: root.accounts[root.detail-idx].av-b;
-                                picture: root.accounts[root.detail-idx].picture;
-                                has-picture: root.accounts[root.detail-idx].has-picture;
-                            }
-                        }
-
-                        VerticalLayout {
-                            alignment: center;
-                            spacing: 2px;
-                            horizontal-stretch: 1;
-                            Text {
-                                text: root.accounts[root.detail-idx].name;
-                                color: Palette.text-hi;
-                                font-size: Theme.fs(12px, 16px);
-                                font-weight: 700;
-                                font-family: Theme.font;
-                                overflow: elide;
-                            }
-
-                            Text {
-                                text: root.accounts[root.detail-idx].npub-short;
-                                color: Palette.text-lo;
-                                font-size: Theme.fs(10px, 14px);
-                                font-family: Theme.font;
-                                overflow: elide;
-                            }
-                        }
-                    }
-                }
-
-                for line in [
-                    @tr("Its secret key is erased from this device's vault."),
-                    @tr("Its background session ends and it leaves the account list."),
-                    @tr("Back it up first if you'll want to sign in again — this can't be undone."),
-                ]: Text {
-                    text: "•  " + line;
-                    color: Palette.text-mid;
-                    font-size: Theme.fs(11px, 14px);
-                    font-family: Theme.font;
-                    wrap: word-wrap;
-                }
+            if root.confirming: AccountSwitcherConfirm {
+                account: root.accounts[root.detail-idx];
             }
 
             // ── Detail card ───────────────────────────────────────────────────
-            if root.in-detail && !root.confirming: VerticalLayout {
-                spacing: 14px;
-
-                // Back to the list.
-                HorizontalLayout {
-                    alignment: start;
-                    Rectangle {
-                        width: back-row.preferred-width + 16px;
-                        height: 26px;
-                        border-radius: (7px) * Theme.r-scale;
-                        background: back-touch.has-hover ? Palette.panel-2 : transparent;
-                        animate background { duration: Theme.hover-dur; }
-                        back-row := HorizontalLayout {
-                            padding-left: 8px;
-                            padding-right: 10px;
-                            spacing: 5px;
-                            alignment: center;
-                            Text {
-                                text: "‹";
-                                color: Palette.text-mid;
-                                font-size: Theme.fs(15px, 18px);
-                                font-family: Theme.font;
-                                vertical-alignment: center;
-                            }
-
-                            Text {
-                                text: @tr("All accounts");
-                                color: Palette.text-mid;
-                                font-size: Theme.fs(11px, 14px);
-                                font-weight: 700;
-                                font-family: Theme.font;
-                                vertical-alignment: center;
-                            }
-                        }
-
-                        back-touch := TouchArea {
-                            mouse-cursor: pointer;
-                            clicked => {
-                                root.detail-idx = -1;
-                            }
-                        }
-                    }
+            if root.in-detail && !root.confirming: AccountSwitcherDetail {
+                account: root.accounts[root.detail-idx];
+                back => {
+                    root.detail-idx = -1;
                 }
-
-                // Identity header.
-                HorizontalLayout {
-                    spacing: 14px;
-                    Avatar {
-                        size: 54px;
-                        initials: root.accounts[root.detail-idx].av-initials;
-                        color-a: root.accounts[root.detail-idx].av-a;
-                        color-b: root.accounts[root.detail-idx].av-b;
-                        picture: root.accounts[root.detail-idx].picture;
-                        has-picture: root.accounts[root.detail-idx].has-picture;
-                    }
-
-                    VerticalLayout {
-                        alignment: center;
-                        spacing: 4px;
-                        horizontal-stretch: 1;
-                        HorizontalLayout {
-                            spacing: 8px;
-                            alignment: start;
-                            Text {
-                                text: root.accounts[root.detail-idx].name;
-                                color: Palette.text-hi;
-                                font-size: Theme.fs(16px, 20px);
-                                font-weight: 800;
-                                font-family: Theme.font;
-                                overflow: elide;
-                            }
-
-                            if root.accounts[root.detail-idx].active: VerticalLayout {
-                                alignment: center;
-                                Rectangle {
-                                    width: active-pill.preferred-width + 16px;
-                                    height: 18px;
-                                    border-radius: 9px;
-                                    background: Palette.mint-surface;
-                                    active-pill := HorizontalLayout {
-                                        padding-left: 8px;
-                                        padding-right: 8px;
-                                        alignment: center;
-                                        Text {
-                                            text: @tr("ACTIVE");
-                                            color: Palette.mint;
-                                            font-size: Theme.fs(8px, 11px);
-                                            font-weight: 800;
-                                            font-family: Theme.font;
-                                            letter-spacing: 1.0px;
-                                            vertical-alignment: center;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        Text {
-                            text: root.accounts[root.detail-idx].npub-short;
-                            color: Palette.text-lo;
-                            font-size: Theme.fs(11px, 14px);
-                            font-family: Theme.font;
-                            overflow: elide;
-                        }
-                    }
+                switch-account => {
+                    root.select(root.accounts[root.detail-idx].id);
                 }
-
-                // Public key row with copy.
-                Rectangle {
-                    height: 40px;
-                    border-radius: (8px) * Theme.r-scale;
-                    background: Palette.field;
-                    border-width: Theme.border-w;
-                    border-color: Palette.field-border;
-                    HorizontalLayout {
-                        padding-left: 14px;
-                        padding-right: 8px;
-                        spacing: 10px;
-                        Text {
-                            text: root.accounts[root.detail-idx].npub-short;
-                            color: Palette.text-mid;
-                            font-size: Theme.fs(11px, 14px);
-                            font-family: Theme.font;
-                            vertical-alignment: center;
-                            horizontal-stretch: 1;
-                            overflow: elide;
-                        }
-
-                        VerticalLayout {
-                            alignment: center;
-                            Rectangle {
-                                width: 30px;
-                                height: 30px;
-                                border-radius: (7px) * Theme.r-scale;
-                                background: copy-touch.has-hover ? Palette.panel-2 : transparent;
-                                animate background { duration: Theme.hover-dur; }
-                                CopyIcon {
-                                    stroke: Palette.text-mid;
-                                }
-
-                                copy-touch := TouchArea {
-                                    mouse-cursor: pointer;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Switch action (hidden when this account is already active).
-                if !root.accounts[root.detail-idx].active: Button {
-                    label: @tr("Switch to this account");
-                    button-height: 36px;
-                    clicked => {
-                        root.select(root.accounts[root.detail-idx].id);
-                    }
-                }
-
-                // ── Danger zone — a short context line + the remove button ────
-                Rectangle {
-                    border-radius: (11px) * Theme.r-scale;
-                    background: Palette.danger-soft;
-                    border-width: Theme.border-w;
-                    border-color: Palette.danger-border;
-                    VerticalLayout {
-                        padding: 14px;
-                        spacing: 10px;
-                        HorizontalLayout {
-                            spacing: 8px;
-                            alignment: start;
-                            VerticalLayout {
-                                alignment: center;
-                                TrashIcon {
-                                    stroke: Palette.danger;
-                                }
-                            }
-
-                            Text {
-                                text: @tr("Remove from this device");
-                                color: Palette.danger;
-                                font-size: Theme.fs(12px, 16px);
-                                font-weight: 800;
-                                font-family: Theme.font;
-                                vertical-alignment: center;
-                                horizontal-stretch: 1;
-                            }
-                        }
-
-                        Text {
-                            text: @tr("Sign this account out here and erase its secret key from your vault. Your other accounts stay signed in.");
-                            color: Palette.text-mid;
-                            font-size: Theme.fs(11px, 14px);
-                            font-family: Theme.font;
-                            wrap: word-wrap;
-                        }
-
-                        Button {
-                            label: @tr("Log out & remove");
-                            button-height: 34px;
-                            bg-color: Palette.danger;
-                            outline: Palette.danger;
-                            hover-bg: Palette.danger.brighter(0.12);
-                            hover-outline: Palette.danger.brighter(0.12);
-                            fg: Palette.bubble-out-fg;
-                            clicked => {
-                                root.confirming = true;
-                            }
-                        }
-                    }
+                arm-remove => {
+                    root.confirming = true;
                 }
             }
 
             // ── List ──────────────────────────────────────────────────────────
-            if !root.in-detail: VerticalLayout {
-                spacing: 6px;
-                for acc[i] in root.accounts: Rectangle {
-                    property <bool> keyboard-focused: nav.has-focus && root.focus-idx == i;
-
-                    init => {
-                        if (!root.cursor-set && acc.active) {
-                            root.focus-idx = i;
-                            root.cursor-set = true;
-                        }
-                    }
-
-                    height: 56px;
-                    border-radius: (10px) * Theme.r-scale;
-                    background: keyboard-focused ? Palette.hover : (acc.active ? Palette.selected : (row-touch.has-hover || chev.has-hover ? Palette.hover : transparent));
-                    border-width: acc.active ? Theme.border-w : 0px;
-                    border-color: Palette.mint;
-                    animate background {
-                        duration: Theme.hover-dur;
-                        easing: ease-out;
-                    }
-
-                    if keyboard-focused: FocusCaret {
-                        x: 0;
-                        y: (parent.height - self.height) / 2;
-                        height: 26px;
-                    }
-
-                    row-touch := TouchArea {
-                        mouse-cursor: pointer;
-                        clicked => {
-                            root.focus-idx = i;
-                            root.select(acc.id);
-                        }
-
-                        HorizontalLayout {
-                            padding-left: 10px;
-                            padding-right: 8px;
-                            spacing: 12px;
-
-                            VerticalLayout {
-                                alignment: center;
-                                Avatar {
-                                    size: 36px;
-                                    initials: acc.av-initials;
-                                    color-a: acc.av-a;
-                                    color-b: acc.av-b;
-                                    picture: acc.picture;
-                                    has-picture: acc.has-picture;
-                                }
-                            }
-
-                            VerticalLayout {
-                                alignment: center;
-                                spacing: 3px;
-                                horizontal-stretch: 1;
-                                Text {
-                                    text: acc.name;
-                                    color: Palette.text-hi;
-                                    font-size: Theme.fs(12px, 16px);
-                                    font-weight: 700;
-                                    font-family: Theme.font;
-                                    overflow: elide;
-                                }
-
-                                Text {
-                                    text: acc.npub-short;
-                                    color: Palette.text-lo;
-                                    font-size: Theme.fs(10px, 14px);
-                                    font-family: Theme.font;
-                                    overflow: elide;
-                                }
-                            }
-
-                            if acc.active: VerticalLayout {
-                                alignment: center;
-                                Text {
-                                    text: @tr("ACTIVE");
-                                    color: Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.mint;
-                                    font-size: Theme.fs(9px, 12px);
-                                    font-weight: 800;
-                                    font-family: Theme.font;
-                                    letter-spacing: 1.2px;
-                                }
-                            }
-
-                            // Trailing "›" — drills into this account's detail card.
-                            VerticalLayout {
-                                alignment: center;
-                                Rectangle {
-                                    width: 30px;
-                                    height: 30px;
-                                    border-radius: (7px) * Theme.r-scale;
-                                    background: chev.has-hover ? Palette.panel-2 : transparent;
-                                    animate background { duration: Theme.hover-dur; }
-                                    accessible-role: button;
-                                    accessible-label: @tr("Account details");
-                                    ChevronRightIcon {
-                                        stroke: chev.has-hover ? Palette.text-hi : Palette.text-lo;
-                                        size: 11px;
-                                    }
-
-                                    chev := TouchArea {
-                                        mouse-cursor: pointer;
-                                        clicked => {
-                                            root.detail-idx = i;
-                                        }
-                                    }
-                                }
-                            }
-                        }
+            if !root.in-detail: AccountSwitcherList {
+                accounts: root.accounts;
+                focus-idx: root.focus-idx;
+                nav-focused: nav.has-focus;
+                select(id) => {
+                    root.select(id);
+                }
+                drill(i) => {
+                    root.detail-idx = i;
+                }
+                focus-row(i) => {
+                    root.focus-idx = i;
+                }
+                active-init(i) => {
+                    if (!root.cursor-set) {
+                        root.focus-idx = i;
+                        root.cursor-set = true;
                     }
                 }
             }
