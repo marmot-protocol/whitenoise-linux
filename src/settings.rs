@@ -122,6 +122,16 @@ pub struct Settings {
     /// instead of filling the column. Opt-in, off by default (Appearance).
     #[serde(default)]
     pub centered_conversation: bool,
+    /// Where the last "Back up everything" write landed, and when (Unix
+    /// seconds). The success toast scrolls away within seconds, so this is what
+    /// lets the Storage pane keep showing that a backup exists and where it
+    /// went. Both stay `None` until a backup succeeds, which is what keeps the
+    /// pane's "Last backup" row unmounted on a fresh install. Local-only, like
+    /// nicknames — the path never leaves this machine.
+    #[serde(default)]
+    pub last_backup_path: Option<String>,
+    #[serde(default)]
+    pub last_backup_at: Option<i64>,
 }
 
 impl Settings {

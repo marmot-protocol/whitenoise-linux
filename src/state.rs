@@ -762,6 +762,7 @@ copy_snapshot! {
     enter_password: String = get_enter_password => "Enter your password.";
     wrong_password: String = get_wrong_password => "Wrong password.";
     backup_failed: String = get_backup_failed => "Backup failed: %1";
+    backup_saved: String = get_backup_saved => "Backup saved to %1";
     choose_backup_file: String = get_choose_backup_file => "Choose a backup file first.";
     enter_backup_password: String = get_enter_backup_password => "Enter the backup password.";
     // New-chat / add-contact status copy.

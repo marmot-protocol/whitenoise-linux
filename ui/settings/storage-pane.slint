@@ -73,6 +73,17 @@ export component StoragePane inherits DetailPage {
                 }
             }
 
+            // The receipt for the row above. Mounted only once a backup has
+            // actually been written, so a fresh install shows nothing rather
+            // than an empty "never" row.
+            if AppState.storage-last-backup-path != "": KVRow {
+                row-height: 48px;
+                label: @tr("Last backup");
+                sublabel: AppState.storage-last-backup-path;
+                value: AppState.storage-last-backup-at;
+                show-divider: true;
+            }
+
             KVRow {
                 row-height: 48px;
                 label: @tr("Import a backup");

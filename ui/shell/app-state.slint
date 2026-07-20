@@ -74,6 +74,18 @@ export global AppState {
     callback storage-open-vault-folder();
     callback storage-create-backup();
     callback storage-import-backup();
+    // Receipt for the most recent successful backup, restored from settings at
+    // boot: the destination path and a preformatted stamp of when it was
+    // written. Both are empty until a backup succeeds, and the empty path is
+    // what keeps the Storage pane's "Last backup" row unmounted. Set only by
+    // Rust (`publish_last_backup`).
+    in-out property <string> storage-last-backup-path;
+    in-out property <string> storage-last-backup-at;
+    // Rust-invoked from the backup write's completion hop: records the
+    // destination in settings and republishes the row. It lands as a callback
+    // because the worker thread can't carry the `Rc<RefCell<Settings>>` across
+    // the hop, the same way `on_import_backup_submit` re-enters `unlock`.
+    callback storage-backup-written(string);
     // Import-backup modal state. `import-backup-file` is the chosen file's display
     // name; `import-backup-path` round-trips the full path through Slint because
     // the off-thread picker can't touch a UI-thread Rust cell. `restore-mode`

@@ -435,6 +435,10 @@ msgctxt "status, %1 = error detail"
 msgid "Backup failed: %1"
 msgstr "Backup non riuscito: %1"
 
+msgctxt "status toast after writing a backup, %1 = destination path"
+msgid "Backup saved to %1"
+msgstr "Backup salvato in %1"
+
 msgctxt "AppearancePane"
 msgid "Berry"
 msgstr "Bacca"
@@ -1418,6 +1422,10 @@ msgstr "LAYOUT"
 msgctxt "KeysPage"
 msgid "LINKED DEVICES"
 msgstr "DISPOSITIVI COLLEGATI"
+
+msgctxt "StoragePane"
+msgid "Last backup"
+msgstr "Ultimo backup"
 
 msgctxt "ArchivedDetail"
 msgid "Last message"

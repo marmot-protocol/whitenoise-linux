@@ -432,6 +432,10 @@ msgctxt "status, %1 = error detail"
 msgid "Backup failed: %1"
 msgstr "バックアップに失敗しました: %1"
 
+msgctxt "status toast after writing a backup, %1 = destination path"
+msgid "Backup saved to %1"
+msgstr "バックアップを %1 に保存しました"
+
 msgctxt "AppearancePane"
 msgid "Berry"
 msgstr "ベリー"
@@ -1415,6 +1419,10 @@ msgstr "レイアウト"
 msgctxt "KeysPage"
 msgid "LINKED DEVICES"
 msgstr "リンク済みデバイス"
+
+msgctxt "StoragePane"
+msgid "Last backup"
+msgstr "最後のバックアップ"
 
 msgctxt "ArchivedDetail"
 msgid "Last message"
