@@ -142,7 +142,12 @@ msgid "ACTIONS"
 msgstr "AKTIONEN"
 
 #, fuzzy
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherDetail"
+msgid "ACTIVE"
+msgstr "AKTIONEN"
+
+#, fuzzy
+msgctxt "AccountSwitcherList"
 msgid "ACTIVE"
 msgstr "AKTIONEN"
 
@@ -211,7 +216,7 @@ msgid "Account"
 msgstr "Konten"
 
 #, fuzzy
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherList"
 msgid "Account details"
 msgstr "Konten"
 
@@ -337,7 +342,7 @@ msgid "Alert me about messages in chats I'm not viewing."
 msgstr "Benachrichtige mich über Nachrichten in Chats, die ich nicht ansehe."
 
 #, fuzzy
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherDetail"
 msgid "All accounts"
 msgstr "Konten"
 
@@ -411,7 +416,7 @@ msgctxt "LoginScreen"
 msgid "Back"
 msgstr "Zurück"
 
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherConfirm"
 msgid "Back it up first if you'll want to sign in again — this can't be undone."
 msgstr ""
 
@@ -1344,12 +1349,12 @@ msgctxt "ArchivedDetail"
 msgid "It stays end-to-end encrypted. Unarchiving returns it to your main list and resumes notifications."
 msgstr "Sie bleibt Ende-zu-Ende-verschlüsselt. Durch Wiederherstellen kehrt sie in deine Hauptliste zurück und Benachrichtigungen werden fortgesetzt."
 
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherConfirm"
 msgid "Its background session ends and it leaves the account list."
 msgstr ""
 
 #, fuzzy
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherConfirm"
 msgid "Its secret key is erased from this device's vault."
 msgstr "Für dieses Konto ist kein geheimer Schlüssel auf diesem Gerät gespeichert."
 
@@ -1514,7 +1519,7 @@ msgctxt "StoragePane"
 msgid "Location"
 msgstr "Speicherort"
 
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherDetail"
 msgid "Log out & remove"
 msgstr ""
 
@@ -2154,7 +2159,7 @@ msgid "Remove from group"
 msgstr "Aus Gruppe entfernen"
 
 #, fuzzy
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherDetail"
 msgid "Remove from this device"
 msgstr "Dieses Relay entfernen?"
 
@@ -2552,7 +2557,7 @@ msgctxt "LoginScreen"
 msgid "Sign in to your Nostr identity"
 msgstr "Bei deiner Nostr-Identität anmelden"
 
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherDetail"
 msgid "Sign this account out here and erase its secret key from your vault. Your other accounts stay signed in."
 msgstr ""
 
@@ -2626,7 +2631,7 @@ msgctxt "weekday"
 msgid "Sun"
 msgstr "So"
 
-msgctxt "AccountSwitcherModal"
+msgctxt "AccountSwitcherDetail"
 msgid "Switch to this account"
 msgstr ""
 

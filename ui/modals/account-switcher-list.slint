@@ -1,0 +1,129 @@
+import { Palette, Theme, AccountEntry } from "../tokens.slint";
+import { Avatar } from "../primitives/avatar.slint";
+import { FocusCaret } from "../primitives/focus-caret.slint";
+import { ChevronRightIcon } from "../icons/chevron-right-icon.slint";
+
+// Account list phase: one row per account, a keyboard cursor, and a trailing
+// "›" that drills into the detail card. The Modal owns the FocusScope and the
+// focus/cursor state; this reads them in and reports intent through callbacks.
+export component AccountSwitcherList inherits VerticalLayout {
+    in property <[AccountEntry]> accounts;
+    in property <int> focus-idx;
+    in property <bool> nav-focused;
+    callback select(string);      // account-id hex
+    callback drill(int);          // open the detail card for this row
+    callback focus-row(int);      // move the keyboard cursor to this row
+    callback active-init(int);    // this row is the active account (once, on init)
+
+    spacing: 6px;
+    for acc[i] in root.accounts: Rectangle {
+        property <bool> keyboard-focused: root.nav-focused && root.focus-idx == i;
+
+        init => {
+            if (acc.active) {
+                root.active-init(i);
+            }
+        }
+
+        height: 56px;
+        border-radius: (10px) * Theme.r-scale;
+        background: keyboard-focused ? Palette.hover : (acc.active ? Palette.selected : (row-touch.has-hover || chev.has-hover ? Palette.hover : transparent));
+        border-width: acc.active ? Theme.border-w : 0px;
+        border-color: Palette.mint;
+        animate background {
+            duration: Theme.hover-dur;
+            easing: ease-out;
+        }
+
+        if keyboard-focused: FocusCaret {
+            x: 0;
+            y: (parent.height - self.height) / 2;
+            height: 26px;
+        }
+
+        row-touch := TouchArea {
+            mouse-cursor: pointer;
+            clicked => {
+                root.focus-row(i);
+                root.select(acc.id);
+            }
+
+            HorizontalLayout {
+                padding-left: 10px;
+                padding-right: 8px;
+                spacing: 12px;
+
+                VerticalLayout {
+                    alignment: center;
+                    Avatar {
+                        size: 36px;
+                        initials: acc.av-initials;
+                        color-a: acc.av-a;
+                        color-b: acc.av-b;
+                        picture: acc.picture;
+                        has-picture: acc.has-picture;
+                    }
+                }
+
+                VerticalLayout {
+                    alignment: center;
+                    spacing: 3px;
+                    horizontal-stretch: 1;
+                    Text {
+                        text: acc.name;
+                        color: Palette.text-hi;
+                        font-size: Theme.fs(12px, 16px);
+                        font-weight: 700;
+                        font-family: Theme.font;
+                        overflow: elide;
+                    }
+
+                    Text {
+                        text: acc.npub-short;
+                        color: Palette.text-lo;
+                        font-size: Theme.fs(10px, 14px);
+                        font-family: Theme.font;
+                        overflow: elide;
+                    }
+                }
+
+                if acc.active: VerticalLayout {
+                    alignment: center;
+                    Text {
+                        text: @tr("ACTIVE");
+                        color: Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.mint;
+                        font-size: Theme.fs(9px, 12px);
+                        font-weight: 800;
+                        font-family: Theme.font;
+                        letter-spacing: 1.2px;
+                    }
+                }
+
+                // Trailing "›" — drills into this account's detail card.
+                VerticalLayout {
+                    alignment: center;
+                    Rectangle {
+                        width: 30px;
+                        height: 30px;
+                        border-radius: (7px) * Theme.r-scale;
+                        background: chev.has-hover ? Palette.panel-2 : transparent;
+                        animate background { duration: Theme.hover-dur; }
+                        accessible-role: button;
+                        accessible-label: @tr("Account details");
+                        ChevronRightIcon {
+                            stroke: chev.has-hover ? Palette.text-hi : Palette.text-lo;
+                            size: 11px;
+                        }
+
+                        chev := TouchArea {
+                            mouse-cursor: pointer;
+                            clicked => {
+                                root.drill(i);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
