@@ -804,6 +804,11 @@ msgctxt "ErrorCopy"
 msgid "Couldn't finish syncing. We'll keep retrying — check your relay settings if this keeps happening."
 msgstr "Sincronizzazione non completata. Continueremo a riprovare — se il problema persiste, controlla le impostazioni dei relay."
 
+#. Forward failure: some of the source attachments couldn't be fetched to re-send.
+msgctxt "error banner when forwarding attachments fails, %1 = failed count, %2 = total count"
+msgid "Couldn't forward %1 of %2 attachments. Tap the message to try again."
+msgstr "Impossibile inoltrare %1 allegati su %2. Tocca il messaggio per riprovare."
+
 msgctxt "ErrorCopy"
 msgid "Couldn't play audio."
 msgstr "Impossibile riprodurre l'audio."
