@@ -476,7 +476,7 @@ fn main() -> Result<(), slint::PlatformError> {
                         let mut overlay = pending_state.lock().unwrap();
                         if let Err(e) = &result {
                             tracing::warn!(target: "edit", "{e:#}");
-                            ui.set_backend_error(friendly_error(ErrorOp::Edit, e).into());
+                            show_backend_error(&ui, friendly_error(ErrorOp::Edit, e));
                         }
                         overlay.edits.remove(&(group_hex.clone(), target.clone()));
                     }
@@ -546,7 +546,7 @@ fn main() -> Result<(), slint::PlatformError> {
                 // Keep the unlocked vault for the rest of the session.
                 *vault_cell.lock().unwrap() = Some(vault.clone());
                 ui.set_backend_ready(false);
-                ui.set_backend_error(s(""));
+                clear_backend_error(&ui);
                 ui.set_booting(true);
                 ui.set_booting_phase(0);
                 ui.set_booting_status(error_copy().unlocking.into());
@@ -604,7 +604,7 @@ fn main() -> Result<(), slint::PlatformError> {
                             };
                             if let Err(e) = sync_result {
                                 tracing::warn!(target: "backend", "background sync failed: {e:#}");
-                                ui.set_backend_error(friendly_error(ErrorOp::Sync, &e).into());
+                                show_backend_error(&ui, friendly_error(ErrorOp::Sync, &e));
                                 return;
                             }
                             let Some(b) = backend_cell_for_sync.lock().unwrap().clone() else {
@@ -807,7 +807,7 @@ fn main() -> Result<(), slint::PlatformError> {
                             }
                             Err(e) => {
                                 tracing::warn!(target: "backend", "boot failed: {e:#}");
-                                ui.set_backend_error(friendly_error(ErrorOp::Backend, &e).into());
+                                show_backend_error(&ui, friendly_error(ErrorOp::Backend, &e));
                                 ui.set_booting(false);
                             }
                         }

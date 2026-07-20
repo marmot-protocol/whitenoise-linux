@@ -583,6 +583,11 @@ export global AppState {
     callback restore-last-selected-chat-toggled(bool);
 
     in-out property <string> backend-error;
+    // True once the user has dismissed the current `backend-error`. The string
+    // itself is kept (the profile pane reads a captured boot failure back out
+    // of it); `show_backend_error` clears this flag with every new message, so
+    // a later failure raises the banner again.
+    in-out property <bool> backend-error-dismissed: false;
     in-out property <bool> backend-ready;
     // ═══ App chrome: status, splash & breadcrumb ═══════════════════════════
     // Transient status-bar feedback. These retain their original clipboard-

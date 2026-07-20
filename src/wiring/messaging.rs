@@ -160,7 +160,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             };
             let guard = backend_cell.lock().unwrap();
             let Some(backend) = guard.as_ref() else {
-                ui.set_backend_error(error_copy().not_connected.into());
+                show_backend_error(&ui, error_copy().not_connected);
                 return;
             };
 

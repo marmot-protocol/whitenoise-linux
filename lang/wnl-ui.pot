@@ -1001,6 +1001,10 @@ msgctxt "AdvancedPane"
 msgid "Developer mode"
 msgstr ""
 
+msgctxt "ErrorBanner"
+msgid "Dismiss"
+msgstr ""
+
 msgctxt "ProfilePage"
 msgid "Display name"
 msgstr ""

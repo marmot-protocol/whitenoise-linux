@@ -497,7 +497,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 return;
             }
             let Some(b) = backend_cell.lock().unwrap().clone() else {
-                ui.set_backend_error(error_copy().not_connected.into());
+                show_backend_error(&ui, error_copy().not_connected);
                 return;
             };
             let weak = weak.clone();
@@ -508,7 +508,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     let Some(ui) = weak.upgrade() else { return };
                     if let Err(e) = result {
                         tracing::warn!(target: "contact_archive", "{e:#}");
-                        ui.set_backend_error(friendly_error(ErrorOp::Archive, &e).into());
+                        show_backend_error(&ui, friendly_error(ErrorOp::Archive, &e));
                         return;
                     }
                     refresh();
@@ -577,7 +577,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 return;
             }
             let Some(b) = backend_cell.lock().unwrap().clone() else {
-                ui.set_backend_error(error_copy().not_connected.into());
+                show_backend_error(&ui, error_copy().not_connected);
                 return;
             };
             let weak = weak.clone();
@@ -588,7 +588,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     let Some(ui) = weak.upgrade() else { return };
                     if let Err(e) = result {
                         tracing::warn!(target: "contact_remove", "{e:#}");
-                        ui.set_backend_error(friendly_error(ErrorOp::RemoveContact, &e).into());
+                        show_backend_error(&ui, friendly_error(ErrorOp::RemoveContact, &e));
                         return;
                     }
                     refresh_contacts_async(&ui, &b, move |ui| {

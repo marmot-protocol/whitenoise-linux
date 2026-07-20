@@ -1,0 +1,100 @@
+import { Palette, Theme } from "../tokens.slint";
+import { AppState } from "app-state.slint";
+
+// Dismissible danger plate for `AppState.backend-error`.
+//
+// Nineteen Rust call sites write that property when an operation fails — a send
+// with no backend, a "Delete for everyone" that never landed, an edit that
+// reverted, archive/unarchive, accepting an invitation, switching or removing
+// an account — and nothing in the UI read it, so every one of those failures
+// was silent. The writers span Chats, Contacts, Archive and Settings, so this
+// floats over the shell canvas instead of living inside one page.
+//
+// `InfoBanner` (ui/layout/info-banner.slint) is the neighbouring plate, but it
+// is a fixed 64px tall and defaults to `no-wrap`, which elides the two-sentence
+// `ErrorCopy` strings, and it has no dismiss affordance — hence a sibling
+// rather than a mode flag on it.
+//
+// Dismissing sets `backend-error-dismissed` rather than clearing the string:
+// `save_profile` reads the captured boot failure back out of `backend-error` to
+// explain why the backend is missing, and a dismissal must not erase that.
+// `show_backend_error` (src/state.rs) re-arms the flag with every new message.
+export component ErrorBanner inherits Rectangle {
+    background: Palette.danger-soft;
+    border-radius: 10px * Theme.r-scale;
+    border-width: max(Theme.border-w, 1px);
+    border-color: Palette.danger-border;
+    drop-shadow-blur: Theme.hard-shadow ? 0px : 20px;
+    drop-shadow-offset-x: Theme.hard-shadow ? 4px : 0px;
+    drop-shadow-offset-y: Theme.hard-shadow ? 4px : 8px;
+    drop-shadow-color: Palette.shadow-card;
+
+    HorizontalLayout {
+        padding-left: 14px;
+        padding-right: 8px;
+        padding-top: 11px;
+        padding-bottom: 11px;
+        spacing: 11px;
+
+        // Warning glyph, drawn like InfoIcon's ringed mark. Top-aligned so it
+        // stays beside the first line when the message wraps.
+        VerticalLayout {
+            alignment: start;
+            Rectangle {
+                width: 18px;
+                height: 18px;
+                border-radius: 9px;
+                border-width: 1.4px;
+                border-color: Palette.danger;
+                Text {
+                    text: "!";
+                    color: Palette.danger;
+                    font-size: Theme.fs(11px, 14px);
+                    font-weight: 700;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+        }
+
+        Text {
+            text: AppState.backend-error;
+            color: Palette.danger;
+            font-size: Theme.fs(12px, 15px);
+            font-weight: 600;
+            wrap: word-wrap;
+            horizontal-stretch: 1;
+            min-width: 0;
+        }
+
+        VerticalLayout {
+            alignment: start;
+            Rectangle {
+                width: 26px;
+                height: 26px;
+                border-radius: (6px) * Theme.r-scale;
+                background: close-touch.has-hover ? Palette.danger-soft-hover : transparent;
+                animate background { duration: Theme.hover-dur; }
+                accessible-role: button;
+                accessible-label: @tr("Dismiss");
+                accessible-action-default => {
+                    AppState.backend-error-dismissed = true;
+                }
+                close-touch := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        AppState.backend-error-dismissed = true;
+                    }
+                }
+
+                Text {
+                    text: "✕";
+                    color: Palette.danger;
+                    font-size: Theme.fs(12px, 15px);
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
+}

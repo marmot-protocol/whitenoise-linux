@@ -468,6 +468,25 @@ pub(crate) fn set_status_feedback(
     ui.set_clipboard_status_error(is_error);
 }
 
+/// Raise the shell's backend-failure banner (`ui/shell/error-banner.slint`).
+///
+/// Setting `backend_error` alone is not enough: the banner stays hidden while
+/// `backend_error_dismissed` is true, so a second failure after the user closed
+/// the first one would never appear. Clearing the flag here keeps the message
+/// and its visibility from drifting apart, the way [`show_profile_status`] does
+/// for the profile status line.
+pub(crate) fn show_backend_error(ui: &DarkMatterLinux, message: impl Into<SharedString>) {
+    ui.set_backend_error(message.into());
+    ui.set_backend_error_dismissed(false);
+}
+
+/// Drop the recorded backend failure entirely — used at the start of a boot, so
+/// a previous run's error can't outlive the attempt that replaces it.
+pub(crate) fn clear_backend_error(ui: &DarkMatterLinux) {
+    ui.set_backend_error(SharedString::new());
+    ui.set_backend_error_dismissed(false);
+}
+
 /// Report the outcome of a "Save attachment to disk" write in the status-bar
 /// toast. Safe to call from any thread — the actual write runs on the backend
 /// runtime, so this hops to the event loop before touching the UI. `file_name`

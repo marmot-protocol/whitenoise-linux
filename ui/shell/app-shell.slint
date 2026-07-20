@@ -37,6 +37,7 @@ import { SettingsPage } from "../settings/settings-page.slint";
 import { SettingsSidebar } from "../settings/settings-sidebar.slint";
 import { ProfilePage } from "../profile/profile-page.slint";
 import { StatusBar } from "status-bar.slint";
+import { ErrorBanner } from "error-banner.slint";
 import { FadeInPage } from "../layout/fade-in-page.slint";
 import { PaperDoodles } from "../theme-decor/paper-doodles.slint";
 import { SynthGrid } from "../theme-decor/synth-grid.slint";
@@ -199,6 +200,17 @@ export component AppShell inherits Rectangle {
 
     VerticalLayout {
         spacing: 0;
+
+        // Backend-failure banner. It sits above the cards rather than inside
+        // one page because every section writes `backend-error`, and it takes
+        // its own row instead of floating over them so it never covers the
+        // header nav the user needs to act on the failure.
+        if AppState.backend-error != "" && !AppState.backend-error-dismissed: HorizontalLayout {
+            padding-left: 10px;
+            padding-right: 10px;
+            padding-top: 10px;
+            ErrorBanner { }
+        }
 
         Rectangle {
             vertical-stretch: 1;

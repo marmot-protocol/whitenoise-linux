@@ -74,7 +74,7 @@ pub(crate) fn wire_forward(ui: &DarkMatterLinux, cx: &Cx) {
                 return;
             }
             let Some(backend) = backend_cell.lock().unwrap().clone() else {
-                ui.set_backend_error(error_copy().not_connected.into());
+                show_backend_error(&ui, error_copy().not_connected);
                 return;
             };
 
@@ -517,12 +517,12 @@ fn report_forward_failure(cx: &ForwardCx, failed: usize, total: usize) {
     let _ = slint::invoke_from_event_loop(move || {
         let Some(ui) = weak.upgrade() else { return };
         let copy = error_copy();
-        ui.set_backend_error(
+        show_backend_error(
+            &ui,
             tmpl(
                 &copy.forward_media,
                 &[&failed.to_string(), &total.to_string()],
-            )
-            .into(),
+            ),
         );
     });
 }
