@@ -203,6 +203,18 @@ msgid "Accept the request to start messaging"
 msgstr ""
 
 msgctxt "AccountSwitcherModal"
+msgid "Account"
+msgstr ""
+
+msgctxt "AccountSwitcherModal"
+msgid "Account details"
+msgstr ""
+
+msgctxt "AccountSwitcherModal"
+msgid "Accounts"
+msgstr ""
+
+msgctxt "AppShell"
 msgid "Accounts"
 msgstr ""
 
@@ -309,6 +321,10 @@ msgid "Alert me about messages in chats I'm not viewing."
 msgstr ""
 
 msgctxt "AccountSwitcherModal"
+msgid "All accounts"
+msgstr ""
+
+msgctxt "AccountSwitcherModal"
 msgid "All accounts stay connected. Switching only changes which one you're looking at."
 msgstr ""
 
@@ -377,6 +393,10 @@ msgctxt "LoginScreen"
 msgid "Back"
 msgstr ""
 
+msgctxt "AccountSwitcherModal"
+msgid "Back it up first if you'll want to sign in again — this can't be undone."
+msgstr ""
+
 msgctxt "StoragePane"
 msgid "Back up everything"
 msgstr ""
@@ -415,6 +435,10 @@ msgstr ""
 
 msgctxt "ConfirmFlows"
 msgid "Block this chat request?"
+msgstr ""
+
+msgctxt "ConfirmFlows"
+msgid "Block {}?"
 msgstr ""
 
 msgctxt "AboutPane"
@@ -463,6 +487,10 @@ msgstr ""
 
 msgctxt "ErrorCopy"
 msgid "Can't start a chat with only yourself."
+msgstr ""
+
+msgctxt "AccountSwitcherModal"
+msgid "Cancel"
 msgstr ""
 
 msgctxt "AddAccountModal"
@@ -783,6 +811,10 @@ msgstr ""
 
 msgctxt "ErrorCopy"
 msgid "Couldn't refresh your key packages. Check your relay settings and try again."
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Couldn't remove that contact. Please try again."
 msgstr ""
 
 msgctxt "ErrorCopy"
@@ -1244,6 +1276,14 @@ msgctxt "ArchivedDetail"
 msgid "It stays end-to-end encrypted. Unarchiving returns it to your main list and resumes notifications."
 msgstr ""
 
+msgctxt "AccountSwitcherModal"
+msgid "Its background session ends and it leaves the account list."
+msgstr ""
+
+msgctxt "AccountSwitcherModal"
+msgid "Its secret key is erased from this device's vault."
+msgstr ""
+
 msgctxt "ErrorCopy"
 msgid "JSON copied"
 msgstr ""
@@ -1392,6 +1432,10 @@ msgctxt "StoragePane"
 msgid "Location"
 msgstr ""
 
+msgctxt "AccountSwitcherModal"
+msgid "Log out & remove"
+msgstr ""
+
 msgctxt "StoragePane"
 msgid "MEDIA CACHE"
 msgstr ""
@@ -1430,6 +1474,10 @@ msgstr ""
 
 msgctxt "ConfirmFlows"
 msgid "Make {} an admin?"
+msgstr ""
+
+msgctxt "AccountSwitcherModal"
+msgid "Manage this identity or remove it from the device."
 msgstr ""
 
 msgctxt "month"
@@ -1968,6 +2016,10 @@ msgctxt "StagedChips"
 msgid "Remove"
 msgstr ""
 
+msgctxt "AccountSwitcherModal"
+msgid "Remove account"
+msgstr ""
+
 msgctxt "ConfirmFlows"
 msgid "Remove admin"
 msgstr ""
@@ -1988,12 +2040,24 @@ msgctxt "GroupMemberMenu"
 msgid "Remove from group"
 msgstr ""
 
+msgctxt "AccountSwitcherModal"
+msgid "Remove from this device"
+msgstr ""
+
 msgctxt "LoginScreen"
 msgid "Remove key"
 msgstr ""
 
+msgctxt "AccountSwitcherModal"
+msgid "Remove this account?"
+msgstr ""
+
 msgctxt "ConfirmFlows"
 msgid "Remove this relay?"
+msgstr ""
+
+msgctxt "ConfirmFlows"
+msgid "Remove {} from contacts?"
 msgstr ""
 
 msgctxt "ConfirmFlows"
@@ -2349,6 +2413,10 @@ msgctxt "LoginScreen"
 msgid "Sign in to your Nostr identity"
 msgstr ""
 
+msgctxt "AccountSwitcherModal"
+msgid "Sign this account out here and erase its secret key from your vault. Your other accounts stay signed in."
+msgstr ""
+
 msgctxt "LoginScreen"
 msgid "Signing in…"
 msgstr ""
@@ -2413,6 +2481,10 @@ msgctxt "weekday"
 msgid "Sun"
 msgstr ""
 
+msgctxt "AccountSwitcherModal"
+msgid "Switch to this account"
+msgstr ""
+
 msgctxt "ThemePicker"
 msgid "Synthwave"
 msgstr ""
@@ -2444,6 +2516,10 @@ msgstr ""
 
 msgctxt "AppearancePane"
 msgid "Theme"
+msgstr ""
+
+msgctxt "ConfirmFlows"
+msgid "They come off your published contact list, so anyone reading it sees they're gone. Your chats and messages are untouched, and you can add them again anytime."
 msgstr ""
 
 msgctxt "ArchivedDetail"
@@ -2502,6 +2578,10 @@ msgctxt "ChatRequestBanner"
 msgid "This sender isn't in your contacts. Accept to start an"
 msgstr ""
 
+msgctxt "AccountSwitcherModal"
+msgid "This signs the account out on this device and erases its secret key from your vault. Your other accounts stay signed in."
+msgstr ""
+
 msgctxt "GetStartedScreen"
 msgid "Three quick steps and you're ready to message — end-to-end encrypted, no servers in the middle."
 msgstr ""
@@ -2538,6 +2618,10 @@ msgctxt "ArchivedDetail"
 msgid "Unarchive"
 msgstr ""
 
+msgctxt "ContactDetail"
+msgid "Unblock"
+msgstr ""
+
 msgctxt "LoginScreen"
 msgid "Unlock"
 msgstr ""
@@ -2552,6 +2636,10 @@ msgid "Unlocking…"
 msgstr ""
 
 msgctxt "ChatContextMenu"
+msgid "Unmute"
+msgstr ""
+
+msgctxt "ContactDetail"
 msgid "Unmute"
 msgstr ""
 
@@ -2665,6 +2753,10 @@ msgstr ""
 
 msgctxt "ConfirmFlows"
 msgid "You will stop receiving new messages from this group. The chat moves to Archive."
+msgstr ""
+
+msgctxt "ConfirmFlows"
+msgid "Your chat with them, and any new chat request they send, stays out of your chat list. Nothing is deleted — unblocking brings the conversation back."
 msgstr ""
 
 msgctxt "KeysPage"

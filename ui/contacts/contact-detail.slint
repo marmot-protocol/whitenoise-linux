@@ -242,33 +242,56 @@ export component ContactDetail inherits DetailPage {
         HorizontalLayout {
             spacing: 10px;
             alignment: start;
-            MicroButton {
-                label: @tr("Mute");
+            // Mute and Archive act on the 1:1 chat with this contact, so they
+            // appear only once there is one — Rust publishes its id in
+            // `contact-chat-hex`. With no chat to act on there is nothing to
+            // grey out, so they stay out of the row entirely (the spacer goes
+            // with them, or the danger pair would start with a stray gap).
+            if AppState.contact-chat-hex != "": MicroButton {
+                label: AppState.contact-chat-muted ? @tr("Unmute") : @tr("Mute");
                 MuteIcon {
                     stroke: Palette.text-mid;
                 }
+
+                clicked => {
+                    AppState.contact-toggle-mute();
+                }
             }
 
-            MicroButton {
+            if AppState.contact-chat-hex != "": MicroButton {
                 label: @tr("Archive chat");
                 ArchiveIcon {
                     stroke: Palette.text-mid;
                 }
+
+                clicked => {
+                    AppState.contact-archive-chat();
+                }
             }
 
-            Rectangle {
+            if AppState.contact-chat-hex != "": Rectangle {
                 width: 16px;
             }
 
+            // Blocking is armed behind a confirm; unblocking only restores what
+            // the block hid, so it fires directly and drops the danger skin.
             MicroButton {
-                label: @tr("Block");
-                fg: Palette.danger;
-                bg-color: Palette.danger-soft;
-                hover-bg: Palette.danger-soft-hover;
-                outline: Palette.danger-border;
-                hover-outline: Palette.danger-border-hover;
+                label: AppState.contact-blocked ? @tr("Unblock") : @tr("Block");
+                fg: AppState.contact-blocked ? Palette.text-hi : Palette.danger;
+                bg-color: AppState.contact-blocked ? Palette.panel-2 : Palette.danger-soft;
+                hover-bg: AppState.contact-blocked ? Palette.bubble-in : Palette.danger-soft-hover;
+                outline: AppState.contact-blocked ? Palette.border : Palette.danger-border;
+                hover-outline: AppState.contact-blocked ? Palette.border : Palette.danger-border-hover;
                 BanIcon {
-                    stroke: Palette.danger;
+                    stroke: AppState.contact-blocked ? Palette.text-mid : Palette.danger;
+                }
+
+                clicked => {
+                    if (AppState.contact-blocked) {
+                        AppState.contact-toggle-block();
+                    } else {
+                        AppState.show-contact-block-confirm = true;
+                    }
                 }
             }
 
@@ -281,6 +304,10 @@ export component ContactDetail inherits DetailPage {
                 hover-outline: Palette.danger-border-hover;
                 TrashIcon {
                     stroke: Palette.danger;
+                }
+
+                clicked => {
+                    AppState.show-contact-remove-confirm = true;
                 }
             }
         }

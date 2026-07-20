@@ -79,6 +79,13 @@ pub struct Settings {
     /// like nicknames — never published to relays.
     #[serde(default)]
     pub pinned_chats: BTreeSet<String>,
+    /// Accounts (account_id_hex) the user has blocked. Their 1:1 chat — and any
+    /// chat request they send — is filtered out of the visible chat list, which
+    /// also takes their notifications and unread counts with it. Local-only,
+    /// like `muted_chats`: nothing is published to relays and nothing is
+    /// deleted, so unblocking restores the conversation intact.
+    #[serde(default)]
+    pub blocked_accounts: BTreeSet<String>,
     /// Per-chat read marker: `group_id_hex` → the Unix-seconds timestamp the
     /// user last viewed that chat. Messages recorded after the marker count as
     /// unread. Written when a chat is opened; the authoritative read state the

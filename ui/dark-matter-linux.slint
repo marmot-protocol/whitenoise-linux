@@ -390,6 +390,11 @@ export component DarkMatterLinux inherits Window {
     in-out property <string> contact-qr-npub <=> AppState.contact-qr-npub;
     in-out property <string> contact-qr-name <=> AppState.contact-qr-name;
     in-out property <bool> show-block-confirm <=> AppState.show-block-confirm;
+    in-out property <string> contact-chat-hex <=> AppState.contact-chat-hex;
+    in-out property <bool> contact-chat-muted <=> AppState.contact-chat-muted;
+    in-out property <bool> contact-blocked <=> AppState.contact-blocked;
+    in-out property <bool> show-contact-block-confirm <=> AppState.show-contact-block-confirm;
+    in-out property <bool> show-contact-remove-confirm <=> AppState.show-contact-remove-confirm;
     // END GENERATED ALIASES
 
     // The active theme id drives `Theme.id` directly; Rust sets `theme-id` and

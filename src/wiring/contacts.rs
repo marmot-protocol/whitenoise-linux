@@ -9,7 +9,9 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
         ..
     } = cx.clone();
     let Handlers {
-        refresh_breadcrumb, ..
+        refresh_breadcrumb,
+        refresh_all_chat_models,
+        ..
     } = h.clone();
     // Live contacts-list filter: recompute one case-insensitive match flag per
     // contact row as the user types in the sidebar search field (Slint has no
@@ -377,6 +379,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 ui.set_active_contact(idx);
                 if let Some(b) = backend_cell.lock().unwrap().clone() {
                     push_contact_shared_groups(&ui, &b);
+                    push_contact_actions(&ui, &b);
                 }
                 refresh();
                 // Freshen the key-package status the moment the detail page
@@ -429,6 +432,173 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 refresh_breadcrumb_now(ui);
                 ui.set_active_chat(pos as i32);
                 ui.global::<AppState>().invoke_chat_selected(pos as i32);
+            });
+        }
+    });
+
+    // ─── Contact ACTIONS (mute / archive / block / remove) ─────────────────
+    //
+    // Mute and Archive act on the 1:1 chat with the contact, whose id the
+    // selection already resolved into `contact-chat-hex` — the button is only
+    // mounted while that's non-empty, so an empty read here means the model
+    // moved under us and the right move is to do nothing.
+
+    // Mute mirrors the header bell (`on_toggle_mute_chat`): flip the live set,
+    // persist, then repaint. The rail row is refreshed by group id rather than
+    // index, because the contact page has no chat-row index to hand.
+    ui.global::<AppState>().on_contact_toggle_mute({
+        let weak = ui.as_weak();
+        let settings_cell = settings_cell.clone();
+        let group_ids = group_ids.clone();
+        move || {
+            let Some(ui) = weak.upgrade() else { return };
+            let group_hex = ui.get_contact_chat_hex().to_string();
+            if group_hex.is_empty() {
+                return;
+            }
+            let now_muted = !is_muted(&group_hex);
+            set_muted(&group_hex, now_muted);
+            {
+                let mut st = settings_cell.borrow_mut();
+                if now_muted {
+                    st.muted_chats.insert(group_hex.clone());
+                } else {
+                    st.muted_chats.remove(&group_hex);
+                }
+                st.save();
+            }
+            ui.set_contact_chat_muted(now_muted);
+            // Keep the rail's mute glyph in step with the contact page.
+            let idx = group_ids
+                .lock()
+                .unwrap()
+                .iter()
+                .position(|g| g == &group_hex);
+            if let Some(idx) = idx {
+                set_chat_row_muted(&ui, idx as i32, now_muted);
+                if ui.get_active_chat() == idx as i32 {
+                    ui.set_active_chat_muted(now_muted);
+                }
+            }
+        }
+    });
+
+    // Archiving is local-only and reversible, so it fires one-click like the
+    // chat-request Archive. An archived chat leaves `chats()`, so re-pushing
+    // the actions state drops the two chat-scoped buttons off the page.
+    ui.global::<AppState>().on_contact_archive_chat({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let refresh = refresh_all_chat_models.clone();
+        move || {
+            let Some(ui) = weak.upgrade() else { return };
+            let group_hex = ui.get_contact_chat_hex().to_string();
+            if group_hex.is_empty() {
+                return;
+            }
+            let Some(b) = backend_cell.lock().unwrap().clone() else {
+                ui.set_backend_error(error_copy().not_connected.into());
+                return;
+            };
+            let weak = weak.clone();
+            let refresh = refresh.clone();
+            std::thread::spawn(move || {
+                let result = b.set_group_archived(&group_hex, true);
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    if let Err(e) = result {
+                        tracing::warn!(target: "contact_archive", "{e:#}");
+                        ui.set_backend_error(friendly_error(ErrorOp::Archive, &e).into());
+                        return;
+                    }
+                    refresh();
+                    push_contact_actions(&ui, &b);
+                });
+            });
+        }
+    });
+
+    // Block/unblock is local and instant: flip the live set, persist, then
+    // rebuild the chat models so the blocked peer's conversation drops out of
+    // (or returns to) the rail. Nothing is published and nothing is deleted.
+    ui.global::<AppState>().on_contact_toggle_block({
+        let weak = ui.as_weak();
+        let settings_cell = settings_cell.clone();
+        let contacts = contacts.clone();
+        let backend_cell = backend_cell.clone();
+        let refresh = refresh_all_chat_models.clone();
+        move || {
+            let Some(ui) = weak.upgrade() else { return };
+            let Some(row) = contacts.row_data(ui.get_active_contact().max(0) as usize) else {
+                return;
+            };
+            let account_id = row.account_id.to_string();
+            if account_id.is_empty() {
+                return;
+            }
+            let now_blocked = !is_blocked(&account_id);
+            set_blocked(&account_id, now_blocked);
+            {
+                let mut st = settings_cell.borrow_mut();
+                if now_blocked {
+                    st.blocked_accounts.insert(account_id.to_lowercase());
+                } else {
+                    st.blocked_accounts
+                        .retain(|b| !b.eq_ignore_ascii_case(&account_id));
+                }
+                st.save();
+            }
+            ui.set_contact_blocked(now_blocked);
+            refresh();
+            if let Some(b) = backend_cell.lock().unwrap().clone() {
+                // The blocked peer's chat just left (or rejoined) `chats()`, so
+                // the resolved chat id and its mute state are both stale.
+                push_contact_actions(&ui, &b);
+            }
+        }
+    });
+
+    // Removing republishes the kind-3 follow list, so it goes to a worker and
+    // reports failure like every other publishing action. On success the
+    // contacts model is rebuilt from the refreshed directory, which drops the
+    // row; the selection is clamped so the detail pane can't point past the end.
+    ui.global::<AppState>().on_contact_remove({
+        let weak = ui.as_weak();
+        let contacts = contacts.clone();
+        let backend_cell = backend_cell.clone();
+        let refresh = refresh_breadcrumb.clone();
+        move || {
+            let Some(ui) = weak.upgrade() else { return };
+            let Some(row) = contacts.row_data(ui.get_active_contact().max(0) as usize) else {
+                return;
+            };
+            let account_id = row.account_id.to_string();
+            if account_id.is_empty() {
+                return;
+            }
+            let Some(b) = backend_cell.lock().unwrap().clone() else {
+                ui.set_backend_error(error_copy().not_connected.into());
+                return;
+            };
+            let weak = weak.clone();
+            let refresh = refresh.clone();
+            std::thread::spawn(move || {
+                let result = b.remove_contact(&account_id);
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    if let Err(e) = result {
+                        tracing::warn!(target: "contact_remove", "{e:#}");
+                        ui.set_backend_error(friendly_error(ErrorOp::RemoveContact, &e).into());
+                        return;
+                    }
+                    refresh_contacts_async(&ui, &b, move |ui| {
+                        let last = (ui.get_contacts().row_count() as i32 - 1).max(0);
+                        if ui.get_active_contact() > last {
+                            ui.set_active_contact(last);
+                        }
+                        refresh();
+                    });
+                });
             });
         }
     });

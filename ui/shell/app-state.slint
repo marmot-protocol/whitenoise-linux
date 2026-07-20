@@ -782,6 +782,25 @@ export global AppState {
     // gated behind a confirm; Archive stays one-click because it's reversible.
     in-out property <bool> show-block-confirm: false;
 
+    // Contact ACTIONS panel (contact detail page). Mute and Archive are
+    // chat-scoped, but a Contact carries a pubkey, not a group id — Rust
+    // resolves the 1:1 chat when the contact is selected and publishes it here.
+    // Empty means there is no chat with this contact yet (or it's archived), so
+    // the two chat-scoped buttons hide rather than sit there doing nothing.
+    in-out property <string> contact-chat-hex;
+    in-out property <bool> contact-chat-muted: false;
+    // Blocked is keyed by the person, not a chat, so it stands on its own.
+    in-out property <bool> contact-blocked: false;
+    callback contact-toggle-mute();
+    callback contact-archive-chat();
+    callback contact-toggle-block();
+    callback contact-remove();
+    // Confirms for the two actions that aren't a one-click undo: blocking
+    // hides the conversation, removing republishes the follow list. Unblocking
+    // is one-click — it only puts back what blocking hid.
+    in-out property <bool> show-contact-block-confirm: false;
+    in-out property <bool> show-contact-remove-confirm: false;
+
     // ═══ Zoom & global shortcuts ═══════════════════════════════════════════
     // Ctrl +/-/0 zoom. Rust owns the level (it changes the window scale factor,
     // which scales the whole rendered UI like browser zoom) and persists it.

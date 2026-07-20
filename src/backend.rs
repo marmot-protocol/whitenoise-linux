@@ -781,13 +781,56 @@ impl Backend {
     }
 
     /// Snapshot of visible (non-archived) chats for the active account.
+    ///
+    /// Blocked peers are filtered out here, at the one choke point every chat
+    /// surface reads through (the rail, the unread counts and the notification
+    /// watcher all land on this call), so a block can't apply to one of them
+    /// and miss another. Only 1:1 chats are dropped: `direct_chat_peer` returns
+    /// `Some` for exactly-two-member groups, so a group chat that happens to
+    /// contain a blocked account still shows — blocking a person shouldn't
+    /// silently remove you from a shared group. `find_chat` sits on top of this
+    /// and is therefore blind to a blocked chat, which is harmless: its only
+    /// callers are group-image and group-admin lookups, never a 1:1.
+    ///
+    /// The peer lookup rides the members cache, so a group whose entry is still
+    /// cold reads as memberless and isn't filtered — the same self-healing
+    /// degradation `shared_groups` documents. The queued refresh warms it and
+    /// the next snapshot hides the chat; a block is never silently lost, it can
+    /// only be a beat late right after a cold start.
     pub fn chats(&self) -> Result<Vec<AppGroupRecord>> {
         // Direct snapshot read. Don't go through subscribe_chats here: it
         // spawns a live-update forwarder task and a broadcast subscriber per
         // call that we'd immediately throw away.
-        self.app
+        let groups = self
+            .app
             .visible_groups(&self.active_label())
-            .map_err(|e| anyhow!("visible_groups: {e}"))
+            .map_err(|e| anyhow!("visible_groups: {e}"))?;
+        if crate::blocked_state().lock().unwrap().is_empty() {
+            // Overwhelmingly the common case — skip the per-group member scan.
+            return Ok(groups);
+        }
+        Ok(groups
+            .into_iter()
+            .filter(|g| {
+                self.direct_chat_peer(&g.group_id_hex)
+                    .is_none_or(|peer| !crate::is_blocked(&peer))
+            })
+            .collect())
+    }
+
+    /// The 1:1 chat with `account_id_hex`, if one exists among the visible
+    /// chats. The reverse of [`Backend::direct_chat_peer`], which the contact
+    /// page needs because a `Contact` carries a pubkey and every mute/archive
+    /// path is keyed by group id. Archived and blocked chats are out of scope
+    /// by construction (both are absent from [`Backend::chats`]), so a `None`
+    /// here means "no chat to act on right now" — which is exactly when the
+    /// contact page hides its chat-scoped actions.
+    pub fn direct_chat_with(&self, account_id_hex: &str) -> Option<String> {
+        self.chats().ok()?.into_iter().find_map(|g| {
+            self.direct_chat_peer(&g.group_id_hex)
+                .filter(|peer| peer.eq_ignore_ascii_case(account_id_hex))
+                .map(|_| g.group_id_hex)
+        })
     }
 
     /// Snapshot of archived chats for the active account.
@@ -982,6 +1025,47 @@ impl Backend {
             .block_on(async move { app.refresh_user_directory_for_account_id(&me, broad).await })
             .map_err(|e| anyhow!("refresh_directory: {e}"))?;
         Ok(account_id_hex)
+    }
+
+    /// Unfollow a contact: drop them from the account's kind-3 follow list,
+    /// republish it, then re-sync the directory so [`Backend::follow_list`]
+    /// reflects the change immediately. The exact inverse of
+    /// [`Backend::add_contact`] — same publish, same re-sync, `retain` in place
+    /// of the push — so the contacts list is edited by one mechanism in both
+    /// directions. Takes the account id (hex) the contact row already carries;
+    /// no NIP-05 resolution, because you can only remove someone already
+    /// followed. Removing a contact does not touch chats or messages: any
+    /// conversation with them stays exactly where it was.
+    pub fn remove_contact(&self, account_id_hex: &str) -> Result<()> {
+        let mut follows = self
+            .app
+            .directory_entry_for_account_id(&self.active_id())
+            .map_err(|e| anyhow!("directory_entry: {e}"))?
+            .map(|e| e.follows)
+            .unwrap_or_default();
+        let before = follows.len();
+        follows.retain(|f| !f.eq_ignore_ascii_case(account_id_hex));
+        if follows.len() == before {
+            return Err(anyhow!("not in your contacts"));
+        }
+
+        let bootstrap = self.require_relay_bootstrap()?;
+        let label = self.active_label();
+        let runtime = self.runtime.clone();
+        self.tokio.block_on(async move {
+            runtime
+                .publish_account_follow_list(&label, &follows, bootstrap)
+                .await
+                .map_err(|e| anyhow!("publish_follow_list: {e}"))
+        })?;
+
+        let app = self.app.clone();
+        let me = self.active_id();
+        let broad = self.discovery_relays();
+        self.tokio
+            .block_on(async move { app.refresh_user_directory_for_account_id(&me, broad).await })
+            .map_err(|e| anyhow!("refresh_directory: {e}"))?;
+        Ok(())
     }
 
     /// Resolve a NIP-05 username (`name@domain`, or a bare `domain` meaning
