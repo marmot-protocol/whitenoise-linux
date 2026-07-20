@@ -2160,6 +2160,11 @@ msgctxt "LoginScreen"
 msgid "Remove key"
 msgstr "鍵を削除"
 
+#. Icon-only and destructive, so it needs a spoken name.
+msgctxt "RelayRow"
+msgid "Remove relay"
+msgstr "リレーを削除"
+
 #, fuzzy
 msgctxt "AccountSwitcherModal"
 msgid "Remove this account?"

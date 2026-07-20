@@ -44,6 +44,9 @@ component RelayRow inherits Rectangle {
             alignment: center;
             MicroButton {
                 label: "";
+                // Icon-only and destructive, so it needs a spoken name.
+                a11y-label: @tr("Remove relay");
+                focusable: true;
                 pad-left: 8px;
                 pad-right: 8px;
                 TrashIcon {
