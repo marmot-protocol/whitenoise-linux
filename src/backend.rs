@@ -1,5 +1,3 @@
-#![allow(dead_code)] // home(), watch_messages(), save_relays() are wired in the next slice.
-
 // In-process bridge from the Slint UI to marmot-app.
 //
 // Owns a tokio runtime + MarmotAppRuntime. Exposes blocking helpers the Slint
@@ -97,9 +95,6 @@ pub fn set_visible_message_filter(filter: fn(&AppMessageRecord) -> bool) {
 type ProfileCache = Arc<Mutex<HashMap<String, (String, Option<String>)>>>;
 /// Boot-progress callback ("Connecting…", "Syncing…"), invoked off the UI thread.
 type StatusCallback = Arc<dyn Fn(&str) + Send + Sync>;
-
-/// Default account label used when we bootstrap from a single stored nsec.
-pub const DEFAULT_ACCOUNT_LABEL: &str = "default";
 
 /// Sentinel group-profile name for the built-in "Saved Messages" notes-to-self
 /// chat. Used as the chat's identity because it rides in [`AppGroupRecord`]'s
@@ -778,6 +773,9 @@ impl Backend {
         self.tokio.handle().clone()
     }
 
+    /// Kept for the data-dir surface even with no caller today; the lint is
+    /// otherwise live for both files, so this is the one deliberate exception.
+    #[allow(dead_code)]
     pub fn home(&self) -> &PathBuf {
         &self.home
     }

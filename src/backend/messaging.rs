@@ -38,37 +38,6 @@ fn own_reaction_event_id_for_emoji(
 }
 
 impl Backend {
-    /// Synchronously send a text message — blocks the UI thread for the
-    /// duration of the network round-trip. Acceptable for the v1 wiring;
-    /// move to spawn + callback once we want a real busy indicator.
-    pub fn send_text(&self, group_hex: &str, text: &str) -> Result<SendSummary> {
-        let bytes = hex::decode(group_hex).context("decode group id")?;
-        let group_id = GroupId::new(bytes);
-        let label = self.active_label();
-        let runtime = self.runtime.clone();
-        let payload = text.as_bytes().to_vec();
-        tracing::debug!(
-            target: "send", "-> group={} label={} len={}",
-            group_hex,
-            label,
-            payload.len()
-        );
-        let result = self.tokio.block_on(async move {
-            runtime
-                .send_message(&label, &group_id, payload)
-                .await
-                .map_err(|e| anyhow!("send_message: {e}"))
-        });
-        match &result {
-            Ok(summary) => tracing::debug!(
-                target: "send", "<- ok published={} ids={:?}",
-                summary.published, summary.message_ids
-            ),
-            Err(e) => tracing::warn!(target: "send", "<- err {e:#}"),
-        }
-        result
-    }
-
     /// Non-blocking send: dispatches the network round-trip onto the tokio
     /// runtime and returns immediately. The callback fires (on a tokio worker
     /// thread) when the send resolves. The UI is responsible for hopping back
@@ -374,54 +343,6 @@ impl Backend {
             .await;
             on_done(res);
         });
-    }
-
-    /// Add a reaction (`emoji`) to a message in `group_hex`.
-    pub fn react(&self, group_hex: &str, message_id_hex: &str, emoji: &str) -> Result<SendSummary> {
-        let group_id = group_id_from_hex(group_hex)?;
-        let label = self.active_label();
-        let runtime = self.runtime.clone();
-        let target = message_id_hex.to_string();
-        let emoji = emoji.to_string();
-        self.tokio.block_on(async move {
-            runtime
-                .react_to_message(&label, &group_id, &target, &emoji)
-                .await
-                .map_err(|e| anyhow!("react_to_message: {e}"))
-        })
-    }
-
-    /// Remove my reaction with `emoji` from `message_id_hex` by publishing a
-    /// kind-5 delete for the matching kind-7 reaction event.
-    pub fn unreact(
-        &self,
-        group_hex: &str,
-        message_id_hex: &str,
-        emoji: &str,
-    ) -> Result<SendSummary> {
-        let group_id = group_id_from_hex(group_hex)?;
-        let label = self.active_label();
-        let sender = self.active_id();
-        let messages = self
-            .app
-            .messages_with_query(
-                &label,
-                AppMessageQuery {
-                    group_id_hex: Some(group_hex.to_string()),
-                    limit: None,
-                },
-            )
-            .map_err(|e| anyhow!("messages_with_query: {e}"))?;
-        let reaction_id =
-            own_reaction_event_id_for_emoji(&messages, &sender, message_id_hex, emoji)
-                .ok_or_else(|| anyhow!("reaction not found for tapped emoji"))?;
-        let runtime = self.runtime.clone();
-        self.tokio.block_on(async move {
-            runtime
-                .delete_message(&label, &group_id, &reaction_id)
-                .await
-                .map_err(|e| anyhow!("delete reaction: {e}"))
-        })
     }
 }
 
