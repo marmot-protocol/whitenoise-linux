@@ -80,8 +80,15 @@ export component StagedChips inherits Rectangle {
                     // The name/size stack doubles as the hover target for the
                     // reveal; keeping it off the chip as a whole leaves Remove
                     // free to take its own hover.
+                    //
+                    // min-width: 0 on the column and on both Texts is what
+                    // keeps Remove intact. A VerticalLayout otherwise adopts
+                    // its widest child's min-width, so a long filename made the
+                    // name column un-shrinkable and the row stole the width
+                    // back from the button, clipping it to "Rem".
                     Rectangle {
                         horizontal-stretch: 1;
+                        min-width: 0px;
                         VerticalLayout {
                             alignment: center;
                             name-text := Text {
@@ -90,6 +97,7 @@ export component StagedChips inherits Rectangle {
                                 font-size: Theme.fs(11px, 14px);
                                 font-family: Theme.font;
                                 overflow: elide;
+                                min-width: 0px;
                             }
 
                             Text {
@@ -98,6 +106,7 @@ export component StagedChips inherits Rectangle {
                                 font-size: Theme.fs(10px, 14px);
                                 font-family: Theme.font;
                                 overflow: elide;
+                                min-width: 0px;
                             }
                         }
 
@@ -116,6 +125,11 @@ export component StagedChips inherits Rectangle {
 
                     MicroButton {
                         label: @tr("Remove");
+                        // Button's min-width defaults to 0, so a long filename
+                        // used to shrink the label away to "Rem". Pinning the
+                        // floor to its own natural width keeps the whole word
+                        // in every locale and pushes the eliding onto the name.
+                        min-w: self.preferred-width;
                         button-height: 32px;
                         y: (parent.height - self.height) / 2;
                         focusable: true;
