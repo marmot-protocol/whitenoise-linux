@@ -805,6 +805,10 @@ msgctxt "ErrorCopy"
 msgid "Couldn't play audio."
 msgstr "音声を再生できませんでした。"
 
+msgctxt "VideoViewerModal"
+msgid "Couldn't play video — tap to retry"
+msgstr "動画を再生できませんでした — タップして再試行"
+
 msgctxt "ErrorCopy"
 msgid "Couldn't publish your key package. Check your relay settings and try again."
 msgstr "キーパッケージを公開できませんでした。リレーの設定を確認して、もう一度お試しください。"

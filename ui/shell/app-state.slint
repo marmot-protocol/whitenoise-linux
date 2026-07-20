@@ -225,6 +225,10 @@ export global AppState {
     in-out property <bool> video-viewer-has-frame: false;
     in-out property <bool> video-viewer-playing: false;
     in-out property <bool> video-viewer-loading: false;
+    // Set by Rust when the download or libmpv decode fails, so the viewer shows
+    // a "couldn't play" pill with a tap-to-retry affordance instead of a frozen
+    // black frame. `video-viewer-retry` re-enters the same load path.
+    in-out property <bool> video-viewer-failed: false;
     in-out property <float> video-viewer-progress: 0.0;
     in-out property <string> video-viewer-pos: "0:00";
     in-out property <string> video-viewer-dur: "0:00";
@@ -233,6 +237,7 @@ export global AppState {
     callback video-viewer-seek(float);
     callback video-viewer-seek-relative(float);
     callback video-viewer-fullscreen();
+    callback video-viewer-retry();
 
     // ═══ Profiles & shared groups ══════════════════════════════════════════
     // Peer-profile modal — opened by tapping an @mention or any avatar (Rust

@@ -761,10 +761,12 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 }
                 ui.set_video_viewer_open(false);
                 ui.set_video_viewer_loading(false);
+                ui.set_video_viewer_failed(false);
                 ui.set_video_viewer_has_frame(false);
                 ui.set_video_viewer_playing(false);
                 ui.set_video_viewer_frame(slint::Image::default());
             }
+            *current_video_reference().lock().unwrap() = None;
             let target = current_video_target().lock().ok().and_then(|t| t.clone());
             if let Some((group_hex, mid)) = target
                 && let Some(backend) = backend_cell.lock().unwrap().clone()
@@ -779,6 +781,39 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 );
             }
             *current_video_target().lock().unwrap() = None;
+        }
+    });
+
+    // Retry a failed download/decode: re-resolve the stashed target + reference
+    // and re-enter the same load path the tap used, back to the loading spinner.
+    ui.global::<AppState>().on_video_viewer_retry({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let vault_cell = vault_cell.clone();
+        move || {
+            let Some(ui) = weak.upgrade() else { return };
+            let Some(backend) = backend_cell.lock().unwrap().clone() else {
+                return;
+            };
+            let target = current_video_target().lock().ok().and_then(|t| t.clone());
+            let reference = current_video_reference()
+                .lock()
+                .ok()
+                .and_then(|r| r.clone());
+            let (Some((group_hex, mid)), Some(reference)) = (target, reference) else {
+                return;
+            };
+            let vault = vault_cell.lock().unwrap().clone();
+            stop_current_player();
+            *current_video_duration().lock().unwrap() = 0.0;
+            ui.set_video_viewer_has_frame(false);
+            ui.set_video_viewer_playing(false);
+            ui.set_video_viewer_progress(0.0);
+            ui.set_video_viewer_pos("0:00".into());
+            ui.set_video_viewer_dur("0:00".into());
+            ui.set_video_viewer_failed(false);
+            ui.set_video_viewer_loading(true);
+            start_video_playback(weak.clone(), backend, group_hex, mid, reference, vault);
         }
     });
 

@@ -329,6 +329,7 @@ export component ModalHost inherits Rectangle {
             has-frame: AppState.video-viewer-has-frame;
             playing: AppState.video-viewer-playing;
             loading: AppState.video-viewer-loading;
+            failed: AppState.video-viewer-failed;
             progress: AppState.video-viewer-progress;
             pos-label: AppState.video-viewer-pos;
             dur-label: AppState.video-viewer-dur;
@@ -346,6 +347,9 @@ export component ModalHost inherits Rectangle {
             }
             fullscreen => {
                 AppState.video-viewer-fullscreen();
+            }
+            retry => {
+                AppState.video-viewer-retry();
             }
         }
 

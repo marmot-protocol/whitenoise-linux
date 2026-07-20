@@ -562,6 +562,16 @@ pub(crate) fn current_video_target() -> &'static Mutex<Option<(String, String)>>
     T.get_or_init(|| Mutex::new(None))
 }
 
+/// The attachment reference of the video currently open in the viewer, stashed
+/// so the failure-retry affordance can re-enter [`start_video_playback`]
+/// without re-resolving the record. Set when the viewer opens, cleared on
+/// dismiss.
+pub(crate) fn current_video_reference() -> &'static Mutex<Option<MediaAttachmentReference>> {
+    use std::sync::OnceLock;
+    static R: OnceLock<Mutex<Option<MediaAttachmentReference>>> = OnceLock::new();
+    R.get_or_init(|| Mutex::new(None))
+}
+
 /// Whether the video viewer put the app window into fullscreen. Tracked so the
 /// `f`-key / button toggle can flip it and the dismiss handler can revert it
 /// (so closing the viewer never leaves the whole app stuck fullscreen).
@@ -605,6 +615,7 @@ pub(crate) fn start_video_playback(
                 let _ = slint::invoke_from_event_loop(move || {
                     if let Some(ui) = weak_fail.upgrade() {
                         ui.set_video_viewer_loading(false);
+                        ui.set_video_viewer_failed(true);
                     }
                 });
             }
@@ -636,6 +647,7 @@ pub(crate) fn spawn_video_player(weak: Weak<DarkMatterLinux>, mid: String, bytes
                     ui.set_video_viewer_frame(image_from_pixels(&px));
                     ui.set_video_viewer_has_frame(true);
                     ui.set_video_viewer_loading(false);
+                    ui.set_video_viewer_failed(false);
                 }
             });
         }
@@ -682,6 +694,7 @@ pub(crate) fn spawn_video_player(weak: Weak<DarkMatterLinux>, mid: String, bytes
             let _ = slint::invoke_from_event_loop(move || {
                 if let Some(ui) = weak.upgrade() {
                     ui.set_video_viewer_loading(false);
+                    ui.set_video_viewer_failed(true);
                 }
             });
         }

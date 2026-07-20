@@ -1112,11 +1112,15 @@ fn open_video_tap(ui: &DarkMatterLinux, cx: AttachmentTapCx, reference: MediaAtt
     stop_current_player();
     *current_video_duration().lock().unwrap() = 0.0;
     *current_video_target().lock().unwrap() = Some((cx.group_hex.clone(), cx.mid.clone()));
+    // Stash the reference so a failure retry can re-enter the load path without
+    // re-resolving the record.
+    *current_video_reference().lock().unwrap() = Some(reference.clone());
     ui.set_video_viewer_has_frame(false);
     ui.set_video_viewer_playing(false);
     ui.set_video_viewer_progress(0.0);
     ui.set_video_viewer_pos("0:00".into());
     ui.set_video_viewer_dur("0:00".into());
+    ui.set_video_viewer_failed(false);
     ui.set_video_viewer_loading(true);
     ui.set_video_viewer_open(true);
     start_video_playback(cx.weak, cx.b, cx.group_hex, cx.mid, reference, cx.vault);
