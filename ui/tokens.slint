@@ -253,6 +253,15 @@ export global Theme {
     public pure function fsr(modern: length, pixel: length) -> length {
         root.pixel-metrics ? pixel : modern
     }
+
+    // The size a chat bubble draws its body text at. It lives here rather than
+    // at the bubble's render site because Rust wraps message text against this
+    // exact value: `render.rs` estimates character widths from it to pick line
+    // breaks, so a second declaration of the pair would let the wrapper and the
+    // renderer drift (they did — the wrapper assumed 13px under every theme,
+    // while a pixel-metrics theme draws at 16px and overflowed the bubble).
+    // The window root pushes it to Rust through `AppState.body-fs-changed`.
+    out property <length> body-fs: root.fs(13px, 16px);
 }
 
 export global Palette {

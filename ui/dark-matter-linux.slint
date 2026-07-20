@@ -403,12 +403,17 @@ export component DarkMatterLinux inherits Window {
     // the whole palette/style resolution follows. `init` covers first paint
     // (a `changed` handler never fires at construction). The mirrors observe
     // the global so the bridge keeps firing now that the contract is aliased.
+    // Both arms push the resolved chat body size straight after assigning the
+    // id: `Theme.body-fs` is a binding, so reading it here sees the new pack,
+    // and Rust needs it before it wraps another message body.
     init => {
         Theme.id = root.theme-id;
+        AppState.body-fs-changed(Theme.body-fs);
     }
     private property <int> theme-id-obs: AppState.theme-id;
     changed theme-id-obs => {
         Theme.id = self.theme-id-obs;
+        AppState.body-fs-changed(Theme.body-fs);
     }
     private property <int> accent-color-obs: AppState.accent-color;
     changed accent-color-obs => {

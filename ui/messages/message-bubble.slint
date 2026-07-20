@@ -76,7 +76,7 @@ export component MessageBubble inherits Rectangle {
         root.msg.failed ? @tr("failed · tap to retry") : root.msg.stamp;
     // Body typography. Emoji glyphs are sized off `body-fs` so they ride
     // the text line cleanly.
-    property <length> body-fs: Theme.fs(13px, 16px);
+    property <length> body-fs: Theme.body-fs;
     property <length> emoji-px: root.msg.jumbo-emoji ? Theme.fs(66px, 72px) : root.body-fs * 1.2;
 
     property <float> enter: 0;

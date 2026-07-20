@@ -696,6 +696,21 @@ pub(crate) fn wire_panes(
         }
     });
 
+    // The window root pushes `Theme.body-fs` here on every theme change (and
+    // once at init). Message text is wrapped in Rust against that size, so
+    // record it for the next build and re-wrap what is already on screen.
+    ui.global::<AppState>().on_body_fs_changed({
+        let weak = ui.as_weak();
+        move |px| {
+            if !set_body_fs(px) {
+                return;
+            }
+            if let Some(ui) = weak.upgrade() {
+                rewrap_all_message_lines(&ui);
+            }
+        }
+    });
+
     ui.global::<AppState>().on_accent_selected({
         let weak = ui.as_weak();
         let settings_cell = settings_cell.clone();

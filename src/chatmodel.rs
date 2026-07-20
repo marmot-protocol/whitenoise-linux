@@ -1113,6 +1113,33 @@ pub(crate) fn with_inner_messages<R>(
     Some(f(vm))
 }
 
+/// Re-wrap every rendered message body against the current theme's body size.
+///
+/// The line models are wrapped in Rust against `Theme.body-fs`, so a theme
+/// switch that moves that size leaves every already-built row broken at the
+/// old width. Rebuilding from the backend snapshot would also drop the
+/// optimistic overlay, so this rewrites the `lines` model in place and touches
+/// nothing else. Rows with no body of their own — system lines, deleted
+/// bubbles — keep the model they have.
+pub(crate) fn rewrap_all_message_lines(ui: &DarkMatterLinux) {
+    let chats_messages = ui.get_chats_messages();
+    let chat_count = chats_messages.row_count();
+    for idx in 0..chat_count {
+        let _ = with_inner_messages(&chats_messages, idx, |vm| {
+            for pos in 0..vm.row_count() {
+                let Some(mut row) = vm.row_data(pos) else {
+                    continue;
+                };
+                if row.text.is_empty() || row.lines.row_count() == 0 {
+                    continue;
+                }
+                row.lines = build_message_lines(row.text.as_str(), row.bubble_max);
+                vm.set_row_data(pos, row);
+            }
+        });
+    }
+}
+
 /// Find the index of the row whose `message_id` matches `id`.
 pub(crate) fn find_message_row(vm: &VecModel<ChatMessage>, id: &str) -> Option<usize> {
     (0..vm.row_count()).find(|&i| {
