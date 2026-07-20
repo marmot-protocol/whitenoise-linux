@@ -38,6 +38,41 @@ if ! command -v msgmerge >/dev/null 2>&1; then
     exit 1
 fi
 
+# Validate the freshly extracted POT before merging anything. Without this the
+# first msgmerge below dies under `set -e` with a screenful of "keyword ...
+# unknown" pointing at the POT, which reads as catalog corruption rather than
+# what it is: a source comment the extractor mangled on the way in.
+#
+# slint-tr-extractor copies the LAST `//` line of the comment block above a
+# `@tr` into the POT as a `#.` translator note. It wraps that output at 79
+# columns, and when the note is long enough to wrap it emits the text with no
+# `#.` prefix on either physical line, which is not valid PO syntax. `#. ` is
+# 3 columns, so the note must stay within 76 characters.
+if command -v msgfmt >/dev/null 2>&1; then
+    if ! err="$(msgfmt --check -o /dev/null "$POT" 2>&1)"; then
+        echo "✗ The extractor produced an invalid $POT:" >&2
+        echo "$err" >&2
+        echo >&2
+        echo "  This is almost always a translator note over 76 characters on the" >&2
+        echo "  line directly above a @tr(...). Shorten the offending comment to a" >&2
+        echo "  single line of 76 characters or less, then re-run this script." >&2
+        echo "  Note that only that last // line reaches translators, so keep it" >&2
+        echo "  readable on its own rather than splitting the sentence in two." >&2
+        echo >&2
+        echo "  Offending .slint lines:" >&2
+        awk '
+            /@tr\(/ && prev ~ /^[[:space:]]*\/\// {
+                t = prev
+                sub(/^[[:space:]]*\/\/[[:space:]]?/, "", t)
+                if (length(t) > 76)
+                    printf "    %s:%d (%d chars) %s\n", FILENAME, FNR - 1, length(t), t
+            }
+            { prev = $0 }
+        ' $(find ui -name '*.slint' | sort) >&2
+        exit 1
+    fi
+fi
+
 for locale in it de ja; do
     PO="lang/$locale/LC_MESSAGES/$DOMAIN.po"
     if [[ ! -f "$PO" ]]; then

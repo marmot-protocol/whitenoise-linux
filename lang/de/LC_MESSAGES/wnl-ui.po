@@ -837,7 +837,7 @@ msgctxt "ErrorCopy"
 msgid "Couldn't finish syncing. We'll keep retrying — check your relay settings if this keeps happening."
 msgstr "Synchronisierung nicht abgeschlossen. Wir versuchen es weiter — überprüfe deine Relay-Einstellungen, falls das öfter vorkommt."
 
-#. Forward failure: some of the source attachments couldn't be fetched to re-send.
+#. Forward failure: some source attachments could not be fetched to re-send.
 msgctxt "error banner when forwarding attachments fails, %1 = failed count, %2 = total count"
 msgid "Couldn't forward %1 of %2 attachments. Tap the message to try again."
 msgstr "%1 von %2 Anhängen konnten nicht weitergeleitet werden. Tippe auf die Nachricht, um es erneut zu versuchen."
