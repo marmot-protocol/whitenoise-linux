@@ -417,14 +417,6 @@ impl Backend {
         });
     }
 
-    /// The group's admin set as 32-byte hex pubkeys (same encoding as
-    /// `account_id_hex`). Empty when the group is unknown.
-    pub fn group_admins(&self, group_hex: &str) -> Vec<String> {
-        self.find_chat(group_hex)
-            .map(|g| g.admin_policy.admins)
-            .unwrap_or_default()
-    }
-
     /// True when the active account is an admin of `group_hex`. Looks at the
     /// group's admin policy component; the admins list contains 32-byte hex
     /// pubkeys, identical encoding to `account_id_hex`.

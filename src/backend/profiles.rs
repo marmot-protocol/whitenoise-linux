@@ -86,21 +86,6 @@ impl Backend {
         self.account_name_and_picture(account_id_hex).0
     }
 
-    /// Published display name for ANY account, read synchronously from the
-    /// directory storage (a disk read — never call on the UI thread). Unlike
-    /// [`Self::account_name_and_picture`] this doesn't depend on the boot-time
-    /// cache warm, so it resolves keys outside the user's groups/contacts —
-    /// the mention warm paths (src/mentions.rs) use it for arbitrary npubs.
-    /// `None` when the directory has no profile (or no name) for the key.
-    pub fn directory_display_name(&self, account_id_hex: &str) -> Option<String> {
-        let entry = self
-            .app
-            .directory_entry_for_account_id(account_id_hex)
-            .ok()??;
-        let profile = entry.profile?;
-        best_display_name(&profile)
-    }
-
     /// Display name + picture URL for an account id, served from the
     /// in-process profile cache — NEVER synchronously from the directory
     /// storage (see `profile_cache`). A cold entry returns the hex-tail
