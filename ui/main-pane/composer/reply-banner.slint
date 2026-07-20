@@ -1,6 +1,7 @@
 import { Palette, Theme } from "../../tokens.slint";
 import { MicroButton } from "../../primitives/button.slint";
 import { Avatar } from "../../primitives/avatar.slint";
+import { Tooltip } from "../../primitives/tooltip.slint";
 
 // Reply banner — shown above the input when replying to a message.
 // A mint accent bar, the quoted author's small avatar, then
@@ -62,14 +63,22 @@ export component ReplyBanner inherits Rectangle {
                     vertical-alignment: center;
                 }
 
-                Text {
-                    text: root.reply-target-preview;
-                    color: Palette.text-mid;
-                    font-size: Theme.fs(11px, 14px);
-                    font-family: Theme.font;
-                    overflow: elide;
+                // The quote is elided to keep the banner one line tall, so the
+                // text sits under a hover target that reveals the rest.
+                Rectangle {
                     horizontal-stretch: 1;
-                    vertical-alignment: center;
+                    preview-text := Text {
+                        width: 100%;
+                        height: 100%;
+                        text: root.reply-target-preview;
+                        color: Palette.text-mid;
+                        font-size: Theme.fs(11px, 14px);
+                        font-family: Theme.font;
+                        overflow: elide;
+                        vertical-alignment: center;
+                    }
+
+                    preview-touch := TouchArea { }
                 }
             }
         }
@@ -104,5 +113,18 @@ export component ReplyBanner inherits Rectangle {
                 root.cancel-reply();
             }
         }
+    }
+
+    // Reveal of the elided quote. Mounted after the layout so it paints over
+    // the banner, and only while the text is actually cut off — a preview that
+    // fits already shows everything. It floats above the banner, where the
+    // message list gives it room, and wraps within the banner's own width so a
+    // long quote can't run off the window.
+    if preview-touch.has-hover && preview-text.preferred-width > preview-text.width: Tooltip {
+        x: min(preview-text.absolute-position.x - root.absolute-position.x, root.width - self.width - 18px);
+        y: -self.height - 6px;
+        label: root.reply-target-preview;
+        wrap-width: root.width - 36px;
+        is-visible: true;
     }
 }

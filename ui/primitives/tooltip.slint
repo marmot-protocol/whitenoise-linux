@@ -1,16 +1,22 @@
 import { Palette, Theme } from "../tokens.slint";
 
 // Tooltip — a small floating label that appears to the right of a target element.
-// Used in the left rail for icon-only buttons when the rail is collapsed.
+// Used in the left rail for icon-only buttons when the rail is collapsed, and to
+// reveal text a surface had to elide (composer reply preview, attachment names).
 export component Tooltip inherits Rectangle {
     in property <string> label: "";
     in property <bool> is-visible: false;
     in property <length> offset-y: 0px;
+    // Caps how wide the tooltip may grow before the label wraps onto more
+    // lines, so revealing a long elided string can't run off the window. 0px
+    // (the default) keeps the single-line, grow-to-fit behaviour short labels
+    // want.
+    in property <length> wrap-width: 0px;
 
     x: 0px;
     y: root.offset-y;
-    width: self.preferred-width;
-    height: 28px;
+    width: root.wrap-width <= 0px ? self.preferred-width : min(self.preferred-width, root.wrap-width);
+    height: max(28px, label-text.preferred-height + 12px);
     background: Palette.elevated;
     border-radius: (6px) * Theme.r-scale;
     border-width: Theme.border-w;
@@ -28,14 +34,17 @@ export component Tooltip inherits Rectangle {
     HorizontalLayout {
         padding-left: 10px;
         padding-right: 10px;
+        padding-top: 6px;
+        padding-bottom: 6px;
         alignment: center;
-        Text {
+        label-text := Text {
             text: root.label;
             color: Palette.text-mid;
             font-size: Theme.fs(10px, 14px);
             font-weight: 600;
             font-family: Theme.font;
             vertical-alignment: center;
+            wrap: root.wrap-width <= 0px ? no-wrap : word-wrap;
         }
     }
 }
