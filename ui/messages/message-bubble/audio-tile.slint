@@ -94,6 +94,19 @@ export component AudioTile inherits Rectangle {
                         border-radius: 2.5px * Theme.r-scale;
                         background: root.msg.outgoing ? Palette.bubble-out-fg : Palette.mint;
                     }
+
+                    // Playhead knob, mirroring the video player's
+                    // (modals/video-viewer-modal.slint). Centered on the end
+                    // of the fill, and grows on hover to read as draggable.
+                    Rectangle {
+                        x: parent.width * clamp(root.msg.att-audio-progress, 0.0, 1.0) - self.width / 2;
+                        y: (parent.height - self.height) / 2;
+                        width: seek-touch.has-hover ? 14px : 11px;
+                        height: self.width;
+                        animate width { duration: 80ms; }
+                        border-radius: self.width / 2;
+                        background: root.msg.outgoing ? Palette.bubble-out-fg : Palette.mint;
+                    }
                 }
 
                 seek-touch := TouchArea {
