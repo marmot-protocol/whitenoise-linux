@@ -1,6 +1,7 @@
 import { Palette, Theme, StagedAttachment } from "../../tokens.slint";
 import { PaperclipIcon } from "../../icons/paperclip-icon.slint";
 import { MicroButton } from "../../primitives/button.slint";
+import { Tooltip } from "../../primitives/tooltip.slint";
 
 // Staged-attachment chips — the "are you sure" step. Everything queued here is
 // visible (with a thumbnail for images) and removable before Send fires the
@@ -8,6 +9,14 @@ import { MicroButton } from "../../primitives/button.slint";
 export component StagedChips inherits Rectangle {
     in property <[StagedAttachment]> staged;
     callback remove-staged(int);
+
+    // Which chip's name is hovered and still cut off, plus the name and offset
+    // to draw. The chips live inside a clipping Flickable, so the reveal has to
+    // be mounted out here at the root — these carry the hovered row's data past
+    // that boundary. -1 means nothing to reveal.
+    property <int> hover-index: -1;
+    property <string> hover-name: "";
+    property <length> hover-x: 0px;
 
     height: 58px;
     background: Palette.bg;
@@ -22,8 +31,12 @@ export component StagedChips inherits Rectangle {
             padding-bottom: 9px;
             spacing: 8px;
             alignment: start;
+            // 192px is the floor, not the width: a chip grows with its name up
+            // to 320px so ordinary filenames are never cut for want of room,
+            // and only what's still too long falls back to eliding.
             for att[att-i] in root.staged: Rectangle {
-                width: 192px;
+                min-width: 192px;
+                max-width: 320px;
                 height: 40px;
                 border-radius: (8px) * Theme.r-scale;
                 background: Palette.panel;
@@ -64,28 +77,59 @@ export component StagedChips inherits Rectangle {
                         }
                     }
 
-                    VerticalLayout {
-                        alignment: center;
+                    // The name/size stack doubles as the hover target for the
+                    // reveal; keeping it off the chip as a whole leaves Remove
+                    // free to take its own hover.
+                    //
+                    // min-width: 0 on the column and on both Texts is what
+                    // keeps Remove intact. A VerticalLayout otherwise adopts
+                    // its widest child's min-width, so a long filename made the
+                    // name column un-shrinkable and the row stole the width
+                    // back from the button, clipping it to "Rem".
+                    Rectangle {
                         horizontal-stretch: 1;
-                        Text {
-                            text: att.name;
-                            color: Palette.text-hi;
-                            font-size: Theme.fs(11px, 14px);
-                            font-family: Theme.font;
-                            overflow: elide;
+                        min-width: 0px;
+                        VerticalLayout {
+                            alignment: center;
+                            name-text := Text {
+                                text: att.name;
+                                color: Palette.text-hi;
+                                font-size: Theme.fs(11px, 14px);
+                                font-family: Theme.font;
+                                overflow: elide;
+                                min-width: 0px;
+                            }
+
+                            Text {
+                                text: att.size-label;
+                                color: Palette.text-lo;
+                                font-size: Theme.fs(10px, 14px);
+                                font-family: Theme.font;
+                                overflow: elide;
+                                min-width: 0px;
+                            }
                         }
 
-                        Text {
-                            text: att.size-label;
-                            color: Palette.text-lo;
-                            font-size: Theme.fs(10px, 14px);
-                            font-family: Theme.font;
-                            overflow: elide;
+                        name-touch := TouchArea {
+                            changed has-hover => {
+                                if (self.has-hover && name-text.preferred-width > name-text.width) {
+                                    root.hover-index = att-i;
+                                    root.hover-name = att.name;
+                                    root.hover-x = self.absolute-position.x - root.absolute-position.x;
+                                } else if (root.hover-index == att-i) {
+                                    root.hover-index = -1;
+                                }
+                            }
                         }
                     }
 
                     MicroButton {
                         label: @tr("Remove");
+                        // Button's min-width defaults to 0, so a long filename
+                        // used to shrink the label away to "Rem". Pinning the
+                        // floor to its own natural width keeps the whole word
+                        // in every locale and pushes the eliding onto the name.
+                        min-w: self.preferred-width;
                         button-height: 32px;
                         y: (parent.height - self.height) / 2;
                         focusable: true;
@@ -102,5 +146,15 @@ export component StagedChips inherits Rectangle {
                 }
             }
         }
+    }
+
+    // Reveal of the hovered chip's full filename, floated above the row and
+    // outside the Flickable that would otherwise clip it.
+    if root.hover-index >= 0: Tooltip {
+        x: max(18px, min(root.hover-x, root.width - self.width - 18px));
+        y: -self.height - 6px;
+        label: root.hover-name;
+        wrap-width: root.width - 36px;
+        is-visible: true;
     }
 }
