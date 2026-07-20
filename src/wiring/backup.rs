@@ -1,9 +1,26 @@
 use crate::*;
 
+/// Push the "Last backup" receipt from persisted settings into the Storage
+/// pane. An absent path leaves both properties empty, which is what keeps the
+/// row unmounted on an install that has never written a backup; the stamp is
+/// formatted here (not in Slint) so it honors the user's date/time preferences
+/// like every other visible timestamp.
+pub(crate) fn publish_last_backup(ui: &DarkMatterLinux, settings: &Settings) {
+    let path = settings.last_backup_path.clone().unwrap_or_default();
+    let stamp = settings
+        .last_backup_at
+        .filter(|_| !path.is_empty())
+        .map(|secs| format_full_stamp(secs.max(0) as u64))
+        .unwrap_or_default();
+    ui.set_storage_last_backup_path(path.into());
+    ui.set_storage_last_backup_at(stamp.into());
+}
+
 pub(crate) fn wire_backup(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     let Cx {
         backend_cell,
         vault_cell,
+        settings_cell,
         ..
     } = cx.clone();
     let Handlers {
@@ -71,6 +88,19 @@ pub(crate) fn wire_backup(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                         Ok(()) => {
                             ui.set_show_create_backup(false);
                             ui.set_create_backup_password(s(""));
+                            // Closing the modal is all the old success arm did,
+                            // which looks exactly like a cancel. Say the write
+                            // happened and name where it landed, then record it
+                            // so the Storage pane keeps the receipt after the
+                            // toast has faded.
+                            let dest = dest.display().to_string();
+                            set_status_feedback(
+                                &ui,
+                                tmpl(&error_copy().backup_saved, &[&dest]),
+                                false,
+                            );
+                            ui.global::<AppState>()
+                                .invoke_storage_backup_written(dest.into());
                         }
                         Err(backup::BackupError::WrongPassword) => {
                             ui.set_create_backup_status(error_copy().wrong_password.into());
@@ -83,6 +113,26 @@ pub(crate) fn wire_backup(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     }
                 });
             });
+        }
+    });
+
+    // Persist the destination of a backup that just succeeded and republish the
+    // Storage pane's row. Reached only from the write's completion hop, which
+    // runs on the UI thread but can't carry `settings_cell` (an `Rc`) through
+    // `invoke_from_event_loop` — routing through a callback keeps the cell here,
+    // the shape `on_import_backup_submit` already uses to re-enter `unlock`.
+    ui.global::<AppState>().on_storage_backup_written({
+        let weak = ui.as_weak();
+        let settings_cell = settings_cell.clone();
+        move |dest| {
+            let Some(ui) = weak.upgrade() else { return };
+            {
+                let mut st = settings_cell.borrow_mut();
+                st.last_backup_path = Some(dest.to_string());
+                st.last_backup_at = Some(now_unix_secs() as i64);
+                st.save();
+            }
+            publish_last_backup(&ui, &settings_cell.borrow());
         }
     });
 

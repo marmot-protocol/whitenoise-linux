@@ -1657,6 +1657,9 @@ pub(crate) fn wire_panes(
     refresh_storage_size();
     // Static for the session — the data dir doesn't move while we're running.
     ui.set_storage_vault_dir(vault::vault_dir().display().to_string().into());
+    // Restore the "Last backup" receipt so it survives a restart, not just the
+    // modal that wrote it. Refreshed in place by `on_storage_backup_written`.
+    publish_last_backup(ui, &settings_cell.borrow());
 
     // Reveal the folder holding vault.db in the platform file manager. Reuses the
     // same xdg-open/open handler as external links — a directory path is fine.
