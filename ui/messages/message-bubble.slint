@@ -76,7 +76,7 @@ export component MessageBubble inherits Rectangle {
         root.msg.failed ? @tr("failed · tap to retry") : root.msg.stamp;
     // Body typography. Emoji glyphs are sized off `body-fs` so they ride
     // the text line cleanly.
-    property <length> body-fs: Theme.fs(13px, 16px);
+    property <length> body-fs: Theme.body-fs;
     property <length> emoji-px: root.msg.jumbo-emoji ? Theme.fs(66px, 72px) : root.body-fs * 1.2;
 
     property <float> enter: 0;
@@ -308,16 +308,24 @@ export component MessageBubble inherits Rectangle {
         // Retraction tombstone — replaces the body (and all the blocks gated
         // off above) with a muted italic placeholder. The timestamp in `meta`
         // still renders so the deleted row keeps its place in the timeline.
-        if root.msg.deleted: Text {
-                text: @tr("This message was deleted");
-                color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
-                font-size: root.body-fs;
-                font-family: Theme.font;
-                font-italic: true;
-                opacity: root.msg.outgoing ? 0.7 : 0.85;
-                vertical-alignment: top;
-                wrap: word-wrap;
-                width: min(self.preferred-width, root.text-budget);
+        if root.msg.deleted: HorizontalLayout {
+                spacing: 0;
+                alignment: start;
+                Text {
+                    text: @tr("This message was deleted");
+                    color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
+                    font-size: root.body-fs;
+                    font-family: Theme.font;
+                    font-italic: true;
+                    opacity: root.msg.outgoing ? 0.7 : 0.85;
+                    vertical-alignment: top;
+                    wrap: word-wrap;
+                    width: min(self.preferred-width, root.text-budget);
+                }
+                // Same stamp slot the wrapped-line path reserves.
+                Rectangle {
+                    width: meta.preferred-width + root.gap;
+                }
             }
             // Body lines, wrapped in the text-selection TouchArea. Wrapping
             // (rather than overlaying) keeps the nested link cells winning
@@ -510,109 +518,136 @@ export component MessageBubble inherits Rectangle {
                                     sel-bg: root.msg.outgoing ? Palette.bubble-selection-out : Palette.mint.transparentize(0.7);
                                 }
                             }
+                            // Reserves the stamp's slot on the final line, so
+                            // `meta` (drawn over this, anchored bottom-right)
+                            // rides at the end of the text instead of holding a
+                            // full-height column beside it. Rust already wraps
+                            // every line to `text-budget`, which excludes this
+                            // width, so the text can never reach under it.
+                            if li == root.msg.lines.length - 1: Rectangle {
+                                width: meta.preferred-width + root.gap;
+                            }
                         }
                     }
                 }
             }
-            if root.msg.lines.length == 0 && !root.msg.deleted: Text {
-                text: root.msg.text;
-                color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
-                font-size: root.body-fs;
+            if root.msg.lines.length == 0 && !root.msg.deleted: HorizontalLayout {
+                spacing: 0;
+                alignment: start;
+                Text {
+                    text: root.msg.text;
+                    color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
+                    font-size: root.body-fs;
+                    font-family: Theme.font;
+                    vertical-alignment: top;
+                    wrap: Theme.char-wrap ? char-wrap : word-wrap;
+                    width: min(self.preferred-width, root.text-budget);
+                }
+                // Same stamp slot the wrapped-line path reserves.
+                Rectangle {
+                    width: meta.preferred-width + root.gap;
+                }
+            }
+        }
+    }
+
+    // Timestamp + delivery state, tucked into the bubble's bottom-right
+    // corner. It used to be a second column in the body row, which reserved a
+    // full-height strip beside the text; now only the last body line reserves
+    // this width (the spacer Rectangles above) and the stamp rides at the end
+    // of the text. Declared after `layout` so it paints over that spacer —
+    // Slint paints in declaration order and has no z-index.
+    meta := VerticalLayout {
+        x: parent.width - self.width - root.pad-h;
+        y: parent.height - self.height - root.pad-v;
+        width: self.preferred-width;
+        height: self.preferred-height;
+        alignment: end;
+    // Hidden for jumbo emoji — the timestamp floats as a pill instead
+    // (see `stamp-pill` below), so it doesn't reserve inline width.
+    if !root.msg.jumbo-emoji: HorizontalLayout {
+            spacing: 4px;
+            alignment: end;
+        // "(edited)" affordance — opens the history modal on tap. Sits
+        // before the timestamp so the stamp + check stay rightmost.
+        if root.msg.edited && !root.msg.failed && !root.msg.deleted: edited-rect := Rectangle {
+                height: edited-label.preferred-height;
+                width: edited-label.preferred-width;
+                y: parent.height - self.height;
+                edited-label := Text {
+                    text: @tr("edited");
+                    color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.mint;
+                    font-size: Theme.fs(10px, 14px);
+                    font-family: Theme.font;
+                    font-weight: 600;
+                    vertical-alignment: bottom;
+                    opacity: edited-touch.has-hover ? 1.0 : (root.msg.outgoing ? 0.7 : 0.85);
+                    animate opacity { duration: Theme.hover-dur; }
+                }
+
+                edited-touch := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        root.show-history-clicked();
+                    }
+                }
+            }
+            stamp-rect := Rectangle {
+                height: stamp-label.preferred-height;
+                width: stamp-label.preferred-width;
+                y: parent.height - self.height;
+                stamp-label := Text {
+                    text: root.stamp-with-delivery;
+                    color: root.msg.failed ? Palette.danger-on-bubble : (root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-lo);
+                    font-size: Theme.fs(10px, 14px);
+                    font-family: Theme.font;
+                    vertical-alignment: bottom;
+                    opacity: root.msg.outgoing && !root.msg.failed ? 0.7 : 1;
+                }
+            // Hover sensor for the datetime tooltip. Sits above the
+            // whole-bubble TouchAreas, so it forwards clicks (retry /
+            // effect replay) and right-clicks (context menu) to keep
+            // the stamp region behaving exactly like the rest of the
+            // bubble — same reason `edited-touch` above swallows.
+            stamp-touch := TouchArea {
+                    pointer-event(e) => {
+                        if (e.kind == PointerEventKind.down && e.button == PointerEventButton.right) {
+                            root.context-menu-requested(
+                            self.absolute-position.x + self.mouse-x,
+                            self.absolute-position.y + self.mouse-y);
+                        }
+                    }
+                    clicked => {
+                        if (root.msg.failed) {
+                            root.retry-clicked();
+                        } else {
+                            root.body-clicked();
+                        }
+                    }
+                }
+            // Floats above the stamp, right-aligned; the bubble root
+            // doesn't clip, so it can overflow into the previous row.
+            if stamp-touch.has-hover && !root.msg.failed && root.msg.stamp-full != "": Tooltip {
+                    x: parent.width - self.width;
+                    y: -self.height - 6px;
+                    label: root.msg.stamp-full;
+                    is-visible: true;
+                }
+            }
+        // Status indicator: confirmed = double check, pending = single
+        // (lighter, animates), failed = "!" in red. Only on outgoing.
+        if root.msg.outgoing && !root.msg.failed: CheckMark {
+                stroke: Palette.bubble-out-fg;
+                double: !root.msg.pending;
+                opacity: root.msg.pending ? 0.55 : 1.0;
+                animate opacity { duration: 180ms; }
+            }
+            if root.msg.outgoing && root.msg.failed: Text {
+                text: "!";
+                color: Palette.danger-on-bubble;
+                font-size: Theme.fs(11px, 14px);
                 font-family: Theme.font;
-                vertical-alignment: top;
-                wrap: Theme.char-wrap ? char-wrap : word-wrap;
-                width: min(self.preferred-width, root.text-budget);
-            }
-
-            meta := VerticalLayout {
-                alignment: end;
-            // Hidden for jumbo emoji — the timestamp floats as a pill instead
-            // (see `stamp-pill` below), so it doesn't reserve inline width.
-            if !root.msg.jumbo-emoji: HorizontalLayout {
-                    spacing: 4px;
-                    alignment: end;
-                // "(edited)" affordance — opens the history modal on tap. Sits
-                // before the timestamp so the stamp + check stay rightmost.
-                if root.msg.edited && !root.msg.failed && !root.msg.deleted: edited-rect := Rectangle {
-                        height: edited-label.preferred-height;
-                        width: edited-label.preferred-width;
-                        y: parent.height - self.height;
-                        edited-label := Text {
-                            text: @tr("edited");
-                            color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.mint;
-                            font-size: Theme.fs(10px, 14px);
-                            font-family: Theme.font;
-                            font-weight: 600;
-                            vertical-alignment: bottom;
-                            opacity: edited-touch.has-hover ? 1.0 : (root.msg.outgoing ? 0.7 : 0.85);
-                            animate opacity { duration: Theme.hover-dur; }
-                        }
-
-                        edited-touch := TouchArea {
-                            mouse-cursor: pointer;
-                            clicked => {
-                                root.show-history-clicked();
-                            }
-                        }
-                    }
-                    stamp-rect := Rectangle {
-                        height: stamp-label.preferred-height;
-                        width: stamp-label.preferred-width;
-                        y: parent.height - self.height;
-                        stamp-label := Text {
-                            text: root.stamp-with-delivery;
-                            color: root.msg.failed ? Palette.danger-on-bubble : (root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-lo);
-                            font-size: Theme.fs(10px, 14px);
-                            font-family: Theme.font;
-                            vertical-alignment: bottom;
-                            opacity: root.msg.outgoing && !root.msg.failed ? 0.7 : 1;
-                        }
-                    // Hover sensor for the datetime tooltip. Sits above the
-                    // whole-bubble TouchAreas, so it forwards clicks (retry /
-                    // effect replay) and right-clicks (context menu) to keep
-                    // the stamp region behaving exactly like the rest of the
-                    // bubble — same reason `edited-touch` above swallows.
-                    stamp-touch := TouchArea {
-                            pointer-event(e) => {
-                                if (e.kind == PointerEventKind.down && e.button == PointerEventButton.right) {
-                                    root.context-menu-requested(
-                                    self.absolute-position.x + self.mouse-x,
-                                    self.absolute-position.y + self.mouse-y);
-                                }
-                            }
-                            clicked => {
-                                if (root.msg.failed) {
-                                    root.retry-clicked();
-                                } else {
-                                    root.body-clicked();
-                                }
-                            }
-                        }
-                    // Floats above the stamp, right-aligned; the bubble root
-                    // doesn't clip, so it can overflow into the previous row.
-                    if stamp-touch.has-hover && !root.msg.failed && root.msg.stamp-full != "": Tooltip {
-                            x: parent.width - self.width;
-                            y: -self.height - 6px;
-                            label: root.msg.stamp-full;
-                            is-visible: true;
-                        }
-                    }
-                // Status indicator: confirmed = double check, pending = single
-                // (lighter, animates), failed = "!" in red. Only on outgoing.
-                if root.msg.outgoing && !root.msg.failed: CheckMark {
-                        stroke: Palette.bubble-out-fg;
-                        double: !root.msg.pending;
-                        opacity: root.msg.pending ? 0.55 : 1.0;
-                        animate opacity { duration: 180ms; }
-                    }
-                    if root.msg.outgoing && root.msg.failed: Text {
-                        text: "!";
-                        color: Palette.danger-on-bubble;
-                        font-size: Theme.fs(11px, 14px);
-                        font-family: Theme.font;
-                        vertical-alignment: bottom;
-                    }
-                }
+                vertical-alignment: bottom;
             }
         }
     }

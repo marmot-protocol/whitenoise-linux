@@ -561,6 +561,10 @@ export global AppState {
     callback change-language-clicked();
     callback locale-selected(string);
     callback theme-mode-selected(string);
+    // Fired with `Theme.body-fs` whenever the active theme resolves a new chat
+    // body size. Rust wraps message text against that size, so it re-wraps the
+    // rendered rows here; see `set_body_fs` in `render.rs`.
+    callback body-fs-changed(length);
     callback accent-selected(int);
     callback outgoing-on-right-toggled(bool);
     // Stamp formats — `24h`/`12h` and `mdy`/`dmy`/`iso`; Rust persists and

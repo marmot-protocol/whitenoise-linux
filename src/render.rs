@@ -1188,7 +1188,43 @@ pub(crate) fn commit_mention(
     ui.set_composer_caret_tick(ui.get_composer_caret_tick().wrapping_add(1));
 }
 
-// Memoized markdown line models, keyed by (body, wrap-width). Rebuilding a
+// The size the chat bubble actually draws its body text at, in logical pixels
+// — the live value of `Theme.body-fs`, pushed from the window root through
+// `AppState.body-fs-changed` every time the theme id changes.
+//
+// The greedy wrapper derives its per-character width estimate from this
+// (`env.base_fs * MD_CHAR_W`), so it has to track the theme: a `pixel-metrics`
+// theme resolves `Theme.fs(13px, 16px)` to 16px, and wrapping those lines
+// against 13px packs them about a quarter too wide for the bubble. UI-thread
+// only, like the line cache it keys.
+thread_local! {
+    static BODY_FS: std::cell::Cell<f32> = const { std::cell::Cell::new(DEFAULT_BODY_FS) };
+}
+
+/// The non-pixel-metrics body size — the `modern` half of the bubble's
+/// `Theme.fs(13px, 16px)`. Only the value before the first push; every theme
+/// (including the default one) re-states it through `body-fs-changed`.
+pub(crate) const DEFAULT_BODY_FS: f32 = 13.0;
+
+pub(crate) fn body_fs() -> f32 {
+    BODY_FS.with(|c| c.get())
+}
+
+/// Record the theme's body size. Returns whether it moved, so the caller can
+/// skip re-wrapping the rendered rows when a theme switch leaves the metric
+/// alone (every non-pixel-metrics theme resolves to the same size).
+pub(crate) fn set_body_fs(px: f32) -> bool {
+    BODY_FS.with(|c| {
+        if (c.get() - px).abs() < 0.01 {
+            return false;
+        }
+        c.set(px);
+        true
+    })
+}
+
+// Memoized markdown line models, keyed by (body, wrap-width, body-size).
+// Rebuilding a
 // chat re-parses every visible body through the full markdown → wrap pipeline;
 // bodies are immutable (edits arrive as new text → new key), so the flattened
 // model can be shared across rows and rebuilds. UI-thread only (the line
@@ -1196,7 +1232,7 @@ pub(crate) fn commit_mention(
 // at the cap rather than LRU-tracked — a full re-parse of one chat is cheap
 // compared to bookkeeping on every hit.
 thread_local! {
-    static MESSAGE_LINES_CACHE: RefCell<HashMap<(String, u32), ModelRc<MessageLine>>> =
+    static MESSAGE_LINES_CACHE: RefCell<HashMap<(String, u32, u32), ModelRc<MessageLine>>> =
         RefCell::new(HashMap::new());
 }
 pub(crate) const MESSAGE_LINES_CACHE_CAP: usize = 4096;
@@ -1206,13 +1242,18 @@ pub(crate) fn build_message_lines(text: &str, bubble_max: f32) -> ModelRc<Messag
     // Chat-body chrome: 2*pad-h (14) + gap (12) + meta col (~70). Conservative
     // so wrapping kicks in before the dynamic `available-w` clips the bubble.
     let budget = (bubble_max - 110.0).max(60.0);
+    // Part of the key: the same body at the same width wraps differently once
+    // the theme moves the body size, so a cached model from the previous theme
+    // must not answer for the new one.
+    let base_fs = body_fs();
     MESSAGE_LINES_CACHE.with(|cache| {
-        let key = (text.to_string(), budget.to_bits());
+        let key = (text.to_string(), budget.to_bits(), base_fs.to_bits());
         if let Some(model) = cache.borrow().get(&key) {
             return model.clone();
         }
-        let model: ModelRc<MessageLine> =
-            ModelRc::new(VecModel::from(tokenize_message_lines(text, budget, 13.0)));
+        let model: ModelRc<MessageLine> = ModelRc::new(VecModel::from(tokenize_message_lines(
+            text, budget, base_fs,
+        )));
         let mut cache = cache.borrow_mut();
         if cache.len() >= MESSAGE_LINES_CACHE_CAP {
             cache.clear();
