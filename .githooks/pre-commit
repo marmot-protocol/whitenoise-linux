@@ -79,6 +79,34 @@ if staged -- '*.slint' | grep -qz .; then
         rm -f "$tmp"
     done < <(staged -- '*.slint')
     [ "$slint_changed" = 1 ] && echo "pre-commit: formatted staged Slint files."
+
+    # Gate translator notes on length. slint-tr-extractor copies the LAST `//`
+    # line above a @tr into the POT as a `#.` note and wraps its output at 79
+    # columns; a note long enough to wrap comes out with no `#.` prefix on
+    # either physical line, which is invalid PO syntax and breaks
+    # scripts/update-translations.sh on the next run. `#. ` is 3 columns, so
+    # the note has 76 to work with.
+    long_notes=""
+    while IFS= read -r -d '' f; do
+        [ -f "$f" ] || continue          # skip deletions
+        hits="$(awk '
+            /@tr\(/ && prev ~ /^[[:space:]]*\/\// {
+                t = prev
+                sub(/^[[:space:]]*\/\/[[:space:]]?/, "", t)
+                if (length(t) > 76)
+                    printf "\n  %s:%d (%d chars) %s", FILENAME, FNR - 1, length(t), t
+            }
+            { prev = $0 }
+        ' "$f")"
+        long_notes="$long_notes$hits"
+    done < <(staged -- '*.slint')
+    if [ -n "$long_notes" ]; then
+        printf '✗ Translator note over 76 characters above a @tr:%b\n' "$long_notes" >&2
+        echo "  The extractor mangles these into invalid PO syntax. Shorten each to" >&2
+        echo "  one line of 76 characters or less. Only that last // line reaches" >&2
+        echo "  translators, so keep it readable on its own." >&2
+        exit 1
+    fi
 fi
 
 # --- 3. File-length gate ------------------------------------------------
