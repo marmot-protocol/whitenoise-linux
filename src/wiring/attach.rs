@@ -4,6 +4,37 @@ use crate::*;
 // forward, and offline-queue (extra.rs) wiring sections, so they live in
 // their own chapter rather than at the bottom of one caller.
 
+/// Why a spawner is being handed an existing temp id instead of allocating one.
+///
+/// Both variants reuse the id (and so adopt any bubble already rendered under
+/// it) — they differ only in whether the durable queue entry is already on disk:
+///
+/// * [`Replay`](PendingReuse::Replay) — the reconnect flush or a manual retry
+///   re-dispatching an entry read back from the queue. Already persisted; a
+///   second write would duplicate it.
+/// * [`Placeholder`](PendingReuse::Placeholder) — the forward flow adopting the
+///   "forwarding…" bubble it rendered before the source attachments finished
+///   downloading. Never persisted (there were no bytes yet), so this send still
+///   owes the queue its entry.
+#[derive(Clone, Debug)]
+pub(crate) enum PendingReuse {
+    Replay(String),
+    Placeholder(String),
+}
+
+impl PendingReuse {
+    fn into_temp_id(self) -> String {
+        match self {
+            PendingReuse::Replay(id) | PendingReuse::Placeholder(id) => id,
+        }
+    }
+
+    /// True when the durable queue already holds this send.
+    fn already_queued(&self) -> bool {
+        matches!(self, PendingReuse::Replay(_))
+    }
+}
+
 // Called by `on_send_message` for each staged attachment: insert the
 // optimistic pending bubble, run the encrypted Blossom upload + kind-9
 // publish, reconcile the bubble when the round-trip resolves.
@@ -11,11 +42,10 @@ use crate::*;
 // Thread-safety: `ModelRc` is `!Send`, so we never carry it across the
 // tokio boundary — every closure that hops back to the UI re-fetches
 // the model via `ui.get_chats_messages()`.
-// `replay_temp_id` is `None` for a fresh send (allocate an id, render the
-// pending bubble, persist a durable queue entry) and `Some(id)` when the
-// reconnect flush re-dispatches an already-queued attachment using bytes read
-// back from disk — in which case the overlay entry/bubble may already
-// exist and the durable entry is already on disk.
+// `reuse` is `None` for a fresh send (allocate an id, render the pending
+// bubble, persist a durable queue entry) and `Some(..)` when an id is being
+// adopted — see [`PendingReuse`] for the two cases and what each implies for
+// the overlay entry, the bubble, and the durable queue.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn spawn_attachment_send(
     weak: slint::Weak<DarkMatterLinux>,
@@ -29,7 +59,7 @@ pub(crate) fn spawn_attachment_send(
     bytes: Vec<u8>,
     is_image: bool,
     local_preview: Option<PicturePixels>,
-    replay_temp_id: Option<String>,
+    reuse: Option<PendingReuse>,
 ) {
     let size_bytes = bytes.len() as u64;
     let weak2 = weak;
@@ -53,8 +83,8 @@ pub(crate) fn spawn_attachment_send(
             return;
         };
 
-        let is_replay = replay_temp_id.is_some();
-        let temp_id = replay_temp_id.unwrap_or_else(next_temp_id);
+        let already_queued = reuse.as_ref().is_some_and(PendingReuse::already_queued);
+        let temp_id = reuse.map_or_else(next_temp_id, PendingReuse::into_temp_id);
         let send = PendingSend {
             temp_id: temp_id.clone(),
             text: String::new(),
@@ -64,7 +94,7 @@ pub(crate) fn spawn_attachment_send(
             media: vec![PendingMedia {
                 file_name: file_name_u.clone(),
                 media_type: media_type_u.clone(),
-                size_bytes,
+                size_bytes: Some(size_bytes),
                 is_image,
                 is_video: mime_is_video(&media_type_u),
                 is_audio: mime_is_audio(&media_type_u),
@@ -72,8 +102,9 @@ pub(crate) fn spawn_attachment_send(
             }],
         };
         // Render the pending bubble + insert the overlay entry only if it isn't
-        // already present (a replay of an in-session offline failure keeps its
-        // existing bubble; a boot replay has none yet).
+        // already present (a replay of an in-session offline failure, and a
+        // forward adopting its placeholder, both keep the existing bubble; a
+        // boot replay has none yet).
         let already_present = pending_state2
             .lock()
             .unwrap()
@@ -93,7 +124,7 @@ pub(crate) fn spawn_attachment_send(
             ui.set_messages_scroll_tick(ui.get_messages_scroll_tick() + 1);
         }
         // Durably queue this attachment on first send so it survives a restart.
-        if !is_replay {
+        if !already_queued {
             let my_id = backend.account().account_id_hex.clone();
             offline_persist(
                 &vault_cell,
@@ -154,8 +185,8 @@ pub(crate) fn spawn_attachment_send(
 // attachment cache (per image, under `real_id#index`) so the confirmed grid
 // shows the same pixels without a re-download, then swap the row. Mirrors
 // `spawn_attachment_send`'s reconcile, generalized to N images.
-// `replay_temp_id`: see `spawn_attachment_send` — `Some(id)` re-dispatches an
-// already-queued album from disk on reconnect.
+// `reuse`: see `spawn_attachment_send` and [`PendingReuse`] — an album is
+// re-dispatched from disk on reconnect, or adopts a forward's placeholder.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn spawn_album_send(
     weak: slint::Weak<DarkMatterLinux>,
@@ -165,7 +196,7 @@ pub(crate) fn spawn_album_send(
     vault_cell: VaultCell,
     group_hex: String,
     files: Vec<StagedFile>,
-    replay_temp_id: Option<String>,
+    reuse: Option<PendingReuse>,
 ) {
     let _ = slint::invoke_from_event_loop(move || {
         let Some(ui) = weak.upgrade() else { return };
@@ -183,14 +214,14 @@ pub(crate) fn spawn_album_send(
             return;
         };
 
-        let is_replay = replay_temp_id.is_some();
-        let temp_id = replay_temp_id.unwrap_or_else(next_temp_id);
+        let already_queued = reuse.as_ref().is_some_and(PendingReuse::already_queued);
+        let temp_id = reuse.map_or_else(next_temp_id, PendingReuse::into_temp_id);
         let media: Vec<PendingMedia> = files
             .iter()
             .map(|f| PendingMedia {
                 file_name: f.file_name.clone(),
                 media_type: f.media_type.clone(),
-                size_bytes: f.bytes.len() as u64,
+                size_bytes: Some(f.bytes.len() as u64),
                 is_image: true,
                 is_video: false,
                 is_audio: false,
@@ -224,7 +255,7 @@ pub(crate) fn spawn_album_send(
             ui.set_messages_scroll_tick(ui.get_messages_scroll_tick() + 1);
         }
         // Durably queue the album on first send (one entry, all images' bytes).
-        if !is_replay {
+        if !already_queued {
             let my_id = backend.account().account_id_hex.clone();
             let queued_media: Vec<offline_queue::QueuedMedia> = files
                 .iter()

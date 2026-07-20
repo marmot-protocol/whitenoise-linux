@@ -1611,7 +1611,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                         media: vec![PendingMedia {
                             file_name: m.file_name.clone(),
                             media_type: m.media_type.clone(),
-                            size_bytes: m.bytes.len() as u64,
+                            size_bytes: Some(m.bytes.len() as u64),
                             is_image: m.is_image,
                             is_video: mime_is_video(&m.media_type),
                             is_audio: mime_is_audio(&m.media_type),
@@ -1629,7 +1629,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                             .map(|m| PendingMedia {
                                 file_name: m.file_name.clone(),
                                 media_type: m.media_type.clone(),
-                                size_bytes: m.bytes.len() as u64,
+                                size_bytes: Some(m.bytes.len() as u64),
                                 is_image: m.is_image,
                                 is_video: false,
                                 is_audio: false,
@@ -1698,7 +1698,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                             m.bytes,
                             m.is_image,
                             None,
-                            Some(temp_id),
+                            Some(PendingReuse::Replay(temp_id)),
                         );
                     }
                     offline_queue::QueuedKind::Album(ms) => {
@@ -1721,7 +1721,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                             vault_cell.clone(),
                             group_hex,
                             files,
-                            Some(temp_id),
+                            Some(PendingReuse::Replay(temp_id)),
                         );
                     }
                 }

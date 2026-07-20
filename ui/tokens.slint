@@ -682,6 +682,8 @@ export global ErrorCopy {
     out property <string> save-profile: @tr("Couldn't save your profile. Check your connection and try again.");
     out property <string> upload-picture: @tr("Couldn't upload your picture. Please try again.");
     out property <string> generic: @tr("Something went wrong. Please try again.");
+    // Forward failure: some of the source attachments couldn't be fetched to re-send.
+    out property <string> forward-media: @tr("error banner when forwarding attachments fails, %1 = failed count, %2 = total count" => "Couldn't forward %1 of %2 attachments. Tap the message to try again.");
     // Save-attachment-to-disk outcomes (status-bar toast; %1 = file name).
     out property <string> save-attachment-ok: @tr("status toast after saving a file, %1 = file name" => "Saved %1");
     out property <string> save-attachment-failed: @tr("status toast when saving a file fails, %1 = file name" => "Couldn't save %1. Check the location has space and permission, then try again.");

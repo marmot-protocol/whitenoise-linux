@@ -378,6 +378,9 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                 offline_inflight_insert(&temp_id);
                 let parent_id = send.reply_to.as_ref().map(|(id, _, _)| id.clone());
                 dispatch_send(group_hex, send.text, temp_id, parent_id, send.effect);
+            } else if retry_forward_media(&temp_id) {
+                // A forward whose source attachments never downloaded: it has no
+                // bytes on disk to replay, so the retry re-enters the download.
             } else {
                 let entry = vault_cell
                     .lock()
@@ -399,7 +402,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                             m.bytes,
                             m.is_image,
                             None,
-                            Some(temp_id),
+                            Some(PendingReuse::Replay(temp_id)),
                         );
                     }
                     Some(offline_queue::QueuedKind::Album(ms)) => {
@@ -423,7 +426,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                             vault_cell.clone(),
                             group_hex,
                             files,
-                            Some(temp_id),
+                            Some(PendingReuse::Replay(temp_id)),
                         );
                     }
                     _ => {

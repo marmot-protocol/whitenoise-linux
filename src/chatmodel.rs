@@ -773,7 +773,7 @@ pub(crate) fn pending_chat_message(
                 true,
                 m.file_name.clone(),
                 m.media_type.clone(),
-                human_bytes(m.size_bytes),
+                m.size_bytes.map(human_bytes).unwrap_or_default(),
                 m.is_image,
                 image,
                 has_image,

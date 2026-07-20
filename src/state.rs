@@ -26,7 +26,11 @@ pub(crate) struct PendingSend {
 pub(crate) struct PendingMedia {
     pub(crate) file_name: String,
     pub(crate) media_type: String,
-    pub(crate) size_bytes: u64,
+    /// `None` while the size is genuinely unknown — a forward renders its
+    /// placeholder bubble from the source's `imeta` tag, which carries no size,
+    /// before the attachment has been downloaded. The row then shows no size
+    /// label rather than a misleading "0 B".
+    pub(crate) size_bytes: Option<u64>,
     pub(crate) is_image: bool,
     pub(crate) is_video: bool,
     pub(crate) is_audio: bool,
@@ -731,6 +735,9 @@ copy_snapshot! {
     save_profile: String = get_save_profile => "Couldn't save your profile. Check your connection and try again.";
     upload_picture: String = get_upload_picture => "Couldn't upload your picture. Please try again.";
     generic: String = get_generic => "Something went wrong. Please try again.";
+    // Forward failure; carries `%1` (failed count) and `%2` (total), filled
+    // Rust-side with `tmpl`.
+    forward_media: String = get_forward_media => "Couldn't forward %1 of %2 attachments. Tap the message to try again.";
     save_attachment_ok: String = get_save_attachment_ok => "Saved %1";
     save_attachment_failed: String = get_save_attachment_failed => "Couldn't save %1. Check the location has space and permission, then try again.";
     not_connected: String = get_not_connected => "Not connected yet. Please wait a moment and try again.";
