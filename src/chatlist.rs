@@ -1074,6 +1074,37 @@ pub(crate) fn set_muted(group_hex: &str, muted: bool) {
     }
 }
 
+/// Process-wide set of blocked accounts (`account_id_hex`), lazily initialized
+/// from `Settings::blocked_accounts`. Same singleton shape as [`muted_state`],
+/// and for the same reason: [`Backend::chats`] filters blocked peers out of the
+/// visible chat list, so the rail, the unread counts and the notification
+/// watcher all read one live source and can never disagree about who is
+/// blocked. Keyed by the *peer's* account id, not a group id — a block follows
+/// the person across whatever chat they open.
+pub(crate) fn blocked_state() -> &'static Mutex<std::collections::BTreeSet<String>> {
+    static BLOCKED: std::sync::OnceLock<Mutex<std::collections::BTreeSet<String>>> =
+        std::sync::OnceLock::new();
+    BLOCKED.get_or_init(|| Mutex::new(Settings::load().blocked_accounts))
+}
+
+/// Whether an account is blocked (their 1:1 chat and any chat request from them
+/// stay out of the visible list).
+pub(crate) fn is_blocked(account_id_hex: &str) -> bool {
+    let set = blocked_state().lock().unwrap();
+    set.iter().any(|b| b.eq_ignore_ascii_case(account_id_hex))
+}
+
+/// Set an account's blocked state on the live singleton. The caller persists to
+/// `Settings` (the disk write), mirroring [`set_muted`]'s split.
+pub(crate) fn set_blocked(account_id_hex: &str, blocked: bool) {
+    let mut set = blocked_state().lock().unwrap();
+    if blocked {
+        set.insert(account_id_hex.to_lowercase());
+    } else {
+        set.retain(|b| !b.eq_ignore_ascii_case(account_id_hex));
+    }
+}
+
 /// Re-order the rail's chat rows to reflect the current pin set *without*
 /// rebuilding the per-chat message models — a full [`refresh_chats_from`] would
 /// `set_vec` empty message models over every non-default chat and blank the

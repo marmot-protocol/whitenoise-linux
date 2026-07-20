@@ -205,7 +205,22 @@ msgctxt "ChatRequestBar"
 msgid "Accept the request to start messaging"
 msgstr "Anfrage annehmen, um Nachrichten zu senden"
 
+#, fuzzy
 msgctxt "AccountSwitcherModal"
+msgid "Account"
+msgstr "Konten"
+
+#, fuzzy
+msgctxt "AccountSwitcherModal"
+msgid "Account details"
+msgstr "Konten"
+
+msgctxt "AccountSwitcherModal"
+msgid "Accounts"
+msgstr "Konten"
+
+#, fuzzy
+msgctxt "AppShell"
 msgid "Accounts"
 msgstr "Konten"
 
@@ -321,6 +336,11 @@ msgctxt "NotificationsPane"
 msgid "Alert me about messages in chats I'm not viewing."
 msgstr "Benachrichtige mich über Nachrichten in Chats, die ich nicht ansehe."
 
+#, fuzzy
+msgctxt "AccountSwitcherModal"
+msgid "All accounts"
+msgstr "Konten"
+
 msgctxt "AccountSwitcherModal"
 msgid "All accounts stay connected. Switching only changes which one you're looking at."
 msgstr "Alle Konten bleiben verbunden. Beim Wechseln ändert sich nur, welches du gerade ansiehst."
@@ -391,6 +411,10 @@ msgctxt "LoginScreen"
 msgid "Back"
 msgstr "Zurück"
 
+msgctxt "AccountSwitcherModal"
+msgid "Back it up first if you'll want to sign in again — this can't be undone."
+msgstr ""
+
 msgctxt "StoragePane"
 msgid "Back up everything"
 msgstr "Alles sichern"
@@ -432,6 +456,10 @@ msgstr "Blockieren"
 msgctxt "ConfirmFlows"
 msgid "Block this chat request?"
 msgstr "Chat-Anfrage"
+
+msgctxt "ConfirmFlows"
+msgid "Block {}?"
+msgstr "{} blockieren?"
 
 msgctxt "AboutPane"
 msgid "Built with"
@@ -482,6 +510,11 @@ msgstr "Deine Relays sind gerade nicht erreichbar. Überprüfe dein Netzwerk und
 msgctxt "ErrorCopy"
 msgid "Can't start a chat with only yourself."
 msgstr "Du kannst keinen Chat nur mit dir selbst starten."
+
+#, fuzzy
+msgctxt "AccountSwitcherModal"
+msgid "Cancel"
+msgstr "Abbrechen"
 
 #, fuzzy
 msgctxt "AddAccountModal"
@@ -824,6 +857,10 @@ msgstr "Dein Key Package konnte nicht veröffentlicht werden. Überprüfe deine 
 msgctxt "ErrorCopy"
 msgid "Couldn't refresh your key packages. Check your relay settings and try again."
 msgstr "Deine Key Packages konnten nicht aktualisiert werden. Überprüfe deine Relay-Einstellungen und versuche es erneut."
+
+msgctxt "ErrorCopy"
+msgid "Couldn't remove that contact. Please try again."
+msgstr "Dieser Kontakt konnte nicht entfernt werden. Bitte versuche es erneut."
 
 msgctxt "ErrorCopy"
 msgid "Couldn't remove your reaction. Please try again."
@@ -1303,6 +1340,15 @@ msgctxt "ArchivedDetail"
 msgid "It stays end-to-end encrypted. Unarchiving returns it to your main list and resumes notifications."
 msgstr "Sie bleibt Ende-zu-Ende-verschlüsselt. Durch Wiederherstellen kehrt sie in deine Hauptliste zurück und Benachrichtigungen werden fortgesetzt."
 
+msgctxt "AccountSwitcherModal"
+msgid "Its background session ends and it leaves the account list."
+msgstr ""
+
+#, fuzzy
+msgctxt "AccountSwitcherModal"
+msgid "Its secret key is erased from this device's vault."
+msgstr "Für dieses Konto ist kein geheimer Schlüssel auf diesem Gerät gespeichert."
+
 msgctxt "ErrorCopy"
 msgid "JSON copied"
 msgstr "JSON kopiert"
@@ -1460,6 +1506,10 @@ msgctxt "StoragePane"
 msgid "Location"
 msgstr "Speicherort"
 
+msgctxt "AccountSwitcherModal"
+msgid "Log out & remove"
+msgstr ""
+
 msgctxt "StoragePane"
 msgid "MEDIA CACHE"
 msgstr "MEDIEN-CACHE"
@@ -1502,6 +1552,10 @@ msgstr "Zum Admin machen"
 msgctxt "ConfirmFlows"
 msgid "Make {} an admin?"
 msgstr "Zum Admin machen"
+
+msgctxt "AccountSwitcherModal"
+msgid "Manage this identity or remove it from the device."
+msgstr ""
 
 msgctxt "month"
 msgid "Mar"
@@ -2066,6 +2120,11 @@ msgid "Remove"
 msgstr "Entfernen"
 
 #, fuzzy
+msgctxt "AccountSwitcherModal"
+msgid "Remove account"
+msgstr "Kontakt entfernen"
+
+#, fuzzy
 msgctxt "ConfirmFlows"
 msgid "Remove admin"
 msgstr "Adminrechte entziehen"
@@ -2087,13 +2146,27 @@ msgid "Remove from group"
 msgstr "Aus Gruppe entfernen"
 
 #, fuzzy
+msgctxt "AccountSwitcherModal"
+msgid "Remove from this device"
+msgstr "Dieses Relay entfernen?"
+
+#, fuzzy
 msgctxt "LoginScreen"
 msgid "Remove key"
 msgstr "Schlüssel entfernen"
 
+#, fuzzy
+msgctxt "AccountSwitcherModal"
+msgid "Remove this account?"
+msgstr "Dieses Relay entfernen?"
+
 msgctxt "ConfirmFlows"
 msgid "Remove this relay?"
 msgstr "Dieses Relay entfernen?"
+
+msgctxt "ConfirmFlows"
+msgid "Remove {} from contacts?"
+msgstr "{} aus den Kontakten entfernen?"
 
 msgctxt "ConfirmFlows"
 msgid "Remove {} from the group?"
@@ -2466,6 +2539,10 @@ msgctxt "LoginScreen"
 msgid "Sign in to your Nostr identity"
 msgstr "Bei deiner Nostr-Identität anmelden"
 
+msgctxt "AccountSwitcherModal"
+msgid "Sign this account out here and erase its secret key from your vault. Your other accounts stay signed in."
+msgstr ""
+
 msgctxt "LoginScreen"
 msgid "Signing in…"
 msgstr "Anmeldung…"
@@ -2536,6 +2613,10 @@ msgctxt "weekday"
 msgid "Sun"
 msgstr "So"
 
+msgctxt "AccountSwitcherModal"
+msgid "Switch to this account"
+msgstr ""
+
 msgctxt "ThemePicker"
 msgid "Synthwave"
 msgstr ""
@@ -2568,6 +2649,10 @@ msgstr "Dieses Relay ist bereits in deiner Liste."
 msgctxt "AppearancePane"
 msgid "Theme"
 msgstr "Thema"
+
+msgctxt "ConfirmFlows"
+msgid "They come off your published contact list, so anyone reading it sees they're gone. Your chats and messages are untouched, and you can add them again anytime."
+msgstr "Die Person verschwindet aus deiner veröffentlichten Kontaktliste — wer sie liest, sieht also, dass sie nicht mehr dort steht. Deine Chats und Nachrichten bleiben unberührt, und du kannst sie jederzeit wieder hinzufügen."
 
 msgctxt "ArchivedDetail"
 msgid "This chat is archived"
@@ -2627,6 +2712,10 @@ msgctxt "ChatRequestBanner"
 msgid "This sender isn't in your contacts. Accept to start an"
 msgstr "Dieser Absender ist nicht in deinen Kontakten. Annehmen, um eine"
 
+msgctxt "AccountSwitcherModal"
+msgid "This signs the account out on this device and erases its secret key from your vault. Your other accounts stay signed in."
+msgstr ""
+
 msgctxt "GetStartedScreen"
 msgid "Three quick steps and you're ready to message — end-to-end encrypted, no servers in the middle."
 msgstr "Drei schnelle Schritte und du kannst loslegen — Ende-zu-Ende-verschlüsselt, ohne Server dazwischen."
@@ -2663,6 +2752,10 @@ msgctxt "ArchivedDetail"
 msgid "Unarchive"
 msgstr "Wiederherstellen"
 
+msgctxt "ContactDetail"
+msgid "Unblock"
+msgstr "Blockierung aufheben"
+
 msgctxt "LoginScreen"
 msgid "Unlock"
 msgstr "Entsperren"
@@ -2677,6 +2770,10 @@ msgid "Unlocking…"
 msgstr "Entsperre…"
 
 msgctxt "ChatContextMenu"
+msgid "Unmute"
+msgstr "Stummschaltung aufheben"
+
+msgctxt "ContactDetail"
 msgid "Unmute"
 msgstr "Stummschaltung aufheben"
 
@@ -2796,6 +2893,10 @@ msgstr "Du bist zurückgetreten."
 msgctxt "ConfirmFlows"
 msgid "You will stop receiving new messages from this group. The chat moves to Archive."
 msgstr "Du erhältst keine neuen Nachrichten aus dieser Gruppe mehr. Der Chat wird ins Archiv verschoben."
+
+msgctxt "ConfirmFlows"
+msgid "Your chat with them, and any new chat request they send, stays out of your chat list. Nothing is deleted — unblocking brings the conversation back."
+msgstr "Dein Chat mit dieser Person und jede neue Chat-Anfrage von ihr bleiben aus deiner Chat-Liste heraus. Es wird nichts gelöscht — sobald du die Blockierung aufhebst, ist die Unterhaltung wieder da."
 
 msgctxt "KeysPage"
 msgid "Your identity is sovereign"

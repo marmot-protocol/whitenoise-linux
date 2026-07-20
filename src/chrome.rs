@@ -282,6 +282,7 @@ pub(crate) fn refresh_contacts_async(
             spawn_contact_avatar_fetches(&ui, &b);
             // Groups-in-common for whichever contact the detail pane shows.
             push_contact_shared_groups(&ui, &b);
+            push_contact_actions(&ui, &b);
             then(&ui);
         });
     });
@@ -511,6 +512,31 @@ pub(crate) fn push_contact_shared_groups(ui: &DarkMatterLinux, backend: &Backend
         shared_groups_rows(ui, backend, &account_id)
     };
     ui.set_contact_shared_groups(model(rows));
+}
+
+/// Recompute and push the active contact's ACTIONS state: the 1:1 chat with
+/// them (empty when there is none to act on), whether that chat is muted, and
+/// whether the contact is blocked. The contact page's Mute/Archive buttons are
+/// chat-scoped but a `Contact` row only carries a pubkey, so the reverse lookup
+/// happens here once per selection rather than inside each handler. Call this
+/// wherever the selection or any of those three states changes, so the buttons
+/// never describe a stale state.
+pub(crate) fn push_contact_actions(ui: &DarkMatterLinux, backend: &Backend) {
+    let account_id = ui
+        .get_contacts()
+        .row_data(ui.get_active_contact().max(0) as usize)
+        .map(|c| c.account_id.to_string())
+        .unwrap_or_default();
+    if account_id.is_empty() {
+        ui.set_contact_chat_hex(s(""));
+        ui.set_contact_chat_muted(false);
+        ui.set_contact_blocked(false);
+        return;
+    }
+    let chat_hex = backend.direct_chat_with(&account_id).unwrap_or_default();
+    ui.set_contact_chat_muted(!chat_hex.is_empty() && is_muted(&chat_hex));
+    ui.set_contact_chat_hex(s(&chat_hex));
+    ui.set_contact_blocked(is_blocked(&account_id));
 }
 
 /// Split the new-chat modal's members textarea into individual npubs/hex

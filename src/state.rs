@@ -729,6 +729,7 @@ copy_snapshot! {
     add_account: String = get_add_account => "Couldn't add that account. Please check the key and try again.";
     create_chat: String = get_create_chat => "Couldn't create the chat. Please try again.";
     add_contact: String = get_add_contact => "Couldn't add that contact. Please try again.";
+    remove_contact: String = get_remove_contact => "Couldn't remove that contact. Please try again.";
     add_member: String = get_add_member => "Couldn't add that member. Please try again.";
     group_settings: String = get_group_settings => "Couldn't update the group settings. Please try again.";
     group_image: String = get_group_image => "Couldn't update the group image. Please try again.";
@@ -866,6 +867,7 @@ pub(crate) enum ErrorOp {
     AddAccount,
     CreateChat,
     AddContact,
+    RemoveContact,
     AddMember,
     GroupSettings,
     GroupImage,
@@ -945,6 +947,7 @@ pub(crate) fn friendly_error(op: ErrorOp, e: &anyhow::Error) -> String {
         ErrorOp::AddAccount => copy.add_account,
         ErrorOp::CreateChat => copy.create_chat,
         ErrorOp::AddContact => copy.add_contact,
+        ErrorOp::RemoveContact => copy.remove_contact,
         ErrorOp::AddMember => copy.add_member,
         ErrorOp::GroupSettings => copy.group_settings,
         ErrorOp::GroupImage => copy.group_image,

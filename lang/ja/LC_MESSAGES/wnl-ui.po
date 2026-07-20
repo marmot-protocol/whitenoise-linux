@@ -202,7 +202,22 @@ msgctxt "ChatRequestBar"
 msgid "Accept the request to start messaging"
 msgstr "リクエストを承認するとメッセージを送信できます"
 
+#, fuzzy
 msgctxt "AccountSwitcherModal"
+msgid "Account"
+msgstr "アカウント"
+
+#, fuzzy
+msgctxt "AccountSwitcherModal"
+msgid "Account details"
+msgstr "アカウント"
+
+msgctxt "AccountSwitcherModal"
+msgid "Accounts"
+msgstr "アカウント"
+
+#, fuzzy
+msgctxt "AppShell"
 msgid "Accounts"
 msgstr "アカウント"
 
@@ -318,6 +333,11 @@ msgctxt "NotificationsPane"
 msgid "Alert me about messages in chats I'm not viewing."
 msgstr "表示していないチャットのメッセージを通知します。"
 
+#, fuzzy
+msgctxt "AccountSwitcherModal"
+msgid "All accounts"
+msgstr "アカウント"
+
 msgctxt "AccountSwitcherModal"
 msgid "All accounts stay connected. Switching only changes which one you're looking at."
 msgstr "すべてのアカウントは接続されたままです。切り替えても、表示するアカウントが変わるだけです。"
@@ -388,6 +408,10 @@ msgctxt "LoginScreen"
 msgid "Back"
 msgstr "戻る"
 
+msgctxt "AccountSwitcherModal"
+msgid "Back it up first if you'll want to sign in again — this can't be undone."
+msgstr ""
+
 msgctxt "StoragePane"
 msgid "Back up everything"
 msgstr "すべてをバックアップ"
@@ -429,6 +453,10 @@ msgstr "ブロック"
 msgctxt "ConfirmFlows"
 msgid "Block this chat request?"
 msgstr "チャットリクエスト"
+
+msgctxt "ConfirmFlows"
+msgid "Block {}?"
+msgstr "{}をブロックしますか？"
 
 msgctxt "AboutPane"
 msgid "Built with"
@@ -479,6 +507,11 @@ msgstr "現在リレーに接続できません。ネットワークとリレー
 msgctxt "ErrorCopy"
 msgid "Can't start a chat with only yourself."
 msgstr "自分だけとのチャットは始められません。"
+
+#, fuzzy
+msgctxt "AccountSwitcherModal"
+msgid "Cancel"
+msgstr "キャンセル"
 
 #, fuzzy
 msgctxt "AddAccountModal"
@@ -821,6 +854,10 @@ msgstr "キーパッケージを公開できませんでした。リレーの設
 msgctxt "ErrorCopy"
 msgid "Couldn't refresh your key packages. Check your relay settings and try again."
 msgstr "キーパッケージを更新できませんでした。リレーの設定を確認して、もう一度お試しください。"
+
+msgctxt "ErrorCopy"
+msgid "Couldn't remove that contact. Please try again."
+msgstr "その連絡先を削除できませんでした。もう一度お試しください。"
 
 msgctxt "ErrorCopy"
 msgid "Couldn't remove your reaction. Please try again."
@@ -1300,6 +1337,15 @@ msgctxt "ArchivedDetail"
 msgid "It stays end-to-end encrypted. Unarchiving returns it to your main list and resumes notifications."
 msgstr "エンドツーエンド暗号化は維持されます。アーカイブ解除するとメインリストに戻り、通知が再開されます。"
 
+msgctxt "AccountSwitcherModal"
+msgid "Its background session ends and it leaves the account list."
+msgstr ""
+
+#, fuzzy
+msgctxt "AccountSwitcherModal"
+msgid "Its secret key is erased from this device's vault."
+msgstr "このアカウントの秘密鍵はこの端末に保存されていません。"
+
 msgctxt "ErrorCopy"
 msgid "JSON copied"
 msgstr "JSONをコピーしました"
@@ -1457,6 +1503,10 @@ msgctxt "StoragePane"
 msgid "Location"
 msgstr "保存場所"
 
+msgctxt "AccountSwitcherModal"
+msgid "Log out & remove"
+msgstr ""
+
 msgctxt "StoragePane"
 msgid "MEDIA CACHE"
 msgstr "メディアキャッシュ"
@@ -1499,6 +1549,10 @@ msgstr "管理者にする"
 msgctxt "ConfirmFlows"
 msgid "Make {} an admin?"
 msgstr "管理者にする"
+
+msgctxt "AccountSwitcherModal"
+msgid "Manage this identity or remove it from the device."
+msgstr ""
 
 msgctxt "month"
 msgid "Mar"
@@ -2063,6 +2117,11 @@ msgid "Remove"
 msgstr "削除"
 
 #, fuzzy
+msgctxt "AccountSwitcherModal"
+msgid "Remove account"
+msgstr "連絡先を削除"
+
+#, fuzzy
 msgctxt "ConfirmFlows"
 msgid "Remove admin"
 msgstr "管理者から外す"
@@ -2084,13 +2143,27 @@ msgid "Remove from group"
 msgstr "グループから削除"
 
 #, fuzzy
+msgctxt "AccountSwitcherModal"
+msgid "Remove from this device"
+msgstr "このリレーを削除しますか？"
+
+#, fuzzy
 msgctxt "LoginScreen"
 msgid "Remove key"
 msgstr "鍵を削除"
 
+#, fuzzy
+msgctxt "AccountSwitcherModal"
+msgid "Remove this account?"
+msgstr "このリレーを削除しますか？"
+
 msgctxt "ConfirmFlows"
 msgid "Remove this relay?"
 msgstr "このリレーを削除しますか？"
+
+msgctxt "ConfirmFlows"
+msgid "Remove {} from contacts?"
+msgstr "{}を連絡先から削除しますか？"
 
 msgctxt "ConfirmFlows"
 msgid "Remove {} from the group?"
@@ -2463,6 +2536,10 @@ msgctxt "LoginScreen"
 msgid "Sign in to your Nostr identity"
 msgstr "Nostr ID でサインイン"
 
+msgctxt "AccountSwitcherModal"
+msgid "Sign this account out here and erase its secret key from your vault. Your other accounts stay signed in."
+msgstr ""
+
 msgctxt "LoginScreen"
 msgid "Signing in…"
 msgstr "サインイン中…"
@@ -2533,6 +2610,10 @@ msgctxt "weekday"
 msgid "Sun"
 msgstr "日曜日"
 
+msgctxt "AccountSwitcherModal"
+msgid "Switch to this account"
+msgstr ""
+
 msgctxt "ThemePicker"
 msgid "Synthwave"
 msgstr ""
@@ -2565,6 +2646,10 @@ msgstr "そのリレーは既にリストにあります。"
 msgctxt "AppearancePane"
 msgid "Theme"
 msgstr "テーマ"
+
+msgctxt "ConfirmFlows"
+msgid "They come off your published contact list, so anyone reading it sees they're gone. Your chats and messages are untouched, and you can add them again anytime."
+msgstr "公開している連絡先リストから外れるため、リストを見た人には削除されたことがわかります。チャットとメッセージはそのまま残り、いつでも再び追加できます。"
 
 msgctxt "ArchivedDetail"
 msgid "This chat is archived"
@@ -2624,6 +2709,10 @@ msgctxt "ChatRequestBanner"
 msgid "This sender isn't in your contacts. Accept to start an"
 msgstr "この送信者は連絡先にいません。承認して"
 
+msgctxt "AccountSwitcherModal"
+msgid "This signs the account out on this device and erases its secret key from your vault. Your other accounts stay signed in."
+msgstr ""
+
 msgctxt "GetStartedScreen"
 msgid "Three quick steps and you're ready to message — end-to-end encrypted, no servers in the middle."
 msgstr "3つの簡単なステップでメッセージを始められます。エンドツーエンドで暗号化され、間にサーバーは入りません。"
@@ -2660,6 +2749,10 @@ msgctxt "ArchivedDetail"
 msgid "Unarchive"
 msgstr "アーカイブ解除"
 
+msgctxt "ContactDetail"
+msgid "Unblock"
+msgstr "ブロック解除"
+
 msgctxt "LoginScreen"
 msgid "Unlock"
 msgstr "ロック解除"
@@ -2674,6 +2767,10 @@ msgid "Unlocking…"
 msgstr "ロック解除中…"
 
 msgctxt "ChatContextMenu"
+msgid "Unmute"
+msgstr "ミュート解除"
+
+msgctxt "ContactDetail"
 msgid "Unmute"
 msgstr "ミュート解除"
 
@@ -2793,6 +2890,10 @@ msgstr "管理者を降りました。"
 msgctxt "ConfirmFlows"
 msgid "You will stop receiving new messages from this group. The chat moves to Archive."
 msgstr "このグループからの新しいメッセージの受信を停止します。チャットはアーカイブに移動します。"
+
+msgctxt "ConfirmFlows"
+msgid "Your chat with them, and any new chat request they send, stays out of your chat list. Nothing is deleted — unblocking brings the conversation back."
+msgstr "この相手とのチャットと、相手から届く新しいチャットリクエストは、チャット一覧に表示されなくなります。何も削除されません。ブロックを解除すれば会話は元どおりになります。"
 
 msgctxt "KeysPage"
 msgid "Your identity is sovereign"

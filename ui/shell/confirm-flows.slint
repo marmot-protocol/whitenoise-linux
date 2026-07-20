@@ -11,117 +11,143 @@ import { ConfirmModal } from "../modals/confirm-modal.slint";
 import { AppState } from "app-state.slint";
 
 export component ConfirmFlows inherits Rectangle {
-        if AppState.show-block-confirm: ConfirmModal {
-            title: @tr("Block this chat request?");
-            subtitle: @tr("This declines the invite from {}. It can't be restored unless they invite you again.", AppState.chats[AppState.active-chat].name);
-            confirm-label: @tr("Block");
-            confirm => {
-                AppState.show-block-confirm = false;
-                AppState.block-chat-request();
-            }
-            dismissed => {
-                AppState.show-block-confirm = false;
-            }
+    if AppState.show-block-confirm: ConfirmModal {
+        title: @tr("Block this chat request?");
+        subtitle: @tr("This declines the invite from {}. It can't be restored unless they invite you again.", AppState.chats[AppState.active-chat].name);
+        confirm-label: @tr("Block");
+        confirm => {
+            AppState.show-block-confirm = false;
+            AppState.block-chat-request();
         }
-
-        if AppState.show-audit-delete-confirm: ConfirmModal {
-            title: @tr("SettingsPage" => "Delete audit log file?");
-            subtitle: @tr("SettingsPage" => "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log.");
-            confirm-label: @tr("SettingsPage" => "Delete file");
-            confirm => {
-                AppState.show-audit-delete-confirm = false;
-                AppState.audit-delete-file(AppState.pending-audit-delete-path);
-                AppState.pending-audit-delete-path = "";
-            }
-            dismissed => {
-                AppState.show-audit-delete-confirm = false;
-                AppState.pending-audit-delete-path = "";
-            }
+        dismissed => {
+            AppState.show-block-confirm = false;
         }
+    }
 
-        // Rotating invalidates the currently advertised key package, so the page
+    if AppState.show-audit-delete-confirm: ConfirmModal {
+        title: @tr("SettingsPage" => "Delete audit log file?");
+        subtitle: @tr("SettingsPage" => "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log.");
+        confirm-label: @tr("SettingsPage" => "Delete file");
+        confirm => {
+            AppState.show-audit-delete-confirm = false;
+            AppState.audit-delete-file(AppState.pending-audit-delete-path);
+            AppState.pending-audit-delete-path = "";
+        }
+        dismissed => {
+            AppState.show-audit-delete-confirm = false;
+            AppState.pending-audit-delete-path = "";
+        }
+    }
+
+    // Rotating invalidates the currently advertised key package, so the page
     // only emits intent; the window root owns the modal and blocks all chrome.
     if AppState.show-rotate-confirm: ConfirmModal {
-            title: @tr("KeysPage" => "Rotate key package?");
-            subtitle: @tr("KeysPage" => "This invalidates your current package. Contacts will use the new one going forward.");
-            confirm-label: @tr("KeysPage" => "Rotate");
-            confirm => {
-                AppState.show-rotate-confirm = false;
-                AppState.kp-rotate-clicked();
-            }
-            dismissed => {
-                AppState.show-rotate-confirm = false;
-            }
+        title: @tr("KeysPage" => "Rotate key package?");
+        subtitle: @tr("KeysPage" => "This invalidates your current package. Contacts will use the new one going forward.");
+        confirm-label: @tr("KeysPage" => "Rotate");
+        confirm => {
+            AppState.show-rotate-confirm = false;
+            AppState.kp-rotate-clicked();
         }
+        dismissed => {
+            AppState.show-rotate-confirm = false;
+        }
+    }
 
-        if AppState.relay-remove-target != "": ConfirmModal {
-            title: @tr("Remove this relay?");
-            subtitle: @tr("{} will stop carrying your messages. You can add it back anytime.", AppState.relay-remove-target);
-            confirm-label: @tr("Remove");
-            confirm => {
-                AppState.network-remove-relay(AppState.relay-remove-target);
-                AppState.relay-remove-target = "";
-            }
-            dismissed => {
-                AppState.relay-remove-target = "";
-            }
+    if AppState.relay-remove-target != "": ConfirmModal {
+        title: @tr("Remove this relay?");
+        subtitle: @tr("{} will stop carrying your messages. You can add it back anytime.", AppState.relay-remove-target);
+        confirm-label: @tr("Remove");
+        confirm => {
+            AppState.network-remove-relay(AppState.relay-remove-target);
+            AppState.relay-remove-target = "";
         }
+        dismissed => {
+            AppState.relay-remove-target = "";
+        }
+    }
 
-        if AppState.show-leave-confirm: ConfirmModal {
-            x: 0;
-            y: 0;
-            width: root.width;
-            height: root.height;
-            title: @tr("Leave {}?", AppState.chats[AppState.leave-confirm-chat-idx].name);
-            subtitle: @tr("You will stop receiving new messages from this group. The chat moves to Archive.");
-            confirm-label: @tr("Leave group");
-            confirm => {
-                AppState.show-leave-confirm = false;
-                AppState.leave-group-at(AppState.leave-confirm-chat-idx);
-                AppState.leave-confirm-chat-idx = -1;
-            }
-            dismissed => {
-                AppState.show-leave-confirm = false;
-                AppState.leave-confirm-chat-idx = -1;
-            }
+    if AppState.show-leave-confirm: ConfirmModal {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        title: @tr("Leave {}?", AppState.chats[AppState.leave-confirm-chat-idx].name);
+        subtitle: @tr("You will stop receiving new messages from this group. The chat moves to Archive.");
+        confirm-label: @tr("Leave group");
+        confirm => {
+            AppState.show-leave-confirm = false;
+            AppState.leave-group-at(AppState.leave-confirm-chat-idx);
+            AppState.leave-confirm-chat-idx = -1;
         }
+        dismissed => {
+            AppState.show-leave-confirm = false;
+            AppState.leave-confirm-chat-idx = -1;
+        }
+    }
 
-        if AppState.show-admin-confirm: ConfirmModal {
-            title: AppState.admin-confirm-action == 1 ? @tr("Make {} an admin?", AppState.admin-confirm-member-name) : (AppState.admin-confirm-action == 2 ? @tr("Remove admin rights from {}?", AppState.admin-confirm-member-name) : (AppState.admin-confirm-action == 4 ? @tr("Remove {} from the group?", AppState.admin-confirm-member-name) : @tr("Step down as admin?")));
-            subtitle: AppState.admin-confirm-action == 1 ? @tr("{} will be able to add members, change group settings, and manage other admins.", AppState.admin-confirm-member-name) : (AppState.admin-confirm-action == 2 ? @tr("{} will stay in the group, but won't be able to manage members or group settings.", AppState.admin-confirm-member-name) : (AppState.admin-confirm-action == 4 ? @tr("{} will lose access to this group and stop receiving its messages. You'll need to invite them again to bring them back.", AppState.admin-confirm-member-name) : @tr("This removes your admin rights. You can't restore them yourself unless another admin promotes you again.")));
-            confirm-label: AppState.admin-confirm-action == 1 ? @tr("Make admin") : (AppState.admin-confirm-action == 2 ? @tr("Remove admin") : (AppState.admin-confirm-action == 4 ? @tr("Remove") : @tr("Step down")));
-            confirm => {
-                AppState.show-admin-confirm = false;
-                if (AppState.admin-confirm-action == 1) {
-                    AppState.promote-admin(AppState.admin-confirm-member-id);
-                } else if (AppState.admin-confirm-action == 2) {
-                    AppState.demote-admin(AppState.admin-confirm-member-id);
-                } else if (AppState.admin-confirm-action == 3) {
-                    AppState.self-demote-admin();
-                } else if (AppState.admin-confirm-action == 4) {
-                    AppState.remove-member(AppState.admin-confirm-member-id);
-                }
-                AppState.clear-admin-confirm();
+    if AppState.show-admin-confirm: ConfirmModal {
+        title: AppState.admin-confirm-action == 1 ? @tr("Make {} an admin?", AppState.admin-confirm-member-name) : (AppState.admin-confirm-action == 2 ? @tr("Remove admin rights from {}?", AppState.admin-confirm-member-name) : (AppState.admin-confirm-action == 4 ? @tr("Remove {} from the group?", AppState.admin-confirm-member-name) : @tr("Step down as admin?")));
+        subtitle: AppState.admin-confirm-action == 1 ? @tr("{} will be able to add members, change group settings, and manage other admins.", AppState.admin-confirm-member-name) : (AppState.admin-confirm-action == 2 ? @tr("{} will stay in the group, but won't be able to manage members or group settings.", AppState.admin-confirm-member-name) : (AppState.admin-confirm-action == 4 ? @tr("{} will lose access to this group and stop receiving its messages. You'll need to invite them again to bring them back.", AppState.admin-confirm-member-name) : @tr("This removes your admin rights. You can't restore them yourself unless another admin promotes you again.")));
+        confirm-label: AppState.admin-confirm-action == 1 ? @tr("Make admin") : (AppState.admin-confirm-action == 2 ? @tr("Remove admin") : (AppState.admin-confirm-action == 4 ? @tr("Remove") : @tr("Step down")));
+        confirm => {
+            AppState.show-admin-confirm = false;
+            if (AppState.admin-confirm-action == 1) {
+                AppState.promote-admin(AppState.admin-confirm-member-id);
+            } else if (AppState.admin-confirm-action == 2) {
+                AppState.demote-admin(AppState.admin-confirm-member-id);
+            } else if (AppState.admin-confirm-action == 3) {
+                AppState.self-demote-admin();
+            } else if (AppState.admin-confirm-action == 4) {
+                AppState.remove-member(AppState.admin-confirm-member-id);
             }
-            dismissed => {
-                AppState.clear-admin-confirm();
-            }
+            AppState.clear-admin-confirm();
         }
+        dismissed => {
+            AppState.clear-admin-confirm();
+        }
+    }
 
-        if AppState.show-delete-confirm: ConfirmModal {
-            title: AppState.delete-confirm-everyone ? @tr("Delete for everyone?") : @tr("Delete for me?");
-            subtitle: AppState.delete-confirm-everyone ? @tr("This removes the message for everyone in the chat. This can't be undone.") : @tr("This hides the message on this device only. Other people will still see it.");
-            confirm-label: @tr("Delete");
-            confirm => {
-                AppState.show-delete-confirm = false;
-                if (AppState.delete-confirm-everyone) {
-                    AppState.request-delete-everyone(AppState.ctx-menu-id);
-                } else {
-                    AppState.request-delete-me(AppState.ctx-menu-id);
-                }
-            }
-            dismissed => {
-                AppState.show-delete-confirm = false;
+    if AppState.show-contact-block-confirm: ConfirmModal {
+        title: @tr("Block {}?", AppState.contacts[AppState.active-contact].name);
+        subtitle: @tr("Your chat with them, and any new chat request they send, stays out of your chat list. Nothing is deleted — unblocking brings the conversation back.");
+        confirm-label: @tr("Block");
+        confirm => {
+            AppState.show-contact-block-confirm = false;
+            AppState.contact-toggle-block();
+        }
+        dismissed => {
+            AppState.show-contact-block-confirm = false;
+        }
+    }
+
+    if AppState.show-contact-remove-confirm: ConfirmModal {
+        title: @tr("Remove {} from contacts?", AppState.contacts[AppState.active-contact].name);
+        subtitle: @tr("They come off your published contact list, so anyone reading it sees they're gone. Your chats and messages are untouched, and you can add them again anytime.");
+        confirm-label: @tr("Remove");
+        confirm => {
+            AppState.show-contact-remove-confirm = false;
+            AppState.contact-remove();
+        }
+        dismissed => {
+            AppState.show-contact-remove-confirm = false;
+        }
+    }
+
+    if AppState.show-delete-confirm: ConfirmModal {
+        title: AppState.delete-confirm-everyone ? @tr("Delete for everyone?") : @tr("Delete for me?");
+        subtitle: AppState.delete-confirm-everyone ? @tr("This removes the message for everyone in the chat. This can't be undone.") : @tr("This hides the message on this device only. Other people will still see it.");
+        confirm-label: @tr("Delete");
+        confirm => {
+            AppState.show-delete-confirm = false;
+            if (AppState.delete-confirm-everyone) {
+                AppState.request-delete-everyone(AppState.ctx-menu-id);
+            } else {
+                AppState.request-delete-me(AppState.ctx-menu-id);
             }
         }
+        dismissed => {
+            AppState.show-delete-confirm = false;
+        }
+    }
 }
