@@ -28,71 +28,85 @@ export component ErrorBanner inherits Rectangle {
     drop-shadow-offset-x: Theme.hard-shadow ? 4px : 0px;
     drop-shadow-offset-y: Theme.hard-shadow ? 4px : 8px;
     drop-shadow-color: Palette.shadow-card;
+    clip: true;
 
     HorizontalLayout {
-        padding-left: 14px;
-        padding-right: 8px;
-        padding-top: 11px;
-        padding-bottom: 11px;
-        spacing: 11px;
+        spacing: 0;
 
-        // Warning glyph, drawn like InfoIcon's ringed mark. Top-aligned so it
-        // stays beside the first line when the message wraps.
-        VerticalLayout {
-            alignment: start;
-            Rectangle {
-                width: 18px;
-                height: 18px;
-                border-radius: 9px;
-                border-width: 1.4px;
-                border-color: Palette.danger;
-                Text {
-                    text: "!";
-                    color: Palette.danger;
-                    font-size: Theme.fs(11px, 14px);
-                    font-weight: 700;
-                    horizontal-alignment: center;
-                    vertical-alignment: center;
-                }
-            }
+        // Solid danger rail down the leading edge — reads as "error" at a
+        // glance, before the copy is even parsed.
+        Rectangle {
+            width: 4px;
+            background: Palette.danger;
         }
 
-        Text {
-            text: AppState.backend-error;
-            color: Palette.danger;
-            font-size: Theme.fs(12px, 15px);
-            font-weight: 600;
-            wrap: word-wrap;
-            horizontal-stretch: 1;
-            min-width: 0;
-        }
+        HorizontalLayout {
+            padding-left: 14px;
+            padding-right: 8px;
+            padding-top: 11px;
+            padding-bottom: 11px;
+            spacing: 11px;
 
-        VerticalLayout {
-            alignment: start;
-            Rectangle {
-                width: 26px;
-                height: 26px;
-                border-radius: (6px) * Theme.r-scale;
-                background: close-touch.has-hover ? Palette.danger-soft-hover : transparent;
-                animate background { duration: Theme.hover-dur; }
-                accessible-role: button;
-                accessible-label: @tr("Dismiss");
-                accessible-action-default => {
-                    AppState.backend-error-dismissed = true;
-                }
-                close-touch := TouchArea {
-                    mouse-cursor: pointer;
-                    clicked => {
-                        AppState.backend-error-dismissed = true;
+            // Filled danger disc with a light glyph — a firmer focal point
+            // than the old outline ring. The glyph reads in `danger-soft`, the
+            // plate's own surface colour, so it stays legible on the disc in
+            // every theme. Top-aligned so it stays beside the first line when
+            // the message wraps.
+            VerticalLayout {
+                alignment: start;
+                Rectangle {
+                    width: 20px;
+                    height: 20px;
+                    border-radius: 10px;
+                    background: Palette.danger;
+                    Text {
+                        text: "!";
+                        color: Palette.danger-soft;
+                        font-size: Theme.fs(12px, 15px);
+                        font-weight: 700;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
                     }
                 }
+            }
 
-                Text {
-                    text: "✕";
-                    color: Palette.danger;
-                    font-size: Theme.fs(12px, 15px);
-                    horizontal-alignment: center;
-                    vertical-alignment: center;
+            Text {
+                text: AppState.backend-error;
+                color: Palette.danger;
+                font-size: Theme.fs(12px, 15px);
+                font-weight: 600;
+                wrap: word-wrap;
+                horizontal-stretch: 1;
+                min-width: 0;
+            }
+
+            VerticalLayout {
+                alignment: start;
+                Rectangle {
+                    width: 26px;
+                    height: 26px;
+                    border-radius: (6px) * Theme.r-scale;
+                    background: close-touch.has-hover ? Palette.danger-soft-hover : transparent;
+                    animate background { duration: Theme.hover-dur; }
+                    accessible-role: button;
+                    accessible-label: @tr("Dismiss");
+                    accessible-action-default => {
+                        AppState.backend-error-dismissed = true;
+                    }
+                    close-touch := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => {
+                            AppState.backend-error-dismissed = true;
+                        }
+                    }
+
+                    Text {
+                        text: "✕";
+                        color: Palette.danger;
+                        font-size: Theme.fs(12px, 15px);
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
                 }
             }
         }
