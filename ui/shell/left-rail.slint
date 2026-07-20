@@ -24,9 +24,15 @@ component NavItem inherits Rectangle {
     in property <bool> rail-expanded: false;
     in property <length> rail-width: 56px;
     out property <bool> item-hovered: touch.has-hover;
+    out property <bool> item-focused: fs.has-focus;
 
     height: 36px;
     width: root.rail-width;
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-action-default => {
+        root.clicked();
+    }
     background: root.selected ? Palette.selected : (touch.has-hover ? Palette.hover : transparent);
     border-radius: (6px) * Theme.r-scale;
     animate background {
@@ -101,6 +107,35 @@ component NavItem inherits Rectangle {
             root.clicked();
         }
     }
+
+    // Zero-size FocusScope: joins the Tab chain without taking pointer events,
+    // so clicking an item can't pull keyboard focus out of the composer.
+    // Mirrors ui/primitives/button.slint.
+    fs := FocusScope {
+        width: 0px;
+        height: 0px;
+        key-pressed(event) => {
+            if (event.text == Key.Return || event.text == " ") {
+                root.clicked();
+                return accept;
+            }
+            return reject;
+        }
+    }
+
+    // Focus ring. Drawn inside the item bounds rather than outside (as buttons
+    // do) because a collapsed rail is exactly one item wide, so an outset ring
+    // would paint over the page beside it.
+    if fs.has-focus: Rectangle {
+        x: 1px;
+        y: 1px;
+        width: parent.width - 2px;
+        height: parent.height - 2px;
+        background: transparent;
+        border-radius: (6px) * Theme.r-scale;
+        border-width: 2px;
+        border-color: Palette.mint;
+    }
 }
 
 // Profile tile at the bottom of the rail.
@@ -115,9 +150,15 @@ component ProfileTile inherits Rectangle {
     in property <bool> rail-expanded: false;
     in property <length> rail-width: 56px;
     out property <bool> item-hovered: touch.has-hover;
+    out property <bool> item-focused: fs.has-focus;
 
     height: root.rail-expanded ? 56px : 36px;
     width: root.rail-width;
+    accessible-role: button;
+    accessible-label: @tr("Profile");
+    accessible-action-default => {
+        root.clicked();
+    }
     background: root.selected ? Palette.selected : (touch.has-hover ? Palette.hover : transparent);
     border-radius: (6px) * Theme.r-scale;
     animate background, height {
@@ -164,6 +205,29 @@ component ProfileTile inherits Rectangle {
             root.clicked();
         }
     }
+
+    fs := FocusScope {
+        width: 0px;
+        height: 0px;
+        key-pressed(event) => {
+            if (event.text == Key.Return || event.text == " ") {
+                root.clicked();
+                return accept;
+            }
+            return reject;
+        }
+    }
+
+    if fs.has-focus: Rectangle {
+        x: 1px;
+        y: 1px;
+        width: parent.width - 2px;
+        height: parent.height - 2px;
+        background: transparent;
+        border-radius: (6px) * Theme.r-scale;
+        border-width: 2px;
+        border-color: Palette.mint;
+    }
 }
 
 // ─── Main component ───────────────────────────────────────────────────────
@@ -176,7 +240,7 @@ export component LeftRail inherits Rectangle {
     out property <length> collapsed-width: 56px;
     property <length> expanded-width: 160px;
     // Width driven by hover state — the rail itself detects hover.
-    width: root.is-hovered ? root.expanded-width : root.collapsed-width;
+    width: root.is-expanded ? root.expanded-width : root.collapsed-width;
     background: Palette.rail;
     animate width {
         duration: 180ms;
@@ -199,8 +263,12 @@ export component LeftRail inherits Rectangle {
         height: parent.height;
     }
 
-    property <bool> is-hovered:
-        hover-area.has-hover || nav0.item-hovered || nav1.item-hovered || nav2.item-hovered || nav3.item-hovered || nav-new.item-hovered || nav-settings.item-hovered || nav-accounts.item-hovered || profile.item-hovered;
+    // Keyboard focus expands the rail too — the item names live in the
+    // expanded state, so a Tab user would otherwise walk a column of
+    // unlabelled icons.
+    property <bool> is-expanded:
+        hover-area.has-hover || nav0.item-hovered || nav1.item-hovered || nav2.item-hovered || nav3.item-hovered || nav-new.item-hovered || nav-settings.item-hovered || nav-accounts.item-hovered || profile.item-hovered
+        || nav0.item-focused || nav1.item-focused || nav2.item-focused || nav3.item-focused || nav-new.item-focused || nav-settings.item-focused || nav-accounts.item-focused || profile.item-focused;
 
     // Content.
     VerticalLayout {
@@ -228,7 +296,7 @@ export component LeftRail inherits Rectangle {
             selected: AppState.active-page == 0;
             has-badge: AppState.rail-badge-chats > 0;
             show-glow: AppState.active-chat >= 0 && AppState.chats.length > 0 && AppState.active-page != 0;
-            rail-expanded: root.is-hovered;
+            rail-expanded: root.is-expanded;
             rail-width: root.width;
             ChatBubbleIcon {
                 stroke: AppState.active-page == 0 ? root.selected-glyph : Palette.text-mid;
@@ -244,7 +312,7 @@ export component LeftRail inherits Rectangle {
             label: @tr("Contacts");
             selected: AppState.active-page == 1;
             has-badge: AppState.rail-badge-contacts > 0;
-            rail-expanded: root.is-hovered;
+            rail-expanded: root.is-expanded;
             rail-width: root.width;
             PeopleIcon {
                 stroke: AppState.active-page == 1 ? root.selected-glyph : Palette.text-mid;
@@ -259,7 +327,7 @@ export component LeftRail inherits Rectangle {
             label: @tr("Archive");
             selected: AppState.active-page == 2;
             has-badge: AppState.rail-badge-archive > 0;
-            rail-expanded: root.is-hovered;
+            rail-expanded: root.is-expanded;
             rail-width: root.width;
             ArchiveIcon {
                 stroke: AppState.active-page == 2 ? root.selected-glyph : Palette.text-mid;
@@ -274,7 +342,7 @@ export component LeftRail inherits Rectangle {
             label: @tr("Keys");
             selected: AppState.active-page == 3;
             has-badge: AppState.rail-badge-keys > 0;
-            rail-expanded: root.is-hovered;
+            rail-expanded: root.is-expanded;
             rail-width: root.width;
             KeyIcon {
                 stroke: AppState.active-page == 3 ? root.selected-glyph : Palette.text-mid;
@@ -288,7 +356,7 @@ export component LeftRail inherits Rectangle {
         // New chat — same style as nav items, accent icon.
         nav-new := NavItem {
             label: @tr("New chat");
-            rail-expanded: root.is-hovered;
+            rail-expanded: root.is-expanded;
             rail-width: root.width;
             PlusIcon {
                 stroke: Palette.mint;
@@ -320,7 +388,7 @@ export component LeftRail inherits Rectangle {
         nav-settings := NavItem {
             label: @tr("Settings");
             selected: AppState.active-page == 4;
-            rail-expanded: root.is-hovered;
+            rail-expanded: root.is-expanded;
             rail-width: root.width;
             SettingsIcon {
                 stroke: AppState.active-page == 4 ? root.selected-glyph : Palette.text-mid;
@@ -335,7 +403,7 @@ export component LeftRail inherits Rectangle {
         // displayed one.
         nav-accounts := NavItem {
             label: @tr("Accounts");
-            rail-expanded: root.is-hovered;
+            rail-expanded: root.is-expanded;
             rail-width: root.width;
             AccountsIcon {
                 stroke: Palette.text-mid;
@@ -358,7 +426,7 @@ export component LeftRail inherits Rectangle {
             picture: AppState.my-av-picture;
             has-picture: AppState.my-av-has-picture;
             selected: AppState.active-page == 5;
-            rail-expanded: root.is-hovered;
+            rail-expanded: root.is-expanded;
             rail-width: root.width;
             clicked => {
                 AppState.profile-requested();

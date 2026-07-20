@@ -11,6 +11,9 @@ export component Button inherits Rectangle {
     // Telegram-style without a second overlapping TouchArea.
     callback alt-action;
     in property <string> label;
+    // Screen-reader name. Defaults to the visible label; icon-only buttons
+    // (which carry no `label`) must set it, or they announce as nothing.
+    in property <string> a11y-label: root.label;
     in property <length> button-height: 32px;
     in property <length> button-width: 0px;   // 0 = auto (preferred-width)
     in property <length> min-w: 0px;
@@ -57,7 +60,7 @@ export component Button inherits Rectangle {
     }
     accessible-role: button;
     accessible-enabled: root.enabled;
-    accessible-label: root.label;
+    accessible-label: root.a11y-label;
     accessible-action-default => {
         if root.enabled {
             root.clicked();
