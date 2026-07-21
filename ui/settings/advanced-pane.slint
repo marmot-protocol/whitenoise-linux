@@ -94,6 +94,7 @@ export component AdvancedPane inherits DetailPage {
                 label: @tr("Share anonymous app telemetry");
                 sublabel: @tr("Share relay connection telemetry.");
                 Toggle {
+                    label: @tr("Share anonymous app telemetry");
                     on <=> AppState.telemetry-enabled;
                     toggled => {
                         AppState.telemetry-toggled(self.on);
@@ -107,6 +108,7 @@ export component AdvancedPane inherits DetailPage {
                 sublabel: @tr("Create and send group audit log files. Applies immediately.");
                 show-divider: false;
                 Toggle {
+                    label: @tr("Audit logs");
                     on <=> AppState.audit-enabled;
                     toggled => {
                         AppState.audit-toggled(self.on);
@@ -181,6 +183,7 @@ export component AdvancedPane inherits DetailPage {
                 sublabel: @tr("Shows diagnostics and MLS internals. Adds a Debug entry with account, key-packages, and group state.");
                 show-divider: false;
                 Toggle {
+                    label: @tr("Developer mode");
                     on <=> AppState.debug-enabled;
                     toggled => {
                         AppState.debug-toggled(self.on);
