@@ -973,7 +973,13 @@ fn main() -> Result<(), slint::PlatformError> {
                     let _ = slint::quit_event_loop();
                 });
                 match tray.show() {
-                    Ok(()) => Some(tray),
+                    Ok(()) => {
+                        // Let refresh_unread_chrome mirror the unread total into
+                        // the tray tooltip, and seed the current total now.
+                        register_tray(&tray);
+                        tray.set_unread_count(unread_state().total() as i32);
+                        Some(tray)
+                    }
                     Err(e) => {
                         tracing::warn!(target: "startup", "show tray failed; starting normally: {e}");
                         None

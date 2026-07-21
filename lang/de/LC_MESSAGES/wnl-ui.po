@@ -2916,6 +2916,16 @@ msgctxt "DarkMatterTray"
 msgid "White Noise"
 msgstr "White Noise"
 
+msgctxt "DarkMatterTray"
+msgid "White Noise ({} unread)"
+msgstr "White Noise ({} ungelesen)"
+
+msgctxt "DarkMatterTray"
+msgid "White Noise · 1 unread message"
+msgid_plural "White Noise · {n} unread messages"
+msgstr[0] "White Noise · 1 ungelesene Nachricht"
+msgstr[1] "White Noise · {n} ungelesene Nachrichten"
+
 msgctxt "ErrorCopy"
 msgid "Wrong password."
 msgstr "Falsches Passwort."
