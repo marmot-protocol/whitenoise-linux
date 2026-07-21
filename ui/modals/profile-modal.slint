@@ -14,6 +14,7 @@ export component ProfileModal inherits Modal {
     in property <string> display-name;
     in property <string> npub-short;
     in property <string> nip05;
+    in property <bool> nip05-verified: false;
     in property <string> about;
     in property <string> lud16;
     in property <bool> loading: false;
@@ -164,11 +165,14 @@ export component ProfileModal inherits Modal {
                 }
             }
 
-            // nip05 verification line.
+            // nip05 handle line. The check + mint accent appear only once the
+            // handle is verified against the domain's `.well-known/nostr.json`;
+            // an unverified (self-declared) handle shows in a muted tone with no
+            // badge, so the checkmark never overstates trust.
             if !root.loading && root.nip05 != "": HorizontalLayout {
                 alignment: center;
                 spacing: 6px;
-                VerticalLayout {
+                if root.nip05-verified: VerticalLayout {
                     alignment: center;
                     CheckMark {
                         stroke: Palette.mint;
@@ -177,7 +181,7 @@ export component ProfileModal inherits Modal {
 
                 Text {
                     text: root.nip05;
-                    color: Palette.mint;
+                    color: root.nip05-verified ? Palette.mint : Palette.text-lo;
                     font-size: Theme.fs(11px, 14px);
                     font-weight: 700;
                     font-family: Theme.font;

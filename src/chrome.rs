@@ -280,6 +280,7 @@ pub(crate) fn refresh_contacts_async(
                 vm.set_vec(rows);
             }
             spawn_contact_avatar_fetches(&ui, &b);
+            spawn_contact_nip05_verifications(&ui, &b);
             // Groups-in-common for whichever contact the detail pane shows.
             push_contact_shared_groups(&ui, &b);
             push_contact_actions(&ui, &b);
@@ -364,11 +365,18 @@ pub(crate) fn contact_from(
     // key-package relay list since the upstream relay-list rework), so the
     // nip65 + inbox counts already cover the account's relays.
     let relays = record.relay_lists.nip65.relays.len() + record.relay_lists.inbox.relays.len();
-    let nip05_verified = record
+    // A verified badge reflects a real `.well-known/nostr.json` check, not the
+    // mere presence of a self-declared handle. Seed from the cache (default
+    // unverified); `spawn_contact_nip05_verifications` confirms in the
+    // background and flips the row when it passes.
+    let nip05_handle = record
         .profile
         .as_ref()
-        .and_then(|p| p.nip05.as_ref())
-        .is_some();
+        .and_then(|p| p.nip05.as_deref())
+        .unwrap_or("")
+        .trim();
+    let nip05_verified = !nip05_handle.is_empty()
+        && nip05_verify_cached(&record.account_id_hex, nip05_handle).unwrap_or(false);
     let picture_url = record.profile.as_ref().and_then(|p| p.picture.clone());
     let (picture, has_picture) = bind_cached_picture(picture_url.as_deref());
     // Real key-package state from the directory cache. Honest empty state when
@@ -1160,6 +1168,63 @@ pub(crate) fn spawn_contact_avatar_fetches(ui: &DarkMatterLinux, backend: &Arc<B
             );
         }
     });
+}
+
+/// Confirm each contact's NIP-05 handle against its domain and flip the row's
+/// verified badge when it passes. Mirrors [`spawn_contact_avatar_fetches`]: the
+/// enumeration reads `follow_list()` on the runtime, and each cache-backed
+/// verification lands a per-row update on the UI thread. Rows start unverified
+/// (see `contact_from`), so the badge only appears on a real match.
+pub(crate) fn spawn_contact_nip05_verifications(ui: &DarkMatterLinux, backend: &Arc<Backend>) {
+    let weak_outer = ui.as_weak();
+    let b = backend.clone();
+    backend.tokio_handle().spawn(async move {
+        let records = match b.follow_list() {
+            Ok(v) => v,
+            Err(_) => return,
+        };
+        for record in records {
+            let handle = record
+                .profile
+                .as_ref()
+                .and_then(|p| p.nip05.as_deref())
+                .map(|h| h.trim().to_string())
+                .filter(|h| !h.is_empty());
+            let Some(handle) = handle else {
+                continue;
+            };
+            let account_id = record.account_id_hex.clone();
+            spawn_nip05_verify(
+                weak_outer.clone(),
+                b.tokio_handle(),
+                account_id.clone(),
+                handle,
+                move |ui, verified| update_contact_verified(ui, &account_id, verified),
+            );
+        }
+    });
+}
+
+/// Flip the verified badge on the contact row for `account_id` in place (the
+/// contact-detail pane binds `AppState.contacts[active-contact]`, so the model
+/// update refreshes the open detail too). No-op when the flag already matches.
+pub(crate) fn update_contact_verified(ui: &DarkMatterLinux, account_id: &str, verified: bool) {
+    let model = ui.get_contacts();
+    let Some(vm) = model.as_any().downcast_ref::<VecModel<Contact>>() else {
+        return;
+    };
+    for i in 0..vm.row_count() {
+        let Some(mut row) = vm.row_data(i) else {
+            continue;
+        };
+        if row.account_id.as_str().eq_ignore_ascii_case(account_id) {
+            if row.verified != verified {
+                row.verified = verified;
+                vm.set_row_data(i, row);
+            }
+            break;
+        }
+    }
 }
 
 /// Bind a decoded picture onto the contact row identified by `account_id`.

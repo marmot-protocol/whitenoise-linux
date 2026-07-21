@@ -131,6 +131,7 @@ pub(crate) fn open_profile_modal(
     ui.set_peer_profile_adding(false);
     ui.set_peer_profile_status(s(""));
     ui.set_peer_profile_not_found(false);
+    ui.set_peer_profile_nip05_verified(false);
     ui.set_peer_profile_picture(slint::Image::default());
     ui.set_peer_profile_has_picture(false);
     // Groups in common — meaningless for one's own profile, so leave it empty
@@ -230,7 +231,38 @@ pub(crate) fn apply_peer_profile(
     ui.set_peer_profile_av_a(a);
     ui.set_peer_profile_av_b(b);
     ui.set_peer_profile_av_initials(s(&init));
-    ui.set_peer_profile_nip05(s(profile.and_then(|p| p.nip05.as_deref()).unwrap_or("")));
+    // The handle text always shows when present; the verified badge only
+    // appears once it is confirmed against the domain's `.well-known/nostr.json`
+    // (an unverified, self-declared handle renders without the check). Seed from
+    // the cache, then confirm asynchronously and bind if the modal is still on
+    // this account.
+    let nip05 = profile
+        .and_then(|p| p.nip05.as_deref())
+        .unwrap_or("")
+        .trim()
+        .to_string();
+    ui.set_peer_profile_nip05(s(&nip05));
+    ui.set_peer_profile_nip05_verified(
+        !nip05.is_empty() && nip05_verify_cached(account_id_hex, &nip05).unwrap_or(false),
+    );
+    if !nip05.is_empty() {
+        let id = account_id_hex.to_string();
+        spawn_nip05_verify(
+            ui.as_weak(),
+            backend.tokio_handle(),
+            id.clone(),
+            nip05.clone(),
+            move |ui, verified| {
+                if ui
+                    .get_peer_profile_account_id()
+                    .as_str()
+                    .eq_ignore_ascii_case(&id)
+                {
+                    ui.set_peer_profile_nip05_verified(verified);
+                }
+            },
+        );
+    }
     ui.set_peer_profile_about(s(profile
         .and_then(|p| p.about.as_deref())
         .unwrap_or("")
@@ -330,6 +362,114 @@ pub(crate) fn picture_cache_has(url: &str) -> bool {
         .lock()
         .map(|c| c.contains_key(url))
         .unwrap_or(false)
+}
+
+// ─── NIP-05 verification ────────────────────────────────────────────────
+//
+// A "verified" badge must reflect a real check against the domain's
+// `.well-known/nostr.json`, not the mere presence of a self-declared handle
+// (anyone can put `jack@cash.app` in their kind-0 profile). Verification is a
+// network fetch, so verdicts are cached process-wide (like avatar pixels) and
+// keyed by the exact `(pubkey, handle)` pair: a profile that later changes its
+// handle re-verifies rather than inheriting a stale verdict. Any parse,
+// network, or HTTP failure is an unverified result — the badge only ever
+// appears on a positive match.
+
+/// Fetch `handle`'s domain `.well-known/nostr.json?name=<local>` and confirm
+/// `names[local]` maps to `pubkey_hex` (NIP-05). Async, so it is safe to
+/// `.await` inside a runtime task, unlike the blocking `Backend::add_contact`
+/// resolve path. Returns `false` on any failure.
+pub(crate) async fn verify_nip05(pubkey_hex: &str, handle: &str) -> bool {
+    use nostr::nips::nip05::{verify_from_raw_json, Nip05Address};
+    let Ok(pubkey) = nostr::PublicKey::from_hex(pubkey_hex) else {
+        return false;
+    };
+    let handle = handle.trim().to_lowercase();
+    let Ok(address) = Nip05Address::parse(&handle) else {
+        return false;
+    };
+    let url = address.url().as_str().to_string();
+    let Ok(client) = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+    else {
+        return false;
+    };
+    let Ok(resp) = client.get(&url).send().await else {
+        return false;
+    };
+    if !resp.status().is_success() {
+        return false;
+    }
+    let Ok(body) = resp.text().await else {
+        return false;
+    };
+    verify_from_raw_json(&pubkey, &address, &body).unwrap_or(false)
+}
+
+fn nip05_verify_cache() -> &'static Mutex<HashMap<String, bool>> {
+    use std::sync::OnceLock;
+    static CACHE: OnceLock<Mutex<HashMap<String, bool>>> = OnceLock::new();
+    CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn nip05_verify_key(pubkey_hex: &str, handle: &str) -> String {
+    format!(
+        "{}|{}",
+        pubkey_hex.trim().to_lowercase(),
+        handle.trim().to_lowercase()
+    )
+}
+
+/// Cached verdict for an exact `(pubkey, handle)` pair: `Some(true)` verified,
+/// `Some(false)` checked-and-failed, `None` not yet checked. Callers seed a
+/// badge from this synchronously and default `None` to unverified.
+pub(crate) fn nip05_verify_cached(pubkey_hex: &str, handle: &str) -> Option<bool> {
+    nip05_verify_cache()
+        .lock()
+        .ok()?
+        .get(&nip05_verify_key(pubkey_hex, handle))
+        .copied()
+}
+
+fn nip05_verify_put(pubkey_hex: &str, handle: &str, verified: bool) {
+    if let Ok(mut c) = nip05_verify_cache().lock() {
+        c.insert(nip05_verify_key(pubkey_hex, handle), verified);
+    }
+}
+
+/// Verify `handle` against `pubkey_hex` off the UI thread, then hop back to it
+/// and hand the verdict to `apply` so the caller can bind its badge. A cached
+/// verdict skips the fetch (still delivered through the same event-loop hop for
+/// a uniform call site); a blank handle is a no-op. Mirrors the avatar
+/// `spawn_picture_fetch` pipeline.
+pub(crate) fn spawn_nip05_verify(
+    weak: Weak<DarkMatterLinux>,
+    handle: tokio::runtime::Handle,
+    pubkey_hex: String,
+    nip05: String,
+    apply: impl FnOnce(&DarkMatterLinux, bool) + Send + 'static,
+) {
+    if nip05.trim().is_empty() {
+        return;
+    }
+    if let Some(verified) = nip05_verify_cached(&pubkey_hex, &nip05) {
+        let _ = slint::invoke_from_event_loop(move || {
+            if let Some(ui) = weak.upgrade() {
+                apply(&ui, verified);
+            }
+        });
+        return;
+    }
+    handle.spawn(async move {
+        let verified = verify_nip05(&pubkey_hex, &nip05).await;
+        nip05_verify_put(&pubkey_hex, &nip05, verified);
+        let _ = slint::invoke_from_event_loop(move || {
+            if let Some(ui) = weak.upgrade() {
+                apply(&ui, verified);
+            }
+        });
+    });
 }
 
 // UI-thread cache of ready `slint::Image` handles. `slint::Image` is `!Send`
