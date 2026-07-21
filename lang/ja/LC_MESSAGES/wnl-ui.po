@@ -1053,6 +1053,10 @@ msgctxt "AdvancedPane"
 msgid "Developer mode"
 msgstr "開発者フラグ"
 
+msgctxt "ErrorBanner"
+msgid "Dismiss"
+msgstr "閉じる"
+
 msgctxt "ProfilePage"
 msgid "Display name"
 msgstr "表示名"

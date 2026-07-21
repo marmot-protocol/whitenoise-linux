@@ -65,7 +65,7 @@ pub(crate) fn wire_panes(
                 Ok(s) => s,
                 Err(e) => {
                     tracing::warn!(target: "accounts", "switch failed: {e:#}");
-                    ui.set_backend_error(friendly_error(ErrorOp::SwitchAccount, &e).into());
+                    show_backend_error(&ui, friendly_error(ErrorOp::SwitchAccount, &e));
                     return;
                 }
             };
@@ -206,7 +206,7 @@ pub(crate) fn wire_panes(
                 .eq_ignore_ascii_case(&id);
             if let Err(e) = backend.remove_account(&id) {
                 tracing::warn!(target: "accounts", "remove failed: {e:#}");
-                ui.set_backend_error(friendly_error(ErrorOp::RemoveAccount, &e).into());
+                show_backend_error(&ui, friendly_error(ErrorOp::RemoveAccount, &e));
                 return;
             }
             // marmot doesn't know about the app's `nsec:<hex>` backup, so drop it

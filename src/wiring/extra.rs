@@ -484,7 +484,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                         let mut overlay = pending_state.lock().unwrap();
                         if let Err(e) = &result {
                             tracing::warn!(target: "delete", "{e:#}");
-                            ui.set_backend_error(friendly_error(ErrorOp::Delete, e).into());
+                            show_backend_error(&ui, friendly_error(ErrorOp::Delete, e));
                         }
                         overlay.deletes.remove(&(group_hex.clone(), target.clone()));
                     }
@@ -1139,7 +1139,7 @@ pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                         let mut overlay = pending_state.lock().unwrap();
                         if let Err(e) = &result {
                             tracing::warn!("[{label}] {e:#}");
-                            ui.set_backend_error(friendly_error(err_op, e).into());
+                            show_backend_error(&ui, friendly_error(err_op, e));
                         }
                         overlay
                             .reactions

@@ -722,7 +722,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             let Some(ui) = weak.upgrade() else { return };
             let Some(group_hex) = resolve() else { return };
             let Some(b) = backend_cell.lock().unwrap().clone() else {
-                ui.set_backend_error(error_copy().not_connected.into());
+                show_backend_error(&ui, error_copy().not_connected);
                 return;
             };
             // Accepting publishes to relays — worker; `refresh` captures only
@@ -735,7 +735,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     let Some(ui) = weak.upgrade() else { return };
                     if let Err(e) = result {
                         tracing::warn!(target: "accept", "{e:#}");
-                        ui.set_backend_error(friendly_error(ErrorOp::Accept, &e).into());
+                        show_backend_error(&ui, friendly_error(ErrorOp::Accept, &e));
                         return;
                     }
                     refresh();
@@ -753,7 +753,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             let Some(ui) = weak.upgrade() else { return };
             let Some(group_hex) = resolve() else { return };
             let Some(b) = backend_cell.lock().unwrap().clone() else {
-                ui.set_backend_error(error_copy().not_connected.into());
+                show_backend_error(&ui, error_copy().not_connected);
                 return;
             };
             let weak = weak.clone();
@@ -764,7 +764,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     let Some(ui) = weak.upgrade() else { return };
                     if let Err(e) = result {
                         tracing::warn!(target: "block", "{e:#}");
-                        ui.set_backend_error(friendly_error(ErrorOp::Block, &e).into());
+                        show_backend_error(&ui, friendly_error(ErrorOp::Block, &e));
                         return;
                     }
                     refresh();
@@ -865,7 +865,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     let refresh_cb = refresh_cb.clone();
                     let _ = slint::invoke_from_event_loop(move || {
                         let Some(ui) = weak_cb.upgrade() else { return };
-                        ui.set_backend_error(friendly_error(ErrorOp::Archive, &e).into());
+                        show_backend_error(&ui, friendly_error(ErrorOp::Archive, &e));
                         refresh_cb();
                     });
                 }
@@ -882,7 +882,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             let Some(ui) = weak.upgrade() else { return };
             let idx = ui.get_active_archived() as usize;
             let Some(b) = backend_cell.lock().unwrap().clone() else {
-                ui.set_backend_error(error_copy().not_connected.into());
+                show_backend_error(&ui, error_copy().not_connected);
                 return;
             };
 
@@ -959,7 +959,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                             let refresh_cb = refresh_cb.clone();
                             let _ = slint::invoke_from_event_loop(move || {
                                 let Some(ui) = weak_cb.upgrade() else { return };
-                                ui.set_backend_error(friendly_error(ErrorOp::Unarchive, &e).into());
+                                show_backend_error(&ui, friendly_error(ErrorOp::Unarchive, &e));
                                 refresh_cb();
                             });
                         }

@@ -168,7 +168,7 @@ pub(crate) fn apply_send_result<F>(
                     return;
                 }
                 if let Some(op) = error_op {
-                    ui.set_backend_error(friendly_error(op, &e).into());
+                    show_backend_error(&ui, friendly_error(op, &e));
                 }
                 // Online failure: a real error. Mark failed in place — the
                 // bubble flips to red without disturbing its neighbours.
