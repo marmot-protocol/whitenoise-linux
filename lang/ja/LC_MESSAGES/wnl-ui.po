@@ -740,6 +740,10 @@ msgctxt "EncryptionInfoModal"
 msgid "Copied ✓"
 msgstr "コピーしました ✓"
 
+msgctxt "RevealNsecModal"
+msgid "Copied ✓"
+msgstr "コピーしました ✓"
+
 msgctxt "ContactDetail"
 msgid "Copy"
 msgstr "コピー"

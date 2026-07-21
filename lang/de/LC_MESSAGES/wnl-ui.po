@@ -743,6 +743,10 @@ msgctxt "EncryptionInfoModal"
 msgid "Copied ✓"
 msgstr "Kopiert ✓"
 
+msgctxt "RevealNsecModal"
+msgid "Copied ✓"
+msgstr "Kopiert ✓"
+
 msgctxt "ContactDetail"
 msgid "Copy"
 msgstr "Kopieren"
