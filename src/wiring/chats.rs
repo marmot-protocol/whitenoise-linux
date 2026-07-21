@@ -233,6 +233,10 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                     // and clear the row's badge optimistically. Persisting on
                     // open is what makes the read state authoritative.
                     let now = now_unix_secs() as i64;
+                    // The read marker BEFORE this open advances it — the boundary
+                    // the "New messages" divider is drawn from. Captured here
+                    // because `set_marker` below overwrites it to `now`.
+                    let prev_marker = unread_state().marker_or_seed(&group_hex, now);
                     unread_state().set_marker(&group_hex, now);
                     unread_state().set_count(&group_hex, 0);
                     {
@@ -319,6 +323,20 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                                     jump_target_exists = false;
                                 }
                             }
+                            // The "New messages" divider anchor for a normal
+                            // (tail) open, captured before the rebuild reads it.
+                            // A mention jump shows a historical slice, so it gets
+                            // no divider — clear any stale anchor from a prior
+                            // open of this chat.
+                            let unread_anchor = if jump_message_id.is_none() {
+                                let anchor =
+                                    first_unread_message_id(&msgs, &my_id, prev_marker);
+                                unread_state().set_divider_anchor(&group_hex, anchor.clone());
+                                anchor
+                            } else {
+                                unread_state().set_divider_anchor(&group_hex, None);
+                                None
+                            };
                             let chats_messages = ui.get_chats_messages();
                             {
                                 let overlay = pending_state.lock().unwrap();
@@ -362,12 +380,23 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
                                 ui.set_message_jump_index(jump_index);
                                 ui.set_message_jump_id(s(message_id));
                                 ui.set_message_jump_tick(ui.get_message_jump_tick() + 1);
+                            } else if let Some(unread_row) = unread_anchor.as_ref().and_then(|id| {
+                                ui.get_chats_messages().row_data(current_idx).and_then(|rows| {
+                                    rows.iter()
+                                        .position(|row| row.message_id.eq_ignore_ascii_case(id))
+                                })
+                            }) {
+                                // The open chat had unread history: scroll so the
+                                // "New messages" divider above the first-unread
+                                // row lands near the top, instead of the bottom.
+                                ui.set_message_unread_index(unread_row as i32);
+                                ui.set_message_unread_tick(ui.get_message_unread_tick() + 1);
                             } else {
                                 if let Some(message_id) = jump_message_id.as_ref() {
                                     tracing::warn!(target: "mentions", %group_hex, %message_id, "mention target no longer exists");
                                 }
-                                // Normal opens and stale mention targets land on
-                                // the most recent message.
+                                // Normal opens with nothing unread and stale
+                                // mention targets land on the most recent message.
                                 ui.set_messages_scroll_tick(ui.get_messages_scroll_tick() + 1);
                             }
                             // Attach a live watcher after the rebuild. Abort the
