@@ -3,7 +3,30 @@ import { Palette, Theme } from "../tokens.slint";
 export component Toggle inherits Rectangle {
     in-out property <bool> on: false;
     in property <bool> enabled: true;
+    // Screen-reader name for the switch, passed in by the caller (mirrors
+    // NavItem's accessible-label in left-rail.slint).
+    in property <string> label: "";
     callback toggled;
+
+    // The single flip the pointer, the keyboard, and assistive tech all run.
+    function flip() {
+        root.on = !root.on;
+        root.toggled();
+    }
+
+    // Announce as a switch carrying its on/off state and name, so a screen
+    // reader reads the control and whether it is currently on.
+    accessible-role: switch;
+    accessible-label: root.label;
+    accessible-checkable: true;
+    accessible-checked: root.on;
+    accessible-enabled: root.enabled;
+    accessible-action-default => {
+        if (root.enabled) {
+            root.flip();
+        }
+    }
+
     width: Theme.pixel-metrics ? 44px : 34px;
     height: Theme.pixel-metrics ? 22px : 18px;
     opacity: root.enabled ? 1.0 : 0.45;
@@ -49,8 +72,7 @@ export component Toggle inherits Rectangle {
         enabled: root.enabled;
         key-pressed(event) => {
             if (event.text == Key.Return || event.text == " ") {
-                root.on = !root.on;
-                root.toggled();
+                root.flip();
                 return accept;
             }
             return reject;
@@ -59,8 +81,7 @@ export component Toggle inherits Rectangle {
         TouchArea {
             enabled: root.enabled;
             clicked => {
-                root.on = !root.on;
-                root.toggled();
+                root.flip();
             }
         }
     }

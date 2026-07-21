@@ -31,6 +31,7 @@ export component NotificationsPane inherits DetailPage {
                 label: @tr("Desktop notifications");
                 sublabel: @tr("Alert me about messages in chats I'm not viewing.");
                 Toggle {
+                    label: @tr("Desktop notifications");
                     on <=> AppState.notifications-enabled;
                     toggled => {
                         AppState.notifications-toggled(self.on);
@@ -42,6 +43,7 @@ export component NotificationsPane inherits DetailPage {
                 row-height: 48px;
                 label: @tr("Play a sound");
                 Toggle {
+                    label: @tr("Play a sound");
                     on <=> AppState.notification-sound;
                     enabled: AppState.notifications-enabled;
                     toggled => {
@@ -56,6 +58,7 @@ export component NotificationsPane inherits DetailPage {
                 sublabel: @tr("Off shows only \"New message\" without the text.");
                 show-divider: false;
                 Toggle {
+                    label: @tr("Show message preview");
                     on <=> AppState.notification-preview;
                     enabled: AppState.notifications-enabled;
                     toggled => {

@@ -30,6 +30,7 @@ export component GeneralPane inherits DetailPage {
                 row-height: 48px;
                 label: @tr("Launch at login");
                 Toggle {
+                    label: @tr("Launch at login");
                     on <=> AppState.launch-at-login;
                     toggled => {
                         AppState.launch-at-login-toggled(self.on);
@@ -41,6 +42,7 @@ export component GeneralPane inherits DetailPage {
                 row-height: 48px;
                 label: @tr("Start minimized to tray");
                 Toggle {
+                    label: @tr("Start minimized to tray");
                     on <=> AppState.start-minimized-to-tray;
                     toggled => {
                         AppState.start-minimized-to-tray-toggled(self.on);
@@ -53,6 +55,7 @@ export component GeneralPane inherits DetailPage {
                 label: @tr("Restore last selected chat on launch");
                 show-divider: false;
                 Toggle {
+                    label: @tr("Restore last selected chat on launch");
                     on <=> AppState.restore-last-selected-chat;
                     toggled => {
                         AppState.restore-last-selected-chat-toggled(self.on);

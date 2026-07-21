@@ -69,6 +69,7 @@ export component AppearancePane inherits DetailPage {
                 sublabel: @tr("Place your sent messages on the right side.");
                 show-divider: false;
                 Toggle {
+                    label: @tr("Own messages on the right");
                     on <=> AppState.outgoing-on-right;
                     toggled => {
                         AppState.outgoing-on-right-toggled(AppState.outgoing-on-right);
@@ -87,6 +88,7 @@ export component AppearancePane inherits DetailPage {
                 sublabel: @tr("Keep the open conversation on a comfortable reading measure instead of filling the width.");
                 show-divider: false;
                 Toggle {
+                    label: @tr("Centred conversation");
                     on <=> AppState.shell-centered;
                     toggled => {
                         AppState.shell-centered-toggled(AppState.shell-centered);
