@@ -22,6 +22,18 @@ export component RevealNsecModal inherits Modal {
     in property <string> nsec-value;        // "" until revealed
     property <bool> revealed: root.nsec-value != "";
 
+    // Copy feedback, matching CopyChip: the button flashes "Copied ✓" for 1.4s
+    // after a tap so the most security-sensitive copy in the app confirms the
+    // key reached the clipboard.
+    property <bool> copied: false;
+    copy-reset := Timer {
+        interval: 1.4s;
+        running: root.copied;
+        triggered => {
+            root.copied = false;
+        }
+    }
+
     card-width: 460px;
     title: @tr("Reveal private key");
     subtitle: root.revealed ? @tr("This is the secret key for your active account. Anyone with it controls your identity — never share it.") : @tr("Confirm your vault password to reveal the secret key (nsec) for your active account.");
@@ -81,18 +93,21 @@ export component RevealNsecModal inherits Modal {
             }
 
             Button {
-                label: @tr("Copy");
+                label: root.copied ? @tr("Copied ✓") : @tr("Copy");
+                fg: root.copied ? Palette.mint : Palette.text-hi;
+                outline: root.copied ? Palette.mint : Palette.border;
                 button-height: 30px;
                 radius: 5px;
                 pad-left: 10px;
                 pad-right: 12px;
                 font-size: Theme.fs(11px, 12px);
-                CopyIcon {
+                if !root.copied: CopyIcon {
                     stroke: Palette.text-mid;
                 }
 
                 clicked => {
                     root.copy(root.nsec-value);
+                    root.copied = true;
                 }
             }
         }
