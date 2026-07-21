@@ -1432,6 +1432,10 @@ msgctxt "MessagesArea"
 msgid "Load earlier messages"
 msgstr ""
 
+msgctxt "GroupMembersPanel"
+msgid "Loading members…"
+msgstr ""
+
 msgctxt "MentionsInbox"
 msgid "Loading mentions…"
 msgstr ""

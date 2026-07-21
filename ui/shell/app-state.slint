@@ -693,6 +693,10 @@ export global AppState {
     // ═══ Group membership & admin ══════════════════════════════════════════
     // Active group membership (refreshed when the selected chat/archive changes).
     in-out property <[GroupMember]> chat-members;
+    // Set while the async member snapshot is in flight so the panel can show a
+    // "Loading members…" line instead of a blank card (chat-members is empty
+    // until push_group_members_to_ui_from lands).
+    in-out property <bool> chat-members-loading: false;
     // Roster entries invited but not yet seen active in the group.
     in-out property <[GroupMember]> chat-invited-members;
     in-out property <bool> chat-is-group: false;

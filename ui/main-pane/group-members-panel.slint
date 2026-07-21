@@ -1,4 +1,4 @@
-import { Palette } from "../tokens.slint";
+import { Palette, Theme } from "../tokens.slint";
 import { AppState } from "../shell/app-state.slint";
 import { ScrollView } from "../primitives/scroll-view.slint";
 import { Section } from "../layout/section.slint";
@@ -54,6 +54,15 @@ export component GroupMembersPanel inherits Rectangle {
                         note: "\{AppState.chat-members.length}";
                         VerticalLayout {
                             spacing: 2px;
+                            // Members arrive asynchronously; show a placeholder
+                            // line rather than a blank card while the fetch runs.
+                            if AppState.chat-members.length == 0 && AppState.chat-members-loading: Text {
+                                text: @tr("Loading members…");
+                                color: Palette.text-lo;
+                                font-family: Theme.font;
+                                font-size: Theme.fs(11px, 13px);
+                                horizontal-alignment: center;
+                            }
                             for m in AppState.chat-members: GroupMemberRow {
                                 data: m;
                                 request-menu(id, name, cp, cd, csd, cr, ax, ay) => {
