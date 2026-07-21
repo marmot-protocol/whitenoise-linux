@@ -105,7 +105,7 @@ export component ChatHeader inherits Rectangle {
 
         // In-conversation search toggle (Ctrl+F does the same). Active while
         // the search bar below the header is open.
-        if !root.chat.is-chat-request: Rectangle {
+        if !root.chat.is-chat-request: search-btn := Rectangle {
             width: 36px;
             height: 36px;
             y: (parent.height - self.height) / 2;
@@ -114,14 +114,20 @@ export component ChatHeader inherits Rectangle {
             border-width: AppState.msg-search-open ? 1px : 0px;
             border-color: Palette.border-2;
             animate background { duration: Theme.hover-dur; }
+            accessible-role: button;
+            accessible-label: AppState.msg-search-open ? @tr("Close search") : @tr("Search in conversation");
+            accessible-action-default => { search-btn.activate(); }
+            function activate() {
+                if (AppState.msg-search-open) {
+                    AppState.msg-search-open = false;
+                    AppState.msg-search-closed();
+                } else {
+                    AppState.msg-search-open = true;
+                }
+            }
             search-touch := TouchArea {
                 clicked => {
-                    if (AppState.msg-search-open) {
-                        AppState.msg-search-open = false;
-                        AppState.msg-search-closed();
-                    } else {
-                        AppState.msg-search-open = true;
-                    }
+                    search-btn.activate();
                 }
                 SearchIcon {
                     stroke: AppState.msg-search-open ? Palette.mint : Palette.text-mid;
@@ -129,11 +135,34 @@ export component ChatHeader inherits Rectangle {
                     y: (parent.height - self.height) / 2;
                 }
             }
+            // Zero-size FocusScope: joins the Tab chain without taking pointer
+            // events, so clicking can't pull focus off the composer. Mirrors
+            // ui/primitives/button.slint and the left rail's NavItem.
+            search-fs := FocusScope {
+                width: 0px;
+                height: 0px;
+                key-pressed(event) => {
+                    if (event.text == Key.Return || event.text == " ") {
+                        search-btn.activate();
+                        return accept;
+                    }
+                    return reject;
+                }
+            }
+            if search-fs.has-focus: Rectangle {
+                x: 1px;
+                y: 1px;
+                width: parent.width - 2px;
+                height: parent.height - 2px;
+                border-radius: (6px) * Theme.r-scale;
+                border-width: 2px;
+                border-color: Palette.mint;
+            }
         }
 
         // Mute toggle — silences this chat's desktop notifications. Shown for
         // any established chat (not pending requests). Muted = mint bell-off.
-        if !root.chat.is-chat-request: Rectangle {
+        if !root.chat.is-chat-request: mute-btn := Rectangle {
             width: 36px;
             height: 36px;
             y: (parent.height - self.height) / 2;
@@ -142,6 +171,9 @@ export component ChatHeader inherits Rectangle {
             border-width: AppState.active-chat-muted ? 1px : 0px;
             border-color: Palette.border-2;
             animate background { duration: Theme.hover-dur; }
+            accessible-role: button;
+            accessible-label: AppState.active-chat-muted ? @tr("Unmute conversation") : @tr("Mute conversation");
+            accessible-action-default => { AppState.toggle-mute-chat(); }
             mute-touch := TouchArea {
                 clicked => {
                     AppState.toggle-mute-chat();
@@ -157,9 +189,29 @@ export component ChatHeader inherits Rectangle {
                     y: (parent.height - self.height) / 2;
                 }
             }
+            mute-fs := FocusScope {
+                width: 0px;
+                height: 0px;
+                key-pressed(event) => {
+                    if (event.text == Key.Return || event.text == " ") {
+                        AppState.toggle-mute-chat();
+                        return accept;
+                    }
+                    return reject;
+                }
+            }
+            if mute-fs.has-focus: Rectangle {
+                x: 1px;
+                y: 1px;
+                width: parent.width - 2px;
+                height: parent.height - 2px;
+                border-radius: (6px) * Theme.r-scale;
+                border-width: 2px;
+                border-color: Palette.mint;
+            }
         }
 
-        if AppState.chat-can-show-members && !root.chat.is-chat-request: Rectangle {
+        if AppState.chat-can-show-members && !root.chat.is-chat-request: members-btn := Rectangle {
             width: 36px;
             height: 36px;
             y: (parent.height - self.height) / 2;
@@ -167,6 +219,9 @@ export component ChatHeader inherits Rectangle {
             border-radius: (6px) * Theme.r-scale;
             border-width: AppState.show-chat-members ? 1px : 0px;
             border-color: Palette.border-2;
+            accessible-role: button;
+            accessible-label: AppState.show-chat-members ? @tr("Hide members") : @tr("Show members");
+            accessible-action-default => { AppState.members-toggle-clicked(); }
             TouchArea {
                 clicked => {
                     AppState.members-toggle-clicked();
@@ -176,6 +231,26 @@ export component ChatHeader inherits Rectangle {
                     x: (parent.width - self.width) / 2;
                     y: (parent.height - self.height) / 2;
                 }
+            }
+            members-fs := FocusScope {
+                width: 0px;
+                height: 0px;
+                key-pressed(event) => {
+                    if (event.text == Key.Return || event.text == " ") {
+                        AppState.members-toggle-clicked();
+                        return accept;
+                    }
+                    return reject;
+                }
+            }
+            if members-fs.has-focus: Rectangle {
+                x: 1px;
+                y: 1px;
+                width: parent.width - 2px;
+                height: parent.height - 2px;
+                border-radius: (6px) * Theme.r-scale;
+                border-width: 2px;
+                border-color: Palette.mint;
             }
         }
 
