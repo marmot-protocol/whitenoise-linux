@@ -53,6 +53,7 @@ export component FileChip inherits Rectangle {
 
     TouchArea {
         enabled: !root.msg.att-loading;
+        mouse-cursor: pointer;
         clicked => {
             root.clicked();
         }
