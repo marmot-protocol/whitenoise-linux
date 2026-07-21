@@ -1647,6 +1647,10 @@ msgctxt "ContactDetail"
 msgid "Mutual relays"
 msgstr "Gemeinsame Relays"
 
+msgctxt "MessagesArea"
+msgid "NEW MESSAGES"
+msgstr "NEUE NACHRICHTEN"
+
 msgctxt "NicknameModal"
 msgid "NICKNAME"
 msgstr "SPITZNAME"

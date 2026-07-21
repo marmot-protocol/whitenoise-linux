@@ -48,6 +48,9 @@ export component MessagesArea inherits Rectangle {
     // `changed` handler must sit on a property of the declaring element.)
     property <int> scroll-tick: AppState.messages-scroll-tick;
     property <int> jump-tick: AppState.message-jump-tick;
+    // Bumped by Rust on opening a chat that had unread messages: scroll so the
+    // "New messages" divider (above message-unread-index) lands near the top.
+    property <int> unread-tick: AppState.message-unread-tick;
     // True when older history exists beyond the loaded window; shows the
     // "load earlier messages" pill at the top of the list.
     property <bool> has-older: AppState.messages-has-older;
@@ -209,6 +212,18 @@ export component MessagesArea inherits Rectangle {
         }
     }
 
+    // Jump-to-unread on open: top-align the first-unread row (no highlight) so
+    // the "New messages" divider above it is visible, reusing the two-phase
+    // scroll targeting. Same mechanism as the load-earlier anchor.
+    changed unread-tick => {
+        if (AppState.message-unread-index >= 0) {
+            root.jump-reset-pending = false;
+            root.scroll-center = false;
+            root.scroll-target-idx = AppState.message-unread-index;
+            root.scroll-tries = 40;
+        }
+    }
+
     // Scroll anchoring for "load earlier messages": content grows at the TOP,
     // so without correction the viewport would show the middle of the newly
     // loaded history. The pill click records the current row count; when the
@@ -313,6 +328,13 @@ export component MessagesArea inherits Rectangle {
             // multi-day history stays orientable (bubbles only stamp HH:MM).
             if msg.day-label != "": SessionDivider {
                 label: msg.day-label;
+            }
+            // "New messages" divider above the first message that was unread when
+            // the chat was opened — accented, so it reads apart from the date
+            // dividers. Rust flags exactly one row per open (see chatmodel.rs).
+            if msg.unread-divider: SessionDivider {
+                label: @tr("NEW MESSAGES");
+                accent: true;
             }
             if msg.gap-before > 0px: Rectangle {
                 height: msg.gap-before;

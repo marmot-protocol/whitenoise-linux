@@ -25,6 +25,12 @@ pub struct UnreadState {
     last_read: Mutex<HashMap<String, i64>>,
     /// group_id_hex → current unread count. Only non-zero entries are kept.
     counts: Mutex<HashMap<String, u32>>,
+    /// The "New messages" divider anchor: `(group_id_hex, message_id_hex)` of
+    /// the first message that was unread when the open chat was opened. Captured
+    /// once per open (from the marker before it advances) and held until another
+    /// chat is opened, so the divider stays put while you read past it. `None`
+    /// when the open chat had no unread history.
+    divider_anchor: Mutex<Option<(String, String)>>,
 }
 
 impl UnreadState {
@@ -32,6 +38,7 @@ impl UnreadState {
         Self {
             last_read: Mutex::new(last_read),
             counts: Mutex::new(HashMap::new()),
+            divider_anchor: Mutex::new(None),
         }
     }
 
@@ -79,6 +86,27 @@ impl UnreadState {
     /// folded into the rail's chats badge.
     pub fn total(&self) -> u32 {
         self.lock_counts().values().copied().sum()
+    }
+
+    fn lock_anchor(&self) -> std::sync::MutexGuard<'_, Option<(String, String)>> {
+        self.divider_anchor
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+    }
+
+    /// Set (or clear, with `None`) the unread-divider anchor for the chat that
+    /// was just opened. Replaces any previous anchor.
+    pub fn set_divider_anchor(&self, group_hex: &str, message_id: Option<String>) {
+        *self.lock_anchor() = message_id.map(|id| (group_hex.to_string(), id));
+    }
+
+    /// The anchored first-unread message id, but only when the anchor belongs to
+    /// `group_hex` — so a rebuild of any other chat never draws the divider.
+    pub fn divider_anchor_for(&self, group_hex: &str) -> Option<String> {
+        self.lock_anchor()
+            .as_ref()
+            .filter(|(group, _)| group.eq_ignore_ascii_case(group_hex))
+            .map(|(_, id)| id.clone())
     }
 }
 

@@ -2,6 +2,10 @@ import { Palette, Theme } from "../tokens.slint";
 
 export component SessionDivider inherits Rectangle {
     in property <string> label;
+    // When true the rules and label render in the accent colour, marking the
+    // "New messages" line apart from the neutral date dividers.
+    in property <bool> accent: false;
+    property <color> rule-color: root.accent ? Palette.mint : Palette.border;
     height: 40px;
     HorizontalLayout {
         padding-left: 18px;
@@ -15,7 +19,7 @@ export component SessionDivider inherits Rectangle {
                 width: parent.width;
                 height: 1px;
                 y: (parent.height - 1px) / 2;
-                background: @linear-gradient(90deg, transparent 0%, Palette.border 100%);
+                background: @linear-gradient(90deg, transparent 0%, root.rule-color 100%);
             }
         }
 
@@ -36,7 +40,7 @@ export component SessionDivider inherits Rectangle {
             }
             Text {
                 text: root.label;
-                color: Palette.text-lo;
+                color: root.accent ? Palette.mint-hi : Palette.text-lo;
                 font-size: Theme.fs(10px, 14px);
                 font-weight: 600;
                 letter-spacing: 1.4px;
@@ -63,7 +67,7 @@ export component SessionDivider inherits Rectangle {
                 width: parent.width;
                 height: 1px;
                 y: (parent.height - 1px) / 2;
-                background: @linear-gradient(90deg, Palette.border 0%, transparent 100%);
+                background: @linear-gradient(90deg, root.rule-color 0%, transparent 100%);
             }
         }
     }

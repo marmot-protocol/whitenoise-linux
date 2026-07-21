@@ -1144,6 +1144,11 @@ export struct ChatMessage {
     // the row renders as a centered system line (from `text`), never a bubble,
     // and carries no reply/react/edit affordances.
     system-line: bool,
+    // True on the first unread message of the chat as it stood when opened: the
+    // list renders an accented "New messages" divider (reusing SessionDivider)
+    // above this row. Captured once on open and held for the session, so the
+    // marker stays put while you read past it.
+    unread-divider: bool,
 }
 
 // One entry in a message's edit history (original + each subsequent edit),

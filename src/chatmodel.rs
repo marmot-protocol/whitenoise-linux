@@ -436,6 +436,8 @@ pub(crate) fn chat_message_from_with_reactions(
         effect_autoplay: !deleted && effect_autoplay,
         // Not a system line: this is a real chat bubble.
         system_line: false,
+        // Set by `build_message_rows` for the anchored first-unread row.
+        unread_divider: false,
     }
 }
 
@@ -497,6 +499,7 @@ pub(crate) fn system_chat_message(
 ) -> ChatMessage {
     ChatMessage {
         system_line: true,
+        unread_divider: false,
         text: s(&system_line_text(event, backend)),
         stamp: s(&format_unix(record.recorded_at)),
         stamp_full: s(&format_full_stamp(record.recorded_at)),
@@ -885,6 +888,8 @@ pub(crate) fn pending_chat_message(
         effect_autoplay,
         // A pending send is always a real chat bubble, never a system line.
         system_line: false,
+        // A pending send is our own, so never the first-unread row.
+        unread_divider: false,
     }
 }
 
@@ -1377,6 +1382,25 @@ fn message_row_state<'a>(
     }
 }
 
+/// The id of the first message in `msgs` (ascending order) that was unread at
+/// `marker`: incoming, visible, not a group-system row, recorded after the
+/// marker. `None` when the window holds nothing unread. Mirrors `count_unread`'s
+/// filter so the "New messages" divider lands exactly where the badge counted.
+pub(crate) fn first_unread_message_id(
+    msgs: &[AppMessageRecord],
+    my_id: &str,
+    marker: i64,
+) -> Option<String> {
+    msgs.iter()
+        .find(|m| {
+            m.recorded_at as i64 > marker
+                && !m.sender.eq_ignore_ascii_case(my_id)
+                && is_visible_chat_message(m)
+                && backend::group_system_event(m).is_none()
+        })
+        .map(|m| m.message_id_hex.clone())
+}
+
 /// Build one chat's rows from a message window plus the parallel grouping keys
 /// (so the caller can fold in optimistic sends before `apply_grouping`). The
 /// single source of truth for the documented row pipeline: `rebuild_chat_messages_from`
@@ -1402,6 +1426,11 @@ pub(crate) fn build_message_rows(
         by_id,
     } = message_row_state(backend, my_id, group_hex, msgs, overlay);
 
+    // The row that carries the "New messages" divider this open, if any. Read
+    // once here and matched by id below, so the anchor captured on open keeps
+    // marking the same row across every rebuild while the chat stays open.
+    let unread_anchor = unread_state().divider_anchor_for(group_hex);
+
     let mut rows: Vec<ChatMessage> = Vec::new();
     let mut keys: Vec<GroupKey> = Vec::new();
     for m in msgs.iter().filter(|m| is_visible_chat_message(m)) {
@@ -1422,9 +1451,16 @@ pub(crate) fn build_message_rows(
             .cloned()
             .unwrap_or_default();
         let deleted = deletes.contains(&m.message_id_hex);
-        rows.push(chat_message_from_with_reactions(
+        let mut row = chat_message_from_with_reactions(
             m, &by_id, my_id, my_label, r, e, deleted, &profiles, is_group, false,
-        ));
+        );
+        if unread_anchor
+            .as_deref()
+            .is_some_and(|id| id.eq_ignore_ascii_case(&m.message_id_hex))
+        {
+            row.unread_divider = true;
+        }
+        rows.push(row);
         keys.push(key);
     }
     (rows, keys)

@@ -298,6 +298,13 @@ export global AppState {
     // off-screen rows, so it first scrolls near this index (estimated), then
     // centers exactly once the target row instantiates.
     in-out property <int> message-jump-index: -1;
+    // Row index of the first-unread message within the loaded window, set by
+    // Rust on open when the chat had unread history. The messages view scrolls
+    // to it top-aligned (no highlight, unlike a mention jump) so the "New
+    // messages" divider lands in view; -1 when nothing was unread. The tick is
+    // bumped alongside to fire the scroll.
+    in-out property <int> message-unread-index: -1;
+    in-out property <int> message-unread-tick: 0;
     // True when the active chat has history beyond the loaded window; the
     // messages view shows a "load earlier messages" pill that fires
     // messages-request-older.
