@@ -1,7 +1,7 @@
 import { Palette, Theme } from "../tokens.slint";
 import { Modal, ModalField } from "modal.slint";
 import { Button } from "../primitives/button.slint";
-import { FormLabel } from "../primitives/form-label.slint";
+import { ReadoutBox } from "../login/readout-box.slint";
 import { CopyIcon } from "../icons/copy-icon.slint";
 
 // Danger-zone affordance: reveal the *active* account's private key (nsec),
@@ -63,28 +63,9 @@ export component RevealNsecModal inherits Modal {
 
     if root.revealed: VerticalLayout {
         spacing: 6px;
-        FormLabel {
-            text: @tr("SECRET KEY (NSEC)");
-        }
-
-        Rectangle {
-            height: 38px;
-            border-radius: (7px) * Theme.r-scale;
-            background: Palette.field;
-            border-width: 1px;
-            border-color: Palette.field-border;
-            HorizontalLayout {
-                padding-left: 14px;
-                padding-right: 14px;
-                Text {
-                    text: root.nsec-value;
-                    color: Palette.text-hi;
-                    font-size: Theme.fs(12px, 12px);
-                    font-family: Theme.font;
-                    vertical-alignment: center;
-                    overflow: elide;
-                }
-            }
+        ReadoutBox {
+            label: @tr("SECRET KEY (NSEC)");
+            value: root.nsec-value;
         }
 
         HorizontalLayout {

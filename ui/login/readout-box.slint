@@ -1,8 +1,11 @@
 import { Palette, Theme } from "../tokens.slint";
 import { FormLabel } from "../primitives/form-label.slint";
 
-// Read-only elided value box (npub/nsec readouts in mode 2). A FormLabel
-// above a 38px field-styled rectangle with centered elided text.
+// Read-only value box (npub/nsec readouts). A FormLabel above a field-styled
+// box holding the full value. This is the one place a 63-char bech32 key is
+// shown for backup, so the box wraps and grows to fit the whole value instead
+// of eliding it, and the value lives in a read-only TextInput so it can be
+// selected to check or copy by hand.
 export component ReadoutBox inherits VerticalLayout {
     in property <string> label;
     in property <string> value;
@@ -13,7 +16,7 @@ export component ReadoutBox inherits VerticalLayout {
     }
 
     Rectangle {
-        height: 38px;
+        min-height: 38px;
         border-radius: (7px) * Theme.r-scale;
         background: Palette.field;
         border-width: 1px;
@@ -21,12 +24,20 @@ export component ReadoutBox inherits VerticalLayout {
         HorizontalLayout {
             padding-left: 14px;
             padding-right: 14px;
-            Text {
+            padding-top: 9px;
+            padding-bottom: 9px;
+            TextInput {
                 text: root.value;
+                read-only: true;
+                single-line: false;
+                wrap: char-wrap;
                 color: Palette.text-hi;
                 font-size: Theme.fs(12px, 12px);
+                font-family: Theme.font;
                 vertical-alignment: center;
-                overflow: elide;
+                horizontal-alignment: left;
+                selection-background-color: Palette.mint;
+                selection-foreground-color: Palette.bubble-out-fg;
             }
         }
     }
