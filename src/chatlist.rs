@@ -1255,8 +1255,23 @@ pub(crate) fn count_unread(
     }
 }
 
-/// Push the aggregate unread total into the window title (the "tray" surface —
-/// `(N) darkmatter`) and fold it into the rail's chats badge, which
+thread_local! {
+    /// Handle to the system tray icon, live only when the user runs
+    /// minimized-to-tray. Both the tray and the window are `!Send` and live on
+    /// the UI thread, where `refresh_unread_chrome` always runs, so a
+    /// thread-local weak handle mirrors the unread total into the tray without
+    /// threading it through every call site.
+    static TRAY: RefCell<Option<Weak<DarkMatterTray>>> = const { RefCell::new(None) };
+}
+
+/// Register the tray icon so the unread total reaches its tooltip. Called once
+/// at startup when the tray is created.
+pub(crate) fn register_tray(tray: &DarkMatterTray) {
+    TRAY.with(|t| *t.borrow_mut() = Some(tray.as_weak()));
+}
+
+/// Push the aggregate unread total into the window title (`(N) darkmatter`) and
+/// the tray tooltip, and fold it into the rail's chats badge, which
 /// `set_rail_badges` has just set from pending chat-requests. Call right after
 /// `set_rail_badges` so the badge reflects unread + requests together.
 pub(crate) fn refresh_unread_chrome(ui: &DarkMatterLinux) {
@@ -1266,6 +1281,11 @@ pub(crate) fn refresh_unread_chrome(ui: &DarkMatterLinux) {
         s("darkmatter")
     } else {
         s(&format!("({total}) darkmatter"))
+    });
+    TRAY.with(|t| {
+        if let Some(tray) = t.borrow().as_ref().and_then(|w| w.upgrade()) {
+            tray.set_unread_count(total as i32);
+        }
     });
 }
 

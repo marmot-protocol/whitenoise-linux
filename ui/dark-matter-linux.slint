@@ -68,8 +68,16 @@ export {
 }
 export component DarkMatterTray inherits SystemTrayIcon {
     icon: @image-url("../assets/svg/logo.svg");
-    tooltip: @tr("White Noise");
-    title: @tr("White Noise");
+    // Total unread across all chats, pushed from Rust by refresh_unread_chrome
+    // alongside the window title so the tray surfaces the same count the taskbar
+    // does. Zero drops the suffix and shows the plain product name.
+    in property <int> unread-count: 0;
+    tooltip: root.unread-count > 0
+        ? @tr("White Noise · 1 unread message" | "White Noise · {n} unread messages" % root.unread-count)
+        : @tr("White Noise");
+    title: root.unread-count > 0
+        ? @tr("White Noise ({} unread)", root.unread-count)
+        : @tr("White Noise");
 
     callback show-window();
     callback quit();
