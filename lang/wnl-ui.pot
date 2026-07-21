@@ -631,6 +631,10 @@ msgctxt "command palette footer"
 msgid "Close"
 msgstr ""
 
+msgctxt "ChatHeader"
+msgid "Close search"
+msgstr ""
+
 msgctxt "KeysPage"
 msgid "Configure key-package relays first."
 msgstr ""
@@ -1171,6 +1175,10 @@ msgctxt "GroupHero"
 msgid "Group name"
 msgstr ""
 
+msgctxt "ChatHeader"
+msgid "Hide members"
+msgstr ""
+
 msgctxt "PasswordField"
 msgid "Hide password"
 msgstr ""
@@ -1542,6 +1550,10 @@ msgstr ""
 
 msgctxt "ContactDetail"
 msgid "Mute"
+msgstr ""
+
+msgctxt "ChatHeader"
+msgid "Mute conversation"
 msgstr ""
 
 msgctxt "ContactDetail"
@@ -2338,6 +2350,10 @@ msgctxt "ContactsSidebar"
 msgid "Search contacts…"
 msgstr ""
 
+msgctxt "ChatHeader"
+msgid "Search in conversation"
+msgstr ""
+
 msgctxt "ChatSearchBar"
 msgid "Search in conversation…"
 msgstr ""
@@ -2404,6 +2420,10 @@ msgstr ""
 
 msgctxt "ContactDetail"
 msgid "Show as QR"
+msgstr ""
+
+msgctxt "ChatHeader"
+msgid "Show members"
 msgstr ""
 
 msgctxt "NotificationsPane"
@@ -2658,6 +2678,10 @@ msgstr ""
 
 msgctxt "ContactDetail"
 msgid "Unmute"
+msgstr ""
+
+msgctxt "ChatHeader"
+msgid "Unmute conversation"
 msgstr ""
 
 msgctxt "ChatContextMenu"
