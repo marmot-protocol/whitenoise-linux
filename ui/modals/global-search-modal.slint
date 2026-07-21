@@ -15,10 +15,28 @@ export component GlobalSearchModal inherits Modal {
     property <[SearchHit]> results: AppState.msg-global-results;
     property <bool> searching: AppState.msg-global-searching;
     in-out property <string> query;
+    in-out property <int> selected: 0;
 
     function open-hit(group-id: string, message-id: string) {
         AppState.msg-global-result-selected(group-id, message-id);
         root.dismissed();
+    }
+
+    // Arrow keys move the highlight; wraps at the ends like the command palette.
+    function move-selection(delta: int) {
+        if (root.results.length > 0) {
+            if (delta < 0) {
+                root.selected = root.selected == 0 ? root.results.length - 1 : root.selected - 1;
+            } else {
+                root.selected = mod(root.selected + 1, root.results.length);
+            }
+        }
+    }
+
+    function activate-selected() {
+        if (root.results.length > 0 && root.selected < root.results.length) {
+            root.open-hit(root.results[root.selected].group-id, root.results[root.selected].message-id);
+        }
     }
 
     // Top-anchored frameless card, same footprint as the command palette.
@@ -67,11 +85,12 @@ export component GlobalSearchModal inherits Modal {
                         enter-submits: false;
                         capture-nav: true;
                         nav-tab-commits: false;
-                        // Enter opens the newest hit.
+                        nav(delta) => {
+                            root.move-selection(delta);
+                        }
+                        // Enter opens the highlighted hit.
                         commit-mention => {
-                            if (root.results.length > 0) {
-                                root.open-hit(root.results[0].group-id, root.results[0].message-id);
-                            }
+                            root.activate-selected();
                         }
                         dismiss-mention => {
                             root.dismissed();
@@ -137,9 +156,11 @@ export component GlobalSearchModal inherits Modal {
                         padding: 8px;
                         spacing: 4px;
 
-                        for hit in root.results: SearchHitRow {
+                        for hit[i] in root.results: SearchHitRow {
                             hit: hit;
+                            is-selected: i == root.selected;
                             selected => {
+                                root.selected = i;
                                 root.open-hit(hit.group-id, hit.message-id);
                             }
                         }
@@ -154,6 +175,7 @@ export component GlobalSearchModal inherits Modal {
     changed query => {
         if (root.query != root.last-query) {
             root.last-query = root.query;
+            root.selected = 0;
             AppState.msg-global-query-changed(root.query);
         }
     }

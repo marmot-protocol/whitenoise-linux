@@ -6,13 +6,16 @@ import { Avatar } from "../primitives/avatar.slint";
 // matched text highlighted as its own accent-colored run.
 export component SearchHitRow inherits Rectangle {
     in property <SearchHit> hit;
+    in property <bool> is-selected: false;
     callback selected();
 
     height: 62px;
-    background: touch.has-hover ? Palette.hover : transparent;
+    background: root.is-selected
+        ? (Theme.selected-inverts-text ? Palette.selected : Palette.bubble-in)
+        : (touch.has-hover ? Palette.hover : transparent);
     border-radius: 8px * Theme.r-scale;
     border-width: Theme.border-w;
-    border-color: touch.has-hover ? Palette.border-2 : transparent;
+    border-color: root.is-selected ? Palette.mint : (touch.has-hover ? Palette.border-2 : transparent);
     animate background, border-color { duration: Theme.hover-dur; }
 
     HorizontalLayout {
