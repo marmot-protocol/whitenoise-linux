@@ -30,6 +30,22 @@ export component ErrorBanner inherits Rectangle {
     drop-shadow-color: Palette.shadow-card;
     clip: true;
 
+    // Reveal on mount — the shell only instantiates this row when a failure
+    // arrives, so flipping `shown` in `init` fades the plate in over
+    // `transition-dur` instead of snapping it on. Opacity rather than a slide,
+    // because the row sizes itself in the shell's VerticalLayout and offsetting
+    // the content's `y` drops that content-driven height. Matches the
+    // flip-after-mount pattern MemberMenu and the tooltip use.
+    property <bool> shown: false;
+    init => {
+        root.shown = true;
+    }
+    opacity: root.shown ? 1.0 : 0.0;
+    animate opacity {
+        duration: Theme.transition-dur;
+        easing: ease-out;
+    }
+
     HorizontalLayout {
         spacing: 0;
 
@@ -50,10 +66,9 @@ export component ErrorBanner inherits Rectangle {
             // Filled danger disc with a light glyph — a firmer focal point
             // than the old outline ring. The glyph reads in `danger-soft`, the
             // plate's own surface colour, so it stays legible on the disc in
-            // every theme. Top-aligned so it stays beside the first line when
-            // the message wraps.
+            // every theme. Centred with the copy so the whole row reads level.
             VerticalLayout {
-                alignment: start;
+                alignment: center;
                 Rectangle {
                     width: 20px;
                     height: 20px;
@@ -76,12 +91,13 @@ export component ErrorBanner inherits Rectangle {
                 font-size: Theme.fs(12px, 15px);
                 font-weight: 600;
                 wrap: word-wrap;
+                vertical-alignment: center;
                 horizontal-stretch: 1;
                 min-width: 0;
             }
 
             VerticalLayout {
-                alignment: start;
+                alignment: center;
                 Rectangle {
                     width: 26px;
                     height: 26px;
