@@ -900,6 +900,9 @@ pub(crate) fn push_group_members_to_ui_async(
     if let Ok(mut slot) = active_group_slot().lock() {
         *slot = group_hex.to_string();
     }
+    // The list is emptied until the snapshot lands; flag the in-flight fetch so
+    // the panel shows "Loading members…" rather than a blank card.
+    ui.set_chat_members_loading(true);
     let b = backend.clone();
     let group_hex = group_hex.to_string();
     let weak = ui.as_weak();
@@ -925,6 +928,9 @@ pub(crate) fn push_group_members_to_ui_from(
     group_hex: &str,
     snap: MembersSnapshot,
 ) {
+    // Snapshot has arrived — clear the loading placeholder for both the
+    // can-show and can't-show branches below.
+    ui.set_chat_members_loading(false);
     push_group_settings_to_ui_from(ui, backend, group_hex, snap.group_rec.as_ref(), snap.count);
     let count = snap.count;
     let is_group = count > 2;

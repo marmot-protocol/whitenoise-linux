@@ -1503,6 +1503,10 @@ msgctxt "MessagesArea"
 msgid "Load earlier messages"
 msgstr "Carica messaggi precedenti"
 
+msgctxt "GroupMembersPanel"
+msgid "Loading members…"
+msgstr "Caricamento dei membri…"
+
 msgctxt "MentionsInbox"
 msgid "Loading mentions…"
 msgstr "Caricamento delle menzioni…"
