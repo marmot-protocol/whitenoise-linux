@@ -65,33 +65,37 @@ shadow-bubble-in = "#33302b44"
 vignette = "#d8ccae80"
 avatar-ring = "#00000015"
 selected-uses-base = false
+# accent-base carries body text: white on the outgoing bubble fill and the
+# accent-tinted text on accent-surface. Both need WCAG AA 4.5:1, so the resting
+# swatches are darkened into the paint band (white clears ~5.8:1, accent-on-
+# surface ~4.7:1). The old pastels move up to accent-hi as the bright highlight.
 accent-base = [
+    "#2d7158ff",
+    "#336a92ff",
+    "#b73060ff",
+    "#9d501aff",
+    "#7b51abff",
+]
+accent-hi = [
     "#3e9e7aff",
     "#4a8fc0ff",
     "#d45c86ff",
     "#e08544ff",
     "#9b7bc0ff",
 ]
-accent-hi = [
-    "#52b891ff",
-    "#62a6d2ff",
-    "#e0789fff",
-    "#ee9c62ff",
-    "#b193d2ff",
-]
 accent-dim = [
-    "#2e7e60ff",
-    "#387098ff",
-    "#b0476cff",
-    "#b86836ff",
-    "#7c5fa0ff",
+    "#235a46ff",
+    "#285474ff",
+    "#92274cff",
+    "#7d4015ff",
+    "#614187ff",
 ]
 accent-glow = [
-    "#3e9e7a22",
-    "#4a8fc022",
-    "#d45c8622",
-    "#e0854422",
-    "#9b7bc022",
+    "#2d715822",
+    "#336a9222",
+    "#b7306022",
+    "#9d501a22",
+    "#7b51ab22",
 ]
 accent-surface = [
     "#dcede3ff",
