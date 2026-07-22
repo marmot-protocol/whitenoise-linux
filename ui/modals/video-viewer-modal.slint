@@ -81,16 +81,19 @@ export component VideoViewerModal inherits Modal {
             }
         }
 
-        // "Loading…" pill while the first frame decodes.
-        if root.loading && !root.has-frame: StatusPill {
+        // "Loading…" pill: the first frame is still decoding, or playback
+        // stalled mid-stream. Overlays the stale frame so a buffering stall
+        // reads as buffering rather than a frozen window.
+        if root.loading: StatusPill {
             x: (parent.width - self.width) / 2;
             y: (parent.height - self.height) / 2;
             text: @tr("Loading…");
         }
 
-        // Failure pill — download/decode failed and no frame ever arrived.
-        // Tap to retry (mirrors the inline video tile's "!" failure glyph).
-        if root.failed && !root.has-frame: StatusPill {
+        // Failure pill — the download or libmpv decode failed, whether or not a
+        // frame already rendered. Overlays the stale frame; tap to retry
+        // (mirrors the inline video tile's "!" failure glyph).
+        if root.failed: StatusPill {
             x: (parent.width - self.width) / 2;
             y: (parent.height - self.height) / 2;
             text: @tr("Couldn't play video — tap to retry");

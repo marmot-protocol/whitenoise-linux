@@ -632,11 +632,17 @@ pub(crate) fn spawn_video_player(weak: Weak<DarkMatterLinux>, mid: String, bytes
 
     let poster_saved = Arc::new(AtomicBool::new(false));
     let dur_saved = Arc::new(AtomicBool::new(false));
+    // Set once the first frame renders. `on_state` reads it so a mid-stream
+    // buffering/error signal only overrides the loading pill after a frame has
+    // appeared, leaving the initial "Loading…" up until then.
+    let frame_seen = Arc::new(AtomicBool::new(false));
 
     let on_frame = {
         let weak = weak.clone();
         let mid = mid.clone();
+        let frame_seen = frame_seen.clone();
         move |px: PicturePixels| {
+            frame_seen.store(true, Ordering::Release);
             // First frame doubles as the bubble poster (cached once).
             if !poster_saved.swap(true, Ordering::AcqRel) {
                 attachment_image_cache_put(vidposter_key(&mid), px.clone());
@@ -656,6 +662,7 @@ pub(crate) fn spawn_video_player(weak: Weak<DarkMatterLinux>, mid: String, bytes
     let on_state = {
         let weak = weak.clone();
         let mid = mid.clone();
+        let frame_seen = frame_seen.clone();
         move |st: mpv::PlayerState| {
             if st.duration > 0.0 {
                 *current_video_duration().lock().unwrap() = st.duration;
@@ -673,6 +680,10 @@ pub(crate) fn spawn_video_player(weak: Weak<DarkMatterLinux>, mid: String, bytes
             let pos_l = fmt_dur(st.time_pos);
             let dur_l = fmt_dur(st.duration);
             let playing = !st.paused;
+            // Buffering only counts as a stall while the user hasn't paused.
+            let buffering = st.buffering && !st.paused;
+            let errored = st.errored;
+            let seen = frame_seen.load(Ordering::Acquire);
             let weak = weak.clone();
             let _ = slint::invoke_from_event_loop(move || {
                 if let Some(ui) = weak.upgrade() {
@@ -680,6 +691,16 @@ pub(crate) fn spawn_video_player(weak: Weak<DarkMatterLinux>, mid: String, bytes
                     ui.set_video_viewer_pos(pos_l.into());
                     ui.set_video_viewer_dur(dur_l.into());
                     ui.set_video_viewer_playing(playing);
+                    // A playback error surfaces the retry pill whether or not a
+                    // frame rendered; a mid-stream buffering stall shows the
+                    // loading pill, but only once a frame is up (before that the
+                    // initial "Loading…" already covers the wait).
+                    if errored {
+                        ui.set_video_viewer_loading(false);
+                        ui.set_video_viewer_failed(true);
+                    } else if seen {
+                        ui.set_video_viewer_loading(buffering);
+                    }
                 }
             });
         }
