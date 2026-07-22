@@ -1046,6 +1046,10 @@ msgctxt "AboutPane"
 msgid "Encrypted group chat on Nostr"
 msgstr ""
 
+msgctxt "ChatHeader"
+msgid "Encryption details"
+msgstr ""
+
 msgctxt "EncryptionInfoModal"
 msgid "End-to-end encrypted"
 msgstr ""

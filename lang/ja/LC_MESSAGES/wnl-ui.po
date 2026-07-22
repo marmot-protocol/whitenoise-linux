@@ -1101,6 +1101,11 @@ msgid "Encrypted group chat on Nostr"
 msgstr "Nostr 上の暗号化グループチャット"
 
 #, fuzzy
+msgctxt "ChatHeader"
+msgid "Encryption details"
+msgstr "アカウント"
+
+#, fuzzy
 msgctxt "EncryptionInfoModal"
 msgid "End-to-end encrypted"
 msgstr "エンドツーエンド暗号化:"
