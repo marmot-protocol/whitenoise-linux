@@ -9,25 +9,17 @@ export component ArchivedSidebar inherits SidePanel {
     in property <[ArchivedChat]> archives;
     in property <int> active-archived;
 
-    // Live search: mirrors the chat-list/contacts-list filter — Rust
-    // recomputes `archive-match-flags` (one flag per archived chat) for the
-    // live query since Slint has no substring match.
-    property <string> query;
-
     title: @tr("ARCHIVED");
     count: root.archives.length;
-    show-search: true;
-    search-placeholder: @tr("Search archived chats…");
-    search-edited(q) => {
-        root.query = q;
-        AppState.archive-search-changed(q);
-    }
+
+    // The archive search field lives in the shell header
+    // (AppState.archive-search-query), not this panel — see app-shell.slint.
     // The archived list is re-pushed on archive/unarchive; re-derive the
     // match set so filtered rows track the fresh order (mirrors the chat
     // list). No-op while the query is empty.
     changed archives => {
-        if (root.query != "") {
-            AppState.archive-search-changed(root.query);
+        if (AppState.archive-search-query != "") {
+            AppState.archive-search-changed(AppState.archive-search-query);
         }
     }
 
@@ -48,7 +40,7 @@ export component ArchivedSidebar inherits SidePanel {
             // Rust). No `visible:` here — binding it on a ListView delegate
             // root breaks row placement (every delegate lands at y=0); zero
             // height + clip hides collapsed rows just as well.
-            property <bool> shown: root.query == "" || (idx < AppState.archive-match-flags.length && AppState.archive-match-flags[idx]);
+            property <bool> shown: AppState.archive-search-query == "" || (idx < AppState.archive-match-flags.length && AppState.archive-match-flags[idx]);
             height: shown ? item.height + 2px : 0px;
             clip: true;
             item := ArchivedListItem {

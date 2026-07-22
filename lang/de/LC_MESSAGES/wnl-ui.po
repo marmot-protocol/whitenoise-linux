@@ -2498,7 +2498,7 @@ msgctxt "GlobalSearchModal"
 msgid "Search all messages…"
 msgstr "Alle Nachrichten durchsuchen…"
 
-msgctxt "ArchivedSidebar"
+msgctxt "AppShell"
 msgid "Search archived chats…"
 msgstr "Archivierte Chats durchsuchen…"
 
