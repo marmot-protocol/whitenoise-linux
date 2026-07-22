@@ -2229,6 +2229,10 @@ msgctxt "ErrorCopy"
 msgid "Rotating…"
 msgstr ""
 
+msgctxt "KeysPage"
+msgid "Rotating…"
+msgstr ""
+
 msgctxt "AddAccountModal"
 msgid "SECRET KEY (NSEC)"
 msgstr ""
@@ -3058,10 +3062,6 @@ msgstr ""
 
 msgctxt "RecordingOverlay"
 msgid "{}s"
-msgstr ""
-
-msgctxt "DangerActionRow"
-msgid "…"
 msgstr ""
 
 msgctxt "ProfileModal"

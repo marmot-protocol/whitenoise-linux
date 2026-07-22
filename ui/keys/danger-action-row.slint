@@ -3,11 +3,13 @@ import { MicroButton } from "../primitives/button.slint";
 
 // One row in the page's DANGER ZONE: a red-tinted plate with title + detail
 // on the left and a danger-styled action button on the right (button icon via
-// @children). `busy` swaps the label for an ellipsis and gates the click.
+// @children). `busy` swaps the label for `busy-label` (falling back to
+// `action-label` if unset) and gates the click.
 export component DangerActionRow inherits Rectangle {
     in property <string> title;
     in property <string> detail;
     in property <string> action-label;
+    in property <string> busy-label;
     in property <bool> busy: false;
     callback triggered();
 
@@ -44,7 +46,7 @@ export component DangerActionRow inherits Rectangle {
         VerticalLayout {
             alignment: center;
             MicroButton {
-                label: root.busy ? @tr("…") : root.action-label;
+                label: root.busy ? (root.busy-label != "" ? root.busy-label : root.action-label) : root.action-label;
                 fg: Palette.danger;
                 bg-color: Palette.danger-soft;
                 hover-bg: Palette.danger-soft-hover;

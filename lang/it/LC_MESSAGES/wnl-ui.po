@@ -2345,6 +2345,10 @@ msgctxt "ErrorCopy"
 msgid "Rotating…"
 msgstr "Rotazione…"
 
+msgctxt "KeysPage"
+msgid "Rotating…"
+msgstr "Rotazione…"
+
 msgctxt "AddAccountModal"
 msgid "SECRET KEY (NSEC)"
 msgstr "CHIAVE SEGRETA (NSEC)"
@@ -3207,11 +3211,6 @@ msgstr "{} non trasporterà più i tuoi messaggi. Puoi aggiungerlo di nuovo quan
 msgctxt "RecordingOverlay"
 msgid "{}s"
 msgstr "{}s"
-
-#, fuzzy
-msgctxt "DangerActionRow"
-msgid "…"
-msgstr "…"
 
 msgctxt "ProfileModal"
 msgid "✓ In your contacts"
