@@ -156,6 +156,7 @@ export component ChatHeader inherits Rectangle {
                 }
             }
             search-touch := TouchArea {
+                mouse-cursor: pointer;
                 clicked => {
                     search-btn.activate();
                 }
@@ -205,6 +206,7 @@ export component ChatHeader inherits Rectangle {
             accessible-label: AppState.active-chat-muted ? @tr("Unmute conversation") : @tr("Mute conversation");
             accessible-action-default => { AppState.toggle-mute-chat(); }
             mute-touch := TouchArea {
+                mouse-cursor: pointer;
                 clicked => {
                     AppState.toggle-mute-chat();
                 }
@@ -253,6 +255,7 @@ export component ChatHeader inherits Rectangle {
             accessible-label: AppState.show-chat-members ? @tr("Hide members") : @tr("Show members");
             accessible-action-default => { AppState.members-toggle-clicked(); }
             TouchArea {
+                mouse-cursor: pointer;
                 clicked => {
                     AppState.members-toggle-clicked();
                 }
