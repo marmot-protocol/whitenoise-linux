@@ -299,13 +299,20 @@ export component MessagesArea inherits Rectangle {
                     width: pill-label.preferred-width + 28px;
                     height: 26px;
                     border-radius: 13px * Theme.r-scale;
-                    background: pill-touch.has-hover ? Palette.hover : Palette.panel-2;
+                    background: (pill-touch.has-hover || pill-focus.has-focus) ? Palette.hover : Palette.panel-2;
                     border-width: Theme.border-w;
-                    border-color: pill-touch.has-hover ? Palette.border-2 : Palette.border;
+                    border-color: (pill-touch.has-hover || pill-focus.has-focus) ? Palette.border-2 : Palette.border;
                     animate background, border-color { duration: Theme.hover-dur; }
+                    accessible-role: button;
+                    accessible-label: @tr("Load earlier messages");
+                    accessible-action-default => {
+                        root.anchor-old-len = root.messages.length;
+                        root.anchor-armed = true;
+                        AppState.messages-request-older();
+                    }
                     pill-label := Text {
                         text: @tr("Load earlier messages");
-                        color: pill-touch.has-hover ? Palette.text-hi : Palette.text-lo;
+                        color: (pill-touch.has-hover || pill-focus.has-focus) ? Palette.text-hi : Palette.text-lo;
                         animate color { duration: Theme.hover-dur; }
                         font-size: Theme.fs(10px, 14px);
                         font-weight: 600;
@@ -320,6 +327,34 @@ export component MessagesArea inherits Rectangle {
                             root.anchor-armed = true;
                             AppState.messages-request-older();
                         }
+                    }
+
+                    // Zero-size FocusScope: joins the Tab chain without
+                    // stealing pointer focus from the composer on click
+                    // (mirrors primitives/button.slint's `fs`).
+                    pill-focus := FocusScope {
+                        width: 0px;
+                        height: 0px;
+                        key-pressed(event) => {
+                            if (event.text == Key.Return || event.text == " ") {
+                                root.anchor-old-len = root.messages.length;
+                                root.anchor-armed = true;
+                                AppState.messages-request-older();
+                                return accept;
+                            }
+                            return reject;
+                        }
+                    }
+
+                    if pill-focus.has-focus: Rectangle {
+                        x: -3px;
+                        y: -3px;
+                        width: parent.width + 6px;
+                        height: parent.height + 6px;
+                        background: transparent;
+                        border-radius: (13px + 3px) * Theme.r-scale;
+                        border-width: 2px;
+                        border-color: Palette.mint;
                     }
                 }
             }
