@@ -197,6 +197,8 @@ export component ImageViewerModal inherits Modal {
                 visible: !root.failed;
                 source: root.source;
                 image-fit: contain;
+                accessible-role: image;
+                accessible-label: root.count > 1 ? @tr("Image {} of {}", root.index, root.count) : @tr("Image");
                 // Swallow taps on the image so they don't reach the backdrop;
                 // right-click opens the lightbox action menu at the pointer.
                 TouchArea {

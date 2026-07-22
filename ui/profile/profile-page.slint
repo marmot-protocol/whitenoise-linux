@@ -200,6 +200,7 @@ component AvatarEditable inherits Rectangle {
         color-b: Palette.mint-dim;
         picture: root.picture;
         has-picture: root.has-picture;
+        a11y-label: AppState.profile-display-name != "" ? AppState.profile-display-name : root.initials;
         font-size: Theme.fs(34px, 40px);
     }
 

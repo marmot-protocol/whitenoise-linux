@@ -187,6 +187,7 @@ component ProfileTile inherits Rectangle {
             color-b: root.color-b;
             picture: root.picture;
             has-picture: root.has-picture;
+            a11y-label: AppState.my-display-name != "" ? AppState.my-display-name : root.initials;
             font-size: Theme.fs(11px, 18px);
         }
     }

@@ -64,6 +64,7 @@ export component IncomingRow inherits VerticalLayout {
                 color-b: root.msg.av-b;
                 picture: root.msg.picture;
                 has-picture: root.msg.has-picture;
+                a11y-label: root.msg.sender-name != "" ? root.msg.sender-name : root.msg.av-initials;
                 font-size: Theme.fs(9px, 14px);
             }
         }

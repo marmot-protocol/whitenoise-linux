@@ -1282,12 +1282,20 @@ msgid "If someone's device gets compromised, the group quietly swaps in fresh ke
 msgstr ""
 
 msgctxt "ImageViewerModal"
+msgid "Image"
+msgstr "Immagine"
+
+msgctxt "ImageViewerModal"
 msgid "Image didn't load. Tap to retry."
 msgstr "Immagine non caricata. Tocca per riprovare."
 
 msgctxt "ErrorCopy"
 msgid "Image isn't ready yet."
 msgstr "L'immagine non è ancora pronta."
+
+msgctxt "ImageViewerModal"
+msgid "Image {} of {}"
+msgstr "Immagine {} di {}"
 
 msgctxt "ImportBackupModal"
 msgid "Import"
@@ -1704,6 +1712,10 @@ msgstr "Nuova chat"
 msgctxt "StartNewChatModal"
 msgid "New chat or group"
 msgstr "Nuova chat o gruppo"
+
+msgctxt "LoginScreen"
+msgid "New profile picture"
+msgstr "Nuova immagine del profilo"
 
 msgctxt "ImageViewerModal"
 msgid "Next image"
