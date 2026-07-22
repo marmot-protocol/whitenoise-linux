@@ -2132,6 +2132,10 @@ msgctxt "ErrorCopy"
 msgid "Refreshing…"
 msgstr "更新中…"
 
+msgctxt "KeysPage"
+msgid "Refreshing…"
+msgstr "更新中…"
+
 msgctxt "LoginScreen"
 msgid "Regenerate"
 msgstr "再生成"
@@ -3180,10 +3184,6 @@ msgstr "{}秒"
 
 #, fuzzy
 msgctxt "DangerActionRow"
-msgid "…"
-msgstr "…"
-
-msgctxt "KeysPage"
 msgid "…"
 msgstr "…"
 

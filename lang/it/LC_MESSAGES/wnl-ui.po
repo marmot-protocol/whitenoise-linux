@@ -2135,6 +2135,10 @@ msgctxt "ErrorCopy"
 msgid "Refreshing…"
 msgstr "Aggiornamento…"
 
+msgctxt "KeysPage"
+msgid "Refreshing…"
+msgstr "Aggiornamento…"
+
 msgctxt "LoginScreen"
 msgid "Regenerate"
 msgstr "Rigenera"
@@ -3185,10 +3189,6 @@ msgstr "{}s"
 
 #, fuzzy
 msgctxt "DangerActionRow"
-msgid "…"
-msgstr "…"
-
-msgctxt "KeysPage"
 msgid "…"
 msgstr "…"
 

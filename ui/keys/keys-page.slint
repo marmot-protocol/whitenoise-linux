@@ -83,7 +83,7 @@ export component KeysPage inherits Rectangle {
                     label: @tr("KEY PACKAGES");
                     note: AppState.kp-relays.length > 0 ? @tr("(published to your kind-10051 relay list)") : @tr("(no key-package relays configured)");
                     MicroButton {
-                        label: AppState.kp-busy ? @tr("…") : @tr("Refresh");
+                        label: AppState.kp-busy ? @tr("Refreshing…") : @tr("Refresh");
                         RefreshIcon {
                             stroke: Palette.text-mid;
                         }
