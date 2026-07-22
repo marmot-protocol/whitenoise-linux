@@ -2032,6 +2032,10 @@ msgctxt "ErrorCopy"
 msgid "Refreshing…"
 msgstr ""
 
+msgctxt "KeysPage"
+msgid "Refreshing…"
+msgstr ""
+
 msgctxt "LoginScreen"
 msgid "Regenerate"
 msgstr ""
@@ -3037,10 +3041,6 @@ msgid "{}s"
 msgstr ""
 
 msgctxt "DangerActionRow"
-msgid "…"
-msgstr ""
-
-msgctxt "KeysPage"
 msgid "…"
 msgstr ""
 
