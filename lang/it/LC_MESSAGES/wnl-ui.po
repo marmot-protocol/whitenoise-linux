@@ -2498,6 +2498,10 @@ msgctxt "GlobalSearchModal"
 msgid "Search all messages…"
 msgstr "Cerca in tutti i messaggi…"
 
+msgctxt "AppShell"
+msgid "Search archived chats…"
+msgstr "Cerca chat archiviate…"
+
 msgctxt "ChatListPanel"
 msgid "Search chats…"
 msgstr "Cerca chat…"

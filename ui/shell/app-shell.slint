@@ -18,6 +18,7 @@ import { Palette, Theme, ChatMeta, TextSelection } from "../tokens.slint";
 import { AppState } from "app-state.slint";
 import { ListView } from "std-widgets.slint";
 import { Avatar } from "../primitives/avatar.slint";
+import { LineInput } from "../primitives/line-input.slint";
 import { ChatBubbleIcon } from "../icons/chat-bubble-icon.slint";
 import { PeopleIcon } from "../icons/people-icon.slint";
 import { ArchiveIcon } from "../icons/archive-icon.slint";
@@ -425,11 +426,14 @@ export component AppShell inherits Rectangle {
                         }
                     }
 
-                    // Search (global message search) + new chat.
+                    // Search + new chat. On the Archived page this bar IS the
+                    // archive search (replacing global message search there,
+                    // not hiding behind a second one lower down); "new chat"
+                    // doesn't apply to an archive, so the plus button drops.
                     if !root.strip: HorizontalLayout {
                         height: 38px;
                         spacing: 9px;
-                        Rectangle {
+                        if AppState.active-page != 2: Rectangle {
                             horizontal-stretch: 1;
                             border-radius: 10px * Theme.r-scale;
                             background: Palette.field;
@@ -459,7 +463,40 @@ export component AppShell inherits Rectangle {
                                 }
                             }
                         }
-                        Rectangle {
+                        if AppState.active-page == 2: Rectangle {
+                            horizontal-stretch: 1;
+                            border-radius: 10px * Theme.r-scale;
+                            background: Palette.field;
+                            border-width: max(Theme.border-w, 1px);
+                            border-color: archive-search-input.has-focus ? Palette.mint-dim : Palette.field-border;
+                            animate border-color {
+                                duration: 140ms;
+                                easing: ease-out;
+                            }
+                            HorizontalLayout {
+                                padding-left: 11px;
+                                padding-right: 10px;
+                                spacing: 9px;
+                                SearchIcon {
+                                    stroke: archive-search-input.has-focus ? Palette.mint-dim : Palette.text-vlo;
+                                    size: 13px;
+                                    y: (parent.height - self.height) / 2;
+                                    animate stroke { duration: 140ms; }
+                                }
+                                archive-search-input := LineInput {
+                                    placeholder: @tr("Search archived chats…");
+                                    font-size: Theme.fs(13px, 16px);
+                                    fg: Palette.text-hi;
+                                    placeholder-color: Palette.text-vlo;
+                                    horizontal-stretch: 1;
+                                    text <=> AppState.archive-search-query;
+                                    changed text => {
+                                        AppState.archive-search-changed(self.text);
+                                    }
+                                }
+                            }
+                        }
+                        if AppState.active-page != 2: Rectangle {
                             width: 38px;
                             border-radius: 10px * Theme.r-scale;
                             background: newchat-touch.has-hover ? Palette.mint-hi : Palette.mint-surface;

@@ -50,6 +50,25 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
             ui.set_chat_match_flags(model(flags));
         }
     });
+    // Live archived-list filter: same case-insensitive name match, mirroring
+    // the chat-list filter above.
+    ui.global::<AppState>().on_archive_search_changed({
+        let weak = ui.as_weak();
+        move |query| {
+            let Some(ui) = weak.upgrade() else { return };
+            let q = query.trim().to_lowercase();
+            if q.is_empty() {
+                ui.set_archive_match_flags(model(Vec::<bool>::new()));
+                return;
+            }
+            let flags: Vec<bool> = ui
+                .get_archived_chats()
+                .iter()
+                .map(|c| c.name.to_lowercase().contains(&q))
+                .collect();
+            ui.set_archive_match_flags(model(flags));
+        }
+    });
     ui.global::<AppState>().on_new_chat_requested({
         let weak = ui.as_weak();
         move || {

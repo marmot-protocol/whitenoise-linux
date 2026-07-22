@@ -674,6 +674,15 @@ export global AppState {
     callback contact-search-changed(string);
     in-out property <[bool]> contact-match-flags;
     callback archive-selected(int);
+    // Archived-list search: mirrors the chat-list filter — Rust recomputes
+    // `archive-match-flags` (one flag per archived chat) for the live query so
+    // the sidebar filters as the user types.
+    callback archive-search-changed(string);
+    in-out property <[bool]> archive-match-flags;
+    // Live text of the archive search field, which lives in the shell header
+    // (replacing the global message search there) rather than in
+    // ArchivedSidebar itself.
+    in-out property <string> archive-search-query: "";
     // Chat-request + archive actions — operate on the active chat / active archived row.
     callback accept-chat-request();
     callback block-chat-request();
