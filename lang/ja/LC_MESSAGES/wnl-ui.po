@@ -2342,6 +2342,10 @@ msgctxt "ErrorCopy"
 msgid "Rotating…"
 msgstr "ローテーション中…"
 
+msgctxt "KeysPage"
+msgid "Rotating…"
+msgstr "ローテーション中…"
+
 msgctxt "AddAccountModal"
 msgid "SECRET KEY (NSEC)"
 msgstr "秘密鍵 (nsec)"
@@ -3202,11 +3206,6 @@ msgstr "{} はメッセージの中継に使われなくなります。いつで
 msgctxt "RecordingOverlay"
 msgid "{}s"
 msgstr "{}秒"
-
-#, fuzzy
-msgctxt "DangerActionRow"
-msgid "…"
-msgstr "…"
 
 msgctxt "ProfileModal"
 msgid "✓ In your contacts"

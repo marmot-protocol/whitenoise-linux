@@ -215,6 +215,7 @@ export component KeysPage inherits Rectangle {
                     title: @tr("Rotate key package now");
                     detail: @tr("Invalidates the current package and uploads a fresh one to your relays.");
                     action-label: @tr("Rotate");
+                    busy-label: @tr("Rotating…");
                     busy: AppState.kp-busy;
                     triggered => {
                         AppState.show-rotate-confirm = true;
