@@ -81,17 +81,46 @@ export component ChatHeader inherits Rectangle {
                 }
 
                 // The badge now surfaces the chat's MLS group id. Tap it to
-                // learn what end-to-end MLS encryption means.
+                // learn what end-to-end MLS encryption means. Mirrors the
+                // sibling header buttons: a spoken name, a keyboard default
+                // action, and a zero-size FocusScope with a focus ring.
                 badge-touch := TouchArea {
                     mouse-cursor: pointer;
-                    clicked => {
+                    accessible-role: button;
+                    accessible-label: @tr("Encryption details");
+                    accessible-action-default => { badge-touch.activate(); }
+                    function activate() {
                         AppState.encryption-info-open = true;
+                    }
+                    clicked => {
+                        badge-touch.activate();
                     }
                     Pill {
                         label: root.chat.npub;
                         has-lock: true;
                         bg-color: badge-touch.has-hover ? Palette.mint-hi : Palette.mint;
                         fg: Palette.bubble-out-fg;
+                    }
+                    badge-fs := FocusScope {
+                        width: 0px;
+                        height: 0px;
+                        key-pressed(event) => {
+                            if (event.text == Key.Return || event.text == " ") {
+                                badge-touch.activate();
+                                return accept;
+                            }
+                            return reject;
+                        }
+                    }
+                    // Focus ring parallels the pill's 4px corner (1px inset).
+                    if badge-fs.has-focus: Rectangle {
+                        x: 1px;
+                        y: 1px;
+                        width: parent.width - 2px;
+                        height: parent.height - 2px;
+                        border-radius: (5px) * Theme.r-scale;
+                        border-width: 2px;
+                        border-color: Palette.mint;
                     }
                 }
             }
