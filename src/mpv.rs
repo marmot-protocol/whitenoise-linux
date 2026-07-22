@@ -51,6 +51,9 @@ const MPV_EVENT_SHUTDOWN: c_int = 1;
 const MPV_EVENT_END_FILE: c_int = 7;
 const MPV_EVENT_PROPERTY_CHANGE: c_int = 22;
 
+// mpv_end_file_reason: the file ended because of a playback error, not EOF.
+const MPV_END_FILE_REASON_ERROR: c_int = 4;
+
 // mpv_render_param_type
 const MPV_RENDER_PARAM_INVALID: c_int = 0;
 const MPV_RENDER_PARAM_API_TYPE: c_int = 1;
@@ -74,6 +77,13 @@ struct mpv_event_property {
     name: *const c_char,
     format: c_int,
     data: *mut c_void,
+}
+
+// Payload of MPV_EVENT_END_FILE; `reason` distinguishes normal EOF from an error.
+#[repr(C)]
+struct mpv_event_end_file {
+    reason: c_int,
+    error: c_int,
 }
 
 #[repr(C)]
@@ -265,6 +275,13 @@ pub struct PlayerState {
     pub duration: f64,
     pub paused: bool,
     pub eof: bool,
+    // Playback stalled waiting for the cache to fill (mpv `paused-for-cache`):
+    // a mid-stream buffering pause, distinct from a user pause.
+    pub buffering: bool,
+    // Playback ended because of an error (mpv `MPV_END_FILE_REASON_ERROR`),
+    // as opposed to reaching the end of the clip. Stays set until a new player
+    // opens, so the viewer can hold the failure state.
+    pub errored: bool,
 }
 
 // ─── Small FFI helpers ───────────────────────────────────────────────────────
@@ -524,6 +541,7 @@ impl MpvPlayer {
             mpv_observe_property(h, 2, c"duration".as_ptr(), MPV_FORMAT_DOUBLE);
             mpv_observe_property(h, 3, c"pause".as_ptr(), MPV_FORMAT_FLAG);
             mpv_observe_property(h, 4, c"eof-reached".as_ptr(), MPV_FORMAT_FLAG);
+            mpv_observe_property(h, 5, c"paused-for-cache".as_ptr(), MPV_FORMAT_FLAG);
             loadfile(h);
         }
 
@@ -587,6 +605,12 @@ impl MpvPlayer {
                             MPV_EVENT_SHUTDOWN => break,
                             MPV_EVENT_END_FILE => {
                                 st.eof = true;
+                                if !ev.data.is_null() {
+                                    let ef = unsafe { &*(ev.data as *const mpv_event_end_file) };
+                                    if ef.reason == MPV_END_FILE_REASON_ERROR {
+                                        st.errored = true;
+                                    }
+                                }
                                 on_state(st);
                             }
                             MPV_EVENT_PROPERTY_CHANGE => {
@@ -615,6 +639,11 @@ impl MpvPlayer {
                                     b"eof-reached" => {
                                         st.eof = unsafe { get_flag(h.0, c"eof-reached") }
                                             .unwrap_or(false);
+                                    }
+                                    b"paused-for-cache" => {
+                                        st.buffering =
+                                            unsafe { get_flag(h.0, c"paused-for-cache") }
+                                                .unwrap_or(false);
                                     }
                                     _ => {}
                                 }
