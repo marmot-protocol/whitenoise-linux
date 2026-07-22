@@ -425,11 +425,14 @@ export component AppShell inherits Rectangle {
                         }
                     }
 
-                    // Search (global message search) + new chat.
+                    // Search (global message search) + new chat. The Archived
+                    // page's own panel already has a search field that covers
+                    // archived chats, so this global one is hidden there
+                    // instead of duplicating it; the plus button stays put.
                     if !root.strip: HorizontalLayout {
                         height: 38px;
                         spacing: 9px;
-                        Rectangle {
+                        if AppState.active-page != 2: Rectangle {
                             horizontal-stretch: 1;
                             border-radius: 10px * Theme.r-scale;
                             background: Palette.field;
@@ -458,6 +461,9 @@ export component AppShell inherits Rectangle {
                                     }
                                 }
                             }
+                        }
+                        if AppState.active-page == 2: Rectangle {
+                            horizontal-stretch: 1;
                         }
                         Rectangle {
                             width: 38px;
