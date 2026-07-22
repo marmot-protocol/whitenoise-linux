@@ -225,16 +225,19 @@ export component ProfileModal inherits Modal {
 
             // About / bio.
             if !root.loading && root.about != "": Rectangle {
-                max-height: 120px;
+                height: min(bio-text.preferred-height, 120px);
                 clip: true;
-                Text {
+                bio-text := Text {
                     width: parent.width;
+                    height: 120px;
                     text: root.about;
                     color: Palette.text-mid;
                     font-size: Theme.fs(12px, 16px);
                     font-family: Theme.font;
                     horizontal-alignment: center;
+                    vertical-alignment: top;
                     wrap: word-wrap;
+                    overflow: elide;
                 }
             }
             if root.loading: VerticalLayout {
