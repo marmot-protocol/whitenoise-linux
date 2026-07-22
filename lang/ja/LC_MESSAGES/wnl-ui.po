@@ -2495,6 +2495,10 @@ msgctxt "GlobalSearchModal"
 msgid "Search all messages…"
 msgstr "すべてのメッセージを検索…"
 
+msgctxt "ArchivedSidebar"
+msgid "Search archived chats…"
+msgstr "アーカイブしたチャットを検索…"
+
 msgctxt "ChatListPanel"
 msgid "Search chats…"
 msgstr "チャットを検索…"
