@@ -126,6 +126,7 @@ component StripRow inherits Rectangle {
     in property <color> ca;
     in property <color> cb;
     in property <string> initials;
+    in property <string> a11y-label;
     in property <image> pic;
     in property <bool> has-pic: false;
     in property <bool> selected: false;
@@ -145,6 +146,7 @@ component StripRow inherits Rectangle {
     Avatar {
         size: 42px;
         initials: root.initials;
+        a11y-label: root.a11y-label;
         color-a: root.ca;
         color-b: root.cb;
         picture: root.pic;
@@ -326,6 +328,7 @@ export component AppShell inherits Rectangle {
                                 color-b: AppState.my-av-b;
                                 picture: AppState.my-av-picture;
                                 has-picture: AppState.my-av-has-picture;
+                                a11y-label: AppState.my-display-name != "" ? AppState.my-display-name : AppState.my-av-initials;
                                 font-size: Theme.fs(12px, 16px);
                                 x: (parent.width - self.width) / 2;
                                 y: (parent.height - self.height) / 2;
@@ -523,6 +526,7 @@ export component AppShell inherits Rectangle {
                                 ca: c.av-a;
                                 cb: c.av-b;
                                 initials: c.av-initials;
+                                a11y-label: c.name;
                                 pic: c.picture;
                                 has-pic: c.has-picture;
                                 selected: idx == AppState.active-contact;
@@ -554,6 +558,7 @@ export component AppShell inherits Rectangle {
                                 ca: a.av-a;
                                 cb: a.av-b;
                                 initials: a.av-initials;
+                                a11y-label: a.name;
                                 pic: a.picture;
                                 has-pic: a.has-picture;
                                 selected: idx == AppState.active-archived;

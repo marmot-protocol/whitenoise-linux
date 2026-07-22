@@ -68,6 +68,7 @@ export component GroupHero inherits Rectangle {
                     color-b: root.is-grp ? AppState.chat-group-av-b : root.chat.av-b;
                     picture: root.is-grp ? AppState.chat-group-picture : root.chat.picture;
                     has-picture: root.is-grp ? AppState.chat-group-has-picture : root.chat.has-picture;
+                    a11y-label: root.chat.name;
                     font-size: Theme.fs(24px, 26px);
                 }
 
