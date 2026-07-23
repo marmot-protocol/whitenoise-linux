@@ -27,7 +27,7 @@ export component ContactDetail inherits DetailPage {
 
     PageHeader {
         title: @tr("Contact");
-        caption: @tr("ADDED {}  ·  {} RELAYS", root.contact.added, root.contact.relays);
+        caption: @tr("{} RELAYS", root.contact.relays);
         PeopleIcon {
             stroke: Palette.text-mid;
         }

@@ -401,7 +401,6 @@ pub(crate) fn contact_from(
         verified: nip05_verified,
         online: false,
         relays: relays as i32,
-        added: s(""),
         picture,
         has_picture,
         kp_status: s(&kp_status),

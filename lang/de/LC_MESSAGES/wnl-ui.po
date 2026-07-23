@@ -151,10 +151,6 @@ msgctxt "AccountSwitcherList"
 msgid "ACTIVE"
 msgstr "AKTIONEN"
 
-msgctxt "ContactDetail"
-msgid "ADDED {}  ·  {} RELAYS"
-msgstr "HINZUGEFÜGT {}  ·  {} RELAYS"
-
 msgctxt "ChatListPanel"
 msgid "AGO"
 msgstr "VOR"

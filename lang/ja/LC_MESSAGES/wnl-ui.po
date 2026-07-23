@@ -148,10 +148,6 @@ msgctxt "AccountSwitcherList"
 msgid "ACTIVE"
 msgstr "操作"
 
-msgctxt "ContactDetail"
-msgid "ADDED {}  ·  {} RELAYS"
-msgstr "追加 {}  ·  {} リレー"
-
 msgctxt "ChatListPanel"
 msgid "AGO"
 msgstr "前"
