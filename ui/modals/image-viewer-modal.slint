@@ -186,6 +186,14 @@ export component ImageViewerModal inherits Modal {
                     root.next();
                     return accept;
                 }
+                if ((event.text == "c" || event.text == "C") && root.actions-enabled) {
+                    root.copy();
+                    return accept;
+                }
+                if ((event.text == "s" || event.text == "S") && root.actions-enabled) {
+                    root.save();
+                    return accept;
+                }
                 return reject;
             }
 
@@ -244,6 +252,7 @@ export component ImageViewerModal inherits Modal {
             Button {
                 label: @tr("Copy");
                 enabled: root.actions-enabled;
+                focusable: true;
                 button-height: 34px;
                 min-w: 86px;
                 radius: 8px;
@@ -267,6 +276,7 @@ export component ImageViewerModal inherits Modal {
             Button {
                 label: @tr("Save");
                 enabled: root.actions-enabled;
+                focusable: true;
                 button-height: 34px;
                 min-w: 84px;
                 radius: 8px;
