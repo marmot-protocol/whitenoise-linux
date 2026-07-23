@@ -90,6 +90,7 @@ export component ConfirmFlows inherits Rectangle {
         title: AppState.admin-confirm-action == 1 ? @tr("Make {} an admin?", AppState.admin-confirm-member-name) : (AppState.admin-confirm-action == 2 ? @tr("Remove admin rights from {}?", AppState.admin-confirm-member-name) : (AppState.admin-confirm-action == 4 ? @tr("Remove {} from the group?", AppState.admin-confirm-member-name) : @tr("Step down as admin?")));
         subtitle: AppState.admin-confirm-action == 1 ? @tr("{} will be able to add members, change group settings, and manage other admins.", AppState.admin-confirm-member-name) : (AppState.admin-confirm-action == 2 ? @tr("{} will stay in the group, but won't be able to manage members or group settings.", AppState.admin-confirm-member-name) : (AppState.admin-confirm-action == 4 ? @tr("{} will lose access to this group and stop receiving its messages. You'll need to invite them again to bring them back.", AppState.admin-confirm-member-name) : @tr("This removes your admin rights. You can't restore them yourself unless another admin promotes you again.")));
         confirm-label: AppState.admin-confirm-action == 1 ? @tr("Make admin") : (AppState.admin-confirm-action == 2 ? @tr("Remove admin") : (AppState.admin-confirm-action == 4 ? @tr("Remove") : @tr("Step down")));
+        primary-danger: AppState.admin-confirm-action != 1;
         confirm => {
             AppState.show-admin-confirm = false;
             if (AppState.admin-confirm-action == 1) {
