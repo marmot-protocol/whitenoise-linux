@@ -5,10 +5,11 @@ import { Palette, Theme } from "../tokens.slint";
 // 1px bottom divider. `row-height` is the only knob families vary; empty
 // sublabel/value are gated so a row collapses cleanly to a single line.
 //
-// Responsive: the label and value columns carry `min-width: 0` and elide, so
-// when the pane is narrow the flexible text yields space and the fixed trailing
-// controls stay on screen, instead of the row forcing its card wider than the
-// pane and clipping every control at the window edge.
+// Responsive: the label column stays at its natural width so the identifying
+// text is always readable. The value column carries `min-width: 0` and its
+// Text elides, so when the pane is narrow the value yields space instead of
+// the row forcing its card wider than the pane and clipping the label or any
+// trailing controls at the window edge.
 export component KVRow inherits Rectangle {
     in property <string> label;
     in property <string> sublabel;
@@ -27,8 +28,7 @@ export component KVRow inherits Rectangle {
         alignment: stretch;
 
         VerticalLayout {
-            horizontal-stretch: 1;
-            min-width: 0px;
+            horizontal-stretch: 0;
             spacing: 3px;
             alignment: center;
             Text {
@@ -49,7 +49,8 @@ export component KVRow inherits Rectangle {
 
         VerticalLayout {
             alignment: center;
-            horizontal-stretch: 0;
+            horizontal-stretch: 1;
+            min-width: 0px;
             HorizontalLayout {
                 alignment: end;
                 spacing: 10px;
