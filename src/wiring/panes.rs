@@ -200,10 +200,7 @@ pub(crate) fn wire_panes(
                 return;
             };
             let id = id.to_string();
-            let was_active = backend
-                .account()
-                .account_id_hex
-                .eq_ignore_ascii_case(&id);
+            let was_active = backend.account().account_id_hex.eq_ignore_ascii_case(&id);
             if let Err(e) = backend.remove_account(&id) {
                 tracing::warn!(target: "accounts", "remove failed: {e:#}");
                 show_backend_error(&ui, friendly_error(ErrorOp::RemoveAccount, &e));
@@ -212,10 +209,10 @@ pub(crate) fn wire_panes(
             // marmot doesn't know about the app's `nsec:<hex>` backup, so drop it
             // explicitly — otherwise `import_nsecs_from_bytes` re-imports the
             // account on the next unlock.
-            if let Some(vault) = vault_cell.lock().unwrap().clone() {
-                if let Ok(mut v) = vault.lock() {
-                    let _ = v.remove(&vault::nsec_key_for(&id));
-                }
+            if let Some(vault) = vault_cell.lock().unwrap().clone()
+                && let Ok(mut v) = vault.lock()
+            {
+                let _ = v.remove(&vault::nsec_key_for(&id));
             }
             let survivors = backend.accounts();
             if survivors.is_empty() {

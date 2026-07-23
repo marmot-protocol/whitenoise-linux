@@ -121,11 +121,7 @@ fn migrate_legacy_dirs() {
             let _ = std::fs::create_dir_all(parent);
         }
         match std::fs::rename(old, new) {
-            Ok(()) => tracing::info!(
-                "migrated legacy dir {} -> {}",
-                old.display(),
-                new.display()
-            ),
+            Ok(()) => tracing::info!("migrated legacy dir {} -> {}", old.display(), new.display()),
             Err(e) => tracing::warn!(
                 "could not migrate legacy dir {} -> {}: {e}",
                 old.display(),
@@ -133,13 +129,13 @@ fn migrate_legacy_dirs() {
             ),
         }
     }
-    if std::env::var_os("WN_HOME").is_none() {
-        if let (Some(old), Some(new)) = (
+    if std::env::var_os("WN_HOME").is_none()
+        && let (Some(old), Some(new)) = (
             directories::ProjectDirs::from("", "", "darkmatter"),
             directories::ProjectDirs::from("", "", "whitenoise-linux"),
-        ) {
-            move_dir(old.data_dir(), new.data_dir());
-        }
+        )
+    {
+        move_dir(old.data_dir(), new.data_dir());
     }
     if let (Some(old), Some(new)) = (
         directories::ProjectDirs::from("", "", "darkmatter-linux"),
@@ -314,6 +310,9 @@ fn main() -> Result<(), slint::PlatformError> {
     // preview and the chat in lockstep — a message hidden via delete-for-me
     // never surfaces as its chat's preview.
     backend::set_visible_message_filter(is_visible_chat_message);
+    // Backend::chats filters blocked 1:1 peers through this hook, reading the
+    // same live singleton the contact page's block toggle mutates.
+    backend::set_blocked_accounts_source(|| blocked_state().lock().unwrap().clone());
     // When a background relay fetch resolves a mentioned profile's name after
     // the bubbles already rendered, re-tokenize the visible rows IN PLACE.
     // Deliberately no snapshot re-read: a repaint built from a fresh

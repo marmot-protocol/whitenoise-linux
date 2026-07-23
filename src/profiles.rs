@@ -380,7 +380,7 @@ pub(crate) fn picture_cache_has(url: &str) -> bool {
 /// `.await` inside a runtime task, unlike the blocking `Backend::add_contact`
 /// resolve path. Returns `false` on any failure.
 pub(crate) async fn verify_nip05(pubkey_hex: &str, handle: &str) -> bool {
-    use nostr::nips::nip05::{verify_from_raw_json, Nip05Address};
+    use nostr::nips::nip05::{Nip05Address, verify_from_raw_json};
     let Ok(pubkey) = nostr::PublicKey::from_hex(pubkey_hex) else {
         return false;
     };

@@ -90,6 +90,20 @@ pub fn set_visible_message_filter(filter: fn(&AppMessageRecord) -> bool) {
     let _ = VISIBLE_MESSAGE_FILTER.set(filter);
 }
 
+/// Snapshot of blocked account ids for [`Backend::chats`]'s peer filter,
+/// installed once at startup by the main binary (backed by the UI-glue
+/// `blocked_state` singleton in `chatlist.rs`). Same indirection as
+/// [`VISIBLE_MESSAGE_FILTER`]: this file is also compiled into the staged
+/// dm-ctl / bootbench bins, which don't include the UI-glue modules — with no
+/// source installed, no chat is filtered.
+type BlockedAccountsSource = fn() -> std::collections::BTreeSet<String>;
+static BLOCKED_ACCOUNTS_SOURCE: std::sync::OnceLock<BlockedAccountsSource> =
+    std::sync::OnceLock::new();
+
+pub fn set_blocked_accounts_source(source: BlockedAccountsSource) {
+    let _ = BLOCKED_ACCOUNTS_SOURCE.set(source);
+}
+
 /// account_id (lowercase) → (display name, picture URL), shared behind a mutex
 /// so the background sync and UI-thread reads share one warmed map.
 type ProfileCache = Arc<Mutex<HashMap<String, (String, Option<String>)>>>;
@@ -805,7 +819,12 @@ impl Backend {
             .app
             .visible_groups(&self.active_label())
             .map_err(|e| anyhow!("visible_groups: {e}"))?;
-        if crate::blocked_state().lock().unwrap().is_empty() {
+        let blocked = match BLOCKED_ACCOUNTS_SOURCE.get() {
+            Some(source) => source(),
+            // Staged harness bins install no source; nothing is blocked there.
+            None => return Ok(groups),
+        };
+        if blocked.is_empty() {
             // Overwhelmingly the common case — skip the per-group member scan.
             return Ok(groups);
         }
@@ -813,7 +832,7 @@ impl Backend {
             .into_iter()
             .filter(|g| {
                 self.direct_chat_peer(&g.group_id_hex)
-                    .is_none_or(|peer| !crate::is_blocked(&peer))
+                    .is_none_or(|peer| !blocked.iter().any(|b| b.eq_ignore_ascii_case(&peer)))
             })
             .collect())
     }

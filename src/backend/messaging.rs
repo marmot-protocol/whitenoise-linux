@@ -38,6 +38,41 @@ fn own_reaction_event_id_for_emoji(
 }
 
 impl Backend {
+    /// Synchronous send, kept for the staged harness bins (`dm-ctl` calls it
+    /// from its blocking command loop); the UI always goes through
+    /// [`Backend::send_text_async`], hence the dead-code allow in the main
+    /// binary.
+    #[allow(dead_code)]
+    pub fn send_text(&self, group_hex: &str, text: &str) -> Result<SendSummary> {
+        let group_id = group_id_from_hex(group_hex)?;
+        let label = self.active_label();
+        let runtime = self.runtime.clone();
+        let payload = text.as_bytes().to_vec();
+        self.tokio.block_on(async move {
+            runtime
+                .send_message(&label, &group_id, payload)
+                .await
+                .map_err(|e| anyhow!("send_message: {e}"))
+        })
+    }
+
+    /// Synchronous reaction, kept for the staged harness bins like
+    /// [`Backend::send_text`]; the UI goes through the async react path.
+    #[allow(dead_code)]
+    pub fn react(&self, group_hex: &str, message_id_hex: &str, emoji: &str) -> Result<SendSummary> {
+        let group_id = group_id_from_hex(group_hex)?;
+        let label = self.active_label();
+        let runtime = self.runtime.clone();
+        let target = message_id_hex.to_string();
+        let emoji = emoji.to_string();
+        self.tokio.block_on(async move {
+            runtime
+                .react_to_message(&label, &group_id, &target, &emoji)
+                .await
+                .map_err(|e| anyhow!("react_to_message: {e}"))
+        })
+    }
+
     /// Non-blocking send: dispatches the network round-trip onto the tokio
     /// runtime and returns immediately. The callback fires (on a tokio worker
     /// thread) when the send resolves. The UI is responsible for hopping back
