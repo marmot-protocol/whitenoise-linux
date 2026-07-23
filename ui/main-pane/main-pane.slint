@@ -60,7 +60,16 @@ export component MainPane inherits Rectangle {
                 }
             }
 
-            composer := Composer { }
+            // Keep the composer aligned with the thread above: when the
+            // centred reading measure is on, constrain the input pill to the
+            // same 760px column and centre it; otherwise it fills the pane.
+            HorizontalLayout {
+                alignment: AppState.shell-centered ? center : stretch;
+                composer := Composer {
+                    min-width: AppState.shell-centered ? 760px : 0px;
+                    max-width: AppState.shell-centered ? 760px : 100000px;
+                }
+            }
         }
 
         // Always mounted; open/close animates the clipped wrapper width so
