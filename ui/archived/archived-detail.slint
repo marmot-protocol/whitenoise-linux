@@ -23,7 +23,9 @@ export component ArchivedDetail inherits DetailPage {
         PageHeader {
             horizontal-stretch: 1;
             title: root.data.name;
-            caption: @tr("ARCHIVED  ·  {} MEMBERS  ·  {}", root.data.members, root.data.group-id);
+            caption: root.is-group
+                ? @tr("ARCHIVED  ·  1 MEMBER" | "ARCHIVED  ·  {n} MEMBERS" % root.data.members) + "  ·  " + root.data.group-id
+                : @tr("ARCHIVED");
             ArchiveIcon {
                 stroke: Palette.text-mid;
             }
@@ -97,17 +99,18 @@ export component ArchivedDetail inherits DetailPage {
                 label: @tr("Last message");
                 sublabel: root.data.last-msg;
                 value: root.data.last-date;
+                // No trailing divider when this is the only row (a direct message).
+                show-divider: root.is-group;
             }
 
-            KVRow {
+            if root.is-group: KVRow {
                 label: @tr("Members");
                 value: root.data.members;
             }
 
-            KVRow {
+            if root.is-group: KVRow {
                 label: @tr("Group id");
                 value: root.data.group-id;
-                show-divider: root.is-group;
             }
         }
     }
