@@ -123,6 +123,30 @@ export component ErrorBanner inherits Rectangle {
                         horizontal-alignment: center;
                         vertical-alignment: center;
                     }
+
+                    // Zero-size FocusScope: joins the Tab chain without taking
+                    // pointer events, mirroring chat-header.slint's icon
+                    // buttons.
+                    close-fs := FocusScope {
+                        width: 0px;
+                        height: 0px;
+                        key-pressed(event) => {
+                            if (event.text == Key.Return || event.text == " ") {
+                                AppState.backend-error-dismissed = true;
+                                return accept;
+                            }
+                            return reject;
+                        }
+                    }
+                    if close-fs.has-focus: Rectangle {
+                        x: 1px;
+                        y: 1px;
+                        width: parent.width - 2px;
+                        height: parent.height - 2px;
+                        border-radius: (5px) * Theme.r-scale;
+                        border-width: 2px;
+                        border-color: Palette.danger;
+                    }
                 }
             }
         }
