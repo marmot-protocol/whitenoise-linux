@@ -279,12 +279,19 @@ export global AppState {
     in-out property <string> peer-profile-av-initials;
     in-out property <image> peer-profile-picture;
     in-out property <bool> peer-profile-has-picture: false;
+    // True when the open profile modal's picture download or decode failed,
+    // so the modal can offer a retry. `peer-profile-picture-url` keeps the
+    // source URL so the retry callback can re-enter the fetch.
+    in-out property <bool> peer-profile-picture-failed: false;
+    in-out property <string> peer-profile-picture-url;
     // Groups the local account shares with the profiled person. Recomputed
     // Rust-side each time the modal opens; the contact detail page keeps its
     // own copy in `contact-shared-groups`.
     in-out property <[SharedGroup]> peer-profile-shared-groups;
     callback peer-profile-dismissed();
     callback peer-profile-add-contact();
+    // Re-run the open profile modal's picture download after it failed.
+    callback retry-peer-profile-picture();
     // A "groups in common" row was tapped (contact detail or profile modal):
     // Rust switches to Chats and opens that group by its group-id-hex.
     callback open-shared-group(string);
@@ -622,6 +629,10 @@ export global AppState {
     in-out property <color> my-av-b: Palette.mint-dim;
     in-out property <image> my-av-picture;
     in-out property <bool> my-av-has-picture: false;
+    // True when the own-profile picture download or decode failed, so the
+    // profile page can offer a retry instead of showing initials forever.
+    // Rust clears it on a fresh attempt and on success.
+    in-out property <bool> my-av-load-failed: false;
     in-out property <string> my-display-name: "";
     // Rail badge counts — aggregated unread/activity per section.
     in-out property <int> rail-badge-chats: 0;
@@ -644,6 +655,8 @@ export global AppState {
     callback start-edit-profile();
     callback cancel-edit-profile();
     callback upload-profile-picture();
+    // Re-run the own-profile picture download after it failed.
+    callback retry-profile-picture();
     callback copy-to-clipboard(string);
     // Copy the selected slice of a message's body: message id, then the two
     // selection endpoints as (line, run, fraction-within-run) triples in

@@ -2298,6 +2298,14 @@ msgctxt "ContactDetail"
 msgid "Retry"
 msgstr "再試行"
 
+msgctxt "AvatarEditable"
+msgid "Retry loading profile picture"
+msgstr "プロフィール画像を再読み込み"
+
+msgctxt "ProfileModal"
+msgid "Retry loading profile picture"
+msgstr "プロフィール画像を再読み込み"
+
 msgctxt "KeysPage"
 msgid "Reveal"
 msgstr ""
