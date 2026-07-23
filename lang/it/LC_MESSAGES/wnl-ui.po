@@ -983,14 +983,6 @@ msgctxt "ThemePicker"
 msgid "Dark"
 msgstr "Scuro"
 
-msgctxt "AboutPane"
-msgid "White Noise is a native desktop client for private group chat. Messages are encrypted with MLS before they leave your machine, routed over Nostr relays, and decrypted only for the people in the room."
-msgstr "White Noise è un client desktop nativo per chat di gruppo private. I messaggi vengono crittografati con MLS prima di lasciare la tua macchina, instradati sui relay Nostr e decifrati solo per le persone nella stanza."
-
-msgctxt "KeysPage"
-msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
-msgstr "White Noise non vede mai la tua chiave privata. Resta solo su questo dispositivo e su qualsiasi firmatario collegato."
-
 msgctxt "GeneralPane"
 msgid "Date format"
 msgstr "Formato data"
@@ -1982,10 +1974,6 @@ msgctxt "StartNewChatModal"
 msgid "Paste one npub for a direct chat, or several (one per line) plus a group name."
 msgstr "Incolla un npub per una chat diretta, o diversi (uno per riga) più un nome per il gruppo."
 
-msgctxt "ContactsPage"
-msgid "People you start chats with will show up here."
-msgstr "Le persone con cui avvii una chat compariranno qui."
-
 msgctxt "ForwardPickerModal"
 msgid "Pick a chat to forward this message to."
 msgstr "Scegli una chat a cui inoltrare questo messaggio."
@@ -2901,6 +2889,10 @@ msgctxt "LoginScreen"
 msgid "Use another key?"
 msgstr "Usare un'altra chiave?"
 
+msgctxt "ContactsPage"
+msgid "Use the Add button to add your first contact."
+msgstr "Usa il pulsante Aggiungi per aggiungere il tuo primo contatto."
+
 msgctxt "ContactDetail"
 msgid "Used to deliver messages between you."
 msgstr "Usati per consegnare i messaggi tra voi."
@@ -2962,6 +2954,14 @@ msgstr "White Noise"
 msgctxt "WhiteNoiseTray"
 msgid "White Noise ({} unread)"
 msgstr "White Noise ({} non letti)"
+
+msgctxt "AboutPane"
+msgid "White Noise is a native desktop client for private group chat. Messages are encrypted with MLS before they leave your machine, routed over Nostr relays, and decrypted only for the people in the room."
+msgstr "White Noise è un client desktop nativo per chat di gruppo private. I messaggi vengono crittografati con MLS prima di lasciare la tua macchina, instradati sui relay Nostr e decifrati solo per le persone nella stanza."
+
+msgctxt "KeysPage"
+msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
+msgstr "White Noise non vede mai la tua chiave privata. Resta solo su questo dispositivo e su qualsiasi firmatario collegato."
 
 msgctxt "WhiteNoiseTray"
 msgid "White Noise · 1 unread message"
