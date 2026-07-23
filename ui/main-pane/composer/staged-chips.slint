@@ -18,6 +18,19 @@ export component StagedChips inherits Rectangle {
     property <string> hover-name: "";
     property <length> hover-x: 0px;
 
+    // Shared by the hover TouchArea and the Tab-focus FocusScope below: either
+    // one revealing the same chip's name sets the tooltip, and either one's
+    // handler can safely clear it (each only clears when it owns the index).
+    function set-name-reveal(idx: int, name: string, x: length, show: bool) {
+        if (show) {
+            root.hover-index = idx;
+            root.hover-name = name;
+            root.hover-x = x;
+        } else if (root.hover-index == idx) {
+            root.hover-index = -1;
+        }
+    }
+
     height: 58px;
     background: Palette.bg;
     staged-flick := Flickable {
@@ -112,13 +125,21 @@ export component StagedChips inherits Rectangle {
 
                         name-touch := TouchArea {
                             changed has-hover => {
-                                if (self.has-hover && name-text.preferred-width > name-text.width) {
-                                    root.hover-index = att-i;
-                                    root.hover-name = att.name;
-                                    root.hover-x = self.absolute-position.x - root.absolute-position.x;
-                                } else if (root.hover-index == att-i) {
-                                    root.hover-index = -1;
-                                }
+                                root.set-name-reveal(att-i, att.name, self.absolute-position.x - root.absolute-position.x, (self.has-hover || name-focus.has-focus) && name-text.preferred-width > name-text.width);
+                            }
+                        }
+
+                        // Zero-size FocusScope: same Tab-chain trick as Button's
+                        // (see primitives/button.slint) so this doesn't steal
+                        // pointer events from name-touch. Only a tab stop when
+                        // the name is actually cut off, matching what the
+                        // reveal would show.
+                        name-focus := FocusScope {
+                            width: 0px;
+                            height: 0px;
+                            enabled: name-text.preferred-width > name-text.width;
+                            changed has-focus => {
+                                root.set-name-reveal(att-i, att.name, name-touch.absolute-position.x - root.absolute-position.x, name-touch.has-hover || self.has-focus);
                             }
                         }
                     }
