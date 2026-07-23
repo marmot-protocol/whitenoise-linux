@@ -1198,10 +1198,17 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     });
 
     // ─── Edit profile ──────────────────────────────────────────────────
+    // Cancel can't abort the in-flight publish (it's already a nostr
+    // round-trip), so it flags the save as withdrawn; the save's completion
+    // handler checks the flag and drops the result instead of reapplying it.
+    let profile_save_cancelled = Arc::new(AtomicBool::new(false));
+
     ui.global::<AppState>().on_start_edit_profile({
         let weak = ui.as_weak();
+        let profile_save_cancelled = profile_save_cancelled.clone();
         move || {
             if let Some(ui) = weak.upgrade() {
+                profile_save_cancelled.store(false, AtomicOrdering::SeqCst);
                 ui.set_profile_status(s(""));
                 ui.set_profile_editing(true);
             }
@@ -1211,8 +1218,12 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     ui.global::<AppState>().on_cancel_edit_profile({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
+        let profile_save_cancelled = profile_save_cancelled.clone();
         move || {
             let Some(ui) = weak.upgrade() else { return };
+            if ui.get_profile_busy() {
+                profile_save_cancelled.store(true, AtomicOrdering::SeqCst);
+            }
             if let Some(b) = backend_cell.lock().unwrap().as_ref() {
                 populate_profile_async(&ui, b);
             }
@@ -1224,6 +1235,7 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     ui.global::<AppState>().on_save_profile({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
+        let profile_save_cancelled = profile_save_cancelled.clone();
         move || {
             let Some(ui) = weak.upgrade() else { return };
             let Some(backend) = backend_cell.lock().unwrap().clone() else {
@@ -1240,15 +1252,26 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             };
             let profile = profile_from_ui(&ui);
             ui.set_profile_busy(true);
+            profile_save_cancelled.store(false, AtomicOrdering::SeqCst);
             show_profile_status(&ui, error_copy().profile_publishing, StatusKind::Pending);
             // Publishing the kind-0 is a relay round-trip — worker thread, so
             // "publishing…" actually shows instead of freezing the window.
             let weak = weak.clone();
+            let profile_save_cancelled = profile_save_cancelled.clone();
             std::thread::spawn(move || {
                 let result = backend.save_profile(profile);
                 let _ = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak.upgrade() else { return };
                     ui.set_profile_busy(false);
+                    if profile_save_cancelled.swap(false, AtomicOrdering::SeqCst) {
+                        // The user cancelled while this was in flight — the
+                        // publish already went out and can't be recalled,
+                        // but don't reapply it locally or claim success.
+                        if let Err(e) = result {
+                            tracing::warn!(target: "profile", "save failed after cancel: {e:#}");
+                        }
+                        return;
+                    }
                     match result {
                         Ok(saved) => {
                             apply_profile(&ui, Some(&saved));
