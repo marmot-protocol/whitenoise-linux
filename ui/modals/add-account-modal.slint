@@ -45,6 +45,9 @@ export component AddAccountModal inherits Modal {
         Rectangle {
             width: gen-label.preferred-width;
             height: gen-label.preferred-height;
+            accessible-role: button;
+            accessible-label: @tr("Generate a new key");
+            accessible-action-default => { root.generate(); }
             gen-touch := TouchArea {
                 mouse-cursor: pointer;
                 clicked => {
@@ -58,6 +61,28 @@ export component AddAccountModal inherits Modal {
                     font-family: Theme.font;
                     vertical-alignment: center;
                 }
+            }
+            // Zero-size FocusScope: joins the Tab chain without taking pointer
+            // events. Mirrors ui/primitives/button.slint and group-leave-row.slint.
+            gen-fs := FocusScope {
+                width: 0px;
+                height: 0px;
+                key-pressed(event) => {
+                    if (event.text == Key.Return || event.text == " ") {
+                        root.generate();
+                        return accept;
+                    }
+                    return reject;
+                }
+            }
+            if gen-fs.has-focus: Rectangle {
+                x: -2px;
+                y: -2px;
+                width: parent.width + 4px;
+                height: parent.height + 4px;
+                border-radius: (4px) * Theme.r-scale;
+                border-width: 2px;
+                border-color: Palette.mint;
             }
         }
     }
