@@ -1263,6 +1263,61 @@ pub(crate) fn build_message_lines(text: &str, bubble_max: f32) -> ModelRc<Messag
     })
 }
 
+/// Estimated on-screen width of one reaction chip: the image/glyph plus its
+/// horizontal padding, and — only past a count of 1 — the count digits.
+/// `ReactionChip` picks its real width from its own content at render time;
+/// this only has to be close enough to decide where a row should break, the
+/// same estimate-then-let-Slint-draw split `MD_CHAR_W` uses above for
+/// message-body wrapping.
+fn reaction_chip_width(count: i32) -> f32 {
+    const PADDING: f32 = 16.0; // 8px + 8px horizontal padding
+    const GLYPH: f32 = 15.0; // sprite tile / fallback glyph
+    const DIGIT: f32 = 7.0; // ~11px count text, per digit
+    let digits = if count > 1 {
+        count.to_string().len() as f32
+    } else {
+        0.0
+    };
+    let content = GLYPH
+        + if digits > 0.0 {
+            4.0 + digits * DIGIT
+        } else {
+            0.0
+        };
+    (PADDING + content).max(36.0) // chip's own `min-width`
+}
+
+/// Wraps a message's reaction chips into rows that fit within `max_w` (the
+/// bubble's own width cap), so a message with many distinct reactions grows
+/// its chip block downward instead of pushing chips past the edge of the
+/// chat pane. Slint has no flow/wrap layout, so the grouping has to happen
+/// here; `ReactionsRow` just stacks the rows this returns.
+pub(crate) fn group_reaction_rows(chips: Vec<Reaction>, max_w: f32) -> ModelRc<ReactionRow> {
+    const SPACING: f32 = 6.0;
+    let mut rows = Vec::new();
+    let mut current = Vec::new();
+    let mut current_w = 0.0_f32;
+    for chip in chips {
+        let w = reaction_chip_width(chip.count);
+        let grown_w = current_w + SPACING + w;
+        if !current.is_empty() && grown_w > max_w {
+            rows.push(ReactionRow {
+                chips: ModelRc::new(VecModel::from(std::mem::take(&mut current))),
+            });
+            current_w = w;
+        } else {
+            current_w = if current.is_empty() { w } else { grown_w };
+        }
+        current.push(chip);
+    }
+    if !current.is_empty() {
+        rows.push(ReactionRow {
+            chips: ModelRc::new(VecModel::from(current)),
+        });
+    }
+    ModelRc::new(VecModel::from(rows))
+}
+
 /// Telegram-style jumbo-emoji test. If `text` is nothing but emoji (plus
 /// whitespace) and short enough — at most [`JUMBO_EMOJI_MAX`] glyphs — return
 /// the emoji count; otherwise 0. The probe mirrors the tokenizer's longest-
@@ -1334,4 +1389,72 @@ pub(crate) fn build_emoji_list(query: &str) -> Vec<EmojiEntry> {
         });
     }
     hits
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn chip(emoji: &str, count: i32) -> Reaction {
+        Reaction {
+            emoji: emoji.into(),
+            count,
+            mine: false,
+            reactors: Default::default(),
+            clip_x: -1,
+            clip_y: -1,
+        }
+    }
+
+    fn row_emojis(row: &ReactionRow) -> Vec<String> {
+        (0..row.chips.row_count())
+            .filter_map(|i| row.chips.row_data(i))
+            .map(|c| c.emoji.to_string())
+            .collect()
+    }
+
+    #[test]
+    fn group_reaction_rows_keeps_a_short_list_on_one_row() {
+        let chips = vec![chip("😀", 1), chip("😂", 3), chip("❤️", 1)];
+        let rows = group_reaction_rows(chips, 560.0);
+        assert_eq!(rows.row_count(), 1);
+        assert_eq!(
+            row_emojis(&rows.row_data(0).unwrap()),
+            vec!["😀", "😂", "❤️"]
+        );
+    }
+
+    #[test]
+    fn group_reaction_rows_wraps_once_the_bubble_width_is_exceeded() {
+        // Each chip estimates to ~46-58px; six of them clear a 120px cap well
+        // before the list ends, so the wrap has to land mid-list, not just at
+        // the end of it.
+        let chips = vec![
+            chip("😀", 1),
+            chip("😂", 1),
+            chip("❤️", 1),
+            chip("👍", 1),
+            chip("🎉", 1),
+            chip("🔥", 1),
+        ];
+        let rows = group_reaction_rows(chips, 120.0);
+        assert!(
+            rows.row_count() > 1,
+            "expected the 6-chip list to wrap within a 120px cap, got {} row(s)",
+            rows.row_count()
+        );
+        // No chip goes missing in the split.
+        let total: usize = (0..rows.row_count())
+            .map(|i| rows.row_data(i).unwrap().chips.row_count())
+            .sum();
+        assert_eq!(total, 6);
+    }
+
+    #[test]
+    fn group_reaction_rows_never_strands_a_single_chip_wider_than_the_cap() {
+        // A cap narrower than one chip must still place it, not drop it.
+        let rows = group_reaction_rows(vec![chip("😀", 1)], 10.0);
+        assert_eq!(rows.row_count(), 1);
+        assert_eq!(rows.row_data(0).unwrap().chips.row_count(), 1);
+    }
 }

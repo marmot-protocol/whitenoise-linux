@@ -365,6 +365,8 @@ pub(crate) fn chat_message_from_with_reactions(
     };
 
     let jumbo_emoji = jumbo_emoji_for(has_attachment, is_album, !reply_id.is_empty(), display_text);
+    let reactions = if deleted { Vec::new() } else { reactions };
+    let reaction_rows = group_reaction_rows(reactions.clone(), bubble_max);
 
     ChatMessage {
         // A tombstone carries no body, reactions, attachments, or affordances —
@@ -402,7 +404,8 @@ pub(crate) fn chat_message_from_with_reactions(
         day_key: day_key_of(record.recorded_at),
         day_label: s(""),
         message_id: s(&record.message_id_hex),
-        reactions: ModelRc::new(VecModel::from(if deleted { Vec::new() } else { reactions })),
+        reactions: ModelRc::new(VecModel::from(reactions)),
+        reaction_rows,
         pending: false,
         failed: false,
         reply_to_id: s(&reply_id),
@@ -855,6 +858,7 @@ pub(crate) fn pending_chat_message(
         // the id string being empty.
         message_id: s(&pending.temp_id),
         reactions: ModelRc::new(VecModel::from(Vec::<Reaction>::new())),
+        reaction_rows: ModelRc::new(VecModel::from(Vec::<ReactionRow>::new())),
         pending: !pending.failed,
         failed: pending.failed,
         reply_to_id: s(&reply_id),
@@ -998,6 +1002,7 @@ pub(crate) fn apply_reaction_to_model_row(
             .filter_map(|i| row.reactions.row_data(i))
             .collect();
         merge_reaction(&mut chips, op);
+        row.reaction_rows = group_reaction_rows(chips.clone(), row.bubble_max);
         row.reactions = ModelRc::new(VecModel::from(chips));
         vm.set_row_data(pos, row);
     });

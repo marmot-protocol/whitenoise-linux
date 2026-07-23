@@ -152,9 +152,9 @@ export component OutgoingRow inherits VerticalLayout {
                 }
             }
 
-            if root.msg.message-id != "" && !root.msg.pending && !root.msg.failed && root.msg.reactions.length > 0: ReactionsRow {
+            if root.msg.message-id != "" && !root.msg.pending && !root.msg.failed && root.msg.reaction-rows.length > 0: ReactionsRow {
                 message-id: root.msg.message-id;
-                reactions: root.msg.reactions;
+                rows: root.msg.reaction-rows;
                 align-right: root.align-right;
             }
         }
