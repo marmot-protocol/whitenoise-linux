@@ -34,7 +34,7 @@ export component ChatListPanel inherits SidePanel {
     }
 
     title: @tr("CHATS");
-    count: AppState.chats.length;
+    count: root.query == "" ? AppState.chats.length : AppState.chat-match-count;
     show-search: true;
     search-placeholder: @tr("Search chats…");
     show-search-shortcut: true;

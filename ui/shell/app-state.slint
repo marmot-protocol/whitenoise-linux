@@ -677,21 +677,29 @@ export global AppState {
     callback start-chat-with-contact();
     callback chat-selected(int);
     // Chat-list search: Rust recomputes `chat-match-flags` (one flag per chat)
-    // for the live query so the list filters as the user types.
+    // for the live query so the list filters as the user types. `chat-match-count`
+    // is the number of set flags, so the sidebar header count pill can track
+    // the visible rows instead of the full chat count while a query is active.
     callback chat-search-changed(string);
     in-out property <[bool]> chat-match-flags;
+    in-out property <int> chat-match-count;
     callback contact-selected(int);
     // Contacts-list search: mirrors the chat-list filter — Rust recomputes
-    // `contact-match-flags` (one flag per contact) for the live query so the
-    // sidebar filters as the user types.
+    // `contact-match-flags` (one flag per contact) and `contact-match-count`
+    // (the number of set flags) for the live query so the sidebar filters as
+    // the user types and its header count pill tracks the visible rows.
     callback contact-search-changed(string);
     in-out property <[bool]> contact-match-flags;
+    in-out property <int> contact-match-count;
     callback archive-selected(int);
     // Archived-list search: mirrors the chat-list filter — Rust recomputes
-    // `archive-match-flags` (one flag per archived chat) for the live query so
-    // the sidebar filters as the user types.
+    // `archive-match-flags` (one flag per archived chat) and
+    // `archive-match-count` (the number of set flags) for the live query so
+    // the sidebar filters as the user types and its header count pill tracks
+    // the visible rows.
     callback archive-search-changed(string);
     in-out property <[bool]> archive-match-flags;
+    in-out property <int> archive-match-count;
     // Live text of the archive search field, which lives in the shell header
     // (replacing the global message search there) rather than in
     // ArchivedSidebar itself.

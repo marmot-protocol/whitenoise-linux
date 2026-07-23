@@ -12,7 +12,7 @@ export component ContactsSidebar inherits SidePanel {
     property <string> query;
 
     title: @tr("CONTACTS");
-    count: AppState.contacts.length;
+    count: root.query == "" ? AppState.contacts.length : AppState.contact-match-count;
     show-search: true;
     search-placeholder: @tr("Search contacts…");
     show-add: true;
