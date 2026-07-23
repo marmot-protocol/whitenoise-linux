@@ -13,55 +13,87 @@ export component AddMemberRow inherits VerticalLayout {
 
     spacing: 0;
 
-    header-ta := TouchArea {
+    header-row := Rectangle {
         height: 48px;
-        mouse-cursor: pointer;
-        clicked => {
+        accessible-role: button;
+        accessible-label: root.expanded ? @tr("Invite by npub") : @tr("Add member");
+        accessible-action-default => { header-row.activate(); }
+        function activate() {
             root.expanded = !root.expanded;
         }
 
-        Rectangle {
-            border-radius: (8px) * Theme.r-scale;
-            background: header-ta.has-hover ? Palette.hover : transparent;
-            animate background { duration: Theme.hover-dur; }
+        header-ta := TouchArea {
+            mouse-cursor: pointer;
+            clicked => {
+                header-row.activate();
+            }
 
-            HorizontalLayout {
-                padding-left: 6px;
-                padding-right: 8px;
-                spacing: 10px;
+            Rectangle {
+                border-radius: (8px) * Theme.r-scale;
+                background: header-ta.has-hover ? Palette.hover : transparent;
+                animate background { duration: Theme.hover-dur; }
 
-                Rectangle {
-                    width: 38px;
+                HorizontalLayout {
+                    padding-left: 6px;
+                    padding-right: 8px;
+                    spacing: 10px;
+
                     Rectangle {
-                        x: 0;
-                        y: (parent.height - self.height) / 2;
-                        width: 36px;
-                        height: 36px;
-                        border-radius: (18px) * Theme.r-scale;
-                        background: Palette.mint-surface;
-                        border-width: Theme.border-w;
-                        border-color: Palette.mint-dim;
-                        Text {
-                            text: root.expanded ? "–" : "＋";
-                            color: Palette.mint;
-                            font-size: Theme.fs(15px, 18px);
-                            font-family: Theme.font;
-                            font-weight: 700;
-                            horizontal-alignment: center;
-                            vertical-alignment: center;
+                        width: 38px;
+                        Rectangle {
+                            x: 0;
+                            y: (parent.height - self.height) / 2;
+                            width: 36px;
+                            height: 36px;
+                            border-radius: (18px) * Theme.r-scale;
+                            background: Palette.mint-surface;
+                            border-width: Theme.border-w;
+                            border-color: Palette.mint-dim;
+                            Text {
+                                text: root.expanded ? "–" : "＋";
+                                color: Palette.mint;
+                                font-size: Theme.fs(15px, 18px);
+                                font-family: Theme.font;
+                                font-weight: 700;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                            }
                         }
                     }
-                }
 
-                Text {
-                    horizontal-stretch: 1;
-                    text: root.expanded ? @tr("Invite by npub") : @tr("Add member");
-                    color: Palette.mint;
-                    font-size: Theme.fs(13px, 16px);
-                    font-weight: 700;
-                    vertical-alignment: center;
+                    Text {
+                        horizontal-stretch: 1;
+                        text: root.expanded ? @tr("Invite by npub") : @tr("Add member");
+                        color: Palette.mint;
+                        font-size: Theme.fs(13px, 16px);
+                        font-weight: 700;
+                        vertical-alignment: center;
+                    }
                 }
             }
+        }
+
+        // Zero-size FocusScope: joins the Tab chain without taking pointer
+        // events. Mirrors group-leave-row.slint and chat-header.slint.
+        header-fs := FocusScope {
+            width: 0px;
+            height: 0px;
+            key-pressed(event) => {
+                if (event.text == Key.Return || event.text == " ") {
+                    header-row.activate();
+                    return accept;
+                }
+                return reject;
+            }
+        }
+        if header-fs.has-focus: Rectangle {
+            x: 1px;
+            y: 1px;
+            width: parent.width - 2px;
+            height: parent.height - 2px;
+            border-radius: (8px) * Theme.r-scale;
+            border-width: 2px;
+            border-color: Palette.mint;
         }
     }
 
