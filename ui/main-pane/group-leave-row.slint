@@ -21,39 +21,73 @@ export component GroupLeaveRow inherits Rectangle {
         padding-top: 8px;
         padding-bottom: 10px;
 
-        if !AppState.chat-can-add-members: leave-ta := TouchArea {
+        if !AppState.chat-can-add-members: leave-row := Rectangle {
             height: 40px;
-            mouse-cursor: pointer;
-            enabled: !AppState.group-leave-busy;
-            clicked => {
-                AppState.leave-confirm-chat-idx = AppState.active-chat;
-                AppState.show-leave-confirm = true;
+            accessible-role: button;
+            accessible-enabled: !AppState.group-leave-busy;
+            accessible-label: @tr("Leave group");
+            accessible-action-default => { leave-row.activate(); }
+            function activate() {
+                if (!AppState.group-leave-busy) {
+                    AppState.leave-confirm-chat-idx = AppState.active-chat;
+                    AppState.show-leave-confirm = true;
+                }
             }
-            Rectangle {
-                border-radius: (8px) * Theme.r-scale;
-                background: leave-ta.has-hover ? Palette.danger-soft : transparent;
-                animate background { duration: Theme.hover-dur; }
-                HorizontalLayout {
-                    padding-left: 8px;
-                    padding-right: 8px;
-                    spacing: 10px;
-                    Text {
-                        text: "⊘";
-                        color: Palette.danger;
-                        font-size: Theme.fs(14px, 16px);
-                        font-family: Theme.font;
-                        vertical-alignment: center;
-                    }
+            leave-ta := TouchArea {
+                mouse-cursor: pointer;
+                enabled: !AppState.group-leave-busy;
+                clicked => {
+                    leave-row.activate();
+                }
+                Rectangle {
+                    border-radius: (8px) * Theme.r-scale;
+                    background: leave-ta.has-hover ? Palette.danger-soft : transparent;
+                    animate background { duration: Theme.hover-dur; }
+                    HorizontalLayout {
+                        padding-left: 8px;
+                        padding-right: 8px;
+                        spacing: 10px;
+                        Text {
+                            text: "⊘";
+                            color: Palette.danger;
+                            font-size: Theme.fs(14px, 16px);
+                            font-family: Theme.font;
+                            vertical-alignment: center;
+                        }
 
-                    Text {
-                        horizontal-stretch: 1;
-                        text: AppState.group-leave-busy ? @tr("Leaving…") : @tr("Leave group");
-                        color: Palette.danger;
-                        font-size: Theme.fs(13px, 16px);
-                        font-weight: 700;
-                        vertical-alignment: center;
+                        Text {
+                            horizontal-stretch: 1;
+                            text: AppState.group-leave-busy ? @tr("Leaving…") : @tr("Leave group");
+                            color: Palette.danger;
+                            font-size: Theme.fs(13px, 16px);
+                            font-weight: 700;
+                            vertical-alignment: center;
+                        }
                     }
                 }
+            }
+            // Zero-size FocusScope: joins the Tab chain without taking pointer
+            // events. Mirrors ui/primitives/button.slint and chat-header.slint.
+            leave-fs := FocusScope {
+                width: 0px;
+                height: 0px;
+                enabled: !AppState.group-leave-busy;
+                key-pressed(event) => {
+                    if (event.text == Key.Return || event.text == " ") {
+                        leave-row.activate();
+                        return accept;
+                    }
+                    return reject;
+                }
+            }
+            if leave-fs.has-focus: Rectangle {
+                x: 1px;
+                y: 1px;
+                width: parent.width - 2px;
+                height: parent.height - 2px;
+                border-radius: (8px) * Theme.r-scale;
+                border-width: 2px;
+                border-color: Palette.mint;
             }
         }
 
