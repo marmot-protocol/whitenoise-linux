@@ -1663,6 +1663,10 @@ msgctxt "ForwardPickerModal"
 msgid "No chats match your search."
 msgstr ""
 
+msgctxt "ContactsSidebar"
+msgid "No contacts match \"{}\""
+msgstr ""
+
 msgctxt "ContactsPage"
 msgid "No contacts yet"
 msgstr ""
