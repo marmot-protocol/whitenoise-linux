@@ -627,9 +627,11 @@ pub(crate) fn active_group_slot() -> &'static Mutex<String> {
 }
 
 /// Push the admin group-settings surface (rename draft + group avatar) for the
-/// active group. The avatar drives both the chat header and the members panel
-/// via the `chat-group-*` root properties. For 1:1 chats the group avatar is
-/// cleared (the header falls back to the peer avatar in `ChatMeta`).
+/// active group, and clear the settings/invite status and the invite draft so
+/// they don't carry over from the previously open group. The avatar drives
+/// both the chat header and the members panel via the `chat-group-*` root
+/// properties. For 1:1 chats the group avatar is cleared (the header falls
+/// back to the peer avatar in `ChatMeta`).
 pub(crate) fn push_group_settings_to_ui_from(
     ui: &WhiteNoiseLinux,
     backend: &Backend,
@@ -637,6 +639,10 @@ pub(crate) fn push_group_settings_to_ui_from(
     rec: Option<&AppGroupRecord>,
     count: usize,
 ) {
+    ui.set_group_settings_status(s(""));
+    ui.set_add_member_status(s(""));
+    ui.set_add_member_draft(s(""));
+
     if count <= 2 || rec.is_none() {
         ui.set_chat_group_has_picture(false);
         ui.set_chat_group_picture(slint::Image::default());
