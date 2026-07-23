@@ -2187,6 +2187,14 @@ msgctxt "ContactDetail"
 msgid "Retry"
 msgstr ""
 
+msgctxt "AvatarEditable"
+msgid "Retry loading profile picture"
+msgstr ""
+
+msgctxt "ProfileModal"
+msgid "Retry loading profile picture"
+msgstr ""
+
 msgctxt "KeysPage"
 msgid "Reveal"
 msgstr ""

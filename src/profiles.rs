@@ -40,6 +40,8 @@ pub(crate) fn populate_profile_from(
     // picture is currently bound: redundant writes to `my-av-picture`
     // re-render every outgoing bubble.
     if picture_url.trim().is_empty() {
+        // No picture to load, so there is nothing to have failed or to retry.
+        ui.set_my_av_load_failed(false);
         if ui.get_my_av_has_picture() {
             ui.set_my_av_has_picture(false);
             ui.set_my_av_picture(slint::Image::default());
@@ -55,23 +57,45 @@ pub(crate) fn populate_profile_from(
 /// constructed on the UI thread. Cache mirrors that shape.
 pub(crate) fn fetch_profile_picture(ui: &WhiteNoiseLinux, backend: &Backend, url: &str) {
     let url = url.trim().to_string();
+    // Starting a fresh attempt: drop any previous failure so the retry
+    // affordance disappears while the download is in flight.
+    ui.set_my_av_load_failed(false);
     if picture_cache_has(&url) {
         apply_picture(ui, &url);
         return;
     }
     let weak = ui.as_weak();
     let url_for_task = url.clone();
+    // Flag the failure so the profile page can offer a retry, but only while
+    // this URL is still the account's current picture: a profile edit that
+    // swapped the URL out mid-download must not paint a stale failure.
+    let mark_failed = {
+        let weak = ui.as_weak();
+        let url = url.clone();
+        move || {
+            let weak = weak.clone();
+            let url = url.clone();
+            let _ = slint::invoke_from_event_loop(move || {
+                let Some(ui) = weak.upgrade() else { return };
+                if ui.get_profile_picture().as_str() == url && !ui.get_my_av_has_picture() {
+                    ui.set_my_av_load_failed(true);
+                }
+            });
+        }
+    };
     backend.tokio_handle().spawn(async move {
         let bytes = match reqwest::get(&url_for_task).await {
             Ok(resp) => match resp.bytes().await {
                 Ok(b) => b,
                 Err(e) => {
                     tracing::warn!(target: "avatar", "download failed for {url_for_task}: {e}");
+                    mark_failed();
                     return;
                 }
             },
             Err(e) => {
                 tracing::warn!(target: "avatar", "request failed for {url_for_task}: {e}");
+                mark_failed();
                 return;
             }
         };
@@ -79,6 +103,7 @@ pub(crate) fn fetch_profile_picture(ui: &WhiteNoiseLinux, backend: &Backend, url
             Ok(p) => p,
             Err(e) => {
                 tracing::warn!(target: "avatar", "decode failed for {url_for_task}: {e}");
+                mark_failed();
                 return;
             }
         };
@@ -86,6 +111,7 @@ pub(crate) fn fetch_profile_picture(ui: &WhiteNoiseLinux, backend: &Backend, url
         let _ = slint::invoke_from_event_loop(move || {
             if let Some(ui) = weak.upgrade() {
                 apply_picture(&ui, &url_for_task);
+                ui.set_my_av_load_failed(false);
             }
         });
     });
@@ -134,6 +160,8 @@ pub(crate) fn open_profile_modal(
     ui.set_peer_profile_nip05_verified(false);
     ui.set_peer_profile_picture(slint::Image::default());
     ui.set_peer_profile_has_picture(false);
+    ui.set_peer_profile_picture_failed(false);
+    ui.set_peer_profile_picture_url(s(""));
     // Groups in common — meaningless for one's own profile, so leave it empty
     // there (the modal hides the section for self anyway).
     let shared = if is_self {
@@ -272,12 +300,22 @@ pub(crate) fn apply_peer_profile(
     let url = profile
         .and_then(|p| p.picture.clone())
         .filter(|u| !u.trim().is_empty());
-    if let Some(url) = url {
-        let (img, has) = bind_cached_picture(Some(&url));
-        ui.set_peer_profile_picture(img);
-        ui.set_peer_profile_has_picture(has);
-        if !has {
-            fetch_peer_profile_picture(ui, backend, account_id_hex, &url);
+    match url {
+        Some(url) => {
+            // Keep the source URL so the retry callback can re-enter the fetch,
+            // and clear any prior failure before this attempt.
+            ui.set_peer_profile_picture_url(s(url.trim()));
+            ui.set_peer_profile_picture_failed(false);
+            let (img, has) = bind_cached_picture(Some(&url));
+            ui.set_peer_profile_picture(img);
+            ui.set_peer_profile_has_picture(has);
+            if !has {
+                fetch_peer_profile_picture(ui, backend, account_id_hex, &url);
+            }
+        }
+        None => {
+            ui.set_peer_profile_picture_url(s(""));
+            ui.set_peer_profile_picture_failed(false);
         }
     }
 }
@@ -294,8 +332,25 @@ pub(crate) fn fetch_peer_profile_picture(
     let url = url.trim().to_string();
     let id = account_id_hex.to_string();
     let weak = ui.as_weak();
+    let weak_fail = ui.as_weak();
+    let id_fail = id.clone();
     backend.tokio_handle().spawn(async move {
         let Some(pixels) = fetch_picture_pixels(&url).await else {
+            // Flag the failure so the modal can offer a retry, but only while it
+            // still shows this account (the modal may have moved on).
+            let _ = slint::invoke_from_event_loop(move || {
+                let Some(ui) = weak_fail.upgrade() else {
+                    return;
+                };
+                if ui
+                    .get_peer_profile_account_id()
+                    .as_str()
+                    .eq_ignore_ascii_case(&id_fail)
+                    && !ui.get_peer_profile_has_picture()
+                {
+                    ui.set_peer_profile_picture_failed(true);
+                }
+            });
             return;
         };
         picture_cache_put(url.clone(), pixels.clone());

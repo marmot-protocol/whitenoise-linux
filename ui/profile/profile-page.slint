@@ -2,6 +2,7 @@ import { AppState } from "../shell/app-state.slint";
 import { Palette, Theme } from "../tokens.slint";
 import { CopyIcon } from "../icons/copy-icon.slint";
 import { CameraIcon } from "../icons/camera-icon.slint";
+import { RefreshIcon } from "../icons/refresh-icon.slint";
 import { Avatar } from "../primitives/avatar.slint";
 import { ScrollView } from "../primitives/scroll-view.slint";
 import { LineInput } from "../primitives/line-input.slint";
@@ -189,7 +190,14 @@ component AvatarEditable inherits Rectangle {
     in property <bool> has-picture: false;
     in property <bool> editing: false;
     in property <bool> uploading: false;
+    // The picture download failed and the avatar fell back to initials; while
+    // not editing, offer a retry instead of leaving it stuck on the fallback.
+    in property <bool> failed: false;
     callback upload-clicked();
+    callback retry-clicked();
+    // Retry is offered only when the fetch failed, we are not editing (editing
+    // already taps to upload), and no picture is currently shown.
+    property <bool> show-retry: root.failed && !root.editing && !root.uploading && !root.has-picture;
     width: 96px;
     height: 96px;
 
@@ -243,6 +251,36 @@ component AvatarEditable inherits Rectangle {
             if (!root.uploading) {
                 root.upload-clicked();
             }
+        }
+    }
+
+    // Retry badge over the fallback initials when the picture failed to load.
+    // The whole avatar is the hit target (below), so the badge only advertises.
+    if root.show-retry: Rectangle {
+        x: parent.width - self.width - 2px;
+        y: parent.height - self.height - 2px;
+        width: 30px;
+        height: 30px;
+        border-radius: (15px) * Theme.r-scale;
+        background: Palette.danger;
+        border-width: 2px;
+        border-color: Palette.panel;
+        RefreshIcon {
+            stroke: white;
+        }
+    }
+
+    if root.show-retry: TouchArea {
+        width: 96px;
+        height: 96px;
+        mouse-cursor: pointer;
+        accessible-role: button;
+        accessible-label: @tr("Retry loading profile picture");
+        accessible-action-default => {
+            root.retry-clicked();
+        }
+        clicked => {
+            root.retry-clicked();
         }
     }
 }
@@ -392,8 +430,12 @@ export component ProfilePage inherits Rectangle {
                         has-picture: AppState.my-av-has-picture;
                         editing: AppState.profile-editing;
                         uploading: AppState.profile-uploading;
+                        failed: AppState.my-av-load-failed;
                         upload-clicked => {
                             AppState.upload-profile-picture();
+                        }
+                        retry-clicked => {
+                            AppState.retry-profile-picture();
                         }
                     }
                 }

@@ -145,6 +145,7 @@ pub(crate) fn wire_panes(
             // populate_profile_async upgrades it once the profile loads.
             ui.set_my_av_has_picture(false);
             ui.set_my_av_picture(slint::Image::default());
+            ui.set_my_av_load_failed(false);
             set_my_avatar(&ui, &backend);
             refresh_breadcrumb_now(&ui);
             // Rebuild from the new account's snapshots and re-subscribe.

@@ -2302,6 +2302,14 @@ msgctxt "ContactDetail"
 msgid "Retry"
 msgstr "Riprova"
 
+msgctxt "AvatarEditable"
+msgid "Retry loading profile picture"
+msgstr "Riprova a caricare l'immagine del profilo"
+
+msgctxt "ProfileModal"
+msgid "Retry loading profile picture"
+msgstr "Riprova a caricare l'immagine del profilo"
+
 msgctxt "KeysPage"
 msgid "Reveal"
 msgstr ""

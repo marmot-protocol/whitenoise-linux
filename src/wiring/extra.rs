@@ -1500,6 +1500,44 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
+    // Retry the own-profile picture after a failed download: re-run the fetch
+    // with the URL still bound in the picture field.
+    ui.global::<AppState>().on_retry_profile_picture({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        move || {
+            let Some(ui) = weak.upgrade() else { return };
+            let Some(backend) = backend_cell.lock().unwrap().clone() else {
+                return;
+            };
+            let url = ui.get_profile_picture().to_string();
+            if url.trim().is_empty() {
+                return;
+            }
+            fetch_profile_picture(&ui, &backend, &url);
+        }
+    });
+
+    // Retry the open profile modal's picture after a failed download, keyed by
+    // the URL and account id stashed when the modal opened.
+    ui.global::<AppState>().on_retry_peer_profile_picture({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        move || {
+            let Some(ui) = weak.upgrade() else { return };
+            let Some(backend) = backend_cell.lock().unwrap().clone() else {
+                return;
+            };
+            let url = ui.get_peer_profile_picture_url().to_string();
+            let id = ui.get_peer_profile_account_id().to_string();
+            if url.trim().is_empty() || id.is_empty() {
+                return;
+            }
+            ui.set_peer_profile_picture_failed(false);
+            fetch_peer_profile_picture(&ui, &backend, &id, &url);
+        }
+    });
+
     // Chat-list stamps are date-granular ("Yesterday", weekday, …), so they
     // only go stale when the civil date flips. A cheap minute tick watches
     // for midnight and rebuilds the chat models once per day-change. Held in

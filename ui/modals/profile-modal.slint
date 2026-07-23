@@ -4,6 +4,7 @@ import { Avatar } from "../primitives/avatar.slint";
 import { SharedGroupsList } from "../layout/shared-groups.slint";
 import { CopyChip } from "../primitives/copy-chip.slint";
 import { CheckMark } from "../icons/check-mark.slint";
+import { RefreshIcon } from "../icons/refresh-icon.slint";
 
 // User profile card — opened by tapping an @mention or any avatar in the chat
 // tree. Hero layout: a banner tinted with the user's deterministic avatar
@@ -27,10 +28,14 @@ export component ProfileModal inherits Modal {
     in property <string> av-initials;
     in property <image> av-picture;
     in property <bool> av-has-picture: false;
+    // The picture download failed and the avatar fell back to initials; offer a
+    // retry over it.
+    in property <bool> picture-failed: false;
     in property <[SharedGroup]> shared-groups;
     callback copy-npub;
     callback add-contact;
     callback open-shared-group(string);
+    callback retry-picture;
 
     card-width: 380px;
     title: "";
@@ -129,6 +134,38 @@ export component ProfileModal inherits Modal {
                     has-picture: root.av-has-picture;
                     a11y-label: root.display-name;
                     font-size: Theme.fs(26px, 26px);
+                }
+
+                // Retry badge over the fallback initials when the picture failed
+                // to load; the avatar itself is the hit target.
+                if root.picture-failed && !root.av-has-picture: Rectangle {
+                    x: parent.width - self.width - 2px;
+                    y: parent.height - self.height - 2px;
+                    width: 28px;
+                    height: 28px;
+                    border-radius: (14px) * Theme.r-scale;
+                    background: Palette.danger;
+                    border-width: 2px;
+                    border-color: Palette.elevated;
+                    RefreshIcon {
+                        stroke: white;
+                    }
+                }
+
+                if root.picture-failed && !root.av-has-picture: TouchArea {
+                    x: 4px;
+                    y: 4px;
+                    width: 88px;
+                    height: 88px;
+                    mouse-cursor: pointer;
+                    accessible-role: button;
+                    accessible-label: @tr("Retry loading profile picture");
+                    accessible-action-default => {
+                        root.retry-picture();
+                    }
+                    clicked => {
+                        root.retry-picture();
+                    }
                 }
             }
         }

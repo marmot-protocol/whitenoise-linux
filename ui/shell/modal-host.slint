@@ -371,9 +371,13 @@ export component ModalHost inherits Rectangle {
             av-initials: AppState.peer-profile-av-initials;
             av-picture: AppState.peer-profile-picture;
             av-has-picture: AppState.peer-profile-has-picture;
+            picture-failed: AppState.peer-profile-picture-failed;
             shared-groups: AppState.peer-profile-shared-groups;
             copy-npub => {
                 AppState.copy-to-clipboard(AppState.peer-profile-npub);
+            }
+            retry-picture => {
+                AppState.retry-peer-profile-picture();
             }
             add-contact => {
                 AppState.peer-profile-add-contact();

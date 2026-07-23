@@ -2302,6 +2302,14 @@ msgctxt "ContactDetail"
 msgid "Retry"
 msgstr "Wiederholen"
 
+msgctxt "AvatarEditable"
+msgid "Retry loading profile picture"
+msgstr "Profilbild erneut laden"
+
+msgctxt "ProfileModal"
+msgid "Retry loading profile picture"
+msgstr "Profilbild erneut laden"
+
 msgctxt "KeysPage"
 msgid "Reveal"
 msgstr ""

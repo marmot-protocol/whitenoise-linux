@@ -232,6 +232,8 @@ export component WhiteNoiseLinux inherits Window {
     in-out property <string> peer-profile-av-initials <=> AppState.peer-profile-av-initials;
     in-out property <image> peer-profile-picture <=> AppState.peer-profile-picture;
     in-out property <bool> peer-profile-has-picture <=> AppState.peer-profile-has-picture;
+    in-out property <bool> peer-profile-picture-failed <=> AppState.peer-profile-picture-failed;
+    in-out property <string> peer-profile-picture-url <=> AppState.peer-profile-picture-url;
     in-out property <[SharedGroup]> peer-profile-shared-groups <=> AppState.peer-profile-shared-groups;
     in-out property <int> messages-scroll-tick <=> AppState.messages-scroll-tick;
     in-out property <string> message-jump-id <=> AppState.message-jump-id;
@@ -326,6 +328,7 @@ export component WhiteNoiseLinux inherits Window {
     in-out property <color> my-av-b <=> AppState.my-av-b;
     in-out property <image> my-av-picture <=> AppState.my-av-picture;
     in-out property <bool> my-av-has-picture <=> AppState.my-av-has-picture;
+    in-out property <bool> my-av-load-failed <=> AppState.my-av-load-failed;
     in-out property <string> my-display-name <=> AppState.my-display-name;
     in-out property <int> rail-badge-chats <=> AppState.rail-badge-chats;
     in-out property <int> rail-badge-contacts <=> AppState.rail-badge-contacts;
@@ -349,6 +352,7 @@ export component WhiteNoiseLinux inherits Window {
     in-out property <[bool]> chat-match-flags <=> AppState.chat-match-flags;
     in-out property <[bool]> contact-match-flags <=> AppState.contact-match-flags;
     in-out property <[bool]> archive-match-flags <=> AppState.archive-match-flags;
+    in-out property <string> archive-search-query <=> AppState.archive-search-query;
     in-out property <[Contact]> contacts <=> AppState.contacts;
     in-out property <[SharedGroup]> contact-shared-groups <=> AppState.contact-shared-groups;
     in-out property <[ArchivedChat]> archived-chats <=> AppState.archived-chats;
