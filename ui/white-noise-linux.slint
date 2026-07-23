@@ -294,6 +294,7 @@ export component WhiteNoiseLinux inherits Window {
     in-out property <bool> telemetry-enabled <=> AppState.telemetry-enabled;
     in-out property <bool> audit-enabled <=> AppState.audit-enabled;
     in-out property <string> audit-status <=> AppState.audit-status;
+    in-out property <int> audit-status-kind <=> AppState.audit-status-kind;
     in-out property <[AuditLogEntry]> audit-files <=> AppState.audit-files;
     in-out property <[string]> network-relays <=> AppState.network-relays;
     in-out property <[string]> suggested-relays <=> AppState.suggested-relays;
@@ -302,6 +303,7 @@ export component WhiteNoiseLinux inherits Window {
     in-out property <int> network-connected <=> AppState.network-connected;
     in-out property <int> network-total <=> AppState.network-total;
     in-out property <string> network-status <=> AppState.network-status;
+    in-out property <int> network-status-kind <=> AppState.network-status-kind;
     in-out property <bool> network-republish-busy <=> AppState.network-republish-busy;
     in-out property <string> network-add-error <=> AppState.network-add-error;
     in-out property <int> sync-secs <=> AppState.sync-secs;

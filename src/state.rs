@@ -562,6 +562,26 @@ pub(crate) fn show_group_settings_status(
     ui.set_group_settings_status_kind(kind as i32);
 }
 
+/// Set the network/relays pane status line and its outcome together.
+pub(crate) fn show_network_status(
+    ui: &WhiteNoiseLinux,
+    message: impl Into<SharedString>,
+    kind: StatusKind,
+) {
+    ui.set_network_status(message.into());
+    ui.set_network_status_kind(kind as i32);
+}
+
+/// Set the advanced-settings audit-log status line and its outcome together.
+pub(crate) fn show_audit_status(
+    ui: &WhiteNoiseLinux,
+    message: impl Into<SharedString>,
+    kind: StatusKind,
+) {
+    ui.set_audit_status(message.into());
+    ui.set_audit_status_kind(kind as i32);
+}
+
 /// Persist the composer draft for the currently active chat index.
 ///
 /// Entering edit mode temporarily reuses the composer for the edited message,
