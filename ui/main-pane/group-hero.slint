@@ -178,6 +178,7 @@ export component GroupHero inherits Rectangle {
                 }
             }
             cancel => {
+                AppState.group-rename-draft = root.chat.name;
                 root.editing-name = false;
             }
         }
@@ -246,6 +247,7 @@ export component GroupHero inherits Rectangle {
                 root.editing-desc = false;
             }
             cancel => {
+                AppState.group-description-draft = AppState.chat-group-description;
                 root.editing-desc = false;
             }
         }
