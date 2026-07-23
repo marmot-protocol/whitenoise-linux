@@ -376,7 +376,7 @@ export component GetStartedScreen inherits Rectangle {
                             // muted and inert — publishing needs somewhere to land.
                             Button {
                                 property <bool> ready: AppState.network-total > 0 && !AppState.kp-published;
-                                label: AppState.kp-published ? @tr("Published") : (AppState.kp-busy ? @tr("Publishing…") : @tr("Publish key package"));
+                                label: AppState.kp-published ? @tr("Published") : (AppState.kp-publish-busy ? @tr("Publishing…") : @tr("Publish key package"));
                                 button-height: 38px;
                                 bg-color: self.ready ? Palette.mint : Palette.panel-2;
                                 outline: self.ready ? Palette.mint : Palette.border-2;
@@ -388,7 +388,7 @@ export component GetStartedScreen inherits Rectangle {
                                 }
 
                                 clicked => {
-                                    if (AppState.network-total > 0 && !AppState.kp-busy && !AppState.kp-published) {
+                                    if (AppState.network-total > 0 && !AppState.kp-publish-busy && !AppState.kp-published) {
                                         AppState.kp-publish-clicked();
                                     }
                                 }
@@ -405,8 +405,8 @@ export component GetStartedScreen inherits Rectangle {
                             }
                         }
 
-                        if AppState.kp-status != "": Text {
-                            text: AppState.kp-status;
+                        if AppState.kp-publish-status != "": Text {
+                            text: AppState.kp-publish-status;
                             color: Palette.text-lo;
                             font-size: Theme.fs(11px, 14px);
                             wrap: word-wrap;

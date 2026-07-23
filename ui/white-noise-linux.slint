@@ -276,8 +276,12 @@ export component WhiteNoiseLinux inherits Window {
     in-out property <int> composer-caret-tick <=> AppState.composer-caret-tick;
     in-out property <[KeyPackageInfo]> key-packages <=> AppState.key-packages;
     in-out property <[string]> kp-relays <=> AppState.kp-relays;
-    in-out property <string> kp-status <=> AppState.kp-status;
-    in-out property <bool> kp-busy <=> AppState.kp-busy;
+    in-out property <string> kp-refresh-status <=> AppState.kp-refresh-status;
+    in-out property <bool> kp-refresh-busy <=> AppState.kp-refresh-busy;
+    in-out property <string> kp-publish-status <=> AppState.kp-publish-status;
+    in-out property <bool> kp-publish-busy <=> AppState.kp-publish-busy;
+    in-out property <string> kp-rotate-status <=> AppState.kp-rotate-status;
+    in-out property <bool> kp-rotate-busy <=> AppState.kp-rotate-busy;
     in-out property <bool> kp-published <=> AppState.kp-published;
     in-out property <string> reveal-nsec-password <=> AppState.reveal-nsec-password;
     in-out property <string> reveal-nsec-value <=> AppState.reveal-nsec-value;

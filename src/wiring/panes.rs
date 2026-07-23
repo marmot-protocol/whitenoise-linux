@@ -1461,8 +1461,25 @@ pub(crate) fn wire_panes(
     // ─── Keys page: KP publish / rotate / refresh ──────────────────────
     // All three call into the marmot runtime, which blocks on its tokio
     // executor — so we hop onto a worker thread first, then back to the
-    // Slint event loop with the results. UI sets `kp-busy` for the
-    // round-trip so buttons can disable themselves visually.
+    // Slint event loop with the results. Each op sets its own `kp-*-busy` /
+    // `kp-*-status` pair for the round-trip, so triggering one doesn't make
+    // an unrelated action look busy too.
+
+    fn set_kp_busy(ui: &WhiteNoiseLinux, op_kind: &str, busy: bool) {
+        match op_kind {
+            "rotate" => ui.set_kp_rotate_busy(busy),
+            "refresh" => ui.set_kp_refresh_busy(busy),
+            _ => ui.set_kp_publish_busy(busy),
+        }
+    }
+
+    fn set_kp_status(ui: &WhiteNoiseLinux, op_kind: &str, status: String) {
+        match op_kind {
+            "rotate" => ui.set_kp_rotate_status(status.into()),
+            "refresh" => ui.set_kp_refresh_status(status.into()),
+            _ => ui.set_kp_publish_status(status.into()),
+        }
+    }
 
     let kp_run = {
         let weak = ui.as_weak();
@@ -1470,15 +1487,16 @@ pub(crate) fn wire_panes(
         // op_kind: "publish" | "rotate" | "refresh"
         Rc::new(move |op_kind: &'static str| {
             let Some(ui) = weak.upgrade() else { return };
-            ui.set_kp_busy(true);
+            set_kp_busy(&ui, op_kind, true);
             let copy = error_copy();
-            ui.set_kp_status(
+            set_kp_status(
+                &ui,
+                op_kind,
                 match op_kind {
                     "rotate" => copy.kp_rotating,
                     "refresh" => copy.kp_refreshing,
                     _ => copy.kp_publishing,
-                }
-                .into(),
+                },
             );
             let weak = weak.clone();
             // Clone the backend handle and drop the lock before the relay
@@ -1530,10 +1548,10 @@ pub(crate) fn wire_panes(
                 });
                 let _ = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak.upgrade() else { return };
-                    ui.set_kp_busy(false);
+                    set_kp_busy(&ui, op_kind, false);
                     match result {
-                        Ok(status) => ui.set_kp_status(status.into()),
-                        Err(e) => ui.set_kp_status(e.into()),
+                        Ok(status) => set_kp_status(&ui, op_kind, status),
+                        Err(e) => set_kp_status(&ui, op_kind, e),
                     }
                     // Refresh from local state regardless of op outcome; for
                     // "refresh" we additionally surface the relay snapshot.
