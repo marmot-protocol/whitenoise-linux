@@ -38,6 +38,7 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                         || c.npub_short.to_lowercase().contains(&q)
                 })
                 .collect();
+            ui.set_contact_match_count(flags.iter().filter(|&&m| m).count() as i32);
             ui.set_contact_match_flags(model(flags));
         }
     });

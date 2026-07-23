@@ -47,6 +47,7 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 .iter()
                 .map(|c| c.name.to_lowercase().contains(&q))
                 .collect();
+            ui.set_chat_match_count(flags.iter().filter(|&&m| m).count() as i32);
             ui.set_chat_match_flags(model(flags));
         }
     });
@@ -66,6 +67,7 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 .iter()
                 .map(|c| c.name.to_lowercase().contains(&q))
                 .collect();
+            ui.set_archive_match_count(flags.iter().filter(|&&m| m).count() as i32);
             ui.set_archive_match_flags(model(flags));
         }
     });

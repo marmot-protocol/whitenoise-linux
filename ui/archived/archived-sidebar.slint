@@ -10,7 +10,7 @@ export component ArchivedSidebar inherits SidePanel {
     in property <int> active-archived;
 
     title: @tr("ARCHIVED");
-    count: root.archives.length;
+    count: AppState.archive-search-query == "" ? root.archives.length : AppState.archive-match-count;
 
     // The archive search field lives in the shell header
     // (AppState.archive-search-query), not this panel — see app-shell.slint.
