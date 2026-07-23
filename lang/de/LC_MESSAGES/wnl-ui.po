@@ -1746,6 +1746,11 @@ msgid "No chats match your search."
 msgstr "Keine Chats entsprechen deiner Suche."
 
 #, fuzzy
+msgctxt "ContactsSidebar"
+msgid "No contacts match \"{}\""
+msgstr "Kontakt entfernen"
+
+#, fuzzy
 msgctxt "ContactsPage"
 msgid "No contacts yet"
 msgstr "Kontakt entfernen"

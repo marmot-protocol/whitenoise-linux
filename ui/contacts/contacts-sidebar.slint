@@ -1,4 +1,4 @@
-import { Contact } from "../tokens.slint";
+import { Contact, Palette, Theme } from "../tokens.slint";
 import { ListView } from "std-widgets.slint";
 import { AppState } from "../shell/app-state.slint";
 import { SidePanel } from "../layout/side-panel.slint";
@@ -67,5 +67,19 @@ export component ContactsSidebar inherits SidePanel {
             }
         }
         }
+    }
+
+    // Mirrors the emoji-picker's "no matches for …" copy: the ListView above
+    // renders no rows once every flag is false, so without this the panel
+    // just goes blank with no indication the query is what emptied it.
+    if root.query != "" && AppState.contact-match-count == 0: Text {
+        x: 0;
+        y: 24px;
+        width: 100%;
+        horizontal-alignment: center;
+        wrap: word-wrap;
+        text: @tr("No contacts match \"{}\"", root.query);
+        color: Palette.text-lo;
+        font-size: Theme.fs(11px, 14px);
     }
 }
