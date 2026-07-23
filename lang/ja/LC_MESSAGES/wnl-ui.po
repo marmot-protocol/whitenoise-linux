@@ -164,13 +164,18 @@ msgctxt "ThemePicker"
 msgid "AMOLED"
 msgstr ""
 
+msgctxt "ArchivedDetail"
+msgid "ARCHIVED"
+msgstr "アーカイブ済み"
+
 msgctxt "ArchivedSidebar"
 msgid "ARCHIVED"
 msgstr "アーカイブ"
 
 msgctxt "ArchivedDetail"
-msgid "ARCHIVED  ·  {} MEMBERS  ·  {}"
-msgstr "アーカイブ済み  ·  {} メンバー  ·  {}"
+msgid "ARCHIVED  ·  1 MEMBER"
+msgid_plural "ARCHIVED  ·  {n} MEMBERS"
+msgstr[0] "アーカイブ済み  ·  {n} メンバー"
 
 msgctxt "AdvancedPane"
 msgid "AUDIT LOG FILES"

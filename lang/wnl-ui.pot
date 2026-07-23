@@ -166,13 +166,19 @@ msgctxt "ThemePicker"
 msgid "AMOLED"
 msgstr ""
 
+msgctxt "ArchivedDetail"
+msgid "ARCHIVED"
+msgstr ""
+
 msgctxt "ArchivedSidebar"
 msgid "ARCHIVED"
 msgstr ""
 
 msgctxt "ArchivedDetail"
-msgid "ARCHIVED  ·  {} MEMBERS  ·  {}"
-msgstr ""
+msgid "ARCHIVED  ·  1 MEMBER"
+msgid_plural "ARCHIVED  ·  {n} MEMBERS"
+msgstr[0] ""
+msgstr[1] ""
 
 msgctxt "AdvancedPane"
 msgid "AUDIT LOG FILES"
