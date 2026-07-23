@@ -14,6 +14,25 @@ import { SectionHeader } from "../layout/section-header.slint";
 import { DangerActionRow } from "danger-action-row.slint";
 import { InfoBanner } from "../layout/info-banner.slint";
 
+// One line of status text for a single key-package operation (refresh,
+// publish, or rotate), styled like the page's other status plates.
+component KpStatusLine inherits Rectangle {
+    in property <string> text;
+    height: 32px;
+    background: Palette.panel-2;
+    border-radius: (6px) * Theme.r-scale;
+    border-width: 1px;
+    border-color: Palette.border-2;
+    Text {
+        x: 12px;
+        y: (parent.height - self.height) / 2;
+        text: root.text;
+        color: Palette.text-mid;
+        font-size: Theme.fs(11px, 14px);
+        font-family: Theme.font;
+    }
+}
+
 export component KeysPage inherits Rectangle {
     horizontal-stretch: 1;
     vertical-stretch: 1;
@@ -83,13 +102,13 @@ export component KeysPage inherits Rectangle {
                     label: @tr("KEY PACKAGES");
                     note: AppState.kp-relays.length > 0 ? @tr("(published to your kind-10051 relay list)") : @tr("(no key-package relays configured)");
                     MicroButton {
-                        label: AppState.kp-busy ? @tr("Refreshing…") : @tr("Refresh");
+                        label: AppState.kp-refresh-busy ? @tr("Refreshing…") : @tr("Refresh");
                         RefreshIcon {
                             stroke: Palette.text-mid;
                         }
 
                         clicked => {
-                            if (!AppState.kp-busy) {
+                            if (!AppState.kp-refresh-busy) {
                                 AppState.kp-refresh-clicked();
                             }
                         }
@@ -128,9 +147,9 @@ export component KeysPage inherits Rectangle {
                         VerticalLayout {
                             alignment: center;
                             MicroButton {
-                                label: AppState.kp-busy ? @tr("Publishing…") : @tr("Publish");
+                                label: AppState.kp-publish-busy ? @tr("Publishing…") : @tr("Publish");
                                 clicked => {
-                                    if (!AppState.kp-busy) {
+                                    if (!AppState.kp-publish-busy) {
                                         AppState.kp-publish-clicked();
                                     }
                                 }
@@ -149,20 +168,16 @@ export component KeysPage inherits Rectangle {
                 }
             }
 
-            if AppState.kp-status != "": Rectangle {
-                height: 32px;
-                background: Palette.panel-2;
-                border-radius: (6px) * Theme.r-scale;
-                border-width: 1px;
-                border-color: Palette.border-2;
-                Text {
-                    x: 12px;
-                    y: (parent.height - self.height) / 2;
-                    text: AppState.kp-status;
-                    color: Palette.text-mid;
-                    font-size: Theme.fs(11px, 14px);
-                    font-family: Theme.font;
-                }
+            if AppState.kp-refresh-status != "": KpStatusLine {
+                text: AppState.kp-refresh-status;
+            }
+
+            if AppState.kp-publish-status != "": KpStatusLine {
+                text: AppState.kp-publish-status;
+            }
+
+            if AppState.kp-rotate-status != "": KpStatusLine {
+                text: AppState.kp-rotate-status;
             }
 
             VerticalLayout {
@@ -216,7 +231,7 @@ export component KeysPage inherits Rectangle {
                     detail: @tr("Invalidates the current package and uploads a fresh one to your relays.");
                     action-label: @tr("Rotate");
                     busy-label: @tr("Rotating…");
-                    busy: AppState.kp-busy;
+                    busy: AppState.kp-rotate-busy;
                     triggered => {
                         AppState.show-rotate-confirm = true;
                     }

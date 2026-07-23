@@ -466,11 +466,17 @@ export global AppState {
     in-out property <int> composer-caret-pos: 0;
     in-out property <int> composer-caret-tick: 0;
     // ═══ Keys & identity ═══════════════════════════════════════════════════
-    // Key-package state and management.
+    // Key-package state and management. Refresh, publish, and rotate each get
+    // their own busy flag and status string, so triggering one doesn't make
+    // an unrelated action (e.g. the Danger Zone's Rotate) look busy too.
     in-out property <[KeyPackageInfo]> key-packages;
     in-out property <[string]> kp-relays;
-    in-out property <string> kp-status;
-    in-out property <bool> kp-busy: false;
+    in-out property <string> kp-refresh-status;
+    in-out property <bool> kp-refresh-busy: false;
+    in-out property <string> kp-publish-status;
+    in-out property <bool> kp-publish-busy: false;
+    in-out property <string> kp-rotate-status;
+    in-out property <bool> kp-rotate-busy: false;
     // True only when a key package is actually published to a relay (not merely
     // present locally). Set by Rust from the live KP records.
     in-out property <bool> kp-published: false;
