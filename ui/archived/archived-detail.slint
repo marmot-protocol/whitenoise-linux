@@ -24,7 +24,7 @@ export component ArchivedDetail inherits DetailPage {
             horizontal-stretch: 1;
             title: root.data.name;
             caption: root.is-group
-                ? @tr("ARCHIVED  ·  1 MEMBER" | "ARCHIVED  ·  {n} MEMBERS" % root.data.members) + "  ·  " + root.data.group-id
+                ? @tr("ARCHIVED  ·  1 MEMBER" | "ARCHIVED  ·  {n} MEMBERS" % root.data.members)
                 : @tr("ARCHIVED");
             ArchiveIcon {
                 stroke: Palette.text-mid;
