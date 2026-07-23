@@ -470,6 +470,14 @@ export struct Reaction {
     clip-y: int,
 }
 
+// One line of a message's reaction-chip row. Rust wraps the flat chip list
+// into rows sized to the bubble's own width cap (Slint has no flow layout,
+// so it can't discover where a row should break on its own), the same
+// estimate-then-render split `MessageLine`/`MessageRun` use for message text.
+export struct ReactionRow {
+    chips: [Reaction],
+}
+
 // One emoji in the picker grid. `clip-x`/`clip-y` are pixel coordinates
 // into the shared Twemoji sprite sheet (passed in separately at the picker
 // level). `name` is the human-readable label.
@@ -1059,6 +1067,9 @@ export struct ChatMessage {
     // reactions which target this id.
     message-id: string,
     reactions: [Reaction],
+    // Same chips as `reactions`, pre-wrapped into rows that fit within
+    // `bubble-max` — what `ReactionsRow` actually renders.
+    reaction-rows: [ReactionRow],
     // Optimistic-send state. `pending` = inserted locally, waiting for relay
     // ack; bubble dims + shows a clock instead of the double-check. `failed`
     // = send threw; bubble gains a red border and becomes clickable to retry.

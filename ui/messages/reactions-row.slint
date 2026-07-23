@@ -1,30 +1,36 @@
 import { AppState } from "../shell/app-state.slint";
-import { Reaction } from "../tokens.slint";
+import { ReactionRow } from "../tokens.slint";
 import { ReactionChip } from "reaction-chip.slint";
 
-// In-flow row of reaction chips, rendered directly under a bubble (only when
-// the message actually has reactions, so empty messages stay tight). Tapping a
+// In-flow block of reaction chips, rendered directly under a bubble (only
+// when the message actually has reactions, so empty messages stay tight).
+// `rows` is already wrapped Rust-side to the bubble's width cap, so this
+// just stacks each row and lets a chip overflow onto the next one. Tapping a
 // chip toggles my reaction on/off.
-export component ReactionsRow inherits HorizontalLayout {
+export component ReactionsRow inherits VerticalLayout {
     in property <string> message-id;
-    in property <[Reaction]> reactions;
+    in property <[ReactionRow]> rows;
     in property <bool> align-right: false;
 
     spacing: 6px;
-    alignment: root.align-right ? end : start;
 
-    for r in root.reactions: ReactionChip {
-        emoji: r.emoji;
-        clip-x: r.clip-x;
-        clip-y: r.clip-y;
-        count: r.count;
-        mine: r.mine;
-        reactors: r.reactors;
-        clicked => {
-            if (r.mine) {
-                AppState.unreact-message(root.message-id, r.emoji);
-            } else {
-                AppState.react-message(root.message-id, r.emoji);
+    for row in root.rows: HorizontalLayout {
+        spacing: 6px;
+        alignment: root.align-right ? end : start;
+
+        for r in row.chips: ReactionChip {
+            emoji: r.emoji;
+            clip-x: r.clip-x;
+            clip-y: r.clip-y;
+            count: r.count;
+            mine: r.mine;
+            reactors: r.reactors;
+            clicked => {
+                if (r.mine) {
+                    AppState.unreact-message(root.message-id, r.emoji);
+                } else {
+                    AppState.react-message(root.message-id, r.emoji);
+                }
             }
         }
     }
