@@ -2896,6 +2896,26 @@ msgctxt "ProfilePage"
 msgid "Your public key. Safe to share."
 msgstr ""
 
+msgctxt "MessageView"
+msgid "[audio: {}]"
+msgstr ""
+
+msgctxt "MessageView"
+msgid "[file: {}]"
+msgstr ""
+
+msgctxt "MessageView"
+msgid "[image: {} — click to view]"
+msgstr ""
+
+msgctxt "MessageView"
+msgid "[video: {} — click to play]"
+msgstr ""
+
+msgctxt "MessageView"
+msgid "[{} images — click to view]"
+msgstr ""
+
 msgctxt "ContactDetail"
 msgid "aka {}"
 msgstr ""

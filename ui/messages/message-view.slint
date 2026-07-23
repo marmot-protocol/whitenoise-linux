@@ -64,7 +64,11 @@ export component MessageView inherits VerticalLayout {
         property <bool> is-album: root.msg.album.length > 0;
         property <bool> has-media: self.is-album || root.msg.has-attachment;
         property <string> media-label:
-            self.is-album ? ("[" + root.msg.album.length + " images — click to view]") : (root.msg.att-is-image ? ("[image: " + root.msg.att-name + " — click to view]") : (root.msg.att-is-video ? ("[video: " + root.msg.att-name + " — click to play]") : (root.msg.att-is-audio ? ("[audio: " + root.msg.att-name + "]") : ("[file: " + root.msg.att-name + "]"))));
+            self.is-album ? @tr("[{} images — click to view]", root.msg.album.length)
+            : (root.msg.att-is-image ? @tr("[image: {} — click to view]", root.msg.att-name)
+            : (root.msg.att-is-video ? @tr("[video: {} — click to play]", root.msg.att-name)
+            : (root.msg.att-is-audio ? @tr("[audio: {}]", root.msg.att-name)
+            : @tr("[file: {}]", root.msg.att-name))));
         // Shared whole-line action: album → attachment → reply.
         function activate() {
             if (self.is-album) {

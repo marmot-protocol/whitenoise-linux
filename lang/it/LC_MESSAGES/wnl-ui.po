@@ -3038,6 +3038,26 @@ msgctxt "ProfilePage"
 msgid "Your public key. Safe to share."
 msgstr "La tua chiave pubblica. Sicura da condividere."
 
+msgctxt "MessageView"
+msgid "[audio: {}]"
+msgstr "[audio: {}]"
+
+msgctxt "MessageView"
+msgid "[file: {}]"
+msgstr "[file: {}]"
+
+msgctxt "MessageView"
+msgid "[image: {} — click to view]"
+msgstr "[immagine: {} — clicca per visualizzare]"
+
+msgctxt "MessageView"
+msgid "[video: {} — click to play]"
+msgstr "[video: {} — clicca per riprodurre]"
+
+msgctxt "MessageView"
+msgid "[{} images — click to view]"
+msgstr "[{} immagini — clicca per visualizzare]"
+
 msgctxt "ContactDetail"
 msgid "aka {}"
 msgstr "alias {}"
