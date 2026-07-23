@@ -6,7 +6,7 @@
 use crate::*;
 
 /// Push the on-disk relay list into the UI model. Used after add/remove.
-pub(crate) fn push_network_relays(ui: &DarkMatterLinux, list: &[String]) {
+pub(crate) fn push_network_relays(ui: &WhiteNoiseLinux, list: &[String]) {
     let rows: Vec<SharedString> = list.iter().cloned().map(SharedString::from).collect();
     ui.set_network_relays(ModelRc::new(VecModel::from(rows)));
     // Keep the one-click suggestions in sync: only offer ones not already added.
@@ -25,7 +25,7 @@ pub(crate) const SUGGESTED_RELAYS: &[&str] = &[
 
 /// Publish the suggested-relay chips = `SUGGESTED_RELAYS` minus whatever the user
 /// already has, so a suggestion vanishes once it's added.
-pub(crate) fn push_suggested_relays(ui: &DarkMatterLinux, current: &[String]) {
+pub(crate) fn push_suggested_relays(ui: &WhiteNoiseLinux, current: &[String]) {
     let suggestions: Vec<SharedString> = SUGGESTED_RELAYS
         .iter()
         .filter(|s| !current.iter().any(|u| u.eq_ignore_ascii_case(s)))
@@ -75,7 +75,7 @@ pub(crate) fn relay_sets_differ(current: &[String], booted: &[String]) -> bool {
     current != booted
 }
 
-pub(crate) fn refresh_network_restart_required(ui: &DarkMatterLinux) {
+pub(crate) fn refresh_network_restart_required(ui: &WhiteNoiseLinux) {
     let current = vec_string_from_model(&ui.get_network_relays());
     let booted = vec_string_from_model(&ui.get_network_booted_relays());
     ui.set_network_restart_required(relay_sets_differ(&current, &booted));
@@ -83,7 +83,7 @@ pub(crate) fn refresh_network_restart_required(ui: &DarkMatterLinux) {
 
 /// Push the booted-relays list + current health into the UI. Called after
 /// the backend finishes booting.
-pub(crate) fn refresh_network_post_boot(backend: &Arc<Backend>, ui: &DarkMatterLinux) {
+pub(crate) fn refresh_network_post_boot(backend: &Arc<Backend>, ui: &WhiteNoiseLinux) {
     let booted: Vec<SharedString> = backend
         .booted_relays()
         .iter()

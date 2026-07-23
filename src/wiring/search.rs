@@ -22,7 +22,7 @@ const GLOBAL_HIT_LIMIT: usize = 50;
 /// mention-card rows. Selecting a hit rides the mention-inbox navigation
 /// path (pending jump + chat select), which centers the target message even
 /// when it's outside the loaded window.
-pub(crate) fn wire_search(ui: &DarkMatterLinux, cx: &Cx) {
+pub(crate) fn wire_search(ui: &WhiteNoiseLinux, cx: &Cx) {
     let Cx {
         backend_cell,
         group_ids,

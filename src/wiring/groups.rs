@@ -4,7 +4,7 @@ use crate::*;
 /// row to its group hex and grab the live backend. Shows the not-ready
 /// status and returns `None` when the backend hasn't booted yet.
 fn active_group_backend(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend_cell: &BackendCell,
     group_ids: &Arc<Mutex<Vec<String>>>,
 ) -> Option<(String, Arc<Backend>)> {
@@ -23,7 +23,7 @@ fn active_group_backend(
 /// then on the UI thread refreshes the members panel + shows `ok_msg` on
 /// success or routes the error through `friendly_error`.
 fn spawn_group_admin_op(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     b: Arc<Backend>,
     group_hex: String,
     op_name: &'static str,
@@ -54,7 +54,7 @@ fn spawn_group_admin_op(
     });
 }
 
-pub(crate) fn wire_groups(ui: &DarkMatterLinux, cx: &Cx) {
+pub(crate) fn wire_groups(ui: &WhiteNoiseLinux, cx: &Cx) {
     let Cx {
         backend_cell,
         group_ids,

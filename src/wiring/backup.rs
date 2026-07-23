@@ -5,7 +5,7 @@ use crate::*;
 /// row unmounted on an install that has never written a backup; the stamp is
 /// formatted here (not in Slint) so it honors the user's date/time preferences
 /// like every other visible timestamp.
-pub(crate) fn publish_last_backup(ui: &DarkMatterLinux, settings: &Settings) {
+pub(crate) fn publish_last_backup(ui: &WhiteNoiseLinux, settings: &Settings) {
     let path = settings.last_backup_path.clone().unwrap_or_default();
     let stamp = settings
         .last_backup_at
@@ -16,7 +16,7 @@ pub(crate) fn publish_last_backup(ui: &DarkMatterLinux, settings: &Settings) {
     ui.set_storage_last_backup_at(stamp.into());
 }
 
-pub(crate) fn wire_backup(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
+pub(crate) fn wire_backup(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     let Cx {
         backend_cell,
         vault_cell,

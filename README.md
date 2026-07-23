@@ -108,7 +108,7 @@ A few environment variables matter at runtime:
 
 | Variable | Effect |
 | --- | --- |
-| `DM_HOME` | Where the vault, media cache, and observability override live. Defaults to the platform's standard data directory for `darkmatter`. |
+| `WN_HOME` | Where the vault, media cache, and observability override live. Defaults to the platform's standard data directory for `whitenoise-linux`. |
 | `RUST_LOG` | `tracing` filter; logs go to stderr, defaulting to `info`. |
 | `WAYLAND_DISPLAY` / `DISPLAY` | Selects the clipboard backend: prefers `wl-copy` on Wayland, falls back to `xclip`, `xsel`, or `arboard` on X11. |
 
@@ -152,7 +152,7 @@ It reads flat by intent: there are no per-feature abstractions, and the data flo
 | `src/chatmodel.rs`, `chatlist.rs`, `chrome.rs`, `media.rs`, `render.rs`, `state.rs` | The chat-row build pipeline, list/chrome refreshers, markdown/avatar rendering, and the optimistic overlay |
 | `src/backend.rs`, `src/backend/groups.rs` | The `MarmotApp` wrapper, the tokio runtime, and all platform-specific bits (clipboard, paths) |
 | `src/vault.rs` | The password-encrypted secret vault |
-| `src/backup.rs` | Whole-folder encrypted backup and restore (`.dmbackup`), sealed with the vault password |
+| `src/backup.rs` | Whole-folder encrypted backup and restore (`.wnbackup`), sealed with the vault password |
 | `src/media_cache.rs` | Encrypted-at-rest cache for decrypted attachment bytes |
 | `src/blossom.rs` | Public Blossom uploads, used only for profile pictures |
 | `src/mpv.rs`, `src/audio.rs` | Inline video over libmpv, and voice-message capture and playback |

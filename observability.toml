@@ -3,7 +3,7 @@
 # These are NOT secret; they live here so endpoints/tokens are easy to change in
 # one place without touching Rust. This file is embedded into the binary at
 # build time, so the app always has working defaults. To override at runtime
-# without rebuilding, drop a copy at `$DM_HOME/observability.toml` — if present
+# without rebuilding, drop a copy at `$WN_HOME/observability.toml` — if present
 # and valid, it wins.
 #
 # Sending still only happens when the user enables the Telemetry / Audit-logs
@@ -18,7 +18,7 @@ goggles_audit_endpoint = "https://goggles.ipf.dev/api/v1/audit-logs/"
 goggles_token = "goggles_b8b8cfca_QtpxFqpYfT-zTwEkHpTuN_08fsbjAVt7xQX-G6Uhw0E"
 
 # Resource attribute `tenant` (a metric label, not the X-OTLP-Tenant header).
-tenant = "darkmatter-linux"
+tenant = "whitenoise-linux"
 
 # OTLP resource attr `deployment.environment`: production | staging | development.
 deployment_environment = "production"

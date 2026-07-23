@@ -73,7 +73,7 @@ impl NotifState {
 /// (freedesktop sound naming) rather than bundling an audio asset.
 pub fn show(summary: &str, body: &str, play_sound: bool) {
     let mut n = notify_rust::Notification::new();
-    n.appname("darkmatter").summary(summary).body(body);
+    n.appname("White Noise").summary(summary).body(body);
     if play_sound {
         n.sound_name("message-new-instant");
     }

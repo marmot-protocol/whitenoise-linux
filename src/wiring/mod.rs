@@ -34,7 +34,7 @@ pub(crate) type VaultCell = Arc<Mutex<Option<Arc<Mutex<Vault>>>>>;
 pub(crate) type SharedFn = Arc<dyn Fn() + Send + Sync>;
 pub(crate) type BootFn = Arc<dyn Fn(String, Arc<Mutex<Vault>>, Option<String>) + Send + Sync>;
 // (ui, group_hex, message_id)
-pub(crate) type MessageJumpFn = Arc<dyn Fn(&DarkMatterLinux, &str, &str) + Send + Sync>;
+pub(crate) type MessageJumpFn = Arc<dyn Fn(&WhiteNoiseLinux, &str, &str) + Send + Sync>;
 // (group_hex, clean_text, temp_id, parent_id, effect_id). The effect rides as
 // an out-of-band kind-9 tag, so `clean_text` is always the unmodified body.
 pub(crate) type DispatchSendFn = Rc<dyn Fn(String, String, String, Option<String>, i32)>;

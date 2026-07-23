@@ -1,6 +1,6 @@
 // Password-encrypted secret database. Replaces the old libsecret/pass storage.
 //
-// On disk this is a single file, `$DM_HOME/vault.db`, holding *every* secret the
+// On disk this is a single file, `$WN_HOME/vault.db`, holding *every* secret the
 // app keeps: the user's nsec plus marmot's per-account secret keys. Nothing is
 // stored in plaintext and no OS keyring is touched.
 //
@@ -51,6 +51,9 @@ const NONCE_LEN: usize = 24; // XChaCha20-Poly1305 uses a 192-bit nonce.
 
 /// Domain-separation label mixed into the media-cache subkey derivation so it
 /// can never coincide with the vault's own data-sealing key.
+// Historical KDF domain-separation label from the app's pre-rename era. Do NOT
+// update it to the new name: changing it would derive a different subkey and
+// silently invalidate every sealed media-cache entry on existing installs.
 const MEDIA_CACHE_KDF_LABEL: &[u8] = b"darkmatter-linux/media-cache/v1";
 
 // Argon2id cost parameters. ~19 MiB / 2 passes / 1 lane — the OWASP baseline.
@@ -102,7 +105,7 @@ struct VaultEnvelope {
     ciphertext_hex: String,
 }
 
-/// Default vault location: `$DM_HOME/vault.db`.
+/// Default vault location: `$WN_HOME/vault.db`.
 pub fn vault_path() -> PathBuf {
     crate::backend::default_home().join("vault.db")
 }
@@ -207,7 +210,7 @@ impl Vault {
         Ok(v)
     }
 
-    /// Open and decrypt the default vault (`$DM_HOME/vault.db`) with `password`.
+    /// Open and decrypt the default vault (`$WN_HOME/vault.db`) with `password`.
     pub fn open(password: &str) -> Result<Self, VaultError> {
         Self::open_path(&vault_path(), password)
     }
@@ -569,29 +572,29 @@ impl AccountSecretStore for VaultSecretStore {
 mod tests {
     use super::*;
 
-    // Points the vault at a unique temp dir via DM_HOME, runs `f`, then cleans up.
-    // Holds the shared DM_HOME lock so the backup suite (which also rebinds the
+    // Points the vault at a unique temp dir via WN_HOME, runs `f`, then cleans up.
+    // Holds the shared WN_HOME lock so the backup suite (which also rebinds the
     // env var) can't run concurrently.
     fn with_temp_home(f: impl FnOnce()) {
-        let _guard = crate::DM_HOME_TEST_LOCK
+        let _guard = crate::WN_HOME_TEST_LOCK
             .lock()
             .unwrap_or_else(|e| e.into_inner());
-        let prev = std::env::var_os("DM_HOME");
+        let prev = std::env::var_os("WN_HOME");
         let dir = std::env::temp_dir().join(format!("dm-vault-test-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
-        // SAFETY: the lock above guarantees no other test reads/writes DM_HOME
+        // SAFETY: the lock above guarantees no other test reads/writes WN_HOME
         // concurrently.
         unsafe {
-            std::env::set_var("DM_HOME", &dir);
+            std::env::set_var("WN_HOME", &dir);
         }
         let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(f));
-        // Restore DM_HOME (even on panic) so a later test doesn't inherit a path
+        // Restore WN_HOME (even on panic) so a later test doesn't inherit a path
         // that points at the temp dir we're about to delete.
         unsafe {
             match &prev {
-                Some(v) => std::env::set_var("DM_HOME", v),
-                None => std::env::remove_var("DM_HOME"),
+                Some(v) => std::env::set_var("WN_HOME", v),
+                None => std::env::remove_var("WN_HOME"),
             }
         }
         let _ = std::fs::remove_dir_all(&dir);
@@ -642,7 +645,7 @@ mod tests {
 
             // A blob sealed under one vault key can't be opened by another.
             // (Built directly — the test module can see private fields — so we
-            // don't have to juggle DM_HOME for a second on-disk vault.)
+            // don't have to juggle WN_HOME for a second on-disk vault.)
             let mut foreign_key = v.key.clone();
             foreign_key[0] ^= 0xff;
             let foreign = Vault {
@@ -703,7 +706,7 @@ mod tests {
             ));
 
             // Generic seal/open round-trips arbitrary bytes (backs backup.rs).
-            let blob = b"darkmatter folder archive bytes".to_vec();
+            let blob = b"whitenoise folder archive bytes".to_vec();
             let sealed = seal_with_password("pw2", &blob).unwrap();
             assert_eq!(open_with_password(&sealed, "pw2").unwrap(), blob);
             assert!(matches!(

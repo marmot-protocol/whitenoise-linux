@@ -242,9 +242,9 @@ pub(crate) fn local_time(secs: u64) -> jiff::Zoned {
 /// on the UI thread, for follow-ups that need the refreshed model (e.g.
 /// selecting a freshly-added contact).
 pub(crate) fn refresh_contacts_async(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend: &Arc<Backend>,
-    then: impl FnOnce(&DarkMatterLinux) + Send + 'static,
+    then: impl FnOnce(&WhiteNoiseLinux) + Send + 'static,
 ) {
     let weak = ui.as_weak();
     let b = backend.clone();
@@ -418,7 +418,7 @@ pub(crate) fn contact_from(
 /// [`spawn_shared_group_avatar_fetches`]) that rebinds the row when it decodes.
 /// Ordering (by name) is done backend-side.
 pub(crate) fn shared_groups_rows(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend: &Backend,
     account_id_hex: &str,
 ) -> Vec<SharedGroup> {
@@ -448,7 +448,7 @@ pub(crate) fn shared_groups_rows(
 /// is shown — the contact page list and the profile modal share the row type,
 /// so update both models (each is a no-op when it holds no matching row).
 pub(crate) fn update_shared_group_pictures(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     group_id_hex: &str,
     pixels: &PicturePixels,
 ) {
@@ -474,7 +474,7 @@ pub(crate) fn update_shared_group_pictures(
 /// an encrypted Blossom image (`group-image:{hash}`) downloads and decrypts via
 /// the backend, mirroring the conversation-header avatar path.
 pub(crate) fn spawn_shared_group_avatar_fetches(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend: &Backend,
     infos: &[backend::SharedGroupInfo],
 ) {
@@ -508,7 +508,7 @@ pub(crate) fn spawn_shared_group_avatar_fetches(
 /// Recompute and push the active contact's "groups in common" list. Reads the
 /// contact's account id from the current contacts model row; a cold members
 /// cache just yields fewer rows until it warms.
-pub(crate) fn push_contact_shared_groups(ui: &DarkMatterLinux, backend: &Backend) {
+pub(crate) fn push_contact_shared_groups(ui: &WhiteNoiseLinux, backend: &Backend) {
     let account_id = ui
         .get_contacts()
         .row_data(ui.get_active_contact().max(0) as usize)
@@ -529,7 +529,7 @@ pub(crate) fn push_contact_shared_groups(ui: &DarkMatterLinux, backend: &Backend
 /// happens here once per selection rather than inside each handler. Call this
 /// wherever the selection or any of those three states changes, so the buttons
 /// never describe a stale state.
-pub(crate) fn push_contact_actions(ui: &DarkMatterLinux, backend: &Backend) {
+pub(crate) fn push_contact_actions(ui: &WhiteNoiseLinux, backend: &Backend) {
     let account_id = ui
         .get_contacts()
         .row_data(ui.get_active_contact().max(0) as usize)
@@ -591,7 +591,7 @@ pub(crate) fn kp_to_ui(rec: &marmot_app::AccountKeyPackageRecord) -> KeyPackageI
 /// immediately, while a relay refresh runs in the background.
 /// Read the local key packages (on-disk JSON) + relay list on the backend
 /// runtime, then push the rows on the UI thread.
-pub(crate) fn refresh_kp_local_async(ui: &DarkMatterLinux, backend: &Arc<Backend>) {
+pub(crate) fn refresh_kp_local_async(ui: &WhiteNoiseLinux, backend: &Arc<Backend>) {
     let weak = ui.as_weak();
     let b = backend.clone();
     backend.tokio_handle().spawn(async move {
@@ -631,7 +631,7 @@ pub(crate) fn active_group_slot() -> &'static Mutex<String> {
 /// via the `chat-group-*` root properties. For 1:1 chats the group avatar is
 /// cleared (the header falls back to the peer avatar in `ChatMeta`).
 pub(crate) fn push_group_settings_to_ui_from(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend: &Backend,
     group_hex: &str,
     rec: Option<&AppGroupRecord>,
@@ -698,10 +698,10 @@ pub(crate) fn push_group_settings_to_ui_from(
 /// thread with the upgraded window and the decoded pixels. Every plain-URL
 /// avatar fetch below goes through this one fetch-and-hop shape.
 pub(crate) fn spawn_picture_fetch(
-    weak: Weak<DarkMatterLinux>,
+    weak: Weak<WhiteNoiseLinux>,
     handle: tokio::runtime::Handle,
     url: String,
-    bind: impl FnOnce(&DarkMatterLinux, &PicturePixels) + Send + 'static,
+    bind: impl FnOnce(&WhiteNoiseLinux, &PicturePixels) + Send + 'static,
 ) {
     handle.spawn(async move {
         let Some(pixels) = fetch_picture_pixels(&url).await else {
@@ -750,7 +750,7 @@ pub(crate) fn bind_picture_to_rows<Row: Clone + 'static>(
 /// (`marmot.group.avatar-url.v1`) on the tokio runtime, then bind it on the
 /// UI thread — but only if the user is still viewing this group.
 pub(crate) fn spawn_group_avatar_url_fetch(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend: &Backend,
     group_hex: &str,
     url: String,
@@ -781,11 +781,11 @@ pub(crate) fn spawn_group_avatar_url_fetch(
 /// sibling of [`spawn_picture_fetch`]. Per-call apply guards (e.g. "is this
 /// still the active group") belong in the caller's `bind`.
 pub(crate) fn spawn_group_image_pixels_fetch(
-    weak: Weak<DarkMatterLinux>,
+    weak: Weak<WhiteNoiseLinux>,
     backend: &Backend,
     group_hex: &str,
     cache_key: String,
-    bind: impl FnOnce(&DarkMatterLinux, &PicturePixels) + Send + 'static,
+    bind: impl FnOnce(&WhiteNoiseLinux, &PicturePixels) + Send + 'static,
 ) {
     let group_for_log = group_hex.to_string();
     backend.fetch_group_image_async(group_hex, move |result| {
@@ -816,7 +816,7 @@ pub(crate) fn spawn_group_image_pixels_fetch(
 /// cache the RGBA under `cache_key`, then bind it on the UI thread — but only
 /// if the user is still viewing this group.
 pub(crate) fn spawn_group_image_fetch(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend: &Backend,
     group_hex: &str,
     cache_key: String,
@@ -901,7 +901,7 @@ pub(crate) fn fetch_members_snapshot(backend: &Backend, group_hex: &str) -> Memb
 /// UI thread. Marks `group_hex` as the active group slot immediately so a
 /// stale completion (user already switched groups) is dropped at apply time.
 pub(crate) fn push_group_members_to_ui_async(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend: &Arc<Backend>,
     group_hex: &str,
 ) {
@@ -931,7 +931,7 @@ pub(crate) fn push_group_members_to_ui_async(
 }
 
 pub(crate) fn push_group_members_to_ui_from(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend: &Backend,
     group_hex: &str,
     snap: MembersSnapshot,
@@ -1004,7 +1004,7 @@ pub(crate) fn push_group_members_to_ui_from(
 /// picture decodes, every bubble from that sender (keyed by `sender-id`) gets
 /// the image bound in place — no full rebuild. Mirrors the members pipeline.
 pub(crate) fn spawn_message_avatar_fetches(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend: &Backend,
     msgs: &[AppMessageRecord],
 ) {
@@ -1034,7 +1034,7 @@ pub(crate) fn spawn_message_avatar_fetches(
 /// Bind a decoded picture onto every incoming bubble from `sender_id` in the
 /// currently-open chat. Outgoing rows are skipped (they paint `my-picture`).
 pub(crate) fn update_bubble_pictures(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     sender_id: &str,
     pixels: &PicturePixels,
 ) {
@@ -1063,7 +1063,7 @@ pub(crate) fn update_bubble_pictures(
 
 /// Spawn async avatar fetches for the 1:1 peers in the chat list. On decode the
 /// matching `ChatMeta` row (keyed by its `npub`) gets the picture bound.
-pub(crate) fn spawn_chat_list_avatar_fetches(ui: &DarkMatterLinux, backend: &Arc<Backend>) {
+pub(crate) fn spawn_chat_list_avatar_fetches(ui: &WhiteNoiseLinux, backend: &Arc<Backend>) {
     // The enumeration itself reads `chats()` (sqlite) — runtime, not UI thread.
     let weak_outer = ui.as_weak();
     let b = backend.clone();
@@ -1128,7 +1128,7 @@ pub(crate) fn spawn_chat_list_avatar_fetches(ui: &DarkMatterLinux, backend: &Arc
 }
 
 /// Bind a decoded picture onto the chat-list row identified by `npub`.
-pub(crate) fn update_chat_picture(ui: &DarkMatterLinux, npub: &str, pixels: &PicturePixels) {
+pub(crate) fn update_chat_picture(ui: &WhiteNoiseLinux, npub: &str, pixels: &PicturePixels) {
     bind_picture_to_rows(
         &ui.get_chats(),
         pixels,
@@ -1143,7 +1143,7 @@ pub(crate) fn update_chat_picture(ui: &DarkMatterLinux, npub: &str, pixels: &Pic
 
 /// Queue async fetches for contact-list avatars whose picture URL isn't in
 /// the cache yet. Mirrors [`spawn_chat_list_avatar_fetches`].
-pub(crate) fn spawn_contact_avatar_fetches(ui: &DarkMatterLinux, backend: &Arc<Backend>) {
+pub(crate) fn spawn_contact_avatar_fetches(ui: &WhiteNoiseLinux, backend: &Arc<Backend>) {
     // The enumeration itself reads `follow_list()` (sqlite) — runtime only.
     let weak_outer = ui.as_weak();
     let b = backend.clone();
@@ -1181,7 +1181,7 @@ pub(crate) fn spawn_contact_avatar_fetches(ui: &DarkMatterLinux, backend: &Arc<B
 /// enumeration reads `follow_list()` on the runtime, and each cache-backed
 /// verification lands a per-row update on the UI thread. Rows start unverified
 /// (see `contact_from`), so the badge only appears on a real match.
-pub(crate) fn spawn_contact_nip05_verifications(ui: &DarkMatterLinux, backend: &Arc<Backend>) {
+pub(crate) fn spawn_contact_nip05_verifications(ui: &WhiteNoiseLinux, backend: &Arc<Backend>) {
     let weak_outer = ui.as_weak();
     let b = backend.clone();
     backend.tokio_handle().spawn(async move {
@@ -1214,7 +1214,7 @@ pub(crate) fn spawn_contact_nip05_verifications(ui: &DarkMatterLinux, backend: &
 /// Flip the verified badge on the contact row for `account_id` in place (the
 /// contact-detail pane binds `AppState.contacts[active-contact]`, so the model
 /// update refreshes the open detail too). No-op when the flag already matches.
-pub(crate) fn update_contact_verified(ui: &DarkMatterLinux, account_id: &str, verified: bool) {
+pub(crate) fn update_contact_verified(ui: &WhiteNoiseLinux, account_id: &str, verified: bool) {
     let model = ui.get_contacts();
     let Some(vm) = model.as_any().downcast_ref::<VecModel<Contact>>() else {
         return;
@@ -1235,7 +1235,7 @@ pub(crate) fn update_contact_verified(ui: &DarkMatterLinux, account_id: &str, ve
 
 /// Bind a decoded picture onto the contact row identified by `account_id`.
 pub(crate) fn update_contact_picture(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     account_id: &str,
     pixels: &PicturePixels,
 ) {
@@ -1253,7 +1253,7 @@ pub(crate) fn update_contact_picture(
 
 /// Queue async fetches for archived-chat avatars (1:1 peers only) whose
 /// picture URL isn't in the cache yet.
-pub(crate) fn spawn_archived_avatar_fetches(ui: &DarkMatterLinux, backend: &Arc<Backend>) {
+pub(crate) fn spawn_archived_avatar_fetches(ui: &WhiteNoiseLinux, backend: &Arc<Backend>) {
     // The enumeration itself reads `archived_chats()` (sqlite) — runtime only.
     let weak_outer = ui.as_weak();
     let b = backend.clone();
@@ -1289,7 +1289,7 @@ pub(crate) fn spawn_archived_avatar_fetches(ui: &DarkMatterLinux, backend: &Arc<
 
 /// Bind a decoded picture onto the archived row identified by `group_id`.
 pub(crate) fn update_archived_picture(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     group_id: &str,
     pixels: &PicturePixels,
 ) {
@@ -1306,7 +1306,7 @@ pub(crate) fn update_archived_picture(
 }
 
 pub(crate) fn spawn_member_picture_fetch(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend: &Backend,
     npub_short: String,
     url: String,
@@ -1322,7 +1322,7 @@ pub(crate) fn spawn_member_picture_fetch(
 /// Bind a decoded picture onto the members-panel row identified by
 /// `npub_short`.
 pub(crate) fn update_member_picture(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     npub_short: &str,
     pixels: &PicturePixels,
 ) {
@@ -1508,7 +1508,7 @@ pub(crate) fn refresh_archived_from(
 
 /// Fetch + apply the archived list (+ avatar fetches) off the UI thread.
 pub(crate) fn refresh_archived_async(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend: &Arc<Backend>,
     archived_group_ids: &Arc<Mutex<Vec<String>>>,
 ) {
@@ -1590,7 +1590,7 @@ fn apply_message_event(
     msg_id: String,
     target_id_for_reaction: Option<String>,
     all: Vec<AppMessageRecord>,
-    weak: Weak<DarkMatterLinux>,
+    weak: Weak<WhiteNoiseLinux>,
     b: Arc<Backend>,
     pending_state: Arc<Mutex<PendingState>>,
     group_hex: String,
@@ -1679,7 +1679,7 @@ fn reaction_target_ref(kind: u64, tags: &[Vec<String>]) -> Option<String> {
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn install_message_watcher(
     backend: &Backend,
-    weak: Weak<DarkMatterLinux>,
+    weak: Weak<WhiteNoiseLinux>,
     backend_cell: Arc<Mutex<Option<Arc<Backend>>>>,
     pending_state: Arc<Mutex<PendingState>>,
     group_hex: String,

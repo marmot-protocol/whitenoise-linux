@@ -265,7 +265,7 @@ impl Settings {
     }
 
     fn path() -> Option<PathBuf> {
-        directories::ProjectDirs::from("", "", "darkmatter-linux")
+        directories::ProjectDirs::from("", "", "whitenoise-linux")
             .map(|d| d.config_dir().join("settings.json"))
     }
 }

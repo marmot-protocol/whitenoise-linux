@@ -5,7 +5,7 @@ use crate::*;
 /// author avatar `av_a/av_b/av_initials/picture/has_picture`); this is the
 /// single owner that clears them, so a new field only has to be added here
 /// rather than at every call site that dismisses the banner.
-pub(crate) fn clear_reply_target(ui: &DarkMatterLinux) {
+pub(crate) fn clear_reply_target(ui: &WhiteNoiseLinux) {
     ui.set_reply_target_id(s(""));
     ui.set_reply_target_author(s(""));
     ui.set_reply_target_preview(s(""));
@@ -18,7 +18,7 @@ pub(crate) fn clear_reply_target(ui: &DarkMatterLinux) {
     ui.set_reply_target_has_picture(false);
 }
 
-pub(crate) fn wire_reply_target(ui: &DarkMatterLinux) {
+pub(crate) fn wire_reply_target(ui: &WhiteNoiseLinux) {
     // ─── Reply target (set / cancel) ───────────────────────────────────
     //
     // The bubble's "↩" affordance fires `request-reply(id, preview, author)`.
@@ -62,7 +62,7 @@ pub(crate) fn wire_reply_target(ui: &DarkMatterLinux) {
     });
 }
 
-pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
+pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     let Cx {
         chats_messages,
         backend_cell,
@@ -1031,7 +1031,7 @@ pub(crate) fn wire_messaging(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
 /// plus the shared handles the completion refresh takes. Cheap to clone.
 #[derive(Clone)]
 struct AttachmentTapCx {
-    weak: Weak<DarkMatterLinux>,
+    weak: Weak<WhiteNoiseLinux>,
     b: Arc<Backend>,
     backend_cell: BackendCell,
     group_ids: Arc<Mutex<Vec<String>>>,
@@ -1110,7 +1110,7 @@ fn open_audio_tap(cx: AttachmentTapCx, reference: MediaAttachmentReference) {
 /// Video → open the in-app libmpv viewer and start playback. The poster
 /// (first frame) + duration get cached during playback, so the dismiss
 /// handler can repaint the bubble tile afterwards.
-fn open_video_tap(ui: &DarkMatterLinux, cx: AttachmentTapCx, reference: MediaAttachmentReference) {
+fn open_video_tap(ui: &WhiteNoiseLinux, cx: AttachmentTapCx, reference: MediaAttachmentReference) {
     clear_attachment_in_flight(&cx.mid);
     stop_current_player();
     *current_video_duration().lock().unwrap() = 0.0;

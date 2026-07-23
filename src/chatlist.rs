@@ -3,7 +3,7 @@ use crate::*;
 /// Push the current account's avatar (initials + palette) onto the UI.
 /// Drives the left-rail avatar tile and the outgoing-message sender avatar
 /// so they reflect the user's profile instead of a stale default.
-pub(crate) fn set_my_avatar(ui: &DarkMatterLinux, backend: &Backend) {
+pub(crate) fn set_my_avatar(ui: &WhiteNoiseLinux, backend: &Backend) {
     let my_id = backend.account().account_id_hex.clone();
     let label = my_avatar_label(backend, &my_id);
     let (a, b, init) = avatar_for(&label);
@@ -15,7 +15,7 @@ pub(crate) fn set_my_avatar(ui: &DarkMatterLinux, backend: &Backend) {
 
 /// Compute and push rail badge counts from the chat list.
 /// For now, chats badge counts pending chat requests (pending_confirmation).
-pub(crate) fn set_rail_badges(ui: &DarkMatterLinux, chats: &ModelRc<ChatMeta>) {
+pub(crate) fn set_rail_badges(ui: &WhiteNoiseLinux, chats: &ModelRc<ChatMeta>) {
     let mut chats_badge = 0;
     if let Some(vm) = chats.as_any().downcast_ref::<VecModel<ChatMeta>>() {
         for i in 0..vm.row_count() {
@@ -35,7 +35,7 @@ pub(crate) fn set_rail_badges(ui: &DarkMatterLinux, chats: &ModelRc<ChatMeta>) {
 /// Clear one chat row's unread affordance in place (badge gone, read mark
 /// restored). Used when a chat is opened so the badge disappears immediately,
 /// ahead of the next full chat-list snapshot that recomputes it.
-pub(crate) fn clear_chat_unread_row(ui: &DarkMatterLinux, idx: usize) {
+pub(crate) fn clear_chat_unread_row(ui: &WhiteNoiseLinux, idx: usize) {
     let chats = ui.get_chats();
     if let Some(vm) = chats.as_any().downcast_ref::<VecModel<ChatMeta>>()
         && let Some(mut row) = vm.row_data(idx)
@@ -159,7 +159,7 @@ pub(crate) fn publish_random_profile_async(
     label: String,
     account_id_hex: String,
     preset_name: Option<String>,
-    weak: slint::Weak<DarkMatterLinux>,
+    weak: slint::Weak<WhiteNoiseLinux>,
     on_published: impl FnOnce() + Send + 'static,
 ) {
     let backend = backend.clone();
@@ -246,7 +246,7 @@ pub(crate) fn seed_profile_picture(
     }
 }
 
-pub(crate) fn apply_profile(ui: &DarkMatterLinux, profile: Option<&UserProfileMetadata>) {
+pub(crate) fn apply_profile(ui: &WhiteNoiseLinux, profile: Option<&UserProfileMetadata>) {
     let opt = |o: &Option<String>| o.clone().unwrap_or_default();
     match profile {
         Some(p) => {
@@ -268,7 +268,7 @@ pub(crate) fn apply_profile(ui: &DarkMatterLinux, profile: Option<&UserProfileMe
     }
 }
 
-pub(crate) fn profile_from_ui(ui: &DarkMatterLinux) -> UserProfileMetadata {
+pub(crate) fn profile_from_ui(ui: &WhiteNoiseLinux) -> UserProfileMetadata {
     let opt = |s: SharedString| {
         let t = s.trim().to_string();
         if t.is_empty() { None } else { Some(t) }
@@ -312,7 +312,7 @@ pub(crate) fn replace_message_row(
 /// list, and the open conversation. Called when the user flips the time or
 /// date format so stale stamps don't linger until the next sync.
 pub(crate) fn refresh_stamps_everywhere(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend_cell: &Arc<Mutex<Option<Arc<Backend>>>>,
     pending_state: &Arc<Mutex<PendingState>>,
     group_ids: &Arc<Mutex<Vec<String>>>,
@@ -475,10 +475,10 @@ pub(crate) fn fetch_chat_list_snapshot(backend: &Backend) -> Option<ChatListSnap
 /// run `then` — still on the UI thread — for call-site follow-ups that need
 /// the refreshed models/`group_ids` (e.g. selecting a freshly-created chat).
 pub(crate) fn refresh_chats_async(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend: &Arc<Backend>,
     group_ids: &Arc<Mutex<Vec<String>>>,
-    then: impl FnOnce(&DarkMatterLinux, &Arc<Backend>, &ChatListSnapshot) + Send + 'static,
+    then: impl FnOnce(&WhiteNoiseLinux, &Arc<Backend>, &ChatListSnapshot) + Send + 'static,
 ) {
     let weak = ui.as_weak();
     let b = backend.clone();
@@ -504,7 +504,7 @@ pub(crate) fn refresh_chats_async(
 /// clamps — the post-mutation "refresh everything" used by accept / block /
 /// archive / unarchive.
 pub(crate) fn refresh_all_chat_models_async(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend: &Arc<Backend>,
     group_ids: &Arc<Mutex<Vec<String>>>,
     archived_group_ids: &Arc<Mutex<Vec<String>>>,
@@ -617,7 +617,7 @@ pub(crate) fn refresh_chats_from(
 /// Fetch the chat-list snapshot on the backend runtime, then apply a
 /// non-destructive merge (+ rail badges + avatar fetches) on the UI thread.
 pub(crate) fn merge_chat_list_rows_async(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend: &Arc<Backend>,
     group_ids: &Arc<Mutex<Vec<String>>>,
 ) {
@@ -691,7 +691,7 @@ pub(crate) fn merge_chat_list_rows_from(
 /// by the boot-success path and the account switcher. Every fetch runs on the
 /// backend runtime and applies on the UI thread; nothing here blocks.
 pub(crate) fn populate_models_for_active(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend: &Arc<Backend>,
     group_ids: &Arc<Mutex<Vec<String>>>,
     archived_group_ids: &Arc<Mutex<Vec<String>>>,
@@ -743,7 +743,7 @@ pub(crate) fn populate_models_for_active(
 /// never the UI thread (would block the event loop) nor a tokio worker (would
 /// nest `block_on`).
 pub(crate) fn ensure_self_chat_async(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend: &Arc<Backend>,
     group_ids: &Arc<Mutex<Vec<String>>>,
 ) {
@@ -770,7 +770,7 @@ pub(crate) fn ensure_self_chat_async(
 /// picture URLs resolve from the backend's profile cache on the runtime;
 /// rows apply on the UI thread. Pictures not yet in the process-wide cache
 /// are fetched once, then the model refreshes to pick them up.
-pub(crate) fn refresh_accounts_model(ui: &DarkMatterLinux, backend: &Arc<Backend>) {
+pub(crate) fn refresh_accounts_model(ui: &WhiteNoiseLinux, backend: &Arc<Backend>) {
     let weak = ui.as_weak();
     let b = backend.clone();
     backend.tokio_handle().spawn(async move {
@@ -887,7 +887,7 @@ pub(crate) fn import_backup_error(e: &backup::BackupError) -> String {
 /// skipped, not re-added. Runs on the UI thread; per-account completions hop
 /// through a worker before the final summary lands back on the event loop.
 pub(crate) fn merge_imported_accounts(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend: &Arc<Backend>,
     vault_cell: &Arc<Mutex<Option<Arc<Mutex<Vault>>>>>,
     nsecs: Vec<String>,
@@ -1117,7 +1117,7 @@ pub(crate) fn set_blocked(account_id_hex: &str, blocked: bool) {
 /// runtime; the permutation is (re)computed on the UI thread against the live
 /// `group_ids` + pin set, which sidesteps any watcher-append race.
 pub(crate) fn reorder_chats_by_pin_async(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend: &Arc<Backend>,
     group_ids: &Arc<Mutex<Vec<String>>>,
 ) {
@@ -1138,7 +1138,7 @@ pub(crate) fn reorder_chats_by_pin_async(
 /// and every pinned chat sort above the rest, each group keeping its current
 /// relative order (a stable sort).
 pub(crate) fn apply_pin_order(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     group_ids: &Arc<Mutex<Vec<String>>>,
     saved: Option<&str>,
 ) {
@@ -1204,7 +1204,7 @@ pub(crate) fn apply_pin_order(
 /// appears/clears the instant the user toggles it — without a full
 /// [`refresh_chats_from`], which would blank the open conversation. Mirrors the
 /// per-row `pinned` refresh [`apply_pin_order`] does after a reorder.
-pub(crate) fn set_chat_row_muted(ui: &DarkMatterLinux, idx: i32, muted: bool) {
+pub(crate) fn set_chat_row_muted(ui: &WhiteNoiseLinux, idx: i32, muted: bool) {
     if idx < 0 {
         return;
     }
@@ -1261,26 +1261,26 @@ thread_local! {
     /// the UI thread, where `refresh_unread_chrome` always runs, so a
     /// thread-local weak handle mirrors the unread total into the tray without
     /// threading it through every call site.
-    static TRAY: RefCell<Option<Weak<DarkMatterTray>>> = const { RefCell::new(None) };
+    static TRAY: RefCell<Option<Weak<WhiteNoiseTray>>> = const { RefCell::new(None) };
 }
 
 /// Register the tray icon so the unread total reaches its tooltip. Called once
 /// at startup when the tray is created.
-pub(crate) fn register_tray(tray: &DarkMatterTray) {
+pub(crate) fn register_tray(tray: &WhiteNoiseTray) {
     TRAY.with(|t| *t.borrow_mut() = Some(tray.as_weak()));
 }
 
-/// Push the aggregate unread total into the window title (`(N) darkmatter`) and
+/// Push the aggregate unread total into the window title (`(N) White Noise`) and
 /// the tray tooltip, and fold it into the rail's chats badge, which
 /// `set_rail_badges` has just set from pending chat-requests. Call right after
 /// `set_rail_badges` so the badge reflects unread + requests together.
-pub(crate) fn refresh_unread_chrome(ui: &DarkMatterLinux) {
+pub(crate) fn refresh_unread_chrome(ui: &WhiteNoiseLinux) {
     let total = unread_state().total();
     ui.set_rail_badge_chats(ui.get_rail_badge_chats() + total as i32);
     ui.set_window_title(if total == 0 {
-        s("darkmatter")
+        s("White Noise")
     } else {
-        s(&format!("({total}) darkmatter"))
+        s(&format!("({total}) White Noise"))
     });
     TRAY.with(|t| {
         if let Some(tray) = t.borrow().as_ref().and_then(|w| w.upgrade()) {
@@ -1319,7 +1319,7 @@ pub(crate) fn notification_body(
 
 pub(crate) fn install_chat_watcher(
     backend: &Backend,
-    weak: Weak<DarkMatterLinux>,
+    weak: Weak<WhiteNoiseLinux>,
     group_ids: Arc<Mutex<Vec<String>>>,
     backend_cell: Arc<Mutex<Option<Arc<Backend>>>>,
     notif: Arc<notify::NotifState>,

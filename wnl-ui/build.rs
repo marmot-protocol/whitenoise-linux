@@ -37,15 +37,15 @@ fn main() {
     // selects the shim. It requires the `live-reload` feature (on by default)
     // for the interpreter module; the guard below keeps codegen and feature in
     // sync so `--no-default-features` can't emit a shim it can't compile.
-    // Escape hatch: DM_COMPILED_UI=1 forces the compiled path in a debug build
+    // Escape hatch: WN_COMPILED_UI=1 forces the compiled path in a debug build
     // (e.g. the VM test harness, which has no ui/*.slint at the build-time path,
     // or to exercise bundled translations).
     println!("cargo:rerun-if-env-changed=PROFILE");
-    println!("cargo:rerun-if-env-changed=DM_COMPILED_UI");
+    println!("cargo:rerun-if-env-changed=WN_COMPILED_UI");
     println!("cargo:rerun-if-env-changed=SLINT_LIVE_PREVIEW");
     let feature_on = env::var_os("CARGO_FEATURE_LIVE_RELOAD").is_some();
     let is_release = env::var("PROFILE").as_deref() == Ok("release");
-    let force_compiled = env::var_os("DM_COMPILED_UI").is_some();
+    let force_compiled = env::var_os("WN_COMPILED_UI").is_some();
     if feature_on && !is_release && !force_compiled && env::var_os("SLINT_LIVE_PREVIEW").is_none() {
         // SAFETY: build scripts are single-threaded; set before any threads spawn.
         unsafe { env::set_var("SLINT_LIVE_PREVIEW", "1") };
@@ -53,7 +53,7 @@ fn main() {
 
     // Compile the UI with bundled gettext translations from lang/.
     let config = slint_build::CompilerConfiguration::new().with_bundled_translations("../lang");
-    slint_build::compile_with_config("../ui/dark-matter-linux.slint", config).unwrap();
+    slint_build::compile_with_config("../ui/white-noise-linux.slint", config).unwrap();
 
     ensure_emoji_sprite(&sprite_path, &map_path);
 }

@@ -1,8 +1,8 @@
-// darkmatter — the window root.
+// White Noise — the window root.
 //
 // This file is deliberately thin: it declares the Rust-facing contract (every
 // property/callback below is a two-way alias onto the AppState global, so the
-// generated `DarkMatterLinux` API is unchanged) and mounts the four shell
+// generated `WhiteNoiseLinux` API is unchanged) and mounts the four shell
 // pieces that do the actual work:
 //
 //   shell/app-shell.slint    — the signed-in window body (rail, pages, bars)
@@ -66,7 +66,7 @@ export {
     SystemCopy,           // group system-line templates, filled in system_event_text
     TextSelection,        // in-bubble selection state; Rust binds `request-word`
 }
-export component DarkMatterTray inherits SystemTrayIcon {
+export component WhiteNoiseTray inherits SystemTrayIcon {
     icon: @image-url("../assets/svg/logo.svg");
     // Total unread across all chats, pushed from Rust by refresh_unread_chrome
     // alongside the window title so the tray surfaces the same count the taskbar
@@ -105,10 +105,10 @@ export component DarkMatterTray inherits SystemTrayIcon {
     }
 }
 
-export component DarkMatterLinux inherits Window {
-    // Window/taskbar title. Rust prefixes the total unread count — `(3) darkmatter`
+export component WhiteNoiseLinux inherits Window {
+    // Window/taskbar title. Rust prefixes the total unread count — `(3) White Noise`
     // — so the count shows wherever the OS surfaces the title (taskbar/tray/Alt-Tab).
-    in property <string> window-title: "darkmatter";
+    in property <string> window-title: "White Noise";
     title: root.window-title;
     preferred-width: 1920px;
     preferred-height: 1080px;

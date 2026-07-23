@@ -1,6 +1,6 @@
 // Whole-folder encrypted backup & restore.
 //
-// A backup is the entire `$DM_HOME` data directory — the vault, marmot's
+// A backup is the entire `$WN_HOME` data directory — the vault, marmot's
 // account/group databases, key packages, the offline queue — packed into a
 // single file and sealed with the user's *vault* password. Using the same
 // password the vault already uses means a restore needs exactly one secret: the
@@ -22,7 +22,7 @@ use crate::vault;
 
 const MAGIC: &[u8; 6] = b"DMBK01";
 /// Suggested filename for the save dialog. The user can rename freely.
-pub const DEFAULT_FILENAME: &str = "darkmatter-backup.dmbackup";
+pub const DEFAULT_FILENAME: &str = "whitenoise-backup.wnbackup";
 
 #[derive(Debug)]
 pub enum BackupError {
@@ -81,7 +81,7 @@ pub fn create(dest: &Path, password: &str) -> Result<(), BackupError> {
     if let Some(parent) = dest.parent() {
         std::fs::create_dir_all(parent).map_err(|e| BackupError::Io(e.to_string()))?;
     }
-    let tmp = dest.with_extension("dmbackup.tmp");
+    let tmp = dest.with_extension("wnbackup.tmp");
     write_owner_only(&tmp, &sealed).map_err(|e| BackupError::Io(e.to_string()))?;
     std::fs::rename(&tmp, dest).map_err(|e| BackupError::Io(e.to_string()))?;
     set_owner_only(dest);
@@ -153,7 +153,7 @@ fn collect_files(
         let name = entry.file_name();
         let name = name.to_string_lossy();
         // Skip symlinks: the data dir is ours, but following them would let a
-        // stray link pull bytes from outside `$DM_HOME` into the backup (or, for
+        // stray link pull bytes from outside `$WN_HOME` into the backup (or, for
         // a directory link, recurse forever). `file_type` does not traverse.
         match entry.file_type() {
             Ok(ft) if ft.is_symlink() => continue,
@@ -303,7 +303,7 @@ fn write_owner_only(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
 }
 
 /// `create_dir_all`, but the directories we create are `0700` from the outset
-/// (Unix). Used for restore targets inside `$DM_HOME`.
+/// (Unix). Used for restore targets inside `$WN_HOME`.
 #[cfg(unix)]
 fn create_dir_all_owner_only(path: &Path) -> std::io::Result<()> {
     use std::os::unix::fs::DirBuilderExt;
@@ -355,32 +355,32 @@ mod tests {
     #[test]
     fn create_restore_merge_roundtrip() {
         use nostr::ToBech32;
-        // Shared with the vault suite — both rebind DM_HOME.
-        let _guard = crate::DM_HOME_TEST_LOCK
+        // Shared with the vault suite — both rebind WN_HOME.
+        let _guard = crate::WN_HOME_TEST_LOCK
             .lock()
             .unwrap_or_else(|e| e.into_inner());
 
-        // Restore DM_HOME on the way out (even if an assert panics) so a later
+        // Restore WN_HOME on the way out (even if an assert panics) so a later
         // test never inherits this test's now-deleted temp dir.
-        struct DmHomeGuard(Option<std::ffi::OsString>);
-        impl Drop for DmHomeGuard {
+        struct WnHomeGuard(Option<std::ffi::OsString>);
+        impl Drop for WnHomeGuard {
             fn drop(&mut self) {
                 unsafe {
                     match self.0.take() {
-                        Some(v) => std::env::set_var("DM_HOME", v),
-                        None => std::env::remove_var("DM_HOME"),
+                        Some(v) => std::env::set_var("WN_HOME", v),
+                        None => std::env::remove_var("WN_HOME"),
                     }
                 }
             }
         }
-        let _home_guard = DmHomeGuard(std::env::var_os("DM_HOME"));
+        let _home_guard = WnHomeGuard(std::env::var_os("WN_HOME"));
 
         let home = std::env::temp_dir().join(format!("dm-backup-test-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&home);
         std::fs::create_dir_all(&home).unwrap();
-        // SAFETY: the lock above serializes all DM_HOME access in tests.
+        // SAFETY: the lock above serializes all WN_HOME access in tests.
         unsafe {
-            std::env::set_var("DM_HOME", &home);
+            std::env::set_var("WN_HOME", &home);
         }
 
         // A vault with a primary nsec + a second account key, plus a couple of
@@ -400,7 +400,7 @@ mod tests {
         std::fs::write(home.join("scratch.tmp"), b"junk").unwrap();
 
         // Create the backup outside the home dir.
-        let dest = std::env::temp_dir().join(format!("dm-backup-{}.dmbackup", std::process::id()));
+        let dest = std::env::temp_dir().join(format!("wn-backup-{}.wnbackup", std::process::id()));
         let _ = std::fs::remove_file(&dest);
         create(&dest, "pw").unwrap();
         assert!(matches!(

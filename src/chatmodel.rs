@@ -1070,7 +1070,7 @@ pub(crate) fn refresh_one_message_row_from(
 /// right slot.
 pub(crate) fn refresh_one_message_row_async(
     backend: &Arc<Backend>,
-    weak: Weak<DarkMatterLinux>,
+    weak: Weak<WhiteNoiseLinux>,
     pending_state: Arc<Mutex<PendingState>>,
     group_ids: Arc<Mutex<Vec<String>>>,
     group_hex: String,
@@ -1126,7 +1126,7 @@ pub(crate) fn with_inner_messages<R>(
 /// optimistic overlay, so this rewrites the `lines` model in place and touches
 /// nothing else. Rows with no body of their own — system lines, deleted
 /// bubbles — keep the model they have.
-pub(crate) fn rewrap_all_message_lines(ui: &DarkMatterLinux) {
+pub(crate) fn rewrap_all_message_lines(ui: &WhiteNoiseLinux) {
     let chats_messages = ui.get_chats_messages();
     let chat_count = chats_messages.row_count();
     for idx in 0..chat_count {

@@ -4,7 +4,7 @@ use crate::*;
 /// span through the active chat's row model. `None` when the id or position
 /// is stale.
 fn word_span_for(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     message_id: &str,
     line: i32,
     run: i32,
@@ -39,7 +39,7 @@ fn current_viewer_item() -> Option<ViewerItem> {
 }
 
 fn finish_viewer_image_action(
-    weak: Weak<DarkMatterLinux>,
+    weak: Weak<WhiteNoiseLinux>,
     action: ViewerImageAction,
     bytes: Vec<u8>,
     media_type: String,
@@ -76,7 +76,7 @@ fn finish_viewer_image_action(
 }
 
 fn fetch_viewer_image_bytes(
-    weak: Weak<DarkMatterLinux>,
+    weak: Weak<WhiteNoiseLinux>,
     backend: Arc<Backend>,
     group_hex: String,
     vault: Option<Arc<Mutex<Vault>>>,
@@ -112,7 +112,7 @@ fn fetch_viewer_image_bytes(
 }
 
 fn viewer_image_context(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend_cell: &BackendCell,
     group_ids: &Arc<Mutex<Vec<String>>>,
     vault_cell: &VaultCell,
@@ -146,7 +146,7 @@ fn viewer_image_context(
 }
 
 fn run_viewer_image_action(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend_cell: BackendCell,
     group_ids: Arc<Mutex<Vec<String>>>,
     vault_cell: VaultCell,
@@ -162,7 +162,7 @@ fn run_viewer_image_action(
 
 /// Push the user's quick-reaction set into the `QuickReact` global, the single
 /// source the hover toolbar, context menu, and Settings editor all read.
-pub(crate) fn push_quick_reactions(ui: &DarkMatterLinux, list: &[String]) {
+pub(crate) fn push_quick_reactions(ui: &WhiteNoiseLinux, list: &[String]) {
     // Resolve each emoji to its tile in the shared Twemoji sprite sheet (the
     // same texture and resolver the chat bubbles draw inline emoji from) so the
     // cells render in colour; clip -1 tells the cell to fall back to the text
@@ -186,7 +186,7 @@ pub(crate) fn push_quick_reactions(ui: &DarkMatterLinux, list: &[String]) {
 
 /// Bind the `QuickReact` global: a one-tap `react` (any message row), plus the
 /// Settings-editor actions that add, remove, or reset the set and re-push it.
-fn wire_quick_reactions(ui: &DarkMatterLinux, settings_cell: &Rc<RefCell<Settings>>) {
+fn wire_quick_reactions(ui: &WhiteNoiseLinux, settings_cell: &Rc<RefCell<Settings>>) {
     let qr = ui.global::<QuickReact>();
 
     qr.on_react({
@@ -242,7 +242,7 @@ fn wire_quick_reactions(ui: &DarkMatterLinux, settings_cell: &Rc<RefCell<Setting
     });
 }
 
-pub(crate) fn wire_extra(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
+pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     let Cx {
         settings_cell,
         backend_cell,

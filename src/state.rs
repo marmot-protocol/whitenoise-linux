@@ -460,7 +460,7 @@ pub(crate) fn s(v: &str) -> SharedString {
 /// Show transient feedback in the status bar. The underlying Slint properties
 /// retain their original clipboard-specific names for API compatibility.
 pub(crate) fn set_status_feedback(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     message: impl Into<SharedString>,
     is_error: bool,
 ) {
@@ -475,14 +475,14 @@ pub(crate) fn set_status_feedback(
 /// the first one would never appear. Clearing the flag here keeps the message
 /// and its visibility from drifting apart, the way [`show_profile_status`] does
 /// for the profile status line.
-pub(crate) fn show_backend_error(ui: &DarkMatterLinux, message: impl Into<SharedString>) {
+pub(crate) fn show_backend_error(ui: &WhiteNoiseLinux, message: impl Into<SharedString>) {
     ui.set_backend_error(message.into());
     ui.set_backend_error_dismissed(false);
 }
 
 /// Drop the recorded backend failure entirely — used at the start of a boot, so
 /// a previous run's error can't outlive the attempt that replaces it.
-pub(crate) fn clear_backend_error(ui: &DarkMatterLinux) {
+pub(crate) fn clear_backend_error(ui: &WhiteNoiseLinux) {
     ui.set_backend_error(SharedString::new());
     ui.set_backend_error_dismissed(false);
 }
@@ -494,7 +494,7 @@ pub(crate) fn clear_backend_error(ui: &DarkMatterLinux) {
 /// both localized through the [`ErrorCopy`] snapshot. Without this the save
 /// completion only logged to stderr, so a failed save looked exactly like a
 /// successful one.
-pub(crate) fn toast_save_attachment(weak: Weak<DarkMatterLinux>, file_name: String, ok: bool) {
+pub(crate) fn toast_save_attachment(weak: Weak<WhiteNoiseLinux>, file_name: String, ok: bool) {
     let _ = slint::invoke_from_event_loop(move || {
         let Some(ui) = weak.upgrade() else { return };
         let copy = error_copy();
@@ -534,7 +534,7 @@ pub(crate) enum StatusKind {
 /// Set the profile-page status line and its outcome together, so the text and
 /// its color/glyph never drift apart.
 pub(crate) fn show_profile_status(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     message: impl Into<SharedString>,
     kind: StatusKind,
 ) {
@@ -544,7 +544,7 @@ pub(crate) fn show_profile_status(
 
 /// Set the add-member card status line and its outcome together.
 pub(crate) fn show_add_member_status(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     message: impl Into<SharedString>,
     kind: StatusKind,
 ) {
@@ -554,7 +554,7 @@ pub(crate) fn show_add_member_status(
 
 /// Set the group-settings card status line and its outcome together.
 pub(crate) fn show_group_settings_status(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     message: impl Into<SharedString>,
     kind: StatusKind,
 ) {
@@ -691,7 +691,7 @@ macro_rules! copy_snapshot {
         }
 
         $(#[$rmeta])*
-        $vis fn $refresh(ui: &DarkMatterLinux) {
+        $vis fn $refresh(ui: &WhiteNoiseLinux) {
             let g = ui.global::<$global>();
             *$cell().lock().unwrap() = $name {
                 $( $field: $crate::copy_field_read!(g, $getter), )+
@@ -984,7 +984,7 @@ pub(crate) fn model<T: Clone + 'static>(v: Vec<T>) -> ModelRc<T> {
 /// Recompute the breadcrumb from the UI's own models. Same effect as the
 /// `refresh_breadcrumb` closure in `main`, but callable from `Send` completion
 /// closures that can't capture the model handles.
-pub(crate) fn refresh_breadcrumb_now(ui: &DarkMatterLinux) {
+pub(crate) fn refresh_breadcrumb_now(ui: &WhiteNoiseLinux) {
     ui.set_breadcrumb(breadcrumb(
         ui.get_active_page(),
         &ui.get_chats(),
@@ -1163,7 +1163,7 @@ pub(crate) const THEME_MODES: [&str; 8] = [
 ];
 
 /// The full theme registry — the built-ins plus the user themes loaded from
-/// `$DM_HOME/themes/` at startup, in id order. Set once by `set_theme_registry`
+/// `$WN_HOME/themes/` at startup, in id order. Set once by `set_theme_registry`
 /// after `themes::load_themes`. A read before it is set sees only the
 /// built-ins, which is correct: no user theme can be active before the load.
 static THEME_REGISTRY: OnceLock<Vec<String>> = OnceLock::new();
@@ -1228,7 +1228,7 @@ pub(crate) fn accent_color_name(idx: i32) -> &'static str {
 /// Every Rust-side accent push goes through here so an index the Slint
 /// accent arrays cannot resolve fails loudly in dev builds instead of
 /// silently painting the wrong swatch.
-pub(crate) fn set_accent_index(ui: &DarkMatterLinux, idx: i32) {
+pub(crate) fn set_accent_index(ui: &WhiteNoiseLinux, idx: i32) {
     debug_assert!(
         (0..ACCENTS.len() as i32).contains(&idx),
         "accent index {idx} outside the ACCENTS table (len {})",
@@ -1241,7 +1241,7 @@ pub(crate) fn set_accent_index(ui: &DarkMatterLinux, idx: i32) {
 /// cannot resolve fails loudly in dev builds instead of silently indexing out
 /// of range. Sets the single `theme-id` the root folds onto `Theme.id`; the
 /// old per-theme boolean flags are gone.
-pub(crate) fn apply_theme_mode(ui: &DarkMatterLinux, mode: &str) {
+pub(crate) fn apply_theme_mode(ui: &WhiteNoiseLinux, mode: &str) {
     let idx = theme_mode_idx(&normalize_theme_mode(mode));
     let n = theme_modes().len() as i32;
     debug_assert!(

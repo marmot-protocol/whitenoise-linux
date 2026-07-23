@@ -48,7 +48,7 @@ impl PendingReuse {
 // the overlay entry, the bubble, and the durable queue.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn spawn_attachment_send(
-    weak: slint::Weak<DarkMatterLinux>,
+    weak: slint::Weak<WhiteNoiseLinux>,
     backend_cell: BackendCell,
     group_ids: Arc<Mutex<Vec<String>>>,
     pending_state: Arc<Mutex<PendingState>>,
@@ -189,7 +189,7 @@ pub(crate) fn spawn_attachment_send(
 // re-dispatched from disk on reconnect, or adopts a forward's placeholder.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn spawn_album_send(
-    weak: slint::Weak<DarkMatterLinux>,
+    weak: slint::Weak<WhiteNoiseLinux>,
     backend_cell: BackendCell,
     group_ids: Arc<Mutex<Vec<String>>>,
     pending_state: Arc<Mutex<PendingState>>,

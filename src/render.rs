@@ -1133,7 +1133,7 @@ pub(crate) fn detect_mention(text: &str, cursor: usize) -> Option<(usize, String
 
 /// Filter the open chat's members by a mention query (matches display name,
 /// short npub, or full npub; an empty query lists everyone). Capped at 50.
-pub(crate) fn filter_mention_candidates(ui: &DarkMatterLinux, query: &str) -> Vec<GroupMember> {
+pub(crate) fn filter_mention_candidates(ui: &WhiteNoiseLinux, query: &str) -> Vec<GroupMember> {
     let q = query.to_lowercase();
     ui.get_chat_members()
         .iter()
@@ -1157,7 +1157,7 @@ pub(crate) fn filter_mention_candidates(ui: &DarkMatterLinux, query: &str) -> Ve
 /// Splice the chosen member's npub over the active `@token` and place the caret
 /// just after the inserted mention.
 pub(crate) fn commit_mention(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     mention_span: &Rc<RefCell<Option<(usize, usize)>>>,
     index: i32,
 ) {

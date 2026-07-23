@@ -3,7 +3,7 @@
 // Decrypted attachment bytes are sensitive, and this repo deliberately keeps no
 // plaintext on disk (see `vault.rs`). So each entry is sealed with the vault's
 // media-cache subkey (XChaCha20-Poly1305) before being written to
-// `$DM_HOME/media-cache/<file_hash>.bin` (mode 0600). Entries are
+// `$WN_HOME/media-cache/<file_hash>.bin` (mode 0600). Entries are
 // content-addressed by the Blossom blob hash (the `x` field of the NIP-92
 // `imeta` tag), so the same attachment referenced from several messages shares
 // one entry, and a download whose ciphertext hash mismatches can never collide

@@ -159,7 +159,7 @@ thread_local! {
 /// sqlite read + tag parse run on the backend runtime; the result (which is
 /// `Send`) hops back to store the list and seed the counter.
 pub(crate) fn build_viewer_slideshow(
-    weak: slint::Weak<DarkMatterLinux>,
+    weak: slint::Weak<WhiteNoiseLinux>,
     backend_cell: Arc<Mutex<Option<Arc<Backend>>>>,
     group_ids: Arc<Mutex<Vec<String>>>,
     group_hex: String,
@@ -206,7 +206,7 @@ pub(crate) fn build_viewer_slideshow(
 /// have clicked past it). The decoded pixels seed the shared attachment cache
 /// so the bubble row and a re-open are both free afterwards.
 pub(crate) fn load_viewer_image(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend_cell: &Arc<Mutex<Option<Arc<Backend>>>>,
     group_ids: &Arc<Mutex<Vec<String>>>,
     pos: usize,
@@ -585,7 +585,7 @@ pub(crate) fn video_fullscreen() -> &'static std::sync::atomic::AtomicBool {
 /// hand the bytes to [`spawn_video_player`]. Runs entirely on the backend
 /// runtime; on failure it just clears the viewer's loading spinner.
 pub(crate) fn start_video_playback(
-    weak: Weak<DarkMatterLinux>,
+    weak: Weak<WhiteNoiseLinux>,
     backend: Arc<Backend>,
     group_hex: String,
     mid: String,
@@ -627,7 +627,7 @@ pub(crate) fn start_video_playback(
 /// state callbacks to the video viewer. Caches the first frame as the bubble
 /// poster and the clip duration. Stores the player in [`current_player`] so the
 /// viewer controls + dismiss can reach it. Safe to call off the UI thread.
-pub(crate) fn spawn_video_player(weak: Weak<DarkMatterLinux>, mid: String, bytes: Vec<u8>) {
+pub(crate) fn spawn_video_player(weak: Weak<WhiteNoiseLinux>, mid: String, bytes: Vec<u8>) {
     use std::sync::atomic::{AtomicBool, Ordering};
 
     let poster_saved = Arc::new(AtomicBool::new(false));
@@ -741,7 +741,7 @@ pub(crate) fn stop_current_audio() {
 /// [`audio_decode_failed`] and repaints the bubble so the player shows a
 /// "Can't play this audio format" notice instead of silently doing nothing.
 pub(crate) fn start_audio_playback(
-    weak: Weak<DarkMatterLinux>,
+    weak: Weak<WhiteNoiseLinux>,
     backend_cell: Arc<Mutex<Option<Arc<Backend>>>>,
     group_ids: Arc<Mutex<Vec<String>>>,
     pending_state: Arc<Mutex<PendingState>>,
@@ -1110,7 +1110,7 @@ pub(crate) fn no_album() -> (ModelRc<AlbumCell>, f32, f32) {
 /// background image fetches without threading these through every signature.
 #[derive(Clone)]
 pub(crate) struct AlbumLoadCtx {
-    pub(crate) weak: Weak<DarkMatterLinux>,
+    pub(crate) weak: Weak<WhiteNoiseLinux>,
     pub(crate) backend_cell: Arc<Mutex<Option<Arc<Backend>>>>,
     pub(crate) vault_cell: Arc<Mutex<Option<Arc<Mutex<Vault>>>>>,
     pub(crate) group_ids: Arc<Mutex<Vec<String>>>,
@@ -1370,7 +1370,7 @@ pub(crate) fn staged_file_from_bytes(
 
 /// Rebuild the composer's staged-attachment chip row from the queue. UI
 /// thread only — it constructs `slint::Image` thumbnails.
-pub(crate) fn refresh_staged_ui(ui: &DarkMatterLinux, staged: &[StagedFile]) {
+pub(crate) fn refresh_staged_ui(ui: &WhiteNoiseLinux, staged: &[StagedFile]) {
     let rows: Vec<StagedAttachment> = staged
         .iter()
         .map(|f| StagedAttachment {

@@ -1,7 +1,7 @@
 // Theme dropdown with live previews (Settings → Appearance).
 //
 // Lists every registered theme, the built-ins first and then whatever Rust
-// loaded from `$DM_HOME/themes/`. Each row shows a mini preview built from that
+// loaded from `$WN_HOME/themes/`. Each row shows a mini preview built from that
 // theme's actual ThemeColors data (Theme.colors-at(id)) so the swatch always
 // matches the real palette, user themes included. Picking a row emits
 // theme-mode-selected(mode). Add a built-in theme by appending a name+mode pair
@@ -127,7 +127,7 @@ export component ThemePicker inherits Rectangle {
     ];
 
     // Total selectable themes = built-ins plus whatever Rust loaded from
-    // `$DM_HOME/themes/`. The two fold helpers below map a row id onto the
+    // `$WN_HOME/themes/`. The two fold helpers below map a row id onto the
     // built-in arrays for the first `names.length` ids and onto the
     // Rust-provided user arrays beyond that, so one id space spans both.
     function theme-count() -> int {

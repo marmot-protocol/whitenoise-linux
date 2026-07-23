@@ -2,7 +2,7 @@ use crate::*;
 
 /// Read the profile from the directory cache on the backend runtime (a
 /// sqlite read), then apply it on the UI thread.
-pub(crate) fn populate_profile_async(ui: &DarkMatterLinux, backend: &Arc<Backend>) {
+pub(crate) fn populate_profile_async(ui: &WhiteNoiseLinux, backend: &Arc<Backend>) {
     let weak = ui.as_weak();
     let b = backend.clone();
     backend.tokio_handle().spawn(async move {
@@ -16,7 +16,7 @@ pub(crate) fn populate_profile_async(ui: &DarkMatterLinux, backend: &Arc<Backend
 
 pub(crate) fn populate_profile_from(
     backend: &Backend,
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     profile: anyhow::Result<Option<UserProfileMetadata>>,
 ) {
     let picture_url = match profile {
@@ -53,7 +53,7 @@ pub(crate) fn populate_profile_from(
 /// `slint::Image` itself is `!Send`, so the worker thread ships raw RGBA
 /// pixels + dimensions across the event loop and the actual `Image` is
 /// constructed on the UI thread. Cache mirrors that shape.
-pub(crate) fn fetch_profile_picture(ui: &DarkMatterLinux, backend: &Backend, url: &str) {
+pub(crate) fn fetch_profile_picture(ui: &WhiteNoiseLinux, backend: &Backend, url: &str) {
     let url = url.trim().to_string();
     if picture_cache_has(&url) {
         apply_picture(ui, &url);
@@ -111,7 +111,7 @@ pub(crate) fn nostr_ref_to_hex(reference: &str) -> Option<String> {
 /// @mention of someone outside the group — get the loading skeleton plus an
 /// async relay fetch through the discovery set.
 pub(crate) fn open_profile_modal(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend_cell: &Arc<Mutex<Option<Arc<Backend>>>>,
     account_id_hex: &str,
 ) {
@@ -212,7 +212,7 @@ pub(crate) fn open_profile_modal(
 /// Push a resolved (or placeholder) profile into the modal's properties and
 /// kick off the avatar download when a picture URL is present.
 pub(crate) fn apply_peer_profile(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend: &Backend,
     account_id_hex: &str,
     npub_short: &str,
@@ -286,7 +286,7 @@ pub(crate) fn apply_peer_profile(
 /// the same account. Cache-backed; the `slint::Image` is reconstructed on the
 /// UI thread because it is `!Send`.
 pub(crate) fn fetch_peer_profile_picture(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend: &Backend,
     account_id_hex: &str,
     url: &str,
@@ -327,7 +327,7 @@ pub(crate) struct PicturePixels {
 /// outgoing bubble, so a fresh handle (or even a redundant set) re-renders
 /// the whole conversation — the visible blink reported after background
 /// syncs.
-pub(crate) fn apply_picture(ui: &DarkMatterLinux, url: &str) {
+pub(crate) fn apply_picture(ui: &WhiteNoiseLinux, url: &str) {
     let Some(img) = cached_picture_image(url) else {
         return;
     };
@@ -444,11 +444,11 @@ fn nip05_verify_put(pubkey_hex: &str, handle: &str, verified: bool) {
 /// a uniform call site); a blank handle is a no-op. Mirrors the avatar
 /// `spawn_picture_fetch` pipeline.
 pub(crate) fn spawn_nip05_verify(
-    weak: Weak<DarkMatterLinux>,
+    weak: Weak<WhiteNoiseLinux>,
     handle: tokio::runtime::Handle,
     pubkey_hex: String,
     nip05: String,
-    apply: impl FnOnce(&DarkMatterLinux, bool) + Send + 'static,
+    apply: impl FnOnce(&WhiteNoiseLinux, bool) + Send + 'static,
 ) {
     if nip05.trim().is_empty() {
         return;

@@ -13,7 +13,7 @@ license = "AGPL-3.0-or-later"
 # On by default: makes Slint's `live-preview` (interpreter) module available so
 # build.rs can emit an interpreter-backed shim instead of the ~580k-line
 # generated module. The shim exposes the *same* strongly-typed API
-# (`DarkMatterLinux`, `ChatMessage`, callbacks…) but loads ui/*.slint from disk
+# (`WhiteNoiseLinux`, `ChatMessage`, callbacks…) but loads ui/*.slint from disk
 # at runtime, so a .slint edit hot-reloads with no recompile of the generated
 # tree.
 #

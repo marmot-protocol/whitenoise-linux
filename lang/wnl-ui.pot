@@ -930,11 +930,11 @@ msgid "Dark"
 msgstr ""
 
 msgctxt "AboutPane"
-msgid "Dark Matter is a native desktop client for private group chat. Messages are encrypted with MLS before they leave your machine, routed over Nostr relays, and decrypted only for the people in the room."
+msgid "White Noise is a native desktop client for private group chat. Messages are encrypted with MLS before they leave your machine, routed over Nostr relays, and decrypted only for the people in the room."
 msgstr ""
 
 msgctxt "KeysPage"
-msgid "Dark Matter never sees your private key. It lives only on this device and any signer you connect."
+msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
 msgstr ""
 
 msgctxt "GeneralPane"
@@ -1988,7 +1988,7 @@ msgctxt "GeneralPane"
 msgid "QUICK REACTIONS"
 msgstr ""
 
-msgctxt "DarkMatterTray"
+msgctxt "WhiteNoiseTray"
 msgid "Quit"
 msgstr ""
 
@@ -2162,7 +2162,7 @@ msgid "Reset"
 msgstr ""
 
 msgctxt "NetworkPane"
-msgid "Restart darkmatter to apply relay changes."
+msgid "Restart White Noise to apply relay changes."
 msgstr ""
 
 msgctxt "ImportBackupModal"
@@ -2458,7 +2458,7 @@ msgctxt "ProfilePage"
 msgid "Short handle (no spaces)"
 msgstr ""
 
-msgctxt "DarkMatterTray"
+msgctxt "WhiteNoiseTray"
 msgid "Show White Noise"
 msgstr ""
 
@@ -2551,7 +2551,7 @@ msgid "Storage"
 msgstr ""
 
 msgctxt "RevealNsecModal"
-msgid "Store it somewhere safe and close this dialog. Dark Matter keeps it encrypted in your vault — this is the only place it's shown in the clear."
+msgid "Store it somewhere safe and close this dialog. White Noise keeps it encrypted in your vault — this is the only place it's shown in the clear."
 msgstr ""
 
 msgctxt "ErrorCopy"
@@ -2797,7 +2797,7 @@ msgid "Wed"
 msgstr ""
 
 msgctxt "GetStartedScreen"
-msgid "Welcome to darkmatter"
+msgid "Welcome to White Noise"
 msgstr ""
 
 msgctxt "EncryptionInfoModal"
@@ -2808,15 +2808,15 @@ msgctxt "NetworkPane"
 msgid "Where your messages land."
 msgstr ""
 
-msgctxt "DarkMatterTray"
+msgctxt "WhiteNoiseTray"
 msgid "White Noise"
 msgstr ""
 
-msgctxt "DarkMatterTray"
+msgctxt "WhiteNoiseTray"
 msgid "White Noise ({} unread)"
 msgstr ""
 
-msgctxt "DarkMatterTray"
+msgctxt "WhiteNoiseTray"
 msgid "White Noise · 1 unread message"
 msgid_plural "White Noise · {n} unread messages"
 msgstr[0] ""

@@ -3,7 +3,7 @@ import { Modal, ModalField } from "modal.slint";
 // Create an encrypted whole-folder backup. The backup is sealed with the user's
 // *vault* password (so a later restore needs just that one secret), so this
 // dialog asks them to confirm it. Rust verifies it against the live vault, then
-// opens a native save dialog for the destination and writes the `.dmbackup`.
+// opens a native save dialog for the destination and writes the `.wnbackup`.
 export component BackupCreateModal inherits Modal {
     callback create(string); // vault password
 

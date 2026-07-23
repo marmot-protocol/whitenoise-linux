@@ -1,6 +1,6 @@
 use crate::*;
 
-pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
+pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     let Cx {
         settings_cell,
         contacts,
@@ -611,7 +611,7 @@ pub(crate) fn wire_contacts(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
 /// the failure-only Retry button. On a miss or error the row keeps `kp-can-retry`
 /// set, so the detail page keeps offering a Retry.
 pub(crate) fn spawn_contact_key_package_fetch(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend_cell: &BackendCell,
     idx: usize,
 ) {

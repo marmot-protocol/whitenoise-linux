@@ -466,7 +466,7 @@ impl Backend {
         let _rt_guard = self.tokio.enter();
 
         // Endpoints + tokens come from `observability.toml` (embedded default,
-        // overridable at `$DM_HOME/observability.toml`).
+        // overridable at `$WN_HOME/observability.toml`).
         let cfg = ObservabilityConfig::load(&self.home);
 
         // Stable per-install UUID, persisted by marmot in shared storage.
@@ -563,7 +563,7 @@ impl Backend {
     fn require_relays(&self) -> Result<Vec<TransportEndpoint>> {
         if self.relays.is_empty() {
             return Err(anyhow!(
-                "no relays configured — set ~/.config/darkmatter-linux/relays.json first"
+                "no relays configured — set ~/.config/whitenoise-linux/relays.json first"
             ));
         }
         Ok(self.relay_endpoints())

@@ -1,7 +1,7 @@
 use crate::*;
 
 pub(crate) fn wire_panes(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     cx: &Cx,
     h: &Handlers,
     boot_backend: &BootFn,
@@ -1687,7 +1687,7 @@ pub(crate) fn wire_panes(
 // ─── Audit-log file rows (Settings → Advanced) ─────────────────────────────
 
 /// Map on-disk audit-log files into UI rows (newest first) and push the model.
-pub(crate) fn push_audit_files(ui: &DarkMatterLinux, mut files: Vec<AuditLogFile>) {
+pub(crate) fn push_audit_files(ui: &WhiteNoiseLinux, mut files: Vec<AuditLogFile>) {
     files.sort_by(|a, b| {
         b.modified_at_ms
             .unwrap_or(0)
@@ -1714,7 +1714,7 @@ pub(crate) fn push_audit_files(ui: &DarkMatterLinux, mut files: Vec<AuditLogFile
 
 /// List audit-log files off the UI thread (disk IO) and push the rows back
 /// through the event loop.
-pub(crate) fn refresh_audit_files(ui: &DarkMatterLinux, backend: &Arc<Backend>) {
+pub(crate) fn refresh_audit_files(ui: &WhiteNoiseLinux, backend: &Arc<Backend>) {
     let weak = ui.as_weak();
     let b = backend.clone();
     backend.tokio_handle().spawn(async move {

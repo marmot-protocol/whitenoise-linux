@@ -1,16 +1,16 @@
 // AppState — the app's entire view-model surface as one global singleton.
 //
 // Every Rust-facing property and callback lives here; the window root
-// (dark-matter-linux.slint) re-exposes each member with a two-way alias
+// (white-noise-linux.slint) re-exposes each member with a two-way alias
 // (`in-out property <T> x <=> AppState.x;` / `callback x <=> AppState.x;`),
-// which keeps the generated Rust API on `DarkMatterLinux` unchanged while
+// which keeps the generated Rust API on `WhiteNoiseLinux` unchanged while
 // letting the shell subcomponents (app-shell / modal-host / login-gate /
 // shell-timers) read and write state directly — no per-mount forwarding.
 //
 // Members marked "(was private on the window root)" are UI-internal overlay
 // state shared between the shell, the menus and the confirm flows; they have
 // no root alias and stay invisible to Rust. The root alias block in
-// dark-matter-linux.slint is GENERATED from this file by
+// white-noise-linux.slint is GENERATED from this file by
 // scripts/update-root-aliases.sh — run it after adding a Rust-facing property.
 
 import {

@@ -52,7 +52,7 @@ user intent through these callbacks (e.g. `send-message`, `react-message`,
 `request-reply`, `attachment-clicked`, `switch-account`) and read state from these
 properties (e.g. `composer-draft`, `chats`, `messages`, `reply-target-*`).
 Rust binds callbacks on the global (`ui.global::<AppState>().on_*`); properties
-are also re-exposed on the `DarkMatterLinux` root via two-way aliases, so
+are also re-exposed on the `WhiteNoiseLinux` root via two-way aliases, so
 property setters/getters stay on the window handle (`ui.set_*` / `ui.get_*`).
 The root component itself is thin: the alias contract plus mounts of the shell
 pieces (`shell/app-shell.slint`, `shell/modal-host.slint`,
@@ -96,7 +96,7 @@ Theme (id + accent)          ← Rust sets only this
 
 Every theme, built-in or user, is a `.toml` file loaded through one path
 (`src/themes.rs`). The built-ins are embedded (`themes/<mode>.toml`, `include_str!`);
-user themes are read from `$DM_HOME/themes/*.toml`. Rust builds the whole pack list and
+user themes are read from `$WN_HOME/themes/*.toml`. Rust builds the whole pack list and
 fills `Theme.color-packs` / `style-packs`; the Slint side holds no theme data and just
 renders whatever id it is handed. Runtime *skin bodies* (new Slint via
 slint-interpreter) remain the not-built extension the contract still permits.
@@ -108,7 +108,7 @@ A pure recolor overrides a handful of fields; a drastic theme additionally write
 bodies and bumps the selectors.
 
 1. **Write the file** — a built-in goes in `themes/<mode>.toml`, a user theme in
-   `$DM_HOME/themes/<mode>.toml` (same format). Name a `base` (another theme by mode)
+   `$WN_HOME/themes/<mode>.toml` (same format). Name a `base` (another theme by mode)
    and override any `ThemeColors` field or `ThemeStyle` flag by its kebab-case name;
    everything unspecified inherits the base. A file with no `base` is a complete
    definition (the eight built-ins are authored this way).

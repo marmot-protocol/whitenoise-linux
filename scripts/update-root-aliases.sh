@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regenerate the DarkMatterLinux root alias block from the AppState global.
+# Regenerate the WhiteNoiseLinux root alias block from the AppState global.
 #
 # Every non-UI-internal `in-out property` in ui/shell/app-state.slint gets a
 # two-way alias on the window root so Rust keeps `ui.set_x()` / `ui.get_x()`.
@@ -13,7 +13,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 STATE=ui/shell/app-state.slint
-ROOT=ui/dark-matter-linux.slint
+ROOT=ui/white-noise-linux.slint
 BEGIN='    // BEGIN GENERATED ALIASES — edit ui/shell/app-state.slint and run scripts/update-root-aliases.sh'
 END='    // END GENERATED ALIASES'
 

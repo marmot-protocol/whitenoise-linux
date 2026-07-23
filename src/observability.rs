@@ -3,7 +3,7 @@
 // centralized so the values are easy to change.
 //
 // The repo's `observability.toml` is embedded at build time as the default, so
-// the binary always has working values. A copy at `$DM_HOME/observability.toml`
+// the binary always has working values. A copy at `$WN_HOME/observability.toml`
 // overrides it at runtime (edit + restart, no rebuild). Endpoints/tokens are
 // fed to marmot's telemetry exporter + audit-log tracker in `backend.rs`.
 
@@ -31,7 +31,7 @@ pub struct ObservabilityConfig {
 }
 
 impl ObservabilityConfig {
-    /// Load the config, preferring `$DM_HOME/observability.toml` when present
+    /// Load the config, preferring `$WN_HOME/observability.toml` when present
     /// and parseable, otherwise the embedded default. Never fails: a malformed
     /// override falls back to the embedded copy (which is validated at startup
     /// by construction, since it ships with the binary).

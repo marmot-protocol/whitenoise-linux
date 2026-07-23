@@ -1002,12 +1002,12 @@ pub(crate) fn read_key_packages_dir(home: &Path) -> Vec<serde_json::Value> {
 }
 
 pub fn default_home() -> PathBuf {
-    if let Some(p) = std::env::var_os("DM_HOME") {
+    if let Some(p) = std::env::var_os("WN_HOME") {
         return PathBuf::from(p);
     }
-    directories::ProjectDirs::from("", "", "darkmatter")
+    directories::ProjectDirs::from("", "", "whitenoise-linux")
         .map(|d| d.data_dir().to_path_buf())
-        .unwrap_or_else(|| PathBuf::from("./dm-home"))
+        .unwrap_or_else(|| PathBuf::from("./wn-home"))
 }
 
 pub(crate) fn group_id_from_hex(group_hex: &str) -> Result<GroupId> {
@@ -1401,7 +1401,7 @@ pub(crate) fn stub_directory_entry(account_id_hex: &str) -> UserDirectoryRecord 
 /// Read relay URLs from the user's config dir. No defaults — empty list when
 /// the file is missing or malformed, which is the documented behavior.
 pub fn load_relays() -> Vec<String> {
-    let Some(proj) = directories::ProjectDirs::from("", "", "darkmatter-linux") else {
+    let Some(proj) = directories::ProjectDirs::from("", "", "whitenoise-linux") else {
         return Vec::new();
     };
     let path = proj.config_dir().join("relays.json");
@@ -1413,7 +1413,7 @@ pub fn load_relays() -> Vec<String> {
 
 /// Persist the relay list. Best-effort — surfaces an error string on failure.
 pub fn save_relays(relays: &[String]) -> Result<(), String> {
-    let proj = directories::ProjectDirs::from("", "", "darkmatter-linux")
+    let proj = directories::ProjectDirs::from("", "", "whitenoise-linux")
         .ok_or_else(|| "no config dir".to_string())?;
     let dir = proj.config_dir();
     std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;

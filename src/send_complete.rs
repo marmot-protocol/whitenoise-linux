@@ -13,7 +13,7 @@ use crate::*;
 
 /// The shared captures every send path threads into [`apply_send_result`].
 pub(crate) struct SendReconcileCtx {
-    pub(crate) weak: slint::Weak<DarkMatterLinux>,
+    pub(crate) weak: slint::Weak<WhiteNoiseLinux>,
     pub(crate) backend_cell: BackendCell,
     pub(crate) group_ids: Arc<Mutex<Vec<String>>>,
     pub(crate) pending_state: Arc<Mutex<PendingState>>,

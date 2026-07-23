@@ -1,6 +1,6 @@
 use crate::*;
 
-pub(crate) fn wire_nav(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
+pub(crate) fn wire_nav(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     let Cx { settings_cell, .. } = cx.clone();
     let Handlers {
         refresh_breadcrumb,

@@ -77,12 +77,12 @@ pub(crate) use backend::SAVED_MESSAGES_NAME;
 pub(crate) use settings::Settings;
 pub(crate) use vault::Vault;
 
-// Tests that point `DM_HOME` at a temp dir mutate a single process-global env
+// Tests that point `WN_HOME` at a temp dir mutate a single process-global env
 // var, so the vault and backup suites must not run concurrently — they share
 // this lock to serialize. (Poisoning is ignored: a panicking test still leaves
 // the lock usable for the next.)
 #[cfg(test)]
-pub(crate) static DM_HOME_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+pub(crate) static WN_HOME_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
 // Generated Slint UI (components, ui/tokens.slint structs, globals) plus the
 // build-time emoji sprite artifacts — all owned by the wnl-ui crate so Rust
@@ -107,6 +107,48 @@ pub(crate) use wnl_ui::*;
 // The overlay only ever holds *my* not-yet-confirmed mutations. Everything
 // else still comes from the marmot snapshot.
 
+/// One-time rename migration: the data dir used to be `ProjectDirs("darkmatter")`
+/// (vault.db, media-cache, themes) and the config dir `darkmatter-linux`
+/// (settings.json, relays.json). If an old dir exists and the new one doesn't,
+/// move it wholesale so existing vaults keep working. A `WN_HOME` override
+/// bypasses the data-dir default entirely, so nothing is moved for it.
+fn migrate_legacy_dirs() {
+    fn move_dir(old: &std::path::Path, new: &std::path::Path) {
+        if !old.is_dir() || new.exists() {
+            return;
+        }
+        if let Some(parent) = new.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        match std::fs::rename(old, new) {
+            Ok(()) => tracing::info!(
+                "migrated legacy dir {} -> {}",
+                old.display(),
+                new.display()
+            ),
+            Err(e) => tracing::warn!(
+                "could not migrate legacy dir {} -> {}: {e}",
+                old.display(),
+                new.display()
+            ),
+        }
+    }
+    if std::env::var_os("WN_HOME").is_none() {
+        if let (Some(old), Some(new)) = (
+            directories::ProjectDirs::from("", "", "darkmatter"),
+            directories::ProjectDirs::from("", "", "whitenoise-linux"),
+        ) {
+            move_dir(old.data_dir(), new.data_dir());
+        }
+    }
+    if let (Some(old), Some(new)) = (
+        directories::ProjectDirs::from("", "", "darkmatter-linux"),
+        directories::ProjectDirs::from("", "", "whitenoise-linux"),
+    ) {
+        move_dir(old.config_dir(), new.config_dir());
+    }
+}
+
 fn main() -> Result<(), slint::PlatformError> {
     // marmot crates emit `tracing` events; install a subscriber so RUST_LOG works.
     // Default to info if RUST_LOG isn't set.
@@ -118,11 +160,15 @@ fn main() -> Result<(), slint::PlatformError> {
         .with_writer(std::io::stderr)
         .try_init();
 
+    // The app was renamed from "darkmatter" to White Noise; move any existing
+    // vault/settings from the old dirs before anything resolves a path.
+    migrate_legacy_dirs();
+
     // A `marmot://` URL from the OS scheme handler arrives as argv; park it
     // until the backend boots and the profile modal can resolve it.
     deeplink::stash_from_args();
 
-    let ui = DarkMatterLinux::new()?;
+    let ui = WhiteNoiseLinux::new()?;
 
     // Settings (locale + theme + accent + debug toggle) — load early so
     // bundled translations apply before the user sees any @tr()-annotated UI.
@@ -130,7 +176,7 @@ fn main() -> Result<(), slint::PlatformError> {
     let locale = normalize_locale(&initial_settings.locale).to_string();
     initial_settings.locale = locale.clone();
     // Load every theme — the embedded built-ins and any user themes from
-    // `$DM_HOME/themes/` — into the Slint pack registry and record the user
+    // `$WN_HOME/themes/` — into the Slint pack registry and record the user
     // modes, so a persisted user theme resolves to its own id below.
     set_theme_registry(themes::load_themes(&ui));
     let theme_mode = normalize_theme_mode(&initial_settings.theme);
@@ -956,7 +1002,7 @@ fn main() -> Result<(), slint::PlatformError> {
     }
 
     let tray = if start_minimized_to_tray {
-        match DarkMatterTray::new() {
+        match WhiteNoiseTray::new() {
             Ok(tray) => {
                 tray.on_show_window({
                     let weak = ui.as_weak();

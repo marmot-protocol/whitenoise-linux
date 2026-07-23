@@ -3,7 +3,7 @@
 // Every theme — the eight that ship with the app and any a user adds — is a
 // `.toml` file in the same format, loaded through the same path. The built-ins
 // are embedded in the binary with `include_str!` (`themes/<mode>.toml`); user
-// themes are read from `$DM_HOME/themes/*.toml` at startup. Each file names an
+// themes are read from `$WN_HOME/themes/*.toml` at startup. Each file names an
 // optional `base` (another theme by mode name) and overrides `ThemeColors`
 // fields and `ThemeStyle` flags by their kebab-case names; everything left
 // unspecified inherits the base, so a whole theme can be a few lines. A file
@@ -16,7 +16,7 @@
 // mode name collides is logged and skipped, never blocking the others.
 //
 // Color, Model, ModelRc, SharedString, VecModel, Rc, and the generated Theme /
-// ThemeColors / ThemeStyle / DarkMatterLinux types come from the crate prelude.
+// ThemeColors / ThemeStyle / WhiteNoiseLinux types come from the crate prelude.
 
 use crate::*;
 
@@ -34,7 +34,7 @@ const BUILTIN_THEME_FILES: [(&str, &str); 8] = [
     ("amoled", include_str!("../themes/amoled.toml")),
 ];
 
-/// The directory scanned for user theme files: `$DM_HOME/themes/`.
+/// The directory scanned for user theme files: `$WN_HOME/themes/`.
 fn themes_dir() -> std::path::PathBuf {
     crate::backend::default_home().join("themes")
 }
@@ -348,7 +348,7 @@ fn build_pack(
     (c, s)
 }
 
-/// The user theme files in `$DM_HOME/themes/`, sorted so ids stay stable across
+/// The user theme files in `$WN_HOME/themes/`, sorted so ids stay stable across
 /// restarts. Missing directory or a read error yields an empty list.
 fn user_theme_paths() -> Vec<std::path::PathBuf> {
     let dir = themes_dir();
@@ -367,11 +367,11 @@ fn user_theme_paths() -> Vec<std::path::PathBuf> {
     entries
 }
 
-/// Load every theme — embedded built-ins then `$DM_HOME/themes/` user files —
+/// Load every theme — embedded built-ins then `$WN_HOME/themes/` user files —
 /// through one path, push the full `ThemeColors`/`ThemeStyle` registry (and the
 /// user themes' picker names/modes) into the `Theme` global, and return the
 /// user modes in id order so [`crate::state`] can extend `THEME_MODES`.
-pub(crate) fn load_themes(ui: &DarkMatterLinux) -> Vec<String> {
+pub(crate) fn load_themes(ui: &WhiteNoiseLinux) -> Vec<String> {
     let mut by_name: HashMap<String, (ThemeColors, ThemeStyle)> = HashMap::new();
     let mut colors: Vec<ThemeColors> = Vec::new();
     let mut styles: Vec<ThemeStyle> = Vec::new();

@@ -11,7 +11,7 @@
 //
 // Each queued send is sealed with the vault key (XChaCha20-Poly1305, via
 // `Vault::seal_blob`, the same path the media cache uses) and written to its own
-// file at `$DM_HOME/offline-queue/<temp_id_hex>.bin` (mode 0600). One file per
+// file at `$WN_HOME/offline-queue/<temp_id_hex>.bin` (mode 0600). One file per
 // entry — not one big blob — so acking a send deletes a single small file
 // instead of re-sealing every still-queued attachment's bytes. Message bodies
 // and attachment bytes are user content, so nothing here ever touches disk in

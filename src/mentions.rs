@@ -416,7 +416,7 @@ static MENTION_INBOX_GENERATION: AtomicUsize = AtomicUsize::new(0);
 /// generation and account checks prevent stale scans from crossing popup opens
 /// or account switches.
 pub(crate) fn refresh_mention_inbox_async(
-    ui: &DarkMatterLinux,
+    ui: &WhiteNoiseLinux,
     backend: &Arc<Backend>,
     group_ids: &Arc<Mutex<Vec<String>>>,
 ) {

@@ -12,7 +12,7 @@ struct MsgSearchState {
     pos: usize,
 }
 
-pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
+pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     let Cx {
         notif,
         settings_cell,
@@ -509,7 +509,7 @@ pub(crate) fn wire_chats(ui: &DarkMatterLinux, cx: &Cx, h: &Handlers) {
     let msg_search_jump: MessageJumpFn = {
         let pending_message_jump = pending_message_jump.clone();
         Arc::new(
-            move |ui: &DarkMatterLinux, group_hex: &str, message_id: &str| {
+            move |ui: &WhiteNoiseLinux, group_hex: &str, message_id: &str| {
                 let chats_messages = ui.get_chats_messages();
                 let idx = ui.get_active_chat();
                 let row = with_inner_messages(&chats_messages, idx as usize, |vm| {

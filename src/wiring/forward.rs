@@ -15,7 +15,7 @@ use crate::*;
 //
 // Forwarding never carries the original's reply context, reactions, or effect —
 // it re-sends content only, exactly like composing it anew in the target chat.
-pub(crate) fn wire_forward(ui: &DarkMatterLinux, cx: &Cx) {
+pub(crate) fn wire_forward(ui: &WhiteNoiseLinux, cx: &Cx) {
     let Cx {
         backend_cell,
         group_ids,
@@ -139,7 +139,7 @@ pub(crate) fn wire_forward(ui: &DarkMatterLinux, cx: &Cx) {
 /// threads twice and would otherwise pass the same five arguments at each hop.
 #[derive(Clone)]
 struct ForwardCx {
-    weak: slint::Weak<DarkMatterLinux>,
+    weak: slint::Weak<WhiteNoiseLinux>,
     backend_cell: BackendCell,
     group_ids: Arc<Mutex<Vec<String>>>,
     pending_state: Arc<Mutex<PendingState>>,
@@ -193,7 +193,7 @@ fn forward_retries() -> &'static Mutex<std::collections::HashMap<String, Forward
 /// forwarded first so it reads above the media.
 #[allow(clippy::too_many_arguments)]
 fn forward_media(
-    weak: slint::Weak<DarkMatterLinux>,
+    weak: slint::Weak<WhiteNoiseLinux>,
     backend_cell: BackendCell,
     group_ids: Arc<Mutex<Vec<String>>>,
     pending_state: Arc<Mutex<PendingState>>,
@@ -566,7 +566,7 @@ pub(crate) fn retry_forward_media(temp_id: &str) -> bool {
 /// leave it pending while offline). Used only by the forward flow — the normal
 /// composer send owns its own optimistic block inline.
 pub(crate) fn spawn_text_forward(
-    weak: slint::Weak<DarkMatterLinux>,
+    weak: slint::Weak<WhiteNoiseLinux>,
     backend_cell: BackendCell,
     group_ids: Arc<Mutex<Vec<String>>>,
     pending_state: Arc<Mutex<PendingState>>,
