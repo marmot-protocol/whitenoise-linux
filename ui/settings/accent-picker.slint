@@ -2,6 +2,9 @@ import { Palette, Theme } from "../tokens.slint";
 
 export component AccentPicker inherits Rectangle {
     in-out property <int> selected: 0;
+    // Accent color names, fed from AppearancePane so assistive tech can name
+    // each swatch; parallel to `swatches` by index.
+    in property <[string]> names;
     callback accent-selected(int);
 
     // Swatches come from the active theme pack so the color shown is the
@@ -52,6 +55,19 @@ export component AccentPicker inherits Rectangle {
                 border-width: root.selected == idx ? 2px : (touch.has-hover ? 1px : 0px);
                 border-color: Palette.text-hi;
                 animate border-width { duration: Theme.hover-dur; }
+
+                // One swatch is a single choice in a mutually-exclusive group,
+                // so it reads as a radio button: the name identifies it and the
+                // checked state announces the active accent. accessible-action-default
+                // lets assistive tech commit the choice.
+                accessible-role: radio-button;
+                accessible-label: root.names[idx];
+                accessible-checked: root.selected == idx;
+                accessible-action-default => {
+                    root.focus-idx = idx;
+                    root.selected = idx;
+                    root.accent-selected(idx);
+                }
 
                 // Accent focus ring just outside the swatch (keyboard only).
                 if fs.has-focus && root.focus-idx == idx: Rectangle {

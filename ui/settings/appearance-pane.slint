@@ -51,6 +51,7 @@ export component AppearancePane inherits DetailPage {
                 value: accent-names[AppState.accent-color];
                 show-divider: false;
                 AccentPicker {
+                    names: root.accent-names;
                     selected <=> AppState.accent-color;
                     accent-selected(idx) => {
                         AppState.accent-selected(idx);
