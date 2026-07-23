@@ -979,14 +979,6 @@ msgctxt "ThemePicker"
 msgid "Dark"
 msgstr "ダーク"
 
-msgctxt "AboutPane"
-msgid "White Noise is a native desktop client for private group chat. Messages are encrypted with MLS before they leave your machine, routed over Nostr relays, and decrypted only for the people in the room."
-msgstr "White Noise は、プライベートなグループチャットのためのネイティブデスクトップクライアントです。メッセージはあなたのマシンを離れる前に MLS で暗号化され、Nostr リレーを経由して送られ、ルーム内の人にだけ復号されます。"
-
-msgctxt "KeysPage"
-msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
-msgstr "White Noise はあなたの秘密鍵を一切見ません。このデバイスと接続した署名者にのみ存在します。"
-
 msgctxt "GeneralPane"
 msgid "Date format"
 msgstr "日付形式"
@@ -1978,10 +1970,6 @@ msgctxt "StartNewChatModal"
 msgid "Paste one npub for a direct chat, or several (one per line) plus a group name."
 msgstr "ダイレクトチャットには npub を1つ、グループには複数（1行に1つ）とグループ名を貼り付けてください。"
 
-msgctxt "ContactsPage"
-msgid "People you start chats with will show up here."
-msgstr "チャットを始めた相手がここに表示されます。"
-
 msgctxt "ForwardPickerModal"
 msgid "Pick a chat to forward this message to."
 msgstr "このメッセージの転送先チャットを選択してください。"
@@ -2897,6 +2885,10 @@ msgctxt "LoginScreen"
 msgid "Use another key?"
 msgstr "別の鍵を使いますか？"
 
+msgctxt "ContactsPage"
+msgid "Use the Add button to add your first contact."
+msgstr "「追加」ボタンで最初の連絡先を追加しましょう。"
+
 msgctxt "ContactDetail"
 msgid "Used to deliver messages between you."
 msgstr "お互いの間でメッセージを配信するために使用されます。"
@@ -2958,6 +2950,14 @@ msgstr "White Noise"
 msgctxt "WhiteNoiseTray"
 msgid "White Noise ({} unread)"
 msgstr "White Noise（未読 {} 件）"
+
+msgctxt "AboutPane"
+msgid "White Noise is a native desktop client for private group chat. Messages are encrypted with MLS before they leave your machine, routed over Nostr relays, and decrypted only for the people in the room."
+msgstr "White Noise は、プライベートなグループチャットのためのネイティブデスクトップクライアントです。メッセージはあなたのマシンを離れる前に MLS で暗号化され、Nostr リレーを経由して送られ、ルーム内の人にだけ復号されます。"
+
+msgctxt "KeysPage"
+msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
+msgstr "White Noise はあなたの秘密鍵を一切見ません。このデバイスと接続した署名者にのみ存在します。"
 
 msgctxt "WhiteNoiseTray"
 msgid "White Noise · 1 unread message"

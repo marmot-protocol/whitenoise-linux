@@ -935,14 +935,6 @@ msgctxt "ThemePicker"
 msgid "Dark"
 msgstr ""
 
-msgctxt "AboutPane"
-msgid "White Noise is a native desktop client for private group chat. Messages are encrypted with MLS before they leave your machine, routed over Nostr relays, and decrypted only for the people in the room."
-msgstr ""
-
-msgctxt "KeysPage"
-msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
-msgstr ""
-
 msgctxt "GeneralPane"
 msgid "Date format"
 msgstr ""
@@ -1889,10 +1881,6 @@ msgctxt "StartNewChatModal"
 msgid "Paste one npub for a direct chat, or several (one per line) plus a group name."
 msgstr ""
 
-msgctxt "ContactsPage"
-msgid "People you start chats with will show up here."
-msgstr ""
-
 msgctxt "ForwardPickerModal"
 msgid "Pick a chat to forward this message to."
 msgstr ""
@@ -2762,6 +2750,10 @@ msgctxt "LoginScreen"
 msgid "Use another key?"
 msgstr ""
 
+msgctxt "ContactsPage"
+msgid "Use the Add button to add your first contact."
+msgstr ""
+
 msgctxt "ContactDetail"
 msgid "Used to deliver messages between you."
 msgstr ""
@@ -2820,6 +2812,14 @@ msgstr ""
 
 msgctxt "WhiteNoiseTray"
 msgid "White Noise ({} unread)"
+msgstr ""
+
+msgctxt "AboutPane"
+msgid "White Noise is a native desktop client for private group chat. Messages are encrypted with MLS before they leave your machine, routed over Nostr relays, and decrypted only for the people in the room."
+msgstr ""
+
+msgctxt "KeysPage"
+msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
 msgstr ""
 
 msgctxt "WhiteNoiseTray"
