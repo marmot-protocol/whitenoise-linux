@@ -1201,18 +1201,19 @@ pub(crate) fn wire_panes(
                 let _ = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak.upgrade() else { return };
                     match result {
-                        Ok(()) => ui.set_audit_status(
+                        Ok(()) => show_audit_status(
+                            &ui,
                             if on {
                                 error_copy().audit_enabled
                             } else {
                                 error_copy().audit_disabled
-                            }
-                            .into(),
+                            },
+                            StatusKind::Ok,
                         ),
                         Err(e) => {
                             tracing::warn!(target: "settings", "set audit logs failed: {e:#}");
                             ui.set_audit_enabled(!on);
-                            ui.set_audit_status(error_copy().audit_change_failed.into());
+                            show_audit_status(&ui, error_copy().audit_change_failed, StatusKind::Error);
                         }
                     }
                     push_audit_files(&ui, files);
@@ -1251,11 +1252,13 @@ pub(crate) fn wire_panes(
                     match result {
                         // `true` = the live recorder owned that file and
                         // rotated in place rather than going dark.
-                        Ok(true) => ui.set_audit_status(error_copy().audit_deleted_live.into()),
-                        Ok(false) => ui.set_audit_status(error_copy().audit_deleted.into()),
+                        Ok(true) => {
+                            show_audit_status(&ui, error_copy().audit_deleted_live, StatusKind::Ok)
+                        }
+                        Ok(false) => show_audit_status(&ui, error_copy().audit_deleted, StatusKind::Ok),
                         Err(e) => {
                             tracing::warn!(target: "settings", "delete audit log failed: {e:#}");
-                            ui.set_audit_status(error_copy().audit_delete_failed.into());
+                            show_audit_status(&ui, error_copy().audit_delete_failed, StatusKind::Error);
                         }
                     }
                     push_audit_files(&ui, files);
@@ -1356,7 +1359,7 @@ pub(crate) fn wire_panes(
             }
             ui.set_network_add_error(SharedString::default());
             push_network_relays(&ui, &list);
-            ui.set_network_status(error_copy().relay_added.into());
+            show_network_status(&ui, error_copy().relay_added, StatusKind::Ok);
             // First-run: connect the freshly-added relay live (no-op otherwise).
             reboot();
             true
@@ -1376,11 +1379,11 @@ pub(crate) fn wire_panes(
             }
             if let Err(e) = backend::save_relays(&list) {
                 tracing::warn!(target: "network", "save relays failed: {e}");
-                ui.set_network_status(error_copy().save_relays_failed.into());
+                show_network_status(&ui, error_copy().save_relays_failed, StatusKind::Error);
                 return;
             }
             push_network_relays(&ui, &list);
-            ui.set_network_status(error_copy().relay_removed.into());
+            show_network_status(&ui, error_copy().relay_removed, StatusKind::Ok);
             // First-run: re-boot so the live transport drops the removed relay.
             reboot();
         }
@@ -1409,7 +1412,7 @@ pub(crate) fn wire_panes(
                             ui.set_sync_secs(0);
                         }
                         None if allow_status_update && !ui.get_network_republish_busy() => {
-                            ui.set_network_status(error_copy().not_connected.into())
+                            show_network_status(&ui, error_copy().not_connected, StatusKind::Error)
                         }
                         None => {}
                     }
@@ -1429,7 +1432,7 @@ pub(crate) fn wire_panes(
             if ui.get_network_republish_busy() {
                 return;
             }
-            ui.set_network_status(error_copy().republishing.into());
+            show_network_status(&ui, error_copy().republishing, StatusKind::Pending);
             ui.set_network_republish_busy(true);
             let weak = weak.clone();
             let backend_cell = backend_cell.clone();
@@ -1447,11 +1450,12 @@ pub(crate) fn wire_panes(
                     let Some(ui) = weak.upgrade() else { return };
                     ui.set_network_republish_busy(false);
                     match result {
-                        Ok(n) => ui.set_network_status(
-                            format!("Republished to {n} relay{}.", if n == 1 { "" } else { "s" })
-                                .into(),
+                        Ok(n) => show_network_status(
+                            &ui,
+                            format!("Republished to {n} relay{}.", if n == 1 { "" } else { "s" }),
+                            StatusKind::Ok,
                         ),
-                        Err(e) => ui.set_network_status(e.into()),
+                        Err(e) => show_network_status(&ui, e, StatusKind::Error),
                     }
                 });
             });

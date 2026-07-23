@@ -10,6 +10,7 @@ import { GroupCard } from "../layout/group-card.slint";
 import { KVRow } from "../layout/kv-row.slint";
 import { Toggle } from "../primitives/toggle.slint";
 import { MicroButton } from "../primitives/button.slint";
+import { StatusLine } from "../primitives/status-line.slint";
 
 // One row in the audit-log file list. Self-contained so delete hit-testing
 // doesn't fight the list-level layout (same shape as the relay rows).
@@ -117,12 +118,9 @@ export component AdvancedPane inherits DetailPage {
             }
         }
 
-        if AppState.audit-status != "": Text {
+        if AppState.audit-status != "": StatusLine {
             text: AppState.audit-status;
-            color: Palette.text-mid;
-            font-family: Theme.font;
-            font-size: Theme.fs(11px, 14px);
-            wrap: word-wrap;
+            kind: AppState.audit-status-kind;
         }
     }
 

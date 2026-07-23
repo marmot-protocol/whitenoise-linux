@@ -10,6 +10,7 @@ import { Section } from "../layout/section.slint";
 import { GroupCard } from "../layout/group-card.slint";
 import { Button, MicroButton } from "../primitives/button.slint";
 import { LineInput } from "../primitives/line-input.slint";
+import { StatusLine } from "../primitives/status-line.slint";
 
 // One row in the relay list. Self-contained so removal hit-testing doesn't
 // fight the list-level layout.
@@ -310,10 +311,9 @@ export component NetworkPane inherits DetailPage {
             wrap: word-wrap;
         }
 
-        if AppState.network-status != "": Text {
+        if AppState.network-status != "": StatusLine {
             text: AppState.network-status;
-            color: Palette.text-lo;
-            font-size: Theme.fs(11px, 14px);
+            kind: AppState.network-status-kind;
         }
     }
 }

@@ -525,6 +525,8 @@ export global AppState {
     in-out property <bool> telemetry-enabled: false;
     in-out property <bool> audit-enabled: false;
     in-out property <string> audit-status;
+    // Outcome of audit-status: 0 = pending, 1 = ok, 2 = error (Rust StatusKind).
+    in-out property <int> audit-status-kind: 0;
     in-out property <[AuditLogEntry]> audit-files;
     // (was private on the window root; UI-internal, not part of the Rust contract)
     in-out property <bool> show-audit-delete-confirm: false;
@@ -549,6 +551,8 @@ export global AppState {
     in-out property <int> network-connected;
     in-out property <int> network-total;
     in-out property <string> network-status;
+    // Outcome of network-status: 0 = pending, 1 = ok, 2 = error (Rust StatusKind).
+    in-out property <int> network-status-kind: 0;
     in-out property <bool> network-republish-busy: false;
     // Inline error for the add-relay fields (get-started and the network pane
     // share it). Rust sets it when an add is rejected; the fields clear it as
