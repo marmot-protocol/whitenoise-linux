@@ -19,6 +19,7 @@ export component AddAccountModal inherits Modal {
     secondary-label: @tr("Cancel");
     primary-label: @tr("Add account");
     primary-busy-label: @tr("Adding…");
+    primary-enabled: root.nsec-text != "";
     primary => {
         root.add(root.nsec-text);
     }
@@ -27,6 +28,8 @@ export component AddAccountModal inherits Modal {
         label: @tr("SECRET KEY (NSEC)");
         placeholder: "nsec1…";
         text <=> root.nsec-text;
+        password: true;
+        revealable: true;
         autofocus: true;
         submitted => {
             root.add(root.nsec-text);
