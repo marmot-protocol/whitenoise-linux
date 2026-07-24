@@ -288,6 +288,7 @@ export component Composer inherits Rectangle {
                 // Painted on top of the normal composer when `recording` is true.
                 if AppState.composer-recording: RecordingOverlay {
                     recording-secs: AppState.composer-recording-secs;
+                    recording-level: AppState.composer-recording-level;
                     stop-recording => {
                         AppState.stop-recording();
                     }

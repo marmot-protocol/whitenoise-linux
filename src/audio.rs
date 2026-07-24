@@ -11,7 +11,7 @@
 // thread (it is Send + Sync).
 
 use std::io::Cursor;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -34,6 +34,7 @@ pub struct AudioRecorder {
     _stream: cpal::Stream,
     state: Arc<Mutex<RecordState>>,
     sample_rate: u32,
+    level: Arc<AtomicU32>,
 }
 
 impl AudioRecorder {
@@ -54,14 +55,21 @@ impl AudioRecorder {
             samples: Vec::new(),
             channels,
         }));
+        // Peak amplitude since the last `take_level` call. Non-negative floats
+        // compare the same way as their bit patterns, so `fetch_max` on the
+        // raw bits is a lock-free running max across capture callbacks.
+        let level = Arc::new(AtomicU32::new(0));
 
         let state_c = state.clone();
+        let level_c = level.clone();
         let err_fn = |e| tracing::warn!(target: "audio", "capture error: {e}");
 
         let stream = if config.sample_format() == cpal::SampleFormat::F32 {
             device.build_input_stream(
                 &config.into(),
                 move |data: &[f32], _: &cpal::InputCallbackInfo| {
+                    let peak = data.iter().fold(0.0f32, |m, &s| m.max(s.abs()));
+                    level_c.fetch_max(peak.to_bits(), Ordering::Relaxed);
                     if let Ok(mut s) = state_c.lock() {
                         s.samples.extend_from_slice(data);
                     }
@@ -73,6 +81,9 @@ impl AudioRecorder {
             device.build_input_stream(
                 &config.into(),
                 move |data: &[i16], _: &cpal::InputCallbackInfo| {
+                    // `unsigned_abs` (not `abs`) — `i16::MIN.abs()` overflows.
+                    let peak = data.iter().fold(0u16, |m, &s| m.max(s.unsigned_abs()));
+                    level_c.fetch_max((peak as f32 / i16::MAX as f32).to_bits(), Ordering::Relaxed);
                     if let Ok(mut s) = state_c.lock() {
                         s.samples
                             .extend(data.iter().map(|v| *v as f32 / i16::MAX as f32));
@@ -90,7 +101,15 @@ impl AudioRecorder {
             _stream: stream,
             state,
             sample_rate,
+            level,
         })
+    }
+
+    /// A cloned handle to the live peak-amplitude accumulator, for a polling
+    /// thread to read (and reset) at its own cadence while `self` stays
+    /// confined to the UI thread (`cpal::Stream` is `!Send`).
+    pub fn level_handle(&self) -> Arc<AtomicU32> {
+        self.level.clone()
     }
 
     /// Stop capturing and encode the audio as a mono 16-bit PCM WAV file in

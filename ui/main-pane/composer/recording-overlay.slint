@@ -5,6 +5,8 @@ import { Button, MicroButton } from "../../primitives/button.slint";
 // true. Red indicator dot, live timer, stop (send) + cancel buttons.
 export component RecordingOverlay inherits Rectangle {
     in property <int> recording-secs;
+    // Peak input amplitude (0.0-1.0), refreshed ~10x/sec while recording.
+    in property <float> recording-level;
     callback stop-recording();
     callback cancel-recording();
 
@@ -32,6 +34,25 @@ export component RecordingOverlay inherits Rectangle {
                 background: Palette.danger;
                 y: (parent.height - self.height) / 2;
                 x: (parent.width - self.width) / 2;
+            }
+        }
+
+        // Live input-level meter: bars light up in sequence as `recording-level`
+        // rises, so a dead/muted mic reads as visibly silent before the clip
+        // is sent, instead of only being discoverable after the recipient
+        // complains.
+        HorizontalLayout {
+            width: 36px;
+            height: parent.height;
+            spacing: 3px;
+            alignment: center;
+            for threshold[i] in [0.05, 0.14, 0.28, 0.46, 0.68]: Rectangle {
+                width: 4px;
+                height: 7px + i * 3px;
+                y: (parent.height - self.height) / 2;
+                border-radius: (2px) * Theme.r-scale;
+                background: root.recording-level >= threshold ? Palette.danger : Palette.bubble-inset-strong;
+                animate background { duration: 90ms; }
             }
         }
 
