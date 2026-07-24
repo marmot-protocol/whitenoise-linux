@@ -465,6 +465,13 @@ export global AppState {
     // re-triggers the `changed` handler down in MainPane.
     in-out property <int> composer-caret-pos: 0;
     in-out property <int> composer-caret-tick: 0;
+    // Link-open confirmation: a tapped external http(s) link is not opened
+    // immediately. Rust resolves nostr:/marmot:// links to the in-app profile
+    // modal itself and only arms this pair for the OS-handler fallback, so
+    // the resolved host is visible before a browser launches.
+    in-out property <string> pending-external-link: "";
+    in-out property <string> pending-external-host: "";
+    callback confirm-external-link(string);
     // ═══ Keys & identity ═══════════════════════════════════════════════════
     // Key-package state and management. Refresh, publish, and rotate each get
     // their own busy flag and status string, so triggering one doesn't make

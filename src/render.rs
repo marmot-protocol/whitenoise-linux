@@ -1084,6 +1084,21 @@ pub(crate) fn extract_selection(
     out.trim_matches('\n').to_string()
 }
 
+/// Best-effort host for a link-open confirmation prompt: strips the scheme
+/// and any userinfo, keeping the rest up to the first path/query/fragment
+/// delimiter. Not a validating URL parser — just enough to preview where a
+/// tapped link actually goes before handing it to the OS.
+pub(crate) fn url_host(url: &str) -> String {
+    let without_scheme = url.split_once("://").map_or(url, |(_, rest)| rest);
+    let without_userinfo = without_scheme
+        .rsplit_once('@')
+        .map_or(without_scheme, |(_, rest)| rest);
+    let end = without_userinfo
+        .find(['/', '?', '#'])
+        .unwrap_or(without_userinfo.len());
+    without_userinfo[..end].to_string()
+}
+
 /// Open a URL (or `mailto:` / `nostr:` URI) with the platform's default
 /// handler. Fire-and-forget; failures are logged, not surfaced.
 pub(crate) fn open_external(url: &str) {
