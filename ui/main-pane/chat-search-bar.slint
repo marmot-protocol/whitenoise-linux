@@ -114,11 +114,20 @@ export component ChatSearchBar inherits Rectangle {
             border-radius: (6px) * Theme.r-scale;
             background: up-touch.has-hover && root.has-matches ? Palette.hover : transparent;
             animate background { duration: Theme.hover-dur; }
+            accessible-role: button;
+            accessible-enabled: root.has-matches;
+            accessible-label: @tr("Previous match");
+            accessible-action-default => { up-btn.activate(); }
+            function activate() {
+                if (root.has-matches) {
+                    AppState.msg-search-step(false);
+                }
+            }
             up-touch := TouchArea {
                 enabled: root.has-matches;
                 mouse-cursor: root.has-matches ? pointer : default;
                 clicked => {
-                    AppState.msg-search-step(false);
+                    up-btn.activate();
                 }
             }
 
@@ -127,6 +136,30 @@ export component ChatSearchBar inherits Rectangle {
                 y: (parent.height - self.height) / 2;
                 size: 12px;
                 stroke: root.has-matches ? Palette.text-mid : Palette.text-vlo;
+            }
+
+            // Zero-size FocusScope: joins the Tab chain without taking pointer
+            // events. Mirrors ui/primitives/button.slint and chat-header.slint.
+            up-fs := FocusScope {
+                width: 0px;
+                height: 0px;
+                enabled: root.has-matches;
+                key-pressed(event) => {
+                    if (event.text == Key.Return || event.text == " ") {
+                        up-btn.activate();
+                        return accept;
+                    }
+                    return reject;
+                }
+            }
+            if up-fs.has-focus: Rectangle {
+                x: 1px;
+                y: 1px;
+                width: parent.width - 2px;
+                height: parent.height - 2px;
+                border-radius: (6px) * Theme.r-scale;
+                border-width: 2px;
+                border-color: Palette.mint;
             }
         }
 
@@ -137,11 +170,20 @@ export component ChatSearchBar inherits Rectangle {
             border-radius: (6px) * Theme.r-scale;
             background: down-touch.has-hover && root.has-matches ? Palette.hover : transparent;
             animate background { duration: Theme.hover-dur; }
+            accessible-role: button;
+            accessible-enabled: root.has-matches;
+            accessible-label: @tr("Next match");
+            accessible-action-default => { down-btn.activate(); }
+            function activate() {
+                if (root.has-matches) {
+                    AppState.msg-search-step(true);
+                }
+            }
             down-touch := TouchArea {
                 enabled: root.has-matches;
                 mouse-cursor: root.has-matches ? pointer : default;
                 clicked => {
-                    AppState.msg-search-step(true);
+                    down-btn.activate();
                 }
             }
 
@@ -150,6 +192,28 @@ export component ChatSearchBar inherits Rectangle {
                 y: (parent.height - self.height) / 2;
                 size: 12px;
                 stroke: root.has-matches ? Palette.text-mid : Palette.text-vlo;
+            }
+
+            down-fs := FocusScope {
+                width: 0px;
+                height: 0px;
+                enabled: root.has-matches;
+                key-pressed(event) => {
+                    if (event.text == Key.Return || event.text == " ") {
+                        down-btn.activate();
+                        return accept;
+                    }
+                    return reject;
+                }
+            }
+            if down-fs.has-focus: Rectangle {
+                x: 1px;
+                y: 1px;
+                width: parent.width - 2px;
+                height: parent.height - 2px;
+                border-radius: (6px) * Theme.r-scale;
+                border-width: 2px;
+                border-color: Palette.mint;
             }
         }
 
@@ -160,10 +224,16 @@ export component ChatSearchBar inherits Rectangle {
             border-radius: (6px) * Theme.r-scale;
             background: close-touch.has-hover ? Palette.hover : transparent;
             animate background { duration: Theme.hover-dur; }
+            accessible-role: button;
+            accessible-label: @tr("Close search");
+            accessible-action-default => { close-btn.activate(); }
+            function activate() {
+                root.close();
+            }
             close-touch := TouchArea {
                 mouse-cursor: pointer;
                 clicked => {
-                    root.close();
+                    close-btn.activate();
                 }
             }
 
@@ -173,6 +243,27 @@ export component ChatSearchBar inherits Rectangle {
                 font-size: Theme.fs(12px, 15px);
                 vertical-alignment: center;
                 horizontal-alignment: center;
+            }
+
+            close-fs := FocusScope {
+                width: 0px;
+                height: 0px;
+                key-pressed(event) => {
+                    if (event.text == Key.Return || event.text == " ") {
+                        close-btn.activate();
+                        return accept;
+                    }
+                    return reject;
+                }
+            }
+            if close-fs.has-focus: Rectangle {
+                x: 1px;
+                y: 1px;
+                width: parent.width - 2px;
+                height: parent.height - 2px;
+                border-radius: (6px) * Theme.r-scale;
+                border-width: 2px;
+                border-color: Palette.mint;
             }
         }
     }

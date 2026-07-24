@@ -674,6 +674,10 @@ msgctxt "ChatHeader"
 msgid "Close search"
 msgstr "Suche schließen"
 
+msgctxt "ChatSearchBar"
+msgid "Close search"
+msgstr "Suche schließen"
+
 msgctxt "KeysPage"
 msgid "Configure key-package relays first."
 msgstr "Konfiguriere zuerst Schlüsselpaket-Relays."
@@ -1724,6 +1728,10 @@ msgctxt "ImageViewerModal"
 msgid "Next image"
 msgstr "Nächstes Bild"
 
+msgctxt "ChatSearchBar"
+msgid "Next match"
+msgstr "Nächster Treffer"
+
 msgctxt "ContactDetail"
 msgid "Nickname"
 msgstr "Spitzname"
@@ -2019,6 +2027,10 @@ msgstr "Ton abspielen"
 msgctxt "ImageViewerModal"
 msgid "Previous image"
 msgstr "Vorheriges Bild"
+
+msgctxt "ChatSearchBar"
+msgid "Previous match"
+msgstr "Vorheriger Treffer"
 
 #, fuzzy
 msgctxt "AdvancedPane"
