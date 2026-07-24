@@ -9,6 +9,8 @@ export component AddContactModal inherits Modal {
     in property <bool> busy: false;
 
     card-width: 460px;
+    // The username/key field below autofocuses itself.
+    grab-focus: false;
     title: @tr("Add contact");
     subtitle: @tr("Enter their username (name@domain), npub, or hex public key. They'll appear in your contacts on every device.");
     secondary-label: @tr("Cancel");

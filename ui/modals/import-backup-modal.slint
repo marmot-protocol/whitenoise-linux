@@ -28,6 +28,8 @@ export component ImportBackupModal inherits Modal {
     }
 
     card-width: 460px;
+    // The password field below autofocuses itself.
+    grab-focus: false;
     title: @tr("Import backup");
     subtitle: root.restore-mode ? @tr("Restore everything from an encrypted backup. Use the password the backup was created with.") : @tr("Merge the accounts from an encrypted backup into this install. Use the password the backup was created with.");
     secondary-label: @tr("Cancel");

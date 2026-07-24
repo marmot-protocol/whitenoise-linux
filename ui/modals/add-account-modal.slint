@@ -12,6 +12,8 @@ export component AddAccountModal inherits Modal {
     in property <bool> generated: false;
 
     card-width: 460px;
+    // The nsec field below autofocuses itself.
+    grab-focus: false;
     title: @tr("Add account");
     subtitle: @tr("Paste another secret key, or generate a fresh one. It's encrypted with your password and stays signed in alongside your other accounts.");
     secondary-label: @tr("Cancel");

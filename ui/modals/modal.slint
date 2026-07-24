@@ -37,8 +37,13 @@ export component Modal inherits Rectangle {
     in property <color> status-color: Palette.text-lo;
     in property <bool> show-close: true;
     in property <bool> bare: false;
-    // Set false when a child mounts its own FocusScope (command palette) so
-    // the modal doesn't fight it for keyboard focus.
+    // Set false when a child mounts its own FocusScope (command palette) or
+    // autofocuses one of its own fields (a ModalField with `autofocus: true`)
+    // so the modal doesn't fight it for keyboard focus — Slint runs `init` on
+    // children before their parent, so an unconditional esc-scope.focus()
+    // here would always win and steal focus back from the field. Escape
+    // still works once the field has focus: TextInput rejects it and it
+    // bubbles up to esc-scope below.
     in property <bool> grab-focus: true;
     // Width tiers: 360px compact (single-purpose pickers), 440px default,
     // 460px+ wide (forms with side-by-side fields). Pick a tier rather than

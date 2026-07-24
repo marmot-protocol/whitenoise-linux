@@ -10,6 +10,8 @@ export component BackupCreateModal inherits Modal {
     in-out property <string> password-text;
 
     card-width: 460px;
+    // The password field below autofocuses itself.
+    grab-focus: false;
     title: @tr("Create backup");
     subtitle: @tr("Pack everything — accounts, chats, settings — into one encrypted file, sealed with your password. The media cache is left out.");
     secondary-label: @tr("Cancel");
