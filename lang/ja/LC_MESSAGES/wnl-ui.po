@@ -675,6 +675,10 @@ msgctxt "ChatHeader"
 msgid "Close search"
 msgstr "検索を閉じる"
 
+msgctxt "ChatSearchBar"
+msgid "Close search"
+msgstr "検索を閉じる"
+
 msgctxt "KeysPage"
 msgid "Configure key-package relays first."
 msgstr "先にキーパッケージ用リレーを設定してください。"
@@ -1786,6 +1790,10 @@ msgctxt "ImageViewerModal"
 msgid "Next image"
 msgstr "次の画像"
 
+msgctxt "ChatSearchBar"
+msgid "Next match"
+msgstr "次の一致"
+
 msgctxt "ContactDetail"
 msgid "Nickname"
 msgstr "ニックネーム"
@@ -2081,6 +2089,10 @@ msgstr "音を鳴らす"
 msgctxt "ImageViewerModal"
 msgid "Previous image"
 msgstr "前の画像"
+
+msgctxt "ChatSearchBar"
+msgid "Previous match"
+msgstr "前の一致"
 
 #, fuzzy
 msgctxt "AdvancedPane"
