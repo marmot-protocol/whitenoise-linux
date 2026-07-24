@@ -287,6 +287,11 @@ msgctxt "MessageContextMenu"
 msgid "Add reaction"
 msgstr "リアクションを追加"
 
+#. Default screen-reader name for the "+" add cell.
+msgctxt "QuickReactCell"
+msgid "Add reaction"
+msgstr "リアクションを追加"
+
 msgctxt "ErrorCopy"
 msgid "Add the relay's address after wss://."
 msgstr "wss:// に続けてリレーのアドレスを入力してください。"
@@ -2208,6 +2213,11 @@ msgctxt "LoginScreen"
 msgid "Re-enter password"
 msgstr "パスワードを再入力"
 
+#. Default screen-reader name for a plain reaction cell.
+msgctxt "QuickReactCell"
+msgid "React with {}"
+msgstr "{}でリアクションする"
+
 msgctxt "Composer"
 msgid "Record voice message"
 msgstr "音声メッセージを録音"
@@ -2319,6 +2329,10 @@ msgstr "{}を連絡先から削除しますか？"
 msgctxt "ConfirmFlows"
 msgid "Remove {} from the group?"
 msgstr "{}をグループから削除しますか？"
+
+msgctxt "GeneralPane"
+msgid "Remove {} reaction"
+msgstr "{}のリアクションを削除"
 
 msgctxt "ErrorCopy"
 msgid "Renamed."

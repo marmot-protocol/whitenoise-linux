@@ -278,6 +278,11 @@ msgctxt "MessageContextMenu"
 msgid "Add reaction"
 msgstr ""
 
+#. Default screen-reader name for the "+" add cell.
+msgctxt "QuickReactCell"
+msgid "Add reaction"
+msgstr ""
+
 msgctxt "ErrorCopy"
 msgid "Add the relay's address after wss://."
 msgstr ""
@@ -2108,6 +2113,11 @@ msgctxt "LoginScreen"
 msgid "Re-enter password"
 msgstr ""
 
+#. Default screen-reader name for a plain reaction cell.
+msgctxt "QuickReactCell"
+msgid "React with {}"
+msgstr ""
+
 msgctxt "Composer"
 msgid "Record voice message"
 msgstr ""
@@ -2211,6 +2221,10 @@ msgstr ""
 
 msgctxt "ConfirmFlows"
 msgid "Remove {} from the group?"
+msgstr ""
+
+msgctxt "GeneralPane"
+msgid "Remove {} reaction"
 msgstr ""
 
 msgctxt "ErrorCopy"
