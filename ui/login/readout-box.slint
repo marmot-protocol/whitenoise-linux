@@ -28,6 +28,7 @@ export component ReadoutBox inherits VerticalLayout {
             padding-bottom: 9px;
             TextInput {
                 text: root.value;
+                accessible-label: root.label;
                 read-only: true;
                 single-line: false;
                 wrap: char-wrap;
