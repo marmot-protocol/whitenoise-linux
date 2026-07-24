@@ -1703,6 +1703,84 @@ pub(crate) fn wire_panes(
         }
     });
 
+    // ─── Export encrypted key (Keys → Danger zone) ─────────────────────
+    // Same gate as reveal-nsec: re-confirm the vault password on a worker
+    // thread. On success, encrypt the active account's secret key as an
+    // NIP-49 `ncryptsec1…` string, sealed with that same password — matching
+    // how BackupCreateModal seals a whole backup with the vault password
+    // rather than asking for a second, freshly-typed one.
+    ui.global::<AppState>().on_export_key_confirm({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        move |password| {
+            let Some(ui) = weak.upgrade() else { return };
+            let password = password.to_string();
+            let Some(backend) = backend_cell.lock().unwrap().clone() else {
+                ui.set_export_key_status(error_copy().backend_not_ready_yet.into());
+                ui.set_export_key_status_error(true);
+                return;
+            };
+            let account_hex = backend.account().account_id_hex;
+            ui.set_export_key_busy(true);
+            ui.set_export_key_status(s(""));
+            ui.set_export_key_status_error(false);
+            let weak = weak.clone();
+            std::thread::spawn(move || {
+                let result: Result<String, String> = (|| {
+                    let v = Vault::open(&password).map_err(|e| match e {
+                        vault::VaultError::WrongPassword => error_copy().wrong_password,
+                        other => format!("{other}"),
+                    })?;
+                    let nsec = v
+                        .nsec_for_pubkey(&account_hex)
+                        .ok_or_else(|| error_copy().no_secret_key_account)?;
+                    let keys =
+                        nostr::Keys::parse(&nsec).map_err(|_| error_copy().export_key_failed)?;
+                    let encrypted = nostr::nips::nip49::EncryptedSecretKey::new(
+                        keys.secret_key(),
+                        &password,
+                        16,
+                        nostr::nips::nip49::KeySecurity::Unknown,
+                    )
+                    .map_err(|_| error_copy().export_key_failed)?;
+                    encrypted
+                        .to_bech32()
+                        .map_err(|_| error_copy().export_key_failed)
+                })();
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    ui.set_export_key_busy(false);
+                    match result {
+                        Ok(ncryptsec) => {
+                            ui.set_export_key_password(s(""));
+                            ui.set_export_key_status(s(""));
+                            ui.set_export_key_status_error(false);
+                            ui.set_export_key_value(ncryptsec.into());
+                        }
+                        Err(err) => {
+                            ui.set_export_key_status(err.into());
+                            ui.set_export_key_status_error(true);
+                        }
+                    }
+                });
+            });
+        }
+    });
+
+    ui.global::<AppState>().on_export_key_dismissed({
+        let weak = ui.as_weak();
+        move || {
+            let Some(ui) = weak.upgrade() else { return };
+            // Drop the encrypted key and the typed password the moment the
+            // dialog closes — don't leave either lingering in UI state.
+            ui.set_export_key_password(s(""));
+            ui.set_export_key_value(s(""));
+            ui.set_export_key_status(s(""));
+            ui.set_export_key_status_error(false);
+            ui.set_export_key_busy(false);
+        }
+    });
+
     // After any selection mutation, refresh the breadcrumb so the title bar matches state.
     // Captures only the weak handle, so clones are `Send` and can ride
     // through worker threads into completion closures.

@@ -869,6 +869,7 @@ copy_snapshot! {
     clipboard_failed_nsec: String = get_clipboard_failed_nsec => "Couldn't access clipboard. Your nsec was not copied.";
     no_secret_key_account: String = get_no_secret_key_account => "No secret key for this account is stored on this device.";
     restore_lock_only: String = get_restore_lock_only => "Full restore is only available from the lock screen, before unlocking.";
+    export_key_failed: String = get_export_key_failed => "Couldn't create the encrypted key. Please try again.";
     // Contact key-package row (in-flight + `kp_labels` result). The "From"/
     // "Published" forms carry `%1`/`%2` (relay host, relative time) slots.
     kp_checking: String = get_kp_checking => "Checking…";

@@ -547,6 +547,11 @@ msgctxt "ConfirmModal"
 msgid "Cancel"
 msgstr "Abbrechen"
 
+#. control lives inline next to the key) and the footer just closes.
+msgctxt "ExportKeyModal"
+msgid "Cancel"
+msgstr "Abbrechen"
+
 msgctxt "ForwardPickerModal"
 msgid "Cancel"
 msgstr "Abbrechen"
@@ -683,6 +688,10 @@ msgctxt "BackupCreateModal"
 msgid "Confirm your password"
 msgstr "Bestätige dein Passwort"
 
+msgctxt "ExportKeyModal"
+msgid "Confirm your vault password to create an NIP-49 encrypted key (ncryptsec) you can safely store or move to another client."
+msgstr "Bestätige dein Tresor-Passwort, um einen NIP-49-verschlüsselten Schlüssel (ncryptsec) zu erstellen, den du sicher aufbewahren oder in einen anderen Client übertragen kannst."
+
 msgctxt "RevealNsecModal"
 msgid "Confirm your vault password to reveal the secret key (nsec) for your active account."
 msgstr ""
@@ -745,11 +754,19 @@ msgctxt "EncryptionInfoModal"
 msgid "Copied ✓"
 msgstr "Kopiert ✓"
 
+msgctxt "ExportKeyModal"
+msgid "Copied ✓"
+msgstr "Kopiert ✓"
+
 msgctxt "RevealNsecModal"
 msgid "Copied ✓"
 msgstr "Kopiert ✓"
 
 msgctxt "ContactDetail"
+msgid "Copy"
+msgstr "Kopieren"
+
+msgctxt "ExportKeyModal"
 msgid "Copy"
 msgstr "Kopieren"
 
@@ -838,6 +855,10 @@ msgstr "Bild konnte nicht kopiert werden."
 msgctxt "ErrorCopy"
 msgid "Couldn't create the chat. Please try again."
 msgstr "Chat konnte nicht erstellt werden. Bitte versuche es erneut."
+
+msgctxt "ErrorCopy"
+msgid "Couldn't create the encrypted key. Please try again."
+msgstr "Der verschlüsselte Schlüssel konnte nicht erstellt werden. Bitte versuche es erneut."
 
 msgctxt "ErrorCopy"
 msgid "Couldn't decline the invitation. Please try again in a moment."
@@ -957,6 +978,10 @@ msgctxt "StoragePane"
 msgid "Create backup…"
 msgstr "Backup erstellen…"
 
+msgctxt "KeysPage"
+msgid "Creates an NIP-49 key encrypted with your vault password, safe to store or move to another client."
+msgstr "Erstellt einen mit deinem Tresor-Passwort verschlüsselten NIP-49-Schlüssel, den du sicher aufbewahren oder in einen anderen Client übertragen kannst."
+
 #, fuzzy
 msgctxt "StartNewChatModal"
 msgid "Creating…"
@@ -1071,6 +1096,11 @@ msgid "Display name"
 msgstr "Anzeigename"
 
 #. control lives inline next to the key) and the footer just closes.
+msgctxt "ExportKeyModal"
+msgid "Done"
+msgstr "Fertig"
+
+#. control lives inline next to the key) and the footer just closes.
 msgctxt "RevealNsecModal"
 msgid "Done"
 msgstr ""
@@ -1082,6 +1112,10 @@ msgstr "BEARBEITEN"
 msgctxt "ProfilePage"
 msgid "EDITING · BROADCAST TO RELAYS ON SAVE"
 msgstr "BEARBEITUNG · BEIM SPEICHERN AN RELAYS SENDEN"
+
+msgctxt "ExportKeyModal"
+msgid "ENCRYPTED KEY (NCRYPTSEC)"
+msgstr "VERSCHLÜSSELTER SCHLÜSSEL (NCRYPTSEC)"
 
 msgctxt "EditHistoryModal"
 msgid "Edit history"
@@ -1104,6 +1138,10 @@ msgstr "Bearbeiten:"
 msgctxt "AboutPane"
 msgid "Encrypted group chat on Nostr"
 msgstr "Verschlüsselter Gruppenchat über Nostr"
+
+msgctxt "ExportKeyModal"
+msgid "Encrypting…"
+msgstr "Verschlüssele…"
 
 #, fuzzy
 msgctxt "ChatHeader"
@@ -1157,6 +1195,22 @@ msgstr "Gib dein Passwort ein."
 msgctxt "EncryptionInfoModal"
 msgid "Even if a key leaks later on, the messages you already sent can't be unlocked with it."
 msgstr ""
+
+msgctxt "KeysPage"
+msgid "Export"
+msgstr "Exportieren"
+
+msgctxt "ExportKeyModal"
+msgid "Export encrypted key"
+msgstr "Verschlüsselten Schlüssel exportieren"
+
+msgctxt "KeysPage"
+msgid "Export encrypted key (ncryptsec)"
+msgstr "Verschlüsselten Schlüssel exportieren (ncryptsec)"
+
+msgctxt "ExportKeyModal"
+msgid "Export key"
+msgstr "Schlüssel exportieren"
 
 msgctxt "ChatContextMenu"
 msgid "Export transcript…"
@@ -2711,6 +2765,10 @@ msgctxt "StoragePane"
 msgid "Storage"
 msgstr "Speicher"
 
+msgctxt "ExportKeyModal"
+msgid "Store it somewhere safe and close this dialog. Anyone who imports it will need the vault password you just entered to decrypt it."
+msgstr "Bewahre ihn an einem sicheren Ort auf und schließe dieses Fenster. Wer ihn importiert, benötigt zum Entschlüsseln das Tresor-Passwort, das du gerade eingegeben hast."
+
 msgctxt "RevealNsecModal"
 msgid "Store it somewhere safe and close this dialog. White Noise keeps it encrypted in your vault — this is the only place it's shown in the clear."
 msgstr ""
@@ -2787,6 +2845,10 @@ msgstr ""
 msgctxt "GetStartedScreen"
 msgid "This is what lets other people start an encrypted chat with you."
 msgstr "Damit können andere einen verschlüsselten Chat mit dir starten."
+
+msgctxt "ExportKeyModal"
+msgid "This is your secret key, encrypted with your vault password. Whoever holds this string and that password controls your identity."
+msgstr "Dies ist dein geheimer Schlüssel, verschlüsselt mit deinem Tresor-Passwort. Wer diese Zeichenfolge und dieses Passwort besitzt, kontrolliert deine Identität."
 
 msgctxt "AddAccountModal"
 msgid "This key was just generated and exists nowhere else yet. Copy it somewhere safe before adding it — there is no recovery."
@@ -2938,6 +3000,10 @@ msgctxt "ProfilePage"
 msgid "Username"
 msgstr "Benutzername"
 
+msgctxt "ExportKeyModal"
+msgid "VAULT PASSWORD"
+msgstr "TRESOR-PASSWORT"
+
 #, fuzzy
 msgctxt "RevealNsecModal"
 msgid "VAULT PASSWORD"
@@ -3053,6 +3119,10 @@ msgstr "Dein Schlüssel verlässt nie dieses Gerät."
 msgctxt "AboutPane"
 msgid "Your keys stay on this device — we never see them."
 msgstr "Deine Schlüssel bleiben auf diesem Gerät — wir sehen sie nie."
+
+msgctxt "ExportKeyModal"
+msgid "Your password"
+msgstr "Dein Passwort"
 
 #, fuzzy
 msgctxt "RevealNsecModal"

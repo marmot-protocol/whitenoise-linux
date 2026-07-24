@@ -543,6 +543,11 @@ msgctxt "ConfirmModal"
 msgid "Cancel"
 msgstr "キャンセル"
 
+#. control lives inline next to the key) and the footer just closes.
+msgctxt "ExportKeyModal"
+msgid "Cancel"
+msgstr "キャンセル"
+
 msgctxt "ForwardPickerModal"
 msgid "Cancel"
 msgstr "キャンセル"
@@ -679,6 +684,10 @@ msgctxt "BackupCreateModal"
 msgid "Confirm your password"
 msgstr "パスワードを確認"
 
+msgctxt "ExportKeyModal"
+msgid "Confirm your vault password to create an NIP-49 encrypted key (ncryptsec) you can safely store or move to another client."
+msgstr "NIP-49 暗号化キー(ncryptsec)を作成するには、ボールトのパスワードを確認してください。安全に保管したり、別のクライアントに移したりできます。"
+
 msgctxt "RevealNsecModal"
 msgid "Confirm your vault password to reveal the secret key (nsec) for your active account."
 msgstr ""
@@ -741,11 +750,19 @@ msgctxt "EncryptionInfoModal"
 msgid "Copied ✓"
 msgstr "コピーしました ✓"
 
+msgctxt "ExportKeyModal"
+msgid "Copied ✓"
+msgstr "コピーしました ✓"
+
 msgctxt "RevealNsecModal"
 msgid "Copied ✓"
 msgstr "コピーしました ✓"
 
 msgctxt "ContactDetail"
+msgid "Copy"
+msgstr "コピー"
+
+msgctxt "ExportKeyModal"
 msgid "Copy"
 msgstr "コピー"
 
@@ -834,6 +851,10 @@ msgstr "画像をコピーできませんでした。"
 msgctxt "ErrorCopy"
 msgid "Couldn't create the chat. Please try again."
 msgstr "チャットを作成できませんでした。もう一度お試しください。"
+
+msgctxt "ErrorCopy"
+msgid "Couldn't create the encrypted key. Please try again."
+msgstr "暗号化キーを作成できませんでした。もう一度お試しください。"
 
 msgctxt "ErrorCopy"
 msgid "Couldn't decline the invitation. Please try again in a moment."
@@ -953,6 +974,10 @@ msgctxt "StoragePane"
 msgid "Create backup…"
 msgstr "バックアップを作成…"
 
+msgctxt "KeysPage"
+msgid "Creates an NIP-49 key encrypted with your vault password, safe to store or move to another client."
+msgstr "ボールトのパスワードで暗号化された NIP-49 キーを作成します。安全に保管したり、別のクライアントに移したりできます。"
+
 #, fuzzy
 msgctxt "StartNewChatModal"
 msgid "Creating…"
@@ -1067,6 +1092,11 @@ msgid "Display name"
 msgstr "表示名"
 
 #. control lives inline next to the key) and the footer just closes.
+msgctxt "ExportKeyModal"
+msgid "Done"
+msgstr "完了"
+
+#. control lives inline next to the key) and the footer just closes.
 msgctxt "RevealNsecModal"
 msgid "Done"
 msgstr ""
@@ -1078,6 +1108,10 @@ msgstr "編集"
 msgctxt "ProfilePage"
 msgid "EDITING · BROADCAST TO RELAYS ON SAVE"
 msgstr "編集中 · 保存時にリレーへ配信"
+
+msgctxt "ExportKeyModal"
+msgid "ENCRYPTED KEY (NCRYPTSEC)"
+msgstr "暗号化キー(NCRYPTSEC)"
 
 msgctxt "EditHistoryModal"
 msgid "Edit history"
@@ -1100,6 +1134,10 @@ msgstr "編集中:"
 msgctxt "AboutPane"
 msgid "Encrypted group chat on Nostr"
 msgstr "Nostr 上の暗号化グループチャット"
+
+msgctxt "ExportKeyModal"
+msgid "Encrypting…"
+msgstr "暗号化中…"
 
 #, fuzzy
 msgctxt "ChatHeader"
@@ -1153,6 +1191,22 @@ msgstr "パスワードを入力してください。"
 msgctxt "EncryptionInfoModal"
 msgid "Even if a key leaks later on, the messages you already sent can't be unlocked with it."
 msgstr ""
+
+msgctxt "KeysPage"
+msgid "Export"
+msgstr "エクスポート"
+
+msgctxt "ExportKeyModal"
+msgid "Export encrypted key"
+msgstr "暗号化キーをエクスポート"
+
+msgctxt "KeysPage"
+msgid "Export encrypted key (ncryptsec)"
+msgstr "暗号化キーをエクスポート(ncryptsec)"
+
+msgctxt "ExportKeyModal"
+msgid "Export key"
+msgstr "キーをエクスポート"
 
 msgctxt "ChatContextMenu"
 msgid "Export transcript…"
@@ -2707,6 +2761,10 @@ msgctxt "StoragePane"
 msgid "Storage"
 msgstr "ストレージ"
 
+msgctxt "ExportKeyModal"
+msgid "Store it somewhere safe and close this dialog. Anyone who imports it will need the vault password you just entered to decrypt it."
+msgstr "安全な場所に保管し、このダイアログを閉じてください。インポートする人は、復号のために今入力したボールトのパスワードが必要になります。"
+
 msgctxt "RevealNsecModal"
 msgid "Store it somewhere safe and close this dialog. White Noise keeps it encrypted in your vault — this is the only place it's shown in the clear."
 msgstr ""
@@ -2783,6 +2841,10 @@ msgstr ""
 msgctxt "GetStartedScreen"
 msgid "This is what lets other people start an encrypted chat with you."
 msgstr "これにより、他の人があなたと暗号化されたチャットを始められます。"
+
+msgctxt "ExportKeyModal"
+msgid "This is your secret key, encrypted with your vault password. Whoever holds this string and that password controls your identity."
+msgstr "これはボールトのパスワードで暗号化されたあなたの秘密鍵です。この文字列とそのパスワードを持つ者があなたの ID を管理します。"
 
 msgctxt "AddAccountModal"
 msgid "This key was just generated and exists nowhere else yet. Copy it somewhere safe before adding it — there is no recovery."
@@ -2934,6 +2996,10 @@ msgctxt "ProfilePage"
 msgid "Username"
 msgstr "ユーザー名"
 
+msgctxt "ExportKeyModal"
+msgid "VAULT PASSWORD"
+msgstr "ボールトのパスワード"
+
 #, fuzzy
 msgctxt "RevealNsecModal"
 msgid "VAULT PASSWORD"
@@ -3048,6 +3114,10 @@ msgstr "鍵がこのデバイス外に出ることはありません。"
 msgctxt "AboutPane"
 msgid "Your keys stay on this device — we never see them."
 msgstr "あなたの鍵はこのデバイスに留まり、私たちが見ることはありません。"
+
+msgctxt "ExportKeyModal"
+msgid "Your password"
+msgstr "パスワード"
 
 #, fuzzy
 msgctxt "RevealNsecModal"

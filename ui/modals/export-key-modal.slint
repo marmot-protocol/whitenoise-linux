@@ -1,0 +1,105 @@
+import { Palette, Theme } from "../tokens.slint";
+import { Modal, ModalField } from "modal.slint";
+import { Button } from "../primitives/button.slint";
+import { ReadoutBox } from "../login/readout-box.slint";
+import { CopyIcon } from "../icons/copy-icon.slint";
+
+// Danger-zone affordance: export the *active* account's private key as an
+// NIP-49 password-encrypted `ncryptsec1…` string, gated behind the vault
+// password. Same two-phase shape as RevealNsecModal, keyed on whether
+// `key-value` has been filled in by Rust:
+//
+//   1. Confirm — the user re-enters their vault password. `confirm(password)`
+//      verifies it and, on success, encrypts the secret key under that same
+//      password (matching how BackupCreateModal seals a backup with the vault
+//      password) and fills `key-value` with the resulting `ncryptsec1…`.
+//   2. Reveal — the encrypted key is shown with a copy button.
+//
+// The root owns `show-export-key`; dismissing clears the password + value.
+export component ExportKeyModal inherits Modal {
+    callback confirm(string);   // vault password → verify + encrypt
+    callback copy(string);      // copy the exported ncryptsec
+
+    in-out property <string> password;
+    in property <string> key-value;        // "" until exported
+    property <bool> revealed: root.key-value != "";
+
+    // Copy feedback, matching RevealNsecModal.
+    property <bool> copied: false;
+    copy-reset := Timer {
+        interval: 1.4s;
+        running: root.copied;
+        triggered => {
+            root.copied = false;
+        }
+    }
+
+    card-width: 460px;
+    title: @tr("Export encrypted key");
+    subtitle: root.revealed ? @tr("This is your secret key, encrypted with your vault password. Whoever holds this string and that password controls your identity.") : @tr("Confirm your vault password to create an NIP-49 encrypted key (ncryptsec) you can safely store or move to another client.");
+    // Phase 1 shows a danger-styled Export; phase 2 drops the primary (the copy
+    // control lives inline next to the key) and the footer just closes.
+    secondary-label: root.revealed ? @tr("Done") : @tr("Cancel");
+    primary-label: root.revealed ? "" : @tr("Export key");
+    primary-busy-label: @tr("Encrypting…");
+    primary-danger: true;
+    primary-enabled: root.password != "";
+    primary => {
+        root.confirm(root.password);
+    }
+
+    if !root.revealed: ModalField {
+        label: @tr("VAULT PASSWORD");
+        placeholder: @tr("Your password");
+        text <=> root.password;
+        password: true;
+        autofocus: true;
+        submitted => {
+            if (root.password != "") {
+                root.confirm(root.password);
+            }
+        }
+    }
+
+    if root.revealed: VerticalLayout {
+        spacing: 6px;
+        ReadoutBox {
+            label: @tr("ENCRYPTED KEY (NCRYPTSEC)");
+            value: root.key-value;
+        }
+
+        HorizontalLayout {
+            Rectangle {
+                horizontal-stretch: 1;
+            }
+
+            Button {
+                label: root.copied ? @tr("Copied ✓") : @tr("Copy");
+                fg: root.copied ? Palette.mint : Palette.text-hi;
+                outline: root.copied ? Palette.mint : Palette.border;
+                button-height: 30px;
+                radius: 5px;
+                pad-left: 10px;
+                pad-right: 12px;
+                font-size: Theme.fs(11px, 12px);
+                focusable: true;
+                if !root.copied: CopyIcon {
+                    stroke: Palette.text-mid;
+                }
+
+                clicked => {
+                    root.copy(root.key-value);
+                    root.copied = true;
+                }
+            }
+        }
+    }
+
+    if root.revealed: Text {
+        text: @tr("Store it somewhere safe and close this dialog. Anyone who imports it will need the vault password you just entered to decrypt it.");
+        color: Palette.danger;
+        font-size: Theme.fs(10px, 14px);
+        font-family: Theme.font;
+        wrap: word-wrap;
+    }
+}
