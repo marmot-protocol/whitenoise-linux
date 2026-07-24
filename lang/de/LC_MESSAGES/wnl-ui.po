@@ -1393,6 +1393,10 @@ msgctxt "month"
 msgid "Jul"
 msgstr "Jul"
 
+msgctxt "MessagesArea"
+msgid "Jump to latest messages"
+msgstr "Zu den neuesten Nachrichten springen"
+
 msgctxt "month"
 msgid "Jun"
 msgstr "Jun"

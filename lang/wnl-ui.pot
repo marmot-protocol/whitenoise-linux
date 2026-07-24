@@ -1326,6 +1326,10 @@ msgctxt "month"
 msgid "Jul"
 msgstr ""
 
+msgctxt "MessagesArea"
+msgid "Jump to latest messages"
+msgstr ""
+
 msgctxt "month"
 msgid "Jun"
 msgstr ""
