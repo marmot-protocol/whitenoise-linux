@@ -140,6 +140,11 @@ export component VideoViewerModal inherits Modal {
                     border-radius: (18px) * Theme.r-scale;
                     background: play-touch.has-hover ? Palette.mint : Palette.media-control-bg;
                     animate background { duration: Theme.hover-dur; }
+                    accessible-role: button;
+                    accessible-label: root.playing ? @tr("Pause") : @tr("Play");
+                    accessible-action-default => {
+                        root.toggle-play();
+                    }
                     Text {
                         x: parent.width / 2 - self.width / 2 + (root.playing ? 0px : 2px);
                         text: root.playing ? "⏸" : "▶";
@@ -247,6 +252,11 @@ export component VideoViewerModal inherits Modal {
                     border-radius: (18px) * Theme.r-scale;
                     background: fs-touch.has-hover ? Palette.mint : Palette.media-control-bg;
                     animate background { duration: Theme.hover-dur; }
+                    accessible-role: button;
+                    accessible-label: @tr("Fullscreen");
+                    accessible-action-default => {
+                        root.fullscreen();
+                    }
                     Text {
                         text: "⛶";
                         color: Palette.media-chip-fg;

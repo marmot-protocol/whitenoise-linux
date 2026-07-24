@@ -1269,6 +1269,10 @@ msgctxt "ErrorCopy"
 msgid "Full restore is only available from the lock screen, before unlocking."
 msgstr "Il ripristino completo è disponibile solo dalla schermata di blocco, prima dello sblocco."
 
+msgctxt "VideoViewerModal"
+msgid "Fullscreen"
+msgstr "Schermo intero"
+
 msgctxt "EncryptionInfoModal"
 msgid "GROUP ID"
 msgstr ""
@@ -2066,6 +2070,10 @@ msgctxt "StartNewChatModal"
 msgid "Paste one npub for a direct chat, or several (one per line) plus a group name."
 msgstr "Incolla un npub per una chat diretta, o diversi (uno per riga) più un nome per il gruppo."
 
+msgctxt "VideoViewerModal"
+msgid "Pause"
+msgstr "Pausa"
+
 msgctxt "ForwardPickerModal"
 msgid "Pick a chat to forward this message to."
 msgstr "Scegli una chat a cui inoltrare questo messaggio."
@@ -2090,6 +2098,10 @@ msgstr "Fissa in alto"
 msgctxt "AppearancePane"
 msgid "Place your sent messages on the right side."
 msgstr "Posiziona i messaggi che invii sul lato destro."
+
+msgctxt "VideoViewerModal"
+msgid "Play"
+msgstr "Riproduzione"
 
 msgctxt "NotificationsPane"
 msgid "Play a sound"

@@ -1265,6 +1265,10 @@ msgctxt "ErrorCopy"
 msgid "Full restore is only available from the lock screen, before unlocking."
 msgstr "完全な復元は、ロック解除前のロック画面からのみ行えます。"
 
+msgctxt "VideoViewerModal"
+msgid "Fullscreen"
+msgstr "全画面表示"
+
 msgctxt "EncryptionInfoModal"
 msgid "GROUP ID"
 msgstr ""
@@ -2062,6 +2066,10 @@ msgctxt "StartNewChatModal"
 msgid "Paste one npub for a direct chat, or several (one per line) plus a group name."
 msgstr "ダイレクトチャットには npub を1つ、グループには複数（1行に1つ）とグループ名を貼り付けてください。"
 
+msgctxt "VideoViewerModal"
+msgid "Pause"
+msgstr "一時停止"
+
 msgctxt "ForwardPickerModal"
 msgid "Pick a chat to forward this message to."
 msgstr "このメッセージの転送先チャットを選択してください。"
@@ -2086,6 +2094,10 @@ msgstr "上部に固定"
 msgctxt "AppearancePane"
 msgid "Place your sent messages on the right side."
 msgstr "送信したメッセージを右側に配置します。"
+
+msgctxt "VideoViewerModal"
+msgid "Play"
+msgstr "再生"
 
 msgctxt "NotificationsPane"
 msgid "Play a sound"
