@@ -119,6 +119,7 @@ component PictureField inherits Rectangle {
                         single-line: true;
                         fg: Palette.text-hi;
                         placeholder-color: Palette.text-lo;
+                        enabled: !root.uploading;
                     }
                 }
             }
