@@ -132,6 +132,13 @@ pub struct Settings {
     pub last_backup_path: Option<String>,
     #[serde(default)]
     pub last_backup_at: Option<i64>,
+    /// Chats (group_id_hex) the user manually marked unread from the rail
+    /// context menu, independent of `last_read` — the badge floors at 1 while
+    /// a chat is in this set, even though `count_unread` sees nothing new.
+    /// Cleared the moment the chat is genuinely read (opened, or read while
+    /// already on screen). Local-only, like `muted_chats`.
+    #[serde(default)]
+    pub manually_unread: BTreeSet<String>,
 }
 
 impl Settings {

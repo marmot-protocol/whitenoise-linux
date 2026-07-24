@@ -903,6 +903,7 @@ pub(crate) fn wire_panes(
             ui.set_chat_ctx_y(ay);
             ui.set_chat_ctx_pinned(is_pinned(&group_hex));
             ui.set_chat_ctx_muted(notif.is_muted(&group_hex));
+            ui.set_chat_ctx_unread(!ui.get_chats().row_data(idx as usize).is_some_and(|r| r.read));
             ui.set_chat_ctx_can_leave(can_leave);
             // The self-chat is permanently pinned to the top; drop the Pin/Unpin
             // item so it doesn't present a control that reorders nothing.
@@ -969,6 +970,46 @@ pub(crate) fn wire_panes(
                 ui.set_active_chat_muted(now_muted);
             }
             set_chat_row_muted(&ui, idx, now_muted);
+        }
+    });
+
+    // Mark a specific rail row read or unread (from its context menu).
+    // Marking read is the same action opening the chat performs: advance the
+    // read marker and drop any manual flag. Marking unread sets the manual
+    // flag without touching the marker, so a chat with nothing new can still
+    // be flagged to come back to — `record_count`/`chat_meta_from` are what
+    // floor the badge at 1 on the next recompute; this handler pokes the row
+    // directly so the badge appears immediately.
+    ui.global::<AppState>().on_toggle_read_chat_at({
+        let weak = ui.as_weak();
+        let group_ids = group_ids.clone();
+        let settings_cell = settings_cell.clone();
+        move |idx| {
+            let Some(ui) = weak.upgrade() else { return };
+            let group_hex = group_ids.lock().unwrap().get(idx as usize).cloned();
+            let Some(group_hex) = group_hex else { return };
+            let now_unread = !ui
+                .get_chats()
+                .row_data(idx as usize)
+                .map(|r| r.read)
+                .unwrap_or(true);
+            let mut s = settings_cell.borrow_mut();
+            if now_unread {
+                unread_state().set_forced_unread(&group_hex, true);
+                unread_state().set_count(&group_hex, 1);
+                s.manually_unread.insert(group_hex.clone());
+                set_chat_row_unread(&ui, idx as usize, 1);
+            } else {
+                let now = now_unix_secs() as i64;
+                unread_state().mark_read(&group_hex, now);
+                s.last_read.insert(group_hex.clone(), now);
+                s.manually_unread.remove(&group_hex);
+                clear_chat_unread_row(&ui, idx as usize);
+            }
+            s.save();
+            drop(s);
+            set_rail_badges(&ui, &ui.get_chats());
+            refresh_unread_chrome(&ui);
         }
     });
 

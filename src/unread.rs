@@ -17,7 +17,7 @@
 // when you actually open a chat) survive a restart and surface backlog that
 // arrived while the app was closed.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Mutex;
 
 pub struct UnreadState {
@@ -31,14 +31,22 @@ pub struct UnreadState {
     /// chat is opened, so the divider stays put while you read past it. `None`
     /// when the open chat had no unread history.
     divider_anchor: Mutex<Option<(String, String)>>,
+    /// Chats the user manually flagged unread from the rail context menu,
+    /// layered under the marker-derived count (see `record_count`).
+    forced_unread: Mutex<HashSet<String>>,
 }
 
 impl UnreadState {
     pub fn new(last_read: HashMap<String, i64>) -> Self {
+        Self::with_forced_unread(last_read, HashSet::new())
+    }
+
+    pub fn with_forced_unread(last_read: HashMap<String, i64>, forced_unread: HashSet<String>) -> Self {
         Self {
             last_read: Mutex::new(last_read),
             counts: Mutex::new(HashMap::new()),
             divider_anchor: Mutex::new(None),
+            forced_unread: Mutex::new(forced_unread),
         }
     }
 
@@ -48,6 +56,10 @@ impl UnreadState {
 
     fn lock_counts(&self) -> std::sync::MutexGuard<'_, HashMap<String, u32>> {
         self.counts.lock().unwrap_or_else(|p| p.into_inner())
+    }
+
+    fn lock_forced(&self) -> std::sync::MutexGuard<'_, HashSet<String>> {
+        self.forced_unread.lock().unwrap_or_else(|p| p.into_inner())
     }
 
     /// The marker for a chat, seeding it (in memory) to `now` if it has none.
@@ -73,6 +85,48 @@ impl UnreadState {
         } else {
             counts.insert(group_hex.to_string(), n);
         }
+    }
+
+    /// Whether the chat carries the user's manual "mark unread" flag.
+    pub fn is_forced_unread(&self, group_hex: &str) -> bool {
+        self.lock_forced().contains(group_hex)
+    }
+
+    /// Flip the manual "mark unread" flag on or off. Setting it true does not
+    /// by itself change the stored count — the next `record_count` (a
+    /// recompute) is what floors the badge at 1; setting it false likewise
+    /// leaves the count for the next recompute to decide.
+    pub fn set_forced_unread(&self, group_hex: &str, flagged: bool) {
+        let mut set = self.lock_forced();
+        if flagged {
+            set.insert(group_hex.to_string());
+        } else {
+            set.remove(group_hex);
+        }
+    }
+
+    /// Record a chat's *naturally recomputed* unread count (from
+    /// `count_unread`), flooring at 1 when the manual "mark unread" flag is
+    /// set and the real count is zero — so a chat with nothing new can still
+    /// render as unread. Returns the count actually stored, for callers to
+    /// pass straight into `chat_meta_from`.
+    pub fn record_count(&self, group_hex: &str, n: u32) -> u32 {
+        let effective = if n == 0 && self.is_forced_unread(group_hex) {
+            1
+        } else {
+            n
+        };
+        self.set_count(group_hex, effective);
+        effective
+    }
+
+    /// Mark a chat fully read: advances the marker to `ts`, drops the manual
+    /// "mark unread" flag, and clears the stored count. Used both by opening
+    /// a chat and by the rail context menu's "Mark as read".
+    pub fn mark_read(&self, group_hex: &str, ts: i64) {
+        self.set_marker(group_hex, ts);
+        self.lock_forced().remove(group_hex);
+        self.set_count(group_hex, 0);
     }
 
     /// Drop every cached count. Used before a full chat-list recompute so
