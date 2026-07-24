@@ -10,6 +10,8 @@ export component NicknameModal inherits Modal {
     in property <string> contact-name;
 
     card-width: 460px;
+    // The nickname field below autofocuses itself.
+    grab-focus: false;
     title: @tr("Nickname");
     subtitle: @tr("A private name for {}. Only you see it — leave empty to use their published name.", root.contact-name);
     secondary-label: @tr("Cancel");

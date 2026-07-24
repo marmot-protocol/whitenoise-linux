@@ -11,6 +11,8 @@ export component StartNewChatModal inherits Modal {
     in property <bool> busy: false;
 
     card-width: 460px;
+    // The group-name field below autofocuses itself.
+    grab-focus: false;
     title: @tr("New chat or group");
     subtitle: @tr("Paste one npub for a direct chat, or several (one per line) plus a group name.");
     secondary-label: @tr("Cancel");
