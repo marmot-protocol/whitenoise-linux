@@ -31,10 +31,30 @@ export component VideoTile inherits Rectangle {
         Text {
             // Nudge the glyph optically-center inside the circle.
             x: parent.width / 2 - self.width / 2 + 3px;
-            text: root.msg.att-loading ? "…" : (root.msg.att-failed ? "!" : "▶");
+            text: root.msg.att-loading ? "…" : (root.msg.att-failed ? "↻" : "▶");
             color: Palette.media-chip-fg;
             font-size: Theme.fs(24px, 28px);
             font-family: Theme.font;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+    }
+    // Failure caption, bottom-left — mirrors the audio tile's inline
+    // "failed · tap to retry" hint so a decode/send failure over the poster
+    // reads as recoverable instead of a bare glyph.
+    if root.msg.att-failed: Rectangle {
+        x: 6px;
+        y: parent.height - self.height - 6px;
+        width: fail-text.preferred-width + 12px;
+        height: 18px;
+        border-radius: (4px) * Theme.r-scale;
+        background: Palette.media-chip-bg;
+        fail-text := Text {
+            text: @tr("failed · tap to retry");
+            color: Palette.danger;
+            font-size: Theme.fs(10px, 14px);
+            font-family: Theme.font;
+            font-weight: 600;
             horizontal-alignment: center;
             vertical-alignment: center;
         }
