@@ -351,6 +351,9 @@ export component ModalHost inherits Rectangle {
             retry => {
                 AppState.video-viewer-retry();
             }
+            save => {
+                AppState.video-viewer-save();
+            }
         }
 
         if AppState.peer-profile-open: ProfileModal {

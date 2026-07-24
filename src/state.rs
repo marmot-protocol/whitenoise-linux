@@ -847,6 +847,10 @@ copy_snapshot! {
     image_not_ready: String = get_image_not_ready => "Image isn't ready yet.";
     no_image_selected: String = get_no_image_selected => "No image selected.";
     no_chat_selected: String = get_no_chat_selected => "No chat selected.";
+    video_saved: String = get_video_saved => "video saved";
+    save_video_failed: String = get_save_video_failed => "Couldn't save video.";
+    video_not_ready: String = get_video_not_ready => "Video isn't ready yet.";
+    no_video_selected: String = get_no_video_selected => "No video selected.";
     // Audit-log settings feedback.
     audit_enabled: String = get_audit_enabled => "Audit logging enabled — recording now; logs upload automatically.";
     audit_disabled: String = get_audit_disabled => "Audit logging disabled. Existing files stay until you delete them.";

@@ -160,6 +160,92 @@ fn run_viewer_image_action(
     fetch_viewer_image_bytes(ui.as_weak(), backend, group_hex, vault, item, action);
 }
 
+/// Resolve the video viewer's Save action to the currently open clip's backend
+/// handle, group, vault, and attachment reference. Mirrors
+/// `viewer_image_context`, gating on the same loading/failed flags the video
+/// viewer already tracks instead of a separate `actions-ready` prop (unlike
+/// the image slideshow, there's exactly one clip open at a time).
+fn video_save_context(
+    ui: &WhiteNoiseLinux,
+    backend_cell: &BackendCell,
+    vault_cell: &VaultCell,
+) -> Option<(Arc<Backend>, String, Option<Arc<Mutex<Vault>>>, MediaAttachmentReference)> {
+    if ui.get_video_viewer_loading() || ui.get_video_viewer_failed() {
+        set_status_feedback(ui, error_copy().video_not_ready, false);
+        return None;
+    }
+    let Some((group_hex, _mid)) = current_video_target().lock().ok().and_then(|t| t.clone())
+    else {
+        set_status_feedback(ui, error_copy().no_video_selected, true);
+        return None;
+    };
+    let Some(reference) = current_video_reference().lock().ok().and_then(|r| r.clone()) else {
+        set_status_feedback(ui, error_copy().no_video_selected, true);
+        return None;
+    };
+    let Some(backend) = backend_cell.lock().unwrap().clone() else {
+        set_status_feedback(ui, error_copy().backend_not_ready, true);
+        return None;
+    };
+    let vault = vault_cell.lock().unwrap().clone();
+    Some((backend, group_hex, vault, reference))
+}
+
+/// Fetch the open video's decrypted bytes (encrypted disk cache first, else
+/// download+decrypt) and write them to `path`. Mirrors
+/// `fetch_viewer_image_bytes`'s Save branch; the video viewer has no Copy
+/// action, so this skips `ViewerImageAction` entirely.
+fn fetch_video_save_bytes(
+    weak: Weak<WhiteNoiseLinux>,
+    backend: Arc<Backend>,
+    group_hex: String,
+    vault: Option<Arc<Mutex<Vault>>>,
+    reference: MediaAttachmentReference,
+    path: std::path::PathBuf,
+) {
+    let hash = reference.ciphertext_sha256.clone();
+    let tokio_handle = backend.tokio_handle();
+    tokio_handle.spawn(async move {
+        if let Some(bytes) = vault.as_ref().and_then(|v| media_cache::get(v, &hash)) {
+            write_video_save_bytes(weak, bytes, path);
+            return;
+        }
+
+        backend.download_media_async(&group_hex, reference, move |result| match result {
+            Ok(dl) => {
+                if let Some(v) = &vault {
+                    media_cache::put(v, &hash, &dl.plaintext);
+                }
+                write_video_save_bytes(weak, dl.plaintext, path);
+            }
+            Err(e) => {
+                tracing::warn!(target: "attach", "viewer video download failed: {e:#}");
+                let _ = slint::invoke_from_event_loop(move || {
+                    if let Some(ui) = weak.upgrade() {
+                        set_status_feedback(&ui, error_copy().save_video_failed, true);
+                    }
+                });
+            }
+        });
+    });
+}
+
+fn write_video_save_bytes(weak: Weak<WhiteNoiseLinux>, bytes: Vec<u8>, path: std::path::PathBuf) {
+    std::thread::spawn(move || {
+        let result = std::fs::write(&path, &bytes).map_err(|e| e.to_string());
+        let _ = slint::invoke_from_event_loop(move || {
+            let Some(ui) = weak.upgrade() else { return };
+            match result {
+                Ok(()) => set_status_feedback(&ui, error_copy().video_saved, false),
+                Err(e) => {
+                    tracing::warn!(target: "attach", "save video {}: {e}", path.display());
+                    set_status_feedback(&ui, error_copy().save_video_failed, true);
+                }
+            }
+        });
+    });
+}
+
 /// Push the user's quick-reaction set into the `QuickReact` global, the single
 /// source the hover toolbar, context menu, and Settings editor all read.
 pub(crate) fn push_quick_reactions(ui: &WhiteNoiseLinux, list: &[String]) {
@@ -855,6 +941,36 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             if let Some(ui) = weak.upgrade() {
                 ui.window().set_fullscreen(want);
             }
+        }
+    });
+
+    // Save the open clip's decrypted bytes to a user-chosen path, mirroring
+    // the image viewer's Save action. The native file dialog blocks, so it
+    // runs on a plain thread and hops back to the event loop once a path (or
+    // a cancel) comes back.
+    ui.global::<AppState>().on_video_viewer_save({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let vault_cell = vault_cell.clone();
+        move || {
+            let Some(ui) = weak.upgrade() else { return };
+            let Some((backend, group_hex, vault, reference)) =
+                video_save_context(&ui, &backend_cell, &vault_cell)
+            else {
+                return;
+            };
+            let file_name = attachment_save_name(&reference.file_name, &reference.media_type);
+            let weak_dialog = weak.clone();
+            std::thread::spawn(move || {
+                let chosen = rfd::FileDialog::new()
+                    .set_title("Save video")
+                    .set_file_name(&file_name)
+                    .save_file();
+                let Some(path) = chosen else { return };
+                let _ = slint::invoke_from_event_loop(move || {
+                    fetch_video_save_bytes(weak_dialog, backend, group_hex, vault, reference, path);
+                });
+            });
         }
     });
 
