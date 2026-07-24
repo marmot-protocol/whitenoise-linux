@@ -36,6 +36,11 @@ export component LineInput inherits Rectangle {
     callback nav(int);            // +1 / -1 to move the picker selection
     callback commit-mention();    // accept the highlighted candidate
     callback dismiss-mention();   // close the picker
+    // Fired on Escape whenever `capture-nav` isn't already claiming it (e.g.
+    // an inline editor wants Escape to cancel). The key event still rejects
+    // afterward so an ancestor (a Modal's dismiss-on-Escape scope) still
+    // sees it too.
+    callback escape;
     // Fired on a paste shortcut (Ctrl/Cmd+V, Shift+Insert) *in addition to*
     // the native text paste, which still runs. The owner can probe the
     // system clipboard for non-text content (the composer sends images).
@@ -130,6 +135,9 @@ export component LineInput inherits Rectangle {
                 if (root.enter-submits && event.text == Key.Return && !event.modifiers.shift) {
                     root.submit();
                     return accept;
+                }
+                if (event.text == Key.Escape) {
+                    root.escape();
                 }
                 // Paste shortcut: notify the owner so it can probe for image
                 // content, but reject so the built-in text paste still runs

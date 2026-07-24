@@ -46,6 +46,9 @@ export component HeroEditField inherits VerticalLayout {
                         root.save();
                     }
                 }
+                escape => {
+                    root.cancel();
+                }
             }
         }
     }
@@ -56,6 +59,7 @@ export component HeroEditField inherits VerticalLayout {
         Button {
             label: root.busy ? @tr("Saving…") : @tr("Save");
             enabled: !root.busy;
+            focusable: true;
             button-height: 28px;
             pad-left: 12px;
             pad-right: 12px;
@@ -71,6 +75,7 @@ export component HeroEditField inherits VerticalLayout {
 
         Button {
             label: @tr("Cancel");
+            focusable: true;
             button-height: 28px;
             pad-left: 12px;
             pad-right: 12px;
