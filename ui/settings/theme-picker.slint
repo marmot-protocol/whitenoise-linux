@@ -61,6 +61,16 @@ component ThemeRow inherits Rectangle {
     border-radius: 7px * Theme.r-scale;
     background: root.is-selected ? Palette.selected : ((root.is-focused || row-touch.has-hover) ? Palette.hover : transparent);
     animate background { duration: 80ms; }
+
+    // One row is a single choice in a mutually-exclusive group, so it reads
+    // as a radio button: the name identifies it and the checked state
+    // announces the active theme (mirrors AccentPicker's swatches).
+    accessible-role: radio-button;
+    accessible-label: root.label;
+    accessible-checked: root.is-selected;
+    accessible-action-default => {
+        root.chosen();
+    }
     HorizontalLayout {
         padding-left: 8px;
         padding-right: 10px;
@@ -159,6 +169,15 @@ export component ThemePicker inherits Rectangle {
         border-color: trig-touch.has-hover ? Palette.field-border-hover : Palette.field-border;
         border-radius: 8px * Theme.r-scale;
         animate background, border-color { duration: Theme.transition-dur; }
+
+        // Names the current theme so a screen-reader user hears what's
+        // selected, the same way AccentPicker's swatches announce the
+        // active accent (mirrors accent-picker.slint).
+        accessible-role: combobox;
+        accessible-label: root.name-at(root.selected-id);
+        accessible-action-default => {
+            root.open-popup();
+        }
         HorizontalLayout {
             padding-left: 8px;
             padding-right: 10px;
