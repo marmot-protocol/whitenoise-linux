@@ -1389,6 +1389,10 @@ msgctxt "month"
 msgid "Jul"
 msgstr "7月"
 
+msgctxt "MessagesArea"
+msgid "Jump to latest messages"
+msgstr "最新のメッセージへ移動"
+
 msgctxt "month"
 msgid "Jun"
 msgstr "6月"
