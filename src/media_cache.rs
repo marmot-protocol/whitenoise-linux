@@ -15,9 +15,10 @@
 // far smaller on disk, and re-decoding locally is cheap next to the network
 // round-trip and decryption we're avoiding.
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
+use crate::sealed_store;
 use crate::vault::Vault;
 
 fn cache_dir() -> PathBuf {
@@ -40,13 +41,10 @@ fn path_for(hash_hex: &str) -> Option<PathBuf> {
 /// repopulate it.
 pub fn get(vault: &Arc<Mutex<Vault>>, hash_hex: &str) -> Option<Vec<u8>> {
     let path = path_for(hash_hex)?;
-    let sealed = std::fs::read(&path).ok()?;
-    let v = vault.lock().ok()?;
-    match v.open_blob(&sealed) {
+    match sealed_store::get(vault, &path)? {
         Ok(plain) => Some(plain),
         Err(e) => {
             tracing::warn!(target: "media_cache", "open {hash_hex}: {e}; evicting");
-            let _ = std::fs::remove_file(&path);
             None
         }
     }
@@ -59,36 +57,9 @@ pub fn put(vault: &Arc<Mutex<Vault>>, hash_hex: &str, plaintext: &[u8]) {
     let Some(path) = path_for(hash_hex) else {
         return;
     };
-    let sealed = {
-        let Ok(v) = vault.lock() else { return };
-        match v.seal_blob(plaintext) {
-            Ok(s) => s,
-            Err(e) => {
-                tracing::warn!(target: "media_cache", "seal {hash_hex}: {e}");
-                return;
-            }
-        }
-    };
-    let dir = cache_dir();
-    if let Err(e) = std::fs::create_dir_all(&dir) {
-        tracing::warn!(target: "media_cache", "mkdir: {e}");
-        return;
+    if let Err(e) = sealed_store::put(vault, &path, plaintext) {
+        tracing::warn!(target: "media_cache", "put {hash_hex}: {e}");
     }
-    set_owner_only_dir(&dir);
-    // Temp-then-rename so a crash mid-write can't leave a truncated entry that
-    // would fail the auth tag (and waste a re-download) every time after.
-    let tmp = path.with_extension("bin.tmp");
-    if let Err(e) = std::fs::write(&tmp, &sealed) {
-        tracing::warn!(target: "media_cache", "write {hash_hex}: {e}");
-        return;
-    }
-    set_owner_only(&tmp);
-    if let Err(e) = std::fs::rename(&tmp, &path) {
-        tracing::warn!(target: "media_cache", "rename {hash_hex}: {e}");
-        let _ = std::fs::remove_file(&tmp);
-        return;
-    }
-    set_owner_only(&path);
 }
 
 /// Delete the entire media cache. Called when the vault is reset, since entries
@@ -111,21 +82,3 @@ pub fn size_bytes() -> u64 {
         .map(|m| m.len())
         .sum()
 }
-
-#[cfg(unix)]
-fn set_owner_only(path: &Path) {
-    use std::os::unix::fs::PermissionsExt;
-    let _ = std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600));
-}
-
-#[cfg(not(unix))]
-fn set_owner_only(_path: &Path) {}
-
-#[cfg(unix)]
-fn set_owner_only_dir(path: &Path) {
-    use std::os::unix::fs::PermissionsExt;
-    let _ = std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o700));
-}
-
-#[cfg(not(unix))]
-fn set_owner_only_dir(_path: &Path) {}
