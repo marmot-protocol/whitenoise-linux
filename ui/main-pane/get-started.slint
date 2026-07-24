@@ -43,6 +43,8 @@ component MiniRelayRow inherits Rectangle {
             alignment: center;
             MicroButton {
                 label: "";
+                a11y-label: @tr("Remove relay");
+                focusable: true;
                 pad-left: 8px;
                 pad-right: 8px;
                 TrashIcon {
