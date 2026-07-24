@@ -25,12 +25,12 @@ pub(crate) fn populate_profile_from(
                 .as_ref()
                 .and_then(|p| p.picture.clone())
                 .unwrap_or_default();
-            apply_profile(ui, profile.as_ref());
+            apply_profile(ui, backend, profile.as_ref());
             url
         }
         Err(e) => {
             tracing::warn!(target: "backend", "load_profile failed: {e:#}");
-            apply_profile(ui, None);
+            apply_profile(ui, backend, None);
             String::new()
         }
     };

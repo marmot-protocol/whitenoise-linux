@@ -1274,7 +1274,7 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                     }
                     match result {
                         Ok(saved) => {
-                            apply_profile(&ui, Some(&saved));
+                            apply_profile(&ui, &backend, Some(&saved));
                             ui.set_profile_editing(false);
                             show_profile_status(
                                 &ui,

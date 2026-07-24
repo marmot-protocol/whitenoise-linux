@@ -246,7 +246,11 @@ pub(crate) fn seed_profile_picture(
     }
 }
 
-pub(crate) fn apply_profile(ui: &WhiteNoiseLinux, profile: Option<&UserProfileMetadata>) {
+pub(crate) fn apply_profile(
+    ui: &WhiteNoiseLinux,
+    backend: &Backend,
+    profile: Option<&UserProfileMetadata>,
+) {
     let opt = |o: &Option<String>| o.clone().unwrap_or_default();
     match profile {
         Some(p) => {
@@ -256,6 +260,7 @@ pub(crate) fn apply_profile(ui: &WhiteNoiseLinux, profile: Option<&UserProfileMe
             ui.set_profile_picture(s(&opt(&p.picture)));
             ui.set_profile_nip05(s(&opt(&p.nip05)));
             ui.set_profile_lud16(s(&opt(&p.lud16)));
+            apply_own_nip05_verification(ui, backend, p.nip05.as_deref().unwrap_or("").trim());
         }
         None => {
             ui.set_profile_display_name(s(""));
@@ -264,8 +269,37 @@ pub(crate) fn apply_profile(ui: &WhiteNoiseLinux, profile: Option<&UserProfileMe
             ui.set_profile_picture(s(""));
             ui.set_profile_nip05(s(""));
             ui.set_profile_lud16(s(""));
+            ui.set_profile_nip05_verified(false);
         }
     }
+}
+
+/// Seed the own-profile nip05 badge from the verification cache, then confirm
+/// against the domain's `.well-known/nostr.json` in the background — the same
+/// check `apply_peer_profile` runs for everyone else's handle, so the badge
+/// means the same thing on your own profile as it does on a contact's.
+fn apply_own_nip05_verification(ui: &WhiteNoiseLinux, backend: &Backend, nip05: &str) {
+    let account_id_hex = backend.account().account_id_hex;
+    ui.set_profile_nip05_verified(
+        !nip05.is_empty() && nip05_verify_cached(&account_id_hex, nip05).unwrap_or(false),
+    );
+    if nip05.is_empty() {
+        return;
+    }
+    let nip05 = nip05.to_string();
+    spawn_nip05_verify(
+        ui.as_weak(),
+        backend.tokio_handle(),
+        account_id_hex,
+        nip05.clone(),
+        move |ui, verified| {
+            // The handle may have changed (or been cleared) while the check
+            // was in flight — only bind if it's still what we verified.
+            if ui.get_profile_nip05().as_str() == nip05 {
+                ui.set_profile_nip05_verified(verified);
+            }
+        },
+    );
 }
 
 pub(crate) fn profile_from_ui(ui: &WhiteNoiseLinux) -> UserProfileMetadata {
