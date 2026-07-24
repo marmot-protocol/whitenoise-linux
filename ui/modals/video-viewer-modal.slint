@@ -1,6 +1,7 @@
 import { Modal } from "modal.slint";
 import { Palette, Theme } from "../tokens.slint";
 import { StatusPill } from "../primitives/status-pill.slint";
+import { SaveIcon } from "../icons/save-icon.slint";
 
 // Full-window in-app video player, built on Modal's bare mode. `frame` is the
 // latest decoded RGBA frame pushed from Rust (libmpv software render); it's
@@ -32,6 +33,11 @@ export component VideoViewerModal inherits Modal {
     callback fullscreen();
     // Re-attempt the download/decode after a failure (failure-pill tap).
     callback retry();
+    // Write the decrypted video bytes to a user-chosen path (Rust owns the
+    // save-file dialog), mirroring ImageViewerModal's Save action.
+    callback save();
+
+    property <bool> actions-enabled: root.has-frame && !root.failed;
 
     bare: true;
     background: Palette.overlay-strong;
@@ -59,6 +65,10 @@ export component VideoViewerModal inherits Modal {
                 }
                 if (event.text == "f" || event.text == "F") {
                     root.fullscreen();
+                    return accept;
+                }
+                if ((event.text == "s" || event.text == "S") && root.actions-enabled) {
+                    root.save();
                     return accept;
                 }
                 return reject;
@@ -202,6 +212,31 @@ export component VideoViewerModal inherits Modal {
                     font-family: Theme.font;
                     vertical-alignment: center;
                     width: 42px;
+                }
+
+                // Save the decrypted video to disk (also bound to the `s` key).
+                save-btn := Rectangle {
+                    width: 36px;
+                    height: 36px;
+                    y: (parent.height - self.height) / 2;
+                    border-radius: (18px) * Theme.r-scale;
+                    background: save-touch.has-hover ? Palette.mint : Palette.media-control-bg;
+                    opacity: root.actions-enabled ? 1.0 : 0.4;
+                    animate background { duration: Theme.hover-dur; }
+                    SaveIcon {
+                        x: parent.width / 2 - self.width / 2;
+                        y: parent.height / 2 - self.height / 2;
+                        stroke: Palette.media-chip-fg;
+                    }
+
+                    save-touch := TouchArea {
+                        mouse-cursor: root.actions-enabled ? pointer : default;
+                        clicked => {
+                            if (root.actions-enabled) {
+                                root.save();
+                            }
+                        }
+                    }
                 }
 
                 // Fullscreen toggle (also bound to the `f` key).
