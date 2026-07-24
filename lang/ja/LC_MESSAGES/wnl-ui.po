@@ -2822,6 +2822,10 @@ msgctxt "ArchivedDetail"
 msgid "This chat is archived"
 msgstr "このチャットはアーカイブされています"
 
+msgctxt "ErrorCopy"
+msgid "This contact's messaging keys were published by an app we're not compatible with. Ask them to publish a key package from an up-to-date Marmot client, then try again."
+msgstr ""
+
 msgctxt "ConfirmFlows"
 msgid "This declines the invite from {}. It can't be restored unless they invite you again."
 msgstr "{} からの招待を辞退します。相手がもう一度招待しない限り、元に戻すことはできません。"

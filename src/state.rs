@@ -746,6 +746,7 @@ copy_snapshot! {
     /// Read the current localized `ErrorCopy` snapshot. Safe from any thread.
     read fn error_copy;
     invalid_key: String = get_invalid_key => "That doesn't look like a valid npub or public key. Double-check it and try again.";
+    peer_key_package_invalid: String = get_peer_key_package_invalid => "This contact's messaging keys were published by an app we're not compatible with. Ask them to publish a key package from an up-to-date Marmot client, then try again.";
     nip05_not_found: String = get_nip05_not_found => "We couldn't find anyone with that username. Double-check the name@domain and try again.";
     network: String = get_network => "Can't reach your relays right now. Check your network and relay settings, then try again.";
     microphone_unavailable: String = get_microphone_unavailable => "No microphone available.";
@@ -951,7 +952,22 @@ pub(crate) fn friendly_error(op: ErrorOp, e: &anyhow::Error) -> String {
     if detail.contains("nip05:") {
         return copy.nip05_not_found;
     }
-    if detail.contains("npub") || detail.contains("pubkey") || detail.contains("public key") {
+    // A peer's key package exists but fails Marmot/MLS validation (e.g. a
+    // missing mls_extensions value from an outdated or foreign client). The
+    // npub itself is fine, so this must be checked before the invalid-key
+    // matcher below.
+    if detail.contains("invalid marmot keypackage") || detail.contains("mls_extensions") {
+        return copy.peer_key_package_invalid;
+    }
+    // Genuine key-parse failures only. Errors that merely *mention* an npub
+    // (e.g. "can't reach these contacts … npub1… (reason)") must not land
+    // here, so match on the parse-failure phrasings, not the bare tokens.
+    if detail.contains("not a valid npub")
+        || detail.contains("invalid npub")
+        || detail.contains("invalid public key")
+        || detail.contains("invalid pubkey")
+        || detail.contains("malformed public key")
+    {
         return copy.invalid_key;
     }
     if detail.contains("timed out")

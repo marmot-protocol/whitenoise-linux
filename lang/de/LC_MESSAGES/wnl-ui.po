@@ -2826,6 +2826,10 @@ msgctxt "ArchivedDetail"
 msgid "This chat is archived"
 msgstr "Dieser Chat ist archiviert"
 
+msgctxt "ErrorCopy"
+msgid "This contact's messaging keys were published by an app we're not compatible with. Ask them to publish a key package from an up-to-date Marmot client, then try again."
+msgstr ""
+
 msgctxt "ConfirmFlows"
 msgid "This declines the invite from {}. It can't be restored unless they invite you again."
 msgstr "Damit lehnst du die Einladung von {} ab. Sie kann nur wiederhergestellt werden, wenn sie dich erneut einladen."

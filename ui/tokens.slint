@@ -669,6 +669,7 @@ export global TextSelection {
 export global ErrorCopy {
     // Tier 1 — content-based classification.
     out property <string> invalid-key: @tr("That doesn't look like a valid npub or public key. Double-check it and try again.");
+    out property <string> peer-key-package-invalid: @tr("This contact's messaging keys were published by an app we're not compatible with. Ask them to publish a key package from an up-to-date Marmot client, then try again.");
     out property <string> nip05-not-found: @tr("We couldn't find anyone with that username. Double-check the name@domain and try again.");
     out property <string> network: @tr("Can't reach your relays right now. Check your network and relay settings, then try again.");
     out property <string> microphone-unavailable: @tr("No microphone available.");
