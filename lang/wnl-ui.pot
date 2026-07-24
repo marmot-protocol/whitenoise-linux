@@ -999,6 +999,14 @@ msgctxt "AdvancedPane"
 msgid "Developer mode"
 msgstr ""
 
+msgctxt "LoginScreen"
+msgid "Discard key"
+msgstr ""
+
+msgctxt "LoginScreen"
+msgid "Discard this key?"
+msgstr ""
+
 msgctxt "ErrorBanner"
 msgid "Dismiss"
 msgstr ""
@@ -1167,6 +1175,10 @@ msgstr ""
 
 msgctxt "LoginScreen"
 msgid "Generate a new key"
+msgstr ""
+
+msgctxt "LoginScreen"
+msgid "Going back won't save this identity. Unless you backed up the nsec yourself, it's gone for good."
 msgstr ""
 
 msgctxt "EncryptionInfoModal"

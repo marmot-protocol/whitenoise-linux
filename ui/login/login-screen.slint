@@ -49,6 +49,9 @@ export component LoginScreen inherits Rectangle {
     // password recovery, so the button arms this modal instead of firing
     // reset-vault() directly.
     property <bool> show-reset-confirm: false;
+    // Same guard for mode 2's Back: leaving before Save key discards the
+    // freshly generated identity with no way to recover it.
+    property <bool> show-discard-confirm: false;
     // Mode-2 name/avatar reveal progress (0 → 1).
     property <float> name-reveal: 0;
     property <float> avatar-reveal: 0;
@@ -502,7 +505,7 @@ export component LoginScreen inherits Rectangle {
                             button-height: 38px;
                             min-w: 96px;
                             clicked => {
-                                root.mode = 0;
+                                root.show-discard-confirm = true;
                             }
                         }
 
@@ -609,6 +612,25 @@ export component LoginScreen inherits Rectangle {
         }
         dismissed => {
             root.show-reset-confirm = false;
+        }
+    }
+
+    // Discard-confirmation for mode 2's Back. Leaving this screen without
+    // saving throws the freshly generated key away for good.
+    if root.show-discard-confirm: ConfirmModal {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        title: @tr("Discard this key?");
+        subtitle: @tr("Going back won't save this identity. Unless you backed up the nsec yourself, it's gone for good.");
+        confirm-label: @tr("Discard key");
+        confirm => {
+            root.show-discard-confirm = false;
+            root.mode = 0;
+        }
+        dismissed => {
+            root.show-discard-confirm = false;
         }
     }
 }
