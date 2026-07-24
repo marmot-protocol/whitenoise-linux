@@ -506,6 +506,7 @@ export global AppState {
     in-out property <bool> reveal-nsec-status-error: false;
     callback reveal-nsec-confirm(string);   // vault password
     callback reveal-nsec-dismissed();
+    callback reveal-nsec-copy(string);      // copy the revealed nsec
 
     // ═══ Debug & developer tools ═══════════════════════════════════════════
     // Debug pane (gated by Settings → Advanced toggle).

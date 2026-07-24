@@ -621,7 +621,7 @@ pub(crate) fn wire_panes(
         let weak = ui.as_weak();
         move |nsec| {
             let weak = weak.clone();
-            copy_to_clipboard_async(nsec.to_string(), move |result| {
+            copy_secret_to_clipboard_async(nsec.to_string(), move |result| {
                 let Some(ui) = weak.upgrade() else { return };
                 match result {
                     Ok(()) => {
@@ -1679,6 +1679,27 @@ pub(crate) fn wire_panes(
             ui.set_reveal_nsec_status(s(""));
             ui.set_reveal_nsec_status_error(false);
             ui.set_reveal_nsec_busy(false);
+        }
+    });
+
+    ui.global::<AppState>().on_reveal_nsec_copy({
+        let weak = ui.as_weak();
+        move |nsec| {
+            let weak = weak.clone();
+            copy_secret_to_clipboard_async(nsec.to_string(), move |result| {
+                let Some(ui) = weak.upgrade() else { return };
+                match result {
+                    Ok(()) => {
+                        ui.set_reveal_nsec_status(error_copy().nsec_copied.into());
+                        ui.set_reveal_nsec_status_error(false);
+                    }
+                    Err(e) => {
+                        tracing::warn!(target: "clipboard", "copy revealed nsec failed: {e}");
+                        ui.set_reveal_nsec_status(error_copy().clipboard_failed_nsec.into());
+                        ui.set_reveal_nsec_status_error(true);
+                    }
+                }
+            });
         }
     });
 

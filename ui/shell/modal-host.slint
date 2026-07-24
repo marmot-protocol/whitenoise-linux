@@ -157,7 +157,7 @@ export component ModalHost inherits Rectangle {
                 AppState.reveal-nsec-confirm(password);
             }
             copy(nsec) => {
-                AppState.copy-to-clipboard(nsec);
+                AppState.reveal-nsec-copy(nsec);
             }
             dismissed => {
                 AppState.show-reveal-nsec = false;

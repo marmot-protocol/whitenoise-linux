@@ -19,6 +19,156 @@ pub(crate) fn copy_to_clipboard_async(
     });
 }
 
+/// How long a copied secret (an nsec) stays on the clipboard before
+/// [`copy_secret_to_clipboard_async`] clears it automatically. Long enough
+/// for a deliberate paste, short enough to bound the exposure window.
+const SECRET_CLIPBOARD_CLEAR_AFTER: std::time::Duration = std::time::Duration::from_secs(45);
+
+/// Like [`copy_to_clipboard_async`], but for secrets (an nsec): marks the
+/// write as single-use where the backend supports that, and schedules an
+/// automatic clear after [`SECRET_CLIPBOARD_CLEAR_AFTER`] so the plaintext
+/// key does not linger indefinitely. The clear checks the clipboard still
+/// holds exactly what was copied, so a later, unrelated copy is left alone.
+pub(crate) fn copy_secret_to_clipboard_async(
+    text: String,
+    on_done: impl FnOnce(Result<(), String>) + Send + 'static,
+) {
+    std::thread::spawn(move || {
+        let result = copy_secret_to_clipboard(&text);
+        if result.is_ok() {
+            schedule_secret_clear(text);
+        }
+        let _ = slint::invoke_from_event_loop(move || on_done(result));
+    });
+}
+
+/// Copy `text` the way [`copy_to_clipboard`] does, except on Wayland where
+/// `wl-copy --paste-once` is used so the compositor drops the offer after a
+/// single paste instead of serving it indefinitely. X11 and macOS have no
+/// equivalent primitive, so they fall through to the normal ladder.
+fn copy_secret_to_clipboard(text: &str) -> Result<(), String> {
+    #[cfg(not(target_os = "macos"))]
+    {
+        if std::env::var_os("WAYLAND_DISPLAY").is_some() {
+            match copy_via_command("wl-copy", &["--paste-once"], text) {
+                Ok(()) => {
+                    tracing::debug!(target: "clipboard", "secret via wl-copy --paste-once ok");
+                    return Ok(());
+                }
+                Err(e) => tracing::warn!(target: "clipboard", "wl-copy --paste-once failed: {e}"),
+            }
+        }
+    }
+    copy_to_clipboard(text)
+}
+
+/// Sleep off the UI thread, then clear the clipboard iff it still holds
+/// exactly `text` — the secret that was copied. A read failure or a mismatch
+/// (the user copied something else in the meantime) leaves the clipboard
+/// untouched.
+fn schedule_secret_clear(text: String) {
+    std::thread::spawn(move || {
+        std::thread::sleep(SECRET_CLIPBOARD_CLEAR_AFTER);
+        match read_clipboard_text() {
+            Some(current) if current == text => match clear_clipboard() {
+                Ok(()) => {
+                    tracing::debug!(target: "clipboard", "auto-cleared secret from clipboard")
+                }
+                Err(e) => tracing::warn!(target: "clipboard", "auto-clear failed: {e}"),
+            },
+            Some(_) => {
+                tracing::debug!(target: "clipboard", "clipboard changed, skipping auto-clear");
+            }
+            None => {
+                tracing::debug!(target: "clipboard", "clipboard unreadable, skipping auto-clear");
+            }
+        }
+    });
+}
+
+/// Read whatever plain text is currently on the system clipboard, mirroring
+/// the platform ladder the copy helpers use. `None` covers both an empty
+/// clipboard and a read failure, since both mean "nothing to compare".
+fn read_clipboard_text() -> Option<String> {
+    #[cfg(target_os = "macos")]
+    {
+        if let Ok(out) = paste_via_command("pbpaste", &[]) {
+            let text = String::from_utf8_lossy(&out).into_owned();
+            if !text.is_empty() {
+                return Some(text);
+            }
+        }
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        if std::env::var_os("WAYLAND_DISPLAY").is_some()
+            && let Ok(out) = paste_via_command("wl-paste", &["--no-newline"])
+        {
+            let text = String::from_utf8_lossy(&out).into_owned();
+            if !text.is_empty() {
+                return Some(text);
+            }
+        }
+        if std::env::var_os("DISPLAY").is_some()
+            && let Ok(out) = paste_via_command("xclip", &["-selection", "clipboard", "-o"])
+        {
+            let text = String::from_utf8_lossy(&out).into_owned();
+            if !text.is_empty() {
+                return Some(text);
+            }
+        }
+    }
+
+    use std::sync::{Mutex, OnceLock};
+    static CLIPBOARD: OnceLock<Mutex<arboard::Clipboard>> = OnceLock::new();
+    let cb = CLIPBOARD.get_or_init(|| {
+        Mutex::new(arboard::Clipboard::new().expect("clipboard backend init failed"))
+    });
+    let mut guard = cb.lock().ok()?;
+    guard.get_text().ok().filter(|t| !t.is_empty())
+}
+
+/// Clear the clipboard outright rather than setting it to an empty string:
+/// `wl-copy --clear` drops the compositor offer, and arboard's `clear()`
+/// releases ownership, so a paste afterward gets nothing instead of "".
+fn clear_clipboard() -> Result<(), String> {
+    #[cfg(not(target_os = "macos"))]
+    {
+        if std::env::var_os("WAYLAND_DISPLAY").is_some() {
+            match copy_via_command("wl-copy", &["--clear"], "") {
+                Ok(()) => return Ok(()),
+                Err(e) => tracing::warn!(target: "clipboard", "wl-copy --clear failed: {e}"),
+            }
+        }
+        if std::env::var_os("DISPLAY").is_some() {
+            for (cmd, args) in [
+                ("xclip", &["-selection", "clipboard"][..]),
+                ("xsel", &["--clipboard", "--clear"][..]),
+            ] {
+                match copy_via_command(cmd, args, "") {
+                    Ok(()) => return Ok(()),
+                    Err(e) => tracing::warn!(target: "clipboard", "{cmd} clear failed: {e}"),
+                }
+            }
+        }
+    }
+    #[cfg(target_os = "macos")]
+    {
+        if let Ok(()) = copy_via_command("pbcopy", &[], "") {
+            return Ok(());
+        }
+    }
+
+    use std::sync::{Mutex, OnceLock};
+    static CLIPBOARD: OnceLock<Mutex<arboard::Clipboard>> = OnceLock::new();
+    let cb = CLIPBOARD.get_or_init(|| {
+        Mutex::new(arboard::Clipboard::new().expect("clipboard backend init failed"))
+    });
+    let mut guard = cb.lock().map_err(|e| e.to_string())?;
+    guard.clear().map_err(|e| e.to_string())
+}
+
 /// Run [`copy_image_to_clipboard`] off the UI thread and report back on the
 /// event loop. Image clipboard helpers may block on the compositor just like
 /// text helpers.
