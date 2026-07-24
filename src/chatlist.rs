@@ -908,7 +908,9 @@ pub(crate) fn vault_set_async(vault: &Arc<Mutex<Vault>>, key: String, value: Str
 /// common case and gets its own clear line; everything else shows the detail.
 pub(crate) fn import_backup_error(e: &backup::BackupError) -> String {
     match e {
-        backup::BackupError::WrongPassword => "Wrong backup password.".to_string(),
+        backup::BackupError::Vault(vault::VaultError::WrongPassword) => {
+            "Wrong backup password.".to_string()
+        }
         backup::BackupError::NotFound => "That backup file is gone.".to_string(),
         other => format!("Couldn't read backup: {other}"),
     }

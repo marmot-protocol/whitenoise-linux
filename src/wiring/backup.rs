@@ -102,7 +102,7 @@ pub(crate) fn wire_backup(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                             ui.global::<AppState>()
                                 .invoke_storage_backup_written(dest.into());
                         }
-                        Err(backup::BackupError::WrongPassword) => {
+                        Err(backup::BackupError::Vault(vault::VaultError::WrongPassword)) => {
                             ui.set_create_backup_status(error_copy().wrong_password.into());
                         }
                         Err(e) => {
