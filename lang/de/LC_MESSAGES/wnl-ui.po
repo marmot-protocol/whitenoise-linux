@@ -1914,9 +1914,17 @@ msgctxt "EncryptionInfoModal"
 msgid "Only the people in this chat can read it."
 msgstr ""
 
+msgctxt "ConfirmFlows"
+msgid "Open"
+msgstr "Öffnen"
+
 msgctxt "StoragePane"
 msgid "Open folder"
 msgstr "Ordner öffnen"
+
+msgctxt "ConfirmFlows"
+msgid "Open this link?"
+msgstr "Diesen Link öffnen?"
 
 msgctxt "MessageBubble"
 msgid "Original message"
@@ -2779,6 +2787,10 @@ msgstr ""
 msgctxt "MessageView"
 msgid "This message was deleted"
 msgstr ""
+
+msgctxt "ConfirmFlows"
+msgid "This opens {} in your default browser."
+msgstr "Dies öffnet {} in deinem Standardbrowser."
 
 msgctxt "SettingsPage"
 msgid "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log."

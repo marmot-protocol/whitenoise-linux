@@ -1499,8 +1499,17 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 tracing::warn!(target: "deeplink", "unhandled marmot:// link: {url}");
                 return;
             }
-            open_external(url);
+            // Anything else is an outside link: arm the confirm modal with
+            // its resolved host instead of opening it immediately.
+            if let Some(ui) = weak.upgrade() {
+                ui.set_pending_external_link(url.into());
+                ui.set_pending_external_host(url_host(url).into());
+            }
         }
+    });
+
+    ui.global::<AppState>().on_confirm_external_link(|url| {
+        open_external(url.as_str());
     });
 
     // Avatar / sender-name taps anywhere in the message tree (and the members

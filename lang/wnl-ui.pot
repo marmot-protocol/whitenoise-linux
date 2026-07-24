@@ -1825,8 +1825,16 @@ msgctxt "EncryptionInfoModal"
 msgid "Only the people in this chat can read it."
 msgstr ""
 
+msgctxt "ConfirmFlows"
+msgid "Open"
+msgstr ""
+
 msgctxt "StoragePane"
 msgid "Open folder"
+msgstr ""
+
+msgctxt "ConfirmFlows"
+msgid "Open this link?"
 msgstr ""
 
 msgctxt "MessageBubble"
@@ -2643,6 +2651,10 @@ msgstr ""
 
 msgctxt "MessageView"
 msgid "This message was deleted"
+msgstr ""
+
+msgctxt "ConfirmFlows"
+msgid "This opens {} in your default browser."
 msgstr ""
 
 msgctxt "SettingsPage"

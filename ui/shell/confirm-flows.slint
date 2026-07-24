@@ -135,6 +135,22 @@ export component ConfirmFlows inherits Rectangle {
         }
     }
 
+    if AppState.pending-external-link != "": ConfirmModal {
+        title: @tr("Open this link?");
+        subtitle: @tr("This opens {} in your default browser.", AppState.pending-external-host);
+        confirm-label: @tr("Open");
+        primary-danger: false;
+        confirm => {
+            AppState.confirm-external-link(AppState.pending-external-link);
+            AppState.pending-external-link = "";
+            AppState.pending-external-host = "";
+        }
+        dismissed => {
+            AppState.pending-external-link = "";
+            AppState.pending-external-host = "";
+        }
+    }
+
     if AppState.show-delete-confirm: ConfirmModal {
         title: AppState.delete-confirm-everyone ? @tr("Delete for everyone?") : @tr("Delete for me?");
         subtitle: AppState.delete-confirm-everyone ? @tr("This removes the message for everyone in the chat. This can't be undone.") : @tr("This hides the message on this device only. Other people will still see it.");
