@@ -253,6 +253,20 @@ export component KeysPage inherits Rectangle {
                         stroke: Palette.danger;
                     }
                 }
+
+                DangerActionRow {
+                    title: @tr("Export encrypted key (ncryptsec)");
+                    detail: @tr("Creates an NIP-49 key encrypted with your vault password, safe to store or move to another client.");
+                    action-label: @tr("Export");
+                    triggered => {
+                        AppState.export-key-password = "";
+                        AppState.export-key-value = "";
+                        AppState.show-export-key = true;
+                    }
+                    LockIcon {
+                        stroke: Palette.danger;
+                    }
+                }
             }
         }
     }

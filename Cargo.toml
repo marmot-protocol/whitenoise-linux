@@ -36,6 +36,7 @@ wnl-ui = { path = "wnl-ui", default-features = false }
 nostr = { version = "0.44.2", default-features = false, features = [
   "std",
   "nip59",
+  "nip49",
 ] }
 # Password-encrypted secret vault (replaces libsecret/pass). Argon2id derives a
 # 32-byte key from the user's password; XChaCha20-Poly1305 seals the secret DB.

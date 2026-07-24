@@ -508,6 +508,21 @@ export global AppState {
     callback reveal-nsec-dismissed();
     callback reveal-nsec-copy(string);      // copy the revealed nsec
 
+    // Export-encrypted-key danger-zone flow (NIP-49 `ncryptsec`). Same shape as
+    // reveal-nsec above: Rust verifies `export-key-confirm`'s vault password off
+    // the UI thread and, on success, encrypts the active account's secret key
+    // under that same password and fills `export-key-value` with the resulting
+    // `ncryptsec1…` string; dismissing clears both.
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <bool> show-export-key: false;
+    in-out property <string> export-key-password;
+    in-out property <string> export-key-value;
+    in-out property <bool> export-key-busy: false;
+    in-out property <string> export-key-status;
+    in-out property <bool> export-key-status-error: false;
+    callback export-key-confirm(string);   // vault password
+    callback export-key-dismissed();
+
     // ═══ Debug & developer tools ═══════════════════════════════════════════
     // Debug pane (gated by Settings → Advanced toggle).
     in-out property <bool> debug-enabled: false;

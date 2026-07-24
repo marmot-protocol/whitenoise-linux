@@ -12,6 +12,7 @@ import { NicknameModal } from "../modals/nickname-modal.slint";
 import { AccountSwitcherModal } from "../modals/account-switcher-modal.slint";
 import { AddAccountModal } from "../modals/add-account-modal.slint";
 import { RevealNsecModal } from "../modals/reveal-nsec-modal.slint";
+import { ExportKeyModal } from "../modals/export-key-modal.slint";
 import { ImportBackupModal } from "../modals/import-backup-modal.slint";
 import { BackupCreateModal } from "../modals/backup-create-modal.slint";
 import { ForwardPickerModal } from "../modals/forward-chat-picker-modal.slint";
@@ -162,6 +163,24 @@ export component ModalHost inherits Rectangle {
             dismissed => {
                 AppState.show-reveal-nsec = false;
                 AppState.reveal-nsec-dismissed();
+            }
+        }
+
+        if AppState.show-export-key: ExportKeyModal {
+            password <=> AppState.export-key-password;
+            key-value: AppState.export-key-value;
+            primary-busy: AppState.export-key-busy;
+            status: AppState.export-key-status;
+            status-color: AppState.export-key-status-error ? Palette.danger : Palette.text-lo;
+            confirm(password) => {
+                AppState.export-key-confirm(password);
+            }
+            copy(key) => {
+                AppState.copy-to-clipboard(key);
+            }
+            dismissed => {
+                AppState.show-export-key = false;
+                AppState.export-key-dismissed();
             }
         }
 
