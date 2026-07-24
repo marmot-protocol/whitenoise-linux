@@ -28,6 +28,8 @@ export component ChatListItem inherits Rectangle {
     in property <string> av-initials;
     in property <image> picture;
     in property <bool> has-picture: false;
+    // True while this row is the chat list's keyboard cursor position.
+    in property <bool> keyboard-focused: false;
 
     // Collapsed-strip mode: on narrow windows the side panel hands rows only
     // ~60px, so drop the text columns and float the unread badge over the
@@ -37,7 +39,13 @@ export component ChatListItem inherits Rectangle {
     // Content-driven so a wrapping preview can grow the row; a short preview
     // keeps the standard single-line height.
     min-height: 64px;
-    background: root.selected ? Palette.selected : (touch.has-hover ? Palette.hover : transparent);
+    // Keyboard focus wins over the selected tint — the currently open chat is
+    // also the likeliest place the cursor starts, and the selection bar below
+    // already marks "open" on its own, so the background is free to mark
+    // "the keyboard cursor is here" instead (mirrors AccountSwitcherList).
+    background: root.keyboard-focused ? Palette.hover : (root.selected ? Palette.selected : (touch.has-hover ? Palette.hover : transparent));
+    accessible-role: list-item;
+    accessible-label: root.badge == "" ? root.name : @tr("{}, {} unread", root.name, root.badge);
     border-radius: (8px) * Theme.r-scale;
     border-width: Theme.selected-inverts-text && root.selected ? Theme.border-w : (root.selected && !Theme.selected-inverts-text ? 1px : 0px);
     border-color: root.selected && !Theme.selected-inverts-text ? Palette.mint-glow : Palette.border;

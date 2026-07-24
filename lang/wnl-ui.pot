@@ -3208,6 +3208,14 @@ msgctxt "ConfirmFlows"
 msgid "{} will stop carrying your messages. You can add it back anytime."
 msgstr ""
 
+msgctxt "ChatListItem"
+msgid "{}, {} unread"
+msgstr ""
+
+msgctxt "ChatListItemIrc"
+msgid "{}, {} unread"
+msgstr ""
+
 msgctxt "RecordingOverlay"
 msgid "{}s"
 msgstr ""

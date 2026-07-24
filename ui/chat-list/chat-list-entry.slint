@@ -9,11 +9,14 @@ import { Palette, Theme, ChatMeta } from "../tokens.slint";
 import { ChatListItem } from "chat-list-item.slint";
 import { PinIcon } from "../icons/pin-icon.slint";
 import { MuteIcon } from "../icons/mute-icon.slint";
+import { FocusCaret } from "../primitives/focus-caret.slint";
 
 // IRC-style one-line channel row: `# name        (badge)`.
 component ChatListItemIrc inherits Rectangle {
     in property <ChatMeta> chat;
     in property <bool> selected: false;
+    // True while this row is the chat list's keyboard cursor position.
+    in property <bool> keyboard-focused: false;
     callback clicked;
     callback context-menu(length, length);
 
@@ -21,7 +24,16 @@ component ChatListItemIrc inherits Rectangle {
     in property <bool> compact: false;
 
     height: 26px;
-    background: root.selected ? Palette.selected : (touch.has-hover ? Palette.hover : transparent);
+    // Keyboard focus wins over the selected tint — see chat-list-item.slint.
+    background: root.keyboard-focused ? Palette.hover : (root.selected ? Palette.selected : (touch.has-hover ? Palette.hover : transparent));
+    accessible-role: list-item;
+    accessible-label: root.chat.badge == "" ? root.chat.name : @tr("{}, {} unread", root.chat.name, root.chat.badge);
+
+    if root.keyboard-focused: FocusCaret {
+        x: 0;
+        y: (parent.height - self.height) / 2;
+        height: 18px;
+    }
 
     HorizontalLayout {
         padding-left: 10px;
@@ -84,12 +96,15 @@ export component ChatListEntry inherits VerticalLayout {
     in property <bool> selected: false;
     // Forwarded to the skins: true while the side panel is a collapsed strip.
     in property <bool> compact: false;
+    // True while this row is the chat list's keyboard cursor position.
+    in property <bool> keyboard-focused: false;
     callback clicked;
     callback context-menu(length, length);
 
     if Theme.skin-list == 0: ChatListItem {
         compact: root.compact;
         selected: root.selected;
+        keyboard-focused: root.keyboard-focused;
         name: root.chat.name;
         preview: root.chat.preview;
         stamp: root.chat.stamp;
@@ -114,6 +129,7 @@ export component ChatListEntry inherits VerticalLayout {
         compact: root.compact;
         chat: root.chat;
         selected: root.selected;
+        keyboard-focused: root.keyboard-focused;
         clicked => {
             root.clicked();
         }
