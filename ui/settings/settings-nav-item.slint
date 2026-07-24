@@ -10,6 +10,11 @@ export component SettingsNavItem inherits Rectangle {
 
     height: root.compact ? 42px : 30px;
     border-radius: (root.compact ? 10px : 5px) * Theme.r-scale;
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-action-default => {
+        root.clicked();
+    }
     background: root.selected ? Palette.selected : (touch.has-hover ? Palette.hover : transparent);
     animate background { duration: 80ms; }
 
@@ -36,5 +41,30 @@ export component SettingsNavItem inherits Rectangle {
         clicked => {
             root.clicked();
         }
+    }
+
+    // Zero-size FocusScope: joins the Tab chain without taking pointer events.
+    // Mirrors ui/shell/left-rail.slint's NavItem.
+    fs := FocusScope {
+        width: 0px;
+        height: 0px;
+        key-pressed(event) => {
+            if (event.text == Key.Return || event.text == " ") {
+                root.clicked();
+                return accept;
+            }
+            return reject;
+        }
+    }
+
+    if fs.has-focus: Rectangle {
+        x: 1px;
+        y: 1px;
+        width: parent.width - 2px;
+        height: parent.height - 2px;
+        background: transparent;
+        border-radius: root.border-radius;
+        border-width: 2px;
+        border-color: Palette.mint;
     }
 }
