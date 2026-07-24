@@ -894,23 +894,46 @@ pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                     return;
                 }
             };
+            let level_handle = recorder.level_handle();
             with_active_recorder(|r| {
                 *r = Some(recorder);
             });
             *recording_start().lock().unwrap() = Some(std::time::Instant::now());
+            *recording_level().lock().unwrap() = Some(level_handle);
             let weak_t = weak.clone();
             std::thread::spawn(move || {
-                for secs in 1.. {
-                    std::thread::sleep(std::time::Duration::from_secs(1));
+                // 100ms ticks so the level meter reads live; the elapsed-seconds
+                // counter only bumps every tenth tick.
+                let mut secs = 0i32;
+                let mut ticks = 0u32;
+                loop {
+                    std::thread::sleep(std::time::Duration::from_millis(100));
                     let still_recording = recording_start().lock().unwrap().is_some();
                     if !still_recording {
                         break;
+                    }
+                    // Swap-and-reset: each tick reports the peak amplitude seen
+                    // since the previous tick, then starts accumulating fresh.
+                    let level = recording_level()
+                        .lock()
+                        .unwrap()
+                        .as_ref()
+                        .map(|l| f32::from_bits(l.swap(0, AtomicOrdering::Relaxed)))
+                        .unwrap_or(0.0)
+                        .min(1.0);
+                    ticks += 1;
+                    let bump_secs = ticks.is_multiple_of(10);
+                    if bump_secs {
+                        secs += 1;
                     }
                     let _ = slint::invoke_from_event_loop({
                         let weak = weak_t.clone();
                         move || {
                             if let Some(ui) = weak.upgrade() {
-                                ui.set_composer_recording_secs(secs);
+                                if bump_secs {
+                                    ui.set_composer_recording_secs(secs);
+                                }
+                                ui.set_composer_recording_level(level);
                             }
                         }
                     });
@@ -933,6 +956,7 @@ pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 if let Some(ui) = weak_i.upgrade() {
                     ui.set_composer_recording(true);
                     ui.set_composer_recording_secs(0);
+                    ui.set_composer_recording_level(0.0);
                 }
             });
         }
@@ -948,6 +972,7 @@ pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             let recorder = with_active_recorder(|r| r.take());
             let Some(recorder) = recorder else { return };
             *recording_start().lock().unwrap() = None;
+            *recording_level().lock().unwrap() = None;
 
             // Stop/encode on the UI thread because the cpal Stream is !Send.
             // Encoding a short WAV clip is fast, so this keeps the code simple.
@@ -957,12 +982,14 @@ pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                     tracing::warn!(target: "audio", "stop recording: {e:#}");
                     if let Some(ui) = weak.upgrade() {
                         ui.set_composer_recording(false);
+                        ui.set_composer_recording_level(0.0);
                     }
                     return;
                 }
             };
             if let Some(ui) = weak.upgrade() {
                 ui.set_composer_recording(false);
+                ui.set_composer_recording_level(0.0);
             }
             let Some(ui) = weak.upgrade() else { return };
             let idx = ui.get_active_chat() as usize;
@@ -1008,10 +1035,12 @@ pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 *r = None;
             });
             *recording_start().lock().unwrap() = None;
+            *recording_level().lock().unwrap() = None;
             let weak_i = weak.clone();
             let _ = slint::invoke_from_event_loop(move || {
                 if let Some(ui) = weak_i.upgrade() {
                     ui.set_composer_recording(false);
+                    ui.set_composer_recording_level(0.0);
                 }
             });
         }

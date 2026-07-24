@@ -195,9 +195,12 @@ export global AppState {
     callback paste-image(); // composer paste shortcut → probe clipboard for an image, send it
     // Voice message recording. The mic button toggles recording; Rust drives
     // `recording` and `recording-secs` so the composer can show a red pulsing
-    // indicator and a live timer.
+    // indicator and a live timer. `recording-level` is the peak input
+    // amplitude (0.0-1.0) sampled roughly 10x/sec, driving a live meter so a
+    // dead/muted mic is visible before the clip is sent.
     in-out property <bool> composer-recording: false;
     in-out property <int> composer-recording-secs: 0;
+    in-out property <float> composer-recording-level: 0.0;
     callback record-clicked();
     callback stop-recording();
     callback cancel-recording();

@@ -415,6 +415,16 @@ pub(crate) fn recording_start() -> &'static Mutex<Option<std::time::Instant>> {
     S.get_or_init(|| Mutex::new(None))
 }
 
+/// Peak-amplitude accumulator of the current recording (cloned from
+/// [`audio::AudioRecorder::level_handle`]), shared with the timer thread so
+/// it can drive the composer's live level meter without touching the
+/// `!Send` recorder itself.
+pub(crate) fn recording_level() -> &'static Mutex<Option<Arc<std::sync::atomic::AtomicU32>>> {
+    use std::sync::OnceLock;
+    static S: OnceLock<Mutex<Option<Arc<std::sync::atomic::AtomicU32>>>> = OnceLock::new();
+    S.get_or_init(|| Mutex::new(None))
+}
+
 /// The message id of the currently-playing voice message.
 pub(crate) fn current_audio_message_id() -> &'static Mutex<Option<String>> {
     use std::sync::OnceLock;
