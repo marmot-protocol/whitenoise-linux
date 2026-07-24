@@ -3340,6 +3340,14 @@ msgctxt "ConfirmFlows"
 msgid "{} will stop carrying your messages. You can add it back anytime."
 msgstr "{} non trasporterà più i tuoi messaggi. Puoi aggiungerlo di nuovo quando vuoi."
 
+msgctxt "ChatListItem"
+msgid "{}, {} unread"
+msgstr "{}, {} non letti"
+
+msgctxt "ChatListItemIrc"
+msgid "{}, {} unread"
+msgstr "{}, {} non letti"
+
 #, fuzzy
 msgctxt "RecordingOverlay"
 msgid "{}s"

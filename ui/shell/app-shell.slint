@@ -185,6 +185,25 @@ export component AppShell inherits Rectangle {
     property <length> left-reserved: root.collapsible ? root.strip-w : AppState.shell-chats-width;
     property <length> left-shown: root.strip ? root.strip-w : AppState.shell-chats-width;
 
+    // Chat-list keyboard cursor: a chat index, moved by Up/Down while the list
+    // (wrapped in a FocusScope below) has focus; Enter opens the cursored chat.
+    property <int> chat-cursor: 0;
+    function move-chat-cursor(delta: int) {
+        if (AppState.chats.length > 0) {
+            if (delta < 0) {
+                root.chat-cursor = root.chat-cursor <= 0 ? AppState.chats.length - 1 : root.chat-cursor - 1;
+            } else {
+                root.chat-cursor = mod(root.chat-cursor + 1, AppState.chats.length);
+            }
+        }
+    }
+    function commit-chat-cursor() {
+        if (root.chat-cursor >= 0 && root.chat-cursor < AppState.chats.length) {
+            TextSelection.clear();
+            AppState.chat-selected(root.chat-cursor);
+        }
+    }
+
     // Theme decor as a full-window backdrop (painted first, behind the cards),
     // so a theme's feel spans every section, not just the chat area: the
     // sketch/chalkboard paper texture and the synthwave neon grid.
@@ -526,22 +545,53 @@ export component AppShell inherits Rectangle {
                     Rectangle {
                         vertical-stretch: 1;
                         clip: true;
-                        if AppState.active-page != 1 && AppState.active-page != 2 && AppState.active-page != 4: ListView {
+                        // Keyboard cursor on the chat list: Up/Down move it,
+                        // Enter opens the cursored chat. Nothing else in the
+                        // left card holds a Tab stop today (the rail icons and
+                        // search/add controls are plain TouchAreas), so Tab
+                        // alone would never reach this FocusScope — it takes
+                        // focus itself on mount, the same way CommandPalette
+                        // and AccountSwitcherModal seed their own scope.
+                        if AppState.active-page != 1 && AppState.active-page != 2 && AppState.active-page != 4: chat-nav := FocusScope {
                             x: 0;
                             y: 0;
                             width: 100%;
                             height: 100%;
-                            for chat[idx] in AppState.chats: ChatListEntry {
-                                width: 100%;
-                                chat: chat;
-                                compact: root.strip;
-                                selected: idx == AppState.active-chat;
-                                clicked => {
-                                    TextSelection.clear();
-                                    AppState.chat-selected(idx);
+                            init => { self.focus(); }
+                            key-pressed(event) => {
+                                if (event.text == Key.UpArrow) {
+                                    root.move-chat-cursor(-1);
+                                    return accept;
                                 }
-                                context-menu(ax, ay) => {
-                                    AppState.request-chat-context(idx, ax, ay);
+                                if (event.text == Key.DownArrow) {
+                                    root.move-chat-cursor(1);
+                                    return accept;
+                                }
+                                if (event.text == Key.Return) {
+                                    root.commit-chat-cursor();
+                                    return accept;
+                                }
+                                return reject;
+                            }
+
+                            ListView {
+                                x: 0;
+                                y: 0;
+                                width: 100%;
+                                height: 100%;
+                                for chat[idx] in AppState.chats: ChatListEntry {
+                                    width: 100%;
+                                    chat: chat;
+                                    compact: root.strip;
+                                    selected: idx == AppState.active-chat;
+                                    keyboard-focused: chat-nav.has-focus && idx == root.chat-cursor;
+                                    clicked => {
+                                        TextSelection.clear();
+                                        AppState.chat-selected(idx);
+                                    }
+                                    context-menu(ax, ay) => {
+                                        AppState.request-chat-context(idx, ax, ay);
+                                    }
                                 }
                             }
                         }
