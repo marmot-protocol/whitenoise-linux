@@ -18,18 +18,23 @@ import { InfoBanner } from "../layout/info-banner.slint";
 // publish, or rotate), styled like the page's other status plates.
 component KpStatusLine inherits Rectangle {
     in property <string> text;
-    height: 32px;
     background: Palette.panel-2;
     border-radius: (6px) * Theme.r-scale;
     border-width: 1px;
     border-color: Palette.border-2;
-    Text {
-        x: 12px;
-        y: (parent.height - self.height) / 2;
-        text: root.text;
-        color: Palette.text-mid;
-        font-size: Theme.fs(11px, 14px);
-        font-family: Theme.font;
+    VerticalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        padding-top: 8px;
+        padding-bottom: 8px;
+        alignment: center;
+        Text {
+            text: root.text;
+            color: Palette.text-mid;
+            font-size: Theme.fs(11px, 14px);
+            font-family: Theme.font;
+            wrap: word-wrap;
+        }
     }
 }
 
