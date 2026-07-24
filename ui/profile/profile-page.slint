@@ -459,10 +459,14 @@ export component ProfilePage inherits Rectangle {
                     HorizontalLayout {
                         spacing: 8px;
                         alignment: start;
+                        // The check only appears once the handle is confirmed
+                        // against the domain's `.well-known/nostr.json` — the
+                        // same rule contact-detail.slint and profile-modal.slint
+                        // apply to everyone else's handle.
                         if AppState.profile-nip05 != "": MetaChip {
-                            glyph: "✓";
+                            glyph: AppState.profile-nip05-verified ? "✓" : "";
                             text: AppState.profile-nip05;
-                            tint: Palette.mint;
+                            tint: AppState.profile-nip05-verified ? Palette.mint : Palette.text-lo;
                         }
                         if AppState.profile-lud16 != "": MetaChip {
                             glyph: "⚡";
