@@ -26,24 +26,23 @@ pub const DEFAULT_FILENAME: &str = "whitenoise-backup.wnbackup";
 
 #[derive(Debug)]
 pub enum BackupError {
-    /// The password didn't decrypt the archive (or the vault, at backup time).
-    WrongPassword,
-    /// No backup/vault file where one was expected.
+    /// No backup file where one was expected (the archive itself, on disk).
     NotFound,
-    /// Malformed archive or envelope.
+    /// Malformed archive.
     Corrupt(String),
     Io(String),
-    Crypto(String),
+    /// A failure opening or sealing the vault this backup is keyed to — wrong
+    /// password, a corrupt vault envelope, no vault yet, or a crypto error.
+    Vault(vault::VaultError),
 }
 
 impl std::fmt::Display for BackupError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            BackupError::WrongPassword => write!(f, "wrong password"),
             BackupError::NotFound => write!(f, "backup not found"),
             BackupError::Corrupt(s) => write!(f, "backup corrupt: {s}"),
             BackupError::Io(s) => write!(f, "backup io: {s}"),
-            BackupError::Crypto(s) => write!(f, "backup crypto: {s}"),
+            BackupError::Vault(e) => write!(f, "backup: {e}"),
         }
     }
 }
@@ -52,13 +51,7 @@ impl std::error::Error for BackupError {}
 
 impl From<vault::VaultError> for BackupError {
     fn from(e: vault::VaultError) -> Self {
-        match e {
-            vault::VaultError::WrongPassword => BackupError::WrongPassword,
-            vault::VaultError::NotFound => BackupError::NotFound,
-            vault::VaultError::Corrupt(s) => BackupError::Corrupt(s),
-            vault::VaultError::Io(s) => BackupError::Io(s),
-            vault::VaultError::Crypto(s) => BackupError::Crypto(s),
-        }
+        BackupError::Vault(e)
     }
 }
 
@@ -405,7 +398,7 @@ mod tests {
         create(&dest, "pw").unwrap();
         assert!(matches!(
             create(&dest, "nope"),
-            Err(BackupError::WrongPassword)
+            Err(BackupError::Vault(vault::VaultError::WrongPassword))
         ));
 
         // merge_nsecs recovers both keys (deduped, bech32).
@@ -418,7 +411,7 @@ mod tests {
         assert_eq!(got, want);
         assert!(matches!(
             merge_nsecs(&dest, "nope"),
-            Err(BackupError::WrongPassword)
+            Err(BackupError::Vault(vault::VaultError::WrongPassword))
         ));
 
         // Wipe the home, restore, and confirm what came back (and what didn't).
