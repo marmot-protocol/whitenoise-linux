@@ -1050,6 +1050,14 @@ msgctxt "AdvancedPane"
 msgid "Developer mode"
 msgstr "開発者フラグ"
 
+msgctxt "LoginScreen"
+msgid "Discard key"
+msgstr ""
+
+msgctxt "LoginScreen"
+msgid "Discard this key?"
+msgstr ""
+
 msgctxt "ErrorBanner"
 msgid "Dismiss"
 msgstr "閉じる"
@@ -1226,6 +1234,10 @@ msgstr "新しい鍵を生成"
 msgctxt "LoginScreen"
 msgid "Generate a new key"
 msgstr "新しい鍵を生成"
+
+msgctxt "LoginScreen"
+msgid "Going back won't save this identity. Unless you backed up the nsec yourself, it's gone for good."
+msgstr ""
 
 msgctxt "EncryptionInfoModal"
 msgid "Got it"
