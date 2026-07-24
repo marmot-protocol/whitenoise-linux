@@ -12,7 +12,6 @@ import { Button } from "../primitives/button.slint";
 import { FormLabel } from "../primitives/form-label.slint";
 import { Avatar } from "../primitives/avatar.slint";
 import { ScrollView } from "../primitives/scroll-view.slint";
-import { VaultField } from "vault-field.slint";
 import { PasswordField } from "password-field.slint";
 import { ReadoutBox } from "readout-box.slint";
 import { FormMessages } from "form-messages.slint";
@@ -269,7 +268,7 @@ export component LoginScreen inherits Rectangle {
             if root.mode == 1: VerticalLayout {
                     spacing: 12px;
 
-                    VaultField {
+                    PasswordField {
                         label: @tr("NSEC");
                         placeholder: "nsec1…";
                         text <=> root.nsec-input;
