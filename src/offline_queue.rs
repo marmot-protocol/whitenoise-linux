@@ -21,11 +21,12 @@
 // failure to persist degrades to today's behaviour (in-RAM only, lost on
 // restart) rather than blocking the send.
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use serde::{Deserialize, Serialize};
 
+use crate::sealed_store;
 use crate::vault::Vault;
 
 /// One attachment's worth of bytes needed to re-upload a queued media send.
@@ -101,37 +102,10 @@ pub fn put(vault: &Arc<Mutex<Vault>>, send: &QueuedSend) {
             return;
         }
     };
-    let sealed = {
-        let Ok(v) = vault.lock() else { return };
-        match v.seal_blob(&plaintext) {
-            Ok(s) => s,
-            Err(e) => {
-                tracing::warn!(target: "offline_queue", "seal {}: {e}", send.temp_id);
-                return;
-            }
-        }
-    };
-    let dir = queue_dir();
-    if let Err(e) = std::fs::create_dir_all(&dir) {
-        tracing::warn!(target: "offline_queue", "mkdir: {e}");
-        return;
-    }
-    set_owner_only_dir(&dir);
     let path = path_for(&send.temp_id);
-    // Temp-then-rename so a crash mid-write can't leave a truncated entry that
-    // fails the auth tag forever after.
-    let tmp = path.with_extension("bin.tmp");
-    if let Err(e) = std::fs::write(&tmp, &sealed) {
-        tracing::warn!(target: "offline_queue", "write {}: {e}", send.temp_id);
-        return;
+    if let Err(e) = sealed_store::put(vault, &path, &plaintext) {
+        tracing::warn!(target: "offline_queue", "put {}: {e}", send.temp_id);
     }
-    set_owner_only(&tmp);
-    if let Err(e) = std::fs::rename(&tmp, &path) {
-        tracing::warn!(target: "offline_queue", "rename {}: {e}", send.temp_id);
-        let _ = std::fs::remove_file(&tmp);
-        return;
-    }
-    set_owner_only(&path);
 }
 
 /// Drop a queued entry once its send is confirmed (acked). Best-effort.
@@ -153,19 +127,13 @@ pub fn load_all(vault: &Arc<Mutex<Vault>>) -> Vec<QueuedSend> {
         if path.extension().and_then(|e| e.to_str()) != Some("bin") {
             continue;
         }
-        let Ok(sealed) = std::fs::read(&path) else {
-            continue;
-        };
-        let plain = {
-            let Ok(v) = vault.lock() else { return out };
-            match v.open_blob(&sealed) {
-                Ok(p) => p,
-                Err(e) => {
-                    tracing::warn!(target: "offline_queue", "open {path:?}: {e}; evicting");
-                    let _ = std::fs::remove_file(&path);
-                    continue;
-                }
+        let plain = match sealed_store::get(vault, &path) {
+            Some(Ok(p)) => p,
+            Some(Err(e)) => {
+                tracing::warn!(target: "offline_queue", "open {path:?}: {e}; evicting");
+                continue;
             }
+            None => continue,
         };
         match serde_json::from_slice::<QueuedSend>(&plain) {
             Ok(s) => out.push(s),
@@ -183,10 +151,13 @@ pub fn load_all(vault: &Arc<Mutex<Vault>>) -> Vec<QueuedSend> {
 /// Used by the manual retry path to recover an attachment's bytes (which the
 /// in-RAM overlay does not keep) so a failed media send can be re-dispatched.
 pub fn load_one(vault: &Arc<Mutex<Vault>>, temp_id: &str) -> Option<QueuedSend> {
-    let sealed = std::fs::read(path_for(temp_id)).ok()?;
-    let plain = {
-        let v = vault.lock().ok()?;
-        v.open_blob(&sealed).ok()?
+    let path = path_for(temp_id);
+    let plain = match sealed_store::get(vault, &path)? {
+        Ok(p) => p,
+        Err(e) => {
+            tracing::warn!(target: "offline_queue", "open {path:?}: {e}; evicting");
+            return None;
+        }
     };
     serde_json::from_slice::<QueuedSend>(&plain).ok()
 }
@@ -196,21 +167,3 @@ pub fn load_one(vault: &Arc<Mutex<Vault>>, temp_id: &str) -> Option<QueuedSend> 
 pub fn clear() {
     let _ = std::fs::remove_dir_all(queue_dir());
 }
-
-#[cfg(unix)]
-fn set_owner_only(path: &Path) {
-    use std::os::unix::fs::PermissionsExt;
-    let _ = std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600));
-}
-
-#[cfg(not(unix))]
-fn set_owner_only(_path: &Path) {}
-
-#[cfg(unix)]
-fn set_owner_only_dir(path: &Path) {
-    use std::os::unix::fs::PermissionsExt;
-    let _ = std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o700));
-}
-
-#[cfg(not(unix))]
-fn set_owner_only_dir(_path: &Path) {}

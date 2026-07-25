@@ -360,15 +360,15 @@ impl Vault {
         let bytes = serde_json::to_vec(&env).map_err(|e| VaultError::Crypto(e.to_string()))?;
 
         if let Some(parent) = self.path.parent() {
-            std::fs::create_dir_all(parent).map_err(|e| VaultError::Io(e.to_string()))?;
+            crate::fsperm::create_dir_all_owner_only(parent)
+                .map_err(|e| VaultError::Io(e.to_string()))?;
         }
         // Write to a temp sibling then rename, so a crash mid-write can't truncate
         // the existing vault.
         let tmp = self.path.with_extension("db.tmp");
-        std::fs::write(&tmp, &bytes).map_err(|e| VaultError::Io(e.to_string()))?;
-        set_owner_only(&tmp);
+        crate::fsperm::write_owner_only(&tmp, &bytes).map_err(|e| VaultError::Io(e.to_string()))?;
         std::fs::rename(&tmp, &self.path).map_err(|e| VaultError::Io(e.to_string()))?;
-        set_owner_only(&self.path);
+        crate::fsperm::owner_only_file(&self.path);
         Ok(())
     }
 }
@@ -507,15 +507,6 @@ pub(crate) fn open_with_password(bytes: &[u8], password: &str) -> Result<Vec<u8>
     let (_salt, plaintext, _key) = open_envelope_keyed(bytes, password)?;
     Ok(plaintext)
 }
-
-#[cfg(unix)]
-fn set_owner_only(path: &std::path::Path) {
-    use std::os::unix::fs::PermissionsExt;
-    let _ = std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600));
-}
-
-#[cfg(not(unix))]
-fn set_owner_only(_path: &std::path::Path) {}
 
 // ── marmot AccountSecretStore backed by the vault ────────────────────────
 //

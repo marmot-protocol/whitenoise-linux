@@ -18,6 +18,7 @@
 
 use std::path::{Path, PathBuf};
 
+use crate::fsperm::{create_dir_all_owner_only, owner_only_file, write_owner_only};
 use crate::vault;
 
 const MAGIC: &[u8; 6] = b"DMBK01";
@@ -77,7 +78,7 @@ pub fn create(dest: &Path, password: &str) -> Result<(), BackupError> {
     let tmp = dest.with_extension("wnbackup.tmp");
     write_owner_only(&tmp, &sealed).map_err(|e| BackupError::Io(e.to_string()))?;
     std::fs::rename(&tmp, dest).map_err(|e| BackupError::Io(e.to_string()))?;
-    set_owner_only(dest);
+    owner_only_file(dest);
     Ok(())
 }
 
@@ -261,54 +262,6 @@ fn unpack(buf: &[u8]) -> Result<Vec<(String, Vec<u8>)>, BackupError> {
         out.push((path, data));
     }
     Ok(out)
-}
-
-#[cfg(unix)]
-fn set_owner_only(path: &Path) {
-    use std::os::unix::fs::PermissionsExt;
-    let _ = std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600));
-}
-
-#[cfg(not(unix))]
-fn set_owner_only(_path: &Path) {}
-
-/// Write `bytes` to `path`, creating the file `0600` from the outset so there is
-/// no window where freshly-restored plaintext (e.g. `vault.db`) is world-
-/// readable. Also re-tightens perms on an existing file being overwritten.
-#[cfg(unix)]
-fn write_owner_only(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
-    use std::io::Write;
-    use std::os::unix::fs::OpenOptionsExt;
-    let mut f = std::fs::OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .mode(0o600)
-        .open(path)?;
-    f.write_all(bytes)?;
-    set_owner_only(path);
-    Ok(())
-}
-
-#[cfg(not(unix))]
-fn write_owner_only(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
-    std::fs::write(path, bytes)
-}
-
-/// `create_dir_all`, but the directories we create are `0700` from the outset
-/// (Unix). Used for restore targets inside `$WN_HOME`.
-#[cfg(unix)]
-fn create_dir_all_owner_only(path: &Path) -> std::io::Result<()> {
-    use std::os::unix::fs::DirBuilderExt;
-    std::fs::DirBuilder::new()
-        .recursive(true)
-        .mode(0o700)
-        .create(path)
-}
-
-#[cfg(not(unix))]
-fn create_dir_all_owner_only(path: &Path) -> std::io::Result<()> {
-    std::fs::create_dir_all(path)
 }
 
 #[cfg(test)]
