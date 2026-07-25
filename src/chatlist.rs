@@ -47,6 +47,20 @@ pub(crate) fn clear_chat_unread_row(ui: &WhiteNoiseLinux, idx: usize) {
     }
 }
 
+/// Set one chat row's badge/read fields to show `unread` unread messages —
+/// the mark-as-unread counterpart of `clear_chat_unread_row`, used by the rail
+/// context menu's "Mark as unread" so the badge appears immediately.
+pub(crate) fn set_chat_row_unread(ui: &WhiteNoiseLinux, idx: usize, unread: u32) {
+    let chats = ui.get_chats();
+    if let Some(vm) = chats.as_any().downcast_ref::<VecModel<ChatMeta>>()
+        && let Some(mut row) = vm.row_data(idx)
+    {
+        row.badge = s(&unread::format_unread(unread));
+        row.read = unread == 0;
+        vm.set_row_data(idx, row);
+    }
+}
+
 /// String key used to derive the current account's avatar palette/initials.
 /// Falls back to the account hex if no display name is available so the
 /// avatar is at least deterministic per account.
@@ -469,8 +483,7 @@ pub(crate) fn fetch_chat_list_snapshot(backend: &Backend) -> Option<ChatListSnap
         .map(|(r, lm)| {
             let marker = state.marker_or_seed(&r.group_id_hex, now);
             let n = count_unread(backend, &r.group_id_hex, &my_id, marker, lm.as_ref());
-            state.set_count(&r.group_id_hex, n);
-            n
+            state.record_count(&r.group_id_hex, n)
         })
         .collect();
     // Eagerly load the startup chat's window. Normally this is the first real
@@ -1041,15 +1054,18 @@ pub(crate) fn now_unix_secs() -> u64 {
 pub(crate) const UNREAD_SCAN_CAP: usize = 200;
 
 /// Process-wide unread state, lazily initialized from the persisted
-/// `Settings::last_read` markers on first use. A `OnceLock` singleton (like
-/// `active_group_slot`) rather than a threaded handle, because the chat watcher
-/// and the chat-list snapshot fetch both run off the UI thread and would
-/// otherwise need it plumbed through every refresh path.
+/// `Settings::last_read` markers and `Settings::manually_unread` flags on
+/// first use. A `OnceLock` singleton (like `active_group_slot`) rather than a
+/// threaded handle, because the chat watcher and the chat-list snapshot fetch
+/// both run off the UI thread and would otherwise need it plumbed through
+/// every refresh path.
 pub(crate) fn unread_state() -> &'static unread::UnreadState {
     static UNREAD: std::sync::OnceLock<unread::UnreadState> = std::sync::OnceLock::new();
     UNREAD.get_or_init(|| {
-        let markers: HashMap<String, i64> = Settings::load().last_read.into_iter().collect();
-        unread::UnreadState::new(markers)
+        let settings = Settings::load();
+        let markers: HashMap<String, i64> = settings.last_read.into_iter().collect();
+        let forced_unread: HashSet<String> = settings.manually_unread.into_iter().collect();
+        unread::UnreadState::with_forced_unread(markers, forced_unread)
     })
 }
 
@@ -1420,12 +1436,11 @@ pub(crate) fn install_chat_watcher(
                     .map(|g| g == &id)
                     .unwrap_or(false);
             let unread = if viewing {
-                unread_state().set_marker(&id, now);
+                unread_state().mark_read(&id, now);
                 0
             } else {
-                raw_unread
+                unread_state().record_count(&id, raw_unread)
             };
-            unread_state().set_count(&id, unread);
             let row_meta = match guard.as_deref() {
                 Some(b) => chat_meta_from(&record, None, &my_id, b, unread),
                 None => fallback_chat_meta(&record),

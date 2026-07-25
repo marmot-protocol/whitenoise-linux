@@ -439,6 +439,9 @@ export global AppState {
     in-out property <length> chat-ctx-y;
     in-out property <bool> chat-ctx-pinned: false;
     in-out property <bool> chat-ctx-muted: false;
+    // Whether the right-clicked chat currently shows an unread badge — picks
+    // the "Mark as read" / "Mark as unread" item label.
+    in-out property <bool> chat-ctx-unread: false;
     in-out property <bool> chat-ctx-can-leave: false;
     // False for the "Saved Messages" self-chat, which is permanently pinned to
     // the top: it drops the Pin/Unpin item rather than showing a no-op.
@@ -446,6 +449,9 @@ export global AppState {
     callback request-chat-context(int, length, length);
     callback toggle-pin-chat(int);
     callback toggle-mute-chat-at(int);
+    // Flip the right-clicked chat between read and unread: clears its badge
+    // and advances the read marker, or flags it unread without a new message.
+    callback toggle-read-chat-at(int);
     // Export the right-clicked chat's transcript to a Markdown or HTML file
     // (Rust opens the save dialog and writes it).
     callback export-chat-at(int);

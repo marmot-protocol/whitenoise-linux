@@ -253,13 +253,15 @@ export component ModalHost inherits Rectangle {
             }
         }
 
-        // Right-click rail chat-row context menu — pin/unpin, mute/unmute, and
-    // leaving eligible group rows by captured index, independent of open chat.
+        // Right-click rail chat-row context menu — pin/unpin, mute/unmute,
+    // mark as read/unread, and leaving eligible group rows by captured index,
+    // independent of open chat.
     if AppState.chat-ctx-open: ChatContextMenu {
             anchor-x: AppState.chat-ctx-x;
             anchor-y: AppState.chat-ctx-y;
             pinned: AppState.chat-ctx-pinned;
             muted: AppState.chat-ctx-muted;
+            unread: AppState.chat-ctx-unread;
             can-leave: AppState.chat-ctx-can-leave;
             can-pin: AppState.chat-ctx-can-pin;
             toggle-pin => {
@@ -269,6 +271,10 @@ export component ModalHost inherits Rectangle {
             toggle-mute => {
                 AppState.chat-ctx-open = false;
                 AppState.toggle-mute-chat-at(AppState.chat-ctx-idx);
+            }
+            toggle-read => {
+                AppState.chat-ctx-open = false;
+                AppState.toggle-read-chat-at(AppState.chat-ctx-idx);
             }
             export-chat => {
                 AppState.chat-ctx-open = false;

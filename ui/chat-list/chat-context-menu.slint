@@ -4,19 +4,22 @@ import { MenuItem } from "../primitives/menu-item.slint";
 // Right-click context menu for a chat row in the rail. Full-window mount (like
 // MessageContextMenu / EmojiPicker) so the invisible backdrop catches outside
 // clicks; the panel sits at the anchor, clamped inside the window. Actions:
-// pin/unpin, mute/unmute, and leave for group rows the viewer can leave.
+// pin/unpin, mute/unmute, mark as read/unread, and leave for group rows the
+// viewer can leave.
 export component ChatContextMenu inherits Rectangle {
     in property <length> anchor-x;
     in property <length> anchor-y;
     // Current state of the target row — picks each item's label.
     in property <bool> pinned: false;
     in property <bool> muted: false;
+    in property <bool> unread: false;
     in property <bool> can-leave: false;
     // The "Saved Messages" self-chat is force-pinned to the top and can't be
     // reordered, so it offers no Pin/Unpin item (which would be a no-op).
     in property <bool> can-pin: true;
     callback toggle-pin();
     callback toggle-mute();
+    callback toggle-read();
     callback export-chat();
     callback leave-group();
     callback dismissed();
@@ -25,9 +28,10 @@ export component ChatContextMenu inherits Rectangle {
     // rather than leaving a gap in the keyboard-nav sequence.
     property <int> pin-idx: root.can-pin ? 0 : -1;
     property <int> mute-idx: root.can-pin ? 1 : 0;
-    property <int> export-idx: root.mute-idx + 1;
+    property <int> read-idx: root.mute-idx + 1;
+    property <int> export-idx: root.read-idx + 1;
     property <int> leave-idx: root.export-idx + 1;
-    property <int> item-count: (root.can-pin ? 1 : 0) + 2 + (root.can-leave ? 1 : 0);
+    property <int> item-count: (root.can-pin ? 1 : 0) + 3 + (root.can-leave ? 1 : 0);
     property <int> selected-index: 0;
 
     function move-selection(delta: int) {
@@ -47,6 +51,8 @@ export component ChatContextMenu inherits Rectangle {
             root.toggle-pin();
         } else if (root.selected-index == root.mute-idx) {
             root.toggle-mute();
+        } else if (root.selected-index == root.read-idx) {
+            root.toggle-read();
         } else if (root.selected-index == root.export-idx) {
             root.export-chat();
         } else if (root.can-leave && root.selected-index == root.leave-idx) {
@@ -126,6 +132,18 @@ export component ChatContextMenu inherits Rectangle {
                     }
                     hovered => {
                         root.selected-index = root.mute-idx;
+                    }
+                }
+
+                MenuItem {
+                    glyph: root.unread ? "●" : "○";
+                    label: root.unread ? @tr("Mark as read") : @tr("Mark as unread");
+                    selected: root.selected-index == root.read-idx;
+                    activated => {
+                        root.toggle-read();
+                    }
+                    hovered => {
+                        root.selected-index = root.read-idx;
                     }
                 }
 

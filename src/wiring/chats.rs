@@ -256,14 +256,14 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                     let now = now_unix_secs() as i64;
                     // The read marker BEFORE this open advances it — the boundary
                     // the "New messages" divider is drawn from. Captured here
-                    // because `set_marker` below overwrites it to `now`.
+                    // because `mark_read` below overwrites it to `now`.
                     let prev_marker = unread_state().marker_or_seed(&group_hex, now);
-                    unread_state().set_marker(&group_hex, now);
-                    unread_state().set_count(&group_hex, 0);
+                    unread_state().mark_read(&group_hex, now);
                     {
                         let mut st = settings_cell.borrow_mut();
                         st.last_selected_chat = Some(group_hex.clone());
                         st.last_read.insert(group_hex.clone(), now);
+                        st.manually_unread.remove(&group_hex);
                         st.save();
                     }
                     clear_chat_unread_row(&ui, idx as usize);
