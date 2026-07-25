@@ -602,6 +602,10 @@ export global AppState {
     callback network-remove-relay(string);
     callback network-refresh-health();
     callback network-republish-relay-list();
+    // Re-boots the backend against the current on-disk relay list, using the
+    // already-unlocked vault — reconnects live instead of requiring the user
+    // to quit and relaunch the app. Shows the boot splash for the duration.
+    callback network-reconnect-relays();
     // Seconds since the last successful relay-health sync. Driven by the 1s
     // Timer below; reset to 0 by Rust on boot and after each health refresh.
     // -1 means "not synced yet" (shown as SYNCING…). Drives the chat-list
