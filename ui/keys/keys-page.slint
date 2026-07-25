@@ -167,7 +167,7 @@ export component KeysPage inherits Rectangle {
                         row-height: 64px;
                         label: "0x" + kp.key-package-ref;
                         sublabel: (kp.published-at != "" ? (kp.published-at + " · ") : "") + (kp.on-relay ? @tr("{n} relay" | "{n} relays" % kp.relay-count, kp.relay-count) : @tr("local only"));
-                        value: kp.local ? "LOCAL" : "REMOTE";
+                        value: kp.local ? @tr("LOCAL") : @tr("REMOTE");
                         show-divider: i < AppState.key-packages.length - 1;
                     }
                 }

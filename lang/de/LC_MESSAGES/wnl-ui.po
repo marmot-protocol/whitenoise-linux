@@ -1534,6 +1534,10 @@ msgctxt "KeysPage"
 msgid "LINKED DEVICES"
 msgstr "VERKNÜPFTE GERÄTE"
 
+msgctxt "KeysPage"
+msgid "LOCAL"
+msgstr "LOKAL"
+
 msgctxt "StoragePane"
 msgid "Last backup"
 msgstr "Letztes Backup"
@@ -2216,6 +2220,10 @@ msgstr "RELAYS"
 msgctxt "StatusBar"
 msgid "RELAYS"
 msgstr "RELAYS"
+
+msgctxt "KeysPage"
+msgid "REMOTE"
+msgstr "REMOTE"
 
 msgctxt "DebugPane"
 msgid "Raw events"

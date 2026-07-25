@@ -1530,6 +1530,10 @@ msgctxt "KeysPage"
 msgid "LINKED DEVICES"
 msgstr "リンク済みデバイス"
 
+msgctxt "KeysPage"
+msgid "LOCAL"
+msgstr "ローカル"
+
 msgctxt "StoragePane"
 msgid "Last backup"
 msgstr "最後のバックアップ"
@@ -2212,6 +2216,10 @@ msgstr "リレー"
 msgctxt "StatusBar"
 msgid "RELAYS"
 msgstr "リレー"
+
+msgctxt "KeysPage"
+msgid "REMOTE"
+msgstr "リモート"
 
 msgctxt "DebugPane"
 msgid "Raw events"
