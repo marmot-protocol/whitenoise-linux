@@ -1,5 +1,6 @@
 import {
     Theme,
+    Palette,
     EmojiSheet,
     Linkout,
     TextSelection,
@@ -285,11 +286,49 @@ export component RunCell inherits Rectangle {
 
     // Always mounted (never `if`-gated) and disabled for non-link runs so it
     // doesn't intercept hover/clicks meant for the bubble's hover sensor.
-    TouchArea {
+    link-touch := TouchArea {
         enabled: root.is-link;
         mouse-cursor: root.is-link ? pointer : default;
+        function activate() {
+            if (root.is-link) {
+                Linkout.open(root.link);
+            }
+        }
         clicked => {
-            Linkout.open(root.link);
+            link-touch.activate();
+        }
+    }
+
+    // The keyboard path and accessible name are mounted only for link runs:
+    // `accessible-role` must be a constant expression, so it cannot ternary
+    // on `is-link` the way `enabled`/`mouse-cursor` above do. Zero-size
+    // FocusScope joins the Tab chain without taking pointer events, mirroring
+    // ui/primitives/button.slint and chat-header.slint's badge-fs.
+    if root.is-link: Rectangle {
+        width: 100%;
+        height: 100%;
+        link-fs := FocusScope {
+            width: 0px;
+            height: 0px;
+            accessible-role: button;
+            accessible-label: @tr("Open link {}", root.link);
+            accessible-action-default => { link-touch.activate(); }
+            key-pressed(event) => {
+                if (event.text == Key.Return || event.text == " ") {
+                    link-touch.activate();
+                    return accept;
+                }
+                return reject;
+            }
+        }
+        if link-fs.has-focus: Rectangle {
+            x: 1px;
+            y: 1px;
+            width: parent.width - 2px;
+            height: parent.height - 2px;
+            border-radius: (3px) * Theme.r-scale;
+            border-width: 2px;
+            border-color: Palette.mint;
         }
     }
 }
