@@ -2214,6 +2214,10 @@ msgctxt "LoginScreen"
 msgid "Remove key"
 msgstr ""
 
+msgctxt "MiniRelayRow"
+msgid "Remove relay"
+msgstr ""
+
 #. Icon-only and destructive, so it needs a spoken name.
 msgctxt "RelayRow"
 msgid "Remove relay"
