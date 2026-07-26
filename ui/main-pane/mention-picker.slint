@@ -13,10 +13,18 @@ export component MentionPicker inherits Rectangle {
     // composer's own callback instead.
     callback choose(int);
 
+    // Desired left edge and the width of the pane the popup must stay inside
+    // (the conversation column, not the full window — the group-members
+    // panel eats into it when open). Mirrors EffectPicker's anchor-x /
+    // container-width clamp.
+    in property <length> anchor-x: 0px;
+    in property <length> container-width: 0px;
+
     property <length> row-h: 44px;
     property <int> max-visible: 6;
-    width: 320px;
+    width: min(320px, max(160px, root.container-width - 8px));
     height: min(root.candidates.length * root.row-h, root.row-h * root.max-visible) + 8px;
+    x: max(4px, min(root.anchor-x, root.container-width - self.width - 4px));
 
     background: Palette.panel;
     border-width: 1px;

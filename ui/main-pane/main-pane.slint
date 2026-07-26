@@ -96,7 +96,8 @@ export component MainPane inherits Rectangle {
     if AppState.mention-active && AppState.mention-candidates.length > 0: MentionPicker {
         candidates: AppState.mention-candidates;
         selected: AppState.mention-selected;
-        x: composer.absolute-position.x - root.absolute-position.x + 46px;
+        anchor-x: composer.absolute-position.x - root.absolute-position.x + 46px;
+        container-width: composer.absolute-position.x - root.absolute-position.x + composer.width;
         y: composer.absolute-position.y - root.absolute-position.y - self.height - 2px;
         choose(i) => {
             AppState.mention-choose(i);
