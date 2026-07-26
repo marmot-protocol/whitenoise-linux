@@ -33,6 +33,9 @@ export component LineInput inherits Rectangle {
     // Fired on every edit / caret move with the cursor's byte offset, so the
     // owner can detect the active `@query` token at the caret.
     callback caret-moved(int);
+    // Fired only when the user changes the text (typing, paste, cut) — never
+    // for a programmatic `text` assignment from the owner.
+    callback edited;
     callback nav(int);            // +1 / -1 to move the picker selection
     callback commit-mention();    // accept the highlighted candidate
     callback dismiss-mention();   // close the picker
@@ -107,6 +110,7 @@ export component LineInput inherits Rectangle {
 
             edited => {
                 root.caret-moved(self.cursor-position-byte-offset);
+                root.edited();
             }
             cursor-position-changed(p) => {
                 root.caret-moved(self.cursor-position-byte-offset);

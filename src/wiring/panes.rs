@@ -286,6 +286,14 @@ pub(crate) fn wire_panes(
         }
     });
 
+    ui.global::<AppState>().on_add_account_nsec_edited({
+        let weak = ui.as_weak();
+        move || {
+            let Some(ui) = weak.upgrade() else { return };
+            ui.set_add_account_generated(false);
+        }
+    });
+
     ui.global::<AppState>().on_add_account({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();

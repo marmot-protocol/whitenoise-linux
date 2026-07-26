@@ -10,6 +10,9 @@ export component AddAccountModal inherits Modal {
     in-out property <string> nsec-text;
     // True after `generate()` filled the field — shows the backup warning.
     in property <bool> generated: false;
+    // Fired when the user edits the nsec field by hand, so the owner can
+    // clear `generated` once the field no longer holds the generated key.
+    callback nsec-edited;
 
     card-width: 460px;
     // The nsec field below autofocuses itself.
@@ -33,6 +36,9 @@ export component AddAccountModal inherits Modal {
         autofocus: true;
         submitted => {
             root.add(root.nsec-text);
+        }
+        edited => {
+            root.nsec-edited();
         }
     }
 

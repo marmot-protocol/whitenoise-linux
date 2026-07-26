@@ -870,6 +870,7 @@ export global AppState {
     callback add-account(string);             // nsec
     callback add-account-dismissed();
     callback generate-add-account-key();
+    callback add-account-nsec-edited();       // user typed over the generated key
 
     // Nickname modal state — a private, local-only rename of the active
     // contact. Rust prefills the input and owns persistence (settings.json).
