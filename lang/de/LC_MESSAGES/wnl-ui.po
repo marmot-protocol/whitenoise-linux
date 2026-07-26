@@ -3155,8 +3155,16 @@ msgid "You"
 msgstr "Du"
 
 msgctxt "ErrorCopy"
+msgid "You left the group."
+msgstr "Du hast die Gruppe verlassen."
+
+msgctxt "ErrorCopy"
 msgid "You stepped down."
 msgstr "Du bist zurückgetreten."
+
+msgctxt "ConfirmFlows"
+msgid "You will stop receiving new messages from this group."
+msgstr "Du erhältst keine neuen Nachrichten aus dieser Gruppe mehr."
 
 msgctxt "ConfirmFlows"
 msgid "You will stop receiving new messages from this group. The chat moves to Archive."

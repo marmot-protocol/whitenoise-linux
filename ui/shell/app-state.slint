@@ -811,6 +811,9 @@ export global AppState {
     in-out property <bool> group-description-busy: false;
     in-out property <bool> group-image-busy: false;
     in-out property <bool> group-leave-busy: false;
+    // Leaving a group from the Archived detail view (already-archived, so the
+    // row doesn't move — it just stops receiving new messages).
+    in-out property <bool> archived-leave-busy: false;
     in-out property <string> group-settings-status;
     // Outcome of group-settings-status: 0 = pending, 1 = ok, 2 = error (Rust StatusKind).
     in-out property <int> group-settings-status-kind: 0;
@@ -821,6 +824,11 @@ export global AppState {
     callback change-group-image();
     callback clear-group-image();
     callback leave-group-at(int);
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <bool> show-leave-archived-confirm: false;
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <int> leave-confirm-archived-idx: -1;
+    callback leave-archived-group-at(int);
     in-out property <bool> show-chat-members: false;
     callback members-toggle-clicked();
     callback add-member(string);

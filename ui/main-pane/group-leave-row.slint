@@ -1,10 +1,16 @@
 import { Palette, Theme } from "../tokens.slint";
 import { AppState } from "../shell/app-state.slint";
 
-// Danger-zone footer of the members panel: the leave-group action, separated
-// from the list by a hairline. Admins can't leave (MLS requires stepping down
-// first), so they get the explanatory caption instead of the action.
+// The leave-group action, separated from what it sits under by a hairline.
+// Admins can't leave (MLS requires stepping down first), so they get the
+// explanatory caption instead of the action. Shared by the active-chat
+// members panel and the Archived detail view — the two differ only in which
+// busy flag they show and what a confirmed leave should do, both left to the
+// caller via `busy` and `leave-requested`.
 export component GroupLeaveRow inherits Rectangle {
+    in property <bool> busy: false;
+    callback leave-requested();
+
     height: col.preferred-height;
 
     Rectangle {
@@ -24,18 +30,17 @@ export component GroupLeaveRow inherits Rectangle {
         if !AppState.chat-can-add-members: leave-row := Rectangle {
             height: 40px;
             accessible-role: button;
-            accessible-enabled: !AppState.group-leave-busy;
+            accessible-enabled: !root.busy;
             accessible-label: @tr("Leave group");
             accessible-action-default => { leave-row.activate(); }
             function activate() {
-                if (!AppState.group-leave-busy) {
-                    AppState.leave-confirm-chat-idx = AppState.active-chat;
-                    AppState.show-leave-confirm = true;
+                if (!root.busy) {
+                    root.leave-requested();
                 }
             }
             leave-ta := TouchArea {
                 mouse-cursor: pointer;
-                enabled: !AppState.group-leave-busy;
+                enabled: !root.busy;
                 clicked => {
                     leave-row.activate();
                 }
@@ -57,7 +62,7 @@ export component GroupLeaveRow inherits Rectangle {
 
                         Text {
                             horizontal-stretch: 1;
-                            text: AppState.group-leave-busy ? @tr("Leaving…") : @tr("Leave group");
+                            text: root.busy ? @tr("Leaving…") : @tr("Leave group");
                             color: Palette.danger;
                             font-size: Theme.fs(13px, 16px);
                             font-weight: 700;
@@ -71,7 +76,7 @@ export component GroupLeaveRow inherits Rectangle {
             leave-fs := FocusScope {
                 width: 0px;
                 height: 0px;
-                enabled: !AppState.group-leave-busy;
+                enabled: !root.busy;
                 key-pressed(event) => {
                     if (event.text == Key.Return || event.text == " ") {
                         leave-row.activate();

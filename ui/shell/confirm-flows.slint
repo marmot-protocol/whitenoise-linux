@@ -86,6 +86,25 @@ export component ConfirmFlows inherits Rectangle {
         }
     }
 
+    if AppState.show-leave-archived-confirm: ConfirmModal {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        title: @tr("Leave {}?", AppState.archived-chats[AppState.leave-confirm-archived-idx].name);
+        subtitle: @tr("You will stop receiving new messages from this group.");
+        confirm-label: @tr("Leave group");
+        confirm => {
+            AppState.show-leave-archived-confirm = false;
+            AppState.leave-archived-group-at(AppState.leave-confirm-archived-idx);
+            AppState.leave-confirm-archived-idx = -1;
+        }
+        dismissed => {
+            AppState.show-leave-archived-confirm = false;
+            AppState.leave-confirm-archived-idx = -1;
+        }
+    }
+
     if AppState.show-admin-confirm: ConfirmModal {
         title: AppState.admin-confirm-action == 1 ? @tr("Make {} an admin?", AppState.admin-confirm-member-name) : (AppState.admin-confirm-action == 2 ? @tr("Remove admin rights from {}?", AppState.admin-confirm-member-name) : (AppState.admin-confirm-action == 4 ? @tr("Remove {} from the group?", AppState.admin-confirm-member-name) : @tr("Step down as admin?")));
         subtitle: AppState.admin-confirm-action == 1 ? @tr("{} will be able to add members, change group settings, and manage other admins.", AppState.admin-confirm-member-name) : (AppState.admin-confirm-action == 2 ? @tr("{} will stay in the group, but won't be able to manage members or group settings.", AppState.admin-confirm-member-name) : (AppState.admin-confirm-action == 4 ? @tr("{} will lose access to this group and stop receiving its messages. You'll need to invite them again to bring them back.", AppState.admin-confirm-member-name) : @tr("This removes your admin rights. You can't restore them yourself unless another admin promotes you again.")));

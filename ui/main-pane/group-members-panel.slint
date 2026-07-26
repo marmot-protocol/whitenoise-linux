@@ -105,6 +105,12 @@ export component GroupMembersPanel inherits Rectangle {
             }
         }
 
-        if AppState.chat-is-group: GroupLeaveRow { }
+        if AppState.chat-is-group: GroupLeaveRow {
+            busy: AppState.group-leave-busy;
+            leave-requested => {
+                AppState.leave-confirm-chat-idx = AppState.active-chat;
+                AppState.show-leave-confirm = true;
+            }
+        }
     }
 }

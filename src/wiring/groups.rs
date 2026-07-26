@@ -255,6 +255,53 @@ pub(crate) fn wire_groups(ui: &WhiteNoiseLinux, cx: &Cx) {
             });
         }
     });
+    // Leave a group straight from the Archived detail view — the row is
+    // already archived, so a successful leave just stops it receiving new
+    // messages rather than moving it anywhere.
+    ui.global::<AppState>().on_leave_archived_group_at({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let archived_group_ids = archived_group_ids.clone();
+        move |idx| {
+            let Some(ui) = weak.upgrade() else { return };
+            if ui.get_archived_leave_busy() || idx < 0 {
+                return;
+            }
+            let Some(group_hex) = archived_group_ids
+                .lock()
+                .unwrap()
+                .get(idx as usize)
+                .cloned()
+            else {
+                return;
+            };
+            ui.set_archived_leave_busy(true);
+            let Some(b) = backend_cell.lock().unwrap().clone() else {
+                ui.set_archived_leave_busy(false);
+                show_backend_error(&ui, error_copy().backend_not_ready);
+                return;
+            };
+            let weak = weak.clone();
+            let archived_group_ids = archived_group_ids.clone();
+            std::thread::spawn(move || {
+                let result = b.leave_group(&group_hex);
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    ui.set_archived_leave_busy(false);
+                    match result {
+                        Ok(_) => {
+                            set_status_feedback(&ui, error_copy().left_group, false);
+                            refresh_archived_async(&ui, &b, &archived_group_ids);
+                        }
+                        Err(e) => {
+                            tracing::warn!(target: "leave_archived_group", "{e:#}");
+                            show_backend_error(&ui, friendly_error(ErrorOp::GroupSettings, &e));
+                        }
+                    }
+                });
+            });
+        }
+    });
     ui.global::<AppState>().on_rename_group({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();

@@ -3150,8 +3150,16 @@ msgid "You"
 msgstr "あなた"
 
 msgctxt "ErrorCopy"
+msgid "You left the group."
+msgstr "グループを退出しました。"
+
+msgctxt "ErrorCopy"
 msgid "You stepped down."
 msgstr "管理者を降りました。"
+
+msgctxt "ConfirmFlows"
+msgid "You will stop receiving new messages from this group."
+msgstr "このグループからの新しいメッセージの受信を停止します。"
 
 msgctxt "ConfirmFlows"
 msgid "You will stop receiving new messages from this group. The chat moves to Archive."
