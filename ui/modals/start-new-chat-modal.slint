@@ -11,7 +11,7 @@ export component StartNewChatModal inherits Modal {
     in property <bool> busy: false;
 
     card-width: 460px;
-    // The group-name field below autofocuses itself.
+    // The members field below autofocuses itself.
     grab-focus: false;
     title: @tr("New chat or group");
     subtitle: @tr("Paste one npub for a direct chat, or several (one per line) plus a group name.");
@@ -30,7 +30,6 @@ export component StartNewChatModal inherits Modal {
         label: @tr("GROUP NAME (OPTIONAL)");
         placeholder: @tr("e.g. friday-crew");
         text <=> root.chat-name;
-        autofocus: true;
         submitted => {
             if (!root.busy) {
                 root.start-chat(root.chat-name, root.members-text);
@@ -42,6 +41,7 @@ export component StartNewChatModal inherits Modal {
         label: @tr("MEMBERS");
         placeholder: "npub1…\nnpub1…";
         text <=> root.members-text;
+        autofocus: true;
         multiline: true;
         field-height: 132px;
     }
