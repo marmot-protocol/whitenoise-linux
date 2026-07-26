@@ -3150,6 +3150,10 @@ msgctxt "TimeCopy"
 msgid "Yesterday"
 msgstr "Ieri"
 
+msgctxt "MessageView"
+msgid "You"
+msgstr "Tu"
+
 msgctxt "OutgoingRow"
 msgid "You"
 msgstr "Tu"
