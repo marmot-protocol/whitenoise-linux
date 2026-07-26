@@ -365,6 +365,10 @@ msgctxt "month"
 msgid "Apr"
 msgstr "4月"
 
+msgctxt "AppShell"
+msgid "Archive"
+msgstr "アーカイブ"
+
 msgctxt "ChatHeader"
 msgid "Archive"
 msgstr "アーカイブ"
@@ -617,6 +621,10 @@ msgctxt "ChatRequestBanner"
 msgid "Chat request"
 msgstr "チャットリクエスト"
 
+msgctxt "AppShell"
+msgid "Chats"
+msgstr "チャット"
+
 msgctxt "LeftRail"
 msgid "Chats"
 msgstr "チャット"
@@ -739,6 +747,10 @@ msgstr "リレーに接続中…"
 msgctxt "ProfileModal"
 msgid "Contacting relays…"
 msgstr "リレーに接続中…"
+
+msgctxt "AppShell"
+msgid "Contacts"
+msgstr "連絡先"
 
 #, fuzzy
 msgctxt "LeftRail"
@@ -2698,6 +2710,10 @@ msgstr "9月"
 msgctxt "ProfilePage"
 msgid "Set"
 msgstr "設定する"
+
+msgctxt "AppShell"
+msgid "Settings"
+msgstr "設定"
 
 msgctxt "LeftRail"
 msgid "Settings"

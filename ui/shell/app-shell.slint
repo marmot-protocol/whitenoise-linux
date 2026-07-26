@@ -102,6 +102,10 @@ component IconBtn inherits Rectangle {
     border-radius: 9px * Theme.r-scale;
     background: root.selected ? Palette.selected : (ta.has-hover ? Palette.hover : transparent);
     animate background { duration: Theme.hover-dur; }
+    accessible-role: button;
+    accessible-action-default => {
+        root.clicked();
+    }
     @children
     if root.has-badge: Rectangle {
         x: parent.width - 11px;
@@ -116,6 +120,33 @@ component IconBtn inherits Rectangle {
         clicked => {
             root.clicked();
         }
+    }
+
+    // Zero-size FocusScope: joins the Tab chain without taking pointer
+    // events, mirroring left-rail.slint's NavItem.
+    fs := FocusScope {
+        width: 0px;
+        height: 0px;
+        key-pressed(event) => {
+            if (event.text == Key.Return || event.text == " ") {
+                root.clicked();
+                return accept;
+            }
+            return reject;
+        }
+    }
+
+    // Focus ring drawn inside the bounds, since neighboring nav icons sit
+    // edge-to-edge and an outset ring would overlap them.
+    if fs.has-focus: Rectangle {
+        x: 1px;
+        y: 1px;
+        width: parent.width - 2px;
+        height: parent.height - 2px;
+        background: transparent;
+        border-radius: (8px) * Theme.r-scale;
+        border-width: 2px;
+        border-color: Palette.mint;
     }
 }
 
@@ -381,6 +412,7 @@ export component AppShell inherits Rectangle {
                             selected: AppState.active-page == 0;
                             has-badge: AppState.rail-badge-chats > 0;
                             y: (parent.height - self.height) / 2;
+                            accessible-label: @tr("Chats");
                             clicked => {
                                 AppState.nav-requested(0);
                             }
@@ -395,6 +427,7 @@ export component AppShell inherits Rectangle {
                             selected: AppState.active-page == 1;
                             has-badge: AppState.rail-badge-contacts > 0;
                             y: (parent.height - self.height) / 2;
+                            accessible-label: @tr("Contacts");
                             clicked => {
                                 AppState.nav-requested(1);
                             }
@@ -408,6 +441,7 @@ export component AppShell inherits Rectangle {
                             selected: AppState.active-page == 2;
                             has-badge: AppState.rail-badge-archive > 0;
                             y: (parent.height - self.height) / 2;
+                            accessible-label: @tr("Archive");
                             clicked => {
                                 AppState.nav-requested(2);
                             }
@@ -422,6 +456,7 @@ export component AppShell inherits Rectangle {
                         IconBtn {
                             selected: AppState.active-page == 4;
                             y: (parent.height - self.height) / 2;
+                            accessible-label: @tr("Settings");
                             clicked => {
                                 AppState.nav-requested(4);
                             }

@@ -369,6 +369,10 @@ msgctxt "month"
 msgid "Apr"
 msgstr "Apr"
 
+msgctxt "AppShell"
+msgid "Archive"
+msgstr "Archivieren"
+
 msgctxt "ChatHeader"
 msgid "Archive"
 msgstr "Archivieren"
@@ -621,6 +625,10 @@ msgctxt "ChatRequestBanner"
 msgid "Chat request"
 msgstr "Chat-Anfrage"
 
+msgctxt "AppShell"
+msgid "Chats"
+msgstr "Chats"
+
 msgctxt "LeftRail"
 msgid "Chats"
 msgstr "Chats"
@@ -743,6 +751,10 @@ msgstr "Relays werden kontaktiert…"
 msgctxt "ProfileModal"
 msgid "Contacting relays…"
 msgstr "Verbinde mit Relays…"
+
+msgctxt "AppShell"
+msgid "Contacts"
+msgstr "Kontakt"
 
 #, fuzzy
 msgctxt "LeftRail"
@@ -2702,6 +2714,10 @@ msgstr "Sep"
 msgctxt "ProfilePage"
 msgid "Set"
 msgstr "Festgelegt"
+
+msgctxt "AppShell"
+msgid "Settings"
+msgstr "Einstellungen"
 
 msgctxt "LeftRail"
 msgid "Settings"
