@@ -250,9 +250,9 @@ export component NetworkPane inherits DetailPage {
             }
         }
 
-        // Restart-required banner. Only shown when the saved list diverges
-        // from the booted set — the running runtime can't be re-wired in
-        // place, so the truthful signal is "edits queued, apply on restart".
+        // Reconnect-required banner. Only shown when the saved list diverges
+        // from the booted set — the button re-boots the backend in place, so
+        // applying the change no longer needs a full app restart.
         if AppState.network-restart-required: Rectangle {
             height: 36px;
             border-radius: (6px) * Theme.r-scale;
@@ -262,24 +262,45 @@ export component NetworkPane inherits DetailPage {
             HorizontalLayout {
                 padding-left: 12px;
                 padding-right: 12px;
-                alignment: start;
+                alignment: space-between;
                 spacing: 8px;
-                VerticalLayout {
-                    alignment: center;
-                    Rectangle {
-                        width: 6px;
-                        height: 6px;
-                        border-radius: (3px) * Theme.r-scale;
-                        background: Palette.warning;
+                HorizontalLayout {
+                    alignment: start;
+                    spacing: 8px;
+                    VerticalLayout {
+                        alignment: center;
+                        Rectangle {
+                            width: 6px;
+                            height: 6px;
+                            border-radius: (3px) * Theme.r-scale;
+                            background: Palette.warning;
+                        }
+                    }
+
+                    Text {
+                        text: @tr("Relay list changed.");
+                        color: Palette.text-hi;
+                        font-size: Theme.fs(11px, 14px);
+                        font-weight: 600;
+                        vertical-alignment: center;
                     }
                 }
 
-                Text {
-                    text: @tr("Restart White Noise to apply relay changes.");
-                    color: Palette.text-hi;
-                    font-size: Theme.fs(11px, 14px);
-                    font-weight: 600;
-                    vertical-alignment: center;
+                VerticalLayout {
+                    alignment: center;
+                    MicroButton {
+                        label: AppState.booting ? @tr("Reconnecting…") : @tr("Reconnect now");
+                        enabled: !AppState.booting;
+                        focusable: true;
+                        pad-left: 10px;
+                        pad-right: 10px;
+
+                        clicked => {
+                            if (!AppState.booting) {
+                                AppState.network-reconnect-relays();
+                            }
+                        }
+                    }
                 }
             }
         }

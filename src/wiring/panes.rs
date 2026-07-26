@@ -1312,9 +1312,10 @@ pub(crate) fn wire_panes(
     // The on-disk list (`backend::load_relays`) is the source of truth and
     // what we mutate from the UI. `backend.booted_relays()` is what the
     // running runtime was started with — when they diverge the pane shows a
-    // "restart to apply" banner. MarmotApp has no `set_relays` API; pushing
-    // the new list into the live runtime would require a much larger refactor,
-    // so for now the user restarts to pick up changes.
+    // "reconnect" banner. MarmotApp has no `set_relays` API, so applying a
+    // change still means re-booting the whole runtime — but `reconnect_relays`
+    // below does that in place, reusing the already-unlocked vault, instead of
+    // requiring the user to quit the app and unlock it again.
     //
     // `network-status` is the transient line under the list — error text on
     // bad input or save failures, brief confirmation on success.
@@ -1333,28 +1334,25 @@ pub(crate) fn wire_panes(
         ui.set_network_republish_busy(false);
     }
 
-    // On the first-run get-started screen the backend is booted *before* the
-    // user has configured any relay (`load_relays()` is empty at boot), and
-    // MarmotApp exposes no live `set_relays`. So a relay added there would only
-    // ever land on disk — never on the running transport — which is why it
-    // "does nothing" until the next restart. To make the welcome flow actually
-    // work, re-boot the runtime against the new on-disk list whenever it
-    // changes while we're still in the no-chats first-run state. Once a chat
-    // exists the Settings → Network pane is the only entry point, and it keeps
-    // its intentional "restart to apply" banner rather than yanking a live
-    // session out from under the user.
-    let reboot_relays_first_run: Rc<dyn Fn()> = {
+    // Re-boot the runtime against the current on-disk relay list, in place.
+    // `boot_backend` re-derives the nsec from the still-unlocked vault (no
+    // password re-entry), tears down nothing itself, and on success replaces
+    // `backend_cell` + reinstalls the chat watcher — so any watcher left over
+    // from the runtime we're replacing must be aborted first, or it keeps
+    // delivering updates from a backend nothing else references anymore.
+    // Shows the boot splash for the duration (`AppState.booting`), which is
+    // why call sites gate this behind either the empty first-run state or an
+    // explicit user action rather than firing it on every keystroke.
+    let reconnect_relays: Rc<dyn Fn()> = {
         let weak = ui.as_weak();
         let boot = boot_backend.clone();
         let vault_cell = vault_cell.clone();
+        let active_message_watcher = active_message_watcher.clone();
+        let chats_watcher = chats_watcher.clone();
         Rc::new(move || {
             let Some(ui) = weak.upgrade() else { return };
-            // Only when a previous boot has settled (avoid racing a boot in
-            // flight) and we're still on the first-run get-started screen.
-            if !ui.get_backend_ready() {
-                return;
-            }
-            if ui.get_chats().row_count() > 0 {
+            // Avoid racing a boot already in flight.
+            if !ui.get_backend_ready() || ui.get_booting() {
                 return;
             }
             let Some(vault) = vault_cell.lock().unwrap().clone() else {
@@ -1363,16 +1361,24 @@ pub(crate) fn wire_panes(
             let Some(nsec) = vault.lock().unwrap().nsec() else {
                 return;
             };
-            // `boot` re-reads `load_relays()` (already saved below), spawns a
-            // fresh runtime, and on success replaces backend_cell + re-pushes
-            // the live connection counts via refresh_network_post_boot.
+            if let Some(h) = active_message_watcher.lock().unwrap().take() {
+                h.abort();
+            }
+            if let Some(h) = chats_watcher.lock().unwrap().take() {
+                h.abort();
+            }
             boot(nsec, vault, None);
         })
     };
 
+    ui.global::<AppState>().on_network_reconnect_relays({
+        let reconnect = reconnect_relays.clone();
+        move || reconnect()
+    });
+
     ui.global::<AppState>().on_network_add_relay({
         let weak = ui.as_weak();
-        let reboot = reboot_relays_first_run.clone();
+        let reboot = reconnect_relays.clone();
         // Returns whether the relay was accepted — the add-relay fields keep
         // their draft on a rejection so the user can correct it in place.
         move |raw| {
@@ -1401,15 +1407,19 @@ pub(crate) fn wire_panes(
             ui.set_network_add_error(SharedString::default());
             push_network_relays(&ui, &list);
             show_network_status(&ui, error_copy().relay_added, StatusKind::Ok);
-            // First-run: connect the freshly-added relay live (no-op otherwise).
-            reboot();
+            // First-run (no chats yet): connect the freshly-added relay live
+            // right away. Once chats exist, the banner's "Reconnect now"
+            // button applies the change instead — see `reconnect_relays`.
+            if ui.get_chats().row_count() == 0 {
+                reboot();
+            }
             true
         }
     });
 
     ui.global::<AppState>().on_network_remove_relay({
         let weak = ui.as_weak();
-        let reboot = reboot_relays_first_run.clone();
+        let reboot = reconnect_relays.clone();
         move |url| {
             let Some(ui) = weak.upgrade() else { return };
             let mut list: Vec<String> = vec_string_from_model(&ui.get_network_relays());
@@ -1425,8 +1435,11 @@ pub(crate) fn wire_panes(
             }
             push_network_relays(&ui, &list);
             show_network_status(&ui, error_copy().relay_removed, StatusKind::Ok);
-            // First-run: re-boot so the live transport drops the removed relay.
-            reboot();
+            // First-run: re-boot so the live transport drops the removed
+            // relay right away; otherwise leave it to "Reconnect now".
+            if ui.get_chats().row_count() == 0 {
+                reboot();
+            }
         }
     });
 

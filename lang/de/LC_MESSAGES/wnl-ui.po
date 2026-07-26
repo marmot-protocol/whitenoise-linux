@@ -2234,6 +2234,14 @@ msgctxt "QuickReactCell"
 msgid "React with {}"
 msgstr "Mit {} reagieren"
 
+msgctxt "NetworkPane"
+msgid "Reconnect now"
+msgstr "Jetzt neu verbinden"
+
+msgctxt "NetworkPane"
+msgid "Reconnecting…"
+msgstr "Verbinde erneut…"
+
 msgctxt "Composer"
 msgid "Record voice message"
 msgstr "Sprachnachricht aufnehmen"
@@ -2270,6 +2278,10 @@ msgstr "Neu generieren"
 msgctxt "ErrorCopy"
 msgid "Relay added."
 msgstr "Relay hinzugefügt."
+
+msgctxt "NetworkPane"
+msgid "Relay list changed."
+msgstr "Relay-Liste geändert."
 
 msgctxt "ErrorCopy"
 msgid "Relay removed."
@@ -2388,10 +2400,6 @@ msgstr "Erneut veröffentlichen…"
 msgctxt "GeneralPane"
 msgid "Reset"
 msgstr "Zurücksetzen"
-
-msgctxt "NetworkPane"
-msgid "Restart White Noise to apply relay changes."
-msgstr "Starte White Noise neu, um Relay-Änderungen anzuwenden."
 
 msgctxt "ImportBackupModal"
 msgid "Restore"
