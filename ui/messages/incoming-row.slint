@@ -18,6 +18,12 @@ export component IncomingRow inherits VerticalLayout {
     in property <bool> highlighted: false;
     in property <length> row-w: 9999px;
 
+    // Right edge the toolbar may reach before it falls outside the row: 28px
+    // avatar + 10px spacing precede the bubble, so anything past
+    // `row-w - 38px` is off the visible pane. Mirrors the window clamp
+    // MessageContextMenu and GroupMemberMenu already use.
+    property <length> acts-max-x: max(0px, root.row-w - 38px - acts.width);
+
     // Fire the burst in the shared overlay (which paints above all bubbles),
     // reporting this bubble's window position + size. Autoplay is deferred a
     // beat so layout/scroll settle before the position is snapshotted.
@@ -149,7 +155,7 @@ export component IncomingRow inherits VerticalLayout {
                 }
 
                 acts := HoverActions {
-                    x: bubble.width + 6px;
+                    x: min(bubble.width + 6px, root.acts-max-x);
                     y: (parent.height - self.height) / 2;
                     message-id: root.msg.message-id;
                     reply-preview-text: root.msg.text;

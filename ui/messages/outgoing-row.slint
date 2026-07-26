@@ -23,6 +23,13 @@ export component OutgoingRow inherits VerticalLayout {
     property <image> av-picture: AppState.my-av-picture;
     property <bool> av-has-picture: AppState.my-av-has-picture;
 
+    // Same clamp as IncomingRow, but the toolbar can float on either side of
+    // the bubble depending on `align-right`, so bound it against whichever
+    // edge it grows toward. 28px avatar + 10px spacing sit on the far side of
+    // the bubble from the toolbar either way.
+    property <length> acts-max-x: max(0px, root.row-w - 38px - acts.width);
+    property <length> acts-min-x: 38px + bubble.width - root.row-w;
+
     // Fire the burst in the shared overlay (above all bubbles). See IncomingRow.
     callback play-effect(int, int, int, length, length, length, length);
     function fire-effect() {
@@ -137,7 +144,9 @@ export component OutgoingRow inherits VerticalLayout {
                 }
 
                 acts := HoverActions {
-                    x: root.align-right ? -(self.width + 6px) : (bubble.width + 6px);
+                    x: root.align-right
+                        ? max(-(self.width + 6px), root.acts-min-x)
+                        : min(bubble.width + 6px, root.acts-max-x);
                     y: (parent.height - self.height) / 2;
                     message-id: root.msg.message-id;
                     reply-preview-text: root.msg.text;
