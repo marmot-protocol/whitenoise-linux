@@ -849,9 +849,9 @@ copy_snapshot! {
     // Clipboard feedback.
     nsec_copied: String = get_nsec_copied => "nsec copied";
     npub_copied: String = get_npub_copied => "npub copied";
-    npub_empty_nothing: String = get_npub_empty_nothing => "nothing to copy (npub empty)";
     clipboard_failed: String = get_clipboard_failed => "Couldn't access clipboard.";
     nothing_to_copy: String = get_nothing_to_copy => "Nothing to copy.";
+    copied_to_clipboard: String = get_copied_to_clipboard => "Copied to clipboard.";
     json_copied: String = get_json_copied => "JSON copied";
     debug_dump_copied: String = get_debug_dump_copied => "debug dump copied";
     no_debug_snapshot: String = get_no_debug_snapshot => "No debug snapshot to copy.";
