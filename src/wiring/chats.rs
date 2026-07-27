@@ -206,13 +206,30 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 // switch, so it's there when the user comes back (and, via the
                 // settings file, after a restart). Skipped while editing — the
                 // composer then holds an in-progress edit, not a draft.
+                let prev_idx = ui.get_active_chat();
                 if ui.get_editing_message_id().is_empty() {
-                    let prev_idx = ui.get_active_chat();
                     let prev_hex = group_ids.lock().unwrap().get(prev_idx as usize).cloned();
                     if let Some(prev_hex) = prev_hex {
                         let mut st = settings_cell.borrow_mut();
                         if st.set_draft(&prev_hex, &ui.get_composer_draft()) {
                             st.save();
+                        }
+                    }
+                }
+                // Snapshot the outgoing chat's scroll position (only when it
+                // is a real switch, not a same-chat re-select): a chat left
+                // mid-history gets an entry so reopening it can restore
+                // rather than reset to the bottom; a chat left at the bottom
+                // drops any stale entry so reopening uses the normal
+                // scroll-to-bottom path instead of an outdated offset.
+                if prev_idx != idx {
+                    let prev_hex = group_ids.lock().unwrap().get(prev_idx as usize).cloned();
+                    if let Some(prev_hex) = prev_hex {
+                        let mut positions = msg_scroll_positions().lock().unwrap();
+                        if ui.get_messages_at_bottom() {
+                            positions.remove(&prev_hex);
+                        } else {
+                            positions.insert(prev_hex, ui.get_messages_scroll_y());
                         }
                     }
                 }
@@ -268,12 +285,6 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                     }
                     clear_chat_unread_row(&ui, idx as usize);
                     refresh_unread_chrome(&ui);
-                    // Re-entering a normal chat starts from the default window.
-                    // A mention jump deliberately scans full history so even an
-                    // old target can be centered without repeated pagination.
-                    if jump_message_id.is_none() {
-                        msg_window_reset(&group_hex);
-                    }
                     ui.set_show_chat_members(false);
                     push_group_members_to_ui_async(&ui, &backend, &group_hex);
                     // Snapshot read rides the backend runtime (sqlite can
@@ -412,6 +423,15 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                                 // row lands near the top, instead of the bottom.
                                 ui.set_message_unread_index(unread_row as i32);
                                 ui.set_message_unread_tick(ui.get_message_unread_tick() + 1);
+                            } else if let Some(restore_y) = jump_message_id
+                                .is_none()
+                                .then(|| msg_scroll_positions().lock().unwrap().get(&group_hex).copied())
+                                .flatten()
+                            {
+                                // A previous visit left this chat scrolled up;
+                                // land back there instead of the bottom.
+                                ui.set_message_restore_y(restore_y);
+                                ui.set_message_restore_tick(ui.get_message_restore_tick() + 1);
                             } else {
                                 if let Some(message_id) = jump_message_id.as_ref() {
                                     tracing::warn!(target: "mentions", %group_hex, %message_id, "mention target no longer exists");
