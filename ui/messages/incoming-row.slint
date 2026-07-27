@@ -23,6 +23,9 @@ export component IncomingRow inherits VerticalLayout {
     // `row-w - 38px` is off the visible pane. Mirrors the window clamp
     // MessageContextMenu and GroupMemberMenu already use.
     property <length> acts-max-x: max(0px, root.row-w - 38px - acts.width);
+    // Toolbar sits below the bubble, right-aligned to its edge; clamp keeps
+    // it from sliding past the row on a narrow bubble with a wide toolbar.
+    property <length> acts-x: max(0px, min(bubble.width - acts.width, root.acts-max-x));
 
     // Fire the burst in the shared overlay (which paints above all bubbles),
     // reporting this bubble's window position + size. Autoplay is deferred a
@@ -111,12 +114,14 @@ export component IncomingRow inherits VerticalLayout {
                 height: bubble.height;
 
                 // Stable hover region spanning bubble → toolbar (declared first
-                // so it sits behind the bubble and the toolbar buttons).
+                // so it sits behind the bubble and the toolbar buttons). Now
+                // that the toolbar sits below the bubble, the region has to
+                // reach down through the gap and the toolbar's own height.
                 hover := TouchArea {
                     x: 0;
                     y: 0;
-                    width: bubble.width + 6px + acts.width;
-                    height: parent.height;
+                    width: max(bubble.width, acts.width);
+                    height: bubble.height + 6px + acts.height;
                 }
 
                 bubble := MessageBubble {
@@ -155,8 +160,8 @@ export component IncomingRow inherits VerticalLayout {
                 }
 
                 acts := HoverActions {
-                    x: min(bubble.width + 6px, root.acts-max-x);
-                    y: (parent.height - self.height) / 2;
+                    x: root.acts-x;
+                    y: bubble.height + 6px;
                     message-id: root.msg.message-id;
                     reply-preview-text: root.msg.text;
                     reply-author: root.msg.sender-name != "" ? root.msg.sender-name : root.msg.av-initials;
