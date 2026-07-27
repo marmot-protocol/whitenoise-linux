@@ -482,7 +482,11 @@ export global AppState {
     // the resolved host is visible before a browser launches.
     in-out property <string> pending-external-link: "";
     in-out property <string> pending-external-host: "";
-    callback confirm-external-link(string);
+    callback confirm-external-link(string, bool);
+    // Exact hosts approved through the link prompt. Settings → Advanced lists
+    // them so approvals can be revoked without editing settings.json.
+    in-out property <[string]> trusted-link-hosts;
+    callback forget-trusted-link-host(string);
     // ═══ Keys & identity ═══════════════════════════════════════════════════
     // Key-package state and management. Refresh, publish, and rotate each get
     // their own busy flag and status string, so triggering one doesn't make

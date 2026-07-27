@@ -3476,3 +3476,23 @@ msgstr "✓ 確認済み"
 msgctxt "GroupHero"
 msgid "＋ Add a description"
 msgstr "＋ 説明を追加"
+
+msgctxt "AdvancedPane"
+msgid "TRUSTED LINK SITES"
+msgstr "信頼済みのリンク先"
+
+msgctxt "AdvancedPane"
+msgid "No trusted sites."
+msgstr "信頼済みのサイトはありません。"
+
+msgctxt "AdvancedPane"
+msgid "Forget trusted site {}"
+msgstr "{} の信頼を解除"
+
+msgctxt "AdvancedPane"
+msgid "Links to these exact sites open without confirmation."
+msgstr "これらのサイトへのリンクは確認なしで開きます。"
+
+msgctxt "ConfirmFlows"
+msgid "Don't ask again for this site"
+msgstr "このサイトでは今後確認しない"

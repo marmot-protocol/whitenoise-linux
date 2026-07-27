@@ -3482,3 +3482,23 @@ msgstr "✓ VERIFIZIERT"
 msgctxt "GroupHero"
 msgid "＋ Add a description"
 msgstr "＋ Beschreibung hinzufügen"
+
+msgctxt "AdvancedPane"
+msgid "TRUSTED LINK SITES"
+msgstr "VERTRAUENSWÜRDIGE WEBSITES"
+
+msgctxt "AdvancedPane"
+msgid "No trusted sites."
+msgstr "Keine vertrauenswürdigen Websites."
+
+msgctxt "AdvancedPane"
+msgid "Forget trusted site {}"
+msgstr "Vertrauen für {} widerrufen"
+
+msgctxt "AdvancedPane"
+msgid "Links to these exact sites open without confirmation."
+msgstr "Links zu genau diesen Websites werden ohne Bestätigung geöffnet."
+
+msgctxt "ConfirmFlows"
+msgid "Don't ask again for this site"
+msgstr "Für diese Website nicht mehr fragen"

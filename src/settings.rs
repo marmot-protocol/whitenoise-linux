@@ -86,6 +86,10 @@ pub struct Settings {
     /// deleted, so unblocking restores the conversation intact.
     #[serde(default)]
     pub blocked_accounts: BTreeSet<String>,
+    /// External-link hosts the user explicitly chose to open without another
+    /// confirmation. Exact, lower-case host matches only; local-only.
+    #[serde(default)]
+    pub trusted_link_hosts: BTreeSet<String>,
     /// Per-chat read marker: `group_id_hex` → the Unix-seconds timestamp the
     /// user last viewed that chat. Messages recorded after the marker count as
     /// unread. Written when a chat is opened; the authoritative read state the
@@ -142,6 +146,24 @@ pub struct Settings {
 }
 
 impl Settings {
+    /// Remember an external-link host, normalized for DNS case-insensitivity.
+    /// Returns true when the trusted-host set changed.
+    pub fn trust_link_host(&mut self, host: &str) -> bool {
+        let host = host.trim().to_ascii_lowercase();
+        !host.is_empty() && self.trusted_link_hosts.insert(host)
+    }
+
+    pub fn is_link_host_trusted(&self, host: &str) -> bool {
+        self.trusted_link_hosts
+            .contains(&host.trim().to_ascii_lowercase())
+    }
+
+    /// Forget an external-link host. Returns true when the set changed.
+    pub fn forget_link_host(&mut self, host: &str) -> bool {
+        self.trusted_link_hosts
+            .remove(&host.trim().to_ascii_lowercase())
+    }
+
     /// Hide `message_id` for `account_hex`. Returns true if it wasn't already
     /// hidden (so the caller knows to persist).
     pub fn hide_message(&mut self, account_hex: &str, message_id: &str) -> bool {
@@ -307,5 +329,29 @@ mod tests {
         assert!(settings.start_minimized_to_tray);
         assert!(settings.restore_last_selected_chat);
         assert_eq!(settings.last_selected_chat.as_deref(), Some("group-123"));
+    }
+
+    #[test]
+    fn trusted_link_hosts_match_case_insensitively_and_round_trip() {
+        let mut settings = Settings::default();
+
+        assert!(settings.trust_link_host("Example.COM"));
+        assert!(!settings.trust_link_host("example.com"));
+        assert!(settings.is_link_host_trusted("EXAMPLE.com"));
+        assert!(!settings.is_link_host_trusted("sub.example.com"));
+
+        let json = serde_json::to_string(&settings).unwrap();
+        let restored: Settings = serde_json::from_str(&json).unwrap();
+        assert!(restored.is_link_host_trusted("example.com"));
+    }
+
+    #[test]
+    fn trusted_link_host_can_be_forgotten() {
+        let mut settings = Settings::default();
+        assert!(settings.trust_link_host("example.com"));
+
+        assert!(settings.forget_link_host("EXAMPLE.COM"));
+        assert!(!settings.forget_link_host("example.com"));
+        assert!(!settings.is_link_host_trusted("example.com"));
     }
 }
