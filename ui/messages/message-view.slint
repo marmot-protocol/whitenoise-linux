@@ -17,6 +17,7 @@ import { IncomingRow } from "incoming-row.slint";
 import { OutgoingRow } from "outgoing-row.slint";
 import { SystemLine } from "system-line.slint";
 import { Tooltip } from "../primitives/tooltip.slint";
+import { ReactionsRow } from "reactions-row.slint";
 
 export component MessageView inherits VerticalLayout {
     spacing: 0;
@@ -157,11 +158,36 @@ export component MessageView inherits VerticalLayout {
         }
         // One TouchArea for the whole line; the action is chosen in the handler
         // (album → attachment → reply) to avoid overlapping/if-mounted TouchAreas.
+        // A retracted tombstone offers no actions, so the right-click branch is
+        // suppressed the same way the bubble skin's hover toolbar is.
         term-touch := TouchArea {
             mouse-cursor: pointer;
             clicked => {
                 line.activate();
             }
+            pointer-event(e) => {
+                if (e.kind == PointerEventKind.down && e.button == PointerEventButton.right
+                        && root.msg.message-id != "" && !root.msg.deleted) {
+                    AppState.arm-context-menu(
+                        root.msg.message-id, root.msg.text,
+                        root.msg.outgoing ? @tr("You") : (root.msg.sender-name == "" ? root.msg.av-initials : root.msg.sender-name),
+                        root.msg.outgoing ? root.msg.can-edit : false,
+                        self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                }
+            }
+        }
+    }
+
+    // Reaction chips — mirrors IncomingRow/OutgoingRow's ReactionsRow, only
+    // present when the message actually has reactions.
+    if Theme.skin-message == 1 && !root.msg.system-line && root.msg.message-id != "" && root.msg.reaction-rows.length > 0: HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        padding-bottom: 2px;
+        ReactionsRow {
+            message-id: root.msg.message-id;
+            rows: root.msg.reaction-rows;
+            align-right: false;
         }
     }
 }
