@@ -420,7 +420,7 @@ export component GetStartedScreen inherits Rectangle {
                         step-no: "3";
                         title: @tr("Start your first chat");
                         desc: @tr("Invite someone by their npub and say hello.");
-                        done: false;
+                        done: AppState.chats.length > 0;
 
                         HorizontalLayout {
                             alignment: start;
