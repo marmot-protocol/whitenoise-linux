@@ -2291,6 +2291,10 @@ msgctxt "KeysPage"
 msgid "Refreshing…"
 msgstr "Wird aktualisiert…"
 
+msgctxt "NetworkPane"
+msgid "Refreshing…"
+msgstr "Wird aktualisiert…"
+
 msgctxt "LoginScreen"
 msgid "Regenerate"
 msgstr "Neu generieren"

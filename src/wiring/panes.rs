@@ -1340,6 +1340,7 @@ pub(crate) fn wire_panes(
         ui.set_network_total(0);
         ui.set_network_status(s(""));
         ui.set_network_republish_busy(false);
+        ui.set_network_refresh_busy(false);
     }
 
     // Re-boot the runtime against the current on-disk relay list, in place.
@@ -1457,6 +1458,7 @@ pub(crate) fn wire_panes(
         move || {
             let Some(ui) = weak.upgrade() else { return };
             let allow_status_update = !ui.get_network_republish_busy();
+            ui.set_network_refresh_busy(true);
             let weak = weak.clone();
             let backend_cell = backend_cell.clone();
             std::thread::spawn(move || {
@@ -1466,6 +1468,7 @@ pub(crate) fn wire_panes(
                 let snapshot = b.map(|b| b.relay_health());
                 let _ = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak.upgrade() else { return };
+                    ui.set_network_refresh_busy(false);
                     match snapshot {
                         Some((connected, total)) => {
                             ui.set_network_connected(connected as i32);

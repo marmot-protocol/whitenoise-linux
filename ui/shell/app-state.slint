@@ -587,6 +587,7 @@ export global AppState {
     // Outcome of network-status: 0 = pending, 1 = ok, 2 = error (Rust StatusKind).
     in-out property <int> network-status-kind: 0;
     in-out property <bool> network-republish-busy: false;
+    in-out property <bool> network-refresh-busy: false;
     // Inline error for the add-relay fields (get-started and the network pane
     // share it). Rust sets it when an add is rejected; the fields clear it as
     // the user edits the draft.
