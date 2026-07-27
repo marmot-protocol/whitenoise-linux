@@ -236,7 +236,7 @@ msgctxt "GetStartedScreen"
 msgid "Add"
 msgstr "追加"
 
-msgctxt "NetworkPane"
+msgctxt "RelayListEditor"
 msgid "Add"
 msgstr "追加"
 
@@ -1359,6 +1359,10 @@ msgctxt "ProfilePage"
 msgid "IDENTITY"
 msgstr "ID"
 
+msgctxt "NetworkPane"
+msgid "INBOX RELAYS"
+msgstr "受信リレー"
+
 msgctxt "NotificationsPane"
 msgid "INCOMING MESSAGES"
 msgstr "受信メッセージ"
@@ -1886,6 +1890,10 @@ msgctxt "ErrorCopy"
 msgid "No image selected."
 msgstr "画像が選択されていません。"
 
+msgctxt "NetworkPane"
+msgid "No inbox relays yet. Add one above."
+msgstr "受信リレーがまだありません。上で追加してください。"
+
 msgctxt "ErrorCopy"
 msgid "No key package on relays yet"
 msgstr "リレーにキーパッケージがまだありません"
@@ -1995,6 +2003,10 @@ msgstr "このデバイス上"
 msgctxt "StatusBar"
 msgid "ONLINE"
 msgstr "オンライン"
+
+msgctxt "NetworkPane"
+msgid "OUTBOX RELAYS (NIP-65)"
+msgstr "送信リレー (NIP-65)"
 
 msgctxt "AppearancePane"
 msgid "Ocean"
@@ -2233,10 +2245,6 @@ msgctxt "ChatListPanel"
 msgid "RELAYS"
 msgstr "リレー"
 
-msgctxt "NetworkPane"
-msgid "RELAYS"
-msgstr "リレー"
-
 msgctxt "StatusBar"
 msgid "RELAYS"
 msgstr "リレー"
@@ -2250,8 +2258,8 @@ msgid "Raw events"
 msgstr ""
 
 msgctxt "NetworkPane"
-msgid "Re-broadcasts your relay lists to every relay above. Use this if peers can't find you."
-msgstr "あなたのリレーリストを上記のすべてのリレーに再配信します。相手があなたを見つけられない場合に使用してください。"
+msgid "Re-broadcasts your outbox and inbox relay lists. Use this if peers can't find you."
+msgstr "送信リレーと受信リレーのリストを再配信します。相手があなたを見つけられない場合に使用してください。"
 
 msgctxt "LoginScreen"
 msgid "Re-enter password"
@@ -2383,6 +2391,10 @@ msgid "Remove this account?"
 msgstr "このリレーを削除しますか？"
 
 msgctxt "ConfirmFlows"
+msgid "Remove this inbox relay?"
+msgstr "この受信リレーを削除しますか？"
+
+msgctxt "ConfirmFlows"
 msgid "Remove this relay?"
 msgstr "このリレーを削除しますか？"
 
@@ -2417,7 +2429,7 @@ msgid "Replying to {}:"
 msgstr "{} への返信:"
 
 msgctxt "NetworkPane"
-msgid "Republish relay list"
+msgid "Republish relay lists"
 msgstr "リレーリストを再公開"
 
 msgctxt "ErrorCopy"
@@ -2552,6 +2564,10 @@ msgstr "状態"
 msgctxt "GetStartedScreen"
 msgid "SUGGESTED"
 msgstr "おすすめ"
+
+msgctxt "NetworkPane"
+msgid "SYNC"
+msgstr "同期"
 
 msgctxt "AppShell"
 msgid "SYNCED"
@@ -3419,6 +3435,14 @@ msgctxt "ErrorCopy"
 msgid "uploading to Blossom…"
 msgstr "Blossomにアップロード中…"
 
+msgctxt "NetworkPane"
+msgid "where peers reach you"
+msgstr "相手があなたに届ける場所"
+
+msgctxt "NetworkPane"
+msgid "where you publish"
+msgstr "あなたが発信する場所"
+
 msgctxt "KeysPage"
 msgid "{n} relay"
 msgid_plural "{n} relays"
@@ -3443,6 +3467,10 @@ msgstr "{}はこのグループにアクセスできなくなり、メッセー�
 msgctxt "ConfirmFlows"
 msgid "{} will stay in the group, but won't be able to manage members or group settings."
 msgstr ""
+
+msgctxt "ConfirmFlows"
+msgid "{} will stop being declared as somewhere peers can reach you. You can add it back anytime."
+msgstr "{} は相手があなたに届ける場所として公開されなくなります。いつでも追加し直せます。"
 
 msgctxt "ConfirmFlows"
 msgid "{} will stop carrying your messages. You can add it back anytime."

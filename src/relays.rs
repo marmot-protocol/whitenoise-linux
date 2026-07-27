@@ -14,6 +14,14 @@ pub(crate) fn push_network_relays(ui: &WhiteNoiseLinux, list: &[String]) {
     refresh_network_restart_required(ui);
 }
 
+/// Push the on-disk inbox relay list into the UI model. Used after add/remove.
+/// Unlike `push_network_relays`, this list is not part of the connect pool —
+/// it has no suggestions and no "restart required" banner.
+pub(crate) fn push_network_inbox_relays(ui: &WhiteNoiseLinux, list: &[String]) {
+    let rows: Vec<SharedString> = list.iter().cloned().map(SharedString::from).collect();
+    ui.set_network_inbox_relays(ModelRc::new(VecModel::from(rows)));
+}
+
 /// Well-known public relays offered as one-click adds on the get-started screen.
 /// DEV POLICY: whitenoise official relays only while in development — these are
 /// where the mobile apps publish, so dev peers are always mutually discoverable.
@@ -37,6 +45,46 @@ pub(crate) fn push_suggested_relays(ui: &WhiteNoiseLinux, current: &[String]) {
 /// Collect a `[string]` Slint model into an owned `Vec<String>`.
 pub(crate) fn vec_string_from_model(model: &ModelRc<SharedString>) -> Vec<String> {
     model.iter().map(|s| s.to_string()).collect()
+}
+
+/// Validate, dedupe-check against `list`, and persist a candidate relay URL.
+/// Shared by every relay-list add callback (outbox, inbox) — the differences
+/// between lists (which model to push, which error field to set) stay at the
+/// call site; `save` is the list's own persistence fn.
+pub(crate) fn add_relay_to_list(
+    raw: &str,
+    list: &mut Vec<String>,
+    save: impl FnOnce(&[String]) -> Result<(), String>,
+) -> Result<(), String> {
+    let trimmed = raw.trim().to_string();
+    validate_relay_url(&trimmed)?;
+    if list.iter().any(|u| u.eq_ignore_ascii_case(&trimmed)) {
+        return Err(error_copy().relay_already_listed);
+    }
+    list.push(trimmed);
+    save(list).map_err(|e| {
+        tracing::warn!(target: "network", "save relays failed: {e}");
+        error_copy().save_relays_failed
+    })
+}
+
+/// Remove `url` from `list` and persist. `Ok(true)` means it was present and
+/// removed; `Ok(false)` means it wasn't in the list (a no-op).
+pub(crate) fn remove_relay_from_list(
+    url: &str,
+    list: &mut Vec<String>,
+    save: impl FnOnce(&[String]) -> Result<(), String>,
+) -> Result<bool, String> {
+    let before = list.len();
+    list.retain(|u| u != url);
+    if list.len() == before {
+        return Ok(false);
+    }
+    save(list).map_err(|e| {
+        tracing::warn!(target: "network", "save relays failed: {e}");
+        error_copy().save_relays_failed
+    })?;
+    Ok(true)
 }
 
 /// Validate a user-entered relay URL. Trim is the caller's job. Returns the

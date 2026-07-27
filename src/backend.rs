@@ -24,9 +24,9 @@ pub(crate) use marmot_app::{
     AuditLogFile, AuditLogSettings, AuditLogTrackerConfig, AuditLogUploadSource,
     DEFAULT_BLOSSOM_SERVER_URL, MarmotApp, MarmotAppRuntime, MediaAttachmentReference,
     MediaDownloadResult, MediaUploadAttachmentRequest, MediaUploadRequest, MediaUploadResult,
-    RelayTelemetryResource, RelayTelemetryRuntimeConfig, RelayTelemetrySettings,
-    RuntimeMessageUpdate, RuntimeMessagesSubscription, SendSummary, UserDirectoryRecord,
-    UserProfileMetadata, group_system_event_from_message,
+    MissingRelayListKind, RelayTelemetryResource, RelayTelemetryRuntimeConfig,
+    RelayTelemetrySettings, RuntimeMessageUpdate, RuntimeMessagesSubscription, SendSummary,
+    UserDirectoryRecord, UserProfileMetadata, group_system_event_from_message,
 };
 pub(crate) use tokio::runtime::Runtime as TokioRuntime;
 pub(crate) use tokio::task::JoinHandle;
@@ -1343,6 +1343,12 @@ impl Backend {
     /// and publishes only the kinds reported missing. A no-op when no relays are
     /// configured, so the downstream op still surfaces the real error instead of
     /// us papering over a genuinely unconfigured account.
+    ///
+    /// The declared content differs by kind — nip65 (outbox) declares the
+    /// connect-pool relays, inbox declares the separately configured inbox
+    /// relay list (`groups::load_inbox_relays`) — but both are still
+    /// published *to* the connect pool, since that's the only thing we're
+    /// actually connected to.
     fn ensure_account_relay_lists(&self) -> Result<()> {
         if self.relays.is_empty() {
             return Ok(());
@@ -1354,20 +1360,21 @@ impl Backend {
         if status.complete {
             return Ok(());
         }
-        let endpoints = self.relay_endpoints();
+        let bootstrap = self.relay_endpoints();
+        let outbox_endpoints = bootstrap.clone();
+        let inbox_endpoints = Self::endpoints_from(&load_inbox_relays());
         let label = self.active_label();
         let runtime = self.runtime.clone();
         let missing = status.missing.clone();
         self.tokio.block_on(async move {
             for kind in &missing {
                 let token = kind.token();
+                let declared = match kind {
+                    MissingRelayListKind::Nip65 => outbox_endpoints.clone(),
+                    MissingRelayListKind::Inbox => inbox_endpoints.clone(),
+                };
                 runtime
-                    .publish_account_relay_list_kind(
-                        &label,
-                        token,
-                        endpoints.clone(),
-                        endpoints.clone(),
-                    )
+                    .publish_account_relay_list_kind(&label, token, declared, bootstrap.clone())
                     .await
                     .map_err(|e| anyhow!("publish_account_relay_list_kind({token}): {e}"))?;
             }
@@ -1375,38 +1382,39 @@ impl Backend {
         })
     }
 
-    /// Republish the account's NIP-65 and inbox relay lists, declaring *all*
-    /// currently-configured relays and publishing the events to that full set.
+    /// Republish the account's NIP-65 (outbox) and inbox relay lists, each
+    /// declaring whatever its own configured set currently contains and
+    /// publishing to the connect-pool relays.
     ///
     /// This is the "Republish relay list" button. It exists because the account
     /// may have a stale list that names only a subset of relays (e.g. only the
     /// first relay that acked at first login), which makes the account
     /// undiscoverable to peers who only query the relays it omits. Forcing a
-    /// republish to the full configured set fixes that. Returns the number of
-    /// relays declared.
-    pub fn republish_relay_lists(&self) -> Result<usize> {
+    /// republish to the full configured set fixes that. The two kinds used to
+    /// mirror the same connect-pool set into both; now each is republished
+    /// from its own list. Returns `(outbox_count, inbox_count)`.
+    pub fn republish_relay_lists(&self) -> Result<(usize, usize)> {
         if self.relays.is_empty() {
             return Err(anyhow!("No relays configured."));
         }
-        let endpoints = self.relay_endpoints();
+        let bootstrap = self.relay_endpoints();
+        let outbox_endpoints = bootstrap.clone();
+        let inbox_relays = load_inbox_relays();
+        let inbox_endpoints = Self::endpoints_from(&inbox_relays);
         let label = self.active_label();
         let runtime = self.runtime.clone();
-        let count = self.relays.len();
+        let outbox_count = self.relays.len();
+        let inbox_count = inbox_relays.len();
         self.tokio.block_on(async move {
-            for kind in ["nip65", "inbox"] {
+            for (kind, declared) in [("nip65", outbox_endpoints), ("inbox", inbox_endpoints)] {
                 runtime
-                    .publish_account_relay_list_kind(
-                        &label,
-                        kind,
-                        endpoints.clone(),
-                        endpoints.clone(),
-                    )
+                    .publish_account_relay_list_kind(&label, kind, declared, bootstrap.clone())
                     .await
                     .map_err(|e| anyhow!("publish_account_relay_list_kind({kind}): {e}"))?;
             }
             Ok::<_, anyhow::Error>(())
         })?;
-        Ok(count)
+        Ok((outbox_count, inbox_count))
     }
 
     /// The relay set we use to *discover* peers: the user's configured relays
