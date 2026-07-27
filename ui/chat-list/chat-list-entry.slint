@@ -10,6 +10,7 @@ import { ChatListItem } from "chat-list-item.slint";
 import { PinIcon } from "../icons/pin-icon.slint";
 import { MuteIcon } from "../icons/mute-icon.slint";
 import { FocusCaret } from "../primitives/focus-caret.slint";
+import { Avatar } from "../primitives/avatar.slint";
 
 // IRC-style one-line channel row: `# name        (badge)`.
 component ChatListItemIrc inherits Rectangle {
@@ -45,6 +46,16 @@ component ChatListItemIrc inherits Rectangle {
         }
         if root.chat.muted: MuteIcon {
             stroke: Palette.text-lo;
+        }
+        Avatar {
+            size: 18px;
+            initials: root.chat.av-initials;
+            color-a: root.chat.av-a;
+            color-b: root.chat.av-b;
+            picture: root.chat.picture;
+            has-picture: root.chat.has-picture;
+            a11y-label: root.chat.name;
+            font-size: Theme.fs(8px, 11px);
         }
         Text {
             text: "#";
