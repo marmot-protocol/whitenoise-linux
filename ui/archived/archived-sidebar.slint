@@ -1,5 +1,5 @@
 import { ListView } from "std-widgets.slint";
-import { ArchivedChat } from "../tokens.slint";
+import { ArchivedChat, Palette, Theme } from "../tokens.slint";
 import { AppState } from "../shell/app-state.slint";
 import { SidePanel } from "../layout/side-panel.slint";
 import { ArchivedListItem } from "archived-list-item.slint";
@@ -55,5 +55,19 @@ export component ArchivedSidebar inherits SidePanel {
                 }
             }
         }
+    }
+
+    // Mirrors ContactsSidebar's "no matches for …" copy: the ListView above
+    // renders no rows once every flag is false, so without this the panel
+    // just goes blank with no indication the query is what emptied it.
+    if AppState.archive-search-query != "" && AppState.archive-match-count == 0: Text {
+        x: 0;
+        y: 24px;
+        width: 100%;
+        horizontal-alignment: center;
+        wrap: word-wrap;
+        text: @tr("No archived chats match \"{}\"", AppState.archive-search-query);
+        color: Palette.text-lo;
+        font-size: Theme.fs(11px, 14px);
     }
 }

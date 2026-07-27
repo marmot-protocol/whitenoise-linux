@@ -1844,6 +1844,10 @@ msgctxt "ArchivedPage"
 msgid "No archived chats"
 msgstr "チャットをアーカイブ"
 
+msgctxt "ArchivedSidebar"
+msgid "No archived chats match \"{}\""
+msgstr ""
+
 msgctxt "AdvancedPane"
 msgid "No audit log files on disk."
 msgstr "ディスク上に監査ログファイルはありません。"
