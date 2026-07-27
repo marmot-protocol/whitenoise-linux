@@ -80,6 +80,17 @@ export component ReplyBanner inherits Rectangle {
                     }
 
                     preview-touch := TouchArea { }
+
+                    // Zero-size FocusScope: same Tab-chain trick as Button's
+                    // (see primitives/button.slint) so this doesn't steal
+                    // pointer events from preview-touch. Only a tab stop when
+                    // the quote is actually cut off, matching what the
+                    // reveal would show.
+                    preview-focus := FocusScope {
+                        width: 0px;
+                        height: 0px;
+                        enabled: preview-text.preferred-width > preview-text.width;
+                    }
                 }
             }
         }
@@ -121,7 +132,7 @@ export component ReplyBanner inherits Rectangle {
     // fits already shows everything. It floats above the banner, where the
     // message list gives it room, and wraps within the banner's own width so a
     // long quote can't run off the window.
-    if preview-touch.has-hover && preview-text.preferred-width > preview-text.width: Tooltip {
+    if (preview-touch.has-hover || preview-focus.has-focus) && preview-text.preferred-width > preview-text.width: Tooltip {
         x: min(preview-text.absolute-position.x - root.absolute-position.x, root.width - self.width - 18px);
         y: -self.height - 6px;
         label: root.reply-target-preview;
