@@ -761,6 +761,10 @@ msgctxt "LoginScreen"
 msgid "Continue"
 msgstr "続行"
 
+msgctxt "ErrorCopy"
+msgid "Copied to clipboard."
+msgstr "クリップボードにコピーしました。"
+
 #, fuzzy
 msgctxt "CopyChip"
 msgid "Copied ✓"
@@ -3365,10 +3369,6 @@ msgstr "一致なし"
 msgctxt "EmojiPicker"
 msgid "no matches for \"{}\""
 msgstr "\"{}\" に一致なし"
-
-msgctxt "ErrorCopy"
-msgid "nothing to copy (npub empty)"
-msgstr "コピーするものがありません（npubが空です）"
 
 msgctxt "ErrorCopy"
 msgid "npub copied"

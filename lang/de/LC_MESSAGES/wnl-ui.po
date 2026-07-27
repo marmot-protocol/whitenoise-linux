@@ -765,6 +765,10 @@ msgctxt "LoginScreen"
 msgid "Continue"
 msgstr "Weiter"
 
+msgctxt "ErrorCopy"
+msgid "Copied to clipboard."
+msgstr "In die Zwischenablage kopiert."
+
 #, fuzzy
 msgctxt "CopyChip"
 msgid "Copied ✓"
@@ -3370,10 +3374,6 @@ msgstr "keine Treffer"
 msgctxt "EmojiPicker"
 msgid "no matches for \"{}\""
 msgstr "keine Treffer für \"{}\""
-
-msgctxt "ErrorCopy"
-msgid "nothing to copy (npub empty)"
-msgstr "nichts zu kopieren (npub leer)"
 
 msgctxt "ErrorCopy"
 msgid "npub copied"

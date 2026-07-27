@@ -1672,21 +1672,16 @@ pub(crate) fn wire_panes(
             );
             let Some(ui) = weak.upgrade() else { return };
             if text.is_empty() {
-                show_profile_status(&ui, error_copy().npub_empty_nothing, StatusKind::Pending);
-                set_status_feedback(&ui, error_copy().npub_empty_nothing, false);
+                set_status_feedback(&ui, error_copy().nothing_to_copy, false);
                 return;
             }
             let weak = weak.clone();
             copy_to_clipboard_async(text.to_string(), move |result| {
                 let Some(ui) = weak.upgrade() else { return };
                 match result {
-                    Ok(()) => {
-                        show_profile_status(&ui, error_copy().npub_copied, StatusKind::Ok);
-                        set_status_feedback(&ui, error_copy().npub_copied, false);
-                    }
+                    Ok(()) => set_status_feedback(&ui, error_copy().copied_to_clipboard, false),
                     Err(e) => {
                         tracing::warn!(target: "clipboard", "copy failed: {e}");
-                        show_profile_status(&ui, error_copy().clipboard_failed, StatusKind::Error);
                         set_status_feedback(&ui, error_copy().clipboard_failed, true);
                     }
                 }

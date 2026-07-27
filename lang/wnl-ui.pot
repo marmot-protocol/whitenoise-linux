@@ -723,6 +723,10 @@ msgctxt "LoginScreen"
 msgid "Continue"
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "Copied to clipboard."
+msgstr ""
+
 msgctxt "CopyChip"
 msgid "Copied ✓"
 msgstr ""
@@ -3223,10 +3227,6 @@ msgstr ""
 
 msgctxt "EmojiPicker"
 msgid "no matches for \"{}\""
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "nothing to copy (npub empty)"
 msgstr ""
 
 msgctxt "ErrorCopy"
