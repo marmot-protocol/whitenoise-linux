@@ -1,7 +1,7 @@
 // chat list panel — a SidePanel populated with chat list items.
 import { ListView } from "std-widgets.slint";
 import { AppState } from "../shell/app-state.slint";
-import { ChatMeta, TextSelection } from "../tokens.slint";
+import { ChatMeta, TextSelection, Palette } from "../tokens.slint";
 import { ChatListEntry } from "chat-list-entry.slint";
 import { SidePanel } from "../layout/side-panel.slint";
 
@@ -41,6 +41,7 @@ export component ChatListPanel inherits SidePanel {
     show-add: true;
     footer-text: AppState.network-total > 0 ? AppState.network-connected + "/" + AppState.network-total + " " + @tr("RELAYS") : @tr("NO RELAYS");
     footer-trail: AppState.sync-secs < 0 ? "· " + @tr("SYNCING…") : "· " + @tr("SYNCED") + " " + AppState.sync-secs + "S " + @tr("AGO");
+    footer-dot-color: AppState.network-connected > 0 ? Palette.mint : (AppState.network-total > 0 ? Palette.warning : Palette.text-vlo);
     // Rows filter in place, so drop the layout's inter-row spacing and bake the
     // 2px gap into each shown wrapper — hidden rows then collapse to nothing.
 
