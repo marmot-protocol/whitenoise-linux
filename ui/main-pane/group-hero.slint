@@ -197,11 +197,18 @@ export component GroupHero inherits Rectangle {
             // Wrap the description but hard-cap it at three lines, mirroring
             // the chat-list preview: Slint's Text ignores max-height on an
             // auto-sized box, so clip inside a fixed-height box instead.
+            // Hovering grows the box to the full text height so a long
+            // description stays reachable without an always-open panel, then
+            // shrinks back to the clamp on mouse-out.
             Rectangle {
                 clip: true;
                 width: 230px;
-                height: Theme.fs(11px, 14px) * 3.75;
-                Text {
+                height: desc-ta.has-hover ? desc-text.preferred-height : Theme.fs(11px, 14px) * 3.75;
+                animate height {
+                    duration: 180ms;
+                    easing: ease-in-out;
+                }
+                desc-text := Text {
                     text: AppState.chat-group-description;
                     color: Palette.text-mid;
                     font-size: Theme.fs(11px, 14px);
@@ -209,6 +216,9 @@ export component GroupHero inherits Rectangle {
                     y: 0;
                     horizontal-alignment: center;
                     wrap: word-wrap;
+                }
+                desc-ta := TouchArea {
+                    mouse-cursor: default;
                 }
             }
 
