@@ -352,6 +352,9 @@ export component ModalField inherits VerticalLayout {
     in property <bool> capture-nav: false;
     callback nav(int);
     callback nav-dismissed;
+    // Forwarded from LineInput: fires only on a user edit, never a
+    // programmatic `text` assignment from the owner.
+    callback edited;
 
     spacing: 7px;
 
@@ -408,6 +411,9 @@ export component ModalField inherits VerticalLayout {
                 }
                 dismiss-mention => {
                     root.nav-dismissed();
+                }
+                edited => {
+                    root.edited();
                 }
             }
 
