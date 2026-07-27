@@ -62,6 +62,7 @@ export component ModalHost inherits Rectangle {
             npub-text <=> AppState.add-contact-input;
             busy: AppState.add-contact-busy;
             status: AppState.add-contact-status;
+            status-color: AppState.add-contact-status-error ? Palette.danger : Palette.text-lo;
             add-contact(n) => {
                 AppState.add-contact(n);
             }
@@ -400,6 +401,7 @@ export component ModalHost inherits Rectangle {
             is-self: AppState.peer-profile-is-self;
             adding: AppState.peer-profile-adding;
             status: AppState.peer-profile-status;
+            status-color: AppState.peer-profile-status-error ? Palette.danger : Palette.text-lo;
             av-a: AppState.peer-profile-av-a;
             av-b: AppState.peer-profile-av-b;
             av-initials: AppState.peer-profile-av-initials;

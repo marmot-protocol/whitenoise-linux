@@ -57,6 +57,7 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 ui.set_show_add_contact(false);
                 ui.set_add_contact_input(s(""));
                 ui.set_add_contact_status(s(""));
+                ui.set_add_contact_status_error(false);
                 ui.set_add_contact_busy(false);
             }
         }
@@ -69,6 +70,7 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             let input = input.trim().to_string();
             if input.is_empty() {
                 ui.set_add_contact_status(error_copy().add_contact_input.into());
+                ui.set_add_contact_status_error(true);
                 return;
             }
             // Accept a pasted `marmot://profile/<npub>` deep link too.
@@ -77,10 +79,12 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 .unwrap_or(input);
             let Some(b) = backend_cell.lock().unwrap().clone() else {
                 ui.set_add_contact_status(error_copy().backend_not_ready.into());
+                ui.set_add_contact_status_error(true);
                 return;
             };
             ui.set_add_contact_busy(true);
             ui.set_add_contact_status(s(""));
+            ui.set_add_contact_status_error(false);
             // `add_contact` publishes the follow list and runs a broad
             // directory refresh across relays — worker thread.
             let weak = weak.clone();
@@ -105,6 +109,7 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                             });
                             ui.set_add_contact_input(s(""));
                             ui.set_add_contact_status(s(""));
+                            ui.set_add_contact_status_error(false);
                             ui.set_show_add_contact(false);
                             refresh_breadcrumb_now(&ui);
                         }
@@ -113,6 +118,7 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                             ui.set_add_contact_status(
                                 friendly_error(ErrorOp::AddContact, &e).into(),
                             );
+                            ui.set_add_contact_status_error(true);
                         }
                     }
                 });
@@ -135,6 +141,7 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             };
             ui.set_peer_profile_adding(true);
             ui.set_peer_profile_status(s(""));
+            ui.set_peer_profile_status_error(false);
             let weak = weak.clone();
             std::thread::spawn(move || {
                 let result = b.add_contact(&npub);
@@ -152,6 +159,7 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                             ui.set_peer_profile_status(
                                 friendly_error(ErrorOp::AddContact, &e).into(),
                             );
+                            ui.set_peer_profile_status_error(true);
                         }
                     }
                 });
