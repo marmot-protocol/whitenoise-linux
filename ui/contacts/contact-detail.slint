@@ -1,7 +1,6 @@
 import { Palette, Contact, Theme } from "../tokens.slint";
 import { AppState } from "../shell/app-state.slint";
 import { StartChatIcon } from "../icons/start-chat-icon.slint";
-import { CopyIcon } from "../icons/copy-icon.slint";
 import { RefreshIcon } from "../icons/refresh-icon.slint";
 import { QRIcon } from "../icons/qr-icon.slint";
 import { MuteIcon } from "../icons/mute-icon.slint";
@@ -11,6 +10,7 @@ import { TrashIcon } from "../icons/trash-icon.slint";
 import { PeopleIcon } from "../icons/people-icon.slint";
 import { Avatar } from "../primitives/avatar.slint";
 import { Pill } from "../primitives/pill.slint";
+import { CopyChip } from "../primitives/copy-chip.slint";
 import { DetailPage } from "../layout/detail-page.slint";
 import { PageHeader } from "../layout/page-header.slint";
 import { Section } from "../layout/section.slint";
@@ -157,13 +157,9 @@ export component ContactDetail inherits DetailPage {
                 label: "npub";
                 sublabel: @tr("Public key, safe to share.");
                 value: root.contact.npub-short;
-                MicroButton {
-                    label: @tr("Copy");
-                    CopyIcon {
-                        stroke: Palette.text-mid;
-                    }
-
-                    clicked => {
+                CopyChip {
+                    value: @tr("Copy");
+                    copy-requested => {
                         AppState.copy-to-clipboard(root.contact.npub-full);
                     }
                 }
