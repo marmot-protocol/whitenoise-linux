@@ -649,6 +649,30 @@ pub(crate) fn wire_panes(
         }
     });
 
+    ui.global::<AppState>().on_copy_npub({
+        let weak = ui.as_weak();
+        move |npub| {
+            let weak = weak.clone();
+            copy_to_clipboard_async(npub.to_string(), move |result| {
+                let Some(ui) = weak.upgrade() else { return };
+                match result {
+                    Ok(()) => {
+                        ui.set_login_error(s(""));
+                        ui.set_login_status(error_copy().npub_copied.into());
+                        set_status_feedback(&ui, error_copy().npub_copied, false);
+                    }
+                    Err(e) => {
+                        tracing::warn!(target: "clipboard", "copy npub failed: {e}");
+                        let msg: SharedString = error_copy().clipboard_failed.into();
+                        ui.set_login_status(s(""));
+                        ui.set_login_error(msg.clone());
+                        set_status_feedback(&ui, msg, true);
+                    }
+                }
+            });
+        }
+    });
+
     // ─── Debug pane ────────────────────────────────────────────────────
     // Settings persist the toggle across launches. The pane itself is gated
     // behind that toggle; when off, the sidebar entry doesn't even render.
