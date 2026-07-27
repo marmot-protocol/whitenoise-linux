@@ -32,12 +32,16 @@ pub(crate) fn wire_nav(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             // it can render whatever chat was loaded last — refresh here too.
             if matches!(page, Page::Archived) {
                 let idx = ui.get_active_archived();
-                if idx >= 0 {
-                    if let Some(backend) = backend_cell.lock().unwrap().clone() {
-                        let hex = archived_group_ids.lock().unwrap().get(idx as usize).cloned();
-                        if let Some(group_hex) = hex {
-                            push_group_members_to_ui_async(&ui, &backend, &group_hex);
-                        }
+                if idx >= 0
+                    && let Some(backend) = backend_cell.lock().unwrap().clone()
+                {
+                    let hex = archived_group_ids
+                        .lock()
+                        .unwrap()
+                        .get(idx as usize)
+                        .cloned();
+                    if let Some(group_hex) = hex {
+                        push_group_members_to_ui_async(&ui, &backend, &group_hex);
                     }
                 }
             }

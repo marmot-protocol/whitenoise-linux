@@ -169,17 +169,20 @@ fn video_save_context(
     ui: &WhiteNoiseLinux,
     backend_cell: &BackendCell,
     vault_cell: &VaultCell,
-) -> Option<(Arc<Backend>, String, Option<Arc<Mutex<Vault>>>, MediaAttachmentReference)> {
+) -> Option<ViewerSaveContext> {
     if ui.get_video_viewer_loading() || ui.get_video_viewer_failed() {
         set_status_feedback(ui, error_copy().video_not_ready, false);
         return None;
     }
-    let Some((group_hex, _mid)) = current_video_target().lock().ok().and_then(|t| t.clone())
-    else {
+    let Some((group_hex, _mid)) = current_video_target().lock().ok().and_then(|t| t.clone()) else {
         set_status_feedback(ui, error_copy().no_video_selected, true);
         return None;
     };
-    let Some(reference) = current_video_reference().lock().ok().and_then(|r| r.clone()) else {
+    let Some(reference) = current_video_reference()
+        .lock()
+        .ok()
+        .and_then(|r| r.clone())
+    else {
         set_status_feedback(ui, error_copy().no_video_selected, true);
         return None;
     };

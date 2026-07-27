@@ -629,6 +629,7 @@ mod tests {
             kind,
             tags: Vec::new(),
             source_epoch: None,
+            retention: None,
             recorded_at: 0,
             received_at: 0,
             insert_order: 0,

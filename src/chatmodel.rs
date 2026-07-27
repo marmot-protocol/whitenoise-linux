@@ -1896,6 +1896,7 @@ mod tests {
                 .map(|target| vec![vec!["e".to_string(), target.to_string()]])
                 .unwrap_or_default(),
             source_epoch: None,
+            retention: None,
             recorded_at,
             received_at: recorded_at,
             insert_order: recorded_at as i64,

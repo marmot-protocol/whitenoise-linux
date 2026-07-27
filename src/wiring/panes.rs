@@ -911,7 +911,11 @@ pub(crate) fn wire_panes(
             ui.set_chat_ctx_y(ay);
             ui.set_chat_ctx_pinned(is_pinned(&group_hex));
             ui.set_chat_ctx_muted(notif.is_muted(&group_hex));
-            ui.set_chat_ctx_unread(!ui.get_chats().row_data(idx as usize).is_some_and(|r| r.read));
+            ui.set_chat_ctx_unread(
+                !ui.get_chats()
+                    .row_data(idx as usize)
+                    .is_some_and(|r| r.read),
+            );
             ui.set_chat_ctx_can_leave(can_leave);
             // The self-chat is permanently pinned to the top; drop the Pin/Unpin
             // item so it doesn't present a control that reorders nothing.
@@ -1262,7 +1266,11 @@ pub(crate) fn wire_panes(
                         Err(e) => {
                             tracing::warn!(target: "settings", "set audit logs failed: {e:#}");
                             ui.set_audit_enabled(!on);
-                            show_audit_status(&ui, error_copy().audit_change_failed, StatusKind::Error);
+                            show_audit_status(
+                                &ui,
+                                error_copy().audit_change_failed,
+                                StatusKind::Error,
+                            );
                         }
                     }
                     push_audit_files(&ui, files);
@@ -1304,10 +1312,16 @@ pub(crate) fn wire_panes(
                         Ok(true) => {
                             show_audit_status(&ui, error_copy().audit_deleted_live, StatusKind::Ok)
                         }
-                        Ok(false) => show_audit_status(&ui, error_copy().audit_deleted, StatusKind::Ok),
+                        Ok(false) => {
+                            show_audit_status(&ui, error_copy().audit_deleted, StatusKind::Ok)
+                        }
                         Err(e) => {
                             tracing::warn!(target: "settings", "delete audit log failed: {e:#}");
-                            show_audit_status(&ui, error_copy().audit_delete_failed, StatusKind::Error);
+                            show_audit_status(
+                                &ui,
+                                error_copy().audit_delete_failed,
+                                StatusKind::Error,
+                            );
                         }
                     }
                     push_audit_files(&ui, files);

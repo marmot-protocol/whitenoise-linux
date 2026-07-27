@@ -37,7 +37,10 @@ pub struct UnreadState {
 }
 
 impl UnreadState {
-    pub fn with_forced_unread(last_read: HashMap<String, i64>, forced_unread: HashSet<String>) -> Self {
+    pub fn with_forced_unread(
+        last_read: HashMap<String, i64>,
+        forced_unread: HashSet<String>,
+    ) -> Self {
         Self {
             last_read: Mutex::new(last_read),
             counts: Mutex::new(HashMap::new()),
