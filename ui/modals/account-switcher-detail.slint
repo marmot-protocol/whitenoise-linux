@@ -1,7 +1,7 @@
 import { Palette, Theme, AccountEntry } from "../tokens.slint";
 import { Avatar } from "../primitives/avatar.slint";
 import { Button } from "../primitives/button.slint";
-import { CopyIcon } from "../icons/copy-icon.slint";
+import { CopyChip } from "../primitives/copy-chip.slint";
 import { TrashIcon } from "../icons/trash-icon.slint";
 
 // Per-account detail card: a back affordance, the identity header, the public
@@ -10,6 +10,7 @@ import { TrashIcon } from "../icons/trash-icon.slint";
 export component AccountSwitcherDetail inherits VerticalLayout {
     in property <AccountEntry> account;
     callback back();
+    callback copy-npub();
     callback switch-account();
     callback arm-remove();
 
@@ -120,43 +121,13 @@ export component AccountSwitcherDetail inherits VerticalLayout {
         }
     }
 
-    // Public key row with copy.
-    Rectangle {
-        height: 40px;
-        border-radius: (8px) * Theme.r-scale;
-        background: Palette.field;
-        border-width: Theme.border-w;
-        border-color: Palette.field-border;
-        HorizontalLayout {
-            padding-left: 14px;
-            padding-right: 8px;
-            spacing: 10px;
-            Text {
-                text: root.account.npub-short;
-                color: Palette.text-mid;
-                font-size: Theme.fs(11px, 14px);
-                font-family: Theme.font;
-                vertical-alignment: center;
-                horizontal-stretch: 1;
-                overflow: elide;
-            }
-
-            VerticalLayout {
-                alignment: center;
-                Rectangle {
-                    width: 30px;
-                    height: 30px;
-                    border-radius: (7px) * Theme.r-scale;
-                    background: copy-touch.has-hover ? Palette.panel-2 : transparent;
-                    animate background { duration: Theme.hover-dur; }
-                    CopyIcon {
-                        stroke: Palette.text-mid;
-                    }
-
-                    copy-touch := TouchArea {
-                        mouse-cursor: pointer;
-                    }
-                }
+    // Public key chip — tap to copy, flashes "Copied ✓".
+    HorizontalLayout {
+        alignment: center;
+        CopyChip {
+            value: root.account.npub-short;
+            copy-requested => {
+                root.copy-npub();
             }
         }
     }

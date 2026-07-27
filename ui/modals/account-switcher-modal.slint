@@ -17,6 +17,7 @@ import { AccountSwitcherList } from "account-switcher-list.slint";
 // through callbacks.
 export component AccountSwitcherModal inherits Modal {
     callback select(string);   // account-id hex
+    callback copy-npub(string);
     callback add-account();
     callback remove-account(string);   // account-id hex — owner does the work + closes
 
@@ -115,6 +116,9 @@ export component AccountSwitcherModal inherits Modal {
                 account: root.accounts[root.detail-idx];
                 back => {
                     root.detail-idx = -1;
+                }
+                copy-npub => {
+                    root.copy-npub(root.accounts[root.detail-idx].npub-full);
                 }
                 switch-account => {
                     root.select(root.accounts[root.detail-idx].id);
