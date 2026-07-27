@@ -17,6 +17,7 @@ export component SidePanel inherits Rectangle {
     in property <string> add-label: @tr("Add");
     in property <string> footer-text: "";
     in property <string> footer-trail: "";
+    in property <color> footer-dot-color: Palette.mint-dim;
     // Live search text, echoed on every keystroke so hosts can filter their
     // `@children` rows as the user types.
     callback search-edited(string);
@@ -213,7 +214,7 @@ export component SidePanel inherits Rectangle {
                     height: 8px;
                     y: (parent.height - self.height) / 2;
                     border-radius: (4px) * Theme.r-scale;
-                    background: Palette.mint-dim;
+                    background: root.footer-dot-color;
                 }
 
                 Text {
