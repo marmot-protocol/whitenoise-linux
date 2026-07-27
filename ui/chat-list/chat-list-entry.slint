@@ -47,6 +47,14 @@ component ChatListItemIrc inherits Rectangle {
         if root.chat.muted: MuteIcon {
             stroke: Palette.text-lo;
         }
+        Text {
+            text: "#";
+            color: Palette.mint-dim;
+            font-family: Theme.font;
+            font-size: Theme.fs(13px, 16px);
+            font-weight: 700;
+            vertical-alignment: center;
+        }
         Avatar {
             size: 18px;
             initials: root.chat.av-initials;
@@ -56,14 +64,6 @@ component ChatListItemIrc inherits Rectangle {
             has-picture: root.chat.has-picture;
             a11y-label: root.chat.name;
             font-size: Theme.fs(8px, 11px);
-        }
-        Text {
-            text: "#";
-            color: Palette.mint-dim;
-            font-family: Theme.font;
-            font-size: Theme.fs(13px, 16px);
-            font-weight: 700;
-            vertical-alignment: center;
         }
 
         if !root.compact: Text {
