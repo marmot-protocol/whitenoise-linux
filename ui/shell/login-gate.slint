@@ -37,6 +37,9 @@ export component LoginGate inherits Rectangle {
             copy-nsec(s) => {
                 AppState.copy-nsec(s);
             }
+            copy-npub(s) => {
+                AppState.copy-npub(s);
+            }
             import-backup => {
                 AppState.storage-import-backup();
             }

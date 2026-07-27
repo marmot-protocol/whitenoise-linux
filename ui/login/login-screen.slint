@@ -78,6 +78,7 @@ export component LoginScreen inherits Rectangle {
     callback unlock(string);                            // vault password
     callback reset-vault();
     callback copy-nsec(string);
+    callback copy-npub(string);
     callback import-backup();                            // restore from an encrypted backup
     pure callback login-password-valid(string, string) -> bool; // password, confirm
 
@@ -407,12 +408,36 @@ export component LoginScreen inherits Rectangle {
                         }
                     }
 
-                    // npub readout.
+                    // npub readout + copy action (split prevents the elided text
+                // from overlapping the button when the row gets tight).
                 VerticalLayout {
                         spacing: 6px;
                         ReadoutBox {
                             label: @tr("PUBLIC KEY (NPUB)");
                             value: root.generated-npub;
+                        }
+
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Rectangle {
+                                horizontal-stretch: 1;
+                            }
+
+                            Button {
+                                label: @tr("Copy");
+                                button-height: 30px;
+                                radius: 5px;
+                                pad-left: 10px;
+                                pad-right: 12px;
+                                font-size: Theme.fs(11px, 12px);
+                                CopyIcon {
+                                    stroke: Palette.text-mid;
+                                }
+
+                                clicked => {
+                                    root.copy-npub(root.generated-npub);
+                                }
+                            }
                         }
                     }
 
