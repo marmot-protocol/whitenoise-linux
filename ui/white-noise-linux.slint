@@ -45,6 +45,7 @@ import {
 import { EditVersion } from "tokens.slint";
 import { AuditLogEntry } from "tokens.slint";
 import { StagedAttachment } from "tokens.slint";
+import { ImageSearchHit } from "tokens.slint";
 import { AppState } from "shell/app-state.slint";
 import { AppShell } from "shell/app-shell.slint";
 import { ModalHost } from "shell/modal-host.slint";
@@ -284,6 +285,12 @@ export component WhiteNoiseLinux inherits Window {
     in-out property <string> pending-external-link <=> AppState.pending-external-link;
     in-out property <string> pending-external-host <=> AppState.pending-external-host;
     in-out property <[string]> trusted-link-hosts <=> AppState.trusted-link-hosts;
+    in-out property <bool> show-remote-image-search <=> AppState.show-remote-image-search;
+    in-out property <int> remote-image-search-target <=> AppState.remote-image-search-target;
+    in-out property <string> remote-image-search-query <=> AppState.remote-image-search-query;
+    in-out property <[ImageSearchHit]> remote-image-search-results <=> AppState.remote-image-search-results;
+    in-out property <bool> remote-image-search-busy <=> AppState.remote-image-search-busy;
+    in-out property <string> remote-image-search-status <=> AppState.remote-image-search-status;
     in-out property <[KeyPackageInfo]> key-packages <=> AppState.key-packages;
     in-out property <[string]> kp-relays <=> AppState.kp-relays;
     in-out property <string> kp-refresh-status <=> AppState.kp-refresh-status;

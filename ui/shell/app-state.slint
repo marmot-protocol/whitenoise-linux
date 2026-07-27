@@ -28,6 +28,7 @@ import {
     EditVersion,
     AuditLogEntry,
     StagedAttachment,
+    ImageSearchHit,
 } from "../tokens.slint";
 import { KeyPackageInfo } from "../keys/types.slint";
 import { PaletteAction } from "../modals/command-palette.slint";
@@ -500,6 +501,22 @@ export global AppState {
     // them so approvals can be revoked without editing settings.json.
     in-out property <[string]> trusted-link-hosts;
     callback forget-trusted-link-host(string);
+    // Remote image search — a shared picker for the group-photo and
+    // profile-picture editors' "search the web" badges (see GroupHero's and
+    // ProfilePage's AvatarEditable/PictureField). `target` says which upload
+    // path a picked hit re-enters: 1 = group photo, 2 = profile picture, 0 =
+    // no picker open.
+    in-out property <bool> show-remote-image-search: false;
+    in-out property <int> remote-image-search-target: 0;
+    in-out property <string> remote-image-search-query: "";
+    in-out property <[ImageSearchHit]> remote-image-search-results;
+    in-out property <bool> remote-image-search-busy: false;
+    in-out property <string> remote-image-search-status: "";
+    callback open-group-image-search();
+    callback open-profile-image-search();
+    callback remote-image-search-run();
+    callback remote-image-search-pick(int);
+    callback remote-image-search-cancel();
     // ═══ Keys & identity ═══════════════════════════════════════════════════
     // Key-package state and management. Refresh, publish, and rotate each get
     // their own busy flag and status string, so triggering one doesn't make

@@ -2,6 +2,7 @@ import { AppState } from "../shell/app-state.slint";
 import { Palette, Theme } from "../tokens.slint";
 import { CameraIcon } from "../icons/camera-icon.slint";
 import { RefreshIcon } from "../icons/refresh-icon.slint";
+import { SearchIcon } from "../icons/search-icon.slint";
 import { Avatar } from "../primitives/avatar.slint";
 import { ScrollView } from "../primitives/scroll-view.slint";
 import { CopyChip } from "../primitives/copy-chip.slint";
@@ -74,11 +75,13 @@ component FieldRow inherits Rectangle {
 }
 
 // Picture row: an upload-to-Blossom button alongside the URL field, so the user
-// can either pick a local file (uploaded for them) or paste a URL directly.
+// can either pick a local file (uploaded for them), paste a URL directly, or
+// search the web for one.
 component PictureField inherits Rectangle {
     in-out property <string> text <=> input.text;
     in property <bool> uploading: false;
     callback upload-clicked();
+    callback search-clicked();
     height: 96px;
     VerticalLayout {
         padding-left: 16px;
@@ -141,6 +144,21 @@ component PictureField inherits Rectangle {
                     stroke: Palette.mint;
                 }
             }
+
+            Button {
+                label: @tr("Search");
+                button-height: 40px;
+                button-width: 110px;
+                enabled: !root.uploading;
+                clicked => {
+                    if (!root.uploading) {
+                        root.search-clicked();
+                    }
+                }
+                SearchIcon {
+                    stroke: Palette.text-mid;
+                }
+            }
         }
     }
 }
@@ -182,9 +200,12 @@ component MetaChip inherits Rectangle {
 }
 
 // Avatar with an in-place upload affordance. Tapping anywhere on the avatar
-// while editing triggers an upload; a camera badge advertises it. We use a
-// single full-cover TouchArea (no overlapping siblings) to dodge the Slint
-// first-click-swallowing pitfall.
+// while editing triggers an upload; a camera badge advertises it. A second,
+// smaller search badge nests inside the same TouchArea (nested wins the
+// hit-test, mirroring GroupHero's change/remove pair) to search the web for
+// an image instead. We use a single full-cover TouchArea for the upload path
+// (no overlapping siblings) to dodge the Slint first-click-swallowing
+// pitfall.
 component AvatarEditable inherits Rectangle {
     in property <string> initials;
     in property <image> picture;
@@ -195,6 +216,7 @@ component AvatarEditable inherits Rectangle {
     // not editing, offer a retry instead of leaving it stuck on the fallback.
     in property <bool> failed: false;
     callback upload-clicked();
+    callback search-clicked();
     callback retry-clicked();
     // Retry is offered only when the fetch failed, we are not editing (editing
     // already taps to upload), and no picture is currently shown.
@@ -251,6 +273,34 @@ component AvatarEditable inherits Rectangle {
         clicked => {
             if (!root.uploading) {
                 root.upload-clicked();
+            }
+        }
+
+        if !root.uploading: search-ta := TouchArea {
+            x: 0px;
+            y: parent.height - self.height;
+            width: 30px;
+            height: 30px;
+            mouse-cursor: pointer;
+            accessible-role: button;
+            accessible-label: @tr("Search the web for a profile picture");
+            accessible-action-default => {
+                root.search-clicked();
+            }
+            clicked => {
+                root.search-clicked();
+            }
+            Rectangle {
+                border-radius: (15px) * Theme.r-scale;
+                background: Palette.elevated;
+                border-width: 2px;
+                border-color: Palette.panel;
+                SearchIcon {
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    size: 14px;
+                    stroke: Palette.text-hi;
+                }
             }
         }
     }
@@ -435,6 +485,9 @@ export component ProfilePage inherits Rectangle {
                         upload-clicked => {
                             AppState.upload-profile-picture();
                         }
+                        search-clicked => {
+                            AppState.open-profile-image-search();
+                        }
                         retry-clicked => {
                             AppState.retry-profile-picture();
                         }
@@ -549,6 +602,9 @@ export component ProfilePage inherits Rectangle {
                         uploading: AppState.profile-uploading;
                         upload-clicked => {
                             AppState.upload-profile-picture();
+                        }
+                        search-clicked => {
+                            AppState.open-profile-image-search();
                         }
                     }
 

@@ -757,6 +757,11 @@ export global ErrorCopy {
     out property <string> image-removed: @tr("image removed");
     out property <string> group-image-updated: @tr("group image updated");
     out property <string> backend-not-ready-lc: @tr("status, lower-case to match the image-upload flow" => "backend not ready");
+    // Remote image search status copy (src/wiring/image_search.rs).
+    out property <string> searching-images: @tr("searching…");
+    out property <string> image-search-failed: @tr("Couldn't search for images. Check your connection and try again.");
+    out property <string> image-search-no-results: @tr("No images found for that search.");
+    out property <string> image-download-failed: @tr("Couldn't download that image. Try another.");
     // Profile publish status copy (src/wiring/extra.rs).
     out property <string> profile-publishing: @tr("publishing…");
     out property <string> profile-published: @tr("profile published");
@@ -1022,6 +1027,17 @@ export struct SearchHit {
     text-match: string,
     text-post: string,
     stamp: string,
+}
+
+// One result row in the remote-image-search picker (group/profile picture).
+// `full-url` is the source Rust downloads and re-uploads to Blossom once the
+// user picks a hit; the thumbnail is fetched separately (and may fail
+// independently of the search request itself, hence `has-thumbnail`).
+export struct ImageSearchHit {
+    thumbnail: image,
+    has-thumbnail: bool,
+    full-url: string,
+    title: string,
 }
 
 export struct ChatMessage {

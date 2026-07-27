@@ -1,0 +1,140 @@
+import { Palette, Theme, ImageSearchHit } from "../tokens.slint";
+import { AppState } from "../shell/app-state.slint";
+import { SearchIcon } from "../icons/search-icon.slint";
+import { LineInput } from "../primitives/line-input.slint";
+import { Button } from "../primitives/button.slint";
+import { Modal } from "modal.slint";
+import { ScrollView } from "../primitives/scroll-view.slint";
+
+// Remote image search for the group-photo and profile-picture pickers' "search
+// the web" badges (GroupHero, ProfilePage). Rust's `image_search` module
+// queries Openverse (a keyless, CC-licensed image API — no account, no key)
+// and fills `remote-image-search-results`; picking a thumbnail re-enters the
+// same Blossom-upload path the local-file pickers use, routed by
+// `remote-image-search-target` (1 = group photo, 2 = profile picture).
+export component RemoteImageSearchModal inherits Modal {
+    property <[ImageSearchHit]> results: AppState.remote-image-search-results;
+    property <bool> busy: AppState.remote-image-search-busy;
+    property <int> cols: 4;
+    property <length> cell: 100px;
+    property <length> gap: 8px;
+
+    title: @tr("Search the web for an image");
+    card-width: 480px;
+    status: AppState.remote-image-search-status;
+    grab-focus: false;
+    dismissed => {
+        AppState.remote-image-search-cancel();
+    }
+
+    function run-search() {
+        if (AppState.remote-image-search-query != "" && !root.busy) {
+            AppState.remote-image-search-run();
+        }
+    }
+
+    focus-scope := FocusScope {
+        init => {
+            query-input.take-focus();
+        }
+        key-pressed(event) => {
+            if (event.text == Key.Escape) {
+                root.dismissed();
+                return accept;
+            }
+            return reject;
+        }
+
+        VerticalLayout {
+            spacing: 12px;
+
+            HorizontalLayout {
+                spacing: 8px;
+
+                query-input := LineInput {
+                    placeholder: @tr("Search term, e.g. \"mountain sunset\"");
+                    text <=> AppState.remote-image-search-query;
+                    submit => {
+                        root.run-search();
+                    }
+                    font-size: Theme.fsr(14px, 16px);
+                    fg: Palette.text-hi;
+                    placeholder-color: Palette.text-vlo;
+                }
+
+                Button {
+                    label: root.busy ? @tr("Searching…") : @tr("Search");
+                    button-width: 100px;
+                    enabled: !root.busy;
+                    clicked => {
+                        root.run-search();
+                    }
+                    SearchIcon {
+                        stroke: Palette.text-mid;
+                    }
+                }
+            }
+
+            Rectangle {
+                height: 340px;
+                clip: true;
+
+                if root.results.length == 0 && !root.busy: Text {
+                    text: @tr("Search for an image to use.");
+                    color: Palette.text-lo;
+                    font-size: Theme.fs(11px, 14px);
+                    font-family: Theme.font;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    width: parent.width;
+                    height: parent.height;
+                }
+
+                ScrollView {
+                    width: parent.width;
+                    height: parent.height;
+                    viewport-width: self.visible-width;
+                    viewport-height: grid.height;
+
+                    grid := Rectangle {
+                        width: parent.width;
+                        height: (root.cell + root.gap) * ((root.results.length + root.cols - 1) / root.cols) + root.gap;
+
+                        for hit[i] in root.results: hit-ta := TouchArea {
+                            property <int> grid-col: mod(i, root.cols);
+                            property <int> grid-row: (i - self.grid-col) / root.cols;
+                            x: root.gap + self.grid-col * (root.cell + root.gap);
+                            y: root.gap + self.grid-row * (root.cell + root.gap);
+                            width: root.cell;
+                            height: root.cell;
+                            mouse-cursor: pointer;
+                            accessible-role: button;
+                            accessible-label: hit.title == "" ? @tr("Use this image") : hit.title;
+                            accessible-action-default => {
+                                AppState.remote-image-search-pick(i);
+                            }
+                            clicked => {
+                                AppState.remote-image-search-pick(i);
+                            }
+
+                            Rectangle {
+                                border-radius: (8px) * Theme.r-scale;
+                                background: Palette.panel-2;
+                                border-width: Theme.border-w;
+                                border-color: hit-ta.has-hover ? Palette.mint-dim : Palette.elevated-border;
+                                clip: true;
+
+                                if hit.has-thumbnail: Image {
+                                    source: hit.thumbnail;
+                                    width: parent.width;
+                                    height: parent.height;
+                                    image-fit: cover;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

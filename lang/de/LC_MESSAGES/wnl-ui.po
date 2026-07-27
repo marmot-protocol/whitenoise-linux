@@ -901,6 +901,10 @@ msgctxt "ErrorCopy"
 msgid "Couldn't download image."
 msgstr "Bild konnte nicht heruntergeladen werden."
 
+msgctxt "ErrorCopy"
+msgid "Couldn't download that image. Try another."
+msgstr "Bild konnte nicht heruntergeladen werden. Versuche es mit einem anderen."
+
 #. Tier 2 — operation-specific fallbacks.
 msgctxt "ErrorCopy"
 msgid "Couldn't finish syncing. We'll keep retrying — check your relay settings if this keeps happening."
@@ -966,6 +970,10 @@ msgstr "Dein Profil konnte nicht gespeichert werden. Überprüfe deine Verbindun
 msgctxt "ErrorCopy"
 msgid "Couldn't save your relay list. Please try again."
 msgstr "Deine Relay-Liste konnte nicht gespeichert werden. Bitte versuche es erneut."
+
+msgctxt "ErrorCopy"
+msgid "Couldn't search for images. Check your connection and try again."
+msgstr "Bilder konnten nicht gesucht werden. Überprüfe deine Verbindung und versuche es erneut."
 
 msgctxt "ErrorCopy"
 msgid "Couldn't send your message. Check your connection and try again."
@@ -1903,6 +1911,10 @@ msgid "No image selected."
 msgstr "Kein Bild ausgewählt."
 
 msgctxt "ErrorCopy"
+msgid "No images found for that search."
+msgstr "Keine Bilder für diese Suche gefunden."
+
+msgctxt "ErrorCopy"
 msgid "No key package on relays yet"
 msgstr "Noch kein Key Package auf den Relays"
 
@@ -2673,6 +2685,14 @@ msgctxt "LoginScreen"
 msgid "Sealed with your password on this device. Keep your own copy of the nsec too — lose both and this identity is gone."
 msgstr "Auf diesem Gerät mit deinem Passwort versiegelt. Bewahre auch eine eigene Kopie des nsec auf — verlierst du beides, ist diese Identität weg."
 
+msgctxt "PictureField"
+msgid "Search"
+msgstr "Suchen"
+
+msgctxt "RemoteImageSearchModal"
+msgid "Search"
+msgstr "Suchen"
+
 msgctxt "GlobalSearchModal"
 msgid "Search across every conversation."
 msgstr "In allen Unterhaltungen suchen."
@@ -2697,6 +2717,10 @@ msgctxt "ContactsSidebar"
 msgid "Search contacts…"
 msgstr "Kontakte durchsuchen…"
 
+msgctxt "RemoteImageSearchModal"
+msgid "Search for an image to use."
+msgstr "Suche nach einem Bild, das du verwenden möchtest."
+
 msgctxt "ChatHeader"
 msgid "Search in conversation"
 msgstr "In Unterhaltung suchen"
@@ -2709,7 +2733,27 @@ msgctxt "AppShell"
 msgid "Search messages…"
 msgstr "Nachrichten durchsuchen…"
 
+msgctxt "RemoteImageSearchModal"
+msgid "Search term, e.g. \"mountain sunset\""
+msgstr "Suchbegriff, z. B. „Sonnenuntergang in den Bergen“"
+
+msgctxt "GroupHero"
+msgid "Search the web for a group image"
+msgstr "Im Web nach einem Gruppenbild suchen"
+
+msgctxt "AvatarEditable"
+msgid "Search the web for a profile picture"
+msgstr "Im Web nach einem Profilbild suchen"
+
+msgctxt "RemoteImageSearchModal"
+msgid "Search the web for an image"
+msgstr "Im Web nach einem Bild suchen"
+
 msgctxt "GlobalSearchModal"
+msgid "Searching…"
+msgstr "Suche…"
+
+msgctxt "RemoteImageSearchModal"
 msgid "Searching…"
 msgstr "Suche…"
 
@@ -3106,6 +3150,10 @@ msgctxt "ContactsPage"
 msgid "Use the Add button to add your first contact."
 msgstr "Füge über die Schaltfläche „Hinzufügen“ deinen ersten Kontakt hinzu."
 
+msgctxt "RemoteImageSearchModal"
+msgid "Use this image"
+msgstr "Dieses Bild verwenden"
+
 msgctxt "ContactDetail"
 msgid "Used to deliver messages between you."
 msgstr "Werden genutzt, um Nachrichten zwischen euch zuzustellen."
@@ -3409,6 +3457,11 @@ msgstr "Bild wird entfernt…"
 msgctxt "ErrorCopy"
 msgid "rotated · published a fresh key package"
 msgstr "rotiert · ein frisches Key Package veröffentlicht"
+
+#. Remote image search status copy (src/wiring/image_search.rs).
+msgctxt "ErrorCopy"
+msgid "searching…"
+msgstr "wird gesucht…"
 
 msgctxt "EmojiPicker"
 msgid "search…"
