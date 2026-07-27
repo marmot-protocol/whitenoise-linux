@@ -75,6 +75,9 @@ export component ModalHost inherits Rectangle {
             select(id) => {
                 AppState.switch-account(id);
             }
+            copy-npub(npub) => {
+                AppState.copy-to-clipboard(npub);
+            }
             remove-account(id) => {
                 AppState.remove-account(id);
             }

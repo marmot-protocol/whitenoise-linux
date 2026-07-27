@@ -853,6 +853,7 @@ pub(crate) fn refresh_accounts_model(ui: &WhiteNoiseLinux, backend: &Arc<Backend
                     AccountEntry {
                         id: s(id),
                         name: s(&display),
+                        npub_full: s(npub),
                         npub_short: s(&shorten_npub(npub)),
                         av_a: col_a,
                         av_b: col_b,
