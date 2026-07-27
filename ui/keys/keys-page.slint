@@ -86,6 +86,7 @@ export component KeysPage inherits Rectangle {
                         label: @tr("Public key (npub)");
                         sublabel: @tr("Safe to share. This is how people find you.");
                         value: AppState.my-npub;
+                        wrap-value: true;
                         show-divider: false;
                         MicroButton {
                             label: @tr("Copy");
