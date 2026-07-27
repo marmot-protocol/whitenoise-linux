@@ -812,6 +812,10 @@ msgctxt "RevealNsecModal"
 msgid "Copy"
 msgstr "Kopieren"
 
+msgctxt "StoragePane"
+msgid "Copy"
+msgstr "Kopieren"
+
 #, fuzzy
 msgctxt "DebugJsonModal"
 msgid "Copy JSON"

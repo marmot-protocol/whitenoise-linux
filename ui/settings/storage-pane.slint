@@ -52,10 +52,22 @@ export component StoragePane inherits DetailPage {
                 label: @tr("Location");
                 sublabel: AppState.storage-vault-dir;
                 show-divider: true;
-                MicroButton {
-                    label: @tr("Open folder");
-                    clicked => {
-                        AppState.storage-open-vault-folder();
+                HorizontalLayout {
+                    alignment: center;
+                    spacing: 10px;
+
+                    MicroButton {
+                        label: @tr("Copy");
+                        clicked => {
+                            AppState.copy-to-clipboard(AppState.storage-vault-dir);
+                        }
+                    }
+
+                    MicroButton {
+                        label: @tr("Open folder");
+                        clicked => {
+                            AppState.storage-open-vault-folder();
+                        }
                     }
                 }
             }
