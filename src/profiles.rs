@@ -156,6 +156,7 @@ pub(crate) fn open_profile_modal(
     ui.set_peer_profile_is_self(is_self);
     ui.set_peer_profile_adding(false);
     ui.set_peer_profile_status(s(""));
+    ui.set_peer_profile_status_error(false);
     ui.set_peer_profile_not_found(false);
     ui.set_peer_profile_nip05_verified(false);
     ui.set_peer_profile_picture(slint::Image::default());

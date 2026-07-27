@@ -228,6 +228,7 @@ export component WhiteNoiseLinux inherits Window {
     in-out property <bool> peer-profile-is-self <=> AppState.peer-profile-is-self;
     in-out property <bool> peer-profile-adding <=> AppState.peer-profile-adding;
     in-out property <string> peer-profile-status <=> AppState.peer-profile-status;
+    in-out property <bool> peer-profile-status-error <=> AppState.peer-profile-status-error;
     in-out property <color> peer-profile-av-a <=> AppState.peer-profile-av-a;
     in-out property <color> peer-profile-av-b <=> AppState.peer-profile-av-b;
     in-out property <string> peer-profile-av-initials <=> AppState.peer-profile-av-initials;
@@ -415,6 +416,7 @@ export component WhiteNoiseLinux inherits Window {
     in-out property <string> add-contact-input <=> AppState.add-contact-input;
     in-out property <bool> add-contact-busy <=> AppState.add-contact-busy;
     in-out property <string> add-contact-status <=> AppState.add-contact-status;
+    in-out property <bool> add-contact-status-error <=> AppState.add-contact-status-error;
     in-out property <[AccountEntry]> accounts <=> AppState.accounts;
     in-out property <bool> show-account-switcher <=> AppState.show-account-switcher;
     in-out property <bool> show-add-account <=> AppState.show-add-account;

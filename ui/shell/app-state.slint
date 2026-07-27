@@ -278,6 +278,7 @@ export global AppState {
     in-out property <bool> peer-profile-is-self: false;
     in-out property <bool> peer-profile-adding: false;
     in-out property <string> peer-profile-status;
+    in-out property <bool> peer-profile-status-error: false;
     in-out property <color> peer-profile-av-a;
     in-out property <color> peer-profile-av-b;
     in-out property <string> peer-profile-av-initials;
@@ -857,6 +858,7 @@ export global AppState {
     in-out property <string> add-contact-input;
     in-out property <bool> add-contact-busy: false;
     in-out property <string> add-contact-status;
+    in-out property <bool> add-contact-status-error: false;
     callback add-contact-requested();
     callback add-contact(string);
     callback add-contact-dismissed();
