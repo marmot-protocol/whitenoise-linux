@@ -194,13 +194,22 @@ export component GroupHero inherits Rectangle {
         if !root.editing-desc && AppState.chat-group-description != "": HorizontalLayout {
             alignment: center;
             spacing: 6px;
-            Text {
-                text: AppState.chat-group-description;
-                color: Palette.text-mid;
-                font-size: Theme.fs(11px, 14px);
-                horizontal-alignment: center;
-                wrap: word-wrap;
-                max-width: 230px;
+            // Wrap the description but hard-cap it at three lines, mirroring
+            // the chat-list preview: Slint's Text ignores max-height on an
+            // auto-sized box, so clip inside a fixed-height box instead.
+            Rectangle {
+                clip: true;
+                width: 230px;
+                height: Theme.fs(11px, 14px) * 3.75;
+                Text {
+                    text: AppState.chat-group-description;
+                    color: Palette.text-mid;
+                    font-size: Theme.fs(11px, 14px);
+                    width: 100%;
+                    y: 0;
+                    horizontal-alignment: center;
+                    wrap: word-wrap;
+                }
             }
 
             if root.can-admin: edit-desc-ta := TouchArea {
