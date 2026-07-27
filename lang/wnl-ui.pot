@@ -1320,8 +1320,20 @@ msgctxt "ErrorCopy"
 msgid "Image isn't ready yet."
 msgstr ""
 
+msgctxt "AlbumGrid"
+msgid "Image {} of {}"
+msgstr ""
+
 msgctxt "ImageViewerModal"
 msgid "Image {} of {}"
+msgstr ""
+
+msgctxt "AlbumGrid"
+msgid "Image {} of {}, failed to load. Activate to retry."
+msgstr ""
+
+msgctxt "AlbumGrid"
+msgid "Image {} of {}, loading."
 msgstr ""
 
 msgctxt "ImportBackupModal"

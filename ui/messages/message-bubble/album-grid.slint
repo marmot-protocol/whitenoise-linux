@@ -17,6 +17,19 @@ export component AlbumGrid inherits Rectangle {
         clip: true;
         border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
         border-color: Palette.border-2;
+
+        accessible-role: button;
+        accessible-enabled: !cell.loading || cell.failed;
+        accessible-label: cell.failed
+            ? @tr("Image {} of {}, failed to load. Activate to retry.", i + 1, root.msg.album.length)
+            : (cell.loading
+                ? @tr("Image {} of {}, loading.", i + 1, root.msg.album.length)
+                : @tr("Image {} of {}", i + 1, root.msg.album.length));
+        accessible-action-default => {
+            if !cell.loading || cell.failed {
+                root.cell-clicked(cell.key);
+            }
+        }
         if cell.has-image: Image {
             width: parent.width;
             height: parent.height;
@@ -44,6 +57,34 @@ export component AlbumGrid inherits Rectangle {
             clicked => {
                 root.cell-clicked(cell.key);
             }
+        }
+
+        // Zero-size FocusScope: joins the Tab chain without stealing pointer
+        // events, mirroring QuickReactCell's focus handling.
+        fs := FocusScope {
+            width: 0px;
+            height: 0px;
+            enabled: !cell.loading || cell.failed;
+            key-pressed(event) => {
+                if (event.text == Key.Return || event.text == " ") {
+                    root.cell-clicked(cell.key);
+                    return accept;
+                }
+                return reject;
+            }
+        }
+
+        // Focus ring just inside the cell bounds (keyboard only) — the cell
+        // clips, so an outer ring like QuickReactCell's would be cut off.
+        if fs.has-focus: Rectangle {
+            x: 2px;
+            y: 2px;
+            width: parent.width - 4px;
+            height: parent.height - 4px;
+            background: transparent;
+            border-radius: (4px) * Theme.r-scale;
+            border-width: 2px;
+            border-color: Palette.mint;
         }
     }
 }
