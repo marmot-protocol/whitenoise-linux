@@ -318,6 +318,18 @@ export global AppState {
     // bumped alongside to fire the scroll.
     in-out property <int> message-unread-index: -1;
     in-out property <int> message-unread-tick: 0;
+    // Live mirror of the viewport's scroll offset and bottom-proximity, pushed
+    // by MessagesArea on every scroll so Rust can snapshot where the user left
+    // off in the chat they're switching away from.
+    in-out property <length> messages-scroll-y: 0px;
+    in-out property <bool> messages-at-bottom: true;
+    // Set by Rust on open when the chat had a saved, non-bottom scroll
+    // position from a previous visit; the tick fires the restore, mirroring
+    // message-jump/message-unread above but snapping straight to a raw
+    // offset instead of an estimated row index (the content is unchanged
+    // since it was saved, so no two-phase settle is needed).
+    in-out property <length> message-restore-y: 0px;
+    in-out property <int> message-restore-tick: 0;
     // True when the active chat has history beyond the loaded window; the
     // messages view shows a "load earlier messages" pill that fires
     // messages-request-older.

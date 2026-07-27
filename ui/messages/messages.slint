@@ -51,6 +51,9 @@ export component MessagesArea inherits Rectangle {
     // Bumped by Rust on opening a chat that had unread messages: scroll so the
     // "New messages" divider (above message-unread-index) lands near the top.
     property <int> unread-tick: AppState.message-unread-tick;
+    // Bumped by Rust on opening a chat that had a saved, non-bottom scroll
+    // position from a previous visit: snap straight to message-restore-y.
+    property <int> restore-tick: AppState.message-restore-tick;
     // True when older history exists beyond the loaded window; shows the
     // "load earlier messages" pill at the top of the list.
     property <bool> has-older: AppState.messages-has-older;
@@ -129,6 +132,10 @@ export component MessagesArea inherits Rectangle {
     property <int> converge-frames: 0;
     changed vy => {
         root.following = root.at-bottom;
+        // Live snapshot for Rust: read when the user switches to another
+        // chat, so reopening this one can restore rather than reset it.
+        AppState.messages-scroll-y = root.vy;
+        AppState.messages-at-bottom = root.at-bottom;
     }
     converge-timer := Timer {
         interval: 16ms;
@@ -222,6 +229,20 @@ export component MessagesArea inherits Rectangle {
             root.scroll-target-idx = AppState.message-unread-index;
             root.scroll-tries = 40;
         }
+    }
+
+    // Restore-on-reopen: the saved offset was captured from this exact
+    // content (the window fix above keeps it from shrinking), so no
+    // estimate-then-settle phase is needed — snap straight there and cancel
+    // whatever the fresh chat's own msg-count change just queued (a stale
+    // `following` from the chat left at its bottom otherwise re-snaps this
+    // one to bottom-y a few frames later via converge-timer).
+    changed restore-tick => {
+        root.jump-reset-pending = false;
+        root.scroll-target-idx = -1;
+        root.converge-frames = 0;
+        root.following = false;
+        cs.viewport-y = AppState.message-restore-y;
     }
 
     // Scroll anchoring for "load earlier messages": content grows at the TOP,

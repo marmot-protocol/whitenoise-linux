@@ -381,12 +381,16 @@ pub(crate) fn msg_window_set(group_hex: &str, limit: usize) {
     }
 }
 
-/// Drop a chat's expanded window (back to the default). Called on chat
-/// select so re-entering a chat is always the fast path.
-pub(crate) fn msg_window_reset(group_hex: &str) {
-    if let Ok(mut m) = msg_windows().lock() {
-        m.remove(group_hex);
-    }
+// ─── Scroll-position restore ────────────────────────────────────────────────
+
+/// Per-chat scroll offset (group_id_hex → viewport-y in px), captured when the
+/// user switches to another chat while scrolled away from the bottom. Only
+/// holds an entry for a chat left mid-history; a chat left at the bottom has
+/// none, so reopening it falls back to the normal scroll-to-bottom path.
+pub(crate) fn msg_scroll_positions() -> &'static Mutex<HashMap<String, f32>> {
+    use std::sync::OnceLock;
+    static MAP: OnceLock<Mutex<HashMap<String, f32>>> = OnceLock::new();
+    MAP.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
 // ─── Voice-message state ───────────────────────────────────────────────────
