@@ -57,6 +57,7 @@ export component StoragePane inherits DetailPage {
                     spacing: 10px;
 
                     MicroButton {
+                        min-w: self.preferred-width;
                         label: @tr("Copy");
                         clicked => {
                             AppState.copy-to-clipboard(AppState.storage-vault-dir);
@@ -64,6 +65,7 @@ export component StoragePane inherits DetailPage {
                     }
 
                     MicroButton {
+                        min-w: self.preferred-width;
                         label: @tr("Open folder");
                         clicked => {
                             AppState.storage-open-vault-folder();
