@@ -2756,6 +2756,10 @@ msgctxt "NotificationsPane"
 msgid "Show message preview"
 msgstr "メッセージのプレビューを表示"
 
+msgctxt "AppShell"
+msgid "Show only unread chats"
+msgstr "未読のチャットのみ表示"
+
 msgctxt "PasswordField"
 msgid "Show password"
 msgstr "パスワードを表示"
@@ -3038,6 +3042,10 @@ msgstr "会話のミュートを解除"
 msgctxt "ChatContextMenu"
 msgid "Unpin"
 msgstr "固定を解除"
+
+msgctxt "AppShell"
+msgid "Unread"
+msgstr "未読"
 
 msgctxt "PictureField"
 msgid "Upload"

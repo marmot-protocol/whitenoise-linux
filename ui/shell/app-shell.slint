@@ -19,6 +19,7 @@ import { AppState } from "app-state.slint";
 import { ListView } from "std-widgets.slint";
 import { Avatar } from "../primitives/avatar.slint";
 import { LineInput } from "../primitives/line-input.slint";
+import { MicroButton } from "../primitives/button.slint";
 import { ChatBubbleIcon } from "../icons/chat-bubble-icon.slint";
 import { PeopleIcon } from "../icons/people-icon.slint";
 import { ArchiveIcon } from "../icons/archive-icon.slint";
@@ -215,6 +216,11 @@ export component AppShell inherits Rectangle {
     // floats over the conversation when the narrow strip expands.
     property <length> left-reserved: root.collapsible ? root.strip-w : AppState.shell-chats-width;
     property <length> left-shown: root.strip ? root.strip-w : AppState.shell-chats-width;
+
+    // Chat-list "Unread" header toggle — narrows the list below to chats
+    // with `read == false`. Purely local UI state: every chat's `read` flag
+    // is already in `AppState.chats`, so no Rust plumbing is needed.
+    property <bool> chats-unread-only: false;
 
     // Chat-list keyboard cursor: a chat index, moved by Up/Down while the list
     // (wrapped in a FocusScope below) has focus; Enter opens the cursored chat.
@@ -550,6 +556,19 @@ export component AppShell inherits Rectangle {
                                 }
                             }
                         }
+                        // "Unread" narrows the chat list below to chats with
+                        // something unread — Chats page only, since Archive
+                        // has its own search in this slot instead.
+                        if AppState.active-page == 0: MicroButton {
+                            label: @tr("Unread");
+                            a11y-label: @tr("Show only unread chats");
+                            button-height: 38px;
+                            selected: root.chats-unread-only;
+                            fg: root.chats-unread-only && Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.text-mid;
+                            clicked => {
+                                root.chats-unread-only = !root.chats-unread-only;
+                            }
+                        }
                         if AppState.active-page != 2: Rectangle {
                             width: 38px;
                             border-radius: 10px * Theme.r-scale;
@@ -614,18 +633,30 @@ export component AppShell inherits Rectangle {
                                 y: 0;
                                 width: 100%;
                                 height: 100%;
-                                for chat[idx] in AppState.chats: ChatListEntry {
-                                    width: 100%;
-                                    chat: chat;
-                                    compact: root.strip;
-                                    selected: idx == AppState.active-chat;
-                                    keyboard-focused: chat-nav.has-focus && idx == root.chat-cursor;
-                                    clicked => {
-                                        TextSelection.clear();
-                                        AppState.chat-selected(idx);
-                                    }
-                                    context-menu(ax, ay) => {
-                                        AppState.request-chat-context(idx, ax, ay);
+                                for chat[idx] in AppState.chats: Rectangle {
+                                    width: parent.width;
+                                    // Shown unless the "Unread" toggle is on and this
+                                    // chat has nothing unread. No `visible:` here —
+                                    // binding it on a ListView delegate root breaks row
+                                    // placement, so a collapsed row goes to 0 height
+                                    // instead.
+                                    property <bool> shown: !root.chats-unread-only || !chat.read;
+                                    height: shown ? entry.preferred-height : 0px;
+                                    clip: true;
+
+                                    entry := ChatListEntry {
+                                        width: 100%;
+                                        chat: chat;
+                                        compact: root.strip;
+                                        selected: idx == AppState.active-chat;
+                                        keyboard-focused: chat-nav.has-focus && idx == root.chat-cursor;
+                                        clicked => {
+                                            TextSelection.clear();
+                                            AppState.chat-selected(idx);
+                                        }
+                                        context-menu(ax, ay) => {
+                                            AppState.request-chat-context(idx, ax, ay);
+                                        }
                                     }
                                 }
                             }
