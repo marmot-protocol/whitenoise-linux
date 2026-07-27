@@ -2,12 +2,12 @@ import { AppState } from "../shell/app-state.slint";
 import { Palette, Theme } from "../tokens.slint";
 import { KeyIcon } from "../icons/key-icon.slint";
 import { LockIcon } from "../icons/lock-icon.slint";
-import { CopyIcon } from "../icons/copy-icon.slint";
 import { RefreshIcon } from "../icons/refresh-icon.slint";
 import { EyeIcon } from "../icons/eye-icon.slint";
 import { PageHeader } from "../layout/page-header.slint";
 import { GroupCard } from "../layout/group-card.slint";
 import { ScrollView } from "../primitives/scroll-view.slint";
+import { CopyChip } from "../primitives/copy-chip.slint";
 import { KVRow } from "../layout/kv-row.slint";
 import { MicroButton } from "../primitives/button.slint";
 import { SectionHeader } from "../layout/section-header.slint";
@@ -88,13 +88,9 @@ export component KeysPage inherits Rectangle {
                         value: AppState.my-npub;
                         wrap-value: true;
                         show-divider: false;
-                        MicroButton {
-                            label: @tr("Copy");
-                            CopyIcon {
-                                stroke: Palette.text-mid;
-                            }
-
-                            clicked => {
+                        CopyChip {
+                            value: @tr("Copy");
+                            copy-requested => {
                                 AppState.copy-to-clipboard(AppState.my-npub);
                             }
                         }
