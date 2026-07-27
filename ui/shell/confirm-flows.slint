@@ -8,8 +8,8 @@
 // full-window layer, so each modal below defaults to the full window.
 
 import { ConfirmModal } from "../modals/confirm-modal.slint";
+import { KVRow } from "../layout/kv-row.slint";
 import { Toggle } from "../primitives/toggle.slint";
-import { Palette, Theme } from "../tokens.slint";
 import { AppState } from "app-state.slint";
 
 export component ConfirmFlows inherits Rectangle {
@@ -163,16 +163,10 @@ export component ConfirmFlows inherits Rectangle {
         confirm-label: @tr("Open");
         primary-danger: false;
 
-        HorizontalLayout {
-            spacing: 12px;
-            Text {
-                text: @tr("Don't ask again for this site");
-                color: Palette.text-mid;
-                font-size: Theme.fs(12px, 16px);
-                vertical-alignment: center;
-                horizontal-stretch: 1;
-            }
-
+        KVRow {
+            row-height: 48px;
+            label: @tr("Don't ask again for this site");
+            show-divider: false;
             Toggle {
                 label: @tr("Don't ask again for this site");
                 on <=> root.remember-external-host;
