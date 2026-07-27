@@ -8,6 +8,9 @@
 #      re-stage it, so committed UI files are always canonically formatted.
 #   3. Gate any Rust/Slint/Cargo change on `cargo fmt --check` and
 #      `cargo clippy -D warnings`.
+#   4. Refresh .github/workflows/pr-precommit.yml (GitHub's byte-identical
+#      mirror of the canonical ngit-ci gate at
+#      .ngit/act/workflows/pr-precommit.yml) and re-stage it on drift.
 #
 # Emergency bypass:  git commit --no-verify
 set -euo pipefail
@@ -142,6 +145,23 @@ if staged -- '*.rs' '*.slint' '*Cargo.toml' '*Cargo.lock' | grep -qz .; then
         echo "✗ Clippy reported warnings/errors. Fix them, then re-commit." >&2
         exit 1
     fi
+fi
+
+# --- 5. Sync the GitHub mirror of the ngit-ci gate ----------------------
+# .ngit/act/workflows/pr-precommit.yml is canonical (ngit is the primary
+# forge); GitHub cannot run workflows through symlinks, so a byte-identical
+# copy must exist at .github/workflows/pr-precommit.yml. Refresh the mirror
+# from the canonical file and re-stage it whenever the two differ — including
+# when someone edited the mirror directly (the canonical side always wins).
+# Under CI (pr-precommit.yml runs this hook with everything staged), a
+# refresh here re-stages the mirror and the workflow's final drift check
+# turns that into a failure — so a proposal can't land with drifted copies.
+gate_src=".ngit/act/workflows/pr-precommit.yml"
+gate_dst=".github/workflows/pr-precommit.yml"
+if [ -f "$gate_src" ] && ! cmp -s "$gate_src" "$gate_dst"; then
+    cp "$gate_src" "$gate_dst"
+    git add -- "$gate_dst"
+    echo "pre-commit: refreshed $gate_dst from canonical $gate_src."
 fi
 
 exit 0

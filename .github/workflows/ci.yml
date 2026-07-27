@@ -1,8 +1,13 @@
-# CI: runs on every push to master and every PR. A fast formatting gate and a
-# clippy gate run on x86_64 Linux, then a release build (compiled Slint UI, no
-# live-reload) of every target platform via the reusable build workflow — the
-# same build release.yml ships, minus packaging, so a broken compiled UI fails
-# CI instead of only surfacing at tag time.
+# CI: runs on every push to master and every PR. Just the release build
+# (compiled Slint UI, no live-reload) of every target platform via the
+# reusable build workflow — the same build release.yml ships, minus packaging,
+# so a broken compiled UI fails CI instead of only surfacing at tag time.
+#
+# The quality gates (fmt, clippy, catalogs, file caps, slint formatting) are
+# NOT here: they run via pr-precommit.yml, the byte-identical GitHub mirror of
+# the canonical ngit-ci gate at .ngit/act/workflows/pr-precommit.yml (synced
+# by .githooks/pre-commit). That workflow only fires on PRs; direct pushes to
+# master are gated by the same hook running locally at commit time.
 name: CI
 
 on:
@@ -16,91 +21,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Formatting and catalog normalization need no compilation, heavy system
-  # deps, or cache — keep them in their own tiny job so they fail in seconds
-  # instead of riding behind the clippy build. These mirror the pre-commit hook
-  # (.githooks/pre-commit): fmt here, clippy in the job below, catalogs here.
-  fmt:
-    name: fmt + catalogs
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt
-      - name: Check formatting
-        run: cargo fmt --all -- --check
-
-      # gettext gives us msgcat for scripts/po-clean.sh — a few seconds to
-      # install, keeps this job fast.
-      - name: Install gettext
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gettext
-
-      # Reject any catalog a contributor committed without the po-clean
-      # normalization the hook/filter apply (e.g. via `git commit --no-verify`).
-      # Running po-clean.sh must be a no-op on every tracked catalog.
-      - name: Check PO catalogs are normalized
-        run: |
-          fail=0
-          while IFS= read -r f; do
-            if ! bash scripts/po-clean.sh < "$f" | cmp -s - "$f"; then
-              echo "::error file=$f::catalog not normalized — run scripts/update-translations.sh (or scripts/po-clean.sh) and commit the result"
-              fail=1
-            fi
-          done < <(git ls-files '*.po' '*.pot')
-          exit "$fail"
-
-  clippy:
-    name: clippy
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install system deps
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            pkg-config libmpv-dev libfontconfig-dev libasound2-dev libdbus-1-dev
-
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy
-
-      # Caches the registry/git deps and the opt-level-3 dependency build.
-      # cache-on-failure keeps that warm even when clippy fails (the common PR
-      # case), so the next push doesn't recompile the whole dep tree from cold.
-      - uses: Swatinem/rust-cache@v2
-        with:
-          key: clippy
-          cache-on-failure: true
-
-      # rust-cache (above) cleans workspace-member artifacts before saving, so
-      # the generated wnl-ui Slint crate is NOT in that cache and would recompile
-      # every run. This content-addressed cache restores it directly. Clippy is a
-      # debug build, so wnl-ui here is the interpreter shim (live-reload is on by
-      # default in debug — see wnl-ui/build.rs); that's fine, clippy lints our
-      # src/ against the same public API either way, and the shim compiles fast.
-      # The key covers everything that changes its output (UI/lang/wnl-ui
-      # sources, the locked dep ABIs, and the toolchain), so a hit means the
-      # inputs are identical; cargo's own fingerprint check is the backstop if
-      # anything is stale. Defined AFTER rust-cache so its restore overlays
-      # rust-cache's target/ and its save runs before rust-cache cleans.
-      - name: Record toolchain version
-        shell: bash
-        run: echo "RUSTC_VER=$(rustc -V | tr ' .()' '----')" >> "$GITHUB_ENV"
-      - name: Cache compiled wnl-ui (Slint UI) crate
-        uses: actions/cache@v4
-        with:
-          path: |
-            target/debug/build/wnl-ui-*
-            target/debug/deps/libwnl_ui-*
-            target/debug/deps/wnl_ui-*
-            target/debug/.fingerprint/wnl-ui-*
-          key: wnlui-clippy-${{ env.RUSTC_VER }}-${{ hashFiles('ui/**', 'lang/**', 'wnl-ui/**', 'Cargo.lock') }}
-
-      - name: Clippy
-        run: cargo clippy --locked --all-targets -- -D warnings
-
   build:
     name: build
     uses: ./.github/workflows/_build.yml

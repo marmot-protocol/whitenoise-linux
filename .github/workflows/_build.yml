@@ -1,7 +1,7 @@
 # Reusable build workflow: compiles whitenoise-linux for every supported
-# platform (Linux x86_64/arm64, macOS arm64). Called by ci.yml (release build,
-# no artifacts) and release.yml (release build, uploads artifacts).
-# (FreeBSD x86_64 and Intel-macOS x86_64 builds temporarily disabled.)
+# platform (Linux x86_64/arm64). Called by ci.yml (release build, no
+# artifacts) and release.yml (release build, uploads artifacts).
+# (FreeBSD and macOS are no longer build targets.)
 #
 # Both callers build with `--release --no-default-features`: that drops the
 # default `live-reload` feature so the binary embeds the statically compiled
@@ -27,10 +27,9 @@ on:
         default: false
 
 jobs:
-  # Native runners: one per OS/arch. arm64 Linux uses GitHub's native arm
-  # runners and macOS arm64 uses the Apple-silicon image, so every job builds
-  # natively — no cross-compilation sysroot wrangling for the C deps (libmpv,
-  # ALSA, fontconfig).
+  # Native runners: one per arch. arm64 Linux uses GitHub's native arm
+  # runners, so every job builds natively — no cross-compilation sysroot
+  # wrangling for the C deps (libmpv, ALSA, fontconfig).
   native:
     name: build (${{ matrix.triple }})
     runs-on: ${{ matrix.os }}
@@ -40,22 +39,14 @@ jobs:
         include:
           - { os: ubuntu-24.04,     triple: x86_64-unknown-linux-gnu }
           - { os: ubuntu-24.04-arm, triple: aarch64-unknown-linux-gnu }
-          - { os: macos-14,         triple: aarch64-apple-darwin }
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Linux system deps
-        if: runner.os == 'Linux'
+      - name: Install system deps
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             pkg-config libmpv-dev libfontconfig-dev libasound2-dev libdbus-1-dev
-
-      - name: Install macOS system deps
-        if: runner.os == 'macOS'
-        run: |
-          brew install mpv pkgconf
-          echo "PKG_CONFIG_PATH=$(brew --prefix)/lib/pkgconfig" >> "$GITHUB_ENV"
 
       - uses: dtolnay/rust-toolchain@stable
 
