@@ -23,17 +23,19 @@ export component OutgoingRow inherits VerticalLayout {
     property <image> av-picture: AppState.my-av-picture;
     property <bool> av-has-picture: AppState.my-av-has-picture;
 
-    // Toolbar sits below the bubble, hugging whichever edge sits away from
-    // the avatar (left when right-aligned, right otherwise) — same edge it
-    // used to float toward beside the bubble. The right-hugging case still
-    // needs the row clamp IncomingRow uses: 28px avatar + 10px spacing sit on
-    // the far side of the bubble from the toolbar, so anything past
-    // `row-w - 38px` is off the visible pane. The left-hugging case starts at
-    // the bubble's own left edge, which is always inside the row already.
-    property <length> acts-max-x: max(0px, root.row-w - 38px - acts.width);
-    property <length> acts-x: root.align-right
-        ? 0px
-        : max(0px, min(bubble.width - acts.width, root.acts-max-x));
+    // Toolbar sits below the bubble, centered under it, clamped between the
+    // bubble's own edge nearest the avatar (never overlap it) and the row's
+    // far edge (28px avatar + 10px spacing reserved on whichever side holds
+    // it, so anything past that is off the visible pane). Which edge plays
+    // which role flips with align-right, since the avatar swaps sides.
+    property <length> acts-center-x: (bubble.width - acts.width) / 2;
+    property <length> acts-min-x: root.align-right
+        ? bubble.width - root.row-w + 38px
+        : 0px;
+    property <length> acts-max-x: root.align-right
+        ? bubble.width - acts.width
+        : max(0px, root.row-w - 38px - acts.width);
+    property <length> acts-x: max(root.acts-min-x, min(root.acts-center-x, root.acts-max-x));
 
     // Fire the burst in the shared overlay (above all bubbles). See IncomingRow.
     callback play-effect(int, int, int, length, length, length, length);
@@ -100,14 +102,15 @@ export component OutgoingRow inherits VerticalLayout {
                 height: bubble.height;
 
                 // Stable hover region spanning bubble → toolbar below it. The
-                // toolbar hugs the side opposite the avatar (left when right-
-                // aligned), so the region only needs to widen past the bubble
-                // when the toolbar is wider than it; height reaches down
-                // through the gap and the toolbar itself.
+                // toolbar is centered under the bubble, so on align-right it
+                // can overhang the bubble's left edge too (acts-x turns
+                // negative there); the region tracks whichever edges are
+                // actually in use. Height reaches down through the gap and
+                // the toolbar itself.
                 hover := TouchArea {
-                    x: 0;
+                    x: min(0px, acts.x);
                     y: 0;
-                    width: max(bubble.width, acts.width);
+                    width: max(bubble.width, acts.x + acts.width) - self.x;
                     height: bubble.height + 6px + acts.height;
                 }
 

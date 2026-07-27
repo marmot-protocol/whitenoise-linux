@@ -23,9 +23,11 @@ export component IncomingRow inherits VerticalLayout {
     // `row-w - 38px` is off the visible pane. Mirrors the window clamp
     // MessageContextMenu and GroupMemberMenu already use.
     property <length> acts-max-x: max(0px, root.row-w - 38px - acts.width);
-    // Toolbar sits below the bubble, right-aligned to its edge; clamp keeps
-    // it from sliding past the row on a narrow bubble with a wide toolbar.
-    property <length> acts-x: max(0px, min(bubble.width - acts.width, root.acts-max-x));
+    // Toolbar sits below the bubble, centered under it; clamped to the
+    // bubble's own left edge (the avatar sits there) and to acts-max-x (the
+    // row's right edge), so a toolbar wider than the bubble still fits.
+    property <length> acts-center-x: (bubble.width - acts.width) / 2;
+    property <length> acts-x: max(0px, min(root.acts-center-x, root.acts-max-x));
 
     // Fire the burst in the shared overlay (which paints above all bubbles),
     // reporting this bubble's window position + size. Autoplay is deferred a
