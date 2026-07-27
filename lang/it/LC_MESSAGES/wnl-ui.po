@@ -2760,6 +2760,10 @@ msgctxt "NotificationsPane"
 msgid "Show message preview"
 msgstr "Mostra anteprima del messaggio"
 
+msgctxt "AppShell"
+msgid "Show only unread chats"
+msgstr "Mostra solo le chat non lette"
+
 msgctxt "PasswordField"
 msgid "Show password"
 msgstr "Mostra password"
@@ -3042,6 +3046,10 @@ msgstr "Riattiva conversazione"
 msgctxt "ChatContextMenu"
 msgid "Unpin"
 msgstr "Rimuovi dai fissati"
+
+msgctxt "AppShell"
+msgid "Unread"
+msgstr "Non lette"
 
 msgctxt "PictureField"
 msgid "Upload"
