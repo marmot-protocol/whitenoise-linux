@@ -138,13 +138,16 @@ export component NetworkPane inherits DetailPage {
                     VerticalLayout {
                         alignment: center;
                         MicroButton {
-                            label: @tr("Refresh");
+                            label: AppState.network-refresh-busy ? @tr("Refreshing…") : @tr("Refresh");
+                            enabled: !AppState.network-refresh-busy;
                             RefreshIcon {
                                 stroke: Palette.text-mid;
                             }
 
                             clicked => {
-                                AppState.network-refresh-health();
+                                if (!AppState.network-refresh-busy) {
+                                    AppState.network-refresh-health();
+                                }
                             }
                         }
                     }

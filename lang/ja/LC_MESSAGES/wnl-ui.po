@@ -2287,6 +2287,10 @@ msgctxt "KeysPage"
 msgid "Refreshing…"
 msgstr "更新中…"
 
+msgctxt "NetworkPane"
+msgid "Refreshing…"
+msgstr "更新中…"
+
 msgctxt "LoginScreen"
 msgid "Regenerate"
 msgstr "再生成"

@@ -2186,6 +2186,10 @@ msgctxt "KeysPage"
 msgid "Refreshing…"
 msgstr ""
 
+msgctxt "NetworkPane"
+msgid "Refreshing…"
+msgstr ""
+
 msgctxt "LoginScreen"
 msgid "Regenerate"
 msgstr ""
