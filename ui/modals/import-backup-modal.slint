@@ -53,6 +53,7 @@ export component ImportBackupModal inherits Modal {
                 label: @tr("Choose file…");
                 button-height: 38px;
                 min-w: 120px;
+                focusable: true;
                 clicked => {
                     root.pick-file();
                 }
