@@ -1,7 +1,12 @@
 use crate::*;
 
 pub(crate) fn wire_nav(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
-    let Cx { settings_cell, .. } = cx.clone();
+    let Cx {
+        settings_cell,
+        backend_cell,
+        archived_group_ids,
+        ..
+    } = cx.clone();
     let Handlers {
         refresh_breadcrumb,
         refresh_storage_size,
@@ -11,6 +16,8 @@ pub(crate) fn wire_nav(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
         let weak = ui.as_weak();
         let refresh = refresh_breadcrumb.clone();
         let refresh_storage = refresh_storage_size.clone();
+        let backend_cell = backend_cell.clone();
+        let archived_group_ids = archived_group_ids.clone();
         move |page: Page| {
             let Some(ui) = weak.upgrade() else { return };
             ui.set_active_page(page as i32);
@@ -18,6 +25,21 @@ pub(crate) fn wire_nav(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             // Settings can land on the Storage tab — make sure the size is fresh.
             if matches!(page, Page::Settings) {
                 refresh_storage();
+            }
+            // Archived binds to the same chat-members/chat-is-group globals the
+            // live Chats tab uses. Reaching it via the left rail or command
+            // palette skips the row click that normally refreshes them, so
+            // it can render whatever chat was loaded last — refresh here too.
+            if matches!(page, Page::Archived) {
+                let idx = ui.get_active_archived();
+                if idx >= 0 {
+                    if let Some(backend) = backend_cell.lock().unwrap().clone() {
+                        let hex = archived_group_ids.lock().unwrap().get(idx as usize).cloned();
+                        if let Some(group_hex) = hex {
+                            push_group_members_to_ui_async(&ui, &backend, &group_hex);
+                        }
+                    }
+                }
             }
         }
     };
