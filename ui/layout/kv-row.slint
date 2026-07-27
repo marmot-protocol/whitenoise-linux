@@ -9,15 +9,18 @@ import { Palette, Theme } from "../tokens.slint";
 // text is always readable. The value column carries `min-width: 0` and its
 // Text elides, so when the pane is narrow the value yields space instead of
 // the row forcing its card wider than the pane and clipping the label or any
-// trailing controls at the window edge.
+// trailing controls at the window edge. Set `wrap-value` for a value that
+// must stay fully visible (a public key, never truncated) — the row grows to
+// fit a wrapped second line instead of eliding.
 export component KVRow inherits Rectangle {
     in property <string> label;
     in property <string> sublabel;
     in property <string> value;
     in property <bool> show-divider: true;
     in property <length> row-height: 56px;
+    in property <bool> wrap-value: false;
 
-    height: root.row-height;
+    min-height: root.row-height;
 
     HorizontalLayout {
         padding-left: 16px;
@@ -60,10 +63,17 @@ export component KVRow inherits Rectangle {
                     font-size: Theme.fs(12px, 16px);
                     font-family: Theme.font;
                     vertical-alignment: center;
-                    overflow: elide;
+                    horizontal-stretch: 1;
+                    min-width: 0px;
+                    wrap: root.wrap-value ? word-wrap : no-wrap;
+                    overflow: root.wrap-value ? clip : elide;
                 }
 
-                @children
+                VerticalLayout {
+                    horizontal-stretch: 0;
+                    alignment: center;
+                    @children
+                }
             }
         }
     }

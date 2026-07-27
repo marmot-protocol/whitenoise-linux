@@ -86,6 +86,7 @@ export component KeysPage inherits Rectangle {
                         label: @tr("Public key (npub)");
                         sublabel: @tr("Safe to share. This is how people find you.");
                         value: AppState.my-npub;
+                        wrap-value: true;
                         show-divider: false;
                         MicroButton {
                             label: @tr("Copy");
@@ -150,6 +151,7 @@ export component KeysPage inherits Rectangle {
                         }
 
                         VerticalLayout {
+                            horizontal-stretch: 0;
                             alignment: center;
                             MicroButton {
                                 label: AppState.kp-publish-busy ? @tr("Publishing…") : @tr("Publish");
@@ -193,7 +195,7 @@ export component KeysPage inherits Rectangle {
                 }
 
                 Rectangle {
-                    height: 60px;
+                    min-height: 60px;
                     border-radius: (8px) * Theme.r-scale;
                     background: Palette.panel-2;
                     border-width: 1px;
@@ -218,6 +220,7 @@ export component KeysPage inherits Rectangle {
                                 text: @tr("Your identity lives only on this device for now. When device linking ships, the devices signed into your key will appear here.");
                                 color: Palette.text-lo;
                                 font-size: Theme.fs(11px, 14px);
+                                wrap: word-wrap;
                             }
                         }
                     }
@@ -231,7 +234,7 @@ export component KeysPage inherits Rectangle {
                     note: "";
                 }
 
-                DangerActionRow {
+                rotate-row := DangerActionRow {
                     title: @tr("Rotate key package now");
                     detail: @tr("Invalidates the current package and uploads a fresh one to your relays.");
                     action-label: @tr("Rotate");
@@ -249,6 +252,7 @@ export component KeysPage inherits Rectangle {
                     title: @tr("Reveal private key (nsec)");
                     detail: @tr("Shows your secret key after you confirm your vault password. Never share it — it is your identity.");
                     action-label: @tr("Reveal");
+                    min-button-width: rotate-row.button-width;
                     triggered => {
                         AppState.reveal-nsec-password = "";
                         AppState.reveal-nsec-value = "";
@@ -263,6 +267,7 @@ export component KeysPage inherits Rectangle {
                     title: @tr("Export encrypted key (ncryptsec)");
                     detail: @tr("Creates an NIP-49 key encrypted with your vault password, safe to store or move to another client.");
                     action-label: @tr("Export");
+                    min-button-width: rotate-row.button-width;
                     triggered => {
                         AppState.export-key-password = "";
                         AppState.export-key-value = "";

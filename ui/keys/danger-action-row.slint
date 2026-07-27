@@ -11,9 +11,14 @@ export component DangerActionRow inherits Rectangle {
     in property <string> action-label;
     in property <string> busy-label;
     in property <bool> busy: false;
+    // Lets a sibling row pin its button to another row's rendered width
+    // (see `button-width` below) so a set of DangerActionRows can share
+    // one uniform button size instead of each auto-sizing to its own label.
+    in property <length> min-button-width: 0px;
+    out property <length> button-width: micro.width;
     callback triggered();
 
-    height: 60px;
+    min-height: 60px;
     border-radius: (8px) * Theme.r-scale;
     background: Palette.danger-soft;
     border-width: 1px;
@@ -34,18 +39,22 @@ export component DangerActionRow inherits Rectangle {
                 color: Palette.danger;
                 font-size: Theme.fs(12px, 16px);
                 font-weight: 700;
+                overflow: elide;
             }
 
             Text {
                 text: root.detail;
                 color: Palette.text-lo;
                 font-size: Theme.fs(11px, 14px);
+                wrap: word-wrap;
             }
         }
 
         VerticalLayout {
+            horizontal-stretch: 0;
             alignment: center;
-            MicroButton {
+            micro := MicroButton {
+                min-w: root.min-button-width;
                 label: root.busy ? (root.busy-label != "" ? root.busy-label : root.action-label) : root.action-label;
                 fg: Palette.danger;
                 bg-color: Palette.danger-soft;
