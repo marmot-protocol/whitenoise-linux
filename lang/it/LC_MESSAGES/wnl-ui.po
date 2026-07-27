@@ -1848,6 +1848,10 @@ msgctxt "ArchivedPage"
 msgid "No archived chats"
 msgstr "Archivia chat"
 
+msgctxt "ArchivedSidebar"
+msgid "No archived chats match \"{}\""
+msgstr ""
+
 msgctxt "AdvancedPane"
 msgid "No audit log files on disk."
 msgstr "Nessun file di log di audit su disco."
