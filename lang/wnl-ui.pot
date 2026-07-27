@@ -3033,7 +3033,15 @@ msgid "You"
 msgstr ""
 
 msgctxt "ErrorCopy"
+msgid "You left the group."
+msgstr ""
+
+msgctxt "ErrorCopy"
 msgid "You stepped down."
+msgstr ""
+
+msgctxt "ConfirmFlows"
+msgid "You will stop receiving new messages from this group."
 msgstr ""
 
 msgctxt "ConfirmFlows"

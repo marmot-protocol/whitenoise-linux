@@ -8,6 +8,8 @@ import { GroupCard } from "../layout/group-card.slint";
 import { KVRow } from "../layout/kv-row.slint";
 import { Button } from "../primitives/button.slint";
 import { GroupMemberRow } from "../main-pane/group-member-row.slint";
+import { GroupLeaveRow } from "../main-pane/group-leave-row.slint";
+import { AppState } from "../shell/app-state.slint";
 
 export component ArchivedDetail inherits DetailPage {
     in property <ArchivedChat> data;
@@ -120,6 +122,14 @@ export component ArchivedDetail inherits DetailPage {
         GroupCard {
             for m in root.members: GroupMemberRow {
                 data: m;
+            }
+
+            GroupLeaveRow {
+                busy: AppState.archived-leave-busy;
+                leave-requested => {
+                    AppState.leave-confirm-archived-idx = AppState.active-archived;
+                    AppState.show-leave-archived-confirm = true;
+                }
             }
         }
     }

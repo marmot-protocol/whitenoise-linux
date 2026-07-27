@@ -827,6 +827,7 @@ copy_snapshot! {
     stepped_down: String = get_stepped_down => "You stepped down.";
     member_removed: String = get_member_removed => "Member removed.";
     leaving_group: String = get_leaving_group => "Leaving group…";
+    left_group: String = get_left_group => "You left the group.";
     name_empty: String = get_name_empty => "Name can't be empty.";
     renamed: String = get_renamed => "Renamed.";
     description_saved: String = get_description_saved => "Description saved.";
