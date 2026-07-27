@@ -304,6 +304,7 @@ impl Backend {
                     Ok(SendSummary {
                         published: 0,
                         message_ids: Vec::new(),
+                        maintenance_disposition: Default::default(),
                     })
                 } else {
                     Err(err)
@@ -432,12 +433,20 @@ impl Backend {
             .unwrap_or(false)
     }
 
-    /// Local key-package records for the active account. Sync — reads the
-    /// on-disk JSON next to the account home. Use `key_packages_fetch()` for
-    /// the network-augmented view (local + what's actually on the relay).
+    /// Local key-package records for the active account: the durably owned
+    /// key packages from the account worker, dressed up as display records.
+    /// Use `key_packages_fetch()` for the network-augmented view (local +
+    /// what's actually on the relay).
     pub fn key_packages_local(&self) -> Vec<marmot_app::AccountKeyPackageRecord> {
+        let label = self.active_label();
+        let runtime = self.runtime.clone();
+        let l = label.clone();
+        let owned = self
+            .tokio
+            .block_on(async move { runtime.accounts().durably_owned_key_packages(&l).await })
+            .unwrap_or_default();
         self.app
-            .local_key_package_records(&self.active_label())
+            .local_key_package_records(&label, owned)
             .unwrap_or_default()
     }
 
@@ -446,12 +455,13 @@ impl Backend {
     /// account was booted with — empty means use the cached relay list.
     pub fn key_packages_fetch(&self) -> Result<Vec<marmot_app::AccountKeyPackageRecord>> {
         let label = self.active_label();
-        let app = self.app.clone();
+        let runtime = self.runtime.clone();
         let bootstrap = self.relay_endpoints();
         self.tokio.block_on(async move {
-            app.account_key_package_records(&label, bootstrap)
+            runtime
+                .account_key_packages(&label, bootstrap)
                 .await
-                .map_err(|e| anyhow!("account_key_package_records: {e}"))
+                .map_err(|e| anyhow!("account_key_packages: {e}"))
         })
     }
 
@@ -1377,6 +1387,8 @@ pub(crate) fn stub_directory_entry(account_id_hex: &str) -> UserDirectoryRecord 
     let empty_state = |kind: u64| AccountRelayListState {
         kind,
         relays: Vec::new(),
+        read_relays: Vec::new(),
+        write_relays: Vec::new(),
     };
     UserDirectoryRecord {
         account_id_hex: account_id_hex.to_string(),

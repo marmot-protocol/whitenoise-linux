@@ -417,7 +417,6 @@ impl Backend {
         let handle = self.tokio.handle().clone();
         let runtime = self.runtime.clone();
         let account_home = self.account_home.clone();
-        let app = self.app.clone();
         let relays = self.relays.clone();
         let label = self.active_label();
         std::thread::spawn(move || {
@@ -436,8 +435,10 @@ impl Backend {
                         Self::login_account(&handle, &runtime, &nsec, &relays)?;
                     }
                 }
-                let has_kp = app
-                    .local_key_package_records(&label)
+                let rt = runtime.clone();
+                let l = label.clone();
+                let has_kp = handle
+                    .block_on(async move { rt.accounts().durably_owned_key_packages(&l).await })
                     .map(|v| !v.is_empty())
                     .unwrap_or(false);
                 if !relays.is_empty() && !has_kp {
