@@ -580,6 +580,7 @@ export component LoginScreen inherits Rectangle {
                             label: root.busy ? @tr("Unlocking…") : @tr("Unlock");
                             button-height: 38px;
                             min-w: 120px;
+                            enabled: !root.busy;
                             bg-color: Palette.mint;
                             outline: Palette.mint;
                             hover-bg: Palette.mint-hi;
