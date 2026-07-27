@@ -18,6 +18,17 @@ export component IncomingRow inherits VerticalLayout {
     in property <bool> highlighted: false;
     in property <length> row-w: 9999px;
 
+    // Right edge the toolbar may reach before it falls outside the row: 28px
+    // avatar + 10px spacing precede the bubble, so anything past
+    // `row-w - 38px` is off the visible pane. Mirrors the window clamp
+    // MessageContextMenu and GroupMemberMenu already use.
+    property <length> acts-max-x: max(0px, root.row-w - 38px - acts.width);
+    // Toolbar sits below the bubble, centered under it; clamped to the
+    // bubble's own left edge (the avatar sits there) and to acts-max-x (the
+    // row's right edge), so a toolbar wider than the bubble still fits.
+    property <length> acts-center-x: (bubble.width - acts.width) / 2;
+    property <length> acts-x: max(0px, min(root.acts-center-x, root.acts-max-x));
+
     // Fire the burst in the shared overlay (which paints above all bubbles),
     // reporting this bubble's window position + size. Autoplay is deferred a
     // beat so layout/scroll settle before the position is snapshotted.
@@ -105,12 +116,14 @@ export component IncomingRow inherits VerticalLayout {
                 height: bubble.height;
 
                 // Stable hover region spanning bubble → toolbar (declared first
-                // so it sits behind the bubble and the toolbar buttons).
+                // so it sits behind the bubble and the toolbar buttons). Now
+                // that the toolbar sits below the bubble, the region has to
+                // reach down through the gap and the toolbar's own height.
                 hover := TouchArea {
                     x: 0;
                     y: 0;
-                    width: bubble.width + 6px + acts.width;
-                    height: parent.height;
+                    width: max(bubble.width, acts.width);
+                    height: bubble.height + 6px + acts.height;
                 }
 
                 bubble := MessageBubble {
@@ -149,8 +162,8 @@ export component IncomingRow inherits VerticalLayout {
                 }
 
                 acts := HoverActions {
-                    x: bubble.width + 6px;
-                    y: (parent.height - self.height) / 2;
+                    x: root.acts-x;
+                    y: bubble.height + 6px;
                     message-id: root.msg.message-id;
                     reply-preview-text: root.msg.text;
                     reply-author: root.msg.sender-name != "" ? root.msg.sender-name : root.msg.av-initials;

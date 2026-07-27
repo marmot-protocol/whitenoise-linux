@@ -23,6 +23,20 @@ export component OutgoingRow inherits VerticalLayout {
     property <image> av-picture: AppState.my-av-picture;
     property <bool> av-has-picture: AppState.my-av-has-picture;
 
+    // Toolbar sits below the bubble, centered under it, clamped between the
+    // bubble's own edge nearest the avatar (never overlap it) and the row's
+    // far edge (28px avatar + 10px spacing reserved on whichever side holds
+    // it, so anything past that is off the visible pane). Which edge plays
+    // which role flips with align-right, since the avatar swaps sides.
+    property <length> acts-center-x: (bubble.width - acts.width) / 2;
+    property <length> acts-min-x: root.align-right
+        ? bubble.width - root.row-w + 38px
+        : 0px;
+    property <length> acts-max-x: root.align-right
+        ? bubble.width - acts.width
+        : max(0px, root.row-w - 38px - acts.width);
+    property <length> acts-x: max(root.acts-min-x, min(root.acts-center-x, root.acts-max-x));
+
     // Fire the burst in the shared overlay (above all bubbles). See IncomingRow.
     callback play-effect(int, int, int, length, length, length, length);
     function fire-effect() {
@@ -87,14 +101,17 @@ export component OutgoingRow inherits VerticalLayout {
                 width: bubble.width;
                 height: bubble.height;
 
-                // Stable hover region spanning toolbar → bubble. The toolbar
-                // floats on the side opposite the avatar (left when right-
-                // aligned), overflowing into the gutter.
+                // Stable hover region spanning bubble → toolbar below it. The
+                // toolbar is centered under the bubble, so on align-right it
+                // can overhang the bubble's left edge too (acts-x turns
+                // negative there); the region tracks whichever edges are
+                // actually in use. Height reaches down through the gap and
+                // the toolbar itself.
                 hover := TouchArea {
-                    x: root.align-right ? -(acts.width + 6px) : 0px;
+                    x: min(0px, acts.x);
                     y: 0;
-                    width: bubble.width + 6px + acts.width;
-                    height: parent.height;
+                    width: max(bubble.width, acts.x + acts.width) - self.x;
+                    height: bubble.height + 6px + acts.height;
                 }
 
                 bubble := MessageBubble {
@@ -137,8 +154,8 @@ export component OutgoingRow inherits VerticalLayout {
                 }
 
                 acts := HoverActions {
-                    x: root.align-right ? -(self.width + 6px) : (bubble.width + 6px);
-                    y: (parent.height - self.height) / 2;
+                    x: root.acts-x;
+                    y: bubble.height + 6px;
                     message-id: root.msg.message-id;
                     reply-preview-text: root.msg.text;
                     reply-author: @tr("You");
