@@ -1383,9 +1383,21 @@ msgctxt "ErrorCopy"
 msgid "Image isn't ready yet."
 msgstr "L'immagine non è ancora pronta."
 
+msgctxt "AlbumGrid"
+msgid "Image {} of {}"
+msgstr "Immagine {} di {}"
+
 msgctxt "ImageViewerModal"
 msgid "Image {} of {}"
 msgstr "Immagine {} di {}"
+
+msgctxt "AlbumGrid"
+msgid "Image {} of {}, failed to load. Activate to retry."
+msgstr "Immagine {} di {}, caricamento non riuscito. Attiva per riprovare."
+
+msgctxt "AlbumGrid"
+msgid "Image {} of {}, loading."
+msgstr "Immagine {} di {}, caricamento in corso."
 
 msgctxt "ImportBackupModal"
 msgid "Import"
