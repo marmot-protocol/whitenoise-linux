@@ -100,6 +100,10 @@ export component AccountSwitcherModal inherits Modal {
                 root.commit();
                 return accept;
             }
+            if (event.text == Key.RightArrow && root.accounts.length > 0) {
+                root.detail-idx = root.focus-idx;
+                return accept;
+            }
             return reject;
         }
 
