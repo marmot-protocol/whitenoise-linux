@@ -282,10 +282,18 @@ msgctxt "ProfileModal"
 msgid "Add contact"
 msgstr "Kontakt"
 
+msgctxt "Composer"
+msgid "Add emoji"
+msgstr ""
+
 #, fuzzy
 msgctxt "AddMemberRow"
 msgid "Add member"
 msgstr "1 Mitglied"
+
+msgctxt "HoverActions"
+msgid "Add reaction"
+msgstr ""
 
 msgctxt "MessageContextMenu"
 msgid "Add reaction"
@@ -385,6 +393,10 @@ msgstr "Archivieren"
 msgctxt "ContactDetail"
 msgid "Archive chat"
 msgstr "Chat archivieren"
+
+msgctxt "Composer"
+msgid "Attach file"
+msgstr ""
 
 msgctxt "ErrorCopy"
 msgid "Audit log deleted — recording continues in a fresh file."
@@ -1157,6 +1169,10 @@ msgstr "VERSCHLÜSSELTER SCHLÜSSEL (NCRYPTSEC)"
 msgctxt "EditHistoryModal"
 msgid "Edit history"
 msgstr "Bearbeitungsverlauf"
+
+msgctxt "HoverActions"
+msgid "Edit message"
+msgstr ""
 
 #, fuzzy
 msgctxt "MessageContextMenu"
@@ -2429,6 +2445,10 @@ msgstr "{}-Reaktion entfernen"
 msgctxt "ErrorCopy"
 msgid "Renamed."
 msgstr "Umbenannt."
+
+msgctxt "HoverActions"
+msgid "Reply"
+msgstr ""
 
 msgctxt "MessageContextMenu"
 msgid "Reply"

@@ -2,6 +2,7 @@ import { AppState } from "../shell/app-state.slint";
 import { Palette, Theme, QuickReact } from "../tokens.slint";
 import { QuickReactCell } from "quick-react-cell.slint";
 import { ActionButton } from "../primitives/action-button.slint";
+import { Tooltip } from "../primitives/tooltip.slint";
 
 // Floating action toolbar — a one-tap quick-reaction row (👍 ❤️ … + "+" into
 // the full picker), then reply and (author-only) edit. Positioned by the row to
@@ -46,6 +47,7 @@ export component HoverActions inherits Rectangle {
 
             plus-btn := ActionButton {
                 glyph: "+";
+                label: @tr("Add reaction");
                 clicked => {
                     AppState.emoji-picker-requested(
                         root.message-id,
@@ -69,6 +71,7 @@ export component HoverActions inherits Rectangle {
 
             reply-btn := ActionButton {
                 glyph: "↩";
+                label: @tr("Reply");
                 clicked => {
                     AppState.request-reply(root.message-id, root.reply-preview-text, root.reply-author);
                 }
@@ -76,11 +79,35 @@ export component HoverActions inherits Rectangle {
 
             edit-btn := ActionButton {
                 glyph: "✎";
+                label: @tr("Edit message");
                 shown: root.can-edit;
                 clicked => {
                     AppState.request-edit(root.message-id, root.reply-preview-text);
                 }
             }
         }
+    }
+
+    // Hover tooltips for the toolbar's icon-only buttons, floated above the
+    // bar the same way composer.slint's send-button tooltip is: positioned
+    // from the button's absolute position rather than nested inside it, so
+    // it paints outside the bar's own bounds.
+    if plus-btn.hovered: Tooltip {
+        x: plus-btn.absolute-position.x - root.absolute-position.x + plus-btn.width / 2 - self.width / 2;
+        y: -self.height - 8px;
+        label: plus-btn.label;
+        is-visible: true;
+    }
+    if reply-btn.hovered: Tooltip {
+        x: reply-btn.absolute-position.x - root.absolute-position.x + reply-btn.width / 2 - self.width / 2;
+        y: -self.height - 8px;
+        label: reply-btn.label;
+        is-visible: true;
+    }
+    if edit-btn.hovered: Tooltip {
+        x: edit-btn.absolute-position.x - root.absolute-position.x + edit-btn.width / 2 - self.width / 2;
+        y: -self.height - 8px;
+        label: edit-btn.label;
+        is-visible: true;
     }
 }

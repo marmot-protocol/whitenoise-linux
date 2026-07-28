@@ -132,7 +132,7 @@ export component Composer inherits Rectangle {
                     spacing: 12px;
                     alignment: stretch;
 
-                    Rectangle {
+                    attach-rect := Rectangle {
                         width: 22px;
                         height: parent.height;
                         border-radius: (4px) * Theme.r-scale;
@@ -345,6 +345,22 @@ export component Composer inherits Rectangle {
         y: send-button.absolute-position.y - root.absolute-position.y - self.height - 8px;
         label: root.primary-action-label;
         is-visible: send-button.has-hover;
+        offset-y: 0px;
+    }
+
+    if attach-touch.has-hover: Tooltip {
+        x: attach-rect.absolute-position.x - root.absolute-position.x;
+        y: attach-rect.absolute-position.y - root.absolute-position.y - self.height - 8px;
+        label: @tr("Attach file");
+        is-visible: attach-touch.has-hover;
+        offset-y: 0px;
+    }
+
+    if emoji-touch.has-hover: Tooltip {
+        x: emoji-rect.absolute-position.x - root.absolute-position.x + emoji-rect.width - self.width;
+        y: emoji-rect.absolute-position.y - root.absolute-position.y - self.height - 8px;
+        label: @tr("Add emoji");
+        is-visible: emoji-touch.has-hover;
         offset-y: 0px;
     }
 

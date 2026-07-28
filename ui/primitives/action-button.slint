@@ -3,6 +3,9 @@ import { Palette, Theme } from "../tokens.slint";
 // One round icon button inside the floating hover-actions toolbar.
 export component ActionButton inherits Rectangle {
     in property <string> glyph;
+    // What the button does, shown in a hover tooltip by the parent (which
+    // owns tooltip placement, the same split composer.slint's send button uses).
+    in property <string> label: "";
     // When false the button collapses to nothing — used to keep the edit
     // button in the tree (so its id stays referenceable) while hiding it for
     // non-authors.
