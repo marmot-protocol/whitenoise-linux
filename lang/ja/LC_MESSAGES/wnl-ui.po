@@ -897,6 +897,10 @@ msgctxt "ErrorCopy"
 msgid "Couldn't download image."
 msgstr "画像をダウンロードできませんでした。"
 
+msgctxt "ErrorCopy"
+msgid "Couldn't download that image. Try another."
+msgstr "画像をダウンロードできませんでした。別の画像をお試しください。"
+
 #. Tier 2 — operation-specific fallbacks.
 msgctxt "ErrorCopy"
 msgid "Couldn't finish syncing. We'll keep retrying — check your relay settings if this keeps happening."
@@ -962,6 +966,10 @@ msgstr "プロフィールを保存できませんでした。接続を確認し
 msgctxt "ErrorCopy"
 msgid "Couldn't save your relay list. Please try again."
 msgstr "リレーのリストを保存できませんでした。もう一度お試しください。"
+
+msgctxt "ErrorCopy"
+msgid "Couldn't search for images. Check your connection and try again."
+msgstr "画像を検索できませんでした。接続を確認して、もう一度お試しください。"
 
 msgctxt "ErrorCopy"
 msgid "Couldn't send your message. Check your connection and try again."
@@ -1899,6 +1907,10 @@ msgid "No image selected."
 msgstr "画像が選択されていません。"
 
 msgctxt "ErrorCopy"
+msgid "No images found for that search."
+msgstr "その検索条件に一致する画像が見つかりませんでした。"
+
+msgctxt "ErrorCopy"
 msgid "No key package on relays yet"
 msgstr "リレーにキーパッケージがまだありません"
 
@@ -2669,6 +2681,14 @@ msgctxt "LoginScreen"
 msgid "Sealed with your password on this device. Keep your own copy of the nsec too — lose both and this identity is gone."
 msgstr "このデバイスでパスワードにより封印されます。nsec のコピーも自分で保管してください。両方を失うとこの ID は失われます。"
 
+msgctxt "PictureField"
+msgid "Search"
+msgstr "検索"
+
+msgctxt "RemoteImageSearchModal"
+msgid "Search"
+msgstr "検索"
+
 msgctxt "GlobalSearchModal"
 msgid "Search across every conversation."
 msgstr "すべての会話を横断して検索します。"
@@ -2693,6 +2713,10 @@ msgctxt "ContactsSidebar"
 msgid "Search contacts…"
 msgstr "連絡先を検索…"
 
+msgctxt "RemoteImageSearchModal"
+msgid "Search for an image to use."
+msgstr "使用する画像を検索してください。"
+
 msgctxt "ChatHeader"
 msgid "Search in conversation"
 msgstr "会話内を検索"
@@ -2705,7 +2729,27 @@ msgctxt "AppShell"
 msgid "Search messages…"
 msgstr "メッセージを検索…"
 
+msgctxt "RemoteImageSearchModal"
+msgid "Search term, e.g. \"mountain sunset\""
+msgstr "検索キーワード(例:山の夕日)"
+
+msgctxt "GroupHero"
+msgid "Search the web for a group image"
+msgstr "グループ画像をウェブで検索"
+
+msgctxt "AvatarEditable"
+msgid "Search the web for a profile picture"
+msgstr "プロフィール画像をウェブで検索"
+
+msgctxt "RemoteImageSearchModal"
+msgid "Search the web for an image"
+msgstr "ウェブで画像を検索"
+
 msgctxt "GlobalSearchModal"
+msgid "Searching…"
+msgstr "検索中…"
+
+msgctxt "RemoteImageSearchModal"
 msgid "Searching…"
 msgstr "検索中…"
 
@@ -3102,6 +3146,10 @@ msgctxt "ContactsPage"
 msgid "Use the Add button to add your first contact."
 msgstr "「追加」ボタンで最初の連絡先を追加しましょう。"
 
+msgctxt "RemoteImageSearchModal"
+msgid "Use this image"
+msgstr "この画像を使用"
+
 msgctxt "ContactDetail"
 msgid "Used to deliver messages between you."
 msgstr "お互いの間でメッセージを配信するために使用されます。"
@@ -3404,6 +3452,11 @@ msgstr "画像を削除中…"
 msgctxt "ErrorCopy"
 msgid "rotated · published a fresh key package"
 msgstr "ローテーション · 新しいキーパッケージを公開しました"
+
+#. Remote image search status copy (src/wiring/image_search.rs).
+msgctxt "ErrorCopy"
+msgid "searching…"
+msgstr "検索中…"
 
 msgctxt "EmojiPicker"
 msgid "search…"

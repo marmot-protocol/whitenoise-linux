@@ -26,6 +26,7 @@ mod backup;
 mod blossom;
 mod deeplink;
 mod fsperm;
+mod image_search;
 mod media_cache;
 mod mpv;
 mod notify;
@@ -882,6 +883,7 @@ fn main() -> Result<(), slint::PlatformError> {
     wire_messaging(&ui, &cx, &h);
     wire_forward(&ui, &cx);
     wire_extra(&ui, &cx, &h);
+    wire_image_search(&ui, &cx);
 
     // ── UI zoom (Ctrl +/-/0) ─────────────────────────────────────────────
     // Browser-style zoom: change the window's scale factor so the *entire*

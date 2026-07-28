@@ -842,6 +842,10 @@ copy_snapshot! {
     image_removed: String = get_image_removed => "image removed";
     group_image_updated: String = get_group_image_updated => "group image updated";
     backend_not_ready_lc: String = get_backend_not_ready_lc => "backend not ready";
+    searching_images: String = get_searching_images => "searching…";
+    image_search_failed: String = get_image_search_failed => "Couldn't search for images. Check your connection and try again.";
+    image_search_no_results: String = get_image_search_no_results => "No images found for that search.";
+    image_download_failed: String = get_image_download_failed => "Couldn't download that image. Try another.";
     // Profile publish status copy.
     profile_publishing: String = get_profile_publishing => "publishing…";
     profile_published: String = get_profile_published => "profile published";

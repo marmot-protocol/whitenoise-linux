@@ -54,6 +54,80 @@ fn spawn_group_admin_op(
     });
 }
 
+/// Upload `bytes` as the active group's photo and refresh the chat/member
+/// models on success. Shared by the local-file picker (`on_change_group_image`
+/// below) and the remote-image-search picker (`wiring/image_search.rs`) —
+/// both reach this once they already have raw bytes + a content type in hand.
+pub(crate) fn upload_group_image_async(
+    weak: slint::Weak<WhiteNoiseLinux>,
+    backend_cell: BackendCell,
+    group_ids: Arc<Mutex<Vec<String>>>,
+    group_hex: String,
+    bytes: Vec<u8>,
+    content_type: String,
+) {
+    {
+        let weak = weak.clone();
+        let _ = slint::invoke_from_event_loop(move || {
+            if let Some(ui) = weak.upgrade() {
+                show_group_settings_status(
+                    &ui,
+                    error_copy().uploading_blossom,
+                    StatusKind::Pending,
+                );
+            }
+        });
+    }
+
+    let weak_done = weak.clone();
+    let backend_cell_done = backend_cell.clone();
+    let group_ids_done = group_ids.clone();
+    let group_hex_done = group_hex.clone();
+    let guard = backend_cell.lock().unwrap();
+    let Some(backend) = guard.as_ref() else {
+        let _ = slint::invoke_from_event_loop(move || {
+            if let Some(ui) = weak_done.upgrade() {
+                ui.set_group_image_busy(false);
+                show_group_settings_status(
+                    &ui,
+                    error_copy().backend_not_ready_lc,
+                    StatusKind::Error,
+                );
+            }
+        });
+        return;
+    };
+    backend.set_group_image_async(&group_hex, bytes, content_type, move |result| {
+        let _ = slint::invoke_from_event_loop(move || {
+            let Some(ui) = weak_done.upgrade() else {
+                return;
+            };
+            ui.set_group_image_busy(false);
+            match result {
+                Ok(_) => {
+                    show_group_settings_status(
+                        &ui,
+                        error_copy().group_image_updated,
+                        StatusKind::Ok,
+                    );
+                    if let Some(backend) = backend_cell_done.lock().unwrap().as_ref() {
+                        refresh_chats_async(&ui, backend, &group_ids_done, |_, _, _| {});
+                        push_group_members_to_ui_async(&ui, backend, &group_hex_done);
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!(target: "group_image", "upload failed: {e:#}");
+                    show_group_settings_status(
+                        &ui,
+                        friendly_error(ErrorOp::GroupImage, &e),
+                        StatusKind::Error,
+                    );
+                }
+            }
+        });
+    });
+}
+
 pub(crate) fn wire_groups(ui: &WhiteNoiseLinux, cx: &Cx) {
     let Cx {
         backend_cell,
@@ -519,71 +593,14 @@ pub(crate) fn wire_groups(ui: &WhiteNoiseLinux, cx: &Cx) {
                     .essence_str()
                     .to_string();
 
-                {
-                    let weak = weak.clone();
-                    let _ = slint::invoke_from_event_loop(move || {
-                        if let Some(ui) = weak.upgrade() {
-                            show_group_settings_status(
-                                &ui,
-                                error_copy().uploading_blossom,
-                                StatusKind::Pending,
-                            );
-                        }
-                    });
-                }
-
-                let weak_done = weak.clone();
-                let backend_cell_done = backend_cell.clone();
-                let group_ids_done = group_ids.clone();
-                let group_hex_done = group_hex.clone();
-                let guard = backend_cell.lock().unwrap();
-                let Some(backend) = guard.as_ref() else {
-                    let _ = slint::invoke_from_event_loop(move || {
-                        if let Some(ui) = weak_done.upgrade() {
-                            ui.set_group_image_busy(false);
-                            show_group_settings_status(
-                                &ui,
-                                error_copy().backend_not_ready_lc,
-                                StatusKind::Error,
-                            );
-                        }
-                    });
-                    return;
-                };
-                backend.set_group_image_async(&group_hex, bytes, content_type, move |result| {
-                    let _ = slint::invoke_from_event_loop(move || {
-                        let Some(ui) = weak_done.upgrade() else {
-                            return;
-                        };
-                        ui.set_group_image_busy(false);
-                        match result {
-                            Ok(_) => {
-                                show_group_settings_status(
-                                    &ui,
-                                    error_copy().group_image_updated,
-                                    StatusKind::Ok,
-                                );
-                                if let Some(backend) = backend_cell_done.lock().unwrap().as_ref() {
-                                    refresh_chats_async(
-                                        &ui,
-                                        backend,
-                                        &group_ids_done,
-                                        |_, _, _| {},
-                                    );
-                                    push_group_members_to_ui_async(&ui, backend, &group_hex_done);
-                                }
-                            }
-                            Err(e) => {
-                                tracing::warn!(target: "group_image", "upload failed: {e:#}");
-                                show_group_settings_status(
-                                    &ui,
-                                    friendly_error(ErrorOp::GroupImage, &e),
-                                    StatusKind::Error,
-                                );
-                            }
-                        }
-                    });
-                });
+                upload_group_image_async(
+                    weak.clone(),
+                    backend_cell.clone(),
+                    group_ids.clone(),
+                    group_hex.clone(),
+                    bytes,
+                    content_type,
+                );
             });
         }
     });

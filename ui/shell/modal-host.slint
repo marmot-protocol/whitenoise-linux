@@ -26,6 +26,7 @@ import { ProfileModal } from "../modals/profile-modal.slint";
 import { QrModal } from "../modals/qr-modal.slint";
 import { EncryptionInfoModal } from "../modals/encryption-info-modal.slint";
 import { DebugJsonModal } from "../modals/debug-json-modal.slint";
+import { RemoteImageSearchModal } from "../modals/remote-image-search-modal.slint";
 import { ConfirmFlows } from "confirm-flows.slint";
 import { EmojiPicker } from "../emoji/emoji-picker.slint";
 import { MessageContextMenu } from "../messages/message-context-menu.slint";
@@ -191,6 +192,9 @@ export component ModalHost inherits Rectangle {
             }
         }
 
+
+        if AppState.show-remote-image-search: RemoteImageSearchModal {
+        }
 
         if AppState.msg-global-open: GlobalSearchModal {
             dismissed => {

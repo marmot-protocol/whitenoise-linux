@@ -3,6 +3,7 @@ import { AppState } from "../shell/app-state.slint";
 import { Avatar } from "../primitives/avatar.slint";
 import { StatusLine } from "../primitives/status-line.slint";
 import { HeroEditField } from "hero-edit-field.slint";
+import { SearchIcon } from "../icons/search-icon.slint";
 
 // Identity header of the members panel: centered group avatar, name, member
 // count, and description. Admins edit everything in place — hovering the
@@ -73,9 +74,10 @@ export component GroupHero inherits Rectangle {
                 }
 
                 // Admin photo actions live on the avatar itself: hover scrim
-                // with a pencil to change, corner badge to remove. The remove
-                // badge nests inside the change TouchArea (nested wins the
-                // hit-test; overlapping siblings would race the first click).
+                // with a pencil to change, corner badges to search the web or
+                // remove. Both badges nest inside the change TouchArea (nested
+                // wins the hit-test; overlapping siblings would race the
+                // first click).
                 if root.can-admin && !AppState.group-image-busy: av-ta := TouchArea {
                     mouse-cursor: pointer;
                     clicked => {
@@ -115,6 +117,34 @@ export component GroupHero inherits Rectangle {
                                     font-family: Theme.font;
                                     horizontal-alignment: center;
                                     vertical-alignment: center;
+                                }
+                            }
+                        }
+
+                        search-ta := TouchArea {
+                            x: 0px;
+                            y: parent.height - 20px;
+                            width: 20px;
+                            height: 20px;
+                            mouse-cursor: pointer;
+                            accessible-role: button;
+                            accessible-label: @tr("Search the web for a group image");
+                            accessible-action-default => {
+                                AppState.open-group-image-search();
+                            }
+                            clicked => {
+                                AppState.open-group-image-search();
+                            }
+                            Rectangle {
+                                border-radius: (10px) * Theme.r-scale;
+                                background: search-ta.has-hover ? Palette.hover : Palette.elevated;
+                                border-width: Theme.border-w;
+                                border-color: Palette.elevated-border;
+                                SearchIcon {
+                                    x: (parent.width - self.width) / 2;
+                                    y: (parent.height - self.height) / 2;
+                                    size: 11px;
+                                    stroke: Palette.text-mid;
                                 }
                             }
                         }

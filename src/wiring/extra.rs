@@ -1497,69 +1497,12 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                     .essence_str()
                     .to_string();
 
-                // Tell the user we're uploading now (file picked).
-                {
-                    let weak = weak.clone();
-                    let _ = slint::invoke_from_event_loop(move || {
-                        if let Some(ui) = weak.upgrade() {
-                            show_profile_status(
-                                &ui,
-                                error_copy().uploading_blossom,
-                                StatusKind::Pending,
-                            );
-                        }
-                    });
-                }
-
-                // Hand the upload to the backend (it signs with the account
-                // keys). The callback fires on a tokio worker; hop back to the
-                // event loop for all UI work.
-                let weak_done = weak.clone();
-                let backend_cell_done = backend_cell.clone();
-                let guard = backend_cell.lock().unwrap();
-                let Some(backend) = guard.as_ref() else {
-                    let _ = slint::invoke_from_event_loop(move || {
-                        if let Some(ui) = weak_done.upgrade() {
-                            ui.set_profile_uploading(false);
-                            show_profile_status(
-                                &ui,
-                                error_copy().backend_not_ready_lc,
-                                StatusKind::Error,
-                            );
-                        }
-                    });
-                    return;
-                };
-                backend.upload_public_blob_async(bytes, content_type, move |result| {
-                    let _ = slint::invoke_from_event_loop(move || {
-                        let Some(ui) = weak_done.upgrade() else {
-                            return;
-                        };
-                        ui.set_profile_uploading(false);
-                        match result {
-                            Ok(url) => {
-                                ui.set_profile_picture(url.clone().into());
-                                show_profile_status(
-                                    &ui,
-                                    error_copy().picture_uploaded,
-                                    StatusKind::Ok,
-                                );
-                                // Refresh the avatar preview from the new URL.
-                                if let Some(backend) = backend_cell_done.lock().unwrap().as_ref() {
-                                    fetch_profile_picture(&ui, backend, &url);
-                                }
-                            }
-                            Err(e) => {
-                                tracing::warn!(target: "profile", "picture upload failed: {e:#}");
-                                show_profile_status(
-                                    &ui,
-                                    friendly_error(ErrorOp::UploadPicture, &e),
-                                    StatusKind::Error,
-                                );
-                            }
-                        }
-                    });
-                });
+                upload_profile_picture_async(
+                    weak.clone(),
+                    backend_cell.clone(),
+                    bytes,
+                    content_type,
+                );
             });
         }
     });
