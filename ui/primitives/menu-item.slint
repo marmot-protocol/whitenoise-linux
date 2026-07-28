@@ -20,6 +20,11 @@ export component MenuItem inherits Rectangle {
     border-radius: (6px) * Theme.r-scale;
     background: root.highlighted ? Palette.hover : transparent;
     animate background { duration: Theme.hover-dur; }
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-action-default => {
+        root.activated();
+    }
 
     HorizontalLayout {
         padding-left: 10px;
