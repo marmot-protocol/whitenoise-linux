@@ -19,6 +19,7 @@ export component StartNewChatModal inherits Modal {
     primary-label: @tr("Create");
     primary-busy-label: @tr("Creating…");
     primary-busy: root.busy;
+    primary-enabled: root.members-text != "";
     primary => {
         root.start-chat(root.chat-name, root.members-text);
     }
@@ -31,7 +32,7 @@ export component StartNewChatModal inherits Modal {
         placeholder: @tr("e.g. friday-crew");
         text <=> root.chat-name;
         submitted => {
-            if (!root.busy) {
+            if (root.primary-enabled && !root.busy) {
                 root.start-chat(root.chat-name, root.members-text);
             }
         }
