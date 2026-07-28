@@ -1,11 +1,13 @@
 import { Palette, Theme } from "../tokens.slint";
 import { SearchIcon } from "../icons/search-icon.slint";
 import { AddUserIcon } from "../icons/add-user-icon.slint";
+import { SaveIcon } from "../icons/save-icon.slint";
 import { LineInput } from "../primitives/line-input.slint";
 import { Button } from "../primitives/button.slint";
 
 export component SidePanel inherits Rectangle {
     callback add-clicked;
+    callback export-clicked;
 
     in property <string> title;
     in property <int> count;
@@ -15,6 +17,8 @@ export component SidePanel inherits Rectangle {
     in property <string> search-shortcut-label: "Ctrl+F";
     in property <bool> show-add: false;
     in property <string> add-label: @tr("Add");
+    in property <bool> show-export: false;
+    in property <string> export-label: @tr("Export");
     in property <string> footer-text: "";
     in property <string> footer-trail: "";
     in property <color> footer-dot-color: Palette.mint-dim;
@@ -81,6 +85,7 @@ export component SidePanel inherits Rectangle {
             if !root.collapsed: HorizontalLayout {
                 height: 24px;
                 alignment: stretch;
+                spacing: 6px;
                 HorizontalLayout {
                     spacing: 7px;
                     alignment: start;
@@ -111,6 +116,24 @@ export component SidePanel inherits Rectangle {
 
                 Rectangle {
                     horizontal-stretch: 1;
+                }
+
+                if root.show-export: Button {
+                    label: root.export-label;
+                    button-height: 24px;
+                    radius: 5px;
+                    pad-left: 6px;
+                    pad-right: 8px;
+                    spacing: 5px;
+                    font-size: Theme.fs(10px, 14px);
+                    bg-color: transparent;
+                    SaveIcon {
+                        stroke: Palette.text-mid;
+                    }
+
+                    clicked => {
+                        root.export-clicked();
+                    }
                 }
 
                 if root.show-add: Button {

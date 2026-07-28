@@ -51,6 +51,8 @@ mod chrome;
 pub(crate) use chrome::*;
 mod clipboard;
 pub(crate) use clipboard::*;
+mod contacts_export;
+pub(crate) use contacts_export::*;
 mod export;
 pub(crate) use export::*;
 mod media;

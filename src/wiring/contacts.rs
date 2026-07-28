@@ -42,6 +42,53 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             ui.set_contact_match_flags(model(flags));
         }
     });
+    // Contacts-page "Export" button: the UI model already has every field we
+    // need (resolved npub/nickname/published name), so this needs no backend
+    // read — only the blocking save dialog and file write run off-thread.
+    ui.global::<AppState>().on_export_contacts_requested({
+        let weak = ui.as_weak();
+        let contacts = contacts.clone();
+        move || {
+            let Some(ui) = weak.upgrade() else { return };
+            let rows: Vec<ContactExportRow> = contacts
+                .iter()
+                .map(|c| ContactExportRow {
+                    npub: c.npub_full.to_string(),
+                    nickname: c.nickname.to_string(),
+                    profile_name: c.real_name.to_string(),
+                })
+                .collect();
+            if rows.is_empty() {
+                set_status_feedback(&ui, error_copy().no_contacts_to_export, true);
+                return;
+            }
+            let weak = weak.clone();
+            std::thread::spawn(move || {
+                let Some(dest) = rfd::FileDialog::new()
+                    .set_title("Export contacts")
+                    .set_file_name("contacts.csv")
+                    .add_filter("CSV", &["csv"])
+                    .add_filter("JSON", &["json"])
+                    .save_file()
+                else {
+                    return;
+                };
+                let format = ContactExportFormat::from_path(&dest);
+                let contents = render_contacts(&rows, format);
+                let result = std::fs::write(&dest, contents.as_bytes());
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    match result {
+                        Ok(()) => set_status_feedback(&ui, error_copy().contacts_exported, false),
+                        Err(e) => {
+                            tracing::warn!(target: "export_contacts", "{e:#}");
+                            set_status_feedback(&ui, error_copy().export_contacts_failed, true);
+                        }
+                    }
+                });
+            });
+        }
+    });
     ui.global::<AppState>().on_add_contact_requested({
         let weak = ui.as_weak();
         move || {
