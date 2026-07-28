@@ -108,6 +108,9 @@ export component ModalHost inherits Rectangle {
             generate => {
                 AppState.generate-add-account-key();
             }
+            copy-nsec(nsec) => {
+                AppState.copy-nsec(nsec);
+            }
             nsec-edited => {
                 AppState.add-account-nsec-edited();
             }

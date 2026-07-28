@@ -1,5 +1,7 @@
 import { Palette, Theme } from "../tokens.slint";
 import { Modal, ModalField } from "modal.slint";
+import { Button } from "../primitives/button.slint";
+import { CopyIcon } from "../icons/copy-icon.slint";
 
 // Add another account to the running session. The nsec is sealed into the
 // same password-encrypted vault as everything else; the account is imported
@@ -7,6 +9,7 @@ import { Modal, ModalField } from "modal.slint";
 export component AddAccountModal inherits Modal {
     callback add(string);   // nsec
     callback generate();    // Rust fills nsec-text with a fresh key
+    callback copy-nsec(string);
     in-out property <string> nsec-text;
     // True after `generate()` filled the field — shows the backup warning.
     in property <bool> generated: false;
@@ -98,11 +101,36 @@ export component AddAccountModal inherits Modal {
         }
     }
 
-    if root.generated: Text {
-        text: @tr("This key was just generated and exists nowhere else yet. Copy it somewhere safe before adding it — there is no recovery.");
-        color: Palette.danger;
-        font-size: Theme.fs(10px, 14px);
-        font-family: Theme.font;
-        wrap: word-wrap;
+    if root.generated: VerticalLayout {
+        spacing: 8px;
+        Text {
+            text: @tr("This key was just generated and exists nowhere else yet. Copy it somewhere safe before adding it — there is no recovery.");
+            color: Palette.danger;
+            font-size: Theme.fs(10px, 14px);
+            font-family: Theme.font;
+            wrap: word-wrap;
+        }
+
+        HorizontalLayout {
+            Rectangle {
+                horizontal-stretch: 1;
+            }
+
+            Button {
+                label: @tr("Copy");
+                button-height: 30px;
+                radius: 5px;
+                pad-left: 10px;
+                pad-right: 12px;
+                font-size: Theme.fs(11px, 12px);
+                CopyIcon {
+                    stroke: Palette.text-mid;
+                }
+
+                clicked => {
+                    root.copy-nsec(root.nsec-text);
+                }
+            }
+        }
     }
 }
