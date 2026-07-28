@@ -13,6 +13,14 @@ export component AddMemberRow inherits VerticalLayout {
 
     spacing: 0;
 
+    // Autofocus the npub field the moment the row expands, matching
+    // ChatSearchBar's open-obs pattern.
+    changed expanded => {
+        if (root.expanded) {
+            add-input.take-focus();
+        }
+    }
+
     header-row := Rectangle {
         height: 48px;
         accessible-role: button;
