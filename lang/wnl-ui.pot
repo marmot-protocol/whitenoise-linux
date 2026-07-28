@@ -343,12 +343,20 @@ msgctxt "NotificationsPane"
 msgid "Alert me about messages in chats I'm not viewing."
 msgstr ""
 
+msgctxt "AppShell"
+msgid "All"
+msgstr ""
+
 msgctxt "AccountSwitcherDetail"
 msgid "All accounts"
 msgstr ""
 
 msgctxt "AccountSwitcherModal"
 msgid "All accounts stay connected. Switching only changes which one you're looking at."
+msgstr ""
+
+msgctxt "LabelModal"
+msgid "An organizing label for {}. Leave empty to remove it."
 msgstr ""
 
 msgctxt "AppearancePane"
@@ -558,6 +566,10 @@ msgid "Cancel"
 msgstr ""
 
 msgctxt "ImportBackupModal"
+msgid "Cancel"
+msgstr ""
+
+msgctxt "LabelModal"
 msgid "Cancel"
 msgstr ""
 
@@ -1159,6 +1171,10 @@ msgctxt "EditHistoryModal"
 msgid "Edit history"
 msgstr ""
 
+msgctxt "ChatContextMenu"
+msgid "Edit label ({})…"
+msgstr ""
+
 msgctxt "HoverActions"
 msgid "Edit message"
 msgstr ""
@@ -1617,6 +1633,10 @@ msgctxt "SettingsSidebar"
 msgid "Keys & identity"
 msgstr ""
 
+msgctxt "LabelModal"
+msgid "LABEL"
+msgstr ""
+
 msgctxt "GeneralPane"
 msgid "LANGUAGE"
 msgstr ""
@@ -1635,6 +1655,10 @@ msgstr ""
 
 msgctxt "KeysPage"
 msgid "LOCAL"
+msgstr ""
+
+msgctxt "LabelModal"
+msgid "Label"
 msgstr ""
 
 msgctxt "StoragePane"
@@ -2719,6 +2743,10 @@ msgctxt "ImageViewerModal"
 msgid "Save"
 msgstr ""
 
+msgctxt "LabelModal"
+msgid "Save"
+msgstr ""
+
 msgctxt "NicknameModal"
 msgid "Save"
 msgstr ""
@@ -2874,6 +2902,10 @@ msgstr ""
 
 msgctxt "ProfilePage"
 msgid "Set"
+msgstr ""
+
+msgctxt "ChatContextMenu"
+msgid "Set label…"
 msgstr ""
 
 msgctxt "AppShell"
@@ -3468,6 +3500,10 @@ msgstr ""
 
 msgctxt "ImageTile"
 msgid "decrypting…"
+msgstr ""
+
+msgctxt "LabelModal"
+msgid "e.g. Work"
 msgstr ""
 
 msgctxt "StartNewChatModal"

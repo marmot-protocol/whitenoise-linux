@@ -1250,4 +1250,7 @@ export struct ChatMeta {
     // as a small MuteIcon in the row so a muted chat is distinguishable from an
     // active one at a glance.
     muted: bool,
+    // User-assigned organizing label ("" = unlabeled). Drives the rail's
+    // filter chips and, when set, a small tag in the row.
+    label: string,
 }

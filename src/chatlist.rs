@@ -543,6 +543,7 @@ pub(crate) fn refresh_chats_async(
             refresh_chats_from(&b, &snap, &chats, &chats_messages, &group_ids);
             set_rail_badges(&ui, &chats);
             refresh_unread_chrome(&ui);
+            push_known_chat_labels(&ui);
             spawn_chat_list_avatar_fetches(&ui, &b);
             then(&ui, &b, &snap);
         });
@@ -574,6 +575,7 @@ pub(crate) fn refresh_all_chat_models_async(
                 refresh_chats_from(&b, snap, &chats, &chats_messages, &group_ids);
                 set_rail_badges(&ui, &chats);
                 refresh_unread_chrome(&ui);
+                push_known_chat_labels(&ui);
                 spawn_chat_list_avatar_fetches(&ui, &b);
             }
             if let Some(snap) = &archived_snap {
@@ -1129,6 +1131,88 @@ pub(crate) fn set_muted(group_hex: &str, muted: bool) {
     }
 }
 
+/// Process-wide per-chat organizing label (`group_id_hex` → label text),
+/// lazily initialized from `Settings::chat_labels`. Same singleton shape as
+/// [`pinned_state`]/[`muted_state`]: the chat-list snapshot reads it off the
+/// UI thread to fill each row's `ChatMeta.label`, while the label modal's save
+/// handler writes it on the UI thread.
+pub(crate) fn label_state() -> &'static Mutex<std::collections::BTreeMap<String, String>> {
+    static LABELS: std::sync::OnceLock<Mutex<std::collections::BTreeMap<String, String>>> =
+        std::sync::OnceLock::new();
+    LABELS.get_or_init(|| Mutex::new(Settings::load().chat_labels))
+}
+
+/// A chat's organizing label, or `""` if unlabeled.
+pub(crate) fn chat_label(group_hex: &str) -> String {
+    label_state()
+        .lock()
+        .unwrap()
+        .get(group_hex)
+        .cloned()
+        .unwrap_or_default()
+}
+
+/// Set (or clear, with `""`) a chat's label on the live singleton. The caller
+/// persists to `Settings` (the disk write), mirroring [`set_muted`]'s split.
+pub(crate) fn set_chat_label(group_hex: &str, label: &str) {
+    let mut map = label_state().lock().unwrap();
+    if label.is_empty() {
+        map.remove(group_hex);
+    } else {
+        map.insert(group_hex.to_string(), label.to_string());
+    }
+}
+
+/// The distinct labels currently assigned to any chat, sorted. Backs the
+/// rail's filter chips — one per label actually in use, so the row never
+/// shows a chip for a label nobody has anymore.
+pub(crate) fn known_chat_labels() -> Vec<String> {
+    let mut labels: Vec<String> = label_state()
+        .lock()
+        .unwrap()
+        .values()
+        .cloned()
+        .collect();
+    labels.sort();
+    labels.dedup();
+    labels
+}
+
+/// Push the current set of distinct labels to the UI's filter-chip row. If
+/// the active filter no longer names a label anyone has (its last chat was
+/// relabeled or unlabeled), reset the filter to "All" rather than leaving it
+/// silently filtering out everything.
+pub(crate) fn push_known_chat_labels(ui: &WhiteNoiseLinux) {
+    let labels = known_chat_labels();
+    let current_filter = ui.get_chat_label_filter().to_string();
+    if !current_filter.is_empty() && !labels.contains(&current_filter) {
+        ui.set_chat_label_filter(s(""));
+    }
+    ui.set_chat_label_options(model(labels.iter().map(|l| s(l)).collect()));
+}
+
+/// Refresh one chat row's `label` field in place, mirroring
+/// [`set_chat_row_muted`] — used right after the label modal saves so the
+/// filter chips and the row's stored label never lag behind a fresh
+/// [`refresh_chats_from`].
+pub(crate) fn set_chat_row_label(ui: &WhiteNoiseLinux, idx: i32, label: &str) {
+    if idx < 0 {
+        return;
+    }
+    let chats = ui.get_chats();
+    let Some(chats_vm) = chats.as_any().downcast_ref::<VecModel<ChatMeta>>() else {
+        return;
+    };
+    let Some(mut meta) = chats_vm.row_data(idx as usize) else {
+        return;
+    };
+    if meta.label == label {
+        return;
+    }
+    meta.label = s(label);
+    chats_vm.set_row_data(idx as usize, meta);
+}
+
 /// Process-wide set of blocked accounts (`account_id_hex`), lazily initialized
 /// from `Settings::blocked_accounts`. Same singleton shape as [`muted_state`],
 /// and for the same reason: [`Backend::chats`] filters blocked peers out of the
@@ -1558,6 +1642,7 @@ pub(crate) fn fallback_chat_meta(record: &AppGroupRecord) -> ChatMeta {
         is_chat_request: record.pending_confirmation,
         pinned: is_pinned(&record.group_id_hex),
         muted: is_muted(&record.group_id_hex),
+        label: s(&chat_label(&record.group_id_hex)),
     }
 }
 

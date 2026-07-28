@@ -16,6 +16,9 @@ export component ChatContextMenu inherits Rectangle {
     in property <bool> pinned: false;
     in property <bool> muted: false;
     in property <bool> unread: false;
+    // Current organizing label ("" = unlabeled) — picks the menu item's copy
+    // between "Set label…" and "Edit label (Work)…".
+    in property <string> label: "";
     in property <bool> can-leave: false;
     // The "Saved Messages" self-chat is force-pinned to the top and can't be
     // reordered, so it offers no Pin/Unpin item (which would be a no-op).
@@ -23,6 +26,7 @@ export component ChatContextMenu inherits Rectangle {
     callback toggle-pin();
     callback toggle-mute();
     callback toggle-read();
+    callback set-label();
     callback export-chat();
     callback leave-group();
     callback dismissed();
@@ -32,9 +36,10 @@ export component ChatContextMenu inherits Rectangle {
     property <int> pin-idx: root.can-pin ? 0 : -1;
     property <int> mute-idx: root.can-pin ? 1 : 0;
     property <int> read-idx: root.mute-idx + 1;
-    property <int> export-idx: root.read-idx + 1;
+    property <int> label-idx: root.read-idx + 1;
+    property <int> export-idx: root.label-idx + 1;
     property <int> leave-idx: root.export-idx + 1;
-    property <int> item-count: (root.can-pin ? 1 : 0) + 3 + (root.can-leave ? 1 : 0);
+    property <int> item-count: (root.can-pin ? 1 : 0) + 4 + (root.can-leave ? 1 : 0);
     property <int> selected-index: 0;
 
     function move-selection(delta: int) {
@@ -56,6 +61,8 @@ export component ChatContextMenu inherits Rectangle {
             root.toggle-mute();
         } else if (root.selected-index == root.read-idx) {
             root.toggle-read();
+        } else if (root.selected-index == root.label-idx) {
+            root.set-label();
         } else if (root.selected-index == root.export-idx) {
             root.export-chat();
         } else if (root.can-leave && root.selected-index == root.leave-idx) {
@@ -151,6 +158,18 @@ export component ChatContextMenu inherits Rectangle {
                     }
                     hovered => {
                         root.selected-index = root.read-idx;
+                    }
+                }
+
+                MenuItem {
+                    glyph: root.label == "" ? "🏷" : "✎";
+                    label: root.label == "" ? @tr("Set label…") : @tr("Edit label ({})…", root.label);
+                    selected: root.selected-index == root.label-idx;
+                    activated => {
+                        root.set-label();
+                    }
+                    hovered => {
+                        root.selected-index = root.label-idx;
                     }
                 }
 

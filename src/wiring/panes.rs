@@ -1120,6 +1120,47 @@ pub(crate) fn wire_panes(
         }
     });
 
+    // Save (or clear) the right-clicked chat's organizing label from the
+    // LabelModal. Mirrors the mute-at handler's split: update the live
+    // singleton + Settings, patch the one row in place, then refresh the
+    // filter-chip row so a brand-new label shows up as a chip immediately.
+    ui.global::<AppState>().on_set_chat_label({
+        let weak = ui.as_weak();
+        let group_ids = group_ids.clone();
+        let settings_cell = settings_cell.clone();
+        move |idx, label| {
+            let Some(ui) = weak.upgrade() else { return };
+            let group_hex = group_ids.lock().unwrap().get(idx as usize).cloned();
+            let Some(group_hex) = group_hex else { return };
+            let label = label.trim().to_string();
+            set_chat_label(&group_hex, &label);
+            {
+                let mut s = settings_cell.borrow_mut();
+                if label.is_empty() {
+                    s.chat_labels.remove(&group_hex);
+                } else {
+                    s.chat_labels.insert(group_hex.clone(), label.clone());
+                }
+                s.save();
+            }
+            set_chat_row_label(&ui, idx, &label);
+            push_known_chat_labels(&ui);
+            ui.set_show_label_modal(false);
+            ui.set_label_input(s(""));
+            ui.set_label_modal_idx(-1);
+        }
+    });
+    ui.global::<AppState>().on_label_modal_dismissed({
+        let weak = ui.as_weak();
+        move || {
+            if let Some(ui) = weak.upgrade() {
+                ui.set_show_label_modal(false);
+                ui.set_label_input(s(""));
+                ui.set_label_modal_idx(-1);
+            }
+        }
+    });
+
     ui.global::<AppState>().on_time_format_selected({
         let weak = ui.as_weak();
         let settings_cell = settings_cell.clone();

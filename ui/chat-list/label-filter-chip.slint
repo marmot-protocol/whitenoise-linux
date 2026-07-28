@@ -1,0 +1,41 @@
+import { Palette, Theme } from "../tokens.slint";
+
+// One chip in the rail's label-filter row (chat-list.slint) — "All" plus one
+// per distinct chat label in use. Same mint-highlight language as
+// ReactionChip's `mine` state, but toggled by selection rather than hover.
+export component LabelFilterChip inherits Rectangle {
+    in property <string> chip-label;
+    in property <bool> selected: false;
+    callback clicked();
+
+    height: 22px;
+    border-radius: (11px) * Theme.r-scale;
+    border-width: 1px;
+    border-color: root.selected ? Palette.mint : (touch.has-hover ? Palette.mint-dim : Palette.border-2);
+    background: root.selected ? Palette.mint-surface : (touch.has-hover ? Palette.panel-2 : Palette.panel);
+    animate background, border-color {
+        duration: 140ms;
+        easing: ease-out;
+    }
+
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        alignment: center;
+        Text {
+            text: root.chip-label;
+            color: root.selected ? Palette.mint : Palette.text-mid;
+            font-size: Theme.fs(10px, 13px);
+            font-weight: 700;
+            font-family: Theme.font;
+            vertical-alignment: center;
+        }
+    }
+
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            root.clicked();
+        }
+    }
+}

@@ -123,6 +123,7 @@ pub(crate) fn chat_meta_from(
         is_chat_request: record.pending_confirmation,
         pinned: is_pinned(&record.group_id_hex),
         muted: is_muted(&record.group_id_hex),
+        label: s(&chat_label(&record.group_id_hex)),
     }
 }
 

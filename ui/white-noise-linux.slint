@@ -278,6 +278,10 @@ export component WhiteNoiseLinux inherits Window {
     in-out property <bool> chat-ctx-unread <=> AppState.chat-ctx-unread;
     in-out property <bool> chat-ctx-can-leave <=> AppState.chat-ctx-can-leave;
     in-out property <bool> chat-ctx-can-pin <=> AppState.chat-ctx-can-pin;
+    in-out property <bool> show-label-modal <=> AppState.show-label-modal;
+    in-out property <string> label-input <=> AppState.label-input;
+    in-out property <string> label-chat-name <=> AppState.label-chat-name;
+    in-out property <int> label-modal-idx <=> AppState.label-modal-idx;
     in-out property <bool> mention-active <=> AppState.mention-active;
     in-out property <[GroupMember]> mention-candidates <=> AppState.mention-candidates;
     in-out property <int> mention-selected <=> AppState.mention-selected;
@@ -391,6 +395,8 @@ export component WhiteNoiseLinux inherits Window {
     in-out property <string> breadcrumb <=> AppState.breadcrumb;
     in-out property <[bool]> chat-match-flags <=> AppState.chat-match-flags;
     in-out property <int> chat-match-count <=> AppState.chat-match-count;
+    in-out property <[string]> chat-label-options <=> AppState.chat-label-options;
+    in-out property <string> chat-label-filter <=> AppState.chat-label-filter;
     in-out property <[bool]> contact-match-flags <=> AppState.contact-match-flags;
     in-out property <int> contact-match-count <=> AppState.contact-match-count;
     in-out property <[bool]> archive-match-flags <=> AppState.archive-match-flags;

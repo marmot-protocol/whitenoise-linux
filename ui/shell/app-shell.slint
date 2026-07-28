@@ -29,6 +29,7 @@ import { AccountsIcon } from "../icons/accounts-icon.slint";
 import { SearchIcon } from "../icons/search-icon.slint";
 import { MentionsIcon } from "mentions-icon.slint";
 import { ChatListEntry } from "../chat-list/chat-list-entry.slint";
+import { LabelFilterChip } from "../chat-list/label-filter-chip.slint";
 import { MainPane } from "../main-pane/main-pane.slint";
 import { GetStartedScreen } from "../main-pane/get-started.slint";
 import { ContactsPage } from "../contacts/contacts-page.slint";
@@ -591,6 +592,35 @@ export component AppShell inherits Rectangle {
                         }
                     }
 
+                    // Label-filter chips: "All" plus one per distinct chat
+                    // label in use (Rust-pushed to AppState.chat-label-options
+                    // whenever a label is set/cleared). Chats page only, and
+                    // only once at least one chat actually has a label — an
+                    // unused feature stays invisible rather than showing an
+                    // empty "All" row.
+                    if AppState.active-page == 0 && AppState.chat-label-options.length > 0 && !root.strip: Flickable {
+                        height: 26px;
+                        interactive: true;
+                        viewport-width: label-filter-row.preferred-width;
+                        label-filter-row := HorizontalLayout {
+                            spacing: 6px;
+                            LabelFilterChip {
+                                chip-label: @tr("All");
+                                selected: AppState.chat-label-filter == "";
+                                clicked => {
+                                    AppState.chat-label-filter = "";
+                                }
+                            }
+                            for lbl in AppState.chat-label-options: LabelFilterChip {
+                                chip-label: lbl;
+                                selected: AppState.chat-label-filter == lbl;
+                                clicked => {
+                                    AppState.chat-label-filter = lbl;
+                                }
+                            }
+                        }
+                    }
+
                     // The left card's list area is contextual: the chat list on
                     // the Chats page, or the open page's own sidebar (Settings
                     // here) so the section nav lives in the left bar. The
@@ -636,11 +666,12 @@ export component AppShell inherits Rectangle {
                                 for chat[idx] in AppState.chats: Rectangle {
                                     width: parent.width;
                                     // Shown unless the "Unread" toggle is on and this
-                                    // chat has nothing unread. No `visible:` here —
-                                    // binding it on a ListView delegate root breaks row
-                                    // placement, so a collapsed row goes to 0 height
-                                    // instead.
-                                    property <bool> shown: !root.chats-unread-only || !chat.read;
+                                    // chat has nothing unread, or a label filter chip
+                                    // is active and this chat doesn't carry that label.
+                                    // No `visible:` here — binding it on a ListView
+                                    // delegate root breaks row placement, so a
+                                    // collapsed row goes to 0 height instead.
+                                    property <bool> shown: (!root.chats-unread-only || !chat.read) && (AppState.chat-label-filter == "" || chat.label == AppState.chat-label-filter);
                                     height: shown ? entry.preferred-height : 0px;
                                     clip: true;
 
