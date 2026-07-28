@@ -1,5 +1,8 @@
 import { Palette, Theme } from "../tokens.slint";
 import { MenuItem } from "../primitives/menu-item.slint";
+import { PinIcon } from "../icons/pin-icon.slint";
+import { MuteIcon } from "../icons/mute-icon.slint";
+import { SaveIcon } from "../icons/save-icon.slint";
 
 // Right-click context menu for a chat row in the rail. Full-window mount (like
 // MessageContextMenu / EmojiPicker) so the invisible backdrop catches outside
@@ -112,7 +115,6 @@ export component ChatContextMenu inherits Rectangle {
                 spacing: 1px;
                 MenuItem {
                     shown: root.can-pin;
-                    glyph: root.pinned ? "▽" : "▲";
                     label: root.pinned ? @tr("Unpin") : @tr("Pin to top");
                     selected: root.selected-index == root.pin-idx;
                     activated => {
@@ -121,10 +123,12 @@ export component ChatContextMenu inherits Rectangle {
                     hovered => {
                         root.selected-index = root.pin-idx;
                     }
+                    PinIcon {
+                        fill: root.pinned ? Palette.mint : Palette.text-mid;
+                    }
                 }
 
                 MenuItem {
-                    glyph: root.muted ? "♪" : "♩";
                     label: root.muted ? @tr("Unmute") : @tr("Mute");
                     selected: root.selected-index == root.mute-idx;
                     activated => {
@@ -132,6 +136,9 @@ export component ChatContextMenu inherits Rectangle {
                     }
                     hovered => {
                         root.selected-index = root.mute-idx;
+                    }
+                    MuteIcon {
+                        stroke: root.muted ? Palette.text-lo : Palette.text-mid;
                     }
                 }
 
@@ -148,7 +155,6 @@ export component ChatContextMenu inherits Rectangle {
                 }
 
                 MenuItem {
-                    glyph: "⭳";
                     label: @tr("Export transcript…");
                     selected: root.selected-index == root.export-idx;
                     activated => {
@@ -156,6 +162,9 @@ export component ChatContextMenu inherits Rectangle {
                     }
                     hovered => {
                         root.selected-index = root.export-idx;
+                    }
+                    SaveIcon {
+                        stroke: Palette.text-mid;
                     }
                 }
 
