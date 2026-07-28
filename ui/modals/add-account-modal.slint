@@ -38,7 +38,9 @@ export component AddAccountModal inherits Modal {
         revealable: true;
         autofocus: true;
         submitted => {
-            root.add(root.nsec-text);
+            if (root.primary-enabled && !root.primary-busy) {
+                root.add(root.nsec-text);
+            }
         }
         edited => {
             root.nsec-edited();

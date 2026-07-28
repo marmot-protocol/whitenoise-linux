@@ -55,7 +55,7 @@ export component ExportKeyModal inherits Modal {
         password: true;
         autofocus: true;
         submitted => {
-            if (root.password != "") {
+            if (root.primary-enabled && !root.primary-busy) {
                 root.confirm(root.password);
             }
         }

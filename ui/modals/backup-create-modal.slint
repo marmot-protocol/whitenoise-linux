@@ -29,7 +29,7 @@ export component BackupCreateModal inherits Modal {
         password: true;
         autofocus: true;
         submitted => {
-            if (root.password-text != "") {
+            if (root.primary-enabled && !root.primary-busy) {
                 root.create(root.password-text);
             }
         }
