@@ -16,6 +16,10 @@ export component HeroEditField inherits VerticalLayout {
 
     spacing: 8px;
 
+    init => {
+        input.take-focus();
+    }
+
     Rectangle {
         height: root.multiline ? 76px : 34px;
         border-radius: (6px) * Theme.r-scale;
