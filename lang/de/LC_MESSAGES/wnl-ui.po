@@ -2005,6 +2005,10 @@ msgctxt "ErrorCopy"
 msgid "No secret key for this account is stored on this device."
 msgstr "Für dieses Konto ist kein geheimer Schlüssel auf diesem Gerät gespeichert."
 
+msgctxt "SharedMediaGrid"
+msgid "No shared media yet."
+msgstr ""
+
 #. Network-pane status copy (also Rust-set).
 msgctxt "ErrorCopy"
 msgid "Not connected yet. Please wait a moment and try again."
@@ -2597,6 +2601,10 @@ msgctxt "SettingsSidebar"
 msgid "SETTINGS"
 msgstr "EINSTELLUNGEN"
 
+msgctxt "ContactDetail"
+msgid "SHARED MEDIA"
+msgstr ""
+
 msgctxt "GeneralPane"
 msgid "STARTUP"
 msgstr "START"
@@ -2834,6 +2842,22 @@ msgstr "Anonyme App-Telemetrie teilen"
 msgctxt "AdvancedPane"
 msgid "Share relay connection telemetry."
 msgstr "Telemetrie zu Relay-Verbindungen teilen."
+
+msgctxt "SharedMediaGrid"
+msgid "Shared image {}"
+msgstr ""
+
+msgctxt "SharedMediaGrid"
+msgid "Shared image {}, failed to load. Activate to retry."
+msgstr ""
+
+msgctxt "SharedMediaGrid"
+msgid "Shared image {}, loading."
+msgstr ""
+
+msgctxt "GroupMembersPanel"
+msgid "Shared media"
+msgstr ""
 
 #, fuzzy
 msgctxt "Composer"

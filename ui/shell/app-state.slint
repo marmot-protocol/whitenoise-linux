@@ -29,6 +29,7 @@ import {
     AuditLogEntry,
     StagedAttachment,
     ImageSearchHit,
+    SharedMediaCell,
 } from "../tokens.slint";
 import { KeyPackageInfo } from "../keys/types.slint";
 import { PaletteAction } from "../modals/command-palette.slint";
@@ -817,6 +818,13 @@ export global AppState {
     // "Groups in common" rows for the active contact (contacts page detail).
     in-out property <[SharedGroup]> contact-shared-groups;
 
+    // "Shared media" grid for the active contact's 1:1 chat (contacts page
+    // detail) — every image attachment in that conversation, oldest last.
+    // Tapping a cell switches to the chat and opens the whole-conversation
+    // lightbox on it (see `contact-shared-media-clicked`).
+    in-out property <[SharedMediaCell]> contact-shared-media;
+    callback contact-shared-media-clicked(string);
+
     in-out property <[ArchivedChat]> archived-chats;
 
     in-out property <[ChatMeta]> chats;
@@ -834,6 +842,12 @@ export global AppState {
     in-out property <[GroupMember]> chat-invited-members;
     in-out property <bool> chat-is-group: false;
     in-out property <bool> chat-can-show-members: false;
+    // "Shared media" grid for the currently open chat (group info panel) —
+    // every image attachment in this conversation, oldest last. Tapping a
+    // cell opens the whole-conversation lightbox directly on it, since we're
+    // already in the right chat.
+    in-out property <[SharedMediaCell]> chat-shared-media;
+    callback chat-shared-media-clicked(string);
     // Mute state of the currently-open chat (Rust sets it on chat switch /
     // toggle); the header bell reflects it and `toggle-mute-chat` flips it.
     in-out property <bool> active-chat-muted: false;

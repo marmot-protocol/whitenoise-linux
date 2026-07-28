@@ -2001,6 +2001,10 @@ msgctxt "ErrorCopy"
 msgid "No secret key for this account is stored on this device."
 msgstr "このアカウントの秘密鍵はこの端末に保存されていません。"
 
+msgctxt "SharedMediaGrid"
+msgid "No shared media yet."
+msgstr ""
+
 #. Network-pane status copy (also Rust-set).
 msgctxt "ErrorCopy"
 msgid "Not connected yet. Please wait a moment and try again."
@@ -2593,6 +2597,10 @@ msgctxt "SettingsSidebar"
 msgid "SETTINGS"
 msgstr "設定"
 
+msgctxt "ContactDetail"
+msgid "SHARED MEDIA"
+msgstr ""
+
 msgctxt "GeneralPane"
 msgid "STARTUP"
 msgstr "起動"
@@ -2830,6 +2838,22 @@ msgstr "匿名のアプリ利用統計を共有"
 msgctxt "AdvancedPane"
 msgid "Share relay connection telemetry."
 msgstr "リレー接続の利用統計を共有します。"
+
+msgctxt "SharedMediaGrid"
+msgid "Shared image {}"
+msgstr ""
+
+msgctxt "SharedMediaGrid"
+msgid "Shared image {}, failed to load. Activate to retry."
+msgstr ""
+
+msgctxt "SharedMediaGrid"
+msgid "Shared image {}, loading."
+msgstr ""
+
+msgctxt "GroupMembersPanel"
+msgid "Shared media"
+msgstr ""
 
 #, fuzzy
 msgctxt "Composer"

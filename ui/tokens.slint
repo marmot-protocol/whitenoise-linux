@@ -997,6 +997,19 @@ export struct AlbumCell {
     key: string,
 }
 
+// One thumbnail in a chat's shared-media grid (contact detail / group info
+// panel): every image attachment in the conversation, spanning albums, in the
+// same order and keyed the same way as the fullscreen viewer's slideshow list
+// (`key` is the shared attachment-cache handle a tap opens), so a grid tap
+// reuses the whole-conversation lightbox instead of a one-off view.
+export struct SharedMediaCell {
+    image: image,
+    has-image: bool,
+    loading: bool,
+    failed: bool,
+    key: string,
+}
+
 export struct MentionInboxItem {
     group-id: string,
     message-id: string,

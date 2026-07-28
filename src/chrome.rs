@@ -521,6 +521,62 @@ pub(crate) fn push_contact_shared_groups(ui: &WhiteNoiseLinux, backend: &Backend
     ui.set_contact_shared_groups(model(rows));
 }
 
+/// Recompute and push the active contact's Shared Media grid: every image
+/// attachment in the 1:1 chat with them (empty, with the section itself
+/// hidden, when there is no chat yet — see `contact-chat-hex`). Call this
+/// after `push_contact_actions` has resolved that hex for the current
+/// selection. Fetches the chat's message window on the backend runtime (the
+/// contact page has no already-loaded snapshot to reuse, unlike the in-chat
+/// panel), then autoloads whatever isn't cached yet so the grid fills in
+/// instead of sitting on placeholders until each cell is tapped.
+pub(crate) fn push_contact_shared_media(
+    ui: &WhiteNoiseLinux,
+    backend: &Arc<Backend>,
+    backend_cell: Arc<Mutex<Option<Arc<Backend>>>>,
+    vault_cell: Arc<Mutex<Option<Arc<Mutex<Vault>>>>>,
+) {
+    let group_hex = ui.get_contact_chat_hex().to_string();
+    if group_hex.is_empty() {
+        ui.set_contact_shared_media(model(Vec::new()));
+        return;
+    }
+    let b = backend.clone();
+    let weak = ui.as_weak();
+    let group_hex_task = group_hex.clone();
+    backend.tokio_handle().spawn(async move {
+        let all = b
+            .messages(&group_hex_task, Some(msg_window_for(&group_hex_task)))
+            .unwrap_or_default();
+        let _ = slint::invoke_from_event_loop(move || {
+            let Some(ui) = weak.upgrade() else { return };
+            // The selection may have moved on to a different contact while
+            // this was in flight; a stale snapshot would show the wrong
+            // person's photos.
+            if ui.get_contact_chat_hex() != group_hex_task {
+                return;
+            }
+            let all = Arc::new(all);
+            ui.set_contact_shared_media(model(build_shared_media_cells(&all)));
+            let all_for_refresh = all.clone();
+            let group_hex_guard = group_hex_task.clone();
+            let on_done: Arc<dyn Fn(&WhiteNoiseLinux) + Send + Sync> = Arc::new(move |ui| {
+                if ui.get_contact_chat_hex() != group_hex_guard {
+                    return;
+                }
+                ui.set_contact_shared_media(model(build_shared_media_cells(&all_for_refresh)));
+            });
+            autoload_shared_media(
+                group_hex_task.clone(),
+                backend_cell.clone(),
+                vault_cell.clone(),
+                ui.as_weak(),
+                &all,
+                on_done,
+            );
+        });
+    });
+}
+
 /// Recompute and push the active contact's ACTIONS state: the 1:1 chat with
 /// them (empty when there is none to act on), whether that chat is muted, and
 /// whether the contact is blocked. The contact page's Mute/Archive buttons are

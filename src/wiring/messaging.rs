@@ -591,30 +591,30 @@ pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 retry_album_cell(group_hex, key);
                 return;
             }
-            // Show the cached pixels immediately if we have them, else open on
-            // the loading pill while the builder fetches the image.
-            match attachment_image_cache_get(&key) {
-                Some(px) => {
-                    ui.set_image_viewer_image(image_from_pixels(&px));
-                    ui.set_image_viewer_loading(false);
-                    ui.set_image_viewer_failed(false);
-                }
-                None => {
-                    ui.set_image_viewer_loading(true);
-                    ui.set_image_viewer_failed(false);
-                }
+            open_image_viewer_for(&ui, &backend_cell, &group_ids, &group_hex, &key);
+        }
+    });
+
+    // ─── Shared Media grid cell tapped (group info panel) ──────────────
+    //
+    // Already the active chat — no page/chat switch needed, unlike the same
+    // grid on the Contact page (`on_contact_shared_media_clicked`), which has
+    // to get there first.
+    ui.global::<AppState>().on_chat_shared_media_clicked({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let group_ids = group_ids.clone();
+        move |key| {
+            let Some(ui) = weak.upgrade() else { return };
+            let key = key.to_string();
+            if key.is_empty() {
+                return;
             }
-            ui.set_image_viewer_count(1);
-            ui.set_image_viewer_index(1);
-            ui.set_image_viewer_actions_ready(false);
-            ui.set_image_viewer_open(true);
-            build_viewer_slideshow(
-                ui.as_weak(),
-                backend_cell.clone(),
-                group_ids.clone(),
-                group_hex,
-                key,
-            );
+            let idx = ui.get_active_chat() as usize;
+            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
+                return;
+            };
+            open_image_viewer_for(&ui, &backend_cell, &group_ids, &group_hex, &key);
         }
     });
 
@@ -639,23 +639,10 @@ pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             // Already decoded → tapping expands it into the full-window
             // lightbox instead of re-downloading. Also (re)build the slideshow
             // list so the chevrons can flip through the chat's other images.
-            if let Some(img) = cached_attachment_image(&mid) {
-                ui.set_image_viewer_image(img);
-                ui.set_image_viewer_loading(false);
-                ui.set_image_viewer_failed(false);
-                ui.set_image_viewer_count(1);
-                ui.set_image_viewer_index(1);
-                ui.set_image_viewer_actions_ready(false);
-                ui.set_image_viewer_open(true);
+            if cached_attachment_image(&mid).is_some() {
                 let idx = ui.get_active_chat() as usize;
                 if let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() {
-                    build_viewer_slideshow(
-                        ui.as_weak(),
-                        backend_cell.clone(),
-                        group_ids.clone(),
-                        group_hex,
-                        mid.clone(),
-                    );
+                    open_image_viewer_for(&ui, &backend_cell, &group_ids, &group_hex, &mid);
                 }
                 return;
             }

@@ -138,6 +138,184 @@ pub(crate) fn build_viewer_items(all: &[AppMessageRecord]) -> Vec<ViewerItem> {
     items
 }
 
+/// Grid cells for a chat's Shared Media section, most-recent-first (the
+/// natural order for browsing back through history) — the same items
+/// [`build_viewer_items`] returns for the lightbox, just reversed for
+/// display. Cache hits render instantly; everything else is a placeholder
+/// until [`autoload_shared_media`] fills it in.
+pub(crate) fn build_shared_media_cells(all: &[AppMessageRecord]) -> Vec<SharedMediaCell> {
+    build_viewer_items(all)
+        .into_iter()
+        .rev()
+        .map(|it| {
+            let (image, has_image) = match attachment_image_cache_get(&it.cache_key) {
+                Some(p) => (image_from_pixels(&p), true),
+                None => (slint::Image::default(), false),
+            };
+            let loading = attachment_in_flight()
+                .lock()
+                .map(|s| s.contains(&it.cache_key))
+                .unwrap_or(false);
+            let failed = !loading && !has_image && attachment_failed_contains(&it.cache_key);
+            SharedMediaCell {
+                image,
+                has_image,
+                loading,
+                failed,
+                key: it.cache_key.into(),
+            }
+        })
+        .collect()
+}
+
+/// Kick off background download+decode for every shared-media cell that
+/// isn't already cached or in flight, mirroring `maybe_autoload_album` but
+/// spanning the whole chat's image attachments instead of one album — so
+/// opening a Shared Media section fills its grid in rather than leaving
+/// every cell a placeholder until it's individually tapped. `on_done` runs
+/// on the UI thread after each cell finishes (success or failure) so the
+/// caller can re-push its own grid model; the contact page and the in-chat
+/// panel keep separate models, so each supplies its own.
+pub(crate) fn autoload_shared_media(
+    group_hex: String,
+    backend_cell: Arc<Mutex<Option<Arc<Backend>>>>,
+    vault_cell: Arc<Mutex<Option<Arc<Mutex<Vault>>>>>,
+    weak: slint::Weak<WhiteNoiseLinux>,
+    all: &[AppMessageRecord],
+    on_done: Arc<dyn Fn(&WhiteNoiseLinux) + Send + Sync>,
+) {
+    let needed: Vec<(String, MediaAttachmentReference)> = build_viewer_items(all)
+        .into_iter()
+        .filter(|it| {
+            attachment_image_cache_get(&it.cache_key).is_none()
+                && !attachment_in_flight()
+                    .lock()
+                    .map(|s| s.contains(&it.cache_key))
+                    .unwrap_or(true)
+        })
+        .map(|it| (it.cache_key, it.reference))
+        .collect();
+    if needed.is_empty() {
+        return;
+    }
+    let Some(backend) = backend_cell.lock().unwrap().clone() else {
+        return;
+    };
+    let vault = vault_cell.lock().unwrap().clone();
+    for (key, reference) in needed {
+        {
+            let Ok(mut set) = attachment_in_flight().lock() else {
+                continue;
+            };
+            if set.contains(&key) {
+                continue;
+            }
+            set.insert(key.clone());
+        }
+        attachment_failed_clear(&key);
+        let backend = backend.clone();
+        let vault = vault.clone();
+        let weak = weak.clone();
+        let on_done = on_done.clone();
+        let group_hex = group_hex.clone();
+        let hash = reference.ciphertext_sha256.clone();
+        backend.tokio_handle().spawn({
+            let backend = backend.clone();
+            async move {
+                if let Some(px) = vault
+                    .as_ref()
+                    .and_then(|v| media_cache::get(v, &hash))
+                    .and_then(|plain| decode_avatar_pixels(&plain).ok())
+                {
+                    attachment_image_cache_put(key.clone(), px);
+                    attachment_failed_clear(&key);
+                    clear_attachment_in_flight(&key);
+                    let _ = slint::invoke_from_event_loop(move || {
+                        let Some(ui) = weak.upgrade() else { return };
+                        on_done(&ui);
+                    });
+                    return;
+                }
+                let weak_cb = weak.clone();
+                let on_done_cb = on_done.clone();
+                backend.download_media_async(&group_hex, reference, move |result| {
+                    let pixels = match result {
+                        Ok(dl) => {
+                            if let Some(v) = &vault {
+                                media_cache::put(v, &hash, &dl.plaintext);
+                            }
+                            decode_avatar_pixels(&dl.plaintext).ok()
+                        }
+                        Err(e) => {
+                            tracing::warn!(target: "shared_media", "autoload {key}: {e:#}");
+                            None
+                        }
+                    };
+                    if let Some(px) = pixels {
+                        attachment_image_cache_put(key.clone(), px);
+                        attachment_failed_clear(&key);
+                    } else {
+                        attachment_failed_mark(&key);
+                    }
+                    clear_attachment_in_flight(&key);
+                    let _ = slint::invoke_from_event_loop(move || {
+                        let Some(ui) = weak_cb.upgrade() else { return };
+                        on_done_cb(&ui);
+                    });
+                });
+            }
+        });
+    }
+}
+
+/// Open the fullscreen lightbox on `key` within `group_hex`'s conversation,
+/// seeded with whatever's already cached so it never flashes an empty frame.
+/// Shared by every tap that opens the whole-conversation slideshow: an album
+/// cell, a solo attachment bubble, and a Shared Media grid cell.
+pub(crate) fn open_image_viewer_for(
+    ui: &WhiteNoiseLinux,
+    backend_cell: &Arc<Mutex<Option<Arc<Backend>>>>,
+    group_ids: &Arc<Mutex<Vec<String>>>,
+    group_hex: &str,
+    key: &str,
+) {
+    match attachment_image_cache_get(key) {
+        Some(px) => {
+            ui.set_image_viewer_image(image_from_pixels(&px));
+            ui.set_image_viewer_loading(false);
+            ui.set_image_viewer_failed(false);
+        }
+        None => {
+            ui.set_image_viewer_loading(true);
+            ui.set_image_viewer_failed(false);
+        }
+    }
+    ui.set_image_viewer_count(1);
+    ui.set_image_viewer_index(1);
+    ui.set_image_viewer_actions_ready(false);
+    ui.set_image_viewer_open(true);
+    build_viewer_slideshow(
+        ui.as_weak(),
+        backend_cell.clone(),
+        group_ids.clone(),
+        group_hex.to_string(),
+        key.to_string(),
+    );
+}
+
+/// Cross-chat handoff for a Shared Media grid tap on the Contact page: that
+/// page has no group_hex-vs-active-chat guarantee (the viewer's
+/// `load_viewer_image` always resolves via the *active* chat), so the click
+/// handler switches to the target chat and stashes `(group_hex, key)` here;
+/// `chat_selected`'s load path takes it once that chat's own shared-media
+/// list is ready, then opens the lightbox — the same handoff
+/// `pending_message_jump` does for a cross-chat mention.
+pub(crate) fn pending_media_jump() -> &'static Mutex<Option<(String, String)>> {
+    use std::sync::OnceLock;
+    static CELL: OnceLock<Mutex<Option<(String, String)>>> = OnceLock::new();
+    CELL.get_or_init(|| Mutex::new(None))
+}
+
 /// Ordered image attachments for the open lightbox + the current position.
 /// UI-thread-only state (the lightbox and its callbacks all run there), held
 /// in a thread-local so download-completion closures — which must be `Send`

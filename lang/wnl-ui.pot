@@ -1919,6 +1919,10 @@ msgctxt "ErrorCopy"
 msgid "No secret key for this account is stored on this device."
 msgstr ""
 
+msgctxt "SharedMediaGrid"
+msgid "No shared media yet."
+msgstr ""
+
 #. Network-pane status copy (also Rust-set).
 msgctxt "ErrorCopy"
 msgid "Not connected yet. Please wait a moment and try again."
@@ -2479,6 +2483,10 @@ msgctxt "SettingsSidebar"
 msgid "SETTINGS"
 msgstr ""
 
+msgctxt "ContactDetail"
+msgid "SHARED MEDIA"
+msgstr ""
+
 msgctxt "GeneralPane"
 msgid "STARTUP"
 msgstr ""
@@ -2706,6 +2714,22 @@ msgstr ""
 
 msgctxt "AdvancedPane"
 msgid "Share relay connection telemetry."
+msgstr ""
+
+msgctxt "SharedMediaGrid"
+msgid "Shared image {}"
+msgstr ""
+
+msgctxt "SharedMediaGrid"
+msgid "Shared image {}, failed to load. Activate to retry."
+msgstr ""
+
+msgctxt "SharedMediaGrid"
+msgid "Shared image {}, loading."
+msgstr ""
+
+msgctxt "GroupMembersPanel"
+msgid "Shared media"
 msgstr ""
 
 msgctxt "Composer"

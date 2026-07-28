@@ -17,6 +17,7 @@ import { Section } from "../layout/section.slint";
 import { GroupCard } from "../layout/group-card.slint";
 import { KVRow } from "../layout/kv-row.slint";
 import { SharedGroupsList } from "../layout/shared-groups.slint";
+import { SharedMediaGrid } from "../layout/shared-media-grid.slint";
 import { Button, MicroButton } from "../primitives/button.slint";
 import { PencilIcon } from "../icons/pencil-icon.slint";
 
@@ -217,6 +218,20 @@ export component ContactDetail inherits DetailPage {
                             AppState.contact-show-qr();
                         }
                     }
+                }
+            }
+        }
+    }
+
+    // Only a 1:1 chat has media to show; with none yet the section would
+    // just repeat the empty state ACTIONS already explains by hiding.
+    if AppState.contact-chat-hex != "": Section {
+        label: @tr("SHARED MEDIA");
+        GroupCard {
+            SharedMediaGrid {
+                items: AppState.contact-shared-media;
+                cell-clicked(key) => {
+                    AppState.contact-shared-media-clicked(key);
                 }
             }
         }
