@@ -110,22 +110,32 @@ export component GroupMemberRow inherits Rectangle {
             }
 
             // "⋯" — opens the per-member admin action menu. Always mounted so
-            // the TouchArea never races the first click; fades in on hover.
-            Rectangle {
+            // the TouchArea never races the first click; stays dimly visible
+            // (not fully hidden) so it stays discoverable without a hover,
+            // and brightens on hover or keyboard focus.
+            menu-btn := Rectangle {
                 width: 32px;
+                accessible-role: button;
+                accessible-enabled: root.has-actions;
+                accessible-label: @tr("Member actions for {}", root.data.name);
+                accessible-action-default => { menu-btn.activate(); }
+                function activate() {
+                    root.request-menu(
+                        root.data.member-id,
+                        root.data.name,
+                        root.data.can-promote,
+                        root.data.can-demote,
+                        root.data.can-self-demote,
+                        root.data.can-remove,
+                        menu-ta.absolute-position.x + menu-ta.width,
+                        menu-ta.absolute-position.y + menu-ta.height);
+                }
+
                 menu-ta := TouchArea {
                     enabled: root.has-actions;
                     mouse-cursor: pointer;
                     clicked => {
-                        root.request-menu(
-                            root.data.member-id,
-                            root.data.name,
-                            root.data.can-promote,
-                            root.data.can-demote,
-                            root.data.can-self-demote,
-                            root.data.can-remove,
-                            self.absolute-position.x + self.width,
-                            self.absolute-position.y + self.height);
+                        menu-btn.activate();
                     }
 
                     Rectangle {
@@ -135,7 +145,7 @@ export component GroupMemberRow inherits Rectangle {
                         y: (parent.height - self.height) / 2;
                         border-radius: (6px) * Theme.r-scale;
                         background: menu-ta.has-hover ? Palette.selected : transparent;
-                        opacity: root.has-actions && root.hot ? 1.0 : 0.0;
+                        opacity: !root.has-actions ? 0.0 : (root.hot || menu-fs.has-focus ? 1.0 : 0.35);
                         animate opacity { duration: Theme.hover-dur; }
                         Text {
                             text: "⋯";
@@ -146,6 +156,32 @@ export component GroupMemberRow inherits Rectangle {
                             vertical-alignment: center;
                         }
                     }
+                }
+
+                // Zero-size FocusScope: joins the Tab chain without taking
+                // pointer events, mirroring ui/primitives/button.slint.
+                menu-fs := FocusScope {
+                    width: 0px;
+                    height: 0px;
+                    enabled: root.has-actions;
+                    key-pressed(event) => {
+                        if (event.text == Key.Return || event.text == " ") {
+                            menu-btn.activate();
+                            return accept;
+                        }
+                        return reject;
+                    }
+                }
+
+                if menu-fs.has-focus: Rectangle {
+                    x: (parent.width - 26px) / 2 - 2px;
+                    y: (parent.height - 26px) / 2 - 2px;
+                    width: 26px + 4px;
+                    height: 26px + 4px;
+                    background: transparent;
+                    border-radius: (8px) * Theme.r-scale;
+                    border-width: 2px;
+                    border-color: Palette.mint;
                 }
             }
         }

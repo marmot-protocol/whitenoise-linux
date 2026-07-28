@@ -1732,6 +1732,10 @@ msgctxt "month"
 msgid "May"
 msgstr "Mai"
 
+msgctxt "GroupMemberRow"
+msgid "Member actions for {}"
+msgstr "Aktionen für Mitglied {}"
+
 msgctxt "ErrorCopy"
 msgid "Member removed."
 msgstr "Mitglied entfernt."
