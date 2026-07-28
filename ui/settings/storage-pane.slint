@@ -96,6 +96,13 @@ export component StoragePane inherits DetailPage {
                 sublabel: AppState.storage-last-backup-path;
                 value: AppState.storage-last-backup-at;
                 show-divider: true;
+                MicroButton {
+                    min-w: self.preferred-width;
+                    label: @tr("Copy");
+                    clicked => {
+                        AppState.copy-to-clipboard(AppState.storage-last-backup-path);
+                    }
+                }
             }
 
             KVRow {
