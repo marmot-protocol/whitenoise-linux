@@ -3071,8 +3071,8 @@ msgid "This removes your admin rights. You can't restore them yourself unless an
 msgstr "Questo rifiuta l'invito di {}. Non potrà essere ripristinato a meno che non ti invitino di nuovo."
 
 msgctxt "ChatRequestBanner"
-msgid "This sender isn't in your contacts. Accept to start an"
-msgstr "Questo mittente non è nei tuoi contatti. Accetta per avviare una"
+msgid "This sender isn't in your contacts. Accept to start an encrypted session."
+msgstr ""
 
 msgctxt "AccountSwitcherModal"
 msgid "This signs the account out on this device and erases its secret key from your vault. Your other accounts stay signed in."
@@ -3498,10 +3498,6 @@ msgstr "ricerca…"
 msgctxt "EmojiPicker"
 msgid "search…"
 msgstr "cerca…"
-
-msgctxt "ChatRequestBanner"
-msgid "session."
-msgstr "sessione."
 
 #, fuzzy
 msgctxt "ImageTile"

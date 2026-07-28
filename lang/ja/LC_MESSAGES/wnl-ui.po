@@ -3067,8 +3067,8 @@ msgid "This removes your admin rights. You can't restore them yourself unless an
 msgstr "{} からの招待を辞退します。相手がもう一度招待しない限り、元に戻すことはできません。"
 
 msgctxt "ChatRequestBanner"
-msgid "This sender isn't in your contacts. Accept to start an"
-msgstr "この送信者は連絡先にいません。承認して"
+msgid "This sender isn't in your contacts. Accept to start an encrypted session."
+msgstr ""
 
 msgctxt "AccountSwitcherModal"
 msgid "This signs the account out on this device and erases its secret key from your vault. Your other accounts stay signed in."
@@ -3493,10 +3493,6 @@ msgstr "検索中…"
 msgctxt "EmojiPicker"
 msgid "search…"
 msgstr "検索…"
-
-msgctxt "ChatRequestBanner"
-msgid "session."
-msgstr "セッションを開始。"
 
 #, fuzzy
 msgctxt "ImageTile"
