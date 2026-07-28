@@ -2,17 +2,31 @@ import { Palette, Theme } from "../tokens.slint";
 
 // Keyboard-shortcut pill ("⌘ K", "Ctrl N"): bordered plate around a key
 // label. Modifier glyphs are key labels, not prose, so callers keep them out
-// of @tr(). `bg` is overridable for selected-row contrast.
+// of @tr(). `bg` is overridable for selected-row contrast. Every pill in a
+// list (the palette, the shortcuts reference) sits at the same width so the
+// column reads as a straight edge instead of hugging each label; the width
+// is calibrated off "Shift Enter", the widest bound combo, rather than a
+// fixed pixel guess, so it keeps tracking Theme.fs() automatically. Update
+// the calibration text if a future binding's label grows past it.
 export component KbdPill inherits Rectangle {
     in property <string> label;
     in property <color> bg: Palette.panel-2;
 
     height: 20px;
-    min-width: kbd-text.preferred-width + 12px;
+    width: calibration.preferred-width + 12px;
     border-radius: (4px) * Theme.r-scale;
     border-width: Theme.border-w;
     border-color: Palette.border-2;
     background: root.bg;
+
+    calibration := Text {
+        text: "Shift Enter";
+        visible: false;
+        font-size: Theme.fs(10px, 13px);
+        font-weight: 700;
+        font-family: Theme.font;
+    }
+
     kbd-text := Text {
         text: root.label;
         color: Palette.text-mid;
