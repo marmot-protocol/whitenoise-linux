@@ -188,4 +188,25 @@ export component GeneralPane inherits DetailPage {
             }
         }
     }
+
+    Section {
+        label: @tr("HELP");
+        GroupCard {
+            KVRow {
+                row-height: 48px;
+                label: @tr("Keyboard shortcuts");
+                show-divider: false;
+                MicroButton {
+                    label: @tr("keyboard shortcuts button" => "View");
+                    ChevronRightIcon {
+                        stroke: Palette.text-mid;
+                    }
+
+                    clicked => {
+                        AppState.show-keyboard-shortcuts = true;
+                    }
+                }
+            }
+        }
+    }
 }

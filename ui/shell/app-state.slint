@@ -806,6 +806,11 @@ export global AppState {
     callback palette-execute(string);        // Rust runs the action by id
     callback palette-dismissed();
 
+    // Keyboard Shortcuts reference modal — the row list is static for the
+    // whole session, so Rust pushes it once at boot rather than on open.
+    in-out property <[PaletteAction]> keyboard-shortcuts;
+    in-out property <bool> show-keyboard-shortcuts: false;
+
     in-out property <[Contact]> contacts;
 
     // "Groups in common" rows for the active contact (contacts page detail).

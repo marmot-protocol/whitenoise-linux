@@ -1168,6 +1168,59 @@ palette_commands! {
     OpenSearch => ("act.search-messages", "Search all messages", "ACTIONS", ""),
     CopyNpub => ("act.copy-npub", "Copy your npub", "ACTIONS", ""),
     ToggleRetro => ("act.toggle-retro", "Toggle retro mode", "ACTIONS", ""),
+    OpenShortcuts => ("act.keyboard-shortcuts", "Keyboard shortcuts", "ACTIONS", ""),
+}
+
+/// Bindings with no palette entry — global keys handled by the single
+/// `global-keys` FocusScope in `ui/white-noise-linux.slint`, and the
+/// composer/media-viewer keys each own component wires for itself. Kept as
+/// one static table, appended to the palette rows by `all_shortcuts`, so the
+/// Keyboard Shortcuts reference and the palette can never drift onto
+/// different key sets for what the palette already covers.
+const EXTRA_SHORTCUTS: &[(&str, &str, &str)] = &[
+    ("Open the command palette", "GLOBAL", "Ctrl K"),
+    ("Search in the open chat", "GLOBAL", "Ctrl F"),
+    ("Zoom in", "GLOBAL", "Ctrl +"),
+    ("Zoom out", "GLOBAL", "Ctrl -"),
+    ("Reset zoom", "GLOBAL", "Ctrl 0"),
+    ("Send message", "COMPOSER", "Enter"),
+    ("Insert a newline", "COMPOSER", "Shift Enter"),
+    ("Paste an image", "COMPOSER", "Ctrl V"),
+    (
+        "Navigate @mention suggestions",
+        "COMPOSER",
+        "\u{2191} \u{2193}",
+    ),
+    ("Accept @mention suggestion", "COMPOSER", "Enter"),
+    ("Dismiss @mention suggestions", "COMPOSER", "Esc"),
+    (
+        "Previous / next attachment",
+        "MEDIA VIEWER",
+        "\u{2190} \u{2192}",
+    ),
+    ("Close viewer", "MEDIA VIEWER", "Esc"),
+    ("Play / pause video", "MEDIA VIEWER", "Space"),
+    ("Toggle fullscreen video", "MEDIA VIEWER", "F"),
+    ("Save attachment", "MEDIA VIEWER", "S"),
+    ("Copy image", "MEDIA VIEWER", "C"),
+];
+
+/// Every row for the Keyboard Shortcuts reference: the palette table (so
+/// renaming/re-keying a palette command can't silently fall out of sync)
+/// plus the bindings above that have no palette entry of their own.
+pub(crate) fn all_shortcuts() -> Vec<PaletteAction> {
+    let mut rows = all_palette_actions();
+    rows.extend(
+        EXTRA_SHORTCUTS
+            .iter()
+            .map(|(label, group, kbd)| PaletteAction {
+                id: s(""),
+                label: s(label),
+                group: s(group),
+                kbd: s(kbd),
+            }),
+    );
+    rows
 }
 
 // Master list of palette actions. The single `palette_commands!` table declares
@@ -1357,6 +1410,12 @@ mod tests {
             ("act.search-messages", "Search all messages", "ACTIONS", ""),
             ("act.copy-npub", "Copy your npub", "ACTIONS", ""),
             ("act.toggle-retro", "Toggle retro mode", "ACTIONS", ""),
+            (
+                "act.keyboard-shortcuts",
+                "Keyboard shortcuts",
+                "ACTIONS",
+                "",
+            ),
         ];
         let actions = all_palette_actions();
         assert_eq!(actions.len(), expected.len());
@@ -1378,6 +1437,22 @@ mod tests {
             assert_eq!(PaletteCommand::from_id(id), Some(command));
         }
         assert_eq!(PaletteCommand::from_id("missing.action"), None);
+    }
+
+    #[test]
+    fn keyboard_shortcuts_start_with_the_palette_rows_and_append_the_rest() {
+        let palette = all_palette_actions();
+        let shortcuts = all_shortcuts();
+        assert_eq!(shortcuts.len(), palette.len() + EXTRA_SHORTCUTS.len());
+        for (row, action) in shortcuts.iter().zip(&palette) {
+            assert_eq!(row.id, action.id);
+        }
+        for (row, (label, group, kbd)) in shortcuts[palette.len()..].iter().zip(EXTRA_SHORTCUTS) {
+            assert_eq!(row.id.as_str(), "");
+            assert_eq!(row.label.as_str(), *label);
+            assert_eq!(row.group.as_str(), *group);
+            assert_eq!(row.kbd.as_str(), *kbd);
+        }
     }
 
     #[test]
