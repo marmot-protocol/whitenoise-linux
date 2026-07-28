@@ -2934,7 +2934,7 @@ msgid "This removes your admin rights. You can't restore them yourself unless an
 msgstr ""
 
 msgctxt "ChatRequestBanner"
-msgid "This sender isn't in your contacts. Accept to start an"
+msgid "This sender isn't in your contacts. Accept to start an encrypted session."
 msgstr ""
 
 msgctxt "AccountSwitcherModal"
@@ -3351,10 +3351,6 @@ msgstr ""
 
 msgctxt "EmojiPicker"
 msgid "search…"
-msgstr ""
-
-msgctxt "ChatRequestBanner"
-msgid "session."
 msgstr ""
 
 msgctxt "ImageTile"
