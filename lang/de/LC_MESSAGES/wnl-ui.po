@@ -240,7 +240,7 @@ msgctxt "GetStartedScreen"
 msgid "Add"
 msgstr "Hinzufügen"
 
-msgctxt "NetworkPane"
+msgctxt "RelayListEditor"
 msgid "Add"
 msgstr "Hinzufügen"
 
@@ -1399,6 +1399,10 @@ msgctxt "ProfilePage"
 msgid "IDENTITY"
 msgstr "IDENTITÄT"
 
+msgctxt "NetworkPane"
+msgid "INBOX RELAYS"
+msgstr "EMPFANGS-RELAYS"
+
 msgctxt "NotificationsPane"
 msgid "INCOMING MESSAGES"
 msgstr "EINGEHENDE NACHRICHTEN"
@@ -1934,6 +1938,10 @@ msgctxt "ErrorCopy"
 msgid "No image selected."
 msgstr "Kein Bild ausgewählt."
 
+msgctxt "NetworkPane"
+msgid "No inbox relays yet. Add one above."
+msgstr "Noch keine Empfangs-Relays. Füge oben eines hinzu."
+
 msgctxt "ErrorCopy"
 msgid "No images found for that search."
 msgstr "Keine Bilder für diese Suche gefunden."
@@ -2047,6 +2055,10 @@ msgstr "AUF DIESEM GERÄT"
 msgctxt "StatusBar"
 msgid "ONLINE"
 msgstr "ONLINE"
+
+msgctxt "NetworkPane"
+msgid "OUTBOX RELAYS (NIP-65)"
+msgstr "SENDE-RELAYS (NIP-65)"
 
 msgctxt "AppearancePane"
 msgid "Ocean"
@@ -2285,10 +2297,6 @@ msgctxt "ChatListPanel"
 msgid "RELAYS"
 msgstr "RELAYS"
 
-msgctxt "NetworkPane"
-msgid "RELAYS"
-msgstr "RELAYS"
-
 msgctxt "StatusBar"
 msgid "RELAYS"
 msgstr "RELAYS"
@@ -2302,8 +2310,8 @@ msgid "Raw events"
 msgstr ""
 
 msgctxt "NetworkPane"
-msgid "Re-broadcasts your relay lists to every relay above. Use this if peers can't find you."
-msgstr "Sendet deine Relay-Listen erneut an jedes Relay oben. Verwende dies, wenn Kontakte dich nicht finden können."
+msgid "Re-broadcasts your outbox and inbox relay lists. Use this if peers can't find you."
+msgstr "Sendet deine Sende- und Empfangs-Relay-Listen erneut. Verwende dies, wenn Kontakte dich nicht finden können."
 
 msgctxt "LoginScreen"
 msgid "Re-enter password"
@@ -2439,6 +2447,10 @@ msgid "Remove this account?"
 msgstr "Dieses Relay entfernen?"
 
 msgctxt "ConfirmFlows"
+msgid "Remove this inbox relay?"
+msgstr "Dieses Empfangs-Relay entfernen?"
+
+msgctxt "ConfirmFlows"
 msgid "Remove this relay?"
 msgstr "Dieses Relay entfernen?"
 
@@ -2477,8 +2489,8 @@ msgid "Replying to {}:"
 msgstr "Antwort an {}:"
 
 msgctxt "NetworkPane"
-msgid "Republish relay list"
-msgstr "Relay-Liste erneut veröffentlichen"
+msgid "Republish relay lists"
+msgstr "Relay-Listen erneut veröffentlichen"
 
 msgctxt "ErrorCopy"
 msgid "Republishing…"
@@ -2612,6 +2624,10 @@ msgstr "STATUS"
 msgctxt "GetStartedScreen"
 msgid "SUGGESTED"
 msgstr "VORGESCHLAGEN"
+
+msgctxt "NetworkPane"
+msgid "SYNC"
+msgstr "SYNCHRONISIERUNG"
 
 msgctxt "AppShell"
 msgid "SYNCED"
@@ -3513,6 +3529,14 @@ msgctxt "ErrorCopy"
 msgid "uploading to Blossom…"
 msgstr "wird zu Blossom hochgeladen…"
 
+msgctxt "NetworkPane"
+msgid "where peers reach you"
+msgstr "wo Kontakte dich erreichen"
+
+msgctxt "NetworkPane"
+msgid "where you publish"
+msgstr "wo du veröffentlichst"
+
 msgctxt "KeysPage"
 msgid "{n} relay"
 msgid_plural "{n} relays"
@@ -3538,6 +3562,10 @@ msgstr "{} verliert den Zugang zu dieser Gruppe und erhält keine Nachrichten me
 msgctxt "ConfirmFlows"
 msgid "{} will stay in the group, but won't be able to manage members or group settings."
 msgstr ""
+
+msgctxt "ConfirmFlows"
+msgid "{} will stop being declared as somewhere peers can reach you. You can add it back anytime."
+msgstr "{} wird nicht mehr als Ort angegeben, an dem Kontakte dich erreichen können. Du kannst es jederzeit wieder hinzufügen."
 
 msgctxt "ConfirmFlows"
 msgid "{} will stop carrying your messages. You can add it back anytime."

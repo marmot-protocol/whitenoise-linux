@@ -69,24 +69,133 @@ component RelayRow inherits Rectangle {
     }
 }
 
+// The add-input + list shared by the outbox and inbox relay sections. Each
+// section owns its own draft/list/error, so this only carries what varies:
+// the model, the inline error, the empty-state copy, and the two callbacks.
+component RelayListEditor inherits Rectangle {
+    in property <[string]> relays;
+    in-out property <string> add-error;
+    in property <string> empty-copy;
+    callback add(string) -> bool;
+    callback remove(string);
+
+    property <string> draft: "wss://";
+
+    // Land the caret after the pre-filled scheme so typing continues
+    // straight into the hostname.
+    init => {
+        input.set-cursor(6);
+    }
+    changed draft => {
+        root.add-error = "";
+    }
+
+    VerticalLayout {
+        // Add row.
+        Rectangle {
+            height: 56px;
+            HorizontalLayout {
+                padding-left: 12px;
+                padding-right: 12px;
+                padding-top: 10px;
+                padding-bottom: 10px;
+                spacing: 8px;
+
+                Rectangle {
+                    horizontal-stretch: 1;
+                    border-width: 1px;
+                    border-color: root.add-error != "" ? Palette.danger-border : (input.has-focus ? Palette.mint : Palette.border-2);
+                    border-radius: (6px) * Theme.r-scale;
+                    background: root.add-error != "" ? Palette.danger-soft : Palette.panel-2;
+                    animate border-color { duration: Theme.transition-dur; }
+                    input := LineInput {
+                        x: 10px;
+                        y: 0;
+                        width: parent.width - 20px;
+                        height: parent.height;
+                        placeholder: "wss://relay.example.com";
+                        text <=> root.draft;
+                        submit => {
+                            if (root.add(root.draft)) {
+                                root.draft = "";
+                            }
+                        }
+                    }
+                }
+
+                VerticalLayout {
+                    alignment: center;
+                    Button {
+                        label: @tr("Add");
+                        bg-color: Palette.mint;
+                        fg: Palette.bubble-out-fg;
+                        PlusIcon {
+                            stroke: Palette.bubble-out-fg;
+                        }
+
+                        clicked => {
+                            if (root.add(root.draft)) {
+                                root.draft = "";
+                            }
+                        }
+                    }
+                }
+            }
+
+            Rectangle {
+                y: parent.height - 1px;
+                width: parent.width;
+                height: 1px;
+                background: Palette.border-2;
+            }
+        }
+
+        if root.add-error != "": HorizontalLayout {
+            padding-left: 16px;
+            padding-right: 16px;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            Text {
+                text: root.add-error;
+                color: Palette.danger;
+                font-size: Theme.fs(11px, 14px);
+                wrap: word-wrap;
+            }
+        }
+
+        // Saved relay list, or empty placeholder.
+        if root.relays.length == 0: Rectangle {
+            height: 56px;
+            Text {
+                x: 16px;
+                width: parent.width - 32px;
+                height: parent.height;
+                text: root.empty-copy;
+                color: Palette.text-lo;
+                font-size: Theme.fs(12px, 16px);
+                vertical-alignment: center;
+            }
+        }
+        for url[i] in root.relays: RelayRow {
+            url: url;
+            show-divider: i < root.relays.length - 1;
+            remove-clicked => {
+                root.remove(url);
+            }
+        }
+    }
+}
+
 export component NetworkPane inherits DetailPage {
     // Reads/writes AppState directly (relay list, health counters, add-error)
     // and invokes its callbacks; the page above passes no bindings.
 
-    property <string> draft: "wss://";
-
-    // The error belongs to the draft, and the draft dies with this pane (it
-    // is recreated on every tab switch) — drop a stale error from a previous
-    // incarnation (the AppState property outlives us), and clear it as the
-    // user edits.
+    // The errors belong to each editor's draft, and the draft dies with this
+    // pane (it is recreated on every tab switch) — drop stale errors from a
+    // previous incarnation (the AppState properties outlive us).
     init => {
         AppState.network-add-error = "";
-        // Land the caret after the pre-filled scheme so typing continues
-        // straight into the hostname.
-        input.set-cursor(6);
-    }
-    changed draft => {
-        AppState.network-add-error = "";
+        AppState.network-inbox-add-error = "";
     }
 
     PageHeader {
@@ -160,97 +269,17 @@ export component NetworkPane inherits DetailPage {
     }
 
     Section {
-        label: @tr("RELAYS");
+        label: @tr("OUTBOX RELAYS (NIP-65)");
+        note: @tr("where you publish");
         GroupCard {
-            // Add row.
-            Rectangle {
-                height: 56px;
-                HorizontalLayout {
-                    padding-left: 12px;
-                    padding-right: 12px;
-                    padding-top: 10px;
-                    padding-bottom: 10px;
-                    spacing: 8px;
-
-                    Rectangle {
-                        horizontal-stretch: 1;
-                        border-width: 1px;
-                        border-color: AppState.network-add-error != "" ? Palette.danger-border : (input.has-focus ? Palette.mint : Palette.border-2);
-                        border-radius: (6px) * Theme.r-scale;
-                        background: AppState.network-add-error != "" ? Palette.danger-soft : Palette.panel-2;
-                        animate border-color { duration: Theme.transition-dur; }
-                        input := LineInput {
-                            x: 10px;
-                            y: 0;
-                            width: parent.width - 20px;
-                            height: parent.height;
-                            placeholder: "wss://relay.example.com";
-                            text <=> root.draft;
-                            submit => {
-                                if (AppState.network-add-relay(root.draft)) {
-                                    root.draft = "";
-                                }
-                            }
-                        }
-                    }
-
-                    VerticalLayout {
-                        alignment: center;
-                        Button {
-                            label: @tr("Add");
-                            bg-color: Palette.mint;
-                            fg: Palette.bubble-out-fg;
-                            PlusIcon {
-                                stroke: Palette.bubble-out-fg;
-                            }
-
-                            clicked => {
-                                if (AppState.network-add-relay(root.draft)) {
-                                    root.draft = "";
-                                }
-                            }
-                        }
-                    }
+            RelayListEditor {
+                relays: AppState.network-relays;
+                add-error <=> AppState.network-add-error;
+                empty-copy: @tr("No relays yet. Add one above.");
+                add(url) => {
+                    return AppState.network-add-relay(url);
                 }
-
-                Rectangle {
-                    y: parent.height - 1px;
-                    width: parent.width;
-                    height: 1px;
-                    background: Palette.border-2;
-                }
-            }
-
-            if AppState.network-add-error != "": HorizontalLayout {
-                padding-left: 16px;
-                padding-right: 16px;
-                padding-top: 8px;
-                padding-bottom: 8px;
-                Text {
-                    text: AppState.network-add-error;
-                    color: Palette.danger;
-                    font-size: Theme.fs(11px, 14px);
-                    wrap: word-wrap;
-                }
-            }
-
-            // Saved relay list, or empty placeholder.
-            if AppState.network-relays.length == 0: Rectangle {
-                height: 56px;
-                Text {
-                    x: 16px;
-                    width: parent.width - 32px;
-                    height: parent.height;
-                    text: @tr("No relays yet. Add one above.");
-                    color: Palette.text-lo;
-                    font-size: Theme.fs(12px, 16px);
-                    vertical-alignment: center;
-                }
-            }
-            for url[i] in AppState.network-relays: RelayRow {
-                url: url;
-                show-divider: i < AppState.network-relays.length - 1;
-                remove-clicked => {
+                remove(url) => {
                     AppState.relay-remove-target = url;
                 }
             }
@@ -310,14 +339,36 @@ export component NetworkPane inherits DetailPage {
                 }
             }
         }
+    }
 
-        // Republish action. Forces your NIP-65 + inbox relay lists to be
-        // re-broadcast declaring the full configured set — fixes a stale list
-        // that only names a subset of relays and leaves you undiscoverable.
+    Section {
+        label: @tr("INBOX RELAYS");
+        note: @tr("where peers reach you");
+        GroupCard {
+            RelayListEditor {
+                relays: AppState.network-inbox-relays;
+                add-error <=> AppState.network-inbox-add-error;
+                empty-copy: @tr("No inbox relays yet. Add one above.");
+                add(url) => {
+                    return AppState.network-add-inbox-relay(url);
+                }
+                remove(url) => {
+                    AppState.relay-inbox-remove-target = url;
+                }
+            }
+        }
+    }
+
+    Section {
+        label: @tr("SYNC");
+        // Republish action. Forces the NIP-65 (outbox) and inbox relay lists
+        // to be re-broadcast, each declaring whatever its own section above
+        // currently contains — fixes a stale list that only names a subset
+        // of relays and leaves you undiscoverable.
         HorizontalLayout {
             alignment: start;
             Button {
-                label: AppState.network-republish-busy ? @tr("Republishing…") : @tr("Republish relay list");
+                label: AppState.network-republish-busy ? @tr("Republishing…") : @tr("Republish relay lists");
                 enabled: !AppState.network-republish-busy;
                 RefreshIcon {
                     stroke: Palette.text-hi;
@@ -332,7 +383,7 @@ export component NetworkPane inherits DetailPage {
         }
 
         Text {
-            text: @tr("Re-broadcasts your relay lists to every relay above. Use this if peers can't find you.");
+            text: @tr("Re-broadcasts your outbox and inbox relay lists. Use this if peers can't find you.");
             color: Palette.text-lo;
             font-size: Theme.fs(11px, 14px);
             wrap: word-wrap;

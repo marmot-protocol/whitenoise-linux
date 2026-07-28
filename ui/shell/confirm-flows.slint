@@ -70,6 +70,19 @@ export component ConfirmFlows inherits Rectangle {
         }
     }
 
+    if AppState.relay-inbox-remove-target != "": ConfirmModal {
+        title: @tr("Remove this inbox relay?");
+        subtitle: @tr("{} will stop being declared as somewhere peers can reach you. You can add it back anytime.", AppState.relay-inbox-remove-target);
+        confirm-label: @tr("Remove");
+        confirm => {
+            AppState.network-remove-inbox-relay(AppState.relay-inbox-remove-target);
+            AppState.relay-inbox-remove-target = "";
+        }
+        dismissed => {
+            AppState.relay-inbox-remove-target = "";
+        }
+    }
+
     if AppState.show-leave-confirm: ConfirmModal {
         x: 0;
         y: 0;

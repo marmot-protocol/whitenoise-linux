@@ -1434,6 +1434,33 @@ pub fn save_relays(relays: &[String]) -> Result<(), String> {
     std::fs::write(&path, bytes).map_err(|e| e.to_string())
 }
 
+/// Read inbox-relay URLs (marmot's kind-10050 "inbox" list — the read side,
+/// where peers should reach this account) from the user's config dir. Falls
+/// back to the outbox (NIP-65) relay list when no inbox-specific file has
+/// been saved yet, so an existing install keeps declaring the same set it
+/// always mirrored into both kinds until the user diverges the two.
+pub fn load_inbox_relays() -> Vec<String> {
+    let Some(proj) = directories::ProjectDirs::from("", "", "whitenoise-linux") else {
+        return Vec::new();
+    };
+    let path = proj.config_dir().join("inbox-relays.json");
+    let Ok(bytes) = std::fs::read(&path) else {
+        return load_relays();
+    };
+    serde_json::from_slice::<Vec<String>>(&bytes).unwrap_or_default()
+}
+
+/// Persist the inbox relay list. Best-effort — surfaces an error string on failure.
+pub fn save_inbox_relays(relays: &[String]) -> Result<(), String> {
+    let proj = directories::ProjectDirs::from("", "", "whitenoise-linux")
+        .ok_or_else(|| "no config dir".to_string())?;
+    let dir = proj.config_dir();
+    std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+    let path = dir.join("inbox-relays.json");
+    let bytes = serde_json::to_vec_pretty(relays).map_err(|e| e.to_string())?;
+    std::fs::write(&path, bytes).map_err(|e| e.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

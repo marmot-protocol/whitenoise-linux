@@ -1373,6 +1373,7 @@ pub(crate) fn wire_panes(
         // Routes through push_network_relays so suggested-relay chips are seeded too.
         let initial = backend::load_relays();
         push_network_relays(ui, &initial);
+        push_network_inbox_relays(ui, &backend::load_inbox_relays());
         ui.set_network_booted_relays(ModelRc::new(VecModel::from(Vec::<SharedString>::new())));
         ui.set_network_connected(0);
         ui.set_network_total(0);
@@ -1423,6 +1424,9 @@ pub(crate) fn wire_panes(
         move || reconnect()
     });
 
+    // Add/remove for both lists share validate+dedupe+persist logic via
+    // relays::add_relay_to_list / remove_relay_from_list; only the model,
+    // save fn, error field, and (outbox-only) reboot trigger vary here.
     ui.global::<AppState>().on_network_add_relay({
         let weak = ui.as_weak();
         let reboot = reconnect_relays.clone();
@@ -1432,35 +1436,26 @@ pub(crate) fn wire_panes(
             let Some(ui) = weak.upgrade() else {
                 return false;
             };
-            let trimmed = raw.trim().to_string();
-            if let Err(msg) = validate_relay_url(&trimmed) {
-                ui.set_network_add_error(msg.into());
-                ui.set_network_status(SharedString::default());
-                return false;
+            let mut list = vec_string_from_model(&ui.get_network_relays());
+            match add_relay_to_list(&raw, &mut list, backend::save_relays) {
+                Ok(()) => {
+                    ui.set_network_add_error(SharedString::default());
+                    push_network_relays(&ui, &list);
+                    show_network_status(&ui, error_copy().relay_added, StatusKind::Ok);
+                    // First-run (no chats yet): connect the freshly-added relay
+                    // live right away. Once chats exist, the banner's "Reconnect
+                    // now" button applies the change instead.
+                    if ui.get_chats().row_count() == 0 {
+                        reboot();
+                    }
+                    true
+                }
+                Err(msg) => {
+                    ui.set_network_add_error(msg.into());
+                    ui.set_network_status(SharedString::default());
+                    false
+                }
             }
-            let mut list: Vec<String> = vec_string_from_model(&ui.get_network_relays());
-            if list.iter().any(|u| u.eq_ignore_ascii_case(&trimmed)) {
-                ui.set_network_add_error(error_copy().relay_already_listed.into());
-                ui.set_network_status(SharedString::default());
-                return false;
-            }
-            list.push(trimmed);
-            if let Err(e) = backend::save_relays(&list) {
-                tracing::warn!(target: "network", "save relays failed: {e}");
-                ui.set_network_add_error(error_copy().save_relays_failed.into());
-                ui.set_network_status(SharedString::default());
-                return false;
-            }
-            ui.set_network_add_error(SharedString::default());
-            push_network_relays(&ui, &list);
-            show_network_status(&ui, error_copy().relay_added, StatusKind::Ok);
-            // First-run (no chats yet): connect the freshly-added relay live
-            // right away. Once chats exist, the banner's "Reconnect now"
-            // button applies the change instead — see `reconnect_relays`.
-            if ui.get_chats().row_count() == 0 {
-                reboot();
-            }
-            true
         }
     });
 
@@ -1469,23 +1464,61 @@ pub(crate) fn wire_panes(
         let reboot = reconnect_relays.clone();
         move |url| {
             let Some(ui) = weak.upgrade() else { return };
-            let mut list: Vec<String> = vec_string_from_model(&ui.get_network_relays());
-            let before = list.len();
-            list.retain(|u| u != url.as_str());
-            if list.len() == before {
-                return;
+            let mut list = vec_string_from_model(&ui.get_network_relays());
+            match remove_relay_from_list(&url, &mut list, backend::save_relays) {
+                Ok(true) => {
+                    push_network_relays(&ui, &list);
+                    show_network_status(&ui, error_copy().relay_removed, StatusKind::Ok);
+                    // First-run: re-boot so the live transport drops the removed
+                    // relay right away; otherwise leave it to "Reconnect now".
+                    if ui.get_chats().row_count() == 0 {
+                        reboot();
+                    }
+                }
+                Ok(false) => {}
+                Err(msg) => show_network_status(&ui, msg, StatusKind::Error),
             }
-            if let Err(e) = backend::save_relays(&list) {
-                tracing::warn!(target: "network", "save relays failed: {e}");
-                show_network_status(&ui, error_copy().save_relays_failed, StatusKind::Error);
-                return;
+        }
+    });
+
+    // Not part of the connect pool, so unlike the outbox pair above these
+    // never trigger a reboot — they only change what we declare, not what
+    // we're connected to.
+    ui.global::<AppState>().on_network_add_inbox_relay({
+        let weak = ui.as_weak();
+        move |raw| {
+            let Some(ui) = weak.upgrade() else {
+                return false;
+            };
+            let mut list = vec_string_from_model(&ui.get_network_inbox_relays());
+            match add_relay_to_list(&raw, &mut list, backend::save_inbox_relays) {
+                Ok(()) => {
+                    ui.set_network_inbox_add_error(SharedString::default());
+                    push_network_inbox_relays(&ui, &list);
+                    show_network_status(&ui, error_copy().relay_added, StatusKind::Ok);
+                    true
+                }
+                Err(msg) => {
+                    ui.set_network_inbox_add_error(msg.into());
+                    ui.set_network_status(SharedString::default());
+                    false
+                }
             }
-            push_network_relays(&ui, &list);
-            show_network_status(&ui, error_copy().relay_removed, StatusKind::Ok);
-            // First-run: re-boot so the live transport drops the removed
-            // relay right away; otherwise leave it to "Reconnect now".
-            if ui.get_chats().row_count() == 0 {
-                reboot();
+        }
+    });
+
+    ui.global::<AppState>().on_network_remove_inbox_relay({
+        let weak = ui.as_weak();
+        move |url| {
+            let Some(ui) = weak.upgrade() else { return };
+            let mut list = vec_string_from_model(&ui.get_network_inbox_relays());
+            match remove_relay_from_list(&url, &mut list, backend::save_inbox_relays) {
+                Ok(true) => {
+                    push_network_inbox_relays(&ui, &list);
+                    show_network_status(&ui, error_copy().relay_removed, StatusKind::Ok);
+                }
+                Ok(false) => {}
+                Err(msg) => show_network_status(&ui, msg, StatusKind::Error),
             }
         }
     });
@@ -1553,9 +1586,13 @@ pub(crate) fn wire_panes(
                     let Some(ui) = weak.upgrade() else { return };
                     ui.set_network_republish_busy(false);
                     match result {
-                        Ok(n) => show_network_status(
+                        Ok((outbox, inbox)) => show_network_status(
                             &ui,
-                            format!("Republished to {n} relay{}.", if n == 1 { "" } else { "s" }),
+                            format!(
+                                "Republished — {outbox} outbox relay{}, {inbox} inbox relay{}.",
+                                if outbox == 1 { "" } else { "s" },
+                                if inbox == 1 { "" } else { "s" }
+                            ),
                             StatusKind::Ok,
                         ),
                         Err(e) => show_network_status(&ui, e, StatusKind::Error),

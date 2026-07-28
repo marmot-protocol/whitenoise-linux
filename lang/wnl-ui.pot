@@ -232,7 +232,7 @@ msgctxt "GetStartedScreen"
 msgid "Add"
 msgstr ""
 
-msgctxt "NetworkPane"
+msgctxt "RelayListEditor"
 msgid "Add"
 msgstr ""
 
@@ -1336,6 +1336,10 @@ msgctxt "ProfilePage"
 msgid "IDENTITY"
 msgstr ""
 
+msgctxt "NetworkPane"
+msgid "INBOX RELAYS"
+msgstr ""
+
 msgctxt "NotificationsPane"
 msgid "INCOMING MESSAGES"
 msgstr ""
@@ -1850,6 +1854,10 @@ msgctxt "ErrorCopy"
 msgid "No image selected."
 msgstr ""
 
+msgctxt "NetworkPane"
+msgid "No inbox relays yet. Add one above."
+msgstr ""
+
 msgctxt "ErrorCopy"
 msgid "No images found for that search."
 msgstr ""
@@ -1958,6 +1966,10 @@ msgstr ""
 
 msgctxt "StatusBar"
 msgid "ONLINE"
+msgstr ""
+
+msgctxt "NetworkPane"
+msgid "OUTBOX RELAYS (NIP-65)"
 msgstr ""
 
 msgctxt "AppearancePane"
@@ -2181,10 +2193,6 @@ msgctxt "ChatListPanel"
 msgid "RELAYS"
 msgstr ""
 
-msgctxt "NetworkPane"
-msgid "RELAYS"
-msgstr ""
-
 msgctxt "StatusBar"
 msgid "RELAYS"
 msgstr ""
@@ -2198,7 +2206,7 @@ msgid "Raw events"
 msgstr ""
 
 msgctxt "NetworkPane"
-msgid "Re-broadcasts your relay lists to every relay above. Use this if peers can't find you."
+msgid "Re-broadcasts your outbox and inbox relay lists. Use this if peers can't find you."
 msgstr ""
 
 msgctxt "LoginScreen"
@@ -2328,6 +2336,10 @@ msgid "Remove this account?"
 msgstr ""
 
 msgctxt "ConfirmFlows"
+msgid "Remove this inbox relay?"
+msgstr ""
+
+msgctxt "ConfirmFlows"
 msgid "Remove this relay?"
 msgstr ""
 
@@ -2364,7 +2376,7 @@ msgid "Replying to {}:"
 msgstr ""
 
 msgctxt "NetworkPane"
-msgid "Republish relay list"
+msgid "Republish relay lists"
 msgstr ""
 
 msgctxt "ErrorCopy"
@@ -2493,6 +2505,10 @@ msgstr ""
 
 msgctxt "GetStartedScreen"
 msgid "SUGGESTED"
+msgstr ""
+
+msgctxt "NetworkPane"
+msgid "SYNC"
 msgstr ""
 
 msgctxt "AppShell"
@@ -3365,6 +3381,14 @@ msgctxt "ErrorCopy"
 msgid "uploading to Blossom…"
 msgstr ""
 
+msgctxt "NetworkPane"
+msgid "where peers reach you"
+msgstr ""
+
+msgctxt "NetworkPane"
+msgid "where you publish"
+msgstr ""
+
 msgctxt "KeysPage"
 msgid "{n} relay"
 msgid_plural "{n} relays"
@@ -3389,6 +3413,10 @@ msgstr ""
 
 msgctxt "ConfirmFlows"
 msgid "{} will stay in the group, but won't be able to manage members or group settings."
+msgstr ""
+
+msgctxt "ConfirmFlows"
+msgid "{} will stop being declared as somewhere peers can reach you. You can add it back anytime."
 msgstr ""
 
 msgctxt "ConfirmFlows"

@@ -639,6 +639,18 @@ export global AppState {
     callback network-remove-relay(string);
     callback network-refresh-health();
     callback network-republish-relay-list();
+    // Inbox relays (marmot's kind-10050 list, read-side/"where peers reach
+    // you") declared separately from the outbox (NIP-65) list above — the two
+    // used to be mirrored into one bundled list. Same shape as the outbox
+    // properties/callbacks, kept as its own set rather than parameterizing
+    // the pane, since the add/remove/error flows differ only in which list
+    // they touch.
+    in-out property <[string]> network-inbox-relays;
+    in-out property <string> network-inbox-add-error;
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <string> relay-inbox-remove-target: "";
+    callback network-add-inbox-relay(string) -> bool;
+    callback network-remove-inbox-relay(string);
     // Re-boots the backend against the current on-disk relay list, using the
     // already-unlocked vault — reconnects live instead of requiring the user
     // to quit and relaunch the app. Shows the boot splash for the duration.
