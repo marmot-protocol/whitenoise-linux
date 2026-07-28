@@ -160,11 +160,18 @@ export component OutgoingRow inherits VerticalLayout {
                     reply-preview-text: root.msg.text;
                     reply-author: @tr("You");
                     can-edit: root.msg.can-edit;
-                    // `bubble.hovered` joins in because the selection area
-                    // inside the bubble consumes hover while the pointer is
-                    // over body text, which starves the row-level sensor.
-                    visible: root.msg.message-id != "" && !root.msg.pending && !root.msg.failed && !root.msg.deleted && (hover.has-hover || self.hovered || bubble.hovered);
-                    opacity: (hover.has-hover || self.hovered || bubble.hovered) ? 1.0 : 0.0;
+                    // Stays mounted (`visible` only gates on the message
+                    // existing/being sendable) so its buttons stay in the Tab
+                    // chain; a `visible: false` toggle here would clip the
+                    // whole bar out of Slint's focus traversal, matching
+                    // Button's own opacity-only hide/reveal. `bubble.hovered`
+                    // joins in because the selection area inside the bubble
+                    // consumes hover while the pointer is over body text,
+                    // which starves the row-level sensor; `self.focus-within`
+                    // joins in so Tab-ing onto a button reveals the bar the
+                    // same way hovering does.
+                    visible: root.msg.message-id != "" && !root.msg.pending && !root.msg.failed && !root.msg.deleted;
+                    opacity: (hover.has-hover || self.hovered || bubble.hovered || self.focus-within) ? 1.0 : 0.0;
                     animate opacity { duration: Theme.hover-dur; }
                 }
             }
