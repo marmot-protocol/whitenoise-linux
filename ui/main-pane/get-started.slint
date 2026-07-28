@@ -145,13 +145,16 @@ component StepCard inherits Rectangle {
 export component GetStartedScreen inherits Rectangle {
     // Reads relay/key-package state and invokes setup actions on AppState
     // directly; the pane above passes no bindings.
-    property <string> relay-draft;
+    property <string> relay-draft: "wss://";
 
     // The error belongs to the draft, and the draft dies with this screen —
     // drop a stale error from a previous incarnation (the AppState property
     // outlives us), and clear it as the user edits.
     init => {
         AppState.network-add-error = "";
+        // Land the caret after the pre-filled scheme so typing continues
+        // straight into the hostname.
+        relay-input.set-cursor(6);
     }
     changed relay-draft => {
         AppState.network-add-error = "";
