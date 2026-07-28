@@ -68,6 +68,33 @@ pub fn clear() {
     let _ = std::fs::remove_dir_all(cache_dir());
 }
 
+/// Evict a single cache entry by its blob hash. Called when the message
+/// referencing it is deleted (kind-5 retraction or local-only hide), so its
+/// decrypted bytes don't keep sitting on disk past the message's own life.
+/// Best-effort: a missing entry is not an error.
+pub fn remove(hash_hex: &str) {
+    if let Some(path) = path_for(hash_hex) {
+        let _ = std::fs::remove_file(path);
+    }
+}
+
+/// Every `ciphertext_sha256` value carried by `tags`' `imeta` entries — the
+/// cache key for each attachment on a message (one per image in an album, or
+/// the sole attachment). Used to resolve which entries to [`remove`] on
+/// delete; unlike [`crate::parse_all_media_references`] this only needs the
+/// one field eviction cares about, so it doesn't require every other `imeta`
+/// field to be present.
+pub fn hashes_from_tags(tags: &[Vec<String>]) -> Vec<String> {
+    tags.iter()
+        .filter(|t| t.first().map(String::as_str) == Some("imeta"))
+        .filter_map(|t| {
+            t.iter()
+                .find_map(|field| field.strip_prefix("ciphertext_sha256 "))
+        })
+        .map(str::to_string)
+        .collect()
+}
+
 /// Total size on disk of the sealed cache entries, in bytes. Walks the cache
 /// dir (flat — no subdirs) and sums file lengths. Best-effort: an unreadable
 /// dir or entry just contributes nothing. Does IO, so call it off the UI thread.
