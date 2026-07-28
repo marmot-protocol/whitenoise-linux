@@ -31,6 +31,45 @@ export component EmojiPicker inherits Rectangle {
     property <length> panel-w: 2 * self.grid-pad + self.cols * self.cell-size + (self.cols - 1) * self.cell-spacing + 15px /* scrollbar + breathing */;
     property <length> panel-h: 280px;
 
+    // ── Keyboard grid navigation ─────────────────────────────────────────
+    // Index into `emoji-list` (the recent row stays mouse-only, matching the
+    // issue's scope). ↑/↓ step a whole row, ←/→ and Tab/Backtab step one
+    // cell, clamped to the current list — mirrors the selection pattern
+    // MenuItem/MessageContextMenu use for their own lists.
+    in-out property <int> selected-index: 0;
+    property <int> total: root.emoji-list.length;
+
+    function clamp-index(k: int) -> int {
+        return max(0, min(k, root.total - 1));
+    }
+    function move-vertical(delta: int) {
+        if (root.total > 0) {
+            root.selected-index = root.clamp-index(root.selected-index + delta * root.cols);
+            root.ensure-selected-visible();
+        }
+    }
+    function move-horizontal(delta: int) {
+        if (root.total > 0) {
+            root.selected-index = root.clamp-index(root.selected-index + delta);
+            root.ensure-selected-visible();
+        }
+    }
+    function activate-selected() {
+        if (root.selected-index >= 0 && root.selected-index < root.total) {
+            root.picked(root.emoji-list[root.selected-index].emoji);
+        }
+    }
+    // Scrolls the grid so the selected row is inside the visible viewport —
+    // the grid is virtualized (see `scroll`/`grid-frame` below), so moving
+    // the selection past the pool's overscan needs an explicit nudge.
+    function ensure-selected-visible() {
+        if (root.grid-pad + (root.selected-index / root.cols) * root.row-h < -scroll.viewport-y) {
+            scroll.viewport-y = -(root.grid-pad + (root.selected-index / root.cols) * root.row-h);
+        } else if (root.grid-pad + (root.selected-index / root.cols) * root.row-h + root.cell-size > -scroll.viewport-y + scroll.visible-height) {
+            scroll.viewport-y = scroll.visible-height - (root.grid-pad + (root.selected-index / root.cols) * root.row-h + root.cell-size);
+        }
+    }
+
     // Backdrop — invisible but eats clicks for dismissal.
     TouchArea {
         clicked => {
@@ -110,6 +149,7 @@ export component EmojiPicker inherits Rectangle {
                             tile: root.tile;
                             clip-x: e.clip-x;
                             clip-y: e.clip-y;
+                            label: e.name;
                             picked => {
                                 root.picked(e.emoji);
                             }
@@ -139,6 +179,21 @@ export component EmojiPicker inherits Rectangle {
                             fg: Palette.text-hi;
                             placeholder-color: Palette.text-lo;
                         font-size: Theme.fsr(12px, 16px);
+                            capture-nav: true;
+                            capture-horizontal: true;
+                            nav-tab-commits: false;
+                            nav(delta) => {
+                                root.move-vertical(delta);
+                            }
+                            nav-horizontal(delta) => {
+                                root.move-horizontal(delta);
+                            }
+                            commit-mention => {
+                                root.activate-selected();
+                            }
+                            dismiss-mention => {
+                                root.dismissed();
+                            }
                         }
                     }
                 }
@@ -199,10 +254,12 @@ export component EmojiPicker inherits Rectangle {
                                         width: 100%;
                                         height: 100%;
                                         active: cell-slot.active;
+                                        selected: cell-slot.active && cell-slot.flat-idx == root.selected-index;
                                         sprite: root.sprite;
                                         tile: root.tile;
                                         clip-x: cell-slot.active ? emoji-list[cell-slot.flat-idx].clip-x : 0;
                                         clip-y: cell-slot.active ? emoji-list[cell-slot.flat-idx].clip-y : 0;
+                                        label: cell-slot.active ? emoji-list[cell-slot.flat-idx].name : "";
                                         picked => {
                                             if (cell-slot.active) {
                                                 root.picked(emoji-list[cell-slot.flat-idx].emoji);
@@ -241,11 +298,14 @@ export component EmojiPicker inherits Rectangle {
         }
     }
 
-    // Echo query changes back to Rust so it can refilter the grid.
+    // Echo query changes back to Rust so it can refilter the grid; the old
+    // selected-index may no longer point at the same emoji (or may be past
+    // the end of a shorter result set), so reset it to the top match.
     property <string> last-query: "";
     changed query => {
         if (root.query != root.last-query) {
             root.last-query = root.query;
+            root.selected-index = 0;
             root.query-changed(root.query);
         }
     }

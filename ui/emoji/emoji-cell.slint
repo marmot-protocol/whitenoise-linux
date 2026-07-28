@@ -10,11 +10,25 @@ export component EmojiCell inherits Rectangle {
     in property <int> tile;
     in property <int> clip-x;
     in property <int> clip-y;
+    in property <string> label;
+    // Keyboard selection — highlighted exactly like hover so arrow-key/Tab
+    // users get the same visible affordance mouse users get (mirrors
+    // MenuItem.selected).
+    in property <bool> selected: false;
     callback picked();
+
+    property <bool> highlighted: cell.has-hover || root.selected;
 
     visible: root.active;
     border-radius: (4px) * Theme.r-scale;
-    background: cell.has-hover ? Palette.hover : transparent;
+    background: root.highlighted ? Palette.hover : transparent;
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-action-default => {
+        if (root.active) {
+            root.picked();
+        }
+    }
 
     Image {
         x: (parent.width - self.width) / 2;
@@ -25,10 +39,10 @@ export component EmojiCell inherits Rectangle {
         source-clip-y: root.clip-y;
         source-clip-width: root.tile;
         source-clip-height: root.tile;
-        // Slight pop on hover so the glyph responds along with the cell
-        // highlight.
-        width: cell.has-hover ? 26px : 22px;
-        height: cell.has-hover ? 26px : 22px;
+        // Slight pop on hover/selection so the glyph responds along with the
+        // cell highlight.
+        width: root.highlighted ? 26px : 22px;
+        height: root.highlighted ? 26px : 22px;
         animate width, height {
             duration: 80ms;
             easing: ease-out;
