@@ -10,6 +10,7 @@ import { EmojiCell } from "emoji-cell.slint";
 // scroll, so no subtree churn ever.
 export component EmojiPicker inherits Rectangle {
     in property <[EmojiEntry]> emoji-list;
+    in property <[EmojiEntry]> recent-emoji-list;
     in property <image> sprite;
     in property <int> tile;
     in-out property <string> query;
@@ -84,6 +85,37 @@ export component EmojiPicker inherits Rectangle {
             VerticalLayout {
                 padding: 8px;
                 spacing: 8px;
+
+                // ── Recent row ───────────────────────────────────────────
+                // Last emoji picked from this grid (Rust tracks them in
+                // Settings.recent_emoji), so the common case is one click
+                // instead of a scroll or a search on every use.
+                if root.recent-emoji-list.length > 0: VerticalLayout {
+                    vertical-stretch: 0;
+                    spacing: 4px;
+                    Text {
+                        text: @tr("Recent");
+                        font-size: Theme.fs(9px, 12px);
+                        color: Palette.text-lo;
+                    }
+                    HorizontalLayout {
+                        vertical-stretch: 0;
+                        spacing: root.cell-spacing;
+                        alignment: start;
+                        for e in root.recent-emoji-list: EmojiCell {
+                            width: root.cell-size;
+                            height: root.cell-size;
+                            active: true;
+                            sprite: root.sprite;
+                            tile: root.tile;
+                            clip-x: e.clip-x;
+                            clip-y: e.clip-y;
+                            picked => {
+                                root.picked(e.emoji);
+                            }
+                        }
+                    }
+                }
 
                 // ── Search bar ─────────────────────────────────────────────
             Rectangle {

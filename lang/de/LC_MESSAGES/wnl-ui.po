@@ -2314,6 +2314,10 @@ msgctxt "QuickReactCell"
 msgid "React with {}"
 msgstr "Mit {} reagieren"
 
+msgctxt "EmojiPicker"
+msgid "Recent"
+msgstr "Zuletzt verwendet"
+
 msgctxt "NetworkPane"
 msgid "Reconnect now"
 msgstr "Jetzt neu verbinden"
