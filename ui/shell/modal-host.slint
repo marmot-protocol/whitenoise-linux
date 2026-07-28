@@ -9,6 +9,7 @@ import { Palette, TextSelection } from "../tokens.slint";
 import { StartNewChatModal } from "../modals/start-new-chat-modal.slint";
 import { AddContactModal } from "../modals/add-contact-modal.slint";
 import { NicknameModal } from "../modals/nickname-modal.slint";
+import { CustomEmojiModal } from "../modals/custom-emoji-modal.slint";
 import { AccountSwitcherModal } from "../modals/account-switcher-modal.slint";
 import { AddAccountModal } from "../modals/add-account-modal.slint";
 import { RevealNsecModal } from "../modals/reveal-nsec-modal.slint";
@@ -153,6 +154,21 @@ export component ModalHost inherits Rectangle {
             }
             dismissed => {
                 AppState.nickname-modal-dismissed();
+            }
+        }
+
+        if AppState.show-custom-emoji-modal: CustomEmojiModal {
+            shortcode-text <=> AppState.custom-emoji-modal-shortcode;
+            preview: AppState.custom-emoji-modal-preview;
+            has-preview: AppState.custom-emoji-modal-has-preview;
+            busy: AppState.custom-emoji-modal-busy;
+            status: AppState.custom-emoji-modal-status;
+            status-color: AppState.custom-emoji-modal-status-error ? Palette.danger : Palette.text-lo;
+            save(shortcode) => {
+                AppState.custom-emoji-modal-save(shortcode);
+            }
+            dismissed => {
+                AppState.custom-emoji-modal-dismissed();
             }
         }
 

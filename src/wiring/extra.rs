@@ -1037,20 +1037,43 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     });
 
     // ─── Emoji picker ─────────────────────────────────────────────────
-    // The picker's source list is the entire Unicode emoji catalog from the
-    // `emojis` crate, filtered by the search query. Rebuilt on each query
-    // change and on open.
+    // The picker's source list is the user's custom emoji (settings.rs) ahead
+    // of the entire Unicode emoji catalog from the `emojis` crate, both
+    // filtered by the search query. Rebuilt on each query change and on open.
     let emoji_query: Rc<RefCell<String>> = Rc::new(RefCell::new(String::new()));
     let refresh_emoji_rows = {
         let weak = ui.as_weak();
         let emoji_query = emoji_query.clone();
+        let settings_cell = settings_cell.clone();
+        let backend_cell = backend_cell.clone();
         move || {
             let Some(ui) = weak.upgrade() else { return };
             let q = emoji_query.borrow().clone();
-            let list = build_emoji_list(&q);
-            let total = list.len();
-            ui.set_emoji_list(ModelRc::new(VecModel::from(list)));
-            ui.set_emoji_shown(total as i32);
+            let custom = settings_cell.borrow().custom_emoji.clone();
+            let missing = build_and_set_emoji_rows(&ui, &custom, &q);
+            if missing.is_empty() {
+                return;
+            }
+            let Some(backend) = backend_cell.lock().unwrap().clone() else {
+                return;
+            };
+            let weak = weak.clone();
+            backend.tokio_handle().spawn(async move {
+                let mut any = false;
+                for url in missing {
+                    if fetch_picture_pixels(&url).await.is_some() {
+                        any = true;
+                    }
+                }
+                // A permanently failing URL must not loop the refresh forever.
+                if !any {
+                    return;
+                }
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(ui) = weak.upgrade() else { return };
+                    build_and_set_emoji_rows(&ui, &custom, &q);
+                });
+            });
         }
     };
 

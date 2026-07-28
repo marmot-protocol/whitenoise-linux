@@ -510,6 +510,10 @@ msgctxt "AboutPane"
 msgid "CREDITS"
 msgstr "編集"
 
+msgctxt "GeneralPane"
+msgid "CUSTOM EMOJI"
+msgstr "カスタム絵文字"
+
 msgctxt "StoragePane"
 msgid "Cached attachments"
 msgstr "キャッシュされた添付ファイル"
@@ -549,6 +553,10 @@ msgstr "キャンセル"
 
 #, fuzzy
 msgctxt "ConfirmModal"
+msgid "Cancel"
+msgstr "キャンセル"
+
+msgctxt "CustomEmojiModal"
 msgid "Cancel"
 msgstr "キャンセル"
 
@@ -641,6 +649,10 @@ msgstr "確認中…"
 msgctxt "ErrorCopy"
 msgid "Choose a backup file first."
 msgstr "先にバックアップファイルを選んでください。"
+
+msgctxt "NativeDialogStrings"
+msgid "Choose a custom emoji image"
+msgstr "カスタム絵文字の画像を選択"
 
 msgctxt "LoginScreen"
 msgid "Choose a password"
@@ -956,6 +968,10 @@ msgid "Couldn't save image."
 msgstr "画像を保存できませんでした。"
 
 msgctxt "ErrorCopy"
+msgid "Couldn't save video."
+msgstr ""
+
+msgctxt "ErrorCopy"
 msgid "Couldn't save your edit. Check your connection and try again."
 msgstr "編集を保存できませんでした。接続を確認して、もう一度お試しください。"
 
@@ -1019,6 +1035,10 @@ msgstr "ボールトのパスワードで暗号化された NIP-49 キーを作�
 msgctxt "StartNewChatModal"
 msgid "Creating…"
 msgstr "保存中…"
+
+msgctxt "CustomEmojiModal"
+msgid "Custom Emoji"
+msgstr "カスタム絵文字"
 
 msgctxt "KeysPage"
 msgid "DANGER ZONE"
@@ -1128,6 +1148,10 @@ msgctxt "ProfilePage"
 msgid "Display name"
 msgstr "表示名"
 
+msgctxt "ConfirmFlows"
+msgid "Don't ask again for this site"
+msgstr "このサイトでは今後確認しない"
+
 #. control lives inline next to the key) and the footer just closes.
 msgctxt "ExportKeyModal"
 msgid "Done"
@@ -1197,6 +1221,10 @@ msgid "End-to-end encryption"
 msgstr "エンドツーエンド暗号化:"
 
 msgctxt "ErrorCopy"
+msgid "Enter a name for this emoji."
+msgstr "この絵文字の名前を入力してください。"
+
+msgctxt "ErrorCopy"
 msgid "Enter a relay address."
 msgstr "リレーのアドレスを入力してください。"
 
@@ -1260,6 +1288,10 @@ msgstr "2月"
 msgctxt "MessagesArea"
 msgid "Fetching the latest conversation history."
 msgstr "最新の会話履歴を取得しています。"
+
+msgctxt "AdvancedPane"
+msgid "Forget trusted site {}"
+msgstr "{} の信頼を解除"
 
 msgctxt "MessageContextMenu"
 msgid "Forward"
@@ -1354,6 +1386,10 @@ msgstr "メンバーを非表示"
 msgctxt "PasswordField"
 msgid "Hide password"
 msgstr "パスワードを隠す"
+
+msgctxt "ModalField"
+msgid "Hide value"
+msgstr ""
 
 msgctxt "ProfilePage"
 msgid "How your name appears in chats"
@@ -1629,6 +1665,10 @@ msgctxt "ProfilePage"
 msgid "Lightning address (LUD-16)"
 msgstr "Lightning アドレス (LUD-16)"
 
+msgctxt "AdvancedPane"
+msgid "Links to these exact sites open without confirmation."
+msgstr "これらのサイトへのリンクは確認なしで開きます。"
+
 msgctxt "MessagesArea"
 msgid "Load earlier messages"
 msgstr "以前のメッセージを読み込む"
@@ -1724,6 +1764,14 @@ msgctxt "month"
 msgid "Mar"
 msgstr "3月"
 
+msgctxt "ChatContextMenu"
+msgid "Mark as read"
+msgstr ""
+
+msgctxt "ChatContextMenu"
+msgid "Mark as unread"
+msgstr ""
+
 msgctxt "month"
 msgid "May"
 msgstr "5月"
@@ -1809,6 +1857,10 @@ msgstr ""
 msgctxt "ErrorCopy"
 msgid "Name can't be empty."
 msgstr "名前を空にはできません。"
+
+msgctxt "CustomEmojiModal"
+msgid "Name it, then react or type the name anywhere the picker opens."
+msgstr "名前を付けてください。ピッカーが開く場所ならどこでも、リアクションしたり名前を入力したりできます。"
 
 #. are translated.
 msgctxt "command palette footer"
@@ -1977,6 +2029,14 @@ msgctxt "ErrorCopy"
 msgid "No secret key for this account is stored on this device."
 msgstr "このアカウントの秘密鍵はこの端末に保存されていません。"
 
+msgctxt "AdvancedPane"
+msgid "No trusted sites."
+msgstr "信頼済みのサイトはありません。"
+
+msgctxt "ErrorCopy"
+msgid "No video selected."
+msgstr ""
+
 #. Network-pane status copy (also Rust-set).
 msgctxt "ErrorCopy"
 msgid "Not connected yet. Please wait a moment and try again."
@@ -2052,6 +2112,10 @@ msgstr "開く"
 msgctxt "StoragePane"
 msgid "Open folder"
 msgstr "フォルダを開く"
+
+msgctxt "RunCell"
+msgid "Open link {}"
+msgstr ""
 
 msgctxt "ConfirmFlows"
 msgid "Open this link?"
@@ -2410,6 +2474,10 @@ msgctxt "ConfirmFlows"
 msgid "Remove this relay?"
 msgstr "このリレーを削除しますか？"
 
+msgctxt "GeneralPane"
+msgid "Remove {} emoji"
+msgstr "{} の絵文字を削除"
+
 msgctxt "ConfirmFlows"
 msgid "Remove {} from contacts?"
 msgstr "{}を連絡先から削除しますか？"
@@ -2561,6 +2629,10 @@ msgctxt "SettingsSidebar"
 msgid "SETTINGS"
 msgstr "設定"
 
+msgctxt "CustomEmojiModal"
+msgid "SHORTCODE"
+msgstr "名前"
+
 msgctxt "GeneralPane"
 msgid "STARTUP"
 msgstr "起動"
@@ -2608,6 +2680,10 @@ msgstr "共有して問題ありません。他のユーザーがあなたを見
 msgctxt "weekday"
 msgid "Sat"
 msgstr "土曜日"
+
+msgctxt "CustomEmojiModal"
+msgid "Save"
+msgstr "保存"
 
 #, fuzzy
 msgctxt "HeroEditField"
@@ -2832,6 +2908,14 @@ msgctxt "PasswordField"
 msgid "Show password"
 msgstr "パスワードを表示"
 
+msgctxt "ModalField"
+msgid "Show value"
+msgstr ""
+
+msgctxt "GeneralPane"
+msgid "Shown in the picker next to the built-in set. Tap one to remove it."
+msgstr "内蔵セットの隣にピッカーで表示されます。タップすると削除できます。"
+
 msgctxt "GeneralPane"
 msgid "Shown on the message toolbar and menu. Tap one to remove it."
 msgstr "メッセージのツールバーとメニューに表示されます。タップすると削除できます。"
@@ -2938,6 +3022,10 @@ msgstr ""
 msgctxt "AppearancePane"
 msgid "THEME"
 msgstr "テーマ"
+
+msgctxt "AdvancedPane"
+msgid "TRUSTED LINK SITES"
+msgstr "信頼済みのリンク先"
 
 msgctxt "ThemePicker"
 msgid "Terminal"
@@ -3119,10 +3207,18 @@ msgctxt "PictureField"
 msgid "Upload"
 msgstr "アップロード"
 
+msgctxt "GeneralPane"
+msgid "Uploaded emoji"
+msgstr "アップロード済みの絵文字"
+
 #, fuzzy
 msgctxt "AvatarEditable"
 msgid "Uploading…"
 msgstr "保存中…"
+
+msgctxt "CustomEmojiModal"
+msgid "Uploading…"
+msgstr "アップロード中…"
 
 #, fuzzy
 msgctxt "GroupHero"
@@ -3175,6 +3271,10 @@ msgstr "チャット相手全員に公開"
 msgctxt "RevealNsecModal"
 msgid "Verifying…"
 msgstr "復号中…"
+
+msgctxt "ErrorCopy"
+msgid "Video isn't ready yet."
+msgstr ""
 
 msgctxt "ContactDetail"
 msgid "View"
@@ -3252,6 +3352,10 @@ msgstr "あなた"
 msgctxt "OutgoingRow"
 msgid "You"
 msgstr "あなた"
+
+msgctxt "ErrorCopy"
+msgid "You already have an emoji with that name."
+msgstr "その名前の絵文字はすでに存在します。"
 
 msgctxt "ErrorCopy"
 msgid "You left the group."
@@ -3352,6 +3456,10 @@ msgctxt "StartNewChatModal"
 msgid "e.g. friday-crew"
 msgstr "例: friday-crew"
 
+msgctxt "CustomEmojiModal"
+msgid "e.g. partyparrot"
+msgstr "例: partyparrot"
+
 msgctxt "MessageBubble"
 msgid "edited"
 msgstr "編集済み"
@@ -3367,6 +3475,10 @@ msgid "failed · tap to retry"
 msgstr "失敗 · タップして再試行"
 
 msgctxt "MessageBubble"
+msgid "failed · tap to retry"
+msgstr "失敗 · タップして再試行"
+
+msgctxt "VideoTile"
 msgid "failed · tap to retry"
 msgstr "失敗 · タップして再試行"
 
@@ -3476,9 +3588,18 @@ msgctxt "ImageTile"
 msgid "tap to retry"
 msgstr "失敗 · タップして再試行"
 
+#. Custom-emoji upload status copy (src/wiring/custom_emoji.rs).
+msgctxt "ErrorCopy"
+msgid "uploaded — name it below"
+msgstr "アップロードしました — 下で名前を付けてください"
+
 msgctxt "ErrorCopy"
 msgid "uploading to Blossom…"
 msgstr "Blossomにアップロード中…"
+
+msgctxt "ErrorCopy"
+msgid "video saved"
+msgstr ""
 
 msgctxt "KeysPage"
 msgid "{n} relay"
@@ -3533,23 +3654,3 @@ msgstr "✓ 確認済み"
 msgctxt "GroupHero"
 msgid "＋ Add a description"
 msgstr "＋ 説明を追加"
-
-msgctxt "AdvancedPane"
-msgid "TRUSTED LINK SITES"
-msgstr "信頼済みのリンク先"
-
-msgctxt "AdvancedPane"
-msgid "No trusted sites."
-msgstr "信頼済みのサイトはありません。"
-
-msgctxt "AdvancedPane"
-msgid "Forget trusted site {}"
-msgstr "{} の信頼を解除"
-
-msgctxt "AdvancedPane"
-msgid "Links to these exact sites open without confirmation."
-msgstr "これらのサイトへのリンクは確認なしで開きます。"
-
-msgctxt "ConfirmFlows"
-msgid "Don't ask again for this site"
-msgstr "このサイトでは今後確認しない"

@@ -1,0 +1,50 @@
+import { Modal, ModalField } from "modal.slint";
+
+// Names a just-uploaded custom emoji before it joins the picker. Opens the
+// moment "Add" is pressed (Settings → General → Custom Emoji) and stays open
+// through the pick-file/upload round trip, using `busy`/`status` to narrate
+// progress the same way AddContactModal does for its network step.
+export component CustomEmojiModal inherits Modal {
+    // save(shortcode) — Rust sanitizes it, rejects a name already in use, and
+    // stores { shortcode, url } in settings.json next to the upload.
+    callback save(string);
+    in-out property <string> shortcode-text;
+    in property <image> preview;
+    in property <bool> has-preview;
+    in property <bool> busy: false;
+
+    card-width: 380px;
+    grab-focus: false;
+    title: @tr("Custom Emoji");
+    subtitle: @tr("Name it, then react or type the name anywhere the picker opens.");
+    secondary-label: @tr("Cancel");
+    primary-label: @tr("Save");
+    primary-busy-label: @tr("Uploading…");
+    primary-busy: root.busy;
+    primary-enabled: root.shortcode-text != "" && root.has-preview;
+    primary => {
+        root.save(root.shortcode-text);
+    }
+
+    if root.has-preview: HorizontalLayout {
+        alignment: center;
+        Image {
+            source: root.preview;
+            width: 64px;
+            height: 64px;
+            image-fit: contain;
+        }
+    }
+
+    ModalField {
+        label: @tr("SHORTCODE");
+        placeholder: @tr("e.g. partyparrot");
+        text <=> root.shortcode-text;
+        autofocus: true;
+        submitted => {
+            if (!root.busy && root.shortcode-text != "" && root.has-preview) {
+                root.save(root.shortcode-text);
+            }
+        }
+    }
+}

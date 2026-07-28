@@ -514,6 +514,10 @@ msgctxt "AboutPane"
 msgid "CREDITS"
 msgstr "MODIFICA"
 
+msgctxt "GeneralPane"
+msgid "CUSTOM EMOJI"
+msgstr "EMOJI PERSONALIZZATE"
+
 msgctxt "StoragePane"
 msgid "Cached attachments"
 msgstr "Allegati in cache"
@@ -553,6 +557,10 @@ msgstr "Annulla"
 
 #, fuzzy
 msgctxt "ConfirmModal"
+msgid "Cancel"
+msgstr "Annulla"
+
+msgctxt "CustomEmojiModal"
 msgid "Cancel"
 msgstr "Annulla"
 
@@ -645,6 +653,10 @@ msgstr "Verifica in corso…"
 msgctxt "ErrorCopy"
 msgid "Choose a backup file first."
 msgstr "Scegli prima un file di backup."
+
+msgctxt "NativeDialogStrings"
+msgid "Choose a custom emoji image"
+msgstr "Scegli un'immagine per l'emoji personalizzata"
 
 msgctxt "LoginScreen"
 msgid "Choose a password"
@@ -960,6 +972,10 @@ msgid "Couldn't save image."
 msgstr "Impossibile salvare l'immagine."
 
 msgctxt "ErrorCopy"
+msgid "Couldn't save video."
+msgstr ""
+
+msgctxt "ErrorCopy"
 msgid "Couldn't save your edit. Check your connection and try again."
 msgstr "Impossibile salvare la modifica. Controlla la connessione e riprova."
 
@@ -1023,6 +1039,10 @@ msgstr "Crea una chiave NIP-49 crittografata con la password del vault, sicura d
 msgctxt "StartNewChatModal"
 msgid "Creating…"
 msgstr "Salvataggio…"
+
+msgctxt "CustomEmojiModal"
+msgid "Custom Emoji"
+msgstr "Emoji personalizzata"
 
 msgctxt "KeysPage"
 msgid "DANGER ZONE"
@@ -1132,6 +1152,10 @@ msgctxt "ProfilePage"
 msgid "Display name"
 msgstr "Nome visualizzato"
 
+msgctxt "ConfirmFlows"
+msgid "Don't ask again for this site"
+msgstr "Non chiedere più per questo sito"
+
 #. control lives inline next to the key) and the footer just closes.
 msgctxt "ExportKeyModal"
 msgid "Done"
@@ -1201,6 +1225,10 @@ msgid "End-to-end encryption"
 msgstr "Crittografato end-to-end con"
 
 msgctxt "ErrorCopy"
+msgid "Enter a name for this emoji."
+msgstr "Inserisci un nome per questa emoji."
+
+msgctxt "ErrorCopy"
 msgid "Enter a relay address."
 msgstr "Inserisci l'indirizzo di un relay."
 
@@ -1264,6 +1292,10 @@ msgstr "Feb"
 msgctxt "MessagesArea"
 msgid "Fetching the latest conversation history."
 msgstr "Recupero della cronologia più recente della conversazione."
+
+msgctxt "AdvancedPane"
+msgid "Forget trusted site {}"
+msgstr "Rimuovi {} dai siti affidabili"
 
 msgctxt "MessageContextMenu"
 msgid "Forward"
@@ -1358,6 +1390,10 @@ msgstr "Nascondi membri"
 msgctxt "PasswordField"
 msgid "Hide password"
 msgstr "Nascondi password"
+
+msgctxt "ModalField"
+msgid "Hide value"
+msgstr ""
 
 msgctxt "ProfilePage"
 msgid "How your name appears in chats"
@@ -1633,6 +1669,10 @@ msgctxt "ProfilePage"
 msgid "Lightning address (LUD-16)"
 msgstr "Indirizzo Lightning (LUD-16)"
 
+msgctxt "AdvancedPane"
+msgid "Links to these exact sites open without confirmation."
+msgstr "I link esattamente a questi siti si aprono senza conferma."
+
 msgctxt "MessagesArea"
 msgid "Load earlier messages"
 msgstr "Carica messaggi precedenti"
@@ -1728,6 +1768,14 @@ msgctxt "month"
 msgid "Mar"
 msgstr "Mar"
 
+msgctxt "ChatContextMenu"
+msgid "Mark as read"
+msgstr ""
+
+msgctxt "ChatContextMenu"
+msgid "Mark as unread"
+msgstr ""
+
 msgctxt "month"
 msgid "May"
 msgstr "Mag"
@@ -1813,6 +1861,10 @@ msgstr ""
 msgctxt "ErrorCopy"
 msgid "Name can't be empty."
 msgstr "Il nome non può essere vuoto."
+
+msgctxt "CustomEmojiModal"
+msgid "Name it, then react or type the name anywhere the picker opens."
+msgstr "Assegnale un nome, poi reagisci o digita il nome ovunque si apra il selettore."
 
 #. are translated.
 msgctxt "command palette footer"
@@ -1981,6 +2033,14 @@ msgctxt "ErrorCopy"
 msgid "No secret key for this account is stored on this device."
 msgstr "Nessuna chiave segreta per questo account è salvata su questo dispositivo."
 
+msgctxt "AdvancedPane"
+msgid "No trusted sites."
+msgstr "Nessun sito affidabile."
+
+msgctxt "ErrorCopy"
+msgid "No video selected."
+msgstr ""
+
 #. Network-pane status copy (also Rust-set).
 msgctxt "ErrorCopy"
 msgid "Not connected yet. Please wait a moment and try again."
@@ -2056,6 +2116,10 @@ msgstr "Apri"
 msgctxt "StoragePane"
 msgid "Open folder"
 msgstr "Apri cartella"
+
+msgctxt "RunCell"
+msgid "Open link {}"
+msgstr ""
 
 msgctxt "ConfirmFlows"
 msgid "Open this link?"
@@ -2414,6 +2478,10 @@ msgctxt "ConfirmFlows"
 msgid "Remove this relay?"
 msgstr "Rimuovere questo relay?"
 
+msgctxt "GeneralPane"
+msgid "Remove {} emoji"
+msgstr "Rimuovi emoji {}"
+
 msgctxt "ConfirmFlows"
 msgid "Remove {} from contacts?"
 msgstr "Rimuovere {} dai contatti?"
@@ -2565,6 +2633,10 @@ msgctxt "SettingsSidebar"
 msgid "SETTINGS"
 msgstr "IMPOSTAZIONI"
 
+msgctxt "CustomEmojiModal"
+msgid "SHORTCODE"
+msgstr "NOME"
+
 msgctxt "GeneralPane"
 msgid "STARTUP"
 msgstr "AVVIO"
@@ -2612,6 +2684,10 @@ msgstr "Sicura da condividere. Così ti trovano gli altri."
 msgctxt "weekday"
 msgid "Sat"
 msgstr "Sab"
+
+msgctxt "CustomEmojiModal"
+msgid "Save"
+msgstr "Salva"
 
 #, fuzzy
 msgctxt "HeroEditField"
@@ -2836,6 +2912,14 @@ msgctxt "PasswordField"
 msgid "Show password"
 msgstr "Mostra password"
 
+msgctxt "ModalField"
+msgid "Show value"
+msgstr ""
+
+msgctxt "GeneralPane"
+msgid "Shown in the picker next to the built-in set. Tap one to remove it."
+msgstr "Mostrate nel selettore accanto al set integrato. Toccane una per rimuoverla."
+
 msgctxt "GeneralPane"
 msgid "Shown on the message toolbar and menu. Tap one to remove it."
 msgstr "Mostrate sulla barra e nel menu del messaggio. Toccane una per rimuoverla."
@@ -2942,6 +3026,10 @@ msgstr ""
 msgctxt "AppearancePane"
 msgid "THEME"
 msgstr "TEMA"
+
+msgctxt "AdvancedPane"
+msgid "TRUSTED LINK SITES"
+msgstr "SITI AFFIDABILI"
 
 msgctxt "ThemePicker"
 msgid "Terminal"
@@ -3123,10 +3211,18 @@ msgctxt "PictureField"
 msgid "Upload"
 msgstr "Carica"
 
+msgctxt "GeneralPane"
+msgid "Uploaded emoji"
+msgstr "Emoji caricate"
+
 #, fuzzy
 msgctxt "AvatarEditable"
 msgid "Uploading…"
 msgstr "Salvataggio…"
+
+msgctxt "CustomEmojiModal"
+msgid "Uploading…"
+msgstr "Caricamento…"
 
 #, fuzzy
 msgctxt "GroupHero"
@@ -3179,6 +3275,10 @@ msgstr "VISIBILE A CHIUNQUE CHATTI"
 msgctxt "RevealNsecModal"
 msgid "Verifying…"
 msgstr "decifrazione…"
+
+msgctxt "ErrorCopy"
+msgid "Video isn't ready yet."
+msgstr ""
 
 msgctxt "ContactDetail"
 msgid "View"
@@ -3257,6 +3357,10 @@ msgstr "Tu"
 msgctxt "OutgoingRow"
 msgid "You"
 msgstr "Tu"
+
+msgctxt "ErrorCopy"
+msgid "You already have an emoji with that name."
+msgstr "Hai già un'emoji con questo nome."
 
 msgctxt "ErrorCopy"
 msgid "You left the group."
@@ -3357,6 +3461,10 @@ msgctxt "StartNewChatModal"
 msgid "e.g. friday-crew"
 msgstr "es. squadra-venerdì"
 
+msgctxt "CustomEmojiModal"
+msgid "e.g. partyparrot"
+msgstr "es. partyparrot"
+
 msgctxt "MessageBubble"
 msgid "edited"
 msgstr "modificato"
@@ -3372,6 +3480,10 @@ msgid "failed · tap to retry"
 msgstr "fallito · tocca per riprovare"
 
 msgctxt "MessageBubble"
+msgid "failed · tap to retry"
+msgstr "fallito · tocca per riprovare"
+
+msgctxt "VideoTile"
 msgid "failed · tap to retry"
 msgstr "fallito · tocca per riprovare"
 
@@ -3481,9 +3593,18 @@ msgctxt "ImageTile"
 msgid "tap to retry"
 msgstr "fallito · tocca per riprovare"
 
+#. Custom-emoji upload status copy (src/wiring/custom_emoji.rs).
+msgctxt "ErrorCopy"
+msgid "uploaded — name it below"
+msgstr "caricata — assegnale un nome qui sotto"
+
 msgctxt "ErrorCopy"
 msgid "uploading to Blossom…"
 msgstr "caricamento su Blossom…"
+
+msgctxt "ErrorCopy"
+msgid "video saved"
+msgstr ""
 
 msgctxt "KeysPage"
 msgid "{n} relay"
@@ -3539,23 +3660,3 @@ msgstr "✓ VERIFICATO"
 msgctxt "GroupHero"
 msgid "＋ Add a description"
 msgstr "＋ Aggiungi una descrizione"
-
-msgctxt "AdvancedPane"
-msgid "TRUSTED LINK SITES"
-msgstr "SITI AFFIDABILI"
-
-msgctxt "AdvancedPane"
-msgid "No trusted sites."
-msgstr "Nessun sito affidabile."
-
-msgctxt "AdvancedPane"
-msgid "Forget trusted site {}"
-msgstr "Rimuovi {} dai siti affidabili"
-
-msgctxt "AdvancedPane"
-msgid "Links to these exact sites open without confirmation."
-msgstr "I link esattamente a questi siti si aprono senza conferma."
-
-msgctxt "ConfirmFlows"
-msgid "Don't ask again for this site"
-msgstr "Non chiedere più per questo sito"

@@ -188,4 +188,37 @@ export component GeneralPane inherits DetailPage {
             }
         }
     }
+
+    Section {
+        label: @tr("CUSTOM EMOJI");
+        GroupCard {
+            KVRow {
+                row-height: 60px;
+                label: @tr("Uploaded emoji");
+                sublabel: @tr("Shown in the picker next to the built-in set. Tap one to remove it.");
+                show-divider: false;
+                HorizontalLayout {
+                    spacing: 1px;
+                    alignment: end;
+                    for e[i] in AppState.custom-emoji-list: QuickReactCell {
+                        emoji: e.shortcode;
+                        picture: e.picture;
+                        has-picture: e.has-picture;
+                        removable: true;
+                        a11y-label: @tr("Remove {} emoji", e.shortcode);
+                        clicked => {
+                            AppState.custom-emoji-removed(i);
+                        }
+                    }
+
+                    QuickReactCell {
+                        emoji: "+";
+                        clicked => {
+                            AppState.custom-emoji-add-requested();
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

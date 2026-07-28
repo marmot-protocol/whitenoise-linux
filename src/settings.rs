@@ -143,6 +143,23 @@ pub struct Settings {
     /// already on screen). Local-only, like `muted_chats`.
     #[serde(default)]
     pub manually_unread: BTreeSet<String>,
+    /// User-uploaded custom emoji, shown in the emoji picker alongside the
+    /// built-in Twemoji set (see AGENTS.md's "Build-time sprite sheet"
+    /// section for why custom entries can't join that build-time sheet).
+    /// Local-only, like `quick_reactions` — never published to relays, so
+    /// only this account sees its own custom emoji in the picker.
+    #[serde(default)]
+    pub custom_emoji: Vec<CustomEmoji>,
+}
+
+/// One user-uploaded custom emoji: a short name plus the public Blossom URL
+/// the image was uploaded to (same upload path as profile pictures, see
+/// `src/blossom.rs`). Picking it inserts `:shortcode:` into the composer or
+/// reaction, matching how NIP-30 custom emoji are named.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CustomEmoji {
+    pub shortcode: String,
+    pub url: String,
 }
 
 impl Settings {

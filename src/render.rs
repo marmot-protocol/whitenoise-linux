@@ -1401,6 +1401,8 @@ pub(crate) fn build_emoji_list(query: &str) -> Vec<EmojiEntry> {
             name: s(e.name()),
             clip_x: x as i32,
             clip_y: y as i32,
+            picture: slint::Image::default(),
+            has_picture: false,
         });
     }
     hits
