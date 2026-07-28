@@ -20,8 +20,17 @@ component FieldRow inherits Rectangle {
     in property <string> placeholder;
     in property <bool> single-line: true;
     in property <bool> show-divider: true;
+    // Set on the field that should take the caret the moment this row's
+    // parent (the `if profile-editing: Section`) mounts.
+    in property <bool> autofocus: false;
     in-out property <string> text <=> input.text;
     height: root.single-line ? 64px : 96px;
+
+    init => {
+        if (root.autofocus) {
+            input.take-focus();
+        }
+    }
     VerticalLayout {
         padding-left: 16px;
         padding-right: 16px;
@@ -582,6 +591,7 @@ export component ProfilePage inherits Rectangle {
                         label: @tr("Display name");
                         placeholder: @tr("How your name appears in chats");
                         text <=> AppState.profile-display-name;
+                        autofocus: true;
                     }
 
                     FieldRow {
