@@ -103,7 +103,7 @@ export component AccountSwitcherList inherits VerticalLayout {
                 // Trailing "›" — drills into this account's detail card.
                 VerticalLayout {
                     alignment: center;
-                    Rectangle {
+                    chev-rect := Rectangle {
                         width: 30px;
                         height: 30px;
                         border-radius: (7px) * Theme.r-scale;
@@ -111,6 +111,10 @@ export component AccountSwitcherList inherits VerticalLayout {
                         animate background { duration: Theme.hover-dur; }
                         accessible-role: button;
                         accessible-label: @tr("Account details");
+                        accessible-action-default => { chev-rect.activate(); }
+                        function activate() {
+                            root.drill(i);
+                        }
                         ChevronRightIcon {
                             stroke: chev.has-hover ? Palette.text-hi : Palette.text-lo;
                             size: 11px;
