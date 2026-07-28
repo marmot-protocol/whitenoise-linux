@@ -1728,6 +1728,10 @@ msgctxt "month"
 msgid "May"
 msgstr "5月"
 
+msgctxt "GroupMemberRow"
+msgid "Member actions for {}"
+msgstr "{}のメンバー操作"
+
 msgctxt "ErrorCopy"
 msgid "Member removed."
 msgstr "メンバーを削除しました。"
