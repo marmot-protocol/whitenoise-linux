@@ -1171,8 +1171,8 @@ checksum = "f079e83a288787bcd14a6aea84cee5c87a67c5a3e660c30f557a3d24761b3527"
 
 [[package]]
 name = "cgka-engine"
-version = "0.9.9"
-source = "git+https://github.com/marmot-protocol/mdk.git?branch=master#5fe7dccc94b411e9dca3ad45927afc8ffc0f2c0f"
+version = "0.9.10"
+source = "git+https://github.com/marmot-protocol/mdk.git?branch=master#523a193815eafb22560923a3960b70e07373ac93"
 dependencies = [
  "async-trait",
  "cgka-traits",
@@ -1196,8 +1196,8 @@ dependencies = [
 
 [[package]]
 name = "cgka-session"
-version = "0.9.9"
-source = "git+https://github.com/marmot-protocol/mdk.git?branch=master#5fe7dccc94b411e9dca3ad45927afc8ffc0f2c0f"
+version = "0.9.10"
+source = "git+https://github.com/marmot-protocol/mdk.git?branch=master#523a193815eafb22560923a3960b70e07373ac93"
 dependencies = [
  "cgka-engine",
  "cgka-traits",
@@ -1209,8 +1209,8 @@ dependencies = [
 
 [[package]]
 name = "cgka-traits"
-version = "0.9.9"
-source = "git+https://github.com/marmot-protocol/mdk.git?branch=master#5fe7dccc94b411e9dca3ad45927afc8ffc0f2c0f"
+version = "0.9.10"
+source = "git+https://github.com/marmot-protocol/mdk.git?branch=master#523a193815eafb22560923a3960b70e07373ac93"
 dependencies = [
  "async-trait",
  "hex",
@@ -1950,13 +1950,13 @@ dependencies = [
 
 [[package]]
 name = "displaydoc"
-version = "0.2.6"
+version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ac70aa55017e108007fbaf5aa0f54b021c98f92ff8af59d42eda9da96e3dd4f"
+checksum = "c6232dd377dcc64799954cbd3a9bb882e9cdc1308ccd87b1c098f1fb2eaf82a8"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.119",
+ "syn 3.0.3",
 ]
 
 [[package]]
@@ -2461,8 +2461,8 @@ dependencies = [
 
 [[package]]
 name = "fs-private"
-version = "0.9.9"
-source = "git+https://github.com/marmot-protocol/mdk.git?branch=master#5fe7dccc94b411e9dca3ad45927afc8ffc0f2c0f"
+version = "0.9.10"
+source = "git+https://github.com/marmot-protocol/mdk.git?branch=master#523a193815eafb22560923a3960b70e07373ac93"
 dependencies = [
  "libc",
 ]
@@ -4438,7 +4438,7 @@ dependencies = [
  "bitflags 2.13.1",
  "libc",
  "plain",
- "redox_syscall 0.9.0",
+ "redox_syscall 0.9.1",
 ]
 
 [[package]]
@@ -4610,8 +4610,8 @@ dependencies = [
 
 [[package]]
 name = "marmot-account"
-version = "0.9.9"
-source = "git+https://github.com/marmot-protocol/mdk.git?branch=master#5fe7dccc94b411e9dca3ad45927afc8ffc0f2c0f"
+version = "0.9.10"
+source = "git+https://github.com/marmot-protocol/mdk.git?branch=master#523a193815eafb22560923a3960b70e07373ac93"
 dependencies = [
  "android-native-keyring-store",
  "apple-native-keyring-store",
@@ -4637,8 +4637,8 @@ dependencies = [
 
 [[package]]
 name = "marmot-app"
-version = "0.9.9"
-source = "git+https://github.com/marmot-protocol/mdk.git?branch=master#5fe7dccc94b411e9dca3ad45927afc8ffc0f2c0f"
+version = "0.9.10"
+source = "git+https://github.com/marmot-protocol/mdk.git?branch=master#523a193815eafb22560923a3960b70e07373ac93"
 dependencies = [
  "async-trait",
  "cgka-engine",
@@ -4678,8 +4678,8 @@ dependencies = [
 
 [[package]]
 name = "marmot-forensics"
-version = "0.9.9"
-source = "git+https://github.com/marmot-protocol/mdk.git?branch=master#5fe7dccc94b411e9dca3ad45927afc8ffc0f2c0f"
+version = "0.9.10"
+source = "git+https://github.com/marmot-protocol/mdk.git?branch=master#523a193815eafb22560923a3960b70e07373ac93"
 dependencies = [
  "fs-private",
  "serde",
@@ -4688,8 +4688,8 @@ dependencies = [
 
 [[package]]
 name = "marmot-markdown"
-version = "0.9.9"
-source = "git+https://github.com/marmot-protocol/mdk.git?branch=master#5fe7dccc94b411e9dca3ad45927afc8ffc0f2c0f"
+version = "0.9.10"
+source = "git+https://github.com/marmot-protocol/mdk.git?branch=master#523a193815eafb22560923a3960b70e07373ac93"
 dependencies = [
  "serde",
 ]
@@ -6759,9 +6759,9 @@ dependencies = [
 
 [[package]]
 name = "redox_syscall"
-version = "0.9.0"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c5102a6aaa05aa011a238e178e6bca86d2cb56fc9f586d37cb80f5bca6e07759"
+checksum = "07507be7b4a5f9f26eeb41eeaebb1f5a7ff29dfb29739facc21d35bf8b11c21e"
 dependencies = [
  "bitflags 2.13.1",
 ]
@@ -7604,7 +7604,7 @@ dependencies = [
  "regex",
  "serde_json",
  "tar",
- "toml 1.1.3+spec-1.1.0",
+ "toml 1.1.4+spec-1.1.0",
 ]
 
 [[package]]
@@ -7922,8 +7922,8 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "storage-sqlite"
-version = "0.9.9"
-source = "git+https://github.com/marmot-protocol/mdk.git?branch=master#5fe7dccc94b411e9dca3ad45927afc8ffc0f2c0f"
+version = "0.9.10"
+source = "git+https://github.com/marmot-protocol/mdk.git?branch=master#523a193815eafb22560923a3960b70e07373ac93"
 dependencies = [
  "cgka-traits",
  "fs-private",
@@ -8538,9 +8538,9 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "1.1.3+spec-1.1.0"
+version = "1.1.4+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "53c96ecdfa941c8fc4fcaed14f99ada8ebed502eef533015095a07e3301d4c3c"
+checksum = "3aace63f4bbcdfc2c965b059de67119c89c4017a70d633be6c104910f67056f5"
 dependencies = [
  "indexmap",
  "serde_core",
@@ -8706,8 +8706,8 @@ dependencies = [
 
 [[package]]
 name = "transport-nostr-adapter"
-version = "0.9.9"
-source = "git+https://github.com/marmot-protocol/mdk.git?branch=master#5fe7dccc94b411e9dca3ad45927afc8ffc0f2c0f"
+version = "0.9.10"
+source = "git+https://github.com/marmot-protocol/mdk.git?branch=master#523a193815eafb22560923a3960b70e07373ac93"
 dependencies = [
  "async-trait",
  "cgka-traits",
@@ -8724,8 +8724,8 @@ dependencies = [
 
 [[package]]
 name = "transport-nostr-peeler"
-version = "0.9.9"
-source = "git+https://github.com/marmot-protocol/mdk.git?branch=master#5fe7dccc94b411e9dca3ad45927afc8ffc0f2c0f"
+version = "0.9.10"
+source = "git+https://github.com/marmot-protocol/mdk.git?branch=master#523a193815eafb22560923a3960b70e07373ac93"
 dependencies = [
  "async-trait",
  "cgka-traits",
@@ -8741,8 +8741,8 @@ dependencies = [
 
 [[package]]
 name = "transport-quic-broker"
-version = "0.9.9"
-source = "git+https://github.com/marmot-protocol/mdk.git?branch=master#5fe7dccc94b411e9dca3ad45927afc8ffc0f2c0f"
+version = "0.9.10"
+source = "git+https://github.com/marmot-protocol/mdk.git?branch=master#523a193815eafb22560923a3960b70e07373ac93"
 dependencies = [
  "cgka-traits",
  "clap",
@@ -8761,8 +8761,8 @@ dependencies = [
 
 [[package]]
 name = "transport-quic-stream"
-version = "0.9.9"
-source = "git+https://github.com/marmot-protocol/mdk.git?branch=master#5fe7dccc94b411e9dca3ad45927afc8ffc0f2c0f"
+version = "0.9.10"
+source = "git+https://github.com/marmot-protocol/mdk.git?branch=master#523a193815eafb22560923a3960b70e07373ac93"
 dependencies = [
  "cgka-traits",
  "chacha20poly1305",
