@@ -30,14 +30,25 @@ export component MenuItem inherits Rectangle {
         padding-left: 10px;
         padding-right: 16px;
         spacing: 9px;
-        Text {
-            text: root.glyph;
-            color: root.highlighted ? Palette.text-hi : Palette.text-mid;
-            font-size: Theme.fs(13px, 16px);
-            font-family: Theme.font;
+        // Icon column: a caller with a real vector icon (e.g. PinIcon,
+        // MuteIcon) passes it as a child, centered here, instead of setting
+        // `glyph` — both share this 16px column so labels stay aligned
+        // either way. A layout (not a plain Rectangle) so the fixed-size
+        // icon self-centers instead of needing parent-relative x/y math.
+        HorizontalLayout {
             width: 16px;
-            horizontal-alignment: center;
-            vertical-alignment: center;
+            height: 16px;
+            alignment: center;
+            @children
+            if root.glyph != "": Text {
+                text: root.glyph;
+                color: root.highlighted ? Palette.text-hi : Palette.text-mid;
+                font-size: Theme.fs(13px, 16px);
+                font-family: Theme.font;
+                width: 16px;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
         }
 
         Text {
