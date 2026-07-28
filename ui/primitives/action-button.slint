@@ -12,16 +12,24 @@ export component ActionButton inherits Rectangle {
     in property <bool> shown: true;
     callback clicked();
     out property <bool> hovered: touch.has-hover;
+    out property <bool> focused: fs.has-focus;
 
     visible: root.shown;
     width: root.shown ? 28px : 0px;
     height: 28px;
     border-radius: (8px) * Theme.r-scale;
-    background: touch.has-hover ? Palette.hover : transparent;
+    background: (touch.has-hover || fs.has-focus) ? Palette.hover : transparent;
     animate background { duration: Theme.hover-dur; }
+
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-action-default => {
+        root.clicked();
+    }
+
     Text {
         text: root.glyph;
-        color: touch.has-hover ? Palette.text-hi : Palette.text-mid;
+        color: (touch.has-hover || fs.has-focus) ? Palette.text-hi : Palette.text-mid;
         font-size: Theme.fs(13px, 16px);
         horizontal-alignment: center;
         vertical-alignment: center;
@@ -32,5 +40,33 @@ export component ActionButton inherits Rectangle {
         clicked => {
             root.clicked();
         }
+    }
+
+    // Zero-size FocusScope: participates in the Tab chain but never receives
+    // pointer events, so clicking the button can't pull keyboard focus away.
+    // Mirrors QuickReactCell's and the Button primitive's focus handling.
+    fs := FocusScope {
+        width: 0px;
+        height: 0px;
+        enabled: root.shown;
+        key-pressed(event) => {
+            if (event.text == Key.Return || event.text == " ") {
+                root.clicked();
+                return accept;
+            }
+            return reject;
+        }
+    }
+
+    // Focus ring just outside the bounds (keyboard only).
+    if fs.has-focus: Rectangle {
+        x: -3px;
+        y: -3px;
+        width: parent.width + 6px;
+        height: parent.height + 6px;
+        background: transparent;
+        border-radius: (11px) * Theme.r-scale;
+        border-width: 2px;
+        border-color: Palette.mint;
     }
 }

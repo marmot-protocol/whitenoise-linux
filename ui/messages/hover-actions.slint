@@ -20,6 +20,11 @@ export component HoverActions inherits Rectangle {
     // keep the toolbar open), and nested cell TouchAreas still win their own
     // clicks — the wrapping pattern the emoji picker and context menu rely on.
     out property <bool> hovered: bar-touch.has-hover;
+    // Whether any button inside the bar holds keyboard focus. The row that
+    // hosts this bar reads it to keep the toolbar revealed while a Tab user
+    // is on one of its buttons, since the bar itself only mounts visibly on
+    // hover otherwise.
+    out property <bool> focus-within: plus-btn.focused || reply-btn.focused || edit-btn.focused;
 
     width: bar.preferred-width;
     height: bar.preferred-height;
@@ -92,19 +97,19 @@ export component HoverActions inherits Rectangle {
     // bar the same way composer.slint's send-button tooltip is: positioned
     // from the button's absolute position rather than nested inside it, so
     // it paints outside the bar's own bounds.
-    if plus-btn.hovered: Tooltip {
+    if plus-btn.hovered || plus-btn.focused: Tooltip {
         x: plus-btn.absolute-position.x - root.absolute-position.x + plus-btn.width / 2 - self.width / 2;
         y: -self.height - 8px;
         label: plus-btn.label;
         is-visible: true;
     }
-    if reply-btn.hovered: Tooltip {
+    if reply-btn.hovered || reply-btn.focused: Tooltip {
         x: reply-btn.absolute-position.x - root.absolute-position.x + reply-btn.width / 2 - self.width / 2;
         y: -self.height - 8px;
         label: reply-btn.label;
         is-visible: true;
     }
-    if edit-btn.hovered: Tooltip {
+    if edit-btn.hovered || edit-btn.focused: Tooltip {
         x: edit-btn.absolute-position.x - root.absolute-position.x + edit-btn.width / 2 - self.width / 2;
         y: -self.height - 8px;
         label: edit-btn.label;
