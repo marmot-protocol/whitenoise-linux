@@ -569,6 +569,7 @@ export component ProfilePage inherits Rectangle {
                         label: "npub";
                         sublabel: @tr("Your public key. Safe to share.");
                         value: AppState.my-npub;
+                        wrap-value: true;
                         CopyChip {
                             value: @tr("Copy");
                             copy-requested => {
