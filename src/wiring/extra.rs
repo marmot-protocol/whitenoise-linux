@@ -554,6 +554,17 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 target.clone(),
             );
 
+            // Resolve this message's cached-media hashes now, before the
+            // retraction — once the kind-9 is gone there's no imeta left to
+            // read back, so eviction on ack needs them captured up front.
+            let media_hashes = backend
+                .messages(&group_hex, Some(msg_window_for(&group_hex)))
+                .unwrap_or_default()
+                .into_iter()
+                .find(|r| r.message_id_hex == target)
+                .map(|r| media_cache::hashes_from_tags(&r.tags))
+                .unwrap_or_default();
+
             // 2. Dispatch + reconcile (surgical).
             let weak_cb = weak.clone();
             let group_ids_cb = group_ids.clone();
@@ -575,6 +586,10 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                         if let Err(e) = &result {
                             tracing::warn!(target: "delete", "{e:#}");
                             show_backend_error(&ui, friendly_error(ErrorOp::Delete, e));
+                        } else {
+                            for hash in &media_hashes {
+                                media_cache::remove(hash);
+                            }
                         }
                         overlay.deletes.remove(&(group_hex.clone(), target.clone()));
                     }
@@ -638,6 +653,14 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 let msgs = b
                     .messages(&group_hex, Some(msg_window_for(&group_hex)))
                     .unwrap_or_default();
+                // Local hide never touches the wire, so the message's own
+                // cached attachment(s) are still ours to evict — nothing else
+                // will, since the record itself lives on unretracted.
+                if let Some(record) = msgs.iter().find(|r| r.message_id_hex == id) {
+                    for hash in media_cache::hashes_from_tags(&record.tags) {
+                        media_cache::remove(&hash);
+                    }
+                }
                 let _ = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak2.upgrade() else { return };
                     let ids = group_ids2.lock().unwrap();
