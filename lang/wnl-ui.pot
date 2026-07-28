@@ -743,6 +743,10 @@ msgctxt "RevealNsecModal"
 msgid "Copied ✓"
 msgstr ""
 
+msgctxt "AddAccountModal"
+msgid "Copy"
+msgstr ""
+
 msgctxt "ContactDetail"
 msgid "Copy"
 msgstr ""
