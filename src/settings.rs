@@ -143,6 +143,20 @@ pub struct Settings {
     /// already on screen). Local-only, like `muted_chats`.
     #[serde(default)]
     pub manually_unread: BTreeSet<String>,
+    /// Window geometry (physical pixels), remembered across launches so the
+    /// window reopens at the size and position the user left it at. `None`
+    /// until the window is closed once; a fresh install falls back to the
+    /// `.slint` root's `preferred-width`/`preferred-height` and whatever
+    /// position the windowing system picks. `window_x`/`window_y` are best
+    /// effort — Wayland compositors generally ignore a requested position.
+    #[serde(default)]
+    pub window_width: Option<u32>,
+    #[serde(default)]
+    pub window_height: Option<u32>,
+    #[serde(default)]
+    pub window_x: Option<i32>,
+    #[serde(default)]
+    pub window_y: Option<i32>,
 }
 
 impl Settings {

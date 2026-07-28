@@ -246,6 +246,22 @@ fn main() -> Result<(), slint::PlatformError> {
     ));
     let settings_cell: Rc<RefCell<Settings>> = Rc::new(RefCell::new(initial_settings));
 
+    // Restore the window's size and position from the previous session
+    // before it's ever shown, so there's no visible jump to the default
+    // 1920x1080 the `.slint` root declares. `set_position` is a no-op on
+    // windowing systems that don't support it, such as Wayland.
+    {
+        let s = settings_cell.borrow();
+        if let (Some(width), Some(height)) = (s.window_width, s.window_height) {
+            ui.window()
+                .set_size(slint::PhysicalSize::new(width, height));
+        }
+        if let (Some(x), Some(y)) = (s.window_x, s.window_y) {
+            ui.window()
+                .set_position(slint::PhysicalPosition::new(x, y));
+        }
+    }
+
     // All models start empty; they're filled from marmot-app after login.
     let contacts: ModelRc<Contact> = ModelRc::new(VecModel::from(Vec::<Contact>::new()));
     let archived: ModelRc<ArchivedChat> = ModelRc::new(VecModel::from(Vec::<ArchivedChat>::new()));
@@ -1006,6 +1022,40 @@ fn main() -> Result<(), slint::PlatformError> {
         std::mem::forget(watch);
     }
 
+    // Snapshot the window's current size and position into settings and save,
+    // so the next launch reopens at the same geometry. Called both when the
+    // window itself is closed and when the app quits from the tray, since
+    // neither path is guaranteed to leave a still-mapped window for the
+    // post-event-loop code below to read from.
+    let save_window_geometry = {
+        let ui_weak = ui.as_weak();
+        let settings_cell = settings_cell.clone();
+        move || {
+            let Some(ui) = ui_weak.upgrade() else {
+                return;
+            };
+            let win = ui.window();
+            let size = win.size();
+            if size.width == 0 || size.height == 0 {
+                return;
+            }
+            let pos = win.position();
+            let mut st = settings_cell.borrow_mut();
+            st.window_width = Some(size.width);
+            st.window_height = Some(size.height);
+            st.window_x = Some(pos.x);
+            st.window_y = Some(pos.y);
+            st.save();
+        }
+    };
+    ui.window().on_close_requested({
+        let save_window_geometry = save_window_geometry.clone();
+        move || {
+            save_window_geometry();
+            slint::CloseRequestResponse::HideWindow
+        }
+    });
+
     let tray = if start_minimized_to_tray {
         match WhiteNoiseTray::new() {
             Ok(tray) => {
@@ -1020,8 +1070,12 @@ fn main() -> Result<(), slint::PlatformError> {
                         }
                     }
                 });
-                tray.on_quit(|| {
-                    let _ = slint::quit_event_loop();
+                tray.on_quit({
+                    let save_window_geometry = save_window_geometry.clone();
+                    move || {
+                        save_window_geometry();
+                        let _ = slint::quit_event_loop();
+                    }
                 });
                 match tray.show() {
                     Ok(()) => {
