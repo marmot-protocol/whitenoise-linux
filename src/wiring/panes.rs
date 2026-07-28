@@ -1442,12 +1442,10 @@ pub(crate) fn wire_panes(
                     ui.set_network_add_error(SharedString::default());
                     push_network_relays(&ui, &list);
                     show_network_status(&ui, error_copy().relay_added, StatusKind::Ok);
-                    // First-run (no chats yet): connect the freshly-added relay
-                    // live right away. Once chats exist, the banner's "Reconnect
-                    // now" button applies the change instead.
-                    if ui.get_chats().row_count() == 0 {
-                        reboot();
-                    }
+                    // Reconnect immediately so the live transport picks up the
+                    // change right away, instead of waiting on the "Reconnect
+                    // now" banner.
+                    reboot();
                     true
                 }
                 Err(msg) => {
@@ -1469,11 +1467,9 @@ pub(crate) fn wire_panes(
                 Ok(true) => {
                     push_network_relays(&ui, &list);
                     show_network_status(&ui, error_copy().relay_removed, StatusKind::Ok);
-                    // First-run: re-boot so the live transport drops the removed
-                    // relay right away; otherwise leave it to "Reconnect now".
-                    if ui.get_chats().row_count() == 0 {
-                        reboot();
-                    }
+                    // Re-boot so the live transport drops the removed relay
+                    // right away.
+                    reboot();
                 }
                 Ok(false) => {}
                 Err(msg) => show_network_status(&ui, msg, StatusKind::Error),
