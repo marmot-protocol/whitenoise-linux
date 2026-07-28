@@ -1,0 +1,42 @@
+import { Palette, Theme } from "../tokens.slint";
+import { Modal } from "modal.slint";
+import { PaletteAction, PaletteRow } from "palette-row.slint";
+import { ScrollView } from "../primitives/scroll-view.slint";
+
+// Read-only reference of every bound key in the app — the command palette
+// table (Ctrl+K reachable) plus the global/composer/media-viewer bindings
+// that have no palette entry of their own. Opened from Settings and from the
+// palette itself (`act.keyboard-shortcuts`); Rust supplies the row list once
+// at boot since it never changes for the session.
+export component KeyboardShortcutsModal inherits Modal {
+    in property <[PaletteAction]> shortcuts;
+
+    title: @tr("Keyboard shortcuts");
+    card-width: min(480px, root.width - 64px);
+    v-pos: 0.12;
+    content-padding: 0px;
+
+    Rectangle {
+        height: min(440px, list.preferred-height + 16px);
+        clip: true;
+
+        ScrollView {
+            width: parent.width;
+            height: parent.height;
+            viewport-width: self.visible-width;
+            viewport-height: list.preferred-height + 16px;
+
+            list := VerticalLayout {
+                width: parent.width;
+                padding-top: 6px;
+                padding-bottom: 10px;
+                spacing: 0;
+
+                for row[i] in root.shortcuts: PaletteRow {
+                    action: row;
+                    show-group-header: i == 0 || root.shortcuts[i - 1].group != row.group;
+                }
+            }
+        }
+    }
+}

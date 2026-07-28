@@ -69,6 +69,10 @@ pub(crate) fn wire_nav(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     // ─── Command palette wiring ────────────────────────────────────────
     let palette_master = all_palette_actions();
 
+    // Keyboard Shortcuts reference: static for the whole session, so push it
+    // once here rather than recomputing on every open.
+    ui.set_keyboard_shortcuts(model(all_shortcuts()));
+
     // Ctrl+K: populate actions for the empty query and open the palette.
     ui.global::<AppState>().on_palette_requested({
         let weak = ui.as_weak();
@@ -146,6 +150,7 @@ pub(crate) fn wire_nav(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                     }
                     apply_theme_mode(&ui, mode);
                 }
+                PaletteCommand::OpenShortcuts => ui.set_show_keyboard_shortcuts(true),
             }
         }
     });
