@@ -193,8 +193,12 @@ export component EmojiPicker inherits Rectangle {
             }
         } // close swallow TouchArea wrapping VerticalLayout
 
-        // Esc dismiss.
+        // Esc dismiss. Also seeds focus onto the search field on open, the
+        // same way CommandPalette and GlobalSearchModal seed their own scope.
         FocusScope {
+            init => {
+                search.take-focus();
+            }
             key-pressed(e) => {
                 if (e.text == Key.Escape) {
                     root.dismissed();
