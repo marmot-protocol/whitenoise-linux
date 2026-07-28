@@ -36,6 +36,20 @@ export component Composer inherits Rectangle {
         composer-input.set-cursor(AppState.composer-caret-pos);
     }
 
+    // Autofocus the composer whenever the user switches to a different chat,
+    // so typing can start without an extra click into the message box. A
+    // same-chat reselect — the off-window search-match jump also re-fires
+    // chat-selected on the active chat — leaves active-chat-obs unchanged, so
+    // it does not steal focus from an open search bar. Skipped while a chat
+    // request is pending, since the input is disabled and the action bar
+    // takes its place.
+    property <int> active-chat-obs: AppState.active-chat;
+    changed active-chat-obs => {
+        if (!root.chat-request) {
+            composer-input.take-focus();
+        }
+    }
+
     property <length> min-row-h: 52px;
     property <length> max-row-h: 132px;
     property <length> row-h: clamp(composer-input.preferred-height + 20px, root.min-row-h, root.max-row-h);
