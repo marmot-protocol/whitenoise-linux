@@ -867,6 +867,10 @@ copy_snapshot! {
     save_video_failed: String = get_save_video_failed => "Couldn't save video.";
     video_not_ready: String = get_video_not_ready => "Video isn't ready yet.";
     no_video_selected: String = get_no_video_selected => "No video selected.";
+    // Contact-list export feedback (src/wiring/contacts.rs).
+    contacts_exported: String = get_contacts_exported => "contacts exported";
+    export_contacts_failed: String = get_export_contacts_failed => "Couldn't export contacts.";
+    no_contacts_to_export: String = get_no_contacts_to_export => "No contacts to export.";
     // Audit-log settings feedback.
     audit_enabled: String = get_audit_enabled => "Audit logging enabled — recording now; logs upload automatically.";
     audit_disabled: String = get_audit_disabled => "Audit logging disabled. Existing files stay until you delete them.";

@@ -761,6 +761,9 @@ export global AppState {
     callback contact-search-changed(string);
     in-out property <[bool]> contact-match-flags;
     in-out property <int> contact-match-count;
+    // Contacts-page "Export" button: Rust reads `contacts`, opens a native
+    // save dialog, and writes the list to CSV or JSON (src/wiring/contacts.rs).
+    callback export-contacts-requested();
     callback archive-selected(int);
     // Archived-list search: mirrors the chat-list filter — Rust recomputes
     // `archive-match-flags` (one flag per archived chat) and

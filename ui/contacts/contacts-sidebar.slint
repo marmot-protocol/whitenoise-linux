@@ -16,6 +16,7 @@ export component ContactsSidebar inherits SidePanel {
     show-search: true;
     search-placeholder: @tr("Search contacts…");
     show-add: true;
+    show-export: true;
     // Typing in the header search field filters the rows below in place. Echo
     // the query to Rust so it recomputes the match flags for the current contacts.
     search-edited(q) => {
@@ -24,6 +25,9 @@ export component ContactsSidebar inherits SidePanel {
     }
     add-clicked => {
         AppState.add-contact-requested();
+    }
+    export-clicked => {
+        AppState.export-contacts-requested();
     }
     // The contacts list is re-pushed on refresh; re-derive the match set so
     // filtered rows track the fresh order (mirrors the chat list). No-op while
