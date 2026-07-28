@@ -24,6 +24,12 @@ export component LineInput inherits Rectangle {
     // While `capture-nav` is on, Tab commits like Enter — the mention picker's
     // affordance. List pickers set false so Tab stays focus traversal.
     in property <bool> nav-tab-commits: true;
+    // When `capture-nav` is also on, Left/Right (and Tab/Backtab, once
+    // `nav-tab-commits` is off) fire `nav-horizontal` instead of moving the
+    // caret — a second axis the plain `nav` callback (↑/↓ only) doesn't
+    // cover, for grid-shaped pickers (the emoji picker). Off by default so
+    // every existing `capture-nav` consumer keeps Left/Right as caret moves.
+    in property <bool> capture-horizontal: false;
     out property <bool> has-focus: input.has-focus;
     callback submit;
     // ── Mention autocomplete hooks ──────────────────────────────────────────
@@ -37,6 +43,7 @@ export component LineInput inherits Rectangle {
     // for a programmatic `text` assignment from the owner.
     callback edited;
     callback nav(int);            // +1 / -1 to move the picker selection
+    callback nav-horizontal(int); // +1 / -1 to move the picker selection sideways
     callback commit-mention();    // accept the highlighted candidate
     callback dismiss-mention();   // close the picker
     // Fired on Escape whenever `capture-nav` isn't already claiming it (e.g.
@@ -125,6 +132,14 @@ export component LineInput inherits Rectangle {
                     }
                     if (event.text == Key.DownArrow) {
                         root.nav(1);
+                        return accept;
+                    }
+                    if (root.capture-horizontal && (event.text == Key.LeftArrow || (event.text == Key.Backtab && !root.nav-tab-commits))) {
+                        root.nav-horizontal(-1);
+                        return accept;
+                    }
+                    if (root.capture-horizontal && (event.text == Key.RightArrow || (event.text == Key.Tab && !root.nav-tab-commits))) {
+                        root.nav-horizontal(1);
                         return accept;
                     }
                     if (event.text == Key.Return || (event.text == Key.Tab && root.nav-tab-commits)) {
