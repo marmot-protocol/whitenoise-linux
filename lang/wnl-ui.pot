@@ -270,8 +270,16 @@ msgctxt "ProfileModal"
 msgid "Add contact"
 msgstr ""
 
+msgctxt "Composer"
+msgid "Add emoji"
+msgstr ""
+
 msgctxt "AddMemberRow"
 msgid "Add member"
+msgstr ""
+
+msgctxt "HoverActions"
+msgid "Add reaction"
 msgstr ""
 
 msgctxt "MessageContextMenu"
@@ -365,6 +373,10 @@ msgstr ""
 
 msgctxt "ContactDetail"
 msgid "Archive chat"
+msgstr ""
+
+msgctxt "Composer"
+msgid "Attach file"
 msgstr ""
 
 msgctxt "ErrorCopy"
@@ -1101,6 +1113,10 @@ msgstr ""
 
 msgctxt "EditHistoryModal"
 msgid "Edit history"
+msgstr ""
+
+msgctxt "HoverActions"
+msgid "Edit message"
 msgstr ""
 
 msgctxt "MessageContextMenu"
@@ -2321,6 +2337,10 @@ msgstr ""
 
 msgctxt "ErrorCopy"
 msgid "Renamed."
+msgstr ""
+
+msgctxt "HoverActions"
+msgid "Reply"
 msgstr ""
 
 msgctxt "MessageContextMenu"

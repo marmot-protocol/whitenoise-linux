@@ -278,10 +278,18 @@ msgctxt "ProfileModal"
 msgid "Add contact"
 msgstr "連絡先"
 
+msgctxt "Composer"
+msgid "Add emoji"
+msgstr ""
+
 #, fuzzy
 msgctxt "AddMemberRow"
 msgid "Add member"
 msgstr "1 メンバー"
+
+msgctxt "HoverActions"
+msgid "Add reaction"
+msgstr ""
 
 msgctxt "MessageContextMenu"
 msgid "Add reaction"
@@ -381,6 +389,10 @@ msgstr "アーカイブ"
 msgctxt "ContactDetail"
 msgid "Archive chat"
 msgstr "チャットをアーカイブ"
+
+msgctxt "Composer"
+msgid "Attach file"
+msgstr ""
 
 msgctxt "ErrorCopy"
 msgid "Audit log deleted — recording continues in a fresh file."
@@ -1153,6 +1165,10 @@ msgstr "暗号化キー(NCRYPTSEC)"
 msgctxt "EditHistoryModal"
 msgid "Edit history"
 msgstr "編集履歴"
+
+msgctxt "HoverActions"
+msgid "Edit message"
+msgstr ""
 
 #, fuzzy
 msgctxt "MessageContextMenu"
@@ -2429,6 +2445,10 @@ msgstr "{}のリアクションを削除"
 msgctxt "ErrorCopy"
 msgid "Renamed."
 msgstr "名前を変更しました。"
+
+msgctxt "HoverActions"
+msgid "Reply"
+msgstr ""
 
 msgctxt "MessageContextMenu"
 msgid "Reply"
