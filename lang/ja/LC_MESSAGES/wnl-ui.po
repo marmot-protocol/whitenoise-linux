@@ -2310,6 +2310,10 @@ msgctxt "QuickReactCell"
 msgid "React with {}"
 msgstr "{}でリアクションする"
 
+msgctxt "EmojiPicker"
+msgid "Recent"
+msgstr "最近使った"
+
 msgctxt "NetworkPane"
 msgid "Reconnect now"
 msgstr "今すぐ再接続"

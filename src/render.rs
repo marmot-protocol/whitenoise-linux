@@ -1406,6 +1406,24 @@ pub(crate) fn build_emoji_list(query: &str) -> Vec<EmojiEntry> {
     hits
 }
 
+/// Resolve `Settings::recent_emoji` (newest first) into the picker's
+/// recent-emoji row, skipping any entry the sprite sheet no longer covers.
+pub(crate) fn build_recent_emoji_list(recent: &[String]) -> Vec<EmojiEntry> {
+    recent
+        .iter()
+        .filter_map(|emoji| {
+            let (x, y) = emoji_clip(emoji)?;
+            let name = emojis::get(emoji).map(|e| e.name()).unwrap_or(emoji);
+            Some(EmojiEntry {
+                emoji: s(emoji),
+                name: s(name),
+                clip_x: x as i32,
+                clip_y: y as i32,
+            })
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

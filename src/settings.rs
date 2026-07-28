@@ -47,6 +47,12 @@ pub struct Settings {
     /// only, like nicknames — never published to relays.
     #[serde(default = "default_quick_reactions")]
     pub quick_reactions: Vec<String>,
+    /// The emoji the user has picked from the full emoji picker most recently,
+    /// newest first, capped at `RECENT_EMOJI_MAX`. Feeds the picker's own
+    /// recent-emoji row (see `record_recent_emoji`). Local-only, like
+    /// `quick_reactions` — never published to relays.
+    #[serde(default)]
+    pub recent_emoji: Vec<String>,
     /// Fire a desktop notification for incoming messages in chats you aren't
     /// currently viewing. Master switch for the two below.
     #[serde(default = "default_true")]
@@ -209,7 +215,20 @@ impl Settings {
             .map(String::as_str)
             .unwrap_or_default()
     }
+
+    /// Move `emoji` to the front of the recent-emoji row, dropping any
+    /// earlier occurrence and truncating to `RECENT_EMOJI_MAX`.
+    pub fn record_recent_emoji(&mut self, emoji: &str) {
+        self.recent_emoji.retain(|e| e != emoji);
+        self.recent_emoji.insert(0, emoji.to_string());
+        self.recent_emoji.truncate(RECENT_EMOJI_MAX);
+    }
 }
+
+/// The recent-emoji row is a single unscrolled strip, so the cap matches the
+/// picker grid's fixed column count (`EmojiPicker.cols` in
+/// `ui/emoji/emoji-picker.slint`).
+pub const RECENT_EMOJI_MAX: usize = 10;
 
 fn default_locale() -> String {
     "en".into()

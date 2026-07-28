@@ -1058,6 +1058,7 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
         let weak = ui.as_weak();
         let emoji_query = emoji_query.clone();
         let refresh = refresh_emoji_rows.clone();
+        let settings_cell = settings_cell.clone();
         move |message_id, anchor_x, anchor_y| {
             let Some(ui) = weak.upgrade() else { return };
             *emoji_query.borrow_mut() = String::new();
@@ -1066,6 +1067,8 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             ui.set_emoji_anchor_x(anchor_x);
             ui.set_emoji_anchor_y(anchor_y);
             refresh();
+            let recent = build_recent_emoji_list(&settings_cell.borrow().recent_emoji);
+            ui.set_recent_emoji_list(ModelRc::new(VecModel::from(recent)));
             ui.set_show_emoji_picker(true);
         }
     });
@@ -1100,6 +1103,9 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 let mut draft = ui.get_composer_draft().to_string();
                 draft.push_str(emoji.as_str());
                 ui.set_composer_draft(draft.into());
+                let mut s = settings_cell.borrow_mut();
+                s.record_recent_emoji(emoji.as_str());
+                s.save();
                 return;
             }
             // Sentinel target: append to the customizable quick-reaction set
@@ -1113,6 +1119,11 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                     push_quick_reactions(&ui, &s.quick_reactions);
                 }
                 return;
+            }
+            {
+                let mut s = settings_cell.borrow_mut();
+                s.record_recent_emoji(emoji.as_str());
+                s.save();
             }
             ui.global::<AppState>()
                 .invoke_react_message(message_id, emoji);
