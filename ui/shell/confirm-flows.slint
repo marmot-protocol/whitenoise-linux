@@ -8,9 +8,12 @@
 // full-window layer, so each modal below defaults to the full window.
 
 import { ConfirmModal } from "../modals/confirm-modal.slint";
+import { KVRow } from "../layout/kv-row.slint";
+import { Toggle } from "../primitives/toggle.slint";
 import { AppState } from "app-state.slint";
 
 export component ConfirmFlows inherits Rectangle {
+    property <bool> remember-external-host: false;
     if AppState.show-block-confirm: ConfirmModal {
         title: @tr("Block this chat request?");
         subtitle: @tr("This declines the invite from {}. It can't be restored unless they invite you again.", AppState.chats[AppState.active-chat].name);
@@ -159,12 +162,25 @@ export component ConfirmFlows inherits Rectangle {
         subtitle: @tr("This opens {} in your default browser.", AppState.pending-external-host);
         confirm-label: @tr("Open");
         primary-danger: false;
+
+        KVRow {
+            row-height: 48px;
+            label: @tr("Don't ask again for this site");
+            show-divider: false;
+            Toggle {
+                label: @tr("Don't ask again for this site");
+                on <=> root.remember-external-host;
+            }
+        }
+
         confirm => {
-            AppState.confirm-external-link(AppState.pending-external-link);
+            AppState.confirm-external-link(AppState.pending-external-link, root.remember-external-host);
+            root.remember-external-host = false;
             AppState.pending-external-link = "";
             AppState.pending-external-host = "";
         }
         dismissed => {
+            root.remember-external-host = false;
             AppState.pending-external-link = "";
             AppState.pending-external-host = "";
         }

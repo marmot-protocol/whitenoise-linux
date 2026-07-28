@@ -3337,3 +3337,23 @@ msgstr ""
 msgctxt "GroupHero"
 msgid "＋ Add a description"
 msgstr ""
+
+msgctxt "AdvancedPane"
+msgid "TRUSTED LINK SITES"
+msgstr ""
+
+msgctxt "AdvancedPane"
+msgid "No trusted sites."
+msgstr ""
+
+msgctxt "AdvancedPane"
+msgid "Forget trusted site {}"
+msgstr ""
+
+msgctxt "AdvancedPane"
+msgid "Links to these exact sites open without confirmation."
+msgstr ""
+
+msgctxt "ConfirmFlows"
+msgid "Don't ask again for this site"
+msgstr ""

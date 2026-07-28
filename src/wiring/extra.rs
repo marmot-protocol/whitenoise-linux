@@ -346,6 +346,7 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
         ..
     } = h.clone();
     wire_reply_target(ui);
+    wire_linkout(ui, cx);
     // ─── Edit target (enter / cancel) ──────────────────────────────────
     //
     // The bubble's edit affordance (own messages only) fires
@@ -1592,44 +1593,6 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             .set_choices(ModelRc::new(VecModel::from(choices)));
     }
     refresh_emoji_rows();
-
-    // Markdown links/anchors in chat bubbles activate through this global so
-    // they don't have to be plumbed through every row component. nostr: profile
-    // references (@mentions render as `nostr:npub…` anchors) and marmot://
-    // profile deep links open the in-app profile modal; everything else goes
-    // to the platform handler (xdg-open).
-    ui.global::<Linkout>().on_open({
-        let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        move |url| {
-            let url = url.as_str();
-            if let Some(reference) = url
-                .strip_prefix("nostr:")
-                .or_else(|| deeplink::profile_link_ref(url))
-                && let Some(hex) = nostr_ref_to_hex(reference)
-                && let Some(ui) = weak.upgrade()
-            {
-                open_profile_modal(&ui, &backend_cell, &hex);
-                return;
-            }
-            // We are the OS handler for marmot:// — handing an unresolvable
-            // link to xdg-open would just relaunch this app.
-            if deeplink::is_marmot_url(url) {
-                tracing::warn!(target: "deeplink", "unhandled marmot:// link: {url}");
-                return;
-            }
-            // Anything else is an outside link: arm the confirm modal with
-            // its resolved host instead of opening it immediately.
-            if let Some(ui) = weak.upgrade() {
-                ui.set_pending_external_link(url.into());
-                ui.set_pending_external_host(url_host(url).into());
-            }
-        }
-    });
-
-    ui.global::<AppState>().on_confirm_external_link(|url| {
-        open_external(url.as_str());
-    });
 
     // Avatar / sender-name taps anywhere in the message tree (and the members
     // panel) land here with the account-id hex.

@@ -125,6 +125,50 @@ export component AdvancedPane inherits DetailPage {
     }
 
     Section {
+        label: @tr("TRUSTED LINK SITES");
+        GroupCard {
+            if AppState.trusted-link-hosts.length == 0: Rectangle {
+                height: 48px;
+                Text {
+                    x: 16px;
+                    width: parent.width - 32px;
+                    height: parent.height;
+                    text: @tr("No trusted sites.");
+                    color: Palette.text-lo;
+                    font-size: Theme.fs(12px, 16px);
+                    vertical-alignment: center;
+                }
+            }
+            for host[i] in AppState.trusted-link-hosts: KVRow {
+                row-height: 48px;
+                label: host;
+                show-divider: i < AppState.trusted-link-hosts.length - 1;
+                MicroButton {
+                    label: "";
+                    a11y-label: @tr("Forget trusted site {}", host);
+                    focusable: true;
+                    pad-left: 8px;
+                    pad-right: 8px;
+                    TrashIcon {
+                        stroke: Palette.text-mid;
+                    }
+
+                    clicked => {
+                        AppState.forget-trusted-link-host(host);
+                    }
+                }
+            }
+        }
+
+        Text {
+            text: @tr("Links to these exact sites open without confirmation.");
+            color: Palette.text-lo;
+            font-size: Theme.fs(11px, 14px);
+            wrap: word-wrap;
+        }
+    }
+
+    Section {
         label: @tr("AUDIT LOG FILES");
         GroupCard {
             if AppState.audit-files.length == 0: Rectangle {
