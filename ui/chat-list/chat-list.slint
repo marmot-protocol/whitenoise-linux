@@ -37,7 +37,6 @@ export component ChatListPanel inherits SidePanel {
     count: root.query == "" ? AppState.chats.length : AppState.chat-match-count;
     show-search: true;
     search-placeholder: @tr("Search chats…");
-    show-search-shortcut: true;
     show-add: true;
     footer-text: AppState.network-total > 0 ? AppState.network-connected + "/" + AppState.network-total + " " + @tr("RELAYS") : @tr("NO RELAYS");
     footer-trail: AppState.sync-secs < 0 ? "· " + @tr("SYNCING…") : "· " + @tr("SYNCED") + " " + AppState.sync-secs + "S " + @tr("AGO");
