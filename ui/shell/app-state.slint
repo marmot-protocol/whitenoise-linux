@@ -120,6 +120,7 @@ export global AppState {
     callback notifications-toggled(bool);
     callback notification-sound-toggled(bool);
     callback notification-preview-toggled(bool);
+    callback send-test-notification();
     in-out property <int> accent-color: 0;
     in-out property <string> my-npub;
     // QR of the marmot://profile deep link, rasterized Rust-side on login.

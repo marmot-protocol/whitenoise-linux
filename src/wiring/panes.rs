@@ -878,6 +878,22 @@ pub(crate) fn wire_panes(
             s.save();
         }
     });
+    ui.global::<AppState>().on_send_test_notification({
+        let notif = notif.clone();
+        move || {
+            let preview = notif.preview.load(std::sync::atomic::Ordering::Relaxed);
+            let sound = notif.sound.load(std::sync::atomic::Ordering::Relaxed);
+            let body = if preview {
+                "This is a preview of what your notifications look like."
+            } else {
+                "New message"
+            };
+            // dbus IO — keep it off the UI thread, mirroring the chat watcher.
+            std::thread::spawn(move || {
+                notify::show("White Noise", body, sound);
+            });
+        }
+    });
 
     // Mute / unmute the currently-open chat (header bell). Flips the live
     // NotifState set + the persisted settings, and updates the header.
