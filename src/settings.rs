@@ -114,6 +114,14 @@ pub struct Settings {
     /// published to relays.
     #[serde(default)]
     pub composer_drafts: BTreeMap<String, String>,
+    /// Per-chat scroll offset (viewport-y in px), keyed by `group_id_hex`.
+    /// Mirrors the in-memory `msg_scroll_positions` cache in `state.rs`:
+    /// written when the user switches away from (or quits with) a chat
+    /// scrolled away from the bottom, and used to seed that cache at boot so
+    /// a chat left mid-history reopens there after a restart instead of at
+    /// the bottom. Local-only, like nicknames — never published to relays.
+    #[serde(default)]
+    pub scroll_positions: BTreeMap<String, f32>,
     /// Messages the user deleted *for themselves* ("delete for me"), keyed by
     /// the local account hex that hid them → the set of inner event ids (hex).
     /// Local-only — never published; the message stays on the wire for everyone
@@ -243,6 +251,17 @@ impl Settings {
             .get(group_hex)
             .map(String::as_str)
             .unwrap_or_default()
+    }
+
+    /// Store (or clear) the saved scroll offset for `group_hex`. `None`
+    /// clears the entry (chat left at the bottom). Returns true when the
+    /// stored value actually changed, so callers only `save()` when there's
+    /// something new to persist.
+    pub fn set_scroll_position(&mut self, group_hex: &str, y: Option<f32>) -> bool {
+        match y {
+            Some(y) => self.scroll_positions.insert(group_hex.to_string(), y) != Some(y),
+            None => self.scroll_positions.remove(group_hex).is_some(),
+        }
     }
 
     /// Move `emoji` to the front of the recent-emoji row, dropping any

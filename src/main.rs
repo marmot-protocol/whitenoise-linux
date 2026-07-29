@@ -250,6 +250,9 @@ fn main() -> Result<(), slint::PlatformError> {
     // Seed the mention resolver's nickname map so chat bodies rendered before
     // the first contacts refresh already prefer private nicknames.
     mention_set_nicknames(&initial_settings.nicknames);
+    // Seed the scroll-position cache so a chat left mid-history before the
+    // last restart reopens there instead of resetting to the bottom.
+    msg_scroll_positions_seed(initial_settings.scroll_positions.clone());
     apply_stamp_formats(&initial_settings);
     ui.set_time_format(s(&initial_settings.time_format));
     ui.set_date_format(s(&initial_settings.date_format));
@@ -1061,14 +1064,18 @@ fn main() -> Result<(), slint::PlatformError> {
         std::mem::forget(watch);
     }
 
-    // Snapshot the window's current size and position into settings and save,
-    // so the next launch reopens at the same geometry. Called both when the
-    // window itself is closed and when the app quits from the tray, since
-    // neither path is guaranteed to leave a still-mapped window for the
-    // post-event-loop code below to read from.
+    // Snapshot the window's current size/position and the open chat's scroll
+    // offset into settings and save, so the next launch reopens at the same
+    // geometry and mid-history scroll position. The chat-switch handler in
+    // wiring/chats.rs only records an offset for a chat the user has left, so
+    // the chat still on screen at quit time needs its own snapshot here.
+    // Called both when the window itself is closed and when the app quits
+    // from the tray, since neither path is guaranteed to leave a still-mapped
+    // window for the post-event-loop code below to read from.
     let save_window_geometry = {
         let ui_weak = ui.as_weak();
         let settings_cell = settings_cell.clone();
+        let group_ids = group_ids.clone();
         move || {
             let Some(ui) = ui_weak.upgrade() else {
                 return;
@@ -1084,6 +1091,14 @@ fn main() -> Result<(), slint::PlatformError> {
             st.window_height = Some(size.height);
             st.window_x = Some(pos.x);
             st.window_y = Some(pos.y);
+            let active_idx = ui.get_active_chat();
+            if active_idx >= 0
+                && let Some(group_hex) = group_ids.lock().unwrap().get(active_idx as usize).cloned()
+            {
+                let at_bottom = ui.get_messages_at_bottom();
+                let scroll_y = ui.get_messages_scroll_y();
+                st.set_scroll_position(&group_hex, (!at_bottom).then_some(scroll_y));
+            }
             st.save();
         }
     };
