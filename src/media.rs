@@ -705,58 +705,136 @@ pub(crate) fn video_duration_label(message_id: &str) -> String {
         .unwrap_or_default()
 }
 
-/// The single live [`mpv::MpvPlayer`] backing the video viewer. Only one video
-/// plays at a time; opening another or dismissing the viewer drops this (which
-/// joins the render/event threads and frees the mpv handle).
-pub(crate) fn current_player() -> &'static Mutex<Option<mpv::MpvPlayer>> {
-    use std::sync::OnceLock;
-    static P: OnceLock<Mutex<Option<mpv::MpvPlayer>>> = OnceLock::new();
-    P.get_or_init(|| Mutex::new(None))
+/// One open playback session for the in-app video viewer: the live libmpv
+/// player (absent until [`attach_video_player`] fills it in), the seek-bar
+/// duration, the `(group_hex, message_id)` the dismiss/retry handlers repaint,
+/// the attachment reference a failure retry re-resolves from, and whether
+/// opening the viewer put the app window into fullscreen. These five used to
+/// be five independent globals that every open/retry/dismiss site had to
+/// set and clear in lockstep; behind one lock, a half-open or half-closed
+/// session is no longer reachable by forgetting one of them.
+pub(crate) struct VideoSession {
+    pub(crate) player: Option<mpv::MpvPlayer>,
+    pub(crate) duration: f64,
+    pub(crate) target: (String, String),
+    pub(crate) reference: MediaAttachmentReference,
+    pub(crate) fullscreen: bool,
 }
 
-/// Stop + drop the live player off the UI thread. `MpvPlayer::drop` joins its
-/// render/event threads and calls `mpv_terminate_destroy`, which can block
-/// briefly — never do that on the event loop (hard rule).
-pub(crate) fn stop_current_player() {
-    let taken = current_player().lock().ok().and_then(|mut p| p.take());
-    if let Some(player) = taken {
-        std::thread::spawn(move || drop(player));
+fn video_session_slot() -> &'static Mutex<Option<VideoSession>> {
+    use std::sync::OnceLock;
+    static S: OnceLock<Mutex<Option<VideoSession>>> = OnceLock::new();
+    S.get_or_init(|| Mutex::new(None))
+}
+
+/// Drop a player off the UI thread. `MpvPlayer::drop` joins its render/event
+/// threads and calls `mpv_terminate_destroy`, which can block briefly — never
+/// do that on the event loop (hard rule).
+fn drop_player_off_thread(player: mpv::MpvPlayer) {
+    std::thread::spawn(move || drop(player));
+}
+
+/// Open a fresh session for `target`/`reference`, replacing (and
+/// asynchronously dropping the player of) any session already open.
+pub(crate) fn open_video_session(target: (String, String), reference: MediaAttachmentReference) {
+    let old = video_session_slot().lock().unwrap().replace(VideoSession {
+        player: None,
+        duration: 0.0,
+        target,
+        reference,
+        fullscreen: false,
+    });
+    if let Some(player) = old.and_then(|s| s.player) {
+        drop_player_off_thread(player);
     }
 }
 
+/// Reset the open session for a retry: keep `target`/`reference`/
+/// `fullscreen`, drop the stalled player, zero the duration. No-op if the
+/// viewer isn't open (the retry button isn't reachable then).
+pub(crate) fn restart_video_session() {
+    let mut guard = video_session_slot().lock().unwrap();
+    let Some(session) = guard.as_mut() else {
+        return;
+    };
+    session.duration = 0.0;
+    if let Some(player) = session.player.take() {
+        drop(guard);
+        drop_player_off_thread(player);
+    }
+}
+
+/// Close the open session, dropping its player off the UI thread, and return
+/// its target plus whether it had gone fullscreen, so the caller can repaint
+/// the source bubble and revert fullscreen. No-op (returns `None`) if the
+/// viewer wasn't open.
+pub(crate) fn close_video_session() -> Option<((String, String), bool)> {
+    let mut taken = video_session_slot().lock().unwrap().take()?;
+    if let Some(player) = taken.player.take() {
+        drop_player_off_thread(player);
+    }
+    Some((taken.target, taken.fullscreen))
+}
+
+/// Attach the live player once mpv finishes opening the clip. Dropped
+/// immediately (off the UI thread) instead of left dangling if the viewer was
+/// dismissed before playback started.
+pub(crate) fn attach_video_player(player: mpv::MpvPlayer) {
+    let mut guard = video_session_slot().lock().unwrap();
+    match guard.as_mut() {
+        Some(session) => session.player = Some(player),
+        None => {
+            drop(guard);
+            drop_player_off_thread(player);
+        }
+    }
+}
+
+/// Run `f` against the open session's live player, if any.
+pub(crate) fn with_video_player<R>(f: impl FnOnce(&mpv::MpvPlayer) -> R) -> Option<R> {
+    let guard = video_session_slot().lock().unwrap();
+    guard.as_ref()?.player.as_ref().map(f)
+}
+
 /// Duration (seconds) of the currently-open video, for translating the seek
-/// bar's 0..1 fraction into an absolute position.
-pub(crate) fn current_video_duration() -> &'static Mutex<f64> {
-    use std::sync::OnceLock;
-    static D: OnceLock<Mutex<f64>> = OnceLock::new();
-    D.get_or_init(|| Mutex::new(0.0))
+/// bar's 0..1 fraction into an absolute position. `0.0` if the viewer isn't
+/// open or the clip hasn't reported a duration yet.
+pub(crate) fn video_duration() -> f64 {
+    video_session_slot()
+        .lock()
+        .unwrap()
+        .as_ref()
+        .map(|s| s.duration)
+        .unwrap_or(0.0)
 }
 
-/// `(group_hex, message_id)` of the video currently open in the viewer, so the
-/// dismiss handler can repaint that bubble (poster + duration now cached).
-pub(crate) fn current_video_target() -> &'static Mutex<Option<(String, String)>> {
-    use std::sync::OnceLock;
-    static T: OnceLock<Mutex<Option<(String, String)>>> = OnceLock::new();
-    T.get_or_init(|| Mutex::new(None))
+pub(crate) fn set_video_duration(duration: f64) {
+    if let Some(session) = video_session_slot().lock().unwrap().as_mut() {
+        session.duration = duration;
+    }
 }
 
-/// The attachment reference of the video currently open in the viewer, stashed
-/// so the failure-retry affordance can re-enter [`start_video_playback`]
-/// without re-resolving the record. Set when the viewer opens, cleared on
-/// dismiss.
-pub(crate) fn current_video_reference() -> &'static Mutex<Option<MediaAttachmentReference>> {
-    use std::sync::OnceLock;
-    static R: OnceLock<Mutex<Option<MediaAttachmentReference>>> = OnceLock::new();
-    R.get_or_init(|| Mutex::new(None))
+/// The open session's `(group_hex, message_id)` target plus its attachment
+/// reference, for the Save action and the failure-retry affordance.
+pub(crate) fn video_session_target_reference()
+-> Option<((String, String), MediaAttachmentReference)> {
+    video_session_slot()
+        .lock()
+        .unwrap()
+        .as_ref()
+        .map(|s| (s.target.clone(), s.reference.clone()))
 }
 
-/// Whether the video viewer put the app window into fullscreen. Tracked so the
-/// `f`-key / button toggle can flip it and the dismiss handler can revert it
-/// (so closing the viewer never leaves the whole app stuck fullscreen).
-pub(crate) fn video_fullscreen() -> &'static std::sync::atomic::AtomicBool {
-    use std::sync::OnceLock;
-    static F: OnceLock<std::sync::atomic::AtomicBool> = OnceLock::new();
-    F.get_or_init(|| std::sync::atomic::AtomicBool::new(false))
+/// Flip whether the video viewer has put the app window into fullscreen and
+/// return the new value. No-op (returns `false`) if the viewer isn't open.
+pub(crate) fn toggle_video_fullscreen() -> bool {
+    match video_session_slot().lock().unwrap().as_mut() {
+        Some(session) => {
+            session.fullscreen = !session.fullscreen;
+            session.fullscreen
+        }
+        None => false,
+    }
 }
 
 /// Fetch (cache read-through, else decrypt+download) a video attachment and
@@ -803,8 +881,9 @@ pub(crate) fn start_video_playback(
 
 /// Build the libmpv player for already-decrypted `bytes`, wiring its frame and
 /// state callbacks to the video viewer. Caches the first frame as the bubble
-/// poster and the clip duration. Stores the player in [`current_player`] so the
-/// viewer controls + dismiss can reach it. Safe to call off the UI thread.
+/// poster and the clip duration. Attaches the player to the open
+/// [`VideoSession`] so the viewer controls + dismiss can reach it. Safe to
+/// call off the UI thread.
 pub(crate) fn spawn_video_player(weak: Weak<WhiteNoiseLinux>, mid: String, bytes: Vec<u8>) {
     use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -843,7 +922,7 @@ pub(crate) fn spawn_video_player(weak: Weak<WhiteNoiseLinux>, mid: String, bytes
         let frame_seen = frame_seen.clone();
         move |st: mpv::PlayerState| {
             if st.duration > 0.0 {
-                *current_video_duration().lock().unwrap() = st.duration;
+                set_video_duration(st.duration);
                 if !dur_saved.swap(true, Ordering::AcqRel)
                     && let Ok(mut m) = video_meta().lock()
                 {
@@ -886,7 +965,7 @@ pub(crate) fn spawn_video_player(weak: Weak<WhiteNoiseLinux>, mid: String, bytes
 
     match mpv::MpvPlayer::open(bytes, 1920, on_frame, on_state) {
         Some(player) => {
-            *current_player().lock().unwrap() = Some(player);
+            attach_video_player(player);
         }
         None => {
             tracing::warn!(target: "video", "mpv player failed to start");

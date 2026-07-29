@@ -1131,12 +1131,7 @@ fn open_audio_tap(cx: AttachmentTapCx, reference: MediaAttachmentReference) {
 /// handler can repaint the bubble tile afterwards.
 fn open_video_tap(ui: &WhiteNoiseLinux, cx: AttachmentTapCx, reference: MediaAttachmentReference) {
     clear_attachment_in_flight(&cx.mid);
-    stop_current_player();
-    *current_video_duration().lock().unwrap() = 0.0;
-    *current_video_target().lock().unwrap() = Some((cx.group_hex.clone(), cx.mid.clone()));
-    // Stash the reference so a failure retry can re-enter the load path without
-    // re-resolving the record.
-    *current_video_reference().lock().unwrap() = Some(reference.clone());
+    open_video_session((cx.group_hex.clone(), cx.mid.clone()), reference.clone());
     ui.set_video_viewer_has_frame(false);
     ui.set_video_viewer_playing(false);
     ui.set_video_viewer_progress(0.0);
