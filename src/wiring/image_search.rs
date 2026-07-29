@@ -163,6 +163,41 @@ fn download_and_apply_picked_image(
     });
 }
 
+/// Last query + result set per picker target (1 = group photo, 2 = profile
+/// picture), so reopening the picker or switching targets prefills instead of
+/// starting blank. Local to `wire_image_search`: nothing outside this module
+/// reads it.
+type ImageSearchMemory = Rc<RefCell<HashMap<i32, (String, Vec<ImageSearchHit>)>>>;
+
+/// Save the modal's current query/results into `memory` under its current
+/// target, called right before that target's state would otherwise be
+/// discarded (cancel, pick, or reopening under the other target).
+fn stash_image_search(ui: &WhiteNoiseLinux, memory: &ImageSearchMemory) {
+    let target = ui.get_remote_image_search_target();
+    if target == 0 {
+        return;
+    }
+    let query = ui.get_remote_image_search_query().to_string();
+    let results_model = ui.get_remote_image_search_results();
+    let results: Vec<ImageSearchHit> = (0..results_model.row_count())
+        .filter_map(|i| results_model.row_data(i))
+        .collect();
+    memory.borrow_mut().insert(target, (query, results));
+}
+
+/// Open the modal for `target`, prefilling from `memory` if a prior search
+/// for that target was stashed, otherwise starting blank.
+fn open_image_search(ui: &WhiteNoiseLinux, memory: &ImageSearchMemory, target: i32) {
+    stash_image_search(ui, memory);
+    let (query, results) = memory.borrow().get(&target).cloned().unwrap_or_default();
+    ui.set_remote_image_search_target(target);
+    ui.set_remote_image_search_query(s(&query));
+    ui.set_remote_image_search_status(s(""));
+    ui.set_remote_image_search_busy(false);
+    ui.set_remote_image_search_results(ModelRc::new(VecModel::from(results)));
+    ui.set_show_remote_image_search(true);
+}
+
 pub(crate) fn wire_image_search(ui: &WhiteNoiseLinux, cx: &Cx) {
     let Cx {
         backend_cell,
@@ -170,40 +205,32 @@ pub(crate) fn wire_image_search(ui: &WhiteNoiseLinux, cx: &Cx) {
         ..
     } = cx.clone();
 
+    let image_search_memory: ImageSearchMemory = Rc::new(RefCell::new(HashMap::new()));
+
     ui.global::<AppState>().on_open_group_image_search({
         let weak = ui.as_weak();
+        let memory = image_search_memory.clone();
         move || {
             let Some(ui) = weak.upgrade() else { return };
-            ui.set_remote_image_search_target(1);
-            ui.set_remote_image_search_query(s(""));
-            ui.set_remote_image_search_status(s(""));
-            ui.set_remote_image_search_busy(false);
-            ui.set_remote_image_search_results(ModelRc::new(VecModel::from(
-                Vec::<ImageSearchHit>::new(),
-            )));
-            ui.set_show_remote_image_search(true);
+            open_image_search(&ui, &memory, 1);
         }
     });
 
     ui.global::<AppState>().on_open_profile_image_search({
         let weak = ui.as_weak();
+        let memory = image_search_memory.clone();
         move || {
             let Some(ui) = weak.upgrade() else { return };
-            ui.set_remote_image_search_target(2);
-            ui.set_remote_image_search_query(s(""));
-            ui.set_remote_image_search_status(s(""));
-            ui.set_remote_image_search_busy(false);
-            ui.set_remote_image_search_results(ModelRc::new(VecModel::from(
-                Vec::<ImageSearchHit>::new(),
-            )));
-            ui.set_show_remote_image_search(true);
+            open_image_search(&ui, &memory, 2);
         }
     });
 
     ui.global::<AppState>().on_remote_image_search_cancel({
         let weak = ui.as_weak();
+        let memory = image_search_memory.clone();
         move || {
             let Some(ui) = weak.upgrade() else { return };
+            stash_image_search(&ui, &memory);
             ui.set_show_remote_image_search(false);
             ui.set_remote_image_search_target(0);
         }
@@ -307,6 +334,7 @@ pub(crate) fn wire_image_search(ui: &WhiteNoiseLinux, cx: &Cx) {
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
         let group_ids = group_ids.clone();
+        let memory = image_search_memory.clone();
         move |index| {
             let Some(ui) = weak.upgrade() else { return };
             let Some(hit) = ui
@@ -316,6 +344,7 @@ pub(crate) fn wire_image_search(ui: &WhiteNoiseLinux, cx: &Cx) {
                 return;
             };
             let is_group = ui.get_remote_image_search_target() == 1;
+            stash_image_search(&ui, &memory);
             ui.set_show_remote_image_search(false);
             ui.set_remote_image_search_target(0);
 
