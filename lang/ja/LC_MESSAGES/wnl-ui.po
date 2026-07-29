@@ -2720,6 +2720,14 @@ msgctxt "ImportBackupModal"
 msgid "Restore"
 msgstr "復元"
 
+msgctxt "SettingsPage"
+msgid "Restore default quick reactions?"
+msgstr "デフォルトのクイックリアクションに戻しますか？"
+
+msgctxt "SettingsPage"
+msgid "Restore defaults"
+msgstr "デフォルトに戻す"
+
 msgctxt "ImportBackupModal"
 msgid "Restore everything from an encrypted backup. Use the password the backup was created with."
 msgstr "暗号化されたバックアップからすべてを復元します。バックアップ作成時のパスワードを使用してください。"
@@ -3321,6 +3329,10 @@ msgstr ""
 msgctxt "ConfirmFlows"
 msgid "This removes your admin rights. You can't restore them yourself unless another admin promotes you again."
 msgstr "{} からの招待を辞退します。相手がもう一度招待しない限り、元に戻すことはできません。"
+
+msgctxt "SettingsPage"
+msgid "This replaces your customized set with the default six reactions."
+msgstr "カスタマイズしたセットが、デフォルトの6つのリアクションに置き換わります。"
 
 msgctxt "ChatRequestBanner"
 msgid "This sender isn't in your contacts. Accept to start an encrypted session."

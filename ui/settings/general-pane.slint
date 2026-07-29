@@ -182,7 +182,7 @@ export component GeneralPane inherits DetailPage {
                 MicroButton {
                     label: @tr("Reset");
                     clicked => {
-                        QuickReact.reset();
+                        AppState.show-quick-react-reset-confirm = true;
                     }
                 }
             }

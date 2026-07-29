@@ -10,6 +10,7 @@
 import { ConfirmModal } from "../modals/confirm-modal.slint";
 import { KVRow } from "../layout/kv-row.slint";
 import { Toggle } from "../primitives/toggle.slint";
+import { QuickReact } from "../tokens.slint";
 import { AppState } from "app-state.slint";
 
 export component ConfirmFlows inherits Rectangle {
@@ -196,6 +197,19 @@ export component ConfirmFlows inherits Rectangle {
             root.remember-external-host = false;
             AppState.pending-external-link = "";
             AppState.pending-external-host = "";
+        }
+    }
+
+    if AppState.show-quick-react-reset-confirm: ConfirmModal {
+        title: @tr("SettingsPage" => "Restore default quick reactions?");
+        subtitle: @tr("SettingsPage" => "This replaces your customized set with the default six reactions.");
+        confirm-label: @tr("SettingsPage" => "Restore defaults");
+        confirm => {
+            AppState.show-quick-react-reset-confirm = false;
+            QuickReact.reset();
+        }
+        dismissed => {
+            AppState.show-quick-react-reset-confirm = false;
         }
     }
 

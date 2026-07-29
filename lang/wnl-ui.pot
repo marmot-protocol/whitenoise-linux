@@ -2595,6 +2595,14 @@ msgctxt "ImportBackupModal"
 msgid "Restore"
 msgstr ""
 
+msgctxt "SettingsPage"
+msgid "Restore default quick reactions?"
+msgstr ""
+
+msgctxt "SettingsPage"
+msgid "Restore defaults"
+msgstr ""
+
 msgctxt "ImportBackupModal"
 msgid "Restore everything from an encrypted backup. Use the password the backup was created with."
 msgstr ""
@@ -3171,6 +3179,10 @@ msgstr ""
 
 msgctxt "ConfirmFlows"
 msgid "This removes your admin rights. You can't restore them yourself unless another admin promotes you again."
+msgstr ""
+
+msgctxt "SettingsPage"
+msgid "This replaces your customized set with the default six reactions."
 msgstr ""
 
 msgctxt "ChatRequestBanner"
