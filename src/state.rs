@@ -393,6 +393,15 @@ pub(crate) fn msg_scroll_positions() -> &'static Mutex<HashMap<String, f32>> {
     MAP.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
+/// Seed the in-memory scroll-position cache from persisted settings at boot,
+/// so a chat left mid-history before the last restart reopens there instead
+/// of resetting to the bottom.
+pub(crate) fn msg_scroll_positions_seed(saved: impl IntoIterator<Item = (String, f32)>) {
+    if let Ok(mut map) = msg_scroll_positions().lock() {
+        map.extend(saved);
+    }
+}
+
 // ─── Voice-message state ───────────────────────────────────────────────────
 
 // The active cpal recorder and the currently-playing rodio audio player are

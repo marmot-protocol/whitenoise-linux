@@ -233,11 +233,19 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 if prev_idx != idx {
                     let prev_hex = group_ids.lock().unwrap().get(prev_idx as usize).cloned();
                     if let Some(prev_hex) = prev_hex {
-                        let mut positions = msg_scroll_positions().lock().unwrap();
-                        if ui.get_messages_at_bottom() {
-                            positions.remove(&prev_hex);
-                        } else {
-                            positions.insert(prev_hex, ui.get_messages_scroll_y());
+                        let at_bottom = ui.get_messages_at_bottom();
+                        let scroll_y = ui.get_messages_scroll_y();
+                        {
+                            let mut positions = msg_scroll_positions().lock().unwrap();
+                            if at_bottom {
+                                positions.remove(&prev_hex);
+                            } else {
+                                positions.insert(prev_hex.clone(), scroll_y);
+                            }
+                        }
+                        let mut st = settings_cell.borrow_mut();
+                        if st.set_scroll_position(&prev_hex, (!at_bottom).then_some(scroll_y)) {
+                            st.save();
                         }
                     }
                 }
