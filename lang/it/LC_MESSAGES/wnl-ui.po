@@ -361,6 +361,10 @@ msgctxt "NotificationsPane"
 msgid "Alert me about messages in chats I'm not viewing."
 msgstr "Avvisami dei messaggi nelle chat che non sto guardando."
 
+msgctxt "AppShell"
+msgid "All"
+msgstr ""
+
 #, fuzzy
 msgctxt "AccountSwitcherDetail"
 msgid "All accounts"
@@ -369,6 +373,10 @@ msgstr "Account"
 msgctxt "AccountSwitcherModal"
 msgid "All accounts stay connected. Switching only changes which one you're looking at."
 msgstr "Tutti gli account restano connessi. Il passaggio cambia solo quale stai visualizzando."
+
+msgctxt "LabelModal"
+msgid "An organizing label for {}. Leave empty to remove it."
+msgstr ""
 
 msgctxt "AppearancePane"
 msgid "Appearance"
@@ -591,6 +599,10 @@ msgstr "Annulla"
 msgctxt "ImportBackupModal"
 msgid "Cancel"
 msgstr "Annulla"
+
+msgctxt "LabelModal"
+msgid "Cancel"
+msgstr ""
 
 #, fuzzy
 msgctxt "NicknameModal"
@@ -1217,6 +1229,10 @@ msgctxt "EditHistoryModal"
 msgid "Edit history"
 msgstr "Cronologia modifiche"
 
+msgctxt "ChatContextMenu"
+msgid "Edit label ({})…"
+msgstr ""
+
 msgctxt "HoverActions"
 msgid "Edit message"
 msgstr ""
@@ -1694,6 +1710,10 @@ msgctxt "SettingsSidebar"
 msgid "Keys & identity"
 msgstr "Chiavi e identità"
 
+msgctxt "LabelModal"
+msgid "LABEL"
+msgstr ""
+
 msgctxt "GeneralPane"
 msgid "LANGUAGE"
 msgstr "LINGUA"
@@ -1713,6 +1733,10 @@ msgstr "DISPOSITIVI COLLEGATI"
 msgctxt "KeysPage"
 msgid "LOCAL"
 msgstr "LOCALE"
+
+msgctxt "LabelModal"
+msgid "Label"
+msgstr ""
 
 msgctxt "StoragePane"
 msgid "Last backup"
@@ -2853,6 +2877,10 @@ msgctxt "ImageViewerModal"
 msgid "Save"
 msgstr "Salva"
 
+msgctxt "LabelModal"
+msgid "Save"
+msgstr ""
+
 #, fuzzy
 msgctxt "NicknameModal"
 msgid "Save"
@@ -3017,6 +3045,10 @@ msgstr "Set"
 msgctxt "ProfilePage"
 msgid "Set"
 msgstr "Imposta"
+
+msgctxt "ChatContextMenu"
+msgid "Set label…"
+msgstr ""
 
 msgctxt "AppShell"
 msgid "Settings"
@@ -3634,6 +3666,10 @@ msgstr "dump di debug copiato"
 msgctxt "ImageTile"
 msgid "decrypting…"
 msgstr "decifrazione…"
+
+msgctxt "LabelModal"
+msgid "e.g. Work"
+msgstr ""
 
 msgctxt "StartNewChatModal"
 msgid "e.g. friday-crew"

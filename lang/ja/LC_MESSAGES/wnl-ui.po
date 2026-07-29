@@ -357,6 +357,10 @@ msgctxt "NotificationsPane"
 msgid "Alert me about messages in chats I'm not viewing."
 msgstr "表示していないチャットのメッセージを通知します。"
 
+msgctxt "AppShell"
+msgid "All"
+msgstr ""
+
 #, fuzzy
 msgctxt "AccountSwitcherDetail"
 msgid "All accounts"
@@ -365,6 +369,10 @@ msgstr "アカウント"
 msgctxt "AccountSwitcherModal"
 msgid "All accounts stay connected. Switching only changes which one you're looking at."
 msgstr "すべてのアカウントは接続されたままです。切り替えても、表示するアカウントが変わるだけです。"
+
+msgctxt "LabelModal"
+msgid "An organizing label for {}. Leave empty to remove it."
+msgstr ""
 
 msgctxt "AppearancePane"
 msgid "Appearance"
@@ -587,6 +595,10 @@ msgstr "キャンセル"
 msgctxt "ImportBackupModal"
 msgid "Cancel"
 msgstr "キャンセル"
+
+msgctxt "LabelModal"
+msgid "Cancel"
+msgstr ""
 
 #, fuzzy
 msgctxt "NicknameModal"
@@ -1213,6 +1225,10 @@ msgctxt "EditHistoryModal"
 msgid "Edit history"
 msgstr "編集履歴"
 
+msgctxt "ChatContextMenu"
+msgid "Edit label ({})…"
+msgstr ""
+
 msgctxt "HoverActions"
 msgid "Edit message"
 msgstr ""
@@ -1690,6 +1706,10 @@ msgctxt "SettingsSidebar"
 msgid "Keys & identity"
 msgstr "鍵と ID"
 
+msgctxt "LabelModal"
+msgid "LABEL"
+msgstr ""
+
 msgctxt "GeneralPane"
 msgid "LANGUAGE"
 msgstr "言語"
@@ -1709,6 +1729,10 @@ msgstr "リンク済みデバイス"
 msgctxt "KeysPage"
 msgid "LOCAL"
 msgstr "ローカル"
+
+msgctxt "LabelModal"
+msgid "Label"
+msgstr ""
 
 msgctxt "StoragePane"
 msgid "Last backup"
@@ -2849,6 +2873,10 @@ msgctxt "ImageViewerModal"
 msgid "Save"
 msgstr "保存"
 
+msgctxt "LabelModal"
+msgid "Save"
+msgstr ""
+
 #, fuzzy
 msgctxt "NicknameModal"
 msgid "Save"
@@ -3013,6 +3041,10 @@ msgstr "9月"
 msgctxt "ProfilePage"
 msgid "Set"
 msgstr "設定する"
+
+msgctxt "ChatContextMenu"
+msgid "Set label…"
+msgstr ""
 
 msgctxt "AppShell"
 msgid "Settings"
@@ -3629,6 +3661,10 @@ msgstr "デバッグダンプをコピーしました"
 msgctxt "ImageTile"
 msgid "decrypting…"
 msgstr "復号中…"
+
+msgctxt "LabelModal"
+msgid "e.g. Work"
+msgstr ""
 
 msgctxt "StartNewChatModal"
 msgid "e.g. friday-crew"

@@ -9,6 +9,7 @@ import { Palette, TextSelection } from "../tokens.slint";
 import { StartNewChatModal } from "../modals/start-new-chat-modal.slint";
 import { AddContactModal } from "../modals/add-contact-modal.slint";
 import { NicknameModal } from "../modals/nickname-modal.slint";
+import { LabelModal } from "../modals/label-modal.slint";
 import { AccountSwitcherModal } from "../modals/account-switcher-modal.slint";
 import { AddAccountModal } from "../modals/add-account-modal.slint";
 import { RevealNsecModal } from "../modals/reveal-nsec-modal.slint";
@@ -284,6 +285,7 @@ export component ModalHost inherits Rectangle {
             pinned: AppState.chat-ctx-pinned;
             muted: AppState.chat-ctx-muted;
             unread: AppState.chat-ctx-unread;
+            label: AppState.chats[AppState.chat-ctx-idx].label;
             can-leave: AppState.chat-ctx-can-leave;
             can-pin: AppState.chat-ctx-can-pin;
             toggle-pin => {
@@ -298,6 +300,13 @@ export component ModalHost inherits Rectangle {
                 AppState.chat-ctx-open = false;
                 AppState.toggle-read-chat-at(AppState.chat-ctx-idx);
             }
+            set-label => {
+                AppState.chat-ctx-open = false;
+                AppState.label-modal-idx = AppState.chat-ctx-idx;
+                AppState.label-input = AppState.chats[AppState.chat-ctx-idx].label;
+                AppState.label-chat-name = AppState.chats[AppState.chat-ctx-idx].name;
+                AppState.show-label-modal = true;
+            }
             export-chat => {
                 AppState.chat-ctx-open = false;
                 AppState.export-chat-at(AppState.chat-ctx-idx);
@@ -309,6 +318,17 @@ export component ModalHost inherits Rectangle {
             }
             dismissed => {
                 AppState.chat-ctx-open = false;
+            }
+        }
+
+        if AppState.show-label-modal: LabelModal {
+            label-text <=> AppState.label-input;
+            chat-name: AppState.label-chat-name;
+            save(text) => {
+                AppState.set-chat-label(AppState.label-modal-idx, text);
+            }
+            dismissed => {
+                AppState.label-modal-dismissed();
             }
         }
 

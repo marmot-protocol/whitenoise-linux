@@ -471,6 +471,16 @@ export global AppState {
     // Export the right-clicked chat's transcript to a Markdown or HTML file
     // (Rust opens the save dialog and writes it).
     callback export-chat-at(int);
+    // "Set label…" from the chat context menu — the LabelModal, mirroring the
+    // NicknameModal. `label-modal-idx` is captured from `chat-ctx-idx` at
+    // request time (like `leave-confirm-chat-idx`) so it survives the menu
+    // closing before the modal's save fires.
+    in-out property <bool> show-label-modal: false;
+    in-out property <string> label-input;
+    in-out property <string> label-chat-name;
+    in-out property <int> label-modal-idx: -1;
+    callback set-chat-label(int, string);
+    callback label-modal-dismissed();
     // (was private on the window root; UI-internal, not part of the Rust contract)
     in-out property <bool> show-leave-confirm: false;
     // (was private on the window root; UI-internal, not part of the Rust contract)
@@ -796,6 +806,13 @@ export global AppState {
     callback chat-search-changed(string);
     in-out property <[bool]> chat-match-flags;
     in-out property <int> chat-match-count;
+    // Chats-page filter row: the distinct chat labels currently in use
+    // (Rust-pushed, one chip each) and the active one ("" = All chats). Pure
+    // client-side filter — matching a chat's label is a plain equality check,
+    // so no Rust round-trip is needed the way the (currently unused) text
+    // search above needs one for substring matching.
+    in-out property <[string]> chat-label-options;
+    in-out property <string> chat-label-filter: "";
     callback contact-selected(int);
     // Contacts-list search: mirrors the chat-list filter — Rust recomputes
     // `contact-match-flags` (one flag per contact) and `contact-match-count`

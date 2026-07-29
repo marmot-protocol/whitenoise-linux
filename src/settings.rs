@@ -163,6 +163,12 @@ pub struct Settings {
     pub window_x: Option<i32>,
     #[serde(default)]
     pub window_y: Option<i32>,
+    /// User-defined organizing label per chat, keyed by `group_id_hex`. A chat
+    /// with no entry is unlabeled. Local-only, like nicknames — never
+    /// published to relays. Drives both the rail's filter row (distinct
+    /// values) and each row's own label.
+    #[serde(default)]
+    pub chat_labels: BTreeMap<String, String>,
 }
 
 impl Settings {

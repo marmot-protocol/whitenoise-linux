@@ -1,0 +1,31 @@
+import { Modal, ModalField } from "modal.slint";
+
+export component LabelModal inherits Modal {
+    // save(label) — Rust trims it and stores it locally (settings.json); an
+    // empty string clears the chat's label.
+    callback save(string);
+    in-out property <string> label-text;
+    // The chat's name, shown in the subtitle so the target is unambiguous.
+    in property <string> chat-name;
+
+    card-width: 420px;
+    // The label field below autofocuses itself.
+    grab-focus: false;
+    title: @tr("Label");
+    subtitle: @tr("An organizing label for {}. Leave empty to remove it.", root.chat-name);
+    secondary-label: @tr("Cancel");
+    primary-label: @tr("Save");
+    primary => {
+        root.save(root.label-text);
+    }
+
+    ModalField {
+        label: @tr("LABEL");
+        placeholder: @tr("e.g. Work");
+        text <=> root.label-text;
+        autofocus: true;
+        submitted => {
+            root.save(root.label-text);
+        }
+    }
+}
