@@ -30,7 +30,7 @@ export component NotificationsPane inherits DetailPage {
             KVRow {
                 row-height: 48px;
                 label: @tr("Desktop notifications");
-                sublabel: @tr("Alert me about messages in chats I'm not viewing.");
+                sublabel: @tr("Get an alert when a message arrives in a chat you're not viewing.");
                 Toggle {
                     label: @tr("Desktop notifications");
                     on <=> AppState.notifications-enabled;

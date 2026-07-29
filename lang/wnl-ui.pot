@@ -339,10 +339,6 @@ msgctxt "NetworkPane"
 msgid "Aggregate connection counter from the relay pool."
 msgstr ""
 
-msgctxt "NotificationsPane"
-msgid "Alert me about messages in chats I'm not viewing."
-msgstr ""
-
 msgctxt "AppShell"
 msgid "All"
 msgstr ""
@@ -533,7 +529,7 @@ msgid "Can't play this audio format"
 msgstr ""
 
 msgctxt "ErrorCopy"
-msgid "Can't reach your relays right now. Check your network and relay settings, then try again."
+msgid "Can't reach your relays right now. Check your relay settings and try again."
 msgstr ""
 
 msgctxt "ErrorCopy"
@@ -868,7 +864,7 @@ msgid "Coral"
 msgstr ""
 
 msgctxt "ErrorCopy"
-msgid "Couldn't accept the invitation. Please try again in a moment."
+msgid "Couldn't accept the invitation. Please try again."
 msgstr ""
 
 msgctxt "ErrorCopy"
@@ -880,7 +876,7 @@ msgid "Couldn't access clipboard. Your nsec was not copied."
 msgstr ""
 
 msgctxt "ErrorCopy"
-msgid "Couldn't add that account. Please check the key and try again."
+msgid "Couldn't add that account. Double-check the key and try again."
 msgstr ""
 
 msgctxt "ErrorCopy"
@@ -916,7 +912,7 @@ msgid "Couldn't create the encrypted key. Please try again."
 msgstr ""
 
 msgctxt "ErrorCopy"
-msgid "Couldn't decline the invitation. Please try again in a moment."
+msgid "Couldn't decline the invitation. Please try again."
 msgstr ""
 
 msgctxt "ErrorCopy"
@@ -935,9 +931,13 @@ msgctxt "ErrorCopy"
 msgid "Couldn't export contacts."
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "Couldn't find anyone with that username. Double-check the name@domain and try again."
+msgstr ""
+
 #. Tier 2 — operation-specific fallbacks.
 msgctxt "ErrorCopy"
-msgid "Couldn't finish syncing. We'll keep retrying — check your relay settings if this keeps happening."
+msgid "Couldn't finish syncing. It will retry automatically. Check your relay settings if this keeps happening."
 msgstr ""
 
 #. Forward failure: some source attachments could not be fetched to re-send.
@@ -994,11 +994,11 @@ msgid "Couldn't save video."
 msgstr ""
 
 msgctxt "ErrorCopy"
-msgid "Couldn't save your edit. Check your connection and try again."
+msgid "Couldn't save your edit. Please try again."
 msgstr ""
 
 msgctxt "ErrorCopy"
-msgid "Couldn't save your profile. Check your connection and try again."
+msgid "Couldn't save your profile. Please try again."
 msgstr ""
 
 msgctxt "ErrorCopy"
@@ -1006,19 +1006,19 @@ msgid "Couldn't save your relay list. Please try again."
 msgstr ""
 
 msgctxt "ErrorCopy"
-msgid "Couldn't search for images. Check your connection and try again."
+msgid "Couldn't search for images. Please try again."
 msgstr ""
 
 msgctxt "ErrorCopy"
-msgid "Couldn't send your message. Check your connection and try again."
+msgid "Couldn't send your message. Please try again."
 msgstr ""
 
 msgctxt "ErrorCopy"
-msgid "Couldn't start up. Check your network and relay settings, then try again."
+msgid "Couldn't start up. Check your relay settings and try again."
 msgstr ""
 
 msgctxt "ErrorCopy"
-msgid "Couldn't switch accounts. Please try again in a moment."
+msgid "Couldn't switch accounts. Please try again."
 msgstr ""
 
 msgctxt "ErrorCopy"
@@ -1419,6 +1419,10 @@ msgstr ""
 
 msgctxt "LoginScreen"
 msgid "Generate a new key"
+msgstr ""
+
+msgctxt "NotificationsPane"
+msgid "Get an alert when a message arrives in a chat you're not viewing."
 msgstr ""
 
 msgctxt "LoginScreen"
@@ -2065,7 +2069,7 @@ msgid "No file selected"
 msgstr ""
 
 msgctxt "ErrorCopy"
-msgid "No generated key to save. Try again."
+msgid "No generated key to save. Please try again."
 msgstr ""
 
 msgctxt "SharedGroupsList"
@@ -2163,7 +2167,7 @@ msgstr ""
 
 #. Network-pane status copy (also Rust-set).
 msgctxt "ErrorCopy"
-msgid "Not connected yet. Please wait a moment and try again."
+msgid "Not connected yet. Wait a moment and try again."
 msgstr ""
 
 msgctxt "ErrorCopy"
@@ -2902,12 +2906,12 @@ msgctxt "MessagesArea"
 msgid "Say hello to start the conversation."
 msgstr ""
 
-msgctxt "ProfileQrPlate"
-msgid "Scan to add me from another device"
-msgstr ""
-
 msgctxt "QrModal"
 msgid "Scan to add or message on another device"
+msgstr ""
+
+msgctxt "ProfileQrPlate"
+msgid "Scan to add this account from another device"
 msgstr ""
 
 msgctxt "LoginScreen"
@@ -3248,7 +3252,7 @@ msgid "This chat is archived"
 msgstr ""
 
 msgctxt "ErrorCopy"
-msgid "This contact's messaging keys were published by an app we're not compatible with. Ask them to publish a key package from an up-to-date Marmot client, then try again."
+msgid "This contact's messaging keys were published by an incompatible app. Ask them to publish a key package from an up-to-date Marmot client, then try again."
 msgstr ""
 
 msgctxt "ConfirmFlows"
@@ -3320,7 +3324,7 @@ msgid "This signs the account out on this device and erases its secret key from 
 msgstr ""
 
 msgctxt "GetStartedScreen"
-msgid "Three quick steps and you're ready to message — end-to-end encrypted, no servers in the middle."
+msgid "Three steps and you're ready to message. Everything is end-to-end encrypted, with no servers in the middle."
 msgstr ""
 
 msgctxt "weekday"
@@ -3480,10 +3484,6 @@ msgctxt "AboutPane"
 msgid "WHAT IT IS"
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "We couldn't find anyone with that username. Double-check the name@domain and try again."
-msgstr ""
-
 msgctxt "weekday"
 msgid "Wed"
 msgstr ""
@@ -3493,7 +3493,7 @@ msgid "Welcome to White Noise"
 msgstr ""
 
 msgctxt "EncryptionInfoModal"
-msgid "Whatever you send in this chat is encrypted on your device before it goes out. The relays that pass it along can't read it, and we can't either."
+msgid "Whatever you send in this chat is encrypted on your device before it goes out. The relays that pass it along can't read it, and neither can anyone else."
 msgstr ""
 
 msgctxt "KpCard"
@@ -3595,7 +3595,7 @@ msgid "Your key package"
 msgstr ""
 
 msgctxt "AboutPane"
-msgid "Your keys stay on this device — we never see them."
+msgid "Your keys stay on this device. No one else ever sees them."
 msgstr ""
 
 msgctxt "ExportKeyModal"

@@ -769,34 +769,34 @@ copy_snapshot! {
     /// Read the current localized `ErrorCopy` snapshot. Safe from any thread.
     read fn error_copy;
     invalid_key: String = get_invalid_key => "That doesn't look like a valid npub or public key. Double-check it and try again.";
-    peer_key_package_invalid: String = get_peer_key_package_invalid => "This contact's messaging keys were published by an app we're not compatible with. Ask them to publish a key package from an up-to-date Marmot client, then try again.";
-    nip05_not_found: String = get_nip05_not_found => "We couldn't find anyone with that username. Double-check the name@domain and try again.";
-    network: String = get_network => "Can't reach your relays right now. Check your network and relay settings, then try again.";
+    peer_key_package_invalid: String = get_peer_key_package_invalid => "This contact's messaging keys were published by an incompatible app. Ask them to publish a key package from an up-to-date Marmot client, then try again.";
+    nip05_not_found: String = get_nip05_not_found => "Couldn't find anyone with that username. Double-check the name@domain and try again.";
+    network: String = get_network => "Can't reach your relays right now. Check your relay settings and try again.";
     microphone_unavailable: String = get_microphone_unavailable => "No microphone available.";
     audio_playback: String = get_audio_playback => "Couldn't play audio.";
-    sync: String = get_sync => "Couldn't finish syncing. We'll keep retrying — check your relay settings if this keeps happening.";
-    backend: String = get_backend => "Couldn't start up. Check your network and relay settings, then try again.";
-    switch_account: String = get_switch_account => "Couldn't switch accounts. Please try again in a moment.";
-    accept: String = get_accept => "Couldn't accept the invitation. Please try again in a moment.";
-    block: String = get_block => "Couldn't decline the invitation. Please try again in a moment.";
+    sync: String = get_sync => "Couldn't finish syncing. It will retry automatically. Check your relay settings if this keeps happening.";
+    backend: String = get_backend => "Couldn't start up. Check your relay settings and try again.";
+    switch_account: String = get_switch_account => "Couldn't switch accounts. Please try again.";
+    accept: String = get_accept => "Couldn't accept the invitation. Please try again.";
+    block: String = get_block => "Couldn't decline the invitation. Please try again.";
     archive: String = get_archive => "Couldn't archive this chat. Please try again.";
     unarchive: String = get_unarchive => "Couldn't restore this chat. Please try again.";
-    send: String = get_send => "Couldn't send your message. Check your connection and try again.";
-    edit: String = get_edit => "Couldn't save your edit. Check your connection and try again.";
+    send: String = get_send => "Couldn't send your message. Please try again.";
+    edit: String = get_edit => "Couldn't save your edit. Please try again.";
     react: String = get_react => "Couldn't add your reaction. Please try again.";
     unreact: String = get_unreact => "Couldn't remove your reaction. Please try again.";
     kp_publish: String = get_kp_publish => "Couldn't publish your key package. Check your relay settings and try again.";
     kp_rotate: String = get_kp_rotate => "Couldn't rotate your key package. Check your relay settings and try again.";
     kp_refresh: String = get_kp_refresh => "Couldn't refresh your key packages. Check your relay settings and try again.";
     republish: String = get_republish => "Couldn't republish to your relays. Check your relay settings and try again.";
-    add_account: String = get_add_account => "Couldn't add that account. Please check the key and try again.";
+    add_account: String = get_add_account => "Couldn't add that account. Double-check the key and try again.";
     create_chat: String = get_create_chat => "Couldn't create the chat. Please try again.";
     add_contact: String = get_add_contact => "Couldn't add that contact. Please try again.";
     remove_contact: String = get_remove_contact => "Couldn't remove that contact. Please try again.";
     add_member: String = get_add_member => "Couldn't add that member. Please try again.";
     group_settings: String = get_group_settings => "Couldn't update the group settings. Please try again.";
     group_image: String = get_group_image => "Couldn't update the group image. Please try again.";
-    save_profile: String = get_save_profile => "Couldn't save your profile. Check your connection and try again.";
+    save_profile: String = get_save_profile => "Couldn't save your profile. Please try again.";
     upload_picture: String = get_upload_picture => "Couldn't upload your picture. Please try again.";
     generic: String = get_generic => "Something went wrong. Please try again.";
     // Forward failure; carries `%1` (failed count) and `%2` (total), filled
@@ -804,7 +804,7 @@ copy_snapshot! {
     forward_media: String = get_forward_media => "Couldn't forward %1 of %2 attachments. Tap the message to try again.";
     save_attachment_ok: String = get_save_attachment_ok => "Saved %1";
     save_attachment_failed: String = get_save_attachment_failed => "Couldn't save %1. Check the location has space and permission, then try again.";
-    not_connected: String = get_not_connected => "Not connected yet. Please wait a moment and try again.";
+    not_connected: String = get_not_connected => "Not connected yet. Wait a moment and try again.";
     relay_already_listed: String = get_relay_already_listed => "That relay is already in your list.";
     relay_url_empty: String = get_relay_url_empty => "Enter a relay address.";
     relay_url_scheme: String = get_relay_url_scheme => "A relay address starts with wss:// — for example wss://relay.example.com.";
@@ -818,7 +818,7 @@ copy_snapshot! {
     // filled Rust-side with `tmpl`.
     unlocking: String = get_unlocking => "Unlocking…";
     invalid_nsec: String = get_invalid_nsec => "That doesn't look like a valid nsec.";
-    no_generated_key: String = get_no_generated_key => "No generated key to save. Try again.";
+    no_generated_key: String = get_no_generated_key => "No generated key to save. Please try again.";
     encode_key_failed: String = get_encode_key_failed => "Failed to encode key: %1";
     backend_not_ready_yet: String = get_backend_not_ready_yet => "Backend isn't ready yet.";
     // Backup / import status copy. `backup_failed` carries a `%1` slot.
@@ -852,7 +852,7 @@ copy_snapshot! {
     group_image_updated: String = get_group_image_updated => "group image updated";
     backend_not_ready_lc: String = get_backend_not_ready_lc => "backend not ready";
     searching_images: String = get_searching_images => "searching…";
-    image_search_failed: String = get_image_search_failed => "Couldn't search for images. Check your connection and try again.";
+    image_search_failed: String = get_image_search_failed => "Couldn't search for images. Please try again.";
     image_search_no_results: String = get_image_search_no_results => "No images found for that search.";
     image_download_failed: String = get_image_download_failed => "Couldn't download that image. Try another.";
     // Profile publish status copy.

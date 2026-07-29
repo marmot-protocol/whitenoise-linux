@@ -713,35 +713,35 @@ export global TextSelection {
 export global ErrorCopy {
     // Tier 1 — content-based classification.
     out property <string> invalid-key: @tr("That doesn't look like a valid npub or public key. Double-check it and try again.");
-    out property <string> peer-key-package-invalid: @tr("This contact's messaging keys were published by an app we're not compatible with. Ask them to publish a key package from an up-to-date Marmot client, then try again.");
-    out property <string> nip05-not-found: @tr("We couldn't find anyone with that username. Double-check the name@domain and try again.");
-    out property <string> network: @tr("Can't reach your relays right now. Check your network and relay settings, then try again.");
+    out property <string> peer-key-package-invalid: @tr("This contact's messaging keys were published by an incompatible app. Ask them to publish a key package from an up-to-date Marmot client, then try again.");
+    out property <string> nip05-not-found: @tr("Couldn't find anyone with that username. Double-check the name@domain and try again.");
+    out property <string> network: @tr("Can't reach your relays right now. Check your relay settings and try again.");
     out property <string> microphone-unavailable: @tr("No microphone available.");
     out property <string> audio-playback: @tr("Couldn't play audio.");
     // Tier 2 — operation-specific fallbacks.
-    out property <string> sync: @tr("Couldn't finish syncing. We'll keep retrying — check your relay settings if this keeps happening.");
-    out property <string> backend: @tr("Couldn't start up. Check your network and relay settings, then try again.");
-    out property <string> switch-account: @tr("Couldn't switch accounts. Please try again in a moment.");
-    out property <string> accept: @tr("Couldn't accept the invitation. Please try again in a moment.");
-    out property <string> block: @tr("Couldn't decline the invitation. Please try again in a moment.");
+    out property <string> sync: @tr("Couldn't finish syncing. It will retry automatically. Check your relay settings if this keeps happening.");
+    out property <string> backend: @tr("Couldn't start up. Check your relay settings and try again.");
+    out property <string> switch-account: @tr("Couldn't switch accounts. Please try again.");
+    out property <string> accept: @tr("Couldn't accept the invitation. Please try again.");
+    out property <string> block: @tr("Couldn't decline the invitation. Please try again.");
     out property <string> archive: @tr("Couldn't archive this chat. Please try again.");
     out property <string> unarchive: @tr("Couldn't restore this chat. Please try again.");
-    out property <string> send: @tr("Couldn't send your message. Check your connection and try again.");
-    out property <string> edit: @tr("Couldn't save your edit. Check your connection and try again.");
+    out property <string> send: @tr("Couldn't send your message. Please try again.");
+    out property <string> edit: @tr("Couldn't save your edit. Please try again.");
     out property <string> react: @tr("Couldn't add your reaction. Please try again.");
     out property <string> unreact: @tr("Couldn't remove your reaction. Please try again.");
     out property <string> kp-publish: @tr("Couldn't publish your key package. Check your relay settings and try again.");
     out property <string> kp-rotate: @tr("Couldn't rotate your key package. Check your relay settings and try again.");
     out property <string> kp-refresh: @tr("Couldn't refresh your key packages. Check your relay settings and try again.");
     out property <string> republish: @tr("Couldn't republish to your relays. Check your relay settings and try again.");
-    out property <string> add-account: @tr("Couldn't add that account. Please check the key and try again.");
+    out property <string> add-account: @tr("Couldn't add that account. Double-check the key and try again.");
     out property <string> create-chat: @tr("Couldn't create the chat. Please try again.");
     out property <string> add-contact: @tr("Couldn't add that contact. Please try again.");
     out property <string> remove-contact: @tr("Couldn't remove that contact. Please try again.");
     out property <string> add-member: @tr("Couldn't add that member. Please try again.");
     out property <string> group-settings: @tr("Couldn't update the group settings. Please try again.");
     out property <string> group-image: @tr("Couldn't update the group image. Please try again.");
-    out property <string> save-profile: @tr("Couldn't save your profile. Check your connection and try again.");
+    out property <string> save-profile: @tr("Couldn't save your profile. Please try again.");
     out property <string> upload-picture: @tr("Couldn't upload your picture. Please try again.");
     out property <string> generic: @tr("Something went wrong. Please try again.");
     // Forward failure: some source attachments could not be fetched to re-send.
@@ -750,7 +750,7 @@ export global ErrorCopy {
     out property <string> save-attachment-ok: @tr("status toast after saving a file, %1 = file name" => "Saved %1");
     out property <string> save-attachment-failed: @tr("status toast when saving a file fails, %1 = file name" => "Couldn't save %1. Check the location has space and permission, then try again.");
     // Network-pane status copy (also Rust-set).
-    out property <string> not-connected: @tr("Not connected yet. Please wait a moment and try again.");
+    out property <string> not-connected: @tr("Not connected yet. Wait a moment and try again.");
     out property <string> relay-already-listed: @tr("That relay is already in your list.");
     out property <string> relay-url-empty: @tr("Enter a relay address.");
     out property <string> relay-url-scheme: @tr("A relay address starts with wss:// — for example wss://relay.example.com.");
@@ -765,7 +765,7 @@ export global ErrorCopy {
     // Rust-side with `tmpl`.
     out property <string> unlocking: @tr("Unlocking…");
     out property <string> invalid-nsec: @tr("That doesn't look like a valid nsec.");
-    out property <string> no-generated-key: @tr("No generated key to save. Try again.");
+    out property <string> no-generated-key: @tr("No generated key to save. Please try again.");
     out property <string> encode-key-failed: @tr("status, %1 = error detail" => "Failed to encode key: %1");
     out property <string> backend-not-ready-yet: @tr("Backend isn't ready yet.");
     // Backup / import status copy (src/wiring/backup.rs). `%1` in backup-failed
@@ -802,7 +802,7 @@ export global ErrorCopy {
     out property <string> backend-not-ready-lc: @tr("status, lower-case to match the image-upload flow" => "backend not ready");
     // Remote image search status copy (src/wiring/image_search.rs).
     out property <string> searching-images: @tr("searching…");
-    out property <string> image-search-failed: @tr("Couldn't search for images. Check your connection and try again.");
+    out property <string> image-search-failed: @tr("Couldn't search for images. Please try again.");
     out property <string> image-search-no-results: @tr("No images found for that search.");
     out property <string> image-download-failed: @tr("Couldn't download that image. Try another.");
     // Profile publish status copy (src/wiring/extra.rs).

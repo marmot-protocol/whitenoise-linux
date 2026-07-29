@@ -128,3 +128,10 @@ matching how `settings.rs` swallows bad input.
 The worked example is theme id 3, **Terminal** (terminal message lines + IRC chat
 list + bracketed buttons): it required **zero** changes to message/list/button
 *rendering logic in Rust* — only the theme-selection plumbing in step 4.
+
+## Copy voice
+
+Every user-visible string follows the copy-voice rules in AGENTS.md ("Copy
+voice" under i18n): second-person address, no company "we", plain register,
+no em dashes, the fixed error-recovery ladder, the casing ladder, and one
+register per language catalog.

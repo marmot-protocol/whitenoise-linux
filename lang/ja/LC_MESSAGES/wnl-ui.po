@@ -87,10 +87,9 @@ msgctxt "DebugPane"
 msgid "(no snapshot yet — click Refresh)"
 msgstr "(スナップショットなし — 更新をクリック)"
 
-#, fuzzy
 msgctxt "KpInspectorPane"
 msgid "(nothing loaded yet — click Refresh)"
-msgstr "(スナップショットなし — 更新をクリック)"
+msgstr "(まだ読み込みなし。「更新」をクリックしてください)"
 
 msgctxt "DebugJsonModal"
 msgid "(nothing to show)"
@@ -143,15 +142,13 @@ msgctxt "ContactDetail"
 msgid "ACTIONS"
 msgstr "操作"
 
-#, fuzzy
 msgctxt "AccountSwitcherDetail"
 msgid "ACTIVE"
-msgstr "操作"
+msgstr "アクティブ"
 
-#, fuzzy
 msgctxt "AccountSwitcherList"
 msgid "ACTIVE"
-msgstr "操作"
+msgstr "アクティブ"
 
 msgctxt "ChatListPanel"
 msgid "AGO"
@@ -182,10 +179,9 @@ msgctxt "AdvancedPane"
 msgid "AUDIT LOG FILES"
 msgstr "監査ログファイル"
 
-#, fuzzy
 msgctxt "AboutPane"
 msgid "About"
-msgstr "自己紹介"
+msgstr "このアプリについて"
 
 msgctxt "ProfilePage"
 msgid "About"
@@ -203,31 +199,26 @@ msgctxt "ChatHeader"
 msgid "Accept"
 msgstr "承認"
 
-#, fuzzy
 msgctxt "ChatRequestBar"
 msgid "Accept"
 msgstr "承認"
 
-#, fuzzy
 msgctxt "ChatRequestBar"
 msgid "Accept the request to start messaging"
 msgstr "リクエストを承認するとメッセージを送信できます"
 
-#, fuzzy
 msgctxt "AccountSwitcherModal"
 msgid "Account"
 msgstr "アカウント"
 
-#, fuzzy
 msgctxt "AccountSwitcherList"
 msgid "Account details"
-msgstr "アカウント"
+msgstr "アカウントの詳細"
 
 msgctxt "AccountSwitcherModal"
 msgid "Accounts"
 msgstr "アカウント"
 
-#, fuzzy
 msgctxt "AppShell"
 msgid "Accounts"
 msgstr "アカウント"
@@ -236,7 +227,6 @@ msgctxt "LeftRail"
 msgid "Accounts"
 msgstr "アカウント"
 
-#, fuzzy
 msgctxt "GetStartedScreen"
 msgid "Add"
 msgstr "追加"
@@ -257,40 +247,35 @@ msgctxt "GetStartedScreen"
 msgid "Add a relay first."
 msgstr "先にリレーを追加してください。"
 
-#, fuzzy
 msgctxt "AccountSwitcherModal"
 msgid "Add account"
-msgstr "連絡先"
+msgstr "アカウントを追加"
 
-#, fuzzy
 msgctxt "AddAccountModal"
 msgid "Add account"
-msgstr "連絡先"
+msgstr "アカウントを追加"
 
 #. New-chat / add-contact status copy (src/wiring/chats.rs, contacts.rs).
 msgctxt "ErrorCopy"
 msgid "Add at least one npub."
 msgstr "npubを少なくとも1つ追加してください。"
 
-#, fuzzy
 msgctxt "AddContactModal"
 msgid "Add contact"
-msgstr "連絡先"
+msgstr "連絡先を追加"
 
 #. or failed kind-0 fetch hides the action entirely.
-#, fuzzy
 msgctxt "ProfileModal"
 msgid "Add contact"
-msgstr "連絡先"
+msgstr "連絡先に追加"
 
 msgctxt "Composer"
 msgid "Add emoji"
 msgstr ""
 
-#, fuzzy
 msgctxt "AddMemberRow"
 msgid "Add member"
-msgstr "1 メンバー"
+msgstr "メンバーを追加"
 
 msgctxt "HoverActions"
 msgid "Add reaction"
@@ -309,20 +294,17 @@ msgctxt "ErrorCopy"
 msgid "Add the relay's address after wss://."
 msgstr "wss:// に続けてリレーのアドレスを入力してください。"
 
-#, fuzzy
 msgctxt "AddAccountModal"
 msgid "Adding…"
-msgstr "保存中…"
+msgstr "追加中…"
 
-#, fuzzy
 msgctxt "AddContactModal"
 msgid "Adding…"
-msgstr "保存中…"
+msgstr "追加中…"
 
-#, fuzzy
 msgctxt "ProfileModal"
 msgid "Adding…"
-msgstr "保存中…"
+msgstr "追加中…"
 
 msgctxt "GroupMemberRow"
 msgid "Admin"
@@ -336,10 +318,9 @@ msgctxt "ErrorCopy"
 msgid "Admin removed."
 msgstr "管理者を削除しました。"
 
-#, fuzzy
 msgctxt "GroupLeaveRow"
 msgid "Admins must step down before leaving."
-msgstr "管理者は退出前に管理者権限を外す必要があります。"
+msgstr "管理者は退出する前に管理者を辞める必要があります。"
 
 msgctxt "AdvancedPane"
 msgid "Advanced"
@@ -353,18 +334,13 @@ msgctxt "NetworkPane"
 msgid "Aggregate connection counter from the relay pool."
 msgstr "リレープールからの接続数カウンター。"
 
-msgctxt "NotificationsPane"
-msgid "Alert me about messages in chats I'm not viewing."
-msgstr "表示していないチャットのメッセージを通知します。"
-
 msgctxt "AppShell"
 msgid "All"
 msgstr ""
 
-#, fuzzy
 msgctxt "AccountSwitcherDetail"
 msgid "All accounts"
-msgstr "アカウント"
+msgstr "すべてのアカウント"
 
 msgctxt "AccountSwitcherModal"
 msgid "All accounts stay connected. Switching only changes which one you're looking at."
@@ -398,7 +374,6 @@ msgctxt "ChatHeader"
 msgid "Archive"
 msgstr "アーカイブ"
 
-#, fuzzy
 msgctxt "LeftRail"
 msgid "Archive"
 msgstr "アーカイブ"
@@ -488,7 +463,6 @@ msgctxt "ChatHeader"
 msgid "Block"
 msgstr "ブロック"
 
-#, fuzzy
 msgctxt "ConfirmFlows"
 msgid "Block"
 msgstr "ブロック"
@@ -497,10 +471,9 @@ msgctxt "ContactDetail"
 msgid "Block"
 msgstr "ブロック"
 
-#, fuzzy
 msgctxt "ConfirmFlows"
 msgid "Block this chat request?"
-msgstr "チャットリクエスト"
+msgstr "このチャットリクエストをブロックしますか？"
 
 msgctxt "ConfirmFlows"
 msgid "Block {}?"
@@ -534,10 +507,9 @@ msgctxt "ContactsSidebar"
 msgid "CONTACTS"
 msgstr "連絡先"
 
-#, fuzzy
 msgctxt "AboutPane"
 msgid "CREDITS"
-msgstr "編集"
+msgstr "クレジット"
 
 msgctxt "GeneralPane"
 msgid "CUSTOM EMOJI"
@@ -547,45 +519,38 @@ msgctxt "StoragePane"
 msgid "Cached attachments"
 msgstr "キャッシュされた添付ファイル"
 
-#, fuzzy
 msgctxt "AudioTile"
 msgid "Can't play this audio format"
 msgstr "この音声形式は再生できません"
 
 msgctxt "ErrorCopy"
-msgid "Can't reach your relays right now. Check your network and relay settings, then try again."
-msgstr "現在リレーに接続できません。ネットワークとリレーの設定を確認して、もう一度お試しください。"
+msgid "Can't reach your relays right now. Check your relay settings and try again."
+msgstr "現在リレーに接続できません。リレーの設定を確認して、もう一度お試しください。"
 
 msgctxt "ErrorCopy"
 msgid "Can't start a chat with only yourself."
 msgstr "自分だけとのチャットは始められません。"
 
-#, fuzzy
 msgctxt "AccountSwitcherModal"
 msgid "Cancel"
 msgstr "キャンセル"
 
-#, fuzzy
 msgctxt "AddAccountModal"
 msgid "Cancel"
 msgstr "キャンセル"
 
-#, fuzzy
 msgctxt "AddContactModal"
 msgid "Cancel"
 msgstr "キャンセル"
 
-#, fuzzy
 msgctxt "BackupCreateModal"
 msgid "Cancel"
 msgstr "キャンセル"
 
-#, fuzzy
 msgctxt "ConfirmModal"
 msgid "Cancel"
 msgstr "キャンセル"
 
-#, fuzzy
 msgctxt "CustomEmojiModal"
 msgid "Cancel"
 msgstr "キャンセル"
@@ -599,12 +564,10 @@ msgctxt "ForwardPickerModal"
 msgid "Cancel"
 msgstr "キャンセル"
 
-#, fuzzy
 msgctxt "HeroEditField"
 msgid "Cancel"
 msgstr "キャンセル"
 
-#, fuzzy
 msgctxt "ImportBackupModal"
 msgid "Cancel"
 msgstr "キャンセル"
@@ -613,7 +576,6 @@ msgctxt "LabelModal"
 msgid "Cancel"
 msgstr ""
 
-#, fuzzy
 msgctxt "NicknameModal"
 msgid "Cancel"
 msgstr "キャンセル"
@@ -623,7 +585,6 @@ msgid "Cancel"
 msgstr "キャンセル"
 
 #. control lives inline next to the key) and the footer just closes.
-#, fuzzy
 msgctxt "RevealNsecModal"
 msgid "Cancel"
 msgstr "キャンセル"
@@ -632,17 +593,14 @@ msgctxt "StartNewChatModal"
 msgid "Cancel"
 msgstr "キャンセル"
 
-#, fuzzy
 msgctxt "EditBanner"
 msgid "Cancel edit"
 msgstr "編集をキャンセル"
 
-#, fuzzy
 msgctxt "RecordingOverlay"
 msgid "Cancel recording"
-msgstr "編集をキャンセル"
+msgstr "録音をキャンセル"
 
-#, fuzzy
 msgctxt "ReplyBanner"
 msgid "Cancel reply"
 msgstr "返信をキャンセル"
@@ -724,16 +682,14 @@ msgctxt "ConfirmFlows"
 msgid "Clear the media cache?"
 msgstr "メディアキャッシュを消去しますか？"
 
-#, fuzzy
 msgctxt "StoragePane"
 msgid "Clearing…"
-msgstr "保存中…"
+msgstr "消去中…"
 
 msgctxt "AccountSwitcherModal"
 msgid "Close"
 msgstr "閉じる"
 
-#, fuzzy
 msgctxt "DebugJsonModal"
 msgid "Close"
 msgstr "閉じる"
@@ -766,7 +722,6 @@ msgctxt "KeysPage"
 msgid "Configure key-package relays first."
 msgstr "先にキーパッケージ用リレーを設定してください。"
 
-#, fuzzy
 msgctxt "BackupCreateModal"
 msgid "Confirm your password"
 msgstr "パスワードを確認"
@@ -779,16 +734,14 @@ msgctxt "RevealNsecModal"
 msgid "Confirm your vault password to reveal the secret key (nsec) for your active account."
 msgstr ""
 
-#, fuzzy
 msgctxt "GetStartedScreen"
 msgid "Connect a relay"
-msgstr "リレーに接続中…"
+msgstr "リレーに接続する"
 
 msgctxt "AboutPane"
 msgid "Connect to Nostr relays you choose."
 msgstr "選んだ Nostr リレーに接続します。"
 
-#, fuzzy
 msgctxt "GetStartedScreen"
 msgid "Connected · {}/{}"
 msgstr "接続済み · {}/{}"
@@ -813,7 +766,6 @@ msgctxt "ErrorCopy"
 msgid "Contacting relays…"
 msgstr "リレーに接続中…"
 
-#, fuzzy
 msgctxt "ProfileModal"
 msgid "Contacting relays…"
 msgstr "リレーに接続中…"
@@ -822,7 +774,6 @@ msgctxt "AppShell"
 msgid "Contacts"
 msgstr "連絡先"
 
-#, fuzzy
 msgctxt "LeftRail"
 msgid "Contacts"
 msgstr "連絡先"
@@ -835,12 +786,10 @@ msgctxt "ErrorCopy"
 msgid "Copied to clipboard."
 msgstr "クリップボードにコピーしました。"
 
-#, fuzzy
 msgctxt "CopyChip"
 msgid "Copied ✓"
 msgstr "コピーしました ✓"
 
-#, fuzzy
 msgctxt "EncryptionInfoModal"
 msgid "Copied ✓"
 msgstr "コピーしました ✓"
@@ -881,7 +830,6 @@ msgctxt "ProfilePage"
 msgid "Copy"
 msgstr "コピー"
 
-#, fuzzy
 msgctxt "RevealNsecModal"
 msgid "Copy"
 msgstr "コピー"
@@ -890,7 +838,6 @@ msgctxt "StoragePane"
 msgid "Copy"
 msgstr "コピー"
 
-#, fuzzy
 msgctxt "DebugJsonModal"
 msgid "Copy JSON"
 msgstr "JSON をコピー"
@@ -912,8 +859,8 @@ msgid "Coral"
 msgstr "コーラル"
 
 msgctxt "ErrorCopy"
-msgid "Couldn't accept the invitation. Please try again in a moment."
-msgstr "招待を承認できませんでした。しばらくしてからもう一度お試しください。"
+msgid "Couldn't accept the invitation. Please try again."
+msgstr "招待を承認できませんでした。もう一度お試しください。"
 
 msgctxt "ErrorCopy"
 msgid "Couldn't access clipboard."
@@ -924,7 +871,7 @@ msgid "Couldn't access clipboard. Your nsec was not copied."
 msgstr "クリップボードにアクセスできませんでした。nsecはコピーされませんでした。"
 
 msgctxt "ErrorCopy"
-msgid "Couldn't add that account. Please check the key and try again."
+msgid "Couldn't add that account. Double-check the key and try again."
 msgstr "そのアカウントを追加できませんでした。鍵を確認して、もう一度お試しください。"
 
 msgctxt "ErrorCopy"
@@ -960,8 +907,8 @@ msgid "Couldn't create the encrypted key. Please try again."
 msgstr "暗号化キーを作成できませんでした。もう一度お試しください。"
 
 msgctxt "ErrorCopy"
-msgid "Couldn't decline the invitation. Please try again in a moment."
-msgstr "招待を辞退できませんでした。しばらくしてからもう一度お試しください。"
+msgid "Couldn't decline the invitation. Please try again."
+msgstr "招待を辞退できませんでした。もう一度お試しください。"
 
 msgctxt "ErrorCopy"
 msgid "Couldn't delete audit log."
@@ -975,15 +922,18 @@ msgctxt "ErrorCopy"
 msgid "Couldn't download that image. Try another."
 msgstr "画像をダウンロードできませんでした。別の画像をお試しください。"
 
-#, fuzzy
 msgctxt "ErrorCopy"
 msgid "Couldn't export contacts."
-msgstr "その連絡先を削除できませんでした。もう一度お試しください。"
+msgstr "連絡先をエクスポートできませんでした。"
+
+msgctxt "ErrorCopy"
+msgid "Couldn't find anyone with that username. Double-check the name@domain and try again."
+msgstr "そのユーザー名の相手が見つかりませんでした。name@domain を確認して、もう一度お試しください。"
 
 #. Tier 2 — operation-specific fallbacks.
 msgctxt "ErrorCopy"
-msgid "Couldn't finish syncing. We'll keep retrying — check your relay settings if this keeps happening."
-msgstr "同期を完了できませんでした。再試行を続けます。頻発する場合はリレーの設定を確認してください。"
+msgid "Couldn't finish syncing. It will retry automatically. Check your relay settings if this keeps happening."
+msgstr "同期を完了できませんでした。自動的に再試行します。頻発する場合はリレーの設定を確認してください。"
 
 #. Forward failure: some source attachments could not be fetched to re-send.
 msgctxt "error banner when forwarding attachments fails, %1 = failed count, %2 = total count"
@@ -1034,38 +984,37 @@ msgctxt "ErrorCopy"
 msgid "Couldn't save image."
 msgstr "画像を保存できませんでした。"
 
-#, fuzzy
 msgctxt "ErrorCopy"
 msgid "Couldn't save video."
-msgstr "画像を保存できませんでした。"
+msgstr "動画を保存できませんでした。"
 
 msgctxt "ErrorCopy"
-msgid "Couldn't save your edit. Check your connection and try again."
-msgstr "編集を保存できませんでした。接続を確認して、もう一度お試しください。"
+msgid "Couldn't save your edit. Please try again."
+msgstr "編集を保存できませんでした。もう一度お試しください。"
 
 msgctxt "ErrorCopy"
-msgid "Couldn't save your profile. Check your connection and try again."
-msgstr "プロフィールを保存できませんでした。接続を確認して、もう一度お試しください。"
+msgid "Couldn't save your profile. Please try again."
+msgstr "プロフィールを保存できませんでした。もう一度お試しください。"
 
 msgctxt "ErrorCopy"
 msgid "Couldn't save your relay list. Please try again."
 msgstr "リレーのリストを保存できませんでした。もう一度お試しください。"
 
 msgctxt "ErrorCopy"
-msgid "Couldn't search for images. Check your connection and try again."
-msgstr "画像を検索できませんでした。接続を確認して、もう一度お試しください。"
+msgid "Couldn't search for images. Please try again."
+msgstr "画像を検索できませんでした。もう一度お試しください。"
 
 msgctxt "ErrorCopy"
-msgid "Couldn't send your message. Check your connection and try again."
-msgstr "メッセージを送信できませんでした。接続を確認して、もう一度お試しください。"
+msgid "Couldn't send your message. Please try again."
+msgstr "メッセージを送信できませんでした。もう一度お試しください。"
 
 msgctxt "ErrorCopy"
-msgid "Couldn't start up. Check your network and relay settings, then try again."
-msgstr "起動できませんでした。ネットワークとリレーの設定を確認して、もう一度お試しください。"
+msgid "Couldn't start up. Check your relay settings and try again."
+msgstr "起動できませんでした。リレーの設定を確認して、もう一度お試しください。"
 
 msgctxt "ErrorCopy"
-msgid "Couldn't switch accounts. Please try again in a moment."
-msgstr "アカウントを切り替えられませんでした。しばらくしてからもう一度お試しください。"
+msgid "Couldn't switch accounts. Please try again."
+msgstr "アカウントを切り替えられませんでした。もう一度お試しください。"
 
 msgctxt "ErrorCopy"
 msgid "Couldn't update the group image. Please try again."
@@ -1099,10 +1048,9 @@ msgctxt "KeysPage"
 msgid "Creates an NIP-49 key encrypted with your vault password, safe to store or move to another client."
 msgstr "ボールトのパスワードで暗号化された NIP-49 キーを作成します。安全に保管したり、別のクライアントに移したりできます。"
 
-#, fuzzy
 msgctxt "StartNewChatModal"
 msgid "Creating…"
-msgstr "保存中…"
+msgstr "作成中…"
 
 msgctxt "KpCard"
 msgid "Credential"
@@ -1128,7 +1076,6 @@ msgctxt "AdvancedPane"
 msgid "DEVELOPER"
 msgstr "開発者"
 
-#, fuzzy
 msgctxt "ThemePicker"
 msgid "Dark"
 msgstr "ダーク"
@@ -1161,18 +1108,15 @@ msgctxt "KpInspectorPane"
 msgid "Decoded MLS key packages: yours, and anyone's by pubkey"
 msgstr ""
 
-#, fuzzy
 msgctxt "StoragePane"
 msgid "Decrypted images and files, stored encrypted on this device."
 msgstr "復号した画像やファイルを、この端末に暗号化して保存します。"
 
-#, fuzzy
 msgctxt "ConfirmFlows"
 msgid "Delete"
 msgstr "削除"
 
 #. Icon-only and destructive, so it needs a spoken name.
-#, fuzzy
 msgctxt "AuditFileRow"
 msgid "Delete audit file"
 msgstr "監査ログファイルを削除"
@@ -1189,20 +1133,17 @@ msgctxt "MessageContextMenu"
 msgid "Delete for everyone"
 msgstr ""
 
-#, fuzzy
 msgctxt "ConfirmFlows"
 msgid "Delete for everyone?"
-msgstr "日付形式"
+msgstr "全員から削除しますか？"
 
-#, fuzzy
 msgctxt "MessageContextMenu"
 msgid "Delete for me"
-msgstr "日付形式"
+msgstr "自分のみ削除"
 
-#, fuzzy
 msgctxt "ConfirmFlows"
 msgid "Delete for me?"
-msgstr "日付形式"
+msgstr "自分のみ削除しますか？"
 
 msgctxt "AdvancedPane"
 msgid "Deleting the file being recorded rotates it — recording continues in a fresh file."
@@ -1212,15 +1153,13 @@ msgctxt "ErrorCopy"
 msgid "Description saved."
 msgstr "説明を保存しました。"
 
-#, fuzzy
 msgctxt "NotificationsPane"
 msgid "Desktop notifications"
-msgstr "通知"
+msgstr "デスクトップ通知"
 
-#, fuzzy
 msgctxt "AdvancedPane"
 msgid "Developer mode"
-msgstr "開発者フラグ"
+msgstr "開発者モード"
 
 msgctxt "LoginScreen"
 msgid "Discard key"
@@ -1276,16 +1215,14 @@ msgctxt "HoverActions"
 msgid "Edit message"
 msgstr ""
 
-#, fuzzy
 msgctxt "MessageContextMenu"
 msgid "Edit message"
-msgstr "最後のメッセージ"
+msgstr "メッセージを編集"
 
 msgctxt "ProfilePage"
 msgid "Edit profile"
 msgstr "プロフィールを編集"
 
-#, fuzzy
 msgctxt "EditBanner"
 msgid "Editing:"
 msgstr "編集中:"
@@ -1298,30 +1235,25 @@ msgctxt "ExportKeyModal"
 msgid "Encrypting…"
 msgstr "暗号化中…"
 
-#, fuzzy
 msgctxt "ChatHeader"
 msgid "Encryption details"
-msgstr "アカウント"
+msgstr "暗号化の詳細"
 
-#, fuzzy
 msgctxt "EncryptionInfoModal"
 msgid "End-to-end encrypted"
-msgstr "エンドツーエンド暗号化:"
+msgstr "エンドツーエンド暗号化"
 
-#, fuzzy
 msgctxt "AboutHeroCard"
 msgid "End-to-end encrypted group messaging for Linux."
-msgstr "エンドツーエンド暗号化:"
+msgstr "Linux 向けのエンドツーエンド暗号化グループメッセージング。"
 
-#, fuzzy
 msgctxt "AboutPane"
 msgid "End-to-end encryption"
-msgstr "エンドツーエンド暗号化:"
+msgstr "エンドツーエンド暗号化"
 
-#, fuzzy
 msgctxt "ErrorCopy"
 msgid "Enter a name for this emoji."
-msgstr "ユーザー名、npub、または16進の公開鍵を入力してください。"
+msgstr "この絵文字の名前を入力してください。"
 
 msgctxt "ErrorCopy"
 msgid "Enter a relay address."
@@ -1372,7 +1304,6 @@ msgctxt "KeysPage"
 msgid "Export"
 msgstr "エクスポート"
 
-#, fuzzy
 msgctxt "SidePanel"
 msgid "Export"
 msgstr "エクスポート"
@@ -1393,10 +1324,9 @@ msgctxt "ChatContextMenu"
 msgid "Export transcript…"
 msgstr "履歴を書き出す…"
 
-#, fuzzy
 msgctxt "KpCard"
 msgid "Extensions"
-msgstr "メンション"
+msgstr "拡張"
 
 msgctxt "status, %1 = error detail"
 msgid "Failed to encode key: %1"
@@ -1410,10 +1340,9 @@ msgctxt "MessagesArea"
 msgid "Fetching the latest conversation history."
 msgstr "最新の会話履歴を取得しています。"
 
-#, fuzzy
 msgctxt "KpInspectorPane"
 msgid "Fetching…"
-msgstr "検索中…"
+msgstr "取得中…"
 
 msgctxt "AdvancedPane"
 msgid "Forget trusted site {}"
@@ -1479,7 +1408,6 @@ msgctxt "SettingsSidebar"
 msgid "General"
 msgstr "一般"
 
-#, fuzzy
 msgctxt "AddAccountModal"
 msgid "Generate a new key"
 msgstr "新しい鍵を生成"
@@ -1487,6 +1415,10 @@ msgstr "新しい鍵を生成"
 msgctxt "LoginScreen"
 msgid "Generate a new key"
 msgstr "新しい鍵を生成"
+
+msgctxt "NotificationsPane"
+msgid "Get an alert when a message arrives in a chat you're not viewing."
+msgstr "表示していないチャットにメッセージが届いたときに通知を受け取ります。"
 
 msgctxt "LoginScreen"
 msgid "Going back won't save this identity. Unless you backed up the nsec yourself, it's gone for good."
@@ -1500,10 +1432,9 @@ msgctxt "ArchivedDetail"
 msgid "Group id"
 msgstr "グループ ID"
 
-#, fuzzy
 msgctxt "GroupHero"
 msgid "Group name"
-msgstr "グループ ID"
+msgstr "グループ名"
 
 msgctxt "GeneralPane"
 msgid "HELP"
@@ -1609,10 +1540,9 @@ msgctxt "ImportBackupModal"
 msgid "Import backup"
 msgstr "バックアップをインポート"
 
-#, fuzzy
 msgctxt "ImportBackupModal"
 msgid "Importing…"
-msgstr "保存中…"
+msgstr "インポート中…"
 
 msgctxt "StoragePane"
 msgid "Import…"
@@ -1638,7 +1568,6 @@ msgctxt "KeysPage"
 msgid "Invalidates the current package and uploads a fresh one to your relays."
 msgstr "現在のパッケージを無効化し、新しいものをリレーにアップロードします。"
 
-#, fuzzy
 msgctxt "AddMemberRow"
 msgid "Invite"
 msgstr "招待"
@@ -1660,10 +1589,9 @@ msgctxt "ErrorCopy"
 msgid "Invited."
 msgstr "招待しました。"
 
-#, fuzzy
 msgctxt "AddMemberRow"
 msgid "Inviting…"
-msgstr "保存中…"
+msgstr "招待中…"
 
 msgctxt "EncryptionInfoModal"
 msgid "It recovers on its own"
@@ -1677,10 +1605,9 @@ msgctxt "AccountSwitcherConfirm"
 msgid "Its background session ends and it leaves the account list."
 msgstr ""
 
-#, fuzzy
 msgctxt "AccountSwitcherConfirm"
 msgid "Its secret key is erased from this device's vault."
-msgstr "このアカウントの秘密鍵はこの端末に保存されていません。"
+msgstr "秘密鍵はこの端末のボールトから消去されます。"
 
 msgctxt "ErrorCopy"
 msgid "JSON copied"
@@ -1702,7 +1629,6 @@ msgctxt "month"
 msgid "Jun"
 msgstr "6月"
 
-#, fuzzy
 msgctxt "DebugPane"
 msgid "KEY PACKAGES"
 msgstr "キーパッケージ"
@@ -1736,17 +1662,14 @@ msgid "Key package"
 msgstr "キーパッケージ"
 
 #. (Slint can't build `debug-view-rows` itself).
-#, fuzzy
 msgctxt "KpCard"
 msgid "Key package"
 msgstr "キーパッケージ"
 
-#, fuzzy
 msgctxt "KpCard"
 msgid "Key package ref"
-msgstr "キーパッケージ"
+msgstr "キーパッケージ参照"
 
-#, fuzzy
 msgctxt "DebugPane"
 msgid "Key packages"
 msgstr "キーパッケージ"
@@ -1807,10 +1730,9 @@ msgctxt "ArchivedDetail"
 msgid "Last message"
 msgstr "最後のメッセージ"
 
-#, fuzzy
 msgctxt "KpCard"
 msgid "Last resort"
-msgstr "最後のメッセージ"
+msgstr "ラストリゾート"
 
 msgctxt "GeneralPane"
 msgid "Launch at login"
@@ -1824,7 +1746,6 @@ msgctxt "KpCard"
 msgid "Leaf extensions"
 msgstr ""
 
-#, fuzzy
 msgctxt "ChatContextMenu"
 msgid "Leave group"
 msgstr "グループを退出"
@@ -1833,7 +1754,6 @@ msgctxt "ConfirmFlows"
 msgid "Leave group"
 msgstr "グループを退出"
 
-#, fuzzy
 msgctxt "GroupLeaveRow"
 msgid "Leave group"
 msgstr "グループを退出"
@@ -1846,7 +1766,6 @@ msgctxt "ErrorCopy"
 msgid "Leaving group…"
 msgstr "グループから退出中…"
 
-#, fuzzy
 msgctxt "GroupLeaveRow"
 msgid "Leaving…"
 msgstr "退出中…"
@@ -1887,31 +1806,26 @@ msgctxt "MessagesArea"
 msgid "Loading messages…"
 msgstr "メッセージを読み込み中…"
 
-#, fuzzy
 msgctxt "DebugJsonModal"
 msgid "Loading…"
-msgstr "保存中…"
+msgstr "読み込み中…"
 
-#, fuzzy
 msgctxt "ImageViewerModal"
 msgid "Loading…"
-msgstr "保存中…"
+msgstr "読み込み中…"
 
-#, fuzzy
 msgctxt "KpInspectorPane"
 msgid "Loading…"
-msgstr "保存中…"
+msgstr "読み込み中…"
 
-#, fuzzy
 msgctxt "VideoViewerModal"
 msgid "Loading…"
-msgstr "保存中…"
+msgstr "読み込み中…"
 
 msgctxt "AboutPane"
 msgid "Local key custody"
 msgstr "鍵のローカル管理"
 
-#, fuzzy
 msgctxt "StoragePane"
 msgid "Location"
 msgstr "保存場所"
@@ -1924,10 +1838,9 @@ msgctxt "ArchivedDetail"
 msgid "MEMBER LIST"
 msgstr "メンバー一覧"
 
-#, fuzzy
 msgctxt "StartNewChatModal"
 msgid "MEMBERS"
-msgstr "メンバー一覧"
+msgstr "メンバー"
 
 msgctxt "AppearancePane"
 msgid "MESSAGES"
@@ -1945,7 +1858,6 @@ msgctxt "AboutPane"
 msgid "Made with marmots, math, and a little purple liquid."
 msgstr "マーモットと数学、そして少しの紫色の液体でできています。"
 
-#, fuzzy
 msgctxt "ConfirmFlows"
 msgid "Make admin"
 msgstr "管理者にする"
@@ -1954,10 +1866,9 @@ msgctxt "GroupMemberMenu"
 msgid "Make admin"
 msgstr "管理者にする"
 
-#, fuzzy
 msgctxt "ConfirmFlows"
 msgid "Make {} an admin?"
-msgstr "管理者にする"
+msgstr "{}を管理者にしますか？"
 
 msgctxt "AccountSwitcherModal"
 msgid "Manage this identity or remove it from the device."
@@ -2019,7 +1930,6 @@ msgctxt "KeysPage"
 msgid "Multi-device isn't available yet"
 msgstr "マルチデバイスはまだ利用できません"
 
-#, fuzzy
 msgctxt "ChatContextMenu"
 msgid "Mute"
 msgstr "ミュート"
@@ -2052,10 +1962,9 @@ msgctxt "AppShell"
 msgid "NO RELAYS"
 msgstr "リレーなし"
 
-#, fuzzy
 msgctxt "ChatListPanel"
 msgid "NO RELAYS"
-msgstr "リレー"
+msgstr "リレーなし"
 
 msgctxt "LoginScreen"
 msgid "NSEC"
@@ -2114,10 +2023,9 @@ msgctxt "NicknameModal"
 msgid "Nickname"
 msgstr "ニックネーム"
 
-#, fuzzy
 msgctxt "ArchivedPage"
 msgid "No archived chats"
-msgstr "チャットをアーカイブ"
+msgstr "アーカイブしたチャットはありません"
 
 msgctxt "ArchivedSidebar"
 msgid "No archived chats match \"{}\""
@@ -2135,20 +2043,17 @@ msgctxt "ForwardPickerModal"
 msgid "No chats match your search."
 msgstr "検索に一致するチャットはありません。"
 
-#, fuzzy
 msgctxt "ContactsSidebar"
 msgid "No contacts match \"{}\""
-msgstr "連絡先を削除"
+msgstr "「{}」に一致する連絡先はありません"
 
-#, fuzzy
 msgctxt "ErrorCopy"
 msgid "No contacts to export."
-msgstr "連絡先を削除"
+msgstr "エクスポートする連絡先がありません。"
 
-#, fuzzy
 msgctxt "ContactsPage"
 msgid "No contacts yet"
-msgstr "連絡先を削除"
+msgstr "連絡先がまだありません"
 
 msgctxt "ErrorCopy"
 msgid "No debug snapshot to copy."
@@ -2159,7 +2064,7 @@ msgid "No file selected"
 msgstr "ファイルが選択されていません"
 
 msgctxt "ErrorCopy"
-msgid "No generated key to save. Try again."
+msgid "No generated key to save. Please try again."
 msgstr "保存する生成鍵がありません。もう一度お試しください。"
 
 msgctxt "SharedGroupsList"
@@ -2227,41 +2132,37 @@ msgctxt "NetworkPane"
 msgid "No relays configured"
 msgstr "リレー未設定"
 
-#, fuzzy
 msgctxt "GetStartedScreen"
 msgid "No relays yet"
-msgstr "リレー未設定"
+msgstr "リレーがまだありません"
 
 msgctxt "NetworkPane"
 msgid "No relays yet. Add one above."
 msgstr "リレーがありません。上で追加してください。"
 
-#, fuzzy
 msgctxt "AddAccountModal"
 msgid "No second key yet?"
-msgstr "連絡先を削除"
+msgstr "まだ2つ目の鍵がありませんか？"
 
 msgctxt "ErrorCopy"
 msgid "No secret key for this account is stored on this device."
 msgstr "このアカウントの秘密鍵はこの端末に保存されていません。"
 
-#, fuzzy
 msgctxt "SharedMediaGrid"
 msgid "No shared media yet."
-msgstr "連絡先を削除"
+msgstr "共有メディアはまだありません。"
 
 msgctxt "AdvancedPane"
 msgid "No trusted sites."
 msgstr "信頼済みのサイトはありません。"
 
-#, fuzzy
 msgctxt "ErrorCopy"
 msgid "No video selected."
-msgstr "画像が選択されていません。"
+msgstr "動画が選択されていません。"
 
 #. Network-pane status copy (also Rust-set).
 msgctxt "ErrorCopy"
-msgid "Not connected yet. Please wait a moment and try again."
+msgid "Not connected yet. Wait a moment and try again."
 msgstr "まだ接続されていません。少し待ってからもう一度お試しください。"
 
 msgctxt "ErrorCopy"
@@ -2276,7 +2177,6 @@ msgctxt "ErrorCopy"
 msgid "Nothing to copy."
 msgstr "コピーするものがありません。"
 
-#, fuzzy
 msgctxt "NotificationsPane"
 msgid "Notifications"
 msgstr "通知"
@@ -2289,10 +2189,9 @@ msgctxt "month"
 msgid "Nov"
 msgstr "11月"
 
-#, fuzzy
 msgctxt "StatusBar"
 msgid "OFFLINE"
-msgstr "オンライン"
+msgstr "オフライン"
 
 msgctxt "StoragePane"
 msgid "ON THIS DEVICE"
@@ -2322,7 +2221,6 @@ msgctxt "EncryptionInfoModal"
 msgid "Old messages stay safe"
 msgstr ""
 
-#, fuzzy
 msgctxt "GeneralPane"
 msgid "One-tap reactions"
 msgstr "ワンタップリアクション"
@@ -2339,10 +2237,9 @@ msgctxt "StoragePane"
 msgid "Open folder"
 msgstr "フォルダを開く"
 
-#, fuzzy
 msgctxt "RunCell"
 msgid "Open link {}"
-msgstr "このリンクを開きますか?"
+msgstr "リンク {} を開く"
 
 msgctxt "ConfirmFlows"
 msgid "Open this link?"
@@ -2364,12 +2261,10 @@ msgctxt "KpCard"
 msgid "Owner"
 msgstr ""
 
-#, fuzzy
 msgctxt "BackupCreateModal"
 msgid "PASSWORD"
 msgstr "パスワード"
 
-#, fuzzy
 msgctxt "LoginScreen"
 msgid "PASSWORD"
 msgstr "パスワード"
@@ -2386,15 +2281,13 @@ msgctxt "StoragePane"
 msgid "Pack accounts, chats, and settings into one encrypted file."
 msgstr "アカウント、チャット、設定を1つの暗号化ファイルにまとめます。"
 
-#, fuzzy
 msgctxt "BackupCreateModal"
 msgid "Pack everything — accounts, chats, settings — into one encrypted file, sealed with your password. The media cache is left out."
-msgstr "アカウント、チャット、設定のすべてを、パスワードで保護されたひとつの暗号化ファイルにまとめます。メディアキャッシュは含まれません。"
+msgstr "アカウント、チャット、設定のすべてを、パスワードで封印されたひとつの暗号化ファイルにまとめます。メディアキャッシュは含まれません。"
 
-#, fuzzy
 msgctxt "GetStartedScreen"
 msgid "Partial · {}/{} connected"
-msgstr "一部接続 · {}/{} 接続"
+msgstr "一部接続 · {}/{}"
 
 msgctxt "NetworkPane"
 msgid "Partial · {}/{} connected"
@@ -2408,10 +2301,9 @@ msgctxt "FormMessages"
 msgid "Passwords don't match."
 msgstr ""
 
-#, fuzzy
 msgctxt "AddAccountModal"
 msgid "Paste another secret key, or generate a fresh one. It's encrypted with your password and stays signed in alongside your other accounts."
-msgstr "別の秘密鍵を貼り付けるか、新しく生成してください。パスワードで暗号化され、他のアカウントと一緒にサインインしたままになります。"
+msgstr "別の秘密鍵を貼り付けるか、新しく生成してください。鍵はパスワードで暗号化され、他のアカウントと一緒にサインインしたままになります。"
 
 msgctxt "StartNewChatModal"
 msgid "Paste one npub for a direct chat, or several (one per line) plus a group name."
@@ -2429,7 +2321,6 @@ msgctxt "AppearancePane"
 msgid "Pick the whole app's look."
 msgstr "アプリ全体の見た目を選択します。"
 
-#, fuzzy
 msgctxt "PictureField"
 msgid "Picture"
 msgstr "画像"
@@ -2462,19 +2353,17 @@ msgctxt "ChatSearchBar"
 msgid "Previous match"
 msgstr "前の一致"
 
-#, fuzzy
 msgctxt "AdvancedPane"
 msgid "Privacy & developer flags"
-msgstr "開発者フラグ"
+msgstr "プライバシーと開発者フラグ"
 
 msgctxt "AboutPane"
 msgid "Private material is stored on this device, encrypted with your password."
 msgstr "秘密のデータはこの端末に保存され、パスワードで暗号化されます。"
 
-#, fuzzy
 msgctxt "ProfileTile"
 msgid "Profile"
-msgstr "あなたのプロフィール"
+msgstr "プロフィール"
 
 msgctxt "KpCard"
 msgid "Proposals"
@@ -2492,29 +2381,25 @@ msgctxt "KeysPage"
 msgid "Publish"
 msgstr "公開"
 
-#, fuzzy
 msgctxt "GetStartedScreen"
 msgid "Publish key package"
-msgstr "キーパッケージ"
+msgstr "キーパッケージを公開"
 
 msgctxt "KeysPage"
 msgid "Publish one so other users can invite you to groups."
 msgstr "公開すると他のユーザーがグループに招待できるようになります。"
 
-#, fuzzy
 msgctxt "GetStartedScreen"
 msgid "Publish your key package"
-msgstr "キーパッケージがありません"
+msgstr "キーパッケージを公開する"
 
-#, fuzzy
 msgctxt "GetStartedScreen"
 msgid "Published"
-msgstr "公開"
+msgstr "公開済み"
 
-#, fuzzy
 msgctxt "KpCard"
 msgid "Published"
-msgstr "公開"
+msgstr "公開先"
 
 msgctxt "key package source, published, time unknown"
 msgid "Published"
@@ -2529,7 +2414,6 @@ msgctxt "ErrorCopy"
 msgid "Publishing…"
 msgstr "公開中…"
 
-#, fuzzy
 msgctxt "GetStartedScreen"
 msgid "Publishing…"
 msgstr "公開中…"
@@ -2538,12 +2422,10 @@ msgctxt "KeysPage"
 msgid "Publishing…"
 msgstr "公開中…"
 
-#, fuzzy
 msgctxt "GroupHero"
 msgid "Purpose, rules, or invite blurb"
 msgstr "目的、ルール、招待文"
 
-#, fuzzy
 msgctxt "GeneralPane"
 msgid "QUICK REACTIONS"
 msgstr "クイックリアクション"
@@ -2560,7 +2442,6 @@ msgctxt "AppShell"
 msgid "RELAYS"
 msgstr "リレー"
 
-#, fuzzy
 msgctxt "ChatListPanel"
 msgid "RELAYS"
 msgstr "リレー"
@@ -2610,7 +2491,6 @@ msgctxt "Composer"
 msgid "Record voice message"
 msgstr "音声メッセージを録音"
 
-#, fuzzy
 msgctxt "AdvancedPane"
 msgid "Refresh"
 msgstr "更新"
@@ -2623,7 +2503,6 @@ msgctxt "KeysPage"
 msgid "Refresh"
 msgstr "更新"
 
-#, fuzzy
 msgctxt "KpInspectorPane"
 msgid "Refresh"
 msgstr "更新"
@@ -2668,7 +2547,6 @@ msgctxt "ConfirmFlows"
 msgid "Remove"
 msgstr "削除"
 
-#, fuzzy
 msgctxt "StagedChips"
 msgid "Remove"
 msgstr "削除"
@@ -2677,12 +2555,10 @@ msgctxt "AccountSwitcherDetail"
 msgid "Remove account"
 msgstr "アカウントを削除"
 
-#, fuzzy
 msgctxt "AccountSwitcherModal"
 msgid "Remove account"
-msgstr "連絡先を削除"
+msgstr "アカウントを削除"
 
-#, fuzzy
 msgctxt "ConfirmFlows"
 msgid "Remove admin"
 msgstr "管理者から外す"
@@ -2703,12 +2579,10 @@ msgctxt "GroupMemberMenu"
 msgid "Remove from group"
 msgstr "グループから削除"
 
-#, fuzzy
 msgctxt "AccountSwitcherDetail"
 msgid "Remove from this device"
-msgstr "このリレーを削除しますか？"
+msgstr "この端末から削除"
 
-#, fuzzy
 msgctxt "LoginScreen"
 msgid "Remove key"
 msgstr "鍵を削除"
@@ -2722,10 +2596,9 @@ msgctxt "RelayRow"
 msgid "Remove relay"
 msgstr "リレーを削除"
 
-#, fuzzy
 msgctxt "AccountSwitcherModal"
 msgid "Remove this account?"
-msgstr "このリレーを削除しますか？"
+msgstr "このアカウントを削除しますか？"
 
 msgctxt "ConfirmFlows"
 msgid "Remove this inbox relay?"
@@ -2735,10 +2608,9 @@ msgctxt "ConfirmFlows"
 msgid "Remove this relay?"
 msgstr "このリレーを削除しますか？"
 
-#, fuzzy
 msgctxt "GeneralPane"
 msgid "Remove {} emoji"
-msgstr "{}のリアクションを削除"
+msgstr "絵文字 {} を削除"
 
 msgctxt "ConfirmFlows"
 msgid "Remove {} from contacts?"
@@ -2764,12 +2636,10 @@ msgctxt "MessageContextMenu"
 msgid "Reply"
 msgstr "返信"
 
-#, fuzzy
 msgctxt "ReplyBanner"
 msgid "Replying to message:"
 msgstr "返信先メッセージ:"
 
-#, fuzzy
 msgctxt "ReplyBanner"
 msgid "Replying to {}:"
 msgstr "{} への返信:"
@@ -2782,7 +2652,6 @@ msgctxt "ErrorCopy"
 msgid "Republishing…"
 msgstr "再公開中…"
 
-#, fuzzy
 msgctxt "NetworkPane"
 msgid "Republishing…"
 msgstr "再公開中…"
@@ -2823,15 +2692,13 @@ msgctxt "GeneralPane"
 msgid "Restore the default reactions"
 msgstr "デフォルトのリアクションに戻す"
 
-#, fuzzy
 msgctxt "ImportBackupModal"
 msgid "Restoring…"
-msgstr "保存中…"
+msgstr "復元中…"
 
-#, fuzzy
 msgctxt "ThemePicker"
 msgid "Retro"
-msgstr "レトロモード"
+msgstr "レトロ"
 
 msgctxt "ContactDetail"
 msgid "Retry"
@@ -2849,10 +2716,9 @@ msgctxt "KeysPage"
 msgid "Reveal"
 msgstr ""
 
-#, fuzzy
 msgctxt "RevealNsecModal"
 msgid "Reveal key"
-msgstr "鍵を削除"
+msgstr "鍵を表示"
 
 msgctxt "RevealNsecModal"
 msgid "Reveal private key"
@@ -2894,10 +2760,9 @@ msgctxt "LoginScreen"
 msgid "SECRET KEY (NSEC)"
 msgstr "秘密鍵 (NSEC)"
 
-#, fuzzy
 msgctxt "RevealNsecModal"
 msgid "SECRET KEY (NSEC)"
-msgstr "秘密鍵 (nsec)"
+msgstr "秘密鍵 (NSEC)"
 
 msgctxt "AdvancedPane"
 msgid "SECURITY & PRIVACY"
@@ -2971,12 +2836,10 @@ msgctxt "weekday"
 msgid "Sat"
 msgstr "土曜日"
 
-#, fuzzy
 msgctxt "CustomEmojiModal"
 msgid "Save"
 msgstr "保存"
 
-#, fuzzy
 msgctxt "HeroEditField"
 msgid "Save"
 msgstr "保存"
@@ -2989,7 +2852,6 @@ msgctxt "LabelModal"
 msgid "Save"
 msgstr ""
 
-#, fuzzy
 msgctxt "NicknameModal"
 msgid "Save"
 msgstr "保存"
@@ -3002,7 +2864,6 @@ msgctxt "Composer"
 msgid "Save edit"
 msgstr "編集を保存"
 
-#, fuzzy
 msgctxt "LoginScreen"
 msgid "Save key"
 msgstr "鍵を保存"
@@ -3020,12 +2881,10 @@ msgctxt "status toast after saving a file, %1 = file name"
 msgid "Saved %1"
 msgstr "%1 を保存しました"
 
-#, fuzzy
 msgctxt "BackupCreateModal"
 msgid "Saving…"
 msgstr "保存中…"
 
-#, fuzzy
 msgctxt "HeroEditField"
 msgid "Saving…"
 msgstr "保存中…"
@@ -3042,15 +2901,13 @@ msgctxt "MessagesArea"
 msgid "Say hello to start the conversation."
 msgstr "挨拶して会話を始めましょう。"
 
-#, fuzzy
-msgctxt "ProfileQrPlate"
-msgid "Scan to add me from another device"
-msgstr "別のデバイスからスキャンして追加"
-
-#, fuzzy
 msgctxt "QrModal"
 msgid "Scan to add or message on another device"
-msgstr "別のデバイスからスキャンして追加"
+msgstr "スキャンすると別のデバイスから追加やメッセージ送信ができます"
+
+msgctxt "ProfileQrPlate"
+msgid "Scan to add this account from another device"
+msgstr "スキャンすると別のデバイスからこのアカウントを追加できます"
 
 msgctxt "LoginScreen"
 msgid "Sealed with your password on this device. Keep your own copy of the nsec too — lose both and this identity is gone."
@@ -3144,15 +3001,13 @@ msgctxt "command palette footer"
 msgid "Select"
 msgstr "選択"
 
-#, fuzzy
 msgctxt "RecordingOverlay"
 msgid "Send"
 msgstr "送信"
 
-#, fuzzy
 msgctxt "Composer"
 msgid "Send a message…"
-msgstr "最後のメッセージ"
+msgstr "メッセージを送信…"
 
 msgctxt "NotificationsPane"
 msgid "Send a test notification"
@@ -3198,24 +3053,21 @@ msgctxt "SharedMediaGrid"
 msgid "Shared image {}"
 msgstr "共有画像 {}"
 
-#, fuzzy
 msgctxt "SharedMediaGrid"
 msgid "Shared image {}, failed to load. Activate to retry."
-msgstr "画像 {} / {}、読み込みに失敗しました。再試行してください。"
+msgstr "共有画像 {}、読み込みに失敗しました。選択すると再試行します。"
 
-#, fuzzy
 msgctxt "SharedMediaGrid"
 msgid "Shared image {}, loading."
-msgstr "画像 {} / {}、読み込み中。"
+msgstr "共有画像 {}、読み込み中。"
 
 msgctxt "GroupMembersPanel"
 msgid "Shared media"
 msgstr "共有メディア"
 
-#, fuzzy
 msgctxt "Composer"
 msgid "Shift+Enter for newline"
-msgstr "改行"
+msgstr "Shift+Enter で改行"
 
 msgctxt "ProfilePage"
 msgid "Short handle (no spaces)"
@@ -3249,19 +3101,17 @@ msgctxt "ModalField"
 msgid "Show value"
 msgstr ""
 
-#, fuzzy
 msgctxt "GeneralPane"
 msgid "Shown in the picker next to the built-in set. Tap one to remove it."
-msgstr "メッセージのツールバーとメニューに表示されます。タップすると削除できます。"
+msgstr "ピッカーで標準セットの隣に表示されます。タップすると削除できます。"
 
 msgctxt "GeneralPane"
 msgid "Shown on the message toolbar and menu. Tap one to remove it."
 msgstr "メッセージのツールバーとメニューに表示されます。タップすると削除できます。"
 
-#, fuzzy
 msgctxt "AdvancedPane"
 msgid "Shows diagnostics and MLS internals. Adds a Debug entry with account, key-packages, and group state."
-msgstr "下に Debug 項目を追加。アカウント、キーパッケージ、グループ状態を表示します。"
+msgstr "診断情報と MLS の内部状態を表示します。アカウント、キーパッケージ、グループ状態を含む Debug 項目を追加します。"
 
 msgctxt "KeysPage"
 msgid "Shows your secret key after you confirm your vault password. Never share it — it is your identity."
@@ -3275,10 +3125,9 @@ msgctxt "AccountSwitcherDetail"
 msgid "Sign this account out here and erase its secret key from your vault. Your other accounts stay signed in."
 msgstr ""
 
-#, fuzzy
 msgctxt "KpCard"
 msgid "Signature key"
-msgstr "鍵を保存"
+msgstr "署名鍵"
 
 msgctxt "LoginScreen"
 msgid "Signing in…"
@@ -3300,22 +3149,18 @@ msgctxt "GeneralPane"
 msgid "Start minimized to tray"
 msgstr "トレイに最小化して起動"
 
-#, fuzzy
 msgctxt "GetStartedScreen"
 msgid "Start your first chat"
-msgstr "新しいチャットを開始"
+msgstr "最初のチャットを開始する"
 
-#, fuzzy
 msgctxt "DebugPane"
 msgid "State"
-msgstr "ローテーション"
+msgstr "状態"
 
-#, fuzzy
 msgctxt "DebugPane"
 msgid "State / raw events / key packages"
-msgstr "キーパッケージをローテーションしますか？"
+msgstr "状態 / 生イベント / キーパッケージ"
 
-#, fuzzy
 msgctxt "ConfirmFlows"
 msgid "Step down"
 msgstr "管理者を辞める"
@@ -3324,16 +3169,14 @@ msgctxt "GroupMemberMenu"
 msgid "Step down"
 msgstr "管理者を辞める"
 
-#, fuzzy
 msgctxt "ConfirmFlows"
 msgid "Step down as admin?"
-msgstr "管理者を辞める"
+msgstr "管理者を辞めますか？"
 
 msgctxt "SettingsSidebar"
 msgid "Storage"
 msgstr "ストレージ"
 
-#, fuzzy
 msgctxt "StoragePane"
 msgid "Storage"
 msgstr "ストレージ"
@@ -3404,8 +3247,8 @@ msgid "This chat is archived"
 msgstr "このチャットはアーカイブされています"
 
 msgctxt "ErrorCopy"
-msgid "This contact's messaging keys were published by an app we're not compatible with. Ask them to publish a key package from an up-to-date Marmot client, then try again."
-msgstr ""
+msgid "This contact's messaging keys were published by an incompatible app. Ask them to publish a key package from an up-to-date Marmot client, then try again."
+msgstr "この連絡先のメッセージ鍵は互換性のないアプリで公開されています。最新の Marmot クライアントから鍵パッケージを公開してもらってから、もう一度お試しください。"
 
 msgctxt "ConfirmFlows"
 msgid "This declines the invite from {}. It can't be restored unless they invite you again."
@@ -3451,19 +3294,17 @@ msgctxt "SettingsPage"
 msgid "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log."
 msgstr "監査ログファイルはディスクから完全に削除されます。これが現在記録中のログの場合、記録は新しいファイルに続きます。"
 
-#, fuzzy
 msgctxt "LoginScreen"
 msgid "This removes the key stored on this device. You'll need the nsec you backed up to use this identity again. This can't be undone."
-msgstr "この端末から鍵を削除します。この ID をもう一度使うには、控えておいた nsec が必要です。この操作は元に戻せません。"
+msgstr "この端末に保存されている鍵を削除します。この ID をもう一度使うには、控えておいた nsec が必要です。この操作は元に戻せません。"
 
 msgctxt "ConfirmFlows"
 msgid "This removes the message for everyone in the chat. This can't be undone."
 msgstr ""
 
-#, fuzzy
 msgctxt "ConfirmFlows"
 msgid "This removes your admin rights. You can't restore them yourself unless another admin promotes you again."
-msgstr "{} からの招待を辞退します。相手がもう一度招待しない限り、元に戻すことはできません。"
+msgstr "管理者権限が削除されます。別の管理者が再び任命しない限り、自分で元に戻すことはできません。"
 
 msgctxt "SettingsPage"
 msgid "This replaces your customized set with the default six reactions."
@@ -3478,8 +3319,8 @@ msgid "This signs the account out on this device and erases its secret key from 
 msgstr ""
 
 msgctxt "GetStartedScreen"
-msgid "Three quick steps and you're ready to message — end-to-end encrypted, no servers in the middle."
-msgstr "3つの簡単なステップでメッセージを始められます。エンドツーエンドで暗号化され、間にサーバーは入りません。"
+msgid "Three steps and you're ready to message. Everything is end-to-end encrypted, with no servers in the middle."
+msgstr "3つのステップでメッセージを始められます。すべてエンドツーエンドで暗号化され、間にサーバーは入りません。"
 
 msgctxt "weekday"
 msgid "Thu"
@@ -3558,25 +3399,21 @@ msgctxt "GeneralPane"
 msgid "Uploaded emoji"
 msgstr "アップロード済みの絵文字"
 
-#, fuzzy
 msgctxt "AvatarEditable"
 msgid "Uploading…"
-msgstr "保存中…"
+msgstr "アップロード中…"
 
-#, fuzzy
 msgctxt "CustomEmojiModal"
 msgid "Uploading…"
-msgstr "保存中…"
+msgstr "アップロード中…"
 
-#, fuzzy
 msgctxt "GroupHero"
 msgid "Uploading…"
-msgstr "保存中…"
+msgstr "アップロード中…"
 
-#, fuzzy
 msgctxt "PictureField"
 msgid "Uploading…"
-msgstr "保存中…"
+msgstr "アップロード中…"
 
 msgctxt "LoginScreen"
 msgid "Use another key"
@@ -3606,29 +3443,25 @@ msgctxt "ExportKeyModal"
 msgid "VAULT PASSWORD"
 msgstr "ボールトのパスワード"
 
-#, fuzzy
 msgctxt "RevealNsecModal"
 msgid "VAULT PASSWORD"
-msgstr "バックアップのパスワード"
+msgstr "ボールトのパスワード"
 
 msgctxt "ProfilePage"
 msgid "VISIBLE TO ANYONE YOU CHAT WITH"
 msgstr "チャット相手全員に公開"
 
-#, fuzzy
 msgctxt "RevealNsecModal"
 msgid "Verifying…"
-msgstr "復号中…"
+msgstr "確認中…"
 
-#, fuzzy
 msgctxt "KpCard"
 msgid "Versions"
-msgstr "メンション"
+msgstr "バージョン"
 
-#, fuzzy
 msgctxt "ErrorCopy"
 msgid "Video isn't ready yet."
-msgstr "画像はまだ準備できていません。"
+msgstr "動画はまだ準備できていません。"
 
 msgctxt "ContactDetail"
 msgid "View"
@@ -3646,10 +3479,6 @@ msgctxt "AboutPane"
 msgid "WHAT IT IS"
 msgstr "概要"
 
-msgctxt "ErrorCopy"
-msgid "We couldn't find anyone with that username. Double-check the name@domain and try again."
-msgstr "そのユーザー名の相手が見つかりませんでした。name@domain を確認して、もう一度お試しください。"
-
 msgctxt "weekday"
 msgid "Wed"
 msgstr "水曜日"
@@ -3659,8 +3488,8 @@ msgid "Welcome to White Noise"
 msgstr "White Noise へようこそ"
 
 msgctxt "EncryptionInfoModal"
-msgid "Whatever you send in this chat is encrypted on your device before it goes out. The relays that pass it along can't read it, and we can't either."
-msgstr ""
+msgid "Whatever you send in this chat is encrypted on your device before it goes out. The relays that pass it along can't read it, and neither can anyone else."
+msgstr "このチャットで送る内容は、送信前にあなたのデバイス上で暗号化されます。中継するリレーは内容を読めず、ほかの誰にも読めません。"
 
 msgctxt "KpCard"
 msgid "Where"
@@ -3703,10 +3532,9 @@ msgctxt "LoginScreen"
 msgid "YOUR DISPLAY NAME"
 msgstr "表示名"
 
-#, fuzzy
 msgctxt "KpInspectorPane"
 msgid "YOUR KEY PACKAGES"
-msgstr "キーパッケージ"
+msgstr "あなたのキーパッケージ"
 
 msgctxt "TimeCopy"
 msgid "Yesterday"
@@ -3756,23 +3584,21 @@ msgctxt "LoginScreen"
 msgid "Your key never leaves this device."
 msgstr "鍵がこのデバイス外に出ることはありません。"
 
-#, fuzzy
 msgctxt "KpInspectorPane"
 msgid "Your key package"
-msgstr "キーパッケージがありません"
+msgstr "あなたのキーパッケージ"
 
 msgctxt "AboutPane"
-msgid "Your keys stay on this device — we never see them."
-msgstr "あなたの鍵はこのデバイスに留まり、私たちが見ることはありません。"
+msgid "Your keys stay on this device. No one else ever sees them."
+msgstr "あなたの鍵はこのデバイスに留まり、ほかの誰にも見られることはありません。"
 
 msgctxt "ExportKeyModal"
 msgid "Your password"
 msgstr "パスワード"
 
-#, fuzzy
 msgctxt "RevealNsecModal"
 msgid "Your password"
-msgstr "パスワードを表示"
+msgstr "パスワード"
 
 msgctxt "ProfilePage"
 msgid "Your profile"
@@ -3832,16 +3658,14 @@ msgid "choosing image…"
 msgstr "画像を選択中…"
 
 #. Contact-list export feedback (src/wiring/contacts.rs).
-#, fuzzy
 msgctxt "ErrorCopy"
 msgid "contacts exported"
-msgstr "連絡先を削除"
+msgstr "連絡先をエクスポートしました"
 
 msgctxt "ErrorCopy"
 msgid "debug dump copied"
 msgstr "デバッグダンプをコピーしました"
 
-#, fuzzy
 msgctxt "ImageTile"
 msgid "decrypting…"
 msgstr "復号中…"
@@ -3862,12 +3686,10 @@ msgctxt "MessageBubble"
 msgid "edited"
 msgstr "編集済み"
 
-#, fuzzy
 msgctxt "AudioTile"
 msgid "failed · tap to retry"
 msgstr "失敗 · タップして再試行"
 
-#, fuzzy
 msgctxt "FileChip"
 msgid "failed · tap to retry"
 msgstr "失敗 · タップして再試行"
@@ -3876,7 +3698,6 @@ msgctxt "MessageBubble"
 msgid "failed · tap to retry"
 msgstr "失敗 · タップして再試行"
 
-#, fuzzy
 msgctxt "VideoTile"
 msgid "failed · tap to retry"
 msgstr "失敗 · タップして再試行"
@@ -3913,16 +3734,14 @@ msgctxt "TimeCopy"
 msgid "just now"
 msgstr "たった今"
 
-#, fuzzy
 msgctxt "KpCard"
 msgid "local + relay"
-msgstr "ローカルのみ"
+msgstr "ローカル + リレー"
 
 msgctxt "KeysPage"
 msgid "local only"
 msgstr "ローカルのみ"
 
-#, fuzzy
 msgctxt "KpCard"
 msgid "local only"
 msgstr "ローカルのみ"
@@ -3960,10 +3779,9 @@ msgctxt "ErrorCopy"
 msgid "nsec copied"
 msgstr "nsecをコピーしました"
 
-#, fuzzy
 msgctxt "KpCard"
 msgid "on the key package itself"
-msgstr "キーパッケージをローテーションしますか？"
+msgstr "キーパッケージ本体"
 
 msgctxt "KpCard"
 msgid "on the leaf node"
@@ -3987,10 +3805,9 @@ msgctxt "ErrorCopy"
 msgid "publishing…"
 msgstr "公開中…"
 
-#, fuzzy
 msgctxt "KpCard"
 msgid "relay"
-msgstr "{n} リレー"
+msgstr "リレー"
 
 msgctxt "ErrorCopy"
 msgid "removing image…"
@@ -4009,30 +3826,26 @@ msgctxt "EmojiPicker"
 msgid "search…"
 msgstr "検索…"
 
-#, fuzzy
 msgctxt "ImageTile"
 msgid "tap to load"
 msgstr "タップして読み込む"
 
-#, fuzzy
 msgctxt "ImageTile"
 msgid "tap to retry"
-msgstr "失敗 · タップして再試行"
+msgstr "タップして再試行"
 
 #. Custom-emoji upload status copy (src/wiring/custom_emoji.rs).
-#, fuzzy
 msgctxt "ErrorCopy"
 msgid "uploaded — name it below"
-msgstr "画像をアップロードしました — 公開するには保存してください"
+msgstr "アップロードしました。下で名前を付けてください"
 
 msgctxt "ErrorCopy"
 msgid "uploading to Blossom…"
 msgstr "Blossomにアップロード中…"
 
-#, fuzzy
 msgctxt "ErrorCopy"
 msgid "video saved"
-msgstr "画像を保存しました"
+msgstr "動画を保存しました"
 
 msgctxt "NetworkPane"
 msgid "where peers reach you"
@@ -4087,7 +3900,6 @@ msgctxt "ChatListItemIrc"
 msgid "{}, {} unread"
 msgstr "{}、未読 {} 件"
 
-#, fuzzy
 msgctxt "RecordingOverlay"
 msgid "{}s"
 msgstr "{}秒"

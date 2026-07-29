@@ -115,6 +115,23 @@ Two layers:
 
 All user-visible Slint strings use `@tr("…")`. `wnl-ui/build.rs` bundles the gettext catalogs from `lang/` (`slint_build::CompilerConfiguration::new().with_bundled_translations("../lang")`); locales are `en` (source), `it`, `de`, `ja`. Runtime switching happens via `slint::select_bundled_translation` (`apply_locale` in `main.rs`), driven by `Settings.locale` and the language-picker modal. Catalog maintenance is `scripts/update-translations.sh` (see [Build & run](#build--run)).
 
+#### Copy voice
+
+One voice for every user-visible string: `@tr()` in `.slint`, plus the English defaults mirrored in `src/state.rs` copy snapshots. English source rules:
+
+- **Address the user as "you."** The user's things are "your" ("your relays", "your key package"). Descriptive copy (sublabels, explanations, status and error text) never casts the user as "me"/"I". The only first-person strings are the established control labels where the user names themself as the object of their own click ("Delete for me", "I have an nsec"); don't coin new ones.
+- **The app never speaks as "we."** There is no company voice: no "we can't read them", no "we'll keep retrying". Say what is true of the system instead ("no one else can read it", "it will retry automatically").
+- **Register: plain and calm.** State facts; no marketing flourish, no superlatives, no exclamation points. If a sentence would fit on a landing page, rewrite it.
+- **Never use em dashes** in copy or docs. Use a period, comma, or parentheses instead.
+- **Error copy** is "Couldn't ⟨what failed⟩. ⟨recovery⟩." with exactly this recovery ladder:
+  - `Please try again.` is the default, for transient failures.
+  - `Check your relay settings and try again.` only when relay configuration genuinely bears on the failure.
+  - Input errors name the specific correction as a bare imperative ("Double-check it and try again.", "Wait a moment and try again.").
+  - "Please" appears only in the bare default clause; an imperative that carries content drops it.
+- **Casing ladder:** section eyebrows/captions are ALL CAPS ("DESKTOP ALERTS"); row titles, buttons, toggles, and menu items are sentence case ("Desktop notifications", "Send test"); sublabels and descriptions are full sentences ending with a period.
+
+Translations keep one register per language, held across the whole catalog. Person and formality are language decisions, not echoes of the English. The current choices are: `it` informal *tu*, `de` informal *du*, `ja` polite です／ます form. Don't switch register per string.
+
 ### Slint conventions specific to this repo
 
 - **UI tree layout & the AppState contract.** `ui/white-noise-linux.slint` is entry + contract only: the `WhiteNoiseLinux` root re-exposes every Rust-facing property as a two-way alias onto the `AppState` global (`ui/shell/app-state.slint`) and mounts the shell pieces (`ui/shell/app-shell.slint` body, `modal-host.slint` overlay stack, `login-gate.slint`, `shell-timers.slint`). Rust sets/gets properties on the window handle (`ui.set_x()`, through the aliases) but binds and invokes **callbacks on the global** (`ui.global::<AppState>().on_x(…)` / `.invoke_x(…)`) — root callback aliases to globals are deprecated in Slint, don't add new ones. Adding a Rust-facing member = declare it in `AppState`, run `scripts/update-root-aliases.sh` (regenerates the root property-alias block; UI-internal members annotated "not part of the Rust contract" are skipped), and bind it in `src/wiring/`. Shell components and pages read `AppState` directly; leaf primitives stay pure-props. Feature UI lives in feature dirs (`ui/messages/`, `ui/chat-list/`, `ui/emoji/`, `ui/main-pane/`, `ui/shell/`, `ui/theme-decor/`); `ui/primitives/` is true atoms only (button, avatar, pill, toggle, menu-item, …). One component per `.slint` file. Scrollable lists use std-widgets `ListView` (virtualized — only visible rows instantiate); the custom `primitives/scroll-view.slint` is for free-form content. A ListView needs its `for` as a direct child, so SidePanel-based sidebars own their ListView in the @children slot.
