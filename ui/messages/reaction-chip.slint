@@ -5,6 +5,8 @@ import {
     ProfileSink,
     EmojiSheet,
 } from "../tokens.slint";
+import { ChevronDownIcon } from "../icons/chevron-down-icon.slint";
+import { ChevronUpIcon } from "../icons/chevron-up-icon.slint";
 
 // A single emoji + count chip. `mine` controls the highlight style.
 export component ReactionChip inherits Rectangle {
@@ -18,16 +20,24 @@ export component ReactionChip inherits Rectangle {
     // below. Empty while a just-added reaction is still optimistic.
     in property <[Reactor]> reactors;
     callback clicked();
-    // Popover open-state. `want-open` is the raw hover union (chip or popover);
-    // `pop-open` is what actually mounts the popover and lingers briefly after
-    // the pointer leaves the chip. That grace is the whole point: without it the
-    // popover unmounts the instant the chip loses hover, so the pointer can never
-    // reach the badges above. `pop-hovered` is set from the popover's own
-    // TouchArea (it can't be referenced from the `if` that mounts it).
+    // Popover open-state. `want-open` is the raw hover union (chip, popover, or
+    // the explicit caret toggle below); `pop-open` is what actually mounts the
+    // popover and lingers briefly after the pointer leaves the chip. That grace
+    // is the whole point: without it the popover unmounts the instant the chip
+    // loses hover, so the pointer can never reach the badges above. `pop-hovered`
+    // is set from the popover's own TouchArea (it can't be referenced from the
+    // `if` that mounts it).
     property <bool> pop-hovered: false;
-    property <bool> want-open: touch.has-hover || root.pop-hovered;
+    // Touch and keyboard users have no hover, so the caret button below is their
+    // only way in; it flips this instead of relying on `touch.has-hover`, and
+    // (unlike hover) it stays true until the user closes it again.
+    property <bool> manual-open: false;
+    property <bool> want-open: touch.has-hover || root.pop-hovered || root.manual-open;
     property <bool> pop-open: false;
     property <duration> left-at;
+    // Which reactor the caret's arrow keys have selected while the popover is
+    // open via keyboard; mirrors AccentPicker's focus-idx.
+    property <int> cursor-idx: 0;
     changed want-open => {
         if (root.want-open) {
             root.pop-open = true;
@@ -59,6 +69,18 @@ export component ReactionChip inherits Rectangle {
         easing: ease-out;
     }
 
+    // Declared before the HorizontalLayout (and its caret button below) so it
+    // paints underneath: the caret's own TouchArea, nested later, wins the hit
+    // test for its small region while this one still covers the rest of the
+    // pill. See ui/messages/reaction-chip.slint's caret for the click it must
+    // not swallow.
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            root.clicked();
+        }
+    }
+
     HorizontalLayout {
         padding-left: 8px;
         padding-right: 8px;
@@ -88,12 +110,88 @@ export component ReactionChip inherits Rectangle {
             font-weight: 600;
             vertical-alignment: center;
         }
-    }
 
-    touch := TouchArea {
-        mouse-cursor: pointer;
-        clicked => {
-            root.clicked();
+        // Explicit, non-hover affordance to open the reactor list: the popover
+        // above otherwise only mounts on pointer hover, so touch and keyboard
+        // users had no way to reach it. Its own click toggles `manual-open`
+        // rather than `root.clicked()`, keeping "view reactors" and "toggle my
+        // reaction" on separate gestures.
+        if root.reactors.length > 0: caret := Rectangle {
+            width: 16px;
+            height: 16px;
+            border-radius: (8px) * Theme.r-scale;
+            background: caret-touch.has-hover || root.manual-open ? Palette.hover : transparent;
+            animate background { duration: Theme.hover-dur; }
+            accessible-role: button;
+            accessible-label: root.manual-open ? @tr("Hide who reacted") : @tr("See who reacted");
+            accessible-action-default => { caret.activate(); }
+            function activate() {
+                root.manual-open = !root.manual-open;
+                root.cursor-idx = 0;
+            }
+
+            if !root.manual-open: ChevronDownIcon {
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
+                size: 8px;
+                stroke: root.mine ? Palette.text-hi : Palette.text-mid;
+            }
+            if root.manual-open: ChevronUpIcon {
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
+                size: 8px;
+                stroke: root.mine ? Palette.text-hi : Palette.text-mid;
+            }
+
+            caret-touch := TouchArea {
+                mouse-cursor: pointer;
+                clicked => {
+                    caret.activate();
+                }
+            }
+
+            // Zero-size FocusScope: joins the Tab chain without taking pointer
+            // events. Mirrors add-member-row.slint and chat-search-bar.slint.
+            // Once open, Up/Down cycle `cursor-idx` over the reactor list and
+            // Enter/Space open the selected reactor's profile (mirroring
+            // AccentPicker's arrow-key model); Escape closes the popover.
+            caret-fs := FocusScope {
+                width: 0px;
+                height: 0px;
+                key-pressed(event) => {
+                    if (event.text == Key.Escape && root.manual-open) {
+                        root.manual-open = false;
+                        return accept;
+                    }
+                    if (root.manual-open && event.text == Key.UpArrow) {
+                        root.cursor-idx = root.cursor-idx == 0 ? root.reactors.length - 1 : root.cursor-idx - 1;
+                        return accept;
+                    }
+                    if (root.manual-open && event.text == Key.DownArrow) {
+                        root.cursor-idx = mod(root.cursor-idx + 1, root.reactors.length);
+                        return accept;
+                    }
+                    if (event.text == Key.Return || event.text == " ") {
+                        if (root.manual-open) {
+                            ProfileSink.open(root.reactors[root.cursor-idx].id);
+                        } else {
+                            caret.activate();
+                        }
+                        return accept;
+                    }
+                    return reject;
+                }
+            }
+            if caret-fs.has-focus: Rectangle {
+                x: -3px;
+                y: -3px;
+                width: parent.width + 6px;
+                height: parent.height + 6px;
+                border-radius: (11px) * Theme.r-scale;
+                border-width: 2px;
+                border-color: Palette.mint;
+                background: transparent;
+            }
         }
     }
 
@@ -147,15 +245,22 @@ export component ReactionChip inherits Rectangle {
                 x: 8px;
                 y: 6px;
                 spacing: 4px;
-                for reactor in root.reactors: HorizontalLayout {
+                for reactor[idx] in root.reactors: HorizontalLayout {
                     alignment: start;
                     Rectangle {
                         height: 22px;
                         border-radius: min((6px) * Theme.r-scale, self.height / 2);
                         background: @linear-gradient(135deg, reactor.a 0%, reactor.b 100%);
-                        // Subtle outline on hover so the badge reads as clickable.
-                        border-width: rt.has-hover ? 1px : 0px;
+                        // Subtle outline on hover, or on the keyboard cursor
+                        // (root.cursor-idx), so the badge reads as clickable and
+                        // as keyboard-activatable.
+                        border-width: rt.has-hover || (root.manual-open && root.cursor-idx == idx) ? 1px : 0px;
                         border-color: Palette.avatar-ring;
+                        accessible-role: button;
+                        accessible-label: @tr("Open {}'s profile", reactor.name);
+                        accessible-action-default => {
+                            ProfileSink.open(reactor.id);
+                        }
                         HorizontalLayout {
                             padding-left: 8px;
                             padding-right: 8px;

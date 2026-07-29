@@ -1453,6 +1453,10 @@ msgctxt "ModalField"
 msgid "Hide value"
 msgstr ""
 
+msgctxt "ReactionChip"
+msgid "Hide who reacted"
+msgstr ""
+
 msgctxt "ProfilePage"
 msgid "How your name appears in chats"
 msgstr ""
@@ -2242,6 +2246,10 @@ msgctxt "ConfirmFlows"
 msgid "Open this link?"
 msgstr ""
 
+msgctxt "ReactionChip"
+msgid "Open {}'s profile"
+msgstr ""
+
 msgctxt "MessageBubble"
 msgid "Original message"
 msgstr ""
@@ -2984,6 +2992,10 @@ msgstr ""
 
 msgctxt "NotificationsPane"
 msgid "See and hear it with today's sound and preview settings."
+msgstr ""
+
+msgctxt "ReactionChip"
+msgid "See who reacted"
 msgstr ""
 
 msgctxt "command palette footer"

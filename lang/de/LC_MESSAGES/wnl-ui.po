@@ -1629,6 +1629,10 @@ msgctxt "ModalField"
 msgid "Hide value"
 msgstr ""
 
+msgctxt "ReactionChip"
+msgid "Hide who reacted"
+msgstr "Wer reagiert hat ausblenden"
+
 msgctxt "ProfilePage"
 msgid "How your name appears in chats"
 msgstr "Wie dein Name in Chats erscheint"
@@ -2473,6 +2477,10 @@ msgctxt "ConfirmFlows"
 msgid "Open this link?"
 msgstr "Diesen Link öffnen?"
 
+msgctxt "ReactionChip"
+msgid "Open {}'s profile"
+msgstr "Profil von {} öffnen"
+
 msgctxt "MessageBubble"
 msgid "Original message"
 msgstr "Originalnachricht"
@@ -3287,6 +3295,10 @@ msgstr "Suchen…"
 msgctxt "NotificationsPane"
 msgid "See and hear it with today's sound and preview settings."
 msgstr "Sieh und höre sie mit den aktuellen Ton- und Vorschau-Einstellungen."
+
+msgctxt "ReactionChip"
+msgid "See who reacted"
+msgstr "Wer reagiert hat anzeigen"
 
 msgctxt "command palette footer"
 msgid "Select"
