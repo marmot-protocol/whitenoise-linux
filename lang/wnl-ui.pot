@@ -2548,6 +2548,10 @@ msgctxt "ErrorCopy"
 msgid "Relay removed."
 msgstr ""
 
+msgctxt "AdvancedPane"
+msgid "Relay telemetry"
+msgstr ""
+
 msgctxt "GetStartedScreen"
 msgid "Relays carry your encrypted messages. Add at least one to get online."
 msgstr ""
@@ -3051,11 +3055,7 @@ msgid "Settings"
 msgstr ""
 
 msgctxt "AdvancedPane"
-msgid "Share anonymous app telemetry"
-msgstr ""
-
-msgctxt "AdvancedPane"
-msgid "Share relay connection telemetry."
+msgid "Share anonymous relay connection telemetry."
 msgstr ""
 
 msgctxt "SharedMediaGrid"

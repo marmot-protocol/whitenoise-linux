@@ -95,10 +95,10 @@ export component AdvancedPane inherits DetailPage {
         GroupCard {
             KVRow {
                 row-height: 48px;
-                label: @tr("Share anonymous app telemetry");
-                sublabel: @tr("Share relay connection telemetry.");
+                label: @tr("Relay telemetry");
+                sublabel: @tr("Share anonymous relay connection telemetry.");
                 Toggle {
-                    label: @tr("Share anonymous app telemetry");
+                    label: @tr("Relay telemetry");
                     on <=> AppState.telemetry-enabled;
                     toggled => {
                         AppState.telemetry-toggled(self.on);
