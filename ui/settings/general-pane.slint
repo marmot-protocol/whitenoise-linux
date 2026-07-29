@@ -207,7 +207,8 @@ export component GeneralPane inherits DetailPage {
                         removable: true;
                         a11y-label: @tr("Remove {} emoji", e.shortcode);
                         clicked => {
-                            AppState.custom-emoji-removed(i);
+                            AppState.custom-emoji-remove-confirm-idx = i;
+                            AppState.show-custom-emoji-remove-confirm = true;
                         }
                     }
 
