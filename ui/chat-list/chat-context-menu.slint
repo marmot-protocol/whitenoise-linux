@@ -83,6 +83,10 @@ export component ChatContextMenu inherits Rectangle {
     }
 
     property <length> inset: 8px;
+    // Caps how wide the panel can grow from a long chat label (the "Edit
+    // label (…)…" row) so it never needs more room than the window has to
+    // clamp its position into — the min() below then always has a fit.
+    property <length> max-panel-w: min(320px, root.width - 2 * root.inset);
     property <length> px: min(max(root.inset, root.anchor-x), root.width - panel.width - root.inset);
     property <length> py: min(max(root.inset, root.anchor-y), root.height - panel.height - root.inset);
 
@@ -96,7 +100,7 @@ export component ChatContextMenu inherits Rectangle {
     panel := Rectangle {
         x: root.px;
         y: root.py + (root.opened ? 0px : -4px);
-        width: max(160px, col.preferred-width);
+        width: max(160px, min(col.preferred-width, root.max-panel-w));
         height: col.preferred-height;
         opacity: root.opened ? 1.0 : 0.0;
         animate opacity {
