@@ -2754,6 +2754,14 @@ msgctxt "ImportBackupModal"
 msgid "Restore"
 msgstr "Ripristina"
 
+msgctxt "SettingsPage"
+msgid "Restore default quick reactions?"
+msgstr "Ripristinare le reazioni rapide predefinite?"
+
+msgctxt "SettingsPage"
+msgid "Restore defaults"
+msgstr "Ripristina predefinite"
+
 msgctxt "ImportBackupModal"
 msgid "Restore everything from an encrypted backup. Use the password the backup was created with."
 msgstr "Ripristina tutto da un backup crittografato. Usa la password con cui è stato creato il backup."
@@ -3355,6 +3363,10 @@ msgstr ""
 msgctxt "ConfirmFlows"
 msgid "This removes your admin rights. You can't restore them yourself unless another admin promotes you again."
 msgstr "Questo rifiuta l'invito di {}. Non potrà essere ripristinato a meno che non ti invitino di nuovo."
+
+msgctxt "SettingsPage"
+msgid "This replaces your customized set with the default six reactions."
+msgstr "Questo sostituisce il set personalizzato con le sei reazioni predefinite."
 
 msgctxt "ChatRequestBanner"
 msgid "This sender isn't in your contacts. Accept to start an encrypted session."

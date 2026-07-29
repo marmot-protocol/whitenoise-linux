@@ -1126,4 +1126,8 @@ export global AppState {
             AppState.arm-admin-confirm(4, id, name);
         }
     }
+    // Restoring the default quick reactions discards any customized set, so
+    // the Settings "Reset" button arms this modal instead of firing directly.
+    // (was private on the window root; UI-internal, not part of the Rust contract)
+    in-out property <bool> show-quick-react-reset-confirm: false;
 }
