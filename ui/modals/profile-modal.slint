@@ -95,6 +95,11 @@ export component ProfileModal inherits Modal {
                 // picture (or a bright theme's gradient) where white overlays vanish.
                 background: close-touch.has-hover ? Palette.media-ghost-bg-hover : Palette.media-ghost-bg;
                 animate background { duration: Theme.hover-dur; }
+                accessible-role: button;
+                accessible-label: @tr("Close");
+                accessible-action-default => {
+                    root.dismissed();
+                }
                 Text {
                     text: "✕";
                     color: Palette.media-chip-fg;

@@ -54,6 +54,9 @@ component AuditFileRow inherits Rectangle {
             alignment: center;
             MicroButton {
                 label: "";
+                // Icon-only and destructive, so it needs a spoken name.
+                a11y-label: @tr("Delete audit file");
+                focusable: true;
                 pad-left: 8px;
                 pad-right: 8px;
                 TrashIcon {
