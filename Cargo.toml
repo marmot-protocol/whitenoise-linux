@@ -52,6 +52,9 @@ tokio = { version = "1", features = [
   "time",
 ] }
 hex = "0.4"
+# Single-instance guard: `flock` on `$WN_HOME/instance.lock` (instance_lock.rs);
+# already in the tree as a transitive dependency.
+libc = "0.2"
 # npub QR on the profile page. Matrix only — we rasterize to RGBA ourselves,
 # so the `image`/`svg` render features stay off.
 qrcode = { version = "0.14", default-features = false }

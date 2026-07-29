@@ -27,6 +27,7 @@ mod blossom;
 mod deeplink;
 mod fsperm;
 mod image_search;
+mod instance_lock;
 mod media_cache;
 mod mpv;
 mod notify;
@@ -165,6 +166,30 @@ fn main() -> Result<(), slint::PlatformError> {
     // The app was renamed from "darkmatter" to White Noise; move any existing
     // vault/settings from the old dirs before anything resolves a path.
     migrate_legacy_dirs();
+
+    // Single-instance guard: hold an exclusive flock on the data dir for the
+    // whole process, before anything can touch the vault or marmot stores. A
+    // second instance sharing `$WN_HOME` clobbers vault secrets (whole-map
+    // reseal) and forks MLS group state — chats disappear. Must run after the
+    // legacy-dir migration so the lock lands in the final data dir.
+    let _instance_lock = match instance_lock::acquire(&backend::default_home()) {
+        Ok(Some(lock)) => Some(lock),
+        Ok(None) => {
+            let msg = format!(
+                "White Noise is already running for {} — close the other instance first.",
+                backend::default_home().display()
+            );
+            tracing::error!("{msg}");
+            eprintln!("{msg}");
+            std::process::exit(1);
+        }
+        Err(e) => {
+            // Fail open: an exotic filesystem without flock shouldn't brick
+            // the app; the guard only covers the common double-launch case.
+            tracing::warn!("could not take the single-instance lock: {e}");
+            None
+        }
+    };
 
     // A `marmot://` URL from the OS scheme handler arrives as argv; park it
     // until the backend boots and the profile modal can resolve it.

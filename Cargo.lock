@@ -9434,6 +9434,7 @@ dependencies = [
  "icu_segmenter",
  "image",
  "jiff",
+ "libc",
  "marmot-account",
  "marmot-app",
  "mime_guess",
