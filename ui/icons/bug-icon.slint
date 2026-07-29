@@ -1,0 +1,49 @@
+import { Palette } from "../tokens.slint";
+
+export component BugIcon inherits Rectangle {
+    in property <color> stroke: Palette.text-mid;
+    width: 16px;
+    height: 14px;
+
+    Rectangle {
+        x: 6px;
+        y: 2px;
+        width: 4px;
+        height: 3px;
+        border-radius: 1.5px;
+        border-width: 1.2px;
+        border-color: root.stroke;
+    }
+
+    Path {
+        width: 16px;
+        height: 14px;
+        viewbox-width: 16;
+        viewbox-height: 14;
+        commands: "M 6.5 2.5 L 4.5 1 M 9.5 2.5 L 11.5 1";
+        stroke: root.stroke;
+        stroke-width: 1.1px;
+        fill: transparent;
+    }
+
+    Rectangle {
+        x: 4.5px;
+        y: 5px;
+        width: 7px;
+        height: 8px;
+        border-radius: 3.5px;
+        border-width: 1.2px;
+        border-color: root.stroke;
+    }
+
+    Path {
+        width: 16px;
+        height: 14px;
+        viewbox-width: 16;
+        viewbox-height: 14;
+        commands: "M 8 5 L 8 13 M 4.5 6.5 L 1.5 5.5 M 4.5 9 L 1 9 M 4.5 11.5 L 1.5 12.5 M 11.5 6.5 L 14.5 5.5 M 11.5 9 L 15 9 M 11.5 11.5 L 14.5 12.5";
+        stroke: root.stroke;
+        stroke-width: 1.1px;
+        fill: transparent;
+    }
+}
