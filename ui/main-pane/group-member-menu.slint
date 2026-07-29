@@ -21,6 +21,10 @@ export component GroupMemberMenu inherits Rectangle {
         AppState.member-menu-open = false;
         AppState.request-self-demote-admin(AppState.member-menu-name);
     }
+    function transfer() {
+        AppState.member-menu-open = false;
+        AppState.request-transfer-ownership(AppState.member-menu-id, AppState.member-menu-name);
+    }
     function remove() {
         AppState.member-menu-open = false;
         AppState.request-remove-member(AppState.member-menu-id, AppState.member-menu-name);
@@ -31,14 +35,16 @@ export component GroupMemberMenu inherits Rectangle {
     // first visible row always lands on 0, matching the contiguous
     // [0, count-1] scheme MessageContextMenu / ChatContextMenu use.
     property <int> n-promote: AppState.member-menu-can-promote ? 1 : 0;
+    property <int> n-transfer: AppState.member-menu-can-transfer ? 1 : 0;
     property <int> n-demote: AppState.member-menu-can-demote ? 1 : 0;
     property <int> n-self-demote: AppState.member-menu-can-self-demote ? 1 : 0;
     property <int> n-remove: AppState.member-menu-can-remove ? 1 : 0;
     property <int> promote-idx: AppState.member-menu-can-promote ? 0 : -1;
-    property <int> demote-idx: AppState.member-menu-can-demote ? root.n-promote : -1;
-    property <int> self-demote-idx: AppState.member-menu-can-self-demote ? root.n-promote + root.n-demote : -1;
-    property <int> remove-idx: AppState.member-menu-can-remove ? root.n-promote + root.n-demote + root.n-self-demote : -1;
-    property <int> item-count: root.n-promote + root.n-demote + root.n-self-demote + root.n-remove;
+    property <int> transfer-idx: AppState.member-menu-can-transfer ? root.n-promote : -1;
+    property <int> demote-idx: AppState.member-menu-can-demote ? root.n-promote + root.n-transfer : -1;
+    property <int> self-demote-idx: AppState.member-menu-can-self-demote ? root.n-promote + root.n-transfer + root.n-demote : -1;
+    property <int> remove-idx: AppState.member-menu-can-remove ? root.n-promote + root.n-transfer + root.n-demote + root.n-self-demote : -1;
+    property <int> item-count: root.n-promote + root.n-transfer + root.n-demote + root.n-self-demote + root.n-remove;
     property <int> selected-index: 0;
 
     function move-selection(delta: int) {
@@ -57,6 +63,8 @@ export component GroupMemberMenu inherits Rectangle {
     function activate-selected() {
         if (AppState.member-menu-can-promote && root.selected-index == root.promote-idx) {
             root.promote();
+        } else if (AppState.member-menu-can-transfer && root.selected-index == root.transfer-idx) {
+            root.transfer();
         } else if (AppState.member-menu-can-demote && root.selected-index == root.demote-idx) {
             root.demote();
         } else if (AppState.member-menu-can-self-demote && root.selected-index == root.self-demote-idx) {
@@ -150,6 +158,19 @@ export component GroupMemberMenu inherits Rectangle {
                     }
                     hovered => {
                         root.selected-index = root.promote-idx;
+                    }
+                }
+
+                MenuItem {
+                    glyph: "⇄";
+                    label: @tr("Transfer ownership");
+                    shown: AppState.member-menu-can-transfer;
+                    selected: root.selected-index == root.transfer-idx;
+                    activated => {
+                        root.transfer();
+                    }
+                    hovered => {
+                        root.selected-index = root.transfer-idx;
                     }
                 }
 

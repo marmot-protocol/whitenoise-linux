@@ -2266,6 +2266,10 @@ msgctxt "KpCard"
 msgid "Owner"
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "Ownership transferred."
+msgstr ""
+
 msgctxt "BackupCreateModal"
 msgid "PASSWORD"
 msgstr ""
@@ -3339,6 +3343,18 @@ msgctxt "TimeCopy"
 msgid "Today"
 msgstr ""
 
+msgctxt "ConfirmFlows"
+msgid "Transfer"
+msgstr ""
+
+msgctxt "GroupMemberMenu"
+msgid "Transfer ownership"
+msgstr ""
+
+msgctxt "ConfirmFlows"
+msgid "Transfer ownership to {}?"
+msgstr ""
+
 msgctxt "weekday"
 msgid "Tue"
 msgstr ""
@@ -3873,6 +3889,10 @@ msgstr[1] ""
 
 msgctxt "ContactDetail"
 msgid "{} RELAYS"
+msgstr ""
+
+msgctxt "ConfirmFlows"
+msgid "{} becomes an admin, then your admin rights are removed. You can't restore them yourself unless another admin promotes you again."
 msgstr ""
 
 msgctxt "ContactDetail"

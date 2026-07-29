@@ -452,6 +452,8 @@ export global AppState {
     in-out property <bool> member-menu-can-demote: false;
     // (was private on the window root; UI-internal, not part of the Rust contract)
     in-out property <bool> member-menu-can-self-demote: false;
+    // (UI-internal, not part of the Rust contract)
+    in-out property <bool> member-menu-can-transfer: false;
     // (was private on the window root; UI-internal, not part of the Rust contract)
     in-out property <bool> member-menu-can-remove: false;
     // (was private on the window root; UI-internal, not part of the Rust contract)
@@ -986,6 +988,9 @@ export global AppState {
     callback promote-admin(string);
     callback demote-admin(string);
     callback self-demote-admin();
+    // One confirmed flow: promote the member (arg: member id), then step
+    // down. Rust skips the step-down when the promote fails.
+    callback transfer-ownership(string);
     callback remove-member(string);
 
     // ═══ Modals: new chat, contacts & accounts ═════════════════════════════
@@ -1102,7 +1107,7 @@ export global AppState {
     // (was private on the window root; UI-internal, not part of the Rust contract)
     in-out property <bool> show-admin-confirm: false;
     // (was private on the window root; UI-internal, not part of the Rust contract)
-    in-out property <int> admin-confirm-action: 0; // 1=promote, 2=demote, 3=self-demote, 4=remove
+    in-out property <int> admin-confirm-action: 0; // 1=promote, 2=demote, 3=self-demote, 4=remove, 5=transfer
     // (was private on the window root; UI-internal, not part of the Rust contract)
     in-out property <string> admin-confirm-member-id: "";
     // (was private on the window root; UI-internal, not part of the Rust contract)
@@ -1135,6 +1140,11 @@ export global AppState {
     public function request-remove-member(id: string, name: string) {
         if (id != "") {
             AppState.arm-admin-confirm(4, id, name);
+        }
+    }
+    public function request-transfer-ownership(id: string, name: string) {
+        if (id != "") {
+            AppState.arm-admin-confirm(5, id, name);
         }
     }
     // Restoring the default quick reactions discards any customized set, so

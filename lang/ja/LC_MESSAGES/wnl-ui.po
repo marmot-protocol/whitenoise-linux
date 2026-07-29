@@ -2261,6 +2261,10 @@ msgctxt "KpCard"
 msgid "Owner"
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "Ownership transferred."
+msgstr "オーナー権限を譲渡しました。"
+
 msgctxt "BackupCreateModal"
 msgid "PASSWORD"
 msgstr "パスワード"
@@ -3334,6 +3338,18 @@ msgctxt "TimeCopy"
 msgid "Today"
 msgstr "今日"
 
+msgctxt "ConfirmFlows"
+msgid "Transfer"
+msgstr "譲渡"
+
+msgctxt "GroupMemberMenu"
+msgid "Transfer ownership"
+msgstr "オーナー権限を譲渡"
+
+msgctxt "ConfirmFlows"
+msgid "Transfer ownership to {}?"
+msgstr "{}にオーナー権限を譲渡しますか？"
+
 msgctxt "weekday"
 msgid "Tue"
 msgstr "火曜日"
@@ -3867,6 +3883,10 @@ msgstr[0] "{n} リレー"
 msgctxt "ContactDetail"
 msgid "{} RELAYS"
 msgstr "{} リレー"
+
+msgctxt "ConfirmFlows"
+msgid "{} becomes an admin, then your admin rights are removed. You can't restore them yourself unless another admin promotes you again."
+msgstr "{}が管理者になり、その後あなたの管理者権限が削除されます。別の管理者が再び任命しない限り、自分で元に戻すことはできません。"
 
 msgctxt "ContactDetail"
 msgid "{} relays"

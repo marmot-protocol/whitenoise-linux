@@ -786,6 +786,7 @@ export global ErrorCopy {
     out property <string> admin-added: @tr("Admin added.");
     out property <string> admin-removed: @tr("Admin removed.");
     out property <string> stepped-down: @tr("You stepped down.");
+    out property <string> ownership-transferred: @tr("Ownership transferred.");
     out property <string> member-removed: @tr("Member removed.");
     out property <string> leaving-group: @tr("Leaving group…");
     out property <string> left-group: @tr("You left the group.");
@@ -1276,8 +1277,13 @@ export struct GroupMember {
     can-promote: bool,
     // The viewer is an admin and this row is another admin — "Remove admin".
     can-demote: bool,
-    // The viewer is an admin and this is their own admin row — "Step down".
+    // The viewer is an admin, this is their own admin row, and another admin
+    // remains: "Step down". The last admin can't step down (the group would
+    // have no one able to manage it); they transfer ownership instead.
     can-self-demote: bool,
+    // The viewer is an admin and this row is a non-self, non-admin member:
+    // "Transfer ownership" (make them admin, then step down, as one flow).
+    can-transfer: bool,
     // The viewer is an admin and this row is another member (any role) —
     // "Remove from group".
     can-remove: bool,

@@ -2265,6 +2265,10 @@ msgctxt "KpCard"
 msgid "Owner"
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "Ownership transferred."
+msgstr "Der Besitz wurde übertragen."
+
 msgctxt "BackupCreateModal"
 msgid "PASSWORD"
 msgstr "PASSWORT"
@@ -3338,6 +3342,18 @@ msgctxt "TimeCopy"
 msgid "Today"
 msgstr "Heute"
 
+msgctxt "ConfirmFlows"
+msgid "Transfer"
+msgstr "Übertragen"
+
+msgctxt "GroupMemberMenu"
+msgid "Transfer ownership"
+msgstr "Besitz übertragen"
+
+msgctxt "ConfirmFlows"
+msgid "Transfer ownership to {}?"
+msgstr "Besitz an {} übertragen?"
+
 msgctxt "weekday"
 msgid "Tue"
 msgstr "Di"
@@ -3873,6 +3889,10 @@ msgstr[1] "{n} Relays"
 msgctxt "ContactDetail"
 msgid "{} RELAYS"
 msgstr "{} RELAYS"
+
+msgctxt "ConfirmFlows"
+msgid "{} becomes an admin, then your admin rights are removed. You can't restore them yourself unless another admin promotes you again."
+msgstr "{} wird Admin und du gibst deine Adminrechte ab. Du kannst sie nicht selbst wiederherstellen; nur ein anderer Admin kann dich erneut zum Admin machen."
 
 msgctxt "ContactDetail"
 msgid "{} relays"

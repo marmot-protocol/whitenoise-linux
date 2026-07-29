@@ -11,9 +11,9 @@ export component GroupMemberRow inherits Rectangle {
     in property <GroupMember> data;
     // Fired when the viewer taps this row's "⋯" — the root opens the member
     // action menu at (ax, ay) with the flags describing which actions apply.
-    callback request-menu(string, string, bool, bool, bool, bool, length, length);
+    callback request-menu(string, string, bool, bool, bool, bool, bool, length, length);
 
-    property <bool> has-actions: root.data.can-promote || root.data.can-demote || root.data.can-self-demote || root.data.can-remove;
+    property <bool> has-actions: root.data.can-promote || root.data.can-demote || root.data.can-self-demote || root.data.can-transfer || root.data.can-remove;
     property <bool> hot: row-ta.has-hover || menu-ta.has-hover;
 
     height: 48px;
@@ -126,6 +126,7 @@ export component GroupMemberRow inherits Rectangle {
                         root.data.can-promote,
                         root.data.can-demote,
                         root.data.can-self-demote,
+                        root.data.can-transfer,
                         root.data.can-remove,
                         menu-ta.absolute-position.x + menu-ta.width,
                         menu-ta.absolute-position.y + menu-ta.height);

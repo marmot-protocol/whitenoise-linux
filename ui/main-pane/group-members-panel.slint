@@ -66,12 +66,13 @@ export component GroupMembersPanel inherits Rectangle {
                             }
                             for m in AppState.chat-members: GroupMemberRow {
                                 data: m;
-                                request-menu(id, name, cp, cd, csd, cr, ax, ay) => {
+                                request-menu(id, name, cp, cd, csd, ct, cr, ax, ay) => {
                                     AppState.member-menu-id = id;
                                     AppState.member-menu-name = name;
                                     AppState.member-menu-can-promote = cp;
                                     AppState.member-menu-can-demote = cd;
                                     AppState.member-menu-can-self-demote = csd;
+                                    AppState.member-menu-can-transfer = ct;
                                     AppState.member-menu-can-remove = cr;
                                     AppState.member-menu-x = ax;
                                     AppState.member-menu-y = ay;
@@ -88,12 +89,13 @@ export component GroupMembersPanel inherits Rectangle {
                             spacing: 2px;
                             for m in AppState.chat-invited-members: GroupMemberRow {
                                 data: m;
-                                request-menu(id, name, cp, cd, csd, cr, ax, ay) => {
+                                request-menu(id, name, cp, cd, csd, ct, cr, ax, ay) => {
                                     AppState.member-menu-id = id;
                                     AppState.member-menu-name = name;
                                     AppState.member-menu-can-promote = cp;
                                     AppState.member-menu-can-demote = cd;
                                     AppState.member-menu-can-self-demote = csd;
+                                    AppState.member-menu-can-transfer = ct;
                                     AppState.member-menu-can-remove = cr;
                                     AppState.member-menu-x = ax;
                                     AppState.member-menu-y = ay;

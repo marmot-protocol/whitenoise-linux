@@ -838,6 +838,7 @@ copy_snapshot! {
     admin_added: String = get_admin_added => "Admin added.";
     admin_removed: String = get_admin_removed => "Admin removed.";
     stepped_down: String = get_stepped_down => "You stepped down.";
+    ownership_transferred: String = get_ownership_transferred => "Ownership transferred.";
     member_removed: String = get_member_removed => "Member removed.";
     leaving_group: String = get_leaving_group => "Leaving group…";
     left_group: String = get_left_group => "You left the group.";

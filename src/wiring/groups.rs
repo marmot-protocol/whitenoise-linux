@@ -246,6 +246,35 @@ pub(crate) fn wire_groups(ui: &WhiteNoiseLinux, cx: &Cx) {
             );
         }
     });
+    // "Transfer ownership": promote the target, then step down, as one
+    // confirmed flow. The `?` skips the self-demote when the promote fails,
+    // so a failed handoff never leaves the group without an admin.
+    ui.global::<AppState>().on_transfer_ownership({
+        let weak = ui.as_weak();
+        let backend_cell = backend_cell.clone();
+        let group_ids = group_ids.clone();
+        move |member_id| {
+            let Some(ui) = weak.upgrade() else { return };
+            let member_id = member_id.trim().to_string();
+            if member_id.is_empty() {
+                return;
+            }
+            let Some((group_hex, b)) = active_group_backend(&ui, &backend_cell, &group_ids) else {
+                return;
+            };
+            spawn_group_admin_op(
+                &ui,
+                b,
+                group_hex,
+                "transfer_ownership",
+                error_copy().ownership_transferred,
+                move |b, hex| {
+                    b.promote_admin(hex, &member_id)?;
+                    b.self_demote_admin(hex).map(|_| ())
+                },
+            );
+        }
+    });
     ui.global::<AppState>().on_remove_member({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();

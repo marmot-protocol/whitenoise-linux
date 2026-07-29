@@ -1455,9 +1455,14 @@ pub(crate) fn group_member_from(
         !is_self && !is_admin && !authored.contains(&record.member_id_hex.to_ascii_lowercase());
     // The viewer can hand out admin only to other members who aren't admins yet.
     let can_promote = viewer_is_admin && !is_self && !is_admin;
-    // Demote another admin, or step down from one's own admin role.
+    // Demote another admin, or step down from one's own admin role. Stepping
+    // down needs another admin to remain, so the last admin can't leave the
+    // group with no one able to manage it.
     let can_demote = viewer_is_admin && is_admin && !is_self;
-    let can_self_demote = viewer_is_admin && is_admin && is_self;
+    let can_self_demote = viewer_is_admin && is_admin && is_self && admins.len() > 1;
+    // Hand the group off in one flow (promote this member, then step down);
+    // offered on the same rows as "Make admin".
+    let can_transfer = can_promote;
     // Evict any other member from the group (regardless of their role); an
     // admin can't remove themselves — that's "leave group", not removal.
     let can_remove = viewer_is_admin && !is_self;
@@ -1491,6 +1496,7 @@ pub(crate) fn group_member_from(
         can_promote,
         can_demote,
         can_self_demote,
+        can_transfer,
         can_remove,
         is_invited,
     };
