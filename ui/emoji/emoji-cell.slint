@@ -1,9 +1,9 @@
 import { Palette, Theme } from "../tokens.slint";
 
-// One emoji tile in the picker grid: hover highlight + sprite-sheet glyph
-// with a slight pop on hover. Stays always-mounted with `visible`/`enabled`
-// gating (an `if`-guarded mount used to race the first user click), so the
-// parent drives `active` instead of conditionally instantiating the cell.
+// One emoji tile in the picker grid: hover highlight + glyph with a slight
+// pop on hover. Stays always-mounted with `visible`/`enabled` gating (an
+// `if`-guarded mount used to race the first user click), so the parent
+// drives `active` instead of conditionally instantiating the cell.
 export component EmojiCell inherits Rectangle {
     in property <bool> active;
     in property <image> sprite;
@@ -15,6 +15,11 @@ export component EmojiCell inherits Rectangle {
     // users get the same visible affordance mouse users get (mirrors
     // MenuItem.selected).
     in property <bool> selected: false;
+    // A custom-uploaded emoji's own image, resolved outside the shared
+    // Twemoji sheet (see EmojiEntry in tokens.slint); takes priority over the
+    // sprite clip when present.
+    in property <image> picture;
+    in property <bool> has-picture: false;
     callback picked();
 
     property <bool> highlighted: cell.has-hover || root.selected;
@@ -30,7 +35,23 @@ export component EmojiCell inherits Rectangle {
         }
     }
 
-    Image {
+    if root.has-picture: Image {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        visible: root.active;
+        source: root.picture;
+        // Slight pop on hover so the glyph responds along with the cell
+        // highlight.
+        width: cell.has-hover ? 26px : 22px;
+        height: cell.has-hover ? 26px : 22px;
+        animate width, height {
+            duration: 80ms;
+            easing: ease-out;
+        }
+        image-fit: contain;
+    }
+
+    if !root.has-picture: Image {
         x: (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;
         visible: root.active;

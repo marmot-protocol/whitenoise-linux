@@ -850,6 +850,10 @@ copy_snapshot! {
     profile_publishing: String = get_profile_publishing => "publishing…";
     profile_published: String = get_profile_published => "profile published";
     picture_uploaded: String = get_picture_uploaded => "picture uploaded — Save to publish";
+    // Custom-emoji upload status copy (src/wiring/custom_emoji.rs).
+    emoji_uploaded: String = get_emoji_uploaded => "uploaded — name it below";
+    emoji_shortcode_empty: String = get_emoji_shortcode_empty => "Enter a name for this emoji.";
+    emoji_shortcode_taken: String = get_emoji_shortcode_taken => "You already have an emoji with that name.";
     // Clipboard feedback.
     nsec_copied: String = get_nsec_copied => "nsec copied";
     npub_copied: String = get_npub_copied => "npub copied";

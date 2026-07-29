@@ -480,12 +480,29 @@ export struct ReactionRow {
 
 // One emoji in the picker grid. `clip-x`/`clip-y` are pixel coordinates
 // into the shared Twemoji sprite sheet (passed in separately at the picker
-// level). `name` is the human-readable label.
+// level). `name` is the human-readable label. A custom-uploaded emoji has no
+// sprite tile (clip-x/-y stay -1) and carries its own `picture` instead,
+// resolved from the user's Blossom upload — `has-picture` picks which one
+// EmojiCell draws.
 export struct EmojiEntry {
     emoji: string,
     name: string,
     clip-x: int,
     clip-y: int,
+    picture: image,
+    has-picture: bool,
+}
+
+// One custom emoji in the Settings "Custom Emoji" editor row (see
+// general-pane.slint). `shortcode` is the bare name (no colons); `picture`
+// mirrors what the picker shows once its Blossom URL resolves. `url` isn't
+// rendered — it lets Rust re-resolve the picture from the picture cache
+// without re-reading Settings (see `backfill_custom_emoji_settings_list`).
+export struct CustomEmojiEntry {
+    shortcode: string,
+    url: string,
+    picture: image,
+    has-picture: bool,
 }
 
 // One queued composer attachment (paperclip picker or clipboard paste).
@@ -792,6 +809,10 @@ export global ErrorCopy {
     out property <string> profile-publishing: @tr("publishing…");
     out property <string> profile-published: @tr("profile published");
     out property <string> picture-uploaded: @tr("picture uploaded — Save to publish");
+    // Custom-emoji upload status copy (src/wiring/custom_emoji.rs).
+    out property <string> emoji-uploaded: @tr("uploaded — name it below");
+    out property <string> emoji-shortcode-empty: @tr("Enter a name for this emoji.");
+    out property <string> emoji-shortcode-taken: @tr("You already have an emoji with that name.");
     // Clipboard feedback (src/wiring/panes.rs, nav.rs, extra.rs).
     out property <string> nsec-copied: @tr("nsec copied");
     out property <string> npub-copied: @tr("npub copied");
@@ -983,6 +1004,7 @@ export global EmojiSheet {
 // avoids threading the string through any component tree.
 export global NativeDialogStrings {
     out property <string> choose-profile-picture: @tr("Choose a profile picture");
+    out property <string> choose-custom-emoji: @tr("Choose a custom emoji image");
 }
 
 // One pickable message effect (Telegram-style burst). `clip-x`/`clip-y` index

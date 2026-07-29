@@ -83,7 +83,7 @@ pub(crate) use backend::Backend;
 pub(crate) use backend::CHAT_MESSAGE_KIND;
 pub(crate) use backend::KpInspectionReport;
 pub(crate) use backend::SAVED_MESSAGES_NAME;
-pub(crate) use settings::Settings;
+pub(crate) use settings::{CustomEmoji, Settings};
 pub(crate) use vault::Vault;
 
 // Tests that point `WN_HOME` at a temp dir mutate a single process-global env
@@ -227,6 +227,7 @@ fn main() -> Result<(), slint::PlatformError> {
     ui.set_shell_info_width(initial_settings.shell_info_width);
     ui.set_shell_centered(initial_settings.centered_conversation);
     push_quick_reactions(&ui, &initial_settings.quick_reactions);
+    push_custom_emoji_settings_list(&ui, &initial_settings.custom_emoji);
     // Drives ⌘-vs-Ctrl shortcut hints (command palette badge, etc.).
     ui.set_is_macos(cfg!(target_os = "macos"));
     // Seed the in-memory per-account "delete for me" sets so locally-hidden
@@ -715,6 +716,7 @@ fn main() -> Result<(), slint::PlatformError> {
                             refresh_contacts_async(&ui, &b, |_| {});
                             refresh_archived_async(&ui, &b, &archived_for_sync);
                             populate_profile_async(&ui, &b);
+                            backfill_custom_emoji_settings_list(&ui, &b);
                             refresh_kp_local_async(&ui, &b);
                             refresh_network_post_boot(&b, &ui);
                             // The profile refreshes queued above land asynchronously
@@ -895,6 +897,7 @@ fn main() -> Result<(), slint::PlatformError> {
                                             merge_chat_list_rows_async(&ui, &b, &group_ids);
                                             refresh_contacts_async(&ui, &b, |_| {});
                                             populate_profile_async(&ui, &b);
+                                            backfill_custom_emoji_settings_list(&ui, &b);
                                         },
                                     );
                                 }
@@ -931,6 +934,7 @@ fn main() -> Result<(), slint::PlatformError> {
     wire_extra(&ui, &cx, &h);
     wire_image_search(&ui, &cx);
     wire_kp_inspector(&ui, &cx);
+    wire_custom_emoji(&ui, &cx);
 
     // ── UI zoom (Ctrl +/-/0) ─────────────────────────────────────────────
     // Browser-style zoom: change the window's scale factor so the *entire*

@@ -1401,6 +1401,8 @@ pub(crate) fn build_emoji_list(query: &str) -> Vec<EmojiEntry> {
             name: s(e.name()),
             clip_x: x as i32,
             clip_y: y as i32,
+            picture: slint::Image::default(),
+            has_picture: false,
         });
     }
     hits
@@ -1419,6 +1421,10 @@ pub(crate) fn build_recent_emoji_list(recent: &[String]) -> Vec<EmojiEntry> {
                 name: s(name),
                 clip_x: x as i32,
                 clip_y: y as i32,
+                // Recents are always sprite-sheet emoji; custom-emoji rows
+                // build their own entries with `picture` set.
+                picture: slint::Image::default(),
+                has_picture: false,
             })
         })
         .collect()

@@ -25,6 +25,7 @@ import {
     GroupMember,
     AccountEntry,
     EmojiEntry,
+    CustomEmojiEntry,
     EditVersion,
     AuditLogEntry,
     StagedAttachment,
@@ -384,6 +385,26 @@ export global AppState {
     callback emoji-query-changed(string);
     callback emoji-picked(string, string);    // message-id, emoji
     callback emoji-picker-dismissed();
+
+    // Custom-emoji management (Settings → General "CUSTOM EMOJI"). The
+    // uploaded set itself lives in settings.json and feeds emoji-list above;
+    // this is only the upload → naming flow and the editor's own list.
+    in-out property <[CustomEmojiEntry]> custom-emoji-list;
+    callback custom-emoji-add-requested();
+    callback custom-emoji-removed(int);
+    in-out property <bool> show-custom-emoji-modal: false;
+    in-out property <image> custom-emoji-modal-preview;
+    in-out property <bool> custom-emoji-modal-has-preview: false;
+    // Set once the upload finishes (worker thread → UI thread, so this rides
+    // a plain property rather than a shared Rc — see `profile-picture` for
+    // the same pattern). Empty while no upload has completed yet.
+    in-out property <string> custom-emoji-modal-pending-url;
+    in-out property <string> custom-emoji-modal-shortcode;
+    in-out property <string> custom-emoji-modal-status;
+    in-out property <bool> custom-emoji-modal-status-error: false;
+    in-out property <bool> custom-emoji-modal-busy: false;
+    callback custom-emoji-modal-save(string);
+    callback custom-emoji-modal-dismissed();
     // Message context menu (right-click on a bubble). Handled entirely in
     // Slint — the menu items re-fire the existing reaction-picker / reply /
     // edit plumbing above, so Rust never sees the menu itself.

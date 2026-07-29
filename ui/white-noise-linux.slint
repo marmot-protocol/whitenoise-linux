@@ -32,6 +32,7 @@ import { PaletteAction } from "modals/command-palette.slint";
 import { SplashScreen } from "shell/splash.slint";
 import {
     EmojiEntry,
+    CustomEmojiEntry,
     EmojiSheet,
     Linkout,
     ProfileSink,
@@ -267,6 +268,15 @@ export component WhiteNoiseLinux inherits Window {
     in-out property <string> emoji-target-message-id <=> AppState.emoji-target-message-id;
     in-out property <length> emoji-anchor-x <=> AppState.emoji-anchor-x;
     in-out property <length> emoji-anchor-y <=> AppState.emoji-anchor-y;
+    in-out property <[CustomEmojiEntry]> custom-emoji-list <=> AppState.custom-emoji-list;
+    in-out property <bool> show-custom-emoji-modal <=> AppState.show-custom-emoji-modal;
+    in-out property <image> custom-emoji-modal-preview <=> AppState.custom-emoji-modal-preview;
+    in-out property <bool> custom-emoji-modal-has-preview <=> AppState.custom-emoji-modal-has-preview;
+    in-out property <string> custom-emoji-modal-pending-url <=> AppState.custom-emoji-modal-pending-url;
+    in-out property <string> custom-emoji-modal-shortcode <=> AppState.custom-emoji-modal-shortcode;
+    in-out property <string> custom-emoji-modal-status <=> AppState.custom-emoji-modal-status;
+    in-out property <bool> custom-emoji-modal-status-error <=> AppState.custom-emoji-modal-status-error;
+    in-out property <bool> custom-emoji-modal-busy <=> AppState.custom-emoji-modal-busy;
     in-out property <string> forward-src-id <=> AppState.forward-src-id;
     in-out property <[bool]> forward-match-flags <=> AppState.forward-match-flags;
     in-out property <[int]> forward-visible-rows <=> AppState.forward-visible-rows;

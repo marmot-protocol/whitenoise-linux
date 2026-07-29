@@ -260,6 +260,8 @@ export component EmojiPicker inherits Rectangle {
                                         clip-x: cell-slot.active ? emoji-list[cell-slot.flat-idx].clip-x : 0;
                                         clip-y: cell-slot.active ? emoji-list[cell-slot.flat-idx].clip-y : 0;
                                         label: cell-slot.active ? emoji-list[cell-slot.flat-idx].name : "";
+                                        picture: cell-slot.active ? emoji-list[cell-slot.flat-idx].picture : root.sprite;
+                                        has-picture: cell-slot.active && emoji-list[cell-slot.flat-idx].has-picture;
                                         picked => {
                                             if (cell-slot.active) {
                                                 root.picked(emoji-list[cell-slot.flat-idx].emoji);
