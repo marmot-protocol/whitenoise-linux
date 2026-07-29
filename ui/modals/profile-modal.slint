@@ -33,6 +33,8 @@ export component ProfileModal inherits Modal {
     in property <bool> picture-failed: false;
     in property <[SharedGroup]> shared-groups;
     callback copy-npub;
+    callback copy-nip05;
+    callback copy-lud16;
     callback add-contact;
     callback open-shared-group(string);
     callback retry-picture;
@@ -222,13 +224,12 @@ export component ProfileModal inherits Modal {
                     }
                 }
 
-                Text {
-                    text: root.nip05;
-                    color: root.nip05-verified ? Palette.mint : Palette.text-lo;
-                    font-size: Theme.fs(11px, 14px);
-                    font-weight: 700;
-                    font-family: Theme.font;
-                    overflow: elide;
+                CopyChip {
+                    value: root.nip05;
+                    value-color: root.nip05-verified ? Palette.mint : Palette.text-lo;
+                    copy-requested => {
+                        root.copy-nip05();
+                    }
                 }
             }
 
@@ -316,13 +317,15 @@ export component ProfileModal inherits Modal {
             }
 
             // Lightning address.
-            if !root.loading && root.lud16 != "": Text {
-                text: "⚡ " + root.lud16;
-                color: Palette.text-lo;
-                font-size: Theme.fs(10.5px, 14px);
-                font-family: Theme.font;
-                horizontal-alignment: center;
-                overflow: elide;
+            if !root.loading && root.lud16 != "": HorizontalLayout {
+                alignment: center;
+                CopyChip {
+                    value: "⚡ " + root.lud16;
+                    value-color: Palette.text-lo;
+                    copy-requested => {
+                        root.copy-lud16();
+                    }
+                }
             }
 
             // Groups in common — only when there are any and this isn't the

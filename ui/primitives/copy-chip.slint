@@ -6,6 +6,7 @@ import { CopyIcon } from "../icons/copy-icon.slint";
 // and the caller does the actual clipboard write.
 export component CopyChip inherits Rectangle {
     in property <string> value;
+    in property <color> value-color: Palette.text-mid;
     callback copy-requested();
 
     property <bool> copied: false;
@@ -31,7 +32,7 @@ export component CopyChip inherits Rectangle {
         alignment: center;
         Text {
             text: root.copied ? @tr("Copied ✓") : root.value;
-            color: root.copied ? Palette.mint : Palette.text-mid;
+            color: root.copied ? Palette.mint : root.value-color;
             font-size: Theme.fs(10.5px, 14px);
             font-weight: 700;
             font-family: Theme.font;
