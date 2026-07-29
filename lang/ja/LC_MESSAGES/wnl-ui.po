@@ -87,6 +87,11 @@ msgctxt "DebugPane"
 msgid "(no snapshot yet — click Refresh)"
 msgstr "(スナップショットなし — 更新をクリック)"
 
+#, fuzzy
+msgctxt "KpInspectorPane"
+msgid "(nothing loaded yet — click Refresh)"
+msgstr "(スナップショットなし — 更新をクリック)"
+
 msgctxt "DebugJsonModal"
 msgid "(nothing to show)"
 msgstr ""
@@ -670,6 +675,14 @@ msgctxt "BackupCreateModal"
 msgid "Choose location…"
 msgstr "保存先を選択…"
 
+msgctxt "KpCard"
+msgid "Ciphersuite"
+msgstr ""
+
+msgctxt "KpCard"
+msgid "Ciphersuites"
+msgstr ""
+
 msgctxt "StoragePane"
 msgid "Clear cache"
 msgstr "キャッシュを消去"
@@ -917,6 +930,11 @@ msgctxt "ErrorCopy"
 msgid "Couldn't download that image. Try another."
 msgstr "画像をダウンロードできませんでした。別の画像をお試しください。"
 
+#, fuzzy
+msgctxt "ErrorCopy"
+msgid "Couldn't export contacts."
+msgstr "その連絡先を削除できませんでした。もう一度お試しください。"
+
 #. Tier 2 — operation-specific fallbacks.
 msgctxt "ErrorCopy"
 msgid "Couldn't finish syncing. We'll keep retrying — check your relay settings if this keeps happening."
@@ -969,6 +987,11 @@ msgstr "%1 を保存できませんでした。保存先の空き容量と権限
 
 msgctxt "ErrorCopy"
 msgid "Couldn't save image."
+msgstr "画像を保存できませんでした。"
+
+#, fuzzy
+msgctxt "ErrorCopy"
+msgid "Couldn't save video."
 msgstr "画像を保存できませんでした。"
 
 msgctxt "ErrorCopy"
@@ -1036,6 +1059,14 @@ msgctxt "StartNewChatModal"
 msgid "Creating…"
 msgstr "保存中…"
 
+msgctxt "KpCard"
+msgid "Credential"
+msgstr ""
+
+msgctxt "KpCard"
+msgid "Credentials"
+msgstr ""
+
 msgctxt "KeysPage"
 msgid "DANGER ZONE"
 msgstr "危険ゾーン"
@@ -1072,6 +1103,14 @@ msgstr "12月"
 msgctxt "AboutPane"
 msgid "Decentralized network"
 msgstr "分散型ネットワーク"
+
+msgctxt "KpCard"
+msgid "Decode error"
+msgstr ""
+
+msgctxt "KpInspectorPane"
+msgid "Decoded MLS key packages: yours, and anyone's by pubkey"
+msgstr ""
 
 #, fuzzy
 msgctxt "StoragePane"
@@ -1143,6 +1182,10 @@ msgstr "閉じる"
 msgctxt "ProfilePage"
 msgid "Display name"
 msgstr "表示名"
+
+msgctxt "ConfirmFlows"
+msgid "Don't ask again for this site"
+msgstr "このサイトでは今後確認しない"
 
 #. control lives inline next to the key) and the footer just closes.
 msgctxt "ExportKeyModal"
@@ -1249,7 +1292,16 @@ msgctxt "EncryptionInfoModal"
 msgid "Even if a key leaks later on, the messages you already sent can't be unlocked with it."
 msgstr ""
 
+msgctxt "KpCard"
+msgid "Event id"
+msgstr ""
+
 msgctxt "KeysPage"
+msgid "Export"
+msgstr "エクスポート"
+
+#, fuzzy
+msgctxt "SidePanel"
 msgid "Export"
 msgstr "エクスポート"
 
@@ -1269,6 +1321,11 @@ msgctxt "ChatContextMenu"
 msgid "Export transcript…"
 msgstr "履歴を書き出す…"
 
+#, fuzzy
+msgctxt "KpCard"
+msgid "Extensions"
+msgstr "メンション"
+
 msgctxt "status, %1 = error detail"
 msgid "Failed to encode key: %1"
 msgstr "鍵のエンコードに失敗しました: %1"
@@ -1280,6 +1337,15 @@ msgstr "2月"
 msgctxt "MessagesArea"
 msgid "Fetching the latest conversation history."
 msgstr "最新の会話履歴を取得しています。"
+
+#, fuzzy
+msgctxt "KpInspectorPane"
+msgid "Fetching…"
+msgstr "検索中…"
+
+msgctxt "AdvancedPane"
+msgid "Forget trusted site {}"
+msgstr "{} の信頼を解除"
 
 msgctxt "MessageContextMenu"
 msgid "Forward"
@@ -1367,6 +1433,10 @@ msgctxt "GroupHero"
 msgid "Group name"
 msgstr "グループ ID"
 
+msgctxt "GeneralPane"
+msgid "HELP"
+msgstr ""
+
 msgctxt "ChatHeader"
 msgid "Hide members"
 msgstr "メンバーを非表示"
@@ -1374,6 +1444,10 @@ msgstr "メンバーを非表示"
 msgctxt "PasswordField"
 msgid "Hide password"
 msgstr "パスワードを隠す"
+
+msgctxt "ModalField"
+msgid "Hide value"
+msgstr ""
 
 msgctxt "ProfilePage"
 msgid "How your name appears in chats"
@@ -1402,6 +1476,10 @@ msgstr "受信リレー"
 msgctxt "NotificationsPane"
 msgid "INCOMING MESSAGES"
 msgstr "受信メッセージ"
+
+msgctxt "KpInspectorPane"
+msgid "INSPECT SOMEONE ELSE'S"
+msgstr ""
 
 msgctxt "EncryptionInfoModal"
 msgid "If someone's device gets compromised, the group quietly swaps in fresh keys so what you send next is private again."
@@ -1463,6 +1541,10 @@ msgstr "保存中…"
 msgctxt "StoragePane"
 msgid "Import…"
 msgstr "インポート…"
+
+msgctxt "KpInspectorPane"
+msgid "Inspect"
+msgstr ""
 
 msgctxt "GeneralPane"
 msgid "Interface language"
@@ -1553,6 +1635,18 @@ msgctxt "StoragePane"
 msgid "KEYS & BACKUPS"
 msgstr "鍵とバックアップ"
 
+msgctxt "KpCard"
+msgid "KP extensions"
+msgstr ""
+
+msgctxt "KpInspectorPane"
+msgid "KP inspector"
+msgstr ""
+
+msgctxt "SettingsSidebar"
+msgid "KP inspector"
+msgstr ""
+
 msgctxt "AppearancePane"
 msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
 msgstr "開いている会話を全幅にせず、読みやすい幅に保ちます。"
@@ -1562,9 +1656,27 @@ msgid "Key package"
 msgstr "キーパッケージ"
 
 #, fuzzy
+msgctxt "KpCard"
+msgid "Key package"
+msgstr "キーパッケージ"
+
+#, fuzzy
+msgctxt "KpCard"
+msgid "Key package ref"
+msgstr "キーパッケージ"
+
+#, fuzzy
 msgctxt "DebugPane"
 msgid "Key packages"
 msgstr "キーパッケージ"
+
+msgctxt "GeneralPane"
+msgid "Keyboard shortcuts"
+msgstr ""
+
+msgctxt "KeyboardShortcutsModal"
+msgid "Keyboard shortcuts"
+msgstr ""
 
 msgctxt "LeftRail"
 msgid "Keys"
@@ -1606,6 +1718,11 @@ msgctxt "ArchivedDetail"
 msgid "Last message"
 msgstr "最後のメッセージ"
 
+#, fuzzy
+msgctxt "KpCard"
+msgid "Last resort"
+msgstr "最後のメッセージ"
+
 msgctxt "GeneralPane"
 msgid "Launch at login"
 msgstr "ログイン時に起動"
@@ -1613,6 +1730,10 @@ msgstr "ログイン時に起動"
 msgctxt "AppearancePane"
 msgid "Lavender"
 msgstr "ラベンダー"
+
+msgctxt "KpCard"
+msgid "Leaf extensions"
+msgstr ""
 
 #, fuzzy
 msgctxt "ChatContextMenu"
@@ -1641,6 +1762,10 @@ msgctxt "GroupLeaveRow"
 msgid "Leaving…"
 msgstr "退出中…"
 
+msgctxt "KpCard"
+msgid "Lifetime"
+msgstr ""
+
 msgctxt "ThemePicker"
 msgid "Light"
 msgstr "ライト"
@@ -1652,6 +1777,10 @@ msgstr "Lightning"
 msgctxt "ProfilePage"
 msgid "Lightning address (LUD-16)"
 msgstr "Lightning アドレス (LUD-16)"
+
+msgctxt "AdvancedPane"
+msgid "Links to these exact sites open without confirmation."
+msgstr "これらのサイトへのリンクは確認なしで開きます。"
 
 msgctxt "MessagesArea"
 msgid "Load earlier messages"
@@ -1676,6 +1805,11 @@ msgstr "保存中…"
 
 #, fuzzy
 msgctxt "ImageViewerModal"
+msgid "Loading…"
+msgstr "保存中…"
+
+#, fuzzy
+msgctxt "KpInspectorPane"
 msgid "Loading…"
 msgstr "保存中…"
 
@@ -1747,6 +1881,14 @@ msgstr ""
 msgctxt "month"
 msgid "Mar"
 msgstr "3月"
+
+msgctxt "ChatContextMenu"
+msgid "Mark as read"
+msgstr ""
+
+msgctxt "ChatContextMenu"
+msgid "Mark as unread"
+msgstr ""
 
 msgctxt "month"
 msgid "May"
@@ -1910,6 +2052,11 @@ msgid "No contacts match \"{}\""
 msgstr "連絡先を削除"
 
 #, fuzzy
+msgctxt "ErrorCopy"
+msgid "No contacts to export."
+msgstr "連絡先を削除"
+
+#, fuzzy
 msgctxt "ContactsPage"
 msgid "No contacts yet"
 msgstr "連絡先を削除"
@@ -1934,13 +2081,13 @@ msgctxt "ErrorCopy"
 msgid "No image selected."
 msgstr "画像が選択されていません。"
 
-msgctxt "NetworkPane"
-msgid "No inbox relays yet. Add one above."
-msgstr "受信リレーがまだありません。上で追加してください。"
-
 msgctxt "ErrorCopy"
 msgid "No images found for that search."
 msgstr "その検索条件に一致する画像が見つかりませんでした。"
+
+msgctxt "NetworkPane"
+msgid "No inbox relays yet. Add one above."
+msgstr "受信リレーがまだありません。上で追加してください。"
 
 msgctxt "ErrorCopy"
 msgid "No key package on relays yet"
@@ -2008,6 +2155,15 @@ msgstr "連絡先を削除"
 msgctxt "ErrorCopy"
 msgid "No secret key for this account is stored on this device."
 msgstr "このアカウントの秘密鍵はこの端末に保存されていません。"
+
+msgctxt "AdvancedPane"
+msgid "No trusted sites."
+msgstr "信頼済みのサイトはありません。"
+
+#, fuzzy
+msgctxt "ErrorCopy"
+msgid "No video selected."
+msgstr "画像が選択されていません。"
 
 #. Network-pane status copy (also Rust-set).
 msgctxt "ErrorCopy"
@@ -2089,6 +2245,11 @@ msgctxt "StoragePane"
 msgid "Open folder"
 msgstr "フォルダを開く"
 
+#, fuzzy
+msgctxt "RunCell"
+msgid "Open link {}"
+msgstr "このリンクを開きますか?"
+
 msgctxt "ConfirmFlows"
 msgid "Open this link?"
 msgstr "このリンクを開きますか?"
@@ -2100,6 +2261,10 @@ msgstr "元のメッセージ"
 msgctxt "AppearancePane"
 msgid "Own messages on the right"
 msgstr "自分のメッセージを右側に表示"
+
+msgctxt "KpCard"
+msgid "Owner"
+msgstr ""
 
 #, fuzzy
 msgctxt "BackupCreateModal"
@@ -2213,6 +2378,10 @@ msgctxt "ProfileTile"
 msgid "Profile"
 msgstr "あなたのプロフィール"
 
+msgctxt "KpCard"
+msgid "Proposals"
+msgstr ""
+
 msgctxt "KeysPage"
 msgid "Public key (npub)"
 msgstr "公開鍵 (npub)"
@@ -2241,6 +2410,11 @@ msgstr "キーパッケージがありません"
 
 #, fuzzy
 msgctxt "GetStartedScreen"
+msgid "Published"
+msgstr "公開"
+
+#, fuzzy
+msgctxt "KpCard"
 msgid "Published"
 msgstr "公開"
 
@@ -2301,6 +2475,10 @@ msgctxt "KeysPage"
 msgid "REMOTE"
 msgstr "リモート"
 
+msgctxt "KpCard"
+msgid "Raw JSON"
+msgstr ""
+
 msgctxt "DebugPane"
 msgid "Raw events"
 msgstr ""
@@ -2344,6 +2522,11 @@ msgid "Refresh"
 msgstr "更新"
 
 msgctxt "KeysPage"
+msgid "Refresh"
+msgstr "更新"
+
+#, fuzzy
+msgctxt "KpInspectorPane"
 msgid "Refresh"
 msgstr "更新"
 
@@ -2880,6 +3063,10 @@ msgctxt "PasswordField"
 msgid "Show password"
 msgstr "パスワードを表示"
 
+msgctxt "ModalField"
+msgid "Show value"
+msgstr ""
+
 msgctxt "GeneralPane"
 msgid "Shown on the message toolbar and menu. Tap one to remove it."
 msgstr "メッセージのツールバーとメニューに表示されます。タップすると削除できます。"
@@ -2900,6 +3087,11 @@ msgstr "Nostr ID でサインイン"
 msgctxt "AccountSwitcherDetail"
 msgid "Sign this account out here and erase its secret key from your vault. Your other accounts stay signed in."
 msgstr ""
+
+#, fuzzy
+msgctxt "KpCard"
+msgid "Signature key"
+msgstr "鍵を保存"
 
 msgctxt "LoginScreen"
 msgid "Signing in…"
@@ -2986,6 +3178,10 @@ msgstr ""
 msgctxt "AppearancePane"
 msgid "THEME"
 msgstr "テーマ"
+
+msgctxt "AdvancedPane"
+msgid "TRUSTED LINK SITES"
+msgstr "信頼済みのリンク先"
 
 msgctxt "ThemePicker"
 msgid "Terminal"
@@ -3224,7 +3420,21 @@ msgctxt "RevealNsecModal"
 msgid "Verifying…"
 msgstr "復号中…"
 
+#, fuzzy
+msgctxt "KpCard"
+msgid "Versions"
+msgstr "メンション"
+
+#, fuzzy
+msgctxt "ErrorCopy"
+msgid "Video isn't ready yet."
+msgstr "画像はまだ準備できていません。"
+
 msgctxt "ContactDetail"
+msgid "View"
+msgstr ""
+
+msgctxt "keyboard shortcuts button"
 msgid "View"
 msgstr ""
 
@@ -3250,6 +3460,10 @@ msgstr "White Noise へようこそ"
 
 msgctxt "EncryptionInfoModal"
 msgid "Whatever you send in this chat is encrypted on your device before it goes out. The relays that pass it along can't read it, and we can't either."
+msgstr ""
+
+msgctxt "KpCard"
+msgid "Where"
 msgstr ""
 
 msgctxt "NetworkPane"
@@ -3288,6 +3502,11 @@ msgstr "あなた"
 msgctxt "LoginScreen"
 msgid "YOUR DISPLAY NAME"
 msgstr "表示名"
+
+#, fuzzy
+msgctxt "KpInspectorPane"
+msgid "YOUR KEY PACKAGES"
+msgstr "キーパッケージ"
 
 msgctxt "TimeCopy"
 msgid "Yesterday"
@@ -3332,6 +3551,11 @@ msgstr "現在、あなたのアイデンティティはこのデバイスにの
 msgctxt "LoginScreen"
 msgid "Your key never leaves this device."
 msgstr "鍵がこのデバイス外に出ることはありません。"
+
+#, fuzzy
+msgctxt "KpInspectorPane"
+msgid "Your key package"
+msgstr "キーパッケージがありません"
 
 msgctxt "AboutPane"
 msgid "Your keys stay on this device — we never see them."
@@ -3382,10 +3606,20 @@ msgctxt "status, lower-case to match the image-upload flow"
 msgid "backend not ready"
 msgstr "バックエンドの準備ができていません"
 
+msgctxt "KpCard"
+msgid "capabilities"
+msgstr ""
+
 #. read lower-case to match their in-flight siblings.
 msgctxt "ErrorCopy"
 msgid "choosing image…"
 msgstr "画像を選択中…"
+
+#. Contact-list export feedback (src/wiring/contacts.rs).
+#, fuzzy
+msgctxt "ErrorCopy"
+msgid "contacts exported"
+msgstr "連絡先を削除"
 
 msgctxt "ErrorCopy"
 msgid "debug dump copied"
@@ -3415,6 +3649,11 @@ msgid "failed · tap to retry"
 msgstr "失敗 · タップして再試行"
 
 msgctxt "MessageBubble"
+msgid "failed · tap to retry"
+msgstr "失敗 · タップして再試行"
+
+#, fuzzy
+msgctxt "VideoTile"
 msgid "failed · tap to retry"
 msgstr "失敗 · タップして再試行"
 
@@ -3450,9 +3689,27 @@ msgctxt "TimeCopy"
 msgid "just now"
 msgstr "たった今"
 
+#, fuzzy
+msgctxt "KpCard"
+msgid "local + relay"
+msgstr "ローカルのみ"
+
 msgctxt "KeysPage"
 msgid "local only"
 msgstr "ローカルのみ"
+
+#, fuzzy
+msgctxt "KpCard"
+msgid "local only"
+msgstr "ローカルのみ"
+
+msgctxt "KpCard"
+msgid "never"
+msgstr ""
+
+msgctxt "KpCard"
+msgid "no"
+msgstr ""
 
 msgctxt "ProfilePage"
 msgid "no handle yet"
@@ -3470,10 +3727,23 @@ msgctxt "ErrorCopy"
 msgid "npub copied"
 msgstr "npubをコピーしました"
 
+msgctxt "KpInspectorPane"
+msgid "npub or hex pubkey"
+msgstr ""
+
 #. Clipboard feedback (src/wiring/panes.rs, nav.rs, extra.rs).
 msgctxt "ErrorCopy"
 msgid "nsec copied"
 msgstr "nsecをコピーしました"
+
+#, fuzzy
+msgctxt "KpCard"
+msgid "on the key package itself"
+msgstr "キーパッケージをローテーションしますか？"
+
+msgctxt "KpCard"
+msgid "on the leaf node"
+msgstr ""
 
 msgctxt "ErrorCopy"
 msgid "picture uploaded — Save to publish"
@@ -3492,6 +3762,11 @@ msgstr "公開 · キーパッケージが有効になりました"
 msgctxt "ErrorCopy"
 msgid "publishing…"
 msgstr "公開中…"
+
+#, fuzzy
+msgctxt "KpCard"
+msgid "relay"
+msgstr "{n} リレー"
 
 msgctxt "ErrorCopy"
 msgid "removing image…"
@@ -3524,6 +3799,11 @@ msgctxt "ErrorCopy"
 msgid "uploading to Blossom…"
 msgstr "Blossomにアップロード中…"
 
+#, fuzzy
+msgctxt "ErrorCopy"
+msgid "video saved"
+msgstr "画像を保存しました"
+
 msgctxt "NetworkPane"
 msgid "where peers reach you"
 msgstr "相手があなたに届ける場所"
@@ -3531,6 +3811,10 @@ msgstr "相手があなたに届ける場所"
 msgctxt "NetworkPane"
 msgid "where you publish"
 msgstr "あなたが発信する場所"
+
+msgctxt "KpCard"
+msgid "yes"
+msgstr ""
 
 msgctxt "KeysPage"
 msgid "{n} relay"
@@ -3589,23 +3873,3 @@ msgstr "✓ 確認済み"
 msgctxt "GroupHero"
 msgid "＋ Add a description"
 msgstr "＋ 説明を追加"
-
-msgctxt "AdvancedPane"
-msgid "TRUSTED LINK SITES"
-msgstr "信頼済みのリンク先"
-
-msgctxt "AdvancedPane"
-msgid "No trusted sites."
-msgstr "信頼済みのサイトはありません。"
-
-msgctxt "AdvancedPane"
-msgid "Forget trusted site {}"
-msgstr "{} の信頼を解除"
-
-msgctxt "AdvancedPane"
-msgid "Links to these exact sites open without confirmation."
-msgstr "これらのサイトへのリンクは確認なしで開きます。"
-
-msgctxt "ConfirmFlows"
-msgid "Don't ask again for this site"
-msgstr "このサイトでは今後確認しない"

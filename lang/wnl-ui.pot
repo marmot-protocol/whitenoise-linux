@@ -88,6 +88,10 @@ msgctxt "DebugPane"
 msgid "(no snapshot yet — click Refresh)"
 msgstr ""
 
+msgctxt "KpInspectorPane"
+msgid "(nothing loaded yet — click Refresh)"
+msgstr ""
+
 msgctxt "DebugJsonModal"
 msgid "(nothing to show)"
 msgstr ""
@@ -639,6 +643,14 @@ msgctxt "BackupCreateModal"
 msgid "Choose location…"
 msgstr ""
 
+msgctxt "KpCard"
+msgid "Ciphersuite"
+msgstr ""
+
+msgctxt "KpCard"
+msgid "Ciphersuites"
+msgstr ""
+
 msgctxt "StoragePane"
 msgid "Clear cache"
 msgstr ""
@@ -875,6 +887,10 @@ msgctxt "ErrorCopy"
 msgid "Couldn't download that image. Try another."
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "Couldn't export contacts."
+msgstr ""
+
 #. Tier 2 — operation-specific fallbacks.
 msgctxt "ErrorCopy"
 msgid "Couldn't finish syncing. We'll keep retrying — check your relay settings if this keeps happening."
@@ -927,6 +943,10 @@ msgstr ""
 
 msgctxt "ErrorCopy"
 msgid "Couldn't save image."
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Couldn't save video."
 msgstr ""
 
 msgctxt "ErrorCopy"
@@ -993,6 +1013,14 @@ msgctxt "StartNewChatModal"
 msgid "Creating…"
 msgstr ""
 
+msgctxt "KpCard"
+msgid "Credential"
+msgstr ""
+
+msgctxt "KpCard"
+msgid "Credentials"
+msgstr ""
+
 msgctxt "KeysPage"
 msgid "DANGER ZONE"
 msgstr ""
@@ -1027,6 +1055,14 @@ msgstr ""
 
 msgctxt "AboutPane"
 msgid "Decentralized network"
+msgstr ""
+
+msgctxt "KpCard"
+msgid "Decode error"
+msgstr ""
+
+msgctxt "KpInspectorPane"
+msgid "Decoded MLS key packages: yours, and anyone's by pubkey"
 msgstr ""
 
 msgctxt "StoragePane"
@@ -1091,6 +1127,10 @@ msgstr ""
 
 msgctxt "ProfilePage"
 msgid "Display name"
+msgstr ""
+
+msgctxt "ConfirmFlows"
+msgid "Don't ask again for this site"
 msgstr ""
 
 #. control lives inline next to the key) and the footer just closes.
@@ -1192,7 +1232,15 @@ msgctxt "EncryptionInfoModal"
 msgid "Even if a key leaks later on, the messages you already sent can't be unlocked with it."
 msgstr ""
 
+msgctxt "KpCard"
+msgid "Event id"
+msgstr ""
+
 msgctxt "KeysPage"
+msgid "Export"
+msgstr ""
+
+msgctxt "SidePanel"
 msgid "Export"
 msgstr ""
 
@@ -1212,6 +1260,10 @@ msgctxt "ChatContextMenu"
 msgid "Export transcript…"
 msgstr ""
 
+msgctxt "KpCard"
+msgid "Extensions"
+msgstr ""
+
 msgctxt "status, %1 = error detail"
 msgid "Failed to encode key: %1"
 msgstr ""
@@ -1222,6 +1274,14 @@ msgstr ""
 
 msgctxt "MessagesArea"
 msgid "Fetching the latest conversation history."
+msgstr ""
+
+msgctxt "KpInspectorPane"
+msgid "Fetching…"
+msgstr ""
+
+msgctxt "AdvancedPane"
+msgid "Forget trusted site {}"
 msgstr ""
 
 msgctxt "MessageContextMenu"
@@ -1308,12 +1368,20 @@ msgctxt "GroupHero"
 msgid "Group name"
 msgstr ""
 
+msgctxt "GeneralPane"
+msgid "HELP"
+msgstr ""
+
 msgctxt "ChatHeader"
 msgid "Hide members"
 msgstr ""
 
 msgctxt "PasswordField"
 msgid "Hide password"
+msgstr ""
+
+msgctxt "ModalField"
+msgid "Hide value"
 msgstr ""
 
 msgctxt "ProfilePage"
@@ -1342,6 +1410,10 @@ msgstr ""
 
 msgctxt "NotificationsPane"
 msgid "INCOMING MESSAGES"
+msgstr ""
+
+msgctxt "KpInspectorPane"
+msgid "INSPECT SOMEONE ELSE'S"
 msgstr ""
 
 msgctxt "EncryptionInfoModal"
@@ -1402,6 +1474,10 @@ msgstr ""
 
 msgctxt "StoragePane"
 msgid "Import…"
+msgstr ""
+
+msgctxt "KpInspectorPane"
+msgid "Inspect"
 msgstr ""
 
 msgctxt "GeneralPane"
@@ -1489,6 +1565,18 @@ msgctxt "StoragePane"
 msgid "KEYS & BACKUPS"
 msgstr ""
 
+msgctxt "KpCard"
+msgid "KP extensions"
+msgstr ""
+
+msgctxt "KpInspectorPane"
+msgid "KP inspector"
+msgstr ""
+
+msgctxt "SettingsSidebar"
+msgid "KP inspector"
+msgstr ""
+
 msgctxt "AppearancePane"
 msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
 msgstr ""
@@ -1497,8 +1585,24 @@ msgctxt "ContactDetail"
 msgid "Key package"
 msgstr ""
 
+msgctxt "KpCard"
+msgid "Key package"
+msgstr ""
+
+msgctxt "KpCard"
+msgid "Key package ref"
+msgstr ""
+
 msgctxt "DebugPane"
 msgid "Key packages"
+msgstr ""
+
+msgctxt "GeneralPane"
+msgid "Keyboard shortcuts"
+msgstr ""
+
+msgctxt "KeyboardShortcutsModal"
+msgid "Keyboard shortcuts"
 msgstr ""
 
 msgctxt "LeftRail"
@@ -1541,12 +1645,20 @@ msgctxt "ArchivedDetail"
 msgid "Last message"
 msgstr ""
 
+msgctxt "KpCard"
+msgid "Last resort"
+msgstr ""
+
 msgctxt "GeneralPane"
 msgid "Launch at login"
 msgstr ""
 
 msgctxt "AppearancePane"
 msgid "Lavender"
+msgstr ""
+
+msgctxt "KpCard"
+msgid "Leaf extensions"
 msgstr ""
 
 msgctxt "ChatContextMenu"
@@ -1573,6 +1685,10 @@ msgctxt "GroupLeaveRow"
 msgid "Leaving…"
 msgstr ""
 
+msgctxt "KpCard"
+msgid "Lifetime"
+msgstr ""
+
 msgctxt "ThemePicker"
 msgid "Light"
 msgstr ""
@@ -1583,6 +1699,10 @@ msgstr ""
 
 msgctxt "ProfilePage"
 msgid "Lightning address (LUD-16)"
+msgstr ""
+
+msgctxt "AdvancedPane"
+msgid "Links to these exact sites open without confirmation."
 msgstr ""
 
 msgctxt "MessagesArea"
@@ -1606,6 +1726,10 @@ msgid "Loading…"
 msgstr ""
 
 msgctxt "ImageViewerModal"
+msgid "Loading…"
+msgstr ""
+
+msgctxt "KpInspectorPane"
 msgid "Loading…"
 msgstr ""
 
@@ -1671,6 +1795,14 @@ msgstr ""
 
 msgctxt "month"
 msgid "Mar"
+msgstr ""
+
+msgctxt "ChatContextMenu"
+msgid "Mark as read"
+msgstr ""
+
+msgctxt "ChatContextMenu"
+msgid "Mark as unread"
 msgstr ""
 
 msgctxt "month"
@@ -1830,6 +1962,10 @@ msgctxt "ContactsSidebar"
 msgid "No contacts match \"{}\""
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "No contacts to export."
+msgstr ""
+
 msgctxt "ContactsPage"
 msgid "No contacts yet"
 msgstr ""
@@ -1854,12 +1990,12 @@ msgctxt "ErrorCopy"
 msgid "No image selected."
 msgstr ""
 
-msgctxt "NetworkPane"
-msgid "No inbox relays yet. Add one above."
-msgstr ""
-
 msgctxt "ErrorCopy"
 msgid "No images found for that search."
+msgstr ""
+
+msgctxt "NetworkPane"
+msgid "No inbox relays yet. Add one above."
 msgstr ""
 
 msgctxt "ErrorCopy"
@@ -1925,6 +2061,14 @@ msgstr ""
 
 msgctxt "ErrorCopy"
 msgid "No secret key for this account is stored on this device."
+msgstr ""
+
+msgctxt "AdvancedPane"
+msgid "No trusted sites."
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "No video selected."
 msgstr ""
 
 #. Network-pane status copy (also Rust-set).
@@ -2004,6 +2148,10 @@ msgctxt "StoragePane"
 msgid "Open folder"
 msgstr ""
 
+msgctxt "RunCell"
+msgid "Open link {}"
+msgstr ""
+
 msgctxt "ConfirmFlows"
 msgid "Open this link?"
 msgstr ""
@@ -2014,6 +2162,10 @@ msgstr ""
 
 msgctxt "AppearancePane"
 msgid "Own messages on the right"
+msgstr ""
+
+msgctxt "KpCard"
+msgid "Owner"
 msgstr ""
 
 msgctxt "BackupCreateModal"
@@ -2120,6 +2272,10 @@ msgctxt "ProfileTile"
 msgid "Profile"
 msgstr ""
 
+msgctxt "KpCard"
+msgid "Proposals"
+msgstr ""
+
 msgctxt "KeysPage"
 msgid "Public key (npub)"
 msgstr ""
@@ -2145,6 +2301,10 @@ msgid "Publish your key package"
 msgstr ""
 
 msgctxt "GetStartedScreen"
+msgid "Published"
+msgstr ""
+
+msgctxt "KpCard"
 msgid "Published"
 msgstr ""
 
@@ -2201,6 +2361,10 @@ msgctxt "KeysPage"
 msgid "REMOTE"
 msgstr ""
 
+msgctxt "KpCard"
+msgid "Raw JSON"
+msgstr ""
+
 msgctxt "DebugPane"
 msgid "Raw events"
 msgstr ""
@@ -2243,6 +2407,10 @@ msgid "Refresh"
 msgstr ""
 
 msgctxt "KeysPage"
+msgid "Refresh"
+msgstr ""
+
+msgctxt "KpInspectorPane"
 msgid "Refresh"
 msgstr ""
 
@@ -2756,6 +2924,10 @@ msgctxt "PasswordField"
 msgid "Show password"
 msgstr ""
 
+msgctxt "ModalField"
+msgid "Show value"
+msgstr ""
+
 msgctxt "GeneralPane"
 msgid "Shown on the message toolbar and menu. Tap one to remove it."
 msgstr ""
@@ -2774,6 +2946,10 @@ msgstr ""
 
 msgctxt "AccountSwitcherDetail"
 msgid "Sign this account out here and erase its secret key from your vault. Your other accounts stay signed in."
+msgstr ""
+
+msgctxt "KpCard"
+msgid "Signature key"
 msgstr ""
 
 msgctxt "LoginScreen"
@@ -2854,6 +3030,10 @@ msgstr ""
 
 msgctxt "AppearancePane"
 msgid "THEME"
+msgstr ""
+
+msgctxt "AdvancedPane"
+msgid "TRUSTED LINK SITES"
 msgstr ""
 
 msgctxt "ThemePicker"
@@ -3086,7 +3266,19 @@ msgctxt "RevealNsecModal"
 msgid "Verifying…"
 msgstr ""
 
+msgctxt "KpCard"
+msgid "Versions"
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Video isn't ready yet."
+msgstr ""
+
 msgctxt "ContactDetail"
+msgid "View"
+msgstr ""
+
+msgctxt "keyboard shortcuts button"
 msgid "View"
 msgstr ""
 
@@ -3112,6 +3304,10 @@ msgstr ""
 
 msgctxt "EncryptionInfoModal"
 msgid "Whatever you send in this chat is encrypted on your device before it goes out. The relays that pass it along can't read it, and we can't either."
+msgstr ""
+
+msgctxt "KpCard"
+msgid "Where"
 msgstr ""
 
 msgctxt "NetworkPane"
@@ -3150,6 +3346,10 @@ msgstr ""
 
 msgctxt "LoginScreen"
 msgid "YOUR DISPLAY NAME"
+msgstr ""
+
+msgctxt "KpInspectorPane"
+msgid "YOUR KEY PACKAGES"
 msgstr ""
 
 msgctxt "TimeCopy"
@@ -3194,6 +3394,10 @@ msgstr ""
 
 msgctxt "LoginScreen"
 msgid "Your key never leaves this device."
+msgstr ""
+
+msgctxt "KpInspectorPane"
+msgid "Your key package"
 msgstr ""
 
 msgctxt "AboutPane"
@@ -3244,9 +3448,18 @@ msgctxt "status, lower-case to match the image-upload flow"
 msgid "backend not ready"
 msgstr ""
 
+msgctxt "KpCard"
+msgid "capabilities"
+msgstr ""
+
 #. read lower-case to match their in-flight siblings.
 msgctxt "ErrorCopy"
 msgid "choosing image…"
+msgstr ""
+
+#. Contact-list export feedback (src/wiring/contacts.rs).
+msgctxt "ErrorCopy"
+msgid "contacts exported"
 msgstr ""
 
 msgctxt "ErrorCopy"
@@ -3274,6 +3487,10 @@ msgid "failed · tap to retry"
 msgstr ""
 
 msgctxt "MessageBubble"
+msgid "failed · tap to retry"
+msgstr ""
+
+msgctxt "VideoTile"
 msgid "failed · tap to retry"
 msgstr ""
 
@@ -3309,8 +3526,24 @@ msgctxt "TimeCopy"
 msgid "just now"
 msgstr ""
 
+msgctxt "KpCard"
+msgid "local + relay"
+msgstr ""
+
 msgctxt "KeysPage"
 msgid "local only"
+msgstr ""
+
+msgctxt "KpCard"
+msgid "local only"
+msgstr ""
+
+msgctxt "KpCard"
+msgid "never"
+msgstr ""
+
+msgctxt "KpCard"
+msgid "no"
 msgstr ""
 
 msgctxt "ProfilePage"
@@ -3329,9 +3562,21 @@ msgctxt "ErrorCopy"
 msgid "npub copied"
 msgstr ""
 
+msgctxt "KpInspectorPane"
+msgid "npub or hex pubkey"
+msgstr ""
+
 #. Clipboard feedback (src/wiring/panes.rs, nav.rs, extra.rs).
 msgctxt "ErrorCopy"
 msgid "nsec copied"
+msgstr ""
+
+msgctxt "KpCard"
+msgid "on the key package itself"
+msgstr ""
+
+msgctxt "KpCard"
+msgid "on the leaf node"
 msgstr ""
 
 msgctxt "ErrorCopy"
@@ -3350,6 +3595,10 @@ msgstr ""
 #. Profile publish status copy (src/wiring/extra.rs).
 msgctxt "ErrorCopy"
 msgid "publishing…"
+msgstr ""
+
+msgctxt "KpCard"
+msgid "relay"
 msgstr ""
 
 msgctxt "ErrorCopy"
@@ -3381,12 +3630,20 @@ msgctxt "ErrorCopy"
 msgid "uploading to Blossom…"
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "video saved"
+msgstr ""
+
 msgctxt "NetworkPane"
 msgid "where peers reach you"
 msgstr ""
 
 msgctxt "NetworkPane"
 msgid "where you publish"
+msgstr ""
+
+msgctxt "KpCard"
+msgid "yes"
 msgstr ""
 
 msgctxt "KeysPage"
@@ -3445,24 +3702,4 @@ msgstr ""
 
 msgctxt "GroupHero"
 msgid "＋ Add a description"
-msgstr ""
-
-msgctxt "AdvancedPane"
-msgid "TRUSTED LINK SITES"
-msgstr ""
-
-msgctxt "AdvancedPane"
-msgid "No trusted sites."
-msgstr ""
-
-msgctxt "AdvancedPane"
-msgid "Forget trusted site {}"
-msgstr ""
-
-msgctxt "AdvancedPane"
-msgid "Links to these exact sites open without confirmation."
-msgstr ""
-
-msgctxt "ConfirmFlows"
-msgid "Don't ask again for this site"
 msgstr ""

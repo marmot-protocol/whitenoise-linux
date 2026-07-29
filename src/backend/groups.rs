@@ -794,6 +794,69 @@ impl Backend {
         }
     }
 
+    /// Dev-mode KP inspector: decode every durably owned key package of the
+    /// active account, correlated with its publish metadata by index
+    /// (`local_key_package_records` preserves the input order 1:1). Local-only
+    /// but still `block_on`s the account worker — worker thread only.
+    pub fn inspect_own_key_packages(&self) -> Vec<KpInspectionReport> {
+        let label = self.active_label();
+        let runtime = self.runtime.clone();
+        let l = label.clone();
+        let owned = self
+            .tokio
+            .block_on(async move { runtime.accounts().durably_owned_key_packages(&l).await })
+            .unwrap_or_default();
+        let records = self
+            .app
+            .local_key_package_records(&label, owned.clone())
+            .unwrap_or_default();
+        let me = self.account().account_id_hex.clone();
+        owned
+            .iter()
+            .enumerate()
+            .map(|(i, kp)| {
+                let mut report = inspect_key_package(kp);
+                report.owner_hex = me.clone();
+                if let Some(rec) = records.get(i) {
+                    report.kp_ref_hex = rec.key_package_ref_hex.clone();
+                    report.event_id = rec.key_package_event_id.clone();
+                    report.published_at = rec.published_at;
+                    report.source_relays = rec.source_relays.clone();
+                    report.local = rec.local;
+                    report.relay = rec.relay;
+                }
+                report
+            })
+            .collect()
+    }
+
+    /// Dev-mode KP inspector: fetch a peer's latest published key package
+    /// (npub or hex, broad discovery relay set) and decode it. Blocking
+    /// network call — worker thread only.
+    pub fn inspect_contact_key_package(&self, account_id: &str) -> Result<KpInspectionReport> {
+        let account_id_hex = nostr::PublicKey::parse(account_id)
+            .map(|pk| pk.to_hex())
+            .map_err(|_| anyhow!("not a valid npub or hex pubkey"))?;
+        let broad = self.discovery_relays();
+        let app = self.app.clone();
+        let query_id = account_id_hex.clone();
+        let fetched = self
+            .tokio
+            .block_on(async move {
+                app.fetch_latest_key_package_for_account_id(&query_id, broad)
+                    .await
+            })
+            .map_err(|e| anyhow!("fetch_latest_key_package_for_account_id: {e}"))?;
+        let mut report = inspect_key_package(&fetched.key_package);
+        report.owner_hex = fetched.account_id_hex;
+        report.kp_ref_hex = fetched.key_package_ref_hex;
+        report.event_id = fetched.key_package_event_id;
+        report.published_at = fetched.created_at;
+        report.source_relays = fetched.source_relays;
+        report.relay = true;
+        Ok(report)
+    }
+
     /// Pump live chat-list updates for the active account onto the Slint
     /// event loop.
     ///
@@ -907,27 +970,10 @@ pub(crate) fn kp_record_to_json(rec: &marmot_app::AccountKeyPackageRecord) -> se
 /// accessors. On a decode/validate failure we surface the error and the raw
 /// bytes rather than dropping everything.
 fn decompose_key_package(kp: &cgka_traits::engine::KeyPackage) -> serde_json::Value {
-    use openmls::prelude::{
-        KeyPackage as MlsKeyPackage, MlsMessageBodyIn, MlsMessageIn, ProtocolVersion,
-    };
-    use openmls_rust_crypto::RustCrypto;
     use serde_json::json;
-    use tls_codec::Deserialize as _;
 
     let bytes = kp.bytes();
-    let decoded: Result<MlsKeyPackage, String> = (|| {
-        let msg = MlsMessageIn::tls_deserialize_exact(bytes)
-            .map_err(|e| format!("tls_deserialize: {e:?}"))?;
-        let kp_in = match msg.extract() {
-            MlsMessageBodyIn::KeyPackage(k) => k,
-            _ => return Err("MLS message did not carry a KeyPackage".to_string()),
-        };
-        kp_in
-            .validate(&RustCrypto::default(), ProtocolVersion::Mls10)
-            .map_err(|e| format!("validate: {e:?}"))
-    })();
-
-    let mls = match decoded {
+    let mls = match decode_transported_key_package(bytes) {
         Ok(m) => m,
         Err(e) => {
             return json!({
@@ -972,6 +1018,105 @@ fn decompose_key_package(kp: &cgka_traits::engine::KeyPackage) -> serde_json::Va
         "summary": summary,
         "raw": serde_json::to_value(&mls).unwrap_or(serde_json::Value::Null),
     })
+}
+
+/// Decode a transported `KeyPackage` blob (TLS wire bytes) into the openmls
+/// structure, mirroring cgka-engine's `key_package_metadata` path
+/// (`MlsMessageIn` → `KeyPackageIn` → `validate`).
+fn decode_transported_key_package(bytes: &[u8]) -> Result<openmls::prelude::KeyPackage, String> {
+    use openmls::prelude::{MlsMessageBodyIn, MlsMessageIn, ProtocolVersion};
+    use openmls_rust_crypto::RustCrypto;
+    use tls_codec::Deserialize as _;
+
+    let msg = MlsMessageIn::tls_deserialize_exact(bytes)
+        .map_err(|e| format!("tls_deserialize: {e:?}"))?;
+    let kp_in = match msg.extract() {
+        MlsMessageBodyIn::KeyPackage(k) => k,
+        _ => return Err("MLS message did not carry a KeyPackage".to_string()),
+    };
+    kp_in
+        .validate(&RustCrypto::default(), ProtocolVersion::Mls10)
+        .map_err(|e| format!("validate: {e:?}"))
+}
+
+/// Everything the dev-mode KP inspector shows for one key package: publish
+/// metadata plus what the MLS blob advertises. The capability/extension lists
+/// are pre-joined display strings (the UI renders them verbatim); `raw_json`
+/// carries the complete decomposed structure for the raw viewer. On a decode
+/// failure only `decode_error`, `raw_json` and the caller-filled metadata
+/// carry data.
+#[derive(Clone, Default)]
+pub struct KpInspectionReport {
+    pub owner_hex: String,
+    pub kp_ref_hex: String,
+    pub event_id: String,
+    pub published_at: u64,
+    pub source_relays: Vec<String>,
+    pub local: bool,
+    pub relay: bool,
+    pub decode_error: String,
+    pub ciphersuite: String,
+    pub last_resort: bool,
+    pub not_before: u64,
+    pub not_after: u64,
+    pub credential_type: String,
+    pub signature_key_hex: String,
+    pub cap_versions: String,
+    pub cap_ciphersuites: String,
+    pub cap_extensions: String,
+    pub cap_proposals: String,
+    pub cap_credentials: String,
+    pub kp_extensions: String,
+    pub leaf_extensions: String,
+    pub raw_json: String,
+}
+
+/// Decode one transported key package into the inspector's field set. Publish
+/// metadata (owner/ref/event/relays) is left for the caller to fill from
+/// whichever record accompanied the blob.
+fn inspect_key_package(kp: &cgka_traits::engine::KeyPackage) -> KpInspectionReport {
+    let mut report = KpInspectionReport {
+        raw_json: serde_json::to_string_pretty(&decompose_key_package(kp))
+            .unwrap_or_else(|e| format!("serialize error: {e}")),
+        ..Default::default()
+    };
+    let mls = match decode_transported_key_package(kp.bytes()) {
+        Ok(m) => m,
+        Err(e) => {
+            report.decode_error = e;
+            return report;
+        }
+    };
+
+    let join = |it: &mut dyn Iterator<Item = String>| -> String {
+        it.collect::<Vec<_>>().join(", ")
+    };
+    let leaf = mls.leaf_node();
+    let caps = leaf.capabilities();
+    report.ciphersuite = format!("{:?}", mls.ciphersuite());
+    report.last_resort = mls.last_resort();
+    report.not_before = mls.life_time().not_before();
+    report.not_after = mls.life_time().not_after();
+    report.credential_type = format!("{:?}", leaf.credential().credential_type());
+    report.signature_key_hex = hex::encode(leaf.signature_key().as_slice());
+    report.cap_versions = join(&mut caps.versions().iter().map(|v| format!("{v:?}")));
+    report.cap_ciphersuites = join(&mut caps.ciphersuites().iter().map(|c| format!("{c:?}")));
+    report.cap_extensions = join(&mut caps.extensions().iter().map(|e| format!("{e:?}")));
+    report.cap_proposals = join(&mut caps.proposals().iter().map(|p| format!("{p:?}")));
+    report.cap_credentials = join(&mut caps.credentials().iter().map(|c| format!("{c:?}")));
+    report.kp_extensions = join(
+        &mut mls
+            .extensions()
+            .iter()
+            .map(|e| format!("{:?}", e.extension_type())),
+    );
+    report.leaf_extensions = join(
+        &mut leaf
+            .extensions()
+            .iter()
+            .map(|e| format!("{:?}", e.extension_type())),
+    );
+    report
 }
 
 /// Best-effort dump of the `key-packages/` directory next to the account home.

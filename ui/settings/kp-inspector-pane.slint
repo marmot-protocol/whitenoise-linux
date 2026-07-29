@@ -1,0 +1,113 @@
+import { AppState } from "../shell/app-state.slint";
+import { Palette, Theme } from "../tokens.slint";
+import { KeyIcon } from "../icons/key-icon.slint";
+import { DetailPage } from "../layout/detail-page.slint";
+import { PageHeader } from "../layout/page-header.slint";
+import { Section } from "../layout/section.slint";
+import { Button } from "../primitives/button.slint";
+import { LineInput } from "../primitives/line-input.slint";
+import { KpCard } from "kp-card.slint";
+
+// Developer-mode key-package inspector (settings tab 9, gated like the Debug
+// tab): every durably owned key package of the active account, fully decoded
+// — plus a pubkey box to fetch and decode anyone else's latest published KP.
+export component KpInspectorPane inherits DetailPage {
+    property <string> peer-draft;
+
+    PageHeader {
+        title: @tr("KP inspector");
+        caption: @tr("Decoded MLS key packages: yours, and anyone's by pubkey");
+        KeyIcon {
+            stroke: Palette.mint;
+        }
+    }
+
+    Section {
+        label: @tr("YOUR KEY PACKAGES");
+
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: start;
+            Button {
+                label: AppState.kp-inspector-busy ? @tr("Loading…") : @tr("Refresh");
+                clicked => {
+                    if (!AppState.kp-inspector-busy) {
+                        AppState.kp-inspector-refresh();
+                    }
+                }
+            }
+
+            if AppState.kp-inspector-status != "": Text {
+                text: AppState.kp-inspector-status;
+                color: Palette.text-lo;
+                font-size: Theme.fs(11px, 14px);
+                vertical-alignment: center;
+            }
+        }
+
+        for kp in AppState.kp-inspector-own: KpCard {
+            kp: kp;
+            raw-title: @tr("Your key package");
+        }
+
+        if AppState.kp-inspector-own.length == 0 && !AppState.kp-inspector-busy: Text {
+            text: @tr("(nothing loaded yet — click Refresh)");
+            color: Palette.text-lo;
+            font-size: Theme.fs(11px, 14px);
+        }
+    }
+
+    Section {
+        label: @tr("INSPECT SOMEONE ELSE'S");
+
+        HorizontalLayout {
+            spacing: 8px;
+
+            input-frame := Rectangle {
+                horizontal-stretch: 1;
+                height: 36px;
+                border-width: 1px;
+                border-color: input.has-focus ? Palette.mint : Palette.border-2;
+                border-radius: (6px) * Theme.r-scale;
+                background: Palette.panel-2;
+                input := LineInput {
+                    x: 10px;
+                    y: 0;
+                    width: parent.width - 20px;
+                    height: parent.height;
+                    placeholder: @tr("npub or hex pubkey");
+                    text <=> root.peer-draft;
+                    submit => {
+                        if (!AppState.kp-peer-busy && root.peer-draft != "") {
+                            AppState.kp-inspect-peer(root.peer-draft);
+                        }
+                    }
+                }
+            }
+
+            VerticalLayout {
+                alignment: center;
+                Button {
+                    label: AppState.kp-peer-busy ? @tr("Fetching…") : @tr("Inspect");
+                    clicked => {
+                        if (!AppState.kp-peer-busy && root.peer-draft != "") {
+                            AppState.kp-inspect-peer(root.peer-draft);
+                        }
+                    }
+                }
+            }
+        }
+
+        if AppState.kp-peer-status != "": Text {
+            text: AppState.kp-peer-status;
+            color: Palette.danger;
+            font-size: Theme.fs(11px, 14px);
+            wrap: word-wrap;
+        }
+
+        if AppState.kp-peer-loaded: KpCard {
+            kp: AppState.kp-peer-result;
+            raw-title: AppState.kp-peer-result.owner;
+        }
+    }
+}

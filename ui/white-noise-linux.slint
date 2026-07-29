@@ -27,7 +27,7 @@ import {
     AccountEntry,
     TextSelection,
 } from "tokens.slint";
-import { KeyPackageInfo } from "keys/types.slint";
+import { KeyPackageInfo, KpInspection } from "keys/types.slint";
 import { PaletteAction } from "modals/command-palette.slint";
 import { SplashScreen } from "shell/splash.slint";
 import {
@@ -318,6 +318,13 @@ export component WhiteNoiseLinux inherits Window {
     in-out property <string> debug-view-subtitle <=> AppState.debug-view-subtitle;
     in-out property <string> debug-view-json <=> AppState.debug-view-json;
     in-out property <bool> debug-view-busy <=> AppState.debug-view-busy;
+    in-out property <[KpInspection]> kp-inspector-own <=> AppState.kp-inspector-own;
+    in-out property <bool> kp-inspector-busy <=> AppState.kp-inspector-busy;
+    in-out property <string> kp-inspector-status <=> AppState.kp-inspector-status;
+    in-out property <KpInspection> kp-peer-result <=> AppState.kp-peer-result;
+    in-out property <bool> kp-peer-loaded <=> AppState.kp-peer-loaded;
+    in-out property <bool> kp-peer-busy <=> AppState.kp-peer-busy;
+    in-out property <string> kp-peer-status <=> AppState.kp-peer-status;
     in-out property <bool> telemetry-enabled <=> AppState.telemetry-enabled;
     in-out property <bool> audit-enabled <=> AppState.audit-enabled;
     in-out property <string> audit-status <=> AppState.audit-status;

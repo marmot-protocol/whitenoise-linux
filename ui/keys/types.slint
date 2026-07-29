@@ -11,6 +11,34 @@ export struct LinkedDevice {
     current: bool,
 }
 
+// One fully decoded key package for the dev-mode KP inspector: publish
+// metadata plus everything the MLS blob advertises. The capability and
+// extension lists arrive pre-joined from Rust ("MLS_10, …") and render
+// verbatim; `raw-json` feeds the shared debug JSON viewer.
+export struct KpInspection {
+    owner: string,           // owner pubkey (hex)
+    kp-ref: string,          // MLS key_package_ref (hex)
+    event-id: string,        // Nostr event id (empty if never published)
+    published-at: string,    // pretty timestamp or empty
+    relays: string,          // source relays, comma-joined (empty if local-only)
+    local: bool,
+    on-relay: bool,
+    decode-error: string,    // non-empty when the MLS blob failed to decode
+    ciphersuite: string,
+    last-resort: bool,
+    lifetime: string,        // "not-before → not-after", pretty-formatted
+    credential-type: string,
+    signature-key: string,   // hex
+    cap-versions: string,
+    cap-ciphersuites: string,
+    cap-extensions: string,
+    cap-proposals: string,
+    cap-credentials: string,
+    kp-extensions: string,   // the KeyPackage's own extensions (types)
+    leaf-extensions: string, // the leaf node's extensions (types)
+    raw-json: string,
+}
+
 // A single key-package record surfaced on the Keys page. Combines local
 // + relay state so the UI can show whether the package is published.
 export struct KeyPackageInfo {

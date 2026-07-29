@@ -87,6 +87,11 @@ msgctxt "DebugPane"
 msgid "(no snapshot yet — click Refresh)"
 msgstr "(nessuna istantanea — clicca Aggiorna)"
 
+#, fuzzy
+msgctxt "KpInspectorPane"
+msgid "(nothing loaded yet — click Refresh)"
+msgstr "(nessuna istantanea — clicca Aggiorna)"
+
 msgctxt "DebugJsonModal"
 msgid "(nothing to show)"
 msgstr ""
@@ -674,6 +679,14 @@ msgctxt "BackupCreateModal"
 msgid "Choose location…"
 msgstr "Scegli posizione…"
 
+msgctxt "KpCard"
+msgid "Ciphersuite"
+msgstr ""
+
+msgctxt "KpCard"
+msgid "Ciphersuites"
+msgstr ""
+
 msgctxt "StoragePane"
 msgid "Clear cache"
 msgstr "Svuota cache"
@@ -921,6 +934,11 @@ msgctxt "ErrorCopy"
 msgid "Couldn't download that image. Try another."
 msgstr "Impossibile scaricare l'immagine. Provane un'altra."
 
+#, fuzzy
+msgctxt "ErrorCopy"
+msgid "Couldn't export contacts."
+msgstr "Impossibile rimuovere questo contatto. Riprova."
+
 #. Tier 2 — operation-specific fallbacks.
 msgctxt "ErrorCopy"
 msgid "Couldn't finish syncing. We'll keep retrying — check your relay settings if this keeps happening."
@@ -973,6 +991,11 @@ msgstr "Impossibile salvare %1. Controlla che la destinazione abbia spazio e i p
 
 msgctxt "ErrorCopy"
 msgid "Couldn't save image."
+msgstr "Impossibile salvare l'immagine."
+
+#, fuzzy
+msgctxt "ErrorCopy"
+msgid "Couldn't save video."
 msgstr "Impossibile salvare l'immagine."
 
 msgctxt "ErrorCopy"
@@ -1040,6 +1063,14 @@ msgctxt "StartNewChatModal"
 msgid "Creating…"
 msgstr "Salvataggio…"
 
+msgctxt "KpCard"
+msgid "Credential"
+msgstr ""
+
+msgctxt "KpCard"
+msgid "Credentials"
+msgstr ""
+
 msgctxt "KeysPage"
 msgid "DANGER ZONE"
 msgstr "ZONA PERICOLOSA"
@@ -1076,6 +1107,14 @@ msgstr "Dic"
 msgctxt "AboutPane"
 msgid "Decentralized network"
 msgstr "Rete decentralizzata"
+
+msgctxt "KpCard"
+msgid "Decode error"
+msgstr ""
+
+msgctxt "KpInspectorPane"
+msgid "Decoded MLS key packages: yours, and anyone's by pubkey"
+msgstr ""
 
 #, fuzzy
 msgctxt "StoragePane"
@@ -1147,6 +1186,10 @@ msgstr "Ignora"
 msgctxt "ProfilePage"
 msgid "Display name"
 msgstr "Nome visualizzato"
+
+msgctxt "ConfirmFlows"
+msgid "Don't ask again for this site"
+msgstr "Non chiedere più per questo sito"
 
 #. control lives inline next to the key) and the footer just closes.
 msgctxt "ExportKeyModal"
@@ -1253,7 +1296,16 @@ msgctxt "EncryptionInfoModal"
 msgid "Even if a key leaks later on, the messages you already sent can't be unlocked with it."
 msgstr ""
 
+msgctxt "KpCard"
+msgid "Event id"
+msgstr ""
+
 msgctxt "KeysPage"
+msgid "Export"
+msgstr "Esporta"
+
+#, fuzzy
+msgctxt "SidePanel"
 msgid "Export"
 msgstr "Esporta"
 
@@ -1273,6 +1325,11 @@ msgctxt "ChatContextMenu"
 msgid "Export transcript…"
 msgstr "Esporta cronologia…"
 
+#, fuzzy
+msgctxt "KpCard"
+msgid "Extensions"
+msgstr "Menzioni"
+
 msgctxt "status, %1 = error detail"
 msgid "Failed to encode key: %1"
 msgstr "Codifica della chiave non riuscita: %1"
@@ -1284,6 +1341,15 @@ msgstr "Feb"
 msgctxt "MessagesArea"
 msgid "Fetching the latest conversation history."
 msgstr "Recupero della cronologia più recente della conversazione."
+
+#, fuzzy
+msgctxt "KpInspectorPane"
+msgid "Fetching…"
+msgstr "Ricerca…"
+
+msgctxt "AdvancedPane"
+msgid "Forget trusted site {}"
+msgstr "Rimuovi {} dai siti affidabili"
 
 msgctxt "MessageContextMenu"
 msgid "Forward"
@@ -1371,6 +1437,10 @@ msgctxt "GroupHero"
 msgid "Group name"
 msgstr "ID gruppo"
 
+msgctxt "GeneralPane"
+msgid "HELP"
+msgstr ""
+
 msgctxt "ChatHeader"
 msgid "Hide members"
 msgstr "Nascondi membri"
@@ -1378,6 +1448,10 @@ msgstr "Nascondi membri"
 msgctxt "PasswordField"
 msgid "Hide password"
 msgstr "Nascondi password"
+
+msgctxt "ModalField"
+msgid "Hide value"
+msgstr ""
 
 msgctxt "ProfilePage"
 msgid "How your name appears in chats"
@@ -1406,6 +1480,10 @@ msgstr "RELAY DI RICEZIONE"
 msgctxt "NotificationsPane"
 msgid "INCOMING MESSAGES"
 msgstr "MESSAGGI IN ARRIVO"
+
+msgctxt "KpInspectorPane"
+msgid "INSPECT SOMEONE ELSE'S"
+msgstr ""
 
 msgctxt "EncryptionInfoModal"
 msgid "If someone's device gets compromised, the group quietly swaps in fresh keys so what you send next is private again."
@@ -1467,6 +1545,10 @@ msgstr "Salvataggio…"
 msgctxt "StoragePane"
 msgid "Import…"
 msgstr "Importa…"
+
+msgctxt "KpInspectorPane"
+msgid "Inspect"
+msgstr ""
 
 msgctxt "GeneralPane"
 msgid "Interface language"
@@ -1557,6 +1639,18 @@ msgctxt "StoragePane"
 msgid "KEYS & BACKUPS"
 msgstr "CHIAVI E BACKUP"
 
+msgctxt "KpCard"
+msgid "KP extensions"
+msgstr ""
+
+msgctxt "KpInspectorPane"
+msgid "KP inspector"
+msgstr ""
+
+msgctxt "SettingsSidebar"
+msgid "KP inspector"
+msgstr ""
+
 msgctxt "AppearancePane"
 msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
 msgstr "Mantieni la conversazione aperta su una comoda larghezza di lettura invece di riempire tutta la larghezza."
@@ -1566,9 +1660,27 @@ msgid "Key package"
 msgstr "Pacchetto chiavi"
 
 #, fuzzy
+msgctxt "KpCard"
+msgid "Key package"
+msgstr "Pacchetto chiavi"
+
+#, fuzzy
+msgctxt "KpCard"
+msgid "Key package ref"
+msgstr "Pacchetto chiavi"
+
+#, fuzzy
 msgctxt "DebugPane"
 msgid "Key packages"
 msgstr "Pacchetto chiavi"
+
+msgctxt "GeneralPane"
+msgid "Keyboard shortcuts"
+msgstr ""
+
+msgctxt "KeyboardShortcutsModal"
+msgid "Keyboard shortcuts"
+msgstr ""
 
 msgctxt "LeftRail"
 msgid "Keys"
@@ -1610,6 +1722,11 @@ msgctxt "ArchivedDetail"
 msgid "Last message"
 msgstr "Ultimo messaggio"
 
+#, fuzzy
+msgctxt "KpCard"
+msgid "Last resort"
+msgstr "Ultimo messaggio"
+
 msgctxt "GeneralPane"
 msgid "Launch at login"
 msgstr "Avvia all'accesso"
@@ -1617,6 +1734,10 @@ msgstr "Avvia all'accesso"
 msgctxt "AppearancePane"
 msgid "Lavender"
 msgstr "Lavanda"
+
+msgctxt "KpCard"
+msgid "Leaf extensions"
+msgstr ""
 
 #, fuzzy
 msgctxt "ChatContextMenu"
@@ -1645,6 +1766,10 @@ msgctxt "GroupLeaveRow"
 msgid "Leaving…"
 msgstr "Uscita in corso…"
 
+msgctxt "KpCard"
+msgid "Lifetime"
+msgstr ""
+
 msgctxt "ThemePicker"
 msgid "Light"
 msgstr "Chiaro"
@@ -1656,6 +1781,10 @@ msgstr "Lightning"
 msgctxt "ProfilePage"
 msgid "Lightning address (LUD-16)"
 msgstr "Indirizzo Lightning (LUD-16)"
+
+msgctxt "AdvancedPane"
+msgid "Links to these exact sites open without confirmation."
+msgstr "I link esattamente a questi siti si aprono senza conferma."
 
 msgctxt "MessagesArea"
 msgid "Load earlier messages"
@@ -1680,6 +1809,11 @@ msgstr "Salvataggio…"
 
 #, fuzzy
 msgctxt "ImageViewerModal"
+msgid "Loading…"
+msgstr "Salvataggio…"
+
+#, fuzzy
+msgctxt "KpInspectorPane"
 msgid "Loading…"
 msgstr "Salvataggio…"
 
@@ -1751,6 +1885,14 @@ msgstr ""
 msgctxt "month"
 msgid "Mar"
 msgstr "Mar"
+
+msgctxt "ChatContextMenu"
+msgid "Mark as read"
+msgstr ""
+
+msgctxt "ChatContextMenu"
+msgid "Mark as unread"
+msgstr ""
 
 msgctxt "month"
 msgid "May"
@@ -1914,6 +2056,11 @@ msgid "No contacts match \"{}\""
 msgstr "Rimuovi contatto"
 
 #, fuzzy
+msgctxt "ErrorCopy"
+msgid "No contacts to export."
+msgstr "Rimuovi contatto"
+
+#, fuzzy
 msgctxt "ContactsPage"
 msgid "No contacts yet"
 msgstr "Rimuovi contatto"
@@ -1938,13 +2085,13 @@ msgctxt "ErrorCopy"
 msgid "No image selected."
 msgstr "Nessuna immagine selezionata."
 
-msgctxt "NetworkPane"
-msgid "No inbox relays yet. Add one above."
-msgstr "Ancora nessun relay di ricezione. Aggiungine uno sopra."
-
 msgctxt "ErrorCopy"
 msgid "No images found for that search."
 msgstr "Nessuna immagine trovata per questa ricerca."
+
+msgctxt "NetworkPane"
+msgid "No inbox relays yet. Add one above."
+msgstr "Ancora nessun relay di ricezione. Aggiungine uno sopra."
 
 msgctxt "ErrorCopy"
 msgid "No key package on relays yet"
@@ -2012,6 +2159,15 @@ msgstr "Rimuovi contatto"
 msgctxt "ErrorCopy"
 msgid "No secret key for this account is stored on this device."
 msgstr "Nessuna chiave segreta per questo account è salvata su questo dispositivo."
+
+msgctxt "AdvancedPane"
+msgid "No trusted sites."
+msgstr "Nessun sito affidabile."
+
+#, fuzzy
+msgctxt "ErrorCopy"
+msgid "No video selected."
+msgstr "Nessuna immagine selezionata."
 
 #. Network-pane status copy (also Rust-set).
 msgctxt "ErrorCopy"
@@ -2093,6 +2249,11 @@ msgctxt "StoragePane"
 msgid "Open folder"
 msgstr "Apri cartella"
 
+#, fuzzy
+msgctxt "RunCell"
+msgid "Open link {}"
+msgstr "Aprire questo link?"
+
 msgctxt "ConfirmFlows"
 msgid "Open this link?"
 msgstr "Aprire questo link?"
@@ -2104,6 +2265,10 @@ msgstr "Messaggio originale"
 msgctxt "AppearancePane"
 msgid "Own messages on the right"
 msgstr "I tuoi messaggi a destra"
+
+msgctxt "KpCard"
+msgid "Owner"
+msgstr ""
 
 #, fuzzy
 msgctxt "BackupCreateModal"
@@ -2217,6 +2382,10 @@ msgctxt "ProfileTile"
 msgid "Profile"
 msgstr "Il tuo profilo"
 
+msgctxt "KpCard"
+msgid "Proposals"
+msgstr ""
+
 msgctxt "KeysPage"
 msgid "Public key (npub)"
 msgstr "Chiave pubblica (npub)"
@@ -2245,6 +2414,11 @@ msgstr "Nessun pacchetto chiave"
 
 #, fuzzy
 msgctxt "GetStartedScreen"
+msgid "Published"
+msgstr "Pubblica"
+
+#, fuzzy
+msgctxt "KpCard"
 msgid "Published"
 msgstr "Pubblica"
 
@@ -2305,6 +2479,10 @@ msgctxt "KeysPage"
 msgid "REMOTE"
 msgstr "REMOTO"
 
+msgctxt "KpCard"
+msgid "Raw JSON"
+msgstr ""
+
 msgctxt "DebugPane"
 msgid "Raw events"
 msgstr ""
@@ -2348,6 +2526,11 @@ msgid "Refresh"
 msgstr "Aggiorna"
 
 msgctxt "KeysPage"
+msgid "Refresh"
+msgstr "Aggiorna"
+
+#, fuzzy
+msgctxt "KpInspectorPane"
 msgid "Refresh"
 msgstr "Aggiorna"
 
@@ -2884,6 +3067,10 @@ msgctxt "PasswordField"
 msgid "Show password"
 msgstr "Mostra password"
 
+msgctxt "ModalField"
+msgid "Show value"
+msgstr ""
+
 msgctxt "GeneralPane"
 msgid "Shown on the message toolbar and menu. Tap one to remove it."
 msgstr "Mostrate sulla barra e nel menu del messaggio. Toccane una per rimuoverla."
@@ -2904,6 +3091,11 @@ msgstr "Accedi alla tua identità Nostr"
 msgctxt "AccountSwitcherDetail"
 msgid "Sign this account out here and erase its secret key from your vault. Your other accounts stay signed in."
 msgstr ""
+
+#, fuzzy
+msgctxt "KpCard"
+msgid "Signature key"
+msgstr "Salva chiave"
 
 msgctxt "LoginScreen"
 msgid "Signing in…"
@@ -2990,6 +3182,10 @@ msgstr ""
 msgctxt "AppearancePane"
 msgid "THEME"
 msgstr "TEMA"
+
+msgctxt "AdvancedPane"
+msgid "TRUSTED LINK SITES"
+msgstr "SITI AFFIDABILI"
 
 msgctxt "ThemePicker"
 msgid "Terminal"
@@ -3228,7 +3424,21 @@ msgctxt "RevealNsecModal"
 msgid "Verifying…"
 msgstr "decifrazione…"
 
+#, fuzzy
+msgctxt "KpCard"
+msgid "Versions"
+msgstr "Menzioni"
+
+#, fuzzy
+msgctxt "ErrorCopy"
+msgid "Video isn't ready yet."
+msgstr "L'immagine non è ancora pronta."
+
 msgctxt "ContactDetail"
+msgid "View"
+msgstr ""
+
+msgctxt "keyboard shortcuts button"
 msgid "View"
 msgstr ""
 
@@ -3254,6 +3464,10 @@ msgstr "Benvenuto in White Noise"
 
 msgctxt "EncryptionInfoModal"
 msgid "Whatever you send in this chat is encrypted on your device before it goes out. The relays that pass it along can't read it, and we can't either."
+msgstr ""
+
+msgctxt "KpCard"
+msgid "Where"
 msgstr ""
 
 msgctxt "NetworkPane"
@@ -3293,6 +3507,11 @@ msgstr "TU"
 msgctxt "LoginScreen"
 msgid "YOUR DISPLAY NAME"
 msgstr "IL TUO NOME VISUALIZZATO"
+
+#, fuzzy
+msgctxt "KpInspectorPane"
+msgid "YOUR KEY PACKAGES"
+msgstr "PACCHETTI CHIAVE"
 
 msgctxt "TimeCopy"
 msgid "Yesterday"
@@ -3337,6 +3556,11 @@ msgstr "Per ora la tua identità risiede solo su questo dispositivo. Quando il c
 msgctxt "LoginScreen"
 msgid "Your key never leaves this device."
 msgstr "La tua chiave non lascia mai questo dispositivo."
+
+#, fuzzy
+msgctxt "KpInspectorPane"
+msgid "Your key package"
+msgstr "Nessun pacchetto chiave"
 
 msgctxt "AboutPane"
 msgid "Your keys stay on this device — we never see them."
@@ -3387,10 +3611,20 @@ msgctxt "status, lower-case to match the image-upload flow"
 msgid "backend not ready"
 msgstr "backend non pronto"
 
+msgctxt "KpCard"
+msgid "capabilities"
+msgstr ""
+
 #. read lower-case to match their in-flight siblings.
 msgctxt "ErrorCopy"
 msgid "choosing image…"
 msgstr "selezione immagine…"
+
+#. Contact-list export feedback (src/wiring/contacts.rs).
+#, fuzzy
+msgctxt "ErrorCopy"
+msgid "contacts exported"
+msgstr "Rimuovi contatto"
 
 msgctxt "ErrorCopy"
 msgid "debug dump copied"
@@ -3420,6 +3654,11 @@ msgid "failed · tap to retry"
 msgstr "fallito · tocca per riprovare"
 
 msgctxt "MessageBubble"
+msgid "failed · tap to retry"
+msgstr "fallito · tocca per riprovare"
+
+#, fuzzy
+msgctxt "VideoTile"
 msgid "failed · tap to retry"
 msgstr "fallito · tocca per riprovare"
 
@@ -3455,9 +3694,27 @@ msgctxt "TimeCopy"
 msgid "just now"
 msgstr "proprio ora"
 
+#, fuzzy
+msgctxt "KpCard"
+msgid "local + relay"
+msgstr "solo locale"
+
 msgctxt "KeysPage"
 msgid "local only"
 msgstr "solo locale"
+
+#, fuzzy
+msgctxt "KpCard"
+msgid "local only"
+msgstr "solo locale"
+
+msgctxt "KpCard"
+msgid "never"
+msgstr ""
+
+msgctxt "KpCard"
+msgid "no"
+msgstr ""
 
 msgctxt "ProfilePage"
 msgid "no handle yet"
@@ -3475,10 +3732,23 @@ msgctxt "ErrorCopy"
 msgid "npub copied"
 msgstr "npub copiato"
 
+msgctxt "KpInspectorPane"
+msgid "npub or hex pubkey"
+msgstr ""
+
 #. Clipboard feedback (src/wiring/panes.rs, nav.rs, extra.rs).
 msgctxt "ErrorCopy"
 msgid "nsec copied"
 msgstr "nsec copiato"
+
+#, fuzzy
+msgctxt "KpCard"
+msgid "on the key package itself"
+msgstr "Ruotare il pacchetto chiavi?"
+
+msgctxt "KpCard"
+msgid "on the leaf node"
+msgstr ""
 
 msgctxt "ErrorCopy"
 msgid "picture uploaded — Save to publish"
@@ -3497,6 +3767,11 @@ msgstr "pubblicato · il tuo key package è attivo"
 msgctxt "ErrorCopy"
 msgid "publishing…"
 msgstr "pubblicazione…"
+
+#, fuzzy
+msgctxt "KpCard"
+msgid "relay"
+msgstr "{n} relay"
 
 msgctxt "ErrorCopy"
 msgid "removing image…"
@@ -3529,6 +3804,11 @@ msgctxt "ErrorCopy"
 msgid "uploading to Blossom…"
 msgstr "caricamento su Blossom…"
 
+#, fuzzy
+msgctxt "ErrorCopy"
+msgid "video saved"
+msgstr "immagine salvata"
+
 msgctxt "NetworkPane"
 msgid "where peers reach you"
 msgstr "dove i contatti ti raggiungono"
@@ -3536,6 +3816,10 @@ msgstr "dove i contatti ti raggiungono"
 msgctxt "NetworkPane"
 msgid "where you publish"
 msgstr "dove pubblichi"
+
+msgctxt "KpCard"
+msgid "yes"
+msgstr ""
 
 msgctxt "KeysPage"
 msgid "{n} relay"
@@ -3595,23 +3879,3 @@ msgstr "✓ VERIFICATO"
 msgctxt "GroupHero"
 msgid "＋ Add a description"
 msgstr "＋ Aggiungi una descrizione"
-
-msgctxt "AdvancedPane"
-msgid "TRUSTED LINK SITES"
-msgstr "SITI AFFIDABILI"
-
-msgctxt "AdvancedPane"
-msgid "No trusted sites."
-msgstr "Nessun sito affidabile."
-
-msgctxt "AdvancedPane"
-msgid "Forget trusted site {}"
-msgstr "Rimuovi {} dai siti affidabili"
-
-msgctxt "AdvancedPane"
-msgid "Links to these exact sites open without confirmation."
-msgstr "I link esattamente a questi siti si aprono senza conferma."
-
-msgctxt "ConfirmFlows"
-msgid "Don't ask again for this site"
-msgstr "Non chiedere più per questo sito"

@@ -163,6 +163,19 @@ export component SettingsSidebar inherits Rectangle {
             }
         }
 
+        if AppState.debug-enabled: SettingsNavItem {
+            label: @tr("KP inspector");
+            selected: root.active-tab == 9;
+            compact: root.compact;
+            KeyIcon {
+                stroke: root.active-tab == 9 ? Palette.mint : Palette.text-mid;
+            }
+
+            clicked => {
+                root.active-tab = 9;
+            }
+        }
+
         Rectangle {
             vertical-stretch: 1;
         }

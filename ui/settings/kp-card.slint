@@ -1,0 +1,158 @@
+import { AppState } from "../shell/app-state.slint";
+import { Palette } from "../tokens.slint";
+import { KpInspection } from "../keys/types.slint";
+import { GroupCard } from "../layout/group-card.slint";
+import { KVRow } from "../layout/kv-row.slint";
+import { Button } from "../primitives/button.slint";
+
+// One decoded key package in the dev-mode KP inspector: publish metadata up
+// top, then every advertised MLS capability, with a Raw-JSON escape hatch into
+// the shared debug viewer. Rows with an empty value collapse away, so a
+// decode failure shows only the error + metadata.
+export component KpCard inherits GroupCard {
+    in property <KpInspection> kp;
+    // The debug viewer's subtitle — callers name the KP ("Your key package",
+    // a contact name, an npub…).
+    in property <string> raw-title;
+
+    KVRow {
+        label: @tr("Owner");
+        value: root.kp.owner;
+        wrap-value: true;
+        row-height: 44px;
+        Button {
+            label: @tr("Raw JSON");
+            clicked => {
+                AppState.debug-view-title = @tr("Key package");
+                AppState.debug-view-subtitle = root.raw-title;
+                AppState.debug-view-json = root.kp.raw-json;
+                AppState.debug-view-busy = false;
+                AppState.debug-view-open = true;
+            }
+        }
+    }
+
+    if root.kp.decode-error != "": KVRow {
+        label: @tr("Decode error");
+        value: root.kp.decode-error;
+        wrap-value: true;
+        row-height: 44px;
+    }
+
+    KVRow {
+        label: @tr("Key package ref");
+        value: root.kp.kp-ref;
+        wrap-value: true;
+        row-height: 44px;
+    }
+
+    if root.kp.event-id != "": KVRow {
+        label: @tr("Event id");
+        value: root.kp.event-id;
+        wrap-value: true;
+        row-height: 44px;
+    }
+
+    KVRow {
+        label: @tr("Published");
+        sublabel: root.kp.relays;
+        value: root.kp.published-at != "" ? root.kp.published-at : @tr("never");
+        row-height: 44px;
+    }
+
+    KVRow {
+        label: @tr("Where");
+        value: root.kp.local && root.kp.on-relay ? @tr("local + relay") : root.kp.local ? @tr("local only") : @tr("relay");
+        row-height: 44px;
+    }
+
+    if root.kp.decode-error == "": KVRow {
+        label: @tr("Ciphersuite");
+        value: root.kp.ciphersuite;
+        wrap-value: true;
+        row-height: 44px;
+    }
+
+    if root.kp.decode-error == "": KVRow {
+        label: @tr("Last resort");
+        value: root.kp.last-resort ? @tr("yes") : @tr("no");
+        row-height: 44px;
+    }
+
+    if root.kp.decode-error == "": KVRow {
+        label: @tr("Lifetime");
+        value: root.kp.lifetime;
+        wrap-value: true;
+        row-height: 44px;
+    }
+
+    if root.kp.decode-error == "": KVRow {
+        label: @tr("Credential");
+        value: root.kp.credential-type;
+        row-height: 44px;
+    }
+
+    if root.kp.decode-error == "": KVRow {
+        label: @tr("Signature key");
+        value: root.kp.signature-key;
+        wrap-value: true;
+        row-height: 44px;
+    }
+
+    if root.kp.decode-error == "": KVRow {
+        label: @tr("Versions");
+        sublabel: @tr("capabilities");
+        value: root.kp.cap-versions;
+        wrap-value: true;
+        row-height: 44px;
+    }
+
+    if root.kp.decode-error == "": KVRow {
+        label: @tr("Ciphersuites");
+        sublabel: @tr("capabilities");
+        value: root.kp.cap-ciphersuites;
+        wrap-value: true;
+        row-height: 44px;
+    }
+
+    if root.kp.decode-error == "": KVRow {
+        label: @tr("Extensions");
+        sublabel: @tr("capabilities");
+        value: root.kp.cap-extensions;
+        wrap-value: true;
+        row-height: 44px;
+    }
+
+    if root.kp.decode-error == "": KVRow {
+        label: @tr("Proposals");
+        sublabel: @tr("capabilities");
+        value: root.kp.cap-proposals;
+        wrap-value: true;
+        row-height: 44px;
+    }
+
+    if root.kp.decode-error == "": KVRow {
+        label: @tr("Credentials");
+        sublabel: @tr("capabilities");
+        value: root.kp.cap-credentials;
+        wrap-value: true;
+        row-height: 44px;
+    }
+
+    if root.kp.decode-error == "": KVRow {
+        label: @tr("KP extensions");
+        sublabel: @tr("on the key package itself");
+        value: root.kp.kp-extensions;
+        wrap-value: true;
+        row-height: 44px;
+    }
+
+    if root.kp.decode-error == "": KVRow {
+        label: @tr("Leaf extensions");
+        sublabel: @tr("on the leaf node");
+        value: root.kp.leaf-extensions;
+        wrap-value: true;
+        show-divider: false;
+        row-height: 44px;
+    }
+}

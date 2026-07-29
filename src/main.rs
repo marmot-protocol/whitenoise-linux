@@ -78,6 +78,7 @@ pub(crate) use wiring::*;
 
 pub(crate) use backend::Backend;
 pub(crate) use backend::CHAT_MESSAGE_KIND;
+pub(crate) use backend::KpInspectionReport;
 pub(crate) use backend::SAVED_MESSAGES_NAME;
 pub(crate) use settings::Settings;
 pub(crate) use vault::Vault;
@@ -902,6 +903,7 @@ fn main() -> Result<(), slint::PlatformError> {
     wire_forward(&ui, &cx);
     wire_extra(&ui, &cx, &h);
     wire_image_search(&ui, &cx);
+    wire_kp_inspector(&ui, &cx);
 
     // ── UI zoom (Ctrl +/-/0) ─────────────────────────────────────────────
     // Browser-style zoom: change the window's scale factor so the *entire*

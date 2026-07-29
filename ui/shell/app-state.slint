@@ -30,7 +30,7 @@ import {
     StagedAttachment,
     ImageSearchHit,
 } from "../tokens.slint";
-import { KeyPackageInfo } from "../keys/types.slint";
+import { KeyPackageInfo, KpInspection } from "../keys/types.slint";
 import { PaletteAction } from "../modals/command-palette.slint";
 
 export global AppState {
@@ -590,6 +590,19 @@ export global AppState {
     // `active-contact`).
     callback view-contact-key-packages();
     callback debug-view-copy();
+
+    // KP inspector (dev-gated settings tab 9): decoded MLS key packages.
+    // `kp-inspector-own` holds the active account's durably owned KPs;
+    // `kp-peer-result` the last pubkey lookup (valid while `kp-peer-loaded`).
+    in-out property <[KpInspection]> kp-inspector-own;
+    in-out property <bool> kp-inspector-busy: false;
+    in-out property <string> kp-inspector-status;
+    in-out property <KpInspection> kp-peer-result;
+    in-out property <bool> kp-peer-loaded: false;
+    in-out property <bool> kp-peer-busy: false;
+    in-out property <string> kp-peer-status;
+    callback kp-inspector-refresh();
+    callback kp-inspect-peer(string);   // npub or hex pubkey
 
     in-out property <bool> telemetry-enabled: false;
     in-out property <bool> audit-enabled: false;

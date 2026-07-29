@@ -8,6 +8,7 @@ import { NotificationsPane } from "notifications-pane.slint";
 import { NetworkPane } from "network-pane.slint";
 import { AdvancedPane } from "advanced-pane.slint";
 import { DebugPane } from "debug-pane.slint";
+import { KpInspectorPane } from "kp-inspector-pane.slint";
 import { AboutPane } from "about-pane.slint";
 import { KeysPage } from "../keys/keys-page.slint";
 
@@ -71,6 +72,10 @@ export component SettingsPage inherits Rectangle {
             }
             // Keys & identity, moved in from the old top-level Keys page.
             if root.active-tab == 8: KeysPage {
+                width: parent.width;
+                height: parent.height;
+            }
+            if root.active-tab == 9: KpInspectorPane {
                 width: parent.width;
                 height: parent.height;
             }

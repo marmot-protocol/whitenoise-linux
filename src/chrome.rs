@@ -588,12 +588,13 @@ pub(crate) fn kp_to_ui(rec: &marmot_app::AccountKeyPackageRecord) -> KeyPackageI
 /// Populate the Keys page from local-only KP state (no relay round-trip).
 /// Used at boot and after publish/rotate so the UI reflects what's on disk
 /// immediately, while a relay refresh runs in the background.
-/// Read the local key packages (on-disk JSON) + relay list on the backend
-/// runtime, then push the rows on the UI thread.
+/// Read the local key packages + relay list on a plain OS thread — never the
+/// backend runtime: `key_packages_local` blocks on that runtime internally,
+/// and a nested `block_on` on a worker panics. Rows push on the UI thread.
 pub(crate) fn refresh_kp_local_async(ui: &WhiteNoiseLinux, backend: &Arc<Backend>) {
     let weak = ui.as_weak();
     let b = backend.clone();
-    backend.tokio_handle().spawn(async move {
+    std::thread::spawn(move || {
         let local = b.key_packages_local();
         let relays = b.key_package_relays();
         let _ = slint::invoke_from_event_loop(move || {
