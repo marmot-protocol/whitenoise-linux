@@ -520,6 +520,10 @@ msgctxt "AboutPane"
 msgid "CREDITS"
 msgstr ""
 
+msgctxt "GeneralPane"
+msgid "CUSTOM EMOJI"
+msgstr ""
+
 msgctxt "StoragePane"
 msgid "Cached attachments"
 msgstr ""
@@ -553,6 +557,10 @@ msgid "Cancel"
 msgstr ""
 
 msgctxt "ConfirmModal"
+msgid "Cancel"
+msgstr ""
+
+msgctxt "CustomEmojiModal"
 msgid "Cancel"
 msgstr ""
 
@@ -643,6 +651,10 @@ msgctxt "ErrorCopy"
 msgid "Choose a backup file first."
 msgstr ""
 
+msgctxt "NativeDialogStrings"
+msgid "Choose a custom emoji image"
+msgstr ""
+
 msgctxt "LoginScreen"
 msgid "Choose a password"
 msgstr ""
@@ -709,6 +721,10 @@ msgstr ""
 
 msgctxt "ChatSearchBar"
 msgid "Close search"
+msgstr ""
+
+msgctxt "JsonView"
+msgid "Collapse"
 msgstr ""
 
 msgctxt "KeysPage"
@@ -1049,6 +1065,10 @@ msgctxt "KpCard"
 msgid "Credentials"
 msgstr ""
 
+msgctxt "CustomEmojiModal"
+msgid "Custom Emoji"
+msgstr ""
+
 msgctxt "KeysPage"
 msgid "DANGER ZONE"
 msgstr ""
@@ -1237,6 +1257,10 @@ msgid "End-to-end encryption"
 msgstr ""
 
 msgctxt "ErrorCopy"
+msgid "Enter a name for this emoji."
+msgstr ""
+
+msgctxt "ErrorCopy"
 msgid "Enter a relay address."
 msgstr ""
 
@@ -1275,6 +1299,10 @@ msgstr ""
 
 msgctxt "ConfirmFlows"
 msgid "Every cached attachment on this device is removed. Photos, voice notes, and files you've already viewed will need to redownload and redecrypt the next time you open them."
+msgstr ""
+
+msgctxt "JsonView"
+msgid "Expand"
 msgstr ""
 
 msgctxt "KeysPage"
@@ -1630,6 +1658,7 @@ msgctxt "ContactDetail"
 msgid "Key package"
 msgstr ""
 
+#. (Slint can't build `debug-view-rows` itself).
 msgctxt "KpCard"
 msgid "Key package"
 msgstr ""
@@ -1942,6 +1971,10 @@ msgctxt "ErrorCopy"
 msgid "Name can't be empty."
 msgstr ""
 
+msgctxt "CustomEmojiModal"
+msgid "Name it, then react or type the name anywhere the picker opens."
+msgstr ""
+
 #. are translated.
 msgctxt "command palette footer"
 msgid "Navigate"
@@ -2110,6 +2143,10 @@ msgstr ""
 
 msgctxt "ErrorCopy"
 msgid "No secret key for this account is stored on this device."
+msgstr ""
+
+msgctxt "SharedMediaGrid"
+msgid "No shared media yet."
 msgstr ""
 
 msgctxt "AdvancedPane"
@@ -2564,6 +2601,10 @@ msgctxt "ConfirmFlows"
 msgid "Remove this relay?"
 msgstr ""
 
+msgctxt "GeneralPane"
+msgid "Remove {} emoji"
+msgstr ""
+
 msgctxt "ConfirmFlows"
 msgid "Remove {} from contacts?"
 msgstr ""
@@ -2728,6 +2769,14 @@ msgctxt "SettingsSidebar"
 msgid "SETTINGS"
 msgstr ""
 
+msgctxt "ContactDetail"
+msgid "SHARED MEDIA"
+msgstr ""
+
+msgctxt "CustomEmojiModal"
+msgid "SHORTCODE"
+msgstr ""
+
 msgctxt "GeneralPane"
 msgid "STARTUP"
 msgstr ""
@@ -2778,6 +2827,10 @@ msgstr ""
 
 msgctxt "weekday"
 msgid "Sat"
+msgstr ""
+
+msgctxt "CustomEmojiModal"
+msgid "Save"
 msgstr ""
 
 msgctxt "HeroEditField"
@@ -2985,6 +3038,22 @@ msgctxt "AdvancedPane"
 msgid "Share relay connection telemetry."
 msgstr ""
 
+msgctxt "SharedMediaGrid"
+msgid "Shared image {}"
+msgstr ""
+
+msgctxt "SharedMediaGrid"
+msgid "Shared image {}, failed to load. Activate to retry."
+msgstr ""
+
+msgctxt "SharedMediaGrid"
+msgid "Shared image {}, loading."
+msgstr ""
+
+msgctxt "GroupMembersPanel"
+msgid "Shared media"
+msgstr ""
+
 msgctxt "Composer"
 msgid "Shift+Enter for newline"
 msgstr ""
@@ -3019,6 +3088,10 @@ msgstr ""
 
 msgctxt "ModalField"
 msgid "Show value"
+msgstr ""
+
+msgctxt "GeneralPane"
+msgid "Shown in the picker next to the built-in set. Tap one to remove it."
 msgstr ""
 
 msgctxt "GeneralPane"
@@ -3311,7 +3384,15 @@ msgctxt "PictureField"
 msgid "Upload"
 msgstr ""
 
+msgctxt "GeneralPane"
+msgid "Uploaded emoji"
+msgstr ""
+
 msgctxt "AvatarEditable"
+msgid "Uploading…"
+msgstr ""
+
+msgctxt "CustomEmojiModal"
 msgid "Uploading…"
 msgstr ""
 
@@ -3462,6 +3543,10 @@ msgid "You"
 msgstr ""
 
 msgctxt "ErrorCopy"
+msgid "You already have an emoji with that name."
+msgstr ""
+
+msgctxt "ErrorCopy"
 msgid "You left the group."
 msgstr ""
 
@@ -3585,6 +3670,10 @@ msgstr ""
 
 msgctxt "StartNewChatModal"
 msgid "e.g. friday-crew"
+msgstr ""
+
+msgctxt "CustomEmojiModal"
+msgid "e.g. partyparrot"
 msgstr ""
 
 msgctxt "MessageBubble"
@@ -3737,6 +3826,11 @@ msgstr ""
 
 msgctxt "ImageTile"
 msgid "tap to retry"
+msgstr ""
+
+#. Custom-emoji upload status copy (src/wiring/custom_emoji.rs).
+msgctxt "ErrorCopy"
+msgid "uploaded — name it below"
 msgstr ""
 
 msgctxt "ErrorCopy"
