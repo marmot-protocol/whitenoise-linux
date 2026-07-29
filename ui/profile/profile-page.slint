@@ -572,6 +572,7 @@ export component ProfilePage inherits Rectangle {
                         wrap-value: true;
                         CopyChip {
                             value: @tr("Copy");
+                            label: @tr("Copy public key");
                             copy-requested => {
                                 AppState.copy-to-clipboard(AppState.my-npub);
                             }

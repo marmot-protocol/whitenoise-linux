@@ -160,6 +160,7 @@ export component ContactDetail inherits DetailPage {
                 value: root.contact.npub-short;
                 CopyChip {
                     value: @tr("Copy");
+                    label: @tr("Copy public key");
                     copy-requested => {
                         AppState.copy-to-clipboard(root.contact.npub-full);
                     }

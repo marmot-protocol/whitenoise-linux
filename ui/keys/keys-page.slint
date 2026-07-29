@@ -90,6 +90,7 @@ export component KeysPage inherits Rectangle {
                         show-divider: false;
                         CopyChip {
                             value: @tr("Copy");
+                            label: @tr("Copy public key");
                             copy-requested => {
                                 AppState.copy-to-clipboard(AppState.my-npub);
                             }

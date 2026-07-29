@@ -7,6 +7,9 @@ import { CopyIcon } from "../icons/copy-icon.slint";
 export component CopyChip inherits Rectangle {
     in property <string> value;
     in property <color> value-color: Palette.text-mid;
+    // Screen-reader name; falls back to the visible value text when the
+    // caller does not pass one, mirroring ActionButton's accessible-label.
+    in property <string> label: "";
     callback copy-requested();
 
     property <bool> copied: false;
@@ -16,6 +19,18 @@ export component CopyChip inherits Rectangle {
         triggered => {
             root.copied = false;
         }
+    }
+
+    // The single activation the pointer, the keyboard, and assistive tech all run.
+    function activate() {
+        root.copy-requested();
+        root.copied = true;
+    }
+
+    accessible-role: button;
+    accessible-label: root.label != "" ? root.label : root.value;
+    accessible-action-default => {
+        root.activate();
     }
 
     height: 30px;
@@ -50,8 +65,34 @@ export component CopyChip inherits Rectangle {
     chip-touch := TouchArea {
         mouse-cursor: pointer;
         clicked => {
-            root.copy-requested();
-            root.copied = true;
+            root.activate();
         }
+    }
+
+    // Zero-size FocusScope: participates in the Tab chain but never receives
+    // pointer events, so clicking the chip can't pull keyboard focus away.
+    // Mirrors ActionButton's and the Button primitive's focus handling.
+    chip-fs := FocusScope {
+        width: 0px;
+        height: 0px;
+        key-pressed(event) => {
+            if (event.text == Key.Return || event.text == " ") {
+                root.activate();
+                return accept;
+            }
+            return reject;
+        }
+    }
+
+    // Focus ring just outside the bounds (keyboard only).
+    if chip-fs.has-focus: Rectangle {
+        x: -3px;
+        y: -3px;
+        width: parent.width + 6px;
+        height: parent.height + 6px;
+        background: transparent;
+        border-radius: (root.border-radius + 3px);
+        border-width: 2px;
+        border-color: Palette.mint;
     }
 }
