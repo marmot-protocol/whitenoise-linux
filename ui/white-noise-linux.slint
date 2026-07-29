@@ -48,6 +48,7 @@ import { AuditLogEntry } from "tokens.slint";
 import { StagedAttachment } from "tokens.slint";
 import { ImageSearchHit } from "tokens.slint";
 import { JsonLine } from "tokens.slint";
+import { SharedMediaCell } from "tokens.slint";
 import { AppState } from "shell/app-state.slint";
 import { AppShell } from "shell/app-shell.slint";
 import { ModalHost } from "shell/modal-host.slint";
@@ -419,6 +420,7 @@ export component WhiteNoiseLinux inherits Window {
     in-out property <bool> show-keyboard-shortcuts <=> AppState.show-keyboard-shortcuts;
     in-out property <[Contact]> contacts <=> AppState.contacts;
     in-out property <[SharedGroup]> contact-shared-groups <=> AppState.contact-shared-groups;
+    in-out property <[SharedMediaCell]> contact-shared-media <=> AppState.contact-shared-media;
     in-out property <[ArchivedChat]> archived-chats <=> AppState.archived-chats;
     in-out property <[ChatMeta]> chats <=> AppState.chats;
     in-out property <[[ChatMessage]]> chats-messages <=> AppState.chats-messages;
@@ -427,6 +429,7 @@ export component WhiteNoiseLinux inherits Window {
     in-out property <[GroupMember]> chat-invited-members <=> AppState.chat-invited-members;
     in-out property <bool> chat-is-group <=> AppState.chat-is-group;
     in-out property <bool> chat-can-show-members <=> AppState.chat-can-show-members;
+    in-out property <[SharedMediaCell]> chat-shared-media <=> AppState.chat-shared-media;
     in-out property <bool> active-chat-muted <=> AppState.active-chat-muted;
     in-out property <int> chat-member-count <=> AppState.chat-member-count;
     in-out property <string> chat-group-description <=> AppState.chat-group-description;

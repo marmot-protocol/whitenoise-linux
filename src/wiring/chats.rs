@@ -17,6 +17,7 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
         notif,
         settings_cell,
         backend_cell,
+        vault_cell,
         group_ids,
         archived_group_ids,
         pending_state,
@@ -301,6 +302,7 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                     let my_id = backend.account().account_id_hex.clone();
                     let weak = ui.as_weak();
                     let backend_cell = backend_cell.clone();
+                    let vault_cell = vault_cell.clone();
                     let pending_state = pending_state.clone();
                     let active_watcher = active_watcher.clone();
                     let current_group_ids = group_ids.clone();
@@ -389,6 +391,67 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                                 );
                             }
                             spawn_message_avatar_fetches(&ui, &b, &msgs);
+                            // Shared Media grid for this chat: build instantly
+                            // from the same `msgs` snapshot just rebuilt into
+                            // rows (no extra query), then autoload whatever
+                            // isn't cached so the grid fills in rather than
+                            // sitting on placeholders until each cell is
+                            // individually tapped.
+                            {
+                                let all = Arc::new(msgs.clone());
+                                ui.set_chat_shared_media(model(build_shared_media_cells(&all)));
+                                let all_for_refresh = all.clone();
+                                let group_hex_guard = group_hex.clone();
+                                let current_group_ids_guard = current_group_ids.clone();
+                                let on_done: Arc<dyn Fn(&WhiteNoiseLinux) + Send + Sync> =
+                                    Arc::new(move |ui: &WhiteNoiseLinux| {
+                                        let still_active = current_group_ids_guard
+                                            .lock()
+                                            .unwrap()
+                                            .get(ui.get_active_chat() as usize)
+                                            .is_some_and(|g| g.eq_ignore_ascii_case(&group_hex_guard));
+                                        if !still_active {
+                                            return;
+                                        }
+                                        ui.set_chat_shared_media(model(build_shared_media_cells(
+                                            &all_for_refresh,
+                                        )));
+                                    });
+                                autoload_shared_media(
+                                    group_hex.clone(),
+                                    backend_cell.clone(),
+                                    vault_cell.clone(),
+                                    ui.as_weak(),
+                                    &all,
+                                    on_done,
+                                );
+                            }
+                            // A Shared Media tap on the Contact page for this
+                            // very chat stashed (group_hex, key) before
+                            // switching here; open the lightbox on it now that
+                            // the grid above is built (mirrors the
+                            // pending_message_jump handling below, but for the
+                            // image viewer instead of a message row).
+                            let pending_media = {
+                                let mut guard = pending_media_jump().lock().unwrap();
+                                if guard
+                                    .as_ref()
+                                    .is_some_and(|(g, _)| g.eq_ignore_ascii_case(&group_hex))
+                                {
+                                    guard.take()
+                                } else {
+                                    None
+                                }
+                            };
+                            if let Some((_, key)) = pending_media {
+                                open_image_viewer_for(
+                                    &ui,
+                                    &backend_cell,
+                                    &current_group_ids,
+                                    &group_hex,
+                                    &key,
+                                );
+                            }
                             tracing::debug!(
                                 target: "switch_timing", "chat {current_idx}: {} records rebuilt in {:?}",
                                 msgs.len(),

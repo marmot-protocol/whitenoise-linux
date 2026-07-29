@@ -2,6 +2,7 @@ import { Palette, Theme } from "../tokens.slint";
 import { AppState } from "../shell/app-state.slint";
 import { ScrollView } from "../primitives/scroll-view.slint";
 import { Section } from "../layout/section.slint";
+import { SharedMediaGrid } from "../layout/shared-media-grid.slint";
 import { GroupHero } from "group-hero.slint";
 import { GroupMemberRow } from "group-member-row.slint";
 import { AddMemberRow } from "add-member-row.slint";
@@ -98,6 +99,21 @@ export component GroupMembersPanel inherits Rectangle {
                                     AppState.member-menu-y = ay;
                                     AppState.member-menu-open = true;
                                 }
+                            }
+                        }
+                    }
+
+                    Section {
+                        label: @tr("Shared media");
+                        SharedMediaGrid {
+                            items: AppState.chat-shared-media;
+                            // This panel is a fixed 320px column (minus the
+                            // 10px side padding above) — 4 cols at the
+                            // default cell-size overflows it by a column's
+                            // width, unlike the wider Contact page card.
+                            cols: 3;
+                            cell-clicked(key) => {
+                                AppState.chat-shared-media-clicked(key);
                             }
                         }
                     }

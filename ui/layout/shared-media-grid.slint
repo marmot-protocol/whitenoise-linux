@@ -1,0 +1,105 @@
+import { Palette, Theme, SharedMediaCell } from "../tokens.slint";
+
+// Fixed-size thumbnail grid for a chat's shared media (contact detail /
+// group info panel) — unlike AlbumGrid's per-message masonry (aspect-ratio
+// rects Rust precomputes for one album), every cell here is the same square,
+// positioned by index since Slint has no flow layout. Same glyph states as
+// AlbumGrid (loading "…", failed "⚠", pre-load "🖼") so a half-loaded grid
+// reads the same way a half-loaded album does.
+export component SharedMediaGrid inherits Rectangle {
+    in property <[SharedMediaCell]> items;
+    in property <int> cols: 4;
+    in property <length> cell-size: 72px;
+    in property <length> gap: 6px;
+
+    callback cell-clicked(string);
+
+    height: root.items.length == 0
+        ? 28px
+        : (root.cell-size + root.gap) * ((root.items.length + root.cols - 1) / root.cols) + root.gap;
+
+    if root.items.length == 0: Text {
+        text: @tr("No shared media yet.");
+        color: Palette.text-lo;
+        font-family: Theme.font;
+        font-size: Theme.fs(11px, 13px);
+        vertical-alignment: center;
+    }
+
+    for item[i] in root.items: cell-ta := TouchArea {
+        property <int> grid-col: mod(i, root.cols);
+        property <int> grid-row: (i - self.grid-col) / root.cols;
+        x: root.gap + self.grid-col * (root.cell-size + root.gap);
+        y: root.gap + self.grid-row * (root.cell-size + root.gap);
+        width: root.cell-size;
+        height: root.cell-size;
+        enabled: !item.loading || item.failed;
+        mouse-cursor: pointer;
+
+        accessible-role: button;
+        accessible-enabled: !item.loading || item.failed;
+        accessible-label: item.failed
+            ? @tr("Shared image {}, failed to load. Activate to retry.", i + 1)
+            : (item.loading
+                ? @tr("Shared image {}, loading.", i + 1)
+                : @tr("Shared image {}", i + 1));
+        accessible-action-default => {
+            if !item.loading || item.failed {
+                root.cell-clicked(item.key);
+            }
+        }
+        clicked => {
+            if !item.loading || item.failed {
+                root.cell-clicked(item.key);
+            }
+        }
+
+        Rectangle {
+            border-radius: (6px) * Theme.r-scale;
+            background: Palette.panel-2;
+            border-width: Theme.border-w;
+            border-color: cell-ta.has-hover ? Palette.mint-dim : Palette.elevated-border;
+            clip: true;
+
+            if item.has-image: Image {
+                width: parent.width;
+                height: parent.height;
+                source: item.image;
+                image-fit: cover;
+            }
+            if !item.has-image: Text {
+                text: item.failed ? "⚠" : (item.loading ? "…" : "🖼");
+                color: item.failed ? Palette.danger : Palette.text-mid;
+                font-size: Theme.fs(18px, 22px);
+                font-family: Theme.font;
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
+                opacity: item.failed ? 1.0 : 0.7;
+            }
+        }
+
+        fs := FocusScope {
+            width: 0px;
+            height: 0px;
+            enabled: !item.loading || item.failed;
+            key-pressed(event) => {
+                if (event.text == Key.Return || event.text == " ") {
+                    root.cell-clicked(item.key);
+                    return accept;
+                }
+                return reject;
+            }
+        }
+
+        if fs.has-focus: Rectangle {
+            x: 2px;
+            y: 2px;
+            width: parent.width - 4px;
+            height: parent.height - 4px;
+            background: transparent;
+            border-radius: (4px) * Theme.r-scale;
+            border-width: 2px;
+            border-color: Palette.mint;
+        }
+    }
+}

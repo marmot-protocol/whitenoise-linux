@@ -5,6 +5,7 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
         settings_cell,
         contacts,
         backend_cell,
+        vault_cell,
         group_ids,
         ..
     } = cx.clone();
@@ -433,18 +434,52 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
         let weak = ui.as_weak();
         let refresh = refresh_breadcrumb.clone();
         let backend_cell = backend_cell.clone();
+        let vault_cell = vault_cell.clone();
         move |idx| {
             if let Some(ui) = weak.upgrade() {
                 ui.set_active_contact(idx);
                 if let Some(b) = backend_cell.lock().unwrap().clone() {
                     push_contact_shared_groups(&ui, &b);
                     push_contact_actions(&ui, &b);
+                    // Shared media reads `contact-chat-hex`, so it must run
+                    // after push_contact_actions has resolved it above.
+                    push_contact_shared_media(&ui, &b, backend_cell.clone(), vault_cell.clone());
                 }
                 refresh();
                 // Freshen the key-package status the moment the detail page
                 // opens, so the readout is trustworthy without a manual press.
                 spawn_contact_key_package_fetch(&ui, &backend_cell, idx as usize);
             }
+        }
+    });
+    // Shared Media grid cell tapped on the Contact page. The lightbox always
+    // opens for the *active* chat (`load_viewer_image` resolves group_hex via
+    // `group_ids[active_chat]`), which this contact's chat may not be — so
+    // switch to it first and stash the tapped key in `pending_media_jump`;
+    // `chat_selected`'s load path opens the lightbox once that chat's own
+    // shared-media list is ready (mirrors the mention-inbox cross-chat jump).
+    ui.global::<AppState>().on_contact_shared_media_clicked({
+        let weak = ui.as_weak();
+        let group_ids = group_ids.clone();
+        move |key| {
+            let Some(ui) = weak.upgrade() else { return };
+            let key = key.to_string();
+            let group_hex = ui.get_contact_chat_hex().to_string();
+            if group_hex.is_empty() || key.is_empty() {
+                return;
+            }
+            let idx = group_ids
+                .lock()
+                .unwrap()
+                .iter()
+                .position(|g| g.eq_ignore_ascii_case(&group_hex));
+            let Some(idx) = idx else {
+                tracing::warn!(target: "shared_media", %group_hex, "contact chat is no longer visible");
+                return;
+            };
+            *pending_media_jump().lock().unwrap() = Some((group_hex, key));
+            ui.set_active_page(Page::Chats as i32);
+            ui.global::<AppState>().invoke_chat_selected(idx as i32);
         }
     });
     // A "groups in common" row was tapped (contact detail or profile modal):
