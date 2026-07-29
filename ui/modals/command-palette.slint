@@ -4,6 +4,7 @@ import { LineInput } from "../primitives/line-input.slint";
 import { Modal } from "modal.slint";
 import { KbdPill } from "kbd-pill.slint";
 import { PaletteAction, PaletteRow } from "palette-row.slint";
+import { ScrollView } from "../primitives/scroll-view.slint";
 
 // The row struct lives with PaletteRow; re-exported here so the app root's
 // `import { CommandPalette, PaletteAction }` stays a single path.
@@ -130,34 +131,55 @@ export component CommandPalette inherits Modal {
             Rectangle {
                 height: min(380px, list-layout.preferred-height + 8px);
                 clip: true;
-                list-layout := VerticalLayout {
-                    padding-top: 6px;
-                    padding-bottom: 6px;
-                    spacing: 0;
-                    for action[i] in root.actions: PaletteRow {
-                        action: action;
-                        // Group header — only when this row's group differs
-                        // from the previous row's.
-                        show-group-header: i == 0 || root.actions[i - 1].group != action.group;
-                        is-selected: i == root.selected;
-                        activate => {
-                            root.selected = i;
-                            root.execute(action.id);
-                            root.dismissed();
-                        }
-                    }
 
-                    if root.actions.length == 0: Rectangle {
-                        height: 60px;
-                        Text {
-                            text: @tr("No matches");
-                            color: Palette.text-lo;
-                            font-size: Theme.fs(12px, 16px);
-                            font-family: Theme.font;
-                            horizontal-alignment: center;
-                            vertical-alignment: center;
-                            width: parent.width;
-                            height: parent.height;
+                list-scroll := ScrollView {
+                    width: parent.width;
+                    height: parent.height;
+                    viewport-width: self.visible-width;
+                    viewport-height: list-layout.preferred-height;
+
+                    list-layout := VerticalLayout {
+                        width: parent.width;
+                        padding-top: 6px;
+                        padding-bottom: 6px;
+                        spacing: 0;
+                        for action[i] in root.actions: PaletteRow {
+                            action: action;
+                            // Group header — only when this row's group differs
+                            // from the previous row's.
+                            show-group-header: i == 0 || root.actions[i - 1].group != action.group;
+                            is-selected: i == root.selected;
+                            activate => {
+                                root.selected = i;
+                                root.execute(action.id);
+                                root.dismissed();
+                            }
+                            // Keep the highlighted row inside the scrollable
+                            // viewport when arrow-key navigation moves the
+                            // selection past what is currently shown.
+                            changed is-selected => {
+                                if (self.is-selected) {
+                                    if (self.absolute-position.y < list-scroll.absolute-position.y) {
+                                        list-scroll.viewport-y += list-scroll.absolute-position.y - self.absolute-position.y;
+                                    } else if (self.absolute-position.y + self.height > list-scroll.absolute-position.y + list-scroll.visible-height) {
+                                        list-scroll.viewport-y -= (self.absolute-position.y + self.height) - (list-scroll.absolute-position.y + list-scroll.visible-height);
+                                    }
+                                }
+                            }
+                        }
+
+                        if root.actions.length == 0: Rectangle {
+                            height: 60px;
+                            Text {
+                                text: @tr("No matches");
+                                color: Palette.text-lo;
+                                font-size: Theme.fs(12px, 16px);
+                                font-family: Theme.font;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                                width: parent.width;
+                                height: parent.height;
+                            }
                         }
                     }
                 }
@@ -229,6 +251,7 @@ export component CommandPalette inherits Modal {
         if (root.query != root.last-query) {
             root.last-query = root.query;
             root.selected = 0;
+            list-scroll.viewport-y = 0;
             root.query-changed(root.query);
         }
     }
