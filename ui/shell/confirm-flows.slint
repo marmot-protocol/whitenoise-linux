@@ -27,6 +27,19 @@ export component ConfirmFlows inherits Rectangle {
         }
     }
 
+    if AppState.show-storage-clear-cache-confirm: ConfirmModal {
+        title: @tr("Clear the media cache?");
+        subtitle: @tr("Every cached attachment on this device is removed. Photos, voice notes, and files you've already viewed will need to redownload and redecrypt the next time you open them.");
+        confirm-label: @tr("Clear cache");
+        confirm => {
+            AppState.show-storage-clear-cache-confirm = false;
+            AppState.storage-clear-cache();
+        }
+        dismissed => {
+            AppState.show-storage-clear-cache-confirm = false;
+        }
+    }
+
     if AppState.show-audit-delete-confirm: ConfirmModal {
         title: @tr("SettingsPage" => "Delete audit log file?");
         subtitle: @tr("SettingsPage" => "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log.");

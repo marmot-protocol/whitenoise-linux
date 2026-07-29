@@ -37,7 +37,7 @@ export component StoragePane inherits DetailPage {
                     label: AppState.storage-clearing ? @tr("Clearing…") : @tr("Clear cache");
                     enabled: !AppState.storage-clearing;
                     clicked => {
-                        AppState.storage-clear-cache();
+                        AppState.show-storage-clear-cache-confirm = true;
                     }
                 }
             }
