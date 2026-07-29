@@ -2519,6 +2519,10 @@ msgctxt "EmojiPicker"
 msgid "Recent"
 msgstr "Recenti"
 
+msgctxt "GlobalSearchModal"
+msgid "Recent searches"
+msgstr ""
+
 msgctxt "NetworkPane"
 msgid "Reconnect now"
 msgstr "Riconnetti ora"
