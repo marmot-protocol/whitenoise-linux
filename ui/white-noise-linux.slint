@@ -499,9 +499,31 @@ export component WhiteNoiseLinux inherits Window {
     // composer, a settings control, a modal's own scope — its unhandled Ctrl
     // keys bubble here instead of dying at the focused leaf. init() grabs focus
     // on startup so the shortcuts also work before anything else is focused.
+    // Ctrl+scroll zoom needs a TouchArea *above* every scrollable (a ListView
+    // consumes wheel events no matter which modifiers are held, so an ancestor
+    // handler would never see them). The overlay only exists while Ctrl is
+    // down — tracked via the capture-phase key handlers below — so plain
+    // scrolling never has to punch through it (a rejected scroll-event only
+    // bubbles to ancestors, not to the elements underneath).
+    private property <bool> ctrl-down: false;
+    private property <length> zoom-scroll-accum: 0;
+
     global-keys := FocusScope {
         init => {
             self.focus();
+        }
+        // Capture-phase handlers run before the focused child for every key
+        // event, so Ctrl tracking works no matter which widget holds focus.
+        // Always reject: this only observes, it must never consume.
+        capture-key-pressed(event) => {
+            root.ctrl-down = event.text == Key.Control || event.modifiers.control;
+            return reject;
+        }
+        capture-key-released(event) => {
+            if (event.text == Key.Control) {
+                root.ctrl-down = false;
+            }
+            return reject;
         }
         key-pressed(event) => {
             if (event.modifiers.control) {
@@ -557,5 +579,34 @@ export component WhiteNoiseLinux inherits Window {
         ShellTimers { }
 
         if !root.logged-in: LoginGate { }
+
+        // Ctrl+scroll zoom (see the ctrl-down comment above). Deltas are
+        // accumulated so one wheel notch (~60px) is one zoom step and smooth
+        // trackpad scrolling doesn't fire a step per micro-event.
+        if root.ctrl-down: TouchArea {
+            scroll-event(event) => {
+                if (!event.modifiers.control) {
+                    // Stale state (e.g. Ctrl released while the window was
+                    // unfocused): drop the overlay instead of zooming.
+                    root.ctrl-down = false;
+                    return reject;
+                }
+                root.zoom-scroll-accum += event.delta-y;
+                if (root.zoom-scroll-accum >= 40px) {
+                    AppState.zoom-adjust(1);
+                    root.zoom-scroll-accum = 0;
+                } else if (root.zoom-scroll-accum <= -40px) {
+                    AppState.zoom-adjust(-1);
+                    root.zoom-scroll-accum = 0;
+                }
+                return accept;
+            }
+            pointer-event(event) => {
+                // Any mouse activity without Ctrl heals a stuck overlay.
+                if (!event.modifiers.control) {
+                    root.ctrl-down = false;
+                }
+            }
+        }
     }
 }

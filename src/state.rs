@@ -1182,6 +1182,7 @@ const EXTRA_SHORTCUTS: &[(&str, &str, &str)] = &[
     ("Search in the open chat", "GLOBAL", "Ctrl F"),
     ("Zoom in", "GLOBAL", "Ctrl +"),
     ("Zoom out", "GLOBAL", "Ctrl -"),
+    ("Zoom in / out", "GLOBAL", "Ctrl Scroll"),
     ("Reset zoom", "GLOBAL", "Ctrl 0"),
     ("Send message", "COMPOSER", "Enter"),
     ("Insert a newline", "COMPOSER", "Shift Enter"),
