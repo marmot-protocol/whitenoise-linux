@@ -121,6 +121,13 @@ pub(crate) fn spawn_attachment_send(
             with_inner_messages(&chats_messages, idx, |vm| {
                 push_message_grouped(vm, pending_row)
             });
+            // Rail preview tracks the send immediately ("📷 Photo" / "📄 …");
+            // the ack reconciles it via `update_chat_row_preview`.
+            set_chat_preview_sending(
+                &ui,
+                idx,
+                &media_kind_label(&media_type_u, &file_name_u, 0),
+            );
             ui.set_messages_scroll_tick(ui.get_messages_scroll_tick() + 1);
         }
         // Durably queue this attachment on first send so it survives a restart.
@@ -252,6 +259,12 @@ pub(crate) fn spawn_album_send(
             with_inner_messages(&chats_messages, idx, |vm| {
                 push_message_grouped(vm, pending_row)
             });
+            // Rail preview tracks the album send immediately ("📷 N photos").
+            set_chat_preview_sending(
+                &ui,
+                idx,
+                &media_kind_label("image/", "", files.len()),
+            );
             ui.set_messages_scroll_tick(ui.get_messages_scroll_tick() + 1);
         }
         // Durably queue the album on first send (one entry, all images' bytes).

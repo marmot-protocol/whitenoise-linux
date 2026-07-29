@@ -242,10 +242,13 @@ export component ModalHost inherits Rectangle {
     if AppState.debug-view-open: DebugJsonModal {
             title: AppState.debug-view-title;
             subtitle: AppState.debug-view-subtitle;
-            json: AppState.debug-view-json;
+            rows: AppState.debug-view-rows;
             busy: AppState.debug-view-busy;
             copy-clicked => {
                 AppState.debug-view-copy();
+            }
+            toggle(logical) => {
+                AppState.debug-view-toggle(logical);
             }
             dismissed => {
                 AppState.debug-view-open = false;

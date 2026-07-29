@@ -1,0 +1,116 @@
+import { Palette, Theme, JsonLine } from "../tokens.slint";
+import { ListView } from "std-widgets.slint";
+
+// Shared read-only JSON viewer for developer/debug dumps — the render half of
+// the pipeline that starts at `json_doc_set` (src/jsonview.rs), which
+// tokenizes pretty-printed JSON into colored runs (Slint has no rich text).
+// Virtualized: dumps can run to thousands of lines, so rows live in a
+// ListView and only visible lines instantiate. Rust pre-wraps long tokens
+// (key-package blobs) into continuation lines, so there is no horizontal
+// scrolling to manage. Containers fold: the gutter chevron reports the row's
+// logical line via `toggle`, and the host routes it to Rust, which flips the
+// fold and pushes rebuilt rows. Non-JSON input degrades gracefully: the
+// tokenizer emits it as plain (punctuation-colored) lines with nothing to
+// fold.
+export component JsonView inherits Rectangle {
+    in property <[JsonLine]> rows;
+    // Shown centered when there are no rows (busy / empty states). The host
+    // owns the wording (and its @tr context).
+    in property <string> placeholder: "";
+    // Fired with a row's `logical` index when its fold chevron is clicked.
+    callback toggle(int);
+
+    border-width: Theme.border-w;
+    border-color: Palette.border-2;
+    border-radius: (8px) * Theme.r-scale;
+    background: Palette.panel-2;
+    clip: true;
+
+    // Gutter width scales with the line count so four-digit dumps still
+    // right-align without reserving space every small dump pays for.
+    property <length> gutter-w: root.rows.length >= 1000 ? 34px : (root.rows.length >= 100 ? 27px : 20px);
+
+    if root.rows.length == 0: Text {
+        width: parent.width - 32px;
+        x: 16px;
+        text: root.placeholder;
+        color: Palette.text-lo;
+        font-family: Theme.font;
+        font-size: Theme.fs(11px, 14px);
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        wrap: word-wrap;
+    }
+
+    ListView {
+        x: 0;
+        y: 0;
+        width: parent.width;
+        height: parent.height;
+
+        for line[i] in root.rows: HorizontalLayout {
+            width: parent.width;
+            padding-left: 10px;
+            padding-right: 12px;
+            padding-top: i == 0 ? 10px : 0px;
+            padding-bottom: i == root.rows.length - 1 ? 10px : 0px;
+            spacing: 0;
+            alignment: start;
+
+            // Gutter: line number + fold chevron, one click target. Disabled
+            // (and cursor-neutral) on rows with nothing to fold.
+            fold-tap := TouchArea {
+                width: root.gutter-w + 16px;
+                enabled: line.collapsible;
+                mouse-cursor: line.collapsible ? pointer : default;
+                clicked => {
+                    root.toggle(line.logical);
+                }
+                accessible-role: button;
+                accessible-enabled: line.collapsible;
+                accessible-label: line.collapsed ? @tr("Expand") : @tr("Collapse");
+                accessible-expandable: line.collapsible;
+                accessible-expanded: line.collapsible && !line.collapsed;
+
+                HorizontalLayout {
+                    spacing: 0;
+                    Text {
+                        width: root.gutter-w;
+                        text: line.num > 0 ? "\{line.num}" : "";
+                        color: Palette.text-vlo;
+                        font-family: Theme.font;
+                        font-size: Theme.fs(10px, 13px);
+                        horizontal-alignment: right;
+                        vertical-alignment: center;
+                    }
+
+                    Text {
+                        width: 16px;
+                        text: line.collapsible ? (line.collapsed ? "▸" : "▾") : "";
+                        color: fold-tap.has-hover && line.collapsible ? Palette.mint : Palette.mint-dim;
+                        font-family: Theme.font;
+                        font-size: Theme.fs(9px, 12px);
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+
+            Rectangle {
+                width: 8px;
+            }
+
+            for run in line.runs: Text {
+                text: run.text;
+                color: run.kind == 1 ? Palette.mint
+                    : run.kind == 2 ? Palette.text-hi
+                    : run.kind == 3 ? Palette.warning
+                    : run.kind == 4 ? Palette.mint-dim
+                    : Palette.text-lo;
+                font-family: Theme.font;
+                font-size: Theme.fs(11px, 14px);
+                vertical-alignment: center;
+            }
+        }
+    }
+}

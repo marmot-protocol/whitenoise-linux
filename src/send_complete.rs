@@ -158,6 +158,9 @@ pub(crate) fn apply_send_result<F>(
                         &all,
                     );
                 }
+                // The confirmed send is this chat's newest message — reflect it
+                // in the rail row (clears the optimistic sending indicator).
+                update_chat_row_preview(&ui, backend, idx, &all);
             }
             Err(e) => {
                 tracing::warn!(target: "send", path = label, "{e:#}");

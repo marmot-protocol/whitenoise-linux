@@ -46,6 +46,7 @@ import { EditVersion } from "tokens.slint";
 import { AuditLogEntry } from "tokens.slint";
 import { StagedAttachment } from "tokens.slint";
 import { ImageSearchHit } from "tokens.slint";
+import { JsonLine } from "tokens.slint";
 import { AppState } from "shell/app-state.slint";
 import { AppShell } from "shell/app-shell.slint";
 import { ModalHost } from "shell/modal-host.slint";
@@ -317,10 +318,12 @@ export component WhiteNoiseLinux inherits Window {
     in-out property <bool> export-key-status-error <=> AppState.export-key-status-error;
     in-out property <bool> debug-enabled <=> AppState.debug-enabled;
     in-out property <string> debug-dump <=> AppState.debug-dump;
+    in-out property <[JsonLine]> debug-dump-rows <=> AppState.debug-dump-rows;
     in-out property <bool> debug-view-open <=> AppState.debug-view-open;
     in-out property <string> debug-view-title <=> AppState.debug-view-title;
     in-out property <string> debug-view-subtitle <=> AppState.debug-view-subtitle;
     in-out property <string> debug-view-json <=> AppState.debug-view-json;
+    in-out property <[JsonLine]> debug-view-rows <=> AppState.debug-view-rows;
     in-out property <bool> debug-view-busy <=> AppState.debug-view-busy;
     in-out property <[KpInspection]> kp-inspector-own <=> AppState.kp-inspector-own;
     in-out property <bool> kp-inspector-busy <=> AppState.kp-inspector-busy;
@@ -468,6 +471,7 @@ export component WhiteNoiseLinux inherits Window {
     in-out property <bool> contact-blocked <=> AppState.contact-blocked;
     in-out property <bool> show-contact-block-confirm <=> AppState.show-contact-block-confirm;
     in-out property <bool> show-contact-remove-confirm <=> AppState.show-contact-remove-confirm;
+    in-out property <int> zoom-percent <=> AppState.zoom-percent;
     // END GENERATED ALIASES
 
     // The active theme id drives `Theme.id` directly; Rust sets `theme-id` and

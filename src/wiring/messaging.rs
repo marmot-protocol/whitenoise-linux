@@ -229,6 +229,9 @@ pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 with_inner_messages(&chats_messages, idx, |vm| {
                     push_message_grouped(vm, pending_row)
                 });
+                // Rail preview tracks the composer immediately; the ack (or the
+                // echo) reconciles it via `update_chat_row_preview`.
+                set_chat_preview_sending(&ui, idx, &text);
                 ui.set_composer_draft(s(""));
                 // The draft just went out — drop any persisted copy so it can't
                 // resurrect itself on the next switch back (or restart).

@@ -144,22 +144,25 @@ export component ChatListItem inherits Rectangle {
             HorizontalLayout {
                 spacing: 6px;
                 // Wrap the preview but hard-cap it at three lines. Slint's Text
-                // ignores max-height, so clip inside a height-capped box and
-                // constrain the Text to that box so overflow: elide can engage.
+                // ignores max-height, so clip inside a height-capped box. The
+                // Text sits in a layout (not absolutely positioned) so its
+                // wrapped height flows into the box's preferred height — an
+                // absolute child reports none, which squeezed the single-line
+                // preview to the row's leftover space and clipped it mid-glyph.
                 Rectangle {
                     horizontal-stretch: 1;
                     clip: true;
                     max-height: Theme.fs(11px, 16px) * 3.75;
-                    Text {
-                        text: root.preview;
-                        color: Theme.selected-inverts-text && root.selected ? Palette.bubble-out-fg : Palette.text-lo;
-                        font-size: Theme.fs(11px, 16px);
-                        font-family: Theme.font;
-                        width: 100%;
-                        height: 100%;
-                        y: 0;
-                        wrap: word-wrap;
-                        overflow: elide;
+                    VerticalLayout {
+                        alignment: start;
+                        Text {
+                            text: root.preview;
+                            color: Theme.selected-inverts-text && root.selected ? Palette.bubble-out-fg : Palette.text-lo;
+                            font-size: Theme.fs(11px, 16px);
+                            font-family: Theme.font;
+                            wrap: word-wrap;
+                            overflow: elide;
+                        }
                     }
                 }
 

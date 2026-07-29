@@ -23,11 +23,9 @@ export component KpCard inherits GroupCard {
         Button {
             label: @tr("Raw JSON");
             clicked => {
-                AppState.debug-view-title = @tr("Key package");
-                AppState.debug-view-subtitle = root.raw-title;
-                AppState.debug-view-json = root.kp.raw-json;
-                AppState.debug-view-busy = false;
-                AppState.debug-view-open = true;
+                // Rust tokenizes the JSON into viewer rows and opens the modal
+                // (Slint can't build `debug-view-rows` itself).
+                AppState.debug-view-show(@tr("Key package"), root.raw-title, root.kp.raw-json);
             }
         }
     }

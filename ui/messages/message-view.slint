@@ -29,6 +29,12 @@ export component MessageView inherits VerticalLayout {
     in property <length> row-w: 9999px;
 
     callback play-effect(int, int, int, length, length, length, length);
+    // Floating hover-toolbar plumbing (bubble skins → MessagesArea overlay):
+    // arm carries (message-id, reply text, author, can-edit, bubble abs-x/y,
+    // bubble w/h); disarm carries the message-id it releases. Like
+    // play-effect, this is messages-area mechanics, not AppState contract.
+    callback arm-actions(string, string, string, bool, length, length, length, length);
+    callback disarm-actions(string);
 
     // ── Group system row: a centered system line, shared across every skin.
     // Rendered before the skins and guarded out of them below so a kind-1210
@@ -45,6 +51,12 @@ export component MessageView inherits VerticalLayout {
         play-effect(eid, cx, cy, ax, ay, w, h) => {
             root.play-effect(eid, cx, cy, ax, ay, w, h);
         }
+        arm-actions(id, text, author, can-edit, ax, ay, w, h) => {
+            root.arm-actions(id, text, author, can-edit, ax, ay, w, h);
+        }
+        disarm-actions(id) => {
+            root.disarm-actions(id);
+        }
     }
 
     if Theme.skin-message == 0 && !root.msg.system-line && root.msg.outgoing: OutgoingRow {
@@ -53,6 +65,12 @@ export component MessageView inherits VerticalLayout {
         row-w: root.row-w;
         play-effect(eid, cx, cy, ax, ay, w, h) => {
             root.play-effect(eid, cx, cy, ax, ay, w, h);
+        }
+        arm-actions(id, text, author, can-edit, ax, ay, w, h) => {
+            root.arm-actions(id, text, author, can-edit, ax, ay, w, h);
+        }
+        disarm-actions(id) => {
+            root.disarm-actions(id);
         }
     }
 

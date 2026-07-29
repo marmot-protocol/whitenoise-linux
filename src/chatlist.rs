@@ -733,6 +733,64 @@ pub(crate) fn merge_chat_list_rows_from(
     }
 }
 
+/// Surgically rewrite one chat row's preview/stamp from the newest visible
+/// message in `all` — the live message paths' counterpart to the full
+/// snapshot refresh. Without this, a send or an incoming message in the open
+/// chat updates the bubbles but leaves the rail's "last message" line stale
+/// until the next full refresh (typically a restart). UI thread only.
+pub(crate) fn update_chat_row_preview(
+    ui: &WhiteNoiseLinux,
+    backend: &Backend,
+    idx: usize,
+    all: &[AppMessageRecord],
+) {
+    let chats = ui.get_chats();
+    let Some(vm) = chats.as_any().downcast_ref::<VecModel<ChatMeta>>() else {
+        return;
+    };
+    let Some(mut row) = vm.row_data(idx) else {
+        return;
+    };
+    // Same visibility rule as `Backend::latest_message`, applied to the window
+    // we already hold — newest visible row wins (`all` is oldest → newest).
+    let Some(m) = all.iter().rev().find(|m| is_visible_chat_message(m)) else {
+        return;
+    };
+    let my_id = backend.account().account_id_hex.clone();
+    let (preview, stamp) = preview_and_stamp_for(m, &my_id, backend);
+    let read = row.badge.is_empty();
+    if row.preview.as_str() != preview
+        || row.stamp.as_str() != stamp
+        || row.sending
+        || row.read != read
+    {
+        row.preview = s(&preview);
+        row.stamp = s(&stamp);
+        row.sending = false;
+        row.read = read;
+        vm.set_row_data(idx, row);
+    }
+}
+
+/// Optimistically stamp a chat row's preview the instant the user hits send —
+/// "You: …" plus a sending indicator — so the rail tracks the composer without
+/// waiting for the ack ([`update_chat_row_preview`] reconciles it then).
+pub(crate) fn set_chat_preview_sending(ui: &WhiteNoiseLinux, idx: usize, body: &str) {
+    let chats = ui.get_chats();
+    let Some(vm) = chats.as_any().downcast_ref::<VecModel<ChatMeta>>() else {
+        return;
+    };
+    let Some(mut row) = vm.row_data(idx) else {
+        return;
+    };
+    row.preview = s(&format!("You: {}", truncate_preview(body, 160)));
+    row.stamp = s(&format_chat_stamp(now_unix_secs()));
+    // The rail's status slot shows the sending ring instead of the read tick.
+    row.sending = true;
+    row.read = false;
+    vm.set_row_data(idx, row);
+}
+
 /// Spawn the chat-list watcher. New groups (welcomes, invites) get appended
 /// to the chats model on the Slint thread.
 ///
@@ -1480,16 +1538,21 @@ pub(crate) fn install_chat_watcher(
         let id = record.group_id_hex.clone();
         let now = now_unix_secs() as i64;
         let marker = unread_state().marker_or_seed(&id, now);
-        let raw_unread = backend_cell
+        // `latest` rides into the UI closure below: the rebuilt row must carry
+        // the real preview/stamp (passing `None` used to reset the preview to
+        // the group description on every watcher fire), and the notification
+        // block reuses it instead of re-querying sqlite on the render thread.
+        let (raw_unread, latest) = backend_cell
             .lock()
             .unwrap()
             .as_ref()
             .map(|b| {
                 let my_id = b.account().account_id_hex.clone();
                 let latest = b.latest_message(&id);
-                count_unread(b, &id, &my_id, marker, latest.as_ref())
+                let n = count_unread(b, &id, &my_id, marker, latest.as_ref());
+                (n, latest)
             })
-            .unwrap_or(0);
+            .unwrap_or((0, None));
         let _ = slint::invoke_from_event_loop(move || {
             let Some(ui) = weak.upgrade() else { return };
             // The watcher fires on the tokio thread; the backend lives behind
@@ -1529,7 +1592,7 @@ pub(crate) fn install_chat_watcher(
                 unread_state().record_count(&id, raw_unread)
             };
             let row_meta = match guard.as_deref() {
-                Some(b) => chat_meta_from(&record, None, &my_id, b, unread),
+                Some(b) => chat_meta_from(&record, latest.as_ref(), &my_id, b, unread),
                 None => fallback_chat_meta(&record),
             };
             // Title for any notification below = the chat's display name.
@@ -1568,7 +1631,7 @@ pub(crate) fn install_chat_watcher(
             // changed since we last saw this chat → not the on-screen chat.
             if notif.enabled.load(std::sync::atomic::Ordering::Relaxed)
                 && let Some(b) = guard.as_ref()
-                && let Some(m) = b.latest_message(&id)
+                && let Some(m) = latest.as_ref()
             {
                 let incoming = !m.sender.eq_ignore_ascii_case(&my_id);
                 let recent = m.recorded_at.saturating_add(NOTIF_SKEW_SECS) >= since_secs;
@@ -1579,10 +1642,10 @@ pub(crate) fn install_chat_watcher(
                 if incoming
                     && recent
                     && (!notif.is_muted(&id) || mentioned)
-                    && is_visible_chat_message(&m)
+                    && is_visible_chat_message(m)
                     // A group-system row isn't a message — no desktop toast (its
                     // plaintext is the raw event JSON, not readable body text).
-                    && backend::group_system_event(&m).is_none()
+                    && backend::group_system_event(m).is_none()
                     && notif.note_latest(&id, &m.message_id_hex)
                     && !viewing
                 {
@@ -1590,12 +1653,12 @@ pub(crate) fn install_chat_watcher(
                     let sound = notif.sound.load(std::sync::atomic::Ordering::Relaxed);
                     let body = if mentioned {
                         if preview {
-                            format!("Mentioned you — {}", notification_body(b, &m, &id, true))
+                            format!("Mentioned you — {}", notification_body(b, m, &id, true))
                         } else {
                             "Mentioned you".to_string()
                         }
                     } else {
-                        notification_body(b, &m, &id, preview)
+                        notification_body(b, m, &id, preview)
                     };
                     // dbus IO — keep it off the UI thread.
                     std::thread::spawn(move || {

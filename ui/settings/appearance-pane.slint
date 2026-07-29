@@ -7,6 +7,7 @@ import { Section } from "../layout/section.slint";
 import { GroupCard } from "../layout/group-card.slint";
 import { KVRow } from "../layout/kv-row.slint";
 import { Toggle } from "../primitives/toggle.slint";
+import { MicroButton } from "../primitives/button.slint";
 import { AccentPicker } from "accent-picker.slint";
 import { ThemePicker } from "theme-picker.slint";
 
@@ -74,6 +75,46 @@ export component AppearancePane inherits DetailPage {
                     on <=> AppState.outgoing-on-right;
                     toggled => {
                         AppState.outgoing-on-right-toggled(AppState.outgoing-on-right);
+                    }
+                }
+            }
+        }
+    }
+
+    Section {
+        label: @tr("ZOOM");
+        GroupCard {
+            KVRow {
+                row-height: 48px;
+                label: @tr("Interface zoom");
+                sublabel: @tr("Also Ctrl + / − / 0, or Ctrl + scroll.");
+                value: "\{AppState.zoom-percent}%";
+                show-divider: false;
+                HorizontalLayout {
+                    spacing: 6px;
+                    MicroButton {
+                        label: "−";
+                        a11y-label: @tr("Zoom out");
+                        clicked => {
+                            AppState.zoom-adjust(-1);
+                        }
+                    }
+
+                    MicroButton {
+                        label: "+";
+                        a11y-label: @tr("Zoom in");
+                        clicked => {
+                            AppState.zoom-adjust(1);
+                        }
+                    }
+
+                    MicroButton {
+                        label: @tr("Reset");
+                        a11y-label: @tr("Reset zoom to 100%");
+                        enabled: AppState.zoom-percent != 100;
+                        clicked => {
+                            AppState.zoom-adjust(0);
+                        }
                     }
                 }
             }

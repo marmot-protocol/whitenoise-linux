@@ -5,6 +5,7 @@ import { DetailPage } from "../layout/detail-page.slint";
 import { PageHeader } from "../layout/page-header.slint";
 import { Section } from "../layout/section.slint";
 import { Button } from "../primitives/button.slint";
+import { JsonView } from "../primitives/json-view.slint";
 
 export component DebugPane inherits DetailPage {
     // Reads AppState.debug-dump directly and invokes AppState.debug-load /
@@ -76,33 +77,13 @@ export component DebugPane inherits DetailPage {
             }
         }
 
-        Rectangle {
-            border-width: 1px;
-            border-color: Palette.border-2;
-            border-radius: (6px) * Theme.r-scale;
-            background: Palette.panel-2;
+        JsonView {
             preferred-height: 540px;
             vertical-stretch: 1;
-            clip: true;
-
-            Flickable {
-                x: 0;
-                y: 0;
-                width: parent.width;
-                height: parent.height;
-                viewport-width: parent.width;
-                viewport-height: dump-text.preferred-height + 24px;
-
-                dump-text := Text {
-                    x: 12px;
-                    y: 12px;
-                    width: parent.width - 24px;
-                    text: AppState.debug-dump != "" ? AppState.debug-dump : @tr("(no snapshot yet — click Refresh)");
-                    color: Palette.text-hi;
-                    font-family: Theme.font;
-                    font-size: Theme.fs(11px, 14px);
-                    wrap: word-wrap;
-                }
+            rows: AppState.debug-dump-rows;
+            placeholder: @tr("(no snapshot yet — click Refresh)");
+            toggle(logical) => {
+                AppState.debug-dump-toggle(logical);
             }
         }
     }

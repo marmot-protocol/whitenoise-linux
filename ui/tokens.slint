@@ -568,6 +568,32 @@ export struct MessageLine {
     last-content: bool,
 }
 
+// One colored token inside a line of the shared debug JSON viewer
+// (primitives/json-view.slint). Rust pre-tokenizes the pretty-printed JSON
+// (src/jsonview.rs) because Slint has no rich text — same idea as the chat
+// body's MessageRun pipeline, minus wrapping/emoji. `kind` picks the color:
+//   0 punctuation/whitespace/plain, 1 object key, 2 string value,
+//   3 number, 4 keyword (true/false/null).
+export struct JsonRun {
+    text: string,
+    kind: int,
+}
+
+// One visual line of the JSON viewer. Long tokens (base64/hex blobs) are
+// pre-wrapped Rust-side into continuation lines, so a line never overflows
+// horizontally and the ListView can stay virtualized with no h-scroll.
+// Containers fold: `collapsible` lines show a chevron, clicking it reports
+// `logical` (the Rust-side document line to toggle) via the viewer's
+// `toggle` callback, and Rust rebuilds the visible rows. `num` is the
+// logical line number for the gutter (0 = blank, on wrap continuations).
+export struct JsonLine {
+    runs: [JsonRun],
+    num: int,
+    logical: int,
+    collapsible: bool,
+    collapsed: bool,
+}
+
 // Signal-style in-bubble text selection. Exactly one message can hold a
 // selection at a time: `owner` is its message id ("" = none). The anchor and
 // cursor points live in the owner bubble's text-block coordinate space; the

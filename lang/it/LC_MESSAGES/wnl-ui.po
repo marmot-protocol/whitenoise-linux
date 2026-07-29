@@ -374,6 +374,10 @@ msgctxt "AccountSwitcherModal"
 msgid "All accounts stay connected. Switching only changes which one you're looking at."
 msgstr "Tutti gli account restano connessi. Il passaggio cambia solo quale stai visualizzando."
 
+msgctxt "AppearancePane"
+msgid "Also Ctrl + / − / 0, or Ctrl + scroll."
+msgstr "Anche Ctrl + / − / 0, o Ctrl + scorrimento."
+
 msgctxt "LabelModal"
 msgid "An organizing label for {}. Leave empty to remove it."
 msgstr ""
@@ -1142,7 +1146,9 @@ msgctxt "ConfirmFlows"
 msgid "Delete"
 msgstr "Elimina"
 
-msgctxt "AdvancedPane"
+#. Icon-only and destructive, so it needs a spoken name.
+#, fuzzy
+msgctxt "AuditFileRow"
 msgid "Delete audit file"
 msgstr "Elimina file di audit"
 
@@ -1581,6 +1587,10 @@ msgstr "Lingua interfaccia"
 msgctxt "LanguagePickerModal"
 msgid "Interface language"
 msgstr "Lingua interfaccia"
+
+msgctxt "AppearancePane"
+msgid "Interface zoom"
+msgstr "Zoom dell’interfaccia"
 
 msgctxt "KeysPage"
 msgid "Invalidates the current package and uploads a fresh one to your relays."
@@ -2716,9 +2726,17 @@ msgctxt "NetworkPane"
 msgid "Republishing…"
 msgstr "Ripubblicazione…"
 
+msgctxt "AppearancePane"
+msgid "Reset"
+msgstr "Ripristina"
+
 msgctxt "GeneralPane"
 msgid "Reset"
 msgstr "Ripristina"
+
+msgctxt "AppearancePane"
+msgid "Reset zoom to 100%"
+msgstr "Ripristina lo zoom al 100%"
 
 msgctxt "ImportBackupModal"
 msgid "Restore"
@@ -3626,6 +3644,18 @@ msgstr "Il tuo profilo"
 msgctxt "ProfilePage"
 msgid "Your public key. Safe to share."
 msgstr "La tua chiave pubblica. Sicura da condividere."
+
+msgctxt "AppearancePane"
+msgid "ZOOM"
+msgstr "ZOOM"
+
+msgctxt "AppearancePane"
+msgid "Zoom in"
+msgstr "Aumenta lo zoom"
+
+msgctxt "AppearancePane"
+msgid "Zoom out"
+msgstr "Riduci lo zoom"
 
 msgctxt "MessageView"
 msgid "[audio: {}]"

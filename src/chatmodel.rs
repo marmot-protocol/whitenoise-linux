@@ -75,32 +75,7 @@ pub(crate) fn chat_meta_from(
     let (a, b, init) = avatar_for(&name);
     let (picture, has_picture) = bind_cached_picture(picture_url.as_deref());
     let (preview, stamp) = match last_message {
-        // A group-system row (member added, renamed, …) previews as its own
-        // localized line with no "You:" prefix — it isn't a message anyone sent.
-        Some(m) if backend::group_system_event(m).is_some() => {
-            let text = backend::group_system_event(m)
-                .map(|ev| system_line_text(&ev, backend))
-                .unwrap_or_default();
-            (text, format_chat_stamp(m.recorded_at))
-        }
-        Some(m) => {
-            let mine = m.sender.eq_ignore_ascii_case(my_account_id_hex);
-            let prefix = if mine {
-                "You: ".to_string()
-            } else {
-                String::new()
-            };
-            // Attachment-only messages have an empty body; synthesize the
-            // media label ("📷 Photo", "📄 report.pdf") so the rail preview
-            // isn't blank.
-            let mut body = m.plaintext.clone();
-            if body.trim().is_empty()
-                && let Some(label) = media_reply_label(m)
-            {
-                body = label;
-            }
-            (format!("{prefix}{body}"), format_chat_stamp(m.recorded_at))
-        }
+        Some(m) => preview_and_stamp_for(m, my_account_id_hex, backend),
         None => (record.profile.description.clone(), String::new()),
     };
     ChatMeta {
@@ -125,6 +100,38 @@ pub(crate) fn chat_meta_from(
         muted: is_muted(&record.group_id_hex),
         label: s(&chat_label(&record.group_id_hex)),
     }
+}
+
+/// The chat-list row's preview text + stamp for one message record. Shared by
+/// [`chat_meta_from`] (full row builds) and the surgical preview updaters in
+/// `chatlist.rs`, so the rail's "last message" line renders identically no
+/// matter which path refreshed it.
+pub(crate) fn preview_and_stamp_for(
+    m: &AppMessageRecord,
+    my_account_id_hex: &str,
+    backend: &Backend,
+) -> (String, String) {
+    // A group-system row (member added, renamed, …) previews as its own
+    // localized line with no "You:" prefix — it isn't a message anyone sent.
+    if let Some(ev) = backend::group_system_event(m) {
+        return (system_line_text(&ev, backend), format_chat_stamp(m.recorded_at));
+    }
+    let mine = m.sender.eq_ignore_ascii_case(my_account_id_hex);
+    let prefix = if mine {
+        "You: ".to_string()
+    } else {
+        String::new()
+    };
+    // Attachment-only messages have an empty body; synthesize the
+    // media label ("📷 Photo", "📄 report.pdf") so the rail preview
+    // isn't blank.
+    let mut body = m.plaintext.clone();
+    if body.trim().is_empty()
+        && let Some(label) = media_reply_label(m)
+    {
+        body = label;
+    }
+    (format!("{prefix}{body}"), format_chat_stamp(m.recorded_at))
 }
 
 /// Returns true when the record is a normal text message that belongs in

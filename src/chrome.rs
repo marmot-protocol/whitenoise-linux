@@ -1659,6 +1659,10 @@ fn apply_message_event(
             }
             _ => {}
         }
+        // Keep the rail's "last message" line in step with the bubbles — a new
+        // message moves it, and an edit/delete of the newest message rewrites
+        // it. (`update_chat_row_preview` no-ops when nothing changed.)
+        update_chat_row_preview(&ui, &b, chat_idx, &all);
     });
 }
 

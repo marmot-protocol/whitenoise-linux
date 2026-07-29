@@ -1244,9 +1244,20 @@ pub(crate) fn wire_panes(
                     .unwrap_or_else(|| "(backend not booted)".to_string());
                 let _ = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak.upgrade() else { return };
+                    // Rows drive the viewer; the plain string stays for copy.
+                    ui.set_debug_dump_rows(json_doc_set(JsonSlot::Dump, &snap));
                     ui.set_debug_dump(snap.into());
                 });
             });
+        }
+    });
+
+    // Fold/unfold a container line in the Debug pane's dump viewer.
+    ui.global::<AppState>().on_debug_dump_toggle({
+        let weak = ui.as_weak();
+        move |logical| {
+            let Some(ui) = weak.upgrade() else { return };
+            ui.set_debug_dump_rows(json_doc_toggle(JsonSlot::Dump, logical));
         }
     });
 

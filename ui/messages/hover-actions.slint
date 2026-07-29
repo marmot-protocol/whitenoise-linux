@@ -25,6 +25,11 @@ export component HoverActions inherits Rectangle {
     // is on one of its buttons, since the bar itself only mounts visibly on
     // hover otherwise.
     out property <bool> focus-within: plus-btn.focused || reply-btn.focused || edit-btn.focused;
+    // Which side the button tooltips float on. The host sets it to match the
+    // bar's own placement (bar below the bubble → tips below the bar), so a
+    // tooltip never covers the message it belongs to.
+    in property <bool> tips-below: false;
+    property <length> tip-y-below: root.height + 8px;
 
     width: bar.preferred-width;
     height: bar.preferred-height;
@@ -99,19 +104,19 @@ export component HoverActions inherits Rectangle {
     // it paints outside the bar's own bounds.
     if plus-btn.hovered || plus-btn.focused: Tooltip {
         x: plus-btn.absolute-position.x - root.absolute-position.x + plus-btn.width / 2 - self.width / 2;
-        y: -self.height - 8px;
+        y: root.tips-below ? root.tip-y-below : -self.height - 8px;
         label: plus-btn.label;
         is-visible: true;
     }
     if reply-btn.hovered || reply-btn.focused: Tooltip {
         x: reply-btn.absolute-position.x - root.absolute-position.x + reply-btn.width / 2 - self.width / 2;
-        y: -self.height - 8px;
+        y: root.tips-below ? root.tip-y-below : -self.height - 8px;
         label: reply-btn.label;
         is-visible: true;
     }
     if edit-btn.hovered || edit-btn.focused: Tooltip {
         x: edit-btn.absolute-position.x - root.absolute-position.x + edit-btn.width / 2 - self.width / 2;
-        y: -self.height - 8px;
+        y: root.tips-below ? root.tip-y-below : -self.height - 8px;
         label: edit-btn.label;
         is-visible: true;
     }

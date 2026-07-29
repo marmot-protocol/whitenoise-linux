@@ -336,6 +336,7 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             ui.set_debug_view_title(s("Key package"));
             ui.set_debug_view_subtitle(row.name.clone());
             ui.set_debug_view_json(s(""));
+            ui.set_debug_view_rows(json_doc_set(JsonSlot::View, ""));
             ui.set_debug_view_busy(true);
             ui.set_debug_view_open(true);
             let weak = ui.as_weak();
@@ -347,6 +348,8 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 let _ = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak.upgrade() else { return };
                     ui.set_debug_view_busy(false);
+                    // Rows drive the viewer; the plain string stays for copy.
+                    ui.set_debug_view_rows(json_doc_set(JsonSlot::View, &json));
                     ui.set_debug_view_json(json.into());
                 });
             });

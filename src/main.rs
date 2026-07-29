@@ -56,6 +56,8 @@ mod contacts_export;
 pub(crate) use contacts_export::*;
 mod export;
 pub(crate) use export::*;
+mod jsonview;
+pub(crate) use jsonview::*;
 mod media;
 pub(crate) use media::*;
 mod mentions;
@@ -941,6 +943,8 @@ fn main() -> Result<(), slint::PlatformError> {
     let zoom_level = Rc::new(std::cell::Cell::new(
         settings_cell.borrow().zoom.clamp(ZOOM_MIN, ZOOM_MAX),
     ));
+    // Settings → Appearance shows the live level next to its zoom buttons.
+    ui.set_zoom_percent((zoom_level.get() * 100.0).round() as i32);
     let base_scale = Rc::new(std::cell::Cell::new(0.0f32));
     // The effective scale factor we last pushed to the window, so the reapply
     // watcher below can tell an external (compositor) change from our own.
@@ -981,6 +985,7 @@ fn main() -> Result<(), slint::PlatformError> {
         }
     };
     ui.global::<AppState>().on_zoom_adjust({
+        let ui_weak = ui.as_weak();
         let zoom_level = zoom_level.clone();
         let settings_cell = settings_cell.clone();
         let apply_zoom = apply_zoom.clone();
@@ -994,6 +999,9 @@ fn main() -> Result<(), slint::PlatformError> {
             let next = (next * 10.0).round() / 10.0;
             zoom_level.set(next);
             apply_zoom();
+            if let Some(ui) = ui_weak.upgrade() {
+                ui.set_zoom_percent((next * 100.0).round() as i32);
+            }
             let mut s = settings_cell.borrow_mut();
             s.zoom = next;
             s.save();

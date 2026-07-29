@@ -29,6 +29,7 @@ import {
     AuditLogEntry,
     StagedAttachment,
     ImageSearchHit,
+    JsonLine,
 } from "../tokens.slint";
 import { KeyPackageInfo, KpInspection } from "../keys/types.slint";
 import { PaletteAction } from "../modals/command-palette.slint";
@@ -583,22 +584,38 @@ export global AppState {
     // Debug pane (gated by Settings → Advanced toggle).
     in-out property <bool> debug-enabled: false;
     in-out property <string> debug-dump;
+    // Colored viewer rows for `debug-dump`, tokenized Rust-side
+    // (src/jsonview.rs) and rendered by primitives/json-view.slint. The plain
+    // string stays alongside for the clipboard path.
+    in-out property <[JsonLine]> debug-dump-rows;
+    // Fold/unfold the container at this logical line of the dump; Rust
+    // rebuilds `debug-dump-rows` from its fold state (src/jsonview.rs).
+    callback debug-dump-toggle(int);
     callback debug-toggled(bool);
     callback debug-load(int);
     callback debug-copy-clicked();
 
     // Developer-mode raw JSON viewer (message raw event / contact key package).
-    // Openers set title/subtitle + busy, then Rust fills `debug-view-json`.
+    // Openers set title/subtitle + busy, then Rust fills `debug-view-json` and
+    // the tokenized `debug-view-rows` the modal actually renders.
     in-out property <bool> debug-view-open: false;
     in-out property <string> debug-view-title;
     in-out property <string> debug-view-subtitle;
     in-out property <string> debug-view-json;
+    in-out property <[JsonLine]> debug-view-rows;
     in-out property <bool> debug-view-busy: false;
     // Fires with the message id whose raw event to show.
     callback view-raw-event(string);
     // Shows the currently-selected contact's key package (no arg — Rust reads
     // `active-contact`).
     callback view-contact-key-packages();
+    // Open the viewer on JSON the UI already holds (title, subtitle, json) —
+    // Rust tokenizes it into `debug-view-rows` and flips the modal open. The
+    // entry point for Slint-side openers like the KP inspector cards, which
+    // can't build rows themselves.
+    callback debug-view-show(string, string, string);
+    // Fold/unfold the container at this logical line of the modal's JSON.
+    callback debug-view-toggle(int);
     callback debug-view-copy();
 
     // KP inspector (dev-gated settings tab 9): decoded MLS key packages.
@@ -1017,6 +1034,10 @@ export global AppState {
     // which scales the whole rendered UI like browser zoom) and persists it.
     // Direction: 1 = zoom in, -1 = zoom out, 0 = reset to 100%.
     callback zoom-adjust(int);
+    // Current zoom as a whole percentage (100 = default). Pushed by Rust on
+    // boot and on every zoom-adjust; read-only for the UI (Settings →
+    // Appearance shows it next to its +/−/reset buttons).
+    in-out property <int> zoom-percent: 100;
 
     // ═══ Confirm-flow arming (UI-internal, no root alias) ═══════════════════
     // (was private on the window root; UI-internal, not part of the Rust contract)

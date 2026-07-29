@@ -195,6 +195,13 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 chat_load_generation.fetch_add(1, AtomicOrdering::Relaxed) + 1;
             let identity_epoch = account_epoch();
             if let Some(ui) = weak.upgrade() {
+                // The chat list stays in the left card on the Keys and Profile
+                // pages too — picking a chat from there is an implicit "go to
+                // Chats", otherwise the click selects invisibly and reads as
+                // doing nothing.
+                if ui.get_active_page() != Page::Chats as i32 {
+                    ui.set_active_page(Page::Chats as i32);
+                }
                 // Search state is per-conversation: switching threads closes
                 // the bar. A same-chat re-select (the off-window match jump
                 // re-fires chat_selected on the active chat) keeps it open.

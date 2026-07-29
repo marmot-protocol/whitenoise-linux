@@ -13,6 +13,7 @@ import { ListView } from "std-widgets.slint";
 import { AppState } from "../shell/app-state.slint";
 import { Palette, Theme, ChatMessage } from "../tokens.slint";
 import { MessageView } from "message-view.slint";
+import { HoverActions } from "hover-actions.slint";
 import { MessageEffectLayer } from "message-effect-layer.slint";
 import { PaperDoodles } from "../theme-decor/paper-doodles.slint";
 import { SynthGrid } from "../theme-decor/synth-grid.slint";
@@ -136,6 +137,11 @@ export component MessagesArea inherits Rectangle {
         // chat, so reopening this one can restore rather than reset it.
         AppState.messages-scroll-y = root.vy;
         AppState.messages-at-bottom = root.at-bottom;
+        // Scrolling moves the rows out from under a toolbar armed at the old
+        // coordinates — drop it; the next pointer move over a bubble re-arms
+        // it at the fresh position (rows re-report on hover moves).
+        root.acts-msg-id = "";
+        root.acts-armed = false;
     }
     converge-timer := Timer {
         interval: 16ms;
@@ -405,6 +411,25 @@ export component MessagesArea inherits Rectangle {
                 play-effect(eid, cx, cy, ax, ay, w, h) => {
                     root.stage-effect(eid, cx, cy, ax, ay, w, h);
                 }
+                arm-actions(id, text, author, can-edit, ax, ay, w, h) => {
+                    root.acts-msg-id = id;
+                    root.acts-text = text;
+                    root.acts-author = author;
+                    root.acts-can-edit = can-edit;
+                    // Window coords → area-local (the overlay fills root at 0,0).
+                    root.acts-bx = ax - root.absolute-position.x;
+                    root.acts-by = ay - root.absolute-position.y;
+                    root.acts-bw = w;
+                    root.acts-bh = h;
+                    root.acts-armed = true;
+                }
+                disarm-actions(id) => {
+                    // Guarded: leaving row A fires after entering row B has
+                    // already re-armed the overlay — don't tear B down.
+                    if (id == root.acts-msg-id) {
+                        root.acts-armed = false;
+                    }
+                }
             }
         }
     }
@@ -418,6 +443,73 @@ export component MessagesArea inherits Rectangle {
         ChatBubbleIcon {
             stroke: Palette.text-mid;
             filled: !root.loading;
+        }
+    }
+
+    // ── Floating hover-actions toolbar ─────────────────────────────────────
+    // One overlay instance for the whole list, declared after the scroll so it
+    // paints above every bubble. Rows report bubble hover + window geometry
+    // via arm/disarm (see MessageView); the bar places itself below the
+    // bubble, flipping above only when below would leave the pane — so it is
+    // never painted over by a later row (delegates paint in model order and
+    // `z` is compile-time-only) and never clipped at the viewport edges.
+    property <string> acts-msg-id;
+    property <string> acts-text;
+    property <string> acts-author;
+    property <bool> acts-can-edit;
+    // Armed bubble's geometry, area-local.
+    property <length> acts-bx;
+    property <length> acts-by;
+    property <length> acts-bw;
+    property <length> acts-bh;
+    // True while the pointer is over the armed bubble (the bar's own hover
+    // takes over from there — see acts-host's visible gate).
+    property <bool> acts-armed: false;
+    // Rows unmount without firing their disarm on a chat switch — drop any
+    // armed bar explicitly so it can't linger over the next conversation.
+    property <int> acts-chat: AppState.active-chat;
+    changed acts-chat => {
+        root.acts-msg-id = "";
+        root.acts-armed = false;
+    }
+    property <bool> acts-below: root.acts-by + root.acts-bh + 6px + acts-bar.height <= root.height - 4px;
+    property <length> acts-bar-x: clamp(
+        root.acts-bx + (root.acts-bw - acts-bar.width) / 2,
+        18px, max(18px, root.width - 18px - acts-bar.width));
+    property <length> acts-bar-y: root.acts-below
+        ? root.acts-by + root.acts-bh + 6px
+        : max(4px, root.acts-by - 6px - acts-bar.height);
+
+    acts-host := Rectangle {
+        x: 0;
+        y: 0;
+        width: parent.width;
+        height: parent.height;
+        // `visible: false` also disables the hover bridge's TouchArea, so the
+        // overlay is input-transparent whenever no bar is out.
+        visible: root.acts-msg-id != ""
+            && (root.acts-armed || acts-hover.has-hover || acts-bar.hovered || acts-bar.focus-within);
+
+        // Hover bridge: spans the 6px gap and the bar band (plus the bubble's
+        // horizontal extent) so the pointer can travel bubble → bar without a
+        // dead zone dropping the reveal — the job the old row-local hover
+        // region did.
+        acts-hover := TouchArea {
+            x: min(root.acts-bar-x, root.acts-bx);
+            y: min(root.acts-bar-y, root.acts-by + root.acts-bh);
+            width: max(root.acts-bar-x + acts-bar.width, root.acts-bx + root.acts-bw) - self.x;
+            height: (root.acts-below ? root.acts-bar-y + acts-bar.height : root.acts-by) - self.y;
+        }
+
+        acts-bar := HoverActions {
+            x: root.acts-bar-x;
+            y: root.acts-bar-y;
+            message-id: root.acts-msg-id;
+            reply-preview-text: root.acts-text;
+            reply-author: root.acts-author;
+            can-edit: root.acts-can-edit;
+            // Tooltips float away from the bubble: bar below → tips below.
+            tips-below: root.acts-below;
         }
     }
 

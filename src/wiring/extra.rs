@@ -751,6 +751,7 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             ui.set_debug_view_title(s("Raw event"));
             ui.set_debug_view_subtitle(s(&shorten_npub(message_id.as_str())));
             ui.set_debug_view_json(s(""));
+            ui.set_debug_view_rows(json_doc_set(JsonSlot::View, ""));
             ui.set_debug_view_busy(true);
             ui.set_debug_view_open(true);
             let weak = ui.as_weak();
@@ -760,9 +761,36 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 let _ = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak.upgrade() else { return };
                     ui.set_debug_view_busy(false);
+                    // Rows drive the viewer; the plain string stays for copy.
+                    ui.set_debug_view_rows(json_doc_set(JsonSlot::View, &json));
                     ui.set_debug_view_json(json.into());
                 });
             });
+        }
+    });
+
+    // Open the debug viewer on JSON the UI already holds (KP inspector cards
+    // etc.) — the Slint side can't tokenize into rows, so it hands the string
+    // here and this fills both representations and flips the modal open.
+    ui.global::<AppState>().on_debug_view_show({
+        let weak = ui.as_weak();
+        move |title, subtitle, json| {
+            let Some(ui) = weak.upgrade() else { return };
+            ui.set_debug_view_title(title);
+            ui.set_debug_view_subtitle(subtitle);
+            ui.set_debug_view_rows(json_doc_set(JsonSlot::View, &json));
+            ui.set_debug_view_json(json);
+            ui.set_debug_view_busy(false);
+            ui.set_debug_view_open(true);
+        }
+    });
+
+    // Fold/unfold a container line in the debug viewer modal.
+    ui.global::<AppState>().on_debug_view_toggle({
+        let weak = ui.as_weak();
+        move |logical| {
+            let Some(ui) = weak.upgrade() else { return };
+            ui.set_debug_view_rows(json_doc_toggle(JsonSlot::View, logical));
         }
     });
 

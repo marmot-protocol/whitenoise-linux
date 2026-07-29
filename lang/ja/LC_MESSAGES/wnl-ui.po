@@ -370,6 +370,10 @@ msgctxt "AccountSwitcherModal"
 msgid "All accounts stay connected. Switching only changes which one you're looking at."
 msgstr "すべてのアカウントは接続されたままです。切り替えても、表示するアカウントが変わるだけです。"
 
+msgctxt "AppearancePane"
+msgid "Also Ctrl + / − / 0, or Ctrl + scroll."
+msgstr "Ctrl + / − / 0、または Ctrl + スクロールでも操作できます。"
+
 msgctxt "LabelModal"
 msgid "An organizing label for {}. Leave empty to remove it."
 msgstr ""
@@ -1138,7 +1142,9 @@ msgctxt "ConfirmFlows"
 msgid "Delete"
 msgstr "削除"
 
-msgctxt "AdvancedPane"
+#. Icon-only and destructive, so it needs a spoken name.
+#, fuzzy
+msgctxt "AuditFileRow"
 msgid "Delete audit file"
 msgstr "監査ログファイルを削除"
 
@@ -1577,6 +1583,10 @@ msgstr "インターフェース言語"
 msgctxt "LanguagePickerModal"
 msgid "Interface language"
 msgstr "インターフェース言語"
+
+msgctxt "AppearancePane"
+msgid "Interface zoom"
+msgstr "インターフェースのズーム"
 
 msgctxt "KeysPage"
 msgid "Invalidates the current package and uploads a fresh one to your relays."
@@ -2712,9 +2722,17 @@ msgctxt "NetworkPane"
 msgid "Republishing…"
 msgstr "再公開中…"
 
+msgctxt "AppearancePane"
+msgid "Reset"
+msgstr "リセット"
+
 msgctxt "GeneralPane"
 msgid "Reset"
 msgstr "リセット"
+
+msgctxt "AppearancePane"
+msgid "Reset zoom to 100%"
+msgstr "ズームを100%にリセット"
 
 msgctxt "ImportBackupModal"
 msgid "Restore"
@@ -3621,6 +3639,18 @@ msgstr "あなたのプロフィール"
 msgctxt "ProfilePage"
 msgid "Your public key. Safe to share."
 msgstr "公開鍵。共有して問題ありません。"
+
+msgctxt "AppearancePane"
+msgid "ZOOM"
+msgstr "ズーム"
+
+msgctxt "AppearancePane"
+msgid "Zoom in"
+msgstr "拡大"
+
+msgctxt "AppearancePane"
+msgid "Zoom out"
+msgstr "縮小"
 
 msgctxt "MessageView"
 msgid "[audio: {}]"
