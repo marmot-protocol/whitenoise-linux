@@ -1594,6 +1594,10 @@ msgctxt "ModalField"
 msgid "Hide value"
 msgstr ""
 
+msgctxt "ReactionChip"
+msgid "Hide who reacted"
+msgstr "リアクションした人を非表示"
+
 msgctxt "ProfilePage"
 msgid "How your name appears in chats"
 msgstr "チャットでの表示名"
@@ -2432,6 +2436,10 @@ msgctxt "ConfirmFlows"
 msgid "Open this link?"
 msgstr "このリンクを開きますか?"
 
+msgctxt "ReactionChip"
+msgid "Open {}'s profile"
+msgstr "{}のプロフィールを開く"
+
 msgctxt "MessageBubble"
 msgid "Original message"
 msgstr "元のメッセージ"
@@ -3242,6 +3250,10 @@ msgstr "検索…"
 msgctxt "NotificationsPane"
 msgid "See and hear it with today's sound and preview settings."
 msgstr "現在のサウンドとプレビュー設定で確認できます。"
+
+msgctxt "ReactionChip"
+msgid "See who reacted"
+msgstr "リアクションした人を表示"
 
 msgctxt "command palette footer"
 msgid "Select"
