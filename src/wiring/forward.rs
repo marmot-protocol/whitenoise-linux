@@ -21,36 +21,64 @@ pub(crate) fn wire_forward(ui: &WhiteNoiseLinux, cx: &Cx) {
         group_ids,
         pending_state,
         vault_cell,
+        settings_cell,
         ..
     } = cx.clone();
 
     // The picker's search field: recompute one case-insensitive name-match
     // flag per chat row (the modal overlays these on its own active-chat skip)
-    // plus the ordered list of visible chat indices, which the modal's
-    // keyboard cursor walks. The picker also fires this on open with the
-    // empty query, so both arrays are fresh for the current active chat.
+    // plus the display/keyboard-cursor order (recently-forwarded-to chats
+    // first, see `Settings::recent_forwards`) and the visible subsequence of
+    // that order. The picker also fires this on open with the empty query, so
+    // all three arrays are fresh for the current active chat.
     ui.global::<AppState>().on_forward_filter_changed({
         let weak = ui.as_weak();
+        let group_ids = group_ids.clone();
+        let settings_cell = settings_cell.clone();
         move |query| {
             let Some(ui) = weak.upgrade() else { return };
             let q = query.to_lowercase();
             let active = ui.get_active_chat();
-            let mut flags: Vec<bool> = Vec::new();
-            let mut visible: Vec<i32> = Vec::new();
-            for (idx, c) in ui.get_chats().iter().enumerate() {
-                let matches = q.is_empty() || c.name.to_lowercase().contains(&q);
-                flags.push(matches);
-                if matches && idx as i32 != active {
-                    visible.push(idx as i32);
+            let flags: Vec<bool> = ui
+                .get_chats()
+                .iter()
+                .map(|c| q.is_empty() || c.name.to_lowercase().contains(&q))
+                .collect();
+
+            let recent = settings_cell.borrow().recent_forwards.clone();
+            let ids = group_ids.lock().unwrap();
+            let mut seen = vec![false; ids.len()];
+            let mut order: Vec<i32> = Vec::with_capacity(ids.len());
+            for group_hex in &recent {
+                if let Some(idx) = ids.iter().position(|g| g == group_hex)
+                    && !seen[idx]
+                {
+                    seen[idx] = true;
+                    order.push(idx as i32);
                 }
             }
+            for (idx, was_seen) in seen.into_iter().enumerate() {
+                if !was_seen {
+                    order.push(idx as i32);
+                }
+            }
+            drop(ids);
+
+            let visible: Vec<i32> = order
+                .iter()
+                .copied()
+                .filter(|&idx| flags.get(idx as usize).copied().unwrap_or(false) && idx != active)
+                .collect();
+
             ui.set_forward_match_flags(model(flags));
             ui.set_forward_visible_rows(model(visible));
+            ui.set_forward_chat_order(model(order));
         }
     });
 
     ui.global::<AppState>().on_request_forward({
         let weak = ui.as_weak();
+        let settings_cell = settings_cell.clone();
         move |dest_idx| {
             let Some(ui) = weak.upgrade() else { return };
             let dest_idx = dest_idx as usize;
@@ -73,6 +101,16 @@ pub(crate) fn wire_forward(ui: &WhiteNoiseLinux, cx: &Cx) {
             if src_group == dest_group {
                 return;
             }
+
+            // Picking a destination is the user's forwarding intent — record it
+            // regardless of how the send below turns out, so the picker keeps
+            // surfacing chats the user actually forwards to.
+            {
+                let mut s = settings_cell.borrow_mut();
+                s.record_recent_forward(&dest_group);
+                s.save();
+            }
+
             let Some(backend) = backend_cell.lock().unwrap().clone() else {
                 show_backend_error(&ui, error_copy().not_connected);
                 return;

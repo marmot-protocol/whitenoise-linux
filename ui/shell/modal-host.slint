@@ -264,6 +264,7 @@ export component ModalHost inherits Rectangle {
             source-text: AppState.ctx-menu-text;
             match-flags: AppState.forward-match-flags;
             visible-rows: AppState.forward-visible-rows;
+            chat-order: AppState.forward-chat-order;
             query-changed(q) => {
                 AppState.forward-filter-changed(q);
             }

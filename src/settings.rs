@@ -53,6 +53,12 @@ pub struct Settings {
     /// `quick_reactions` — never published to relays.
     #[serde(default)]
     pub recent_emoji: Vec<String>,
+    /// Group ids (`group_id_hex`) the user has recently forwarded a message
+    /// to, newest first, capped at `RECENT_FORWARD_MAX`. Feeds the forward
+    /// picker's row order (see `record_recent_forward`). Local-only, like
+    /// `recent_emoji` — never published to relays.
+    #[serde(default)]
+    pub recent_forwards: Vec<String>,
     /// Fire a desktop notification for incoming messages in chats you aren't
     /// currently viewing. Master switch for the two below.
     #[serde(default = "default_true")]
@@ -229,12 +235,25 @@ impl Settings {
         self.recent_emoji.insert(0, emoji.to_string());
         self.recent_emoji.truncate(RECENT_EMOJI_MAX);
     }
+
+    /// Move `group_hex` to the front of the recent-forwards list, dropping any
+    /// earlier occurrence and truncating to `RECENT_FORWARD_MAX`.
+    pub fn record_recent_forward(&mut self, group_hex: &str) {
+        self.recent_forwards.retain(|g| g != group_hex);
+        self.recent_forwards.insert(0, group_hex.to_string());
+        self.recent_forwards.truncate(RECENT_FORWARD_MAX);
+    }
 }
 
 /// The recent-emoji row is a single unscrolled strip, so the cap matches the
 /// picker grid's fixed column count (`EmojiPicker.cols` in
 /// `ui/emoji/emoji-picker.slint`).
 pub const RECENT_EMOJI_MAX: usize = 10;
+
+/// How many recently-forwarded-to chats the forward picker pins to the top —
+/// "the same handful of people or groups" from the issue this implements, not
+/// the whole chat list.
+pub const RECENT_FORWARD_MAX: usize = 8;
 
 fn default_locale() -> String {
     "en".into()
