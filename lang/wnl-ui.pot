@@ -2892,6 +2892,10 @@ msgctxt "SidePanel"
 msgid "Search…"
 msgstr ""
 
+msgctxt "NotificationsPane"
+msgid "See and hear it with today's sound and preview settings."
+msgstr ""
+
 msgctxt "command palette footer"
 msgid "Select"
 msgstr ""
@@ -2904,8 +2908,16 @@ msgctxt "Composer"
 msgid "Send a message…"
 msgstr ""
 
+msgctxt "NotificationsPane"
+msgid "Send a test notification"
+msgstr ""
+
 msgctxt "Composer"
 msgid "Send message"
+msgstr ""
+
+msgctxt "NotificationsPane"
+msgid "Send test"
 msgstr ""
 
 msgctxt "month"

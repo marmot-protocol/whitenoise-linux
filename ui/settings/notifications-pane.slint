@@ -7,6 +7,7 @@ import { Section } from "../layout/section.slint";
 import { GroupCard } from "../layout/group-card.slint";
 import { KVRow } from "../layout/kv-row.slint";
 import { Toggle } from "../primitives/toggle.slint";
+import { MicroButton } from "../primitives/button.slint";
 
 // Desktop-notification preferences. The master toggle gates the two detail
 // toggles (they dim + stop responding when notifications are off), mirroring
@@ -56,13 +57,27 @@ export component NotificationsPane inherits DetailPage {
                 row-height: 48px;
                 label: @tr("Show message preview");
                 sublabel: @tr("Off shows only \"New message\" without the text.");
-                show-divider: false;
                 Toggle {
                     label: @tr("Show message preview");
                     on <=> AppState.notification-preview;
                     enabled: AppState.notifications-enabled;
                     toggled => {
                         AppState.notification-preview-toggled(self.on);
+                    }
+                }
+            }
+
+            KVRow {
+                row-height: 48px;
+                label: @tr("Send a test notification");
+                sublabel: @tr("See and hear it with today's sound and preview settings.");
+                show-divider: false;
+                MicroButton {
+                    min-w: self.preferred-width;
+                    label: @tr("Send test");
+                    enabled: AppState.notifications-enabled;
+                    clicked => {
+                        AppState.send-test-notification();
                     }
                 }
             }
