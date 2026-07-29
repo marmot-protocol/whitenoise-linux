@@ -1859,10 +1859,6 @@ msgctxt "StoragePane"
 msgid "Location"
 msgstr "保存場所"
 
-msgctxt "AccountSwitcherDetail"
-msgid "Log out & remove"
-msgstr ""
-
 msgctxt "StoragePane"
 msgid "MEDIA CACHE"
 msgstr "メディアキャッシュ"
@@ -2606,6 +2602,10 @@ msgstr "削除"
 msgctxt "StagedChips"
 msgid "Remove"
 msgstr "削除"
+
+msgctxt "AccountSwitcherDetail"
+msgid "Remove account"
+msgstr "アカウントを削除"
 
 #, fuzzy
 msgctxt "AccountSwitcherModal"

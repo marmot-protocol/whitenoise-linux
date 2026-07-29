@@ -1777,10 +1777,6 @@ msgctxt "StoragePane"
 msgid "Location"
 msgstr ""
 
-msgctxt "AccountSwitcherDetail"
-msgid "Log out & remove"
-msgstr ""
-
 msgctxt "StoragePane"
 msgid "MEDIA CACHE"
 msgstr ""
@@ -2488,6 +2484,10 @@ msgstr ""
 
 msgctxt "StagedChips"
 msgid "Remove"
+msgstr ""
+
+msgctxt "AccountSwitcherDetail"
+msgid "Remove account"
 msgstr ""
 
 msgctxt "AccountSwitcherModal"
