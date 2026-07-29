@@ -72,6 +72,7 @@ export global AppState {
     in-out property <string> storage-cache-size;
     in-out property <bool> storage-clearing: false;
     callback storage-clear-cache();
+    in-out property <bool> show-storage-clear-cache-confirm: false;
     // Secret-vault affordances (Settings → Storage): the data-dir path, a button
     // to reveal it in the file manager, plus whole-folder backup / restore.
     in-out property <string> storage-vault-dir;

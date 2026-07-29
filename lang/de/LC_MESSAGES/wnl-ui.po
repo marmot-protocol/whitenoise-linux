@@ -703,9 +703,17 @@ msgctxt "KpCard"
 msgid "Ciphersuites"
 msgstr ""
 
+msgctxt "ConfirmFlows"
+msgid "Clear cache"
+msgstr "Cache leeren"
+
 msgctxt "StoragePane"
 msgid "Clear cache"
 msgstr "Cache leeren"
+
+msgctxt "ConfirmFlows"
+msgid "Clear the media cache?"
+msgstr ""
 
 #, fuzzy
 msgctxt "StoragePane"
@@ -1328,6 +1336,10 @@ msgstr ""
 
 msgctxt "KpCard"
 msgid "Event id"
+msgstr ""
+
+msgctxt "ConfirmFlows"
+msgid "Every cached attachment on this device is removed. Photos, voice notes, and files you've already viewed will need to redownload and redecrypt the next time you open them."
 msgstr ""
 
 msgctxt "KeysPage"
