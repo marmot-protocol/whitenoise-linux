@@ -60,6 +60,33 @@ export component MessagesArea inherits Rectangle {
     property <bool> has-older: AppState.messages-has-older;
     property <length> content-w: max(120px, root.available-w - 36px);
 
+    // Live budget for a bubble's wrap width — the same `row-w` minus gutter
+    // math each row applies to its own `available-w` (see incoming-row.slint /
+    // outgoing-row.slint), computed once here and pushed to Rust so the
+    // pre-wrapped `lines` model matches what the pane can actually show.
+    // Pushing on every layout tick would re-wrap every visible bubble mid-drag,
+    // so the push is debounced: a resize restarts the settle countdown, and
+    // only the tick that ticks it down to 0 without being restarted again
+    // fires `chat-pane-width-changed`.
+    property <length> bubble-budget: max(80px, root.content-w - 28px - 10px - 10px);
+    property <int> bubble-budget-settle: 0;
+    init => {
+        AppState.chat-pane-width-changed(root.bubble-budget);
+    }
+    changed bubble-budget => {
+        root.bubble-budget-settle = 6;
+    }
+    bubble-budget-debounce := Timer {
+        interval: 30ms;
+        running: root.bubble-budget-settle > 0;
+        triggered => {
+            root.bubble-budget-settle -= 1;
+            if (root.bubble-budget-settle == 0) {
+                AppState.chat-pane-width-changed(root.bubble-budget);
+            }
+        }
+    }
+
     // Message-effect stage. A pool of overlay layers (declared after the scroll,
     // so they paint above every bubble) plays bursts. Rows report their bubble's
     // window position + size via `play-effect`; we convert to overlay-local

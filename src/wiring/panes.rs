@@ -741,6 +741,24 @@ pub(crate) fn wire_panes(
         }
     });
 
+    // Debounced push from `messages.slint` whenever the chat pane's content
+    // width settles — window resize, the members panel opening, or the
+    // centred-conversation toggle all move it. Message text is wrapped in
+    // Rust against a fixed per-direction cap that assumes a wide-enough pane
+    // (see `clamp_bubble_max`), so a narrower live width needs the clamp and
+    // every already-built row's lines refreshed together.
+    ui.global::<AppState>().on_chat_pane_width_changed({
+        let weak = ui.as_weak();
+        move |px| {
+            if !set_bubble_budget(px) {
+                return;
+            }
+            if let Some(ui) = weak.upgrade() {
+                rewrap_all_message_lines_for_pane_width(&ui);
+            }
+        }
+    });
+
     ui.global::<AppState>().on_accent_selected({
         let weak = ui.as_weak();
         let settings_cell = settings_cell.clone();

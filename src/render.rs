@@ -1238,6 +1238,38 @@ pub(crate) fn set_body_fs(px: f32) -> bool {
     })
 }
 
+// The live width available to a bubble's body, in logical pixels, pushed from
+// `messages.slint`'s `chat-pane-width-changed` (debounced) every time the
+// chat pane's content width settles — window resize, the members panel
+// opening, or the centred-conversation toggle all move it. A bubble's wrap
+// width is `min(440/560, this)`: the two fixed caps assume a pane wide
+// enough to hold them, which the declared 640px minimum window width does
+// not guarantee once the left rail and message-pane gutters are subtracted.
+thread_local! {
+    static BUBBLE_BUDGET: std::cell::Cell<f32> = const { std::cell::Cell::new(f32::MAX) };
+}
+
+/// Record the live pane budget. Returns whether it moved, so the caller can
+/// skip re-wrapping every rendered row on a no-op push (the debounce timer
+/// still fires once per settle even when the width round-tripped back to
+/// where it started).
+pub(crate) fn set_bubble_budget(px: f32) -> bool {
+    BUBBLE_BUDGET.with(|c| {
+        if (c.get() - px).abs() < 0.5 {
+            return false;
+        }
+        c.set(px);
+        true
+    })
+}
+
+/// A bubble's wrap-width clamp: the fixed per-direction cap, narrowed to
+/// whatever the live chat pane actually has room for.
+pub(crate) fn clamp_bubble_max(outgoing: bool) -> f32 {
+    let base: f32 = if outgoing { 440.0 } else { 560.0 };
+    BUBBLE_BUDGET.with(|c| base.min(c.get()))
+}
+
 // Memoized markdown line models, keyed by (body, wrap-width, body-size).
 // Rebuilding a
 // chat re-parses every visible body through the full markdown → wrap pipeline;
