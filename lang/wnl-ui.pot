@@ -683,6 +683,10 @@ msgctxt "Modal"
 msgid "Close"
 msgstr ""
 
+msgctxt "ProfileModal"
+msgid "Close"
+msgstr ""
+
 msgctxt "command palette footer"
 msgid "Close"
 msgstr ""
@@ -1083,6 +1087,10 @@ msgstr ""
 
 msgctxt "ConfirmFlows"
 msgid "Delete"
+msgstr ""
+
+msgctxt "AdvancedPane"
+msgid "Delete audit file"
 msgstr ""
 
 msgctxt "SettingsPage"
@@ -2761,6 +2769,10 @@ msgstr ""
 
 msgctxt "LoginScreen"
 msgid "Save key"
+msgstr ""
+
+msgctxt "VideoViewerModal"
+msgid "Save video"
 msgstr ""
 
 msgctxt "LoginScreen"

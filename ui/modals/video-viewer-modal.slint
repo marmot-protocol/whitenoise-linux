@@ -228,6 +228,14 @@ export component VideoViewerModal inherits Modal {
                     background: save-touch.has-hover ? Palette.mint : Palette.media-control-bg;
                     opacity: root.actions-enabled ? 1.0 : 0.4;
                     animate background { duration: Theme.hover-dur; }
+                    accessible-role: button;
+                    accessible-label: @tr("Save video");
+                    accessible-enabled: root.actions-enabled;
+                    accessible-action-default => {
+                        if (root.actions-enabled) {
+                            root.save();
+                        }
+                    }
                     SaveIcon {
                         x: parent.width / 2 - self.width / 2;
                         y: parent.height / 2 - self.height / 2;

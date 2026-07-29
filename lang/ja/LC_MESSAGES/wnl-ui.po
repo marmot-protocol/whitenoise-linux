@@ -717,6 +717,10 @@ msgctxt "Modal"
 msgid "Close"
 msgstr "閉じる"
 
+msgctxt "ProfileModal"
+msgid "Close"
+msgstr "閉じる"
+
 msgctxt "command palette footer"
 msgid "Close"
 msgstr "閉じる"
@@ -1133,6 +1137,10 @@ msgstr "復号した画像やファイルを、この端末に暗号化して保
 msgctxt "ConfirmFlows"
 msgid "Delete"
 msgstr "削除"
+
+msgctxt "AdvancedPane"
+msgid "Delete audit file"
+msgstr "監査ログファイルを削除"
 
 msgctxt "SettingsPage"
 msgid "Delete audit log file?"
@@ -2894,6 +2902,10 @@ msgstr "編集を保存"
 msgctxt "LoginScreen"
 msgid "Save key"
 msgstr "鍵を保存"
+
+msgctxt "VideoViewerModal"
+msgid "Save video"
+msgstr "動画を保存"
 
 msgctxt "LoginScreen"
 msgid "Save your new key"

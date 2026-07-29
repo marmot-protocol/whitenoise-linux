@@ -721,6 +721,10 @@ msgctxt "Modal"
 msgid "Close"
 msgstr "Schließen"
 
+msgctxt "ProfileModal"
+msgid "Close"
+msgstr "Schließen"
+
 msgctxt "command palette footer"
 msgid "Close"
 msgstr "Schließen"
@@ -1137,6 +1141,10 @@ msgstr "Entschlüsselte Bilder und Dateien, verschlüsselt auf diesem Gerät ges
 msgctxt "ConfirmFlows"
 msgid "Delete"
 msgstr "Löschen"
+
+msgctxt "AdvancedPane"
+msgid "Delete audit file"
+msgstr "Audit-Protokolldatei löschen"
 
 msgctxt "SettingsPage"
 msgid "Delete audit log file?"
@@ -2898,6 +2906,10 @@ msgstr "Änderung speichern"
 msgctxt "LoginScreen"
 msgid "Save key"
 msgstr "Schlüssel speichern"
+
+msgctxt "VideoViewerModal"
+msgid "Save video"
+msgstr "Video speichern"
 
 msgctxt "LoginScreen"
 msgid "Save your new key"
