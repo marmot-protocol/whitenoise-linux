@@ -467,6 +467,12 @@ export component ModalHost inherits Rectangle {
             copy-npub => {
                 AppState.copy-to-clipboard(AppState.peer-profile-npub);
             }
+            copy-nip05 => {
+                AppState.copy-to-clipboard(AppState.peer-profile-nip05);
+            }
+            copy-lud16 => {
+                AppState.copy-to-clipboard(AppState.peer-profile-lud16);
+            }
             retry-picture => {
                 AppState.retry-peer-profile-picture();
             }
