@@ -28,6 +28,11 @@ export component ForwardPickerModal inherits Modal {
     // Rust alongside `match-flags` (active chat skipped, query applied). The
     // keyboard cursor walks this array so hidden rows are never focusable.
     in property <[int]> visible-rows;
+    // Every chat index, in the order rows are drawn: recently-forwarded-to
+    // chats first, then the rest in normal chat-list order. Recomputed by
+    // Rust alongside `match-flags`/`visible-rows`, so the drawn order and the
+    // keyboard-cursor order always agree.
+    in property <[int]> chat-order;
     callback query-changed(string);
 
     property <string> query;
@@ -167,9 +172,9 @@ export component ForwardPickerModal inherits Modal {
         flick := ListView {
             width: 100%;
             height: 100%;
-            for chat[idx] in root.chats: ForwardChatRow {
+            for idx in root.chat-order: ForwardChatRow {
                 width: parent.width;
-                chat: chat;
+                chat: root.chats[idx];
                 // Skip the chat the message is already in; the query
                 // filters the rest by chat name (flags computed in Rust).
                 shown: idx != root.active-chat && (root.query == "" || (idx < root.match-flags.length && root.match-flags[idx]));
