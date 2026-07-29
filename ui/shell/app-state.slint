@@ -740,6 +740,12 @@ export global AppState {
     // body size. Rust wraps message text against that size, so it re-wraps the
     // rendered rows here; see `set_body_fs` in `render.rs`.
     callback body-fs-changed(length);
+    // Fired (debounced) with the chat pane's live content width whenever it
+    // settles — window resize, the members panel opening, or the
+    // centred-conversation toggle all move it. Rust wraps message text
+    // against a fixed per-direction cap that assumes a wide-enough pane; see
+    // `clamp_bubble_max` in `render.rs`.
+    callback chat-pane-width-changed(length);
     callback accent-selected(int);
     callback outgoing-on-right-toggled(bool);
     // Stamp formats — `24h`/`12h` and `mdy`/`dmy`/`iso`; Rust persists and

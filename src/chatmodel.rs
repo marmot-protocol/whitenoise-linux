@@ -234,7 +234,7 @@ pub(crate) fn chat_message_from_with_reactions(
     let (reply_id, reply_author, reply_text) =
         reply_preview_for(record, records_by_id, my_account_id_hex);
     let (reply_to_image, reply_to_has_image) = reply_thumbnail_for(&reply_id);
-    let bubble_max = if outgoing { 440.0 } else { 560.0 };
+    let bubble_max = clamp_bubble_max(outgoing);
     let lines = build_message_lines(display_text, bubble_max);
 
     // Attachment fields. Parse the NIP-92 `imeta` tags. Two or more image
@@ -744,7 +744,7 @@ pub(crate) fn pending_chat_message(
     };
     let (reply_id, reply_author, reply_text) = pending.reply_to.clone().unwrap_or_default();
     let (reply_to_image, reply_to_has_image) = reply_thumbnail_for(&reply_id);
-    let bubble_max = 440.0_f32;
+    let bubble_max = clamp_bubble_max(true);
     let lines = build_message_lines(&pending.text, bubble_max);
 
     // Armed effect: `effect_id` is the persistent identity (so the row is
@@ -1152,6 +1152,39 @@ pub(crate) fn rewrap_all_message_lines(ui: &WhiteNoiseLinux) {
                     continue;
                 }
                 row.lines = build_message_lines(row.text.as_str(), row.bubble_max);
+                vm.set_row_data(pos, row);
+            }
+        });
+    }
+}
+
+/// Re-clamp and re-wrap every rendered message body against the live chat
+/// pane width.
+///
+/// Unlike [`rewrap_all_message_lines`] (the body-fs sibling, which only
+/// re-wraps because a font-size change never moves the clamp itself), a pane
+/// resize moves `bubble_max` too — `clamp_bubble_max` narrows the fixed
+/// per-direction cap to whatever the pane now has room for — so both the
+/// clamp and the lines built against it need refreshing. Reaction rows share
+/// the same width budget, so they are regrouped alongside the text.
+pub(crate) fn rewrap_all_message_lines_for_pane_width(ui: &WhiteNoiseLinux) {
+    let chats_messages = ui.get_chats_messages();
+    let chat_count = chats_messages.row_count();
+    for idx in 0..chat_count {
+        let _ = with_inner_messages(&chats_messages, idx, |vm| {
+            for pos in 0..vm.row_count() {
+                let Some(mut row) = vm.row_data(pos) else {
+                    continue;
+                };
+                if row.text.is_empty() || row.lines.row_count() == 0 {
+                    continue;
+                }
+                row.bubble_max = clamp_bubble_max(row.outgoing);
+                row.lines = build_message_lines(row.text.as_str(), row.bubble_max);
+                let chips: Vec<Reaction> = (0..row.reactions.row_count())
+                    .filter_map(|i| row.reactions.row_data(i))
+                    .collect();
+                row.reaction_rows = group_reaction_rows(chips, row.bubble_max);
                 vm.set_row_data(pos, row);
             }
         });
