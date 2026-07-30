@@ -66,7 +66,7 @@ export component RemoteImageSearchModal inherits Modal {
                 Button {
                     label: root.busy ? @tr("Searching…") : @tr("Search");
                     min-w: 100px;
-                    enabled: !root.busy;
+                    enabled: !root.busy && AppState.remote-image-search-query != "";
                     clicked => {
                         root.run-search();
                     }
