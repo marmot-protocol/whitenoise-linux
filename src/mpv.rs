@@ -217,8 +217,8 @@ unsafe extern "C" fn stream_close(cookie: *mut c_void) {
     drop(unsafe { Box::from_raw(cookie as *mut StreamCookie) });
 }
 
-// `user_data` is a `*const Arc<Vec<u8>>` we registered (owned by the player /
-// leaked for the one-shot grab). Each open clones the Arc into a fresh cursor.
+// `user_data` is a `*const Arc<Vec<u8>>` we registered, owned by the player.
+// Each open clones the Arc into a fresh cursor.
 unsafe extern "C" fn stream_open(
     user_data: *mut c_void,
     _uri: *mut c_char,
@@ -402,12 +402,11 @@ unsafe fn render_frame(
 }
 
 // Common handle setup: create + configure + initialize + register the blob
-// protocol + create the SW render context. `audio` false uses a null AO (for
-// the silent poster grab). Returns (handle, render_ctx, leaked user_data ptr).
-// On any failure the partially-built handle is destroyed and None returned.
+// protocol + create the SW render context. Returns (handle, render_ctx, leaked
+// user_data ptr). On any failure the partially-built handle is destroyed and
+// None returned.
 unsafe fn build_handle(
     bytes: Arc<Vec<u8>>,
-    audio: bool,
 ) -> Option<(*mut mpv_handle, *mut mpv_render_context, *mut Arc<Vec<u8>>)> {
     let h = unsafe { mpv_create() };
     if h.is_null() {
@@ -418,14 +417,8 @@ unsafe fn build_handle(
         mpv_set_option_string(h, c"vo".as_ptr(), c"libmpv".as_ptr());
         mpv_set_option_string(h, c"hwdec".as_ptr(), c"no".as_ptr());
         mpv_set_option_string(h, c"audio-display".as_ptr(), c"no".as_ptr());
-        if !audio {
-            mpv_set_option_string(h, c"ao".as_ptr(), c"null".as_ptr());
-            mpv_set_option_string(h, c"pause".as_ptr(), c"yes".as_ptr());
-        }
         // Loop the chat clip; users dismiss to stop.
-        if audio {
-            mpv_set_option_string(h, c"loop-file".as_ptr(), c"inf".as_ptr());
-        }
+        mpv_set_option_string(h, c"loop-file".as_ptr(), c"inf".as_ptr());
         if mpv_initialize(h) < 0 {
             mpv_terminate_destroy(h);
             return None;
@@ -519,7 +512,7 @@ impl MpvPlayer {
         on_state: impl Fn(PlayerState) + Send + 'static,
     ) -> Option<MpvPlayer> {
         let bytes = Arc::new(bytes);
-        let (h, rctx, user_data) = unsafe { build_handle(bytes, true)? };
+        let (h, rctx, user_data) = unsafe { build_handle(bytes)? };
 
         let wake = Arc::new(Wake {
             redraw: Mutex::new(false),
