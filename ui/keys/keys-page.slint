@@ -236,6 +236,7 @@ export component KeysPage inherits Rectangle {
                     action-label: @tr("Rotate");
                     busy-label: @tr("Rotating…");
                     busy: AppState.kp-rotate-busy;
+                    focusable: true;
                     triggered => {
                         AppState.show-rotate-confirm = true;
                     }
@@ -249,6 +250,7 @@ export component KeysPage inherits Rectangle {
                     detail: @tr("Shows your secret key after you confirm your vault password. Never share it — it is your identity.");
                     action-label: @tr("Reveal");
                     min-button-width: rotate-row.button-width;
+                    focusable: true;
                     triggered => {
                         AppState.reveal-nsec-password = "";
                         AppState.reveal-nsec-value = "";
@@ -264,6 +266,7 @@ export component KeysPage inherits Rectangle {
                     detail: @tr("Creates an NIP-49 key encrypted with your vault password, safe to store or move to another client.");
                     action-label: @tr("Export");
                     min-button-width: rotate-row.button-width;
+                    focusable: true;
                     triggered => {
                         AppState.export-key-password = "";
                         AppState.export-key-value = "";

@@ -16,6 +16,9 @@ export component DangerActionRow inherits Rectangle {
     // one uniform button size instead of each auto-sizing to its own label.
     in property <length> min-button-width: 0px;
     out property <length> button-width: micro.width;
+    // Opt-in Tab focusability, passed straight through to the underlying
+    // MicroButton (same opt-in-per-call-site convention as Button.focusable).
+    in property <bool> focusable: false;
     callback triggered();
 
     min-height: 60px;
@@ -56,6 +59,7 @@ export component DangerActionRow inherits Rectangle {
             micro := MicroButton {
                 min-w: root.min-button-width;
                 label: root.busy ? (root.busy-label != "" ? root.busy-label : root.action-label) : root.action-label;
+                focusable: root.focusable;
                 fg: Palette.danger;
                 bg-color: Palette.danger-soft;
                 hover-bg: Palette.danger-soft-hover;
