@@ -29,6 +29,7 @@ pub(crate) use marmot_app::{
     UserDirectoryRecord, UserProfileMetadata, group_system_event_from_message,
 };
 pub(crate) use tokio::runtime::Runtime as TokioRuntime;
+pub(crate) use zeroize::Zeroizing;
 pub(crate) use tokio::task::JoinHandle;
 
 pub(crate) use crate::observability::ObservabilityConfig;
@@ -596,7 +597,8 @@ impl Backend {
     fn account_setup_request(relays: &[String]) -> AccountSetupRequest {
         let endpoints = Self::endpoints_from(relays);
         AccountSetupRequest {
-            identity: None, // runtime.login() fills this from the nsec
+            identity: None,    // derived from import_nsec by create_or_import_account
+            import_nsec: None, // the login paths move the nsec in before dispatch
             default_relays: endpoints.clone(),
             bootstrap_relays: endpoints,
             discovery_relays: Vec::new(),
@@ -620,12 +622,12 @@ impl Backend {
         nsec: &str,
         relays: &[String],
     ) -> Result<()> {
-        let request = Self::account_setup_request(relays);
-        let nsec = nsec.to_string();
+        let mut request = Self::account_setup_request(relays);
+        request.import_nsec = Some(Zeroizing::new(nsec.to_string()));
         let runtime_for_login = runtime.clone();
         tokio
-            .block_on(async move { runtime_for_login.login(nsec, request).await })
-            .context("runtime.login")?;
+            .block_on(async move { runtime_for_login.create_or_import_account(request).await })
+            .context("runtime.create_or_import_account")?;
         Ok(())
     }
 
@@ -761,11 +763,12 @@ impl Backend {
             on_done(Err(anyhow!("that account is already added")));
             return;
         }
-        let request = Self::account_setup_request(&self.relays);
+        let mut request = Self::account_setup_request(&self.relays);
+        request.import_nsec = Some(Zeroizing::new(nsec));
         let runtime = self.runtime.clone();
         let account_home = self.account_home.clone();
         self.tokio.spawn(async move {
-            let result = match runtime.login(nsec, request).await {
+            let result = match runtime.create_or_import_account(request).await {
                 Ok(_) => account_home
                     .accounts()
                     .context("list accounts after login")
@@ -775,7 +778,7 @@ impl Backend {
                             .find(|a| a.account_id_hex.eq_ignore_ascii_case(&target_id))
                             .ok_or_else(|| anyhow!("account did not appear in home after login"))
                     }),
-                Err(e) => Err(anyhow!("login: {e}")),
+                Err(e) => Err(anyhow!("import account: {e}")),
             };
             on_done(result);
         });
