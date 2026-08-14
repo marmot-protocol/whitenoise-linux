@@ -15,6 +15,7 @@ mod kp_inspector;
 mod linkout;
 mod messaging;
 mod nav;
+mod network;
 mod panes;
 mod search;
 pub(crate) use attach::*;
@@ -30,8 +31,53 @@ pub(crate) use kp_inspector::*;
 pub(crate) use linkout::*;
 pub(crate) use messaging::*;
 pub(crate) use nav::*;
+pub(crate) use network::*;
 pub(crate) use panes::*;
 pub(crate) use search::*;
+
+/// The worker-thread → UI-thread round trip the wiring sections repeat: run
+/// `work` on a fresh thread (it may block on the backend or grind a KDF),
+/// then hop back onto the Slint event loop and hand the result to `apply`,
+/// skipped entirely if the window is already gone. `T` must be `Send`, which
+/// is exactly the `slint::Image` constraint the avatar pipeline documents:
+/// send raw pixels across, rebuild the `Image` inside `apply`.
+pub(crate) fn spawn_ui<T, W, A>(weak: slint::Weak<WhiteNoiseLinux>, work: W, apply: A)
+where
+    T: Send + 'static,
+    W: FnOnce() -> T + Send + 'static,
+    A: FnOnce(WhiteNoiseLinux, T) + Send + 'static,
+{
+    std::thread::spawn(move || {
+        let result = work();
+        let _ = slint::invoke_from_event_loop(move || {
+            let Some(ui) = weak.upgrade() else { return };
+            apply(ui, result);
+        });
+    });
+}
+
+/// [`spawn_ui`] for work that must resolve on the backend's tokio runtime
+/// (async backend ops): await `fut` on a runtime worker, then hand the result
+/// to `apply` on the Slint event loop. Compose an `async move` block at the
+/// call site when follow-up worker-side reads belong in the same hop.
+pub(crate) fn spawn_ui_tokio<T, Fut, A>(
+    backend: &Backend,
+    weak: slint::Weak<WhiteNoiseLinux>,
+    fut: Fut,
+    apply: A,
+) where
+    T: Send + 'static,
+    Fut: std::future::Future<Output = T> + Send + 'static,
+    A: FnOnce(WhiteNoiseLinux, T) + Send + 'static,
+{
+    backend.tokio_handle().spawn(async move {
+        let result = fut.await;
+        let _ = slint::invoke_from_event_loop(move || {
+            let Some(ui) = weak.upgrade() else { return };
+            apply(ui, result);
+        });
+    });
+}
 
 // Aliases for the handful of boxed-closure / nested-Arc shapes that the wiring
 // split now threads through struct fields and function signatures (positions

@@ -32,26 +32,27 @@ fn spawn_group_admin_op(
 ) {
     ui.set_group_settings_status(s(""));
     let weak = ui.as_weak();
-    std::thread::spawn(move || {
-        let result = op(&b, &group_hex);
-        let _ = slint::invoke_from_event_loop(move || {
-            let Some(ui) = weak.upgrade() else { return };
-            match result {
-                Ok(()) => {
-                    push_group_members_to_ui_async(&ui, &b, &group_hex);
-                    show_group_settings_status(&ui, ok_msg, StatusKind::Ok);
-                }
-                Err(e) => {
-                    tracing::warn!(target: "group_admin", "{op_name}: {e:#}");
-                    show_group_settings_status(
-                        &ui,
-                        friendly_error(ErrorOp::GroupSettings, &e),
-                        StatusKind::Error,
-                    );
-                }
+    spawn_ui(
+        weak,
+        move || {
+            let result = op(&b, &group_hex);
+            (result, b, group_hex)
+        },
+        move |ui, (result, b, group_hex)| match result {
+            Ok(()) => {
+                push_group_members_to_ui_async(&ui, &b, &group_hex);
+                show_group_settings_status(&ui, ok_msg, StatusKind::Ok);
             }
-        });
-    });
+            Err(e) => {
+                tracing::warn!(target: "group_admin", "{op_name}: {e:#}");
+                show_group_settings_status(
+                    &ui,
+                    friendly_error(ErrorOp::GroupSettings, &e),
+                    StatusKind::Error,
+                );
+            }
+        },
+    );
 }
 
 /// Upload `bytes` as the active group's photo and refresh the chat/member
@@ -157,10 +158,13 @@ pub(crate) fn wire_groups(ui: &WhiteNoiseLinux, cx: &Cx) {
             ui.set_add_member_status(s(""));
             // Inviting publishes an MLS commit + welcome to relays — worker.
             let weak = weak.clone();
-            std::thread::spawn(move || {
-                let result = b.invite_members(&group_hex, std::slice::from_ref(&npub));
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+            spawn_ui(
+                weak,
+                move || {
+                    let result = b.invite_members(&group_hex, std::slice::from_ref(&npub));
+                    (result, b, group_hex)
+                },
+                move |ui, (result, b, group_hex)| {
                     ui.set_add_member_busy(false);
                     match result {
                         Ok(_) => {
@@ -177,8 +181,8 @@ pub(crate) fn wire_groups(ui: &WhiteNoiseLinux, cx: &Cx) {
                             );
                         }
                     }
-                });
-            });
+                },
+            );
         }
     });
     ui.global::<AppState>().on_promote_admin({
@@ -322,10 +326,13 @@ pub(crate) fn wire_groups(ui: &WhiteNoiseLinux, cx: &Cx) {
             let weak = weak.clone();
             let group_ids = group_ids.clone();
             let archived_group_ids = archived_group_ids.clone();
-            std::thread::spawn(move || {
-                let result = b.leave_group(&group_hex);
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+            spawn_ui(
+                weak,
+                move || {
+                    let result = b.leave_group(&group_hex);
+                    (result, b)
+                },
+                move |ui, (result, b)| {
                     ui.set_group_leave_busy(false);
                     match result {
                         Ok(_) => {
@@ -354,8 +361,8 @@ pub(crate) fn wire_groups(ui: &WhiteNoiseLinux, cx: &Cx) {
                             );
                         }
                     }
-                });
-            });
+                },
+            );
         }
     });
     // Leave a group straight from the Archived detail view — the row is
@@ -386,10 +393,13 @@ pub(crate) fn wire_groups(ui: &WhiteNoiseLinux, cx: &Cx) {
             };
             let weak = weak.clone();
             let archived_group_ids = archived_group_ids.clone();
-            std::thread::spawn(move || {
-                let result = b.leave_group(&group_hex);
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+            spawn_ui(
+                weak,
+                move || {
+                    let result = b.leave_group(&group_hex);
+                    (result, b)
+                },
+                move |ui, (result, b)| {
                     ui.set_archived_leave_busy(false);
                     match result {
                         Ok(_) => {
@@ -401,8 +411,8 @@ pub(crate) fn wire_groups(ui: &WhiteNoiseLinux, cx: &Cx) {
                             show_backend_error(&ui, friendly_error(ErrorOp::GroupSettings, &e));
                         }
                     }
-                });
-            });
+                },
+            );
         }
     });
     ui.global::<AppState>().on_rename_group({
@@ -424,10 +434,13 @@ pub(crate) fn wire_groups(ui: &WhiteNoiseLinux, cx: &Cx) {
             // Renaming publishes an MLS commit to relays — worker.
             let weak = weak.clone();
             let group_ids = group_ids.clone();
-            std::thread::spawn(move || {
-                let result = b.rename_group(&group_hex, &name);
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+            spawn_ui(
+                weak,
+                move || {
+                    let result = b.rename_group(&group_hex, &name);
+                    (result, b, group_hex)
+                },
+                move |ui, (result, b, group_hex)| {
                     ui.set_group_rename_busy(false);
                     match result {
                         Ok(_) => {
@@ -444,8 +457,8 @@ pub(crate) fn wire_groups(ui: &WhiteNoiseLinux, cx: &Cx) {
                             );
                         }
                     }
-                });
-            });
+                },
+            );
         }
     });
     ui.global::<AppState>().on_set_group_description({
@@ -465,10 +478,13 @@ pub(crate) fn wire_groups(ui: &WhiteNoiseLinux, cx: &Cx) {
             ui.set_group_settings_status(s(""));
             // Description edits publish an MLS commit to relays — worker.
             let weak = weak.clone();
-            std::thread::spawn(move || {
-                let result = b.set_group_description(&group_hex, &description);
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+            spawn_ui(
+                weak,
+                move || {
+                    let result = b.set_group_description(&group_hex, &description);
+                    (result, b, group_hex, description)
+                },
+                move |ui, (result, b, group_hex, description)| {
                     ui.set_group_description_busy(false);
                     match result {
                         Ok(_) => {
@@ -490,8 +506,8 @@ pub(crate) fn wire_groups(ui: &WhiteNoiseLinux, cx: &Cx) {
                             );
                         }
                     }
-                });
-            });
+                },
+            );
         }
     });
     ui.global::<AppState>().on_clear_group_image({

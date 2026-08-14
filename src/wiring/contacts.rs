@@ -136,10 +136,11 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             // `add_contact` publishes the follow list and runs a broad
             // directory refresh across relays — worker thread.
             let weak = weak.clone();
-            std::thread::spawn(move || {
-                let result = b.add_contact(&input);
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+            let bg = b.clone();
+            spawn_ui(
+                weak,
+                move || bg.add_contact(&input),
+                move |ui, result| {
                     ui.set_add_contact_busy(false);
                     match result {
                         Ok(account_id_hex) => {
@@ -169,8 +170,8 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                             ui.set_add_contact_status_error(true);
                         }
                     }
-                });
-            });
+                },
+            );
         }
     });
     // "Add contact" from the peer-profile modal — same flow as the add-contact
@@ -191,10 +192,11 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             ui.set_peer_profile_status(s(""));
             ui.set_peer_profile_status_error(false);
             let weak = weak.clone();
-            std::thread::spawn(move || {
-                let result = b.add_contact(&npub);
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+            let bg = b.clone();
+            spawn_ui(
+                weak,
+                move || bg.add_contact(&npub),
+                move |ui, result| {
                     ui.set_peer_profile_adding(false);
                     match result {
                         Ok(_) => {
@@ -210,8 +212,8 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                             ui.set_peer_profile_status_error(true);
                         }
                     }
-                });
-            });
+                },
+            );
         }
     });
     ui.global::<AppState>().on_contact_nickname_requested({
@@ -344,16 +346,16 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             // `debug_contact_key_packages` does a `block_on` on the backend's
             // tokio runtime — run it on a plain thread, never a runtime worker
             // (that panics: "Cannot start a runtime from within a runtime").
-            std::thread::spawn(move || {
-                let json = b.debug_contact_key_packages(&account_id);
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+            spawn_ui(
+                weak,
+                move || b.debug_contact_key_packages(&account_id),
+                move |ui, json| {
                     ui.set_debug_view_busy(false);
                     // Rows drive the viewer; the plain string stays for copy.
                     ui.set_debug_view_rows(json_doc_set(JsonSlot::View, &json));
                     ui.set_debug_view_json(json.into());
-                });
-            });
+                },
+            );
         }
     });
     // Contact detail → "Start chat": create a 1:1 conversation with the
@@ -390,10 +392,12 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             }
             let weak = weak.clone();
             let group_ids = group_ids.clone();
-            std::thread::spawn(move || {
-                let result = b.create_group("", std::slice::from_ref(&npub));
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+            let bg = b.clone();
+            let npub_bg = npub.clone();
+            spawn_ui(
+                weak,
+                move || bg.create_group("", std::slice::from_ref(&npub_bg)),
+                move |ui, result| {
                     match result {
                         Ok(group_id) => {
                             let group_hex = hex::encode(group_id.as_slice());
@@ -426,8 +430,8 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                             ui.set_show_new_chat(true);
                         }
                     }
-                });
-            });
+                },
+            );
         }
     });
     ui.global::<AppState>().on_contact_selected({
@@ -596,10 +600,11 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             };
             let weak = weak.clone();
             let refresh = refresh.clone();
-            std::thread::spawn(move || {
-                let result = b.set_group_archived(&group_hex, true);
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+            let bg = b.clone();
+            spawn_ui(
+                weak,
+                move || bg.set_group_archived(&group_hex, true),
+                move |ui, result| {
                     if let Err(e) = result {
                         tracing::warn!(target: "contact_archive", "{e:#}");
                         show_backend_error(&ui, friendly_error(ErrorOp::Archive, &e));
@@ -607,8 +612,8 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                     }
                     refresh();
                     push_contact_actions(&ui, &b);
-                });
-            });
+                },
+            );
         }
     });
 
@@ -676,10 +681,11 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             };
             let weak = weak.clone();
             let refresh = refresh.clone();
-            std::thread::spawn(move || {
-                let result = b.remove_contact(&account_id);
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+            let bg = b.clone();
+            spawn_ui(
+                weak,
+                move || bg.remove_contact(&account_id),
+                move |ui, result| {
                     if let Err(e) = result {
                         tracing::warn!(target: "contact_remove", "{e:#}");
                         show_backend_error(&ui, friendly_error(ErrorOp::RemoveContact, &e));
@@ -692,8 +698,8 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                         }
                         refresh();
                     });
-                });
-            });
+                },
+            );
         }
     });
 }
@@ -728,20 +734,23 @@ pub(crate) fn spawn_contact_key_package_fetch(
     contacts.set_row_data(idx, row);
 
     let weak = ui.as_weak();
-    std::thread::spawn(move || {
-        let result = b.fetch_contact_key_package(&account_id);
-        let (status, detail, can_retry) = match result {
-            Ok((created_at, relays)) => {
-                let (status, detail) = kp_labels(created_at, &relays);
-                (status, detail, false)
+    let account_id_bg = account_id.clone();
+    spawn_ui(
+        weak,
+        move || {
+            let result = b.fetch_contact_key_package(&account_id_bg);
+            match result {
+                Ok((created_at, relays)) => {
+                    let (status, detail) = kp_labels(created_at, &relays);
+                    (status, detail, false)
+                }
+                Err(e) => {
+                    tracing::warn!(target: "backend", "fetch_contact_key_package failed: {e:#}");
+                    (error_copy().kp_not_found, error_copy().kp_none_yet, true)
+                }
             }
-            Err(e) => {
-                tracing::warn!(target: "backend", "fetch_contact_key_package failed: {e:#}");
-                (error_copy().kp_not_found, error_copy().kp_none_yet, true)
-            }
-        };
-        let _ = slint::invoke_from_event_loop(move || {
-            let Some(ui) = weak.upgrade() else { return };
+        },
+        move |ui, (status, detail, can_retry)| {
             let contacts = ui.get_contacts();
             let Some(vm) = contacts.as_any().downcast_ref::<VecModel<Contact>>() else {
                 return;
@@ -759,6 +768,6 @@ pub(crate) fn spawn_contact_key_package_fetch(
                 vm.set_row_data(i, r);
                 break;
             }
-        });
-    });
+        },
+    );
 }

@@ -21,10 +21,10 @@ pub(crate) fn wire_kp_inspector(ui: &WhiteNoiseLinux, cx: &Cx) {
             ui.set_kp_inspector_busy(true);
             ui.set_kp_inspector_status(s(""));
             let weak = ui.as_weak();
-            std::thread::spawn(move || {
-                let reports = b.inspect_own_key_packages();
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+            spawn_ui(
+                weak,
+                move || b.inspect_own_key_packages(),
+                move |ui, reports| {
                     ui.set_kp_inspector_busy(false);
                     // Dev-only surface: statuses stay untranslated, like the
                     // debug pane's JSON dumps.
@@ -33,11 +33,10 @@ pub(crate) fn wire_kp_inspector(ui: &WhiteNoiseLinux, cx: &Cx) {
                         reports.len(),
                         if reports.len() == 1 { "" } else { "s" }
                     )));
-                    let rows: Vec<KpInspection> =
-                        reports.iter().map(kp_report_to_ui).collect();
+                    let rows: Vec<KpInspection> = reports.iter().map(kp_report_to_ui).collect();
                     ui.set_kp_inspector_own(ModelRc::new(VecModel::from(rows)));
-                });
-            });
+                },
+            );
         }
     });
 
@@ -53,10 +52,10 @@ pub(crate) fn wire_kp_inspector(ui: &WhiteNoiseLinux, cx: &Cx) {
             ui.set_kp_peer_loaded(false);
             ui.set_kp_peer_status(s(""));
             let weak = ui.as_weak();
-            std::thread::spawn(move || {
-                let result = b.inspect_contact_key_package(&query);
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+            spawn_ui(
+                weak,
+                move || b.inspect_contact_key_package(&query),
+                move |ui, result| {
                     ui.set_kp_peer_busy(false);
                     match result {
                         Ok(report) => {
@@ -65,8 +64,8 @@ pub(crate) fn wire_kp_inspector(ui: &WhiteNoiseLinux, cx: &Cx) {
                         }
                         Err(e) => ui.set_kp_peer_status(s(&e.to_string())),
                     }
-                });
-            });
+                },
+            );
         }
     });
 }

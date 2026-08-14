@@ -58,19 +58,20 @@ fn finish_viewer_image_action(
             });
         }
         ViewerImageAction::Save(path) => {
-            std::thread::spawn(move || {
-                let result = std::fs::write(&path, &bytes).map_err(|e| e.to_string());
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
-                    match result {
-                        Ok(()) => set_status_feedback(&ui, error_copy().image_saved, false),
-                        Err(e) => {
-                            tracing::warn!(target: "attach", "save image {}: {e}", path.display());
-                            set_status_feedback(&ui, error_copy().save_image_failed, true);
-                        }
+            spawn_ui(
+                weak,
+                move || {
+                    let result = std::fs::write(&path, &bytes).map_err(|e| e.to_string());
+                    (result, path)
+                },
+                move |ui, (result, path)| match result {
+                    Ok(()) => set_status_feedback(&ui, error_copy().image_saved, false),
+                    Err(e) => {
+                        tracing::warn!(target: "attach", "save image {}: {e}", path.display());
+                        set_status_feedback(&ui, error_copy().save_image_failed, true);
                     }
-                });
-            });
+                },
+            );
         }
     }
 }
@@ -226,19 +227,20 @@ fn fetch_video_save_bytes(
 }
 
 fn write_video_save_bytes(weak: Weak<WhiteNoiseLinux>, bytes: Vec<u8>, path: std::path::PathBuf) {
-    std::thread::spawn(move || {
-        let result = std::fs::write(&path, &bytes).map_err(|e| e.to_string());
-        let _ = slint::invoke_from_event_loop(move || {
-            let Some(ui) = weak.upgrade() else { return };
-            match result {
-                Ok(()) => set_status_feedback(&ui, error_copy().video_saved, false),
-                Err(e) => {
-                    tracing::warn!(target: "attach", "save video {}: {e}", path.display());
-                    set_status_feedback(&ui, error_copy().save_video_failed, true);
-                }
+    spawn_ui(
+        weak,
+        move || {
+            let result = std::fs::write(&path, &bytes).map_err(|e| e.to_string());
+            (result, path)
+        },
+        move |ui, (result, path)| match result {
+            Ok(()) => set_status_feedback(&ui, error_copy().video_saved, false),
+            Err(e) => {
+                tracing::warn!(target: "attach", "save video {}: {e}", path.display());
+                set_status_feedback(&ui, error_copy().save_video_failed, true);
             }
-        });
-    });
+        },
+    );
 }
 
 /// Push the user's quick-reaction set into the `QuickReact` global, the single
@@ -641,20 +643,26 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             let pending_state = pending_state.clone();
             let group_ids2 = group_ids.clone();
             let b = backend.clone();
-            backend.tokio_handle().spawn(async move {
-                let msgs = b
-                    .messages(&group_hex, Some(msg_window_for(&group_hex)))
-                    .unwrap_or_default();
-                // Local hide never touches the wire, so the message's own
-                // cached attachment(s) are still ours to evict — nothing else
-                // will, since the record itself lives on unretracted.
-                if let Some(record) = msgs.iter().find(|r| r.message_id_hex == id) {
-                    for hash in media_cache::hashes_from_tags(&record.tags) {
-                        media_cache::remove(&hash);
+            let bg = b.clone();
+            let bg_group_hex = group_hex.clone();
+            spawn_ui_tokio(
+                backend,
+                weak2,
+                async move {
+                    let msgs = bg
+                        .messages(&bg_group_hex, Some(msg_window_for(&bg_group_hex)))
+                        .unwrap_or_default();
+                    // Local hide never touches the wire, so the message's own
+                    // cached attachment(s) are still ours to evict — nothing else
+                    // will, since the record itself lives on unretracted.
+                    if let Some(record) = msgs.iter().find(|r| r.message_id_hex == id) {
+                        for hash in media_cache::hashes_from_tags(&record.tags) {
+                            media_cache::remove(&hash);
+                        }
                     }
-                }
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak2.upgrade() else { return };
+                    msgs
+                },
+                move |ui, msgs| {
                     let ids = group_ids2.lock().unwrap();
                     let Some(idx) = ids.iter().position(|g| g == &group_hex) else {
                         return;
@@ -670,8 +678,8 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                         &group_hex,
                         &msgs,
                     );
-                });
-            });
+                },
+            );
         }
     });
 
@@ -698,20 +706,22 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             let weak = ui.as_weak();
             let message_id = message_id.to_string();
             let b = backend.clone();
-            backend.tokio_handle().spawn(async move {
-                let all = b
-                    .messages(&group_hex, Some(msg_window_for(&group_hex)))
-                    .unwrap_or_default();
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+            spawn_ui_tokio(
+                &backend,
+                weak,
+                async move {
+                    b.messages(&group_hex, Some(msg_window_for(&group_hex)))
+                        .unwrap_or_default()
+                },
+                move |ui, all| {
                     let versions = build_edit_history(&all, &message_id);
                     if versions.is_empty() {
                         return;
                     }
                     ui.set_edit_history(ModelRc::new(VecModel::from(versions)));
                     ui.set_edit_history_open(true);
-                });
-            });
+                },
+            );
         }
     });
     ui.global::<AppState>().on_dismiss_edit_history({
@@ -748,16 +758,18 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             ui.set_debug_view_open(true);
             let weak = ui.as_weak();
             let message_id = message_id.to_string();
-            backend.tokio_handle().spawn(async move {
-                let json = backend.debug_message_event(&group_hex, &message_id);
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+            let bg = backend.clone();
+            spawn_ui_tokio(
+                &backend,
+                weak,
+                async move { bg.debug_message_event(&group_hex, &message_id) },
+                move |ui, json| {
                     ui.set_debug_view_busy(false);
                     // Rows drive the viewer; the plain string stays for copy.
                     ui.set_debug_view_rows(json_doc_set(JsonSlot::View, &json));
                     ui.set_debug_view_json(json.into());
-                });
-            });
+                },
+            );
         }
     });
 
@@ -1440,10 +1452,11 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             // "publishing…" actually shows instead of freezing the window.
             let weak = weak.clone();
             let profile_save_cancelled = profile_save_cancelled.clone();
-            std::thread::spawn(move || {
-                let result = backend.save_profile(profile);
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+            let bg = backend.clone();
+            spawn_ui(
+                weak,
+                move || bg.save_profile(profile),
+                move |ui, result| {
                     ui.set_profile_busy(false);
                     if profile_save_cancelled.swap(false, AtomicOrdering::SeqCst) {
                         // The user cancelled while this was in flight — the
@@ -1473,8 +1486,8 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                             );
                         }
                     }
-                });
-            });
+                },
+            );
         }
     });
 

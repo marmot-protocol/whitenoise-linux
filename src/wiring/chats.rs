@@ -115,10 +115,11 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             // paints.
             let weak = weak.clone();
             let group_ids = group_ids.clone();
-            std::thread::spawn(move || {
-                let result = b.create_group(&group_name, &members);
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+            let bg = b.clone();
+            spawn_ui(
+                weak,
+                move || bg.create_group(&group_name, &members),
+                move |ui, result| {
                     ui.set_new_chat_busy(false);
                     match result {
                         Ok(group_id) => {
@@ -148,8 +149,8 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                             ui.set_new_chat_status(friendly_error(ErrorOp::CreateChat, &e).into());
                         }
                     }
-                });
-            });
+                },
+            );
         }
     });
     // One-shot target used by the global mentions inbox. The normal chat
@@ -293,17 +294,23 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                     let current_group_ids = group_ids.clone();
                     let chat_load_generation = chat_load_generation.clone();
                     let b = backend.clone();
-                    backend.tokio_handle().spawn(async move {
-                        // The rebuild resolves mention chips and member "@"
-                        // prefixes from this registration; the concurrent
-                        // members-panel fetch may land later.
-                        warm_group_mentions(&b, &group_hex);
-                        let limit = jump_message_id
-                            .as_ref()
-                            .map_or_else(|| Some(msg_window_for(&group_hex)), |_| None);
-                        let result = b.messages(&group_hex, limit);
-                        let _ = slint::invoke_from_event_loop(move || {
-                            let Some(ui) = weak.upgrade() else { return };
+                    let bg = b.clone();
+                    let group_hex_bg = group_hex.clone();
+                    let jump_bg = jump_message_id.clone();
+                    spawn_ui_tokio(
+                        &backend,
+                        weak,
+                        async move {
+                            // The rebuild resolves mention chips and member "@"
+                            // prefixes from this registration; the concurrent
+                            // members-panel fetch may land later.
+                            warm_group_mentions(&bg, &group_hex_bg);
+                            let limit = jump_bg
+                                .as_ref()
+                                .map_or_else(|| Some(msg_window_for(&group_hex_bg)), |_| None);
+                            bg.messages(&group_hex_bg, limit)
+                        },
+                        move |ui, result| {
                             if chat_load_generation.load(AtomicOrdering::Relaxed) != generation
                                 || account_epoch() != identity_epoch
                                 || !b.account().account_id_hex.eq_ignore_ascii_case(&my_id)
@@ -522,8 +529,8 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                                 snapshot_ids,
                             );
                             *active_watcher.lock().unwrap() = Some(handle);
-                        });
-                    });
+                        },
+                    );
                 } else {
                     ui.set_messages_loading(false);
                 }
@@ -638,31 +645,35 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             let msg_search_generation = msg_search_generation.clone();
             let msg_search_jump = msg_search_jump.clone();
             let b = backend.clone();
-            backend.tokio_handle().spawn(async move {
-                // Full-history scan (like the mentions inbox) so even an old
-                // match is steppable without manual pagination. Edits replace
-                // the original text; deleted messages never match.
-                let records = b.messages(&group_hex, None).unwrap_or_default();
-                let edits = aggregate_edits(&records);
-                let deletes = aggregate_deletes(&records);
-                let matches: Vec<String> = records
-                    .iter()
-                    .filter(|m| is_visible_chat_message(m))
-                    .filter(|m| !deletes.contains(&m.message_id_hex))
-                    .filter(|m| {
-                        let text = edits
-                            .get(&m.message_id_hex)
-                            .filter(|edit| edit.count() > 0)
-                            .map(|edit| edit.text().to_string())
-                            .unwrap_or_else(|| m.plaintext.clone());
-                        matches_tokens(&text, &tokens)
-                    })
-                    // Newest first: position 1 is the most recent match.
-                    .rev()
-                    .map(|m| m.message_id_hex.clone())
-                    .collect();
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+            let group_hex_bg = group_hex.clone();
+            spawn_ui_tokio(
+                &backend,
+                weak,
+                async move {
+                    // Full-history scan (like the mentions inbox) so even an old
+                    // match is steppable without manual pagination. Edits replace
+                    // the original text; deleted messages never match.
+                    let records = b.messages(&group_hex_bg, None).unwrap_or_default();
+                    let edits = aggregate_edits(&records);
+                    let deletes = aggregate_deletes(&records);
+                    records
+                        .iter()
+                        .filter(|m| is_visible_chat_message(m))
+                        .filter(|m| !deletes.contains(&m.message_id_hex))
+                        .filter(|m| {
+                            let text = edits
+                                .get(&m.message_id_hex)
+                                .filter(|edit| edit.count() > 0)
+                                .map(|edit| edit.text().to_string())
+                                .unwrap_or_else(|| m.plaintext.clone());
+                            matches_tokens(&text, &tokens)
+                        })
+                        // Newest first: position 1 is the most recent match.
+                        .rev()
+                        .map(|m| m.message_id_hex.clone())
+                        .collect::<Vec<String>>()
+                },
+                move |ui, matches| {
                     if msg_search_generation.load(AtomicOrdering::Relaxed) != generation {
                         return;
                     }
@@ -689,8 +700,8 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                     } else {
                         ui.set_message_jump_id(s(""));
                     }
-                });
-            });
+                },
+            );
         }
     });
 
@@ -763,12 +774,16 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             let weak = ui.as_weak();
             let pending_state = pending_state.clone();
             let b = backend.clone();
-            backend.tokio_handle().spawn(async move {
-                let msgs = b
-                    .messages(&group_hex, Some(msg_window_for(&group_hex)))
-                    .unwrap_or_default();
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+            let bg = b.clone();
+            let group_hex_bg = group_hex.clone();
+            spawn_ui_tokio(
+                &backend,
+                weak,
+                async move {
+                    bg.messages(&group_hex_bg, Some(msg_window_for(&group_hex_bg)))
+                        .unwrap_or_default()
+                },
+                move |ui, msgs| {
                     let chats_messages = ui.get_chats_messages();
                     {
                         let overlay = pending_state.lock().unwrap();
@@ -787,8 +802,8 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                         // loaded.
                         ui.set_messages_has_older(msgs.len() >= new_window);
                     }
-                });
-            });
+                },
+            );
         }
     });
     ui.global::<AppState>().on_archive_selected({
@@ -854,18 +869,18 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             // Send handles, so a clone rides into the completion.
             let weak = weak.clone();
             let refresh = refresh.clone();
-            std::thread::spawn(move || {
-                let result = b.accept_group_invite(&group_hex);
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+            spawn_ui(
+                weak,
+                move || b.accept_group_invite(&group_hex),
+                move |ui, result| {
                     if let Err(e) = result {
                         tracing::warn!(target: "accept", "{e:#}");
                         show_backend_error(&ui, friendly_error(ErrorOp::Accept, &e));
                         return;
                     }
                     refresh();
-                });
-            });
+                },
+            );
         }
     });
 
@@ -883,18 +898,18 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             };
             let weak = weak.clone();
             let refresh = refresh.clone();
-            std::thread::spawn(move || {
-                let result = b.decline_group_invite(&group_hex);
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+            spawn_ui(
+                weak,
+                move || b.decline_group_invite(&group_hex),
+                move |ui, result| {
                     if let Err(e) = result {
                         tracing::warn!(target: "block", "{e:#}");
                         show_backend_error(&ui, friendly_error(ErrorOp::Block, &e));
                         return;
                     }
                     refresh();
-                });
-            });
+                },
+            );
         }
     });
 

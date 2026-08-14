@@ -414,17 +414,17 @@ pub(crate) fn wire_panes(
             ui.set_login_busy(true);
             let weak = weak.clone();
             let boot = boot.clone();
-            std::thread::spawn(move || {
-                let result = (|| -> Result<(String, String, Arc<Mutex<Vault>>), String> {
+            spawn_ui(
+                weak,
+                move || -> Result<(String, String, Arc<Mutex<Vault>>), String> {
                     let npub = keys.public_key().to_bech32().map_err(|e| e.to_string())?;
                     let nsec = keys.secret_key().to_bech32().map_err(|e| e.to_string())?;
                     let mut v = Vault::create(&password).map_err(|e| format!("save key: {e}"))?;
                     v.set(vault::NSEC_KEY, &nsec)
                         .map_err(|e| format!("seal nsec: {e}"))?;
                     Ok((npub, nsec, Arc::new(Mutex::new(v))))
-                })();
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+                },
+                move |ui, result| {
                     ui.set_login_busy(false);
                     match result {
                         Ok((npub, nsec, vault)) => {
@@ -441,8 +441,8 @@ pub(crate) fn wire_panes(
                             ui.set_login_error(err.into());
                         }
                     }
-                });
-            });
+                },
+            );
         }
     });
 
@@ -458,10 +458,11 @@ pub(crate) fn wire_panes(
             // the unlock spinner actually spins while it grinds.
             let weak = weak.clone();
             let boot = boot.clone();
-            std::thread::spawn(move || {
-                type UnlockOutcome =
-                    Result<(String, String, Arc<Mutex<Vault>>, Option<String>), String>;
-                let result = (|| -> UnlockOutcome {
+            type UnlockOutcome =
+                Result<(String, String, Arc<Mutex<Vault>>, Option<String>), String>;
+            spawn_ui(
+                weak,
+                move || -> UnlockOutcome {
                     let v = Vault::open(&password).map_err(|e| match e {
                         vault::VaultError::WrongPassword => error_copy().wrong_password,
                         other => format!("{other}"),
@@ -473,9 +474,8 @@ pub(crate) fn wire_panes(
                     // instead of the primary when it still exists.
                     let active = v.get(vault::ACTIVE_ACCOUNT_KEY).map(|s| s.to_string());
                     Ok((npub, nsec, Arc::new(Mutex::new(v)), active))
-                })();
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+                },
+                move |ui, result| {
                     ui.set_login_busy(false);
                     match result {
                         Ok((npub, nsec, vault, active)) => {
@@ -490,8 +490,8 @@ pub(crate) fn wire_panes(
                             ui.set_login_error(err.into());
                         }
                     }
-                });
-            });
+                },
+            );
         }
     });
 
@@ -579,8 +579,12 @@ pub(crate) fn wire_panes(
             let boot = boot.clone();
             let pending = pending.clone();
             let pending_seed = pending_seed.clone();
-            std::thread::spawn(move || {
-                let result = (|| -> Result<(String, String, Arc<Mutex<Vault>>), String> {
+            // `boot` in the completion consumes `nsec` too; give the worker its own copy.
+            let nsec_for_seal = nsec.clone();
+            spawn_ui(
+                weak,
+                move || -> Result<(String, String, Arc<Mutex<Vault>>), String> {
+                    let nsec = nsec_for_seal;
                     validate_new_password(&password, confirm.as_str())?;
                     let keys = Keys::parse(&nsec).map_err(|e| format!("parse: {e}"))?;
                     let npub = keys
@@ -592,9 +596,8 @@ pub(crate) fn wire_panes(
                     v.set(vault::NSEC_KEY, &nsec)
                         .map_err(|e| format!("seal nsec: {e}"))?;
                     Ok((npub, id_hex, Arc::new(Mutex::new(v))))
-                })();
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+                },
+                move |ui, result| {
                     ui.set_login_busy(false);
                     match result {
                         Ok((npub, id_hex, vault)) => {
@@ -620,8 +623,8 @@ pub(crate) fn wire_panes(
                             ui.set_login_error(err.into());
                         }
                     }
-                });
-            });
+                },
+            );
         }
     });
 
@@ -1268,21 +1271,22 @@ pub(crate) fn wire_panes(
             // the marmot runtime — gather them on a worker, never the UI thread.
             let b = backend_cell.lock().unwrap().clone();
             let weak = weak.clone();
-            std::thread::spawn(move || {
-                let snap = b
-                    .map(|b| match mode {
+            spawn_ui(
+                weak,
+                move || {
+                    b.map(|b| match mode {
                         1 => b.debug_raw_events(),
                         2 => b.debug_key_packages(),
                         _ => b.debug_snapshot(),
                     })
-                    .unwrap_or_else(|| "(backend not booted)".to_string());
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+                    .unwrap_or_else(|| "(backend not booted)".to_string())
+                },
+                move |ui, snap| {
                     // Rows drive the viewer; the plain string stays for copy.
                     ui.set_debug_dump_rows(json_doc_set(JsonSlot::Dump, &snap));
                     ui.set_debug_dump(snap.into());
-                });
-            });
+                },
+            );
         }
     });
 
@@ -1331,16 +1335,16 @@ pub(crate) fn wire_panes(
                 return;
             };
             let weak = ui.as_weak();
-            std::thread::spawn(move || {
-                let result = b.set_telemetry_enabled(on);
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+            spawn_ui(
+                weak,
+                move || b.set_telemetry_enabled(on),
+                move |ui, result| {
                     if let Err(e) = result {
                         tracing::warn!(target: "settings", "set telemetry failed: {e}");
                         ui.set_telemetry_enabled(!on);
                     }
-                });
-            });
+                },
+            );
         }
     });
 
@@ -1358,11 +1362,16 @@ pub(crate) fn wire_panes(
             // a misbehaving relay can hold for ~35s — never block here.
             let weak = ui.as_weak();
             let fut = b.set_audit_logs_enabled(on);
-            b.tokio_handle().spawn(async move {
-                let result = fut.await;
-                let files = b.audit_log_files().unwrap_or_default();
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+            let bg = b.clone();
+            spawn_ui_tokio(
+                &b,
+                weak,
+                async move {
+                    let result = fut.await;
+                    let files = bg.audit_log_files().unwrap_or_default();
+                    (result, files)
+                },
+                move |ui, (result, files)| {
                     match result {
                         Ok(()) => show_audit_status(
                             &ui,
@@ -1384,8 +1393,8 @@ pub(crate) fn wire_panes(
                         }
                     }
                     push_audit_files(&ui, files);
-                });
-            });
+                },
+            );
         }
     });
 
@@ -1411,11 +1420,16 @@ pub(crate) fn wire_panes(
             };
             let weak = ui.as_weak();
             let fut = b.delete_audit_log_file(path.to_string());
-            b.tokio_handle().spawn(async move {
-                let result = fut.await;
-                let files = b.audit_log_files().unwrap_or_default();
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+            let bg = b.clone();
+            spawn_ui_tokio(
+                &b,
+                weak,
+                async move {
+                    let result = fut.await;
+                    let files = bg.audit_log_files().unwrap_or_default();
+                    (result, files)
+                },
+                move |ui, (result, files)| {
                     match result {
                         // `true` = the live recorder owned that file and
                         // rotated in place rather than going dark.
@@ -1435,377 +1449,12 @@ pub(crate) fn wire_panes(
                         }
                     }
                     push_audit_files(&ui, files);
-                });
-            });
-        }
-    });
-
-    // ─── Network & relays pane ─────────────────────────────────────────
-    // The on-disk list (`backend::load_relays`) is the source of truth and
-    // what we mutate from the UI. `backend.booted_relays()` is what the
-    // running runtime was started with — when they diverge the pane shows a
-    // "reconnect" banner. MarmotApp has no `set_relays` API, so applying a
-    // change still means re-booting the whole runtime — but `reconnect_relays`
-    // below does that in place, reusing the already-unlocked vault, instead of
-    // requiring the user to quit the app and unlock it again.
-    //
-    // `network-status` is the transient line under the list — error text on
-    // bad input or save failures, brief confirmation on success.
-
-    // Initial population — the on-disk list always exists (possibly empty)
-    // even before the backend boots; booted-relays + health stay empty until
-    // backend ready, then we re-push.
-    {
-        // Routes through push_network_relays so suggested-relay chips are seeded too.
-        let initial = backend::load_relays();
-        push_network_relays(ui, &initial);
-        push_network_inbox_relays(ui, &backend::load_inbox_relays());
-        ui.set_network_booted_relays(ModelRc::new(VecModel::from(Vec::<SharedString>::new())));
-        ui.set_network_connected(0);
-        ui.set_network_total(0);
-        ui.set_network_status(s(""));
-        ui.set_network_republish_busy(false);
-        ui.set_network_refresh_busy(false);
-    }
-
-    // Re-boot the runtime against the current on-disk relay list, in place.
-    // `boot_backend` re-derives the nsec from the still-unlocked vault (no
-    // password re-entry), tears down nothing itself, and on success replaces
-    // `backend_cell` + reinstalls the chat watcher — so any watcher left over
-    // from the runtime we're replacing must be aborted first, or it keeps
-    // delivering updates from a backend nothing else references anymore.
-    // Shows the boot splash for the duration (`AppState.booting`), which is
-    // why call sites gate this behind either the empty first-run state or an
-    // explicit user action rather than firing it on every keystroke.
-    let reconnect_relays: Rc<dyn Fn()> = {
-        let weak = ui.as_weak();
-        let boot = boot_backend.clone();
-        let vault_cell = vault_cell.clone();
-        let active_message_watcher = active_message_watcher.clone();
-        let chats_watcher = chats_watcher.clone();
-        Rc::new(move || {
-            let Some(ui) = weak.upgrade() else { return };
-            // Avoid racing a boot already in flight.
-            if !ui.get_backend_ready() || ui.get_booting() {
-                return;
-            }
-            let Some(vault) = vault_cell.lock().unwrap().clone() else {
-                return;
-            };
-            let Some(nsec) = vault.lock().unwrap().nsec() else {
-                return;
-            };
-            if let Some(h) = active_message_watcher.lock().unwrap().take() {
-                h.abort();
-            }
-            if let Some(h) = chats_watcher.lock().unwrap().take() {
-                h.abort();
-            }
-            boot(nsec, vault, None);
-        })
-    };
-
-    ui.global::<AppState>().on_network_reconnect_relays({
-        let reconnect = reconnect_relays.clone();
-        move || reconnect()
-    });
-
-    // Add/remove for both lists share validate+dedupe+persist logic via
-    // relays::add_relay_to_list / remove_relay_from_list; only the model,
-    // save fn, error field, and (outbox-only) reboot trigger vary here.
-    ui.global::<AppState>().on_network_add_relay({
-        let weak = ui.as_weak();
-        let reboot = reconnect_relays.clone();
-        // Returns whether the relay was accepted — the add-relay fields keep
-        // their draft on a rejection so the user can correct it in place.
-        move |raw| {
-            let Some(ui) = weak.upgrade() else {
-                return false;
-            };
-            let mut list = vec_string_from_model(&ui.get_network_relays());
-            match add_relay_to_list(&raw, &mut list, backend::save_relays) {
-                Ok(()) => {
-                    ui.set_network_add_error(SharedString::default());
-                    push_network_relays(&ui, &list);
-                    show_network_status(&ui, error_copy().relay_added, StatusKind::Ok);
-                    // Reconnect immediately so the live transport picks up the
-                    // change right away, instead of waiting on the "Reconnect
-                    // now" banner.
-                    reboot();
-                    true
-                }
-                Err(msg) => {
-                    ui.set_network_add_error(msg.into());
-                    ui.set_network_status(SharedString::default());
-                    false
-                }
-            }
-        }
-    });
-
-    ui.global::<AppState>().on_network_remove_relay({
-        let weak = ui.as_weak();
-        let reboot = reconnect_relays.clone();
-        move |url| {
-            let Some(ui) = weak.upgrade() else { return };
-            let mut list = vec_string_from_model(&ui.get_network_relays());
-            match remove_relay_from_list(&url, &mut list, backend::save_relays) {
-                Ok(true) => {
-                    push_network_relays(&ui, &list);
-                    show_network_status(&ui, error_copy().relay_removed, StatusKind::Ok);
-                    // Re-boot so the live transport drops the removed relay
-                    // right away.
-                    reboot();
-                }
-                Ok(false) => {}
-                Err(msg) => show_network_status(&ui, msg, StatusKind::Error),
-            }
-        }
-    });
-
-    // Not part of the connect pool, so unlike the outbox pair above these
-    // never trigger a reboot — they only change what we declare, not what
-    // we're connected to.
-    ui.global::<AppState>().on_network_add_inbox_relay({
-        let weak = ui.as_weak();
-        move |raw| {
-            let Some(ui) = weak.upgrade() else {
-                return false;
-            };
-            let mut list = vec_string_from_model(&ui.get_network_inbox_relays());
-            match add_relay_to_list(&raw, &mut list, backend::save_inbox_relays) {
-                Ok(()) => {
-                    ui.set_network_inbox_add_error(SharedString::default());
-                    push_network_inbox_relays(&ui, &list);
-                    show_network_status(&ui, error_copy().relay_added, StatusKind::Ok);
-                    true
-                }
-                Err(msg) => {
-                    ui.set_network_inbox_add_error(msg.into());
-                    ui.set_network_status(SharedString::default());
-                    false
-                }
-            }
-        }
-    });
-
-    ui.global::<AppState>().on_network_remove_inbox_relay({
-        let weak = ui.as_weak();
-        move |url| {
-            let Some(ui) = weak.upgrade() else { return };
-            let mut list = vec_string_from_model(&ui.get_network_inbox_relays());
-            match remove_relay_from_list(&url, &mut list, backend::save_inbox_relays) {
-                Ok(true) => {
-                    push_network_inbox_relays(&ui, &list);
-                    show_network_status(&ui, error_copy().relay_removed, StatusKind::Ok);
-                }
-                Ok(false) => {}
-                Err(msg) => show_network_status(&ui, msg, StatusKind::Error),
-            }
-        }
-    });
-
-    ui.global::<AppState>().on_network_refresh_health({
-        let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            let allow_status_update = !ui.get_network_republish_busy();
-            ui.set_network_refresh_busy(true);
-            let weak = weak.clone();
-            let backend_cell = backend_cell.clone();
-            std::thread::spawn(move || {
-                // Clone the handle, drop the lock, then poll — the UI thread
-                // must never find this mutex held across a relay query.
-                let b = backend_cell.lock().unwrap().clone();
-                let snapshot = b.map(|b| b.relay_health());
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
-                    ui.set_network_refresh_busy(false);
-                    match snapshot {
-                        Some((connected, total)) => {
-                            ui.set_network_connected(connected as i32);
-                            ui.set_network_total(total as i32);
-                            // We just polled the relay pool — that's a real sync.
-                            ui.set_sync_secs(0);
-                        }
-                        None if allow_status_update && !ui.get_network_republish_busy() => {
-                            show_network_status(&ui, error_copy().not_connected, StatusKind::Error)
-                        }
-                        None => {}
-                    }
-                });
-            });
-            if allow_status_update {
-                ui.set_network_status(s(""));
-            }
-        }
-    });
-
-    ui.global::<AppState>().on_network_republish_relay_list({
-        let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            if ui.get_network_republish_busy() {
-                return;
-            }
-            show_network_status(&ui, error_copy().republishing, StatusKind::Pending);
-            ui.set_network_republish_busy(true);
-            let weak = weak.clone();
-            let backend_cell = backend_cell.clone();
-            std::thread::spawn(move || {
-                // Same handle-clone dance: never hold the cell lock across
-                // the relay publish.
-                let b = backend_cell.lock().unwrap().clone();
-                let result = match b {
-                    None => Err(error_copy().not_connected),
-                    Some(b) => b
-                        .republish_relay_lists()
-                        .map_err(|e| friendly_error(ErrorOp::Republish, &e)),
-                };
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
-                    ui.set_network_republish_busy(false);
-                    match result {
-                        Ok((outbox, inbox)) => show_network_status(
-                            &ui,
-                            format!(
-                                "Republished — {outbox} outbox relay{}, {inbox} inbox relay{}.",
-                                if outbox == 1 { "" } else { "s" },
-                                if inbox == 1 { "" } else { "s" }
-                            ),
-                            StatusKind::Ok,
-                        ),
-                        Err(e) => show_network_status(&ui, e, StatusKind::Error),
-                    }
-                });
-            });
-        }
-    });
-
-    // ─── Keys page: KP publish / rotate / refresh ──────────────────────
-    // All three call into the marmot runtime, which blocks on its tokio
-    // executor — so we hop onto a worker thread first, then back to the
-    // Slint event loop with the results. Each op sets its own `kp-*-busy` /
-    // `kp-*-status` pair for the round-trip, so triggering one doesn't make
-    // an unrelated action look busy too.
-
-    fn set_kp_busy(ui: &WhiteNoiseLinux, op_kind: &str, busy: bool) {
-        match op_kind {
-            "rotate" => ui.set_kp_rotate_busy(busy),
-            "refresh" => ui.set_kp_refresh_busy(busy),
-            _ => ui.set_kp_publish_busy(busy),
-        }
-    }
-
-    fn set_kp_status(ui: &WhiteNoiseLinux, op_kind: &str, status: String) {
-        match op_kind {
-            "rotate" => ui.set_kp_rotate_status(status.into()),
-            "refresh" => ui.set_kp_refresh_status(status.into()),
-            _ => ui.set_kp_publish_status(status.into()),
-        }
-    }
-
-    let kp_run = {
-        let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        // op_kind: "publish" | "rotate" | "refresh"
-        Rc::new(move |op_kind: &'static str| {
-            let Some(ui) = weak.upgrade() else { return };
-            set_kp_busy(&ui, op_kind, true);
-            let copy = error_copy();
-            set_kp_status(
-                &ui,
-                op_kind,
-                match op_kind {
-                    "rotate" => copy.kp_rotating,
-                    "refresh" => copy.kp_refreshing,
-                    _ => copy.kp_publishing,
                 },
             );
-            let weak = weak.clone();
-            // Clone the backend handle and drop the lock before the relay
-            // round-trip — other callbacks keep locking this cell freely.
-            let b = backend_cell.lock().unwrap().clone();
-            std::thread::spawn(move || {
-                let result: Result<String, String> = {
-                    match b.as_deref() {
-                        None => Err(error_copy().not_connected),
-                        Some(b) => match op_kind {
-                            // NOTE: the SDK returns the key-package size in bytes,
-                            // not a relay-ack count — so we don't surface the number
-                            // (it was being shown as a nonsensical "N relay acks").
-                            "publish" => b
-                                .publish_key_package()
-                                .map(|_| error_copy().kp_published)
-                                .map_err(|e| friendly_error(ErrorOp::KpPublish, &e)),
-                            "rotate" => b
-                                .rotate_key_package()
-                                .map(|_| error_copy().kp_rotated)
-                                .map_err(|e| friendly_error(ErrorOp::KpRotate, &e)),
-                            "refresh" => b
-                                .key_packages_fetch()
-                                .map(|recs| {
-                                    let copy = error_copy();
-                                    let form = if recs.len() == 1 {
-                                        copy.kp_fetched_one
-                                    } else {
-                                        copy.kp_fetched_many
-                                    };
-                                    tmpl(&form, &[&recs.len().to_string()])
-                                })
-                                .map_err(|e| friendly_error(ErrorOp::KpRefresh, &e)),
-                            _ => Err(error_copy().generic),
-                        },
-                    }
-                };
-                // The post-op snapshot for "refresh" hits relays too — pull
-                // the rows here on the worker, never in the event-loop
-                // completion (that closure runs on the UI thread).
-                let rows: Option<Vec<KeyPackageInfo>> = b.as_deref().and_then(|b| {
-                    if op_kind == "refresh" {
-                        b.key_packages_fetch()
-                            .ok()
-                            .map(|recs| recs.iter().map(kp_to_ui).collect())
-                    } else {
-                        None
-                    }
-                });
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
-                    set_kp_busy(&ui, op_kind, false);
-                    match result {
-                        Ok(status) => set_kp_status(&ui, op_kind, status),
-                        Err(e) => set_kp_status(&ui, op_kind, e),
-                    }
-                    // Refresh from local state regardless of op outcome; for
-                    // "refresh" we additionally surface the relay snapshot.
-                    if let Some(b) = b.as_ref() {
-                        if let Some(rows) = rows {
-                            ui.set_key_packages(ModelRc::new(VecModel::from(rows)));
-                        } else {
-                            refresh_kp_local_async(&ui, b);
-                        }
-                    }
-                });
-            });
-        })
-    };
-
-    ui.global::<AppState>().on_kp_publish_clicked({
-        let kp_run = kp_run.clone();
-        move || kp_run("publish")
-    });
-    ui.global::<AppState>().on_kp_rotate_clicked({
-        let kp_run = kp_run.clone();
-        move || kp_run("rotate")
-    });
-    ui.global::<AppState>().on_kp_refresh_clicked({
-        let kp_run = kp_run.clone();
-        move || kp_run("refresh")
+        }
     });
 
+    wire_network(ui, cx, boot_backend);
     ui.global::<AppState>().on_copy_to_clipboard({
         let weak = ui.as_weak();
         move |text| {
@@ -1856,17 +1505,17 @@ pub(crate) fn wire_panes(
             ui.set_reveal_nsec_status(s(""));
             ui.set_reveal_nsec_status_error(false);
             let weak = weak.clone();
-            std::thread::spawn(move || {
-                let result: Result<String, String> = (|| {
+            spawn_ui(
+                weak,
+                move || -> Result<String, String> {
                     let v = Vault::open(&password).map_err(|e| match e {
                         vault::VaultError::WrongPassword => error_copy().wrong_password,
                         other => format!("{other}"),
                     })?;
                     v.nsec_for_pubkey(&account_hex)
                         .ok_or_else(|| error_copy().no_secret_key_account)
-                })();
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+                },
+                move |ui, result| {
                     ui.set_reveal_nsec_busy(false);
                     match result {
                         Ok(nsec) => {
@@ -1880,8 +1529,8 @@ pub(crate) fn wire_panes(
                             ui.set_reveal_nsec_status_error(true);
                         }
                     }
-                });
-            });
+                },
+            );
         }
     });
 
@@ -1942,8 +1591,9 @@ pub(crate) fn wire_panes(
             ui.set_export_key_status(s(""));
             ui.set_export_key_status_error(false);
             let weak = weak.clone();
-            std::thread::spawn(move || {
-                let result: Result<String, String> = (|| {
+            spawn_ui(
+                weak,
+                move || -> Result<String, String> {
                     let v = Vault::open(&password).map_err(|e| match e {
                         vault::VaultError::WrongPassword => error_copy().wrong_password,
                         other => format!("{other}"),
@@ -1963,9 +1613,8 @@ pub(crate) fn wire_panes(
                     encrypted
                         .to_bech32()
                         .map_err(|_| error_copy().export_key_failed)
-                })();
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+                },
+                move |ui, result| {
                     ui.set_export_key_busy(false);
                     match result {
                         Ok(ncryptsec) => {
@@ -1979,8 +1628,8 @@ pub(crate) fn wire_panes(
                             ui.set_export_key_status_error(true);
                         }
                     }
-                });
-            });
+                },
+            );
         }
     });
 
@@ -2053,17 +1702,17 @@ pub(crate) fn push_audit_files(ui: &WhiteNoiseLinux, mut files: Vec<AuditLogFile
 pub(crate) fn refresh_audit_files(ui: &WhiteNoiseLinux, backend: &Arc<Backend>) {
     let weak = ui.as_weak();
     let b = backend.clone();
-    backend.tokio_handle().spawn(async move {
-        let files = b.audit_log_files().unwrap_or_else(|e| {
-            tracing::warn!(target: "settings", "list audit logs failed: {e:#}");
-            Vec::new()
-        });
-        let _ = slint::invoke_from_event_loop(move || {
-            if let Some(ui) = weak.upgrade() {
-                push_audit_files(&ui, files);
-            }
-        });
-    });
+    spawn_ui_tokio(
+        backend,
+        weak,
+        async move {
+            b.audit_log_files().unwrap_or_else(|e| {
+                tracing::warn!(target: "settings", "list audit logs failed: {e:#}");
+                Vec::new()
+            })
+        },
+        move |ui, files| push_audit_files(&ui, files),
+    );
 }
 
 fn chat_context_can_leave_group(is_group: bool, is_admin: bool) -> bool {
