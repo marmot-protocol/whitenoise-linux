@@ -14,6 +14,10 @@ export component DebugPane inherits DetailPage {
     // 1 = raw events, 2 = key packages. Rust reads it back in `debug-load`.
     property <int> mode: 0;
 
+    init => {
+        AppState.debug-load(0);
+    }
+
     PageHeader {
         title: @tr("Debug");
         caption: @tr("State / raw events / key packages");
@@ -35,6 +39,8 @@ export component DebugPane inherits DetailPage {
                 alignment: start;
                 Button {
                     label: @tr("State");
+                    selected: root.mode == 0;
+                    fg: root.mode == 0 && Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.text-hi;
                     clicked => {
                         root.mode = 0;
                         AppState.debug-load(0);
@@ -43,6 +49,8 @@ export component DebugPane inherits DetailPage {
 
                 Button {
                     label: @tr("Raw events");
+                    selected: root.mode == 1;
+                    fg: root.mode == 1 && Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.text-hi;
                     clicked => {
                         root.mode = 1;
                         AppState.debug-load(1);
@@ -51,6 +59,8 @@ export component DebugPane inherits DetailPage {
 
                 Button {
                     label: @tr("Key packages");
+                    selected: root.mode == 2;
+                    fg: root.mode == 2 && Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.text-hi;
                     clicked => {
                         root.mode = 2;
                         AppState.debug-load(2);
