@@ -304,6 +304,7 @@ impl Backend {
                     Ok(SendSummary {
                         published: 0,
                         message_ids: Vec::new(),
+                        accept_disposition: Default::default(),
                         maintenance_disposition: Default::default(),
                     })
                 } else {
