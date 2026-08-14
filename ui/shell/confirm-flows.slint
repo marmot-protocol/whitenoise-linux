@@ -228,6 +228,21 @@ export component ConfirmFlows inherits Rectangle {
         }
     }
 
+    if AppState.show-custom-emoji-remove-confirm: ConfirmModal {
+        title: @tr("SettingsPage" => "Remove {}?", AppState.custom-emoji-list[AppState.custom-emoji-remove-confirm-idx].shortcode);
+        subtitle: @tr("SettingsPage" => "You'll need to re-upload the image and retype the shortcode to bring it back.");
+        confirm-label: @tr("SettingsPage" => "Remove");
+        confirm => {
+            AppState.show-custom-emoji-remove-confirm = false;
+            AppState.custom-emoji-removed(AppState.custom-emoji-remove-confirm-idx);
+            AppState.custom-emoji-remove-confirm-idx = -1;
+        }
+        dismissed => {
+            AppState.show-custom-emoji-remove-confirm = false;
+            AppState.custom-emoji-remove-confirm-idx = -1;
+        }
+    }
+
     if AppState.show-delete-confirm: ConfirmModal {
         title: AppState.delete-confirm-everyone ? @tr("Delete for everyone?") : @tr("Delete for me?");
         subtitle: AppState.delete-confirm-everyone ? @tr("This removes the message for everyone in the chat. This can't be undone.") : @tr("This hides the message on this device only. Other people will still see it.");

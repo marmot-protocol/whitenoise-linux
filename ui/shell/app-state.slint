@@ -395,6 +395,11 @@ export global AppState {
     in-out property <[CustomEmojiEntry]> custom-emoji-list;
     callback custom-emoji-add-requested();
     callback custom-emoji-removed(int);
+    // Tapping an uploaded emoji is destructive (no undo short of a fresh
+    // upload), so it arms this modal instead of firing custom-emoji-removed
+    // directly. (UI-internal, not part of the Rust contract.)
+    in-out property <bool> show-custom-emoji-remove-confirm: false;
+    in-out property <int> custom-emoji-remove-confirm-idx: -1;
     in-out property <bool> show-custom-emoji-modal: false;
     in-out property <image> custom-emoji-modal-preview;
     in-out property <bool> custom-emoji-modal-has-preview: false;
