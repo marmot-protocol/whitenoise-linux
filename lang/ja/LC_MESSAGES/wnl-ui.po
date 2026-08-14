@@ -2575,6 +2575,10 @@ msgctxt "ErrorCopy"
 msgid "Relay removed."
 msgstr "リレーを削除しました。"
 
+msgctxt "AdvancedPane"
+msgid "Relay telemetry"
+msgstr "リレーテレメトリ"
+
 msgctxt "GetStartedScreen"
 msgid "Relays carry your encrypted messages. Add at least one to get online."
 msgstr "リレーは暗号化されたメッセージを中継します。オンラインにするには少なくとも1つ追加してください。"
@@ -3078,12 +3082,8 @@ msgid "Settings"
 msgstr "設定"
 
 msgctxt "AdvancedPane"
-msgid "Share anonymous app telemetry"
-msgstr "匿名のアプリ利用統計を共有"
-
-msgctxt "AdvancedPane"
-msgid "Share relay connection telemetry."
-msgstr "リレー接続の利用統計を共有します。"
+msgid "Share anonymous relay connection telemetry."
+msgstr "匿名のリレー接続の利用統計を共有します。"
 
 msgctxt "SharedMediaGrid"
 msgid "Shared image {}"

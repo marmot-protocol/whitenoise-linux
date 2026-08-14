@@ -2579,6 +2579,10 @@ msgctxt "ErrorCopy"
 msgid "Relay removed."
 msgstr "Relay entfernt."
 
+msgctxt "AdvancedPane"
+msgid "Relay telemetry"
+msgstr "Relay-Telemetrie"
+
 msgctxt "GetStartedScreen"
 msgid "Relays carry your encrypted messages. Add at least one to get online."
 msgstr "Relays übertragen deine verschlüsselten Nachrichten. Füge mindestens eines hinzu, um online zu gehen."
@@ -3082,12 +3086,8 @@ msgid "Settings"
 msgstr "Einstellungen"
 
 msgctxt "AdvancedPane"
-msgid "Share anonymous app telemetry"
-msgstr "Anonyme App-Telemetrie teilen"
-
-msgctxt "AdvancedPane"
-msgid "Share relay connection telemetry."
-msgstr "Telemetrie zu Relay-Verbindungen teilen."
+msgid "Share anonymous relay connection telemetry."
+msgstr "Anonyme Telemetrie zu Relay-Verbindungen teilen."
 
 msgctxt "SharedMediaGrid"
 msgid "Shared image {}"
