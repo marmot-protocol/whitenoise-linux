@@ -174,15 +174,7 @@ fn video_save_context(
         set_status_feedback(ui, error_copy().video_not_ready, false);
         return None;
     }
-    let Some((group_hex, _mid)) = current_video_target().lock().ok().and_then(|t| t.clone()) else {
-        set_status_feedback(ui, error_copy().no_video_selected, true);
-        return None;
-    };
-    let Some(reference) = current_video_reference()
-        .lock()
-        .ok()
-        .and_then(|r| r.clone())
-    else {
+    let Some(((group_hex, _mid), reference)) = video_session_target_reference() else {
         set_status_feedback(ui, error_copy().no_video_selected, true);
         return None;
     };
@@ -893,11 +885,12 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
         let pending_state = pending_state.clone();
         let group_ids = group_ids.clone();
         move || {
-            use std::sync::atomic::Ordering;
-            stop_current_player();
+            let Some((target, was_fullscreen)) = close_video_session() else {
+                return;
+            };
             if let Some(ui) = weak.upgrade() {
                 // Never leave the whole app stuck fullscreen after closing.
-                if video_fullscreen().swap(false, Ordering::AcqRel) {
+                if was_fullscreen {
                     ui.window().set_fullscreen(false);
                 }
                 ui.set_video_viewer_open(false);
@@ -907,11 +900,8 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 ui.set_video_viewer_playing(false);
                 ui.set_video_viewer_frame(slint::Image::default());
             }
-            *current_video_reference().lock().unwrap() = None;
-            let target = current_video_target().lock().ok().and_then(|t| t.clone());
-            if let Some((group_hex, mid)) = target
-                && let Some(backend) = backend_cell.lock().unwrap().clone()
-            {
+            let (group_hex, mid) = target;
+            if let Some(backend) = backend_cell.lock().unwrap().clone() {
                 refresh_one_message_row_async(
                     &backend,
                     weak.clone(),
@@ -921,7 +911,6 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                     mid,
                 );
             }
-            *current_video_target().lock().unwrap() = None;
         }
     });
 
@@ -936,17 +925,11 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             let Some(backend) = backend_cell.lock().unwrap().clone() else {
                 return;
             };
-            let target = current_video_target().lock().ok().and_then(|t| t.clone());
-            let reference = current_video_reference()
-                .lock()
-                .ok()
-                .and_then(|r| r.clone());
-            let (Some((group_hex, mid)), Some(reference)) = (target, reference) else {
+            let Some(((group_hex, mid), reference)) = video_session_target_reference() else {
                 return;
             };
             let vault = vault_cell.lock().unwrap().clone();
-            stop_current_player();
-            *current_video_duration().lock().unwrap() = 0.0;
+            restart_video_session();
             ui.set_video_viewer_has_frame(false);
             ui.set_video_viewer_playing(false);
             ui.set_video_viewer_progress(0.0);
@@ -961,38 +944,32 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     ui.global::<AppState>().on_video_viewer_toggle_play({
         let weak = ui.as_weak();
         move || {
-            if let Some(player) = current_player().lock().unwrap().as_ref() {
-                let now_playing = !player.toggle_pause();
-                if let Some(ui) = weak.upgrade() {
-                    ui.set_video_viewer_playing(now_playing);
-                }
+            let now_playing = with_video_player(|player| !player.toggle_pause());
+            if let Some(now_playing) = now_playing
+                && let Some(ui) = weak.upgrade()
+            {
+                ui.set_video_viewer_playing(now_playing);
             }
         }
     });
 
     ui.global::<AppState>()
         .on_video_viewer_seek(move |fraction| {
-            let dur = *current_video_duration().lock().unwrap();
-            if dur > 0.0
-                && let Some(player) = current_player().lock().unwrap().as_ref()
-            {
-                player.seek((fraction as f64).clamp(0.0, 1.0) * dur);
+            let dur = video_duration();
+            if dur > 0.0 {
+                with_video_player(|player| player.seek((fraction as f64).clamp(0.0, 1.0) * dur));
             }
         });
 
     ui.global::<AppState>()
         .on_video_viewer_seek_relative(move |secs| {
-            if let Some(player) = current_player().lock().unwrap().as_ref() {
-                player.seek_relative(secs as f64);
-            }
+            with_video_player(|player| player.seek_relative(secs as f64));
         });
 
     ui.global::<AppState>().on_video_viewer_fullscreen({
         let weak = ui.as_weak();
         move || {
-            use std::sync::atomic::Ordering;
-            let want = !video_fullscreen().load(Ordering::Acquire);
-            video_fullscreen().store(want, Ordering::Release);
+            let want = toggle_video_fullscreen();
             if let Some(ui) = weak.upgrade() {
                 ui.window().set_fullscreen(want);
             }
