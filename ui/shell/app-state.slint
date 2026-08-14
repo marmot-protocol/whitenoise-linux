@@ -857,13 +857,6 @@ export global AppState {
     callback new-chat-requested();
     callback start-chat-with-contact();
     callback chat-selected(int);
-    // Chat-list search: Rust recomputes `chat-match-flags` (one flag per chat)
-    // for the live query so the list filters as the user types. `chat-match-count`
-    // is the number of set flags, so the sidebar header count pill can track
-    // the visible rows instead of the full chat count while a query is active.
-    callback chat-search-changed(string);
-    in-out property <[bool]> chat-match-flags;
-    in-out property <int> chat-match-count;
     // Chats-page filter row: the distinct chat labels currently in use
     // (Rust-pushed, one chip each) and the active one ("" = All chats). Pure
     // client-side filter — matching a chat's label is a plain equality check,
