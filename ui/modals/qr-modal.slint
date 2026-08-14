@@ -44,6 +44,7 @@ export component QrModal inherits Modal {
             alignment: center;
             CopyChip {
                 value: root.npub-short;
+                label: @tr("Copy public key");
                 copy-requested => {
                     root.copy-npub();
                 }

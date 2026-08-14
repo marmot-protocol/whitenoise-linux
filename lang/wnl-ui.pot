@@ -851,6 +851,38 @@ msgctxt "DebugPane"
 msgid "Copy JSON"
 msgstr ""
 
+msgctxt "ProfileModal"
+msgid "Copy Lightning address"
+msgstr ""
+
+msgctxt "ProfileModal"
+msgid "Copy NIP-05 identifier"
+msgstr ""
+
+msgctxt "AccountSwitcherDetail"
+msgid "Copy public key"
+msgstr ""
+
+msgctxt "ContactDetail"
+msgid "Copy public key"
+msgstr ""
+
+msgctxt "KeysPage"
+msgid "Copy public key"
+msgstr ""
+
+msgctxt "ProfileModal"
+msgid "Copy public key"
+msgstr ""
+
+msgctxt "ProfilePage"
+msgid "Copy public key"
+msgstr ""
+
+msgctxt "QrModal"
+msgid "Copy public key"
+msgstr ""
+
 msgctxt "MessageContextMenu"
 msgid "Copy selection"
 msgstr ""

@@ -126,6 +126,7 @@ export component AccountSwitcherDetail inherits VerticalLayout {
         alignment: center;
         CopyChip {
             value: root.account.npub-short;
+            label: @tr("Copy public key");
             copy-requested => {
                 root.copy-npub();
             }

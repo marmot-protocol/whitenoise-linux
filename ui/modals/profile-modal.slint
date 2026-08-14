@@ -227,6 +227,7 @@ export component ProfileModal inherits Modal {
                 CopyChip {
                     value: root.nip05;
                     value-color: root.nip05-verified ? Palette.mint : Palette.text-lo;
+                    label: @tr("Copy NIP-05 identifier");
                     copy-requested => {
                         root.copy-nip05();
                     }
@@ -238,6 +239,7 @@ export component ProfileModal inherits Modal {
                 alignment: center;
                 CopyChip {
                     value: root.npub-short;
+                    label: @tr("Copy public key");
                     copy-requested => {
                         root.copy-npub();
                     }
@@ -322,6 +324,7 @@ export component ProfileModal inherits Modal {
                 CopyChip {
                     value: "⚡ " + root.lud16;
                     value-color: Palette.text-lo;
+                    label: @tr("Copy Lightning address");
                     copy-requested => {
                         root.copy-lud16();
                     }

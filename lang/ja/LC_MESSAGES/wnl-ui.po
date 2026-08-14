@@ -846,6 +846,38 @@ msgctxt "DebugPane"
 msgid "Copy JSON"
 msgstr "JSON をコピー"
 
+msgctxt "ProfileModal"
+msgid "Copy Lightning address"
+msgstr "Lightning アドレスをコピー"
+
+msgctxt "ProfileModal"
+msgid "Copy NIP-05 identifier"
+msgstr "NIP-05 識別子をコピー"
+
+msgctxt "AccountSwitcherDetail"
+msgid "Copy public key"
+msgstr "公開鍵をコピー"
+
+msgctxt "ContactDetail"
+msgid "Copy public key"
+msgstr "公開鍵をコピー"
+
+msgctxt "KeysPage"
+msgid "Copy public key"
+msgstr "公開鍵をコピー"
+
+msgctxt "ProfileModal"
+msgid "Copy public key"
+msgstr "公開鍵をコピー"
+
+msgctxt "ProfilePage"
+msgid "Copy public key"
+msgstr "公開鍵をコピー"
+
+msgctxt "QrModal"
+msgid "Copy public key"
+msgstr "公開鍵をコピー"
+
 msgctxt "MessageContextMenu"
 msgid "Copy selection"
 msgstr "選択範囲をコピー"
