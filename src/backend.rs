@@ -29,10 +29,91 @@ pub(crate) use marmot_app::{
     UserDirectoryRecord, UserProfileMetadata, group_system_event_from_message,
 };
 pub(crate) use tokio::runtime::Runtime as TokioRuntime;
-pub(crate) use zeroize::Zeroizing;
 pub(crate) use tokio::task::JoinHandle;
+pub(crate) use zeroize::Zeroizing;
 
 pub(crate) use crate::observability::ObservabilityConfig;
+
+// ─── Runtime-call wrappers ──────────────────────────────────────────────────
+//
+// Every blocking `Backend` op has the same skeleton: clone the active label
+// and runtime handle, hop onto tokio with `block_on`, and tag any error with
+// the op name. These macros own that skeleton so the op-name string is derived
+// from the method (they can't drift); pass a leading string literal only when
+// the user-facing error label intentionally differs from the method name.
+// `block_on` places no `'static` bound on the future, so arguments may borrow
+// from the caller. Defined before the child `mod`s below so they're visible
+// throughout the `impl Backend` chapters (macro scoping is textual).
+
+/// `runtime.$method(&label, args…)` under `block_on`, error tagged `$method: {e}`.
+macro_rules! rt_call {
+    ($self:ident, $method:ident $(, $arg:expr)* $(,)?) => {
+        rt_call!($self, stringify!($method), $method $(, $arg)*)
+    };
+    ($self:ident, $op:expr, $method:ident $(, $arg:expr)* $(,)?) => {{
+        let label = $self.active_label();
+        let runtime = $self.runtime.clone();
+        $self.tokio.block_on(async move {
+            runtime
+                .$method(&label $(, $arg)*)
+                .await
+                .map_err(|e| anyhow!("{}: {e}", $op))
+        })
+    }};
+}
+
+/// [`rt_call!`] with a leading `group_hex` parse: `runtime.$method(&label,
+/// &group_id, args…)`. The hex parse uses `?`, so only usable where the
+/// enclosing fn returns `Result`.
+macro_rules! group_call {
+    ($self:ident, $group_hex:expr, $method:ident $(, $arg:expr)* $(,)?) => {
+        group_call!($self, $group_hex, stringify!($method), $method $(, $arg)*)
+    };
+    ($self:ident, $group_hex:expr, $op:expr, $method:ident $(, $arg:expr)* $(,)?) => {{
+        let group_id = group_id_from_hex($group_hex)?;
+        let label = $self.active_label();
+        let runtime = $self.runtime.clone();
+        $self.tokio.block_on(async move {
+            runtime
+                .$method(&label, &group_id $(, $arg)*)
+                .await
+                .map_err(|e| anyhow!("{}: {e}", $op))
+        })
+    }};
+}
+
+/// `group_id_from_hex` for the `*_async` entry points: a bad hex is routed
+/// through `on_done` (the UI's failure path) instead of a `?` return.
+macro_rules! group_id_or_bail {
+    ($group_hex:expr, $on_done:ident) => {
+        match group_id_from_hex($group_hex) {
+            Ok(g) => g,
+            Err(e) => {
+                $on_done(Err(e));
+                return;
+            }
+        }
+    };
+}
+
+/// Async variant of [`group_call!`] for the UI's `*_async` ops: parse the
+/// group id (bad hex goes through `on_done`), spawn the call on the tokio
+/// runtime, and hand the tagged result to `on_done` on a worker thread.
+/// Arguments are moved into the spawned future, so they must be owned.
+macro_rules! group_call_async {
+    ($self:ident, $group_hex:expr, $on_done:ident, $method:ident $(, $arg:expr)* $(,)?) => {{
+        let group_id = group_id_or_bail!($group_hex, $on_done);
+        let label = $self.active_label();
+        let runtime = $self.runtime.clone();
+        $self.tokio.spawn(async move {
+            let res = runtime
+                .$method(&label, &group_id $(, $arg)*)
+                .await
+                .map_err(|e| anyhow!("{}: {e}", stringify!($method)));
+            $on_done(res);
+        });
+    }};
+}
 
 /// Observer invoked with every [`Backend::messages`] snapshot. Installed once
 /// at startup by the main binary (the mention resolver); the staged dm-ctl /
@@ -1029,14 +1110,13 @@ impl Backend {
         follows.push(account_id_hex.clone());
 
         let bootstrap = self.require_relay_bootstrap()?;
-        let label = self.active_label();
-        let runtime = self.runtime.clone();
-        self.tokio.block_on(async move {
-            runtime
-                .publish_account_follow_list(&label, &follows, bootstrap)
-                .await
-                .map_err(|e| anyhow!("publish_follow_list: {e}"))
-        })?;
+        rt_call!(
+            self,
+            "publish_follow_list",
+            publish_account_follow_list,
+            &follows,
+            bootstrap
+        )?;
 
         // Publishing doesn't touch the directory cache — re-sync from the broad
         // discovery set so the sidebar updates now and the peer's profile/relay
@@ -1073,14 +1153,13 @@ impl Backend {
         }
 
         let bootstrap = self.require_relay_bootstrap()?;
-        let label = self.active_label();
-        let runtime = self.runtime.clone();
-        self.tokio.block_on(async move {
-            runtime
-                .publish_account_follow_list(&label, &follows, bootstrap)
-                .await
-                .map_err(|e| anyhow!("publish_follow_list: {e}"))
-        })?;
+        rt_call!(
+            self,
+            "publish_follow_list",
+            publish_account_follow_list,
+            &follows,
+            bootstrap
+        )?;
 
         let app = self.app.clone();
         let me = self.active_id();
@@ -1160,29 +1239,12 @@ impl Backend {
     /// Accept a pending chat-request / group invite. After this returns the
     /// group is a normal active chat.
     pub fn accept_group_invite(&self, group_hex: &str) -> Result<AppGroupRecord> {
-        let group_id = group_id_from_hex(group_hex)?;
-        let label = self.active_label();
-        let runtime = self.runtime.clone();
-        self.tokio.block_on(async move {
-            runtime
-                .accept_group_invite(&label, &group_id)
-                .await
-                .map_err(|e| anyhow!("accept_group_invite: {e}"))
-        })
+        group_call!(self, group_hex, accept_group_invite)
     }
 
     /// Decline a pending chat-request / group invite. Used for "Block".
     pub fn decline_group_invite(&self, group_hex: &str) -> Result<()> {
-        let group_id = group_id_from_hex(group_hex)?;
-        let label = self.active_label();
-        let runtime = self.runtime.clone();
-        self.tokio.block_on(async move {
-            runtime
-                .decline_group_invite(&label, &group_id)
-                .await
-                .map(|_| ())
-                .map_err(|e| anyhow!("decline_group_invite: {e}"))
-        })
+        group_call!(self, group_hex, decline_group_invite).map(|_| ())
     }
 
     /// Toggle the archived flag on a group. Local-only — no relay traffic.
@@ -1308,15 +1370,7 @@ impl Backend {
     }
 
     pub fn group_mls_state(&self, group_hex: &str) -> Result<AppGroupMlsState> {
-        let group_id = group_id_from_hex(group_hex)?;
-        let label = self.active_label();
-        let runtime = self.runtime.clone();
-        self.tokio.block_on(async move {
-            runtime
-                .group_mls_state(&label, &group_id)
-                .await
-                .map_err(|e| anyhow!("group_mls_state: {e}"))
-        })
+        group_call!(self, group_hex, group_mls_state)
     }
 
     /// For a 1:1 chat (exactly two members) return the *other* member's account

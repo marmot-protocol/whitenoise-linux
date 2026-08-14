@@ -44,33 +44,14 @@ impl Backend {
     /// binary.
     #[allow(dead_code)]
     pub fn send_text(&self, group_hex: &str, text: &str) -> Result<SendSummary> {
-        let group_id = group_id_from_hex(group_hex)?;
-        let label = self.active_label();
-        let runtime = self.runtime.clone();
-        let payload = text.as_bytes().to_vec();
-        self.tokio.block_on(async move {
-            runtime
-                .send_message(&label, &group_id, payload)
-                .await
-                .map_err(|e| anyhow!("send_message: {e}"))
-        })
+        group_call!(self, group_hex, send_message, text.as_bytes().to_vec())
     }
 
     /// Synchronous reaction, kept for the staged harness bins like
     /// [`Backend::send_text`]; the UI goes through the async react path.
     #[allow(dead_code)]
     pub fn react(&self, group_hex: &str, message_id_hex: &str, emoji: &str) -> Result<SendSummary> {
-        let group_id = group_id_from_hex(group_hex)?;
-        let label = self.active_label();
-        let runtime = self.runtime.clone();
-        let target = message_id_hex.to_string();
-        let emoji = emoji.to_string();
-        self.tokio.block_on(async move {
-            runtime
-                .react_to_message(&label, &group_id, &target, &emoji)
-                .await
-                .map_err(|e| anyhow!("react_to_message: {e}"))
-        })
+        group_call!(self, group_hex, react_to_message, message_id_hex, emoji)
     }
 
     /// Non-blocking send: dispatches the network round-trip onto the tokio
@@ -84,23 +65,8 @@ impl Backend {
     where
         F: FnOnce(Result<SendSummary>) + Send + 'static,
     {
-        let group_id = match group_id_from_hex(group_hex) {
-            Ok(g) => g,
-            Err(e) => {
-                on_done(Err(e));
-                return;
-            }
-        };
-        let label = self.active_label();
-        let runtime = self.runtime.clone();
         let payload = text.as_bytes().to_vec();
-        self.tokio.spawn(async move {
-            let res = runtime
-                .send_message(&label, &group_id, payload)
-                .await
-                .map_err(|e| anyhow!("send_message: {e}"));
-            on_done(res);
-        });
+        group_call_async!(self, group_hex, on_done, send_message, payload);
     }
 
     /// Non-blocking media upload + send. Encrypts `plaintext` with the
@@ -119,13 +85,7 @@ impl Backend {
     ) where
         F: FnOnce(Result<MediaUploadResult>) + Send + 'static,
     {
-        let group_id = match group_id_from_hex(group_hex) {
-            Ok(g) => g,
-            Err(e) => {
-                on_done(Err(e));
-                return;
-            }
-        };
+        let group_id = group_id_or_bail!(group_hex, on_done);
         let label = self.active_label();
         let runtime = self.runtime.clone();
         let request = MediaUploadRequest {
@@ -158,13 +118,7 @@ impl Backend {
     ) where
         F: FnOnce(Result<MediaUploadResult>) + Send + 'static,
     {
-        let group_id = match group_id_from_hex(group_hex) {
-            Ok(g) => g,
-            Err(e) => {
-                on_done(Err(e));
-                return;
-            }
-        };
+        let group_id = group_id_or_bail!(group_hex, on_done);
         let label = self.active_label();
         let runtime = self.runtime.clone();
         let request = MediaUploadRequest {
@@ -201,13 +155,7 @@ impl Backend {
     ) where
         F: FnOnce(Result<MediaDownloadResult>) + Send + 'static,
     {
-        let group_id = match group_id_from_hex(group_hex) {
-            Ok(g) => g,
-            Err(e) => {
-                on_done(Err(e));
-                return;
-            }
-        };
+        let group_id = group_id_or_bail!(group_hex, on_done);
         let label = self.active_label();
         let runtime = self.runtime.clone();
         self.tokio.spawn(async move {
@@ -230,24 +178,9 @@ impl Backend {
     ) where
         F: FnOnce(Result<SendSummary>) + Send + 'static,
     {
-        let group_id = match group_id_from_hex(group_hex) {
-            Ok(g) => g,
-            Err(e) => {
-                on_done(Err(e));
-                return;
-            }
-        };
-        let label = self.active_label();
-        let runtime = self.runtime.clone();
         let parent = parent_message_id_hex.to_string();
         let text = text.to_string();
-        self.tokio.spawn(async move {
-            let res = runtime
-                .reply_to_message(&label, &group_id, &parent, &text)
-                .await
-                .map_err(|e| anyhow!("reply_to_message: {e}"));
-            on_done(res);
-        });
+        group_call_async!(self, group_hex, on_done, reply_to_message, &parent, &text);
     }
 
     /// Non-blocking variant of [`react`]. See [`send_text_async`] for the
@@ -257,24 +190,9 @@ impl Backend {
     where
         F: FnOnce(Result<SendSummary>) + Send + 'static,
     {
-        let group_id = match group_id_from_hex(group_hex) {
-            Ok(g) => g,
-            Err(e) => {
-                on_done(Err(e));
-                return;
-            }
-        };
-        let label = self.active_label();
-        let runtime = self.runtime.clone();
         let target = message_id_hex.to_string();
         let emoji = emoji.to_string();
-        self.tokio.spawn(async move {
-            let res = runtime
-                .react_to_message(&label, &group_id, &target, &emoji)
-                .await
-                .map_err(|e| anyhow!("react_to_message: {e}"));
-            on_done(res);
-        });
+        group_call_async!(self, group_hex, on_done, react_to_message, &target, &emoji);
     }
 
     /// Publish a kind-1009 edit of `message_id_hex` with replacement text
@@ -289,24 +207,9 @@ impl Backend {
     ) where
         F: FnOnce(Result<SendSummary>) + Send + 'static,
     {
-        let group_id = match group_id_from_hex(group_hex) {
-            Ok(g) => g,
-            Err(e) => {
-                on_done(Err(e));
-                return;
-            }
-        };
-        let label = self.active_label();
-        let runtime = self.runtime.clone();
         let target = message_id_hex.to_string();
         let content = content.to_string();
-        self.tokio.spawn(async move {
-            let res = runtime
-                .edit_message(&label, &group_id, &target, &content)
-                .await
-                .map_err(|e| anyhow!("edit_message: {e}"));
-            on_done(res);
-        });
+        group_call_async!(self, group_hex, on_done, edit_message, &target, &content);
     }
 
     /// Retract `message_id_hex` for everyone: publish a kind-5 delete event
@@ -318,23 +221,8 @@ impl Backend {
     where
         F: FnOnce(Result<SendSummary>) + Send + 'static,
     {
-        let group_id = match group_id_from_hex(group_hex) {
-            Ok(g) => g,
-            Err(e) => {
-                on_done(Err(e));
-                return;
-            }
-        };
-        let label = self.active_label();
-        let runtime = self.runtime.clone();
         let target = message_id_hex.to_string();
-        self.tokio.spawn(async move {
-            let res = runtime
-                .delete_message(&label, &group_id, &target)
-                .await
-                .map_err(|e| anyhow!("delete_message: {e}"));
-            on_done(res);
-        });
+        group_call_async!(self, group_hex, on_done, delete_message, &target);
     }
 
     /// Non-blocking variant of [`unreact`].
@@ -342,13 +230,7 @@ impl Backend {
     where
         F: FnOnce(Result<SendSummary>) + Send + 'static,
     {
-        let group_id = match group_id_from_hex(group_hex) {
-            Ok(g) => g,
-            Err(e) => {
-                on_done(Err(e));
-                return;
-            }
-        };
+        let group_id = group_id_or_bail!(group_hex, on_done);
         let label = self.active_label();
         let sender = self.active_id();
         let app = self.app.clone();

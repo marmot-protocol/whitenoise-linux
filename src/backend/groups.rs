@@ -62,16 +62,7 @@ impl Backend {
             ));
         }
 
-        let label = self.active_label();
-        let members = members.to_vec();
-        let runtime = self.runtime.clone();
-        let name = name.to_string();
-        self.tokio.block_on(async move {
-            runtime
-                .create_group(&label, &name, &members, None)
-                .await
-                .map_err(|e| anyhow!("create_group: {e}"))
-        })
+        rt_call!(self, create_group, name, members, None)
     }
 
     /// Find the active account's "Saved Messages" self-chat by its sentinel
@@ -103,14 +94,14 @@ impl Backend {
         // no members there are no welcomes to publish, so there's no per-peer
         // relay round-trip — just the local MLS group create.
         self.ensure_account_relay_lists()?;
-        let label = self.active_label();
-        let runtime = self.runtime.clone();
-        let id = self.tokio.block_on(async move {
-            runtime
-                .create_group(&label, SAVED_MESSAGES_NAME, &[], None)
-                .await
-                .map_err(|e| anyhow!("create self-chat: {e}"))
-        })?;
+        let id = rt_call!(
+            self,
+            "create self-chat",
+            create_group,
+            SAVED_MESSAGES_NAME,
+            &[],
+            None
+        )?;
         Ok(hex::encode(id.as_slice()))
     }
 
@@ -119,7 +110,8 @@ impl Backend {
     /// `members` are npub or hex pubkey strings; the runtime fetches each
     /// peer's key package off the relay set before committing.
     pub fn invite_members(&self, group_hex: &str, members: &[String]) -> Result<SendSummary> {
-        let group_id = group_id_from_hex(group_hex)?;
+        // Validate the hex up front, before the preflight below does relay work.
+        group_id_from_hex(group_hex)?;
 
         // Same preflight as create_group: the runtime resolves each invitee's
         // relay list + key package against only the configured relays, so a
@@ -139,15 +131,7 @@ impl Backend {
             ));
         }
 
-        let label = self.active_label();
-        let members = members.to_vec();
-        let runtime = self.runtime.clone();
-        let summary = self.tokio.block_on(async move {
-            runtime
-                .invite_members(&label, &group_id, &members)
-                .await
-                .map_err(|e| anyhow!("invite_members: {e}"))
-        })?;
+        let summary = group_call!(self, group_hex, invite_members, members)?;
         // The invite commits an MLS Add, so the invitee is in the roster right
         // away (before they accept). But `group_members` is served from
         // `members_cache`, which this invite did not touch, so the immediate UI
@@ -215,32 +199,14 @@ impl Backend {
     /// error). `member_ref` is an npub, hex pubkey, or known account label —
     /// `member_id_hex` from a group-member record works directly.
     pub fn promote_admin(&self, group_hex: &str, member_ref: &str) -> Result<SendSummary> {
-        let group_id = group_id_from_hex(group_hex)?;
-        let label = self.active_label();
-        let member_ref = member_ref.to_string();
-        let runtime = self.runtime.clone();
-        self.tokio.block_on(async move {
-            runtime
-                .promote_admin(&label, &group_id, &member_ref)
-                .await
-                .map_err(|e| anyhow!("promote_admin: {e}"))
-        })
+        group_call!(self, group_hex, promote_admin, member_ref)
     }
 
     /// Demote a group admin back to a regular member. Caller must be an admin
     /// (the engine enforces this; non-admins get an error). `member_ref` is an
     /// npub, hex pubkey, or known account label.
     pub fn demote_admin(&self, group_hex: &str, member_ref: &str) -> Result<SendSummary> {
-        let group_id = group_id_from_hex(group_hex)?;
-        let label = self.active_label();
-        let member_ref = member_ref.to_string();
-        let runtime = self.runtime.clone();
-        self.tokio.block_on(async move {
-            runtime
-                .demote_admin(&label, &group_id, &member_ref)
-                .await
-                .map_err(|e| anyhow!("demote_admin: {e}"))
-        })
+        group_call!(self, group_hex, demote_admin, member_ref)
     }
 
     /// Remove a member from a group. Caller must be an admin (the engine
@@ -249,16 +215,13 @@ impl Backend {
     /// `member_id_hex` from a group-member record works directly. Marmot's
     /// `remove_members` takes a slice; we pass the single target.
     pub fn remove_member(&self, group_hex: &str, member_ref: &str) -> Result<SendSummary> {
-        let group_id = group_id_from_hex(group_hex)?;
-        let label = self.active_label();
-        let members = vec![member_ref.to_string()];
-        let runtime = self.runtime.clone();
-        let summary = self.tokio.block_on(async move {
-            runtime
-                .remove_members(&label, &group_id, &members)
-                .await
-                .map_err(|e| anyhow!("remove_member: {e}"))
-        })?;
+        let summary = group_call!(
+            self,
+            group_hex,
+            "remove_member",
+            remove_members,
+            &[member_ref.to_string()]
+        )?;
         // The eviction mutated the roster, but `group_members` is served from
         // `members_cache`, which the removal did not touch — so the immediate
         // UI push would repaint the pre-removal list and look like nothing
@@ -272,15 +235,7 @@ impl Backend {
 
     /// Relinquish the active account's own admin rights on `group_hex`.
     pub fn self_demote_admin(&self, group_hex: &str) -> Result<SendSummary> {
-        let group_id = group_id_from_hex(group_hex)?;
-        let label = self.active_label();
-        let runtime = self.runtime.clone();
-        self.tokio.block_on(async move {
-            runtime
-                .self_demote_admin(&label, &group_id)
-                .await
-                .map_err(|e| anyhow!("self_demote_admin: {e}"))
-        })
+        group_call!(self, group_hex, self_demote_admin)
     }
 
     /// Leave a group, then hide it from the active chat list locally.
@@ -319,30 +274,26 @@ impl Backend {
     /// the group's `marmot.group.profile.v1` component, leaving the description
     /// untouched.
     pub fn rename_group(&self, group_hex: &str, new_name: &str) -> Result<SendSummary> {
-        let group_id = group_id_from_hex(group_hex)?;
-        let label = self.active_label();
-        let name = new_name.to_string();
-        let runtime = self.runtime.clone();
-        self.tokio.block_on(async move {
-            runtime
-                .update_group_profile(&label, &group_id, Some(name), None)
-                .await
-                .map_err(|e| anyhow!("rename_group: {e}"))
-        })
+        group_call!(
+            self,
+            group_hex,
+            "rename_group",
+            update_group_profile,
+            Some(new_name.to_string()),
+            None
+        )
     }
 
     /// Update a group's description without changing its name.
     pub fn set_group_description(&self, group_hex: &str, description: &str) -> Result<SendSummary> {
-        let group_id = group_id_from_hex(group_hex)?;
-        let label = self.active_label();
-        let description = description.to_string();
-        let runtime = self.runtime.clone();
-        self.tokio.block_on(async move {
-            runtime
-                .update_group_profile(&label, &group_id, None, Some(description))
-                .await
-                .map_err(|e| anyhow!("set_group_description: {e}"))
-        })
+        group_call!(
+            self,
+            group_hex,
+            "set_group_description",
+            update_group_profile,
+            None,
+            Some(description.to_string())
+        )
     }
 
     /// Encrypt + upload a new group avatar to Blossom and publish the group image
@@ -455,15 +406,8 @@ impl Backend {
     /// configured key-package relays. Bootstrap relay list is whatever the
     /// account was booted with — empty means use the cached relay list.
     pub fn key_packages_fetch(&self) -> Result<Vec<marmot_app::AccountKeyPackageRecord>> {
-        let label = self.active_label();
-        let runtime = self.runtime.clone();
         let bootstrap = self.relay_endpoints();
-        self.tokio.block_on(async move {
-            runtime
-                .account_key_packages(&label, bootstrap)
-                .await
-                .map_err(|e| anyhow!("account_key_packages: {e}"))
-        })
+        rt_call!(self, account_key_packages, bootstrap)
     }
 
     /// Relays this account uses for key-package publishing. After the upstream
@@ -487,28 +431,14 @@ impl Backend {
     /// of relays that acked the publish. Same call as the runtime worker's
     /// `PublishKeyPackage` command.
     pub fn publish_key_package(&self) -> Result<usize> {
-        let label = self.active_label();
-        let runtime = self.runtime.clone();
-        self.tokio.block_on(async move {
-            runtime
-                .publish_key_package(&label)
-                .await
-                .map_err(|e| anyhow!("publish_key_package: {e}"))
-        })
+        rt_call!(self, publish_key_package)
     }
 
     /// Rotate the key package: invalidate the current one (delete-event on
     /// the relay set) and publish a fresh one. Returns the relay-ack count
     /// for the new publish.
     pub fn rotate_key_package(&self) -> Result<usize> {
-        let label = self.active_label();
-        let runtime = self.runtime.clone();
-        self.tokio.block_on(async move {
-            runtime
-                .rotate_key_package(&label)
-                .await
-                .map_err(|e| anyhow!("rotate_key_package: {e}"))
-        })
+        rt_call!(self, rotate_key_package)
     }
 
     /// Fetch a *contact's* latest published key package from their relays
@@ -1089,9 +1019,8 @@ fn inspect_key_package(kp: &cgka_traits::engine::KeyPackage) -> KpInspectionRepo
         }
     };
 
-    let join = |it: &mut dyn Iterator<Item = String>| -> String {
-        it.collect::<Vec<_>>().join(", ")
-    };
+    let join =
+        |it: &mut dyn Iterator<Item = String>| -> String { it.collect::<Vec<_>>().join(", ") };
     let leaf = mls.leaf_node();
     let caps = leaf.capabilities();
     report.ciphersuite = format!("{:?}", mls.ciphersuite());
