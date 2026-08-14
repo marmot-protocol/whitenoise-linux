@@ -13,32 +13,21 @@ pub(crate) fn upload_profile_picture_async(
     bytes: Vec<u8>,
     content_type: String,
 ) {
-    {
-        let weak = weak.clone();
-        let _ = slint::invoke_from_event_loop(move || {
-            if let Some(ui) = weak.upgrade() {
-                show_profile_status(&ui, error_copy().uploading_blossom, StatusKind::Pending);
-            }
-        });
-    }
+    ui_update!(weak, move |ui| {
+        show_profile_status(&ui, error_copy().uploading_blossom, StatusKind::Pending);
+    });
 
-    let weak_done = weak.clone();
     let backend_cell_done = backend_cell.clone();
     let guard = backend_cell.lock().unwrap();
     let Some(backend) = guard.as_ref() else {
-        let _ = slint::invoke_from_event_loop(move || {
-            if let Some(ui) = weak_done.upgrade() {
-                ui.set_profile_uploading(false);
-                show_profile_status(&ui, error_copy().backend_not_ready_lc, StatusKind::Error);
-            }
+        ui_update!(weak, move |ui| {
+            ui.set_profile_uploading(false);
+            show_profile_status(&ui, error_copy().backend_not_ready_lc, StatusKind::Error);
         });
         return;
     };
     backend.upload_public_blob_async(bytes, content_type, move |result| {
-        let _ = slint::invoke_from_event_loop(move || {
-            let Some(ui) = weak_done.upgrade() else {
-                return;
-            };
+        ui_update!(weak, move |ui| {
             ui.set_profile_uploading(false);
             match result {
                 Ok(url) => {
@@ -121,8 +110,7 @@ fn download_and_apply_picked_image(
         };
 
         let Some((bytes, content_type)) = downloaded else {
-            let _ = slint::invoke_from_event_loop(move || {
-                let Some(ui) = weak.upgrade() else { return };
+            ui_update!(weak, move |ui| {
                 match target {
                     PickTarget::Group(_) => {
                         ui.set_group_image_busy(false);
@@ -266,13 +254,11 @@ pub(crate) fn wire_image_search(ui: &WhiteNoiseLinux, cx: &Cx) {
                 let result = crate::image_search::search_images(&query).await;
                 match result {
                     Ok(hits) if hits.is_empty() => {
-                        let _ = slint::invoke_from_event_loop(move || {
-                            if let Some(ui) = weak.upgrade() {
-                                ui.set_remote_image_search_busy(false);
-                                ui.set_remote_image_search_status(s(
-                                    &error_copy().image_search_no_results
-                                ));
-                            }
+                        ui_update!(weak, move |ui| {
+                            ui.set_remote_image_search_busy(false);
+                            ui.set_remote_image_search_status(s(
+                                &error_copy().image_search_no_results
+                            ));
                         });
                     }
                     Ok(hits) => {
@@ -291,8 +277,7 @@ pub(crate) fn wire_image_search(ui: &WhiteNoiseLinux, cx: &Cx) {
                         for handle in handles {
                             thumbs.push(handle.await.unwrap_or(None));
                         }
-                        let _ = slint::invoke_from_event_loop(move || {
-                            let Some(ui) = weak.upgrade() else { return };
+                        ui_update!(weak, move |ui| {
                             ui.set_remote_image_search_busy(false);
                             ui.set_remote_image_search_status(s(""));
                             let rows: Vec<ImageSearchHit> = hits
@@ -316,13 +301,11 @@ pub(crate) fn wire_image_search(ui: &WhiteNoiseLinux, cx: &Cx) {
                     }
                     Err(e) => {
                         tracing::warn!(target: "image_search", "search failed: {e:#}");
-                        let _ = slint::invoke_from_event_loop(move || {
-                            if let Some(ui) = weak.upgrade() {
-                                ui.set_remote_image_search_busy(false);
-                                ui.set_remote_image_search_status(s(
-                                    &error_copy().image_search_failed
-                                ));
-                            }
+                        ui_update!(weak, move |ui| {
+                            ui.set_remote_image_search_busy(false);
+                            ui.set_remote_image_search_status(s(
+                                &error_copy().image_search_failed
+                            ));
                         });
                     }
                 }

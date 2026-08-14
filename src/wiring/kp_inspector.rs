@@ -10,63 +10,54 @@ use crate::*;
 pub(crate) fn wire_kp_inspector(ui: &WhiteNoiseLinux, cx: &Cx) {
     let Cx { backend_cell, .. } = cx.clone();
 
-    ui.global::<AppState>().on_kp_inspector_refresh({
+    wire!(ui, on_kp_inspector_refresh [backend_cell], |ui| {
+        let Some(b) = backend_cell.lock().unwrap().clone() else {
+            return;
+        };
+        ui.set_kp_inspector_busy(true);
+        ui.set_kp_inspector_status(s(""));
         let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            let Some(b) = backend_cell.lock().unwrap().clone() else {
-                return;
-            };
-            ui.set_kp_inspector_busy(true);
-            ui.set_kp_inspector_status(s(""));
-            let weak = ui.as_weak();
-            spawn_ui(
-                weak,
-                move || b.inspect_own_key_packages(),
-                move |ui, reports| {
-                    ui.set_kp_inspector_busy(false);
-                    // Dev-only surface: statuses stay untranslated, like the
-                    // debug pane's JSON dumps.
-                    ui.set_kp_inspector_status(s(&format!(
-                        "{} owned key package{}",
-                        reports.len(),
-                        if reports.len() == 1 { "" } else { "s" }
-                    )));
-                    let rows: Vec<KpInspection> = reports.iter().map(kp_report_to_ui).collect();
-                    ui.set_kp_inspector_own(ModelRc::new(VecModel::from(rows)));
-                },
-            );
-        }
+        spawn_ui(
+            weak,
+            move || b.inspect_own_key_packages(),
+            move |ui, reports| {
+                ui.set_kp_inspector_busy(false);
+                // Dev-only surface: statuses stay untranslated, like the
+                // debug pane's JSON dumps.
+                ui.set_kp_inspector_status(s(&format!(
+                    "{} owned key package{}",
+                    reports.len(),
+                    if reports.len() == 1 { "" } else { "s" }
+                )));
+                let rows: Vec<KpInspection> = reports.iter().map(kp_report_to_ui).collect();
+                ui.set_kp_inspector_own(ModelRc::new(VecModel::from(rows)));
+            },
+        );
     });
 
-    ui.global::<AppState>().on_kp_inspect_peer({
+    wire!(ui, on_kp_inspect_peer [], |ui, query| {
+        let Some(b) = backend_cell.lock().unwrap().clone() else {
+            return;
+        };
+        let query = query.to_string();
+        ui.set_kp_peer_busy(true);
+        ui.set_kp_peer_loaded(false);
+        ui.set_kp_peer_status(s(""));
         let weak = ui.as_weak();
-        move |query| {
-            let Some(ui) = weak.upgrade() else { return };
-            let Some(b) = backend_cell.lock().unwrap().clone() else {
-                return;
-            };
-            let query = query.to_string();
-            ui.set_kp_peer_busy(true);
-            ui.set_kp_peer_loaded(false);
-            ui.set_kp_peer_status(s(""));
-            let weak = ui.as_weak();
-            spawn_ui(
-                weak,
-                move || b.inspect_contact_key_package(&query),
-                move |ui, result| {
-                    ui.set_kp_peer_busy(false);
-                    match result {
-                        Ok(report) => {
-                            ui.set_kp_peer_result(kp_report_to_ui(&report));
-                            ui.set_kp_peer_loaded(true);
-                        }
-                        Err(e) => ui.set_kp_peer_status(s(&e.to_string())),
+        spawn_ui(
+            weak,
+            move || b.inspect_contact_key_package(&query),
+            move |ui, result| {
+                ui.set_kp_peer_busy(false);
+                match result {
+                    Ok(report) => {
+                        ui.set_kp_peer_result(kp_report_to_ui(&report));
+                        ui.set_kp_peer_loaded(true);
                     }
-                },
-            );
-        }
+                    Err(e) => ui.set_kp_peer_status(s(&e.to_string())),
+                }
+            },
+        );
     });
 }
 

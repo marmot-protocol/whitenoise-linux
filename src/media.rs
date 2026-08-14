@@ -24,70 +24,34 @@ pub(crate) fn cached_attachment_image(id: &str) -> Option<slint::Image> {
     })
 }
 
-/// Cache for decrypted+decoded image attachments. Keyed by the inner-event
-/// message id so the same bubble can be rebuilt many times (overlay/reaction
-/// changes) without losing the loaded image. Populated lazily on the first
-/// tap of an image attachment.
-pub(crate) fn attachment_image_cache() -> &'static Mutex<HashMap<String, PicturePixels>> {
-    use std::sync::OnceLock;
-    static CACHE: OnceLock<Mutex<HashMap<String, PicturePixels>>> = OnceLock::new();
-    CACHE.get_or_init(|| Mutex::new(HashMap::new()))
-}
+// Cache for decrypted+decoded image attachments. Keyed by the inner-event
+// message id so the same bubble can be rebuilt many times (overlay/reaction
+// changes) without losing the loaded image. Populated lazily on the first
+// tap of an image attachment.
+global_cell!(pub(crate) fn attachment_image_cache() -> HashMap<String, PicturePixels> = HashMap::new());
+map_ops!(
+    pub(crate) attachment_image_cache<PicturePixels>:
+    get attachment_image_cache_get,
+    put attachment_image_cache_put,
+);
 
-pub(crate) fn attachment_image_cache_get(id: &str) -> Option<PicturePixels> {
-    attachment_image_cache().lock().ok()?.get(id).cloned()
-}
+// Tracks attachments currently being decrypted (so the UI shows "decrypting…"
+// and so we don't fire duplicate downloads on rapid clicks). Stores
+// message_id_hex while the round-trip is in flight.
+global_cell!(pub(crate) fn attachment_in_flight() -> std::collections::HashSet<String> = std::collections::HashSet::new());
+set_ops!(pub(crate) attachment_in_flight: remove clear_attachment_in_flight);
 
-pub(crate) fn attachment_image_cache_put(id: String, pixels: PicturePixels) {
-    if let Ok(mut c) = attachment_image_cache().lock() {
-        c.insert(id, pixels);
-    }
-}
-
-/// Tracks attachments currently being decrypted (so the UI shows "decrypting…"
-/// and so we don't fire duplicate downloads on rapid clicks). Stores
-/// message_id_hex while the round-trip is in flight.
-pub(crate) fn attachment_in_flight() -> &'static Mutex<std::collections::HashSet<String>> {
-    use std::sync::OnceLock;
-    static SET: OnceLock<Mutex<std::collections::HashSet<String>>> = OnceLock::new();
-    SET.get_or_init(|| Mutex::new(std::collections::HashSet::new()))
-}
-
-/// Drop one key from the in-flight set (best-effort under a poisoned lock).
-/// Every exit of an attachment flow must funnel through here — a leaked
-/// guard permanently dead-taps that attachment.
-pub(crate) fn clear_attachment_in_flight(key: &str) {
-    if let Ok(mut set) = attachment_in_flight().lock() {
-        set.remove(key);
-    }
-}
-
-/// Album cells whose download/decrypt failed, keyed by `att_key`. Read by
-/// [`build_album_cells`] to render the failed glyph and by the tap handler to
-/// route a tap into a retry instead of the lightbox. Cleared when a fresh
-/// attempt starts or succeeds.
-pub(crate) fn attachment_failed() -> &'static Mutex<std::collections::HashSet<String>> {
-    use std::sync::OnceLock;
-    static SET: OnceLock<Mutex<std::collections::HashSet<String>>> = OnceLock::new();
-    SET.get_or_init(|| Mutex::new(std::collections::HashSet::new()))
-}
-
-pub(crate) fn attachment_failed_contains(key: &str) -> bool {
-    attachment_failed()
-        .lock()
-        .map(|s| s.contains(key))
-        .unwrap_or(false)
-}
-
-fn attachment_failed_mark(key: &str) {
-    if let Ok(mut s) = attachment_failed().lock() {
-        s.insert(key.to_string());
-    }
-}
-
-fn attachment_failed_clear(key: &str) {
-    attachment_failed().lock().ok().map(|mut s| s.remove(key));
-}
+// Album cells whose download/decrypt failed, keyed by `att_key`. Read by
+// [`build_album_cells`] to render the failed glyph and by the tap handler to
+// route a tap into a retry instead of the lightbox. Cleared when a fresh
+// attempt starts or succeeds.
+global_cell!(pub(crate) fn attachment_failed() -> std::collections::HashSet<String> = std::collections::HashSet::new());
+set_ops!(
+    pub(crate) attachment_failed:
+    contains attachment_failed_contains,
+    insert attachment_failed_mark,
+    remove attachment_failed_clear
+);
 
 /// Convert cached pixels into a Slint `Image`. Must be called on the UI thread —
 /// `slint::Image` is `!Send` (it wraps a `VRc`).
@@ -230,13 +194,9 @@ pub(crate) fn autoload_shared_media(
                     attachment_image_cache_put(key.clone(), px);
                     attachment_failed_clear(&key);
                     clear_attachment_in_flight(&key);
-                    let _ = slint::invoke_from_event_loop(move || {
-                        let Some(ui) = weak.upgrade() else { return };
-                        on_done(&ui);
-                    });
+                    ui_update!(weak, move |ui| on_done(&ui));
                     return;
                 }
-                let weak_cb = weak.clone();
                 let on_done_cb = on_done.clone();
                 backend.download_media_async(&group_hex, reference, move |result| {
                     let pixels = match result {
@@ -258,10 +218,7 @@ pub(crate) fn autoload_shared_media(
                         attachment_failed_mark(&key);
                     }
                     clear_attachment_in_flight(&key);
-                    let _ = slint::invoke_from_event_loop(move || {
-                        let Some(ui) = weak_cb.upgrade() else { return };
-                        on_done_cb(&ui);
-                    });
+                    ui_update!(weak, move |ui| on_done_cb(&ui));
                 });
             }
         });
@@ -303,18 +260,14 @@ pub(crate) fn open_image_viewer_for(
     );
 }
 
-/// Cross-chat handoff for a Shared Media grid tap on the Contact page: that
-/// page has no group_hex-vs-active-chat guarantee (the viewer's
-/// `load_viewer_image` always resolves via the *active* chat), so the click
-/// handler switches to the target chat and stashes `(group_hex, key)` here;
-/// `chat_selected`'s load path takes it once that chat's own shared-media
-/// list is ready, then opens the lightbox — the same handoff
-/// `pending_message_jump` does for a cross-chat mention.
-pub(crate) fn pending_media_jump() -> &'static Mutex<Option<(String, String)>> {
-    use std::sync::OnceLock;
-    static CELL: OnceLock<Mutex<Option<(String, String)>>> = OnceLock::new();
-    CELL.get_or_init(|| Mutex::new(None))
-}
+// Cross-chat handoff for a Shared Media grid tap on the Contact page: that
+// page has no group_hex-vs-active-chat guarantee (the viewer's
+// `load_viewer_image` always resolves via the *active* chat), so the click
+// handler switches to the target chat and stashes `(group_hex, key)` here;
+// `chat_selected`'s load path takes it once that chat's own shared-media
+// list is ready, then opens the lightbox — the same handoff
+// `pending_message_jump` does for a cross-chat mention.
+global_cell!(pub(crate) fn pending_media_jump() -> Option<(String, String)> = None);
 
 /// Ordered image attachments for the open lightbox + the current position.
 /// UI-thread-only state (the lightbox and its callbacks all run there), held
@@ -357,8 +310,7 @@ pub(crate) fn build_viewer_slideshow(
             .position(|it| it.cache_key == current_key)
             .unwrap_or(0);
         let count = items.len();
-        let _ = slint::invoke_from_event_loop(move || {
-            let Some(ui) = weak.upgrade() else { return };
+        ui_update!(weak, move |ui| {
             // Store the list, then load the selected image (cache hit → instant,
             // miss → loading pill + download).
             let current = VIEWER_SLIDESHOW.with(|s| {
@@ -437,8 +389,7 @@ pub(crate) fn load_viewer_image(
         if let Some(px) = &pixels {
             attachment_image_cache_put(mid.clone(), px.clone());
         }
-        let _ = slint::invoke_from_event_loop(move || {
-            let Some(ui) = weak.upgrade() else { return };
+        ui_update!(weak, move |ui| {
             // Drop the result if the user navigated on while we downloaded.
             let still_current = VIEWER_SLIDESHOW.with(|s| {
                 let s = s.borrow();
@@ -639,16 +590,12 @@ pub(crate) fn file_type_label(mime: &str, file_name: &str) -> String {
     mime.to_string()
 }
 
-/// Plaintext byte size per attachment message id. The `imeta` tag carries no
-/// size field, so this is best-effort session knowledge: populated at
-/// send-ack (the uploader knows what it sent) and whenever a download or
-/// encrypted-cache hit reveals the bytes. Rows built before an entry exists
-/// render the chip without a size.
-pub(crate) fn attachment_size_cache() -> &'static Mutex<HashMap<String, u64>> {
-    use std::sync::OnceLock;
-    static M: OnceLock<Mutex<HashMap<String, u64>>> = OnceLock::new();
-    M.get_or_init(|| Mutex::new(HashMap::new()))
-}
+// Plaintext byte size per attachment message id. The `imeta` tag carries no
+// size field, so this is best-effort session knowledge: populated at
+// send-ack (the uploader knows what it sent) and whenever a download or
+// encrypted-cache hit reveals the bytes. Rows built before an entry exists
+// render the chip without a size.
+global_cell!(pub(crate) fn attachment_size_cache() -> HashMap<String, u64> = HashMap::new());
 
 pub(crate) fn attachment_size_put(message_id: &str, bytes: u64) {
     if let Ok(mut m) = attachment_size_cache().lock() {
@@ -689,13 +636,9 @@ pub(crate) fn fmt_dur(secs: f64) -> String {
     }
 }
 
-/// Cached duration label per video message id ("1:23"), captured the first
-/// time a clip is played (mpv reports `duration`). Renders on the poster tile.
-pub(crate) fn video_meta() -> &'static Mutex<HashMap<String, String>> {
-    use std::sync::OnceLock;
-    static M: OnceLock<Mutex<HashMap<String, String>>> = OnceLock::new();
-    M.get_or_init(|| Mutex::new(HashMap::new()))
-}
+// Cached duration label per video message id ("1:23"), captured the first
+// time a clip is played (mpv reports `duration`). Renders on the poster tile.
+global_cell!(pub(crate) fn video_meta() -> HashMap<String, String> = HashMap::new());
 
 pub(crate) fn video_duration_label(message_id: &str) -> String {
     video_meta()
@@ -856,7 +799,6 @@ pub(crate) fn start_video_playback(
             spawn_video_player(weak, mid, bytes);
             return;
         }
-        let weak_fail = weak.clone();
         let mid_dl = mid.clone();
         let vault2 = vault.clone();
         backend2.download_media_async(&group_hex, reference, move |res| match res {
@@ -868,11 +810,9 @@ pub(crate) fn start_video_playback(
             }
             Err(e) => {
                 tracing::warn!(target: "video", "download {mid_dl}: {e:#}");
-                let _ = slint::invoke_from_event_loop(move || {
-                    if let Some(ui) = weak_fail.upgrade() {
-                        ui.set_video_viewer_loading(false);
-                        ui.set_video_viewer_failed(true);
-                    }
+                ui_update!(weak, move |ui| {
+                    ui.set_video_viewer_loading(false);
+                    ui.set_video_viewer_failed(true);
                 });
             }
         });
@@ -904,14 +844,11 @@ pub(crate) fn spawn_video_player(weak: Weak<WhiteNoiseLinux>, mid: String, bytes
             if !poster_saved.swap(true, Ordering::AcqRel) {
                 attachment_image_cache_put(vidposter_key(&mid), px.clone());
             }
-            let weak = weak.clone();
-            let _ = slint::invoke_from_event_loop(move || {
-                if let Some(ui) = weak.upgrade() {
-                    ui.set_video_viewer_frame(image_from_pixels(&px));
-                    ui.set_video_viewer_has_frame(true);
-                    ui.set_video_viewer_loading(false);
-                    ui.set_video_viewer_failed(false);
-                }
+            ui_update!(weak, move |ui| {
+                ui.set_video_viewer_frame(image_from_pixels(&px));
+                ui.set_video_viewer_has_frame(true);
+                ui.set_video_viewer_loading(false);
+                ui.set_video_viewer_failed(false);
             });
         }
     };
@@ -941,23 +878,20 @@ pub(crate) fn spawn_video_player(weak: Weak<WhiteNoiseLinux>, mid: String, bytes
             let buffering = st.buffering && !st.paused;
             let errored = st.errored;
             let seen = frame_seen.load(Ordering::Acquire);
-            let weak = weak.clone();
-            let _ = slint::invoke_from_event_loop(move || {
-                if let Some(ui) = weak.upgrade() {
-                    ui.set_video_viewer_progress(progress);
-                    ui.set_video_viewer_pos(pos_l.into());
-                    ui.set_video_viewer_dur(dur_l.into());
-                    ui.set_video_viewer_playing(playing);
-                    // A playback error surfaces the retry pill whether or not a
-                    // frame rendered; a mid-stream buffering stall shows the
-                    // loading pill, but only once a frame is up (before that the
-                    // initial "Loading…" already covers the wait).
-                    if errored {
-                        ui.set_video_viewer_loading(false);
-                        ui.set_video_viewer_failed(true);
-                    } else if seen {
-                        ui.set_video_viewer_loading(buffering);
-                    }
+            ui_update!(weak, move |ui| {
+                ui.set_video_viewer_progress(progress);
+                ui.set_video_viewer_pos(pos_l.into());
+                ui.set_video_viewer_dur(dur_l.into());
+                ui.set_video_viewer_playing(playing);
+                // A playback error surfaces the retry pill whether or not a
+                // frame rendered; a mid-stream buffering stall shows the
+                // loading pill, but only once a frame is up (before that the
+                // initial "Loading…" already covers the wait).
+                if errored {
+                    ui.set_video_viewer_loading(false);
+                    ui.set_video_viewer_failed(true);
+                } else if seen {
+                    ui.set_video_viewer_loading(buffering);
                 }
             });
         }
@@ -969,11 +903,9 @@ pub(crate) fn spawn_video_player(weak: Weak<WhiteNoiseLinux>, mid: String, bytes
         }
         None => {
             tracing::warn!(target: "video", "mpv player failed to start");
-            let _ = slint::invoke_from_event_loop(move || {
-                if let Some(ui) = weak.upgrade() {
-                    ui.set_video_viewer_loading(false);
-                    ui.set_video_viewer_failed(true);
-                }
+            ui_update!(weak, move |ui| {
+                ui.set_video_viewer_loading(false);
+                ui.set_video_viewer_failed(true);
             });
         }
     }

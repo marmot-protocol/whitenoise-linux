@@ -102,10 +102,8 @@ fn fetch_viewer_image_bytes(
             }
             Err(e) => {
                 tracing::warn!(target: "attach", "viewer image download failed: {e:#}");
-                let _ = slint::invoke_from_event_loop(move || {
-                    if let Some(ui) = weak.upgrade() {
-                        set_status_feedback(&ui, error_copy().download_image_failed, true);
-                    }
+                ui_update!(weak, move |ui| {
+                    set_status_feedback(&ui, error_copy().download_image_failed, true);
                 });
             }
         });
@@ -216,10 +214,8 @@ fn fetch_video_save_bytes(
             }
             Err(e) => {
                 tracing::warn!(target: "attach", "viewer video download failed: {e:#}");
-                let _ = slint::invoke_from_event_loop(move || {
-                    if let Some(ui) = weak.upgrade() {
-                        set_status_feedback(&ui, error_copy().save_video_failed, true);
-                    }
+                ui_update!(weak, move |ui| {
+                    set_status_feedback(&ui, error_copy().save_video_failed, true);
                 });
             }
         });
@@ -347,98 +343,82 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     // `request-edit(id, current_text)`. We load the current text into the
     // composer and stash the target id; the next send routes through
     // `edit_op`. Entering edit mode clears any pending reply target.
-    ui.global::<AppState>().on_request_edit({
-        let weak = ui.as_weak();
-        let settings_cell = settings_cell.clone();
-        let group_ids = group_ids.clone();
-        move |message_id, current_text| {
-            let Some(ui) = weak.upgrade() else { return };
-            // Preserve the unsent draft before the composer is repurposed for
-            // the edit body. Normal chat-switch/quit persistence intentionally
-            // skips while editing because the composer no longer contains a
-            // draft at that point.
-            {
-                let draft = ui.get_composer_draft().to_string();
-                let editing_id = ui.get_editing_message_id().to_string();
-                let groups = group_ids.lock().unwrap();
-                let mut st = settings_cell.borrow_mut();
-                if stash_pre_edit_draft_for_chat_index(
-                    &mut st,
-                    &groups,
-                    ui.get_active_chat(),
-                    &editing_id,
-                    &draft,
-                ) {
-                    st.save();
-                }
+    wire!(ui, on_request_edit [settings_cell, group_ids], |ui, message_id, current_text| {
+        // Preserve the unsent draft before the composer is repurposed for
+        // the edit body. Normal chat-switch/quit persistence intentionally
+        // skips while editing because the composer no longer contains a
+        // draft at that point.
+        {
+            let draft = ui.get_composer_draft().to_string();
+            let editing_id = ui.get_editing_message_id().to_string();
+            let groups = group_ids.lock().unwrap();
+            let mut st = settings_cell.borrow_mut();
+            if stash_pre_edit_draft_for_chat_index(
+                &mut st,
+                &groups,
+                ui.get_active_chat(),
+                &editing_id,
+                &draft,
+            ) {
+                st.save();
             }
-            clear_reply_target(&ui);
-            // Preview of the target body for the edit banner. Mirrors the reply
-            // banner: flatten + elide the body, and fall back to the media label
-            // when the message is attachment-only.
-            let mut preview = truncate_preview(current_text.as_str(), 160);
-            if preview.is_empty()
-                && let Some(label) =
-                    media_label_for_row(&ui.get_chats_messages(), message_id.as_str())
-            {
-                preview = label;
-            }
-            ui.set_editing_message_preview(s(&preview));
-            ui.set_editing_message_id(message_id);
-            ui.set_composer_draft(current_text);
         }
+        clear_reply_target(&ui);
+        // Preview of the target body for the edit banner. Mirrors the reply
+        // banner: flatten + elide the body, and fall back to the media label
+        // when the message is attachment-only.
+        let mut preview = truncate_preview(current_text.as_str(), 160);
+        if preview.is_empty()
+            && let Some(label) =
+                media_label_for_row(&ui.get_chats_messages(), message_id.as_str())
+        {
+            preview = label;
+        }
+        ui.set_editing_message_preview(s(&preview));
+        ui.set_editing_message_id(message_id);
+        ui.set_composer_draft(current_text);
     });
-    ui.global::<AppState>().on_cancel_edit({
-        let weak = ui.as_weak();
-        let settings_cell = settings_cell.clone();
-        let group_ids = group_ids.clone();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            let draft = {
-                let groups = group_ids.lock().unwrap();
-                let st = settings_cell.borrow();
-                draft_for_chat_index(&st, &groups, ui.get_active_chat())
-            };
-            ui.set_editing_message_id(s(""));
-            ui.set_composer_draft(s(&draft));
-        }
+    wire!(ui, on_cancel_edit [settings_cell, group_ids], |ui| {
+        let draft = {
+            let groups = group_ids.lock().unwrap();
+            let st = settings_cell.borrow();
+            draft_for_chat_index(&st, &groups, ui.get_active_chat())
+        };
+        ui.set_editing_message_id(s(""));
+        ui.set_composer_draft(s(&draft));
     });
 
     // ─── Copy selection (context menu on a text-selected bubble) ───────
     //
     // The bubble's run cells resolved the drag into two (line, run, fraction)
     // endpoints; re-read the row's line model and extract the covered text.
-    ui.global::<AppState>().on_copy_selection({
-        let weak = ui.as_weak();
-        move |message_id, a_line, a_run, a_frac, b_line, b_run, b_frac| {
-            let Some(ui) = weak.upgrade() else { return };
-            let idx = ui.get_active_chat();
-            if idx < 0 || message_id.is_empty() {
-                return;
-            }
-            let chats_messages = ui.get_chats_messages();
-            let text = with_inner_messages(&chats_messages, idx as usize, |vm| {
-                find_message_row(vm, &message_id)
-                    .and_then(|pos| vm.row_data(pos))
-                    .map(|row| {
-                        extract_selection(
-                            &row.lines,
-                            (a_line, a_run, a_frac),
-                            (b_line, b_run, b_frac),
-                        )
-                    })
-            })
-            .flatten()
-            .unwrap_or_default();
-            if text.is_empty() {
-                return;
-            }
-            copy_to_clipboard_async(text, |result| {
-                if let Err(e) = result {
-                    tracing::warn!(target: "clipboard", "copy selection failed: {e}");
-                }
-            });
+    wire!(ui, on_copy_selection [], |ui, message_id, a_line, a_run, a_frac, b_line, b_run, b_frac| {
+        let idx = ui.get_active_chat();
+        if idx < 0 || message_id.is_empty() {
+            return;
         }
+        let chats_messages = ui.get_chats_messages();
+        let text = with_inner_messages(&chats_messages, idx as usize, |vm| {
+            find_message_row(vm, &message_id)
+                .and_then(|pos| vm.row_data(pos))
+                .map(|row| {
+                    extract_selection(
+                        &row.lines,
+                        (a_line, a_run, a_frac),
+                        (b_line, b_run, b_frac),
+                    )
+                })
+        })
+        .flatten()
+        .unwrap_or_default();
+        if text.is_empty() {
+            return;
+        }
+        copy_to_clipboard_async(text, |result| {
+            if let Err(e) = result {
+                tracing::warn!(target: "clipboard", "copy selection failed: {e}");
+            }
+        });
     });
 
     // ─── Word selection (double-click on a bubble) ─────────────────────
@@ -573,8 +553,7 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 let backend_cell = backend_cell_cb.clone();
                 let group_hex = group_hex_cb.clone();
                 let target = target_cb.clone();
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+                ui_update!(weak, move |ui| {
                     {
                         let mut overlay = pending_state.lock().unwrap();
                         if let Err(e) = &result {
@@ -609,78 +588,70 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     // Never touches the wire: record the id in the persisted hidden set + the
     // in-memory global the renderer consults, then rebuild the active chat so
     // the row drops out. Works on any message (own or others').
-    ui.global::<AppState>().on_request_delete_me({
-        let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        let group_ids = group_ids.clone();
-        let pending_state = pending_state.clone();
-        let settings_cell = settings_cell.clone();
-        move |message_id| {
-            let Some(ui) = weak.upgrade() else { return };
-            let id = message_id.to_string();
-            if id.is_empty() {
-                return;
-            }
-            // Rebuild the active chat so the now-hidden row disappears. Window
-            // read rides the backend runtime; the UI thread never hits sqlite.
-            let idx = ui.get_active_chat() as usize;
-            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
-                return;
-            };
-            let guard = backend_cell.lock().unwrap();
-            let Some(backend) = guard.as_ref() else {
-                return;
-            };
-            // Scope the hide to the *active account* — never the machine — so a
-            // second account on this device still sees the message.
-            let my_id = backend.account().account_id_hex;
-            if hidden_insert(&my_id, &id) {
-                let mut st = settings_cell.borrow_mut();
-                st.hide_message(&my_id, &id);
-                st.save();
-            }
-            let weak2 = ui.as_weak();
-            let pending_state = pending_state.clone();
-            let group_ids2 = group_ids.clone();
-            let b = backend.clone();
-            let bg = b.clone();
-            let bg_group_hex = group_hex.clone();
-            spawn_ui_tokio(
-                backend,
-                weak2,
-                async move {
-                    let msgs = bg
-                        .messages(&bg_group_hex, Some(msg_window_for(&bg_group_hex)))
-                        .unwrap_or_default();
-                    // Local hide never touches the wire, so the message's own
-                    // cached attachment(s) are still ours to evict — nothing else
-                    // will, since the record itself lives on unretracted.
-                    if let Some(record) = msgs.iter().find(|r| r.message_id_hex == id) {
-                        for hash in media_cache::hashes_from_tags(&record.tags) {
-                            media_cache::remove(&hash);
-                        }
-                    }
-                    msgs
-                },
-                move |ui, msgs| {
-                    let ids = group_ids2.lock().unwrap();
-                    let Some(idx) = ids.iter().position(|g| g == &group_hex) else {
-                        return;
-                    };
-                    drop(ids);
-                    let chats_messages = ui.get_chats_messages();
-                    let overlay = pending_state.lock().unwrap();
-                    rebuild_chat_messages_from(
-                        &b,
-                        &overlay,
-                        &chats_messages,
-                        idx,
-                        &group_hex,
-                        &msgs,
-                    );
-                },
-            );
+    wire!(ui, on_request_delete_me [backend_cell, group_ids, pending_state, settings_cell], |ui, message_id| {
+        let id = message_id.to_string();
+        if id.is_empty() {
+            return;
         }
+        // Rebuild the active chat so the now-hidden row disappears. Window
+        // read rides the backend runtime; the UI thread never hits sqlite.
+        let idx = ui.get_active_chat() as usize;
+        let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
+            return;
+        };
+        let guard = backend_cell.lock().unwrap();
+        let Some(backend) = guard.as_ref() else {
+            return;
+        };
+        // Scope the hide to the *active account* — never the machine — so a
+        // second account on this device still sees the message.
+        let my_id = backend.account().account_id_hex;
+        if hidden_insert(&my_id, &id) {
+            let mut st = settings_cell.borrow_mut();
+            st.hide_message(&my_id, &id);
+            st.save();
+        }
+        let weak2 = ui.as_weak();
+        let pending_state = pending_state.clone();
+        let group_ids2 = group_ids.clone();
+        let b = backend.clone();
+        let bg = b.clone();
+        let bg_group_hex = group_hex.clone();
+        spawn_ui_tokio(
+            backend,
+            weak2,
+            async move {
+                let msgs = bg
+                    .messages(&bg_group_hex, Some(msg_window_for(&bg_group_hex)))
+                    .unwrap_or_default();
+                // Local hide never touches the wire, so the message's own
+                // cached attachment(s) are still ours to evict — nothing else
+                // will, since the record itself lives on unretracted.
+                if let Some(record) = msgs.iter().find(|r| r.message_id_hex == id) {
+                    for hash in media_cache::hashes_from_tags(&record.tags) {
+                        media_cache::remove(&hash);
+                    }
+                }
+                msgs
+            },
+            move |ui, msgs| {
+                let ids = group_ids2.lock().unwrap();
+                let Some(idx) = ids.iter().position(|g| g == &group_hex) else {
+                    return;
+                };
+                drop(ids);
+                let chats_messages = ui.get_chats_messages();
+                let overlay = pending_state.lock().unwrap();
+                rebuild_chat_messages_from(
+                    &b,
+                    &overlay,
+                    &chats_messages,
+                    idx,
+                    &group_hex,
+                    &msgs,
+                );
+            },
+        );
     });
 
     // ─── Edit history (visible to anyone) ──────────────────────────────
@@ -688,114 +659,89 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     // Tapping a bubble's "(edited)" label asks Rust to assemble the full
     // version list (original + each author-authored kind-1009) and open the
     // modal. Empty history (race) just no-ops.
-    ui.global::<AppState>().on_show_edit_history({
+    wire!(ui, on_show_edit_history [backend_cell, group_ids], |ui, message_id| {
+        let idx = ui.get_active_chat() as usize;
+        let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
+            return;
+        };
+        let Some(backend) = backend_cell.lock().unwrap().clone() else {
+            return;
+        };
+        // Window read on the backend runtime; the modal opens a beat
+        // later instead of stalling the UI thread on sqlite.
         let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        let group_ids = group_ids.clone();
-        move |message_id| {
-            let Some(ui) = weak.upgrade() else { return };
-            let idx = ui.get_active_chat() as usize;
-            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
-                return;
-            };
-            let Some(backend) = backend_cell.lock().unwrap().clone() else {
-                return;
-            };
-            // Window read on the backend runtime; the modal opens a beat
-            // later instead of stalling the UI thread on sqlite.
-            let weak = ui.as_weak();
-            let message_id = message_id.to_string();
-            let b = backend.clone();
-            spawn_ui_tokio(
-                &backend,
-                weak,
-                async move {
-                    b.messages(&group_hex, Some(msg_window_for(&group_hex)))
-                        .unwrap_or_default()
-                },
-                move |ui, all| {
-                    let versions = build_edit_history(&all, &message_id);
-                    if versions.is_empty() {
-                        return;
-                    }
-                    ui.set_edit_history(ModelRc::new(VecModel::from(versions)));
-                    ui.set_edit_history_open(true);
-                },
-            );
-        }
+        let message_id = message_id.to_string();
+        let b = backend.clone();
+        spawn_ui_tokio(
+            &backend,
+            weak,
+            async move {
+                b.messages(&group_hex, Some(msg_window_for(&group_hex)))
+                    .unwrap_or_default()
+            },
+            move |ui, all| {
+                let versions = build_edit_history(&all, &message_id);
+                if versions.is_empty() {
+                    return;
+                }
+                ui.set_edit_history(ModelRc::new(VecModel::from(versions)));
+                ui.set_edit_history_open(true);
+            },
+        );
     });
-    ui.global::<AppState>().on_dismiss_edit_history({
-        let weak = ui.as_weak();
-        move || {
-            if let Some(ui) = weak.upgrade() {
-                ui.set_edit_history_open(false);
-            }
-        }
+    wire!(ui, on_dismiss_edit_history [], |ui| {
+        ui.set_edit_history_open(false);
     });
 
     // ─── Developer mode: "View raw event" ──────────────────────────────
     // Opens the shared JSON viewer with this message's raw event. Collecting
     // it reads the group's window snapshot on the marmot runtime — worker
     // thread only, per the no-UI-thread-blocking rule.
-    ui.global::<AppState>().on_view_raw_event({
+    wire!(ui, on_view_raw_event [backend_cell, group_ids], |ui, message_id| {
+        let idx = ui.get_active_chat() as usize;
+        let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
+            return;
+        };
+        let Some(backend) = backend_cell.lock().unwrap().clone() else {
+            return;
+        };
+        ui.set_debug_view_title(s("Raw event"));
+        ui.set_debug_view_subtitle(s(&shorten_npub(message_id.as_str())));
+        ui.set_debug_view_json(s(""));
+        ui.set_debug_view_rows(json_doc_set(JsonSlot::View, ""));
+        ui.set_debug_view_busy(true);
+        ui.set_debug_view_open(true);
         let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        let group_ids = group_ids.clone();
-        move |message_id| {
-            let Some(ui) = weak.upgrade() else { return };
-            let idx = ui.get_active_chat() as usize;
-            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
-                return;
-            };
-            let Some(backend) = backend_cell.lock().unwrap().clone() else {
-                return;
-            };
-            ui.set_debug_view_title(s("Raw event"));
-            ui.set_debug_view_subtitle(s(&shorten_npub(message_id.as_str())));
-            ui.set_debug_view_json(s(""));
-            ui.set_debug_view_rows(json_doc_set(JsonSlot::View, ""));
-            ui.set_debug_view_busy(true);
-            ui.set_debug_view_open(true);
-            let weak = ui.as_weak();
-            let message_id = message_id.to_string();
-            let bg = backend.clone();
-            spawn_ui_tokio(
-                &backend,
-                weak,
-                async move { bg.debug_message_event(&group_hex, &message_id) },
-                move |ui, json| {
-                    ui.set_debug_view_busy(false);
-                    // Rows drive the viewer; the plain string stays for copy.
-                    ui.set_debug_view_rows(json_doc_set(JsonSlot::View, &json));
-                    ui.set_debug_view_json(json.into());
-                },
-            );
-        }
+        let message_id = message_id.to_string();
+        let bg = backend.clone();
+        spawn_ui_tokio(
+            &backend,
+            weak,
+            async move { bg.debug_message_event(&group_hex, &message_id) },
+            move |ui, json| {
+                ui.set_debug_view_busy(false);
+                // Rows drive the viewer; the plain string stays for copy.
+                ui.set_debug_view_rows(json_doc_set(JsonSlot::View, &json));
+                ui.set_debug_view_json(json.into());
+            },
+        );
     });
 
     // Open the debug viewer on JSON the UI already holds (KP inspector cards
     // etc.) — the Slint side can't tokenize into rows, so it hands the string
     // here and this fills both representations and flips the modal open.
-    ui.global::<AppState>().on_debug_view_show({
-        let weak = ui.as_weak();
-        move |title, subtitle, json| {
-            let Some(ui) = weak.upgrade() else { return };
-            ui.set_debug_view_title(title);
-            ui.set_debug_view_subtitle(subtitle);
-            ui.set_debug_view_rows(json_doc_set(JsonSlot::View, &json));
-            ui.set_debug_view_json(json);
-            ui.set_debug_view_busy(false);
-            ui.set_debug_view_open(true);
-        }
+    wire!(ui, on_debug_view_show [], |ui, title, subtitle, json| {
+        ui.set_debug_view_title(title);
+        ui.set_debug_view_subtitle(subtitle);
+        ui.set_debug_view_rows(json_doc_set(JsonSlot::View, &json));
+        ui.set_debug_view_json(json);
+        ui.set_debug_view_busy(false);
+        ui.set_debug_view_open(true);
     });
 
     // Fold/unfold a container line in the debug viewer modal.
-    ui.global::<AppState>().on_debug_view_toggle({
-        let weak = ui.as_weak();
-        move |logical| {
-            let Some(ui) = weak.upgrade() else { return };
-            ui.set_debug_view_rows(json_doc_toggle(JsonSlot::View, logical));
-        }
+    wire!(ui, on_debug_view_toggle [], |ui, logical| {
+        ui.set_debug_view_rows(json_doc_toggle(JsonSlot::View, logical));
     });
 
     // Copy whatever the debug JSON viewer is currently showing.
@@ -835,21 +781,14 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.global::<AppState>().on_image_viewer_copy({
-        let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        let group_ids = group_ids.clone();
-        let vault_cell = vault_cell.clone();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            run_viewer_image_action(
-                &ui,
-                backend_cell.clone(),
-                group_ids.clone(),
-                vault_cell.clone(),
-                ViewerImageAction::Copy,
-            );
-        }
+    wire!(ui, on_image_viewer_copy [backend_cell, group_ids, vault_cell], |ui| {
+        run_viewer_image_action(
+            &ui,
+            backend_cell.clone(),
+            group_ids.clone(),
+            vault_cell.clone(),
+            ViewerImageAction::Copy,
+        );
     });
 
     ui.global::<AppState>().on_image_viewer_save({
@@ -1022,57 +961,39 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     // Step the position and load that image (cache hit → instant; miss →
     // download with the loading pill up). `prev`/`next` are no-ops at the
     // ends — the UI hides the chevron there, but a stray ←/→ key is harmless.
-    ui.global::<AppState>().on_image_viewer_prev({
-        let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        let group_ids = group_ids.clone();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            let target = VIEWER_SLIDESHOW.with(|s| {
-                let mut s = s.borrow_mut();
-                if s.pos > 0 {
-                    s.pos -= 1;
-                }
-                s.items.get(s.pos).map(|it| (s.pos, it.clone()))
-            });
-            if let Some((pos, item)) = target {
-                ui.set_image_viewer_index((pos + 1) as i32);
-                load_viewer_image(&ui, &backend_cell, &group_ids, pos, item);
+    wire!(ui, on_image_viewer_prev [backend_cell, group_ids], |ui| {
+        let target = VIEWER_SLIDESHOW.with(|s| {
+            let mut s = s.borrow_mut();
+            if s.pos > 0 {
+                s.pos -= 1;
             }
+            s.items.get(s.pos).map(|it| (s.pos, it.clone()))
+        });
+        if let Some((pos, item)) = target {
+            ui.set_image_viewer_index((pos + 1) as i32);
+            load_viewer_image(&ui, &backend_cell, &group_ids, pos, item);
         }
     });
-    ui.global::<AppState>().on_image_viewer_next({
-        let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        let group_ids = group_ids.clone();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            let target = VIEWER_SLIDESHOW.with(|s| {
-                let mut s = s.borrow_mut();
-                if s.pos + 1 < s.items.len() {
-                    s.pos += 1;
-                }
-                s.items.get(s.pos).map(|it| (s.pos, it.clone()))
-            });
-            if let Some((pos, item)) = target {
-                ui.set_image_viewer_index((pos + 1) as i32);
-                load_viewer_image(&ui, &backend_cell, &group_ids, pos, item);
+    wire!(ui, on_image_viewer_next [backend_cell, group_ids], |ui| {
+        let target = VIEWER_SLIDESHOW.with(|s| {
+            let mut s = s.borrow_mut();
+            if s.pos + 1 < s.items.len() {
+                s.pos += 1;
             }
+            s.items.get(s.pos).map(|it| (s.pos, it.clone()))
+        });
+        if let Some((pos, item)) = target {
+            ui.set_image_viewer_index((pos + 1) as i32);
+            load_viewer_image(&ui, &backend_cell, &group_ids, pos, item);
         }
     });
-    ui.global::<AppState>().on_image_viewer_retry({
-        let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        let group_ids = group_ids.clone();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            let target = VIEWER_SLIDESHOW.with(|s| {
-                let s = s.borrow();
-                s.items.get(s.pos).map(|it| (s.pos, it.clone()))
-            });
-            if let Some((pos, item)) = target {
-                load_viewer_image(&ui, &backend_cell, &group_ids, pos, item);
-            }
+    wire!(ui, on_image_viewer_retry [backend_cell, group_ids], |ui| {
+        let target = VIEWER_SLIDESHOW.with(|s| {
+            let s = s.borrow();
+            s.items.get(s.pos).map(|it| (s.pos, it.clone()))
+        });
+        if let Some((pos, item)) = target {
+            load_viewer_image(&ui, &backend_cell, &group_ids, pos, item);
         }
     });
 
@@ -1109,8 +1030,7 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 if !any {
                     return;
                 }
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+                ui_update!(weak, move |ui| {
                     build_and_set_emoji_rows(&ui, &custom, &q);
                 });
             });
@@ -1145,20 +1065,14 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.global::<AppState>().on_emoji_picker_dismissed({
-        let weak = ui.as_weak();
-        move || {
-            if let Some(ui) = weak.upgrade() {
-                ui.set_show_emoji_picker(false);
-            }
-        }
+    wire!(ui, on_emoji_picker_dismissed [], |ui| {
+        ui.set_show_emoji_picker(false);
     });
 
-    ui.global::<AppState>().on_emoji_picked({
-        let weak = ui.as_weak();
-        let settings_cell = settings_cell.clone();
-        move |message_id, emoji| {
-            let Some(ui) = weak.upgrade() else { return };
+    wire!(
+        ui,
+        on_emoji_picked[settings_cell],
+        |ui, message_id, emoji| {
             ui.set_show_emoji_picker(false);
             // Sentinel target: append to the composer draft instead of
             // reacting to a message.
@@ -1191,7 +1105,7 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             ui.global::<AppState>()
                 .invoke_react_message(message_id, emoji);
         }
-    });
+    );
 
     wire_quick_reactions(ui, &settings_cell);
 
@@ -1202,77 +1116,50 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     // span [at, caret) of the token from a keystroke to its commit.
     let mention_span: Rc<RefCell<Option<(usize, usize)>>> = Rc::new(RefCell::new(None));
 
-    ui.global::<AppState>().on_composer_input_changed({
-        let weak = ui.as_weak();
-        let mention_span = mention_span.clone();
-        move |cursor| {
-            let Some(ui) = weak.upgrade() else { return };
-            let draft = ui.get_composer_draft().to_string();
-            let cursor = (cursor.max(0) as usize).min(draft.len());
-            match detect_mention(&draft, cursor) {
-                Some((at, query)) => {
-                    let cands = filter_mention_candidates(&ui, &query);
-                    if cands.is_empty() {
-                        *mention_span.borrow_mut() = None;
-                        ui.set_mention_active(false);
-                        return;
-                    }
-                    *mention_span.borrow_mut() = Some((at, cursor));
-                    ui.set_mention_candidates(model(cands));
-                    ui.set_mention_selected(0);
-                    ui.set_mention_active(true);
-                }
-                None => {
+    wire!(ui, on_composer_input_changed[mention_span], |ui, cursor| {
+        let draft = ui.get_composer_draft().to_string();
+        let cursor = (cursor.max(0) as usize).min(draft.len());
+        match detect_mention(&draft, cursor) {
+            Some((at, query)) => {
+                let cands = filter_mention_candidates(&ui, &query);
+                if cands.is_empty() {
                     *mention_span.borrow_mut() = None;
                     ui.set_mention_active(false);
+                    return;
                 }
+                *mention_span.borrow_mut() = Some((at, cursor));
+                ui.set_mention_candidates(model(cands));
+                ui.set_mention_selected(0);
+                ui.set_mention_active(true);
             }
-        }
-    });
-
-    ui.global::<AppState>().on_mention_nav({
-        let weak = ui.as_weak();
-        move |delta| {
-            let Some(ui) = weak.upgrade() else { return };
-            let n = ui.get_mention_candidates().row_count() as i32;
-            if n == 0 {
-                return;
-            }
-            let sel = (ui.get_mention_selected() + delta).rem_euclid(n);
-            ui.set_mention_selected(sel);
-        }
-    });
-
-    ui.global::<AppState>().on_mention_commit({
-        let weak = ui.as_weak();
-        let mention_span = mention_span.clone();
-        move || {
-            if let Some(ui) = weak.upgrade() {
-                let sel = ui.get_mention_selected();
-                commit_mention(&ui, &mention_span, sel);
-            }
-        }
-    });
-
-    ui.global::<AppState>().on_mention_choose({
-        let weak = ui.as_weak();
-        let mention_span = mention_span.clone();
-        move |index| {
-            if let Some(ui) = weak.upgrade() {
-                commit_mention(&ui, &mention_span, index);
-            }
-        }
-    });
-
-    ui.global::<AppState>().on_mention_dismiss({
-        let weak = ui.as_weak();
-        let mention_span = mention_span.clone();
-        move || {
-            if let Some(ui) = weak.upgrade() {
+            None => {
                 *mention_span.borrow_mut() = None;
                 ui.set_mention_active(false);
             }
         }
+    });
+
+    wire!(ui, on_mention_nav [], |ui, delta| {
+        let n = ui.get_mention_candidates().row_count() as i32;
+        if n == 0 {
+            return;
+        }
+        let sel = (ui.get_mention_selected() + delta).rem_euclid(n);
+        ui.set_mention_selected(sel);
+    });
+
+    wire!(ui, on_mention_commit[mention_span], |ui| {
+        let sel = ui.get_mention_selected();
+        commit_mention(&ui, &mention_span, sel);
+    });
+
+    wire!(ui, on_mention_choose[mention_span], |ui, index| {
+        commit_mention(&ui, &mention_span, index);
+    });
+
+    wire!(ui, on_mention_dismiss[mention_span], |ui| {
+        *mention_span.borrow_mut() = None;
+        ui.set_mention_active(false);
     });
 
     // ─── Reactions (optimistic, surgical) ─────────────────────────────
@@ -1327,8 +1214,7 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 let group_hex = group_hex_cb.clone();
                 let target = target_cb.clone();
                 let label = label;
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+                ui_update!(weak, move |ui| {
                     {
                         let mut overlay = pending_state.lock().unwrap();
                         if let Err(e) = &result {
@@ -1397,33 +1283,21 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     // handler checks the flag and drops the result instead of reapplying it.
     let profile_save_cancelled = Arc::new(AtomicBool::new(false));
 
-    ui.global::<AppState>().on_start_edit_profile({
-        let weak = ui.as_weak();
-        let profile_save_cancelled = profile_save_cancelled.clone();
-        move || {
-            if let Some(ui) = weak.upgrade() {
-                profile_save_cancelled.store(false, AtomicOrdering::SeqCst);
-                ui.set_profile_status(s(""));
-                ui.set_profile_editing(true);
-            }
-        }
+    wire!(ui, on_start_edit_profile[profile_save_cancelled], |ui| {
+        profile_save_cancelled.store(false, AtomicOrdering::SeqCst);
+        ui.set_profile_status(s(""));
+        ui.set_profile_editing(true);
     });
 
-    ui.global::<AppState>().on_cancel_edit_profile({
-        let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        let profile_save_cancelled = profile_save_cancelled.clone();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            if ui.get_profile_busy() {
-                profile_save_cancelled.store(true, AtomicOrdering::SeqCst);
-            }
-            if let Some(b) = backend_cell.lock().unwrap().as_ref() {
-                populate_profile_async(&ui, b);
-            }
-            ui.set_profile_status(s(""));
-            ui.set_profile_editing(false);
+    wire!(ui, on_cancel_edit_profile [backend_cell, profile_save_cancelled], |ui| {
+        if ui.get_profile_busy() {
+            profile_save_cancelled.store(true, AtomicOrdering::SeqCst);
         }
+        if let Some(b) = backend_cell.lock().unwrap().as_ref() {
+            populate_profile_async(&ui, b);
+        }
+        ui.set_profile_status(s(""));
+        ui.set_profile_editing(false);
     });
 
     ui.global::<AppState>().on_save_profile({
@@ -1498,88 +1372,69 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     // avatar preview. The rfd dialog runs on a blocking task (its xdg-portal
     // backend drives ashpd/zbus); everything that touches the UI bounces back
     // through `invoke_from_event_loop`.
-    ui.global::<AppState>().on_upload_profile_picture({
+    wire!(ui, on_upload_profile_picture[backend_cell], |ui| {
+        if ui.get_profile_uploading() {
+            return;
+        }
+        let tokio_handle = {
+            let guard = backend_cell.lock().unwrap();
+            match guard.as_ref() {
+                Some(b) => b.tokio_handle(),
+                None => {
+                    show_profile_status(&ui, error_copy().backend_not_ready_lc, StatusKind::Error);
+                    return;
+                }
+            }
+        };
+        ui.set_profile_uploading(true);
+        show_profile_status(&ui, error_copy().choosing_image, StatusKind::Pending);
+        // Localized dialog title comes from the Slint @tr catalogs (the
+        // project keeps all i18n there); read it here on the UI thread,
+        // then move it into the blocking dialog task.
+        let dialog_title = ui
+            .global::<NativeDialogStrings>()
+            .get_choose_profile_picture()
+            .to_string();
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            if ui.get_profile_uploading() {
-                return;
-            }
-            let tokio_handle = {
-                let guard = backend_cell.lock().unwrap();
-                match guard.as_ref() {
-                    Some(b) => b.tokio_handle(),
-                    None => {
-                        show_profile_status(
-                            &ui,
-                            error_copy().backend_not_ready_lc,
-                            StatusKind::Error,
-                        );
-                        return;
-                    }
-                }
-            };
-            ui.set_profile_uploading(true);
-            show_profile_status(&ui, error_copy().choosing_image, StatusKind::Pending);
-            // Localized dialog title comes from the Slint @tr catalogs (the
-            // project keeps all i18n there); read it here on the UI thread,
-            // then move it into the blocking dialog task.
-            let dialog_title = ui
-                .global::<NativeDialogStrings>()
-                .get_choose_profile_picture()
-                .to_string();
-            let weak = ui.as_weak();
-            let backend_cell = backend_cell.clone();
-            tokio_handle.spawn(async move {
-                let chosen = tokio::task::spawn_blocking(move || {
-                    rfd::FileDialog::new()
-                        .set_title(dialog_title)
-                        .add_filter("Images", &["png", "jpg", "jpeg", "gif", "webp"])
-                        .pick_file()
-                })
-                .await
-                .ok()
-                .flatten();
+        tokio_handle.spawn(async move {
+            let chosen = tokio::task::spawn_blocking(move || {
+                rfd::FileDialog::new()
+                    .set_title(dialog_title)
+                    .add_filter("Images", &["png", "jpg", "jpeg", "gif", "webp"])
+                    .pick_file()
+            })
+            .await
+            .ok()
+            .flatten();
 
-                let Some(path) = chosen else {
-                    // Cancelled — reset state on the UI thread.
-                    let weak = weak.clone();
-                    let _ = slint::invoke_from_event_loop(move || {
-                        if let Some(ui) = weak.upgrade() {
-                            ui.set_profile_uploading(false);
-                            ui.set_profile_status(s(""));
-                        }
+            let Some(path) = chosen else {
+                // Cancelled — reset state on the UI thread.
+                ui_update!(weak, move |ui| {
+                    ui.set_profile_uploading(false);
+                    ui.set_profile_status(s(""));
+                });
+                return;
+            };
+
+            let bytes = match std::fs::read(&path) {
+                Ok(b) => b,
+                Err(e) => {
+                    let msg = format!("could not read file: {e}");
+                    ui_update!(weak, move |ui| {
+                        ui.set_profile_uploading(false);
+                        show_profile_status(&ui, msg, StatusKind::Error);
                     });
                     return;
-                };
+                }
+            };
+            let content_type = mime_guess::from_path(&path)
+                .first_or_octet_stream()
+                .essence_str()
+                .to_string();
 
-                let bytes = match std::fs::read(&path) {
-                    Ok(b) => b,
-                    Err(e) => {
-                        let msg = format!("could not read file: {e}");
-                        let _ = slint::invoke_from_event_loop(move || {
-                            if let Some(ui) = weak.upgrade() {
-                                ui.set_profile_uploading(false);
-                                show_profile_status(&ui, msg, StatusKind::Error);
-                            }
-                        });
-                        return;
-                    }
-                };
-                let content_type = mime_guess::from_path(&path)
-                    .first_or_octet_stream()
-                    .essence_str()
-                    .to_string();
-
-                upload_profile_picture_async(
-                    weak.clone(),
-                    backend_cell.clone(),
-                    bytes,
-                    content_type,
-                );
-            });
-        }
+            upload_profile_picture_async(weak.clone(), backend_cell.clone(), bytes, content_type);
+        });
     });
 
     // One-time emoji setup:
@@ -1623,51 +1478,36 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.global::<AppState>().on_peer_profile_dismissed({
-        let weak = ui.as_weak();
-        move || {
-            if let Some(ui) = weak.upgrade() {
-                ui.set_peer_profile_open(false);
-            }
-        }
+    wire!(ui, on_peer_profile_dismissed [], |ui| {
+        ui.set_peer_profile_open(false);
     });
 
     // Retry the own-profile picture after a failed download: re-run the fetch
     // with the URL still bound in the picture field.
-    ui.global::<AppState>().on_retry_profile_picture({
-        let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            let Some(backend) = backend_cell.lock().unwrap().clone() else {
-                return;
-            };
-            let url = ui.get_profile_picture().to_string();
-            if url.trim().is_empty() {
-                return;
-            }
-            fetch_profile_picture(&ui, &backend, &url);
+    wire!(ui, on_retry_profile_picture[backend_cell], |ui| {
+        let Some(backend) = backend_cell.lock().unwrap().clone() else {
+            return;
+        };
+        let url = ui.get_profile_picture().to_string();
+        if url.trim().is_empty() {
+            return;
         }
+        fetch_profile_picture(&ui, &backend, &url);
     });
 
     // Retry the open profile modal's picture after a failed download, keyed by
     // the URL and account id stashed when the modal opened.
-    ui.global::<AppState>().on_retry_peer_profile_picture({
-        let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            let Some(backend) = backend_cell.lock().unwrap().clone() else {
-                return;
-            };
-            let url = ui.get_peer_profile_picture_url().to_string();
-            let id = ui.get_peer_profile_account_id().to_string();
-            if url.trim().is_empty() || id.is_empty() {
-                return;
-            }
-            ui.set_peer_profile_picture_failed(false);
-            fetch_peer_profile_picture(&ui, &backend, &id, &url);
+    wire!(ui, on_retry_peer_profile_picture[backend_cell], |ui| {
+        let Some(backend) = backend_cell.lock().unwrap().clone() else {
+            return;
+        };
+        let url = ui.get_peer_profile_picture_url().to_string();
+        let id = ui.get_peer_profile_account_id().to_string();
+        if url.trim().is_empty() || id.is_empty() {
+            return;
         }
+        ui.set_peer_profile_picture_failed(false);
+        fetch_peer_profile_picture(&ui, &backend, &id, &url);
     });
 
     // Chat-list stamps are date-granular ("Yesterday", weekday, …), so they

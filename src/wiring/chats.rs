@@ -31,43 +31,29 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     } = h.clone();
     // Live archived-list filter: same case-insensitive name match, mirroring
     // the chat-list filter above.
-    ui.global::<AppState>().on_archive_search_changed({
-        let weak = ui.as_weak();
-        move |query| {
-            let Some(ui) = weak.upgrade() else { return };
-            let q = query.trim().to_lowercase();
-            if q.is_empty() {
-                ui.set_archive_match_flags(model(Vec::<bool>::new()));
-                return;
-            }
-            let flags: Vec<bool> = ui
-                .get_archived_chats()
-                .iter()
-                .map(|c| c.name.to_lowercase().contains(&q))
-                .collect();
-            ui.set_archive_match_count(flags.iter().filter(|&&m| m).count() as i32);
-            ui.set_archive_match_flags(model(flags));
+    wire!(ui, on_archive_search_changed [], |ui, query| {
+        let q = query.trim().to_lowercase();
+        if q.is_empty() {
+            ui.set_archive_match_flags(model(Vec::<bool>::new()));
+            return;
         }
+        let flags: Vec<bool> = ui
+            .get_archived_chats()
+            .iter()
+            .map(|c| c.name.to_lowercase().contains(&q))
+            .collect();
+        ui.set_archive_match_count(flags.iter().filter(|&&m| m).count() as i32);
+        ui.set_archive_match_flags(model(flags));
     });
-    ui.global::<AppState>().on_new_chat_requested({
-        let weak = ui.as_weak();
-        move || {
-            if let Some(ui) = weak.upgrade() {
-                ui.set_show_new_chat(true);
-            }
-        }
+    wire!(ui, on_new_chat_requested [], |ui| {
+        ui.set_show_new_chat(true);
     });
-    ui.global::<AppState>().on_modal_dismissed({
-        let weak = ui.as_weak();
-        move || {
-            if let Some(ui) = weak.upgrade() {
-                ui.set_show_new_chat(false);
-                ui.set_new_chat_name(s(""));
-                ui.set_new_chat_members(s(""));
-                ui.set_new_chat_status(s(""));
-                ui.set_new_chat_busy(false);
-            }
-        }
+    wire!(ui, on_modal_dismissed [], |ui| {
+        ui.set_show_new_chat(false);
+        ui.set_new_chat_name(s(""));
+        ui.set_new_chat_members(s(""));
+        ui.set_new_chat_status(s(""));
+        ui.set_new_chat_busy(false);
     });
     ui.global::<AppState>().on_start_chat({
         let weak = ui.as_weak();
@@ -540,26 +526,18 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
 
     // Refresh on demand when the popup opens. Keeping this lazy avoids one
     // full-history query per chat during normal message traffic.
-    ui.global::<AppState>().on_mention_inbox_opened({
-        let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        let group_ids = group_ids.clone();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            let Some(backend) = backend_cell.lock().unwrap().clone() else {
-                ui.set_mention_inbox_loading(false);
-                return;
-            };
-            crate::mentions::refresh_mention_inbox_async(&ui, &backend, &group_ids);
-        }
+    wire!(ui, on_mention_inbox_opened [backend_cell, group_ids], |ui| {
+        let Some(backend) = backend_cell.lock().unwrap().clone() else {
+            ui.set_mention_inbox_loading(false);
+            return;
+        };
+        crate::mentions::refresh_mention_inbox_async(&ui, &backend, &group_ids);
     });
 
-    ui.global::<AppState>().on_mention_inbox_selected({
-        let weak = ui.as_weak();
-        let group_ids = group_ids.clone();
-        let pending_message_jump = pending_message_jump.clone();
-        move |group_id, message_id| {
-            let Some(ui) = weak.upgrade() else { return };
+    wire!(
+        ui,
+        on_mention_inbox_selected [group_ids, pending_message_jump],
+        |ui, group_id, message_id| {
             let group_id = group_id.to_string();
             let message_id = message_id.to_string();
             let idx = group_ids
@@ -576,7 +554,7 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             ui.set_active_page(Page::Chats as i32);
             ui.global::<AppState>().invoke_chat_selected(idx as i32);
         }
-    });
+    );
 
     // ─── In-conversation search ────────────────────────────────────────
     // Fuzzy full-history search within the open chat (whitenoise-style
@@ -614,15 +592,11 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
         )
     };
 
-    ui.global::<AppState>().on_msg_search_query_changed({
-        let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        let group_ids = group_ids.clone();
-        let msg_search = msg_search.clone();
-        let msg_search_generation = msg_search_generation.clone();
-        let msg_search_jump = msg_search_jump.clone();
-        move |query| {
-            let Some(ui) = weak.upgrade() else { return };
+    wire!(
+        ui,
+        on_msg_search_query_changed
+            [backend_cell, group_ids, msg_search, msg_search_generation, msg_search_jump],
+        |ui, query| {
             let generation = msg_search_generation.fetch_add(1, AtomicOrdering::Relaxed) + 1;
             let tokens = query_tokens(&query);
             if tokens.is_empty() {
@@ -703,108 +677,89 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 },
             );
         }
-    });
+    );
 
-    ui.global::<AppState>().on_msg_search_step({
-        let weak = ui.as_weak();
-        let msg_search = msg_search.clone();
-        let msg_search_jump = msg_search_jump.clone();
-        move |newer| {
-            let Some(ui) = weak.upgrade() else { return };
-            let (id, pos, group_hex) = {
-                let mut st = msg_search.lock().unwrap();
-                let len = st.matches.len();
-                if len == 0 {
-                    return;
-                }
-                // Matches are newest-first, so "newer" walks toward position
-                // 1 and "older" away from it; both directions wrap.
-                st.pos = if newer {
-                    if st.pos <= 1 { len } else { st.pos - 1 }
-                } else if st.pos >= len {
-                    1
-                } else {
-                    st.pos + 1
-                };
-                (st.matches[st.pos - 1].clone(), st.pos, st.group_hex.clone())
+    wire!(ui, on_msg_search_step [msg_search, msg_search_jump], |ui, newer| {
+        let (id, pos, group_hex) = {
+            let mut st = msg_search.lock().unwrap();
+            let len = st.matches.len();
+            if len == 0 {
+                return;
+            }
+            // Matches are newest-first, so "newer" walks toward position
+            // 1 and "older" away from it; both directions wrap.
+            st.pos = if newer {
+                if st.pos <= 1 { len } else { st.pos - 1 }
+            } else if st.pos >= len {
+                1
+            } else {
+                st.pos + 1
             };
-            ui.set_msg_search_pos(pos as i32);
-            msg_search_jump(&ui, &group_hex, &id);
-        }
+            (st.matches[st.pos - 1].clone(), st.pos, st.group_hex.clone())
+        };
+        ui.set_msg_search_pos(pos as i32);
+        msg_search_jump(&ui, &group_hex, &id);
     });
 
-    ui.global::<AppState>().on_msg_search_closed({
-        let weak = ui.as_weak();
-        let msg_search = msg_search.clone();
-        let msg_search_generation = msg_search_generation.clone();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            // Invalidate any in-flight scan before dropping the state.
-            msg_search_generation.fetch_add(1, AtomicOrdering::Relaxed);
-            *msg_search.lock().unwrap() = Default::default();
-            ui.set_msg_search_open(false);
-            ui.set_msg_search_count(0);
-            ui.set_msg_search_pos(0);
-            ui.set_message_jump_id(s(""));
-        }
+    wire!(ui, on_msg_search_closed [msg_search, msg_search_generation], |ui| {
+        // Invalidate any in-flight scan before dropping the state.
+        msg_search_generation.fetch_add(1, AtomicOrdering::Relaxed);
+        *msg_search.lock().unwrap() = Default::default();
+        ui.set_msg_search_open(false);
+        ui.set_msg_search_count(0);
+        ui.set_msg_search_pos(0);
+        ui.set_message_jump_id(s(""));
     });
 
     // "Load earlier messages" at the top of the messages view: grow the
     // active chat's record window one MESSAGE_WINDOW step and rebuild. The
     // Slint side anchors the scroll so the content the user was reading
     // stays put under the newly-prepended history.
-    ui.global::<AppState>().on_messages_request_older({
+    wire!(ui, on_messages_request_older [backend_cell, group_ids, pending_state], |ui| {
+        let idx = ui.get_active_chat() as usize;
+        let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
+            return;
+        };
+        let Some(backend) = backend_cell.lock().unwrap().clone() else {
+            return;
+        };
+        let new_window = msg_window_expand(&group_hex);
+        // Expanded-window read on the backend runtime; rows built back on
+        // the UI thread. The Slint side anchors the scroll, so the rows
+        // landing a beat later keeps the content under the user.
         let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        let group_ids = group_ids.clone();
         let pending_state = pending_state.clone();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            let idx = ui.get_active_chat() as usize;
-            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
-                return;
-            };
-            let Some(backend) = backend_cell.lock().unwrap().clone() else {
-                return;
-            };
-            let new_window = msg_window_expand(&group_hex);
-            // Expanded-window read on the backend runtime; rows built back on
-            // the UI thread. The Slint side anchors the scroll, so the rows
-            // landing a beat later keeps the content under the user.
-            let weak = ui.as_weak();
-            let pending_state = pending_state.clone();
-            let b = backend.clone();
-            let bg = b.clone();
-            let group_hex_bg = group_hex.clone();
-            spawn_ui_tokio(
-                &backend,
-                weak,
-                async move {
-                    bg.messages(&group_hex_bg, Some(msg_window_for(&group_hex_bg)))
-                        .unwrap_or_default()
-                },
-                move |ui, msgs| {
-                    let chats_messages = ui.get_chats_messages();
-                    {
-                        let overlay = pending_state.lock().unwrap();
-                        rebuild_chat_messages_from(
-                            &b,
-                            &overlay,
-                            &chats_messages,
-                            idx,
-                            &group_hex,
-                            &msgs,
-                        );
-                    }
-                    spawn_message_avatar_fetches(&ui, &b, &msgs);
-                    if ui.get_active_chat() as usize == idx {
-                        // Fewer records than asked for → the full history is
-                        // loaded.
-                        ui.set_messages_has_older(msgs.len() >= new_window);
-                    }
-                },
-            );
-        }
+        let b = backend.clone();
+        let bg = b.clone();
+        let group_hex_bg = group_hex.clone();
+        spawn_ui_tokio(
+            &backend,
+            weak,
+            async move {
+                bg.messages(&group_hex_bg, Some(msg_window_for(&group_hex_bg)))
+                    .unwrap_or_default()
+            },
+            move |ui, msgs| {
+                let chats_messages = ui.get_chats_messages();
+                {
+                    let overlay = pending_state.lock().unwrap();
+                    rebuild_chat_messages_from(
+                        &b,
+                        &overlay,
+                        &chats_messages,
+                        idx,
+                        &group_hex,
+                        &msgs,
+                    );
+                }
+                spawn_message_avatar_fetches(&ui, &b, &msgs);
+                if ui.get_active_chat() as usize == idx {
+                    // Fewer records than asked for → the full history is
+                    // loaded.
+                    ui.set_messages_has_older(msgs.len() >= new_window);
+                }
+            },
+        );
     });
     ui.global::<AppState>().on_archive_selected({
         let weak = ui.as_weak();
@@ -829,13 +784,8 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             }
         }
     });
-    ui.global::<AppState>().on_members_toggle_clicked({
-        let weak = ui.as_weak();
-        move || {
-            if let Some(ui) = weak.upgrade() {
-                ui.set_show_chat_members(!ui.get_show_chat_members());
-            }
-        }
+    wire!(ui, on_members_toggle_clicked [], |ui| {
+        ui.set_show_chat_members(!ui.get_show_chat_members());
     });
 
     // ─── Chat-request + archive actions ───────────────────────────────
@@ -1003,8 +953,7 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 if let Some(Err(e)) = res {
                     tracing::warn!(target: "archive", "{e:#}");
                     let refresh_cb = refresh_cb.clone();
-                    let _ = slint::invoke_from_event_loop(move || {
-                        let Some(ui) = weak_cb.upgrade() else { return };
+                    ui_update!(weak_cb, move |ui| {
                         show_backend_error(&ui, friendly_error(ErrorOp::Archive, &e));
                         refresh_cb();
                     });
@@ -1097,8 +1046,7 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                         if let Some(Err(e)) = res {
                             tracing::warn!(target: "unarchive", "{e:#}");
                             let refresh_cb = refresh_cb.clone();
-                            let _ = slint::invoke_from_event_loop(move || {
-                                let Some(ui) = weak_cb.upgrade() else { return };
+                            ui_update!(weak_cb, move |ui| {
                                 show_backend_error(&ui, friendly_error(ErrorOp::Unarchive, &e));
                                 refresh_cb();
                             });

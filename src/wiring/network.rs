@@ -161,19 +161,15 @@ pub(crate) fn wire_network(ui: &WhiteNoiseLinux, cx: &Cx, boot_backend: &BootFn)
         }
     });
 
-    ui.global::<AppState>().on_network_remove_inbox_relay({
-        let weak = ui.as_weak();
-        move |url| {
-            let Some(ui) = weak.upgrade() else { return };
-            let mut list = vec_string_from_model(&ui.get_network_inbox_relays());
-            match remove_relay_from_list(&url, &mut list, backend::save_inbox_relays) {
-                Ok(true) => {
-                    push_network_inbox_relays(&ui, &list);
-                    show_network_status(&ui, error_copy().relay_removed, StatusKind::Ok);
-                }
-                Ok(false) => {}
-                Err(msg) => show_network_status(&ui, msg, StatusKind::Error),
+    wire!(ui, on_network_remove_inbox_relay [], |ui, url| {
+        let mut list = vec_string_from_model(&ui.get_network_inbox_relays());
+        match remove_relay_from_list(&url, &mut list, backend::save_inbox_relays) {
+            Ok(true) => {
+                push_network_inbox_relays(&ui, &list);
+                show_network_status(&ui, error_copy().relay_removed, StatusKind::Ok);
             }
+            Ok(false) => {}
+            Err(msg) => show_network_status(&ui, msg, StatusKind::Error),
         }
     });
 

@@ -21,27 +21,23 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     // findable by nickname, published name, or key prefix. The flags are only
     // consulted while the query is non-empty, so the empty-query case (which
     // shows everything) needn't clear the array.
-    ui.global::<AppState>().on_contact_search_changed({
-        let weak = ui.as_weak();
-        move |query| {
-            let Some(ui) = weak.upgrade() else { return };
-            let q = query.trim().to_lowercase();
-            if q.is_empty() {
-                ui.set_contact_match_flags(model(Vec::<bool>::new()));
-                return;
-            }
-            let flags: Vec<bool> = ui
-                .get_contacts()
-                .iter()
-                .map(|c| {
-                    c.name.to_lowercase().contains(&q)
-                        || c.real_name.to_lowercase().contains(&q)
-                        || c.npub_short.to_lowercase().contains(&q)
-                })
-                .collect();
-            ui.set_contact_match_count(flags.iter().filter(|&&m| m).count() as i32);
-            ui.set_contact_match_flags(model(flags));
+    wire!(ui, on_contact_search_changed [], |ui, query| {
+        let q = query.trim().to_lowercase();
+        if q.is_empty() {
+            ui.set_contact_match_flags(model(Vec::<bool>::new()));
+            return;
         }
+        let flags: Vec<bool> = ui
+            .get_contacts()
+            .iter()
+            .map(|c| {
+                c.name.to_lowercase().contains(&q)
+                    || c.real_name.to_lowercase().contains(&q)
+                    || c.npub_short.to_lowercase().contains(&q)
+            })
+            .collect();
+        ui.set_contact_match_count(flags.iter().filter(|&&m| m).count() as i32);
+        ui.set_contact_match_flags(model(flags));
     });
     // Contacts-page "Export" button: the UI model already has every field we
     // need (resolved npub/nickname/published name), so this needs no backend
@@ -77,8 +73,7 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 let format = ContactExportFormat::from_path(&dest);
                 let contents = render_contacts(&rows, format);
                 let result = std::fs::write(&dest, contents.as_bytes());
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+                ui_update!(weak, move |ui| {
                     match result {
                         Ok(()) => set_status_feedback(&ui, error_copy().contacts_exported, false),
                         Err(e) => {
@@ -90,25 +85,15 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             });
         }
     });
-    ui.global::<AppState>().on_add_contact_requested({
-        let weak = ui.as_weak();
-        move || {
-            if let Some(ui) = weak.upgrade() {
-                ui.set_show_add_contact(true);
-            }
-        }
+    wire!(ui, on_add_contact_requested [], |ui| {
+        ui.set_show_add_contact(true);
     });
-    ui.global::<AppState>().on_add_contact_dismissed({
-        let weak = ui.as_weak();
-        move || {
-            if let Some(ui) = weak.upgrade() {
-                ui.set_show_add_contact(false);
-                ui.set_add_contact_input(s(""));
-                ui.set_add_contact_status(s(""));
-                ui.set_add_contact_status_error(false);
-                ui.set_add_contact_busy(false);
-            }
-        }
+    wire!(ui, on_add_contact_dismissed [], |ui| {
+        ui.set_show_add_contact(false);
+        ui.set_add_contact_input(s(""));
+        ui.set_add_contact_status(s(""));
+        ui.set_add_contact_status_error(false);
+        ui.set_add_contact_busy(false);
     });
     ui.global::<AppState>().on_add_contact({
         let weak = ui.as_weak();
@@ -216,27 +201,17 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             );
         }
     });
-    ui.global::<AppState>().on_contact_nickname_requested({
-        let weak = ui.as_weak();
-        let contacts = contacts.clone();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            let Some(row) = contacts.row_data(ui.get_active_contact() as usize) else {
-                return;
-            };
-            ui.set_nickname_input(row.nickname.clone());
-            ui.set_nickname_contact_name(row.real_name.clone());
-            ui.set_show_nickname_modal(true);
-        }
+    wire!(ui, on_contact_nickname_requested[contacts], |ui| {
+        let Some(row) = contacts.row_data(ui.get_active_contact() as usize) else {
+            return;
+        };
+        ui.set_nickname_input(row.nickname.clone());
+        ui.set_nickname_contact_name(row.real_name.clone());
+        ui.set_show_nickname_modal(true);
     });
-    ui.global::<AppState>().on_nickname_modal_dismissed({
-        let weak = ui.as_weak();
-        move || {
-            if let Some(ui) = weak.upgrade() {
-                ui.set_show_nickname_modal(false);
-                ui.set_nickname_input(s(""));
-            }
-        }
+    wire!(ui, on_nickname_modal_dismissed [], |ui| {
+        ui.set_show_nickname_modal(false);
+        ui.set_nickname_input(s(""));
     });
     ui.global::<AppState>().on_set_contact_nickname({
         let weak = ui.as_weak();
@@ -277,86 +252,65 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     // Contact detail → "Show as QR": rasterize the contact's marmot://
     // profile deep link and open the QrModal. Reuses `qr_image` (UI-thread
     // only — Image is !Send).
-    ui.global::<AppState>().on_contact_show_qr({
-        let weak = ui.as_weak();
-        let contacts = contacts.clone();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            let Some(row) = contacts.row_data(ui.get_active_contact() as usize) else {
-                return;
-            };
-            let npub = row.npub_full.to_string();
-            if npub.is_empty() {
-                return;
-            }
-            ui.set_contact_qr(qr_image(&deeplink::profile_qr_url(&npub)));
-            ui.set_contact_qr_npub(s(&npub));
-            ui.set_contact_qr_npub_short(row.npub_short.clone());
-            ui.set_contact_qr_name(row.name.clone());
-            ui.set_contact_qr_open(true);
+    wire!(ui, on_contact_show_qr[contacts], |ui| {
+        let Some(row) = contacts.row_data(ui.get_active_contact() as usize) else {
+            return;
+        };
+        let npub = row.npub_full.to_string();
+        if npub.is_empty() {
+            return;
         }
+        ui.set_contact_qr(qr_image(&deeplink::profile_qr_url(&npub)));
+        ui.set_contact_qr_npub(s(&npub));
+        ui.set_contact_qr_npub_short(row.npub_short.clone());
+        ui.set_contact_qr_name(row.name.clone());
+        ui.set_contact_qr_open(true);
     });
-    ui.global::<AppState>().on_contact_qr_dismissed({
-        let weak = ui.as_weak();
-        move || {
-            if let Some(ui) = weak.upgrade() {
-                ui.set_contact_qr_open(false);
-            }
-        }
+    wire!(ui, on_contact_qr_dismissed [], |ui| {
+        ui.set_contact_qr_open(false);
     });
     // Contact detail → "Retry" key package: re-fetch the peer's latest key
     // package from their relays. The automatic on-open fetch already covers the
     // common case, so this button only surfaces after a fetch comes up empty.
-    ui.global::<AppState>().on_contact_refresh_key_package({
-        let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            let idx = ui.get_active_contact() as usize;
-            spawn_contact_key_package_fetch(&ui, &backend_cell, idx);
-        }
+    wire!(ui, on_contact_refresh_key_package[backend_cell], |ui| {
+        let idx = ui.get_active_contact() as usize;
+        spawn_contact_key_package_fetch(&ui, &backend_cell, idx);
     });
 
     // Developer mode: dump the selected contact's latest key package as raw
     // JSON in the shared viewer. The fetch hits discovery relays — worker
     // thread only.
-    ui.global::<AppState>().on_view_contact_key_packages({
-        let weak = ui.as_weak();
-        let contacts = contacts.clone();
-        let backend_cell = backend_cell.clone();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            let Some(row) = contacts.row_data(ui.get_active_contact() as usize) else {
-                return;
-            };
-            let account_id = row.account_id.to_string();
-            if account_id.is_empty() {
-                return;
-            }
-            let Some(b) = backend_cell.lock().unwrap().clone() else {
-                return;
-            };
-            ui.set_debug_view_title(s("Key package"));
-            ui.set_debug_view_subtitle(row.name.clone());
-            ui.set_debug_view_json(s(""));
-            ui.set_debug_view_rows(json_doc_set(JsonSlot::View, ""));
-            ui.set_debug_view_busy(true);
-            ui.set_debug_view_open(true);
-            let weak = ui.as_weak();
-            // `debug_contact_key_packages` does a `block_on` on the backend's
-            // tokio runtime — run it on a plain thread, never a runtime worker
-            // (that panics: "Cannot start a runtime from within a runtime").
-            spawn_ui(
-                weak,
-                move || b.debug_contact_key_packages(&account_id),
-                move |ui, json| {
-                    ui.set_debug_view_busy(false);
-                    // Rows drive the viewer; the plain string stays for copy.
-                    ui.set_debug_view_rows(json_doc_set(JsonSlot::View, &json));
-                    ui.set_debug_view_json(json.into());
-                },
-            );
+    wire!(ui, on_view_contact_key_packages [contacts, backend_cell], |ui| {
+        let Some(row) = contacts.row_data(ui.get_active_contact() as usize) else {
+            return;
+        };
+        let account_id = row.account_id.to_string();
+        if account_id.is_empty() {
+            return;
         }
+        let Some(b) = backend_cell.lock().unwrap().clone() else {
+            return;
+        };
+        ui.set_debug_view_title(s("Key package"));
+        ui.set_debug_view_subtitle(row.name.clone());
+        ui.set_debug_view_json(s(""));
+        ui.set_debug_view_rows(json_doc_set(JsonSlot::View, ""));
+        ui.set_debug_view_busy(true);
+        ui.set_debug_view_open(true);
+        let weak = ui.as_weak();
+        // `debug_contact_key_packages` does a `block_on` on the backend's
+        // tokio runtime — run it on a plain thread, never a runtime worker
+        // (that panics: "Cannot start a runtime from within a runtime").
+        spawn_ui(
+            weak,
+            move || b.debug_contact_key_packages(&account_id),
+            move |ui, json| {
+                ui.set_debug_view_busy(false);
+                // Rows drive the viewer; the plain string stays for copy.
+                ui.set_debug_view_rows(json_doc_set(JsonSlot::View, &json));
+                ui.set_debug_view_json(json.into());
+            },
+        );
     });
     // Contact detail → "Start chat": create a 1:1 conversation with the
     // selected contact and drop the user into it. Mirrors the new-chat
@@ -462,76 +416,65 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     // switch to it first and stash the tapped key in `pending_media_jump`;
     // `chat_selected`'s load path opens the lightbox once that chat's own
     // shared-media list is ready (mirrors the mention-inbox cross-chat jump).
-    ui.global::<AppState>().on_contact_shared_media_clicked({
-        let weak = ui.as_weak();
-        let group_ids = group_ids.clone();
-        move |key| {
-            let Some(ui) = weak.upgrade() else { return };
-            let key = key.to_string();
-            let group_hex = ui.get_contact_chat_hex().to_string();
-            if group_hex.is_empty() || key.is_empty() {
-                return;
-            }
-            let idx = group_ids
-                .lock()
-                .unwrap()
-                .iter()
-                .position(|g| g.eq_ignore_ascii_case(&group_hex));
-            let Some(idx) = idx else {
-                tracing::warn!(target: "shared_media", %group_hex, "contact chat is no longer visible");
-                return;
-            };
-            *pending_media_jump().lock().unwrap() = Some((group_hex, key));
-            ui.set_active_page(Page::Chats as i32);
-            ui.global::<AppState>().invoke_chat_selected(idx as i32);
+    wire!(ui, on_contact_shared_media_clicked[group_ids], |ui, key| {
+        let key = key.to_string();
+        let group_hex = ui.get_contact_chat_hex().to_string();
+        if group_hex.is_empty() || key.is_empty() {
+            return;
         }
+        let idx = group_ids
+            .lock()
+            .unwrap()
+            .iter()
+            .position(|g| g.eq_ignore_ascii_case(&group_hex));
+        let Some(idx) = idx else {
+            tracing::warn!(target: "shared_media", %group_hex, "contact chat is no longer visible");
+            return;
+        };
+        *pending_media_jump().lock().unwrap() = Some((group_hex, key));
+        ui.set_active_page(Page::Chats as i32);
+        ui.global::<AppState>().invoke_chat_selected(idx as i32);
     });
     // A "groups in common" row was tapped (contact detail or profile modal):
     // switch to Chats and open that group. It's a visible group the local
     // account is in, so its hex is already in `group_ids`; a snapshot refresh
     // is the fallback if the ordering shifted since the list was built.
-    ui.global::<AppState>().on_open_shared_group({
-        let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        let group_ids = group_ids.clone();
-        move |group_hex| {
-            let Some(ui) = weak.upgrade() else { return };
-            let group_hex = group_hex.to_string();
-            if group_hex.is_empty() {
-                return;
-            }
-            // The row can be tapped from the profile modal, which overlays any
-            // page; close it so the chat it opens is visible.
-            ui.set_peer_profile_open(false);
-            let pos = group_ids
-                .lock()
-                .unwrap()
+    wire!(ui, on_open_shared_group [backend_cell, group_ids], |ui, group_hex| {
+        let group_hex = group_hex.to_string();
+        if group_hex.is_empty() {
+            return;
+        }
+        // The row can be tapped from the profile modal, which overlays any
+        // page; close it so the chat it opens is visible.
+        ui.set_peer_profile_open(false);
+        let pos = group_ids
+            .lock()
+            .unwrap()
+            .iter()
+            .position(|g| g.eq_ignore_ascii_case(&group_hex));
+        if let Some(pos) = pos {
+            ui.set_active_page(Page::Chats as i32);
+            refresh_breadcrumb_now(&ui);
+            ui.set_active_chat(pos as i32);
+            ui.global::<AppState>().invoke_chat_selected(pos as i32);
+            return;
+        }
+        let Some(b) = backend_cell.lock().unwrap().clone() else {
+            return;
+        };
+        refresh_chats_async(&ui, &b, &group_ids, move |ui, _b, snap| {
+            let Some(pos) = snap
+                .records
                 .iter()
-                .position(|g| g.eq_ignore_ascii_case(&group_hex));
-            if let Some(pos) = pos {
-                ui.set_active_page(Page::Chats as i32);
-                refresh_breadcrumb_now(&ui);
-                ui.set_active_chat(pos as i32);
-                ui.global::<AppState>().invoke_chat_selected(pos as i32);
-                return;
-            }
-            let Some(b) = backend_cell.lock().unwrap().clone() else {
+                .position(|r| r.group_id_hex.eq_ignore_ascii_case(&group_hex))
+            else {
                 return;
             };
-            refresh_chats_async(&ui, &b, &group_ids, move |ui, _b, snap| {
-                let Some(pos) = snap
-                    .records
-                    .iter()
-                    .position(|r| r.group_id_hex.eq_ignore_ascii_case(&group_hex))
-                else {
-                    return;
-                };
-                ui.set_active_page(Page::Chats as i32);
-                refresh_breadcrumb_now(ui);
-                ui.set_active_chat(pos as i32);
-                ui.global::<AppState>().invoke_chat_selected(pos as i32);
-            });
-        }
+            ui.set_active_page(Page::Chats as i32);
+            refresh_breadcrumb_now(ui);
+            ui.set_active_chat(pos as i32);
+            ui.global::<AppState>().invoke_chat_selected(pos as i32);
+        });
     });
 
     // ─── Contact ACTIONS (mute / archive / block / remove) ─────────────────
@@ -544,39 +487,33 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     // Mute mirrors the header bell (`on_toggle_mute_chat`): flip the live set,
     // persist, then repaint. The rail row is refreshed by group id rather than
     // index, because the contact page has no chat-row index to hand.
-    ui.global::<AppState>().on_contact_toggle_mute({
-        let weak = ui.as_weak();
-        let settings_cell = settings_cell.clone();
-        let group_ids = group_ids.clone();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            let group_hex = ui.get_contact_chat_hex().to_string();
-            if group_hex.is_empty() {
-                return;
+    wire!(ui, on_contact_toggle_mute [settings_cell, group_ids], |ui| {
+        let group_hex = ui.get_contact_chat_hex().to_string();
+        if group_hex.is_empty() {
+            return;
+        }
+        let now_muted = !is_muted(&group_hex);
+        set_muted(&group_hex, now_muted);
+        {
+            let mut st = settings_cell.borrow_mut();
+            if now_muted {
+                st.muted_chats.insert(group_hex.clone());
+            } else {
+                st.muted_chats.remove(&group_hex);
             }
-            let now_muted = !is_muted(&group_hex);
-            set_muted(&group_hex, now_muted);
-            {
-                let mut st = settings_cell.borrow_mut();
-                if now_muted {
-                    st.muted_chats.insert(group_hex.clone());
-                } else {
-                    st.muted_chats.remove(&group_hex);
-                }
-                st.save();
-            }
-            ui.set_contact_chat_muted(now_muted);
-            // Keep the rail's mute glyph in step with the contact page.
-            let idx = group_ids
-                .lock()
-                .unwrap()
-                .iter()
-                .position(|g| g == &group_hex);
-            if let Some(idx) = idx {
-                set_chat_row_muted(&ui, idx as i32, now_muted);
-                if ui.get_active_chat() == idx as i32 {
-                    ui.set_active_chat_muted(now_muted);
-                }
+            st.save();
+        }
+        ui.set_contact_chat_muted(now_muted);
+        // Keep the rail's mute glyph in step with the contact page.
+        let idx = group_ids
+            .lock()
+            .unwrap()
+            .iter()
+            .position(|g| g == &group_hex);
+        if let Some(idx) = idx {
+            set_chat_row_muted(&ui, idx as i32, now_muted);
+            if ui.get_active_chat() == idx as i32 {
+                ui.set_active_chat_muted(now_muted);
             }
         }
     });

@@ -7,10 +7,7 @@ pub(crate) fn populate_profile_async(ui: &WhiteNoiseLinux, backend: &Arc<Backend
     let b = backend.clone();
     backend.tokio_handle().spawn(async move {
         let profile = b.load_profile();
-        let _ = slint::invoke_from_event_loop(move || {
-            let Some(ui) = weak.upgrade() else { return };
-            populate_profile_from(&b, &ui, profile);
-        });
+        ui_update!(weak, move |ui| populate_profile_from(&b, &ui, profile));
     });
 }
 
@@ -73,10 +70,8 @@ pub(crate) fn fetch_profile_picture(ui: &WhiteNoiseLinux, backend: &Backend, url
         let weak = ui.as_weak();
         let url = url.clone();
         move || {
-            let weak = weak.clone();
             let url = url.clone();
-            let _ = slint::invoke_from_event_loop(move || {
-                let Some(ui) = weak.upgrade() else { return };
+            ui_update!(weak, move |ui| {
                 if ui.get_profile_picture().as_str() == url && !ui.get_my_av_has_picture() {
                     ui.set_my_av_load_failed(true);
                 }
@@ -108,11 +103,9 @@ pub(crate) fn fetch_profile_picture(ui: &WhiteNoiseLinux, backend: &Backend, url
             }
         };
         picture_cache_put(url_for_task.clone(), pixels);
-        let _ = slint::invoke_from_event_loop(move || {
-            if let Some(ui) = weak.upgrade() {
-                apply_picture(&ui, &url_for_task);
-                ui.set_my_av_load_failed(false);
-            }
+        ui_update!(weak, move |ui| {
+            apply_picture(&ui, &url_for_task);
+            ui.set_my_av_load_failed(false);
         });
     });
 }
@@ -394,21 +387,9 @@ pub(crate) fn apply_picture(ui: &WhiteNoiseLinux, url: &str) {
     ui.set_my_av_has_picture(true);
 }
 
-pub(crate) fn picture_cache() -> &'static Mutex<HashMap<String, PicturePixels>> {
-    use std::sync::OnceLock;
-    static CACHE: OnceLock<Mutex<HashMap<String, PicturePixels>>> = OnceLock::new();
-    CACHE.get_or_init(|| Mutex::new(HashMap::new()))
-}
+global_cell!(pub(crate) fn picture_cache() -> HashMap<String, PicturePixels> = HashMap::new());
 
-pub(crate) fn picture_cache_get(url: &str) -> Option<PicturePixels> {
-    picture_cache().lock().ok()?.get(url).cloned()
-}
-
-pub(crate) fn picture_cache_put(url: String, pixels: PicturePixels) {
-    if let Ok(mut c) = picture_cache().lock() {
-        c.insert(url, pixels);
-    }
-}
+map_ops!(pub(crate) picture_cache<PicturePixels>: get picture_cache_get, put picture_cache_put,);
 
 /// Presence check that doesn't clone the pixel buffer out of the cache —
 /// `picture_cache_get(url).is_some()` copies the whole RGBA blob just to

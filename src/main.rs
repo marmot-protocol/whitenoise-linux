@@ -28,6 +28,8 @@ mod deeplink;
 mod fsperm;
 mod image_search;
 mod instance_lock;
+mod macros;
+pub(crate) use macros::*;
 mod media_cache;
 mod mpv;
 mod notify;
@@ -380,8 +382,7 @@ fn main() -> Result<(), slint::PlatformError> {
         Box::new(move || {
             let weak = weak.clone();
             let group_ids = group_ids.clone();
-            let _ = slint::invoke_from_event_loop(move || {
-                let Some(ui) = weak.upgrade() else { return };
+            ui_update!(weak, move |ui| {
                 let idx = ui.get_active_chat() as usize;
                 let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
                     tracing::warn!(target: "mentions", idx, "repaint hook: no group for active chat");
@@ -452,11 +453,7 @@ fn main() -> Result<(), slint::PlatformError> {
             let weak = weak.clone();
             std::thread::spawn(move || {
                 let label = human_bytes(media_cache::size_bytes());
-                let _ = slint::invoke_from_event_loop(move || {
-                    if let Some(ui) = weak.upgrade() {
-                        ui.set_storage_cache_size(label.into());
-                    }
-                });
+                ui_update!(weak, move |ui| ui.set_storage_cache_size(label.into()));
             });
         })
     };
@@ -568,8 +565,7 @@ fn main() -> Result<(), slint::PlatformError> {
                 let backend_cell = backend_cell_cb.clone();
                 let group_hex = group_hex_cb.clone();
                 let target = target_cb.clone();
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+                ui_update!(weak, move |ui| {
                     {
                         let mut overlay = pending_state.lock().unwrap();
                         if let Err(e) = &result {
@@ -688,8 +684,7 @@ fn main() -> Result<(), slint::PlatformError> {
                         let weak = weak_for_status.clone();
                         let msg = msg.to_string();
                         let phase = boot_phase_for_status(&msg);
-                        let _ = slint::invoke_from_event_loop(move || {
-                            let Some(ui) = weak.upgrade() else { return };
+                        ui_update!(weak, move |ui| {
                             ui.set_booting_status(msg.into());
                             ui.set_booting_phase(phase);
                         });
@@ -759,11 +754,7 @@ fn main() -> Result<(), slint::PlatformError> {
                     {
                         tracing::warn!(target: "self_chat", "ensure failed: {e:#}");
                     }
-                    let _ = slint::invoke_from_event_loop(move || {
-                        let Some(ui) = weak_for_worker.upgrade() else {
-                            return;
-                        };
-                        match result {
+                    ui_update!(weak_for_worker, move |ui| match result {
                             Ok(b) => {
                                 let b = Arc::new(b);
                                 // Point the "delete for me" renderer at the booted
@@ -910,7 +901,6 @@ fn main() -> Result<(), slint::PlatformError> {
                                 show_backend_error(&ui, friendly_error(ErrorOp::Backend, &e));
                                 ui.set_booting(false);
                             }
-                        }
                     });
                 });
             },

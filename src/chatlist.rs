@@ -205,10 +205,7 @@ pub(crate) fn publish_random_profile_async(
                 tracing::debug!(target: "profile", "seeded fresh account {label} as \"{name}\"");
                 on_published();
                 backend.refresh_profile_cache_async(&account_id_hex);
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
-                    populate_profile_async(&ui, &backend);
-                });
+                ui_update!(weak, move |ui| populate_profile_async(&ui, &backend));
             }
             Err(e) => {
                 tracing::warn!(target: "profile", "seeding starter profile for {label} failed: {e:#}")
@@ -387,8 +384,7 @@ pub(crate) fn refresh_stamps_everywhere(
             let msgs = b
                 .messages(&group_hex, Some(msg_window_for(&group_hex)))
                 .unwrap_or_default();
-            let _ = slint::invoke_from_event_loop(move || {
-                let Some(ui) = weak.upgrade() else { return };
+            ui_update!(weak, move |ui| {
                 let chats_messages = ui.get_chats_messages();
                 let overlay = pending_state.lock().unwrap();
                 rebuild_chat_messages_from(&b, &overlay, &chats_messages, idx, &group_hex, &msgs);
@@ -536,8 +532,7 @@ pub(crate) fn refresh_chats_async(
         let Some(snap) = fetch_chat_list_snapshot(&b) else {
             return;
         };
-        let _ = slint::invoke_from_event_loop(move || {
-            let Some(ui) = weak.upgrade() else { return };
+        ui_update!(weak, move |ui| {
             let chats = ui.get_chats();
             let chats_messages = ui.get_chats_messages();
             refresh_chats_from(&b, &snap, &chats, &chats_messages, &group_ids);
@@ -566,8 +561,7 @@ pub(crate) fn refresh_all_chat_models_async(
     backend.tokio_handle().spawn(async move {
         let chat_snap = fetch_chat_list_snapshot(&b);
         let archived_snap = fetch_archived_snapshot(&b);
-        let _ = slint::invoke_from_event_loop(move || {
-            let Some(ui) = weak.upgrade() else { return };
+        ui_update!(weak, move |ui| {
             let chats = ui.get_chats();
             let archived = ui.get_archived_chats();
             if let Some(snap) = &chat_snap {
@@ -679,8 +673,7 @@ pub(crate) fn merge_chat_list_rows_async(
         let Some(snap) = fetch_chat_list_snapshot(&b) else {
             return;
         };
-        let _ = slint::invoke_from_event_loop(move || {
-            let Some(ui) = weak.upgrade() else { return };
+        ui_update!(weak, move |ui| {
             let chats = ui.get_chats();
             let chats_messages = ui.get_chats_messages();
             merge_chat_list_rows_from(&b, &snap, &chats, &chats_messages, &group_ids);
@@ -834,8 +827,7 @@ pub(crate) fn populate_models_for_active(
         backend.tokio_handle().spawn(async move {
             let telemetry = b2.telemetry_enabled();
             let audit = b2.audit_logs_enabled();
-            let _ = slint::invoke_from_event_loop(move || {
-                let Some(ui) = weak.upgrade() else { return };
+            ui_update!(weak, move |ui| {
                 ui.set_telemetry_enabled(telemetry);
                 ui.set_audit_enabled(audit);
             });
@@ -868,10 +860,7 @@ pub(crate) fn ensure_self_chat_async(
             tracing::warn!(target: "self_chat", "ensure failed: {e:#}");
             return;
         }
-        let _ = slint::invoke_from_event_loop(move || {
-            let Some(ui) = weak.upgrade() else { return };
-            refresh_chats_async(&ui, &b, &group_ids, |_, _, _| {});
-        });
+        ui_update!(weak, move |ui| refresh_chats_async(&ui, &b, &group_ids, |_, _, _| {}));
     });
 }
 
@@ -895,8 +884,7 @@ pub(crate) fn refresh_accounts_model(ui: &WhiteNoiseLinux, backend: &Arc<Backend
             })
             .collect();
         let b_for_fetch = b.clone();
-        let _ = slint::invoke_from_event_loop(move || {
-            let Some(ui) = weak.upgrade() else { return };
+        ui_update!(weak, move |ui| {
             let entries: Vec<AccountEntry> = rows
                 .iter()
                 .map(|(id, name, pic, npub)| {
@@ -959,10 +947,7 @@ pub(crate) fn refresh_accounts_model(ui: &WhiteNoiseLinux, backend: &Arc<Backend
                 if !any_cached {
                     return;
                 }
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
-                    refresh_accounts_model(&ui, &b);
-                });
+                ui_update!(weak, move |ui| refresh_accounts_model(&ui, &b));
             });
         });
     });
@@ -1073,8 +1058,7 @@ pub(crate) fn merge_imported_accounts(
                 let g = done.lock().unwrap();
                 (g.0, g.1)
             };
-            let _ = slint::invoke_from_event_loop(move || {
-                let Some(ui) = weak.upgrade() else { return };
+            ui_update!(weak, move |ui| {
                 ui.set_import_backup_busy(false);
                 if ok > 0 {
                     refresh_accounts_model(&ui, &backend_final);
@@ -1132,16 +1116,12 @@ pub(crate) fn unread_state() -> &'static unread::UnreadState {
     })
 }
 
-/// Process-wide set of pinned chats (`group_id_hex`), lazily initialized from
-/// `Settings::pinned_chats`. A `OnceLock<Mutex<…>>` singleton like
-/// [`unread_state`], because the chat-list snapshot fetch reads it off the UI
-/// thread to order pinned chats above the rest, while the pin-toggle callback
-/// writes it on the UI thread — the same cross-thread shape as the unread set.
-pub(crate) fn pinned_state() -> &'static Mutex<std::collections::BTreeSet<String>> {
-    static PINNED: std::sync::OnceLock<Mutex<std::collections::BTreeSet<String>>> =
-        std::sync::OnceLock::new();
-    PINNED.get_or_init(|| Mutex::new(Settings::load().pinned_chats))
-}
+// Process-wide set of pinned chats (`group_id_hex`), lazily initialized from
+// `Settings::pinned_chats`. A `OnceLock<Mutex<…>>` singleton like
+// [`unread_state`], because the chat-list snapshot fetch reads it off the UI
+// thread to order pinned chats above the rest, while the pin-toggle callback
+// writes it on the UI thread — the same cross-thread shape as the unread set.
+global_cell!(pub(crate) fn pinned_state() -> std::collections::BTreeSet<String> = Settings::load().pinned_chats);
 
 /// Whether a chat is pinned to the top of the rail.
 pub(crate) fn is_pinned(group_hex: &str) -> bool {
@@ -1160,17 +1140,13 @@ pub(crate) fn toggle_pinned(group_hex: &str) -> bool {
     }
 }
 
-/// Process-wide set of muted chats (`group_id_hex`), lazily initialized from
-/// `Settings::muted_chats`. Same singleton shape as [`pinned_state`]: the one
-/// live source both the chat-list rows and the desktop-notification watcher
-/// read (via [`is_muted`]) and the mute toggles write, so a muted chat's rail
-/// indicator and its notification suppression never drift apart. `NotifState`
-/// delegates its mute reads/writes here rather than holding a second copy.
-pub(crate) fn muted_state() -> &'static Mutex<std::collections::BTreeSet<String>> {
-    static MUTED: std::sync::OnceLock<Mutex<std::collections::BTreeSet<String>>> =
-        std::sync::OnceLock::new();
-    MUTED.get_or_init(|| Mutex::new(Settings::load().muted_chats))
-}
+// Process-wide set of muted chats (`group_id_hex`), lazily initialized from
+// `Settings::muted_chats`. Same singleton shape as [`pinned_state`]: the one
+// live source both the chat-list rows and the desktop-notification watcher
+// read (via [`is_muted`]) and the mute toggles write, so a muted chat's rail
+// indicator and its notification suppression never drift apart. `NotifState`
+// delegates its mute reads/writes here rather than holding a second copy.
+global_cell!(pub(crate) fn muted_state() -> std::collections::BTreeSet<String> = Settings::load().muted_chats);
 
 /// Whether a chat is muted (its incoming messages don't notify, and the rail
 /// row shows a mute glyph).
@@ -1189,16 +1165,12 @@ pub(crate) fn set_muted(group_hex: &str, muted: bool) {
     }
 }
 
-/// Process-wide per-chat organizing label (`group_id_hex` → label text),
-/// lazily initialized from `Settings::chat_labels`. Same singleton shape as
-/// [`pinned_state`]/[`muted_state`]: the chat-list snapshot reads it off the
-/// UI thread to fill each row's `ChatMeta.label`, while the label modal's save
-/// handler writes it on the UI thread.
-pub(crate) fn label_state() -> &'static Mutex<std::collections::BTreeMap<String, String>> {
-    static LABELS: std::sync::OnceLock<Mutex<std::collections::BTreeMap<String, String>>> =
-        std::sync::OnceLock::new();
-    LABELS.get_or_init(|| Mutex::new(Settings::load().chat_labels))
-}
+// Process-wide per-chat organizing label (`group_id_hex` → label text),
+// lazily initialized from `Settings::chat_labels`. Same singleton shape as
+// [`pinned_state`]/[`muted_state`]: the chat-list snapshot reads it off the
+// UI thread to fill each row's `ChatMeta.label`, while the label modal's save
+// handler writes it on the UI thread.
+global_cell!(pub(crate) fn label_state() -> std::collections::BTreeMap<String, String> = Settings::load().chat_labels);
 
 /// A chat's organizing label, or `""` if unlabeled.
 pub(crate) fn chat_label(group_hex: &str) -> String {
@@ -1254,35 +1226,21 @@ pub(crate) fn push_known_chat_labels(ui: &WhiteNoiseLinux) {
 /// filter chips and the row's stored label never lag behind a fresh
 /// [`refresh_chats_from`].
 pub(crate) fn set_chat_row_label(ui: &WhiteNoiseLinux, idx: i32, label: &str) {
-    if idx < 0 {
-        return;
+    if idx >= 0 {
+        update_row_at(&ui.get_chats(), idx as usize, |meta: &mut ChatMeta| {
+            meta.label = s(label);
+        });
     }
-    let chats = ui.get_chats();
-    let Some(chats_vm) = chats.as_any().downcast_ref::<VecModel<ChatMeta>>() else {
-        return;
-    };
-    let Some(mut meta) = chats_vm.row_data(idx as usize) else {
-        return;
-    };
-    if meta.label == label {
-        return;
-    }
-    meta.label = s(label);
-    chats_vm.set_row_data(idx as usize, meta);
 }
 
-/// Process-wide set of blocked accounts (`account_id_hex`), lazily initialized
-/// from `Settings::blocked_accounts`. Same singleton shape as [`muted_state`],
-/// and for the same reason: [`Backend::chats`] filters blocked peers out of the
-/// visible chat list, so the rail, the unread counts and the notification
-/// watcher all read one live source and can never disagree about who is
-/// blocked. Keyed by the *peer's* account id, not a group id — a block follows
-/// the person across whatever chat they open.
-pub(crate) fn blocked_state() -> &'static Mutex<std::collections::BTreeSet<String>> {
-    static BLOCKED: std::sync::OnceLock<Mutex<std::collections::BTreeSet<String>>> =
-        std::sync::OnceLock::new();
-    BLOCKED.get_or_init(|| Mutex::new(Settings::load().blocked_accounts))
-}
+// Process-wide set of blocked accounts (`account_id_hex`), lazily initialized
+// from `Settings::blocked_accounts`. Same singleton shape as [`muted_state`],
+// and for the same reason: [`Backend::chats`] filters blocked peers out of the
+// visible chat list, so the rail, the unread counts and the notification
+// watcher all read one live source and can never disagree about who is
+// blocked. Keyed by the *peer's* account id, not a group id — a block follows
+// the person across whatever chat they open.
+global_cell!(pub(crate) fn blocked_state() -> std::collections::BTreeSet<String> = Settings::load().blocked_accounts);
 
 /// Whether an account is blocked (their 1:1 chat and any chat request from them
 /// stay out of the visible list).
@@ -1323,10 +1281,7 @@ pub(crate) fn reorder_chats_by_pin_async(
     let group_ids = group_ids.clone();
     backend.tokio_handle().spawn(async move {
         let saved = b.find_self_chat();
-        let _ = slint::invoke_from_event_loop(move || {
-            let Some(ui) = weak.upgrade() else { return };
-            apply_pin_order(&ui, &group_ids, saved.as_deref());
-        });
+        ui_update!(weak, move |ui| apply_pin_order(&ui, &group_ids, saved.as_deref()));
     });
 }
 
@@ -1402,21 +1357,11 @@ pub(crate) fn apply_pin_order(
 /// [`refresh_chats_from`], which would blank the open conversation. Mirrors the
 /// per-row `pinned` refresh [`apply_pin_order`] does after a reorder.
 pub(crate) fn set_chat_row_muted(ui: &WhiteNoiseLinux, idx: i32, muted: bool) {
-    if idx < 0 {
-        return;
+    if idx >= 0 {
+        update_row_at(&ui.get_chats(), idx as usize, |meta: &mut ChatMeta| {
+            meta.muted = muted;
+        });
     }
-    let chats = ui.get_chats();
-    let Some(chats_vm) = chats.as_any().downcast_ref::<VecModel<ChatMeta>>() else {
-        return;
-    };
-    let Some(mut meta) = chats_vm.row_data(idx as usize) else {
-        return;
-    };
-    if meta.muted == muted {
-        return;
-    }
-    meta.muted = muted;
-    chats_vm.set_row_data(idx as usize, meta);
 }
 
 /// Count a chat's unread messages relative to `marker`: incoming, visible chat
@@ -1527,7 +1472,6 @@ pub(crate) fn install_chat_watcher(
     watcher_cell: &Arc<Mutex<Option<JoinHandle<()>>>>,
 ) {
     let handle = backend.watch_chats(move |record| {
-        let weak = weak.clone();
         let group_ids = group_ids.clone();
         let backend_cell = backend_cell.clone();
         let notif = notif.clone();
@@ -1553,8 +1497,7 @@ pub(crate) fn install_chat_watcher(
                 (n, latest)
             })
             .unwrap_or((0, None));
-        let _ = slint::invoke_from_event_loop(move || {
-            let Some(ui) = weak.upgrade() else { return };
+        ui_update!(weak, move |ui| {
             // The watcher fires on the tokio thread; the backend lives behind
             // `backend_cell`. Lock it here (on the UI thread) so chat-list rows
             // can resolve the 1:1 peer's profile name/picture. If it isn't

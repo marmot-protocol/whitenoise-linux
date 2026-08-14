@@ -49,10 +49,7 @@ where
 {
     std::thread::spawn(move || {
         let result = work();
-        let _ = slint::invoke_from_event_loop(move || {
-            let Some(ui) = weak.upgrade() else { return };
-            apply(ui, result);
-        });
+        ui_update!(weak, move |ui| apply(ui, result));
     });
 }
 
@@ -72,10 +69,7 @@ pub(crate) fn spawn_ui_tokio<T, Fut, A>(
 {
     backend.tokio_handle().spawn(async move {
         let result = fut.await;
-        let _ = slint::invoke_from_event_loop(move || {
-            let Some(ui) = weak.upgrade() else { return };
-            apply(ui, result);
-        });
+        ui_update!(weak, move |ui| apply(ui, result));
     });
 }
 

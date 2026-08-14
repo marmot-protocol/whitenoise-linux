@@ -173,17 +173,11 @@ mod temp_id_tests {
 // (a free fn with no settings handle). `hidden_account()` names the account
 // whose set the renderer currently consults — it follows the active account,
 // so a hide on one account never leaks to another on the same machine.
-pub(crate) fn hidden_messages() -> &'static Mutex<HashMap<String, HashSet<String>>> {
-    static S: OnceLock<Mutex<HashMap<String, HashSet<String>>>> = OnceLock::new();
-    S.get_or_init(|| Mutex::new(HashMap::new()))
-}
+global_cell!(pub(crate) fn hidden_messages() -> HashMap<String, HashSet<String>> = HashMap::new());
 
-/// The account hex whose hidden set the renderer currently consults. Set at
-/// boot and on every account switch, before the chat models are rebuilt.
-pub(crate) fn hidden_account() -> &'static Mutex<String> {
-    static S: OnceLock<Mutex<String>> = OnceLock::new();
-    S.get_or_init(|| Mutex::new(String::new()))
-}
+// The account hex whose hidden set the renderer currently consults. Set at
+// boot and on every account switch, before the chat models are rebuilt.
+global_cell!(pub(crate) fn hidden_account() -> String = String::new());
 
 /// Point the renderer at `account_hex`'s hidden set (called on boot + switch).
 pub(crate) fn hidden_set_account(account_hex: &str) {
@@ -225,13 +219,10 @@ pub(crate) fn is_hidden_message(message_id: &str) -> bool {
         .unwrap_or(false)
 }
 
-/// Pre-upgrade global hides, stashed at startup (when the boot account isn't
-/// known yet) and folded into the boot account's set once it is. `take` drains
-/// it so the fold runs once per boot.
-pub(crate) fn hidden_legacy_stash() -> &'static Mutex<Vec<String>> {
-    static S: OnceLock<Mutex<Vec<String>>> = OnceLock::new();
-    S.get_or_init(|| Mutex::new(Vec::new()))
-}
+// Pre-upgrade global hides, stashed at startup (when the boot account isn't
+// known yet) and folded into the boot account's set once it is. `take` drains
+// it so the fold runs once per boot.
+global_cell!(pub(crate) fn hidden_legacy_stash() -> Vec<String> = Vec::new());
 
 pub(crate) fn hidden_stash_legacy(ids: Vec<String>) {
     if let Ok(mut s) = hidden_legacy_stash().lock() {
@@ -255,33 +246,17 @@ pub(crate) fn hidden_take_legacy() -> Vec<String> {
 
 // (HashSet / OnceLock / atomics are re-exported at the crate root above.)
 
-/// temp_ids whose send is currently in flight (dispatched, not yet resolved).
-/// The reconnect flush skips these so a send can't be dispatched twice
-/// concurrently. Entries are inserted at dispatch and removed when the op
-/// resolves (ack or error), on whichever thread resolves it.
-pub(crate) fn offline_inflight() -> &'static Mutex<HashSet<String>> {
-    static S: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
-    S.get_or_init(|| Mutex::new(HashSet::new()))
-}
-
-pub(crate) fn offline_inflight_insert(temp_id: &str) {
-    if let Ok(mut s) = offline_inflight().lock() {
-        s.insert(temp_id.to_string());
-    }
-}
-
-pub(crate) fn offline_inflight_remove(temp_id: &str) {
-    if let Ok(mut s) = offline_inflight().lock() {
-        s.remove(temp_id);
-    }
-}
-
-pub(crate) fn offline_inflight_contains(temp_id: &str) -> bool {
-    offline_inflight()
-        .lock()
-        .map(|s| s.contains(temp_id))
-        .unwrap_or(false)
-}
+// temp_ids whose send is currently in flight (dispatched, not yet resolved).
+// The reconnect flush skips these so a send can't be dispatched twice
+// concurrently. Entries are inserted at dispatch and removed when the op
+// resolves (ack or error), on whichever thread resolves it.
+global_cell!(pub(crate) fn offline_inflight() -> HashSet<String> = HashSet::new());
+set_ops!(
+    pub(crate) offline_inflight:
+    contains offline_inflight_contains,
+    insert offline_inflight_insert,
+    remove offline_inflight_remove
+);
 
 /// Set by the background connectivity watcher when there's queued work to (re)try
 /// — on first boot-ready and on every offline→online relay transition. The UI
@@ -343,15 +318,11 @@ pub(crate) fn looks_already_sent(
 /// "Load earlier messages" grows it per chat via [`msg_window_expand`].
 pub(crate) const MESSAGE_WINDOW: usize = 80;
 
-/// Per-chat message-window overrides (group_id_hex → record limit). Only
-/// chats expanded via "Load earlier messages" have an entry; everything else
-/// uses [`MESSAGE_WINDOW`]. Process-wide like the picture caches so the many
-/// callback closures don't all need another captured handle.
-pub(crate) fn msg_windows() -> &'static Mutex<HashMap<String, usize>> {
-    use std::sync::OnceLock;
-    static MAP: OnceLock<Mutex<HashMap<String, usize>>> = OnceLock::new();
-    MAP.get_or_init(|| Mutex::new(HashMap::new()))
-}
+// Per-chat message-window overrides (group_id_hex → record limit). Only
+// chats expanded via "Load earlier messages" have an entry; everything else
+// uses [`MESSAGE_WINDOW`]. Process-wide like the picture caches so the many
+// callback closures don't all need another captured handle.
+global_cell!(pub(crate) fn msg_windows() -> HashMap<String, usize> = HashMap::new());
 
 /// Current record limit for a chat (default [`MESSAGE_WINDOW`]).
 pub(crate) fn msg_window_for(group_hex: &str) -> usize {
@@ -383,15 +354,11 @@ pub(crate) fn msg_window_set(group_hex: &str, limit: usize) {
 
 // ─── Scroll-position restore ────────────────────────────────────────────────
 
-/// Per-chat scroll offset (group_id_hex → viewport-y in px), captured when the
-/// user switches to another chat while scrolled away from the bottom. Only
-/// holds an entry for a chat left mid-history; a chat left at the bottom has
-/// none, so reopening it falls back to the normal scroll-to-bottom path.
-pub(crate) fn msg_scroll_positions() -> &'static Mutex<HashMap<String, f32>> {
-    use std::sync::OnceLock;
-    static MAP: OnceLock<Mutex<HashMap<String, f32>>> = OnceLock::new();
-    MAP.get_or_init(|| Mutex::new(HashMap::new()))
-}
+// Per-chat scroll offset (group_id_hex → viewport-y in px), captured when the
+// user switches to another chat while scrolled away from the bottom. Only
+// holds an entry for a chat left mid-history; a chat left at the bottom has
+// none, so reopening it falls back to the normal scroll-to-bottom path.
+global_cell!(pub(crate) fn msg_scroll_positions() -> HashMap<String, f32> = HashMap::new());
 
 /// Seed the in-memory scroll-position cache from persisted settings at boot,
 /// so a chat left mid-history before the last restart reopens there instead
@@ -421,56 +388,32 @@ pub(crate) fn with_active_player<R>(f: impl FnOnce(&mut Option<audio::AudioPlaye
     ACTIVE_AUDIO_PLAYER.with(|p| f(&mut p.borrow_mut()))
 }
 
-/// Start instant of the current recording, shared with the timer thread.
-pub(crate) fn recording_start() -> &'static Mutex<Option<std::time::Instant>> {
-    use std::sync::OnceLock;
-    static S: OnceLock<Mutex<Option<std::time::Instant>>> = OnceLock::new();
-    S.get_or_init(|| Mutex::new(None))
-}
+// Start instant of the current recording, shared with the timer thread.
+global_cell!(pub(crate) fn recording_start() -> Option<std::time::Instant> = None);
 
-/// Peak-amplitude accumulator of the current recording (cloned from
-/// [`audio::AudioRecorder::level_handle`]), shared with the timer thread so
-/// it can drive the composer's live level meter without touching the
-/// `!Send` recorder itself.
-pub(crate) fn recording_level() -> &'static Mutex<Option<Arc<std::sync::atomic::AtomicU32>>> {
-    use std::sync::OnceLock;
-    static S: OnceLock<Mutex<Option<Arc<std::sync::atomic::AtomicU32>>>> = OnceLock::new();
-    S.get_or_init(|| Mutex::new(None))
-}
+// Peak-amplitude accumulator of the current recording (cloned from
+// [`audio::AudioRecorder::level_handle`]), shared with the timer thread so
+// it can drive the composer's live level meter without touching the
+// `!Send` recorder itself.
+global_cell!(pub(crate) fn recording_level() -> Option<Arc<std::sync::atomic::AtomicU32>> = None);
 
-/// The message id of the currently-playing voice message.
-pub(crate) fn current_audio_message_id() -> &'static Mutex<Option<String>> {
-    use std::sync::OnceLock;
-    static M: OnceLock<Mutex<Option<String>>> = OnceLock::new();
-    M.get_or_init(|| Mutex::new(None))
-}
+// The message id of the currently-playing voice message.
+global_cell!(pub(crate) fn current_audio_message_id() -> Option<String> = None);
 
-/// Last-known playback progress per message id (0..1). Kept so rows that
-/// scroll out and back in show the correct progress without re-querying the
-/// player.
-pub(crate) fn audio_progress() -> &'static Mutex<HashMap<String, f32>> {
-    use std::sync::OnceLock;
-    static M: OnceLock<Mutex<HashMap<String, f32>>> = OnceLock::new();
-    M.get_or_init(|| Mutex::new(HashMap::new()))
-}
+// Last-known playback progress per message id (0..1). Kept so rows that
+// scroll out and back in show the correct progress without re-querying the
+// player.
+global_cell!(pub(crate) fn audio_progress() -> HashMap<String, f32> = HashMap::new());
 
-/// Duration label per audio message id (e.g. "0:42"), captured the first
-/// time the clip is decoded.
-pub(crate) fn audio_meta() -> &'static Mutex<HashMap<String, String>> {
-    use std::sync::OnceLock;
-    static M: OnceLock<Mutex<HashMap<String, String>>> = OnceLock::new();
-    M.get_or_init(|| Mutex::new(HashMap::new()))
-}
+// Duration label per audio message id (e.g. "0:42"), captured the first
+// time the clip is decoded.
+global_cell!(pub(crate) fn audio_meta() -> HashMap<String, String> = HashMap::new());
 
-/// Message ids whose audio attachment downloaded and decrypted fine but failed
-/// to decode (unsupported codec or corrupt data). The bubble swaps its size
-/// label for a "Can't play this audio format" notice. An entry is cleared when
-/// a later play attempt on the same message succeeds.
-pub(crate) fn audio_decode_failed() -> &'static Mutex<std::collections::HashSet<String>> {
-    use std::sync::OnceLock;
-    static SET: OnceLock<Mutex<std::collections::HashSet<String>>> = OnceLock::new();
-    SET.get_or_init(|| Mutex::new(std::collections::HashSet::new()))
-}
+// Message ids whose audio attachment downloaded and decrypted fine but failed
+// to decode (unsupported codec or corrupt data). The bubble swaps its size
+// label for a "Can't play this audio format" notice. An entry is cleared when
+// a later play attempt on the same message succeeds.
+global_cell!(pub(crate) fn audio_decode_failed() -> std::collections::HashSet<String> = std::collections::HashSet::new());
 
 pub(crate) fn rgb(hex: u32) -> Color {
     Color::from_rgb_u8((hex >> 16) as u8, (hex >> 8) as u8, hex as u8)
@@ -554,56 +497,13 @@ pub(crate) enum StatusKind {
     Error = 2,
 }
 
-/// Set the profile-page status line and its outcome together, so the text and
-/// its color/glyph never drift apart.
-pub(crate) fn show_profile_status(
-    ui: &WhiteNoiseLinux,
-    message: impl Into<SharedString>,
-    kind: StatusKind,
-) {
-    ui.set_profile_status(message.into());
-    ui.set_profile_status_kind(kind as i32);
-}
-
-/// Set the add-member card status line and its outcome together.
-pub(crate) fn show_add_member_status(
-    ui: &WhiteNoiseLinux,
-    message: impl Into<SharedString>,
-    kind: StatusKind,
-) {
-    ui.set_add_member_status(message.into());
-    ui.set_add_member_status_kind(kind as i32);
-}
-
-/// Set the group-settings card status line and its outcome together.
-pub(crate) fn show_group_settings_status(
-    ui: &WhiteNoiseLinux,
-    message: impl Into<SharedString>,
-    kind: StatusKind,
-) {
-    ui.set_group_settings_status(message.into());
-    ui.set_group_settings_status_kind(kind as i32);
-}
-
-/// Set the network/relays pane status line and its outcome together.
-pub(crate) fn show_network_status(
-    ui: &WhiteNoiseLinux,
-    message: impl Into<SharedString>,
-    kind: StatusKind,
-) {
-    ui.set_network_status(message.into());
-    ui.set_network_status_kind(kind as i32);
-}
-
-/// Set the advanced-settings audit-log status line and its outcome together.
-pub(crate) fn show_audit_status(
-    ui: &WhiteNoiseLinux,
-    message: impl Into<SharedString>,
-    kind: StatusKind,
-) {
-    ui.set_audit_status(message.into());
-    ui.set_audit_status_kind(kind as i32);
-}
+// Set a status line and its outcome together, so the text and its
+// color/glyph never drift apart.
+status_setter!(pub(crate), show_profile_status, set_profile_status, set_profile_status_kind);
+status_setter!(pub(crate), show_add_member_status, set_add_member_status, set_add_member_status_kind);
+status_setter!(pub(crate), show_group_settings_status, set_group_settings_status, set_group_settings_status_kind);
+status_setter!(pub(crate), show_network_status, set_network_status, set_network_status_kind);
+status_setter!(pub(crate), show_audit_status, set_audit_status, set_audit_status_kind);
 
 /// Persist the composer draft for the currently active chat index.
 ///

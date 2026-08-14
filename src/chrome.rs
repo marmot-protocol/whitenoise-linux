@@ -269,8 +269,7 @@ pub(crate) fn refresh_contacts_async(
                 mention_note_profile(&r.account_id_hex, &name);
             }
         }
-        let _ = slint::invoke_from_event_loop(move || {
-            let Some(ui) = weak.upgrade() else { return };
+        ui_update!(weak, move |ui| {
             let contacts = ui.get_contacts();
             let rows: Vec<Contact> = records
                 .iter()
@@ -547,8 +546,7 @@ pub(crate) fn push_contact_shared_media(
         let all = b
             .messages(&group_hex_task, Some(msg_window_for(&group_hex_task)))
             .unwrap_or_default();
-        let _ = slint::invoke_from_event_loop(move || {
-            let Some(ui) = weak.upgrade() else { return };
+        ui_update!(weak, move |ui| {
             // The selection may have moved on to a different contact while
             // this was in flight; a stale snapshot would show the wrong
             // person's photos.
@@ -653,8 +651,7 @@ pub(crate) fn refresh_kp_local_async(ui: &WhiteNoiseLinux, backend: &Arc<Backend
     std::thread::spawn(move || {
         let local = b.key_packages_local();
         let relays = b.key_package_relays();
-        let _ = slint::invoke_from_event_loop(move || {
-            let Some(ui) = weak.upgrade() else { return };
+        ui_update!(weak, move |ui| {
             // "Published" means actually out on the network — a KP with a
             // published event id, or one we've observed on a relay. A purely
             // local KP (which always exists once the account boots) does NOT
@@ -673,14 +670,10 @@ pub(crate) fn refresh_kp_local_async(ui: &WhiteNoiseLinux, backend: &Arc<Backend
 
 // ─── Group members ─────────────────────────────────────────────────────
 
-/// Process-wide record of which group is currently shown, so async group-avatar
-/// decodes that finish after the user has switched chats don't paint the wrong
-/// group's image into the header/panel.
-pub(crate) fn active_group_slot() -> &'static Mutex<String> {
-    use std::sync::OnceLock;
-    static SLOT: OnceLock<Mutex<String>> = OnceLock::new();
-    SLOT.get_or_init(|| Mutex::new(String::new()))
-}
+// Process-wide record of which group is currently shown, so async group-avatar
+// decodes that finish after the user has switched chats don't paint the wrong
+// group's image into the header/panel.
+global_cell!(pub(crate) fn active_group_slot() -> String = String::new());
 
 /// Push the admin group-settings surface (rename draft + group avatar) for the
 /// active group, and clear the settings/invite status and the invite draft so
@@ -769,11 +762,7 @@ pub(crate) fn spawn_picture_fetch(
         let Some(pixels) = fetch_picture_pixels(&url).await else {
             return;
         };
-        let _ = slint::invoke_from_event_loop(move || {
-            if let Some(ui) = weak.upgrade() {
-                bind(&ui, &pixels);
-            }
-        });
+        ui_update!(weak, move |ui| bind(&ui, &pixels));
     });
 }
 
@@ -789,22 +778,12 @@ pub(crate) fn bind_picture_to_rows<Row: Clone + 'static>(
     matches: impl Fn(&Row) -> bool,
     bind: impl Fn(&mut Row, slint::Image),
 ) {
-    let Some(vm) = model.as_any().downcast_ref::<VecModel<Row>>() else {
-        return;
-    };
     let img = image_from_pixels(pixels);
-    for i in 0..vm.row_count() {
-        let Some(mut row) = vm.row_data(i) else {
-            continue;
-        };
-        if !matches(&row) {
-            continue;
-        }
-        bind(&mut row, img.clone());
-        vm.set_row_data(i, row);
-        if first_only {
-            break;
-        }
+    let mut apply = |row: &mut Row| bind(row, img.clone());
+    if first_only {
+        update_first_row_where(model, &matches, &mut apply);
+    } else {
+        update_rows_where(model, &matches, &mut apply);
     }
 }
 
@@ -866,11 +845,7 @@ pub(crate) fn spawn_group_image_pixels_fetch(
             }
         };
         picture_cache_put(cache_key, pixels.clone());
-        let _ = slint::invoke_from_event_loop(move || {
-            if let Some(ui) = weak.upgrade() {
-                bind(&ui, &pixels);
-            }
-        });
+        ui_update!(weak, move |ui| bind(&ui, &pixels));
     });
 }
 
@@ -978,8 +953,7 @@ pub(crate) fn push_group_members_to_ui_async(
     let weak = ui.as_weak();
     backend.tokio_handle().spawn(async move {
         let snap = fetch_members_snapshot(&b, &group_hex);
-        let _ = slint::invoke_from_event_loop(move || {
-            let Some(ui) = weak.upgrade() else { return };
+        ui_update!(weak, move |ui| {
             let still_active = active_group_slot()
                 .lock()
                 .map(|slot| slot.eq_ignore_ascii_case(&group_hex))
@@ -1277,22 +1251,11 @@ pub(crate) fn spawn_contact_nip05_verifications(ui: &WhiteNoiseLinux, backend: &
 /// contact-detail pane binds `AppState.contacts[active-contact]`, so the model
 /// update refreshes the open detail too). No-op when the flag already matches.
 pub(crate) fn update_contact_verified(ui: &WhiteNoiseLinux, account_id: &str, verified: bool) {
-    let model = ui.get_contacts();
-    let Some(vm) = model.as_any().downcast_ref::<VecModel<Contact>>() else {
-        return;
-    };
-    for i in 0..vm.row_count() {
-        let Some(mut row) = vm.row_data(i) else {
-            continue;
-        };
-        if row.account_id.as_str().eq_ignore_ascii_case(account_id) {
-            if row.verified != verified {
-                row.verified = verified;
-                vm.set_row_data(i, row);
-            }
-            break;
-        }
-    }
+    update_first_row_where(
+        &ui.get_contacts(),
+        |row: &Contact| row.account_id.as_str().eq_ignore_ascii_case(account_id),
+        |row: &mut Contact| row.verified = verified,
+    );
 }
 
 /// Bind a decoded picture onto the contact row identified by `account_id`.
@@ -1587,8 +1550,7 @@ pub(crate) fn refresh_archived_async(
         let Some(snap) = fetch_archived_snapshot(&b) else {
             return;
         };
-        let _ = slint::invoke_from_event_loop(move || {
-            let Some(ui) = weak.upgrade() else { return };
+        ui_update!(weak, move |ui| {
             let archived = ui.get_archived_chats();
             refresh_archived_from(&b, &snap, &archived, &archived_group_ids);
             spawn_archived_avatar_fetches(&ui, &b);
@@ -1664,8 +1626,7 @@ fn apply_message_event(
     group_hex: String,
     chat_idx: usize,
 ) {
-    let _ = slint::invoke_from_event_loop(move || {
-        let Some(ui) = weak.upgrade() else { return };
+    ui_update!(weak, move |ui| {
         let overlay = pending_state.lock().unwrap();
         let chats_messages = ui.get_chats_messages();
 

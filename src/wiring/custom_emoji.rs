@@ -102,8 +102,7 @@ pub(crate) fn backfill_custom_emoji_settings_list(ui: &WhiteNoiseLinux, backend:
         if !any {
             return;
         }
-        let _ = slint::invoke_from_event_loop(move || {
-            let Some(ui) = weak.upgrade() else { return };
+        ui_update!(weak, move |ui| {
             let rows = ui.get_custom_emoji_list();
             let refreshed: Vec<CustomEmojiEntry> = (0..rows.row_count())
                 .filter_map(|i| rows.row_data(i))
@@ -207,12 +206,9 @@ pub(crate) fn wire_custom_emoji(ui: &WhiteNoiseLinux, cx: &Cx) {
                 .flatten();
 
                 let Some(path) = chosen else {
-                    let weak = weak.clone();
-                    let _ = slint::invoke_from_event_loop(move || {
-                        if let Some(ui) = weak.upgrade() {
-                            ui.set_custom_emoji_modal_busy(false);
-                            ui.set_show_custom_emoji_modal(false);
-                        }
+                    ui_update!(weak, move |ui| {
+                        ui.set_custom_emoji_modal_busy(false);
+                        ui.set_show_custom_emoji_modal(false);
                     });
                     return;
                 };
@@ -226,11 +222,9 @@ pub(crate) fn wire_custom_emoji(ui: &WhiteNoiseLinux, cx: &Cx) {
                     Ok(b) => b,
                     Err(e) => {
                         let msg = format!("could not read file: {e}");
-                        let _ = slint::invoke_from_event_loop(move || {
-                            if let Some(ui) = weak.upgrade() {
-                                ui.set_custom_emoji_modal_busy(false);
-                                show_custom_emoji_modal_status(&ui, msg, true);
-                            }
+                        ui_update!(weak, move |ui| {
+                            ui.set_custom_emoji_modal_busy(false);
+                            show_custom_emoji_modal_status(&ui, msg, true);
                         });
                         return;
                     }
@@ -242,38 +236,27 @@ pub(crate) fn wire_custom_emoji(ui: &WhiteNoiseLinux, cx: &Cx) {
                 let preview_pixels = decode_avatar_pixels(&bytes).ok();
 
                 let Some(backend) = backend_cell.lock().unwrap().clone() else {
-                    let _ = slint::invoke_from_event_loop(move || {
-                        if let Some(ui) = weak.upgrade() {
-                            ui.set_custom_emoji_modal_busy(false);
-                            show_custom_emoji_modal_status(
-                                &ui,
-                                error_copy().backend_not_ready_lc,
-                                true,
-                            );
-                        }
+                    ui_update!(weak, move |ui| {
+                        ui.set_custom_emoji_modal_busy(false);
+                        show_custom_emoji_modal_status(
+                            &ui,
+                            error_copy().backend_not_ready_lc,
+                            true,
+                        );
                     });
                     return;
                 };
 
-                {
-                    let weak = weak.clone();
-                    let _ = slint::invoke_from_event_loop(move || {
-                        if let Some(ui) = weak.upgrade() {
-                            show_custom_emoji_modal_status(
-                                &ui,
-                                error_copy().uploading_blossom,
-                                false,
-                            );
-                        }
-                    });
-                }
+                ui_update!(weak, move |ui| {
+                    show_custom_emoji_modal_status(
+                        &ui,
+                        error_copy().uploading_blossom,
+                        false,
+                    );
+                });
 
-                let weak_done = weak.clone();
                 backend.upload_public_blob_async(bytes, content_type, move |result| {
-                    let _ = slint::invoke_from_event_loop(move || {
-                        let Some(ui) = weak_done.upgrade() else {
-                            return;
-                        };
+                    ui_update!(weak, move |ui| {
                         ui.set_custom_emoji_modal_busy(false);
                         match result {
                             Ok(url) => {
@@ -305,60 +288,46 @@ pub(crate) fn wire_custom_emoji(ui: &WhiteNoiseLinux, cx: &Cx) {
         }
     });
 
-    ui.global::<AppState>().on_custom_emoji_modal_save({
-        let weak = ui.as_weak();
-        let settings_cell = settings_cell.clone();
-        move |shortcode| {
-            let Some(ui) = weak.upgrade() else { return };
-            let url = ui.get_custom_emoji_modal_pending_url().to_string();
-            if url.is_empty() {
-                return;
-            }
-            let Some(shortcode) = sanitize_shortcode(shortcode.as_str()) else {
-                show_custom_emoji_modal_status(&ui, error_copy().emoji_shortcode_empty, true);
-                return;
-            };
-            let mut st = settings_cell.borrow_mut();
-            if st
-                .custom_emoji
-                .iter()
-                .any(|c| c.shortcode.eq_ignore_ascii_case(&shortcode))
-            {
-                drop(st);
-                show_custom_emoji_modal_status(&ui, error_copy().emoji_shortcode_taken, true);
-                return;
-            }
-            st.custom_emoji.push(CustomEmoji { shortcode, url });
+    wire!(ui, on_custom_emoji_modal_save [settings_cell], |ui, shortcode| {
+        let url = ui.get_custom_emoji_modal_pending_url().to_string();
+        if url.is_empty() {
+            return;
+        }
+        let Some(shortcode) = sanitize_shortcode(shortcode.as_str()) else {
+            show_custom_emoji_modal_status(&ui, error_copy().emoji_shortcode_empty, true);
+            return;
+        };
+        let mut st = settings_cell.borrow_mut();
+        if st
+            .custom_emoji
+            .iter()
+            .any(|c| c.shortcode.eq_ignore_ascii_case(&shortcode))
+        {
+            drop(st);
+            show_custom_emoji_modal_status(&ui, error_copy().emoji_shortcode_taken, true);
+            return;
+        }
+        st.custom_emoji.push(CustomEmoji { shortcode, url });
+        st.save();
+        push_custom_emoji_settings_list(&ui, &st.custom_emoji);
+        drop(st);
+        ui.set_custom_emoji_modal_pending_url(s(""));
+        ui.set_show_custom_emoji_modal(false);
+    });
+
+    wire!(ui, on_custom_emoji_modal_dismissed [], |ui| {
+        ui.set_custom_emoji_modal_pending_url(s(""));
+        ui.set_custom_emoji_modal_busy(false);
+        ui.set_show_custom_emoji_modal(false);
+    });
+
+    wire!(ui, on_custom_emoji_removed [settings_cell], |ui, index| {
+        let mut st = settings_cell.borrow_mut();
+        let idx = index as usize;
+        if idx < st.custom_emoji.len() {
+            st.custom_emoji.remove(idx);
             st.save();
             push_custom_emoji_settings_list(&ui, &st.custom_emoji);
-            drop(st);
-            ui.set_custom_emoji_modal_pending_url(s(""));
-            ui.set_show_custom_emoji_modal(false);
-        }
-    });
-
-    ui.global::<AppState>().on_custom_emoji_modal_dismissed({
-        let weak = ui.as_weak();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            ui.set_custom_emoji_modal_pending_url(s(""));
-            ui.set_custom_emoji_modal_busy(false);
-            ui.set_show_custom_emoji_modal(false);
-        }
-    });
-
-    ui.global::<AppState>().on_custom_emoji_removed({
-        let weak = ui.as_weak();
-        let settings_cell = settings_cell.clone();
-        move |index| {
-            let Some(ui) = weak.upgrade() else { return };
-            let mut st = settings_cell.borrow_mut();
-            let idx = index as usize;
-            if idx < st.custom_emoji.len() {
-                st.custom_emoji.remove(idx);
-                st.save();
-                push_custom_emoji_settings_list(&ui, &st.custom_emoji);
-            }
         }
     });
 }

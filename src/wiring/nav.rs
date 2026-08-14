@@ -85,13 +85,8 @@ pub(crate) fn wire_nav(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
         }
     });
 
-    ui.global::<AppState>().on_palette_dismissed({
-        let weak = ui.as_weak();
-        move || {
-            if let Some(ui) = weak.upgrade() {
-                ui.set_show_palette(false);
-            }
-        }
+    wire!(ui, on_palette_dismissed [], |ui| {
+        ui.set_show_palette(false);
     });
 
     ui.global::<AppState>().on_palette_query_changed({

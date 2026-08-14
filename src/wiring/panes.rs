@@ -167,17 +167,12 @@ pub(crate) fn wire_panes(
         })
     };
 
-    ui.global::<AppState>().on_account_switcher_requested({
-        let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            let Some(b) = backend_cell.lock().unwrap().clone() else {
-                return;
-            };
-            refresh_accounts_model(&ui, &b);
-            ui.set_show_account_switcher(true);
-        }
+    wire!(ui, on_account_switcher_requested [backend_cell], |ui| {
+        let Some(b) = backend_cell.lock().unwrap().clone() else {
+            return;
+        };
+        refresh_accounts_model(&ui, &b);
+        ui.set_show_account_switcher(true);
     });
 
     ui.global::<AppState>().on_switch_account({
@@ -190,187 +185,156 @@ pub(crate) fn wire_panes(
     // then we delete the app-written nsec backup so it can't be re-imported at
     // boot. Removing the active account switches to a survivor; removing the
     // last account falls back to the first-run screen, mirroring reset-vault.
-    ui.global::<AppState>().on_remove_account({
-        let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        let vault_cell = vault_cell.clone();
-        let do_switch = do_switch_account.clone();
-        move |id| {
-            let Some(ui) = weak.upgrade() else { return };
-            let Some(backend) = backend_cell.lock().unwrap().clone() else {
-                return;
-            };
-            let id = id.to_string();
-            let was_active = backend.account().account_id_hex.eq_ignore_ascii_case(&id);
-            if let Err(e) = backend.remove_account(&id) {
-                tracing::warn!(target: "accounts", "remove failed: {e:#}");
-                show_backend_error(&ui, friendly_error(ErrorOp::RemoveAccount, &e));
-                return;
-            }
-            // marmot doesn't know about the app's `nsec:<hex>` backup, so drop it
-            // explicitly — otherwise `import_nsecs_from_bytes` re-imports the
-            // account on the next unlock.
-            if let Some(vault) = vault_cell.lock().unwrap().clone()
-                && let Ok(mut v) = vault.lock()
-            {
-                let _ = v.remove(&vault::nsec_key_for(&id));
-            }
-            let survivors = backend.accounts();
-            if survivors.is_empty() {
-                // Nothing left to unlock into. Wipe the vault and return to the
-                // first-run choose screen, the same path "Use another key" takes.
-                if let Err(e) = vault::delete() {
-                    tracing::warn!(target: "accounts", "vault delete after last account: {e}");
-                }
-                offline_queue::clear();
-                ui.set_show_account_switcher(false);
-                ui.set_logged_in(false);
-                ui.set_password_input(s(""));
-                ui.set_password_confirm(s(""));
-                ui.set_login_error(s(""));
-                ui.set_login_mode(0);
-                return;
-            }
-            if was_active {
-                // The active pointer still names the removed account; switch to a
-                // survivor, which rebuilds every model, rewrites the persisted
-                // active-account hint, and closes the switcher.
-                do_switch(survivors[0].account_id_hex.clone());
-            } else {
-                // Active account is untouched — just rebuild the roster in place
-                // so the removed row drops out and the switcher stays open.
-                refresh_accounts_model(&ui, &backend);
-            }
+    wire!(ui, on_remove_account [backend_cell, vault_cell, do_switch_account], |ui, id| {
+        let Some(backend) = backend_cell.lock().unwrap().clone() else {
+            return;
+        };
+        let id = id.to_string();
+        let was_active = backend.account().account_id_hex.eq_ignore_ascii_case(&id);
+        if let Err(e) = backend.remove_account(&id) {
+            tracing::warn!(target: "accounts", "remove failed: {e:#}");
+            show_backend_error(&ui, friendly_error(ErrorOp::RemoveAccount, &e));
+            return;
         }
-    });
-
-    ui.global::<AppState>().on_add_account_requested({
-        let weak = ui.as_weak();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
+        // marmot doesn't know about the app's `nsec:<hex>` backup, so drop it
+        // explicitly — otherwise `import_nsecs_from_bytes` re-imports the
+        // account on the next unlock.
+        if let Some(vault) = vault_cell.lock().unwrap().clone()
+            && let Ok(mut v) = vault.lock()
+        {
+            let _ = v.remove(&vault::nsec_key_for(&id));
+        }
+        let survivors = backend.accounts();
+        if survivors.is_empty() {
+            // Nothing left to unlock into. Wipe the vault and return to the
+            // first-run choose screen, the same path "Use another key" takes.
+            if let Err(e) = vault::delete() {
+                tracing::warn!(target: "accounts", "vault delete after last account: {e}");
+            }
+            offline_queue::clear();
             ui.set_show_account_switcher(false);
-            ui.set_add_account_nsec(s(""));
-            ui.set_add_account_status(s(""));
-            ui.set_add_account_generated(false);
-            ui.set_add_account_busy(false);
-            ui.set_show_add_account(true);
+            ui.set_logged_in(false);
+            ui.set_password_input(s(""));
+            ui.set_password_confirm(s(""));
+            ui.set_login_error(s(""));
+            ui.set_login_mode(0);
+            return;
+        }
+        if was_active {
+            // The active pointer still names the removed account; switch to a
+            // survivor, which rebuilds every model, rewrites the persisted
+            // active-account hint, and closes the switcher.
+            do_switch_account(survivors[0].account_id_hex.clone());
+        } else {
+            // Active account is untouched — just rebuild the roster in place
+            // so the removed row drops out and the switcher stays open.
+            refresh_accounts_model(&ui, &backend);
         }
     });
 
-    ui.global::<AppState>().on_add_account_dismissed({
-        let weak = ui.as_weak();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            ui.set_show_add_account(false);
-            ui.set_add_account_nsec(s(""));
-            ui.set_add_account_generated(false);
-            ui.set_add_account_status(s(""));
-        }
+    wire!(ui, on_add_account_requested [], |ui| {
+        ui.set_show_account_switcher(false);
+        ui.set_add_account_nsec(s(""));
+        ui.set_add_account_status(s(""));
+        ui.set_add_account_generated(false);
+        ui.set_add_account_busy(false);
+        ui.set_show_add_account(true);
     });
 
-    ui.global::<AppState>().on_generate_add_account_key({
-        let weak = ui.as_weak();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            let keys = Keys::generate();
-            match keys.secret_key().to_bech32() {
-                Ok(nsec) => {
-                    ui.set_add_account_nsec(nsec.into());
-                    ui.set_add_account_generated(true);
-                    ui.set_add_account_status(s(""));
-                }
-                Err(e) => ui.set_add_account_status(
-                    tmpl(&error_copy().encode_key_failed, &[&e.to_string()]).into(),
-                ),
+    wire!(ui, on_add_account_dismissed [], |ui| {
+        ui.set_show_add_account(false);
+        ui.set_add_account_nsec(s(""));
+        ui.set_add_account_generated(false);
+        ui.set_add_account_status(s(""));
+    });
+
+    wire!(ui, on_generate_add_account_key [], |ui| {
+        let keys = Keys::generate();
+        match keys.secret_key().to_bech32() {
+            Ok(nsec) => {
+                ui.set_add_account_nsec(nsec.into());
+                ui.set_add_account_generated(true);
+                ui.set_add_account_status(s(""));
             }
+            Err(e) => ui.set_add_account_status(
+                tmpl(&error_copy().encode_key_failed, &[&e.to_string()]).into(),
+            ),
         }
     });
 
-    ui.global::<AppState>().on_add_account_nsec_edited({
-        let weak = ui.as_weak();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            ui.set_add_account_generated(false);
-        }
+    wire!(ui, on_add_account_nsec_edited [], |ui| {
+        ui.set_add_account_generated(false);
     });
 
-    ui.global::<AppState>().on_add_account({
+    wire!(ui, on_add_account [backend_cell, vault_cell, do_switch_account], |ui, nsec_input| {
+        let raw = nsec_input.trim().to_string();
+        let Ok(keys) = Keys::parse(&raw) else {
+            ui.set_add_account_status(error_copy().invalid_nsec.into());
+            return;
+        };
+        let Some(backend) = backend_cell.lock().unwrap().clone() else {
+            ui.set_add_account_status(error_copy().backend_not_ready_yet.into());
+            return;
+        };
+        // Canonical bech32 form for vault storage, whatever was pasted.
+        let nsec = match keys.secret_key().to_bech32() {
+            Ok(n) => n,
+            Err(e) => {
+                ui.set_add_account_status(
+                    tmpl(&error_copy().encode_key_failed, &[&e.to_string()]).into(),
+                );
+                return;
+            }
+        };
+        let account_id = keys.public_key().to_hex();
+        // A key generated in this dialog can't have a profile yet; a
+        // pasted one may — only generated keys get a random starter name.
+        let generated = ui.get_add_account_generated();
+        ui.set_add_account_busy(true);
+        ui.set_add_account_status(s(""));
         let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
         let vault_cell = vault_cell.clone();
         let do_switch = do_switch_account.clone();
-        move |nsec_input| {
-            let Some(ui) = weak.upgrade() else { return };
-            let raw = nsec_input.trim().to_string();
-            let Ok(keys) = Keys::parse(&raw) else {
-                ui.set_add_account_status(error_copy().invalid_nsec.into());
-                return;
-            };
-            let Some(backend) = backend_cell.lock().unwrap().clone() else {
-                ui.set_add_account_status(error_copy().backend_not_ready_yet.into());
-                return;
-            };
-            // Canonical bech32 form for vault storage, whatever was pasted.
-            let nsec = match keys.secret_key().to_bech32() {
-                Ok(n) => n,
-                Err(e) => {
-                    ui.set_add_account_status(
-                        tmpl(&error_copy().encode_key_failed, &[&e.to_string()]).into(),
-                    );
-                    return;
-                }
-            };
-            let account_id = keys.public_key().to_hex();
-            // A key generated in this dialog can't have a profile yet; a
-            // pasted one may — only generated keys get a random starter name.
-            let generated = ui.get_add_account_generated();
-            ui.set_add_account_busy(true);
-            ui.set_add_account_status(s(""));
-            let weak = ui.as_weak();
-            let vault_cell = vault_cell.clone();
-            let do_switch = do_switch.clone();
-            let backend_for_seed = backend.clone();
-            backend.add_account_async(nsec.clone(), move |result| {
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
-                    ui.set_add_account_busy(false);
-                    match result {
-                        Ok(summary) => {
-                            // Seal the new key into the session vault so the
-                            // account survives restarts (marmot's own secret
-                            // landed there too, via VaultSecretStore).
-                            if let Some(vault) = vault_cell.lock().unwrap().clone() {
-                                vault_set_async(
-                                    &vault,
-                                    vault::nsec_key_for(&account_id),
-                                    nsec.clone(),
-                                );
-                            }
-                            ui.set_show_add_account(false);
-                            ui.set_add_account_nsec(s(""));
-                            ui.set_add_account_generated(false);
-                            if generated {
-                                publish_random_profile_async(
-                                    &backend_for_seed,
-                                    summary.label.clone(),
-                                    summary.account_id_hex.clone(),
-                                    None,
-                                    ui.as_weak(),
-                                    || {},
-                                );
-                            }
-                            do_switch(summary.account_id_hex);
-                        }
-                        Err(e) => {
-                            tracing::warn!(target: "add_account", "{e:#}");
-                            ui.set_add_account_status(
-                                friendly_error(ErrorOp::AddAccount, &e).into(),
+        let backend_for_seed = backend.clone();
+        backend.add_account_async(nsec.clone(), move |result| {
+            ui_update!(weak, move |ui| {
+                ui.set_add_account_busy(false);
+                match result {
+                    Ok(summary) => {
+                        // Seal the new key into the session vault so the
+                        // account survives restarts (marmot's own secret
+                        // landed there too, via VaultSecretStore).
+                        if let Some(vault) = vault_cell.lock().unwrap().clone() {
+                            vault_set_async(
+                                &vault,
+                                vault::nsec_key_for(&account_id),
+                                nsec.clone(),
                             );
                         }
+                        ui.set_show_add_account(false);
+                        ui.set_add_account_nsec(s(""));
+                        ui.set_add_account_generated(false);
+                        if generated {
+                            publish_random_profile_async(
+                                &backend_for_seed,
+                                summary.label.clone(),
+                                summary.account_id_hex.clone(),
+                                None,
+                                ui.as_weak(),
+                                || {},
+                            );
+                        }
+                        do_switch(summary.account_id_hex);
                     }
-                });
+                    Err(e) => {
+                        tracing::warn!(target: "add_account", "{e:#}");
+                        ui.set_add_account_status(
+                            friendly_error(ErrorOp::AddAccount, &e).into(),
+                        );
+                    }
+                }
             });
-        }
+        });
     });
 
     // There is no silent auto-login anymore: secrets live in a password-encrypted
@@ -497,64 +461,54 @@ pub(crate) fn wire_panes(
 
     // "Reset & use another key" on the unlock screen. No password recovery exists,
     // so this deletes the vault and returns to first-run choose.
-    ui.global::<AppState>().on_reset_vault({
-        let weak = ui.as_weak();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            if let Err(e) = vault::delete() {
-                tracing::warn!(target: "login", "vault reset failed: {e}");
-            }
-            // Queued sends were sealed under the old vault key — unreadable now.
-            offline_queue::clear();
-            ui.set_password_input(s(""));
-            ui.set_password_confirm(s(""));
-            ui.set_login_error(s(""));
-            ui.set_login_mode(0);
+    wire!(ui, on_reset_vault [], |ui| {
+        if let Err(e) = vault::delete() {
+            tracing::warn!(target: "login", "vault reset failed: {e}");
         }
+        // Queued sends were sealed under the old vault key — unreadable now.
+        offline_queue::clear();
+        ui.set_password_input(s(""));
+        ui.set_password_confirm(s(""));
+        ui.set_login_error(s(""));
+        ui.set_login_mode(0);
     });
 
-    ui.global::<AppState>().on_generate_key_requested({
-        let weak = ui.as_weak();
-        let pending = pending_generated.clone();
-        let pending_name = pending_profile_name.clone();
-        move || {
-            tracing::debug!(target: "login", "generate_key_requested fired");
-            let Some(ui) = weak.upgrade() else { return };
-            let keys = Keys::generate();
-            let nsec = match keys.secret_key().to_bech32() {
-                Ok(v) => v,
-                Err(e) => {
-                    ui.set_login_error(
-                        tmpl(&error_copy().encode_key_failed, &[&e.to_string()]).into(),
-                    );
-                    return;
-                }
-            };
-            let npub = match keys.public_key().to_bech32() {
-                Ok(v) => v,
-                Err(e) => {
-                    ui.set_login_error(
-                        tmpl(&error_copy().encode_key_failed, &[&e.to_string()]).into(),
-                    );
-                    return;
-                }
-            };
-            *pending.lock().unwrap() = Some(nsec.clone());
-            let name = random_profile_name();
-            *pending_name.lock().unwrap() = Some(name.clone());
-            ui.set_generated_display_name(name.clone().into());
-            if let Some(img) = local_animal_avatar_image(&npub, &name) {
-                ui.set_generated_avatar(img);
-                ui.set_generated_has_avatar(true);
-            } else {
-                ui.set_generated_has_avatar(false);
+    wire!(ui, on_generate_key_requested [pending_generated, pending_profile_name], |ui| {
+        tracing::debug!(target: "login", "generate_key_requested fired");
+        let keys = Keys::generate();
+        let nsec = match keys.secret_key().to_bech32() {
+            Ok(v) => v,
+            Err(e) => {
+                ui.set_login_error(
+                    tmpl(&error_copy().encode_key_failed, &[&e.to_string()]).into(),
+                );
+                return;
             }
-            ui.set_generated_nsec(nsec.into());
-            ui.set_generated_npub(npub.into());
-            ui.set_login_error(s(""));
-            ui.set_login_status(s(""));
-            ui.set_login_mode(2);
+        };
+        let npub = match keys.public_key().to_bech32() {
+            Ok(v) => v,
+            Err(e) => {
+                ui.set_login_error(
+                    tmpl(&error_copy().encode_key_failed, &[&e.to_string()]).into(),
+                );
+                return;
+            }
+        };
+        *pending_generated.lock().unwrap() = Some(nsec.clone());
+        let name = random_profile_name();
+        *pending_profile_name.lock().unwrap() = Some(name.clone());
+        ui.set_generated_display_name(name.clone().into());
+        if let Some(img) = local_animal_avatar_image(&npub, &name) {
+            ui.set_generated_avatar(img);
+            ui.set_generated_has_avatar(true);
+        } else {
+            ui.set_generated_has_avatar(false);
         }
+        ui.set_generated_nsec(nsec.into());
+        ui.set_generated_npub(npub.into());
+        ui.set_login_error(s(""));
+        ui.set_login_status(s(""));
+        ui.set_login_mode(2);
     });
 
     ui.global::<AppState>().on_confirm_saved_key({
@@ -681,67 +635,45 @@ pub(crate) fn wire_panes(
     // behind that toggle; when off, the sidebar entry doesn't even render.
     ui.set_debug_enabled(settings_cell.borrow().debug_enabled);
 
-    ui.global::<AppState>().on_change_language_clicked({
-        let weak = ui.as_weak();
-        move || {
-            if let Some(ui) = weak.upgrade() {
-                ui.set_show_language_picker(true);
-            }
-        }
+    wire!(ui, on_change_language_clicked [], |ui| {
+        ui.set_show_language_picker(true);
     });
 
-    ui.global::<AppState>().on_locale_selected({
-        let weak = ui.as_weak();
-        let settings_cell = settings_cell.clone();
-        move |code| {
-            let locale = normalize_locale(code.as_str()).to_string();
-            apply_locale(&locale);
-            {
-                let mut s = settings_cell.borrow_mut();
-                s.locale = locale.clone();
-                s.save();
-            }
-            if let Some(ui) = weak.upgrade() {
-                ui.set_locale(s(&locale));
-                ui.set_locale_display(s(locale_display(&locale)));
-                ui.set_show_language_picker(false);
-                // Re-snapshot the now-localized error/status copy for worker threads.
-                refresh_error_copy(&ui);
-                refresh_time_copy(&ui);
-                refresh_system_copy(&ui);
-            }
+    wire!(ui, on_locale_selected [settings_cell], |ui, code| {
+        let locale = normalize_locale(code.as_str()).to_string();
+        apply_locale(&locale);
+        {
+            let mut s = settings_cell.borrow_mut();
+            s.locale = locale.clone();
+            s.save();
         }
+        ui.set_locale(s(&locale));
+        ui.set_locale_display(s(locale_display(&locale)));
+        ui.set_show_language_picker(false);
+        // Re-snapshot the now-localized error/status copy for worker threads.
+        refresh_error_copy(&ui);
+        refresh_time_copy(&ui);
+        refresh_system_copy(&ui);
     });
 
-    ui.global::<AppState>().on_theme_mode_selected({
-        let weak = ui.as_weak();
-        let settings_cell = settings_cell.clone();
-        move |mode| {
-            let mode = normalize_theme_mode(mode.as_str()).to_string();
-            {
-                let mut s = settings_cell.borrow_mut();
-                s.theme = mode.clone();
-                s.save();
-            }
-            if let Some(ui) = weak.upgrade() {
-                apply_theme_mode(&ui, &mode);
-            }
+    wire!(ui, on_theme_mode_selected [settings_cell], |ui, mode| {
+        let mode = normalize_theme_mode(mode.as_str()).to_string();
+        {
+            let mut s = settings_cell.borrow_mut();
+            s.theme = mode.clone();
+            s.save();
         }
+        apply_theme_mode(&ui, &mode);
     });
 
     // The window root pushes `Theme.body-fs` here on every theme change (and
     // once at init). Message text is wrapped in Rust against that size, so
     // record it for the next build and re-wrap what is already on screen.
-    ui.global::<AppState>().on_body_fs_changed({
-        let weak = ui.as_weak();
-        move |px| {
-            if !set_body_fs(px) {
-                return;
-            }
-            if let Some(ui) = weak.upgrade() {
-                rewrap_all_message_lines(&ui);
-            }
+    wire!(ui, on_body_fs_changed [], |ui, px| {
+        if !set_body_fs(px) {
+            return;
         }
+        rewrap_all_message_lines(&ui);
     });
 
     // Debounced push from `messages.slint` whenever the chat pane's content
@@ -750,32 +682,21 @@ pub(crate) fn wire_panes(
     // Rust against a fixed per-direction cap that assumes a wide-enough pane
     // (see `clamp_bubble_max`), so a narrower live width needs the clamp and
     // every already-built row's lines refreshed together.
-    ui.global::<AppState>().on_chat_pane_width_changed({
-        let weak = ui.as_weak();
-        move |px| {
-            if !set_bubble_budget(px) {
-                return;
-            }
-            if let Some(ui) = weak.upgrade() {
-                rewrap_all_message_lines_for_pane_width(&ui);
-            }
+    wire!(ui, on_chat_pane_width_changed [], |ui, px| {
+        if !set_bubble_budget(px) {
+            return;
         }
+        rewrap_all_message_lines_for_pane_width(&ui);
     });
 
-    ui.global::<AppState>().on_accent_selected({
-        let weak = ui.as_weak();
-        let settings_cell = settings_cell.clone();
-        move |idx| {
-            let color = accent_color_name(idx);
-            {
-                let mut s = settings_cell.borrow_mut();
-                s.accent_color = color.to_string();
-                s.save();
-            }
-            if let Some(ui) = weak.upgrade() {
-                set_accent_index(&ui, accent_color_idx(color));
-            }
+    wire!(ui, on_accent_selected [settings_cell], |ui, idx| {
+        let color = accent_color_name(idx);
+        {
+            let mut s = settings_cell.borrow_mut();
+            s.accent_color = color.to_string();
+            s.save();
         }
+        set_accent_index(&ui, accent_color_idx(color));
     });
 
     ui.global::<AppState>().on_debug_toggled({
@@ -817,21 +738,15 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.global::<AppState>().on_launch_at_login_toggled({
-        let weak = ui.as_weak();
-        let settings_cell = settings_cell.clone();
-        move |on| {
-            if let Err(e) = startup::set_launch_at_login(on) {
-                tracing::warn!(target: "startup", on, "set launch-at-login failed: {e}");
-                if let Some(ui) = weak.upgrade() {
-                    ui.set_launch_at_login(!on);
-                }
-                return;
-            }
-            let mut s = settings_cell.borrow_mut();
-            s.launch_at_login = on;
-            s.save();
+    wire!(ui, on_launch_at_login_toggled [settings_cell], |ui, on| {
+        if let Err(e) = startup::set_launch_at_login(on) {
+            tracing::warn!(target: "startup", on, "set launch-at-login failed: {e}");
+            ui.set_launch_at_login(!on);
+            return;
         }
+        let mut s = settings_cell.borrow_mut();
+        s.launch_at_login = on;
+        s.save();
     });
 
     ui.global::<AppState>().on_start_minimized_to_tray_toggled({
@@ -843,27 +758,19 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.global::<AppState>()
-        .on_restore_last_selected_chat_toggled({
-            let weak = ui.as_weak();
-            let settings_cell = settings_cell.clone();
-            let group_ids = group_ids.clone();
-            move |on| {
-                let current = weak.upgrade().and_then(|ui| {
-                    group_ids
-                        .lock()
-                        .unwrap()
-                        .get(ui.get_active_chat() as usize)
-                        .cloned()
-                });
-                let mut s = settings_cell.borrow_mut();
-                s.restore_last_selected_chat = on;
-                if on && current.is_some() {
-                    s.last_selected_chat = current;
-                }
-                s.save();
-            }
-        });
+    wire!(ui, on_restore_last_selected_chat_toggled [settings_cell, group_ids], |ui, on| {
+        let current = group_ids
+            .lock()
+            .unwrap()
+            .get(ui.get_active_chat() as usize)
+            .cloned();
+        let mut s = settings_cell.borrow_mut();
+        s.restore_last_selected_chat = on;
+        if on && current.is_some() {
+            s.last_selected_chat = current;
+        }
+        s.save();
+    });
 
     ui.global::<AppState>().on_notifications_toggled({
         let settings_cell = settings_cell.clone();
@@ -918,132 +825,104 @@ pub(crate) fn wire_panes(
 
     // Mute / unmute the currently-open chat (header bell). Flips the live
     // NotifState set + the persisted settings, and updates the header.
-    ui.global::<AppState>().on_toggle_mute_chat({
-        let weak = ui.as_weak();
-        let group_ids = group_ids.clone();
-        let settings_cell = settings_cell.clone();
-        let notif = notif.clone();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            let idx = ui.get_active_chat();
-            let group_hex = group_ids.lock().unwrap().get(idx as usize).cloned();
-            let Some(group_hex) = group_hex else { return };
-            let now_muted = !notif.is_muted(&group_hex);
-            notif.set_muted(&group_hex, now_muted);
-            {
-                let mut s = settings_cell.borrow_mut();
-                if now_muted {
-                    s.muted_chats.insert(group_hex);
-                } else {
-                    s.muted_chats.remove(&group_hex);
-                }
-                s.save();
+    wire!(ui, on_toggle_mute_chat [group_ids, settings_cell, notif], |ui| {
+        let idx = ui.get_active_chat();
+        let group_hex = group_ids.lock().unwrap().get(idx as usize).cloned();
+        let Some(group_hex) = group_hex else { return };
+        let now_muted = !notif.is_muted(&group_hex);
+        notif.set_muted(&group_hex, now_muted);
+        {
+            let mut s = settings_cell.borrow_mut();
+            if now_muted {
+                s.muted_chats.insert(group_hex);
+            } else {
+                s.muted_chats.remove(&group_hex);
             }
-            ui.set_active_chat_muted(now_muted);
-            set_chat_row_muted(&ui, idx, now_muted);
+            s.save();
         }
+        ui.set_active_chat_muted(now_muted);
+        set_chat_row_muted(&ui, idx, now_muted);
     });
 
     // Right-click a rail chat row: resolve the row's group id, read its live
     // pin + mute state (Rust owns both sets), and open the context menu at the
     // cursor. The menu itself is Slint; only the state lookup needs Rust.
-    ui.global::<AppState>().on_request_chat_context({
-        let weak = ui.as_weak();
-        let group_ids = group_ids.clone();
-        let notif = notif.clone();
-        let backend_cell = backend_cell.clone();
-        move |idx, ax, ay| {
-            let Some(ui) = weak.upgrade() else { return };
-            let group_hex = group_ids.lock().unwrap().get(idx as usize).cloned();
-            let Some(group_hex) = group_hex else { return };
-            let (can_leave, is_self_chat) = backend_cell
-                .lock()
-                .unwrap()
-                .as_ref()
-                .map(|b| {
-                    let is_group = b.group_member_count(&group_hex) > 2;
-                    let is_admin = b.is_group_admin(&group_hex);
-                    let is_self = b.find_self_chat().as_deref() == Some(group_hex.as_str());
-                    (chat_context_can_leave_group(is_group, is_admin), is_self)
-                })
-                .unwrap_or((false, false));
-            ui.set_chat_ctx_idx(idx);
-            ui.set_chat_ctx_x(ax);
-            ui.set_chat_ctx_y(ay);
-            ui.set_chat_ctx_pinned(is_pinned(&group_hex));
-            ui.set_chat_ctx_muted(notif.is_muted(&group_hex));
-            ui.set_chat_ctx_unread(
-                !ui.get_chats()
-                    .row_data(idx as usize)
-                    .is_some_and(|r| r.read),
-            );
-            ui.set_chat_ctx_can_leave(can_leave);
-            // The self-chat is permanently pinned to the top; drop the Pin/Unpin
-            // item so it doesn't present a control that reorders nothing.
-            ui.set_chat_ctx_can_pin(!is_self_chat);
-            ui.set_chat_ctx_open(true);
-        }
+    wire!(ui, on_request_chat_context [group_ids, notif, backend_cell], |ui, idx, ax, ay| {
+        let group_hex = group_ids.lock().unwrap().get(idx as usize).cloned();
+        let Some(group_hex) = group_hex else { return };
+        let (can_leave, is_self_chat) = backend_cell
+            .lock()
+            .unwrap()
+            .as_ref()
+            .map(|b| {
+                let is_group = b.group_member_count(&group_hex) > 2;
+                let is_admin = b.is_group_admin(&group_hex);
+                let is_self = b.find_self_chat().as_deref() == Some(group_hex.as_str());
+                (chat_context_can_leave_group(is_group, is_admin), is_self)
+            })
+            .unwrap_or((false, false));
+        ui.set_chat_ctx_idx(idx);
+        ui.set_chat_ctx_x(ax);
+        ui.set_chat_ctx_y(ay);
+        ui.set_chat_ctx_pinned(is_pinned(&group_hex));
+        ui.set_chat_ctx_muted(notif.is_muted(&group_hex));
+        ui.set_chat_ctx_unread(
+            !ui.get_chats()
+                .row_data(idx as usize)
+                .is_some_and(|r| r.read),
+        );
+        ui.set_chat_ctx_can_leave(can_leave);
+        // The self-chat is permanently pinned to the top; drop the Pin/Unpin
+        // item so it doesn't present a control that reorders nothing.
+        ui.set_chat_ctx_can_pin(!is_self_chat);
+        ui.set_chat_ctx_open(true);
     });
 
     // Pin / unpin a chat to the top of the rail. Flips the live pinned set +
     // the persisted settings, then re-sorts the chat list — keeping whatever
     // chat is currently open selected across the reorder.
-    ui.global::<AppState>().on_toggle_pin_chat({
-        let weak = ui.as_weak();
-        let group_ids = group_ids.clone();
-        let settings_cell = settings_cell.clone();
-        let backend_cell = backend_cell.clone();
-        move |idx| {
-            let Some(ui) = weak.upgrade() else { return };
-            let group_hex = group_ids.lock().unwrap().get(idx as usize).cloned();
-            let Some(group_hex) = group_hex else { return };
-            let now_pinned = toggle_pinned(&group_hex);
-            {
-                let mut s = settings_cell.borrow_mut();
-                if now_pinned {
-                    s.pinned_chats.insert(group_hex.clone());
-                } else {
-                    s.pinned_chats.remove(&group_hex);
-                }
-                s.save();
+    wire!(ui, on_toggle_pin_chat [group_ids, settings_cell, backend_cell], |ui, idx| {
+        let group_hex = group_ids.lock().unwrap().get(idx as usize).cloned();
+        let Some(group_hex) = group_hex else { return };
+        let now_pinned = toggle_pinned(&group_hex);
+        {
+            let mut s = settings_cell.borrow_mut();
+            if now_pinned {
+                s.pinned_chats.insert(group_hex.clone());
+            } else {
+                s.pinned_chats.remove(&group_hex);
             }
-            let Some(backend) = backend_cell.lock().unwrap().clone() else {
-                return;
-            };
-            // Re-order in place (preserving loaded messages + the open chat),
-            // rather than a full refresh which would blank the conversation.
-            reorder_chats_by_pin_async(&ui, &backend, &group_ids);
+            s.save();
         }
+        let Some(backend) = backend_cell.lock().unwrap().clone() else {
+            return;
+        };
+        // Re-order in place (preserving loaded messages + the open chat),
+        // rather than a full refresh which would blank the conversation.
+        reorder_chats_by_pin_async(&ui, &backend, &group_ids);
     });
 
     // Mute / unmute a specific rail row (from its context menu) — same effect
     // as the header bell, but targets the right-clicked chat by index rather
     // than the open one. Keeps the header in sync when they coincide.
-    ui.global::<AppState>().on_toggle_mute_chat_at({
-        let weak = ui.as_weak();
-        let group_ids = group_ids.clone();
-        let settings_cell = settings_cell.clone();
-        let notif = notif.clone();
-        move |idx| {
-            let Some(ui) = weak.upgrade() else { return };
-            let group_hex = group_ids.lock().unwrap().get(idx as usize).cloned();
-            let Some(group_hex) = group_hex else { return };
-            let now_muted = !notif.is_muted(&group_hex);
-            notif.set_muted(&group_hex, now_muted);
-            {
-                let mut s = settings_cell.borrow_mut();
-                if now_muted {
-                    s.muted_chats.insert(group_hex.clone());
-                } else {
-                    s.muted_chats.remove(&group_hex);
-                }
-                s.save();
+    wire!(ui, on_toggle_mute_chat_at [group_ids, settings_cell, notif], |ui, idx| {
+        let group_hex = group_ids.lock().unwrap().get(idx as usize).cloned();
+        let Some(group_hex) = group_hex else { return };
+        let now_muted = !notif.is_muted(&group_hex);
+        notif.set_muted(&group_hex, now_muted);
+        {
+            let mut s = settings_cell.borrow_mut();
+            if now_muted {
+                s.muted_chats.insert(group_hex.clone());
+            } else {
+                s.muted_chats.remove(&group_hex);
             }
-            if idx == ui.get_active_chat() {
-                ui.set_active_chat_muted(now_muted);
-            }
-            set_chat_row_muted(&ui, idx, now_muted);
+            s.save();
         }
+        if idx == ui.get_active_chat() {
+            ui.set_active_chat_muted(now_muted);
+        }
+        set_chat_row_muted(&ui, idx, now_muted);
     });
 
     // Mark a specific rail row read or unread (from its context menu).
@@ -1053,37 +932,31 @@ pub(crate) fn wire_panes(
     // be flagged to come back to — `record_count`/`chat_meta_from` are what
     // floor the badge at 1 on the next recompute; this handler pokes the row
     // directly so the badge appears immediately.
-    ui.global::<AppState>().on_toggle_read_chat_at({
-        let weak = ui.as_weak();
-        let group_ids = group_ids.clone();
-        let settings_cell = settings_cell.clone();
-        move |idx| {
-            let Some(ui) = weak.upgrade() else { return };
-            let group_hex = group_ids.lock().unwrap().get(idx as usize).cloned();
-            let Some(group_hex) = group_hex else { return };
-            let now_unread = !ui
-                .get_chats()
-                .row_data(idx as usize)
-                .map(|r| r.read)
-                .unwrap_or(true);
-            let mut s = settings_cell.borrow_mut();
-            if now_unread {
-                unread_state().set_forced_unread(&group_hex, true);
-                unread_state().set_count(&group_hex, 1);
-                s.manually_unread.insert(group_hex.clone());
-                set_chat_row_unread(&ui, idx as usize, 1);
-            } else {
-                let now = now_unix_secs() as i64;
-                unread_state().mark_read(&group_hex, now);
-                s.last_read.insert(group_hex.clone(), now);
-                s.manually_unread.remove(&group_hex);
-                clear_chat_unread_row(&ui, idx as usize);
-            }
-            s.save();
-            drop(s);
-            set_rail_badges(&ui, &ui.get_chats());
-            refresh_unread_chrome(&ui);
+    wire!(ui, on_toggle_read_chat_at [group_ids, settings_cell], |ui, idx| {
+        let group_hex = group_ids.lock().unwrap().get(idx as usize).cloned();
+        let Some(group_hex) = group_hex else { return };
+        let now_unread = !ui
+            .get_chats()
+            .row_data(idx as usize)
+            .map(|r| r.read)
+            .unwrap_or(true);
+        let mut s = settings_cell.borrow_mut();
+        if now_unread {
+            unread_state().set_forced_unread(&group_hex, true);
+            unread_state().set_count(&group_hex, 1);
+            s.manually_unread.insert(group_hex.clone());
+            set_chat_row_unread(&ui, idx as usize, 1);
+        } else {
+            let now = now_unix_secs() as i64;
+            unread_state().mark_read(&group_hex, now);
+            s.last_read.insert(group_hex.clone(), now);
+            s.manually_unread.remove(&group_hex);
+            clear_chat_unread_row(&ui, idx as usize);
         }
+        s.save();
+        drop(s);
+        set_rail_badges(&ui, &ui.get_chats());
+        refresh_unread_chrome(&ui);
     });
 
     // Export the right-clicked chat's transcript to an HTML (default) or
@@ -1092,170 +965,132 @@ pub(crate) fn wire_panes(
     // the native save dialog, the image download/decrypt, and the file write go
     // to a blocking task, the same split as the "Save attachment" path. The
     // final extension picks the format: `.md` for Markdown, otherwise HTML.
-    ui.global::<AppState>().on_export_chat_at({
-        let weak = ui.as_weak();
-        let group_ids = group_ids.clone();
-        let backend_cell = backend_cell.clone();
-        let vault_cell = vault_cell.clone();
-        move |idx| {
-            let Some(ui) = weak.upgrade() else { return };
-            let group_hex = group_ids.lock().unwrap().get(idx as usize).cloned();
-            let Some(group_hex) = group_hex else { return };
-            let Some(backend) = backend_cell.lock().unwrap().clone() else {
-                return;
-            };
-            let chat_name = ui
-                .get_chats()
-                .row_data(idx as usize)
-                .map(|c| c.name.to_string())
-                .unwrap_or_default();
-            let transcript = build_transcript(&backend, &group_hex, &chat_name);
-            if transcript.is_empty() {
-                tracing::info!(target: "export", "no messages to export for {group_hex}");
-                return;
-            }
-            let default_name = format!("{}.html", safe_file_stem(&chat_name));
-            let vault = vault_cell.lock().unwrap().clone();
-            backend.tokio_handle().spawn(async move {
-                let chosen = tokio::task::spawn_blocking(move || {
-                    rfd::FileDialog::new()
-                        .set_title("Export chat transcript")
-                        .set_file_name(&default_name)
-                        .add_filter("HTML", &["html", "htm"])
-                        .add_filter("Markdown", &["md"])
-                        .save_file()
-                })
-                .await
-                .ok()
-                .flatten();
-                let Some(path) = chosen else { return };
-                let format = ExportFormat::from_path(&path);
-                // HTML embeds each image inline, so decrypt them off the UI
-                // thread first; Markdown keeps images as notes and needs none.
-                let images = if format == ExportFormat::Html {
-                    collect_image_data(
-                        &backend,
-                        vault.as_ref(),
-                        transcript.group_hex(),
-                        &transcript.image_references(),
-                    )
-                    .await
-                } else {
-                    ImageData::new()
-                };
-                let contents = render(&transcript, format, &images);
-                match tokio::task::spawn_blocking(move || {
-                    std::fs::write(&path, contents.as_bytes())
-                })
-                .await
-                {
-                    Ok(Err(e)) => tracing::warn!(target: "export", "write: {e:#}"),
-                    Err(e) => tracing::warn!(target: "export", "write join: {e:#}"),
-                    Ok(Ok(())) => {}
-                }
-            });
+    wire!(ui, on_export_chat_at [group_ids, backend_cell, vault_cell], |ui, idx| {
+        let group_hex = group_ids.lock().unwrap().get(idx as usize).cloned();
+        let Some(group_hex) = group_hex else { return };
+        let Some(backend) = backend_cell.lock().unwrap().clone() else {
+            return;
+        };
+        let chat_name = ui
+            .get_chats()
+            .row_data(idx as usize)
+            .map(|c| c.name.to_string())
+            .unwrap_or_default();
+        let transcript = build_transcript(&backend, &group_hex, &chat_name);
+        if transcript.is_empty() {
+            tracing::info!(target: "export", "no messages to export for {group_hex}");
+            return;
         }
+        let default_name = format!("{}.html", safe_file_stem(&chat_name));
+        let vault = vault_cell.lock().unwrap().clone();
+        backend.tokio_handle().spawn(async move {
+            let chosen = tokio::task::spawn_blocking(move || {
+                rfd::FileDialog::new()
+                    .set_title("Export chat transcript")
+                    .set_file_name(&default_name)
+                    .add_filter("HTML", &["html", "htm"])
+                    .add_filter("Markdown", &["md"])
+                    .save_file()
+            })
+            .await
+            .ok()
+            .flatten();
+            let Some(path) = chosen else { return };
+            let format = ExportFormat::from_path(&path);
+            // HTML embeds each image inline, so decrypt them off the UI
+            // thread first; Markdown keeps images as notes and needs none.
+            let images = if format == ExportFormat::Html {
+                collect_image_data(
+                    &backend,
+                    vault.as_ref(),
+                    transcript.group_hex(),
+                    &transcript.image_references(),
+                )
+                .await
+            } else {
+                ImageData::new()
+            };
+            let contents = render(&transcript, format, &images);
+            match tokio::task::spawn_blocking(move || {
+                std::fs::write(&path, contents.as_bytes())
+            })
+            .await
+            {
+                Ok(Err(e)) => tracing::warn!(target: "export", "write: {e:#}"),
+                Err(e) => tracing::warn!(target: "export", "write join: {e:#}"),
+                Ok(Ok(())) => {}
+            }
+        });
     });
 
     // Save (or clear) the right-clicked chat's organizing label from the
     // LabelModal. Mirrors the mute-at handler's split: update the live
     // singleton + Settings, patch the one row in place, then refresh the
     // filter-chip row so a brand-new label shows up as a chip immediately.
-    ui.global::<AppState>().on_set_chat_label({
-        let weak = ui.as_weak();
-        let group_ids = group_ids.clone();
-        let settings_cell = settings_cell.clone();
-        move |idx, label| {
-            let Some(ui) = weak.upgrade() else { return };
-            let group_hex = group_ids.lock().unwrap().get(idx as usize).cloned();
-            let Some(group_hex) = group_hex else { return };
-            let label = label.trim().to_string();
-            set_chat_label(&group_hex, &label);
-            {
-                let mut s = settings_cell.borrow_mut();
-                if label.is_empty() {
-                    s.chat_labels.remove(&group_hex);
-                } else {
-                    s.chat_labels.insert(group_hex.clone(), label.clone());
-                }
-                s.save();
+    wire!(ui, on_set_chat_label [group_ids, settings_cell], |ui, idx, label| {
+        let group_hex = group_ids.lock().unwrap().get(idx as usize).cloned();
+        let Some(group_hex) = group_hex else { return };
+        let label = label.trim().to_string();
+        set_chat_label(&group_hex, &label);
+        {
+            let mut s = settings_cell.borrow_mut();
+            if label.is_empty() {
+                s.chat_labels.remove(&group_hex);
+            } else {
+                s.chat_labels.insert(group_hex.clone(), label.clone());
             }
-            set_chat_row_label(&ui, idx, &label);
-            push_known_chat_labels(&ui);
-            ui.set_show_label_modal(false);
-            ui.set_label_input(s(""));
-            ui.set_label_modal_idx(-1);
+            s.save();
         }
+        set_chat_row_label(&ui, idx, &label);
+        push_known_chat_labels(&ui);
+        ui.set_show_label_modal(false);
+        ui.set_label_input(s(""));
+        ui.set_label_modal_idx(-1);
     });
-    ui.global::<AppState>().on_label_modal_dismissed({
-        let weak = ui.as_weak();
-        move || {
-            if let Some(ui) = weak.upgrade() {
-                ui.set_show_label_modal(false);
-                ui.set_label_input(s(""));
-                ui.set_label_modal_idx(-1);
-            }
-        }
+    wire!(ui, on_label_modal_dismissed [], |ui| {
+        ui.set_show_label_modal(false);
+        ui.set_label_input(s(""));
+        ui.set_label_modal_idx(-1);
     });
 
-    ui.global::<AppState>().on_time_format_selected({
-        let weak = ui.as_weak();
-        let settings_cell = settings_cell.clone();
-        let backend_cell = backend_cell.clone();
-        let pending_state = pending_state.clone();
-        let group_ids = group_ids.clone();
-        let archived_group_ids = archived_group_ids.clone();
-        move |fmt| {
-            let fmt = if fmt.as_str() == "12h" { "12h" } else { "24h" };
-            {
-                let mut st = settings_cell.borrow_mut();
-                st.time_format = fmt.to_string();
-                st.save();
-                apply_stamp_formats(&st);
-            }
-            if let Some(ui) = weak.upgrade() {
-                ui.set_time_format(s(fmt));
-                refresh_stamps_everywhere(
-                    &ui,
-                    &backend_cell,
-                    &pending_state,
-                    &group_ids,
-                    &archived_group_ids,
-                );
-            }
+    wire!(ui, on_time_format_selected [settings_cell, backend_cell, pending_state, group_ids, archived_group_ids], |ui, fmt| {
+        let fmt = if fmt.as_str() == "12h" { "12h" } else { "24h" };
+        {
+            let mut st = settings_cell.borrow_mut();
+            st.time_format = fmt.to_string();
+            st.save();
+            apply_stamp_formats(&st);
         }
+        ui.set_time_format(s(fmt));
+        refresh_stamps_everywhere(
+            &ui,
+            &backend_cell,
+            &pending_state,
+            &group_ids,
+            &archived_group_ids,
+        );
     });
 
-    ui.global::<AppState>().on_date_format_selected({
-        let weak = ui.as_weak();
-        let settings_cell = settings_cell.clone();
-        let backend_cell = backend_cell.clone();
-        let pending_state = pending_state.clone();
-        let group_ids = group_ids.clone();
-        let archived_group_ids = archived_group_ids.clone();
-        move |fmt| {
-            let fmt = match fmt.as_str() {
-                "dmy" => "dmy",
-                "iso" => "iso",
-                _ => "mdy",
-            };
-            {
-                let mut st = settings_cell.borrow_mut();
-                st.date_format = fmt.to_string();
-                st.save();
-                apply_stamp_formats(&st);
-            }
-            if let Some(ui) = weak.upgrade() {
-                ui.set_date_format(s(fmt));
-                refresh_stamps_everywhere(
-                    &ui,
-                    &backend_cell,
-                    &pending_state,
-                    &group_ids,
-                    &archived_group_ids,
-                );
-            }
+    wire!(ui, on_date_format_selected [settings_cell, backend_cell, pending_state, group_ids, archived_group_ids], |ui, fmt| {
+        let fmt = match fmt.as_str() {
+            "dmy" => "dmy",
+            "iso" => "iso",
+            _ => "mdy",
+        };
+        {
+            let mut st = settings_cell.borrow_mut();
+            st.date_format = fmt.to_string();
+            st.save();
+            apply_stamp_formats(&st);
         }
+        ui.set_date_format(s(fmt));
+        refresh_stamps_everywhere(
+            &ui,
+            &backend_cell,
+            &pending_state,
+            &group_ids,
+            &archived_group_ids,
+        );
     });
 
     ui.global::<AppState>().on_debug_load({
@@ -1291,12 +1126,8 @@ pub(crate) fn wire_panes(
     });
 
     // Fold/unfold a container line in the Debug pane's dump viewer.
-    ui.global::<AppState>().on_debug_dump_toggle({
-        let weak = ui.as_weak();
-        move |logical| {
-            let Some(ui) = weak.upgrade() else { return };
-            ui.set_debug_dump_rows(json_doc_toggle(JsonSlot::Dump, logical));
-        }
+    wire!(ui, on_debug_dump_toggle [], |ui, logical| {
+        ui.set_debug_dump_rows(json_doc_toggle(JsonSlot::Dump, logical));
     });
 
     ui.global::<AppState>().on_debug_copy_clicked({
@@ -1323,135 +1154,115 @@ pub(crate) fn wire_panes(
     });
 
     // ─── Security & privacy toggles ────────────────────────────────────
-    ui.global::<AppState>().on_telemetry_toggled({
+    wire!(ui, on_telemetry_toggled [backend_cell], |ui, on| {
+        // The marmot settings store is a synchronous disk write — never
+        // run it on the UI thread (or while holding the cell lock).
+        let Some(b) = backend_cell.lock().ok().and_then(|g| g.as_ref().cloned()) else {
+            ui.set_telemetry_enabled(!on);
+            return;
+        };
         let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        move |on| {
-            let Some(ui) = weak.upgrade() else { return };
-            // The marmot settings store is a synchronous disk write — never
-            // run it on the UI thread (or while holding the cell lock).
-            let Some(b) = backend_cell.lock().ok().and_then(|g| g.as_ref().cloned()) else {
-                ui.set_telemetry_enabled(!on);
-                return;
-            };
-            let weak = ui.as_weak();
-            spawn_ui(
-                weak,
-                move || b.set_telemetry_enabled(on),
-                move |ui, result| {
-                    if let Err(e) = result {
-                        tracing::warn!(target: "settings", "set telemetry failed: {e}");
-                        ui.set_telemetry_enabled(!on);
-                    }
-                },
-            );
-        }
+        spawn_ui(
+            weak,
+            move || b.set_telemetry_enabled(on),
+            move |ui, result| {
+                if let Err(e) = result {
+                    tracing::warn!(target: "settings", "set telemetry failed: {e}");
+                    ui.set_telemetry_enabled(!on);
+                }
+            },
+        );
     });
 
-    ui.global::<AppState>().on_audit_toggled({
+    wire!(ui, on_audit_toggled [backend_cell], |ui, on| {
+        let Some(b) = backend_cell.lock().ok().and_then(|g| g.as_ref().cloned()) else {
+            ui.set_audit_enabled(!on);
+            return;
+        };
+        // Persist + hot-swap the recorder on running sessions (no restart).
+        // Applying the switch awaits each account worker's FIFO queue, which
+        // a misbehaving relay can hold for ~35s — never block here.
         let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        move |on| {
-            let Some(ui) = weak.upgrade() else { return };
-            let Some(b) = backend_cell.lock().ok().and_then(|g| g.as_ref().cloned()) else {
-                ui.set_audit_enabled(!on);
-                return;
-            };
-            // Persist + hot-swap the recorder on running sessions (no restart).
-            // Applying the switch awaits each account worker's FIFO queue, which
-            // a misbehaving relay can hold for ~35s — never block here.
-            let weak = ui.as_weak();
-            let fut = b.set_audit_logs_enabled(on);
-            let bg = b.clone();
-            spawn_ui_tokio(
-                &b,
-                weak,
-                async move {
-                    let result = fut.await;
-                    let files = bg.audit_log_files().unwrap_or_default();
-                    (result, files)
-                },
-                move |ui, (result, files)| {
-                    match result {
-                        Ok(()) => show_audit_status(
+        let fut = b.set_audit_logs_enabled(on);
+        let bg = b.clone();
+        spawn_ui_tokio(
+            &b,
+            weak,
+            async move {
+                let result = fut.await;
+                let files = bg.audit_log_files().unwrap_or_default();
+                (result, files)
+            },
+            move |ui, (result, files)| {
+                match result {
+                    Ok(()) => show_audit_status(
+                        &ui,
+                        if on {
+                            error_copy().audit_enabled
+                        } else {
+                            error_copy().audit_disabled
+                        },
+                        StatusKind::Ok,
+                    ),
+                    Err(e) => {
+                        tracing::warn!(target: "settings", "set audit logs failed: {e:#}");
+                        ui.set_audit_enabled(!on);
+                        show_audit_status(
                             &ui,
-                            if on {
-                                error_copy().audit_enabled
-                            } else {
-                                error_copy().audit_disabled
-                            },
-                            StatusKind::Ok,
-                        ),
-                        Err(e) => {
-                            tracing::warn!(target: "settings", "set audit logs failed: {e:#}");
-                            ui.set_audit_enabled(!on);
-                            show_audit_status(
-                                &ui,
-                                error_copy().audit_change_failed,
-                                StatusKind::Error,
-                            );
-                        }
+                            error_copy().audit_change_failed,
+                            StatusKind::Error,
+                        );
                     }
-                    push_audit_files(&ui, files);
-                },
-            );
-        }
+                }
+                push_audit_files(&ui, files);
+            },
+        );
     });
 
-    ui.global::<AppState>().on_audit_refresh_files({
-        let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            let Some(b) = backend_cell.lock().ok().and_then(|g| g.as_ref().cloned()) else {
-                return;
-            };
-            refresh_audit_files(&ui, &b);
-        }
+    wire!(ui, on_audit_refresh_files [backend_cell], |ui| {
+        let Some(b) = backend_cell.lock().ok().and_then(|g| g.as_ref().cloned()) else {
+            return;
+        };
+        refresh_audit_files(&ui, &b);
     });
 
-    ui.global::<AppState>().on_audit_delete_file({
+    wire!(ui, on_audit_delete_file [backend_cell], |ui, path| {
+        let Some(b) = backend_cell.lock().ok().and_then(|g| g.as_ref().cloned()) else {
+            return;
+        };
         let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        move |path| {
-            let Some(ui) = weak.upgrade() else { return };
-            let Some(b) = backend_cell.lock().ok().and_then(|g| g.as_ref().cloned()) else {
-                return;
-            };
-            let weak = ui.as_weak();
-            let fut = b.delete_audit_log_file(path.to_string());
-            let bg = b.clone();
-            spawn_ui_tokio(
-                &b,
-                weak,
-                async move {
-                    let result = fut.await;
-                    let files = bg.audit_log_files().unwrap_or_default();
-                    (result, files)
-                },
-                move |ui, (result, files)| {
-                    match result {
-                        // `true` = the live recorder owned that file and
-                        // rotated in place rather than going dark.
-                        Ok(true) => {
-                            show_audit_status(&ui, error_copy().audit_deleted_live, StatusKind::Ok)
-                        }
-                        Ok(false) => {
-                            show_audit_status(&ui, error_copy().audit_deleted, StatusKind::Ok)
-                        }
-                        Err(e) => {
-                            tracing::warn!(target: "settings", "delete audit log failed: {e:#}");
-                            show_audit_status(
-                                &ui,
-                                error_copy().audit_delete_failed,
-                                StatusKind::Error,
-                            );
-                        }
+        let fut = b.delete_audit_log_file(path.to_string());
+        let bg = b.clone();
+        spawn_ui_tokio(
+            &b,
+            weak,
+            async move {
+                let result = fut.await;
+                let files = bg.audit_log_files().unwrap_or_default();
+                (result, files)
+            },
+            move |ui, (result, files)| {
+                match result {
+                    // `true` = the live recorder owned that file and
+                    // rotated in place rather than going dark.
+                    Ok(true) => {
+                        show_audit_status(&ui, error_copy().audit_deleted_live, StatusKind::Ok)
                     }
-                    push_audit_files(&ui, files);
-                },
-            );
-        }
+                    Ok(false) => {
+                        show_audit_status(&ui, error_copy().audit_deleted, StatusKind::Ok)
+                    }
+                    Err(e) => {
+                        tracing::warn!(target: "settings", "delete audit log failed: {e:#}");
+                        show_audit_status(
+                            &ui,
+                            error_copy().audit_delete_failed,
+                            StatusKind::Error,
+                        );
+                    }
+                }
+                push_audit_files(&ui, files);
+            },
+        );
     });
 
     wire_network(ui, cx, boot_backend);
@@ -1534,18 +1345,14 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.global::<AppState>().on_reveal_nsec_dismissed({
-        let weak = ui.as_weak();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            // Drop the revealed key and the typed password the moment the
-            // dialog closes — don't leave either lingering in UI state.
-            ui.set_reveal_nsec_password(s(""));
-            ui.set_reveal_nsec_value(s(""));
-            ui.set_reveal_nsec_status(s(""));
-            ui.set_reveal_nsec_status_error(false);
-            ui.set_reveal_nsec_busy(false);
-        }
+    wire!(ui, on_reveal_nsec_dismissed [], |ui| {
+        // Drop the revealed key and the typed password the moment the
+        // dialog closes — don't leave either lingering in UI state.
+        ui.set_reveal_nsec_password(s(""));
+        ui.set_reveal_nsec_value(s(""));
+        ui.set_reveal_nsec_status(s(""));
+        ui.set_reveal_nsec_status_error(false);
+        ui.set_reveal_nsec_busy(false);
     });
 
     ui.global::<AppState>().on_reveal_nsec_copy({
@@ -1633,18 +1440,14 @@ pub(crate) fn wire_panes(
         }
     });
 
-    ui.global::<AppState>().on_export_key_dismissed({
-        let weak = ui.as_weak();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            // Drop the encrypted key and the typed password the moment the
-            // dialog closes — don't leave either lingering in UI state.
-            ui.set_export_key_password(s(""));
-            ui.set_export_key_value(s(""));
-            ui.set_export_key_status(s(""));
-            ui.set_export_key_status_error(false);
-            ui.set_export_key_busy(false);
-        }
+    wire!(ui, on_export_key_dismissed [], |ui| {
+        // Drop the encrypted key and the typed password the moment the
+        // dialog closes — don't leave either lingering in UI state.
+        ui.set_export_key_password(s(""));
+        ui.set_export_key_value(s(""));
+        ui.set_export_key_status(s(""));
+        ui.set_export_key_status_error(false);
+        ui.set_export_key_busy(false);
     });
 
     // After any selection mutation, refresh the breadcrumb so the title bar matches state.

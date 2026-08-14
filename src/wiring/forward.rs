@@ -31,49 +31,43 @@ pub(crate) fn wire_forward(ui: &WhiteNoiseLinux, cx: &Cx) {
     // first, see `Settings::recent_forwards`) and the visible subsequence of
     // that order. The picker also fires this on open with the empty query, so
     // all three arrays are fresh for the current active chat.
-    ui.global::<AppState>().on_forward_filter_changed({
-        let weak = ui.as_weak();
-        let group_ids = group_ids.clone();
-        let settings_cell = settings_cell.clone();
-        move |query| {
-            let Some(ui) = weak.upgrade() else { return };
-            let q = query.to_lowercase();
-            let active = ui.get_active_chat();
-            let flags: Vec<bool> = ui
-                .get_chats()
-                .iter()
-                .map(|c| q.is_empty() || c.name.to_lowercase().contains(&q))
-                .collect();
+    wire!(ui, on_forward_filter_changed [group_ids, settings_cell], |ui, query| {
+        let q = query.to_lowercase();
+        let active = ui.get_active_chat();
+        let flags: Vec<bool> = ui
+            .get_chats()
+            .iter()
+            .map(|c| q.is_empty() || c.name.to_lowercase().contains(&q))
+            .collect();
 
-            let recent = settings_cell.borrow().recent_forwards.clone();
-            let ids = group_ids.lock().unwrap();
-            let mut seen = vec![false; ids.len()];
-            let mut order: Vec<i32> = Vec::with_capacity(ids.len());
-            for group_hex in &recent {
-                if let Some(idx) = ids.iter().position(|g| g == group_hex)
-                    && !seen[idx]
-                {
-                    seen[idx] = true;
-                    order.push(idx as i32);
-                }
+        let recent = settings_cell.borrow().recent_forwards.clone();
+        let ids = group_ids.lock().unwrap();
+        let mut seen = vec![false; ids.len()];
+        let mut order: Vec<i32> = Vec::with_capacity(ids.len());
+        for group_hex in &recent {
+            if let Some(idx) = ids.iter().position(|g| g == group_hex)
+                && !seen[idx]
+            {
+                seen[idx] = true;
+                order.push(idx as i32);
             }
-            for (idx, was_seen) in seen.into_iter().enumerate() {
-                if !was_seen {
-                    order.push(idx as i32);
-                }
-            }
-            drop(ids);
-
-            let visible: Vec<i32> = order
-                .iter()
-                .copied()
-                .filter(|&idx| flags.get(idx as usize).copied().unwrap_or(false) && idx != active)
-                .collect();
-
-            ui.set_forward_match_flags(model(flags));
-            ui.set_forward_visible_rows(model(visible));
-            ui.set_forward_chat_order(model(order));
         }
+        for (idx, was_seen) in seen.into_iter().enumerate() {
+            if !was_seen {
+                order.push(idx as i32);
+            }
+        }
+        drop(ids);
+
+        let visible: Vec<i32> = order
+            .iter()
+            .copied()
+            .filter(|&idx| flags.get(idx as usize).copied().unwrap_or(false) && idx != active)
+            .collect();
+
+        ui.set_forward_match_flags(model(flags));
+        ui.set_forward_visible_rows(model(visible));
+        ui.set_forward_chat_order(model(order));
     });
 
     ui.global::<AppState>().on_request_forward({
@@ -339,8 +333,7 @@ fn render_forward_placeholder(cx: &ForwardCx, dest_group: &str, bubble: &Forward
     let cx = cx.clone();
     let dest_group = dest_group.to_string();
     let send = placeholder_send(bubble);
-    let _ = slint::invoke_from_event_loop(move || {
-        let Some(ui) = cx.weak.upgrade() else { return };
+    ui_update!(cx.weak, move |ui| {
         let Some(idx) = cx
             .group_ids
             .lock()
@@ -516,8 +509,7 @@ fn mark_forward_row_failed(cx: &ForwardCx, dest_group: &str, temp_id: &str) {
     let cx = cx.clone();
     let dest_group = dest_group.to_string();
     let temp_id = temp_id.to_string();
-    let _ = slint::invoke_from_event_loop(move || {
-        let Some(ui) = cx.weak.upgrade() else { return };
+    ui_update!(cx.weak, move |ui| {
         let Some(idx) = cx
             .group_ids
             .lock()
@@ -551,9 +543,7 @@ fn mark_forward_row_failed(cx: &ForwardCx, dest_group: &str, temp_id: &str) {
 /// Surface the forward's failed-attachment count on the error banner — the same
 /// surface the text-forward path reports on via `ErrorOp::Forward`.
 fn report_forward_failure(cx: &ForwardCx, failed: usize, total: usize) {
-    let weak = cx.weak.clone();
-    let _ = slint::invoke_from_event_loop(move || {
-        let Some(ui) = weak.upgrade() else { return };
+    ui_update!(cx.weak, move |ui| {
         let copy = error_copy();
         show_backend_error(
             &ui,

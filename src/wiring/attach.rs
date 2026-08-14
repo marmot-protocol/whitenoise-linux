@@ -62,7 +62,6 @@ pub(crate) fn spawn_attachment_send(
     reuse: Option<PendingReuse>,
 ) {
     let size_bytes = bytes.len() as u64;
-    let weak2 = weak;
     let backend_cell2 = backend_cell;
     let group_ids2 = group_ids;
     let pending_state2 = pending_state;
@@ -70,8 +69,7 @@ pub(crate) fn spawn_attachment_send(
     let file_name_u = file_name.clone();
     let media_type_u = media_type.clone();
     let bytes_for_queue = bytes.clone();
-    let _ = slint::invoke_from_event_loop(move || {
-        let Some(ui) = weak2.upgrade() else { return };
+    ui_update!(weak, move |ui| {
         let chats_messages = ui.get_chats_messages();
         let ids = group_ids2.lock().unwrap();
         let Some(idx) = ids.iter().position(|g| g == &group_hex2) else {
@@ -152,7 +150,7 @@ pub(crate) fn spawn_attachment_send(
         offline_inflight_insert(&temp_id);
 
         let ctx = SendReconcileCtx {
-            weak: weak2.clone(),
+            weak: weak.clone(),
             backend_cell: backend_cell2.clone(),
             group_ids: group_ids2.clone(),
             pending_state: pending_state2.clone(),
@@ -205,8 +203,7 @@ pub(crate) fn spawn_album_send(
     files: Vec<StagedFile>,
     reuse: Option<PendingReuse>,
 ) {
-    let _ = slint::invoke_from_event_loop(move || {
-        let Some(ui) = weak.upgrade() else { return };
+    ui_update!(weak, move |ui| {
         let chats_messages = ui.get_chats_messages();
         let Some(idx) = group_ids
             .lock()

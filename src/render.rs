@@ -146,15 +146,11 @@ pub(crate) fn effect_from_tags(tags: &[Vec<String>]) -> i32 {
         .unwrap_or(0)
 }
 
-/// Set of message-ids whose effect has already been claimed for autoplay (or
-/// marked seen-during-backfill). Rows rebuild from scratch (reactions, picture
-/// loads, full rebuilds recreate components and re-run `init`), so the
-/// fire-exactly-once decision can't live in Slint state — it lives here.
-pub(crate) fn effect_seen_ids() -> &'static std::sync::Mutex<std::collections::HashSet<String>> {
-    use std::sync::OnceLock;
-    static S: OnceLock<std::sync::Mutex<std::collections::HashSet<String>>> = OnceLock::new();
-    S.get_or_init(|| std::sync::Mutex::new(std::collections::HashSet::new()))
-}
+// Set of message-ids whose effect has already been claimed for autoplay (or
+// marked seen-during-backfill). Rows rebuild from scratch (reactions, picture
+// loads, full rebuilds recreate components and re-run `init`), so the
+// fire-exactly-once decision can't live in Slint state — it lives here.
+global_cell!(pub(crate) fn effect_seen_ids() -> std::collections::HashSet<String> = std::collections::HashSet::new());
 
 /// Whether this build should AUTOPLAY the effect for `message_id`. True only on
 /// the very first time the id is ever built, and only if that first build is

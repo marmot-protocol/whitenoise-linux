@@ -24,41 +24,33 @@ pub(crate) fn wire_reply_target(ui: &WhiteNoiseLinux) {
     // The bubble's "↩" affordance fires `request-reply(id, preview, author)`.
     // We stash all three on the root so the composer chip renders, then the
     // next send pulls them off and routes through `reply_text_async`.
-    ui.global::<AppState>().on_request_reply({
-        let weak = ui.as_weak();
-        move |message_id, preview, author| {
-            let Some(ui) = weak.upgrade() else { return };
-            // Attachment-only rows fire with an empty preview (it's the row's
-            // body text); fall back to the same media label the quoted block
-            // uses so the banner never shows a blank quote.
-            let mut trimmed = truncate_preview(preview.as_str(), 160);
-            if trimmed.is_empty()
-                && let Some(label) =
-                    media_label_for_row(&ui.get_chats_messages(), message_id.as_str())
-            {
-                trimmed = label;
-            }
-            let (thumb, has_thumb) = reply_thumbnail_for(message_id.as_str());
-            let (av_a, av_b, av_init, pic, has_pic) =
-                reply_avatar_for(&ui.get_chats_messages(), message_id.as_str()).unwrap_or_default();
-            ui.set_reply_target_id(message_id);
-            ui.set_reply_target_author(author);
-            ui.set_reply_target_preview(s(&trimmed));
-            ui.set_reply_target_image(thumb);
-            ui.set_reply_target_has_image(has_thumb);
-            ui.set_reply_target_av_a(av_a);
-            ui.set_reply_target_av_b(av_b);
-            ui.set_reply_target_av_initials(av_init);
-            ui.set_reply_target_picture(pic);
-            ui.set_reply_target_has_picture(has_pic);
+    wire!(ui, on_request_reply [], |ui, message_id, preview, author| {
+        // Attachment-only rows fire with an empty preview (it's the row's
+        // body text); fall back to the same media label the quoted block
+        // uses so the banner never shows a blank quote.
+        let mut trimmed = truncate_preview(preview.as_str(), 160);
+        if trimmed.is_empty()
+            && let Some(label) =
+                media_label_for_row(&ui.get_chats_messages(), message_id.as_str())
+        {
+            trimmed = label;
         }
+        let (thumb, has_thumb) = reply_thumbnail_for(message_id.as_str());
+        let (av_a, av_b, av_init, pic, has_pic) =
+            reply_avatar_for(&ui.get_chats_messages(), message_id.as_str()).unwrap_or_default();
+        ui.set_reply_target_id(message_id);
+        ui.set_reply_target_author(author);
+        ui.set_reply_target_preview(s(&trimmed));
+        ui.set_reply_target_image(thumb);
+        ui.set_reply_target_has_image(has_thumb);
+        ui.set_reply_target_av_a(av_a);
+        ui.set_reply_target_av_b(av_b);
+        ui.set_reply_target_av_initials(av_init);
+        ui.set_reply_target_picture(pic);
+        ui.set_reply_target_has_picture(has_pic);
     });
-    ui.global::<AppState>().on_cancel_reply({
-        let weak = ui.as_weak();
-        move || {
-            let Some(ui) = weak.upgrade() else { return };
-            clear_reply_target(&ui);
-        }
+    wire!(ui, on_cancel_reply [], |ui| {
+        clear_reply_target(&ui);
     });
 }
 
@@ -513,8 +505,7 @@ pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 if new_files.is_empty() {
                     return;
                 }
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak_t.upgrade() else { return };
+                ui_update!(weak_t, move |ui| {
                     let mut staged = staged_t.lock().unwrap();
                     staged.extend(new_files);
                     refresh_staged_ui(&ui, &staged);
@@ -544,8 +535,7 @@ pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 };
                 let ext = media_extension(&media_type);
                 let file = staged_file_from_bytes(format!("pasted-image.{ext}"), media_type, bytes);
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = weak.upgrade() else { return };
+                ui_update!(weak, move |ui| {
                     let mut staged = staged_files.lock().unwrap();
                     staged.push(file);
                     refresh_staged_ui(&ui, &staged);
@@ -555,18 +545,13 @@ pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     });
 
     // ─── Remove a staged attachment chip ───────────────────────────────
-    ui.global::<AppState>().on_remove_staged({
-        let weak = ui.as_weak();
-        let staged_files = staged_files.clone();
-        move |idx| {
-            let Some(ui) = weak.upgrade() else { return };
-            let mut staged = staged_files.lock().unwrap();
-            let idx = idx as usize;
-            if idx < staged.len() {
-                staged.remove(idx);
-            }
-            refresh_staged_ui(&ui, &staged);
+    wire!(ui, on_remove_staged [staged_files], |ui, idx| {
+        let mut staged = staged_files.lock().unwrap();
+        let idx = idx as usize;
+        if idx < staged.len() {
+            staged.remove(idx);
         }
+        refresh_staged_ui(&ui, &staged);
     });
 
     // ─── Album cell tapped → open the slideshow at that image ──────────
@@ -574,28 +559,22 @@ pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     // `is_temp_id`) aren't sent yet, so they don't open the viewer. Otherwise we
     // open the lightbox and let the slideshow builder load the tapped image
     // (cache hit → instant; miss → downloads) and wire up prev/next.
-    ui.global::<AppState>().on_album_cell_clicked({
-        let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        let group_ids = group_ids.clone();
-        move |key| {
-            let Some(ui) = weak.upgrade() else { return };
-            let key = key.to_string();
-            if key.is_empty() || is_temp_id(&key) {
-                return;
-            }
-            let idx = ui.get_active_chat() as usize;
-            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
-                return;
-            };
-            // A failed cell taps to retry its download in place, not to open
-            // the lightbox on an image that isn't there yet.
-            if attachment_failed_contains(&key) {
-                retry_album_cell(group_hex, key);
-                return;
-            }
-            open_image_viewer_for(&ui, &backend_cell, &group_ids, &group_hex, &key);
+    wire!(ui, on_album_cell_clicked [backend_cell, group_ids], |ui, key| {
+        let key = key.to_string();
+        if key.is_empty() || is_temp_id(&key) {
+            return;
         }
+        let idx = ui.get_active_chat() as usize;
+        let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
+            return;
+        };
+        // A failed cell taps to retry its download in place, not to open
+        // the lightbox on an image that isn't there yet.
+        if attachment_failed_contains(&key) {
+            retry_album_cell(group_hex, key);
+            return;
+        }
+        open_image_viewer_for(&ui, &backend_cell, &group_ids, &group_hex, &key);
     });
 
     // ─── Shared Media grid cell tapped (group info panel) ──────────────
@@ -603,22 +582,16 @@ pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     // Already the active chat — no page/chat switch needed, unlike the same
     // grid on the Contact page (`on_contact_shared_media_clicked`), which has
     // to get there first.
-    ui.global::<AppState>().on_chat_shared_media_clicked({
-        let weak = ui.as_weak();
-        let backend_cell = backend_cell.clone();
-        let group_ids = group_ids.clone();
-        move |key| {
-            let Some(ui) = weak.upgrade() else { return };
-            let key = key.to_string();
-            if key.is_empty() {
-                return;
-            }
-            let idx = ui.get_active_chat() as usize;
-            let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
-                return;
-            };
-            open_image_viewer_for(&ui, &backend_cell, &group_ids, &group_hex, &key);
+    wire!(ui, on_chat_shared_media_clicked [backend_cell, group_ids], |ui, key| {
+        let key = key.to_string();
+        if key.is_empty() {
+            return;
         }
+        let idx = ui.get_active_chat() as usize;
+        let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() else {
+            return;
+        };
+        open_image_viewer_for(&ui, &backend_cell, &group_ids, &group_hex, &key);
     });
 
     // ─── Attachment clicked (download + open) ──────────────────────────
@@ -701,8 +674,7 @@ pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 let is_image = mime_is_image(&reference.media_type);
                 let is_video = mime_is_video(&reference.media_type);
                 let is_audio = mime_is_audio(&reference.media_type);
-                let _ = slint::invoke_from_event_loop(move || {
-                    let Some(ui) = cx.weak.upgrade() else { return };
+                ui_update!(cx.weak, move |ui| {
                     let chats_messages = ui.get_chats_messages();
                     {
                         let overlay = cx.pending_state.lock().unwrap();
@@ -916,38 +888,25 @@ pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                     if bump_secs {
                         secs += 1;
                     }
-                    let _ = slint::invoke_from_event_loop({
-                        let weak = weak_t.clone();
-                        move || {
-                            if let Some(ui) = weak.upgrade() {
-                                if bump_secs {
-                                    ui.set_composer_recording_secs(secs);
-                                }
-                                ui.set_composer_recording_level(level);
-                            }
+                    ui_update!(weak_t, move |ui| {
+                        if bump_secs {
+                            ui.set_composer_recording_secs(secs);
                         }
+                        ui.set_composer_recording_level(level);
                     });
                     // Auto-stop at the maximum clip length.
                     if secs >= 120 {
-                        let _ = slint::invoke_from_event_loop({
-                            let weak = weak_t.clone();
-                            move || {
-                                if let Some(ui) = weak.upgrade() {
-                                    ui.global::<AppState>().invoke_stop_recording();
-                                }
-                            }
+                        ui_update!(weak_t, move |ui| {
+                            ui.global::<AppState>().invoke_stop_recording();
                         });
                         break;
                     }
                 }
             });
-            let weak_i = weak.clone();
-            let _ = slint::invoke_from_event_loop(move || {
-                if let Some(ui) = weak_i.upgrade() {
-                    ui.set_composer_recording(true);
-                    ui.set_composer_recording_secs(0);
-                    ui.set_composer_recording_level(0.0);
-                }
+            ui_update!(weak, move |ui| {
+                ui.set_composer_recording(true);
+                ui.set_composer_recording_secs(0);
+                ui.set_composer_recording_level(0.0);
             });
         }
     });
@@ -1026,12 +985,9 @@ pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             });
             *recording_start().lock().unwrap() = None;
             *recording_level().lock().unwrap() = None;
-            let weak_i = weak.clone();
-            let _ = slint::invoke_from_event_loop(move || {
-                if let Some(ui) = weak_i.upgrade() {
-                    ui.set_composer_recording(false);
-                    ui.set_composer_recording_level(0.0);
-                }
+            ui_update!(weak, move |ui| {
+                ui.set_composer_recording(false);
+                ui.set_composer_recording_level(0.0);
             });
         }
     });
