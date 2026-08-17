@@ -194,6 +194,10 @@ export component ImageViewerModal inherits Modal {
                     root.save();
                     return accept;
                 }
+                if ((event.text == "r" || event.text == "R") && root.failed) {
+                    root.retry();
+                    return accept;
+                }
                 return reject;
             }
 
