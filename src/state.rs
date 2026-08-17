@@ -1080,6 +1080,7 @@ palette_commands! {
     NavProfile => ("nav.profile", "Go to Profile", "NAVIGATE", ""),
     NewChat => ("act.new-chat", "New chat", "ACTIONS", "Ctrl N"),
     OpenSearch => ("act.search-messages", "Search all messages", "ACTIONS", ""),
+    OpenMentions => ("act.open-mentions", "Open mentions inbox", "ACTIONS", ""),
     CopyNpub => ("act.copy-npub", "Copy your npub", "ACTIONS", ""),
     ToggleRetro => ("act.toggle-retro", "Toggle retro mode", "ACTIONS", ""),
     OpenShortcuts => ("act.keyboard-shortcuts", "Keyboard shortcuts", "ACTIONS", ""),
