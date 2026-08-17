@@ -26,6 +26,7 @@ pub(crate) fn wire_search(ui: &WhiteNoiseLinux, cx: &Cx) {
     let Cx {
         backend_cell,
         group_ids,
+        settings_cell,
         ..
     } = cx.clone();
 
@@ -179,5 +180,22 @@ pub(crate) fn wire_search(ui: &WhiteNoiseLinux, cx: &Cx) {
         // jump, switch to the chat, and center the target message.
         ui.global::<AppState>()
             .invoke_mention_inbox_selected(group_id, message_id);
+    });
+
+    // Fires when the user opens a hit, i.e. a search they actually acted on
+    // (not every debounced keystroke) — same "record on use" shape as
+    // `record_recent_emoji`.
+    ui.global::<AppState>().on_msg_global_search_committed({
+        let weak = ui.as_weak();
+        let settings_cell = settings_cell.clone();
+        move |query| {
+            let Some(ui) = weak.upgrade() else { return };
+            let mut settings = settings_cell.borrow_mut();
+            settings.record_recent_search_term(query.as_str());
+            settings.save();
+            ui.set_msg_global_recent_terms(model(
+                settings.recent_search_terms.iter().map(|t| s(t)).collect(),
+            ));
+        }
     });
 }

@@ -369,8 +369,10 @@ export global AppState {
     in-out property <bool> msg-global-open: false;
     in-out property <[SearchHit]> msg-global-results;
     in-out property <bool> msg-global-searching: false;
+    in-out property <[string]> msg-global-recent-terms;
     callback msg-global-query-changed(string);
     callback msg-global-result-selected(string, string);  // group-id, message-id
+    callback msg-global-search-committed(string);  // query text of a hit the user opened
 
     // ═══ Pickers, context menus & confirms ═════════════════════════════════
     // Emoji picker (full-window modal).

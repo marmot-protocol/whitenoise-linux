@@ -59,6 +59,13 @@ pub struct Settings {
     /// `recent_emoji` — never published to relays.
     #[serde(default)]
     pub recent_forwards: Vec<String>,
+    /// Global message-search terms the user has opened a hit for, newest
+    /// first, capped at `RECENT_SEARCH_TERMS_MAX`. Feeds the tappable list
+    /// shown in the global search modal while its query is empty (see
+    /// `record_recent_search_term`). Local-only, like `recent_emoji` — never
+    /// published to relays.
+    #[serde(default)]
+    pub recent_search_terms: Vec<String>,
     /// Fire a desktop notification for incoming messages in chats you aren't
     /// currently viewing. Master switch for the two below.
     #[serde(default = "default_true")]
@@ -279,6 +286,20 @@ impl Settings {
         self.recent_forwards.insert(0, group_hex.to_string());
         self.recent_forwards.truncate(RECENT_FORWARD_MAX);
     }
+
+    /// Move `term` to the front of the recent-search-terms row, dropping any
+    /// earlier occurrence (case-insensitively) and truncating to
+    /// `RECENT_SEARCH_TERMS_MAX`. A blank term (after trimming) is a no-op.
+    pub fn record_recent_search_term(&mut self, term: &str) {
+        let term = term.trim();
+        if term.is_empty() {
+            return;
+        }
+        self.recent_search_terms
+            .retain(|t| !t.eq_ignore_ascii_case(term));
+        self.recent_search_terms.insert(0, term.to_string());
+        self.recent_search_terms.truncate(RECENT_SEARCH_TERMS_MAX);
+    }
 }
 
 /// The recent-emoji row is a single unscrolled strip, so the cap matches the
@@ -290,6 +311,11 @@ pub const RECENT_EMOJI_MAX: usize = 10;
 /// "the same handful of people or groups" from the issue this implements, not
 /// the whole chat list.
 pub const RECENT_FORWARD_MAX: usize = 8;
+
+/// The global-search modal's recent-terms list is a short, unscrolled column
+/// shown only while the query is empty — keep it well under the search
+/// results' own 440px scroll cap.
+pub const RECENT_SEARCH_TERMS_MAX: usize = 8;
 
 fn default_locale() -> String {
     "en".into()

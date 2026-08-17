@@ -230,6 +230,13 @@ fn main() -> Result<(), slint::PlatformError> {
     ui.set_shell_centered(initial_settings.centered_conversation);
     push_quick_reactions(&ui, &initial_settings.quick_reactions);
     push_custom_emoji_settings_list(&ui, &initial_settings.custom_emoji);
+    ui.set_msg_global_recent_terms(model(
+        initial_settings
+            .recent_search_terms
+            .iter()
+            .map(|t| s(t))
+            .collect(),
+    ));
     // Drives ⌘-vs-Ctrl shortcut hints (command palette badge, etc.).
     ui.set_is_macos(cfg!(target_os = "macos"));
     // Seed the in-memory per-account "delete for me" sets so locally-hidden
