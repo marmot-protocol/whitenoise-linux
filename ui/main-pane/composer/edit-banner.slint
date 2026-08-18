@@ -1,5 +1,6 @@
 import { Palette, Theme } from "../../tokens.slint";
 import { MicroButton } from "../../primitives/button.slint";
+import { Tooltip } from "../../primitives/tooltip.slint";
 
 // Editing banner — shown above the input when the composer is in edit mode.
 // A mint accent bar + "Editing: <preview>" with a Cancel edit button.
@@ -39,14 +40,34 @@ export component EditBanner inherits Rectangle {
                     vertical-alignment: center;
                 }
 
-                Text {
-                    text: root.editing-message-preview;
-                    color: Palette.text-mid;
-                    font-size: Theme.fs(11px, 14px);
-                    font-family: Theme.font;
-                    overflow: elide;
+                // The preview is elided to keep the banner one line tall, so
+                // the text sits under a hover target that reveals the rest,
+                // matching ReplyBanner's identical layout above the composer.
+                Rectangle {
                     horizontal-stretch: 1;
-                    vertical-alignment: center;
+                    preview-text := Text {
+                        width: 100%;
+                        height: 100%;
+                        text: root.editing-message-preview;
+                        color: Palette.text-mid;
+                        font-size: Theme.fs(11px, 14px);
+                        font-family: Theme.font;
+                        overflow: elide;
+                        vertical-alignment: center;
+                    }
+
+                    preview-touch := TouchArea { }
+
+                    // Zero-size FocusScope: same Tab-chain trick as Button's
+                    // (see primitives/button.slint) so this doesn't steal
+                    // pointer events from preview-touch. Only a tab stop when
+                    // the preview is actually cut off, matching what the
+                    // reveal would show.
+                    preview-focus := FocusScope {
+                        width: 0px;
+                        height: 0px;
+                        enabled: preview-text.preferred-width > preview-text.width;
+                    }
                 }
             }
         }
@@ -66,5 +87,18 @@ export component EditBanner inherits Rectangle {
                 root.cancel-edit();
             }
         }
+    }
+
+    // Reveal of the elided preview. Mounted after the layout so it paints over
+    // the banner, and only while the text is actually cut off — a preview that
+    // fits already shows everything. It floats above the banner, where the
+    // message list gives it room, and wraps within the banner's own width so a
+    // long preview can't run off the window.
+    if (preview-touch.has-hover || preview-focus.has-focus) && preview-text.preferred-width > preview-text.width: Tooltip {
+        x: min(preview-text.absolute-position.x - root.absolute-position.x, root.width - self.width - 18px);
+        y: -self.height - 6px;
+        label: root.editing-message-preview;
+        wrap-width: root.width - 36px;
+        is-visible: true;
     }
 }
