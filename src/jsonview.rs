@@ -56,8 +56,9 @@ thread_local! {
 }
 
 /// Parse `text` into `slot`'s document (resetting any fold state) and return
-/// the visible rows.
-pub(crate) fn json_doc_set(slot: JsonSlot, text: &str) -> ModelRc<JsonLine> {
+/// the visible rows plus the largest line number among them (see
+/// [`visible_rows`] for why that is not just `rows.length`).
+pub(crate) fn json_doc_set(slot: JsonSlot, text: &str) -> (ModelRc<JsonLine>, i32) {
     let lines: Vec<Runs> = text.lines().map(tokenize_line).collect();
     let close_of = match_brackets(&lines);
     let doc = JsonDoc {
@@ -65,18 +66,19 @@ pub(crate) fn json_doc_set(slot: JsonSlot, text: &str) -> ModelRc<JsonLine> {
         close_of,
         collapsed: HashSet::new(),
     };
-    let rows = visible_rows(&doc);
+    let result = visible_rows(&doc);
     DOCS.with(|d| d.borrow_mut().insert(slot, doc));
-    rows
+    result
 }
 
-/// Flip one container's fold and return the rebuilt visible rows. Unknown
-/// indices (or a slot never filled) return the current state unchanged.
-pub(crate) fn json_doc_toggle(slot: JsonSlot, logical: i32) -> ModelRc<JsonLine> {
+/// Flip one container's fold and return the rebuilt visible rows plus their
+/// largest line number. Unknown indices (or a slot never filled) return the
+/// current state unchanged.
+pub(crate) fn json_doc_toggle(slot: JsonSlot, logical: i32) -> (ModelRc<JsonLine>, i32) {
     DOCS.with(|d| {
         let mut docs = d.borrow_mut();
         let Some(doc) = docs.get_mut(&slot) else {
-            return ModelRc::new(VecModel::from(Vec::<JsonLine>::new()));
+            return (ModelRc::new(VecModel::from(Vec::<JsonLine>::new())), 0);
         };
         let idx = logical as usize;
         if doc.close_of.contains_key(&idx) && !doc.collapsed.remove(&idx) {
@@ -87,8 +89,12 @@ pub(crate) fn json_doc_toggle(slot: JsonSlot, logical: i32) -> ModelRc<JsonLine>
 }
 
 /// Walk the document, emitting expanded lines (wrapped) and one summary line
-/// per folded container, skipping everything a fold hides.
-fn visible_rows(doc: &JsonDoc) -> ModelRc<JsonLine> {
+/// per folded container, skipping everything a fold hides. Also returns the
+/// largest `num` among the emitted rows: folding can shrink the row count to
+/// a handful while a line deep in the document (past a folded block) still
+/// carries a four-digit number, so the gutter must size off that, not off
+/// how many rows are visible.
+fn visible_rows(doc: &JsonDoc) -> (ModelRc<JsonLine>, i32) {
     let mut rows: Vec<JsonLine> = Vec::new();
     let mut i = 0usize;
     while i < doc.lines.len() {
@@ -107,7 +113,8 @@ fn visible_rows(doc: &JsonDoc) -> ModelRc<JsonLine> {
         rows.extend(build_rows(doc.lines[i].clone(), i, collapsible, false));
         i += 1;
     }
-    ModelRc::new(VecModel::from(rows))
+    let max_num = rows.iter().map(|r| r.num).max().unwrap_or(0);
+    (ModelRc::new(VecModel::from(rows)), max_num)
 }
 
 /// `{ … n lines … }` — the folded form: the open line's runs, an elision

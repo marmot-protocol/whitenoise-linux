@@ -14,6 +14,12 @@ import { ListView } from "std-widgets.slint";
 // fold.
 export component JsonView inherits Rectangle {
     in property <[JsonLine]> rows;
+    // Largest line number among `rows`, computed alongside them (see
+    // `json_doc_set`/`json_doc_toggle` in src/jsonview.rs). Folding a
+    // container can shrink `rows.length` to a handful of visible rows while
+    // one of them still carries a four-digit number from deep in the
+    // document, so the gutter sizes off this, not off the row count.
+    in property <int> gutter-lines: 0;
     // Shown centered when there are no rows (busy / empty states). The host
     // owns the wording (and its @tr context).
     in property <string> placeholder: "";
@@ -26,9 +32,9 @@ export component JsonView inherits Rectangle {
     background: Palette.panel-2;
     clip: true;
 
-    // Gutter width scales with the line count so four-digit dumps still
-    // right-align without reserving space every small dump pays for.
-    property <length> gutter-w: root.rows.length >= 1000 ? 34px : (root.rows.length >= 100 ? 27px : 20px);
+    // Gutter width scales with the largest line number so four-digit dumps
+    // still right-align without reserving space every small dump pays for.
+    property <length> gutter-w: root.gutter-lines >= 1000 ? 34px : (root.gutter-lines >= 100 ? 27px : 20px);
 
     if root.rows.length == 0: Text {
         width: parent.width - 32px;

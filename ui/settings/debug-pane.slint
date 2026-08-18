@@ -91,6 +91,7 @@ export component DebugPane inherits DetailPage {
             preferred-height: 540px;
             vertical-stretch: 1;
             rows: AppState.debug-dump-rows;
+            gutter-lines: AppState.debug-dump-gutter-lines;
             placeholder: @tr("(no snapshot yet — click Refresh)");
             toggle(logical) => {
                 AppState.debug-dump-toggle(logical);

@@ -708,7 +708,9 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
         ui.set_debug_view_title(s("Raw event"));
         ui.set_debug_view_subtitle(s(&shorten_npub(message_id.as_str())));
         ui.set_debug_view_json(s(""));
-        ui.set_debug_view_rows(json_doc_set(JsonSlot::View, ""));
+        let (rows, gutter_lines) = json_doc_set(JsonSlot::View, "");
+        ui.set_debug_view_rows(rows);
+        ui.set_debug_view_gutter_lines(gutter_lines);
         ui.set_debug_view_busy(true);
         ui.set_debug_view_open(true);
         let weak = ui.as_weak();
@@ -721,7 +723,9 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             move |ui, json| {
                 ui.set_debug_view_busy(false);
                 // Rows drive the viewer; the plain string stays for copy.
-                ui.set_debug_view_rows(json_doc_set(JsonSlot::View, &json));
+                let (rows, gutter_lines) = json_doc_set(JsonSlot::View, &json);
+                ui.set_debug_view_rows(rows);
+                ui.set_debug_view_gutter_lines(gutter_lines);
                 ui.set_debug_view_json(json.into());
             },
         );
@@ -733,7 +737,9 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     wire!(ui, on_debug_view_show [], |ui, title, subtitle, json| {
         ui.set_debug_view_title(title);
         ui.set_debug_view_subtitle(subtitle);
-        ui.set_debug_view_rows(json_doc_set(JsonSlot::View, &json));
+        let (rows, gutter_lines) = json_doc_set(JsonSlot::View, &json);
+        ui.set_debug_view_rows(rows);
+        ui.set_debug_view_gutter_lines(gutter_lines);
         ui.set_debug_view_json(json);
         ui.set_debug_view_busy(false);
         ui.set_debug_view_open(true);
@@ -741,7 +747,9 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
 
     // Fold/unfold a container line in the debug viewer modal.
     wire!(ui, on_debug_view_toggle [], |ui, logical| {
-        ui.set_debug_view_rows(json_doc_toggle(JsonSlot::View, logical));
+        let (rows, gutter_lines) = json_doc_toggle(JsonSlot::View, logical);
+        ui.set_debug_view_rows(rows);
+        ui.set_debug_view_gutter_lines(gutter_lines);
     });
 
     // Copy whatever the debug JSON viewer is currently showing.

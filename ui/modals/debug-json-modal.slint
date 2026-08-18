@@ -10,6 +10,7 @@ import { JsonView } from "../primitives/json-view.slint";
 // (Modal's secondary always does).
 export component DebugJsonModal inherits Modal {
     in property <[JsonLine]> rows;
+    in property <int> gutter-lines: 0;
     in property <bool> busy: false;
     callback copy-clicked;
     // Forwarded from the viewer's fold chevrons (logical line index).
@@ -28,6 +29,7 @@ export component DebugJsonModal inherits Modal {
     JsonView {
         vertical-stretch: 1;
         rows: root.rows;
+        gutter-lines: root.gutter-lines;
         placeholder: root.busy ? @tr("Loading…") : @tr("(nothing to show)");
         toggle(logical) => {
             root.toggle(logical);

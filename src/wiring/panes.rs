@@ -1118,7 +1118,9 @@ pub(crate) fn wire_panes(
                 },
                 move |ui, snap| {
                     // Rows drive the viewer; the plain string stays for copy.
-                    ui.set_debug_dump_rows(json_doc_set(JsonSlot::Dump, &snap));
+                    let (rows, gutter_lines) = json_doc_set(JsonSlot::Dump, &snap);
+                    ui.set_debug_dump_rows(rows);
+                    ui.set_debug_dump_gutter_lines(gutter_lines);
                     ui.set_debug_dump(snap.into());
                 },
             );
@@ -1127,7 +1129,9 @@ pub(crate) fn wire_panes(
 
     // Fold/unfold a container line in the Debug pane's dump viewer.
     wire!(ui, on_debug_dump_toggle [], |ui, logical| {
-        ui.set_debug_dump_rows(json_doc_toggle(JsonSlot::Dump, logical));
+        let (rows, gutter_lines) = json_doc_toggle(JsonSlot::Dump, logical);
+        ui.set_debug_dump_rows(rows);
+        ui.set_debug_dump_gutter_lines(gutter_lines);
     });
 
     ui.global::<AppState>().on_debug_copy_clicked({

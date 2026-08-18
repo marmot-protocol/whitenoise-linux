@@ -625,6 +625,11 @@ export global AppState {
     // (src/jsonview.rs) and rendered by primitives/json-view.slint. The plain
     // string stays alongside for the clipboard path.
     in-out property <[JsonLine]> debug-dump-rows;
+    // Largest line number among `debug-dump-rows`, recomputed Rust-side
+    // alongside the rows (src/jsonview.rs) and used to size the viewer's
+    // line-number gutter — folding can shrink the row count while leaving a
+    // deep, un-folded line's number just as wide.
+    in-out property <int> debug-dump-gutter-lines;
     // Fold/unfold the container at this logical line of the dump; Rust
     // rebuilds `debug-dump-rows` from its fold state (src/jsonview.rs).
     callback debug-dump-toggle(int);
@@ -640,6 +645,8 @@ export global AppState {
     in-out property <string> debug-view-subtitle;
     in-out property <string> debug-view-json;
     in-out property <[JsonLine]> debug-view-rows;
+    // Largest line number among `debug-view-rows`; see `debug-dump-gutter-lines`.
+    in-out property <int> debug-view-gutter-lines;
     in-out property <bool> debug-view-busy: false;
     // Fires with the message id whose raw event to show.
     callback view-raw-event(string);
