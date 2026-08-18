@@ -153,10 +153,6 @@ msgctxt "AccountSwitcherList"
 msgid "ACTIVE"
 msgstr "ATTIVO"
 
-msgctxt "ChatListPanel"
-msgid "AGO"
-msgstr "FA"
-
 msgctxt "StatusBar"
 msgid "AGO"
 msgstr "FA"
@@ -224,10 +220,6 @@ msgid "Accounts"
 msgstr "Account"
 
 msgctxt "AppShell"
-msgid "Accounts"
-msgstr "Account"
-
-msgctxt "LeftRail"
 msgid "Accounts"
 msgstr "Account"
 
@@ -378,10 +370,6 @@ msgctxt "ChatHeader"
 msgid "Archive"
 msgstr "Archivia"
 
-msgctxt "LeftRail"
-msgid "Archive"
-msgstr "Archivio"
-
 msgctxt "ContactDetail"
 msgid "Archive chat"
 msgstr "Archivia chat"
@@ -490,10 +478,6 @@ msgstr "Realizzato con"
 msgctxt "MainPane"
 msgid "CHAT REQUEST"
 msgstr "RICHIESTA CHAT"
-
-msgctxt "ChatListPanel"
-msgid "CHATS"
-msgstr "CHAT"
 
 msgctxt "StatusBar"
 msgid "COMMAND"
@@ -629,10 +613,6 @@ msgctxt "AppShell"
 msgid "Chats"
 msgstr "Chat"
 
-msgctxt "LeftRail"
-msgid "Chats"
-msgstr "Chat"
-
 msgctxt "ArchivedPage"
 msgid "Chats you archive are kept here, out of your main list."
 msgstr "Le chat che archivi vengono conservate qui, fuori dall'elenco principale."
@@ -722,6 +702,10 @@ msgctxt "JsonView"
 msgid "Collapse"
 msgstr "Comprimi"
 
+msgctxt "AppShell"
+msgid "Collapse chat panel"
+msgstr "Comprimi pannello chat"
+
 msgctxt "KeysPage"
 msgid "Configure key-package relays first."
 msgstr "Configura prima i relay per i pacchetti chiave."
@@ -777,10 +761,6 @@ msgstr "Interrogazione dei relay…"
 msgctxt "AppShell"
 msgid "Contacts"
 msgstr "Contatto"
-
-msgctxt "LeftRail"
-msgid "Contacts"
-msgstr "Contatti"
 
 msgctxt "LoginScreen"
 msgid "Continue"
@@ -1336,6 +1316,10 @@ msgctxt "JsonView"
 msgid "Expand"
 msgstr "Espandi"
 
+msgctxt "AppShell"
+msgid "Expand chat panel"
+msgstr "Espandi pannello chat"
+
 msgctxt "KeysPage"
 msgid "Export"
 msgstr "Esporta"
@@ -1718,10 +1702,6 @@ msgctxt "KeyboardShortcutsModal"
 msgid "Keyboard shortcuts"
 msgstr ""
 
-msgctxt "LeftRail"
-msgid "Keys"
-msgstr "Chiavi"
-
 msgctxt "KeysPage"
 msgid "Keys & identity"
 msgstr "Chiavi e identità"
@@ -1998,10 +1978,6 @@ msgctxt "AppShell"
 msgid "NO RELAYS"
 msgstr "NESSUN RELAY"
 
-msgctxt "ChatListPanel"
-msgid "NO RELAYS"
-msgstr "NESSUN RELAY"
-
 msgctxt "LoginScreen"
 msgid "NSEC"
 msgstr ""
@@ -2028,10 +2004,6 @@ msgid "Network & relays"
 msgstr "Rete e relay"
 
 msgctxt "GetStartedScreen"
-msgid "New chat"
-msgstr "Nuova chat"
-
-msgctxt "LeftRail"
 msgid "New chat"
 msgstr "Nuova chat"
 
@@ -2401,10 +2373,6 @@ msgctxt "AboutPane"
 msgid "Private material is stored on this device, encrypted with your password."
 msgstr "I dati privati restano su questo dispositivo, cifrati con la tua password."
 
-msgctxt "ProfileTile"
-msgid "Profile"
-msgstr "Profilo"
-
 msgctxt "KpCard"
 msgid "Proposals"
 msgstr ""
@@ -2479,10 +2447,6 @@ msgid "RAW EVENTS"
 msgstr ""
 
 msgctxt "AppShell"
-msgid "RELAYS"
-msgstr "RELAY"
-
-msgctxt "ChatListPanel"
 msgid "RELAYS"
 msgstr "RELAY"
 
@@ -2595,6 +2559,11 @@ msgctxt "ConfirmFlows"
 msgid "Remove"
 msgstr "Rimuovi"
 
+#, fuzzy
+msgctxt "SettingsPage"
+msgid "Remove"
+msgstr "Rimuovi"
+
 msgctxt "StagedChips"
 msgid "Remove"
 msgstr "Rimuovi"
@@ -2671,6 +2640,11 @@ msgstr "Rimuovere {} dal gruppo?"
 msgctxt "GeneralPane"
 msgid "Remove {} reaction"
 msgstr "Rimuovi reazione {}"
+
+#, fuzzy
+msgctxt "SettingsPage"
+msgid "Remove {}?"
+msgstr "Rimuovi"
 
 msgctxt "ErrorCopy"
 msgid "Renamed."
@@ -2776,10 +2750,6 @@ msgctxt "KeysPage"
 msgid "Reveal private key (nsec)"
 msgstr ""
 
-msgctxt "DeviceRow"
-msgid "Revoke"
-msgstr "Revoca"
-
 msgctxt "KeysPage"
 msgid "Rotate"
 msgstr "Ruota"
@@ -2856,19 +2826,11 @@ msgctxt "AppShell"
 msgid "SYNCED"
 msgstr "SINCRONIZZATO"
 
-msgctxt "ChatListPanel"
-msgid "SYNCED"
-msgstr "SINCRONIZZATO"
-
 msgctxt "StatusBar"
 msgid "SYNCED"
 msgstr "SINCRONIZZATO"
 
 msgctxt "AppShell"
-msgid "SYNCING…"
-msgstr "SINCRONIZZAZIONE…"
-
-msgctxt "ChatListPanel"
 msgid "SYNCING…"
 msgstr "SINCRONIZZAZIONE…"
 
@@ -2981,10 +2943,6 @@ msgctxt "AppShell"
 msgid "Search archived chats…"
 msgstr "Cerca chat archiviate…"
 
-msgctxt "ChatListPanel"
-msgid "Search chats…"
-msgstr "Cerca chat…"
-
 msgctxt "ForwardPickerModal"
 msgid "Search chats…"
 msgstr "Cerca chat…"
@@ -3082,10 +3040,6 @@ msgid "Set label…"
 msgstr ""
 
 msgctxt "AppShell"
-msgid "Settings"
-msgstr "Impostazioni"
-
-msgctxt "LeftRail"
 msgid "Settings"
 msgstr "Impostazioni"
 
@@ -3624,6 +3578,10 @@ msgstr "Smetterai di ricevere nuovi messaggi da questo gruppo."
 msgctxt "ConfirmFlows"
 msgid "You will stop receiving new messages from this group. The chat moves to Archive."
 msgstr "Smetterai di ricevere nuovi messaggi da questo gruppo. La chat viene spostata nell'Archivio."
+
+msgctxt "SettingsPage"
+msgid "You'll need to re-upload the image and retype the shortcode to bring it back."
+msgstr ""
 
 msgctxt "ConfirmFlows"
 msgid "Your chat with them, and any new chat request they send, stays out of your chat list. Nothing is deleted — unblocking brings the conversation back."

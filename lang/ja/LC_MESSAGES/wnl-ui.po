@@ -150,10 +150,6 @@ msgctxt "AccountSwitcherList"
 msgid "ACTIVE"
 msgstr "アクティブ"
 
-msgctxt "ChatListPanel"
-msgid "AGO"
-msgstr "前"
-
 msgctxt "StatusBar"
 msgid "AGO"
 msgstr "前"
@@ -220,10 +216,6 @@ msgid "Accounts"
 msgstr "アカウント"
 
 msgctxt "AppShell"
-msgid "Accounts"
-msgstr "アカウント"
-
-msgctxt "LeftRail"
 msgid "Accounts"
 msgstr "アカウント"
 
@@ -374,10 +366,6 @@ msgctxt "ChatHeader"
 msgid "Archive"
 msgstr "アーカイブ"
 
-msgctxt "LeftRail"
-msgid "Archive"
-msgstr "アーカイブ"
-
 msgctxt "ContactDetail"
 msgid "Archive chat"
 msgstr "チャットをアーカイブ"
@@ -486,10 +474,6 @@ msgstr "使用技術"
 msgctxt "MainPane"
 msgid "CHAT REQUEST"
 msgstr "チャットリクエスト"
-
-msgctxt "ChatListPanel"
-msgid "CHATS"
-msgstr "チャット"
 
 msgctxt "StatusBar"
 msgid "COMMAND"
@@ -625,10 +609,6 @@ msgctxt "AppShell"
 msgid "Chats"
 msgstr "チャット"
 
-msgctxt "LeftRail"
-msgid "Chats"
-msgstr "チャット"
-
 msgctxt "ArchivedPage"
 msgid "Chats you archive are kept here, out of your main list."
 msgstr "アーカイブしたチャットは、メインのリストから外してここに保管されます。"
@@ -718,6 +698,10 @@ msgctxt "JsonView"
 msgid "Collapse"
 msgstr "折りたたむ"
 
+msgctxt "AppShell"
+msgid "Collapse chat panel"
+msgstr "チャットパネルを折りたたむ"
+
 msgctxt "KeysPage"
 msgid "Configure key-package relays first."
 msgstr "先にキーパッケージ用リレーを設定してください。"
@@ -771,10 +755,6 @@ msgid "Contacting relays…"
 msgstr "リレーに接続中…"
 
 msgctxt "AppShell"
-msgid "Contacts"
-msgstr "連絡先"
-
-msgctxt "LeftRail"
 msgid "Contacts"
 msgstr "連絡先"
 
@@ -1332,6 +1312,10 @@ msgctxt "JsonView"
 msgid "Expand"
 msgstr "展開"
 
+msgctxt "AppShell"
+msgid "Expand chat panel"
+msgstr "チャットパネルを展開"
+
 msgctxt "KeysPage"
 msgid "Export"
 msgstr "エクスポート"
@@ -1714,10 +1698,6 @@ msgctxt "KeyboardShortcutsModal"
 msgid "Keyboard shortcuts"
 msgstr ""
 
-msgctxt "LeftRail"
-msgid "Keys"
-msgstr "鍵"
-
 msgctxt "KeysPage"
 msgid "Keys & identity"
 msgstr "鍵と ID"
@@ -1994,10 +1974,6 @@ msgctxt "AppShell"
 msgid "NO RELAYS"
 msgstr "リレーなし"
 
-msgctxt "ChatListPanel"
-msgid "NO RELAYS"
-msgstr "リレーなし"
-
 msgctxt "LoginScreen"
 msgid "NSEC"
 msgstr ""
@@ -2024,10 +2000,6 @@ msgid "Network & relays"
 msgstr "ネットワークとリレー"
 
 msgctxt "GetStartedScreen"
-msgid "New chat"
-msgstr "新しいチャット"
-
-msgctxt "LeftRail"
 msgid "New chat"
 msgstr "新しいチャット"
 
@@ -2397,10 +2369,6 @@ msgctxt "AboutPane"
 msgid "Private material is stored on this device, encrypted with your password."
 msgstr "秘密のデータはこの端末に保存され、パスワードで暗号化されます。"
 
-msgctxt "ProfileTile"
-msgid "Profile"
-msgstr "プロフィール"
-
 msgctxt "KpCard"
 msgid "Proposals"
 msgstr ""
@@ -2475,10 +2443,6 @@ msgid "RAW EVENTS"
 msgstr ""
 
 msgctxt "AppShell"
-msgid "RELAYS"
-msgstr "リレー"
-
-msgctxt "ChatListPanel"
 msgid "RELAYS"
 msgstr "リレー"
 
@@ -2591,6 +2555,11 @@ msgctxt "ConfirmFlows"
 msgid "Remove"
 msgstr "削除"
 
+#, fuzzy
+msgctxt "SettingsPage"
+msgid "Remove"
+msgstr "削除"
+
 msgctxt "StagedChips"
 msgid "Remove"
 msgstr "削除"
@@ -2667,6 +2636,11 @@ msgstr "{}をグループから削除しますか？"
 msgctxt "GeneralPane"
 msgid "Remove {} reaction"
 msgstr "{}のリアクションを削除"
+
+#, fuzzy
+msgctxt "SettingsPage"
+msgid "Remove {}?"
+msgstr "削除"
 
 msgctxt "ErrorCopy"
 msgid "Renamed."
@@ -2772,10 +2746,6 @@ msgctxt "KeysPage"
 msgid "Reveal private key (nsec)"
 msgstr ""
 
-msgctxt "DeviceRow"
-msgid "Revoke"
-msgstr "取り消し"
-
 msgctxt "KeysPage"
 msgid "Rotate"
 msgstr "ローテーション"
@@ -2852,19 +2822,11 @@ msgctxt "AppShell"
 msgid "SYNCED"
 msgstr "同期済み"
 
-msgctxt "ChatListPanel"
-msgid "SYNCED"
-msgstr "同期済み"
-
 msgctxt "StatusBar"
 msgid "SYNCED"
 msgstr "同期済み"
 
 msgctxt "AppShell"
-msgid "SYNCING…"
-msgstr "同期中…"
-
-msgctxt "ChatListPanel"
 msgid "SYNCING…"
 msgstr "同期中…"
 
@@ -2977,10 +2939,6 @@ msgctxt "AppShell"
 msgid "Search archived chats…"
 msgstr "アーカイブしたチャットを検索…"
 
-msgctxt "ChatListPanel"
-msgid "Search chats…"
-msgstr "チャットを検索…"
-
 msgctxt "ForwardPickerModal"
 msgid "Search chats…"
 msgstr "チャットを検索…"
@@ -3078,10 +3036,6 @@ msgid "Set label…"
 msgstr ""
 
 msgctxt "AppShell"
-msgid "Settings"
-msgstr "設定"
-
-msgctxt "LeftRail"
 msgid "Settings"
 msgstr "設定"
 
@@ -3619,6 +3573,10 @@ msgstr "このグループからの新しいメッセージの受信を停止し
 msgctxt "ConfirmFlows"
 msgid "You will stop receiving new messages from this group. The chat moves to Archive."
 msgstr "このグループからの新しいメッセージの受信を停止します。チャットはアーカイブに移動します。"
+
+msgctxt "SettingsPage"
+msgid "You'll need to re-upload the image and retype the shortcode to bring it back."
+msgstr ""
 
 msgctxt "ConfirmFlows"
 msgid "Your chat with them, and any new chat request they send, stays out of your chat list. Nothing is deleted — unblocking brings the conversation back."

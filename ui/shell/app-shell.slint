@@ -27,6 +27,8 @@ import { PlusIcon } from "../icons/plus-icon.slint";
 import { SettingsIcon } from "../icons/settings-icon.slint";
 import { AccountsIcon } from "../icons/accounts-icon.slint";
 import { SearchIcon } from "../icons/search-icon.slint";
+import { ChevronRightIcon } from "../icons/chevron-right-icon.slint";
+import { ChevronLeftIcon } from "../icons/chevron-left-icon.slint";
 import { MentionsIcon } from "mentions-icon.slint";
 import { ChatListEntry } from "../chat-list/chat-list-entry.slint";
 import { LabelFilterChip } from "../chat-list/label-filter-chip.slint";
@@ -202,15 +204,20 @@ export component AppShell inherits Rectangle {
 
     // Responsive left card: below a width threshold it collapses to a slim
     // strip (compact chat avatars, no header) and expands to the full width
-    // only while hovered, so a narrow window keeps the conversation wide. On a
-    // roomy window it stays at its dragged width and never collapses.
+    // while hovered or pinned open (see `left-pinned` below), so a narrow
+    // window keeps the conversation wide. On a roomy window it stays at its
+    // dragged width and never collapses.
     property <length> strip-w: 76px;
     // On a narrow window the left card collapses to a slim strip on every page;
     // each hosted sidebar shows a tidy compact form there (chat / contact /
     // archive avatars, settings section icons) rather than a squeezed panel.
     property <bool> collapsible: root.width < 860px;
     property <bool> narrow: root.width < 860px;
-    property <bool> left-open: left-hover.has-hover;
+    // Set by the strip's own expand/collapse trigger below, for keyboard and
+    // touch users who cannot hover. Stays set until they toggle it again,
+    // rather than reverting the moment the pointer or focus moves on.
+    property <bool> left-pinned: false;
+    property <bool> left-open: left-hover.has-hover || root.left-pinned;
     property <bool> strip: root.collapsible && !root.left-open;
     // Layout reserves this (constant per narrow/wide state, so hovering never
     // reflows the conversation); the card itself draws at `left-shown` and
@@ -367,8 +374,39 @@ export component AppShell inherits Rectangle {
                     padding-bottom: 11px;
                     spacing: 10px;
 
+                    // Strip expand/collapse trigger. The card otherwise only
+                    // opens on mouse hover (`left-hover.has-hover`), so a
+                    // keyboard-only or touch-only user on a narrow window has
+                    // no way to reach the header nav, search, or sidebar
+                    // controls below. This button is reachable by Tab and by
+                    // tap, and toggles `left-pinned` so the card stays open
+                    // until pressed again.
+                    if root.collapsible: HorizontalLayout {
+                        height: 34px;
+                        alignment: center;
+                        IconBtn {
+                            accessible-label: root.strip ? @tr("Expand chat panel") : @tr("Collapse chat panel");
+                            clicked => {
+                                root.left-pinned = !root.left-pinned;
+                            }
+                            if root.strip: ChevronRightIcon {
+                                stroke: Palette.text-mid;
+                                size: 12px;
+                                x: (parent.width - self.width) / 2;
+                                y: (parent.height - self.height) / 2;
+                            }
+                            if !root.strip: ChevronLeftIcon {
+                                stroke: Palette.text-mid;
+                                size: 12px;
+                                x: (parent.width - self.width) / 2;
+                                y: (parent.height - self.height) / 2;
+                            }
+                        }
+                    }
+
                     // Header: account + section nav. Hidden in the collapsed
-                    // strip, revealed when the narrow card expands on hover.
+                    // strip, revealed when the narrow card expands on hover
+                    // or via the trigger above.
                     if !root.strip: HorizontalLayout {
                         height: 40px;
                         spacing: 6px;
