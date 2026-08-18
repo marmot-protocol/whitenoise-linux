@@ -35,6 +35,7 @@ export component KeyboardShortcutsModal inherits Modal {
                 for row[i] in root.shortcuts: PaletteRow {
                     action: row;
                     show-group-header: i == 0 || root.shortcuts[i - 1].group != row.group;
+                    interactive: false;
                 }
             }
         }
