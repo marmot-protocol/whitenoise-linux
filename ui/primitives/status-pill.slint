@@ -33,4 +33,40 @@ export component StatusPill inherits Rectangle {
             root.clicked();
         }
     }
+
+    // The keyboard path and accessible name are mounted only when clickable:
+    // `accessible-role` must be a constant expression, so it cannot ternary
+    // on `clickable` the way `enabled`/`mouse-cursor` above do. Zero-size
+    // FocusScope joins the Tab chain without stealing pointer events,
+    // mirroring ui/primitives/button.slint and run-cell.slint's link-fs.
+    if root.clickable: Rectangle {
+        width: 100%;
+        height: 100%;
+        pill-fs := FocusScope {
+            width: 0px;
+            height: 0px;
+            accessible-role: button;
+            accessible-label: root.text;
+            accessible-action-default => {
+                root.clicked();
+            }
+            key-pressed(event) => {
+                if (event.text == Key.Return || event.text == " ") {
+                    root.clicked();
+                    return accept;
+                }
+                return reject;
+            }
+        }
+        if pill-fs.has-focus: Rectangle {
+            x: -3px;
+            y: -3px;
+            width: parent.width + 6px;
+            height: parent.height + 6px;
+            background: transparent;
+            border-radius: (13px) * Theme.r-scale;
+            border-width: 2px;
+            border-color: Palette.mint;
+        }
+    }
 }
