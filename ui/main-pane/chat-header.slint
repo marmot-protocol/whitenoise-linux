@@ -102,7 +102,7 @@ export component ChatHeader inherits Rectangle {
                         label: root.chat.npub;
                         has-lock: true;
                         bg-color: badge-touch.has-hover ? Palette.mint-hi : Palette.mint;
-                        fg: Palette.bubble-out-fg;
+                        fg: Palette.on-accent;
                     }
                     badge-fs := FocusScope {
                         width: 0px;
@@ -323,7 +323,7 @@ export component ChatHeader inherits Rectangle {
                 label: @tr("Accept");
                 focusable: true;
                 bg-color: Palette.mint;
-                fg: Palette.bubble-out-fg;
+                fg: Palette.on-accent;
                 outline: Palette.mint;
                 hover-bg: Palette.mint-hi;
                 hover-outline: Palette.mint-hi;
@@ -332,7 +332,7 @@ export component ChatHeader inherits Rectangle {
                     AppState.accept-chat-request();
                 }
                 CheckMark {
-                    stroke: Palette.bubble-out-fg;
+                    stroke: Palette.on-accent;
                     double: false;
                 }
             }

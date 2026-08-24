@@ -191,7 +191,7 @@ pub struct PlaybackState {
     pub finished: bool,
 }
 
-/// Why [`AudioPlayer::play`] failed. Callers surface `Decode` on the bubble
+/// Why [`AudioPlayer::play`] failed. Callers surface `Decode` on the body
 /// (the clip itself is unplayable) but treat `Output` as environmental (no
 /// usable audio device) — retrying the same bytes could succeed later.
 #[derive(Debug)]

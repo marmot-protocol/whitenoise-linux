@@ -3,22 +3,22 @@ import { QuickReactCell } from "quick-react-cell.slint";
 import { MenuItem } from "../primitives/menu-item.slint";
 import { AppState } from "../shell/app-state.slint";
 
+// Glyph + label for one menu action. The table below is indexed by the action
+// ids Rust puts in `ctx-menu-actions` (wiring/extra.rs): 0 add-reaction,
+// 1 reply, 2 forward, 3 copy-text, 4 copy-selection, 5 delete-for-me, 6 edit,
+// 7 delete-for-everyone, 8 view-raw.
+struct CtxAction {
+    glyph: string,
+    label: string,
+}
 
-// Right-click context menu for a message bubble. Mounted full-window (like
+
+// Right-click context menu for a message body. Mounted full-window (like
 // EmojiPicker) so the invisible backdrop catches outside clicks; the panel
 // sits at the anchor point, clamped inside the window. The message this menu
 // acts on is `AppState.ctx-menu-id`, so the quick-reaction strip can fire
 // `QuickReact.react` directly without a callback per emoji.
 export component MessageContextMenu inherits Rectangle {
-    property <bool> can-edit: AppState.ctx-menu-can-edit;
-    // True when the message has body text to copy (attachment-only messages
-    // don't). Gates the "Copy text" row.
-    property <bool> can-copy: AppState.ctx-menu-text != "";
-    // True when this message holds the active text selection. Gates the
-    // "Copy selection" row; implies can-copy (a selection needs body lines).
-    property <bool> has-selection: TextSelection.active && TextSelection.owner == AppState.ctx-menu-id && TextSelection.a-line >= 0 && TextSelection.b-line >= 0;
-    // Developer mode: reveals a "View raw event" row at the tail of the menu.
-    property <bool> debug-enabled: AppState.debug-enabled;
     // Called with the panel's clamped position so the emoji picker can open
     // where the menu was.
     function add-reaction(ax: length, ay: length) {
@@ -74,59 +74,55 @@ export component MessageContextMenu inherits Rectangle {
         AppState.ctx-menu-open = false;
     }
 
-    // Keyboard navigation. Rows are ordered so the visible set is always the
-    // contiguous [0, count-1]: the two copy rows sit between Forward and
-    // Delete for me and shift the tail indices when shown, and the
-    // author-only rows close the list:
-    //   0 = Add reaction, 1 = Reply, 2 = Forward             (always)
-    //   3 = Copy text                                        (can-copy)
-    //   4 = Copy selection                                   (has-selection)
-    //   idx-del-me = Delete for me                           (always)
-    //   idx-del-me + 1 = Edit, + 2 = Delete for everyone     (author-only)
-    //   idx-view-raw = View raw event                        (debug-enabled)
-    property <int> n-copy: root.can-copy ? 1 : 0;
-    property <int> n-sel: root.has-selection ? 1 : 0;
-    property <int> n-edit: root.can-edit ? 2 : 0;
-    property <int> n-debug: root.debug-enabled ? 1 : 0;
-    property <int> idx-del-me: 3 + root.n-copy + root.n-sel;
-    property <int> idx-view-raw: root.idx-del-me + 1 + root.n-edit;
-    property <int> item-count: 4 + root.n-copy + root.n-sel + root.n-edit + root.n-debug;
+    // The visible rows, as the ordered action-id list Rust built at arm time.
+    // Hidden rows simply aren't in the list, so the keyboard selection is a
+    // plain index over it — no index arithmetic.
+    property <[int]> actions: AppState.ctx-menu-actions;
+    property <int> item-count: root.actions.length;
     property <int> selected-index: 0;
+    property <[CtxAction]> action-table: [
+        { glyph: "☺", label: @tr("Add reaction") },
+        { glyph: "↩", label: @tr("Reply") },
+        { glyph: "➦", label: @tr("Forward") },
+        { glyph: "⧉", label: @tr("Copy text") },
+        { glyph: "⧉", label: @tr("Copy selection") },
+        { glyph: "⌫", label: @tr("Delete for me") },
+        { glyph: "✎", label: @tr("Edit message") },
+        { glyph: "⊘", label: @tr("Delete for everyone") },
+        { glyph: "{ }", label: @tr("View raw event") },
+    ];
+    function act(a: int) {
+        if (a == 0) {
+            root.add-reaction(root.px, root.py);
+        } else if (a == 1) {
+            root.reply();
+        } else if (a == 2) {
+            root.forward();
+        } else if (a == 3) {
+            root.copy-text();
+        } else if (a == 4) {
+            root.copy-selection();
+        } else if (a == 5) {
+            root.delete-for-me();
+        } else if (a == 6) {
+            root.edit();
+        } else if (a == 7) {
+            root.delete-for-everyone();
+        } else {
+            root.view-raw();
+        }
+    }
 
     function move-selection(delta: int) {
         root.selected-index = min(max(0, root.selected-index + delta), root.item-count - 1);
     }
-    // Tab wraps around the list rather than escaping the menu.
+    // Tab wraps around the list rather than escaping the menu. (+ item-count
+    // keeps the operand non-negative for Backtab at index 0.)
     function wrap-selection(delta: int) {
-        // Manual modulo so this doesn't depend on a Math.mod builtin.
-        if (root.selected-index + delta < 0) {
-            root.selected-index = root.item-count - 1;
-        } else if (root.selected-index + delta >= root.item-count) {
-            root.selected-index = 0;
-        } else {
-            root.selected-index = root.selected-index + delta;
-        }
+        root.selected-index = mod(root.selected-index + delta + root.item-count, root.item-count);
     }
     function activate-selected() {
-        if (root.selected-index == 0) {
-            root.add-reaction(root.px, root.py);
-        } else if (root.selected-index == 1) {
-            root.reply();
-        } else if (root.selected-index == 2) {
-            root.forward();
-        } else if (root.selected-index == 3 && root.can-copy) {
-            root.copy-text();
-        } else if (root.selected-index == 4 && root.has-selection) {
-            root.copy-selection();
-        } else if (root.selected-index == root.idx-del-me) {
-            root.delete-for-me();
-        } else if (root.selected-index == root.idx-del-me + 1 && root.can-edit) {
-            root.edit();
-        } else if (root.selected-index == root.idx-del-me + 2 && root.can-edit) {
-            root.delete-for-everyone();
-        } else if (root.selected-index == root.idx-view-raw && root.debug-enabled) {
-            root.view-raw();
-        }
+        root.act(root.actions[root.selected-index]);
     }
 
     // Backdrop — invisible, dismisses on a click or another right-click
@@ -227,116 +223,15 @@ export component MessageContextMenu inherits Rectangle {
                     }
                 }
 
-                MenuItem {
-                    glyph: "☺";
-                    label: @tr("Add reaction");
-                    selected: root.selected-index == 0;
+                for a[idx] in root.actions: MenuItem {
+                    glyph: root.action-table[a].glyph;
+                    label: root.action-table[a].label;
+                    selected: root.selected-index == idx;
                     activated => {
-                        root.add-reaction(root.px, root.py);
+                        root.act(a);
                     }
                     hovered => {
-                        root.selected-index = 0;
-                    }
-                }
-
-                MenuItem {
-                    glyph: "↩";
-                    label: @tr("Reply");
-                    selected: root.selected-index == 1;
-                    activated => {
-                        root.reply();
-                    }
-                    hovered => {
-                        root.selected-index = 1;
-                    }
-                }
-
-                MenuItem {
-                    glyph: "➦";
-                    label: @tr("Forward");
-                    selected: root.selected-index == 2;
-                    activated => {
-                        root.forward();
-                    }
-                    hovered => {
-                        root.selected-index = 2;
-                    }
-                }
-
-                MenuItem {
-                    glyph: "⧉";
-                    label: @tr("Copy text");
-                    shown: root.can-copy;
-                    selected: root.can-copy && root.selected-index == 3;
-                    activated => {
-                        root.copy-text();
-                    }
-                    hovered => {
-                        root.selected-index = 3;
-                    }
-                }
-
-                MenuItem {
-                    glyph: "⧉";
-                    label: @tr("Copy selection");
-                    shown: root.has-selection;
-                    selected: root.has-selection && root.selected-index == 4;
-                    activated => {
-                        root.copy-selection();
-                    }
-                    hovered => {
-                        root.selected-index = 4;
-                    }
-                }
-
-                MenuItem {
-                    glyph: "⌫";
-                    label: @tr("Delete for me");
-                    selected: root.selected-index == root.idx-del-me;
-                    activated => {
-                        root.delete-for-me();
-                    }
-                    hovered => {
-                        root.selected-index = root.idx-del-me;
-                    }
-                }
-
-                MenuItem {
-                    glyph: "✎";
-                    label: @tr("Edit message");
-                    shown: root.can-edit;
-                    selected: root.selected-index == root.idx-del-me + 1;
-                    activated => {
-                        root.edit();
-                    }
-                    hovered => {
-                        root.selected-index = root.idx-del-me + 1;
-                    }
-                }
-
-                MenuItem {
-                    glyph: "⊘";
-                    label: @tr("Delete for everyone");
-                    shown: root.can-edit;
-                    selected: root.selected-index == root.idx-del-me + 2;
-                    activated => {
-                        root.delete-for-everyone();
-                    }
-                    hovered => {
-                        root.selected-index = root.idx-del-me + 2;
-                    }
-                }
-
-                MenuItem {
-                    glyph: "{ }";
-                    label: @tr("View raw event");
-                    shown: root.debug-enabled;
-                    selected: root.selected-index == root.idx-view-raw;
-                    activated => {
-                        root.view-raw();
-                    }
-                    hovered => {
-                        root.selected-index = root.idx-view-raw;
+                        root.selected-index = idx;
                     }
                 }
             }

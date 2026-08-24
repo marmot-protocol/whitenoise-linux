@@ -104,7 +104,7 @@ pub(crate) fn wire_search(ui: &WhiteNoiseLinux, cx: &Cx) {
                 let chats = ui.get_chats();
                 // Senders whose profile picture isn't cached yet: fetched
                 // below after the rows land, then bound in place by
-                // sender id (same shape as the bubble-avatar pipeline).
+                // sender id (same shape as the body-avatar pipeline).
                 let mut pending_fetches: HashMap<String, String> = HashMap::new();
                 let items: Vec<SearchHit> = hits
                     .into_iter()

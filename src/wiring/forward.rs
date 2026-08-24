@@ -111,7 +111,7 @@ pub(crate) fn wire_forward(ui: &WhiteNoiseLinux, cx: &Cx) {
             };
 
             // Land the user in the destination so they watch the forward arrive.
-            // The optimistic bubbles below reconcile by group hex, so they land
+            // The optimistic message rows below reconcile by group hex, so they land
             // in the right chat regardless of this switch's async rebuild.
             ui.global::<AppState>()
                 .invoke_chat_selected(dest_idx as i32);
@@ -178,30 +178,30 @@ struct ForwardCx {
     vault_cell: VaultCell,
 }
 
-/// One optimistic bubble a media forward will produce, planned *before* any
+/// One optimistic body a media forward will produce, planned *before* any
 /// download starts.
 ///
 /// The grouping mirrors the composer's staged flush exactly (images chunk into
 /// albums of 10, a lone image or any non-image file goes out on its own), so
-/// each planned bubble is adopted one-for-one by the send that eventually
+/// each planned body is adopted one-for-one by the send that eventually
 /// carries it — the placeholder the user sees on arrival *is* the row that
 /// turns into the real message.
-struct ForwardBubble {
+struct ForwardBody {
     temp_id: String,
     refs: Vec<MediaAttachmentReference>,
     is_album: bool,
 }
 
-/// Everything needed to re-run one bubble's downloads, stashed under its temp
+/// Everything needed to re-run one body's downloads, stashed under its temp
 /// id when they fail. See [`retry_forward_media`].
 struct ForwardRetry {
     cx: ForwardCx,
     src_group: String,
     dest_group: String,
-    bubble: ForwardBubble,
+    body: ForwardBody,
 }
 
-/// Forward bubbles sitting in the red "tap to retry" state because their source
+/// Forward message rows sitting in the red "tap to retry" state because their source
 /// attachments couldn't be downloaded.
 ///
 /// A normal failed send retries out of the durable offline queue, which holds
@@ -215,12 +215,12 @@ fn forward_retries() -> &'static Mutex<std::collections::HashMap<String, Forward
 }
 
 /// Download+decrypt every attachment on the source message, then re-upload them
-/// (re-encrypted for the destination group) as the planned bubbles.
+/// (re-encrypted for the destination group) as the planned message rows.
 ///
-/// The destination shows the forward the moment the user picks it: the bubbles
+/// The destination shows the forward the moment the user picks it: the message rows
 /// are planned and rendered as "sending…" placeholders up front, from the
 /// source's `imeta` metadata, and each is adopted by its send once that
-/// bubble's attachments have downloaded. A bubble whose downloads fail flips
+/// body's attachments have downloaded. A body whose downloads fail flips
 /// red and stays tappable instead of vanishing. The body text (a caption) is
 /// forwarded first so it reads above the media.
 #[allow(clippy::too_many_arguments)]
@@ -256,20 +256,20 @@ fn forward_media(
     }
 
     let total = refs.len();
-    let bubbles = plan_forward_bubbles(refs);
-    // Shared across every bubble so the error banner reports the forward as a
-    // whole ("2 of 5") once, rather than once per failing bubble.
-    let outstanding = Arc::new(AtomicUsize::new(bubbles.len()));
+    let bodies = plan_forward_bodies(refs);
+    // Shared across every body so the error banner reports the forward as a
+    // whole ("2 of 5") once, rather than once per failing body.
+    let outstanding = Arc::new(AtomicUsize::new(bodies.len()));
     let failed = Arc::new(AtomicUsize::new(0));
 
-    for bubble in bubbles {
-        render_forward_placeholder(&cx, &dest_group, &bubble);
-        run_forward_bubble(
+    for body in bodies {
+        render_forward_placeholder(&cx, &dest_group, &body);
+        run_forward_body(
             &cx,
             &backend,
             &src_group,
             &dest_group,
-            bubble,
+            body,
             outstanding.clone(),
             failed.clone(),
             total,
@@ -277,41 +277,41 @@ fn forward_media(
     }
 }
 
-/// Group the source references into the bubbles the destination will show,
+/// Group the source references into the message rows the destination will show,
 /// mirroring `on_send_message`'s staged flush so the placeholders match the
 /// messages that replace them.
-fn plan_forward_bubbles(refs: Vec<MediaAttachmentReference>) -> Vec<ForwardBubble> {
+fn plan_forward_bodies(refs: Vec<MediaAttachmentReference>) -> Vec<ForwardBody> {
     let (images, others): (Vec<_>, Vec<_>) =
         refs.into_iter().partition(|r| mime_is_image(&r.media_type));
-    let mut bubbles: Vec<ForwardBubble> = Vec::new();
+    let mut bodies: Vec<ForwardBody> = Vec::new();
     for chunk in images.chunks(10) {
-        bubbles.push(ForwardBubble {
+        bodies.push(ForwardBody {
             temp_id: next_temp_id(),
             refs: chunk.to_vec(),
             is_album: chunk.len() > 1,
         });
     }
     for r in others {
-        bubbles.push(ForwardBubble {
+        bodies.push(ForwardBody {
             temp_id: next_temp_id(),
             refs: vec![r],
             is_album: false,
         });
     }
-    bubbles
+    bodies
 }
 
-/// Build the pending overlay entry for a planned bubble from the source's
+/// Build the pending overlay entry for a planned body from the source's
 /// `imeta` metadata. Sizes are `None` — the tag doesn't carry one and the bytes
 /// aren't downloaded yet — and previews are `None` until they are.
-fn placeholder_send(bubble: &ForwardBubble) -> PendingSend {
+fn placeholder_send(body: &ForwardBody) -> PendingSend {
     PendingSend {
-        temp_id: bubble.temp_id.clone(),
+        temp_id: body.temp_id.clone(),
         text: String::new(),
         failed: false,
         reply_to: None,
         effect: 0,
-        media: bubble
+        media: body
             .refs
             .iter()
             .map(|r| PendingMedia {
@@ -327,12 +327,12 @@ fn placeholder_send(bubble: &ForwardBubble) -> PendingSend {
     }
 }
 
-/// Render a planned bubble in the destination straight away, so the chat the
+/// Render a planned body in the destination straight away, so the chat the
 /// user just landed in shows the forward in flight instead of nothing.
-fn render_forward_placeholder(cx: &ForwardCx, dest_group: &str, bubble: &ForwardBubble) {
+fn render_forward_placeholder(cx: &ForwardCx, dest_group: &str, body: &ForwardBody) {
     let cx = cx.clone();
     let dest_group = dest_group.to_string();
-    let send = placeholder_send(bubble);
+    let send = placeholder_send(body);
     ui_update!(cx.weak, move |ui| {
         let Some(idx) = cx
             .group_ids
@@ -361,38 +361,38 @@ fn render_forward_placeholder(cx: &ForwardCx, dest_group: &str, bubble: &Forward
     });
 }
 
-/// Download one bubble's attachments concurrently, then hand the bytes to the
+/// Download one body's attachments concurrently, then hand the bytes to the
 /// send that adopts its placeholder — or, if any of them failed, flip the
 /// placeholder red and stash the inputs a retry needs.
 ///
-/// A partial album is treated as a failure of the whole bubble: shipping the
+/// A partial album is treated as a failure of the whole body: shipping the
 /// images that happened to arrive would silently drop the rest, which is the
 /// behaviour this replaces.
 #[allow(clippy::too_many_arguments)]
-fn run_forward_bubble(
+fn run_forward_body(
     cx: &ForwardCx,
     backend: &Arc<Backend>,
     src_group: &str,
     dest_group: &str,
-    bubble: ForwardBubble,
+    body: ForwardBody,
     outstanding: Arc<AtomicUsize>,
     failed: Arc<AtomicUsize>,
     total: usize,
 ) {
-    let n = bubble.refs.len();
+    let n = body.refs.len();
     // Order-preserving slots so a multi-image album keeps its original order.
     let slots: Arc<Mutex<Vec<Option<StagedFile>>>> =
         Arc::new(Mutex::new((0..n).map(|_| None).collect()));
     let remaining = Arc::new(AtomicUsize::new(n));
-    let bubble = Arc::new(bubble);
+    let body = Arc::new(body);
 
-    for (i, reference) in bubble.refs.iter().cloned().enumerate() {
+    for (i, reference) in body.refs.iter().cloned().enumerate() {
         let cx = cx.clone();
         let slots = slots.clone();
         let remaining = remaining.clone();
         let outstanding = outstanding.clone();
         let failed = failed.clone();
-        let bubble = bubble.clone();
+        let body = body.clone();
         let src_group = src_group.to_string();
         let dest_group = dest_group.to_string();
         let dl_src_group = src_group.clone();
@@ -413,24 +413,24 @@ fn run_forward_bubble(
                     tracing::warn!(target: "forward", "attachment {i} download failed: {e:#}");
                 }
             }
-            // Last download of this bubble in → dispatch it or fail it.
+            // Last download of this body in → dispatch it or fail it.
             if remaining.fetch_sub(1, AtomicOrdering::SeqCst) != 1 {
                 return;
             }
             let slots = std::mem::take(&mut *slots.lock().unwrap());
             let missing = slots.iter().filter(|s| s.is_none()).count();
             if missing == 0 {
-                dispatch_forward_bubble(
+                dispatch_forward_body(
                     &cx,
                     &dest_group,
-                    &bubble,
+                    &body,
                     slots.into_iter().flatten().collect(),
                 );
             } else {
                 failed.fetch_add(missing, AtomicOrdering::SeqCst);
-                fail_forward_bubble(&cx, &src_group, &dest_group, &bubble);
+                fail_forward_body(&cx, &src_group, &dest_group, &body);
             }
-            // Last bubble of the forward resolved → report the total damage
+            // Last body of the forward resolved → report the total damage
             // once, on the same banner the text-forward path already uses.
             if outstanding.fetch_sub(1, AtomicOrdering::SeqCst) == 1 {
                 let failed = failed.load(AtomicOrdering::SeqCst);
@@ -442,15 +442,15 @@ fn run_forward_bubble(
     }
 }
 
-/// Hand a fully downloaded bubble to the send that adopts its placeholder.
-fn dispatch_forward_bubble(
+/// Hand a fully downloaded body to the send that adopts its placeholder.
+fn dispatch_forward_body(
     cx: &ForwardCx,
     dest_group: &str,
-    bubble: &ForwardBubble,
+    body: &ForwardBody,
     files: Vec<StagedFile>,
 ) {
-    let reuse = Some(PendingReuse::Placeholder(bubble.temp_id.clone()));
-    if bubble.is_album {
+    let reuse = Some(PendingReuse::Placeholder(body.temp_id.clone()));
+    if body.is_album {
         spawn_album_send(
             cx.weak.clone(),
             cx.backend_cell.clone(),
@@ -482,28 +482,28 @@ fn dispatch_forward_bubble(
     );
 }
 
-/// Flip a bubble whose downloads failed to the red "tap to retry" state and
+/// Flip a message body whose downloads failed to the red "tap to retry" state and
 /// stash what a retry needs to re-enter the download.
-fn fail_forward_bubble(cx: &ForwardCx, src_group: &str, dest_group: &str, bubble: &ForwardBubble) {
+fn fail_forward_body(cx: &ForwardCx, src_group: &str, dest_group: &str, body: &ForwardBody) {
     forward_retries().lock().unwrap().insert(
-        bubble.temp_id.clone(),
+        body.temp_id.clone(),
         ForwardRetry {
             cx: cx.clone(),
             src_group: src_group.to_string(),
             dest_group: dest_group.to_string(),
-            bubble: ForwardBubble {
-                temp_id: bubble.temp_id.clone(),
-                refs: bubble.refs.clone(),
-                is_album: bubble.is_album,
+            body: ForwardBody {
+                temp_id: body.temp_id.clone(),
+                refs: body.refs.clone(),
+                is_album: body.is_album,
             },
         },
     );
-    // No in-flight guard to drop and no durable entry to remove: this bubble
+    // No in-flight guard to drop and no durable entry to remove: this body
     // never reached the uploader, which is what owns both.
-    mark_forward_row_failed(cx, dest_group, &bubble.temp_id);
+    mark_forward_row_failed(cx, dest_group, &body.temp_id);
 }
 
-/// Repaint one forward bubble as failed, in place, keeping its grouping —
+/// Repaint one forward body as failed, in place, keeping its grouping —
 /// the same surgical flip `apply_send_result` does for a failed send.
 fn mark_forward_row_failed(cx: &ForwardCx, dest_group: &str, temp_id: &str) {
     let cx = cx.clone();
@@ -555,9 +555,9 @@ fn report_forward_failure(cx: &ForwardCx, failed: usize, total: usize) {
     });
 }
 
-/// Retry a forward bubble whose source attachments failed to download.
+/// Retry a forward body whose source attachments failed to download.
 ///
-/// Returns `false` when `temp_id` isn't such a bubble, leaving the caller to
+/// Returns `false` when `temp_id` isn't such a message body, leaving the caller to
 /// fall through to its normal durable-queue replay.
 pub(crate) fn retry_forward_media(temp_id: &str) -> bool {
     let Some(entry) = forward_retries().lock().unwrap().remove(temp_id) else {
@@ -567,20 +567,20 @@ pub(crate) fn retry_forward_media(temp_id: &str) -> bool {
         cx,
         src_group,
         dest_group,
-        bubble,
+        body,
     } = entry;
     let guard = cx.backend_cell.lock().unwrap();
     let Some(backend) = guard.as_ref().cloned() else {
         return false;
     };
     drop(guard);
-    let total = bubble.refs.len();
-    run_forward_bubble(
+    let total = body.refs.len();
+    run_forward_body(
         &cx,
         &backend,
         &src_group,
         &dest_group,
-        bubble,
+        body,
         Arc::new(AtomicUsize::new(1)),
         Arc::new(AtomicUsize::new(0)),
         total,
@@ -588,7 +588,7 @@ pub(crate) fn retry_forward_media(temp_id: &str) -> bool {
     true
 }
 
-/// Text analog of [`spawn_attachment_send`]: insert an optimistic bubble in the
+/// Text analog of [`spawn_attachment_send`]: insert an optimistic body in the
 /// destination chat, durably queue the send, dispatch it in the background, and
 /// reconcile the row by group hex on ack (or flip it red on an online failure /
 /// leave it pending while offline). Used only by the forward flow — the normal

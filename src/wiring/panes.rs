@@ -680,13 +680,13 @@ pub(crate) fn wire_panes(
     // width settles — window resize, the members panel opening, or the
     // centred-conversation toggle all move it. Message text is wrapped in
     // Rust against a fixed per-direction cap that assumes a wide-enough pane
-    // (see `clamp_bubble_max`), so a narrower live width needs the clamp and
+    // (see `clamp_wrap_max`), so a narrower live width needs the clamp and
     // every already-built row's lines refreshed together.
     wire!(ui, on_chat_pane_width_changed [], |ui, px| {
-        if !set_bubble_budget(px) {
+        if !set_wrap_budget(px) {
             return;
         }
-        rewrap_all_message_lines_for_pane_width(&ui);
+        rewrap_all_message_lines(&ui);
     });
 
     wire!(ui, on_accent_selected [settings_cell], |ui, idx| {
@@ -704,15 +704,6 @@ pub(crate) fn wire_panes(
         move |on| {
             let mut s = settings_cell.borrow_mut();
             s.debug_enabled = on;
-            s.save();
-        }
-    });
-
-    ui.global::<AppState>().on_outgoing_on_right_toggled({
-        let settings_cell = settings_cell.clone();
-        move |on| {
-            let mut s = settings_cell.borrow_mut();
-            s.outgoing_on_right = on;
             s.save();
         }
     });

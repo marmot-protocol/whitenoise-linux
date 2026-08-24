@@ -1,0 +1,67 @@
+import { MessageFx } from "../tokens.slint";
+import { MessageEffectLayer } from "message-effect-layer.slint";
+
+// One slot in the effect-burst pool. `gen` is a per-slot generation counter —
+// bumping it (re)fires that slot's layer; the position/effect fields say where
+// and what. Default (all-zero, gen 0) = an idle slot that never plays.
+struct EffectBurst {
+    x: length,
+    y: length,
+    w: length,
+    h: length,
+    id: int,
+    cx: int,
+    cy: int,
+    gen: int,
+}
+
+// Message-effect stage: a pool of overlay layers playing Telegram-style
+// bursts. Rows report their body's window position + size via the MessageFx
+// sink; the stage converts to local coords, writes the next round-robin slot,
+// and bumps that slot's `gen` to fire. Each layer binds to its own slot, so a
+// new burst STACKS instead of interrupting the ones already playing.
+// 8 concurrent. Mount it after the message list so it paints above every row;
+// it clips to its own rect so particles don't spill into the header/composer,
+// and it declares no TouchArea, so it is transparent to input.
+export component EffectStage inherits Rectangle {
+    clip: true;
+
+    // Burst requests arrive through the MessageFx global (rows call
+    // MessageFx.play); each gen bump stages one burst.
+    property <int> fx-gen: MessageFx.gen;
+    changed fx-gen => {
+        root.stage-effect(MessageFx.effect-id, MessageFx.clip-x, MessageFx.clip-y,
+            MessageFx.px, MessageFx.py, MessageFx.w, MessageFx.h);
+    }
+    property <[EffectBurst]> bursts: [{ }, { }, { }, { }, { }, { }, { }, { }];
+    property <int> burst-next: 0;
+    function stage-effect(eid: int, cx: int, cy: int, ax: length, ay: length, w: length, h: length) {
+        root.bursts[root.burst-next] = {
+            // Window coords → stage-local (the stage fills its parent at 0,0).
+            x: ax - root.absolute-position.x,
+            y: ay - root.absolute-position.y,
+            w: w,
+            h: h,
+            id: eid,
+            cx: cx,
+            cy: cy,
+            gen: root.bursts[root.burst-next].gen + 1,
+        };
+        root.burst-next = root.burst-next + 1 < 8 ? root.burst-next + 1 : 0;
+    }
+
+    // One layer per pool slot. Only the slot whose `gen` changed re-fires;
+    // the rest keep playing — so bursts stack instead of interrupting.
+    for b in root.bursts: MessageEffectLayer {
+        x: b.x;
+        y: b.y;
+        width: b.w;
+        height: b.h;
+        effect-id: b.id;
+        clip-x: b.cx;
+        clip-y: b.cy;
+        origin-w: b.w;
+        origin-h: b.h;
+        trigger: b.gen;
+    }
+}

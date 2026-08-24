@@ -1,7 +1,7 @@
 import { Palette, Theme, ChatMessage } from "../../tokens.slint";
 
 // Audio attachment — inline player: play/pause, filename, scrubber, size +
-// duration. Height tracks the row's content so the bubble only grows the
+// duration. Height tracks the row's content so the body only grows the
 // extra rows when there's a filename to show.
 export component AudioTile inherits Rectangle {
     in property <ChatMessage> msg;
@@ -15,7 +15,7 @@ export component AudioTile inherits Rectangle {
     width: self.audio-w;
     height: aud-row.preferred-height;
     border-radius: (8px) * Theme.r-scale;
-    background: root.msg.outgoing ? Palette.bubble-inset-out : Palette.bubble-inset;
+    background: Palette.plate-inset;
     border-width: Theme.outline-surfaces ? Theme.border-w : 0px;
     border-color: Palette.border-2;
 
@@ -34,14 +34,14 @@ export component AudioTile inherits Rectangle {
             width: 36px;
             height: 36px;
             border-radius: (18px) * Theme.r-scale;
-            background: play-touch.has-hover ? (root.msg.outgoing ? Palette.text-hi : Palette.mint-hi) : (root.msg.outgoing ? Palette.bubble-out-fg : Palette.mint);
+            background: play-touch.has-hover ? (Palette.mint-hi) : (Palette.mint);
             animate background { duration: Theme.hover-dur; }
             Text {
                 x: parent.width / 2 - self.width / 2 + (root.msg.att-audio-playing || root.msg.att-loading || root.msg.att-failed || root.msg.att-audio-failed ? 0px : 2px);
                 // Loading → ellipsis, send-failed → retry, decode-failed
                 // → bang, else play/pause.
                 text: root.msg.att-loading ? "…" : (root.msg.att-failed ? "↻" : (root.msg.att-audio-failed ? "!" : (root.msg.att-audio-playing ? "⏸" : "▶")));
-                color: root.msg.outgoing ? Palette.mint : Palette.bg;
+                color: Palette.bg;
                 font-size: Theme.fs(14px, 18px);
                 font-family: Theme.font;
                 horizontal-alignment: center;
@@ -70,7 +70,7 @@ export component AudioTile inherits Rectangle {
                 text: root.msg.att-name;
                 width: root.col-w;
                 overflow: elide;
-                color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-hi;
+                color: Palette.text-hi;
                 font-size: Theme.fs(11px, 14px);
                 font-family: Theme.font;
                 font-weight: 600;
@@ -86,13 +86,13 @@ export component AudioTile inherits Rectangle {
                     width: 100%;
                     height: 5px;
                     border-radius: 2.5px * Theme.r-scale;
-                    background: root.msg.outgoing ? Palette.bubble-inset-out-strong : Palette.bubble-inset-strong;
+                    background: Palette.plate-inset-strong;
                     Rectangle {
                         x: 0;
                         width: parent.width * clamp(root.msg.att-audio-progress, 0.0, 1.0);
                         height: 100%;
                         border-radius: 2.5px * Theme.r-scale;
-                        background: root.msg.outgoing ? Palette.bubble-out-fg : Palette.mint;
+                        background: Palette.mint;
                     }
 
                     // Playhead knob, mirroring the video player's
@@ -105,7 +105,7 @@ export component AudioTile inherits Rectangle {
                         height: self.width;
                         animate width { duration: 80ms; }
                         border-radius: self.width / 2;
-                        background: root.msg.outgoing ? Palette.bubble-out-fg : Palette.mint;
+                        background: Palette.mint;
                     }
                 }
 
@@ -124,15 +124,15 @@ export component AudioTile inherits Rectangle {
                     text: root.msg.att-failed ? @tr("failed · tap to retry") : (root.msg.att-audio-failed ? @tr("Can't play this audio format") : root.msg.att-size-label);
                     horizontal-stretch: 1;
                     overflow: elide;
-                    color: root.msg.att-failed || root.msg.att-audio-failed ? (root.msg.outgoing ? Palette.danger-on-bubble : Palette.danger) : (root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid);
+                    color: root.msg.att-failed || root.msg.att-audio-failed ? (Palette.danger) : (Palette.text-mid);
                     font-size: Theme.fs(10px, 14px);
                     font-family: Theme.font;
-                    opacity: root.msg.att-failed || root.msg.att-audio-failed ? 1.0 : (root.msg.outgoing ? 0.75 : 0.9);
+                    opacity: root.msg.att-failed || root.msg.att-audio-failed ? 1.0 : (0.9);
                 }
 
                 Text {
                     text: root.msg.att-duration;
-                    color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
+                    color: Palette.text-mid;
                     font-size: Theme.fs(10px, 14px);
                     font-family: Theme.font;
                     horizontal-alignment: right;

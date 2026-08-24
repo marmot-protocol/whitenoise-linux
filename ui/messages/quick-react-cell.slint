@@ -1,6 +1,7 @@
 import { Palette, Theme, EmojiSheet } from "../tokens.slint";
+import { KeyActivate } from "../primitives/key-activate.slint";
 
-// One tappable emoji in the quick-reaction row (the hover toolbar, the context
+// One tappable emoji in the quick-reaction row (the context
 // menu, and the Settings editor). Renders the glyph over a hover highlight.
 // `removable` overlays a small ✕ on hover or focus so the same cell doubles
 // as the delete control in the Settings editor, where a tap removes the
@@ -16,14 +17,9 @@ export component QuickReactCell inherits Rectangle {
     in property <image> picture;
     in property <bool> has-picture: false;
     in property <bool> removable: false;
-    // Default screen-reader name for the "+" add cell.
-    property <string> add-label: @tr("Add reaction");
-    // Default screen-reader name for a plain reaction cell.
-    property <string> react-label: @tr("React with {}", root.emoji);
-    // Screen-reader name. Defaults to add-label/react-label above; the
-    // Settings editor's remove cells override this to say what a tap does
-    // instead of what it shows.
-    in property <string> a11y-label: root.emoji == "+" ? root.add-label : root.react-label;
+    // Screen-reader name; the Settings editor's remove cells override this to
+    // say what a tap does instead of what it shows.
+    in property <string> a11y-label: root.emoji == "+" ? @tr("Add reaction") : @tr("React with {}", root.emoji);
     callback clicked();
 
     width: 28px;
@@ -48,7 +44,7 @@ export component QuickReactCell inherits Rectangle {
         image-fit: contain;
     }
 
-    // A tile from the shared Twemoji sheet — the same texture the chat bubbles
+    // A tile from the shared Twemoji sheet — the same texture the message rows
     // draw inline emoji from, so a quick reaction looks identical to the emoji
     // it posts.
     if !root.has-picture && root.clip-x >= 0: Image {
@@ -76,7 +72,7 @@ export component QuickReactCell inherits Rectangle {
     // Delete affordance for the editor: a red ✕ badge that shows on hover or
     // keyboard focus, so the row reads as emoji until the user reaches for
     // one to remove.
-    if root.removable && (touch.has-hover || fs.has-focus): Rectangle {
+    if root.removable && (touch.has-hover || ka.focused): Rectangle {
         x: parent.width - self.width + 3px;
         y: -3px;
         width: 14px;
@@ -100,30 +96,10 @@ export component QuickReactCell inherits Rectangle {
         }
     }
 
-    // Zero-size FocusScope: participates in the Tab chain but never receives
-    // pointer events, so clicking a cell can't pull keyboard focus away.
-    // Mirrors the Button primitive's focus handling.
-    fs := FocusScope {
-        width: 0px;
-        height: 0px;
-        key-pressed(event) => {
-            if (event.text == Key.Return || event.text == " ") {
-                root.clicked();
-                return accept;
-            }
-            return reject;
+    ka := KeyActivate {
+        ring-radius: (11px) * Theme.r-scale;
+        activate => {
+            root.clicked();
         }
-    }
-
-    // Focus ring just outside the bounds (keyboard only).
-    if fs.has-focus: Rectangle {
-        x: -3px;
-        y: -3px;
-        width: parent.width + 6px;
-        height: parent.height + 6px;
-        background: transparent;
-        border-radius: (11px) * Theme.r-scale;
-        border-width: 2px;
-        border-color: Palette.mint;
     }
 }

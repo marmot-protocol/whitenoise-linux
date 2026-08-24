@@ -71,7 +71,8 @@ msgctxt "ForwardPickerModal"
 msgid "(attachment)"
 msgstr "(Anhang)"
 
-msgctxt "MessageBubble"
+#, fuzzy
+msgctxt "MessageBody"
 msgid "(message unavailable)"
 msgstr "(Nachricht nicht verfügbar)"
 
@@ -279,15 +280,11 @@ msgctxt "AddMemberRow"
 msgid "Add member"
 msgstr "Mitglied hinzufügen"
 
-msgctxt "HoverActions"
-msgid "Add reaction"
-msgstr ""
-
 msgctxt "MessageContextMenu"
 msgid "Add reaction"
 msgstr "Reaktion hinzufügen"
 
-#. Default screen-reader name for the "+" add cell.
+#. say what a tap does instead of what it shows.
 msgctxt "QuickReactCell"
 msgid "Add reaction"
 msgstr "Reaktion hinzufügen"
@@ -1269,10 +1266,6 @@ msgctxt "ChatContextMenu"
 msgid "Edit label ({})…"
 msgstr ""
 
-msgctxt "HoverActions"
-msgid "Edit message"
-msgstr ""
-
 msgctxt "MessageContextMenu"
 msgid "Edit message"
 msgstr "Nachricht bearbeiten"
@@ -1909,10 +1902,6 @@ msgctxt "StartNewChatModal"
 msgid "MEMBERS"
 msgstr "MITGLIEDER"
 
-msgctxt "AppearancePane"
-msgid "MESSAGES"
-msgstr "NACHRICHTEN"
-
 msgctxt "KeysPage"
 msgid "MLS  ·  YOUR KEY MATERIAL"
 msgstr "MLS  ·  DEIN SCHLÜSSELMATERIAL"
@@ -2317,13 +2306,10 @@ msgctxt "ReactionChip"
 msgid "Open {}'s profile"
 msgstr "Profil von {} öffnen"
 
-msgctxt "MessageBubble"
+#, fuzzy
+msgctxt "MessageBody"
 msgid "Original message"
 msgstr "Originalnachricht"
-
-msgctxt "AppearancePane"
-msgid "Own messages on the right"
-msgstr "Eigene Nachrichten rechts"
 
 msgctxt "KpCard"
 msgid "Owner"
@@ -2404,10 +2390,6 @@ msgstr "Bild"
 msgctxt "ChatContextMenu"
 msgid "Pin to top"
 msgstr "Oben anheften"
-
-msgctxt "AppearancePane"
-msgid "Place your sent messages on the right side."
-msgstr "Platziere deine gesendeten Nachrichten auf der rechten Seite."
 
 msgctxt "VideoViewerModal"
 msgid "Play"
@@ -2542,7 +2524,7 @@ msgctxt "KeysPage"
 msgid "Re-seals every secret on this device under a new password. Existing backups stay sealed with the previous one."
 msgstr "Versiegelt jedes Geheimnis auf diesem Gerät mit einem neuen Passwort. Vorhandene Backups bleiben mit dem bisherigen versiegelt."
 
-#. Default screen-reader name for a plain reaction cell.
+#. say what a tap does instead of what it shows.
 msgctxt "QuickReactCell"
 msgid "React with {}"
 msgstr "Mit {} reagieren"
@@ -2717,10 +2699,6 @@ msgstr "Entfernen"
 msgctxt "ErrorCopy"
 msgid "Renamed."
 msgstr "Umbenannt."
-
-msgctxt "HoverActions"
-msgid "Reply"
-msgstr ""
 
 msgctxt "MessageContextMenu"
 msgid "Reply"
@@ -3175,8 +3153,9 @@ msgctxt "GeneralPane"
 msgid "Shown in the picker next to the built-in set. Tap one to remove it."
 msgstr "Erscheinen im Picker neben den eingebauten Emojis. Zum Entfernen antippen."
 
+#, fuzzy
 msgctxt "GeneralPane"
-msgid "Shown on the message toolbar and menu. Tap one to remove it."
+msgid "Shown on the message menu. Tap one to remove it."
 msgstr "Wird in der Nachrichtenleiste und im Menü angezeigt. Zum Entfernen antippen."
 
 msgctxt "AdvancedPane"
@@ -3348,13 +3327,15 @@ msgctxt "AddAccountModal"
 msgid "This key was just generated and exists nowhere else yet. Copy it somewhere safe before adding it — there is no recovery."
 msgstr "Dieser Schlüssel wurde gerade generiert und existiert noch nirgendwo sonst. Kopiere ihn an einen sicheren Ort, bevor du ihn hinzufügst — es gibt keine Wiederherstellung."
 
-msgctxt "MessageBubble"
+#, fuzzy
+msgctxt "MessageBody"
 msgid "This message was deleted"
-msgstr ""
+msgstr "Kein Bild ausgewählt."
 
-msgctxt "MessageView"
+#, fuzzy
+msgctxt "TerminalLine"
 msgid "This message was deleted"
-msgstr ""
+msgstr "Kein Bild ausgewählt."
 
 msgctxt "ConfirmFlows"
 msgid "This opens {} in your default browser."
@@ -3631,10 +3612,6 @@ msgctxt "MessageView"
 msgid "You"
 msgstr "Du"
 
-msgctxt "OutgoingRow"
-msgid "You"
-msgstr "Du"
-
 msgctxt "ErrorCopy"
 msgid "You already have an emoji with that name."
 msgstr "Du hast bereits eine Emoji mit diesem Namen."
@@ -3715,23 +3692,28 @@ msgctxt "AppearancePane"
 msgid "Zoom out"
 msgstr "Verkleinern"
 
-msgctxt "MessageView"
+#, fuzzy
+msgctxt "TerminalLine"
 msgid "[audio: {}]"
 msgstr "[Audio: {}]"
 
-msgctxt "MessageView"
+#, fuzzy
+msgctxt "TerminalLine"
 msgid "[file: {}]"
 msgstr "[Datei: {}]"
 
-msgctxt "MessageView"
+#, fuzzy
+msgctxt "TerminalLine"
 msgid "[image: {} — click to view]"
 msgstr "[Bild: {} — zum Anzeigen klicken]"
 
-msgctxt "MessageView"
+#, fuzzy
+msgctxt "TerminalLine"
 msgid "[video: {} — click to play]"
 msgstr "[Video: {} — zum Abspielen klicken]"
 
-msgctxt "MessageView"
+#, fuzzy
+msgctxt "TerminalLine"
 msgid "[{} images — click to view]"
 msgstr "[{} Bilder — zum Anzeigen klicken]"
 
@@ -3782,7 +3764,8 @@ msgctxt "CustomEmojiModal"
 msgid "e.g. partyparrot"
 msgstr "z. B. partyparrot"
 
-msgctxt "MessageBubble"
+#, fuzzy
+msgctxt "MessageBody"
 msgid "edited"
 msgstr "bearbeitet"
 
@@ -3794,7 +3777,8 @@ msgctxt "FileChip"
 msgid "failed · tap to retry"
 msgstr "fehlgeschlagen · tippen zum Wiederholen"
 
-msgctxt "MessageBubble"
+#, fuzzy
+msgctxt "MessageBody"
 msgid "failed · tap to retry"
 msgstr "fehlgeschlagen · tippen zum Wiederholen"
 

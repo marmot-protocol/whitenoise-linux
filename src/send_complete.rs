@@ -24,16 +24,16 @@ pub(crate) struct SendReconcileCtx {
     pub(crate) label: &'static str,
     /// `Some(op)` surfaces a friendly-error banner on an online failure (text +
     /// forward); `None` leaves the banner untouched (attachment + album only
-    /// flip the bubble red). Reproduces each path's existing behavior.
+    /// flip the body red). Reproduces each path's existing behavior.
     pub(crate) error_op: Option<ErrorOp>,
 }
 
-/// Reconcile the optimistic bubble once a send resolves.
+/// Reconcile the optimistic body once a send resolves.
 ///
 /// Runs on the tokio worker: on success it reads the refreshed message window
 /// here (the invoke closure below never touches sqlite); on failure it polls
 /// connectivity so an offline failure stays queued + pending rather than
-/// flipping the bubble red. It then hops to the event loop and, on the
+/// flipping the body red. It then hops to the event loop and, on the
 /// confirmed row, swaps the single pending row in place (keeping its grouping),
 /// falling back to a full rebuild if the model isn't shaped as expected.
 ///
@@ -66,9 +66,9 @@ pub(crate) fn apply_send_result<F>(
     offline_inflight_remove(&temp_id);
 
     // Worker thread: on a failure, decide here (where a blocking `relay_health`
-    // poll is fine) whether we're offline. An offline failure keeps the bubble
+    // poll is fine) whether we're offline. An offline failure keeps the body
     // *pending* and the durable entry queued for the reconnect flush; an online
-    // failure is a real error and flips the bubble red.
+    // failure is a real error and flips the body red.
     let (all, online): (Vec<AppMessageRecord>, bool) = if result.is_ok() {
         let all = backend_cell
             .lock()
@@ -165,7 +165,7 @@ pub(crate) fn apply_send_result<F>(
             Err(e) => {
                 tracing::warn!(target: "send", path = label, "{e:#}");
                 if !online {
-                    // Offline: leave the bubble pending ("sending…") and the
+                    // Offline: leave the body pending ("sending…") and the
                     // durable entry queued. The reconnect flush re-dispatches it.
                     tracing::warn!(target: "send", path = label, "offline — left queued for flush");
                     return;
@@ -174,7 +174,7 @@ pub(crate) fn apply_send_result<F>(
                     show_backend_error(&ui, friendly_error(op, &e));
                 }
                 // Online failure: a real error. Mark failed in place — the
-                // bubble flips to red without disturbing its neighbours.
+                // body flips to red without disturbing its neighbours.
                 let mut overlay = pending_state.lock().unwrap();
                 overlay.mark_send_failed(&group_hex, &temp_id);
                 let failed = overlay.find_send(&group_hex, &temp_id);

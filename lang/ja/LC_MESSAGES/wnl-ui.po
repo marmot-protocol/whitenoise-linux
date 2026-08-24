@@ -71,7 +71,8 @@ msgctxt "ForwardPickerModal"
 msgid "(attachment)"
 msgstr "（添付ファイル）"
 
-msgctxt "MessageBubble"
+#, fuzzy
+msgctxt "MessageBody"
 msgid "(message unavailable)"
 msgstr "(メッセージを表示できません)"
 
@@ -274,15 +275,11 @@ msgctxt "AddMemberRow"
 msgid "Add member"
 msgstr "メンバーを追加"
 
-msgctxt "HoverActions"
-msgid "Add reaction"
-msgstr ""
-
 msgctxt "MessageContextMenu"
 msgid "Add reaction"
 msgstr "リアクションを追加"
 
-#. Default screen-reader name for the "+" add cell.
+#. say what a tap does instead of what it shows.
 msgctxt "QuickReactCell"
 msgid "Add reaction"
 msgstr "リアクションを追加"
@@ -1264,10 +1261,6 @@ msgctxt "ChatContextMenu"
 msgid "Edit label ({})…"
 msgstr ""
 
-msgctxt "HoverActions"
-msgid "Edit message"
-msgstr ""
-
 msgctxt "MessageContextMenu"
 msgid "Edit message"
 msgstr "メッセージを編集"
@@ -1904,10 +1897,6 @@ msgctxt "StartNewChatModal"
 msgid "MEMBERS"
 msgstr "メンバー"
 
-msgctxt "AppearancePane"
-msgid "MESSAGES"
-msgstr "メッセージ"
-
 msgctxt "KeysPage"
 msgid "MLS  ·  YOUR KEY MATERIAL"
 msgstr "MLS  ·  あなたの鍵素材"
@@ -2312,13 +2301,10 @@ msgctxt "ReactionChip"
 msgid "Open {}'s profile"
 msgstr "{}のプロフィールを開く"
 
-msgctxt "MessageBubble"
+#, fuzzy
+msgctxt "MessageBody"
 msgid "Original message"
 msgstr "元のメッセージ"
-
-msgctxt "AppearancePane"
-msgid "Own messages on the right"
-msgstr "自分のメッセージを右側に表示"
 
 msgctxt "KpCard"
 msgid "Owner"
@@ -2399,10 +2385,6 @@ msgstr "画像"
 msgctxt "ChatContextMenu"
 msgid "Pin to top"
 msgstr "上部に固定"
-
-msgctxt "AppearancePane"
-msgid "Place your sent messages on the right side."
-msgstr "送信したメッセージを右側に配置します。"
 
 msgctxt "VideoViewerModal"
 msgid "Play"
@@ -2537,7 +2519,7 @@ msgctxt "KeysPage"
 msgid "Re-seals every secret on this device under a new password. Existing backups stay sealed with the previous one."
 msgstr "この端末のすべての秘密を新しいパスワードで再暗号化します。既存のバックアップは以前のパスワードのままです。"
 
-#. Default screen-reader name for a plain reaction cell.
+#. say what a tap does instead of what it shows.
 msgctxt "QuickReactCell"
 msgid "React with {}"
 msgstr "{}でリアクションする"
@@ -2712,10 +2694,6 @@ msgstr "削除"
 msgctxt "ErrorCopy"
 msgid "Renamed."
 msgstr "名前を変更しました。"
-
-msgctxt "HoverActions"
-msgid "Reply"
-msgstr ""
 
 msgctxt "MessageContextMenu"
 msgid "Reply"
@@ -3170,8 +3148,9 @@ msgctxt "GeneralPane"
 msgid "Shown in the picker next to the built-in set. Tap one to remove it."
 msgstr "ピッカーで標準セットの隣に表示されます。タップすると削除できます。"
 
+#, fuzzy
 msgctxt "GeneralPane"
-msgid "Shown on the message toolbar and menu. Tap one to remove it."
+msgid "Shown on the message menu. Tap one to remove it."
 msgstr "メッセージのツールバーとメニューに表示されます。タップすると削除できます。"
 
 msgctxt "AdvancedPane"
@@ -3343,13 +3322,15 @@ msgctxt "AddAccountModal"
 msgid "This key was just generated and exists nowhere else yet. Copy it somewhere safe before adding it — there is no recovery."
 msgstr "この鍵は今生成されたばかりで、まだ他のどこにも存在しません。追加する前に安全な場所にコピーしてください。復元はできません。"
 
-msgctxt "MessageBubble"
+#, fuzzy
+msgctxt "MessageBody"
 msgid "This message was deleted"
-msgstr ""
+msgstr "画像が選択されていません。"
 
-msgctxt "MessageView"
+#, fuzzy
+msgctxt "TerminalLine"
 msgid "This message was deleted"
-msgstr ""
+msgstr "画像が選択されていません。"
 
 msgctxt "ConfirmFlows"
 msgid "This opens {} in your default browser."
@@ -3625,10 +3606,6 @@ msgctxt "MessageView"
 msgid "You"
 msgstr "あなた"
 
-msgctxt "OutgoingRow"
-msgid "You"
-msgstr "あなた"
-
 msgctxt "ErrorCopy"
 msgid "You already have an emoji with that name."
 msgstr "その名前の絵文字はすでに存在します。"
@@ -3709,23 +3686,28 @@ msgctxt "AppearancePane"
 msgid "Zoom out"
 msgstr "縮小"
 
-msgctxt "MessageView"
+#, fuzzy
+msgctxt "TerminalLine"
 msgid "[audio: {}]"
 msgstr "[音声: {}]"
 
-msgctxt "MessageView"
+#, fuzzy
+msgctxt "TerminalLine"
 msgid "[file: {}]"
 msgstr "[ファイル: {}]"
 
-msgctxt "MessageView"
+#, fuzzy
+msgctxt "TerminalLine"
 msgid "[image: {} — click to view]"
 msgstr "[画像: {} — クリックして表示]"
 
-msgctxt "MessageView"
+#, fuzzy
+msgctxt "TerminalLine"
 msgid "[video: {} — click to play]"
 msgstr "[動画: {} — クリックして再生]"
 
-msgctxt "MessageView"
+#, fuzzy
+msgctxt "TerminalLine"
 msgid "[{} images — click to view]"
 msgstr "[{}枚の画像 — クリックして表示]"
 
@@ -3776,7 +3758,8 @@ msgctxt "CustomEmojiModal"
 msgid "e.g. partyparrot"
 msgstr "例: partyparrot"
 
-msgctxt "MessageBubble"
+#, fuzzy
+msgctxt "MessageBody"
 msgid "edited"
 msgstr "編集済み"
 
@@ -3788,7 +3771,8 @@ msgctxt "FileChip"
 msgid "failed · tap to retry"
 msgstr "失敗 · タップして再試行"
 
-msgctxt "MessageBubble"
+#, fuzzy
+msgctxt "MessageBody"
 msgid "failed · tap to retry"
 msgstr "失敗 · タップして再試行"
 

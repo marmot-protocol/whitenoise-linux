@@ -4,7 +4,7 @@ use crate::*;
 // `Send` pixel cache below as a thread-local — same shape and rationale as
 // `PICTURE_IMAGES` in `src/profiles.rs` (`slint::Image` is `!Send`, and one
 // shared handle per decoded attachment gives the renderer one texture instead
-// of one per bubble). Entries never go stale: attachment pixels are
+// of one per body). Entries never go stale: attachment pixels are
 // write-once per message id.
 thread_local! {
     static ATTACHMENT_IMAGES: RefCell<HashMap<String, slint::Image>> = RefCell::new(HashMap::new());
@@ -25,7 +25,7 @@ pub(crate) fn cached_attachment_image(id: &str) -> Option<slint::Image> {
 }
 
 // Cache for decrypted+decoded image attachments. Keyed by the inner-event
-// message id so the same bubble can be rebuilt many times (overlay/reaction
+// message id so the same body can be rebuilt many times (overlay/reaction
 // changes) without losing the loaded image. Populated lazily on the first
 // tap of an image attachment.
 global_cell!(pub(crate) fn attachment_image_cache() -> HashMap<String, PicturePixels> = HashMap::new());
@@ -66,7 +66,7 @@ pub(crate) fn image_from_pixels(pixels: &PicturePixels) -> slint::Image {
 
 /// One image in the lightbox slideshow. `cache_key` is the shared attachment
 /// cache handle (bare message id for a lone image, `id#index` for an album
-/// member) — the same key the bubble renders from. `reference` is pre-resolved
+/// member) — the same key the body renders from. `reference` is pre-resolved
 /// so prev/next never re-reads sqlite to find what to download.
 #[derive(Clone)]
 pub(crate) struct ViewerItem {
@@ -228,7 +228,7 @@ pub(crate) fn autoload_shared_media(
 /// Open the fullscreen lightbox on `key` within `group_hex`'s conversation,
 /// seeded with whatever's already cached so it never flashes an empty frame.
 /// Shared by every tap that opens the whole-conversation slideshow: an album
-/// cell, a solo attachment bubble, and a Shared Media grid cell.
+/// cell, a solo attachment body, and a Shared Media grid cell.
 pub(crate) fn open_image_viewer_for(
     ui: &WhiteNoiseLinux,
     backend_cell: &Arc<Mutex<Option<Arc<Backend>>>>,
@@ -334,7 +334,7 @@ pub(crate) fn build_viewer_slideshow(
 /// swap instantly; miss → flip on the loading pill and download+decode, then
 /// swap *only if* the viewer is still parked on the same image (the user may
 /// have clicked past it). The decoded pixels seed the shared attachment cache
-/// so the bubble row and a re-open are both free afterwards.
+/// so the body row and a re-open are both free afterwards.
 pub(crate) fn load_viewer_image(
     ui: &WhiteNoiseLinux,
     backend_cell: &Arc<Mutex<Option<Arc<Backend>>>>,
@@ -570,7 +570,7 @@ pub(crate) fn file_type_icon(mime: &str, file_name: &str) -> &'static str {
 /// Short type name for the chip's meta line: the uppercased extension
 /// ("PDF", "DOCX") when the file name carries one, else a short mime
 /// subtype, else the raw mime. Keeps `application/vnd.openxmlformats-…`
-/// off the bubble. Rust-side English by design (same policy as
+/// off the body. Rust-side English by design (same policy as
 /// `media_kind_label`).
 pub(crate) fn file_type_label(mime: &str, file_name: &str) -> String {
     if let Some(ext) = file_ext(file_name)
@@ -709,7 +709,7 @@ pub(crate) fn restart_video_session() {
 
 /// Close the open session, dropping its player off the UI thread, and return
 /// its target plus whether it had gone fullscreen, so the caller can repaint
-/// the source bubble and revert fullscreen. No-op (returns `None`) if the
+/// the source body and revert fullscreen. No-op (returns `None`) if the
 /// viewer wasn't open.
 pub(crate) fn close_video_session() -> Option<((String, String), bool)> {
     let mut taken = video_session_slot().lock().unwrap().take()?;
@@ -820,7 +820,7 @@ pub(crate) fn start_video_playback(
 }
 
 /// Build the libmpv player for already-decrypted `bytes`, wiring its frame and
-/// state callbacks to the video viewer. Caches the first frame as the bubble
+/// state callbacks to the video viewer. Caches the first frame as the body
 /// poster and the clip duration. Attaches the player to the open
 /// [`VideoSession`] so the viewer controls + dismiss can reach it. Safe to
 /// call off the UI thread.
@@ -840,7 +840,7 @@ pub(crate) fn spawn_video_player(weak: Weak<WhiteNoiseLinux>, mid: String, bytes
         let frame_seen = frame_seen.clone();
         move |px: PicturePixels| {
             frame_seen.store(true, Ordering::Release);
-            // First frame doubles as the bubble poster (cached once).
+            // First frame doubles as the body poster (cached once).
             if !poster_saved.swap(true, Ordering::AcqRel) {
                 attachment_image_cache_put(vidposter_key(&mid), px.clone());
             }
@@ -924,10 +924,10 @@ pub(crate) fn stop_current_audio() {
 
 /// Start playing an audio attachment. `bytes` are the decrypted audio data
 /// (any format rodio decodes: WAV from our own recorder, m4a/mp3 from other
-/// clients). A monitor thread keeps the playing message's bubble refreshed
+/// clients). A monitor thread keeps the playing message's body refreshed
 /// with position/duration. When playback finishes or another message is
-/// started, the bubble is updated accordingly. A decode failure lands in
-/// [`audio_decode_failed`] and repaints the bubble so the player shows a
+/// started, the body is updated accordingly. A decode failure lands in
+/// [`audio_decode_failed`] and repaints the body so the player shows a
 /// "Can't play this audio format" notice instead of silently doing nothing.
 pub(crate) fn start_audio_playback(
     weak: Weak<WhiteNoiseLinux>,
@@ -943,7 +943,7 @@ pub(crate) fn start_audio_playback(
         Ok(p) => p,
         Err(e @ audio::PlayError::Output(_)) => {
             // Environmental (no usable output device) — the clip itself is
-            // fine, so don't brand the bubble unplayable.
+            // fine, so don't brand the body unplayable.
             tracing::warn!(target: "audio", "play {message_id}: {e}");
             if let Some(ui) = weak.upgrade() {
                 set_status_feedback(&ui, error_copy().audio_playback, true);
@@ -1021,7 +1021,7 @@ pub(crate) fn start_audio_playback(
                 stop_current_audio();
             }
             if let Some(ui) = weak_i.upgrade() {
-                // Refresh the bubble so the play button / progress bar updates.
+                // Refresh the body so the play button / progress bar updates.
                 let idx = ui.get_active_chat() as usize;
                 let group_opt = {
                     let ids = group_ids_i.lock().unwrap();
@@ -1184,7 +1184,7 @@ pub(crate) fn album_layout(
     (out, total_h)
 }
 
-/// Album width for a bubble (outgoing bubbles are narrower than incoming).
+/// Album width for a message body (outgoing message rows are narrower than incoming).
 pub(crate) fn album_box_w(outgoing: bool) -> f32 {
     if outgoing { 360.0 } else { 380.0 }
 }
@@ -1514,7 +1514,7 @@ pub(crate) fn retry_album_cell(group_hex: String, key: String) {
 }
 
 /// Build a [`StagedFile`] from raw bytes: full-resolution decode for the
-/// optimistic bubble preview plus a ≤96px thumbnail for the composer chip.
+/// optimistic body preview plus a ≤96px thumbnail for the composer chip.
 /// Blocking image decode — call off the UI thread.
 pub(crate) fn staged_file_from_bytes(
     file_name: String,

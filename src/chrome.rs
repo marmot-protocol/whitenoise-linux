@@ -144,7 +144,7 @@ pub(crate) fn format_unix(secs: u64) -> String {
     format_clock(&z)
 }
 
-/// Unabbreviated stamp for the bubble-timestamp hover tooltip: the full date
+/// Unabbreviated stamp for the body-timestamp hover tooltip: the full date
 /// (year always included) plus the clock, both honoring the user's format
 /// preferences and locale.
 pub(crate) fn format_full_stamp(secs: u64) -> String {
@@ -1037,7 +1037,7 @@ pub(crate) fn push_group_members_to_ui_from(
 }
 
 /// Spawn async avatar fetches for the open chat's incoming senders. When a
-/// picture decodes, every bubble from that sender (keyed by `sender-id`) gets
+/// picture decodes, every body from that sender (keyed by `sender-id`) gets
 /// the image bound in place — no full rebuild. Mirrors the members pipeline.
 pub(crate) fn spawn_message_avatar_fetches(
     ui: &WhiteNoiseLinux,
@@ -1062,14 +1062,14 @@ pub(crate) fn spawn_message_avatar_fetches(
             ui.as_weak(),
             backend.tokio_handle(),
             url,
-            move |ui, pixels| update_bubble_pictures(ui, &sender_id, pixels),
+            move |ui, pixels| update_body_pictures(ui, &sender_id, pixels),
         );
     }
 }
 
-/// Bind a decoded picture onto every incoming bubble from `sender_id` in the
+/// Bind a decoded picture onto every incoming body from `sender_id` in the
 /// currently-open chat. Outgoing rows are skipped (they paint `my-picture`).
-pub(crate) fn update_bubble_pictures(
+pub(crate) fn update_body_pictures(
     ui: &WhiteNoiseLinux,
     sender_id: &str,
     pixels: &PicturePixels,
@@ -1649,7 +1649,7 @@ fn apply_message_event(
                 // reconciled our own send, or the event was redelivered), do
                 // nothing. Otherwise append it surgically — no full rebuild.
                 // `build_one_message_row` returns a centered system line for
-                // kind-1210 and a bubble for kind-9.
+                // kind-1210 and a message body for kind-9.
                 let my_id = b.account().account_id_hex.clone();
                 let my_label = my_avatar_label(&b, &my_id);
                 let Some(rec) = all.iter().find(|m| m.message_id_hex == msg_id).cloned() else {
@@ -1667,7 +1667,7 @@ fn apply_message_event(
                 })
                 .unwrap_or(false);
                 // A brand-new sender's avatar may not be cached yet; fetch it so
-                // the freshly-appended bubble fills in.
+                // the freshly-appended body fills in.
                 if pushed && !rec.sender.eq_ignore_ascii_case(&my_id) {
                     drop(overlay);
                     spawn_message_avatar_fetches(&ui, &b, &all);
@@ -1694,7 +1694,7 @@ fn apply_message_event(
             }
             _ => {}
         }
-        // Keep the rail's "last message" line in step with the bubbles — a new
+        // Keep the rail's "last message" line in step with the message rows — a new
         // message moves it, and an edit/delete of the newest message rewrites
         // it. (`update_chat_row_preview` no-ops when nothing changed.)
         update_chat_row_preview(&ui, &b, chat_idx, &all);
@@ -1787,7 +1787,7 @@ pub(crate) fn install_message_watcher(
             }
             // Interesting wire kinds: chat (9), reaction/delete/edit (7/5/1009),
             // and group-system rows (1210). Each becomes a surgical model update
-            // so neighbouring bubbles don't remount.
+            // so neighbouring message rows don't remount.
             let kind = received.kind;
             if !matches!(kind, 9 | 7 | 5 | 1009 | 1210) {
                 return;

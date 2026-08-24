@@ -81,7 +81,7 @@ All UI mutations (send, react, unreact) go through a `PendingState` overlay (`st
 1. The mutation is applied locally to the overlay, and the UI rebuilds the affected message rows from `backend snapshot ∪ overlay`.
 2. The real op dispatches on the tokio runtime.
 3. On ack, the overlay entry is dropped, and the next rebuild pulls the confirmed record from the snapshot.
-4. On failure, the overlay entry is marked failed (red bubble, tap to retry).
+4. On failure, the overlay entry is marked failed (red body, tap to retry).
 
 Three entry points share the same model-to-row pipeline; **changing the avatar/text/etc. for a row means touching all three:**
 
@@ -89,13 +89,13 @@ Three entry points share the same model-to-row pipeline; **changing the avatar/t
 - `pending_chat_message(pending, my_id, my_label)`: pending/failed rows.
 - `build_one_message_row(...)` / `rebuild_chat_messages(...)` / `refresh_one_message_row(...)`: orchestrators that call the two above.
 
-`my_label` is the user's display name (`backend.account_display_name(&my_id)`, falling back to the account hex). It drives the outgoing-bubble avatar palette/initials so the user's own messages match the left-rail avatar.
+`my_label` is the user's display name (`backend.account_display_name(&my_id)`, falling back to the account hex). It drives the outgoing-body avatar palette/initials so the user's own messages match the left-rail avatar.
 
 Group chats add a member-list panel backed by `Backend::group_members`, `GroupMember` Slint rows, and `push_group_members_to_ui`.
 
 ### Markdown rendering
 
-Chat bodies are parsed with `whitenoise-markdown` (the same CommonMark + GFM + nostr-entity parser whitenoise-rs uses) into a `Document`, then flattened in `render.rs` into the bubble's line/run model: each `MessageLine` is one visual line, each `MessageRun` an inline text/emoji cell with resolved styling; block context (heading scale, list/blockquote indent, code plates, rules) rides on the line. Line wrapping is Rust-side and greedy: character widths are *estimated* (`MD_CHAR_W`, `MD_EMOJI_W`, fractions of font-size) only to pick break points, and Slint draws with real metrics.
+Chat bodies are parsed with `whitenoise-markdown` (the same CommonMark + GFM + nostr-entity parser whitenoise-rs uses) into a `Document`, then flattened in `render.rs` into the body's line/run model: each `MessageLine` is one visual line, each `MessageRun` an inline text/emoji cell with resolved styling; block context (heading scale, list/blockquote indent, code plates, rules) rides on the line. Line wrapping is Rust-side and greedy: character widths are *estimated* (`MD_CHAR_W`, `MD_EMOJI_W`, fractions of font-size) only to pick break points, and Slint draws with real metrics.
 
 ### Avatar pipeline
 
@@ -140,7 +140,7 @@ Translations keep one register per language, held across the whole catalog. Pers
 - **Accent system:** `Theme.accent` is an index (0..4 = mint/ocean/berry/coral/lavender) into the active pack's `accent-*` tables. Read the resolved colors from `Palette.mint` / `mint-hi` / `mint-dim` / `mint-glow` / `mint-surface`, never hardcode an accent.
 - **Font sizes** go through the theme helpers: `font-size: Theme.fs(12px, 16px)` declares the modern and pixel-grid sizes and lets the active theme's `pixel-metrics` flag pick one (retro is the only pixel-metrics theme). Never write a bare `font-size: 12px` or multiply by a scale factor — `Theme.fs-scale` has been removed; every site goes through `Theme.fs()` (render sites) or `Theme.fsr()` (primitive property defaults consumed through `root.font-size`).
 - **Border radius** is scaled by `Theme.r-scale` so retro mode can zero it.
-- **Avatars** on the left-rail / outgoing-bubble / profile-page / members-list all read from a common `my-av-*` set of root properties on `WhiteNoiseLinux`, pushed from Rust on profile load. Don't reintroduce hardcoded initials/colors at the leaf; wire the property through.
+- **Avatars** on the left-rail / outgoing-body / profile-page / members-list all read from a common `my-av-*` set of root properties on `WhiteNoiseLinux`, pushed from Rust on profile load. Don't reintroduce hardcoded initials/colors at the leaf; wire the property through.
 
 ## Learned user preferences
 

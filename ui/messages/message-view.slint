@@ -2,22 +2,18 @@
 //
 // Takes one ChatMessage (the view-model contract struct) plus the small bit of
 // row context that isn't on the message itself, and dispatches to the render
-// body selected by `Theme.skin-message`. Skin 0 is the standard incoming/
-// outgoing bubble rows. A drastic theme (e.g. terminal) adds skin 1+ here and
+// body selected by `Theme.skin-message`. Skin 0 is the standard flat message
+// rows; skin 1 the terminal line. A drastic theme adds skin 2+ here and
 // selects it via its ThemeStyle pack — without any change to messages.slint or
 // the Rust glue. See ui/CONTRACT.md.
 //
 // Actions (react/reply/edit/context/attachment/…) are invoked straight on the
-// AppState contract by whichever element originates them — no callback
-// forwarding through this slot. Only `play-effect` still bubbles up: it is
-// messages-area mechanics (overlay-local burst staging), not contract.
-import { Palette, Theme, ChatMessage } from "../tokens.slint";
-import { AppState } from "../shell/app-state.slint";
-import { IncomingRow } from "incoming-row.slint";
-import { OutgoingRow } from "outgoing-row.slint";
+// AppState contract by whichever element originates them, and effect bursts
+// go through the MessageFx sink — no callback forwarding through this slot.
+import { Theme, ChatMessage } from "../tokens.slint";
+import { MessageRow } from "message-row.slint";
+import { TerminalLine } from "terminal-line.slint";
 import { SystemLine } from "system-line.slint";
-import { Tooltip } from "../primitives/tooltip.slint";
-import { ReactionsRow } from "reactions-row.slint";
 
 export component MessageView inherits VerticalLayout {
     spacing: 0;
@@ -27,185 +23,31 @@ export component MessageView inherits VerticalLayout {
     in property <bool> highlighted: false;
     // Row context not carried on the message.
     in property <length> row-w: 9999px;
+    // The one author-label resolution, shared by every skin.
+    property <string> author-label: root.msg.outgoing
+        ? @tr("You")
+        : (root.msg.sender-name != "" ? root.msg.sender-name : root.msg.av-initials);
 
-    callback play-effect(int, int, int, length, length, length, length);
-    // Floating hover-toolbar plumbing (bubble skins → MessagesArea overlay):
-    // arm carries (message-id, reply text, author, can-edit, bubble abs-x/y,
-    // bubble w/h); disarm carries the message-id it releases. Like
-    // play-effect, this is messages-area mechanics, not AppState contract.
-    callback arm-actions(string, string, string, bool, length, length, length, length);
-    callback disarm-actions(string);
 
     // ── Group system row: a centered system line, shared across every skin.
     // Rendered before the skins and guarded out of them below so a kind-1210
-    // record never falls into a bubble or terminal line. ──
+    // record never falls into a message body or terminal line. ──
     if root.msg.system-line: SystemLine {
         msg: root.msg;
     }
 
-    // ── Skin 0: standard bubble rows ──
-    if Theme.skin-message == 0 && !root.msg.system-line && !root.msg.outgoing: IncomingRow {
+    // ── Skin 0: standard flat rows (incoming and outgoing render the same) ──
+    if Theme.skin-message == 0 && !root.msg.system-line: MessageRow {
         msg: root.msg;
         highlighted: root.highlighted;
         row-w: root.row-w;
-        play-effect(eid, cx, cy, ax, ay, w, h) => {
-            root.play-effect(eid, cx, cy, ax, ay, w, h);
-        }
-        arm-actions(id, text, author, can-edit, ax, ay, w, h) => {
-            root.arm-actions(id, text, author, can-edit, ax, ay, w, h);
-        }
-        disarm-actions(id) => {
-            root.disarm-actions(id);
-        }
+        author-label: root.author-label;
     }
 
-    if Theme.skin-message == 0 && !root.msg.system-line && root.msg.outgoing: OutgoingRow {
+    // ── Skin 1: terminal line — `<sender> message text` ──
+    if Theme.skin-message == 1 && !root.msg.system-line: TerminalLine {
         msg: root.msg;
         highlighted: root.highlighted;
-        row-w: root.row-w;
-        play-effect(eid, cx, cy, ax, ay, w, h) => {
-            root.play-effect(eid, cx, cy, ax, ay, w, h);
-        }
-        arm-actions(id, text, author, can-edit, ax, ay, w, h) => {
-            root.arm-actions(id, text, author, can-edit, ax, ay, w, h);
-        }
-        disarm-actions(id) => {
-            root.disarm-actions(id);
-        }
-    }
-
-    // ── Skin 1: terminal line — `<sender> message text` (no bubbles/avatars) ──
-    if Theme.skin-message == 1 && !root.msg.system-line: line := Rectangle {
-        // Attachment state. Albums carry their cells in `album`; single
-        // attachments use the `att-*` fields. A line with media routes its tap to
-        // the same viewer/slideshow the bubble uses (attachment-clicked /
-        // album-cell-clicked) so images stay openable in terminal mode.
-        property <bool> is-album: root.msg.album.length > 0;
-        property <bool> has-media: self.is-album || root.msg.has-attachment;
-        property <string> media-label:
-            self.is-album ? @tr("[{} images — click to view]", root.msg.album.length)
-            : (root.msg.att-is-image ? @tr("[image: {} — click to view]", root.msg.att-name)
-            : (root.msg.att-is-video ? @tr("[video: {} — click to play]", root.msg.att-name)
-            : (root.msg.att-is-audio ? @tr("[audio: {}]", root.msg.att-name)
-            : @tr("[file: {}]", root.msg.att-name))));
-        // Shared whole-line action: album → attachment → reply.
-        function activate() {
-            if (self.is-album) {
-                AppState.album-cell-clicked(root.msg.album[0].key);
-            } else if (root.msg.has-attachment) {
-                AppState.attachment-clicked(root.msg.message-id);
-            } else {
-                AppState.request-reply(root.msg.message-id, root.msg.text, root.msg.outgoing ? "you" : root.msg.sender-name);
-            }
-        }
-
-        background: root.highlighted ? Palette.mint-glow : (root.msg.mentioned ? Palette.selected : (term-touch.has-hover ? Palette.hover : transparent));
-        HorizontalLayout {
-            padding-left: 12px;
-            padding-right: 12px;
-            padding-top: 1px;
-            padding-bottom: 1px;
-            spacing: 6px;
-            alignment: start;
-            Text {
-                text: "<" + (root.msg.outgoing ? "you" : (root.msg.sender-name == "" ? root.msg.av-initials : root.msg.sender-name)) + ">";
-                color: root.msg.outgoing ? Palette.mint-dim : Palette.mint;
-                font-family: Theme.font;
-                font-size: Theme.fs(13px, 16px);
-                font-weight: 700;
-                vertical-alignment: top;
-            }
-
-            VerticalLayout {
-                horizontal-stretch: 1;
-                alignment: start;
-                spacing: 1px;
-                if root.msg.deleted: Text {
-                    text: @tr("This message was deleted");
-                    color: Palette.text-mid;
-                    font-family: Theme.font;
-                    font-size: Theme.fs(13px, 16px);
-                    font-italic: true;
-                    wrap: word-wrap;
-                }
-                if root.msg.text != "" && !root.msg.deleted: Text {
-                    text: root.msg.text;
-                    color: root.msg.failed ? Palette.danger : Palette.text-hi;
-                    font-family: Theme.font;
-                    font-size: Theme.fs(13px, 16px);
-                    wrap: word-wrap;
-                }
-                // Accent-colored, clickable attachment label (the whole line is
-                // the click target — see term-touch below).
-                if line.has-media && !root.msg.deleted: Text {
-                    text: line.media-label;
-                    color: Palette.mint;
-                    font-family: Theme.font;
-                    font-size: Theme.fs(12px, 16px);
-                    font-weight: 700;
-                    wrap: word-wrap;
-                }
-            }
-
-            if root.msg.stamp != "": Rectangle {
-                width: term-stamp.preferred-width;
-                term-stamp := Text {
-                    text: root.msg.stamp;
-                    color: Palette.text-vlo;
-                    font-family: Theme.font;
-                    font-size: Theme.fs(11px, 14px);
-                    vertical-alignment: top;
-                }
-                // Hover tooltip with the full datetime. Forwards clicks to the
-                // same handler as `term-touch` (which it sits on top of) so the
-                // whole-line click target keeps working over the stamp.
-                term-stamp-touch := TouchArea {
-                    mouse-cursor: pointer;
-                    clicked => {
-                        line.activate();
-                    }
-                }
-
-                if term-stamp-touch.has-hover && root.msg.stamp-full != "": Tooltip {
-                    x: parent.width - self.width;
-                    y: -self.height - 4px;
-                    label: root.msg.stamp-full;
-                    is-visible: true;
-                }
-            }
-        }
-        // One TouchArea for the whole line; the action is chosen in the handler
-        // (album → attachment → reply) to avoid overlapping/if-mounted TouchAreas.
-        // A retracted tombstone offers no actions, so the right-click branch is
-        // suppressed the same way the bubble skin's hover toolbar is.
-        term-touch := TouchArea {
-            mouse-cursor: pointer;
-            clicked => {
-                line.activate();
-            }
-            pointer-event(e) => {
-                if (e.kind == PointerEventKind.down && e.button == PointerEventButton.right
-                        && root.msg.message-id != "" && !root.msg.deleted) {
-                    AppState.arm-context-menu(
-                        root.msg.message-id, root.msg.text,
-                        root.msg.outgoing ? @tr("You") : (root.msg.sender-name == "" ? root.msg.av-initials : root.msg.sender-name),
-                        root.msg.outgoing ? root.msg.can-edit : false,
-                        self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
-                }
-            }
-        }
-    }
-
-    // Reaction chips — mirrors IncomingRow/OutgoingRow's ReactionsRow, only
-    // present when the message actually has reactions.
-    if Theme.skin-message == 1 && !root.msg.system-line && root.msg.message-id != "" && root.msg.reaction-rows.length > 0: HorizontalLayout {
-        padding-left: 12px;
-        padding-right: 12px;
-        padding-bottom: 2px;
-        ReactionsRow {
-            message-id: root.msg.message-id;
-            rows: root.msg.reaction-rows;
-            align-right: false;
-        }
+        author-label: root.author-label;
     }
 }

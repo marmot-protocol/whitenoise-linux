@@ -32,7 +32,7 @@ export component ChatRequestBar inherits Rectangle {
             focusable: true;
             y: (parent.height - self.height) / 2;
             bg-color: Palette.mint;
-            fg: Palette.bubble-out-fg;
+            fg: Palette.on-accent;
             outline: Palette.mint;
             hover-bg: Palette.mint-hi;
             hover-outline: Palette.mint-hi;
@@ -40,7 +40,7 @@ export component ChatRequestBar inherits Rectangle {
                 root.accept-clicked();
             }
             CheckMark {
-                stroke: Palette.bubble-out-fg;
+                stroke: Palette.on-accent;
                 double: false;
             }
         }

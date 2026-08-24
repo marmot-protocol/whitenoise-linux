@@ -97,7 +97,7 @@ export component RunCell inherits Rectangle {
     property <float> sz: root.base-sz * root.anim-sz;
     // During the hold the glyph is solid (with a quick fade-in at the very
     // start); during the burst it fades out fast (gone by ~40% of the arc, so
-    // no half-faded letters drift across the bubble), and stays gone until the
+    // no half-faded letters drift across the body), and stays gone until the
     // next hold.
     property <float> fx-opacity:
         root.f-explode ? (root.explode-l < 1.3 ? clamp(root.explode-l / 0.25, 0, 1) : clamp(1 - root.ep * 1.6, 0, 1)) : 1.0;
@@ -129,7 +129,7 @@ export component RunCell inherits Rectangle {
 
     // Highlight from the RESOLVED endpoints (line, run, fraction) — the same
     // values the extractor copies, so painted and copied text agree; it also
-    // lets word / whole-bubble selections set endpoints directly without
+    // lets word / whole-body selections set endpoints directly without
     // synthesizing pointer coordinates. Endpoints arrive unordered (a =
     // anchor, b = cursor); order them lexicographically first.
     property <bool> sel-on: root.sel-mine && TextSelection.active && TextSelection.a-line >= 0 && TextSelection.a-run >= 0 && TextSelection.b-line >= 0 && TextSelection.b-run >= 0;
@@ -285,7 +285,7 @@ export component RunCell inherits Rectangle {
     }
 
     // Always mounted (never `if`-gated) and disabled for non-link runs so it
-    // doesn't intercept hover/clicks meant for the bubble's hover sensor.
+    // doesn't intercept hover/clicks meant for the body's hover sensor.
     link-touch := TouchArea {
         enabled: root.is-link;
         mouse-cursor: root.is-link ? pointer : default;

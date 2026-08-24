@@ -1,0 +1,51 @@
+import { Palette, Theme } from "../tokens.slint";
+import { Tooltip } from "../primitives/tooltip.slint";
+
+// Timestamp label with a hover tooltip showing the full localized datetime.
+// Shared by the flat row's name header (bottom-aligned, danger on failed
+// sends) and the terminal line (top-aligned, clickable).
+export component StampBadge inherits Rectangle {
+    in property <string> stamp;
+    in property <string> stamp-full;
+    in property <color> fg: Palette.text-lo;
+    in property <length> fs: Theme.fs(10px, 12px);
+    // bottom pins the label to the header baseline (flat row); top rides the
+    // terminal line's cap height.
+    in property <bool> bottom-align: true;
+    // Pin the tooltip's right edge to the stamp — for stamps sitting near the
+    // row's right edge, so the card can't overflow the pane.
+    in property <bool> tip-right: false;
+    // True when a tap on the stamp does something (terminal line activates the
+    // message); shows a pointer cursor.
+    in property <bool> clickable: false;
+    // Reports hover so the flat row's full-row tint stays lit over the stamp
+    // (a covered TouchArea never reports has-hover to the row's own sensor).
+    out property <bool> hovered: touch.has-hover;
+    callback clicked();
+
+    width: label.preferred-width;
+
+    label := Text {
+        x: 0;
+        height: 100%;
+        text: root.stamp;
+        color: root.fg;
+        font-size: root.fs;
+        font-family: Theme.font;
+        vertical-alignment: root.bottom-align ? bottom : top;
+    }
+
+    touch := TouchArea {
+        mouse-cursor: root.clickable ? pointer : default;
+        clicked => {
+            root.clicked();
+        }
+    }
+
+    if touch.has-hover && root.stamp-full != "": Tooltip {
+        x: root.tip-right ? parent.width - self.width : 0;
+        y: -self.height - 6px;
+        label: root.stamp-full;
+        is-visible: true;
+    }
+}

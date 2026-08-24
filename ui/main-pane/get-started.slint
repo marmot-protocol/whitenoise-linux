@@ -110,7 +110,7 @@ component StepCard inherits Rectangle {
                 if root.done: CheckMark {
                     x: (parent.width - self.width) / 2;
                     y: (parent.height - self.height) / 2;
-                    stroke: Palette.bubble-out-fg;
+                    stroke: Palette.on-accent;
                 }
             }
         }
@@ -276,9 +276,9 @@ export component GetStartedScreen inherits Rectangle {
                                 outline: Palette.mint;
                                 hover-bg: Palette.mint-hi;
                                 hover-outline: Palette.mint-hi;
-                                fg: Palette.bubble-out-fg;
+                                fg: Palette.on-accent;
                                 PlusIcon {
-                                    stroke: Palette.bubble-out-fg;
+                                    stroke: Palette.on-accent;
                                     size: 12px;
                                 }
 
@@ -384,9 +384,9 @@ export component GetStartedScreen inherits Rectangle {
                                 outline: self.ready ? Palette.mint : Palette.border-2;
                                 hover-bg: self.ready ? Palette.mint-hi : Palette.panel-2;
                                 hover-outline: self.ready ? Palette.mint-hi : Palette.border-2;
-                                fg: AppState.kp-published ? Palette.text-mid : (AppState.network-total > 0 ? Palette.bubble-out-fg : Palette.text-vlo);
+                                fg: AppState.kp-published ? Palette.text-mid : (AppState.network-total > 0 ? Palette.on-accent : Palette.text-vlo);
                                 KeyIcon {
-                                    stroke: AppState.kp-published ? Palette.text-mid : (AppState.network-total > 0 ? Palette.bubble-out-fg : Palette.text-vlo);
+                                    stroke: AppState.kp-published ? Palette.text-mid : (AppState.network-total > 0 ? Palette.on-accent : Palette.text-vlo);
                                 }
 
                                 clicked => {
@@ -431,9 +431,9 @@ export component GetStartedScreen inherits Rectangle {
                                 outline: Palette.mint;
                                 hover-bg: Palette.mint-hi;
                                 hover-outline: Palette.mint-hi;
-                                fg: Palette.bubble-out-fg;
+                                fg: Palette.on-accent;
                                 StartChatIcon {
-                                    stroke: Palette.bubble-out-fg;
+                                    stroke: Palette.on-accent;
                                 }
 
                                 clicked => {

@@ -60,7 +60,7 @@ impl Backend {
     /// onto the Slint event loop in the callback.
     ///
     /// This is the engine behind optimistic-rendering — the UI inserts a
-    /// pending bubble first, then calls this, then reconciles on done.
+    /// pending body first, then calls this, then reconciles on done.
     pub fn send_text_async<F>(&self, group_hex: &str, text: &str, on_done: F)
     where
         F: FnOnce(Result<SendSummary>) + Send + 'static,
@@ -107,7 +107,7 @@ impl Backend {
 
     /// Non-blocking album upload + send: all images go out as **one** kind-9
     /// message carrying one `imeta` tag per image (so the UI renders them as a
-    /// single grid bubble). Each item is `(file_name, media_type, plaintext,
+    /// single grid body). Each item is `(file_name, media_type, plaintext,
     /// dim)`, where `dim` is `"WxH"` so receivers can lay out the grid without
     /// decoding. Shares the same self-heal-and-retry as [`upload_media_async`].
     pub fn upload_album_async<F>(
@@ -197,7 +197,7 @@ impl Backend {
 
     /// Publish a kind-1009 edit of `message_id_hex` with replacement text
     /// `content`. Same optimistic-reconciliation shape as [`react_async`] — the
-    /// UI overlay rewrites the bubble immediately and the ack/echo reconciles.
+    /// UI overlay rewrites the body immediately and the ack/echo reconciles.
     pub fn edit_message_async<F>(
         &self,
         group_hex: &str,

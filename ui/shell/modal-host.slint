@@ -270,7 +270,7 @@ export component ModalHost inherits Rectangle {
 
         // Right-click menus: both read their AppState.member-menu-* /
         // ctx-menu-* invocation context directly and re-fire the same AppState
-        // callbacks the hover toolbar uses, so the Rust side is untouched.
+        // callbacks the context menu uses, so the Rust side is untouched.
         if AppState.member-menu-open: GroupMemberMenu { }
 
         if AppState.ctx-menu-open: MessageContextMenu { }

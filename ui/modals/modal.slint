@@ -265,7 +265,7 @@ export component Modal inherits Rectangle {
                                     outline: root.primary-danger ? Palette.danger : Palette.mint;
                                     hover-bg: root.primary-danger ? Palette.danger.brighter(0.12) : Palette.mint-hi;
                                     hover-outline: root.primary-danger ? Palette.danger.brighter(0.12) : Palette.mint-hi;
-                                    fg: Palette.bubble-out-fg;
+                                    fg: Palette.on-accent;
                                     clicked => {
                                         if (root.primary-enabled && !root.primary-busy) {
                                             root.primary();
@@ -347,7 +347,7 @@ export component ModalField inherits VerticalLayout {
     // Forwarded LineInput nav-capture hooks: a list-picker modal sets
     // `capture-nav` so ↑/↓ drive its cursor (`nav`) while focus stays in this
     // field. A focused TextInput otherwise consumes arrow keys as caret moves,
-    // so they never bubble to an outer FocusScope. While captured, Enter
+    // so they never body to an outer FocusScope. While captured, Enter
     // fires `submitted` and Esc fires `nav-dismissed` instead of editing
     // keys; Tab keeps its focus-traversal role.
     in property <bool> capture-nav: false;

@@ -21,7 +21,7 @@ pub(crate) fn clear_reply_target(ui: &WhiteNoiseLinux) {
 pub(crate) fn wire_reply_target(ui: &WhiteNoiseLinux) {
     // ─── Reply target (set / cancel) ───────────────────────────────────
     //
-    // The bubble's "↩" affordance fires `request-reply(id, preview, author)`.
+    // The body's "↩" affordance fires `request-reply(id, preview, author)`.
     // We stash all three on the root so the composer chip renders, then the
     // next send pulls them off and routes through `reply_text_async`.
     wire!(ui, on_request_reply [], |ui, message_id, preview, author| {
@@ -73,7 +73,7 @@ pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     // ─── Send message (optimistic) ─────────────────────────────────────
     //
     // Flow:
-    //   1. Insert pending bubble + clear draft instantly.
+    //   1. Insert pending body + clear draft instantly.
     //   2. Spawn the real send on tokio (non-blocking).
     //   3. On ack from the runtime, hop back to the Slint event loop, drop
     //      the pending entry, and rebuild from the backend snapshot — which
@@ -81,7 +81,7 @@ pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     //   4. On failure, mark the pending entry failed and rebuild (the row
     //      stays put but flips to the red "tap to retry" state).
     //
-    // The UI never blocks on the network. The pending bubble dims + shows
+    // The UI never blocks on the network. The pending body dims + shows
     // a single check; once confirmed it flips to the regular double-check.
     // Signature: (group_hex, clean_text, temp_id, Option<parent_id_hex>,
     // effect_id). When the parent id is `Some`, the dispatch routes through
@@ -92,7 +92,7 @@ pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     // ─── Edit dispatch (optimistic, surgical) ─────────────────────────
     //
     // Same shape as `react_op`: stamp the overlay, rewrite ONLY the target
-    // bubble's text locally, publish the kind-1009 in the background, then on
+    // body's text locally, publish the kind-1009 in the background, then on
     // ack drop the overlay and refresh ONLY that row from the snapshot (which
     // now carries the confirmed edit). On failure the overlay is dropped too,
     // so the row reverts to its last confirmed text.
@@ -179,7 +179,7 @@ pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                     clear_reply_target(&ui);
                 }
 
-                // 1. Insert pending bubble + clear the composer. Surgical push —
+                // 1. Insert pending body + clear the composer. Surgical push —
                 //    no full rebuild, no neighbour remount.
                 let temp_id = next_temp_id();
                 let send = PendingSend {
@@ -233,7 +233,7 @@ pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                         st.save();
                     }
                 }
-                // Force-scroll to the new bubble. The MessagesArea watches this
+                // Force-scroll to the new body. The MessagesArea watches this
                 // tick and animates viewport-y to the bottom — so the user sees
                 // their message even if they were paged up reading history.
                 ui.set_messages_scroll_tick(ui.get_messages_scroll_tick() + 1);
@@ -255,9 +255,9 @@ pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             }
 
             // 3. Flush the staged attachments. Multiple images go out as one
-            //    kind-9 album (one bubble, rendered as a grid); a lone image or
+            //    kind-9 album (one body, rendered as a grid); a lone image or
             //    any non-image file goes out as its own message. Chips clear
-            //    immediately; a failed upload surfaces on its bubble (red, tap
+            //    immediately; a failed upload surfaces on its body (red, tap
             //    to retry) like any other send. Telegram caps an album at 10.
             let staged_now: Vec<StagedFile> = std::mem::take(&mut *staged_files.lock().unwrap());
             if !staged_now.is_empty() {
@@ -318,7 +318,7 @@ pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
 
     // ─── Retry a failed send ───────────────────────────────────────────
     //
-    // The bubble owns its retry click. We look up the pending entry by its
+    // The body owns its retry click. We look up the pending entry by its
     // temp id (carried in `message_id`), flip it back to non-failed, and
     // re-dispatch.
     ui.global::<AppState>().on_retry_message({
@@ -426,7 +426,7 @@ pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                     }
                     _ => {
                         // No durable bytes to retry with (e.g. an entry from before
-                        // this feature). Leave the bubble as-is.
+                        // this feature). Leave the body as-is.
                         tracing::warn!(target: "retry", "no durable media for {temp_id}");
                     }
                 }
@@ -596,7 +596,7 @@ pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
 
     // ─── Attachment clicked (download + open) ──────────────────────────
     //
-    // Confirmed attachment bubble tapped. For images we decrypt + decode +
+    // Confirmed attachment body tapped. For images we decrypt + decode +
     // cache pixels then repaint the row so the preview swaps in. For other
     // files we prompt save-as first (so the user can cancel before any
     // network traffic) then write the decrypted bytes to that path.
@@ -704,7 +704,7 @@ pub(crate) fn wire_messaging(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
 
     // ─── Audio play / seek (inline voice-message player) ───────────────
     //
-    // The bubble's audio player routes play/pause and progress-bar taps here.
+    // The body's audio player routes play/pause and progress-bar taps here.
     // Play toggles the current clip; seek jumps to a fraction of the duration.
     // Both operate on the per-message encrypted cache just like images/videos.
     ui.global::<AppState>().on_audio_play_clicked({
@@ -1084,7 +1084,7 @@ fn open_audio_tap(cx: AttachmentTapCx, reference: MediaAttachmentReference) {
 
 /// Video → open the in-app libmpv viewer and start playback. The poster
 /// (first frame) + duration get cached during playback, so the dismiss
-/// handler can repaint the bubble tile afterwards.
+/// handler can repaint the body tile afterwards.
 fn open_video_tap(ui: &WhiteNoiseLinux, cx: AttachmentTapCx, reference: MediaAttachmentReference) {
     clear_attachment_in_flight(&cx.mid);
     open_video_session((cx.group_hex.clone(), cx.mid.clone()), reference.clone());
@@ -1209,7 +1209,7 @@ fn spawn_attachment_download(
                 // Persist the decrypted original bytes to the encrypted disk
                 // cache so this attachment (image or generic file) survives a
                 // restart without another Blossom round-trip + decrypt, and
-                // record the now-known plaintext size for the bubble's size
+                // record the now-known plaintext size for the body's size
                 // label.
                 if let Some(v) = &cx.vault {
                     media_cache::put(v, &cache_hash, &dl.plaintext);

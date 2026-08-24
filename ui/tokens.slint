@@ -20,33 +20,24 @@ export struct ThemeColors {
     banner: color,
     border: color,
     border-2: color,
-    bubble-in: color,
-    // Recessed surfaces *inside* a received bubble, drawn over bubble-in.
-    // `bubble-inset` is the standard plate (reply quote, attachment tiles and
-    // chips, audio player); `bubble-inset-strong` is the deeper recess drawn on
-    // top of an inset plate (audio scrubber track). (Were
-    // `Theme.light ? #E2E8F0 : #ffffff10`-style two-way hexes in message-bubble.)
-    bubble-inset: color,
-    bubble-inset-strong: color,
-    // Code background inside a received bubble: the fenced-block plate and
-    // inline-code chips.
+    plate: color,
+    // Recessed plate surfaces: `plate-inset` is the standard plate (reply
+    // quote, attachment tiles and chips, audio player); `plate-inset-strong`
+    // is the deeper recess drawn on top of an inset plate (audio scrubber
+    // track).
+    plate-inset: color,
+    plate-inset-strong: color,
+    // Code background: the fenced-block plate and inline-code chips.
     code-plate: color,
     // Letterbox behind video posters — dark in every theme so the white play
     // badge and duration chip stay readable over it.
     media-backdrop: color,
-    // Recessed surfaces inside the outgoing accent bubble, mirroring the
-    // received-bubble tokens above so components never hardcode black alphas.
-    bubble-inset-out: color,
-    bubble-inset-out-strong: color,
-    code-plate-out: color,
-    media-backdrop-out: color,
-    bubble-selection-out: color,
     text-hi: color,
     text-mid: color,
     text-lo: color,
     text-vlo: color,
     hover: color,
-    bubble-out-fg: color,
+    on-accent: color,
     bevel-hi: color,
     bevel-lo: color,
     danger: color,
@@ -99,13 +90,11 @@ export struct ThemeColors {
     // Soft (blurred) drop-shadow tints; hard-shadow themes use Palette.shadow
     // instead. `shadow-soft` is the in-canvas lift (jump pill), `shadow-card`
     // the strongest modal/login card shadow, `shadow-popover` menu/dropdown
-    // lift, `shadow-float` compact chips/tooltips, and `shadow-bubble-in` the
-    // received-message bubble lift.
+    // received-message body lift.
     shadow-soft: color,
     shadow-card: color,
     shadow-popover: color,
     shadow-float: color,
-    shadow-bubble-in: color,
     // Edge color of the login screen's radial vignette (the center is this
     // color at alpha 0).
     vignette: color,
@@ -132,9 +121,7 @@ export struct ThemeColors {
 export struct ThemeStyle {
     hard-shadow: bool,           // hard pixel drop-shadow vs soft blur
     focus-glow: bool,            // accent glow ring on focused inputs
-    char-wrap: bool,             // char-wrap (pixel/CJK font) vs word-wrap
     motion-fast: bool,           // snappier enter/transition durations
-    bubble-bounce: bool,         // message bubbles pop/bounce on enter
     bevel: bool,                 // SNES-style raised button bevel
     pixel-icons: bool,           // pixel-art icon glyphs vs vector paths
     selected-inverts-text: bool, // selected list rows invert text onto a solid fill
@@ -155,7 +142,6 @@ export struct ThemeStyle {
     bracket-labels: bool,        // wrap button labels in [ ... ] (terminal/TUI look)
     // ── Hand-drawn / "doodle" capabilities ──────────────────────────────────
     paper-doodles: bool,         // scatter faint cute shapes across the chat canvas
-    sketch-bubbles: bool,        // soft ink-outlined, flat-filled bubbles with a speech tail
     // ── Synthwave capability ─────────────────────────────────────────────────
     synth-grid: bool,            // neon perspective grid + sunset glow on the chat canvas
     // ── Structural metrics (theme-file-driven, not identity-branched) ────────
@@ -222,9 +208,7 @@ export global Theme {
     // theme identity (`Theme.id == N`) for styling; branch on these.
     out property <bool> hard-shadow:           root.s.hard-shadow;
     out property <bool> focus-glow:            root.s.focus-glow;
-    out property <bool> char-wrap:             root.s.char-wrap;
     out property <bool> motion-fast:           root.s.motion-fast;
-    out property <bool> bubble-bounce:         root.s.bubble-bounce;
     out property <bool> bevel:                 root.s.bevel;
     out property <bool> pixel-icons:           root.s.pixel-icons;
     out property <bool> selected-inverts-text: root.s.selected-inverts-text;
@@ -239,7 +223,6 @@ export global Theme {
     out property <int> skin-modal:           root.s.skin-modal;
     out property <bool> bracket-labels:        root.s.bracket-labels;
     out property <bool> paper-doodles:         root.s.paper-doodles;
-    out property <bool> sketch-bubbles:        root.s.sketch-bubbles;
     out property <bool> synth-grid:            root.s.synth-grid;
 
     // Font-size helpers. A call site declares both metrics; the active theme's
@@ -253,12 +236,12 @@ export global Theme {
         root.pixel-metrics ? pixel : modern
     }
 
-    // The size a chat bubble draws its body text at. It lives here rather than
-    // at the bubble's render site because Rust wraps message text against this
+    // The size a message row draws its body text at. It lives here rather than
+    // at the body's render site because Rust wraps message text against this
     // exact value: `render.rs` estimates character widths from it to pick line
     // breaks, so a second declaration of the pair would let the wrapper and the
     // renderer drift (they did — the wrapper assumed 13px under every theme,
-    // while a pixel-metrics theme draws at 16px and overflowed the bubble).
+    // while a pixel-metrics theme draws at 16px and overflowed the body).
     // The window root pushes it to Rust through `AppState.body-fs-changed`.
     out property <length> body-fs: root.fs(13px, 16px);
 }
@@ -277,16 +260,11 @@ export global Palette {
     out property <color> banner:    Theme.c.banner;
     out property <color> border:    Theme.c.border;
     out property <color> border-2:  Theme.c.border-2;
-    out property <color> bubble-in: Theme.c.bubble-in;
-    out property <color> bubble-inset: Theme.c.bubble-inset;
-    out property <color> bubble-inset-strong: Theme.c.bubble-inset-strong;
+    out property <color> plate: Theme.c.plate;
+    out property <color> plate-inset: Theme.c.plate-inset;
+    out property <color> plate-inset-strong: Theme.c.plate-inset-strong;
     out property <color> code-plate: Theme.c.code-plate;
     out property <color> media-backdrop: Theme.c.media-backdrop;
-    out property <color> bubble-inset-out: Theme.c.bubble-inset-out;
-    out property <color> bubble-inset-out-strong: Theme.c.bubble-inset-out-strong;
-    out property <color> code-plate-out: Theme.c.code-plate-out;
-    out property <color> media-backdrop-out: Theme.c.media-backdrop-out;
-    out property <color> bubble-selection-out: Theme.c.bubble-selection-out;
 
     // Accent resolution: active pack's table indexed by the orthogonal accent.
     out property <color> mint:      Theme.c.accent-base[Theme.accent];
@@ -301,7 +279,7 @@ export global Palette {
     out property <color> text-vlo:  Theme.c.text-vlo;
     out property <color> selected:  Theme.c.selected-uses-base ? Theme.c.accent-base[Theme.accent] : Theme.c.accent-surface[Theme.accent];
     out property <color> hover:     Theme.c.hover;
-    out property <color> bubble-out-fg: Theme.c.bubble-out-fg;
+    out property <color> on-accent: Theme.c.on-accent;
     // Hard pixel shadow color — constant across themes.
     out property <color> shadow:    #000000;
     // QR plate — white in every theme so codes keep their light quiet zone
@@ -315,9 +293,9 @@ export global Palette {
 
     out property <color> danger:      Theme.c.danger;
     out property <color> danger-soft: Theme.c.danger-soft;
-    // Danger *inside* the outgoing accent bubble: that bubble is a dark
-    // saturated accent even in light theme, so this stays bright everywhere.
-    out property <color> danger-on-bubble: #FF5A5A;
+    // Danger over dark media backdrops (video letterbox, viewer chrome),
+    // which stay dark in every theme, so this stays bright everywhere.
+    out property <color> danger-on-media: #FF5A5A;
     out property <color> danger-border: Theme.c.danger-border;
     out property <color> danger-soft-hover:   Theme.c.danger-soft-hover;
     out property <color> danger-border-hover: Theme.c.danger-border-hover;
@@ -352,7 +330,6 @@ export global Palette {
     out property <color> shadow-card: Theme.c.shadow-card;
     out property <color> shadow-popover: Theme.c.shadow-popover;
     out property <color> shadow-float: Theme.c.shadow-float;
-    out property <color> shadow-bubble-in: Theme.c.shadow-bubble-in;
     out property <color> vignette: Theme.c.vignette;
     out property <color> avatar-ring: Theme.c.avatar-ring;
 }
@@ -462,14 +439,14 @@ export struct Reaction {
     mine: bool,
     reactors: [Reactor],
     // Tile in the shared Twemoji sprite sheet, so a reaction chip draws the
-    // same colour glyph the quick-reaction row and chat bubbles do. clip-x < 0
+    // same colour glyph the quick-reaction row and message rows do. clip-x < 0
     // falls back to the text glyph. Filled Rust-side via `emoji_clip`.
     clip-x: int,
     clip-y: int,
 }
 
 // One line of a message's reaction-chip row. Rust wraps the flat chip list
-// into rows sized to the bubble's own width cap (Slint has no flow layout,
+// into rows sized to the body's own width cap (Slint has no flow layout,
 // so it can't discover where a row should break on its own), the same
 // estimate-then-render split `MessageLine`/`MessageRun` use for message text.
 export struct ReactionRow {
@@ -521,7 +498,7 @@ export struct StagedAttachment {
 // One inline cell inside a wrapped line of a chat-message body. Slint's
 // `Text` can't host inline images and `HorizontalLayout` doesn't wrap, so
 // Rust pre-tokenizes the message into text + emoji runs and pre-groups them
-// into lines (see `MessageLine`). The bubble renders one HorizontalLayout
+// into lines (see `MessageLine`). The body renders one HorizontalLayout
 // per line, letting Slint size text cells naturally — no per-cell width
 // estimation in Rust (which used to overshoot and produce huge inter-word
 // gaps because Rust didn't know JetBrains Mono's real advance).
@@ -542,7 +519,7 @@ export struct MessageRun {
     // markup, as a bitmask so any effects stack on one glyph (each acts on an
     // independent visual axis — e.g. `{big}{explode}` or `{jitter}{ripple}`):
     //   1 Big, 2 Small, 4 Explode, 8 Bloom, 16 Shake, 32 Nod, 64 Ripple,
-    //   128 Jitter. The bubble's RunCell decodes the bits and composes them.
+    //   128 Jitter. The body's RunCell decodes the bits and composes them.
     // `phase` staggers the per-letter animation across a span (a travelling
     // crest for Ripple, decorrelated wobble for Jitter); it increments per
     // effect run and resets between spans.
@@ -609,13 +586,13 @@ export struct JsonLine {
     collapsed: bool,
 }
 
-// Signal-style in-bubble text selection. Exactly one message can hold a
+// Signal-style in-message text selection. Exactly one message can hold a
 // selection at a time: `owner` is its message id ("" = none). The anchor and
-// cursor points live in the owner bubble's text-block coordinate space; the
+// cursor points live in the owner body's text-block coordinate space; the
 // run cells hit-test themselves against those points, paint their own slice
 // of the highlight, and claim the resolved document endpoints (line / run /
 // fraction-within-run) back into this global (see RunCell in
-// message-bubble.slint). The context menu's "Copy selection" reads the
+// message-body.slint). The context menu's "Copy selection" reads the
 // claimed endpoints and hands them to Rust for text extraction.
 export global TextSelection {
     in-out property <string> owner;
@@ -657,12 +634,12 @@ export global TextSelection {
     in-out property <float> wa-from;
     in-out property <float> wa-to;
 
-    // Double-click word selection. The bubble passes the clicked document
+    // Double-click word selection. The body passes the clicked document
     // position (already resolved by the run cells); Rust expands it to word
     // boundaries, stores the anchor word, and writes the endpoints back into
     // this global (bound in src/wiring/extra.rs).
     callback request-word(string, int, int, float);
-    // Word-mode drag: the bubble passes the pointer's document position and
+    // Word-mode drag: the body passes the pointer's document position and
     // Rust re-derives the endpoints as the union of the anchor word and the
     // word under the pointer.
     callback request-word-extend(string, int, int, float);
@@ -936,8 +913,33 @@ export global SystemCopy {
     out property <string> group-avatar-changed: @tr("group system line, %1 = actor" => "%1 changed the group photo");
 }
 
-// Link activation sink. Chat bubbles render Markdown anchors deep inside the
-// IncomingRow/OutgoingRow → MessageBubble → RunCell chain; rather than thread a
+// Message-effect burst sink. A row calls `play` with its body's window
+// geometry; MessagesArea watches `gen` and stages the burst into its overlay
+// pool. A global (like ProfileSink/Linkout) so the request doesn't thread a
+// 7-arg callback through the skin-dispatch layers.
+export global MessageFx {
+    in-out property <int> effect-id;
+    in-out property <int> clip-x;
+    in-out property <int> clip-y;
+    in-out property <length> px;
+    in-out property <length> py;
+    in-out property <length> w;
+    in-out property <length> h;
+    in-out property <int> gen: 0;
+    public function play(id: int, cx: int, cy: int, ax: length, ay: length, bw: length, bh: length) {
+        self.effect-id = id;
+        self.clip-x = cx;
+        self.clip-y = cy;
+        self.px = ax;
+        self.py = ay;
+        self.w = bw;
+        self.h = bh;
+        self.gen += 1;
+    }
+}
+
+// Link activation sink. Chat message rows render Markdown anchors deep inside the
+// MessageRow → MessageBody → RunCell chain; rather than thread a
 // callback through every level, the leaf RunCell invokes `Linkout.open(url)`
 // directly and Rust binds the handler once (opens the URL externally).
 export global Linkout {
@@ -954,7 +956,7 @@ export global ProfileSink {
 
 // One entry in the quick-reaction row: the emoji plus its resolved tile in the
 // shared Twemoji sprite sheet, so a cell draws the same colour glyph the chat
-// bubbles do. `clip-x < 0` means the sheet carries no tile for it, so the cell
+// message rows do. `clip-x < 0` means the sheet carries no tile for it, so the cell
 // falls back to the raw text glyph (also how the "+" add cell renders). Rust
 // fills clip-x/clip-y from the build-time sprite map when it pushes the list.
 export struct QuickReaction {
@@ -990,8 +992,8 @@ export global QuickReact {
 }
 
 // Shared Twemoji sprite sheet — set once at startup from Rust and read by
-// every chat bubble that needs to draw inline emoji. A global avoids drilling
-// the sprite + tile size through the IncomingRow/OutgoingRow → MessageBubble
+// every message row that needs to draw inline emoji. A global avoids drilling
+// the sprite + tile size through the MessageRow → MessageBody
 // chain.
 export global EmojiSheet {
     in property <image> sprite;
@@ -1029,7 +1031,7 @@ export global EffectCatalog {
 
 // One image in a multi-image album (Telegram-style grid). Rust computes the
 // pixel rect (x/y/w/h) within the album box via an aspect-aware layout engine;
-// the bubble just absolute-positions a clipped image at that rect. `key` is the
+// the body just absolute-positions a clipped image at that rect. `key` is the
 // per-image cache/slideshow handle (message-id for a lone image, `id#index`
 // inside an album) the tap routes through.
 export struct AlbumCell {
@@ -1109,7 +1111,7 @@ export struct ImageSearchHit {
 export struct ChatMessage {
     text: string,
     // Pre-tokenized + pre-wrapped body, grouped into lines. Empty for
-    // synthetic rows; the bubble falls back to plain `Text` when empty.
+    // synthetic rows; the body falls back to plain `Text` when empty.
     lines: [MessageLine],
     stamp: string,
     // Full localized date+time ("Jun 12 2026 · 14:32", honoring the user's
@@ -1126,7 +1128,7 @@ export struct ChatMessage {
     // decodes, without rebuilding the whole message list.
     sender-id: string,
     // Sender display name (resolved from the directory profile). Rendered as a
-    // small label above incoming group-chat bubbles; `show-sender-name` gates
+    // small label above incoming group-message rows; `show-sender-name` gates
     // it so 1:1 chats and outgoing rows don't repeat the obvious.
     sender-name: string,
     show-sender-name: bool,
@@ -1138,13 +1140,8 @@ export struct ChatMessage {
     // cache, same as the members list.
     picture: image,
     has-picture: bool,
-    bubble-max: length,
+    wrap-max: length,
     gap-before: length,
-    // Visual grouping of consecutive same-sender messages. `first-in-group`
-    // rounds the top corner on the avatar side; `last-in-group` is the row
-    // that carries the avatar + tail. A standalone message is both true.
-    first-in-group: bool,
-    last-in-group: bool,
     // Local-day identity of the message's timestamp (yyyymmdd as an int, 0 =
     // unknown). Rust compares consecutive rows' keys to find day boundaries.
     day-key: int,
@@ -1155,17 +1152,17 @@ export struct ChatMessage {
     // when the message hasn't been confirmed yet. Needed to send / aggregate
     // reactions which target this id.
     message-id: string,
-    reactions: [Reaction],
-    // Same chips as `reactions`, pre-wrapped into rows that fit within
-    // `bubble-max` — what `ReactionsRow` actually renders.
+    // The message's reaction chips, pre-wrapped into rows that fit within
+    // `wrap-max` — what `ReactionsRow` renders. This is the single copy;
+    // Rust flattens it back to a chip list when merging an optimistic toggle.
     reaction-rows: [ReactionRow],
     // Optimistic-send state. `pending` = inserted locally, waiting for relay
-    // ack; bubble dims + shows a clock instead of the double-check. `failed`
-    // = send threw; bubble gains a red border and becomes clickable to retry.
+    // ack; body dims + shows a clock instead of the double-check. `failed`
+    // = send threw; body gains a red border and becomes clickable to retry.
     pending: bool,
     failed: bool,
     // Reply preview. When `reply-to-id` is non-empty this row was sent as a
-    // reply to that message; the bubble renders a quoted-parent block above
+    // reply to that message; the body renders a quoted-parent block above
     // its own text. `reply-to-text` is already truncated by Rust for display.
     // `reply-to-author` is the parent's display label ("You" or initials/name).
     reply-to-id: string,
@@ -1178,10 +1175,10 @@ export struct ChatMessage {
     reply-to-image: image,
     reply-to-has-image: bool,
     // Attachment (NIP-92 imeta payload, parsed in Rust). When `has-attachment`
-    // is true the bubble renders a chip / image preview block above the body.
+    // is true the body renders a chip / image preview block above the body.
     has-attachment: bool,
     // Album: 2+ images sent in one message, rendered as an aspect-aware grid
-    // instead of the single `att-*` tile. When `album` has entries the bubble
+    // instead of the single `att-*` tile. When `album` has entries the body
     // renders the grid (sized `album-w` × `album-h`) and ignores `att-*`.
     album: [AlbumCell],
     album-w: length,
@@ -1216,18 +1213,17 @@ export struct ChatMessage {
     att-has-image: bool,
     att-loading: bool,
     att-failed: bool,
-    // Edit state. `edited` true => the bubble renders the latest edit's text
-    // and shows an "(edited · N)" affordance that opens the history modal.
-    // `can-edit` gates the edit pencil to the author's own messages.
+    // Edit state. `edited` true => the body renders the latest edit's text
+    // and shows an "edited" affordance that opens the history modal.
+    // `can-edit` gates the edit affordance to the author's own messages.
     edited: bool,
-    edit-count: int,
     can-edit: bool,
-    // Retracted message (kind-5 "delete for everyone"). When true the bubble
+    // Retracted message (kind-5 "delete for everyone"). When true the body
     // drops its body/attachments/reactions and renders a muted "this message
     // was deleted" tombstone in their place.
     deleted: bool,
     // Emoji-only body (1–3 emoji, no attachment/album/reply): renders jumbo and
-    // bubble-less, Telegram-style, with the timestamp floating on hover.
+    // chrome-less, Telegram-style, with the timestamp floating on hover.
     jumbo-emoji: bool,
     // Message effect (Telegram-style particle burst). `effect-id` is the
     // persistent catalog identity (0 = none, 1..5) carried by every row whose
@@ -1241,7 +1237,7 @@ export struct ChatMessage {
     effect-autoplay: bool,
     // Group system row (marmot kind-1210: member added/removed/left, admin
     // added/removed, group renamed/avatar-changed). When `system-line` is true
-    // the row renders as a centered system line (from `text`), never a bubble,
+    // the row renders as a centered system line (from `text`), never a message body,
     // and carries no reply/react/edit affordances.
     system-line: bool,
     // True on the first unread message of the chat as it stood when opened: the

@@ -8,22 +8,17 @@ rail = "#ece4d0ff"
 banner = "#efe8d6ff"
 border = "#c7b894ff"
 border-2 = "#d8ccaeff"
-bubble-in = "#fcf8eeff"
-bubble-inset = "#efe8d6ff"
-bubble-inset-strong = "#d8ccaeff"
+plate = "#fcf8eeff"
+plate-inset = "#efe8d6ff"
+plate-inset-strong = "#d8ccaeff"
 code-plate = "#0000000d"
 media-backdrop = "#33302bff"
-bubble-inset-out = "#33302b22"
-bubble-inset-out-strong = "#33302b38"
-code-plate-out = "#33302b22"
-media-backdrop-out = "#33302b33"
-bubble-selection-out = "#33302b38"
 text-hi = "#33302bff"
 text-mid = "#6e6657ff"
 text-lo = "#968b76ff"
 text-vlo = "#bbb199ff"
 hover = "#ebe3cfff"
-bubble-out-fg = "#ffffffff"
+on-accent = "#ffffffff"
 bevel-hi = "#ffffffff"
 bevel-lo = "#d8ccaeff"
 danger = "#c4453bff"
@@ -60,11 +55,10 @@ shadow-soft = "#33302b44"
 shadow-card = "#33302b55"
 shadow-popover = "#33302b55"
 shadow-float = "#33302b33"
-shadow-bubble-in = "#33302b44"
 vignette = "#d8ccae80"
 avatar-ring = "#00000015"
 selected-uses-base = false
-# accent-base carries body text: white on the outgoing bubble fill and the
+# accent-base carries body text: white on the accent fill and the
 # accent-tinted text on accent-surface. Both need WCAG AA 4.5:1, so the resting
 # swatches are darkened into the paint band (white clears ~5.8:1, accent-on-
 # surface ~4.7:1). The old pastels move up to accent-hi as the bright highlight.
@@ -107,9 +101,7 @@ accent-surface = [
 [style]
 hard-shadow = false
 focus-glow = true
-char-wrap = false
 motion-fast = false
-bubble-bounce = true
 bevel = false
 pixel-icons = false
 selected-inverts-text = false
@@ -124,7 +116,6 @@ skin-avatar = 0
 skin-modal = 0
 bracket-labels = false
 paper-doodles = true
-sketch-bubbles = true
 synth-grid = false
 
 font = "JetBrains Mono"

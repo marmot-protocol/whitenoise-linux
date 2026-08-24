@@ -1,7 +1,7 @@
 import { EmojiSheet } from "../tokens.slint";
 
 // One-shot Telegram-style "message effect": a short burst of emoji-sprite
-// particles flung from a chat bubble when a message is sent / arrives. Pure
+// particles flung from a message row when a message is sent / arrives. Pure
 // Slint animation — no Rust per-frame work. The motion profile is selected by
 // `effect-id` (1 love · 2 fire · 3 party · 4 star · 5 like); the emoji drawn is
 // whatever tile Rust resolved into `clip-x`/`clip-y` against the shared Twemoji
@@ -20,14 +20,14 @@ export component MessageEffectLayer inherits Rectangle {
     in property <int> effect-id;
     in property <int> clip-x;
     in property <int> clip-y;
-    // The bubble's box, so the emission origin can sit at its centre.
+    // The body's box, so the emission origin can sit at its centre.
     in property <length> origin-w;
     in property <length> origin-h;
     // Bump to (re)play. The row sets it for autoplay and increments it on click.
     in property <int> trigger;
 
     clip: false;
-    // Never intercept pointer input — the bubble underneath keeps its hover /
+    // Never intercept pointer input — the body underneath keeps its hover /
     // click / context-menu affordances.
     property <duration> t0;
     property <bool> playing: false;
@@ -65,22 +65,22 @@ export component MessageEffectLayer inherits Rectangle {
     property <int> pcount:
         root.effect-id == 4 ? 28 : root.effect-id == 3 ? 24 : root.effect-id == 2 ? 22 : root.effect-id == 1 ? 13 : root.effect-id == 5 ? 11 : 16;
     property <length> ox: root.origin-w / 2;
-    // Risers emit low on the bubble; bursts from the middle.
+    // Risers emit low on the body; bursts from the middle.
     property <length> oy: root.origin-h * (root.effect-id == 1 ? 0.62 : root.effect-id == 2 ? 0.88 : root.effect-id == 5 ? 0.76 : 0.5);
     property <length> tile: 26px;
 
+    // Slint has no fract(); the particle seeds below are fract(sin(i·k)).
+    pure function fr(v: float) -> float {
+        return v - floor(v);
+    }
+
     for i in root.pcount: Image {
         // Per-particle fract(sin) seeds in [0,1) — independent axes, deterministic.
-        property <float> r-dir-raw: sin((i + 1) * 137.5deg) * 731.7;
-        property <float> r-spd-raw: sin((i + 1) * 71.3deg + 19deg) * 419.2;
-        property <float> r-sz-raw:  sin((i + 1) * 43.9deg + 7deg) * 257.1;
-        property <float> r-stg-raw: sin((i + 1) * 97.1deg + 3deg) * 613.3;
-        property <float> r-spin-raw: sin((i + 1) * 53.7deg + 11deg) * 311.9;
-        property <float> seed-dir: r-dir-raw - floor(r-dir-raw);
-        property <float> seed-spd: r-spd-raw - floor(r-spd-raw);
-        property <float> seed-sz:  r-sz-raw - floor(r-sz-raw);
-        property <float> seed-stg: r-stg-raw - floor(r-stg-raw);
-        property <float> seed-spin: r-spin-raw - floor(r-spin-raw);
+        property <float> seed-dir: fr(sin((i + 1) * 137.5deg) * 731.7);
+        property <float> seed-spd: fr(sin((i + 1) * 71.3deg + 19deg) * 419.2);
+        property <float> seed-sz:  fr(sin((i + 1) * 43.9deg + 7deg) * 257.1);
+        property <float> seed-stg: fr(sin((i + 1) * 97.1deg + 3deg) * 613.3);
+        property <float> seed-spin: fr(sin((i + 1) * 53.7deg + 11deg) * 311.9);
 
         // Local clock in SECONDS — physics below is real velocity/gravity, not a
         // normalised lerp, so particles keep moving until they fade (no freeze).
@@ -103,7 +103,7 @@ export component MessageEffectLayer inherits Rectangle {
 
         // ── Horizontal displacement ──
         property <length> dx:
-            // hearts: spread across the bubble, gentle sway as they rise
+            // hearts: spread across the body, gentle sway as they rise
             root.effect-id == 1 ? ((seed-dir - 0.5) * root.origin-w * 0.5 + sin((t * 1.5 + seed-dir * 6.283) * 1rad) * (6px + seed-sz * 10px))
             // fire: wide flickering base that TAPERS toward centre as it rises
             // (flame shape), plus turbulence growing with height.

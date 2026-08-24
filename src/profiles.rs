@@ -66,7 +66,7 @@ pub(crate) fn populate_profile_from(
     // If the URL is empty (or fetch fails), the Avatar falls back to the
     // initials/gradient — no further work needed here. Only clear when a
     // picture is currently bound: redundant writes to `my-av-picture`
-    // re-render every outgoing bubble.
+    // re-render every outgoing body.
     if picture_url.trim().is_empty() {
         // No picture to load, so there is nothing to have failed or to retry.
         ui.set_my_av_load_failed(false);
@@ -404,7 +404,7 @@ pub(crate) struct PicturePixels {
 /// Bind the user's own avatar picture by cache key (URL). Uses the shared
 /// thread-local `Image` handle and SKIPS the property writes when the handle
 /// is already bound: `my-av-picture` feeds the left-rail avatar AND every
-/// outgoing bubble, so a fresh handle (or even a redundant set) re-renders
+/// outgoing body, so a fresh handle (or even a redundant set) re-renders
 /// the whole conversation — the visible blink reported after background
 /// syncs.
 pub(crate) fn apply_picture(ui: &WhiteNoiseLinux, url: &str) {
@@ -545,7 +545,7 @@ pub(crate) fn spawn_nip05_verify(
 // thread-local: the first bind converts pixels → image once, and every later
 // row build clones the cheap shared handle instead of re-copying the whole
 // RGBA buffer. Sharing one handle across rows also means the renderer sees
-// one texture per picture instead of one per bubble. Entries never go stale:
+// one texture per picture instead of one per body. Entries never go stale:
 // the underlying pixel cache is write-once per key (URLs are
 // content-addressed). Attachment images get the same treatment in
 // `src/media.rs` (`cached_attachment_image`).

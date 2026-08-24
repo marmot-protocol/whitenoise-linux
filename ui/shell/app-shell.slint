@@ -604,7 +604,7 @@ export component AppShell inherits Rectangle {
                             a11y-label: @tr("Show only unread chats");
                             button-height: 38px;
                             selected: root.chats-unread-only;
-                            fg: root.chats-unread-only && Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.text-mid;
+                            fg: root.chats-unread-only && Theme.selected-inverts-text ? Palette.on-accent : Palette.text-mid;
                             clicked => {
                                 root.chats-unread-only = !root.chats-unread-only;
                             }

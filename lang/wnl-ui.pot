@@ -72,7 +72,7 @@ msgctxt "ForwardPickerModal"
 msgid "(attachment)"
 msgstr ""
 
-msgctxt "MessageBubble"
+msgctxt "MessageBody"
 msgid "(message unavailable)"
 msgstr ""
 
@@ -280,15 +280,11 @@ msgctxt "AddMemberRow"
 msgid "Add member"
 msgstr ""
 
-msgctxt "HoverActions"
-msgid "Add reaction"
-msgstr ""
-
 msgctxt "MessageContextMenu"
 msgid "Add reaction"
 msgstr ""
 
-#. Default screen-reader name for the "+" add cell.
+#. say what a tap does instead of what it shows.
 msgctxt "QuickReactCell"
 msgid "Add reaction"
 msgstr ""
@@ -1270,10 +1266,6 @@ msgctxt "ChatContextMenu"
 msgid "Edit label ({})…"
 msgstr ""
 
-msgctxt "HoverActions"
-msgid "Edit message"
-msgstr ""
-
 msgctxt "MessageContextMenu"
 msgid "Edit message"
 msgstr ""
@@ -1909,10 +1901,6 @@ msgctxt "StartNewChatModal"
 msgid "MEMBERS"
 msgstr ""
 
-msgctxt "AppearancePane"
-msgid "MESSAGES"
-msgstr ""
-
 msgctxt "KeysPage"
 msgid "MLS  ·  YOUR KEY MATERIAL"
 msgstr ""
@@ -2316,12 +2304,8 @@ msgctxt "ReactionChip"
 msgid "Open {}'s profile"
 msgstr ""
 
-msgctxt "MessageBubble"
+msgctxt "MessageBody"
 msgid "Original message"
-msgstr ""
-
-msgctxt "AppearancePane"
-msgid "Own messages on the right"
 msgstr ""
 
 msgctxt "KpCard"
@@ -2402,10 +2386,6 @@ msgstr ""
 
 msgctxt "ChatContextMenu"
 msgid "Pin to top"
-msgstr ""
-
-msgctxt "AppearancePane"
-msgid "Place your sent messages on the right side."
 msgstr ""
 
 msgctxt "VideoViewerModal"
@@ -2541,7 +2521,7 @@ msgctxt "KeysPage"
 msgid "Re-seals every secret on this device under a new password. Existing backups stay sealed with the previous one."
 msgstr ""
 
-#. Default screen-reader name for a plain reaction cell.
+#. say what a tap does instead of what it shows.
 msgctxt "QuickReactCell"
 msgid "React with {}"
 msgstr ""
@@ -2713,10 +2693,6 @@ msgstr ""
 
 msgctxt "ErrorCopy"
 msgid "Renamed."
-msgstr ""
-
-msgctxt "HoverActions"
-msgid "Reply"
 msgstr ""
 
 msgctxt "MessageContextMenu"
@@ -3173,7 +3149,7 @@ msgid "Shown in the picker next to the built-in set. Tap one to remove it."
 msgstr ""
 
 msgctxt "GeneralPane"
-msgid "Shown on the message toolbar and menu. Tap one to remove it."
+msgid "Shown on the message menu. Tap one to remove it."
 msgstr ""
 
 msgctxt "AdvancedPane"
@@ -3345,11 +3321,11 @@ msgctxt "AddAccountModal"
 msgid "This key was just generated and exists nowhere else yet. Copy it somewhere safe before adding it — there is no recovery."
 msgstr ""
 
-msgctxt "MessageBubble"
+msgctxt "MessageBody"
 msgid "This message was deleted"
 msgstr ""
 
-msgctxt "MessageView"
+msgctxt "TerminalLine"
 msgid "This message was deleted"
 msgstr ""
 
@@ -3628,10 +3604,6 @@ msgctxt "MessageView"
 msgid "You"
 msgstr ""
 
-msgctxt "OutgoingRow"
-msgid "You"
-msgstr ""
-
 msgctxt "ErrorCopy"
 msgid "You already have an emoji with that name."
 msgstr ""
@@ -3712,23 +3684,23 @@ msgctxt "AppearancePane"
 msgid "Zoom out"
 msgstr ""
 
-msgctxt "MessageView"
+msgctxt "TerminalLine"
 msgid "[audio: {}]"
 msgstr ""
 
-msgctxt "MessageView"
+msgctxt "TerminalLine"
 msgid "[file: {}]"
 msgstr ""
 
-msgctxt "MessageView"
+msgctxt "TerminalLine"
 msgid "[image: {} — click to view]"
 msgstr ""
 
-msgctxt "MessageView"
+msgctxt "TerminalLine"
 msgid "[video: {} — click to play]"
 msgstr ""
 
-msgctxt "MessageView"
+msgctxt "TerminalLine"
 msgid "[{} images — click to view]"
 msgstr ""
 
@@ -3778,7 +3750,7 @@ msgctxt "CustomEmojiModal"
 msgid "e.g. partyparrot"
 msgstr ""
 
-msgctxt "MessageBubble"
+msgctxt "MessageBody"
 msgid "edited"
 msgstr ""
 
@@ -3790,7 +3762,7 @@ msgctxt "FileChip"
 msgid "failed · tap to retry"
 msgstr ""
 
-msgctxt "MessageBubble"
+msgctxt "MessageBody"
 msgid "failed · tap to retry"
 msgstr ""
 

@@ -729,7 +729,7 @@ pub(crate) fn merge_chat_list_rows_from(
 /// Surgically rewrite one chat row's preview/stamp from the newest visible
 /// message in `all` — the live message paths' counterpart to the full
 /// snapshot refresh. Without this, a send or an incoming message in the open
-/// chat updates the bubbles but leaves the rail's "last message" line stale
+/// chat updates the message rows but leaves the rail's "last message" line stale
 /// until the next full refresh (typically a restart). UI thread only.
 pub(crate) fn update_chat_row_preview(
     ui: &WhiteNoiseLinux,

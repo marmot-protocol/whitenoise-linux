@@ -68,7 +68,7 @@ export {
     ErrorCopy,            // localized error/status copy, read on the UI thread
     TimeCopy,             // localized time/date vocabulary for Rust-side stamp formatters
     SystemCopy,           // group system-line templates, filled in system_event_text
-    TextSelection,        // in-bubble selection state; Rust binds `request-word`
+    TextSelection,        // in-message selection state; Rust binds `request-word`
 }
 export component WhiteNoiseTray inherits SystemTrayIcon {
     icon: @image-url("../assets/svg/logo.svg");
@@ -142,7 +142,6 @@ export component WhiteNoiseLinux inherits Window {
     in-out property <[MentionInboxItem]> mention-inbox-items <=> AppState.mention-inbox-items;
     in-out property <bool> mention-inbox-loading <=> AppState.mention-inbox-loading;
     in-out property <int> mention-inbox-open-pulse <=> AppState.mention-inbox-open-pulse;
-    in-out property <bool> outgoing-on-right <=> AppState.outgoing-on-right;
     in-out property <length> shell-chats-width <=> AppState.shell-chats-width;
     in-out property <length> shell-info-width <=> AppState.shell-info-width;
     in-out property <bool> shell-centered <=> AppState.shell-centered;

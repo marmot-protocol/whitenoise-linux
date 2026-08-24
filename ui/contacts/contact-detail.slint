@@ -99,7 +99,7 @@ export component ContactDetail inherits DetailPage {
                 if root.contact.verified: Pill {
                     label: @tr("✓ VERIFIED");
                     bg-color: Palette.mint;
-                    fg: Palette.bubble-out-fg;
+                    fg: Palette.on-accent;
                 }
                 VerticalLayout {
                     alignment: center;
@@ -135,15 +135,15 @@ export component ContactDetail inherits DetailPage {
                 outline: Palette.mint;
                 hover-bg: Palette.mint-hi;
                 hover-outline: Palette.mint-hi;
-                fg: Palette.bubble-out-fg;
-                hover-fg: Palette.bubble-out-fg;
+                fg: Palette.on-accent;
+                hover-fg: Palette.on-accent;
                 font-size: Theme.fsr(13px, 16px);
                 focusable: true;
                 clicked => {
                     AppState.start-chat-with-contact();
                 }
                 StartChatIcon {
-                    stroke: Palette.bubble-out-fg;
+                    stroke: Palette.on-accent;
                 }
             }
         }
@@ -291,7 +291,7 @@ export component ContactDetail inherits DetailPage {
                 label: AppState.contact-blocked ? @tr("Unblock") : @tr("Block");
                 fg: AppState.contact-blocked ? Palette.text-hi : Palette.danger;
                 bg-color: AppState.contact-blocked ? Palette.panel-2 : Palette.danger-soft;
-                hover-bg: AppState.contact-blocked ? Palette.bubble-in : Palette.danger-soft-hover;
+                hover-bg: AppState.contact-blocked ? Palette.plate : Palette.danger-soft-hover;
                 outline: AppState.contact-blocked ? Palette.border : Palette.danger-border;
                 hover-outline: AppState.contact-blocked ? Palette.border : Palette.danger-border-hover;
                 BanIcon {

@@ -2,7 +2,7 @@ use crate::*;
 
 /// Sprite-sheet tile for a reaction emoji as `(clip_x, clip_y)`, or `(-1, -1)`
 /// when the sheet has no tile for it (the chip then draws the text glyph). Same
-/// resolver the quick-reaction row and inline bubble emoji use, so a reaction
+/// resolver the quick-reaction row and inline body emoji use, so a reaction
 /// looks identical everywhere it appears.
 fn reaction_clip(emoji: &str) -> (i32, i32) {
     emoji_clip(emoji)
@@ -22,7 +22,7 @@ pub(crate) fn file_chip_labels(mime: &str, name: &str) -> (String, String) {
 }
 
 /// The single jumbo-emoji rule: a bare emoji body renders oversized, but a
-/// reply, an attachment, or an album wants normal bubble chrome around the
+/// reply, an attachment, or an album wants normal body chrome around the
 /// block. Called from both row builders and the optimistic edit path so an
 /// edited message classifies the same way a fresh one does.
 pub(crate) fn jumbo_emoji_for(
@@ -135,7 +135,7 @@ pub(crate) fn preview_and_stamp_for(
 }
 
 /// Returns true when the record is a normal text message that belongs in
-/// the visible bubble stream. Filters out everything marmot-app surfaces as
+/// the visible body stream. Filters out everything marmot-app surfaces as
 /// `AppMessageRecord` but isn't user-readable chat — push-token gossip
 /// (MIP-05 kinds 447/448/449), reactions (kind 7), deletes (kind 5), agent
 /// stream-start events (kind 1200), and anything else.
@@ -166,6 +166,22 @@ pub(crate) fn is_visible_chat_message(record: &AppMessageRecord) -> bool {
     !is_hidden_message(&record.message_id_hex)
 }
 
+/// Single-attachment presentation fields, shared by the confirmed and pending
+/// row builders (each fills it from its own source; `Default` is the
+/// no-attachment row). One struct instead of two hand-mirrored 8-tuples, so
+/// the builders can't drift apart.
+#[derive(Default)]
+struct AttFields {
+    has_attachment: bool,
+    name: String,
+    mime: String,
+    size_label: String,
+    is_image: bool,
+    image: slint::Image,
+    has_image: bool,
+    loading: bool,
+}
+
 // Builds a confirmed message row; legitimately needs the full record context
 // (record, id map, self identity/label, reactions, effect-gating), so the arg
 // count exceeds clippy's default threshold.
@@ -181,7 +197,6 @@ pub(crate) fn chat_message_from_with_reactions(
     // optimistic overlay). The row renders as a muted tombstone.
     deleted: bool,
     profiles: &SenderProfiles,
-    is_group: bool,
     // When true this build may start a one-shot effect burst (live arrival or
     // single-row refresh). Backfill passes false so opening a chat full of
     // effect-tagged history doesn't fire a burst storm.
@@ -190,10 +205,9 @@ pub(crate) fn chat_message_from_with_reactions(
     let outgoing = record.sender.eq_ignore_ascii_case(my_account_id_hex);
     // Edited messages display the latest edit's text in place of the original;
     // the "(edited)" indicator + history modal expose the change. `can_edit`
-    // gates the edit affordance to the author's own bubbles.
+    // gates the edit affordance to the author's own message rows.
     let edited = edit.as_ref().map(|e| e.count > 0).unwrap_or(false);
-    let edit_count = edit.as_ref().map(|e| e.count as i32).unwrap_or(0);
-    let raw_display_text = edit
+    let display_text = edit
         .as_ref()
         .filter(|e| e.count > 0)
         .map(|e| e.text.as_str())
@@ -204,7 +218,6 @@ pub(crate) fn chat_message_from_with_reactions(
     // `effect_autoplay` fires the burst by itself only on a live incoming build —
     // the sender already saw it on the optimistic row, and backfill marks the id
     // seen-but-quiet so it doesn't storm or replay later.
-    let display_text = raw_display_text;
     let effect_id = effect_from_tags(&record.tags);
     let effect_autoplay =
         !outgoing && effect_should_autoplay(&record.message_id_hex, effect_id, play_effects);
@@ -215,7 +228,7 @@ pub(crate) fn chat_message_from_with_reactions(
     // show a real identity rather than a hash of the raw pubkey. The lookup is
     // a cheap map hit — `profiles` was resolved once for the whole rebuild.
     // Outgoing rows key off the user's own label (matches the left-rail
-    // avatar); their picture is painted by OutgoingRow via `my-picture`.
+    // avatar); their picture is painted by MessageRow via `my-av-*`.
     let (sender_name, picture_url) = if outgoing {
         (my_label.to_string(), None)
     } else {
@@ -231,11 +244,39 @@ pub(crate) fn chat_message_from_with_reactions(
     };
     let (a, b, init) = avatar_for(key);
     let (picture, has_picture) = bind_cached_picture(picture_url.as_deref());
+
+    // A tombstone renders only the placeholder line plus sender identity, so
+    // skip the whole markdown/attachment/reaction pipeline (mirrors
+    // `system_chat_message`). Everything the UI gates on `deleted` stays at
+    // its default; `wrap_max` still needs a real value so the placeholder's
+    // text budget doesn't collapse.
+    if deleted {
+        return ChatMessage {
+            deleted: true,
+            outgoing,
+            stamp: s(&format_unix(record.recorded_at)),
+            stamp_full: s(&format_full_stamp(record.recorded_at)),
+            day_key: day_key_of(record.recorded_at),
+            message_id: s(&record.message_id_hex),
+            sender_id: s(&record.sender),
+            sender_name: s(&sender_name),
+            show_sender_name: true,
+            av_initials: s(&init),
+            av_a: a,
+            av_b: b,
+            picture,
+            has_picture,
+            show_avatar: true,
+            wrap_max: clamp_wrap_max(),
+            ..Default::default()
+        };
+    }
+
     let (reply_id, reply_author, reply_text) =
         reply_preview_for(record, records_by_id, my_account_id_hex);
     let (reply_to_image, reply_to_has_image) = reply_thumbnail_for(&reply_id);
-    let bubble_max = clamp_bubble_max(outgoing);
-    let lines = build_message_lines(display_text, bubble_max);
+    let wrap_max = clamp_wrap_max();
+    let lines = build_message_lines(display_text, wrap_max);
 
     // Attachment fields. Parse the NIP-92 `imeta` tags. Two or more image
     // attachments in one message render as an album grid; otherwise the first
@@ -258,16 +299,7 @@ pub(crate) fn chat_message_from_with_reactions(
     } else {
         all_refs.into_iter().next()
     };
-    let (
-        has_attachment,
-        att_name,
-        att_mime,
-        att_size_label,
-        att_is_image,
-        att_image,
-        att_has_image,
-        att_loading,
-    ) = match media_ref {
+    let att = match media_ref {
         Some(refp) => {
             let is_image = mime_is_image(&refp.media_type);
             let cached = if is_image {
@@ -279,32 +311,32 @@ pub(crate) fn chat_message_from_with_reactions(
                 Some(img) => (img, true),
                 None => (slint::Image::default(), false),
             };
-            let in_flight = attachment_in_flight()
-                .lock()
-                .map(|s| s.contains(&record.message_id_hex))
-                .unwrap_or(false);
-            (
-                true,
-                refp.file_name.clone(),
-                refp.media_type.clone(),
-                attachment_size_label(&record.message_id_hex),
+            AttFields {
+                has_attachment: true,
+                name: refp.file_name.clone(),
+                mime: refp.media_type.clone(),
+                size_label: attachment_size_label(&record.message_id_hex),
                 is_image,
                 image,
                 has_image,
-                in_flight,
-            )
+                loading: attachment_in_flight()
+                    .lock()
+                    .map(|s| s.contains(&record.message_id_hex))
+                    .unwrap_or(false),
+            }
         }
-        None => (
-            false,
-            String::new(),
-            String::new(),
-            String::new(),
-            false,
-            slint::Image::default(),
-            false,
-            false,
-        ),
+        None => AttFields::default(),
     };
+    let AttFields {
+        has_attachment,
+        name: att_name,
+        mime: att_mime,
+        size_label: att_size_label,
+        is_image: att_is_image,
+        image: att_image,
+        has_image: att_has_image,
+        loading: att_loading,
+    } = att;
 
     // Video attachment: not an image, so the tuple above left the poster empty.
     // The poster (decoded first frame, captured on first play) lives under a
@@ -344,7 +376,7 @@ pub(crate) fn chat_message_from_with_reactions(
         (false, 0.0)
     };
     // Decode failure (unsupported codec / corrupt data) recorded by
-    // start_audio_playback; the bubble renders the "can't play" notice.
+    // start_audio_playback; the body renders the "can't play" notice.
     let att_audio_failed = att_is_audio
         && audio_decode_failed()
             .lock()
@@ -364,7 +396,7 @@ pub(crate) fn chat_message_from_with_reactions(
     };
 
     // Generic-file chip presentation (per-type emoji + short type name).
-    // Computed for every attachment; the bubble only renders them on the
+    // Computed for every attachment; the body only renders them on the
     // non image/video/audio chip.
     let (att_icon, att_type_label) = if has_attachment {
         file_chip_labels(&att_mime, &att_name)
@@ -373,46 +405,33 @@ pub(crate) fn chat_message_from_with_reactions(
     };
 
     let jumbo_emoji = jumbo_emoji_for(has_attachment, is_album, !reply_id.is_empty(), display_text);
-    let reactions = if deleted { Vec::new() } else { reactions };
-    let reaction_rows = group_reaction_rows(reactions.clone(), bubble_max);
+    let reaction_rows = group_reaction_rows(reactions, wrap_max);
 
     ChatMessage {
-        // A tombstone carries no body, reactions, attachments, or affordances —
-        // the bubble swaps in the "this message was deleted" placeholder and the
-        // row hides its toolbar/reaction chips. We still null out the model
-        // fields so nothing leaks (e.g. a reaction chip row, an edit badge).
-        text: if deleted { s("") } else { s(display_text) },
-        lines: if deleted {
-            ModelRc::new(VecModel::from(Vec::<MessageLine>::new()))
-        } else {
-            lines
-        },
-        jumbo_emoji: !deleted && jumbo_emoji,
-        deleted,
+        text: s(display_text),
+        lines,
+        jumbo_emoji,
+        deleted: false,
         stamp: s(&format_unix(record.recorded_at)),
         stamp_full: s(&format_full_stamp(record.recorded_at)),
         outgoing,
-        edited: !deleted && edited,
-        edit_count: if deleted { 0 } else { edit_count },
-        can_edit: outgoing && !deleted,
+        edited,
+        can_edit: outgoing,
         show_avatar: true,
         av_initials: s(&init),
         av_a: a,
         av_b: b,
         sender_id: s(&record.sender),
-        sender_name: s(if outgoing { "" } else { &sender_name }),
-        show_sender_name: is_group && !outgoing,
+        sender_name: s(&sender_name),
+        show_sender_name: true,
         mentioned: !outgoing && text_mentions_account(display_text, my_account_id_hex),
         picture,
         has_picture,
-        bubble_max,
+        wrap_max,
         gap_before: 0.0,
-        first_in_group: true,
-        last_in_group: true,
         day_key: day_key_of(record.recorded_at),
         day_label: s(""),
         message_id: s(&record.message_id_hex),
-        reactions: ModelRc::new(VecModel::from(reactions)),
         reaction_rows,
         pending: false,
         failed: false,
@@ -441,11 +460,11 @@ pub(crate) fn chat_message_from_with_reactions(
         att_has_image,
         att_loading,
         att_failed: false,
-        effect_id: if deleted { 0 } else { effect_id },
+        effect_id,
         effect_clip_x,
         effect_clip_y,
-        effect_autoplay: !deleted && effect_autoplay,
-        // Not a system line: this is a real chat bubble.
+        effect_autoplay,
+        // Not a system line: this is a real message row.
         system_line: false,
         // Set by `build_message_rows` for the anchored first-unread row.
         unread_divider: false,
@@ -499,7 +518,7 @@ pub(crate) fn system_line_text(event: &AppGroupSystemEvent, backend: &Backend) -
 /// (member added/removed/left, admin added/removed, group renamed/avatar
 /// changed). The line text (`SystemLine` renders it verbatim) is the localized
 /// sentence from [`system_line_text`]. The row carries no reply/react/edit
-/// affordances (those live on the bubble rows the render path guards out), so it
+/// affordances (those live on the body rows the render path guards out), so it
 /// can safely keep its real `message_id`: the id only serves the live-append
 /// dedup (`find_message_row`) and never matches a reaction/edit target, which
 /// point at kind-9 ids.
@@ -517,8 +536,6 @@ pub(crate) fn system_chat_message(
         day_key: day_key_of(record.recorded_at),
         message_id: s(&record.message_id_hex),
         show_avatar: false,
-        first_in_group: true,
-        last_in_group: true,
         ..Default::default()
     }
 }
@@ -547,7 +564,7 @@ fn system_event_text(event: &AppGroupSystemEvent, actor: &str, subject: &str) ->
 /// Resolve a record's reply target into (parent_id, author_label, preview).
 /// Returns empty strings when the record isn't a reply. The author label is
 /// "You" for your own messages and the parent's avatar-initials otherwise —
-/// matches what the bubble's quoted-block expects to render.
+/// matches what the body's quoted-block expects to render.
 pub(crate) fn reply_preview_for(
     record: &AppMessageRecord,
     records_by_id: &HashMap<&str, &AppMessageRecord>,
@@ -559,8 +576,8 @@ pub(crate) fn reply_preview_for(
         .tags
         .iter()
         .find(|t| t.len() >= 2 && t[0] == "q")
-        .or_else(|| record.tags.iter().find(|t| t.len() >= 2 && t[0] == "e"))
-        .map(|t| t[1].clone());
+        .map(|t| t[1].clone())
+        .or_else(|| first_event_ref(&record.tags).map(str::to_string));
     let Some(parent_id) = parent_id else {
         return (String::new(), String::new(), String::new());
     };
@@ -656,21 +673,27 @@ pub(crate) fn reply_avatar_for(
     chats: &ModelRc<ModelRc<ChatMessage>>,
     message_id: &str,
 ) -> Option<(Color, Color, SharedString, slint::Image, bool)> {
+    let row = find_row_by_id(chats, message_id)?;
+    Some((
+        row.av_a,
+        row.av_b,
+        row.av_initials,
+        row.picture,
+        row.has_picture,
+    ))
+}
+
+/// Find `message_id` across every loaded chat's rows.
+fn find_row_by_id(
+    chats: &ModelRc<ModelRc<ChatMessage>>,
+    message_id: &str,
+) -> Option<ChatMessage> {
     if message_id.is_empty() {
         return None;
     }
     for chat in chats.iter() {
-        for row in chat.iter() {
-            if row.message_id != message_id {
-                continue;
-            }
-            return Some((
-                row.av_a,
-                row.av_b,
-                row.av_initials.clone(),
-                row.picture.clone(),
-                row.has_picture,
-            ));
+        if let Some(row) = chat.iter().find(|row| row.message_id == message_id) {
+            return Some(row);
         }
     }
     None
@@ -684,30 +707,23 @@ pub(crate) fn media_label_for_row(
     chats: &ModelRc<ModelRc<ChatMessage>>,
     message_id: &str,
 ) -> Option<String> {
-    for chat in chats.iter() {
-        for row in chat.iter() {
-            if row.message_id != message_id {
-                continue;
-            }
-            let album_count = row.album.row_count();
-            if album_count >= 2 {
-                return Some(media_kind_label("", "", album_count));
-            }
-            if row.has_attachment {
-                return Some(media_kind_label(
-                    row.att_mime.as_str(),
-                    row.att_name.as_str(),
-                    0,
-                ));
-            }
-            return None;
-        }
+    let row = find_row_by_id(chats, message_id)?;
+    let album_count = row.album.row_count();
+    if album_count >= 2 {
+        return Some(media_kind_label("", "", album_count));
+    }
+    if row.has_attachment {
+        return Some(media_kind_label(
+            row.att_mime.as_str(),
+            row.att_name.as_str(),
+            0,
+        ));
     }
     None
 }
 
 /// Single-line, length-capped quote preview. Newlines collapse to spaces and
-/// the result is ellipsized so long parent messages fit the chip + bubble
+/// the result is ellipsized so long parent messages fit the chip + body
 /// block without forcing a multi-line layout.
 pub(crate) fn truncate_preview(text: &str, max: usize) -> String {
     let flat: String = text
@@ -724,10 +740,10 @@ pub(crate) fn truncate_preview(text: &str, max: usize) -> String {
     }
 }
 
-/// Build the placeholder bubble for a not-yet-confirmed outgoing message.
+/// Build the placeholder body for a not-yet-confirmed outgoing message.
 /// The empty `message_id` suppresses the reactions row (you can't react to
 /// something that doesn't exist on the wire yet), and the `pending`/`failed`
-/// flags drive the bubble's dimming + indicator.
+/// flags drive the body's dimming + indicator.
 pub(crate) fn pending_chat_message(
     pending: &PendingSend,
     my_account_id_hex: &str,
@@ -736,7 +752,7 @@ pub(crate) fn pending_chat_message(
     let (a, b, init) = avatar_for(my_label);
     // Pending rows replace the timestamp with status text — "sending…" while
     // we wait for the relay ack, or the failure pill once the send errored.
-    // The bubble component handles the retry-affordance copy itself.
+    // The body component handles the retry-affordance copy itself.
     let stamp = if pending.failed {
         "failed".to_string()
     } else {
@@ -744,8 +760,8 @@ pub(crate) fn pending_chat_message(
     };
     let (reply_id, reply_author, reply_text) = pending.reply_to.clone().unwrap_or_default();
     let (reply_to_image, reply_to_has_image) = reply_thumbnail_for(&reply_id);
-    let bubble_max = clamp_bubble_max(true);
-    let lines = build_message_lines(&pending.text, bubble_max);
+    let wrap_max = clamp_wrap_max();
+    let lines = build_message_lines(&pending.text, wrap_max);
 
     // Armed effect: `effect_id` is the persistent identity (so the row is
     // tap-to-replay), `effect_autoplay` fires it once on the optimistic row (a
@@ -760,7 +776,7 @@ pub(crate) fn pending_chat_message(
 
     // Pending media optimistic-render. While the upload is in flight we render
     // the chip / image preview / album grid straight from the local bytes the
-    // user picked, so the bubble doesn't pop in once the real record lands.
+    // user picked, so the body doesn't pop in once the real record lands.
     let is_album = pending.media.len() >= 2;
     let (album, album_w, album_h) = if is_album {
         let (cells, w, h) = pending_album_cells(&pending.media, &pending.temp_id, true);
@@ -768,45 +784,37 @@ pub(crate) fn pending_chat_message(
     } else {
         no_album()
     };
-    let (
-        has_attachment,
-        att_name,
-        att_mime,
-        att_size_label,
-        att_is_image,
-        att_image,
-        att_has_image,
-        att_loading,
-    ) = match (is_album, pending.media.first()) {
+    let att = match (is_album, pending.media.first()) {
         (false, Some(m)) => {
             let (image, has_image) = match &m.local_preview {
                 Some(p) => (image_from_pixels(p), true),
                 None => (slint::Image::default(), false),
             };
-            (
-                true,
-                m.file_name.clone(),
-                m.media_type.clone(),
-                m.size_bytes.map(human_bytes).unwrap_or_default(),
-                m.is_image,
+            AttFields {
+                has_attachment: true,
+                name: m.file_name.clone(),
+                mime: m.media_type.clone(),
+                size_label: m.size_bytes.map(human_bytes).unwrap_or_default(),
+                is_image: m.is_image,
                 image,
                 has_image,
-                !pending.failed,
-            )
+                loading: !pending.failed,
+            }
         }
-        _ => (
-            false,
-            String::new(),
-            String::new(),
-            String::new(),
-            false,
-            slint::Image::default(),
-            false,
-            false,
-        ),
+        _ => AttFields::default(),
     };
+    let AttFields {
+        has_attachment,
+        name: att_name,
+        mime: att_mime,
+        size_label: att_size_label,
+        is_image: att_is_image,
+        image: att_image,
+        has_image: att_has_image,
+        loading: att_loading,
+    } = att;
 
-    // Optimistic video / audio bubble flags.
+    // Optimistic video / audio body flags.
     let att_is_video = has_attachment && pending.media.first().map(|m| m.is_video).unwrap_or(false);
     let att_is_audio = has_attachment
         && !att_is_video
@@ -827,46 +835,33 @@ pub(crate) fn pending_chat_message(
         &pending.text,
     );
 
+    // Everything not listed rides `Default` — including the empty
+    // `stamp_full` (suppresses the datetime tooltip until the send confirms)
+    // and the not-yet-possible states (edited/deleted/reactions).
     ChatMessage {
         text: s(&pending.text),
         lines,
         jumbo_emoji,
         stamp: s(&stamp),
-        // No confirmed timestamp yet — the empty string suppresses the
-        // datetime tooltip on pending/failed rows.
-        stamp_full: s(""),
         outgoing: true,
-        edited: false,
-        edit_count: 0,
-        can_edit: false,
-        // A pending row is freshly composed; it can't already be retracted.
-        deleted: false,
         show_avatar: true,
         av_initials: s(&init),
         av_a: a,
         av_b: b,
-        // Pending rows are always the user's own outgoing message: no sender
-        // label, and the outgoing avatar picture comes from `my-picture`.
+        // Pending rows are always the user's own outgoing message: the name
+        // header shows the user's label, and the avatar picture comes from
+        // `my-av-*` (bound in MessageRow).
         sender_id: s(my_account_id_hex),
-        sender_name: s(""),
-        show_sender_name: false,
-        mentioned: false,
-        picture: slint::Image::default(),
-        has_picture: false,
-        bubble_max,
-        gap_before: 0.0,
-        first_in_group: true,
-        last_in_group: true,
+        sender_name: s(my_label),
+        show_sender_name: true,
+        wrap_max,
         // A pending row was composed just now, so it's always on today's side
         // of any day boundary.
         day_key: today_day_key(),
-        day_label: s(""),
         // Carry the temp_id in `message_id` so the retry callback can find
         // the entry. The visual layer keys off `pending`/`failed`, not on
         // the id string being empty.
         message_id: s(&pending.temp_id),
-        reactions: ModelRc::new(VecModel::from(Vec::<Reaction>::new())),
-        reaction_rows: ModelRc::new(VecModel::from(Vec::<ReactionRow>::new())),
         pending: !pending.failed,
         failed: pending.failed,
         reply_to_id: s(&reply_id),
@@ -886,10 +881,6 @@ pub(crate) fn pending_chat_message(
         att_is_image,
         att_is_video,
         att_is_audio,
-        att_audio_playing: false,
-        att_audio_progress: 0.0,
-        att_audio_failed: false,
-        att_duration: s(""),
         att_image,
         att_has_image,
         att_loading,
@@ -898,10 +889,7 @@ pub(crate) fn pending_chat_message(
         effect_clip_x,
         effect_clip_y,
         effect_autoplay,
-        // A pending send is always a real chat bubble, never a system line.
-        system_line: false,
-        // A pending send is our own, so never the first-unread row.
-        unread_divider: false,
+        ..Default::default()
     }
 }
 
@@ -972,7 +960,7 @@ pub(crate) fn apply_reaction_overlay(
 
 // ─── Surgical row updates ─────────────────────────────────────────────
 //
-// Full `rebuild_chat_messages` calls were causing every bubble to remount
+// Full `rebuild_chat_messages` calls were causing every body to remount
 // (the inner VecModel got replaced wholesale), which re-fired the
 // `init=>enter` fade on every neighbour. These helpers update just the
 // affected row(s) so siblings stay put.
@@ -1006,17 +994,14 @@ pub(crate) fn apply_reaction_to_model_row(
         let Some(mut row) = vm.row_data(pos) else {
             return;
         };
-        let mut chips: Vec<Reaction> = (0..row.reactions.row_count())
-            .filter_map(|i| row.reactions.row_data(i))
-            .collect();
+        let mut chips = flatten_reaction_rows(&row.reaction_rows);
         merge_reaction(&mut chips, op);
-        row.reaction_rows = group_reaction_rows(chips.clone(), row.bubble_max);
-        row.reactions = ModelRc::new(VecModel::from(chips));
+        row.reaction_rows = group_reaction_rows(chips, row.wrap_max);
         vm.set_row_data(pos, row);
     });
 }
 
-/// Surgically rewrite one bubble's body to `new_text` and flag it edited.
+/// Surgically rewrite one body's body to `new_text` and flag it edited.
 /// The optimistic counterpart to [`apply_reaction_to_model_row`] — used the
 /// instant the user confirms an edit, before the kind-1009 echoes back.
 pub(crate) fn apply_edit_to_model_row(
@@ -1033,7 +1018,7 @@ pub(crate) fn apply_edit_to_model_row(
             return;
         };
         row.text = s(new_text);
-        row.lines = build_message_lines(new_text, row.bubble_max);
+        row.lines = build_message_lines(new_text, row.wrap_max);
         row.jumbo_emoji = jumbo_emoji_for(
             row.has_attachment,
             row.album.row_count() != 0,
@@ -1041,12 +1026,11 @@ pub(crate) fn apply_edit_to_model_row(
             new_text,
         );
         row.edited = true;
-        row.edit_count += 1;
         vm.set_row_data(pos, row);
     });
 }
 
-/// Surgically refresh one bubble (by message id) from a prefetched snapshot +
+/// Surgically refresh one body (by message id) from a prefetched snapshot +
 /// overlay. Used by react/unreact and the kind-7/5 echo handler — they all
 /// only need to touch the target row, not the whole model. `all` must be the
 /// current message window for `group_hex`, read OFF the UI thread (sqlite can
@@ -1076,7 +1060,7 @@ pub(crate) fn refresh_one_message_row_from(
 }
 
 /// Read the message window for `group_hex` on the backend runtime, then hop
-/// to the event loop and surgically refresh `target_id`'s bubble. Never
+/// to the event loop and surgically refresh `target_id`'s body. Never
 /// blocks the caller — safe from any thread, including Slint callbacks.
 /// The chat index is re-resolved from `group_ids` at apply time so a chat
 /// list that moved underneath the round-trip still lands the row in the
@@ -1131,14 +1115,12 @@ pub(crate) fn with_inner_messages<R>(
     Some(f(vm))
 }
 
-/// Re-wrap every rendered message body against the current theme's body size.
-///
-/// The line models are wrapped in Rust against `Theme.body-fs`, so a theme
-/// switch that moves that size leaves every already-built row broken at the
-/// old width. Rebuilding from the backend snapshot would also drop the
-/// optimistic overlay, so this rewrites the `lines` model in place and touches
-/// nothing else. Rows with no body of their own — system lines, deleted
-/// bubbles — keep the model they have.
+/// Re-clamp and re-wrap every rendered message body against the live pane
+/// width and theme body size (both a pane resize and a body-fs change end
+/// here; refreshing the clamp and regrouping reaction rows are no-ops when
+/// only the font moved). Rebuilding from the backend snapshot would drop the
+/// optimistic overlay, so this rewrites the models in place. Rows with no
+/// body of their own — system lines, tombstones — keep what they have.
 pub(crate) fn rewrap_all_message_lines(ui: &WhiteNoiseLinux) {
     let chats_messages = ui.get_chats_messages();
     let chat_count = chats_messages.row_count();
@@ -1151,40 +1133,10 @@ pub(crate) fn rewrap_all_message_lines(ui: &WhiteNoiseLinux) {
                 if row.text.is_empty() || row.lines.row_count() == 0 {
                     continue;
                 }
-                row.lines = build_message_lines(row.text.as_str(), row.bubble_max);
-                vm.set_row_data(pos, row);
-            }
-        });
-    }
-}
-
-/// Re-clamp and re-wrap every rendered message body against the live chat
-/// pane width.
-///
-/// Unlike [`rewrap_all_message_lines`] (the body-fs sibling, which only
-/// re-wraps because a font-size change never moves the clamp itself), a pane
-/// resize moves `bubble_max` too — `clamp_bubble_max` narrows the fixed
-/// per-direction cap to whatever the pane now has room for — so both the
-/// clamp and the lines built against it need refreshing. Reaction rows share
-/// the same width budget, so they are regrouped alongside the text.
-pub(crate) fn rewrap_all_message_lines_for_pane_width(ui: &WhiteNoiseLinux) {
-    let chats_messages = ui.get_chats_messages();
-    let chat_count = chats_messages.row_count();
-    for idx in 0..chat_count {
-        let _ = with_inner_messages(&chats_messages, idx, |vm| {
-            for pos in 0..vm.row_count() {
-                let Some(mut row) = vm.row_data(pos) else {
-                    continue;
-                };
-                if row.text.is_empty() || row.lines.row_count() == 0 {
-                    continue;
-                }
-                row.bubble_max = clamp_bubble_max(row.outgoing);
-                row.lines = build_message_lines(row.text.as_str(), row.bubble_max);
-                let chips: Vec<Reaction> = (0..row.reactions.row_count())
-                    .filter_map(|i| row.reactions.row_data(i))
-                    .collect();
-                row.reaction_rows = group_reaction_rows(chips, row.bubble_max);
+                row.wrap_max = clamp_wrap_max();
+                row.lines = build_message_lines(row.text.as_str(), row.wrap_max);
+                let chips = flatten_reaction_rows(&row.reaction_rows);
+                row.reaction_rows = group_reaction_rows(chips, row.wrap_max);
                 vm.set_row_data(pos, row);
             }
         });
@@ -1226,7 +1178,6 @@ pub(crate) fn build_one_message_row(
         edits,
         deletes,
         profiles,
-        is_group,
         by_id,
     } = message_row_state(backend, my_id, group_hex, all_records, Some(overlay));
     let r = reactions
@@ -1236,7 +1187,7 @@ pub(crate) fn build_one_message_row(
     let e = edits.get(&record.message_id_hex).cloned();
     let deleted = deletes.contains(&record.message_id_hex);
     chat_message_from_with_reactions(
-        record, &by_id, my_id, my_label, r, e, deleted, &profiles, is_group, true,
+        record, &by_id, my_id, my_label, r, e, deleted, &profiles, true,
     )
 }
 
@@ -1244,8 +1195,8 @@ pub(crate) fn build_one_message_row(
 /// This is the single source of truth — every code path that mutates state
 /// (send, react, unreact, watcher fires) ends here.
 /// Consecutive messages from the same sender within this many seconds collapse
-/// into one visual group: a single trailing avatar, one name label, tightened
-/// corners, and no inter-bubble gap.
+/// into one visual group: the avatar and name header ride the first message,
+/// continuations indent under it with no inter-group gap.
 pub(crate) const GROUP_WINDOW_SECS: u64 = 5 * 60;
 
 /// A grouping key: (sender_lowercased, is_outgoing, recorded_at_secs).
@@ -1255,31 +1206,24 @@ pub(crate) fn keys_grouped(a: &GroupKey, b: &GroupKey) -> bool {
     a.1 == b.1 && a.0 == b.0 && a.2.abs_diff(b.2) <= GROUP_WINDOW_SECS
 }
 
-/// Stamp first/last/avatar/name/gap grouping flags onto a freshly-built run of
-/// rows. `keys` must be in the same order and length as `rows`.
+/// Stamp avatar/name/gap grouping flags onto a freshly-built run of rows.
+/// `keys` must be in the same order and length as `rows`.
 pub(crate) fn apply_grouping(rows: &mut [ChatMessage], keys: &[GroupKey]) {
     let n = rows.len();
     let today = today_day_key();
     for i in 0..n {
         // A day boundary always breaks the visual group — a date divider
-        // renders between the bubbles, so they can't share corners/avatar.
+        // renders between the message rows, so they can't share corners/avatar.
         let day_break = i > 0 && rows[i].day_key != rows[i - 1].day_key;
         // A system line is always standalone and also breaks its neighbours'
-        // groups: it can't share an avatar/corner run with a bubble.
+        // groups: it can't share an avatar run with a message body.
         let sys = rows[i].system_line;
         let sys_prev = i > 0 && rows[i - 1].system_line;
-        let sys_next = i + 1 < n && rows[i + 1].system_line;
         let first = i == 0 || day_break || sys || sys_prev || !keys_grouped(&keys[i - 1], &keys[i]);
-        let last = i + 1 == n
-            || rows[i + 1].day_key != rows[i].day_key
-            || sys
-            || sys_next
-            || !keys_grouped(&keys[i], &keys[i + 1]);
-        rows[i].first_in_group = first;
-        rows[i].last_in_group = last;
-        // Avatar rides the bottom of a stack; the name label tops it. System
-        // lines never show one.
-        rows[i].show_avatar = last && !sys;
+        // Flat layout: the avatar and name header ride the FIRST message of a
+        // stack (Discord-style); continuations indent under it. System lines
+        // never show one.
+        rows[i].show_avatar = first && !sys;
         rows[i].show_sender_name = rows[i].show_sender_name && first;
         rows[i].gap_before = if first && i != 0 { 10.0 } else { 0.0 };
         // Date divider above the first message of each local day. The window's
@@ -1307,9 +1251,10 @@ fn grouping_key_for(m: &AppMessageRecord, my_id: &str) -> GroupKey {
 }
 
 /// Append `row` to the chat model, folding it into the previous row's visual
-/// group when they share sender + direction. Recomputes the new row's grouping
-/// flags and clears the previous row's avatar/tail so live arrivals stack the
-/// same way a full rebuild would.
+/// group when they share sender + direction. Only the NEW row's flags change
+/// (the avatar/name ride the first message of a group, so the previous row
+/// never needs a rewrite) — live arrivals stack the same way a full rebuild
+/// would.
 pub(crate) fn push_message_grouped(vm: &VecModel<ChatMessage>, mut row: ChatMessage) {
     let n = vm.row_count();
     let mut grouped = false;
@@ -1317,12 +1262,12 @@ pub(crate) fn push_message_grouped(vm: &VecModel<ChatMessage>, mut row: ChatMess
     // 0 = no previous row.
     let mut prev_day = 0;
     if n > 0
-        && let Some(mut prev) = vm.row_data(n - 1)
+        && let Some(prev) = vm.row_data(n - 1)
     {
         prev_day = prev.day_key;
         // A system line (either side) is always standalone — never fold it into
-        // a bubble run or fold a bubble into it.
-        let same = !row.system_line
+        // a message body run or fold a message body into it.
+        grouped = !row.system_line
             && !prev.system_line
             && prev.day_key == row.day_key
             && ((row.outgoing && prev.outgoing)
@@ -1333,12 +1278,6 @@ pub(crate) fn push_message_grouped(vm: &VecModel<ChatMessage>, mut row: ChatMess
                         .sender_id
                         .as_str()
                         .eq_ignore_ascii_case(row.sender_id.as_str())));
-        if same {
-            grouped = true;
-            prev.last_in_group = false;
-            prev.show_avatar = false;
-            vm.set_row_data(n - 1, prev);
-        }
     }
     // Date divider when this row starts a new local day (same rule as
     // `apply_grouping`: an empty chat only gets one for a non-today row).
@@ -1352,9 +1291,7 @@ pub(crate) fn push_message_grouped(vm: &VecModel<ChatMessage>, mut row: ChatMess
     } else {
         s("")
     };
-    row.first_in_group = !grouped;
-    row.last_in_group = true;
-    row.show_avatar = true;
+    row.show_avatar = !grouped && !row.system_line;
     if grouped {
         row.show_sender_name = false;
         row.gap_before = 0.0;
@@ -1366,15 +1303,13 @@ pub(crate) fn push_message_grouped(vm: &VecModel<ChatMessage>, mut row: ChatMess
 
 /// Copy the grouping flags off the row currently at `pos` onto `row`. Used when
 /// swapping a row in place (reaction refresh, send reconciliation) so a single-
-/// row update doesn't reset that bubble's grouping to the standalone defaults.
+/// row update doesn't reset that body's grouping to the standalone defaults.
 pub(crate) fn preserve_grouping_flags(
     vm: &VecModel<ChatMessage>,
     pos: usize,
     row: &mut ChatMessage,
 ) {
     if let Some(old) = vm.row_data(pos) {
-        row.first_in_group = old.first_in_group;
-        row.last_in_group = old.last_in_group;
         row.show_avatar = old.show_avatar;
         row.show_sender_name = old.show_sender_name;
         row.gap_before = old.gap_before;
@@ -1391,7 +1326,6 @@ struct RowState<'a> {
     edits: std::collections::HashMap<String, EditState>,
     deletes: std::collections::HashSet<String>,
     profiles: SenderProfiles,
-    is_group: bool,
     by_id: HashMap<&'a str, &'a AppMessageRecord>,
 }
 
@@ -1414,7 +1348,6 @@ fn message_row_state<'a>(
         apply_delete_overlay(&mut deletes, group_hex, overlay);
     }
     let profiles = build_sender_profiles(backend, records, my_id);
-    let is_group = backend.group_member_count(group_hex) > 2;
     let by_id: HashMap<&str, &AppMessageRecord> = records
         .iter()
         .map(|m| (m.message_id_hex.as_str(), m))
@@ -1424,7 +1357,6 @@ fn message_row_state<'a>(
         edits,
         deletes,
         profiles,
-        is_group,
         by_id,
     }
 }
@@ -1470,7 +1402,6 @@ pub(crate) fn build_message_rows(
         edits,
         deletes,
         profiles,
-        is_group,
         by_id,
     } = message_row_state(backend, my_id, group_hex, msgs, overlay);
 
@@ -1500,7 +1431,7 @@ pub(crate) fn build_message_rows(
             .unwrap_or_default();
         let deleted = deletes.contains(&m.message_id_hex);
         let mut row = chat_message_from_with_reactions(
-            m, &by_id, my_id, my_label, r, e, deleted, &profiles, is_group, false,
+            m, &by_id, my_id, my_label, r, e, deleted, &profiles, false,
         );
         if unread_anchor
             .as_deref()
@@ -1743,38 +1674,39 @@ impl EditState {
 /// MLS-authenticated sender) matches the *original* message's author. A
 /// kind-1009 from anyone else referencing your message is ignored. Edits are
 /// ordered by `(recorded_at, id)` and the newest wins as the displayed text.
+/// The author-enforcement walk shared by edit and delete aggregation: yields
+/// each record of `kind` whose `e`-target is a kind-9 message that the
+/// record's authenticated sender actually authored. Anything referencing
+/// someone else's message is silently dropped here, once, for both.
+fn authored_targets(
+    records: &[AppMessageRecord],
+    kind: u64,
+) -> impl Iterator<Item = (&str, &AppMessageRecord)> {
+    let author_of: HashMap<&str, &str> = records
+        .iter()
+        .filter(|r| r.kind == CHAT_MESSAGE_KIND)
+        .map(|r| (r.message_id_hex.as_str(), r.sender.as_str()))
+        .collect();
+    records.iter().filter_map(move |r| {
+        if r.kind != kind {
+            return None;
+        }
+        let target = first_event_ref(&r.tags)?;
+        let orig_author = author_of.get(target)?;
+        if !r.sender.eq_ignore_ascii_case(orig_author) {
+            return None;
+        }
+        Some((target, r))
+    })
+}
+
 pub(crate) fn aggregate_edits(
     records: &[AppMessageRecord],
 ) -> std::collections::HashMap<String, EditState> {
     use std::collections::HashMap;
-    // message_id → original author, for kind-9 chat messages only.
-    let mut author_of: HashMap<&str, &str> = HashMap::new();
-    for r in records {
-        if r.kind == CHAT_MESSAGE_KIND {
-            author_of.insert(r.message_id_hex.as_str(), r.sender.as_str());
-        }
-    }
     // target_id → ordered (recorded_at, id, content) edits.
     let mut by_target: HashMap<String, Vec<(u64, String, String)>> = HashMap::new();
-    for r in records {
-        if r.kind != 1009 {
-            continue;
-        }
-        let Some(target) = r
-            .tags
-            .iter()
-            .find(|t| t.len() >= 2 && t[0] == "e")
-            .map(|t| t[1].as_str())
-        else {
-            continue;
-        };
-        // Only the original author may edit their own message.
-        let Some(orig_author) = author_of.get(target) else {
-            continue;
-        };
-        if !r.sender.eq_ignore_ascii_case(orig_author) {
-            continue;
-        }
+    for (target, r) in authored_targets(records, 1009) {
         if r.plaintext.trim().is_empty() {
             continue;
         }
@@ -1803,36 +1735,9 @@ pub(crate) fn aggregate_edits(
 /// author. A kind-5 referencing someone else's message is ignored (you can't
 /// retract a message you didn't send).
 pub(crate) fn aggregate_deletes(records: &[AppMessageRecord]) -> std::collections::HashSet<String> {
-    use std::collections::{HashMap, HashSet};
-    // message_id → original author, for kind-9 chat messages only.
-    let mut author_of: HashMap<&str, &str> = HashMap::new();
-    for r in records {
-        if r.kind == CHAT_MESSAGE_KIND {
-            author_of.insert(r.message_id_hex.as_str(), r.sender.as_str());
-        }
-    }
-    let mut deleted: HashSet<String> = HashSet::new();
-    for r in records {
-        if r.kind != 5 {
-            continue;
-        }
-        let Some(target) = r
-            .tags
-            .iter()
-            .find(|t| t.len() >= 2 && t[0] == "e")
-            .map(|t| t[1].as_str())
-        else {
-            continue;
-        };
-        let Some(orig_author) = author_of.get(target) else {
-            continue;
-        };
-        if !r.sender.eq_ignore_ascii_case(orig_author) {
-            continue;
-        }
-        deleted.insert(target.to_string());
-    }
-    deleted
+    authored_targets(records, 5)
+        .map(|(target, _)| target.to_string())
+        .collect()
 }
 
 /// Layer the pending-delete overlay onto an aggregated delete set, so an

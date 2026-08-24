@@ -43,7 +43,7 @@ export component PaletteRow inherits Rectangle {
         // Row body.
         Rectangle {
             height: 36px;
-            background: root.is-selected ? (Theme.selected-inverts-text ? Palette.selected : Palette.bubble-in) : (root.interactive && row-touch.has-hover ? Palette.hover : transparent);
+            background: root.is-selected ? (Theme.selected-inverts-text ? Palette.selected : Palette.plate) : (root.interactive && row-touch.has-hover ? Palette.hover : transparent);
             border-radius: (5px) * Theme.r-scale;
             animate background {
                 duration: 90ms;
@@ -65,7 +65,7 @@ export component PaletteRow inherits Rectangle {
                 x: 6px;
                 y: (parent.height - self.height) / 2;
                 text: "▶";
-                color: Palette.bubble-out-fg;
+                color: Palette.on-accent;
                 font-size: Theme.fs(12px, 13px);
                 font-family: Theme.font;
                 vertical-alignment: center;
@@ -78,7 +78,7 @@ export component PaletteRow inherits Rectangle {
                 alignment: stretch;
                 Text {
                     text: root.action.label;
-                    color: Theme.pixel-select-marker && root.is-selected ? Palette.bubble-out-fg : Palette.text-hi;
+                    color: Theme.pixel-select-marker && root.is-selected ? Palette.on-accent : Palette.text-hi;
                     font-size: Theme.fs(12px, 13px);
                     font-weight: root.is-selected ? 700 : 500;
                     font-family: Theme.font;

@@ -40,7 +40,7 @@ export component DebugPane inherits DetailPage {
                 Button {
                     label: @tr("State");
                     selected: root.mode == 0;
-                    fg: root.mode == 0 && Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.text-hi;
+                    fg: root.mode == 0 && Theme.selected-inverts-text ? Palette.on-accent : Palette.text-hi;
                     clicked => {
                         root.mode = 0;
                         AppState.debug-load(0);
@@ -50,7 +50,7 @@ export component DebugPane inherits DetailPage {
                 Button {
                     label: @tr("Raw events");
                     selected: root.mode == 1;
-                    fg: root.mode == 1 && Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.text-hi;
+                    fg: root.mode == 1 && Theme.selected-inverts-text ? Palette.on-accent : Palette.text-hi;
                     clicked => {
                         root.mode = 1;
                         AppState.debug-load(1);
@@ -60,7 +60,7 @@ export component DebugPane inherits DetailPage {
                 Button {
                     label: @tr("Key packages");
                     selected: root.mode == 2;
-                    fg: root.mode == 2 && Theme.selected-inverts-text ? Palette.bubble-out-fg : Palette.text-hi;
+                    fg: root.mode == 2 && Theme.selected-inverts-text ? Palette.on-accent : Palette.text-hi;
                     clicked => {
                         root.mode = 2;
                         AppState.debug-load(2);

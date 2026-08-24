@@ -240,10 +240,10 @@ fn write_video_save_bytes(weak: Weak<WhiteNoiseLinux>, bytes: Vec<u8>, path: std
 }
 
 /// Push the user's quick-reaction set into the `QuickReact` global, the single
-/// source the hover toolbar, context menu, and Settings editor all read.
+/// source the context menu and Settings editor read.
 pub(crate) fn push_quick_reactions(ui: &WhiteNoiseLinux, list: &[String]) {
     // Resolve each emoji to its tile in the shared Twemoji sprite sheet (the
-    // same texture and resolver the chat bubbles draw inline emoji from) so the
+    // same texture and resolver the message rows draw inline emoji from) so the
     // cells render in colour; clip -1 tells the cell to fall back to the text
     // glyph.
     let rows: Vec<QuickReaction> = list
@@ -339,7 +339,7 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     wire_linkout(ui, cx);
     // ─── Edit target (enter / cancel) ──────────────────────────────────
     //
-    // The bubble's edit affordance (own messages only) fires
+    // The body's edit affordance (own messages only) fires
     // `request-edit(id, current_text)`. We load the current text into the
     // composer and stash the target id; the next send routes through
     // `edit_op`. Entering edit mode clears any pending reply target.
@@ -388,10 +388,48 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
         ui.set_composer_draft(s(&draft));
     });
 
-    // ─── Copy selection (context menu on a text-selected bubble) ───────
+    // ─── Copy selection (context menu on a text-selected body) ───────
     //
-    // The bubble's run cells resolved the drag into two (line, run, fraction)
+    // The body's run cells resolved the drag into two (line, run, fraction)
     // endpoints; re-read the row's line model and extract the covered text.
+    // Arm the message context menu: store the target fields, build the
+    // visible rows as an ordered action-id list (0 add-reaction, 1 reply,
+    // 2 forward, 3 copy-text, 4 copy-selection, 5 delete-for-me, 6 edit,
+    // 7 delete-for-everyone, 8 view-raw — labels/glyphs resolve in
+    // message-context-menu.slint so they stay in the @tr catalogs), and open.
+    // Built here because Slint cannot construct conditional arrays.
+    wire!(ui, on_arm_context_menu [], |ui, id, text, author, can_edit, ax, ay| {
+        let app = ui.global::<AppState>();
+        let sel = ui.global::<TextSelection>();
+        let has_selection = sel.get_active()
+            && sel.get_owner() == id
+            && sel.get_a_line() >= 0
+            && sel.get_b_line() >= 0;
+        let mut actions: Vec<i32> = vec![0, 1, 2];
+        if !text.is_empty() {
+            actions.push(3);
+        }
+        if has_selection {
+            actions.push(4);
+        }
+        actions.push(5);
+        if can_edit {
+            actions.push(6);
+            actions.push(7);
+        }
+        if app.get_debug_enabled() {
+            actions.push(8);
+        }
+        app.set_ctx_menu_id(id);
+        app.set_ctx_menu_text(text);
+        app.set_ctx_menu_author(author);
+        app.set_ctx_menu_can_edit(can_edit);
+        app.set_ctx_menu_x(ax);
+        app.set_ctx_menu_y(ay);
+        app.set_ctx_menu_actions(ModelRc::new(VecModel::from(actions)));
+        app.set_ctx_menu_open(true);
+    });
+
     wire!(ui, on_copy_selection [], |ui, message_id, a_line, a_run, a_frac, b_line, b_run, b_frac| {
         let idx = ui.get_active_chat();
         if idx < 0 || message_id.is_empty() {
@@ -421,9 +459,9 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
         });
     });
 
-    // ─── Word selection (double-click on a bubble) ─────────────────────
+    // ─── Word selection (double-click on a message body) ─────────────────────
     //
-    // The bubble resolved the clicked document position; expand it to word
+    // The body resolved the clicked document position; expand it to word
     // boundaries within the run, remember it as the anchor word, and write
     // the endpoints back into the TextSelection global, which the run cells
     // render directly.
@@ -656,7 +694,7 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
 
     // ─── Edit history (visible to anyone) ──────────────────────────────
     //
-    // Tapping a bubble's "(edited)" label asks Rust to assemble the full
+    // Tapping a message body's "(edited)" label asks Rust to assemble the full
     // version list (original + each author-authored kind-1009) and open the
     // modal. Empty history (race) just no-ops.
     wire!(ui, on_show_edit_history [backend_cell, group_ids], |ui, message_id| {
@@ -837,7 +875,7 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     // ─── In-app video viewer ───────────────────────────────────────────
     // Dropping the player joins its render/event threads and frees the mpv
     // handle (stopping audio). The first-frame poster + duration captured
-    // during playback are now cached, so repaint that bubble's tile.
+    // during playback are now cached, so repaint that body's tile.
     ui.global::<AppState>().on_dismiss_video_viewer({
         let weak = ui.as_weak();
         let backend_cell = backend_cell.clone();
@@ -1180,7 +1218,7 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     //
     // Stamp the overlay locally, refresh ONLY the target row, dispatch the
     // kind-7 in the background, then refresh ONLY the target row again on
-    // ack. No siblings are remounted; the bubble's enter animation never
+    // ack. No siblings are remounted; the body's enter animation never
     // re-fires on neighbours.
     let react_op = {
         let backend_cell = backend_cell.clone();
@@ -1458,7 +1496,7 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     ui.set_emoji_sprite(emoji_sprite_image());
     ui.set_emoji_tile(emoji_sprite_map::TILE as i32);
     // Also populate the `EmojiSheet` global so deeply-nested components
-    // (chat bubbles in particular) can render inline emoji without having
+    // (message rows in particular) can render inline emoji without having
     // the sprite plumbed through every intermediate row.
     let sheet = ui.global::<EmojiSheet>();
     sheet.set_sprite(emoji_sprite_image());
@@ -1548,7 +1586,7 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     // ─── Durable offline send queue: flush + reconnect watcher ─────────────
     //
     // `flush_offline_queue` reconciles the encrypted on-disk queue with the UI:
-    // it renders a pending bubble for every queued send that isn't on screen yet
+    // it renders a pending body for every queued send that isn't on screen yet
     // (so messages composed offline are visible across restarts), and — when a
     // relay is reachable — (re)dispatches each one through the normal send path.
     // The disk entry is the source of truth for the bytes; the overlay is just
@@ -1590,7 +1628,7 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                     .unwrap()
                     .find_send(&group_hex, &temp_id);
                 let in_overlay = existing.is_some();
-                // A red (online hard-failure) bubble is manual-retry-only within a
+                // A red (online hard-failure) body is manual-retry-only within a
                 // session — don't auto-flush it. (After a restart it isn't in the
                 // overlay yet, so it's retried fresh once, then re-reddens if it
                 // genuinely still fails.)
@@ -1613,7 +1651,7 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                     }
                 }
 
-                // Reconstruct the overlay mirror so we can render the bubble.
+                // Reconstruct the overlay mirror so we can render the body.
                 let pending = match &entry.kind {
                     offline_queue::QueuedKind::Text {
                         text,
@@ -1664,7 +1702,7 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                     },
                 };
 
-                // Render the pending bubble if it isn't already on screen.
+                // Render the pending body if it isn't already on screen.
                 if !in_overlay {
                     pending_state
                         .lock()
@@ -1696,7 +1734,7 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 // event-loop closure, so set it synchronously here too.
                 offline_inflight_insert(&temp_id);
 
-                // Online: (re)dispatch from the durable bytes. The overlay bubble
+                // Online: (re)dispatch from the durable bytes. The overlay body
                 // already exists, so the media replays skip their own render.
                 match entry.kind {
                     offline_queue::QueuedKind::Text {

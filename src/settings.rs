@@ -24,8 +24,6 @@ pub struct Settings {
     /// Accent color name. One of `mint`, `ocean`, `berry`, `coral`, `lavender`.
     #[serde(default = "default_accent")]
     pub accent_color: String,
-    #[serde(default = "default_outgoing_on_right")]
-    pub outgoing_on_right: bool,
     /// UI zoom level (Ctrl +/-/0): multiplies the window scale factor so the
     /// whole UI scales like browser zoom. Clamped to [0.5, 3.0]; 1.0 is 100%.
     #[serde(default = "default_zoom")]
@@ -41,8 +39,8 @@ pub struct Settings {
     /// Local-only — never published to relays.
     #[serde(default)]
     pub nicknames: BTreeMap<String, String>,
-    /// The emoji shown in the one-tap quick-reaction row on the message hover
-    /// toolbar and the right-click menu; a trailing "+" always opens the full
+    /// The emoji shown in the one-tap quick-reaction row on the message
+    /// right-click menu; a trailing "+" always opens the full
     /// picker. Ordered as the user arranged them, editable in Settings. Local-
     /// only, like nicknames — never published to relays.
     #[serde(default = "default_quick_reactions")]
@@ -327,10 +325,6 @@ fn default_theme() -> String {
 
 fn default_accent() -> String {
     "mint".into()
-}
-
-fn default_outgoing_on_right() -> bool {
-    true
 }
 
 fn default_zoom() -> f32 {

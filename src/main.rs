@@ -111,9 +111,9 @@ pub(crate) use wnl_ui::*;
 //   2. UI rebuilds the message row from `backend snapshot + overlay`.
 //   3. The real send is dispatched on the tokio runtime in the background.
 //   4. On ack: drop the overlay entry, rebuild (snapshot now has the real
-//      record, so the row keeps the same content but the bubble flips from
+//      record, so the row keeps the same content but the body flips from
 //      pending → confirmed).
-//   5. On failure: mark the overlay entry failed (red bubble, tap to retry).
+//   5. On failure: mark the overlay entry failed (red body, tap to retry).
 //
 // The overlay only ever holds *my* not-yet-confirmed mutations. Everything
 // else still comes from the marmot snapshot.
@@ -230,7 +230,6 @@ fn main() -> Result<(), slint::PlatformError> {
     refresh_system_copy(&ui);
     apply_theme_mode(&ui, &theme_mode);
     set_accent_index(&ui, accent_color_idx(accent_color));
-    ui.set_outgoing_on_right(initial_settings.outgoing_on_right);
     ui.set_shell_chats_width(initial_settings.shell_chats_width);
     ui.set_shell_info_width(initial_settings.shell_info_width);
     ui.set_shell_centered(initial_settings.centered_conversation);
@@ -374,7 +373,7 @@ fn main() -> Result<(), slint::PlatformError> {
         }
     }));
     // Backend::latest_message (chat-list previews, notifications) filters
-    // with this hook; installing the bubble stream's own predicate keeps the
+    // with this hook; installing the body stream's own predicate keeps the
     // preview and the chat in lockstep — a message hidden via delete-for-me
     // never surfaces as its chat's preview.
     backend::set_visible_message_filter(is_visible_chat_message);
@@ -382,7 +381,7 @@ fn main() -> Result<(), slint::PlatformError> {
     // same live singleton the contact page's block toggle mutates.
     backend::set_blocked_accounts_source(|| blocked_state().lock().unwrap().clone());
     // When a background relay fetch resolves a mentioned profile's name after
-    // the bubbles already rendered, re-tokenize the visible rows IN PLACE.
+    // the message rows already rendered, re-tokenize the visible rows IN PLACE.
     // Deliberately no snapshot re-read: a repaint built from a fresh
     // `messages()` read races whatever send/edit is in flight (the resolve
     // often finishes before the edit's kind-1009 is queryable, so the re-read
@@ -414,7 +413,7 @@ fn main() -> Result<(), slint::PlatformError> {
                         if !(text.contains("npub1") || text.contains("nprofile1")) {
                             continue;
                         }
-                        row.lines = build_message_lines(&text, row.bubble_max);
+                        row.lines = build_message_lines(&text, row.wrap_max);
                         vm.set_row_data(i, row);
                         patched += 1;
                     }

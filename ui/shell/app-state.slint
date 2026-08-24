@@ -52,7 +52,6 @@ export global AppState {
     // to any change, so repeat invocations reopen it even after a selection
     // closed the popup.
     in-out property <int> mention-inbox-open-pulse: 0;
-    in-out property <bool> outgoing-on-right: true;
     // Chat-shell bento columns: the user-dragged widths of the left chat-bar
     // and right info columns, pushed from Rust (settings.rs) and echoed back on
     // drag via `shell-widths-changed` so the choice persists across restarts.
@@ -163,7 +162,7 @@ export global AppState {
     // Rust owns the bytes; this model only carries the chip-row display data.
     in-out property <[StagedAttachment]> composer-staged;
     callback remove-staged(int); // ✕ on a staged chip (index into composer-staged)
-    // Reply target — set by Rust when the user taps a bubble's reply button,
+    // Reply target — set by Rust when the user taps a message body's reply button,
     // cleared on send or cancel. Drives the composer's "Replying to …" chip
     // and tells Rust to send the next message as a kind-9 reply (e+q tags).
     in-out property <string> reply-target-id;
@@ -179,14 +178,14 @@ export global AppState {
     in-out property <string> reply-target-av-initials;
     in-out property <image> reply-target-picture;
     in-out property <bool> reply-target-has-picture: false;
-    // Edit state — set by Rust when the user taps a bubble's edit pencil,
+    // Edit state — set by Rust when the user taps a message body's edit pencil,
     // cleared on save or cancel. Drives the composer's "Editing message" banner
     // and tells Rust the next send is a kind-1010 edit of this message.
     in-out property <string> editing-message-id;
     // Elided preview of the message body being edited (set by Rust alongside
     // editing-message-id), shown in the composer's edit banner.
     in-out property <string> editing-message-preview;
-    // Edit-history modal — populated + shown when a bubble's "(edited)" label
+    // Edit-history modal — populated + shown when a message body's "(edited)" label
     // is tapped. Read-only; visible to anyone in the chat.
     in-out property <[EditVersion]> edit-history;
     in-out property <bool> edit-history-open: false;
@@ -216,9 +215,9 @@ export global AppState {
     callback record-clicked();
     callback stop-recording();
     callback cancel-recording();
-    callback attachment-clicked(string); // bubble attachment tapped (message_id)
-    callback audio-play-clicked(string); // bubble audio play/pause tapped
-    callback audio-seek-clicked(string, float); // bubble audio progress tapped
+    callback attachment-clicked(string); // body attachment tapped (message_id)
+    callback audio-play-clicked(string); // body audio play/pause tapped
+    callback audio-seek-clicked(string, float); // body audio progress tapped
     callback album-cell-clicked(string); // album grid cell tapped (image key) → slideshow
 
     // ═══ Media viewers ═════════════════════════════════════════════════════
@@ -420,23 +419,22 @@ export global AppState {
     in-out property <bool> custom-emoji-modal-busy: false;
     callback custom-emoji-modal-save(string);
     callback custom-emoji-modal-dismissed();
-    // Message context menu (right-click on a bubble). Handled entirely in
+    // Message context menu (right-click on a message body). Handled entirely in
     // Slint — the menu items re-fire the existing reaction-picker / reply /
     // edit plumbing above, so Rust never sees the menu itself.
     // (was private on the window root; UI-internal, not part of the Rust contract)
     in-out property <bool> ctx-menu-open: false;
     // One-call arming used by every site that opens the message context menu
-    // (bubble right-click, hover-actions "more"): fills the fields below and
+    // (body right-click, hover-actions "more"): fills the fields below and
     // opens it. Coordinates are window-absolute.
-    public function arm-context-menu(id: string, text: string, author: string, can-edit: bool, ax: length, ay: length) {
-        AppState.ctx-menu-id = id;
-        AppState.ctx-menu-text = text;
-        AppState.ctx-menu-author = author;
-        AppState.ctx-menu-can-edit = can-edit;
-        AppState.ctx-menu-x = ax;
-        AppState.ctx-menu-y = ay;
-        AppState.ctx-menu-open = true;
-    }
+    // Handled in Rust (wiring/extra.rs): stores the fields below, builds the
+    // visible `ctx-menu-actions` list (Slint cannot construct conditional
+    // arrays), and opens the menu.
+    callback arm-context-menu(string, string, string, bool, length, length);
+    // Visible menu rows as an ordered list of action ids (see
+    // message-context-menu.slint for the id table). Built at arm time.
+    // (UI-internal, not part of the Rust contract)
+    in-out property <[int]> ctx-menu-actions: [];
     // (was private on the window root; UI-internal, not part of the Rust contract)
     in-out property <string> ctx-menu-id;
     // (was private on the window root; UI-internal, not part of the Rust contract)
@@ -781,11 +779,9 @@ export global AppState {
     // Fired (debounced) with the chat pane's live content width whenever it
     // settles — window resize, the members panel opening, or the
     // centred-conversation toggle all move it. Rust wraps message text
-    // against a fixed per-direction cap that assumes a wide-enough pane; see
-    // `clamp_bubble_max` in `render.rs`.
+    // against this budget; see `clamp_wrap_max` in `render.rs`.
     callback chat-pane-width-changed(length);
     callback accent-selected(int);
-    callback outgoing-on-right-toggled(bool);
     // Stamp formats — `24h`/`12h` and `mdy`/`dmy`/`iso`; Rust persists and
     // re-renders all visible timestamps on change.
     in-out property <string> time-format: "24h";

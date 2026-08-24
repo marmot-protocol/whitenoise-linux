@@ -16,6 +16,12 @@ import { GroupMembersPanel } from "group-members-panel.slint";
 export component MainPane inherits Rectangle {
     // The open chat's row — the single indexed lookup the children share.
     property <ChatMeta> chat: AppState.chats[AppState.active-chat];
+    // Centred reading measure: proportional to the thread pane (78%, floored
+    // at 760px) instead of the old fixed body-era 760px column. Computed
+    // from the root minus the members panel so it never feeds back into the
+    // column layout's own sizing (binding loop).
+    property <length> thread-w: root.width - members-wrap.width;
+    property <length> centered-col: min(root.thread-w, max(760px, root.thread-w * 0.78));
 
     horizontal-stretch: 1;
     // Sits inside the shell's conversation card, so it takes the elevated card
@@ -54,8 +60,8 @@ export component MainPane inherits Rectangle {
                 HorizontalLayout {
                     alignment: center;
                     MessagesArea {
-                        width: 760px;
-                        available-w: 760px;
+                        width: root.centered-col;
+                        available-w: root.centered-col;
                     }
                 }
             }
@@ -66,8 +72,8 @@ export component MainPane inherits Rectangle {
             HorizontalLayout {
                 alignment: AppState.shell-centered ? center : stretch;
                 composer := Composer {
-                    min-width: AppState.shell-centered ? 760px : 0px;
-                    max-width: AppState.shell-centered ? 760px : 100000px;
+                    min-width: AppState.shell-centered ? root.centered-col : 0px;
+                    max-width: AppState.shell-centered ? root.centered-col : 100000px;
                 }
             }
         }

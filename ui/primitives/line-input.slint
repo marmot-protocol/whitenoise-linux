@@ -113,7 +113,7 @@ export component LineInput inherits Rectangle {
             vertical-alignment: root.single-line || self.preferred-height <= parent.height ? center : top;
             horizontal-alignment: left;
             selection-background-color: Palette.mint;
-            selection-foreground-color: Palette.bubble-out-fg;
+            selection-foreground-color: Palette.on-accent;
 
             edited => {
                 root.caret-moved(self.cursor-position-byte-offset);

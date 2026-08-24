@@ -12,7 +12,7 @@ import { AccentPicker } from "accent-picker.slint";
 import { ThemePicker } from "theme-picker.slint";
 
 export component AppearancePane inherits DetailPage {
-    // Reads/writes AppState directly (theme, accent, bubble side) and invokes
+    // Reads/writes AppState directly (theme, accent, body side) and invokes
     // its callbacks; the page above passes no bindings.
 
     property <[string]> accent-names: [
@@ -56,25 +56,6 @@ export component AppearancePane inherits DetailPage {
                     selected <=> AppState.accent-color;
                     accent-selected(idx) => {
                         AppState.accent-selected(idx);
-                    }
-                }
-            }
-        }
-    }
-
-    Section {
-        label: @tr("MESSAGES");
-        GroupCard {
-            KVRow {
-                row-height: 48px;
-                label: @tr("Own messages on the right");
-                sublabel: @tr("Place your sent messages on the right side.");
-                show-divider: false;
-                Toggle {
-                    label: @tr("Own messages on the right");
-                    on <=> AppState.outgoing-on-right;
-                    toggled => {
-                        AppState.outgoing-on-right-toggled(AppState.outgoing-on-right);
                     }
                 }
             }

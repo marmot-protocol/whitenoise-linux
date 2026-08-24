@@ -278,14 +278,14 @@ export component Composer inherits Rectangle {
                         // an empty draft (dimmed, disabled) — it never becomes the
                         // mic below.
                         if root.is-editing: CheckMark {
-                            stroke: root.primary-active ? Palette.bubble-out-fg : Palette.text-lo;
+                            stroke: root.primary-active ? Palette.on-accent : Palette.text-lo;
                             double: false;
                         }
                         if !root.is-editing && root.can-send: Rectangle {
                             width: 16px;
                             height: 16px;
                             SendIcon {
-                                fill-color: Palette.bubble-out-fg;
+                                fill-color: Palette.on-accent;
                                 size: 16px;
                                 // optical-center the asymmetric arrow in the circle
                                 x: (parent.width - self.width) / 2 - 1px;

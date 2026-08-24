@@ -319,7 +319,7 @@ fn centered_visible_window(
 
 /// Build an eager-Slint-safe message window around `target_id`. Control events
 /// (edits, deletes, reactions) from the bounded scan are retained so the rows
-/// in the window render their current state, while visible bubbles stay capped.
+/// in the window render their current state, while visible message rows stay capped.
 /// The returned recent-record limit keeps surgical actions able to find the
 /// target until the user normally re-enters the chat. Navigation scans the
 /// selected chat's full history off the UI thread first, so every mention shown
@@ -782,7 +782,7 @@ mod tests {
     }
 
     #[test]
-    fn navigation_window_caps_bubbles_and_keeps_control_events() {
+    fn navigation_window_caps_rows_and_keeps_control_events() {
         let mut records: Vec<AppMessageRecord> = (0..200)
             .map(|index| message_record(format!("message-{index:03}"), CHAT_MESSAGE_KIND))
             .collect();

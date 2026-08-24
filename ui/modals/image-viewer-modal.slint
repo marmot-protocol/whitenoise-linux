@@ -128,7 +128,7 @@ component ImageActionContextMenu inherits Rectangle {
 // the backdrop darkens the whole app and the image is letterboxed
 // (`image-fit: contain`) into ~90% of the window so any aspect ratio fits
 // without cropping. Backdrop click, the floating ✕, and Esc all dismiss;
-// tapping the image itself is swallowed so it doesn't bubble to the backdrop.
+// tapping the image itself is swallowed so it doesn't body to the backdrop.
 //
 // Slideshow: when the chat holds more than one image attachment, `count` > 1
 // turns on the prev/next chevrons, a "n / N" counter, and ←/→ key navigation.
@@ -247,7 +247,7 @@ export component ImageViewerModal inherits Modal {
         }
 
         // Copy / Save actions for the currently visible image. These live in
-        // the lightbox instead of the bubble so a downloaded album cell has the
+        // the lightbox instead of the body so a downloaded album cell has the
         // same affordances as a single-image attachment.
         HorizontalLayout {
             x: 24px;

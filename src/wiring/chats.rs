@@ -270,7 +270,7 @@ pub(crate) fn wire_chats(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                     // Snapshot read rides the backend runtime (sqlite can
                     // stall behind sync writes or a slow disk); rows are
                     // built back on the UI thread, merged with any pending
-                    // overlay so chat switching doesn't drop pending bubbles.
+                    // overlay so chat switching doesn't drop pending message rows.
                     let my_id = backend.account().account_id_hex.clone();
                     let weak = ui.as_weak();
                     let backend_cell = backend_cell.clone();

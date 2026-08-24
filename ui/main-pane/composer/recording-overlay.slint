@@ -51,7 +51,7 @@ export component RecordingOverlay inherits Rectangle {
                 height: 7px + i * 3px;
                 y: (parent.height - self.height) / 2;
                 border-radius: (2px) * Theme.r-scale;
-                background: root.recording-level >= threshold ? Palette.danger : Palette.bubble-inset-strong;
+                background: root.recording-level >= threshold ? Palette.danger : Palette.plate-inset-strong;
                 animate background { duration: 90ms; }
             }
         }
@@ -81,8 +81,8 @@ export component RecordingOverlay inherits Rectangle {
             hover-bg: Palette.mint-hi;
             outline: Palette.mint;
             hover-outline: Palette.mint-hi;
-            fg: Palette.bubble-out-fg;
-            hover-fg: Palette.bubble-out-fg;
+            fg: Palette.on-accent;
+            hover-fg: Palette.on-accent;
             clicked => {
                 root.stop-recording();
             }

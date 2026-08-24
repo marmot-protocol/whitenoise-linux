@@ -6,14 +6,14 @@ use crate::*;
 
 /// Why a spawner is being handed an existing temp id instead of allocating one.
 ///
-/// Both variants reuse the id (and so adopt any bubble already rendered under
+/// Both variants reuse the id (and so adopt any body already rendered under
 /// it) — they differ only in whether the durable queue entry is already on disk:
 ///
 /// * [`Replay`](PendingReuse::Replay) — the reconnect flush or a manual retry
 ///   re-dispatching an entry read back from the queue. Already persisted; a
 ///   second write would duplicate it.
 /// * [`Placeholder`](PendingReuse::Placeholder) — the forward flow adopting the
-///   "forwarding…" bubble it rendered before the source attachments finished
+///   "forwarding…" body it rendered before the source attachments finished
 ///   downloading. Never persisted (there were no bytes yet), so this send still
 ///   owes the queue its entry.
 #[derive(Clone, Debug)]
@@ -36,16 +36,16 @@ impl PendingReuse {
 }
 
 // Called by `on_send_message` for each staged attachment: insert the
-// optimistic pending bubble, run the encrypted Blossom upload + kind-9
-// publish, reconcile the bubble when the round-trip resolves.
+// optimistic pending body, run the encrypted Blossom upload + kind-9
+// publish, reconcile the body when the round-trip resolves.
 //
 // Thread-safety: `ModelRc` is `!Send`, so we never carry it across the
 // tokio boundary — every closure that hops back to the UI re-fetches
 // the model via `ui.get_chats_messages()`.
 // `reuse` is `None` for a fresh send (allocate an id, render the pending
-// bubble, persist a durable queue entry) and `Some(..)` when an id is being
+// body, persist a durable queue entry) and `Some(..)` when an id is being
 // adopted — see [`PendingReuse`] for the two cases and what each implies for
-// the overlay entry, the bubble, and the durable queue.
+// the overlay entry, the body, and the durable queue.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn spawn_attachment_send(
     weak: slint::Weak<WhiteNoiseLinux>,
@@ -99,9 +99,9 @@ pub(crate) fn spawn_attachment_send(
                 local_preview: local_preview.clone(),
             }],
         };
-        // Render the pending bubble + insert the overlay entry only if it isn't
+        // Render the pending body + insert the overlay entry only if it isn't
         // already present (a replay of an in-session offline failure, and a
-        // forward adopting its placeholder, both keep the existing bubble; a
+        // forward adopting its placeholder, both keep the existing body; a
         // boot replay has none yet).
         let already_present = pending_state2
             .lock()
@@ -185,7 +185,7 @@ pub(crate) fn spawn_attachment_send(
 }
 
 // Album send: all the images go out as ONE kind-9 message (multiple imeta
-// tags) so the confirmed bubble renders a grid. Optimistic pending bubble
+// tags) so the confirmed body renders a grid. Optimistic pending body
 // shows the grid immediately from local previews; on ack we seed the
 // attachment cache (per image, under `real_id#index`) so the confirmed grid
 // shows the same pixels without a re-download, then swap the row. Mirrors

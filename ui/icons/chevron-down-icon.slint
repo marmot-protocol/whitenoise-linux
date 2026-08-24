@@ -3,6 +3,9 @@ import { Palette } from "../tokens.slint";
 export component ChevronDownIcon inherits Rectangle {
     in property <color> stroke: Palette.text-mid;
     in property <length> size: 10px;
+    // Flips the glyph to point up (chevron-up without a second component);
+    // swapped in the path data since Path supports no rotation property.
+    in property <bool> flip: false;
     width: root.size;
     height: root.size;
     Path {
@@ -10,7 +13,7 @@ export component ChevronDownIcon inherits Rectangle {
         height: root.size;
         viewbox-width: 10;
         viewbox-height: 10;
-        commands: "M 1.5 3 L 5 7 L 8.5 3";
+        commands: root.flip ? "M 1.5 7 L 5 3 L 8.5 7" : "M 1.5 3 L 5 7 L 8.5 3";
         stroke: root.stroke;
         stroke-width: 1.3px;
         fill: transparent;

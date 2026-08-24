@@ -79,7 +79,7 @@ export component ChatListItem inherits Rectangle {
         x: root.selected ? 2px : -14px;
         y: (parent.height - self.height) / 2;
         text: "▶";
-        color: Palette.bubble-out-fg;
+        color: Palette.on-accent;
         font-size: Theme.fs(14px, 18px);
         font-family: Theme.font;
         vertical-alignment: center;
@@ -115,7 +115,7 @@ export component ChatListItem inherits Rectangle {
                 spacing: 6px;
                 Text {
                     text: root.name;
-                    color: Theme.selected-inverts-text && root.selected ? Palette.bubble-out-fg : Palette.text-hi;
+                    color: Theme.selected-inverts-text && root.selected ? Palette.on-accent : Palette.text-hi;
                     font-size: Theme.fs(13px, 16px);
                     font-weight: 700;
                     font-family: Theme.font;
@@ -124,16 +124,16 @@ export component ChatListItem inherits Rectangle {
                 }
 
                 if root.pinned: PinIcon {
-                    fill: Theme.selected-inverts-text && root.selected ? Palette.bubble-out-fg : Palette.mint;
+                    fill: Theme.selected-inverts-text && root.selected ? Palette.on-accent : Palette.mint;
                     y: 2px;
                 }
                 if root.muted: MuteIcon {
-                    stroke: Theme.selected-inverts-text && root.selected ? Palette.bubble-out-fg : Palette.text-lo;
+                    stroke: Theme.selected-inverts-text && root.selected ? Palette.on-accent : Palette.text-lo;
                     y: 1px;
                 }
                 Text {
                     text: root.stamp;
-                    color: Theme.selected-inverts-text && root.selected ? Palette.bubble-out-fg : Palette.text-lo;
+                    color: Theme.selected-inverts-text && root.selected ? Palette.on-accent : Palette.text-lo;
                     font-size: Theme.fs(10px, 14px);
                     font-family: Theme.font;
                     vertical-alignment: center;
@@ -157,7 +157,7 @@ export component ChatListItem inherits Rectangle {
                         alignment: start;
                         Text {
                             text: root.preview;
-                            color: Theme.selected-inverts-text && root.selected ? Palette.bubble-out-fg : Palette.text-lo;
+                            color: Theme.selected-inverts-text && root.selected ? Palette.on-accent : Palette.text-lo;
                             font-size: Theme.fs(11px, 16px);
                             font-family: Theme.font;
                             wrap: word-wrap;

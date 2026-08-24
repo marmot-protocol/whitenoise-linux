@@ -32,7 +32,7 @@ pub(crate) fn wire_linkout(ui: &WhiteNoiseLinux, cx: &Cx) {
 
     push_trusted_link_hosts(ui, &settings_cell.borrow());
 
-    // Markdown links/anchors in chat bubbles activate through this global so
+    // Markdown links/anchors in message rows activate through this global so
     // they don't have to be plumbed through every row component. nostr: profile
     // references (@mentions render as `nostr:npub…` anchors) and marmot://
     // profile deep links open the in-app profile modal; everything else goes

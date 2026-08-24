@@ -3,7 +3,7 @@ use crate::*;
 #[derive(Clone)]
 pub(crate) struct PendingSend {
     // Local-only id so retry/failure can find the entry. Carried into the
-    // bubble's `message_id` so the retry callback can resolve back here.
+    // body's `message_id` so the retry callback can resolve back here.
     pub(crate) temp_id: String,
     pub(crate) text: String,
     pub(crate) failed: bool,
@@ -13,7 +13,7 @@ pub(crate) struct PendingSend {
     pub(crate) reply_to: Option<(String, String, String)>,
     // Media upload + send. Empty for a plain text send; one entry for a single
     // attachment (chip/image preview); 2+ for an album (rendered as a grid).
-    // The optimistic bubble renders straight from the local previews while the
+    // The optimistic body renders straight from the local previews while the
     // encrypt+blossom+publish round-trip resolves.
     pub(crate) media: Vec<PendingMedia>,
     // Armed message effect (Telegram-style burst), 0 = none. Plays once on the
@@ -27,7 +27,7 @@ pub(crate) struct PendingMedia {
     pub(crate) file_name: String,
     pub(crate) media_type: String,
     /// `None` while the size is genuinely unknown — a forward renders its
-    /// placeholder bubble from the source's `imeta` tag, which carries no size,
+    /// placeholder body from the source's `imeta` tag, which carries no size,
     /// before the attachment has been downloaded. The row then shows no size
     /// label rather than a misleading "0 B".
     pub(crate) size_bytes: Option<u64>,
@@ -50,7 +50,7 @@ pub(crate) struct StagedFile {
     pub(crate) media_type: String,
     pub(crate) bytes: Vec<u8>,
     pub(crate) is_image: bool,
-    // Full-resolution decode, reused as the optimistic bubble preview and
+    // Full-resolution decode, reused as the optimistic body preview and
     // seeded into the attachment image cache once the upload confirms.
     pub(crate) preview: Option<PicturePixels>,
     // Small (≤96px) decode for the chip thumbnail, so rebuilding the chip
@@ -268,7 +268,7 @@ pub(crate) fn offline_flush_requested() -> &'static AtomicBool {
 
 /// Last-known connected relay count, published by the watcher thread so the
 /// UI-thread flush can decide whether to dispatch (online) or only render the
-/// queued bubbles (offline) without itself blocking on `relay_health`.
+/// queued message rows (offline) without itself blocking on `relay_health`.
 pub(crate) fn offline_last_connected() -> &'static AtomicUsize {
     static N: AtomicUsize = AtomicUsize::new(0);
     &N
@@ -312,7 +312,7 @@ pub(crate) fn looks_already_sent(
 // ─── Message-window paging ─────────────────────────────────────────────────
 
 /// How many recent records (all kinds — chat, reactions, edits) are loaded
-/// per chat by default. The messages view instantiates a full bubble
+/// per chat by default. The messages view instantiates a full body
 /// component tree per visible row (the Slint `for` is eager, not
 /// virtualized), so this window is the main lever on chat-switch latency.
 /// "Load earlier messages" grows it per chat via [`msg_window_expand`].
@@ -410,7 +410,7 @@ global_cell!(pub(crate) fn audio_progress() -> HashMap<String, f32> = HashMap::n
 global_cell!(pub(crate) fn audio_meta() -> HashMap<String, String> = HashMap::new());
 
 // Message ids whose audio attachment downloaded and decrypted fine but failed
-// to decode (unsupported codec or corrupt data). The bubble swaps its size
+// to decode (unsupported codec or corrupt data). The body swaps its size
 // label for a "Can't play this audio format" notice. An entry is cleared when
 // a later play attempt on the same message succeeds.
 global_cell!(pub(crate) fn audio_decode_failed() -> std::collections::HashSet<String> = std::collections::HashSet::new());

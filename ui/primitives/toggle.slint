@@ -47,7 +47,7 @@ export component Toggle inherits Rectangle {
         x: root.on ? parent.width - self.width - (Theme.pixel-metrics ? 4px : 2px) : (Theme.pixel-metrics ? 4px : 2px);
         y: (parent.height - self.height) / 2;
         border-radius: (7px) * Theme.r-scale;
-        background: root.on ? Palette.bubble-out-fg : Palette.text-mid;
+        background: root.on ? Palette.on-accent : Palette.text-mid;
         animate x {
             duration: Theme.transition-dur;
             easing: ease-in-out;
@@ -58,7 +58,7 @@ export component Toggle inherits Rectangle {
         x: root.on ? 6px : parent.width - self.width - 6px;
         y: (parent.height - self.height) / 2;
         text: root.on ? "ON" : "OFF";
-        color: root.on ? Palette.bubble-out-fg : Palette.text-mid;
+        color: root.on ? Palette.on-accent : Palette.text-mid;
         // Zpix is a 12px-grid bitmap font; off-grid sizes rasterize blurry.
         font-size: Theme.fs(12px, 16px);
         font-family: Theme.font;

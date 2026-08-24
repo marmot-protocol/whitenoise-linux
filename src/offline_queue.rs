@@ -61,7 +61,7 @@ pub enum QueuedKind {
 }
 
 /// A single durable entry. `temp_id` is the same local id the in-RAM overlay
-/// uses (carried into the bubble's `message_id`), so the disk entry and the
+/// uses (carried into the body's `message_id`), so the disk entry and the
 /// overlay entry resolve to each other. `account_id_hex` scopes the entry to one
 /// account (the vault is shared across accounts); `group_hex` is the target
 /// group. `enqueued_at` (unix seconds) drives the boot-time duplicate check.

@@ -158,7 +158,7 @@ global_cell!(pub(crate) fn effect_seen_ids() -> std::collections::HashSet<String
 /// a full rebuild that recreates the row component and re-runs its `init`, or a
 /// chat reopen — returns false, so a playing burst is never re-fired or
 /// interrupted. Backfill (`live == false`) just claims the id as seen-but-quiet.
-/// (Tap-to-replay is independent of this — it fires straight from the bubble.)
+/// (Tap-to-replay is independent of this — it fires straight from the body.)
 pub(crate) fn effect_should_autoplay(message_id: &str, raw_effect: i32, live: bool) -> bool {
     if raw_effect == 0 {
         return false;
@@ -175,7 +175,7 @@ pub(crate) fn effect_should_autoplay(message_id: &str, raw_effect: i32, live: bo
 //
 // Chat bodies are parsed with `whitenoise_markdown` (the same CommonMark + GFM +
 // nostr parser whitenoise-rs uses) into a `Document`, then flattened into the
-// bubble's existing line/run model: each `MessageLine` is one visual line, each
+// body's existing line/run model: each `MessageLine` is one visual line, each
 // `MessageRun` an inline text/emoji cell carrying resolved styling. Block
 // context (heading scale, list/blockquote indent, code plates, rules) rides on
 // the line. Wrapping stays Rust-side and greedy — widths are estimated against
@@ -184,8 +184,41 @@ pub(crate) fn effect_should_autoplay(message_id: &str, raw_effect: i32, live: bo
 use whitenoise_markdown::{Block, Inline, ListItem, ListKind, NostrEntity};
 
 /// Approximate monospace glyph advance as a fraction of font-size. Only used to
-/// decide wrap points; never to position glyphs.
+/// decide wrap points; never to position glyphs. Body text uses the per-class
+/// [`md_char_est`] table instead — a flat 0.62em overshoots proportional
+/// glyphs by ~20%, wrapping lines far short of the pane.
 pub(crate) const MD_CHAR_W: f32 = 0.62;
+
+/// Estimated advance of one proportional-font glyph, as a fraction of
+/// font-size. Class-based (narrow stems, wide m/w, caps, digits, CJK) so the
+/// wrap-point estimate lands near the real render without font metrics. Only
+/// used to decide wrap points; never to position glyphs.
+pub(crate) fn md_char_est(c: char) -> f32 {
+    match c {
+        'i' | 'j' | 'l' | '!' | '|' | '.' | ',' | ':' | ';' | '\'' | '`' => 0.28,
+        'f' | 't' | 'r' | 'I' | '(' | ')' | '[' | ']' | '{' | '}' | '/' | '\\' | '"' => 0.36,
+        'm' | 'w' => 0.85,
+        'M' | 'W' => 0.98,
+        ' ' => 0.30,
+        '-' | '_' => 0.45,
+        c if c.is_ascii_digit() => 0.60,
+        c if c.is_ascii_uppercase() => 0.70,
+        c if c.is_ascii_lowercase() => 0.52,
+        // CJK, fullwidth forms, and other wide scripts.
+        c if (c as u32) >= 0x2E80 => 1.0,
+        _ => 0.62,
+    }
+}
+
+/// Estimated pixel width of a text span at `fs`. Code spans use the flat
+/// monospace advance; everything else sums the per-class table.
+pub(crate) fn md_text_est(text: &str, fs: f32, code: bool) -> f32 {
+    if code {
+        text.chars().count() as f32 * fs * MD_CHAR_W
+    } else {
+        text.chars().map(|c| md_char_est(c) * fs).sum()
+    }
+}
 /// Approximate inline-emoji advance as a fraction of font-size.
 pub(crate) const MD_EMOJI_W: f32 = 1.25;
 /// Extra horizontal pixels a mention chip's plate adds around its text (must
@@ -380,20 +413,7 @@ pub(crate) fn md_push_text(
     let mut i = 0;
     while i < text.len() {
         if probe_emoji {
-            // Probe for the longest emoji match at `i`. ZWJ sequences can be
-            // ~30+ bytes; 48 is a comfortable cap.
-            let end_max = (i + 48).min(text.len());
-            let mut matched: Option<(usize, u32, u32)> = None;
-            for end in (i + 1..=end_max).rev() {
-                if !text.is_char_boundary(end) {
-                    continue;
-                }
-                if let Some(&(x, y)) = positions.get(&text[i..end]) {
-                    matched = Some((end, x, y));
-                    break;
-                }
-            }
-            if let Some((end, x, y)) = matched {
+            if let Some((end, x, y)) = emoji_match_at(text, i, positions) {
                 flush(&mut buf, &mut buf_space, out);
                 out.push(MdTok::Emoji {
                     text: text[i..end].to_string(),
@@ -583,7 +603,7 @@ pub(crate) fn md_spacer(ctx: MdCtx) -> MdLine {
 
 /// Greedy-pack a token stream into wrapped lines under `max_width` (minus the
 /// block indent). Over-long single tokens (URLs, code) are hard-split so they
-/// never overflow the bubble.
+/// never overflow the body.
 pub(crate) fn md_wrap(
     out: &mut Vec<MdLine>,
     toks: Vec<MdTok>,
@@ -593,10 +613,8 @@ pub(crate) fn md_wrap(
     quote: i32,
     code_block: bool,
 ) {
-    let char_w = env.base_fs * MD_CHAR_W * scale;
     let emoji_w = env.base_fs * MD_EMOJI_W * scale;
     let avail = (env.max_width - indent).max(40.0);
-    let max_chars = ((avail / char_w).floor() as usize).max(1);
 
     let mut cur: Vec<MessageRun> = Vec::new();
     let mut x = 0.0f32;
@@ -617,6 +635,31 @@ pub(crate) fn md_wrap(
         *hard = next;
     };
 
+    // Coalesce consecutive same-style text tokens into ONE run: cell-per-word
+    // rendering let per-cell pixel rounding open uneven word gaps and split
+    // font shaping, so words and spaces merge until the style, the link, or an
+    // emoji breaks the run. Mention chips and per-letter effect runs stay
+    // their own cells (they render as plates / animate per glyph).
+    let push_text = |cur: &mut Vec<MessageRun>, text: &str, style: MdStyle, link: &Option<String>| {
+        let run = md_run_text(text, style, link);
+        if run.fx == 0 && !run.mention {
+            if let Some(last) = cur.last_mut()
+                && !last.is_emoji
+                && !last.mention
+                && last.fx == 0
+                && last.bold == run.bold
+                && last.italic == run.italic
+                && last.strike == run.strike
+                && last.code == run.code
+                && last.link == run.link
+            {
+                last.text = SharedString::from(format!("{}{}", last.text, text));
+                return;
+            }
+        }
+        cur.push(run);
+    };
+
     for tok in toks {
         match tok {
             MdTok::Break => {
@@ -629,8 +672,8 @@ pub(crate) fn md_wrap(
                 if x == 0.0 && !code_block {
                     continue;
                 }
-                x += text.chars().count() as f32 * char_w;
-                cur.push(md_run_text(&text, style, &link));
+                x += md_text_est(&text, env.base_fs * scale, style.code);
+                push_text(&mut cur, &text, style, &link);
             }
             MdTok::Emoji {
                 text,
@@ -646,15 +689,14 @@ pub(crate) fn md_wrap(
                 x += emoji_w;
             }
             MdTok::Word { text, style, link } => {
-                let n = text.chars().count();
                 let pad = if style.mention { MD_MENTION_PAD } else { 0.0 };
-                let w = n as f32 * char_w + pad;
+                let w = md_text_est(&text, env.base_fs * scale, style.code) + pad;
                 if w <= avail {
                     if x > 0.0 && x + w > avail {
                         flush(out, &mut cur, &mut hard, false);
                         x = 0.0;
                     }
-                    cur.push(md_run_text(&text, style, &link));
+                    push_text(&mut cur, &text, style, &link);
                     x += w;
                 } else {
                     // Hard-split an over-long token into width-fitting chunks.
@@ -665,10 +707,23 @@ pub(crate) fn md_wrap(
                             flush(out, &mut cur, &mut hard, false);
                             x = 0.0;
                         }
-                        let end = (start + max_chars).min(chars.len());
+                        let mut end = start;
+                        let mut cw = 0.0f32;
+                        while end < chars.len() {
+                            let adv = if style.code {
+                                env.base_fs * scale * MD_CHAR_W
+                            } else {
+                                md_char_est(chars[end]) * env.base_fs * scale
+                            };
+                            if end > start && cw + adv > avail {
+                                break;
+                            }
+                            cw += adv;
+                            end += 1;
+                        }
                         let chunk: String = chars[start..end].iter().collect();
-                        cur.push(md_run_text(&chunk, style, &link));
-                        x += (end - start) as f32 * char_w;
+                        push_text(&mut cur, &chunk, style, &link);
+                        x += cw;
                         start = end;
                     }
                 }
@@ -750,7 +805,7 @@ pub(crate) fn md_walk_list(
         if let Some(checked) = item.checked {
             marker.push_str(if checked { "☑ " } else { "☐ " });
         }
-        let marker_w = marker.chars().count() as f32 * env.base_fs * MD_CHAR_W;
+        let marker_w = md_text_est(&marker, env.base_fs, false);
         let child = MdCtx {
             indent: ctx.indent + marker_w,
             quote: ctx.quote,
@@ -1209,20 +1264,20 @@ pub(crate) fn commit_mention(
     ui.set_composer_caret_tick(ui.get_composer_caret_tick().wrapping_add(1));
 }
 
-// The size the chat bubble actually draws its body text at, in logical pixels
+// The size the message row actually draws its body text at, in logical pixels
 // — the live value of `Theme.body-fs`, pushed from the window root through
 // `AppState.body-fs-changed` every time the theme id changes.
 //
 // The greedy wrapper derives its per-character width estimate from this
 // (`env.base_fs * MD_CHAR_W`), so it has to track the theme: a `pixel-metrics`
 // theme resolves `Theme.fs(13px, 16px)` to 16px, and wrapping those lines
-// against 13px packs them about a quarter too wide for the bubble. UI-thread
+// against 13px packs them about a quarter too wide for the body. UI-thread
 // only, like the line cache it keys.
 thread_local! {
     static BODY_FS: std::cell::Cell<f32> = const { std::cell::Cell::new(DEFAULT_BODY_FS) };
 }
 
-/// The non-pixel-metrics body size — the `modern` half of the bubble's
+/// The non-pixel-metrics body size — the `modern` half of the body's
 /// `Theme.fs(13px, 16px)`. Only the value before the first push; every theme
 /// (including the default one) re-states it through `body-fs-changed`.
 pub(crate) const DEFAULT_BODY_FS: f32 = 13.0;
@@ -1244,23 +1299,23 @@ pub(crate) fn set_body_fs(px: f32) -> bool {
     })
 }
 
-// The live width available to a bubble's body, in logical pixels, pushed from
+// The live width available to a message body's body, in logical pixels, pushed from
 // `messages.slint`'s `chat-pane-width-changed` (debounced) every time the
 // chat pane's content width settles — window resize, the members panel
-// opening, or the centred-conversation toggle all move it. A bubble's wrap
+// opening, or the centred-conversation toggle all move it. A body's wrap
 // width is `min(440/560, this)`: the two fixed caps assume a pane wide
 // enough to hold them, which the declared 640px minimum window width does
 // not guarantee once the left rail and message-pane gutters are subtracted.
 thread_local! {
-    static BUBBLE_BUDGET: std::cell::Cell<f32> = const { std::cell::Cell::new(f32::MAX) };
+    static WRAP_BUDGET: std::cell::Cell<f32> = const { std::cell::Cell::new(f32::MAX) };
 }
 
 /// Record the live pane budget. Returns whether it moved, so the caller can
 /// skip re-wrapping every rendered row on a no-op push (the debounce timer
 /// still fires once per settle even when the width round-tripped back to
 /// where it started).
-pub(crate) fn set_bubble_budget(px: f32) -> bool {
-    BUBBLE_BUDGET.with(|c| {
+pub(crate) fn set_wrap_budget(px: f32) -> bool {
+    WRAP_BUDGET.with(|c| {
         if (c.get() - px).abs() < 0.5 {
             return false;
         }
@@ -1269,11 +1324,14 @@ pub(crate) fn set_bubble_budget(px: f32) -> bool {
     })
 }
 
-/// A bubble's wrap-width clamp: the fixed per-direction cap, narrowed to
-/// whatever the live chat pane actually has room for.
-pub(crate) fn clamp_bubble_max(outgoing: bool) -> f32 {
-    let base: f32 = if outgoing { 440.0 } else { 560.0 };
-    BUBBLE_BUDGET.with(|c| base.min(c.get()))
+/// A message body's wrap width: the full live chat-pane budget (flat rows
+/// span the pane, Discord-style). Falls back to a fixed width until the UI
+/// pushes the first real pane measurement.
+pub(crate) fn clamp_wrap_max() -> f32 {
+    WRAP_BUDGET.with(|c| {
+        let b = c.get();
+        if b == f32::MAX { 560.0 } else { b }
+    })
 }
 
 // Memoized markdown line models, keyed by (body, wrap-width, body-size).
@@ -1291,10 +1349,10 @@ thread_local! {
 pub(crate) const MESSAGE_LINES_CACHE_CAP: usize = 4096;
 
 /// Build the `lines` model for `ChatMessage` from the message body.
-pub(crate) fn build_message_lines(text: &str, bubble_max: f32) -> ModelRc<MessageLine> {
-    // Chat-body chrome: 2*pad-h (14) + gap (12) + meta col (~70). Conservative
-    // so wrapping kicks in before the dynamic `available-w` clips the bubble.
-    let budget = (bubble_max - 110.0).max(60.0);
+pub(crate) fn build_message_lines(text: &str, wrap_max: f32) -> ModelRc<MessageLine> {
+    // Small safety margin so wrapping kicks in just before the dynamic
+    // `available-w` clips the body (the flat row has no chrome to reserve).
+    let budget = (wrap_max - 24.0).max(60.0);
     // Part of the key: the same body at the same width wraps differently once
     // the theme moves the body size, so a cached model from the previous theme
     // must not answer for the new one.
@@ -1341,7 +1399,7 @@ fn reaction_chip_width(count: i32) -> f32 {
 }
 
 /// Wraps a message's reaction chips into rows that fit within `max_w` (the
-/// bubble's own width cap), so a message with many distinct reactions grows
+/// body's own width cap), so a message with many distinct reactions grows
 /// its chip block downward instead of pushing chips past the edge of the
 /// chat pane. Slint has no flow/wrap layout, so the grouping has to happen
 /// here; `ReactionsRow` just stacks the rows this returns.
@@ -1371,11 +1429,48 @@ pub(crate) fn group_reaction_rows(chips: Vec<Reaction>, max_w: f32) -> ModelRc<R
     ModelRc::new(VecModel::from(rows))
 }
 
+/// Flatten a row's wrapped `reaction_rows` back into the flat chip list. The
+/// wrapped model is the single source of truth on the row; this is the read
+/// path for the optimistic-toggle merge.
+pub(crate) fn flatten_reaction_rows(rows: &ModelRc<ReactionRow>) -> Vec<Reaction> {
+    let mut out = Vec::new();
+    for i in 0..rows.row_count() {
+        if let Some(r) = rows.row_data(i) {
+            for j in 0..r.chips.row_count() {
+                if let Some(c) = r.chips.row_data(j) {
+                    out.push(c);
+                }
+            }
+        }
+    }
+    out
+}
+
+/// Longest sprite-sheet emoji match starting at byte `i` of `text`: probes
+/// backward from a 48-byte cap (ZWJ sequences run ~30+ bytes) and returns
+/// (end byte, tile x, tile y). The single matcher behind the tokenizer and
+/// the jumbo-emoji test, so they can never disagree on what counts as emoji.
+pub(crate) fn emoji_match_at(
+    text: &str,
+    i: usize,
+    positions: &std::collections::HashMap<&'static str, (u32, u32)>,
+) -> Option<(usize, u32, u32)> {
+    let end_max = (i + 48).min(text.len());
+    for end in (i + 1..=end_max).rev() {
+        if !text.is_char_boundary(end) {
+            continue;
+        }
+        if let Some(&(x, y)) = positions.get(&text[i..end]) {
+            return Some((end, x, y));
+        }
+    }
+    None
+}
+
 /// Telegram-style jumbo-emoji test. If `text` is nothing but emoji (plus
 /// whitespace) and short enough — at most [`JUMBO_EMOJI_MAX`] glyphs — return
-/// the emoji count; otherwise 0. The probe mirrors the tokenizer's longest-
-/// match-against-the-sprite-table logic ([`md_push_text`]) so what we classify
-/// as jumbo is exactly what would render as sprite cells.
+/// the emoji count; otherwise 0. Uses [`emoji_match_at`], the same matcher
+/// the tokenizer renders sprite cells from.
 pub(crate) const JUMBO_EMOJI_MAX: u32 = 3;
 pub(crate) fn jumbo_emoji_count(text: &str) -> u32 {
     let positions = emoji_position_index();
@@ -1391,17 +1486,8 @@ pub(crate) fn jumbo_emoji_count(text: &str) -> u32 {
             i += c.len_utf8();
             continue;
         }
-        // Longest emoji match at `i` (ZWJ sequences run ~30+ bytes; 48 caps it).
-        let end_max = (i + 48).min(t.len());
-        let mut matched = None;
-        for end in (i + 1..=end_max).rev() {
-            if t.is_char_boundary(end) && positions.contains_key(&t[i..end]) {
-                matched = Some(end);
-                break;
-            }
-        }
-        match matched {
-            Some(end) => {
+        match emoji_match_at(t, i, positions) {
+            Some((end, _, _)) => {
                 count += 1;
                 if count > JUMBO_EMOJI_MAX {
                     return 0;
@@ -1502,7 +1588,7 @@ mod tests {
     }
 
     #[test]
-    fn group_reaction_rows_wraps_once_the_bubble_width_is_exceeded() {
+    fn group_reaction_rows_wraps_once_the_body_width_is_exceeded() {
         // Each chip estimates to ~46-58px; six of them clear a 120px cap well
         // before the list ends, so the wrap has to land mid-list, not just at
         // the end of it.

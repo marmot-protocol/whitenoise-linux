@@ -130,7 +130,7 @@ pub fn set_messages_snapshot_observer(observer: MessagesSnapshotObserver) {
 }
 
 /// Nostr `kind` of the inner Marmot app event carrying a plain chat message —
-/// the only kind rendered as a bubble. Reactions are 7, deletes 5, edits
+/// the only kind rendered as a message body. Reactions are 7, deletes 5, edits
 /// 1009, push-token gossip 447/448/449 (see `is_visible_chat_message` in
 /// `chatmodel.rs` for the full allow-list rationale).
 pub const CHAT_MESSAGE_KIND: u64 = 9;
@@ -152,7 +152,7 @@ pub fn is_plain_chat_message(record: &AppMessageRecord) -> bool {
 /// Parse a record as a marmot group-system event (kind-1210: membership, admin,
 /// rename, avatar, and retention changes) if it is one. Returns the decoded
 /// [`AppGroupSystemEvent`] (system_type + resolved actor/subject ids + name)
-/// so the UI can render it as a centered system line instead of a chat bubble;
+/// so the UI can render it as a centered system line instead of a message row;
 /// `None` for a plain chat message or any other kind. Wraps
 /// [`group_system_event_from_message`] so callers don't repeat the kind check.
 pub fn group_system_event(record: &AppMessageRecord) -> Option<AppGroupSystemEvent> {
@@ -161,7 +161,7 @@ pub fn group_system_event(record: &AppMessageRecord) -> Option<AppGroupSystemEve
 
 /// Visibility filter consulted by [`Backend::latest_message`]. Installed once
 /// at startup by the main binary (it installs `is_visible_chat_message`, the
-/// same predicate the bubble stream renders with) — a hook rather than a
+/// same predicate the body stream renders with) — a hook rather than a
 /// direct call for the same reason as [`MESSAGES_SNAPSHOT_OBSERVER`]. The
 /// staged dm-ctl / bootbench bins never install one and fall back to
 /// [`is_plain_chat_message`].
@@ -952,7 +952,7 @@ impl Backend {
     /// recent window and returns the newest record that passes the filter
     /// installed via [`set_visible_message_filter`] — in the app that is
     /// `is_visible_chat_message`, so chat-list previews and notifications
-    /// apply the exact rule the bubble stream renders with (chat kind only,
+    /// apply the exact rule the body stream renders with (chat kind only,
     /// no MIP-05 token gossip, and the local delete-for-me hidden set: a
     /// message hidden in the chat never surfaces as its preview).
     pub fn latest_message(&self, group_hex: &str) -> Option<AppMessageRecord> {

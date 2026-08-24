@@ -15,7 +15,7 @@
 //!
 //! Message bodies are Markdown already, so the Markdown export embeds them
 //! verbatim. For HTML we reparse each body with `whitenoise_markdown`, the same
-//! CommonMark + GFM parser the chat bubbles use, and walk the AST into HTML so
+//! CommonMark + GFM parser the message rows use, and walk the AST into HTML so
 //! bold, lists, links, and code survive.
 
 use crate::*;
@@ -558,7 +558,7 @@ fn html_list_item(out: &mut String, item: &ListItem) {
     }
     for b in &item.blocks {
         // Tight single-paragraph items read better unwrapped, matching how the
-        // bubbles flatten them.
+        // message rows flatten them.
         if let Block::Paragraph { inlines } = b {
             html_inlines(out, inlines);
         } else {

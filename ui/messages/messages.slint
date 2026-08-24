@@ -13,28 +13,14 @@ import { ListView } from "std-widgets.slint";
 import { AppState } from "../shell/app-state.slint";
 import { Palette, Theme, ChatMessage } from "../tokens.slint";
 import { MessageView } from "message-view.slint";
-import { HoverActions } from "hover-actions.slint";
-import { MessageEffectLayer } from "message-effect-layer.slint";
+import { EffectStage } from "effect-stage.slint";
 import { PaperDoodles } from "../theme-decor/paper-doodles.slint";
 import { SynthGrid } from "../theme-decor/synth-grid.slint";
 import { ChevronDownIcon } from "../icons/chevron-down-icon.slint";
+import { KeyActivate } from "../primitives/key-activate.slint";
 import { ChatBubbleIcon } from "../icons/chat-bubble-icon.slint";
 import { SessionDivider } from "../main-pane/session-divider.slint";
 import { EmptyState } from "../layout/empty-state.slint";
-
-// One slot in the effect-burst pool. `gen` is a per-slot generation counter —
-// bumping it (re)fires that slot's layer; the position/effect fields say where
-// and what. Default (all-zero, gen 0) = an idle slot that never plays.
-struct EffectBurst {
-    x: length,
-    y: length,
-    w: length,
-    h: length,
-    id: int,
-    cx: int,
-    cy: int,
-    gen: int,
-}
 
 export component MessagesArea inherits Rectangle {
     // Reads AppState directly: the open chat's rows, loading flag, and the
@@ -60,55 +46,30 @@ export component MessagesArea inherits Rectangle {
     property <bool> has-older: AppState.messages-has-older;
     property <length> content-w: max(120px, root.available-w - 36px);
 
-    // Live budget for a bubble's wrap width — the same `row-w` minus gutter
-    // math each row applies to its own `available-w` (see incoming-row.slint /
-    // outgoing-row.slint), computed once here and pushed to Rust so the
+    // Live budget for a message body's wrap width — the same `row-w` minus
+    // gutter math each row applies to its own `available-w` (see
+    // message-row.slint), computed once here and pushed to Rust so the
     // pre-wrapped `lines` model matches what the pane can actually show.
-    // Pushing on every layout tick would re-wrap every visible bubble mid-drag,
-    // so the push is debounced: a resize restarts the settle countdown, and
-    // only the tick that ticks it down to 0 without being restarted again
-    // fires `chat-pane-width-changed`.
-    property <length> bubble-budget: max(80px, root.content-w - 28px - 10px - 10px);
-    property <int> bubble-budget-settle: 0;
+    // Pushing on every layout tick would re-wrap every visible body mid-drag,
+    // so the push is debounced: each change restarts the one-shot timer and
+    // only an uninterrupted settle fires `chat-pane-width-changed`.
+    property <length> wrap-budget: max(80px, root.content-w - 28px - 10px - 10px);
     init => {
-        AppState.chat-pane-width-changed(root.bubble-budget);
+        AppState.chat-pane-width-changed(root.wrap-budget);
     }
-    changed bubble-budget => {
-        root.bubble-budget-settle = 6;
+    changed wrap-budget => {
+        wrap-budget-debounce.running = false;
+        wrap-budget-debounce.running = true;
     }
-    bubble-budget-debounce := Timer {
-        interval: 30ms;
-        running: root.bubble-budget-settle > 0;
+    wrap-budget-debounce := Timer {
+        interval: 180ms;
+        running: false;
         triggered => {
-            root.bubble-budget-settle -= 1;
-            if (root.bubble-budget-settle == 0) {
-                AppState.chat-pane-width-changed(root.bubble-budget);
-            }
+            self.running = false;
+            AppState.chat-pane-width-changed(root.wrap-budget);
         }
     }
 
-    // Message-effect stage. A pool of overlay layers (declared after the scroll,
-    // so they paint above every bubble) plays bursts. Rows report their bubble's
-    // window position + size via `play-effect`; we convert to overlay-local
-    // coords, write the next round-robin slot, and bump that slot's `gen` to
-    // fire. Each layer binds to its own slot, so a new burst STACKS instead of
-    // interrupting the ones already playing (Telegram-style). 8 concurrent.
-    property <[EffectBurst]> bursts: [{ }, { }, { }, { }, { }, { }, { }, { }];
-    property <int> burst-next: 0;
-    function stage-effect(eid: int, cx: int, cy: int, ax: length, ay: length, w: length, h: length) {
-        root.bursts[root.burst-next] = {
-            // Window coords → overlay-local (the clip wrapper fills root at 0,0).
-            x: ax - fx-clip.absolute-position.x,
-            y: ay - fx-clip.absolute-position.y,
-            w: w,
-            h: h,
-            id: eid,
-            cx: cx,
-            cy: cy,
-            gen: root.bursts[root.burst-next].gen + 1,
-        };
-        root.burst-next = root.burst-next + 1 < 8 ? root.burst-next + 1 : 0;
-    }
     // Subtle vertical lift — keeps the chat canvas from feeling flat.
     background: Theme.soft-decor ? @linear-gradient(180deg, Palette.canvas-top 0%, Palette.bg 28%) : Palette.bg;
 
@@ -164,11 +125,6 @@ export component MessagesArea inherits Rectangle {
         // chat, so reopening this one can restore rather than reset it.
         AppState.messages-scroll-y = root.vy;
         AppState.messages-at-bottom = root.at-bottom;
-        // Scrolling moves the rows out from under a toolbar armed at the old
-        // coordinates — drop it; the next pointer move over a bubble re-arms
-        // it at the fresh position (rows re-report on hover moves).
-        root.acts-msg-id = "";
-        root.acts-armed = false;
     }
     converge-timer := Timer {
         interval: 16ms;
@@ -285,6 +241,16 @@ export component MessagesArea inherits Rectangle {
     // back under the pill, so what the user was reading stays put.
     property <int> anchor-old-len: 0;
     property <bool> anchor-armed: false;
+    // Shared by the pill's click, key, and accessibility paths.
+    function request-older() {
+        root.anchor-old-len = root.messages.length;
+        root.anchor-armed = true;
+        AppState.messages-request-older();
+    }
+    // Shared by the jump pill's click, key, and accessibility paths.
+    function jump-latest() {
+        cs.viewport-y = root.bottom-y;
+    }
     property <int> msg-count: root.messages.length;
     changed msg-count => {
         if (root.anchor-armed && root.msg-count > root.anchor-old-len) {
@@ -311,7 +277,7 @@ export component MessagesArea inherits Rectangle {
     cs := ListView {
         width: parent.width;
         height: parent.height;
-        // Drags belong to in-bubble text selection (TextSelection), never to
+        // Drags belong to in-message text selection (TextSelection), never to
         // panning — scrolling is wheel/scrollbar only, like the ScrollView
         // this replaced.
         mouse-drag-pan-enabled: false;
@@ -325,12 +291,10 @@ export component MessagesArea inherits Rectangle {
         for msg[idx] in root.messages: VerticalLayout {
             width: parent.width;
             spacing: 0;
-            // The old container padding/spacing, folded per-row: 18px frame at
-            // the top of the first and bottom of the last row, 3px between
-            // rows (tight within a group; Rust adds `gap-before` between
-            // message groups).
-            padding-left: 18px;
-            padding-right: 18px;
+            // 18px frame at the top of the first and bottom of the last row,
+            // 3px between rows (tight within a group; Rust adds `gap-before`
+            // between groups). No horizontal padding: the inset lives inside
+            // MessageRow so the hover tint bleeds edge-to-edge.
             padding-top: idx == 0 ? 18px : 3px;
             padding-bottom: idx == root.messages.length - 1 ? 18px : 0px;
 
@@ -353,20 +317,18 @@ export component MessagesArea inherits Rectangle {
                     width: pill-label.preferred-width + 28px;
                     height: 26px;
                     border-radius: 13px * Theme.r-scale;
-                    background: (pill-touch.has-hover || pill-focus.has-focus) ? Palette.hover : Palette.panel-2;
+                    background: (pill-touch.has-hover || pill-ka.focused) ? Palette.hover : Palette.panel-2;
                     border-width: Theme.border-w;
-                    border-color: (pill-touch.has-hover || pill-focus.has-focus) ? Palette.border-2 : Palette.border;
+                    border-color: (pill-touch.has-hover || pill-ka.focused) ? Palette.border-2 : Palette.border;
                     animate background, border-color { duration: Theme.hover-dur; }
                     accessible-role: button;
                     accessible-label: @tr("Load earlier messages");
                     accessible-action-default => {
-                        root.anchor-old-len = root.messages.length;
-                        root.anchor-armed = true;
-                        AppState.messages-request-older();
+                        root.request-older();
                     }
                     pill-label := Text {
                         text: @tr("Load earlier messages");
-                        color: (pill-touch.has-hover || pill-focus.has-focus) ? Palette.text-hi : Palette.text-lo;
+                        color: (pill-touch.has-hover || pill-ka.focused) ? Palette.text-hi : Palette.text-lo;
                         animate color { duration: Theme.hover-dur; }
                         font-size: Theme.fs(10px, 14px);
                         font-weight: 600;
@@ -377,44 +339,21 @@ export component MessagesArea inherits Rectangle {
 
                     pill-touch := TouchArea {
                         clicked => {
-                            root.anchor-old-len = root.messages.length;
-                            root.anchor-armed = true;
-                            AppState.messages-request-older();
+                            root.request-older();
                         }
                     }
 
-                    // Zero-size FocusScope: joins the Tab chain without
-                    // stealing pointer focus from the composer on click
-                    // (mirrors primitives/button.slint's `fs`).
-                    pill-focus := FocusScope {
-                        width: 0px;
-                        height: 0px;
-                        key-pressed(event) => {
-                            if (event.text == Key.Return || event.text == " ") {
-                                root.anchor-old-len = root.messages.length;
-                                root.anchor-armed = true;
-                                AppState.messages-request-older();
-                                return accept;
-                            }
-                            return reject;
+                    pill-ka := KeyActivate {
+                        ring-radius: (13px + 3px) * Theme.r-scale;
+                        activate => {
+                            root.request-older();
                         }
-                    }
-
-                    if pill-focus.has-focus: Rectangle {
-                        x: -3px;
-                        y: -3px;
-                        width: parent.width + 6px;
-                        height: parent.height + 6px;
-                        background: transparent;
-                        border-radius: (13px + 3px) * Theme.r-scale;
-                        border-width: 2px;
-                        border-color: Palette.mint;
                     }
                 }
             }
 
             // Date divider above the first message of each local day, so
-            // multi-day history stays orientable (bubbles only stamp HH:MM).
+            // multi-day history stays orientable (message rows only stamp HH:MM).
             if msg.day-label != "": SessionDivider {
                 label: msg.day-label;
             }
@@ -430,33 +369,11 @@ export component MessagesArea inherits Rectangle {
             }
 
             // One skin slot per message. Theme.skin-message picks the render
-            // body (skin 0 = standard incoming/outgoing bubble rows).
+            // body (skin 0 = standard incoming/outgoing body rows).
             MessageView {
                 msg: msg;
                 highlighted: AppState.message-jump-id == msg.message-id;
                 row-w: root.content-w;
-                play-effect(eid, cx, cy, ax, ay, w, h) => {
-                    root.stage-effect(eid, cx, cy, ax, ay, w, h);
-                }
-                arm-actions(id, text, author, can-edit, ax, ay, w, h) => {
-                    root.acts-msg-id = id;
-                    root.acts-text = text;
-                    root.acts-author = author;
-                    root.acts-can-edit = can-edit;
-                    // Window coords → area-local (the overlay fills root at 0,0).
-                    root.acts-bx = ax - root.absolute-position.x;
-                    root.acts-by = ay - root.absolute-position.y;
-                    root.acts-bw = w;
-                    root.acts-bh = h;
-                    root.acts-armed = true;
-                }
-                disarm-actions(id) => {
-                    // Guarded: leaving row A fires after entering row B has
-                    // already re-armed the overlay — don't tear B down.
-                    if (id == root.acts-msg-id) {
-                        root.acts-armed = false;
-                    }
-                }
             }
         }
     }
@@ -473,96 +390,14 @@ export component MessagesArea inherits Rectangle {
         }
     }
 
-    // ── Floating hover-actions toolbar ─────────────────────────────────────
-    // One overlay instance for the whole list, declared after the scroll so it
-    // paints above every bubble. Rows report bubble hover + window geometry
-    // via arm/disarm (see MessageView); the bar places itself below the
-    // bubble, flipping above only when below would leave the pane — so it is
-    // never painted over by a later row (delegates paint in model order and
-    // `z` is compile-time-only) and never clipped at the viewport edges.
-    property <string> acts-msg-id;
-    property <string> acts-text;
-    property <string> acts-author;
-    property <bool> acts-can-edit;
-    // Armed bubble's geometry, area-local.
-    property <length> acts-bx;
-    property <length> acts-by;
-    property <length> acts-bw;
-    property <length> acts-bh;
-    // True while the pointer is over the armed bubble (the bar's own hover
-    // takes over from there — see acts-host's visible gate).
-    property <bool> acts-armed: false;
-    // Rows unmount without firing their disarm on a chat switch — drop any
-    // armed bar explicitly so it can't linger over the next conversation.
-    property <int> acts-chat: AppState.active-chat;
-    changed acts-chat => {
-        root.acts-msg-id = "";
-        root.acts-armed = false;
-    }
-    property <bool> acts-below: root.acts-by + root.acts-bh + 6px + acts-bar.height <= root.height - 4px;
-    property <length> acts-bar-x: clamp(
-        root.acts-bx + (root.acts-bw - acts-bar.width) / 2,
-        18px, max(18px, root.width - 18px - acts-bar.width));
-    property <length> acts-bar-y: root.acts-below
-        ? root.acts-by + root.acts-bh + 6px
-        : max(4px, root.acts-by - 6px - acts-bar.height);
-
-    acts-host := Rectangle {
+    // Effect overlay — above all message rows (declared after the scroll),
+    // below the jump-pill. Fills the viewport and clips so particles don't
+    // spill into the header / composer. Transparent to input (no TouchArea).
+    EffectStage {
         x: 0;
         y: 0;
         width: parent.width;
         height: parent.height;
-        // `visible: false` also disables the hover bridge's TouchArea, so the
-        // overlay is input-transparent whenever no bar is out.
-        visible: root.acts-msg-id != ""
-            && (root.acts-armed || acts-hover.has-hover || acts-bar.hovered || acts-bar.focus-within);
-
-        // Hover bridge: spans the 6px gap and the bar band (plus the bubble's
-        // horizontal extent) so the pointer can travel bubble → bar without a
-        // dead zone dropping the reveal — the job the old row-local hover
-        // region did.
-        acts-hover := TouchArea {
-            x: min(root.acts-bar-x, root.acts-bx);
-            y: min(root.acts-bar-y, root.acts-by + root.acts-bh);
-            width: max(root.acts-bar-x + acts-bar.width, root.acts-bx + root.acts-bw) - self.x;
-            height: (root.acts-below ? root.acts-bar-y + acts-bar.height : root.acts-by) - self.y;
-        }
-
-        acts-bar := HoverActions {
-            x: root.acts-bar-x;
-            y: root.acts-bar-y;
-            message-id: root.acts-msg-id;
-            reply-preview-text: root.acts-text;
-            reply-author: root.acts-author;
-            can-edit: root.acts-can-edit;
-            // Tooltips float away from the bubble: bar below → tips below.
-            tips-below: root.acts-below;
-        }
-    }
-
-    // Effect overlay — above all bubbles (declared after the scroll), below the
-    // jump-pill. Fills the viewport and clips so particles don't spill into the
-    // header / composer. Transparent to input (no TouchArea).
-    fx-clip := Rectangle {
-        x: 0;
-        y: 0;
-        width: parent.width;
-        height: parent.height;
-        clip: true;
-        // One layer per pool slot. Only the slot whose `gen` changed re-fires;
-        // the rest keep playing — so bursts stack instead of interrupting.
-        for b in root.bursts: MessageEffectLayer {
-            x: b.x;
-            y: b.y;
-            width: b.w;
-            height: b.h;
-            effect-id: b.id;
-            clip-x: b.cx;
-            clip-y: b.cy;
-            origin-w: b.w;
-            origin-h: b.h;
-            trigger: b.gen;
-        }
     }
 
     // Floating "jump to latest" pill — fades in once the user pages up into
@@ -576,7 +411,7 @@ export component MessagesArea inherits Rectangle {
         width: 38px;
         height: 38px;
         border-radius: (19px) * Theme.r-scale;
-        background: (jump-touch.has-hover || jump-focus.has-focus) ? Palette.field-hover : Palette.elevated;
+        background: (jump-touch.has-hover || jump-ka.focused) ? Palette.field-hover : Palette.elevated;
         border-width: Theme.border-w;
         border-color: Palette.elevated-border;
         drop-shadow-blur: Theme.hard-shadow ? 0px : 16px;
@@ -592,14 +427,14 @@ export component MessagesArea inherits Rectangle {
         accessible-role: button;
         accessible-label: @tr("Jump to latest messages");
         accessible-action-default => {
-            cs.viewport-y = root.bottom-y;
+            root.jump-latest();
         }
 
         ChevronDownIcon {
             x: (parent.width - self.width) / 2;
             y: (parent.height - self.height) / 2;
             size: 14px;
-            stroke: (jump-touch.has-hover || jump-focus.has-focus) ? Palette.text-hi : Palette.text-mid;
+            stroke: (jump-touch.has-hover || jump-ka.focused) ? Palette.text-hi : Palette.text-mid;
             animate stroke { duration: Theme.hover-dur; }
         }
 
@@ -607,36 +442,18 @@ export component MessagesArea inherits Rectangle {
             enabled: !root.at-bottom;
             mouse-cursor: pointer;
             clicked => {
-                cs.viewport-y = root.bottom-y;
+                root.jump-latest();
             }
         }
 
-        // Zero-size FocusScope: joins the Tab chain without stealing pointer
-        // focus from the composer on click (mirrors the "Load earlier
-        // messages" pill above). Disabled while the pill is hidden so a
-        // keyboard user can't tab to an invisible control.
-        jump-focus := FocusScope {
-            width: 0px;
-            height: 0px;
-            enabled: !root.at-bottom;
-            key-pressed(event) => {
-                if (event.text == Key.Return || event.text == " ") {
-                    cs.viewport-y = root.bottom-y;
-                    return accept;
-                }
-                return reject;
+        // Disabled while the pill is hidden so a keyboard user can't tab to
+        // an invisible control.
+        jump-ka := KeyActivate {
+            key-enabled: !root.at-bottom;
+            ring-radius: (19px + 3px) * Theme.r-scale;
+            activate => {
+                root.jump-latest();
             }
-        }
-
-        if jump-focus.has-focus: Rectangle {
-            x: -3px;
-            y: -3px;
-            width: parent.width + 6px;
-            height: parent.height + 6px;
-            background: transparent;
-            border-radius: (19px + 3px) * Theme.r-scale;
-            border-width: 2px;
-            border-color: Palette.mint;
         }
     }
 }
