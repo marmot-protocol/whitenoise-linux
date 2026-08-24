@@ -53,15 +53,31 @@ export component ContactsSidebar inherits SidePanel {
             width: parent.width;
         // Shown when the query is empty or this row matched (flags from Rust).
         property <bool> shown: root.query == "" || (idx < AppState.contact-match-flags.length && AppState.contact-match-flags[idx]);
+        // A–Z header above the first row of each letter group (rows arrive
+        // name-sorted with a Rust-stamped `section`). Hidden while searching:
+        // the filtered rows are sparse, so letters would label mostly-empty
+        // groups.
+        property <bool> lead: root.query == "" && !root.strip && (idx == 0 || AppState.contacts[idx - 1].section != c.section);
         // No `visible:` here: binding visible on a ListView delegate root
         // breaks the ListView's row placement (every delegate lands at y=0);
         // zero height + clip hides collapsed rows just as well.
-        height: shown ? item.height + 2px : 0px;
+        height: shown ? item.height + 2px + (lead ? 22px : 0px) : 0px;
         clip: true;
+
+        if lead: Text {
+            x: 12px;
+            y: 4px;
+            text: c.section;
+            color: Palette.text-lo;
+            font-size: Theme.fs(10px, 14px);
+            font-weight: 700;
+            font-family: Theme.font;
+            letter-spacing: 1.2px;
+        }
 
         item := ContactListItem {
             x: 0;
-            y: 0;
+            y: lead ? 22px : 0;
             width: 100%;
             data: c;
             compact: root.strip;

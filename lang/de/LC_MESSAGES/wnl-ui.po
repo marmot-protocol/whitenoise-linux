@@ -490,6 +490,10 @@ msgctxt "MainPane"
 msgid "CHAT REQUEST"
 msgstr "CHAT-ANFRAGE"
 
+msgctxt "AppShell"
+msgid "CHATS"
+msgstr "CHATS"
+
 msgctxt "StatusBar"
 msgid "COMMAND"
 msgstr "BEFEHL"
@@ -2068,6 +2072,11 @@ msgctxt "SettingsSidebar"
 msgid "Network & relays"
 msgstr "Netzwerk & Relays"
 
+#, fuzzy
+msgctxt "AppShell"
+msgid "New chat"
+msgstr "Neuer Chat"
+
 msgctxt "GetStartedScreen"
 msgid "New chat"
 msgstr "Neuer Chat"
@@ -3005,7 +3014,8 @@ msgctxt "GlobalSearchModal"
 msgid "Search all messages…"
 msgstr "Alle Nachrichten durchsuchen…"
 
-msgctxt "AppShell"
+#, fuzzy
+msgctxt "ArchivedSidebar"
 msgid "Search archived chats…"
 msgstr "Archivierte Chats durchsuchen…"
 

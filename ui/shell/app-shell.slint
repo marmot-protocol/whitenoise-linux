@@ -18,8 +18,7 @@ import { Palette, Theme, ChatMeta, TextSelection } from "../tokens.slint";
 import { AppState } from "app-state.slint";
 import { ListView } from "std-widgets.slint";
 import { Avatar } from "../primitives/avatar.slint";
-import { LineInput } from "../primitives/line-input.slint";
-import { MicroButton } from "../primitives/button.slint";
+import { Button, MicroButton } from "../primitives/button.slint";
 import { ChatBubbleIcon } from "../icons/chat-bubble-icon.slint";
 import { PeopleIcon } from "../icons/people-icon.slint";
 import { ArchiveIcon } from "../icons/archive-icon.slint";
@@ -526,106 +525,105 @@ export component AppShell inherits Rectangle {
                         }
                     }
 
-                    // Search + new chat. On the Archived page this bar IS the
-                    // archive search (replacing global message search there,
-                    // not hiding behind a second one lower down); "new chat"
-                    // doesn't apply to an archive, so the plus button drops.
-                    if !root.strip: HorizontalLayout {
-                        height: 38px;
-                        spacing: 9px;
-                        if AppState.active-page != 2: Rectangle {
-                            horizontal-stretch: 1;
-                            border-radius: 10px * Theme.r-scale;
-                            background: Palette.field;
-                            border-width: max(Theme.border-w, 1px);
-                            border-color: Palette.field-border;
-                            search-touch := TouchArea {
-                                mouse-cursor: pointer;
-                                clicked => {
-                                    AppState.msg-global-open = true;
-                                }
-                                HorizontalLayout {
-                                    padding-left: 11px;
-                                    padding-right: 10px;
-                                    spacing: 9px;
-                                    SearchIcon {
-                                        stroke: Palette.text-vlo;
-                                        size: 13px;
-                                        y: (parent.height - self.height) / 2;
-                                    }
-                                    Text {
-                                        text: @tr("Search messages…");
-                                        color: Palette.text-vlo;
-                                        font-size: Theme.fs(13px, 16px);
-                                        vertical-alignment: center;
-                                        horizontal-stretch: 1;
-                                    }
-                                }
+                    // Chats header + search, Chats page only. Contacts and
+                    // Archived own theirs (SidePanel), so this mirrors the
+                    // SidePanel pattern exactly: a 24px `TITLE · n [actions]`
+                    // line over a 34px search field, same metrics.
+                    if !root.strip && AppState.active-page == 0: HorizontalLayout {
+                        height: 24px;
+                        alignment: stretch;
+                        spacing: 6px;
+                        HorizontalLayout {
+                            spacing: 7px;
+                            alignment: start;
+                            Text {
+                                text: @tr("CHATS");
+                                color: Palette.text-mid;
+                                font-size: Theme.fs(11px, 14px);
+                                font-weight: 700;
+                                letter-spacing: 1.4px;
+                                vertical-alignment: center;
+                            }
+
+                            Text {
+                                text: "·";
+                                color: Palette.text-vlo;
+                                font-size: Theme.fs(11px, 14px);
+                                vertical-alignment: center;
+                            }
+
+                            Text {
+                                text: AppState.chats.length;
+                                color: Palette.text-mid;
+                                font-size: Theme.fs(11px, 14px);
+                                font-weight: 700;
+                                vertical-alignment: center;
                             }
                         }
-                        if AppState.active-page == 2: Rectangle {
+
+                        Rectangle {
                             horizontal-stretch: 1;
-                            border-radius: 10px * Theme.r-scale;
-                            background: Palette.field;
-                            border-width: max(Theme.border-w, 1px);
-                            border-color: archive-search-input.has-focus ? Palette.mint-dim : Palette.field-border;
-                            animate border-color {
-                                duration: 140ms;
-                                easing: ease-out;
-                            }
-                            HorizontalLayout {
-                                padding-left: 11px;
-                                padding-right: 10px;
-                                spacing: 9px;
-                                SearchIcon {
-                                    stroke: archive-search-input.has-focus ? Palette.mint-dim : Palette.text-vlo;
-                                    size: 13px;
-                                    y: (parent.height - self.height) / 2;
-                                    animate stroke { duration: 140ms; }
-                                }
-                                archive-search-input := LineInput {
-                                    placeholder: @tr("Search archived chats…");
-                                    font-size: Theme.fs(13px, 16px);
-                                    fg: Palette.text-hi;
-                                    placeholder-color: Palette.text-vlo;
-                                    horizontal-stretch: 1;
-                                    text <=> AppState.archive-search-query;
-                                    changed text => {
-                                        AppState.archive-search-changed(self.text);
-                                    }
-                                }
-                            }
                         }
+
                         // "Unread" narrows the chat list below to chats with
-                        // something unread — Chats page only, since Archive
-                        // has its own search in this slot instead.
-                        if AppState.active-page == 0: MicroButton {
+                        // something unread.
+                        MicroButton {
                             label: @tr("Unread");
                             a11y-label: @tr("Show only unread chats");
-                            button-height: 38px;
+                            button-height: 24px;
                             selected: root.chats-unread-only;
                             fg: root.chats-unread-only && Theme.selected-inverts-text ? Palette.on-accent : Palette.text-mid;
                             clicked => {
                                 root.chats-unread-only = !root.chats-unread-only;
                             }
                         }
-                        if AppState.active-page != 2: Rectangle {
-                            width: 38px;
-                            border-radius: 10px * Theme.r-scale;
-                            background: newchat-touch.has-hover ? Palette.mint-hi : Palette.mint-surface;
-                            border-width: 1px;
-                            border-color: Palette.mint-dim;
-                            animate background { duration: Theme.hover-dur; }
-                            newchat-touch := TouchArea {
-                                mouse-cursor: pointer;
-                                clicked => {
-                                    AppState.new-chat-requested();
-                                }
-                                PlusIcon {
-                                    stroke: Palette.mint;
-                                    size: 15px;
-                                    x: (parent.width - self.width) / 2;
+
+                        Button {
+                            a11y-label: @tr("New chat");
+                            button-height: 24px;
+                            button-width: 26px;
+                            radius: 5px;
+                            pad-left: 6px;
+                            pad-right: 6px;
+                            spacing: 0;
+                            bg-color: transparent;
+                            PlusIcon {
+                                stroke: Palette.mint;
+                                size: 13px;
+                            }
+
+                            clicked => {
+                                AppState.new-chat-requested();
+                            }
+                        }
+                    }
+
+                    if !root.strip && AppState.active-page == 0: Rectangle {
+                        height: 34px;
+                        border-radius: (8px) * Theme.r-scale;
+                        background: Palette.panel;
+                        border-width: 1px;
+                        border-color: Palette.border-2;
+                        search-touch := TouchArea {
+                            mouse-cursor: pointer;
+                            clicked => {
+                                AppState.msg-global-open = true;
+                            }
+                            HorizontalLayout {
+                                padding-left: 10px;
+                                padding-right: 8px;
+                                spacing: 8px;
+                                SearchIcon {
+                                    stroke: Palette.text-vlo;
+                                    size: 12px;
                                     y: (parent.height - self.height) / 2;
+                                }
+                                Text {
+                                    text: @tr("Search messages…");
+                                    color: Palette.text-vlo;
+                                    font-size: Theme.fs(12px, 16px);
+                                    vertical-alignment: center;
+                                    horizontal-stretch: 1;
                                 }
                             }
                         }

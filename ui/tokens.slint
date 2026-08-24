@@ -361,6 +361,11 @@ export struct Contact {
     av-a: color,
     av-b: color,
     av-initials: string,
+    // A–Z directory section for this row ("M", or "#" for non-alphabetic
+    // names), stamped Rust-side because Slint has no substring op. Rows are
+    // pushed sorted by name, so a section change between neighbours marks a
+    // header boundary.
+    section: string,
     verified: bool,
     online: bool,
     relays: int,

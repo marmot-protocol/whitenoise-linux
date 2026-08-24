@@ -485,6 +485,10 @@ msgctxt "MainPane"
 msgid "CHAT REQUEST"
 msgstr "チャットリクエスト"
 
+msgctxt "AppShell"
+msgid "CHATS"
+msgstr "チャット"
+
 msgctxt "StatusBar"
 msgid "COMMAND"
 msgstr "コマンド"
@@ -2063,6 +2067,11 @@ msgctxt "SettingsSidebar"
 msgid "Network & relays"
 msgstr "ネットワークとリレー"
 
+#, fuzzy
+msgctxt "AppShell"
+msgid "New chat"
+msgstr "新しいチャット"
+
 msgctxt "GetStartedScreen"
 msgid "New chat"
 msgstr "新しいチャット"
@@ -3000,7 +3009,8 @@ msgctxt "GlobalSearchModal"
 msgid "Search all messages…"
 msgstr "すべてのメッセージを検索…"
 
-msgctxt "AppShell"
+#, fuzzy
+msgctxt "ArchivedSidebar"
 msgid "Search archived chats…"
 msgstr "アーカイブしたチャットを検索…"
 

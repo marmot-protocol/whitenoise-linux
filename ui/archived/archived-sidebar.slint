@@ -11,9 +11,13 @@ export component ArchivedSidebar inherits SidePanel {
 
     title: @tr("ARCHIVED");
     count: AppState.archive-search-query == "" ? root.archives.length : AppState.archive-match-count;
+    show-search: true;
+    search-placeholder: @tr("Search archived chats…");
+    search-text <=> AppState.archive-search-query;
+    search-edited(q) => {
+        AppState.archive-search-changed(q);
+    }
 
-    // The archive search field lives in the shell header
-    // (AppState.archive-search-query), not this panel — see app-shell.slint.
     // The archived list is re-pushed on archive/unarchive; re-derive the
     // match set so filtered rows track the fresh order (mirrors the chat
     // list). No-op while the query is empty.

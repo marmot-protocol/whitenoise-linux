@@ -271,10 +271,13 @@ pub(crate) fn refresh_contacts_async(
         }
         ui_update!(weak, move |ui| {
             let contacts = ui.get_contacts();
-            let rows: Vec<Contact> = records
+            let mut rows: Vec<Contact> = records
                 .iter()
                 .map(|r| contact_from(r, &nicknames))
                 .collect();
+            // Directory order: the A–Z section headers in the sidebar assume
+            // name-sorted rows ("#" bucket first, before the letters).
+            rows.sort_by_cached_key(|c| c.name.to_lowercase());
             if let Some(vm) = contacts.as_any().downcast_ref::<VecModel<Contact>>() {
                 vm.set_vec(rows);
             }
@@ -387,6 +390,14 @@ pub(crate) fn contact_from(
             "No key package on relays yet".to_string(),
         ),
     };
+    // Directory section letter for the sidebar's A–Z headers ("#" bucket for
+    // names that don't start with a letter).
+    let section = display
+        .chars()
+        .next()
+        .filter(|ch| ch.is_alphabetic())
+        .map(|ch| ch.to_uppercase().to_string())
+        .unwrap_or_else(|| "#".to_string());
     Contact {
         name: s(&display),
         real_name: s(&published),
@@ -397,6 +408,7 @@ pub(crate) fn contact_from(
         av_a: a,
         av_b: b,
         av_initials: s(&init),
+        section: s(&section),
         verified: nip05_verified,
         online: false,
         relays: relays as i32,
