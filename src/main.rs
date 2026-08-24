@@ -185,6 +185,12 @@ fn main() -> Result<(), slint::PlatformError> {
             );
             tracing::error!("{msg}");
             eprintln!("{msg}");
+            rfd::MessageDialog::new()
+                .set_level(rfd::MessageLevel::Warning)
+                .set_title("White Noise")
+                .set_description(&msg)
+                .set_buttons(rfd::MessageButtons::Ok)
+                .show();
             std::process::exit(1);
         }
         Err(e) => {
