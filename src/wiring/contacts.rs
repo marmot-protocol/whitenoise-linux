@@ -294,7 +294,9 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
         ui.set_debug_view_title(s("Key package"));
         ui.set_debug_view_subtitle(row.name.clone());
         ui.set_debug_view_json(s(""));
-        ui.set_debug_view_rows(json_doc_set(JsonSlot::View, ""));
+        let (rows, gutter_lines) = json_doc_set(JsonSlot::View, "");
+        ui.set_debug_view_rows(rows);
+        ui.set_debug_view_gutter_lines(gutter_lines);
         ui.set_debug_view_busy(true);
         ui.set_debug_view_open(true);
         let weak = ui.as_weak();
@@ -307,7 +309,9 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             move |ui, json| {
                 ui.set_debug_view_busy(false);
                 // Rows drive the viewer; the plain string stays for copy.
-                ui.set_debug_view_rows(json_doc_set(JsonSlot::View, &json));
+                let (rows, gutter_lines) = json_doc_set(JsonSlot::View, &json);
+                ui.set_debug_view_rows(rows);
+                ui.set_debug_view_gutter_lines(gutter_lines);
                 ui.set_debug_view_json(json.into());
             },
         );
