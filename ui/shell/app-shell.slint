@@ -477,6 +477,7 @@ export component AppShell inherits Rectangle {
                         MentionsIcon {
                             mention-items: AppState.mention-inbox-items;
                             mentions-loading: AppState.mention-inbox-loading;
+                            open-requested: AppState.mention-inbox-open-pulse;
                             y: (parent.height - self.height) / 2;
                             mentions-inbox-opened => {
                                 AppState.mention-inbox-opened();

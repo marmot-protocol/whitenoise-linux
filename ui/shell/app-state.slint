@@ -47,6 +47,11 @@ export global AppState {
     in-out property <bool> mention-inbox-loading: false;
     callback mention-inbox-opened();
     callback mention-inbox-selected(string, string);
+    // Bumped by Rust (command palette / a global shortcut) to open the "@"
+    // mentions inbox popover without a mouse click. mentions-icon.slint reacts
+    // to any change, so repeat invocations reopen it even after a selection
+    // closed the popup.
+    in-out property <int> mention-inbox-open-pulse: 0;
     in-out property <bool> outgoing-on-right: true;
     // Chat-shell bento columns: the user-dragged widths of the left chat-bar
     // and right info columns, pushed from Rust (settings.rs) and echoed back on

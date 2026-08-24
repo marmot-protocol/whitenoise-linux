@@ -118,6 +118,9 @@ pub(crate) fn wire_nav(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                 PaletteCommand::NavProfile => go(Page::Profile),
                 PaletteCommand::NewChat => ui.set_show_new_chat(true),
                 PaletteCommand::OpenSearch => ui.set_msg_global_open(true),
+                PaletteCommand::OpenMentions => {
+                    ui.set_mention_inbox_open_pulse(ui.get_mention_inbox_open_pulse() + 1);
+                }
                 PaletteCommand::CopyNpub => {
                     let npub = ui.get_my_npub();
                     let weak = weak.clone();
