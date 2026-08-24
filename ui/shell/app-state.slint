@@ -622,6 +622,19 @@ export global AppState {
     callback export-key-confirm(string);   // vault password
     callback export-key-dismissed();
 
+    // Change-vault-password danger-zone flow. Rust verifies the current
+    // password off the UI thread (Argon2id), derives a fresh salt and key,
+    // and re-seals the vault plus media-cache / offline-queue blobs.
+    in-out property <bool> show-change-password: false;
+    in-out property <string> change-password-current;
+    in-out property <string> change-password-new;
+    in-out property <string> change-password-repeat;
+    in-out property <bool> change-password-busy: false;
+    in-out property <string> change-password-status;
+    in-out property <bool> change-password-status-error: false;
+    callback change-password-submit(string, string, string); // current, new, confirm
+    callback change-password-dismissed();
+
     // ═══ Debug & developer tools ═══════════════════════════════════════════
     // Debug pane (gated by Settings → Advanced toggle).
     in-out property <bool> debug-enabled: false;

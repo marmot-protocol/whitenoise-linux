@@ -812,6 +812,8 @@ copy_snapshot! {
     no_secret_key_account: String = get_no_secret_key_account => "No secret key for this account is stored on this device.";
     restore_lock_only: String = get_restore_lock_only => "Full restore is only available from the lock screen, before unlocking.";
     export_key_failed: String = get_export_key_failed => "Couldn't create the encrypted key. Please try again.";
+    change_password_failed: String = get_change_password_failed => "Couldn't change your vault password. Please try again.";
+    password_changed: String = get_password_changed => "Vault password changed.";
     // Contact key-package row (in-flight + `kp_labels` result). The "From"/
     // "Published" forms carry `%1`/`%2` (relay host, relative time) slots.
     kp_checking: String = get_kp_checking => "Checking…";

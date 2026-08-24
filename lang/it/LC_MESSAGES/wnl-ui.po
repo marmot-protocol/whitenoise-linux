@@ -489,6 +489,10 @@ msgctxt "StatusBar"
 msgid "COMMAND"
 msgstr "COMANDO"
 
+msgctxt "ChangePasswordModal"
+msgid "CONFIRM NEW PASSWORD"
+msgstr "CONFERMA NUOVA PASSWORD"
+
 msgctxt "LoginScreen"
 msgid "CONFIRM PASSWORD"
 msgstr "CONFERMA PASSWORD"
@@ -504,6 +508,10 @@ msgstr "CONTATTI"
 msgctxt "AboutPane"
 msgid "CREDITS"
 msgstr "CREDITI"
+
+msgctxt "ChangePasswordModal"
+msgid "CURRENT PASSWORD"
+msgstr "PASSWORD ATTUALE"
 
 msgctxt "GeneralPane"
 msgid "CUSTOM EMOJI"
@@ -538,6 +546,10 @@ msgid "Cancel"
 msgstr "Annulla"
 
 msgctxt "BackupCreateModal"
+msgid "Cancel"
+msgstr "Annulla"
+
+msgctxt "ChangePasswordModal"
 msgid "Cancel"
 msgstr "Annulla"
 
@@ -607,9 +619,29 @@ msgctxt "ThemePicker"
 msgid "Chalkboard"
 msgstr ""
 
+msgctxt "KeysPage"
+msgid "Change"
+msgstr "Cambia"
+
 msgctxt "language picker button"
 msgid "Change"
 msgstr "Modifica"
+
+msgctxt "ChangePasswordModal"
+msgid "Change password"
+msgstr "Cambia password"
+
+msgctxt "ChangePasswordModal"
+msgid "Change vault password"
+msgstr "Cambia la password del vault"
+
+msgctxt "KeysPage"
+msgid "Change vault password"
+msgstr "Cambia la password del vault"
+
+msgctxt "ChangePasswordModal"
+msgid "Changing…"
+msgstr "Cambio in corso…"
 
 msgctxt "ChatRequestBanner"
 msgid "Chat request"
@@ -635,6 +667,10 @@ msgstr "Scegli prima un file di backup."
 msgctxt "NativeDialogStrings"
 msgid "Choose a custom emoji image"
 msgstr "Scegli un'immagine per l'emoji personalizzata"
+
+msgctxt "ChangePasswordModal"
+msgid "Choose a password"
+msgstr "Scegli una password"
 
 msgctxt "LoginScreen"
 msgid "Choose a password"
@@ -915,6 +951,10 @@ msgstr "Impossibile archiviare questa chat. Riprova."
 msgctxt "ErrorCopy"
 msgid "Couldn't change audit logging."
 msgstr "Impossibile modificare il log di audit."
+
+msgctxt "ErrorCopy"
+msgid "Couldn't change your vault password. Please try again."
+msgstr "Impossibile cambiare la password del vault. Riprova."
 
 msgctxt "ErrorCopy"
 msgid "Couldn't copy image."
@@ -1288,6 +1328,10 @@ msgstr "Inserisci la password del backup."
 msgctxt "AddContactModal"
 msgid "Enter their username (name@domain), npub, or hex public key. They'll appear in your contacts on every device."
 msgstr "Inserisci il loro nome utente (name@domain), npub o chiave pubblica esadecimale. Compariranno tra i tuoi contatti su ogni dispositivo."
+
+msgctxt "ChangePasswordModal"
+msgid "Enter your current password, then choose a new one. There is no recovery if you forget it. Existing backups stay sealed with the previous password."
+msgstr "Inserisci la password attuale, poi scegline una nuova. Se la dimentichi non c'è recupero. I backup esistenti restano sigillati con la password precedente."
 
 msgctxt "LoginScreen"
 msgid "Enter your password"
@@ -1973,6 +2017,10 @@ msgctxt "MessagesArea"
 msgid "NEW MESSAGES"
 msgstr "NUOVI MESSAGGI"
 
+msgctxt "ChangePasswordModal"
+msgid "NEW PASSWORD"
+msgstr "NUOVA PASSWORD"
+
 msgctxt "NicknameModal"
 msgid "NICKNAME"
 msgstr "SOPRANNOME"
@@ -2477,9 +2525,17 @@ msgctxt "NetworkPane"
 msgid "Re-broadcasts your outbox and inbox relay lists. Use this if peers can't find you."
 msgstr "Ritrasmette i tuoi elenchi di relay di invio e di ricezione. Usalo se i peer non riescono a trovarti."
 
+msgctxt "ChangePasswordModal"
+msgid "Re-enter password"
+msgstr "Reinserisci la password"
+
 msgctxt "LoginScreen"
 msgid "Re-enter password"
 msgstr "Reinserisci la password"
+
+msgctxt "KeysPage"
+msgid "Re-seals every secret on this device under a new password. Existing backups stay sealed with the previous one."
+msgstr "Risigilla ogni segreto su questo dispositivo con una nuova password. I backup esistenti restano sigillati con quella precedente."
 
 #. Default screen-reader name for a plain reaction cell.
 msgctxt "QuickReactCell"
@@ -3472,6 +3528,10 @@ msgctxt "ProfilePage"
 msgid "VISIBLE TO ANYONE YOU CHAT WITH"
 msgstr "VISIBILE A CHIUNQUE CHATTI"
 
+msgctxt "ErrorCopy"
+msgid "Vault password changed."
+msgstr "Password del vault cambiata."
+
 msgctxt "RevealNsecModal"
 msgid "Verifying…"
 msgstr "Verifica…"
@@ -3617,6 +3677,10 @@ msgstr "Il tuo pacchetto chiavi"
 msgctxt "AboutPane"
 msgid "Your keys stay on this device. No one else ever sees them."
 msgstr "Le tue chiavi restano su questo dispositivo. Nessun altro le vede mai."
+
+msgctxt "ChangePasswordModal"
+msgid "Your password"
+msgstr "La tua password"
 
 msgctxt "ExportKeyModal"
 msgid "Your password"

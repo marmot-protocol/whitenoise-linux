@@ -490,6 +490,10 @@ msgctxt "StatusBar"
 msgid "COMMAND"
 msgstr ""
 
+msgctxt "ChangePasswordModal"
+msgid "CONFIRM NEW PASSWORD"
+msgstr ""
+
 msgctxt "LoginScreen"
 msgid "CONFIRM PASSWORD"
 msgstr ""
@@ -504,6 +508,10 @@ msgstr ""
 
 msgctxt "AboutPane"
 msgid "CREDITS"
+msgstr ""
+
+msgctxt "ChangePasswordModal"
+msgid "CURRENT PASSWORD"
 msgstr ""
 
 msgctxt "GeneralPane"
@@ -539,6 +547,10 @@ msgid "Cancel"
 msgstr ""
 
 msgctxt "BackupCreateModal"
+msgid "Cancel"
+msgstr ""
+
+msgctxt "ChangePasswordModal"
 msgid "Cancel"
 msgstr ""
 
@@ -608,8 +620,28 @@ msgctxt "ThemePicker"
 msgid "Chalkboard"
 msgstr ""
 
+msgctxt "KeysPage"
+msgid "Change"
+msgstr ""
+
 msgctxt "language picker button"
 msgid "Change"
+msgstr ""
+
+msgctxt "ChangePasswordModal"
+msgid "Change password"
+msgstr ""
+
+msgctxt "ChangePasswordModal"
+msgid "Change vault password"
+msgstr ""
+
+msgctxt "KeysPage"
+msgid "Change vault password"
+msgstr ""
+
+msgctxt "ChangePasswordModal"
+msgid "Changing…"
 msgstr ""
 
 msgctxt "ChatRequestBanner"
@@ -635,6 +667,10 @@ msgstr ""
 
 msgctxt "NativeDialogStrings"
 msgid "Choose a custom emoji image"
+msgstr ""
+
+msgctxt "ChangePasswordModal"
+msgid "Choose a password"
 msgstr ""
 
 msgctxt "LoginScreen"
@@ -915,6 +951,10 @@ msgstr ""
 
 msgctxt "ErrorCopy"
 msgid "Couldn't change audit logging."
+msgstr ""
+
+msgctxt "ErrorCopy"
+msgid "Couldn't change your vault password. Please try again."
 msgstr ""
 
 msgctxt "ErrorCopy"
@@ -1288,6 +1328,10 @@ msgstr ""
 
 msgctxt "AddContactModal"
 msgid "Enter their username (name@domain), npub, or hex public key. They'll appear in your contacts on every device."
+msgstr ""
+
+msgctxt "ChangePasswordModal"
+msgid "Enter your current password, then choose a new one. There is no recovery if you forget it. Existing backups stay sealed with the previous password."
 msgstr ""
 
 msgctxt "LoginScreen"
@@ -1973,6 +2017,10 @@ msgctxt "MessagesArea"
 msgid "NEW MESSAGES"
 msgstr ""
 
+msgctxt "ChangePasswordModal"
+msgid "NEW PASSWORD"
+msgstr ""
+
 msgctxt "NicknameModal"
 msgid "NICKNAME"
 msgstr ""
@@ -2477,8 +2525,16 @@ msgctxt "NetworkPane"
 msgid "Re-broadcasts your outbox and inbox relay lists. Use this if peers can't find you."
 msgstr ""
 
+msgctxt "ChangePasswordModal"
+msgid "Re-enter password"
+msgstr ""
+
 msgctxt "LoginScreen"
 msgid "Re-enter password"
+msgstr ""
+
+msgctxt "KeysPage"
+msgid "Re-seals every secret on this device under a new password. Existing backups stay sealed with the previous one."
 msgstr ""
 
 #. Default screen-reader name for a plain reaction cell.
@@ -3470,6 +3526,10 @@ msgctxt "ProfilePage"
 msgid "VISIBLE TO ANYONE YOU CHAT WITH"
 msgstr ""
 
+msgctxt "ErrorCopy"
+msgid "Vault password changed."
+msgstr ""
+
 msgctxt "RevealNsecModal"
 msgid "Verifying…"
 msgstr ""
@@ -3614,6 +3674,10 @@ msgstr ""
 
 msgctxt "AboutPane"
 msgid "Your keys stay on this device. No one else ever sees them."
+msgstr ""
+
+msgctxt "ChangePasswordModal"
+msgid "Your password"
 msgstr ""
 
 msgctxt "ExportKeyModal"

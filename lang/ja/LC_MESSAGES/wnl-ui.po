@@ -484,6 +484,10 @@ msgctxt "StatusBar"
 msgid "COMMAND"
 msgstr "コマンド"
 
+msgctxt "ChangePasswordModal"
+msgid "CONFIRM NEW PASSWORD"
+msgstr "新しいパスワード（確認）"
+
 msgctxt "LoginScreen"
 msgid "CONFIRM PASSWORD"
 msgstr "パスワードの確認"
@@ -499,6 +503,10 @@ msgstr "連絡先"
 msgctxt "AboutPane"
 msgid "CREDITS"
 msgstr "クレジット"
+
+msgctxt "ChangePasswordModal"
+msgid "CURRENT PASSWORD"
+msgstr "現在のパスワード"
 
 msgctxt "GeneralPane"
 msgid "CUSTOM EMOJI"
@@ -533,6 +541,10 @@ msgid "Cancel"
 msgstr "キャンセル"
 
 msgctxt "BackupCreateModal"
+msgid "Cancel"
+msgstr "キャンセル"
+
+msgctxt "ChangePasswordModal"
 msgid "Cancel"
 msgstr "キャンセル"
 
@@ -602,9 +614,29 @@ msgctxt "ThemePicker"
 msgid "Chalkboard"
 msgstr ""
 
+msgctxt "KeysPage"
+msgid "Change"
+msgstr "変更"
+
 msgctxt "language picker button"
 msgid "Change"
 msgstr "変更"
+
+msgctxt "ChangePasswordModal"
+msgid "Change password"
+msgstr "パスワードを変更"
+
+msgctxt "ChangePasswordModal"
+msgid "Change vault password"
+msgstr "ボールトのパスワードを変更"
+
+msgctxt "KeysPage"
+msgid "Change vault password"
+msgstr "ボールトのパスワードを変更"
+
+msgctxt "ChangePasswordModal"
+msgid "Changing…"
+msgstr "変更中…"
 
 msgctxt "ChatRequestBanner"
 msgid "Chat request"
@@ -630,6 +662,10 @@ msgstr "先にバックアップファイルを選んでください。"
 msgctxt "NativeDialogStrings"
 msgid "Choose a custom emoji image"
 msgstr "カスタム絵文字の画像を選択"
+
+msgctxt "ChangePasswordModal"
+msgid "Choose a password"
+msgstr "パスワードを設定"
 
 msgctxt "LoginScreen"
 msgid "Choose a password"
@@ -910,6 +946,10 @@ msgstr "このチャットをアーカイブできませんでした。もう一
 msgctxt "ErrorCopy"
 msgid "Couldn't change audit logging."
 msgstr "監査ログを変更できませんでした。"
+
+msgctxt "ErrorCopy"
+msgid "Couldn't change your vault password. Please try again."
+msgstr "ボールトのパスワードを変更できませんでした。もう一度お試しください。"
 
 msgctxt "ErrorCopy"
 msgid "Couldn't copy image."
@@ -1283,6 +1323,10 @@ msgstr "バックアップのパスワードを入力してください。"
 msgctxt "AddContactModal"
 msgid "Enter their username (name@domain), npub, or hex public key. They'll appear in your contacts on every device."
 msgstr "相手のユーザー名（name@domain）、npub、または16進数の公開鍵を入力してください。すべてのデバイスの連絡先に表示されます。"
+
+msgctxt "ChangePasswordModal"
+msgid "Enter your current password, then choose a new one. There is no recovery if you forget it. Existing backups stay sealed with the previous password."
+msgstr "現在のパスワードを入力し、新しいパスワードを設定してください。忘れた場合の復旧手段はありません。既存のバックアップは以前のパスワードのまま暗号化されています。"
 
 msgctxt "LoginScreen"
 msgid "Enter your password"
@@ -1968,6 +2012,10 @@ msgctxt "MessagesArea"
 msgid "NEW MESSAGES"
 msgstr "新着メッセージ"
 
+msgctxt "ChangePasswordModal"
+msgid "NEW PASSWORD"
+msgstr "新しいパスワード"
+
 msgctxt "NicknameModal"
 msgid "NICKNAME"
 msgstr "ニックネーム"
@@ -2472,9 +2520,17 @@ msgctxt "NetworkPane"
 msgid "Re-broadcasts your outbox and inbox relay lists. Use this if peers can't find you."
 msgstr "送信リレーと受信リレーのリストを再配信します。相手があなたを見つけられない場合に使用してください。"
 
+msgctxt "ChangePasswordModal"
+msgid "Re-enter password"
+msgstr "パスワードを再入力"
+
 msgctxt "LoginScreen"
 msgid "Re-enter password"
 msgstr "パスワードを再入力"
+
+msgctxt "KeysPage"
+msgid "Re-seals every secret on this device under a new password. Existing backups stay sealed with the previous one."
+msgstr "この端末のすべての秘密を新しいパスワードで再暗号化します。既存のバックアップは以前のパスワードのままです。"
 
 #. Default screen-reader name for a plain reaction cell.
 msgctxt "QuickReactCell"
@@ -3467,6 +3523,10 @@ msgctxt "ProfilePage"
 msgid "VISIBLE TO ANYONE YOU CHAT WITH"
 msgstr "チャット相手全員に公開"
 
+msgctxt "ErrorCopy"
+msgid "Vault password changed."
+msgstr "ボールトのパスワードを変更しました。"
+
 msgctxt "RevealNsecModal"
 msgid "Verifying…"
 msgstr "確認中…"
@@ -3611,6 +3671,10 @@ msgstr "あなたのキーパッケージ"
 msgctxt "AboutPane"
 msgid "Your keys stay on this device. No one else ever sees them."
 msgstr "あなたの鍵はこのデバイスに留まり、ほかの誰にも見られることはありません。"
+
+msgctxt "ChangePasswordModal"
+msgid "Your password"
+msgstr "パスワード"
 
 msgctxt "ExportKeyModal"
 msgid "Your password"

@@ -277,6 +277,25 @@ export component KeysPage inherits Rectangle {
                         stroke: Palette.danger;
                     }
                 }
+
+                DangerActionRow {
+                    title: @tr("Change vault password");
+                    detail: @tr("Re-seals every secret on this device under a new password. Existing backups stay sealed with the previous one.");
+                    action-label: @tr("Change");
+                    min-button-width: rotate-row.button-width;
+                    focusable: true;
+                    triggered => {
+                        AppState.change-password-current = "";
+                        AppState.change-password-new = "";
+                        AppState.change-password-repeat = "";
+                        AppState.change-password-status = "";
+                        AppState.change-password-status-error = false;
+                        AppState.show-change-password = true;
+                    }
+                    LockIcon {
+                        stroke: Palette.danger;
+                    }
+                }
             }
         }
     }

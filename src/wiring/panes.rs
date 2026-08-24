@@ -1454,6 +1454,72 @@ pub(crate) fn wire_panes(
         ui.set_export_key_busy(false);
     });
 
+    // ─── Change vault password (Keys → Danger zone) ────────────────────
+    // Re-confirm the current password on a worker thread (Argon2id), then
+    // rotate salt+key on the *live* vault so the session's in-memory key
+    // matches the file. Media-cache and offline-queue blobs are re-sealed
+    // under the new media-cache subkey inside `Vault::change_password`.
+    ui.global::<AppState>().on_change_password_submit({
+        let weak = ui.as_weak();
+        let vault_cell = vault_cell.clone();
+        move |current, new, confirm| {
+            let Some(ui) = weak.upgrade() else { return };
+            let current = current.to_string();
+            let new = new.to_string();
+            if let Err(err) = validate_new_password(&new, confirm.as_str()) {
+                ui.set_change_password_status(err.into());
+                ui.set_change_password_status_error(true);
+                return;
+            }
+            let Some(vault) = vault_cell.lock().unwrap().clone() else {
+                ui.set_change_password_status(error_copy().backend_not_ready_yet.into());
+                ui.set_change_password_status_error(true);
+                return;
+            };
+            ui.set_change_password_busy(true);
+            ui.set_change_password_status(s(""));
+            ui.set_change_password_status_error(false);
+            let weak = weak.clone();
+            spawn_ui(
+                weak,
+                move || -> Result<(), String> {
+                    let mut v = vault.lock().map_err(|_| error_copy().change_password_failed)?;
+                    v.change_password(&current, &new).map_err(|e| match e {
+                        vault::VaultError::WrongPassword => error_copy().wrong_password,
+                        _ => error_copy().change_password_failed,
+                    })
+                },
+                move |ui, result| {
+                    ui.set_change_password_busy(false);
+                    match result {
+                        Ok(()) => {
+                            ui.set_show_change_password(false);
+                            ui.set_change_password_current(s(""));
+                            ui.set_change_password_new(s(""));
+                            ui.set_change_password_repeat(s(""));
+                            ui.set_change_password_status(s(""));
+                            ui.set_change_password_status_error(false);
+                            set_status_feedback(&ui, error_copy().password_changed, false);
+                        }
+                        Err(err) => {
+                            ui.set_change_password_status(err.into());
+                            ui.set_change_password_status_error(true);
+                        }
+                    }
+                },
+            );
+        }
+    });
+
+    wire!(ui, on_change_password_dismissed [], |ui| {
+        ui.set_change_password_current(s(""));
+        ui.set_change_password_new(s(""));
+        ui.set_change_password_repeat(s(""));
+        ui.set_change_password_status(s(""));
+        ui.set_change_password_status_error(false);
+        ui.set_change_password_busy(false);
+    });
+
     // After any selection mutation, refresh the breadcrumb so the title bar matches state.
     // Captures only the weak handle, so clones are `Send` and can ride
     // through worker threads into completion closures.

@@ -273,6 +273,7 @@ export component WhiteNoiseLinux inherits Window {
     in-out property <length> emoji-anchor-x <=> AppState.emoji-anchor-x;
     in-out property <length> emoji-anchor-y <=> AppState.emoji-anchor-y;
     in-out property <[CustomEmojiEntry]> custom-emoji-list <=> AppState.custom-emoji-list;
+    in-out property <int> custom-emoji-remove-confirm-idx <=> AppState.custom-emoji-remove-confirm-idx;
     in-out property <bool> show-custom-emoji-modal <=> AppState.show-custom-emoji-modal;
     in-out property <image> custom-emoji-modal-preview <=> AppState.custom-emoji-modal-preview;
     in-out property <bool> custom-emoji-modal-has-preview <=> AppState.custom-emoji-modal-has-preview;
@@ -331,6 +332,13 @@ export component WhiteNoiseLinux inherits Window {
     in-out property <bool> export-key-busy <=> AppState.export-key-busy;
     in-out property <string> export-key-status <=> AppState.export-key-status;
     in-out property <bool> export-key-status-error <=> AppState.export-key-status-error;
+    in-out property <bool> show-change-password <=> AppState.show-change-password;
+    in-out property <string> change-password-current <=> AppState.change-password-current;
+    in-out property <string> change-password-new <=> AppState.change-password-new;
+    in-out property <string> change-password-repeat <=> AppState.change-password-repeat;
+    in-out property <bool> change-password-busy <=> AppState.change-password-busy;
+    in-out property <string> change-password-status <=> AppState.change-password-status;
+    in-out property <bool> change-password-status-error <=> AppState.change-password-status-error;
     in-out property <bool> debug-enabled <=> AppState.debug-enabled;
     in-out property <string> debug-dump <=> AppState.debug-dump;
     in-out property <[JsonLine]> debug-dump-rows <=> AppState.debug-dump-rows;

@@ -341,6 +341,7 @@ export component ModalField inherits VerticalLayout {
     in property <bool> revealable: false;
     property <bool> revealed: false;
     in property <bool> autofocus: false;
+    in property <bool> error: false;
     in property <length> field-height: root.multiline ? 120px : 38px;
     callback submitted;
     // Forwarded LineInput nav-capture hooks: a list-picker modal sets
@@ -373,8 +374,8 @@ export component ModalField inherits VerticalLayout {
         border-radius: (8px) * Theme.r-scale;
         background: Palette.field;
         border-width: Theme.border-w;
-        border-color: inner.has-focus ? Palette.mint : Palette.field-border;
-        drop-shadow-blur: inner.has-focus && Theme.focus-glow ? 10px : 0px;
+        border-color: root.error ? Palette.danger : (inner.has-focus ? Palette.mint : Palette.field-border);
+        drop-shadow-blur: inner.has-focus && !root.error && Theme.focus-glow ? 10px : 0px;
         drop-shadow-color: inner.has-focus && Theme.focus-glow ? Palette.mint-glow : transparent;
         animate border-color {
             duration: Theme.transition-dur;

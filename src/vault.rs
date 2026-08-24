@@ -334,6 +334,47 @@ impl Vault {
             .map_err(|_| VaultError::WrongPassword)
     }
 
+    /// Re-derive the KDF against the in-memory salt and compare with the held
+    /// key. Same `WrongPassword` surface as unlock, without a disk round-trip.
+    fn verify_password(&self, password: &str) -> Result<(), VaultError> {
+        let check = derive_key(password, &self.salt)?;
+        if !keys_eq(&check, &self.key) {
+            return Err(VaultError::WrongPassword);
+        }
+        Ok(())
+    }
+
+    /// Rotate the vault password. Verifies `old`, derives a fresh salt and key
+    /// from `new`, re-seals the secret map, then re-seals media-cache and
+    /// offline-queue blobs under the new media-cache subkey so they stay
+    /// readable. Must run on the live in-memory vault: a separately opened
+    /// copy would leave the session's key stale and the next `set` would
+    /// overwrite the file under the old password.
+    pub fn change_password(&mut self, old: &str, new: &str) -> Result<(), VaultError> {
+        self.verify_password(old)?;
+        let home = crate::backend::default_home();
+        let mut plains = crate::sealed_store::load_plains(self, &home.join("media-cache"));
+        plains.extend(crate::sealed_store::load_plains(
+            self,
+            &home.join("offline-queue"),
+        ));
+
+        let mut salt = [0u8; SALT_LEN];
+        random_bytes(&mut salt)?;
+        let key = derive_key(new, &salt)?;
+        let prev_salt = self.salt;
+        let prev_key = self.key.clone();
+        self.salt = salt;
+        self.key = key;
+        if let Err(e) = self.persist() {
+            self.salt = prev_salt;
+            self.key = prev_key;
+            return Err(e);
+        }
+        crate::sealed_store::rewrite_plains(self, &plains);
+        Ok(())
+    }
+
     /// Encrypt the current map under a fresh nonce and atomically write the file.
     fn persist(&self) -> Result<(), VaultError> {
         let plaintext =
@@ -413,6 +454,16 @@ fn derive_key_with_params(
 
 fn random_bytes(buf: &mut [u8]) -> Result<(), VaultError> {
     getrandom::getrandom(buf).map_err(|e| VaultError::Crypto(format!("rng: {e}")))
+}
+
+/// Constant-time 32-byte compare so a wrong password doesn't leak through
+/// early-exit on the derived key. Argon2 already dominates the timing.
+fn keys_eq(a: &[u8; 32], b: &[u8; 32]) -> bool {
+    let mut diff = 0u8;
+    for (x, y) in a.iter().zip(b.iter()) {
+        diff |= x ^ y;
+    }
+    diff == 0
 }
 
 /// `(salt, recovered plaintext, derived Argon2id key)` — the parts of an opened
@@ -704,6 +755,50 @@ mod tests {
                 open_with_password(&sealed, "wrong"),
                 Err(VaultError::WrongPassword)
             ));
+        });
+    }
+
+    #[test]
+    fn change_password_rotates_key_and_rewrapping_blobs() {
+        with_temp_home(|| {
+            let mut v = Vault::create("old password").unwrap();
+            v.set(NSEC_KEY, "nsec1example").unwrap();
+
+            // A media-cache blob sealed under the old key must survive the
+            // rotation (otherwise attachments would miss and queued sends
+            // would be evicted).
+            let plaintext = b"cached attachment bytes";
+            let sealed = v.seal_blob(plaintext).unwrap();
+            let cache_path = crate::backend::default_home()
+                .join("media-cache")
+                .join("aa.bin");
+            std::fs::create_dir_all(cache_path.parent().unwrap()).unwrap();
+            std::fs::write(&cache_path, &sealed).unwrap();
+
+            // Wrong current password leaves the file and the in-memory key
+            // untouched.
+            assert!(matches!(
+                v.change_password("nope nope", "new password"),
+                Err(VaultError::WrongPassword)
+            ));
+            assert_eq!(v.nsec().as_deref(), Some("nsec1example"));
+            drop(v);
+            assert!(Vault::open("old password").is_ok());
+
+            let mut v = Vault::open("old password").unwrap();
+            v.change_password("old password", "new password").unwrap();
+            v.set(&account_key("alice"), "deadbeef").unwrap();
+            drop(v);
+
+            assert!(matches!(
+                Vault::open("old password"),
+                Err(VaultError::WrongPassword)
+            ));
+            let v = Vault::open("new password").unwrap();
+            assert_eq!(v.nsec().as_deref(), Some("nsec1example"));
+            assert_eq!(v.get(&account_key("alice")), Some("deadbeef"));
+            let resealed = std::fs::read(&cache_path).unwrap();
+            assert_eq!(v.open_blob(&resealed).unwrap(), plaintext);
         });
     }
 }

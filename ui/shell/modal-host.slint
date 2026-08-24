@@ -15,6 +15,7 @@ import { AccountSwitcherModal } from "../modals/account-switcher-modal.slint";
 import { AddAccountModal } from "../modals/add-account-modal.slint";
 import { RevealNsecModal } from "../modals/reveal-nsec-modal.slint";
 import { ExportKeyModal } from "../modals/export-key-modal.slint";
+import { ChangePasswordModal } from "../modals/change-password-modal.slint";
 import { ImportBackupModal } from "../modals/import-backup-modal.slint";
 import { BackupCreateModal } from "../modals/backup-create-modal.slint";
 import { ForwardPickerModal } from "../modals/forward-chat-picker-modal.slint";
@@ -213,6 +214,21 @@ export component ModalHost inherits Rectangle {
             }
         }
 
+        if AppState.show-change-password: ChangePasswordModal {
+            current-password <=> AppState.change-password-current;
+            new-password <=> AppState.change-password-new;
+            confirm-password <=> AppState.change-password-repeat;
+            primary-busy: AppState.change-password-busy;
+            status: AppState.change-password-status;
+            status-color: AppState.change-password-status-error ? Palette.danger : Palette.text-lo;
+            confirm(current, new-pw, confirm-pw) => {
+                AppState.change-password-submit(current, new-pw, confirm-pw);
+            }
+            dismissed => {
+                AppState.show-change-password = false;
+                AppState.change-password-dismissed();
+            }
+        }
 
         if AppState.show-remote-image-search: RemoteImageSearchModal {
         }
