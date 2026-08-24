@@ -18,6 +18,7 @@ export component PaletteRow inherits Rectangle {
     in property <PaletteAction> action;
     in property <bool> show-group-header: false;
     in property <bool> is-selected: false;
+    in property <bool> interactive: true;
     callback activate();
 
     height: row-stack.preferred-height;
@@ -42,7 +43,7 @@ export component PaletteRow inherits Rectangle {
         // Row body.
         Rectangle {
             height: 36px;
-            background: root.is-selected ? (Theme.selected-inverts-text ? Palette.selected : Palette.bubble-in) : (row-touch.has-hover ? Palette.hover : transparent);
+            background: root.is-selected ? (Theme.selected-inverts-text ? Palette.selected : Palette.bubble-in) : (root.interactive && row-touch.has-hover ? Palette.hover : transparent);
             border-radius: (5px) * Theme.r-scale;
             animate background {
                 duration: 90ms;
@@ -93,6 +94,7 @@ export component PaletteRow inherits Rectangle {
             }
 
             row-touch := TouchArea {
+                enabled: root.interactive;
                 clicked => {
                     root.activate();
                 }
