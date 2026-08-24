@@ -79,13 +79,8 @@ component RelayListEditor inherits Rectangle {
     callback add(string) -> bool;
     callback remove(string);
 
-    property <string> draft: "wss://";
+    property <string> draft: "";
 
-    // Land the caret after the pre-filled scheme so typing continues
-    // straight into the hostname.
-    init => {
-        input.set-cursor(6);
-    }
     changed draft => {
         root.add-error = "";
     }

@@ -95,16 +95,14 @@ pub(crate) fn validate_relay_url(url: &str) -> Result<(), String> {
     if url.is_empty() {
         return Err(copy.relay_url_empty);
     }
-    let rest = ["wss://", "ws://"]
-        .iter()
-        .find(|scheme| {
-            url.get(..scheme.len())
-                .is_some_and(|p| p.eq_ignore_ascii_case(scheme))
-        })
-        .map(|scheme| &url[scheme.len()..]);
-    let Some(rest) = rest else {
+    let Some(rest) = strip_relay_scheme(url) else {
         return Err(copy.relay_url_scheme);
     };
+    // A pasted `wss://wss://relay…` (the field used to pre-fill the scheme)
+    // still has a scheme after the first strip; that is never a hostname.
+    if strip_relay_scheme(rest).is_some() {
+        return Err(copy.relay_url_invalid);
+    }
     let host = rest.split(['/', '?', '#']).next().unwrap_or("");
     if host.is_empty() {
         return Err(copy.relay_url_no_host);
@@ -113,6 +111,14 @@ pub(crate) fn validate_relay_url(url: &str) -> Result<(), String> {
         return Err(copy.relay_url_invalid);
     }
     Ok(())
+}
+
+fn strip_relay_scheme(url: &str) -> Option<&str> {
+    ["wss://", "ws://"].iter().find_map(|scheme| {
+        url.get(..scheme.len())
+            .filter(|p| p.eq_ignore_ascii_case(scheme))
+            .map(|_| &url[scheme.len()..])
+    })
 }
 
 pub(crate) fn relay_sets_differ(current: &[String], booted: &[String]) -> bool {
@@ -179,5 +185,29 @@ mod tests {
         let booted = strings(&["wss://relay-a.example", "wss://relay-b.example"]);
 
         assert!(!relay_sets_differ(&current, &booted));
+    }
+
+    #[test]
+    fn validate_relay_url_accepts_a_plain_host() {
+        assert!(validate_relay_url("wss://relay.example.com").is_ok());
+        assert!(validate_relay_url("ws://relay.example.com").is_ok());
+        assert!(validate_relay_url("WSS://Relay.Example.COM").is_ok());
+    }
+
+    #[test]
+    fn validate_relay_url_rejects_a_nested_scheme() {
+        let copy = error_copy();
+        assert_eq!(
+            validate_relay_url("wss://wss://relay.example.com"),
+            Err(copy.relay_url_invalid.clone())
+        );
+        assert_eq!(
+            validate_relay_url("WSS://WSS://relay.example.com"),
+            Err(copy.relay_url_invalid.clone())
+        );
+        assert_eq!(
+            validate_relay_url("wss://ws://relay.example.com"),
+            Err(copy.relay_url_invalid)
+        );
     }
 }

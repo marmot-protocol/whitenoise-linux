@@ -404,7 +404,6 @@ export component ProfilePage inherits Rectangle {
                         hover-bg: Palette.mint-hi;
                         hover-fg: Palette.bubble-out-fg;
                         outline: Palette.mint;
-                        button-width: 128px;
                         button-height: 36px;
                         clicked => {
                             AppState.start-edit-profile();
@@ -425,7 +424,6 @@ export component ProfilePage inherits Rectangle {
                             hover-bg: Palette.mint-hi;
                             hover-fg: Palette.bubble-out-fg;
                             outline: Palette.mint;
-                            button-width: 96px;
                             button-height: 36px;
                             clicked => {
                                 if (!AppState.profile-busy) {
@@ -436,7 +434,6 @@ export component ProfilePage inherits Rectangle {
 
                         Button {
                             label: @tr("Cancel");
-                            button-width: 80px;
                             button-height: 36px;
                             clicked => {
                                 AppState.cancel-edit-profile();
