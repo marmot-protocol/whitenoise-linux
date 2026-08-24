@@ -9,6 +9,10 @@ import { AppState } from "../shell/app-state.slint";
 // the menu and calls the AppState request-* function, which arms the existing
 // admin-confirm modal.
 export component GroupMemberMenu inherits Rectangle {
+    function edit-nickname() {
+        AppState.member-menu-open = false;
+        AppState.member-nickname-requested(AppState.member-menu-id, AppState.member-menu-name);
+    }
     function promote() {
         AppState.member-menu-open = false;
         AppState.request-promote-admin(AppState.member-menu-id, AppState.member-menu-name);
@@ -30,21 +34,24 @@ export component GroupMemberMenu inherits Rectangle {
         AppState.request-remove-member(AppState.member-menu-id, AppState.member-menu-name);
     }
 
-    // Keyboard navigation. Every row is independently gated, so indices are
+    // Keyboard navigation. "Edit nickname" is always present (index 0); the
+    // admin rows after it are independently gated, so their indices are
     // derived by cascading the shown-count of the rows before each one — the
     // first visible row always lands on 0, matching the contiguous
     // [0, count-1] scheme MessageContextMenu / ChatContextMenu use.
+    property <int> n-nickname: 1;
     property <int> n-promote: AppState.member-menu-can-promote ? 1 : 0;
     property <int> n-transfer: AppState.member-menu-can-transfer ? 1 : 0;
     property <int> n-demote: AppState.member-menu-can-demote ? 1 : 0;
     property <int> n-self-demote: AppState.member-menu-can-self-demote ? 1 : 0;
     property <int> n-remove: AppState.member-menu-can-remove ? 1 : 0;
-    property <int> promote-idx: AppState.member-menu-can-promote ? 0 : -1;
-    property <int> transfer-idx: AppState.member-menu-can-transfer ? root.n-promote : -1;
-    property <int> demote-idx: AppState.member-menu-can-demote ? root.n-promote + root.n-transfer : -1;
-    property <int> self-demote-idx: AppState.member-menu-can-self-demote ? root.n-promote + root.n-transfer + root.n-demote : -1;
-    property <int> remove-idx: AppState.member-menu-can-remove ? root.n-promote + root.n-transfer + root.n-demote + root.n-self-demote : -1;
-    property <int> item-count: root.n-promote + root.n-transfer + root.n-demote + root.n-self-demote + root.n-remove;
+    property <int> nickname-idx: 0;
+    property <int> promote-idx: AppState.member-menu-can-promote ? root.n-nickname : -1;
+    property <int> transfer-idx: AppState.member-menu-can-transfer ? root.n-nickname + root.n-promote : -1;
+    property <int> demote-idx: AppState.member-menu-can-demote ? root.n-nickname + root.n-promote + root.n-transfer : -1;
+    property <int> self-demote-idx: AppState.member-menu-can-self-demote ? root.n-nickname + root.n-promote + root.n-transfer + root.n-demote : -1;
+    property <int> remove-idx: AppState.member-menu-can-remove ? root.n-nickname + root.n-promote + root.n-transfer + root.n-demote + root.n-self-demote : -1;
+    property <int> item-count: root.n-nickname + root.n-promote + root.n-transfer + root.n-demote + root.n-self-demote + root.n-remove;
     property <int> selected-index: 0;
 
     function move-selection(delta: int) {
@@ -61,7 +68,9 @@ export component GroupMemberMenu inherits Rectangle {
         }
     }
     function activate-selected() {
-        if (AppState.member-menu-can-promote && root.selected-index == root.promote-idx) {
+        if (root.selected-index == root.nickname-idx) {
+            root.edit-nickname();
+        } else if (AppState.member-menu-can-promote && root.selected-index == root.promote-idx) {
             root.promote();
         } else if (AppState.member-menu-can-transfer && root.selected-index == root.transfer-idx) {
             root.transfer();
@@ -146,6 +155,18 @@ export component GroupMemberMenu inherits Rectangle {
                 Rectangle {
                     height: 1px;
                     background: Palette.border-2;
+                }
+
+                MenuItem {
+                    glyph: "✎";
+                    label: @tr("Edit nickname");
+                    selected: root.selected-index == root.nickname-idx;
+                    activated => {
+                        root.edit-nickname();
+                    }
+                    hovered => {
+                        root.selected-index = root.nickname-idx;
+                    }
                 }
 
                 MenuItem {

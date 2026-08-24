@@ -485,12 +485,12 @@ pub(crate) fn system_line_text(event: &AppGroupSystemEvent, backend: &Backend) -
     let actor = event
         .actor_account_id_hex
         .as_deref()
-        .map(|id| backend.account_display_name(id))
+        .map(|id| account_display_name_with_nickname(backend, id))
         .unwrap_or_default();
     let subject = event
         .subject_account_id_hex
         .as_deref()
-        .map(|id| backend.account_display_name(id))
+        .map(|id| account_display_name_with_nickname(backend, id))
         .unwrap_or_default();
     system_event_text(event, &actor, &subject)
 }
@@ -1691,7 +1691,7 @@ fn build_reactors(
         .map(|hex| {
             (
                 hex.eq_ignore_ascii_case(my_account_id_hex),
-                backend.account_display_name(hex),
+                account_display_name_with_nickname(backend, hex),
                 hex.clone(),
             )
         })

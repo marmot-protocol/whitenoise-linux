@@ -1272,6 +1272,11 @@ msgctxt "MessageContextMenu"
 msgid "Edit message"
 msgstr "メッセージを編集"
 
+#, fuzzy
+msgctxt "GroupMemberMenu"
+msgid "Edit nickname"
+msgstr "ニックネーム"
+
 msgctxt "ProfilePage"
 msgid "Edit profile"
 msgstr "プロフィールを編集"
@@ -3725,6 +3730,11 @@ msgid "[{} images — click to view]"
 msgstr "[{}枚の画像 — クリックして表示]"
 
 msgctxt "ContactDetail"
+msgid "aka {}"
+msgstr "別名 {}"
+
+#, fuzzy
+msgctxt "GroupMemberRow"
 msgid "aka {}"
 msgstr "別名 {}"
 

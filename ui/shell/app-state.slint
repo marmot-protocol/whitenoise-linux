@@ -1071,6 +1071,14 @@ export global AppState {
     callback set-contact-nickname(string);
     callback nickname-modal-dismissed();
 
+    // Group-member nickname — the same private, local-only rename reached from
+    // a member row's "⋯" menu. `member-nickname-id` is the member's account-id
+    // hex captured when the modal opens; the same NicknameModal is reused, so
+    // `show-nickname-modal` / `nickname-input` double for this flow.
+    in-out property <string> member-nickname-id;
+    callback member-nickname-requested(string, string);
+    callback set-member-nickname(string);
+
     // Contact IDENTITY panel actions (contact detail page). Refresh re-fetches
     // the peer's key package; show-qr opens the QrModal below. Rust owns both.
     callback contact-refresh-key-package();

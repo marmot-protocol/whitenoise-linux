@@ -13,7 +13,9 @@ export component GroupMemberRow inherits Rectangle {
     // action menu at (ax, ay) with the flags describing which actions apply.
     callback request-menu(string, string, bool, bool, bool, bool, bool, length, length);
 
-    property <bool> has-actions: root.data.can-promote || root.data.can-demote || root.data.can-self-demote || root.data.can-transfer || root.data.can-remove;
+    // Every member has at least the nickname action, so the "⋯" trigger is
+    // always live — the admin items inside the menu stay gated per-row.
+    property <bool> has-actions: true;
     property <bool> hot: row-ta.has-hover || menu-ta.has-hover;
 
     height: 48px;
@@ -89,6 +91,18 @@ export component GroupMemberRow inherits Rectangle {
                         font-weight: 700;
                         vertical-alignment: center;
                         horizontal-stretch: 1;
+                        overflow: elide;
+                    }
+
+                    // When a private nickname is shown, keep the published
+                    // name alongside so the identity stays unambiguous.
+                    if root.data.nickname != "": Text {
+                        text: @tr("aka {}", root.data.real-name);
+                        color: Palette.text-lo;
+                        font-size: Theme.fs(10px, 13px);
+                        vertical-alignment: center;
+                        horizontal-stretch: 0;
+                        min-width: 0px;
                         overflow: elide;
                     }
 

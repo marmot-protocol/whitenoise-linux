@@ -1277,6 +1277,11 @@ msgctxt "MessageContextMenu"
 msgid "Edit message"
 msgstr "Modifica messaggio"
 
+#, fuzzy
+msgctxt "GroupMemberMenu"
+msgid "Edit nickname"
+msgstr "Soprannome"
+
 msgctxt "ProfilePage"
 msgid "Edit profile"
 msgstr "Modifica profilo"
@@ -3731,6 +3736,11 @@ msgid "[{} images — click to view]"
 msgstr "[{} immagini — clicca per visualizzare]"
 
 msgctxt "ContactDetail"
+msgid "aka {}"
+msgstr "alias {}"
+
+#, fuzzy
+msgctxt "GroupMemberRow"
 msgid "aka {}"
 msgstr "alias {}"
 

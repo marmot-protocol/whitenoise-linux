@@ -1,5 +1,36 @@
 use crate::*;
 
+/// The private, local-only nickname set for `account_id_hex` ("" when unset).
+/// `Settings` reads are cheap and silent on failure, matching the other
+/// call sites that consult nicknames.
+pub(crate) fn nickname_for(account_id_hex: &str) -> String {
+    Settings::load()
+        .nicknames
+        .get(account_id_hex)
+        .cloned()
+        .unwrap_or_default()
+}
+
+/// Display name for `account_id_hex` with the private nickname taking priority
+/// over the published profile name — the same rule the contacts list applies.
+/// Used for group members, who needn't be contacts.
+pub(crate) fn nickname_or(account_id_hex: &str, published: String) -> String {
+    let nick = nickname_for(account_id_hex);
+    if nick.is_empty() {
+        published
+    } else {
+        nick
+    }
+}
+
+/// Display name for `account_id_hex` with the private nickname taking priority.
+pub(crate) fn account_display_name_with_nickname(
+    backend: &Backend,
+    account_id_hex: &str,
+) -> String {
+    nickname_or(account_id_hex, backend.account_display_name(account_id_hex))
+}
+
 /// Read the profile from the directory cache on the backend runtime (a
 /// sqlite read), then apply it on the UI thread.
 pub(crate) fn populate_profile_async(ui: &WhiteNoiseLinux, backend: &Arc<Backend>) {
@@ -564,8 +595,10 @@ pub(crate) fn build_sender_profiles(
         if r.sender.eq_ignore_ascii_case(my_id) {
             continue;
         }
-        map.entry(r.sender.clone())
-            .or_insert_with(|| backend.account_name_and_picture(&r.sender));
+        map.entry(r.sender.clone()).or_insert_with(|| {
+            let (name, picture) = backend.account_name_and_picture(&r.sender);
+            (nickname_or(&r.sender, name), picture)
+        });
     }
     map
 }

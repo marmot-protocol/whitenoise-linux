@@ -124,6 +124,7 @@ pub(crate) fn wire_groups(ui: &WhiteNoiseLinux, cx: &Cx) {
         backend_cell,
         group_ids,
         archived_group_ids,
+        settings_cell,
         ..
     } = cx.clone();
     ui.global::<AppState>().on_add_member({
@@ -261,6 +262,59 @@ pub(crate) fn wire_groups(ui: &WhiteNoiseLinux, cx: &Cx) {
             error_copy().member_removed,
             move |b, hex| b.remove_member(hex, &member_id).map(|_| ()),
         );
+    });
+
+    // Member "⋯" → "Edit nickname": open the shared NicknameModal with the
+    // member's current nickname prefilled and their published name as the
+    // placeholder. The account id rides on `member-nickname-id` so the save
+    // path knows which key to write (and the modal's dismiss clears it).
+    ui.global::<AppState>().on_member_nickname_requested({
+        let weak = ui.as_weak();
+        move |member_id, display_name| {
+            let Some(ui) = weak.upgrade() else { return };
+            ui.set_member_nickname_id(member_id.clone());
+            ui.set_nickname_input(nickname_for(member_id.as_str()).into());
+            ui.set_nickname_contact_name(display_name);
+            ui.set_show_nickname_modal(true);
+        }
+    });
+    ui.global::<AppState>().on_set_member_nickname({
+        let weak = ui.as_weak();
+        let settings_cell = settings_cell.clone();
+        let backend_cell = backend_cell.clone();
+        let group_ids = group_ids.clone();
+        move |nick| {
+            let Some(ui) = weak.upgrade() else { return };
+            let member_id = ui.get_member_nickname_id().to_string();
+            if member_id.is_empty() {
+                return;
+            }
+            let nick = nick.trim().to_string();
+            {
+                let mut st = settings_cell.borrow_mut();
+                if nick.is_empty() {
+                    st.nicknames.remove(member_id.as_str());
+                } else {
+                    st.nicknames.insert(member_id.clone(), nick);
+                }
+                st.save();
+                mention_set_nicknames(&st.nicknames);
+            }
+            ui.set_member_nickname_id(s(""));
+            ui.set_show_nickname_modal(false);
+            ui.set_nickname_input(s(""));
+            // Repaint every surface the name touches: the members panel and
+            // the chat's message rows (sender names, system lines, reactors,
+            // and mention chips all resolve through the same maps).
+            if let Some(b) = backend_cell.lock().unwrap().clone() {
+                let idx = ui.get_active_chat() as usize;
+                if let Some(group_hex) = group_ids.lock().unwrap().get(idx).cloned() {
+                    push_group_members_to_ui_async(&ui, &b, &group_hex);
+                }
+            }
+            ui.global::<AppState>()
+                .invoke_chat_selected(ui.get_active_chat());
+        }
     });
     ui.global::<AppState>().on_leave_group_at({
         let weak = ui.as_weak();

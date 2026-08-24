@@ -1260,7 +1260,15 @@ export struct EditVersion {
 }
 
 export struct GroupMember {
+    // Resolved display name: the private nickname when set, else the
+    // published name (same rule as the contacts list).
     name: string,
+    // The member's published (kind-0) name, kept alongside `name` so the row
+    // can disambiguate with an "aka …" line when a nickname is shown.
+    real-name: string,
+    // The private, local-only nickname ("" when unset) — prefill for the
+    // nickname editor.
+    nickname: string,
     npub-short: string,
     av-a: color,
     av-b: color,

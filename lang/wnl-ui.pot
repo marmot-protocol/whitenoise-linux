@@ -1278,6 +1278,10 @@ msgctxt "MessageContextMenu"
 msgid "Edit message"
 msgstr ""
 
+msgctxt "GroupMemberMenu"
+msgid "Edit nickname"
+msgstr ""
+
 msgctxt "ProfilePage"
 msgid "Edit profile"
 msgstr ""
@@ -3729,6 +3733,10 @@ msgid "[{} images — click to view]"
 msgstr ""
 
 msgctxt "ContactDetail"
+msgid "aka {}"
+msgstr ""
+
+msgctxt "GroupMemberRow"
 msgid "aka {}"
 msgstr ""
 

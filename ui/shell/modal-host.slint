@@ -156,7 +156,13 @@ export component ModalHost inherits Rectangle {
             nickname-text <=> AppState.nickname-input;
             contact-name: AppState.nickname-contact-name;
             save(n) => {
-                AppState.set-contact-nickname(n);
+                // The member flow arms `member-nickname-id`; otherwise the
+                // modal acts on the active contact.
+                if (AppState.member-nickname-id != "") {
+                    AppState.set-member-nickname(n);
+                } else {
+                    AppState.set-contact-nickname(n);
+                }
             }
             dismissed => {
                 AppState.nickname-modal-dismissed();

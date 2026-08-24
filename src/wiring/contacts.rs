@@ -212,6 +212,9 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     wire!(ui, on_nickname_modal_dismissed [], |ui| {
         ui.set_show_nickname_modal(false);
         ui.set_nickname_input(s(""));
+        // Clear the member flow's key (no-op for the contact flow) so the
+        // next open always starts from a known owner.
+        ui.set_member_nickname_id(s(""));
     });
     ui.global::<AppState>().on_set_contact_nickname({
         let weak = ui.as_weak();
@@ -246,6 +249,7 @@ pub(crate) fn wire_contacts(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
             contacts.set_row_data(idx, row);
             ui.set_show_nickname_modal(false);
             ui.set_nickname_input(s(""));
+            ui.set_member_nickname_id(s(""));
             refresh();
         }
     });

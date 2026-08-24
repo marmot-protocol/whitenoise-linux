@@ -1435,6 +1435,16 @@ pub(crate) fn group_member_from(
     {
         name = label.clone();
     }
+    // A private nickname wins over the published name for display, exactly as
+    // on the contacts list; the published name stays on the row for the "aka"
+    // disambiguation line and the avatar key.
+    let nickname = nickname_for(&record.member_id_hex);
+    let real_name = name.clone();
+    let display = if nickname.is_empty() {
+        name.clone()
+    } else {
+        nickname.clone()
+    };
     let npub =
         npub_for_account_id(&record.member_id_hex).unwrap_or_else(|_| record.member_id_hex.clone());
     let (a, b, init) = avatar_for(&name);
@@ -1446,7 +1456,9 @@ pub(crate) fn group_member_from(
     // row paints with the image on the first frame (no flash-of-initials).
     let (picture_img, has_picture) = bind_cached_picture(picture_url.as_deref());
     let row = GroupMember {
-        name: s(&name),
+        name: s(&display),
+        real_name: s(&real_name),
+        nickname: s(&nickname),
         npub_short: s(&shorten_npub(&npub)),
         av_a: a,
         av_b: b,
