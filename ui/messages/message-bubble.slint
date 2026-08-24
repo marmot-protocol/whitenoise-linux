@@ -727,7 +727,7 @@ export component MessageBubble inherits Rectangle {
     // it). Sits on the corner away from the tail; never clipped (the bubble root
     // doesn't clip).
     if root.msg.effect-id > 0: Rectangle {
-        x: root.msg.outgoing ? -7px : parent.width - self.width + 7px;
+        x: root.hug-right ? -7px : parent.width - self.width + 7px;
         y: -7px;
         width: 20px;
         height: 20px;

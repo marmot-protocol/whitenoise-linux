@@ -108,6 +108,8 @@ export component ContactListItem inherits Rectangle {
                     font-weight: 700;
                     font-family: Theme.font;
                     vertical-alignment: center;
+                    horizontal-stretch: 1;
+                    overflow: elide;
                 }
 
                 if root.data.verified: CheckMark {

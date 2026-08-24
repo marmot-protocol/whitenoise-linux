@@ -131,6 +131,7 @@ export component Button inherits Rectangle {
     property <bool> alt-fired: false;
     touch := TouchArea {
         enabled: root.enabled;
+        mouse-cursor: pointer;
         pointer-event(ev) => {
             if ev.button == PointerEventButton.right {
                 if ev.kind == PointerEventKind.down {

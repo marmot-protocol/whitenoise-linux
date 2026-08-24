@@ -30,6 +30,7 @@ export component KpInspectorPane inherits DetailPage {
             alignment: start;
             Button {
                 label: AppState.kp-inspector-busy ? @tr("Loading…") : @tr("Refresh");
+                enabled: !AppState.kp-inspector-busy;
                 clicked => {
                     if (!AppState.kp-inspector-busy) {
                         AppState.kp-inspector-refresh();
@@ -89,6 +90,7 @@ export component KpInspectorPane inherits DetailPage {
                 alignment: center;
                 Button {
                     label: AppState.kp-peer-busy ? @tr("Fetching…") : @tr("Inspect");
+                    enabled: !AppState.kp-peer-busy;
                     clicked => {
                         if (!AppState.kp-peer-busy && root.peer-draft != "") {
                             AppState.kp-inspect-peer(root.peer-draft);

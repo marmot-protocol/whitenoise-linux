@@ -72,12 +72,15 @@ export component ChatHeader inherits Rectangle {
             HorizontalLayout {
                 spacing: 10px;
                 alignment: start;
+                horizontal-stretch: 1;
                 Text {
                     text: root.chat.name;
                     color: Palette.text-hi;
                     font-size: Theme.fs(14px, 18px);
                     font-weight: 700;
                     vertical-alignment: center;
+                    horizontal-stretch: 1;
+                    overflow: elide;
                 }
 
                 // The badge now surfaces the chat's MLS group id. Tap it to

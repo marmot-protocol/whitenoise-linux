@@ -46,7 +46,7 @@ component RelayRow inherits Rectangle {
             MicroButton {
                 label: "";
                 // Icon-only and destructive, so it needs a spoken name.
-                a11y-label: @tr("Remove relay");
+                a11y-label: @tr("Remove relay {}", root.url);
                 focusable: true;
                 pad-left: 8px;
                 pad-right: 8px;
@@ -223,7 +223,7 @@ export component NetworkPane inherits DetailPage {
                         height: 10px;
                         y: (parent.height - self.height) / 2;
                         border-radius: (5px) * Theme.r-scale;
-                        background: AppState.network-connected > 0 ? Palette.mint : (AppState.network-total > 0 ? Palette.warning : Palette.text-vlo);
+                        background: AppState.network-total == 0 ? Palette.text-vlo : (AppState.network-connected == AppState.network-total ? Palette.mint : Palette.warning);
                     }
 
                     VerticalLayout {

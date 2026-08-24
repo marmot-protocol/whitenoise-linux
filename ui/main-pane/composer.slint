@@ -252,7 +252,7 @@ export component Composer inherits Rectangle {
                         // Right-click / long-press arms a message effect — only
                         // meaningful when there's actually a message to send.
                         alt-action => {
-                            if (root.can-send) {
+                            if (root.can-send && !root.is-editing) {
                                 root.show-effects = !root.show-effects;
                             }
                         }
@@ -330,7 +330,7 @@ export component Composer inherits Rectangle {
     // Badge: the chosen effect's emoji over the top-right of Send, when an
     // effect is armed. Lives at the composer root (not in the Button's layout
     // slot, which ignores explicit x/y) and floats over the button corner.
-    if EffectCatalog.selected > 0 && root.can-send && !root.chat-request: Rectangle {
+    if EffectCatalog.selected > 0 && root.can-send && !root.chat-request && !root.is-editing: Rectangle {
         x: send-button.absolute-position.x - root.absolute-position.x + send-button.width - self.width + 4px;
         y: send-button.absolute-position.y - root.absolute-position.y - 4px;
         width: 18px;

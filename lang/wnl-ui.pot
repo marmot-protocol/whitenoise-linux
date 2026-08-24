@@ -122,6 +122,12 @@ msgid_plural "{n} members"
 msgstr[0] ""
 msgstr[1] ""
 
+msgctxt "GlobalSearchModal"
+msgid "1 result"
+msgid_plural "{n} results"
+msgstr[0] ""
+msgstr[1] ""
+
 msgctxt "GeneralPane"
 msgid "12-hour"
 msgstr ""
@@ -1049,10 +1055,6 @@ msgctxt "StartNewChatModal"
 msgid "Create"
 msgstr ""
 
-msgctxt "AdvancedPane"
-msgid "Create and send group audit log files. Applies immediately."
-msgstr ""
-
 msgctxt "BackupCreateModal"
 msgid "Create backup"
 msgstr ""
@@ -1927,6 +1929,10 @@ msgctxt "MentionsInbox"
 msgid "Mentions"
 msgstr ""
 
+msgctxt "MentionsIcon"
+msgid "Mentions inbox"
+msgstr ""
+
 msgctxt "StoragePane"
 msgid "Merge the accounts from a backup file into this install."
 msgstr ""
@@ -2610,7 +2616,7 @@ msgstr ""
 
 #. Icon-only and destructive, so it needs a spoken name.
 msgctxt "RelayRow"
-msgid "Remove relay"
+msgid "Remove relay {}"
 msgstr ""
 
 msgctxt "AccountSwitcherModal"
@@ -3024,6 +3030,10 @@ msgstr ""
 
 msgctxt "NotificationsPane"
 msgid "Send test"
+msgstr ""
+
+msgctxt "AdvancedPane"
+msgid "Sends group audit log files to the Goggles audit endpoint. Applies immediately."
 msgstr ""
 
 msgctxt "month"

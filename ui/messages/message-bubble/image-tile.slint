@@ -25,7 +25,7 @@ export component ImageTile inherits Rectangle {
         spacing: 4px;
         Text {
             text: root.msg.att-loading ? "…" : (root.msg.att-failed ? "!" : "🖼");
-            color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
+            color: root.msg.att-failed ? (root.msg.outgoing ? Palette.danger-on-bubble : Palette.danger) : (root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid);
             font-size: Theme.fs(28px, 34px);
             font-family: Theme.font;
             horizontal-alignment: center;
@@ -33,11 +33,11 @@ export component ImageTile inherits Rectangle {
 
         Text {
             text: root.msg.att-loading ? @tr("decrypting…") : (root.msg.att-failed ? @tr("tap to retry") : @tr("tap to load"));
-            color: root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid;
+            color: root.msg.att-failed ? (root.msg.outgoing ? Palette.danger-on-bubble : Palette.danger) : (root.msg.outgoing ? Palette.bubble-out-fg : Palette.text-mid);
             font-size: Theme.fs(10px, 14px);
             font-family: Theme.font;
             horizontal-alignment: center;
-            opacity: 0.85;
+            opacity: root.msg.att-failed ? 1.0 : 0.85;
         }
     }
     TouchArea {

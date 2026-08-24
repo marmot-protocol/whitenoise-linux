@@ -111,7 +111,7 @@ export component GlobalSearchModal inherits Modal {
                     VerticalLayout {
                         alignment: center;
                         Text {
-                            text: root.searching ? @tr("Searching…") : (root.query == "" ? "" : root.results.length);
+                            text: root.searching ? @tr("Searching…") : (root.query == "" ? "" : @tr("1 result" | "{n} results" % root.results.length));
                             color: Palette.text-vlo;
                             font-size: Theme.fs(10px, 12px);
                             font-family: Theme.font;

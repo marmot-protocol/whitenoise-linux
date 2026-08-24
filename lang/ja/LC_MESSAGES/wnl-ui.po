@@ -118,6 +118,11 @@ msgid "1 member"
 msgid_plural "{n} members"
 msgstr[0] "{n} メンバー"
 
+msgctxt "GlobalSearchModal"
+msgid "1 result"
+msgid_plural "{n} results"
+msgstr[0] "{n} 件"
+
 msgctxt "GeneralPane"
 msgid "12-hour"
 msgstr "12時間表示"
@@ -1044,10 +1049,6 @@ msgctxt "StartNewChatModal"
 msgid "Create"
 msgstr "作成"
 
-msgctxt "AdvancedPane"
-msgid "Create and send group audit log files. Applies immediately."
-msgstr "グループの監査ログファイルを作成して送信します。すぐに適用されます。"
-
 msgctxt "BackupCreateModal"
 msgid "Create backup"
 msgstr "バックアップを作成"
@@ -1922,6 +1923,11 @@ msgctxt "MentionsInbox"
 msgid "Mentions"
 msgstr "メンション"
 
+#, fuzzy
+msgctxt "MentionsIcon"
+msgid "Mentions inbox"
+msgstr "メンション"
+
 msgctxt "StoragePane"
 msgid "Merge the accounts from a backup file into this install."
 msgstr "バックアップファイルのアカウントをこのインストールに統合します。"
@@ -2606,8 +2612,8 @@ msgstr "リレーを削除"
 
 #. Icon-only and destructive, so it needs a spoken name.
 msgctxt "RelayRow"
-msgid "Remove relay"
-msgstr "リレーを削除"
+msgid "Remove relay {}"
+msgstr "リレー {} を削除"
 
 msgctxt "AccountSwitcherModal"
 msgid "Remove this account?"
@@ -3022,6 +3028,10 @@ msgstr "メッセージを送信"
 msgctxt "NotificationsPane"
 msgid "Send test"
 msgstr "テスト送信"
+
+msgctxt "AdvancedPane"
+msgid "Sends group audit log files to the Goggles audit endpoint. Applies immediately."
+msgstr "グループの監査ログファイルを Goggles の監査エンドポイントに送信します。すぐに適用されます。"
 
 msgctxt "month"
 msgid "Sep"

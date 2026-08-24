@@ -80,6 +80,7 @@ export component Toggle inherits Rectangle {
 
         TouchArea {
             enabled: root.enabled;
+            mouse-cursor: pointer;
             clicked => {
                 root.flip();
             }

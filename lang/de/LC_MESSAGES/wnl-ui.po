@@ -121,6 +121,12 @@ msgid_plural "{n} members"
 msgstr[0] "1 Mitglied"
 msgstr[1] "{n} Mitglieder"
 
+msgctxt "GlobalSearchModal"
+msgid "1 result"
+msgid_plural "{n} results"
+msgstr[0] "1 Ergebnis"
+msgstr[1] "{n} Ergebnisse"
+
 msgctxt "GeneralPane"
 msgid "12-hour"
 msgstr "12-Stunden"
@@ -1048,10 +1054,6 @@ msgctxt "StartNewChatModal"
 msgid "Create"
 msgstr "Erstellen"
 
-msgctxt "AdvancedPane"
-msgid "Create and send group audit log files. Applies immediately."
-msgstr "Gruppen-Audit-Protokolldateien erstellen und senden. Wird sofort angewendet."
-
 msgctxt "BackupCreateModal"
 msgid "Create backup"
 msgstr "Backup erstellen"
@@ -1926,6 +1928,11 @@ msgctxt "MentionsInbox"
 msgid "Mentions"
 msgstr "Erwähnungen"
 
+#, fuzzy
+msgctxt "MentionsIcon"
+msgid "Mentions inbox"
+msgstr "Erwähnungen"
+
 msgctxt "StoragePane"
 msgid "Merge the accounts from a backup file into this install."
 msgstr "Füge die Konten aus einer Backup-Datei in diese Installation ein."
@@ -2610,8 +2617,8 @@ msgstr "Relay entfernen"
 
 #. Icon-only and destructive, so it needs a spoken name.
 msgctxt "RelayRow"
-msgid "Remove relay"
-msgstr "Relay entfernen"
+msgid "Remove relay {}"
+msgstr "Relay {} entfernen"
 
 msgctxt "AccountSwitcherModal"
 msgid "Remove this account?"
@@ -3026,6 +3033,10 @@ msgstr "Nachricht senden"
 msgctxt "NotificationsPane"
 msgid "Send test"
 msgstr "Test senden"
+
+msgctxt "AdvancedPane"
+msgid "Sends group audit log files to the Goggles audit endpoint. Applies immediately."
+msgstr "Sendet Gruppen-Audit-Protokolldateien an den Goggles-Audit-Endpunkt. Wird sofort angewendet."
 
 msgctxt "month"
 msgid "Sep"
