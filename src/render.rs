@@ -1143,10 +1143,18 @@ pub(crate) fn detect_mention(text: &str, cursor: usize) -> Option<(usize, String
 }
 
 /// Filter the open chat's members by a mention query (matches display name,
-/// short npub, or full npub; an empty query lists everyone). Capped at 50.
-pub(crate) fn filter_mention_candidates(ui: &WhiteNoiseLinux, query: &str) -> Vec<GroupMember> {
+/// short npub, or full npub; an empty query lists everyone), ranked by each
+/// member's most recent message in the open chat (most recent first, members
+/// with no known activity keep their original relative order at the end).
+/// Capped at 50 after ranking.
+pub(crate) fn filter_mention_candidates(
+    ui: &WhiteNoiseLinux,
+    query: &str,
+    group_hex: &str,
+) -> Vec<GroupMember> {
     let q = query.to_lowercase();
-    ui.get_chat_members()
+    let mut cands: Vec<GroupMember> = ui
+        .get_chat_members()
         .iter()
         .filter(|m| {
             if q.is_empty() {
@@ -1161,8 +1169,10 @@ pub(crate) fn filter_mention_candidates(ui: &WhiteNoiseLinux, query: &str) -> Ve
                 .map(|n| n.to_lowercase().contains(&q))
                 .unwrap_or(false)
         })
-        .take(50)
-        .collect()
+        .collect();
+    cands.sort_by_key(|m| std::cmp::Reverse(mention_last_activity(group_hex, m.member_id.as_str())));
+    cands.truncate(50);
+    cands
 }
 
 /// Splice the chosen member's npub over the active `@token` and place the caret

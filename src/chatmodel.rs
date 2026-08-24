@@ -1212,6 +1212,7 @@ pub(crate) fn build_one_message_row(
     backend: &Backend,
 ) -> ChatMessage {
     mention_render_group(group_hex);
+    mention_note_activity(group_hex, all_records);
     // Group-system rows (kind-1210) render as centered system lines and skip the
     // whole reaction/edit/attachment pipeline below.
     if let Some(ev) = backend::group_system_event(record) {
@@ -1463,6 +1464,7 @@ pub(crate) fn build_message_rows(
     overlay: Option<&PendingState>,
 ) -> (Vec<ChatMessage>, Vec<GroupKey>) {
     mention_render_group(group_hex);
+    mention_note_activity(group_hex, msgs);
     let RowState {
         reactions,
         edits,

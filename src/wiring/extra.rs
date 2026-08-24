@@ -1124,12 +1124,18 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
     // span [at, caret) of the token from a keystroke to its commit.
     let mention_span: Rc<RefCell<Option<(usize, usize)>>> = Rc::new(RefCell::new(None));
 
-    wire!(ui, on_composer_input_changed[mention_span], |ui, cursor| {
+    wire!(ui, on_composer_input_changed[mention_span, group_ids], |ui, cursor| {
         let draft = ui.get_composer_draft().to_string();
         let cursor = (cursor.max(0) as usize).min(draft.len());
         match detect_mention(&draft, cursor) {
             Some((at, query)) => {
-                let cands = filter_mention_candidates(&ui, &query);
+                let group_hex = group_ids
+                    .lock()
+                    .unwrap()
+                    .get(ui.get_active_chat() as usize)
+                    .cloned()
+                    .unwrap_or_default();
+                let cands = filter_mention_candidates(&ui, &query, &group_hex);
                 if cands.is_empty() {
                     *mention_span.borrow_mut() = None;
                     ui.set_mention_active(false);
