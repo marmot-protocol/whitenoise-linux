@@ -154,10 +154,6 @@ msgctxt "AccountSwitcherList"
 msgid "ACTIVE"
 msgstr ""
 
-msgctxt "ChatListPanel"
-msgid "AGO"
-msgstr ""
-
 msgctxt "StatusBar"
 msgid "AGO"
 msgstr ""
@@ -225,10 +221,6 @@ msgid "Accounts"
 msgstr ""
 
 msgctxt "AppShell"
-msgid "Accounts"
-msgstr ""
-
-msgctxt "LeftRail"
 msgid "Accounts"
 msgstr ""
 
@@ -379,10 +371,6 @@ msgctxt "ChatHeader"
 msgid "Archive"
 msgstr ""
 
-msgctxt "LeftRail"
-msgid "Archive"
-msgstr ""
-
 msgctxt "ContactDetail"
 msgid "Archive chat"
 msgstr ""
@@ -490,10 +478,6 @@ msgstr ""
 
 msgctxt "MainPane"
 msgid "CHAT REQUEST"
-msgstr ""
-
-msgctxt "ChatListPanel"
-msgid "CHATS"
 msgstr ""
 
 msgctxt "StatusBar"
@@ -630,10 +614,6 @@ msgctxt "AppShell"
 msgid "Chats"
 msgstr ""
 
-msgctxt "LeftRail"
-msgid "Chats"
-msgstr ""
-
 msgctxt "ArchivedPage"
 msgid "Chats you archive are kept here, out of your main list."
 msgstr ""
@@ -723,6 +703,10 @@ msgctxt "JsonView"
 msgid "Collapse"
 msgstr ""
 
+msgctxt "AppShell"
+msgid "Collapse chat panel"
+msgstr ""
+
 msgctxt "KeysPage"
 msgid "Configure key-package relays first."
 msgstr ""
@@ -776,10 +760,6 @@ msgid "Contacting relays…"
 msgstr ""
 
 msgctxt "AppShell"
-msgid "Contacts"
-msgstr ""
-
-msgctxt "LeftRail"
 msgid "Contacts"
 msgstr ""
 
@@ -1337,6 +1317,10 @@ msgctxt "JsonView"
 msgid "Expand"
 msgstr ""
 
+msgctxt "AppShell"
+msgid "Expand chat panel"
+msgstr ""
+
 msgctxt "KeysPage"
 msgid "Export"
 msgstr ""
@@ -1719,10 +1703,6 @@ msgctxt "KeyboardShortcutsModal"
 msgid "Keyboard shortcuts"
 msgstr ""
 
-msgctxt "LeftRail"
-msgid "Keys"
-msgstr ""
-
 msgctxt "KeysPage"
 msgid "Keys & identity"
 msgstr ""
@@ -1999,10 +1979,6 @@ msgctxt "AppShell"
 msgid "NO RELAYS"
 msgstr ""
 
-msgctxt "ChatListPanel"
-msgid "NO RELAYS"
-msgstr ""
-
 msgctxt "LoginScreen"
 msgid "NSEC"
 msgstr ""
@@ -2029,10 +2005,6 @@ msgid "Network & relays"
 msgstr ""
 
 msgctxt "GetStartedScreen"
-msgid "New chat"
-msgstr ""
-
-msgctxt "LeftRail"
 msgid "New chat"
 msgstr ""
 
@@ -2402,10 +2374,6 @@ msgctxt "AboutPane"
 msgid "Private material is stored on this device, encrypted with your password."
 msgstr ""
 
-msgctxt "ProfileTile"
-msgid "Profile"
-msgstr ""
-
 msgctxt "KpCard"
 msgid "Proposals"
 msgstr ""
@@ -2480,10 +2448,6 @@ msgid "RAW EVENTS"
 msgstr ""
 
 msgctxt "AppShell"
-msgid "RELAYS"
-msgstr ""
-
-msgctxt "ChatListPanel"
 msgid "RELAYS"
 msgstr ""
 
@@ -2596,6 +2560,10 @@ msgctxt "ConfirmFlows"
 msgid "Remove"
 msgstr ""
 
+msgctxt "SettingsPage"
+msgid "Remove"
+msgstr ""
+
 msgctxt "StagedChips"
 msgid "Remove"
 msgstr ""
@@ -2671,6 +2639,10 @@ msgstr ""
 
 msgctxt "GeneralPane"
 msgid "Remove {} reaction"
+msgstr ""
+
+msgctxt "SettingsPage"
+msgid "Remove {}?"
 msgstr ""
 
 msgctxt "ErrorCopy"
@@ -2777,10 +2749,6 @@ msgctxt "KeysPage"
 msgid "Reveal private key (nsec)"
 msgstr ""
 
-msgctxt "DeviceRow"
-msgid "Revoke"
-msgstr ""
-
 msgctxt "KeysPage"
 msgid "Rotate"
 msgstr ""
@@ -2857,19 +2825,11 @@ msgctxt "AppShell"
 msgid "SYNCED"
 msgstr ""
 
-msgctxt "ChatListPanel"
-msgid "SYNCED"
-msgstr ""
-
 msgctxt "StatusBar"
 msgid "SYNCED"
 msgstr ""
 
 msgctxt "AppShell"
-msgid "SYNCING…"
-msgstr ""
-
-msgctxt "ChatListPanel"
 msgid "SYNCING…"
 msgstr ""
 
@@ -2982,10 +2942,6 @@ msgctxt "AppShell"
 msgid "Search archived chats…"
 msgstr ""
 
-msgctxt "ChatListPanel"
-msgid "Search chats…"
-msgstr ""
-
 msgctxt "ForwardPickerModal"
 msgid "Search chats…"
 msgstr ""
@@ -3083,10 +3039,6 @@ msgid "Set label…"
 msgstr ""
 
 msgctxt "AppShell"
-msgid "Settings"
-msgstr ""
-
-msgctxt "LeftRail"
 msgid "Settings"
 msgstr ""
 
@@ -3624,6 +3576,10 @@ msgstr ""
 
 msgctxt "ConfirmFlows"
 msgid "You will stop receiving new messages from this group. The chat moves to Archive."
+msgstr ""
+
+msgctxt "SettingsPage"
+msgid "You'll need to re-upload the image and retype the shortcode to bring it back."
 msgstr ""
 
 msgctxt "ConfirmFlows"
