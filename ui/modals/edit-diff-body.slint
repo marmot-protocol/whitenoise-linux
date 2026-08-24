@@ -1,0 +1,17 @@
+import { Theme, EditDiffLine } from "../tokens.slint";
+import { EditDiffRunCell } from "edit-diff-run.slint";
+
+// Wrapped diff lines for one edit-history entry.
+export component EditDiffBody inherits VerticalLayout {
+    in property <[EditDiffLine]> lines;
+    spacing: 4px;
+
+    for line in root.lines: HorizontalLayout {
+        spacing: 0;
+        alignment: start;
+        for r in line.runs: EditDiffRunCell {
+            text: r.text;
+            kind: r.kind;
+        }
+    }
+}

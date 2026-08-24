@@ -39,6 +39,10 @@ msgctxt "group system line, %1 = actor, %2 = former admin"
 msgid "%1 dismissed %2 as admin"
 msgstr "%1が%2の管理者権限を解除しました"
 
+msgctxt "EditHistoryModal"
+msgid "%1 edits"
+msgstr "%1件の編集"
+
 msgctxt "group system line, %1 = the member who left"
 msgid "%1 left the group"
 msgstr "%1がグループを退出しました"
@@ -103,6 +107,10 @@ msgstr "(kind-10051 リレーリストに公開)"
 msgctxt "MentionPicker"
 msgid "(you)"
 msgstr "(あなた)"
+
+msgctxt "EditHistoryModal"
+msgid "1 edit"
+msgstr "1件の編集"
 
 msgctxt "ChatHeader"
 msgid "1 member"
@@ -1110,6 +1118,10 @@ msgctxt "KpCard"
 msgid "Credentials"
 msgstr ""
 
+msgctxt "EditHistoryRow"
+msgid "Current"
+msgstr "現在"
+
 msgctxt "CustomEmojiModal"
 msgid "Custom Emoji"
 msgstr "カスタム絵文字"
@@ -1252,6 +1264,10 @@ msgstr "編集中 · 保存時にリレーへ配信"
 msgctxt "ExportKeyModal"
 msgid "ENCRYPTED KEY (NCRYPTSEC)"
 msgstr "暗号化キー(NCRYPTSEC)"
+
+msgctxt "EditHistoryRow"
+msgid "Edit %1"
+msgstr "編集 %1"
 
 msgctxt "EditHistoryModal"
 msgid "Edit history"
@@ -2300,6 +2316,10 @@ msgstr "このリンクを開きますか?"
 msgctxt "ReactionChip"
 msgid "Open {}'s profile"
 msgstr "{}のプロフィールを開く"
+
+msgctxt "EditHistoryRow"
+msgid "Original"
+msgstr "原文"
 
 #, fuzzy
 msgctxt "MessageBody"

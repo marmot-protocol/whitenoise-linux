@@ -25,6 +25,8 @@ mod backend;
 mod backup;
 mod blossom;
 mod deeplink;
+mod edit_diff;
+pub(crate) use edit_diff::*;
 mod fsperm;
 mod image_search;
 mod instance_lock;

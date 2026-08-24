@@ -188,6 +188,7 @@ export global AppState {
     // Edit-history modal — populated + shown when a message body's "(edited)" label
     // is tapped. Read-only; visible to anyone in the chat.
     in-out property <[EditVersion]> edit-history;
+    in-out property <int> edit-history-count;
     in-out property <bool> edit-history-open: false;
     callback send-message(string);
     callback cancel-reply();

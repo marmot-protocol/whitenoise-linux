@@ -1247,12 +1247,30 @@ export struct ChatMessage {
     unread-divider: bool,
 }
 
-// One entry in a message's edit history (original + each subsequent edit),
-// rendered by the edit-history modal. `label` is "Original" / "Edited".
-export struct EditVersion {
-    label: string,
+// One inline run inside an edit-history diff line. `kind`: 0 = unchanged,
+// 1 = removed (strikethrough), 2 = added (accent highlight).
+export struct EditDiffRun {
     text: string,
+    kind: int,
+}
+
+// One wrapped line of an edit-history diff block.
+export struct EditDiffLine {
+    runs: [EditDiffRun],
+}
+
+// One entry in a message's edit history (original + each subsequent edit),
+// rendered by the edit-history modal timeline. When `show-full` is true the
+// row shows `full-text`; otherwise it renders `diff-lines` (change vs the
+// previous version).
+export struct EditVersion {
     stamp: string,
+    is-original: bool,
+    is-current: bool,
+    edit-number: int,
+    show-full: bool,
+    full-text: string,
+    diff-lines: [EditDiffLine],
 }
 
 export struct GroupMember {

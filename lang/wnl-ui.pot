@@ -40,6 +40,10 @@ msgctxt "group system line, %1 = actor, %2 = former admin"
 msgid "%1 dismissed %2 as admin"
 msgstr ""
 
+msgctxt "EditHistoryModal"
+msgid "%1 edits"
+msgstr ""
+
 msgctxt "group system line, %1 = the member who left"
 msgid "%1 left the group"
 msgstr ""
@@ -102,6 +106,10 @@ msgstr ""
 
 msgctxt "MentionPicker"
 msgid "(you)"
+msgstr ""
+
+msgctxt "EditHistoryModal"
+msgid "1 edit"
 msgstr ""
 
 msgctxt "ChatHeader"
@@ -1115,6 +1123,10 @@ msgctxt "KpCard"
 msgid "Credentials"
 msgstr ""
 
+msgctxt "EditHistoryRow"
+msgid "Current"
+msgstr ""
+
 msgctxt "CustomEmojiModal"
 msgid "Custom Emoji"
 msgstr ""
@@ -1256,6 +1268,10 @@ msgstr ""
 
 msgctxt "ExportKeyModal"
 msgid "ENCRYPTED KEY (NCRYPTSEC)"
+msgstr ""
+
+msgctxt "EditHistoryRow"
+msgid "Edit %1"
 msgstr ""
 
 msgctxt "EditHistoryModal"
@@ -2302,6 +2318,10 @@ msgstr ""
 
 msgctxt "ReactionChip"
 msgid "Open {}'s profile"
+msgstr ""
+
+msgctxt "EditHistoryRow"
+msgid "Original"
 msgstr ""
 
 msgctxt "MessageBody"

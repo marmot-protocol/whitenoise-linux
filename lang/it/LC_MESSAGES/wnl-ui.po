@@ -39,6 +39,10 @@ msgctxt "group system line, %1 = actor, %2 = former admin"
 msgid "%1 dismissed %2 as admin"
 msgstr "%1 ha rimosso %2 come amministratore"
 
+msgctxt "EditHistoryModal"
+msgid "%1 edits"
+msgstr "%1 modifiche"
+
 msgctxt "group system line, %1 = the member who left"
 msgid "%1 left the group"
 msgstr "%1 ha lasciato il gruppo"
@@ -103,6 +107,10 @@ msgstr "(pubblicato sulla tua lista relay kind-10051)"
 msgctxt "MentionPicker"
 msgid "(you)"
 msgstr "(tu)"
+
+msgctxt "EditHistoryModal"
+msgid "1 edit"
+msgstr "1 modifica"
 
 msgctxt "ChatHeader"
 msgid "1 member"
@@ -1115,6 +1123,10 @@ msgctxt "KpCard"
 msgid "Credentials"
 msgstr ""
 
+msgctxt "EditHistoryRow"
+msgid "Current"
+msgstr "Attuale"
+
 msgctxt "CustomEmojiModal"
 msgid "Custom Emoji"
 msgstr "Emoji personalizzata"
@@ -1257,6 +1269,10 @@ msgstr "MODIFICA · TRASMETTE AI RELAY AL SALVATAGGIO"
 msgctxt "ExportKeyModal"
 msgid "ENCRYPTED KEY (NCRYPTSEC)"
 msgstr "CHIAVE CRITTOGRAFATA (NCRYPTSEC)"
+
+msgctxt "EditHistoryRow"
+msgid "Edit %1"
+msgstr "Modifica %1"
 
 msgctxt "EditHistoryModal"
 msgid "Edit history"
@@ -2305,6 +2321,10 @@ msgstr "Aprire questo link?"
 msgctxt "ReactionChip"
 msgid "Open {}'s profile"
 msgstr "Apri il profilo di {}"
+
+msgctxt "EditHistoryRow"
+msgid "Original"
+msgstr "Originale"
 
 #, fuzzy
 msgctxt "MessageBody"

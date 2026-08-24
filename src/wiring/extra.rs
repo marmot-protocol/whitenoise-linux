@@ -718,17 +718,19 @@ pub(crate) fn wire_extra(ui: &WhiteNoiseLinux, cx: &Cx, h: &Handlers) {
                     .unwrap_or_default()
             },
             move |ui, all| {
-                let versions = build_edit_history(&all, &message_id);
-                if versions.is_empty() {
+                let Some((versions, edit_count)) = build_edit_history_bundle(&all, &message_id)
+                else {
                     return;
-                }
+                };
                 ui.set_edit_history(ModelRc::new(VecModel::from(versions)));
+                ui.set_edit_history_count(edit_count);
                 ui.set_edit_history_open(true);
             },
         );
     });
     wire!(ui, on_dismiss_edit_history [], |ui| {
         ui.set_edit_history_open(false);
+        ui.set_edit_history_count(0);
     });
 
     // ─── Developer mode: "View raw event" ──────────────────────────────

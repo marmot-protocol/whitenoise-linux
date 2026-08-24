@@ -403,6 +403,7 @@ export component ModalHost inherits Rectangle {
 
         if AppState.edit-history-open: EditHistoryModal {
             versions: AppState.edit-history;
+            edit-count: AppState.edit-history-count;
             dismissed => {
                 AppState.dismiss-edit-history();
             }

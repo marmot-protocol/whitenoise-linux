@@ -1,64 +1,26 @@
 import { ListView } from "std-widgets.slint";
-import { Palette, Theme, EditVersion } from "../tokens.slint";
+import { EditVersion } from "../tokens.slint";
 import { Modal } from "modal.slint";
+import { EditHistoryRow } from "edit-history-row.slint";
 
-// Read-only viewer for a message's full edit history (original + each edit,
-// oldest → newest). Visible to anyone in the chat, not just the author.
+// Read-only timeline of a message's edit history (original + each edit,
+// oldest → newest). Each edit after the original shows an inline word diff
+// against the previous version instead of repeating the full text.
 export component EditHistoryModal inherits Modal {
     in property <[EditVersion]> versions;
+    in property <int> edit-count;
 
-    card-width: 460px;
+    card-width: 480px;
     card-height: 480px;
     title: @tr("Edit history");
+    subtitle: root.edit-count == 1 ? @tr("1 edit") : @tr("%1 edits", root.edit-count);
 
-    // Version list — newest entries sit at the bottom, matching reading
-    // order. Each row shows its label ("Original" / "Edited") + timestamp
-    // above the full text of that revision.
     ListView {
         vertical-stretch: 1;
-        for v in root.versions: Rectangle {
-            background: Palette.panel;
-            border-width: Theme.border-w;
-            border-color: Palette.border-2;
-            border-radius: (8px) * Theme.r-scale;
-            height: item-layout.preferred-height + 16px;
-
-            item-layout := VerticalLayout {
-                x: 12px;
-                y: 8px;
-                width: parent.width - 24px;
-                spacing: 4px;
-
-                HorizontalLayout {
-                    alignment: stretch;
-                    spacing: 8px;
-                    Text {
-                        text: v.label;
-                        color: Palette.mint;
-                        font-size: Theme.fs(11px, 14px);
-                        font-family: Theme.font;
-                        font-weight: 700;
-                        horizontal-stretch: 1;
-                    }
-
-                    Text {
-                        text: v.stamp;
-                        color: Palette.text-lo;
-                        font-size: Theme.fs(10px, 14px);
-                        font-family: Theme.font;
-                        vertical-alignment: center;
-                    }
-                }
-
-                Text {
-                    text: v.text;
-                    color: Palette.text-hi;
-                    font-size: Theme.fs(13px, 16px);
-                    font-family: Theme.font;
-                    wrap: word-wrap;
-                    width: parent.width;
-                }
-            }
+        for v[i] in root.versions: EditHistoryRow {
+            version: v;
+            is-first: i == 0;
+            is-last: i == root.versions.length - 1;
         }
     }
 }

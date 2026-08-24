@@ -1773,54 +1773,6 @@ pub(crate) fn apply_edit_overlay(
     }
 }
 
-/// Build the full version history (original + each edit, oldest→newest) for the
-/// edit-history modal. Author-enforced, same as [`aggregate_edits`]. Returns an
-/// empty vec when the message has no edits.
-pub(crate) fn build_edit_history(
-    records: &[AppMessageRecord],
-    message_id: &str,
-) -> Vec<EditVersion> {
-    let Some(original) = records
-        .iter()
-        .find(|r| r.kind == CHAT_MESSAGE_KIND && r.message_id_hex == message_id)
-    else {
-        return Vec::new();
-    };
-    let mut edits: Vec<&AppMessageRecord> = records
-        .iter()
-        .filter(|r| r.kind == 1009)
-        .filter(|r| r.sender.eq_ignore_ascii_case(&original.sender))
-        .filter(|r| {
-            r.tags
-                .iter()
-                .any(|t| t.len() >= 2 && t[0] == "e" && t[1] == message_id)
-        })
-        .filter(|r| !r.plaintext.trim().is_empty())
-        .collect();
-    if edits.is_empty() {
-        return Vec::new();
-    }
-    edits.sort_by(|a, b| {
-        a.recorded_at
-            .cmp(&b.recorded_at)
-            .then(a.message_id_hex.cmp(&b.message_id_hex))
-    });
-    let mut out = Vec::with_capacity(edits.len() + 1);
-    out.push(EditVersion {
-        label: s("Original"),
-        text: s(&original.plaintext),
-        stamp: s(&format_unix(original.recorded_at)),
-    });
-    for e in edits {
-        out.push(EditVersion {
-            label: s("Edited"),
-            text: s(&e.plaintext),
-            stamp: s(&format_unix(e.recorded_at)),
-        });
-    }
-    out
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
