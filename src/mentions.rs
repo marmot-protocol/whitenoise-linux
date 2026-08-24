@@ -30,6 +30,10 @@ struct MentionState {
     nicknames: HashMap<String, String>,
     /// group hex (lowercase) → member hex set (lowercase).
     members: HashMap<String, HashSet<String>>,
+    /// group hex (lowercase) → member hex (lowercase) → most recent visible
+    /// message `recorded_at` seen from that sender. Feeds the composer's
+    /// `@mention` popup ranking (recent posters first).
+    activity: HashMap<String, HashMap<String, u64>>,
     /// Keys already sent to a relay profile fetch this session, so a key
     /// with no published kind-0 is attempted once, not on every rebuild.
     fetch_attempted: HashSet<String>,
@@ -45,6 +49,7 @@ fn state() -> &'static Mutex<MentionState> {
             names: HashMap::new(),
             nicknames: HashMap::new(),
             members: HashMap::new(),
+            activity: HashMap::new(),
             fetch_attempted: HashSet::new(),
             render_group: String::new(),
         })
@@ -66,6 +71,33 @@ pub(crate) fn mention_render_group(group_hex: &str) {
     if let Ok(mut st) = state().lock() {
         st.render_group = group_hex.to_ascii_lowercase();
     }
+}
+
+/// Record each visible message's sender/timestamp from a freshly built
+/// message window, keeping the latest `recorded_at` per sender. Called
+/// alongside `mention_render_group` everywhere message rows are built, so the
+/// `@mention` popup can rank candidates by who's actually active.
+pub(crate) fn mention_note_activity(group_hex: &str, records: &[AppMessageRecord]) {
+    let Ok(mut st) = state().lock() else { return };
+    let entry = st.activity.entry(group_hex.to_ascii_lowercase()).or_default();
+    for m in records.iter().filter(|m| is_visible_chat_message(m)) {
+        let sender = m.sender.to_ascii_lowercase();
+        entry
+            .entry(sender)
+            .and_modify(|ts| *ts = (*ts).max(m.recorded_at))
+            .or_insert(m.recorded_at);
+    }
+}
+
+/// Most recent visible-message timestamp known from `member_id_hex` in
+/// `group_hex`, if any. `None` when the member hasn't posted in the loaded
+/// window (or the window hasn't built yet).
+pub(crate) fn mention_last_activity(group_hex: &str, member_id_hex: &str) -> Option<u64> {
+    let st = state().lock().ok()?;
+    st.activity
+        .get(&group_hex.to_ascii_lowercase())?
+        .get(&member_id_hex.to_ascii_lowercase())
+        .copied()
 }
 
 /// Record a resolved published name for an account. Hex-tail fallbacks (a
