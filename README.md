@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/whitenoise-banner.png" alt="White Noise Linux" width="640">
+  <img src="assets/screenshot.png" alt="White Noise Linux" width="720">
 </p>
 
 <h1 align="center">White Noise Linux</h1>
@@ -9,83 +9,83 @@
 <p align="center">
   <a href="https://github.com/marmot-protocol/whitenoise-linux/actions/workflows/ci.yml"><img src="https://github.com/marmot-protocol/whitenoise-linux/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License: AGPL-3.0"></a>
-  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-lightgrey.svg" alt="Platforms: Linux and macOS">
-  <img src="https://img.shields.io/badge/built%20with-Rust%20%2B%20Slint-orange.svg" alt="Built with Rust and Slint">
+  <img src="https://img.shields.io/badge/platform-Linux-lightgrey.svg" alt="Platform: Linux">
+  <img src="https://img.shields.io/badge/built%20with-Odin%20%2B%20clay-blue.svg" alt="Built with Odin and clay">
 </p>
 
 ---
 
-White Noise is a desktop front end for [Marmot](https://github.com/marmot-protocol/darkmatter): [MLS](https://messaginglayersecurity.rocks/) group messaging carried over [Nostr](https://nostr.com) relays. You get the forward secrecy and post-compromise security of MLS together with a portable, self-owned Nostr identity: no phone number, no central server, no account anyone can take away from you. It's one Rust binary with a [Slint](https://slint.dev) UI, and every secret lives in a single password-encrypted vault.
+White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-protocol/mdk): [MLS](https://messaginglayersecurity.rocks/) group messaging carried over [Nostr](https://nostr.com) relays. You get the forward secrecy and post-compromise security of MLS together with a portable, self-owned Nostr identity: no phone number, no central server, no account anyone can take away from you. It is one Odin binary drawing an immediate-mode [clay](https://github.com/nicbarker/clay) layout on SDL3, and every secret lives in a single password-encrypted vault.
 
-> **Status: `v0.1.0`.** It works and is usable day-to-day, but it's early and moving fast, so expect rough edges.
+> **Status: early.** It works and is usable day-to-day, but it is moving fast, so expect rough edges. [`PORT.md`](PORT.md) tracks what is built and what is still outstanding.
 
-**Jump to:** [Features](#features) · [Install](#install-a-release) · [Build from source](#build-from-source) · [Configuration](#configuration) · [Architecture](#architecture) · [Development](#development) · [Contributing](#contributing) · [License](#license)
+**Jump to:** [Features](#features) · [Install](#install) · [Build from source](#build-from-source) · [Configuration](#configuration) · [Architecture](#architecture) · [Development](#development) · [Contributing](#contributing) · [License](#license)
 
 ## Features
 
 **Messaging**
+
 - One-to-one and group chats, end-to-end encrypted through Marmot's MLS, with sealed-sender invites over NIP-59.
-- Markdown bodies (CommonMark + GFM + inline nostr entities), reactions, replies, and edits with history.
+- Markdown bodies, reactions, replies, edits with history, forwarding, and search.
 - A durable on-disk send queue, so messages written offline aren't lost and go out on reconnect.
-- Per-chat unread tracking, surfaced as rail badges and an aggregate count in the window title.
+- Per-chat unread tracking, surfaced as rail badges.
 
 **Media**
-- Image album grids, inline video (via libmpv), and voice messages, all over Marmot's encrypted MIP-04 path.
-- Profile pictures are the one deliberate exception: they go out publicly via Blossom.
+
+- Image albums, inline video (libmpv), voice messages, and a preview modal that reads PDFs (poppler), archives (libarchive), STL and FBX models, and source files with syntax highlighting.
+- Attachments travel over Marmot's encrypted MIP-04 path. Profile pictures are the one deliberate exception: they go out publicly via Blossom.
 
 **Identity & accounts**
-- Several accounts at once: every Nostr identity keeps a live Marmot worker receiving in the background, and switching accounts just changes which one is on screen.
-- Contacts and follow lists, private local-only per-contact nicknames, an archive, and npub QR codes.
+
+- Several accounts at once, each with a live Marmot worker receiving in the background.
+- Contacts, private local-only per-contact nicknames, an archive, and npub QR codes.
 
 **Look & feel**
-- Three themes (modern dark, warm light, and a full SNES-era retro skin with a pixel font), plus five accent colors.
+
+- Eight themes (dark, light, AMOLED, retro, terminal, crayon, synthwave, chalkboard) and five accent colors, all data-driven from `themes/*.toml`. Drop your own pack in the data dir.
 - English, Italian, German, and Japanese, switchable at runtime.
-- Native desktop notifications.
+- Native desktop notifications, a command palette, and full keyboard navigation.
 
 **Privacy & data**
+
 - One password-encrypted vault holds every secret (see [Security model](#security-model)).
 - Whole-folder encrypted backup and restore, sealed with your vault password.
 - Opt-in OTLP metrics and audit logging, both off until you turn them on in Settings.
 
 ## Security model
 
-The whole app is one Rust binary with no OS keyring, no `pass`, and no plaintext key on disk. Every secret (your nsec, Marmot's per-account MLS keys, the decrypted media cache) lives in a single vault file (`vault.db`) sealed with XChaCha20-Poly1305 under a key derived from your password with Argon2id.
+There is no OS keyring and no plaintext key on disk. Every secret (your nsec, Marmot's per-account MLS keys, the decrypted media cache, the offline queue) lives in a single vault file (`vault.db`) sealed with XChaCha20-Poly1305 under a key derived from your password with Argon2id.
 
-The flip side is that **there is no recovery**: lose the password and the data is gone. Take a [backup](#features) if that matters to you; the backup is sealed with the same vault password, so a restore needs exactly one secret.
+The flip side is that **there is no recovery**: lose the password and the data is gone. Take a backup if that matters to you; the backup is sealed with the same vault password, so a restore needs exactly one secret.
 
-## Install a release
+## Install
 
-Pre-built tarballs are on the [Releases](https://github.com/marmot-protocol/whitenoise-linux/releases) page:
-
-| Platform | Target |
-| --- | --- |
-| Linux x86-64 | `x86_64-unknown-linux-gnu` |
-| Linux ARM64 | `aarch64-unknown-linux-gnu` |
-| macOS (Apple Silicon) | `aarch64-apple-darwin` |
+Every tagged release publishes a self-contained x86-64 AppImage on the [Releases](https://github.com/marmot-protocol/whitenoise-linux/releases) page. It carries its own libraries, fonts, and emoji set, so there is nothing to install alongside it:
 
 ```sh
-tar xzf whitenoise-linux-<target>.tar.gz
-cd whitenoise-linux-<target>
-./whitenoise-linux
+chmod +x WhiteNoise-*-x86_64.AppImage
+./WhiteNoise-*-x86_64.AppImage
 ```
 
-You'll still need the runtime libraries listed under [Build from source](#build-from-source).
+Japanese text is the one exception: Noto Sans CJK is tens of megabytes, so it is not bundled and comes from your system instead (`noto-fonts-cjk` on Arch, `fonts-noto-cjk` on Debian and Ubuntu).
+
+Other packaging formats will come later; for now, AppImage or a source build.
 
 ## Build from source
 
-You need a current Rust toolchain (edition 2024) and a handful of C libraries for media, fonts, audio, and notifications.
+You need the [Odin compiler](https://odin-lang.org/docs/install/), a C compiler, and a Rust toolchain (Marmot's C bundle is built from source). Plus SDL3 and the media libraries the viewers bind.
 
-**Debian / Ubuntu:**
+**Debian / Ubuntu** (SDL3 needs 25.04 or newer, or a source build):
 
 ```sh
-sudo apt-get install -y pkg-config libmpv-dev libfontconfig-dev libasound2-dev libdbus-1-dev
+sudo apt-get install -y pkg-config cmake clang git curl \
+  libsdl3-dev libarchive-dev libmpv-dev libpoppler-glib-dev libcairo2-dev libglib2.0-dev
 ```
 
-**macOS (Homebrew):**
+**Arch:**
 
 ```sh
-brew install mpv pkgconf
-export PKG_CONFIG_PATH="$(brew --prefix)/lib/pkgconfig"
+sudo pacman -S --needed odin rust sdl3 libarchive mpv poppler-glib cairo glib2
 ```
 
 **Then:**
@@ -93,97 +93,87 @@ export PKG_CONFIG_PATH="$(brew --prefix)/lib/pkgconfig"
 ```sh
 git clone https://github.com/marmot-protocol/whitenoise-linux
 cd whitenoise-linux
-cargo run
+./build.sh
+build/app
 ```
 
-The first build takes a while: it fetches the Marmot crates, compiles a very large generated Slint UI module, and composes the Twemoji sprite sheet. After that, incremental builds are quick: editing Rust under `src/` rebuilds only the root crate (a couple of seconds), while touching `.slint` or `lang/` files rebuilds the UI crate (~25s). The Marmot crates are pulled anonymously over HTTPS from the public [`marmot-protocol/darkmatter`](https://github.com/marmot-protocol/darkmatter) repo, so there's no SSH key or token to set up.
+The first build is the slow one: it clones the pinned Marmot revision and builds its C bundle, fetches clay, ufbx and the Twemoji set, and (on an Odin install shipping no prebuilt `vendor/stb` archives) builds those. Everything after that is a plain Odin compile of a few seconds.
 
 ### First run
 
-The first time you launch, you either paste an existing nsec or generate a new one, and you set a vault password. That creates the vault; from then on you just enter the password to open it. A wrong password fails the cipher's authentication tag, so there's no recovery path, but the login screen has a **Use another key** option that wipes the vault and starts over from a fresh nsec.
+The first time you launch, you either paste an existing nsec or generate a new one, and you set a vault password. That creates the vault; from then on you just enter the password to open it. A wrong password fails the cipher's authentication tag, so there's no recovery path, but the unlock screen has a **Use another key** option that wipes the vault and starts over from a fresh nsec.
 
 ## Configuration
 
-A few environment variables matter at runtime:
+The data directory is the app's first argument and defaults to `~/.local/share/whitenoise`. It holds the vault, the media cache, the offline queue, and any custom theme packs you drop in its `themes/` subdirectory. UI preferences (theme, accent, locale, notification toggles, nicknames) live separately in `$XDG_CONFIG_HOME/whitenoise/settings.json`.
+
+Telemetry and audit-log endpoints are configured in `observability.toml`, but nothing is ever sent until you enable the toggles under **Settings**, in the **Advanced** section.
+
+A few environment variables matter, mostly for automation:
 
 | Variable | Effect |
 | --- | --- |
-| `WN_HOME` | Where the vault, media cache, and observability override live. Defaults to the platform's standard data directory for `whitenoise-linux`. |
-| `RUST_LOG` | `tracing` filter; logs go to stderr, defaulting to `info`. |
-| `WAYLAND_DISPLAY` / `DISPLAY` | Selects the clipboard backend: prefers `wl-copy` on Wayland, falls back to `xclip`, `xsel`, or `arboard` on X11. |
-
-UI preferences (theme, accent, locale, which side your own messages sit on, nicknames) live in a small JSON file in your XDG config directory. Telemetry and audit-log endpoints are configured in `observability.toml`, but nothing is ever sent until you enable the toggles under **Settings**, in the **Advanced** section.
+| `WN_VAULT_PW` | Unlocks (or creates) the vault without showing the gate. |
+| `WN_SHOT` / `WN_SHOT_FRAME` | Capture a screenshot after N frames, then exit. |
+| `WN_TEST_*` | Drive the app into a given pane or action on boot; see `app/main.odin`. |
 
 ### Deep links (`marmot://`)
 
-Profile QR codes encode `marmot://profile/<npub>?from=qr`, the scheme shared by all Marmot clients. The app handles these links when they arrive as a command-line argument or are pasted into **Add contact**, and `marmot://profile/…` anchors inside chats open the in-app profile view. To have your desktop hand `marmot://` links to White Noise, install the bundled desktop entry (edit `Exec=` if the binary isn't on your `PATH`):
+Profile QR codes encode `marmot://profile/<npub>?from=qr`, the scheme shared by all Marmot clients. The app handles these when they arrive as a command-line argument or are pasted into **Add contact**. To have your desktop hand `marmot://` links to White Noise:
 
 ```sh
-install -Dm644 assets/whitenoise-linux.desktop ~/.local/share/applications/whitenoise-linux.desktop
-update-desktop-database ~/.local/share/applications
-xdg-mime default whitenoise-linux.desktop x-scheme-handler/marmot
+scripts/install-scheme.sh
 ```
 
 ## Architecture
 
-Top to bottom:
-
 ```
- Slint UI (ui/*.slint)
-        │   compiled once into a generated module
-        ▼
-   wnl-ui crate   : owns slint::include_modules!()
-        │
-        ▼
-   src/main.rs   : ~13.5k lines of callback glue plus the optimistic-overlay state machine
-        │
-        ▼
-  src/backend.rs : wraps MarmotApp and its own tokio runtime (~2.7k lines)
-        │
-        ▼
-  MarmotApp       : MLS groups, Nostr relays, sealed secrets
+ SDL3  ←──  app/sdlrl/  ←──  app/renderer.odin  ←──  clay layout (app/*.odin)
+                                                          │
+                                                    app/state.odin  (Ui_State)
+                                                          │
+                                              app/workers.odin  (worker threads)
+                                                          │
+                                                   marmot/marmot.odin
+                                                          │
+                                            marmot-c  →  the Marmot runtime
 ```
 
-It reads flat by intent: there are no per-feature abstractions, and the data flow for any UI action reads straight through. The UI glue is chaptered across a handful of files only to honor a hard rule — **no Rust file may exceed 2000 lines** (enforced by the pre-commit hook) — but they share one crate-root prelude (`pub(crate) use` re-exports, pulled in with `use crate::*;`), so they behave like one file. `main.rs` builds the window and the shared context (`Cx` handles + `Handlers` closures) and calls the `wire_*` functions; the callback sections live under `src/wiring/` (`panes.rs`, `backup.rs`, `messaging.rs`, `extra.rs`) and the pure row/render/state helpers in `chatmodel.rs` / `chatlist.rs` / `chrome.rs` / `media.rs` / `render.rs` / `state.rs`. The other real split is the `wnl-ui` crate: the generated Slint module is enormous, so isolating it keeps everyday Rust edits from triggering a full UI recompile.
+It reads flat by intent. The layout is immediate-mode: every frame rebuilds the clay tree by reading one `Ui_State` struct, so there is no retained view tree, no widget objects, and no observer graph to trace. Panes are plain procs.
 
 | Path | What's there |
 | --- | --- |
-| `src/main.rs`, `src/wiring/` | UI callback wiring (`main.rs` builds the context and calls the `wire_*` functions in the `wiring/` submodules) |
-| `src/chatmodel.rs`, `chatlist.rs`, `chrome.rs`, `media.rs`, `render.rs`, `state.rs` | The chat-row build pipeline, list/chrome refreshers, markdown/avatar rendering, and the optimistic overlay |
-| `src/backend.rs`, `src/backend/groups.rs` | The `MarmotApp` wrapper, the tokio runtime, and all platform-specific bits (clipboard, paths) |
-| `src/vault.rs` | The password-encrypted secret vault |
-| `src/backup.rs` | Whole-folder encrypted backup and restore (`.wnbackup`), sealed with the vault password |
-| `src/media_cache.rs` | Encrypted-at-rest cache for decrypted attachment bytes |
-| `src/blossom.rs` | Public Blossom uploads, used only for profile pictures |
-| `src/mpv.rs`, `src/audio.rs` | Inline video over libmpv, and voice-message capture and playback |
-| `src/offline_queue.rs` | The durable outgoing-message queue |
-| `src/unread.rs` | Per-chat unread tracking behind the rail badges and the window-title count |
-| `src/animal_avatar.rs` | Deterministic starter avatars drawn over an npub-derived gradient |
-| `src/settings.rs`, `src/observability.rs`, `src/notify.rs` | UI prefs, telemetry config, desktop notifications |
-| `wnl-ui/` | The build-isolation crate that compiles the Slint tree and the emoji sprite sheet |
-| `ui/` | The Slint component tree; `tokens.slint` holds shared structs and theme globals, and `ui/CONTRACT.md` documents the theming engine |
-| `lang/` | gettext catalogs (`en`, `it`, `de`, `ja`), bundled at build time |
+| `app/` | The whole app: panes, layout, state, workers, vault, media viewers |
+| `app/state.odin` | `Ui_State`, the single struct every pane reads, plus the live theme globals |
+| `app/workers.odin` | The live-subscription worker and the per-send threads that keep blocking Marmot calls off the UI thread |
+| `app/sdlrl/` | SDL3 shim with a raylib-shaped API: window, input, IME, clipboard, and a stb_truetype text engine |
+| `app/vault.odin` | The password-encrypted secret vault |
+| `marmot/` | The `marmot-c` bindings, the only place that touches C |
+| `smoke/` | Standalone liveness check for the bindings against a fresh home dir |
+| `themes/` | The theme packs, `#load`ed at build time |
+| `lang/` | gettext catalogs (`en` source, plus `it`, `de`, `ja`), `#load`ed at build time |
 | `assets/` | Logo, fonts, and the SVG starter-avatar set |
 
 A few design choices are worth knowing before you dig in:
 
-- **Optimistic rendering.** Sending, reacting, and unreacting apply to a local overlay first and repaint immediately, then reconcile against Marmot's response. The UI never blocks on the network round-trip.
+- **Optimistic rendering.** Sending, reacting, and unreacting apply locally and repaint immediately, then reconcile against Marmot's response. The UI never blocks on the network round-trip.
 - **Two upload paths.** Chat attachments go through Marmot's encrypted MIP-04 path, readable only by group members. Profile pictures take the deliberately public Blossom path.
-- **Three-way theming.** Every color token branches across modern, light, and retro. A new component has to cover all three and read accent colors from the `Theme` global instead of hardcoding them.
+- **Data-driven themes.** Every color, metric, and capability flag comes from a `themes/*.toml` pack. A new component reads the globals; it never branches on which theme is active.
 
-For the deeper details (vault format, the avatar pipeline, the i18n setup, and the Slint conventions specific to this repo), see [`AGENTS.md`](AGENTS.md).
+For the deeper details, see [`AGENTS.md`](AGENTS.md) and [`PORT.md`](PORT.md).
 
 ## Development
 
 ```sh
-cargo build                      # build everything
-cargo run                        # run the app
-scripts/update-translations.sh   # regenerate gettext catalogs after editing @tr() strings
+./build.sh                       # build
+./build.sh test                  # build, then run the tests
+./dev.sh                         # rebuild and restart on any .odin change
+scripts/update-translations.sh   # regenerate the gettext catalogs
 ```
 
-There's no unit-test suite yet: `cargo test` is a no-op, and changes are verified by running the app. End-to-end testing (a QEMU VM harness, a headless control daemon, and multi-VM messaging scenarios) lives in the separate [`darkmatter-automated-testing`](https://github.com/marmot-protocol/darkmatter-automated-testing) repo, which builds this checkout.
+Tests are `@(test)` procs in `*_test.odin` beside the code they cover; CI runs `build.sh test`. End-to-end testing (a QEMU VM harness, a headless control daemon, and multi-VM messaging scenarios) lives in the separate [`darkmatter-automated-testing`](https://github.com/marmot-protocol/darkmatter-automated-testing) repo, which builds this checkout.
 
-To develop against a local Marmot checkout, add a `[patch]` to `.cargo/config.toml` instead of editing `Cargo.toml`; the exact stanza is in [`AGENTS.md`](AGENTS.md).
+To build against a different Marmot revision, edit `mdk-commit` in `DEPS_PIN`; the next `build.sh` re-checks it out and rebuilds the C bundle. Every pinned third-party revision lives in that one file.
 
 ## Contributing
 
@@ -195,10 +185,7 @@ Before your first commit, install the project git hooks (**required**):
 scripts/install-hooks.sh
 ```
 
-This points `core.hooksPath` at the tracked `.githooks/` directory and registers the `po-clean` catalog filter, so the same checks CI enforces run locally before you commit. The `pre-commit` hook:
-
-- **Normalizes gettext catalogs** (`*.po` / `*.pot`): strips source-line references and the volatile `POT-Creation-Date` header and sorts by message id, so unrelated line shifts never surface as catalog diffs or merge conflicts. Needs `gettext` (`msgcat`); without it the hook still strips the date header. The same normalization runs automatically on `git add` via the filter, and CI rejects any catalog that isn't normalized.
-- **Gates Rust / Slint / Cargo changes** on `cargo fmt --all -- --check` and `cargo clippy --all-targets -- -D warnings`, the same gates CI runs. Run `cargo fmt --all` to fix formatting before committing.
+This points `core.hooksPath` at the tracked `.githooks/` directory and registers the `po-clean` catalog filter, so the same checks CI enforces run locally before you commit. The `pre-commit` hook normalizes and validates staged gettext catalogs (stripping source-line references and the volatile `POT-Creation-Date` header so unrelated line shifts never surface as diffs), and keeps the GitHub mirror of the ngit-ci gate in sync. Needs `gettext`.
 
 In a real emergency you can bypass a single commit with `git commit --no-verify`, but CI runs the same checks, so the bypass only defers them.
 

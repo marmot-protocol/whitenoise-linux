@@ -1,0 +1,1581 @@
+// Entry point: boots the marmot-c runtime, opens the window, and runs
+// the clay layout/render loop.
+//
+// renderer.odin started as clay's official Odin raylib renderer and now
+// draws through sdlrl, the SDL3 shim that kept raylib's call shapes.
+//
+// Usage: app [home-dir]   (default: ~/.local/share/whitenoise)
+// Env: WN_SHOT=1 captures wn-odin-shot.png after a few frames and exits.
+//      WN_VAULT_PW unlocks (or creates) the vault without the gate.
+//      WN_TEST_PREVIEW=<path> opens the preview modal on a local file.
+//      WN_TEST_WEB=<url> opens the webxdc modal on a URL.
+//      WN_TEST_XDC=<file.xdc> unpacks and runs a webxdc app.
+//
+// Secrets: everything sealed goes through $home/vault.db (vault.odin),
+// unlocked by vault_gate before the runtime boots. Marmot's own account
+// signing keys ride the same file through the marmot-c secret-store
+// vtable (vault_gate.odin), so nothing lands in an OS keychain.
+package main
+
+import "core:c"
+import "core:encoding/hex"
+import "core:fmt"
+import "core:os"
+import "core:slice"
+import "core:strconv"
+import "core:strings"
+import "core:sync"
+import "core:text/edit"
+import "core:thread"
+import "core:time"
+import "core:unicode/utf8"
+
+import clay "../vendor/clay/bindings/odin/clay-odin"
+import rl "sdlrl"
+
+import marmot "../marmot"
+
+IDLE_MS :: 60 // extra sleep per frame while idle in the background
+
+FONT_BODY :: 0
+FONT_TITLE :: 1
+FONT_MONO :: 2
+FONT_ICON :: 3
+
+// Nerd Font (Font Awesome range) codepoints for the nav and chrome.
+ICON_CHATS :: "\uf075"
+ICON_PEOPLE :: "\uf0c0"
+ICON_ARCHIVE :: "\uf187"
+ICON_SETTINGS :: "\uf013"
+ICON_PROFILE :: "\uf007"
+ICON_SEARCH :: "\uf002"
+ICON_CHECK :: "\uf00c"
+ICON_CLIP :: "\uf0c6"
+ICON_LOCK :: "\uf023"
+ICON_BELL :: "\uf0f3"
+ICON_SMILE :: "\uf118"
+ICON_MIC :: "\uf130"
+ICON_REPLY :: "\uf112"
+ICON_FORWARD :: "\uf064"
+ICON_COPY :: "\uf0c5"
+ICON_TRASH :: "\uf014"
+ICON_PENCIL :: "\uf040"
+ICON_BAN :: "\uf05e"
+ICON_CODE :: "\uf121"
+ICON_CLOSE :: "\uf00d"
+ICON_DOWN :: "\uf063"
+ICON_INFO :: "\uf05a"
+ICON_GLOBE :: "\uf0ac"
+ICON_KEY :: "\uf084"
+ICON_BRUSH :: "\uf1fc"
+ICON_BUG :: "\uf188"
+ICON_DOWNLOAD :: "\uf019"
+ICON_PIN :: "\uf08d"
+ICON_BELL_OFF :: "\uf1f6"
+ICON_ENVELOPE :: "\uf0e0"
+ICON_ENVELOPE_OPEN :: "\uf2b6"
+ICON_FOLDER :: "\uf07b"
+ICON_STAR :: "\uf005"
+
+// Nerd Font private-use codepoints (ICON_CODEPOINTS below), so there is
+// no system fallback: without one of these the icons render as blanks,
+// which is why a packaged build bundles the font.
+ICON_CANDIDATES := []cstring {
+	"/usr/share/fonts/TTF/JetBrainsMonoNerdFont-Regular.ttf",
+	"/usr/share/fonts/truetype/nerd-fonts/JetBrainsMonoNerdFont-Regular.ttf",
+	"/usr/share/fonts/jetbrains-mono-nerd/JetBrainsMonoNerdFont-Regular.ttf",
+}
+ICON_CODEPOINTS := []rune {
+	0xF075,
+	0xF0C0,
+	0xF187,
+	0xF013,
+	0xF007,
+	0xF002,
+	0xF00C,
+	0xF0C6,
+	0xF023,
+	0xF0F3,
+	0xF118,
+	0xF130,
+	0xF112,
+	0xF064,
+	0xF0C5,
+	0xF014,
+	0xF040,
+	0xF05E,
+	0xF121,
+	0xF00D,
+	0xF005,
+}
+
+// Quick-reaction strip (the slint QuickReact.list): vendored Twemoji
+// 72px tiles, drawn as textures since no installed font rasterizes
+// color emoji.
+QUICK_REACT := [6]struct {
+	emoji: string,
+	png:   []u8,
+} {
+	{"👍", #load("assets/1f44d.png")},
+	{"❤️", #load("assets/2764.png")},
+	{"😂", #load("assets/1f602.png")},
+	{"😮", #load("assets/1f62e.png")},
+	{"😢", #load("assets/1f622.png")},
+	{"🙏", #load("assets/1f64f.png")},
+}
+quick_react_tex: [6]rl.Texture2D
+
+// Tile for a one-tap reaction: staged twemoji first, bundled default
+// tiles as fallback, nil = draw the text glyph.
+build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.RenderCommand) {
+	clay.BeginLayout()
+
+	page_advance(ui)
+
+	logged_in := len(ui.accounts) > 0
+
+	if clay.UI(clay.ID("Root"))(
+	{
+		layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom},
+		backgroundColor = BG,
+	},
+	) {
+		// Logged out: the sign-in card alone on the canvas, like the slint
+		// login gate (no sidebar, no status bar).
+		if !logged_in {
+			if clay.UI(clay.ID("LoginCanvas"))(
+			{
+				layout = {
+					sizing = {clay.SizingGrow(), clay.SizingGrow()},
+					childAlignment = {x = .Center, y = .Center},
+				},
+			},
+			) {
+				login_pane(ui)
+			}
+		} else {
+			if clay.UI(clay.ID("CardsRow"))(
+			{
+				layout = {
+					sizing = {clay.SizingGrow(), clay.SizingGrow()},
+					layoutDirection = .LeftToRight,
+					padding = {left = 10, right = 10, top = 10},
+					childGap = 4,
+				},
+			},
+			) {
+				// Left card: the slint bento card holding nav + chat list.
+				if clay.UI(clay.ID("Rail"))(
+				{
+					layout = {
+						sizing = {
+							width = clay.SizingFixed(rail_width(ui)),
+							height = clay.SizingGrow(),
+						},
+						layoutDirection = .TopToBottom,
+						padding = clay.PaddingAll(12),
+						childGap = 6,
+					},
+					// Only while it is moving: a list that no longer fits slides
+					// out of view instead of spilling over the card.
+					clip = {horizontal = rail_open(ui) > 0 && rail_open(ui) < 1},
+					backgroundColor = CARD,
+					cornerRadius = rr(16),
+					border = {color = CARD_BORDER, width = bw()},
+				},
+				) {
+					// Top strip: account avatar + horizontal nav, like the
+					// slint icon rail (text stand-ins until an icon font).
+					if logged_in {
+						// Collapsed, the strip stacks so the rail is one icon
+						// column; expanded it stays the horizontal slint nav.
+						collapsed := rail_narrow(ui)
+						if clay.UI(clay.ID("RailTop"))(
+						{
+							layout = {
+								sizing = {width = clay.SizingGrow()},
+								layoutDirection = collapsed ? .TopToBottom : .LeftToRight,
+								childGap = 8,
+								childAlignment = {x = collapsed ? .Center : .Left, y = .Center},
+							},
+						},
+						) {
+							avatar(
+								"RailAvatar",
+								0,
+								ui.account_ref,
+								short_hex(ui.account_ref),
+								30,
+								url_pic(ui.my_pic_url),
+							)
+							for page in Page {
+								nav_button(page, ui.page == page)
+							}
+							nav_indicator(ui)
+							if !collapsed {
+								if clay.UI(clay.ID("RailTopGap"))(
+								{layout = {sizing = {width = clay.SizingGrow()}}},
+								) {}
+							}
+							// Fit-sized (padding), never fixed: this clay pushes a
+							// fixed sibling declared after the grow spacer past
+							// the card edge (PORT.md Quirks).
+							if clay.UI(clay.ID("RailCollapse"))(
+							{
+								layout = {
+									padding = {left = 7, right = 7, top = 4, bottom = 4},
+									childAlignment = {x = .Center, y = .Center},
+								},
+								backgroundColor = hovered() ? HOVER : {},
+								cornerRadius = rr(7),
+							},
+							) {
+								if hovered() {
+									tooltip(
+										collapsed ? "Expand the chat list" : "Collapse the chat list",
+									)
+								}
+								clay.Text(
+									collapsed ? "›" : "‹",
+									{fontId = FONT_TITLE, fontSize = 15, textColor = TEXT_DIM},
+								)
+							}
+						}
+						if !collapsed {
+							if clay.UI(clay.ID("RailDivider"))(
+							{
+								layout = {
+									sizing = {
+										width = clay.SizingGrow(),
+										height = clay.SizingFixed(1),
+									},
+								},
+								backgroundColor = DIVIDER,
+							},
+							) {}
+
+							// Settings and Profile swap the chat rail for their own
+							// sidebar: the slint settings sections, and the accounts
+							// on this device.
+							if ui.page == .Profile {
+								profile_rail(ui)
+							} else if ui.page == .Settings {
+								if clay.UI(clay.ID("SettingsNavHead"))(
+								{layout = {padding = {left = 4, top = 6, bottom = 4}}},
+								) {
+									clay.Text(
+										tr("SETTINGS"),
+										{
+											fontId = FONT_MONO,
+											fontSize = 12,
+											textColor = TEXT_DIM,
+											letterSpacing = 2,
+										},
+									)
+								}
+								for s in Settings_Section {
+									// Debug pages only exist in developer mode.
+									if (s == .Debug || s == .KP) && !ui.prefs.dev_mode {
+										continue
+									}
+									active := ui.settings_section == s
+									if clay.UI(clay.ID("SettingsNav", u32(s)))(
+									{
+										layout = {
+											sizing = {width = clay.SizingGrow()},
+											padding = {left = 12, right = 12, top = 9, bottom = 9},
+											childGap = 10,
+											childAlignment = {y = .Center},
+										},
+										backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
+										cornerRadius = rr(9),
+									},
+									) {
+										clay.Text(
+											SETTINGS_SECTIONS[s].icon,
+											{
+												fontId = FONT_ICON,
+												fontSize = 13,
+												textColor = active ? ACCENT : TEXT_DIM,
+											},
+										)
+										clay.Text(
+											tr(SETTINGS_SECTIONS[s].label),
+											{
+												fontId = FONT_TITLE,
+												fontSize = 13,
+												textColor = active ? TEXT : TEXT_DIM,
+											},
+										)
+									}
+								}
+							} else {
+								// Section header: CHATS/CONTACTS count + new-chat button.
+								if clay.UI(clay.ID("RailHead"))(
+								{
+									layout = {
+										sizing = {width = clay.SizingGrow()},
+										childGap = 8,
+										childAlignment = {y = .Center},
+										padding = {top = 4, bottom = 2},
+									},
+								},
+								) {
+									head := fmt.tprintf("CHATS   %d", len(ui.chats))
+									if ui.page == .Contacts {
+										head = fmt.tprintf("CONTACTS   %d", len(ui.contacts))
+									} else if ui.page == .Archived {
+										head = fmt.tprintf("ARCHIVED   %d", len(ui.archived))
+									}
+									clay.Text(
+										head,
+										{
+											fontId = FONT_MONO,
+											fontSize = 12,
+											textColor = TEXT_DIM,
+											letterSpacing = 2,
+										},
+									)
+									// Unread filter pill + accent plus, pinned right like the
+									// slint rail head. Fit-sized (padding), never fixed: this
+									// clay drops fixed siblings after the grow spacer.
+									if clay.UI(clay.ID("RailHeadGap"))(
+									{layout = {sizing = {width = clay.SizingGrow()}}},
+									) {}
+									if ui.page == .Chats {
+										// All/Unread filter tabs, the slint chat-list tabs.
+										for label, t in ([2]string{"All", "Unread"}) {
+											active := ui.unread_only == (t == 1)
+											if clay.UI(clay.ID(t == 0 ? "AllPill" : "UnreadPill"))(
+											{
+												layout = {
+													padding = {
+														left = 14,
+														right = 14,
+														top = 5,
+														bottom = 5,
+													},
+												},
+												backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
+												cornerRadius = rr(8),
+												border = {color = FIELD_BORDER, width = bw()},
+											},
+											) {
+												clay.Text(
+													label,
+													{
+														fontId = FONT_BODY,
+														fontSize = 12,
+														textColor = active ? ACCENT : TEXT_DIM,
+													},
+												)
+											}
+										}
+									}
+									// Global-search chip, also on Ctrl+K.
+									if clay.UI(clay.ID("GSearchBtn"))(
+									{
+										layout = {
+											padding = {left = 8, right = 8, top = 5, bottom = 5},
+											childAlignment = {x = .Center, y = .Center},
+										},
+										backgroundColor = hovered() ? HOVER : {},
+										cornerRadius = rr(7),
+									},
+									) {
+										clay.Text(
+											ICON_SEARCH,
+											{
+												fontId = FONT_ICON,
+												fontSize = 12,
+												textColor = TEXT_DIM,
+											},
+										)
+									}
+									if clay.UI(clay.ID("NewChatBtn"))(
+									{
+										layout = {
+											padding = {left = 8, right = 8, top = 3, bottom = 3},
+											childAlignment = {x = .Center, y = .Center},
+										},
+										backgroundColor = hovered() ? HOVER : {},
+										cornerRadius = rr(7),
+									},
+									) {
+										clay.Text(
+											"+",
+											{
+												fontId = FONT_TITLE,
+												fontSize = 18,
+												textColor = ACCENT,
+											},
+										)
+									}
+								}
+
+								// Chat filter.
+								if clay.UI(clay.ID("FilterBox"))(
+								{
+									layout = {
+										sizing = {
+											width = clay.SizingGrow(),
+											height = clay.SizingFixed(34),
+										},
+										padding = {left = 12, right = 12},
+										childGap = 8,
+										childAlignment = {y = .Center},
+									},
+									backgroundColor = ROW_BG,
+									cornerRadius = rr(10),
+									border = {color = FIELD_BORDER, width = bw()},
+								},
+								) {
+									clay.Text(
+										ICON_SEARCH,
+										{fontId = FONT_ICON, fontSize = 12, textColor = TEXT_LO},
+									)
+									field_text(
+										ui,
+										"FilterBox",
+										&ui.sidebar_filter,
+										ui.page == .Contacts ? "Search contacts..." : ui.page == .Archived ? "Search archived..." : "Search messages...",
+										ui.focus == .Filter,
+										13,
+										TEXT_LO,
+									)
+								}
+								// Folder chips, once the row menu has made a folder.
+								if ui.page == .Chats && len(ui.prefs.folders) > 0 {
+									folder_chips(ui)
+								}
+							}
+						}
+					}
+
+					if ui.page == .Contacts && logged_in && !rail_narrow(ui) {
+						if len(ui.contacts) == 0 {
+							clay.Text(
+								tr("No contacts yet"),
+								{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+							)
+						} else {
+							if clay.UI(clay.ID("ContactsExportRow"))(
+							{layout = {childGap = 8, padding = {left = 4, bottom = 2}}},
+							) {
+								micro_button("ContactsCsvBtn", "Export CSV")
+								micro_button("ContactsJsonBtn", "Export JSON")
+							}
+						}
+						// Alphabetical with letter section headers and a name
+						// filter, the slint contacts rail. Rows keep their
+						// ui.contacts index in the clay ID so clicks stay stable.
+						filter := strings.to_lower(
+							string(ui.sidebar_filter[:]),
+							context.temp_allocator,
+						)
+						last_letter: u8 = 0
+						for order in contact_order(ui) {
+							contact := ui.contacts[order.idx]
+							if len(filter) > 0 && !strings.contains(order.key, filter) {
+								continue
+							}
+
+							letter: u8 = '#'
+							if len(order.key) > 0 && order.key[0] >= 'a' && order.key[0] <= 'z' {
+								letter = order.key[0] - 32
+							}
+							if letter != last_letter {
+								last_letter = letter
+								if clay.UI(clay.ID("ContactLetter", u32(order.idx)))(
+								{layout = {padding = {left = 10, top = 6, bottom = 2}}},
+								) {
+									clay.Text(
+										fmt.tprintf("%c", letter),
+										{
+											fontId = FONT_MONO,
+											fontSize = 11,
+											textColor = TEXT_LO,
+											letterSpacing = 2,
+										},
+									)
+								}
+							}
+
+							selected := ui.selected_contact == order.idx
+							if clay.UI(clay.ID("ContactRow", u32(order.idx)))(
+							{
+								layout = {
+									sizing = {width = clay.SizingGrow()},
+									padding = clay.PaddingAll(10),
+									childGap = 10,
+									childAlignment = {y = .Center},
+								},
+								backgroundColor = selected ? SELECTED : (hovered() ? HOVER : {}),
+								cornerRadius = rr(12),
+							},
+							) {
+								if selected {
+									if clay.UI(clay.ID("ContactRowBar", u32(order.idx)))(
+									{
+										layout = {
+											sizing = {
+												width = clay.SizingFixed(3),
+												height = clay.SizingFixed(18),
+											},
+										},
+										backgroundColor = ACCENT,
+										cornerRadius = rr(2),
+									},
+									) {}
+								}
+								avatar(
+									"ContactAvatar",
+									u32(order.idx),
+									contact.id_hex,
+									contact.name,
+									30,
+									url_pic(contact.pic_url),
+								)
+								clay.Text(
+									contact_label(ui, contact),
+									{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT},
+								)
+								if selected && len(contact.npub) > 0 {
+									if clay.UI(clay.ID("ContactRowGap", u32(order.idx)))(
+									{layout = {sizing = {width = clay.SizingGrow()}}},
+									) {}
+									clay.Text(
+										npub_tail(contact.npub),
+										{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO},
+									)
+								}
+							}
+						}
+					}
+
+					if ui.page == .Chats && logged_in && !rail_narrow(ui) {
+						if len(ui.chats) == 0 {
+							clay.Text(
+								tr("No chats yet"),
+								{fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM},
+							)
+						}
+						filter := strings.to_lower(
+							string(ui.sidebar_filter[:]),
+							context.temp_allocator,
+						)
+						// Pinned chats lead the rail; the rest keep marmot's
+						// activity order.
+						for i in rail_order(ui.chats[:], ui.prefs.pinned) {
+							chat := ui.chats[i]
+							if !in_folder(ui.prefs.folder_of, chat.group_id, ui.folder_filter) {
+								continue
+							}
+							// A chat stays visible on a title match or a cached
+							// message-body hit (refresh_filter_hits).
+							if len(filter) > 0 &&
+							   !strings.contains(
+									   strings.to_lower(chat.title, context.temp_allocator),
+									   filter,
+								   ) &&
+							   !(i < len(ui.filter_hits) && ui.filter_hits[i]) {
+								continue
+							}
+							if ui.unread_only &&
+							   chat.unread == 0 &&
+							   !ui.prefs.unread_ids[chat.group_id] {
+								continue
+							}
+							// A blocked contact's 1:1 chat leaves the rail, the
+							// slint contact-block behavior (local, reversible).
+							if peer, is_dm := ui.dm_peer[chat.group_id];
+							   is_dm && ui.blocked[peer] {
+								continue
+							}
+							chat_row(u32(i), chat, ui.selected == i, .Archive)
+						}
+					}
+
+					// Footer: relay/sync status pinned under the list. Collapsed,
+					// the dot alone carries the connection state.
+					if logged_in {
+						if clay.UI(clay.ID("RailFill"))(
+						{layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}}},
+						) {}
+						if clay.UI(clay.ID("RailFoot"))(
+						{
+							layout = {
+								sizing = {width = clay.SizingGrow()},
+								childGap = 8,
+								childAlignment = {
+									x = rail_narrow(ui) ? .Center : .Left,
+									y = .Center,
+								},
+								padding = {top = 6},
+							},
+						},
+						) {
+							if clay.UI(clay.ID("RailFootDot"))(
+							{
+								layout = {
+									sizing = {
+										width = clay.SizingFixed(7),
+										height = clay.SizingFixed(7),
+									},
+								},
+								backgroundColor = net_color(net_state(ui)),
+								cornerRadius = rr(4),
+							},
+							) {}
+							if !rail_narrow(ui) {
+								clay.Text(
+									relay_counter(ui),
+									{
+										fontId = FONT_MONO,
+										fontSize = 11,
+										textColor = TEXT_LO,
+										letterSpacing = 2,
+									},
+								)
+								if clay.UI(clay.ID("RailFootGap"))(
+								{layout = {sizing = {width = clay.SizingGrow()}}},
+								) {}
+								clay.Text(
+									rl.GetTime() - sync_at < SYNCING_SECS ? "· SYNCING" : "· SYNCED",
+									{
+										fontId = FONT_MONO,
+										fontSize = 11,
+										textColor = TEXT_LO,
+										letterSpacing = 2,
+									},
+								)
+							}
+						}
+					}
+				}
+
+				// Drag handle between the rail and the page card. A collapsed
+				// rail has no width to drag, so the strip goes away and the page
+				// card takes the space.
+				if !rail_narrow(ui) {
+					gutter("RailGutter")
+				}
+
+				// Right card: the active page.
+				if clay.UI(clay.ID("MainCard"))(
+				{
+					// Switching page or chat: the new content rises the last few
+					// pixels into place under a veil in the card's own color, so
+					// the swap reads as a transition instead of a cut.
+					layout = {
+						sizing = {clay.SizingGrow(), clay.SizingGrow()},
+						layoutDirection = .TopToBottom,
+						padding = {top = u16((1 - page_t) * PAGE_SLIDE)},
+					},
+					backgroundColor = CARD,
+					cornerRadius = rr(16),
+					border = {color = CARD_BORDER, width = bw()},
+				},
+				) {
+					if !logged_in || ui.add_account_open {
+						if clay.UI(clay.ID("Main"))(
+						{
+							layout = {
+								sizing = {clay.SizingGrow(), clay.SizingGrow()},
+								layoutDirection = .TopToBottom,
+								childAlignment = {x = .Center, y = .Center},
+								childGap = 12,
+							},
+						},
+						) {
+							login_pane(ui)
+						}
+					} else if ui.new_chat_open {
+						new_chat_pane(ui)
+					} else {
+						switch ui.page {
+						case .Chats:
+							if ui.selected >= 0 {
+								chat_pane(ui)
+							} else if len(ui.chats) == 0 {
+								get_started_pane(ui)
+							} else {
+								centered_note("PickChat", "Select a chat", ui.client_status)
+							}
+						case .Contacts:
+							contacts_pane(ui)
+						case .Archived:
+							archived_pane(ui)
+						case .Settings:
+							settings_pane(ui)
+						case .Profile:
+							profile_pane(ui)
+						}
+					}
+				}
+			}
+
+			// Message banner + status bar, the slint shell's bottom strip.
+			status_bar(ui)
+
+			// One backdrop for every centered modal, whichever pane drew it.
+			if open_now(clay.ID("ModalVeil"), modal_open(ui)) {
+				modal_backdrop()
+			}
+
+			if open_now(clay.ID("PalModal"), ui.pal_open) {
+				palette_modal(ui)
+			}
+			if open_now(clay.ID("ConfirmModal"), ui.confirm.kind != .None) {
+				confirm_modal(ui)
+			}
+			if open_now(clay.ID("LinkModal"), ui.link_open) {
+				link_modal(ui)
+			}
+			// No close animation: web_close tears down the child process, so
+			// nothing may draw the modal after it.
+			if web_modal.open {
+				web_modal_draw(ui)
+			}
+			toast_layer(ui)
+
+			if open_now(clay.ID("RowMenu"), ui.row_menu >= 0) &&
+			   row_menu_index(ui) < len(ui.chats) {
+				chat_row_menu(ui)
+			}
+			if open_now(clay.ID("MemberMenu"), ui.member_menu >= 0) &&
+			   member_menu_index(ui) < len(ui.members) {
+				member_menu(ui)
+			}
+			if open_now(clay.ID("FolderModal"), ui.folder_open) {
+				folder_modal(ui)
+			}
+			if open_now(clay.ID("AccountsModal"), ui.accounts_open) {
+				accounts_modal(ui)
+			}
+			if open_now(clay.ID("PeerModal"), ui.peer_open) {
+				peer_modal(ui)
+			}
+			if open_now(clay.ID("GsModal"), ui.gs_open) {
+				gsearch_modal(ui)
+			}
+			// The reaction fan and the flights cross everything, so they are
+			// declared last.
+			fan_layer(ui)
+			fly_layer()
+		}
+	}
+
+	return clay.EndLayout(frame_time)
+}
+
+// Optimistic row: the confirmed row's shape in dim colors with
+// "sending…" for a stamp (the slint pending overlay renders at 0.62
+// opacity); a failed send goes danger and the row is a retry target.
+// Integer from a test-hook env string, falling back when it isn't one.
+parse_int_or :: proc(text: string, fallback: int) -> int {
+	value, ok := strconv.parse_int(text)
+	return ok ? value : fallback
+}
+
+main :: proc() {
+	home: string
+	link: string
+	if len(os.args) > 1 {
+		// The OS scheme handler passes the deep link as the sole
+		// argument (Exec=… %u); anything else is the home-dir arg.
+		if is_marmot_url(os.args[1]) {
+			link = os.args[1]
+		} else {
+			home = os.args[1]
+		}
+	}
+	if len(home) == 0 {
+		home = fmt.aprintf("%s/.local/share/whitenoise", os.get_env("HOME", context.allocator))
+	}
+
+	ui: Ui_State
+	ui.selected = -1
+	ui.selected_contact = -1
+	ui.mention_dismissed = -1
+	ui.member_nick = -1
+	ui.member_menu = -1
+	ui.row_menu = -1
+	ui.folder_rename = -1
+	edit.init(&ui.ed, context.allocator, context.allocator)
+	// Grapheme motion/deletion is done in edit_text via prev/next_grapheme;
+	// the stdlib's translate_by_grapheme is broken for wide (CJK) chars.
+	ui.ed.set_clipboard = clip_set
+	ui.ed.get_clipboard = clip_get
+	data_home = home // before load_themes: user themes live in <home>/themes
+	os.make_directory(home) // the vault writes here before marmot boots
+	harden_perms(home)
+	// Two runtimes over one sqlite store corrupt it, so a second
+	// instance stops here instead of booting.
+	if !instance_lock(home) {
+		fmt.eprintfln("White Noise is already running on %s", home)
+		return
+	}
+	load_themes()
+	load_settings(&ui)
+	set_locale(ui.prefs.locale)
+	g_prefs = &ui.prefs
+	apply_theme(ui.theme, ui.accent)
+	apply_zoom(&ui)
+
+	// Headroom over clay's defaults (8192 elements): per-letter effect
+	// runs, burst particles and the pre-wrapped body lines all spend
+	// elements, and clay treats an exceeded capacity as an error
+	// callback, not a stop.
+	clay.SetMaxElementCount(32768)
+
+	min_memory := cast(c.size_t)clay.MinMemorySize()
+	memory := make([^]u8, min_memory)
+	arena := clay.CreateArenaWithCapacityAndMemory(min_memory, memory)
+	clay.Initialize(arena, {1024, 700}, {handler = error_handler})
+	clay.SetMeasureTextFunction(measure_text, nil)
+
+	win_w, win_h := i32(1024), i32(700)
+	if tw := os.get_env("WN_TEST_WINDOW", context.temp_allocator); tw != "" {
+		if x := strings.index_byte(tw, 'x'); x > 0 {
+			w, _ := strconv.parse_int(tw[:x])
+			h, _ := strconv.parse_int(tw[x + 1:])
+			win_w = i32(w)
+			win_h = i32(h)
+		}
+	}
+	rl.InitWindow(win_w, win_h, "White Noise (Odin)")
+	app_started = rl.GetTime()
+	start_pic_worker()
+	rl.SetTargetFPS(60)
+	dpi := rl.GetWindowScaleDPI()
+	UI_SCALE = max(dpi.x, 1) * UI_ZOOM
+	init_fonts()
+
+	for entry, i in QUICK_REACT {
+		img := rl.LoadImageFromMemory(".png", raw_data(entry.png), i32(len(entry.png)))
+		quick_react_tex[i] = rl.LoadTextureFromImage(img)
+		rl.UnloadImage(img)
+		rl.SetTextureFilter(quick_react_tex[i], .BILINEAR)
+		append(&ui.recent_emoji, entry.emoji)
+	}
+	load_emoji_catalog()
+
+	// Every secret lives in $home/vault.db, marmot's account keys
+	// included, so the vault opens before the runtime does; closing the
+	// window at the gate quits.
+	if !vault_gate(&ui) {
+		rl.CloseWindow()
+		return
+	}
+	// Tray icon for either tray pref; start-in-tray also hides the
+	// window, honored at boot only, after the unlock.
+	apply_tray(&ui)
+	if ui.prefs.start_in_tray {
+		rl.HideWindow()
+	}
+
+	splash_frame(0)
+	client := boot_marmot(home, &ui)
+	splash_frame(1)
+	// The boot line already showed on the splash; don't repeat it as a
+	// banner over the first screen.
+	ui.banner_seen = ui.client_status
+	g_ui = &ui
+	g_client = client
+	if client != nil && len(ui.account_ref) > 0 {
+		load_offline(&ui) // restore queued sends; first flush_queued tick retries them
+	}
+
+	shot := os.get_env("WN_SHOT", context.allocator) != ""
+	frame := 0
+
+	// Automation hooks for headless runs: create an identity when none
+	// exists; create a group when none exists; send a message; select
+	// the first chat so the screenshot shows the timeline.
+	if client != nil &&
+	   len(ui.accounts) == 0 &&
+	   os.get_env("WN_TEST_CREATE", context.allocator) != "" {
+		do_create_identity(&ui, client)
+	}
+	if client != nil &&
+	   len(ui.accounts) > 0 &&
+	   len(ui.chats) == 0 &&
+	   os.get_env("WN_TEST_GROUP", context.allocator) != "" {
+		group_id: cstring
+		account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
+		if marmot.create_group(
+			   client,
+			   account,
+			   "Notes to self",
+			   nil,
+			   0,
+			   "test group",
+			   &group_id,
+		   ) !=
+		   .OK {
+			ui.client_status = fmt.aprintf("create group failed: %s", marmot.last_error())
+		} else {
+			marmot.string_free(group_id)
+			load_chat_list(client, ui.account_ref, &ui)
+		}
+	}
+	// WN_TEST_SEND fires inside the frame loop (after the subscription
+	// is armed) with no manual reload, so the rendered message proves
+	// the live-update path.
+	if os.get_env("WN_TEST_THEME", context.allocator) == "light" {
+		ui.theme = 1
+		apply_theme(ui.theme, ui.accent)
+		save_settings(&ui)
+	}
+	if client != nil && len(ui.accounts) > 0 {
+		switch os.get_env("WN_TEST_PAGE", context.allocator) {
+		case "contacts":
+			ui.page = .Contacts
+			load_contacts(client, &ui)
+		case "archived":
+			ui.page = .Archived
+			load_archived(client, &ui)
+		case "members":
+			if len(ui.chats) > 0 {
+				ui.selected = 0
+				load_timeline(client, &ui)
+				ui.show_members = true
+				load_members(client, &ui)
+			}
+		case "settings":
+			ui.page = .Settings
+		case "debug", "kp":
+			// Both are dev-mode only; the harness forces the flag on.
+			ui.page = .Settings
+			ui.prefs.dev_mode = true
+			ui.settings_section =
+				os.get_env("WN_TEST_PAGE", context.temp_allocator) == "kp" ? .KP : .Debug
+			if ui.settings_section == .Debug {
+				compose_debug_json(&ui, client)
+			}
+		case "fx":
+			// Arms the first catalog effect, so WN_TEST_COMPOSE's send
+			// exercises the tagged path.
+			ui.fx_armed = 1
+		case "about":
+			ui.page = .Settings
+			ui.settings_section = .About
+		case "palette":
+			pal_open_modal(&ui)
+		case "advanced":
+			ui.page = .Settings
+			ui.settings_section = .Advanced
+			load_advanced(&ui, client)
+		case "profile":
+			ui.page = .Profile
+			load_profile(client, &ui)
+		case "profile-edit":
+			ui.page = .Profile
+			load_profile(client, &ui)
+			ui.profile.editing = true
+		case "accounts":
+			ui.accounts_open = true
+		case "gsearch":
+			gs_open_modal(&ui)
+		case "peer":
+			if len(ui.chats) > 0 {
+				ui.selected = 0
+				load_timeline(client, &ui)
+				for msg in ui.messages {
+					if !msg.mine && len(msg.sender_id) > 0 {
+						open_peer(&ui, client, msg.sender_id, msg.sender, msg.pic_url)
+						break
+					}
+				}
+			}
+			if !ui.peer_open {
+				// Single-account test home: render the popup on self.
+				open_peer(&ui, client, ui.account_ref, ui.accounts[0], ui.my_pic_url)
+			}
+		}
+	}
+
+	// Deep link from the OS scheme handler: open the profile once
+	// booted (own account routes to the profile page, like a mention
+	// click). A second running instance is not detected; the link
+	// opens in this fresh instance.
+	if client != nil && len(ui.account_ref) > 0 && len(link) > 0 {
+		if hx := deeplink_hex(marmot_link_ref(link)); len(hx) > 0 {
+			if hx == ui.account_ref {
+				ui.page = .Profile
+				load_profile(client, &ui)
+			} else {
+				info := profile_info(client, hx)
+				open_peer(
+					&ui,
+					client,
+					hx,
+					len(info.name) > 0 ? info.name : short_hex(hx),
+					info.pic_url,
+				)
+			}
+		}
+	}
+
+	ensure_notes(&ui, client) // the rail always has the user's own notepad
+
+	test_send := os.get_env("WN_TEST_SEND", context.allocator)
+	if client != nil &&
+	   len(ui.chats) > 0 &&
+	   os.get_env("WN_TEST_SELECT", context.allocator) != "" {
+		ui.selected = 0
+		load_timeline(client, &ui)
+	}
+
+	// Reopen the last chat, the General-settings startup toggle.
+	if client != nil &&
+	   ui.prefs.restore_last_chat &&
+	   len(ui.prefs.last_chat) > 0 &&
+	   ui.selected < 0 {
+		select_by_id(&ui, client, ui.prefs.last_chat)
+	}
+
+	// Last splash beat: the relay pool is polled once here so the status
+	// bar opens with a real count instead of the pre-poll placeholder.
+	splash_frame(2)
+	health_refresh(&ui, client)
+
+	live: Live
+
+	for !rl.WindowShouldClose() {
+		defer free_all(context.temp_allocator)
+
+		anim_tick(rl.GetFrameTime())
+
+		start_live(&live, client, ui.account_ref) // no-op once running
+		live_tick(&live, &ui, client) // poll fallback when the stream stalls
+		drain_live(&live, &ui, client)
+		drain_sends(&ui, client)
+		drain_ops(&ui, client)
+		web_tick() // webxdc modal: run WebKit, take its pixels
+		xdc_drain(&ui, client) // webxdc sendUpdate() becomes a group message
+		drain_auth(&ui, client) // a finished sign-in lands on the UI thread
+		flush_queued(&ui, client)
+		mi_tick(&ui, client) // periodic mentions-inbox badge refresh
+		health_tick(&ui, client) // relay-pool counters, Network page only
+		banner_tick(&ui) // a new client_status becomes the shell banner
+		tray_tick(&ui) // unread total in the tray tooltip
+
+		// Interface zoom shortcuts (Ctrl + / - / 0), the slint bindings.
+		if rl.IsKeyDown(.LEFT_CONTROL) || rl.IsKeyDown(.RIGHT_CONTROL) {
+			if rl.IsKeyPressed(.EQUAL) {
+				ui.prefs.zoom_pct += 10
+				apply_zoom(&ui)
+				save_settings(&ui)
+			}
+			if rl.IsKeyPressed(.MINUS) {
+				ui.prefs.zoom_pct -= 10
+				apply_zoom(&ui)
+				save_settings(&ui)
+			}
+			if rl.IsKeyPressed(.ZERO) {
+				ui.prefs.zoom_pct = 100
+				apply_zoom(&ui)
+				save_settings(&ui)
+			}
+		}
+
+		// Synthetic click injection for headless tests: "x,y[,x,y...]",
+		// one click per pair, released every 25 frames from frame 20.
+		forced_release = false
+		pointer := transmute(clay.Vector2)rl.GetMousePosition()
+		if test_click := os.get_env("WN_TEST_CLICK", context.temp_allocator);
+		   test_click != "" && frame >= 15 {
+			parts := strings.split(test_click, ",", context.temp_allocator)
+			step := min(int(frame - 15) / 25, len(parts) / 2 - 1)
+			if len(parts) >= 2 && step >= 0 {
+				px, _ := strconv.parse_f64(parts[step * 2])
+				py, _ := strconv.parse_f64(parts[step * 2 + 1])
+				pointer.x = f32(px)
+				pointer.y = f32(py)
+				forced_release = int(frame) == 20 + step * 25
+			}
+		}
+		pointer.x /= UI_ZOOM
+		pointer.y /= UI_ZOOM
+		clay.SetPointerState(pointer, rl.IsMouseButtonDown(.LEFT))
+
+		// End a thumb drag one frame AFTER release so mouse_released()
+		// can still see it and swallow the ending click.
+		if !rl.IsMouseButtonDown(.LEFT) && !rl.IsMouseButtonReleased(.LEFT) {
+			scroll_drag = {}
+		}
+		// A drag-selection ending with text selected feeds the primary
+		// selection (select-to-copy), except from the masked nsec field.
+		if rl.IsMouseButtonReleased(.LEFT) && text_drag != nil {
+			if text_drag != &ui.login_input &&
+			   ui.ed_target == text_drag &&
+			   ui.ed.selection[0] != ui.ed.selection[1] {
+				buf := (^[dynamic]u8)(text_drag)
+				lo, hi, _ := field_sel(&ui, buf)
+				rl.SetPrimaryText(
+					strings.clone_to_cstring(string(buf[lo:hi]), context.temp_allocator),
+				)
+			}
+			text_drag = nil
+		}
+
+		if os.get_env("WN_DEBUG_INPUT", context.temp_allocator) != "" {
+			if rl.IsMouseButtonPressed(.LEFT) || rl.IsMouseButtonReleased(.LEFT) {
+				fmt.eprintfln(
+					"input: pos=%v down=%v pressed=%v released=%v over_nav1=%v",
+					rl.GetMousePosition(),
+					rl.IsMouseButtonDown(.LEFT),
+					rl.IsMouseButtonPressed(.LEFT),
+					rl.IsMouseButtonReleased(.LEFT),
+					clay.PointerOver(clay.ID("Nav", 1)),
+				)
+			}
+		}
+		// Wheel over a 3D tile (hover from last frame's build) zooms
+		// the model instead of scrolling the timeline.
+		wheel := rl.GetMouseWheelMoveV()
+		// Ctrl + wheel zooms the interface; the wheel is consumed so
+		// it doesn't also scroll.
+		if ctrl_down() && wheel.y != 0 {
+			ui.prefs.zoom_pct += wheel.y > 0 ? 10 : -10
+			apply_zoom(&ui)
+			save_settings(&ui)
+			wheel = {}
+		}
+		wheel.x *= f32(ui.prefs.scroll_speed) / 100
+		wheel.y *= f32(ui.prefs.scroll_speed) / 100
+		if orbit_hover != nil {
+			wheel = {}
+		}
+		// Wheel notches land in a residual that drains a fraction per
+		// frame, so a scroll glides to a stop instead of stepping. What
+		// the residual can't spend (already at a bound) becomes
+		// overscroll, sprung back by the timeline's own padding.
+		scroll_residual += transmute(clay.Vector2)wheel
+		drain := anim_drain(SCROLL_DRAIN)
+		step := clay.Vector2{scroll_residual.x * drain, scroll_residual.y * drain}
+		scroll_residual -= step
+		if abs(scroll_residual.x) < 0.01 {
+			scroll_residual.x = 0
+		}
+		if abs(scroll_residual.y) < 0.01 {
+			scroll_residual.y = 0
+		}
+		if scroll_residual != {} {
+			anim_moving += 1
+		}
+		update_overscroll(step.y)
+		update_scroll_vel()
+		clay.UpdateScrollContainers(false, step, rl.GetFrameTime())
+		clay.SetLayoutDimensions(
+			{f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM},
+		)
+
+		orbit_hover = nil // rebound by the build when a tile is hovered
+		link_hover = ""
+		clear(&sel_lines) // body lines re-register during the build
+		video_hover = nil
+		att_hover = {}
+		arc_hover = {}
+		arc_more_hover = nil
+		xdc_hover = {}
+		img_hover = {}
+		model_hover = {}
+		pdf_flip_hover = nil
+		img_retry_hover = ""
+		media_retry_hover = false
+		reply_jump_hover = ""
+		mention_hover = ""
+		clear(&gcode_bars)
+		clear(&video_bars)
+		clear(&anim_bars)
+		advance_videos() // pull decoded frames into the video textures
+		voice_poll() // drain the mic stream while recording
+		render_commands := build_layout(&ui, rl.GetFrameTime())
+		// Models register during the build and are posed before the
+		// renderer walks the commands, so a playing take advances only
+		// while its tile is actually mounted.
+		advance_models(rl.GetFrameTime())
+
+		// Jump to the newest message AFTER layout, so the content
+		// height includes rows appended this frame (an optimistic
+		// pending row would otherwise sit below the scroll fold for
+		// the whole send).
+		// Center a global-search hit: the correction is relative to this
+		// frame's laid-out row box, so the current offset doesn't matter.
+		// ponytail: best effort, one attempt; a hit older than the loaded
+		// page (limit 100) isn't in ui.messages and falls back to the
+		// bottom jump. Paged loading with an anchor is the upgrade.
+		if len(ui.jump_id) > 0 {
+			for msg, i in ui.messages {
+				if msg.id != ui.jump_id {
+					continue
+				}
+				row := clay.GetElementData(clay.ID("MsgRow", u32(i)))
+				tl := clay.GetElementData(clay.ID("Timeline"))
+				scroll_data := clay.GetScrollContainerData(clay.ID("Timeline"))
+				if row.found && tl.found && scroll_data.found {
+					overflow := max(
+						scroll_data.contentDimensions.height -
+						scroll_data.scrollContainerDimensions.height,
+						0,
+					)
+					delta :=
+						(row.boundingBox.y + row.boundingBox.height / 2) -
+						(tl.boundingBox.y + tl.boundingBox.height / 2)
+					scroll_data.scrollPosition.y = clamp(
+						scroll_data.scrollPosition.y - delta,
+						-overflow,
+						0,
+					)
+					ui.scroll_pending = false
+				}
+				break
+			}
+			delete(ui.jump_id)
+			ui.jump_id = ""
+		}
+		if ui.scroll_pending {
+			scroll_data := clay.GetScrollContainerData(clay.ID("Timeline"))
+			if scroll_data.found {
+				overflow :=
+					scroll_data.contentDimensions.height -
+					scroll_data.scrollContainerDimensions.height
+				target := overflow > 0 ? -overflow : 0
+				// Opening a chat snaps (nobody wants to watch it scroll
+				// down from the top); a message arriving into the open
+				// chat glides, which is what carries the eye to it.
+				y := scroll_data.scrollPosition.y
+				if page_settling() || abs(target - y) < 1 {
+					scroll_data.scrollPosition.y = target
+					ui.scroll_pending = false
+				} else {
+					scroll_data.scrollPosition.y = y + (target - y) * anim_drain(14)
+					anim_moving += 1
+				}
+			}
+		}
+		rl.BeginDrawing()
+		shake_x, shake_y := shake_offset()
+		rl.BeginMode2D(rl.Camera2D{zoom = UI_ZOOM, offset = {shake_x, shake_y}})
+		draw_frame(&render_commands)
+		rl.EndMode2D()
+		rl.EndDrawing()
+
+		// Profile pictures fetched by the curl worker decode here (the
+		// render thread owns texture creation).
+		drain_pics()
+		drain_ov()
+
+		// Files picked in the async SDL dialog land here; they become
+		// composer chips, custom emoji when the settings "+" asked, or
+		// the group photo when the hero chooser asked.
+		picked := rl.PickedFiles()
+		for path in picked {
+			if ui.picking_backup {
+				backup_stage(&ui, path)
+			} else if ui.picking_emoji {
+				stage_emoji(&ui, path)
+			} else if ui.picking_gpic {
+				set_group_pic(&ui, path)
+			} else {
+				stage_file(&ui, path)
+			}
+			delete(path)
+		}
+		if len(picked) > 0 {
+			ui.picking_emoji = false
+			ui.picking_gpic = false
+			ui.picking_backup = false
+		}
+		delete(picked)
+
+		if tc := os.get_env("WN_TEST_COMPOSE", context.temp_allocator); tc != "" {
+			// Semicolon-separated "N:text" entries. Text lands in the
+			// focused input; on the Chats page it also sends.
+			for entry in strings.split(tc, ";", context.temp_allocator) {
+				if colon := strings.index_byte(entry, ':');
+				   colon > 0 && frame == parse_int_or(entry[:colon], -1) {
+					ed_set(&ui, active_buf(&ui), entry[colon + 1:])
+					test_send_now = ui.page == .Chats
+				}
+			}
+		}
+
+		handle_gutters(&ui)
+		if clicked("BannerClose") {
+			ui.banner = "" // borrowed from client_status; never freed here
+		}
+		if clicked("RailCollapse") {
+			flip(&ui, &ui.prefs.rail_collapsed)
+		}
+
+		// Modal capture order: a confirm sits over everything, then the
+		// link guard, then the palette, then the older modals. Global
+		// search opens on Ctrl+K, the palette on Ctrl+P.
+		if ui.confirm.kind != .None {
+			handle_confirm(&ui, client)
+		} else if ui.link_open {
+			handle_link_modal(&ui)
+		} else if ui.pal_open {
+			handle_palette(&ui, client)
+		} else if len(ui.accounts) > 0 &&
+		   !ui.add_account_open &&
+		   ctrl_down() &&
+		   rl.IsKeyPressed(.P) {
+			pal_open_modal(&ui)
+		} else if ui.backup_mode != .None {
+			handle_backup(&ui)
+		} else if ui.gs_open {
+			handle_gsearch(&ui, client)
+		} else if len(ui.accounts) > 0 &&
+		   !ui.add_account_open &&
+		   ((ctrl_down() && rl.IsKeyPressed(.K)) || clicked("GSearchBtn")) {
+			gs_open_modal(&ui)
+		} else {
+			handle_login(&ui, client)
+			handle_pages(&ui, client)
+			if ui.page == .Chats && !ui.add_account_open {
+				handle_chat(&ui, client)
+			}
+		}
+		// Body text selection and the link guard share the pointer over
+		// message bodies: a drag that selected something swallows the
+		// release, so dragging across a link doesn't open it.
+		if !ui.pal_open && !ui.link_open && !ui.gs_open && ui.confirm.kind == .None {
+			handle_body_sel(&ui)
+			handle_body_copy(&ui)
+			// A press that missed a body drags the timeline instead, and
+			// a drag that moved is not a click on whatever is under it.
+			handle_react_fan(&ui, client)
+			update_drag_scroll(
+				&ui,
+				sel_dragging || orbit_hover != nil || modal_open(&ui) || fan_open(),
+			)
+			if len(ui.sel_copy) == 0 && !drag_moved {
+				handle_link_click(&ui)
+			}
+		}
+		handle_orbit()
+		handle_gcode_bar()
+		handle_anim_bar()
+		handle_video()
+		handle_video_bar()
+		handle_pdf()
+		handle_preview(&ui, client)
+		handle_arc_click(&ui)
+		handle_xdc_click(&ui, client)
+		handle_web_input(&ui)
+		handle_att_click(&ui)
+		handle_img_click(&ui, client)
+		handle_model_click(&ui, client)
+		handle_mention_click(&ui, client)
+		handle_img_retry(&ui, client)
+		handle_media_retry(&ui, client)
+		handle_reply_jump(&ui)
+
+		// Destination chosen in the save dialog: fetch and write.
+		saved := rl.SavedFiles()
+		for path in saved {
+			save_attachment(&ui, client, path)
+			if backup_saving {
+				backup_saved(&ui)
+			}
+			delete(path)
+		}
+		delete(saved)
+
+		cursor_apply() // every raise for this frame is in by now
+
+		// Background window with nothing moving: stop burning a vsynced
+		// frame every 16ms. The focused window always runs at full rate,
+		// so nothing the user is looking at can feel sluggish.
+		if anim_moving == 0 && !rl.IsWindowFocused() {
+			rl.Wait(IDLE_MS)
+		}
+
+		frame += 1
+		if test_send != "" && frame == 10 && client != nil && len(ui.chats) > 0 {
+			summary: ^marmot.Send_Summary
+			account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
+			group := strings.clone_to_cstring(ui.chats[0].group_id, context.temp_allocator)
+			if marmot.send_text(
+				   client,
+				   account,
+				   group,
+				   strings.clone_to_cstring(test_send, context.temp_allocator),
+				   &summary,
+			   ) ==
+			   .OK {
+				marmot.send_summary_free(summary)
+			}
+		}
+		if frame == 10 && ui.selected >= 0 {
+			if media_path := os.get_env("WN_TEST_MEDIA", context.allocator); media_path != "" {
+				data, read_err := os.read_entire_file(media_path, context.temp_allocator)
+				if read_err == nil {
+					attachment := marmot.Media_Upload_Attachment_Request {
+						file_name     = strings.clone_to_cstring(
+							media_path,
+							context.temp_allocator,
+						),
+						media_type    = "image/png",
+						plaintext     = raw_data(data),
+						plaintext_len = len(data),
+					}
+					request := marmot.Media_Upload_Request {
+						attachments     = &attachment,
+						attachments_len = 1,
+						caption         = "attachment test",
+						send            = true,
+					}
+					result: ^marmot.Media_Upload_Result
+					account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
+					group := strings.clone_to_cstring(
+						ui.chats[ui.selected].group_id,
+						context.temp_allocator,
+					)
+					if marmot.upload_media(client, account, group, &request, &result) != .OK {
+						fmt.eprintfln("media: upload failed: %s", marmot.last_error())
+					} else {
+						fmt.eprintfln("media: uploaded %d attachment(s)", result.attachments_len)
+						marmot.media_upload_result_free(result)
+						load_timeline(client, &ui)
+					}
+				}
+			}
+		}
+		if frame == 5 && ui.selected >= 0 {
+			if seed := os.get_env("WN_TEST_COMPOSE", context.allocator); seed != "" {
+				ed_set(&ui, &ui.compose, seed)
+				ui.ed_target = &ui.compose
+				mid := rune_snap(seed, len(seed) / 2)
+				ui.ed.selection = {mid, mid}
+			}
+		}
+		if frame == 22 &&
+		   ui.selected >= 0 &&
+		   os.get_env("WN_TEST_PICKER", context.temp_allocator) != "" {
+			open_picker(&ui, "")
+		}
+		// WN_TEST_PREVIEW=<path> opens the preview modal on a local
+		// file, the only way to reach the model inspector headlessly
+		// (the modal otherwise opens from an attachment).
+		// Frame 12, before WN_TEST_CLICK's release at 20, so a click can
+		// land on the modal.
+		// WN_TEST_WEB=<url> opens the webxdc modal on any URL, and
+		// WN_TEST_XDC=<file.xdc> takes the whole path a real
+		// attachment takes (unpack, serve, run). Both exist because
+		// the modal otherwise opens only from a chat.
+		if frame == 12 && !web_modal.open {
+			if url := os.get_env("WN_TEST_WEB", context.temp_allocator); url != "" {
+				web_open(url, "test")
+			}
+			if path := os.get_env("WN_TEST_XDC", context.temp_allocator); path != "" {
+				if bytes, err := os.read_entire_file(path, context.allocator); err == nil {
+					if view := xdc_view_make(bytes, path); view != nil {
+						xdc_launch(&ui, client, view, "test-session", "test-group")
+					} else {
+						fmt.eprintfln("webxdc: %s is not a webxdc app", path)
+					}
+				}
+			}
+		}
+		if frame == 12 && !preview_shown {
+			if path := os.get_env("WN_TEST_PREVIEW", context.temp_allocator); path != "" {
+				if bytes, err := os.read_entire_file(path, context.allocator); err == nil {
+					preview_show(path, bytes) // the extension is what dispatches
+				}
+			}
+		}
+		if frame == 22 && os.get_env("WN_TEST_HIST", context.temp_allocator) != "" {
+			for msg, i in ui.messages {
+				if msg.edited {
+					ui.hist_open = true
+					ui.hist_msg = i
+					break
+				}
+			}
+		}
+		if frame == 20 &&
+		   ui.selected >= 0 &&
+		   len(ui.messages) > 0 &&
+		   os.get_env("WN_TEST_CTX", context.temp_allocator) != "" {
+			ui.ctx_open = true
+			ui.ctx_msg = len(ui.messages) - 1
+			ui.ctx_x = 400
+			ui.ctx_y = 120
+		}
+		if frame == 12 && ui.selected >= 0 && len(ui.messages) > 0 {
+			if os.get_env("WN_TEST_REACT", context.allocator) != "" {
+				message_op(&ui, client, .React, ui.messages[len(ui.messages) - 1].id, "👍")
+			}
+			if edit_to := os.get_env("WN_TEST_EDIT", context.allocator); edit_to != "" {
+				for msg in ui.messages {
+					if msg.mine {
+						clear(&ui.compose)
+						append(&ui.compose, edit_to)
+						ui.editing = msg.id
+						break
+					}
+				}
+				if len(ui.editing) > 0 {
+					summary: ^marmot.Send_Summary
+					account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
+					group := strings.clone_to_cstring(
+						ui.chats[ui.selected].group_id,
+						context.temp_allocator,
+					)
+					target := strings.clone_to_cstring(ui.editing, context.temp_allocator)
+					if marmot.edit_message(
+						   client,
+						   account,
+						   group,
+						   target,
+						   strings.clone_to_cstring(edit_to, context.temp_allocator),
+						   &summary,
+					   ) ==
+					   .OK {
+						marmot.send_summary_free(summary)
+					}
+					ui.editing = ""
+					clear(&ui.compose)
+					load_timeline(client, &ui)
+				}
+			}
+		}
+		// Shot waits out the click sequence: 25 frames per extra pair.
+		shot_frame := test_send != "" ? 300 : 30
+		if test_click := os.get_env("WN_TEST_CLICK", context.temp_allocator); test_click != "" {
+			pairs := (strings.count(test_click, ",") + 1) / 2
+			shot_frame += max(pairs - 1, 0) * 25
+		}
+		if sf := os.get_env("WN_SHOT_FRAME", context.temp_allocator); sf != "" {
+			shot_frame = parse_int_or(sf, shot_frame)
+		}
+		if shot && frame == shot_frame {
+			rl.TakeScreenshot("wn-odin-shot.png")
+			break
+		}
+	}
+
+	// Persist the open chat's half-written draft across restarts.
+	stash_draft(&ui)
+	save_settings(&ui)
+
+	// Shutdown order matters: closing the runtime makes the blocking
+	// subscription read return CLOSED (worker exits), then the sub is
+	// freed before the client that created it.
+	if client != nil {
+		marmot.client_shutdown(client)
+		if live.worker != nil {
+			thread.join(live.worker)
+			thread.destroy(live.worker)
+			marmot.chat_list_subscription_free(live.sub)
+		}
+		marmot.client_free(client)
+	}
+	rl.CloseWindow()
+}

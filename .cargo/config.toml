@@ -1,5 +1,0 @@
-# darkmatter is now a public repo fetched over https (no auth needed). We keep
-# git-fetch-with-cli so cargo fetches through the git CLI, which honours any
-# local git proxy/credential config the user already has set up.
-[net]
-git-fetch-with-cli = true

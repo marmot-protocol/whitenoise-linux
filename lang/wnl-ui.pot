@@ -2,6 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: wnl-ui\n"
+"Report-Msgid-Bugs-To: \n"
 "PO-Revision-Date: 2026-07-06 00:00+0000\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -9,4010 +10,1344 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-msgctxt "date, %1 = day, %2 = month"
-msgid "%1 %2"
+#, c-format
+msgid "%d connecting, %d pending, %d disconnected, %d sleeping."
 msgstr ""
 
-#. Japanese "%1%2日"). %1/%2/%3 keep the slot meaning named in the context.
-msgctxt "date, %1 = month, %2 = day"
-msgid "%1 %2"
+#, c-format
+msgid "%d of %d connected"
 msgstr ""
 
-msgctxt "date, %1 = day, %2 = month, %3 = year"
-msgid "%1 %2 %3"
+#, c-format
+msgid "%d of %d relays are up."
 msgstr ""
 
-msgctxt "date, %1 = month, %2 = day, %3 = year"
-msgid "%1 %2 %3"
+#, c-format
+msgid "%d published, %d on this device, seen on %d relays."
 msgstr ""
 
-msgctxt "group system line, %1 = actor, %2 = added member"
-msgid "%1 added %2"
+#, c-format
+msgid "%d published, so people can invite you."
 msgstr ""
 
-msgctxt "group system line, %1 = actor"
-msgid "%1 changed the group photo"
+msgid "(none)"
 msgstr ""
 
-msgctxt "group system line, %1 = actor, %2 = former admin"
-msgid "%1 dismissed %2 as admin"
+msgid "(nothing loaded yet, click Refresh)"
 msgstr ""
 
-msgctxt "EditHistoryModal"
-msgid "%1 edits"
+msgid "(unknown)"
 msgstr ""
 
-msgctxt "group system line, %1 = the member who left"
-msgid "%1 left the group"
+msgid "(unpublished)"
 msgstr ""
 
-msgctxt "group system line, %1 = actor, %2 = new admin"
-msgid "%1 made %2 an admin"
+msgid "+"
 msgstr ""
 
-msgctxt "group system line, %1 = actor, %2 = removed member"
-msgid "%1 removed %2"
+msgid "-"
 msgstr ""
 
-msgctxt "group system line, %1 = actor, %2 = new group name"
-msgid "%1 renamed the group to %2"
+msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr ""
 
-msgctxt "relative time, %1 = days"
-msgid "%1d ago"
-msgstr ""
-
-msgctxt "relative time, %1 = hours"
-msgid "%1h ago"
-msgstr ""
-
-msgctxt "relative time, %1 = minutes"
-msgid "%1m ago"
-msgstr ""
-
-msgctxt "ForwardPickerModal"
-msgid "(attachment)"
-msgstr ""
-
-msgctxt "MessageBody"
-msgid "(message unavailable)"
-msgstr ""
-
-msgctxt "ProfilePage"
-msgid "(no display name)"
-msgstr ""
-
-msgctxt "KeysPage"
-msgid "(no key-package relays configured)"
-msgstr ""
-
-msgctxt "DebugPane"
-msgid "(no snapshot yet — click Refresh)"
-msgstr ""
-
-msgctxt "KpInspectorPane"
-msgid "(nothing loaded yet — click Refresh)"
-msgstr ""
-
-msgctxt "DebugJsonModal"
-msgid "(nothing to show)"
-msgstr ""
-
-msgctxt "KeysPage"
-msgid "(published to your kind-10051 relay list)"
-msgstr ""
-
-msgctxt "MentionPicker"
-msgid "(you)"
-msgstr ""
-
-msgctxt "EditHistoryModal"
-msgid "1 edit"
-msgstr ""
-
-msgctxt "ChatHeader"
-msgid "1 member"
-msgid_plural "{n} members"
-msgstr[0] ""
-msgstr[1] ""
-
-msgctxt "GroupHero"
-msgid "1 member"
-msgid_plural "{n} members"
-msgstr[0] ""
-msgstr[1] ""
-
-msgctxt "SharedGroupsList"
-msgid "1 member"
-msgid_plural "{n} members"
-msgstr[0] ""
-msgstr[1] ""
-
-msgctxt "GlobalSearchModal"
-msgid "1 result"
-msgid_plural "{n} results"
-msgstr[0] ""
-msgstr[1] ""
-
-msgctxt "GeneralPane"
-msgid "12-hour"
-msgstr ""
-
-msgctxt "GeneralPane"
-msgid "24-hour"
-msgstr ""
-
-msgctxt "ProfilePage"
-msgid "A line or two about you"
-msgstr ""
-
-msgctxt "NicknameModal"
-msgid "A private name for {}. Only you see it — leave empty to use their published name."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "A relay address starts with wss:// — for example wss://relay.example.com."
-msgstr ""
-
-msgctxt "ContactDetail"
 msgid "ACTIONS"
 msgstr ""
 
-msgctxt "AccountSwitcherDetail"
-msgid "ACTIVE"
+msgid "ADD MEMBER"
 msgstr ""
 
-msgctxt "AccountSwitcherList"
-msgid "ACTIVE"
-msgstr ""
-
-msgctxt "StatusBar"
-msgid "AGO"
-msgstr ""
-
-msgctxt "ThemePicker"
-msgid "AMOLED"
-msgstr ""
-
-msgctxt "ArchivedDetail"
-msgid "ARCHIVED"
-msgstr ""
-
-msgctxt "ArchivedSidebar"
-msgid "ARCHIVED"
-msgstr ""
-
-msgctxt "ArchivedDetail"
-msgid "ARCHIVED  ·  1 MEMBER"
-msgid_plural "ARCHIVED  ·  {n} MEMBERS"
-msgstr[0] ""
-msgstr[1] ""
-
-msgctxt "AdvancedPane"
 msgid "AUDIT LOG FILES"
 msgstr ""
 
-msgctxt "AboutPane"
 msgid "About"
 msgstr ""
 
-msgctxt "ProfilePage"
-msgid "About"
-msgstr ""
-
-msgctxt "SettingsSidebar"
-msgid "About"
-msgstr ""
-
-msgctxt "AppearancePane"
 msgid "Accent color"
 msgstr ""
 
-msgctxt "ChatHeader"
 msgid "Accept"
 msgstr ""
 
-msgctxt "ChatRequestBar"
-msgid "Accept"
-msgstr ""
-
-msgctxt "ChatRequestBar"
-msgid "Accept the request to start messaging"
-msgstr ""
-
-msgctxt "AccountSwitcherModal"
-msgid "Account"
-msgstr ""
-
-msgctxt "AccountSwitcherList"
-msgid "Account details"
-msgstr ""
-
-msgctxt "AccountSwitcherModal"
 msgid "Accounts"
 msgstr ""
 
-msgctxt "AppShell"
-msgid "Accounts"
-msgstr ""
-
-msgctxt "GetStartedScreen"
 msgid "Add"
 msgstr ""
 
-msgctxt "RelayListEditor"
-msgid "Add"
+msgid "Add a contact for a direct chat, or leave it empty for a group of your own."
 msgstr ""
 
-msgctxt "SidePanel"
-msgid "Add"
-msgstr ""
-
-msgctxt "NetworkPane"
-msgid "Add a relay below — nothing publishes until you do."
-msgstr ""
-
-msgctxt "GetStartedScreen"
-msgid "Add a relay first."
-msgstr ""
-
-msgctxt "AccountSwitcherModal"
 msgid "Add account"
 msgstr ""
 
-msgctxt "AddAccountModal"
-msgid "Add account"
-msgstr ""
-
-#. New-chat / add-contact status copy (src/wiring/chats.rs, contacts.rs).
-msgctxt "ErrorCopy"
-msgid "Add at least one npub."
-msgstr ""
-
-msgctxt "AddContactModal"
-msgid "Add contact"
-msgstr ""
-
-#. or failed kind-0 fetch hides the action entirely.
-msgctxt "ProfileModal"
-msgid "Add contact"
-msgstr ""
-
-msgctxt "Composer"
-msgid "Add emoji"
-msgstr ""
-
-msgctxt "AddMemberRow"
-msgid "Add member"
-msgstr ""
-
-msgctxt "MessageContextMenu"
 msgid "Add reaction"
 msgstr ""
 
-#. say what a tap does instead of what it shows.
-msgctxt "QuickReactCell"
-msgid "Add reaction"
+msgid "Add someone by npub, or make a group of your own."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Add the relay's address after wss://."
-msgstr ""
-
-msgctxt "AddAccountModal"
-msgid "Adding…"
-msgstr ""
-
-msgctxt "AddContactModal"
-msgid "Adding…"
-msgstr ""
-
-msgctxt "ProfileModal"
-msgid "Adding…"
-msgstr ""
-
-msgctxt "GroupMemberRow"
 msgid "Admin"
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Admin added."
+msgid "Admins can add and remove members and change group details."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Admin removed."
-msgstr ""
-
-msgctxt "GroupLeaveRow"
-msgid "Admins must step down before leaving."
-msgstr ""
-
-msgctxt "AdvancedPane"
 msgid "Advanced"
 msgstr ""
 
-msgctxt "SettingsSidebar"
-msgid "Advanced"
-msgstr ""
-
-msgctxt "NetworkPane"
 msgid "Aggregate connection counter from the relay pool."
 msgstr ""
 
-msgctxt "AppShell"
-msgid "All"
-msgstr ""
-
-msgctxt "AccountSwitcherDetail"
-msgid "All accounts"
-msgstr ""
-
-msgctxt "AccountSwitcherModal"
 msgid "All accounts stay connected. Switching only changes which one you're looking at."
 msgstr ""
 
-msgctxt "AppearancePane"
-msgid "Also Ctrl + / − / 0, or Ctrl + scroll."
+msgid "All folders"
 msgstr ""
 
-msgctxt "LabelModal"
-msgid "An organizing label for {}. Leave empty to remove it."
+msgid "Also Ctrl + / - / 0."
 msgstr ""
 
-msgctxt "AppearancePane"
+msgid "Always open links to this site"
+msgstr ""
+
+msgid "Anything you write here stays between you and this device's key."
+msgstr ""
+
 msgid "Appearance"
 msgstr ""
 
-msgctxt "SettingsSidebar"
-msgid "Appearance"
+msgid "Applies to message bodies and the composer."
 msgstr ""
 
-msgctxt "month"
-msgid "Apr"
-msgstr ""
-
-msgctxt "AppShell"
 msgid "Archive"
 msgstr ""
 
-msgctxt "ChatHeader"
-msgid "Archive"
+msgid "Audit log file deleted."
 msgstr ""
 
-msgctxt "ContactDetail"
-msgid "Archive chat"
-msgstr ""
-
-msgctxt "Composer"
-msgid "Attach file"
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Audit log deleted — recording continues in a fresh file."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Audit log deleted."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Audit logging disabled. Existing files stay until you delete them."
-msgstr ""
-
-#. Audit-log settings feedback (src/wiring/panes.rs).
-msgctxt "ErrorCopy"
-msgid "Audit logging enabled — recording now; logs upload automatically."
-msgstr ""
-
-msgctxt "AdvancedPane"
 msgid "Audit logs"
 msgstr ""
 
-msgctxt "month"
-msgid "Aug"
+msgid "BUILT WITH"
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Available"
-msgstr ""
-
-msgctxt "ImportBackupModal"
-msgid "BACKUP FILE"
-msgstr ""
-
-msgctxt "ImportBackupModal"
-msgid "BACKUP PASSWORD"
-msgstr ""
-
-msgctxt "LoginScreen"
 msgid "Back"
 msgstr ""
 
-msgctxt "AccountSwitcherConfirm"
-msgid "Back it up first if you'll want to sign in again — this can't be undone."
-msgstr ""
-
-msgctxt "StoragePane"
 msgid "Back up everything"
 msgstr ""
 
-msgctxt "LoginScreen"
-msgid "Back up your nsec before saving"
+msgid "Backup created."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Backend isn't ready yet."
+#, c-format
+msgid "Backup imported: %d files restored."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Backend not ready."
+msgid "Backups hold what this device stores locally. Your keys and message history live in marmot's own store and are not included."
 msgstr ""
 
-msgctxt "status, %1 = error detail"
-msgid "Backup failed: %1"
-msgstr ""
-
-msgctxt "status toast after writing a backup, %1 = destination path"
-msgid "Backup saved to %1"
-msgstr ""
-
-msgctxt "AppearancePane"
-msgid "Berry"
-msgstr ""
-
-msgctxt "ChatHeader"
 msgid "Block"
 msgstr ""
 
-msgctxt "ConfirmFlows"
-msgid "Block"
+msgid "Block this contact?"
 msgstr ""
 
-msgctxt "ContactDetail"
-msgid "Block"
-msgstr ""
-
-msgctxt "ConfirmFlows"
-msgid "Block this chat request?"
-msgstr ""
-
-msgctxt "ConfirmFlows"
-msgid "Block {}?"
-msgstr ""
-
-msgctxt "AboutPane"
-msgid "Built with"
-msgstr ""
-
-msgctxt "MainPane"
-msgid "CHAT REQUEST"
-msgstr ""
-
-msgctxt "AppShell"
-msgid "CHATS"
-msgstr ""
-
-msgctxt "StatusBar"
-msgid "COMMAND"
-msgstr ""
-
-msgctxt "ChangePasswordModal"
-msgid "CONFIRM NEW PASSWORD"
-msgstr ""
-
-msgctxt "LoginScreen"
 msgid "CONFIRM PASSWORD"
 msgstr ""
 
-msgctxt "StatusBar"
-msgid "CONNECTING"
-msgstr ""
-
-msgctxt "ContactsSidebar"
-msgid "CONTACTS"
-msgstr ""
-
-msgctxt "AboutPane"
-msgid "CREDITS"
-msgstr ""
-
-msgctxt "ChangePasswordModal"
-msgid "CURRENT PASSWORD"
-msgstr ""
-
-msgctxt "GeneralPane"
 msgid "CUSTOM EMOJI"
 msgstr ""
 
-msgctxt "StoragePane"
+msgid "CacheClear"
+msgstr ""
+
 msgid "Cached attachments"
 msgstr ""
 
-msgctxt "AudioTile"
-msgid "Can't play this audio format"
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Can't reach your relays right now. Check your relay settings and try again."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Can't start a chat with only yourself."
-msgstr ""
-
-msgctxt "AccountSwitcherModal"
 msgid "Cancel"
 msgstr ""
 
-msgctxt "AddAccountModal"
-msgid "Cancel"
+msgid "Cancel edit / reply, close panels"
 msgstr ""
 
-msgctxt "AddContactModal"
-msgid "Cancel"
+msgid "Center the conversation"
 msgstr ""
 
-msgctxt "BackupCreateModal"
-msgid "Cancel"
-msgstr ""
-
-msgctxt "ChangePasswordModal"
-msgid "Cancel"
-msgstr ""
-
-msgctxt "ConfirmModal"
-msgid "Cancel"
-msgstr ""
-
-msgctxt "CustomEmojiModal"
-msgid "Cancel"
-msgstr ""
-
-#. control lives inline next to the key) and the footer just closes.
-msgctxt "ExportKeyModal"
-msgid "Cancel"
-msgstr ""
-
-msgctxt "ForwardPickerModal"
-msgid "Cancel"
-msgstr ""
-
-msgctxt "HeroEditField"
-msgid "Cancel"
-msgstr ""
-
-msgctxt "ImportBackupModal"
-msgid "Cancel"
-msgstr ""
-
-msgctxt "LabelModal"
-msgid "Cancel"
-msgstr ""
-
-msgctxt "NicknameModal"
-msgid "Cancel"
-msgstr ""
-
-msgctxt "ProfilePage"
-msgid "Cancel"
-msgstr ""
-
-#. control lives inline next to the key) and the footer just closes.
-msgctxt "RevealNsecModal"
-msgid "Cancel"
-msgstr ""
-
-msgctxt "StartNewChatModal"
-msgid "Cancel"
-msgstr ""
-
-msgctxt "EditBanner"
-msgid "Cancel edit"
-msgstr ""
-
-msgctxt "RecordingOverlay"
-msgid "Cancel recording"
-msgstr ""
-
-msgctxt "ReplyBanner"
-msgid "Cancel reply"
-msgstr ""
-
-msgctxt "AppearancePane"
 msgid "Centred conversation"
 msgstr ""
 
-msgctxt "ThemePicker"
-msgid "Chalkboard"
-msgstr ""
-
-msgctxt "KeysPage"
 msgid "Change"
 msgstr ""
 
-msgctxt "language picker button"
-msgid "Change"
+msgid "Change photo"
 msgstr ""
 
-msgctxt "ChangePasswordModal"
-msgid "Change password"
+msgid "Check now"
 msgstr ""
 
-msgctxt "ChangePasswordModal"
-msgid "Change vault password"
+msgid "Checking your key with the relays. This takes a few seconds."
 msgstr ""
 
-msgctxt "KeysPage"
-msgid "Change vault password"
-msgstr ""
-
-msgctxt "ChangePasswordModal"
-msgid "Changing…"
-msgstr ""
-
-msgctxt "ChatRequestBanner"
-msgid "Chat request"
-msgstr ""
-
-msgctxt "AppShell"
-msgid "Chats"
-msgstr ""
-
-msgctxt "ArchivedPage"
-msgid "Chats you archive are kept here, out of your main list."
-msgstr ""
-
-#. relay host and the relative time, filled Rust-side with `tmpl`.
-msgctxt "ErrorCopy"
-msgid "Checking…"
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Choose a backup file first."
-msgstr ""
-
-msgctxt "NativeDialogStrings"
-msgid "Choose a custom emoji image"
-msgstr ""
-
-msgctxt "ChangePasswordModal"
-msgid "Choose a password"
-msgstr ""
-
-msgctxt "LoginScreen"
-msgid "Choose a password"
-msgstr ""
-
-msgctxt "NativeDialogStrings"
-msgid "Choose a profile picture"
-msgstr ""
-
-msgctxt "ImportBackupModal"
-msgid "Choose file…"
-msgstr ""
-
-msgctxt "BackupCreateModal"
-msgid "Choose location…"
-msgstr ""
-
-msgctxt "KpCard"
-msgid "Ciphersuite"
-msgstr ""
-
-msgctxt "KpCard"
-msgid "Ciphersuites"
-msgstr ""
-
-msgctxt "ConfirmFlows"
 msgid "Clear cache"
 msgstr ""
 
-msgctxt "StoragePane"
-msgid "Clear cache"
+msgid "Clear effect"
 msgstr ""
 
-msgctxt "ConfirmFlows"
-msgid "Clear the media cache?"
-msgstr ""
-
-msgctxt "StoragePane"
-msgid "Clearing…"
-msgstr ""
-
-msgctxt "AccountSwitcherModal"
 msgid "Close"
 msgstr ""
 
-msgctxt "DebugJsonModal"
-msgid "Close"
+msgid "Close to tray"
 msgstr ""
 
-msgctxt "Modal"
-msgid "Close"
+msgid "Closing the window hides it. The tray icon shows your unread total and brings it back."
 msgstr ""
 
-msgctxt "ProfileModal"
-msgid "Close"
+msgid "Collapse the chat list"
 msgstr ""
 
-msgctxt "command palette footer"
-msgid "Close"
+msgid "Command palette"
 msgstr ""
 
-msgctxt "ChatHeader"
-msgid "Close search"
+msgid "Confirm"
 msgstr ""
 
-msgctxt "ChatSearchBar"
-msgid "Close search"
+msgid "Confirm clear"
 msgstr ""
 
-msgctxt "JsonView"
-msgid "Collapse"
+msgid "Confirm delete"
 msgstr ""
 
-msgctxt "AppShell"
-msgid "Collapse chat panel"
+msgid "Confirm import"
 msgstr ""
 
-msgctxt "KeysPage"
-msgid "Configure key-package relays first."
+msgid "Confirm reveal"
 msgstr ""
 
-msgctxt "BackupCreateModal"
-msgid "Confirm your password"
+msgid "Confirm: delete this vault"
 msgstr ""
 
-msgctxt "ExportKeyModal"
-msgid "Confirm your vault password to create an NIP-49 encrypted key (ncryptsec) you can safely store or move to another client."
+msgid "Connect to relays"
 msgstr ""
 
-msgctxt "RevealNsecModal"
-msgid "Confirm your vault password to reveal the secret key (nsec) for your active account."
+msgid "Connected to relays"
 msgstr ""
 
-msgctxt "GetStartedScreen"
-msgid "Connect a relay"
+msgid "Connecting to relays"
 msgstr ""
 
-msgctxt "AboutPane"
-msgid "Connect to Nostr relays you choose."
-msgstr ""
-
-msgctxt "GetStartedScreen"
-msgid "Connected · {}/{}"
-msgstr ""
-
-msgctxt "NetworkPane"
-msgid "Connected · {}/{}"
-msgstr ""
-
-msgctxt "AppState"
-msgid "Connecting to relays…"
-msgstr ""
-
-msgctxt "SplashScreen"
-msgid "Connecting to relays…"
-msgstr ""
-
-msgctxt "ContactDetail"
 msgid "Contact"
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Contacting relays…"
-msgstr ""
-
-msgctxt "ProfileModal"
-msgid "Contacting relays…"
-msgstr ""
-
-msgctxt "AppShell"
-msgid "Contacts"
-msgstr ""
-
-msgctxt "LoginScreen"
 msgid "Continue"
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Copied to clipboard."
-msgstr ""
-
-msgctxt "CopyChip"
-msgid "Copied ✓"
-msgstr ""
-
-msgctxt "EncryptionInfoModal"
-msgid "Copied ✓"
-msgstr ""
-
-msgctxt "ExportKeyModal"
-msgid "Copied ✓"
-msgstr ""
-
-msgctxt "RevealNsecModal"
-msgid "Copied ✓"
-msgstr ""
-
-msgctxt "AddAccountModal"
 msgid "Copy"
 msgstr ""
 
-msgctxt "ContactDetail"
-msgid "Copy"
-msgstr ""
-
-msgctxt "ExportKeyModal"
-msgid "Copy"
-msgstr ""
-
-msgctxt "ImageViewerModal"
-msgid "Copy"
-msgstr ""
-
-msgctxt "KeysPage"
-msgid "Copy"
-msgstr ""
-
-msgctxt "LoginScreen"
-msgid "Copy"
-msgstr ""
-
-msgctxt "ProfilePage"
-msgid "Copy"
-msgstr ""
-
-msgctxt "RevealNsecModal"
-msgid "Copy"
-msgstr ""
-
-msgctxt "StoragePane"
-msgid "Copy"
-msgstr ""
-
-msgctxt "DebugJsonModal"
 msgid "Copy JSON"
 msgstr ""
 
-msgctxt "DebugPane"
-msgid "Copy JSON"
+msgid "Copy npub"
 msgstr ""
 
-msgctxt "ProfileModal"
-msgid "Copy Lightning address"
-msgstr ""
-
-msgctxt "ProfileModal"
-msgid "Copy NIP-05 identifier"
-msgstr ""
-
-msgctxt "AccountSwitcherDetail"
-msgid "Copy public key"
-msgstr ""
-
-msgctxt "ContactDetail"
-msgid "Copy public key"
-msgstr ""
-
-msgctxt "KeysPage"
-msgid "Copy public key"
-msgstr ""
-
-msgctxt "ProfileModal"
-msgid "Copy public key"
-msgstr ""
-
-msgctxt "ProfilePage"
-msgid "Copy public key"
-msgstr ""
-
-msgctxt "QrModal"
-msgid "Copy public key"
-msgstr ""
-
-msgctxt "MessageContextMenu"
-msgid "Copy selection"
-msgstr ""
-
-msgctxt "MessageContextMenu"
 msgid "Copy text"
 msgstr ""
 
-msgctxt "AppearancePane"
-msgid "Coral"
+#, c-format
+msgid "Couldn't change audit logs. %s"
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Couldn't accept the invitation. Please try again."
+#, c-format
+msgid "Couldn't change relay telemetry. %s"
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Couldn't access clipboard."
+msgid "Couldn't create the backup. Please try again."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Couldn't access clipboard. Your nsec was not copied."
+msgid "Couldn't create the vault. Please try again."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Couldn't add that account. Double-check the key and try again."
+#, c-format
+msgid "Couldn't delete the audit log file. %s"
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Couldn't add that contact. Please try again."
+#, c-format
+msgid "Couldn't export the key. %s"
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Couldn't add that member. Please try again."
+msgid "Couldn't load attachment. Click to retry."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Couldn't add your reaction. Please try again."
+msgid "Couldn't load image. Click to retry."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Couldn't archive this chat. Please try again."
+#, c-format
+msgid "Couldn't load the timeline. %s"
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Couldn't change audit logging."
+msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Couldn't change your vault password. Please try again."
+#, c-format
+msgid "Couldn't publish the key package. %s"
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Couldn't copy image."
+msgid "Couldn't read that pubkey. Double-check it and try again."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Couldn't create the chat. Please try again."
+msgid "Couldn't read the backup file. Please try again."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Couldn't create the encrypted key. Please try again."
+msgid "Couldn't read the backup. Please try again."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Couldn't decline the invitation. Please try again."
+msgid "Couldn't read the vault file. Please try again."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Couldn't delete audit log."
+#, c-format
+msgid "Couldn't read their key packages. %s"
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Couldn't download image."
+#, c-format
+msgid "Couldn't reveal your private key. %s"
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Couldn't download that image. Try another."
+msgid "Couldn't serialize the key packages. Please try again."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Couldn't export contacts."
+msgid "Couldn't serialize the snapshot. Please try again."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Couldn't find anyone with that username. Double-check the name@domain and try again."
+msgid "Couldn't unlock the vault. Double-check the password and try again."
 msgstr ""
 
-#. Tier 2 — operation-specific fallbacks.
-msgctxt "ErrorCopy"
-msgid "Couldn't finish syncing. It will retry automatically. Check your relay settings if this keeps happening."
-msgstr ""
-
-#. Forward failure: some source attachments could not be fetched to re-send.
-msgctxt "error banner when forwarding attachments fails, %1 = failed count, %2 = total count"
-msgid "Couldn't forward %1 of %2 attachments. Tap the message to try again."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Couldn't play audio."
-msgstr ""
-
-msgctxt "VideoViewerModal"
-msgid "Couldn't play video — tap to retry"
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Couldn't publish your key package. Check your relay settings and try again."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Couldn't refresh your key packages. Check your relay settings and try again."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Couldn't remove that contact. Please try again."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Couldn't remove your reaction. Please try again."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Couldn't republish to your relays. Check your relay settings and try again."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Couldn't restore this chat. Please try again."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Couldn't rotate your key package. Check your relay settings and try again."
-msgstr ""
-
-msgctxt "status toast when saving a file fails, %1 = file name"
-msgid "Couldn't save %1. Check the location has space and permission, then try again."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Couldn't save image."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Couldn't save video."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Couldn't save your edit. Please try again."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Couldn't save your profile. Please try again."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Couldn't save your relay list. Please try again."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Couldn't search for images. Please try again."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Couldn't send your message. Please try again."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Couldn't start up. Check your relay settings and try again."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Couldn't switch accounts. Please try again."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Couldn't update the group image. Please try again."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Couldn't update the group settings. Please try again."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Couldn't upload your picture. Please try again."
-msgstr ""
-
-msgctxt "StartNewChatModal"
 msgid "Create"
 msgstr ""
 
-msgctxt "BackupCreateModal"
 msgid "Create backup"
 msgstr ""
 
-msgctxt "StoragePane"
-msgid "Create backup…"
+msgid "Create backup..."
 msgstr ""
 
-msgctxt "KeysPage"
-msgid "Creates an NIP-49 key encrypted with your vault password, safe to store or move to another client."
-msgstr ""
-
-msgctxt "StartNewChatModal"
-msgid "Creating…"
-msgstr ""
-
-msgctxt "KpCard"
-msgid "Credential"
-msgstr ""
-
-msgctxt "KpCard"
-msgid "Credentials"
-msgstr ""
-
-msgctxt "EditHistoryRow"
-msgid "Current"
-msgstr ""
-
-msgctxt "CustomEmojiModal"
-msgid "Custom Emoji"
-msgstr ""
-
-msgctxt "KeysPage"
 msgid "DANGER ZONE"
 msgstr ""
 
-msgctxt "NotificationsPane"
+msgid "DECODED MLS KEY PACKAGES"
+msgstr ""
+
 msgid "DESKTOP ALERTS"
 msgstr ""
 
-msgctxt "AdvancedPane"
 msgid "DEVELOPER"
 msgstr ""
 
-msgctxt "ThemePicker"
-msgid "Dark"
+msgid "DISPLAY NAME"
 msgstr ""
 
-msgctxt "GeneralPane"
 msgid "Date format"
 msgstr ""
 
-msgctxt "DebugPane"
 msgid "Debug"
 msgstr ""
 
-msgctxt "SettingsSidebar"
-msgid "Debug"
+msgid "Decline"
 msgstr ""
 
-msgctxt "month"
-msgid "Dec"
+msgid "Decline this invitation?"
 msgstr ""
 
-msgctxt "AboutPane"
-msgid "Decentralized network"
+msgid "Decode own"
 msgstr ""
 
-msgctxt "KpCard"
-msgid "Decode error"
-msgstr ""
-
-msgctxt "KpInspectorPane"
-msgid "Decoded MLS key packages: yours, and anyone's by pubkey"
-msgstr ""
-
-msgctxt "StoragePane"
-msgid "Decrypted images and files, stored encrypted on this device."
-msgstr ""
-
-msgctxt "ConfirmFlows"
 msgid "Delete"
 msgstr ""
 
-#. Icon-only and destructive, so it needs a spoken name.
-msgctxt "AuditFileRow"
-msgid "Delete audit file"
-msgstr ""
-
-msgctxt "SettingsPage"
-msgid "Delete audit log file?"
-msgstr ""
-
-msgctxt "SettingsPage"
-msgid "Delete file"
-msgstr ""
-
-msgctxt "MessageContextMenu"
 msgid "Delete for everyone"
 msgstr ""
 
-msgctxt "ConfirmFlows"
-msgid "Delete for everyone?"
-msgstr ""
-
-msgctxt "MessageContextMenu"
 msgid "Delete for me"
 msgstr ""
 
-msgctxt "ConfirmFlows"
-msgid "Delete for me?"
+msgid "Delete for you?"
 msgstr ""
 
-msgctxt "AdvancedPane"
-msgid "Deleting the file being recorded rotates it — recording continues in a fresh file."
+msgid "Delete this message?"
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Description saved."
+msgid "Deleted. Recording continues in a fresh file."
 msgstr ""
 
-msgctxt "NotificationsPane"
+msgid "Deleting the file being recorded rotates it. Recording continues in a fresh file."
+msgstr ""
+
+msgid "Demote"
+msgstr ""
+
 msgid "Desktop notifications"
 msgstr ""
 
-msgctxt "AdvancedPane"
 msgid "Developer mode"
 msgstr ""
 
-msgctxt "LoginScreen"
-msgid "Discard key"
+msgid "Done."
 msgstr ""
 
-msgctxt "LoginScreen"
-msgid "Discard this key?"
+msgid "Drops idle relay sockets and dials them again."
 msgstr ""
 
-msgctxt "ErrorBanner"
-msgid "Dismiss"
-msgstr ""
-
-msgctxt "ProfilePage"
-msgid "Display name"
-msgstr ""
-
-msgctxt "ConfirmFlows"
-msgid "Don't ask again for this site"
-msgstr ""
-
-#. control lives inline next to the key) and the footer just closes.
-msgctxt "ExportKeyModal"
-msgid "Done"
-msgstr ""
-
-#. control lives inline next to the key) and the footer just closes.
-msgctxt "RevealNsecModal"
-msgid "Done"
-msgstr ""
-
-msgctxt "ProfilePage"
-msgid "EDIT"
-msgstr ""
-
-msgctxt "ProfilePage"
-msgid "EDITING · BROADCAST TO RELAYS ON SAVE"
-msgstr ""
-
-msgctxt "ExportKeyModal"
 msgid "ENCRYPTED KEY (NCRYPTSEC)"
 msgstr ""
 
-msgctxt "EditHistoryRow"
-msgid "Edit %1"
+msgid "EXPORT CHAT"
 msgstr ""
 
-msgctxt "EditHistoryModal"
+msgid "Edit"
+msgstr ""
+
 msgid "Edit history"
 msgstr ""
 
-msgctxt "ChatContextMenu"
-msgid "Edit label ({})…"
-msgstr ""
-
-msgctxt "MessageContextMenu"
 msgid "Edit message"
 msgstr ""
 
-msgctxt "GroupMemberMenu"
-msgid "Edit nickname"
+msgid "Encrypted key copied"
 msgstr ""
 
-msgctxt "ProfilePage"
-msgid "Edit profile"
-msgstr ""
-
-msgctxt "EditBanner"
-msgid "Editing:"
-msgstr ""
-
-msgctxt "AboutPane"
-msgid "Encrypted group chat on Nostr"
-msgstr ""
-
-msgctxt "ExportKeyModal"
-msgid "Encrypting…"
-msgstr ""
-
-msgctxt "ChatHeader"
-msgid "Encryption details"
-msgstr ""
-
-msgctxt "EncryptionInfoModal"
 msgid "End-to-end encrypted"
 msgstr ""
 
-msgctxt "AboutHeroCard"
-msgid "End-to-end encrypted group messaging for Linux."
+msgid "Enter the password this backup was created with. The settings, drafts, custom emoji, and themes on this device will be replaced."
 msgstr ""
 
-msgctxt "AboutPane"
-msgid "End-to-end encryption"
+msgid "Enter your password to unlock this device's keys."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Enter a name for this emoji."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Enter a relay address."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Enter a username, npub, or hex public key."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Enter the backup password."
-msgstr ""
-
-msgctxt "AddContactModal"
-msgid "Enter their username (name@domain), npub, or hex public key. They'll appear in your contacts on every device."
-msgstr ""
-
-msgctxt "ChangePasswordModal"
-msgid "Enter your current password, then choose a new one. There is no recovery if you forget it. Existing backups stay sealed with the previous password."
-msgstr ""
-
-msgctxt "LoginScreen"
-msgid "Enter your password"
-msgstr ""
-
-msgctxt "LoginScreen"
-msgid "Enter your password to unlock"
-msgstr ""
-
-#. is the underlying error, filled Rust-side with `tmpl`.
-msgctxt "ErrorCopy"
-msgid "Enter your password."
-msgstr ""
-
-msgctxt "EncryptionInfoModal"
-msgid "Even if a key leaks later on, the messages you already sent can't be unlocked with it."
-msgstr ""
-
-msgctxt "KpCard"
 msgid "Event id"
 msgstr ""
 
-msgctxt "ConfirmFlows"
-msgid "Every cached attachment on this device is removed. Photos, voice notes, and files you've already viewed will need to redownload and redecrypt the next time you open them."
+msgid "Expand the chat list"
 msgstr ""
 
-msgctxt "JsonView"
-msgid "Expand"
+msgid "Export CSV"
 msgstr ""
 
-msgctxt "AppShell"
-msgid "Expand chat panel"
+msgid "Export JSON"
 msgstr ""
 
-msgctxt "KeysPage"
-msgid "Export"
+msgid "Export as HTML"
 msgstr ""
 
-msgctxt "SidePanel"
-msgid "Export"
+msgid "Export as Markdown"
 msgstr ""
 
-msgctxt "ExportKeyModal"
-msgid "Export encrypted key"
+msgid "FOLDERS"
 msgstr ""
 
-msgctxt "KeysPage"
-msgid "Export encrypted key (ncryptsec)"
+msgid "Filter unread chats"
 msgstr ""
 
-msgctxt "ExportKeyModal"
-msgid "Export key"
+msgid "Folders"
 msgstr ""
 
-msgctxt "ChatContextMenu"
-msgid "Export transcript…"
-msgstr ""
-
-msgctxt "KpCard"
-msgid "Extensions"
-msgstr ""
-
-msgctxt "status, %1 = error detail"
-msgid "Failed to encode key: %1"
-msgstr ""
-
-msgctxt "month"
-msgid "Feb"
-msgstr ""
-
-msgctxt "MessagesArea"
-msgid "Fetching the latest conversation history."
-msgstr ""
-
-msgctxt "KpInspectorPane"
-msgid "Fetching…"
-msgstr ""
-
-msgctxt "AdvancedPane"
-msgid "Forget trusted site {}"
-msgstr ""
-
-msgctxt "MessageContextMenu"
 msgid "Forward"
 msgstr ""
 
-msgctxt "ForwardPickerModal"
-msgid "Forward to…"
+msgid "From file"
 msgstr ""
 
-msgctxt "ForwardPickerModal"
-msgid "Forwarding from {}:"
-msgstr ""
-
-msgctxt "ForwardPickerModal"
-msgid "Forwarding:"
-msgstr ""
-
-msgctxt "weekday"
-msgid "Fri"
-msgstr ""
-
-msgctxt "key package source, %1 = relay host"
-msgid "From %1"
-msgstr ""
-
-msgctxt "key package source, %1 = relay host, %2 = relative time"
-msgid "From %1 · %2"
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Full restore is only available from the lock screen, before unlocking."
-msgstr ""
-
-msgctxt "VideoViewerModal"
-msgid "Fullscreen"
-msgstr ""
-
-msgctxt "EncryptionInfoModal"
 msgid "GROUP ID"
 msgstr ""
 
-msgctxt "StartNewChatModal"
-msgid "GROUP NAME (OPTIONAL)"
+msgid "GROUP NAME"
 msgstr ""
 
-msgctxt "ContactDetail"
 msgid "GROUPS IN COMMON"
 msgstr ""
 
-msgctxt "ProfileModal"
-msgid "GROUPS IN COMMON"
-msgstr ""
-
-msgctxt "GeneralPane"
 msgid "General"
 msgstr ""
 
-msgctxt "SettingsSidebar"
-msgid "General"
+msgid "Generating your key"
 msgstr ""
 
-msgctxt "AddAccountModal"
-msgid "Generate a new key"
-msgstr ""
-
-msgctxt "LoginScreen"
-msgid "Generate a new key"
-msgstr ""
-
-msgctxt "NotificationsPane"
 msgid "Get an alert when a message arrives in a chat you're not viewing."
 msgstr ""
 
-msgctxt "LoginScreen"
-msgid "Going back won't save this identity. Unless you backed up the nsec yourself, it's gone for good."
+msgid "Get started"
 msgstr ""
 
-msgctxt "EncryptionInfoModal"
-msgid "Got it"
+msgid "Go to archive"
 msgstr ""
 
-msgctxt "ArchivedDetail"
-msgid "Group id"
+msgid "Go to chats"
 msgstr ""
 
-msgctxt "GroupHero"
-msgid "Group name"
+msgid "Go to people"
 msgstr ""
 
-msgctxt "GeneralPane"
+msgid "Go to settings"
+msgstr ""
+
+msgid "Go to your profile"
+msgstr ""
+
+msgid "Group id copied"
+msgstr ""
+
 msgid "HELP"
 msgstr ""
 
-msgctxt "ChatHeader"
-msgid "Hide members"
+msgid "HTML"
 msgstr ""
 
-msgctxt "PasswordField"
-msgid "Hide password"
+msgid "Hide"
 msgstr ""
 
-msgctxt "ModalField"
-msgid "Hide value"
+msgid "How far the mouse wheel moves the view."
 msgstr ""
 
-msgctxt "ReactionChip"
-msgid "Hide who reacted"
-msgstr ""
-
-msgctxt "ProfilePage"
-msgid "How your name appears in chats"
-msgstr ""
-
-msgctxt "LoginScreen"
-msgid "I have an nsec"
-msgstr ""
-
-msgctxt "ContactDetail"
 msgid "IDENTITY"
 msgstr ""
 
-msgctxt "KeysPage"
-msgid "IDENTITY"
-msgstr ""
-
-msgctxt "ProfilePage"
-msgid "IDENTITY"
-msgstr ""
-
-msgctxt "NetworkPane"
 msgid "INBOX RELAYS"
 msgstr ""
 
-msgctxt "NotificationsPane"
 msgid "INCOMING MESSAGES"
 msgstr ""
 
-msgctxt "KpInspectorPane"
 msgid "INSPECT SOMEONE ELSE'S"
 msgstr ""
 
-msgctxt "EncryptionInfoModal"
-msgid "If someone's device gets compromised, the group quietly swaps in fresh keys so what you send next is private again."
+msgid "Images and files kept on this device so they don't download twice, sealed with your vault key."
 msgstr ""
 
-msgctxt "ImageViewerModal"
-msgid "Image"
-msgstr ""
-
-msgctxt "ImageViewerModal"
-msgid "Image didn't load. Tap to retry."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Image isn't ready yet."
-msgstr ""
-
-msgctxt "AlbumGrid"
-msgid "Image {} of {}"
-msgstr ""
-
-msgctxt "ImageViewerModal"
-msgid "Image {} of {}"
-msgstr ""
-
-msgctxt "AlbumGrid"
-msgid "Image {} of {}, failed to load. Activate to retry."
-msgstr ""
-
-msgctxt "AlbumGrid"
-msgid "Image {} of {}, loading."
-msgstr ""
-
-msgctxt "ImportBackupModal"
-msgid "Import"
-msgstr ""
-
-msgctxt "LoginScreen"
 msgid "Import a backup"
 msgstr ""
 
-msgctxt "StoragePane"
-msgid "Import a backup"
+msgid "Import a key"
 msgstr ""
 
-msgctxt "LoginScreen"
-msgid "Import a key & set a password"
-msgstr ""
-
-msgctxt "ImportBackupModal"
 msgid "Import backup"
 msgstr ""
 
-msgctxt "ImportBackupModal"
-msgid "Importing…"
+msgid "Import..."
 msgstr ""
 
-msgctxt "StoragePane"
-msgid "Import…"
+msgid "ImportBtn"
 msgstr ""
 
-msgctxt "KpInspectorPane"
+msgid "Insert a new line"
+msgstr ""
+
 msgid "Inspect"
 msgstr ""
 
-msgctxt "GeneralPane"
 msgid "Interface language"
 msgstr ""
 
-msgctxt "LanguagePickerModal"
-msgid "Interface language"
+msgid "Interface sounds"
 msgstr ""
 
-msgctxt "AppearancePane"
 msgid "Interface zoom"
 msgstr ""
 
-msgctxt "KeysPage"
-msgid "Invalidates the current package and uploads a fresh one to your relays."
-msgstr ""
-
-msgctxt "AddMemberRow"
 msgid "Invite"
 msgstr ""
 
-msgctxt "AddMemberRow"
-msgid "Invite by npub"
+msgid "It disappears for everyone in the chat. This can't be undone."
 msgstr ""
 
-msgctxt "GetStartedScreen"
-msgid "Invite someone by their npub and say hello."
+msgid "It is what lets people invite you to a group."
 msgstr ""
 
-msgctxt "GroupMembersPanel"
-msgid "Invited"
+msgid "It stays for everyone else. You won't see it on this device again."
 msgstr ""
 
-#. Group-admin status copy (src/wiring/groups.rs).
-msgctxt "ErrorCopy"
-msgid "Invited."
+msgid "Its keys stay in the vault on this device. You can sign in again from the accounts screen."
 msgstr ""
 
-msgctxt "AddMemberRow"
-msgid "Inviting…"
-msgstr ""
-
-msgctxt "EncryptionInfoModal"
-msgid "It recovers on its own"
-msgstr ""
-
-msgctxt "ArchivedDetail"
-msgid "It stays end-to-end encrypted. Unarchiving returns it to your main list and resumes notifications."
-msgstr ""
-
-msgctxt "AccountSwitcherConfirm"
-msgid "Its background session ends and it leaves the account list."
-msgstr ""
-
-msgctxt "AccountSwitcherConfirm"
-msgid "Its secret key is erased from this device's vault."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "JSON copied"
-msgstr ""
-
-msgctxt "month"
-msgid "Jan"
-msgstr ""
-
-msgctxt "month"
-msgid "Jul"
-msgstr ""
-
-msgctxt "MessagesArea"
-msgid "Jump to latest messages"
-msgstr ""
-
-msgctxt "month"
-msgid "Jun"
-msgstr ""
-
-msgctxt "DebugPane"
 msgid "KEY PACKAGES"
 msgstr ""
 
-msgctxt "KeysPage"
-msgid "KEY PACKAGES"
+msgid "KEY PACKAGES (PUBLISHED TO YOUR KIND-10051 RELAY LIST)"
 msgstr ""
 
-msgctxt "StoragePane"
 msgid "KEYS & BACKUPS"
 msgstr ""
 
-msgctxt "KpCard"
-msgid "KP extensions"
-msgstr ""
-
-msgctxt "KpInspectorPane"
 msgid "KP inspector"
 msgstr ""
 
-msgctxt "SettingsSidebar"
-msgid "KP inspector"
-msgstr ""
-
-msgctxt "AppearancePane"
 msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
 msgstr ""
 
-msgctxt "ContactDetail"
 msgid "Key package"
 msgstr ""
 
-#. (Slint can't build `debug-view-rows` itself).
-msgctxt "KpCard"
-msgid "Key package"
+#, c-format
+msgid "Key package accepted by %d relays."
 msgstr ""
 
-msgctxt "KpCard"
+msgid "Key package published"
+msgstr ""
+
 msgid "Key package ref"
 msgstr ""
 
-msgctxt "DebugPane"
 msgid "Key packages"
 msgstr ""
 
-msgctxt "GeneralPane"
 msgid "Keyboard shortcuts"
 msgstr ""
 
-msgctxt "KeyboardShortcutsModal"
-msgid "Keyboard shortcuts"
-msgstr ""
-
-msgctxt "KeysPage"
 msgid "Keys & identity"
 msgstr ""
 
-msgctxt "SettingsSidebar"
-msgid "Keys & identity"
-msgstr ""
-
-msgctxt "LabelModal"
-msgid "LABEL"
-msgstr ""
-
-msgctxt "GeneralPane"
 msgid "LANGUAGE"
 msgstr ""
 
-msgctxt "ArchivedDetail"
-msgid "LAST ACTIVITY"
-msgstr ""
-
-msgctxt "AppearancePane"
 msgid "LAYOUT"
 msgstr ""
 
-msgctxt "KeysPage"
 msgid "LINKED DEVICES"
 msgstr ""
 
-msgctxt "KeysPage"
-msgid "LOCAL"
-msgstr ""
-
-msgctxt "LabelModal"
-msgid "Label"
-msgstr ""
-
-msgctxt "StoragePane"
 msgid "Last backup"
 msgstr ""
 
-msgctxt "ArchivedDetail"
-msgid "Last message"
-msgstr ""
-
-msgctxt "KpCard"
-msgid "Last resort"
-msgstr ""
-
-msgctxt "GeneralPane"
 msgid "Launch at login"
 msgstr ""
 
-msgctxt "AppearancePane"
-msgid "Lavender"
+msgid "Leave"
 msgstr ""
 
-msgctxt "KpCard"
-msgid "Leaf extensions"
-msgstr ""
-
-msgctxt "ChatContextMenu"
 msgid "Leave group"
 msgstr ""
 
-msgctxt "ConfirmFlows"
-msgid "Leave group"
+msgid "Leave this group?"
 msgstr ""
 
-msgctxt "GroupLeaveRow"
-msgid "Leave group"
-msgstr ""
-
-msgctxt "ConfirmFlows"
-msgid "Leave {}?"
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Leaving group…"
-msgstr ""
-
-msgctxt "GroupLeaveRow"
-msgid "Leaving…"
-msgstr ""
-
-msgctxt "KpCard"
-msgid "Lifetime"
-msgstr ""
-
-msgctxt "ThemePicker"
-msgid "Light"
-msgstr ""
-
-msgctxt "ProfilePage"
-msgid "Lightning"
-msgstr ""
-
-msgctxt "ProfilePage"
-msgid "Lightning address (LUD-16)"
-msgstr ""
-
-msgctxt "AdvancedPane"
 msgid "Links to these exact sites open without confirmation."
 msgstr ""
 
-msgctxt "MessagesArea"
 msgid "Load earlier messages"
 msgstr ""
 
-msgctxt "GroupMembersPanel"
-msgid "Loading members…"
+msgid "Loading your accounts"
 msgstr ""
 
-msgctxt "MentionsInbox"
-msgid "Loading mentions…"
-msgstr ""
-
-msgctxt "MessagesArea"
-msgid "Loading messages…"
-msgstr ""
-
-msgctxt "DebugJsonModal"
-msgid "Loading…"
-msgstr ""
-
-msgctxt "ImageViewerModal"
-msgid "Loading…"
-msgstr ""
-
-msgctxt "KpInspectorPane"
-msgid "Loading…"
-msgstr ""
-
-msgctxt "VideoViewerModal"
-msgid "Loading…"
-msgstr ""
-
-msgctxt "AboutPane"
-msgid "Local key custody"
-msgstr ""
-
-msgctxt "StoragePane"
 msgid "Location"
 msgstr ""
 
-msgctxt "StoragePane"
 msgid "MEDIA CACHE"
 msgstr ""
 
-msgctxt "ArchivedDetail"
-msgid "MEMBER LIST"
+msgid "MLS · YOUR KEY MATERIAL"
 msgstr ""
 
-msgctxt "StartNewChatModal"
-msgid "MEMBERS"
+msgid "MOTION"
 msgstr ""
 
-msgctxt "KeysPage"
-msgid "MLS  ·  YOUR KEY MATERIAL"
+msgid "Make this member an admin?"
 msgstr ""
 
-msgctxt "AboutPane"
-msgid "MLS group keys; no server in the trust path."
+msgid "Mark read"
 msgstr ""
 
-msgctxt "AboutPane"
-msgid "Made with marmots, math, and a little purple liquid."
+msgid "Mark unread"
 msgstr ""
 
-msgctxt "ConfirmFlows"
-msgid "Make admin"
+msgid "Markdown"
 msgstr ""
 
-msgctxt "GroupMemberMenu"
-msgid "Make admin"
+msgid "Media cache cleared."
 msgstr ""
 
-msgctxt "ConfirmFlows"
-msgid "Make {} an admin?"
-msgstr ""
-
-msgctxt "AccountSwitcherModal"
-msgid "Manage this identity or remove it from the device."
-msgstr ""
-
-msgctxt "month"
-msgid "Mar"
-msgstr ""
-
-msgctxt "ChatContextMenu"
-msgid "Mark as read"
-msgstr ""
-
-msgctxt "ChatContextMenu"
-msgid "Mark as unread"
-msgstr ""
-
-msgctxt "month"
-msgid "May"
-msgstr ""
-
-msgctxt "GroupMemberRow"
-msgid "Member actions for {}"
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Member removed."
-msgstr ""
-
-msgctxt "ArchivedDetail"
 msgid "Members"
 msgstr ""
 
-msgctxt "GroupMembersPanel"
-msgid "Members"
+msgid "Message copied"
 msgstr ""
 
-msgctxt "MentionsInbox"
-msgid "Mentions"
+msgid "Message menu"
 msgstr ""
 
-msgctxt "MentionsIcon"
-msgid "Mentions inbox"
+msgid "Message text copied"
 msgstr ""
 
-msgctxt "StoragePane"
-msgid "Merge the accounts from a backup file into this install."
+msgid "Message text size"
 msgstr ""
 
-msgctxt "ImportBackupModal"
-msgid "Merge the accounts from an encrypted backup into this install. Use the password the backup was created with."
+msgid "Move to folder"
 msgstr ""
 
-msgctxt "AppearancePane"
-msgid "Mint"
-msgstr ""
-
-msgctxt "weekday"
-msgid "Mon"
-msgstr ""
-
-msgctxt "KeysPage"
 msgid "Multi-device isn't available yet"
 msgstr ""
 
-msgctxt "ChatContextMenu"
-msgid "Mute"
-msgstr ""
-
-msgctxt "ContactDetail"
-msgid "Mute"
-msgstr ""
-
-msgctxt "ChatHeader"
-msgid "Mute conversation"
-msgstr ""
-
-msgctxt "ContactDetail"
-msgid "Mutual relays"
-msgstr ""
-
-msgctxt "MessagesArea"
-msgid "NEW MESSAGES"
-msgstr ""
-
-msgctxt "ChangePasswordModal"
-msgid "NEW PASSWORD"
-msgstr ""
-
-msgctxt "NicknameModal"
-msgid "NICKNAME"
-msgstr ""
-
-msgctxt "ProfilePage"
-msgid "NIP-05"
-msgstr ""
-
-msgctxt "AppShell"
-msgid "NO RELAYS"
-msgstr ""
-
-msgctxt "LoginScreen"
 msgid "NSEC"
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Name can't be empty."
-msgstr ""
-
-msgctxt "CustomEmojiModal"
-msgid "Name it, then react or type the name anywhere the picker opens."
-msgstr ""
-
-#. are translated.
-msgctxt "command palette footer"
-msgid "Navigate"
-msgstr ""
-
-msgctxt "NetworkPane"
 msgid "Network & relays"
 msgstr ""
 
-msgctxt "SettingsSidebar"
-msgid "Network & relays"
+msgid "Never share it. It is your identity."
 msgstr ""
 
-msgctxt "AppShell"
 msgid "New chat"
 msgstr ""
 
-msgctxt "GetStartedScreen"
-msgid "New chat"
+msgid "New message"
 msgstr ""
 
-msgctxt "StartNewChatModal"
-msgid "New chat or group"
+msgid "Next accent color"
 msgstr ""
 
-msgctxt "LoginScreen"
-msgid "New profile picture"
+msgid "Next theme"
 msgstr ""
 
-msgctxt "ImageViewerModal"
-msgid "Next image"
-msgstr ""
-
-msgctxt "ChatSearchBar"
-msgid "Next match"
-msgstr ""
-
-msgctxt "ContactDetail"
 msgid "Nickname"
 msgstr ""
 
-msgctxt "NicknameModal"
-msgid "Nickname"
+msgid "No archived chats."
 msgstr ""
 
-msgctxt "ArchivedPage"
-msgid "No archived chats"
+msgid "No audit log files."
 msgstr ""
 
-msgctxt "ArchivedSidebar"
-msgid "No archived chats match \"{}\""
+msgid "No backup made from this device yet."
 msgstr ""
 
-msgctxt "AdvancedPane"
-msgid "No audit log files on disk."
+msgid "No chat is open. Select one and refresh."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "No chat selected."
+msgid "No chats yet"
 msgstr ""
 
-msgctxt "ForwardPickerModal"
-msgid "No chats match your search."
+msgid "No command matches."
 msgstr ""
 
-msgctxt "ContactsSidebar"
-msgid "No contacts match \"{}\""
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "No contacts to export."
-msgstr ""
-
-msgctxt "ContactsPage"
 msgid "No contacts yet"
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "No debug snapshot to copy."
+msgid "No folders yet."
 msgstr ""
 
-msgctxt "ImportBackupModal"
-msgid "No file selected"
+msgid "No inbox relays."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "No generated key to save. Please try again."
+msgid "No key package on this device or its relays."
 msgstr ""
 
-msgctxt "SharedGroupsList"
-msgid "No groups in common"
+msgid "No key package published for that pubkey."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "No image selected."
+msgid "No key package yet. Publish one so people can invite you."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "No images found for that search."
-msgstr ""
-
-msgctxt "NetworkPane"
-msgid "No inbox relays yet. Add one above."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "No key package on relays yet"
-msgstr ""
-
-msgctxt "KeysPage"
-msgid "No key packages yet"
-msgstr ""
-
-#. the UI thread, so they read from this snapshot like the rest.
-msgctxt "ErrorCopy"
-msgid "No key stored on this device. Reset and re-enter your nsec."
-msgstr ""
-
-msgctxt "ChatSearchBar"
-msgid "No matches"
-msgstr ""
-
-msgctxt "CommandPalette"
-msgid "No matches"
-msgstr ""
-
-msgctxt "MentionsInbox"
-msgid "No mentions yet"
-msgstr ""
-
-msgctxt "GlobalSearchModal"
-msgid "No messages found"
-msgstr ""
-
-msgctxt "MessagesArea"
 msgid "No messages yet"
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "No microphone available."
+msgid "No relay list published."
 msgstr ""
 
-msgctxt "ForwardPickerModal"
-msgid "No other chats to forward to."
-msgstr ""
-
-msgctxt "ProfileModal"
-msgid "No profile found on relays."
-msgstr ""
-
-msgctxt "NetworkPane"
-msgid "No relays configured"
-msgstr ""
-
-msgctxt "GetStartedScreen"
-msgid "No relays yet"
-msgstr ""
-
-msgctxt "NetworkPane"
-msgid "No relays yet. Add one above."
-msgstr ""
-
-msgctxt "AddAccountModal"
-msgid "No second key yet?"
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "No secret key for this account is stored on this device."
-msgstr ""
-
-msgctxt "SharedMediaGrid"
-msgid "No shared media yet."
-msgstr ""
-
-msgctxt "AdvancedPane"
 msgid "No trusted sites."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "No video selected."
+msgid "Not loaded yet. Click Decode own."
 msgstr ""
 
-#. Network-pane status copy (also Rust-set).
-msgctxt "ErrorCopy"
-msgid "Not connected yet. Wait a moment and try again."
+msgid "Not loaded yet. Click Refresh."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Not found"
+msgid "Notes to self"
 msgstr ""
 
-msgctxt "ProfilePage"
-msgid "Not set"
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Nothing to copy."
-msgstr ""
-
-msgctxt "NotificationsPane"
 msgid "Notifications"
 msgstr ""
 
-msgctxt "SettingsSidebar"
-msgid "Notifications"
-msgstr ""
-
-msgctxt "month"
-msgid "Nov"
-msgstr ""
-
-msgctxt "StatusBar"
-msgid "OFFLINE"
-msgstr ""
-
-msgctxt "StoragePane"
 msgid "ON THIS DEVICE"
 msgstr ""
 
-msgctxt "StatusBar"
-msgid "ONLINE"
-msgstr ""
-
-msgctxt "NetworkPane"
 msgid "OUTBOX RELAYS (NIP-65)"
 msgstr ""
 
-msgctxt "AppearancePane"
-msgid "Ocean"
-msgstr ""
-
-msgctxt "month"
-msgid "Oct"
-msgstr ""
-
-msgctxt "NotificationsPane"
 msgid "Off shows only \"New message\" without the text."
 msgstr ""
 
-msgctxt "EncryptionInfoModal"
-msgid "Old messages stay safe"
-msgstr ""
-
-msgctxt "GeneralPane"
 msgid "One-tap reactions"
 msgstr ""
 
-msgctxt "EncryptionInfoModal"
-msgid "Only the people in this chat can read it."
-msgstr ""
-
-msgctxt "ConfirmFlows"
 msgid "Open"
 msgstr ""
 
-msgctxt "StoragePane"
 msgid "Open folder"
 msgstr ""
 
-msgctxt "RunCell"
-msgid "Open link {}"
-msgstr ""
-
-msgctxt "ConfirmFlows"
 msgid "Open this link?"
 msgstr ""
 
-msgctxt "ReactionChip"
-msgid "Open {}'s profile"
+msgid "Opening in your browser"
 msgstr ""
 
-msgctxt "EditHistoryRow"
-msgid "Original"
-msgstr ""
-
-msgctxt "MessageBody"
-msgid "Original message"
-msgstr ""
-
-msgctxt "KpCard"
 msgid "Owner"
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Ownership transferred."
-msgstr ""
-
-msgctxt "BackupCreateModal"
 msgid "PASSWORD"
 msgstr ""
 
-msgctxt "LoginScreen"
-msgid "PASSWORD"
+msgid "PRIVACY & DEVELOPER FLAGS"
 msgstr ""
 
-msgctxt "ProfilePage"
+msgid "PRIVATE GROUP CHAT OVER NOSTR"
+msgstr ""
+
 msgid "PROFILE"
 msgstr ""
 
-msgctxt "LoginScreen"
-msgid "PUBLIC KEY (NPUB)"
+msgid "Pack your settings, drafts, custom emoji, and themes into one encrypted file."
 msgstr ""
 
-msgctxt "StoragePane"
-msgid "Pack accounts, chats, and settings into one encrypted file."
+msgid "Path copied"
 msgstr ""
 
-msgctxt "BackupCreateModal"
-msgid "Pack everything — accounts, chats, settings — into one encrypted file, sealed with your password. The media cache is left out."
+msgid "Pick a folder for this chat, or make a new one. A chat sits in one folder at a time."
 msgstr ""
 
-msgctxt "GetStartedScreen"
-msgid "Partial · {}/{} connected"
+msgid "Pick a password first."
 msgstr ""
 
-msgctxt "NetworkPane"
-msgid "Partial · {}/{} connected"
+msgid "Pick a password to encrypt the backup with. Without it the file cannot be opened again."
 msgstr ""
 
-msgctxt "ImportBackupModal"
-msgid "Password the backup was sealed with"
+msgid "Pick a password to encrypt the key with. You will need it to import the key anywhere else."
 msgstr ""
 
-msgctxt "FormMessages"
-msgid "Passwords don't match."
+msgid "Pick a password. It encrypts everything in the app, and there is no way to recover it."
 msgstr ""
 
-msgctxt "AddAccountModal"
-msgid "Paste another secret key, or generate a fresh one. It's encrypted with your password and stays signed in alongside your other accounts."
-msgstr ""
-
-msgctxt "StartNewChatModal"
-msgid "Paste one npub for a direct chat, or several (one per line) plus a group name."
-msgstr ""
-
-msgctxt "VideoViewerModal"
-msgid "Pause"
-msgstr ""
-
-msgctxt "ForwardPickerModal"
-msgid "Pick a chat to forward this message to."
-msgstr ""
-
-msgctxt "AppearancePane"
 msgid "Pick the whole app's look."
 msgstr ""
 
-msgctxt "PictureField"
-msgid "Picture"
-msgstr ""
-
-msgctxt "ProfilePage"
-msgid "Picture"
-msgstr ""
-
-msgctxt "ChatContextMenu"
-msgid "Pin to top"
-msgstr ""
-
-msgctxt "VideoViewerModal"
-msgid "Play"
-msgstr ""
-
-msgctxt "NotificationsPane"
 msgid "Play a sound"
 msgstr ""
 
-msgctxt "ImageViewerModal"
-msgid "Previous image"
+msgid "Plays here when you send. It can't travel: marmot reserves the chat event kind, so no client attaches the tag any more. An effect sent by an older client still plays."
 msgstr ""
 
-msgctxt "ChatSearchBar"
-msgid "Previous match"
+msgid "Press Ctrl P for the command palette."
 msgstr ""
 
-msgctxt "AdvancedPane"
-msgid "Privacy & developer flags"
+msgid "Previous / next in the media viewer"
 msgstr ""
 
-msgctxt "AboutPane"
-msgid "Private material is stored on this device, encrypted with your password."
+msgid "Promote"
 msgstr ""
 
-msgctxt "KpCard"
-msgid "Proposals"
-msgstr ""
-
-msgctxt "KeysPage"
-msgid "Public key (npub)"
-msgstr ""
-
-msgctxt "ContactDetail"
 msgid "Public key, safe to share."
 msgstr ""
 
-msgctxt "KeysPage"
 msgid "Publish"
 msgstr ""
 
-msgctxt "GetStartedScreen"
-msgid "Publish key package"
-msgstr ""
-
-msgctxt "KeysPage"
-msgid "Publish one so other users can invite you to groups."
-msgstr ""
-
-msgctxt "GetStartedScreen"
 msgid "Publish your key package"
 msgstr ""
 
-msgctxt "GetStartedScreen"
 msgid "Published"
 msgstr ""
 
-msgctxt "KpCard"
-msgid "Published"
+msgid "Publishing your profile to the relays. This takes a few seconds."
 msgstr ""
 
-msgctxt "key package source, published, time unknown"
-msgid "Published"
-msgstr ""
-
-msgctxt "key package source, %1 = relative time"
-msgid "Published %1"
-msgstr ""
-
-#. Key-package progress verbs (src/wiring/panes.rs), one per `op_kind`.
-msgctxt "ErrorCopy"
-msgid "Publishing…"
-msgstr ""
-
-msgctxt "GetStartedScreen"
-msgid "Publishing…"
-msgstr ""
-
-msgctxt "KeysPage"
-msgid "Publishing…"
-msgstr ""
-
-msgctxt "GroupHero"
-msgid "Purpose, rules, or invite blurb"
-msgstr ""
-
-msgctxt "GeneralPane"
 msgid "QUICK REACTIONS"
 msgstr ""
 
-msgctxt "WhiteNoiseTray"
-msgid "Quit"
-msgstr ""
-
-msgctxt "DebugPane"
 msgid "RAW EVENTS"
 msgstr ""
 
-msgctxt "AppShell"
-msgid "RELAYS"
+msgid "RECENT"
 msgstr ""
 
-msgctxt "StatusBar"
-msgid "RELAYS"
+msgid "RENAME FOLDER"
 msgstr ""
 
-msgctxt "KeysPage"
-msgid "REMOTE"
+msgid "Raw event"
 msgstr ""
 
-msgctxt "KpCard"
-msgid "Raw JSON"
-msgstr ""
-
-msgctxt "DebugPane"
 msgid "Raw events"
 msgstr ""
 
-msgctxt "NetworkPane"
 msgid "Re-broadcasts your outbox and inbox relay lists. Use this if peers can't find you."
 msgstr ""
 
-msgctxt "ChangePasswordModal"
-msgid "Re-enter password"
+msgid "Reconnect"
 msgstr ""
 
-msgctxt "LoginScreen"
-msgid "Re-enter password"
-msgstr ""
-
-msgctxt "KeysPage"
-msgid "Re-seals every secret on this device under a new password. Existing backups stay sealed with the previous one."
-msgstr ""
-
-#. say what a tap does instead of what it shows.
-msgctxt "QuickReactCell"
-msgid "React with {}"
-msgstr ""
-
-msgctxt "EmojiPicker"
-msgid "Recent"
-msgstr ""
-
-msgctxt "GlobalSearchModal"
-msgid "Recent searches"
-msgstr ""
-
-msgctxt "NetworkPane"
 msgid "Reconnect now"
 msgstr ""
 
-msgctxt "NetworkPane"
-msgid "Reconnecting…"
+msgid "Record group audit log files on this device. Identifiers are hashed."
 msgstr ""
 
-msgctxt "Composer"
-msgid "Record voice message"
+msgid "Reduce motion"
 msgstr ""
 
-msgctxt "AdvancedPane"
 msgid "Refresh"
 msgstr ""
 
-msgctxt "DebugPane"
-msgid "Refresh"
+msgid "Relay status unavailable"
 msgstr ""
 
-msgctxt "KeysPage"
-msgid "Refresh"
-msgstr ""
-
-msgctxt "KpInspectorPane"
-msgid "Refresh"
-msgstr ""
-
-msgctxt "NetworkPane"
-msgid "Refresh"
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Refreshing…"
-msgstr ""
-
-msgctxt "KeysPage"
-msgid "Refreshing…"
-msgstr ""
-
-msgctxt "NetworkPane"
-msgid "Refreshing…"
-msgstr ""
-
-msgctxt "LoginScreen"
-msgid "Regenerate"
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Relay added."
-msgstr ""
-
-msgctxt "NetworkPane"
-msgid "Relay list changed."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Relay removed."
-msgstr ""
-
-msgctxt "AdvancedPane"
 msgid "Relay telemetry"
 msgstr ""
 
-msgctxt "GetStartedScreen"
-msgid "Relays carry your encrypted messages. Add at least one to get online."
+msgid "Relays"
 msgstr ""
 
-msgctxt "ConfirmFlows"
+msgid "Relays carry your encrypted messages. The defaults are already configured."
+msgstr ""
+
 msgid "Remove"
 msgstr ""
 
-msgctxt "SettingsPage"
-msgid "Remove"
+msgid "Remove admin rights?"
 msgstr ""
 
-msgctxt "StagedChips"
-msgid "Remove"
+msgid "Remove this member?"
 msgstr ""
 
-msgctxt "AccountSwitcherDetail"
-msgid "Remove account"
-msgstr ""
-
-msgctxt "AccountSwitcherModal"
-msgid "Remove account"
-msgstr ""
-
-msgctxt "ConfirmFlows"
-msgid "Remove admin"
-msgstr ""
-
-msgctxt "GroupMemberMenu"
-msgid "Remove admin"
-msgstr ""
-
-msgctxt "ConfirmFlows"
-msgid "Remove admin rights from {}?"
-msgstr ""
-
-msgctxt "ContactDetail"
-msgid "Remove contact"
-msgstr ""
-
-msgctxt "GroupMemberMenu"
-msgid "Remove from group"
-msgstr ""
-
-msgctxt "AccountSwitcherDetail"
-msgid "Remove from this device"
-msgstr ""
-
-msgctxt "LoginScreen"
-msgid "Remove key"
-msgstr ""
-
-msgctxt "MiniRelayRow"
-msgid "Remove relay"
-msgstr ""
-
-#. Icon-only and destructive, so it needs a spoken name.
-msgctxt "RelayRow"
-msgid "Remove relay {}"
-msgstr ""
-
-msgctxt "AccountSwitcherModal"
-msgid "Remove this account?"
-msgstr ""
-
-msgctxt "ConfirmFlows"
-msgid "Remove this inbox relay?"
-msgstr ""
-
-msgctxt "ConfirmFlows"
 msgid "Remove this relay?"
 msgstr ""
 
-msgctxt "GeneralPane"
-msgid "Remove {} emoji"
+msgid "Rename"
 msgstr ""
 
-msgctxt "ConfirmFlows"
-msgid "Remove {} from contacts?"
+msgid "Replaces the settings, drafts, custom emoji, and themes on this device."
 msgstr ""
 
-msgctxt "ConfirmFlows"
-msgid "Remove {} from the group?"
-msgstr ""
-
-msgctxt "GeneralPane"
-msgid "Remove {} reaction"
-msgstr ""
-
-msgctxt "SettingsPage"
-msgid "Remove {}?"
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Renamed."
-msgstr ""
-
-msgctxt "MessageContextMenu"
 msgid "Reply"
 msgstr ""
 
-msgctxt "ReplyBanner"
-msgid "Replying to message:"
+msgid "Republish"
 msgstr ""
 
-msgctxt "ReplyBanner"
-msgid "Replying to {}:"
-msgstr ""
-
-msgctxt "NetworkPane"
 msgid "Republish relay lists"
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Republishing…"
-msgstr ""
-
-msgctxt "NetworkPane"
-msgid "Republishing…"
-msgstr ""
-
-msgctxt "AppearancePane"
 msgid "Reset"
 msgstr ""
 
-msgctxt "GeneralPane"
-msgid "Reset"
+msgid "Reset zoom"
 msgstr ""
 
-msgctxt "AppearancePane"
-msgid "Reset zoom to 100%"
-msgstr ""
-
-msgctxt "ImportBackupModal"
-msgid "Restore"
-msgstr ""
-
-msgctxt "SettingsPage"
-msgid "Restore default quick reactions?"
-msgstr ""
-
-msgctxt "SettingsPage"
-msgid "Restore defaults"
-msgstr ""
-
-msgctxt "ImportBackupModal"
-msgid "Restore everything from an encrypted backup. Use the password the backup was created with."
-msgstr ""
-
-msgctxt "GeneralPane"
 msgid "Restore last selected chat on launch"
 msgstr ""
 
-msgctxt "GeneralPane"
 msgid "Restore the default reactions"
 msgstr ""
 
-msgctxt "ImportBackupModal"
-msgid "Restoring…"
-msgstr ""
-
-msgctxt "ThemePicker"
-msgid "Retro"
-msgstr ""
-
-msgctxt "ContactDetail"
-msgid "Retry"
-msgstr ""
-
-msgctxt "AvatarEditable"
-msgid "Retry loading profile picture"
-msgstr ""
-
-msgctxt "ProfileModal"
-msgid "Retry loading profile picture"
-msgstr ""
-
-msgctxt "KeysPage"
 msgid "Reveal"
 msgstr ""
 
-msgctxt "RevealNsecModal"
-msgid "Reveal key"
-msgstr ""
-
-msgctxt "RevealNsecModal"
-msgid "Reveal private key"
-msgstr ""
-
-msgctxt "KeysPage"
 msgid "Reveal private key (nsec)"
 msgstr ""
 
-msgctxt "KeysPage"
-msgid "Rotate"
+msgid "RevealNsecBtn"
 msgstr ""
 
-msgctxt "KeysPage"
-msgid "Rotate key package now"
+msgid "SCROLLING"
 msgstr ""
 
-msgctxt "KeysPage"
-msgid "Rotate key package?"
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Rotating…"
-msgstr ""
-
-msgctxt "KeysPage"
-msgid "Rotating…"
-msgstr ""
-
-msgctxt "AddAccountModal"
-msgid "SECRET KEY (NSEC)"
-msgstr ""
-
-msgctxt "LoginScreen"
-msgid "SECRET KEY (NSEC)"
-msgstr ""
-
-msgctxt "RevealNsecModal"
-msgid "SECRET KEY (NSEC)"
-msgstr ""
-
-msgctxt "AdvancedPane"
 msgid "SECURITY & PRIVACY"
 msgstr ""
 
-msgctxt "MainPane"
-msgid "SESSION ESTABLISHED"
+msgid "SEND WITH EFFECT"
 msgstr ""
 
-msgctxt "SettingsSidebar"
 msgid "SETTINGS"
 msgstr ""
 
-msgctxt "ContactDetail"
-msgid "SHARED MEDIA"
+msgid "SITE"
 msgstr ""
 
-msgctxt "CustomEmojiModal"
-msgid "SHORTCODE"
-msgstr ""
-
-msgctxt "GeneralPane"
 msgid "STARTUP"
 msgstr ""
 
-msgctxt "DebugPane"
+msgid "STATE / RAW EVENTS / KEY PACKAGES"
+msgstr ""
+
 msgid "STATE SNAPSHOT"
 msgstr ""
 
-msgctxt "NetworkPane"
 msgid "STATUS"
 msgstr ""
 
-msgctxt "GetStartedScreen"
-msgid "SUGGESTED"
-msgstr ""
-
-msgctxt "NetworkPane"
 msgid "SYNC"
 msgstr ""
 
-msgctxt "AppShell"
-msgid "SYNCED"
-msgstr ""
-
-msgctxt "StatusBar"
-msgid "SYNCED"
-msgstr ""
-
-msgctxt "AppShell"
-msgid "SYNCING…"
-msgstr ""
-
-msgctxt "StatusBar"
-msgid "SYNCING…"
-msgstr ""
-
-msgctxt "KeysPage"
-msgid "Safe to share. This is how people find you."
-msgstr ""
-
-msgctxt "weekday"
-msgid "Sat"
-msgstr ""
-
-msgctxt "CustomEmojiModal"
 msgid "Save"
 msgstr ""
 
-msgctxt "HeroEditField"
-msgid "Save"
+msgid "Save file"
 msgstr ""
 
-msgctxt "ImageViewerModal"
-msgid "Save"
-msgstr ""
-
-msgctxt "LabelModal"
-msgid "Save"
-msgstr ""
-
-msgctxt "NicknameModal"
-msgid "Save"
-msgstr ""
-
-msgctxt "ProfilePage"
-msgid "Save"
-msgstr ""
-
-msgctxt "Composer"
-msgid "Save edit"
-msgstr ""
-
-msgctxt "LoginScreen"
-msgid "Save key"
-msgstr ""
-
-msgctxt "VideoViewerModal"
-msgid "Save video"
-msgstr ""
-
-msgctxt "LoginScreen"
-msgid "Save your new key"
-msgstr ""
-
-#. Save-attachment-to-disk outcomes (status-bar toast; %1 = file name).
-msgctxt "status toast after saving a file, %1 = file name"
-msgid "Saved %1"
-msgstr ""
-
-msgctxt "BackupCreateModal"
-msgid "Saving…"
-msgstr ""
-
-msgctxt "HeroEditField"
-msgid "Saving…"
-msgstr ""
-
-msgctxt "LoginScreen"
-msgid "Saving…"
-msgstr ""
-
-msgctxt "ProfilePage"
-msgid "Saving…"
-msgstr ""
-
-msgctxt "MessagesArea"
-msgid "Say hello to start the conversation."
-msgstr ""
-
-msgctxt "QrModal"
-msgid "Scan to add or message on another device"
-msgstr ""
-
-msgctxt "ProfileQrPlate"
 msgid "Scan to add this account from another device"
 msgstr ""
 
-msgctxt "LoginScreen"
-msgid "Sealed with your password on this device. Keep your own copy of the nsec too — lose both and this identity is gone."
+msgid "Scroll speed"
 msgstr ""
 
-msgctxt "PictureField"
-msgid "Search"
+msgid "Search all chats"
 msgstr ""
 
-msgctxt "RemoteImageSearchModal"
-msgid "Search"
+msgid "Search everywhere"
 msgstr ""
 
-msgctxt "GlobalSearchModal"
-msgid "Search across every conversation."
+msgid "Search images"
 msgstr ""
 
-msgctxt "GlobalSearchModal"
-msgid "Search all messages…"
-msgstr ""
-
-msgctxt "ArchivedSidebar"
-msgid "Search archived chats…"
-msgstr ""
-
-msgctxt "ForwardPickerModal"
-msgid "Search chats…"
-msgstr ""
-
-msgctxt "ContactsSidebar"
-msgid "Search contacts…"
-msgstr ""
-
-msgctxt "RemoteImageSearchModal"
-msgid "Search for an image to use."
-msgstr ""
-
-msgctxt "ChatHeader"
-msgid "Search in conversation"
-msgstr ""
-
-msgctxt "ChatSearchBar"
-msgid "Search in conversation…"
-msgstr ""
-
-msgctxt "AppShell"
-msgid "Search messages…"
-msgstr ""
-
-msgctxt "RemoteImageSearchModal"
-msgid "Search term, e.g. \"mountain sunset\""
-msgstr ""
-
-msgctxt "GroupHero"
-msgid "Search the web for a group image"
-msgstr ""
-
-msgctxt "AvatarEditable"
-msgid "Search the web for a profile picture"
-msgstr ""
-
-msgctxt "RemoteImageSearchModal"
-msgid "Search the web for an image"
-msgstr ""
-
-msgctxt "GlobalSearchModal"
 msgid "Searching…"
 msgstr ""
 
-msgctxt "RemoteImageSearchModal"
-msgid "Searching…"
+msgid "Secret key copied"
 msgstr ""
 
-msgctxt "SidePanel"
-msgid "Search…"
-msgstr ""
-
-msgctxt "NotificationsPane"
 msgid "See and hear it with today's sound and preview settings."
 msgstr ""
 
-msgctxt "ReactionChip"
-msgid "See who reacted"
+msgid "Select a chat"
 msgstr ""
 
-msgctxt "command palette footer"
-msgid "Select"
+msgid "Select a contact from the list."
 msgstr ""
 
-msgctxt "RecordingOverlay"
-msgid "Send"
+msgid "Send a message..."
 msgstr ""
 
-msgctxt "Composer"
-msgid "Send a message…"
-msgstr ""
-
-msgctxt "NotificationsPane"
 msgid "Send a test notification"
 msgstr ""
 
-msgctxt "Composer"
-msgid "Send message"
-msgstr ""
-
-msgctxt "NotificationsPane"
 msgid "Send test"
 msgstr ""
 
-msgctxt "AdvancedPane"
-msgid "Sends group audit log files to the Goggles audit endpoint. Applies immediately."
+msgid "Send the first message to start the conversation."
 msgstr ""
 
-msgctxt "month"
-msgid "Sep"
+msgid "Send the message"
 msgstr ""
 
-msgctxt "ProfilePage"
-msgid "Set"
+msgid "Send with an effect"
 msgstr ""
 
-msgctxt "ChatContextMenu"
-msgid "Set label…"
+msgid "Settings: about"
 msgstr ""
 
-msgctxt "AppShell"
-msgid "Settings"
+msgid "Settings: advanced"
 msgstr ""
 
-msgctxt "AdvancedPane"
-msgid "Share anonymous relay connection telemetry."
+msgid "Settings: appearance"
 msgstr ""
 
-msgctxt "SharedMediaGrid"
-msgid "Shared image {}"
+msgid "Settings: general"
 msgstr ""
 
-msgctxt "SharedMediaGrid"
-msgid "Shared image {}, failed to load. Activate to retry."
+msgid "Settings: keys and identity"
 msgstr ""
 
-msgctxt "SharedMediaGrid"
-msgid "Shared image {}, loading."
+msgid "Settings: network and relays"
 msgstr ""
 
-msgctxt "GroupMembersPanel"
+msgid "Settings: notifications"
+msgstr ""
+
+msgid "Settings: storage"
+msgstr ""
+
+msgid "Share anonymous relay connection telemetry. Nothing is sent while this is off."
+msgstr ""
+
 msgid "Shared media"
 msgstr ""
 
-msgctxt "Composer"
-msgid "Shift+Enter for newline"
+msgid "Short tones when a message leaves, arrives, or fails to send."
 msgstr ""
 
-msgctxt "ProfilePage"
-msgid "Short handle (no spaces)"
+msgid "Show"
 msgstr ""
 
-msgctxt "WhiteNoiseTray"
-msgid "Show White Noise"
-msgstr ""
-
-msgctxt "ContactDetail"
 msgid "Show as QR"
 msgstr ""
 
-msgctxt "ChatHeader"
-msgid "Show members"
+msgid "Show group members"
 msgstr ""
 
-msgctxt "NotificationsPane"
 msgid "Show message preview"
 msgstr ""
 
-msgctxt "AppShell"
-msgid "Show only unread chats"
-msgstr ""
-
-msgctxt "PasswordField"
-msgid "Show password"
-msgstr ""
-
-msgctxt "ModalField"
-msgid "Show value"
-msgstr ""
-
-msgctxt "GeneralPane"
-msgid "Shown in the picker next to the built-in set. Tap one to remove it."
-msgstr ""
-
-msgctxt "GeneralPane"
 msgid "Shown on the message menu. Tap one to remove it."
 msgstr ""
 
-msgctxt "AdvancedPane"
 msgid "Shows diagnostics and MLS internals. Adds a Debug entry with account, key-packages, and group state."
 msgstr ""
 
-msgctxt "KeysPage"
-msgid "Shows your secret key after you confirm your vault password. Never share it — it is your identity."
-msgstr ""
-
-msgctxt "LoginScreen"
 msgid "Sign in to your Nostr identity"
 msgstr ""
 
-msgctxt "AccountSwitcherDetail"
-msgid "Sign this account out here and erase its secret key from your vault. Your other accounts stay signed in."
+msgid "Sign out"
 msgstr ""
 
-msgctxt "KpCard"
-msgid "Signature key"
+msgid "Sign out of this account?"
 msgstr ""
 
-msgctxt "LoginScreen"
-msgid "Signing in…"
+msgid "Signing you in"
 msgstr ""
 
-msgctxt "ThemePicker"
-msgid "Sketch"
+msgid "Size"
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Something went wrong. Please try again."
-msgstr ""
-
-msgctxt "ContactDetail"
 msgid "Start chat"
 msgstr ""
 
-msgctxt "GeneralPane"
 msgid "Start minimized to tray"
 msgstr ""
 
-msgctxt "GetStartedScreen"
 msgid "Start your first chat"
 msgstr ""
 
-msgctxt "DebugPane"
+msgid "Starting the runtime"
+msgstr ""
+
 msgid "State"
 msgstr ""
 
-msgctxt "DebugPane"
-msgid "State / raw events / key packages"
-msgstr ""
-
-msgctxt "ConfirmFlows"
 msgid "Step down"
 msgstr ""
 
-msgctxt "GroupMemberMenu"
-msgid "Step down"
-msgstr ""
-
-msgctxt "ConfirmFlows"
 msgid "Step down as admin?"
 msgstr ""
 
-msgctxt "SettingsSidebar"
 msgid "Storage"
 msgstr ""
 
-msgctxt "StoragePane"
-msgid "Storage"
+msgid "Store it somewhere safe and close this dialog. Anyone who imports it will need the password you just entered to decrypt it."
 msgstr ""
 
-msgctxt "ExportKeyModal"
-msgid "Store it somewhere safe and close this dialog. Anyone who imports it will need the vault password you just entered to decrypt it."
+msgid "Stored on this device, not published to any relay yet."
 msgstr ""
 
-msgctxt "RevealNsecModal"
-msgid "Store it somewhere safe and close this dialog. White Noise keeps it encrypted in your vault — this is the only place it's shown in the clear."
+msgid "TEXT SIZE"
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "Stored key is invalid."
-msgstr ""
-
-msgctxt "weekday"
-msgid "Sun"
-msgstr ""
-
-msgctxt "AccountSwitcherDetail"
-msgid "Switch to this account"
-msgstr ""
-
-msgctxt "ThemePicker"
-msgid "Synthwave"
-msgstr ""
-
-msgctxt "AppearancePane"
 msgid "THEME"
 msgstr ""
 
-msgctxt "AdvancedPane"
+msgid "THIS SESSION"
+msgstr ""
+
 msgid "TRUSTED LINK SITES"
 msgstr ""
 
-msgctxt "ThemePicker"
-msgid "Terminal"
+msgid "Take out of folder"
 msgstr ""
 
-#. Tier 1 — content-based classification.
-msgctxt "ErrorCopy"
-msgid "That doesn't look like a valid npub or public key. Double-check it and try again."
+msgid "Takes effect on the next launch."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "That doesn't look like a valid nsec."
+msgid "Tap one to remove it."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "That doesn't look like a valid relay address."
+msgid "Test notification"
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "That relay is already in your list."
+msgid "The chat leaves your list. Joining later needs a new invite."
 msgstr ""
 
-msgctxt "AppearancePane"
+msgid "The passwords don't match. Type them again."
+msgstr ""
+
+msgid "The relay in the middle stores and forwards. It never holds a key."
+msgstr ""
+
+msgid "The updated list is published to your relays."
+msgstr ""
+
+msgid "Their direct chat leaves your list. Nothing is published, and you can undo it here."
+msgstr ""
+
 msgid "Theme"
 msgstr ""
 
-msgctxt "ConfirmFlows"
-msgid "They come off your published contact list, so anyone reading it sees they're gone. Your chats and messages are untouched, and you can add them again anytime."
+msgid "They lose access to new messages in this group."
 msgstr ""
 
-msgctxt "ArchivedDetail"
-msgid "This chat is archived"
+msgid "They stay in the group as a regular member."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "This contact's messaging keys were published by an incompatible app. Ask them to publish a key package from an up-to-date Marmot client, then try again."
+msgid "This is what a message alert looks like."
 msgstr ""
 
-msgctxt "ConfirmFlows"
-msgid "This declines the invite from {}. It can't be restored unless they invite you again."
+msgid "This is your secret key, encrypted with the password you entered. Whoever holds this string and that password controls your identity."
 msgstr ""
 
-msgctxt "ConfirmFlows"
-msgid "This hides the message on this device only. Other people will still see it."
+msgid "This leaves White Noise and opens in your browser."
 msgstr ""
 
-msgctxt "KeysPage"
-msgid "This invalidates your current package. Contacts will use the new one going forward."
-msgstr ""
-
-msgctxt "RevealNsecModal"
-msgid "This is the secret key for your active account. Anyone with it controls your identity — never share it."
-msgstr ""
-
-msgctxt "GetStartedScreen"
-msgid "This is what lets other people start an encrypted chat with you."
-msgstr ""
-
-msgctxt "ExportKeyModal"
-msgid "This is your secret key, encrypted with your vault password. Whoever holds this string and that password controls your identity."
-msgstr ""
-
-msgctxt "AddAccountModal"
-msgid "This key was just generated and exists nowhere else yet. Copy it somewhere safe before adding it — there is no recovery."
-msgstr ""
-
-msgctxt "MessageBody"
 msgid "This message was deleted"
 msgstr ""
 
-msgctxt "TerminalLine"
-msgid "This message was deleted"
+msgid "Three things and you can send your first message."
 msgstr ""
 
-msgctxt "ConfirmFlows"
-msgid "This opens {} in your default browser."
-msgstr ""
-
-msgctxt "SettingsPage"
-msgid "This permanently deletes the audit log file from disk. Recording continues in a fresh file if this is the active log."
-msgstr ""
-
-msgctxt "LoginScreen"
-msgid "This removes the key stored on this device. You'll need the nsec you backed up to use this identity again. This can't be undone."
-msgstr ""
-
-msgctxt "ConfirmFlows"
-msgid "This removes the message for everyone in the chat. This can't be undone."
-msgstr ""
-
-msgctxt "ConfirmFlows"
-msgid "This removes your admin rights. You can't restore them yourself unless another admin promotes you again."
-msgstr ""
-
-msgctxt "SettingsPage"
-msgid "This replaces your customized set with the default six reactions."
-msgstr ""
-
-msgctxt "ChatRequestBanner"
-msgid "This sender isn't in your contacts. Accept to start an encrypted session."
-msgstr ""
-
-msgctxt "AccountSwitcherModal"
-msgid "This signs the account out on this device and erases its secret key from your vault. Your other accounts stay signed in."
-msgstr ""
-
-msgctxt "GetStartedScreen"
-msgid "Three steps and you're ready to message. Everything is end-to-end encrypted, with no servers in the middle."
-msgstr ""
-
-msgctxt "weekday"
-msgid "Thu"
-msgstr ""
-
-msgctxt "GeneralPane"
 msgid "Time format"
 msgstr ""
 
-msgctxt "TimeCopy"
-msgid "Today"
+msgid "Toggle developer mode"
 msgstr ""
 
-msgctxt "ConfirmFlows"
-msgid "Transfer"
+msgid "TrustForgetAll"
 msgstr ""
 
-msgctxt "GroupMemberMenu"
-msgid "Transfer ownership"
+msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr ""
 
-msgctxt "ConfirmFlows"
-msgid "Transfer ownership to {}?"
-msgstr ""
-
-msgctxt "weekday"
-msgid "Tue"
-msgstr ""
-
-msgctxt "CommandPalette"
-msgid "Type a command…"
-msgstr ""
-
-msgctxt "AboutPane"
-msgid "UNDER THE HOOD"
-msgstr ""
-
-msgctxt "AddContactModal"
-msgid "USERNAME OR KEY"
-msgstr ""
-
-msgctxt "ArchivedDetail"
-msgid "Unarchive"
-msgstr ""
-
-msgctxt "ContactDetail"
 msgid "Unblock"
 msgstr ""
 
-msgctxt "LoginScreen"
 msgid "Unlock"
 msgstr ""
 
-#. Rust-side with `tmpl`.
-msgctxt "ErrorCopy"
-msgid "Unlocking…"
-msgstr ""
-
-msgctxt "LoginScreen"
-msgid "Unlocking…"
-msgstr ""
-
-msgctxt "ChatContextMenu"
 msgid "Unmute"
 msgstr ""
 
-msgctxt "ContactDetail"
-msgid "Unmute"
-msgstr ""
-
-msgctxt "ChatHeader"
-msgid "Unmute conversation"
-msgstr ""
-
-msgctxt "ChatContextMenu"
 msgid "Unpin"
 msgstr ""
 
-msgctxt "AppShell"
-msgid "Unread"
-msgstr ""
-
-msgctxt "PictureField"
-msgid "Upload"
-msgstr ""
-
-msgctxt "GeneralPane"
 msgid "Uploaded emoji"
 msgstr ""
 
-msgctxt "AvatarEditable"
-msgid "Uploading…"
-msgstr ""
-
-msgctxt "CustomEmojiModal"
-msgid "Uploading…"
-msgstr ""
-
-msgctxt "GroupHero"
-msgid "Uploading…"
-msgstr ""
-
-msgctxt "PictureField"
-msgid "Uploading…"
-msgstr ""
-
-msgctxt "LoginScreen"
 msgid "Use another key"
 msgstr ""
 
-msgctxt "LoginScreen"
-msgid "Use another key?"
-msgstr ""
-
-msgctxt "ContactsPage"
-msgid "Use the Add button to add your first contact."
-msgstr ""
-
-msgctxt "RemoteImageSearchModal"
-msgid "Use this image"
-msgstr ""
-
-msgctxt "ContactDetail"
-msgid "Used to deliver messages between you."
-msgstr ""
-
-msgctxt "ProfilePage"
-msgid "Username"
-msgstr ""
-
-msgctxt "ExportKeyModal"
-msgid "VAULT PASSWORD"
-msgstr ""
-
-msgctxt "RevealNsecModal"
-msgid "VAULT PASSWORD"
-msgstr ""
-
-msgctxt "ProfilePage"
-msgid "VISIBLE TO ANYONE YOU CHAT WITH"
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Vault password changed."
-msgstr ""
-
-msgctxt "RevealNsecModal"
-msgid "Verifying…"
-msgstr ""
-
-msgctxt "KpCard"
-msgid "Versions"
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "Video isn't ready yet."
-msgstr ""
-
-msgctxt "ContactDetail"
 msgid "View"
 msgstr ""
 
-msgctxt "keyboard shortcuts button"
-msgid "View"
+msgid "View contact"
 msgstr ""
 
-msgctxt "MessageContextMenu"
 msgid "View raw event"
 msgstr ""
 
-msgctxt "AboutPane"
 msgid "WHAT IT IS"
 msgstr ""
 
-msgctxt "weekday"
-msgid "Wed"
+msgid "WHAT THIS IS, LIVE"
 msgstr ""
 
-msgctxt "GetStartedScreen"
-msgid "Welcome to White Noise"
+msgid "WHERE A MESSAGE GOES"
 msgstr ""
 
-msgctxt "EncryptionInfoModal"
-msgid "Whatever you send in this chat is encrypted on your device before it goes out. The relays that pass it along can't read it, and neither can anyone else."
+msgid "WHERE YOUR MESSAGES LAND"
 msgstr ""
 
-msgctxt "KpCard"
+msgid "Webxdc app"
+msgstr ""
+
+msgid "Whatever you send in this chat is encrypted on your device with MLS before it goes out. The relays that pass it along can't read it, and neither can anyone else."
+msgstr ""
+
 msgid "Where"
 msgstr ""
 
-msgctxt "NetworkPane"
-msgid "Where your messages land."
+msgid "Where peers reach you."
 msgstr ""
 
-msgctxt "WhiteNoiseTray"
-msgid "White Noise"
+msgid "Where you publish."
 msgstr ""
 
-msgctxt "WhiteNoiseTray"
-msgid "White Noise ({} unread)"
-msgstr ""
-
-msgctxt "AboutPane"
-msgid "White Noise is a native desktop client for private group chat. Messages are encrypted with MLS before they leave your machine, routed over Nostr relays, and decrypted only for the people in the room."
-msgstr ""
-
-msgctxt "KeysPage"
 msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
 msgstr ""
 
-msgctxt "WhiteNoiseTray"
-msgid "White Noise · 1 unread message"
-msgid_plural "White Noise · {n} unread messages"
-msgstr[0] ""
-msgstr[1] ""
-
-msgctxt "ErrorCopy"
-msgid "Wrong password."
-msgstr ""
-
-msgctxt "GroupMemberRow"
 msgid "YOU"
 msgstr ""
 
-msgctxt "LoginScreen"
-msgid "YOUR DISPLAY NAME"
-msgstr ""
-
-msgctxt "KpInspectorPane"
 msgid "YOUR KEY PACKAGES"
 msgstr ""
 
-msgctxt "TimeCopy"
-msgid "Yesterday"
+msgid "You stay in the group, but another admin has to grant the rights back."
 msgstr ""
 
-msgctxt "MessageView"
-msgid "You"
+msgid "You stop receiving its messages. Rejoining needs a new invite."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "You already have an emoji with that name."
+msgid "You were invited to this group."
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "You left the group."
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "You stepped down."
-msgstr ""
-
-msgctxt "ConfirmFlows"
-msgid "You will stop receiving new messages from this group."
-msgstr ""
-
-msgctxt "ConfirmFlows"
-msgid "You will stop receiving new messages from this group. The chat moves to Archive."
-msgstr ""
-
-msgctxt "SettingsPage"
-msgid "You'll need to re-upload the image and retype the shortcode to bring it back."
-msgstr ""
-
-msgctxt "ConfirmFlows"
-msgid "Your chat with them, and any new chat request they send, stays out of your chat list. Nothing is deleted — unblocking brings the conversation back."
-msgstr ""
-
-msgctxt "KeysPage"
 msgid "Your identity is sovereign"
 msgstr ""
 
-msgctxt "KeysPage"
 msgid "Your identity lives only on this device for now. When device linking ships, the devices signed into your key will appear here."
 msgstr ""
 
-msgctxt "LoginScreen"
 msgid "Your key never leaves this device."
 msgstr ""
 
-msgctxt "KpInspectorPane"
-msgid "Your key package"
+msgid "Your own notepad"
 msgstr ""
 
-msgctxt "AboutPane"
-msgid "Your keys stay on this device. No one else ever sees them."
-msgstr ""
-
-msgctxt "ChangePasswordModal"
 msgid "Your password"
 msgstr ""
 
-msgctxt "ExportKeyModal"
-msgid "Your password"
-msgstr ""
-
-msgctxt "RevealNsecModal"
-msgid "Your password"
-msgstr ""
-
-msgctxt "ProfilePage"
 msgid "Your profile"
 msgstr ""
 
-msgctxt "ProfilePage"
 msgid "Your public key. Safe to share."
 msgstr ""
 
-msgctxt "AppearancePane"
 msgid "ZOOM"
 msgstr ""
 
-msgctxt "AppearancePane"
 msgid "Zoom in"
 msgstr ""
 
-msgctxt "AppearancePane"
+msgid "Zoom in / out / reset"
+msgstr ""
+
 msgid "Zoom out"
 msgstr ""
 
-msgctxt "TerminalLine"
-msgid "[audio: {}]"
+msgid "carries the blob"
 msgstr ""
 
-msgctxt "TerminalLine"
-msgid "[file: {}]"
-msgstr ""
-
-msgctxt "TerminalLine"
-msgid "[image: {} — click to view]"
-msgstr ""
-
-msgctxt "TerminalLine"
-msgid "[video: {} — click to play]"
-msgstr ""
-
-msgctxt "TerminalLine"
-msgid "[{} images — click to view]"
-msgstr ""
-
-msgctxt "ContactDetail"
-msgid "aka {}"
-msgstr ""
-
-msgctxt "GroupMemberRow"
-msgid "aka {}"
-msgstr ""
-
-msgctxt "status, lower-case to match the image-upload flow"
-msgid "backend not ready"
-msgstr ""
-
-msgctxt "KpCard"
-msgid "capabilities"
-msgstr ""
-
-#. read lower-case to match their in-flight siblings.
-msgctxt "ErrorCopy"
-msgid "choosing image…"
-msgstr ""
-
-#. Contact-list export feedback (src/wiring/contacts.rs).
-msgctxt "ErrorCopy"
-msgid "contacts exported"
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "debug dump copied"
-msgstr ""
-
-msgctxt "ImageTile"
-msgid "decrypting…"
-msgstr ""
-
-msgctxt "LabelModal"
-msgid "e.g. Work"
-msgstr ""
-
-msgctxt "StartNewChatModal"
-msgid "e.g. friday-crew"
-msgstr ""
-
-msgctxt "CustomEmojiModal"
-msgid "e.g. partyparrot"
-msgstr ""
-
-msgctxt "MessageBody"
 msgid "edited"
 msgstr ""
 
-msgctxt "AudioTile"
 msgid "failed · tap to retry"
 msgstr ""
 
-msgctxt "FileChip"
-msgid "failed · tap to retry"
-msgstr ""
-
-msgctxt "MessageBody"
-msgid "failed · tap to retry"
-msgstr ""
-
-msgctxt "VideoTile"
-msgid "failed · tap to retry"
-msgstr ""
-
-msgctxt "result, %1 = record count (always 1)"
-msgid "fetched · %1 record"
-msgstr ""
-
-msgctxt "result, %1 = record count"
-msgid "fetched · %1 records"
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "group image updated"
-msgstr ""
-
-msgctxt "PictureField"
-msgid "https://… or upload a file →"
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "image copied"
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "image removed"
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "image saved"
-msgstr ""
-
-msgctxt "TimeCopy"
-msgid "just now"
-msgstr ""
-
-msgctxt "KpCard"
 msgid "local + relay"
 msgstr ""
 
-msgctxt "KeysPage"
 msgid "local only"
 msgstr ""
 
-msgctxt "KpCard"
-msgid "local only"
+msgid "marmot exposes publish metadata only. Ciphersuite, capabilities, and credential decoding are not available in this build."
 msgstr ""
 
-msgctxt "KpCard"
-msgid "never"
-msgstr ""
-
-msgctxt "KpCard"
-msgid "no"
-msgstr ""
-
-msgctxt "ProfilePage"
-msgid "no handle yet"
-msgstr ""
-
-msgctxt "EmojiPicker"
-msgid "no matches"
-msgstr ""
-
-msgctxt "EmojiPicker"
-msgid "no matches for \"{}\""
-msgstr ""
-
-msgctxt "ErrorCopy"
 msgid "npub copied"
 msgstr ""
 
-msgctxt "KpInspectorPane"
-msgid "npub or hex pubkey"
+msgid "opened there"
 msgstr ""
 
-#. Clipboard feedback (src/wiring/panes.rs, nav.rs, extra.rs).
-msgctxt "ErrorCopy"
-msgid "nsec copied"
+msgid "plaintext"
 msgstr ""
 
-msgctxt "KpCard"
-msgid "on the key package itself"
-msgstr ""
-
-msgctxt "KpCard"
-msgid "on the leaf node"
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "picture uploaded — Save to publish"
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "profile published"
-msgstr ""
-
-#. fetched forms is the record count, filled Rust-side with `tmpl`.
-msgctxt "ErrorCopy"
-msgid "published · your key package is live"
-msgstr ""
-
-#. Profile publish status copy (src/wiring/extra.rs).
-msgctxt "ErrorCopy"
-msgid "publishing…"
-msgstr ""
-
-msgctxt "KpCard"
 msgid "relay"
 msgstr ""
 
-msgctxt "ErrorCopy"
-msgid "removing image…"
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "rotated · published a fresh key package"
-msgstr ""
-
-#. Remote image search status copy (src/wiring/image_search.rs).
-msgctxt "ErrorCopy"
-msgid "searching…"
-msgstr ""
-
-msgctxt "EmojiPicker"
-msgid "search…"
-msgstr ""
-
-msgctxt "ImageTile"
-msgid "tap to load"
-msgstr ""
-
-msgctxt "ImageTile"
-msgid "tap to retry"
-msgstr ""
-
-#. Custom-emoji upload status copy (src/wiring/custom_emoji.rs).
-msgctxt "ErrorCopy"
-msgid "uploaded — name it below"
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "uploading to Blossom…"
-msgstr ""
-
-msgctxt "ErrorCopy"
-msgid "video saved"
-msgstr ""
-
-msgctxt "NetworkPane"
-msgid "where peers reach you"
-msgstr ""
-
-msgctxt "NetworkPane"
-msgid "where you publish"
-msgstr ""
-
-msgctxt "KpCard"
-msgid "yes"
-msgstr ""
-
-msgctxt "KeysPage"
-msgid "{n} relay"
-msgid_plural "{n} relays"
-msgstr[0] ""
-msgstr[1] ""
-
-msgctxt "ContactDetail"
-msgid "{} RELAYS"
-msgstr ""
-
-msgctxt "ConfirmFlows"
-msgid "{} becomes an admin, then your admin rights are removed. You can't restore them yourself unless another admin promotes you again."
-msgstr ""
-
-msgctxt "ContactDetail"
-msgid "{} relays"
-msgstr ""
-
-msgctxt "ConfirmFlows"
-msgid "{} will be able to add members, change group settings, and manage other admins."
-msgstr ""
-
-msgctxt "ConfirmFlows"
-msgid "{} will lose access to this group and stop receiving its messages. You'll need to invite them again to bring them back."
-msgstr ""
-
-msgctxt "ConfirmFlows"
-msgid "{} will stay in the group, but won't be able to manage members or group settings."
-msgstr ""
-
-msgctxt "ConfirmFlows"
-msgid "{} will stop being declared as somewhere peers can reach you. You can add it back anytime."
-msgstr ""
-
-msgctxt "ConfirmFlows"
-msgid "{} will stop carrying your messages. You can add it back anytime."
-msgstr ""
-
-msgctxt "ChatListItem"
-msgid "{}, {} unread"
-msgstr ""
-
-msgctxt "ChatListItemIrc"
-msgid "{}, {} unread"
-msgstr ""
-
-msgctxt "RecordingOverlay"
-msgid "{}s"
-msgstr ""
-
-msgctxt "ProfileModal"
-msgid "✓ In your contacts"
-msgstr ""
-
-msgctxt "ContactDetail"
-msgid "✓ VERIFIED"
-msgstr ""
-
-msgctxt "GroupHero"
-msgid "＋ Add a description"
+msgid "sealed here"
 msgstr ""

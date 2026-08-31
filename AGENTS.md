@@ -2,148 +2,254 @@
 
 Guidance for AI coding agents working in this repository.
 
+White Noise Linux is an Odin + [clay](https://github.com/nicbarker/clay)
+desktop client for [Marmot](https://github.com/marmot-protocol/mdk): MLS group
+messaging over Nostr relays. It talks to the Marmot runtime through
+`marmot-c`, the same C API the Android, iOS, and macOS apps use.
+
+`PORT.md` records what is built, what is still outstanding, and the clay/SDL
+quirks worth knowing before you debug a layout.
+
 ## Build & run
 
-The workspace has two crates: the root binary (`whitenoise-linux`, the `default-run` target) and `wnl-ui`, a build-time-isolation lib crate.
-
-- **The two-crate split exists to keep rebuilds fast.** `wnl-ui/build.rs` compiles the Slint UI tree (`ui/white-noise-linux.slint`) into a ~580k-line generated module (`slint::include_modules!()` in `wnl-ui/src/lib.rs`), bundles the gettext catalogs from `lang/`, and composes the Twemoji sprite sheet. Because all of that lives in `wnl-ui`, editing Rust in `src/` rebuilds only the root crate (~2s); editing `.slint` or `lang/` files rebuilds `wnl-ui` too (tens of seconds to minutes as the tree grows). The first build is slow (marmot deps plus sprite composition).
-- **Live-reload for UI iteration (automatic in dev).** Any non-release build (`cargo build`/`cargo run`, no flags) skips the `.slint`-recompile loop: `wnl-ui/build.rs` sets `SLINT_LIVE_PREVIEW=1` for non-release profiles, so Slint's `live-preview` codegen emits an interpreter-backed shim instead of the ~580k-line module. The shim exposes the **same** strongly-typed generated API (`WhiteNoiseLinux`, `ChatMessage`, callbacks, globals — so `src/` glue is unchanged), but loads `ui/*.slint` from disk at runtime and hot-reloads on save. `cargo build --release` keeps the (default-on) `live-reload` feature but compiles the self-contained, statically checked UI into the binary; add `--no-default-features` for a release that also omits the interpreter crate. Because a dev binary reads `ui/*.slint` from its build-time absolute path, set **`WN_COMPILED_UI=1`** to force the compiled path in a debug build — required for anything that runs the binary away from this checkout (e.g. the `darkmatter-automated-testing` VM harness). Other caveats in shim mode: bundled `lang/` translations aren't applied (the interpreter loads the raw `.slint`), and a `.slint` edit still triggers a quick `wnl-ui` rebuild of the tiny shim on the next `cargo run` (hot-reload avoids even that while the app is running).
-- **Testing:** no unit-test suite exists (`cargo test` is a no-op), so verify changes by running the app. End-to-end/automated testing lives in a separate repo, `darkmatter-automated-testing`: the `dmvm` QEMU harness, the `dm-ctl` headless control daemon, and the multi-VM scenarios. That repo builds this checkout (located via `$DARKMATTER_LINUX_DIR`, default sibling `../darkmatter-linux`) and stages its `dm-ctl`/`bootbench` sources into `src/bin/`, which is why `src/bin/` is gitignored here and `cargo run --bin bootbench` only works after staging.
-- **Logging:** `tracing-subscriber` is installed in `main` (writes to stderr). Filter via `RUST_LOG`; default is `info`.
-- **Translations:** after adding/changing `@tr("…")` strings in `.slint` files, run `scripts/update-translations.sh` (needs `cargo install slint-tr-extractor` and gettext's `msgmerge`) to regenerate `lang/wnl-ui.pot` and merge into the `it`/`de`/`ja` catalogs. The gettext domain is `wnl-ui` because slint-build hardwires it to the name of the crate that compiles the UI. Edit the `.po` files directly. See [i18n](#i18n).
-
-### Dependencies (marmot + whitenoise)
-
-`Cargo.toml` pulls `marmot-app`, `marmot-account`, and `cgka-traits` from the public `darkmatter` repo over https (`git = "https://github.com/marmot-protocol/darkmatter.git", branch = "master"`), so cargo fetches them anonymously, with no ssh key or deploy secret. `.cargo/config.toml` sets `net.git-fetch-with-cli` to fetch through the git CLI (honouring local proxy/credential config). `Cargo.lock` pins the exact rev; bump with `cargo update -p marmot-app -p marmot-account -p cgka-traits`.
-
-`whitenoise-markdown` (the chat-body markdown parser) is a separate git dependency on the public `whitenoise-rs` repo.
-
-To develop against a local darkmatter checkout, **don't edit `Cargo.toml`**; add a patch to `.cargo/config.toml` (or `[patch]` locally):
-
-```toml
-[patch."https://github.com/marmot-protocol/darkmatter.git"]
-marmot-app     = { path = "../darkmatter/crates/marmot-app" }
-marmot-account = { path = "../darkmatter/crates/marmot-account" }
-cgka-traits    = { path = "../darkmatter/crates/traits" }
+```sh
+./build.sh          # build build/{app,smoke}
+./build.sh test     # build, then run the app package's tests
+./dev.sh            # watch app/ and marmot/, rebuild + restart on save
+build/app           # run against ~/.local/share/whitenoise
 ```
 
-Note: changes in darkmatter must be **pushed to master** before a plain build here picks them up.
+`build.sh` stages everything the build needs and skips each step when its
+output is already present, so only the first run is slow:
 
-### Runtime env vars
+- `vendor/mdk` cloned at `mdk-commit` from `DEPS_PIN`, and its C bundle built by
+  upstream's own `crates/marmot-c/c-bindings.sh` (this is the Rust part of the
+  build, and the long pole on a cold checkout).
+- `vendor/clay` and `vendor/ufbx` at their pinned commits; `ufbx.c` plus
+  `app/fbx_shim.c` are archived into `build/libwnfbx.a`.
+- `vendor/twemoji` (the 72x72 PNG set) and `vendor/emoji-catalog.tsv`, both
+  pulled from pinned crates.io tarballs.
+- An `ODIN_ROOT` overlay at `build/odin-root`, but **only** when the installed
+  Odin is missing `vendor/stb/lib/stb_truetype.a` (the Linux release tarball
+  and the Arch package both are; `sdlrl` needs truetype and image). The
+  overlay symlinks the real install and swaps in a writable `vendor/stb` copy
+  it can run `build_stb.sh` in.
 
-- `WN_HOME`: override data dir (default: `directories::ProjectDirs` for `"whitenoise-linux"`). Holds the encrypted vault (`vault.db`), the encrypted media cache (`media-cache/`), and an optional `observability.toml` override.
-- `WAYLAND_DISPLAY` / `DISPLAY`: clipboard chooses `wl-copy` on Wayland and falls back to `xclip` / `xsel` / `arboard` on X11 (Linux and FreeBSD). With neither set, only the `arboard` fallback runs. On macOS these are ignored: the clipboard goes through `pbcopy`, with `arboard` as fallback.
+`DEPS_PIN` holds every third-party revision as `<name>-commit = <sha>`, one
+per line. Bumping one is a one-line edit; `build.sh` re-checks out and
+rebuilds on the next run.
 
-(`DM_SECRET_STORE` is gone; there is no more libsecret/pass/plaintext path. See [Secret vault](#secret-vault).)
+Odin has no incremental compilation, so a full app build is the unit of work
+(~3s at `-o:minimal`, which is what `dev.sh` uses; release builds use
+`-o:speed` for the STL orbit path). There is no UI markup to hot-reload: the
+layout is Odin code, so `dev.sh` watches, rebuilds, and restarts.
+
+**Testing:** `odin test app` runs the `@(test)` procs that live beside the
+code they cover (`*_test.odin`). CI runs exactly `build.sh test`. End-to-end
+testing lives in a separate repo, `darkmatter-automated-testing` (the `dmvm`
+QEMU harness and multi-VM scenarios). The `WN_TEST_*` env vars in `main.odin`
+drive the app into a given state for screenshots and harness runs.
+
+### Runtime env
+
+| Variable | Effect |
+| --- | --- |
+| `WN_VAULT_PW` | Unlocks (or creates) the vault without the gate. For the harness. |
+| `WN_SHOT` / `WN_SHOT_FRAME` | Capture `wn-odin-shot.png` after N frames, then exit. |
+| `WN_TEST_*` | Drive a specific pane/action on boot; see `main.odin`. |
+| `WN_DEBUG_INPUT` | Log input events. |
+
+The data dir is the app's first argument, defaulting to
+`~/.local/share/whitenoise`. It holds `vault.db`, the media cache, and
+the offline queue. UI prefs are a separate JSON blob at
+`$XDG_CONFIG_HOME/whitenoise/settings.json`.
+
+### System dependencies
+
+Odin (a recent nightly; CI pins one in `.github/workflows/ci.yml`), a C
+compiler, and a Rust toolchain for `marmot-c`. Then SDL3 plus the libraries
+behind the `foreign import "system:…"` lines in `app/`: `libarchive`
+(`archive.odin`), `libmpv` (`mpv.odin`), `poppler-glib` + `glib` + `gobject` +
+`cairo` (`pdf.odin`).
 
 ## Architecture
 
-### Layering
-
 ```
-slint UI (ui/*.slint)  ←──  wnl-ui (generated Slint module)  ←──  src/main.rs + UI-glue modules  ──→  Backend (src/backend.rs)  ──→  MarmotApp (sibling crate) + tokio runtime
+ SDL3  ←──  app/sdlrl/  ←──  app/renderer.odin  ←──  clay layout (app/*.odin)
+                                                          │
+                                                    app/state.odin  (Ui_State)
+                                                          │
+                                              app/workers.odin  (worker threads)
+                                                          │
+                                                   marmot/marmot.odin
+                                                          │
+                                            marmot-c  →  the Marmot runtime
 ```
 
-- **`wnl-ui`** owns `slint::include_modules!()` and re-exports all generated Slint types; `main.rs` pulls them in with `use wnl_ui::*;`. UI structs (`ChatMessage`, `ChatMeta`, `GroupMember`, `Contact`, `ArchivedChat`, `Reaction`) live in `ui/tokens.slint` and Rust constructs them directly. The split is purely for rebuild speed, so **don't put app logic in `wnl-ui`.**
-- **Hard rule: no Rust source file may exceed 2000 lines.** Keeps files readable and rebuilds fast. The pre-commit hook (`.githooks/pre-commit`) enforces it on staged `*.rs`; split before you cross it.
-- **The UI glue is one logical layer split across files purely to stay under that limit.** `src/main.rs` builds the window, the shared handles (bundled in `Cx`), and the cross-section closures (bundled in `Handlers`), then calls the `wire_*` functions. The callback sections live under `src/wiring/` — `wiring/mod.rs` (the `Cx`/`Handlers`/type-alias definitions), `wiring/panes.rs` (account/settings/keys), `wiring/backup.rs` (backup create/import + storage), `wiring/chats.rs` (new-chat/chat-select/chat-request/archive), `wiring/nav.rs` (page nav + command palette), `wiring/contacts.rs` (contact select/add/nicknames/QR/key-package), `wiring/groups.rs` (group admin: members/admins/rename/image), `wiring/image_search.rs` (remote image search shared by the group-photo and profile-picture pickers), `wiring/messaging.rs` (send/edit/attach/media), `wiring/attach.rs` (the shared attachment/album send spawners called from messaging/forward/extra), `wiring/forward.rs` (forward picker), and `wiring/extra.rs` (reactions/delete/pickers/profile/offline); each `wire_*` takes `(&ui, &cx, &h)` and reproduces its local bindings with `let Cx { .. } = cx.clone();`. The pure row/model/render helpers live in `chatmodel.rs`, `chatlist.rs`, `chrome.rs`, `media.rs`, `render.rs`, the system-clipboard stack in `clipboard.rs`, the network-relay UI plumbing in `relays.rs`, and the optimistic-overlay state in `state.rs`. All of these share the crate-root prelude (`pub(crate) use` re-exports in `main.rs`) via `use crate::*;`, so the data flow still reads flat — treat them as one file that happens to be chaptered.
-- **Macro toolkit (`src/macros.rs`, re-exported through the crate prelude) kills the recurring glue ceremony — use it instead of hand-writing these shapes.** `wire!(ui, on_cb [cap, cap2], |ui, args| body)` binds an `AppState` callback, absorbing the `as_weak`/capture-clone/upgrade prologue (list every captured local in `[...]`; closures that pass `weak` onward into spawns stay hand-written). `ui_update!(weak, move |ui| body)` replaces the `invoke_from_event_loop` + `upgrade() else { return }` pair (the macro clones the weak, so `Fn` contexts reuse one handle). `global_cell!(vis fn name() -> T = init)` generates a process-wide `Mutex<T>` singleton accessor; `map_ops!`/`set_ops!` add get/put/remove or contains/insert/remove wrappers over it; `status_setter!` generates the `show_X_status` pairs. Plain helpers in the same file: `update_rows_where` / `update_first_row_where` / `update_row_at` / `find_row` replace hand-written downcast-loop-`set_row_data` blocks.
-- **`Backend` (`src/backend.rs` + `src/backend/*.rs`)** wraps `MarmotApp` plus its own multi-thread tokio runtime. `impl Backend` is chaptered across child modules that can reach `Backend`'s private fields: `backend/groups.rs` (groups/keys/admin/telemetry/watchers plus the media-validation free fns), `backend/messaging.rs` (send/reply/edit/delete/react and media upload/download ops), and `backend/profiles.rs` (profile/directory name+picture cache and display-name resolution); `backend.rs` itself keeps boot/accounts, chat/message queries, and relay-list management. It exposes `tokio_handle()` so callers can `spawn` ad-hoc background work (HTTP fetches, etc.) on that same runtime; one runtime serves all background work. Platform-specific path handling lives here; the platform-specific clipboard ladder lives in `src/clipboard.rs`.
-- **Support modules are thin and single-purpose** and do not own state (the UI does): `vault.rs` (password-encrypted secret vault), `settings.rs` (JSON UI prefs), `blossom.rs` (public Blossom uploads), `media_cache.rs` (encrypted attachment cache), `observability.rs` (telemetry/audit endpoint config), `image_search.rs` (Openverse image search for the remote-image picker).
+- **`marmot/marmot.odin`** is the entire binding layer: a `foreign import` of
+  the `marmot-c` staticlib plus Odin-shaped wrappers. Nothing else in the tree
+  touches C.
+- **`app/state.odin`** owns `Ui_State`, the single struct every pane reads and
+  writes, plus the live theme color globals. There is no per-feature state
+  container and no observer graph; a frame reads the struct and lays out from
+  it.
+- **`app/workers.odin`** keeps the UI thread off blocking Marmot calls: a live
+  subscription worker feeds updates into a queue that the UI thread drains at
+  a frame boundary, and each send runs on its own short-lived thread. Anything
+  that can block belongs on a worker.
+- **`app/sdlrl/`** is an SDL3 shim with a raylib-shaped API (window, input,
+  clipboard, screenshots, IME, and a stb_truetype text engine with a CJK
+  fallback stack). It exists because the app was written against raylib
+  first, and raylib has no IME text input and no dynamic glyph baking.
+  `renderer.odin` is clay's official renderer, retargeted onto it.
+- **Panes are flat procs.** `chatpane.odin`, `panes.odin`, `settings_pages.odin`
+  and friends each build their part of the clay tree directly from `Ui_State`.
+  Follow that: no widget objects, no retained view tree.
+
+### Themes
+
+A theme is a `themes/*.toml` pack, `#load`ed at build time and parsed into a
+`Theme_Pack` (`app/theme.odin`). `apply_theme` copies the active pack into the
+color globals (`BG`, `TEXT`, `ACCENT`, …) plus the structural metrics and
+capability flags (`R_SCALE`, `BORDER_W`, `SCANLINES`, `PAPER_DECOR`, …).
+
+**Never branch on theme identity.** Read the globals, and when a component
+needs something no token covers, add a field to `Theme_Pack` and set it in
+every pack instead of special-casing a theme by name. Users can drop their own
+packs in `<data-dir>/themes/*.toml`.
 
 ### Secret vault
 
-There is no OS keyring, no `pass`, no plaintext key on disk. All secrets (the user's nsec plus marmot's per-account keys) live in one password-encrypted file, `$WN_HOME/vault.db` (`vault.rs`).
+Every secret lives in one password-encrypted file, `<data-dir>/vault.db`
+(`app/vault.odin`): Argon2id (19 MiB / 2 / 1) over the password, then
+XChaCha20-Poly1305 over a JSON key→value map, atomically renamed into place at
+mode 0600. There is no OS keychain and no plaintext key on disk.
 
-- **Format:** a serde envelope `{ version, kdf{argon2id salt + cost params}, nonce, ciphertext }`. The ciphertext is `XChaCha20-Poly1305(serde_json(BTreeMap<String,String>))` keyed by `Argon2id(password, salt)`. Every mutation re-seals the whole map under a fresh nonce and atomically renames into place (mode `0600`). The derived key is held in `Zeroizing` and wiped on drop.
-- **Unlock vs create:** on startup, if `vault.db` exists the login screen opens in mode 3 (Unlock, where the user enters the password). Otherwise it's first-run: the user pastes/generates an nsec **and** sets a password (with confirm), creating the vault. A wrong password fails the Poly1305 tag, returning `VaultError::WrongPassword`. There is no recovery; the unlock screen offers "Use another key", which deletes the vault and restarts from the nsec.
-- **marmot integration:** `VaultSecretStore` implements marmot's `AccountSecretStore` and is passed to `AccountHome::open_with_secret_store` in `Backend::boot`, so marmot's account secrets land in the *same* vault file (under `account:<label>` keys). The same `Arc<Mutex<Vault>>` unlocked on the login screen is threaded into boot.
-- **Blob sealing:** `Vault::seal_blob` / `open_blob` encrypt arbitrary byte blobs under a vault subkey, used by the media cache so nothing decrypted ever hits disk in plaintext.
+`vault_gate.odin` runs *before* the runtime boots, because Marmot takes the
+secret store at client construction (`marmot_client_new_with_secret_store`):
+account signing keys land under `account:<label>` in the same file. The media
+cache and the offline queue seal with the vault's blob subkey.
 
-### Media: two upload paths + encrypted cache
+A wrong password fails the Poly1305 tag. There is no recovery: "Use another
+key" deletes the vault and everything sealed under it.
 
-- **Chat attachments** go through marmot's encrypted MIP-04 path (sealed blobs only group members can read; content type is always `application/octet-stream`). The UI resolves a record's NIP-92 `imeta` tag to download/decrypt on tap. Encrypted downloads retry marmot redirect failures by resolving Blossom redirects in `src/backend.rs`, validating each hop before retrying.
-- **Profile pictures** are the opposite (publicly fetchable), so `blossom.rs` is a deliberately simple unencrypted path: BUD-01/BUD-02 `PUT /upload` with a signed kind-24242 auth event, returning the public URL that goes into the kind-0 `picture` field. Default server: `https://blossom.primal.net`.
-- **`media_cache.rs`** is an encrypted-at-rest disk cache for *decrypted* attachment bytes at `$WN_HOME/media-cache/<blob_hash>.bin`, sealed with the vault's media-cache subkey and content-addressed by the Blossom blob hash. Best-effort: any IO/crypto failure degrades to a miss, triggering a fresh download+decrypt. Cleared entirely on vault reset (old-key entries are unreadable anyway). It stores original compressed bytes (PNG/JPEG), not decoded RGBA.
+## Packaging
 
-### Observability (telemetry + audit logs)
+Releases are AppImages, built by `.github/workflows/release.yml` on a `v*`
+tag. `.ngit/act/workflows/release-appimage.yml` builds the same thing on every
+push to master and hands it to ngit-ci for Blossom.
 
-`observability.toml` at the repo root holds OTLP-metrics and Goggles-audit endpoints/tokens (deliberately not secret). It's embedded into the binary at build time (`include_str!`); a copy at `$WN_HOME/observability.toml` overrides it at runtime without a rebuild. `Backend::configure_observability` feeds these to marmot's relay-telemetry exporter and audit-log tracker at boot, but **sending only happens when the user enables the Telemetry / Audit-logs toggles in Settings (Advanced section)**. Those enabled-flags live in marmot's settings store (not `settings.rs`), via `telemetry_enabled()` / `audit_logs_enabled()` and their setters; the audit toggle takes effect on next restart.
+The app reads three things from disk at runtime, and `res_dir`
+(`app/paths.odin`) resolves all of them relative to the running binary, so the
+AppDir layout is a contract with it:
 
-### Settings (`settings.rs`)
+```
+usr/bin/whitenoise-linux
+usr/share/whitenoise-linux/twemoji/*.png      reaction and picker tiles
+usr/share/whitenoise-linux/emoji-catalog.tsv  the picker's search index
+usr/share/whitenoise-linux/fonts/*.ttf        the four bundled faces
+```
 
-UI prefs as a tiny JSON blob in XDG config: `debug_enabled`, `locale` (`en`/`it`/`de`/`ja`), `theme` (`dark`/`light`/`retro`/`terminal`/`crayon`/`synthwave`/`chalkboard`), `accent_color` (`mint`/`ocean`/`berry`/`coral`/`lavender`), `outgoing_on_right`, and `nicknames` (private per-contact nicknames keyed by account hex, local-only and never published to relays). All load/save failures are swallowed; defaults keep the app booting.
+Without that tree, `res_dir` falls back to `vendor/`, the path this was built
+from, which is what a dev build wants and what a shipped binary must
+never rely on. **Anything new the app reads from disk at runtime goes under
+`res_dir()`, and gets copied into the AppDir by both workflows.**
 
-### Optimistic overlay model
+Fonts are bundled because the stacks would otherwise depend on the host
+distro's font layout, and the icon face in particular has no substitute (the
+glyphs are Nerd Font private-use codepoints). Noto Sans CJK is the deliberate
+exception: the `.ttc` is tens of megabytes, so Japanese falls back to the
+system copy. The system paths behind the bundled ones in each stack cover
+Arch, Debian/Ubuntu, and Fedora layouts.
 
-All UI mutations (send, react, unreact) go through a `PendingState` overlay (`state.rs`; the row builders below live in `chatmodel.rs`):
+Both workflows boot the finished AppImage headlessly (`SDL_VIDEODRIVER=dummy`
+plus `WN_SHOT`) before publishing, which catches a library linuxdeploy failed
+to bundle and a `res_dir` that stopped finding its data.
 
-1. The mutation is applied locally to the overlay, and the UI rebuilds the affected message rows from `backend snapshot ∪ overlay`.
-2. The real op dispatches on the tokio runtime.
-3. On ack, the overlay entry is dropped, and the next rebuild pulls the confirmed record from the snapshot.
-4. On failure, the overlay entry is marked failed (red body, tap to retry).
+## i18n
 
-Three entry points share the same model-to-row pipeline; **changing the avatar/text/etc. for a row means touching all three:**
+User-visible strings go through `tr()` (`app/i18n.odin`), which looks the
+English source string up in the gettext catalog for the active locale. The
+catalogs in `lang/` (`it`, `de`, `ja`; `en` is the msgid source) are `#load`ed
+at build time and parsed on boot and on locale switch. A missing entry falls
+back to English, so an unextracted string is invisible until someone switches
+locale.
 
-- `chat_message_from_with_reactions(record, records_by_id, my_id, my_label, reactions)`: confirmed rows (`records_by_id` is a prebuilt message-id-to-record map for reply-preview lookups).
-- `pending_chat_message(pending, my_id, my_label)`: pending/failed rows.
-- `build_one_message_row(...)` / `rebuild_chat_messages(...)` / `refresh_one_message_row(...)`: orchestrators that call the two above.
+`scripts/update-translations.sh` regenerates `lang/wnl-ui.pot` and merges it
+into the catalogs. It is `xgettext -L C` over a copy of `app/*.odin` (Odin is
+close enough to C for the lexer, once backtick raw strings are blanked out),
+and it recognizes three shapes:
 
-`my_label` is the user's display name (`backend.account_display_name(&my_id)`, falling back to the account hex). It drives the outgoing-body avatar palette/initials so the user's own messages match the left-rail avatar.
+- `tr("…")`: translated where it is written.
+- `N_("…")`: gettext's noop marker, for a string held in a package-level
+  table or returned from a copy proc, where some `tr(var)` downstream does the
+  lookup. Mark at the literal, translate at the point of use.
+- `helper("…", …)`: a proc that calls `tr()` on one of its parameters, so the
+  literal at the call site is the msgid. These are listed by name and argument
+  position in the script's `HELPERS` array.
 
-Group chats add a member-list panel backed by `Backend::group_members`, `GroupMember` Slint rows, and `push_group_members_to_ui`.
+**Adding a proc that `tr()`s a parameter means adding it to `HELPERS`,** or
+its call sites go unextracted and stay English. Same for a new table of
+copy: mark each literal `N_(…)`.
 
-### Markdown rendering
+Edit the `.po` files directly. The catalogs have no `msgctxt` (`po_parse`
+ignores it and keys on msgid alone, first entry winning), and no plural forms.
 
-Chat bodies are parsed with `whitenoise-markdown` (the same CommonMark + GFM + nostr-entity parser whitenoise-rs uses) into a `Document`, then flattened in `render.rs` into the body's line/run model: each `MessageLine` is one visual line, each `MessageRun` an inline text/emoji cell with resolved styling; block context (heading scale, list/blockquote indent, code plates, rules) rides on the line. Line wrapping is Rust-side and greedy: character widths are *estimated* (`MD_CHAR_W`, `MD_EMOJI_W`, fractions of font-size) only to pick break points, and Slint draws with real metrics.
+### Copy voice
 
-### Avatar pipeline
+One voice for every user-visible string. English source rules:
 
-Two layers:
-
-1. **Deterministic fallback:** `avatar_for(key: &str) -> (Color, Color, String)` hashes any string into a gradient + initials. Used for everyone (self, peers, group rows); always renders something.
-2. **Profile pictures:** `fetch_profile_picture` / `fetch_picture_pixels` GET the URL via `reqwest`, decode with `image`, and cache as raw RGBA (`PicturePixels { w, h, rgba }`) in a process-wide `OnceLock<Mutex<HashMap<...>>>`.
-
-**Critical constraint:** `slint::Image` holds a `VRc<...>` that is `!Send`, so you cannot move an `Image` from a `tokio::spawn` into `slint::invoke_from_event_loop`. The cache stores `PicturePixels` (which is `Send`); the `slint::Image` is reconstructed on the UI thread via `slint::SharedPixelBuffer::clone_from_slice` + `Image::from_rgba8` inside the event-loop closure.
-
-`Avatar` (`ui/primitives/avatar.slint`) takes `picture: image` + `has-picture: bool`. When `has-picture` is false it renders initials over the gradient; when true it renders the `Image` with `image-fit: cover` and `clip: true` (the circular border-radius does the clip).
-
-### Build-time sprite sheet
-
-`wnl-ui/build.rs` walks all `emojis::iter()`, looks up each in `twemoji-assets`, and composes a single 44-column, 72px-tile sheet. Runtime renders the picker with one shared texture and per-cell `source-clip`, never decoding individual PNGs at runtime. The emitted `EMOJI_POSITIONS` table and the sprite PNG bytes are included in `wnl-ui/src/lib.rs` (`emoji_sprite_map` module, `EMOJI_SPRITE_PNG`) and re-exported to `main.rs`. The build reuses `twemoji_sprite.png` and `emoji_sprite_map.rs` from `OUT_DIR` when both exist, so sprite generation only runs when an output is missing.
-
-### i18n
-
-All user-visible Slint strings use `@tr("…")`. `wnl-ui/build.rs` bundles the gettext catalogs from `lang/` (`slint_build::CompilerConfiguration::new().with_bundled_translations("../lang")`); locales are `en` (source), `it`, `de`, `ja`. Runtime switching happens via `slint::select_bundled_translation` (`apply_locale` in `main.rs`), driven by `Settings.locale` and the language-picker modal. Catalog maintenance is `scripts/update-translations.sh` (see [Build & run](#build--run)).
-
-#### Copy voice
-
-One voice for every user-visible string: `@tr()` in `.slint`, plus the English defaults mirrored in `src/state.rs` copy snapshots. English source rules:
-
-- **Address the user as "you."** The user's things are "your" ("your relays", "your key package"). Descriptive copy (sublabels, explanations, status and error text) never casts the user as "me"/"I". The only first-person strings are the established control labels where the user names themself as the object of their own click ("Delete for me", "I have an nsec"); don't coin new ones.
-- **The app never speaks as "we."** There is no company voice: no "we can't read them", no "we'll keep retrying". Say what is true of the system instead ("no one else can read it", "it will retry automatically").
-- **Register: plain and calm.** State facts; no marketing flourish, no superlatives, no exclamation points. If a sentence would fit on a landing page, rewrite it.
-- **Never use em dashes** in copy or docs. Use a period, comma, or parentheses instead.
-- **Error copy** is "Couldn't ⟨what failed⟩. ⟨recovery⟩." with exactly this recovery ladder:
+- **Address the user as "you."** The user's things are "your" ("your relays",
+  "your key package"). Descriptive copy never casts the user as "me"/"I". The
+  only first-person strings are the established control labels where the user
+  names themself as the object of their own click ("Delete for me", "I have an
+  nsec"); don't coin new ones.
+- **The app never speaks as "we."** No "we can't read them", no "we'll keep
+  retrying". Say what is true of the system instead ("no one else can read
+  it", "it will retry automatically").
+- **Register: plain and calm.** State facts; no marketing flourish, no
+  superlatives, no exclamation points.
+- **Never use em dashes** in copy or docs. Use a period, comma, or parentheses.
+- **Error copy** is "Couldn't ⟨what failed⟩. ⟨recovery⟩." with exactly this
+  recovery ladder:
   - `Please try again.` is the default, for transient failures.
-  - `Check your relay settings and try again.` only when relay configuration genuinely bears on the failure.
-  - Input errors name the specific correction as a bare imperative ("Double-check it and try again.", "Wait a moment and try again.").
-  - "Please" appears only in the bare default clause; an imperative that carries content drops it.
-- **Casing ladder:** section eyebrows/captions are ALL CAPS ("DESKTOP ALERTS"); row titles, buttons, toggles, and menu items are sentence case ("Desktop notifications", "Send test"); sublabels and descriptions are full sentences ending with a period.
+  - `Check your relay settings and try again.` only when relay configuration
+    genuinely bears on the failure.
+  - Input errors name the specific correction as a bare imperative
+    ("Double-check it and try again.", "Wait a moment and try again.").
+  - "Please" appears only in the bare default clause; an imperative that
+    carries content drops it.
+- **Casing ladder:** section eyebrows/captions are ALL CAPS ("DESKTOP
+  ALERTS"); row titles, buttons, toggles, and menu items are sentence case
+  ("Desktop notifications", "Send test"); sublabels and descriptions are full
+  sentences ending with a period.
 
-Translations keep one register per language, held across the whole catalog. Person and formality are language decisions, not echoes of the English. The current choices are: `it` informal *tu*, `de` informal *du*, `ja` polite です／ます form. Don't switch register per string.
+Translations keep one register per language across the whole catalog: `it`
+informal *tu*, `de` informal *du*, `ja` polite です／ます form. Don't switch
+register per string.
 
-### Slint conventions specific to this repo
+## Conventions
 
-- **UI tree layout & the AppState contract.** `ui/white-noise-linux.slint` is entry + contract only: the `WhiteNoiseLinux` root re-exposes every Rust-facing property as a two-way alias onto the `AppState` global (`ui/shell/app-state.slint`) and mounts the shell pieces (`ui/shell/app-shell.slint` body, `modal-host.slint` overlay stack, `login-gate.slint`, `shell-timers.slint`). Rust sets/gets properties on the window handle (`ui.set_x()`, through the aliases) but binds and invokes **callbacks on the global** (`ui.global::<AppState>().on_x(…)` / `.invoke_x(…)`) — root callback aliases to globals are deprecated in Slint, don't add new ones. Adding a Rust-facing member = declare it in `AppState`, run `scripts/update-root-aliases.sh` (regenerates the root property-alias block; UI-internal members annotated "not part of the Rust contract" are skipped), and bind it in `src/wiring/`. Shell components and pages read `AppState` directly; leaf primitives stay pure-props. Feature UI lives in feature dirs (`ui/messages/`, `ui/chat-list/`, `ui/emoji/`, `ui/main-pane/`, `ui/shell/`, `ui/theme-decor/`); `ui/primitives/` is true atoms only (button, avatar, pill, toggle, menu-item, …). One component per `.slint` file. Scrollable lists use std-widgets `ListView` (virtualized — only visible rows instantiate); the custom `primitives/scroll-view.slint` is for free-form content. A ListView needs its `for` as a direct child, so SidePanel-based sidebars own their ListView in the @children slot.
-- **Data-driven themes** (`Theme` global in `ui/tokens.slint`; see `ui/CONTRACT.md` for the engine's layering and rules): a theme is a pair of registry entries indexed by `Theme.id` (0=dark, 1=light, 2=retro, 3=terminal, 4=sketch/`crayon`, 5=synthwave, 6=chalkboard) — a `ThemeColors` pack (every color the UI reads, exposed as `Palette.*`) and a `ThemeStyle` pack (capability flags such as `hard-shadow`, `bevel`, `soft-decor`, `outline-surfaces`, `pixel-metrics`, plus per-family skin selectors and structural metrics `font`, `r-scale`, `border-w`). **Never branch on theme identity for styling** — `Theme.id == N` is banned. Branch on the capability flags, read colors from `Palette`, read structural metrics from `Theme.font`/`Theme.r-scale`/`Theme.border-w`, and when a component needs a themed value no token covers, add a `ThemeColors` field or `ThemeStyle` field and set it in every pack instead of writing an inline identity ternary.
-- **Accent system:** `Theme.accent` is an index (0..4 = mint/ocean/berry/coral/lavender) into the active pack's `accent-*` tables. Read the resolved colors from `Palette.mint` / `mint-hi` / `mint-dim` / `mint-glow` / `mint-surface`, never hardcode an accent.
-- **Font sizes** go through the theme helpers: `font-size: Theme.fs(12px, 16px)` declares the modern and pixel-grid sizes and lets the active theme's `pixel-metrics` flag pick one (retro is the only pixel-metrics theme). Never write a bare `font-size: 12px` or multiply by a scale factor — `Theme.fs-scale` has been removed; every site goes through `Theme.fs()` (render sites) or `Theme.fsr()` (primitive property defaults consumed through `root.font-size`).
-- **Border radius** is scaled by `Theme.r-scale` so retro mode can zero it.
-- **Avatars** on the left-rail / outgoing-body / profile-page / members-list all read from a common `my-av-*` set of root properties on `WhiteNoiseLinux`, pushed from Rust on profile load. Don't reintroduce hardcoded initials/colors at the leaf; wire the property through.
+- **Data first.** Design the layout of `Ui_State` and how a frame reads it
+  before writing procs. Flat arrays and structs, not object graphs.
+- **No speculative generality.** No interface with one implementation, no
+  config for a constant, no helper that only forwards arguments. A layer earns
+  its place at the second call site, not the first.
+- **Deliberate corner cuts get a `ponytail:` comment** naming the ceiling and
+  the upgrade path (see `sdlrl.odin`'s per-glyph textures for the shape).
+- Keep visibility tight: `@(private)` / `@(private = "file")` unless another
+  file genuinely needs the symbol.
+- Comments explain *what* a block does and *why*, with an example or an ASCII
+  diagram where a system needs one. Don't annotate code you didn't touch.
 
-## Learned user preferences
+## Commits
 
-- Avoid adding Python project tooling or helper scripts; prefer Rust or the existing shell/toolchain workflows.
-- For i18n work, keep scope to Slint `@tr()` bundled catalogs unless explicitly asked; do not propose Rust-side string translation.
-- When implementing from an attached plan, do not edit the plan file itself; update the already-created todos instead of recreating them.
+Install the hooks once per clone: `scripts/install-hooks.sh`. The pre-commit
+hook normalizes and validates staged gettext catalogs, and keeps
+`.github/workflows/pr-precommit.yml` byte-identical to its canonical copy at
+`.ngit/act/workflows/pr-precommit.yml` (ngit is the primary forge; GitHub
+cannot run workflows through symlinks).
+
+Commit messages: imperative subject under 50 characters, capitalized, no
+trailing period, a blank line, then a body wrapped at 72 explaining what and
+why rather than how.

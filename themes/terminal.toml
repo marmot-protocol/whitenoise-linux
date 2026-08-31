@@ -112,6 +112,7 @@ skin-avatar = 0
 skin-modal = 0
 bracket-labels = true
 paper-doodles = false
+scanlines = true
 synth-grid = false
 
 font = "JetBrains Mono"

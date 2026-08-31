@@ -1,13 +1,11 @@
-/target
+/build/
+/vendor/
 .stignore
 .syncthing.*
 *.sync-conflict*
 
+# Screenshots WN_SHOT drops in the working directory
+/wn-odin-shot.png
+
 # gettext msgmerge backups — regenerated on every catalog update
 *.po~
-
-# Headless-control bins (dm-ctl, bootbench) staged in by the
-# darkmatter-automated-testing harness to build against this crate. They live in
-# that repo, not here — see its README. A plain `cargo build` ignores them
-# until the harness stages them.
-/src/bin/

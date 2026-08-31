@@ -1,0 +1,144 @@
+#!/usr/bin/env bash
+# Build White Noise Linux against marmot-c from the pinned mdk revision.
+# `build.sh test` builds, then runs the app package's tests.
+#
+# Every third-party revision this build pins lives in DEPS_PIN, one
+# `<name>-commit = <sha>` line each. vendor/mdk is cloned at mdk-commit and
+# its C bundle staged by upstream's own c-bindings.sh; both steps are skipped
+# when already present. Then the Odin packages build against the staticlib.
+set -euo pipefail
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+# One pinned revision out of DEPS_PIN, by name.
+pin() { sed -n "s/^$1-commit = //p" "$HERE/DEPS_PIN"; }
+
+MDK_REPO="https://github.com/marmot-protocol/mdk.git"
+MDK_PIN="$(pin mdk)"
+MDK="$HERE/vendor/mdk"
+BUNDLE="$MDK/crates/marmot-c/output"
+
+if [ ! -d "$MDK" ]; then
+  git clone --filter=blob:none "$MDK_REPO" "$MDK"
+fi
+
+if [ "$(git -C "$MDK" rev-parse HEAD)" != "$MDK_PIN" ]; then
+  git -C "$MDK" fetch origin "$MDK_PIN"
+  git -C "$MDK" checkout --detach "$MDK_PIN"
+  rm -rf "$BUNDLE"
+fi
+
+if [ ! -f "$BUNDLE/lib/libmarmot_c.a" ]; then
+  "$MDK/crates/marmot-c/c-bindings.sh"
+fi
+
+CLAY="$HERE/vendor/clay"
+CLAY_PIN="$(pin clay)"
+if [ ! -d "$CLAY" ]; then
+  git clone --filter=blob:none https://github.com/nicbarker/clay.git "$CLAY"
+  git -C "$CLAY" checkout --detach "$CLAY_PIN"
+fi
+
+# FBX support: ufbx (single-file MIT reader) plus app/fbx_shim.c, the
+# flat C API the Odin viewer binds. FBX is a versioned proprietary
+# format with skinning and animation curves; ufbx already reads every
+# flavor, so only the shim is ours. Archived into build/ so a stale
+# object can't survive a shim edit.
+UFBX="$HERE/vendor/ufbx"
+UFBX_PIN="$(pin ufbx)"
+if [ ! -d "$UFBX" ]; then
+  git clone --filter=blob:none https://github.com/ufbx/ufbx.git "$UFBX"
+fi
+if [ "$(git -C "$UFBX" rev-parse HEAD)" != "$UFBX_PIN" ]; then
+  git -C "$UFBX" fetch origin "$UFBX_PIN"
+  git -C "$UFBX" checkout --detach "$UFBX_PIN"
+  rm -rf "$HERE/build/fbx"
+fi
+
+mkdir -p "$HERE/build/fbx"
+if [ ! -f "$HERE/build/fbx/ufbx.o" ]; then
+  cc -c -O2 -fPIC "$UFBX/ufbx.c" -o "$HERE/build/fbx/ufbx.o"
+fi
+if [ ! -f "$HERE/build/fbx/fbx_shim.o" ] || [ "$HERE/app/fbx_shim.c" -nt "$HERE/build/fbx/fbx_shim.o" ]; then
+  cc -c -O2 -fPIC -I"$UFBX" "$HERE/app/fbx_shim.c" -o "$HERE/build/fbx/fbx_shim.o"
+  rm -f "$HERE/build/libwnfbx.a"
+fi
+if [ ! -f "$HERE/build/libwnfbx.a" ]; then
+  ar rcs "$HERE/build/libwnfbx.a" "$HERE/build/fbx/ufbx.o" "$HERE/build/fbx/fbx_shim.o"
+fi
+
+# wn-webview: the process that runs a webxdc app offscreen and hands
+# the app its pixels through shared memory. Optional: without
+# webkit2gtk-4.1 there is no viewer, and .xdc attachments stay inert.
+if pkg-config --exists webkit2gtk-4.1 2>/dev/null; then
+  if [ ! -f "$HERE/build/wn-webview" ] || [ "$HERE/app/webview.c" -nt "$HERE/build/wn-webview" ] || [ "$HERE/app/webview.h" -nt "$HERE/build/wn-webview" ]; then
+    cc -O2 "$HERE/app/webview.c" -o "$HERE/build/wn-webview" \
+      $(pkg-config --cflags --libs webkit2gtk-4.1)
+  fi
+else
+  echo "==> webkit2gtk-4.1 not found: webxdc apps will not run"
+fi
+
+# Full Twemoji 72x72 PNG set for reaction chips (any emoji, not just
+# the embedded quick-react six), staged from the pinned crates.io
+# tarball of twemoji-assets.
+TWEMOJI="$HERE/vendor/twemoji"
+if [ ! -d "$TWEMOJI" ]; then
+  TMP="$(mktemp -d)"
+  curl -sSfL -A "whitenoise-build" "https://static.crates.io/crates/twemoji-assets/twemoji-assets-1.5.1+17.0.2.crate" | tar xz -C "$TMP"
+  mv "$TMP"/twemoji-assets-*/assets/72x72 "$TWEMOJI"
+  rm -rf "$TMP"
+fi
+
+# Emoji picker catalog: "emoji<TAB>name" per line, extracted from the
+# pinned emojis crate (the same dataset the slint build walks). Skin
+# tone variants are dropped to keep the grid to base emoji.
+CATALOG="$HERE/vendor/emoji-catalog.tsv"
+if [ ! -f "$CATALOG" ]; then
+  TMP="$(mktemp -d)"
+  curl -sSfL -A "whitenoise-build" "https://static.crates.io/crates/emojis/emojis-0.6.4.crate" | tar xz -C "$TMP"
+  grep -o 'Emoji { emoji: "[^"]*", name: "[^"]*"' "$TMP"/emojis-0.6.4/src/gen/mod.rs |
+    sed 's/Emoji { emoji: "\([^"]*\)", name: "\([^"]*\)"/\1\t\2/' |
+    grep -av $'\xf0\x9f\x8f\xbb' | grep -av $'\xf0\x9f\x8f\xbc' |
+    grep -av $'\xf0\x9f\x8f\xbd' | grep -av $'\xf0\x9f\x8f\xbe' |
+    grep -av $'\xf0\x9f\x8f\xbf' >"$CATALOG"
+  rm -rf "$TMP"
+fi
+
+mkdir -p "$HERE/build"
+
+# The distro odin package ships vendor/stb without the built .a archives
+# (the sdlrl text/image layer needs truetype + image). When they are
+# missing, build them inside a private ODIN_ROOT that symlinks the real
+# install and swaps in a writable copy of vendor/stb.
+SYS_ODIN="$(dirname "$(realpath "$(command -v odin)")")"
+ODIN_ROOT_ARG=()
+if [ ! -f "$SYS_ODIN/vendor/stb/lib/stb_truetype.a" ]; then
+  OVERLAY="$HERE/build/odin-root"
+  if [ ! -f "$OVERLAY/vendor/stb/lib/stb_truetype.a" ]; then
+    mkdir -p "$OVERLAY/vendor"
+    ln -sfn "$SYS_ODIN/base" "$SYS_ODIN/core" "$SYS_ODIN/shared" "$OVERLAY/"
+    for entry in "$SYS_ODIN/vendor"/*; do
+      [ "$(basename "$entry")" = stb ] || ln -sfn "$entry" "$OVERLAY/vendor/"
+    done
+    cp -r "$SYS_ODIN/vendor/stb" "$OVERLAY/vendor/stb"
+    chmod -R u+w "$OVERLAY/vendor/stb"
+    (cd "$OVERLAY/vendor/stb/src" && ./build_stb.sh)
+  fi
+  ODIN_ROOT_ARG=(ODIN_ROOT="$OVERLAY")
+fi
+
+# Remove the previous binaries first: overwriting one that is still
+# mapped by a running instance leaves a half-written file whose next
+# run segfaults in libc's init, long before main.
+rm -f "$HERE/build/smoke" "$HERE/build/app"
+odin build "$HERE/smoke" -out:"$HERE/build/smoke"
+# -o:speed: the STL orbit path needs it (200k tris: 20ms/step at
+# -o:minimal vs 3.4ms; 60fps budget is 16.6ms).
+env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/app" -o:speed -out:"$HERE/build/app"
+echo "==> Done: $HERE/build/{smoke,app}"
+
+# `build.sh test` also runs the app package's test procs, which is what CI
+# does after the build.
+if [ "${1:-}" = test ]; then
+  env "${ODIN_ROOT_ARG[@]}" odin test "$HERE/app" -out:"$HERE/build/apptest"
+fi

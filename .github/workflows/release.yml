@@ -1,36 +1,169 @@
-# Release: triggered by pushing a `v*` tag (e.g. v0.1.0). Builds optimized
-# binaries for every platform via the reusable build workflow, then collects
-# the per-platform tarballs and publishes them on a GitHub Release.
+# Release: triggered by pushing a `v*` tag (e.g. v0.2.0). Builds the app,
+# bundles it into a self-contained AppImage, and publishes it on a GitHub
+# Release.
+#
+# AppImage is the only distribution channel for now; distro packages come
+# later. What "self-contained" means here:
+#   * linuxdeploy copies the binary's shared-library dependencies into the
+#     AppDir (SDL3, libmpv and its codec deps, poppler, cairo, libarchive).
+#   * The AppDir also carries the runtime data the app reads from disk: the
+#     Twemoji tiles, the emoji picker catalog, and the fonts. `res_dir` in
+#     app/paths.odin resolves those relative to the binary, so the
+#     layout below (usr/bin + usr/share/whitenoise-linux) is a contract with it.
+#   * Noto Sans CJK is deliberately NOT bundled: the .ttc is tens of
+#     megabytes, so Japanese falls back to the host's system copy.
 name: Release
 
 on:
   push:
     tags: ["v*"]
 
-jobs:
-  build:
-    name: build
-    uses: ./.github/workflows/_build.yml
-    with:
-      release: true
-      package: true
+env:
+  ODIN_VERSION: dev-2026-08
+  SDL_VERSION: "3.4.14"
+  NERD_FONTS_VERSION: v3.5.1
+  # Lets the linuxdeploy / appimagetool AppImages run on a runner without
+  # FUSE, by self-extracting instead of mounting.
+  APPIMAGE_EXTRACT_AND_RUN: "1"
 
-  publish:
-    name: publish GitHub Release
-    needs: build
+jobs:
+  appimage:
+    name: AppImage (x86_64)
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
-      - name: Download all build artifacts
-        uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
+
+      # The app's own deps, plus the tools that assemble the AppImage:
+      # rsvg + ImageMagick to rasterize the SVG logo, and the file/desktop
+      # utils linuxdeploy expects. fonts-liberation supplies three of the
+      # four faces the AppDir bundles.
+      - name: Install system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config cmake ninja-build clang git curl \
+            libarchive-dev libmpv-dev libpoppler-glib-dev libcairo2-dev \
+            libglib2.0-dev fonts-liberation \
+            librsvg2-bin imagemagick file desktop-file-utils wget ca-certificates unzip
+
+      - name: Cache SDL3
+        id: sdl-cache
+        uses: actions/cache@v4
         with:
-          path: artifacts
-          merge-multiple: true
+          path: /usr/local/sdl3
+          key: sdl3-${{ env.SDL_VERSION }}-ubuntu-24.04
+
+      - name: Build SDL3
+        if: steps.sdl-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 -b "release-$SDL_VERSION" \
+            https://github.com/libsdl-org/SDL.git /tmp/SDL
+          cmake -S /tmp/SDL -B /tmp/SDL/build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/sdl3
+          cmake --build /tmp/SDL/build --target install
+
+      - name: Put SDL3 on the linker path
+        run: |
+          echo /usr/local/sdl3/lib | sudo tee /etc/ld.so.conf.d/sdl3.conf
+          sudo ldconfig
+          echo "PKG_CONFIG_PATH=/usr/local/sdl3/lib/pkgconfig" >> "$GITHUB_ENV"
+          echo "LIBRARY_PATH=/usr/local/sdl3/lib" >> "$GITHUB_ENV"
+
+      - name: Cache Odin
+        id: odin-cache
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/odin
+          key: odin-${{ env.ODIN_VERSION }}-ubuntu-24.04
+
+      - name: Install Odin
+        if: steps.odin-cache.outputs.cache-hit != 'true'
+        run: |
+          sudo mkdir -p /usr/local/odin
+          curl -sSfL "https://github.com/odin-lang/Odin/releases/download/$ODIN_VERSION/odin-linux-amd64-$ODIN_VERSION.tar.gz" \
+            | sudo tar xz -C /usr/local/odin --strip-components=1
+          sudo chmod +x /usr/local/odin/odin
+
+      - name: Put Odin on PATH
+        run: echo /usr/local/odin >> "$GITHUB_PATH"
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        run: ./build.sh
+
+      # The layout here is the other half of res_dir's contract: the binary
+      # at usr/bin, everything it reads at usr/share/whitenoise.
+      - name: Assemble AppDir
+        run: |
+          set -euo pipefail
+          rm -rf AppDir
+          mkdir -p AppDir/usr/bin AppDir/usr/share/whitenoise-linux/fonts
+          cp build/app AppDir/usr/bin/whitenoise-linux
+          cp -r vendor/twemoji AppDir/usr/share/whitenoise-linux/
+          cp vendor/emoji-catalog.tsv AppDir/usr/share/whitenoise-linux/
+
+          # Icons are Nerd Font private-use codepoints with no system
+          # fallback, so that face has to travel with the binary.
+          curl -sSfL -o /tmp/jbmono.zip \
+            "https://github.com/ryanoasis/nerd-fonts/releases/download/$NERD_FONTS_VERSION/JetBrainsMono.zip"
+          unzip -qo /tmp/jbmono.zip -d /tmp/jbmono
+          cp /tmp/jbmono/JetBrainsMonoNerdFont-Regular.ttf AppDir/usr/share/whitenoise-linux/fonts/
+          for f in LiberationSans-Regular LiberationSans-Bold LiberationMono-Regular; do
+            cp "/usr/share/fonts/truetype/liberation/$f.ttf" AppDir/usr/share/whitenoise-linux/fonts/
+          done
+
+          # Exec is the plain binary name; AppRun puts usr/bin on PATH.
+          sed 's|@APP@|whitenoise-linux|' assets/whitenoise-linux.desktop \
+            > AppDir/whitenoise-linux.desktop
+
+          # The logo is white-on-transparent; render it onto the app's dark
+          # surface colour and pad to a square 256x256 PNG so it stays
+          # visible in launchers.
+          rsvg-convert -b '#0e1116' -w 200 assets/svg/logo.svg -o /tmp/logo.png
+          convert /tmp/logo.png -background '#0e1116' -gravity center \
+            -extent 256x256 AppDir/whitenoise-linux.png
+
+      - name: Fetch AppImage tooling
+        run: |
+          set -euo pipefail
+          wget -q -O linuxdeploy \
+            "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage"
+          wget -q -O appimagetool \
+            "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
+          chmod +x linuxdeploy appimagetool
+
+      - name: Build AppImage
+        run: |
+          set -euo pipefail
+          # SDL3 lives outside the default search path, so point linuxdeploy
+          # at it or it bundles everything except the one library that is
+          # not installed system-wide.
+          export LD_LIBRARY_PATH="/usr/local/sdl3/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          ./linuxdeploy --appdir AppDir \
+            --executable AppDir/usr/bin/whitenoise-linux \
+            --desktop-file AppDir/whitenoise-linux.desktop \
+            --icon-file AppDir/whitenoise-linux.png
+          out="WhiteNoise-${GITHUB_REF_NAME}-x86_64.AppImage"
+          ./appimagetool AppDir "$out"
+          echo "APPIMAGE_NAME=$out" >> "$GITHUB_ENV"
+
+      # A smoke test of the packaged artifact, not of the app: SDL's dummy
+      # video driver lets it boot with no display, and WN_SHOT exits after a
+      # few frames. Catches a missing bundled library or a res_dir that no
+      # longer finds its data.
+      - name: Run the AppImage headless
+        run: |
+          set -euo pipefail
+          chmod +x "$APPIMAGE_NAME"
+          SDL_VIDEODRIVER=dummy WN_SHOT=1 WN_VAULT_PW=ci-smoke \
+            ./"$APPIMAGE_NAME" "$(mktemp -d)"
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/*.tar.gz
+          files: ${{ env.APPIMAGE_NAME }}
           generate_release_notes: true
           fail_on_unmatched_files: true

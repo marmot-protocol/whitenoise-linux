@@ -1,12 +1,10 @@
-# CI: runs on every push to master and every PR. Just the release build
-# (compiled Slint UI, no live-reload) of every target platform via the
-# reusable build workflow — the same build release.yml ships, minus packaging,
-# so a broken compiled UI fails CI instead of only surfacing at tag time.
+# CI: runs on every push to master and every PR. Builds the app and runs its
+# test procs, which is exactly what `./build.sh test` does locally.
 #
-# The quality gates (fmt, clippy, catalogs, file caps, slint formatting) are
-# NOT here: they run via pr-precommit.yml, the byte-identical GitHub mirror of
-# the canonical ngit-ci gate at .ngit/act/workflows/pr-precommit.yml (synced
-# by .githooks/pre-commit). That workflow only fires on PRs; direct pushes to
+# The quality gates (catalog validation) are NOT here: they run via
+# pr-precommit.yml, the byte-identical GitHub mirror of the canonical
+# ngit-ci gate at .ngit/act/workflows/pr-precommit.yml (synced by
+# .githooks/pre-commit). That workflow only fires on PRs; direct pushes to
 # master are gated by the same hook running locally at commit time.
 name: CI
 
@@ -20,11 +18,86 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Pinned so a new Odin release can't break a build without a commit here.
+  ODIN_VERSION: dev-2026-08
+  # SDL3 is not packaged on ubuntu-24.04; build it from source and cache it.
+  SDL_VERSION: "3.4.14"
+
 jobs:
   build:
-    name: build
-    uses: ./.github/workflows/_build.yml
-    with:
-      # Release-profile compiled UI, but no packaging/upload on PRs.
-      release: true
-      package: false
+    name: build + test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      # libarchive/mpv/poppler/cairo back the archive, video and PDF
+      # viewers (see the `foreign import "system:…"` lines in app/).
+      - name: Install system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config cmake ninja-build clang git curl \
+            libarchive-dev libmpv-dev libpoppler-glib-dev libcairo2-dev \
+            libglib2.0-dev gettext
+
+      - name: Cache SDL3
+        id: sdl-cache
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/sdl3
+          key: sdl3-${{ env.SDL_VERSION }}-ubuntu-24.04
+
+      - name: Build SDL3
+        if: steps.sdl-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 -b "release-$SDL_VERSION" \
+            https://github.com/libsdl-org/SDL.git /tmp/SDL
+          cmake -S /tmp/SDL -B /tmp/SDL/build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/sdl3
+          cmake --build /tmp/SDL/build --target install
+
+      - name: Put SDL3 on the linker path
+        run: |
+          echo /usr/local/sdl3/lib | sudo tee /etc/ld.so.conf.d/sdl3.conf
+          sudo ldconfig
+          echo "PKG_CONFIG_PATH=/usr/local/sdl3/lib/pkgconfig" >> "$GITHUB_ENV"
+          echo "LIBRARY_PATH=/usr/local/sdl3/lib" >> "$GITHUB_ENV"
+
+      # The linux release ships vendor/stb without its .a archives, so
+      # build.sh builds them into its own ODIN_ROOT overlay (clang, above).
+      - name: Cache Odin
+        id: odin-cache
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/odin
+          key: odin-${{ env.ODIN_VERSION }}-ubuntu-24.04
+
+      - name: Install Odin
+        if: steps.odin-cache.outputs.cache-hit != 'true'
+        run: |
+          sudo mkdir -p /usr/local/odin
+          curl -sSfL "https://github.com/odin-lang/Odin/releases/download/$ODIN_VERSION/odin-linux-amd64-$ODIN_VERSION.tar.gz" \
+            | sudo tar xz -C /usr/local/odin --strip-components=1
+          sudo chmod +x /usr/local/odin/odin
+
+      - name: Put Odin on PATH
+        run: echo /usr/local/odin >> "$GITHUB_PATH"
+
+      # marmot-c is a Rust staticlib; c-bindings.sh builds it from the mdk
+      # revision pinned in DEPS_PIN.
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache the marmot-c bundle
+        uses: actions/cache@v4
+        with:
+          path: |
+            vendor/mdk
+            vendor/clay
+            vendor/ufbx
+            vendor/twemoji
+            vendor/emoji-catalog.tsv
+          key: vendor-${{ hashFiles('DEPS_PIN') }}
+
+      - name: Build and test
+        run: ./build.sh test

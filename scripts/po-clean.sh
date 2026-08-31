@@ -15,9 +15,9 @@
 #                   --no-location strips the file refs, sort-by-file has no key
 #                   left and the order flips on the next pass (not idempotent).
 #   --no-wrap       one string per line; no width-dependent rewrapping
-#   --no-obsolete   drop `#~` obsolete entries. When a @tr string moves to a
-#                   different Slint component its msgctxt changes, so msgmerge
-#                   retires the old context as obsolete; left in, these dead
+#   --no-obsolete   drop `#~` obsolete entries. When a string is reworded or
+#                   removed from the UI, msgmerge retires the old msgid as
+#                   obsolete; left in, these dead
 #                   entries pile up on every refactor. Stripping them here keeps
 #                   the catalogs to their live strings.
 #   sed             drop the volatile POT-Creation-Date header line

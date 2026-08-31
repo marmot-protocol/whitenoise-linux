@@ -4,11 +4,7 @@
 #
 #   1. Normalize every staged PO/POT catalog in place, then re-stage it, so the
 #      working tree matches what the po-clean filter writes to the index.
-#   2. Format every staged .slint file in place with `slint-lsp format`, then
-#      re-stage it, so committed UI files are always canonically formatted.
-#   3. Gate any Rust/Slint/Cargo change on `cargo fmt --check` and
-#      `cargo clippy -D warnings`.
-#   4. Refresh .github/workflows/pr-precommit.yml (GitHub's byte-identical
+#   2. Refresh .github/workflows/pr-precommit.yml (GitHub's byte-identical
 #      mirror of the canonical ngit-ci gate at
 #      .ngit/act/workflows/pr-precommit.yml) and re-stage it on drift.
 #
@@ -54,100 +50,7 @@ if staged -- '*.po' '*.pot' | grep -qz .; then
     echo "pre-commit: msgfmt --check passed on staged catalogs."
 fi
 
-# --- 2. Format staged Slint files ---------------------------------------
-# `slint-lsp format -i` rewrites a .slint file into its canonical form. Format
-# a copy of each staged file, and only when that differs do we write it back and
-# re-stage — so the index (and working tree) always match the formatter's output.
-if staged -- '*.slint' | grep -qz .; then
-    if ! command -v slint-lsp >/dev/null 2>&1; then
-        echo "✗ slint-lsp not found — needed to format staged .slint files." >&2
-        echo "  Install it with: cargo install slint-lsp" >&2
-        exit 1
-    fi
-    slint_changed=0
-    while IFS= read -r -d '' f; do
-        [ -f "$f" ] || continue          # skip deletions
-        tmp="$(mktemp --suffix=.slint)"
-        cp "$f" "$tmp"
-        if ! slint-lsp format -i "$tmp" 2>/dev/null; then
-            rm -f "$tmp"
-            echo "✗ slint-lsp format failed on $f" >&2
-            exit 1
-        fi
-        if ! cmp -s "$f" "$tmp"; then
-            cat "$tmp" > "$f"
-            git add -- "$f"
-            slint_changed=1
-        fi
-        rm -f "$tmp"
-    done < <(staged -- '*.slint')
-    [ "$slint_changed" = 1 ] && echo "pre-commit: formatted staged Slint files."
-
-    # Gate translator notes on length. slint-tr-extractor copies the LAST `//`
-    # line above a @tr into the POT as a `#.` note and wraps its output at 79
-    # columns; a note long enough to wrap comes out with no `#.` prefix on
-    # either physical line, which is invalid PO syntax and breaks
-    # scripts/update-translations.sh on the next run. `#. ` is 3 columns, so
-    # the note has 76 to work with.
-    long_notes=""
-    while IFS= read -r -d '' f; do
-        [ -f "$f" ] || continue          # skip deletions
-        hits="$(awk '
-            /@tr\(/ && prev ~ /^[[:space:]]*\/\// {
-                t = prev
-                sub(/^[[:space:]]*\/\/[[:space:]]?/, "", t)
-                if (length(t) > 76)
-                    printf "\n  %s:%d (%d chars) %s", FILENAME, FNR - 1, length(t), t
-            }
-            { prev = $0 }
-        ' "$f")"
-        long_notes="$long_notes$hits"
-    done < <(staged -- '*.slint')
-    if [ -n "$long_notes" ]; then
-        printf '✗ Translator note over 76 characters above a @tr:%b\n' "$long_notes" >&2
-        echo "  The extractor mangles these into invalid PO syntax. Shorten each to" >&2
-        echo "  one line of 76 characters or less. Only that last // line reaches" >&2
-        echo "  translators, so keep it readable on its own." >&2
-        exit 1
-    fi
-fi
-
-# --- 3. File-length gate ------------------------------------------------
-# Hard rule: no Rust source may exceed 2000 lines. Keeps files readable and
-# rebuilds fast (the UI tree already lives in its own crate). Checks the staged
-# content, so a commit can't sneak an over-long file past `wc` on the worktree.
-oversized=""
-while IFS= read -r -d '' f; do
-    [ -f "$f" ] || continue                       # skip deletions
-    n="$(git show ":$f" | wc -l)"
-    if [ "$n" -gt 2000 ]; then
-        oversized="$oversized\n  $f ($n lines)"
-    fi
-done < <(staged -- '*.rs')
-if [ -n "$oversized" ]; then
-    printf "✗ Rust files over the 2000-line limit — split them first:%b\n" "$oversized" >&2
-    exit 1
-fi
-
-# --- 4. Rust gate -------------------------------------------------------
-# Only run the (heavier) compile-based checks when staged changes can affect
-# the build: Rust sources (incl. build.rs), Cargo manifests, or the Slint UI
-# they compile. Pure translation/docs commits skip straight through.
-if staged -- '*.rs' '*.slint' '*Cargo.toml' '*Cargo.lock' | grep -qz .; then
-    echo "pre-commit: cargo fmt --check…"
-    if ! cargo fmt --all -- --check; then
-        echo "✗ Unformatted code. Run: cargo fmt --all" >&2
-        exit 1
-    fi
-
-    echo "pre-commit: cargo clippy -D warnings… (first run can be slow)"
-    if ! cargo clippy --all-targets -- -D warnings; then
-        echo "✗ Clippy reported warnings/errors. Fix them, then re-commit." >&2
-        exit 1
-    fi
-fi
-
-# --- 5. Sync the GitHub mirror of the ngit-ci gate ----------------------
+# --- 2. Sync the GitHub mirror of the ngit-ci gate ----------------------
 # .ngit/act/workflows/pr-precommit.yml is canonical (ngit is the primary
 # forge); GitHub cannot run workflows through symlinks, so a byte-identical
 # copy must exist at .github/workflows/pr-precommit.yml. Refresh the mirror
