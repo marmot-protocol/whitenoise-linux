@@ -82,6 +82,13 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 
+	// Profile presses and keys, before the release gate below:
+	// field_mouse fires on the press, handle_profile only ever ran on
+	// the release, so form clicks used to vanish here.
+	if ui.page == .Profile {
+		profile_fields(ui, client)
+	}
+
 	// Peer-profile popup captures everything while open. Handled here
 	// (not handle_chat) so it also swallows nav clicks on every page.
 	if ui.peer_open {
@@ -311,6 +318,98 @@ start_dm :: proc(ui: ^Ui_State, client: ^marmot.Client, contact: Contact_Ui) {
 	}
 }
 
+// Publish the whole edit form as kind-0 and leave edit mode.
+publish_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if len(ui.name_input) == 0 {
+		return
+	}
+	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
+
+	// An empty field clears its kind-0 entry.
+	opt :: proc(buf: []u8) -> cstring {
+		if len(buf) == 0 {
+			return nil
+		}
+		return strings.clone_to_cstring(string(buf), context.temp_allocator)
+	}
+	name := strings.clone_to_cstring(string(ui.name_input[:]), context.temp_allocator)
+	metadata := marmot.User_Profile_Metadata {
+		name         = name,
+		display_name = name,
+		about        = opt(ui.about_input[:]),
+		nip05        = opt(ui.nip05_input[:]),
+		lud16        = opt(ui.lud16_input[:]),
+	}
+
+	// A kind-0 publish replaces the whole record, so carry over the
+	// fields the form doesn't edit.
+	cur: ^marmot.User_Profile_Metadata
+	if marmot.user_profile(client, account, &cur) == .OK && cur != nil {
+		if cur.picture != nil {
+			metadata.picture = strings.clone_to_cstring(string(cur.picture), context.temp_allocator)
+		}
+		if cur.banner != nil {
+			metadata.banner = strings.clone_to_cstring(string(cur.banner), context.temp_allocator)
+		}
+		marmot.user_profile_metadata_free(cur)
+	}
+
+	out: ^marmot.User_Profile_Metadata
+	if marmot.publish_user_profile(client, account, &metadata, raw_data(DEFAULT_RELAYS), uint(len(DEFAULT_RELAYS)), raw_data(DEFAULT_RELAYS), uint(len(DEFAULT_RELAYS)), &out) != .OK {
+		ui.client_status = fmt.aprintf("Couldn't publish the profile. %s", marmot.last_error())
+		return
+	}
+	marmot.user_profile_metadata_free(out)
+
+	ui.profile.name = strings.clone(string(ui.name_input[:]))
+	ui.profile.username = ui.profile.name
+	ui.profile.about = strings.clone(string(ui.about_input[:]))
+	ui.profile.nip05 = strings.clone(string(ui.nip05_input[:]))
+	ui.profile.lud16 = strings.clone(string(ui.lud16_input[:]))
+	ui.profile.editing = false
+}
+
+// Enter the edit form with drafts seeded from the loaded profile.
+edit_profile_start :: proc(ui: ^Ui_State) {
+	ui.profile.editing = true
+	ed_set(ui, &ui.name_input, ui.profile.name)
+	ed_set(ui, &ui.about_input, ui.profile.about)
+	ed_set(ui, &ui.nip05_input, ui.profile.nip05)
+	ed_set(ui, &ui.lud16_input, ui.profile.lud16)
+	ui.focus = .Name
+}
+
+// Press-phase half of the Profile page: field focus clicks and the
+// edit form's keyboard shortcuts. Runs every frame, ahead of the
+// release gate that holds handle_profile back.
+profile_fields :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if field_mouse(ui, &ui.name_input, "NameBox", 14) {
+		ui.focus = .Name
+	}
+	if field_mouse(ui, &ui.about_input, "AboutBox", 14) {
+		ui.focus = .About
+	}
+	if field_mouse(ui, &ui.nip05_input, "Nip05Box", 14) {
+		ui.focus = .Nip05
+	}
+	if field_mouse(ui, &ui.lud16_input, "Lud16Box", 14) {
+		ui.focus = .Lud16
+	}
+	if field_mouse(ui, &ui.relay_input, "RelayBox", 14) {
+		ui.focus = .Relay
+	}
+
+	if !ui.profile.editing {
+		return
+	}
+	if rl.IsKeyPressed(.ESCAPE) {
+		ui.profile.editing = false
+	}
+	if rl.IsKeyPressed(.ENTER) {
+		publish_profile(ui, client)
+	}
+}
+
 handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 
@@ -345,7 +444,11 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	if clicked("EditProfileBtn") {
-		ui.profile.editing = !ui.profile.editing
+		if ui.profile.editing {
+			ui.profile.editing = false
+		} else {
+			edit_profile_start(ui)
+		}
 		return
 	}
 	if clicked("ProfileCopyNpub") && len(ui.profile.npub) > 0 {
@@ -353,11 +456,16 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
-	if field_mouse(ui, &ui.name_input, "NameBox", 14) {
-		ui.focus = .Name
-	}
-	if field_mouse(ui, &ui.relay_input, "RelayBox", 14) {
-		ui.focus = .Relay
+	// A viewer row is a shortcut into the form, focused on its field.
+	if !ui.profile.editing {
+		kv_focus := [4]Focus{.Name, .Nip05, .Lud16, .Name}
+		for focus, i in kv_focus {
+			if clay.PointerOver(clay.ID("ProfileKv", u32(i))) {
+				edit_profile_start(ui)
+				ui.focus = focus
+				return
+			}
+		}
 	}
 
 	if clicked("RevealNsec") {
@@ -368,22 +476,13 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 
-	if clicked("PublishNameBtn") && len(ui.name_input) > 0 {
-		name := strings.clone_to_cstring(string(ui.name_input[:]), context.temp_allocator)
-		metadata := marmot.User_Profile_Metadata {
-			name         = name,
-			display_name = name,
-		}
-		out: ^marmot.User_Profile_Metadata
-		if marmot.publish_user_profile(client, account, &metadata, raw_data(DEFAULT_RELAYS), uint(len(DEFAULT_RELAYS)), raw_data(DEFAULT_RELAYS), uint(len(DEFAULT_RELAYS)), &out) != .OK {
-			ui.client_status = fmt.aprintf("Couldn't publish the name. %s", marmot.last_error())
-			return
-		}
-		marmot.user_profile_metadata_free(out)
-		ui.profile.name = strings.clone(string(ui.name_input[:]))
-		ui.profile.username = ui.profile.name
-		ui.profile.editing = false
-		clear(&ui.name_input)
+	if ui.profile.editing && (clicked("ChangePicBtn") || clicked("ProfileAvatarPick")) && !ppic_busy {
+		ui.picking_ppic = true
+		rl.OpenFileDialog(false)
+	}
+
+	if clicked("PublishProfileBtn") {
+		publish_profile(ui, client)
 	}
 
 	if clicked("AddRelayBtn") && len(ui.relay_input) > 0 {

@@ -698,13 +698,15 @@ field_text :: proc(ui: ^Ui_State, id_str: string, buf: ^[dynamic]u8, placeholder
 }
 
 // Labeled single-line input box; active border while focused.
+// width 0 grows to fill the row.
 input_box :: proc(ui: ^Ui_State, id_str: string, buf: ^[dynamic]u8, placeholder: string, active: bool, width: f32 = 420) {
 	if clay.UI(clay.ID(id_str))(
 	{
-		layout = {sizing = {width = clay.SizingFixed(width), height = clay.SizingFixed(38)}, padding = {left = 12, right = 12}, childAlignment = {y = .Center}},
+		layout = {sizing = {width = width > 0 ? clay.SizingFixed(width) : clay.SizingGrow(), height = clay.SizingFixed(38)}, padding = {left = 12, right = 12}, childAlignment = {y = .Center}},
 		backgroundColor = ROW_BG,
 		cornerRadius = rr(8),
-		border = active ? clay.BorderElementConfig{color = ACCENT, width = bw()} : {},
+		// A resting border keeps the box visible on ROW_BG cards.
+		border = active ? focus_border(true) : {color = FIELD_BORDER, width = bw()},
 	},
 	) {
 		field_text(ui, id_str, buf, placeholder, active, 14)

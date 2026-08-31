@@ -152,6 +152,9 @@ Focus :: enum {
 	Filter, // sidebar chat filter
 	Picker, // emoji-picker search box
 	Name, // profile display name
+	About, // profile about box
+	Nip05, // profile NIP-05 box
+	Lud16, // profile lightning-address box
 	Relay, // profile add-relay box
 	Nick, // contact nickname box
 	Fwd, // forward-picker filter box
@@ -265,6 +268,7 @@ Contact_Ui :: struct {
 Profile_Ui :: struct {
 	npub:     string,
 	name:     string, // display name
+	about:    string, // kind-0 `about`
 	username: string, // kind-0 `name` handle
 	nip05:    string,
 	lud16:    string,
@@ -295,6 +299,9 @@ Ui_State :: struct {
 	scroll_pending: bool, // jump timeline scroll to newest after reload
 	selected_contact: int, // index into contacts, -1 = none
 	name_input:    [dynamic]u8, // profile display name draft
+	about_input:   [dynamic]u8, // profile about draft
+	nip05_input:   [dynamic]u8, // profile NIP-05 draft
+	lud16_input:   [dynamic]u8, // profile lightning-address draft
 	relay_input:   [dynamic]u8, // profile add-relay draft
 	page:          Page,
 	chats:         [dynamic]Chat_Row_Ui,
@@ -331,6 +338,7 @@ Ui_State :: struct {
 	desc_editing:  bool,
 	gpic_menu_open: bool, // hero "Change photo" chooser row
 	picking_gpic:  bool, // route the next picked file to the group photo
+	picking_ppic:  bool, // route the next picked file to the profile picture
 	ov_open:       bool, // Openverse image-search modal
 	ov_input:      [dynamic]u8, // its query box
 	focus:         Focus,

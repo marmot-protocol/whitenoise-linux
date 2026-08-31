@@ -37,7 +37,7 @@ done
 # xgettext, not "extract both".
 HELPERS=(
     section_head:2 login_button:2 kp_kv:3 ctx_item:3
-    centered_note:2 centered_note:3 eyebrow:1 profile_rail_link:3 micro_button:2
+    centered_note:2 centered_note:3 eyebrow:1 profile_rail_link:3 micro_button:2 form_row:3
     row_labels:1 row_labels:2 settings_header:2 settings_header:3
     copy_text:3 tooltip:1
 )

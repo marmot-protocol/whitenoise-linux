@@ -66,7 +66,17 @@ active_buf :: proc(ui: ^Ui_State) -> ^[dynamic]u8 {
 		return ui.focus == .NC_Name ? &ui.nc_name : &ui.nc_member
 	}
 	if ui.page == .Profile {
-		return ui.focus == .Relay ? &ui.relay_input : &ui.name_input
+		#partial switch ui.focus {
+		case .Relay:
+			return &ui.relay_input
+		case .About:
+			return &ui.about_input
+		case .Nip05:
+			return &ui.nip05_input
+		case .Lud16:
+			return &ui.lud16_input
+		}
+		return &ui.name_input
 	}
 	if ui.show_members {
 		if ui.focus == .Nick {

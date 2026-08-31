@@ -1003,7 +1003,7 @@ main :: proc() {
 		case "profile-edit":
 			ui.page = .Profile
 			load_profile(client, &ui)
-			ui.profile.editing = true
+			edit_profile_start(&ui)
 		case "accounts":
 			ui.accounts_open = true
 		case "gsearch":
@@ -1114,6 +1114,7 @@ main :: proc() {
 		// Synthetic click injection for headless tests: "x,y[,x,y...]",
 		// one click per pair, released every 25 frames from frame 20.
 		forced_release = false
+		forced_press = false
 		pointer := transmute(clay.Vector2)rl.GetMousePosition()
 		if test_click := os.get_env("WN_TEST_CLICK", context.temp_allocator);
 		   test_click != "" && frame >= 15 {
@@ -1124,6 +1125,7 @@ main :: proc() {
 				py, _ := strconv.parse_f64(parts[step * 2 + 1])
 				pointer.x = f32(px)
 				pointer.y = f32(py)
+				forced_press = int(frame) == 18 + step * 25
 				forced_release = int(frame) == 20 + step * 25
 			}
 		}
@@ -1302,6 +1304,7 @@ main :: proc() {
 		update_title(&ui)
 		drain_refresh(client)
 		drain_gimg(&ui, client)
+		drain_ppic(&ui)
 		drain_ov()
 
 		// Files picked in the async SDL dialog land here; they become
@@ -1315,6 +1318,8 @@ main :: proc() {
 				stage_emoji(&ui, path)
 			} else if ui.picking_gpic {
 				set_group_pic(&ui, client, path)
+			} else if ui.picking_ppic {
+				set_profile_pic(&ui, client, path)
 			} else {
 				stage_file(&ui, path)
 			}
@@ -1323,6 +1328,7 @@ main :: proc() {
 		if len(picked) > 0 {
 			ui.picking_emoji = false
 			ui.picking_gpic = false
+			ui.picking_ppic = false
 			ui.picking_backup = false
 		}
 		delete(picked)

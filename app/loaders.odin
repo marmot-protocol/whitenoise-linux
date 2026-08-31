@@ -991,6 +991,9 @@ load_profile :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 		if meta.name != nil {
 			ui.profile.username = strings.clone(string(meta.name))
 		}
+		if meta.about != nil {
+			ui.profile.about = strings.clone(string(meta.about))
+		}
 		if meta.nip05 != nil {
 			ui.profile.nip05 = strings.clone(string(meta.nip05))
 		}

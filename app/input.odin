@@ -372,7 +372,7 @@ field_mouse :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, id_str: string, font_size:
 	hit := hit_plain(string(buf[:]), mx - origin, font_size)
 	over := clay.PointerOver(clay.ID(id_str))
 
-	if over && rl.IsMouseButtonPressed(.LEFT) {
+	if over && mouse_pressed() {
 		ed_begin(ui, buf)
 		switch {
 		case rl.GetMouseClicks() >= 3:
@@ -512,8 +512,14 @@ compose_mouse :: proc(ui: ^Ui_State) {
 }
 
 // Test hook: WN_TEST_CLICK forces one synthetic release (position is
-// injected into SetPointerState in the frame loop).
+// injected into SetPointerState in the frame loop). The press fires
+// two frames earlier so press-driven paths (field focus) see it too.
 forced_release := false
+forced_press := false
+
+mouse_pressed :: proc() -> bool {
+	return rl.IsMouseButtonPressed(.LEFT) || forced_press
+}
 
 // Test hook: WN_TEST_COMPOSE="N:text" fills the composer at frame N
 // and forces the send branch, exercising the optimistic path.

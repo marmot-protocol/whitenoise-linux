@@ -766,14 +766,34 @@ theme_chip :: proc(id_str: string, label: string, active: bool) {
 	}
 }
 
+// One LABEL · input row of the profile edit form.
+form_row :: proc(ui: ^Ui_State, index: u32, label: string, box_id: string, buf: ^[dynamic]u8, placeholder: string, active: bool) {
+	if clay.UI(clay.ID("ProfileFormRow", index))(
+	{layout = {sizing = {width = clay.SizingGrow()}, childGap = 12, childAlignment = {y = .Center}}},
+	) {
+		if clay.UI(clay.ID("ProfileFormLabel", index))({layout = {sizing = {width = clay.SizingFixed(120)}}}) {
+			clay.Text(tr(label), {fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO, letterSpacing = 2})
+		}
+		input_box(ui, box_id, buf, placeholder, active, 0)
+	}
+}
+
 // One label-left / value-right hairline row in the PROFILE card.
+// The whole row is a shortcut into the edit form, so it lights on
+// hover like any other actionable row.
 profile_kv :: proc(index: u32, label: string, value: string, last := false) {
 	if clay.UI(clay.ID("ProfileKv", index))(
-	{layout = {sizing = {width = clay.SizingGrow()}, padding = {left = 16, right = 16, top = 12, bottom = 12}, childAlignment = {y = .Center}}},
+	{
+		layout = {sizing = {width = clay.SizingGrow()}, padding = {left = 16, right = 16, top = 12, bottom = 12}, childAlignment = {y = .Center}, childGap = 10},
+		backgroundColor = hovered() ? HOVER : {},
+	},
 	) {
 		clay.Text(label, {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT})
 		if clay.UI(clay.ID("ProfileKvGap", index))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 		clay.Text(len(value) > 0 ? value : "—", {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+		if hovered() {
+			clay.Text(ICON_PENCIL, {fontId = FONT_ICON, fontSize = 11, textColor = TEXT_LO})
+		}
 	}
 	if !last {
 		if clay.UI(clay.ID("ProfileKvRule", index))({layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(1)}}, backgroundColor = DIVIDER}) {}
@@ -808,39 +828,123 @@ profile_pane :: proc(ui: ^Ui_State) {
 				if !ui.profile.editing {
 					clay.Text(ICON_PENCIL, {fontId = FONT_ICON, fontSize = 12, textColor = ON_ACCENT})
 				}
-				clay.Text(ui.profile.editing ? "Done" : "Edit profile", {fontId = FONT_TITLE, fontSize = 13, textColor = ui.profile.editing ? TEXT : ON_ACCENT})
+				clay.Text(ui.profile.editing ? "Cancel" : "Edit profile", {fontId = FONT_TITLE, fontSize = 13, textColor = ui.profile.editing ? TEXT : ON_ACCENT})
 			}
 		}
 
-		// ── Hero: accent banner over avatar + name ─────────────────
+		// ── Hero: banner, avatar riding the seam, live-draft name ──
+		//
+		//   ┌───────────────────────────── banner (ACCENT) ──┐
+		//   │                                        ○  ○  ◯ │
+		//   │  ╭────╮                                        │
+		//   └──│ ◉◉ │────────────────────────────────────────┘
+		//      │ 96 │✎   Name            (draft-live in edit)
+		//      ╰────╯    @handle · about
 		if clay.UI(clay.ID("ProfileHero"))(
 		{
 			layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom},
 			backgroundColor = ROW_BG,
-			cornerRadius = rr(12),
+			cornerRadius = rr(14),
 			border = {color = FIELD_BORDER, width = bw()},
 		},
 		) {
 			if clay.UI(clay.ID("ProfileBanner"))(
-			{layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(64)}}, backgroundColor = ACCENT, cornerRadius = {topLeft = 12, topRight = 12}},
-			) {}
-			if clay.UI(clay.ID("ProfileHeroRow"))(
-			{layout = {sizing = {width = clay.SizingGrow()}, padding = {left = 20, right = 20, top = 14, bottom = 16}, childGap = 14, childAlignment = {y = .Center}}},
+			{
+				layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(88)}, padding = {right = 24}, childGap = 10, childAlignment = {y = .Center}},
+				backgroundColor = ACCENT,
+				cornerRadius = {topLeft = 14, topRight = 14},
+			},
 			) {
-				avatar("ProfileAvatar", 0, ui.account_ref, len(ui.profile.name) > 0 ? ui.profile.name : short_hex(ui.account_ref), 64, url_pic(ui.my_pic_url))
+				// Quiet dot ornament so the band reads designed, not
+				// unfinished, on every pack's accent.
+				if clay.UI(clay.ID("BannerFill"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+				for size, i in ([3]f32{18, 30, 46}) {
+					if clay.UI(clay.ID("BannerDot", u32(i)))(
+					{layout = {sizing = {width = clay.SizingFixed(size), height = clay.SizingFixed(size)}}, backgroundColor = {255, 255, 255, 28}, cornerRadius = rr(size / 2)},
+					) {}
+				}
+			}
+
+			// The avatar overlaps the banner/body seam. In edit mode
+			// the whole circle picks a new picture, badged with ✎.
+			if clay.UI(clay.ID("ProfileAvatarPick"))(
+			{
+				layout = {sizing = {width = clay.SizingFixed(96), height = clay.SizingFixed(96)}},
+				floating = {attachTo = .Parent, zIndex = 5, offset = {24, 40}, attachment = {element = .LeftTop, parent = .LeftTop}},
+			},
+			) {
+				if ui.profile.editing && hovered() {
+					tooltip(tr("Change picture"))
+				}
+				avatar("ProfileAvatar", 0, ui.account_ref, len(ui.profile.name) > 0 ? ui.profile.name : short_hex(ui.account_ref), 96, url_pic(ui.my_pic_url))
+				if ui.profile.editing {
+					if clay.UI(clay.ID("ProfileAvatarBadge"))(
+					{
+						layout = {sizing = {width = clay.SizingFixed(30), height = clay.SizingFixed(30)}, childAlignment = {x = .Center, y = .Center}},
+						floating = {attachTo = .Parent, zIndex = 6, offset = {2, 2}, attachment = {element = .RightBottom, parent = .RightBottom}},
+						backgroundColor = ACCENT,
+						cornerRadius = rr(15),
+						border = {color = ROW_BG, width = {2, 2, 2, 2, 0}},
+					},
+					) {
+						clay.Text(ICON_PENCIL, {fontId = FONT_ICON, fontSize = 12, textColor = ON_ACCENT})
+					}
+				}
+			}
+
+			if clay.UI(clay.ID("ProfileHeroRow"))(
+			{layout = {sizing = {width = clay.SizingGrow()}, padding = {left = 136, right = 24, top = 14, bottom = 18}, childGap = 14, childAlignment = {y = .Center}}},
+			) {
 				if clay.UI(clay.ID("ProfileHeroCol"))({layout = {layoutDirection = .TopToBottom, childGap = 3}}) {
-					clay.Text(len(ui.profile.name) > 0 ? ui.profile.name : "(no display name)", {fontId = FONT_TITLE, fontSize = 22, textColor = TEXT})
+					// While editing, the hero previews the drafts live.
+					shown_name := ui.profile.editing ? string(ui.name_input[:]) : ui.profile.name
+					shown_about := ui.profile.editing ? string(ui.about_input[:]) : ui.profile.about
+					clay.Text(len(shown_name) > 0 ? shown_name : "(no display name)", {fontId = FONT_TITLE, fontSize = 24, textColor = TEXT})
 					clay.Text(len(ui.profile.username) > 0 ? fmt.tprintf("@%s", ui.profile.username) : npub_tail(ui.profile.npub), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO})
+					if len(shown_about) > 0 {
+						clay.Text(shown_about, {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
+					}
 				}
 			}
 		}
 
-		// ── Edit form: the publishable display name ────────────────
+		// ── Edit form: every kind-0 field the app lets you set ─────
 		if ui.profile.editing {
-			eyebrow("DISPLAY NAME")
-			if clay.UI(clay.ID("NameRow"))({layout = {childGap = 10, childAlignment = {y = .Center}}}) {
-				input_box(ui, "NameBox", &ui.name_input, len(ui.profile.name) > 0 ? ui.profile.name : "Your name", ui.focus == .Name, 300)
-				login_button("PublishNameBtn", "Publish")
+			if clay.UI(clay.ID("FormEyebrow"))({layout = {padding = {top = 6}}}) {
+				eyebrow("EDIT PROFILE")
+			}
+			if clay.UI(clay.ID("ProfileForm"))(
+			{
+				layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, padding = {left = 16, right = 16, top = 14, bottom = 14}, childGap = 10},
+				backgroundColor = ROW_BG,
+				cornerRadius = rr(12),
+				border = {color = FIELD_BORDER, width = bw()},
+			},
+			) {
+				form_row(ui, 0, "DISPLAY NAME", "NameBox", &ui.name_input, tr("Your name"), ui.focus == .Name)
+				form_row(ui, 1, "ABOUT", "AboutBox", &ui.about_input, tr("A line about you"), ui.focus == .About)
+				form_row(ui, 2, "NIP-05", "Nip05Box", &ui.nip05_input, "name@example.com", ui.focus == .Nip05)
+				form_row(ui, 3, "LIGHTNING", "Lud16Box", &ui.lud16_input, "you@wallet.com", ui.focus == .Lud16)
+				if clay.UI(clay.ID("ProfileFormActions"))(
+				{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, padding = {top = 6}, childAlignment = {y = .Center}}},
+				) {
+					if ppic_busy {
+						micro_button("ChangePicBtn", "Uploading picture")
+					} else {
+						micro_button("ChangePicBtn", "Change picture")
+					}
+					if clay.UI(clay.ID("FormActionGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+					clay.Text(tr("Enter publishes, Escape cancels."), {fontId = FONT_BODY, fontSize = 10, textColor = TEXT_LO})
+					if clay.UI(clay.ID("PublishProfileBtn"))(
+					{
+						layout = {padding = {left = 16, right = 16, top = 9, bottom = 9}},
+						backgroundColor = ACCENT,
+						cornerRadius = rr(9),
+					},
+					) {
+						clay.Text(tr("Publish changes"), {fontId = FONT_TITLE, fontSize = 13, textColor = ON_ACCENT})
+					}
+				}
 			}
 		}
 
