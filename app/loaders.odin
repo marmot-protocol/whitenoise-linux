@@ -908,6 +908,64 @@ load_contacts :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 			marmot.string_free(resolved)
 		}
 	}
+
+	load_follows(client, ui, seen)
+}
+
+// The account's NIP-02 follows, merged into the contact list: someone
+// followed but never chatted with is still a contact, and only a
+// followed contact can be removed (sharing a group is not something
+// unfollowing can undo).
+@(private = "file")
+load_follows :: proc(client: ^marmot.Client, ui: ^Ui_State, seen: map[string]bool) {
+	follows: ^marmot.String_List
+	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
+	if marmot.account_follows(client, account, &follows) != .OK || follows == nil {
+		return
+	}
+	defer marmot.string_list_free(follows)
+
+	for i in 0 ..< follows.len {
+		if follows.items[i] == nil {
+			continue
+		}
+		id := string(follows.items[i])
+		if id == ui.account_ref {
+			continue // following yourself is not a contact
+		}
+		if seen[id] {
+			for &existing in ui.contacts {
+				if existing.id_hex == id {
+					existing.followed = true
+					break
+				}
+			}
+			continue
+		}
+
+		name := short_hex(id)
+		resolved: cstring
+		if marmot.display_name(client, follows.items[i], &resolved) == .OK && resolved != nil {
+			name = string(resolved)
+		}
+		npub_str: string
+		npub_c: cstring
+		if marmot.npub(client, follows.items[i], &npub_c) == .OK && npub_c != nil {
+			npub_str = strings.clone(string(npub_c))
+			marmot.string_free(npub_c)
+		}
+		append(
+			&ui.contacts,
+			Contact_Ui {
+				id_hex = strings.clone(id),
+				name = strings.clone(name),
+				pic_url = strings.clone(profile_info(client, id).pic_url),
+				npub = npub_str,
+				followed = true,
+			},
+		)
+		marmot.string_free(resolved)
+	}
 }
 
 load_profile :: proc(client: ^marmot.Client, ui: ^Ui_State) {

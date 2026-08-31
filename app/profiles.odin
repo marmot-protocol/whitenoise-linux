@@ -39,6 +39,19 @@ profile_info :: proc(client: ^marmot.Client, hex: string) -> Profile_Info {
 		return info
 	}
 
+	info := read_profile(client, hex)
+	profile_cache[strings.clone(hex)] = info
+	// Nothing cached means marmot has never seen this account's kind-0.
+	// Ask the relays for one; the memo re-reads when it lands.
+	if len(info.name) == 0 && len(info.pic_url) == 0 {
+		queue_refresh(client, hex)
+	}
+	return info
+}
+
+// One kind-0 read straight out of marmot's cache, no memo.
+@(private = "file")
+read_profile :: proc(client: ^marmot.Client, hex: string) -> Profile_Info {
 	info: Profile_Info
 	meta: ^marmot.User_Profile_Metadata
 	if marmot.user_profile(client, strings.clone_to_cstring(hex, context.temp_allocator), &meta) == .OK && meta != nil {
@@ -52,7 +65,6 @@ profile_info :: proc(client: ^marmot.Client, hex: string) -> Profile_Info {
 		}
 		marmot.user_profile_metadata_free(meta)
 	}
-	profile_cache[strings.clone(hex)] = info
 	return info
 }
 
@@ -76,7 +88,7 @@ register_starter_pic :: proc(hex: string, name: string, url: string, image: rl.I
 }
 
 // Register a locally composed image under a pseudo-URL (starter://,
-// group://): nothing to fetch, the round texture lands in the cache
+// group://, blossom://): nothing to fetch, the texture lands in the cache
 // directly. Re-registering an URL replaces its texture.
 register_local_pic :: proc(url: string, image: rl.Image) {
 	tex := new(rl.Texture2D)
@@ -91,6 +103,87 @@ register_local_pic :: proc(url: string, image: rl.Image) {
 	}
 	pic_textures[strings.clone(url)] = tex
 	pic_requested[strings.clone(url)] = true
+}
+
+// ── Profile refresh ─────────────────────────────────────────────────
+//
+// marmot_refresh_profile blocks on a relay round trip, so it runs on
+// its own worker; the frame loop re-reads the accounts it finished.
+
+@(private = "file")
+refresh_mutex: sync.Mutex
+@(private = "file")
+refresh_queue: [dynamic]string
+@(private = "file")
+refresh_done: [dynamic]string
+// Accounts already asked about, so a permanent miss is asked once.
+@(private = "file")
+refresh_asked: map[string]bool
+@(private = "file")
+refresh_client: ^marmot.Client
+
+@(private = "file")
+queue_refresh :: proc(client: ^marmot.Client, hex: string) {
+	if client == nil || refresh_asked[hex] {
+		return
+	}
+	refresh_asked[strings.clone(hex)] = true
+
+	sync.lock(&refresh_mutex)
+	refresh_client = client
+	append(&refresh_queue, strings.clone(hex))
+	sync.unlock(&refresh_mutex)
+}
+
+// ponytail: one worker, 100ms poll; the queue only fills on cache
+// misses, which is once per unseen account.
+@(private = "file")
+refresh_worker :: proc(_: ^thread.Thread) {
+	for {
+		sync.lock(&refresh_mutex)
+		hex: string
+		client := refresh_client
+		have := len(refresh_queue) > 0
+		if have {
+			hex = refresh_queue[0]
+			ordered_remove(&refresh_queue, 0)
+		}
+		sync.unlock(&refresh_mutex)
+		if !have {
+			time.sleep(100 * time.Millisecond)
+			continue
+		}
+
+		id := strings.clone_to_cstring(hex, context.temp_allocator)
+		if marmot.refresh_profile(client, id, raw_data(DEFAULT_RELAYS), uint(len(DEFAULT_RELAYS))) != .OK {
+			// marmot's last_error is thread-local, so it is read here.
+			fmt.eprintfln("profiles: refresh failed for %s: %s", hex, marmot.last_error())
+		}
+		free_all(context.temp_allocator)
+
+		sync.lock(&refresh_mutex)
+		append(&refresh_done, hex)
+		sync.unlock(&refresh_mutex)
+	}
+}
+
+// Frame-loop drain: re-read the memo for accounts the worker touched.
+// The map key is already present, so the assignment reuses it.
+drain_refresh :: proc(client: ^marmot.Client) {
+	sync.lock(&refresh_mutex)
+	done := refresh_done
+	refresh_done = {}
+	sync.unlock(&refresh_mutex)
+
+	for hex in done {
+		if old, ok := profile_cache[hex]; ok {
+			delete(old.name)
+			delete(old.pic_url)
+		}
+		profile_cache[hex] = read_profile(client, hex)
+		delete(hex)
+	}
+	delete(done)
 }
 
 // ── Picture fetch pipeline ──────────────────────────────────────────
@@ -113,6 +206,12 @@ pic_requested: map[string]bool
 // or decode failed (gradient fallback stays).
 @(private = "file")
 pic_textures: map[string]^rl.Texture2D
+
+// Texture for a pseudo-URL somebody else registers (starter://,
+// group://, blossom://): a plain lookup, never a fetch.
+local_pic :: proc(url: string) -> ^rl.Texture2D {
+	return pic_textures[url]
+}
 
 // Layout-side accessor: the picture texture once fetched, nil while
 // the gradient fallback should render. First sight queues the fetch.
@@ -173,6 +272,7 @@ pic_worker :: proc(_: ^thread.Thread) {
 
 start_pic_worker :: proc() {
 	thread.start(thread.create(pic_worker))
+	thread.start(thread.create(refresh_worker))
 }
 
 // Frame-loop drain: decode fetched bytes into round avatar textures.

@@ -3,32 +3,56 @@
 //
 // The description publishes through marmot_update_group_profile. The
 // photo has two sources: "Search images" (Openverse, openverse.odin)
-// publishes a real URL avatar via marmot_update_group_avatar_url;
-// "From file" stays session-local, because marmot-c exports no
-// encrypted-Blossom group-image upload (download only), so a local
-// file has nowhere to publish to.
+// publishes a plain URL avatar via marmot_update_group_avatar_url;
+// "From file" is encrypted, uploaded to Blossom and committed as the
+// group image (marmot_update_group_image), which only an admin may do.
+//
+// Both directions block on the network, so they run on the group-image
+// worker and land back on the UI thread in drain_gimg, where texture
+// creation belongs:
+//
+//   pick file  ─┐                            ┌─► chat-list reload
+//              ├─► gimg_queue ─► worker ─► ┤
+//   chat rows  ─┘   (upload/download)        └─► round texture
 package main
 
 import "core:fmt"
 import "core:os"
+import "core:slice"
 import "core:strings"
+import "core:sync"
+import "core:thread"
+import "core:time"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
 import marmot "../marmot"
 
-// group id → session-local photo pseudo-URL (group://<gid>), so a
-// "From file" pick survives chat-list reloads. Never published.
+// group id → session-local photo pseudo-URL (group://<gid>), so the
+// pick renders instantly, before and regardless of the upload.
 gpic_local: map[string]string
 
-// The chat's photo texture: local override first, else the published
-// avatar_url through the shared fetch pipeline.
+// Cache key for a group's decrypted Blossom avatar; "" when the group
+// has none.
+blossom_pic_url :: proc(image_hash: string) -> string {
+	if len(image_hash) == 0 {
+		return ""
+	}
+	return fmt.tprintf("blossom://%s", image_hash)
+}
+
+// The chat's photo texture: the local pick first, then a published
+// URL avatar (which marmot gives precedence), then the decrypted
+// Blossom image once the worker has landed it.
 chat_pic :: proc(chat: Chat_Row_Ui) -> ^rl.Texture2D {
 	if url, ok := gpic_local[chat.group_id]; ok {
 		return url_pic(url)
 	}
-	return url_pic(chat.avatar_url)
+	if len(chat.avatar_url) > 0 {
+		return url_pic(chat.avatar_url)
+	}
+	return local_pic(blossom_pic_url(chat.image_hash))
 }
 
 group_hero :: proc(ui: ^Ui_State) {
@@ -134,11 +158,10 @@ save_description :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	load_members(client, ui) // re-snapshots group_desc
 }
 
-// A file picked for the group photo: decode, register the round
-// texture under a group:// pseudo-URL, remember the override.
-// Session-local only; peers never see it (no upload path, see the
-// module doc).
-set_group_pic :: proc(ui: ^Ui_State, path: string) {
+// A file picked for the group photo: decode it for an instant local
+// preview, then hand the bytes to the worker, which encrypts and
+// uploads them to Blossom and commits them as the group image.
+set_group_pic :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 	if ui.selected < 0 {
 		return
 	}
@@ -169,7 +192,184 @@ set_group_pic :: proc(ui: ^Ui_State, path: string) {
 	url := fmt.tprintf("group://%s", gid)
 	register_local_pic(url, image)
 	rl.UnloadImage(image)
+	// The local override outlives the upload: it is the same picture,
+	// and keeping it saves re-downloading what this client just sent.
 	if gid not_in gpic_local {
 		gpic_local[strings.clone(gid)] = strings.clone(url)
+	}
+
+	gimg_push(
+		Gimg_Job {
+			kind = .Upload,
+			client = client,
+			account = strings.clone(ui.account_ref),
+			group_id = strings.clone(gid),
+			data = slice.clone(data),
+			media_type = media_type,
+		},
+	)
+}
+
+// ── Group-image worker ──────────────────────────────────────────────
+
+@(private = "file")
+Gimg_Kind :: enum {
+	Download,
+	Upload,
+}
+
+@(private = "file")
+Gimg_Job :: struct {
+	kind:       Gimg_Kind,
+	client:     ^marmot.Client,
+	account:    string,
+	group_id:   string,
+	url:        string, // download only: the blossom:// cache key
+	media_type: string, // upload only; a static literal, never freed
+	data:       []u8, // upload only, freed by the worker
+}
+
+// An upload reports only success or failure (empty url); a download
+// reports the cache key it fetched for, with nil data when it failed.
+@(private = "file")
+Gimg_Result :: struct {
+	url:  string,
+	data: []u8,
+	err:  string, // "" = it worked
+}
+
+@(private = "file")
+gimg_mutex: sync.Mutex
+@(private = "file")
+gimg_queue: [dynamic]Gimg_Job
+@(private = "file")
+gimg_done: [dynamic]Gimg_Result
+// group ids already downloaded (or tried) this session.
+@(private = "file")
+gimg_asked: map[string]bool
+
+@(private = "file")
+gimg_push :: proc(job: Gimg_Job) {
+	sync.lock(&gimg_mutex)
+	append(&gimg_queue, job)
+	sync.unlock(&gimg_mutex)
+}
+
+// Queue the decrypt-download for every chat that has a committed
+// Blossom image and no plain URL avatar to prefer over it. Called
+// from the chat-list load, where the client and account are in hand.
+queue_group_pics :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	for chat in ui.chats {
+		if len(chat.image_hash) == 0 || len(chat.avatar_url) > 0 || gimg_asked[chat.group_id] {
+			continue
+		}
+		gimg_asked[strings.clone(chat.group_id)] = true
+		gimg_push(
+			Gimg_Job {
+				kind = .Download,
+				client = client,
+				account = strings.clone(ui.account_ref),
+				group_id = strings.clone(chat.group_id),
+				url = strings.clone(blossom_pic_url(chat.image_hash)),
+			},
+		)
+	}
+}
+
+// ponytail: one worker, 100ms poll, same shape as the picture fetcher.
+// Group avatars change rarely, so a queue of one is the normal case.
+@(private = "file")
+gimg_worker :: proc(_: ^thread.Thread) {
+	for {
+		sync.lock(&gimg_mutex)
+		job: Gimg_Job
+		have := len(gimg_queue) > 0
+		if have {
+			job = gimg_queue[0]
+			ordered_remove(&gimg_queue, 0)
+		}
+		sync.unlock(&gimg_mutex)
+		if !have {
+			time.sleep(100 * time.Millisecond)
+			continue
+		}
+
+		account := strings.clone_to_cstring(job.account, context.temp_allocator)
+		group := strings.clone_to_cstring(job.group_id, context.temp_allocator)
+		result: Gimg_Result
+
+		switch job.kind {
+		case .Download:
+			data: [^]u8
+			length: uint
+			// marmot's last_error is thread-local, so the message is
+			// built here rather than on the UI thread.
+			if marmot.download_group_blossom_image(job.client, account, group, &data, &length) == .OK && length > 0 {
+				result.data = slice.clone(data[:length])
+				marmot.bytes_free(data, length)
+			} else {
+				fmt.eprintfln("gimg: download failed for %s: %s", job.group_id, marmot.last_error())
+			}
+			result.url = job.url
+
+		case .Upload:
+			summary: ^marmot.Send_Summary
+			media := strings.clone_to_cstring(job.media_type, context.temp_allocator)
+			if marmot.update_group_image(job.client, account, group, raw_data(job.data), uint(len(job.data)), media, &summary) != .OK {
+				result.err = fmt.aprintf("Couldn't publish the photo. %s", marmot.last_error())
+			} else {
+				marmot.send_summary_free(summary)
+			}
+			delete(job.data)
+		}
+
+		delete(job.account)
+		delete(job.group_id)
+		free_all(context.temp_allocator)
+
+		sync.lock(&gimg_mutex)
+		append(&gimg_done, result)
+		sync.unlock(&gimg_mutex)
+	}
+}
+
+start_gimg_worker :: proc() {
+	thread.start(thread.create(gimg_worker))
+}
+
+// Frame-loop drain: decode downloaded avatars into round textures and
+// report a failed upload.
+drain_gimg :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	sync.lock(&gimg_mutex)
+	done := gimg_done
+	gimg_done = {}
+	sync.unlock(&gimg_mutex)
+
+	reload := false
+	for r in done {
+		if len(r.err) > 0 {
+			ui.client_status = r.err
+			continue
+		}
+		if len(r.url) == 0 {
+			// An upload landed: the reload picks up the committed
+			// image hash, and peers see it on their next sync.
+			reload = true
+			continue
+		}
+		if r.data != nil {
+			image := rl.LoadImageFromMemory(".img", raw_data(r.data), i32(len(r.data)))
+			if image.data != nil {
+				register_local_pic(r.url, image)
+				rl.UnloadImage(image)
+			}
+			delete(r.data)
+		}
+		delete(r.url)
+	}
+	delete(done)
+
+	if reload && client != nil {
+		load_chat_list(client, ui.account_ref, ui)
 	}
 }

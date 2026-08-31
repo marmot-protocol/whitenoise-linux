@@ -784,7 +784,7 @@ apply_autostart :: proc(on: bool) {
 	}
 	os.make_directory(dir)
 	entry := fmt.tprintf(
-		"[Desktop Entry]\nType=Application\nName=White Noise (Odin)\nExec=%s\n",
+		"[Desktop Entry]\nType=Application\nName=White Noise\nExec=%s\n",
 		os.args[0],
 	)
 	_ = os.write_entire_file(path, transmute([]u8)entry)

@@ -3,7 +3,6 @@ package main
 import "core:c"
 import "core:encoding/hex"
 import "core:fmt"
-import "core:os"
 import "core:slice"
 import "core:strconv"
 import "core:strings"
@@ -508,6 +507,24 @@ contacts_pane :: proc(ui: ^Ui_State) {
 		}
 		micro_button("QrBtn", "Show as QR")
 
+		if clay.UI(clay.ID("KpEyebrow"))({layout = {padding = {top = 8}}}) {
+			eyebrow("KEY PACKAGE")
+		}
+		if clay.UI(clay.ID("KpCard"))(
+		{layout = {sizing = {width = clay.SizingGrow()}, padding = {left = 16, right = 12, top = 10, bottom = 10}, childGap = 12, childAlignment = {y = .Center}}, backgroundColor = ROW_BG, cornerRadius = rr(10), border = {color = FIELD_BORDER, width = bw()}},
+		) {
+			state := kp_probes[contact.id_hex]
+			if clay.UI(clay.ID("KpCol"))({layout = {layoutDirection = .TopToBottom, childGap = 2}}) {
+				clay.Text(tr(kp_title(state)), {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT})
+				clay.Text(tr(kp_note(state)), {fontId = FONT_BODY, fontSize = 10, textColor = TEXT_LO})
+			}
+		}
+
+		if clay.UI(clay.ID("RelaysEyebrow"))({layout = {padding = {top = 8}}}) {
+			eyebrow("RELAYS IN COMMON")
+		}
+		contact_relays_card()
+
 		if clay.UI(clay.ID("GroupsEyebrow"))({layout = {padding = {top = 8}}}) {
 			eyebrow("GROUPS IN COMMON")
 		}
@@ -538,12 +555,89 @@ contacts_pane :: proc(ui: ^Ui_State) {
 		}
 		if clay.UI(clay.ID("ActionsRow"))({layout = {childGap = 8}}) {
 			micro_button("BlockBtn", ui.blocked[contact.id_hex] ? "Unblock" : "Block", DANGER)
+			// Only a published follow can be taken back; a contact
+			// known from a shared group has nothing to remove.
+			if contact.followed {
+				micro_button("RemoveContactBtn", "Remove contact", DANGER)
+			}
 		}
 
 		if open_now(clay.ID("QrModal"), ui.qr_open) && ui.qr_tex != nil {
 			qr_modal(ui, contact)
 		}
 	}
+}
+
+// The contact's published relays, the ones you share accented: sharing
+// one means your events meet there instead of taking a longer path.
+// Capped, because a published list has no upper bound and the pane does
+// not scroll.
+RELAY_ROWS_MAX :: 6
+
+@(private = "file")
+contact_relays_card :: proc() {
+	if clay.UI(clay.ID("RelaysCard"))(
+	{layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, padding = {left = 16, right = 12, top = 10, bottom = 10}, childGap = 6}, backgroundColor = ROW_BG, cornerRadius = rr(10), border = {color = FIELD_BORDER, width = bw()}},
+	) {
+		if rel_state == .Checking {
+			clay.Text(tr("Checking..."), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
+			return
+		}
+		if len(rel_list) == 0 {
+			clay.Text(tr("They haven't published a relay list."), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
+			return
+		}
+
+		clay.Text(
+			fmt.tprintf(tr("%d of %d shared with you"), rel_mutual, len(rel_list)),
+			{fontId = FONT_TITLE, fontSize = 12, textColor = TEXT},
+		)
+		for relay, i in rel_list {
+			if i >= RELAY_ROWS_MAX {
+				clay.Text(
+					fmt.tprintf(tr("+%d more"), len(rel_list) - RELAY_ROWS_MAX),
+					{fontId = FONT_BODY, fontSize = 10, textColor = TEXT_LO},
+				)
+				break
+			}
+			if clay.UI(clay.ID("RelayShareRow", u32(i)))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 8, childAlignment = {y = .Center}}}) {
+				clay.Text(relay.url, {fontId = FONT_MONO, fontSize = 11, textColor = relay.mutual ? ACCENT : TEXT_DIM})
+				if clay.UI(clay.ID("RelayShareGap", u32(i)))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+				if relay.inbox {
+					clay.Text(tr("inbox"), {fontId = FONT_BODY, fontSize = 10, textColor = TEXT_LO})
+				}
+			}
+		}
+	}
+}
+
+// What the key-package row says. Marmot answers only whether one can
+// be resolved, so the row reports reachability rather than the event
+// detail the Keys page shows for your own account.
+@(private = "file")
+kp_title :: proc(state: Kp_Probe) -> string {
+	switch state {
+	case .Unknown, .Checking:
+		return N_("Checking...")
+	case .Published:
+		return N_("Published")
+	case .Missing:
+		return N_("Not found")
+	}
+	return ""
+}
+
+@(private = "file")
+kp_note :: proc(state: Kp_Probe) -> string {
+	switch state {
+	case .Unknown, .Checking:
+		return N_("Asking your relays for their key package.")
+	case .Published:
+		return N_("They can be added to a chat.")
+	case .Missing:
+		return N_("No key package on your relays, so a chat can't start yet.")
+	}
+	return ""
 }
 
 // Small bordered chip, the slint MicroButton: 11px label, hairline
@@ -559,7 +653,7 @@ micro_button :: proc(id_str: string, label: string, color: clay.Color = {}) {
 }
 
 // Centered QR overlay: the contact's marmot://profile deep link
-// rasterized by qrencode (show_contact_qr).
+// rasterized by the in-app encoder (show_contact_qr).
 qr_modal :: proc(ui: ^Ui_State, contact: Contact_Ui) {
 	if clay.UI(clay.ID("QrModal"))(
 	{
@@ -578,14 +672,12 @@ qr_modal :: proc(ui: ^Ui_State, contact: Contact_Ui) {
 	}
 }
 
-// Rasterize the contact's marmot:// deep link into a texture via the
-// system qrencode (same payload as the slint profile_qr_url).
-// TODO: render QR codes ourselves (small byte-mode encoder + pixel
-// blit) instead of depending on the qrencode binary being installed.
+// Rasterize the contact's marmot:// deep link into a texture (same
+// payload as the slint profile_qr_url).
 show_contact_qr :: proc(ui: ^Ui_State, contact: Contact_Ui) {
 	tex := qr_texture(contact.npub)
 	if tex == nil {
-		ui.client_status = "couldn't render QR (is qrencode installed?)"
+		ui.client_status = strings.clone(tr("Couldn't render the QR code. Please try again."))
 		return
 	}
 	if ui.qr_tex != nil {
@@ -597,25 +689,15 @@ show_contact_qr :: proc(ui: ^Ui_State, contact: Contact_Ui) {
 	ui.qr_open = true
 }
 
-// marmot://profile deep link for an npub, rasterized to a texture via
-// the system qrencode. nil when qrencode is missing or fails.
+// marmot://profile deep link for an npub, rasterized to a texture.
+// nil when the link is too long for the encoder (qr.odin).
 qr_texture :: proc(npub: string) -> ^rl.Texture2D {
-	url := fmt.tprintf("marmot://profile/%s?from=qr", npub)
-	state, out, _, err := os.process_exec(
-		{command = {"qrencode", "-t", "PNG", "-o", "-", "-s", "8", "-m", "2", url}},
-		context.temp_allocator,
-	)
-	if err != nil || state.exit_code != 0 || len(out) == 0 {
-		return nil
-	}
-
-	image := rl.LoadImageFromMemory(".png", raw_data(out), i32(len(out)))
-	if image.data == nil {
+	image, ok := qr_image(fmt.tprintf("marmot://profile/%s?from=qr", npub))
+	if !ok {
 		return nil
 	}
 	tex := new(rl.Texture2D)
 	tex^ = rl.LoadTextureFromImage(image)
-	rl.UnloadImage(image)
 	return tex
 }
 

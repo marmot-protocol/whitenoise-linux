@@ -3,7 +3,7 @@
 //
 // Three moments share it, which is why it exists at all:
 //   - opening a chat, the rail row's avatar flies into the header
-//   - sending, the composer's text flies to the foot of the timeline
+//   - sending, the composer's text flies to where the row will appear
 //   - reacting, the emoji flies from the pointer onto the message
 //
 // clay lays out the endpoints; a flight is a Root-attached floating
@@ -149,8 +149,11 @@ SEND_ARC :: f32(46)
 SEND_W_MAX :: f32(240)
 REACT_SIZE :: f32(24)
 
-// A send leaves the composer: a plate carrying the text, thrown to the
-// foot of the timeline where the row is about to appear.
+// A send leaves the composer: a plate carrying the text, thrown to
+// where the row is about to appear. That is the foot of the timeline
+// once history fills the view, but in a fresh chat the rows stack from
+// the top, so the plate lands under the last one instead of dropping
+// past it into empty space.
 send_arc :: proc(ui: ^Ui_State, text: string) {
 	from, from_ok := element_box(clay.ID("ComposeBox"))
 	view, view_ok := element_box(clay.ID("Timeline"))
@@ -158,13 +161,38 @@ send_arc :: proc(ui: ^Ui_State, text: string) {
 		return
 	}
 	w := min(from.width * 0.6, SEND_W_MAX)
-	to := clay.BoundingBox{view.x + 56, view.y + view.height - 40, w, 32}
+	to := clay.BoundingBox{view.x + 56, send_land_y(ui, view), w, 32}
 	// One line's worth: the plate is a gesture, not a preview.
 	label := text
 	if idx := strings.index_byte(label, '\n'); idx >= 0 {
 		label = label[:idx]
 	}
 	fly(from, to, nil, label, ACCENT, SEND_ARC)
+}
+
+// Top of the row about to be appended: just under the last row the
+// previous frame laid out, never below the foot of the view.
+@(private = "file")
+send_land_y :: proc(ui: ^Ui_State, view: clay.BoundingBox) -> f32 {
+	last := view.y + 8 // an empty chat starts at the top of the content
+	found := false
+
+	// The tail is the newest optimistic row when there is one, else
+	// the newest delivered message.
+	for p, i in ui.pending {
+		if p.group_id != ui.chats[ui.selected].group_id {
+			continue
+		}
+		if box, ok := element_box(clay.ID("PendingRow", u32(i))); ok {
+			last, found = box.y + box.height + 2, true
+		}
+	}
+	if !found && len(ui.messages) > 0 {
+		if box, ok := element_box(clay.ID("MsgRow", u32(len(ui.messages) - 1))); ok {
+			last = box.y + box.height + 2
+		}
+	}
+	return clamp(last, view.y, view.y + view.height - 40)
 }
 
 // A reaction lands on the message it belongs to, from wherever it was

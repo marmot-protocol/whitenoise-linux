@@ -778,6 +778,35 @@ parse_int_or :: proc(text: string, fallback: int) -> int {
 	return ok ? value : fallback
 }
 
+WIN_TITLE :: "White Noise"
+
+// Unread total in the window title, so a minimized window still says
+// how much is waiting: "(3) White Noise". Same count the rail
+// badges show. Set only when it changes, since the title is a window
+// manager round trip and this runs every frame.
+@(private = "file")
+title_unread := -1
+
+@(private = "file")
+update_title :: proc(ui: ^Ui_State) {
+	total := 0
+	for chat in ui.chats {
+		total += int(chat.unread)
+	}
+	if total == title_unread {
+		return
+	}
+	title_unread = total
+
+	if total == 0 {
+		rl.SetWindowTitle(WIN_TITLE)
+		return
+	}
+	rl.SetWindowTitle(
+		strings.clone_to_cstring(fmt.tprintf("(%d) %s", total, WIN_TITLE), context.temp_allocator),
+	)
+}
+
 main :: proc() {
 	home: string
 	link: string
@@ -844,9 +873,10 @@ main :: proc() {
 			win_h = i32(h)
 		}
 	}
-	rl.InitWindow(win_w, win_h, "White Noise (Odin)")
+	rl.InitWindow(win_w, win_h, WIN_TITLE)
 	app_started = rl.GetTime()
 	start_pic_worker()
+	start_gimg_worker()
 	rl.SetTargetFPS(60)
 	dpi := rl.GetWindowScaleDPI()
 	UI_SCALE = max(dpi.x, 1) * UI_ZOOM
@@ -1267,6 +1297,11 @@ main :: proc() {
 		// Profile pictures fetched by the curl worker decode here (the
 		// render thread owns texture creation).
 		drain_pics()
+		drain_kp()
+		drain_relays(&ui, client)
+		update_title(&ui)
+		drain_refresh(client)
+		drain_gimg(&ui, client)
 		drain_ov()
 
 		// Files picked in the async SDL dialog land here; they become
@@ -1279,7 +1314,7 @@ main :: proc() {
 			} else if ui.picking_emoji {
 				stage_emoji(&ui, path)
 			} else if ui.picking_gpic {
-				set_group_pic(&ui, path)
+				set_group_pic(&ui, client, path)
 			} else {
 				stage_file(&ui, path)
 			}

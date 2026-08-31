@@ -97,6 +97,7 @@ Chat_Row_Ui :: struct {
 	tick:     marmot.Delivery_State,
 	first_unread: string, // first unread message id, "" = none
 	avatar_url: string, // chat picture URL, "" = none
+	image_hash: string, // encrypted-Blossom avatar hash, "" = none
 	muted:    bool, // marmot's per-chat mute, suppresses notifications
 	last_id:  string, // latest message id, "" = none (notification dedupe)
 	last_kind: u64, // latest message's event kind
@@ -253,11 +254,12 @@ Common_Group :: struct {
 }
 
 Contact_Ui :: struct {
-	id_hex:  string,
-	name:    string, // display name or truncated id
-	pic_url: string, // kind-0 picture, "" = none
-	npub:    string,
-	groups:  [dynamic]Common_Group, // chats shared with this contact
+	id_hex:   string,
+	name:     string, // display name or truncated id
+	pic_url:  string, // kind-0 picture, "" = none
+	npub:     string,
+	followed: bool, // on the account's NIP-02 list
+	groups:   [dynamic]Common_Group, // chats shared with this contact
 }
 
 Profile_Ui :: struct {

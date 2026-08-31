@@ -102,6 +102,8 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				if contact.id_hex == ui.peer_hex {
 					ui.page = .Contacts
 					ui.selected_contact = i
+					probe_key_package(ui, client, contact.id_hex)
+					load_contact_relays(ui, client, contact.id_hex)
 					ed_set(ui, &ui.nick_input, ui.nicknames[contact.id_hex])
 					ui.focus = .Compose
 					break
@@ -210,6 +212,8 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		for contact, i in ui.contacts {
 			if clay.PointerOver(clay.ID("ContactRow", u32(i))) {
 				ui.selected_contact = i
+				probe_key_package(ui, client, contact.id_hex)
+				load_contact_relays(ui, client, contact.id_hex)
 				// Seed the nickname editor with the stored value.
 				ed_set(ui, &ui.nick_input, ui.nicknames[contact.id_hex])
 				ui.focus = .Compose
@@ -230,6 +234,10 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				show_contact_qr(ui, contact)
 				return
 			}
+			if clicked("RemoveContactBtn") && contact.followed {
+				confirm_ask(ui, .Remove_Contact, contact.id_hex, contact_label(ui, contact))
+				return
+			}
 			if clicked("BlockBtn") {
 				// Unblocking restores what block hid, so it goes through
 				// without asking; blocking is the destructive direction.
@@ -242,6 +250,25 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				return
 			}
 		}
+	}
+}
+
+// Unfollow a contact and publish the updated NIP-02 list. They stay
+// listed while a group is still shared: unfollowing does not undo a
+// shared membership, and load_contacts derives that half from groups.
+remove_contact :: proc(ui: ^Ui_State, client: ^marmot.Client, hex: string) {
+	follows: ^marmot.String_List
+	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
+	user := strings.clone_to_cstring(hex, context.temp_allocator)
+	if marmot.unfollow_user(client, account, user, &follows) != .OK {
+		ui.client_status = fmt.aprintf("Couldn't remove the contact. %s", marmot.last_error())
+		return
+	}
+	marmot.string_list_free(follows)
+
+	load_contacts(client, ui)
+	if ui.selected_contact >= len(ui.contacts) {
+		ui.selected_contact = len(ui.contacts) - 1
 	}
 }
 
@@ -733,6 +760,7 @@ row_to_ui :: proc(row: ^marmot.Chat_List_Row, account_ref: string) -> Chat_Row_U
 		tick     = tick,
 		first_unread = strings.clone(row.first_unread_message_id_hex != nil ? string(row.first_unread_message_id_hex) : ""),
 		avatar_url = strings.clone(row.avatar_url != nil ? string(row.avatar_url) : ""),
+		image_hash = strings.clone(row.avatar != nil && row.avatar.image_hash_hex != nil ? string(row.avatar.image_hash_hex) : ""),
 		// marmot's mute OR the local one from the row menu (its C API
 		// has no mute setter); the notification gate reads this flag.
 		muted    = row.muted || (g_prefs != nil && g_prefs.muted_ids[string(row.group_id_hex)]),
@@ -755,6 +783,7 @@ load_chat_list :: proc(client: ^marmot.Client, account_ref: string, ui: ^Ui_Stat
 		append(&ui.chats, row_to_ui(&rows.items[i], account_ref))
 	}
 	ui.my_pic_url = profile_info(client, account_ref).pic_url
+	queue_group_pics(ui, client)
 
 	// Keep the rail-filter flags aligned with the fresh row set.
 	refresh_filter_hits(client, ui)

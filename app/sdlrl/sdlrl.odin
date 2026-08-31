@@ -202,6 +202,10 @@ InitWindow :: proc(width, height: i32, title: cstring) {
 	state.last_frame_ns = sdl.GetTicksNS()
 }
 
+SetWindowTitle :: proc(title: cstring) {
+	_ = sdl.SetWindowTitle(state.window, title)
+}
+
 // ── Pointer shape ───────────────────────────────────────────────────
 // The system cursors, created on first use and kept for the process.
 // Ordered by priority, so the caller can keep the highest shape raised

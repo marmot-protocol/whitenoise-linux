@@ -576,6 +576,261 @@ drain_ops :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // Which hover action a chat row offers (rail rows archive, archive-page
 // rows unarchive); also selects the chip's clay ID for click handling.
 
+// ── Contact key-package probe ───────────────────────────────────────
+//
+// Whether a contact has a published KeyPackage is what decides if a
+// chat with them can start at all, and marmot answers it only by
+// resolving one: the prewarm call, asked about a single member, caches
+// the KeyPackage it finds and counts it. That is a relay round trip,
+// so the contact pane asks once per contact and reads the answer here.
+
+Kp_Probe :: enum {
+	Unknown, // never asked
+	Checking,
+	Published,
+	Missing,
+}
+
+// contact hex → what the probe found; one entry per contact viewed.
+kp_probes: map[string]Kp_Probe
+
+@(private = "file")
+kp_mutex: sync.Mutex
+@(private = "file")
+Kp_Answer :: struct {
+	hex:   string,
+	found: bool,
+}
+@(private = "file")
+kp_done: [dynamic]Kp_Answer
+
+@(private = "file")
+Kp_Job :: struct {
+	client:  ^marmot.Client,
+	account: string,
+	hex:     string,
+}
+
+// Ask about one contact, once. The answer lands in kp_probes.
+probe_key_package :: proc(ui: ^Ui_State, client: ^marmot.Client, hex: string) {
+	if client == nil || len(hex) == 0 || kp_probes[hex] != .Unknown {
+		return
+	}
+	kp_probes[strings.clone(hex)] = .Checking
+
+	job := new(Kp_Job)
+	job.client = client
+	job.account = strings.clone(ui.account_ref)
+	job.hex = strings.clone(hex)
+	t := thread.create(kp_worker)
+	t.data = job
+	thread.start(t)
+}
+
+@(private = "file")
+kp_worker :: proc(t: ^thread.Thread) {
+	job := (^Kp_Job)(t.data)
+	summary: ^marmot.Member_Key_Package_Prewarm_Summary
+	account := strings.clone_to_cstring(job.account, context.temp_allocator)
+	member := strings.clone_to_cstring(job.hex, context.temp_allocator)
+	refs := [1]cstring{member}
+
+	found := false
+	if marmot.prewarm_group_member_key_packages(job.client, account, raw_data(refs[:]), 1, &summary) == .OK && summary != nil {
+		found = summary.reused_members + summary.network_resolved_members > 0
+		marmot.member_key_package_prewarm_summary_free(summary)
+	}
+	free_all(context.temp_allocator)
+
+	sync.lock(&kp_mutex)
+	append(&kp_done, Kp_Answer{job.hex, found})
+	sync.unlock(&kp_mutex)
+	delete(job.account)
+	free(job)
+}
+
+// Frame-loop drain: adopt finished probes.
+drain_kp :: proc() {
+	sync.lock(&kp_mutex)
+	done := kp_done
+	kp_done = {}
+	sync.unlock(&kp_mutex)
+
+	for d in done {
+		kp_probes[d.hex] = d.found ? .Published : .Missing
+		delete(d.hex)
+	}
+	delete(done)
+}
+
+// ── Contact relay lists ─────────────────────────────────────────────
+//
+// A contact's published NIP-65 and inbox relays, so the detail pane can
+// say which of them you also publish to: share one and your events meet
+// without a third party relaying them.
+//
+// marmot splits the read in two. The cached one is a local lookup, so
+// it runs inline on selection; when it comes back with nothing (the
+// usual case for a contact never fetched before), the worker asks the
+// relays and the drain re-reads the cache. Only the selected contact is
+// ever on screen, so this is one slot rather than a per-contact map.
+
+Rel_State :: enum {
+	Empty, // no contact selected
+	Checking,
+	Loaded,
+}
+
+Contact_Relay :: struct {
+	url:    string,
+	inbox:  bool, // on their inbox list rather than their NIP-65 list
+	mutual: bool, // you publish to it too
+}
+
+// The selected contact's relays; refilled on every selection.
+rel_hex: string
+rel_state: Rel_State
+rel_list: [dynamic]Contact_Relay
+rel_mutual: int
+
+@(private = "file")
+rel_mutex: sync.Mutex
+@(private = "file")
+rel_fetched: string // hex the worker just refreshed, "" = nothing pending
+
+// Selection entry point: read the cache now, fetch if it is empty.
+load_contact_relays :: proc(ui: ^Ui_State, client: ^marmot.Client, hex: string) {
+	if client == nil || len(hex) == 0 {
+		return
+	}
+	// "Shared with you" is measured against your own published lists,
+	// which load lazily with the Profile page. Idempotent, and every
+	// read behind it is local.
+	load_profile(client, ui)
+
+	delete(rel_hex)
+	rel_hex = strings.clone(hex)
+	rel_state = .Checking
+
+	if read_contact_relays(ui, client, hex) {
+		rel_state = .Loaded
+		return
+	}
+	job := new(Rel_Job)
+	job.client = client
+	job.hex = strings.clone(hex)
+	t := thread.create(rel_worker)
+	t.data = job
+	thread.start(t)
+}
+
+// Fill rel_list from marmot's cache. False when nothing is cached yet,
+// which is what sends the worker to the relays.
+@(private = "file")
+read_contact_relays :: proc(ui: ^Ui_State, client: ^marmot.Client, hex: string) -> bool {
+	lists: ^marmot.Account_Relay_Lists
+	id := strings.clone_to_cstring(hex, context.temp_allocator)
+	if marmot.user_relay_lists(client, id, &lists) != .OK || lists == nil {
+		return false
+	}
+	defer marmot.account_relay_lists_free(lists)
+
+	for r in rel_list {
+		delete(r.url)
+	}
+	clear(&rel_list)
+
+	mine := make([dynamic]string, context.temp_allocator)
+	append(&mine, ..ui.profile.nip65[:])
+	append(&mine, ..ui.profile.inbox[:])
+	rel_mutual = merge_relays(relay_urls(lists.nip65), relay_urls(lists.inbox), mine[:], &rel_list)
+	return len(rel_list) > 0
+}
+
+// One published list as Odin strings, borrowed from the C allocation.
+@(private = "file")
+relay_urls :: proc(list: marmot.Relay_List) -> []string {
+	out := make([dynamic]string, context.temp_allocator)
+	for i in 0 ..< list.relays_len {
+		if list.relays[i] != nil {
+			append(&out, string(list.relays[i]))
+		}
+	}
+	return out[:]
+}
+
+// Merge a contact's two published lists into one deduped set, marking
+// every relay you publish to as well. A relay on both of their lists
+// keeps its first sighting, so their NIP-65 entry wins over their inbox
+// one. Returns how many are shared.
+merge_relays :: proc(nip65, inbox, mine: []string, out: ^[dynamic]Contact_Relay) -> (mutual: int) {
+	for list, kind in ([2][]string{nip65, inbox}) {
+		for url in list {
+			seen := false
+			for r in out {
+				if r.url == url {
+					seen = true
+					break
+				}
+			}
+			if seen {
+				continue
+			}
+
+			shared := slice.contains(mine, url)
+			if shared {
+				mutual += 1
+			}
+			append(out, Contact_Relay{strings.clone(url), kind == 1, shared})
+		}
+	}
+	return mutual
+}
+
+@(private = "file")
+Rel_Job :: struct {
+	client: ^marmot.Client,
+	hex:    string,
+}
+
+@(private = "file")
+rel_worker :: proc(t: ^thread.Thread) {
+	job := (^Rel_Job)(t.data)
+	lists: ^marmot.Account_Relay_Lists
+	id := strings.clone_to_cstring(job.hex, context.temp_allocator)
+	// The result is dropped: it lands in marmot's cache, and the drain
+	// re-reads it on the UI thread where rel_list lives.
+	if marmot.refresh_user_relay_lists(job.client, id, raw_data(DEFAULT_RELAYS), uint(len(DEFAULT_RELAYS)), &lists) == .OK && lists != nil {
+		marmot.account_relay_lists_free(lists)
+	}
+	free_all(context.temp_allocator)
+
+	sync.lock(&rel_mutex)
+	delete(rel_fetched)
+	rel_fetched = job.hex
+	sync.unlock(&rel_mutex)
+	free(job)
+}
+
+// Frame-loop drain: adopt a finished fetch, unless the selection moved
+// on while it was in flight.
+drain_relays :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	sync.lock(&rel_mutex)
+	hex := rel_fetched
+	rel_fetched = ""
+	sync.unlock(&rel_mutex)
+	if len(hex) == 0 {
+		return
+	}
+	defer delete(hex)
+
+	if hex != rel_hex {
+		return
+	}
+	read_contact_relays(ui, client, hex)
+	rel_state = .Loaded
+}
+
 // ── Sign-in worker ──────────────────────────────────────────────────
 //
 // create_identity and login block on relay round trips (and, for a

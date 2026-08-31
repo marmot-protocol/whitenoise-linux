@@ -357,7 +357,40 @@ Markdown_Document :: struct {
 App_Group_Record :: struct {}
 Group_Invite_Decline_Result :: struct {}
 Sign_Out_Outcome :: struct {}
-Account_Relay_Lists :: struct {}
+// One published relay list; `kind` is its Nostr event kind (10002
+// NIP-65, 10050 inbox).
+Relay_List :: struct {
+	kind:       u64,
+	relays:     [^]cstring,
+	relays_len: uint,
+}
+
+// Which published list an incomplete relay setup is missing.
+Missing_Relay_List_Kind :: enum i32 {
+	NIP65,
+	INBOX,
+}
+
+// An account's full relay-list state. Reached by pointer only, freed
+// by account_relay_lists_free. Offsets from offsetof() under gcc
+// against the vendored marmot.h.
+Account_Relay_Lists :: struct {
+	complete:             bool,
+	missing:              [^]Missing_Relay_List_Kind,
+	missing_len:          uint,
+	default_relays:       [^]cstring,
+	default_relays_len:   uint,
+	bootstrap_relays:     [^]cstring,
+	bootstrap_relays_len: uint,
+	nip65:                Relay_List,
+	inbox:                Relay_List,
+}
+
+#assert(size_of(Relay_List) == 24)
+#assert(offset_of(Account_Relay_Lists, missing) == 8)
+#assert(offset_of(Account_Relay_Lists, nip65) == 56)
+#assert(offset_of(Account_Relay_Lists, inbox) == 80)
+#assert(size_of(Account_Relay_Lists) == 104)
 
 // Aggregate relay-pool counters (no per-relay identities).
 Relay_Health :: struct {
@@ -584,6 +617,16 @@ String_List :: struct {
 	len:   uint,
 }
 
+// KeyPackage prewarm counters for a prospective member set. Asked
+// about a single member, a nonzero reused+network_resolved means that
+// member has a KeyPackage to be invited with.
+Member_Key_Package_Prewarm_Summary :: struct {
+	requested_members:        u64,
+	unique_members:           u64,
+	reused_members:           u64,
+	network_resolved_members: u64,
+}
+
 // One MLS key package the account owns: `local` = in the local store,
 // `relay` = seen published, `source_relays` = where it was seen.
 Account_Key_Package :: struct {
@@ -794,8 +837,33 @@ foreign lib {
 	publish_user_profile      :: proc(client: ^Client, account_ref: cstring, profile: ^User_Profile_Metadata, default_relays: [^]cstring, default_relays_len: uint, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint, out: ^^User_Profile_Metadata) -> Status ---
 	user_profile_metadata_free :: proc(ptr: ^User_Profile_Metadata) ---
 
+	// NIP-02 follow list. follow/unfollow publish the updated list and
+	// write the new follow set.
+	account_follows :: proc(client: ^Client, account_ref: cstring, out: ^^String_List) -> Status ---
+	is_following    :: proc(client: ^Client, account_ref: cstring, user_ref: cstring, out: ^bool) -> Status ---
+	follow_user     :: proc(client: ^Client, account_ref: cstring, user_ref: cstring, out: ^^String_List) -> Status ---
+	unfollow_user   :: proc(client: ^Client, account_ref: cstring, user_ref: cstring, out: ^^String_List) -> Status ---
+
+	// Resolve and cache KeyPackages for prospective members. Asked
+	// about one member, the counters answer whether that member has a
+	// KeyPackage anyone could invite them with.
+	prewarm_group_member_key_packages         :: proc(client: ^Client, account_ref: cstring, member_refs: [^]cstring, member_refs_len: uint, out: ^^Member_Key_Package_Prewarm_Summary) -> Status ---
+	member_key_package_prewarm_summary_free   :: proc(ptr: ^Member_Key_Package_Prewarm_Summary) ---
+
 	// Cached kind-0 profile for an account id; out may be NULL with OK.
 	user_profile :: proc(client: ^Client, account_id_hex: cstring, out: ^^User_Profile_Metadata) -> Status ---
+
+	// Repopulate that cache for one account id from `relays`. Blocks
+	// on the relay round trip.
+	refresh_profile :: proc(client: ^Client, account_id_hex: cstring, relays: [^]cstring, relays_len: uint) -> Status ---
+
+	// Any account's published relay lists, keyed by account id rather
+	// than a local account: the cached read never touches the network,
+	// the refresh fetches from `relays` and updates the cache. An
+	// account that has published nothing reports both kinds in
+	// `missing` rather than failing. Free with account_relay_lists_free.
+	user_relay_lists         :: proc(client: ^Client, account_id_hex: cstring, out: ^^Account_Relay_Lists) -> Status ---
+	refresh_user_relay_lists :: proc(client: ^Client, account_id_hex: cstring, relays: [^]cstring, relays_len: uint, out: ^^Account_Relay_Lists) -> Status ---
 
 	// Directory/profile lookups; out strings may be NULL with OK.
 	npub         :: proc(client: ^Client, account_id_hex: cstring, out: ^cstring) -> Status ---
@@ -848,6 +916,14 @@ foreign lib {
 	decline_group_invite       :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out: ^^Group_Invite_Decline_Result) -> Status ---
 	update_group_profile       :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, name: cstring, description: cstring, out: ^^Send_Summary) -> Status ---
 	update_group_avatar_url    :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, url: cstring, dim: cstring, thumbhash: cstring, out: ^^Send_Summary) -> Status ---
+
+	// Encrypted-Blossom group avatar: update_group_image encrypts and
+	// uploads the raw bytes then commits them (admin only), download
+	// fetches and decrypts the committed one. Free the buffer with
+	// bytes_free.
+	update_group_image             :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, plaintext: [^]u8, plaintext_len: uint, media_type: cstring, out: ^^Send_Summary) -> Status ---
+	download_group_blossom_image   :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out_data: ^[^]u8, out_len: ^uint) -> Status ---
+	bytes_free                     :: proc(data: [^]u8, len: uint) ---
 	mark_timeline_message_read :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, message_id_hex: cstring, out: ^^Chat_List_Row) -> Status ---
 
 	app_group_record_free            :: proc(ptr: ^App_Group_Record) ---
