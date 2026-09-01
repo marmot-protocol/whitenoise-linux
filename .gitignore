@@ -3,6 +3,9 @@
 
 # odin build output when built in-package
 /app/app
+
+# local notes, not for the repo
+/report.md
 .stignore
 .syncthing.*
 *.sync-conflict*
