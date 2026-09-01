@@ -13,6 +13,8 @@ import "core:unicode/utf8"
 import "core:sync"
 import "core:thread"
 import "core:time"
+import "core:time/datetime"
+import "core:time/timezone"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -31,6 +33,20 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	if (ui.page == .Profile || ui.page == .Settings) && !ui.new_chat_open {
 		edit_text(ui, active_buf(ui))
+	}
+
+	// The theme editor and the theme-share picker are raised from
+	// Settings, so their capture lives here rather than in handle_chat,
+	// which only runs on the Chats page.
+	if ui.theme_edit {
+		// The keystrokes already went to active_buf above; this is the
+		// mouse and the two buttons.
+		handle_theme_edit(ui)
+		return
+	}
+	if ui.fwd_open && ui.fwd_kind == .Theme {
+		handle_forward(ui, client)
+		return
 	}
 
 	// Contact QR modal captures everything while open.
@@ -279,6 +295,7 @@ remove_contact :: proc(ui: ^Ui_State, client: ^marmot.Client, hex: string) {
 	}
 }
 
+
 // Persist the nickname editor for the selected contact: empty clears.
 save_nickname :: proc(ui: ^Ui_State) {
 	if ui.selected_contact < 0 || ui.selected_contact >= len(ui.contacts) {
@@ -526,9 +543,46 @@ short_hex :: proc(s: string) -> string {
 	return fmt.tprintf("%s...", s[:12])
 }
 
-// HH:MM UTC from a timeline timestamp (seconds or millis).
-format_when :: proc(at: u64) -> string {
+// The user's timezone, loaded once from the system tz database; nil
+// means UTC (no database found, or TZ=UTC).
+@(private = "file")
+local_tz: ^datetime.TZ_Region
+@(private = "file")
+local_tz_tried: bool
+
+// Epoch seconds (or millis) shifted to local wall-clock seconds, so the
+// UTC-shaped field math in the formatters below reads local values.
+// DST-correct: the offset comes from the tz record covering the instant.
+local_seconds :: proc(at: u64) -> u64 {
 	seconds := at > 100_000_000_000 ? at / 1000 : at
+	if !local_tz_tried {
+		local_tz_tried = true
+		local_tz, _ = timezone.region_load("local")
+	}
+	if local_tz == nil {
+		return seconds
+	}
+	dt, dok := time.time_to_datetime(time.unix(i64(seconds), 0))
+	if !dok {
+		return seconds
+	}
+	local, lok := timezone.datetime_to_tz(dt, local_tz)
+	if !lok {
+		return seconds
+	}
+	// Reading the local wall-clock fields back as if they were UTC
+	// yields the shifted epoch the formatters below expect.
+	local.tz = nil
+	shifted, sok := time.datetime_to_time(local)
+	if !sok {
+		return seconds
+	}
+	return u64(time.time_to_unix(shifted))
+}
+
+// HH:MM local time from a timeline timestamp (seconds or millis).
+format_when :: proc(at: u64) -> string {
+	seconds := local_seconds(at)
 	minutes_of_day := (seconds / 60) % (24 * 60)
 	hour := minutes_of_day / 60
 	if g_prefs != nil && g_prefs.hour12 {
@@ -546,7 +600,7 @@ MONTH_ABBREV := []string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug",
 
 // Full stamp for the timestamp hover tooltip: "Aug 25, 2026 · 09:14".
 format_full :: proc(at: u64) -> string {
-	seconds := at > 100_000_000_000 ? at / 1000 : at
+	seconds := local_seconds(at)
 	stamp := time.unix(i64(seconds), 0)
 	year, month, day := time.date(stamp)
 	when_str := format_when(at)
@@ -554,14 +608,15 @@ format_full :: proc(at: u64) -> string {
 	return fmt.aprintf("%s %d, %04d · %s", MONTH_ABBREV[int(month) - 1], day, year, when_str)
 }
 
-// Day-marker label: "Today" for the current UTC date, else per the
+// Day-marker label: "Today" for the current local date, else per the
 // General-settings date format.
 format_day :: proc(at: u64) -> string {
-	seconds := at > 100_000_000_000 ? at / 1000 : at
+	seconds := local_seconds(at)
 	stamp := time.unix(i64(seconds), 0)
 	year, month, day := time.date(stamp)
 
-	now_y, now_m, now_d := time.date(time.now())
+	now := u64(time.now()._nsec) / 1_000_000_000
+	now_y, now_m, now_d := time.date(time.unix(i64(local_seconds(now)), 0))
 	if year == now_y && month == now_m && day == now_d {
 		return strings.clone("Today")
 	}

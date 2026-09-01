@@ -1,0 +1,27 @@
+# Machine shop: painted steel, hazard banding, stencilled labels.
+name = "Industria"
+
+[colors]
+bg = "#161817ff"
+bg-2 = "#1e2220ff"
+panel = "#242825ff"
+text-hi = "#e2e5e0ff"
+danger = "#c04630ff"
+warning = "#d9a51cff"
+accent-base = [
+    "#d9a51cff",
+    "#63845fff",
+    "#a85c1cff",
+    "#7d8388ff",
+    "#487186ff",
+]
+
+[style]
+backdrop = "stripes"
+hard-shadow = true
+bevel = true
+outline-surfaces = true
+bracket-labels = true
+motion-fast = true
+r-scale = 0.0
+border-w = 2.0

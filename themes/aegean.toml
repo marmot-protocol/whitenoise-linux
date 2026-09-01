@@ -1,0 +1,24 @@
+# Whitewash and deep water: bright, airy, one strong blue, with slow
+# swells across the page.
+name = "Aegean"
+
+[colors]
+bg = "#f5f8f9ff"
+bg-2 = "#e2edf0ff"
+text-hi = "#13303cff"
+danger = "#b03a2eff"
+warning = "#a8791fff"
+accent-base = [
+    "#1c6b86ff",
+    "#2b8fa8ff",
+    "#3a7566ff",
+    "#bd6f2aff",
+    "#556894ff",
+]
+
+[style]
+backdrop = "waves"
+focus-glow = true
+r-scale = 1.4
+border-w = 1.0
+glow-r = 6.0

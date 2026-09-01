@@ -175,14 +175,15 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 		rl.BeginMode2D(rl.Camera2D{zoom = UI_ZOOM})
 		clay_raylib_render(&render_commands)
 		rl.EndMode2D()
-		rl.EndDrawing()
-
 		// WN_SHOT with no password to type: capture the gate itself and
-		// quit, the same contract the main loop honors.
+		// quit, the same contract the main loop honors. Captured before
+		// EndDrawing; the backbuffer is undefined after present.
 		if shot && frame == 30 {
 			rl.TakeScreenshot("wn-odin-shot.png")
+			rl.EndDrawing()
 			return false
 		}
+		rl.EndDrawing()
 		if gate_input(ui) {
 			return true
 		}

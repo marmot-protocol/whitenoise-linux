@@ -1,0 +1,23 @@
+# Airmail: kraft envelope, the red-and-blue border band, faded stamp.
+name = "Par Avion"
+
+[colors]
+bg = "#ece2cfff"
+bg-2 = "#ded0b6ff"
+panel = "#f4ecdcff"
+text-hi = "#282722ff"
+danger = "#a62f27ff"
+warning = "#9d7420ff"
+accent-base = [
+    "#245080ff",
+    "#a62f27ff",
+    "#7f7353ff",
+    "#456a94ff",
+    "#8f6236ff",
+]
+
+[style]
+backdrop = "airmail"
+outline-surfaces = true
+r-scale = 0.8
+border-w = 1.0

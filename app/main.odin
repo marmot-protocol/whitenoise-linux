@@ -76,6 +76,8 @@ ICON_ENVELOPE :: "\uf0e0"
 ICON_ENVELOPE_OPEN :: "\uf2b6"
 ICON_FOLDER :: "\uf07b"
 ICON_STAR :: "\uf005"
+ICON_POLL :: "\uf080" // bar chart, the create-poll chip
+ICON_COMMENTS :: "\uf086" // stacked bubbles, thread affordances
 
 // Nerd Font private-use codepoints (ICON_CODEPOINTS below), so there is
 // no system fallback: without one of these the icons render as blanks,
@@ -137,7 +139,11 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 	if clay.UI(clay.ID("Root"))(
 	{
 		layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom},
-		backgroundColor = BG,
+		// clay emits an element's Custom command before its own fill, so
+		// a washed pack leaves the fill out and lets the gradient be the
+		// page: it covers the window opaquely either way.
+		backgroundColor = BG_2.a > 0 ? clay.Color{} : BG,
+		custom = {customData = wash_payload()},
 	},
 	) {
 		// Logged out: the sign-in card alone on the canvas, like the slint
@@ -858,6 +864,18 @@ main :: proc() {
 	// callback, not a stop.
 	clay.SetMaxElementCount(32768)
 
+	// Headroom over clay's defaults (8192 elements): per-letter effect
+	// runs, burst particles and the pre-wrapped body lines all spend
+	// elements, and clay treats an exceeded capacity as an error
+	// callback, not a stop.
+	clay.SetMaxElementCount(32768)
+
+	// Headroom over clay's defaults (8192 elements): per-letter effect
+	// runs, burst particles and the pre-wrapped body lines all spend
+	// elements, and clay treats an exceeded capacity as an error
+	// callback, not a stop.
+	clay.SetMaxElementCount(32768)
+
 	min_memory := cast(c.size_t)clay.MinMemorySize()
 	memory := make([^]u8, min_memory)
 	arena := clay.CreateArenaWithCapacityAndMemory(min_memory, memory)
@@ -878,8 +896,7 @@ main :: proc() {
 	start_pic_worker()
 	start_gimg_worker()
 	rl.SetTargetFPS(60)
-	dpi := rl.GetWindowScaleDPI()
-	UI_SCALE = max(dpi.x, 1) * UI_ZOOM
+	refresh_ui_scale()
 	init_fonts()
 
 	for entry, i in QUICK_REACT {
@@ -918,7 +935,32 @@ main :: proc() {
 	}
 
 	shot := os.get_env("WN_SHOT", context.allocator) != ""
+	debug_size := os.get_env("WN_DEBUG_SIZE", context.allocator) != ""
 	frame := 0
+
+	// WN_TEST_RESIZE="WxH@N" or "WxH@N~M": resize the window at frame N,
+	// stepped over M frames (a compositor drag delivers a stream of
+	// sizes, not one jump), for headless checks that content tracks a
+	// live resize.
+	test_resize_w, test_resize_h, test_resize_frame := i32(0), i32(0), -1
+	test_resize_ramp := 1
+	if tr_env := os.get_env("WN_TEST_RESIZE", context.allocator); tr_env != "" {
+		if x := strings.index_byte(tr_env, 'x'); x > 0 {
+			if at := strings.index_byte(tr_env, '@'); at > x {
+				rest := tr_env[at + 1:]
+				if tilde := strings.index_byte(rest, '~'); tilde > 0 {
+					m, _ := strconv.parse_int(rest[tilde + 1:])
+					test_resize_ramp = max(m, 1)
+					rest = rest[:tilde]
+				}
+				w, _ := strconv.parse_int(tr_env[:x])
+				h, _ := strconv.parse_int(tr_env[x + 1:at])
+				n, _ := strconv.parse_int(rest)
+				test_resize_w, test_resize_h, test_resize_frame = i32(w), i32(h), n
+			}
+		}
+	}
+	test_resize_from_w, test_resize_from_h := i32(0), i32(0)
 
 	// Automation hooks for headless runs: create an identity when none
 	// exists; create a group when none exists; send a message; select
@@ -953,8 +995,15 @@ main :: proc() {
 	// WN_TEST_SEND fires inside the frame loop (after the subscription
 	// is armed) with no manual reload, so the rendered message proves
 	// the live-update path.
-	if os.get_env("WN_TEST_THEME", context.allocator) == "light" {
-		ui.theme = 1
+	// Any pack by its mode name ("light", "nixie", "paravion"), so a
+	// screenshot run can land on one directly.
+	if tt := os.get_env("WN_TEST_THEME", context.allocator); tt != "" {
+		for pack, i in theme_packs {
+			if pack.mode == tt {
+				ui.theme = i
+				break
+			}
+		}
 		apply_theme(ui.theme, ui.accent)
 		save_settings(&ui)
 	}
@@ -1051,11 +1100,47 @@ main :: proc() {
 	ensure_notes(&ui, client) // the rail always has the user's own notepad
 
 	test_send := os.get_env("WN_TEST_SEND", context.allocator)
+
+	// Shot waits out the click sequence: 25 frames per extra pair.
+	shot_frame := test_send != "" ? 300 : 30
+	if test_click := os.get_env("WN_TEST_CLICK", context.allocator); test_click != "" {
+		pairs := (strings.count(test_click, ",") + 1) / 2
+		shot_frame += max(pairs - 1, 0) * 25
+	}
+	if sf := os.get_env("WN_SHOT_FRAME", context.allocator); sf != "" {
+		shot_frame = parse_int_or(sf, shot_frame)
+	}
+	burst_lo, burst_hi := 0, 0
+	if bf := os.get_env("WN_SHOT_BURST", context.allocator); bf != "" {
+		if dash := strings.index_byte(bf, '-'); dash > 0 {
+			burst_lo = parse_int_or(bf[:dash], 0)
+			burst_hi = parse_int_or(bf[dash + 1:], 0)
+		}
+	}
+	// WN_TEST_TYPE="N:text": inject the runes as typed input at frame
+	// N, for headless checks of whoever holds the keyboard.
+	test_type_frame, test_type_text := -1, ""
+	if tt := os.get_env("WN_TEST_TYPE", context.allocator); tt != "" {
+		if colon := strings.index_byte(tt, ':'); colon > 0 {
+			test_type_frame = parse_int_or(tt[:colon], -1)
+			test_type_text = tt[colon + 1:]
+		}
+	}
 	if client != nil &&
 	   len(ui.chats) > 0 &&
 	   os.get_env("WN_TEST_SELECT", context.allocator) != "" {
 		ui.selected = 0
 		load_timeline(client, &ui)
+		// Open the thread panel on the newest main-timeline message,
+		// for headless shots of the thread view.
+		if os.get_env("WN_TEST_THREAD", context.allocator) != "" {
+			for i := len(ui.messages) - 1; i >= 0; i -= 1 {
+				if len(ui.messages[i].thread_of) == 0 && !ui.messages[i].system {
+					thread_push(&ui, ui.messages[i].id)
+					break
+				}
+			}
+		}
 	}
 
 	// Reopen the last chat, the General-settings startup toggle.
@@ -1072,11 +1157,28 @@ main :: proc() {
 	health_refresh(&ui, client)
 
 	live: Live
+	tl_container_was: [2]f32
+	tl_at_bottom: bool
+	win_was: [2]i32
 
 	for !rl.WindowShouldClose() {
 		defer free_all(context.temp_allocator)
 
 		anim_tick(rl.GetFrameTime())
+
+		// A monitor change can bring a new pixel density; glyphs baked
+		// for the old one would draw scaled. Cheap check, rare hit.
+		if max(rl.GetWindowScaleDPI().x, 1) * UI_ZOOM != UI_SCALE {
+			refresh_ui_scale()
+		}
+
+		win_now := [2]i32{rl.GetScreenWidth(), rl.GetScreenHeight()}
+		if win_now != win_was {
+			if debug_size {
+				fmt.eprintfln("size: frame %d win %dx%d density %.4f", frame, win_now.x, win_now.y, rl.GetWindowScaleDPI().x)
+			}
+			win_was = win_now
+		}
 
 		start_live(&live, client, ui.account_ref) // no-op once running
 		live_tick(&live, &ui, client) // poll fallback when the stream stalls
@@ -1089,6 +1191,7 @@ main :: proc() {
 		flush_queued(&ui, client)
 		mi_tick(&ui, client) // periodic mentions-inbox badge refresh
 		health_tick(&ui, client) // relay-pool counters, Network page only
+		retention_tick(&ui, client) // prune disappeared messages
 		banner_tick(&ui) // a new client_status becomes the shell banner
 		tray_tick(&ui) // unread total in the tray tooltip
 
@@ -1125,8 +1228,15 @@ main :: proc() {
 				py, _ := strconv.parse_f64(parts[step * 2 + 1])
 				pointer.x = f32(px)
 				pointer.y = f32(py)
+				test_pointer = {f32(px), f32(py)}
+				test_pointer_on = true
 				forced_press = int(frame) == 18 + step * 25
 				forced_release = int(frame) == 20 + step * 25
+			}
+		}
+		if test_type_frame >= 0 && int(frame) == test_type_frame {
+			for r in test_type_text {
+				rl.PushChar(r)
 			}
 		}
 		pointer.x /= UI_ZOOM
@@ -1226,6 +1336,48 @@ main :: proc() {
 		advance_videos() // pull decoded frames into the video textures
 		voice_poll() // drain the mic stream while recording
 		render_commands := build_layout(&ui, rl.GetFrameTime())
+
+		// A relayout (window resize, rail drag, the rewrap they cause)
+		// moves the bottom out from under a bottom-pinned view. Re-pin
+		// and lay out AGAIN in the same frame: rendering first and
+		// correcting next frame shows one wrong-scroll frame per size
+		// step, which a continuous resize turns into a visible bounce.
+		// A view the user scrolled away from is left alone. Container
+		// size is the relayout tell; a new message only grows the
+		// content, so the arrival glide below keeps its motion. The
+		// second build is safe: per-frame anim steps are idempotent.
+		if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found {
+			overflow := max(
+				data.contentDimensions.height - data.scrollContainerDimensions.height,
+				0,
+			)
+			container := [2]f32 {
+				data.scrollContainerDimensions.width,
+				data.scrollContainerDimensions.height,
+			}
+			if container != tl_container_was && tl_at_bottom {
+				data.scrollPosition.y = -overflow
+				scroll_jumped = true
+				render_commands = build_layout(&ui, rl.GetFrameTime())
+				data = clay.GetScrollContainerData(clay.ID("Timeline"))
+				overflow = max(
+					data.contentDimensions.height - data.scrollContainerDimensions.height,
+					0,
+				)
+				data.scrollPosition.y = -overflow
+				// The rebuild can itself move the container a hair (chrome
+				// that measures against the previous layout). Store the
+				// post-rebuild size, or the next frame sees "changed"
+				// again and the pin oscillates between the two layouts.
+				container = {
+					data.scrollContainerDimensions.width,
+					data.scrollContainerDimensions.height,
+				}
+			}
+			tl_container_was = container
+			tl_at_bottom = data.scrollPosition.y <= -overflow + 1
+		}
+
 		// Models register during the build and are posed before the
 		// renderer walks the commands, so a playing take advances only
 		// while its tile is actually mounted.
@@ -1262,6 +1414,7 @@ main :: proc() {
 						-overflow,
 						0,
 					)
+					scroll_jumped = true // a teleport, not velocity
 					ui.scroll_pending = false
 				}
 				break
@@ -1276,17 +1429,11 @@ main :: proc() {
 					scroll_data.contentDimensions.height -
 					scroll_data.scrollContainerDimensions.height
 				target := overflow > 0 ? -overflow : 0
-				// Opening a chat snaps (nobody wants to watch it scroll
-				// down from the top); a message arriving into the open
-				// chat glides, which is what carries the eye to it.
-				y := scroll_data.scrollPosition.y
-				if page_settling() || abs(target - y) < 1 {
-					scroll_data.scrollPosition.y = target
-					ui.scroll_pending = false
-				} else {
-					scroll_data.scrollPosition.y = y + (target - y) * anim_drain(14)
-					anim_moving += 1
-				}
+				// No glide: the chat box does not animate. Arrivals and
+				// chat opens both snap to the bottom.
+				scroll_data.scrollPosition.y = target
+				scroll_jumped = true // a teleport, not velocity
+				ui.scroll_pending = false
 			}
 		}
 		rl.BeginDrawing()
@@ -1294,6 +1441,25 @@ main :: proc() {
 		rl.BeginMode2D(rl.Camera2D{zoom = UI_ZOOM, offset = {shake_x, shake_y}})
 		draw_frame(&render_commands)
 		rl.EndMode2D()
+		// Before EndDrawing: the backbuffer is undefined after present,
+		// and reading it back then crashes inside Mesa on a frame whose
+		// window was just resized.
+		if shot && burst_hi == 0 && frame + 1 == shot_frame {
+			rl.TakeScreenshot("wn-odin-shot.png")
+			rl.EndDrawing()
+			break
+		}
+		// WN_SHOT_BURST="A-B": one shot per frame across the range, then
+		// exit. One run yields a whole animation timeline.
+		if burst_hi > 0 && frame + 1 >= burst_lo {
+			if frame + 1 <= burst_hi {
+				rl.TakeScreenshot(fmt.ctprintf("wn-odin-burst-%04d.png", frame + 1))
+			}
+			if frame + 1 >= burst_hi {
+				rl.EndDrawing()
+				break
+			}
+		}
 		rl.EndDrawing()
 
 		// Profile pictures fetched by the curl worker decode here (the
@@ -1438,6 +1604,15 @@ main :: proc() {
 		}
 
 		frame += 1
+		if test_resize_frame >= 0 && frame >= test_resize_frame && frame < test_resize_frame + test_resize_ramp {
+			if frame == test_resize_frame {
+				test_resize_from_w, test_resize_from_h = rl.GetScreenWidth(), rl.GetScreenHeight()
+			}
+			t := f32(frame - test_resize_frame + 1) / f32(test_resize_ramp)
+			w := test_resize_from_w + i32(f32(test_resize_w - test_resize_from_w) * t)
+			h := test_resize_from_h + i32(f32(test_resize_h - test_resize_from_h) * t)
+			rl.SetWindowSize(w, h)
+		}
 		if test_send != "" && frame == 10 && client != nil && len(ui.chats) > 0 {
 			summary: ^marmot.Send_Summary
 			account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
@@ -1586,19 +1761,6 @@ main :: proc() {
 					load_timeline(client, &ui)
 				}
 			}
-		}
-		// Shot waits out the click sequence: 25 frames per extra pair.
-		shot_frame := test_send != "" ? 300 : 30
-		if test_click := os.get_env("WN_TEST_CLICK", context.temp_allocator); test_click != "" {
-			pairs := (strings.count(test_click, ",") + 1) / 2
-			shot_frame += max(pairs - 1, 0) * 25
-		}
-		if sf := os.get_env("WN_SHOT_FRAME", context.temp_allocator); sf != "" {
-			shot_frame = parse_int_or(sf, shot_frame)
-		}
-		if shot && frame == shot_frame {
-			rl.TakeScreenshot("wn-odin-shot.png")
-			break
 		}
 	}
 

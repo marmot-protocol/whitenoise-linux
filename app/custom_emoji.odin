@@ -9,6 +9,7 @@ package main
 
 import "core:fmt"
 import "core:os"
+import "core:slice"
 import "core:strings"
 
 import rl "sdlrl"
@@ -16,6 +17,16 @@ import rl "sdlrl"
 custom_emoji_names: [dynamic]string // filenames under emoji_dir()
 custom_emoji_scanned: bool
 custom_emoji_textures: map[string]^rl.Texture2D
+
+// Built-in shortcodes shipped in the binary, always available and not
+// removable. A user file with the same code takes precedence.
+BUILTIN_EMOJI := [1]struct {
+	code: string,
+	png:  []u8,
+} {
+	{"marmot", #load("assets/marmot.png")},
+}
+builtin_emoji_tex: [len(BUILTIN_EMOJI)]^rl.Texture2D
 
 emoji_dir :: proc(allocator := context.temp_allocator) -> string {
 	path := settings_path(allocator)
@@ -78,6 +89,24 @@ custom_tex_by_code :: proc(code: string) -> ^rl.Texture2D {
 			return custom_emoji_texture(name)
 		}
 	}
+
+	for b, i in BUILTIN_EMOJI {
+		if b.code != code {
+			continue
+		}
+		if builtin_emoji_tex[i] == nil {
+			img := rl.LoadImageFromMemory(".png", raw_data(b.png), i32(len(b.png)))
+			if img.data == nil {
+				return nil
+			}
+			tex := new(rl.Texture2D)
+			tex^ = rl.LoadTextureFromImage(img)
+			rl.UnloadImage(img)
+			rl.SetTextureFilter(tex^, .BILINEAR)
+			builtin_emoji_tex[i] = tex
+		}
+		return builtin_emoji_tex[i]
+	}
 	return nil
 }
 
@@ -103,21 +132,32 @@ shortcode_at :: proc(text: string, i: int) -> (end: int, tex: ^rl.Texture2D) {
 	return j + 1, custom_tex_by_code(text[i + 1:j])
 }
 
-// Indices into custom_emoji_names matching the picker search box.
-picker_custom :: proc(ui: ^Ui_State) -> [dynamic]int {
-	matches := make([dynamic]int, context.temp_allocator)
+// Shortcodes matching the picker search box: the user's files, then
+// the builtins (deduped, so a user override shows once).
+picker_custom :: proc(ui: ^Ui_State) -> [dynamic]string {
+	codes := make([dynamic]string, context.temp_allocator)
 	filter := strings.to_lower(string(ui.picker_filter[:]), context.temp_allocator)
-	for name, i in custom_emoji_names {
-		code := strings.to_lower(emoji_code(name), context.temp_allocator)
-		if len(filter) > 0 && !strings.contains(code, filter) {
-			continue
+
+	add :: proc(codes: ^[dynamic]string, code, filter: string) {
+		lower := strings.to_lower(code, context.temp_allocator)
+		if len(filter) > 0 && !strings.contains(lower, filter) {
+			return
 		}
+		if !slice.contains(codes[:], code) {
+			append(codes, code)
+		}
+	}
+
+	for name in custom_emoji_names {
 		if custom_emoji_texture(name) == nil {
 			continue
 		}
-		append(&matches, i)
+		add(&codes, emoji_code(name), filter)
 	}
-	return matches
+	for b in BUILTIN_EMOJI {
+		add(&codes, b.code, filter)
+	}
+	return codes
 }
 
 // A picked file waits here until the user names its shortcode.

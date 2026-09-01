@@ -167,6 +167,17 @@ static void wn_dispatch(struct WnWeb *web, GdkEvent *event, gboolean keyboard) {
 	gdk_event_free(event);
 }
 
+// An offscreen window is never the active toplevel, so WebKit thinks
+// the document has no focus: editors ignore clicks and typing. A
+// synthesized focus-in makes the view believe otherwise. Re-sent on
+// every click, because WebKit drops the state when it re-evaluates the
+// (never-active) toplevel.
+static void wn_focus_in(struct WnWeb *web) {
+	GdkEvent *event = gdk_event_new(GDK_FOCUS_CHANGE);
+	event->focus_change.in = TRUE;
+	wn_dispatch(web, event, TRUE);
+}
+
 static void wn_apply(struct WnWeb *web, const struct WnEvent *in) {
 	switch (in->kind) {
 	case WN_EV_MOVE: {
@@ -191,6 +202,9 @@ static void wn_apply(struct WnWeb *web, const struct WnEvent *in) {
 		event->button.state = in->mods;
 		event->button.time = GDK_CURRENT_TIME;
 		wn_dispatch(web, event, FALSE);
+		if (in->kind == WN_EV_DOWN) {
+			wn_focus_in(web);
+		}
 		break;
 	}
 	case WN_EV_SCROLL: {
@@ -356,6 +370,7 @@ int main(int argc, char **argv) {
 	gtk_window_resize(GTK_WINDOW(web->win), w, h);
 	gtk_widget_show_all(web->win);
 	gtk_widget_grab_focus(web->view);
+	wn_focus_in(web);
 	webkit_web_view_load_uri(WEBKIT_WEB_VIEW(web->view), url);
 
 	GIOChannel *stdin_channel = g_io_channel_unix_new(STDIN_FILENO);

@@ -99,6 +99,8 @@ typedef struct fbx_scene fbx_scene;
 static int32_t eval_raw(fbx_scene *s, int32_t anim_index, double time, float *out_pos, float *out_nrm);
 static void fit_animation(fbx_scene *s, float *lo, float *hi);
 
+
+
 static float clampf(float v, float lo, float hi)
 {
 	return v < lo ? lo : (v > hi ? hi : v);
@@ -132,14 +134,34 @@ static void dominant_weight(const ufbx_skin_deformer *skin, int32_t bone_base,
 static void fill_material(float *row, const ufbx_material *mat)
 {
 	const ufbx_material_pbr_maps *p = &mat->pbr;
-	row[0] = (float)p->base_color.value_vec3.x;
-	row[1] = (float)p->base_color.value_vec3.y;
-	row[2] = (float)p->base_color.value_vec3.z;
+	const ufbx_material_fbx_maps *f = &mat->fbx;
+
+	// Some exports (Maya's aiStandardSurface, notably) leave the pbr
+	// base black or zero-weighted while the classic lambert half still
+	// carries the real color. A dead pbr base falls back to it.
+	ufbx_vec3 base = p->base_color.value_vec3;
+	double base_w = p->base_factor.has_value ? p->base_factor.value_real : 1.0;
+	int base_dead = base_w == 0.0 || (base.x == 0 && base.y == 0 && base.z == 0);
+	if (base_dead && f->diffuse_color.has_value) {
+		base = f->diffuse_color.value_vec3;
+		double dw = f->diffuse_factor.has_value ? f->diffuse_factor.value_real : 1.0;
+		if (dw > 0) {
+			base.x *= dw;
+			base.y *= dw;
+			base.z *= dw;
+		}
+	}
+	row[0] = (float)base.x;
+	row[1] = (float)base.y;
+	row[2] = (float)base.z;
 	row[3] = (float)p->metalness.value_real;
 	row[4] = (float)p->roughness.value_real;
-	row[5] = (float)p->emission_color.value_vec3.x;
-	row[6] = (float)p->emission_color.value_vec3.y;
-	row[7] = (float)p->emission_color.value_vec3.z;
+	// The emission color means nothing without its weight: Arnold
+	// defaults the color to white with the weight at zero.
+	double em_w = p->emission_factor.has_value ? p->emission_factor.value_real : 1.0;
+	row[5] = (float)(p->emission_color.value_vec3.x * em_w);
+	row[6] = (float)(p->emission_color.value_vec3.y * em_w);
+	row[7] = (float)(p->emission_color.value_vec3.z * em_w);
 	row[8] = (float)p->specular_color.value_vec3.x;
 	row[9] = (float)p->specular_color.value_vec3.y;
 	row[10] = (float)p->specular_color.value_vec3.z;
@@ -167,6 +189,194 @@ static void fbx_free_arrays(fbx_scene *s)
 	free(s->world);
 	free(s->world_done);
 	free(s->skin_mat);
+}
+
+// ------------------------------------------------------- subdivision
+//
+// The viewer's painter's sort orders whole triangles, so one face
+// spanning the model (a display quad, a bezel plate) is either
+// entirely in front of or entirely behind everything it overlaps; at
+// oblique angles the wrong half wins and a wedge of the far surface
+// pokes through. Splitting big triangles at load caps how much area
+// one sort decision covers. Skinned parts stay whole: their corners
+// carry per-vertex weights a synthesized midpoint doesn't have.
+//
+// ponytail: still painter's, so truly coplanar sheets and edge-on
+// interpenetration can misorder within one piece; the upgrade path
+// is a depth buffer.
+
+#define FBX_SPLIT_EDGE2 (0.20f * 0.20f) // max edge^2, unit-sphere space
+#define FBX_SPLIT_DEPTH 6               // <= 64 pieces per triangle
+#define FBX_SPLIT_GROW 300000           // added-triangle budget
+
+// One triangle with every per-corner side channel the arrays carry.
+typedef struct tri_rec {
+	float pos[9], nrm[9], uv[6], geo[9], geon[9], weight[3];
+	int32_t bone[3], vidx[3];
+} tri_rec;
+
+// Longest edge by rendered position, or -1 when every edge fits.
+static int longest_edge(const tri_rec *t)
+{
+	int best = -1;
+	float most = FBX_SPLIT_EDGE2;
+	for (int e = 0; e < 3; e++) {
+		const float *a = &t->pos[e * 3], *b = &t->pos[((e + 1) % 3) * 3];
+		float d0 = a[0] - b[0], d1 = a[1] - b[1], d2 = a[2] - b[2];
+		float l2 = d0 * d0 + d1 * d1 + d2 * d2;
+		if (l2 > most) {
+			most = l2;
+			best = e;
+		}
+	}
+	return best;
+}
+
+static void corner_mid(const tri_rec *t, int i, int j, tri_rec *out, int k)
+{
+	for (int a = 0; a < 3; a++) {
+		out->pos[k * 3 + a] = (t->pos[i * 3 + a] + t->pos[j * 3 + a]) * 0.5f;
+		out->geo[k * 3 + a] = (t->geo[i * 3 + a] + t->geo[j * 3 + a]) * 0.5f;
+		out->nrm[k * 3 + a] = (t->nrm[i * 3 + a] + t->nrm[j * 3 + a]) * 0.5f;
+		out->geon[k * 3 + a] = (t->geon[i * 3 + a] + t->geon[j * 3 + a]) * 0.5f;
+	}
+	for (int a = 0; a < 2; a++) {
+		out->uv[k * 2 + a] = (t->uv[i * 2 + a] + t->uv[j * 2 + a]) * 0.5f;
+	}
+	out->bone[k] = t->bone[i];
+	out->weight[k] = (t->weight[i] + t->weight[j]) * 0.5f;
+	out->vidx[k] = t->vidx[i];
+}
+
+static void corner_copy(const tri_rec *t, int i, tri_rec *out, int k)
+{
+	memcpy(&out->pos[k * 3], &t->pos[i * 3], 3 * sizeof(float));
+	memcpy(&out->geo[k * 3], &t->geo[i * 3], 3 * sizeof(float));
+	memcpy(&out->nrm[k * 3], &t->nrm[i * 3], 3 * sizeof(float));
+	memcpy(&out->geon[k * 3], &t->geon[i * 3], 3 * sizeof(float));
+	memcpy(&out->uv[k * 2], &t->uv[i * 2], 2 * sizeof(float));
+	out->bone[k] = t->bone[i];
+	out->weight[k] = t->weight[i];
+	out->vidx[k] = t->vidx[i];
+}
+
+// Walk one triangle, splitting its longest edge until every piece
+// fits, and either count the leaves or emit them through `sink`.
+struct split_sink {
+	fbx_model *m;
+	fbx_scene *s;
+	size_t at;
+	int32_t part, mat;
+};
+
+static void emit_leaf(struct split_sink *k, const tri_rec *t)
+{
+	size_t at = k->at++;
+	memcpy(&k->m->pos[at * 9], t->pos, 9 * sizeof(float));
+	memcpy(&k->m->nrm[at * 9], t->nrm, 9 * sizeof(float));
+	memcpy(&k->m->uv[at * 6], t->uv, 6 * sizeof(float));
+	memcpy(&k->m->bone[at * 3], t->bone, 3 * sizeof(int32_t));
+	memcpy(&k->m->weight[at * 3], t->weight, 3 * sizeof(float));
+	k->m->mat[at] = k->mat;
+	memcpy(&k->s->geo[at * 9], t->geo, 9 * sizeof(float));
+	memcpy(&k->s->geo_nrm[at * 9], t->geon, 9 * sizeof(float));
+	memcpy(&k->s->vidx[at * 3], t->vidx, 3 * sizeof(int32_t));
+	k->s->tripart[at] = k->part;
+}
+
+static size_t split_walk(const tri_rec *t, int depth, struct split_sink *sink)
+{
+	int e = depth < FBX_SPLIT_DEPTH ? longest_edge(t) : -1;
+	if (e < 0) {
+		if (sink) {
+			emit_leaf(sink, t);
+		}
+		return 1;
+	}
+	int i = e, j = (e + 1) % 3, o = (e + 2) % 3;
+	tri_rec a, b;
+	// (i, mid, o) and (mid, j, o) keep the winding.
+	corner_copy(t, i, &a, 0);
+	corner_mid(t, i, j, &a, 1);
+	corner_copy(t, o, &a, 2);
+	corner_mid(t, i, j, &b, 0);
+	corner_copy(t, j, &b, 1);
+	corner_copy(t, o, &b, 2);
+	return split_walk(&a, depth + 1, sink) + split_walk(&b, depth + 1, sink);
+}
+
+static void gather_tri(const fbx_scene *s, size_t tri, tri_rec *t)
+{
+	const fbx_model *m = &s->model;
+	memcpy(t->pos, &m->pos[tri * 9], 9 * sizeof(float));
+	memcpy(t->nrm, &m->nrm[tri * 9], 9 * sizeof(float));
+	memcpy(t->uv, &m->uv[tri * 6], 6 * sizeof(float));
+	memcpy(t->bone, &m->bone[tri * 3], 3 * sizeof(int32_t));
+	memcpy(t->weight, &m->weight[tri * 3], 3 * sizeof(float));
+	memcpy(t->geo, &s->geo[tri * 9], 9 * sizeof(float));
+	memcpy(t->geon, &s->geo_nrm[tri * 9], 9 * sizeof(float));
+	memcpy(t->vidx, &s->vidx[tri * 3], 3 * sizeof(int32_t));
+}
+
+static void subdivide_big_tris(fbx_scene *s)
+{
+	fbx_model *m = &s->model;
+	size_t ntri = (size_t)m->num_tris;
+
+	size_t total = 0;
+	for (size_t i = 0; i < ntri; i++) {
+		tri_rec t;
+		if (s->parts[s->tripart[i]].skin) {
+			total += 1;
+			continue;
+		}
+		gather_tri(s, i, &t);
+		total += split_walk(&t, 0, NULL);
+	}
+	if (total == ntri || total > (size_t)FBX_MAX_TRIS || total > ntri + FBX_SPLIT_GROW) {
+		return;
+	}
+
+	fbx_model nm = *m;
+	fbx_scene ns = *s;
+	nm.pos = (float *)calloc(total * 9, sizeof(float));
+	nm.nrm = (float *)calloc(total * 9, sizeof(float));
+	nm.uv = (float *)calloc(total * 6, sizeof(float));
+	nm.bone = (int32_t *)calloc(total * 3, sizeof(int32_t));
+	nm.weight = (float *)calloc(total * 3, sizeof(float));
+	nm.mat = (int32_t *)calloc(total, sizeof(int32_t));
+	ns.geo = (float *)calloc(total * 9, sizeof(float));
+	ns.geo_nrm = (float *)calloc(total * 9, sizeof(float));
+	ns.vidx = (int32_t *)calloc(total * 3, sizeof(int32_t));
+	ns.tripart = (int32_t *)calloc(total, sizeof(int32_t));
+	if (!nm.pos || !nm.nrm || !nm.uv || !nm.bone || !nm.weight || !nm.mat ||
+		!ns.geo || !ns.geo_nrm || !ns.vidx || !ns.tripart) {
+		free(nm.pos); free(nm.nrm); free(nm.uv); free(nm.bone);
+		free(nm.weight); free(nm.mat);
+		free(ns.geo); free(ns.geo_nrm); free(ns.vidx); free(ns.tripart);
+		return; // out of memory: keep the unsplit model
+	}
+
+	struct split_sink sink = {&nm, &ns, 0, 0, 0};
+	for (size_t i = 0; i < ntri; i++) {
+		tri_rec t;
+		gather_tri(s, i, &t);
+		sink.part = s->tripart[i];
+		sink.mat = m->mat[i];
+		if (s->parts[sink.part].skin) {
+			emit_leaf(&sink, &t);
+			continue;
+		}
+		split_walk(&t, 0, &sink);
+	}
+
+	free(m->pos); free(m->nrm); free(m->uv); free(m->bone);
+	free(m->weight); free(m->mat);
+	free(s->geo); free(s->geo_nrm); free(s->vidx); free(s->tripart);
+	m->pos = nm.pos; m->nrm = nm.nrm; m->uv = nm.uv; m->bone = nm.bone;
+	m->weight = nm.weight; m->mat = nm.mat;
+	s->geo = ns.geo; s->geo_nrm = ns.geo_nrm; s->vidx = ns.vidx; s->tripart = ns.tripart;
+	m->num_tris = (int32_t)sink.at;
 }
 
 fbx_scene *fbx_open(const void *data, size_t len)

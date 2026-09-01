@@ -680,7 +680,9 @@ Group_Record_Head :: struct {
 	relays_len:         uint,
 	nostr_group_id_hex: cstring,
 	avatar_url:         cstring, // nullable; wins over the Blossom image
-	_tail:              [160]u8, // avatar_dim .. via_welcome_message_id_hex
+	_mid:               [88]u8, // avatar_dim .. encrypted_media
+	disappearing_message_secs: u64, // 0 = messages never expire
+	_tail:              [64]u8, // archived .. via_welcome_message_id_hex
 }
 
 // Partial mirror of MarmotGroupDetails: the trailing mls_state is
@@ -696,9 +698,53 @@ Group_Details :: struct {
 #assert(size_of(Group_Member_Details) == 40)
 #assert(offset_of(Group_Record_Head, description) == 40)
 #assert(offset_of(Group_Record_Head, avatar_url) == 88)
+#assert(offset_of(Group_Record_Head, disappearing_message_secs) == 184)
 #assert(size_of(Group_Record_Head) == 256)
 #assert(offset_of(Group_Details, members) == 256)
 #assert(offset_of(Group_Details, members_len) == 264)
+
+// Leading fields of MarmotAppGroupMlsState, mirrored far enough to
+// read the epoch. Reached by pointer only, freed by
+// app_group_mls_state_free.
+Group_Mls_State_Head :: struct {
+	group_id_hex:     cstring,
+	protocol_profile: i32,
+	lifecycle_state:  i32,
+	epoch:            u64,
+}
+
+#assert(offset_of(Group_Mls_State_Head, epoch) == 16)
+
+// One group's outcome from a retention sweep. Deferred statuses
+// (unread, clock skew) mean MDK retries on a later sweep.
+Retention_Sweep_Status :: enum i32 {
+	NO_EXPIRED_MESSAGES,
+	PRUNED,
+	DEFERRED_CLOCK_SKEW,
+	DEFERRED_UNREAD,
+	DEFERRED_SCAN_EXHAUSTED,
+	FAILED,
+}
+
+Retention_Sweep_Group_Outcome :: struct {
+	group_id_hex:                cstring,
+	status:                      Retention_Sweep_Status,
+	pruned_messages:             u64,
+	secrets_deleted:             u64,
+	media_ciphertext_sha256:     [^]cstring, // blobs the caller may now delete
+	media_ciphertext_sha256_len: uint,
+	failure_kind:                cstring, // nullable
+}
+
+Retention_Sweep_Report :: struct {
+	groups:     [^]Retention_Sweep_Group_Outcome,
+	groups_len: uint,
+}
+
+#assert(offset_of(Retention_Sweep_Group_Outcome, status) == 8)
+#assert(offset_of(Retention_Sweep_Group_Outcome, failure_kind) == 48)
+#assert(size_of(Retention_Sweep_Group_Outcome) == 56)
+#assert(size_of(Retention_Sweep_Report) == 16)
 
 Group_Member_Record_List :: struct {
 	items: [^]Group_Member_Record,
@@ -891,6 +937,8 @@ foreign lib {
 	group_members                     :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out: ^^Group_Member_Record_List) -> Status ---
 	group_details                     :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out: ^^Group_Details) -> Status ---
 	group_details_free                :: proc(ptr: ^Group_Details) ---
+	group_mls_state                   :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out: ^^Group_Mls_State_Head) -> Status ---
+	app_group_mls_state_free          :: proc(ptr: ^Group_Mls_State_Head) ---
 
 	invite_members :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, member_refs: [^]cstring, member_refs_len: uint, out: ^^Send_Summary) -> Status ---
 	remove_members :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, member_refs: [^]cstring, member_refs_len: uint, out: ^^Send_Summary) -> Status ---
@@ -906,6 +954,14 @@ foreign lib {
 
 	create_group      :: proc(client: ^Client, account_ref: cstring, name: cstring, member_refs: [^]cstring, member_refs_len: uint, description: cstring, out: ^cstring) -> Status ---
 	send_text         :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, text: cstring, out: ^^Send_Summary) -> Status ---
+	// App-defined event: any non-reserved kind with caller-built tags
+	// (borrowed, MarmotStringArray rows == Message_Tag layout). Carries
+	// NIP-88 polls/votes and thread messages.
+	send_custom_event :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, kind: u64, tags: [^]Message_Tag, tags_len: uint, content: cstring, out: ^^Send_Summary) -> Status ---
+	// An imeta tag for an uploaded reference, so a custom event can
+	// carry media the timeline resolves like a kind-9's.
+	build_media_imeta_tag :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, reference: ^Media_Attachment_Reference, out: ^^Message_Tag) -> Status ---
+	message_tag_free      :: proc(tag: ^Message_Tag) ---
 	react_to_message  :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, target_message_id: cstring, emoji: cstring, out: ^^Send_Summary) -> Status ---
 	unreact_from_message :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, target_message_id: cstring, out: ^^Send_Summary) -> Status ---
 	reply_to_message     :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, target_message_id: cstring, text: cstring, out: ^^Send_Summary) -> Status ---
@@ -915,6 +971,9 @@ foreign lib {
 	accept_group_invite        :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out: ^^App_Group_Record) -> Status ---
 	decline_group_invite       :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out: ^^Group_Invite_Decline_Result) -> Status ---
 	update_group_profile       :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, name: cstring, description: cstring, out: ^^Send_Summary) -> Status ---
+	update_message_retention   :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, disappearing_message_secs: u64, out: ^^Send_Summary) -> Status ---
+	sweep_expired_retention    :: proc(client: ^Client, account_ref: cstring, now_ms: u64, out: ^^Retention_Sweep_Report) -> Status ---
+	retention_sweep_report_free :: proc(ptr: ^Retention_Sweep_Report) ---
 	update_group_avatar_url    :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, url: cstring, dim: cstring, thumbhash: cstring, out: ^^Send_Summary) -> Status ---
 
 	// Encrypted-Blossom group avatar: update_group_image encrypts and

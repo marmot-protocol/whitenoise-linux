@@ -34,13 +34,16 @@ chat_pane :: proc(ui: ^Ui_State) {
 			raw_event_modal(ui)
 		}
 		if open_now(clay.ID("EncModal"), ui.enc_open) {
-			encryption_modal(chat)
+			encryption_modal(ui, chat)
 		}
-		if open_now(clay.ID("FwdModal"), ui.fwd_open) && ui.fwd_msg >= 0 && ui.fwd_msg < len(ui.messages) {
+		if open_now(clay.ID("FwdModal"), ui.fwd_open && ui.fwd_kind == .Message) && ui.fwd_msg >= 0 && ui.fwd_msg < len(ui.messages) {
 			forward_modal(ui)
 		}
 		if open_now(clay.ID("OvModal"), ui.ov_open) {
 			openverse_modal(ui)
+		}
+		if open_now(clay.ID("PollModal"), ui.poll_open) {
+			poll_modal(ui)
 		}
 		// No close animation here: preview_close frees the decoded
 		// views, so nothing may draw the modal after it.
@@ -81,10 +84,19 @@ chat_pane :: proc(ui: ^Ui_State) {
 			header_chip("SearchBtn", ICON_SEARCH, ui.search_open, "Search this chat")
 			bell_chip(ui)
 			header_chip("MembersBtn", ICON_PEOPLE, ui.show_members, "Group members")
+			// The chrome floats over the timeline; only the bottom-most
+			// bar casts, so the shadows don't stack.
+			if len(ui.thread_stack) == 0 {
+				cast_shade(clay.ID("ChatHeader"), .Down, 14, 0.35)
+			}
 		}
 		// Declared after the header so the bell it attaches to exists.
 		if open_now(clay.ID("MiModal"), ui.mi_open) {
 			mention_inbox(ui)
+		}
+		// Thread route: breadcrumb bar under the header while open.
+		if len(ui.thread_stack) > 0 {
+			thread_bar(ui)
 		}
 
 		// Pending-invite banner: this chat awaits a decision.
@@ -99,19 +111,12 @@ chat_pane :: proc(ui: ^Ui_State) {
 		}
 
 		if clay.UI(clay.ID("ChatBody"))({layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .LeftToRight}}) {
-			// A growing sibling never shrinks below its own content, so a
-			// wide timeline used to push the fixed info panel off the
-			// card's right edge. With the panel open the column takes an
-			// explicit remainder instead (from last frame's body box, so
-			// a resize settles one frame later).
-			col_w := f32(0)
-			if panel_shown(ui) {
-				if body := clay.GetElementData(clay.ID("ChatBody")); body.found {
-					col_w = max(body.boundingBox.width - panel_width(ui) - GUTTER_W, 200)
-				}
-			}
-			if clay.UI(clay.ID("ChatColumn"))(
-			{layout = {sizing = {col_w > 0 ? clay.SizingFixed(col_w) : clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom}},
+			// Group info takes the whole conversation area, like the
+			// thread route; page_view_key plays the swap transition.
+			if ui.show_members {
+				members_panel(ui)
+			} else if clay.UI(clay.ID("ChatColumn"))(
+			{layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom}},
 			) {
 				// Timeline: a real scroll container, top-anchored like the
 				// slint pane; loads jump to the newest message.
@@ -119,16 +124,16 @@ chat_pane :: proc(ui: ^Ui_State) {
 				side_pad := u16(0)
 				if ui.prefs.centered_chat {
 					pane_w := f32(rl.GetScreenWidth()) / UI_ZOOM - rail_width(ui) - 40
-					if panel_shown(ui) {
-						pane_w -= panel_width(ui) + GUTTER_W
-					}
 					if pane_w > 720 {
 						side_pad = u16((pane_w - 720) / 2)
 					}
 				}
+				// The thread route's push/pop transition: content slides
+				// home from a small offset.
+				cur := thread_cur(ui)
 				if clay.UI(clay.ID("Timeline"))(
 				{
-					layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom, padding = {left = side_pad, right = side_pad, top = 8 + u16(max(overscroll, 0)), bottom = 8 + u16(max(-overscroll, 0))}, childGap = 2},
+					layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom, padding = {left = side_pad + u16(thread_slide()), right = side_pad, top = 8 + u16(max(overscroll, 0)), bottom = 8 + u16(max(-overscroll, 0))}, childGap = 2},
 					clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 					// The theme's decor scene: clay emits the Custom
 					// command before the children, so it paints behind
@@ -136,20 +141,11 @@ chat_pane :: proc(ui: ^Ui_State) {
 					custom = {customData = decor_payload()},
 				},
 				) {
-					// Older history beyond the loaded window: an explicit
-					// plate; the click raises the limit (load_earlier).
-					if ui.tl_has_more {
-						if clay.UI(clay.ID("LoadEarlier"))(
-						{layout = {padding = {left = 16, right = 16, top = 8, bottom = 8}}, backgroundColor = hovered() ? HOVER : PLATE, cornerRadius = rr(8)},
-						) {
-							clay.Text(tr("Load earlier messages"), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
-						}
-					}
 					// Dividers are left-aligned like the day markers:
 					// x=center children drop in this clay build (quirks).
 					// The session divider marks the true start of history,
 					// so it hides while older messages remain unloaded.
-					if chat.stable && !ui.tl_has_more {
+					if chat.stable && !ui.tl_has_more && len(cur) == 0 {
 						if clay.UI(clay.ID("SessionDivider"))({layout = {padding = {left = 16, right = 16, top = 8, bottom = 2}}}) {
 							clay.Text("• MLS · SESSION ESTABLISHED •", {fontId = FONT_MONO, fontSize = 10, textColor = ACCENT_DIM, letterSpacing = 2})
 						}
@@ -164,7 +160,16 @@ chat_pane :: proc(ui: ^Ui_State) {
 					if len(ui.messages) == 0 && len(ui.pending) == 0 {
 						empty_timeline(ui)
 					}
+					// The thread route filters the one timeline: the main
+					// view shows unthreaded rows, a thread view shows its
+					// pinned root and the rows tagged to it.
+					if len(cur) > 0 {
+						thread_root_plate(ui)
+					}
 					for msg, i in ui.messages {
+						if msg.thread_of != cur {
+							continue
+						}
 						if len(ui.unread_mark_id) > 0 && msg.id == ui.unread_mark_id {
 							// Center label between two rule lines, like the
 							// slint unread divider.
@@ -190,7 +195,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 					// Optimistic rows at the tail: unacked sends grayed,
 					// failed ones danger with tap-to-retry.
 					for p, i in ui.pending {
-						if p.group_id == chat.group_id {
+						if p.group_id == chat.group_id && p.thread == cur {
 							pending_row(u32(i), ui, p)
 						}
 					}
@@ -298,17 +303,14 @@ chat_pane :: proc(ui: ^Ui_State) {
 								if ui.focus != .Compose {
 									head = -1
 								}
-								line_start := 0
-								for i := u32(0); ; i += 1 {
-									line_end := len(text)
-									if nl := strings.index_byte(text[line_start:], '\n'); nl >= 0 {
-										line_end = line_start + nl
+								for r, i in compose_lines(text) {
+									h := head
+									// A caret on a wrap boundary belongs to
+									// the upper visual line.
+									if head == r[0] && r[0] > 0 && text[r[0] - 1] != '\n' {
+										h = -1
 									}
-									compose_line(i, text, line_start, line_end, lo, hi, head)
-									if line_end == len(text) {
-										break
-									}
-									line_start = line_end + 1
+									compose_line(u32(i), text, r[0], r[1], lo, hi, h)
 								}
 							}
 						}
@@ -337,6 +339,14 @@ chat_pane :: proc(ui: ^Ui_State) {
 								clay.Text(ICON_STAR, {fontId = FONT_ICON, fontSize = 14, textColor = ui.fx_armed != 0 ? ACCENT : TEXT_LO})
 							}
 						}
+						if clay.UI(clay.ID("PollBtn"))(
+						{layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
+						) {
+							if hovered() {
+								tooltip("Create a poll")
+							}
+							clay.Text(ICON_POLL, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
+						}
 						if clay.UI(clay.ID("MicBtn"))(
 						{layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
 						) {
@@ -345,39 +355,14 @@ chat_pane :: proc(ui: ^Ui_State) {
 					}
 				}
 			}
-
-			// Group info sits right of the conversation, like the slint
-			// pane. (The old "fixed sibling after a grow sibling drops"
-			// quirk no longer reproduces in this clay build.)
-			if panel_shown(ui) {
-				gutter("PanelGutter")
-				members_panel(ui)
-			}
 		}
 	}
 }
 
-// The info panel's drag-resized width, clamped to its gutter range.
-// The panel's resting width, what it animates toward and what its
-// content lays out at.
+// The info page's content column width. The page itself fills the chat
+// area; only its content keeps a readable measure.
 panel_target :: proc(ui: ^Ui_State) -> f32 {
 	return f32(clamp(ui.prefs.panel_w, PANEL_W_MIN, PANEL_W_MAX))
-}
-
-panel_width :: proc(ui: ^Ui_State) -> f32 {
-	target := ui.show_members ? panel_target(ui) : 0
-	// Dragging the gutter must track the pointer exactly; only the open
-	// and close animate.
-	if gutter_drag != "" {
-		return target
-	}
-	return anim_to(clay.ID("PanelWidth").id, target, 20)
-}
-
-// The panel stays mounted while it still has width, so closing it
-// slides shut instead of vanishing.
-panel_shown :: proc(ui: ^Ui_State) -> bool {
-	return panel_width(ui) > 1
 }
 
 // One "Members  8" style section head, the slint Section label + note.
@@ -385,15 +370,15 @@ panel_shown :: proc(ui: ^Ui_State) -> bool {
 COMPOSE_H_MIN :: f32(44)
 COMPOSE_PAD :: f32(16) // the pill's top + bottom padding
 
-// Sprung height of the composer pill, from last frame's text column.
-// The pill and its clip both ask for it; anim_to steps once a frame, so
-// they get the same number.
+// Height of the composer pill, from last frame's text column. The pill
+// and its clip both ask for it; no easing, the chat box does not
+// animate.
 compose_height :: proc() -> f32 {
 	target := COMPOSE_H_MIN
 	if box := clay.GetElementData(clay.ID("ComposeText")); box.found {
 		target = max(COMPOSE_H_MIN, box.boundingBox.height + COMPOSE_PAD)
 	}
-	return anim_to(clay.ID("ComposeBoxH").id, target, 22)
+	return target
 }
 
 section_head :: proc(id_str: string, label: string, note: string) {
@@ -410,16 +395,11 @@ section_head :: proc(id_str: string, label: string, note: string) {
 members_panel :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("MembersPanel"))(
 	{
-		layout = {sizing = {width = clay.SizingFixed(panel_width(ui)), height = clay.SizingGrow()}, layoutDirection = .TopToBottom},
+		layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom, childAlignment = {x = .Center}},
 		backgroundColor = RAIL_BG,
-		// The panel slides over its own content instead of reflowing
-		// every row on the way open.
-		clip = {horizontal = true},
 	},
 	) {
-		// A fixed inner width so the rows lay out at the panel's real
-		// size the whole time: the outer element animates and clips, and
-		// the content never reflows on the way open.
+		// The content keeps a readable column in the middle of the pane.
 		if clay.UI(clay.ID("MembersBody"))(
 		{layout = {sizing = {width = clay.SizingFixed(panel_target(ui)), height = clay.SizingGrow()}, layoutDirection = .TopToBottom}},
 		) {
@@ -506,6 +486,17 @@ members_panel :: proc(ui: ^Ui_State) {
 			}
 			login_button("RenameBtn", "Rename")
 
+			// Group timer, an MLS setting shared by every member; MDK
+			// stamps each new message and prunes after expiry.
+			eyebrow("DISAPPEARING MESSAGES")
+			if clay.UI(clay.ID("RetentionRow"))({layout = {childGap = 8}}) {
+				labels := [len(RETENTION_SECS)]string{N_("Off"), "1h", "1d", "1w", "4w"}
+				for secs, i in RETENTION_SECS {
+					active := ui.group_retention == secs
+					micro_button(fmt.tprintf("RetChip%d", i), labels[i], active ? ACCENT : {})
+				}
+			}
+
 			eyebrow("ADD MEMBER")
 			if clay.UI(clay.ID("InviteBox"))(
 			{
@@ -544,13 +535,17 @@ members_panel :: proc(ui: ^Ui_State) {
 	}
 }
 
+// Timer chip presets, in seconds; 0 disables. Handlers index the same
+// array, so chip N here is chip N there.
+RETENTION_SECS :: [5]u64{0, 3600, 86400, 604800, 2419200}
+
 SHARED_MEDIA_CAP :: 60
 SHARED_MEDIA_COLS :: 3
 
 // Square cell for the current panel width: (panel - 2*14 pad - 2*6
 // gaps) / 3.
 shared_media_cell :: proc(ui: ^Ui_State) -> f32 {
-	return (panel_width(ui) - 28 - 12) / SHARED_MEDIA_COLS
+	return (panel_target(ui) - 28 - 12) / SHARED_MEDIA_COLS
 }
 
 // SHARED MEDIA section of the info panel: the open conversation's
@@ -616,6 +611,7 @@ load_members :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 
 	delete(ui.group_desc)
 	ui.group_desc = strings.clone(details.group.description != nil ? string(details.group.description) : "")
+	ui.group_retention = details.group.disappearing_message_secs
 
 	clear(&ui.members)
 	ui.member_nick = -1 // fresh rows invalidate the editor index
@@ -649,6 +645,7 @@ login_button :: proc(id_str: string, label: string) {
 		layout = {padding = {left = 18, right = 18, top = 10, bottom = 10}},
 		backgroundColor = hovered() ? ACCENT : ROW_BG,
 		cornerRadius = rr(8),
+		border = bevel_border(),
 	},
 	) {
 		clay.Text(tr(label), {fontId = FONT_BODY, fontSize = 16, textColor = hovered() ? BG : TEXT})

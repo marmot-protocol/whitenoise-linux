@@ -1,0 +1,23 @@
+# Warm brick and aged paper: a light theme that is not white, with
+# fibre drifting in the window light.
+name = "Brownstone"
+
+[colors]
+bg = "#f0e6d9ff"
+bg-2 = "#e3d4c1ff"
+text-hi = "#2b1f19ff"
+danger = "#9a3123ff"
+warning = "#9c6d1fff"
+accent-base = [
+    "#8a4629ff",
+    "#5a6a4dff",
+    "#75573aff",
+    "#8e5039ff",
+    "#665069ff",
+]
+
+[style]
+backdrop = "dust"
+outline-surfaces = true
+r-scale = 0.6
+border-w = 1.0

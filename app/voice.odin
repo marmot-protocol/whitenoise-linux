@@ -99,6 +99,7 @@ voice_send :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		group_id = strings.clone(ui.chats[ui.selected].group_id),
 		sender   = strings.clone(len(info.name) > 0 ? info.name : "you"),
 		body     = strings.clone(name),
+		thread   = strings.clone(thread_cur(ui)),
 	}
 	append(&p.atts, Pending_Att{name = name, media_type = "audio/wav", data = wav_encode(voice.samples[:])})
 	append(&ui.pending, p)

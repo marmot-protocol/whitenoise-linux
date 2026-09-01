@@ -1,0 +1,26 @@
+# One key light, everything else shadow. Greyscale, hard edges, no
+# glow, and blind-slat light thrown across the page.
+name = "Film Noir"
+
+[colors]
+bg = "#0a0a0bff"
+bg-2 = "#121214ff"
+text-hi = "#e9e8e4ff"
+danger = "#9e3535ff"
+warning = "#a89355ff"
+accent-base = [
+    "#cfccc4ff",
+    "#8f959bff",
+    "#666b70ff",
+    "#ada699ff",
+    "#7c8085ff",
+]
+
+[style]
+backdrop = "blinds"
+hard-shadow = true
+focus-glow = false
+outline-surfaces = true
+r-scale = 0.0
+border-w = 1.0
+shadow-y = 4.0

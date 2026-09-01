@@ -33,6 +33,14 @@ CJK_BOLD_CANDIDATES := []cstring {
 	"/usr/share/fonts/google-noto-cjk/NotoSansCJK-Bold.ttc",
 }
 
+// dpi * zoom, the density glyphs rasterize at. Re-run whenever UI_ZOOM
+// changes: the glyph cache keys on pixel size, so new sizes bake fresh
+// and stale bakes just go unused.
+refresh_ui_scale :: proc() {
+	UI_SCALE = max(rl.GetWindowScaleDPI().x, 1) * UI_ZOOM
+	rl.SetPixelScale(UI_SCALE)
+}
+
 init_fonts :: proc() {
 	rl.SetPixelScale(UI_SCALE)
 	// A packaged build ships its own copy of each face; res_font puts it
@@ -141,8 +149,10 @@ smearing: bool
 scroll_smear :: proc() {
 	// A modal owns the screen while it is up, and the page behind it is
 	// already blurred by the veil; a second blur over the top is mud.
+	// Only app-driven travel smears (scroll_glide); the user's own wheel
+	// and drag stay sharp.
 	strength := clamp((abs(scroll_vel) - SMEAR_FROM) / (SMEAR_TO - SMEAR_FROM), 0, 1) * SMEAR_MAX
-	if strength <= 0 || open_t(clay.ID("ModalVeil")) > 0 {
+	if !scroll_glide || strength <= 0 || open_t(clay.ID("ModalVeil")) > 0 {
 		smearing = false
 		return
 	}
@@ -316,10 +326,24 @@ render_range :: proc(render_commands: ^clay.ClayArray(clay.RenderCommand), from,
 				dust_draw(bounds)
 			case .Scan:
 				scan_draw(bounds)
+			case .Wash:
+				wash_draw(bounds)
+			case .Deco:
+				deco_draw(bounds)
+			case .Blinds:
+				blinds_draw(bounds)
+			case .Stripes:
+				stripes_draw(bounds)
+			case .Waves:
+				waves_draw(bounds)
+			case .Airmail:
+				airmail_draw(bounds)
 			case .Check:
 				check_draw((^Check_View)(data), bounds)
 			case .Glow:
 				glow_draw((^Glow_View)(data), bounds)
+			case .Shade:
+				shade_draw((^Shade_View)(data), bounds)
 			}
 		}
 	}

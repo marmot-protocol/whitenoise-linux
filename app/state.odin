@@ -45,14 +45,70 @@ apply_theme :: proc(theme: int, accent: int) {
 	TEXT_DIM = pack.text_mid
 	TEXT_LO = pack.text_lo
 	DANGER = pack.danger
+	DANGER_SOFT = pack.danger_soft
+	DANGER_BORDER = pack.danger_border
+	WARNING = pack.warning
+	WARNING_SOFT = pack.warning_soft
+	WARNING_BORDER = pack.warning_border
+	TEXT_VLO = pack.text_vlo
+	PANEL = pack.panel
+	FIELD_HOVER = pack.field_hover
+	CODE_PLATE = pack.code_plate
+	CARD_WELL = pack.card_well
+	TOP_GLINT = pack.top_glint
+	AVATAR_RING = pack.avatar_ring
+	ACCENT_HI = pack.accent_hi[slot]
+	ACCENT_GLOW = pack.accent_glow[slot]
+
+	OVERLAY = pack.overlay
+	OVERLAY_STRONG = pack.overlay_strong
+	VIGNETTE = pack.vignette
+	SHADOW_CARD = pack.shadow_card
+	SHADOW_POPOVER = pack.shadow_popover
+	BEVEL_HI = pack.bevel_hi
+	BEVEL_LO = pack.bevel_lo
+
+	MEDIA_BACKDROP = pack.media_backdrop
+	MEDIA_CHIP_BG = pack.media_chip_bg
+	MEDIA_CHIP_FG = pack.media_chip_fg
+	MEDIA_CHIP_OUTLINE = pack.media_chip_outline
+	MEDIA_CONTROL_BG = pack.media_control_bg
 
 	// Structural metrics + capability flags (retro squares corners and
 	// doubles borders; synthwave mounts the grid backdrop).
 	R_SCALE = pack.r_scale
 	BORDER_W = u16(max(pack.border_w, 1))
+	GLOW_R = pack.glow_r
+	SHADOW_Y = pack.shadow_y
+	BUBBLE_R = pack.bubble_r
+	HOVER_DUR = pack.hover_dur
+	TRANSITION_DUR = pack.transition_dur
 	SYNTH_GRID = pack.synth_grid
 	PAPER_DECOR = pack.paper_doodles
 	SCANLINES = pack.scanlines
+	HARD_SHADOW = pack.hard_shadow
+	FOCUS_GLOW = pack.focus_glow
+	BEVEL = pack.bevel
+	OUTLINE_SURFACES = pack.outline_surfaces
+	SELECTED_INVERTS_TEXT = pack.selected_inverts_text
+	BRACKET_LABELS = pack.bracket_labels
+	MOTION_FAST = pack.motion_fast
+	THEME_FONT = pack.font
+	BACKDROP = pack.backdrop
+	BG_2 = pack.bg_2
+
+	// The legacy per-scene flags still name a backdrop, so the packs
+	// written before the token keep their scene.
+	if len(BACKDROP) == 0 {
+		switch {
+		case pack.synth_grid:
+			BACKDROP = "synth"
+		case pack.paper_doodles:
+			BACKDROP = "dust"
+		case pack.scanlines:
+			BACKDROP = "scan"
+		}
+	}
 }
 
 // A proportional sans for body text with bold titles; mono stays for
@@ -166,7 +222,15 @@ Focus :: enum {
 	EmojiName, // custom-emoji shortcode box
 	Folder, // folder-modal name box
 	Pal, // command-palette query box
+	PollQ, // poll-modal question box
+	PollOpt, // poll-modal option box, index in ui.poll_focus
+	ThemeSeed, // theme-editor seed box, index in ui.theme_edit_idx
 }
+
+// The create-poll modal grows one option row at a time up to this cap
+// (Discord's), starting from two.
+POLL_OPTS_CAP :: 10
+POLL_OPTS_MIN :: 2
 
 // One rendered block of a message body, converted out of the FFI
 // markdown tree into UI-owned strings at load time.
@@ -218,11 +282,34 @@ Msg_Ui :: struct {
 	day:       string, // YYYY-MM-DD or "Today", for day markers
 	mine:      bool,
 	system:    bool, // kind-1210 group-system line; body holds the sentence
+	theme_name: string, // a shared theme's name, "" = not a theme offer
+	theme_toml: string, // its pack source, applied only on the tap
+	theme_swatch: [THEME_SWATCHES]clay.Color, // parsed once at load, drawn every frame
 	deleted:   bool, // tombstone: placeholder row, no body/actions
 	edited:    bool, // kind-1009 edits applied; body holds the latest
 	media_failed: bool, // an image attachment failed to download
 	effect:    int, // ["effect", key] burst id from the event tags, 0 = none
 	history:   [dynamic]Edit_Version,
+	poll_opts: [dynamic]Poll_Opt_Ui, // kind-1068 options + tally; empty = not a poll
+	poll_multi: bool, // polltype multiplechoice
+	poll_total: int, // distinct voters counted
+	poll_ends: u64, // endsAt unix seconds, 0 = open-ended
+	thread_of: string, // kind-1111: root message id; "" = main timeline
+	thread_replies: int, // thread messages under this root
+}
+
+// NIP-88 polls and Discord-style threads ride the group as custom
+// events; loaders folds votes/thread rows, timeline renders them.
+KIND_POLL :: 1068 // NIP-88 poll: content = question, option tags
+KIND_POLL_VOTE :: 1018 // NIP-88 response: ["e", poll] + ["response", id]
+KIND_THREAD :: 1111 // thread message: ["e", root], text in content
+
+Poll_Opt_Ui :: struct {
+	id:    string, // option id from the ["option", id, label] tag
+	label: string,
+	blocks: [dynamic]Md_Block_Ui, // label parsed as markdown; empty = render label plain
+	count: int, // votes after per-sender latest-wins dedup
+	mine:  bool, // own latest vote includes this option
 }
 
 Page :: enum {
@@ -334,6 +421,7 @@ Ui_State :: struct {
 	invite_input:  [dynamic]u8,
 	rename_input:  [dynamic]u8,
 	group_desc:    string, // selected group's description snapshot
+	group_retention: u64, // disappearing-message timer in seconds, 0 = off
 	desc_input:    [dynamic]u8, // hero description editor
 	desc_editing:  bool,
 	gpic_menu_open: bool, // hero "Change photo" chooser row
@@ -352,9 +440,25 @@ Ui_State :: struct {
 	raw_open:      bool, // view-raw-event modal (dev mode)
 	raw_json:      string, // its pretty-printed record JSON
 	enc_open:      bool, // encryption-info modal (MLS badge)
-	fwd_open:      bool, // forward destination picker
-	fwd_msg:       int, // index into messages
+	enc_epoch:     string, // its MLS epoch, "" when the lookup failed
+	fwd_open:      bool, // destination-chat picker
+	fwd_kind:      Fwd_Kind, // what the pick sends
+	fwd_msg:       int, // index into messages (.Message only)
 	fwd_filter:    [dynamic]u8, // its chat filter box
+	poll_open:     bool, // create-poll modal
+	poll_question: [dynamic]u8,
+	poll_inputs:   [dynamic][dynamic]u8, // option drafts, blanks skipped
+	poll_focus:    int, // which option input has the caret (focus == .PollOpt)
+	poll_multi_in: bool, // modal's multiple-choice toggle
+	theme_edit:     bool, // theme-editor modal
+	theme_fields:   [dynamic][dynamic]u8, // one box per THEME_FIELDS entry; empty = derive
+	theme_flags:    [dynamic]bool, // one per THEME_FLAGS entry
+	theme_backdrop: string, // picked scene name, "" = none
+	theme_edit_idx: int, // which box has the caret (focus == .ThemeSeed)
+	theme_slot:     int, // the live working pack in theme_packs
+	theme_prev:     int, // theme to restore if the edit is cancelled
+	theme_last:     string, // last previewed toml, so a still frame reparses nothing
+	thread_stack:  [dynamic]string, // open thread route, last = current root
 	gs_open:       bool, // global cross-chat search modal
 	gs_input:      [dynamic]u8, // its query box
 	gs_hits:       [dynamic]Gs_Hit, // its result cards

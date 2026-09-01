@@ -205,6 +205,14 @@ settings_pane :: proc(ui: ^Ui_State) {
 	}
 	scrollbar(clay.ID("SettingsPage"))
 
+	if open_now(clay.ID("ThemeEdit"), ui.theme_edit) {
+		theme_edit_modal(ui)
+	}
+	// The destination picker is shared with message forwarding, which
+	// mounts it in the chat pane; a theme share is raised from here.
+	if open_now(clay.ID("FwdModal"), ui.fwd_open && ui.fwd_kind == .Theme) {
+		forward_modal(ui)
+	}
 	if open_now(clay.ID("LangModal"), ui.lang_open) {
 		lang_modal(ui)
 	}
@@ -409,6 +417,17 @@ BODY_FONT_LABELS := []string{"Small", "Default", "Large"}
 
 settings_appearance :: proc(ui: ^Ui_State) {
 	eyebrow("THEME")
+	if clay.UI(clay.ID("RowThemeShare"))(srow()) {
+		row_labels("Share this theme", "Pick a chat to send it to. They choose whether to use it.")
+		micro_button("ThemeShareBtn", "Share to chat")
+		micro_button("ThemeEditBtn", "Edit")
+		if theme_packs[ui.theme].custom {
+			micro_button("ThemeDeleteBtn", "Delete", DANGER)
+		}
+		if active_pack(ui).custom {
+			micro_button("ThemeDeleteBtn", "Delete", DANGER)
+		}
+	}
 	if clay.UI(clay.ID("RowTheme"))(srow()) {
 		row_labels("Theme", "Pick the whole app's look.")
 		if clay.UI(clay.ID("ThemeDrop"))(
@@ -426,13 +445,13 @@ settings_appearance :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("ThemeDropSwatch"))(
 			{
 				layout = {sizing = {width = clay.SizingFixed(12), height = clay.SizingFixed(12)}},
-				backgroundColor = theme_packs[ui.theme].bg,
+				backgroundColor = active_pack(ui).bg,
 				cornerRadius = rr(4),
 				border = {color = FIELD_BORDER, width = bw()},
 			},
 			) {}
 			clay.Text(
-				theme_packs[ui.theme].name,
+				active_pack(ui).name,
 				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
 			)
 			clay.Text("▾", {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
@@ -506,7 +525,7 @@ settings_appearance :: proc(ui: ^Ui_State) {
 			if clay.UI(clay.ID("AccentDot", u32(i)))(
 			{
 				layout = {sizing = {width = clay.SizingFixed(18), height = clay.SizingFixed(18)}},
-				backgroundColor = theme_packs[ui.theme].accent_base[i],
+				backgroundColor = active_pack(ui).accent_base[i],
 				cornerRadius = rr(9),
 				border = ui.accent == i ? clay.BorderElementConfig{color = TEXT, width = {2, 2, 2, 2, 0}} : {},
 			},
@@ -795,7 +814,19 @@ BODY_FS: u16 = 14
 
 apply_zoom :: proc(ui: ^Ui_State) {
 	ui.prefs.zoom_pct = clamp(ui.prefs.zoom_pct, 50, 200)
-	UI_ZOOM = 1.5 * f32(ui.prefs.zoom_pct) / 100
+	zoom := 1.5 * f32(ui.prefs.zoom_pct) / 100
+	changed := zoom != UI_ZOOM
+	UI_ZOOM = zoom
+	// A zoom change is a geometry discontinuity: re-bake glyphs at the
+	// new density, re-measure text, and drop eased values so nothing
+	// glides in from coordinates that no longer exist. Skipped at boot
+	// (app_started == 0): the window and clay aren't up yet, and the
+	// boot path sets the scale itself.
+	if changed && app_started != 0 {
+		refresh_ui_scale()
+		anim_snap_all()
+		clay.ResetMeasureTextCache()
+	}
 	BODY_FS = u16(14 + clamp(ui.prefs.body_font, -4, 8))
 }
 
@@ -1058,6 +1089,29 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			ui.prefs.zoom_pct = 100
 			apply_zoom(ui)
 			save_settings(ui)
+			return
+		}
+		if clicked("ThemeShareBtn") {
+			if len(ui.chats) == 0 {
+				ui.client_status = strings.clone(tr("No chats to share with yet."))
+				return
+			}
+			ui.fwd_open = true
+			ui.fwd_kind = .Theme
+			clear(&ui.fwd_filter)
+			ui.focus = .Fwd
+			return
+		}
+		if clicked("ThemeEditBtn") {
+			theme_edit_open(ui)
+			return
+		}
+		if clicked("ThemeDeleteBtn") && theme_packs[ui.theme].custom {
+			confirm_ask(ui, .Delete_Theme, "", theme_packs[ui.theme].name, ui.theme)
+			return
+		}
+		if clicked("ThemeDeleteBtn") && active_pack(ui).custom {
+			confirm_ask(ui, .Delete_Theme, "", active_pack(ui).name, active_theme(ui))
 			return
 		}
 		if clay.PointerOver(clay.ID("TgMotion")) {

@@ -86,6 +86,53 @@ live_tick :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 	sync.unlock(&live.mutex)
 }
 
+// Prune messages past their group's disappearing timer. Expiry lives
+// in MDK's sqlite, so this survives restarts; MDK defers on unread
+// messages and clock skew, making a quiet minute-scale poll enough.
+RETENTION_SWEEP_SECS :: 60.0
+
+@(private = "file")
+retention_last: f64 = -1
+
+retention_tick :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if client == nil || len(ui.account_ref) == 0 {
+		return
+	}
+	now := rl.GetTime()
+	if retention_last >= 0 && now - retention_last < RETENTION_SWEEP_SECS {
+		return
+	}
+	retention_last = now
+
+	report: ^marmot.Retention_Sweep_Report
+	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
+	now_ms := u64(time.now()._nsec) / 1_000_000
+	if marmot.sweep_expired_retention(client, account, now_ms, &report) != .OK {
+		fmt.eprintfln("retention sweep failed: %s", marmot.last_error())
+		return
+	}
+	defer marmot.retention_sweep_report_free(report)
+
+	// Refresh only what a prune actually touched: rail previews always,
+	// the open timeline only when its own group lost rows.
+	open_group := ui.selected >= 0 ? ui.chats[ui.selected].group_id : ""
+	pruned_any, pruned_open := false, false
+	for i in 0 ..< report.groups_len {
+		outcome := &report.groups[i]
+		if outcome.status != .PRUNED {
+			continue
+		}
+		pruned_any = true
+		pruned_open |= string(outcome.group_id_hex) == open_group
+	}
+	if pruned_any {
+		refresh_after_action(ui, client)
+		if pruned_open {
+			load_timeline(client, ui)
+		}
+	}
+}
+
 // Apply pending live updates on the UI thread, preserving selection
 // by group id across the chat-list reload.
 drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
@@ -185,6 +232,7 @@ Pending_Send :: struct {
 	sender:   string, // own display label, mirrors confirmed rows
 	body:     string, // composed text; file name for a non-image upload
 	reply_to: string, // message id, "" = plain send
+	thread:   string, // thread root id, "" = main timeline
 	atts:     [dynamic]Pending_Att, // upload payloads, owned until drained
 	failed:   bool,
 	queued:   bool, // waiting for the auto-retry timer (offline.odin)
@@ -218,6 +266,7 @@ Send_Job :: struct {
 	group:   cstring,
 	text:    cstring,
 	reply:   cstring, // nil = plain send
+	thread:  cstring, // nil = main timeline; else the kind-1111 root
 	atts:    []Job_Att, // non-empty = upload_media instead of a text send
 }
 
@@ -232,12 +281,50 @@ sends_done: [dynamic]Send_Done
 send_threads: [dynamic]^thread.Thread
 send_ticket: int
 
+// Publish uploaded references into a thread: one kind-1111 event
+// carrying the root e tag plus one imeta tag per attachment (built by
+// marmot, the same shape its own kind-9 media messages use, so the
+// timeline resolves them into downloadable media on every client).
+@(private = "file")
+send_thread_media :: proc(job: ^Send_Job, result: ^marmot.Media_Upload_Result) -> marmot.Status {
+	e_vals := [2]cstring{"e", job.thread}
+	rows := make([dynamic]marmot.Message_Tag)
+	defer delete(rows)
+	append(&rows, marmot.Message_Tag{values = raw_data(e_vals[:]), values_len = 2})
+
+	built := make([dynamic]^marmot.Message_Tag)
+	defer {
+		for tag in built {
+			marmot.message_tag_free(tag)
+		}
+		delete(built)
+	}
+	for i in 0 ..< result.attachments_len {
+		tag: ^marmot.Message_Tag
+		if s := marmot.build_media_imeta_tag(job.client, job.account, job.group, &result.attachments[i].reference, &tag); s != .OK {
+			return s
+		}
+		append(&built, tag)
+		append(&rows, tag^)
+	}
+
+	summary: ^marmot.Send_Summary
+	status := marmot.send_custom_event(job.client, job.account, job.group, KIND_THREAD, raw_data(rows[:]), uint(len(rows)), job.text, &summary)
+	if status == .OK {
+		marmot.send_summary_free(summary)
+	}
+	return status
+}
+
 send_worker :: proc(t: ^thread.Thread) {
 	job := (^Send_Job)(t.data)
 	status: marmot.Status
 	if len(job.atts) > 0 {
-		// One upload_media round trip with send=true: encrypt, push to
-		// Blossom, publish the kind-9 message.
+		// One upload_media round trip: encrypt, push to Blossom, and
+		// (main timeline) publish the kind-9 message in the same call.
+		// A thread upload keeps send=false and publishes the references
+		// itself as a kind-1111 event, since upload_media carries no
+		// tags to place it in the thread.
 		requests := make([]marmot.Media_Upload_Attachment_Request, len(job.atts))
 		for a, i in job.atts {
 			requests[i] = {
@@ -251,17 +338,24 @@ send_worker :: proc(t: ^thread.Thread) {
 		request := marmot.Media_Upload_Request {
 			attachments     = raw_data(requests),
 			attachments_len = uint(len(requests)),
-			send            = true,
+			send            = job.thread == nil,
 		}
 		result: ^marmot.Media_Upload_Result
 		status = marmot.upload_media(job.client, job.account, job.group, &request, &result)
 		if status == .OK {
+			if job.thread != nil {
+				status = send_thread_media(job, result)
+			}
 			marmot.media_upload_result_free(result)
 		}
 		delete(requests)
 	} else {
 		summary: ^marmot.Send_Summary
-		if job.reply != nil {
+		if job.thread != nil {
+			e_vals := [2]cstring{"e", job.thread}
+			row := marmot.Message_Tag{values = raw_data(e_vals[:]), values_len = 2}
+			status = marmot.send_custom_event(job.client, job.account, job.group, KIND_THREAD, &row, 1, job.text, &summary)
+		} else if job.reply != nil {
 			status = marmot.reply_to_message(job.client, job.account, job.group, job.reply, job.text, &summary)
 		} else {
 			status = marmot.send_text(job.client, job.account, job.group, job.text, &summary)
@@ -286,6 +380,9 @@ send_worker :: proc(t: ^thread.Thread) {
 	if job.reply != nil {
 		delete(job.reply)
 	}
+	if job.thread != nil {
+		delete(job.thread)
+	}
 	for a in job.atts {
 		delete(a.name)
 		delete(a.media_type)
@@ -306,6 +403,7 @@ spawn_send :: proc(ui: ^Ui_State, client: ^marmot.Client, p: Pending_Send) {
 	job.group = strings.clone_to_cstring(p.group_id)
 	job.text = strings.clone_to_cstring(p.body)
 	job.reply = len(p.reply_to) > 0 ? strings.clone_to_cstring(p.reply_to) : nil
+	job.thread = len(p.thread) > 0 ? strings.clone_to_cstring(p.thread) : nil
 	if len(p.atts) > 0 {
 		job.atts = make([]Job_Att, len(p.atts))
 		for a, i in p.atts {
@@ -336,7 +434,9 @@ queue_send :: proc(ui: ^Ui_State, client: ^marmot.Client, body: string) {
 		group_id = strings.clone(ui.chats[ui.selected].group_id),
 		sender   = strings.clone(len(info.name) > 0 ? info.name : "you"),
 		body     = strings.clone(body),
-		reply_to = strings.clone(ui.replying),
+		// A reply can't carry a thread tag, so the open thread wins.
+		reply_to = strings.clone(len(thread_cur(ui)) > 0 ? "" : ui.replying),
+		thread   = strings.clone(thread_cur(ui)),
 	})
 	spawn_send(ui, client, ui.pending[len(ui.pending) - 1])
 }
@@ -346,6 +446,7 @@ free_pending :: proc(p: ^Pending_Send) {
 	delete(p.sender)
 	delete(p.body)
 	delete(p.reply_to)
+	delete(p.thread)
 	for &a in p.atts {
 		delete(a.name)
 		delete(a.dim)
@@ -388,6 +489,7 @@ queue_staged :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				group_id = strings.clone(group),
 				sender   = strings.clone(sender),
 				body     = strings.clone(f.name),
+				thread   = strings.clone(thread_cur(ui)),
 			}
 			append(&p.atts, att)
 			append(&ui.pending, p)
@@ -400,6 +502,7 @@ queue_staged :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		album.group_id = strings.clone(group)
 		album.sender = strings.clone(sender)
 		album.body = strings.clone("")
+		album.thread = strings.clone(thread_cur(ui))
 		append(&ui.pending, album)
 		spawn_send(ui, client, ui.pending[len(ui.pending) - 1])
 	}
@@ -477,10 +580,15 @@ Op_Job :: struct {
 	group:   cstring,
 	target:  cstring,
 	emoji:   cstring, // nil for delete
+	kind:    u64, // .Custom only
+	tags:    [][]cstring, // .Custom only, owned rows
+	content: cstring, // .Custom only
+	secs:    u64, // .Retention only
 }
 
 Op_Done :: struct {
 	ticket: int,
+	op:     Msg_Op,
 	err:    string, // "" = ok, else the owned marmot error
 }
 
@@ -499,6 +607,28 @@ op_worker :: proc(t: ^thread.Thread) {
 		status = marmot.unreact_from_message(job.client, job.account, job.group, job.target, &summary)
 	case .Delete:
 		status = marmot.delete_message(job.client, job.account, job.group, job.target, &summary)
+	case .Custom:
+		rows := make([]marmot.Message_Tag, len(job.tags))
+		for row, i in job.tags {
+			rows[i] = {values = raw_data(row), values_len = uint(len(row))}
+		}
+		status = marmot.send_custom_event(job.client, job.account, job.group, job.kind, raw_data(rows), uint(len(rows)), job.content, &summary)
+		delete(rows)
+	case .Retention:
+		status = marmot.update_message_retention(job.client, job.account, job.group, job.secs, &summary)
+	case .Rename:
+		status = marmot.update_group_profile(job.client, job.account, job.group, job.target, nil, &summary)
+	case .Invite, .Remove:
+		refs := [1]cstring{job.target}
+		if job.op == .Invite {
+			status = marmot.invite_members(job.client, job.account, job.group, raw_data(refs[:]), 1, &summary)
+		} else {
+			status = marmot.remove_members(job.client, job.account, job.group, raw_data(refs[:]), 1, &summary)
+		}
+	case .Promote:
+		status = marmot.promote_admin(job.client, job.account, job.group, job.target, &summary)
+	case .Demote:
+		status = marmot.demote_admin(job.client, job.account, job.group, job.target, &summary)
 	}
 
 	err: string
@@ -508,7 +638,7 @@ op_worker :: proc(t: ^thread.Thread) {
 		err = marmot.last_error()
 	}
 	sync.lock(&ops_mutex)
-	append(&ops_done, Op_Done{ticket = job.ticket, err = err})
+	append(&ops_done, Op_Done{ticket = job.ticket, op = job.op, err = err})
 	sync.unlock(&ops_mutex)
 
 	delete(job.account)
@@ -517,10 +647,47 @@ op_worker :: proc(t: ^thread.Thread) {
 	if job.emoji != nil {
 		delete(job.emoji)
 	}
+	for row in job.tags {
+		for v in row {
+			delete(v)
+		}
+		delete(row)
+	}
+	delete(job.tags)
+	if job.content != nil {
+		delete(job.content)
+	}
 	free(job)
 }
 
-spawn_op :: proc(ui: ^Ui_State, client: ^marmot.Client, op: Msg_Op, message_id, emoji: string) -> int {
+// Fire-and-forget custom event onto the op worker (poll, vote, thread
+// message); drain_ops reloads the timeline on the ack.
+spawn_custom :: proc(ui: ^Ui_State, client: ^marmot.Client, kind: u64, tags: [][]string, content: string) {
+	op_ticket += 1
+	job := new(Op_Job)
+	job.ticket = op_ticket
+	job.client = client
+	job.op = .Custom
+	job.kind = kind
+	job.account = strings.clone_to_cstring(ui.account_ref)
+	job.group = strings.clone_to_cstring(ui.chats[ui.selected].group_id)
+	job.target = strings.clone_to_cstring("")
+	job.content = strings.clone_to_cstring(content)
+	job.tags = make([][]cstring, len(tags))
+	for row, i in tags {
+		job.tags[i] = make([]cstring, len(row))
+		for v, j in row {
+			job.tags[i][j] = strings.clone_to_cstring(v)
+		}
+	}
+
+	t := thread.create(op_worker)
+	t.data = job
+	append(&send_threads, t)
+	thread.start(t)
+}
+
+spawn_op :: proc(ui: ^Ui_State, client: ^marmot.Client, op: Msg_Op, message_id, emoji: string, secs: u64 = 0) -> int {
 	op_ticket += 1
 	job := new(Op_Job)
 	job.ticket = op_ticket
@@ -530,6 +697,7 @@ spawn_op :: proc(ui: ^Ui_State, client: ^marmot.Client, op: Msg_Op, message_id, 
 	job.group = strings.clone_to_cstring(ui.chats[ui.selected].group_id)
 	job.target = strings.clone_to_cstring(message_id)
 	job.emoji = op == .React ? strings.clone_to_cstring(emoji) : nil
+	job.secs = secs
 
 	t := thread.create(op_worker)
 	t.data = job
@@ -563,7 +731,21 @@ drain_ops :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			break
 		}
 		if len(d.err) == 0 {
+			// Group ops change more than the timeline: the member list,
+			// and for a rename the rail row's title.
+			#partial switch d.op {
+			case .Rename:
+				refresh_after_action(ui, client)
+			case .Invite, .Remove, .Promote, .Demote:
+				load_members(client, ui)
+			}
 			continue
+		}
+		#partial switch d.op {
+		case .Retention:
+			load_members(client, ui) // undo the optimistic chip flip
+		case .Rename:
+			refresh_after_action(ui, client) // undo the optimistic title
 		}
 		ui.client_status = fmt.aprintf("action failed: %s", d.err)
 		delete(d.err)

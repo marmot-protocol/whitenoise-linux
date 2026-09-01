@@ -145,4 +145,36 @@ TEXT := clay.Color{228, 231, 236, 255}
 TEXT_DIM := clay.Color{156, 163, 175, 255}
 TEXT_LO := clay.Color{107, 114, 128, 255}
 DANGER := clay.Color{255, 90, 90, 255}
+DANGER_SOFT := clay.Color{255, 90, 90, 38}
+DANGER_BORDER := clay.Color{255, 90, 90, 110}
+WARNING := clay.Color{235, 180, 70, 255}
+WARNING_SOFT := clay.Color{235, 180, 70, 38}
+WARNING_BORDER := clay.Color{235, 180, 70, 110}
+TEXT_VLO := clay.Color{75, 82, 96, 255}
+PANEL := clay.Color{15, 19, 24, 255}
+FIELD_HOVER := clay.Color{18, 23, 28, 255}
+CODE_PLATE := clay.Color{255, 255, 255, 16}
+CARD_WELL := clay.Color{20, 26, 33, 255}
+TOP_GLINT := clay.Color{255, 255, 255, 10}
+AVATAR_RING := clay.Color{255, 255, 255, 32}
+ACCENT_GLOW := clay.Color{114, 240, 176, 51}
+ACCENT_HI := clay.Color{150, 245, 195, 255}
+
+// Depth: the scrim behind a modal, the tint a raised surface drops,
+// and the two edges a bevelled one is lit and shaded with.
+OVERLAY := clay.Color{0, 0, 0, 115}
+OVERLAY_STRONG := clay.Color{0, 0, 0, 230}
+VIGNETTE := clay.Color{0, 0, 0, 128}
+SHADOW_CARD := clay.Color{0, 0, 0, 208}
+SHADOW_POPOVER := clay.Color{0, 0, 0, 102}
+BEVEL_HI := clay.Color{255, 255, 255, 40}
+BEVEL_LO := clay.Color{0, 0, 0, 90}
+
+// Chrome that floats over a picture, so it cannot take its colors
+// from the page behind it.
+MEDIA_BACKDROP := clay.Color{3, 4, 4, 255}
+MEDIA_CHIP_BG := clay.Color{0, 0, 0, 184}
+MEDIA_CHIP_FG := clay.Color{255, 255, 255, 255}
+MEDIA_CHIP_OUTLINE := clay.Color{255, 255, 255, 102}
+MEDIA_CONTROL_BG := clay.Color{255, 255, 255, 34}
 

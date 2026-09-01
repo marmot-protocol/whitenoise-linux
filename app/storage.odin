@@ -222,7 +222,7 @@ last_backup_line :: proc(ui: ^Ui_State) -> string {
 	if ui.prefs.last_backup == 0 {
 		return tr("No backup made from this device yet.")
 	}
-	stamp := time.unix(ui.prefs.last_backup, 0)
+	stamp := time.unix(i64(local_seconds(u64(ui.prefs.last_backup))), 0)
 	year, month, day := time.date(stamp)
 	hour, minute, _ := time.clock(stamp)
 	return fmt.tprintf("%04d-%02d-%02d · %02d:%02d", year, int(month), day, hour, minute)

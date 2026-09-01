@@ -391,7 +391,12 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 			// A tombstone offers none.
 			if hovered() && !msg.deleted {
 				action_chip("MsgReact", index, "+1")
-				action_chip("MsgReply", index, "Reply")
+				// A reply can't carry a thread tag, so thread rows
+				// offer Thread (nesting) instead of Reply.
+				if len(msg.thread_of) == 0 {
+					action_chip("MsgReply", index, "Reply")
+				}
+				action_chip("MsgThread", index, "Thread")
 				if msg.mine {
 					action_chip("MsgEdit", index, "Edit")
 					action_chip("MsgDel", index, "Delete")
@@ -708,6 +713,36 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 			}
 		}
 
+		// Source tiles: highlighted lines with the file name on top.
+		for entry, j in msg.codes {
+			view := entry.view
+			if clay.UI(clay.ID("MsgCode", index * 1024 + u32(j)))(
+			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(360)}, padding = clay.PaddingAll(10), childGap = 2}, backgroundColor = PLATE, cornerRadius = rr(8)},
+			) {
+				att_dl_button("DlCode", index * 1024 + u32(j), msg.id, entry.att, msg.att_names[entry.att])
+				if clay.UI(clay.ID("MsgCodeName", index * 1024 + u32(j)))({layout = {padding = {bottom = 4}, childGap = 8}}) {
+					clay.Text(msg.att_names[entry.att], {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT})
+					clay.Text(view.lang, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+				}
+				code_lines(view, index * 4096 + 3072 + u32(j) * 512, CODE_TILE_LINES)
+			}
+		}
+
+		// Source tiles: highlighted lines with the file name on top.
+		for entry, j in msg.codes {
+			view := entry.view
+			if clay.UI(clay.ID("MsgCode", index * 1024 + u32(j)))(
+			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(360)}, padding = clay.PaddingAll(10), childGap = 2}, backgroundColor = PLATE, cornerRadius = rr(8)},
+			) {
+				att_dl_button("DlCode", index * 1024 + u32(j), msg.id, entry.att, msg.att_names[entry.att])
+				if clay.UI(clay.ID("MsgCodeName", index * 1024 + u32(j)))({layout = {padding = {bottom = 4}, childGap = 8}}) {
+					clay.Text(msg.att_names[entry.att], {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT})
+					clay.Text(view.lang, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+				}
+				code_lines(view, index * 4096 + 3072 + u32(j) * 512, CODE_TILE_LINES)
+			}
+		}
+
 		// Font tiles: the rasterized specimen.
 		for entry, j in msg.fonts {
 			view := entry.view
@@ -767,7 +802,9 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 					if len(msg.reply_from) > 0 {
 						clay.Text(msg.reply_from, {fontId = FONT_TITLE, fontSize = 11, textColor = ACCENT})
 					}
-					clay.Text(msg.reply_text, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+					// Wrapped so a long token (a cashu string, a URL)
+					// breaks instead of pushing the bubble off-pane.
+					body_text(index * 4096 + 3072, msg.reply_text, 12, TEXT_DIM, wrap_w = body_wrap_w() - 40)
 				}
 			}
 		}
@@ -776,12 +813,23 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 			body_text(index * 4096, msg.body, 14, TEXT, true)
 		}
 
+		// A shared theme: swatches off the pack itself, so the offer
+		// shows what it would do before it is taken.
+		if len(msg.theme_name) > 0 {
+			theme_offer(index, msg)
+		}
+
 		// Tombstone placeholder body, the slint deleted row.
 		if msg.deleted {
 			clay.Text(tr("This message was deleted"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_LO})
 		}
 
 		md_blocks(msg.blocks[:], index * 4096, true)
+
+		// Poll options under the question; clicks vote (handle_chat).
+		if len(msg.poll_opts) > 0 {
+			poll_block(index, msg)
+		}
 
 		// Reactions close the row, under the body.
 		if len(msg.reactions) > 0 {
@@ -820,6 +868,16 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 						}
 					}
 				}
+			}
+		}
+
+		// Thread reply count, click opens the panel on this root.
+		if msg.thread_replies > 0 {
+			if clay.UI(clay.ID("MsgThreadChip", index))(
+			{layout = {padding = {left = 8, right = 8, top = 3, bottom = 3}, childGap = 5, childAlignment = {y = .Center}}, backgroundColor = hovered() ? HOVER : ROW_BG, cornerRadius = rr(10)},
+			) {
+				clay.Text(ICON_COMMENTS, {fontId = FONT_ICON, fontSize = 11, textColor = ACCENT})
+				clay.Text(fmt.tprintf(tr("%d replies"), msg.thread_replies), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
 			}
 		}
 
@@ -1135,6 +1193,50 @@ render_segs :: proc(id: u32, segs: []Inline_Seg, font_size: u16, color: clay.Col
 	}
 }
 
+// Text width available in the composer pill: last frame's box minus
+// the paddings, buttons, and gaps around the text column.
+compose_wrap_w :: proc() -> f32 {
+	COMPOSE_CHROME :: f32(210)
+	box := clay.GetElementData(clay.ID("ComposeBox"))
+	if !box.found {
+		return 480
+	}
+	return max(box.boundingBox.width - COMPOSE_CHROME, 120)
+}
+
+// Byte ranges of the composer's visual lines: each physical '\n' line
+// greedily wrapped to the pill's text width. Spaces at a wrap stay on
+// the upper line so every byte keeps exactly one row and caret
+// hit-mapping stays byte-accurate.
+compose_lines :: proc(text: string) -> [dynamic][2]int {
+	lines := make([dynamic][2]int, context.temp_allocator)
+	width := compose_wrap_w()
+	start := 0
+	for {
+		end := len(text)
+		if nl := strings.index_byte(text[start:], '\n'); nl >= 0 {
+			end = start + nl
+		}
+		at := start
+		for {
+			cut := wrap_break(text, at, end, width, BODY_FS)
+			for cut < end && text[cut] == ' ' {
+				cut += 1
+			}
+			append(&lines, [2]int{at, cut})
+			if cut >= end {
+				break
+			}
+			at = cut
+		}
+		if end == len(text) {
+			break
+		}
+		start = end + 1
+	}
+	return lines
+}
+
 // One physical composer line [ls, le): up to three spans split at the
 // selection [lo, hi) (middle span highlighted), the caret at the
 // selection head, the IME preedit riding at the caret.
@@ -1313,8 +1415,10 @@ md_blocks :: proc(blocks: []Md_Block_Ui, id_base: u32, selectable := false) {
 // rather than by clay: a selection highlight splits a line into three
 // spans, and clay only wraps a whole Text element. Break points come
 // from measured widths, like the slint renderer's greedy wrapper.
-body_text :: proc(id: u32, text: string, font_size: u16, color: clay.Color, selectable := false) {
-	wrap := selectable ? body_wrap_w() : 0
+// `wrap_w` forces wrapping at that width for non-selectable bodies
+// whose container clay can't wrap into (reply previews, edit history).
+body_text :: proc(id: u32, text: string, font_size: u16, color: clay.Color, selectable := false, wrap_w: f32 = 0) {
+	wrap := wrap_w > 0 ? wrap_w : (selectable ? body_wrap_w() : 0)
 	start := 0
 	i := u32(0)
 	for {
@@ -1324,7 +1428,7 @@ body_text :: proc(id: u32, text: string, font_size: u16, color: clay.Color, sele
 		}
 		at := start
 		for at < end {
-			cut := selectable ? wrap_break(text, at, end, wrap, font_size) : end
+			cut := wrap > 0 ? wrap_break(text, at, end, wrap, font_size) : end
 			line_id := id * 8 + i
 			i += 1
 			if selectable {
@@ -1350,13 +1454,17 @@ body_text :: proc(id: u32, text: string, font_size: u16, color: clay.Color, sele
 // Text width available to a message body: the timeline column from the
 // previous frame, minus the row padding, the avatar and its gap. The
 // pre-layout default is a readable measure, corrected on frame two.
+// The box is capped by what the window can hold: it is one frame
+// behind and inflated by its own over-long lines, so after a shrink
+// the rewrap otherwise crawls toward the new width a word per frame.
 body_wrap_w :: proc() -> f32 {
 	MSG_ROW_CHROME :: f32(16 + 16 + 28 + 10 + 8) // paddings, avatar, gap, slack
 	tl := clay.GetElementData(clay.ID("Timeline"))
 	if !tl.found {
 		return 480
 	}
-	return max(tl.boundingBox.width - MSG_ROW_CHROME, 120)
+	avail := f32(rl.GetScreenWidth()) / UI_ZOOM - rail_width(g_ui) - 40
+	return max(min(tl.boundingBox.width, avail) - MSG_ROW_CHROME, 120)
 }
 
 // Greedy break: the longest run of whole words from `at` that fits
@@ -1376,8 +1484,13 @@ wrap_break :: proc(text: string, at, end: int, width: f32, font_size: u16) -> in
 		if next == cut {
 			break
 		}
-		if rl.MeasureTextLine(FONT_BODY, font_size, text[at:next], 0).x > width && cut > at {
-			return cut
+		if rl.MeasureTextLine(FONT_BODY, font_size, text[at:next], 0).x > width {
+			if cut > at {
+				return cut
+			}
+			// One word wider than the line (a cashu token, a long
+			// URL): break it mid-word at the last rune that fits.
+			return rune_fit(text, at, next, width, font_size)
 		}
 		cut = next
 		if cut >= end {
@@ -1387,5 +1500,51 @@ wrap_break :: proc(text: string, at, end: int, width: f32, font_size: u16) -> in
 	return end
 }
 
+// Longest prefix of [at, end) that fits `width`, cut on a rune
+// boundary, never empty. Per-rune advances (no kerning), the same
+// estimate hit_compose_line makes.
+rune_fit :: proc(text: string, at, end: int, width: f32, font_size: u16) -> int {
+	pen: f32 = 0
+	i := at
+	for i < end {
+		_, w := utf8.decode_rune_in_string(text[i:])
+		adv := rl.MeasureTextLine(FONT_BODY, font_size, text[i:i + w], 0).x
+		if i > at && pen + adv > width {
+			return i
+		}
+		pen += adv
+		i += w
+	}
+	return end
+}
+
 // One row of the message context menu, the slint MenuItem: 16px glyph
 // column, hover highlight, 32px tall.
+
+
+// The card a shared theme arrives as: its name, a strip of its own
+// colors, and the one control that applies it. Nothing here changes
+// the running theme; handle_chat does that when the button is hit.
+THEME_SWATCHES :: 6
+
+theme_offer :: proc(index: u32, msg: Msg_Ui) {
+	if clay.UI(clay.ID("ThemeCard", index))(
+	{
+		layout = {sizing = {width = clay.SizingFixed(260)}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(12), childGap = 8},
+		backgroundColor = PLATE,
+		cornerRadius = rr(10),
+		border = {color = CARD_BORDER, width = bw()},
+	},
+	) {
+		clay.Text(tr("SHARED THEME"), {fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO, letterSpacing = 2})
+		clay.Text(msg.theme_name, {fontId = FONT_TITLE, fontSize = 14, textColor = TEXT})
+		if clay.UI(clay.ID("ThemeSwatches", index))({layout = {childGap = 4}}) {
+			for color, i in msg.theme_swatch {
+				if clay.UI(clay.ID("ThemeSwatch", index * 16 + u32(i)))(
+				{layout = {sizing = {width = clay.SizingFixed(28), height = clay.SizingFixed(28)}}, backgroundColor = color, cornerRadius = rr(6), border = {color = DIVIDER, width = bw()}},
+				) {}
+			}
+		}
+		micro_button(fmt.tprintf("ThemeApply%d", index), "Use this theme")
+	}
+}

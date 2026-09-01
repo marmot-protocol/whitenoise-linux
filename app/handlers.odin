@@ -62,6 +62,9 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // the subscriptions phase.
 // The input buffer that currently receives typed characters.
 active_buf :: proc(ui: ^Ui_State) -> ^[dynamic]u8 {
+	if ui.theme_edit && len(ui.theme_fields) > 0 {
+		return &ui.theme_fields[clamp(ui.theme_edit_idx, 0, len(ui.theme_fields) - 1)]
+	}
 	if ui.new_chat_open {
 		return ui.focus == .NC_Name ? &ui.nc_name : &ui.nc_member
 	}
@@ -115,6 +118,24 @@ active_buf :: proc(ui: ^Ui_State) -> ^[dynamic]u8 {
 }
 
 handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	// A shared theme is taken only on the tap: adopt_theme writes it
+	// under the data dir and returns its slot, which then applies.
+	for msg, i in ui.messages {
+		if len(msg.theme_name) == 0 || !clicked(fmt.tprintf("ThemeApply%d", u32(i))) {
+			continue
+		}
+		slot := adopt_theme(msg.theme_toml)
+		if slot < 0 {
+			ui.client_status = strings.clone(tr("Couldn't use that theme. It isn't a theme this version reads."))
+			return
+		}
+		ui.theme = slot
+		apply_theme(ui.theme, ui.accent)
+		save_settings(ui)
+		toast(ui, "Theme applied")
+		return
+	}
+
 	if client == nil || len(ui.accounts) == 0 {
 		return
 	}
@@ -149,6 +170,11 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// Openverse image-search modal, same early capture.
 	if ui.ov_open {
 		handle_openverse(ui, client)
+		return
+	}
+	// Create-poll modal, same early capture.
+	if ui.poll_open {
+		handle_poll(ui, client)
 		return
 	}
 
@@ -295,14 +321,35 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.scroll_pending = true
 		return
 	}
-	if clicked("LoadEarlier") {
-		load_earlier(client, ui)
-		return
+	// Infinite scroll: nearing the top of loaded history pulls in the
+	// next page. load_earlier's anchor re-pins the viewport on the old
+	// topmost row, so the trigger doesn't re-fire until the user scrolls
+	// up through the new page (short content refills until it overflows).
+	// A pending jump or bottom snap means the offset isn't settled yet.
+	if ui.tl_has_more && len(ui.jump_id) == 0 && !ui.scroll_pending && len(thread_cur(ui)) == 0 {
+		if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found && data.scrollPosition.y > -TL_FETCH_MARGIN {
+			load_earlier(client, ui)
+		}
 	}
 
-	if ui.focus != .Filter {
+	// With the webxdc modal open the page owns the keyboard: skip the
+	// composer edit, or it drains the typed runes before
+	// handle_web_input can forward them.
+	if ui.focus != .Filter && !web_modal.open {
 		buf := active_buf(ui)
 		edit_text(ui, buf, buf == &ui.compose)
+	}
+	// Thread route: back chevron pops one level; Escape does too while
+	// the composer holds no draft or edit.
+	if len(ui.thread_stack) > 0 {
+		if clicked("ThreadBack") {
+			thread_back(ui)
+			return
+		}
+		if rl.IsKeyPressed(.ESCAPE) && len(ui.compose) == 0 && len(ui.editing) == 0 {
+			thread_back(ui)
+			return
+		}
 	}
 	compose_mouse(ui)
 	if ui.search_open && field_mouse(ui, &ui.search_input, "SearchBox") {
@@ -332,12 +379,33 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.fx_open = !ui.fx_open
 		return
 	}
+	// The effect picker captures everything while open.
+	if handle_effects(ui) {
+		return
+	}
+	if clicked("FxBtn") {
+		ui.fx_open = !ui.fx_open
+		return
+	}
+	// The effect picker captures everything while open.
+	if handle_effects(ui) {
+		return
+	}
+	if clicked("FxBtn") {
+		ui.fx_open = !ui.fx_open
+		return
+	}
 	if clicked("EmojiBtn") {
 		open_picker(ui, "")
 		return
 	}
 	if clicked("AttachBtn") {
 		rl.OpenFileDialog(true)
+		return
+	}
+	if clicked("PollBtn") {
+		poll_reset(ui)
+		ui.poll_open = true
 		return
 	}
 	for _, i in ui.staged {
@@ -347,6 +415,17 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 	if clicked("MlsBadge") {
+		delete(ui.enc_epoch)
+		ui.enc_epoch = ""
+		if ui.selected >= 0 {
+			st: ^marmot.Group_Mls_State_Head
+			account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
+			group := strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator)
+			if marmot.group_mls_state(client, account, group, &st) == .OK {
+				ui.enc_epoch = fmt.aprintf("%d", st.epoch)
+				marmot.app_group_mls_state_free(st)
+			}
+		}
 		ui.enc_open = true
 		return
 	}
@@ -466,6 +545,16 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 					return
 				}
 			}
+			for _, j in msg.poll_opts {
+				if clay.PointerOver(clay.ID("PollOptRow", u32(i) * 64 + u32(j))) {
+					poll_vote(ui, client, &ui.messages[i], j)
+					return
+				}
+			}
+			if clay.PointerOver(clay.ID("MsgThread", u32(i))) || clay.PointerOver(clay.ID("MsgThreadChip", u32(i))) {
+				thread_push(ui, msg.id)
+				return
+			}
 		}
 		if clicked("ReplyCancel") {
 			ui.replying = ""
@@ -527,6 +616,16 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			queue_staged(ui, client)
 			clear(&ui.compose)
 			drop_draft(ui)
+			// The armed burst plays here and is spent. It never reaches
+			// the wire: marmot-c's send_text carries no tags.
+			if ui.fx_armed != 0 {
+				fx_send_armed(ui)
+			}
+			// The armed burst plays here and is spent. It never reaches
+			// the wire: marmot-c's send_text carries no tags.
+			if ui.fx_armed != 0 {
+				fx_send_armed(ui)
+			}
 			// Every send whooshes; an armed burst plays here too and is
 			// spent. Effects never reach the wire: marmot-c's send_text
 			// carries no tags.
@@ -628,12 +727,6 @@ remove_staged :: proc(ui: ^Ui_State, index: int) {
 	ordered_remove(&ui.staged, index)
 }
 
-clear_staged :: proc(ui: ^Ui_State) {
-	for i := len(ui.staged) - 1; i >= 0; i -= 1 {
-		remove_staged(ui, i)
-	}
-}
-
 // Open the picker anchored near the pointer, clamped on-window.
 open_picker :: proc(ui: ^Ui_State, target: string) {
 	m := rl.GetMousePosition()
@@ -708,9 +801,9 @@ handle_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 	}
-	for index in picker_custom(ui) {
-		if clay.PointerOver(clay.ID("PkCustom", u32(index))) {
-			pick_emoji(ui, client, fmt.tprintf(":%s:", emoji_code(custom_emoji_names[index])))
+	for code, i in picker_custom(ui) {
+		if clay.PointerOver(clay.ID("PkCustom", u32(i))) {
+			pick_emoji(ui, client, fmt.tprintf(":%s:", code))
 			return
 		}
 	}
@@ -755,6 +848,10 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.reply_hint = fmt.aprintf("%s: %s", msg.sender, msg.body[:min(len(msg.body), 60)])
 		return
 	}
+	if clay.PointerOver(clay.ID("CtxThread")) {
+		thread_push(ui, msg.id)
+		return
+	}
 	for att_name, i in msg.att_names {
 		if clay.PointerOver(clay.ID(fmt.tprintf("CtxSave%d", i))) {
 			start_att_save({ui.chats[ui.selected].group_id, msg.id, i, att_name})
@@ -791,6 +888,7 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if clay.PointerOver(clay.ID("CtxForward")) {
 		ui.fwd_open = true
+		ui.fwd_kind = .Message
 		ui.fwd_msg = ui.ctx_msg
 		clear(&ui.fwd_filter)
 		ui.focus = .Fwd
@@ -840,6 +938,7 @@ select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) {
 		avatar_color(ui.chats[index].group_id),
 	)
 	stash_draft(ui)
+	thread_clear(ui) // thread roots belong to the chat being left
 	ui.selected = index
 	ui.search_open = false
 	ui.show_members = false
@@ -1098,16 +1197,19 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	if clicked("RenameBtn") && len(ui.rename_input) > 0 {
-		summary: ^marmot.Send_Summary
-		account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-		group := strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator)
-		if marmot.update_group_profile(client, account, group, strings.clone_to_cstring(string(ui.rename_input[:]), context.temp_allocator), nil, &summary) != .OK {
-			ui.client_status = fmt.aprintf("Couldn't rename. %s", marmot.last_error())
-			return
+		start_rename(ui, client)
+		return
+	}
+
+	for secs, i in RETENTION_SECS {
+		if !clicked(fmt.tprintf("RetChip%d", i)) || ui.group_retention == secs {
+			continue
 		}
-		marmot.send_summary_free(summary)
-		clear(&ui.rename_input)
-		refresh_after_action(ui, client)
+		// Optimistic: the chip flips now, the relay commit runs on the
+		// op worker; drain_ops reloads the timeline on the ack (the
+		// timer-change system row) and re-snapshots on failure.
+		ui.group_retention = secs
+		spawn_op(ui, client, .Retention, "", "", secs)
 		return
 	}
 
@@ -1126,47 +1228,49 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		clear(&ui.invite_input)
 	}
 	if rl.IsKeyPressed(.ENTER) && ui.focus == .Rename && len(ui.rename_input) > 0 {
-		summary: ^marmot.Send_Summary
-		account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-		group := strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator)
-		if marmot.update_group_profile(client, account, group, strings.clone_to_cstring(string(ui.rename_input[:]), context.temp_allocator), nil, &summary) == .OK {
-			marmot.send_summary_free(summary)
-			clear(&ui.rename_input)
-			refresh_after_action(ui, client)
-		}
+		start_rename(ui, client)
 	}
 }
 
+// Admin commits are relay round trips; they run on the op worker and
+// the member list reloads when drain_ops adopts the ack.
 admin_op :: proc(ui: ^Ui_State, client: ^marmot.Client, op: string, member_ref: string) {
-	summary: ^marmot.Send_Summary
-	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	group := strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator)
-	target := strings.clone_to_cstring(member_ref, context.temp_allocator)
-	refs := []cstring{target}
-
-	status: marmot.Status
+	kind: Msg_Op
 	switch op {
 	case "invite":
-		status = marmot.invite_members(client, account, group, raw_data(refs), 1, &summary)
+		kind = .Invite
 	case "remove":
-		status = marmot.remove_members(client, account, group, raw_data(refs), 1, &summary)
+		kind = .Remove
 	case "promote":
-		status = marmot.promote_admin(client, account, group, target, &summary)
+		kind = .Promote
 	case "demote":
-		status = marmot.demote_admin(client, account, group, target, &summary)
+		kind = .Demote
 	}
-	if status != .OK {
-		ui.client_status = fmt.aprintf("Couldn't %s. %s", op, marmot.last_error())
-		return
-	}
-	marmot.send_summary_free(summary)
-	load_members(client, ui)
+	spawn_op(ui, client, kind, member_ref, "")
+}
+
+// Optimistic rename: the rail row and header flip now, the commit runs
+// on the op worker, and drain_ops re-snapshots either way.
+start_rename :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	name := string(ui.rename_input[:])
+	chat := &ui.chats[ui.selected]
+	delete(chat.title)
+	chat.title = strings.clone(name)
+	spawn_op(ui, client, .Rename, name, "")
+	clear(&ui.rename_input)
 }
 
 Msg_Op :: enum {
 	React,
 	Unreact,
 	Delete,
+	Custom, // app-defined kind + tags (polls, votes, thread messages)
+	Retention, // disappearing-timer change; the seconds ride Op_Job.secs
+	Rename, // group rename; the new name rides Op_Job.target
+	Invite, // member ops: the member ref rides Op_Job.target
+	Remove,
+	Promote,
+	Demote,
 }
 
 // Fire and forget onto the op worker: the round trip is a relay's

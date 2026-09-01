@@ -1,9 +1,10 @@
 // STL chat attachments rendered as interactive 3D: parse both STL
-// flavors, then draw flat-shaded triangles through a clay Custom
-// command with SDL RenderGeometry. The stack has no 3D API, so depth
-// comes from a painter's bucket sort instead of a z-buffer.
-// ponytail: painter's order misorders intersecting faces; a software
-// z-buffer is the upgrade if that ever shows.
+// flavors, then draw through a clay Custom command. The stack has no
+// 3D API; models up to RASTER_MAX_TRIS rasterize on the CPU with a
+// real z-buffer into a streaming texture (layered shells sit closer
+// together than any per-triangle sort can order), and bigger ones
+// fall back to the painter's bucket sort + RenderGeometry, whose cost
+// scales better and whose small facets rarely misorder.
 //
 //   parse_stl ─→ unit-sphere tris + face normals (once)
 //        stl_update: rotate + shade + bucket-sort   (orientation change)
@@ -19,6 +20,8 @@ package main
 
 import "core:encoding/endian"
 import "core:math"
+import "core:mem"
+import "core:os"
 import "core:strconv"
 import "core:strings"
 
@@ -40,7 +43,7 @@ STL_BASE :: rl.FColor{0.78, 0.80, 0.84, 1} // neutral resin gray
 
 // Painter's-order depth buckets; z spans [-1, 1] after unit-sphere
 // normalization, so 256 slices are far below visible error.
-STL_BUCKETS :: 256
+STL_BUCKETS :: 65536
 
 // First field of every Custom-command payload: the renderer peeks it
 // to dispatch (mesh models and the G-code extrusion view share the
@@ -51,8 +54,15 @@ Model_Kind :: enum u8 {
 	Synth, // theme decor: the synthwave grid backdrop (decor.odin)
 	Dust, // theme decor: drifting motes behind paper themes
 	Scan, // theme decor: CRT scanlines and roll
+	Wash, // theme decor: the page's vertical gradient wash
+	Deco, // theme decor: art-deco sunburst fan
+	Blinds, // theme decor: venetian light bars
+	Stripes, // theme decor: diagonal hazard banding
+	Waves, // theme decor: slow horizon swells
+	Airmail, // theme decor: the airmail border chevrons
 	Check, // the delivery tick, drawn stroke by stroke
 	Glow, // an additive halo behind an element (glow.odin)
+	Shade, // a linear drop-shadow gradient beside a panel (threads.odin)
 }
 
 // Shared orbit state: drag rotates, wheel zooms; one handler serves
@@ -83,6 +93,18 @@ Stl_View :: struct {
 	basis: [3][3]f32,
 	insp:  Inspect, // render mode, overlays, FBX channels + animation
 	over:  [dynamic]rl.Vertex, // overlay quads (wireframe / normals)
+
+	// Software z-buffer raster (models under RASTER_MAX_TRIS): the
+	// painter's sort can't order stacked shells, so the surface is
+	// rasterized into a streaming texture with real depth instead.
+	// `built` doubles as its cache key ((rw, rh, zoom, yaw, pitch)
+	// there), so everything that already clears `built` to force a
+	// color rebuild invalidates the raster the same way.
+	pix:        []u8, // rw * rh RGBA
+	zbuf:       []f32,
+	raster_tex: rl.Texture2D,
+	rw, rh:     i32,
+	over_built: [5]f32, // (cx, cy, scale, yaw, pitch) the overlay has
 }
 
 // Extension picks the parser; both produce the same triangle soup.
@@ -346,9 +368,11 @@ stl_update :: proc(view: ^Stl_View) {
 	view.basis = {{cy, 0, sy}, {sy * sp, cp, -cy * sp}, {-sy * cp, sp, cy * cp}}
 
 	// z ∈ [-1, 1] → bucket; count, prefix-sum, place. Far (small z)
-	// buckets paint first.
-	bucket := make([]u8, ntri, context.temp_allocator)
-	counts: [STL_BUCKETS]i32
+	// buckets paint first. 64k buckets: layered shells sit ~0.007
+	// apart in unit-sphere space, so 256 buckets tied them and file
+	// order picked the winner per triangle.
+	bucket := make([]u16, ntri, context.temp_allocator)
+	counts := make([]i32, STL_BUCKETS, context.temp_allocator)
 
 	for i in 0 ..< ntri {
 		// Yaw about Y, then pitch about X; +z faces the viewer.
@@ -369,13 +393,19 @@ stl_update :: proc(view: ^Stl_View) {
 		view.shade[i] = ny * sp + (-nx * sy + nz * cy) * cp
 
 		at := i * 9
-		z_avg := (view.rot[at + 2] + view.rot[at + 5] + view.rot[at + 8]) * (1.0 / 3.0)
-		b := u8(clamp(int((z_avg + 1) * (STL_BUCKETS / 2)), 0, STL_BUCKETS - 1))
+		// Nearest corner, not the centroid: a large face keeps a
+		// middling centroid while a sliver overlapping it sorts nearer
+		// and wrongly paints on top.
+		// ponytail: this path only serves models too big for the
+		// z-buffer raster, and can still misorder close layered
+		// sheets; raise RASTER_MAX_TRIS if that ever shows there.
+		z_near := max(view.rot[at + 2], view.rot[at + 5], view.rot[at + 8])
+		b := u16(clamp(int((z_near + 1) * (STL_BUCKETS / 2)), 0, STL_BUCKETS - 1))
 		bucket[i] = b
 		counts[b] += 1
 	}
 
-	next: [STL_BUCKETS]i32
+	next := make([]i32, STL_BUCKETS, context.temp_allocator)
 	total: i32
 	for c, b in counts {
 		next[b] = total
@@ -423,11 +453,151 @@ stl_build_verts :: proc(view: ^Stl_View, cx, cy, scale: f32) {
 	build_overlay(view, cx, cy, scale)
 }
 
+// Under this, the model draws through the software z-buffer; over it,
+// the painter's sort (raster setup cost scales with triangles, and a
+// huge STL orbits fine sorted: its facets are small).
+RASTER_MAX_TRIS :: 150_000
+
+// Rasterize the model into view.pix with a real depth test, at the
+// tile's pixel size. Rebuilds only when the key (size, orbit, or a
+// cleared `built`) moves; a still model costs one texture draw.
+@(private = "file")
+stl_raster :: proc(view: ^Stl_View, w, h: i32) -> (rebuilt: bool) {
+	key := [5]f32{f32(w), f32(h), view.zoom, view.yaw, view.pitch}
+	if view.built == key {
+		return false
+	}
+	view.built = key
+
+	if view.rw != w || view.rh != h {
+		delete(view.pix)
+		delete(view.zbuf)
+		rl.UnloadTexture(view.raster_tex)
+		view.pix = make([]u8, int(w) * int(h) * 4)
+		view.zbuf = make([]f32, int(w) * int(h))
+		view.raster_tex = rl.CreateStreamTexture(w, h, blend = true)
+		view.rw, view.rh = w, h
+	}
+	mem.zero_slice(view.pix)
+	for &z in view.zbuf {
+		z = math.NEG_INF_F32
+	}
+
+	cx, cy := f32(w) / 2, f32(h) / 2
+	scale := f32(min(w, h)) * 0.45 * view.zoom
+	checker := view.insp.mode == .Uv_Checker && view.insp.uv != nil
+	cell := f32(CHECKER_SQUARES)
+
+	ntri := len(view.tris) / 9
+	for tri in 0 ..< ntri {
+		if view.insp.single_sided && view.shade[tri] < 0 {
+			continue
+		}
+		at := tri * 9
+		// Screen-space corners; z stays in view units for the test.
+		x0 := cx + view.rot[at] * scale
+		y0 := cy - view.rot[at + 1] * scale
+		z0 := view.rot[at + 2]
+		x1 := cx + view.rot[at + 3] * scale
+		y1 := cy - view.rot[at + 4] * scale
+		z1 := view.rot[at + 5]
+		x2 := cx + view.rot[at + 6] * scale
+		y2 := cy - view.rot[at + 7] * scale
+		z2 := view.rot[at + 8]
+
+		area := (x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0)
+		if area == 0 {
+			continue
+		}
+		inv := 1 / area
+
+		lo_x := clamp(int(math.floor(min(x0, x1, x2))), 0, int(w) - 1)
+		hi_x := clamp(int(math.ceil(max(x0, x1, x2))), 0, int(w) - 1)
+		lo_y := clamp(int(math.floor(min(y0, y1, y2))), 0, int(h) - 1)
+		hi_y := clamp(int(math.ceil(max(y0, y1, y2))), 0, int(h) - 1)
+		if lo_x > hi_x || lo_y > hi_y {
+			continue
+		}
+
+		colors := model_vert_colors(view, tri)
+		uvs: [3][2]f32
+		if checker {
+			uvs = model_vert_uvs(view, tri)
+		}
+
+		for py in lo_y ..= hi_y {
+			fy := f32(py) + 0.5
+			row := py * int(w)
+			for px in lo_x ..= hi_x {
+				fx := f32(px) + 0.5
+				// Barycentric weights; signs flip with winding, so
+				// inside = all three on the same side as the area.
+				w0 := ((x1 - fx) * (y2 - fy) - (x2 - fx) * (y1 - fy)) * inv
+				w1 := ((x2 - fx) * (y0 - fy) - (x0 - fx) * (y2 - fy)) * inv
+				w2 := 1 - w0 - w1
+				if w0 < 0 || w1 < 0 || w2 < 0 {
+					continue
+				}
+				z := w0 * z0 + w1 * z1 + w2 * z2
+				if z <= view.zbuf[row + px] {
+					continue
+				}
+				view.zbuf[row + px] = z
+
+				r := w0 * colors[0].r + w1 * colors[1].r + w2 * colors[2].r
+				g := w0 * colors[0].g + w1 * colors[1].g + w2 * colors[2].g
+				b := w0 * colors[0].b + w1 * colors[1].b + w2 * colors[2].b
+				if checker {
+					u := w0 * uvs[0][0] + w1 * uvs[1][0] + w2 * uvs[2][0]
+					v := w0 * uvs[0][1] + w1 * uvs[1][1] + w2 * uvs[2][1]
+					// The same 16-square pattern the texture bakes,
+					// clamped like the GPU path (no wrap mode there).
+					iu := int(clamp(u, 0, 0.9999) * cell)
+					iv := int(clamp(v, 0, 0.9999) * cell)
+					tone := (iu + iv) % 2 == 0 ? f32(220.0 / 255.0) : f32(90.0 / 255.0)
+					r *= tone
+					g *= tone
+					b *= tone
+				}
+				out := (row + px) * 4
+				view.pix[out] = u8(clamp(r, 0, 1) * 255)
+				view.pix[out + 1] = u8(clamp(g, 0, 1) * 255)
+				view.pix[out + 2] = u8(clamp(b, 0, 1) * 255)
+				view.pix[out + 3] = 255
+			}
+		}
+	}
+	rl.UpdateTexturePixels(&view.raster_tex, raw_data(view.pix))
+	return true
+}
+
 // Clay renderer hook for the Custom command, clipped to the tile so
 // zoom can't bleed over neighboring rows. The UV-checker mode is the
 // one textured pass; everything else is vertex colors.
 stl_draw :: proc(view: ^Stl_View, bounds: clay.BoundingBox) {
 	stl_update(view)
+
+	if len(view.tris) / 9 <= RASTER_MAX_TRIS {
+		w := i32(bounds.width * UI_SCALE / UI_ZOOM)
+		h := i32(bounds.height * UI_SCALE / UI_ZOOM)
+		if w > 0 && h > 0 {
+			rebuilt := stl_raster(view, w, h)
+			rl.DrawTextureRect(&view.raster_tex, bounds.x, bounds.y, bounds.width, bounds.height, {255, 255, 255, 255})
+			cx := bounds.x + bounds.width / 2
+			cy := bounds.y + bounds.height / 2
+			scale := min(bounds.width, bounds.height) * 0.45 * view.zoom
+			okey := [5]f32{cx, cy, scale, view.yaw, view.pitch}
+			if rebuilt || view.over_built != okey {
+				view.over_built = okey
+				build_overlay(view, cx, cy, scale)
+			}
+			if len(view.over) > 0 {
+				rl.DrawTrianglesClipped(view.over[:], bounds.x, bounds.y, bounds.width, bounds.height)
+			}
+			return
+		}
+	}
+
 	stl_build_verts(
 		view,
 		bounds.x + bounds.width / 2,
@@ -456,10 +626,22 @@ stl_view_free :: proc(view: ^Stl_View) {
 	delete(view.shade)
 	delete(view.order)
 	delete(view.verts)
+	delete(view.pix)
+	delete(view.zbuf)
+	rl.UnloadTexture(view.raster_tex)
 	free(view)
 }
 
 default_orbit :: proc() -> Orbit {
+	// WN_TEST_ORBIT="yaw,pitch" (degrees) pins the opening angle, so a
+	// headless run can shoot a model from any side.
+	if to := os.get_env("WN_TEST_ORBIT", context.temp_allocator); to != "" {
+		if comma := strings.index_byte(to, ','); comma > 0 {
+			yaw, _ := strconv.parse_f32(to[:comma])
+			pitch, _ := strconv.parse_f32(to[comma + 1:])
+			return {yaw = yaw * math.PI / 180, pitch = pitch * math.PI / 180, zoom = 1, dirty = true}
+		}
+	}
 	// Slight top-down tilt so a flat model reads as 3D.
 	return {yaw = 0.6, pitch = -0.4, zoom = 1, dirty = true}
 }

@@ -241,7 +241,7 @@ audit_label :: proc(size_bytes: i64, modified_at_ms: i64) -> string {
 	if modified_at_ms == 0 {
 		return strings.clone(human_size(size_bytes))
 	}
-	stamp := time.Time{_nsec = modified_at_ms * 1_000_000}
+	stamp := time.unix(i64(local_seconds(u64(modified_at_ms))), 0)
 	year, month, day := time.date(stamp)
 	hour, minute, _ := time.clock_from_time(stamp)
 	return fmt.aprintf("%s · %04d-%02d-%02d · %02d:%02d", human_size(size_bytes), year, int(month), day, hour, minute)

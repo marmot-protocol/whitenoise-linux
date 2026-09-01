@@ -19,8 +19,8 @@ import rl "sdlrl"
 
 import marmot "../marmot"
 
-// Base timeline window; "Load earlier" raises it per chat in steps of
-// the same size. Growing one window (instead of before-pagination,
+// Base timeline window; scrolling near the top raises it per chat in
+// steps of the same size. Growing one window (instead of before-pagination,
 // which marmot also supports) keeps the single-page kind-1009 edit
 // aggregation below correct without stitching pages.
 TL_PAGE :: 100
@@ -116,6 +116,12 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 			inflight[p.body] += 1
 		}
 	}
+	// NIP-88 votes and thread replies fold into other rows: collected
+	// during the walk, applied once every row is built (a vote can sit
+	// either side of its poll in the page). Values borrow the page.
+	votes := make(map[string]map[string]Poll_Vote, context.temp_allocator) // poll id → sender → latest
+	thread_counts := make(map[string]int, context.temp_allocator)
+
 	clear(&ui.messages)
 	xdc_collect_begin()
 	defer xdc_collect_end()
@@ -124,6 +130,13 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 		// Edit and delete records act on other rows; they never render
 		// as their own message.
 		if record.kind == 1009 || record.kind == 5 {
+			continue
+		}
+
+		// A kind-1018 vote folds into its poll's tally; never a row.
+		// Latest per sender wins here, per NIP-88.
+		if record.kind == KIND_POLL_VOTE {
+			poll_vote_collect(&votes, record)
 			continue
 		}
 
@@ -153,6 +166,36 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 				at_full = format_full(record.timeline_at),
 				day     = format_day(record.timeline_at),
 				system  = true,
+			})
+			continue
+		}
+
+		// A shared theme rides its own kind: the body is a toml pack,
+		// which renders as an offer card rather than as text. An
+		// unparseable one is dropped, not shown half-read.
+		if record.kind == THEME_EVENT_KIND {
+			toml := string(record.plaintext != nil ? record.plaintext : "")
+			name := theme_offer_name(toml)
+			if len(name) == 0 {
+				continue
+			}
+			info := profile_info(client, sender)
+			label := info.name
+			if len(label) == 0 {
+				label = mine ? "you" : short_hex(sender)
+			}
+			append(&ui.messages, Msg_Ui{
+				id         = strings.clone(id_str),
+				sender     = strings.clone(label),
+				sender_id  = strings.clone(sender),
+				pic_url    = strings.clone(info.pic_url),
+				theme_name = strings.clone(name),
+				theme_toml = strings.clone(toml),
+				theme_swatch = theme_swatches(name, toml),
+				at         = format_when(record.timeline_at),
+				at_full    = format_full(record.timeline_at),
+				day        = format_day(record.timeline_at),
+				mine       = mine,
 			})
 			continue
 		}
@@ -211,6 +254,21 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 			edited = has_edits && len(versions) > 0,
 			effect = record_effect(record),
 		}
+		// A kind-1068 poll renders its question as the body plus the
+		// option bars parsed here; a kind-1111 thread message leaves
+		// the main timeline for its root's thread panel.
+		if record.kind == KIND_POLL {
+			poll_parse(client, &msg, record)
+		}
+		// A kind-1111 thread message, or a poll created inside a
+		// thread, references its root as the first e tag and renders
+		// only in that thread's view.
+		if record.kind == KIND_THREAD || record.kind == KIND_POLL {
+			if root := first_event_ref(record); len(root) > 0 {
+				msg.thread_of = strings.clone(root)
+				thread_counts[msg.thread_of] += 1
+			}
+		}
 		// A burst plays the first time its message is seen, not on every
 		// reload (effects.odin keeps the seen set).
 		burst_arrive(msg.id, msg.effect, mine)
@@ -224,10 +282,10 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 				})
 			}
 		}
-		// Edit records arrive without parsed content tokens; run the
-		// latest text through marmot's markdown parser so an edited
-		// message keeps its formatting.
-		if msg.edited && content.content_tokens.blocks_len == 0 && len(body) > 0 {
+		// Edit records and poll questions arrive without parsed content
+		// tokens; run the text through marmot's markdown parser so they
+		// render like any other body.
+		if (msg.edited || record.kind == KIND_POLL) && content.content_tokens.blocks_len == 0 && len(body) > 0 {
 			doc: ^marmot.Markdown_Document
 			if marmot.parse_markdown(client, strings.clone_to_cstring(body, context.temp_allocator), &doc) == .OK {
 				convert_blocks(&msg.blocks, doc.blocks, doc.blocks_len, false)
@@ -548,6 +606,66 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 				continue
 			}
 
+			// Source files: the same tile shape, syntax highlighted.
+			if is_code_name(lower) {
+				key := reference.plaintext_sha256 != nil ? string(reference.plaintext_sha256) : name
+				if view, seen := code_views[key]; seen {
+					if view != nil {
+						append(&msg.codes, Att_Item(^Code_View){view, int(j)})
+					} else {
+						append(&msg.files, int(j))
+					}
+					continue
+				}
+
+				view: ^Code_View
+				if bytes, ok := media_load(client, account, strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator), reference); ok {
+					defer delete(bytes)
+					view = code_view_make(lower, string(bytes))
+					blob_sizes[strings.clone(key)] = i64(len(bytes))
+				} else {
+					fmt.eprintfln("media: download failed (%s): %s", name, marmot.last_error())
+				}
+
+				code_views[strings.clone(key)] = view
+				if view != nil {
+					append(&msg.codes, Att_Item(^Code_View){view, int(j)})
+				} else {
+					append(&msg.files, int(j))
+				}
+				continue
+			}
+
+			// Source files: the same tile shape, syntax highlighted.
+			if is_code_name(lower) {
+				key := reference.plaintext_sha256 != nil ? string(reference.plaintext_sha256) : name
+				if view, seen := code_views[key]; seen {
+					if view != nil {
+						append(&msg.codes, Att_Item(^Code_View){view, int(j)})
+					} else {
+						append(&msg.files, int(j))
+					}
+					continue
+				}
+
+				view: ^Code_View
+				if bytes, ok := media_load(client, account, strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator), reference); ok {
+					defer delete(bytes)
+					view = code_view_make(lower, string(bytes))
+					blob_sizes[strings.clone(key)] = i64(len(bytes))
+				} else {
+					fmt.eprintfln("media: download failed (%s): %s", name, marmot.last_error())
+				}
+
+				code_views[strings.clone(key)] = view
+				if view != nil {
+					append(&msg.codes, Att_Item(^Code_View){view, int(j)})
+				} else {
+					append(&msg.files, int(j))
+				}
+				continue
+			}
+
 			// Fonts: rasterized type specimen.
 			if strings.has_suffix(lower, ".ttf") || strings.has_suffix(lower, ".otf") {
 				key := reference.plaintext_sha256 != nil ? string(reference.plaintext_sha256) : name
@@ -618,6 +736,16 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 		append(&ui.messages, msg)
 	}
 
+	// Fold the collected votes and thread reply counts onto their rows.
+	for &m in ui.messages {
+		if len(m.poll_opts) > 0 {
+			poll_tally(&m, votes[m.id], ui.account_ref)
+		}
+		if n, ok := thread_counts[m.id]; ok {
+			m.thread_replies = n
+		}
+	}
+
 	apply_pending_reacts(ui)
 }
 
@@ -685,9 +813,13 @@ system_text :: proc(client: ^marmot.Client, ev: ^marmot.Group_System_Event) -> s
 	return ev.text != nil ? string(ev.text) : ""
 }
 
-// "Load earlier": raise this chat's window by one page and reload,
-// then re-anchor the viewport on the previously-topmost message via
-// the jump/centering path (which also cancels the bottom jump).
+// px above the top of loaded history at which scrolling up fetches the
+// next page (handle_chat).
+TL_FETCH_MARGIN :: f32(300)
+
+// Raise this chat's window by one page and reload, then re-anchor the
+// viewport on the previously-topmost message via the jump/centering
+// path (which also cancels the bottom jump).
 load_earlier :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 	if ui.selected < 0 {
 		return

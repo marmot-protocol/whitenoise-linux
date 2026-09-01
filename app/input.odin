@@ -459,19 +459,13 @@ compose_mouse :: proc(ui: ^Ui_State) {
 	// The first line row whose bottom edge is under the pointer takes
 	// the hit; past the last row the caret lands in the last line.
 	hit := len(text)
-	line_start := 0
-	for i := u32(0); ; i += 1 {
-		line_end := len(text)
-		if nl := strings.index_byte(text[line_start:], '\n'); nl >= 0 {
-			line_end = line_start + nl
-		}
-		row := clay.GetElementData(clay.ID("ComposeLine", i))
-		if !row.found || my < row.boundingBox.y + row.boundingBox.height || line_end == len(text) {
+	for r, i in compose_lines(text) {
+		row := clay.GetElementData(clay.ID("ComposeLine", u32(i)))
+		if !row.found || my < row.boundingBox.y + row.boundingBox.height || r[1] == len(text) {
 			origin := row.found ? row.boundingBox.x : box.boundingBox.x
-			hit = line_start + hit_compose_line(text[line_start:line_end], mx - origin)
+			hit = r[0] + hit_compose_line(text[r[0]:r[1]], mx - origin)
 			break
 		}
-		line_start = line_end + 1
 	}
 
 	switch {
@@ -516,6 +510,11 @@ compose_mouse :: proc(ui: ^Ui_State) {
 // two frames earlier so press-driven paths (field focus) see it too.
 forced_release := false
 forced_press := false
+
+// The injected position, in raw pixels, for the paths that read the
+// mouse directly instead of through clay (the webxdc modal).
+test_pointer: [2]f32
+test_pointer_on := false
 
 mouse_pressed :: proc() -> bool {
 	return rl.IsMouseButtonPressed(.LEFT) || forced_press
@@ -574,6 +573,11 @@ mouse_released :: proc() -> bool {
 
 clicked :: proc(id_str: string) -> bool {
 	return mouse_released() && clay.PointerOver(clay.ID(id_str))
+}
+
+// The same for a row of chips sharing one id with an index.
+clicked_indexed :: proc(id_str: string, index: u32) -> bool {
+	return mouse_released() && clay.PointerOver(clay.ID(id_str, index))
 }
 
 // Keyboard editing + click actions for the login pane. Runs after the

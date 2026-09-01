@@ -1,0 +1,24 @@
+# Deco skyline at dusk: cold concrete, chrome verticals, one gold seam.
+name = "Metropolis"
+
+[colors]
+bg = "#10151aff"
+bg-2 = "#1a2129ff"
+text-hi = "#e4e8ecff"
+danger = "#a94a3fff"
+warning = "#bb9445ff"
+accent-base = [
+    "#c0a054ff",
+    "#76838fff",
+    "#8f9daaff",
+    "#a4854fff",
+    "#586674ff",
+]
+
+[style]
+backdrop = "deco"
+bevel = true
+outline-surfaces = true
+bracket-labels = true
+r-scale = 0.0
+border-w = 1.0

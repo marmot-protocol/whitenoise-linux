@@ -1,0 +1,26 @@
+# Nixie tubes behind glass: orange numerals glowing in a dark case,
+# with the faint scan of the display.
+name = "Nixie"
+
+[colors]
+bg = "#07060aff"
+bg-2 = "#0f0c12ff"
+panel = "#131017ff"
+text-hi = "#f6cf9eff"
+danger = "#e0512fff"
+warning = "#d9973aff"
+accent-base = [
+    "#e8862bff",
+    "#f0a95cff",
+    "#d96f18ff",
+    "#c25a10ff",
+    "#f3c68eff",
+]
+
+[style]
+backdrop = "scan"
+focus-glow = true
+r-scale = 0.4
+border-w = 1.0
+glow-r = 7.0
+font = "JetBrains Mono"

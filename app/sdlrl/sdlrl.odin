@@ -183,8 +183,6 @@ SCANCODES := [KeyboardKey]sdl.Scancode{
 
 // ── Window / frame loop ─────────────────────────────────────────────
 
-SetConfigFlags :: proc() {}
-
 InitWindow :: proc(width, height: i32, title: cstring) {
 	if !sdl.Init({.VIDEO}) {
 		fmt.eprintfln("sdl: init failed: %s", sdl.GetError())
@@ -453,6 +451,10 @@ SetHideOnClose :: proc(on: bool) {
 	hide_on_close = on
 }
 
+SetWindowSize :: proc(w, h: i32) {
+	_ = sdl.SetWindowSize(state.window, c.int(w), c.int(h))
+}
+
 HideWindow :: proc() {
 	_ = sdl.HideWindow(state.window)
 }
@@ -460,10 +462,6 @@ HideWindow :: proc() {
 ShowWindow :: proc() {
 	_ = sdl.ShowWindow(state.window)
 	_ = sdl.RaiseWindow(state.window)
-}
-
-WindowHidden :: proc() -> bool {
-	return .HIDDEN in sdl.GetWindowFlags(state.window)
 }
 
 CloseWindow :: proc() {
@@ -515,6 +513,12 @@ WindowShouldClose :: proc() -> bool {
 	state.wheel = {}
 	clear(&state.chars)
 
+	// The density is not fixed for the window's life: snapping to a
+	// monitor with another scale changes it, and everything sized in
+	// physical pixels (targets, the render scale) must follow or the
+	// content stops matching the window.
+	state.density = max(sdl.GetWindowPixelDensity(state.window), 1)
+
 	event: sdl.Event
 	for sdl.PollEvent(&event) {
 		#partial switch event.type {
@@ -523,6 +527,14 @@ WindowShouldClose :: proc() -> bool {
 				HideWindow()
 				swallow_quit = true
 			}
+		case .WINDOW_RESIZED:
+			// Tiled Wayland: a later state-only configure (a focus swap
+			// when a neighbor maps) carries no size, and SDL then falls
+			// back to its cached floating size, which is whatever the
+			// window measured before the tile. Echoing every real resize
+			// into that cache keeps the fallback current, or the layout
+			// flaps between the old and new size for a couple of frames.
+			_ = sdl.SetWindowSize(state.window, event.window.data1, event.window.data2)
 		case .QUIT:
 			if swallow_quit {
 				swallow_quit = false
@@ -692,6 +704,12 @@ GetCharPressed :: proc() -> rune {
 	return r
 }
 
+// Test hook: inject a rune as if it arrived from TEXT_INPUT, so a
+// headless run can type.
+PushChar :: proc(r: rune) {
+	append(&state.chars, r)
+}
+
 IsMouseButtonPressed :: proc(button: MouseButton) -> bool {
 	return state.m_pressed[button]
 }
@@ -779,12 +797,12 @@ UnloadTexture :: proc(texture: Texture2D) {
 // Streaming texture for the video embeds. Blend is off: mpv's "rgb0"
 // frames carry 0 in the padding byte, which BLEND would read as
 // fully transparent.
-CreateStreamTexture :: proc(w, h: i32) -> Texture2D {
+CreateStreamTexture :: proc(w, h: i32, blend := false) -> Texture2D {
 	tex := sdl.CreateTexture(state.renderer, .RGBA32, .STREAMING, w, h)
 	if tex == nil {
 		return {}
 	}
-	sdl.SetTextureBlendMode(tex, {})
+	sdl.SetTextureBlendMode(tex, blend ? {.BLEND} : {})
 	sdl.SetTextureScaleMode(tex, .LINEAR)
 	return {tex = tex, width = w, height = h}
 }
@@ -1175,18 +1193,6 @@ soft_sprite :: proc() -> ^sdl.Texture {
 	return soft_tex
 }
 
-// One stretched blob: sparks, trails, anything round.
-DrawSoft :: proc(x, y, w, h: f32, color: Color) {
-	tex := soft_sprite()
-	if tex == nil {
-		return
-	}
-	sdl.SetTextureColorMod(tex, color.r, color.g, color.b)
-	sdl.SetTextureAlphaMod(tex, color.a)
-	dest := sdl.FRect{x, y, w, h}
-	sdl.RenderTexture(state.renderer, tex, nil, &dest)
-}
-
 // A halo `spread` px wide around the given box.
 DrawGlow :: proc(x, y, w, h, spread: f32, color: Color) {
 	tex := soft_sprite()
@@ -1409,6 +1415,7 @@ DrawTargetBlurred :: proc(slot: int, alpha: f32) {
 	defer restore_view(saved)
 
 	src := t
+	built := 0
 	for i in 0 ..< BLUR_STEPS {
 		w, h := max(t.w >> u32(i + 1), 1), max(t.h >> u32(i + 1), 1)
 		if !ensure_target(&blur_chain[i], w, h) {
@@ -1418,6 +1425,19 @@ DrawTargetBlurred :: proc(slot: int, alpha: f32) {
 		sdl.SetRenderDrawColor(state.renderer, 0, 0, 0, 0)
 		sdl.RenderClear(state.renderer)
 		dest := sdl.FRect{0, 0, f32(w), f32(h)}
+		sdl.SetTextureAlphaMod(src.tex, 255)
+		sdl.RenderTexture(state.renderer, src.tex, nil, &dest)
+		src = blur_chain[i]
+		built = i + 1
+	}
+	// Walk back up the chain: one straight 16x stretch shows its texel
+	// grid as blocky gradients, while doubling through the levels
+	// bilinear-filters the reconstruction at every step.
+	for i := built - 2; i >= 0; i -= 1 {
+		sdl.SetRenderTarget(state.renderer, blur_chain[i].tex)
+		sdl.SetRenderDrawColor(state.renderer, 0, 0, 0, 0)
+		sdl.RenderClear(state.renderer)
+		dest := sdl.FRect{0, 0, f32(blur_chain[i].w), f32(blur_chain[i].h)}
 		sdl.SetTextureAlphaMod(src.tex, 255)
 		sdl.RenderTexture(state.renderer, src.tex, nil, &dest)
 		src = blur_chain[i]

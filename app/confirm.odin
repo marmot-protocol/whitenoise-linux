@@ -23,6 +23,7 @@ Confirm_Kind :: enum {
 	Leave_Group,
 	Block,
 	Remove_Contact,
+	Delete_Theme,
 	Remove_Member,
 	Promote,
 	Demote,
@@ -53,6 +54,8 @@ confirm_copy :: proc(c: Confirm) -> (title, body, action: string) {
 		return N_("Leave this group?"), N_("You stop receiving its messages. Rejoining needs a new invite."), N_("Leave")
 	case .Block:
 		return N_("Block this contact?"), N_("Their direct chat leaves your list. Nothing is published, and you can undo it here."), N_("Block")
+	case .Delete_Theme:
+		return N_("Delete this theme?"), N_("Its file is removed from this device. Themes shared into a chat stay there."), N_("Delete")
 	case .Remove_Contact:
 		return N_("Remove this contact?"), N_("They come off your published contact list. Groups you already share stay as they are."), N_("Remove")
 	case .Remove_Member:
@@ -181,6 +184,8 @@ run_confirm :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	case .Block:
 		ui.blocked[strings.clone(c.arg)] = true
 		save_settings(ui)
+	case .Delete_Theme:
+		delete_theme(ui, c.idx)
 	case .Remove_Contact:
 		remove_contact(ui, client, c.arg)
 	case .Remove_Member:

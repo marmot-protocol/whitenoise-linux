@@ -15,11 +15,21 @@ import rl "sdlrl"
 
 import marmot "../marmot"
 
-// Destination rows: every chat except the source and pending invites,
-// matching the filter against the title, case-insensitive.
+// What a pick in the destination picker sends. Forwarding a message
+// and sharing a theme want the same list and the same filter; only the
+// title and the action differ.
+Fwd_Kind :: enum {
+	Message,
+	Theme,
+}
+
+// Destination rows: every chat except pending invites, matching the
+// filter against the title, case-insensitive. Forwarding also hides
+// the chat the message is already in; sharing a theme does not, since
+// the open chat is a perfectly good destination for it.
 fwd_visible :: proc(ui: ^Ui_State, index: int) -> bool {
 	chat := ui.chats[index]
-	if index == ui.selected || chat.pending {
+	if chat.pending || (ui.fwd_kind == .Message && index == ui.selected) {
 		return false
 	}
 	filter := strings.to_lower(string(ui.fwd_filter[:]), context.temp_allocator)
@@ -40,7 +50,10 @@ forward_modal :: proc(ui: ^Ui_State) {
 	},
 	) {
 		if clay.UI(clay.ID("FwdHead"))({layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}}) {
-			clay.Text("Forward to", {fontId = FONT_TITLE, fontSize = 20, textColor = TEXT})
+			clay.Text(
+				tr(ui.fwd_kind == .Theme ? "Share theme with" : "Forward to"),
+				{fontId = FONT_TITLE, fontSize = 20, textColor = TEXT},
+			)
 			if clay.UI(clay.ID("FwdHeadGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 			if clay.UI(clay.ID("FwdClose"))(
 			{layout = {sizing = {width = clay.SizingFixed(26), height = clay.SizingFixed(26)}, childAlignment = {x = .Center, y = .Center}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(7)},
@@ -199,7 +212,10 @@ do_forward :: proc(ui: ^Ui_State, client: ^marmot.Client, dest: int) {
 // Click/keyboard handling for the open forward picker; anything
 // outside the modal dismisses it.
 handle_forward :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if ui.fwd_msg < 0 || ui.fwd_msg >= len(ui.messages) || rl.IsKeyPressed(.ESCAPE) {
+	// A forward needs its source message to still exist; a theme share
+	// carries its own payload and does not.
+	stale := ui.fwd_kind == .Message && (ui.fwd_msg < 0 || ui.fwd_msg >= len(ui.messages))
+	if stale || rl.IsKeyPressed(.ESCAPE) {
 		ui.fwd_open = false
 		ui.focus = .Compose
 		return
@@ -216,7 +232,11 @@ handle_forward :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if fwd_visible(ui, i) && clay.PointerOver(clay.ID("FwdRow", u32(i))) {
 			ui.fwd_open = false
 			ui.focus = .Compose
-			do_forward(ui, client, i)
+			if ui.fwd_kind == .Theme {
+				share_theme(ui, client, i)
+			} else {
+				do_forward(ui, client, i)
+			}
 			return
 		}
 	}

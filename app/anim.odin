@@ -103,6 +103,21 @@ anim_to :: proc(key: u32, target: f32, rate: f32 = ANIM_RATE) -> f32 {
 	return entry.v
 }
 
+// Pin a value without easing. A gutter drag tracks the pointer exactly;
+// the entry must follow it, or release replays the whole move from
+// where the drag began.
+anim_set :: proc(key: u32, v: f32) {
+	anim_vals[key] = {v = v, frame = anim_frame}
+}
+
+// A global geometry discontinuity (a zoom change): every eased value
+// would otherwise glide in from coordinates that no longer exist, a
+// second animation on top of the instant rescale. Drop them all; the
+// first sighting of each key snaps to its target.
+anim_snap_all :: proc() {
+	clear(&anim_vals)
+}
+
 // Damped spring. Overshoots by design: that is what reads as physical.
 anim_pop :: proc(key: u32, target: f32, stiff: f32 = 260, damp: f32 = 18) -> f32 {
 	entry, seen := anim_vals[key]
@@ -200,52 +215,6 @@ ease_back :: proc(t: f32) -> f32 {
 	return k * k * ((OVERSHOOT + 1) * k + OVERSHOOT) + 1
 }
 
-// ── Boxes that moved ────────────────────────────────────────────────
-
-// Where an element was last frame, eased toward where clay just put
-// it. clay is immediate mode, so this is the only way to notice that a
-// row changed place: keep the old box, walk it to the new one. Callers
-// draw at the returned box instead of the laid-out one.
-Anim_Box :: struct {
-	v:     clay.BoundingBox,
-	frame: u32,
-}
-
-anim_boxes: map[u32]Anim_Box
-
-BOX_RATE :: f32(20)
-BOX_EPS :: f32(0.3) // sub-pixel; nothing to see below it
-
-anim_box :: proc(key: u32, target: clay.BoundingBox, rate: f32 = BOX_RATE) -> clay.BoundingBox {
-	entry, seen := anim_boxes[key]
-	if entry.frame == anim_frame {
-		return entry.v // already stepped this frame
-	}
-	if !seen || !motion_on() {
-		entry.v = target // first sighting never flies in from nowhere
-	} else {
-		cur := transmute([4]f32)entry.v
-		goal := transmute([4]f32)target
-		step := anim_drain(rate)
-		settled := true
-		for i in 0 ..< 4 {
-			cur[i] += (goal[i] - cur[i]) * step
-			if abs(goal[i] - cur[i]) < BOX_EPS {
-				cur[i] = goal[i]
-			} else {
-				settled = false
-			}
-		}
-		entry.v = transmute(clay.BoundingBox)cur
-		if !settled {
-			anim_moving += 1
-		}
-	}
-	entry.frame = anim_frame
-	anim_boxes[key] = entry
-	return entry.v
-}
-
 // The box clay gave an element last frame, if it was laid out at all.
 element_box :: proc(id: clay.ElementId) -> (clay.BoundingBox, bool) {
 	data := clay.GetElementData(id)
@@ -262,6 +231,9 @@ PAGE_SETTLE :: 0.4 // grace after a switch: arrivals inside it are "already ther
 // new-chat pane. Anything that swaps the whole main card.
 page_view_key :: proc(ui: ^Ui_State) -> u32 {
 	key := u32(ui.page) * 131 + u32(ui.selected + 2) * 7919
+	if ui.show_members {
+		key ~= 0x2ab17e10 // the group-info page swaps the whole chat area
+	}
 	return ui.new_chat_open ? key ~ 0x5bf03635 : key
 }
 
@@ -281,13 +253,6 @@ page_advance :: proc(ui: ^Ui_State) {
 	if page_t < 1 {
 		anim_moving += 1
 	}
-}
-
-// True while the current view is still settling in: a jump-to-bottom
-// during it should snap, and a message rendered during it arrived with
-// the view rather than into it.
-page_settling :: proc() -> bool {
-	return rl.GetTime() - page_at < PAGE_SETTLE
 }
 
 // ── Panels that open and close ──────────────────────────────────────
@@ -480,7 +445,6 @@ press_down :: proc(id: clay.ElementId) -> u16 {
 // ── Scrolling ───────────────────────────────────────────────────────
 
 SCROLL_DRAIN :: f32(18) // how fast a wheel notch is spent
-OVERSCROLL_MAX :: f32(52)
 CLAY_SCROLL_PIXELS :: f32(10) // clay's own delta-to-pixels factor
 
 // Undrained wheel input, spent a fraction per frame.
@@ -492,25 +456,8 @@ scroll_residual: clay.Vector2
 overscroll: f32
 
 update_overscroll :: proc(step_y: f32) {
-	pull := f32(0)
-	data := clay.GetScrollContainerData(clay.ID("Timeline"))
-	if data.found && clay.PointerOver(clay.ID("Timeline")) {
-		overflow := max(data.contentDimensions.height - data.scrollContainerDimensions.height, 0)
-		at_top := data.scrollPosition.y >= -0.5
-		at_bottom := data.scrollPosition.y <= -overflow + 0.5
-		if (step_y > 0 && at_top) || (step_y < 0 && at_bottom) {
-			pull = step_y * CLAY_SCROLL_PIXELS
-		}
-	}
-	// The further out it already is, the less each notch adds.
-	overscroll += pull * (1 - abs(overscroll) / OVERSCROLL_MAX)
-	overscroll = clamp(overscroll, -OVERSCROLL_MAX, OVERSCROLL_MAX)
-	overscroll -= overscroll * anim_drain(11)
-	if abs(overscroll) < 0.1 {
-		overscroll = 0
-	} else {
-		anim_moving += 1
-	}
+	_ = step_y
+	overscroll = 0 // the chat box does not animate; no rubber band
 }
 
 // ── Dragging the view ───────────────────────────────────────────────
@@ -587,24 +534,27 @@ SCROLL_LAG_K :: f32(0.09) // px of lag per px/frame of scroll
 MSG_PAD_Y :: u16(6) // the row's resting vertical padding
 
 scroll_vel: f32
+
+// Set by anything that teleports the scroll position (a reply jump, a
+// search hit): the move must not read as velocity, or the smear ghosts
+// the pre-jump content over the timeline.
+scroll_jumped: bool
+
+// True only on frames where the app itself is animating the timeline
+// (the glide to a newly arrived message). The smear is for that kind of
+// travel; the user's own wheel and drag stay sharp.
+scroll_glide: bool
+
 @(private = "file")
 scroll_prev_y: f32
 
 // Called once per frame, before the layout that reads it.
 update_scroll_vel :: proc() {
-	data := clay.GetScrollContainerData(clay.ID("Timeline"))
-	if !data.found || !motion_on() {
-		scroll_vel, scroll_prev_y = 0, 0
-		return
-	}
-	raw := data.scrollPosition.y - scroll_prev_y
-	scroll_prev_y = data.scrollPosition.y
-	scroll_vel += (raw - scroll_vel) * anim_drain(20)
-	if abs(scroll_vel) < 0.05 {
-		scroll_vel = 0
-	} else {
-		anim_moving += 1
-	}
+	// The chat box does not animate: no velocity means no row lag and
+	// no smear, whatever moved the scroll position.
+	scroll_glide = false
+	scroll_jumped = false
+	scroll_vel, scroll_prev_y = 0, 0
 }
 
 // Vertical padding for one message row: the same total height, shifted

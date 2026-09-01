@@ -161,7 +161,10 @@ context_menu :: proc(ui: ^Ui_State) {
 		// Same rows and gating as wiring/extra.rs builds (no text
 		// selection here). A tombstone offers no action rows.
 		ctx_item("CtxReact", ICON_SMILE, "Add reaction")
-		ctx_item("CtxReply", ICON_REPLY, "Reply")
+		if len(msg.thread_of) == 0 {
+			ctx_item("CtxReply", ICON_REPLY, "Reply")
+		}
+		ctx_item("CtxThread", ICON_COMMENTS, "Reply in thread")
 		ctx_item("CtxForward", ICON_FORWARD, "Forward")
 		if len(msg.body) > 0 {
 			ctx_item("CtxCopy", ICON_COPY, "Copy text")
@@ -224,7 +227,7 @@ edit_history_modal :: proc(ui: ^Ui_State) {
 					clay.Text(version.at, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
 				}
 				if i == 0 {
-					body_text(0xD0000 + u32(i) * 8, version.text, 13, TEXT)
+					body_text(0xD0000 + u32(i) * 8, version.text, 13, TEXT, wrap_w = EDIT_DIFF_WRAP)
 				} else {
 					diff_chips(u32(i), msg.history[i - 1].text, version.text)
 				}
@@ -244,9 +247,22 @@ EDIT_DIFF_WRAP :: f32(360)
 diff_chips :: proc(version: u32, prev, next: string) {
 	runs := diff_words(prev, next)
 	if len(runs) == 0 {
-		body_text(0xD0000 + version * 8, next, 13, TEXT)
+		body_text(0xD0000 + version * 8, next, 13, TEXT, wrap_w = EDIT_DIFF_WRAP)
 		return
 	}
+
+	// A single word wider than the line budget (a pasted token) splits
+	// into rune-fit fragments so its chips wrap instead of overflowing.
+	split := make([dynamic]Diff_Run, context.temp_allocator)
+	for run in runs {
+		at := 0
+		for at < len(run.text) {
+			cut := rune_fit(run.text, at, len(run.text), EDIT_DIFF_WRAP - 16, 13)
+			append(&split, Diff_Run{run.kind, run.text[at:cut]})
+			at = cut
+		}
+	}
+	runs = split
 
 	i := 0
 	for line := u32(0); i < len(runs); line += 1 {
@@ -320,8 +336,8 @@ raw_event_modal :: proc(ui: ^Ui_State) {
 // The "what is this?" explainer opened by tapping the MLS badge in the
 // chat header, the slint encryption-info modal: what end-to-end MLS
 // encryption means in plain language, plus the chat's MLS group id with
-// a Copy button.
-encryption_modal :: proc(chat: Chat_Row_Ui) {
+// a Copy button and the current MLS epoch.
+encryption_modal :: proc(ui: ^Ui_State, chat: Chat_Row_Ui) {
 	if clay.UI(clay.ID("EncModal"))(
 	{
 		layout = {sizing = {width = clay.SizingFixed(modal_w(clay.ID("EncModal"), 440))}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(20), childGap = 12},
@@ -348,6 +364,11 @@ encryption_modal :: proc(chat: Chat_Row_Ui) {
 		{layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(10)}, backgroundColor = ROW_BG, cornerRadius = rr(8), border = {color = FIELD_BORDER, width = bw()}},
 		) {
 			clay.Text(chat.group_id, {fontId = FONT_MONO, fontSize = 11, textColor = TEXT})
+		}
+
+		if len(ui.enc_epoch) > 0 {
+			eyebrow("EPOCH")
+			clay.Text(ui.enc_epoch, {fontId = FONT_MONO, fontSize = 11, textColor = TEXT})
 		}
 
 		if clay.UI(clay.ID("EncActions"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}}) {
@@ -456,8 +477,8 @@ emoji_picker :: proc(ui: ^Ui_State) {
 			custom := picker_custom(ui)
 			if len(custom) > 0 {
 				if clay.UI(clay.ID("PkCustomRow"))({layout = {childGap = 2}}) {
-					for k in custom {
-						picker_cell("PkCustom", u32(k), custom_emoji_texture(custom_emoji_names[k]))
+					for code, k in custom {
+						picker_cell("PkCustom", u32(k), custom_tex_by_code(code))
 					}
 				}
 			}

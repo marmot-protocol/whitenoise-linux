@@ -2,7 +2,9 @@
 // Run: ODIN_ROOT=build/odin-root odin test app
 package main
 
+import "core:fmt"
 import "core:testing"
+import "core:time"
 
 @(test)
 obs_parse_reads_keys :: proc(t: ^testing.T) {
@@ -30,7 +32,16 @@ audit_label_formats :: proc(t: ^testing.T) {
 	defer delete(size_only)
 	testing.expect_value(t, size_only, "1.5 KB")
 
+	// The stamp shows local time (2026-02-02 02:40 UTC shifted by the
+	// machine's zone), so the expected clock is derived through the same
+	// shift; the assertion guards the label's format, not the zone.
+	stamp := time.unix(i64(local_seconds(1_770_000_000_000)), 0)
+	year, month, day := time.date(stamp)
+	hour, minute, _ := time.clock_from_time(stamp)
+	expected := fmt.aprintf("2.0 MB · %04d-%02d-%02d · %02d:%02d", year, int(month), day, hour, minute)
+	defer delete(expected)
+
 	dated := audit_label(2_000_000, 1_770_000_000_000)
 	defer delete(dated)
-	testing.expect_value(t, dated, "2.0 MB · 2026-02-02 · 02:40")
+	testing.expect_value(t, dated, expected)
 }

@@ -2,6 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: wnl-ui\n"
 "Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-01 09:41+0200\n"
 "PO-Revision-Date: 2026-07-06 00:00+0000\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -11,1479 +12,2444 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#, c-format
-msgid "%d connecting, %d pending, %d disconnected, %d sleeping."
+#: about.odin:21
+msgid "plaintext"
 msgstr ""
 
-#, c-format
-msgid "%d of %d connected"
+#: about.odin:22
+msgid "sealed here"
 msgstr ""
 
-#, c-format
-msgid "%d of %d relays are up."
+#: about.odin:23
+msgid "carries the blob"
 msgstr ""
 
-#, c-format
-msgid "%d published, %d on this device, seen on %d relays."
+#: about.odin:24
+msgid "opened there"
 msgstr ""
 
-#, fuzzy, c-format
-msgid "%d published, so people can invite you."
-msgstr "公開すると他のユーザーがグループに招待できるようになります。"
+#: about.odin:32
+msgid "WHAT IT IS"
+msgstr "概要"
 
-msgid "(none)"
-msgstr ""
-
-#, fuzzy
-msgid "(nothing loaded yet, click Refresh)"
-msgstr "(まだ読み込みなし。「更新」をクリックしてください)"
-
-msgid "(unknown)"
-msgstr ""
-
-#, fuzzy
-msgid "(unpublished)"
-msgstr "公開済み"
-
-msgid "+"
-msgstr ""
-
-msgid "-"
-msgstr ""
-
+#: about.odin:34
 #, fuzzy
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr "White Noise は、プライベートなグループチャットのためのネイティブデスクトップクライアントです。メッセージはあなたのマシンを離れる前に MLS で暗号化され、Nostr リレーを経由して送られ、ルーム内の人にだけ復号されます。"
 
-msgid "ACTIONS"
-msgstr "操作"
-
-#, fuzzy
-msgid "ADD MEMBER"
-msgstr "メンバー"
-
-msgid "AUDIT LOG FILES"
-msgstr "監査ログファイル"
-
-msgid "About"
-msgstr "このアプリについて"
-
-msgid "Accent color"
-msgstr "アクセントカラー"
-
-msgid "Accept"
-msgstr "承認"
-
-msgid "Accounts"
-msgstr "アカウント"
-
-msgid "Add"
-msgstr "追加"
-
-msgid "Add a contact for a direct chat, or leave it empty for a group of your own."
-msgstr ""
-
-msgid "Add account"
-msgstr "アカウントを追加"
-
-msgid "Add reaction"
-msgstr "リアクションを追加"
-
-msgid "Add someone by npub, or make a group of your own."
-msgstr ""
-
-msgid "Admin"
-msgstr "管理者"
-
-msgid "Admins can add and remove members and change group details."
-msgstr ""
-
-msgid "Advanced"
-msgstr "詳細"
-
-msgid "Aggregate connection counter from the relay pool."
-msgstr "リレープールからの接続数カウンター。"
-
-msgid "All accounts stay connected. Switching only changes which one you're looking at."
-msgstr "すべてのアカウントは接続されたままです。切り替えても、表示するアカウントが変わるだけです。"
-
-#, fuzzy
-msgid "All folders"
-msgstr "フォルダを開く"
-
-#, fuzzy
-msgid "Also Ctrl + / - / 0."
-msgstr "Ctrl + / − / 0、または Ctrl + スクロールでも操作できます。"
-
-msgid "Always open links to this site"
-msgstr ""
-
-msgid "Anything you write here stays between you and this device's key."
-msgstr ""
-
-msgid "Appearance"
-msgstr "外観"
-
-msgid "Applies to message bodies and the composer."
-msgstr ""
-
-msgid "Archive"
-msgstr "アーカイブ"
-
-#, fuzzy
-msgid "Audit log file deleted."
-msgstr "監査ログを削除しました。"
-
-msgid "Audit logs"
-msgstr "監査ログ"
-
-msgid "BUILT WITH"
-msgstr ""
-
-msgid "Back"
-msgstr "戻る"
-
-msgid "Back up everything"
-msgstr "すべてをバックアップ"
-
-#, fuzzy
-msgid "Backup created."
-msgstr "バックアップに失敗しました: %1"
-
-#, c-format
-msgid "Backup imported: %d files restored."
-msgstr ""
-
-msgid "Backups hold what this device stores locally. Your keys and message history live in marmot's own store and are not included."
-msgstr ""
-
-msgid "Block"
-msgstr "ブロック"
-
-#, fuzzy
-msgid "Block this contact?"
-msgstr "このチャットリクエストをブロックしますか？"
-
-msgid "CONFIRM PASSWORD"
-msgstr "パスワードの確認"
-
-msgid "CUSTOM EMOJI"
-msgstr "カスタム絵文字"
-
-msgid "CacheClear"
-msgstr ""
-
-msgid "Cached attachments"
-msgstr "キャッシュされた添付ファイル"
-
-msgid "Cancel"
-msgstr "キャンセル"
-
-msgid "Cancel edit / reply, close panels"
-msgstr ""
-
-#, fuzzy
-msgid "Center the conversation"
-msgstr "会話を中央に配置"
-
-msgid "Centred conversation"
-msgstr "会話を中央に配置"
-
-msgid "Change"
-msgstr "変更"
-
-#, fuzzy
-msgid "Change photo"
-msgstr "パスワードを変更"
-
-#, fuzzy
-msgid "Check now"
-msgstr "確認中…"
-
-msgid "Checking your key with the relays. This takes a few seconds."
-msgstr ""
-
-msgid "Clear cache"
-msgstr "キャッシュを消去"
-
-#, fuzzy
-msgid "Clear effect"
-msgstr "キャッシュを消去"
-
-msgid "Close"
-msgstr "閉じる"
-
-msgid "Close to tray"
-msgstr ""
-
-msgid "Closing the window hides it. The tray icon shows your unread total and brings it back."
-msgstr ""
-
-#, fuzzy
-msgid "Collapse the chat list"
-msgstr "チャットパネルを折りたたむ"
-
-msgid "Command palette"
-msgstr ""
-
-msgid "Confirm"
-msgstr ""
-
-msgid "Confirm clear"
-msgstr ""
-
-msgid "Confirm delete"
-msgstr ""
-
-#, fuzzy
-msgid "Confirm import"
-msgstr "パスワードを確認"
-
-msgid "Confirm reveal"
-msgstr ""
-
-msgid "Confirm: delete this vault"
-msgstr ""
-
-#, fuzzy
-msgid "Connect to relays"
-msgstr "リレーに接続する"
-
-#, fuzzy
-msgid "Connected to relays"
-msgstr "リレーに接続する"
-
-#, fuzzy
-msgid "Connecting to relays"
-msgstr "リレーに接続中…"
-
-msgid "Contact"
-msgstr "連絡先"
-
-msgid "Continue"
-msgstr "続行"
-
-msgid "Copy"
-msgstr "コピー"
-
-msgid "Copy JSON"
-msgstr "JSON をコピー"
-
-#, fuzzy
-msgid "Copy npub"
-msgstr "公開鍵をコピー"
-
-msgid "Copy text"
-msgstr "テキストをコピー"
-
-#, fuzzy, c-format
-msgid "Couldn't change audit logs. %s"
-msgstr "監査ログを変更できませんでした。"
-
-#, fuzzy, c-format
-msgid "Couldn't change relay telemetry. %s"
-msgstr "リレーのリストを保存できませんでした。もう一度お試しください。"
-
-#, fuzzy
-msgid "Couldn't create the backup. Please try again."
-msgstr "チャットを作成できませんでした。もう一度お試しください。"
-
-#, fuzzy
-msgid "Couldn't create the vault. Please try again."
-msgstr "チャットを作成できませんでした。もう一度お試しください。"
-
-#, fuzzy, c-format
-msgid "Couldn't delete the audit log file. %s"
-msgstr "監査ログを削除できませんでした。"
-
-#, fuzzy, c-format
-msgid "Couldn't export the key. %s"
-msgstr "連絡先をエクスポートできませんでした。"
-
-#, fuzzy
-msgid "Couldn't load attachment. Click to retry."
-msgstr "動画を再生できませんでした — タップして再試行"
-
-#, fuzzy
-msgid "Couldn't load image. Click to retry."
-msgstr "画像をダウンロードできませんでした。"
-
-#, fuzzy, c-format
-msgid "Couldn't load the timeline. %s"
-msgstr "画像をダウンロードできませんでした。"
-
-#, fuzzy
-msgid "Couldn't open the backup. Double-check the password and try again."
-msgstr "そのアカウントを追加できませんでした。鍵を確認して、もう一度お試しください。"
-
-#, fuzzy, c-format
-msgid "Couldn't publish the key package. %s"
-msgstr "キーパッケージ本体"
-
-#, fuzzy
-msgid "Couldn't read that pubkey. Double-check it and try again."
-msgstr "そのアカウントを追加できませんでした。鍵を確認して、もう一度お試しください。"
-
-#, fuzzy
-msgid "Couldn't read the backup file. Please try again."
-msgstr "チャットを作成できませんでした。もう一度お試しください。"
-
-#, fuzzy
-msgid "Couldn't read the backup. Please try again."
-msgstr "チャットを作成できませんでした。もう一度お試しください。"
-
-#, fuzzy
-msgid "Couldn't read the vault file. Please try again."
-msgstr "チャットを作成できませんでした。もう一度お試しください。"
-
-#, fuzzy, c-format
-msgid "Couldn't read their key packages. %s"
-msgstr "キーパッケージ本体"
-
-#, fuzzy, c-format
-msgid "Couldn't reveal your private key. %s"
-msgstr "リアクションを削除できませんでした。もう一度お試しください。"
-
-#, fuzzy
-msgid "Couldn't serialize the key packages. Please try again."
-msgstr "チャットを作成できませんでした。もう一度お試しください。"
-
-#, fuzzy
-msgid "Couldn't serialize the snapshot. Please try again."
-msgstr "チャットを作成できませんでした。もう一度お試しください。"
-
-#, fuzzy
-msgid "Couldn't unlock the vault. Double-check the password and try again."
-msgstr "そのアカウントを追加できませんでした。鍵を確認して、もう一度お試しください。"
-
-msgid "Create"
-msgstr "作成"
-
-msgid "Create backup"
-msgstr "バックアップを作成"
-
-#, fuzzy
-msgid "Create backup..."
-msgstr "バックアップを作成"
-
-msgid "DANGER ZONE"
-msgstr "危険ゾーン"
-
-#, fuzzy
-msgid "DECODED MLS KEY PACKAGES"
-msgstr "あなたのキーパッケージ"
-
-msgid "DESKTOP ALERTS"
-msgstr "デスクトップ通知"
-
-msgid "DEVELOPER"
-msgstr "開発者"
-
-#, fuzzy
-msgid "DISPLAY NAME"
-msgstr "表示名"
-
-msgid "Date format"
-msgstr "日付形式"
-
-msgid "Debug"
-msgstr "デバッグ"
-
-msgid "Decline"
-msgstr ""
-
-msgid "Decline this invitation?"
-msgstr ""
-
-msgid "Decode own"
-msgstr ""
-
-msgid "Delete"
-msgstr "削除"
-
-msgid "Delete for everyone"
-msgstr ""
-
-msgid "Delete for me"
-msgstr "自分のみ削除"
-
-#, fuzzy
-msgid "Delete for you?"
-msgstr "自分のみ削除しますか？"
-
-#, fuzzy
-msgid "Delete this message?"
-msgstr "自分のみ削除しますか？"
-
-#, fuzzy
-msgid "Deleted. Recording continues in a fresh file."
-msgstr "監査ログを削除しました — 新しいファイルで記録を続けます。"
-
-#, fuzzy
-msgid "Deleting the file being recorded rotates it. Recording continues in a fresh file."
-msgstr "記録中のファイルを削除するとローテーションされ、新しいファイルに記録が続きます。"
-
-msgid "Demote"
-msgstr ""
-
-msgid "Desktop notifications"
-msgstr "デスクトップ通知"
-
-msgid "Developer mode"
-msgstr "開発者モード"
-
-#, fuzzy
-msgid "Done."
-msgstr "完了"
-
-msgid "Drops idle relay sockets and dials them again."
-msgstr ""
-
-msgid "ENCRYPTED KEY (NCRYPTSEC)"
-msgstr "暗号化キー(NCRYPTSEC)"
-
-msgid "EXPORT CHAT"
-msgstr ""
-
-#, fuzzy
-msgid "Edit"
-msgstr "編集 %1"
-
-msgid "Edit history"
-msgstr "編集履歴"
-
-msgid "Edit message"
-msgstr "メッセージを編集"
-
-#, fuzzy
-msgid "Encrypted key copied"
-msgstr "暗号化キーをエクスポート(ncryptsec)"
-
-msgid "End-to-end encrypted"
-msgstr "エンドツーエンド暗号化"
-
-msgid "Enter the password this backup was created with. The settings, drafts, custom emoji, and themes on this device will be replaced."
-msgstr ""
-
-#, fuzzy
-msgid "Enter your password to unlock this device's keys."
-msgstr "パスワードを入力してロックを解除"
-
-msgid "Event id"
-msgstr ""
-
-#, fuzzy
-msgid "Expand the chat list"
-msgstr "チャットパネルを展開"
-
-#, fuzzy
-msgid "Export CSV"
-msgstr "エクスポート"
-
-#, fuzzy
-msgid "Export JSON"
-msgstr "エクスポート"
-
-#, fuzzy
-msgid "Export as HTML"
-msgstr "エクスポート"
-
-msgid "Export as Markdown"
-msgstr ""
-
-msgid "FOLDERS"
-msgstr ""
-
-#, fuzzy
-msgid "Filter unread chats"
-msgstr "未読のチャットのみ表示"
-
-msgid "Folders"
-msgstr ""
-
-msgid "Forward"
-msgstr "転送"
-
-#, fuzzy
-msgid "From file"
-msgstr "%1 から"
-
-msgid "GROUP ID"
-msgstr ""
-
-#, fuzzy
-msgid "GROUP NAME"
-msgstr "グループ名（任意）"
-
-msgid "GROUPS IN COMMON"
-msgstr "共通のグループ"
-
-msgid "General"
-msgstr "一般"
-
-#, fuzzy
-msgid "Generating your key"
-msgstr "新しい鍵を生成"
-
-msgid "Get an alert when a message arrives in a chat you're not viewing."
-msgstr "表示していないチャットにメッセージが届いたときに通知を受け取ります。"
-
-msgid "Get started"
-msgstr ""
-
-#, fuzzy
-msgid "Go to archive"
-msgstr "アーカイブ解除"
-
-msgid "Go to chats"
-msgstr ""
-
-msgid "Go to people"
-msgstr ""
-
-#, fuzzy
-msgid "Go to settings"
-msgstr "設定"
-
-#, fuzzy
-msgid "Go to your profile"
-msgstr "あなたのプロフィール"
-
-#, fuzzy
-msgid "Group id copied"
-msgstr "グループ ID"
-
-msgid "HELP"
-msgstr ""
-
-msgid "HTML"
-msgstr ""
-
-msgid "Hide"
-msgstr ""
-
-msgid "How far the mouse wheel moves the view."
-msgstr ""
-
-msgid "IDENTITY"
-msgstr "ID"
-
-msgid "INBOX RELAYS"
-msgstr "受信リレー"
-
-msgid "INCOMING MESSAGES"
-msgstr "受信メッセージ"
-
-msgid "INSPECT SOMEONE ELSE'S"
-msgstr ""
-
-msgid "Images and files kept on this device so they don't download twice, sealed with your vault key."
-msgstr ""
-
-msgid "Import a backup"
-msgstr "バックアップをインポート"
-
-#, fuzzy
-msgid "Import a key"
-msgstr "バックアップをインポート"
-
-msgid "Import backup"
-msgstr "バックアップをインポート"
-
-#, fuzzy
-msgid "Import..."
-msgstr "インポート"
-
-#, fuzzy
-msgid "ImportBtn"
-msgstr "インポート"
-
-#, fuzzy
-msgid "Insert a new line"
-msgstr "新しい鍵を生成"
-
-msgid "Inspect"
-msgstr ""
-
-msgid "Interface language"
-msgstr "インターフェース言語"
-
-#, fuzzy
-msgid "Interface sounds"
-msgstr "インターフェースのズーム"
-
-msgid "Interface zoom"
-msgstr "インターフェースのズーム"
-
-msgid "Invite"
-msgstr "招待"
-
-msgid "It disappears for everyone in the chat. This can't be undone."
-msgstr ""
-
-#, fuzzy
-msgid "It is what lets people invite you to a group."
-msgstr "公開すると他のユーザーがグループに招待できるようになります。"
-
-msgid "It stays for everyone else. You won't see it on this device again."
-msgstr ""
-
-msgid "Its keys stay in the vault on this device. You can sign in again from the accounts screen."
-msgstr ""
-
-msgid "KEY PACKAGES"
-msgstr "キーパッケージ"
-
-msgid "KEY PACKAGES (PUBLISHED TO YOUR KIND-10051 RELAY LIST)"
-msgstr ""
-
-msgid "KEYS & BACKUPS"
-msgstr "鍵とバックアップ"
-
-msgid "KP inspector"
-msgstr ""
-
-msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
-msgstr "開いている会話を全幅にせず、読みやすい幅に保ちます。"
-
-msgid "Key package"
-msgstr "キーパッケージ"
-
-#, c-format
-msgid "Key package accepted by %d relays."
-msgstr ""
-
-#, fuzzy
-msgid "Key package published"
-msgstr "キーパッケージ"
-
-msgid "Key package ref"
-msgstr "キーパッケージ参照"
-
-msgid "Key packages"
-msgstr "キーパッケージ"
-
-msgid "Keyboard shortcuts"
-msgstr ""
-
-msgid "Keys & identity"
-msgstr "鍵と ID"
-
-msgid "LANGUAGE"
-msgstr "言語"
-
-msgid "LAYOUT"
-msgstr "レイアウト"
-
-msgid "LINKED DEVICES"
-msgstr "リンク済みデバイス"
-
-msgid "Last backup"
-msgstr "最後のバックアップ"
-
-msgid "Launch at login"
-msgstr "ログイン時に起動"
-
-#, fuzzy
-msgid "Leave"
-msgstr "{}を退出しますか？"
-
-msgid "Leave group"
-msgstr "グループを退出"
-
-#, fuzzy
-msgid "Leave this group?"
-msgstr "グループを退出"
-
-msgid "Links to these exact sites open without confirmation."
-msgstr "これらのサイトへのリンクは確認なしで開きます。"
-
-msgid "Load earlier messages"
-msgstr "以前のメッセージを読み込む"
-
-msgid "Loading your accounts"
-msgstr ""
-
-msgid "Location"
-msgstr "保存場所"
-
-msgid "MEDIA CACHE"
-msgstr "メディアキャッシュ"
-
-#, fuzzy
-msgid "MLS · YOUR KEY MATERIAL"
-msgstr "MLS  ·  あなたの鍵素材"
-
-#, fuzzy
-msgid "MOTION"
-msgstr "操作"
-
-#, fuzzy
-msgid "Make this member an admin?"
-msgstr "{}を管理者にしますか？"
-
-msgid "Mark read"
-msgstr ""
-
-msgid "Mark unread"
-msgstr ""
-
-msgid "Markdown"
-msgstr ""
-
-msgid "Media cache cleared."
-msgstr ""
-
-msgid "Members"
-msgstr "メンバー"
-
-#, fuzzy
-msgid "Message copied"
-msgstr "画像をコピーしました"
-
-msgid "Message menu"
-msgstr ""
-
-#, fuzzy
-msgid "Message text copied"
-msgstr "画像をコピーしました"
-
-msgid "Message text size"
-msgstr ""
-
-#, fuzzy
-msgid "Move to folder"
-msgstr "フォルダを開く"
-
-msgid "Multi-device isn't available yet"
-msgstr "マルチデバイスはまだ利用できません"
-
-msgid "NSEC"
-msgstr ""
-
-msgid "Network & relays"
-msgstr "ネットワークとリレー"
-
-msgid "Never share it. It is your identity."
-msgstr ""
-
-msgid "New chat"
-msgstr "新しいチャット"
-
-#, fuzzy
-msgid "New message"
-msgstr "メッセージを送信"
-
-#, fuzzy
-msgid "Next accent color"
-msgstr "アクセントカラー"
-
-#, fuzzy
-msgid "Next theme"
-msgstr "次の画像"
-
-msgid "Nickname"
-msgstr "ニックネーム"
-
-#, fuzzy
-msgid "No archived chats."
-msgstr "アーカイブしたチャットはありません"
-
-#, fuzzy
-msgid "No audit log files."
-msgstr "ディスク上に監査ログファイルはありません。"
-
-#, fuzzy
-msgid "No backup made from this device yet."
-msgstr "この端末から削除"
-
-msgid "No chat is open. Select one and refresh."
-msgstr ""
-
-#, fuzzy
-msgid "No chats yet"
-msgstr "連絡先がまだありません"
-
-#, fuzzy
-msgid "No command matches."
-msgstr "一致するものがありません"
-
-msgid "No contacts yet"
-msgstr "連絡先がまだありません"
-
-#, fuzzy
-msgid "No folders yet."
-msgstr "リレーがまだありません"
-
-#, fuzzy
-msgid "No inbox relays."
-msgstr "リレー上にプロフィールが見つかりません。"
-
-#, fuzzy
-msgid "No key package on this device or its relays."
-msgstr "リレーにキーパッケージがまだありません"
-
-msgid "No key package published for that pubkey."
-msgstr ""
-
-#, fuzzy
-msgid "No key package yet. Publish one so people can invite you."
-msgstr "公開すると他のユーザーがグループに招待できるようになります。"
-
-msgid "No messages yet"
-msgstr "まだメッセージはありません"
-
-#, fuzzy
-msgid "No relay list published."
-msgstr "リレーリストが変更されました。"
-
-msgid "No trusted sites."
-msgstr "信頼済みのサイトはありません。"
-
-msgid "Not loaded yet. Click Decode own."
-msgstr ""
-
-#, fuzzy
-msgid "Not loaded yet. Click Refresh."
-msgstr "(まだ読み込みなし。「更新」をクリックしてください)"
-
-msgid "Notes to self"
-msgstr ""
-
-msgid "Notifications"
-msgstr "通知"
-
-msgid "ON THIS DEVICE"
-msgstr "このデバイス上"
-
-msgid "OUTBOX RELAYS (NIP-65)"
-msgstr "送信リレー (NIP-65)"
-
-msgid "Off shows only \"New message\" without the text."
-msgstr "オフにすると、本文を表示せず「新着メッセージ」とだけ表示します。"
-
-msgid "One-tap reactions"
-msgstr "ワンタップリアクション"
-
-msgid "Open"
-msgstr "開く"
-
-msgid "Open folder"
-msgstr "フォルダを開く"
-
-msgid "Open this link?"
-msgstr "このリンクを開きますか?"
-
-#, fuzzy
-msgid "Opening in your browser"
-msgstr "既定のブラウザで{}を開きます。"
-
-msgid "Owner"
-msgstr ""
-
-msgid "PASSWORD"
-msgstr "パスワード"
-
-msgid "PRIVACY & DEVELOPER FLAGS"
-msgstr ""
-
-msgid "PRIVATE GROUP CHAT OVER NOSTR"
-msgstr ""
-
-msgid "PROFILE"
-msgstr "プロフィール"
-
-#, fuzzy
-msgid "Pack your settings, drafts, custom emoji, and themes into one encrypted file."
-msgstr "アカウント、チャット、設定を1つの暗号化ファイルにまとめます。"
-
-#, fuzzy
-msgid "Path copied"
-msgstr "画像をコピーしました"
-
-msgid "Pick a folder for this chat, or make a new one. A chat sits in one folder at a time."
-msgstr ""
-
-msgid "Pick a password first."
-msgstr ""
-
-msgid "Pick a password to encrypt the backup with. Without it the file cannot be opened again."
-msgstr ""
-
-msgid "Pick a password to encrypt the key with. You will need it to import the key anywhere else."
-msgstr ""
-
-msgid "Pick a password. It encrypts everything in the app, and there is no way to recover it."
-msgstr ""
-
-msgid "Pick the whole app's look."
-msgstr "アプリ全体の見た目を選択します。"
-
-msgid "Play a sound"
-msgstr "音を鳴らす"
-
-msgid "Plays here when you send. It can't travel: marmot reserves the chat event kind, so no client attaches the tag any more. An effect sent by an older client still plays."
-msgstr ""
-
-msgid "Press Ctrl P for the command palette."
-msgstr ""
-
-msgid "Previous / next in the media viewer"
-msgstr ""
-
-msgid "Promote"
-msgstr ""
-
-msgid "Public key, safe to share."
-msgstr "公開鍵。共有して問題ありません。"
-
-msgid "Publish"
-msgstr "公開"
-
-msgid "Publish your key package"
-msgstr "キーパッケージを公開する"
-
-msgid "Published"
-msgstr "公開済み"
-
-msgid "Publishing your profile to the relays. This takes a few seconds."
-msgstr ""
-
-msgid "QUICK REACTIONS"
-msgstr "クイックリアクション"
-
-msgid "RAW EVENTS"
-msgstr ""
-
-msgid "RECENT"
-msgstr ""
-
-msgid "RENAME FOLDER"
-msgstr ""
-
-msgid "Raw event"
-msgstr ""
-
-msgid "Raw events"
-msgstr ""
-
-msgid "Re-broadcasts your outbox and inbox relay lists. Use this if peers can't find you."
-msgstr "送信リレーと受信リレーのリストを再配信します。相手があなたを見つけられない場合に使用してください。"
-
-#, fuzzy
-msgid "Reconnect"
-msgstr "今すぐ再接続"
-
-msgid "Reconnect now"
-msgstr "今すぐ再接続"
-
-#, fuzzy
-msgid "Record group audit log files on this device. Identifiers are hashed."
-msgstr "グループの監査ログファイルを Goggles の監査エンドポイントに送信します。すぐに適用されます。"
-
-msgid "Reduce motion"
-msgstr ""
-
-msgid "Refresh"
-msgstr "更新"
-
-#, fuzzy
-msgid "Relay status unavailable"
-msgstr "(メッセージを表示できません)"
-
-msgid "Relay telemetry"
-msgstr "リレーテレメトリ"
-
-#, fuzzy
-msgid "Relays"
-msgstr "リレー"
-
-#, fuzzy
-msgid "Relays carry your encrypted messages. The defaults are already configured."
-msgstr "リレーは暗号化されたメッセージを中継します。オンラインにするには少なくとも1つ追加してください。"
-
-msgid "Remove"
-msgstr "削除"
-
-#, fuzzy
-msgid "Remove admin rights?"
-msgstr "管理者から外す"
-
-#, fuzzy
-msgid "Remove this member?"
-msgstr "このリレーを削除しますか？"
-
-msgid "Remove this relay?"
-msgstr "このリレーを削除しますか？"
-
-#, fuzzy
-msgid "Rename"
-msgstr "名前を変更しました。"
-
-msgid "Replaces the settings, drafts, custom emoji, and themes on this device."
-msgstr ""
-
-msgid "Reply"
-msgstr "返信"
-
-#, fuzzy
-msgid "Republish"
-msgstr "再公開中…"
-
-msgid "Republish relay lists"
-msgstr "リレーリストを再公開"
-
-msgid "Reset"
-msgstr "リセット"
-
-#, fuzzy
-msgid "Reset zoom"
-msgstr "ズームを100%にリセット"
-
-msgid "Restore last selected chat on launch"
-msgstr "起動時に最後のチャットを復元"
-
-msgid "Restore the default reactions"
-msgstr "デフォルトのリアクションに戻す"
-
-msgid "Reveal"
-msgstr ""
-
-msgid "Reveal private key (nsec)"
-msgstr ""
-
-#, fuzzy
-msgid "RevealNsecBtn"
-msgstr "鍵を表示"
-
-msgid "SCROLLING"
-msgstr ""
-
-msgid "SECURITY & PRIVACY"
-msgstr "セキュリティとプライバシー"
-
-msgid "SEND WITH EFFECT"
-msgstr ""
-
-msgid "SETTINGS"
-msgstr "設定"
-
-msgid "SITE"
-msgstr ""
-
-msgid "STARTUP"
-msgstr "起動"
-
-msgid "STATE / RAW EVENTS / KEY PACKAGES"
-msgstr ""
-
-msgid "STATE SNAPSHOT"
-msgstr "状態スナップショット"
-
-msgid "STATUS"
-msgstr "状態"
-
-msgid "SYNC"
-msgstr "同期"
-
-msgid "Save"
-msgstr "保存"
-
-#, fuzzy
-msgid "Save file"
-msgstr "動画を保存"
-
-msgid "Scan to add this account from another device"
-msgstr "スキャンすると別のデバイスからこのアカウントを追加できます"
-
-msgid "Scroll speed"
-msgstr ""
-
-#, fuzzy
-msgid "Search all chats"
-msgstr "チャットを検索…"
-
-msgid "Search everywhere"
-msgstr ""
-
-#, fuzzy
-msgid "Search images"
-msgstr "メッセージを検索…"
-
-msgid "Searching…"
-msgstr "検索中…"
-
-#, fuzzy
-msgid "Secret key copied"
-msgstr "nsecをコピーしました"
-
-msgid "See and hear it with today's sound and preview settings."
-msgstr "現在のサウンドとプレビュー設定で確認できます。"
-
-#, fuzzy
-msgid "Select a chat"
-msgstr "チャットを開始"
-
-msgid "Select a contact from the list."
-msgstr ""
-
-#, fuzzy
-msgid "Send a message..."
-msgstr "メッセージを送信"
-
-msgid "Send a test notification"
-msgstr "テスト通知を送信"
-
-msgid "Send test"
-msgstr "テスト送信"
-
-#, fuzzy
-msgid "Send the first message to start the conversation."
-msgstr "挨拶して会話を始めましょう。"
-
-#, fuzzy
-msgid "Send the message"
-msgstr "メッセージを送信"
-
-msgid "Send with an effect"
-msgstr ""
-
-#, fuzzy
-msgid "Settings: about"
-msgstr "設定"
-
-#, fuzzy
-msgid "Settings: advanced"
-msgstr "設定"
-
-#, fuzzy
-msgid "Settings: appearance"
-msgstr "外観"
-
-#, fuzzy
-msgid "Settings: general"
-msgstr "設定"
-
-#, fuzzy
-msgid "Settings: keys and identity"
-msgstr "鍵と ID"
-
-#, fuzzy
-msgid "Settings: network and relays"
-msgstr "ネットワークとリレー"
-
-#, fuzzy
-msgid "Settings: notifications"
-msgstr "デスクトップ通知"
-
-#, fuzzy
-msgid "Settings: storage"
-msgstr "設定"
-
-#, fuzzy
-msgid "Share anonymous relay connection telemetry. Nothing is sent while this is off."
-msgstr "匿名のリレー接続の利用統計を共有します。"
-
-msgid "Shared media"
-msgstr "共有メディア"
-
-msgid "Short tones when a message leaves, arrives, or fails to send."
-msgstr ""
-
-msgid "Show"
-msgstr ""
-
-msgid "Show as QR"
-msgstr "QR コードで表示"
-
-#, fuzzy
-msgid "Show group members"
-msgstr "メンバーを表示"
-
-msgid "Show message preview"
-msgstr "メッセージのプレビューを表示"
-
-#, fuzzy
-msgid "Shown on the message menu. Tap one to remove it."
-msgstr "メッセージのツールバーとメニューに表示されます。タップすると削除できます。"
-
-msgid "Shows diagnostics and MLS internals. Adds a Debug entry with account, key-packages, and group state."
-msgstr "診断情報と MLS の内部状態を表示します。アカウント、キーパッケージ、グループ状態を含む Debug 項目を追加します。"
-
-msgid "Sign in to your Nostr identity"
-msgstr "Nostr ID でサインイン"
-
-msgid "Sign out"
-msgstr ""
-
-#, fuzzy
-msgid "Sign out of this account?"
-msgstr "このアカウントを削除しますか？"
-
-#, fuzzy
-msgid "Signing you in"
-msgstr "サインイン中…"
-
-msgid "Size"
-msgstr ""
-
-msgid "Start chat"
-msgstr "チャットを開始"
-
-msgid "Start minimized to tray"
-msgstr "トレイに最小化して起動"
-
-msgid "Start your first chat"
-msgstr "最初のチャットを開始する"
-
-msgid "Starting the runtime"
-msgstr ""
-
-msgid "State"
-msgstr "状態"
-
-msgid "Step down"
-msgstr "管理者を辞める"
-
-msgid "Step down as admin?"
-msgstr "管理者を辞めますか？"
-
-msgid "Storage"
-msgstr "ストレージ"
-
-#, fuzzy
-msgid "Store it somewhere safe and close this dialog. Anyone who imports it will need the password you just entered to decrypt it."
-msgstr "安全な場所に保管し、このダイアログを閉じてください。インポートする人は、復号のために今入力したボールトのパスワードが必要になります。"
-
-#, fuzzy
-msgid "Stored on this device, not published to any relay yet."
-msgstr "この端末に鍵が保存されていません。リセットしてnsecを再入力してください。"
-
-msgid "TEXT SIZE"
-msgstr ""
-
-msgid "THEME"
-msgstr "テーマ"
-
-msgid "THIS SESSION"
-msgstr ""
-
-msgid "TRUSTED LINK SITES"
-msgstr "信頼済みのリンク先"
-
-msgid "Take out of folder"
-msgstr ""
-
-msgid "Takes effect on the next launch."
-msgstr ""
-
-#, fuzzy
-msgid "Tap one to remove it."
-msgstr "メッセージのツールバーとメニューに表示されます。タップすると削除できます。"
-
-#, fuzzy
-msgid "Test notification"
-msgstr "デスクトップ通知"
-
-msgid "The chat leaves your list. Joining later needs a new invite."
-msgstr ""
-
-msgid "The passwords don't match. Type them again."
-msgstr ""
-
-msgid "The relay in the middle stores and forwards. It never holds a key."
-msgstr ""
-
-msgid "The updated list is published to your relays."
-msgstr ""
-
-msgid "Their direct chat leaves your list. Nothing is published, and you can undo it here."
-msgstr ""
-
-msgid "Theme"
-msgstr "テーマ"
-
-#, fuzzy
-msgid "They lose access to new messages in this group."
-msgstr "このグループからの新しいメッセージの受信を停止します。"
-
-msgid "They stay in the group as a regular member."
-msgstr ""
-
-msgid "This is what a message alert looks like."
-msgstr ""
-
-#, fuzzy
-msgid "This is your secret key, encrypted with the password you entered. Whoever holds this string and that password controls your identity."
-msgstr "これはボールトのパスワードで暗号化されたあなたの秘密鍵です。この文字列とそのパスワードを持つ者があなたの ID を管理します。"
-
-#, fuzzy
-msgid "This leaves White Noise and opens in your browser."
-msgstr "既定のブラウザで{}を開きます。"
-
-#, fuzzy
-msgid "This message was deleted"
-msgstr "画像が選択されていません。"
-
-msgid "Three things and you can send your first message."
-msgstr ""
-
-msgid "Time format"
-msgstr "時刻形式"
-
-#, fuzzy
-msgid "Toggle developer mode"
-msgstr "開発者モード"
-
-msgid "TrustForgetAll"
-msgstr ""
-
-msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
-msgstr ""
-
-msgid "Unblock"
-msgstr "ブロック解除"
-
-msgid "Unlock"
-msgstr "ロック解除"
-
-msgid "Unmute"
-msgstr "ミュート解除"
-
-msgid "Unpin"
-msgstr "固定を解除"
-
-msgid "Uploaded emoji"
-msgstr "アップロード済みの絵文字"
-
-msgid "Use another key"
-msgstr "別の鍵を使う"
-
-msgid "View"
-msgstr ""
-
-#, fuzzy
-msgid "View contact"
-msgstr "連絡先を追加"
-
-msgid "View raw event"
-msgstr ""
-
-msgid "WHAT IT IS"
-msgstr "概要"
-
-#, fuzzy
-msgid "WHAT THIS IS, LIVE"
-msgstr "概要"
-
+#: about.odin:38
 #, fuzzy
 msgid "WHERE A MESSAGE GOES"
 msgstr "新着メッセージ"
 
-msgid "WHERE YOUR MESSAGES LAND"
+#: about.odin:40
+msgid "The relay in the middle stores and forwards. It never holds a key."
 msgstr ""
 
-msgid "Webxdc app"
+#: about.odin:42
+msgid "THIS SESSION"
 msgstr ""
 
-#, fuzzy
-msgid "Whatever you send in this chat is encrypted on your device with MLS before it goes out. The relays that pass it along can't read it, and neither can anyone else."
-msgstr "このチャットで送る内容は、送信前にあなたのデバイス上で暗号化されます。中継するリレーは内容を読めず、ほかの誰にも読めません。"
-
-msgid "Where"
+#: about.odin:45
+msgid "BUILT WITH"
 msgstr ""
 
-#, fuzzy
-msgid "Where peers reach you."
-msgstr "相手があなたに届ける場所"
-
-#, fuzzy
-msgid "Where you publish."
-msgstr "あなたが発信する場所"
-
-msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
-msgstr "White Noise はあなたの秘密鍵を一切見ません。このデバイスと接続した署名者にのみ存在します。"
-
-msgid "YOU"
-msgstr "あなた"
-
-msgid "YOUR KEY PACKAGES"
-msgstr "あなたのキーパッケージ"
-
-msgid "You stay in the group, but another admin has to grant the rights back."
+#: about.odin:79
+msgid "PRIVATE GROUP CHAT OVER NOSTR"
 msgstr ""
 
-#, fuzzy
-msgid "You stop receiving its messages. Rejoining needs a new invite."
-msgstr "このグループからの新しいメッセージの受信を停止します。チャットはアーカイブに移動します。"
+#: advanced.odin:35
+msgid "SECURITY & PRIVACY"
+msgstr "セキュリティとプライバシー"
 
+#: advanced.odin:37
+msgid "Relay telemetry"
+msgstr "リレーテレメトリ"
+
+#: advanced.odin:41
+msgid "Audit logs"
+msgstr "監査ログ"
+
+#: advanced.odin:45
+msgid "TRUSTED LINK SITES"
+msgstr "信頼済みのリンク先"
+
+#: advanced.odin:48
+msgid "No trusted sites."
+msgstr "信頼済みのサイトはありません。"
+
+#: advanced.odin:56
+msgid "TrustForgetAll"
+msgstr ""
+
+#: advanced.odin:59
+msgid "Links to these exact sites open without confirmation."
+msgstr "これらのサイトへのリンクは確認なしで開きます。"
+
+#: advanced.odin:61
+msgid "AUDIT LOG FILES"
+msgstr "監査ログファイル"
+
+#: advanced.odin:64
+#, fuzzy
+msgid "No audit log files."
+msgstr "ディスク上に監査ログファイルはありません。"
+
+#: advanced.odin:76
+msgid "Confirm delete"
+msgstr ""
+
+#: advanced.odin:80 debugpane.odin:46 keys.odin:214 network.odin:32
+msgid "Refresh"
+msgstr "更新"
+
+#: advanced.odin:82
+#, fuzzy
+msgid "Deleting the file being recorded rotates it. Recording continues in a fresh file."
+msgstr "記録中のファイルを削除するとローテーションされ、新しいファイルに記録が続きます。"
+
+#: advanced.odin:84
+msgid "DEVELOPER"
+msgstr "開発者"
+
+#: advanced.odin:86
+msgid "Developer mode"
+msgstr "開発者モード"
+
+#: advanced.odin:172 advanced.odin:183
+#, fuzzy, c-format
+msgid "Couldn't change relay telemetry. %s"
+msgstr "リレーのリストを保存できませんでした。もう一度お試しください。"
+
+#: advanced.odin:194 advanced.odin:202
+#, fuzzy, c-format
+msgid "Couldn't change audit logs. %s"
+msgstr "監査ログを変更できませんでした。"
+
+#: advanced.odin:255
+#, fuzzy, c-format
+msgid "Couldn't delete the audit log file. %s"
+msgstr "監査ログを削除できませんでした。"
+
+#: advanced.odin:258
+#, fuzzy
+msgid "Audit log file deleted."
+msgstr "監査ログを削除しました。"
+
+#: advanced.odin:258
+#, fuzzy
+msgid "Deleted. Recording continues in a fresh file."
+msgstr "監査ログを削除しました — 新しいファイルで記録を続けます。"
+
+#: bodysel.odin:225
+#, fuzzy
+msgid "Message text copied"
+msgstr "画像をコピーしました"
+
+#: chatpane.odin:107
 #, fuzzy
 msgid "You were invited to this group."
 msgstr "グループを退出しました。"
 
-msgid "Your identity is sovereign"
-msgstr "あなたの ID は主権的です"
+#: chatpane.odin:108
+msgid "Accept"
+msgstr "承認"
 
-msgid "Your identity lives only on this device for now. When device linking ships, the devices signed into your key will appear here."
-msgstr "現在、あなたのアイデンティティはこのデバイスにのみ存在します。デバイス連携が導入されると、あなたの鍵でサインインしたデバイスがここに表示されます。"
+#: chatpane.odin:109 confirm.odin:70
+msgid "Decline"
+msgstr ""
 
-msgid "Your key never leaves this device."
-msgstr "鍵がこのデバイス外に出ることはありません。"
+#: chatpane.odin:314
+#, fuzzy
+msgid "Send a message..."
+msgstr "メッセージを送信"
 
+#: chatpane.odin:351
+msgid "Send with an effect"
+msgstr ""
+
+#: chatpane.odin:365
+#, fuzzy
+msgid "Create a poll"
+msgstr "バックアップを作成"
+
+#: chatpane.odin:479
+msgid "Members"
+msgstr "メンバー"
+
+#: chatpane.odin:496
+msgid "YOU"
+msgstr "あなた"
+
+#: chatpane.odin:502
+msgid "Admin"
+msgstr "管理者"
+
+#: chatpane.odin:530
+#, fuzzy
+msgid "GROUP NAME"
+msgstr "グループ名（任意）"
+
+#: chatpane.odin:541 rowactions.odin:133
+#, fuzzy
+msgid "Rename"
+msgstr "名前を変更しました。"
+
+#: chatpane.odin:545
+#, fuzzy
+msgid "DISAPPEARING MESSAGES"
+msgstr "受信メッセージ"
+
+#: chatpane.odin:547
+msgid "Off"
+msgstr ""
+
+#: chatpane.odin:554
+#, fuzzy
+msgid "ADD MEMBER"
+msgstr "メンバー"
+
+#: chatpane.odin:565
+msgid "Invite"
+msgstr "招待"
+
+#: chatpane.odin:567
+msgid "EXPORT CHAT"
+msgstr ""
+
+#: chatpane.odin:569
+msgid "HTML"
+msgstr ""
+
+#: chatpane.odin:570
+msgid "Markdown"
+msgstr ""
+
+#: chatpane.odin:586
+msgid "Leave group"
+msgstr "グループを退出"
+
+#: chatpane.odin:630
+msgid "Shared media"
+msgstr "共有メディア"
+
+#: chatpane.odin:794
+msgid "No messages yet"
+msgstr "まだメッセージはありません"
+
+#: chatpane.odin:794
 msgid "Your own notepad"
 msgstr ""
 
+#: chatpane.odin:798
+msgid "Anything you write here stays between you and this device's key."
+msgstr ""
+
+#: chatpane.odin:798
+#, fuzzy
+msgid "Send the first message to start the conversation."
+msgstr "挨拶して会話を始めましょう。"
+
+#: chatpane.odin:808 onboard.odin:44 palette.odin:55
+msgid "New chat"
+msgstr "新しいチャット"
+
+#: chatpane.odin:809
+msgid "Add a contact for a direct chat, or leave it empty for a group of your own."
+msgstr ""
+
+#: chatpane.odin:813 polls.odin:236
+msgid "Create"
+msgstr "作成"
+
+#: chatpane.odin:814 confirm.odin:140 grouphero.odin:87 linkguard.odin:128
+#: polls.odin:235 settings_pages.odin:390 themeedit.odin:492
+msgid "Cancel"
+msgstr "キャンセル"
+
+#: chatpane.odin:866
+#, fuzzy
+msgid "Generating your key"
+msgstr "新しい鍵を生成"
+
+#: chatpane.odin:866
+#, fuzzy
+msgid "Signing you in"
+msgstr "サインイン中…"
+
+#: chatpane.odin:871
+msgid "Checking your key with the relays. This takes a few seconds."
+msgstr ""
+
+#: chatpane.odin:871
+msgid "Publishing your profile to the relays. This takes a few seconds."
+msgstr ""
+
+#: chatpane.odin:875
+msgid "Sign in to your Nostr identity"
+msgstr "Nostr ID でサインイン"
+
+#: chatpane.odin:880
+msgid "Your key never leaves this device."
+msgstr "鍵がこのデバイス外に出ることはありません。"
+
+#: chatpane.odin:881 storage.odin:306 storage.odin:343
+msgid "Import backup"
+msgstr "バックアップをインポート"
+
+#: chatpane.odin:883
+#, fuzzy
+msgid "Import a key"
+msgstr "バックアップをインポート"
+
+#: chatpane.odin:885
+msgid "NSEC"
+msgstr ""
+
+#: chatpane.odin:903
+msgid "Back"
+msgstr "戻る"
+
+#: chatpane.odin:904 vault_gate.odin:333
+msgid "Continue"
+msgstr "続行"
+
+#: confirm.odin:50 menus.odin:178
+msgid "Delete for everyone"
+msgstr ""
+
+#: confirm.odin:50
+#, fuzzy
+msgid "Delete this message?"
+msgstr "自分のみ削除しますか？"
+
+#: confirm.odin:50
+msgid "It disappears for everyone in the chat. This can't be undone."
+msgstr ""
+
+#: confirm.odin:52 menus.odin:175
+msgid "Delete for me"
+msgstr "自分のみ削除"
+
+#: confirm.odin:52
+#, fuzzy
+msgid "Delete for you?"
+msgstr "自分のみ削除しますか？"
+
+#: confirm.odin:52
+msgid "It stays for everyone else. You won't see it on this device again."
+msgstr ""
+
+#: confirm.odin:54
+#, fuzzy
+msgid "Leave"
+msgstr "{}を退出しますか？"
+
+#: confirm.odin:54
+#, fuzzy
+msgid "Leave this group?"
+msgstr "グループを退出"
+
+#: confirm.odin:54
+#, fuzzy
+msgid "You stop receiving its messages. Rejoining needs a new invite."
+msgstr "このグループからの新しいメッセージの受信を停止します。チャットはアーカイブに移動します。"
+
+#: confirm.odin:56
+msgid "Block"
+msgstr "ブロック"
+
+#: confirm.odin:56
+#, fuzzy
+msgid "Block this contact?"
+msgstr "このチャットリクエストをブロックしますか？"
+
+#: confirm.odin:56
+msgid "Their direct chat leaves your list. Nothing is published, and you can undo it here."
+msgstr ""
+
+#: confirm.odin:58 rowactions.odin:134 settings_pages.odin:425
+#: settings_pages.odin:428
+msgid "Delete"
+msgstr "削除"
+
+#: confirm.odin:58
+#, fuzzy
+msgid "Delete this theme?"
+msgstr "自分のみ削除しますか？"
+
+#: confirm.odin:58
+msgid "Its file is removed from this device. Themes shared into a chat stay there."
+msgstr ""
+
+#: confirm.odin:60 confirm.odin:62 confirm.odin:72 menus.odin:71
+msgid "Remove"
+msgstr "削除"
+
+#: confirm.odin:60
+#, fuzzy
+msgid "Remove this contact?"
+msgstr "このチャットリクエストをブロックしますか？"
+
+#: confirm.odin:60
+msgid "They come off your published contact list. Groups you already share stay as they are."
+msgstr ""
+
+#: confirm.odin:62
+#, fuzzy
+msgid "Remove this member?"
+msgstr "このリレーを削除しますか？"
+
+#: confirm.odin:62
+#, fuzzy
+msgid "They lose access to new messages in this group."
+msgstr "このグループからの新しいメッセージの受信を停止します。"
+
+#: confirm.odin:64
+msgid "Admins can add and remove members and change group details."
+msgstr ""
+
+#: confirm.odin:64
+#, fuzzy
+msgid "Make this member an admin?"
+msgstr "{}を管理者にしますか？"
+
+#: confirm.odin:64
+msgid "Promote"
+msgstr ""
+
+#: confirm.odin:66 menus.odin:70
+msgid "Demote"
+msgstr ""
+
+#: confirm.odin:66
+#, fuzzy
+msgid "Remove admin rights?"
+msgstr "管理者から外す"
+
+#: confirm.odin:66
+msgid "They stay in the group as a regular member."
+msgstr ""
+
+#: confirm.odin:68 menus.odin:66
+msgid "Step down"
+msgstr "管理者を辞める"
+
+#: confirm.odin:68
+msgid "Step down as admin?"
+msgstr "管理者を辞めますか？"
+
+#: confirm.odin:68
+msgid "You stay in the group, but another admin has to grant the rights back."
+msgstr ""
+
+#: confirm.odin:70
+msgid "Decline this invitation?"
+msgstr ""
+
+#: confirm.odin:70
+msgid "The chat leaves your list. Joining later needs a new invite."
+msgstr ""
+
+#: confirm.odin:72
+msgid "Remove this relay?"
+msgstr "このリレーを削除しますか？"
+
+#: confirm.odin:72
+msgid "The updated list is published to your relays."
+msgstr ""
+
+#: confirm.odin:74
+msgid "Its keys stay in the vault on this device. You can sign in again from the accounts screen."
+msgstr ""
+
+#: confirm.odin:74 palette.odin:77 panes.odin:1012
+msgid "Sign out"
+msgstr ""
+
+#: confirm.odin:74
+#, fuzzy
+msgid "Sign out of this account?"
+msgstr "このアカウントを削除しますか？"
+
+#: debugpane.odin:24
+msgid "Key packages"
+msgstr "キーパッケージ"
+
+#: debugpane.odin:24
+msgid "Raw events"
+msgstr ""
+
+#: debugpane.odin:24
+msgid "State"
+msgstr "状態"
+
+#: debugpane.odin:25
+msgid "KEY PACKAGES"
+msgstr "キーパッケージ"
+
+#: debugpane.odin:25
+msgid "RAW EVENTS"
+msgstr ""
+
+#: debugpane.odin:25
+msgid "STATE SNAPSHOT"
+msgstr "状態スナップショット"
+
+#: debugpane.odin:47
+msgid "Copy JSON"
+msgstr "JSON をコピー"
+
+#: debugpane.odin:52
+#, fuzzy
+msgid "(nothing loaded yet, click Refresh)"
+msgstr "(まだ読み込みなし。「更新」をクリックしてください)"
+
+#: debugpane.odin:127
+#, fuzzy
+msgid "Couldn't serialize the snapshot. Please try again."
+msgstr "チャットを作成できませんでした。もう一度お試しください。"
+
+#: debugpane.odin:137
+msgid "No chat is open. Select one and refresh."
+msgstr ""
+
+#: debugpane.odin:147
+#, fuzzy, c-format
+msgid "Couldn't load the timeline. %s"
+msgstr "画像をダウンロードできませんでした。"
+
+#: debugpane.odin:210
+#, fuzzy
+msgid "Couldn't serialize the key packages. Please try again."
+msgstr "チャットを作成できませんでした。もう一度お試しください。"
+
+#: debugpane.odin:218
+msgid "YOUR KEY PACKAGES"
+msgstr "あなたのキーパッケージ"
+
+#: debugpane.odin:220
+msgid "Decode own"
+msgstr ""
+
+#: debugpane.odin:222
+#, fuzzy
+msgid "No key package on this device or its relays."
+msgstr "リレーにキーパッケージがまだありません"
+
+#: debugpane.odin:222
+msgid "Not loaded yet. Click Decode own."
+msgstr ""
+
+#: debugpane.odin:224
+msgid "INSPECT SOMEONE ELSE'S"
+msgstr ""
+
+#: debugpane.odin:227
+msgid "Inspect"
+msgstr ""
+
+#: debugpane.odin:231
+msgid "No key package published for that pubkey."
+msgstr ""
+
+#: debugpane.odin:234
+msgid "marmot exposes publish metadata only. Ciphersuite, capabilities, and credential decoding are not available in this build."
+msgstr ""
+
+#: debugpane.odin:244
+msgid "local + relay"
+msgstr "ローカル + リレー"
+
+#: debugpane.odin:244
+msgid "local only"
+msgstr "ローカルのみ"
+
+#: debugpane.odin:244
+msgid "relay"
+msgstr "リレー"
+
+#: debugpane.odin:245
+msgid "(unknown)"
+msgstr ""
+
+#: debugpane.odin:245
+msgid "Owner"
+msgstr ""
+
+#: debugpane.odin:246 debugpane.odin:251
+msgid "(none)"
+msgstr ""
+
+#: debugpane.odin:246
+msgid "Key package ref"
+msgstr "キーパッケージ参照"
+
+#: debugpane.odin:247
+#, fuzzy
+msgid "(unpublished)"
+msgstr "公開済み"
+
+#: debugpane.odin:247
+msgid "Event id"
+msgstr ""
+
+#: debugpane.odin:248 panes.odin:630
+msgid "Published"
+msgstr "公開済み"
+
+#: debugpane.odin:249
+msgid "Where"
+msgstr ""
+
+#: debugpane.odin:250
+msgid "Size"
+msgstr ""
+
+#: debugpane.odin:251
+#, fuzzy
+msgid "Relays"
+msgstr "リレー"
+
+#: debugpane.odin:289
+#, fuzzy
+msgid "Couldn't read that pubkey. Double-check it and try again."
+msgstr "そのアカウントを追加できませんでした。鍵を確認して、もう一度お試しください。"
+
+#: debugpane.odin:296
+#, fuzzy, c-format
+msgid "Couldn't read their key packages. %s"
+msgstr "キーパッケージ本体"
+
+#: effects.odin:397
+msgid "SEND WITH EFFECT"
+msgstr ""
+
+#: effects.odin:419
+msgid "Plays here when you send. It can't travel: marmot reserves the chat event kind, so no client attaches the tag any more. An effect sent by an older client still plays."
+msgstr ""
+
+#: effects.odin:421
+#, fuzzy
+msgid "Clear effect"
+msgstr "キャッシュを消去"
+
+#: forward.odin:54
+#, fuzzy
+msgid "Share theme with"
+msgstr "共有メディア"
+
+#: grouphero.odin:66
+#, fuzzy
+msgid "Change photo"
+msgstr "パスワードを変更"
+
+#: grouphero.odin:69
+#, fuzzy
+msgid "From file"
+msgstr "%1 から"
+
+#: grouphero.odin:70
+#, fuzzy
+msgid "Search images"
+msgstr "メッセージを検索…"
+
+#: grouphero.odin:86 rowactions.odin:150 settings_pages.odin:389
+msgid "Save"
+msgstr "保存"
+
+#: grouphero.odin:95 settings_pages.odin:423
+#, fuzzy
+msgid "Edit"
+msgstr "編集 %1"
+
+#: handlers.odin:129
+msgid "Couldn't use that theme. It isn't a theme this version reads."
+msgstr ""
+
+#: handlers.odin:257
+#, fuzzy
+msgid "Group id copied"
+msgstr "グループ ID"
+
+#: handlers.odin:862
+#, fuzzy
+msgid "Message copied"
+msgstr "画像をコピーしました"
+
+#: keys.odin:97
+#, fuzzy
+msgid "Not loaded yet. Click Refresh."
+msgstr "(まだ読み込みなし。「更新」をクリックしてください)"
+
+#: keys.odin:110
+#, fuzzy
+msgid "No key package yet. Publish one so people can invite you."
+msgstr "公開すると他のユーザーがグループに招待できるようになります。"
+
+#: keys.odin:113
+#, fuzzy
+msgid "Stored on this device, not published to any relay yet."
+msgstr "この端末に鍵が保存されていません。リセットしてnsecを再入力してください。"
+
+#: keys.odin:115
+#, c-format
+msgid "%d published, %d on this device, seen on %d relays."
+msgstr ""
+
+#: keys.odin:133
+#, fuzzy, c-format
+msgid "Couldn't publish the key package. %s"
+msgstr "キーパッケージ本体"
+
+#: keys.odin:137
+#, c-format
+msgid "Key package accepted by %d relays."
+msgstr ""
+
+#: keys.odin:158
+#, fuzzy, c-format
+msgid "Couldn't reveal your private key. %s"
+msgstr "リアクションを削除できませんでした。もう一度お試しください。"
+
+#: keys.odin:182
+#, fuzzy, c-format
+msgid "Couldn't export the key. %s"
+msgstr "連絡先をエクスポートできませんでした。"
+
+#: keys.odin:194
+msgid "Your identity is sovereign"
+msgstr "あなたの ID は主権的です"
+
+#: keys.odin:197 panes.odin:420 panes.odin:491 panes.odin:960
+msgid "IDENTITY"
+msgstr "ID"
+
+#: keys.odin:204 keys.odin:254 keys.odin:416 menus.odin:331 menus.odin:375
+#: panes.odin:506 panes.odin:979 storage.odin:200
+msgid "Copy"
+msgstr "コピー"
+
+#: keys.odin:207
+msgid "KEY PACKAGES (PUBLISHED TO YOUR KIND-10051 RELAY LIST)"
+msgstr ""
+
+#: keys.odin:210
+msgid "Key package"
+msgstr "キーパッケージ"
+
+#: keys.odin:213 onboard.odin:39
+msgid "Publish"
+msgstr "公開"
+
+#: keys.odin:227
+msgid "LINKED DEVICES"
+msgstr "リンク済みデバイス"
+
+#: keys.odin:229
+msgid "Multi-device isn't available yet"
+msgstr "マルチデバイスはまだ利用できません"
+
+#: keys.odin:232
+msgid "DANGER ZONE"
+msgstr "危険ゾーン"
+
+#: keys.odin:245
+msgid "Reveal private key (nsec)"
+msgstr ""
+
+#: keys.odin:246
+msgid "Never share it. It is your identity."
+msgstr ""
+
+#: keys.odin:253
+msgid "Hide"
+msgstr ""
+
+#: keys.odin:253
+msgid "Show"
+msgstr ""
+
+#: keys.odin:256
+msgid "Confirm reveal"
+msgstr ""
+
+#: keys.odin:256
+msgid "Reveal"
+msgstr ""
+
+#: keys.odin:256
+#, fuzzy
+msgid "RevealNsecBtn"
+msgstr "鍵を表示"
+
+#: keys.odin:286
+msgid "Confirm"
+msgstr ""
+
+#: keys.odin:305 pages.odin:126 pages.odin:262 pages.odin:481
+msgid "npub copied"
+msgstr "npubをコピーしました"
+
+#: keys.odin:333
+#, fuzzy
+msgid "Secret key copied"
+msgstr "nsecをコピーしました"
+
+#: keys.odin:370
+msgid "Pick a password to encrypt the key with. You will need it to import the key anywhere else."
+msgstr ""
+
+#: keys.odin:371 storage.odin:319 vault_gate.odin:325
+msgid "PASSWORD"
+msgstr "パスワード"
+
+#: keys.odin:376 storage.odin:324 vault_gate.odin:280
 msgid "Your password"
 msgstr "パスワード"
 
-msgid "Your profile"
+#: keys.odin:399
+#, fuzzy
+msgid "This is your secret key, encrypted with the password you entered. Whoever holds this string and that password controls your identity."
+msgstr "これはボールトのパスワードで暗号化されたあなたの秘密鍵です。この文字列とそのパスワードを持つ者があなたの ID を管理します。"
+
+#: keys.odin:400
+msgid "ENCRYPTED KEY (NCRYPTSEC)"
+msgstr "暗号化キー(NCRYPTSEC)"
+
+#: keys.odin:415
+#, fuzzy
+msgid "Save file"
+msgstr "動画を保存"
+
+#: keys.odin:418
+#, fuzzy
+msgid "Store it somewhere safe and close this dialog. Anyone who imports it will need the password you just entered to decrypt it."
+msgstr "安全な場所に保管し、このダイアログを閉じてください。インポートする人は、復号のために今入力したボールトのパスワードが必要になります。"
+
+#: linkguard.odin:82
+#, fuzzy
+msgid "Opening in your browser"
+msgstr "既定のブラウザで{}を開きます。"
+
+#: linkguard.odin:107
+msgid "Open this link?"
+msgstr "このリンクを開きますか?"
+
+#: linkguard.odin:109
+#, fuzzy
+msgid "This leaves White Noise and opens in your browser."
+msgstr "既定のブラウザで{}を開きます。"
+
+#: linkguard.odin:111
+msgid "SITE"
+msgstr ""
+
+#: linkguard.odin:121
+msgid "Always open links to this site"
+msgstr ""
+
+#: linkguard.odin:134 webxdc.odin:146
+msgid "Open"
+msgstr "開く"
+
+#: main.odin:241
+#, fuzzy
+msgid "Expand the chat list"
+msgstr "チャットパネルを展開"
+
+#: main.odin:273
+msgid "SETTINGS"
+msgstr "設定"
+
+#: main.odin:464
+msgid "No contacts yet"
+msgstr "連絡先がまだありません"
+
+#: main.odin:471
+#, fuzzy
+msgid "Export CSV"
+msgstr "エクスポート"
+
+#: main.odin:472
+#, fuzzy
+msgid "Export JSON"
+msgstr "エクスポート"
+
+#: main.odin:565
+#, fuzzy
+msgid "No chats yet"
+msgstr "連絡先がまだありません"
+
+#: main.odin:709
+#, fuzzy
+msgid "Select a chat"
+msgstr "チャットを開始"
+
+#: menus.odin:72
+msgid "Nickname"
+msgstr "ニックネーム"
+
+#: menus.odin:163
+msgid "Add reaction"
+msgstr "リアクションを追加"
+
+#: menus.odin:165
+msgid "Reply"
+msgstr "返信"
+
+#: menus.odin:167
+msgid "Reply in thread"
+msgstr ""
+
+#: menus.odin:168
+msgid "Forward"
+msgstr "転送"
+
+#: menus.odin:170
+msgid "Copy text"
+msgstr "テキストをコピー"
+
+#: menus.odin:177
+msgid "Edit message"
+msgstr "メッセージを編集"
+
+#: menus.odin:182
+msgid "View raw event"
+msgstr ""
+
+#: menus.odin:202
+msgid "Edit history"
+msgstr "編集履歴"
+
+#: menus.odin:309
+msgid "Raw event"
+msgstr ""
+
+#: menus.odin:352
+msgid "End-to-end encrypted"
+msgstr "エンドツーエンド暗号化"
+
+#: menus.odin:360
+#, fuzzy
+msgid "Whatever you send in this chat is encrypted on your device with MLS before it goes out. The relays that pass it along can't read it, and neither can anyone else."
+msgstr "このチャットで送る内容は、送信前にあなたのデバイス上で暗号化されます。中継するリレーは内容を読めず、ほかの誰にも読めません。"
+
+#: menus.odin:362
+msgid "GROUP ID"
+msgstr ""
+
+#: menus.odin:370
+msgid "EPOCH"
+msgstr "エポック"
+
+#: menus.odin:448
+msgid "RECENT"
+msgstr ""
+
+#: network.odin:27
+msgid "STATUS"
+msgstr "状態"
+
+#: network.odin:37
+msgid "Reconnect now"
+msgstr "今すぐ再接続"
+
+#: network.odin:38
+#, fuzzy
+msgid "Reconnect"
+msgstr "今すぐ再接続"
+
+#: network.odin:41
+msgid "OUTBOX RELAYS (NIP-65)"
+msgstr "送信リレー (NIP-65)"
+
+#: network.odin:42
+#, fuzzy
+msgid "Where you publish."
+msgstr "あなたが発信する場所"
+
+#: network.odin:45 network.odin:58
+msgid "Add"
+msgstr "追加"
+
+#: network.odin:48
+#, fuzzy
+msgid "No relay list published."
+msgstr "リレーリストが変更されました。"
+
+#: network.odin:54
+msgid "INBOX RELAYS"
+msgstr "受信リレー"
+
+#: network.odin:55
+#, fuzzy
+msgid "Where peers reach you."
+msgstr "相手があなたに届ける場所"
+
+#: network.odin:61
+#, fuzzy
+msgid "No inbox relays."
+msgstr "リレー上にプロフィールが見つかりません。"
+
+#: network.odin:67
+msgid "SYNC"
+msgstr "同期"
+
+#: network.odin:69
+msgid "Republish relay lists"
+msgstr "リレーリストを再公開"
+
+#: network.odin:70
+#, fuzzy
+msgid "Republish"
+msgstr "再公開中…"
+
+#: network.odin:93
+#, fuzzy
+msgid "Relay status unavailable"
+msgstr "(メッセージを表示できません)"
+
+#: network.odin:95
+#, c-format
+msgid "%d of %d connected"
+msgstr ""
+
+#: network.odin:100
+msgid "Aggregate connection counter from the relay pool."
+msgstr "リレープールからの接続数カウンター。"
+
+#: network.odin:104
+#, c-format
+msgid "%d connecting, %d pending, %d disconnected, %d sleeping."
+msgstr ""
+
+#: notify.odin:84
+#, fuzzy
+msgid "New message"
+msgstr "メッセージを送信"
+
+#: onboard.odin:29
+#, c-format
+msgid "%d of %d relays are up."
+msgstr ""
+
+#: onboard.odin:29
+#, fuzzy
+msgid "Connected to relays"
+msgstr "リレーに接続する"
+
+#: onboard.odin:31 onboard.odin:34
+#, fuzzy
+msgid "Check now"
+msgstr "確認中…"
+
+#: onboard.odin:31
+#, fuzzy
+msgid "Connect to relays"
+msgstr "リレーに接続する"
+
+#: onboard.odin:31
+#, fuzzy
+msgid "Relays carry your encrypted messages. The defaults are already configured."
+msgstr "リレーは暗号化されたメッセージを中継します。オンラインにするには少なくとも1つ追加してください。"
+
+#: onboard.odin:34 onboard.odin:39
+#, fuzzy
+msgid "It is what lets people invite you to a group."
+msgstr "公開すると他のユーザーがグループに招待できるようになります。"
+
+#: onboard.odin:34 onboard.odin:39
+msgid "Publish your key package"
+msgstr "キーパッケージを公開する"
+
+#: onboard.odin:37
+#, fuzzy, c-format
+msgid "%d published, so people can invite you."
+msgstr "公開すると他のユーザーがグループに招待できるようになります。"
+
+#: onboard.odin:37
+#, fuzzy
+msgid "Key package published"
+msgstr "キーパッケージ"
+
+#: onboard.odin:42
+#, fuzzy
+msgid "Done."
+msgstr "完了"
+
+#: onboard.odin:42 onboard.odin:44
+msgid "Start your first chat"
+msgstr "最初のチャットを開始する"
+
+#: onboard.odin:44
+msgid "Add someone by npub, or make a group of your own."
+msgstr ""
+
+#: onboard.odin:62
+msgid "Get started"
+msgstr ""
+
+#: onboard.odin:63
+msgid "Three things and you can send your first message."
+msgstr ""
+
+#: onboard.odin:98
+msgid "Press Ctrl P for the command palette."
+msgstr ""
+
+#: openverse.odin:194
+msgid "Searching…"
+msgstr "検索中…"
+
+#: palette.odin:50
+msgid "Go to chats"
+msgstr ""
+
+#: palette.odin:51
+msgid "Go to people"
+msgstr ""
+
+#: palette.odin:52
+#, fuzzy
+msgid "Go to archive"
+msgstr "アーカイブ解除"
+
+#: palette.odin:53
+#, fuzzy
+msgid "Go to settings"
+msgstr "設定"
+
+#: palette.odin:54
+#, fuzzy
+msgid "Go to your profile"
 msgstr "あなたのプロフィール"
 
-msgid "Your public key. Safe to share."
-msgstr "公開鍵。共有して問題ありません。"
+#: palette.odin:56
+msgid "Notes to self"
+msgstr ""
 
-msgid "ZOOM"
-msgstr "ズーム"
+#: palette.odin:57
+#, fuzzy
+msgid "Search all chats"
+msgstr "チャットを検索…"
 
+#: palette.odin:58
+#, fuzzy
+msgid "Filter unread chats"
+msgstr "未読のチャットのみ表示"
+
+#: palette.odin:59
+#, fuzzy
+msgid "Collapse the chat list"
+msgstr "チャットパネルを折りたたむ"
+
+#: palette.odin:60
+#, fuzzy
+msgid "Show group members"
+msgstr "メンバーを表示"
+
+#: palette.odin:61
+#, fuzzy
+msgid "Settings: general"
+msgstr "設定"
+
+#: palette.odin:62
+#, fuzzy
+msgid "Settings: network and relays"
+msgstr "ネットワークとリレー"
+
+#: palette.odin:63
+#, fuzzy
+msgid "Settings: keys and identity"
+msgstr "鍵と ID"
+
+#: palette.odin:64
+#, fuzzy
+msgid "Settings: appearance"
+msgstr "外観"
+
+#: palette.odin:65
+#, fuzzy
+msgid "Settings: notifications"
+msgstr "デスクトップ通知"
+
+#: palette.odin:66
+#, fuzzy
+msgid "Settings: storage"
+msgstr "設定"
+
+#: palette.odin:67
+#, fuzzy
+msgid "Settings: advanced"
+msgstr "設定"
+
+#: palette.odin:68
+#, fuzzy
+msgid "Settings: about"
+msgstr "設定"
+
+#: palette.odin:69
+#, fuzzy
+msgid "Next theme"
+msgstr "次の画像"
+
+#: palette.odin:70
+#, fuzzy
+msgid "Next accent color"
+msgstr "アクセントカラー"
+
+#: palette.odin:71
+#, fuzzy
+msgid "Center the conversation"
+msgstr "会話を中央に配置"
+
+#: palette.odin:72
+#, fuzzy
+msgid "Toggle developer mode"
+msgstr "開発者モード"
+
+#: palette.odin:73
 msgid "Zoom in"
 msgstr "拡大"
 
-msgid "Zoom in / out / reset"
-msgstr ""
-
+#: palette.odin:74
 msgid "Zoom out"
 msgstr "縮小"
 
-msgid "carries the blob"
+#: palette.odin:75
+#, fuzzy
+msgid "Reset zoom"
+msgstr "ズームを100%にリセット"
+
+#: palette.odin:76 settings_pages.odin:396 settings_pages.odin:731
+msgid "Keyboard shortcuts"
 msgstr ""
 
+#: palette.odin:159
+#, fuzzy
+msgid "No command matches."
+msgstr "一致するものがありません"
+
+#: panes.odin:317
+#, fuzzy
+msgid "Copy npub"
+msgstr "公開鍵をコピー"
+
+#: panes.odin:319
+#, fuzzy
+msgid "View contact"
+msgstr "連絡先を追加"
+
+#: panes.odin:337
+msgid "Accounts"
+msgstr "アカウント"
+
+#: panes.odin:345
+msgid "All accounts stay connected. Switching only changes which one you're looking at."
+msgstr "すべてのアカウントは接続されたままです。切り替えても、表示するアカウントが変わるだけです。"
+
+#: panes.odin:355 webembed.odin:357
+msgid "Close"
+msgstr "閉じる"
+
+#: panes.odin:361 panes.odin:415
+msgid "Add account"
+msgstr "アカウントを追加"
+
+#: panes.odin:422 settings_pages.odin:37 settings_pages.odin:181
+msgid "Keys & identity"
+msgstr "鍵と ID"
+
+#: panes.odin:423 settings_pages.odin:36 settings_pages.odin:178
+msgid "Network & relays"
+msgstr "ネットワークとリレー"
+
+#: panes.odin:443
+msgid "Contact"
+msgstr "連絡先"
+
+#: panes.odin:486
+msgid "Start chat"
+msgstr "チャットを開始"
+
+#: panes.odin:502
+msgid "Public key, safe to share."
+msgstr "公開鍵。共有して問題ありません。"
+
+#: panes.odin:509
+msgid "Show as QR"
+msgstr "QR コードで表示"
+
+#: panes.odin:512
+#, fuzzy
+msgid "KEY PACKAGE"
+msgstr "キーパッケージ"
+
+#: panes.odin:525 panes.odin:530
+#, fuzzy
+msgid "RELAYS IN COMMON"
+msgstr "共通のグループ"
+
+#: panes.odin:535
+msgid "GROUPS IN COMMON"
+msgstr "共通のグループ"
+
+#: panes.odin:560
+msgid "ACTIONS"
+msgstr "操作"
+
+#: panes.odin:563
+msgid "Unblock"
+msgstr "ブロック解除"
+
+#: panes.odin:567
+#, fuzzy
+msgid "Remove contact"
+msgstr "連絡先を追加"
+
+#: panes.odin:589 panes.odin:628
+#, fuzzy
+msgid "Checking..."
+msgstr "確認中…"
+
+#: panes.odin:593
+#, fuzzy
+msgid "They haven't published a relay list."
+msgstr "リレーリストを再公開"
+
+#: panes.odin:598
+#, c-format
+msgid "%d of %d shared with you"
+msgstr ""
+
+#: panes.odin:604
+#, c-format
+msgid "+%d more"
+msgstr ""
+
+#: panes.odin:613
+msgid "inbox"
+msgstr ""
+
+#: panes.odin:632
+msgid "Not found"
+msgstr ""
+
+#: panes.odin:641
+#, fuzzy
+msgid "Asking your relays for their key package."
+msgstr "キーパッケージ本体"
+
+#: panes.odin:643
+msgid "They can be added to a chat."
+msgstr ""
+
+#: panes.odin:645
+msgid "No key package on your relays, so a chat can't start yet."
+msgstr ""
+
+#: panes.odin:687
+#, fuzzy
+msgid "Couldn't render the QR code. Please try again."
+msgstr "チャットを作成できませんでした。もう一度お試しください。"
+
+#: panes.odin:715
+msgid "Archive"
+msgstr "アーカイブ"
+
+#: panes.odin:717
+#, fuzzy
+msgid "No archived chats."
+msgstr "アーカイブしたチャットはありません"
+
+#: panes.odin:823
+msgid "Your profile"
+msgstr "あなたのプロフィール"
+
+#: panes.odin:884 panes.odin:941
+#, fuzzy
+msgid "Change picture"
+msgstr "パスワードを変更"
+
+#: panes.odin:921
+#, fuzzy
+msgid "EDIT PROFILE"
+msgstr "プロフィール"
+
+#: panes.odin:931
+#, fuzzy
+msgid "DISPLAY NAME"
+msgstr "表示名"
+
+#: panes.odin:931
+msgid "Your name"
+msgstr ""
+
+#: panes.odin:932
+msgid "A line about you"
+msgstr ""
+
+#: panes.odin:932
+msgid "ABOUT"
+msgstr ""
+
+#: panes.odin:933
+msgid "NIP-05"
+msgstr ""
+
+#: panes.odin:934
+msgid "LIGHTNING"
+msgstr ""
+
+#: panes.odin:939
+msgid "Uploading picture"
+msgstr ""
+
+#: panes.odin:944
+msgid "Enter publishes, Escape cancels."
+msgstr ""
+
+#: panes.odin:952
+#, fuzzy
+msgid "Publish changes"
+msgstr "公開済み"
+
+#: panes.odin:975
+msgid "Your public key. Safe to share."
+msgstr "公開鍵。共有して問題ありません。"
+
+#: panes.odin:988
+msgid "Scan to add this account from another device"
+msgstr "スキャンすると別のデバイスからこのアカウントを追加できます"
+
+#: panes.odin:995
+msgid "PROFILE"
+msgstr "プロフィール"
+
+#: polls.odin:172
+#, c-format
+msgid "%d votes"
+msgstr ""
+
+#: polls.odin:174
+msgid "Voting has ended."
+msgstr ""
+
+#: polls.odin:220
+#, fuzzy
+msgid "Create poll"
+msgstr "作成"
+
+#: polls.odin:221
+msgid "Ask a question..."
+msgstr ""
+
+#: polls.odin:223
+#, fuzzy
+msgid "Add an option..."
+msgstr "リアクションを追加"
+
+#: polls.odin:226
+#, fuzzy
+msgid "Add option"
+msgstr "リアクションを追加"
+
+#: polls.odin:230
+msgid "Multiple choice"
+msgstr ""
+
+#: polls.odin:232
+msgid "Single choice"
+msgstr ""
+
+#: rowactions.odin:81
+msgid "Unpin"
+msgstr "固定を解除"
+
+#: rowactions.odin:82
+msgid "Unmute"
+msgstr "ミュート解除"
+
+#: rowactions.odin:83
+msgid "Mark read"
+msgstr ""
+
+#: rowactions.odin:84
+msgid "Mark unread"
+msgstr ""
+
+#: rowactions.odin:85
+#, fuzzy
+msgid "Move to folder"
+msgstr "フォルダを開く"
+
+#: rowactions.odin:86
+#, fuzzy
+msgid "Export as HTML"
+msgstr "エクスポート"
+
+#: rowactions.odin:87
+msgid "Export as Markdown"
+msgstr ""
+
+#: rowactions.odin:107
+msgid "Folders"
+msgstr ""
+
+#: rowactions.odin:115
+msgid "Pick a folder for this chat, or make a new one. A chat sits in one folder at a time."
+msgstr ""
+
+#: rowactions.odin:117
+msgid "FOLDERS"
+msgstr ""
+
+#: rowactions.odin:119
+#, fuzzy
+msgid "No folders yet."
+msgstr "リレーがまだありません"
+
+#: rowactions.odin:138
+msgid "RENAME FOLDER"
+msgstr ""
+
+#: rowactions.odin:152
+msgid "Take out of folder"
+msgstr ""
+
+#: rowactions.odin:161
+#, fuzzy
+msgid "All folders"
+msgstr "フォルダを開く"
+
+#: settings_pages.odin:35 settings_pages.odin:175
+msgid "General"
+msgstr "一般"
+
+#: settings_pages.odin:38 settings_pages.odin:184
+msgid "Appearance"
+msgstr "外観"
+
+#: settings_pages.odin:39 settings_pages.odin:187
+msgid "Notifications"
+msgstr "通知"
+
+#: settings_pages.odin:40 settings_pages.odin:190
+msgid "Storage"
+msgstr "ストレージ"
+
+#: settings_pages.odin:41 settings_pages.odin:193
+msgid "Advanced"
+msgstr "詳細"
+
+#: settings_pages.odin:42 settings_pages.odin:196
+msgid "About"
+msgstr "このアプリについて"
+
+#: settings_pages.odin:43 settings_pages.odin:199
+msgid "Debug"
+msgstr "デバッグ"
+
+#: settings_pages.odin:44 settings_pages.odin:202
+msgid "KP inspector"
+msgstr ""
+
+#: settings_pages.odin:233
+msgid "STARTUP"
+msgstr "起動"
+
+#: settings_pages.odin:235
+msgid "Launch at login"
+msgstr "ログイン時に起動"
+
+#: settings_pages.odin:239
+msgid "Start minimized to tray"
+msgstr "トレイに最小化して起動"
+
+#: settings_pages.odin:244
+msgid "Close to tray"
+msgstr ""
+
+#: settings_pages.odin:250
+msgid "Restore last selected chat on launch"
+msgstr "起動時に最後のチャットを復元"
+
+#: settings_pages.odin:254
+msgid "LANGUAGE"
+msgstr "言語"
+
+#: settings_pages.odin:256 settings_pages.odin:654
+msgid "Interface language"
+msgstr "インターフェース言語"
+
+#: settings_pages.odin:261
+msgid "Change"
+msgstr "変更"
+
+#: settings_pages.odin:264
+msgid "Time format"
+msgstr "時刻形式"
+
+#: settings_pages.odin:273
+msgid "Date format"
+msgstr "日付形式"
+
+#: settings_pages.odin:283
+msgid "QUICK REACTIONS"
+msgstr "クイックリアクション"
+
+#: settings_pages.odin:285
+msgid "One-tap reactions"
+msgstr "ワンタップリアクション"
+
+#: settings_pages.odin:321
+msgid "Restore the default reactions"
+msgstr "デフォルトのリアクションに戻す"
+
+#: settings_pages.odin:322 settings_pages.odin:545
+msgid "Reset"
+msgstr "リセット"
+
+#: settings_pages.odin:325
+msgid "CUSTOM EMOJI"
+msgstr "カスタム絵文字"
+
+#: settings_pages.odin:327
+msgid "Uploaded emoji"
+msgstr "アップロード済みの絵文字"
+
+#: settings_pages.odin:394
+msgid "HELP"
+msgstr ""
+
+#: settings_pages.odin:397
+msgid "View"
+msgstr ""
+
+#: settings_pages.odin:419
+msgid "THEME"
+msgstr "テーマ"
+
+#: settings_pages.odin:421
+#, fuzzy
+msgid "Share this theme"
+msgstr "次の画像"
+
+#: settings_pages.odin:422
+#, fuzzy
+msgid "Share to chat"
+msgstr "チャットを開始"
+
+#: settings_pages.odin:432
+msgid "Theme"
+msgstr "テーマ"
+
+#: settings_pages.odin:519
+msgid "Accent color"
+msgstr "アクセントカラー"
+
+#: settings_pages.odin:536
+msgid "ZOOM"
+msgstr "ズーム"
+
+#: settings_pages.odin:538
+msgid "Interface zoom"
+msgstr "インターフェースのズーム"
+
+#: settings_pages.odin:543
+msgid "-"
+msgstr ""
+
+#: settings_pages.odin:544
+msgid "+"
+msgstr ""
+
+#: settings_pages.odin:548
+msgid "TEXT SIZE"
+msgstr ""
+
+#: settings_pages.odin:550
+msgid "Message text size"
+msgstr ""
+
+#: settings_pages.odin:561
+msgid "SCROLLING"
+msgstr ""
+
+#: settings_pages.odin:563
+msgid "Scroll speed"
+msgstr ""
+
+#: settings_pages.odin:574
+#, fuzzy
+msgid "MOTION"
+msgstr "操作"
+
+#: settings_pages.odin:577
+msgid "Reduce motion"
+msgstr ""
+
+#: settings_pages.odin:583
+msgid "LAYOUT"
+msgstr "レイアウト"
+
+#: settings_pages.odin:586
+msgid "Centred conversation"
+msgstr "会話を中央に配置"
+
+#: settings_pages.odin:596
+msgid "INCOMING MESSAGES"
+msgstr "受信メッセージ"
+
+#: settings_pages.odin:599
+msgid "Desktop notifications"
+msgstr "デスクトップ通知"
+
+#: settings_pages.odin:605
+msgid "Play a sound"
+msgstr "音を鳴らす"
+
+#: settings_pages.odin:610
+#, fuzzy
+msgid "Interface sounds"
+msgstr "インターフェースのズーム"
+
+#: settings_pages.odin:616
+msgid "Show message preview"
+msgstr "メッセージのプレビューを表示"
+
+#: settings_pages.odin:621
+msgid "Send a test notification"
+msgstr "テスト通知を送信"
+
+#: settings_pages.odin:624
+msgid "Send test"
+msgstr "テスト送信"
+
+#: settings_pages.odin:697
+#, fuzzy
+msgid "Send the message"
+msgstr "メッセージを送信"
+
+#: settings_pages.odin:698
+#, fuzzy
+msgid "Insert a new line"
+msgstr "新しい鍵を生成"
+
+#: settings_pages.odin:699
+msgid "Cancel edit / reply, close panels"
+msgstr ""
+
+#: settings_pages.odin:700
+msgid "Search everywhere"
+msgstr ""
+
+#: settings_pages.odin:701
+msgid "Command palette"
+msgstr ""
+
+#: settings_pages.odin:702
+msgid "Zoom in / out / reset"
+msgstr ""
+
+#: settings_pages.odin:703
+msgid "Previous / next in the media viewer"
+msgstr ""
+
+#: settings_pages.odin:704
+msgid "Message menu"
+msgstr ""
+
+#: settings_pages.odin:871
+#, fuzzy
+msgid "Encrypted key copied"
+msgstr "暗号化キーをエクスポート(ncryptsec)"
+
+#: settings_pages.odin:1096
+#, fuzzy
+msgid "No chats to share with yet."
+msgstr "連絡先がまだありません"
+
+#: settings_pages.odin:1150
+#, fuzzy
+msgid "Test notification"
+msgstr "デスクトップ通知"
+
+#: settings_pages.odin:1151
+msgid "This is what a message alert looks like."
+msgstr ""
+
+#: shell.odin:337
+#, fuzzy
+msgid "Connecting to relays"
+msgstr "リレーに接続中…"
+
+#: shell.odin:337
+msgid "Loading your accounts"
+msgstr ""
+
+#: shell.odin:337
+msgid "Starting the runtime"
+msgstr ""
+
+#: storage.odin:96
+msgid "Media cache cleared."
+msgstr ""
+
+#: storage.odin:127
+#, fuzzy
+msgid "Couldn't create the backup. Please try again."
+msgstr "チャットを作成できませんでした。もう一度お試しください。"
+
+#: storage.odin:143
+#, fuzzy
+msgid "Backup created."
+msgstr "バックアップに失敗しました: %1"
+
+#: storage.odin:150
+#, fuzzy
+msgid "Couldn't read the backup file. Please try again."
+msgstr "チャットを作成できませんでした。もう一度お試しください。"
+
+#: storage.odin:163
+#, fuzzy
+msgid "Couldn't open the backup. Double-check the password and try again."
+msgstr "そのアカウントを追加できませんでした。鍵を確認して、もう一度お試しください。"
+
+#: storage.odin:171
+#, fuzzy
+msgid "Couldn't read the backup. Please try again."
+msgstr "チャットを作成できませんでした。もう一度お試しください。"
+
+#: storage.odin:180
+#, c-format
+msgid "Backup imported: %d files restored."
+msgstr ""
+
+#: storage.odin:190
+msgid "MEDIA CACHE"
+msgstr "メディアキャッシュ"
+
+#: storage.odin:192
+msgid "Cached attachments"
+msgstr "キャッシュされた添付ファイル"
+
+#: storage.odin:194
+msgid "CacheClear"
+msgstr ""
+
+#: storage.odin:194
+msgid "Clear cache"
+msgstr "キャッシュを消去"
+
+#: storage.odin:194
+msgid "Confirm clear"
+msgstr ""
+
+#: storage.odin:197
+msgid "KEYS & BACKUPS"
+msgstr "鍵とバックアップ"
+
+#: storage.odin:199
+msgid "Location"
+msgstr "保存場所"
+
+#: storage.odin:201
+msgid "Open folder"
+msgstr "フォルダを開く"
+
+#: storage.odin:204
+msgid "Back up everything"
+msgstr "すべてをバックアップ"
+
+#: storage.odin:205
+#, fuzzy
+msgid "Create backup..."
+msgstr "バックアップを作成"
+
+#: storage.odin:208
+msgid "Import a backup"
+msgstr "バックアップをインポート"
+
+#: storage.odin:209
+#, fuzzy
+msgid "Confirm import"
+msgstr "パスワードを確認"
+
+#: storage.odin:209
+#, fuzzy
+msgid "Import..."
+msgstr "インポート"
+
+#: storage.odin:209
+#, fuzzy
+msgid "ImportBtn"
+msgstr "インポート"
+
+#: storage.odin:212
+msgid "Last backup"
+msgstr "最後のバックアップ"
+
+#: storage.odin:215
+msgid "Backups hold what this device stores locally. Your keys and message history live in marmot's own store and are not included."
+msgstr ""
+
+#: storage.odin:223
+#, fuzzy
+msgid "No backup made from this device yet."
+msgstr "この端末から削除"
+
+#: storage.odin:235
+#, fuzzy
+msgid "Path copied"
+msgstr "画像をコピーしました"
+
+#: storage.odin:306 storage.odin:343
+msgid "Create backup"
+msgstr "バックアップを作成"
+
+#: storage.odin:315
+msgid "Pick a password to encrypt the backup with. Without it the file cannot be opened again."
+msgstr ""
+
+#: storage.odin:316
+msgid "Enter the password this backup was created with. The settings, drafts, custom emoji, and themes on this device will be replaced."
+msgstr ""
+
+#: theme.odin:633
+#, fuzzy
+msgid "Couldn't share the theme. Please try again."
+msgstr "チャットを作成できませんでした。もう一度お試しください。"
+
+#: themeedit.odin:37 themeedit.odin:121
+msgid "Name"
+msgstr ""
+
+#: themeedit.odin:38
+msgid "Font"
+msgstr ""
+
+#: themeedit.odin:39
+msgid "Background"
+msgstr ""
+
+#: themeedit.odin:40
+msgid "Background 2"
+msgstr ""
+
+#: themeedit.odin:41
+msgid "Text"
+msgstr ""
+
+#: themeedit.odin:42
+#, fuzzy
+msgid "Danger"
+msgstr "変更"
+
+#: themeedit.odin:43
+msgid "Warning"
+msgstr ""
+
+#: themeedit.odin:44
+#, fuzzy
+msgid "Accent 1"
+msgstr "承認"
+
+#: themeedit.odin:45
+#, fuzzy
+msgid "Accent 2"
+msgstr "承認"
+
+#: themeedit.odin:46
+#, fuzzy
+msgid "Accent 3"
+msgstr "承認"
+
+#: themeedit.odin:47
+#, fuzzy
+msgid "Accent 4"
+msgstr "承認"
+
+#: themeedit.odin:48
+#, fuzzy
+msgid "Accent 5"
+msgstr "承認"
+
+#: themeedit.odin:49
+#, fuzzy
+msgid "On accent"
+msgstr "アカウントを追加"
+
+#: themeedit.odin:50
+msgid "Panel"
+msgstr ""
+
+#: themeedit.odin:51
+msgid "Panel 2"
+msgstr ""
+
+#: themeedit.odin:52
+msgid "Rail"
+msgstr ""
+
+#: themeedit.odin:53
+msgid "Elevated"
+msgstr ""
+
+#: themeedit.odin:54
+msgid "Plate"
+msgstr ""
+
+#: themeedit.odin:55
+msgid "Card well"
+msgstr ""
+
+#: themeedit.odin:56
+msgid "Code plate"
+msgstr ""
+
+#: themeedit.odin:57
+msgid "Field"
+msgstr ""
+
+#: themeedit.odin:58
+msgid "Field hover"
+msgstr ""
+
+#: themeedit.odin:59
+msgid "Hover"
+msgstr ""
+
+#: themeedit.odin:60
+msgid "Status bar"
+msgstr ""
+
+#: themeedit.odin:61
+msgid "Text mid"
+msgstr ""
+
+#: themeedit.odin:62
+msgid "Text low"
+msgstr ""
+
+#: themeedit.odin:63
+msgid "Text lowest"
+msgstr ""
+
+#: themeedit.odin:64
+msgid "Divider"
+msgstr ""
+
+#: themeedit.odin:65
+msgid "Field border"
+msgstr ""
+
+#: themeedit.odin:66
+msgid "Card border"
+msgstr ""
+
+#: themeedit.odin:67
+msgid "Elevated border"
+msgstr ""
+
+#: themeedit.odin:68
+msgid "Border 2"
+msgstr ""
+
+#: themeedit.odin:69
+msgid "Avatar ring"
+msgstr ""
+
+#: themeedit.odin:70
+msgid "Top glint"
+msgstr ""
+
+#: themeedit.odin:71
+msgid "Overlay"
+msgstr ""
+
+#: themeedit.odin:72
+msgid "Overlay strong"
+msgstr ""
+
+#: themeedit.odin:73
+msgid "Vignette"
+msgstr ""
+
+#: themeedit.odin:74
+msgid "Shadow soft"
+msgstr ""
+
+#: themeedit.odin:75
+msgid "Shadow card"
+msgstr ""
+
+#: themeedit.odin:76
+msgid "Shadow popover"
+msgstr ""
+
+#: themeedit.odin:77
+msgid "Bevel light"
+msgstr ""
+
+#: themeedit.odin:78
+msgid "Bevel shade"
+msgstr ""
+
+#: themeedit.odin:79
+msgid "Media backdrop"
+msgstr ""
+
+#: themeedit.odin:80
+msgid "Chip background"
+msgstr ""
+
+#: themeedit.odin:81
+#, fuzzy
+msgid "Chip text"
+msgstr "テキストをコピー"
+
+#: themeedit.odin:82
+msgid "Chip outline"
+msgstr ""
+
+#: themeedit.odin:83
+msgid "Control background"
+msgstr ""
+
+#: themeedit.odin:84
+msgid "Corner scale"
+msgstr ""
+
+#: themeedit.odin:85
+msgid "Border width"
+msgstr ""
+
+#: themeedit.odin:86
+msgid "Focus glow radius"
+msgstr ""
+
+#: themeedit.odin:87
+msgid "Shadow offset"
+msgstr ""
+
+#: themeedit.odin:88
+msgid "Bubble radius"
+msgstr ""
+
+#: themeedit.odin:89
+msgid "Hover ms"
+msgstr ""
+
+#: themeedit.odin:90
+msgid "Transition ms"
+msgstr ""
+
+#: themeedit.odin:97
+msgid "Bevelled surfaces"
+msgstr ""
+
+#: themeedit.odin:98
+msgid "Hard shadows"
+msgstr ""
+
+#: themeedit.odin:99
+msgid "Focus glow"
+msgstr ""
+
+#: themeedit.odin:100
+msgid "Outline surfaces"
+msgstr ""
+
+#: themeedit.odin:101
+msgid "Bracket labels"
+msgstr ""
+
+#: themeedit.odin:102
+msgid "Invert selected text"
+msgstr ""
+
+#: themeedit.odin:103
+msgid "Fast motion"
+msgstr ""
+
+#: themeedit.odin:104
+msgid "Pixel metrics"
+msgstr ""
+
+#: themeedit.odin:123
+msgid "Default stack"
+msgstr ""
+
+#: themeedit.odin:127
+msgid "flat"
+msgstr ""
+
+#: themeedit.odin:430
+#, fuzzy
+msgid "Edit theme"
+msgstr "次の画像"
+
+#: themeedit.odin:432
+msgid "An empty box derives its value. The window previews as you type."
+msgstr ""
+
+#: themeedit.odin:453
+msgid "STYLE"
+msgstr ""
+
+#: themeedit.odin:471
+msgid "BACKDROP"
+msgstr ""
+
+#: themeedit.odin:494
+msgid "Save and use"
+msgstr ""
+
+#: themeedit.odin:544
+#, fuzzy
+msgid "Couldn't save the theme. Check the name and colors and try again."
+msgstr "そのアカウントを追加できませんでした。鍵を確認して、もう一度お試しください。"
+
+#: threads.odin:83 threads.odin:85
+msgid "Thread"
+msgstr ""
+
+#: timeline.odin:47
+msgid "failed · tap to retry"
+msgstr "失敗 · タップして再試行"
+
+#: timeline.odin:489
+#, fuzzy
+msgid "Couldn't load image. Click to retry."
+msgstr "画像をダウンロードできませんでした。"
+
+#: timeline.odin:785
+#, fuzzy
+msgid "Couldn't load attachment. Click to retry."
+msgstr "動画を再生できませんでした — タップして再試行"
+
+#: timeline.odin:824
+#, fuzzy
+msgid "This message was deleted"
+msgstr "画像が選択されていません。"
+
+#: timeline.odin:880
+#, c-format
+msgid "%d replies"
+msgstr ""
+
+#: timeline.odin:887
 #, fuzzy
 msgid "edited"
 msgstr "編集済み"
 
-msgid "failed · tap to retry"
-msgstr "失敗 · タップして再試行"
-
-msgid "local + relay"
-msgstr "ローカル + リレー"
-
-msgid "local only"
-msgstr "ローカルのみ"
-
-msgid "marmot exposes publish metadata only. Ciphersuite, capabilities, and credential decoding are not available in this build."
+#: timeline.odin:1542
+msgid "SHARED THEME"
 msgstr ""
 
-msgid "npub copied"
-msgstr "npubをコピーしました"
+#: timeline.odin:1551
+#, fuzzy
+msgid "Use this theme"
+msgstr "次の画像"
 
-msgid "opened there"
+#: vault_gate.odin:227
+msgid "Pick a password first."
 msgstr ""
 
-msgid "plaintext"
+#: vault_gate.odin:242
+#, fuzzy
+msgid "Couldn't unlock the vault. Double-check the password and try again."
+msgstr "そのアカウントを追加できませんでした。鍵を確認して、もう一度お試しください。"
+
+#: vault_gate.odin:243
+#, fuzzy
+msgid "Couldn't read the vault file. Please try again."
+msgstr "チャットを作成できませんでした。もう一度お試しください。"
+
+#: vault_gate.odin:251
+msgid "The passwords don't match. Type them again."
 msgstr ""
 
-msgid "relay"
-msgstr "リレー"
+#: vault_gate.odin:257
+#, fuzzy
+msgid "Couldn't create the vault. Please try again."
+msgstr "チャットを作成できませんでした。もう一度お試しください。"
 
-msgid "sealed here"
+#: vault_gate.odin:320
+#, fuzzy
+msgid "Enter your password to unlock this device's keys."
+msgstr "パスワードを入力してロックを解除"
+
+#: vault_gate.odin:320
+msgid "Pick a password. It encrypts everything in the app, and there is no way to recover it."
 msgstr ""
+
+#: vault_gate.odin:328
+msgid "CONFIRM PASSWORD"
+msgstr "パスワードの確認"
+
+#: vault_gate.odin:333
+msgid "Unlock"
+msgstr "ロック解除"
+
+#: vault_gate.odin:335
+msgid "Confirm: delete this vault"
+msgstr ""
+
+#: vault_gate.odin:335
+msgid "Use another key"
+msgstr "別の鍵を使う"
+
+#: webxdc.odin:137
+msgid "Webxdc app"
+msgstr ""
+
+#: advanced.odin:37
+#, fuzzy
+msgid "Share anonymous relay connection telemetry. Nothing is sent while this is off."
+msgstr "匿名のリレー接続の利用統計を共有します。"
+
+#: advanced.odin:41
+#, fuzzy
+msgid "Record group audit log files on this device. Identifiers are hashed."
+msgstr "グループの監査ログファイルを Goggles の監査エンドポイントに送信します。すぐに適用されます。"
+
+#: advanced.odin:86
+msgid "Shows diagnostics and MLS internals. Adds a Debug entry with account, key-packages, and group state."
+msgstr "診断情報と MLS の内部状態を表示します。アカウント、キーパッケージ、グループ状態を含む Debug 項目を追加します。"
+
+#: keys.odin:194
+msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
+msgstr "White Noise はあなたの秘密鍵を一切見ません。このデバイスと接続した署名者にのみ存在します。"
+
+#: keys.odin:229
+msgid "Your identity lives only on this device for now. When device linking ships, the devices signed into your key will appear here."
+msgstr "現在、あなたのアイデンティティはこのデバイスにのみ存在します。デバイス連携が導入されると、あなたの鍵でサインインしたデバイスがここに表示されます。"
+
+#: network.odin:37
+msgid "Drops idle relay sockets and dials them again."
+msgstr ""
+
+#: network.odin:69
+msgid "Re-broadcasts your outbox and inbox relay lists. Use this if peers can't find you."
+msgstr "送信リレーと受信リレーのリストを再配信します。相手があなたを見つけられない場合に使用してください。"
+
+#: panes.odin:443
+msgid "Select a contact from the list."
+msgstr ""
+
+#: settings_pages.odin:178
+msgid "WHERE YOUR MESSAGES LAND"
+msgstr ""
+
+#: settings_pages.odin:181
+#, fuzzy
+msgid "MLS · YOUR KEY MATERIAL"
+msgstr "MLS  ·  あなたの鍵素材"
+
+#: settings_pages.odin:187
+msgid "DESKTOP ALERTS"
+msgstr "デスクトップ通知"
+
+#: settings_pages.odin:190
+msgid "ON THIS DEVICE"
+msgstr "このデバイス上"
+
+#: settings_pages.odin:193
+msgid "PRIVACY & DEVELOPER FLAGS"
+msgstr ""
+
+#: settings_pages.odin:196
+#, fuzzy
+msgid "WHAT THIS IS, LIVE"
+msgstr "概要"
+
+#: settings_pages.odin:199
+msgid "STATE / RAW EVENTS / KEY PACKAGES"
+msgstr ""
+
+#: settings_pages.odin:202
+#, fuzzy
+msgid "DECODED MLS KEY PACKAGES"
+msgstr "あなたのキーパッケージ"
+
+#: settings_pages.odin:239
+msgid "Takes effect on the next launch."
+msgstr ""
+
+#: settings_pages.odin:245
+msgid "Closing the window hides it. The tray icon shows your unread total and brings it back."
+msgstr ""
+
+#: settings_pages.odin:285
+#, fuzzy
+msgid "Shown on the message menu. Tap one to remove it."
+msgstr "メッセージのツールバーとメニューに表示されます。タップすると削除できます。"
+
+#: settings_pages.odin:327
+#, fuzzy
+msgid "Tap one to remove it."
+msgstr "メッセージのツールバーとメニューに表示されます。タップすると削除できます。"
+
+#: settings_pages.odin:421
+msgid "Pick a chat to send it to. They choose whether to use it."
+msgstr ""
+
+#: settings_pages.odin:432
+msgid "Pick the whole app's look."
+msgstr "アプリ全体の見た目を選択します。"
+
+#: settings_pages.odin:538
+#, fuzzy
+msgid "Also Ctrl + / - / 0."
+msgstr "Ctrl + / − / 0、または Ctrl + スクロールでも操作できます。"
+
+#: settings_pages.odin:550
+msgid "Applies to message bodies and the composer."
+msgstr ""
+
+#: settings_pages.odin:563
+msgid "How far the mouse wheel moves the view."
+msgstr ""
+
+#: settings_pages.odin:578
+msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
+msgstr ""
+
+#: settings_pages.odin:587
+msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
+msgstr "開いている会話を全幅にせず、読みやすい幅に保ちます。"
+
+#: settings_pages.odin:600
+msgid "Get an alert when a message arrives in a chat you're not viewing."
+msgstr "表示していないチャットにメッセージが届いたときに通知を受け取ります。"
+
+#: settings_pages.odin:611
+msgid "Short tones when a message leaves, arrives, or fails to send."
+msgstr ""
+
+#: settings_pages.odin:616
+msgid "Off shows only \"New message\" without the text."
+msgstr "オフにすると、本文を表示せず「新着メッセージ」とだけ表示します。"
+
+#: settings_pages.odin:622
+msgid "See and hear it with today's sound and preview settings."
+msgstr "現在のサウンドとプレビュー設定で確認できます。"
+
+#: storage.odin:192
+msgid "Images and files kept on this device so they don't download twice, sealed with your vault key."
+msgstr ""
+
+#: storage.odin:204
+#, fuzzy
+msgid "Pack your settings, drafts, custom emoji, and themes into one encrypted file."
+msgstr "アカウント、チャット、設定を1つの暗号化ファイルにまとめます。"
+
+#: storage.odin:208
+msgid "Replaces the settings, drafts, custom emoji, and themes on this device."
+msgstr ""
+
+#~ msgid "Load earlier messages"
+#~ msgstr "以前のメッセージを読み込む"

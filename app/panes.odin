@@ -3,7 +3,6 @@ package main
 import "core:c"
 import "core:encoding/hex"
 import "core:fmt"
-import "core:slice"
 import "core:strconv"
 import "core:strings"
 import "core:text/edit"
@@ -379,7 +378,9 @@ centered_note :: proc(id_str: string, title: string, sub: string) {
 
 // Section eyebrow, ALL CAPS like the slint app.
 eyebrow :: proc(text: string) {
-	clay.Text(tr(text), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM, letterSpacing = 2})
+	// A stencilled theme brackets its captions: [ACTIONS], not ACTIONS.
+	label := BRACKET_LABELS ? fmt.tprintf("[%s]", tr(text)) : tr(text)
+	clay.Text(label, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM, letterSpacing = 2})
 }
 
 // The Profile page's rail, in place of the chat list: the accounts on
@@ -525,6 +526,11 @@ contacts_pane :: proc(ui: ^Ui_State) {
 		}
 		contact_relays_card()
 
+		if clay.UI(clay.ID("RelaysEyebrow"))({layout = {padding = {top = 8}}}) {
+			eyebrow("RELAYS IN COMMON")
+		}
+		contact_relays_card()
+
 		if clay.UI(clay.ID("GroupsEyebrow"))({layout = {padding = {top = 8}}}) {
 			eyebrow("GROUPS IN COMMON")
 		}
@@ -610,6 +616,7 @@ contact_relays_card :: proc() {
 		}
 	}
 }
+
 
 // What the key-package row says. Marmot answers only whether one can
 // be resolved, so the row reports reachability rather than the event

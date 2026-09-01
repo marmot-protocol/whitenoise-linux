@@ -282,6 +282,9 @@ handle_web_input :: proc(ui: ^Ui_State) {
 	// The texture is 1:1 with the child's widget, so the pointer maps
 	// straight into it in device pixels.
 	mouse := rl.GetMousePosition()
+	if test_pointer_on {
+		mouse = transmute(rl.Vector2)test_pointer
+	}
 	x, y := f64(mouse.x - box.x * UI_ZOOM), f64(mouse.y - box.y * UI_ZOOM)
 	over := x >= 0 && y >= 0 && x < f64(web_modal.tex_w) && y < f64(web_modal.tex_h)
 
@@ -290,11 +293,11 @@ handle_web_input :: proc(ui: ^Ui_State) {
 	if over || web_modal.down {
 		web_push({kind = .Move, x = x, y = y})
 	}
-	if over && rl.IsMouseButtonPressed(.LEFT) {
+	if over && (rl.IsMouseButtonPressed(.LEFT) || forced_press) {
 		web_push({kind = .Down, arg = GDK_BTN_LEFT, x = x, y = y})
 		web_modal.down = true
 	}
-	if web_modal.down && rl.IsMouseButtonReleased(.LEFT) {
+	if web_modal.down && (rl.IsMouseButtonReleased(.LEFT) || forced_release) {
 		web_push({kind = .Up, arg = GDK_BTN_LEFT, x = x, y = y})
 		web_modal.down = false
 	}

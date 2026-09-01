@@ -1,0 +1,25 @@
+# Prohibition back room: oxblood leather, aged brass, one low lamp.
+# Deco fan behind the conversation, warm falloff toward the floor.
+name = "Speakeasy"
+
+[colors]
+bg = "#170e10ff"
+bg-2 = "#241419ff"
+text-hi = "#efe0ccff"
+danger = "#b4442fff"
+warning = "#c8913aff"
+accent-base = [
+    "#b8933fff",
+    "#7d6136ff",
+    "#8f3b38ff",
+    "#5c6b4dff",
+    "#6f5068ff",
+]
+
+[style]
+backdrop = "deco"
+bevel = true
+focus-glow = true
+r-scale = 0.7
+border-w = 1.0
+glow-r = 5.0

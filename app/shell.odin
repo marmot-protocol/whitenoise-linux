@@ -55,10 +55,8 @@ gutter :: proc(id_str: string) {
 // this frame's.
 handle_gutters :: proc(ui: ^Ui_State) {
 	if rl.IsMouseButtonPressed(.LEFT) {
-		for id in ([]string{"RailGutter", "PanelGutter"}) {
-			if clay.PointerOver(clay.ID(id)) {
-				gutter_drag = id
-			}
+		if clay.PointerOver(clay.ID("RailGutter")) {
+			gutter_drag = "RailGutter"
 		}
 	}
 	if gutter_drag == "" {
@@ -75,22 +73,16 @@ handle_gutters :: proc(ui: ^Ui_State) {
 	case "RailGutter":
 		// The rail card starts at the CardsRow padding (10px).
 		ui.prefs.rail_w = clamp(int(mx) - 10, RAIL_W_MIN, RAIL_W_MAX)
-	case "PanelGutter":
-		// The panel is pinned to the card's right edge, so the drag
-		// measures back from that edge, not forward from its left one.
-		panel := clay.GetElementData(clay.ID("MembersPanel"))
-		if panel.found {
-			right := panel.boundingBox.x + panel.boundingBox.width
-			ui.prefs.panel_w = clamp(int(right - mx), PANEL_W_MIN, PANEL_W_MAX)
-		}
 	}
 }
 
 rail_width :: proc(ui: ^Ui_State) -> f32 {
 	target := ui.prefs.rail_collapsed ? f32(RAIL_W_COLLAPSED) : f32(clamp(ui.prefs.rail_w, RAIL_W_MIN, RAIL_W_MAX))
 	// Dragging the gutter must track the pointer exactly; only the
-	// collapse toggle animates.
+	// collapse toggle animates. Pin the entry too, or release replays
+	// the drag from its starting width.
 	if gutter_drag != "" {
+		anim_set(clay.ID("RailWidth").id, target)
 		return target
 	}
 	return anim_to(clay.ID("RailWidth").id, target, 20)
@@ -250,6 +242,7 @@ modal_open :: proc(ui: ^Ui_State) -> bool {
 		ui.shortcuts_open ||
 		ui.export_open ||
 		ui.folder_open ||
+		ui.theme_edit ||
 		ui.backup_mode != .None ||
 		preview_shown ||
 		web_modal.open \
@@ -268,7 +261,7 @@ modal_backdrop :: proc() {
 	{
 		layout = {sizing = {width = clay.SizingFixed(w), height = clay.SizingFixed(h)}},
 		floating = {attachTo = .Root, zIndex = 9, attachment = {element = .CenterCenter, parent = .CenterCenter}},
-		backgroundColor = {BG.r, BG.g, BG.b, 110},
+		backgroundColor = OVERLAY,
 	},
 	) {}
 }
