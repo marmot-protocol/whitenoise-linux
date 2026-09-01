@@ -122,10 +122,18 @@ handle_member_menu :: proc(ui: ^Ui_State) -> bool {
 context_menu :: proc(ui: ^Ui_State) {
 	msg := ui.messages[ui.ctx_msg]
 
+	// The open-time clamp in handlers.odin guesses the height; re-clamp
+	// against the box clay actually laid out, so a tall menu (own message,
+	// attachments, dev mode) never runs past the window bottom.
+	y := ui.ctx_y
+	if box, laid_out := element_box(clay.ID("CtxMenu")); laid_out {
+		y = min(y, f32(rl.GetScreenHeight()) / UI_ZOOM - box.height - 8)
+	}
+
 	if clay.UI(clay.ID("CtxMenu"))(
 	{
 		layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFit({min = 200})}, padding = clay.PaddingAll(4), childGap = 1},
-		floating = {attachTo = .Root, offset = {ui.ctx_x, ui.ctx_y + rise(clay.ID("CtxMenu"))}, zIndex = 10},
+		floating = {attachTo = .Root, offset = {ui.ctx_x, y + rise(clay.ID("CtxMenu"))}, zIndex = 10},
 		backgroundColor = CARD,
 		cornerRadius = rr(10),
 		border = {color = ELEVATED_BORDER, width = bw()},
