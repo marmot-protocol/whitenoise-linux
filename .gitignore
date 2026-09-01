@@ -1,5 +1,8 @@
 /build/
 /vendor/
+
+# odin build output when built in-package
+/app/app
 .stignore
 .syncthing.*
 *.sync-conflict*
