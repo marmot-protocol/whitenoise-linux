@@ -176,6 +176,7 @@ Reaction_Ui :: struct {
 	count: string,
 	mine:  bool, // clicking toggles: unreact when mine, react otherwise
 	ghost: bool, // optimistic: the op is still in flight, drawn faded
+	who:   string, // reactor names, comma-joined, for the hover tooltip
 }
 
 // A react/unreact still on the wire, overlaid onto the timeline so the
@@ -320,14 +321,6 @@ Page :: enum {
 	Profile,
 }
 
-PAGE_LABELS := [Page]string{
-	.Chats    = "Chat",
-	.Contacts = "Ppl",
-	.Archived = "Arc",
-	.Settings = "Set",
-	.Profile  = "Me",
-}
-
 Member_Ui :: struct {
 	id_hex:   string,
 	npub:     string, // bech32 of id_hex, the row's subline
@@ -398,6 +391,7 @@ Ui_State :: struct {
 	theme:         int, // index into theme_packs
 	accent:        int,
 	selected:      int, // index into chats, -1 = none
+	rail_rows:     [dynamic]int, // chat indices as rendered in the rail, for Ctrl+Tab cycling
 	messages:      [dynamic]Msg_Ui, // selected chat's timeline
 	pending:       [dynamic]Pending_Send, // optimistic sends awaiting ack
 	react_pending: [dynamic]Pending_React, // optimistic reactions awaiting ack

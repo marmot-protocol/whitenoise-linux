@@ -699,6 +699,7 @@ SHORTCUTS := [][2]string {
 	{"Esc", N_("Cancel edit / reply, close panels")},
 	{"Ctrl + K", N_("Search everywhere")},
 	{"Ctrl + P", N_("Command palette")},
+	{"Ctrl + Tab / Shift + Tab", N_("Next / previous chat")},
 	{"Ctrl + / - / 0", N_("Zoom in / out / reset")},
 	{"← / →", N_("Previous / next in the media viewer")},
 	{"Right click", N_("Message menu")},

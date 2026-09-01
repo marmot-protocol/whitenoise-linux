@@ -304,11 +304,19 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 					break
 				}
 			}
+			// Resolve reactor names for the chip's hover tooltip.
+			names := make([dynamic]string, context.temp_allocator)
+			for s in 0 ..< entry.senders_len {
+				if entry.senders[s] != nil {
+					append(&names, profile_label(client, string(entry.senders[s])))
+				}
+			}
 			append(&msg.reactions, Reaction_Ui{
 				label = fmt.aprintf("%s %d", string(entry.emoji), entry.count),
 				emoji = strings.clone(string(entry.emoji)),
 				count = fmt.aprintf("%d", entry.count),
 				mine  = mine_reaction,
+				who   = strings.join(names[:], ", "),
 			})
 		}
 
@@ -941,7 +949,7 @@ load_archived :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 		if !row.archived {
 			continue
 		}
-		append(&ui.archived, row_to_ui(row, ui.account_ref))
+		append(&ui.archived, row_to_ui(client, row, ui.account_ref))
 	}
 }
 

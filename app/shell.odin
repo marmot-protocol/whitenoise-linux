@@ -305,14 +305,20 @@ toast_layer :: proc(ui: ^Ui_State) {
 // ── Tooltip ─────────────────────────────────────────────────────────
 
 // Hover label for an icon-only control. Call inside the hovered
-// element's body, guarded by hovered(). It hangs below the
-// control: everything using it sits in the top chrome, where above
-// would fall off the window.
-tooltip :: proc(text: string) {
+// element's body, guarded by hovered(). Defaults to hanging below
+// the control (the top-chrome callers, where above would fall off
+// the window); .Above suits anything near the bottom edge.
+Tip_Side :: enum {
+	Below,
+	Above,
+}
+
+tooltip :: proc(text: string, side: Tip_Side = .Below) {
+	attach := side == .Below ? clay.FloatingAttachPoints{element = .CenterTop, parent = .CenterBottom} : clay.FloatingAttachPoints{element = .CenterBottom, parent = .CenterTop}
 	if clay.UI(clay.ID_LOCAL("Tip"))(
 	{
 		layout = {padding = {left = 8, right = 8, top = 4, bottom = 4}},
-		floating = {attachTo = .Parent, zIndex = 18, offset = {0, 6}, attachment = {element = .CenterTop, parent = .CenterBottom}},
+		floating = {attachTo = .Parent, zIndex = 18, offset = {0, side == .Below ? 6 : -6}, attachment = attach},
 		backgroundColor = CARD,
 		cornerRadius = rr(6),
 		border = {color = ELEVATED_BORDER, width = bw()},

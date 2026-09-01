@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: wnl-ui\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-01 09:41+0200\n"
+"POT-Creation-Date: 2026-09-01 10:00+0200\n"
 "PO-Revision-Date: 2026-07-06 00:00+0000\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -159,158 +159,158 @@ msgstr "Accetta"
 msgid "Decline"
 msgstr ""
 
-#: chatpane.odin:314
+#: chatpane.odin:288
 #, fuzzy
 msgid "Send a message..."
 msgstr "Invia messaggio"
 
-#: chatpane.odin:351
+#: chatpane.odin:325
 msgid "Send with an effect"
 msgstr ""
 
-#: chatpane.odin:365
+#: chatpane.odin:339
 #, fuzzy
 msgid "Create a poll"
 msgstr "Crea backup"
 
-#: chatpane.odin:479
-msgid "Members"
-msgstr "Membri"
+#: chatpane.odin:447
+msgid "Leave group"
+msgstr "Lascia il gruppo"
 
-#: chatpane.odin:496
-msgid "YOU"
-msgstr "TU"
-
-#: chatpane.odin:502
-msgid "Admin"
-msgstr "Amministratore"
-
-#: chatpane.odin:530
+#: chatpane.odin:476
 #, fuzzy
 msgid "GROUP NAME"
 msgstr "NOME DEL GRUPPO (OPZIONALE)"
 
-#: chatpane.odin:541 rowactions.odin:133
+#: chatpane.odin:487 rowactions.odin:133
 #, fuzzy
 msgid "Rename"
 msgstr "Rinominato."
 
-#: chatpane.odin:545
+#: chatpane.odin:491
 #, fuzzy
 msgid "DISAPPEARING MESSAGES"
 msgstr "MESSAGGI IN ARRIVO"
 
-#: chatpane.odin:547
+#: chatpane.odin:493
 msgid "Off"
 msgstr ""
 
-#: chatpane.odin:554
+#: chatpane.odin:500
 #, fuzzy
 msgid "ADD MEMBER"
 msgstr "MEMBRI"
 
-#: chatpane.odin:565
+#: chatpane.odin:511
 msgid "Invite"
 msgstr "Invita"
 
-#: chatpane.odin:567
+#: chatpane.odin:513
 msgid "EXPORT CHAT"
 msgstr ""
 
-#: chatpane.odin:569
+#: chatpane.odin:515
 msgid "HTML"
 msgstr ""
 
-#: chatpane.odin:570
+#: chatpane.odin:516
 msgid "Markdown"
 msgstr ""
 
-#: chatpane.odin:586
-msgid "Leave group"
-msgstr "Lascia il gruppo"
+#: chatpane.odin:523
+msgid "Members"
+msgstr "Membri"
 
-#: chatpane.odin:630
+#: chatpane.odin:540
+msgid "YOU"
+msgstr "TU"
+
+#: chatpane.odin:546
+msgid "Admin"
+msgstr "Amministratore"
+
+#: chatpane.odin:609
 msgid "Shared media"
 msgstr "Media condivisi"
 
-#: chatpane.odin:794
+#: chatpane.odin:773
 msgid "No messages yet"
 msgstr "Ancora nessun messaggio"
 
-#: chatpane.odin:794
+#: chatpane.odin:773
 msgid "Your own notepad"
 msgstr ""
 
-#: chatpane.odin:798
+#: chatpane.odin:777
 msgid "Anything you write here stays between you and this device's key."
 msgstr ""
 
-#: chatpane.odin:798
+#: chatpane.odin:777
 #, fuzzy
 msgid "Send the first message to start the conversation."
 msgstr "Saluta per iniziare la conversazione."
 
-#: chatpane.odin:808 onboard.odin:44 palette.odin:55
+#: chatpane.odin:787 onboard.odin:44 palette.odin:55
 msgid "New chat"
 msgstr "Nuova chat"
 
-#: chatpane.odin:809
+#: chatpane.odin:788
 msgid "Add a contact for a direct chat, or leave it empty for a group of your own."
 msgstr ""
 
-#: chatpane.odin:813 polls.odin:236
+#: chatpane.odin:792 polls.odin:236
 msgid "Create"
 msgstr "Crea"
 
-#: chatpane.odin:814 confirm.odin:140 grouphero.odin:87 linkguard.odin:128
+#: chatpane.odin:793 confirm.odin:140 grouphero.odin:87 linkguard.odin:128
 #: polls.odin:235 settings_pages.odin:390 themeedit.odin:492
 msgid "Cancel"
 msgstr "Annulla"
 
-#: chatpane.odin:866
+#: chatpane.odin:845
 #, fuzzy
 msgid "Generating your key"
 msgstr "Genera una nuova chiave"
 
-#: chatpane.odin:866
+#: chatpane.odin:845
 #, fuzzy
 msgid "Signing you in"
 msgstr "Accesso…"
 
-#: chatpane.odin:871
+#: chatpane.odin:850
 msgid "Checking your key with the relays. This takes a few seconds."
 msgstr ""
 
-#: chatpane.odin:871
+#: chatpane.odin:850
 msgid "Publishing your profile to the relays. This takes a few seconds."
 msgstr ""
 
-#: chatpane.odin:875
+#: chatpane.odin:854
 msgid "Sign in to your Nostr identity"
 msgstr "Accedi alla tua identità Nostr"
 
-#: chatpane.odin:880
+#: chatpane.odin:859
 msgid "Your key never leaves this device."
 msgstr "La tua chiave non lascia mai questo dispositivo."
 
-#: chatpane.odin:881 storage.odin:306 storage.odin:343
+#: chatpane.odin:860 storage.odin:306 storage.odin:343
 msgid "Import backup"
 msgstr "Importa backup"
 
-#: chatpane.odin:883
+#: chatpane.odin:862
 #, fuzzy
 msgid "Import a key"
 msgstr "Importa un backup"
 
-#: chatpane.odin:885
+#: chatpane.odin:864
 msgid "NSEC"
 msgstr ""
 
-#: chatpane.odin:903
+#: chatpane.odin:882
 msgid "Back"
 msgstr "Indietro"
 
-#: chatpane.odin:904 vault_gate.odin:333
+#: chatpane.odin:883 vault_gate.odin:333
 msgid "Continue"
 msgstr "Continua"
 
@@ -787,7 +787,7 @@ msgstr "Mostra chiave"
 msgid "Confirm"
 msgstr ""
 
-#: keys.odin:305 pages.odin:126 pages.odin:262 pages.odin:481
+#: keys.odin:305 pages.odin:119 pages.odin:253 pages.odin:472
 msgid "npub copied"
 msgstr "npub copiato"
 
@@ -1222,7 +1222,7 @@ msgstr "Riduci lo zoom"
 msgid "Reset zoom"
 msgstr "Ripristina lo zoom al 100%"
 
-#: palette.odin:76 settings_pages.odin:396 settings_pages.odin:731
+#: palette.odin:76 settings_pages.odin:396 settings_pages.odin:732
 msgid "Keyboard shortcuts"
 msgstr ""
 
@@ -1750,46 +1750,50 @@ msgid "Command palette"
 msgstr ""
 
 #: settings_pages.odin:702
+msgid "Next / previous chat"
+msgstr "Chat successiva / precedente"
+
+#: settings_pages.odin:703
 msgid "Zoom in / out / reset"
 msgstr ""
 
-#: settings_pages.odin:703
+#: settings_pages.odin:704
 msgid "Previous / next in the media viewer"
 msgstr ""
 
-#: settings_pages.odin:704
+#: settings_pages.odin:705
 msgid "Message menu"
 msgstr ""
 
-#: settings_pages.odin:871
+#: settings_pages.odin:872
 #, fuzzy
 msgid "Encrypted key copied"
 msgstr "Esporta chiave crittografata (ncryptsec)"
 
-#: settings_pages.odin:1096
+#: settings_pages.odin:1097
 #, fuzzy
 msgid "No chats to share with yet."
 msgstr "Ancora nessun contatto"
 
-#: settings_pages.odin:1150
+#: settings_pages.odin:1151
 #, fuzzy
 msgid "Test notification"
 msgstr "Notifiche desktop"
 
-#: settings_pages.odin:1151
+#: settings_pages.odin:1152
 msgid "This is what a message alert looks like."
 msgstr ""
 
-#: shell.odin:337
+#: shell.odin:327
 #, fuzzy
 msgid "Connecting to relays"
 msgstr "Connessione ai relay…"
 
-#: shell.odin:337
+#: shell.odin:327
 msgid "Loading your accounts"
 msgstr ""
 
-#: shell.odin:337
+#: shell.odin:327
 msgid "Starting the runtime"
 msgstr ""
 
@@ -2245,11 +2249,11 @@ msgstr ""
 msgid "edited"
 msgstr "modificato"
 
-#: timeline.odin:1542
+#: timeline.odin:1539
 msgid "SHARED THEME"
 msgstr ""
 
-#: timeline.odin:1551
+#: timeline.odin:1548
 #, fuzzy
 msgid "Use this theme"
 msgstr "Immagine successiva"

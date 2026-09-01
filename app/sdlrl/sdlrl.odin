@@ -57,6 +57,7 @@ Camera2D :: struct {
 KeyboardKey :: enum {
 	ESCAPE,
 	ENTER,
+	TAB,
 	BACKSPACE,
 	DELETE,
 	LEFT,
@@ -155,6 +156,7 @@ IconFont: u16 = max(u16)
 SCANCODES := [KeyboardKey]sdl.Scancode{
 	.ESCAPE        = .ESCAPE,
 	.ENTER         = .RETURN,
+	.TAB           = .TAB,
 	.BACKSPACE     = .BACKSPACE,
 	.DELETE        = .DELETE,
 	.LEFT          = .LEFT,

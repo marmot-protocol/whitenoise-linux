@@ -866,6 +866,11 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 						} else {
 							clay.Text(chip.label, {fontId = FONT_BODY, fontSize = 12, textColor = chip.ghost ? TEXT_LO : TEXT})
 						}
+						// Who reacted, on hover. Above the chip: the row may
+						// sit against the compose box.
+						if len(chip.who) > 0 && hovered() {
+							tooltip(chip.who, .Above)
+						}
 					}
 				}
 			}

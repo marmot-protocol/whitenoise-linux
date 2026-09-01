@@ -874,11 +874,63 @@ boot_marmot :: proc(home: string, ui: ^Ui_State) -> ^marmot.Client {
 	return client
 }
 
+// Whether this plaintext is a webxdc state update, which feeds the
+// running app and never renders (timeline or preview).
+@(private = "file")
+is_xdc_blob :: proc(text: string) -> bool {
+	return strings.has_prefix(strings.trim_space(text), XDC_SENTINEL)
+}
+
+// The rail preview for a chat whose newest record can't speak for
+// itself: a kind-1210 system payload (raw JSON) or a webxdc state
+// blob. Re-reads the newest window (a local query) and phrases the
+// newest displayable record the way the timeline does, skipping what
+// the timeline skips. Temp-allocated; "" when nothing qualifies.
+@(private = "file")
+window_preview :: proc(client: ^marmot.Client, account_ref: string, row: ^marmot.Chat_List_Row) -> string {
+	if client == nil {
+		return ""
+	}
+	query := marmot.Timeline_Message_Query {
+		group_id_hex = row.group_id_hex,
+		has_limit    = true,
+		limit        = 16,
+	}
+	page: ^marmot.Timeline_Page
+	account := strings.clone_to_cstring(account_ref, context.temp_allocator)
+	if marmot.timeline_messages(client, account, &query, &page) != .OK {
+		return ""
+	}
+	defer marmot.timeline_page_free(page)
+
+	for i := int(page.messages_len) - 1; i >= 0; i -= 1 {
+		record := &page.messages[i]
+		if record.kind == 1009 || record.kind == 5 || record.kind == KIND_POLL_VOTE {
+			continue
+		}
+		if record.kind == 1210 {
+			if record.group_system != nil {
+				return system_text(client, record.group_system)
+			}
+			continue
+		}
+		text := record.plaintext != nil ? string(record.plaintext) : ""
+		if len(text) == 0 || is_xdc_blob(text) {
+			continue
+		}
+		if record.direction != nil && string(record.direction) == "sent" {
+			return fmt.tprintf("You: %s", text)
+		}
+		return text
+	}
+	return ""
+}
+
 // Snapshot the account's chat list into UI-owned strings.
 // One marmot chat-list row into a UI row; shared by the rail
 // (load_chat_list) and the archive page (load_archived) so both render
 // identically (avatar, time, "You:" prefix, delivery tick).
-row_to_ui :: proc(row: ^marmot.Chat_List_Row, account_ref: string) -> Chat_Row_Ui {
+row_to_ui :: proc(client: ^marmot.Client, row: ^marmot.Chat_List_Row, account_ref: string) -> Chat_Row_Ui {
 	title := "Untitled"
 	if row.title != nil && len(string(row.title)) > 0 {
 		title = string(row.title)
@@ -894,6 +946,18 @@ row_to_ui :: proc(row: ^marmot.Chat_List_Row, account_ref: string) -> Chat_Row_U
 			preview = string(row.last_message.plaintext)
 			if mine {
 				preview = fmt.tprintf("You: %s", preview)
+			}
+		}
+		// A kind-1210 payload or a webxdc state blob can't speak for
+		// itself; show the newest displayable record instead (already
+		// phrased, so no "You:" prefix on top).
+		xdc := is_xdc_blob(row.last_message.plaintext != nil ? string(row.last_message.plaintext) : "")
+		if row.last_message.kind == 1210 || xdc {
+			phrased := window_preview(client, account_ref, row)
+			if len(phrased) > 0 {
+				preview = phrased
+			} else if xdc {
+				preview = "" // never the raw blob
 			}
 		}
 	}
@@ -934,7 +998,7 @@ load_chat_list :: proc(client: ^marmot.Client, account_ref: string, ui: ^Ui_Stat
 
 	clear(&ui.chats)
 	for i in 0 ..< rows.len {
-		append(&ui.chats, row_to_ui(&rows.items[i], account_ref))
+		append(&ui.chats, row_to_ui(client, &rows.items[i], account_ref))
 	}
 	ui.my_pic_url = profile_info(client, account_ref).pic_url
 	queue_group_pics(ui, client)

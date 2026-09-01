@@ -572,6 +572,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 						)
 						// Pinned chats lead the rail; the rest keep marmot's
 						// activity order.
+						clear(&ui.rail_rows) // rebuilt below; Ctrl+Tab cycles it
 						for i in rail_order(ui.chats[:], ui.prefs.pinned) {
 							chat := ui.chats[i]
 							if !in_folder(ui.prefs.folder_of, chat.group_id, ui.folder_filter) {
@@ -598,6 +599,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 							   is_dm && ui.blocked[peer] {
 								continue
 							}
+							append(&ui.rail_rows, i)
 							chat_row(u32(i), chat, ui.selected == i, .Archive)
 						}
 					}
@@ -1211,6 +1213,20 @@ main :: proc() {
 				ui.prefs.zoom_pct = 100
 				apply_zoom(&ui)
 				save_settings(&ui)
+			}
+			// Ctrl+Tab / Ctrl+Shift+Tab cycles chats in the rail's
+			// rendered order (last frame's rows), wrapping.
+			if rl.IsKeyPressed(.TAB) && len(ui.rail_rows) > 0 {
+				step := shift_down() ? -1 : 1
+				at := 0 // selection not in the rail: start at the first row
+				for idx, pos in ui.rail_rows {
+					if idx == ui.selected {
+						at = pos + step
+						break
+					}
+				}
+				n := len(ui.rail_rows)
+				select_chat(&ui, client, ui.rail_rows[(at + n) %% n])
 			}
 		}
 

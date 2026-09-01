@@ -15,3 +15,6 @@
 
 # gettext msgmerge backups — regenerated on every catalog update
 *.po~
+
+# stray build artifact, removed from tracking
+/app.bin

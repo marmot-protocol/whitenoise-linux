@@ -838,7 +838,6 @@ foreign lib {
 	client_new_with_secret_store :: proc(root_path: cstring, relay_urls: [^]cstring, relay_urls_len: uint, store: ^Secret_Store, out_client: ^^Client) -> Status ---
 	client_start       :: proc(client: ^Client) -> Status ---
 	client_shutdown    :: proc(client: ^Client) -> Status ---
-	client_is_stopping :: proc(client: ^Client, out_stopping: ^bool) -> Status ---
 	client_free        :: proc(client: ^Client) ---
 
 	// Thread-local detail for the most recent failure; free with string_free.
@@ -886,8 +885,6 @@ foreign lib {
 	// NIP-02 follow list. follow/unfollow publish the updated list and
 	// write the new follow set.
 	account_follows :: proc(client: ^Client, account_ref: cstring, out: ^^String_List) -> Status ---
-	is_following    :: proc(client: ^Client, account_ref: cstring, user_ref: cstring, out: ^bool) -> Status ---
-	follow_user     :: proc(client: ^Client, account_ref: cstring, user_ref: cstring, out: ^^String_List) -> Status ---
 	unfollow_user   :: proc(client: ^Client, account_ref: cstring, user_ref: cstring, out: ^^String_List) -> Status ---
 
 	// Resolve and cache KeyPackages for prospective members. Asked
