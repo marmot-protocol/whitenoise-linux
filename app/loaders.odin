@@ -1,20 +1,10 @@
 package main
 
-import "core:c"
-import "core:encoding/hex"
 import "core:encoding/json"
 import "core:fmt"
-import "core:os"
 import "core:slice"
-import "core:strconv"
 import "core:strings"
-import "core:text/edit"
-import "core:unicode/utf8"
-import "core:sync"
-import "core:thread"
-import "core:time"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -410,7 +400,8 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 			// same path in loop mode, which is what animates them.
 			is_gif := strings.has_suffix(lower, ".gif") ||
 				(reference.media_type != nil && string(reference.media_type) == "image/gif")
-			if is_gif || (reference.media_type != nil && strings.has_prefix(string(reference.media_type), "video/")) {
+			if is_gif || is_video_name(lower) ||
+			   (reference.media_type != nil && strings.has_prefix(string(reference.media_type), "video/")) {
 				key := reference.plaintext_sha256 != nil ? string(reference.plaintext_sha256) : name
 				if view, seen := video_views[key]; seen {
 					if view != nil {

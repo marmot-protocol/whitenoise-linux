@@ -113,7 +113,8 @@ link_modal :: proc(ui: ^Ui_State) {
 		{layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(12), childGap = 5}, backgroundColor = ROW_BG, cornerRadius = rr(10), border = {color = FIELD_BORDER, width = bw()}},
 		) {
 			clay.Text(host, {fontId = FONT_TITLE, fontSize = 14, textColor = TEXT})
-			clay.Text(ui.link_url, {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO})
+			// Chopped to the card: a nevent URL has no space to wrap at.
+			mono_lines(ui.link_url, modal_w(clay.ID("LinkModal"), 440) - 64, TEXT_LO)
 		}
 
 		if clay.UI(clay.ID("LinkTrustRow"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, childAlignment = {y = .Center}}}) {

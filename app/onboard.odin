@@ -53,7 +53,7 @@ get_started_pane :: proc(ui: ^Ui_State) {
 	) {
 		if clay.UI(clay.ID("GetStartedCard"))(
 		{
-			layout = {sizing = {width = clay.SizingFixed(480)}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(24), childGap = 10},
+			layout = {sizing = {width = clay.SizingFixed(fit_w(480))}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(single_pane() ? 16 : 24), childGap = 10},
 			backgroundColor = ROW_BG,
 			cornerRadius = rr(14),
 			border = {color = FIELD_BORDER, width = bw()},

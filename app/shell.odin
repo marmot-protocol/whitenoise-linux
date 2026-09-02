@@ -77,6 +77,14 @@ handle_gutters :: proc(ui: ^Ui_State) {
 }
 
 rail_width :: proc(ui: ^Ui_State) -> f32 {
+	// One card at a time: the rail is either the whole window or gone,
+	// and neither width is draggable, so the eased path is skipped.
+	if single_pane() {
+		if phone_detail(ui) {
+			return 0
+		}
+		return f32(rl.GetScreenWidth()) / UI_ZOOM - CARDS_PAD
+	}
 	target := ui.prefs.rail_collapsed ? f32(RAIL_W_COLLAPSED) : f32(clamp(ui.prefs.rail_w, RAIL_W_MIN, RAIL_W_MAX))
 	// Dragging the gutter must track the pointer exactly; only the
 	// collapse toggle animates. Pin the entry too, or release replays
@@ -103,6 +111,145 @@ rail_open :: proc(ui: ^Ui_State) -> f32 {
 // icon column.
 rail_narrow :: proc(ui: ^Ui_State) -> bool {
 	return rail_open(ui) < 0.5
+}
+
+// ── Narrow windows ──────────────────────────────────────────────────
+//
+// A phone panel reports anywhere from 360 to 720 points wide depending
+// on the scale its compositor picked, and none of that says how big
+// the glass physically is. So nothing here asks what device this is:
+// both rules key off the window's own width, which means a desktop
+// window dragged narrow behaves identically and the phone layout is
+// testable without a phone.
+
+// The CardsRow left+right padding, the width a card does not get.
+CARDS_PAD :: f32(20)
+
+// Fewest clay units the layout ever runs at. A phone at 360 points
+// would otherwise get 240 units at the desktop zoom, less than the
+// rail alone, so below this zoom is traded for units. Both a Librem 5
+// (360 points over 65mm) and a Fairphone 5 (612 over 73mm) land near
+// 5.5 units per mm this way, which is the density a phone UI is read
+// at: the compositor already put the physical size into its scale.
+MIN_UNITS :: f32(360)
+
+// Under this the rail (RAIL_W_MIN, 300) and the page card cannot both
+// fit, so the shell shows one at a time.
+PHONE_W :: f32(560)
+
+// Base magnification for a window this many points wide, before the
+// user's zoom pref multiplies it. Pure, so the breakpoints are
+// testable without a window.
+zoom_for_width :: proc(win_w: i32) -> f32 {
+	if win_w <= 0 {
+		return 1.5 // no window yet; nothing to fit to
+	}
+	return min(1.5, f32(win_w) / MIN_UNITS)
+}
+
+// Width for a card that has a fixed design width, capped so a window
+// narrower than the card never gets clipped content. `margin` is the
+// breathing room left on each side.
+fit_w :: proc(w: f32, margin: f32 = 12) -> f32 {
+	// Floored: a window narrower than the margins would otherwise hand
+	// clay a negative fixed size.
+	return min(w, max(f32(rl.GetScreenWidth()) / UI_ZOOM - margin * 2, 120))
+}
+
+// How wide the page card gets: the window less the rail and the
+// padding around and between the two cards. Three call sites measured
+// this themselves before; the header's badge is the fourth.
+page_w :: proc(ui: ^Ui_State) -> f32 {
+	return f32(rl.GetScreenWidth()) / UI_ZOOM - rail_width(ui) - 40
+}
+
+// Narrowest page card that still fits the chat header's badge beside
+// the title and the three chips. Under it the badge goes.
+HEAD_BADGE_W :: f32(420)
+
+// Narrowest window that still has room for the status bar's shortcut
+// hints after the pills.
+HINTS_W :: f32(760)
+
+// Top-left corner for a floating panel of this size, kept inside the
+// window. A window narrower than the panel pins it to the left edge:
+// the old `screen - panel` alone goes negative there and pushed the
+// panel off the side it was meant to be held on.
+panel_pos :: proc(x, y, w, h: f32) -> (f32, f32) {
+	sw := f32(rl.GetScreenWidth()) / UI_ZOOM
+	sh := f32(rl.GetScreenHeight()) / UI_ZOOM
+	return clamp(x, 8, max(8, sw - w)), clamp(y, 8, max(8, sh - h))
+}
+
+// Controls sized for a finger rather than a pointer: a one-card window
+// (which is a phone in every case that produces one), or any window on
+// a machine with a touch screen, since a Fairphone in landscape is
+// still a Fairphone.
+tap_size :: proc() -> bool {
+	return single_pane() || rl.HasTouch()
+}
+
+// Too narrow for the rail beside the page card.
+single_pane :: proc() -> bool {
+	return f32(rl.GetScreenWidth()) / UI_ZOOM < PHONE_W
+}
+
+// Which half a one-card window is showing: the rail is the list, the
+// page card is the detail a list row opens. Archive is its own list
+// and Profile's rail is the account switcher (which the accounts modal
+// also reaches), so both of those pages are always the detail.
+phone_detail :: proc(ui: ^Ui_State) -> bool {
+	if ui.new_chat_open || ui.add_account_open {
+		return true
+	}
+	switch ui.page {
+	case .Chats:
+		return ui.selected >= 0
+	case .Contacts:
+		return ui.selected_contact >= 0
+	case .Settings:
+		return ui.sett_open
+	case .Archived, .Profile:
+		return true
+	}
+	return false
+}
+
+// Back chip above the page card, the only way out of the detail when
+// there is no rail on screen to click.
+phone_back :: proc(ui: ^Ui_State) {
+	if clay.UI(clay.ID("PhoneBack"))(
+	{
+		layout = {padding = {left = 12, right = 14, top = 8, bottom = 8}, childGap = 6, childAlignment = {y = .Center}},
+		backgroundColor = hovered() ? HOVER : {},
+		cornerRadius = rr(9),
+	},
+	) {
+		clay.Text("‹", {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT_DIM})
+		clay.Text(tr("Back"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM})
+	}
+}
+
+// Close whatever the detail was showing, which puts the rail back.
+phone_back_action :: proc(ui: ^Ui_State) {
+	if ui.new_chat_open {
+		ui.new_chat_open = false
+		return
+	}
+	if ui.add_account_open {
+		ui.add_account_open = false
+		return
+	}
+	switch ui.page {
+	case .Chats:
+		ui.selected = -1
+	case .Contacts:
+		ui.selected_contact = -1
+	case .Settings:
+		ui.sett_open = false
+	case .Archived, .Profile:
+		ui.page = .Chats // no list half of their own to fall back to
+	}
 }
 
 // ── Status bar ──────────────────────────────────────────────────────
@@ -171,7 +318,13 @@ status_bar :: proc(ui: ^Ui_State) {
 		status_pill("SyncPill", syncing ? "SYNCING" : "SYNCED", syncing ? ACCENT : TEXT_LO, false)
 		if clay.UI(clay.ID("StatusGapR"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 
+		// Shortcut hints are the first thing to go when the bar cannot
+		// hold everything: they are the only part of it that is not
+		// live state, and a one-card window rarely has the keys.
 		for hint in ([][2]string{{"Ctrl K", "SEARCH"}, {"Ctrl P", "COMMANDS"}}) {
+			if f32(rl.GetScreenWidth()) / UI_ZOOM < HINTS_W {
+				break
+			}
 			clay.Text(hint[0], {fontId = FONT_MONO, fontSize = 10, textColor = TEXT_DIM, letterSpacing = 1})
 			clay.Text(hint[1], {fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO, letterSpacing = 2})
 		}
@@ -244,6 +397,7 @@ modal_open :: proc(ui: ^Ui_State) -> bool {
 		ui.folder_open ||
 		ui.theme_edit ||
 		ui.backup_mode != .None ||
+		ui.vault_pw_open ||
 		preview_shown ||
 		web_modal.open \
 	)
@@ -343,7 +497,7 @@ splash_frame :: proc(step: int) {
 	) {
 		if clay.UI(clay.ID("SplashCard"))(
 		{
-			layout = {sizing = {width = clay.SizingFixed(360)}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(36), childGap = 10, childAlignment = {x = .Center}},
+			layout = {sizing = {width = clay.SizingFixed(fit_w(360))}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(single_pane() ? 20 : 36), childGap = 10, childAlignment = {x = .Center}},
 			backgroundColor = CARD,
 			cornerRadius = rr(16),
 			border = {color = CARD_BORDER, width = bw()},

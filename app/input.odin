@@ -1,22 +1,11 @@
 package main
 
-import "core:c"
-import "core:encoding/hex"
-import "core:fmt"
-import "core:os"
-import "core:slice"
-import "core:strconv"
 import "core:strings"
 import "core:text/edit"
 import "core:unicode/utf8"
-import "core:sync"
-import "core:thread"
-import "core:time"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
-
-import marmot "../marmot"
 
 key_hit :: proc(k: rl.KeyboardKey) -> bool {
 	return rl.IsKeyPressed(k) || rl.IsKeyPressedRepeat(k)
@@ -202,7 +191,14 @@ set_lines :: proc(ed: ^edit.State, multiline: bool) {
 // clipboard (Ctrl+C/X/V, Shift+Insert), undo/redo (Ctrl+Z/Y), and
 // Select All (Ctrl+A). Backspace/Delete and Left/Right are
 // grapheme-aware. The masked login field never copies out.
+// A text field took keystrokes this frame, so platform text input (and
+// with it a phone's on-screen keyboard) should be on. Every field
+// routes through edit_text, so this is the whole signal; the frame loop
+// applies it and clears it.
+text_field_live: bool
+
 edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
+	text_field_live = true
 	ed_begin(ui, buf)
 	defer ed_end(ui, buf)
 	ed := &ui.ed
@@ -217,7 +213,7 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 
 	ctrl := ctrl_down()
 	shift := shift_down()
-	masked := buf == &ui.login_input || buf == &ui.export_pw || buf == &ui.backup_pw || buf == &gate_pw || buf == &gate_pw2
+	masked := buf == &ui.login_input || buf == &ui.export_pw || buf == &ui.backup_pw || buf == &gate_pw || buf == &gate_pw2 || vault_pw_field(ui, buf)
 	set_lines(ed, multiline)
 
 	if key_hit(.BACKSPACE) {
@@ -306,7 +302,11 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 		edit.perform_command(ed, .Cut)
 	}
 	if (ctrl && key_hit(.V)) || (shift && key_hit(.INSERT)) {
-		edit.perform_command(ed, .Paste)
+		// A pasted picture or file becomes a staged attachment; only
+		// a clipboard holding neither falls through to text.
+		if buf != &ui.compose || !paste_clipboard_files(ui) {
+			edit.perform_command(ed, .Paste)
+		}
 	}
 	if ctrl && !shift && key_hit(.Z) {
 		edit.perform_command(ed, .Undo)
@@ -569,6 +569,70 @@ mouse_released :: proc() -> bool {
 	// A release ending a scrollbar drag must not click what's under
 	// the pointer; the drag clears one frame later in the main loop.
 	return (rl.IsMouseButtonReleased(.LEFT) && scroll_drag.container == 0) || forced_release
+}
+
+// ── Long press ──────────────────────────────────────────────────────
+//
+// A finger has no second button, so a press held still in one place is
+// the touch spelling of a right click. Ticked once a frame from the
+// main loop; the handlers read the flag rather than the timer, so a
+// frame that never reaches a given handler cannot lose the press.
+
+LONG_PRESS_SECS :: f64(0.5)
+LONG_PRESS_SLOP :: f32(8) // px of travel that turns a hold into a drag
+
+Long_Press :: struct {
+	at:    f64, // when the press landed
+	x, y:  f32, // where it landed
+	live:  bool, // still a candidate; cleared once it travels
+	fired: bool, // one menu per press
+}
+
+@(private = "file")
+lp: Long_Press
+
+// True for the one frame a hold crosses the threshold.
+long_pressed: bool
+
+// The state machine, kept clear of rl so it can be stepped in a test.
+lp_step :: proc(s: ^Long_Press, pressed, down: bool, now: f64, x, y: f32) -> bool {
+	if pressed {
+		s^ = {at = now, x = x, y = y, live = true}
+		return false
+	}
+	if !down || s.fired || !s.live {
+		return false
+	}
+	if abs(x - s.x) > LONG_PRESS_SLOP || abs(y - s.y) > LONG_PRESS_SLOP {
+		s.live = false // moved: this press is a drag
+		return false
+	}
+	if now - s.at < LONG_PRESS_SECS {
+		return false
+	}
+	s.fired = true
+	return true
+}
+
+long_press_tick :: proc() {
+	// Touch only: it stands in for the right click a finger cannot do.
+	// With a mouse the hold belongs to the reaction fan alone.
+	long_pressed = false
+	if !rl.HasTouch() {
+		return
+	}
+	m := rl.GetMousePosition()
+	long_pressed = lp_step(
+		&lp,
+		rl.IsMouseButtonPressed(.LEFT),
+		rl.IsMouseButtonDown(.LEFT),
+		rl.GetTime(),
+		m.x,
+		m.y,
+	)
+	if long_pressed {
+		drag_moved = true // the release that follows is a gesture, not a click
+	}
 }
 
 clicked :: proc(id_str: string) -> bool {

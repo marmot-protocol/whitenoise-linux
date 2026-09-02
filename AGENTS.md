@@ -58,6 +58,8 @@ drive the app into a given state for screenshots and harness runs.
 | `WN_SHOT` / `WN_SHOT_FRAME` | Capture `wn-odin-shot.png` after N frames, then exit. |
 | `WN_TEST_*` | Drive a specific pane/action on boot; see `main.odin`. |
 | `WN_DEBUG_INPUT` | Log input events. |
+| `WN_TEST_LINK` | Raise the external-link guard on a URL at frame 12. |
+| `WN_WS_DEBUG` | Log the websocket handshake behind nevent cards (`ws_shim.c`). |
 
 The data dir is the app's first argument, defaulting to
 `~/.local/share/whitenoise`. It holds `vault.db`, the media cache, and
@@ -70,7 +72,7 @@ Odin (a recent nightly; CI pins one in `.github/workflows/ci.yml`), a C
 compiler, and a Rust toolchain for `marmot-c`. Then SDL3 plus the libraries
 behind the `foreign import "system:…"` lines in `app/`: `libarchive`
 (`archive.odin`), `libmpv` (`mpv.odin`), `poppler-glib` + `glib` + `gobject` +
-`cairo` (`pdf.odin`).
+`cairo` (`pdf.odin`), `libcurl` (`ws_shim.c`, the nevent card fetch).
 
 ## Architecture
 
@@ -241,6 +243,7 @@ register per string.
   file genuinely needs the symbol.
 - Comments explain *what* a block does and *why*, with an example or an ASCII
   diagram where a system needs one. Don't annotate code you didn't touch.
+- When committing work that closes ngit issues, add a `fixes nevent1…` trailer per issue (full bech32, one per line). Do not use GitHub `Fixes #N`.
 
 ## Commits
 

@@ -17,7 +17,6 @@ import "core:fmt"
 import "core:strings"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
-import rl "sdlrl"
 
 import marmot "../marmot"
 

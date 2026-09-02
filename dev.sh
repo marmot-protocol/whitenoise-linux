@@ -10,6 +10,13 @@
 # Usage: ./dev.sh [args passed to build/app]
 # Env:   WN_DEV_OPT   optimization level (default -o:minimal;
 #                     use -o:speed when profiling the STL orbit path)
+#        WN_DEV_CMD   command file the running app polls (default
+#                     build/dev-cmd). Append a line to drive the live
+#                     app without a restart:
+#                       echo 'select New group' >> build/dev-cmd
+#                       echo 'send hello'       >> build/dev-cmd
+#                       echo 'chats'            >> build/dev-cmd
+#                       echo 'state'            >> build/dev-cmd
 # Needs: inotify-tools
 set -uo pipefail
 
@@ -18,6 +25,9 @@ OPT="${WN_DEV_OPT:--o:minimal}"
 # build.sh only creates the ODIN_ROOT overlay when the installed odin is
 # missing its vendor/stb archives; without one, the plain root is fine.
 OVERLAY="$HERE/build/odin-root"
+# The dev command channel (app/devctl.odin). Truncated per restart so a
+# line left over from the previous run does not fire against the new one.
+export WN_DEV_CMD="${WN_DEV_CMD:-$HERE/build/dev-cmd}"
 
 command -v inotifywait >/dev/null || { echo "dev.sh needs inotify-tools"; exit 1; }
 # First run stages mdk/clay/twemoji and, if needed, the ODIN_ROOT overlay.
@@ -37,6 +47,8 @@ while :; do
 	rm -f "$HERE/build/app"
 	if env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/app" $OPT -out:"$HERE/build/app"; then
 		stop
+		: > "$WN_DEV_CMD"
+		"$HERE/scripts/vet-imports.sh" || true   # warn only, never block a reload
 		"$HERE/build/app" "$@" &
 		pid=$!
 	else

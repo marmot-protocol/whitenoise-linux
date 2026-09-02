@@ -72,3 +72,44 @@ vault_round_trip :: proc(t: ^testing.T) {
 	_, foreign_ok := vault_open_blob(sealed)
 	testing.expect(t, !foreign_ok)
 }
+
+// Rotating the password keeps every secret and rekeys the file: the old
+// password stops working, the new one opens it, and blobs sealed before
+// the change are dead (which is why the caller drops the media cache).
+@(test)
+vault_rekey_round_trip :: proc(t: ^testing.T) {
+	sync.lock(&test_home_lock)
+	defer sync.unlock(&test_home_lock)
+
+	prev_home := data_home
+	data_home = VAULT_TEST_HOME
+	defer data_home = prev_home
+	os.remove_all(VAULT_TEST_HOME)
+	os.make_directory(VAULT_TEST_HOME)
+	defer os.remove_all(VAULT_TEST_HOME)
+
+	testing.expect_value(t, vault_create("first password"), Vault_Err.None)
+	testing.expect_value(t, vault_set("account:alice", "deadbeef"), Vault_Err.None)
+
+	stale, stale_ok := vault_seal_blob(transmute([]u8)string("cached bytes"))
+	testing.expect(t, stale_ok)
+	defer delete(stale)
+
+	testing.expect(t, vault_verify("first password"), "the live password verifies")
+	testing.expect(t, !vault_verify("second password"), "any other one does not")
+
+	testing.expect_value(t, vault_rekey("second password"), Vault_Err.None)
+	testing.expect(t, vault_verify("second password"), "the new password is live")
+
+	// The file on disk moved with it, both ways.
+	testing.expect_value(t, vault_open("first password"), Vault_Err.Wrong_Password)
+	testing.expect_value(t, vault_open("second password"), Vault_Err.None)
+
+	value, found := vault_get("account:alice")
+	defer delete(value)
+	testing.expect(t, found, "the secrets came through the rotation")
+	testing.expect_value(t, value, "deadbeef")
+
+	_, opened := vault_open_blob(stale)
+	testing.expect(t, !opened, "a blob sealed under the old key is unreadable")
+}

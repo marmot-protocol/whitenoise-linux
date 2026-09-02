@@ -49,6 +49,11 @@ Prefs :: struct {
 	// Advanced (telemetry/audit toggles live in marmot's shared
 	// sqlite, not here)
 	trusted_sites:     [dynamic]string,
+	// Nostr event cards (nevent.odin): where referenced events are
+	// pulled from, and the user's own "open in" web client, a URL
+	// with {id} standing for the nevent/note token.
+	fetch_relays:      [dynamic]string,
+	event_client:      string,
 	dev_mode:          bool, // shows the Debug / KP inspector sections
 	last_backup:       i64, // unix seconds of the last backup written; 0 = never
 }
@@ -75,6 +80,10 @@ default_prefs :: proc() -> Prefs {
 	for emoji in DEFAULT_QUICK_REACTIONS {
 		append(&p.quick_reactions, strings.clone(emoji))
 	}
+	for relay in DEFAULT_FETCH_RELAYS {
+		append(&p.fetch_relays, strings.clone(relay))
+	}
+	p.event_client = strings.clone(DEFAULT_EVENT_CLIENT)
 	return p
 }
 
@@ -172,6 +181,7 @@ load_settings :: proc(ui: ^Ui_State) {
 	// keep the defaults instead of adopting a zeroed struct.
 	if settings.prefs.zoom_pct != 0 {
 		delete(ui.prefs.quick_reactions)
+		delete(ui.prefs.fetch_relays)
 		ui.prefs = settings.prefs
 	}
 	// Fields added after prefs shipped: 0 means an older settings.json.
@@ -183,6 +193,17 @@ load_settings :: proc(ui: ^Ui_State) {
 	}
 	if ui.prefs.panel_w == 0 {
 		ui.prefs.panel_w = PANEL_W_DEFAULT
+	}
+	// ponytail: an empty list reads as "older settings.json", so the
+	// defaults come back; a user who wants no fetch relays at all
+	// cannot have that yet.
+	if len(ui.prefs.fetch_relays) == 0 {
+		for relay in DEFAULT_FETCH_RELAYS {
+			append(&ui.prefs.fetch_relays, strings.clone(relay))
+		}
+	}
+	if len(ui.prefs.event_client) == 0 {
+		ui.prefs.event_client = strings.clone(DEFAULT_EVENT_CLIENT)
 	}
 }
 

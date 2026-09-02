@@ -1,17 +1,9 @@
 package main
 
 import "base:runtime"
-import "core:c"
-import "core:encoding/hex"
 import "core:fmt"
 import "core:os"
-import "core:slice"
-import "core:strconv"
 import "core:strings"
-import "core:text/edit"
-import "core:unicode/utf8"
-import "core:sync"
-import "core:thread"
 import "core:time"
 import "core:time/datetime"
 import "core:time/timezone"
@@ -777,7 +769,9 @@ extract_inlines :: proc(builder: ^strings.Builder, inlines: [^]marmot.Markdown_I
 		case .MATH:
 			strings.write_string(builder, string(node.body.math.content))
 		case .IMAGE:
-			strings.write_string(builder, "[image]")
+			// The url itself: a link in a body, an inline image when an
+			// event card splits its paragraphs (nevent.odin).
+			strings.write_string(builder, string(node.body.image.dest))
 		case .NOSTR_MENTION, .NOSTR_URI:
 			strings.write_string(builder, string(node.body.nostr_mention.entity.bech32))
 		}
@@ -918,7 +912,9 @@ window_preview :: proc(client: ^marmot.Client, account_ref: string, row: ^marmot
 		}
 		if record.kind == 1210 {
 			if record.group_system != nil {
-				return system_text(client, record.group_system)
+				// system_text can hand back ev.text, which borrows the
+				// page freed on return; copy before it goes.
+				return strings.clone(system_text(client, record.group_system), context.temp_allocator)
 			}
 			continue
 		}
@@ -929,7 +925,7 @@ window_preview :: proc(client: ^marmot.Client, account_ref: string, row: ^marmot
 		if record.direction != nil && string(record.direction) == "sent" {
 			return fmt.tprintf("You: %s", text)
 		}
-		return text
+		return strings.clone(text, context.temp_allocator) // text borrows the page
 	}
 	return ""
 }

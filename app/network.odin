@@ -64,6 +64,20 @@ settings_network :: proc(ui: ^Ui_State) {
 		relay_row("InboxRow", "InboxRemove", u32(i), relay)
 	}
 
+	eyebrow("EVENT FETCH RELAYS")
+	clay.Text(tr("Where linked Nostr events (nevent, note) are pulled from. Your chats never touch these."), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+	if clay.UI(clay.ID("AddFetchRow"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, childAlignment = {y = .Center}}}) {
+		input_box(ui, "FetchBox", &ui.fetch_input, "wss://relay.example.com", ui.focus == .Fetch, 300)
+		login_button("AddFetchBtn", "Add")
+	}
+	for relay, i in ui.prefs.fetch_relays {
+		relay_row("FetchRow", "FetchRemove", u32(i), relay)
+	}
+
+	eyebrow("OPEN EVENTS IN")
+	clay.Text(tr("The web client an event card opens, with {id} in place of the event. For example https://primal.net/e/{id}."), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+	input_box(ui, "ClientBox", &ui.client_input, DEFAULT_EVENT_CLIENT, ui.focus == .Client, 300)
+
 	eyebrow("SYNC")
 	if clay.UI(clay.ID("RowRepublish"))(srow()) {
 		row_labels("Republish relay lists", "Re-broadcasts your outbox and inbox relay lists. Use this if peers can't find you.")
@@ -188,6 +202,27 @@ handle_network :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			confirm_ask(ui, .Remove_Inbox, relay, relay, i)
 			return
 		}
+	}
+	// Fetch relays and the client template are local prefs, so no
+	// confirm and no relay round trip: edit, save, done.
+	if clicked("AddFetchBtn") && len(ui.fetch_input) > 0 {
+		append(&ui.prefs.fetch_relays, strings.clone(string(ui.fetch_input[:])))
+		clear(&ui.fetch_input)
+		save_settings(ui)
+		return
+	}
+	for i in 0 ..< len(ui.prefs.fetch_relays) {
+		if clicked_indexed("FetchRemove", u32(i)) {
+			delete(ui.prefs.fetch_relays[i])
+			ordered_remove(&ui.prefs.fetch_relays, i)
+			save_settings(ui)
+			return
+		}
+	}
+	if string(ui.client_input[:]) != ui.prefs.event_client {
+		delete(ui.prefs.event_client)
+		ui.prefs.event_client = strings.clone(string(ui.client_input[:]))
+		save_settings(ui)
 	}
 	handle_profile(ui, client) // outbox add/remove lives with the profile clicks
 }

@@ -1,19 +1,13 @@
 package main
 
-import "core:c"
-import "core:encoding/hex"
 import "core:fmt"
 import "core:os"
 import "core:slice"
-import "core:strconv"
 import "core:strings"
-import "core:text/edit"
-import "core:unicode/utf8"
 import "core:sync"
 import "core:thread"
 import "core:time"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
 import marmot "../marmot"
@@ -305,6 +299,7 @@ Send_Job :: struct {
 	text:    cstring,
 	reply:   cstring, // nil = plain send
 	thread:  cstring, // nil = main timeline; else the kind-1111 root
+	caption: cstring, // nil, or the body to ride along with atts (aliases text)
 	atts:    []Job_Att, // non-empty = upload_media instead of a text send
 }
 
@@ -376,6 +371,7 @@ send_worker :: proc(t: ^thread.Thread) {
 		request := marmot.Media_Upload_Request {
 			attachments     = raw_data(requests),
 			attachments_len = uint(len(requests)),
+			caption         = job.caption,
 			send            = job.thread == nil,
 		}
 		result: ^marmot.Media_Upload_Result
@@ -443,6 +439,17 @@ spawn_send :: proc(ui: ^Ui_State, client: ^marmot.Client, p: Pending_Send) {
 	job.reply = len(p.reply_to) > 0 ? strings.clone_to_cstring(p.reply_to) : nil
 	job.thread = len(p.thread) > 0 ? strings.clone_to_cstring(p.thread) : nil
 	if len(p.atts) > 0 {
+		// upload_media publishes the kind-9 itself, so the typed body
+		// only survives as its caption. Staged files carry no typed
+		// body (their name is the row label), and the thread path
+		// sends job.text as the kind-1111 content already.
+		emoji_only := job.thread == nil && len(p.body) > 0
+		for a in p.atts {
+			emoji_only &= strings.has_prefix(a.name, EMOJI_ATT_PREFIX)
+		}
+		if emoji_only {
+			job.caption = job.text
+		}
 		job.atts = make([]Job_Att, len(p.atts))
 		for a, i in p.atts {
 			job.atts[i] = {

@@ -1,23 +1,12 @@
 package main
 
-import "core:c"
-import "core:encoding/hex"
 import "core:fmt"
 import "core:os"
 import "core:path/filepath"
-import "core:slice"
-import "core:strconv"
 import "core:strings"
-import "core:text/edit"
-import "core:unicode/utf8"
-import "core:sync"
-import "core:thread"
-import "core:time"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
-
-import marmot "../marmot"
 
 quick_tile :: proc(emoji: string) -> ^rl.Texture2D {
 	if tex := emoji_tex(emoji); tex != nil {

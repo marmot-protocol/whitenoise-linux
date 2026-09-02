@@ -117,6 +117,8 @@ State :: struct {
 	last_frame_ns: u64,
 	frame_dt:      f32,
 	density:       f32, // output pixels per window point
+	touch:         bool, // a touch screen is attached
+	text_input:    bool, // text-input-v3 enabled (raises a phone's keyboard)
 	// text engine
 	pixel_scale:   f32, // glyph rasterization multiplier (dpi * zoom)
 	fonts:         [dynamic]Font_File,
@@ -195,9 +197,19 @@ InitWindow :: proc(width, height: i32, title: cstring) {
 		os.exit(1)
 	}
 	state.density = max(sdl.GetWindowPixelDensity(state.window), 1)
+	// Asked once: SDL synthesizes mouse events from touch, so this is
+	// the only way to tell a finger from a pointer.
+	n: c.int
+	if devices := sdl.GetTouchDevices(&n); devices != nil {
+		sdl.free(devices)
+	}
+	state.touch = n > 0
 	_ = sdl.SetRenderVSync(state.renderer, 1)
 	_ = sdl.SetRenderDrawBlendMode(state.renderer, {.BLEND})
-	_ = sdl.StartTextInput(state.window)
+	// Text input stays off until a field asks for it: on Wayland it
+	// drives text-input-v3, and enabling it for the life of the window
+	// keeps an on-screen keyboard (squeekboard, and friends) up over
+	// the whole app.
 	state.pixel_scale = 1
 	state.last_frame_ns = sdl.GetTicksNS()
 }
@@ -641,6 +653,44 @@ EndDrawing :: proc() {
 	state.last_frame_ns = now
 }
 
+// ponytail: the Wayland half of this is unverified. TODO on a Linux
+// phone (phosh + squeekboard): that enabling raises the keyboard and
+// disabling dismisses it, and whether the compositor shrinks the window
+// or lays the keyboard over it. If it overlays, the composer needs to
+// lift by the keyboard's height, which nothing here does yet.
+//
+// Enable or disable platform text input. On Wayland this is
+// text-input-v3: it drives the IME and it is what raises and dismisses
+// a phone's on-screen keyboard, so it belongs to whichever field is
+// taking keystrokes rather than to the window.
+SetTextInput :: proc(on: bool) {
+	if on == state.text_input {
+		return
+	}
+	state.text_input = on
+	if on {
+		_ = sdl.StartTextInput(state.window)
+		return
+	}
+	_ = sdl.StopTextInput(state.window)
+	set_preedit("") // a half-composed string has nowhere to land now
+}
+
+// Where the text being edited sits, in window points. The compositor
+// puts the IME candidate list (and a keyboard's own suggestions) beside
+// it rather than over it.
+SetTextInputArea :: proc(x, y, w, h: i32) {
+	r := sdl.Rect{c.int(x), c.int(y), c.int(w), c.int(h)}
+	_ = sdl.SetTextInputArea(state.window, &r, 0)
+}
+
+// True when the machine has a touch screen. Taps already arrive as
+// mouse events; this is for the controls that have to be bigger and
+// the gestures that have no mouse equivalent.
+HasTouch :: proc() -> bool {
+	return state.touch
+}
+
 GetScreenWidth :: proc() -> i32 {
 	w, h: c.int
 	sdl.GetWindowSize(state.window, &w, &h)
@@ -712,6 +762,25 @@ PushChar :: proc(r: rune) {
 	append(&state.chars, r)
 }
 
+// Test hooks: inject key, button and wheel state as if the event pump had
+// seen it. WindowShouldClose clears the per-frame flags at the top of the
+// next iteration, so a value set from inside the frame loop lasts exactly
+// that frame, which is what a real press does.
+PushKey :: proc(key: KeyboardKey, down: bool) {
+	state.pressed[key] = down
+	state.down[key] = down
+}
+
+PushMouseButton :: proc(button: MouseButton, down: bool) {
+	state.m_pressed[button] = down
+	state.m_released[button] = !down
+	state.m_down[button] = down
+}
+
+PushWheel :: proc(delta: Vector2) {
+	state.wheel = delta
+}
+
 IsMouseButtonPressed :: proc(button: MouseButton) -> bool {
 	return state.m_pressed[button]
 }
@@ -756,6 +825,24 @@ SetPrimaryText :: proc(text: cstring) {
 	sdl.SetPrimarySelectionText(text)
 }
 
+// Clipboard payload for one MIME type ("image/png" when a screenshot
+// tool copied a picture, "text/uri-list" for files copied in a file
+// manager). Empty when the clipboard holds no such type.
+GetClipboardBytes :: proc(mime: cstring, allocator := context.allocator) -> []u8 {
+	if !sdl.HasClipboardData(mime) {
+		return nil
+	}
+	size: uint
+	p := sdl.GetClipboardData(mime, &size)
+	if p == nil {
+		return nil
+	}
+	defer sdl.free(p)
+	out := make([]u8, size, allocator)
+	runtime.mem_copy(raw_data(out), p, int(size))
+	return out
+}
+
 // ── Textures / images ───────────────────────────────────────────────
 
 LoadImageFromMemory :: proc(ext: cstring, data: [^]u8, size: i32) -> Image {
@@ -796,11 +883,14 @@ UnloadTexture :: proc(texture: Texture2D) {
 	}
 }
 
-// Streaming texture for the video embeds. Blend is off: mpv's "rgb0"
-// frames carry 0 in the padding byte, which BLEND would read as
-// fully transparent.
+// Streaming texture for the video embeds. Without blending the format
+// is RGBX, not RGBA: mpv's "rgb0" frames carry 0 in the padding byte,
+// and BLENDMODE_NONE writes that byte through to the target the whole
+// frame is composited from, punching a transparent hole where the
+// video should be. An X format has no alpha to write, so the blit
+// lands opaque.
 CreateStreamTexture :: proc(w, h: i32, blend := false) -> Texture2D {
-	tex := sdl.CreateTexture(state.renderer, .RGBA32, .STREAMING, w, h)
+	tex := sdl.CreateTexture(state.renderer, blend ? .RGBA32 : .RGBX32, .STREAMING, w, h)
 	if tex == nil {
 		return {}
 	}
@@ -810,8 +900,13 @@ CreateStreamTexture :: proc(w, h: i32, blend := false) -> Texture2D {
 }
 
 UpdateTexturePixels :: proc(texture: ^Texture2D, rgba: [^]u8) {
-	if texture.tex != nil {
-		sdl.UpdateTexture(texture.tex, nil, rgba, texture.width * 4)
+	if texture.tex == nil {
+		return
+	}
+	// A rejected upload leaves the texture at whatever it held before
+	// (black, for a fresh one), which is invisible without this.
+	if !sdl.UpdateTexture(texture.tex, nil, rgba, texture.width * 4) {
+		fmt.eprintfln("sdlrl: UpdateTexture %dx%d failed: %s", texture.width, texture.height, sdl.GetError())
 	}
 }
 

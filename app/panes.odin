@@ -1,15 +1,8 @@
 package main
 
-import "core:c"
 import "core:encoding/hex"
 import "core:fmt"
-import "core:strconv"
 import "core:strings"
-import "core:text/edit"
-import "core:unicode/utf8"
-import "core:sync"
-import "core:thread"
-import "core:time"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -473,7 +466,7 @@ contacts_pane :: proc(ui: ^Ui_State) {
 			}
 			// Private local nickname, saved on Enter; never published.
 			if clay.UI(clay.ID("NickBox"))(
-			{layout = {sizing = {width = clay.SizingFixed(320), height = clay.SizingFixed(36)}, padding = {left = 12, right = 12}, childAlignment = {y = .Center}}, backgroundColor = ROW_BG, cornerRadius = rr(8), border = {color = ui.focus == .Nick ? ACCENT : FIELD_BORDER, width = bw()}},
+			{layout = {sizing = {width = clay.SizingFixed(fit_w(320, 40)), height = clay.SizingFixed(36)}, padding = {left = 12, right = 12}, childAlignment = {y = .Center}}, backgroundColor = ROW_BG, cornerRadius = rr(8), border = {color = ui.focus == .Nick ? ACCENT : FIELD_BORDER, width = bw()}},
 			) {
 				field_text(ui, "NickBox", &ui.nick_input, "Nickname", ui.focus == .Nick, 12, TEXT_LO)
 			}
@@ -723,7 +716,7 @@ archived_pane :: proc(ui: ^Ui_State) {
 			if len(filter) > 0 && !strings.contains(strings.to_lower(chat.title, context.temp_allocator), filter) {
 				continue
 			}
-			if clay.UI(clay.ID("ArchivedRowBox", u32(i)))({layout = {sizing = {width = clay.SizingFixed(420)}}}) {
+			if clay.UI(clay.ID("ArchivedRowBox", u32(i)))({layout = {sizing = {width = clay.SizingFixed(fit_w(420, 24))}}}) {
 				chat_row(u32(i), chat, false, .Unarchive)
 			}
 		}
@@ -746,9 +739,10 @@ theme_chip_indexed :: proc(id_str: string, index: u32, label: string, active: bo
 // theme_chip with a hover tooltip, for the icon-only chat-header
 // controls where the glyph is the only label.
 header_chip :: proc(id_str: string, glyph: string, active: bool, tip: string) {
+	pad := tap_size() ? u16(13) : u16(8)
 	if clay.UI(clay.ID(id_str))(
 	{
-		layout = {padding = {left = 14, right = 14, top = 8, bottom = 8}},
+		layout = {padding = {left = 14, right = 14, top = pad, bottom = pad}},
 		backgroundColor = active ? ACCENT : ROW_BG,
 		cornerRadius = rr(8),
 	},
@@ -1019,9 +1013,13 @@ nav_button :: proc(page: Page, active: bool) {
 	// Fixed square + centered glyph: fit-sizing made each button take
 	// its icon's advance/height, so the row wobbled per glyph.
 	down := press_down(clay.ID("Nav", u32(page)))
+	// 42 is what the rail's top strip can spare at its narrowest with
+	// the collapse chip gone; ~7mm at phone density, the floor for a
+	// fingertip.
+	side := tap_size() ? f32(42) : f32(32)
 	if clay.UI(clay.ID("Nav", u32(page)))(
 	{
-		layout = {sizing = {width = clay.SizingFixed(32), height = clay.SizingFixed(32)}, padding = {top = down * 2}, childAlignment = {x = .Center, y = .Center}},
+		layout = {sizing = {width = clay.SizingFixed(side), height = clay.SizingFixed(side)}, padding = {top = down * 2}, childAlignment = {x = .Center, y = .Center}},
 		backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
 		cornerRadius = rr(9),
 	},

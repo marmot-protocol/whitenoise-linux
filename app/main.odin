@@ -18,17 +18,13 @@
 package main
 
 import "core:c"
-import "core:encoding/hex"
 import "core:fmt"
 import "core:os"
-import "core:slice"
 import "core:strconv"
 import "core:strings"
-import "core:sync"
 import "core:text/edit"
-import "core:thread"
 import "core:time"
-import "core:unicode/utf8"
+import "core:thread"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -171,332 +167,499 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 			},
 			) {
 				// Left card: the slint bento card holding nav + chat list.
-				if clay.UI(clay.ID("Rail"))(
-				{
-					layout = {
-						sizing = {
-							width = clay.SizingFixed(rail_width(ui)),
-							height = clay.SizingGrow(),
-						},
-						layoutDirection = .TopToBottom,
-						padding = clay.PaddingAll(12),
-						childGap = 6,
-					},
-					// Only while it is moving: a list that no longer fits slides
-					// out of view instead of spilling over the card.
-					clip = {horizontal = rail_open(ui) > 0 && rail_open(ui) < 1},
-					backgroundColor = CARD,
-					cornerRadius = rr(16),
-					border = {color = CARD_BORDER, width = bw()},
-				},
-				) {
-					// Top strip: account avatar + horizontal nav, like the
-					// slint icon rail (text stand-ins until an icon font).
-					if logged_in {
-						// Collapsed, the strip stacks so the rail is one icon
-						// column; expanded it stays the horizontal slint nav.
-						collapsed := rail_narrow(ui)
-						if clay.UI(clay.ID("RailTop"))(
-						{
-							layout = {
-								sizing = {width = clay.SizingGrow()},
-								layoutDirection = collapsed ? .TopToBottom : .LeftToRight,
-								childGap = 8,
-								childAlignment = {x = collapsed ? .Center : .Left, y = .Center},
+				// A window too narrow for both cards hides one of them by
+				// giving it no width and clipping what is inside, rather
+				// than skipping the subtree: clay's element close is
+				// hides the one it is not showing. The subtree is skipped
+				// outright rather than sized to zero: clay grows a fixed
+				// box back up to its children's minimum, so a zero-width
+				// card still draws an icon column.
+				hide_rail := single_pane() && phone_detail(ui)
+				if !hide_rail {
+					if clay.UI(clay.ID("Rail"))(
+					{
+						layout = {
+							sizing = {
+								width = clay.SizingFixed(rail_width(ui)),
+								height = clay.SizingGrow(),
 							},
+							layoutDirection = .TopToBottom,
+							padding = clay.PaddingAll(12),
+							childGap = 6,
 						},
-						) {
-							avatar(
-								"RailAvatar",
-								0,
-								ui.account_ref,
-								short_hex(ui.account_ref),
-								30,
-								url_pic(ui.my_pic_url),
-							)
-							for page in Page {
-								nav_button(page, ui.page == page)
-							}
-							nav_indicator(ui)
-							if !collapsed {
-								if clay.UI(clay.ID("RailTopGap"))(
-								{layout = {sizing = {width = clay.SizingGrow()}}},
-								) {}
-							}
-							// Fit-sized (padding), never fixed: this clay pushes a
-							// fixed sibling declared after the grow spacer past
-							// the card edge (PORT.md Quirks).
-							if clay.UI(clay.ID("RailCollapse"))(
+						// Only while it is moving: a list that no longer fits slides
+						// out of view instead of spilling over the card.
+						clip = {horizontal = rail_open(ui) > 0 && rail_open(ui) < 1},
+						backgroundColor = CARD,
+						cornerRadius = rr(16),
+						border = {color = CARD_BORDER, width = bw()},
+					},
+					) {
+						// Top strip: account avatar + horizontal nav, like the
+						// slint icon rail (text stand-ins until an icon font).
+						if logged_in {
+							// Collapsed, the strip stacks so the rail is one icon
+							// column; expanded it stays the horizontal slint nav.
+							collapsed := rail_narrow(ui)
+							if clay.UI(clay.ID("RailTop"))(
 							{
 								layout = {
-									padding = {left = 7, right = 7, top = 4, bottom = 4},
-									childAlignment = {x = .Center, y = .Center},
+									sizing = {width = clay.SizingGrow()},
+									layoutDirection = collapsed ? .TopToBottom : .LeftToRight,
+									childGap = 8,
+									childAlignment = {x = collapsed ? .Center : .Left, y = .Center},
 								},
-								backgroundColor = hovered() ? HOVER : {},
-								cornerRadius = rr(7),
 							},
 							) {
-								if hovered() {
-									tooltip(
-										collapsed ? "Expand the chat list" : "Collapse the chat list",
-									)
-								}
-								clay.Text(
-									collapsed ? "›" : "‹",
-									{fontId = FONT_TITLE, fontSize = 15, textColor = TEXT_DIM},
+								avatar(
+									"RailAvatar",
+									0,
+									ui.account_ref,
+									short_hex(ui.account_ref),
+									30,
+									url_pic(ui.my_pic_url),
 								)
-							}
-						}
-						if !collapsed {
-							if clay.UI(clay.ID("RailDivider"))(
-							{
-								layout = {
-									sizing = {
-										width = clay.SizingGrow(),
-										height = clay.SizingFixed(1),
-									},
-								},
-								backgroundColor = DIVIDER,
-							},
-							) {}
-
-							// Settings and Profile swap the chat rail for their own
-							// sidebar: the slint settings sections, and the accounts
-							// on this device.
-							if ui.page == .Profile {
-								profile_rail(ui)
-							} else if ui.page == .Settings {
-								if clay.UI(clay.ID("SettingsNavHead"))(
-								{layout = {padding = {left = 4, top = 6, bottom = 4}}},
-								) {
-									clay.Text(
-										tr("SETTINGS"),
-										{
-											fontId = FONT_MONO,
-											fontSize = 12,
-											textColor = TEXT_DIM,
-											letterSpacing = 2,
-										},
-									)
+								for page in Page {
+									nav_button(page, ui.page == page)
 								}
-								for s in Settings_Section {
-									// Debug pages only exist in developer mode.
-									if (s == .Debug || s == .KP) && !ui.prefs.dev_mode {
-										continue
-									}
-									active := ui.settings_section == s
-									if clay.UI(clay.ID("SettingsNav", u32(s)))(
-									{
-										layout = {
-											sizing = {width = clay.SizingGrow()},
-											padding = {left = 12, right = 12, top = 9, bottom = 9},
-											childGap = 10,
-											childAlignment = {y = .Center},
-										},
-										backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
-										cornerRadius = rr(9),
-									},
-									) {
-										clay.Text(
-											SETTINGS_SECTIONS[s].icon,
-											{
-												fontId = FONT_ICON,
-												fontSize = 13,
-												textColor = active ? ACCENT : TEXT_DIM,
-											},
-										)
-										clay.Text(
-											tr(SETTINGS_SECTIONS[s].label),
-											{
-												fontId = FONT_TITLE,
-												fontSize = 13,
-												textColor = active ? TEXT : TEXT_DIM,
-											},
-										)
-									}
-								}
-							} else {
-								// Section header: CHATS/CONTACTS count + new-chat button.
-								if clay.UI(clay.ID("RailHead"))(
-								{
-									layout = {
-										sizing = {width = clay.SizingGrow()},
-										childGap = 8,
-										childAlignment = {y = .Center},
-										padding = {top = 4, bottom = 2},
-									},
-								},
-								) {
-									head := fmt.tprintf("CHATS   %d", len(ui.chats))
-									if ui.page == .Contacts {
-										head = fmt.tprintf("CONTACTS   %d", len(ui.contacts))
-									} else if ui.page == .Archived {
-										head = fmt.tprintf("ARCHIVED   %d", len(ui.archived))
-									}
-									clay.Text(
-										head,
-										{
-											fontId = FONT_MONO,
-											fontSize = 12,
-											textColor = TEXT_DIM,
-											letterSpacing = 2,
-										},
-									)
-									// Unread filter pill + accent plus, pinned right like the
-									// slint rail head. Fit-sized (padding), never fixed: this
-									// clay drops fixed siblings after the grow spacer.
-									if clay.UI(clay.ID("RailHeadGap"))(
+								nav_indicator(ui)
+								if !collapsed {
+									if clay.UI(clay.ID("RailTopGap"))(
 									{layout = {sizing = {width = clay.SizingGrow()}}},
 									) {}
-									if ui.page == .Chats {
-										// All/Unread filter tabs, the slint chat-list tabs.
-										for label, t in ([2]string{"All", "Unread"}) {
-											active := ui.unread_only == (t == 1)
-											if clay.UI(clay.ID(t == 0 ? "AllPill" : "UnreadPill"))(
-											{
-												layout = {
-													padding = {
-														left = 14,
-														right = 14,
-														top = 5,
-														bottom = 5,
-													},
-												},
-												backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
-												cornerRadius = rr(8),
-												border = {color = FIELD_BORDER, width = bw()},
-											},
-											) {
-												clay.Text(
-													label,
-													{
-														fontId = FONT_BODY,
-														fontSize = 12,
-														textColor = active ? ACCENT : TEXT_DIM,
-													},
-												)
-											}
+								}
+								// Fit-sized (padding), never fixed: this clay pushes a
+								// fixed sibling declared after the grow spacer past
+								// the card edge (PORT.md Quirks).
+								// Gone on a one-card window: there is no second card
+								// to give the space to, and the strip needs it for
+								// finger-sized nav buttons.
+								if !single_pane() {
+									if clay.UI(clay.ID("RailCollapse"))(
+									{
+										layout = {
+											padding = {left = 7, right = 7, top = 4, bottom = 4},
+											childAlignment = {x = .Center, y = .Center},
+										},
+										backgroundColor = hovered() ? HOVER : {},
+										cornerRadius = rr(7),
+									},
+									) {
+										if hovered() {
+											tooltip(
+												collapsed ? "Expand the chat list" : "Collapse the chat list",
+											)
 										}
-									}
-									// Global-search chip, also on Ctrl+K.
-									if clay.UI(clay.ID("GSearchBtn"))(
-									{
-										layout = {
-											padding = {left = 8, right = 8, top = 5, bottom = 5},
-											childAlignment = {x = .Center, y = .Center},
-										},
-										backgroundColor = hovered() ? HOVER : {},
-										cornerRadius = rr(7),
-									},
-									) {
 										clay.Text(
-											ICON_SEARCH,
-											{
-												fontId = FONT_ICON,
-												fontSize = 12,
-												textColor = TEXT_DIM,
-											},
-										)
-									}
-									if clay.UI(clay.ID("NewChatBtn"))(
-									{
-										layout = {
-											padding = {left = 8, right = 8, top = 3, bottom = 3},
-											childAlignment = {x = .Center, y = .Center},
-										},
-										backgroundColor = hovered() ? HOVER : {},
-										cornerRadius = rr(7),
-									},
-									) {
-										clay.Text(
-											"+",
-											{
-												fontId = FONT_TITLE,
-												fontSize = 18,
-												textColor = ACCENT,
-											},
+											collapsed ? "›" : "‹",
+											{fontId = FONT_TITLE, fontSize = 15, textColor = TEXT_DIM},
 										)
 									}
 								}
-
-								// Chat filter.
-								if clay.UI(clay.ID("FilterBox"))(
+							}
+							if !collapsed {
+								if clay.UI(clay.ID("RailDivider"))(
 								{
 									layout = {
 										sizing = {
 											width = clay.SizingGrow(),
-											height = clay.SizingFixed(34),
+											height = clay.SizingFixed(1),
 										},
-										padding = {left = 12, right = 12},
-										childGap = 8,
+									},
+									backgroundColor = DIVIDER,
+								},
+								) {}
+
+								// Settings and Profile swap the chat rail for their own
+								// sidebar: the slint settings sections, and the accounts
+								// on this device.
+								if ui.page == .Profile {
+									profile_rail(ui)
+								} else if ui.page == .Settings {
+									if clay.UI(clay.ID("SettingsNavHead"))(
+									{layout = {padding = {left = 4, top = 6, bottom = 4}}},
+									) {
+										clay.Text(
+											tr("SETTINGS"),
+											{
+												fontId = FONT_MONO,
+												fontSize = 12,
+												textColor = TEXT_DIM,
+												letterSpacing = 2,
+											},
+										)
+									}
+									for s in Settings_Section {
+										// Debug pages only exist in developer mode.
+										if (s == .Debug || s == .KP) && !ui.prefs.dev_mode {
+											continue
+										}
+										active := ui.settings_section == s
+										if clay.UI(clay.ID("SettingsNav", u32(s)))(
+										{
+											layout = {
+												sizing = {width = clay.SizingGrow()},
+												padding = {left = 12, right = 12, top = 9, bottom = 9},
+												childGap = 10,
+												childAlignment = {y = .Center},
+											},
+											backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
+											cornerRadius = rr(9),
+										},
+										) {
+											clay.Text(
+												SETTINGS_SECTIONS[s].icon,
+												{
+													fontId = FONT_ICON,
+													fontSize = 13,
+													textColor = active ? ACCENT : TEXT_DIM,
+												},
+											)
+											clay.Text(
+												tr(SETTINGS_SECTIONS[s].label),
+												{
+													fontId = FONT_TITLE,
+													fontSize = 13,
+													textColor = active ? TEXT : TEXT_DIM,
+												},
+											)
+										}
+									}
+								} else {
+									// Section header: CHATS/CONTACTS count + new-chat button.
+									if clay.UI(clay.ID("RailHead"))(
+									{
+										layout = {
+											sizing = {width = clay.SizingGrow()},
+											childGap = 8,
+											childAlignment = {y = .Center},
+											padding = {top = 4, bottom = 2},
+										},
+									},
+									) {
+										head := fmt.tprintf("CHATS   %d", len(ui.chats))
+										if ui.page == .Contacts {
+											head = fmt.tprintf("CONTACTS   %d", len(ui.contacts))
+										} else if ui.page == .Archived {
+											head = fmt.tprintf("ARCHIVED   %d", len(ui.archived))
+										}
+										clay.Text(
+											head,
+											{
+												fontId = FONT_MONO,
+												fontSize = 12,
+												textColor = TEXT_DIM,
+												letterSpacing = 2,
+											},
+										)
+										// Unread filter pill + accent plus, pinned right like the
+										// slint rail head. Fit-sized (padding), never fixed: this
+										// clay drops fixed siblings after the grow spacer.
+										if clay.UI(clay.ID("RailHeadGap"))(
+										{layout = {sizing = {width = clay.SizingGrow()}}},
+										) {}
+										if ui.page == .Chats {
+											// All/Unread filter tabs, the slint chat-list tabs.
+											for label, t in ([2]string{"All", "Unread"}) {
+												active := ui.unread_only == (t == 1)
+												if clay.UI(clay.ID(t == 0 ? "AllPill" : "UnreadPill"))(
+												{
+													layout = {
+														padding = {
+															left = 14,
+															right = 14,
+															top = 5,
+															bottom = 5,
+														},
+													},
+													backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
+													cornerRadius = rr(8),
+													border = {color = FIELD_BORDER, width = bw()},
+												},
+												) {
+													clay.Text(
+														label,
+														{
+															fontId = FONT_BODY,
+															fontSize = 12,
+															textColor = active ? ACCENT : TEXT_DIM,
+														},
+													)
+												}
+											}
+										}
+										// Global-search chip, also on Ctrl+K.
+										if clay.UI(clay.ID("GSearchBtn"))(
+										{
+											layout = {
+												padding = {left = 8, right = 8, top = 5, bottom = 5},
+												childAlignment = {x = .Center, y = .Center},
+											},
+											backgroundColor = hovered() ? HOVER : {},
+											cornerRadius = rr(7),
+										},
+										) {
+											clay.Text(
+												ICON_SEARCH,
+												{
+													fontId = FONT_ICON,
+													fontSize = 12,
+													textColor = TEXT_DIM,
+												},
+											)
+										}
+										if clay.UI(clay.ID("NewChatBtn"))(
+										{
+											layout = {
+												padding = {left = 8, right = 8, top = 3, bottom = 3},
+												childAlignment = {x = .Center, y = .Center},
+											},
+											backgroundColor = hovered() ? HOVER : {},
+											cornerRadius = rr(7),
+										},
+										) {
+											clay.Text(
+												"+",
+												{
+													fontId = FONT_TITLE,
+													fontSize = 18,
+													textColor = ACCENT,
+												},
+											)
+										}
+									}
+
+									// Chat filter.
+									if clay.UI(clay.ID("FilterBox"))(
+									{
+										layout = {
+											sizing = {
+												width = clay.SizingGrow(),
+												height = clay.SizingFixed(34),
+											},
+											padding = {left = 12, right = 12},
+											childGap = 8,
+											childAlignment = {y = .Center},
+										},
+										backgroundColor = ROW_BG,
+										cornerRadius = rr(10),
+										border = {color = FIELD_BORDER, width = bw()},
+									},
+									) {
+										clay.Text(
+											ICON_SEARCH,
+											{fontId = FONT_ICON, fontSize = 12, textColor = TEXT_LO},
+										)
+										field_text(
+											ui,
+											"FilterBox",
+											&ui.sidebar_filter,
+											ui.page == .Contacts ? "Search contacts..." : ui.page == .Archived ? "Search archived..." : "Search messages...",
+											ui.focus == .Filter,
+											13,
+											TEXT_LO,
+										)
+									}
+									// Folder chips, once the row menu has made a folder.
+									if ui.page == .Chats && len(ui.prefs.folders) > 0 {
+										folder_chips(ui)
+									}
+								}
+							}
+						}
+
+						if ui.page == .Contacts && logged_in && !rail_narrow(ui) {
+							if len(ui.contacts) == 0 {
+								clay.Text(
+									tr("No contacts yet"),
+									{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+								)
+							} else {
+								if clay.UI(clay.ID("ContactsExportRow"))(
+								{layout = {childGap = 8, padding = {left = 4, bottom = 2}}},
+								) {
+									micro_button("ContactsCsvBtn", "Export CSV")
+									micro_button("ContactsJsonBtn", "Export JSON")
+								}
+							}
+							// Alphabetical with letter section headers and a name
+							// filter, the slint contacts rail. Rows keep their
+							// ui.contacts index in the clay ID so clicks stay stable.
+							filter := strings.to_lower(
+								string(ui.sidebar_filter[:]),
+								context.temp_allocator,
+							)
+							last_letter: u8 = 0
+							for order in contact_order(ui) {
+								contact := ui.contacts[order.idx]
+								if len(filter) > 0 && !strings.contains(order.key, filter) {
+									continue
+								}
+
+								letter: u8 = '#'
+								if len(order.key) > 0 && order.key[0] >= 'a' && order.key[0] <= 'z' {
+									letter = order.key[0] - 32
+								}
+								if letter != last_letter {
+									last_letter = letter
+									if clay.UI(clay.ID("ContactLetter", u32(order.idx)))(
+									{layout = {padding = {left = 10, top = 6, bottom = 2}}},
+									) {
+										clay.Text(
+											fmt.tprintf("%c", letter),
+											{
+												fontId = FONT_MONO,
+												fontSize = 11,
+												textColor = TEXT_LO,
+												letterSpacing = 2,
+											},
+										)
+									}
+								}
+
+								selected := ui.selected_contact == order.idx
+								if clay.UI(clay.ID("ContactRow", u32(order.idx)))(
+								{
+									layout = {
+										sizing = {width = clay.SizingGrow()},
+										padding = clay.PaddingAll(10),
+										childGap = 10,
 										childAlignment = {y = .Center},
 									},
-									backgroundColor = ROW_BG,
-									cornerRadius = rr(10),
-									border = {color = FIELD_BORDER, width = bw()},
+									backgroundColor = selected ? SELECTED : (hovered() ? HOVER : {}),
+									cornerRadius = rr(12),
 								},
 								) {
+									if selected {
+										if clay.UI(clay.ID("ContactRowBar", u32(order.idx)))(
+										{
+											layout = {
+												sizing = {
+													width = clay.SizingFixed(3),
+													height = clay.SizingFixed(18),
+												},
+											},
+											backgroundColor = ACCENT,
+											cornerRadius = rr(2),
+										},
+										) {}
+									}
+									avatar(
+										"ContactAvatar",
+										u32(order.idx),
+										contact.id_hex,
+										contact.name,
+										30,
+										url_pic(contact.pic_url),
+									)
 									clay.Text(
-										ICON_SEARCH,
-										{fontId = FONT_ICON, fontSize = 12, textColor = TEXT_LO},
+										contact_label(ui, contact),
+										{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT},
 									)
-									field_text(
-										ui,
-										"FilterBox",
-										&ui.sidebar_filter,
-										ui.page == .Contacts ? "Search contacts..." : ui.page == .Archived ? "Search archived..." : "Search messages...",
-										ui.focus == .Filter,
-										13,
-										TEXT_LO,
-									)
-								}
-								// Folder chips, once the row menu has made a folder.
-								if ui.page == .Chats && len(ui.prefs.folders) > 0 {
-									folder_chips(ui)
+									if selected && len(contact.npub) > 0 {
+										if clay.UI(clay.ID("ContactRowGap", u32(order.idx)))(
+										{layout = {sizing = {width = clay.SizingGrow()}}},
+										) {}
+										clay.Text(
+											npub_tail(contact.npub),
+											{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO},
+										)
+									}
 								}
 							}
 						}
-					}
 
-					if ui.page == .Contacts && logged_in && !rail_narrow(ui) {
-						if len(ui.contacts) == 0 {
-							clay.Text(
-								tr("No contacts yet"),
-								{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+						if ui.page == .Chats && logged_in && !rail_narrow(ui) {
+							if len(ui.chats) == 0 {
+								clay.Text(
+									tr("No chats yet"),
+									{fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM},
+								)
+							}
+							filter := strings.to_lower(
+								string(ui.sidebar_filter[:]),
+								context.temp_allocator,
 							)
-						} else {
-							if clay.UI(clay.ID("ContactsExportRow"))(
-							{layout = {childGap = 8, padding = {left = 4, bottom = 2}}},
-							) {
-								micro_button("ContactsCsvBtn", "Export CSV")
-								micro_button("ContactsJsonBtn", "Export JSON")
+							// Pinned chats lead the rail; the rest keep marmot's
+							// activity order.
+							clear(&ui.rail_rows) // rebuilt below; Ctrl+Tab cycles it
+							for i in rail_order(ui.chats[:], ui.prefs.pinned) {
+								chat := ui.chats[i]
+								if !in_folder(ui.prefs.folder_of, chat.group_id, ui.folder_filter) {
+									continue
+								}
+								// A chat stays visible on a title match or a cached
+								// message-body hit (refresh_filter_hits).
+								if len(filter) > 0 &&
+								   !strings.contains(
+										   strings.to_lower(chat.title, context.temp_allocator),
+										   filter,
+									   ) &&
+								   !(i < len(ui.filter_hits) && ui.filter_hits[i]) {
+									continue
+								}
+								if ui.unread_only &&
+								   chat.unread == 0 &&
+								   !ui.prefs.unread_ids[chat.group_id] {
+									continue
+								}
+								// A blocked contact's 1:1 chat leaves the rail, the
+								// slint contact-block behavior (local, reversible).
+								if peer, is_dm := ui.dm_peer[chat.group_id];
+								   is_dm && ui.blocked[peer] {
+									continue
+								}
+								append(&ui.rail_rows, i)
+								chat_row(u32(i), chat, ui.selected == i, .Archive)
 							}
 						}
-						// Alphabetical with letter section headers and a name
-						// filter, the slint contacts rail. Rows keep their
-						// ui.contacts index in the clay ID so clicks stay stable.
-						filter := strings.to_lower(
-							string(ui.sidebar_filter[:]),
-							context.temp_allocator,
-						)
-						last_letter: u8 = 0
-						for order in contact_order(ui) {
-							contact := ui.contacts[order.idx]
-							if len(filter) > 0 && !strings.contains(order.key, filter) {
-								continue
-							}
 
-							letter: u8 = '#'
-							if len(order.key) > 0 && order.key[0] >= 'a' && order.key[0] <= 'z' {
-								letter = order.key[0] - 32
-							}
-							if letter != last_letter {
-								last_letter = letter
-								if clay.UI(clay.ID("ContactLetter", u32(order.idx)))(
-								{layout = {padding = {left = 10, top = 6, bottom = 2}}},
-								) {
+						// Footer: relay/sync status pinned under the list. Collapsed,
+						// the dot alone carries the connection state.
+						if logged_in {
+							if clay.UI(clay.ID("RailFill"))(
+							{layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}}},
+							) {}
+							if clay.UI(clay.ID("RailFoot"))(
+							{
+								layout = {
+									sizing = {width = clay.SizingGrow()},
+									childGap = 8,
+									childAlignment = {
+										x = rail_narrow(ui) ? .Center : .Left,
+										y = .Center,
+									},
+									padding = {top = 6},
+								},
+							},
+							) {
+								if clay.UI(clay.ID("RailFootDot"))(
+								{
+									layout = {
+										sizing = {
+											width = clay.SizingFixed(7),
+											height = clay.SizingFixed(7),
+										},
+									},
+									backgroundColor = net_color(net_state(ui)),
+									cornerRadius = rr(4),
+								},
+								) {}
+								if !rail_narrow(ui) {
 									clay.Text(
-										fmt.tprintf("%c", letter),
+										relay_counter(ui),
+										{
+											fontId = FONT_MONO,
+											fontSize = 11,
+											textColor = TEXT_LO,
+											letterSpacing = 2,
+										},
+									)
+									if clay.UI(clay.ID("RailFootGap"))(
+									{layout = {sizing = {width = clay.SizingGrow()}}},
+									) {}
+									clay.Text(
+										rl.GetTime() - sync_at < SYNCING_SECS ? "· SYNCING" : "· SYNCED",
 										{
 											fontId = FONT_MONO,
 											fontSize = 11,
@@ -506,158 +669,6 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 									)
 								}
 							}
-
-							selected := ui.selected_contact == order.idx
-							if clay.UI(clay.ID("ContactRow", u32(order.idx)))(
-							{
-								layout = {
-									sizing = {width = clay.SizingGrow()},
-									padding = clay.PaddingAll(10),
-									childGap = 10,
-									childAlignment = {y = .Center},
-								},
-								backgroundColor = selected ? SELECTED : (hovered() ? HOVER : {}),
-								cornerRadius = rr(12),
-							},
-							) {
-								if selected {
-									if clay.UI(clay.ID("ContactRowBar", u32(order.idx)))(
-									{
-										layout = {
-											sizing = {
-												width = clay.SizingFixed(3),
-												height = clay.SizingFixed(18),
-											},
-										},
-										backgroundColor = ACCENT,
-										cornerRadius = rr(2),
-									},
-									) {}
-								}
-								avatar(
-									"ContactAvatar",
-									u32(order.idx),
-									contact.id_hex,
-									contact.name,
-									30,
-									url_pic(contact.pic_url),
-								)
-								clay.Text(
-									contact_label(ui, contact),
-									{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT},
-								)
-								if selected && len(contact.npub) > 0 {
-									if clay.UI(clay.ID("ContactRowGap", u32(order.idx)))(
-									{layout = {sizing = {width = clay.SizingGrow()}}},
-									) {}
-									clay.Text(
-										npub_tail(contact.npub),
-										{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO},
-									)
-								}
-							}
-						}
-					}
-
-					if ui.page == .Chats && logged_in && !rail_narrow(ui) {
-						if len(ui.chats) == 0 {
-							clay.Text(
-								tr("No chats yet"),
-								{fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM},
-							)
-						}
-						filter := strings.to_lower(
-							string(ui.sidebar_filter[:]),
-							context.temp_allocator,
-						)
-						// Pinned chats lead the rail; the rest keep marmot's
-						// activity order.
-						clear(&ui.rail_rows) // rebuilt below; Ctrl+Tab cycles it
-						for i in rail_order(ui.chats[:], ui.prefs.pinned) {
-							chat := ui.chats[i]
-							if !in_folder(ui.prefs.folder_of, chat.group_id, ui.folder_filter) {
-								continue
-							}
-							// A chat stays visible on a title match or a cached
-							// message-body hit (refresh_filter_hits).
-							if len(filter) > 0 &&
-							   !strings.contains(
-									   strings.to_lower(chat.title, context.temp_allocator),
-									   filter,
-								   ) &&
-							   !(i < len(ui.filter_hits) && ui.filter_hits[i]) {
-								continue
-							}
-							if ui.unread_only &&
-							   chat.unread == 0 &&
-							   !ui.prefs.unread_ids[chat.group_id] {
-								continue
-							}
-							// A blocked contact's 1:1 chat leaves the rail, the
-							// slint contact-block behavior (local, reversible).
-							if peer, is_dm := ui.dm_peer[chat.group_id];
-							   is_dm && ui.blocked[peer] {
-								continue
-							}
-							append(&ui.rail_rows, i)
-							chat_row(u32(i), chat, ui.selected == i, .Archive)
-						}
-					}
-
-					// Footer: relay/sync status pinned under the list. Collapsed,
-					// the dot alone carries the connection state.
-					if logged_in {
-						if clay.UI(clay.ID("RailFill"))(
-						{layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}}},
-						) {}
-						if clay.UI(clay.ID("RailFoot"))(
-						{
-							layout = {
-								sizing = {width = clay.SizingGrow()},
-								childGap = 8,
-								childAlignment = {
-									x = rail_narrow(ui) ? .Center : .Left,
-									y = .Center,
-								},
-								padding = {top = 6},
-							},
-						},
-						) {
-							if clay.UI(clay.ID("RailFootDot"))(
-							{
-								layout = {
-									sizing = {
-										width = clay.SizingFixed(7),
-										height = clay.SizingFixed(7),
-									},
-								},
-								backgroundColor = net_color(net_state(ui)),
-								cornerRadius = rr(4),
-							},
-							) {}
-							if !rail_narrow(ui) {
-								clay.Text(
-									relay_counter(ui),
-									{
-										fontId = FONT_MONO,
-										fontSize = 11,
-										textColor = TEXT_LO,
-										letterSpacing = 2,
-									},
-								)
-								if clay.UI(clay.ID("RailFootGap"))(
-								{layout = {sizing = {width = clay.SizingGrow()}}},
-								) {}
-								clay.Text(
-									rl.GetTime() - sync_at < SYNCING_SECS ? "· SYNCING" : "· SYNCED",
-									{
-										fontId = FONT_MONO,
-										fontSize = 11,
-										textColor = TEXT_LO,
-										letterSpacing = 2,
-									},
-								)
-							}
 						}
 					}
 				}
@@ -665,59 +676,72 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 				// Drag handle between the rail and the page card. A collapsed
 				// rail has no width to drag, so the strip goes away and the page
 				// card takes the space.
-				if !rail_narrow(ui) {
+				if !rail_narrow(ui) && !single_pane() {
 					gutter("RailGutter")
 				}
 
-				// Right card: the active page.
-				if clay.UI(clay.ID("MainCard"))(
-				{
-					// Switching page or chat: the new content rises the last few
-					// pixels into place under a veil in the card's own color, so
-					// the swap reads as a transition instead of a cut.
-					layout = {
-						sizing = {clay.SizingGrow(), clay.SizingGrow()},
-						layoutDirection = .TopToBottom,
-						padding = {top = u16((1 - page_t) * PAGE_SLIDE)},
-					},
-					backgroundColor = CARD,
-					cornerRadius = rr(16),
-					border = {color = CARD_BORDER, width = bw()},
-				},
-				) {
-					if !logged_in || ui.add_account_open {
-						if clay.UI(clay.ID("Main"))(
-						{
-							layout = {
-								sizing = {clay.SizingGrow(), clay.SizingGrow()},
-								layoutDirection = .TopToBottom,
-								childAlignment = {x = .Center, y = .Center},
-								childGap = 12,
+				// Right card: the active page. On a one-card window it is
+				// the detail half, so the rail's list stands in its place
+				// until a row opens (hidden the same way as the rail).
+				hide_main := single_pane() && !phone_detail(ui)
+				if !hide_main {
+					if clay.UI(clay.ID("MainCard"))(
+					{
+						// Switching page or chat: the new content rises the last few
+						// pixels into place under a veil in the card's own color, so
+						// the swap reads as a transition instead of a cut.
+						layout = {
+							sizing = {
+								width = hide_main ? clay.SizingFixed(0) : clay.SizingGrow(),
+								height = clay.SizingGrow(),
 							},
+							layoutDirection = .TopToBottom,
+							padding = {top = u16((1 - page_t) * PAGE_SLIDE)},
 						},
-						) {
-							login_pane(ui)
+						clip = {horizontal = hide_main},
+						backgroundColor = hide_main ? {} : CARD,
+						cornerRadius = rr(16),
+						border = hide_main ? {} : clay.BorderElementConfig{color = CARD_BORDER, width = bw()},
+					},
+					) {
+						// No rail on screen to click back to.
+						if single_pane() {
+							phone_back(ui)
 						}
-					} else if ui.new_chat_open {
-						new_chat_pane(ui)
-					} else {
-						switch ui.page {
-						case .Chats:
-							if ui.selected >= 0 {
-								chat_pane(ui)
-							} else if len(ui.chats) == 0 {
-								get_started_pane(ui)
-							} else {
-								centered_note("PickChat", "Select a chat", ui.client_status)
+						if !logged_in || ui.add_account_open {
+							if clay.UI(clay.ID("Main"))(
+							{
+								layout = {
+									sizing = {clay.SizingGrow(), clay.SizingGrow()},
+									layoutDirection = .TopToBottom,
+									childAlignment = {x = .Center, y = .Center},
+									childGap = 12,
+								},
+							},
+							) {
+								login_pane(ui)
 							}
-						case .Contacts:
-							contacts_pane(ui)
-						case .Archived:
-							archived_pane(ui)
-						case .Settings:
-							settings_pane(ui)
-						case .Profile:
-							profile_pane(ui)
+						} else if ui.new_chat_open {
+							new_chat_pane(ui)
+						} else {
+							switch ui.page {
+							case .Chats:
+								if ui.selected >= 0 {
+									chat_pane(ui)
+								} else if len(ui.chats) == 0 {
+									get_started_pane(ui)
+								} else {
+									centered_note("PickChat", "Select a chat", ui.client_status)
+								}
+							case .Contacts:
+								contacts_pane(ui)
+							case .Archived:
+								archived_pane(ui)
+							case .Settings:
+								settings_pane(ui)
+							case .Profile:
+								profile_pane(ui)
+							}
 						}
 					}
 				}
@@ -860,10 +884,10 @@ main :: proc() {
 	}
 	load_themes()
 	load_settings(&ui)
+	append(&ui.client_input, ..transmute([]u8)ui.prefs.event_client)
 	set_locale(ui.prefs.locale)
 	g_prefs = &ui.prefs
 	apply_theme(ui.theme, ui.accent)
-	apply_zoom(&ui)
 
 	// Headroom over clay's defaults (8192 elements): per-letter effect
 	// runs, burst particles and the pre-wrapped body lines all spend
@@ -899,6 +923,12 @@ main :: proc() {
 		}
 	}
 	rl.InitWindow(win_w, win_h, WIN_TITLE)
+	// After the window, never before: the zoom is derived from the
+	// window's width, and there is no window to ask until now. The
+	// vault gate runs its own frames before the main loop, so getting
+	// this wrong renders the gate at a zoom of 1/360 and the app opens
+	// on a black screen.
+	apply_zoom(&ui)
 	app_started = rl.GetTime()
 	start_pic_worker()
 	start_gimg_worker()
@@ -1053,6 +1083,9 @@ main :: proc() {
 			ui.page = .Settings
 			ui.settings_section = .Advanced
 			load_advanced(&ui, client)
+		case "network":
+			ui.page = .Settings
+			ui.settings_section = .Network
 		case "profile":
 			ui.page = .Profile
 			load_profile(client, &ui)
@@ -1164,6 +1197,7 @@ main :: proc() {
 	health_refresh(&ui, client)
 
 	live: Live
+	sett_was := ui.settings_section
 	tl_container_was: [2]f32
 	tl_at_bottom: bool
 	win_was: [2]i32
@@ -1181,6 +1215,10 @@ main :: proc() {
 
 		win_now := [2]i32{rl.GetScreenWidth(), rl.GetScreenHeight()}
 		if win_now != win_was {
+			// Zoom is derived from the width (zoom_for_width), so a
+			// resize or a rotation can change it. apply_zoom only pays
+			// for a re-bake when the value actually moves.
+			apply_zoom(&ui)
 			if debug_size {
 				fmt.eprintfln("size: frame %d win %dx%d density %.4f", frame, win_now.x, win_now.y, rl.GetWindowScaleDPI().x)
 			}
@@ -1260,6 +1298,10 @@ main :: proc() {
 				rl.PushChar(r)
 			}
 		}
+		// After the forced_press reset and the WN_TEST_CLICK block, so a
+		// devctl click owns the same hooks, and before the pointer is
+		// scaled and handed to clay.
+		devctl_poll(&ui, client, int(frame), &pointer)
 		pointer.x /= UI_ZOOM
 		pointer.y /= UI_ZOOM
 		clay.SetPointerState(pointer, rl.IsMouseButtonDown(.LEFT))
@@ -1352,11 +1394,13 @@ main :: proc() {
 		media_retry_hover = false
 		reply_jump_hover = ""
 		mention_hover = ""
+		clear(&drag_targets)
 		clear(&gcode_bars)
 		clear(&video_bars)
 		clear(&anim_bars)
 		advance_videos() // pull decoded frames into the video textures
 		voice_poll() // drain the mic stream while recording
+		build_start := time.tick_now()
 		render_commands := build_layout(&ui, rl.GetFrameTime())
 
 		// A relayout (window resize, rail drag, the rewrap they cause)
@@ -1458,6 +1502,9 @@ main :: proc() {
 				ui.scroll_pending = false
 			}
 		}
+		video_dbg_build = max(video_dbg_build, f32(time.duration_milliseconds(time.tick_since(build_start))))
+
+		draw_start := time.tick_now()
 		rl.BeginDrawing()
 		shake_x, shake_y := shake_offset()
 		rl.BeginMode2D(rl.Camera2D{zoom = UI_ZOOM, offset = {shake_x, shake_y}})
@@ -1482,7 +1529,9 @@ main :: proc() {
 				break
 			}
 		}
+		devctl_draw()
 		rl.EndDrawing()
+		video_dbg_draw = max(video_dbg_draw, f32(time.duration_milliseconds(time.tick_since(draw_start))))
 
 		// Profile pictures fetched by the curl worker decode here (the
 		// render thread owns texture creation).
@@ -1494,6 +1543,8 @@ main :: proc() {
 		drain_gimg(&ui, client)
 		drain_ppic(&ui)
 		drain_ov()
+		drain_gh()
+		drain_nev()
 
 		// Files picked in the async SDL dialog land here; they become
 		// composer chips, custom emoji when the settings "+" asked, or
@@ -1533,12 +1584,24 @@ main :: proc() {
 			}
 		}
 
+		long_press_tick() // before any handler reads long_pressed
 		handle_gutters(&ui)
 		if clicked("BannerClose") {
 			ui.banner = "" // borrowed from client_status; never freed here
 		}
 		if clicked("RailCollapse") {
 			flip(&ui, &ui.prefs.rail_collapsed)
+		}
+		if clicked("PhoneBack") {
+			phone_back_action(&ui)
+		}
+		// Settings has no "nothing picked" state of its own, so a
+		// one-card window treats a section change as the open. Watched
+		// here rather than set at each assignment, because the palette
+		// and the profile jump rows land on a section too.
+		if ui.settings_section != sett_was {
+			sett_was = ui.settings_section
+			ui.sett_open = true
 		}
 
 		// Modal capture order: a confirm sits over everything, then the
@@ -1557,6 +1620,8 @@ main :: proc() {
 			pal_open_modal(&ui)
 		} else if ui.backup_mode != .None {
 			handle_backup(&ui)
+		} else if ui.vault_pw_open {
+			handle_vault_pw(&ui)
 		} else if ui.gs_open {
 			handle_gsearch(&ui, client)
 		} else if len(ui.accounts) > 0 &&
@@ -1587,6 +1652,24 @@ main :: proc() {
 				handle_link_click(&ui)
 			}
 		}
+		// Text input follows the field, not the window: it drives the
+		// IME and it is what raises and dismisses a phone's on-screen
+		// keyboard. The area points the compositor at the caret.
+		// ponytail: a chat opens with the composer focused, so on a
+		// phone the keyboard comes up with the chat. TODO: confirm on
+		// hardware (phosh/squeekboard) whether that reads as helpful or
+		// as in the way; if it is in the way, the fix is a focus state
+		// that starts empty on a tap_size() window and fills on a tap.
+		rl.SetTextInput(text_field_live)
+		if text_field_live {
+			rl.SetTextInputArea(
+				i32(caret_box.x * UI_ZOOM),
+				i32(caret_box.y * UI_ZOOM),
+				i32(max(caret_box.width, 1) * UI_ZOOM),
+				i32(caret_box.height * UI_ZOOM),
+			)
+		}
+		text_field_live = false
 		handle_orbit()
 		handle_gcode_bar()
 		handle_anim_bar()
@@ -1708,6 +1791,12 @@ main :: proc() {
 		// WN_TEST_XDC=<file.xdc> takes the whole path a real
 		// attachment takes (unpack, serve, run). Both exist because
 		// the modal otherwise opens only from a chat.
+		// WN_TEST_LINK=<url> raises the external-link guard on a URL.
+		if frame == 12 {
+			if url := os.get_env("WN_TEST_LINK", context.temp_allocator); url != "" {
+				open_link(&ui, url)
+			}
+		}
 		if frame == 12 && !web_modal.open {
 			if url := os.get_env("WN_TEST_WEB", context.temp_allocator); url != "" {
 				web_open(url, "test")

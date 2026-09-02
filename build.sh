@@ -66,6 +66,15 @@ if [ ! -f "$HERE/build/libwnfbx.a" ]; then
   ar rcs "$HERE/build/libwnfbx.a" "$HERE/build/fbx/ufbx.o" "$HERE/build/fbx/fbx_shim.o"
 fi
 
+# Nostr event fetch (nevent cards): a websocket REQ over libcurl's
+# raw socket, framed in app/ws_shim.c.
+mkdir -p "$HERE/build/ws"
+if [ ! -f "$HERE/build/libwnws.a" ] || [ "$HERE/app/ws_shim.c" -nt "$HERE/build/libwnws.a" ]; then
+  cc -c -O2 -fPIC "$HERE/app/ws_shim.c" -o "$HERE/build/ws/ws_shim.o"
+  rm -f "$HERE/build/libwnws.a"
+  ar rcs "$HERE/build/libwnws.a" "$HERE/build/ws/ws_shim.o"
+fi
+
 # wn-webview: the process that runs a webxdc app offscreen and hands
 # the app its pixels through shared memory. Optional: without
 # webkit2gtk-4.1 there is no viewer, and .xdc attachments stay inert.
@@ -135,6 +144,16 @@ odin build "$HERE/smoke" -out:"$HERE/build/smoke"
 # -o:speed: the STL orbit path needs it (200k tris: 20ms/step at
 # -o:minimal vs 3.4ms; 60fps budget is 16.6ms).
 env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/app" -o:speed -out:"$HERE/build/app"
+# Unused imports: fatal in CI, a warning locally so a work-in-progress
+# import does not block a build.
+if ! "$HERE/scripts/vet-imports.sh"; then
+  if [ -n "${CI:-}" ]; then
+    echo "==> unused imports in app/. Remove them." >&2
+    exit 1
+  fi
+  echo "==> warning: unused imports in app/ (fatal in CI)." >&2
+fi
+
 echo "==> Done: $HERE/build/{smoke,app}"
 
 # `build.sh test` also runs the app package's test procs, which is what CI

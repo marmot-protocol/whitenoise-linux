@@ -266,6 +266,49 @@ vault_open :: proc(password: string) -> Vault_Err {
 	return .None
 }
 
+// True when `password` is the one the vault is sealed with right now.
+// The vault is already unlocked when this runs, so it is not a
+// cryptographic gate: it checks that the person at the keyboard is the
+// one who opened it before letting them rotate the password.
+vault_verify :: proc(password: string) -> bool {
+	sync.lock(&g_vault_lock)
+	defer sync.unlock(&g_vault_lock)
+	if !g_vault.unlocked {
+		return false
+	}
+
+	key: [VAULT_KEY_LEN]u8
+	defer mem.zero(&key, size_of(key))
+	derive_key(password, g_vault.salt[:], VAULT_M_COST, VAULT_T_COST, VAULT_P_COST, key[:])
+	return crypto.compare_constant_time(key[:], g_vault.key[:]) == 1
+}
+
+// Re-seal the vault under a new password: fresh salt, fresh key, the
+// same secret map. The blob subkey hangs off the master key, so
+// everything vault_seal_blob wrote (the media cache, the offline queue)
+// is unreadable afterwards and the caller has to re-seal or drop it.
+vault_rekey :: proc(password: string) -> Vault_Err {
+	sync.lock(&g_vault_lock)
+	defer sync.unlock(&g_vault_lock)
+	if !g_vault.unlocked {
+		return .Not_Found
+	}
+
+	old_key, old_salt := g_vault.key, g_vault.salt
+	crypto.rand_bytes(g_vault.salt[:])
+	derive_key(password, g_vault.salt[:], VAULT_M_COST, VAULT_T_COST, VAULT_P_COST, g_vault.key[:])
+
+	if err := vault_persist(&g_vault); err != .None {
+		// The write is atomic, so the file on disk is still the old one:
+		// put the session key back rather than leaving it keyed to a
+		// vault that was never written.
+		g_vault.key, g_vault.salt = old_key, old_salt
+		return err
+	}
+	mem.zero(&old_key, size_of(old_key))
+	return .None
+}
+
 // Zero the key and free the secret map. Caller holds the lock.
 @(private = "file")
 vault_wipe :: proc(v: ^Vault) {

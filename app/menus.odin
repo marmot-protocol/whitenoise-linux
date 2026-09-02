@@ -1,23 +1,11 @@
 package main
 
-import "core:c"
-import "core:encoding/hex"
 import "core:fmt"
 import "core:math"
-import "core:os"
-import "core:slice"
-import "core:strconv"
 import "core:strings"
-import "core:text/edit"
-import "core:unicode/utf8"
-import "core:sync"
-import "core:thread"
-import "core:time"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
-
-import marmot "../marmot"
 
 ctx_item :: proc(id_str: string, glyph: string, label: string) {
 	if clay.UI(clay.ID(id_str))(
@@ -77,8 +65,7 @@ member_menu :: proc(ui: ^Ui_State) {
 open_member_menu :: proc(ui: ^Ui_State, index: int) {
 	m := rl.GetMousePosition()
 	ui.member_menu = index
-	ui.member_menu_x = min(m.x / UI_ZOOM, f32(rl.GetScreenWidth()) / UI_ZOOM - 200)
-	ui.member_menu_y = min(m.y / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM - 140)
+	ui.member_menu_x, ui.member_menu_y = panel_pos(m.x / UI_ZOOM, m.y / UI_ZOOM, 200, 140)
 }
 
 // Clicks in the open member menu; true when the frame's input was
@@ -301,12 +288,39 @@ diff_chips :: proc(version: u32, prev, next: string) {
 	}
 }
 
+RAW_MODAL_W :: f32(560)
+RAW_FS :: u16(11)
+RAW_PLATE_PAD :: f32(2 * 16 + 2 * 10) // modal padding plus the plate's
+
+// Byte length of the first `n` runes of s, so a chunk never splits a
+// rune in half.
+rune_prefix :: proc(s: string, n: int) -> int {
+	count := 0
+	for _, i in s {
+		if count == n {
+			return i
+		}
+		count += 1
+	}
+	return len(s)
+}
+
+// One JSON line, split into runs of at most `cols` runes.
+raw_line :: proc(line: string, cols: int) {
+	rest := line
+	for len(rest) > 0 {
+		cut := rune_prefix(rest, cols)
+		clay.Text(rest[:cut], {fontId = FONT_MONO, fontSize = RAW_FS, textColor = TEXT, wrapMode = .None})
+		rest = rest[cut:]
+	}
+}
+
 // View-raw-event modal (dev mode): the record's JSON in mono, a
 // scrollable plate, Copy. Esc/backdrop closes (handle_input).
 raw_event_modal :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("RawModal"))(
 	{
-		layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(modal_w(clay.ID("RawModal"), 560)), height = clay.SizingFixed(480)}, padding = clay.PaddingAll(16), childGap = 10},
+		layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(modal_w(clay.ID("RawModal"), RAW_MODAL_W)), height = clay.SizingFixed(modal_h(480))}, padding = clay.PaddingAll(16), childGap = 10},
 		floating = {attachTo = .Root, zIndex = 11, offset = {0, rise(clay.ID("RawModal"))}, attachment = {element = .CenterCenter, parent = .CenterCenter}},
 		backgroundColor = CARD,
 		cornerRadius = rr(12),
@@ -331,7 +345,15 @@ raw_event_modal :: proc(ui: ^Ui_State) {
 			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		},
 		) {
-			clay.Text(ui.raw_json, {fontId = FONT_MONO, fontSize = 11, textColor = TEXT})
+			// A blossom URL or the escaped media_json is one unbroken
+			// token, and clay wraps on words only, so every line is
+			// hard-chunked to the plate width and drawn on its own.
+			cw := rl.MeasureTextLine(FONT_MONO, RAW_FS, "0", 0).x
+			cols := max(8, int((fit_w(RAW_MODAL_W) - RAW_PLATE_PAD) / max(cw, 1)))
+			rest := ui.raw_json
+			for line in strings.split_lines_iterator(&rest) {
+				raw_line(line, cols)
+			}
 		}
 		scrollbar(clay.ID("RawScroll"), 12) // the modal floats at 11
 
@@ -389,7 +411,17 @@ encryption_modal :: proc(ui: ^Ui_State, chat: Chat_Row_Ui) {
 // the grid shows the first matches and search narrows the rest.
 // ponytail: port ListView-style virtualization if the cap ever hurts.
 PICKER_MAX_CELLS :: 396
-PICKER_COLS :: 11
+PICKER_CELL_W :: f32(30 + 2) // cell plus the row's childGap
+
+// Columns that fit the panel at this window width. The flat 11 assumed
+// the full 400px panel, which a window narrower than that never gets,
+// so the last columns fell outside the panel. Measured from the
+// unanimated width: sizing off modal_w would reshuffle the grid every
+// frame of the open.
+picker_cols :: proc() -> int {
+	inner := fit_w(400) - 24 - 13 // panel padding, then the scrollbar
+	return clamp(int(inner / PICKER_CELL_W), 4, 11)
+}
 
 // Indices into emoji_catalog matching the picker search, capped.
 picker_matches :: proc(ui: ^Ui_State) -> [dynamic]int {
@@ -446,7 +478,7 @@ picker_cell :: proc(id_str: string, index: u32, tex: ^rl.Texture2D) {
 emoji_picker :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("PickerPanel"))(
 	{
-		layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(modal_w(clay.ID("PickerPanel"), 400)), height = clay.SizingFixed(440)}, padding = clay.PaddingAll(12), childGap = 8},
+		layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(modal_w(clay.ID("PickerPanel"), 400)), height = clay.SizingFixed(modal_h(440))}, padding = clay.PaddingAll(12), childGap = 8},
 		floating = {attachTo = .Root, offset = {ui.picker_x, ui.picker_y + rise(clay.ID("PickerPanel"))}, zIndex = 12},
 		backgroundColor = CARD,
 		cornerRadius = rr(12),
@@ -491,9 +523,10 @@ emoji_picker :: proc(ui: ^Ui_State) {
 				}
 			}
 			matches := picker_matches(ui)
-			for row_start := 0; row_start < len(matches); row_start += PICKER_COLS {
+			cols := picker_cols()
+			for row_start := 0; row_start < len(matches); row_start += cols {
 				if clay.UI(clay.ID("PkRow", u32(row_start)))({layout = {childGap = 2}}) {
-					for k in row_start ..< min(row_start + PICKER_COLS, len(matches)) {
+					for k in row_start ..< min(row_start + cols, len(matches)) {
 						entry := emoji_catalog[matches[k]]
 						picker_cell("PkCell", u32(matches[k]), emoji_tex(entry.emoji))
 					}

@@ -1,17 +1,7 @@
 package main
 
-import "core:c"
-import "core:encoding/hex"
 import "core:fmt"
-import "core:os"
-import "core:slice"
-import "core:strconv"
 import "core:strings"
-import "core:text/edit"
-import "core:unicode/utf8"
-import "core:sync"
-import "core:thread"
-import "core:time"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -56,11 +46,17 @@ chat_pane :: proc(ui: ^Ui_State) {
 		) {
 			avatar("ChatHeadAvatar", 0, chat.group_id, chat.title, 34, chat_pic(chat))
 			clay.Text(chat.title, {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT})
-			if clay.UI(clay.ID("MlsBadge"))(
-			{layout = {padding = {left = 8, right = 8, top = 3, bottom = 3}, childGap = 5, childAlignment = {y = .Center}}, backgroundColor = hovered() ? ACCENT_DIM : ACCENT, cornerRadius = rr(6)},
-			) {
-				clay.Text(ICON_LOCK, {fontId = FONT_ICON, fontSize = 10, textColor = ON_ACCENT})
-				clay.Text(fmt.tprintf("mls:0x%s", chat.group_id[:min(len(chat.group_id), 6)]), {fontId = FONT_MONO, fontSize = 11, textColor = ON_ACCENT})
+			// The badge is provenance, not a control, and it is the
+			// widest thing in the row: dropped when the row has to
+			// choose between it and the three chips. The same string is
+			// on the chat's encryption panel.
+			if page_w(ui) >= HEAD_BADGE_W {
+				if clay.UI(clay.ID("MlsBadge"))(
+				{layout = {padding = {left = 8, right = 8, top = 3, bottom = 3}, childGap = 5, childAlignment = {y = .Center}}, backgroundColor = hovered() ? ACCENT_DIM : ACCENT, cornerRadius = rr(6)},
+				) {
+					clay.Text(ICON_LOCK, {fontId = FONT_ICON, fontSize = 10, textColor = ON_ACCENT})
+					clay.Text(fmt.tprintf("mls:0x%s", chat.group_id[:min(len(chat.group_id), 6)]), {fontId = FONT_MONO, fontSize = 11, textColor = ON_ACCENT})
+				}
 			}
 			// Search box before the grow spacer: fixed siblings after a
 			// grow sibling drop in this clay build.
@@ -120,9 +116,8 @@ chat_pane :: proc(ui: ^Ui_State) {
 				// Centred conversation pads to a ~720 reading measure.
 				side_pad := u16(0)
 				if ui.prefs.centered_chat {
-					pane_w := f32(rl.GetScreenWidth()) / UI_ZOOM - rail_width(ui) - 40
-					if pane_w > 720 {
-						side_pad = u16((pane_w - 720) / 2)
+					if pane := page_w(ui); pane > 720 {
+						side_pad = u16((pane - 720) / 2)
 					}
 				}
 				// The thread route's push/pop transition: content slides
@@ -459,7 +454,7 @@ INFO_COL_GAP :: 32
 info_width :: proc(ui: ^Ui_State) -> f32 {
 	w := panel_target(ui)
 	if box, ok := element_box(clay.ID("MembersScroll")); ok {
-		avail := f32(rl.GetScreenWidth()) / UI_ZOOM - rail_width(ui) - 40
+		avail := page_w(ui)
 		w = min(box.width, avail)
 	}
 	return w - 28 // the scroll's own side padding
@@ -796,7 +791,7 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 login_big_button :: proc(id_str: string, label: string, primary: bool) {
 	if clay.UI(clay.ID(id_str))(
 	{
-		layout = {sizing = {width = clay.SizingFixed(560), height = clay.SizingFixed(52)}, childAlignment = {x = .Center, y = .Center}},
+		layout = {sizing = {width = clay.SizingGrow({max = 560}), height = clay.SizingFixed(52)}, childAlignment = {x = .Center, y = .Center}},
 		backgroundColor = primary ? ACCENT : ROW_BG,
 		cornerRadius = rr(10),
 		border = primary ? {} : clay.BorderElementConfig{color = FIELD_BORDER, width = bw()},
@@ -826,7 +821,7 @@ progress_dots :: proc(id_str: string) {
 login_pane :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("LoginCard"))(
 	{
-		layout = {sizing = {width = clay.SizingFixed(660)}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(50), childGap = 14, childAlignment = {x = .Center}},
+		layout = {sizing = {width = clay.SizingFixed(fit_w(660))}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(50), childGap = 14, childAlignment = {x = .Center}},
 		backgroundColor = CARD,
 		cornerRadius = rr(16),
 		border = {color = CARD_BORDER, width = bw()},
@@ -861,7 +856,7 @@ login_pane :: proc(ui: ^Ui_State) {
 			eyebrow("NSEC")
 			if clay.UI(clay.ID("LoginInput"))(
 			{
-				layout = {sizing = {width = clay.SizingFixed(560), height = clay.SizingFixed(46)}, padding = {left = 14, right = 14}, childAlignment = {y = .Center}},
+				layout = {sizing = {width = clay.SizingGrow({max = 560}), height = clay.SizingFixed(46)}, padding = {left = 14, right = 14}, childAlignment = {y = .Center}},
 				backgroundColor = ROW_BG,
 				cornerRadius = rr(10),
 				border = {color = ACCENT, width = bw()},

@@ -1,17 +1,10 @@
 package main
 
-import "core:c"
-import "core:encoding/hex"
 import "core:fmt"
 import "core:os"
-import "core:slice"
 import "core:strconv"
 import "core:strings"
 import "core:text/edit"
-import "core:unicode/utf8"
-import "core:sync"
-import "core:thread"
-import "core:time"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -105,6 +98,12 @@ active_buf :: proc(ui: ^Ui_State) -> ^[dynamic]u8 {
 	if ui.focus == .Inbox {
 		return &ui.inbox_input
 	}
+	if ui.focus == .Fetch {
+		return &ui.fetch_input
+	}
+	if ui.focus == .Client {
+		return &ui.client_input
+	}
 	if ui.focus == .ExportPw {
 		return &ui.export_pw
 	}
@@ -189,7 +188,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		handle_folder_modal(ui, client)
 		return
 	}
-	if ui.page == .Chats && rl.IsMouseButtonPressed(.RIGHT) {
+	if ui.page == .Chats && (rl.IsMouseButtonPressed(.RIGHT) || long_pressed) {
 		for _, i in ui.chats {
 			if clay.PointerOver(clay.ID("ChatRow", u32(i))) {
 				open_row_menu(ui, i)
@@ -263,7 +262,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		handle_ctx_menu(ui, client)
 		return
 	}
-	if rl.IsMouseButtonPressed(.RIGHT) && ui.selected >= 0 {
+	if (rl.IsMouseButtonPressed(.RIGHT) || long_pressed) && ui.selected >= 0 {
 		for msg, i in ui.messages {
 			// A tombstone's only menu row is the dev-mode View raw.
 			if msg.deleted && !ui.prefs.dev_mode {
@@ -275,8 +274,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				ui.ctx_msg = i
 				// ponytail: rough clamp from an estimated panel size;
 				// measure the laid-out panel if it ever overflows.
-				ui.ctx_x = min(m.x / UI_ZOOM, f32(rl.GetScreenWidth()) / UI_ZOOM - 240)
-				ui.ctx_y = min(m.y / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM - 330)
+				ui.ctx_x, ui.ctx_y = panel_pos(m.x / UI_ZOOM, m.y / UI_ZOOM, 240, 330)
 				return
 			}
 		}
@@ -694,6 +692,13 @@ stage_file :: proc(ui: ^Ui_State, path: string) {
 	if slash := strings.last_index_byte(path, '/'); slash >= 0 {
 		base = path[slash + 1:]
 	}
+	stage_bytes(ui, base, data)
+}
+
+// Stage bytes already in memory (a picked file's, or a pasted
+// picture's). Takes ownership of data; images also decode a thumbnail
+// texture, reused as the send's dim.
+stage_bytes :: proc(ui: ^Ui_State, base: string, data: []u8) {
 	f := Staged_File {
 		name       = strings.clone(base),
 		media_type = media_type_for(base),
@@ -722,6 +727,56 @@ remove_staged :: proc(ui: ^Ui_State, index: int) {
 	ordered_remove(&ui.staged, index)
 }
 
+// Ctrl+V in the composer: a picture or files copied elsewhere stage as
+// attachments instead of pasting bytes as text. False when the
+// clipboard holds neither, so the caller pastes text as usual.
+PASTE_IMAGES := [?]struct {
+	mime: cstring,
+	name: string,
+}{{"image/png", "pasted.png"}, {"image/jpeg", "pasted.jpg"}, {"image/gif", "pasted.gif"}, {"image/webp", "pasted.webp"}}
+
+paste_clipboard_files :: proc(ui: ^Ui_State) -> bool {
+	for m in PASTE_IMAGES {
+		data := rl.GetClipboardBytes(m.mime)
+		if len(data) == 0 {
+			delete(data)
+			continue
+		}
+		stage_bytes(ui, m.name, data)
+		return true
+	}
+
+	// A file-manager copy offers paths instead: one percent-encoded
+	// "file:///home/me/a%20b.png" URI per line.
+	uris := rl.GetClipboardBytes("text/uri-list", context.temp_allocator)
+	staged := false
+	for line in strings.split_lines(string(uris), context.temp_allocator) {
+		uri := strings.trim_space(line)
+		if !strings.has_prefix(uri, "file://") {
+			continue
+		}
+		stage_file(ui, uri_unescape(uri[len("file://"):]))
+		staged = true
+	}
+	return staged
+}
+
+// %XX → byte, for the file:// URIs on the clipboard.
+uri_unescape :: proc(uri: string) -> string {
+	b := strings.builder_make(context.temp_allocator)
+	for i := 0; i < len(uri); i += 1 {
+		if uri[i] == '%' && i + 2 < len(uri) {
+			if v, ok := strconv.parse_uint(uri[i + 1:i + 3], 16); ok {
+				strings.write_byte(&b, u8(v))
+				i += 2
+				continue
+			}
+		}
+		strings.write_byte(&b, uri[i])
+	}
+	return strings.to_string(b)
+}
+
 // Open the picker anchored near the pointer, clamped on-window.
 open_picker :: proc(ui: ^Ui_State, target: string) {
 	m := rl.GetMousePosition()
@@ -733,8 +788,7 @@ open_picker :: proc(ui: ^Ui_State, target: string) {
 	ui.picker_return = head
 	ui.focus = .Picker
 	clear(&ui.picker_filter)
-	ui.picker_x = clamp(m.x / UI_ZOOM - 200, 8, f32(rl.GetScreenWidth()) / UI_ZOOM - 408)
-	ui.picker_y = clamp(m.y / UI_ZOOM - 452, 8, f32(rl.GetScreenHeight()) / UI_ZOOM - 448)
+	ui.picker_x, ui.picker_y = panel_pos(m.x / UI_ZOOM - 200, m.y / UI_ZOOM - 452, 408, 448)
 }
 
 // Insert into the composer or react to the target, then close.

@@ -163,6 +163,7 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 	for frame := 0; !rl.WindowShouldClose(); frame += 1 {
 		defer free_all(context.temp_allocator)
 		anim_tick(rl.GetFrameTime()) // the gate runs its own loop, so it steps its own motion
+		apply_zoom(ui) // and its own resize response; a no-op unless the width moved
 
 		pointer := transmute(clay.Vector2)rl.GetMousePosition()
 		pointer.x /= UI_ZOOM
@@ -187,6 +188,10 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 		if gate_input(ui) {
 			return true
 		}
+		// Same contract as the main loop: the password box is the only
+		// field here, and gate_input's edit_text sets the flag.
+		rl.SetTextInput(text_field_live)
+		text_field_live = false
 	}
 	return false
 }
@@ -260,11 +265,13 @@ gate_input :: proc(ui: ^Ui_State) -> bool {
 	return true
 }
 
-@(private = "file")
-gate_field :: proc(ui: ^Ui_State, id_str: string, buf: ^[dynamic]u8, focused: bool) {
+// Shared with the change-password modal (vault_pw.odin), the other
+// place a vault password gets typed.
+@(private)
+gate_field :: proc(ui: ^Ui_State, id_str: string, buf: ^[dynamic]u8, focused: bool, placeholder: string) {
 	if clay.UI(clay.ID(id_str))(
 	{
-		layout = {sizing = {width = clay.SizingFixed(560), height = clay.SizingFixed(46)}, padding = {left = 14, right = 14}, childAlignment = {y = .Center}},
+		layout = {sizing = {width = clay.SizingGrow({max = 560}), height = clay.SizingFixed(46)}, padding = {left = 14, right = 14}, childAlignment = {y = .Center}},
 		backgroundColor = ROW_BG,
 		cornerRadius = rr(10),
 		border = {color = focused ? ACCENT : FIELD_BORDER, width = bw()},
@@ -277,7 +284,7 @@ gate_field :: proc(ui: ^Ui_State, id_str: string, buf: ^[dynamic]u8, focused: bo
 			glow(clay.ID(id_str), ACCENT, 0.35 + clamp((pop - 1) * 3, 0, 0.65), 18)
 		}
 		if len(buf) == 0 {
-			clay.Text(tr("Your password"), {fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM})
+			clay.Text(tr(placeholder), {fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM})
 		} else {
 			clay.Text(strings.repeat("*", min(len(buf), 48), context.temp_allocator), {fontId = FONT_BODY, fontSize = 15, textColor = TEXT})
 		}
@@ -307,7 +314,7 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 		) {
 			if clay.UI(clay.ID("GateCard"))(
 			{
-				layout = {sizing = {width = clay.SizingFixed(660)}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(50), childGap = 14, childAlignment = {x = .Center}},
+				layout = {sizing = {width = clay.SizingFixed(fit_w(660))}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(single_pane() ? 20 : 50), childGap = 14, childAlignment = {x = .Center}},
 				backgroundColor = CARD,
 				cornerRadius = rr(16),
 				border = {color = CARD_BORDER, width = bw()},
@@ -323,10 +330,10 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 				if clay.UI(clay.ID("GateGapA"))({layout = {sizing = {height = clay.SizingFixed(10)}}}) {}
 
 				eyebrow("PASSWORD")
-				gate_field(ui, "GatePwBox", &gate_pw, !gate_confirm || !creating)
+				gate_field(ui, "GatePwBox", &gate_pw, !gate_confirm || !creating, "Your password")
 				if creating {
 					eyebrow("CONFIRM PASSWORD")
-					gate_field(ui, "GatePw2Box", &gate_pw2, gate_confirm)
+					gate_field(ui, "GatePw2Box", &gate_pw2, gate_confirm, "Your password")
 				}
 
 				if clay.UI(clay.ID("GateGapB"))({layout = {sizing = {height = clay.SizingFixed(6)}}}) {}

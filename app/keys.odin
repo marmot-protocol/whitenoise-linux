@@ -14,7 +14,6 @@ import "core:mem"
 import "core:strings"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
-import rl "sdlrl"
 
 import marmot "../marmot"
 
@@ -229,6 +228,15 @@ settings_keys :: proc(ui: ^Ui_State) {
 		row_labels("Multi-device isn't available yet", "Your identity lives only on this device for now. When device linking ships, the devices signed into your key will appear here.")
 	}
 
+	eyebrow("DEVICE VAULT")
+	if clay.UI(clay.ID("RowVaultPw"))(srow()) {
+		row_labels(
+			"Change vault password",
+			"Re-encrypts this device's secrets under a new password. The media cache is cleared, since it was sealed with the old one.",
+		)
+		micro_button("VaultPwBtn", "Change...")
+	}
+
 	eyebrow("DANGER ZONE")
 	danger_row(
 		ui,
@@ -266,9 +274,6 @@ settings_keys :: proc(ui: ^Ui_State) {
 		"Export",
 	)
 
-	// ponytail: no "change password" row. Rotating the vault password
-	// means re-sealing every media-cache and offline-queue blob it
-	// keyed; add it when someone asks. See PORT.md.
 }
 
 danger_plate :: proc() -> clay.ElementDeclaration {
@@ -301,6 +306,10 @@ armed :: proc(ui: ^Ui_State, btn_id: string) -> bool {
 }
 
 handle_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if clicked("VaultPwBtn") {
+		vault_pw_begin(ui)
+		return
+	}
 	if clicked("SettingsCopyNpub") && len(ui.profile.npub) > 0 {
 		copy_text(ui, ui.profile.npub, "npub copied")
 		return

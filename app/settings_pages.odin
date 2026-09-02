@@ -4,11 +4,9 @@
 // look and surface "Not available in the odin port yet." on use.
 package main
 
-import "core:encoding/json"
 import "core:fmt"
 import "core:os"
 import "core:strings"
-import "core:time"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -224,6 +222,9 @@ settings_pane :: proc(ui: ^Ui_State) {
 	}
 	if open_now(clay.ID("BackupModal"), ui.backup_mode != .None) {
 		backup_modal(ui)
+	}
+	if open_now(clay.ID("VaultPwModal"), ui.vault_pw_open) {
+		vault_pw_modal(ui)
 	}
 }
 
@@ -815,7 +816,11 @@ BODY_FS: u16 = 14
 
 apply_zoom :: proc(ui: ^Ui_State) {
 	ui.prefs.zoom_pct = clamp(ui.prefs.zoom_pct, 50, 200)
-	zoom := 1.5 * f32(ui.prefs.zoom_pct) / 100
+	// The base is the window's, not a constant: a phone-width window
+	// magnifies less so the layout still gets MIN_UNITS across. The
+	// pref stays a multiplier on top, so 100% means "this window's
+	// natural size" everywhere.
+	zoom := zoom_for_width(rl.GetScreenWidth()) * f32(ui.prefs.zoom_pct) / 100
 	changed := zoom != UI_ZOOM
 	UI_ZOOM = zoom
 	// A zoom change is a geometry discontinuity: re-bake glyphs at the
@@ -1182,6 +1187,12 @@ settings_fields :: proc(ui: ^Ui_State) {
 		}
 		if field_mouse(ui, &ui.inbox_input, "InboxBox", 14) {
 			ui.focus = .Inbox
+		}
+		if field_mouse(ui, &ui.fetch_input, "FetchBox", 14) {
+			ui.focus = .Fetch
+		}
+		if field_mouse(ui, &ui.client_input, "ClientBox", 14) {
+			ui.focus = .Client
 		}
 	}
 	if ui.settings_section == .KP {

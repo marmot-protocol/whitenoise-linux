@@ -309,9 +309,16 @@ open_t :: proc(id: clay.ElementId) -> f32 {
 	return opens[id.id].v
 }
 
-// Width of a fixed-width panel, scaled by how far it has opened.
+// Width of a fixed-width panel, scaled by how far it has opened and
+// capped by the window: a modal wider than the screen it floats over
+// loses its right edge, and modals are centered, so both edges.
 modal_w :: proc(id: clay.ElementId, w: f32) -> f32 {
-	return w * (OPEN_SCALE + (1 - OPEN_SCALE) * open_t(id))
+	return fit_w(w) * (OPEN_SCALE + (1 - OPEN_SCALE) * open_t(id))
+}
+
+// Same for a panel with a fixed height. The status bar sits under it.
+modal_h :: proc(h: f32) -> f32 {
+	return min(h, f32(rl.GetScreenHeight()) / UI_ZOOM - 60)
 }
 
 // Vertical offset for a panel that rises the last few px into place.
@@ -450,6 +457,12 @@ CLAY_SCROLL_PIXELS :: f32(10) // clay's own delta-to-pixels factor
 // Undrained wheel input, spent a fraction per frame.
 scroll_residual: clay.Vector2
 
+// Containers with something to scroll this frame, registered by
+// scrollbar() during the build. A finger drag has to know which
+// container it is over and clay has no query for that, so the list the
+// scrollbars already walk stands in for one.
+drag_targets: [dynamic]clay.ElementId
+
 // How far the timeline is pulled past its end: + past the top, - past
 // the bottom. Applied as extra padding and sprung back to zero, which
 // is the only rubber band available when clay clamps scroll itself.
@@ -462,11 +475,11 @@ update_overscroll :: proc(step_y: f32) {
 
 // ── Dragging the view ───────────────────────────────────────────────
 //
-// The wheel is not the only way to move a long timeline. A press that
-// did not land on a message body (that one selects text) grabs the view
-// itself: the content follows the pointer, and letting go throws it, so
-// the last flick keeps running and settles into the same rubber band a
-// wheel scroll does.
+// A finger has no wheel. On a touch machine a press that did not land on
+// a message body (that one selects text) grabs the view itself: the
+// content follows the pointer, and letting go throws it, so the last
+// flick keeps running and settles into the same rubber band a wheel
+// scroll does. With a mouse there is a wheel, and this is off.
 
 DRAG_MIN :: f32(3) // px of travel before a press stops being a click
 DRAG_VEL_RATE :: f32(30) // smoothing on the throw speed, in 1/s
@@ -477,11 +490,18 @@ drag_at: f32
 drag_vel: f32
 @(private = "file")
 drag_on: bool
+@(private = "file")
+drag_id: clay.ElementId // the container this drag grabbed
 
 // A press that turned into a drag opens no link on release.
 drag_moved: bool
 
 update_drag_scroll :: proc(ui: ^Ui_State, blocked: bool) {
+	// Touch only. A mouse has a wheel, and grabbing the view with the
+	// left button fights click, text selection, and the link guard.
+	if !rl.HasTouch() {
+		return
+	}
 	y := rl.GetMousePosition().y / UI_ZOOM
 
 	if rl.IsMouseButtonReleased(.LEFT) {
@@ -498,10 +518,18 @@ update_drag_scroll :: proc(ui: ^Ui_State, blocked: bool) {
 		return
 	}
 	if !drag_on {
-		if blocked || !motion_on() || !rl.IsMouseButtonPressed(.LEFT) || !clay.PointerOver(clay.ID("Timeline")) {
+		if blocked || !motion_on() || !rl.IsMouseButtonPressed(.LEFT) {
 			return
 		}
-		drag_on, drag_at, drag_vel, drag_moved = true, y, 0, false
+		// The timeline is blocked while a body selection is running
+		// (`blocked`); every other container is fair game.
+		for target in drag_targets {
+			if clay.PointerOver(target) {
+				drag_id = target
+				drag_on, drag_at, drag_vel, drag_moved = true, y, 0, false
+				return
+			}
+		}
 		return
 	}
 
@@ -512,7 +540,7 @@ update_drag_scroll :: proc(ui: ^Ui_State, blocked: bool) {
 	if abs(step) > DRAG_MIN {
 		drag_moved = true
 	}
-	data := clay.GetScrollContainerData(clay.ID("Timeline"))
+	data := clay.GetScrollContainerData(drag_id)
 	if !data.found {
 		return
 	}

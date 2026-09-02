@@ -1,17 +1,7 @@
 package main
 
-import "core:c"
-import "core:encoding/hex"
-import "core:fmt"
-import "core:os"
-import "core:slice"
-import "core:strconv"
 import "core:strings"
 import "core:text/edit"
-import "core:unicode/utf8"
-import "core:sync"
-import "core:thread"
-import "core:time"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -218,6 +208,8 @@ Focus :: enum {
 	GSearch, // global-search modal box
 	KP, // KP-inspector pubkey box
 	Inbox, // settings inbox-relay box
+	Fetch, // settings event-fetch-relay box
+	Client, // settings event web-client box
 	ExportPw, // export-ncryptsec password box
 	BackupPw, // backup create/import password box
 	EmojiName, // custom-emoji shortcode box
@@ -243,6 +235,7 @@ Md_Kind :: enum {
 	List_Item,
 	Rule,
 	Table,
+	Image, // text = image url; only event cards (nevent.odin) mint these
 }
 
 Md_Block_Ui :: struct {
@@ -507,6 +500,10 @@ Ui_State :: struct {
 	backup_mode:    Backup_Mode, // "" = closed; else the password modal
 	backup_pw:      [dynamic]u8, // its password box (masked)
 	backup_blob:    []u8, // the picked .wnbk awaiting its password
+	vault_pw_open:  bool, // change-vault-password modal
+	vault_pw:       [Vault_Pw_Field][dynamic]u8, // its three boxes (masked)
+	vault_pw_focus: Vault_Pw_Field, // which of them takes the typing
+	vault_pw_err:   string, // in-modal failure line, "" = none
 	cache_bytes:    i64, // media-cache size, from cache_scan
 	cache_scanned:  bool,
 	emoji_staged:   string, // picked emoji file awaiting its shortcode
@@ -514,6 +511,8 @@ Ui_State :: struct {
 	adding_quick:   bool, // emoji picker adds a one-tap reaction
 	kp_input:       [dynamic]u8, // KP-inspector pubkey box
 	inbox_input:    [dynamic]u8, // settings inbox-relay box
+	fetch_input:    [dynamic]u8, // settings event-fetch-relay box
+	client_input:   [dynamic]u8, // settings event web-client box, mirrors prefs.event_client
 	health:         marmot.Relay_Health, // relay-pool counters (network.odin)
 	health_ok:      bool, // a relay_health call has succeeded
 	export_open:    bool, // export-ncryptsec modal
@@ -535,6 +534,10 @@ Ui_State :: struct {
 	debug_tab:      int, // 0 = state, 1 = raw events, 2 = key packages
 	debug_json:     string, // composed snapshot shown on the Debug page
 	new_chat_open: bool,
+	// A one-card window shows the settings section list or one section,
+	// never both. Set by the section change detector in build_layout,
+	// cleared by the back chip; ignored at desktop widths.
+	sett_open:     bool,
 	nc_member:     [dynamic]u8, // npub/hex for a DM; empty = own group
 	nc_name:       [dynamic]u8,
 	client_status: string,

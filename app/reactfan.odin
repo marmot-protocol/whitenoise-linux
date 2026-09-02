@@ -45,9 +45,18 @@ fan: Fan
 
 // Wide enough that the cells don't touch: the ring's circumference has
 // to fit `count` cells side by side, with a tenth of a cell between.
-@(private = "file")
+@(private)
 fan_radius :: proc(count: int) -> f32 {
 	return max(FAN_RADIUS, f32(count) * FAN_CELL * 1.1 / (2 * math.PI))
+}
+
+// Where the ring actually centres for a press at `at`: pulled in from
+// the edges of a w x h window so all `count` cells stay on screen, since
+// a press in the corner would otherwise put most of them outside it. A
+// window too small to hold the ring centres it and lets it overflow.
+fan_center :: proc(at: [2]f32, count: int, w, h: f32) -> [2]f32 {
+	m := fan_radius(count) + FAN_CELL * FAN_PICK / 2
+	return {clamp(at.x, m, max(m, w - m)), clamp(at.y, m, max(m, h - m))}
 }
 
 fan_open :: proc() -> bool {
@@ -122,6 +131,12 @@ handle_react_fan :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if rl.GetTime() - fan.held > FAN_HOLD {
+		fan.at = fan_center(
+			fan.at,
+			len(ui.prefs.quick_reactions),
+			f32(rl.GetScreenWidth()) / UI_ZOOM,
+			f32(rl.GetScreenHeight()) / UI_ZOOM,
+		)
 		fan.open = rl.GetTime()
 		play_sound(.Pop)
 	}

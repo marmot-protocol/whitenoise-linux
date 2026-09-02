@@ -132,6 +132,55 @@ sel_word_at :: proc(text: string, at: int) -> (lo, hi: int) {
 	return
 }
 
+// A selection edge never lands inside a URL: the whole run goes in or
+// stays out. Half a link is useless in the clipboard, and worse on
+// screen, where the fragments re-parse: ".../pull/1630" with a
+// selected "30" leaves ".../pull/16", a real link to another PR.
+//
+// Idempotent, so re-running it every drag event holds the anchor still
+// once it has snapped.
+sel_snap :: proc(text: string, lo, hi: int) -> (out_lo, out_hi: int) {
+	out_lo, out_hi = lo, hi
+	for i := 0; i < len(text); {
+		end, _, ok := url_at(text, i)
+		if !ok {
+			i += 1
+			continue
+		}
+		if lo > i && lo < end {
+			out_lo = i
+		}
+		if hi > i && hi < end {
+			out_hi = end
+		}
+		i = end
+	}
+	return
+}
+
+@(private = "file")
+sel_snap_links :: proc(ui: ^Ui_State, text: string) {
+	lo, hi := min(ui.sel_a, ui.sel_b), max(ui.sel_a, ui.sel_b)
+	// A press is a point, not a selection: snapping it would select
+	// the whole link and swallow the release that should open it (a
+	// link card's line is nothing but its URL, so every click on the
+	// card landed here).
+	if lo == hi {
+		return
+	}
+	out_lo, out_hi := sel_snap(text, lo, hi)
+	if out_lo == lo && out_hi == hi {
+		return
+	}
+	// Orientation is the drag direction; keeping it lets the drag go on
+	// extending from the same anchor.
+	if ui.sel_a <= ui.sel_b {
+		ui.sel_a, ui.sel_b = out_lo, out_hi
+	} else {
+		ui.sel_a, ui.sel_b = out_hi, out_lo
+	}
+}
+
 // Refresh the copy buffer from the live selection.
 @(private = "file")
 sel_take :: proc(ui: ^Ui_State, block_text: string) {
@@ -178,6 +227,7 @@ handle_body_sel :: proc(ui: ^Ui_State) {
 			ui.sel_a = offset
 			ui.sel_b = offset
 		}
+		sel_snap_links(ui, line.block_text)
 		sel_take(ui, line.block_text)
 		return
 	}
@@ -194,6 +244,7 @@ handle_body_sel :: proc(ui: ^Ui_State) {
 		} else {
 			ui.sel_b = offset
 		}
+		sel_snap_links(ui, line.block_text)
 		sel_take(ui, line.block_text)
 		return
 	}

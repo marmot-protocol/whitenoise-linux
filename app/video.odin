@@ -11,7 +11,9 @@ package main
 
 import "core:c"
 import "core:fmt"
+import "core:os"
 import "core:strings"
+import "core:time"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -37,7 +39,26 @@ Video_View :: struct {
 	failed:  bool,
 	time:    f64, // playback position, seconds
 	dur:     f64, // duration, seconds (0 until known)
+	dw, dh:  i64, // mpv's display size, 0 until it reports (post-rotation)
+	at_eof:  bool, // parked at the end by keep-open, so play restarts
 }
+
+// Observed properties, identified by reply id so the event handler
+// never compares strings. Reading these with mpv_get_property instead
+// would block the UI thread until mpv's core answers, which during a
+// seek on a large frame is hundreds of milliseconds.
+@(private = "file")
+PROP_PAUSE :: 1
+@(private = "file")
+PROP_TIME :: 2
+@(private = "file")
+PROP_DUR :: 3
+@(private = "file")
+PROP_DW :: 4
+@(private = "file")
+PROP_DH :: 5
+@(private = "file")
+PROP_EOF :: 6
 
 // Stream callbacks run on mpv's demux thread; they only touch the
 // view's data slice and read cursor, which nothing else mutates.
@@ -106,7 +127,20 @@ video_view_make :: proc(data: []u8, mode: Video_Mode = .Clip) -> ^Video_View {
 		return view
 	}
 	mpv_set_option_string(view.mpv, "vo", "libmpv")
-	mpv_set_option_string(view.mpv, "terminal", "no")
+	// Render ahead by nothing: with the default 50ms offset,
+	// mpv_render_context_render() blocks on the UI thread until the
+	// frame's target display time, costing up to a frame period per
+	// playing video per frame.
+	mpv_set_option_string(view.mpv, "video-timing-offset", "0")
+	// WN_DEBUG_MPV=log lets mpv's own log out (it is thousands of
+	// lines a second, enough to skew what the metrics measure);
+	// any other value keeps just the per-second metrics line.
+	if mpv_log() {
+		mpv_set_option_string(view.mpv, "terminal", "yes")
+		mpv_set_option_string(view.mpv, "msg-level", "all=v")
+	} else {
+		mpv_set_option_string(view.mpv, "terminal", "no")
+	}
 	if mode == .Loop {
 		mpv_set_option_string(view.mpv, "loop-file", "inf")
 	} else {
@@ -118,6 +152,14 @@ video_view_make :: proc(data: []u8, mode: Video_Mode = .Clip) -> ^Video_View {
 		mpv_initialize(view.mpv) == 0 &&
 		mpv_stream_cb_add_ro(view.mpv, "wnl", view, stream_open) == 0
 
+	if ok {
+		mpv_observe_property(view.mpv, PROP_PAUSE, "pause", MPV_FORMAT_FLAG)
+		mpv_observe_property(view.mpv, PROP_TIME, "time-pos", MPV_FORMAT_DOUBLE)
+		mpv_observe_property(view.mpv, PROP_DUR, "duration", MPV_FORMAT_DOUBLE)
+		mpv_observe_property(view.mpv, PROP_DW, "dwidth", MPV_FORMAT_INT64)
+		mpv_observe_property(view.mpv, PROP_DH, "dheight", MPV_FORMAT_INT64)
+		mpv_observe_property(view.mpv, PROP_EOF, "eof-reached", MPV_FORMAT_FLAG)
+	}
 	if ok {
 		params := [2]mpv_render_param{
 			{MPV_RENDER_PARAM_API_TYPE, transmute(rawptr)MPV_RENDER_API_TYPE_SW},
@@ -137,14 +179,13 @@ video_view_make :: proc(data: []u8, mode: Video_Mode = .Clip) -> ^Video_View {
 }
 
 // Once mpv knows the real dimensions, size the texture to the video's
-// aspect (capped) so the tile stops being a 16:9 placeholder.
+// aspect (capped) so the tile stops being a 16:9 placeholder. Returns
+// whether the texture was replaced, which costs its contents.
 @(private = "file")
-adopt_size :: proc(view: ^Video_View) {
-	w, h: i64
-	if mpv_get_property(view.mpv, "video-params/w", MPV_FORMAT_INT64, &w) != 0 ||
-	   mpv_get_property(view.mpv, "video-params/h", MPV_FORMAT_INT64, &h) != 0 ||
-	   w <= 0 || h <= 0 {
-		return
+adopt_size :: proc(view: ^Video_View) -> bool {
+	w, h := view.dw, view.dh
+	if w <= 0 || h <= 0 {
+		return false
 	}
 	view.sized = true
 
@@ -155,6 +196,7 @@ adopt_size :: proc(view: ^Video_View) {
 	view.buf = make([]u8, int(tw) * int(th) * 4)
 	rl.UnloadTexture(view.tex)
 	view.tex = rl.CreateStreamTexture(view.w, view.h)
+	return true
 }
 
 // The modal preview owns its own mpv instance; the render context
@@ -178,13 +220,49 @@ video_view_free :: proc(view: ^Video_View) {
 // updates must). mpv decodes on its own threads, the sw blit here is
 // tile-sized and cheap.
 advance_videos :: proc() {
+	start := time.tick_now()
 	for _, view in video_views {
 		advance_one(view)
 	}
 	if preview_shown && preview.vid != nil {
 		advance_one(preview.vid)
 	}
+
+	// WN_DEBUG_MPV: where a laggy frame actually goes. "advance" is
+	// this pass, "frame" is the whole previous frame.
+	if !mpv_debug() {
+		return
+	}
+	dbg_tick += 1
+	spent := f32(time.duration_milliseconds(time.tick_since(start)))
+	dbg_spent = max(dbg_spent, spent)
+	dbg_frame = max(dbg_frame, rl.GetFrameTime() * 1000)
+	if dbg_tick % 60 == 0 {
+		fmt.eprintfln(
+			"video: %d views | worst frame %.1f ms (%.0f fps) = advance %.1f + build %.1f + draw %.1f | seeks %d",
+			len(video_views),
+			dbg_frame,
+			1000 / max(dbg_frame, 0.001),
+			dbg_spent,
+			video_dbg_build,
+			video_dbg_draw,
+			dbg_seeks,
+		)
+		dbg_spent, dbg_frame, dbg_seeks = 0, 0, 0
+		video_dbg_build, video_dbg_draw = 0, 0
+	}
 }
+
+@(private = "file")
+dbg_tick: int
+@(private = "file")
+dbg_spent, dbg_frame: f32
+
+// Worst build_layout and draw_frame of the last second, filled in by
+// the frame loop: a laggy frame is one of these three or none of them.
+video_dbg_build, video_dbg_draw: f32
+@(private = "file")
+dbg_seeks: int
 
 @(private = "file")
 advance_one :: proc(view: ^Video_View) {
@@ -192,39 +270,88 @@ advance_one :: proc(view: ^Video_View) {
 		return
 	}
 
+	// Playback that dies mid-file (bad demux, missing codec) is
+	// otherwise a tile that stays blank forever.
 	for {
 		event := mpv_wait_event(view.mpv, 0)
 		if event == nil || event.event_id == MPV_EVENT_NONE {
 			break
 		}
+		if event.data == nil {
+			continue
+		}
+		if event.event_id == MPV_EVENT_END_FILE {
+			end := (^mpv_event_end_file)(event.data)
+			if end.reason == MPV_END_FILE_REASON_ERROR {
+				view.failed = true
+				fmt.eprintfln("video: playback failed (%s)", mpv_error_string(end.error))
+				return
+			}
+			continue
+		}
+		if event.event_id != MPV_EVENT_PROPERTY_CHANGE {
+			continue
+		}
+		prop := (^mpv_event_property)(event.data)
+		if prop.data == nil {
+			continue // MPV_FORMAT_NONE: not available yet
+		}
+		switch event.reply_userdata {
+		case PROP_PAUSE:
+			view.paused = (^c.int)(prop.data)^ != 0
+		case PROP_TIME:
+			view.time = (^f64)(prop.data)^
+		case PROP_DUR:
+			view.dur = (^f64)(prop.data)^
+		case PROP_DW:
+			view.dw = (^i64)(prop.data)^
+		case PROP_DH:
+			view.dh = (^i64)(prop.data)^
+		case PROP_EOF:
+			view.at_eof = (^c.int)(prop.data)^ != 0
+		}
 	}
 
-	if !view.sized && !view.audio {
-		adopt_size(view)
-	}
+	// A paused clip raises the frame flag exactly once, and it can
+	// arrive before mpv knows video-params. Resizing then throws that
+	// frame away with the old texture, so repaint the new one instead
+	// of waiting for a flag that never comes.
+	resized := !view.sized && !view.audio && adopt_size(view)
 
-	pause_flag: c.int = 1
-	if mpv_get_property(view.mpv, "pause", MPV_FORMAT_FLAG, &pause_flag) == 0 {
-		view.paused = pause_flag != 0
-	}
-	mpv_get_property(view.mpv, "time-pos", MPV_FORMAT_DOUBLE, &view.time)
-	mpv_get_property(view.mpv, "duration", MPV_FORMAT_DOUBLE, &view.dur)
-
-	if view.rctx == nil || mpv_render_context_update(view.rctx) & MPV_RENDER_UPDATE_FRAME == 0 {
+	if view.rctx == nil {
 		return
 	}
-	size := [2]c.int{c.int(view.w), c.int(view.h)}
-	stride := c.size_t(view.w * 4)
-	params := [5]mpv_render_param{
-		{MPV_RENDER_PARAM_SW_SIZE, &size},
-		{MPV_RENDER_PARAM_SW_FORMAT, transmute(rawptr)VIDEO_SW_FORMAT},
-		{MPV_RENDER_PARAM_SW_STRIDE, &stride},
-		{MPV_RENDER_PARAM_SW_POINTER, raw_data(view.buf)},
-		{MPV_RENDER_PARAM_INVALID, nil},
+	fresh := mpv_render_context_update(view.rctx) & MPV_RENDER_UPDATE_FRAME != 0
+	if fresh || resized {
+		size := [2]c.int{c.int(view.w), c.int(view.h)}
+		stride := c.size_t(view.w * 4)
+		params := [5]mpv_render_param{
+			{MPV_RENDER_PARAM_SW_SIZE, &size},
+			{MPV_RENDER_PARAM_SW_FORMAT, transmute(rawptr)VIDEO_SW_FORMAT},
+			{MPV_RENDER_PARAM_SW_STRIDE, &stride},
+			{MPV_RENDER_PARAM_SW_POINTER, raw_data(view.buf)},
+			{MPV_RENDER_PARAM_INVALID, nil},
+		}
+		if mpv_render_context_render(view.rctx, &params[0]) == 0 {
+			rl.UpdateTexturePixels(&view.tex, raw_data(view.buf))
+		}
 	}
-	if mpv_render_context_render(view.rctx, &params[0]) == 0 {
-		rl.UpdateTexturePixels(&view.tex, raw_data(view.buf))
+}
+
+@(private = "file")
+dbg_on := -1
+
+@(private = "file")
+mpv_debug :: proc() -> bool {
+	if dbg_on < 0 {
+		dbg_on = os.get_env("WN_DEBUG_MPV", context.temp_allocator) != "" ? 1 : 0
 	}
+	return dbg_on == 1
+}
+
+@(private = "file")
+mpv_log :: proc() -> bool {
+	return os.get_env("WN_DEBUG_MPV", context.temp_allocator) == "log"
 }
 
 // Hover recorded during the layout build, click handled after it.
@@ -237,13 +364,12 @@ handle_video :: proc() {
 	}
 
 	// Play at the end restarts (keep-open parks the clip at EOF).
-	eof: c.int
-	if mpv_get_property(video_hover.mpv, "eof-reached", MPV_FORMAT_FLAG, &eof) == 0 && eof != 0 {
+	if video_hover.at_eof {
 		seek := [4]cstring{"seek", "0", "absolute", nil}
-		mpv_command(video_hover.mpv, &seek[0])
+		mpv_command_async(video_hover.mpv, 0, &seek[0])
 	}
 	cmd := [3]cstring{"cycle", "pause", nil}
-	mpv_command(video_hover.mpv, &cmd[0])
+	mpv_command_async(video_hover.mpv, 0, &cmd[0])
 }
 
 // Scrub bars, same registration shape as the g-code slider: rebuilt
@@ -255,6 +381,8 @@ Video_Bar :: struct {
 
 video_bars: [dynamic]Video_Bar
 video_bar_drag: Video_Bar
+@(private = "file")
+bar_sent: f64 = -1 // last position asked for, so a still pointer stays quiet
 
 handle_video_bar :: proc() {
 	if rl.IsMouseButtonPressed(.LEFT) {
@@ -268,8 +396,13 @@ handle_video_bar :: proc() {
 	if video_bar_drag.view == nil {
 		return
 	}
+	// Release lands the exact frame; the drag itself never does.
 	if !rl.IsMouseButtonDown(.LEFT) {
+		if bar_sent >= 0 {
+			seek_to(video_bar_drag.view, bar_sent, "absolute")
+		}
 		video_bar_drag = {}
+		bar_sent = -1
 		return
 	}
 
@@ -279,7 +412,34 @@ handle_video_bar :: proc() {
 		return
 	}
 	frac := clamp((rl.GetMousePosition().x / UI_ZOOM - bb.x) / bb.width, 0, 1)
-	target := strings.clone_to_cstring(fmt.tprintf("%.3f", f64(frac) * view.dur), context.temp_allocator)
-	cmd := [4]cstring{"seek", target, "absolute", nil}
-	mpv_command(view.mpv, &cmd[0])
+	target := f64(frac) * view.dur
+	if abs(target - bar_sent) < 0.05 {
+		return
+	}
+	bar_sent = target
+
+	// Keyframes only while dragging: an exact seek decodes every frame
+	// from the preceding keyframe, which on a large 60fps clip costs
+	// more than the frame budget and turns the drag into a slideshow.
+	seek_to(view, target, "absolute+keyframes")
+}
+
+@(private = "file")
+seek_to :: proc(view: ^Video_View, seconds: f64, flags: cstring) {
+	target := strings.clone_to_cstring(fmt.tprintf("%.3f", seconds), context.temp_allocator)
+	cmd := [4]cstring{"seek", target, flags, nil}
+	dbg_seeks += 1
+	mpv_command_async(view.mpv, 0, &cmd[0])
+}
+
+// Other clients send octet-stream for attachments, so the timeline
+// and the preview both match extensions as well as the media type.
+is_video_name :: proc(lower: string) -> bool {
+	return(
+		strings.has_suffix(lower, ".mp4") ||
+		strings.has_suffix(lower, ".webm") ||
+		strings.has_suffix(lower, ".mkv") ||
+		strings.has_suffix(lower, ".mov") ||
+		strings.has_suffix(lower, ".avi") \
+	)
 }

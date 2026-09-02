@@ -1,17 +1,9 @@
 package main
 
-import "core:c"
-import "core:encoding/hex"
 import "core:fmt"
-import "core:os"
 import "core:slice"
-import "core:strconv"
 import "core:strings"
-import "core:text/edit"
 import "core:unicode/utf8"
-import "core:sync"
-import "core:thread"
-import "core:time"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -38,7 +30,7 @@ pending_row :: proc(index: u32, ui: ^Ui_State, p: Pending_Send) {
 			}
 			ratio := a.tex.height > 0 ? f32(a.tex.width) / f32(a.tex.height) : 1
 			if clay.UI(clay.ID("PendingImage", index * 1024 + u32(j)))(
-			{layout = {sizing = {width = clay.SizingFixed(320)}}, aspectRatio = {ratio}, image = {imageData = a.tex}, cornerRadius = rr(8)},
+			{layout = {sizing = {width = clay.SizingFixed(att_w())}}, aspectRatio = {ratio}, image = {imageData = a.tex}, cornerRadius = rr(8)},
 			) {}
 		}
 
@@ -148,7 +140,7 @@ AUDIO_BAR_W :: 244 // 320 tile - padding - play button - gaps
 
 audio_tile :: proc(id: u32, msg_id: string, att: int, name: string, size_label: string, view: ^Video_View) {
 	if clay.UI(clay.ID("MsgAudio", id))(
-	{layout = {sizing = {width = clay.SizingFixed(320)}, padding = clay.PaddingAll(10), childGap = 10, childAlignment = {y = .Center}}, backgroundColor = PLATE, cornerRadius = rr(8)},
+	{layout = {sizing = {width = clay.SizingFixed(att_w())}, padding = clay.PaddingAll(10), childGap = 10, childAlignment = {y = .Center}}, backgroundColor = PLATE, cornerRadius = rr(8)},
 	) {
 		att_dl_button("DlAud", id, msg_id, att, name)
 		if clay.UI(clay.ID("MsgAudioPlay", id))(
@@ -500,7 +492,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 			view := entry.view
 			ratio := view.h > 0 ? f32(view.w) / f32(view.h) : 16.0 / 9.0
 			if clay.UI(clay.ID("MsgVideo", index * 1024 + u32(j)))(
-			{layout = {sizing = {width = clay.SizingFixed(320)}, childAlignment = {x = .Center, y = .Center}}, aspectRatio = {ratio}, image = {imageData = &view.tex}, cornerRadius = rr(8)},
+			{layout = {sizing = {width = clay.SizingFixed(att_w())}, childAlignment = {x = .Center, y = .Center}}, aspectRatio = {ratio}, image = {imageData = &view.tex}, cornerRadius = rr(8)},
 			) {
 				att_dl_button("DlVid", index * 1024 + u32(j), msg.id, entry.att, msg.att_names[entry.att])
 				if hovered() {
@@ -533,7 +525,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 				append(&video_bars, Video_Bar{bar_id, view})
 				frac := view.dur > 0 ? f32(view.time / view.dur) : 0
 				if clay.UI(bar_id)(
-				{layout = {sizing = {width = clay.SizingFixed(320), height = clay.SizingFixed(14)}, padding = {left = 2, right = 2}, childAlignment = {y = .Center}}, backgroundColor = ROW_BG, cornerRadius = rr(7)},
+				{layout = {sizing = {width = clay.SizingFixed(att_w()), height = clay.SizingFixed(14)}, padding = {left = 2, right = 2}, childAlignment = {y = .Center}}, backgroundColor = ROW_BG, cornerRadius = rr(7)},
 				) {
 					if clay.UI(clay.ID("MsgVideoFill", index * 1024 + u32(j)))(
 					{layout = {sizing = {width = clay.SizingFixed(max(10, frac * 316)), height = clay.SizingFixed(10)}}, backgroundColor = ACCENT, cornerRadius = rr(5)},
@@ -554,7 +546,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 			view := entry.view
 			ratio := view.h > 0 ? f32(view.w) / f32(view.h) : 0.77
 			if clay.UI(clay.ID("MsgPdf", index * 1024 + u32(j)))(
-			{layout = {sizing = {width = clay.SizingFixed(320)}, childAlignment = {x = .Center, y = .Bottom}}, aspectRatio = {ratio}, image = {imageData = &view.tex}, cornerRadius = rr(8)},
+			{layout = {sizing = {width = clay.SizingFixed(att_w())}, childAlignment = {x = .Center, y = .Bottom}}, aspectRatio = {ratio}, image = {imageData = &view.tex}, cornerRadius = rr(8)},
 			) {
 				att_dl_button("DlPdf", index * 1024 + u32(j), msg.id, entry.att, msg.att_names[entry.att])
 				if view.pages > 1 {
@@ -593,7 +585,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 		for entry, j in msg.models {
 			view := entry.view
 			if clay.UI(clay.ID("MsgModel", index * 1024 + u32(j)))(
-			{layout = {sizing = {width = clay.SizingFixed(320), height = clay.SizingFixed(320)}}, backgroundColor = PLATE, cornerRadius = rr(8)},
+			{layout = {sizing = {width = clay.SizingFixed(att_w()), height = clay.SizingFixed(320)}}, backgroundColor = PLATE, cornerRadius = rr(8)},
 			) {
 				att_dl_button("DlMesh", index * 1024 + u32(j), msg.id, entry.att, msg.att_names[entry.att])
 				if clay.UI(clay.ID("MsgModelView", index * 1024 + u32(j)))(
@@ -611,7 +603,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 		for entry, j in msg.gcodes {
 			view := entry.view
 			if clay.UI(clay.ID("MsgGcode", index * 1024 + u32(j)))(
-			{layout = {sizing = {width = clay.SizingFixed(320), height = clay.SizingFixed(320)}}, backgroundColor = PLATE, cornerRadius = rr(8)},
+			{layout = {sizing = {width = clay.SizingFixed(att_w()), height = clay.SizingFixed(320)}}, backgroundColor = PLATE, cornerRadius = rr(8)},
 			) {
 				att_dl_button("DlGc", index * 1024 + u32(j), msg.id, entry.att, msg.att_names[entry.att])
 				if clay.UI(clay.ID("MsgGcodeView", index * 1024 + u32(j)))(
@@ -625,7 +617,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 			bar_id := clay.ID("MsgGcodeBar", index * 1024 + u32(j))
 			append(&gcode_bars, Gcode_Bar{bar_id, view})
 			if clay.UI(bar_id)(
-			{layout = {sizing = {width = clay.SizingFixed(320), height = clay.SizingFixed(14)}, padding = {left = 2, right = 2}, childAlignment = {y = .Center}}, backgroundColor = ROW_BG, cornerRadius = rr(7)},
+			{layout = {sizing = {width = clay.SizingFixed(att_w()), height = clay.SizingFixed(14)}, padding = {left = 2, right = 2}, childAlignment = {y = .Center}}, backgroundColor = ROW_BG, cornerRadius = rr(7)},
 			) {
 				if clay.UI(clay.ID("MsgGcodeFill", index * 1024 + u32(j)))(
 				{layout = {sizing = {width = clay.SizingFixed(max(10, view.frac * 316)), height = clay.SizingFixed(10)}}, backgroundColor = ACCENT, cornerRadius = rr(5)},
@@ -638,7 +630,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 		for entry, j in msg.arcs {
 			view := entry.view
 			if clay.UI(clay.ID("MsgArc", index * 1024 + u32(j)))(
-			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(320)}, padding = clay.PaddingAll(8), childGap = 2}, backgroundColor = PLATE, cornerRadius = rr(8)},
+			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(att_w())}, padding = clay.PaddingAll(8), childGap = 2}, backgroundColor = PLATE, cornerRadius = rr(8)},
 			) {
 				att_dl_button("DlArc", index * 1024 + u32(j), msg.id, entry.att, msg.att_names[entry.att])
 				// The archive's own name, above its listing.
@@ -687,7 +679,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 		for entry, j in msg.txts {
 			view := entry.view
 			if clay.UI(clay.ID("MsgTxt", index * 1024 + u32(j)))(
-			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(320)}, padding = clay.PaddingAll(10), childGap = 6}, backgroundColor = PLATE, cornerRadius = rr(8)},
+			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(att_w())}, padding = clay.PaddingAll(10), childGap = 6}, backgroundColor = PLATE, cornerRadius = rr(8)},
 			) {
 				att_dl_button("DlTxt", index * 1024 + u32(j), msg.id, entry.att, msg.att_names[entry.att])
 				shown := min(len(view.blocks), TXT_TILE_BLOCKS)
@@ -722,7 +714,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 			view := entry.view
 			ratio := view.h > 0 ? f32(view.w) / f32(view.h) : 4
 			if clay.UI(clay.ID("MsgFont", index * 1024 + u32(j)))(
-			{layout = {sizing = {width = clay.SizingFixed(320)}}, aspectRatio = {ratio}, image = {imageData = &view.tex}, cornerRadius = rr(8)},
+			{layout = {sizing = {width = clay.SizingFixed(att_w())}}, aspectRatio = {ratio}, image = {imageData = &view.tex}, cornerRadius = rr(8)},
 			) {
 				att_dl_button("DlFont", index * 1024 + u32(j), msg.id, entry.att, msg.att_names[entry.att])
 			}
@@ -783,6 +775,9 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 			}
 		}
 
+		// Bodies draw a card in place of every GitHub link they hold.
+		gh_cards_on = true
+
 		if len(msg.blocks) == 0 && len(msg.body) > 0 {
 			body_text(index * 4096, msg.body, 14, TEXT, true)
 		}
@@ -799,6 +794,8 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 		}
 
 		md_blocks(msg.blocks[:], index * 4096, true)
+
+		gh_cards_on = false
 
 		// Poll options under the question; clicks vote (handle_chat).
 		if len(msg.poll_opts) > 0 {
@@ -886,7 +883,14 @@ caret_wake :: proc() {
 	caret_at = rl.GetTime()
 }
 
+// Last frame's caret box, in layout units. The IME and a phone
+// keyboard are placed against it.
+caret_box: clay.BoundingBox
+
 caret :: proc(h: f32 = 16) {
+	if d := clay.GetElementData(clay.ID_LOCAL("Caret")); d.found {
+		caret_box = d.boundingBox // one frame behind, which no one can see
+	}
 	alpha := f32(1)
 	if since := rl.GetTime() - caret_at; since > CARET_SOLID && motion_on() {
 		// A cosine clipped above 1: on for most of the cycle, with the
@@ -920,6 +924,7 @@ scrollbar :: proc(container: clay.ElementId, z: i16 = 5) {
 	if !data.found || data.contentDimensions.height <= data.scrollContainerDimensions.height {
 		return
 	}
+	append(&drag_targets, container) // a finger can throw this one
 	track := data.scrollContainerDimensions.height
 	thumb := max(24, track * data.scrollContainerDimensions.height / data.contentDimensions.height)
 	span := data.contentDimensions.height - data.scrollContainerDimensions.height
@@ -967,6 +972,8 @@ Inline_Seg :: struct {
 	tex:  ^rl.Texture2D,
 	hex:  string, // mentioned account, "" = not a mention
 	url:  string, // http(s) link, "" = not a link (linkguard.odin)
+	evid: string, // nevent/note event id hex, "" = not one (nevent.odin)
+	hints: []string, // the nevent's relay hints
 	fx:   u8, // glyph-effect bits from {name} markup (effects.odin)
 }
 
@@ -1012,7 +1019,7 @@ inline_segs :: proc(text: string) -> [dynamic]Inline_Seg {
 					// Motion acts per glyph, like slint's RunCell, so a
 					// moving text seg splits into letters. A very long run
 					// stays whole: the per-letter ids would collide.
-					plain := tagged.tex == nil && len(tagged.hex) == 0 && len(tagged.url) == 0
+					plain := tagged.tex == nil && len(tagged.hex) == 0 && len(tagged.url) == 0 && len(tagged.evid) == 0
 					if tagged.fx & FX_MOTION == 0 || !plain || len(tagged.text) > FX_LETTERS_MAX {
 						append(&segs, tagged)
 						continue
@@ -1038,6 +1045,19 @@ inline_segs :: proc(text: string) -> [dynamic]Inline_Seg {
 					append(&segs, Inline_Seg{text = text[plain_start:i]})
 				}
 				append(&segs, Inline_Seg{text = link, url = link})
+				i = end
+				plain_start = end
+				continue
+			}
+		}
+		if r == 'n' {
+			// nevent/note token (bare or "nostr:"-prefixed) becomes an
+			// event seg; body lines draw it as a card.
+			if end, evid, hints, ok := nevent_at(text, i); ok {
+				if i > plain_start {
+					append(&segs, Inline_Seg{text = text[plain_start:i]})
+				}
+				append(&segs, Inline_Seg{text = text[i:end], evid = evid, hints = hints})
 				i = end
 				plain_start = end
 				continue
@@ -1120,6 +1140,14 @@ render_segs :: proc(id: u32, segs: []Inline_Seg, font_size: u16, color: clay.Col
 			if clay.UI(clay.ID("SegEmoji", id * 128 + u32(k)))(
 			{layout = {sizing = {width = clay.SizingFixed(tile_px)}}, aspectRatio = {1}, image = {imageData = seg.tex}},
 			) {}
+		} else if ref, is_gh := gh_ref(seg.url); chips && gh_cards_on && is_gh {
+			// A GitHub PR or issue link is drawn as its own card, in
+			// place of the URL run.
+			gh_card(id * 128 + u32(k), ref)
+		} else if chips && gh_cards_on && len(seg.evid) > 0 {
+			// A referenced Nostr event is drawn as its own card, in
+			// place of the token.
+			nev_card(id * 128 + u32(k), seg.evid, strings.trim_prefix(seg.text, "nostr:"), seg.hints)
 		} else if chips && len(seg.url) > 0 {
 			// Links only in bodies: composer lines keep the raw text so
 			// caret hit-mapping stays byte-accurate.
@@ -1265,13 +1293,28 @@ compose_line :: proc(i: u32, text: string, ls, le, lo, hi, head: int) {
 // caller sets it for pre-wrapped (selectable) bodies only, because an
 // element around a plain Text would take clay's own wrapping away.
 body_line :: proc(id: u32, text: string, font_size: u16, color: clay.Color, sel := [2]int{-1, -1}, boxed := false) {
+	sel := sel
+	if sel[0] >= 0 {
+		// A selection through an event token would split it into
+		// text runs and lose the card, so a line holding one draws
+		// unselected; the copy still carries the token.
+		for seg in inline_segs(text) {
+			if len(seg.evid) > 0 {
+				sel = {-1, -1}
+				break
+			}
+		}
+	}
 	if sel[0] >= 0 {
 		if clay.UI(clay.ID("BodyLine", id))({layout = {childGap = 2, childAlignment = {y = .Center}}}) {
 			if sel[0] > 0 {
 				render_segs(id * 4, inline_segs(text[:sel[0]])[:], font_size, color, f32(font_size) + 4, true)
 			}
 			if clay.UI(clay.ID("BodySel", id))({layout = {childGap = 2, childAlignment = {y = .Center}}, backgroundColor = ACCENT}) {
-				render_segs(id * 4 + 1, inline_segs(text[sel[0]:sel[1]])[:], font_size, ON_ACCENT, f32(font_size) + 4)
+				// chips inside the highlight too: a link that turned
+				// into a card must not fall back to its URL the moment
+				// a selection covers it.
+				render_segs(id * 4 + 1, inline_segs(text[sel[0]:sel[1]])[:], font_size, ON_ACCENT, f32(font_size) + 4, true)
 			}
 			if sel[1] < len(text) {
 				render_segs(id * 4 + 2, inline_segs(text[sel[1]:])[:], font_size, color, f32(font_size) + 4, true)
@@ -1281,7 +1324,7 @@ body_line :: proc(id: u32, text: string, font_size: u16, color: clay.Color, sel 
 	}
 
 	segs := inline_segs(text)
-	if len(segs) == 1 && segs[0].tex == nil && len(segs[0].hex) == 0 && len(segs[0].url) == 0 && len(segs[0].text) == len(text) {
+	if len(segs) == 1 && segs[0].tex == nil && len(segs[0].hex) == 0 && len(segs[0].url) == 0 && len(segs[0].evid) == 0 && len(segs[0].text) == len(text) {
 		// No emoji or mention at all: plain Text keeps clay's wrapping.
 		if !boxed {
 			clay.Text(text, {fontId = FONT_BODY, fontSize = font_size, textColor = color})
@@ -1360,12 +1403,14 @@ md_table :: proc(id: u32, cells: [][]string) {
 	}
 }
 // the preview modal. id_base namespaces the clay ids per call site.
-md_blocks :: proc(blocks: []Md_Block_Ui, id_base: u32, selectable := false) {
+// wrap_w pre-wraps paragraphs to a width (event cards); 0 leaves
+// wrapping to clay or, when selectable, the timeline measure.
+md_blocks :: proc(blocks: []Md_Block_Ui, id_base: u32, selectable := false, wrap_w: f32 = 0) {
 	for block, j in blocks {
 		block_id := id_base + u32(j) * 16
 		switch block.kind {
 		case .Para:
-			body_text(block_id + 1, block.text, BODY_FS, TEXT, selectable)
+			body_text(block_id + 1, block.text, BODY_FS, TEXT, selectable, wrap_w)
 		case .Heading:
 			size := u16(max(24 - block.level * 2, 15))
 			clay.Text(block.text, {fontId = FONT_TITLE, fontSize = size, textColor = TEXT})
@@ -1381,7 +1426,17 @@ md_blocks :: proc(blocks: []Md_Block_Ui, id_base: u32, selectable := false) {
 				clay.Text(block.text, {fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM})
 			}
 		case .List_Item:
-			body_text(block_id + 2, block.text, BODY_FS, TEXT, selectable)
+			body_text(block_id + 2, block.text, BODY_FS, TEXT, selectable, wrap_w)
+		case .Image:
+			tex := nev_img(block.text)
+			if tex == nil {
+				clay.Text(block.text, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
+				continue
+			}
+			ratio := tex.height > 0 ? f32(tex.width) / f32(tex.height) : 1
+			if clay.UI(clay.ID("MdImage", block_id))(
+			{layout = {sizing = {width = clay.SizingFixed(wrap_w > 0 ? wrap_w : att_w())}}, aspectRatio = {ratio}, image = {imageData = tex}, cornerRadius = rr(8)},
+			) {}
 		case .Rule:
 			if clay.UI(clay.ID("MsgRule", block_id))({layout = {sizing = {width = clay.SizingFixed(240), height = clay.SizingFixed(1)}}, backgroundColor = TEXT_DIM}) {}
 		case .Table:
@@ -1445,8 +1500,15 @@ body_wrap_w :: proc() -> f32 {
 	if !tl.found {
 		return 480
 	}
-	avail := f32(rl.GetScreenWidth()) / UI_ZOOM - rail_width(g_ui) - 40
+	avail := page_w(g_ui)
 	return max(min(tl.boundingBox.width, avail) - MSG_ROW_CHROME, 120)
+}
+
+// Widest an attachment tile draws: its design width, or the message
+// column when that is narrower. A 320px tile in a 300px column is the
+// same clipped edge a fixed-width modal gives a narrow window.
+att_w :: proc(w: f32 = 320) -> f32 {
+	return min(w, body_wrap_w())
 }
 
 // Greedy break: the longest run of whole words from `at` that fits
@@ -1469,6 +1531,15 @@ wrap_break :: proc(text: string, at, end: int, width: f32, font_size: u16) -> in
 		if rl.MeasureTextLine(FONT_BODY, font_size, text[at:next], 0).x > width {
 			if cut > at {
 				return cut
+			}
+			// An event token stays whole: its card replaces it, so
+			// it takes a line of its own instead of splitting.
+			word := at
+			for word < next && text[word] == ' ' {
+				word += 1
+			}
+			if tok_end, _, _, is_event := nevent_at(text, word); is_event && tok_end == next {
+				return next
 			}
 			// One word wider than the line (a cashu token, a long
 			// URL): break it mid-word at the last rune that fits.

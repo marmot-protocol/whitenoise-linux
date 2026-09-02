@@ -89,7 +89,7 @@ preview_show :: proc(name: string, bytes: []u8) {
 	case has(lower, ".gif"):
 		preview.vid = video_view_make(clone_bytes(bytes), .Loop)
 		preview.kind = .Video
-	case has(lower, ".mp4") || has(lower, ".webm") || has(lower, ".mkv") || has(lower, ".mov") || has(lower, ".avi"):
+	case is_video_name(lower):
 		preview.vid = video_view_make(clone_bytes(bytes), .Clip)
 		preview.kind = .Video
 	case is_model_name(lower):
@@ -451,7 +451,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 		case .Image:
 			ratio := preview.tex.height > 0 ? f32(preview.tex.width) / f32(preview.tex.height) : 1
 			if clay.UI(clay.ID("PvImage"))(
-			{layout = {sizing = {width = clay.SizingFixed(480)}}, aspectRatio = {ratio}, image = {imageData = &preview.tex}, cornerRadius = rr(8)},
+			{layout = {sizing = {width = clay.SizingFixed(fit_w(480))}}, aspectRatio = {ratio}, image = {imageData = &preview.tex}, cornerRadius = rr(8)},
 			) {}
 
 		case .Video:
@@ -459,7 +459,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 			// mpv couldn't decode the bytes; retry rebuilds the view.
 			if view.failed {
 				if clay.UI(clay.ID("PvVidRetry"))(
-				{layout = {sizing = {width = clay.SizingFixed(480), height = clay.SizingFixed(220)}, childAlignment = {x = .Center, y = .Center}}, backgroundColor = hovered() ? HOVER : PLATE, cornerRadius = rr(8)},
+				{layout = {sizing = {width = clay.SizingFixed(fit_w(480)), height = clay.SizingFixed(220)}, childAlignment = {x = .Center, y = .Center}}, backgroundColor = hovered() ? HOVER : PLATE, cornerRadius = rr(8)},
 				) {
 					clay.Text("Couldn't play video. Click to retry.", {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
 				}
@@ -508,7 +508,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 			model_h := min(f32(480), max_h - PV_CHROME)
 			if clay.UI(clay.ID("PvModelRow"))({layout = {childGap = 10}}) {
 				if clay.UI(clay.ID("PvModel"))(
-				{layout = {sizing = {width = clay.SizingFixed(480), height = clay.SizingFixed(model_h)}}, backgroundColor = PLATE, cornerRadius = rr(8)},
+				{layout = {sizing = {width = clay.SizingFixed(fit_w(480)), height = clay.SizingFixed(model_h)}}, backgroundColor = PLATE, cornerRadius = rr(8)},
 				) {
 					payload: rawptr = preview.kind == .Mesh ? rawptr(preview.mesh) : rawptr(preview.gc)
 					if clay.UI(clay.ID("PvModelView"))(
@@ -530,7 +530,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 				bar_id := clay.ID("PvGcodeBar")
 				append(&gcode_bars, Gcode_Bar{bar_id, preview.gc})
 				if clay.UI(bar_id)(
-				{layout = {sizing = {width = clay.SizingFixed(480), height = clay.SizingFixed(14)}, padding = {left = 2, right = 2}, childAlignment = {y = .Center}}, backgroundColor = ROW_BG, cornerRadius = rr(7)},
+				{layout = {sizing = {width = clay.SizingFixed(fit_w(480)), height = clay.SizingFixed(14)}, padding = {left = 2, right = 2}, childAlignment = {y = .Center}}, backgroundColor = ROW_BG, cornerRadius = rr(7)},
 				) {
 					if clay.UI(clay.ID("PvGcodeFill"))(
 					{layout = {sizing = {width = clay.SizingFixed(max(10, preview.gc.frac * 476)), height = clay.SizingFixed(10)}}, backgroundColor = ACCENT, cornerRadius = rr(5)},
@@ -542,7 +542,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 			view := preview.pdf
 			ratio := view.h > 0 ? f32(view.w) / f32(view.h) : 0.77
 			if clay.UI(clay.ID("PvPdf"))(
-			{layout = {sizing = {width = clay.SizingFixed(480)}, childAlignment = {x = .Center, y = .Bottom}}, aspectRatio = {ratio}, image = {imageData = &view.tex}, cornerRadius = rr(8)},
+			{layout = {sizing = {width = clay.SizingFixed(fit_w(480))}, childAlignment = {x = .Center, y = .Bottom}}, aspectRatio = {ratio}, image = {imageData = &view.tex}, cornerRadius = rr(8)},
 			) {
 				if view.pages > 1 {
 					if clay.UI(clay.ID("PvPdfNav"))(
@@ -569,7 +569,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 
 		case .Text:
 			if clay.UI(clay.ID("PvText"))(
-			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(480)}, padding = clay.PaddingAll(10), childGap = 6}, backgroundColor = PLATE, cornerRadius = rr(8)},
+			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(fit_w(480))}, padding = clay.PaddingAll(10), childGap = 6}, backgroundColor = PLATE, cornerRadius = rr(8)},
 			) {
 				shown := min(len(preview.txt.blocks), TXT_MODAL_BLOCKS)
 				md_blocks(preview.txt.blocks[:shown], 0x7f000000)
@@ -581,14 +581,14 @@ preview_modal :: proc(ui: ^Ui_State) {
 		case .Code:
 			view := preview.code
 			if clay.UI(clay.ID("PvCode"))(
-			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(600)}, padding = clay.PaddingAll(10), childGap = 1}, backgroundColor = PLATE, cornerRadius = rr(8)},
+			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(fit_w(600))}, padding = clay.PaddingAll(10), childGap = 1}, backgroundColor = PLATE, cornerRadius = rr(8)},
 			) {
 				code_lines(view, 0, CODE_MODAL_LINES)
 			}
 
 		case .Hex:
 			if clay.UI(clay.ID("PvHexBody"))(
-			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(600)}, padding = clay.PaddingAll(10), childGap = 1}, backgroundColor = PLATE, cornerRadius = rr(8)},
+			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(fit_w(600))}, padding = clay.PaddingAll(10), childGap = 1}, backgroundColor = PLATE, cornerRadius = rr(8)},
 			) {
 				hex_rows(preview.bytes)
 			}
@@ -597,7 +597,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 			view := preview.font
 			ratio := view.h > 0 ? f32(view.w) / f32(view.h) : 4
 			if clay.UI(clay.ID("PvFont"))(
-			{layout = {sizing = {width = clay.SizingFixed(480)}}, aspectRatio = {ratio}, image = {imageData = &view.tex}},
+			{layout = {sizing = {width = clay.SizingFixed(fit_w(480))}}, aspectRatio = {ratio}, image = {imageData = &view.tex}},
 			) {}
 
 		case .Slides:
@@ -605,13 +605,13 @@ preview_modal :: proc(ui: ^Ui_State) {
 			if s.tex != nil {
 				ratio := s.tex.height > 0 ? f32(s.tex.width) / f32(s.tex.height) : 1
 				if clay.UI(clay.ID("PvSlide"))(
-				{layout = {sizing = {width = clay.SizingFixed(480)}, childAlignment = {x = .Center, y = .Bottom}}, aspectRatio = {ratio}, image = {imageData = s.tex}, cornerRadius = rr(8)},
+				{layout = {sizing = {width = clay.SizingFixed(fit_w(480))}, childAlignment = {x = .Center, y = .Bottom}}, aspectRatio = {ratio}, image = {imageData = s.tex}, cornerRadius = rr(8)},
 				) {
 					slide_nav()
 				}
 			} else {
 				if clay.UI(clay.ID("PvSlideFail"))(
-				{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(480), height = clay.SizingFixed(220)}, childGap = 12, childAlignment = {x = .Center, y = .Center}}, backgroundColor = PLATE, cornerRadius = rr(8)},
+				{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(fit_w(480)), height = clay.SizingFixed(220)}, childGap = 12, childAlignment = {x = .Center, y = .Center}}, backgroundColor = PLATE, cornerRadius = rr(8)},
 				) {
 					if clay.UI(clay.ID("PvRetry"))(
 					{layout = {padding = {left = 10, right = 10, top = 6, bottom = 6}}, backgroundColor = hovered() ? HOVER : ROW_BG, cornerRadius = rr(8)},

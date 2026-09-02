@@ -16,7 +16,6 @@ package main
 
 import "core:math"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
 REVEAL_SECS :: 0.5

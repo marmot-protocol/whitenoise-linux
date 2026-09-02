@@ -183,8 +183,7 @@ folder_chip :: proc(id_str: string, index: u32, label: string, active: bool) {
 open_row_menu :: proc(ui: ^Ui_State, index: int) {
 	m := rl.GetMousePosition()
 	ui.row_menu = index
-	ui.row_menu_x = min(m.x / UI_ZOOM, f32(rl.GetScreenWidth()) / UI_ZOOM - 230)
-	ui.row_menu_y = min(m.y / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM - 250)
+	ui.row_menu_x, ui.row_menu_y = panel_pos(m.x / UI_ZOOM, m.y / UI_ZOOM, 230, 250)
 }
 
 // Clicks in the open row menu; anything unhandled closes it.

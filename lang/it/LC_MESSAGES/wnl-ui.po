@@ -2,7 +2,6 @@ msgid ""
 msgstr ""
 "Project-Id-Version: wnl-ui\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-01 10:00+0200\n"
 "PO-Revision-Date: 2026-07-06 00:00+0000\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -12,2448 +11,1911 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: about.odin:21
-msgid "plaintext"
-msgstr ""
-
-#: about.odin:22
-msgid "sealed here"
-msgstr ""
-
-#: about.odin:23
-msgid "carries the blob"
-msgstr ""
-
-#: about.odin:24
-msgid "opened there"
-msgstr ""
-
-#: about.odin:32
-msgid "WHAT IT IS"
-msgstr "COS'È"
-
-#: about.odin:34
-#, fuzzy
-msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
-msgstr "White Noise è un client desktop nativo per chat di gruppo private. I messaggi vengono crittografati con MLS prima di lasciare la tua macchina, instradati sui relay Nostr e decifrati solo per le persone nella stanza."
-
-#: about.odin:38
-#, fuzzy
-msgid "WHERE A MESSAGE GOES"
-msgstr "NUOVI MESSAGGI"
-
-#: about.odin:40
-msgid "The relay in the middle stores and forwards. It never holds a key."
-msgstr ""
-
-#: about.odin:42
-msgid "THIS SESSION"
-msgstr ""
-
-#: about.odin:45
-msgid "BUILT WITH"
-msgstr ""
-
-#: about.odin:79
-msgid "PRIVATE GROUP CHAT OVER NOSTR"
-msgstr ""
-
-#: advanced.odin:35
-msgid "SECURITY & PRIVACY"
-msgstr "SICUREZZA E PRIVACY"
-
-#: advanced.odin:37
-msgid "Relay telemetry"
-msgstr "Telemetria relay"
-
-#: advanced.odin:41
-msgid "Audit logs"
-msgstr "Log di audit"
-
-#: advanced.odin:45
-msgid "TRUSTED LINK SITES"
-msgstr "SITI AFFIDABILI"
-
-#: advanced.odin:48
-msgid "No trusted sites."
-msgstr "Nessun sito affidabile."
-
-#: advanced.odin:56
-msgid "TrustForgetAll"
-msgstr ""
-
-#: advanced.odin:59
-msgid "Links to these exact sites open without confirmation."
-msgstr "I link esattamente a questi siti si aprono senza conferma."
-
-#: advanced.odin:61
-msgid "AUDIT LOG FILES"
-msgstr "FILE DI LOG DI AUDIT"
-
-#: advanced.odin:64
-#, fuzzy
-msgid "No audit log files."
-msgstr "Nessun file di log di audit su disco."
-
-#: advanced.odin:76
-msgid "Confirm delete"
-msgstr ""
-
-#: advanced.odin:80 debugpane.odin:46 keys.odin:214 network.odin:32
-msgid "Refresh"
-msgstr "Aggiorna"
-
-#: advanced.odin:82
-#, fuzzy
-msgid "Deleting the file being recorded rotates it. Recording continues in a fresh file."
-msgstr "Eliminare il file in registrazione lo ruota — la registrazione continua in un nuovo file."
-
-#: advanced.odin:84
-msgid "DEVELOPER"
-msgstr "SVILUPPATORE"
-
-#: advanced.odin:86
-msgid "Developer mode"
-msgstr "Modalità sviluppatore"
-
-#: advanced.odin:172 advanced.odin:183
-#, fuzzy, c-format
-msgid "Couldn't change relay telemetry. %s"
-msgstr "Impossibile salvare la lista dei relay. Riprova."
-
-#: advanced.odin:194 advanced.odin:202
-#, fuzzy, c-format
-msgid "Couldn't change audit logs. %s"
-msgstr "Impossibile modificare il log di audit."
-
-#: advanced.odin:255
-#, fuzzy, c-format
-msgid "Couldn't delete the audit log file. %s"
-msgstr "Impossibile eliminare il log di audit."
-
-#: advanced.odin:258
-#, fuzzy
-msgid "Audit log file deleted."
-msgstr "Log di audit eliminato."
-
-#: advanced.odin:258
-#, fuzzy
-msgid "Deleted. Recording continues in a fresh file."
-msgstr "Log di audit eliminato — la registrazione continua in un nuovo file."
-
-#: bodysel.odin:225
-#, fuzzy
-msgid "Message text copied"
-msgstr "immagine copiata"
-
-#: chatpane.odin:107
-#, fuzzy
-msgid "You were invited to this group."
-msgstr "Hai lasciato il gruppo."
-
-#: chatpane.odin:108
-msgid "Accept"
-msgstr "Accetta"
-
-#: chatpane.odin:109 confirm.odin:70
-msgid "Decline"
-msgstr ""
-
-#: chatpane.odin:288
-#, fuzzy
-msgid "Send a message..."
-msgstr "Invia messaggio"
-
-#: chatpane.odin:325
-msgid "Send with an effect"
-msgstr ""
-
-#: chatpane.odin:339
-#, fuzzy
-msgid "Create a poll"
-msgstr "Crea backup"
-
-#: chatpane.odin:447
-msgid "Leave group"
-msgstr "Lascia il gruppo"
-
-#: chatpane.odin:476
-#, fuzzy
-msgid "GROUP NAME"
-msgstr "NOME DEL GRUPPO (OPZIONALE)"
-
-#: chatpane.odin:487 rowactions.odin:133
-#, fuzzy
-msgid "Rename"
-msgstr "Rinominato."
-
-#: chatpane.odin:491
-#, fuzzy
-msgid "DISAPPEARING MESSAGES"
-msgstr "MESSAGGI IN ARRIVO"
-
-#: chatpane.odin:493
-msgid "Off"
-msgstr ""
-
-#: chatpane.odin:500
-#, fuzzy
-msgid "ADD MEMBER"
-msgstr "MEMBRI"
-
-#: chatpane.odin:511
-msgid "Invite"
-msgstr "Invita"
-
-#: chatpane.odin:513
-msgid "EXPORT CHAT"
-msgstr ""
-
-#: chatpane.odin:515
-msgid "HTML"
-msgstr ""
-
-#: chatpane.odin:516
-msgid "Markdown"
-msgstr ""
-
-#: chatpane.odin:523
-msgid "Members"
-msgstr "Membri"
-
-#: chatpane.odin:540
-msgid "YOU"
-msgstr "TU"
-
-#: chatpane.odin:546
-msgid "Admin"
-msgstr "Amministratore"
-
-#: chatpane.odin:609
-msgid "Shared media"
-msgstr "Media condivisi"
-
-#: chatpane.odin:773
-msgid "No messages yet"
-msgstr "Ancora nessun messaggio"
-
-#: chatpane.odin:773
-msgid "Your own notepad"
-msgstr ""
-
-#: chatpane.odin:777
-msgid "Anything you write here stays between you and this device's key."
-msgstr ""
-
-#: chatpane.odin:777
-#, fuzzy
-msgid "Send the first message to start the conversation."
-msgstr "Saluta per iniziare la conversazione."
-
-#: chatpane.odin:787 onboard.odin:44 palette.odin:55
-msgid "New chat"
-msgstr "Nuova chat"
-
-#: chatpane.odin:788
-msgid "Add a contact for a direct chat, or leave it empty for a group of your own."
-msgstr ""
-
-#: chatpane.odin:792 polls.odin:236
-msgid "Create"
-msgstr "Crea"
-
-#: chatpane.odin:793 confirm.odin:140 grouphero.odin:87 linkguard.odin:128
-#: polls.odin:235 settings_pages.odin:390 themeedit.odin:492
-msgid "Cancel"
-msgstr "Annulla"
-
-#: chatpane.odin:845
-#, fuzzy
-msgid "Generating your key"
-msgstr "Genera una nuova chiave"
-
-#: chatpane.odin:845
-#, fuzzy
-msgid "Signing you in"
-msgstr "Accesso…"
-
-#: chatpane.odin:850
-msgid "Checking your key with the relays. This takes a few seconds."
-msgstr ""
-
-#: chatpane.odin:850
-msgid "Publishing your profile to the relays. This takes a few seconds."
-msgstr ""
-
-#: chatpane.odin:854
-msgid "Sign in to your Nostr identity"
-msgstr "Accedi alla tua identità Nostr"
-
-#: chatpane.odin:859
-msgid "Your key never leaves this device."
-msgstr "La tua chiave non lascia mai questo dispositivo."
-
-#: chatpane.odin:860 storage.odin:306 storage.odin:343
-msgid "Import backup"
-msgstr "Importa backup"
-
-#: chatpane.odin:862
-#, fuzzy
-msgid "Import a key"
-msgstr "Importa un backup"
-
-#: chatpane.odin:864
-msgid "NSEC"
-msgstr ""
-
-#: chatpane.odin:882
-msgid "Back"
-msgstr "Indietro"
-
-#: chatpane.odin:883 vault_gate.odin:333
-msgid "Continue"
-msgstr "Continua"
-
-#: confirm.odin:50 menus.odin:178
-msgid "Delete for everyone"
-msgstr ""
-
-#: confirm.odin:50
-#, fuzzy
-msgid "Delete this message?"
-msgstr "Eliminare per me?"
-
-#: confirm.odin:50
-msgid "It disappears for everyone in the chat. This can't be undone."
-msgstr ""
-
-#: confirm.odin:52 menus.odin:175
-msgid "Delete for me"
-msgstr "Elimina per me"
-
-#: confirm.odin:52
-#, fuzzy
-msgid "Delete for you?"
-msgstr "Eliminare per me?"
-
-#: confirm.odin:52
-msgid "It stays for everyone else. You won't see it on this device again."
-msgstr ""
-
-#: confirm.odin:54
-#, fuzzy
-msgid "Leave"
-msgstr "Lasciare {}?"
-
-#: confirm.odin:54
-#, fuzzy
-msgid "Leave this group?"
-msgstr "Lascia il gruppo"
-
-#: confirm.odin:54
-#, fuzzy
-msgid "You stop receiving its messages. Rejoining needs a new invite."
-msgstr "Smetterai di ricevere nuovi messaggi da questo gruppo. La chat viene spostata nell'Archivio."
-
-#: confirm.odin:56
-msgid "Block"
-msgstr "Blocca"
-
-#: confirm.odin:56
-#, fuzzy
-msgid "Block this contact?"
-msgstr "Bloccare questa richiesta chat?"
-
-#: confirm.odin:56
-msgid "Their direct chat leaves your list. Nothing is published, and you can undo it here."
-msgstr ""
-
-#: confirm.odin:58 rowactions.odin:134 settings_pages.odin:425
-#: settings_pages.odin:428
-msgid "Delete"
-msgstr "Elimina"
-
-#: confirm.odin:58
-#, fuzzy
-msgid "Delete this theme?"
-msgstr "Eliminare per me?"
-
-#: confirm.odin:58
-msgid "Its file is removed from this device. Themes shared into a chat stay there."
-msgstr ""
-
-#: confirm.odin:60 confirm.odin:62 confirm.odin:72 menus.odin:71
-msgid "Remove"
-msgstr "Rimuovi"
-
-#: confirm.odin:60
-#, fuzzy
-msgid "Remove this contact?"
-msgstr "Bloccare questa richiesta chat?"
-
-#: confirm.odin:60
-msgid "They come off your published contact list. Groups you already share stay as they are."
-msgstr ""
-
-#: confirm.odin:62
-#, fuzzy
-msgid "Remove this member?"
-msgstr "Rimuovere questo relay?"
-
-#: confirm.odin:62
-#, fuzzy
-msgid "They lose access to new messages in this group."
-msgstr "Smetterai di ricevere nuovi messaggi da questo gruppo."
-
-#: confirm.odin:64
-msgid "Admins can add and remove members and change group details."
-msgstr ""
-
-#: confirm.odin:64
-#, fuzzy
-msgid "Make this member an admin?"
-msgstr "Rendere {} admin?"
-
-#: confirm.odin:64
-msgid "Promote"
-msgstr ""
-
-#: confirm.odin:66 menus.odin:70
-msgid "Demote"
-msgstr ""
-
-#: confirm.odin:66
-#, fuzzy
-msgid "Remove admin rights?"
-msgstr "Rimuovi ruolo admin"
-
-#: confirm.odin:66
-msgid "They stay in the group as a regular member."
-msgstr ""
-
-#: confirm.odin:68 menus.odin:66
-msgid "Step down"
-msgstr "Rinuncia"
-
-#: confirm.odin:68
-msgid "Step down as admin?"
-msgstr "Rinunciare al ruolo di admin?"
-
-#: confirm.odin:68
-msgid "You stay in the group, but another admin has to grant the rights back."
-msgstr ""
-
-#: confirm.odin:70
-msgid "Decline this invitation?"
-msgstr ""
-
-#: confirm.odin:70
-msgid "The chat leaves your list. Joining later needs a new invite."
-msgstr ""
-
-#: confirm.odin:72
-msgid "Remove this relay?"
-msgstr "Rimuovere questo relay?"
-
-#: confirm.odin:72
-msgid "The updated list is published to your relays."
-msgstr ""
-
-#: confirm.odin:74
-msgid "Its keys stay in the vault on this device. You can sign in again from the accounts screen."
-msgstr ""
-
-#: confirm.odin:74 palette.odin:77 panes.odin:1012
-msgid "Sign out"
-msgstr ""
-
-#: confirm.odin:74
-#, fuzzy
-msgid "Sign out of this account?"
-msgstr "Rimuovere questo account?"
-
-#: debugpane.odin:24
-msgid "Key packages"
-msgstr "Pacchetti chiave"
-
-#: debugpane.odin:24
-msgid "Raw events"
-msgstr ""
-
-#: debugpane.odin:24
-msgid "State"
-msgstr "Stato"
-
-#: debugpane.odin:25
-msgid "KEY PACKAGES"
-msgstr "PACCHETTI CHIAVE"
-
-#: debugpane.odin:25
-msgid "RAW EVENTS"
-msgstr ""
-
-#: debugpane.odin:25
-msgid "STATE SNAPSHOT"
-msgstr "ISTANTANEA STATO"
-
-#: debugpane.odin:47
-msgid "Copy JSON"
-msgstr "Copia JSON"
-
-#: debugpane.odin:52
-#, fuzzy
-msgid "(nothing loaded yet, click Refresh)"
-msgstr "(ancora niente caricato: clicca Aggiorna)"
-
-#: debugpane.odin:127
-#, fuzzy
-msgid "Couldn't serialize the snapshot. Please try again."
-msgstr "Impossibile creare la chat. Riprova."
-
-#: debugpane.odin:137
-msgid "No chat is open. Select one and refresh."
-msgstr ""
-
-#: debugpane.odin:147
-#, fuzzy, c-format
-msgid "Couldn't load the timeline. %s"
-msgstr "Impossibile scaricare l'immagine."
-
-#: debugpane.odin:210
-#, fuzzy
-msgid "Couldn't serialize the key packages. Please try again."
-msgstr "Impossibile creare la chat. Riprova."
-
-#: debugpane.odin:218
-msgid "YOUR KEY PACKAGES"
-msgstr "I TUOI PACCHETTI CHIAVE"
-
-#: debugpane.odin:220
-msgid "Decode own"
-msgstr ""
-
-#: debugpane.odin:222
-#, fuzzy
-msgid "No key package on this device or its relays."
-msgstr "Ancora nessun key package sui relay"
-
-#: debugpane.odin:222
-msgid "Not loaded yet. Click Decode own."
-msgstr ""
-
-#: debugpane.odin:224
-msgid "INSPECT SOMEONE ELSE'S"
-msgstr ""
-
-#: debugpane.odin:227
-msgid "Inspect"
-msgstr ""
-
-#: debugpane.odin:231
-msgid "No key package published for that pubkey."
-msgstr ""
-
-#: debugpane.odin:234
-msgid "marmot exposes publish metadata only. Ciphersuite, capabilities, and credential decoding are not available in this build."
-msgstr ""
-
-#: debugpane.odin:244
-msgid "local + relay"
-msgstr "locale + relay"
-
-#: debugpane.odin:244
-msgid "local only"
-msgstr "solo locale"
-
-#: debugpane.odin:244
-msgid "relay"
-msgstr "relay"
-
-#: debugpane.odin:245
-msgid "(unknown)"
-msgstr ""
-
-#: debugpane.odin:245
-msgid "Owner"
-msgstr ""
-
-#: debugpane.odin:246 debugpane.odin:251
-msgid "(none)"
-msgstr ""
-
-#: debugpane.odin:246
-msgid "Key package ref"
-msgstr "Ref pacchetto chiavi"
-
-#: debugpane.odin:247
-#, fuzzy
-msgid "(unpublished)"
-msgstr "Pubblicato"
-
-#: debugpane.odin:247
-msgid "Event id"
-msgstr ""
-
-#: debugpane.odin:248 panes.odin:630
-msgid "Published"
-msgstr "Pubblicato"
-
-#: debugpane.odin:249
-msgid "Where"
-msgstr ""
-
-#: debugpane.odin:250
-msgid "Size"
-msgstr ""
-
-#: debugpane.odin:251
-#, fuzzy
-msgid "Relays"
-msgstr "relay"
-
-#: debugpane.odin:289
-#, fuzzy
-msgid "Couldn't read that pubkey. Double-check it and try again."
-msgstr "Impossibile aggiungere questo account. Ricontrolla la chiave e riprova."
-
-#: debugpane.odin:296
-#, fuzzy, c-format
-msgid "Couldn't read their key packages. %s"
-msgstr "sul pacchetto chiavi stesso"
-
-#: effects.odin:397
-msgid "SEND WITH EFFECT"
-msgstr ""
-
-#: effects.odin:419
-msgid "Plays here when you send. It can't travel: marmot reserves the chat event kind, so no client attaches the tag any more. An effect sent by an older client still plays."
-msgstr ""
-
-#: effects.odin:421
-#, fuzzy
-msgid "Clear effect"
-msgstr "Svuota cache"
-
-#: forward.odin:54
-#, fuzzy
-msgid "Share theme with"
-msgstr "Media condivisi"
-
-#: grouphero.odin:66
-#, fuzzy
-msgid "Change photo"
-msgstr "Cambia password"
-
-#: grouphero.odin:69
-#, fuzzy
-msgid "From file"
-msgstr "Da %1"
-
-#: grouphero.odin:70
-#, fuzzy
-msgid "Search images"
-msgstr "Cerca messaggi…"
-
-#: grouphero.odin:86 rowactions.odin:150 settings_pages.odin:389
-msgid "Save"
-msgstr "Salva"
-
-#: grouphero.odin:95 settings_pages.odin:423
-#, fuzzy
-msgid "Edit"
-msgstr "Modifica %1"
-
-#: handlers.odin:129
-msgid "Couldn't use that theme. It isn't a theme this version reads."
-msgstr ""
-
-#: handlers.odin:257
-#, fuzzy
-msgid "Group id copied"
-msgstr "ID gruppo"
-
-#: handlers.odin:862
-#, fuzzy
-msgid "Message copied"
-msgstr "immagine copiata"
-
-#: keys.odin:97
-#, fuzzy
-msgid "Not loaded yet. Click Refresh."
-msgstr "(ancora niente caricato: clicca Aggiorna)"
-
-#: keys.odin:110
-#, fuzzy
-msgid "No key package yet. Publish one so people can invite you."
-msgstr "Pubblicane uno così altri utenti possono invitarti nei gruppi."
-
-#: keys.odin:113
-#, fuzzy
-msgid "Stored on this device, not published to any relay yet."
-msgstr "Nessuna chiave salvata su questo dispositivo. Reimposta e reinserisci il tuo nsec."
-
-#: keys.odin:115
-#, c-format
-msgid "%d published, %d on this device, seen on %d relays."
-msgstr ""
-
-#: keys.odin:133
-#, fuzzy, c-format
-msgid "Couldn't publish the key package. %s"
-msgstr "sul pacchetto chiavi stesso"
-
-#: keys.odin:137
-#, c-format
-msgid "Key package accepted by %d relays."
-msgstr ""
-
-#: keys.odin:158
-#, fuzzy, c-format
-msgid "Couldn't reveal your private key. %s"
-msgstr "Impossibile rimuovere la reazione. Riprova."
-
-#: keys.odin:182
-#, fuzzy, c-format
-msgid "Couldn't export the key. %s"
-msgstr "Impossibile esportare i contatti."
-
-#: keys.odin:194
-msgid "Your identity is sovereign"
-msgstr "La tua identità è sovrana"
-
-#: keys.odin:197 panes.odin:420 panes.odin:491 panes.odin:960
-msgid "IDENTITY"
-msgstr "IDENTITÀ"
-
-#: keys.odin:204 keys.odin:254 keys.odin:416 menus.odin:331 menus.odin:375
-#: panes.odin:506 panes.odin:979 storage.odin:200
-msgid "Copy"
-msgstr "Copia"
-
-#: keys.odin:207
-msgid "KEY PACKAGES (PUBLISHED TO YOUR KIND-10051 RELAY LIST)"
-msgstr ""
-
-#: keys.odin:210
-msgid "Key package"
-msgstr "Pacchetto chiavi"
-
-#: keys.odin:213 onboard.odin:39
-msgid "Publish"
-msgstr "Pubblica"
-
-#: keys.odin:227
-msgid "LINKED DEVICES"
-msgstr "DISPOSITIVI COLLEGATI"
-
-#: keys.odin:229
-msgid "Multi-device isn't available yet"
-msgstr "Multi-dispositivo non ancora disponibile"
-
-#: keys.odin:232
-msgid "DANGER ZONE"
-msgstr "ZONA PERICOLOSA"
-
-#: keys.odin:245
-msgid "Reveal private key (nsec)"
-msgstr ""
-
-#: keys.odin:246
-msgid "Never share it. It is your identity."
-msgstr ""
-
-#: keys.odin:253
-msgid "Hide"
-msgstr ""
-
-#: keys.odin:253
-msgid "Show"
-msgstr ""
-
-#: keys.odin:256
-msgid "Confirm reveal"
-msgstr ""
-
-#: keys.odin:256
-msgid "Reveal"
-msgstr ""
-
-#: keys.odin:256
-#, fuzzy
-msgid "RevealNsecBtn"
-msgstr "Mostra chiave"
-
-#: keys.odin:286
-msgid "Confirm"
-msgstr ""
-
-#: keys.odin:305 pages.odin:119 pages.odin:253 pages.odin:472
-msgid "npub copied"
-msgstr "npub copiato"
-
-#: keys.odin:333
-#, fuzzy
-msgid "Secret key copied"
-msgstr "nsec copiato"
-
-#: keys.odin:370
-msgid "Pick a password to encrypt the key with. You will need it to import the key anywhere else."
-msgstr ""
-
-#: keys.odin:371 storage.odin:319 vault_gate.odin:325
-msgid "PASSWORD"
-msgstr "PASSWORD"
-
-#: keys.odin:376 storage.odin:324 vault_gate.odin:280
-msgid "Your password"
-msgstr "La tua password"
-
-#: keys.odin:399
-#, fuzzy
-msgid "This is your secret key, encrypted with the password you entered. Whoever holds this string and that password controls your identity."
-msgstr "Questa è la tua chiave segreta, crittografata con la password del vault. Chiunque possieda questa stringa e quella password controlla la tua identità."
-
-#: keys.odin:400
-msgid "ENCRYPTED KEY (NCRYPTSEC)"
-msgstr "CHIAVE CRITTOGRAFATA (NCRYPTSEC)"
-
-#: keys.odin:415
-#, fuzzy
-msgid "Save file"
-msgstr "Salva video"
-
-#: keys.odin:418
-#, fuzzy
-msgid "Store it somewhere safe and close this dialog. Anyone who imports it will need the password you just entered to decrypt it."
-msgstr "Conservala in un posto sicuro e chiudi questa finestra. Chiunque la importi avrà bisogno della password del vault appena inserita per decifrarla."
-
-#: linkguard.odin:82
-#, fuzzy
-msgid "Opening in your browser"
-msgstr "Questo apre {} nel browser predefinito."
-
-#: linkguard.odin:107
-msgid "Open this link?"
-msgstr "Aprire questo link?"
-
-#: linkguard.odin:109
-#, fuzzy
-msgid "This leaves White Noise and opens in your browser."
-msgstr "Questo apre {} nel browser predefinito."
-
-#: linkguard.odin:111
-msgid "SITE"
-msgstr ""
-
-#: linkguard.odin:121
-msgid "Always open links to this site"
-msgstr ""
-
-#: linkguard.odin:134 webxdc.odin:146
-msgid "Open"
-msgstr "Apri"
-
-#: main.odin:241
-#, fuzzy
-msgid "Expand the chat list"
-msgstr "Espandi pannello chat"
-
-#: main.odin:273
-msgid "SETTINGS"
-msgstr "IMPOSTAZIONI"
-
-#: main.odin:464
-msgid "No contacts yet"
-msgstr "Ancora nessun contatto"
-
-#: main.odin:471
-#, fuzzy
-msgid "Export CSV"
-msgstr "Esporta"
-
-#: main.odin:472
-#, fuzzy
-msgid "Export JSON"
-msgstr "Esporta"
-
-#: main.odin:565
-#, fuzzy
-msgid "No chats yet"
-msgstr "Ancora nessun contatto"
-
-#: main.odin:709
-#, fuzzy
-msgid "Select a chat"
-msgstr "Avvia chat"
-
-#: menus.odin:72
-msgid "Nickname"
-msgstr "Soprannome"
-
-#: menus.odin:163
-msgid "Add reaction"
-msgstr "Aggiungi reazione"
-
-#: menus.odin:165
-msgid "Reply"
-msgstr "Rispondi"
-
-#: menus.odin:167
-msgid "Reply in thread"
-msgstr ""
-
-#: menus.odin:168
-msgid "Forward"
-msgstr "Inoltra"
-
-#: menus.odin:170
-msgid "Copy text"
-msgstr "Copia testo"
-
-#: menus.odin:177
-msgid "Edit message"
-msgstr "Modifica messaggio"
-
-#: menus.odin:182
-msgid "View raw event"
-msgstr ""
-
-#: menus.odin:202
-msgid "Edit history"
-msgstr "Cronologia modifiche"
-
-#: menus.odin:309
-msgid "Raw event"
-msgstr ""
-
-#: menus.odin:352
-msgid "End-to-end encrypted"
-msgstr "Crittografato end-to-end"
-
-#: menus.odin:360
-#, fuzzy
-msgid "Whatever you send in this chat is encrypted on your device with MLS before it goes out. The relays that pass it along can't read it, and neither can anyone else."
-msgstr "Tutto ciò che invii in questa chat viene crittografato sul tuo dispositivo prima di partire. I relay che lo trasmettono non possono leggerlo, e nessun altro può farlo."
-
-#: menus.odin:362
-msgid "GROUP ID"
-msgstr ""
-
-#: menus.odin:370
-msgid "EPOCH"
-msgstr "EPOCA"
-
-#: menus.odin:448
-msgid "RECENT"
-msgstr ""
-
-#: network.odin:27
-msgid "STATUS"
-msgstr "STATO"
-
-#: network.odin:37
-msgid "Reconnect now"
-msgstr "Riconnetti ora"
-
-#: network.odin:38
-#, fuzzy
-msgid "Reconnect"
-msgstr "Riconnetti ora"
-
-#: network.odin:41
-msgid "OUTBOX RELAYS (NIP-65)"
-msgstr "RELAY DI INVIO (NIP-65)"
-
-#: network.odin:42
-#, fuzzy
-msgid "Where you publish."
-msgstr "dove pubblichi"
-
-#: network.odin:45 network.odin:58
-msgid "Add"
-msgstr "Aggiungi"
-
-#: network.odin:48
-#, fuzzy
-msgid "No relay list published."
-msgstr "Elenco relay modificato."
-
-#: network.odin:54
-msgid "INBOX RELAYS"
-msgstr "RELAY DI RICEZIONE"
-
-#: network.odin:55
-#, fuzzy
-msgid "Where peers reach you."
-msgstr "dove i contatti ti raggiungono"
-
-#: network.odin:61
-#, fuzzy
-msgid "No inbox relays."
-msgstr "Nessun profilo trovato sui relay."
-
-#: network.odin:67
-msgid "SYNC"
-msgstr "SINCRONIZZA"
-
-#: network.odin:69
-msgid "Republish relay lists"
-msgstr "Ripubblica elenchi relay"
-
-#: network.odin:70
-#, fuzzy
-msgid "Republish"
-msgstr "Ripubblicazione…"
-
-#: network.odin:93
-#, fuzzy
-msgid "Relay status unavailable"
-msgstr "(messaggio non disponibile)"
-
-#: network.odin:95
-#, c-format
-msgid "%d of %d connected"
-msgstr ""
-
-#: network.odin:100
-msgid "Aggregate connection counter from the relay pool."
-msgstr "Contatore connessioni aggregato dal pool relay."
-
-#: network.odin:104
 #, c-format
 msgid "%d connecting, %d pending, %d disconnected, %d sleeping."
 msgstr ""
 
-#: notify.odin:84
-#, fuzzy
-msgid "New message"
-msgstr "Invia messaggio"
+#, c-format
+msgid "%d of %d connected"
+msgstr ""
 
-#: onboard.odin:29
 #, c-format
 msgid "%d of %d relays are up."
 msgstr ""
 
-#: onboard.odin:29
-#, fuzzy
-msgid "Connected to relays"
-msgstr "Connetti un relay"
-
-#: onboard.odin:31 onboard.odin:34
-#, fuzzy
-msgid "Check now"
-msgstr "Verifica in corso…"
-
-#: onboard.odin:31
-#, fuzzy
-msgid "Connect to relays"
-msgstr "Connetti un relay"
-
-#: onboard.odin:31
-#, fuzzy
-msgid "Relays carry your encrypted messages. The defaults are already configured."
-msgstr "I relay trasportano i tuoi messaggi crittografati. Aggiungine almeno uno per andare online."
-
-#: onboard.odin:34 onboard.odin:39
-#, fuzzy
-msgid "It is what lets people invite you to a group."
-msgstr "Pubblicane uno così altri utenti possono invitarti nei gruppi."
-
-#: onboard.odin:34 onboard.odin:39
-msgid "Publish your key package"
-msgstr "Pubblica il tuo pacchetto chiavi"
-
-#: onboard.odin:37
-#, fuzzy, c-format
-msgid "%d published, so people can invite you."
-msgstr "Pubblicane uno così altri utenti possono invitarti nei gruppi."
-
-#: onboard.odin:37
-#, fuzzy
-msgid "Key package published"
-msgstr "Pacchetti chiave"
-
-#: onboard.odin:42
-#, fuzzy
-msgid "Done."
-msgstr "Fatto"
-
-#: onboard.odin:42 onboard.odin:44
-msgid "Start your first chat"
-msgstr "Avvia la tua prima chat"
-
-#: onboard.odin:44
-msgid "Add someone by npub, or make a group of your own."
-msgstr ""
-
-#: onboard.odin:62
-msgid "Get started"
-msgstr ""
-
-#: onboard.odin:63
-msgid "Three things and you can send your first message."
-msgstr ""
-
-#: onboard.odin:98
-msgid "Press Ctrl P for the command palette."
-msgstr ""
-
-#: openverse.odin:194
-msgid "Searching…"
-msgstr "Ricerca…"
-
-#: palette.odin:50
-msgid "Go to chats"
-msgstr ""
-
-#: palette.odin:51
-msgid "Go to people"
-msgstr ""
-
-#: palette.odin:52
-#, fuzzy
-msgid "Go to archive"
-msgstr "Ripristina"
-
-#: palette.odin:53
-#, fuzzy
-msgid "Go to settings"
-msgstr "Impostazioni"
-
-#: palette.odin:54
-#, fuzzy
-msgid "Go to your profile"
-msgstr "Il tuo profilo"
-
-#: palette.odin:56
-msgid "Notes to self"
-msgstr ""
-
-#: palette.odin:57
-#, fuzzy
-msgid "Search all chats"
-msgstr "Cerca chat…"
-
-#: palette.odin:58
-#, fuzzy
-msgid "Filter unread chats"
-msgstr "Mostra solo le chat non lette"
-
-#: palette.odin:59
-#, fuzzy
-msgid "Collapse the chat list"
-msgstr "Comprimi pannello chat"
-
-#: palette.odin:60
-#, fuzzy
-msgid "Show group members"
-msgstr "Mostra membri"
-
-#: palette.odin:61
-#, fuzzy
-msgid "Settings: general"
-msgstr "Impostazioni"
-
-#: palette.odin:62
-#, fuzzy
-msgid "Settings: network and relays"
-msgstr "Rete e relay"
-
-#: palette.odin:63
-#, fuzzy
-msgid "Settings: keys and identity"
-msgstr "Chiavi e identità"
-
-#: palette.odin:64
-#, fuzzy
-msgid "Settings: appearance"
-msgstr "Aspetto"
-
-#: palette.odin:65
-#, fuzzy
-msgid "Settings: notifications"
-msgstr "Notifiche desktop"
-
-#: palette.odin:66
-#, fuzzy
-msgid "Settings: storage"
-msgstr "Impostazioni"
-
-#: palette.odin:67
-#, fuzzy
-msgid "Settings: advanced"
-msgstr "Impostazioni"
-
-#: palette.odin:68
-#, fuzzy
-msgid "Settings: about"
-msgstr "Impostazioni"
-
-#: palette.odin:69
-#, fuzzy
-msgid "Next theme"
-msgstr "Immagine successiva"
-
-#: palette.odin:70
-#, fuzzy
-msgid "Next accent color"
-msgstr "Colore accento"
-
-#: palette.odin:71
-#, fuzzy
-msgid "Center the conversation"
-msgstr "Conversazione centrata"
-
-#: palette.odin:72
-#, fuzzy
-msgid "Toggle developer mode"
-msgstr "Modalità sviluppatore"
-
-#: palette.odin:73
-msgid "Zoom in"
-msgstr "Aumenta lo zoom"
-
-#: palette.odin:74
-msgid "Zoom out"
-msgstr "Riduci lo zoom"
-
-#: palette.odin:75
-#, fuzzy
-msgid "Reset zoom"
-msgstr "Ripristina lo zoom al 100%"
-
-#: palette.odin:76 settings_pages.odin:396 settings_pages.odin:732
-msgid "Keyboard shortcuts"
-msgstr ""
-
-#: palette.odin:159
-#, fuzzy
-msgid "No command matches."
-msgstr "Nessun risultato"
-
-#: panes.odin:317
-#, fuzzy
-msgid "Copy npub"
-msgstr "Copia chiave pubblica"
-
-#: panes.odin:319
-#, fuzzy
-msgid "View contact"
-msgstr "Aggiungi contatto"
-
-#: panes.odin:337
-msgid "Accounts"
-msgstr "Account"
-
-#: panes.odin:345
-msgid "All accounts stay connected. Switching only changes which one you're looking at."
-msgstr "Tutti gli account restano connessi. Il passaggio cambia solo quale stai visualizzando."
-
-#: panes.odin:355 webembed.odin:357
-msgid "Close"
-msgstr "Chiudi"
-
-#: panes.odin:361 panes.odin:415
-msgid "Add account"
-msgstr "Aggiungi account"
-
-#: panes.odin:422 settings_pages.odin:37 settings_pages.odin:181
-msgid "Keys & identity"
-msgstr "Chiavi e identità"
-
-#: panes.odin:423 settings_pages.odin:36 settings_pages.odin:178
-msgid "Network & relays"
-msgstr "Rete e relay"
-
-#: panes.odin:443
-msgid "Contact"
-msgstr "Contatto"
-
-#: panes.odin:486
-msgid "Start chat"
-msgstr "Avvia chat"
-
-#: panes.odin:502
-msgid "Public key, safe to share."
-msgstr "Chiave pubblica, sicura da condividere."
-
-#: panes.odin:509
-msgid "Show as QR"
-msgstr "Mostra come QR"
-
-#: panes.odin:512
-#, fuzzy
-msgid "KEY PACKAGE"
-msgstr "PACCHETTI CHIAVE"
-
-#: panes.odin:525 panes.odin:530
-#, fuzzy
-msgid "RELAYS IN COMMON"
-msgstr "GRUPPI IN COMUNE"
-
-#: panes.odin:535
-msgid "GROUPS IN COMMON"
-msgstr "GRUPPI IN COMUNE"
-
-#: panes.odin:560
-msgid "ACTIONS"
-msgstr "AZIONI"
-
-#: panes.odin:563
-msgid "Unblock"
-msgstr "Sblocca"
-
-#: panes.odin:567
-#, fuzzy
-msgid "Remove contact"
-msgstr "Aggiungi contatto"
-
-#: panes.odin:589 panes.odin:628
-#, fuzzy
-msgid "Checking..."
-msgstr "Verifica in corso…"
-
-#: panes.odin:593
-#, fuzzy
-msgid "They haven't published a relay list."
-msgstr "Ripubblica elenchi relay"
-
-#: panes.odin:598
 #, c-format
 msgid "%d of %d shared with you"
 msgstr ""
 
-#: panes.odin:604
 #, c-format
-msgid "+%d more"
+msgid "%d published, %d on this device, seen on %d relays."
 msgstr ""
 
-#: panes.odin:613
-msgid "inbox"
-msgstr ""
-
-#: panes.odin:632
-msgid "Not found"
-msgstr ""
-
-#: panes.odin:641
-#, fuzzy
-msgid "Asking your relays for their key package."
-msgstr "sul pacchetto chiavi stesso"
-
-#: panes.odin:643
-msgid "They can be added to a chat."
-msgstr ""
-
-#: panes.odin:645
-msgid "No key package on your relays, so a chat can't start yet."
-msgstr ""
-
-#: panes.odin:687
-#, fuzzy
-msgid "Couldn't render the QR code. Please try again."
-msgstr "Impossibile creare la chat. Riprova."
-
-#: panes.odin:715
-msgid "Archive"
-msgstr "Archivia"
-
-#: panes.odin:717
-#, fuzzy
-msgid "No archived chats."
-msgstr "Nessuna chat archiviata"
-
-#: panes.odin:823
-msgid "Your profile"
-msgstr "Il tuo profilo"
-
-#: panes.odin:884 panes.odin:941
-#, fuzzy
-msgid "Change picture"
-msgstr "Cambia password"
-
-#: panes.odin:921
-#, fuzzy
-msgid "EDIT PROFILE"
-msgstr "PROFILO"
-
-#: panes.odin:931
-#, fuzzy
-msgid "DISPLAY NAME"
-msgstr "IL TUO NOME VISUALIZZATO"
-
-#: panes.odin:931
-msgid "Your name"
-msgstr ""
-
-#: panes.odin:932
-msgid "A line about you"
-msgstr ""
-
-#: panes.odin:932
-msgid "ABOUT"
-msgstr ""
-
-#: panes.odin:933
-msgid "NIP-05"
-msgstr ""
-
-#: panes.odin:934
-msgid "LIGHTNING"
-msgstr ""
-
-#: panes.odin:939
-msgid "Uploading picture"
-msgstr ""
-
-#: panes.odin:944
-msgid "Enter publishes, Escape cancels."
-msgstr ""
-
-#: panes.odin:952
-#, fuzzy
-msgid "Publish changes"
-msgstr "Pubblicato"
-
-#: panes.odin:975
-msgid "Your public key. Safe to share."
-msgstr "La tua chiave pubblica. Sicura da condividere."
-
-#: panes.odin:988
-msgid "Scan to add this account from another device"
-msgstr "Scansiona per aggiungere questo account da un altro dispositivo"
-
-#: panes.odin:995
-msgid "PROFILE"
-msgstr "PROFILO"
-
-#: polls.odin:172
-#, c-format
-msgid "%d votes"
-msgstr ""
-
-#: polls.odin:174
-msgid "Voting has ended."
-msgstr ""
-
-#: polls.odin:220
-#, fuzzy
-msgid "Create poll"
-msgstr "Crea"
-
-#: polls.odin:221
-msgid "Ask a question..."
-msgstr ""
-
-#: polls.odin:223
-#, fuzzy
-msgid "Add an option..."
-msgstr "Aggiungi reazione"
-
-#: polls.odin:226
-#, fuzzy
-msgid "Add option"
-msgstr "Aggiungi reazione"
-
-#: polls.odin:230
-msgid "Multiple choice"
-msgstr ""
-
-#: polls.odin:232
-msgid "Single choice"
-msgstr ""
-
-#: rowactions.odin:81
-msgid "Unpin"
-msgstr "Rimuovi dai fissati"
-
-#: rowactions.odin:82
-msgid "Unmute"
-msgstr "Riattiva"
-
-#: rowactions.odin:83
-msgid "Mark read"
-msgstr ""
-
-#: rowactions.odin:84
-msgid "Mark unread"
-msgstr ""
-
-#: rowactions.odin:85
-#, fuzzy
-msgid "Move to folder"
-msgstr "Apri cartella"
-
-#: rowactions.odin:86
-#, fuzzy
-msgid "Export as HTML"
-msgstr "Esporta"
-
-#: rowactions.odin:87
-msgid "Export as Markdown"
-msgstr ""
-
-#: rowactions.odin:107
-msgid "Folders"
-msgstr ""
-
-#: rowactions.odin:115
-msgid "Pick a folder for this chat, or make a new one. A chat sits in one folder at a time."
-msgstr ""
-
-#: rowactions.odin:117
-msgid "FOLDERS"
-msgstr ""
-
-#: rowactions.odin:119
-#, fuzzy
-msgid "No folders yet."
-msgstr "Ancora nessun relay"
-
-#: rowactions.odin:138
-msgid "RENAME FOLDER"
-msgstr ""
-
-#: rowactions.odin:152
-msgid "Take out of folder"
-msgstr ""
-
-#: rowactions.odin:161
-#, fuzzy
-msgid "All folders"
-msgstr "Apri cartella"
-
-#: settings_pages.odin:35 settings_pages.odin:175
-msgid "General"
-msgstr "Generale"
-
-#: settings_pages.odin:38 settings_pages.odin:184
-msgid "Appearance"
-msgstr "Aspetto"
-
-#: settings_pages.odin:39 settings_pages.odin:187
-msgid "Notifications"
-msgstr "Notifiche"
-
-#: settings_pages.odin:40 settings_pages.odin:190
-msgid "Storage"
-msgstr "Archiviazione"
-
-#: settings_pages.odin:41 settings_pages.odin:193
-msgid "Advanced"
-msgstr "Avanzate"
-
-#: settings_pages.odin:42 settings_pages.odin:196
-msgid "About"
-msgstr "Informazioni"
-
-#: settings_pages.odin:43 settings_pages.odin:199
-msgid "Debug"
-msgstr "Debug"
-
-#: settings_pages.odin:44 settings_pages.odin:202
-msgid "KP inspector"
-msgstr ""
-
-#: settings_pages.odin:233
-msgid "STARTUP"
-msgstr "AVVIO"
-
-#: settings_pages.odin:235
-msgid "Launch at login"
-msgstr "Avvia all'accesso"
-
-#: settings_pages.odin:239
-msgid "Start minimized to tray"
-msgstr "Avvia minimizzato nella tray"
-
-#: settings_pages.odin:244
-msgid "Close to tray"
-msgstr ""
-
-#: settings_pages.odin:250
-msgid "Restore last selected chat on launch"
-msgstr "Ripristina l'ultima chat selezionata all'avvio"
-
-#: settings_pages.odin:254
-msgid "LANGUAGE"
-msgstr "LINGUA"
-
-#: settings_pages.odin:256 settings_pages.odin:654
-msgid "Interface language"
-msgstr "Lingua interfaccia"
-
-#: settings_pages.odin:261
-msgid "Change"
-msgstr "Cambia"
-
-#: settings_pages.odin:264
-msgid "Time format"
-msgstr "Formato ora"
-
-#: settings_pages.odin:273
-msgid "Date format"
-msgstr "Formato data"
-
-#: settings_pages.odin:283
-msgid "QUICK REACTIONS"
-msgstr "REAZIONI RAPIDE"
-
-#: settings_pages.odin:285
-msgid "One-tap reactions"
-msgstr "Reazioni con un tocco"
-
-#: settings_pages.odin:321
-msgid "Restore the default reactions"
-msgstr "Ripristina le reazioni predefinite"
-
-#: settings_pages.odin:322 settings_pages.odin:545
-msgid "Reset"
-msgstr "Ripristina"
-
-#: settings_pages.odin:325
-msgid "CUSTOM EMOJI"
-msgstr "EMOJI PERSONALIZZATE"
-
-#: settings_pages.odin:327
-msgid "Uploaded emoji"
-msgstr "Emoji caricate"
-
-#: settings_pages.odin:394
-msgid "HELP"
-msgstr ""
-
-#: settings_pages.odin:397
-msgid "View"
-msgstr ""
-
-#: settings_pages.odin:419
-msgid "THEME"
-msgstr "TEMA"
-
-#: settings_pages.odin:421
-#, fuzzy
-msgid "Share this theme"
-msgstr "Immagine successiva"
-
-#: settings_pages.odin:422
-#, fuzzy
-msgid "Share to chat"
-msgstr "Avvia chat"
-
-#: settings_pages.odin:432
-msgid "Theme"
-msgstr "Tema"
-
-#: settings_pages.odin:519
-msgid "Accent color"
-msgstr "Colore accento"
-
-#: settings_pages.odin:536
-msgid "ZOOM"
-msgstr "ZOOM"
-
-#: settings_pages.odin:538
-msgid "Interface zoom"
-msgstr "Zoom dell’interfaccia"
-
-#: settings_pages.odin:543
-msgid "-"
-msgstr ""
-
-#: settings_pages.odin:544
-msgid "+"
-msgstr ""
-
-#: settings_pages.odin:548
-msgid "TEXT SIZE"
-msgstr ""
-
-#: settings_pages.odin:550
-msgid "Message text size"
-msgstr ""
-
-#: settings_pages.odin:561
-msgid "SCROLLING"
-msgstr ""
-
-#: settings_pages.odin:563
-msgid "Scroll speed"
-msgstr ""
-
-#: settings_pages.odin:574
-#, fuzzy
-msgid "MOTION"
-msgstr "AZIONI"
-
-#: settings_pages.odin:577
-msgid "Reduce motion"
-msgstr ""
-
-#: settings_pages.odin:583
-msgid "LAYOUT"
-msgstr "LAYOUT"
-
-#: settings_pages.odin:586
-msgid "Centred conversation"
-msgstr "Conversazione centrata"
-
-#: settings_pages.odin:596
-msgid "INCOMING MESSAGES"
-msgstr "MESSAGGI IN ARRIVO"
-
-#: settings_pages.odin:599
-msgid "Desktop notifications"
-msgstr "Notifiche desktop"
-
-#: settings_pages.odin:605
-msgid "Play a sound"
-msgstr "Riproduci un suono"
-
-#: settings_pages.odin:610
-#, fuzzy
-msgid "Interface sounds"
-msgstr "Zoom dell’interfaccia"
-
-#: settings_pages.odin:616
-msgid "Show message preview"
-msgstr "Mostra anteprima del messaggio"
-
-#: settings_pages.odin:621
-msgid "Send a test notification"
-msgstr "Invia una notifica di prova"
-
-#: settings_pages.odin:624
-msgid "Send test"
-msgstr "Invia prova"
-
-#: settings_pages.odin:697
-#, fuzzy
-msgid "Send the message"
-msgstr "Invia messaggio"
-
-#: settings_pages.odin:698
-#, fuzzy
-msgid "Insert a new line"
-msgstr "Genera una nuova chiave"
-
-#: settings_pages.odin:699
-msgid "Cancel edit / reply, close panels"
-msgstr ""
-
-#: settings_pages.odin:700
-msgid "Search everywhere"
-msgstr ""
-
-#: settings_pages.odin:701
-msgid "Command palette"
-msgstr ""
-
-#: settings_pages.odin:702
-msgid "Next / previous chat"
-msgstr "Chat successiva / precedente"
-
-#: settings_pages.odin:703
-msgid "Zoom in / out / reset"
-msgstr ""
-
-#: settings_pages.odin:704
-msgid "Previous / next in the media viewer"
-msgstr ""
-
-#: settings_pages.odin:705
-msgid "Message menu"
-msgstr ""
-
-#: settings_pages.odin:872
-#, fuzzy
-msgid "Encrypted key copied"
-msgstr "Esporta chiave crittografata (ncryptsec)"
-
-#: settings_pages.odin:1097
-#, fuzzy
-msgid "No chats to share with yet."
-msgstr "Ancora nessun contatto"
-
-#: settings_pages.odin:1151
-#, fuzzy
-msgid "Test notification"
-msgstr "Notifiche desktop"
-
-#: settings_pages.odin:1152
-msgid "This is what a message alert looks like."
-msgstr ""
-
-#: shell.odin:327
-#, fuzzy
-msgid "Connecting to relays"
-msgstr "Connessione ai relay…"
-
-#: shell.odin:327
-msgid "Loading your accounts"
-msgstr ""
-
-#: shell.odin:327
-msgid "Starting the runtime"
-msgstr ""
-
-#: storage.odin:96
-msgid "Media cache cleared."
-msgstr ""
-
-#: storage.odin:127
-#, fuzzy
-msgid "Couldn't create the backup. Please try again."
-msgstr "Impossibile creare la chat. Riprova."
-
-#: storage.odin:143
-#, fuzzy
-msgid "Backup created."
-msgstr "Backup non riuscito: %1"
-
-#: storage.odin:150
-#, fuzzy
-msgid "Couldn't read the backup file. Please try again."
-msgstr "Impossibile creare la chat. Riprova."
-
-#: storage.odin:163
-#, fuzzy
-msgid "Couldn't open the backup. Double-check the password and try again."
-msgstr "Impossibile aggiungere questo account. Ricontrolla la chiave e riprova."
-
-#: storage.odin:171
-#, fuzzy
-msgid "Couldn't read the backup. Please try again."
-msgstr "Impossibile creare la chat. Riprova."
-
-#: storage.odin:180
-#, c-format
-msgid "Backup imported: %d files restored."
-msgstr ""
-
-#: storage.odin:190
-msgid "MEDIA CACHE"
-msgstr "CACHE DEI MEDIA"
-
-#: storage.odin:192
-msgid "Cached attachments"
-msgstr "Allegati in cache"
-
-#: storage.odin:194
-msgid "CacheClear"
-msgstr ""
-
-#: storage.odin:194
-msgid "Clear cache"
-msgstr "Svuota cache"
-
-#: storage.odin:194
-msgid "Confirm clear"
-msgstr ""
-
-#: storage.odin:197
-msgid "KEYS & BACKUPS"
-msgstr "CHIAVI E BACKUP"
-
-#: storage.odin:199
-msgid "Location"
-msgstr "Posizione"
-
-#: storage.odin:201
-msgid "Open folder"
-msgstr "Apri cartella"
-
-#: storage.odin:204
-msgid "Back up everything"
-msgstr "Esegui il backup di tutto"
-
-#: storage.odin:205
-#, fuzzy
-msgid "Create backup..."
-msgstr "Crea backup"
-
-#: storage.odin:208
-msgid "Import a backup"
-msgstr "Importa un backup"
-
-#: storage.odin:209
-#, fuzzy
-msgid "Confirm import"
-msgstr "Conferma la tua password"
-
-#: storage.odin:209
-#, fuzzy
-msgid "Import..."
-msgstr "Importa"
-
-#: storage.odin:209
-#, fuzzy
-msgid "ImportBtn"
-msgstr "Importa"
-
-#: storage.odin:212
-msgid "Last backup"
-msgstr "Ultimo backup"
-
-#: storage.odin:215
-msgid "Backups hold what this device stores locally. Your keys and message history live in marmot's own store and are not included."
-msgstr ""
-
-#: storage.odin:223
-#, fuzzy
-msgid "No backup made from this device yet."
-msgstr "Rimuovi da questo dispositivo"
-
-#: storage.odin:235
-#, fuzzy
-msgid "Path copied"
-msgstr "immagine copiata"
-
-#: storage.odin:306 storage.odin:343
-msgid "Create backup"
-msgstr "Crea backup"
-
-#: storage.odin:315
-msgid "Pick a password to encrypt the backup with. Without it the file cannot be opened again."
-msgstr ""
-
-#: storage.odin:316
-msgid "Enter the password this backup was created with. The settings, drafts, custom emoji, and themes on this device will be replaced."
-msgstr ""
-
-#: theme.odin:633
-#, fuzzy
-msgid "Couldn't share the theme. Please try again."
-msgstr "Impossibile creare la chat. Riprova."
-
-#: themeedit.odin:37 themeedit.odin:121
-msgid "Name"
-msgstr ""
-
-#: themeedit.odin:38
-msgid "Font"
-msgstr ""
-
-#: themeedit.odin:39
-msgid "Background"
-msgstr ""
-
-#: themeedit.odin:40
-msgid "Background 2"
-msgstr ""
-
-#: themeedit.odin:41
-msgid "Text"
-msgstr ""
-
-#: themeedit.odin:42
-#, fuzzy
-msgid "Danger"
-msgstr "Cambia"
-
-#: themeedit.odin:43
-msgid "Warning"
-msgstr ""
-
-#: themeedit.odin:44
-#, fuzzy
-msgid "Accent 1"
-msgstr "Accetta"
-
-#: themeedit.odin:45
-#, fuzzy
-msgid "Accent 2"
-msgstr "Accetta"
-
-#: themeedit.odin:46
-#, fuzzy
-msgid "Accent 3"
-msgstr "Accetta"
-
-#: themeedit.odin:47
-#, fuzzy
-msgid "Accent 4"
-msgstr "Accetta"
-
-#: themeedit.odin:48
-#, fuzzy
-msgid "Accent 5"
-msgstr "Accetta"
-
-#: themeedit.odin:49
-#, fuzzy
-msgid "On accent"
-msgstr "Aggiungi account"
-
-#: themeedit.odin:50
-msgid "Panel"
-msgstr ""
-
-#: themeedit.odin:51
-msgid "Panel 2"
-msgstr ""
-
-#: themeedit.odin:52
-msgid "Rail"
-msgstr ""
-
-#: themeedit.odin:53
-msgid "Elevated"
-msgstr ""
-
-#: themeedit.odin:54
-msgid "Plate"
-msgstr ""
-
-#: themeedit.odin:55
-msgid "Card well"
-msgstr ""
-
-#: themeedit.odin:56
-msgid "Code plate"
-msgstr ""
-
-#: themeedit.odin:57
-msgid "Field"
-msgstr ""
-
-#: themeedit.odin:58
-msgid "Field hover"
-msgstr ""
-
-#: themeedit.odin:59
-msgid "Hover"
-msgstr ""
-
-#: themeedit.odin:60
-msgid "Status bar"
-msgstr ""
-
-#: themeedit.odin:61
-msgid "Text mid"
-msgstr ""
-
-#: themeedit.odin:62
-msgid "Text low"
-msgstr ""
-
-#: themeedit.odin:63
-msgid "Text lowest"
-msgstr ""
-
-#: themeedit.odin:64
-msgid "Divider"
-msgstr ""
-
-#: themeedit.odin:65
-msgid "Field border"
-msgstr ""
-
-#: themeedit.odin:66
-msgid "Card border"
-msgstr ""
-
-#: themeedit.odin:67
-msgid "Elevated border"
-msgstr ""
-
-#: themeedit.odin:68
-msgid "Border 2"
-msgstr ""
-
-#: themeedit.odin:69
-msgid "Avatar ring"
-msgstr ""
-
-#: themeedit.odin:70
-msgid "Top glint"
-msgstr ""
-
-#: themeedit.odin:71
-msgid "Overlay"
-msgstr ""
-
-#: themeedit.odin:72
-msgid "Overlay strong"
-msgstr ""
-
-#: themeedit.odin:73
-msgid "Vignette"
-msgstr ""
-
-#: themeedit.odin:74
-msgid "Shadow soft"
-msgstr ""
-
-#: themeedit.odin:75
-msgid "Shadow card"
-msgstr ""
-
-#: themeedit.odin:76
-msgid "Shadow popover"
-msgstr ""
-
-#: themeedit.odin:77
-msgid "Bevel light"
-msgstr ""
-
-#: themeedit.odin:78
-msgid "Bevel shade"
-msgstr ""
-
-#: themeedit.odin:79
-msgid "Media backdrop"
-msgstr ""
-
-#: themeedit.odin:80
-msgid "Chip background"
-msgstr ""
-
-#: themeedit.odin:81
-#, fuzzy
-msgid "Chip text"
-msgstr "Copia testo"
-
-#: themeedit.odin:82
-msgid "Chip outline"
-msgstr ""
-
-#: themeedit.odin:83
-msgid "Control background"
-msgstr ""
-
-#: themeedit.odin:84
-msgid "Corner scale"
-msgstr ""
-
-#: themeedit.odin:85
-msgid "Border width"
-msgstr ""
-
-#: themeedit.odin:86
-msgid "Focus glow radius"
-msgstr ""
-
-#: themeedit.odin:87
-msgid "Shadow offset"
-msgstr ""
-
-#: themeedit.odin:88
-msgid "Bubble radius"
-msgstr ""
-
-#: themeedit.odin:89
-msgid "Hover ms"
-msgstr ""
-
-#: themeedit.odin:90
-msgid "Transition ms"
-msgstr ""
-
-#: themeedit.odin:97
-msgid "Bevelled surfaces"
-msgstr ""
-
-#: themeedit.odin:98
-msgid "Hard shadows"
-msgstr ""
-
-#: themeedit.odin:99
-msgid "Focus glow"
-msgstr ""
-
-#: themeedit.odin:100
-msgid "Outline surfaces"
-msgstr ""
-
-#: themeedit.odin:101
-msgid "Bracket labels"
-msgstr ""
-
-#: themeedit.odin:102
-msgid "Invert selected text"
-msgstr ""
-
-#: themeedit.odin:103
-msgid "Fast motion"
-msgstr ""
-
-#: themeedit.odin:104
-msgid "Pixel metrics"
-msgstr ""
-
-#: themeedit.odin:123
-msgid "Default stack"
-msgstr ""
-
-#: themeedit.odin:127
-msgid "flat"
-msgstr ""
-
-#: themeedit.odin:430
-#, fuzzy
-msgid "Edit theme"
-msgstr "Immagine successiva"
-
-#: themeedit.odin:432
-msgid "An empty box derives its value. The window previews as you type."
-msgstr ""
-
-#: themeedit.odin:453
-msgid "STYLE"
-msgstr ""
-
-#: themeedit.odin:471
-msgid "BACKDROP"
-msgstr ""
-
-#: themeedit.odin:494
-msgid "Save and use"
-msgstr ""
-
-#: themeedit.odin:544
-#, fuzzy
-msgid "Couldn't save the theme. Check the name and colors and try again."
-msgstr "Impossibile aggiungere questo account. Ricontrolla la chiave e riprova."
-
-#: threads.odin:83 threads.odin:85
-msgid "Thread"
-msgstr ""
-
-#: timeline.odin:47
-msgid "failed · tap to retry"
-msgstr "fallito · tocca per riprovare"
-
-#: timeline.odin:489
-#, fuzzy
-msgid "Couldn't load image. Click to retry."
-msgstr "Impossibile scaricare l'immagine."
-
-#: timeline.odin:785
-#, fuzzy
-msgid "Couldn't load attachment. Click to retry."
-msgstr "Impossibile riprodurre il video — tocca per riprovare"
-
-#: timeline.odin:824
-#, fuzzy
-msgid "This message was deleted"
-msgstr "Nessuna immagine selezionata."
+#, fuzzy, c-format
+msgid "%d published, so people can invite you."
+msgstr "Pubblicane uno così altri utenti possono invitarti nei gruppi."
 
-#: timeline.odin:880
 #, c-format
 msgid "%d replies"
 msgstr ""
 
-#: timeline.odin:887
+#, c-format
+msgid "%d votes"
+msgstr ""
+
+msgid "(none)"
+msgstr ""
+
 #, fuzzy
-msgid "edited"
-msgstr "modificato"
+msgid "(nothing loaded yet, click Refresh)"
+msgstr "(ancora niente caricato: clicca Aggiorna)"
 
-#: timeline.odin:1539
-msgid "SHARED THEME"
+msgid "(unknown)"
 msgstr ""
 
-#: timeline.odin:1548
 #, fuzzy
-msgid "Use this theme"
-msgstr "Immagine successiva"
+msgid "(unpublished)"
+msgstr "Pubblicato"
 
-#: vault_gate.odin:227
-msgid "Pick a password first."
+msgid "+"
 msgstr ""
 
-#: vault_gate.odin:242
+#, c-format
+msgid "+%d more"
+msgstr ""
+
+msgid "-"
+msgstr ""
+
 #, fuzzy
-msgid "Couldn't unlock the vault. Double-check the password and try again."
-msgstr "Impossibile aggiungere questo account. Ricontrolla la chiave e riprova."
+msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
+msgstr "White Noise è un client desktop nativo per chat di gruppo private. I messaggi vengono crittografati con MLS prima di lasciare la tua macchina, instradati sui relay Nostr e decifrati solo per le persone nella stanza."
 
-#: vault_gate.odin:243
+msgid "A line about you"
+msgstr ""
+
+msgid "ABOUT"
+msgstr ""
+
+msgid "ACTIONS"
+msgstr "AZIONI"
+
 #, fuzzy
-msgid "Couldn't read the vault file. Please try again."
-msgstr "Impossibile creare la chat. Riprova."
+msgid "ADD MEMBER"
+msgstr "MEMBRI"
 
-#: vault_gate.odin:251
-msgid "The passwords don't match. Type them again."
-msgstr ""
+msgid "AUDIT LOG FILES"
+msgstr "FILE DI LOG DI AUDIT"
 
-#: vault_gate.odin:257
+msgid "About"
+msgstr "Informazioni"
+
 #, fuzzy
-msgid "Couldn't create the vault. Please try again."
-msgstr "Impossibile creare la chat. Riprova."
+msgid "Accent 1"
+msgstr "Accetta"
 
-#: vault_gate.odin:320
 #, fuzzy
-msgid "Enter your password to unlock this device's keys."
-msgstr "Inserisci la password per sbloccare"
+msgid "Accent 2"
+msgstr "Accetta"
 
-#: vault_gate.odin:320
-msgid "Pick a password. It encrypts everything in the app, and there is no way to recover it."
-msgstr ""
-
-#: vault_gate.odin:328
-msgid "CONFIRM PASSWORD"
-msgstr "CONFERMA PASSWORD"
-
-#: vault_gate.odin:333
-msgid "Unlock"
-msgstr "Sblocca"
-
-#: vault_gate.odin:335
-msgid "Confirm: delete this vault"
-msgstr ""
-
-#: vault_gate.odin:335
-msgid "Use another key"
-msgstr "Usa un'altra chiave"
-
-#: webxdc.odin:137
-msgid "Webxdc app"
-msgstr ""
-
-#: advanced.odin:37
 #, fuzzy
-msgid "Share anonymous relay connection telemetry. Nothing is sent while this is off."
-msgstr "Condividi la telemetria anonima di connessione ai relay."
+msgid "Accent 3"
+msgstr "Accetta"
 
-#: advanced.odin:41
 #, fuzzy
-msgid "Record group audit log files on this device. Identifiers are hashed."
-msgstr "Invia i file di log di audit del gruppo all'endpoint Goggles. Si applica subito."
+msgid "Accent 4"
+msgstr "Accetta"
 
-#: advanced.odin:86
-msgid "Shows diagnostics and MLS internals. Adds a Debug entry with account, key-packages, and group state."
-msgstr "Mostra diagnostica e componenti interni di MLS. Aggiunge una voce Debug con account, pacchetti chiave e stato dei gruppi."
-
-#: keys.odin:194
-msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
-msgstr "White Noise non vede mai la tua chiave privata. Resta solo su questo dispositivo e su qualsiasi firmatario collegato."
-
-#: keys.odin:229
-msgid "Your identity lives only on this device for now. When device linking ships, the devices signed into your key will appear here."
-msgstr "Per ora la tua identità risiede solo su questo dispositivo. Quando il collegamento dei dispositivi sarà disponibile, i dispositivi collegati alla tua chiave appariranno qui."
-
-#: network.odin:37
-msgid "Drops idle relay sockets and dials them again."
-msgstr ""
-
-#: network.odin:69
-msgid "Re-broadcasts your outbox and inbox relay lists. Use this if peers can't find you."
-msgstr "Ritrasmette i tuoi elenchi di relay di invio e di ricezione. Usalo se i peer non riescono a trovarti."
-
-#: panes.odin:443
-msgid "Select a contact from the list."
-msgstr ""
-
-#: settings_pages.odin:178
-msgid "WHERE YOUR MESSAGES LAND"
-msgstr ""
-
-#: settings_pages.odin:181
 #, fuzzy
-msgid "MLS · YOUR KEY MATERIAL"
-msgstr "MLS  ·  IL TUO MATERIALE CHIAVE"
+msgid "Accent 5"
+msgstr "Accetta"
 
-#: settings_pages.odin:187
-msgid "DESKTOP ALERTS"
-msgstr "AVVISI DESKTOP"
+msgid "Accent color"
+msgstr "Colore accento"
 
-#: settings_pages.odin:190
-msgid "ON THIS DEVICE"
-msgstr "SU QUESTO DISPOSITIVO"
+msgid "Accept"
+msgstr "Accetta"
 
-#: settings_pages.odin:193
-msgid "PRIVACY & DEVELOPER FLAGS"
+msgid "Accounts"
+msgstr "Account"
+
+msgid "Add"
+msgstr "Aggiungi"
+
+msgid "Add a contact for a direct chat, or leave it empty for a group of your own."
 msgstr ""
 
-#: settings_pages.odin:196
+msgid "Add account"
+msgstr "Aggiungi account"
+
 #, fuzzy
-msgid "WHAT THIS IS, LIVE"
-msgstr "COS'È"
+msgid "Add an option..."
+msgstr "Aggiungi reazione"
 
-#: settings_pages.odin:199
-msgid "STATE / RAW EVENTS / KEY PACKAGES"
-msgstr ""
-
-#: settings_pages.odin:202
 #, fuzzy
-msgid "DECODED MLS KEY PACKAGES"
-msgstr "I TUOI PACCHETTI CHIAVE"
+msgid "Add option"
+msgstr "Aggiungi reazione"
 
-#: settings_pages.odin:239
-msgid "Takes effect on the next launch."
+msgid "Add reaction"
+msgstr "Aggiungi reazione"
+
+msgid "Add someone by npub, or make a group of your own."
 msgstr ""
 
-#: settings_pages.odin:245
-msgid "Closing the window hides it. The tray icon shows your unread total and brings it back."
+msgid "Admin"
+msgstr "Amministratore"
+
+msgid "Admins can add and remove members and change group details."
 msgstr ""
 
-#: settings_pages.odin:285
+msgid "Advanced"
+msgstr "Avanzate"
+
+msgid "Aggregate connection counter from the relay pool."
+msgstr "Contatore connessioni aggregato dal pool relay."
+
+msgid "All accounts stay connected. Switching only changes which one you're looking at."
+msgstr "Tutti gli account restano connessi. Il passaggio cambia solo quale stai visualizzando."
+
 #, fuzzy
-msgid "Shown on the message menu. Tap one to remove it."
-msgstr "Mostrate sulla barra e nel menu del messaggio. Toccane una per rimuoverla."
+msgid "All folders"
+msgstr "Apri cartella"
 
-#: settings_pages.odin:327
-#, fuzzy
-msgid "Tap one to remove it."
-msgstr "Mostrate sulla barra e nel menu del messaggio. Toccane una per rimuoverla."
-
-#: settings_pages.odin:421
-msgid "Pick a chat to send it to. They choose whether to use it."
-msgstr ""
-
-#: settings_pages.odin:432
-msgid "Pick the whole app's look."
-msgstr "Scegli l'aspetto di tutta l'app."
-
-#: settings_pages.odin:538
 #, fuzzy
 msgid "Also Ctrl + / - / 0."
 msgstr "Anche Ctrl + / − / 0, o Ctrl + scorrimento."
 
-#: settings_pages.odin:550
+msgid "Always open links to this site"
+msgstr ""
+
+msgid "An empty box derives its value. The window previews as you type."
+msgstr ""
+
+msgid "Anything you write here stays between you and this device's key."
+msgstr ""
+
+msgid "Appearance"
+msgstr "Aspetto"
+
 msgid "Applies to message bodies and the composer."
 msgstr ""
 
-#: settings_pages.odin:563
-msgid "How far the mouse wheel moves the view."
+msgid "Archive"
+msgstr "Archivia"
+
+msgid "Ask a question..."
 msgstr ""
 
-#: settings_pages.odin:578
-msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
+#, fuzzy
+msgid "Asking your relays for their key package."
+msgstr "sul pacchetto chiavi stesso"
+
+#, fuzzy
+msgid "Audit log file deleted."
+msgstr "Log di audit eliminato."
+
+msgid "Audit logs"
+msgstr "Log di audit"
+
+msgid "Avatar ring"
 msgstr ""
 
-#: settings_pages.odin:587
-msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
-msgstr "Mantieni la conversazione aperta su una comoda larghezza di lettura invece di riempire tutta la larghezza."
+msgid "BACKDROP"
+msgstr ""
 
-#: settings_pages.odin:600
+msgid "BUILT WITH"
+msgstr ""
+
+msgid "Back"
+msgstr "Indietro"
+
+msgid "Back up everything"
+msgstr "Esegui il backup di tutto"
+
+msgid "Background"
+msgstr ""
+
+msgid "Background 2"
+msgstr ""
+
+#, fuzzy
+msgid "Backup created."
+msgstr "Backup non riuscito: %1"
+
+#, c-format
+msgid "Backup imported: %d files restored."
+msgstr ""
+
+msgid "Backups hold what this device stores locally. Your keys and message history live in marmot's own store and are not included."
+msgstr ""
+
+msgid "Bevel light"
+msgstr ""
+
+msgid "Bevel shade"
+msgstr ""
+
+msgid "Bevelled surfaces"
+msgstr ""
+
+msgid "Block"
+msgstr "Blocca"
+
+#, fuzzy
+msgid "Block this contact?"
+msgstr "Bloccare questa richiesta chat?"
+
+msgid "Border 2"
+msgstr ""
+
+msgid "Border width"
+msgstr ""
+
+msgid "Bracket labels"
+msgstr ""
+
+msgid "Bubble radius"
+msgstr ""
+
+msgid "CONFIRM PASSWORD"
+msgstr "CONFERMA PASSWORD"
+
+msgid "CUSTOM EMOJI"
+msgstr "EMOJI PERSONALIZZATE"
+
+msgid "CacheClear"
+msgstr ""
+
+msgid "Cached attachments"
+msgstr "Allegati in cache"
+
+msgid "Cancel"
+msgstr "Annulla"
+
+msgid "Cancel edit / reply, close panels"
+msgstr ""
+
+msgid "Card border"
+msgstr ""
+
+msgid "Card well"
+msgstr ""
+
+#, fuzzy
+msgid "Center the conversation"
+msgstr "Conversazione centrata"
+
+msgid "Centred conversation"
+msgstr "Conversazione centrata"
+
+msgid "Change"
+msgstr "Cambia"
+
+#, fuzzy
+msgid "Change photo"
+msgstr "Cambia password"
+
+#, fuzzy
+msgid "Change picture"
+msgstr "Cambia password"
+
+#, fuzzy
+msgid "Check now"
+msgstr "Verifica in corso…"
+
+msgid "Checking your key with the relays. This takes a few seconds."
+msgstr ""
+
+#, fuzzy
+msgid "Checking..."
+msgstr "Verifica in corso…"
+
+msgid "Chip background"
+msgstr ""
+
+msgid "Chip outline"
+msgstr ""
+
+#, fuzzy
+msgid "Chip text"
+msgstr "Copia testo"
+
+msgid "Clear cache"
+msgstr "Svuota cache"
+
+#, fuzzy
+msgid "Clear effect"
+msgstr "Svuota cache"
+
+msgid "Close"
+msgstr "Chiudi"
+
+msgid "Close to tray"
+msgstr ""
+
+msgid "Closing the window hides it. The tray icon shows your unread total and brings it back."
+msgstr ""
+
+msgid "Code plate"
+msgstr ""
+
+#, fuzzy
+msgid "Collapse the chat list"
+msgstr "Comprimi pannello chat"
+
+msgid "Command palette"
+msgstr ""
+
+msgid "Confirm"
+msgstr ""
+
+msgid "Confirm clear"
+msgstr ""
+
+msgid "Confirm delete"
+msgstr ""
+
+#, fuzzy
+msgid "Confirm import"
+msgstr "Conferma la tua password"
+
+msgid "Confirm reveal"
+msgstr ""
+
+msgid "Confirm: delete this vault"
+msgstr ""
+
+#, fuzzy
+msgid "Connect to relays"
+msgstr "Connetti un relay"
+
+#, fuzzy
+msgid "Connected to relays"
+msgstr "Connetti un relay"
+
+#, fuzzy
+msgid "Connecting to relays"
+msgstr "Connessione ai relay…"
+
+msgid "Contact"
+msgstr "Contatto"
+
+msgid "Continue"
+msgstr "Continua"
+
+msgid "Control background"
+msgstr ""
+
+msgid "Copy"
+msgstr "Copia"
+
+msgid "Copy JSON"
+msgstr "Copia JSON"
+
+#, fuzzy
+msgid "Copy npub"
+msgstr "Copia chiave pubblica"
+
+msgid "Copy text"
+msgstr "Copia testo"
+
+msgid "Corner scale"
+msgstr ""
+
+#, fuzzy, c-format
+msgid "Couldn't change audit logs. %s"
+msgstr "Impossibile modificare il log di audit."
+
+#, fuzzy, c-format
+msgid "Couldn't change relay telemetry. %s"
+msgstr "Impossibile salvare la lista dei relay. Riprova."
+
+#, fuzzy
+msgid "Couldn't create the backup. Please try again."
+msgstr "Impossibile creare la chat. Riprova."
+
+#, fuzzy
+msgid "Couldn't create the vault. Please try again."
+msgstr "Impossibile creare la chat. Riprova."
+
+#, fuzzy, c-format
+msgid "Couldn't delete the audit log file. %s"
+msgstr "Impossibile eliminare il log di audit."
+
+#, fuzzy, c-format
+msgid "Couldn't export the key. %s"
+msgstr "Impossibile esportare i contatti."
+
+#, fuzzy
+msgid "Couldn't load attachment. Click to retry."
+msgstr "Impossibile riprodurre il video — tocca per riprovare"
+
+#, fuzzy
+msgid "Couldn't load image. Click to retry."
+msgstr "Impossibile scaricare l'immagine."
+
+#, fuzzy, c-format
+msgid "Couldn't load the timeline. %s"
+msgstr "Impossibile scaricare l'immagine."
+
+msgid "Couldn't load this event. Check your relay settings and try again."
+msgstr "Impossibile caricare questo evento. Controlla le impostazioni dei relay e riprova."
+
+#, fuzzy
+msgid "Couldn't open the backup. Double-check the password and try again."
+msgstr "Impossibile aggiungere questo account. Ricontrolla la chiave e riprova."
+
+#, fuzzy, c-format
+msgid "Couldn't publish the key package. %s"
+msgstr "sul pacchetto chiavi stesso"
+
+#, fuzzy
+msgid "Couldn't read that pubkey. Double-check it and try again."
+msgstr "Impossibile aggiungere questo account. Ricontrolla la chiave e riprova."
+
+#, fuzzy
+msgid "Couldn't read the backup file. Please try again."
+msgstr "Impossibile creare la chat. Riprova."
+
+#, fuzzy
+msgid "Couldn't read the backup. Please try again."
+msgstr "Impossibile creare la chat. Riprova."
+
+#, fuzzy
+msgid "Couldn't read the vault file. Please try again."
+msgstr "Impossibile creare la chat. Riprova."
+
+#, fuzzy, c-format
+msgid "Couldn't read their key packages. %s"
+msgstr "sul pacchetto chiavi stesso"
+
+#, fuzzy
+msgid "Couldn't render the QR code. Please try again."
+msgstr "Impossibile creare la chat. Riprova."
+
+#, fuzzy, c-format
+msgid "Couldn't reveal your private key. %s"
+msgstr "Impossibile rimuovere la reazione. Riprova."
+
+#, fuzzy
+msgid "Couldn't save the theme. Check the name and colors and try again."
+msgstr "Impossibile aggiungere questo account. Ricontrolla la chiave e riprova."
+
+#, fuzzy
+msgid "Couldn't serialize the key packages. Please try again."
+msgstr "Impossibile creare la chat. Riprova."
+
+#, fuzzy
+msgid "Couldn't serialize the snapshot. Please try again."
+msgstr "Impossibile creare la chat. Riprova."
+
+#, fuzzy
+msgid "Couldn't share the theme. Please try again."
+msgstr "Impossibile creare la chat. Riprova."
+
+#, fuzzy
+msgid "Couldn't unlock the vault. Double-check the password and try again."
+msgstr "Impossibile aggiungere questo account. Ricontrolla la chiave e riprova."
+
+msgid "Couldn't use that theme. It isn't a theme this version reads."
+msgstr ""
+
+msgid "Create"
+msgstr "Crea"
+
+#, fuzzy
+msgid "Create a poll"
+msgstr "Crea backup"
+
+msgid "Create backup"
+msgstr "Crea backup"
+
+#, fuzzy
+msgid "Create backup..."
+msgstr "Crea backup"
+
+#, fuzzy
+msgid "Create poll"
+msgstr "Crea"
+
+msgid "DANGER ZONE"
+msgstr "ZONA PERICOLOSA"
+
+#, fuzzy
+msgid "DECODED MLS KEY PACKAGES"
+msgstr "I TUOI PACCHETTI CHIAVE"
+
+msgid "DESKTOP ALERTS"
+msgstr "AVVISI DESKTOP"
+
+msgid "DEVELOPER"
+msgstr "SVILUPPATORE"
+
+#, fuzzy
+msgid "DISAPPEARING MESSAGES"
+msgstr "MESSAGGI IN ARRIVO"
+
+#, fuzzy
+msgid "DISPLAY NAME"
+msgstr "IL TUO NOME VISUALIZZATO"
+
+#, fuzzy
+msgid "Danger"
+msgstr "Cambia"
+
+msgid "Date format"
+msgstr "Formato data"
+
+msgid "Debug"
+msgstr "Debug"
+
+msgid "Decline"
+msgstr ""
+
+msgid "Decline this invitation?"
+msgstr ""
+
+msgid "Decode own"
+msgstr ""
+
+msgid "Default stack"
+msgstr ""
+
+msgid "Delete"
+msgstr "Elimina"
+
+msgid "Delete for everyone"
+msgstr ""
+
+msgid "Delete for me"
+msgstr "Elimina per me"
+
+#, fuzzy
+msgid "Delete for you?"
+msgstr "Eliminare per me?"
+
+#, fuzzy
+msgid "Delete this message?"
+msgstr "Eliminare per me?"
+
+#, fuzzy
+msgid "Delete this theme?"
+msgstr "Eliminare per me?"
+
+#, fuzzy
+msgid "Deleted. Recording continues in a fresh file."
+msgstr "Log di audit eliminato — la registrazione continua in un nuovo file."
+
+#, fuzzy
+msgid "Deleting the file being recorded rotates it. Recording continues in a fresh file."
+msgstr "Eliminare il file in registrazione lo ruota — la registrazione continua in un nuovo file."
+
+msgid "Demote"
+msgstr ""
+
+msgid "Desktop notifications"
+msgstr "Notifiche desktop"
+
+msgid "Developer mode"
+msgstr "Modalità sviluppatore"
+
+msgid "Divider"
+msgstr ""
+
+#, fuzzy
+msgid "Done."
+msgstr "Fatto"
+
+msgid "Drops idle relay sockets and dials them again."
+msgstr ""
+
+#, fuzzy
+msgid "EDIT PROFILE"
+msgstr "PROFILO"
+
+msgid "ENCRYPTED KEY (NCRYPTSEC)"
+msgstr "CHIAVE CRITTOGRAFATA (NCRYPTSEC)"
+
+msgid "EPOCH"
+msgstr "EPOCA"
+
+msgid "EVENT FETCH RELAYS"
+msgstr "RELAY PER GLI EVENTI"
+
+msgid "EXPORT CHAT"
+msgstr ""
+
+#, fuzzy
+msgid "Edit"
+msgstr "Modifica %1"
+
+msgid "Edit history"
+msgstr "Cronologia modifiche"
+
+msgid "Edit message"
+msgstr "Modifica messaggio"
+
+#, fuzzy
+msgid "Edit theme"
+msgstr "Immagine successiva"
+
+msgid "Elevated"
+msgstr ""
+
+msgid "Elevated border"
+msgstr ""
+
+#, fuzzy
+msgid "Encrypted key copied"
+msgstr "Esporta chiave crittografata (ncryptsec)"
+
+msgid "End-to-end encrypted"
+msgstr "Crittografato end-to-end"
+
+msgid "Enter publishes, Escape cancels."
+msgstr ""
+
+msgid "Enter the password this backup was created with. The settings, drafts, custom emoji, and themes on this device will be replaced."
+msgstr ""
+
+#, fuzzy
+msgid "Enter your password to unlock this device's keys."
+msgstr "Inserisci la password per sbloccare"
+
+msgid "Event id"
+msgstr ""
+
+#, fuzzy
+msgid "Expand the chat list"
+msgstr "Espandi pannello chat"
+
+#, fuzzy
+msgid "Export CSV"
+msgstr "Esporta"
+
+#, fuzzy
+msgid "Export JSON"
+msgstr "Esporta"
+
+#, fuzzy
+msgid "Export as HTML"
+msgstr "Esporta"
+
+msgid "Export as Markdown"
+msgstr ""
+
+msgid "FOLDERS"
+msgstr ""
+
+msgid "Fast motion"
+msgstr ""
+
+msgid "Field"
+msgstr ""
+
+msgid "Field border"
+msgstr ""
+
+msgid "Field hover"
+msgstr ""
+
+#, fuzzy
+msgid "Filter unread chats"
+msgstr "Mostra solo le chat non lette"
+
+msgid "Focus glow"
+msgstr ""
+
+msgid "Focus glow radius"
+msgstr ""
+
+msgid "Folders"
+msgstr ""
+
+msgid "Font"
+msgstr ""
+
+msgid "Forward"
+msgstr "Inoltra"
+
+#, fuzzy
+msgid "From file"
+msgstr "Da %1"
+
+msgid "GROUP ID"
+msgstr ""
+
+#, fuzzy
+msgid "GROUP NAME"
+msgstr "NOME DEL GRUPPO (OPZIONALE)"
+
+msgid "GROUPS IN COMMON"
+msgstr "GRUPPI IN COMUNE"
+
+msgid "General"
+msgstr "Generale"
+
+#, fuzzy
+msgid "Generating your key"
+msgstr "Genera una nuova chiave"
+
 msgid "Get an alert when a message arrives in a chat you're not viewing."
 msgstr "Ricevi un avviso quando arriva un messaggio in una chat che non stai guardando."
 
-#: settings_pages.odin:611
-msgid "Short tones when a message leaves, arrives, or fails to send."
+msgid "Get started"
 msgstr ""
 
-#: settings_pages.odin:616
-msgid "Off shows only \"New message\" without the text."
-msgstr "Disattivata mostra solo \"Nuovo messaggio\" senza il testo."
+#, fuzzy
+msgid "Go to archive"
+msgstr "Ripristina"
 
-#: settings_pages.odin:622
-msgid "See and hear it with today's sound and preview settings."
-msgstr "Guardala e ascoltala con le impostazioni attuali di suono e anteprima."
+msgid "Go to chats"
+msgstr ""
 
-#: storage.odin:192
+msgid "Go to people"
+msgstr ""
+
+#, fuzzy
+msgid "Go to settings"
+msgstr "Impostazioni"
+
+#, fuzzy
+msgid "Go to your profile"
+msgstr "Il tuo profilo"
+
+#, fuzzy
+msgid "Group id copied"
+msgstr "ID gruppo"
+
+msgid "HELP"
+msgstr ""
+
+msgid "HTML"
+msgstr ""
+
+msgid "Hard shadows"
+msgstr ""
+
+msgid "Hide"
+msgstr ""
+
+msgid "Hover"
+msgstr ""
+
+msgid "Hover ms"
+msgstr ""
+
+msgid "How far the mouse wheel moves the view."
+msgstr ""
+
+msgid "IDENTITY"
+msgstr "IDENTITÀ"
+
+msgid "INBOX RELAYS"
+msgstr "RELAY DI RICEZIONE"
+
+msgid "INCOMING MESSAGES"
+msgstr "MESSAGGI IN ARRIVO"
+
+msgid "INSPECT SOMEONE ELSE'S"
+msgstr ""
+
 msgid "Images and files kept on this device so they don't download twice, sealed with your vault key."
 msgstr ""
 
-#: storage.odin:204
+msgid "Import a backup"
+msgstr "Importa un backup"
+
+#, fuzzy
+msgid "Import a key"
+msgstr "Importa un backup"
+
+msgid "Import backup"
+msgstr "Importa backup"
+
+#, fuzzy
+msgid "Import..."
+msgstr "Importa"
+
+#, fuzzy
+msgid "ImportBtn"
+msgstr "Importa"
+
+#, fuzzy
+msgid "Insert a new line"
+msgstr "Genera una nuova chiave"
+
+msgid "Inspect"
+msgstr ""
+
+msgid "Interface language"
+msgstr "Lingua interfaccia"
+
+#, fuzzy
+msgid "Interface sounds"
+msgstr "Zoom dell’interfaccia"
+
+msgid "Interface zoom"
+msgstr "Zoom dell’interfaccia"
+
+msgid "Invert selected text"
+msgstr ""
+
+msgid "Invite"
+msgstr "Invita"
+
+msgid "It disappears for everyone in the chat. This can't be undone."
+msgstr ""
+
+#, fuzzy
+msgid "It is what lets people invite you to a group."
+msgstr "Pubblicane uno così altri utenti possono invitarti nei gruppi."
+
+msgid "It stays for everyone else. You won't see it on this device again."
+msgstr ""
+
+msgid "Its file is removed from this device. Themes shared into a chat stay there."
+msgstr ""
+
+msgid "Its keys stay in the vault on this device. You can sign in again from the accounts screen."
+msgstr ""
+
+#, fuzzy
+msgid "KEY PACKAGE"
+msgstr "PACCHETTI CHIAVE"
+
+msgid "KEY PACKAGES"
+msgstr "PACCHETTI CHIAVE"
+
+msgid "KEY PACKAGES (PUBLISHED TO YOUR KIND-10051 RELAY LIST)"
+msgstr ""
+
+msgid "KEYS & BACKUPS"
+msgstr "CHIAVI E BACKUP"
+
+msgid "KP inspector"
+msgstr ""
+
+msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
+msgstr "Mantieni la conversazione aperta su una comoda larghezza di lettura invece di riempire tutta la larghezza."
+
+msgid "Key package"
+msgstr "Pacchetto chiavi"
+
+#, c-format
+msgid "Key package accepted by %d relays."
+msgstr ""
+
+#, fuzzy
+msgid "Key package published"
+msgstr "Pacchetti chiave"
+
+msgid "Key package ref"
+msgstr "Ref pacchetto chiavi"
+
+msgid "Key packages"
+msgstr "Pacchetti chiave"
+
+msgid "Keyboard shortcuts"
+msgstr ""
+
+msgid "Keys & identity"
+msgstr "Chiavi e identità"
+
+msgid "LANGUAGE"
+msgstr "LINGUA"
+
+msgid "LAYOUT"
+msgstr "LAYOUT"
+
+msgid "LIGHTNING"
+msgstr ""
+
+msgid "LINKED DEVICES"
+msgstr "DISPOSITIVI COLLEGATI"
+
+msgid "Last backup"
+msgstr "Ultimo backup"
+
+msgid "Launch at login"
+msgstr "Avvia all'accesso"
+
+#, fuzzy
+msgid "Leave"
+msgstr "Lasciare {}?"
+
+msgid "Leave group"
+msgstr "Lascia il gruppo"
+
+#, fuzzy
+msgid "Leave this group?"
+msgstr "Lascia il gruppo"
+
+msgid "Links to these exact sites open without confirmation."
+msgstr "I link esattamente a questi siti si aprono senza conferma."
+
+msgid "Loading your accounts"
+msgstr ""
+
+msgid "Loading…"
+msgstr "Caricamento…"
+
+msgid "Location"
+msgstr "Posizione"
+
+msgid "MEDIA CACHE"
+msgstr "CACHE DEI MEDIA"
+
+#, fuzzy
+msgid "MLS · YOUR KEY MATERIAL"
+msgstr "MLS  ·  IL TUO MATERIALE CHIAVE"
+
+#, fuzzy
+msgid "MOTION"
+msgstr "AZIONI"
+
+#, fuzzy
+msgid "Make this member an admin?"
+msgstr "Rendere {} admin?"
+
+msgid "Mark read"
+msgstr ""
+
+msgid "Mark unread"
+msgstr ""
+
+msgid "Markdown"
+msgstr ""
+
+msgid "Media backdrop"
+msgstr ""
+
+msgid "Media cache cleared."
+msgstr ""
+
+msgid "Members"
+msgstr "Membri"
+
+#, fuzzy
+msgid "Message copied"
+msgstr "immagine copiata"
+
+msgid "Message menu"
+msgstr ""
+
+#, fuzzy
+msgid "Message text copied"
+msgstr "immagine copiata"
+
+msgid "Message text size"
+msgstr ""
+
+#, fuzzy
+msgid "Move to folder"
+msgstr "Apri cartella"
+
+msgid "Multi-device isn't available yet"
+msgstr "Multi-dispositivo non ancora disponibile"
+
+msgid "Multiple choice"
+msgstr ""
+
+msgid "NIP-05"
+msgstr ""
+
+msgid "NOSTR EVENT"
+msgstr "EVENTO NOSTR"
+
+msgid "NOTE"
+msgstr "NOTA"
+
+msgid "NSEC"
+msgstr ""
+
+msgid "Name"
+msgstr ""
+
+msgid "Network & relays"
+msgstr "Rete e relay"
+
+msgid "Never share it. It is your identity."
+msgstr ""
+
+msgid "New chat"
+msgstr "Nuova chat"
+
+#, fuzzy
+msgid "New message"
+msgstr "Invia messaggio"
+
+msgid "Next / previous chat"
+msgstr "Chat successiva / precedente"
+
+#, fuzzy
+msgid "Next accent color"
+msgstr "Colore accento"
+
+#, fuzzy
+msgid "Next theme"
+msgstr "Immagine successiva"
+
+msgid "Nickname"
+msgstr "Soprannome"
+
+#, fuzzy
+msgid "No archived chats."
+msgstr "Nessuna chat archiviata"
+
+#, fuzzy
+msgid "No audit log files."
+msgstr "Nessun file di log di audit su disco."
+
+#, fuzzy
+msgid "No backup made from this device yet."
+msgstr "Rimuovi da questo dispositivo"
+
+msgid "No chat is open. Select one and refresh."
+msgstr ""
+
+#, fuzzy
+msgid "No chats to share with yet."
+msgstr "Ancora nessun contatto"
+
+#, fuzzy
+msgid "No chats yet"
+msgstr "Ancora nessun contatto"
+
+#, fuzzy
+msgid "No command matches."
+msgstr "Nessun risultato"
+
+msgid "No contacts yet"
+msgstr "Ancora nessun contatto"
+
+#, fuzzy
+msgid "No folders yet."
+msgstr "Ancora nessun relay"
+
+#, fuzzy
+msgid "No inbox relays."
+msgstr "Nessun profilo trovato sui relay."
+
+#, fuzzy
+msgid "No key package on this device or its relays."
+msgstr "Ancora nessun key package sui relay"
+
+msgid "No key package on your relays, so a chat can't start yet."
+msgstr ""
+
+msgid "No key package published for that pubkey."
+msgstr ""
+
+#, fuzzy
+msgid "No key package yet. Publish one so people can invite you."
+msgstr "Pubblicane uno così altri utenti possono invitarti nei gruppi."
+
+msgid "No messages yet"
+msgstr "Ancora nessun messaggio"
+
+#, fuzzy
+msgid "No relay list published."
+msgstr "Elenco relay modificato."
+
+msgid "No trusted sites."
+msgstr "Nessun sito affidabile."
+
+msgid "Not found"
+msgstr ""
+
+msgid "Not loaded yet. Click Decode own."
+msgstr ""
+
+#, fuzzy
+msgid "Not loaded yet. Click Refresh."
+msgstr "(ancora niente caricato: clicca Aggiorna)"
+
+msgid "Notes to self"
+msgstr ""
+
+msgid "Notifications"
+msgstr "Notifiche"
+
+msgid "ON THIS DEVICE"
+msgstr "SU QUESTO DISPOSITIVO"
+
+msgid "OPEN EVENTS IN"
+msgstr "APRI GLI EVENTI IN"
+
+msgid "OUTBOX RELAYS (NIP-65)"
+msgstr "RELAY DI INVIO (NIP-65)"
+
+msgid "Off"
+msgstr ""
+
+msgid "Off shows only \"New message\" without the text."
+msgstr "Disattivata mostra solo \"Nuovo messaggio\" senza il testo."
+
+#, fuzzy
+msgid "On accent"
+msgstr "Aggiungi account"
+
+msgid "One-tap reactions"
+msgstr "Reazioni con un tocco"
+
+msgid "Open"
+msgstr "Apri"
+
+msgid "Open folder"
+msgstr "Apri cartella"
+
+msgid "Open in browser"
+msgstr "Apri nel browser"
+
+msgid "Open in client"
+msgstr "Apri nel client"
+
+msgid "Open this link?"
+msgstr "Aprire questo link?"
+
+#, fuzzy
+msgid "Opening in your browser"
+msgstr "Questo apre {} nel browser predefinito."
+
+msgid "Outline surfaces"
+msgstr ""
+
+msgid "Overlay"
+msgstr ""
+
+msgid "Overlay strong"
+msgstr ""
+
+msgid "Owner"
+msgstr ""
+
+msgid "PASSWORD"
+msgstr "PASSWORD"
+
+msgid "PRIVACY & DEVELOPER FLAGS"
+msgstr ""
+
+msgid "PRIVATE GROUP CHAT OVER NOSTR"
+msgstr ""
+
+msgid "PROFILE"
+msgstr "PROFILO"
+
+msgid "PULL REQUEST"
+msgstr "PULL REQUEST"
+
 #, fuzzy
 msgid "Pack your settings, drafts, custom emoji, and themes into one encrypted file."
 msgstr "Racchiudi account, chat e impostazioni in un unico file crittografato."
 
-#: storage.odin:208
+msgid "Panel"
+msgstr ""
+
+msgid "Panel 2"
+msgstr ""
+
+#, fuzzy
+msgid "Path copied"
+msgstr "immagine copiata"
+
+msgid "Pick a chat to send it to. They choose whether to use it."
+msgstr ""
+
+msgid "Pick a folder for this chat, or make a new one. A chat sits in one folder at a time."
+msgstr ""
+
+msgid "Pick a password first."
+msgstr ""
+
+msgid "Pick a password to encrypt the backup with. Without it the file cannot be opened again."
+msgstr ""
+
+msgid "Pick a password to encrypt the key with. You will need it to import the key anywhere else."
+msgstr ""
+
+msgid "Pick a password. It encrypts everything in the app, and there is no way to recover it."
+msgstr ""
+
+msgid "Pick the whole app's look."
+msgstr "Scegli l'aspetto di tutta l'app."
+
+msgid "Pixel metrics"
+msgstr ""
+
+msgid "Plate"
+msgstr ""
+
+msgid "Play a sound"
+msgstr "Riproduci un suono"
+
+msgid "Plays here when you send. It can't travel: marmot reserves the chat event kind, so no client attaches the tag any more. An effect sent by an older client still plays."
+msgstr ""
+
+msgid "Press Ctrl P for the command palette."
+msgstr ""
+
+msgid "Previous / next in the media viewer"
+msgstr ""
+
+msgid "Promote"
+msgstr ""
+
+msgid "Public key, safe to share."
+msgstr "Chiave pubblica, sicura da condividere."
+
+msgid "Publish"
+msgstr "Pubblica"
+
+#, fuzzy
+msgid "Publish changes"
+msgstr "Pubblicato"
+
+msgid "Publish your key package"
+msgstr "Pubblica il tuo pacchetto chiavi"
+
+msgid "Published"
+msgstr "Pubblicato"
+
+msgid "Publishing your profile to the relays. This takes a few seconds."
+msgstr ""
+
+msgid "QUICK REACTIONS"
+msgstr "REAZIONI RAPIDE"
+
+msgid "RAW EVENTS"
+msgstr ""
+
+msgid "RECENT"
+msgstr ""
+
+#, fuzzy
+msgid "RELAYS IN COMMON"
+msgstr "GRUPPI IN COMUNE"
+
+msgid "RENAME FOLDER"
+msgstr ""
+
+msgid "Rail"
+msgstr ""
+
+msgid "Raw event"
+msgstr ""
+
+msgid "Raw events"
+msgstr ""
+
+msgid "Re-broadcasts your outbox and inbox relay lists. Use this if peers can't find you."
+msgstr "Ritrasmette i tuoi elenchi di relay di invio e di ricezione. Usalo se i peer non riescono a trovarti."
+
+#, fuzzy
+msgid "Reconnect"
+msgstr "Riconnetti ora"
+
+msgid "Reconnect now"
+msgstr "Riconnetti ora"
+
+#, fuzzy
+msgid "Record group audit log files on this device. Identifiers are hashed."
+msgstr "Invia i file di log di audit del gruppo all'endpoint Goggles. Si applica subito."
+
+msgid "Reduce motion"
+msgstr ""
+
+msgid "Refresh"
+msgstr "Aggiorna"
+
+#, fuzzy
+msgid "Relay status unavailable"
+msgstr "(messaggio non disponibile)"
+
+msgid "Relay telemetry"
+msgstr "Telemetria relay"
+
+#, fuzzy
+msgid "Relays"
+msgstr "relay"
+
+#, fuzzy
+msgid "Relays carry your encrypted messages. The defaults are already configured."
+msgstr "I relay trasportano i tuoi messaggi crittografati. Aggiungine almeno uno per andare online."
+
+msgid "Remove"
+msgstr "Rimuovi"
+
+#, fuzzy
+msgid "Remove admin rights?"
+msgstr "Rimuovi ruolo admin"
+
+#, fuzzy
+msgid "Remove contact"
+msgstr "Aggiungi contatto"
+
+#, fuzzy
+msgid "Remove this contact?"
+msgstr "Bloccare questa richiesta chat?"
+
+#, fuzzy
+msgid "Remove this member?"
+msgstr "Rimuovere questo relay?"
+
+msgid "Remove this relay?"
+msgstr "Rimuovere questo relay?"
+
+#, fuzzy
+msgid "Rename"
+msgstr "Rinominato."
+
 msgid "Replaces the settings, drafts, custom emoji, and themes on this device."
 msgstr ""
 
-#~ msgid "Load earlier messages"
-#~ msgstr "Carica messaggi precedenti"
+msgid "Reply"
+msgstr "Rispondi"
+
+msgid "Reply in thread"
+msgstr ""
+
+#, fuzzy
+msgid "Republish"
+msgstr "Ripubblicazione…"
+
+msgid "Republish relay lists"
+msgstr "Ripubblica elenchi relay"
+
+msgid "Reset"
+msgstr "Ripristina"
+
+#, fuzzy
+msgid "Reset zoom"
+msgstr "Ripristina lo zoom al 100%"
+
+msgid "Restore last selected chat on launch"
+msgstr "Ripristina l'ultima chat selezionata all'avvio"
+
+msgid "Restore the default reactions"
+msgstr "Ripristina le reazioni predefinite"
+
+msgid "Reveal"
+msgstr ""
+
+msgid "Reveal private key (nsec)"
+msgstr ""
+
+#, fuzzy
+msgid "RevealNsecBtn"
+msgstr "Mostra chiave"
+
+msgid "SCROLLING"
+msgstr ""
+
+msgid "SECURITY & PRIVACY"
+msgstr "SICUREZZA E PRIVACY"
+
+msgid "SEND WITH EFFECT"
+msgstr ""
+
+msgid "SETTINGS"
+msgstr "IMPOSTAZIONI"
+
+msgid "SHARED THEME"
+msgstr ""
+
+msgid "SITE"
+msgstr ""
+
+msgid "STARTUP"
+msgstr "AVVIO"
+
+msgid "STATE / RAW EVENTS / KEY PACKAGES"
+msgstr ""
+
+msgid "STATE SNAPSHOT"
+msgstr "ISTANTANEA STATO"
+
+msgid "STATUS"
+msgstr "STATO"
+
+msgid "STYLE"
+msgstr ""
+
+msgid "SYNC"
+msgstr "SINCRONIZZA"
+
+msgid "Save"
+msgstr "Salva"
+
+msgid "Save and use"
+msgstr ""
+
+#, fuzzy
+msgid "Save file"
+msgstr "Salva video"
+
+msgid "Scan to add this account from another device"
+msgstr "Scansiona per aggiungere questo account da un altro dispositivo"
+
+msgid "Scroll speed"
+msgstr ""
+
+#, fuzzy
+msgid "Search all chats"
+msgstr "Cerca chat…"
+
+msgid "Search everywhere"
+msgstr ""
+
+#, fuzzy
+msgid "Search images"
+msgstr "Cerca messaggi…"
+
+msgid "Searching…"
+msgstr "Ricerca…"
+
+#, fuzzy
+msgid "Secret key copied"
+msgstr "nsec copiato"
+
+msgid "See and hear it with today's sound and preview settings."
+msgstr "Guardala e ascoltala con le impostazioni attuali di suono e anteprima."
+
+#, fuzzy
+msgid "Select a chat"
+msgstr "Avvia chat"
+
+msgid "Select a contact from the list."
+msgstr ""
+
+#, fuzzy
+msgid "Send a message..."
+msgstr "Invia messaggio"
+
+msgid "Send a test notification"
+msgstr "Invia una notifica di prova"
+
+msgid "Send test"
+msgstr "Invia prova"
+
+#, fuzzy
+msgid "Send the first message to start the conversation."
+msgstr "Saluta per iniziare la conversazione."
+
+#, fuzzy
+msgid "Send the message"
+msgstr "Invia messaggio"
+
+msgid "Send with an effect"
+msgstr ""
+
+#, fuzzy
+msgid "Settings: about"
+msgstr "Impostazioni"
+
+#, fuzzy
+msgid "Settings: advanced"
+msgstr "Impostazioni"
+
+#, fuzzy
+msgid "Settings: appearance"
+msgstr "Aspetto"
+
+#, fuzzy
+msgid "Settings: general"
+msgstr "Impostazioni"
+
+#, fuzzy
+msgid "Settings: keys and identity"
+msgstr "Chiavi e identità"
+
+#, fuzzy
+msgid "Settings: network and relays"
+msgstr "Rete e relay"
+
+#, fuzzy
+msgid "Settings: notifications"
+msgstr "Notifiche desktop"
+
+#, fuzzy
+msgid "Settings: storage"
+msgstr "Impostazioni"
+
+msgid "Shadow card"
+msgstr ""
+
+msgid "Shadow offset"
+msgstr ""
+
+msgid "Shadow popover"
+msgstr ""
+
+msgid "Shadow soft"
+msgstr ""
+
+#, fuzzy
+msgid "Share anonymous relay connection telemetry. Nothing is sent while this is off."
+msgstr "Condividi la telemetria anonima di connessione ai relay."
+
+#, fuzzy
+msgid "Share theme with"
+msgstr "Media condivisi"
+
+#, fuzzy
+msgid "Share this theme"
+msgstr "Immagine successiva"
+
+#, fuzzy
+msgid "Share to chat"
+msgstr "Avvia chat"
+
+msgid "Shared media"
+msgstr "Media condivisi"
+
+msgid "Short tones when a message leaves, arrives, or fails to send."
+msgstr ""
+
+msgid "Show"
+msgstr ""
+
+msgid "Show as QR"
+msgstr "Mostra come QR"
+
+#, fuzzy
+msgid "Show group members"
+msgstr "Mostra membri"
+
+msgid "Show message preview"
+msgstr "Mostra anteprima del messaggio"
+
+msgid "Shown on the message menu. Tap one to remove it. Up to 16."
+msgstr "Mostrate nel menu del messaggio. Toccane una per rimuoverla. Fino a 16."
+
+msgid "Shows diagnostics and MLS internals. Adds a Debug entry with account, key-packages, and group state."
+msgstr "Mostra diagnostica e componenti interni di MLS. Aggiunge una voce Debug con account, pacchetti chiave e stato dei gruppi."
+
+msgid "Sign in to your Nostr identity"
+msgstr "Accedi alla tua identità Nostr"
+
+msgid "Sign out"
+msgstr ""
+
+#, fuzzy
+msgid "Sign out of this account?"
+msgstr "Rimuovere questo account?"
+
+#, fuzzy
+msgid "Signing you in"
+msgstr "Accesso…"
+
+msgid "Single choice"
+msgstr ""
+
+msgid "Size"
+msgstr ""
+
+msgid "Start chat"
+msgstr "Avvia chat"
+
+msgid "Start minimized to tray"
+msgstr "Avvia minimizzato nella tray"
+
+msgid "Start your first chat"
+msgstr "Avvia la tua prima chat"
+
+msgid "Starting the runtime"
+msgstr ""
+
+msgid "State"
+msgstr "Stato"
+
+msgid "Status bar"
+msgstr ""
+
+msgid "Step down"
+msgstr "Rinuncia"
+
+msgid "Step down as admin?"
+msgstr "Rinunciare al ruolo di admin?"
+
+msgid "Storage"
+msgstr "Archiviazione"
+
+#, fuzzy
+msgid "Store it somewhere safe and close this dialog. Anyone who imports it will need the password you just entered to decrypt it."
+msgstr "Conservala in un posto sicuro e chiudi questa finestra. Chiunque la importi avrà bisogno della password del vault appena inserita per decifrarla."
+
+#, fuzzy
+msgid "Stored on this device, not published to any relay yet."
+msgstr "Nessuna chiave salvata su questo dispositivo. Reimposta e reinserisci il tuo nsec."
+
+msgid "TEXT SIZE"
+msgstr ""
+
+msgid "THEME"
+msgstr "TEMA"
+
+msgid "THIS SESSION"
+msgstr ""
+
+msgid "TRUSTED LINK SITES"
+msgstr "SITI AFFIDABILI"
+
+msgid "Take out of folder"
+msgstr ""
+
+msgid "Takes effect on the next launch."
+msgstr ""
+
+#, fuzzy
+msgid "Tap one to remove it."
+msgstr "Mostrate sulla barra e nel menu del messaggio. Toccane una per rimuoverla."
+
+#, fuzzy
+msgid "Test notification"
+msgstr "Notifiche desktop"
+
+msgid "Text"
+msgstr ""
+
+msgid "Text low"
+msgstr ""
+
+msgid "Text lowest"
+msgstr ""
+
+msgid "Text mid"
+msgstr ""
+
+msgid "The chat leaves your list. Joining later needs a new invite."
+msgstr ""
+
+msgid "The passwords don't match. Type them again."
+msgstr ""
+
+msgid "The relay in the middle stores and forwards. It never holds a key."
+msgstr ""
+
+msgid "The updated list is published to your relays."
+msgstr ""
+
+msgid "The web client an event card opens, with {id} in place of the event. For example https://primal.net/e/{id}."
+msgstr "Il client web che apre una scheda evento, con {id} al posto dell'evento. Per esempio https://primal.net/e/{id}."
+
+msgid "Their direct chat leaves your list. Nothing is published, and you can undo it here."
+msgstr ""
+
+msgid "Theme"
+msgstr "Tema"
+
+msgid "They can be added to a chat."
+msgstr ""
+
+msgid "They come off your published contact list. Groups you already share stay as they are."
+msgstr ""
+
+#, fuzzy
+msgid "They haven't published a relay list."
+msgstr "Ripubblica elenchi relay"
+
+#, fuzzy
+msgid "They lose access to new messages in this group."
+msgstr "Smetterai di ricevere nuovi messaggi da questo gruppo."
+
+msgid "They stay in the group as a regular member."
+msgstr ""
+
+msgid "This is what a message alert looks like."
+msgstr ""
+
+#, fuzzy
+msgid "This is your secret key, encrypted with the password you entered. Whoever holds this string and that password controls your identity."
+msgstr "Questa è la tua chiave segreta, crittografata con la password del vault. Chiunque possieda questa stringa e quella password controlla la tua identità."
+
+#, fuzzy
+msgid "This leaves White Noise and opens in your browser."
+msgstr "Questo apre {} nel browser predefinito."
+
+#, fuzzy
+msgid "This message was deleted"
+msgstr "Nessuna immagine selezionata."
+
+msgid "Thread"
+msgstr ""
+
+msgid "Three things and you can send your first message."
+msgstr ""
+
+msgid "Time format"
+msgstr "Formato ora"
+
+#, fuzzy
+msgid "Toggle developer mode"
+msgstr "Modalità sviluppatore"
+
+msgid "Top glint"
+msgstr ""
+
+msgid "Transition ms"
+msgstr ""
+
+msgid "TrustForgetAll"
+msgstr ""
+
+msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
+msgstr ""
+
+msgid "Unblock"
+msgstr "Sblocca"
+
+msgid "Unlock"
+msgstr "Sblocca"
+
+msgid "Unmute"
+msgstr "Riattiva"
+
+msgid "Unpin"
+msgstr "Rimuovi dai fissati"
+
+msgid "Uploaded emoji"
+msgstr "Emoji caricate"
+
+msgid "Uploading picture"
+msgstr ""
+
+msgid "Use another key"
+msgstr "Usa un'altra chiave"
+
+#, fuzzy
+msgid "Use this theme"
+msgstr "Immagine successiva"
+
+msgid "View"
+msgstr ""
+
+#, fuzzy
+msgid "View contact"
+msgstr "Aggiungi contatto"
+
+msgid "View raw event"
+msgstr ""
+
+msgid "Vignette"
+msgstr ""
+
+msgid "Voting has ended."
+msgstr ""
+
+msgid "WHAT IT IS"
+msgstr "COS'È"
+
+#, fuzzy
+msgid "WHAT THIS IS, LIVE"
+msgstr "COS'È"
+
+#, fuzzy
+msgid "WHERE A MESSAGE GOES"
+msgstr "NUOVI MESSAGGI"
+
+msgid "WHERE YOUR MESSAGES LAND"
+msgstr ""
+
+msgid "Warning"
+msgstr ""
+
+msgid "Webxdc app"
+msgstr ""
+
+#, fuzzy
+msgid "Whatever you send in this chat is encrypted on your device with MLS before it goes out. The relays that pass it along can't read it, and neither can anyone else."
+msgstr "Tutto ciò che invii in questa chat viene crittografato sul tuo dispositivo prima di partire. I relay che lo trasmettono non possono leggerlo, e nessun altro può farlo."
+
+msgid "Where"
+msgstr ""
+
+msgid "Where linked Nostr events (nevent, note) are pulled from. Your chats never touch these."
+msgstr "Da dove vengono scaricati gli eventi Nostr collegati (nevent, note). Le tue chat non li toccano mai."
+
+#, fuzzy
+msgid "Where peers reach you."
+msgstr "dove i contatti ti raggiungono"
+
+#, fuzzy
+msgid "Where you publish."
+msgstr "dove pubblichi"
+
+msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
+msgstr "White Noise non vede mai la tua chiave privata. Resta solo su questo dispositivo e su qualsiasi firmatario collegato."
+
+msgid "YOU"
+msgstr "TU"
+
+msgid "YOUR KEY PACKAGES"
+msgstr "I TUOI PACCHETTI CHIAVE"
+
+msgid "You stay in the group, but another admin has to grant the rights back."
+msgstr ""
+
+#, fuzzy
+msgid "You stop receiving its messages. Rejoining needs a new invite."
+msgstr "Smetterai di ricevere nuovi messaggi da questo gruppo. La chat viene spostata nell'Archivio."
+
+#, fuzzy
+msgid "You were invited to this group."
+msgstr "Hai lasciato il gruppo."
+
+msgid "Your identity is sovereign"
+msgstr "La tua identità è sovrana"
+
+msgid "Your identity lives only on this device for now. When device linking ships, the devices signed into your key will appear here."
+msgstr "Per ora la tua identità risiede solo su questo dispositivo. Quando il collegamento dei dispositivi sarà disponibile, i dispositivi collegati alla tua chiave appariranno qui."
+
+msgid "Your key never leaves this device."
+msgstr "La tua chiave non lascia mai questo dispositivo."
+
+msgid "Your name"
+msgstr ""
+
+msgid "Your own notepad"
+msgstr ""
+
+msgid "Your password"
+msgstr "La tua password"
+
+msgid "Your profile"
+msgstr "Il tuo profilo"
+
+msgid "Your public key. Safe to share."
+msgstr "La tua chiave pubblica. Sicura da condividere."
+
+msgid "ZOOM"
+msgstr "ZOOM"
+
+msgid "Zoom in"
+msgstr "Aumenta lo zoom"
+
+msgid "Zoom in / out / reset"
+msgstr ""
+
+msgid "Zoom out"
+msgstr "Riduci lo zoom"
+
+msgid "carries the blob"
+msgstr ""
+
+#, fuzzy
+msgid "edited"
+msgstr "modificato"
+
+msgid "failed · tap to retry"
+msgstr "fallito · tocca per riprovare"
+
+msgid "flat"
+msgstr ""
+
+msgid "inbox"
+msgstr ""
+
+msgid "local + relay"
+msgstr "locale + relay"
+
+msgid "local only"
+msgstr "solo locale"
+
+msgid "marmot exposes publish metadata only. Ciphersuite, capabilities, and credential decoding are not available in this build."
+msgstr ""
+
+msgid "npub copied"
+msgstr "npub copiato"
+
+msgid "opened there"
+msgstr ""
+
+msgid "plaintext"
+msgstr ""
+
+msgid "relay"
+msgstr "relay"
+
+msgid "sealed here"
+msgstr ""

@@ -471,7 +471,7 @@ bell_chip :: proc(ui: ^Ui_State) {
 mention_inbox :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("MiModal"))(
 	{
-		layout = {sizing = {width = clay.SizingFixed(420)}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(12), childGap = 6},
+		layout = {sizing = {width = clay.SizingFixed(fit_w(420))}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(12), childGap = 6},
 		backgroundColor = CARD,
 		cornerRadius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
