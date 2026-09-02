@@ -113,6 +113,13 @@ Secret_Store :: struct {
 // Opaque subscription handle; free before the client that created it.
 Chat_List_Subscription :: struct {}
 
+// Opaque handles for the runtime-event firehose. The event payload is
+// a tagged union we deliberately don't mirror: the app only uses an
+// event's arrival as a wake signal, so items stay opaque and are freed
+// unread.
+Events_Subscription :: struct {}
+Runtime_Event :: struct {}
+
 Self_Membership :: enum i32 {
 	MEMBER,
 	LEFT,
@@ -948,6 +955,13 @@ foreign lib {
 	subscribe_chat_list         :: proc(client: ^Client, account_ref: cstring, include_archived: bool, out_sub: ^^Chat_List_Subscription) -> Status ---
 	chat_list_subscription_next :: proc(sub: ^Chat_List_Subscription, timeout_ms: u32, out: ^^Chat_List_Row) -> Status ---
 	chat_list_subscription_free :: proc(sub: ^Chat_List_Subscription) ---
+
+	// Runtime-event firehose (all accounts). Items are opaque wake
+	// signals; timeout_ms 0 waits forever, shutdown yields CLOSED.
+	subscribe_events            :: proc(client: ^Client, out_sub: ^^Events_Subscription) -> Status ---
+	events_subscription_next    :: proc(sub: ^Events_Subscription, timeout_ms: u32, out: ^^Runtime_Event) -> Status ---
+	events_subscription_free    :: proc(sub: ^Events_Subscription) ---
+	event_free                  :: proc(event: ^Runtime_Event) ---
 
 	create_group      :: proc(client: ^Client, account_ref: cstring, name: cstring, member_refs: [^]cstring, member_refs_len: uint, description: cstring, out: ^cstring) -> Status ---
 	send_text         :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, text: cstring, out: ^^Send_Summary) -> Status ---

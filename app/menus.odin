@@ -333,7 +333,7 @@ raw_event_modal :: proc(ui: ^Ui_State) {
 		) {
 			clay.Text(ui.raw_json, {fontId = FONT_MONO, fontSize = 11, textColor = TEXT})
 		}
-		scrollbar(clay.ID("RawScroll"))
+		scrollbar(clay.ID("RawScroll"), 12) // the modal floats at 11
 
 		if clay.UI(clay.ID("RawActions"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}}) {
 			micro_button("RawCopy", "Copy")
@@ -500,7 +500,7 @@ emoji_picker :: proc(ui: ^Ui_State) {
 				}
 			}
 		}
-		scrollbar(clay.ID("PickerGrid"))
+		scrollbar(clay.ID("PickerGrid"), 13) // the panel floats at 12
 	}
 }
 

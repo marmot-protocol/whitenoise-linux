@@ -350,6 +350,19 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 			name := reference.file_name != nil ? string(reference.file_name) : ""
 			append(&msg.att_names, strings.clone(len(name) > 0 ? name : "attachment"))
 			append(&msg.att_keys, strings.clone(reference.plaintext_sha256 != nil ? string(reference.plaintext_sha256) : name))
+			// A custom :shortcode: image riding along with the body.
+			// It renders inline as the emoji, never as an attachment.
+			if strings.has_prefix(name, EMOJI_ATT_PREFIX) {
+				code := emoji_code(name[len(EMOJI_ATT_PREFIX):])
+				if _, seen := remote_emoji_tex[code]; !seen {
+	if plain, ok := media_load(client, account, strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator), reference); ok {
+						remote_emoji_add(name, plain)
+						delete(plain)
+					}
+				}
+				continue
+			}
+
 			lower := strings.to_lower(name, context.temp_allocator)
 			is_mesh := is_model_name(lower) ||
 				(reference.media_type != nil && strings.has_prefix(string(reference.media_type), "model/"))
@@ -578,66 +591,6 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 				txt_views[strings.clone(key)] = view
 				if view != nil {
 					append(&msg.txts, Att_Item(^Txt_View){view, int(j)})
-				} else {
-					append(&msg.files, int(j))
-				}
-				continue
-			}
-
-			// Source files: the same tile shape, syntax highlighted.
-			if is_code_name(lower) {
-				key := reference.plaintext_sha256 != nil ? string(reference.plaintext_sha256) : name
-				if view, seen := code_views[key]; seen {
-					if view != nil {
-						append(&msg.codes, Att_Item(^Code_View){view, int(j)})
-					} else {
-						append(&msg.files, int(j))
-					}
-					continue
-				}
-
-				view: ^Code_View
-				if bytes, ok := media_load(client, account, strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator), reference); ok {
-					defer delete(bytes)
-					view = code_view_make(lower, string(bytes))
-					blob_sizes[strings.clone(key)] = i64(len(bytes))
-				} else {
-					fmt.eprintfln("media: download failed (%s): %s", name, marmot.last_error())
-				}
-
-				code_views[strings.clone(key)] = view
-				if view != nil {
-					append(&msg.codes, Att_Item(^Code_View){view, int(j)})
-				} else {
-					append(&msg.files, int(j))
-				}
-				continue
-			}
-
-			// Source files: the same tile shape, syntax highlighted.
-			if is_code_name(lower) {
-				key := reference.plaintext_sha256 != nil ? string(reference.plaintext_sha256) : name
-				if view, seen := code_views[key]; seen {
-					if view != nil {
-						append(&msg.codes, Att_Item(^Code_View){view, int(j)})
-					} else {
-						append(&msg.files, int(j))
-					}
-					continue
-				}
-
-				view: ^Code_View
-				if bytes, ok := media_load(client, account, strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator), reference); ok {
-					defer delete(bytes)
-					view = code_view_make(lower, string(bytes))
-					blob_sizes[strings.clone(key)] = i64(len(bytes))
-				} else {
-					fmt.eprintfln("media: download failed (%s): %s", name, marmot.last_error())
-				}
-
-				code_views[strings.clone(key)] = view
-				if view != nil {
-					append(&msg.codes, Att_Item(^Code_View){view, int(j)})
 				} else {
 					append(&msg.files, int(j))
 				}

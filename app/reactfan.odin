@@ -1,12 +1,12 @@
 // Hold a message, and the quick reactions fan out around the pointer.
 //
-// The same six emoji the context menu offers, one gesture shorter:
-// press, wait, and they arc up out of the press point, staggered so
+// The same emoji the context menu offers, one gesture shorter: press,
+// wait, and they open into a ring around the press point, staggered so
 // they read as one hand opening. Slide onto one and let go.
 //
-//        😂  ❤️  👍          the arc spans 200°..340°, above the
-//     🎉          🔥         press point, so nothing lands under
-//          ● press           the hand holding the mouse
+//        ❤️  👍  😂          a full circle from 12 o'clock,
+//     🎉    ● press  🔥      clockwise, so the ring holds all
+//        😮  😢  🙏          16 without crowding
 //
 // It composes with the two other things a press can start: a drag
 // scrolls (which needs movement, and the fan needs stillness), and a
@@ -26,8 +26,7 @@ FAN_STILL :: f32(5) // px of drift still counts as holding
 FAN_RADIUS :: f32(62)
 FAN_CELL :: f32(34)
 FAN_TILE :: f32(22)
-FAN_FROM :: f32(200) // degrees, first cell
-FAN_TO :: f32(340) // degrees, last cell
+FAN_FROM :: f32(270) // degrees, first cell: 12 o'clock, then clockwise
 FAN_STAGGER :: 0.045 // seconds between one cell arriving and the next
 FAN_IN :: 0.16 // seconds one cell takes to arrive
 FAN_PICK :: f32(1.25) // how much the cell under the pointer grows
@@ -44,6 +43,13 @@ Fan :: struct {
 @(private = "file")
 fan: Fan
 
+// Wide enough that the cells don't touch: the ring's circumference has
+// to fit `count` cells side by side, with a tenth of a cell between.
+@(private = "file")
+fan_radius :: proc(count: int) -> f32 {
+	return max(FAN_RADIUS, f32(count) * FAN_CELL * 1.1 / (2 * math.PI))
+}
+
 fan_open :: proc() -> bool {
 	return fan.open > 0
 }
@@ -51,10 +57,9 @@ fan_open :: proc() -> bool {
 // Where cell i sits, and how far it has arrived (0 hidden, 1 landed).
 @(private = "file")
 fan_cell :: proc(index, count: int) -> (x, y, t: f32) {
-	share := count > 1 ? f32(index) / f32(count - 1) : 0.5
-	angle := (FAN_FROM + (FAN_TO - FAN_FROM) * share) * math.PI / 180
+	angle := (FAN_FROM + 360 * f32(index) / f32(max(count, 1))) * math.PI / 180
 	t = f32(clamp((rl.GetTime() - fan.open - f64(index) * FAN_STAGGER) / FAN_IN, 0, 1))
-	reach := FAN_RADIUS * ease_back(t)
+	reach := fan_radius(count) * ease_back(t)
 	return fan.at.x + math.cos(angle) * reach, fan.at.y + math.sin(angle) * reach, t
 }
 

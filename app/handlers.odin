@@ -224,11 +224,6 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 
-	// Open emoji picker captures everything while open.
-	if ui.picker_open {
-		handle_picker(ui, client)
-		return
-	}
 	// Open edit-history modal captures everything while open.
 	if ui.hist_open {
 		if rl.IsKeyPressed(.ESCAPE) || (mouse_released() && (clicked("HistClose") || !clay.PointerOver(clay.ID("HistModal")))) {
@@ -762,7 +757,9 @@ pick_emoji :: proc(ui: ^Ui_State, client: ^marmot.Client, emoji: string) {
 	// the composer.
 	if ui.adding_quick {
 		ui.adding_quick = false
-		append(&ui.prefs.quick_reactions, strings.clone(emoji))
+		if len(ui.prefs.quick_reactions) < QUICK_MAX {
+			append(&ui.prefs.quick_reactions, strings.clone(emoji))
+		}
 		save_settings(ui)
 		return
 	}

@@ -6,6 +6,7 @@ package main
 import "core:encoding/json"
 import "core:fmt"
 import "core:os"
+import "core:strings"
 
 // The slint settings pages' knobs. Serialized nested under "prefs".
 Prefs :: struct {
@@ -54,6 +55,10 @@ Prefs :: struct {
 
 DEFAULT_QUICK_REACTIONS := []string{"👍", "❤️", "😂", "😮", "😢", "🙏"}
 
+// Ceiling on the one-tap row: the message menu strip and the hold fan
+// both lay these out on one line.
+QUICK_MAX :: 16
+
 default_prefs :: proc() -> Prefs {
 	p := Prefs {
 		restore_last_chat = true,
@@ -68,7 +73,7 @@ default_prefs :: proc() -> Prefs {
 		panel_w           = PANEL_W_DEFAULT,
 	}
 	for emoji in DEFAULT_QUICK_REACTIONS {
-		append(&p.quick_reactions, emoji)
+		append(&p.quick_reactions, strings.clone(emoji))
 	}
 	return p
 }

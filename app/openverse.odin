@@ -221,7 +221,7 @@ openverse_modal :: proc(ui: ^Ui_State) {
 				}
 			}
 		}
-		scrollbar(clay.ID("OvList"))
+		scrollbar(clay.ID("OvList"), 14) // the modal floats at 13
 	}
 }
 

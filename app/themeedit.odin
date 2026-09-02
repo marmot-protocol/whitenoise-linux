@@ -486,7 +486,7 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 				}
 			}
 		}
-		scrollbar(clay.ID("ThemeEditScroll"))
+		scrollbar(clay.ID("ThemeEditScroll"), 17) // the editor floats at 16
 
 		if clay.UI(clay.ID("ThemeEditActions"))({layout = {sizing = {width = clay.SizingFixed(THEME_EDIT_W)}, childGap = 10, padding = {top = 6}}}) {
 			micro_button("ThemeEditCancel", "Cancel")

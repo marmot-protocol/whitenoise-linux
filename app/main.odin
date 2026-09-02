@@ -747,6 +747,11 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 			}
 			toast_layer(ui)
 
+			// Root level, not the chat pane: settings opens it too.
+			if open_now(clay.ID("PickerPanel"), ui.picker_open) {
+				emoji_picker(ui)
+			}
+
 			if open_now(clay.ID("RowMenu"), ui.row_menu >= 0) &&
 			   row_menu_index(ui) < len(ui.chats) {
 				chat_row_menu(ui)
@@ -1341,6 +1346,7 @@ main :: proc() {
 		xdc_hover = {}
 		img_hover = {}
 		model_hover = {}
+		code_hover = {}
 		pdf_flip_hover = nil
 		img_retry_hover = ""
 		media_retry_hover = false
@@ -1594,6 +1600,7 @@ main :: proc() {
 		handle_att_click(&ui)
 		handle_img_click(&ui, client)
 		handle_model_click(&ui, client)
+		handle_code_click(&ui, client)
 		handle_mention_click(&ui, client)
 		handle_img_retry(&ui, client)
 		handle_media_retry(&ui, client)
@@ -1793,6 +1800,11 @@ main :: proc() {
 			thread.join(live.worker)
 			thread.destroy(live.worker)
 			marmot.chat_list_subscription_free(live.sub)
+		}
+		if live.events_worker != nil {
+			thread.join(live.events_worker)
+			thread.destroy(live.events_worker)
+			marmot.events_subscription_free(live.events_sub)
 		}
 		marmot.client_free(client)
 	}

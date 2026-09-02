@@ -28,7 +28,10 @@ Code_Kind :: enum u8 {
 
 CODE_MAX_LINES :: 4000 // parse cap; a generated file can be enormous
 CODE_TILE_LINES :: 14 // rows on a timeline tile
-CODE_MODAL_LINES :: 40 // rows in the preview modal
+// ponytail: 1000 rows keeps the modal under clay's element budget
+// (32k) with room for the rest of the frame; virtualized rows are the
+// upgrade if whole generated files need to scroll.
+CODE_MODAL_LINES :: 1000 // rows in the preview modal (it scrolls)
 
 // One colored span of a line; text borrows from the view's source.
 Code_Run :: struct {
@@ -58,9 +61,10 @@ Code_Lang :: struct {
 
 @(private = "file")
 CODE_LANGS := []Code_Lang {
+	{"Odin", {".odin"}, "//", "/*", "*/"},
 	{
 		"C-like",
-		{".c", ".h", ".cc", ".cpp", ".hpp", ".cs", ".java", ".go", ".rs", ".odin", ".js", ".mjs", ".ts", ".tsx", ".jsx", ".swift", ".kt", ".zig", ".glsl", ".php", ".scala", ".dart"},
+		{".c", ".h", ".cc", ".cpp", ".hpp", ".cs", ".java", ".go", ".rs", ".js", ".mjs", ".ts", ".tsx", ".jsx", ".swift", ".kt", ".zig", ".glsl", ".php", ".scala", ".dart"},
 		"//",
 		"/*",
 		"*/",
@@ -119,7 +123,10 @@ code_view_make :: proc(name: string, text: string) -> ^Code_View {
 	}
 
 	view := new(Code_View)
-	view^ = {src = strings.clone(text), lang = lang.label}
+	// The mono faces have no tab glyph (it draws as tofu), so tabs
+	// become spaces up front; runs then borrow from the expanded copy.
+	expanded, allocated := strings.replace_all(text, "\t", "    ")
+	view^ = {src = allocated ? expanded : strings.clone(text), lang = lang.label}
 
 	lines := make([dynamic]Code_Line)
 	rest := view.src
@@ -286,8 +293,11 @@ code_color :: proc(kind: Code_Kind) -> clay.Color {
 	return TEXT
 }
 
-// Numbered monospace lines. Long lines are clipped rather than
-// wrapped, so the column structure of code survives.
+// Numbered monospace lines. Runs word-wrap inside their own box, so a
+// long comment or literal folds under its own start instead of running
+// past the tile; the gutter never wraps.
+// ponytail: a line whose runs overflow *together* still clips (clay
+// rows don't wrap children); a run/line reflow model is the upgrade.
 code_lines :: proc(view: ^Code_View, id_seed: u32, limit: int) {
 	shown := min(len(view.lines), limit)
 	for line, i in view.lines[:shown] {
@@ -299,7 +309,7 @@ code_lines :: proc(view: ^Code_View, id_seed: u32, limit: int) {
 			for run in line.runs {
 				clay.Text(
 					run.text,
-					{fontId = FONT_MONO, fontSize = 11, textColor = code_color(run.kind), wrapMode = .None},
+					{fontId = FONT_MONO, fontSize = 11, textColor = code_color(run.kind)},
 				)
 			}
 		}

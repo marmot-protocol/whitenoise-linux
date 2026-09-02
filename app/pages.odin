@@ -90,6 +90,14 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 
+	// The emoji picker captures everything while open, on whatever page
+	// opened it: settings adds a one-tap reaction through it, and the
+	// chat page's handler never runs there.
+	if ui.picker_open {
+		handle_picker(ui, client)
+		return
+	}
+
 	if ui.page == .Settings {
 		settings_fields(ui) // press-phase focus clicks for text boxes
 		if ui.lang_open || ui.shortcuts_open || ui.theme_menu_open || ui.export_open {

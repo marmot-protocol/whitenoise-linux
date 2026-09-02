@@ -282,7 +282,7 @@ settings_general :: proc(ui: ^Ui_State) {
 
 	eyebrow("QUICK REACTIONS")
 	if clay.UI(clay.ID("RowQuick"))(srow()) {
-		row_labels("One-tap reactions", "Shown on the message menu. Tap one to remove it.")
+		row_labels("One-tap reactions", "Shown on the message menu. Tap one to remove it. Up to 16.")
 		for emoji, i in ui.prefs.quick_reactions {
 			if clay.UI(clay.ID("QuickChip", u32(i)))(
 			{
@@ -307,7 +307,7 @@ settings_general :: proc(ui: ^Ui_State) {
 				}
 			}
 		}
-		if clay.UI(clay.ID("QuickAdd"))(
+		if len(ui.prefs.quick_reactions) < QUICK_MAX do if clay.UI(clay.ID("QuickAdd"))(
 		{
 			layout = {padding = {left = 8, right = 8, top = 4, bottom = 4}},
 			backgroundColor = hovered() ? HOVER : {},

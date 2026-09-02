@@ -2,10 +2,9 @@ package main
 
 // Custom :shortcode: emoji. PNGs live under <config>/emoji/, one file
 // per emoji; the filename stem is the shortcode, so the directory IS
-// the persisted shortcode → image map. Local-only: there is no public
-// upload in marmot-c (upload_media is the group-encrypted MIP-04
-// path), so messages carry the literal :shortcode: text and the image
-// renders only on devices that defined it.
+// the persisted shortcode → image map. A message using one ships the
+// image alongside it, so it renders for the group too; see
+// EMOJI_ATT_PREFIX below.
 
 import "core:fmt"
 import "core:os"
@@ -88,6 +87,10 @@ custom_tex_by_code :: proc(code: string) -> ^rl.Texture2D {
 		if emoji_code(name) == code {
 			return custom_emoji_texture(name)
 		}
+	}
+
+	if tex, ok := remote_emoji_tex[code]; ok && tex != nil {
+		return tex
 	}
 
 	for b, i in BUILTIN_EMOJI {
@@ -230,4 +233,71 @@ save_staged_emoji :: proc(ui: ^Ui_State) {
 
 	custom_emoji_scan()
 	cancel_staged_emoji(ui)
+}
+
+// ── Custom emoji over the wire ──────────────────────────────────────
+//
+// Kind 9 is reserved (marmot rejects a hand-built one) and send_text
+// carries no tags, so NIP-30's ["emoji", code, url] tag has nowhere to
+// ride. The attachment path is the one public channel a chat message
+// has: a body containing :code: ships the PNG alongside it, named
+// wn-emoji-<code>.<ext>. Receivers decode that into the cache below
+// and draw it inline; clients that don't know the convention still see
+// the image as an ordinary attachment.
+EMOJI_ATT_PREFIX :: "wn-emoji-"
+
+// Shortcode → texture, filled from received attachments. Session-only:
+// every timeline load walks the records again, and media_load caches
+// the blob on disk, so a reload costs no network.
+remote_emoji_tex: map[string]^rl.Texture2D
+
+// The stored file backing a shortcode, "" when only a builtin (or
+// nothing) defines it. Builtins ship in every binary, so they need no
+// wire copy.
+emoji_file_for :: proc(code: string) -> string {
+	for name in custom_emoji_names {
+		if emoji_code(name) == code {
+			return name
+		}
+	}
+	return ""
+}
+
+// Distinct shortcodes in a body that this device has a file for.
+emoji_codes_in :: proc(body: string) -> [dynamic]string {
+	codes := make([dynamic]string, context.temp_allocator)
+	for i := 0; i < len(body); i += 1 {
+		if body[i] != ':' {
+			continue
+		}
+		end, tex := shortcode_at(body, i)
+		if tex == nil {
+			continue
+		}
+		code := body[i + 1:end - 1]
+		if !slice.contains(codes[:], code) && emoji_file_for(code) != "" {
+			append(&codes, code)
+		}
+		i = end - 1
+	}
+	return codes
+}
+
+// Decode a received wn-emoji-<code>.<ext> attachment into the cache.
+remote_emoji_add :: proc(att_name: string, data: []u8) {
+	code := emoji_code(att_name[len(EMOJI_ATT_PREFIX):])
+	if len(code) == 0 || code in remote_emoji_tex {
+		return
+	}
+	ext := strings.clone_to_cstring(att_name[strings.last_index_byte(att_name, '.'):], context.temp_allocator)
+	img := rl.LoadImageFromMemory(ext, raw_data(data), i32(len(data)))
+	if img.data == nil {
+		remote_emoji_tex[strings.clone(code)] = nil // bad file, don't retry
+		return
+	}
+	tex := new(rl.Texture2D)
+	tex^ = rl.LoadTextureFromImage(img)
+	rl.UnloadImage(img)
+	rl.SetTextureFilter(tex^, .BILINEAR)
+	remote_emoji_tex[strings.clone(code)] = tex
 }

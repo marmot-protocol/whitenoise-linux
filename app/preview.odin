@@ -239,6 +239,27 @@ handle_model_click :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	preview_show(model_hover.name, clone_bytes(result.plaintext[:result.plaintext_len]))
 }
 
+// Click a source tile: the full file in the preview modal, which
+// scrolls where the tile truncates.
+code_hover: Model_Ref
+
+handle_code_click :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if code_hover.msg_id == "" || preview_shown || !mouse_released() {
+		return
+	}
+	if att_hover.msg_id != "" || ui.selected < 0 || ui.selected >= len(ui.chats) {
+		return
+	}
+
+	result, ok := fetch_attachment(ui, client, ui.chats[ui.selected].group_id, code_hover.msg_id, code_hover.att)
+	if !ok {
+		ui.client_status = fmt.aprintf("couldn't open %s", code_hover.name)
+		return
+	}
+	defer marmot.media_download_result_free(result)
+	preview_show(code_hover.name, clone_bytes(result.plaintext[:result.plaintext_len]))
+}
+
 // Drop every failed (nil) entry from the image session cache and
 // reload the timeline, so the downloads run again. An open slideshow
 // is rebuilt in place, keeping its position.
@@ -420,7 +441,9 @@ preview_modal :: proc(ui: ^Ui_State) {
 
 		if clay.UI(clay.ID("PvScroll"))(
 		{
-			layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFit({}), height = clay.SizingFit({})}, childGap = 10},
+			// Height capped below the modal's own cap, or the fit sizing
+			// matches the content and the scrollbar never engages.
+			layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFit({}), height = clay.SizingFit({max = max_h - PV_CHROME})}, childGap = 10},
 			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		},
 		) {
@@ -612,7 +635,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 			}
 		}
 		}
-		scrollbar(clay.ID("PvScroll"))
+		scrollbar(clay.ID("PvScroll"), 13) // the modal floats at 12
 	}
 }
 

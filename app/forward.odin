@@ -95,7 +95,7 @@ forward_modal :: proc(ui: ^Ui_State) {
 				}
 			}
 		}
-		scrollbar(clay.ID("FwdList"))
+		scrollbar(clay.ID("FwdList"), 14) // the modal floats at 13
 	}
 }
 

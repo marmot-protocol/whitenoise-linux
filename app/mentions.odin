@@ -523,7 +523,7 @@ mention_inbox :: proc(ui: ^Ui_State) {
 				}
 			}
 		}
-		scrollbar(clay.ID("MiList"))
+		scrollbar(clay.ID("MiList"), 14) // the modal floats at 13
 	}
 }
 

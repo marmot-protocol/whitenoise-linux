@@ -50,9 +50,6 @@ chat_pane :: proc(ui: ^Ui_State) {
 		if open_now(clay.ID("PvModal"), preview_shown) && preview_shown {
 			preview_modal(ui)
 		}
-		if open_now(clay.ID("PickerPanel"), ui.picker_open) {
-			emoji_picker(ui)
-		}
 		// Header.
 		if clay.UI(clay.ID("ChatHeader"))(
 		{layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(14), childGap = 10, childAlignment = {y = .Center}}, backgroundColor = RAIL_BG},

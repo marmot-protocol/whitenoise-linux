@@ -19,11 +19,14 @@ import rl "sdlrl"
 import marmot "../marmot"
 
 Live :: struct {
-	mutex:        sync.Mutex,
-	dirty:        bool, // chat list changed
-	dirty_groups: [dynamic]string, // group ids with changed rows
-	sub:          ^marmot.Chat_List_Subscription,
-	worker:       ^thread.Thread,
+	mutex:          sync.Mutex,
+	dirty:          bool, // chat list changed
+	timeline_dirty: bool, // any runtime event; reload the open timeline
+	dirty_groups:   [dynamic]string, // group ids with changed rows
+	sub:            ^marmot.Chat_List_Subscription,
+	worker:         ^thread.Thread,
+	events_sub:     ^marmot.Events_Subscription,
+	events_worker:  ^thread.Thread,
 }
 
 live_worker :: proc(t: ^thread.Thread) {
@@ -47,6 +50,30 @@ live_worker :: proc(t: ^thread.Thread) {
 	}
 }
 
+// The chat-list stream only fires when a row changes (a new message
+// moves last_id and the preview). A reaction, edit, or deletion in the
+// open chat changes neither, so it never woke the UI: the timeline
+// stayed stale until a chat switch reloaded it by hand. The firehose
+// covers those; items are freed unread, arrival is the whole signal.
+events_worker :: proc(t: ^thread.Thread) {
+	live := (^Live)(t.data)
+	for {
+		event: ^marmot.Runtime_Event
+		status := marmot.events_subscription_next(live.events_sub, 0, &event)
+		if status == .CLOSED {
+			return
+		}
+		if status != .OK {
+			continue
+		}
+		marmot.event_free(event)
+		sync.lock(&live.mutex)
+		live.dirty = true
+		live.timeline_dirty = true
+		sync.unlock(&live.mutex)
+	}
+}
+
 start_live :: proc(live: ^Live, client: ^marmot.Client, account_ref: string) {
 	if live.worker != nil || client == nil || len(account_ref) == 0 {
 		return
@@ -59,6 +86,16 @@ start_live :: proc(live: ^Live, client: ^marmot.Client, account_ref: string) {
 	live.worker = thread.create(live_worker)
 	live.worker.data = live
 	thread.start(live.worker)
+
+	if marmot.subscribe_events(client, &live.events_sub) != .OK {
+		// The chat-list stream still covers new messages; reactions
+		// and edits fall back to the chat-switch reload.
+		fmt.eprintfln("live: events subscribe failed: %s", marmot.last_error())
+		return
+	}
+	live.events_worker = thread.create(events_worker)
+	live.events_worker.data = live
+	thread.start(live.events_worker)
 }
 
 // The subscription is the fast path, and this is the safety net: a
@@ -139,7 +176,8 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 	sync.lock(&live.mutex)
 	dirty := live.dirty
 	live.dirty = false
-	timeline_hit := false
+	timeline_hit := live.timeline_dirty && ui.selected >= 0
+	live.timeline_dirty = false
 	if ui.selected >= 0 {
 		for group in live.dirty_groups {
 			if group == ui.chats[ui.selected].group_id {
@@ -438,7 +476,30 @@ queue_send :: proc(ui: ^Ui_State, client: ^marmot.Client, body: string) {
 		reply_to = strings.clone(len(thread_cur(ui)) > 0 ? "" : ui.replying),
 		thread   = strings.clone(thread_cur(ui)),
 	})
+	attach_body_emoji(&ui.pending[len(ui.pending) - 1], body)
 	spawn_send(ui, client, ui.pending[len(ui.pending) - 1])
+}
+
+// Ship the image behind every :shortcode: this device defines, so the
+// group renders it instead of the literal text. A reply is left alone:
+// upload_media has no reply tag, so attaching would drop the reply.
+@(private = "file")
+attach_body_emoji :: proc(p: ^Pending_Send, body: string) {
+	if len(p.reply_to) > 0 {
+		return
+	}
+	for code in emoji_codes_in(body) {
+		name := emoji_file_for(code)
+		data, err := os.read_entire_file(fmt.tprintf("%s/%s", emoji_dir(), name), context.allocator)
+		if err != nil {
+			continue
+		}
+		append(&p.atts, Pending_Att{
+			name       = fmt.aprintf("%s%s", EMOJI_ATT_PREFIX, name),
+			media_type = media_type_for(name),
+			data       = data,
+		})
+	}
 }
 
 free_pending :: proc(p: ^Pending_Send) {

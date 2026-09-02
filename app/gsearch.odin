@@ -317,7 +317,7 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 				}
 			}
 		}
-		scrollbar(clay.ID("GsList"))
+		scrollbar(clay.ID("GsList"), 14) // the modal floats at 13
 	}
 }
 

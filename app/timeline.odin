@@ -699,41 +699,15 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 		}
 
 		// Source tiles: highlighted lines with the file name on top.
+		// Click opens the preview modal (handle_code_click).
 		for entry, j in msg.codes {
 			view := entry.view
 			if clay.UI(clay.ID("MsgCode", index * 1024 + u32(j)))(
-			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(360)}, padding = clay.PaddingAll(10), childGap = 2}, backgroundColor = PLATE, cornerRadius = rr(8)},
+			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(10), childGap = 2}, backgroundColor = PLATE, cornerRadius = rr(8)},
 			) {
-				att_dl_button("DlCode", index * 1024 + u32(j), msg.id, entry.att, msg.att_names[entry.att])
-				if clay.UI(clay.ID("MsgCodeName", index * 1024 + u32(j)))({layout = {padding = {bottom = 4}, childGap = 8}}) {
-					clay.Text(msg.att_names[entry.att], {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT})
-					clay.Text(view.lang, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+				if hovered() {
+					code_hover = {msg.id, entry.att, msg.att_names[entry.att]}
 				}
-				code_lines(view, index * 4096 + 3072 + u32(j) * 512, CODE_TILE_LINES)
-			}
-		}
-
-		// Source tiles: highlighted lines with the file name on top.
-		for entry, j in msg.codes {
-			view := entry.view
-			if clay.UI(clay.ID("MsgCode", index * 1024 + u32(j)))(
-			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(360)}, padding = clay.PaddingAll(10), childGap = 2}, backgroundColor = PLATE, cornerRadius = rr(8)},
-			) {
-				att_dl_button("DlCode", index * 1024 + u32(j), msg.id, entry.att, msg.att_names[entry.att])
-				if clay.UI(clay.ID("MsgCodeName", index * 1024 + u32(j)))({layout = {padding = {bottom = 4}, childGap = 8}}) {
-					clay.Text(msg.att_names[entry.att], {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT})
-					clay.Text(view.lang, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
-				}
-				code_lines(view, index * 4096 + 3072 + u32(j) * 512, CODE_TILE_LINES)
-			}
-		}
-
-		// Source tiles: highlighted lines with the file name on top.
-		for entry, j in msg.codes {
-			view := entry.view
-			if clay.UI(clay.ID("MsgCode", index * 1024 + u32(j)))(
-			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(360)}, padding = clay.PaddingAll(10), childGap = 2}, backgroundColor = PLATE, cornerRadius = rr(8)},
-			) {
 				att_dl_button("DlCode", index * 1024 + u32(j), msg.id, entry.att, msg.att_names[entry.att])
 				if clay.UI(clay.ID("MsgCodeName", index * 1024 + u32(j)))({layout = {padding = {bottom = 4}, childGap = 8}}) {
 					clay.Text(msg.att_names[entry.att], {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT})
@@ -938,7 +912,10 @@ scroll_drag: Scroll_Drag
 // Scrollbar for a clay scroll container, floated on its right edge
 // from the previous frame's scroll data. Wheel scrolls; the thumb is
 // also hand-draggable (grab it, scroll follows the pointer).
-scrollbar :: proc(container: clay.ElementId) {
+// `z` must beat the container's own stacking context: the default sits
+// above base content, a scroll region inside a floating modal passes
+// something above the modal's zIndex or the thumb paints beneath it.
+scrollbar :: proc(container: clay.ElementId, z: i16 = 5) {
 	data := clay.GetScrollContainerData(container)
 	if !data.found || data.contentDimensions.height <= data.scrollContainerDimensions.height {
 		return
@@ -963,7 +940,7 @@ scrollbar :: proc(container: clay.ElementId) {
 	if clay.UI(thumb_id)(
 	{
 		layout = {sizing = {width = clay.SizingFixed(5), height = clay.SizingFixed(thumb)}},
-		floating = {attachTo = .ElementWithId, parentId = container.id, offset = {-3, y}, zIndex = 5, attachment = {element = .RightTop, parent = .RightTop}},
+		floating = {attachTo = .ElementWithId, parentId = container.id, offset = {-3, y}, zIndex = z, attachment = {element = .RightTop, parent = .RightTop}},
 		backgroundColor = dragging || clay.PointerOver(thumb_id) ? ACCENT : FIELD_BORDER,
 		cornerRadius = rr(3),
 	},
