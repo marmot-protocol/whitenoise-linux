@@ -19,11 +19,13 @@ custom_emoji_textures: map[string]^rl.Texture2D
 
 // Built-in shortcodes shipped in the binary, always available and not
 // removable. A user file with the same code takes precedence.
-BUILTIN_EMOJI := [1]struct {
+BUILTIN_EMOJI := [2]struct {
 	code: string,
 	png:  []u8,
 } {
 	{"marmot", #load("assets/marmot.png")},
+	// The logomark on its dark tile, so it reads on light themes too.
+	{"wn", #load("assets/wn.png")},
 }
 builtin_emoji_tex: [len(BUILTIN_EMOJI)]^rl.Texture2D
 
