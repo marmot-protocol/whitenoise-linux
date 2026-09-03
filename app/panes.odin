@@ -98,7 +98,11 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 			if clay.UI(clay.ID("ChatRowTop", index))(
 			{layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFit({min = chip_h()})}, childGap = 8, childAlignment = {y = .Center}}},
 			) {
-				clay.Text(chat.title, {fontId = FONT_TITLE, fontSize = 14, textColor = TEXT})
+				// One clipped line: a long unbroken name would otherwise
+				// push the time and badge out of the row.
+				if clay.UI(clay.ID("ChatRowTitleClip", index))({clip = {horizontal = true}}) {
+					clay.Text(chat.title, {fontId = FONT_TITLE, fontSize = 14, textColor = TEXT, wrapMode = .None})
+				}
 				// Row-action markers (rowactions.odin): pinned rows lead
 				// the rail, muted rows raise no notification.
 				if g_prefs != nil && g_prefs.pinned[chat.group_id] {
