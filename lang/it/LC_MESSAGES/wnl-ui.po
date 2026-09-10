@@ -1650,6 +1650,9 @@ msgstr "Conservala in un posto sicuro e chiudi questa finestra. Chiunque la impo
 msgid "Stored on this device, not published to any relay yet."
 msgstr "Nessuna chiave salvata su questo dispositivo. Reimposta e reinserisci il tuo nsec."
 
+msgid "System"
+msgstr "Sistema"
+
 msgid "TEXT SIZE"
 msgstr ""
 

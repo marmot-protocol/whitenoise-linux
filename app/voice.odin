@@ -103,7 +103,7 @@ voice_send :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	append(&p.atts, Pending_Att{name = name, media_type = "audio/wav", data = wav_encode(voice.samples[:])})
 	append(&ui.pending, p)
-	spawn_send(ui, client, ui.pending[len(ui.pending) - 1])
+	spawn_send(ui, client, &ui.pending[len(ui.pending) - 1])
 
 	clear(&voice.samples)
 	ui.scroll_pending = true

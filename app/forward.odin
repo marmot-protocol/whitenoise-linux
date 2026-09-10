@@ -194,7 +194,7 @@ do_forward :: proc(ui: ^Ui_State, client: ^marmot.Client, dest: int) {
 			sender   = strings.clone(sender),
 			body     = strings.clone(msg.body),
 		})
-		spawn_send(ui, client, ui.pending[len(ui.pending) - 1])
+		spawn_send(ui, client, &ui.pending[len(ui.pending) - 1])
 	}
 	if len(atts) > 0 {
 		send_ticket += 1
@@ -205,7 +205,7 @@ do_forward :: proc(ui: ^Ui_State, client: ^marmot.Client, dest: int) {
 			body     = strings.clone(""),
 			atts     = atts,
 		})
-		spawn_send(ui, client, ui.pending[len(ui.pending) - 1])
+		spawn_send(ui, client, &ui.pending[len(ui.pending) - 1])
 	}
 }
 

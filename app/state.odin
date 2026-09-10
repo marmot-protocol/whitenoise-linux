@@ -243,6 +243,7 @@ Md_Block_Ui :: struct {
 	kind:  Md_Kind,
 	text:  string,
 	level: int, // heading level
+	marker_len: int, // list marker bytes, including the trailing space
 	cells: [][]string, // table rows, row 0 = header
 }
 

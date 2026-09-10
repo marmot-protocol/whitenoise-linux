@@ -11,11 +11,19 @@ agent_preview_updates :: proc(t: ^testing.T) {
 	testing.expect_value(t, offset_of(marmot.Agent_Stream_Update, data), 8)
 	p: Agent_Preview
 	defer delete(p.text)
+	progress := marmot.Agent_Stream_Update{tag = .PROGRESS}
+	progress.data.chunk.text = "Checking "
+	agent_apply(&p, &progress)
+	progress.data.chunk.text = "the files"
+	agent_apply(&p, &progress)
+	testing.expect_value(t, string(p.text[:]), "Checking the files")
 	chunk := marmot.Agent_Stream_Update{tag = .CHUNK}
 	chunk.data.chunk.text = "hello"
 	agent_apply(&p, &chunk)
 	chunk.data.chunk.text = " world"
 	agent_apply(&p, &chunk)
+	testing.expect_value(t, string(p.text[:]), "hello world")
+	agent_apply(&p, &progress)
 	testing.expect_value(t, string(p.text[:]), "hello world")
 	checkpoint := marmot.Agent_Stream_Update{tag = .RECORD}
 	checkpoint.data.record.record_type = .CHECKPOINT
@@ -58,6 +66,15 @@ agent_final_reconciliation :: proc(t: ^testing.T) {
 		kind = 9, sender = "agent", message_id_hex = "final",
 		agent_text_stream_json = `{"stream_id_hex":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","status":"finalized"}`,
 	}
+	start.timeline_at = 1
+	plain := marmot.Timeline_Message_Record{
+		kind = 9, sender = "agent", message_id_hex = "commentary", timeline_at = 2,
+	}
+	live_records := [?]marmot.Timeline_Message_Record{start, plain}
+	live_page := marmot.Timeline_Page{messages = raw_data(live_records[:]), messages_len = len(live_records)}
+	agent_collect(nil, &ui, &live_page)
+	_, live_visible := agent_body(&start)
+	testing.expect(t, live_visible, "A plain message must not cancel a live stream")
 	records := [?]marmot.Timeline_Message_Record{start, final}
 	page := marmot.Timeline_Page{messages = raw_data(records[:]), messages_len = len(records)}
 	agent_collect(nil, &ui, &page)

@@ -3,6 +3,7 @@
 package main
 
 import "core:testing"
+import "core:sync"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import marmot "../marmot"
@@ -53,6 +54,9 @@ folder_filter :: proc(t: ^testing.T) {
 
 @(test)
 folder_chip_clicks :: proc(t: ^testing.T) {
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
+
 	memory := make([]u8, int(clay.MinMemorySize()))
 	defer delete(memory)
 	previous := clay.GetCurrentContext()

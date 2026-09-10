@@ -94,7 +94,7 @@ parse_md_text :: proc(text: string) -> [dynamic]Md_Block_Ui {
 			append(&blocks, Md_Block_Ui{kind = .Quote, text = strings.clone(t[2:])})
 		case strings.has_prefix(t, "- ") || strings.has_prefix(t, "* "):
 			flush_para(&blocks, &para)
-			append(&blocks, Md_Block_Ui{kind = .List_Item, text = fmt.aprintf("• %s", t[2:])})
+			append(&blocks, Md_Block_Ui{kind = .List_Item, text = fmt.aprintf("• %s", t[2:]), marker_len = len("• ")})
 		case:
 			if strings.builder_len(para) > 0 {
 				strings.write_byte(&para, ' ')

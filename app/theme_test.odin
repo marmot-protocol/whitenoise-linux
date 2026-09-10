@@ -65,3 +65,32 @@ theme_str_key :: proc(t: ^testing.T) {
 	testing.expect_value(t, toml_str_key(TEST_THEME, "base"), "")
 	testing.expect_value(t, toml_str_key("base = \"dark\"\n", "base"), "dark")
 }
+
+@(test)
+theme_system_palette :: proc(t: ^testing.T) {
+	for source in ([]string{
+		"background = \"#101020\"\nforeground = \"#eeeeff\"\naccent = \"#88aaff\"\ncolor1 = \"#ff5566\"",
+		"background = '#ffffff' # light\nforeground = '#112233'\naccent = '#445566'\nred = '#ff5566'",
+	}) {
+		pack, ok := parse_system_theme(source)
+		testing.expect(t, ok)
+		if !ok { continue }
+		defer delete(pack.source)
+		testing.expect_value(t, pack.name, "System")
+		testing.expect_value(t, pack.danger, [4]f32{255, 85, 102, 255})
+		testing.expect(t, pack.bg != pack.text_hi)
+		testing.expect(t, pack.panel != pack.bg)
+		for accent in pack.accent_base { testing.expect_value(t, accent, pack.accent_base[0]) }
+		snapshot := parse_theme("Shared", "shared", pack.source, default_pack())
+		testing.expect_value(t, snapshot.bg, pack.bg)
+		testing.expect_value(t, snapshot.accent_base, pack.accent_base)
+	}
+	for source in ([]string{
+		"", "background = \"#112233\"",
+		"background = \"#112233\"\nforeground = \"#ffffff\"\naccent = \"#GGGGGG\"",
+		"background = \"#112233\"\nforeground = \"#ffffff\"\naccent = \"#1234567\"",
+	}) {
+		_, ok := parse_system_theme(source)
+		testing.expect(t, !ok)
+	}
+}

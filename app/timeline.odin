@@ -3,6 +3,7 @@ package main
 import "core:fmt"
 import "core:slice"
 import "core:strings"
+import "core:time"
 import "core:unicode/utf8"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
@@ -10,8 +11,21 @@ import rl "sdlrl"
 
 import marmot "../marmot"
 
+@(private)
+PENDING_DELETE_DELAY :: 30 * time.Second
+
+@(private)
+pending_can_delete :: proc(p: Pending_Send, now: time.Tick) -> bool {
+	return !p.dismissed && (p.failed || p.queued ||
+		(p.sending_since != {} && time.tick_diff(p.sending_since, now) >= PENDING_DELETE_DELAY))
+}
+
 pending_row :: proc(index: u32, ui: ^Ui_State, p: Pending_Send) {
+	if p.dismissed {
+		return
+	}
 	body_color := p.failed ? DANGER : TEXT_DIM
+	can_delete := pending_can_delete(p, time.tick_now())
 	if clay.UI(clay.ID("PendingRow", index))(
 	{layout = {sizing = {width = clay.SizingGrow()}, padding = {left = 16, right = 16, top = 6, bottom = 6}, childGap = 10}, backgroundColor = hovered() ? HOVER : {}},
 	) {
@@ -22,6 +36,11 @@ pending_row :: proc(index: u32, ui: ^Ui_State, p: Pending_Send) {
 		if clay.UI(clay.ID("PendingHead", index))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 8, childAlignment = {y = .Center}}}) {
 			clay.Text(p.sender, {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM})
 			clay.Text(p.failed ? "failed" : p.queued ? "queued" : "sending…", {fontId = FONT_BODY, fontSize = 11, textColor = p.failed ? DANGER : TEXT_LO})
+			if can_delete {
+				if clay.UI(clay.ID("PendingDelete", index))({layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(4)}) {
+					clay.Text(tr("Delete for me"), {fontId = FONT_BODY, fontSize = 11, textColor = DANGER})
+				}
+			}
 		}
 
 		for a, j in p.atts {
@@ -34,7 +53,12 @@ pending_row :: proc(index: u32, ui: ^Ui_State, p: Pending_Send) {
 			) {}
 		}
 
-		body_text(0xF00000 + index * 8, p.body, 14, body_color)
+		body_text(0xF00000 + index * 8, p.body, 14, body_color, wrap_w = body_wrap_w())
+		if can_delete {
+			if clay.UI(clay.ID("PendingDeleteEnd", index))({layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(4)}) {
+				clay.Text(tr("Delete for me"), {fontId = FONT_BODY, fontSize = 11, textColor = DANGER})
+			}
+		}
 		if p.failed {
 			clay.Text(tr("failed · tap to retry"), {fontId = FONT_BODY, fontSize = 11, textColor = DANGER})
 		}
@@ -1436,7 +1460,17 @@ md_blocks :: proc(blocks: []Md_Block_Ui, id_base: u32, selectable := false, wrap
 				clay.Text(block.text, {fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM})
 			}
 		case .List_Item:
-			body_text(block_id + 2, block.text, BODY_FS, TEXT, selectable, wrap_w)
+			marker := block.text[:block.marker_len]
+			marker_w := max(f32(20), rl.MeasureTextLine(FONT_BODY, BODY_FS, marker, 0).x)
+			width := wrap_w > 0 ? wrap_w : (selectable ? body_wrap_w() : 0)
+			if clay.UI(clay.ID("MsgListItem", block_id))({layout = {padding = {left = 12}}}) {
+				if clay.UI(clay.ID("MsgListMarker", block_id))({layout = {sizing = {width = clay.SizingFixed(marker_w)}}}) {
+					clay.Text(marker, {fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT})
+				}
+				if clay.UI(clay.ID("MsgListBody", block_id))({layout = {layoutDirection = .TopToBottom}}) {
+					body_text(block_id + 2, block.text[block.marker_len:], BODY_FS, TEXT, selectable, width > 0 ? max(f32(1), width - 12 - marker_w) : 0)
+				}
+			}
 		case .Image:
 			tex := nev_img(block.text)
 			if tex == nil {
@@ -1526,41 +1560,31 @@ att_w :: proc(w: f32 = 320) -> f32 {
 // font, so emoji tiles and mention chips (drawn wider) can push a line
 // slightly over, the same estimate the slint wrapper makes.
 wrap_break :: proc(text: string, at, end: int, width: f32, font_size: u16) -> int {
-	cut := at
-	for {
-		next := cut
-		for next < end && text[next] == ' ' {
-			next += 1
-		}
-		for next < end && text[next] != ' ' {
-			next += 1
-		}
-		if next == cut {
-			break
-		}
-		if rl.MeasureTextLine(FONT_BODY, font_size, text[at:next], 0).x > width {
-			if cut > at {
-				return cut
-			}
-			// An event token stays whole: its card replaces it, so
-			// it takes a line of its own instead of splitting.
-			word := at
-			for word < next && text[word] == ' ' {
-				word += 1
-			}
-			if tok_end, _, _, is_event := nevent_at(text, word); is_event && tok_end == next {
-				return next
-			}
-			// One word wider than the line (a cashu token, a long
-			// URL): break it mid-word at the last rune that fits.
-			return rune_fit(text, at, next, width, font_size)
-		}
-		cut = next
-		if cut >= end {
-			break
-		}
+	// Only measure the current line. Measuring the whole next word
+	// rescans a long unbroken suffix once per line (quadratic work).
+	fit := rune_fit(text, at, end, width, font_size)
+	if fit == end || text[fit] == ' ' {
+		return fit
 	}
-	return end
+	cut := fit
+	for cut > at && text[cut - 1] != ' ' {
+		cut -= 1
+	}
+	for cut > at && text[cut - 1] == ' ' {
+		cut -= 1
+	}
+	if cut > at {
+		return cut
+	}
+	// An event token stays whole because its card replaces the text.
+	word := at
+	for word < fit && text[word] == ' ' {
+		word += 1
+	}
+	if tok_end, _, _, is_event := nevent_at(text, word); is_event && tok_end <= end {
+		return tok_end
+	}
+	return fit
 }
 
 // Longest prefix of [at, end) that fits `width`, cut on a rune

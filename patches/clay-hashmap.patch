@@ -1,0 +1,49 @@
+diff --git a/clay.h b/clay.h
+index 7d9cf4c..b18b4f7 100644
+--- a/clay.h
++++ b/clay.h
+@@ -1783,16 +1783,6 @@ bool Clay__PointIsInsideRect(Clay_Vector2 point, Clay_BoundingBox rect) {
+ 
+ Clay_LayoutElementHashMapItem* Clay__AddHashMapItem(Clay_ElementId elementId, Clay_LayoutElement* layoutElement) {
+     Clay_Context* context = Clay_GetCurrentContext();
+-    if (context->layoutElementsHashMapInternal.length == context->layoutElementsHashMapInternal.capacity - 1) {
+-        if (!context->booleanWarnings.hashMapCapacityExceeded) {
+-            context->errorHandler.errorHandlerFunction(CLAY__INIT(Clay_ErrorData) {
+-                .errorType = CLAY_ERROR_TYPE_HASH_MAP_CAPACITY_EXCEEDED,
+-                .errorText = CLAY_STRING("Clay has run out of space in it's internal element ID hashmap.  Try using Clay_SetMaxElementCount() with a higher value."),
+-                .userData = context->errorHandler.userData });
+-            context->booleanWarnings.hashMapCapacityExceeded = true;
+-        }
+-        return NULL;
+-    }
+     Clay_LayoutElementHashMapItem item = { .elementId = elementId, .layoutElement = layoutElement, .nextIndex = -1, .generation = context->generation + 1, .appearedThisFrame = true };
+     uint32_t hashBucket = elementId.id % context->layoutElementsHashMap.capacity;
+     int32_t hashItemPrevious = -1;
+@@ -1829,6 +1819,16 @@ Clay_LayoutElementHashMapItem* Clay__AddHashMapItem(Clay_ElementId elementId, Cl
+         indexToUse = Clay__int32_tArray_GetValue(&context->layoutElementsHashMapFreeList, context->layoutElementsHashMapFreeList.length - 1);
+         context->layoutElementsHashMapFreeList.length--;
+     } else {
++        if (context->layoutElementsHashMapInternal.length >= context->layoutElementsHashMapInternal.capacity - 1) {
++            if (!context->booleanWarnings.hashMapCapacityExceeded) {
++                context->errorHandler.errorHandlerFunction(CLAY__INIT(Clay_ErrorData) {
++                    .errorType = CLAY_ERROR_TYPE_HASH_MAP_CAPACITY_EXCEEDED,
++                    .errorText = CLAY_STRING("Clay has run out of space in it's internal element ID hashmap.  Try using Clay_SetMaxElementCount() with a higher value."),
++                    .userData = context->errorHandler.userData });
++                context->booleanWarnings.hashMapCapacityExceeded = true;
++            }
++            return NULL;
++        }
+         indexToUse = context->layoutElementsHashMapInternal.length;
+     }
+     Clay_LayoutElementHashMapItem *hashItem = Clay__LayoutElementHashMapItemArray_Set(&context->layoutElementsHashMapInternal, indexToUse, item);
+@@ -4604,6 +4604,10 @@ Clay_RenderCommandArray Clay_EndLayout(float deltaTime) {
+     if (context->booleanWarnings.maxElementsExceeded) {
+         Clay_String message;
+         message = CLAY_STRING("Clay Error: Layout elements exceeded Clay__maxElementCount");
++        context->errorHandler.errorHandlerFunction(CLAY__INIT(Clay_ErrorData) {
++            .errorType = CLAY_ERROR_TYPE_ELEMENTS_CAPACITY_EXCEEDED,
++            .errorText = message,
++            .userData = context->errorHandler.userData });
+         Clay__AddRenderCommand(CLAY__INIT(Clay_RenderCommand ) {
+             .boundingBox = { context->layoutDimensions.width / 2 - 59 * 4, context->layoutDimensions.height / 2, 0, 0 },
+             .renderData = { .text = { .stringContents = CLAY__INIT(Clay_StringSlice) { .length = message.length, .chars = message.chars, .baseChars = message.chars }, .textColor = {255, 0, 0, 255}, .fontSize = 16 } },

@@ -734,10 +734,17 @@ switch_account :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string
 	load_chat_list(client, account_id, ui)
 }
 
-// Clay reports capacity overruns and id clashes here. Silence made a
-// capacity overrun look like a random crash, so it prints.
+// The pinned Odin binding omits C's HashMapCapacityExceeded.
+@(private)
+CLAY_HASH_MAP_CAPACITY :: u32(9)
+
+// Capacity errors request a larger arena; other layout errors are logged.
 error_handler :: proc "c" (errorData: clay.ErrorData) {
 	context = runtime.default_context()
+	if errorData.errorType == .ElementsCapacityExceeded || errorData.errorType == .TextMeasurementCapacityExceeded || u32(errorData.errorType) == CLAY_HASH_MAP_CAPACITY {
+		layout_overflow = true
+		return
+	}
 	fmt.eprintfln("clay: %v: %s", errorData.errorType, string(errorData.errorText.chars[:errorData.errorText.length]))
 }
 
@@ -806,7 +813,7 @@ convert_blocks :: proc(out: ^[dynamic]Md_Block_Ui, blocks: [^]marmot.Markdown_Bl
 				} else if list.kind.tag == 1 {
 					prefix = fmt.tprintf("%d%s ", list.kind.body.ordered.start + u32(j), string(list.kind.body.ordered.delimiter))
 				} else {
-					prefix = "- "
+					prefix = "• "
 				}
 
 				// One row from the item's first paragraph; nested
@@ -815,7 +822,8 @@ convert_blocks :: proc(out: ^[dynamic]Md_Block_Ui, blocks: [^]marmot.Markdown_Bl
 				if item.blocks_len > 0 && item.blocks[0].tag == .PARAGRAPH {
 					body_text = inline_text(item.blocks[0].body.paragraph.inlines, item.blocks[0].body.paragraph.inlines_len)
 				}
-				append(out, Md_Block_Ui{kind = .List_Item, text = strings.clone(fmt.tprintf("%s%s", prefix, body_text))})
+				append(out, Md_Block_Ui{kind = .List_Item, text = strings.clone(fmt.tprintf("%s%s", prefix, body_text)), marker_len = len(prefix)})
+				delete(body_text)
 				if item.blocks_len > 1 {
 					convert_blocks(out, item.blocks[1:], item.blocks_len - 1, quoted)
 				}
@@ -1009,4 +1017,3 @@ load_chat_list :: proc(client: ^marmot.Client, account_ref: string, ui: ^Ui_Stat
 	// Keep the rail-filter flags aligned with the fresh row set.
 	refresh_filter_hits(client, ui)
 }
-

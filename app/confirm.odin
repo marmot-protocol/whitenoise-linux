@@ -173,9 +173,10 @@ run_confirm :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	switch c.kind {
 	case .None:
-	case .Delete_All:
-		message_op(ui, client, .Delete, c.arg, "")
-	case .Delete_Me:
+	case .Delete_All, .Delete_Me:
+		if c.kind == .Delete_All {
+			message_op(ui, client, .Delete, c.arg, "")
+		}
 		ui.hidden[strings.clone(c.arg)] = true
 		save_hidden(ui)
 		load_timeline(client, ui)

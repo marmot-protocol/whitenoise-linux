@@ -17,7 +17,6 @@
 // vtable (vault_gate.odin), so nothing lands in an OS keychain.
 package main
 
-import "core:c"
 import "core:fmt"
 import "core:os"
 import "core:strconv"
@@ -32,6 +31,20 @@ import rl "sdlrl"
 import marmot "../marmot"
 
 IDLE_MS :: 60 // extra sleep per frame while idle in the background
+
+@(private)
+layout_overflow: bool
+
+@(private)
+init_layout :: proc(memory: ^[]u8, count: i32, dimensions: clay.Dimensions) {
+	clay.SetCurrentContext(nil)
+	delete(memory^)
+	clay.SetMaxElementCount(count)
+	memory^ = make([]u8, int(clay.MinMemorySize()))
+	clay.Initialize(clay.CreateArenaWithCapacityAndMemory(uint(len(memory^)), raw_data(memory^)), dimensions, {handler = error_handler})
+	clay.SetMeasureTextFunction(measure_text, nil)
+	layout_overflow = false
+}
 
 FONT_BODY :: 0
 FONT_TITLE :: 1
@@ -482,91 +495,99 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 									micro_button("ContactsJsonBtn", "Export JSON")
 								}
 							}
-							// Alphabetical with letter section headers and a name
-							// filter, the slint contacts rail. Rows keep their
-							// ui.contacts index in the clay ID so clicks stay stable.
-							filter := strings.to_lower(
-								string(ui.sidebar_filter[:]),
-								context.temp_allocator,
-							)
-							last_letter: u8 = 0
-							for order in contact_order(ui) {
-								contact := ui.contacts[order.idx]
-								if len(filter) > 0 && !strings.contains(order.key, filter) {
-									continue
-								}
-
-								letter: u8 = '#'
-								if len(order.key) > 0 && order.key[0] >= 'a' && order.key[0] <= 'z' {
-									letter = order.key[0] - 32
-								}
-								if letter != last_letter {
-									last_letter = letter
-									if clay.UI(clay.ID("ContactLetter", u32(order.idx)))(
-									{layout = {padding = {left = 10, top = 6, bottom = 2}}},
-									) {
-										clay.Text(
-											fmt.tprintf("%c", letter),
-											{
-												fontId = FONT_MONO,
-												fontSize = 11,
-												textColor = TEXT_LO,
-												letterSpacing = 2,
-											},
-										)
+							if clay.UI(clay.ID("ContactList"))(
+							{
+								layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 6},
+								clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+							},
+							) {
+								// Alphabetical with letter section headers and a name
+								// filter, the slint contacts rail. Rows keep their
+								// ui.contacts index in the clay ID so clicks stay stable.
+								filter := strings.to_lower(
+									string(ui.sidebar_filter[:]),
+									context.temp_allocator,
+								)
+								last_letter: u8 = 0
+								for order in contact_order(ui) {
+									contact := ui.contacts[order.idx]
+									if len(filter) > 0 && !strings.contains(order.key, filter) {
+										continue
 									}
-								}
 
-								selected := ui.selected_contact == order.idx
-								if clay.UI(clay.ID("ContactRow", u32(order.idx)))(
-								{
-									layout = {
-										sizing = {width = clay.SizingGrow()},
-										padding = clay.PaddingAll(10),
-										childGap = 10,
-										childAlignment = {y = .Center},
-									},
-									backgroundColor = selected ? SELECTED : (hovered() ? HOVER : {}),
-									cornerRadius = rr(12),
-								},
-								) {
-									if selected {
-										if clay.UI(clay.ID("ContactRowBar", u32(order.idx)))(
-										{
-											layout = {
-												sizing = {
-													width = clay.SizingFixed(3),
-													height = clay.SizingFixed(18),
+									letter: u8 = '#'
+									if len(order.key) > 0 && order.key[0] >= 'a' && order.key[0] <= 'z' {
+										letter = order.key[0] - 32
+									}
+									if letter != last_letter {
+										last_letter = letter
+										if clay.UI(clay.ID("ContactLetter", u32(order.idx)))(
+										{layout = {padding = {left = 10, top = 6, bottom = 2}}},
+										) {
+											clay.Text(
+												fmt.tprintf("%c", letter),
+												{
+													fontId = FONT_MONO,
+													fontSize = 11,
+													textColor = TEXT_LO,
+													letterSpacing = 2,
 												},
-											},
-											backgroundColor = ACCENT,
-											cornerRadius = rr(2),
-										},
-										) {}
+											)
+										}
 									}
-									avatar(
-										"ContactAvatar",
-										u32(order.idx),
-										contact.id_hex,
-										contact.name,
-										30,
-										url_pic(contact.pic_url),
-									)
-									clay.Text(
-										contact_label(ui, contact),
-										{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT},
-									)
-									if selected && len(contact.npub) > 0 {
-										if clay.UI(clay.ID("ContactRowGap", u32(order.idx)))(
-										{layout = {sizing = {width = clay.SizingGrow()}}},
-										) {}
-										clay.Text(
-											npub_tail(contact.npub),
-											{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO},
+
+									selected := ui.selected_contact == order.idx
+									if clay.UI(clay.ID("ContactRow", u32(order.idx)))(
+									{
+										layout = {
+											sizing = {width = clay.SizingGrow()},
+											padding = clay.PaddingAll(10),
+											childGap = 10,
+											childAlignment = {y = .Center},
+										},
+										backgroundColor = selected ? SELECTED : (hovered() ? HOVER : {}),
+										cornerRadius = rr(12),
+									},
+									) {
+										if selected {
+											if clay.UI(clay.ID("ContactRowBar", u32(order.idx)))(
+											{
+												layout = {
+													sizing = {
+														width = clay.SizingFixed(3),
+														height = clay.SizingFixed(18),
+													},
+												},
+												backgroundColor = ACCENT,
+												cornerRadius = rr(2),
+											},
+											) {}
+										}
+										avatar(
+											"ContactAvatar",
+											u32(order.idx),
+											contact.id_hex,
+											contact.name,
+											30,
+											url_pic(contact.pic_url),
 										)
+										clay.Text(
+											contact_label(ui, contact),
+											{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT},
+										)
+										if selected && len(contact.npub) > 0 {
+											if clay.UI(clay.ID("ContactRowGap", u32(order.idx)))(
+											{layout = {sizing = {width = clay.SizingGrow()}}},
+											) {}
+											clay.Text(
+												npub_tail(contact.npub),
+												{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO},
+											)
+										}
 									}
 								}
 							}
+							scrollbar(clay.ID("ContactList"))
 						}
 
 						if ui.page == .Chats && logged_in && !rail_narrow(ui) {
@@ -625,7 +646,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 						// Footer: relay/sync status pinned under the list. Collapsed,
 						// the dot alone carries the connection state.
 						if logged_in {
-							if ui.page != .Chats || rail_narrow(ui) {
+							if (ui.page != .Chats && ui.page != .Contacts) || rail_narrow(ui) {
 								if clay.UI(clay.ID("RailFill"))(
 								{layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}}},
 								) {}
@@ -899,6 +920,7 @@ main :: proc() {
 		return
 	}
 	load_themes()
+	defer stop_system_theme()
 	load_settings(&ui)
 	append(&ui.client_input, ..transmute([]u8)ui.prefs.event_client)
 	set_locale(ui.prefs.locale)
@@ -909,25 +931,9 @@ main :: proc() {
 	// runs, burst particles and the pre-wrapped body lines all spend
 	// elements, and clay treats an exceeded capacity as an error
 	// callback, not a stop.
-	clay.SetMaxElementCount(32768)
-
-	// Headroom over clay's defaults (8192 elements): per-letter effect
-	// runs, burst particles and the pre-wrapped body lines all spend
-	// elements, and clay treats an exceeded capacity as an error
-	// callback, not a stop.
-	clay.SetMaxElementCount(32768)
-
-	// Headroom over clay's defaults (8192 elements): per-letter effect
-	// runs, burst particles and the pre-wrapped body lines all spend
-	// elements, and clay treats an exceeded capacity as an error
-	// callback, not a stop.
-	clay.SetMaxElementCount(32768)
-
-	min_memory := cast(c.size_t)clay.MinMemorySize()
-	memory := make([^]u8, min_memory)
-	arena := clay.CreateArenaWithCapacityAndMemory(min_memory, memory)
-	clay.Initialize(arena, {1024, 700}, {handler = error_handler})
-	clay.SetMeasureTextFunction(measure_text, nil)
+	memory: []u8
+	init_layout(&memory, 32768, {1024, 700})
+	defer delete(memory)
 
 	win_w, win_h := i32(1024), i32(700)
 	if tw := os.get_env("WN_TEST_WINDOW", context.temp_allocator); tw != "" {
@@ -1220,9 +1226,12 @@ main :: proc() {
 	win_was: [2]i32
 	foreground_started: time.Tick
 	focused_was: bool
+	tl_restore: bool
+	tl_offset: f32
 
 	for !rl.WindowShouldClose() {
 		defer free_all(context.temp_allocator)
+		poll_system_theme(&ui, rl.GetTime())
 
 		focused := rl.IsWindowFocused()
 		if focused && !focused_was {
@@ -1428,7 +1437,19 @@ main :: proc() {
 		advance_videos() // pull decoded frames into the video textures
 		voice_poll() // drain the mic stream while recording
 		build_start := time.tick_now()
+		if !tl_restore {
+			if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found {
+				tl_offset = data.scrollPosition.y
+			}
+		}
 		render_commands := build_layout(&ui, rl.GetFrameTime())
+		if tl_restore && !layout_overflow {
+			if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found {
+				data.scrollPosition.y = tl_offset
+				render_commands = build_layout(&ui, rl.GetFrameTime())
+			}
+			tl_restore = false
+		}
 
 		// A relayout (window resize, rail drag, the rewrap they cause)
 		// moves the bottom out from under a bottom-pinned view. Re-pin
@@ -1439,7 +1460,7 @@ main :: proc() {
 		// size is the relayout tell; a new message only grows the
 		// content, so the arrival glide below keeps its motion. The
 		// second build is safe: per-frame anim steps are idempotent.
-		if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found {
+		if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found && !layout_overflow {
 			overflow := max(
 				data.contentDimensions.height - data.scrollContainerDimensions.height,
 				0,
@@ -1469,6 +1490,14 @@ main :: proc() {
 			}
 			tl_container_was = container
 			tl_at_bottom = data.scrollPosition.y <= -overflow + 1
+		}
+
+		// A failed layout contains only Clay's error screen. Grow its arena
+		// and retry next frame, before rendering or handling message clicks.
+		if layout_overflow {
+			init_layout(&memory, clay.GetMaxElementCount() * 2, {f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM})
+			tl_restore = true
+			continue
 		}
 
 		// Models register during the build and are posed before the
@@ -1575,7 +1604,7 @@ main :: proc() {
 		drain_kp()
 		drain_relays(&ui, client)
 		update_title(&ui)
-		drain_refresh(client)
+		drain_refresh(client, &ui)
 		drain_gimg(&ui, client)
 		drain_ppic(&ui)
 		drain_ov()

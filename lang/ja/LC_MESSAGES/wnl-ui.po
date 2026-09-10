@@ -1650,6 +1650,9 @@ msgstr "安全な場所に保管し、このダイアログを閉じてくださ
 msgid "Stored on this device, not published to any relay yet."
 msgstr "この端末に鍵が保存されていません。リセットしてnsecを再入力してください。"
 
+msgid "System"
+msgstr "システム"
+
 msgid "TEXT SIZE"
 msgstr ""
 

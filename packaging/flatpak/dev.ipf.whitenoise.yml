@@ -47,6 +47,8 @@ finish-args:
   # through xdg-open, which the runtime routes to the portal.
   - --talk-name=org.freedesktop.Notifications
   - --filesystem=xdg-download
+  - --filesystem=~/.local/state/omarchy/current:ro
+  - --filesystem=xdg-config/omarchy:ro
 
 cleanup:
   - /include

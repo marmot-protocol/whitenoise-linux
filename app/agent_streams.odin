@@ -1,6 +1,7 @@
 package main
 
 import "core:encoding/json"
+import "core:fmt"
 import "core:strings"
 import "core:sync"
 import "core:thread"
@@ -19,11 +20,10 @@ AGENT_PREVIEW_BYTES :: 256 * 1024
 Agent_Preview :: struct {
 	mutex: sync.Mutex,
 	client: ^marmot.Client,
-	account, group, stream, message, sender: string,
-	started_at: u64,
+	account, group, stream, message: string,
 	worker: ^thread.Thread,
 	text: [dynamic]u8,
-	cancel, done, dirty, failed, final, checkpoint: bool,
+	cancel, done, dirty, failed, final, checkpoint, progress: bool,
 }
 
 @(private = "file")
@@ -71,7 +71,15 @@ agent_apply :: proc(p: ^Agent_Preview, update: ^marmot.Agent_Stream_Update) {
 		return
 	}
 	switch update.tag {
-	case .CHUNK:
+	case .CHUNK, .PROGRESS:
+		if update.tag == .PROGRESS && (p.checkpoint || len(p.text) > 0 && !p.progress) {
+			return
+		}
+		// Show progress until answer text arrives, keeping the transcript separate.
+		if update.tag == .CHUNK && p.progress {
+			clear(&p.text)
+		}
+		p.progress = update.tag == .PROGRESS
 		text := string(update.data.chunk.text)
 		if len(p.text) + len(text) > AGENT_PREVIEW_BYTES {
 			// ponytail: copy only at the 256 KiB ceiling; use a ring if profiling warrants it.
@@ -86,8 +94,10 @@ agent_apply :: proc(p: ^Agent_Preview, update: ^marmot.Agent_Stream_Update) {
 		switch update.data.record.record_type {
 		case .CHECKPOINT: // Checkpoints replace the accumulated transcript.
 			p.checkpoint = true
+			p.progress = false
 			agent_set_text(p, string(update.data.record.text))
 		case .ABORT: // Abort: the agent may fall back to a regular chat reply.
+			fmt.eprintfln("agent stream aborted: %s", string(update.data.record.text))
 			p.failed = true
 			p.dirty = true
 		case .FINAL_NOTICE:
@@ -98,10 +108,12 @@ agent_apply :: proc(p: ^Agent_Preview, update: ^marmot.Agent_Stream_Update) {
 			agent_set_text(p, string(update.data.finished.text))
 		}
 		p.final = true
+		p.progress = false
 	case .FAILED:
+		fmt.eprintfln("agent stream failed: %s", string(update.data.failed.message))
 		p.failed = true
 		p.dirty = true
-	case .STATUS, .PROGRESS:
+	case .STATUS:
 	}
 }
 
@@ -125,6 +137,7 @@ agent_worker :: proc(t: ^thread.Thread) {
 	defer delete(stream)
 	sub: ^marmot.Agent_Stream_Subscription
 	if marmot.watch_agent_text_stream(p.client, account, group, stream, nil, 0, 0, &sub) != .OK {
+		fmt.eprintfln("agent stream subscribe failed: %s", marmot.last_error())
 		return
 	}
 	defer marmot.agent_stream_free(sub)
@@ -141,6 +154,7 @@ agent_worker :: proc(t: ^thread.Thread) {
 			continue
 		}
 		if status != .OK {
+			fmt.eprintfln("agent stream read stopped (%v): %s", status, marmot.last_error())
 			return
 		}
 		sync.lock(&p.mutex)
@@ -193,11 +207,9 @@ agent_collect :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Timel
 				p.account = strings.clone(agent_account)
 				p.group = strings.clone(agent_group)
 				p.stream = strings.clone(id)
-				p.sender = strings.clone(string(r.sender))
 				p.message = strings.clone(string(r.message_id_hex))
-				p.started_at = r.timeline_at
 				agent_previews[strings.clone(key)] = p
-				if !is_final && !r.deleted && r.invalidation_status == nil && !ui.hidden[p.message] {
+				if client != nil && !is_final && !r.deleted && r.invalidation_status == nil && !ui.hidden[p.message] {
 					p.worker = thread.create(agent_worker)
 					p.worker.data = p
 					thread.start(p.worker)
@@ -208,32 +220,6 @@ agent_collect :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Timel
 				p.cancel = true
 				sync.unlock(&p.mutex)
 			}
-		}
-	}
-	// A plain reply is the mobile fallback for an agent that abandons QUIC.
-	// Only retire an unambiguous preview from the same authenticated sender.
-	by_sender := make(map[string]struct { count: int, preview: ^Agent_Preview }, context.temp_allocator)
-	for _, p in agent_previews {
-		sync.lock(&p.mutex)
-		active := !p.cancel && !p.failed && !p.final
-		sync.unlock(&p.mutex)
-		if active {
-			entry := by_sender[p.sender]
-			entry.count += 1
-			entry.preview = p
-			by_sender[p.sender] = entry
-		}
-	}
-	for i in 0 ..< page.messages_len {
-		r := &page.messages[i]
-		if r.kind != 9 || r.agent_text_stream_json != nil || r.deleted || r.invalidation_status != nil {
-			continue
-		}
-		entry := by_sender[string(r.sender)]
-		if entry.count == 1 && r.timeline_at > entry.preview.started_at {
-			sync.lock(&entry.preview.mutex)
-			entry.preview.cancel = true
-			sync.unlock(&entry.preview.mutex)
 		}
 	}
 }
@@ -313,7 +299,6 @@ agent_reap :: proc() {
 		delete(p.account)
 		delete(p.group)
 		delete(p.stream)
-		delete(p.sender)
 		delete(p.message)
 		delete(p.text)
 		free(p)

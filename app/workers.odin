@@ -285,6 +285,7 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 //                                                   or mark failed)
 Pending_Send :: struct {
 	visible_since: time.Tick, // compose action until first presented optimistic row
+	sending_since: time.Tick, // start of the current send attempt
 	ticket:   int, // matches a Send_Done back to its row
 	group_id: string,
 	sender:   string, // own display label, mirrors confirmed rows
@@ -294,13 +295,14 @@ Pending_Send :: struct {
 	atts:     [dynamic]Pending_Att, // upload payloads, owned until drained
 	failed:   bool,
 	queued:   bool, // waiting for the auto-retry timer (offline.odin)
+	dismissed: bool, // hidden during an active send; freed when its worker completes
 	attempts: int, // failed tries so far, capped by MAX_SEND_ATTEMPTS
 }
 
 // One attachment moved out of Staged_File at send time. The worker's
-// upload request points straight at `data`, so an atts-carrying
-// pending is only ever freed by drain_sends (never by the
-// arrival-settlement in load_timeline).
+// upload request points straight at `data`, so the row can only be
+// freed after the worker reports completion (including deletion of
+// a failed or queued send).
 Pending_Att :: struct {
 	name:       string,
 	media_type: string, // static literal from media_type_for, never freed
@@ -333,6 +335,17 @@ Send_Done :: struct {
 	ticket: int,
 	status: marmot.Status, // classifies a failure as queued vs failed
 	err:    string, // "" = ok
+	ids:    [dynamic]string, // hide a dismissed send even if publishing succeeds
+}
+
+@(private = "file")
+sent_ids :: proc(ids: ^[dynamic]string, summary: ^marmot.Send_Summary) {
+	if summary == nil {
+		return
+	}
+	for id in summary.message_ids[:summary.message_ids_len] {
+		append(ids, strings.clone(string(id)))
+	}
 }
 
 sends_mutex: sync.Mutex
@@ -345,7 +358,7 @@ send_ticket: int
 // marmot, the same shape its own kind-9 media messages use, so the
 // timeline resolves them into downloadable media on every client).
 @(private = "file")
-send_thread_media :: proc(job: ^Send_Job, result: ^marmot.Media_Upload_Result) -> marmot.Status {
+send_thread_media :: proc(job: ^Send_Job, result: ^marmot.Media_Upload_Result, ids: ^[dynamic]string) -> marmot.Status {
 	e_vals := [2]cstring{"e", job.thread}
 	rows := make([dynamic]marmot.Message_Tag)
 	defer delete(rows)
@@ -370,6 +383,7 @@ send_thread_media :: proc(job: ^Send_Job, result: ^marmot.Media_Upload_Result) -
 	summary: ^marmot.Send_Summary
 	status := marmot.send_custom_event(job.client, job.account, job.group, KIND_THREAD, raw_data(rows[:]), uint(len(rows)), job.text, &summary)
 	if status == .OK {
+		sent_ids(ids, summary)
 		marmot.send_summary_free(summary)
 	}
 	return status
@@ -378,6 +392,7 @@ send_thread_media :: proc(job: ^Send_Job, result: ^marmot.Media_Upload_Result) -
 send_worker :: proc(t: ^thread.Thread) {
 	job := (^Send_Job)(t.data)
 	status: marmot.Status
+	ids: [dynamic]string
 	if len(job.atts) > 0 {
 		// One upload_media round trip: encrypt, push to Blossom, and
 		// (main timeline) publish the kind-9 message in the same call.
@@ -404,7 +419,9 @@ send_worker :: proc(t: ^thread.Thread) {
 		status = marmot.upload_media(job.client, job.account, job.group, &request, &result)
 		if status == .OK {
 			if job.thread != nil {
-				status = send_thread_media(job, result)
+				status = send_thread_media(job, result, &ids)
+			} else {
+				sent_ids(&ids, result.sent)
 			}
 			marmot.media_upload_result_free(result)
 		}
@@ -421,6 +438,7 @@ send_worker :: proc(t: ^thread.Thread) {
 			status = marmot.send_text(job.client, job.account, job.group, job.text, &summary)
 		}
 		if status == .OK {
+			sent_ids(&ids, summary)
 			marmot.send_summary_free(summary)
 		}
 	}
@@ -431,7 +449,7 @@ send_worker :: proc(t: ^thread.Thread) {
 	}
 	fmt.eprintfln("send: ticket=%d done status=%v err=%s", job.ticket, status, err)
 	sync.lock(&sends_mutex)
-	append(&sends_done, Send_Done{ticket = job.ticket, status = status, err = err})
+	append(&sends_done, Send_Done{ticket = job.ticket, status = status, err = err, ids = ids})
 	sync.unlock(&sends_mutex)
 
 	delete(job.account)
@@ -455,7 +473,8 @@ send_worker :: proc(t: ^thread.Thread) {
 	free(job)
 }
 
-spawn_send :: proc(ui: ^Ui_State, client: ^marmot.Client, p: Pending_Send) {
+spawn_send :: proc(ui: ^Ui_State, client: ^marmot.Client, p: ^Pending_Send) {
+	p.sending_since = time.tick_now()
 	job := new(Send_Job)
 	job.ticket = p.ticket
 	job.client = client
@@ -512,7 +531,7 @@ queue_send :: proc(ui: ^Ui_State, client: ^marmot.Client, body: string) {
 		thread   = strings.clone(thread_cur(ui)),
 	})
 	attach_body_emoji(&ui.pending[len(ui.pending) - 1], body)
-	spawn_send(ui, client, ui.pending[len(ui.pending) - 1])
+	spawn_send(ui, client, &ui.pending[len(ui.pending) - 1])
 }
 
 // Ship the image behind every :shortcode: this device defines, so the
@@ -591,7 +610,7 @@ queue_staged :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			}
 			append(&p.atts, att)
 			append(&ui.pending, p)
-			spawn_send(ui, client, ui.pending[len(ui.pending) - 1])
+			spawn_send(ui, client, &ui.pending[len(ui.pending) - 1])
 		}
 	}
 	if len(album.atts) > 0 {
@@ -602,7 +621,7 @@ queue_staged :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		album.body = strings.clone("")
 		album.thread = strings.clone(thread_cur(ui))
 		append(&ui.pending, album)
-		spawn_send(ui, client, ui.pending[len(ui.pending) - 1])
+		spawn_send(ui, client, &ui.pending[len(ui.pending) - 1])
 	}
 	clear(&ui.staged) // fields moved into the pendings above
 }
@@ -628,15 +647,30 @@ drain_sends :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	reload := false
 	for d in done {
+		defer {
+			delete(d.err)
+			for id in d.ids {
+				delete(id)
+			}
+			delete(d.ids)
+		}
 		for &p, i in ui.pending {
 			if p.ticket != d.ticket {
 				continue
 			}
 			fmt.eprintfln("send: ticket=%d settled err=%s", d.ticket, d.err)
-			if len(d.err) == 0 {
+			if p.dismissed || len(d.err) == 0 {
+				if p.dismissed && len(d.ids) > 0 {
+					for id in d.ids {
+						if !ui.hidden[id] {
+							ui.hidden[strings.clone(id)] = true
+						}
+					}
+					save_hidden(ui)
+				}
 				free_pending(&p)
 				ordered_remove(&ui.pending, i)
-				reload = true
+				reload ||= len(d.err) == 0
 			} else {
 				// Transport-shaped failures queue for auto-retry until
 				// the attempt cap; definitive errors fail outright.
@@ -649,7 +683,6 @@ drain_sends :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 					play_sound(.Error)
 				}
 				ui.client_status = fmt.aprintf("send failed: %s", d.err)
-				delete(d.err)
 			}
 			break
 		}

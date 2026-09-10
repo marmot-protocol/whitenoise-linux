@@ -163,7 +163,7 @@ xdc_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		// its own update.
 		send_ticket += 1
 		p := Pending_Send{ticket = send_ticket, group_id = group, body = line}
-		spawn_send(ui, client, p) // clones everything it keeps
+		spawn_send(ui, client, &p) // clones everything it keeps
 	}
 }
 

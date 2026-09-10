@@ -92,7 +92,6 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 		sel_clear(ui)
 	}
 
-	ui.scroll_pending = true
 	// Ids present before this reload. marmot stores an outgoing message
 	// locally before the relay ack, so its record shows up while the
 	// send worker is still in flight; the build loop below hides that
@@ -147,8 +146,8 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 		sender := record.sender != nil ? string(record.sender) : "?"
 		mine := record.direction != nil && string(record.direction) == "sent"
 
-		// "Delete for me": a locally hidden id never builds a row.
-		if ui.hidden[id_str] {
+		// Also discard our persisted tombstones from before local hiding.
+		if ui.hidden[id_str] || (mine && record.deleted) {
 			continue
 		}
 
@@ -211,8 +210,7 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 			label = mine ? "you" : short_hex(sender)
 		}
 
-		// A tombstone keeps its place as a placeholder row (sender +
-		// stamp only) instead of vanishing, the slint chatmodel path.
+		// Other participants' deletions retain their placeholder row.
 		if record.deleted {
 			append(&ui.messages, Msg_Ui{
 				id        = strings.clone(id_str),
@@ -707,6 +705,9 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 	for &msg in ui.messages {
 		msg.visible_since = old_times[msg.id]
 	}
+	// Deletions and edits keep the viewport; only a new tail requests
+	// the bottom. Older rows filling a deleted row's page slot don't count.
+	ui.scroll_pending ||= len(ui.messages) > 0 && !(ui.messages[len(ui.messages) - 1].id in old_times)
 
 	// Fold the collected votes and thread reply counts onto their rows.
 	for &m in ui.messages {

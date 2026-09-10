@@ -1,8 +1,8 @@
 // Profile names + pictures, the slint avatar-pipeline port.
 //
 // Names and picture URLs come from marmot's local kind-0 cache
-// (marmot_user_profile) at load time, memoized per account for the
-// session. Picture bytes are fetched by one curl worker thread; the
+// (marmot_user_profile), checked for live changes once a second.
+// Picture bytes are fetched by one curl worker thread; the
 // frame loop drains the results and decodes them into textures
 // (texture creation must stay on the render thread), so layout code
 // only ever calls url_pic and falls back to the gradient avatar
@@ -30,7 +30,7 @@ Profile_Info :: struct {
 	pic_url: string,
 }
 
-// account hex → kind-0 essentials, one FFI lookup per session.
+// account hex → kind-0 essentials, shared by the visible UI snapshots.
 @(private = "file")
 profile_cache: map[string]Profile_Info
 
@@ -39,7 +39,7 @@ profile_info :: proc(client: ^marmot.Client, hex: string) -> Profile_Info {
 		return info
 	}
 
-	info := read_profile(client, hex)
+	info, _ := read_profile(client, hex)
 	profile_cache[strings.clone(hex)] = info
 	// Nothing cached means marmot has never seen this account's kind-0.
 	// Ask the relays for one; the memo re-reads when it lands.
@@ -51,10 +51,13 @@ profile_info :: proc(client: ^marmot.Client, hex: string) -> Profile_Info {
 
 // One kind-0 read straight out of marmot's cache, no memo.
 @(private = "file")
-read_profile :: proc(client: ^marmot.Client, hex: string) -> Profile_Info {
+read_profile :: proc(client: ^marmot.Client, hex: string) -> (Profile_Info, bool) {
 	info: Profile_Info
 	meta: ^marmot.User_Profile_Metadata
-	if marmot.user_profile(client, strings.clone_to_cstring(hex, context.temp_allocator), &meta) == .OK && meta != nil {
+	if marmot.user_profile(client, strings.clone_to_cstring(hex, context.temp_allocator), &meta) != .OK {
+		return {}, false
+	}
+	if meta != nil {
 		if meta.display_name != nil && len(string(meta.display_name)) > 0 {
 			info.name = strings.clone(string(meta.display_name))
 		} else if meta.name != nil && len(string(meta.name)) > 0 {
@@ -65,7 +68,7 @@ read_profile :: proc(client: ^marmot.Client, hex: string) -> Profile_Info {
 		}
 		marmot.user_profile_metadata_free(meta)
 	}
-	return info
+	return info, true
 }
 
 // Display label for an account: kind-0 name, else truncated hex.
@@ -167,23 +170,99 @@ refresh_worker :: proc(_: ^thread.Thread) {
 	}
 }
 
-// Frame-loop drain: re-read the memo for accounts the worker touched.
-// The map key is already present, so the assignment reuses it.
-drain_refresh :: proc(client: ^marmot.Client) {
+@(private = "file")
+PROFILE_CHECK_SECS :: 1.0
+@(private = "file")
+profile_checked: f64 = -1
+
+// Directory sync receives kind-0 changes without a runtime event for group
+// members. Poll only the local cache; relay fetch completions bypass the wait.
+drain_refresh :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 	sync.lock(&refresh_mutex)
 	done := refresh_done
 	refresh_done = {}
 	sync.unlock(&refresh_mutex)
 
+	ready := len(done) > 0
 	for hex in done {
-		if old, ok := profile_cache[hex]; ok {
-			delete(old.name)
-			delete(old.pic_url)
-		}
-		profile_cache[hex] = read_profile(client, hex)
 		delete(hex)
 	}
 	delete(done)
+	if client == nil {
+		return
+	}
+	now := rl.GetTime()
+	if !ready && profile_checked >= 0 && now - profile_checked < PROFILE_CHECK_SECS {
+		return
+	}
+	profile_checked = now
+	changed := false
+	for hex in profile_cache {
+		if info, ok := read_profile(client, hex); ok {
+			changed = update_profile(ui, hex, info) || changed
+		}
+	}
+	if changed {
+		// Rebuild reply/reaction/system labels too, retaining the current filter.
+		load_timeline(client, ui, string(ui.search_input[:]))
+	}
+}
+
+// Takes ownership of info. Keep unchanged strings and UI editor indices stable.
+@(private)
+update_profile :: proc(ui: ^Ui_State, hex: string, info: Profile_Info) -> bool {
+	old := profile_cache[hex]
+	if old == info {
+		delete(info.name)
+		delete(info.pic_url)
+		return false
+	}
+	profile_cache[hex] = info
+	name := len(info.name) > 0 ? info.name : short_hex(hex)
+	for &member in ui.members {
+		if member.id_hex != hex {
+			continue
+		}
+		label := len(info.name) == 0 && member.is_self ? "you" : name
+		if nick := ui.nicknames[hex]; len(nick) > 0 && !member.is_self {
+			label = nick
+		}
+		delete(member.name)
+		delete(member.pic_url)
+		member.name = strings.clone(label)
+		member.pic_url = strings.clone(info.pic_url)
+	}
+	for &contact in ui.contacts {
+		if contact.id_hex != hex {
+			continue
+		}
+		delete(contact.name)
+		delete(contact.pic_url)
+		contact.name = strings.clone(name)
+		contact.pic_url = strings.clone(info.pic_url)
+	}
+	if ui.peer_hex == hex {
+		delete(ui.peer_name)
+		delete(ui.peer_pic)
+		ui.peer_name = strings.clone(len(ui.nicknames[hex]) > 0 ? ui.nicknames[hex] : name)
+		ui.peer_pic = strings.clone(info.pic_url)
+	}
+	if ui.account_ref == hex {
+		// my_pic_url can borrow the old memo; replace it before freeing that memo.
+		ui.my_pic_url = info.pic_url
+	}
+	for id, i in ui.account_ids {
+		if id != hex {
+			continue
+		}
+		delete(ui.accounts[i])
+		delete(ui.account_pics[i])
+		ui.accounts[i] = strings.clone(name)
+		ui.account_pics[i] = strings.clone(info.pic_url)
+	}
+	delete(old.name)
+	delete(old.pic_url)
+	return true
 }
 
 // ── Picture fetch pipeline ──────────────────────────────────────────

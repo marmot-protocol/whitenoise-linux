@@ -452,7 +452,7 @@ settings_appearance :: proc(ui: ^Ui_State) {
 			},
 			) {}
 			clay.Text(
-				active_pack(ui).name,
+				tr(active_pack(ui).name),
 				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
 			)
 			clay.Text("▾", {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
@@ -476,7 +476,12 @@ settings_appearance :: proc(ui: ^Ui_State) {
 					border = {color = ELEVATED_BORDER, width = bw()},
 				},
 				) {
-					for pack, i in theme_packs {
+					for _, n in theme_packs {
+						i := n
+						if system_theme_index >= 0 {
+							i = n == 0 ? system_theme_index : (n <= system_theme_index ? n - 1 : n)
+						}
+						pack := theme_packs[i]
 						if clay.UI(clay.ID("ThemeOpt", u32(i)))(
 						{
 							layout = {
@@ -503,7 +508,7 @@ settings_appearance :: proc(ui: ^Ui_State) {
 							},
 							) {}
 							clay.Text(
-								pack.name,
+								tr(pack.name),
 								{
 									fontId = FONT_BODY,
 									fontSize = 13,
@@ -516,21 +521,23 @@ settings_appearance :: proc(ui: ^Ui_State) {
 			}
 		}
 	}
-	if clay.UI(clay.ID("RowAccent"))(srow()) {
-		row_labels("Accent color", "")
-		clay.Text(
-			ACCENT_NAMES[ui.accent],
-			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-		)
-		for _, i in ACCENT_NAMES {
-			if clay.UI(clay.ID("AccentDot", u32(i)))(
-			{
-				layout = {sizing = {width = clay.SizingFixed(18), height = clay.SizingFixed(18)}},
-				backgroundColor = active_pack(ui).accent_base[i],
-				cornerRadius = rr(9),
-				border = ui.accent == i ? clay.BorderElementConfig{color = TEXT, width = {2, 2, 2, 2, 0}} : {},
-			},
-			) {}
+	if ui.theme != system_theme_index {
+		if clay.UI(clay.ID("RowAccent"))(srow()) {
+			row_labels("Accent color", "")
+			clay.Text(
+				ACCENT_NAMES[ui.accent],
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			)
+			for _, i in ACCENT_NAMES {
+				if clay.UI(clay.ID("AccentDot", u32(i)))(
+				{
+					layout = {sizing = {width = clay.SizingFixed(18), height = clay.SizingFixed(18)}},
+					backgroundColor = active_pack(ui).accent_base[i],
+					cornerRadius = rr(9),
+					border = ui.accent == i ? clay.BorderElementConfig{color = TEXT, width = {2, 2, 2, 2, 0}} : {},
+				},
+				) {}
+			}
 		}
 	}
 

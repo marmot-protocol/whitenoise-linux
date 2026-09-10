@@ -4,6 +4,7 @@ import "core:fmt"
 import "core:os"
 import "core:strconv"
 import "core:strings"
+import "core:time"
 import "core:text/edit"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
@@ -214,10 +215,17 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		// Tap a failed optimistic row to retry the send.
 		for &p, i in ui.pending {
+			if !pending_can_delete(p, time.tick_now()) {
+				continue
+			}
+			if clay.PointerOver(clay.ID("PendingDelete", u32(i))) || clay.PointerOver(clay.ID("PendingDeleteEnd", u32(i))) {
+				delete_pending(ui, i)
+				return
+			}
 			if p.failed && clay.PointerOver(clay.ID("PendingRow", u32(i))) {
 				p.failed = false
 				p.attempts = 0 // a manual retry restarts the auto-retry cap
-				spawn_send(ui, client, p)
+				spawn_send(ui, client, &p)
 				return
 			}
 		}

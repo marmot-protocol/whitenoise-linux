@@ -39,6 +39,18 @@ if [ ! -d "$CLAY" ]; then
   git -C "$CLAY" checkout --detach "$CLAY_PIN"
 fi
 
+# Rebuild Clay: the upstream prebuilt archive has the slot-reuse bug too.
+CLAY_LIB="$CLAY/bindings/odin/clay-odin/linux/clay.a"
+CLAY_PATCH="$HERE/patches/clay-hashmap.patch"
+if [ ! -f "$HERE/build/clay/clay.a" ] || [ "$CLAY/clay.h" -nt "$HERE/build/clay/clay.a" ] || [ "$CLAY_PATCH" -nt "$HERE/build/clay/clay.a" ]; then
+  mkdir -p "$HERE/build/clay"
+  cp "$CLAY/clay.h" "$HERE/build/clay/clay.h"
+  git -C "$HERE" apply --directory=build/clay "$CLAY_PATCH"
+  cc -x c -c -DCLAY_IMPLEMENTATION -fPIC -O2 "$HERE/build/clay/clay.h" -o "$HERE/build/clay/clay.o"
+  ar rcs "$HERE/build/clay/clay.a" "$HERE/build/clay/clay.o"
+fi
+cp "$HERE/build/clay/clay.a" "$CLAY_LIB"
+
 # FBX support: ufbx (single-file MIT reader) plus app/fbx_shim.c, the
 # flat C API the Odin viewer binds. FBX is a versioned proprietary
 # format with skinning and animation curves; ufbx already reads every
@@ -192,5 +204,7 @@ echo "==> Done: $HERE/build/{smoke,app}"
 # `build.sh test` also runs the app package's test procs, which is what CI
 # does after the build.
 if [ "${1:-}" = test ]; then
+  cc -O2 -I"$HERE/build/clay" "$HERE/scripts/clay_hashmap_test.c" -lm -o "$HERE/build/clay/hashmap-test"
+  "$HERE/build/clay/hashmap-test"
   env "${ODIN_ROOT_ARG[@]}" odin test "$HERE/app" -out:"$HERE/build/apptest"
 fi

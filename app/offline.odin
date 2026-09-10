@@ -65,6 +65,9 @@ offline_path :: proc(allocator := context.temp_allocator) -> string {
 save_offline :: proc(ui: ^Ui_State) {
 	items := make([dynamic]Offline_Item, context.temp_allocator)
 	for p in ui.pending {
+		if p.dismissed {
+			continue
+		}
 		if !p.queued && !p.failed && p.attempts == 0 {
 			continue
 		}
@@ -164,6 +167,20 @@ load_offline :: proc(ui: ^Ui_State) {
 
 next_flush: time.Time
 
+@(private)
+delete_pending :: proc(ui: ^Ui_State, index: int) {
+	// An active upload still borrows attachment bytes from this row.
+	p := &ui.pending[index]
+	if !p.failed && !p.queued {
+		p.dismissed = true
+		save_offline(ui)
+		return
+	}
+	free_pending(p)
+	ordered_remove(&ui.pending, index)
+	save_offline(ui)
+}
+
 // Frame-loop tick: re-send every queued row on a fixed interval. The
 // zero next_flush makes the first pass after boot flush immediately.
 flush_queued :: proc(ui: ^Ui_State, client: ^marmot.Client) {
@@ -180,6 +197,6 @@ flush_queued :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			continue
 		}
 		p.queued = false
-		spawn_send(ui, client, p)
+		spawn_send(ui, client, &p)
 	}
 }

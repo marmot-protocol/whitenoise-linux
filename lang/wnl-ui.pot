@@ -1500,6 +1500,9 @@ msgstr ""
 msgid "Stored on this device, not published to any relay yet."
 msgstr ""
 
+msgid "System"
+msgstr ""
+
 msgid "TEXT SIZE"
 msgstr ""
 

@@ -1650,6 +1650,9 @@ msgstr "Bewahre ihn an einem sicheren Ort auf und schließe dieses Fenster. Wer 
 msgid "Stored on this device, not published to any relay yet."
 msgstr "Kein Schlüssel auf diesem Gerät gespeichert. Setze zurück und gib deinen nsec erneut ein."
 
+msgid "System"
+msgstr "System"
+
 msgid "TEXT SIZE"
 msgstr ""
 

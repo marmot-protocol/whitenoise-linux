@@ -1,11 +1,15 @@
 package main
 
 import "core:testing"
+import "core:sync"
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
 @(test)
 field_overflow :: proc(t: ^testing.T) {
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
+
 	// The shim's fallback glyph metrics need no window or font files.
 	rl.SetPixelScale(1)
 	memory := make([]u8, int(clay.MinMemorySize()))

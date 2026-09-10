@@ -590,6 +590,7 @@ load_themes :: proc() {
 		append(&theme_packs, pack)
 	}
 
+	load_system_theme()
 	dir := fmt.tprintf("%s/themes", data_home)
 	files, read_err := os.read_directory_by_path(dir, -1, context.temp_allocator)
 	if read_err != nil {
