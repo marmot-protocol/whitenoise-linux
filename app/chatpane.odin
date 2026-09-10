@@ -681,39 +681,52 @@ login_button :: proc(id_str: string, label: string) {
 // selection highlighted and the caret at the selection head. Also the
 // element (id_str, 1) that field_mouse hit-tests against.
 field_text :: proc(ui: ^Ui_State, id_str: string, buf: ^[dynamic]u8, placeholder: string, focused: bool, font_size: u16 = 13, ph_color: clay.Color = {}) {
-	if clay.UI(clay.ID(id_str, 1))({layout = {childAlignment = {y = .Center}}}) {
-		if clay.Hovered() {
-			cursor_raise(.Text)
-		}
-		caret_h := f32(font_size) + 1
-		if len(buf) == 0 {
-			ph := ph_color
-			if ph.a == 0 {
-				ph = TEXT_DIM
+	// Clip inside the parent's padding; keep the selection head in view.
+	view := clay.GetElementData(clay.ID(id_str, 3))
+	offset: f32
+	if focused && len(buf) > 0 && view.found {
+		_, _, head := field_sel(ui, buf)
+		x := rl.MeasureTextLine(FONT_BODY, font_size, string(buf[:head]), 0).x
+		offset = max(0, x + CARET_W - view.boundingBox.width)
+	}
+	if clay.UI(clay.ID(id_str, 3))({
+		layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}},
+		clip = {horizontal = true, childOffset = {-offset, 0}},
+	}) {
+		if clay.UI(clay.ID(id_str, 1))({layout = {childAlignment = {y = .Center}}}) {
+			if clay.Hovered() {
+				cursor_raise(.Text)
 			}
-			clay.Text(placeholder, {fontId = FONT_BODY, fontSize = font_size, textColor = ph})
-			if focused {
-				caret(caret_h)
-			}
-		} else {
-			text := string(buf[:])
-			lo, hi, head := field_sel(ui, buf)
-			if lo > 0 {
-				clay.Text(text[:lo], {fontId = FONT_BODY, fontSize = font_size, textColor = TEXT})
-			}
-			if focused && head == lo {
-				caret(caret_h)
-			}
-			if hi > lo {
-				if clay.UI(clay.ID(id_str, 2))({backgroundColor = ACCENT}) {
-					clay.Text(text[lo:hi], {fontId = FONT_BODY, fontSize = font_size, textColor = ON_ACCENT})
+			caret_h := f32(font_size) + 1
+			if len(buf) == 0 {
+				ph := ph_color
+				if ph.a == 0 {
+					ph = TEXT_DIM
 				}
-				if focused && head == hi {
+				clay.Text(placeholder, {fontId = FONT_BODY, fontSize = font_size, textColor = ph, wrapMode = .None})
+				if focused {
 					caret(caret_h)
 				}
-			}
-			if hi < len(text) {
-				clay.Text(text[hi:], {fontId = FONT_BODY, fontSize = font_size, textColor = TEXT})
+			} else {
+				text := string(buf[:])
+				lo, hi, head := field_sel(ui, buf)
+				if lo > 0 {
+					clay.Text(text[:lo], {fontId = FONT_BODY, fontSize = font_size, textColor = TEXT, wrapMode = .None})
+				}
+				if focused && head == lo {
+					caret(caret_h)
+				}
+				if hi > lo {
+					if clay.UI(clay.ID(id_str, 2))({backgroundColor = ACCENT}) {
+						clay.Text(text[lo:hi], {fontId = FONT_BODY, fontSize = font_size, textColor = ON_ACCENT, wrapMode = .None})
+					}
+					if focused && head == hi {
+						caret(caret_h)
+					}
+				}
+				if hi < len(text) {
+					clay.Text(text[hi:], {fontId = FONT_BODY, fontSize = font_size, textColor = TEXT, wrapMode = .None})
+				}
 			}
 		}
 	}

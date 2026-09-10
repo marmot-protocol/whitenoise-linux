@@ -890,6 +890,7 @@ caret_box: clay.BoundingBox
 caret :: proc(h: f32 = 16) {
 	if d := clay.GetElementData(clay.ID_LOCAL("Caret")); d.found {
 		caret_box = d.boundingBox // one frame behind, which no one can see
+		caret_box.width = CARET_W
 	}
 	alpha := f32(1)
 	if since := rl.GetTime() - caret_at; since > CARET_SOLID && motion_on() {
@@ -901,8 +902,17 @@ caret :: proc(h: f32 = 16) {
 		alpha = clamp(1.8 * (0.5 + 0.5 * sin_approx(phase * TAU / CARET_BLINK + TAU / 4)), 0, 1)
 	}
 	if clay.UI(clay.ID_LOCAL("Caret"))(
-	{layout = {sizing = {width = clay.SizingFixed(CARET_W), height = clay.SizingFixed(h)}}, backgroundColor = fade(TEXT, alpha)},
-	) {}
+	{layout = {sizing = {width = clay.SizingFixed(0), height = clay.SizingFixed(h)}}},
+	) {
+		// Paint the caret without adding space between text spans.
+		if clay.UI(clay.ID_LOCAL("CaretInk"))(
+		{
+			layout = {sizing = {width = clay.SizingFixed(CARET_W), height = clay.SizingFixed(h)}},
+			backgroundColor = fade(TEXT, alpha),
+			floating = {attachTo = .Parent, clipTo = .AttachedParent, pointerCaptureMode = .Passthrough},
+		},
+		) {}
+	}
 }
 
 // Active scrollbar-thumb drag: container id (0 = none) and the
@@ -1252,7 +1262,7 @@ compose_lines :: proc(text: string) -> [dynamic][2]int {
 // selection head, the IME preedit riding at the caret.
 compose_line :: proc(i: u32, text: string, ls, le, lo, hi, head: int) {
 	if clay.UI(clay.ID("ComposeLine", i))(
-	{layout = {sizing = {height = clay.SizingFit({min = 20})}, childGap = 1, childAlignment = {y = .Center}}},
+	{layout = {sizing = {height = clay.SizingFit({min = 20})}, childAlignment = {y = .Center}}},
 	) {
 		a := clamp(lo, ls, le)
 		b := clamp(hi, ls, le)
