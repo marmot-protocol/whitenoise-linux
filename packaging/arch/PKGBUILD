@@ -1,0 +1,55 @@
+# Maintainer: Marmot Protocol <https://github.com/marmot-protocol/whitenoise-linux>
+#
+# Builds the current master from the upstream repo. build.sh fetches the
+# pinned mdk/clay/ufbx revisions and cargo pulls marmot-c's crates, so
+# build() needs network; that is why this is a -git package and not an
+# AUR-clean release one. To build from a local checkout instead:
+#
+#   cd packaging/arch && makepkg -si
+#
+# install-tree.sh lays out /usr/bin + /usr/share/whitenoise-linux, the
+# same tree the AppImage and Flatpak carry (see res_dir in app/paths.odin).
+pkgname=whitenoise-linux-git
+pkgver=r0
+pkgrel=1
+pkgdesc="End-to-end encrypted group chat over Nostr (Marmot client)"
+arch=(x86_64)
+url="https://github.com/marmot-protocol/whitenoise-linux"
+license=(AGPL-3.0-or-later)
+# Linked (readelf -d NEEDED on the binary), then what it spawns: xdg-open
+# for links, notify-send for desktop alerts. ttf-dejavu is the fallback
+# behind the bundled faces (DejaVu Sans Mono has no bundled copy).
+depends=(sdl3 libarchive mpv poppler-glib cairo glib2 curl gcc-libs
+         xdg-utils libnotify ttf-dejavu hicolor-icon-theme)
+makedepends=(git odin rust clang unzip)
+optdepends=(
+  'webkit2gtk-4.1: run webxdc apps attached to messages'
+  'noto-fonts-cjk: Japanese text'
+  'libpulse: notification sound (paplay)'
+  'sound-theme-freedesktop: the notification sound file'
+  'libcanberra: notification sound fallback (canberra-gtk-play)'
+)
+provides=(whitenoise)
+conflicts=(whitenoise)
+# !lto: makepkg's -flto=auto turns the sqlite bundled into libmarmot_c.a
+# into GCC bitcode objects, which the clang link Odin drives cannot see
+# (undefined sqlite3_* at link time).
+options=(!lto)
+source=("$pkgname::git+$url.git")
+sha256sums=(SKIP)
+
+pkgver() {
+  cd "$pkgname"
+  printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cd "$pkgname"
+  ./build.sh
+}
+
+package() {
+  cd "$pkgname"
+  scripts/install-tree.sh "$pkgdir/usr" whitenoise
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

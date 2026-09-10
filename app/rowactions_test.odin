@@ -4,6 +4,9 @@ package main
 
 import "core:testing"
 
+import clay "../vendor/clay/bindings/odin/clay-odin"
+import marmot "../marmot"
+
 @(test)
 rail_order_pins_first :: proc(t: ^testing.T) {
 	chats := []Chat_Row_Ui{{group_id = "a"}, {group_id = "b"}, {group_id = "c"}, {group_id = "d"}}
@@ -46,4 +49,42 @@ folder_filter :: proc(t: ^testing.T) {
 	testing.expect(t, in_folder(folder_of, "a", "Work"))
 	testing.expect(t, !in_folder(folder_of, "b", "Work"))
 	testing.expect(t, !in_folder(folder_of, "z", "Work"))
+}
+
+@(test)
+folder_chip_clicks :: proc(t: ^testing.T) {
+	memory := make([]u8, int(clay.MinMemorySize()))
+	defer delete(memory)
+	previous := clay.GetCurrentContext()
+	defer clay.SetCurrentContext(previous)
+	clay.Initialize(clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)), {600, 400}, {})
+	clay.SetMeasureTextFunction(proc "c" (text: clay.StringSlice, config: ^clay.TextElementConfig, data: rawptr) -> clay.Dimensions {
+		return {f32(text.length) * 6, 12}
+	}, nil)
+
+	ui := Ui_State{selected = -1, row_menu = -1}
+	append(&ui.accounts, "Test")
+	append(&ui.chats, Chat_Row_Ui{group_id = "a"})
+	append(&ui.prefs.folders, "Work", "Family")
+	defer delete(ui.accounts)
+	defer delete(ui.chats)
+	defer delete(ui.prefs.folders)
+	defer delete(ui.folder_filter)
+
+	clay.BeginLayout()
+	folder_chips(&ui)
+	clay.EndLayout(0)
+	client: marmot.Client // The filter path must not call the runtime.
+	forced_release = true
+	defer forced_release = false
+	for name, i in ui.prefs.folders {
+		box := clay.GetElementData(clay.ID("FolderFilter", u32(i))).boundingBox
+		clay.SetPointerState({box.x + 1, box.y + 1}, false)
+		handle_chat(&ui, &client)
+		testing.expect_value(t, ui.folder_filter, name)
+	}
+	box := clay.GetElementData(clay.ID("FolderAllChip")).boundingBox
+	clay.SetPointerState({box.x + 1, box.y + 1}, false)
+	handle_chat(&ui, &client)
+	testing.expect_value(t, ui.folder_filter, "")
 }

@@ -12,11 +12,17 @@ import rl "sdlrl"
 
 import marmot "../marmot"
 
+@(private)
+Live_Change :: struct {
+	group, message: string,
+	at: time.Tick,
+}
+
 Live :: struct {
 	mutex:          sync.Mutex,
 	dirty:          bool, // chat list changed
 	timeline_dirty: bool, // any runtime event; reload the open timeline
-	dirty_groups:   [dynamic]string, // group ids with changed rows
+	dirty_groups:   [dynamic]Live_Change, // group ids with changed rows
 	sub:            ^marmot.Chat_List_Subscription,
 	worker:         ^thread.Thread,
 	events_sub:     ^marmot.Events_Subscription,
@@ -35,10 +41,16 @@ live_worker :: proc(t: ^thread.Thread) {
 			continue
 		}
 
+		received_at := time.tick_now()
 		fmt.eprintfln("live: chat-list event for %s", string(row.group_id_hex))
 		sync.lock(&live.mutex)
 		live.dirty = true
-		append(&live.dirty_groups, strings.clone(string(row.group_id_hex)))
+		message := row.last_message != nil ? row.last_message.message_id_hex : nil
+		append(&live.dirty_groups, Live_Change{
+			group = strings.clone(string(row.group_id_hex)),
+			message = message != nil ? strings.clone(string(message)) : "",
+			at = received_at,
+		})
 		sync.unlock(&live.mutex)
 		marmot.chat_list_row_free(row)
 	}
@@ -170,19 +182,23 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 	sync.lock(&live.mutex)
 	dirty := live.dirty
 	live.dirty = false
+	received := make(map[string]time.Tick, context.temp_allocator)
 	timeline_hit := live.timeline_dirty && ui.selected >= 0
 	live.timeline_dirty = false
 	if ui.selected >= 0 {
 		for group in live.dirty_groups {
-			if group == ui.chats[ui.selected].group_id {
+			if group.group == ui.chats[ui.selected].group_id {
+				if len(group.message) > 0 && !(group.message in received) {
+					received[strings.clone(group.message, context.temp_allocator)] = group.at
+				}
 				timeline_hit = true
-				break
 			}
 		}
 	}
 	had_events := len(live.dirty_groups) > 0
 	for group in live.dirty_groups {
-		delete(group)
+		delete(group.group)
+		delete(group.message)
 	}
 	clear(&live.dirty_groups)
 	sync.unlock(&live.mutex)
@@ -239,7 +255,16 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 		notify_mark(chat.group_id, chat.last_id)
 	}
 	if ui.selected >= 0 && (timeline_hit || ui.chats[ui.selected].last_id != selected_last) {
+		old_ids := make(map[string]bool, context.temp_allocator)
+		for msg in ui.messages {
+			old_ids[msg.id] = true
+		}
 		load_timeline(client, ui)
+		for &msg in ui.messages {
+			if !msg.mine && !msg.system && !old_ids[msg.id] {
+				msg.visible_since = received[msg.id]
+			}
+		}
 		// Messages that arrive in the chat you are watching count as
 		// read, so the badge doesn't pile up on screen.
 		if focused && ui.chats[ui.selected].unread > 0 {
@@ -259,6 +284,7 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 //                (grayed row)          (mutex)     (drop row + reload,
 //                                                   or mark failed)
 Pending_Send :: struct {
+	visible_since: time.Tick, // compose action until first presented optimistic row
 	ticket:   int, // matches a Send_Done back to its row
 	group_id: string,
 	sender:   string, // own display label, mirrors confirmed rows
@@ -472,9 +498,11 @@ spawn_send :: proc(ui: ^Ui_State, client: ^marmot.Client, p: Pending_Send) {
 // Append the grayed row and kick the worker; the composer clears
 // right after in the caller.
 queue_send :: proc(ui: ^Ui_State, client: ^marmot.Client, body: string) {
+	started := time.tick_now()
 	info := profile_info(client, ui.account_ref)
 	send_ticket += 1
 	append(&ui.pending, Pending_Send{
+		visible_since = started,
 		ticket   = send_ticket,
 		group_id = strings.clone(ui.chats[ui.selected].group_id),
 		sender   = strings.clone(len(info.name) > 0 ? info.name : "you"),
@@ -535,11 +563,12 @@ queue_staged :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if len(ui.staged) == 0 {
 		return
 	}
+	started := time.tick_now()
 	info := profile_info(client, ui.account_ref)
 	sender := len(info.name) > 0 ? info.name : "you"
 	group := ui.chats[ui.selected].group_id
 
-	album: Pending_Send
+	album := Pending_Send{visible_since = started}
 	for &f in ui.staged {
 		att := Pending_Att {
 			name       = f.name, // ownership moves out of Staged_File
@@ -553,6 +582,7 @@ queue_staged :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		} else {
 			send_ticket += 1
 			p := Pending_Send {
+				visible_since = started,
 				ticket   = send_ticket,
 				group_id = strings.clone(group),
 				sender   = strings.clone(sender),

@@ -1,6 +1,6 @@
 // The two developer-mode settings sections (dev_mode gates them in the
-// sidebar): Debug, a three-tab JSON dump (state snapshot / raw events /
-// key packages) with refresh + copy, and the KP inspector, which reads
+// sidebar): Debug, a JSON dump (state / events / keys / timings)
+// with refresh + copy, and the KP inspector, which reads
 // key packages for the active account or for any pubkey typed in.
 //
 // The dump is one mono clay.Text on the scrolling settings page, so it
@@ -20,8 +20,8 @@ import clay "../vendor/clay/bindings/odin/clay-odin"
 
 import marmot "../marmot"
 
-DEBUG_TABS := []string{N_("State"), N_("Raw events"), N_("Key packages")}
-DEBUG_EYEBROWS := []string{N_("STATE SNAPSHOT"), N_("RAW EVENTS"), N_("KEY PACKAGES")}
+DEBUG_TABS := []string{N_("State"), N_("Raw events"), N_("Key packages"), N_("Timings")}
+DEBUG_EYEBROWS := []string{N_("STATE SNAPSHOT"), N_("RAW EVENTS"), N_("KEY PACKAGES"), N_("TIMINGS")}
 
 // Newest records dumped on the raw-events tab. The whole page relayouts
 // every frame, so the window stays small.
@@ -36,9 +36,13 @@ json_opts :: proc() -> json.Marshal_Options {
 
 settings_debug :: proc(ui: ^Ui_State) {
 	eyebrow(DEBUG_EYEBROWS[clamp(ui.debug_tab, 0, len(DEBUG_EYEBROWS) - 1)])
-	if clay.UI(clay.ID("DbgTabs"))({layout = {childGap = 8}}) {
-		for label, i in DEBUG_TABS {
-			theme_chip_indexed("DbgTab", u32(i), tr(label), ui.debug_tab == i)
+	if clay.UI(clay.ID("DbgTabs"))({layout = {layoutDirection = .TopToBottom, childGap = 8}}) {
+		for row in 0 ..< 2 {
+			if clay.UI(clay.ID("DbgTabRow", u32(row)))({layout = {childGap = 8}}) {
+				for i in row * 2 ..< min(row * 2 + 2, len(DEBUG_TABS)) {
+					theme_chip_indexed("DbgTab", u32(i), tr(DEBUG_TABS[i]), ui.debug_tab == i)
+				}
+			}
 		}
 	}
 	if clay.UI(clay.ID("DbgActions"))({layout = {childGap = 8}}) {
@@ -48,12 +52,15 @@ settings_debug :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("DbgPlate"))(
 	{layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(12)}, backgroundColor = PLATE, cornerRadius = rr(8)},
 	) {
-		clay.Text(len(ui.debug_json) > 0 ? ui.debug_json : tr("(nothing loaded yet, click Refresh)"), {fontId = FONT_MONO, fontSize = 11, textColor = TEXT})
+		display := ui.debug_tab == 3 ? ui.debug_text : ui.debug_json
+		clay.Text(len(display) > 0 ? display : tr("(nothing loaded yet, click Refresh)"), {fontId = FONT_MONO, fontSize = 11, textColor = TEXT})
 	}
 }
 
 compose_debug_json :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	delete(ui.debug_json)
+	delete(ui.debug_text)
+	ui.debug_text = ""
 	switch ui.debug_tab {
 	case 0:
 		ui.debug_json = debug_state_json(ui)
@@ -61,6 +68,10 @@ compose_debug_json :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.debug_json = debug_events_json(ui, client)
 	case 2:
 		ui.debug_json = debug_kp_json(ui, client)
+	case 3:
+		ui.debug_json = timings_json(client)
+		text, _ := strings.replace_all(ui.debug_json, "_", " ", context.temp_allocator)
+		ui.debug_text = strings.clone(text)
 	case:
 		ui.debug_json = ""
 	}

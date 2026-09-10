@@ -406,6 +406,9 @@ msgstr ""
 msgid "Couldn't change audit logs. %s"
 msgstr "Impossibile modificare il log di audit."
 
+msgid "Couldn't change diagnostics sharing. Please try again."
+msgstr "Impossibile modificare la condivisione della diagnostica. Riprova."
+
 #, fuzzy, c-format
 msgid "Couldn't change relay telemetry. %s"
 msgstr "Impossibile salvare la lista dei relay. Riprova."
@@ -440,6 +443,9 @@ msgstr "Impossibile scaricare l'immagine."
 
 msgid "Couldn't load this event. Check your relay settings and try again."
 msgstr "Impossibile caricare questo evento. Controlla le impostazioni dei relay e riprova."
+
+msgid "Couldn't load timings. Please try again."
+msgstr "Impossibile caricare i tempi. Riprova."
 
 #, fuzzy
 msgid "Couldn't open the backup. Double-check the password and try again."
@@ -598,6 +604,12 @@ msgstr "Notifiche desktop"
 
 msgid "Developer mode"
 msgstr "Modalità sviluppatore"
+
+msgid "Diagnostics includes a random installation identifier until you turn sharing off, app and device details, and relay labels. The collector receives your IP address. Message contents and account or group identifiers are excluded. Turning sharing off stops future uploads; already sent data cannot be recalled. Audit logs are separate."
+msgstr "La diagnostica include un identificatore casuale di installazione fino a quando disattivi la condivisione, dettagli su app e dispositivo ed etichette dei relay. Il servizio di raccolta riceve il tuo indirizzo IP. Sono esclusi i contenuti dei messaggi e gli identificatori di account o gruppi. Disattivare la condivisione interrompe gli invii futuri; i dati già inviati non possono essere ritirati. I log di audit sono separati."
+
+msgid "Diagnostics is sent to the operator of otlp.ipf.dev unless you configured another collector. Its retention policy has not been verified here. Usage event export is not configured."
+msgstr "La diagnostica viene inviata al gestore di otlp.ipf.dev, a meno che tu abbia configurato un altro servizio di raccolta. La sua politica di conservazione non è stata verificata qui. L'invio degli eventi di utilizzo non è configurato."
 
 msgid "Divider"
 msgstr ""
@@ -1409,6 +1421,9 @@ msgstr ""
 msgid "STARTUP"
 msgstr "AVVIO"
 
+msgid "STATE / EVENTS / KEYS / TIMINGS"
+msgstr "STATO / EVENTI / CHIAVI / TEMPI"
+
 msgid "STATE / RAW EVENTS / KEY PACKAGES"
 msgstr ""
 
@@ -1533,6 +1548,9 @@ msgstr ""
 msgid "Shadow soft"
 msgstr ""
 
+msgid "Share aggregate performance timings and relay diagnostics. Nothing is sent while this is off."
+msgstr "Condividi tempi di esecuzione aggregati e diagnostica dei relay. Non viene inviato nulla quando questa opzione è disattivata."
+
 #, fuzzy
 msgid "Share anonymous relay connection telemetry. Nothing is sent while this is off."
 msgstr "Condividi la telemetria anonima di connessione ai relay."
@@ -1548,6 +1566,9 @@ msgstr "Immagine successiva"
 #, fuzzy
 msgid "Share to chat"
 msgstr "Avvia chat"
+
+msgid "Share usage and diagnostics"
+msgstr "Condividi utilizzo e diagnostica"
 
 msgid "Shared media"
 msgstr "Media condivisi"
@@ -1637,6 +1658,9 @@ msgstr "TEMA"
 
 msgid "THIS SESSION"
 msgstr ""
+
+msgid "TIMINGS"
+msgstr "TEMPI"
 
 msgid "TRUSTED LINK SITES"
 msgstr "SITI AFFIDABILI"
@@ -1728,6 +1752,9 @@ msgstr ""
 
 msgid "Time format"
 msgstr "Formato ora"
+
+msgid "Timings"
+msgstr "Tempi"
 
 #, fuzzy
 msgid "Toggle developer mode"

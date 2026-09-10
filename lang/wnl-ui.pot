@@ -376,6 +376,9 @@ msgstr ""
 msgid "Couldn't change audit logs. %s"
 msgstr ""
 
+msgid "Couldn't change diagnostics sharing. Please try again."
+msgstr ""
+
 #, c-format
 msgid "Couldn't change relay telemetry. %s"
 msgstr ""
@@ -405,6 +408,9 @@ msgid "Couldn't load the timeline. %s"
 msgstr ""
 
 msgid "Couldn't load this event. Check your relay settings and try again."
+msgstr ""
+
+msgid "Couldn't load timings. Please try again."
 msgstr ""
 
 msgid "Couldn't open the backup. Double-check the password and try again."
@@ -540,6 +546,12 @@ msgid "Desktop notifications"
 msgstr ""
 
 msgid "Developer mode"
+msgstr ""
+
+msgid "Diagnostics includes a random installation identifier until you turn sharing off, app and device details, and relay labels. The collector receives your IP address. Message contents and account or group identifiers are excluded. Turning sharing off stops future uploads; already sent data cannot be recalled. Audit logs are separate."
+msgstr ""
+
+msgid "Diagnostics is sent to the operator of otlp.ipf.dev unless you configured another collector. Its retention policy has not been verified here. Usage event export is not configured."
 msgstr ""
 
 msgid "Divider"
@@ -1284,6 +1296,9 @@ msgstr ""
 msgid "STARTUP"
 msgstr ""
 
+msgid "STATE / EVENTS / KEYS / TIMINGS"
+msgstr ""
+
 msgid "STATE / RAW EVENTS / KEY PACKAGES"
 msgstr ""
 
@@ -1392,6 +1407,9 @@ msgstr ""
 msgid "Shadow soft"
 msgstr ""
 
+msgid "Share aggregate performance timings and relay diagnostics. Nothing is sent while this is off."
+msgstr ""
+
 msgid "Share anonymous relay connection telemetry. Nothing is sent while this is off."
 msgstr ""
 
@@ -1402,6 +1420,9 @@ msgid "Share this theme"
 msgstr ""
 
 msgid "Share to chat"
+msgstr ""
+
+msgid "Share usage and diagnostics"
 msgstr ""
 
 msgid "Shared media"
@@ -1488,6 +1509,9 @@ msgstr ""
 msgid "THIS SESSION"
 msgstr ""
 
+msgid "TIMINGS"
+msgstr ""
+
 msgid "TRUSTED LINK SITES"
 msgstr ""
 
@@ -1570,6 +1594,9 @@ msgid "Three things and you can send your first message."
 msgstr ""
 
 msgid "Time format"
+msgstr ""
+
+msgid "Timings"
 msgstr ""
 
 msgid "Toggle developer mode"

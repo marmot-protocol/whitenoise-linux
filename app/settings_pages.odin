@@ -194,7 +194,7 @@ settings_pane :: proc(ui: ^Ui_State) {
 			settings_header(ICON_INFO, "About", "WHAT THIS IS, LIVE")
 			settings_about(ui)
 		case .Debug:
-			settings_header(ICON_BUG, "Debug", "STATE / RAW EVENTS / KEY PACKAGES")
+			settings_header(ICON_BUG, "Debug", "STATE / EVENTS / KEYS / TIMINGS")
 			settings_debug(ui)
 		case .KP:
 			settings_header(ICON_KEY, "KP inspector", "DECODED MLS KEY PACKAGES")

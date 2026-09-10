@@ -18,3 +18,6 @@
 
 # stray build artifact, removed from tracking
 /app.bin
+
+# flatpak-builder state for a local packaging/flatpak build
+/.flatpak-builder/

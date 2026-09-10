@@ -861,6 +861,9 @@ boot_marmot :: proc(home: string, ui: ^Ui_State) -> ^marmot.Client {
 		return nil
 	}
 
+	// Configure the destination before startup restores the saved consent.
+	apply_observability(ui, client)
+
 	if marmot.client_start(client) != .OK {
 		ui.client_status = fmt.aprintf("started offline: %s", marmot.last_error())
 	} else {
@@ -871,8 +874,6 @@ boot_marmot :: proc(home: string, ui: ^Ui_State) -> ^marmot.Client {
 	// loop here once missed the npub/pic arrays and crashed the switcher.
 	after_login(ui, client)
 
-	// Routes only; the Advanced toggles decide whether anything travels.
-	apply_observability(ui, client)
 	return client
 }
 

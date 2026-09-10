@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>@ID@</id>
+  <name>White Noise Linux</name>
+  <summary>End-to-end encrypted group chat over Nostr</summary>
+  <developer id="dev.ipf">
+    <name>Marmot Protocol</name>
+  </developer>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>AGPL-3.0-or-later</project_license>
+  <description>
+    <p>White Noise Linux is a desktop client for Marmot: MLS group messaging carried over Nostr relays. No phone number, no central server, and every secret lives in one password-encrypted vault.</p>
+  </description>
+  <launchable type="desktop-id">@ID@.desktop</launchable>
+  <url type="homepage">https://github.com/marmot-protocol/whitenoise-linux</url>
+  <url type="bugtracker">https://github.com/marmot-protocol/whitenoise-linux/issues</url>
+  <provides>
+    <binary>whitenoise</binary>
+  </provides>
+  <content_rating type="oars-1.1">
+    <content_attribute id="social-chat">intense</content_attribute>
+  </content_rating>
+</component>

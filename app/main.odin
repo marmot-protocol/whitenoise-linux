@@ -4,7 +4,7 @@
 // renderer.odin started as clay's official Odin raylib renderer and now
 // draws through sdlrl, the SDL3 shim that kept raylib's call shapes.
 //
-// Usage: app [home-dir]   (default: ~/.local/share/whitenoise)
+// Usage: app [home-dir]   (default: $XDG_DATA_HOME/whitenoise)
 // Env: WN_SHOT=1 captures wn-odin-shot.png after a few frames and exits.
 //      WN_VAULT_PW unlocks (or creates) the vault without the gate.
 //      WN_TEST_PREVIEW=<path> opens the preview modal on a local file.
@@ -570,56 +570,66 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 						}
 
 						if ui.page == .Chats && logged_in && !rail_narrow(ui) {
-							if len(ui.chats) == 0 {
-								clay.Text(
-									tr("No chats yet"),
-									{fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM},
+							if clay.UI(clay.ID("ChatList"))(
+							{
+								layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 6},
+								clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+							},
+							) {
+								if len(ui.chats) == 0 {
+									clay.Text(
+										tr("No chats yet"),
+										{fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM},
+									)
+								}
+								filter := strings.to_lower(
+									string(ui.sidebar_filter[:]),
+									context.temp_allocator,
 								)
+								// Pinned chats lead the rail; the rest keep marmot's
+								// activity order.
+								clear(&ui.rail_rows) // rebuilt below; Ctrl+Tab cycles it
+								for i in rail_order(ui.chats[:], ui.prefs.pinned) {
+									chat := ui.chats[i]
+									if !in_folder(ui.prefs.folder_of, chat.group_id, ui.folder_filter) {
+										continue
+									}
+									// A chat stays visible on a title match or a cached
+									// message-body hit (refresh_filter_hits).
+									if len(filter) > 0 &&
+									   !strings.contains(
+											   strings.to_lower(chat.title, context.temp_allocator),
+											   filter,
+										   ) &&
+									   !(i < len(ui.filter_hits) && ui.filter_hits[i]) {
+										continue
+									}
+									if ui.unread_only &&
+									   chat.unread == 0 &&
+									   !ui.prefs.unread_ids[chat.group_id] {
+										continue
+									}
+									// A blocked contact's 1:1 chat leaves the rail, the
+									// slint contact-block behavior (local, reversible).
+									if peer, is_dm := ui.dm_peer[chat.group_id];
+									   is_dm && ui.blocked[peer] {
+										continue
+									}
+									append(&ui.rail_rows, i)
+									chat_row(u32(i), chat, ui.selected == i, .Archive)
+								}
 							}
-							filter := strings.to_lower(
-								string(ui.sidebar_filter[:]),
-								context.temp_allocator,
-							)
-							// Pinned chats lead the rail; the rest keep marmot's
-							// activity order.
-							clear(&ui.rail_rows) // rebuilt below; Ctrl+Tab cycles it
-							for i in rail_order(ui.chats[:], ui.prefs.pinned) {
-								chat := ui.chats[i]
-								if !in_folder(ui.prefs.folder_of, chat.group_id, ui.folder_filter) {
-									continue
-								}
-								// A chat stays visible on a title match or a cached
-								// message-body hit (refresh_filter_hits).
-								if len(filter) > 0 &&
-								   !strings.contains(
-										   strings.to_lower(chat.title, context.temp_allocator),
-										   filter,
-									   ) &&
-								   !(i < len(ui.filter_hits) && ui.filter_hits[i]) {
-									continue
-								}
-								if ui.unread_only &&
-								   chat.unread == 0 &&
-								   !ui.prefs.unread_ids[chat.group_id] {
-									continue
-								}
-								// A blocked contact's 1:1 chat leaves the rail, the
-								// slint contact-block behavior (local, reversible).
-								if peer, is_dm := ui.dm_peer[chat.group_id];
-								   is_dm && ui.blocked[peer] {
-									continue
-								}
-								append(&ui.rail_rows, i)
-								chat_row(u32(i), chat, ui.selected == i, .Archive)
-							}
+							scrollbar(clay.ID("ChatList"))
 						}
 
 						// Footer: relay/sync status pinned under the list. Collapsed,
 						// the dot alone carries the connection state.
 						if logged_in {
-							if clay.UI(clay.ID("RailFill"))(
-							{layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}}},
-							) {}
+							if ui.page != .Chats || rail_narrow(ui) {
+								if clay.UI(clay.ID("RailFill"))(
+								{layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}}},
+								) {}
+							}
 							if clay.UI(clay.ID("RailFoot"))(
 							{
 								layout = {
@@ -857,7 +867,13 @@ main :: proc() {
 		}
 	}
 	if len(home) == 0 {
-		home = fmt.aprintf("%s/.local/share/whitenoise", os.get_env("HOME", context.allocator))
+		// XDG_DATA_HOME first: a Flatpak points it at the app's own
+		// ~/.var/app/<id>/data, the only writable home the sandbox has.
+		data := os.get_env("XDG_DATA_HOME", context.temp_allocator)
+		if len(data) == 0 {
+			data = fmt.tprintf("%s/.local/share", os.get_env("HOME", context.temp_allocator))
+		}
+		home = fmt.aprintf("%s/whitenoise", data)
 	}
 
 	ui: Ui_State
@@ -959,6 +975,7 @@ main :: proc() {
 		rl.HideWindow()
 	}
 
+	ready_started := time.tick_now()
 	splash_frame(0)
 	client := boot_marmot(home, &ui)
 	splash_frame(1)
@@ -1201,9 +1218,17 @@ main :: proc() {
 	tl_container_was: [2]f32
 	tl_at_bottom: bool
 	win_was: [2]i32
+	foreground_started: time.Tick
+	focused_was: bool
 
 	for !rl.WindowShouldClose() {
 		defer free_all(context.temp_allocator)
+
+		focused := rl.IsWindowFocused()
+		if focused && !focused_was {
+			foreground_started = time.tick_now()
+		}
+		focused_was = focused
 
 		anim_tick(rl.GetFrameTime())
 
@@ -1228,6 +1253,7 @@ main :: proc() {
 		start_live(&live, client, ui.account_ref) // no-op once running
 		live_tick(&live, &ui, client) // poll fallback when the stream stalls
 		drain_live(&live, &ui, client)
+		agent_tick(&ui, tl_at_bottom ? .Follow : .Hold)
 		drain_sends(&ui, client)
 		drain_ops(&ui, client)
 		web_tick() // webxdc modal: run WebKit, take its pixels
@@ -1359,7 +1385,8 @@ main :: proc() {
 		// the residual can't spend (already at a bound) becomes
 		// overscroll, sprung back by the timeline's own padding.
 		scroll_residual += transmute(clay.Vector2)wheel
-		drain := anim_drain(SCROLL_DRAIN)
+		// The chat list follows wheel input immediately.
+		drain := clay.PointerOver(clay.ID("ChatList")) ? f32(1) : anim_drain(SCROLL_DRAIN)
 		step := clay.Vector2{scroll_residual.x * drain, scroll_residual.y * drain}
 		scroll_residual -= step
 		if abs(scroll_residual.x) < 0.01 {
@@ -1531,6 +1558,15 @@ main :: proc() {
 		}
 		devctl_draw()
 		rl.EndDrawing()
+		if ready_started != {} && rl.IsWindowFocused() {
+			timing_record(client, .Splash_Ready, ready_started)
+			ready_started = {}
+		}
+		if foreground_started != {} && focused {
+			timing_record(client, .Foreground_Local_Ready, foreground_started)
+			foreground_started = {}
+		}
+		timings_presented(&ui, client)
 		video_dbg_draw = max(video_dbg_draw, f32(time.duration_milliseconds(time.tick_since(draw_start))))
 
 		// Profile pictures fetched by the curl worker decode here (the
@@ -1885,6 +1921,7 @@ main :: proc() {
 	// freed before the client that created it.
 	if client != nil {
 		marmot.client_shutdown(client)
+		agent_shutdown()
 		if live.worker != nil {
 			thread.join(live.worker)
 			thread.destroy(live.worker)

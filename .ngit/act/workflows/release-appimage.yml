@@ -35,7 +35,13 @@ on:
 env:
   ODIN_VERSION: dev-2026-08
   SDL_VERSION: "3.4.14"
-  NERD_FONTS_VERSION: v3.5.1
+  # The AppImage tooling, pinned by tag and sha256 like everything else
+  # this build fetches. Upstream's "continuous" release is mutable, so
+  # these use its dated tags instead.
+  LINUXDEPLOY_VERSION: 1-alpha-20251107-1
+  LINUXDEPLOY_SHA256: c20cd71e3a4e3b80c3483cef793cda3f4e990aca14014d23c544ca3ce1270b4d
+  APPIMAGETOOL_VERSION: "1.9.1"
+  APPIMAGETOOL_SHA256: ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0
   # Lets the linuxdeploy / appimagetool AppImages run inside a container that
   # has no FUSE, by self-extracting instead of mounting.
   APPIMAGE_EXTRACT_AND_RUN: "1"
@@ -53,9 +59,8 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             pkg-config cmake ninja-build clang git curl \
             libarchive-dev libmpv-dev libpoppler-glib-dev libcairo2-dev libcurl4-openssl-dev \
-            libglib2.0-dev fonts-liberation \
-            librsvg2-bin imagemagick file desktop-file-utils wget ca-certificates \
-            unzip
+            libglib2.0-dev \
+            file desktop-file-utils wget ca-certificates unzip
 
       - name: Build SDL3
         run: |
@@ -89,45 +94,31 @@ jobs:
         run: ./build.sh
 
       # usr/bin + usr/share/whitenoise-linux is a contract with res_dir in
-      # app/paths.odin, which resolves the app's runtime data
-      # relative to the binary.
+      # app/paths.odin; scripts/install-tree.sh lays it out, the same way
+      # the tagged release and the Flatpak do.
       - name: Assemble AppDir
         run: |
-          set -euo pipefail
           rm -rf AppDir
-          mkdir -p AppDir/usr/bin AppDir/usr/share/whitenoise-linux/fonts
-          cp build/app AppDir/usr/bin/whitenoise-linux
-          cp -r vendor/twemoji AppDir/usr/share/whitenoise-linux/
-          cp vendor/emoji-catalog.tsv AppDir/usr/share/whitenoise-linux/
-
-          curl -sSfL -o /tmp/jbmono.zip \
-            "https://github.com/ryanoasis/nerd-fonts/releases/download/$NERD_FONTS_VERSION/JetBrainsMono.zip"
-          unzip -qo /tmp/jbmono.zip -d /tmp/jbmono
-          cp /tmp/jbmono/JetBrainsMonoNerdFont-Regular.ttf AppDir/usr/share/whitenoise-linux/fonts/
-          for f in LiberationSans-Regular LiberationSans-Bold LiberationMono-Regular; do
-            cp "/usr/share/fonts/truetype/liberation/$f.ttf" AppDir/usr/share/whitenoise-linux/fonts/
-          done
-
-          sed 's|@APP@|whitenoise-linux|' assets/whitenoise-linux.desktop \
-            > AppDir/whitenoise-linux.desktop
-          rsvg-convert -b '#0e1116' -w 200 assets/svg/logo.svg -o /tmp/logo.png
-          convert /tmp/logo.png -background '#0e1116' -gravity center \
-            -extent 256x256 AppDir/whitenoise-linux.png
+          scripts/install-tree.sh AppDir/usr whitenoise
 
       - name: Build AppImage
         run: |
           set -euo pipefail
           wget -q -O linuxdeploy \
-            "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage"
+            "https://github.com/linuxdeploy/linuxdeploy/releases/download/$LINUXDEPLOY_VERSION/linuxdeploy-x86_64.AppImage"
           wget -q -O appimagetool \
-            "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
+            "https://github.com/AppImage/appimagetool/releases/download/$APPIMAGETOOL_VERSION/appimagetool-x86_64.AppImage"
+          echo "$LINUXDEPLOY_SHA256  linuxdeploy" | sha256sum -c -
+          echo "$APPIMAGETOOL_SHA256  appimagetool" | sha256sum -c -
           chmod +x linuxdeploy appimagetool
           export LD_LIBRARY_PATH="/usr/local/sdl3/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
           ./linuxdeploy --appdir AppDir \
-            --executable AppDir/usr/bin/whitenoise-linux \
-            --desktop-file AppDir/whitenoise-linux.desktop \
-            --icon-file AppDir/whitenoise-linux.png
+            --executable AppDir/usr/bin/whitenoise \
+            --desktop-file AppDir/usr/share/applications/whitenoise.desktop \
+            --icon-file AppDir/usr/share/icons/hicolor/256x256/apps/whitenoise.png
           # Short commit for a recognizable staging filename. act sets GITHUB_SHA.
+          # No -u here, unlike the release: a staging build must not point
+          # AppImageUpdate at the stable release channel.
           short="${GITHUB_SHA:-unknown}"; short="${short:0:8}"
           out="WhiteNoise-staging-${short}-x86_64.AppImage"
           ./appimagetool AppDir "$out"

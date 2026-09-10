@@ -6,8 +6,8 @@
 # without rebuilding, drop a copy at `$WN_HOME/observability.toml` — if present
 # and valid, it wins.
 #
-# Sending still only happens when the user enables the Telemetry / Audit-logs
-# toggles in Settings → Advanced.
+# Sending requires Share usage and diagnostics (OTLP) or Audit logs (Goggles)
+# in Settings → Advanced. Timings use OTLP, not the audit-log endpoint.
 
 # OTLP/HTTP metrics collector (protobuf, Authorization: Bearer <otlp_token>).
 otlp_metrics_endpoint = "https://otlp.ipf.dev/v1/metrics"

@@ -4,7 +4,7 @@
 // An installed tree keeps them beside the binary, which is the layout
 // the AppImage builds:
 //
-//   usr/bin/whitenoise-linux
+//   usr/bin/whitenoise
 //   usr/share/whitenoise-linux/twemoji/*.png
 //   usr/share/whitenoise-linux/emoji-catalog.tsv
 //   usr/share/whitenoise-linux/fonts/*.ttf

@@ -1,0 +1,160 @@
+# Flatpak manifest. Builds the app from this checkout inside the GNOME
+# 50 SDK and installs it with scripts/install-tree.sh, so the /app tree
+# is the same usr/bin + usr/share/whitenoise-linux layout the AppImage
+# carries (res_dir in app/paths.odin resolves it relative to the
+# binary).
+#
+# The GNOME runtime is the freedesktop 25.08 runtime plus the GNOME
+# platform, which is what ships webkit2gtk-4.1 (and the GTK3 it needs):
+# build.sh then produces wn-webview and webxdc apps run inside the
+# sandbox. The freedesktop runtime has no WebKitGTK, and building it as
+# a module here would cost an hour of CI per release. The 25.08 base
+# keeps the rust-stable and llvm21 SDK extensions below valid.
+#
+# The SDK already ships SDL3, libarchive, curl, cairo, glib and ffmpeg.
+# What the app links beyond that is built as modules here: libass and
+# libplacebo only because libmpv requires them, poppler for the PDF
+# viewer. Video tiles are software-rendered, so mpv is built without GL
+# or Vulkan.
+#
+# The app module needs network at build time: build.sh clones the
+# pinned mdk/clay/ufbx revisions and cargo fetches marmot-c's crates.
+# That rules Flathub out as-is; this manifest targets a self-published
+# bundle (release.yml) and local `flatpak-builder` runs:
+#
+#   flatpak-builder --user --install --install-deps-from=flathub \
+#     --force-clean build/flatpak packaging/flatpak/dev.ipf.whitenoise.yml
+#
+# Not in the sandbox: "Launch at login", which writes an autostart
+# entry the host never sees.
+app-id: dev.ipf.whitenoise
+runtime: org.gnome.Platform
+runtime-version: "50"
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+  - org.freedesktop.Sdk.Extension.llvm21
+command: whitenoise
+
+finish-args:
+  - --share=ipc
+  - --share=network
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --socket=pulseaudio
+  - --device=dri
+  # Desktop alerts go through notify-send; links and the data folder
+  # through xdg-open, which the runtime routes to the portal.
+  - --talk-name=org.freedesktop.Notifications
+  - --filesystem=xdg-download
+
+cleanup:
+  - /include
+  - /lib/pkgconfig
+  - /lib/*.a
+  - /lib/*.la
+  - /share/man
+  - /odin
+
+modules:
+  - name: libass
+    buildsystem: meson
+    config-opts:
+      - -Dasm=disabled
+    sources:
+      - type: git
+        url: https://github.com/libass/libass.git
+        tag: 0.17.4
+        commit: bbb3c7f1570a4a021e52683f3fbdf74fe492ae84
+
+  - name: libplacebo
+    buildsystem: meson
+    config-opts:
+      - -Dvulkan=disabled
+      - -Dopengl=disabled
+      - -Dd3d11=disabled
+      - -Dshaderc=disabled
+      - -Dglslang=disabled
+      - -Dlcms=disabled
+      - -Ddemos=false
+      - -Dtests=false
+    sources:
+      - type: git
+        url: https://code.videolan.org/videolan/libplacebo.git
+        tag: v7.351.0
+        commit: 3188549fba13bbdf3a5a98de2a38c2e71f04e21e
+
+  - name: mpv
+    buildsystem: meson
+    config-opts:
+      - -Dlibmpv=true
+      - -Dcplayer=false
+      - -Dgl=disabled
+      - -Dvulkan=disabled
+      - -Dlua=disabled
+      - -Djavascript=disabled
+      - -Dmanpage-build=disabled
+      - -Dpulse=enabled
+      - -Dpipewire=enabled
+    sources:
+      - type: git
+        url: https://github.com/mpv-player/mpv.git
+        tag: v0.40.0
+        commit: e48ac7ce08462f5e33af6ef9deeac6fa87eef01e
+
+  - name: poppler
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DENABLE_GLIB=ON
+      - -DENABLE_QT5=OFF
+      - -DENABLE_QT6=OFF
+      - -DENABLE_CPP=OFF
+      - -DENABLE_UTILS=OFF
+      - -DENABLE_BOOST=OFF
+      - -DENABLE_GPGME=OFF
+      - -DENABLE_NSS3=OFF
+      - -DENABLE_LIBOPENJPEG=none
+      - -DENABLE_GOBJECT_INTROSPECTION=OFF
+      - -DBUILD_GTK_TESTS=OFF
+      - -DBUILD_CPP_TESTS=OFF
+      - -DBUILD_MANUAL_TESTS=OFF
+    sources:
+      - type: git
+        url: https://gitlab.freedesktop.org/poppler/poppler.git
+        tag: poppler-25.08.0
+        commit: fd0b2b60e6f1321963bb3b7733457a3028fa4826
+
+  # The Odin release binary is static, so no LLVM runtime is needed;
+  # the llvm21 SDK extension above is for clang, Odin's linker driver.
+  # Staged under /app/odin for the app module and cleaned up after.
+  - name: odin
+    buildsystem: simple
+    build-commands:
+      - mkdir -p /app/odin && cp -r . /app/odin/
+    sources:
+      - type: archive
+        url: https://github.com/odin-lang/Odin/releases/download/dev-2026-08/odin-linux-amd64-dev-2026-08.tar.gz
+        sha256: d858c0a182bb28d7b04b04dbb8aed592a9c96c84e4400ee917c74b45848a4d87
+
+  - name: whitenoise-linux
+    buildsystem: simple
+    build-options:
+      build-args:
+        - --share=network
+      append-path: /usr/lib/sdk/rust-stable/bin:/usr/lib/sdk/llvm21/bin:/app/odin
+      env:
+        CARGO_HOME: /run/build/whitenoise-linux/cargo
+        # Odin's `foreign import "system:…"` ignores LDFLAGS; this is how
+        # the linker finds the libmpv and poppler built above.
+        LIBRARY_PATH: /app/lib
+    build-commands:
+      - ./build.sh
+      - scripts/install-tree.sh /app dev.ipf.whitenoise
+    sources:
+      - type: dir
+        path: ../..
+        skip:
+          - build
+          - vendor
+          - .git

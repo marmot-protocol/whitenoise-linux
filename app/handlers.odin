@@ -280,6 +280,28 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 
+	if mouse_released() {
+		for name, i in ui.prefs.folders {
+			if clicked_indexed("FolderFilter", u32(i)) {
+				delete(ui.folder_filter)
+				ui.folder_filter = strings.clone(name)
+				if data := clay.GetScrollContainerData(clay.ID("ChatList")); data.found {
+					data.scrollPosition.y = 0
+				}
+				scroll_residual = {}
+				return
+			}
+		}
+	}
+	if clicked("FolderAllChip") {
+		delete(ui.folder_filter)
+		ui.folder_filter = ""
+		if data := clay.GetScrollContainerData(clay.ID("ChatList")); data.found {
+			data.scrollPosition.y = 0
+		}
+		scroll_residual = {}
+		return
+	}
 	if clicked("AllPill") {
 		ui.unread_only = false
 		return

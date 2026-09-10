@@ -120,6 +120,17 @@ Chat_List_Subscription :: struct {}
 Events_Subscription :: struct {}
 Runtime_Event :: struct {}
 
+Agent_Stream_Subscription :: struct {}
+Agent_Stream_Update :: struct {
+	tag: enum i32 { CHUNK, STATUS, PROGRESS, RECORD, FINISHED, FAILED },
+	data: struct #raw_union {
+		chunk: struct { seq: u64, text: cstring },
+		record: struct { seq: u64, record_type: enum u8 { CHECKPOINT = 4, ABORT = 5, FINAL_NOTICE = 6 }, text: cstring },
+		finished: struct { text, transcript_hash_hex: cstring, chunk_count: u64 },
+		failed: struct { message: cstring },
+	},
+}
+
 Self_Membership :: enum i32 {
 	MEMBER,
 	LEFT,
@@ -963,6 +974,13 @@ foreign lib {
 	events_subscription_free    :: proc(sub: ^Events_Subscription) ---
 	event_free                  :: proc(event: ^Runtime_Event) ---
 
+	watch_agent_text_stream :: proc(client: ^Client, account_ref, group_id_hex, stream_id_hex: cstring, server_cert_der: [^]u8, server_cert_der_len: uint, insecure_local: u8, out_sub: ^^Agent_Stream_Subscription) -> Status ---
+	@(link_name = "marmot_agent_stream_subscription_next")
+	agent_stream_next :: proc(sub: ^Agent_Stream_Subscription, timeout_ms: u32, out: ^^Agent_Stream_Update) -> Status ---
+	@(link_name = "marmot_agent_stream_subscription_free")
+	agent_stream_free :: proc(sub: ^Agent_Stream_Subscription) ---
+	agent_stream_update_free :: proc(update: ^Agent_Stream_Update) ---
+
 	create_group      :: proc(client: ^Client, account_ref: cstring, name: cstring, member_refs: [^]cstring, member_refs_len: uint, description: cstring, out: ^cstring) -> Status ---
 	send_text         :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, text: cstring, out: ^^Send_Summary) -> Status ---
 	// App-defined event: any non-reserved kind with caller-built tags
@@ -1034,4 +1052,147 @@ last_error :: proc() -> string {
 	copy(out, s)
 	string_free(msg)
 	return string(out)
+}
+
+
+Duration_Bucket :: struct {
+	upper_bound_ms, count: u64,
+}
+Duration_Histogram :: struct {
+	buckets: [^]Duration_Bucket,
+	buckets_len: uint,
+	overflow_count, sum_ms: u64,
+}
+Performance_Operation :: struct {
+	attempts, successes, failures: u64,
+	duration_ms: Duration_Histogram,
+}
+Performance_Snapshot :: struct {
+	app_start: Performance_Operation,
+	directory_subscription_sync: Performance_Operation,
+	account_reconcile: Performance_Operation,
+	account_open: Performance_Operation,
+	account_worker_readiness: Performance_Operation,
+	account_session_open: Performance_Operation,
+	account_group_hydration: Performance_Operation,
+	account_profile_load: Performance_Operation,
+	account_group_read_snapshot: Performance_Operation,
+	account_transport_activation: Performance_Operation,
+	account_subscription_registration: Performance_Operation,
+	account_catch_up: Performance_Operation,
+	account_sync: Performance_Operation,
+	account_setup_advisory_step: Performance_Operation,
+	account_bootstrap_relay_and_follow_publish: Performance_Operation,
+	account_default_profile_publish: Performance_Operation,
+	account_initial_key_package_publish: Performance_Operation,
+	account_initial_sync_overlap: Performance_Operation,
+	account_setup_identity_local: Performance_Operation,
+	account_setup_storage_local: Performance_Operation,
+	account_setup_profile_local: Performance_Operation,
+	account_setup_key_package_local: Performance_Operation,
+	account_setup_local_ready_handoff: Performance_Operation,
+	account_setup_network_ready: Performance_Operation,
+	sqlcipher_migration_probe_runs: u64,
+	sqlcipher_migration_probe_skips: u64,
+	inbound_delivery_projection: Performance_Operation,
+	outbound_message_send: Performance_Operation,
+	outbound_message_queue_wait: Performance_Operation,
+	outbound_message_local_projection: Performance_Operation,
+	outbound_message_local_accept: Performance_Operation,
+	outbound_message_publish: Performance_Operation,
+	outbound_message_response: Performance_Operation,
+	host_outbound_message_visible: Performance_Operation,
+	host_inbound_message_visible: Performance_Operation,
+	group_create_queue_wait: Performance_Operation,
+	group_create_key_package_lookup: Performance_Operation,
+	group_member_key_package_prewarm: Performance_Operation,
+	group_create_key_package_cache_reuse: Performance_Operation,
+	group_create_key_package_network_resolution: Performance_Operation,
+	group_create_image_preprocess: Performance_Operation,
+	group_create_image_upload: Performance_Operation,
+	group_create_mls_prepare_persist: Performance_Operation,
+	group_create_pending_welcome_index: Performance_Operation,
+	group_create_welcome_publish: Performance_Operation,
+	group_create_local_projection_save: Performance_Operation,
+	group_create_response_handoff: Performance_Operation,
+	group_create_subscription_refresh: Performance_Operation,
+	group_create_post_mutation_catch_up: Performance_Operation,
+	group_create_total_caller_latency: Performance_Operation,
+	group_invite_members: Performance_Operation,
+	group_invite_key_package_lookup: Performance_Operation,
+	group_invite_routing_refresh: Performance_Operation,
+	group_invite_pre_send_sync: Performance_Operation,
+	group_invite_engine_publish: Performance_Operation,
+	group_invite_local_refresh: Performance_Operation,
+	group_invite_notification_trigger: Performance_Operation,
+	group_invite_welcome_publish: Performance_Operation,
+	group_invite_post_mutation_catch_up: Performance_Operation,
+	group_promote_admin: Performance_Operation,
+	group_details_read: Performance_Operation,
+	group_conversation_snapshot_read: Performance_Operation,
+	chat_list_row_read: Performance_Operation,
+	existing_direct_conversation_read: Performance_Operation,
+	group_mls_state_read: Performance_Operation,
+	group_roster_read: Performance_Operation,
+	group_accept_invite: Performance_Operation,
+	media_upload: Performance_Operation,
+	media_download: Performance_Operation,
+	media_download_queue_wait: Performance_Operation,
+	media_download_preparation: Performance_Operation,
+	media_download_host_setup: Performance_Operation,
+	media_download_response_headers: Performance_Operation,
+	media_download_first_byte: Performance_Operation,
+	media_download_body_transfer: Performance_Operation,
+	media_download_locator_failover: Performance_Operation,
+	media_download_ciphertext_verify: Performance_Operation,
+	media_download_decrypt: Performance_Operation,
+	media_download_plaintext_verify: Performance_Operation,
+	host_splash_ready: Performance_Operation,
+	host_foreground_local_ready: Performance_Operation,
+}
+Host_Performance :: enum u32 {
+	Splash_Ready,
+	Foreground_Local_Ready,
+	Outbound_Message_Visible,
+	Inbound_Message_Visible,
+}
+Performance_Outcome :: enum u32 { Success, Failure }
+
+foreign lib {
+	@(link_name = "marmot_app_performance_snapshot")
+	performance_snapshot :: proc(client: ^Client, out: ^^Performance_Snapshot) -> Status ---
+	@(link_name = "marmot_app_performance_snapshot_free")
+	performance_snapshot_free :: proc(snapshot: ^Performance_Snapshot) ---
+	@(link_name = "marmot_record_host_performance")
+	record_host_performance :: proc(client: ^Client, operation: Host_Performance, duration_ms: u64, outcome: Performance_Outcome) -> Status ---
+}
+
+// Combined diagnostics consent supersedes the legacy telemetry setter.
+Diagnostics_Decision :: enum u32 { Acceptance_Required, Declined, Granted }
+Diagnostics_Consent :: enum u8 { Decline, Grant }
+Diagnostics_Settings :: struct {
+	decision: Diagnostics_Decision,
+	policy_revision, registry_revision: cstring,
+	updated_at_ms: i64,
+	previously_enabled: u8,
+}
+Diagnostics_Exporter :: enum u32 {
+	Disabled, Consent_Required, Unconfigured, Unsupported_Build, Ready, Configuration_Rejected,
+}
+Diagnostics_Status :: struct {
+	consent: Diagnostics_Decision,
+	telemetry, product_analytics: Diagnostics_Exporter,
+	queued_events, dropped_events, accepted_batches, failed_batches: u64,
+}
+foreign lib {
+	@(link_name = "marmot_usage_diagnostics_settings")
+	diagnostics_settings :: proc(client: ^Client, out: ^^Diagnostics_Settings) -> Status ---
+	@(link_name = "marmot_usage_diagnostics_settings_free")
+	diagnostics_settings_free :: proc(settings: ^Diagnostics_Settings) ---
+	@(link_name = "marmot_set_usage_diagnostics_consent")
+	set_diagnostics_consent :: proc(client: ^Client, consent: Diagnostics_Consent, out: ^^Diagnostics_Settings) -> Status ---
+	@(link_name = "marmot_usage_diagnostics_status")
+	diagnostics_status :: proc(client: ^Client, out: ^^Diagnostics_Status) -> Status ---
+	@(link_name = "marmot_usage_diagnostics_status_free")
+	diagnostics_status_free :: proc(status: ^Diagnostics_Status) ---
 }

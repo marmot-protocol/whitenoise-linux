@@ -406,6 +406,9 @@ msgstr ""
 msgid "Couldn't change audit logs. %s"
 msgstr "監査ログを変更できませんでした。"
 
+msgid "Couldn't change diagnostics sharing. Please try again."
+msgstr "診断情報の共有設定を変更できませんでした。もう一度お試しください。"
+
 #, fuzzy, c-format
 msgid "Couldn't change relay telemetry. %s"
 msgstr "リレーのリストを保存できませんでした。もう一度お試しください。"
@@ -440,6 +443,9 @@ msgstr "画像をダウンロードできませんでした。"
 
 msgid "Couldn't load this event. Check your relay settings and try again."
 msgstr "このイベントを読み込めませんでした。リレー設定を確認して、もう一度お試しください。"
+
+msgid "Couldn't load timings. Please try again."
+msgstr "処理時間を読み込めませんでした。もう一度お試しください。"
 
 #, fuzzy
 msgid "Couldn't open the backup. Double-check the password and try again."
@@ -598,6 +604,12 @@ msgstr "デスクトップ通知"
 
 msgid "Developer mode"
 msgstr "開発者モード"
+
+msgid "Diagnostics includes a random installation identifier until you turn sharing off, app and device details, and relay labels. The collector receives your IP address. Message contents and account or group identifiers are excluded. Turning sharing off stops future uploads; already sent data cannot be recalled. Audit logs are separate."
+msgstr "診断情報には、共有をオフにするまで使用されるランダムなインストール識別子、アプリと端末の情報、リレーのラベルが含まれます。収集サービスはあなたのIPアドレスを受け取ります。メッセージの内容やアカウント、グループの識別子は含まれません。共有をオフにすると今後の送信は停止しますが、送信済みのデータは取り消せません。監査ログは別の設定です。"
+
+msgid "Diagnostics is sent to the operator of otlp.ipf.dev unless you configured another collector. Its retention policy has not been verified here. Usage event export is not configured."
+msgstr "別の収集サービスを設定していない場合、診断情報はotlp.ipf.devの運営者に送信されます。その保存方針はここでは確認されていません。利用イベントの送信は設定されていません。"
 
 msgid "Divider"
 msgstr ""
@@ -1409,6 +1421,9 @@ msgstr ""
 msgid "STARTUP"
 msgstr "起動"
 
+msgid "STATE / EVENTS / KEYS / TIMINGS"
+msgstr "状態 / イベント / 鍵 / 処理時間"
+
 msgid "STATE / RAW EVENTS / KEY PACKAGES"
 msgstr ""
 
@@ -1533,6 +1548,9 @@ msgstr ""
 msgid "Shadow soft"
 msgstr ""
 
+msgid "Share aggregate performance timings and relay diagnostics. Nothing is sent while this is off."
+msgstr "集計した処理時間とリレーの診断情報を共有します。オフの間は何も送信されません。"
+
 #, fuzzy
 msgid "Share anonymous relay connection telemetry. Nothing is sent while this is off."
 msgstr "匿名のリレー接続の利用統計を共有します。"
@@ -1548,6 +1566,9 @@ msgstr "次の画像"
 #, fuzzy
 msgid "Share to chat"
 msgstr "チャットを開始"
+
+msgid "Share usage and diagnostics"
+msgstr "利用状況と診断情報を共有"
 
 msgid "Shared media"
 msgstr "共有メディア"
@@ -1637,6 +1658,9 @@ msgstr "テーマ"
 
 msgid "THIS SESSION"
 msgstr ""
+
+msgid "TIMINGS"
+msgstr "処理時間"
 
 msgid "TRUSTED LINK SITES"
 msgstr "信頼済みのリンク先"
@@ -1728,6 +1752,9 @@ msgstr ""
 
 msgid "Time format"
 msgstr "時刻形式"
+
+msgid "Timings"
+msgstr "処理時間"
 
 #, fuzzy
 msgid "Toggle developer mode"

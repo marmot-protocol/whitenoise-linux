@@ -49,6 +49,47 @@ main :: proc() {
 	}
 	fmt.printfln("smoke: bogus login rejected: %s", marmot.last_error())
 
+	// Exercise the real C ABI across both sides of the migration counters.
+	for operation in marmot.Host_Performance {
+		if marmot.record_host_performance(client, operation, 251, .Success) != .OK {
+			fail("record_host_performance")
+		}
+	}
+	snapshot: ^marmot.Performance_Snapshot
+	if marmot.performance_snapshot(client, &snapshot) != .OK {
+		fail("performance_snapshot")
+	}
+	assert(snapshot.host_outbound_message_visible.attempts == 1)
+	assert(snapshot.host_inbound_message_visible.duration_ms.sum_ms == 251)
+	assert(snapshot.host_splash_ready.successes == 1)
+	assert(snapshot.host_foreground_local_ready.duration_ms.sum_ms == 251)
+	assert(snapshot.host_foreground_local_ready.duration_ms.buckets_len > 0)
+	marmot.performance_snapshot_free(snapshot)
+
+	// No runtime start or exporter route: consent round-trip stays offline.
+	consent: ^marmot.Diagnostics_Settings
+	if marmot.diagnostics_settings(client, &consent) != .OK {
+		fail("diagnostics_settings")
+	}
+	assert(consent.decision == .Acceptance_Required)
+	marmot.diagnostics_settings_free(consent)
+	if marmot.set_diagnostics_consent(client, .Grant, &consent) != .OK {
+		fail("grant diagnostics")
+	}
+	assert(consent.decision == .Granted)
+	marmot.diagnostics_settings_free(consent)
+	if marmot.set_diagnostics_consent(client, .Decline, &consent) != .OK {
+		fail("revoke diagnostics")
+	}
+	assert(consent.decision == .Declined)
+	marmot.diagnostics_settings_free(consent)
+	diagnostics: ^marmot.Diagnostics_Status
+	if marmot.diagnostics_status(client, &diagnostics) != .OK {
+		fail("diagnostics_status")
+	}
+	assert(diagnostics.telemetry == .Disabled)
+	marmot.diagnostics_status_free(diagnostics)
+
 	if marmot.client_shutdown(client) != .OK {
 		fail("client_shutdown")
 	}

@@ -1,9 +1,10 @@
 [Desktop Entry]
 Type=Application
-Name=White Noise Linux
+Name=White Noise
 GenericName=Secure Messenger
 Comment=End-to-end encrypted group chat over Nostr
-Exec=@APP@ %u
+Exec=whitenoise %u
+Icon=@ID@
 Terminal=false
 Categories=Network;InstantMessaging;Chat;
 MimeType=x-scheme-handler/marmot;

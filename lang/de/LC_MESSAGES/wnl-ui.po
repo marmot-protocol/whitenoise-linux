@@ -406,6 +406,9 @@ msgstr ""
 msgid "Couldn't change audit logs. %s"
 msgstr "Audit-Logging konnte nicht geändert werden."
 
+msgid "Couldn't change diagnostics sharing. Please try again."
+msgstr "Die Diagnosefreigabe konnte nicht geändert werden. Bitte versuche es erneut."
+
 #, fuzzy, c-format
 msgid "Couldn't change relay telemetry. %s"
 msgstr "Deine Relay-Liste konnte nicht gespeichert werden. Bitte versuche es erneut."
@@ -440,6 +443,9 @@ msgstr "Bild konnte nicht heruntergeladen werden."
 
 msgid "Couldn't load this event. Check your relay settings and try again."
 msgstr "Dieses Ereignis konnte nicht geladen werden. Prüfe deine Relay-Einstellungen und versuche es erneut."
+
+msgid "Couldn't load timings. Please try again."
+msgstr "Die Laufzeiten konnten nicht geladen werden. Bitte versuche es erneut."
 
 #, fuzzy
 msgid "Couldn't open the backup. Double-check the password and try again."
@@ -598,6 +604,12 @@ msgstr "Desktop-Benachrichtigungen"
 
 msgid "Developer mode"
 msgstr "Entwicklermodus"
+
+msgid "Diagnostics includes a random installation identifier until you turn sharing off, app and device details, and relay labels. The collector receives your IP address. Message contents and account or group identifiers are excluded. Turning sharing off stops future uploads; already sent data cannot be recalled. Audit logs are separate."
+msgstr "Die Diagnose enthält bis zum Abschalten der Freigabe eine zufällige Installationskennung, App- und Gerätedetails sowie Relay-Bezeichnungen. Der Erfassungsdienst erhält deine IP-Adresse. Nachrichteninhalte sowie Konto- und Gruppenkennungen sind ausgeschlossen. Das Abschalten beendet künftige Uploads; bereits gesendete Daten können nicht zurückgerufen werden. Audit-Protokolle sind davon getrennt."
+
+msgid "Diagnostics is sent to the operator of otlp.ipf.dev unless you configured another collector. Its retention policy has not been verified here. Usage event export is not configured."
+msgstr "Die Diagnose wird an den Betreiber von otlp.ipf.dev gesendet, sofern du keinen anderen Erfassungsdienst eingerichtet hast. Seine Aufbewahrungsrichtlinie wurde hier nicht überprüft. Der Export von Nutzungsereignissen ist nicht eingerichtet."
 
 msgid "Divider"
 msgstr ""
@@ -1409,6 +1421,9 @@ msgstr ""
 msgid "STARTUP"
 msgstr "START"
 
+msgid "STATE / EVENTS / KEYS / TIMINGS"
+msgstr "STATUS / EREIGNISSE / SCHLÜSSEL / LAUFZEITEN"
+
 msgid "STATE / RAW EVENTS / KEY PACKAGES"
 msgstr ""
 
@@ -1533,6 +1548,9 @@ msgstr ""
 msgid "Shadow soft"
 msgstr ""
 
+msgid "Share aggregate performance timings and relay diagnostics. Nothing is sent while this is off."
+msgstr "Teile zusammengefasste Laufzeiten und Relay-Diagnosedaten. Solange diese Option deaktiviert ist, wird nichts gesendet."
+
 #, fuzzy
 msgid "Share anonymous relay connection telemetry. Nothing is sent while this is off."
 msgstr "Anonyme Telemetrie zu Relay-Verbindungen teilen."
@@ -1548,6 +1566,9 @@ msgstr "Nächstes Bild"
 #, fuzzy
 msgid "Share to chat"
 msgstr "Chat starten"
+
+msgid "Share usage and diagnostics"
+msgstr "Nutzung und Diagnose teilen"
 
 msgid "Shared media"
 msgstr "Geteilte Medien"
@@ -1637,6 +1658,9 @@ msgstr "THEMA"
 
 msgid "THIS SESSION"
 msgstr ""
+
+msgid "TIMINGS"
+msgstr "LAUFZEITEN"
 
 msgid "TRUSTED LINK SITES"
 msgstr "VERTRAUENSWÜRDIGE WEBSITES"
@@ -1728,6 +1752,9 @@ msgstr ""
 
 msgid "Time format"
 msgstr "Zeitformat"
+
+msgid "Timings"
+msgstr "Laufzeiten"
 
 #, fuzzy
 msgid "Toggle developer mode"

@@ -27,8 +27,9 @@ if [ "$(git -C "$MDK" rev-parse HEAD)" != "$MDK_PIN" ]; then
   rm -rf "$BUNDLE"
 fi
 
-if [ ! -f "$BUNDLE/lib/libmarmot_c.a" ]; then
-  "$MDK/crates/marmot-c/c-bindings.sh"
+if [ ! -f "$BUNDLE/lib/libmarmot_c.a" ] || [ ! -f "$BUNDLE/.otlp-export" ]; then
+  OTLP_EXPORT=1 "$MDK/crates/marmot-c/c-bindings.sh"
+  touch "$BUNDLE/.otlp-export"
 fi
 
 CLAY="$HERE/vendor/clay"
@@ -113,6 +114,38 @@ if [ ! -f "$CATALOG" ]; then
   rm -rf "$TMP"
 fi
 
+# Bundled fonts, staged like twemoji above so every package ships
+# byte-identical faces regardless of the build host's font packages.
+# Both archives are pinned by sha256; bump a pin and `rm -rf
+# vendor/fonts` to restage.
+#
+#   JetBrainsMonoNerdFont-Regular.ttf  icons (Nerd Font private-use
+#                                      codepoints, no system fallback)
+#   Liberation{Sans-Regular,Sans-Bold,Mono-Regular}.ttf
+#                                      body, title, mono
+FONTS="$HERE/vendor/fonts"
+NERD_ZIP_URL="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/JetBrainsMono.zip"
+NERD_ZIP_SHA="fab782a66f7d3019da64f6572db9fc5d3a4bcb19f9fa13e2d8a62e3693d6396e"
+LIBERATION_URL="https://github.com/liberationfonts/liberation-fonts/files/7261482/liberation-fonts-ttf-2.1.5.tar.gz"
+LIBERATION_SHA="7191c669bf38899f73a2094ed00f7b800553364f90e2637010a69c0e268f25d0"
+mkdir -p "$FONTS"
+if [ ! -f "$FONTS/JetBrainsMonoNerdFont-Regular.ttf" ]; then
+  TMP="$(mktemp -d)"
+  curl -sSfL -o "$TMP/jbmono.zip" "$NERD_ZIP_URL"
+  echo "$NERD_ZIP_SHA  $TMP/jbmono.zip" | sha256sum -c -
+  unzip -qo "$TMP/jbmono.zip" JetBrainsMonoNerdFont-Regular.ttf -d "$FONTS"
+  rm -rf "$TMP"
+fi
+if [ ! -f "$FONTS/LiberationSans-Regular.ttf" ]; then
+  TMP="$(mktemp -d)"
+  curl -sSfL -o "$TMP/liberation.tar.gz" "$LIBERATION_URL"
+  echo "$LIBERATION_SHA  $TMP/liberation.tar.gz" | sha256sum -c -
+  tar -xzf "$TMP/liberation.tar.gz" -C "$FONTS" --strip-components=1 \
+    --wildcards '*/LiberationSans-Regular.ttf' '*/LiberationSans-Bold.ttf' \
+    '*/LiberationMono-Regular.ttf'
+  rm -rf "$TMP"
+fi
+
 mkdir -p "$HERE/build"
 
 # The distro odin package ships vendor/stb without the built .a archives
@@ -146,7 +179,7 @@ odin build "$HERE/smoke" -out:"$HERE/build/smoke"
 env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/app" -o:speed -out:"$HERE/build/app"
 # Unused imports: fatal in CI, a warning locally so a work-in-progress
 # import does not block a build.
-if ! "$HERE/scripts/vet-imports.sh"; then
+if ! env "${ODIN_ROOT_ARG[@]}" "$HERE/scripts/vet-imports.sh"; then
   if [ -n "${CI:-}" ]; then
     echo "==> unused imports in app/. Remove them." >&2
     exit 1

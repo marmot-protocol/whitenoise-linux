@@ -1,6 +1,7 @@
 package main
 
 import "core:strings"
+import "core:time"
 import "core:text/edit"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
@@ -246,6 +247,7 @@ Md_Block_Ui :: struct {
 }
 
 Msg_Ui :: struct {
+	visible_since: time.Tick, // live observation until first presented row
 	id:        string, // message_id_hex
 	sender:    string, // display label: kind-0 name, else short hex / "you"
 	sender_id: string, // account hex
@@ -532,6 +534,7 @@ Ui_State :: struct {
 	audit_files:       [dynamic]Audit_File, // audit-*.jsonl on disk
 	audit_scanned:     bool,
 	debug_tab:      int, // 0 = state, 1 = raw events, 2 = key packages
+	debug_text:     string, // timing names spaced for wrapping; Copy keeps the original JSON
 	debug_json:     string, // composed snapshot shown on the Debug page
 	new_chat_open: bool,
 	// A one-card window shows the settings section list or one section,

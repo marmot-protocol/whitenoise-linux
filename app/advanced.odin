@@ -34,9 +34,11 @@ Audit_File :: struct {
 settings_advanced :: proc(ui: ^Ui_State) {
 	eyebrow("SECURITY & PRIVACY")
 	if clay.UI(clay.ID("RowTelemetry"))(srow()) {
-		row_labels("Relay telemetry", "Share anonymous relay connection telemetry. Nothing is sent while this is off.")
+		row_labels("Share usage and diagnostics", "Share aggregate performance timings and relay diagnostics. Nothing is sent while this is off.")
 		toggle("TgTelemetry", ui.telemetry_enabled)
 	}
+	clay.Text(tr("Diagnostics includes a random installation identifier until you turn sharing off, app and device details, and relay labels. The collector receives your IP address. Message contents and account or group identifiers are excluded. Turning sharing off stops future uploads; already sent data cannot be recalled. Audit logs are separate."), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+	clay.Text(tr("Diagnostics is sent to the operator of otlp.ipf.dev unless you configured another collector. Its retention policy has not been verified here. Usage event export is not configured."), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
 	if clay.UI(clay.ID("RowAudit"))(srow()) {
 		row_labels("Audit logs", "Record group audit log files on this device. Identifiers are hashed.")
 		toggle("TgAudit", ui.audit_enabled)
@@ -150,10 +152,10 @@ load_advanced :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
-	telemetry: ^marmot.Relay_Telemetry_Settings
-	if marmot.relay_telemetry_settings(client, &telemetry) == .OK {
-		ui.telemetry_enabled = telemetry.export_enabled
-		marmot.relay_telemetry_settings_free(telemetry)
+	telemetry: ^marmot.Diagnostics_Settings
+	if marmot.diagnostics_settings(client, &telemetry) == .OK {
+		ui.telemetry_enabled = telemetry.decision == .Granted
+		marmot.diagnostics_settings_free(telemetry)
 	}
 
 	audit: ^marmot.Audit_Log_Settings
@@ -165,26 +167,16 @@ load_advanced :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	audit_scan(ui, client)
 }
 
-// Flip export_enabled, keeping the runtime's own export interval.
+// An explicit toggle grants the expanded scope; startup never grants consent.
 set_telemetry :: proc(ui: ^Ui_State, client: ^marmot.Client, on: bool) {
-	cur: ^marmot.Relay_Telemetry_Settings
-	if client == nil || marmot.relay_telemetry_settings(client, &cur) != .OK {
-		ui.client_status = fmt.aprintf(tr("Couldn't change relay telemetry. %s"), marmot.last_error())
+	out: ^marmot.Diagnostics_Settings
+	if client == nil || marmot.set_diagnostics_consent(client, on ? .Grant : .Decline, &out) != .OK {
+		ui.telemetry_enabled = false // MDK fails closed if the receipt cannot be saved.
+		ui.client_status = tr("Couldn't change diagnostics sharing. Please try again.")
 		return
 	}
-	next := marmot.Relay_Telemetry_Settings {
-		export_enabled          = on,
-		export_interval_seconds = cur.export_interval_seconds,
-	}
-	marmot.relay_telemetry_settings_free(cur)
-
-	out: ^marmot.Relay_Telemetry_Settings
-	if marmot.set_relay_telemetry_settings(client, &next, &out) != .OK {
-		ui.client_status = fmt.aprintf(tr("Couldn't change relay telemetry. %s"), marmot.last_error())
-		return
-	}
-	ui.telemetry_enabled = out.export_enabled
-	marmot.relay_telemetry_settings_free(out)
+	ui.telemetry_enabled = out.decision == .Granted
+	marmot.diagnostics_settings_free(out)
 }
 
 // Flip the recorder, keeping the runtime's content posture.

@@ -955,15 +955,33 @@ DrawTextureRect :: proc(texture: ^Texture2D, x, y, w, h: f32, tint: Color) {
 	sdl.RenderTexture(state.renderer, texture.tex, nil, &dest)
 }
 
+@(private)
+Clip_State :: struct {
+	rect: sdl.Rect,
+	enabled: bool,
+}
+
+@(private)
+clip_stack: [dynamic]Clip_State
+
 BeginScissorMode :: proc(x, y, w, h: i32) {
-	// SDL clip rects live in render coordinates, which the render
-	// scale already transforms; pass layout coords straight through.
+	// Nested text clips must preserve the enclosing scroll viewport.
+	prev: sdl.Rect
+	enabled := sdl.RenderClipEnabled(state.renderer)
+	if enabled {
+		sdl.GetRenderClipRect(state.renderer, &prev)
+	}
+	append(&clip_stack, Clip_State{prev, enabled})
 	rect := sdl.Rect{c.int(x), c.int(y), c.int(w), c.int(h)}
+	if enabled && !sdl.GetRectIntersection(prev, rect, &rect) {
+		rect = {}
+	}
 	sdl.SetRenderClipRect(state.renderer, &rect)
 }
 
 EndScissorMode :: proc() {
-	sdl.SetRenderClipRect(state.renderer, nil)
+	prev := pop(&clip_stack)
+	sdl.SetRenderClipRect(state.renderer, prev.enabled ? &prev.rect : nil)
 }
 
 // Filled rounded rectangle, ported from clay_renderer_SDL3.c.

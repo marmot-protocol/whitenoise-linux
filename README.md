@@ -69,7 +69,20 @@ chmod +x WhiteNoise-*-x86_64.AppImage
 
 Japanese text is the one exception: Noto Sans CJK is tens of megabytes, so it is not bundled and comes from your system instead (`noto-fonts-cjk` on Arch, `fonts-noto-cjk` on Debian and Ubuntu).
 
-Other packaging formats will come later; for now, AppImage or a source build.
+Each release also ships a Flatpak bundle on the GNOME 50 runtime:
+
+```sh
+flatpak install --user WhiteNoise-*-x86_64.flatpak
+flatpak run dev.ipf.whitenoise
+```
+
+The Flatpak keeps its data under `~/.var/app/dev.ipf.whitenoise/`. One thing stays outside its sandbox: "Launch at login".
+
+On Arch, `packaging/arch/PKGBUILD` builds a `whitenoise-linux-git` package against the system SDL3, mpv, and poppler:
+
+```sh
+cd packaging/arch && makepkg -si
+```
 
 ## Build from source
 

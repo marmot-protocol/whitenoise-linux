@@ -137,25 +137,35 @@ key" deletes the vault and everything sealed under it.
 
 ## Packaging
 
-Releases are AppImages, built by `.github/workflows/release.yml` on a `v*`
-tag. `.ngit/act/workflows/release-appimage.yml` builds the same thing on every
-push to master and hands it to ngit-ci for Blossom.
+Releases are an AppImage and a Flatpak bundle, built by
+`.github/workflows/release.yml` on a `v*` tag.
+`.ngit/act/workflows/release-appimage.yml` builds the AppImage on every push
+to master and hands it to ngit-ci for Blossom. The Flatpak manifest is
+`packaging/flatpak/dev.ipf.whitenoise.yml`; it builds
+the app inside the GNOME 50 SDK (freedesktop 25.08 base, which is what
+ships webkit2gtk-4.1 for wn-webview; libmpv and poppler as modules,
+network on during the build for cargo and the pinned clones), so it is a
+self-published bundle, not a Flathub submission. `packaging/arch/PKGBUILD` is
+a `-git` package against the system libraries, for `makepkg -si`.
 
-The app reads three things from disk at runtime, and `res_dir`
-(`app/paths.odin`) resolves all of them relative to the running binary, so the
-AppDir layout is a contract with it:
+All three install the same tree through `scripts/install-tree.sh
+<prefix> <id>`. The app reads three things from disk at runtime, and
+`res_dir` (`app/paths.odin`) resolves all of them relative to the running
+binary, so that layout is a contract with it:
 
 ```
-usr/bin/whitenoise-linux
-usr/share/whitenoise-linux/twemoji/*.png      reaction and picker tiles
-usr/share/whitenoise-linux/emoji-catalog.tsv  the picker's search index
-usr/share/whitenoise-linux/fonts/*.ttf        the four bundled faces
+<prefix>/bin/whitenoise
+<prefix>/share/whitenoise-linux/twemoji/*.png      reaction and picker tiles
+<prefix>/share/whitenoise-linux/emoji-catalog.tsv  the picker's search index
+<prefix>/share/whitenoise-linux/fonts/*.ttf        the four bundled faces
 ```
 
 Without that tree, `res_dir` falls back to `vendor/`, the path this was built
 from, which is what a dev build wants and what a shipped binary must
 never rely on. **Anything new the app reads from disk at runtime goes under
-`res_dir()`, and gets copied into the AppDir by both workflows.**
+`res_dir()`, and gets copied there by `install-tree.sh`.** The data dir
+defaults to `$XDG_DATA_HOME/whitenoise`, which is what lands the Flatpak's
+data under `~/.var/app/<id>/data`.
 
 Fonts are bundled because the stacks would otherwise depend on the host
 distro's font layout, and the icon face in particular has no substitute (the

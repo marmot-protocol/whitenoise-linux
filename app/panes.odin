@@ -14,74 +14,15 @@ Row_Chip :: enum {
 	Unarchive,
 }
 
-// ── Rows that changed place ─────────────────────────────────────────
-//
-// A chat jumping to the top of the rail teleports: clay is immediate
-// mode and lays the row out at its new slot with no memory that it was
-// somewhere else. So remember where each chat was drawn, and when its
-// slot moves, carry the row from the old place to the new one.
-//
-// The slot stays in flow (holding the gap open at the height the row
-// had); the row's content floats over it at the shrinking offset.
-
-FLIP_RATE :: f32(15)
-FLIP_EPS :: f32(0.5) // half a pixel from home is home
-
-@(private = "file")
-Flip :: struct {
-	y, h, w: f32,
-}
-
-@(private = "file")
-row_was: map[string]Flip
-
-// Where to draw this row relative to its slot, and the box the slot has
-// to hold open while it is away from it.
-@(private = "file")
-flip_row :: proc(key: string, index: u32) -> (offset: f32, slot: Flip) {
-	box, laid_out := element_box(clay.ID("ChatRow", index))
-	if !laid_out {
-		return 0, {}
-	}
-	slot = {box.y, box.height, box.width}
-	was, seen := row_was[key]
-	if !seen {
-		row_was[strings.clone(key)] = slot
-		return 0, slot
-	}
-	// The offset lives in the motion store keyed by the chat, not by the
-	// slot, so it survives the reorder that started it.
-	anim := anim_key(avatar_hash(key), 0x711d)
-	if abs(was.y - box.y) > FLIP_EPS && motion_on() {
-		anim_vals[anim] = {v = was.y - box.y, frame = anim_frame}
-	}
-	was.y = box.y
-	row_was[key] = was
-	offset = anim_to(anim, 0, FLIP_RATE)
-	if abs(offset) < FLIP_EPS {
-		return 0, slot
-	}
-	return offset, slot
-}
-
 chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
-	offset, slot := flip_row(chat.group_id, index)
-	moved := offset != 0
-	// In flight the slot is an empty spacer at the row's own size, and
-	// the content floats over it; at rest the wrapper is just a box.
-	float := clay.FloatingElementConfig{}
-	if moved {
-		float = {attachTo = .Parent, zIndex = 5, offset = {0, offset}, attachment = {element = .LeftTop, parent = .LeftTop}}
-	}
 	if clay.UI(clay.ID("ChatRow", index))(
-	{layout = {sizing = {width = clay.SizingGrow(), height = moved ? clay.SizingFixed(slot.h) : {}}}},
+	{layout = {sizing = {width = clay.SizingGrow()}}},
 	) {
 	if clay.UI(clay.ID("ChatRowSlide", index))(
 	{
-		layout = {sizing = {width = moved ? clay.SizingFixed(slot.w) : clay.SizingGrow()}, childGap = 0},
+		layout = {sizing = {width = clay.SizingGrow()}, childGap = 0},
 		backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
 		cornerRadius = rr(12),
-		floating = float,
 	},
 	) {
 	if clay.UI(clay.ID("ChatRowBar", index))({layout = {sizing = {width = clay.SizingFixed(3), height = clay.SizingGrow()}}, backgroundColor = active ? ACCENT : {}, cornerRadius = rr(2)}) {}
@@ -517,11 +458,6 @@ contacts_pane :: proc(ui: ^Ui_State) {
 				clay.Text(tr(kp_note(state)), {fontId = FONT_BODY, fontSize = 10, textColor = TEXT_LO})
 			}
 		}
-
-		if clay.UI(clay.ID("RelaysEyebrow"))({layout = {padding = {top = 8}}}) {
-			eyebrow("RELAYS IN COMMON")
-		}
-		contact_relays_card()
 
 		if clay.UI(clay.ID("RelaysEyebrow"))({layout = {padding = {top = 8}}}) {
 			eyebrow("RELAYS IN COMMON")

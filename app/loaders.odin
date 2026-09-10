@@ -4,6 +4,7 @@ import "core:encoding/json"
 import "core:fmt"
 import "core:slice"
 import "core:strings"
+import "core:time"
 
 import rl "sdlrl"
 
@@ -41,6 +42,7 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 	}
 	defer marmot.timeline_page_free(page)
 	ui.tl_has_more = page.has_more_before
+	agent_collect(client, ui, page)
 
 	// Message textures are owned by the media_textures session cache
 	// now (shared across reloads), so rows never free them.
@@ -96,9 +98,9 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 	// send worker is still in flight; the build loop below hides that
 	// copy so the grayed pending row stays alone until the ack (slint
 	// keeps the overlay until ack too).
-	old_ids := make(map[string]bool, context.temp_allocator)
+	old_times := make(map[string]time.Tick, context.temp_allocator)
 	for old in ui.messages {
-		old_ids[old.id] = true
+		old_times[old.id] = old.visible_since
 	}
 	inflight := make(map[string]int, context.temp_allocator)
 	for p in ui.pending {
@@ -121,6 +123,17 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 		// as their own message.
 		if record.kind == 1009 || record.kind == 5 {
 			continue
+		}
+		if record.kind == AGENT_ACTIVITY || record.kind == AGENT_OPERATION {
+			continue
+		}
+		stream_body: string
+		if record.kind == AGENT_STREAM_START {
+			visible: bool
+			stream_body, visible = agent_body(record)
+			if !visible {
+				continue
+			}
 		}
 
 		// A kind-1018 vote folds into its poll's tally; never a row.
@@ -223,10 +236,13 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 			content = versions[len(versions) - 1].record
 		}
 		body := content.plaintext != nil ? string(content.plaintext) : ""
+		if record.kind == AGENT_STREAM_START {
+			body = stream_body
+		}
 
 		// The local copy of an in-flight optimistic send: skip it, the
 		// pending row is its visual until the ack lands.
-		if mine && !old_ids[id_str] && inflight[body] > 0 {
+		if mine && !(id_str in old_times) && inflight[body] > 0 {
 			inflight[body] -= 1
 			continue
 		}
@@ -281,7 +297,7 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 				convert_blocks(&msg.blocks, doc.blocks, doc.blocks_len, false)
 				marmot.markdown_document_free(doc)
 			}
-		} else {
+		} else if record.kind != AGENT_STREAM_START {
 			convert_blocks(&msg.blocks, content.content_tokens.blocks, content.content_tokens.blocks_len, false)
 		}
 		for j in 0 ..< record.reactions.by_emoji_len {
@@ -686,6 +702,10 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 			}
 		}
 		append(&ui.messages, msg)
+	}
+
+	for &msg in ui.messages {
+		msg.visible_since = old_times[msg.id]
 	}
 
 	// Fold the collected votes and thread reply counts onto their rows.

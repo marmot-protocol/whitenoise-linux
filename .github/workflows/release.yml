@@ -1,17 +1,19 @@
-# Release: triggered by pushing a `v*` tag (e.g. v0.2.0). Builds the app,
-# bundles it into a self-contained AppImage, and publishes it on a GitHub
-# Release.
+# Release: triggered by pushing a `v*` tag (e.g. v0.2.0). Builds the app
+# twice, as a self-contained AppImage and as a Flatpak bundle, and
+# publishes both on a GitHub Release.
 #
-# AppImage is the only distribution channel for now; distro packages come
-# later. What "self-contained" means here:
-#   * linuxdeploy copies the binary's shared-library dependencies into the
-#     AppDir (SDL3, libmpv and its codec deps, poppler, cairo, libarchive).
-#   * The AppDir also carries the runtime data the app reads from disk: the
-#     Twemoji tiles, the emoji picker catalog, and the fonts. `res_dir` in
-#     app/paths.odin resolves those relative to the binary, so the
-#     layout below (usr/bin + usr/share/whitenoise-linux) is a contract with it.
+# Both packages install the same tree, via scripts/install-tree.sh:
+#   * the binary at <prefix>/bin, and the runtime data the app reads from
+#     disk (Twemoji tiles, the emoji picker catalog, the fonts) at
+#     <prefix>/share/whitenoise-linux. `res_dir` in app/paths.odin resolves
+#     that relative to the binary, so the layout is a contract with it.
 #   * Noto Sans CJK is deliberately NOT bundled: the .ttc is tens of
 #     megabytes, so Japanese falls back to the host's system copy.
+#
+# AppImage: linuxdeploy copies the binary's shared-library dependencies
+# into the AppDir (SDL3, libmpv and its codec deps, poppler, cairo,
+# libarchive). Flatpak: packaging/flatpak/*.yml builds those libraries as
+# modules on the GNOME 50 runtime (freedesktop 25.08 base).
 name: Release
 
 on:
@@ -21,7 +23,14 @@ on:
 env:
   ODIN_VERSION: dev-2026-08
   SDL_VERSION: "3.4.14"
-  NERD_FONTS_VERSION: v3.5.1
+  FLATPAK_ID: dev.ipf.whitenoise
+  # The AppImage tooling, pinned by tag and sha256 like everything else
+  # this build fetches. Upstream's "continuous" release is mutable, so
+  # these use its dated tags instead.
+  LINUXDEPLOY_VERSION: 1-alpha-20251107-1
+  LINUXDEPLOY_SHA256: c20cd71e3a4e3b80c3483cef793cda3f4e990aca14014d23c544ca3ce1270b4d
+  APPIMAGETOOL_VERSION: "1.9.1"
+  APPIMAGETOOL_SHA256: ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0
   # Lets the linuxdeploy / appimagetool AppImages run on a runner without
   # FUSE, by self-extracting instead of mounting.
   APPIMAGE_EXTRACT_AND_RUN: "1"
@@ -30,23 +39,19 @@ jobs:
   appimage:
     name: AppImage (x86_64)
     runs-on: ubuntu-24.04
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v4
 
-      # The app's own deps, plus the tools that assemble the AppImage:
-      # rsvg + ImageMagick to rasterize the SVG logo, and the file/desktop
-      # utils linuxdeploy expects. fonts-liberation supplies three of the
-      # four faces the AppDir bundles.
+      # The app's own deps, plus the file/desktop utils linuxdeploy
+      # expects.
       - name: Install system deps
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             pkg-config cmake ninja-build clang git curl \
             libarchive-dev libmpv-dev libpoppler-glib-dev libcairo2-dev libcurl4-openssl-dev \
-            libglib2.0-dev fonts-liberation \
-            librsvg2-bin imagemagick file desktop-file-utils wget ca-certificates unzip
+            libglib2.0-dev \
+            file desktop-file-utils wget ca-certificates unzip
 
       - name: Cache SDL3
         id: sdl-cache
@@ -94,45 +99,20 @@ jobs:
       - name: Build
         run: ./build.sh
 
-      # The layout here is the other half of res_dir's contract: the binary
-      # at usr/bin, everything it reads at usr/share/whitenoise.
       - name: Assemble AppDir
         run: |
-          set -euo pipefail
           rm -rf AppDir
-          mkdir -p AppDir/usr/bin AppDir/usr/share/whitenoise-linux/fonts
-          cp build/app AppDir/usr/bin/whitenoise-linux
-          cp -r vendor/twemoji AppDir/usr/share/whitenoise-linux/
-          cp vendor/emoji-catalog.tsv AppDir/usr/share/whitenoise-linux/
-
-          # Icons are Nerd Font private-use codepoints with no system
-          # fallback, so that face has to travel with the binary.
-          curl -sSfL -o /tmp/jbmono.zip \
-            "https://github.com/ryanoasis/nerd-fonts/releases/download/$NERD_FONTS_VERSION/JetBrainsMono.zip"
-          unzip -qo /tmp/jbmono.zip -d /tmp/jbmono
-          cp /tmp/jbmono/JetBrainsMonoNerdFont-Regular.ttf AppDir/usr/share/whitenoise-linux/fonts/
-          for f in LiberationSans-Regular LiberationSans-Bold LiberationMono-Regular; do
-            cp "/usr/share/fonts/truetype/liberation/$f.ttf" AppDir/usr/share/whitenoise-linux/fonts/
-          done
-
-          # Exec is the plain binary name; AppRun puts usr/bin on PATH.
-          sed 's|@APP@|whitenoise-linux|' assets/whitenoise-linux.desktop \
-            > AppDir/whitenoise-linux.desktop
-
-          # The logo is white-on-transparent; render it onto the app's dark
-          # surface colour and pad to a square 256x256 PNG so it stays
-          # visible in launchers.
-          rsvg-convert -b '#0e1116' -w 200 assets/svg/logo.svg -o /tmp/logo.png
-          convert /tmp/logo.png -background '#0e1116' -gravity center \
-            -extent 256x256 AppDir/whitenoise-linux.png
+          scripts/install-tree.sh AppDir/usr whitenoise
 
       - name: Fetch AppImage tooling
         run: |
           set -euo pipefail
           wget -q -O linuxdeploy \
-            "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage"
+            "https://github.com/linuxdeploy/linuxdeploy/releases/download/$LINUXDEPLOY_VERSION/linuxdeploy-x86_64.AppImage"
           wget -q -O appimagetool \
-            "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
+            "https://github.com/AppImage/appimagetool/releases/download/$APPIMAGETOOL_VERSION/appimagetool-x86_64.AppImage"
+          echo "$LINUXDEPLOY_SHA256  linuxdeploy" | sha256sum -c -
+          echo "$APPIMAGETOOL_SHA256  appimagetool" | sha256sum -c -
           chmod +x linuxdeploy appimagetool
 
       - name: Build AppImage
@@ -143,11 +123,14 @@ jobs:
           # not installed system-wide.
           export LD_LIBRARY_PATH="/usr/local/sdl3/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
           ./linuxdeploy --appdir AppDir \
-            --executable AppDir/usr/bin/whitenoise-linux \
-            --desktop-file AppDir/whitenoise-linux.desktop \
-            --icon-file AppDir/whitenoise-linux.png
+            --executable AppDir/usr/bin/whitenoise \
+            --desktop-file AppDir/usr/share/applications/whitenoise.desktop \
+            --icon-file AppDir/usr/share/icons/hicolor/256x256/apps/whitenoise.png
           out="WhiteNoise-${GITHUB_REF_NAME}-x86_64.AppImage"
-          ./appimagetool AppDir "$out"
+          # -u embeds update info and emits a .zsync next to the AppImage,
+          # so AppImageUpdate can delta-update against the latest release.
+          ./appimagetool -u "gh-releases-zsync|marmot-protocol|whitenoise-linux|latest|WhiteNoise-*-x86_64.AppImage.zsync" \
+            AppDir "$out"
           echo "APPIMAGE_NAME=$out" >> "$GITHUB_ENV"
 
       # A smoke test of the packaged artifact, not of the app: SDL's dummy
@@ -161,9 +144,75 @@ jobs:
           SDL_VIDEODRIVER=dummy WN_SHOT=1 WN_VAULT_PW=ci-smoke \
             ./"$APPIMAGE_NAME" "$(mktemp -d)"
 
-      - name: Publish release
-        uses: softprops/action-gh-release@v2
+      - uses: actions/upload-artifact@v4
         with:
-          files: ${{ env.APPIMAGE_NAME }}
+          name: appimage
+          path: |
+            ${{ env.APPIMAGE_NAME }}
+            ${{ env.APPIMAGE_NAME }}.zsync
+          if-no-files-found: error
+
+  flatpak:
+    name: Flatpak (x86_64)
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-50
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+
+      # The app module needs network during the build (build.sh clones
+      # mdk/clay/ufbx, cargo fetches crates), which the manifest declares
+      # in its build-args; the action passes it through.
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          manifest-path: packaging/flatpak/${{ env.FLATPAK_ID }}.yml
+          bundle: WhiteNoise-${{ github.ref_name }}-x86_64.flatpak
+          upload-artifact: false
+          cache: false
+
+      # Same smoke test as the AppImage: install the bundle and boot it
+      # against SDL's dummy driver.
+      - name: Run the Flatpak headless
+        run: |
+          set -euo pipefail
+          flatpak install --user -y --noninteractive \
+            "WhiteNoise-${GITHUB_REF_NAME}-x86_64.flatpak"
+          flatpak run --user --env=SDL_VIDEODRIVER=dummy --env=WN_SHOT=1 \
+            --env=WN_VAULT_PW=ci-smoke "$FLATPAK_ID" "$(mktemp -d)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flatpak
+          path: WhiteNoise-${{ github.ref_name }}-x86_64.flatpak
+          if-no-files-found: error
+
+  publish:
+    name: Publish release
+    needs: [appimage, flatpak]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      # One checksum file over everything the release ships, so a
+      # download can be verified without trusting the release page alone.
+      - name: Checksums
+        run: |
+          cd dist
+          sha256sum *.AppImage *.zsync *.flatpak > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.AppImage
+            dist/*.zsync
+            dist/*.flatpak
+            dist/SHA256SUMS.txt
           generate_release_notes: true
           fail_on_unmatched_files: true
