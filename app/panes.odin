@@ -494,11 +494,7 @@ contacts_pane :: proc(ui: ^Ui_State) {
 		}
 		if clay.UI(clay.ID("ActionsRow"))({layout = {childGap = 8}}) {
 			micro_button("BlockBtn", ui.blocked[contact.id_hex] ? "Unblock" : "Block", DANGER)
-			// Only a published follow can be taken back; a contact
-			// known from a shared group has nothing to remove.
-			if contact.followed {
-				micro_button("RemoveContactBtn", "Remove contact", DANGER)
-			}
+			micro_button("RemoveContactBtn", "Remove contact", DANGER)
 		}
 
 		if open_now(clay.ID("QrModal"), ui.qr_open) && ui.qr_tex != nil {

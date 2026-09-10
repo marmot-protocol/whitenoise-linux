@@ -336,7 +336,6 @@ Contact_Ui :: struct {
 	name:     string, // display name or truncated id
 	pic_url:  string, // kind-0 picture, "" = none
 	npub:     string,
-	followed: bool, // on the account's NIP-02 list
 	groups:   [dynamic]Common_Group, // chats shared with this contact
 }
 

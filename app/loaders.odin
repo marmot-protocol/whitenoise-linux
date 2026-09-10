@@ -917,8 +917,6 @@ load_archived :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 	}
 }
 
-// Contacts: every non-local member across the account's groups,
-// deduplicated, with directory display names when known.
 // Contacts sorted case-insensitively by name for the sidebar; key is
 // the lowercased name (also the filter haystack), idx the ui.contacts
 // position. Temp-allocated, rebuilt per frame.
@@ -957,7 +955,8 @@ npub_tail :: proc(npub: string) -> string {
 load_contacts :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 	clear(&ui.contacts)
 	clear(&ui.dm_peer)
-	seen := make(map[string]bool, allocator = context.temp_allocator)
+	indices := make(map[string]int, allocator = context.temp_allocator)
+	load_follows(client, ui, &indices)
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 
 	for chat in ui.chats {
@@ -968,60 +967,31 @@ load_contacts :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 		}
 		defer marmot.app_group_member_record_list_free(members)
 
-		for i in 0 ..< members.len {
-			member := &members.items[i]
-			if member.local || member.member_id_hex == nil {
-				continue
-			}
-			id := string(member.member_id_hex)
-			// Remember the peer of each 1:1 chat so the rail can hide
-			// conversations with locally blocked contacts.
-			if members.len == 2 {
-				ui.dm_peer[strings.clone(chat.group_id)] = strings.clone(id)
-			}
-			if seen[id] {
-				for &existing in ui.contacts {
-					if existing.id_hex == id {
-						append(&existing.groups, Common_Group{strings.clone(chat.title), int(members.len)})
-						break
-					}
-				}
-				continue
-			}
-			seen[strings.clone(id, context.temp_allocator)] = true
-
-			name := short_hex(id)
-			resolved: cstring
-			if marmot.display_name(client, member.member_id_hex, &resolved) == .OK && resolved != nil {
-				name = string(resolved)
-			}
-			npub_str: string
-			npub_c: cstring
-			if marmot.npub(client, member.member_id_hex, &npub_c) == .OK && npub_c != nil {
-				npub_str = strings.clone(string(npub_c))
-				marmot.string_free(npub_c)
-			}
-			contact := Contact_Ui{
-				id_hex  = strings.clone(id),
-				name    = strings.clone(name),
-				pic_url = strings.clone(profile_info(client, id).pic_url),
-				npub    = npub_str,
-			}
-			append(&contact.groups, Common_Group{strings.clone(chat.title), int(members.len)})
-			append(&ui.contacts, contact)
-			marmot.string_free(resolved)
-		}
+		contact_groups(ui, chat, members.items[:members.len], indices)
 	}
-
-	load_follows(client, ui, seen)
 }
 
-// The account's NIP-02 follows, merged into the contact list: someone
-// followed but never chatted with is still a contact, and only a
-// followed contact can be removed (sharing a group is not something
-// unfollowing can undo).
+// Shared membership enriches saved contacts without creating new ones.
+// Keep every 1:1 peer mapped, including people outside the contact list.
+@(private)
+contact_groups :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, members: []marmot.Group_Member_Record, indices: map[string]int) {
+	for member in members {
+		if member.local || member.member_id_hex == nil {
+			continue
+		}
+		id := string(member.member_id_hex)
+		if len(members) == 2 {
+			ui.dm_peer[strings.clone(chat.group_id)] = strings.clone(id)
+		}
+		if index, ok := indices[id]; ok {
+			append(&ui.contacts[index].groups, Common_Group{strings.clone(chat.title), len(members)})
+		}
+	}
+}
+
+// Only the account's explicitly saved NIP-02 follows are contacts.
 @(private = "file")
-load_follows :: proc(client: ^marmot.Client, ui: ^Ui_State, seen: map[string]bool) {
+load_follows :: proc(client: ^marmot.Client, ui: ^Ui_State, indices: ^map[string]int) {
 	follows: ^marmot.String_List
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 	if marmot.account_follows(client, account, &follows) != .OK || follows == nil {
@@ -1037,15 +1007,10 @@ load_follows :: proc(client: ^marmot.Client, ui: ^Ui_State, seen: map[string]boo
 		if id == ui.account_ref {
 			continue // following yourself is not a contact
 		}
-		if seen[id] {
-			for &existing in ui.contacts {
-				if existing.id_hex == id {
-					existing.followed = true
-					break
-				}
-			}
+		if _, exists := indices[id]; exists {
 			continue
 		}
+		indices[strings.clone(id, context.temp_allocator)] = len(ui.contacts)
 
 		name := short_hex(id)
 		resolved: cstring
@@ -1065,7 +1030,6 @@ load_follows :: proc(client: ^marmot.Client, ui: ^Ui_State, seen: map[string]boo
 				name = strings.clone(name),
 				pic_url = strings.clone(profile_info(client, id).pic_url),
 				npub = npub_str,
-				followed = true,
 			},
 		)
 		marmot.string_free(resolved)

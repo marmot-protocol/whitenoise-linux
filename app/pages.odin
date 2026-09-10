@@ -257,7 +257,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				show_contact_qr(ui, contact)
 				return
 			}
-			if clicked("RemoveContactBtn") && contact.followed {
+			if clicked("RemoveContactBtn") {
 				confirm_ask(ui, .Remove_Contact, contact.id_hex, contact_label(ui, contact))
 				return
 			}
@@ -276,9 +276,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 }
 
-// Unfollow a contact and publish the updated NIP-02 list. They stay
-// listed while a group is still shared: unfollowing does not undo a
-// shared membership, and load_contacts derives that half from groups.
+// Unfollow a contact without changing shared group memberships.
 remove_contact :: proc(ui: ^Ui_State, client: ^marmot.Client, hex: string) {
 	follows: ^marmot.String_List
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
