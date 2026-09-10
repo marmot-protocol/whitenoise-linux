@@ -25,6 +25,7 @@ RAIL_W_DEFAULT :: 340
 RAIL_W_MIN :: 300
 RAIL_W_MAX :: 560
 RAIL_W_COLLAPSED :: 60
+PAGE_W_MIN :: f32(560) // Room for the conversation and its header controls.
 
 PANEL_W_DEFAULT :: 280
 PANEL_W_MIN :: 220
@@ -76,6 +77,11 @@ handle_gutters :: proc(ui: ^Ui_State) {
 	}
 }
 
+@(private)
+rail_fits :: proc(window_w: f32, rail_w: int) -> bool {
+	return window_w - f32(clamp(rail_w, RAIL_W_MIN, RAIL_W_MAX)) - 40 >= PAGE_W_MIN
+}
+
 rail_width :: proc(ui: ^Ui_State) -> f32 {
 	// One card at a time: the rail is either the whole window or gone,
 	// and neither width is draggable, so the eased path is skipped.
@@ -84,6 +90,11 @@ rail_width :: proc(ui: ^Ui_State) -> f32 {
 			return 0
 		}
 		return f32(rl.GetScreenWidth()) / UI_ZOOM - CARDS_PAD
+	}
+	// Resize immediately; preserving the pref restores the list when it fits.
+	if !rail_fits(f32(rl.GetScreenWidth()) / UI_ZOOM, ui.prefs.rail_w) {
+		anim_set(clay.ID("RailWidth").id, RAIL_W_COLLAPSED)
+		return RAIL_W_COLLAPSED
 	}
 	target := ui.prefs.rail_collapsed ? f32(RAIL_W_COLLAPSED) : f32(clamp(ui.prefs.rail_w, RAIL_W_MIN, RAIL_W_MAX))
 	// Dragging the gutter must track the pointer exactly; only the

@@ -2,6 +2,18 @@ package main
 
 import "core:testing"
 
+@(test)
+test_rail_fits :: proc(t: ^testing.T) {
+	for rail_w in ([]int{0, RAIL_W_MIN, RAIL_W_DEFAULT, RAIL_W_MAX, 900}) {
+		threshold := f32(clamp(rail_w, RAIL_W_MIN, RAIL_W_MAX)) + 40 + PAGE_W_MIN
+		testing.expect(t, !rail_fits(threshold - 1, rail_w))
+		testing.expect(t, rail_fits(threshold, rail_w))
+		testing.expect(t, rail_fits(threshold + 1, rail_w))
+	}
+	testing.expect(t, !rail_fits(780, RAIL_W_MIN), "collapse at the reported window width")
+	testing.expect(t, rail_fits(1200, RAIL_W_DEFAULT), "restore the list in a wide window")
+}
+
 // The two width rules the narrow layout hangs on. Both are pure, so
 // the phone breakpoints are checked without a window: 360 points is a
 // Librem 5 at scale 2, 612 a Fairphone 5, 1024 the default desktop.

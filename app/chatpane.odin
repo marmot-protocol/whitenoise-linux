@@ -45,7 +45,10 @@ chat_pane :: proc(ui: ^Ui_State) {
 		{layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(14), childGap = 10, childAlignment = {y = .Center}}, backgroundColor = RAIL_BG},
 		) {
 			avatar("ChatHeadAvatar", 0, chat.group_id, chat.title, 34, chat_pic(chat))
-			clay.Text(chat.title, {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT})
+			// Keep unbroken titles from widening the pane beyond the window.
+			if clay.UI(clay.ID("ChatHeadTitleClip"))({clip = {horizontal = true}}) {
+				clay.Text(chat.title, {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT, wrapMode = .None})
+			}
 			// The badge is provenance, not a control, and it is the
 			// widest thing in the row: dropped when the row has to
 			// choose between it and the three chips. The same string is
