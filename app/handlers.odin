@@ -358,7 +358,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// With the webxdc modal open the page owns the keyboard: skip the
 	// composer edit, or it drains the typed runes before
 	// handle_web_input can forward them.
-	if ui.focus != .Filter && !web_modal.open {
+	if ui.focus != .Filter && !web_modal.open && ui.stt.file == nil {
 		buf := active_buf(ui)
 		edit_text(ui, buf, buf == &ui.compose)
 	}
@@ -380,6 +380,18 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
+	if ui.stt.file != nil {
+		if rl.IsKeyPressed(.ESCAPE) {
+			stt_stop(ui)
+		} else if rl.IsKeyPressed(.ENTER) {
+			stt_finish(ui)
+		}
+		return
+	}
+	if clicked("DictateBtn") {
+		stt_start(ui)
+		return
+	}
 	// Voice recording swallows the composer keys while active.
 	if voice.stream != nil {
 		if clicked("VoiceSend") || rl.IsKeyPressed(.ENTER) {
@@ -941,6 +953,10 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if clay.PointerOver(clay.ID("CtxCopy")) {
 		copy_text(ui, msg.body, "Message copied")
+		return
+	}
+	if ui.prefs.tts_enabled && clay.PointerOver(clay.ID("CtxRead")) {
+		tts_read(ui, msg.body)
 		return
 	}
 	if msg.mine && clay.PointerOver(clay.ID("CtxEdit")) {

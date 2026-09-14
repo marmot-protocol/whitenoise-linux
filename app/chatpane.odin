@@ -335,6 +335,9 @@ chat_pane :: proc(ui: ^Ui_State) {
 							}
 							clay.Text(ICON_POLL, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
 						}
+						if ui.prefs.stt_enabled && ui.stt.file == nil {
+							micro_button("DictateBtn", "Dictate")
+						}
 						if clay.UI(clay.ID("MicBtn"))(
 						{layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
 						) {

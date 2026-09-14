@@ -240,7 +240,13 @@ msgstr ""
 msgid "Bubble radius"
 msgstr ""
 
+msgid "CONFIRM NEW PASSWORD"
+msgstr ""
+
 msgid "CONFIRM PASSWORD"
+msgstr ""
+
+msgid "CURRENT PASSWORD"
 msgstr ""
 
 msgid "CUSTOM EMOJI"
@@ -253,6 +259,9 @@ msgid "Cached attachments"
 msgstr ""
 
 msgid "Cancel"
+msgstr ""
+
+msgid "Cancel dictation"
 msgstr ""
 
 msgid "Cancel edit / reply, close panels"
@@ -273,10 +282,19 @@ msgstr ""
 msgid "Change"
 msgstr ""
 
+msgid "Change password"
+msgstr ""
+
 msgid "Change photo"
 msgstr ""
 
 msgid "Change picture"
+msgstr ""
+
+msgid "Change vault password"
+msgstr ""
+
+msgid "Change..."
 msgstr ""
 
 msgid "Check now"
@@ -379,8 +397,7 @@ msgstr ""
 msgid "Couldn't change diagnostics sharing. Please try again."
 msgstr ""
 
-#, c-format
-msgid "Couldn't change relay telemetry. %s"
+msgid "Couldn't change the password. Please try again."
 msgstr ""
 
 msgid "Couldn't create the backup. Please try again."
@@ -393,8 +410,20 @@ msgstr ""
 msgid "Couldn't delete the audit log file. %s"
 msgstr ""
 
+msgid "Couldn't download speech files. Please try again."
+msgstr ""
+
+msgid "Couldn't download the speech model. Check your connection and available disk space, then try again."
+msgstr ""
+
 #, c-format
 msgid "Couldn't export the key. %s"
+msgstr ""
+
+msgid "Couldn't finish dictation. Please try again."
+msgstr ""
+
+msgid "Couldn't hear any speech. Speak clearly and try again."
 msgstr ""
 
 msgid "Couldn't load attachment. Click to retry."
@@ -414,6 +443,12 @@ msgid "Couldn't load timings. Please try again."
 msgstr ""
 
 msgid "Couldn't open the backup. Double-check the password and try again."
+msgstr ""
+
+msgid "Couldn't open the microphone. Please try again."
+msgstr ""
+
+msgid "Couldn't play speech. Check your audio output and try again."
 msgstr ""
 
 #, c-format
@@ -436,6 +471,12 @@ msgstr ""
 msgid "Couldn't read their key packages. %s"
 msgstr ""
 
+msgid "Couldn't read this message aloud. Choose a shorter text message."
+msgstr ""
+
+msgid "Couldn't read this message aloud. Please try again."
+msgstr ""
+
 msgid "Couldn't render the QR code. Please try again."
 msgstr ""
 
@@ -453,6 +494,15 @@ msgid "Couldn't serialize the snapshot. Please try again."
 msgstr ""
 
 msgid "Couldn't share the theme. Please try again."
+msgstr ""
+
+msgid "Couldn't start dictation. Please try again."
+msgstr ""
+
+msgid "Couldn't start reading aloud. Please try again."
+msgstr ""
+
+msgid "Couldn't transcribe your speech. Please try again."
 msgstr ""
 
 msgid "Couldn't unlock the vault. Double-check the password and try again."
@@ -486,6 +536,12 @@ msgid "DESKTOP ALERTS"
 msgstr ""
 
 msgid "DEVELOPER"
+msgstr ""
+
+msgid "DEVICE VAULT"
+msgstr ""
+
+msgid "DICTATION"
 msgstr ""
 
 msgid "DISAPPEARING MESSAGES"
@@ -554,10 +610,26 @@ msgstr ""
 msgid "Diagnostics is sent to the operator of otlp.ipf.dev unless you configured another collector. Its retention policy has not been verified here. Usage event export is not configured."
 msgstr ""
 
+msgid "Dictate"
+msgstr ""
+
+msgid "Dictation"
+msgstr ""
+
 msgid "Divider"
 msgstr ""
 
 msgid "Done."
+msgstr ""
+
+msgid "Downloaded"
+msgstr ""
+
+msgid "Downloading speech model..."
+msgstr ""
+
+#, c-format
+msgid "Downloading: %d%%"
 msgstr ""
 
 msgid "Drops idle relay sockets and dials them again."
@@ -635,6 +707,9 @@ msgstr ""
 msgid "Fast motion"
 msgstr ""
 
+msgid "Female voice. Supports all reading languages."
+msgstr ""
+
 msgid "Field"
 msgstr ""
 
@@ -645,6 +720,9 @@ msgid "Field hover"
 msgstr ""
 
 msgid "Filter unread chats"
+msgstr ""
+
+msgid "Finish dictation"
 msgstr ""
 
 msgid "Focus glow"
@@ -861,6 +939,9 @@ msgstr ""
 msgid "Links to these exact sites open without confirmation."
 msgstr ""
 
+msgid "Listening... Finish when you're done (30 seconds maximum)."
+msgstr ""
+
 msgid "Loading your accounts"
 msgstr ""
 
@@ -880,6 +961,9 @@ msgid "MOTION"
 msgstr ""
 
 msgid "Make this member an admin?"
+msgstr ""
+
+msgid "Male voice. Supports all reading languages."
 msgstr ""
 
 msgid "Mark read"
@@ -919,6 +1003,9 @@ msgid "Multi-device isn't available yet"
 msgstr ""
 
 msgid "Multiple choice"
+msgstr ""
+
+msgid "NEW PASSWORD"
 msgstr ""
 
 msgid "NIP-05"
@@ -1009,6 +1096,9 @@ msgid "No relay list published."
 msgstr ""
 
 msgid "No trusted sites."
+msgstr ""
+
+msgid "Not downloaded"
 msgstr ""
 
 msgid "Not found"
@@ -1110,6 +1200,9 @@ msgstr ""
 msgid "Pick a folder for this chat, or make a new one. A chat sits in one folder at a time."
 msgstr ""
 
+msgid "Pick a new password first."
+msgstr ""
+
 msgid "Pick a password first."
 msgstr ""
 
@@ -1137,7 +1230,16 @@ msgstr ""
 msgid "Plays here when you send. It can't travel: marmot reserves the chat event kind, so no client attaches the tag any more. An effect sent by an older client still plays."
 msgstr ""
 
+msgid "Preparing dictation..."
+msgstr ""
+
+msgid "Preparing speech..."
+msgstr ""
+
 msgid "Press Ctrl P for the command palette."
+msgstr ""
+
+msgid "Preview"
 msgstr ""
 
 msgid "Previous / next in the media viewer"
@@ -1170,6 +1272,9 @@ msgstr ""
 msgid "RAW EVENTS"
 msgstr ""
 
+msgid "READ ALOUD"
+msgstr ""
+
 msgid "RECENT"
 msgstr ""
 
@@ -1191,6 +1296,18 @@ msgstr ""
 msgid "Re-broadcasts your outbox and inbox relay lists. Use this if peers can't find you."
 msgstr ""
 
+msgid "Re-encrypts this device's secrets under a new password. The media cache is cleared, since it was sealed with the old one."
+msgstr ""
+
+msgid "Read aloud"
+msgstr ""
+
+msgid "Read messages on your device in 31 languages. Downloads about 145 MB on first use."
+msgstr ""
+
+msgid "Reading aloud..."
+msgstr ""
+
 msgid "Reconnect"
 msgstr ""
 
@@ -1207,9 +1324,6 @@ msgid "Refresh"
 msgstr ""
 
 msgid "Relay status unavailable"
-msgstr ""
-
-msgid "Relay telemetry"
 msgstr ""
 
 msgid "Relays"
@@ -1299,9 +1413,6 @@ msgstr ""
 msgid "STATE / EVENTS / KEYS / TIMINGS"
 msgstr ""
 
-msgid "STATE / RAW EVENTS / KEY PACKAGES"
-msgstr ""
-
 msgid "STATE SNAPSHOT"
 msgstr ""
 
@@ -1351,6 +1462,9 @@ msgid "Select a chat"
 msgstr ""
 
 msgid "Select a contact from the list."
+msgstr ""
+
+msgid "Selected"
 msgstr ""
 
 msgid "Send a message..."
@@ -1410,9 +1524,6 @@ msgstr ""
 msgid "Share aggregate performance timings and relay diagnostics. Nothing is sent while this is off."
 msgstr ""
 
-msgid "Share anonymous relay connection telemetry. Nothing is sent while this is off."
-msgstr ""
-
 msgid "Share theme with"
 msgstr ""
 
@@ -1423,6 +1534,9 @@ msgid "Share to chat"
 msgstr ""
 
 msgid "Share usage and diagnostics"
+msgstr ""
+
+msgid "Shared by all ten voices and 31 languages. Downloads once."
 msgstr ""
 
 msgid "Shared media"
@@ -1467,6 +1581,12 @@ msgstr ""
 msgid "Size"
 msgstr ""
 
+msgid "Speech"
+msgstr ""
+
+msgid "Speech model"
+msgstr ""
+
 msgid "Start chat"
 msgstr ""
 
@@ -1489,6 +1609,9 @@ msgid "Step down"
 msgstr ""
 
 msgid "Step down as admin?"
+msgstr ""
+
+msgid "Stop reading"
 msgstr ""
 
 msgid "Storage"
@@ -1542,7 +1665,13 @@ msgstr ""
 msgid "Text mid"
 msgstr ""
 
+msgid "That isn't your current password. Double-check it and try again."
+msgstr ""
+
 msgid "The chat leaves your list. Joining later needs a new invite."
+msgstr ""
+
+msgid "The new password re-encrypts this device's keys. There is still no recovery: forgetting it means starting over from your nsec."
 msgstr ""
 
 msgid "The passwords don't match. Type them again."
@@ -1608,6 +1737,9 @@ msgstr ""
 msgid "Top glint"
 msgstr ""
 
+msgid "Transcribing..."
+msgstr ""
+
 msgid "Transition ms"
 msgstr ""
 
@@ -1615,6 +1747,9 @@ msgid "TrustForgetAll"
 msgstr ""
 
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
+msgstr ""
+
+msgid "Turn your speech into a draft on your device. Downloads about 104 MB on first use."
 msgstr ""
 
 msgid "Unblock"
@@ -1639,6 +1774,12 @@ msgid "Use another key"
 msgstr ""
 
 msgid "Use this theme"
+msgstr ""
+
+msgid "Vault password changed."
+msgstr ""
+
+msgid "Verifying download..."
 msgstr ""
 
 msgid "View"
@@ -1707,6 +1848,9 @@ msgstr ""
 msgid "You were invited to this group."
 msgstr ""
 
+msgid "Your current password"
+msgstr ""
+
 msgid "Your identity is sovereign"
 msgstr ""
 
@@ -1717,6 +1861,9 @@ msgid "Your key never leaves this device."
 msgstr ""
 
 msgid "Your name"
+msgstr ""
+
+msgid "Your new password"
 msgstr ""
 
 msgid "Your own notepad"

@@ -257,7 +257,15 @@ msgstr ""
 msgid "Bubble radius"
 msgstr ""
 
+#, fuzzy
+msgid "CONFIRM NEW PASSWORD"
+msgstr "PASSWORT BESTÄTIGEN"
+
 msgid "CONFIRM PASSWORD"
+msgstr "PASSWORT BESTÄTIGEN"
+
+#, fuzzy
+msgid "CURRENT PASSWORD"
 msgstr "PASSWORT BESTÄTIGEN"
 
 msgid "CUSTOM EMOJI"
@@ -271,6 +279,9 @@ msgstr "Zwischengespeicherte Anhänge"
 
 msgid "Cancel"
 msgstr "Abbrechen"
+
+msgid "Cancel dictation"
+msgstr "Diktat abbrechen"
 
 msgid "Cancel edit / reply, close panels"
 msgstr ""
@@ -292,12 +303,23 @@ msgid "Change"
 msgstr "Ändern"
 
 #, fuzzy
+msgid "Change password"
+msgstr "Passwort ändern"
+
+#, fuzzy
 msgid "Change photo"
 msgstr "Passwort ändern"
 
 #, fuzzy
 msgid "Change picture"
 msgstr "Passwort ändern"
+
+msgid "Change vault password"
+msgstr ""
+
+#, fuzzy
+msgid "Change..."
+msgstr "Ändern"
 
 #, fuzzy
 msgid "Check now"
@@ -409,9 +431,9 @@ msgstr "Audit-Logging konnte nicht geändert werden."
 msgid "Couldn't change diagnostics sharing. Please try again."
 msgstr "Die Diagnosefreigabe konnte nicht geändert werden. Bitte versuche es erneut."
 
-#, fuzzy, c-format
-msgid "Couldn't change relay telemetry. %s"
-msgstr "Deine Relay-Liste konnte nicht gespeichert werden. Bitte versuche es erneut."
+#, fuzzy
+msgid "Couldn't change the password. Please try again."
+msgstr "Chat konnte nicht erstellt werden. Bitte versuche es erneut."
 
 #, fuzzy
 msgid "Couldn't create the backup. Please try again."
@@ -425,9 +447,21 @@ msgstr "Chat konnte nicht erstellt werden. Bitte versuche es erneut."
 msgid "Couldn't delete the audit log file. %s"
 msgstr "Audit-Log konnte nicht gelöscht werden."
 
+msgid "Couldn't download speech files. Please try again."
+msgstr "Die Sprachdateien konnten nicht heruntergeladen werden. Bitte versuche es erneut."
+
+msgid "Couldn't download the speech model. Check your connection and available disk space, then try again."
+msgstr "Das Sprachmodell konnte nicht heruntergeladen werden. Prüfe deine Verbindung und den verfügbaren Speicherplatz und versuche es erneut."
+
 #, fuzzy, c-format
 msgid "Couldn't export the key. %s"
 msgstr "Kontakte konnten nicht exportiert werden."
+
+msgid "Couldn't finish dictation. Please try again."
+msgstr "Das Diktat konnte nicht abgeschlossen werden. Versuch es bitte erneut."
+
+msgid "Couldn't hear any speech. Speak clearly and try again."
+msgstr "Es wurde keine Sprache erkannt. Sprich deutlich und versuch es erneut."
 
 #, fuzzy
 msgid "Couldn't load attachment. Click to retry."
@@ -450,6 +484,12 @@ msgstr "Die Laufzeiten konnten nicht geladen werden. Bitte versuche es erneut."
 #, fuzzy
 msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr "Das Konto konnte nicht hinzugefügt werden. Überprüfe den Schlüssel und versuche es erneut."
+
+msgid "Couldn't open the microphone. Please try again."
+msgstr "Das Mikrofon konnte nicht geöffnet werden. Versuch es bitte erneut."
+
+msgid "Couldn't play speech. Check your audio output and try again."
+msgstr "Die Sprachausgabe konnte nicht wiedergegeben werden. Prüfe deine Audioausgabe und versuche es erneut."
 
 #, fuzzy, c-format
 msgid "Couldn't publish the key package. %s"
@@ -475,6 +515,12 @@ msgstr "Chat konnte nicht erstellt werden. Bitte versuche es erneut."
 msgid "Couldn't read their key packages. %s"
 msgstr "auf dem Schlüsselpaket selbst"
 
+msgid "Couldn't read this message aloud. Choose a shorter text message."
+msgstr "Diese Nachricht konnte nicht vorgelesen werden. Wähle eine kürzere Textnachricht."
+
+msgid "Couldn't read this message aloud. Please try again."
+msgstr "Diese Nachricht konnte nicht vorgelesen werden. Bitte versuche es erneut."
+
 #, fuzzy
 msgid "Couldn't render the QR code. Please try again."
 msgstr "Chat konnte nicht erstellt werden. Bitte versuche es erneut."
@@ -498,6 +544,15 @@ msgstr "Chat konnte nicht erstellt werden. Bitte versuche es erneut."
 #, fuzzy
 msgid "Couldn't share the theme. Please try again."
 msgstr "Chat konnte nicht erstellt werden. Bitte versuche es erneut."
+
+msgid "Couldn't start dictation. Please try again."
+msgstr "Das Diktat konnte nicht gestartet werden. Versuch es bitte erneut."
+
+msgid "Couldn't start reading aloud. Please try again."
+msgstr "Das Vorlesen konnte nicht gestartet werden. Bitte versuche es erneut."
+
+msgid "Couldn't transcribe your speech. Please try again."
+msgstr "Deine Sprache konnte nicht transkribiert werden. Versuch es bitte erneut."
 
 #, fuzzy
 msgid "Couldn't unlock the vault. Double-check the password and try again."
@@ -536,6 +591,12 @@ msgstr "DESKTOP-BENACHRICHTIGUNGEN"
 
 msgid "DEVELOPER"
 msgstr "ENTWICKLER"
+
+msgid "DEVICE VAULT"
+msgstr ""
+
+msgid "DICTATION"
+msgstr "DIKTAT"
 
 #, fuzzy
 msgid "DISAPPEARING MESSAGES"
@@ -611,12 +672,28 @@ msgstr "Die Diagnose enthält bis zum Abschalten der Freigabe eine zufällige In
 msgid "Diagnostics is sent to the operator of otlp.ipf.dev unless you configured another collector. Its retention policy has not been verified here. Usage event export is not configured."
 msgstr "Die Diagnose wird an den Betreiber von otlp.ipf.dev gesendet, sofern du keinen anderen Erfassungsdienst eingerichtet hast. Seine Aufbewahrungsrichtlinie wurde hier nicht überprüft. Der Export von Nutzungsereignissen ist nicht eingerichtet."
 
+msgid "Dictate"
+msgstr "Diktieren"
+
+msgid "Dictation"
+msgstr "Diktat"
+
 msgid "Divider"
 msgstr ""
 
 #, fuzzy
 msgid "Done."
 msgstr "Fertig"
+
+msgid "Downloaded"
+msgstr "Heruntergeladen"
+
+msgid "Downloading speech model..."
+msgstr "Sprachmodell wird heruntergeladen..."
+
+#, c-format
+msgid "Downloading: %d%%"
+msgstr "Download: %d%%"
 
 msgid "Drops idle relay sockets and dials them again."
 msgstr ""
@@ -702,6 +779,9 @@ msgstr ""
 msgid "Fast motion"
 msgstr ""
 
+msgid "Female voice. Supports all reading languages."
+msgstr "Weibliche Stimme. Unterstützt alle Vorlesesprachen."
+
 msgid "Field"
 msgstr ""
 
@@ -714,6 +794,9 @@ msgstr ""
 #, fuzzy
 msgid "Filter unread chats"
 msgstr "Nur ungelesene Chats anzeigen"
+
+msgid "Finish dictation"
+msgstr "Diktat beenden"
 
 msgid "Focus glow"
 msgstr ""
@@ -946,6 +1029,9 @@ msgstr "Gruppe verlassen"
 msgid "Links to these exact sites open without confirmation."
 msgstr "Links zu genau diesen Websites werden ohne Bestätigung geöffnet."
 
+msgid "Listening... Finish when you're done (30 seconds maximum)."
+msgstr "Aufnahme läuft... Beende sie, wenn du fertig bist (maximal 30 Sekunden)."
+
 msgid "Loading your accounts"
 msgstr ""
 
@@ -969,6 +1055,9 @@ msgstr "AKTIONEN"
 #, fuzzy
 msgid "Make this member an admin?"
 msgstr "{} zum Admin machen?"
+
+msgid "Male voice. Supports all reading languages."
+msgstr "Männliche Stimme. Unterstützt alle Vorlesesprachen."
 
 msgid "Mark read"
 msgstr ""
@@ -1011,6 +1100,10 @@ msgstr "Mehrere Geräte sind noch nicht verfügbar"
 
 msgid "Multiple choice"
 msgstr ""
+
+#, fuzzy
+msgid "NEW PASSWORD"
+msgstr "PASSWORT"
 
 msgid "NIP-05"
 msgstr ""
@@ -1116,6 +1209,9 @@ msgstr "Relay-Liste geändert."
 msgid "No trusted sites."
 msgstr "Keine vertrauenswürdigen Websites."
 
+msgid "Not downloaded"
+msgstr "Nicht heruntergeladen"
+
 msgid "Not found"
 msgstr ""
 
@@ -1220,6 +1316,9 @@ msgstr ""
 msgid "Pick a folder for this chat, or make a new one. A chat sits in one folder at a time."
 msgstr ""
 
+msgid "Pick a new password first."
+msgstr ""
+
 msgid "Pick a password first."
 msgstr ""
 
@@ -1247,8 +1346,17 @@ msgstr "Ton abspielen"
 msgid "Plays here when you send. It can't travel: marmot reserves the chat event kind, so no client attaches the tag any more. An effect sent by an older client still plays."
 msgstr ""
 
+msgid "Preparing dictation..."
+msgstr "Diktat wird vorbereitet..."
+
+msgid "Preparing speech..."
+msgstr "Sprachausgabe wird vorbereitet..."
+
 msgid "Press Ctrl P for the command palette."
 msgstr ""
+
+msgid "Preview"
+msgstr "Anhören"
 
 msgid "Previous / next in the media viewer"
 msgstr ""
@@ -1281,6 +1389,9 @@ msgstr "SCHNELLREAKTIONEN"
 msgid "RAW EVENTS"
 msgstr ""
 
+msgid "READ ALOUD"
+msgstr "VORLESEN"
+
 msgid "RECENT"
 msgstr ""
 
@@ -1303,6 +1414,18 @@ msgstr ""
 msgid "Re-broadcasts your outbox and inbox relay lists. Use this if peers can't find you."
 msgstr "Sendet deine Sende- und Empfangs-Relay-Listen erneut. Verwende dies, wenn Kontakte dich nicht finden können."
 
+msgid "Re-encrypts this device's secrets under a new password. The media cache is cleared, since it was sealed with the old one."
+msgstr ""
+
+msgid "Read aloud"
+msgstr "Vorlesen"
+
+msgid "Read messages on your device in 31 languages. Downloads about 145 MB on first use."
+msgstr "Lies Nachrichten auf deinem Gerät in 31 Sprachen vor. Beim ersten Mal werden etwa 145 MB heruntergeladen."
+
+msgid "Reading aloud..."
+msgstr "Wird vorgelesen..."
+
 #, fuzzy
 msgid "Reconnect"
 msgstr "Jetzt neu verbinden"
@@ -1323,9 +1446,6 @@ msgstr "Aktualisieren"
 #, fuzzy
 msgid "Relay status unavailable"
 msgstr "(Nachricht nicht verfügbar)"
-
-msgid "Relay telemetry"
-msgstr "Relay-Telemetrie"
 
 #, fuzzy
 msgid "Relays"
@@ -1424,9 +1544,6 @@ msgstr "START"
 msgid "STATE / EVENTS / KEYS / TIMINGS"
 msgstr "STATUS / EREIGNISSE / SCHLÜSSEL / LAUFZEITEN"
 
-msgid "STATE / RAW EVENTS / KEY PACKAGES"
-msgstr ""
-
 msgid "STATE SNAPSHOT"
 msgstr "ZUSTANDSSNAPSHOT"
 
@@ -1482,6 +1599,9 @@ msgstr "Chat starten"
 
 msgid "Select a contact from the list."
 msgstr ""
+
+msgid "Selected"
+msgstr "Ausgewählt"
 
 #, fuzzy
 msgid "Send a message..."
@@ -1552,10 +1672,6 @@ msgid "Share aggregate performance timings and relay diagnostics. Nothing is sen
 msgstr "Teile zusammengefasste Laufzeiten und Relay-Diagnosedaten. Solange diese Option deaktiviert ist, wird nichts gesendet."
 
 #, fuzzy
-msgid "Share anonymous relay connection telemetry. Nothing is sent while this is off."
-msgstr "Anonyme Telemetrie zu Relay-Verbindungen teilen."
-
-#, fuzzy
 msgid "Share theme with"
 msgstr "Geteilte Medien"
 
@@ -1569,6 +1685,9 @@ msgstr "Chat starten"
 
 msgid "Share usage and diagnostics"
 msgstr "Nutzung und Diagnose teilen"
+
+msgid "Shared by all ten voices and 31 languages. Downloads once."
+msgstr "Wird von allen zehn Stimmen und 31 Sprachen verwendet. Wird einmal heruntergeladen."
 
 msgid "Shared media"
 msgstr "Geteilte Medien"
@@ -1615,6 +1734,12 @@ msgstr ""
 msgid "Size"
 msgstr ""
 
+msgid "Speech"
+msgstr "Sprache & Stimme"
+
+msgid "Speech model"
+msgstr "Sprachmodell"
+
 msgid "Start chat"
 msgstr "Chat starten"
 
@@ -1638,6 +1763,9 @@ msgstr "Zurücktreten"
 
 msgid "Step down as admin?"
 msgstr "Als Admin zurücktreten?"
+
+msgid "Stop reading"
+msgstr "Vorlesen stoppen"
 
 msgid "Storage"
 msgstr "Speicher"
@@ -1694,7 +1822,14 @@ msgstr ""
 msgid "Text mid"
 msgstr ""
 
+#, fuzzy
+msgid "That isn't your current password. Double-check it and try again."
+msgstr "Das Konto konnte nicht hinzugefügt werden. Überprüfe den Schlüssel und versuche es erneut."
+
 msgid "The chat leaves your list. Joining later needs a new invite."
+msgstr ""
+
+msgid "The new password re-encrypts this device's keys. There is still no recovery: forgetting it means starting over from your nsec."
 msgstr ""
 
 msgid "The passwords don't match. Type them again."
@@ -1766,6 +1901,9 @@ msgstr "Entwicklermodus"
 msgid "Top glint"
 msgstr ""
 
+msgid "Transcribing..."
+msgstr "Wird transkribiert..."
+
 msgid "Transition ms"
 msgstr ""
 
@@ -1774,6 +1912,9 @@ msgstr ""
 
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr ""
+
+msgid "Turn your speech into a draft on your device. Downloads about 104 MB on first use."
+msgstr "Wandle deine Sprache auf deinem Gerät in einen Entwurf um. Lädt bei der ersten Nutzung etwa 104 MB herunter."
 
 msgid "Unblock"
 msgstr "Blockierung aufheben"
@@ -1799,6 +1940,12 @@ msgstr "Anderen Schlüssel verwenden"
 #, fuzzy
 msgid "Use this theme"
 msgstr "Nächstes Bild"
+
+msgid "Vault password changed."
+msgstr ""
+
+msgid "Verifying download..."
+msgstr "Download wird überprüft..."
 
 msgid "View"
 msgstr ""
@@ -1874,6 +2021,10 @@ msgstr "Du erhältst keine neuen Nachrichten aus dieser Gruppe mehr. Der Chat wi
 msgid "You were invited to this group."
 msgstr "Du hast die Gruppe verlassen."
 
+#, fuzzy
+msgid "Your current password"
+msgstr "Dein Passwort"
+
 msgid "Your identity is sovereign"
 msgstr "Deine Identität ist souverän"
 
@@ -1885,6 +2036,10 @@ msgstr "Dein Schlüssel verlässt nie dieses Gerät."
 
 msgid "Your name"
 msgstr ""
+
+#, fuzzy
+msgid "Your new password"
+msgstr "Dein Passwort"
 
 msgid "Your own notepad"
 msgstr ""

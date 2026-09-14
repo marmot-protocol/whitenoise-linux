@@ -257,7 +257,15 @@ msgstr ""
 msgid "Bubble radius"
 msgstr ""
 
+#, fuzzy
+msgid "CONFIRM NEW PASSWORD"
+msgstr "パスワードの確認"
+
 msgid "CONFIRM PASSWORD"
+msgstr "パスワードの確認"
+
+#, fuzzy
+msgid "CURRENT PASSWORD"
 msgstr "パスワードの確認"
 
 msgid "CUSTOM EMOJI"
@@ -271,6 +279,9 @@ msgstr "キャッシュされた添付ファイル"
 
 msgid "Cancel"
 msgstr "キャンセル"
+
+msgid "Cancel dictation"
+msgstr "音声入力をキャンセル"
 
 msgid "Cancel edit / reply, close panels"
 msgstr ""
@@ -292,12 +303,23 @@ msgid "Change"
 msgstr "変更"
 
 #, fuzzy
+msgid "Change password"
+msgstr "パスワードを変更"
+
+#, fuzzy
 msgid "Change photo"
 msgstr "パスワードを変更"
 
 #, fuzzy
 msgid "Change picture"
 msgstr "パスワードを変更"
+
+msgid "Change vault password"
+msgstr ""
+
+#, fuzzy
+msgid "Change..."
+msgstr "変更"
 
 #, fuzzy
 msgid "Check now"
@@ -409,9 +431,9 @@ msgstr "監査ログを変更できませんでした。"
 msgid "Couldn't change diagnostics sharing. Please try again."
 msgstr "診断情報の共有設定を変更できませんでした。もう一度お試しください。"
 
-#, fuzzy, c-format
-msgid "Couldn't change relay telemetry. %s"
-msgstr "リレーのリストを保存できませんでした。もう一度お試しください。"
+#, fuzzy
+msgid "Couldn't change the password. Please try again."
+msgstr "チャットを作成できませんでした。もう一度お試しください。"
 
 #, fuzzy
 msgid "Couldn't create the backup. Please try again."
@@ -425,9 +447,21 @@ msgstr "チャットを作成できませんでした。もう一度お試しく
 msgid "Couldn't delete the audit log file. %s"
 msgstr "監査ログを削除できませんでした。"
 
+msgid "Couldn't download speech files. Please try again."
+msgstr "音声ファイルをダウンロードできませんでした。もう一度お試しください。"
+
+msgid "Couldn't download the speech model. Check your connection and available disk space, then try again."
+msgstr "音声モデルをダウンロードできませんでした。接続とディスクの空き容量を確認して、もう一度お試しください。"
+
 #, fuzzy, c-format
 msgid "Couldn't export the key. %s"
 msgstr "連絡先をエクスポートできませんでした。"
+
+msgid "Couldn't finish dictation. Please try again."
+msgstr "音声入力を完了できませんでした。もう一度お試しください。"
+
+msgid "Couldn't hear any speech. Speak clearly and try again."
+msgstr "音声を聞き取れませんでした。はっきり話して、もう一度お試しください。"
 
 #, fuzzy
 msgid "Couldn't load attachment. Click to retry."
@@ -450,6 +484,12 @@ msgstr "処理時間を読み込めませんでした。もう一度お試しく
 #, fuzzy
 msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr "そのアカウントを追加できませんでした。鍵を確認して、もう一度お試しください。"
+
+msgid "Couldn't open the microphone. Please try again."
+msgstr "マイクを開けませんでした。もう一度お試しください。"
+
+msgid "Couldn't play speech. Check your audio output and try again."
+msgstr "音声を再生できませんでした。音声出力を確認して、もう一度お試しください。"
 
 #, fuzzy, c-format
 msgid "Couldn't publish the key package. %s"
@@ -475,6 +515,12 @@ msgstr "チャットを作成できませんでした。もう一度お試しく
 msgid "Couldn't read their key packages. %s"
 msgstr "キーパッケージ本体"
 
+msgid "Couldn't read this message aloud. Choose a shorter text message."
+msgstr "このメッセージを読み上げられませんでした。短いテキストメッセージを選んでください。"
+
+msgid "Couldn't read this message aloud. Please try again."
+msgstr "このメッセージを読み上げられませんでした。もう一度お試しください。"
+
 #, fuzzy
 msgid "Couldn't render the QR code. Please try again."
 msgstr "チャットを作成できませんでした。もう一度お試しください。"
@@ -498,6 +544,15 @@ msgstr "チャットを作成できませんでした。もう一度お試しく
 #, fuzzy
 msgid "Couldn't share the theme. Please try again."
 msgstr "チャットを作成できませんでした。もう一度お試しください。"
+
+msgid "Couldn't start dictation. Please try again."
+msgstr "音声入力を開始できませんでした。もう一度お試しください。"
+
+msgid "Couldn't start reading aloud. Please try again."
+msgstr "読み上げを開始できませんでした。もう一度お試しください。"
+
+msgid "Couldn't transcribe your speech. Please try again."
+msgstr "音声を文字に変換できませんでした。もう一度お試しください。"
 
 #, fuzzy
 msgid "Couldn't unlock the vault. Double-check the password and try again."
@@ -536,6 +591,12 @@ msgstr "デスクトップ通知"
 
 msgid "DEVELOPER"
 msgstr "開発者"
+
+msgid "DEVICE VAULT"
+msgstr ""
+
+msgid "DICTATION"
+msgstr "音声入力"
 
 #, fuzzy
 msgid "DISAPPEARING MESSAGES"
@@ -611,12 +672,28 @@ msgstr "診断情報には、共有をオフにするまで使用されるラン
 msgid "Diagnostics is sent to the operator of otlp.ipf.dev unless you configured another collector. Its retention policy has not been verified here. Usage event export is not configured."
 msgstr "別の収集サービスを設定していない場合、診断情報はotlp.ipf.devの運営者に送信されます。その保存方針はここでは確認されていません。利用イベントの送信は設定されていません。"
 
+msgid "Dictate"
+msgstr "音声入力"
+
+msgid "Dictation"
+msgstr "音声入力"
+
 msgid "Divider"
 msgstr ""
 
 #, fuzzy
 msgid "Done."
 msgstr "完了"
+
+msgid "Downloaded"
+msgstr "ダウンロード済み"
+
+msgid "Downloading speech model..."
+msgstr "音声モデルをダウンロードしています..."
+
+#, c-format
+msgid "Downloading: %d%%"
+msgstr "ダウンロード中: %d%%"
 
 msgid "Drops idle relay sockets and dials them again."
 msgstr ""
@@ -702,6 +779,9 @@ msgstr ""
 msgid "Fast motion"
 msgstr ""
 
+msgid "Female voice. Supports all reading languages."
+msgstr "女性の声です。すべての読み上げ言語に対応しています。"
+
 msgid "Field"
 msgstr ""
 
@@ -714,6 +794,9 @@ msgstr ""
 #, fuzzy
 msgid "Filter unread chats"
 msgstr "未読のチャットのみ表示"
+
+msgid "Finish dictation"
+msgstr "音声入力を完了"
 
 msgid "Focus glow"
 msgstr ""
@@ -946,6 +1029,9 @@ msgstr "グループを退出"
 msgid "Links to these exact sites open without confirmation."
 msgstr "これらのサイトへのリンクは確認なしで開きます。"
 
+msgid "Listening... Finish when you're done (30 seconds maximum)."
+msgstr "聞き取り中です。話し終えたら完了してください（最大30秒）。"
+
 msgid "Loading your accounts"
 msgstr ""
 
@@ -969,6 +1055,9 @@ msgstr "操作"
 #, fuzzy
 msgid "Make this member an admin?"
 msgstr "{}を管理者にしますか？"
+
+msgid "Male voice. Supports all reading languages."
+msgstr "男性の声です。すべての読み上げ言語に対応しています。"
 
 msgid "Mark read"
 msgstr ""
@@ -1011,6 +1100,10 @@ msgstr "マルチデバイスはまだ利用できません"
 
 msgid "Multiple choice"
 msgstr ""
+
+#, fuzzy
+msgid "NEW PASSWORD"
+msgstr "パスワード"
 
 msgid "NIP-05"
 msgstr ""
@@ -1116,6 +1209,9 @@ msgstr "リレーリストが変更されました。"
 msgid "No trusted sites."
 msgstr "信頼済みのサイトはありません。"
 
+msgid "Not downloaded"
+msgstr "未ダウンロード"
+
 msgid "Not found"
 msgstr ""
 
@@ -1220,6 +1316,9 @@ msgstr ""
 msgid "Pick a folder for this chat, or make a new one. A chat sits in one folder at a time."
 msgstr ""
 
+msgid "Pick a new password first."
+msgstr ""
+
 msgid "Pick a password first."
 msgstr ""
 
@@ -1247,8 +1346,17 @@ msgstr "音を鳴らす"
 msgid "Plays here when you send. It can't travel: marmot reserves the chat event kind, so no client attaches the tag any more. An effect sent by an older client still plays."
 msgstr ""
 
+msgid "Preparing dictation..."
+msgstr "音声入力を準備しています..."
+
+msgid "Preparing speech..."
+msgstr "読み上げを準備しています..."
+
 msgid "Press Ctrl P for the command palette."
 msgstr ""
+
+msgid "Preview"
+msgstr "試聴"
 
 msgid "Previous / next in the media viewer"
 msgstr ""
@@ -1281,6 +1389,9 @@ msgstr "クイックリアクション"
 msgid "RAW EVENTS"
 msgstr ""
 
+msgid "READ ALOUD"
+msgstr "読み上げ"
+
 msgid "RECENT"
 msgstr ""
 
@@ -1303,6 +1414,18 @@ msgstr ""
 msgid "Re-broadcasts your outbox and inbox relay lists. Use this if peers can't find you."
 msgstr "送信リレーと受信リレーのリストを再配信します。相手があなたを見つけられない場合に使用してください。"
 
+msgid "Re-encrypts this device's secrets under a new password. The media cache is cleared, since it was sealed with the old one."
+msgstr ""
+
+msgid "Read aloud"
+msgstr "読み上げ"
+
+msgid "Read messages on your device in 31 languages. Downloads about 145 MB on first use."
+msgstr "31言語のメッセージを端末上で読み上げます。初回に約145 MBをダウンロードします。"
+
+msgid "Reading aloud..."
+msgstr "読み上げています..."
+
 #, fuzzy
 msgid "Reconnect"
 msgstr "今すぐ再接続"
@@ -1323,9 +1446,6 @@ msgstr "更新"
 #, fuzzy
 msgid "Relay status unavailable"
 msgstr "(メッセージを表示できません)"
-
-msgid "Relay telemetry"
-msgstr "リレーテレメトリ"
 
 #, fuzzy
 msgid "Relays"
@@ -1424,9 +1544,6 @@ msgstr "起動"
 msgid "STATE / EVENTS / KEYS / TIMINGS"
 msgstr "状態 / イベント / 鍵 / 処理時間"
 
-msgid "STATE / RAW EVENTS / KEY PACKAGES"
-msgstr ""
-
 msgid "STATE SNAPSHOT"
 msgstr "状態スナップショット"
 
@@ -1482,6 +1599,9 @@ msgstr "チャットを開始"
 
 msgid "Select a contact from the list."
 msgstr ""
+
+msgid "Selected"
+msgstr "選択中"
 
 #, fuzzy
 msgid "Send a message..."
@@ -1552,10 +1672,6 @@ msgid "Share aggregate performance timings and relay diagnostics. Nothing is sen
 msgstr "集計した処理時間とリレーの診断情報を共有します。オフの間は何も送信されません。"
 
 #, fuzzy
-msgid "Share anonymous relay connection telemetry. Nothing is sent while this is off."
-msgstr "匿名のリレー接続の利用統計を共有します。"
-
-#, fuzzy
 msgid "Share theme with"
 msgstr "共有メディア"
 
@@ -1569,6 +1685,9 @@ msgstr "チャットを開始"
 
 msgid "Share usage and diagnostics"
 msgstr "利用状況と診断情報を共有"
+
+msgid "Shared by all ten voices and 31 languages. Downloads once."
+msgstr "10種類の音声と31言語で共有します。ダウンロードは一度だけです。"
 
 msgid "Shared media"
 msgstr "共有メディア"
@@ -1615,6 +1734,12 @@ msgstr ""
 msgid "Size"
 msgstr ""
 
+msgid "Speech"
+msgstr "音声"
+
+msgid "Speech model"
+msgstr "音声モデル"
+
 msgid "Start chat"
 msgstr "チャットを開始"
 
@@ -1638,6 +1763,9 @@ msgstr "管理者を辞める"
 
 msgid "Step down as admin?"
 msgstr "管理者を辞めますか？"
+
+msgid "Stop reading"
+msgstr "読み上げを停止"
 
 msgid "Storage"
 msgstr "ストレージ"
@@ -1694,7 +1822,14 @@ msgstr ""
 msgid "Text mid"
 msgstr ""
 
+#, fuzzy
+msgid "That isn't your current password. Double-check it and try again."
+msgstr "そのアカウントを追加できませんでした。鍵を確認して、もう一度お試しください。"
+
 msgid "The chat leaves your list. Joining later needs a new invite."
+msgstr ""
+
+msgid "The new password re-encrypts this device's keys. There is still no recovery: forgetting it means starting over from your nsec."
 msgstr ""
 
 msgid "The passwords don't match. Type them again."
@@ -1766,6 +1901,9 @@ msgstr "開発者モード"
 msgid "Top glint"
 msgstr ""
 
+msgid "Transcribing..."
+msgstr "文字に変換しています..."
+
 msgid "Transition ms"
 msgstr ""
 
@@ -1774,6 +1912,9 @@ msgstr ""
 
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr ""
+
+msgid "Turn your speech into a draft on your device. Downloads about 104 MB on first use."
+msgstr "お使いの端末で音声を下書きに変換します。初回使用時に約104 MBをダウンロードします。"
 
 msgid "Unblock"
 msgstr "ブロック解除"
@@ -1799,6 +1940,12 @@ msgstr "別の鍵を使う"
 #, fuzzy
 msgid "Use this theme"
 msgstr "次の画像"
+
+msgid "Vault password changed."
+msgstr ""
+
+msgid "Verifying download..."
+msgstr "ダウンロードを確認中..."
 
 msgid "View"
 msgstr ""
@@ -1874,6 +2021,10 @@ msgstr "このグループからの新しいメッセージの受信を停止し
 msgid "You were invited to this group."
 msgstr "グループを退出しました。"
 
+#, fuzzy
+msgid "Your current password"
+msgstr "パスワード"
+
 msgid "Your identity is sovereign"
 msgstr "あなたの ID は主権的です"
 
@@ -1885,6 +2036,10 @@ msgstr "鍵がこのデバイス外に出ることはありません。"
 
 msgid "Your name"
 msgstr ""
+
+#, fuzzy
+msgid "Your new password"
+msgstr "パスワード"
 
 msgid "Your own notepad"
 msgstr ""

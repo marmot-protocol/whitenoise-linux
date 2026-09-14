@@ -1264,6 +1264,7 @@ main :: proc() {
 		drain_live(&live, &ui, client)
 		agent_tick(&ui, tl_at_bottom ? .Follow : .Hold)
 		drain_sends(&ui, client)
+		tts_tick(&ui)
 		drain_ops(&ui, client)
 		web_tick() // webxdc modal: run WebKit, take its pixels
 		xdc_drain(&ui, client) // webxdc sendUpdate() becomes a group message
@@ -1651,6 +1652,15 @@ main :: proc() {
 
 		long_press_tick() // before any handler reads long_pressed
 		handle_gutters(&ui)
+		if clicked("SttCancel") {
+			stt_stop(&ui)
+		}
+		if clicked("SttFinish") {
+			stt_finish(&ui)
+		}
+		if clicked("TtsStopGlobal") {
+			tts_stop(&ui)
+		}
 		if clicked("BannerClose") {
 			ui.banner = "" // borrowed from client_status; never freed here
 		}
@@ -1753,6 +1763,8 @@ main :: proc() {
 		handle_img_retry(&ui, client)
 		handle_media_retry(&ui, client)
 		handle_reply_jump(&ui)
+		// Drain after input: Enter finishing dictation must not send its result.
+		stt_tick(&ui)
 
 		// Destination chosen in the save dialog: fetch and write.
 		saved := rl.SavedFiles()
@@ -1942,6 +1954,8 @@ main :: proc() {
 	}
 
 	// Persist the open chat's half-written draft across restarts.
+	stt_stop(&ui)
+	tts_stop(&ui)
 	stash_draft(&ui)
 	save_settings(&ui)
 
