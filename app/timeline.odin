@@ -160,59 +160,70 @@ fmt_clock :: proc(s: f64) -> string {
 
 // Audio tile: mpv plays the decrypted bytes through its own ao; the
 // tile is the controls (play/pause, scrub bar, size + position).
-AUDIO_BAR_W :: 244 // 320 tile - padding - play button - gaps
-
 audio_tile :: proc(id: u32, msg_id: string, att: int, name: string, size_label: string, view: ^Video_View) {
 	if clay.UI(clay.ID("MsgAudio", id))(
-	{layout = {sizing = {width = clay.SizingFixed(att_w())}, padding = clay.PaddingAll(10), childGap = 10, childAlignment = {y = .Center}}, backgroundColor = PLATE, cornerRadius = rr(8)},
+	{layout = {sizing = {width = clay.SizingFixed(att_w())}, padding = clay.PaddingAll(10), childGap = 10, layoutDirection = .TopToBottom}, backgroundColor = PLATE, cornerRadius = rr(8)},
 	) {
 		att_dl_button("DlAud", id, msg_id, att, name)
-		if clay.UI(clay.ID("MsgAudioPlay", id))(
-		{layout = {sizing = {width = clay.SizingFixed(36), height = clay.SizingFixed(36)}, childAlignment = {x = .Center, y = .Center}}, backgroundColor = ACCENT, cornerRadius = rr(18)},
-		) {
-			if hovered() {
-				video_hover = view // handle_video cycles pause
+		if clay.UI(clay.ID("MsgAudioControls", id))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, childAlignment = {y = .Top}}}) {
+			if clay.UI(clay.ID("MsgAudioPlay", id))(
+			{layout = {sizing = {width = clay.SizingFixed(36), height = clay.SizingFixed(36)}, childAlignment = {x = .Center, y = .Center}}, backgroundColor = ACCENT, cornerRadius = rr(18)},
+			) {
+				if hovered() {
+					video_hover = view // handle_video cycles pause
+				}
+				clay.Text(view.paused ? "" : "", {fontId = FONT_ICON, fontSize = 14, textColor = ON_ACCENT})
 			}
-			clay.Text(view.paused ? "" : "", {fontId = FONT_ICON, fontSize = 14, textColor = ON_ACCENT})
-		}
-		if clay.UI(clay.ID("MsgAudioCol", id))(
-		{layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 4}},
-		) {
-			clay.Text(name, {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT})
-
-			// Scrub bar, same registration as the video bar: the drag
-			// spans frames and seeks as it moves. Voice notes (decoded
-			// WAV) draw waveform buckets instead of the plain fill; the
-			// whole strip is still the drag target.
-			bar_id := clay.ID("MsgAudioBar", id)
-			append(&video_bars, Video_Bar{bar_id, view})
-			frac := view.dur > 0 ? f32(view.time / view.dur) : 0
-			if view.bars != nil {
-				played := int(frac * VOICE_BARS)
-				if clay.UI(bar_id)(
-				{layout = {sizing = {width = clay.SizingFixed(AUDIO_BAR_W), height = clay.SizingFixed(26)}, childGap = 1, childAlignment = {y = .Center}}},
-				) {
-					for amp, k in view.bars {
-						if clay.UI(clay.ID("MsgAudioWave", id * 64 + u32(k)))(
-						{layout = {sizing = {width = clay.SizingFixed(5), height = clay.SizingFixed(max(3, amp * 24))}}, backgroundColor = k < played ? ACCENT : FIELD_BORDER, cornerRadius = rr(2)},
-						) {}
+			if clay.UI(clay.ID("MsgAudioCol", id))(
+			{layout = {sizing = {width = clay.SizingFixed(max(1, att_w() - 66))}, layoutDirection = .TopToBottom, childGap = 6}},
+			) {
+				if clay.UI(clay.ID("MsgAudioName", id))({layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}}) {
+					clay.Text(name, {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT, wrapMode = .None})
+					if hovered() {
+						tooltip(name)
 					}
 				}
-			} else if clay.UI(bar_id)(
-			{layout = {sizing = {width = clay.SizingFixed(AUDIO_BAR_W), height = clay.SizingFixed(14)}, padding = {left = 2, right = 2}, childAlignment = {y = .Center}}, backgroundColor = ROW_BG, cornerRadius = rr(7)},
-			) {
-				if clay.UI(clay.ID("MsgAudioFill", id))(
-				{layout = {sizing = {width = clay.SizingFixed(max(10, frac * (AUDIO_BAR_W - 4))), height = clay.SizingFixed(10)}}, backgroundColor = ACCENT, cornerRadius = rr(5)},
-				) {}
-			}
 
-			if clay.UI(clay.ID("MsgAudioMeta", id))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}}) {
-				if len(size_label) > 0 {
-					clay.Text(size_label, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+				bar_id := clay.ID("MsgAudioBar", id)
+				append(&video_bars, Video_Bar{bar_id, view})
+				bar_w := max(1, att_w() - 66)
+				frac := view.dur > 0 ? clamp(f32(view.time / view.dur), 0, 1) : 0
+				if clay.UI(bar_id)(
+				{layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(14)}, padding = {left = 2, right = 2}, childAlignment = {y = .Center}}, backgroundColor = ROW_BG, cornerRadius = rr(7)},
+				) {
+					if clay.UI(clay.ID("MsgAudioFill", id))(
+					{layout = {sizing = {width = clay.SizingFixed(max(2, frac * (bar_w - 4))), height = clay.SizingFixed(10)}}, backgroundColor = ACCENT, cornerRadius = rr(5)},
+					) {}
 				}
-				if clay.UI(clay.ID("MsgAudioPad", id))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-				clay.Text(fmt.tprintf("%s / %s", fmt_clock(view.time), fmt_clock(view.dur)), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+
+				if clay.UI(clay.ID("MsgAudioMeta", id))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}}) {
+					if len(size_label) > 0 {
+						clay.Text(size_label, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+					}
+					if clay.UI(clay.ID("MsgAudioPad", id))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+					clay.Text(fmt.tprintf("%s / %s", fmt_clock(view.time), fmt_clock(view.dur)), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+				}
+				if g_ui.prefs.stt_enabled {
+					active := g_ui.stt.file != nil && g_ui.stt.message == msg_id && g_ui.stt.attachment == att
+					button := fmt.tprintf("AudioTranscribe%d", id)
+					// Keep every card the same height while recognition starts and stops.
+					if clay.UI(clay.ID("AudioTranscribeRow", id))({layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(31)}, childGap = 8, childAlignment = {y = .Center}}}) {
+						label := active ? N_("Transcribing...") : view.transcript_done ? (view.transcript_open ? N_("Collapse transcription") : N_("View transcription")) : N_("Transcribe")
+						micro_button(button, label, active || (!view.transcript_done && g_ui.stt.file != nil) ? TEXT_LO : {})
+						if active {
+							cancel := fmt.tprintf("AudioSttCancel%d", id)
+							micro_button(cancel, "Cancel")
+							if clay.PointerOver(clay.ID(cancel)) { stt_hover = {message = msg_id, attachment = att, action = .Cancel} }
+						}
+					}
+					if clay.PointerOver(clay.ID(button)) && !active && (view.transcript_done || g_ui.stt.file == nil) {
+						stt_hover = {message = msg_id, attachment = att, view = view, action = view.transcript_done ? .Toggle : .Transcribe}
+					}
+				}
 			}
+		}
+		if view.transcript_open && view.transcript != "" {
+			clay.Text(view.transcript, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
 		}
 	}
 }

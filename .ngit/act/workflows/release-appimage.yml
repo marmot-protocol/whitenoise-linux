@@ -58,7 +58,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             pkg-config cmake ninja-build clang git curl \
-            libarchive-dev libmpv-dev libpoppler-glib-dev libcairo2-dev libcurl4-openssl-dev \
+            libarchive-dev libmpv-dev libpoppler-glib-dev libcairo2-dev libcurl4-openssl-dev libssl-dev \
             libglib2.0-dev \
             file desktop-file-utils wget ca-certificates unzip
 
@@ -114,6 +114,8 @@ jobs:
           export LD_LIBRARY_PATH="/usr/local/sdl3/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
           ./linuxdeploy --appdir AppDir \
             --executable AppDir/usr/bin/whitenoise \
+            --executable AppDir/usr/bin/wn-tts \
+            --executable AppDir/usr/bin/wn-stt \
             --desktop-file AppDir/usr/share/applications/whitenoise.desktop \
             --icon-file AppDir/usr/share/icons/hicolor/256x256/apps/whitenoise.png
           # Short commit for a recognizable staging filename. act sets GITHUB_SHA.

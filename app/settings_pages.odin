@@ -15,6 +15,7 @@ import marmot "../marmot"
 
 Settings_Section :: enum {
 	General,
+	Speech,
 	Network,
 	Keys,
 	Appearance,
@@ -31,6 +32,7 @@ SETTINGS_SECTIONS := [Settings_Section]struct {
 	icon:  string,
 } {
 	.General       = {N_("General"), ICON_SETTINGS},
+	.Speech        = {N_("Speech"), ICON_MIC},
 	.Network       = {N_("Network & relays"), ICON_GLOBE},
 	.Keys          = {N_("Keys & identity"), ICON_KEY},
 	.Appearance    = {N_("Appearance"), ICON_BRUSH},
@@ -172,6 +174,9 @@ settings_pane :: proc(ui: ^Ui_State) {
 		case .General:
 			settings_header(ICON_SETTINGS, "General", "")
 			settings_general(ui)
+		case .Speech:
+			settings_header(ICON_MIC, "Speech", "")
+			settings_speech(ui)
 		case .Network:
 			settings_header(ICON_GLOBE, "Network & relays", "WHERE YOUR MESSAGES LAND")
 			settings_network(ui)
@@ -225,6 +230,128 @@ settings_pane :: proc(ui: ^Ui_State) {
 	}
 	if open_now(clay.ID("VaultPwModal"), ui.vault_pw_open) {
 		vault_pw_modal(ui)
+	}
+}
+
+@(private)
+settings_tts_download :: proc(ui: ^Ui_State, model: int) {
+	ready := ui.tts.ready[model]
+	size := TTS_MODEL_SIZES[model]
+	active := int(ui.tts.model) == model
+	if model == 0 {
+		ready = true
+		size = 0
+		for bytes, i in TTS_MODEL_SIZES {
+			size += bytes
+			ready = ready && ui.tts.ready[i]
+		}
+		active = true
+	}
+	label := ready ? tr("Downloaded") : tr("Not downloaded")
+	fraction := f32(ui.tts.percent) / 100
+	if active && ui.tts.status == 'D' {
+		if model == 0 {
+			bytes := f32(TTS_MODEL_SIZES[ui.tts.model]) * fraction
+			for i in 0 ..< int(ui.tts.model) {
+				bytes += f32(TTS_MODEL_SIZES[i])
+			}
+			fraction = bytes / f32(size)
+		}
+		label = fmt.tprintf(tr("Downloading: %d%%"), int(fraction * 100))
+		if ui.tts.percent == 100 {
+			label = tr("Verifying download...")
+		}
+	} else if active && ui.tts.status == 'F' {
+		label = tr("Couldn't download speech files. Please try again.")
+	}
+	if clay.UI(clay.ID_LOCAL("DownloadStatus"))({layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 5}}) {
+		clay.Text(fmt.tprintf("%s · %.1f MB", label, f64(size) / 1_000_000), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+		if active && ui.tts.status == 'D' {
+			if clay.UI(clay.ID_LOCAL("DownloadTrack"))({layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(4)}}, backgroundColor = PLATE, cornerRadius = rr(2)}) {
+				if fraction > 0 {
+					if clay.UI(clay.ID_LOCAL("DownloadFill"))({layout = {sizing = {width = clay.SizingPercent(fraction), height = clay.SizingGrow()}}, backgroundColor = ACCENT, cornerRadius = rr(2)}) {}
+				}
+			}
+		}
+	}
+}
+
+// Speech
+
+@(private)
+settings_speech :: proc(ui: ^Ui_State) {
+	eyebrow("SPEECH TO TEXT")
+	if clay.UI(clay.ID("RowStt"))(srow()) {
+		row_labels("Speech to text", "Dictate drafts and transcribe audio messages on your device.")
+		toggle("TgStt", ui.prefs.stt_enabled)
+	}
+	if ui.prefs.stt_enabled {
+		eyebrow("TRANSCRIPTION MODEL")
+		clay.Text(tr("Select a model to download it for dictation and audio messages."), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+		for model, i in STT_MODELS {
+			selected := stt_model(ui.prefs.stt_model) == i
+			row := srow()
+			row.backgroundColor = selected ? SELECTED : ROW_BG
+			row.layout.layoutDirection = .TopToBottom
+			if clay.UI(clay.ID("SttModel", u32(i)))(row) {
+				active := selected && ui.stt.file != nil && ui.stt.purpose == .Download
+				label := ui.stt.ready[i] ? tr("Downloaded") : tr("Not downloaded")
+				fraction: f32
+				if active {
+					bytes := f32(model.sizes[ui.stt.model]) * f32(ui.stt.percent) / 100
+					for j in 0 ..< int(ui.stt.model) { bytes += f32(model.sizes[j]) }
+					fraction = bytes / f32(model.bytes)
+					label = ui.stt.status == 'D' ? fmt.tprintf(tr("Downloading: %d%%"), int(fraction * 100)) : tr("Verifying download...")
+				}
+				if clay.UI(clay.ID_LOCAL("SttModelHeading"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 8, childAlignment = {y = .Center}}}) {
+					row_labels(model.label, fmt.tprintf("%s · %s", human_size(model.bytes), label))
+					if selected {
+						clay.Text(ICON_CHECK, {fontId = FONT_ICON, fontSize = 12, textColor = ACCENT})
+						clay.Text(tr("Selected"), {fontId = FONT_BODY, fontSize = 11, textColor = ACCENT})
+					}
+				}
+				clay.Text(tr(model.languages), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+				if active {
+					if clay.UI(clay.ID_LOCAL("SttDownloadTrack"))({layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(4)}}, backgroundColor = PLATE, cornerRadius = rr(2)}) {
+						if fraction > 0 {
+							if clay.UI(clay.ID_LOCAL("SttDownloadFill"))({layout = {sizing = {width = clay.SizingPercent(fraction), height = clay.SizingGrow()}}, backgroundColor = ACCENT, cornerRadius = rr(2)}) {}
+						}
+					}
+					micro_button("SttCancel", "Cancel")
+				}
+			}
+		}
+	}
+	eyebrow("READ ALOUD")
+	if clay.UI(clay.ID("RowTts"))(srow()) {
+		row_labels("Read aloud", "Read messages on your device in 31 languages. Downloads about 145 MB on first use.")
+		toggle("TgTts", ui.prefs.tts_enabled)
+	}
+	if ui.prefs.tts_enabled {
+		if clay.UI(clay.ID("TtsModel"))(srow()) {
+			row_labels("Speech model", "Shared by all ten voices and 31 languages. Downloads once.")
+			settings_tts_download(ui, 0)
+		}
+		for voice, i in TTS_VOICES {
+			selected := clamp(ui.prefs.tts_voice, 0, len(TTS_VOICES) - 1) == i
+			row := srow()
+			row.layout.layoutDirection = .TopToBottom
+			row.backgroundColor = selected ? SELECTED : ROW_BG
+			if clay.UI(clay.ID("TtsVoice", u32(i)))(row) {
+				_ = hovered()
+				if clay.UI(clay.ID_LOCAL("VoiceTitle"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, childAlignment = {y = .Center}}}) {
+					row_labels(voice, TTS_DESCRIPTIONS[i])
+					if selected {
+						clay.Text(ICON_CHECK, {fontId = FONT_ICON, fontSize = 12, textColor = ACCENT})
+						clay.Text(tr("Selected"), {fontId = FONT_BODY, fontSize = 11, textColor = ACCENT})
+					}
+				}
+				if clay.UI(clay.ID_LOCAL("VoiceDownload"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 12, childAlignment = {y = .Center}}}) {
+					settings_tts_download(ui, 6)
+					micro_button(fmt.tprintf("TtsPreview%d", i), "Preview")
+				}
+			}
+		}
 	}
 }
 
@@ -965,6 +1092,51 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	switch ui.settings_section {
+	case .Speech:
+		if ui.prefs.stt_enabled {
+			for model, i in STT_MODELS {
+				if clay.PointerOver(clay.ID("SttModel", u32(i))) {
+					if clicked("SttCancel") { return }
+					stt_stop(ui)
+					delete(ui.prefs.stt_model)
+					ui.prefs.stt_model = strings.clone(model.name)
+					save_settings(ui)
+					stt_start(ui, purpose = .Download)
+					return
+				}
+			}
+		}
+		if clicked("TgStt") {
+			flip(ui, &ui.prefs.stt_enabled)
+			if !ui.prefs.stt_enabled {
+				stt_stop(ui)
+			}
+			return
+		}
+		if clicked("TgTts") {
+			flip(ui, &ui.prefs.tts_enabled)
+			if !ui.prefs.tts_enabled {
+				tts_stop(ui)
+			}
+			return
+		}
+		if ui.prefs.tts_enabled {
+			for _, i in TTS_VOICES {
+				if clicked(fmt.tprintf("TtsPreview%d", i)) {
+					ui.prefs.tts_voice = i
+					save_settings(ui)
+					tts_read(ui, TTS_LANGUAGES[tts_language(ui, "")].preview)
+					return
+				}
+				if clay.PointerOver(clay.ID("TtsVoice", u32(i))) {
+					tts_stop(ui)
+					ui.prefs.tts_voice = i
+					save_settings(ui)
+					return
+				}
+			}
+		}
+
 	case .General:
 		if clay.PointerOver(clay.ID("TgLaunch")) {
 			flip(ui, &ui.prefs.launch_at_login)

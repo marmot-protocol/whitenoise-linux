@@ -10,6 +10,7 @@
 package main
 
 import "core:c"
+import "core:crypto/sha2"
 import "core:fmt"
 import "core:os"
 import "core:strings"
@@ -35,7 +36,10 @@ Video_View :: struct {
 	paused:  bool,
 	looping: bool, // GIF mode: autoplay, loop, no scrub bar
 	audio:   bool, // audio-only: no frames, the tile is the controls
-	bars:    []f32, // waveform amplitudes (WAV voice notes), nil = plain scrub bar
+	transcript: string, // locally recognized text; owned by this view
+	transcript_model: int, // model index + 1; zero means not checked
+	transcript_done, transcript_open: bool,
+	audio_hash: [32]u8,
 	failed:  bool,
 	time:    f64, // playback position, seconds
 	dur:     f64, // duration, seconds (0 until known)
@@ -117,6 +121,12 @@ video_view_make :: proc(data: []u8, mode: Video_Mode = .Clip) -> ^Video_View {
 	view.paused = mode != .Loop
 	view.looping = mode == .Loop
 	view.audio = mode == .Audio
+	if view.audio {
+		ctx: sha2.Context_256
+		sha2.init_256(&ctx)
+		sha2.update(&ctx, data)
+		sha2.final(&ctx, view.audio_hash[:])
+	}
 	view.w, view.h = 320, 180
 	view.buf = make([]u8, int(view.w) * int(view.h) * 4)
 	view.tex = rl.CreateStreamTexture(view.w, view.h)
@@ -210,7 +220,7 @@ video_view_free :: proc(view: ^Video_View) {
 	}
 	rl.UnloadTexture(view.tex)
 	delete(view.buf)
-	delete(view.bars)
+	delete(view.transcript)
 	delete(view.data)
 	free(view)
 }

@@ -462,7 +462,6 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 	view: ^Video_View
 				if bytes, ok := media_load(client, account, strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator), reference); ok {
 					view = video_view_make(bytes, .Audio)
-					view.bars = wav_bars(bytes) // nil unless 16-bit PCM WAV
 					blob_sizes[strings.clone(key)] = i64(len(bytes))
 				} else {
 					fmt.eprintfln("media: download failed (%s): %s", name, marmot.last_error())

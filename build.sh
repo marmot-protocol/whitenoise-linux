@@ -88,6 +88,15 @@ if [ ! -f "$HERE/build/libwnws.a" ] || [ "$HERE/app/ws_shim.c" -nt "$HERE/build/
   ar rcs "$HERE/build/libwnws.a" "$HERE/build/ws/ws_shim.o"
 fi
 
+# Speech helper uses the pinned multilingual CPU runtime.
+bash "$HERE/scripts/build-tts.sh"
+TTS="$HERE/vendor/sherpa-onnx"
+for speech in tts stt; do
+  cc -O2 -Wall -Wextra -I"$TTS/include" "$HERE/app/$speech.c" \
+    -L"$TTS/lib" -lsherpa-onnx-c-api -Wl,-rpath,'$ORIGIN/tts-lib:$ORIGIN/../share/whitenoise-linux/tts-lib' \
+    $(pkg-config --cflags --libs sdl3 libcurl glib-2.0 mpv libcrypto) -lm -o "$HERE/build/wn-$speech"
+done
+
 # wn-webview: the process that runs a webxdc app offscreen and hands
 # the app its pixels through shared memory. Optional: without
 # webkit2gtk-4.1 there is no viewer, and .xdc attachments stay inert.
@@ -206,5 +215,11 @@ echo "==> Done: $HERE/build/{smoke,app}"
 if [ "${1:-}" = test ]; then
   cc -O2 -I"$HERE/build/clay" "$HERE/scripts/clay_hashmap_test.c" -lm -o "$HERE/build/clay/hashmap-test"
   "$HERE/build/clay/hashmap-test"
+  for speech in tts stt; do
+    cc -O2 -Wall -Wextra -I"$TTS/include" "$HERE/scripts/$speech-test.c" \
+      -L"$TTS/lib" -lsherpa-onnx-c-api -Wl,-rpath,'$ORIGIN/tts-lib' \
+      $(pkg-config --cflags --libs sdl3 libcurl glib-2.0 mpv libcrypto) -lm -o "$HERE/build/$speech-test"
+    "$HERE/build/$speech-test"
+  done
   env "${ODIN_ROOT_ARG[@]}" odin test "$HERE/app" -out:"$HERE/build/apptest"
 fi

@@ -2,7 +2,7 @@
 // buffer (the renderer is already SDL3, no extra capture dependency),
 // Send hand-rolls a WAV around it and queues it through the normal
 // attachment path. Playback stays mpv (the audio tile); the WAV is
-// only re-parsed here to bucket amplitudes for the waveform bars.
+// played through the same seek bar as other audio formats.
 //
 //   MicBtn ──► voice_start ──► voice_poll (per frame: drain stream,
 //   level)  ──► Send: wav_encode + Pending_Send ──► send worker
@@ -21,7 +21,6 @@ import sdl "vendor:sdl3"
 import marmot "../marmot"
 
 VOICE_RATE :: 48000 // Hz, 16-bit PCM mono
-VOICE_BARS :: 40 // waveform buckets on the playback tile
 
 Voice_Rec :: struct {
 	stream:  ^sdl.AudioStream, // nil = not recording
@@ -127,57 +126,6 @@ wav_encode :: proc(samples: []i16) -> []u8 {
 	endian.put_u32(out[40:], .Little, u32(data_len))
 	copy(out[44:], slice.to_bytes(samples))
 	return out
-}
-
-// Bucket a WAV's PCM into per-bar peak amplitudes for the waveform
-// tile. Only 16-bit PCM (what this recorder writes); anything else
-// returns nil and the tile keeps the plain scrub bar.
-wav_bars :: proc(data: []u8) -> []f32 {
-	if len(data) < 44 || string(data[:4]) != "RIFF" || string(data[8:12]) != "WAVE" {
-		return nil
-	}
-	channels, bits, format: int
-	pcm: []i16
-	pos := 12
-	for pos + 8 <= len(data) {
-		size_u32, _ := endian.get_u32(data[pos + 4:], .Little)
-		size := int(size_u32)
-		body := data[pos + 8:][:min(size, len(data) - pos - 8)]
-		switch string(data[pos:][:4]) {
-		case "fmt ":
-			if len(body) >= 16 {
-				f, _ := endian.get_u16(body, .Little)
-				ch, _ := endian.get_u16(body[2:], .Little)
-				b, _ := endian.get_u16(body[14:], .Little)
-				format, channels, bits = int(f), int(ch), int(b)
-			}
-		case "data":
-			pcm = slice.reinterpret([]i16, body)
-		}
-		pos += 8 + size + (size & 1) // chunks are word-aligned
-	}
-	if format != 1 || bits != 16 || channels < 1 || len(pcm) < channels {
-		return nil
-	}
-
-	frames := len(pcm) / channels
-	bars := make([]f32, VOICE_BARS)
-	loudest: f32
-	for &bar, i in bars {
-		lo := frames * i / VOICE_BARS
-		hi := max(frames * (i + 1) / VOICE_BARS, lo + 1)
-		for f in lo ..< min(hi, frames) {
-			bar = max(bar, abs(f32(pcm[f * channels])) / 32768)
-		}
-		loudest = max(loudest, bar)
-	}
-	// Normalize so a quiet clip still shows shape.
-	if loudest > 0.01 {
-		for &bar in bars {
-			bar /= loudest
-		}
-	}
-	return bars
 }
 
 // The recording pill, shown in place of the composer: red dot,

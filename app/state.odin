@@ -494,6 +494,8 @@ Ui_State :: struct {
 	search_input:  [dynamic]u8,
 	settings_section: Settings_Section,
 	prefs:          Prefs, // the slint settings knobs (settings.odin)
+	tts:            Tts_State,
+	stt:            Stt_State,
 	lang_open:      bool, // interface-language modal
 	shortcuts_open: bool, // keyboard-shortcuts modal
 	theme_menu_open: bool, // Appearance theme dropdown

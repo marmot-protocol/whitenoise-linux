@@ -20,6 +20,15 @@ mkdir -p "$PREFIX/bin" "$RES/fonts" "$PREFIX/share/applications" \
   "$PREFIX/share/icons/hicolor/256x256/apps" "$PREFIX/share/metainfo"
 
 cp "$HERE/build/app" "$PREFIX/bin/whitenoise"
+cp "$HERE/build/wn-tts" "$HERE/build/wn-stt" "$PREFIX/bin/"
+mkdir -p "$RES/licenses"
+cp "$HERE/vendor/sherpa-onnx/LICENSE" "$RES/licenses/sherpa-onnx.txt"
+cp "$HERE/vendor/sherpa-onnx/LICENSE-onnxruntime" "$RES/licenses/onnxruntime.txt"
+cp "$HERE/vendor/sherpa-onnx/ThirdPartyNotices-onnxruntime.txt" "$RES/licenses/onnxruntime-third-party.txt"
+cp "$HERE/docs/tts.md" "$RES/licenses/speech-model.md"
+cp "$HERE/docs/stt.md" "$RES/licenses/dictation-model.md"
+mkdir -p "$RES/tts-lib"
+cp "$HERE/build/tts-lib/"*.so "$RES/tts-lib/"
 # The webxdc host process, only when webkit2gtk was present at build time.
 # The app looks for it beside its own binary.
 if [ -x "$HERE/build/wn-webview" ]; then

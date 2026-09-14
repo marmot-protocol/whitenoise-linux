@@ -12,6 +12,10 @@ import "core:strings"
 Prefs :: struct {
 	// General
 	launch_at_login:   bool,
+	tts_enabled:      bool,
+	stt_enabled:      bool,
+	stt_model:        string,
+	tts_voice:        int,
 	start_in_tray:     bool, // honored at boot (SDL tray icon + hidden window)
 	minimize_tray:     bool, // closing the window hides it to the tray
 	restore_last_chat: bool,

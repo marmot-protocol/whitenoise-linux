@@ -163,6 +163,9 @@ context_menu :: proc(ui: ^Ui_State) {
 		ctx_item("CtxForward", ICON_FORWARD, "Forward")
 		if len(msg.body) > 0 {
 			ctx_item("CtxCopy", ICON_COPY, "Copy text")
+			if ui.prefs.tts_enabled {
+				ctx_item("CtxRead", ICON_COMMENTS, "Read aloud")
+			}
 		}
 		for att_name, i in msg.att_names {
 			ctx_item(fmt.tprintf("CtxSave%d", i), ICON_DOWNLOAD, fmt.tprintf("Save %s", att_name))
