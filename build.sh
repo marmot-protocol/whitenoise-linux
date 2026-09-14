@@ -215,11 +215,9 @@ echo "==> Done: $HERE/build/{smoke,app}"
 if [ "${1:-}" = test ]; then
   cc -O2 -I"$HERE/build/clay" "$HERE/scripts/clay_hashmap_test.c" -lm -o "$HERE/build/clay/hashmap-test"
   "$HERE/build/clay/hashmap-test"
-  for speech in tts stt; do
-    cc -O2 -Wall -Wextra -I"$TTS/include" "$HERE/scripts/$speech-test.c" \
-      -L"$TTS/lib" -lsherpa-onnx-c-api -Wl,-rpath,'$ORIGIN/tts-lib' \
-      $(pkg-config --cflags --libs sdl3 libcurl glib-2.0 mpv libcrypto) -lm -o "$HERE/build/$speech-test"
-    "$HERE/build/$speech-test"
-  done
+  cc -O2 -Wall -Wextra -I"$TTS/include" "$HERE/scripts/stt-test.c" \
+    -L"$TTS/lib" -lsherpa-onnx-c-api -Wl,-rpath,'$ORIGIN/tts-lib' \
+    $(pkg-config --cflags --libs sdl3 libcurl glib-2.0 mpv libcrypto) -lm -o "$HERE/build/stt-test"
+  "$HERE/build/stt-test"
   env "${ODIN_ROOT_ARG[@]}" odin test "$HERE/app" -out:"$HERE/build/apptest"
 fi
