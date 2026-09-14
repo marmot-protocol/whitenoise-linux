@@ -245,7 +245,25 @@ system_row :: proc(index: u32, msg: Msg_Ui) {
 			border = {color = FIELD_BORDER, width = bw()},
 		},
 		) {
-			clay.Text(msg.body, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
+			if len(msg.sys_added_hex) > 0 {
+				// member_added: "actor added" (or "was added" when the
+				// wire event names no actor) with the new member as a
+				// mention chip, plus a wave button (handle_chat sends
+				// the greeting).
+				if len(msg.sys_actor) > 0 {
+					clay.Text(fmt.tprintf("%s added", msg.sys_actor), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
+				}
+				segs := [?]Inline_Seg{{hex = msg.sys_added_hex}}
+				render_segs(0xD00000 + index * 8, segs[:], 11, TEXT_LO, 14, chips = true)
+				if len(msg.sys_actor) == 0 {
+					clay.Text("was added", {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
+				}
+				if g_ui == nil || msg.sys_added_hex != g_ui.account_ref {
+					action_chip("SysWave", index, tr("Wave hi"))
+				}
+			} else {
+				clay.Text(msg.body, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
+			}
 			clay.Text(msg.at, {fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO})
 		}
 		if clay.UI(clay.ID("SysGapR", index))({layout = {sizing = {width = clay.SizingGrow()}}}) {}

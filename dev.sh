@@ -30,8 +30,12 @@ OVERLAY="$HERE/build/odin-root"
 export WN_DEV_CMD="${WN_DEV_CMD:-$HERE/build/dev-cmd}"
 
 command -v inotifywait >/dev/null || { echo "dev.sh needs inotify-tools"; exit 1; }
-# First run stages mdk/clay/twemoji and, if needed, the ODIN_ROOT overlay.
-[ -x "$HERE/build/app" ] || "$HERE/build.sh"
+# Stage dependencies and helpers even when an older app binary exists.
+if [ ! -x "$HERE/build/app" ] || [ ! -x "$HERE/build/wn-stt" ] ||
+   [ ! -x "$HERE/build/wn-tts" ] || [ ! -f "$HERE/build/tts-lib/libonnxruntime.so" ] ||
+   [ ! -f "$HERE/build/tts-lib/libsherpa-onnx-c-api.so" ]; then
+	"$HERE/build.sh" || exit $?
+fi
 ODIN_ROOT_ARG=()
 [ -d "$OVERLAY" ] && ODIN_ROOT_ARG=(ODIN_ROOT="$OVERLAY")
 

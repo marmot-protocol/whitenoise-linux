@@ -159,16 +159,31 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 		}
 
 		// A kind-1210 group-system row renders as a dim one-line
-		// sentence ("Alice added Bob"), no avatar or actions.
+		// sentence ("Alice added Bob"), no avatar or actions. A
+		// member_added row with a known subject splits into actor
+		// label + subject hex so the row can draw a mention chip and
+		// a wave button (system_row).
 		if record.kind == 1210 && record.group_system != nil {
-			append(&ui.messages, Msg_Ui{
+			sys := record.group_system
+			kind := sys.system_type != nil ? string(sys.system_type) : ""
+			actor := sys.actor_account_id_hex != nil ? string(sys.actor_account_id_hex) : ""
+			subject := sys.subject_account_id_hex != nil ? string(sys.subject_account_id_hex) : ""
+			is_add := kind == "member_added" && len(subject) > 0
+			msg := Msg_Ui{
 				id      = strings.clone(id_str),
-				body    = strings.clone(system_text(client, record.group_system)),
+				body    = strings.clone(system_text(client, sys)),
 				at      = format_when(record.timeline_at),
 				at_full = format_full(record.timeline_at),
 				day     = format_day(record.timeline_at),
 				system  = true,
-			})
+			}
+			if is_add {
+				msg.sys_added_hex = strings.clone(subject)
+				if len(actor) > 0 {
+					msg.sys_actor = strings.clone(profile_label(client, actor))
+				}
+			}
+			append(&ui.messages, msg)
 			continue
 		}
 

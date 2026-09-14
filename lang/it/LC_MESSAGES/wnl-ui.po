@@ -2016,6 +2016,10 @@ msgstr ""
 msgid "Warning"
 msgstr ""
 
+#, fuzzy
+msgid "Wave hi"
+msgstr "Salva video"
+
 msgid "Webxdc app"
 msgstr ""
 

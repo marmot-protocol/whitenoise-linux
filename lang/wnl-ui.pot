@@ -1848,6 +1848,9 @@ msgstr ""
 msgid "Warning"
 msgstr ""
 
+msgid "Wave hi"
+msgstr ""
+
 msgid "Webxdc app"
 msgstr ""
 

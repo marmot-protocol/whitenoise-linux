@@ -279,6 +279,8 @@ Msg_Ui :: struct {
 	day:       string, // YYYY-MM-DD or "Today", for day markers
 	mine:      bool,
 	system:    bool, // kind-1210 group-system line; body holds the sentence
+	sys_actor: string, // member_added row: resolved actor label, "" = unknown
+	sys_added_hex: string, // member_added row: subject hex, "" = not an add
 	theme_name: string, // a shared theme's name, "" = not a theme offer
 	theme_toml: string, // its pack source, applied only on the tap
 	theme_swatch: [THEME_SWATCHES]clay.Color, // parsed once at load, drawn every frame

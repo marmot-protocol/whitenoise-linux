@@ -555,6 +555,14 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				ui.hist_msg = i
 				return
 			}
+			// Wave button on a member_added row: greet the new member
+			// with a wave emoji plus the composer's mention format.
+			if len(msg.sys_added_hex) > 0 && clay.PointerOver(clay.ID("SysWave", u32(i))) {
+				if npub := hex_npub(msg.sys_added_hex); len(npub) > 0 {
+					queue_send(ui, client, fmt.tprintf("👋 @%s", npub))
+				}
+				return
+			}
 			if clay.PointerOver(clay.ID("MsgReact", u32(i))) {
 				message_op(ui, client, .React, msg.id, "👍")
 				return
