@@ -1,6 +1,7 @@
 package main
 
 import "core:fmt"
+import "core:os"
 import "core:testing"
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -23,6 +24,12 @@ tts_layout :: proc(t: ^testing.T) {
 	clay.SetMeasureTextFunction(measure_text, nil)
 	ui: Ui_State
 	ui.prefs.tts_enabled = true
+	ui.prefs.stt_enabled = true
+	ui.prefs.stt_model = "small"
+	ui.stt.ready[0] = true
+	ui.stt.purpose = .Download
+	ui.stt.status, ui.stt.model, ui.stt.percent = 'D', 1, 42
+	ui.stt.file = cast(^os.File)uintptr(1)
 	ui.settings_section = .Speech
 	ui.tts.status, ui.tts.model, ui.tts.percent = 'D', 0, 42
 	ui.tts.ready[2] = true
@@ -37,6 +44,10 @@ tts_layout :: proc(t: ^testing.T) {
 		testing.expect(t, clay.GetElementData(clay.ID("RowStt")).found)
 		testing.expect(t, clay.GetElementData(clay.ID("RowTts")).found)
 		testing.expect(t, !clay.GetElementData(clay.ID("RowLaunch")).found)
+		for _, i in STT_MODELS {
+			box := clay.GetElementData(clay.ID("SttModel", u32(i)))
+			testing.expect(t, box.found && box.boundingBox.x + box.boundingBox.width <= width)
+		}
 		for _, i in TTS_VOICES {
 			box := clay.GetElementData(clay.ID("TtsVoice", u32(i)))
 			testing.expect(t, box.found)

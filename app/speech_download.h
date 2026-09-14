@@ -1,4 +1,5 @@
 // Shared by the TTS and STT helpers; the including file supplies its manifest.
+#include <openssl/evp.h>
 static int valid_file(const char *path, const ModelFile *model) {
     struct stat st;
     if (stat(path, &st) || st.st_size < 0 || (size_t)st.st_size != model->size) {
@@ -8,14 +9,24 @@ static int valid_file(const char *path, const ModelFile *model) {
     if (!file) {
         return 0;
     }
-    GChecksum *sum = g_checksum_new(G_CHECKSUM_SHA256);
+    EVP_MD_CTX *sum = EVP_MD_CTX_new();
+    int ok = sum && EVP_DigestInit_ex(sum, EVP_sha256(), NULL) == 1;
     unsigned char buf[65536];
     size_t n;
-    while ((n = fread(buf, 1, sizeof(buf), file)) > 0) {
-        g_checksum_update(sum, buf, n);
+    while (ok && (n = fread(buf, 1, sizeof(buf), file)) > 0) {
+        ok = EVP_DigestUpdate(sum, buf, n) == 1;
     }
-    int ok = !ferror(file) && !strcmp(g_checksum_get_string(sum), model->sha256);
-    g_checksum_free(sum);
+    unsigned char digest[EVP_MAX_MD_SIZE];
+    unsigned int length = 0;
+    ok = ok && !ferror(file) && EVP_DigestFinal_ex(sum, digest, &length) == 1 && length == 32;
+    EVP_MD_CTX_free(sum);
+    if (ok) {
+        char hex[65];
+        for (unsigned int i = 0; i < length; ++i) {
+            snprintf(hex + i * 2, 3, "%02x", digest[i]);
+        }
+        ok = !strcmp(hex, model->sha256);
+    }
     fclose(file);
     return ok;
 }
@@ -65,7 +76,7 @@ static int ensure_model(const char *dir, const ModelFile *model) {
     CURL *curl = file ? curl_easy_init() : NULL;
     int ok = 0;
     if (curl) {
-        char *url = g_strdup_printf(MODEL_URL "/%s", model->name);
+        char *url = g_strdup_printf("%s/%s", MODEL_URL, model->name);
         Download download = {.file = file, .remaining = model->size, .model = model};
         curl_easy_setopt(curl, CURLOPT_URL, url);
         curl_easy_setopt(curl, CURLOPT_PROTOCOLS_STR, "https");

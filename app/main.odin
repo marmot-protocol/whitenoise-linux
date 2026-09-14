@@ -1419,6 +1419,7 @@ main :: proc() {
 		link_hover = ""
 		clear(&sel_lines) // body lines re-register during the build
 		video_hover = nil
+		stt_hover = {}
 		att_hover = {}
 		arc_hover = {}
 		arc_more_hover = nil
@@ -1748,6 +1749,15 @@ main :: proc() {
 		handle_orbit()
 		handle_gcode_bar()
 		handle_anim_bar()
+		if mouse_released() && stt_hover.message != "" {
+			if stt_hover.action == .Toggle {
+				stt_hover.view.transcript_open = !stt_hover.view.transcript_open
+			} else if stt_hover.action == .Cancel {
+				stt_stop(&ui)
+			} else {
+				stt_start(&ui, stt_hover.message, stt_hover.attachment)
+			}
+		}
 		handle_video()
 		handle_video_bar()
 		handle_pdf()

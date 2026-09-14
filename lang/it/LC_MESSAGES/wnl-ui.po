@@ -67,6 +67,9 @@ msgstr ""
 msgid "-"
 msgstr ""
 
+msgid "25 European languages, including English and Italian."
+msgstr "25 lingue europee, tra cui inglese e italiano."
+
 #, fuzzy
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr "White Noise è un client desktop nativo per chat di gruppo private. I messaggi vengono crittografati con MLS prima di lasciare la tua macchina, instradati sui relay Nostr e decifrati solo per le persone nella stanza."
@@ -280,9 +283,6 @@ msgstr "Allegati in cache"
 msgid "Cancel"
 msgstr "Annulla"
 
-msgid "Cancel dictation"
-msgstr "Annulla dettatura"
-
 msgid "Cancel edit / reply, close panels"
 msgstr ""
 
@@ -332,6 +332,9 @@ msgstr ""
 msgid "Checking..."
 msgstr "Verifica in corso…"
 
+msgid "Chinese, English, Japanese, Korean and Cantonese."
+msgstr "Cinese, inglese, giapponese, coreano e cantonese."
+
 msgid "Chip background"
 msgstr ""
 
@@ -364,6 +367,9 @@ msgstr ""
 #, fuzzy
 msgid "Collapse the chat list"
 msgstr "Comprimi pannello chat"
+
+msgid "Collapse transcription"
+msgstr "Nascondi trascrizione"
 
 msgid "Command palette"
 msgstr ""
@@ -424,6 +430,9 @@ msgstr "Copia testo"
 msgid "Corner scale"
 msgstr ""
 
+msgid "Couldn't cache your transcription. Please try again."
+msgstr "Impossibile salvare la trascrizione nella cache. Riprova."
+
 #, fuzzy, c-format
 msgid "Couldn't change audit logs. %s"
 msgstr "Impossibile modificare il log di audit."
@@ -442,6 +451,9 @@ msgstr "Impossibile creare la chat. Riprova."
 #, fuzzy
 msgid "Couldn't create the vault. Please try again."
 msgstr "Impossibile creare la chat. Riprova."
+
+msgid "Couldn't decode this audio. Try another audio file."
+msgstr "Impossibile decodificare questo audio. Prova un altro file audio."
 
 #, fuzzy, c-format
 msgid "Couldn't delete the audit log file. %s"
@@ -545,11 +557,17 @@ msgstr "Impossibile creare la chat. Riprova."
 msgid "Couldn't share the theme. Please try again."
 msgstr "Impossibile creare la chat. Riprova."
 
-msgid "Couldn't start dictation. Please try again."
-msgstr "Impossibile avviare la dettatura. Riprova."
-
 msgid "Couldn't start reading aloud. Please try again."
 msgstr "Impossibile avviare la lettura. Riprova."
+
+msgid "Couldn't start transcription. Please try again."
+msgstr "Impossibile avviare la trascrizione. Riprova."
+
+msgid "Couldn't transcribe this audio. Choose a recording under 10 minutes."
+msgstr "Impossibile trascrivere questo audio. Scegli una registrazione inferiore a 10 minuti."
+
+msgid "Couldn't transcribe this audio. Choose an audio file under 100 MB."
+msgstr "Impossibile trascrivere questo audio. Scegli un file audio inferiore a 100 MB."
 
 msgid "Couldn't transcribe your speech. Please try again."
 msgstr "Impossibile trascrivere la tua voce. Riprova."
@@ -594,9 +612,6 @@ msgstr "SVILUPPATORE"
 
 msgid "DEVICE VAULT"
 msgstr ""
-
-msgid "DICTATION"
-msgstr "DETTATURA"
 
 #, fuzzy
 msgid "DISAPPEARING MESSAGES"
@@ -675,8 +690,8 @@ msgstr "La diagnostica viene inviata al gestore di otlp.ipf.dev, a meno che tu a
 msgid "Dictate"
 msgstr "Detta"
 
-msgid "Dictation"
-msgstr "Dettatura"
+msgid "Dictate drafts and transcribe audio messages on your device."
+msgstr "Detta bozze e trascrivi messaggi audio sul tuo dispositivo."
 
 msgid "Divider"
 msgstr ""
@@ -1098,6 +1113,9 @@ msgstr "Apri cartella"
 msgid "Multi-device isn't available yet"
 msgstr "Multi-dispositivo non ancora disponibile"
 
+msgid "Multilingual. Detects your language automatically."
+msgstr "Multilingue. Rileva automaticamente la tua lingua."
+
 msgid "Multiple choice"
 msgstr ""
 
@@ -1352,6 +1370,9 @@ msgstr "Preparazione della dettatura..."
 msgid "Preparing speech..."
 msgstr "Preparazione della lettura..."
 
+msgid "Preparing transcription..."
+msgstr "Preparazione della trascrizione..."
+
 msgid "Press Ctrl P for the command palette."
 msgstr ""
 
@@ -1538,6 +1559,9 @@ msgstr ""
 msgid "SITE"
 msgstr ""
 
+msgid "SPEECH TO TEXT"
+msgstr "DA VOCE A TESTO"
+
 msgid "STARTUP"
 msgstr "AVVIO"
 
@@ -1599,6 +1623,9 @@ msgstr "Avvia chat"
 
 msgid "Select a contact from the list."
 msgstr ""
+
+msgid "Select a model to download it for dictation and audio messages."
+msgstr "Seleziona un modello da scaricare per la dettatura e i messaggi audio."
 
 msgid "Selected"
 msgstr "Selezionata"
@@ -1740,6 +1767,9 @@ msgstr "Voce"
 msgid "Speech model"
 msgstr "Modello vocale"
 
+msgid "Speech to text"
+msgstr "Da voce a testo"
+
 msgid "Start chat"
 msgstr "Avvia chat"
 
@@ -1792,6 +1822,9 @@ msgstr ""
 
 msgid "TIMINGS"
 msgstr "TEMPI"
+
+msgid "TRANSCRIPTION MODEL"
+msgstr "MODELLO DI TRASCRIZIONE"
 
 msgid "TRUSTED LINK SITES"
 msgstr "SITI AFFIDABILI"
@@ -1901,6 +1934,9 @@ msgstr "Modalità sviluppatore"
 msgid "Top glint"
 msgstr ""
 
+msgid "Transcribe"
+msgstr "Trascrivi"
+
 msgid "Transcribing..."
 msgstr "Trascrizione in corso..."
 
@@ -1912,9 +1948,6 @@ msgstr ""
 
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr ""
-
-msgid "Turn your speech into a draft on your device. Downloads about 104 MB on first use."
-msgstr "Trasforma la tua voce in una bozza sul tuo dispositivo. Scarica circa 104 MB al primo utilizzo."
 
 msgid "Unblock"
 msgstr "Sblocca"
@@ -1956,6 +1989,9 @@ msgstr "Aggiungi contatto"
 
 msgid "View raw event"
 msgstr ""
+
+msgid "View transcription"
+msgstr "Mostra trascrizione"
 
 msgid "Vignette"
 msgstr ""

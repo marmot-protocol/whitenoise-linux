@@ -314,9 +314,9 @@ status_pill :: proc(id_str: string, label: string, color: clay.Color, dot := tru
 }
 
 status_bar :: proc(ui: ^Ui_State) {
-	if ui.stt.file != nil {
+	if ui.stt.file != nil && ui.stt.message == "" && ui.stt.purpose != .Download {
 		if clay.UI(clay.ID("SttBar"))({layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(6), childGap = 12, childAlignment = {y = .Center}}, backgroundColor = STATUS_BAR}) {
-			micro_button("SttCancel", "Cancel dictation")
+			micro_button("SttCancel", "Cancel")
 			if ui.stt.status == 'R' {
 				micro_button("SttFinish", "Finish dictation")
 			}

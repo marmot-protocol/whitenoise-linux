@@ -358,7 +358,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// With the webxdc modal open the page owns the keyboard: skip the
 	// composer edit, or it drains the typed runes before
 	// handle_web_input can forward them.
-	if ui.focus != .Filter && !web_modal.open && ui.stt.file == nil {
+	if ui.focus != .Filter && !web_modal.open && (ui.stt.file == nil || ui.stt.message != "") {
 		buf := active_buf(ui)
 		edit_text(ui, buf, buf == &ui.compose)
 	}
@@ -380,7 +380,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
-	if ui.stt.file != nil {
+	if ui.stt.file != nil && ui.stt.message == "" {
 		if rl.IsKeyPressed(.ESCAPE) {
 			stt_stop(ui)
 		} else if rl.IsKeyPressed(.ENTER) {

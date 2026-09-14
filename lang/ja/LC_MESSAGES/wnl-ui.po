@@ -67,6 +67,9 @@ msgstr ""
 msgid "-"
 msgstr ""
 
+msgid "25 European languages, including English and Italian."
+msgstr "英語とイタリア語を含む25のヨーロッパ言語に対応しています。"
+
 #, fuzzy
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr "White Noise は、プライベートなグループチャットのためのネイティブデスクトップクライアントです。メッセージはあなたのマシンを離れる前に MLS で暗号化され、Nostr リレーを経由して送られ、ルーム内の人にだけ復号されます。"
@@ -280,9 +283,6 @@ msgstr "キャッシュされた添付ファイル"
 msgid "Cancel"
 msgstr "キャンセル"
 
-msgid "Cancel dictation"
-msgstr "音声入力をキャンセル"
-
 msgid "Cancel edit / reply, close panels"
 msgstr ""
 
@@ -332,6 +332,9 @@ msgstr ""
 msgid "Checking..."
 msgstr "確認中…"
 
+msgid "Chinese, English, Japanese, Korean and Cantonese."
+msgstr "中国語、英語、日本語、韓国語、広東語に対応しています。"
+
 msgid "Chip background"
 msgstr ""
 
@@ -364,6 +367,9 @@ msgstr ""
 #, fuzzy
 msgid "Collapse the chat list"
 msgstr "チャットパネルを折りたたむ"
+
+msgid "Collapse transcription"
+msgstr "文字起こしを折りたたむ"
 
 msgid "Command palette"
 msgstr ""
@@ -424,6 +430,9 @@ msgstr "テキストをコピー"
 msgid "Corner scale"
 msgstr ""
 
+msgid "Couldn't cache your transcription. Please try again."
+msgstr "文字起こしをキャッシュできませんでした。もう一度お試しください。"
+
 #, fuzzy, c-format
 msgid "Couldn't change audit logs. %s"
 msgstr "監査ログを変更できませんでした。"
@@ -442,6 +451,9 @@ msgstr "チャットを作成できませんでした。もう一度お試しく
 #, fuzzy
 msgid "Couldn't create the vault. Please try again."
 msgstr "チャットを作成できませんでした。もう一度お試しください。"
+
+msgid "Couldn't decode this audio. Try another audio file."
+msgstr "この音声を読み取れませんでした。別の音声ファイルをお試しください。"
 
 #, fuzzy, c-format
 msgid "Couldn't delete the audit log file. %s"
@@ -545,11 +557,17 @@ msgstr "チャットを作成できませんでした。もう一度お試しく
 msgid "Couldn't share the theme. Please try again."
 msgstr "チャットを作成できませんでした。もう一度お試しください。"
 
-msgid "Couldn't start dictation. Please try again."
-msgstr "音声入力を開始できませんでした。もう一度お試しください。"
-
 msgid "Couldn't start reading aloud. Please try again."
 msgstr "読み上げを開始できませんでした。もう一度お試しください。"
+
+msgid "Couldn't start transcription. Please try again."
+msgstr "文字起こしを開始できませんでした。もう一度お試しください。"
+
+msgid "Couldn't transcribe this audio. Choose a recording under 10 minutes."
+msgstr "この音声を文字に変換できませんでした。10分未満の録音を選んでください。"
+
+msgid "Couldn't transcribe this audio. Choose an audio file under 100 MB."
+msgstr "この音声を文字に変換できませんでした。100 MB未満の音声ファイルを選んでください。"
 
 msgid "Couldn't transcribe your speech. Please try again."
 msgstr "音声を文字に変換できませんでした。もう一度お試しください。"
@@ -594,9 +612,6 @@ msgstr "開発者"
 
 msgid "DEVICE VAULT"
 msgstr ""
-
-msgid "DICTATION"
-msgstr "音声入力"
 
 #, fuzzy
 msgid "DISAPPEARING MESSAGES"
@@ -675,8 +690,8 @@ msgstr "別の収集サービスを設定していない場合、診断情報は
 msgid "Dictate"
 msgstr "音声入力"
 
-msgid "Dictation"
-msgstr "音声入力"
+msgid "Dictate drafts and transcribe audio messages on your device."
+msgstr "お使いのデバイスで下書きの音声入力や音声メッセージの文字起こしができます。"
 
 msgid "Divider"
 msgstr ""
@@ -1098,6 +1113,9 @@ msgstr "フォルダを開く"
 msgid "Multi-device isn't available yet"
 msgstr "マルチデバイスはまだ利用できません"
 
+msgid "Multilingual. Detects your language automatically."
+msgstr "多言語対応です。言語を自動で検出します。"
+
 msgid "Multiple choice"
 msgstr ""
 
@@ -1352,6 +1370,9 @@ msgstr "音声入力を準備しています..."
 msgid "Preparing speech..."
 msgstr "読み上げを準備しています..."
 
+msgid "Preparing transcription..."
+msgstr "文字起こしを準備しています..."
+
 msgid "Press Ctrl P for the command palette."
 msgstr ""
 
@@ -1538,6 +1559,9 @@ msgstr ""
 msgid "SITE"
 msgstr ""
 
+msgid "SPEECH TO TEXT"
+msgstr "音声認識"
+
 msgid "STARTUP"
 msgstr "起動"
 
@@ -1599,6 +1623,9 @@ msgstr "チャットを開始"
 
 msgid "Select a contact from the list."
 msgstr ""
+
+msgid "Select a model to download it for dictation and audio messages."
+msgstr "音声入力や音声メッセージに使用するモデルを選択してダウンロードします。"
 
 msgid "Selected"
 msgstr "選択中"
@@ -1740,6 +1767,9 @@ msgstr "音声"
 msgid "Speech model"
 msgstr "音声モデル"
 
+msgid "Speech to text"
+msgstr "音声認識"
+
 msgid "Start chat"
 msgstr "チャットを開始"
 
@@ -1792,6 +1822,9 @@ msgstr ""
 
 msgid "TIMINGS"
 msgstr "処理時間"
+
+msgid "TRANSCRIPTION MODEL"
+msgstr "文字起こしモデル"
 
 msgid "TRUSTED LINK SITES"
 msgstr "信頼済みのリンク先"
@@ -1901,6 +1934,9 @@ msgstr "開発者モード"
 msgid "Top glint"
 msgstr ""
 
+msgid "Transcribe"
+msgstr "文字起こし"
+
 msgid "Transcribing..."
 msgstr "文字に変換しています..."
 
@@ -1912,9 +1948,6 @@ msgstr ""
 
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr ""
-
-msgid "Turn your speech into a draft on your device. Downloads about 104 MB on first use."
-msgstr "お使いの端末で音声を下書きに変換します。初回使用時に約104 MBをダウンロードします。"
 
 msgid "Unblock"
 msgstr "ブロック解除"
@@ -1956,6 +1989,9 @@ msgstr "連絡先を追加"
 
 msgid "View raw event"
 msgstr ""
+
+msgid "View transcription"
+msgstr "文字起こしを表示"
 
 msgid "Vignette"
 msgstr ""

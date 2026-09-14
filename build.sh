@@ -94,7 +94,7 @@ TTS="$HERE/vendor/sherpa-onnx"
 for speech in tts stt; do
   cc -O2 -Wall -Wextra -I"$TTS/include" "$HERE/app/$speech.c" \
     -L"$TTS/lib" -lsherpa-onnx-c-api -Wl,-rpath,'$ORIGIN/tts-lib:$ORIGIN/../share/whitenoise-linux/tts-lib' \
-    $(pkg-config --cflags --libs sdl3 libcurl glib-2.0) -lm -o "$HERE/build/wn-$speech"
+    $(pkg-config --cflags --libs sdl3 libcurl glib-2.0 mpv libcrypto) -lm -o "$HERE/build/wn-$speech"
 done
 
 # wn-webview: the process that runs a webxdc app offscreen and hands
@@ -218,7 +218,7 @@ if [ "${1:-}" = test ]; then
   for speech in tts stt; do
     cc -O2 -Wall -Wextra -I"$TTS/include" "$HERE/scripts/$speech-test.c" \
       -L"$TTS/lib" -lsherpa-onnx-c-api -Wl,-rpath,'$ORIGIN/tts-lib' \
-      $(pkg-config --cflags --libs sdl3 libcurl glib-2.0) -lm -o "$HERE/build/$speech-test"
+      $(pkg-config --cflags --libs sdl3 libcurl glib-2.0 mpv libcrypto) -lm -o "$HERE/build/$speech-test"
     "$HERE/build/$speech-test"
   done
   env "${ODIN_ROOT_ARG[@]}" odin test "$HERE/app" -out:"$HERE/build/apptest"

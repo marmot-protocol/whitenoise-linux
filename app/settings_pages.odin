@@ -280,10 +280,47 @@ settings_tts_download :: proc(ui: ^Ui_State, model: int) {
 
 @(private)
 settings_speech :: proc(ui: ^Ui_State) {
-	eyebrow("DICTATION")
+	eyebrow("SPEECH TO TEXT")
 	if clay.UI(clay.ID("RowStt"))(srow()) {
-		row_labels("Dictation", "Turn your speech into a draft on your device. Downloads about 104 MB on first use.")
+		row_labels("Speech to text", "Dictate drafts and transcribe audio messages on your device.")
 		toggle("TgStt", ui.prefs.stt_enabled)
+	}
+	if ui.prefs.stt_enabled {
+		eyebrow("TRANSCRIPTION MODEL")
+		clay.Text(tr("Select a model to download it for dictation and audio messages."), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+		for model, i in STT_MODELS {
+			selected := stt_model(ui.prefs.stt_model) == i
+			row := srow()
+			row.backgroundColor = selected ? SELECTED : ROW_BG
+			row.layout.layoutDirection = .TopToBottom
+			if clay.UI(clay.ID("SttModel", u32(i)))(row) {
+				active := selected && ui.stt.file != nil && ui.stt.purpose == .Download
+				label := ui.stt.ready[i] ? tr("Downloaded") : tr("Not downloaded")
+				fraction: f32
+				if active {
+					bytes := f32(model.sizes[ui.stt.model]) * f32(ui.stt.percent) / 100
+					for j in 0 ..< int(ui.stt.model) { bytes += f32(model.sizes[j]) }
+					fraction = bytes / f32(model.bytes)
+					label = ui.stt.status == 'D' ? fmt.tprintf(tr("Downloading: %d%%"), int(fraction * 100)) : tr("Verifying download...")
+				}
+				if clay.UI(clay.ID_LOCAL("SttModelHeading"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 8, childAlignment = {y = .Center}}}) {
+					row_labels(model.label, fmt.tprintf("%s · %s", human_size(model.bytes), label))
+					if selected {
+						clay.Text(ICON_CHECK, {fontId = FONT_ICON, fontSize = 12, textColor = ACCENT})
+						clay.Text(tr("Selected"), {fontId = FONT_BODY, fontSize = 11, textColor = ACCENT})
+					}
+				}
+				clay.Text(tr(model.languages), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+				if active {
+					if clay.UI(clay.ID_LOCAL("SttDownloadTrack"))({layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(4)}}, backgroundColor = PLATE, cornerRadius = rr(2)}) {
+						if fraction > 0 {
+							if clay.UI(clay.ID_LOCAL("SttDownloadFill"))({layout = {sizing = {width = clay.SizingPercent(fraction), height = clay.SizingGrow()}}, backgroundColor = ACCENT, cornerRadius = rr(2)}) {}
+						}
+					}
+					micro_button("SttCancel", "Cancel")
+				}
+			}
+		}
 	}
 	eyebrow("READ ALOUD")
 	if clay.UI(clay.ID("RowTts"))(srow()) {
@@ -1056,6 +1093,19 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	switch ui.settings_section {
 	case .Speech:
+		if ui.prefs.stt_enabled {
+			for model, i in STT_MODELS {
+				if clay.PointerOver(clay.ID("SttModel", u32(i))) {
+					if clicked("SttCancel") { return }
+					stt_stop(ui)
+					delete(ui.prefs.stt_model)
+					ui.prefs.stt_model = strings.clone(model.name)
+					save_settings(ui)
+					stt_start(ui, purpose = .Download)
+					return
+				}
+			}
+		}
 		if clicked("TgStt") {
 			flip(ui, &ui.prefs.stt_enabled)
 			if !ui.prefs.stt_enabled {

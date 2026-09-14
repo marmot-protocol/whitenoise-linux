@@ -19,7 +19,7 @@ license=(AGPL-3.0-or-later)
 # Linked (readelf -d NEEDED on the binary), then what it spawns: xdg-open
 # for links, notify-send for desktop alerts. ttf-dejavu is the fallback
 # behind the bundled faces (DejaVu Sans Mono has no bundled copy).
-depends=(sdl3 libarchive mpv poppler-glib cairo glib2 curl gcc-libs
+depends=(sdl3 libarchive mpv poppler-glib cairo glib2 curl openssl gcc-libs
          xdg-utils libnotify ttf-dejavu hicolor-icon-theme)
 makedepends=(git odin rust clang unzip)
 optdepends=(

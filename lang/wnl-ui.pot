@@ -65,6 +65,9 @@ msgstr ""
 msgid "-"
 msgstr ""
 
+msgid "25 European languages, including English and Italian."
+msgstr ""
+
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr ""
 
@@ -261,9 +264,6 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
-msgid "Cancel dictation"
-msgstr ""
-
 msgid "Cancel edit / reply, close panels"
 msgstr ""
 
@@ -306,6 +306,9 @@ msgstr ""
 msgid "Checking..."
 msgstr ""
 
+msgid "Chinese, English, Japanese, Korean and Cantonese."
+msgstr ""
+
 msgid "Chip background"
 msgstr ""
 
@@ -334,6 +337,9 @@ msgid "Code plate"
 msgstr ""
 
 msgid "Collapse the chat list"
+msgstr ""
+
+msgid "Collapse transcription"
 msgstr ""
 
 msgid "Command palette"
@@ -390,6 +396,9 @@ msgstr ""
 msgid "Corner scale"
 msgstr ""
 
+msgid "Couldn't cache your transcription. Please try again."
+msgstr ""
+
 #, c-format
 msgid "Couldn't change audit logs. %s"
 msgstr ""
@@ -404,6 +413,9 @@ msgid "Couldn't create the backup. Please try again."
 msgstr ""
 
 msgid "Couldn't create the vault. Please try again."
+msgstr ""
+
+msgid "Couldn't decode this audio. Try another audio file."
 msgstr ""
 
 #, c-format
@@ -496,10 +508,16 @@ msgstr ""
 msgid "Couldn't share the theme. Please try again."
 msgstr ""
 
-msgid "Couldn't start dictation. Please try again."
+msgid "Couldn't start reading aloud. Please try again."
 msgstr ""
 
-msgid "Couldn't start reading aloud. Please try again."
+msgid "Couldn't start transcription. Please try again."
+msgstr ""
+
+msgid "Couldn't transcribe this audio. Choose a recording under 10 minutes."
+msgstr ""
+
+msgid "Couldn't transcribe this audio. Choose an audio file under 100 MB."
 msgstr ""
 
 msgid "Couldn't transcribe your speech. Please try again."
@@ -539,9 +557,6 @@ msgid "DEVELOPER"
 msgstr ""
 
 msgid "DEVICE VAULT"
-msgstr ""
-
-msgid "DICTATION"
 msgstr ""
 
 msgid "DISAPPEARING MESSAGES"
@@ -613,7 +628,7 @@ msgstr ""
 msgid "Dictate"
 msgstr ""
 
-msgid "Dictation"
+msgid "Dictate drafts and transcribe audio messages on your device."
 msgstr ""
 
 msgid "Divider"
@@ -1002,6 +1017,9 @@ msgstr ""
 msgid "Multi-device isn't available yet"
 msgstr ""
 
+msgid "Multilingual. Detects your language automatically."
+msgstr ""
+
 msgid "Multiple choice"
 msgstr ""
 
@@ -1236,6 +1254,9 @@ msgstr ""
 msgid "Preparing speech..."
 msgstr ""
 
+msgid "Preparing transcription..."
+msgstr ""
+
 msgid "Press Ctrl P for the command palette."
 msgstr ""
 
@@ -1407,6 +1428,9 @@ msgstr ""
 msgid "SITE"
 msgstr ""
 
+msgid "SPEECH TO TEXT"
+msgstr ""
+
 msgid "STARTUP"
 msgstr ""
 
@@ -1462,6 +1486,9 @@ msgid "Select a chat"
 msgstr ""
 
 msgid "Select a contact from the list."
+msgstr ""
+
+msgid "Select a model to download it for dictation and audio messages."
 msgstr ""
 
 msgid "Selected"
@@ -1587,6 +1614,9 @@ msgstr ""
 msgid "Speech model"
 msgstr ""
 
+msgid "Speech to text"
+msgstr ""
+
 msgid "Start chat"
 msgstr ""
 
@@ -1636,6 +1666,9 @@ msgid "THIS SESSION"
 msgstr ""
 
 msgid "TIMINGS"
+msgstr ""
+
+msgid "TRANSCRIPTION MODEL"
 msgstr ""
 
 msgid "TRUSTED LINK SITES"
@@ -1737,6 +1770,9 @@ msgstr ""
 msgid "Top glint"
 msgstr ""
 
+msgid "Transcribe"
+msgstr ""
+
 msgid "Transcribing..."
 msgstr ""
 
@@ -1747,9 +1783,6 @@ msgid "TrustForgetAll"
 msgstr ""
 
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
-msgstr ""
-
-msgid "Turn your speech into a draft on your device. Downloads about 104 MB on first use."
 msgstr ""
 
 msgid "Unblock"
@@ -1789,6 +1822,9 @@ msgid "View contact"
 msgstr ""
 
 msgid "View raw event"
+msgstr ""
+
+msgid "View transcription"
 msgstr ""
 
 msgid "Vignette"

@@ -1,9 +1,9 @@
-// Voice WAV round trip: what the recorder encodes, the waveform
-// parser must bucket back.
+// Voice WAV encoding preserves the header and recorded PCM.
 // Run: ODIN_ROOT=build/odin-root odin test app
 package main
 
 import "core:testing"
+import "core:encoding/endian"
 
 @(test)
 voice_wav_round_trip :: proc(t: ^testing.T) {
@@ -18,12 +18,10 @@ voice_wav_round_trip :: proc(t: ^testing.T) {
 	testing.expect_value(t, len(wav), 44 + VOICE_RATE * 2)
 	testing.expect_value(t, string(wav[:4]), "RIFF")
 
-	bars := wav_bars(wav)
-	defer delete(bars)
-	testing.expect_value(t, len(bars), VOICE_BARS)
-	testing.expect_value(t, bars[0], 0)
-	testing.expect_value(t, bars[VOICE_BARS - 1], 1) // normalized peak
-
-	// Garbage stays nil (the tile falls back to the plain bar).
-	testing.expect_value(t, len(wav_bars(wav[:20])), 0)
+	count, _ := endian.get_u32(wav[40:], .Little)
+	testing.expect_value(t, count, u32(VOICE_RATE * 2))
+	first, _ := endian.get_u16(wav[44:], .Little)
+	last, _ := endian.get_u16(wav[len(wav)-2:], .Little)
+	testing.expect_value(t, first, u16(0))
+	testing.expect_value(t, last, u16(30000))
 }
