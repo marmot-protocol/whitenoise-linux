@@ -53,10 +53,4 @@ The voice IDs follow the upstream sorted order: F1–F5, then M1–M5.
 ```sh
 SDL_VIDEODRIVER=dummy ./build.sh test
 SDL_VIDEODRIVER=dummy odin test app -define:ODIN_TEST_NAMES=tts_layout
-build/tts-test <cache-dir> F1 'こんにちは。日本語で読み上げます。' ja --bench
-SDL_AUDIODRIVER=dummy build/tts-test <cache-dir> F1 'Ciao. Questo è un messaggio.' it
 ```
-
-The preparation benchmark uses seed 123, verifies cached files and measures
-model loading plus generation of the first chunk. It asserts finite, non-silent
-audio. Downloads, process startup and audio-device setup are excluded.
