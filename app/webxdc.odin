@@ -21,6 +21,7 @@ Xdc_View :: struct {
 	arc:      ^Arc_View, // the unpacked zip, owns the bytes
 	name:     string, // manifest name, else the file name
 	icon:     rl.Texture2D,
+	icon_image: rl.Image, // worker pixels until the UI uploads them
 	has_icon: bool,
 }
 
@@ -44,7 +45,7 @@ xdc_manifest_name :: proc(manifest: string) -> string {
 
 // data ownership transfers to the view. nil = not a webxdc app, and
 // the caller falls back to the plain file chip.
-xdc_view_make :: proc(data: []u8, file_name: string) -> ^Xdc_View {
+xdc_view_make :: proc(data: []u8, file_name: string, phase: Media_Phase = .Present) -> ^Xdc_View {
 	arc := arc_view_make(data)
 	if arc == nil {
 		return nil
@@ -67,6 +68,7 @@ xdc_view_make :: proc(data: []u8, file_name: string) -> ^Xdc_View {
 
 	// index.html is the whole contract: without it there is no app.
 	if !has_index {
+		arc.data = nil // ownership transfers only on success
 		arc_view_free(arc)
 		return nil
 	}
@@ -91,8 +93,12 @@ xdc_view_make :: proc(data: []u8, file_name: string) -> ^Xdc_View {
 			// stbi sniffs the format; the ext hint is unused.
 			image := rl.LoadImageFromMemory(".png", raw_data(bytes), i32(len(bytes)))
 			if image.data != nil {
-				view.icon = rl.LoadTextureFromImage(image)
-				rl.UnloadImage(image)
+				if phase == .Present {
+					view.icon = rl.LoadTextureFromImage(image)
+					rl.UnloadImage(image)
+				} else {
+					view.icon_image = image
+				}
 				view.has_icon = true
 			}
 		}

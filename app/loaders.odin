@@ -6,8 +6,6 @@ import "core:slice"
 import "core:strings"
 import "core:time"
 
-import rl "sdlrl"
-
 import marmot "../marmot"
 
 // Base timeline window; scrolling near the top raises it per chat in
@@ -113,6 +111,18 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 	votes := make(map[string]map[string]Poll_Vote, context.temp_allocator) // poll id → sender → latest
 	thread_counts := make(map[string]int, context.temp_allocator)
 
+	previous := make([]Msg_Ui, len(ui.messages), context.temp_allocator)
+	copy(previous, ui.messages[:])
+	previous_ids := make(map[string]int, context.temp_allocator)
+	group_id := ui.chats[ui.selected].group_id
+	if ui.messages_group == group_id && ui.messages_account == ui.account_ref {
+		for msg, i in previous { previous_ids[msg.id] = i }
+	}
+	delete(ui.messages_group)
+	delete(ui.messages_account)
+	ui.messages_group = strings.clone(group_id)
+	ui.messages_account = strings.clone(ui.account_ref)
+	defer append(&retired_messages, ..previous)
 	clear(&ui.messages)
 	xdc_collect_begin()
 	defer xdc_collect_end()
@@ -223,6 +233,16 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 		label := info.name
 		if len(label) == 0 {
 			label = mine ? "you" : short_hex(sender)
+		}
+
+		if old, found := previous_ids[id_str]; found && len(edits[id_str]) == 0 &&
+			message_matches(previous[old], record, label, info.pic_url) {
+			msg := previous[old]
+			msg.thread_replies = 0
+			if old != len(ui.messages) { msg.row_height = 0 }
+			append(&ui.messages, msg)
+			previous[old] = {} // ownership moved into the new snapshot
+			continue
 		}
 
 		// Other participants' deletions retain their placeholder row.
@@ -352,366 +372,9 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 			msg.reply_text = strings.clone("Original message unavailable")
 		}
 
-		// Fetch and decode image attachments; non-images are skipped.
-		// A session cache keyed by content hash makes reloads (every
-		// live event and every send) free of network work; only the
-		// FIRST sight of a blob downloads.
-		// ponytail: that first fetch still blocks the frame; worker +
-		// encrypted disk cache is the upgrade. Failures cache as nil
-		// so a dead blob can't re-freeze every reload.
+		group := strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator)
 		for j in 0 ..< record.media_len {
-			reference := &record.media[j]
-
-			// 3D models (STL/OBJ) and g-code: same download + session
-			// cache shape as images, but the cached value is a parsed
-			// view drawn in 3D. Other clients send octet-stream, so
-			// match extensions too.
-			name := reference.file_name != nil ? string(reference.file_name) : ""
-			append(&msg.att_names, strings.clone(len(name) > 0 ? name : "attachment"))
-			append(&msg.att_keys, strings.clone(reference.plaintext_sha256 != nil ? string(reference.plaintext_sha256) : name))
-			// A custom :shortcode: image riding along with the body.
-			// It renders inline as the emoji, never as an attachment.
-			if strings.has_prefix(name, EMOJI_ATT_PREFIX) {
-				code := emoji_code(name[len(EMOJI_ATT_PREFIX):])
-				if _, seen := remote_emoji_tex[code]; !seen {
-	if plain, ok := media_load(client, account, strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator), reference); ok {
-						remote_emoji_add(name, plain)
-						delete(plain)
-					}
-				}
-				continue
-			}
-
-			lower := strings.to_lower(name, context.temp_allocator)
-			is_mesh := is_model_name(lower) ||
-				(reference.media_type != nil && strings.has_prefix(string(reference.media_type), "model/"))
-			is_gcode := strings.has_suffix(lower, ".gcode") || strings.has_suffix(lower, ".gco")
-			if is_mesh || is_gcode {
-				key := reference.plaintext_sha256 != nil ? string(reference.plaintext_sha256) : name
-				mesh, mesh_seen := stl_views[key]
-				gcode, gcode_seen := gcode_views[key]
-				if !mesh_seen && !gcode_seen {
-	plain, ok := media_load(client, account, strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator), reference)
-					if ok {
-						defer delete(plain)
-						if is_gcode {
-							if segs, ok := parse_gcode(plain); ok {
-								gcode = gcode_view_make(segs)
-							}
-							gcode_views[strings.clone(key)] = gcode
-						} else {
-							mesh = model_view_make(lower, plain)
-							stl_views[strings.clone(key)] = mesh
-						}
-					} else {
-						fmt.eprintfln("media: download failed (%s): %s", name, marmot.last_error())
-						if is_gcode {
-							gcode_views[strings.clone(key)] = nil
-						} else {
-							stl_views[strings.clone(key)] = nil
-						}
-					}
-				}
-
-				switch {
-				case gcode != nil:
-					append(&msg.gcodes, Att_Item(^Gcode_View){gcode, int(j)})
-				case mesh != nil:
-					append(&msg.models, Att_Item(^Stl_View){mesh, int(j)})
-				case:
-					msg.media_failed = true
-				}
-				continue
-			}
-
-			// Video embeds: same cache pattern, the view owns an mpv
-			// instance playing from the decrypted bytes. GIFs ride the
-			// same path in loop mode, which is what animates them.
-			is_gif := strings.has_suffix(lower, ".gif") ||
-				(reference.media_type != nil && string(reference.media_type) == "image/gif")
-			if is_gif || is_video_name(lower) ||
-			   (reference.media_type != nil && strings.has_prefix(string(reference.media_type), "video/")) {
-				key := reference.plaintext_sha256 != nil ? string(reference.plaintext_sha256) : name
-				if view, seen := video_views[key]; seen {
-					if view != nil {
-						append(&msg.videos, Att_Item(^Video_View){view, int(j)})
-					} else {
-						msg.media_failed = true
-					}
-					continue
-				}
-
-	view: ^Video_View
-				if bytes, ok := media_load(client, account, strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator), reference); ok {
-					view = video_view_make(bytes, is_gif ? .Loop : .Clip)
-				} else {
-					fmt.eprintfln("media: download failed (%s): %s", name, marmot.last_error())
-				}
-
-				video_views[strings.clone(key)] = view
-				if view != nil {
-					append(&msg.videos, Att_Item(^Video_View){view, int(j)})
-				} else {
-					msg.media_failed = true
-				}
-				continue
-			}
-
-			// Audio: same mpv view as video, no frames; the tile draws
-			// the controls. A failed download falls to the file chip.
-			is_audio := strings.has_suffix(lower, ".mp3") || strings.has_suffix(lower, ".ogg") ||
-				strings.has_suffix(lower, ".flac") || strings.has_suffix(lower, ".m4a") ||
-				strings.has_suffix(lower, ".wav") ||
-				(reference.media_type != nil && strings.has_prefix(string(reference.media_type), "audio/"))
-			if is_audio {
-				key := reference.plaintext_sha256 != nil ? string(reference.plaintext_sha256) : name
-				if view, seen := video_views[key]; seen {
-					if view != nil {
-						append(&msg.audios, Att_Item(^Video_View){view, int(j)})
-					} else {
-						append(&msg.files, int(j))
-					}
-					continue
-				}
-
-	view: ^Video_View
-				if bytes, ok := media_load(client, account, strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator), reference); ok {
-					view = video_view_make(bytes, .Audio)
-					blob_sizes[strings.clone(key)] = i64(len(bytes))
-				} else {
-					fmt.eprintfln("media: download failed (%s): %s", name, marmot.last_error())
-				}
-
-				video_views[strings.clone(key)] = view
-				if view != nil {
-					append(&msg.audios, Att_Item(^Video_View){view, int(j)})
-				} else {
-					append(&msg.files, int(j))
-				}
-				continue
-			}
-
-			// PDFs: poppler-rendered pages, same cache pattern.
-			if strings.has_suffix(lower, ".pdf") ||
-			   (reference.media_type != nil && string(reference.media_type) == "application/pdf") {
-				key := reference.plaintext_sha256 != nil ? string(reference.plaintext_sha256) : name
-				if view, seen := pdf_views[key]; seen {
-					if view != nil {
-						append(&msg.pdfs, Att_Item(^Pdf_View){view, int(j)})
-					} else {
-						msg.media_failed = true
-					}
-					continue
-				}
-
-	view: ^Pdf_View
-				if bytes, ok := media_load(client, account, strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator), reference); ok {
-					defer delete(bytes) // g_bytes_new copied
-					view = pdf_view_make(bytes)
-					if view.failed {
-						free(view)
-						view = nil
-					}
-				} else {
-					fmt.eprintfln("media: download failed (%s): %s", name, marmot.last_error())
-				}
-
-				pdf_views[strings.clone(key)] = view
-				if view != nil {
-					append(&msg.pdfs, Att_Item(^Pdf_View){view, int(j)})
-				} else {
-					msg.media_failed = true
-				}
-				continue
-			}
-
-			// Webxdc apps: a zip, but identified as an app rather
-			// than listed as files.
-			if is_xdc_name(lower) {
-				key := reference.plaintext_sha256 != nil ? string(reference.plaintext_sha256) : name
-				view, seen := xdc_views[key]
-				if !seen {
-					if bytes, ok := media_load(client, account, strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator), reference); ok {
-						blob_sizes[strings.clone(key)] = i64(len(bytes))
-						view = xdc_view_make(bytes, name)
-						if view == nil {
-							delete(bytes)
-						}
-					} else {
-						fmt.eprintfln("media: download failed (%s): %s", name, marmot.last_error())
-					}
-					xdc_views[strings.clone(key)] = view
-				}
-				if view != nil {
-					append(&msg.xdcs, Att_Item(^Xdc_View){view, int(j)})
-				} else {
-					append(&msg.files, int(j)) // not a webxdc app: plain chip
-				}
-				continue
-			}
-
-			// Archives: libarchive listing, entries preview on click.
-			is_arc := strings.has_suffix(lower, ".zip") || strings.has_suffix(lower, ".rar") ||
-				strings.has_suffix(lower, ".7z") || strings.has_suffix(lower, ".tar") ||
-				strings.has_suffix(lower, ".tgz") || strings.has_suffix(lower, ".txz") ||
-				strings.has_suffix(lower, ".tbz2") || strings.contains(lower, ".tar.")
-			if is_arc {
-				key := reference.plaintext_sha256 != nil ? string(reference.plaintext_sha256) : name
-				if view, seen := arc_views[key]; seen {
-					if view != nil {
-						append(&msg.arcs, Att_Item(^Arc_View){view, int(j)})
-					} else {
-						append(&msg.files, int(j)) // unreadable: plain chip
-					}
-					continue
-				}
-
-	view: ^Arc_View
-				if bytes, ok := media_load(client, account, strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator), reference); ok {
-					view = arc_view_make(bytes)
-					if view == nil {
-						delete(bytes)
-					}
-					blob_sizes[strings.clone(key)] = i64(len(bytes))
-				} else {
-					fmt.eprintfln("media: download failed (%s): %s", name, marmot.last_error())
-				}
-
-				arc_views[strings.clone(key)] = view
-				if view != nil {
-					append(&msg.arcs, Att_Item(^Arc_View){view, int(j)})
-				} else {
-					append(&msg.files, int(j))
-				}
-				continue
-			}
-
-			// Text and markdown: line-level markdown blocks.
-			if strings.has_suffix(lower, ".md") || strings.has_suffix(lower, ".markdown") || strings.has_suffix(lower, ".txt") {
-				key := reference.plaintext_sha256 != nil ? string(reference.plaintext_sha256) : name
-				if view, seen := txt_views[key]; seen {
-					if view != nil {
-						append(&msg.txts, Att_Item(^Txt_View){view, int(j)})
-					} else {
-						append(&msg.files, int(j))
-					}
-					continue
-				}
-
-	view: ^Txt_View
-				if bytes, ok := media_load(client, account, strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator), reference); ok {
-					defer delete(bytes)
-					view = txt_view_make(string(bytes))
-					blob_sizes[strings.clone(key)] = i64(len(bytes))
-				} else {
-					fmt.eprintfln("media: download failed (%s): %s", name, marmot.last_error())
-				}
-
-				txt_views[strings.clone(key)] = view
-				if view != nil {
-					append(&msg.txts, Att_Item(^Txt_View){view, int(j)})
-				} else {
-					append(&msg.files, int(j))
-				}
-				continue
-			}
-
-			// Source files: the same tile shape, syntax highlighted.
-			if is_code_name(lower) {
-				key := reference.plaintext_sha256 != nil ? string(reference.plaintext_sha256) : name
-				if view, seen := code_views[key]; seen {
-					if view != nil {
-						append(&msg.codes, Att_Item(^Code_View){view, int(j)})
-					} else {
-						append(&msg.files, int(j))
-					}
-					continue
-				}
-
-				view: ^Code_View
-				if bytes, ok := media_load(client, account, strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator), reference); ok {
-					defer delete(bytes)
-					view = code_view_make(lower, string(bytes))
-					blob_sizes[strings.clone(key)] = i64(len(bytes))
-				} else {
-					fmt.eprintfln("media: download failed (%s): %s", name, marmot.last_error())
-				}
-
-				code_views[strings.clone(key)] = view
-				if view != nil {
-					append(&msg.codes, Att_Item(^Code_View){view, int(j)})
-				} else {
-					append(&msg.files, int(j))
-				}
-				continue
-			}
-
-			// Fonts: rasterized type specimen.
-			if strings.has_suffix(lower, ".ttf") || strings.has_suffix(lower, ".otf") {
-				key := reference.plaintext_sha256 != nil ? string(reference.plaintext_sha256) : name
-				if view, seen := ttf_views[key]; seen {
-					if view != nil {
-						append(&msg.fonts, Att_Item(^Ttf_View){view, int(j)})
-					} else {
-						append(&msg.files, int(j))
-					}
-					continue
-				}
-
-	view: ^Ttf_View
-				if bytes, ok := media_load(client, account, strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator), reference); ok {
-					defer delete(bytes) // specimen texture already built
-					view = ttf_view_make(bytes)
-					blob_sizes[strings.clone(key)] = i64(len(bytes))
-				} else {
-					fmt.eprintfln("media: download failed (%s): %s", name, marmot.last_error())
-				}
-
-				ttf_views[strings.clone(key)] = view
-				if view != nil {
-					append(&msg.fonts, Att_Item(^Ttf_View){view, int(j)})
-				} else {
-					append(&msg.files, int(j))
-				}
-				continue
-			}
-
-			// No renderer for this type: a chip says so and offers
-			// the download.
-			if reference.media_type == nil || !strings.has_prefix(string(reference.media_type), "image/") {
-				append(&msg.files, int(j))
-				continue
-			}
-			key := reference.plaintext_sha256 != nil ? string(reference.plaintext_sha256) : string(reference.file_name)
-			if tex, seen := media_textures[key]; seen {
-				if tex != nil {
-					append(&msg.images, Att_Item(^rl.Texture2D){tex, int(j)})
-				} else {
-					append(&msg.img_failed, Att_Item(string){strings.clone(key), int(j)})
-				}
-				continue
-			}
-
-	texture: ^rl.Texture2D
-			if bytes, ok := media_load(client, account, strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator), reference); ok {
-				defer delete(bytes)
-				ext := strings.clone_to_cstring(fmt.tprintf(".%s", strings.trim_prefix(string(reference.media_type), "image/")), context.temp_allocator)
-				image := rl.LoadImageFromMemory(ext, raw_data(bytes), i32(len(bytes)))
-				if image.data != nil {
-					texture = new(rl.Texture2D)
-					texture^ = rl.LoadTextureFromImage(image)
-					rl.UnloadImage(image)
-				}
-			} else {
-				fmt.eprintfln("media: download failed (%s): %s", string(reference.file_name), marmot.last_error())
-			}
-
-			media_textures[strings.clone(key)] = texture
-			if texture != nil {
-				append(&msg.images, Att_Item(^rl.Texture2D){texture, int(j)})
-			} else {
-				append(&msg.img_failed, Att_Item(string){strings.clone(key), int(j)})
-			}
+			media_attach(&msg, client, account, group, &record.media[j], int(j))
 		}
 		append(&ui.messages, msg)
 	}
@@ -734,6 +397,7 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 	}
 
 	apply_pending_reacts(ui)
+	messages_rebind(ui)
 }
 
 // Overlay the in-flight reactions onto the rows just built. An add

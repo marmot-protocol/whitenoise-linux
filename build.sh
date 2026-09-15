@@ -9,6 +9,7 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
+bash "$HERE/scripts/version.sh" >/dev/null
 # One pinned revision out of DEPS_PIN, by name.
 pin() { sed -n "s/^$1-commit = //p" "$HERE/DEPS_PIN"; }
 
@@ -213,6 +214,9 @@ echo "==> Done: $HERE/build/{smoke,app}"
 # `build.sh test` also runs the app package's test procs, which is what CI
 # does after the build.
 if [ "${1:-}" = test ]; then
+  bash "$HERE/scripts/version-test.sh"
+  cc -std=c11 -I"$HERE/vendor/mdk/crates/marmot-c/include" "$HERE/scripts/event-layout-test.c" -o "$HERE/build/event-layout-test"
+  "$HERE/build/event-layout-test"
   cc -O2 -I"$HERE/build/clay" "$HERE/scripts/clay_hashmap_test.c" -lm -o "$HERE/build/clay/hashmap-test"
   "$HERE/build/clay/hashmap-test"
   cc -O2 -Wall -Wextra -I"$TTS/include" "$HERE/scripts/stt-test.c" \

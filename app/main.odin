@@ -30,7 +30,6 @@ import rl "sdlrl"
 
 import marmot "../marmot"
 
-IDLE_MS :: 60 // extra sleep per frame while idle in the background
 
 @(private)
 layout_overflow: bool
@@ -834,7 +833,9 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 		}
 	}
 
-	return clay.EndLayout(frame_time)
+	commands := clay.EndLayout(frame_time)
+	timeline_measure(ui)
+	return commands
 }
 
 // Optimistic row: the confirmed row's shape in dim colors with
@@ -1229,8 +1230,11 @@ main :: proc() {
 	tl_restore: bool
 	tl_offset: f32
 
-	for !rl.WindowShouldClose() {
+	frame_input: bool
+	for !rl.WindowShouldClose(&frame_input) {
 		defer free_all(context.temp_allocator)
+		defer messages_collect()
+		defer { if wrap_flush { wrap_clear() } }
 		poll_system_theme(&ui, rl.GetTime())
 
 		focused := rl.IsWindowFocused()
@@ -1240,6 +1244,7 @@ main :: proc() {
 		focused_was = focused
 
 		anim_tick(rl.GetFrameTime())
+		frame_deadline = rl.GetTime() + f64(IDLE_REFRESH_MS) / 1000
 
 		// A monitor change can bring a new pixel density; glyphs baked
 		// for the old one would draw scaled. Cheap check, rare hit.
@@ -1262,6 +1267,7 @@ main :: proc() {
 		start_live(&live, client, ui.account_ref) // no-op once running
 		live_tick(&live, &ui, client) // poll fallback when the stream stalls
 		drain_live(&live, &ui, client)
+		media_drain(&ui)
 		agent_tick(&ui, tl_at_bottom ? .Follow : .Hold)
 		drain_sends(&ui, client)
 		tts_tick(&ui)
@@ -1789,11 +1795,10 @@ main :: proc() {
 
 		cursor_apply() // every raise for this frame is in by now
 
-		// Background window with nothing moving: stop burning a vsynced
-		// frame every 16ms. The focused window always runs at full rate,
-		// so nothing the user is looking at can feel sluggish.
-		if anim_moving == 0 && !rl.IsWindowFocused() {
-			rl.Wait(IDLE_MS)
+		// Present handler changes on the next frame before sleeping. Input
+		// and worker events wake immediately; timers poll at most 4 Hz.
+		if !shot && !frame_input && frame_idle() {
+			rl.Wait(u32(clamp((frame_deadline - rl.GetTime()) * 1000, 1, f64(IDLE_REFRESH_MS))))
 		}
 
 		frame += 1
@@ -1964,6 +1969,7 @@ main :: proc() {
 	}
 
 	// Persist the open chat's half-written draft across restarts.
+	messages_collect()
 	stt_stop(&ui)
 	tts_stop(&ui)
 	stash_draft(&ui)
@@ -1974,6 +1980,7 @@ main :: proc() {
 	// freed before the client that created it.
 	if client != nil {
 		marmot.client_shutdown(client)
+		media_stop()
 		agent_shutdown()
 		if live.worker != nil {
 			thread.join(live.worker)
@@ -1987,5 +1994,12 @@ main :: proc() {
 		}
 		marmot.client_free(client)
 	}
+	delete(live.account)
+	for msg in ui.messages { message_free(msg) }
+	delete(ui.messages)
+	delete(ui.messages_group)
+	delete(ui.messages_account)
+	wrap_clear()
+	delete(wrap_cache)
 	rl.CloseWindow()
 }

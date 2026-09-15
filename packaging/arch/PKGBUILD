@@ -10,7 +10,7 @@
 # install-tree.sh lays out /usr/bin + /usr/share/whitenoise-linux, the
 # same tree the AppImage and Flatpak carry (see res_dir in app/paths.odin).
 pkgname=whitenoise-linux-git
-pkgver=r0
+pkgver=2026.9.15.1.r0
 pkgrel=1
 pkgdesc="End-to-end encrypted group chat over Nostr (Marmot client)"
 arch=(x86_64)
@@ -40,7 +40,9 @@ sha256sums=(SKIP)
 
 pkgver() {
   cd "$pkgname"
-  printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+  local version
+  version="$(bash scripts/version.sh)"
+  printf "%s.r%s.%s" "${version/+/.}" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
 }
 
 build() {

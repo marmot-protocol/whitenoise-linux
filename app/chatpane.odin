@@ -154,6 +154,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 					if len(cur) > 0 {
 						thread_root_plate(ui)
 					}
+					ui.timeline_metric = {body_wrap_w(), UI_SCALE, R_SCALE, chip_h()}
 					for msg, i in ui.messages {
 						if msg.thread_of != cur {
 							continue
@@ -176,6 +177,10 @@ chat_pane :: proc(ui: ^Ui_State) {
 						}
 						if msg.system {
 							system_row(u32(i), msg)
+						} else if timeline_skip(ui, msg) {
+							if clay.UI(clay.ID("MsgRow", u32(i)))(
+							{layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(msg.row_height)}}},
+							) {}
 						} else {
 							message_row(u32(i), msg)
 						}

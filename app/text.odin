@@ -126,10 +126,12 @@ SPECIMEN_SIZES := []f32{30, 20, 14}
 
 // nil when stb can't parse the font.
 ttf_view_make :: proc(data: []u8) -> ^Ttf_View {
-	tex := rl.FontSpecimen(data, SPECIMEN_LINES, SPECIMEN_SIZES, clay_color(TEXT), 640)
-	if tex.width == 0 {
+	image := rl.FontSpecimen(data, SPECIMEN_LINES, SPECIMEN_SIZES, clay_color(TEXT), 640)
+	if image.data == nil {
 		return nil
 	}
+	defer delete(([^]u8)(image.data)[:image.width * image.height * 4])
+	tex := rl.LoadTextureFromImage(image)
 	view := new(Ttf_View)
 	view^ = {tex = tex, w = tex.width, h = tex.height}
 	return view

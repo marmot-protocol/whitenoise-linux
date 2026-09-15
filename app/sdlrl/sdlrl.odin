@@ -332,9 +332,9 @@ SavedFiles :: proc() -> [dynamic]string {
 	return out
 }
 
-// Rasterize sample lines of an in-memory font into one texture (the
+// Rasterize sample lines of an in-memory font into owned RGBA pixels (the
 // .ttf attachment preview). Returns {} when stb can't parse the file.
-FontSpecimen :: proc(data: []u8, lines: []string, sizes: []f32, color: Color, width: i32) -> Texture2D {
+FontSpecimen :: proc(data: []u8, lines: []string, sizes: []f32, color: Color, width: i32) -> Image {
 	info: stbtt.fontinfo
 	offset := stbtt.GetFontOffsetForIndex(raw_data(data), 0)
 	if offset < 0 || !bool(stbtt.InitFont(&info, raw_data(data), offset)) {
@@ -347,7 +347,7 @@ FontSpecimen :: proc(data: []u8, lines: []string, sizes: []f32, color: Color, wi
 		total += i32(size * 1.5)
 	}
 
-	canvas := make([]u8, int(width) * int(total) * 4, context.temp_allocator)
+	canvas := make([]u8, int(width) * int(total) * 4)
 	y := pad
 	for line, li in lines {
 		size := sizes[li]
@@ -391,14 +391,7 @@ FontSpecimen :: proc(data: []u8, lines: []string, sizes: []f32, color: Color, wi
 		y += size * 1.5
 	}
 
-	tex := sdl.CreateTexture(state.renderer, .RGBA32, .STATIC, width, total)
-	if tex == nil {
-		return {}
-	}
-	sdl.UpdateTexture(tex, nil, raw_data(canvas), width * 4)
-	sdl.SetTextureBlendMode(tex, {.BLEND})
-	sdl.SetTextureScaleMode(tex, .LINEAR)
-	return {tex = tex, width = width, height = total}
+	return {data = raw_data(canvas), width = width, height = total}
 }
 
 // ── Tray ────────────────────────────────────────────────────────────
@@ -515,7 +508,8 @@ IsWindowFocused :: proc() -> bool {
 }
 
 // Pumps events and refreshes per-frame input state.
-WindowShouldClose :: proc() -> bool {
+WindowShouldClose :: proc(changed: ^bool = nil) -> bool {
+	if changed != nil { changed^ = false }
 	for key in KeyboardKey {
 		state.pressed[key] = false
 		state.repeated[key] = false
@@ -535,6 +529,7 @@ WindowShouldClose :: proc() -> bool {
 
 	event: sdl.Event
 	for sdl.PollEvent(&event) {
+		if changed != nil { changed^ = true }
 		#partial switch event.type {
 		case .WINDOW_CLOSE_REQUESTED:
 			if hide_on_close {
@@ -703,10 +698,9 @@ GetScreenHeight :: proc() -> i32 {
 	return i32(h)
 }
 
-// Give the CPU back for a moment. Used to idle the loop when nothing
-// is animating and the window is in the background.
+// Leave events queued for WindowShouldClose, waking immediately on input.
 Wait :: proc(ms: u32) {
-	sdl.Delay(ms)
+	_ = sdl.WaitEventTimeout(nil, i32(ms))
 }
 
 GetFrameTime :: proc() -> f32 {

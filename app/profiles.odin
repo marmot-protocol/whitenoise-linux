@@ -167,6 +167,7 @@ refresh_worker :: proc(_: ^thread.Thread) {
 		sync.lock(&refresh_mutex)
 		append(&refresh_done, hex)
 		sync.unlock(&refresh_mutex)
+		frame_wake()
 	}
 }
 
@@ -346,6 +347,7 @@ pic_worker :: proc(_: ^thread.Thread) {
 		sync.lock(&pic_mutex)
 		append(&pic_done, Fetched_Pic{url = url, data = data})
 		sync.unlock(&pic_mutex)
+		frame_wake()
 	}
 }
 

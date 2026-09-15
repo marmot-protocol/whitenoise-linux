@@ -128,6 +128,7 @@ agent_worker :: proc(t: ^thread.Thread) {
 		}
 		p.done = true
 		sync.unlock(&p.mutex)
+		frame_wake()
 	}
 	account := strings.clone_to_cstring(p.account)
 	group := strings.clone_to_cstring(p.group)
@@ -161,6 +162,7 @@ agent_worker :: proc(t: ^thread.Thread) {
 		agent_apply(p, update)
 		sync.unlock(&p.mutex)
 		marmot.agent_stream_update_free(update)
+		frame_wake()
 	}
 }
 
@@ -269,10 +271,13 @@ agent_tick :: proc(ui: ^Ui_State, scroll: enum { Follow, Hold }) {
 		sel_clear(ui)
 		sync.lock(&p.mutex)
 		if p.cancel || p.failed {
+			append(&retired_messages, msg^)
 			ordered_remove(&ui.messages, i)
+			messages_rebind(ui)
 		} else {
 			delete(msg.body)
 			msg.body = strings.clone(string(p.text[:]))
+			msg.row_height = 0
 		}
 		sync.unlock(&p.mutex)
 		if scroll == .Follow {

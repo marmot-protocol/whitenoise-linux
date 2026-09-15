@@ -68,10 +68,13 @@ wash_draw :: proc(bounds: clay.BoundingBox) {
 decor_payload :: proc() -> rawptr {
 	switch BACKDROP {
 	case "synth":
+		anim_moving += 1
 		return &synth_decor
 	case "dust":
+		anim_moving += 1
 		return &dust_decor
 	case "scan":
+		anim_moving += 1
 		return &scan_decor
 	case "deco":
 		return &deco_decor
@@ -80,6 +83,7 @@ decor_payload :: proc() -> rawptr {
 	case "stripes":
 		return &stripes_decor
 	case "waves":
+		anim_moving += 1
 		return &waves_decor
 	case "airmail":
 		return &airmail_decor

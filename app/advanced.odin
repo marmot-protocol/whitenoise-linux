@@ -18,7 +18,7 @@ import clay "../vendor/clay/bindings/odin/clay-odin"
 
 import marmot "../marmot"
 
-APP_VERSION :: "0.1.0" // mirrors the workspace Cargo.toml
+APP_VERSION :: "2026.9.15+1" // YYYY.M.D + increasing build revision
 
 // Endpoints and tokens, embedded like the slint app does. Not secret.
 OBSERVABILITY_TOML :: #load("../observability.toml", string)

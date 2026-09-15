@@ -171,6 +171,7 @@ nev_cache_path :: proc(id: string) -> string {
 
 @(private = "file")
 nev_worker :: proc(job: ^Nev_Job) {
+	defer frame_wake()
 	defer {
 		for r in job.relays {
 			delete(r)
@@ -286,6 +287,7 @@ nev_img_path :: proc(url: string) -> string {
 // the bytes to drain_nev for the texture upload.
 @(private = "file")
 nev_img_worker :: proc(url: string) {
+	defer frame_wake()
 	path := nev_img_path(url)
 	if !os.exists(path) {
 		os.make_directory(fmt.tprintf("%s/events", data_home))

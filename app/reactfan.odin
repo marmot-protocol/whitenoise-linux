@@ -15,6 +15,7 @@
 package main
 
 import "core:math"
+import "core:strings"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -83,10 +84,12 @@ handle_react_fan :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			message_op(ui, client, .React, fan.msg_id, ui.prefs.quick_reactions[fan.hover])
 			drag_moved = true // this release was a gesture, not a click
 		}
+		delete(fan.msg_id)
 		fan = {hover = -1}
 		return
 	}
 	if !rl.IsMouseButtonDown(.LEFT) {
+		delete(fan.msg_id)
 		fan = {hover = -1}
 		return
 	}
@@ -104,6 +107,7 @@ handle_react_fan :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if rl.IsMouseButtonPressed(.LEFT) {
+		delete(fan.msg_id)
 		fan = {at = at, held = rl.GetTime(), hover = -1}
 		// Only over a message, and only where a reaction means anything.
 		if !motion_on() || modal_open(ui) || ui.ctx_open || len(ui.prefs.quick_reactions) == 0 {
@@ -113,7 +117,7 @@ handle_react_fan :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		fan.msg_id = ""
 		for msg, i in ui.messages {
 			if clay.PointerOver(clay.ID("MsgRow", u32(i))) && !msg.deleted {
-				fan.msg_id = msg.id
+				fan.msg_id = strings.clone(msg.id)
 				break
 			}
 		}

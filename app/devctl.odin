@@ -87,6 +87,7 @@ devctl_poll :: proc(ui: ^Ui_State, client: ^marmot.Client, frame: int, pointer: 
 	if os.get_env("WN_DEV_CMD", context.temp_allocator) == "" {
 		return
 	}
+	anim_moving += 1 // frame-indexed automation keeps its normal cadence
 	if frame %% DEV_POLL_FRAMES == 0 {
 		devctl_read(ui, client, frame)
 	}

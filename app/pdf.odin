@@ -60,7 +60,7 @@ Pdf_View :: struct {
 	failed: bool,
 }
 
-pdf_view_make :: proc(data: []u8) -> ^Pdf_View {
+pdf_view_make :: proc(data: []u8, phase: Media_Phase = .Present) -> ^Pdf_View {
 	view := new(Pdf_View)
 
 	bytes := g_bytes_new(raw_data(data), c.size_t(len(data)))
@@ -76,14 +76,14 @@ pdf_view_make :: proc(data: []u8) -> ^Pdf_View {
 		view.failed = true
 		return view
 	}
-	pdf_render_page(view)
+	pdf_render_page(view, phase)
 	return view
 }
 
 // Render the current page: white background, page scaled to
 // PDF_TEX_W, cairo's premultiplied BGRA swizzled to RGBA (alpha is
 // opaque thanks to the background paint).
-pdf_render_page :: proc(view: ^Pdf_View) {
+pdf_render_page :: proc(view: ^Pdf_View, phase: Media_Phase = .Present) {
 	page := poppler_document_get_page(view.doc, c.int(view.page))
 	if page == nil {
 		view.failed = true
@@ -127,8 +127,10 @@ pdf_render_page :: proc(view: ^Pdf_View) {
 	}
 
 	view.w, view.h = i32(w), i32(h)
-	rl.UnloadTexture(view.tex)
-	view.tex = rl.LoadTextureFromImage(rl.Image{data = raw_data(view.pix), width = view.w, height = view.h})
+	if phase == .Present {
+		rl.UnloadTexture(view.tex)
+		view.tex = rl.LoadTextureFromImage(rl.Image{data = raw_data(view.pix), width = view.w, height = view.h})
+	}
 }
 
 pdf_view_free :: proc(view: ^Pdf_View) {

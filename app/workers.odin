@@ -14,14 +14,14 @@ import marmot "../marmot"
 
 @(private)
 Live_Change :: struct {
-	group, message: string,
+	group, message, account: string,
 	at: time.Tick,
 }
 
 Live :: struct {
 	mutex:          sync.Mutex,
+	account:        string,
 	dirty:          bool, // chat list changed
-	timeline_dirty: bool, // any runtime event; reload the open timeline
 	dirty_groups:   [dynamic]Live_Change, // group ids with changed rows
 	sub:            ^marmot.Chat_List_Subscription,
 	worker:         ^thread.Thread,
@@ -48,11 +48,13 @@ live_worker :: proc(t: ^thread.Thread) {
 		message := row.last_message != nil ? row.last_message.message_id_hex : nil
 		append(&live.dirty_groups, Live_Change{
 			group = strings.clone(string(row.group_id_hex)),
+			account = strings.clone(live.account),
 			message = message != nil ? strings.clone(string(message)) : "",
 			at = received_at,
 		})
 		sync.unlock(&live.mutex)
 		marmot.chat_list_row_free(row)
+		frame_wake()
 	}
 }
 
@@ -60,7 +62,7 @@ live_worker :: proc(t: ^thread.Thread) {
 // moves last_id and the preview). A reaction, edit, or deletion in the
 // open chat changes neither, so it never woke the UI: the timeline
 // stayed stale until a chat switch reloaded it by hand. The firehose
-// covers those; items are freed unread, arrival is the whole signal.
+// covers those, scoped to the account and group in each event.
 events_worker :: proc(t: ^thread.Thread) {
 	live := (^Live)(t.data)
 	for {
@@ -72,11 +74,28 @@ events_worker :: proc(t: ^thread.Thread) {
 		if status != .OK {
 			continue
 		}
-		marmot.event_free(event)
+		defer marmot.event_free(event)
+		group: cstring
+		switch event.tag {
+		case .Message_Received:
+			group = event.body.message.group
+		case .Group_Joined, .Group_State_Updated, .Projection_Updated,
+		     .Group_Event, .Welcome_Delivery_Pending, .Epoch_Stall_Escalated,
+		     .Group_Change_Superseded:
+			group = event.body.group.group
+		case .Account_Error, .Agent_Stream_Activity:
+			continue
+		}
+		if group == nil {
+			continue
+		}
 		sync.lock(&live.mutex)
-		live.dirty = true
-		live.timeline_dirty = true
+		append(&live.dirty_groups, Live_Change{
+			group = strings.clone(string(group)),
+			account = strings.clone(string(event.body.group.account)),
+		})
 		sync.unlock(&live.mutex)
+		frame_wake()
 	}
 }
 
@@ -90,6 +109,7 @@ start_live :: proc(live: ^Live, client: ^marmot.Client, account_ref: string) {
 		return
 	}
 	live.worker = thread.create(live_worker)
+	live.account = strings.clone(account_ref)
 	live.worker.data = live
 	thread.start(live.worker)
 
@@ -183,10 +203,13 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 	dirty := live.dirty
 	live.dirty = false
 	received := make(map[string]time.Tick, context.temp_allocator)
-	timeline_hit := live.timeline_dirty && ui.selected >= 0
-	live.timeline_dirty = false
-	if ui.selected >= 0 {
-		for group in live.dirty_groups {
+	timeline_hit := false
+	for group in live.dirty_groups {
+		if group.account != ui.account_ref {
+			continue
+		}
+		dirty = true
+		if ui.selected >= 0 {
 			if group.group == ui.chats[ui.selected].group_id {
 				if len(group.message) > 0 && !(group.message in received) {
 					received[strings.clone(group.message, context.temp_allocator)] = group.at
@@ -199,6 +222,7 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 	for group in live.dirty_groups {
 		delete(group.group)
 		delete(group.message)
+		delete(group.account)
 	}
 	clear(&live.dirty_groups)
 	sync.unlock(&live.mutex)
@@ -390,6 +414,7 @@ send_thread_media :: proc(job: ^Send_Job, result: ^marmot.Media_Upload_Result, i
 }
 
 send_worker :: proc(t: ^thread.Thread) {
+	defer frame_wake()
 	job := (^Send_Job)(t.data)
 	status: marmot.Status
 	ids: [dynamic]string
@@ -728,6 +753,7 @@ ops_done: [dynamic]Op_Done
 op_ticket: int
 
 op_worker :: proc(t: ^thread.Thread) {
+	defer frame_wake()
 	job := (^Op_Job)(t.data)
 	summary: ^marmot.Send_Summary
 	status: marmot.Status
@@ -942,6 +968,7 @@ probe_key_package :: proc(ui: ^Ui_State, client: ^marmot.Client, hex: string) {
 
 @(private = "file")
 kp_worker :: proc(t: ^thread.Thread) {
+	defer frame_wake()
 	job := (^Kp_Job)(t.data)
 	summary: ^marmot.Member_Key_Package_Prewarm_Summary
 	account := strings.clone_to_cstring(job.account, context.temp_allocator)
@@ -1108,6 +1135,7 @@ Rel_Job :: struct {
 
 @(private = "file")
 rel_worker :: proc(t: ^thread.Thread) {
+	defer frame_wake()
 	job := (^Rel_Job)(t.data)
 	lists: ^marmot.Account_Relay_Lists
 	id := strings.clone_to_cstring(job.hex, context.temp_allocator)
@@ -1178,6 +1206,7 @@ auth_done: bool
 
 @(private = "file")
 auth_worker :: proc(t: ^thread.Thread) {
+	defer frame_wake()
 	job := (^Auth_Job)(t.data)
 	// marmot's last_error is thread-local, so the message is built here.
 	if len(job.nsec) > 0 {

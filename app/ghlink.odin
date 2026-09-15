@@ -100,6 +100,7 @@ gh_key :: proc(ref: Gh_Ref, allocator := context.temp_allocator) -> string {
 
 @(private = "file")
 gh_worker :: proc(key: string) {
+	defer frame_wake()
 	url := fmt.aprintf("%s%s", GH_API, key)
 	defer delete(url)
 	state, out, _, err := os.process_exec(

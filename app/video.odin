@@ -115,7 +115,7 @@ Video_Mode :: enum {
 	Audio, // clip behavior, but no video track to render
 }
 
-video_view_make :: proc(data: []u8, mode: Video_Mode = .Clip) -> ^Video_View {
+video_view_make :: proc(data: []u8, mode: Video_Mode = .Clip, phase: Media_Phase = .Present) -> ^Video_View {
 	view := new(Video_View)
 	view.data = data
 	view.paused = mode != .Loop
@@ -129,7 +129,9 @@ video_view_make :: proc(data: []u8, mode: Video_Mode = .Clip) -> ^Video_View {
 	}
 	view.w, view.h = 320, 180
 	view.buf = make([]u8, int(view.w) * int(view.h) * 4)
-	view.tex = rl.CreateStreamTexture(view.w, view.h)
+	if phase == .Present {
+		view.tex = rl.CreateStreamTexture(view.w, view.h)
+	}
 
 	view.mpv = mpv_create()
 	if view.mpv == nil {
@@ -179,7 +181,7 @@ video_view_make :: proc(data: []u8, mode: Video_Mode = .Clip) -> ^Video_View {
 	}
 	if ok {
 		cmd := [3]cstring{"loadfile", "wnl://chat", nil}
-		ok = mpv_command(view.mpv, &cmd[0]) == 0
+		ok = mpv_command_async(view.mpv, 0, &cmd[0]) == 0
 	}
 	if !ok {
 		view.failed = true

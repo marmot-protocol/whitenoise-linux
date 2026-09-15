@@ -847,6 +847,13 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 		}
 
 		md_blocks(msg.blocks[:], index * 4096, true)
+		for att in msg.media_pending {
+			if clay.UI(clay.ID("MediaLoading", index * 1024 + u32(att.index)))(
+			{layout = {padding = clay.PaddingAll(12)}, backgroundColor = PLATE, cornerRadius = rr(6)},
+			) {
+				clay.Text(tr("Loading…"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
+			}
+		}
 
 		gh_cards_on = false
 
@@ -946,13 +953,15 @@ caret :: proc(h: f32 = 16) {
 		caret_box.width = CARET_W
 	}
 	alpha := f32(1)
-	if since := rl.GetTime() - caret_at; since > CARET_SOLID && motion_on() {
-		// A cosine clipped above 1: on for most of the cycle, with the
-		// edges softened. A hard toggle reads as a glitch next to
-		// everything else that moves here.
-		TAU :: 6.28318530717959
-		phase := since - f64(i64(since / CARET_BLINK)) * CARET_BLINK
-		alpha = clamp(1.8 * (0.5 + 0.5 * sin_approx(phase * TAU / CARET_BLINK + TAU / 4)), 0, 1)
+	if motion_on() {
+		// Timer-driven blink lets the rest of a focused chat sleep.
+		next := caret_at + CARET_SOLID
+		if now := rl.GetTime(); now >= next {
+			phase := i64((now - next) / (CARET_BLINK / 2))
+			alpha = phase % 2 == 0 ? 0 : 1
+			next += f64(phase + 1) * (CARET_BLINK / 2)
+		}
+		frame_deadline = min(frame_deadline, next)
 	}
 	if clay.UI(clay.ID_LOCAL("Caret"))(
 	{layout = {sizing = {width = clay.SizingFixed(0), height = clay.SizingFixed(h)}}},
@@ -1240,6 +1249,7 @@ render_segs :: proc(id: u32, segs: []Inline_Seg, font_size: u16, color: clay.Col
 				clay.Text(fmt.tprintf("@%s", mention_label(seg.hex)), {fontId = FONT_TITLE, fontSize = font_size, textColor = {255, 255, 255, 235}})
 			}
 		} else if seg.fx != 0 {
+			anim_moving += 1
 			// The glyph sits in a fixed cell sized to its own text plus
 			// the motion budget, and moves by padding inside it: motion
 			// never disturbs the line's spacing, and (unlike the
@@ -1529,35 +1539,14 @@ md_blocks :: proc(blocks: []Md_Block_Ui, id_base: u32, selectable := false, wrap
 // whose container clay can't wrap into (reply previews, edit history).
 body_text :: proc(id: u32, text: string, font_size: u16, color: clay.Color, selectable := false, wrap_w: f32 = 0) {
 	wrap := wrap_w > 0 ? wrap_w : (selectable ? body_wrap_w() : 0)
-	start := 0
-	i := u32(0)
-	for {
-		end := len(text)
-		if nl := strings.index_byte(text[start:], '\n'); nl >= 0 {
-			end = start + nl
+	for line in wrapped_lines(text, wrap, font_size) {
+		line_id := id * 8 + line.index
+		if selectable {
+			sel_register(line_id, id, line.start, text[line.start:line.end], text, font_size)
+			body_line(line_id, text[line.start:line.end], font_size, color, sel_range(id, line.start, line.end - line.start), true)
+		} else {
+			body_line(line_id, text[line.start:line.end], font_size, color)
 		}
-		at := start
-		for at < end {
-			cut := wrap > 0 ? wrap_break(text, at, end, wrap, font_size) : end
-			line_id := id * 8 + i
-			i += 1
-			if selectable {
-				sel_register(line_id, id, at, text[at:cut], text, font_size)
-				body_line(line_id, text[at:cut], font_size, color, sel_range(id, at, cut - at), true)
-			} else {
-				body_line(line_id, text[at:cut], font_size, color)
-			}
-			at = cut
-			// A break at a space swallows it, like every wrapper.
-			if at < end && text[at] == ' ' {
-				at += 1
-			}
-		}
-		if end == len(text) {
-			break
-		}
-		start = end + 1
-		i += 1
 	}
 }
 

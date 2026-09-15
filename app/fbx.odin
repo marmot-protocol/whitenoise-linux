@@ -202,6 +202,7 @@ advance_models :: proc(dt: f32) {
 		if !insp.playing || insp.anim < 0 {
 			continue
 		}
+		anim_moving += 1
 		insp.time += f64(dt)
 		if insp.time > insp.t1 {
 			insp.time = insp.t0 + (insp.time - insp.t1)

@@ -1,4 +1,4 @@
-# Release: triggered by pushing a `v*` tag (e.g. v0.2.0). Builds the app
+# Release: triggered by a `v*` tag (e.g. v2026.9.15-build.1). Builds the app
 # twice, as a self-contained AppImage and as a Flatpak bundle, and
 # publishes both on a GitHub Release.
 #
@@ -41,6 +41,9 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+
+      - name: Check release version
+        run: bash scripts/version.sh "$GITHUB_REF_NAME"
 
       # The app's own deps, plus the file/desktop utils linuxdeploy
       # expects.
@@ -162,6 +165,9 @@ jobs:
       options: --privileged
     steps:
       - uses: actions/checkout@v4
+
+      - name: Check release version
+        run: bash scripts/version.sh "$GITHUB_REF_NAME"
 
       # The app module needs network during the build (build.sh clones
       # mdk/clay/ufbx, cargo fetches crates), which the manifest declares

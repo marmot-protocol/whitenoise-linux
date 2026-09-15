@@ -248,6 +248,8 @@ Md_Block_Ui :: struct {
 }
 
 Msg_Ui :: struct {
+	row_height, row_top: f32,
+	row_measure: [4]f32, // width, pixel scale, corner scale, action height
 	visible_since: time.Tick, // live observation until first presented row
 	id:        string, // message_id_hex
 	sender:    string, // display label: kind-0 name, else short hex / "you"
@@ -287,6 +289,7 @@ Msg_Ui :: struct {
 	deleted:   bool, // tombstone: placeholder row, no body/actions
 	edited:    bool, // kind-1009 edits applied; body holds the latest
 	media_failed: bool, // an image attachment failed to download
+	media_pending: [dynamic]Media_Pending,
 	effect:    int, // ["effect", key] burst id from the event tags, 0 = none
 	history:   [dynamic]Edit_Version,
 	poll_opts: [dynamic]Poll_Opt_Ui, // kind-1068 options + tally; empty = not a poll
@@ -359,6 +362,8 @@ Profile_Ui :: struct {
 }
 
 Ui_State :: struct {
+	timeline_metric: [4]f32,
+	messages_group, messages_account: string,
 	account_ref:   string, // active account's full hex; "" when logged out
 	account_ids:   [dynamic]string, // full hex per switcher row
 	accounts:      [dynamic]string, // kind-0 name (else truncated hex) per row

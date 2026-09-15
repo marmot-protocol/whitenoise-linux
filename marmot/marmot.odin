@@ -113,12 +113,21 @@ Secret_Store :: struct {
 // Opaque subscription handle; free before the client that created it.
 Chat_List_Subscription :: struct {}
 
-// Opaque handles for the runtime-event firehose. The event payload is
-// a tagged union we deliberately don't mirror: the app only uses an
-// event's arrival as a wake signal, so items stay opaque and are freed
-// unread.
+// Opaque handle for the runtime-event firehose.
 Events_Subscription :: struct {}
-Runtime_Event :: struct {}
+// Borrowed prefix view of MarmotEvent. Only read fields selected by tag;
+// the runtime owns the full union and event_free releases it.
+Runtime_Event :: struct {
+	tag: enum i32 {
+		Group_Joined, Group_State_Updated, Message_Received, Projection_Updated,
+		Group_Event, Account_Error, Agent_Stream_Activity, Welcome_Delivery_Pending,
+		Epoch_Stall_Escalated, Group_Change_Superseded,
+	},
+	body: struct #raw_union {
+		group: struct {account, label, group: cstring},
+		message: struct {account, label, message, group: cstring},
+	},
+}
 
 Agent_Stream_Subscription :: struct {}
 Agent_Stream_Update :: struct {

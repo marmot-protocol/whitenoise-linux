@@ -122,7 +122,8 @@ jobs:
           # No -u here, unlike the release: a staging build must not point
           # AppImageUpdate at the stable release channel.
           short="${GITHUB_SHA:-unknown}"; short="${short:0:8}"
-          out="WhiteNoise-staging-${short}-x86_64.AppImage"
+          version="$(bash scripts/version.sh)"
+          out="WhiteNoise-${version}-staging-${short}-x86_64.AppImage"
           ./appimagetool AppDir "$out"
           echo "APPIMAGE_NAME=$out" >> "$GITHUB_ENV"
 

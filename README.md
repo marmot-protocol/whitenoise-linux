@@ -84,6 +84,15 @@ On Arch, `packaging/arch/PKGBUILD` builds a `whitenoise-linux-git` package again
 cd packaging/arch && makepkg -si
 ```
 
+### Versioning
+
+`APP_VERSION` in `app/advanced.odin` is `YYYY.M.D+REVISION`, starting at
+`2026.9.15+1`. Like Android and iOS, the date is the release date and the
+numeric revision increases for every shipment, including on a new date.
+Set it before releasing and tag that commit `vYYYY.M.D-build.REVISION`
+(for example, `v2026.9.15-build.1`). Never reuse a published tag.
+About, diagnostics, AppImage, Flatpak, and Arch packaging use this version.
+
 ## Build from source
 
 You need the [Odin compiler](https://odin-lang.org/docs/install/), a C compiler, and a Rust toolchain (Marmot's C bundle is built from source). Plus SDL3 and the media libraries the viewers bind.

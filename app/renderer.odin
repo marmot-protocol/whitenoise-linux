@@ -73,6 +73,7 @@ boil :: proc(id: u32, edge: u32) -> f32 {
 	if !PAPER_DECOR {
 		return 0
 	}
+	frame_deadline = min(frame_deadline, (f64(u64(rl.GetTime() * BOIL_HZ)) + 1) / BOIL_HZ)
 	h := (id ~ (edge * 0x9e3779b9) ~ (u32(rl.GetTime() * BOIL_HZ) * 0x85ebca6b)) * 0xc2b2ae35
 	h ~= h >> 15
 	return (f32(h % 1000) / 500 - 1) * BOIL_AMP
