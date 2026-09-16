@@ -61,6 +61,7 @@ Code_Lang :: struct {
 
 @(private = "file")
 CODE_LANGS := []Code_Lang {
+	{"Text", {".txt", ".log"}, "", "", ""},
 	{"Odin", {".odin"}, "//", "/*", "*/"},
 	{
 		"C-like",
@@ -95,8 +96,7 @@ CODE_KEYWORDS := []string {
 	"yield",
 }
 
-// Source files the previewer highlights. Markdown and plain text keep
-// the existing block renderer.
+// Line-oriented previews. Only Markdown uses the block renderer.
 is_code_name :: proc(lower: string) -> bool {
 	return code_lang_for(lower) != nil
 }
@@ -146,6 +146,10 @@ code_view_make :: proc(name: string, text: string) -> ^Code_View {
 @(private = "file")
 code_runs :: proc(line: string, lang: ^Code_Lang, in_block: ^bool) -> []Code_Run {
 	runs := make([dynamic]Code_Run)
+	if lang.line == "" {
+		append(&runs, Code_Run{line, .Plain})
+		return runs[:]
+	}
 	i := 0
 	plain_start := 0
 

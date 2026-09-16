@@ -1,4 +1,4 @@
-// Text attachments (.md/.txt) rendered as markdown, and font
+// Markdown attachments (.md/.markdown), and font
 // attachments (.ttf/.otf) rendered as a type specimen.
 //
 // The markdown here is line-level: headings, fenced code, quotes,

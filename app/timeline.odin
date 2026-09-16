@@ -766,27 +766,27 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 			xdc_tile(entry.view, index * 1024 + u32(j), msg.id, entry.att, msg.att_names[entry.att])
 		}
 
-		// Text/markdown tiles: the shared block renderer on a plate.
+		// Markdown tiles: wrap to the plate, with a bounded scroll area.
 		if entry, j, found := media_at(msg.txts[:], &text_pos, att); found {
 			view := entry.view
 			if clay.UI(clay.ID("MsgTxt", index * 1024 + u32(j)))(
-			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(att_w())}, padding = clay.PaddingAll(10), childGap = 6}, backgroundColor = PLATE, cornerRadius = rr(8)},
+			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(att_w()), height = clay.SizingFit({max = 320})}, padding = clay.PaddingAll(10), childGap = 6}, clip = {horizontal = true, vertical = true, childOffset = clay.GetScrollOffset()}, backgroundColor = PLATE, cornerRadius = rr(8)},
 			) {
 				att_dl_button("DlTxt", index * 1024 + u32(j), msg.id, entry.att, msg.att_names[entry.att])
 				shown := min(len(view.blocks), TXT_TILE_BLOCKS)
-				md_blocks(view.blocks[:shown], index * 4096 + 2048 + u32(j) * 512)
+				md_blocks(view.blocks[:shown], index * 4096 + 2048 + u32(j) * 512, wrap_w = att_w() - 20)
 				if len(view.blocks) > shown {
 					clay.Text(fmt.tprintf("and %d more blocks", len(view.blocks) - shown), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
 				}
 			}
 		}
 
-		// Source tiles: highlighted lines with the file name on top.
+		// Text/source tiles: numbered lines with the file name on top.
 		// Click opens the preview modal (handle_code_click).
 		if entry, j, found := media_at(msg.codes[:], &code_pos, att); found {
 			view := entry.view
 			if clay.UI(clay.ID("MsgCode", index * 1024 + u32(j)))(
-			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(10), childGap = 2}, backgroundColor = PLATE, cornerRadius = rr(8)},
+			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(att_w(480)), height = clay.SizingFit({max = 320})}, padding = clay.PaddingAll(10), childGap = 2}, clip = {horizontal = true, vertical = true, childOffset = clay.GetScrollOffset()}, backgroundColor = PLATE, cornerRadius = rr(8)},
 			) {
 				if hovered() {
 					code_hover = {msg.id, entry.att, msg.att_names[entry.att]}

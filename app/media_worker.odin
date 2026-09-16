@@ -60,7 +60,7 @@ media_kind :: proc(name, mime: string) -> Media_Kind {
 		if strings.has_suffix(lower, ext) { return .Arc }
 	}
 	if strings.contains(lower, ".tar.") { return .Arc }
-	for ext in ([]string{".md", ".markdown", ".txt"}) {
+	for ext in ([]string{".md", ".markdown"}) {
 		if strings.has_suffix(lower, ext) { return .Text }
 	}
 	if is_code_name(lower) { return .Code }

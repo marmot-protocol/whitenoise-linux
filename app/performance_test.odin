@@ -124,7 +124,7 @@ performance_media :: proc(t: ^testing.T) {
 	defer { message_free(ui.messages[0]); delete(ui.messages) }
 	for i in 0 ..< 5 {
 		key := fmt.aprintf("%064d", i)
-		name := fmt.aprintf("file-%d.txt", i)
+		name := fmt.aprintf("file-%d.md", i)
 		body := fmt.aprintf("# File %d\n\nWorker text.", i)
 		mime: cstring = "text/plain"
 		bytes := transmute([]u8)body

@@ -5,7 +5,11 @@
 package main
 
 import "core:strings"
+import "core:sync"
 import "core:testing"
+
+import clay "../vendor/clay/bindings/odin/clay-odin"
+import rl "sdlrl"
 
 // Concatenating the runs must reproduce the line exactly, or the view
 // silently drops source.
@@ -91,9 +95,84 @@ code_extension_gate :: proc(t: ^testing.T) {
 	testing.expect(t, is_code_name("main.odin"))
 	testing.expect(t, is_code_name("build.sh"))
 	testing.expect(t, is_code_name("config.toml"))
-	testing.expect(t, !is_code_name("notes.txt"))
+	testing.expect(t, is_code_name("notes.txt"))
 	testing.expect(t, !is_code_name("photo.png"))
 
 	view := code_view_make("photo.png", "not source")
 	testing.expect(t, view == nil)
+}
+
+@(test)
+text_attachment_layout :: proc(t: ^testing.T) {
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
+	when #config(ODIN_TEST_NAMES, "") == "text_attachment_layout" {
+		rl.InitWindow(800, 800, "Text attachments")
+		load_themes()
+		apply_theme(0, 0)
+		init_fonts()
+	}
+	defer {
+		when #config(ODIN_TEST_NAMES, "") == "text_attachment_layout" { rl.CloseWindow() }
+	}
+	src := "type: logcat\r\n\r\n  # not a heading\r\n09-11 14:46:31 4853 I focus=true\r\n"
+	for name in ([]string{"logcat.txt", "debug.LOG"}) {
+		testing.expect_value(t, media_kind(name, "text/plain"), Media_Kind.Code)
+		view := code_view_make(name, src)
+		testing.expect(t, view != nil)
+		if view == nil { return }
+		testing.expect_value(t, len(view.lines), 4)
+		testing.expect_value(t, joined(view, 1), "")
+		testing.expect_value(t, joined(view, 2), "  # not a heading")
+		testing.expect_value(t, joined(view, 3), "09-11 14:46:31 4853 I focus=true")
+		for line in view.lines {
+			testing.expect_value(t, len(line.runs), 1)
+			testing.expect_value(t, line.runs[0].kind, Code_Kind.Plain)
+		}
+		code_view_free(view)
+	}
+	testing.expect_value(t, media_kind("notes.md", "text/plain"), Media_Kind.Text)
+
+	// A single enormous paragraph must not escape the attachment plate.
+	long := strings.repeat("09-11 14:46:31 I viewroot_draw_event: window=MainActivity ", 1000)
+	defer delete(long)
+	code := code_view_make("logcat.txt", strings.concatenate({src, long}, context.temp_allocator))
+	defer code_view_free(code)
+	markdown := txt_view_make(long)
+	defer txt_view_free(markdown)
+	msg := Msg_Ui{sender = strings.clone("Max")}
+	defer message_free(msg)
+	append(&msg.att_names, strings.clone("logcat.txt"), strings.clone("notes.md"))
+	append(&msg.codes, Att_Item(^Code_View){code, 0})
+	append(&msg.txts, Att_Item(^Txt_View){markdown, 1})
+	previous := clay.GetCurrentContext()
+	memory: []u8
+	init_layout(&memory, 32768, {800, 800})
+	defer {
+		clay.SetCurrentContext(previous)
+		delete(memory)
+		wrap_clear()
+	}
+	rl.SetPixelScale(1)
+	clay.BeginLayout()
+	message_row(0, msg)
+	commands := clay.EndLayout(0)
+	for id, i in ([]clay.ElementId{clay.ID("MsgCode", 0), clay.ID("MsgTxt", 0)}) {
+		box := clay.GetElementData(id).boundingBox
+		testing.expect_value(t, box.width, i == 0 ? f32(480) : f32(320))
+		testing.expect(t, box.height <= 320)
+		testing.expect(t, clay.GetScrollContainerData(id).found)
+	}
+	plate := clay.GetElementData(clay.ID("MsgTxt", 0)).boundingBox
+	for command in commands.internalArray[:commands.length] {
+		if command.commandType == .Text && command.boundingBox.y >= plate.y {
+			testing.expect(t, command.boundingBox.x + command.boundingBox.width <= plate.x + plate.width)
+		}
+	}
+	when #config(ODIN_TEST_NAMES, "") == "text_attachment_layout" {
+		rl.BeginDrawing()
+		draw_frame(&commands)
+		rl.TakeScreenshot("/tmp/text-attachments.png")
+		rl.EndDrawing()
+	}
 }

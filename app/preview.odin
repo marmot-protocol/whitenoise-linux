@@ -102,7 +102,7 @@ preview_show :: proc(name: string, bytes: []u8) {
 			preview.gc = gcode_view_make(segs)
 			preview.kind = .Gcode
 		}
-	case has(lower, ".md") || has(lower, ".markdown") || has(lower, ".txt"):
+	case has(lower, ".md") || has(lower, ".markdown"):
 		preview.txt = txt_view_make(string(bytes))
 		preview.kind = .Text
 	case is_code_name(lower):
@@ -572,7 +572,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(fit_w(480))}, padding = clay.PaddingAll(10), childGap = 6}, backgroundColor = PLATE, cornerRadius = rr(8)},
 			) {
 				shown := min(len(preview.txt.blocks), TXT_MODAL_BLOCKS)
-				md_blocks(preview.txt.blocks[:shown], 0x7f000000)
+				md_blocks(preview.txt.blocks[:shown], 0x7f000000, wrap_w = fit_w(480) - 20)
 				if len(preview.txt.blocks) > shown {
 					clay.Text(fmt.tprintf("and %d more blocks", len(preview.txt.blocks) - shown), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
 				}
