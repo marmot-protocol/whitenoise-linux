@@ -948,6 +948,9 @@ msgstr "Zoom dell’interfaccia"
 msgid "Interface zoom"
 msgstr "Zoom dell’interfaccia"
 
+msgid "Invalid attachment."
+msgstr "Allegato non valido."
+
 msgid "Invert selected text"
 msgstr ""
 
@@ -1960,6 +1963,9 @@ msgstr "Riattiva"
 
 msgid "Unpin"
 msgstr "Rimuovi dai fissati"
+
+msgid "Unsupported attachment format."
+msgstr "Formato dell’allegato non supportato."
 
 msgid "Uploaded emoji"
 msgstr "Emoji caricate"

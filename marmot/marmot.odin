@@ -73,6 +73,38 @@ Status :: enum i32 {
 	GROUP_UNRECOVERABLE_REPAIR_REQUIRED         = 58,
 	ACCOUNT_WORKER_BUSY                         = 59,
 	ACCOUNT_WORKER_RESPONSE_TIMED_OUT           = 60,
+	GROUP_INVITE_NOT_PENDING                    = 61,
+	MISSING_MEMBER_INBOX_ROUTE                  = 62,
+	GROUP_REMOVED                               = 63,
+	ONBOARDING_ACTION_UNAVAILABLE               = 64,
+	ONBOARDING_REQUIRED                         = 65,
+	CONSENT_REQUIRED                            = 66,
+	INVALID_PRODUCT_ANALYTICS_CONFIGURATION     = 67,
+	INVALID_PRODUCT_OBSERVATION                 = 68,
+	CHAT_PRESENTATION_NOT_READY                 = 69,
+	MEDIA_ATTACHMENT_REJECTED                   = 70,
+	MEDIA_UNFETCHABLE                           = 71,
+	MEDIA_DOWNLOAD_FAILED                       = 72,
+	CHAT_WINDOW_INVALID_LIMIT                   = 73,
+	CHAT_WINDOW_STALE                           = 74,
+	CHAT_WINDOW_ANCHOR_OUTSIDE                  = 75,
+	CHAT_WINDOW_CLOSED                          = 76,
+	CHAT_WINDOW_QUERY                           = 77,
+	USER_BLOCKED                                = 78,
+	BLOCK_LIST_UNAVAILABLE                      = 79,
+	BLOCK_PUBLICATION_UNCERTAIN                 = 80,
+	CONVERSATION_WINDOW_INVALID_LIMIT           = 81,
+	CONVERSATION_WINDOW_STALE                   = 82,
+	CONVERSATION_WINDOW_WRONG_GENERATION        = 83,
+	CONVERSATION_WINDOW_ANCHOR_OUTSIDE          = 84,
+	CONVERSATION_WINDOW_CLOSED                  = 85,
+	CONVERSATION_WINDOW_NOT_READY               = 86,
+	CONVERSATION_WINDOW_TIMED_OUT               = 87,
+	CONVERSATION_WINDOW_INVALID_TARGET          = 88,
+	CONVERSATION_WINDOW_QUERY                   = 89,
+	CONVERSATION_WINDOW_PRESENTATION            = 90,
+	MESSAGE_DRAFT_REVISION_CONFLICT             = 91,
+	CONVERSATION_WINDOW_MESSAGE_NOT_RETAINED    = 92,
 }
 
 // Opaque runtime handle.
@@ -544,7 +576,7 @@ Timeline_Message_Record :: struct {
 	reply_to_message_id_hex:   cstring,
 	reply_preview:             ^Timeline_Reply_Preview,
 	media_json:                cstring,
-	media:                     [^]Media_Attachment_Reference,
+	media:                     [^]Media_Attachment_Outcome,
 	media_len:                 uint,
 	agent_text_stream_json:    cstring,
 	group_system:              ^Group_System_Event, // kind-1210 only, else nil
@@ -572,6 +604,25 @@ Media_Attachment_Reference :: struct {
 	source_epoch:      u64,
 	dim:               cstring,
 	thumbhash:         cstring,
+}
+
+Media_Rejection_Kind :: enum i32 {
+	INVALID_STRUCTURE,
+	UNSUPPORTED_FORMAT,
+	MISSING_FIELD,
+	DUPLICATE_FIELD,
+	MALFORMED_FIELD,
+}
+
+Media_Attachment_Outcome :: struct {
+	tag: enum i32 { ACCEPTED, REJECTED },
+	body: struct #raw_union {
+		accepted: struct { attachment_index: u32, reference: Media_Attachment_Reference },
+		rejected: struct {
+			attachment_index: u32,
+			rejection: struct { kind: Media_Rejection_Kind, detail: cstring },
+		},
+	},
 }
 
 // Borrowed inputs to upload_media.
@@ -633,6 +684,8 @@ Timeline_Page :: struct {
 #assert(size_of(Markdown_List_Item) == 40)
 #assert(size_of(Markdown_List_Kind) == 24)
 #assert(size_of(Media_Attachment_Reference) == 88)
+#assert(size_of(Media_Attachment_Outcome) == 104)
+#assert(offset_of(Media_Attachment_Outcome, body) == 8)
 #assert(size_of(Media_Upload_Request) == 40)
 #assert(size_of(Media_Upload_Attachment_Request) == 48)
 #assert(size_of(Media_Upload_Result) == 24)

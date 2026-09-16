@@ -143,7 +143,8 @@ performance_media :: proc(t: ^testing.T) {
 		testing.expect(t, os.write_entire_file(fmt.tprintf("%s/%s.bin", media_cache_dir(), key), sealed) == nil)
 		ref := marmot.Media_Attachment_Reference{
 			plaintext_sha256 = strings.clone_to_cstring(key), file_name = strings.clone_to_cstring(name), media_type = mime}
-		media_attach(&ui.messages[0], nil, "account", "group", &ref, i)
+		outcome := marmot.Media_Attachment_Outcome{body = {accepted = {u32(i), ref}}}
+		media_attach(&ui.messages[0], nil, "account", "group", &outcome)
 		delete(ref.plaintext_sha256); delete(ref.file_name)
 		delete(key); delete(name); delete(body); delete(sealed)
 	}

@@ -948,6 +948,9 @@ msgstr "Oberflächen-Zoom"
 msgid "Interface zoom"
 msgstr "Oberflächen-Zoom"
 
+msgid "Invalid attachment."
+msgstr "Ungültiger Anhang."
+
 msgid "Invert selected text"
 msgstr ""
 
@@ -1960,6 +1963,9 @@ msgstr "Stummschaltung aufheben"
 
 msgid "Unpin"
 msgstr "Loslösen"
+
+msgid "Unsupported attachment format."
+msgstr "Nicht unterstütztes Anhangformat."
 
 msgid "Uploaded emoji"
 msgstr "Hochgeladene Emojis"

@@ -274,6 +274,7 @@ Msg_Ui :: struct {
 	fonts:     [dynamic]Att_Item(^Ttf_View), // font attachments, owned by the ttf_views cache
 	att_names: [dynamic]string, // every media reference by index, for the ctx-menu save rows
 	att_keys:  [dynamic]string, // cache key (plaintext sha256) per media index
+	att_rejected: map[int]string, // source index to static, translatable rejection text
 	files:     [dynamic]int, // att_names indices with no inline renderer (chip rows)
 	img_failed: [dynamic]Att_Item(string), // failed image cells: cache key + media index
 	at:        string, // HH:MM

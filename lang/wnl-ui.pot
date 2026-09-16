@@ -863,6 +863,9 @@ msgstr ""
 msgid "Interface zoom"
 msgstr ""
 
+msgid "Invalid attachment."
+msgstr ""
+
 msgid "Invert selected text"
 msgstr ""
 
@@ -1795,6 +1798,9 @@ msgid "Unmute"
 msgstr ""
 
 msgid "Unpin"
+msgstr ""
+
+msgid "Unsupported attachment format."
 msgstr ""
 
 msgid "Uploaded emoji"

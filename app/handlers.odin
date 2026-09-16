@@ -954,6 +954,9 @@ handle_ctx_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	for att_name, i in msg.att_names {
+		if i in msg.att_rejected {
+			continue
+		}
 		if clay.PointerOver(clay.ID(fmt.tprintf("CtxSave%d", i))) {
 			start_att_save({ui.chats[ui.selected].group_id, msg.id, i, att_name})
 			return

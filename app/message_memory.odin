@@ -81,6 +81,7 @@ message_free :: proc(msg: Msg_Ui) {
 	}
 	delete(msg.att_names)
 	delete(msg.att_keys)
+	delete(msg.att_rejected)
 	delete(msg.img_failed)
 	delete(msg.files)
 	delete(msg.media_pending)

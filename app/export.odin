@@ -115,7 +115,9 @@ transcript_html :: proc(ui: ^Ui_State, client: ^marmot.Client, chat: Chat_Row_Ui
 		}
 		record := records[msg.id]
 		for name, j in msg.att_names {
-			if strings.has_prefix(media_type_for(name), "image/") {
+			if rejection, rejected := msg.att_rejected[j]; rejected {
+				fmt.sbprintf(b, "<div class=\"att\">%s</div>\n", html_esc(tr(rejection)))
+			} else if strings.has_prefix(media_type_for(name), "image/") {
 				inline_image(ui, client, record, j, name, b)
 			} else {
 				fmt.sbprintf(b, "<div class=\"att\">%s</div>\n", html_esc(name))
@@ -133,11 +135,12 @@ transcript_html :: proc(ui: ^Ui_State, client: ^marmot.Client, chat: Chat_Row_Ui
 // failed download degrades to a visible note.
 inline_image :: proc(ui: ^Ui_State, client: ^marmot.Client, record: ^marmot.Timeline_Message_Record, index: int, name: string, b: ^strings.Builder) {
 	result: ^marmot.Media_Download_Result
-	ok := record != nil && index < int(record.media_len)
+	reference := media_reference(record, index)
+	ok := reference != nil
 	if ok {
 		account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 		group := strings.clone_to_cstring(string(record.group_id_hex), context.temp_allocator)
-		ok = marmot.download_media(client, account, group, &record.media[index], &result) == .OK
+		ok = marmot.download_media(client, account, group, reference, &result) == .OK
 	}
 	if !ok {
 		fmt.sbprintf(b, "<div class=\"att\">%s (image unavailable)</div>\n", html_esc(name))
@@ -165,8 +168,10 @@ transcript_md :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, b: ^strings.Builder) {
 		if len(msg.body) > 0 {
 			fmt.sbprintln(b, msg.body)
 		}
-		for name in msg.att_names {
-			if strings.has_prefix(media_type_for(name), "image/") {
+		for name, j in msg.att_names {
+			if rejection, rejected := msg.att_rejected[j]; rejected {
+				fmt.sbprintfln(b, "_%s_", tr(rejection))
+			} else if strings.has_prefix(media_type_for(name), "image/") {
 				fmt.sbprintfln(b, "![%s](attachment)", name)
 			}
 		}

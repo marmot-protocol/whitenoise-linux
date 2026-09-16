@@ -89,11 +89,39 @@ media_cached :: proc(kind: Media_Kind, key: string) -> (rawptr, bool) {
 }
 
 @(private)
-media_attach :: proc(msg: ^Msg_Ui, client: ^marmot.Client, account, group: cstring, ref: ^marmot.Media_Attachment_Reference, index: int) {
+media_rejection_text :: proc(kind: marmot.Media_Rejection_Kind) -> string {
+	if kind == .UNSUPPORTED_FORMAT {
+		return N_("Unsupported attachment format.")
+	}
+	return N_("Invalid attachment.")
+}
+
+// Indices remain source imeta positions, including rejected attachments.
+@(private)
+media_reference :: proc(record: ^marmot.Timeline_Message_Record, index: int) -> ^marmot.Media_Attachment_Reference {
+	if record == nil || index < 0 || index >= int(record.media_len) || record.media[index].tag != .ACCEPTED {
+		return nil
+	}
+	return &record.media[index].body.accepted.reference
+}
+
+@(private)
+media_attach :: proc(msg: ^Msg_Ui, client: ^marmot.Client, account, group: cstring, outcome: ^marmot.Media_Attachment_Outcome) {
+	if outcome.tag == .REJECTED {
+		index := int(outcome.body.rejected.attachment_index)
+		resize(&msg.att_names, index + 1)
+		resize(&msg.att_keys, index + 1)
+		msg.att_rejected[index] = media_rejection_text(outcome.body.rejected.rejection.kind)
+		return
+	}
+	index := int(outcome.body.accepted.attachment_index)
+	ref := &outcome.body.accepted.reference
 	name := ref.file_name != nil ? string(ref.file_name) : ""
 	key := ref.plaintext_sha256 != nil ? string(ref.plaintext_sha256) : name
-	append(&msg.att_names, strings.clone(name != "" ? name : "attachment"))
-	append(&msg.att_keys, strings.clone(key))
+	resize(&msg.att_names, index + 1)
+	resize(&msg.att_keys, index + 1)
+	msg.att_names[index] = strings.clone(name != "" ? name : "attachment")
+	msg.att_keys[index] = strings.clone(key)
 	kind := media_kind(name, ref.media_type != nil ? string(ref.media_type) : "")
 	if kind == .Emoji { key = emoji_code(name[len(EMOJI_ATT_PREFIX):]) }
 	view, seen := media_cached(kind, key)

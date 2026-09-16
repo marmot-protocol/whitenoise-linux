@@ -948,6 +948,9 @@ msgstr "インターフェースのズーム"
 msgid "Interface zoom"
 msgstr "インターフェースのズーム"
 
+msgid "Invalid attachment."
+msgstr "無効な添付ファイルです。"
+
 msgid "Invert selected text"
 msgstr ""
 
@@ -1960,6 +1963,9 @@ msgstr "ミュート解除"
 
 msgid "Unpin"
 msgstr "固定を解除"
+
+msgid "Unsupported attachment format."
+msgstr "この添付ファイルの形式には対応していません。"
 
 msgid "Uploaded emoji"
 msgstr "アップロード済みの絵文字"

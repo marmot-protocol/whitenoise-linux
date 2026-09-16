@@ -170,17 +170,18 @@ fetch_attachment :: proc(ui: ^Ui_State, client: ^marmot.Client, group, msg_id: s
 		if record.message_id_hex == nil || string(record.message_id_hex) != msg_id {
 			continue
 		}
-		if index >= int(record.media_len) {
+		reference := media_reference(record, index)
+		if reference == nil {
 			return
 		}
 
 		group_c := strings.clone_to_cstring(group, context.temp_allocator)
-		if marmot.download_media(client, account, group_c, &record.media[index], &result) != .OK {
+		if marmot.download_media(client, account, group_c, reference, &result) != .OK {
 			fmt.eprintfln("media: download failed: %s", marmot.last_error())
 			return
 		}
 		// The chip's size label learns from any download that passes by.
-		if sha := record.media[index].plaintext_sha256; sha != nil && string(sha) not_in blob_sizes {
+		if sha := reference.plaintext_sha256; sha != nil && string(sha) not_in blob_sizes {
 			blob_sizes[strings.clone(string(sha))] = i64(result.plaintext_len)
 		}
 		return result, true

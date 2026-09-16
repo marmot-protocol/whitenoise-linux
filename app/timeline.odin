@@ -367,6 +367,17 @@ count_roll :: proc(slot: u32, count: string, was: string, t: f32) {
 	}
 }
 
+// Each sorted media list advances once while source attachment positions render.
+@(private = "file")
+media_at :: proc(items: []Att_Item($T), cursor: ^int, att: int) -> (entry: Att_Item(T), index: int, ok: bool) {
+	index = cursor^
+	if index >= len(items) || items[index].att != att {
+		return
+	}
+	cursor^ += 1
+	return items[index], index, true
+}
+
 message_row :: proc(index: u32, msg: Msg_Ui) {
 	// A message that just landed glows in the accent surface and fades
 	// back to the row's normal fill, so the eye is carried to it without
@@ -467,6 +478,33 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 		slice.sort_by(img_cells[:], proc(a, b: Img_Cell) -> bool {
 			return a.att < b.att
 		})
+		// Keep rejected and loading slots between their accepted siblings.
+		image_pos, video_pos, audio_pos, pdf_pos, model_pos, gcode_pos: int
+		arc_pos, xdc_pos, text_pos, code_pos, font_pos, file_pos, pending_pos: int
+		for att := 0; att < len(msg.att_names); att += 1 {
+		if rejection, rejected := msg.att_rejected[att]; rejected {
+			if clay.UI(clay.ID("MediaRejected", index * 1024 + u32(att)))(
+			{layout = {padding = clay.PaddingAll(12)}, backgroundColor = PLATE, cornerRadius = rr(6)},
+			) {
+				clay.Text(tr(rejection), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
+			}
+			continue
+		}
+		if pending_pos < len(msg.media_pending) && msg.media_pending[pending_pos].index == att {
+			pending_pos += 1
+			if clay.UI(clay.ID("MediaLoading", index * 1024 + u32(att)))(
+			{layout = {padding = clay.PaddingAll(12)}, backgroundColor = PLATE, cornerRadius = rr(6)},
+			) {
+				clay.Text(tr("Loading…"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
+			}
+			continue
+		}
+		// Only adjacent image slots share an album; a rejection breaks it.
+		start := image_pos
+		for image_pos < len(img_cells) && img_cells[image_pos].att == att + image_pos - start {
+			image_pos += 1
+		}
+		cells := img_cells[start:image_pos]
 		aspect :: proc(c: Img_Cell) -> f32 {
 			if c.tex != nil && c.tex.height > 0 {
 				return f32(c.tex.width) / f32(c.tex.height)
@@ -477,11 +515,11 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 			start, count: int,
 			h:            f32,
 		}
-		n := len(img_cells)
+		n := len(cells)
 		album_w := f32(n == 1 ? 320 : 400)
 		rows := make([dynamic]Mosaic_Row, context.temp_allocator)
 		i := 0
-		if n >= 3 && aspect(img_cells[0]) >= 1.15 {
+		if n >= 3 && aspect(cells[0]) >= 1.15 {
 			append(&rows, Mosaic_Row{0, 1, 0})
 			i = 1
 		}
@@ -489,7 +527,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 			start := i
 			sum: f32
 			for i < n && i - start < 3 {
-				sum += aspect(img_cells[i])
+				sum += aspect(cells[i])
 				i += 1
 				// Tight enough: stop before the row gets short.
 				if (album_w - ALBUM_GAP * f32(i - start - 1)) / sum <= 120 {
@@ -500,16 +538,16 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 		}
 		for &row in rows {
 			sum: f32
-			for c in img_cells[row.start:row.start + row.count] {
+			for c in cells[row.start:row.start + row.count] {
 				sum += aspect(c)
 			}
 			row.h = min((album_w - ALBUM_GAP * f32(row.count - 1)) / sum, 320)
 		}
 		if len(rows) > 0 {
-		if clay.UI(clay.ID("MsgAlbum", index))({layout = {layoutDirection = .TopToBottom, childGap = ALBUM_GAP}}) {
-		for row, r in rows {
-			if clay.UI(clay.ID("MsgImgRow", index * 1024 + u32(r)))({layout = {childGap = ALBUM_GAP}}) {
-			for cell in img_cells[row.start:row.start + row.count] {
+		if clay.UI(clay.ID("MsgAlbum", index * 1024 + u32(att)))({layout = {layoutDirection = .TopToBottom, childGap = ALBUM_GAP}}) {
+		for row in rows {
+			if clay.UI(clay.ID("MsgImgRow", index * 1024 + u32(cells[row.start].att)))({layout = {childGap = ALBUM_GAP}}) {
+			for cell in cells[row.start:row.start + row.count] {
 				cell_id := index * 1024 + u32(cell.att)
 				cw := row.h * aspect(cell)
 				if cell.tex != nil {
@@ -541,7 +579,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 		}
 		// Video tiles: the mpv-fed texture, with a play glyph while
 		// paused. Click toggles pause (handle_video).
-		for entry, j in msg.videos {
+		if entry, j, found := media_at(msg.videos[:], &video_pos, att); found {
 			view := entry.view
 			ratio := view.h > 0 ? f32(view.w) / f32(view.h) : 16.0 / 9.0
 			if clay.UI(clay.ID("MsgVideo", index * 1024 + u32(j)))(
@@ -589,13 +627,13 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 
 		// Audio tiles: mpv plays through its own ao, no frames; the
 		// tile is the controls.
-		for entry, j in msg.audios {
+		if entry, j, found := media_at(msg.audios[:], &audio_pos, att); found {
 			audio_tile(index * 1024 + u32(j), msg.id, entry.att, msg.att_names[entry.att], att_size_label(msg, entry.att), entry.view)
 		}
 
 		// PDF tiles: one rendered page; prev/next chips when there
 		// are more.
-		for entry, j in msg.pdfs {
+		if entry, j, found := media_at(msg.pdfs[:], &pdf_pos, att); found {
 			view := entry.view
 			ratio := view.h > 0 ? f32(view.w) / f32(view.h) : 0.77
 			if clay.UI(clay.ID("MsgPdf", index * 1024 + u32(j)))(
@@ -635,7 +673,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 		// handler. Plate and model are separate elements because clay
 		// folds a backgroundColor into the CUSTOM command instead of
 		// drawing it.
-		for entry, j in msg.models {
+		if entry, j, found := media_at(msg.models[:], &model_pos, att); found {
 			view := entry.view
 			if clay.UI(clay.ID("MsgModel", index * 1024 + u32(j)))(
 			{layout = {sizing = {width = clay.SizingFixed(att_w()), height = clay.SizingFixed(320)}}, backgroundColor = PLATE, cornerRadius = rr(8)},
@@ -653,7 +691,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 		}
 
 		// G-code tiles: same shape plus the print-progress slider.
-		for entry, j in msg.gcodes {
+		if entry, j, found := media_at(msg.gcodes[:], &gcode_pos, att); found {
 			view := entry.view
 			if clay.UI(clay.ID("MsgGcode", index * 1024 + u32(j)))(
 			{layout = {sizing = {width = clay.SizingFixed(att_w()), height = clay.SizingFixed(320)}}, backgroundColor = PLATE, cornerRadius = rr(8)},
@@ -680,7 +718,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 
 		// Archive tiles: the file listing; clicking an entry opens it
 		// in the preview modal.
-		for entry, j in msg.arcs {
+		if entry, j, found := media_at(msg.arcs[:], &arc_pos, att); found {
 			view := entry.view
 			if clay.UI(clay.ID("MsgArc", index * 1024 + u32(j)))(
 			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(att_w())}, padding = clay.PaddingAll(8), childGap = 2}, backgroundColor = PLATE, cornerRadius = rr(8)},
@@ -724,12 +762,12 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 		}
 
 		// Webxdc app tiles: icon + name, no execution.
-		for entry, j in msg.xdcs {
+		if entry, j, found := media_at(msg.xdcs[:], &xdc_pos, att); found {
 			xdc_tile(entry.view, index * 1024 + u32(j), msg.id, entry.att, msg.att_names[entry.att])
 		}
 
 		// Text/markdown tiles: the shared block renderer on a plate.
-		for entry, j in msg.txts {
+		if entry, j, found := media_at(msg.txts[:], &text_pos, att); found {
 			view := entry.view
 			if clay.UI(clay.ID("MsgTxt", index * 1024 + u32(j)))(
 			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(att_w())}, padding = clay.PaddingAll(10), childGap = 6}, backgroundColor = PLATE, cornerRadius = rr(8)},
@@ -745,7 +783,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 
 		// Source tiles: highlighted lines with the file name on top.
 		// Click opens the preview modal (handle_code_click).
-		for entry, j in msg.codes {
+		if entry, j, found := media_at(msg.codes[:], &code_pos, att); found {
 			view := entry.view
 			if clay.UI(clay.ID("MsgCode", index * 1024 + u32(j)))(
 			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(10), childGap = 2}, backgroundColor = PLATE, cornerRadius = rr(8)},
@@ -763,7 +801,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 		}
 
 		// Font tiles: the rasterized specimen.
-		for entry, j in msg.fonts {
+		if entry, j, found := media_at(msg.fonts[:], &font_pos, att); found {
 			view := entry.view
 			ratio := view.h > 0 ? f32(view.w) / f32(view.h) : 4
 			if clay.UI(clay.ID("MsgFont", index * 1024 + u32(j)))(
@@ -775,7 +813,10 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 
 		// File chips (no inline renderer): name + size when this
 		// session knows it, offer the download.
-		for att_index, j in msg.files {
+		if file_pos < len(msg.files) && msg.files[file_pos] == att {
+			j := file_pos
+			file_pos += 1
+			att_index := att
 			if clay.UI(clay.ID("MsgFile", index * 1024 + u32(j)))(
 			{layout = {padding = clay.PaddingAll(10), childGap = 10, childAlignment = {y = .Center}}, backgroundColor = hovered() ? HOVER : PLATE, cornerRadius = rr(8)},
 			) {
@@ -792,6 +833,9 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 					clay.Text(len(size) > 0 ? fmt.tprintf("%s · Click to download.", size) : "Click to download.", {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
 				}
 			}
+		}
+
+		att += max(n - 1, 0)
 		}
 
 		if msg.media_failed {
@@ -847,13 +891,6 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 		}
 
 		md_blocks(msg.blocks[:], index * 4096, true)
-		for att in msg.media_pending {
-			if clay.UI(clay.ID("MediaLoading", index * 1024 + u32(att.index)))(
-			{layout = {padding = clay.PaddingAll(12)}, backgroundColor = PLATE, cornerRadius = rr(6)},
-			) {
-				clay.Text(tr("Loading…"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
-			}
-		}
 
 		gh_cards_on = false
 

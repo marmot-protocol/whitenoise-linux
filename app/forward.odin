@@ -123,8 +123,11 @@ fwd_download_atts :: proc(ui: ^Ui_State, client: ^marmot.Client, msg_id: string)
 		for j in 0 ..< record.media_len {
 			result: ^marmot.Media_Download_Result
 			group := strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator)
-			if marmot.download_media(client, account, group, &record.media[j], &result) != .OK {
-				fmt.eprintfln("forward: download failed: %s", marmot.last_error())
+			reference := media_reference(record, int(j))
+			if reference == nil || marmot.download_media(client, account, group, reference, &result) != .OK {
+				if reference != nil {
+					fmt.eprintfln("forward: download failed: %s", marmot.last_error())
+				}
 				for &a in atts {
 					delete(a.name)
 					delete(a.dim)

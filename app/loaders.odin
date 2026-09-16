@@ -374,7 +374,7 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 
 		group := strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator)
 		for j in 0 ..< record.media_len {
-			media_attach(&msg, client, account, group, &record.media[j], int(j))
+			media_attach(&msg, client, account, group, &record.media[j])
 		}
 		append(&ui.messages, msg)
 	}
