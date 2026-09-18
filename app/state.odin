@@ -243,9 +243,11 @@ Md_Block_Ui :: struct {
 	kind:  Md_Kind,
 	text:  string,
 	blank_lines_before: u8,
+	fonts: string, // owned font id per UTF-8 byte; empty means regular text
 	level: int, // heading level
 	marker_len: int, // list marker bytes, including the trailing space
 	cells: [][]string, // table rows, row 0 = header
+	cell_fonts: [][]string,
 }
 
 Msg_Ui :: struct {

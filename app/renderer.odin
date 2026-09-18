@@ -20,6 +20,12 @@ UI_SCALE: f32 = 1
 // at once. UI_SCALE folds it in so glyph atlases stay crisp.
 UI_ZOOM: f32 = 1.5
 
+@(private)
+Image_Crop :: struct {
+	kind: Model_Kind,
+	tex: ^rl.Texture2D,
+}
+
 // Register the per-font-id fallback stacks. Noto Sans CJK rides
 // behind the latin faces so CJK text resolves per glyph. It is not
 // bundled (the .ttc is tens of megabytes), so Japanese needs the
@@ -64,6 +70,8 @@ init_fonts :: proc() {
 	}
 	stack(FONT_BODY, "LiberationSans-Regular.ttf", FONT_CANDIDATES, CJK_CANDIDATES)
 	stack(FONT_TITLE, "LiberationSans-Bold.ttf", TITLE_CANDIDATES, CJK_BOLD_CANDIDATES)
+	stack(FONT_ITALIC, "LiberationSans-Italic.ttf", {"/usr/share/fonts/liberation/LiberationSans-Italic.ttf", "/usr/share/fonts/truetype/liberation/LiberationSans-Italic.ttf", "/usr/share/fonts/liberation-sans/LiberationSans-Italic.ttf"}, CJK_CANDIDATES)
+	stack(FONT_BOLD_ITALIC, "LiberationSans-BoldItalic.ttf", {"/usr/share/fonts/liberation/LiberationSans-BoldItalic.ttf", "/usr/share/fonts/truetype/liberation/LiberationSans-BoldItalic.ttf", "/usr/share/fonts/liberation-sans/LiberationSans-BoldItalic.ttf"}, CJK_BOLD_CANDIDATES)
 	stack(FONT_MONO, "LiberationMono-Regular.ttf", MONO_CANDIDATES, CJK_CANDIDATES)
 	stack(FONT_ICON, "JetBrainsMonoNerdFont-Regular.ttf", ICON_CANDIDATES, nil)
 	rl.IconFont = FONT_ICON // ink-boxed, so icons center in their buttons
@@ -353,6 +361,17 @@ render_range :: proc(render_commands: ^clay.ClayArray(clay.RenderCommand), from,
 				glow_draw((^Glow_View)(data), bounds)
 			case .Shade:
 				shade_draw((^Shade_View)(data), bounds)
+			case .Image_Crop:
+				tex := (^Image_Crop)(data).tex
+				if tex.width <= 0 || tex.height <= 0 { continue }
+				scale := max(bounds.width / f32(tex.width), bounds.height / f32(tex.height))
+				tint := clay.Color{255, 255, 255, 255}
+				if len(overlay_colors) > 0 && overlay_colors[len(overlay_colors) - 1] != 0 { tint = overlay_colors[len(overlay_colors) - 1] }
+				// Crop from the top left to preserve the beginning of screenshots.
+				// Renderer clipping leaves wheel scrolling with the timeline.
+				rl.BeginScissorMode(i32(bounds.x), i32(bounds.y), i32(bounds.width), i32(bounds.height))
+				rl.DrawTextureRect(tex, bounds.x, bounds.y, f32(tex.width) * scale, f32(tex.height) * scale, clay_color(tint))
+				rl.EndScissorMode()
 			}
 		}
 	}

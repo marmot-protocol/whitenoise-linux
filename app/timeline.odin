@@ -465,7 +465,8 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 
 		// Image cells: albums lay out as a justified mosaic. Each row
 		// gets one height and cell widths follow each image's aspect
-		// (h = row_width / sum(aspects), so nothing is cropped); a
+		// (h = row_width / sum(aspects)); extreme ratios are cropped so
+		// screenshots cannot collapse into tiny strips. A
 		// leading landscape image is promoted to a full-width hero and
 		// a greedy fill packs the rest 2-3 per row, stopping once the
 		// row is tight enough. The shape therefore varies with the
@@ -510,7 +511,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 		cells := img_cells[start:image_pos]
 		aspect :: proc(c: Img_Cell) -> f32 {
 			if c.tex != nil && c.tex.height > 0 {
-				return f32(c.tex.width) / f32(c.tex.height)
+				return clamp(f32(c.tex.width) / f32(c.tex.height), 0.5, 3)
 			}
 			return 4.0 / 3.0
 		}
@@ -519,7 +520,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 			h:            f32,
 		}
 		n := len(cells)
-		album_w := f32(n == 1 ? 320 : 400)
+		album_w := att_w(n == 1 ? 480 : 400)
 		rows := make([dynamic]Mosaic_Row, context.temp_allocator)
 		i := 0
 		if n >= 3 && aspect(cells[0]) >= 1.15 {
@@ -554,8 +555,10 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 				cell_id := index * 1024 + u32(cell.att)
 				cw := row.h * aspect(cell)
 				if cell.tex != nil {
+					view := new(Image_Crop, context.temp_allocator)
+					view^ = {kind = .Image_Crop, tex = cell.tex}
 					if clay.UI(clay.ID("MsgImage", cell_id))(
-					{layout = {sizing = {width = clay.SizingFixed(cw), height = clay.SizingFixed(row.h)}}, image = {imageData = cell.tex}, cornerRadius = rr(8)},
+					{layout = {sizing = {width = clay.SizingFixed(cw), height = clay.SizingFixed(row.h)}}, custom = {customData = view}, cornerRadius = rr(8)},
 					) {
 						// Click opens the lightbox slideshow on this
 						// image (handle_img_click; dl chip wins via
@@ -892,7 +895,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 		// Bodies draw a card in place of every GitHub link they hold.
 		gh_cards_on = true
 
-		cropped := !msg.deleted && message_excerpt(index * 4096, msg.body, TEXT)
+		cropped := len(msg.blocks) == 0 && !msg.deleted && message_excerpt(index * 4096, msg.body, TEXT)
 		if !cropped && len(msg.blocks) == 0 && len(msg.body) > 0 {
 			body_text(index * 4096, msg.body, 14, TEXT, true)
 		}
@@ -908,7 +911,9 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 			clay.Text(tr("This message was deleted"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_LO})
 		}
 
-		if !cropped { md_blocks(msg.blocks[:], index * 4096, true) }
+		if !cropped && md_blocks(msg.blocks[:], index * 4096, true, max_lines = MESSAGE_LINES) {
+			message_more(index * 4096)
+		}
 
 		gh_cards_on = false
 
@@ -1096,28 +1101,54 @@ is_emoji_rune :: proc(r: rune) -> bool {
 // the resolved pubkey in hex (body lines render the chip).
 Inline_Seg :: struct {
 	text: string,
+	fonts: string,
 	tex:  ^rl.Texture2D,
 	hex:  string, // mentioned account, "" = not a mention
 	url:  string, // http(s) link, "" = not a link (linkguard.odin)
+	bad_ref: bool,
 	evid: string, // nevent/note event id hex, "" = not one (nevent.odin)
 	hints: []string, // the nevent's relay hints
 	fx:   u8, // glyph-effect bits from {name} markup (effects.odin)
 }
 
+@(private)
+Inline_Link :: struct { start, end: int, url: string }
+
 // Split text into text runs and emoji clusters (VS16/ZWJ ride along;
 // a cluster the sheet misses falls back per rune, then raw text).
-inline_segs :: proc(text: string) -> [dynamic]Inline_Seg {
+inline_segs :: proc(text: string, fonts: string = "", links: []Inline_Link = nil, offset: int = 0) -> [dynamic]Inline_Seg {
 	segs := make([dynamic]Inline_Seg, context.temp_allocator)
 	plain_start := 0
 	i := 0
+	link_index := 0
 	for i < len(text) {
+		if end, ref := nostr_at(text, i); ref.kind != .None {
+			if i > plain_start { append(&segs, Inline_Seg{text = text[plain_start:i], fonts = text_fonts(fonts, plain_start, i)}) }
+			seg := Inline_Seg{text = text[i:end], bad_ref = ref.kind == .Invalid}
+			if ref.kind == .Profile { seg.hex = ref.key }
+			if ref.kind == .Event || ref.kind == .Address { seg.evid, seg.hints = ref.key, ref.relays }
+			append(&segs, seg)
+			i, plain_start = end, end
+			continue
+		}
+		for link_index < len(links) && links[link_index].end <= offset + i { link_index += 1 }
+		if link_index < len(links) && links[link_index].start <= offset + i {
+			link := links[link_index]
+			end := min(len(text), link.end - offset)
+			if i > plain_start {
+				append(&segs, Inline_Seg{text = text[plain_start:i], fonts = text_fonts(fonts, plain_start, i)})
+			}
+			append(&segs, Inline_Seg{text = text[i:end], url = link.url, fonts = text_fonts(fonts, i, end)})
+			i, plain_start = end, end
+			continue
+		}
 		r, w := utf8.decode_rune_in_string(text[i:])
 		if r == 'm' || r == 'M' {
 			// marmot://profile deep link becomes one mention chip too;
 			// clicking it opens the profile like a mention.
 			if end, hx, ok := marmot_link_at(text, i); ok {
 				if i > plain_start {
-					append(&segs, Inline_Seg{text = text[plain_start:i]})
+					append(&segs, Inline_Seg{text = text[plain_start:i], fonts = text_fonts(fonts, plain_start, i)})
 				}
 				append(&segs, Inline_Seg{text = text[i:end], hex = hx})
 				i = end
@@ -1132,23 +1163,24 @@ inline_segs :: proc(text: string) -> [dynamic]Inline_Seg {
 			if bit, after, ok := fx_open_at(text, i); ok {
 				inner_end, next := fx_close(text, after, bit)
 				if i > plain_start {
-					append(&segs, Inline_Seg{text = text[plain_start:i]})
+					append(&segs, Inline_Seg{text = text[plain_start:i], fonts = text_fonts(fonts, plain_start, i)})
 				}
-				for seg in inline_segs(text[after:inner_end]) {
+				for seg in inline_segs(text[after:inner_end], text_fonts(fonts, after, inner_end), links[link_index:], offset + after) {
 					tagged := seg
 					tagged.fx |= bit
 					// Motion acts per glyph, like slint's RunCell, so a
 					// moving text seg splits into letters. A very long run
 					// stays whole: the per-letter ids would collide.
-					plain := tagged.tex == nil && len(tagged.hex) == 0 && len(tagged.url) == 0 && len(tagged.evid) == 0
+					plain := !tagged.bad_ref && tagged.tex == nil && len(tagged.hex) == 0 && len(tagged.url) == 0 && len(tagged.evid) == 0
 					if tagged.fx & FX_MOTION == 0 || !plain || len(tagged.text) > FX_LETTERS_MAX {
 						append(&segs, tagged)
 						continue
 					}
 					for at := 0; at < len(tagged.text); {
 						_, w := utf8.decode_rune_in_string(tagged.text[at:])
-						letter := tagged
-						letter.text = tagged.text[at:at + w]
+							letter := tagged
+							letter.text = tagged.text[at:at + w]
+							letter.fonts = text_fonts(tagged.fonts, at, at + w)
 						append(&segs, letter)
 						at += w
 					}
@@ -1163,35 +1195,9 @@ inline_segs :: proc(text: string) -> [dynamic]Inline_Seg {
 			// that routes through the external-link guard.
 			if end, link, ok := url_at(text, i); ok {
 				if i > plain_start {
-					append(&segs, Inline_Seg{text = text[plain_start:i]})
+					append(&segs, Inline_Seg{text = text[plain_start:i], fonts = text_fonts(fonts, plain_start, i)})
 				}
-				append(&segs, Inline_Seg{text = link, url = link})
-				i = end
-				plain_start = end
-				continue
-			}
-		}
-		if r == 'n' {
-			// nevent/note token (bare or "nostr:"-prefixed) becomes an
-			// event seg; body lines draw it as a card.
-			if end, evid, hints, ok := nevent_at(text, i); ok {
-				if i > plain_start {
-					append(&segs, Inline_Seg{text = text[plain_start:i]})
-				}
-				append(&segs, Inline_Seg{text = text[i:end], evid = evid, hints = hints})
-				i = end
-				plain_start = end
-				continue
-			}
-		}
-		if r == '@' || r == 'n' {
-			// npub/nprofile token (bare, "@"- or "nostr:"-prefixed)
-			// becomes a mention seg; body lines draw it as a chip.
-			if end, hx, ok := mention_at(text, i); ok {
-				if i > plain_start {
-					append(&segs, Inline_Seg{text = text[plain_start:i]})
-				}
-				append(&segs, Inline_Seg{text = text[i:end], hex = hx})
+				append(&segs, Inline_Seg{text = link, url = link, fonts = text_fonts(fonts, i, end)})
 				i = end
 				plain_start = end
 				continue
@@ -1202,7 +1208,7 @@ inline_segs :: proc(text: string) -> [dynamic]Inline_Seg {
 			// else stays literal text.
 			if end, ctex := shortcode_at(text, i); ctex != nil {
 				if i > plain_start {
-					append(&segs, Inline_Seg{text = text[plain_start:i]})
+					append(&segs, Inline_Seg{text = text[plain_start:i], fonts = text_fonts(fonts, plain_start, i)})
 				}
 				append(&segs, Inline_Seg{tex = ctex})
 				i = end
@@ -1220,14 +1226,14 @@ inline_segs :: proc(text: string) -> [dynamic]Inline_Seg {
 		tex := text_emoji(cluster)
 		if tex == nil { i = j; continue }
 		if i > plain_start {
-			append(&segs, Inline_Seg{text = text[plain_start:i]})
+			append(&segs, Inline_Seg{text = text[plain_start:i], fonts = text_fonts(fonts, plain_start, i)})
 		}
 		append(&segs, Inline_Seg{tex = tex})
 		i = j
 		plain_start = j
 	}
 	if plain_start < len(text) {
-		append(&segs, Inline_Seg{text = text[plain_start:]})
+		append(&segs, Inline_Seg{text = text[plain_start:], fonts = text_fonts(fonts, plain_start, len(text))})
 	}
 	return segs
 }
@@ -1249,6 +1255,8 @@ render_segs :: proc(id: u32, segs: []Inline_Seg, font_size: u16, color: clay.Col
 			// A referenced Nostr event is drawn as its own card, in
 			// place of the token.
 			nev_card(id * 128 + u32(k), seg.evid, strings.trim_prefix(seg.text, "nostr:"), seg.hints)
+		} else if chips && seg.bad_ref {
+			clay.Text(tr("Invalid Nostr reference"), {fontId = FONT_BODY, fontSize = font_size, textColor = DANGER, wrapMode = .None})
 		} else if chips && len(seg.url) > 0 {
 			// Links only in bodies: composer lines keep the raw text so
 			// caret hit-mapping stays byte-accurate.
@@ -1258,7 +1266,7 @@ render_segs :: proc(id: u32, segs: []Inline_Seg, font_size: u16, color: clay.Col
 				if hovered() {
 					link_hover = seg.url
 				}
-				clay.Text(seg.text, {fontId = FONT_BODY, fontSize = font_size, textColor = ACCENT})
+				styled_text(seg.text, seg.fonts, font_size, ACCENT)
 			}
 		} else if chips && len(seg.hex) > 0 {
 			// Chip tinted by the account's stable avatar hue; a mention
@@ -1266,7 +1274,7 @@ render_segs :: proc(id: u32, segs: []Inline_Seg, font_size: u16, color: clay.Col
 			me := g_ui != nil && seg.hex == g_ui.account_ref
 			if clay.UI(clay.ID("SegMention", id * 128 + u32(k)))(
 			{
-				layout = {padding = {left = 6, right = 6, top = 1, bottom = 1}},
+				layout = {padding = {left = 2, right = 2, top = 1, bottom = 1}, childGap = 2, childAlignment = {y = .Center}},
 				backgroundColor = avatar_color(seg.hex),
 				cornerRadius = rr(7),
 				border = me ? clay.BorderElementConfig{color = ACCENT, width = bw()} : {},
@@ -1275,6 +1283,9 @@ render_segs :: proc(id: u32, segs: []Inline_Seg, font_size: u16, color: clay.Col
 				if hovered() {
 					mention_hover = seg.hex
 				}
+				info := profile_info(g_client, seg.hex)
+				avatar("MentionPhoto", id * 128 + u32(k), seg.hex, mention_label(seg.hex), f32(font_size), url_pic(info.pic_url))
+				crop_circle("MentionCircle", id * 128 + u32(k), seg.hex, f32(font_size))
 				clay.Text(fmt.tprintf("@%s", mention_label(seg.hex)), {fontId = FONT_TITLE, fontSize = font_size, textColor = {255, 255, 255, 235}})
 			}
 		} else if seg.fx != 0 {
@@ -1297,10 +1308,14 @@ render_segs :: proc(id: u32, segs: []Inline_Seg, font_size: u16, color: clay.Col
 				},
 			},
 			) {
-				clay.Text(seg.text, {fontId = FONT_BODY, fontSize = size, textColor = tint})
+				styled_text(seg.text, seg.fonts, size, tint)
 			}
 		} else {
-			clay.Text(seg.text, {fontId = FONT_BODY, fontSize = font_size, textColor = color, wrapMode = chips ? .Words : .None})
+			if len(seg.fonts) > 0 {
+				styled_text(seg.text, seg.fonts, font_size, color)
+			} else {
+				clay.Text(seg.text, {fontId = FONT_BODY, fontSize = font_size, textColor = color, wrapMode = chips ? .Words : .None})
+			}
 		}
 	}
 }
@@ -1404,7 +1419,7 @@ compose_line :: proc(i: u32, text: string, ls, le, lo, hi, head: int) {
 // `boxed` wraps the line in an element hit-testing can measure; the
 // caller sets it for pre-wrapped (selectable) bodies only, because an
 // element around a plain Text would take clay's own wrapping away.
-body_line :: proc(id: u32, text: string, font_size: u16, color: clay.Color, sel := [2]int{-1, -1}, boxed := false, tile_px: f32 = 0) {
+body_line :: proc(id: u32, text: string, font_size: u16, color: clay.Color, sel := [2]int{-1, -1}, boxed := false, tile_px: f32 = 0, fonts: string = "", links: []Inline_Link = nil, offset: int = 0) {
 	tile_px := tile_px > 0 ? tile_px : body_tile_size(text, font_size)
 	if text == "" {
 		if clay.UI(clay.ID("BodyLine", id))({layout = {sizing = {height = clay.SizingFixed(f32(font_size))}}}) {}
@@ -1415,7 +1430,7 @@ body_line :: proc(id: u32, text: string, font_size: u16, color: clay.Color, sel 
 		// A selection through a card token would split it into
 		// text runs and lose the card, so a line holding one draws
 		// unselected; the copy still carries the token.
-		for seg in inline_segs(text) {
+		for seg in inline_segs(text, fonts, links, offset) {
 			_, gh := gh_ref(seg.url)
 			if len(seg.evid) > 0 || (gh_cards_on && gh) {
 				sel = {-1, -1}
@@ -1426,23 +1441,23 @@ body_line :: proc(id: u32, text: string, font_size: u16, color: clay.Color, sel 
 	if sel[0] >= 0 {
 		if clay.UI(clay.ID("BodyLine", id))({layout = {childGap = 2, childAlignment = {y = .Center}}}) {
 			if sel[0] > 0 {
-				render_segs(id * 4, inline_segs(text[:sel[0]])[:], font_size, color, tile_px, true)
+				render_segs(id * 4, inline_segs(text[:sel[0]], text_fonts(fonts, 0, sel[0]), links, offset)[:], font_size, color, tile_px, true)
 			}
 			if clay.UI(clay.ID("BodySel", id))({layout = {childGap = 2, childAlignment = {y = .Center}}, backgroundColor = ACCENT}) {
 				// chips inside the highlight too: a link that turned
 				// into a card must not fall back to its URL the moment
 				// a selection covers it.
-				render_segs(id * 4 + 1, inline_segs(text[sel[0]:sel[1]])[:], font_size, ON_ACCENT, tile_px, true)
+				render_segs(id * 4 + 1, inline_segs(text[sel[0]:sel[1]], text_fonts(fonts, sel[0], sel[1]), links, offset + sel[0])[:], font_size, ON_ACCENT, tile_px, true)
 			}
 			if sel[1] < len(text) {
-				render_segs(id * 4 + 2, inline_segs(text[sel[1]:])[:], font_size, color, tile_px, true)
+				render_segs(id * 4 + 2, inline_segs(text[sel[1]:], text_fonts(fonts, sel[1], len(text)), links, offset + sel[1])[:], font_size, color, tile_px, true)
 			}
 		}
 		return
 	}
 
-	segs := inline_segs(text)
-	if len(segs) == 1 && segs[0].tex == nil && len(segs[0].hex) == 0 && len(segs[0].url) == 0 && len(segs[0].evid) == 0 && len(segs[0].text) == len(text) {
+	segs := inline_segs(text, fonts, links, offset)
+	if len(fonts) == 0 && len(segs) == 1 && segs[0].tex == nil && len(segs[0].hex) == 0 && len(segs[0].url) == 0 && !segs[0].bad_ref && len(segs[0].evid) == 0 && len(segs[0].text) == len(text) {
 		// No emoji or mention at all: plain Text keeps clay's wrapping.
 		if !boxed {
 			clay.Text(text, {fontId = FONT_BODY, fontSize = font_size, textColor = color})
@@ -1469,7 +1484,7 @@ body_line :: proc(id: u32, text: string, font_size: u16, color: clay.Color, sel 
 MD_TABLE_COL_MAX :: 140
 MD_TABLE_PAD :: 7
 
-md_table :: proc(id: u32, cells: [][]string) {
+md_table :: proc(id: u32, cells: [][]string, cell_fonts: [][]string = nil) {
 	if len(cells) == 0 {
 		return
 	}
@@ -1482,9 +1497,13 @@ md_table :: proc(id: u32, cells: [][]string) {
 	}
 
 	widths := make([]f32, cols, context.temp_allocator)
-	for row in cells {
+	for row, r in cells {
 		for cell, c in row {
-			widths[c] = max(widths[c], rl.MeasureTextLine(FONT_BODY, 13, cell, 0).x)
+			fonts := r < len(cell_fonts) && c < len(cell_fonts[r]) ? cell_fonts[r][c] : ""
+			width: f32
+			it := utf8.decode_grapheme_iterator_make(cell)
+			for cluster, g in utf8.decode_grapheme_iterate(&it) { width += rl.MeasureTextLine(text_font(fonts, g.byte_index), 13, cluster, 0).x }
+			widths[c] = max(widths[c], width)
 		}
 	}
 	for &w in widths {
@@ -1503,7 +1522,14 @@ md_table :: proc(id: u32, cells: [][]string) {
 					if clay.UI(clay.ID("MsgTableCell", id + u32(r) * 64 + u32(c)))(
 					{layout = {sizing = {width = clay.SizingFixed(widths[c]), height = clay.SizingGrow()}, padding = clay.PaddingAll(MD_TABLE_PAD)}, border = {color = FIELD_BORDER, width = {0, c < cols - 1 ? 1 : 0, 0, r < len(cells) - 1 ? 1 : 0, 0}}},
 					) {
-						clay.Text(text, {fontId = r == 0 ? FONT_TITLE : FONT_BODY, fontSize = 13, textColor = r == 0 ? TEXT : TEXT_DIM})
+						fonts := r < len(cell_fonts) && c < len(cell_fonts[r]) ? cell_fonts[r][c] : ""
+						if len(fonts) > 0 {
+							if clay.UI()({layout = {layoutDirection = .TopToBottom}}) {
+								body_text(id + u32(r) * 64 + u32(c), text, 13, r == 0 ? TEXT : TEXT_DIM, wrap_w = widths[c] - MD_TABLE_PAD * 2, fonts = fonts)
+							}
+						} else {
+							clay.Text(text, {fontId = r == 0 ? FONT_TITLE : FONT_BODY, fontSize = 13, textColor = r == 0 ? TEXT : TEXT_DIM})
+						}
 					}
 				}
 			}
@@ -1513,28 +1539,48 @@ md_table :: proc(id: u32, cells: [][]string) {
 // the preview modal. id_base namespaces the clay ids per call site.
 // wrap_w pre-wraps paragraphs to a width (event cards); 0 leaves
 // wrapping to clay or, when selectable, the timeline measure.
-md_blocks :: proc(blocks: []Md_Block_Ui, id_base: u32, selectable := false, wrap_w: f32 = 0) {
+md_blocks :: proc(blocks: []Md_Block_Ui, id_base: u32, selectable := false, wrap_w: f32 = 0, max_lines: int = max(int)) -> bool {
+	remaining := max_lines
 	for block, j in blocks {
+		if remaining <= 0 { return true }
 		block_id := id_base + u32(j) * 16
 		if block.blank_lines_before > 0 {
-			if clay.UI(clay.ID("MdGap", block_id))({layout = {sizing = {height = clay.SizingFixed(f32(block.blank_lines_before) * f32(BODY_FS))}}}) {}
+			gap := min(int(block.blank_lines_before), remaining)
+			if clay.UI(clay.ID("MdGap", block_id))({layout = {sizing = {height = clay.SizingFixed(f32(gap) * f32(BODY_FS))}}}) {}
+			remaining -= gap
+			if remaining <= 0 { return true }
 		}
+		used := 1
 		switch block.kind {
 		case .Para:
-			body_text(block_id + 1, block.text, BODY_FS, TEXT, selectable, wrap_w)
+			used = body_text(block_id + 1, block.text, BODY_FS, TEXT, selectable, wrap_w, remaining, block.fonts)
 		case .Heading:
 			size := u16(max(24 - block.level * 2, 15))
-			clay.Text(block.text, {fontId = FONT_TITLE, fontSize = size, textColor = TEXT})
+			fonts := block.fonts
+			font := [1]u8{FONT_TITLE}
+			if len(fonts) == 0 { fonts = strings.repeat(string(font[:]), len(block.text), context.temp_allocator) }
+			used = body_text(block_id + 1, block.text, size, TEXT, selectable, wrap_w, remaining, fonts)
 		case .Code:
 			if clay.UI(clay.ID("MsgCode", block_id))(
-			{layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(10)}, backgroundColor = PLATE, cornerRadius = rr(6)},
+			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(10)}, backgroundColor = PLATE, cornerRadius = rr(6)},
 			) {
-				clay.Text(block.text, {fontId = FONT_MONO, fontSize = 13, textColor = TEXT})
+				font := [1]u8{FONT_MONO}
+				fonts := strings.repeat(string(font[:]), len(block.text), context.temp_allocator)
+				width := max(f32(1), (wrap_w > 0 ? wrap_w : body_wrap_w()) - 20)
+				lines := wrapped_lines(block.text, width, 13, fonts = fonts)
+				used = len(lines)
+				for line in lines[:min(used, remaining)] {
+					if clay.UI()({layout = {sizing = {height = clay.SizingFixed(13)}}}) {
+						clay.Text(block.text[line.start:line.end], {fontId = FONT_MONO, fontSize = 13, textColor = TEXT, wrapMode = .None})
+					}
+				}
 			}
 		case .Quote:
 			if clay.UI(clay.ID("MsgQuote", block_id))({layout = {childGap = 8}}) {
 				if clay.UI(clay.ID("MsgQuoteBar", block_id))({layout = {sizing = {width = clay.SizingFixed(3), height = clay.SizingGrow()}}, backgroundColor = ACCENT, cornerRadius = rr(2)}) {}
-				clay.Text(block.text, {fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM})
+				if clay.UI()({layout = {layoutDirection = .TopToBottom}}) {
+					used = body_text(block_id + 1, block.text, 15, TEXT_DIM, selectable, max(f32(1), (wrap_w > 0 ? wrap_w : body_wrap_w()) - 11), remaining, block.fonts)
+				}
 			}
 		case .List_Item:
 			marker := block.text[:block.marker_len]
@@ -1545,13 +1591,14 @@ md_blocks :: proc(blocks: []Md_Block_Ui, id_base: u32, selectable := false, wrap
 					clay.Text(marker, {fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT})
 				}
 				if clay.UI(clay.ID("MsgListBody", block_id))({layout = {layoutDirection = .TopToBottom}}) {
-					body_text(block_id + 2, block.text[block.marker_len:], BODY_FS, TEXT, selectable, width > 0 ? max(f32(1), width - 12 - marker_w) : 0)
+					used = body_text(block_id + 2, block.text[block.marker_len:], BODY_FS, TEXT, selectable, width > 0 ? max(f32(1), width - 12 - marker_w) : 0, remaining, text_fonts(block.fonts, block.marker_len, len(block.text)))
 				}
 			}
 		case .Image:
 			tex := nev_img(block.text)
 			if tex == nil {
 				clay.Text(block.text, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
+				remaining -= 1
 				continue
 			}
 			ratio := tex.height > 0 ? f32(tex.width) / f32(tex.height) : 1
@@ -1561,9 +1608,13 @@ md_blocks :: proc(blocks: []Md_Block_Ui, id_base: u32, selectable := false, wrap
 		case .Rule:
 			if clay.UI(clay.ID("MsgRule", block_id))({layout = {sizing = {width = clay.SizingFixed(240), height = clay.SizingFixed(1)}}, backgroundColor = TEXT_DIM}) {}
 		case .Table:
-			md_table(block_id, block.cells)
+			used = len(block.cells)
+			md_table(block_id, block.cells[:min(used, remaining)], block.cell_fonts)
 		}
+		if used > remaining { return true }
+		remaining -= used
 	}
+	return false
 }
 
 // One body_line per physical line. `selectable` registers the lines
@@ -1575,25 +1626,42 @@ md_blocks :: proc(blocks: []Md_Block_Ui, id_base: u32, selectable := false, wrap
 // from measured widths, like the slint renderer's greedy wrapper.
 // `wrap_w` forces wrapping at that width for non-selectable bodies
 // whose container clay can't wrap into (reply previews, edit history).
-body_text :: proc(id: u32, text: string, font_size: u16, color: clay.Color, selectable := false, wrap_w: f32 = 0, max_lines: int = max(int)) {
+body_text :: proc(id: u32, text: string, font_size: u16, color: clay.Color, selectable := false, wrap_w: f32 = 0, max_lines: int = max(int), fonts: string = "") -> int {
 	wrap := wrap_w > 0 ? wrap_w : (selectable ? body_wrap_w() : 0)
 	tile_px := body_tile_size(text, font_size)
-	lines := wrapped_lines(text, wrap, font_size, gh_cards_on ? .Cards : .Text)
-	for line in lines[:min(len(lines), max_lines)] {
+	lines := wrapped_lines(text, wrap, font_size, gh_cards_on ? .Cards : .Text, fonts)
+	count := len(lines)
+	lines = lines[:min(len(lines), max_lines)]
+	// Parse destinations before wrapping: every visible fragment keeps
+	// the original URL, including a fragment without an http prefix.
+	links := make([dynamic]Inline_Link, context.temp_allocator)
+	visible_end := len(lines) > 0 ? lines[len(lines) - 1].end : 0
+	for at := 0; at < visible_end; {
+		if end, url, ok := url_at(text, at); ok {
+			append(&links, Inline_Link{at, end, url})
+			at = end
+		} else { at += 1 }
+	}
+	first := 0
+	for line in lines {
+		for first < len(links) && links[first].end <= line.start { first += 1 }
+		last := first
+		for last < len(links) && links[last].start < line.end { last += 1 }
 		line_id := id * 8 + line.index
 		if selectable {
-			sel_register(line_id, id, line.start, text[line.start:line.end], text, font_size, tile_px)
-			body_line(line_id, text[line.start:line.end], font_size, color, sel_range(id, line.start, line.end - line.start), true, tile_px)
+			sel_register(line_id, id, line.start, text[line.start:line.end], text, font_size, tile_px, text_fonts(fonts, line.start, line.end))
+			body_line(line_id, text[line.start:line.end], font_size, color, sel_range(id, line.start, line.end - line.start), true, tile_px, text_fonts(fonts, line.start, line.end), links[first:last], line.start)
 		} else {
-			body_line(line_id, text[line.start:line.end], font_size, color, tile_px = tile_px)
+			body_line(line_id, text[line.start:line.end], font_size, color, tile_px = tile_px, fonts = text_fonts(fonts, line.start, line.end), links = links[first:last], offset = line.start)
 		}
 	}
+	return count
 }
 
 @(private)
 MESSAGE_LINES :: 6
 
-// Long bodies use a text excerpt; the popup retains the original formatting.
+// Plain fallback for pending messages and records without parsed blocks.
 @(private)
 message_excerpt :: proc(id: u32, text: string, color: clay.Color) -> bool {
 	if len(wrapped_lines(text, body_wrap_w(), BODY_FS)) <= MESSAGE_LINES { return false }
@@ -1601,10 +1669,15 @@ message_excerpt :: proc(id: u32, text: string, color: clay.Color) -> bool {
 	gh_cards_on = false
 	body_text(id, text, BODY_FS, color, true, max_lines = MESSAGE_LINES)
 	gh_cards_on = cards
+	message_more(id)
+	return true
+}
+
+@(private)
+message_more :: proc(id: u32) {
 	if clay.UI(clay.ID("MessageMore", id))({layout = {padding = {top = 4, bottom = 4}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(4)}) {
 		clay.Text(tr("Read more"), {fontId = FONT_BODY, fontSize = 12, textColor = ACCENT})
 	}
-	return true
 }
 
 // Text width available to a message body: the timeline column from the
@@ -1648,10 +1721,10 @@ body_tile_size :: proc(text: string, font_size: u16) -> f32 {
 }
 
 // Greedy break at whole words, or whole graphemes in an over-long word.
-wrap_break :: proc(text: string, at, end: int, width: f32, font_size: u16, mode: Wrap_Mode = .Text, tile_px: f32 = 0) -> int {
+wrap_break :: proc(text: string, at, end: int, width: f32, font_size: u16, mode: Wrap_Mode = .Text, tile_px: f32 = 0, fonts: string = "") -> int {
 	// Only measure the current line. Measuring the whole next word
 	// rescans a long unbroken suffix once per line (quadratic work).
-	fit := rune_fit(text, at, end, width, font_size, mode, tile_px)
+	fit := rune_fit(text, at, end, width, font_size, mode, tile_px, fonts)
 	if fit == end || text[fit] == ' ' {
 		return fit
 	}
@@ -1681,13 +1754,24 @@ wrap_break :: proc(text: string, at, end: int, width: f32, font_size: u16, mode:
 
 // Longest prefix of [at, end) that fits `width`, keeping emoji
 // graphemes intact and returning at least one cluster.
-rune_fit :: proc(text: string, at, end: int, width: f32, font_size: u16, mode: Wrap_Mode = .Text, tile_px: f32 = 0) -> int {
+rune_fit :: proc(text: string, at, end: int, width: f32, font_size: u16, mode: Wrap_Mode = .Text, tile_px: f32 = 0, fonts: string = "") -> int {
 	pen: f32 = 0
 	previous_emoji := false
+	skip := at
 	it := utf8.decode_grapheme_iterator_make(text[at:end])
 	for cluster, grapheme in utf8.decode_grapheme_iterate(&it) {
 		i := at + grapheme.byte_index
-		adv := rl.MeasureTextLine(FONT_BODY, font_size, cluster, 0).x
+		if i < skip { continue }
+		if mode != .Compose {
+			if next, atom_width := body_atom(text[:end], i, font_size); next > i {
+				adv := atom_width + (i > at ? 2 : 0)
+				if i > at && pen + adv > width { return i }
+				pen += adv
+				skip, previous_emoji = next, true
+				continue
+			}
+		}
+		adv := rl.MeasureTextLine(text_font(fonts, i), font_size, cluster, 0).x
 		emoji := text_emoji(cluster) != nil
 		if emoji { adv = mode == .Compose ? 18 : (tile_px > 0 ? tile_px : f32(font_size) + 4) }
 		// Body segments have a 2px gap; plain graphemes share one run.

@@ -4,7 +4,7 @@ import "core:strings"
 import "base:runtime"
 
 @(private)
-Wrap_Key :: struct { text: string, width: f32, scale: f32, size: u16, mode: Wrap_Mode }
+Wrap_Key :: struct { text: string, width: f32, scale: f32, size: u16, mode: Wrap_Mode, fonts: string }
 @(private)
 Wrap_Mode :: enum { Text, Cards, Compose }
 @(private)
@@ -26,6 +26,7 @@ wrap_clear :: proc() {
 	compose_cache = {}
 	for key, lines in wrap_cache {
 		delete(key.text)
+		delete(key.fonts)
 		delete(lines)
 	}
 	clear(&wrap_cache)
@@ -34,9 +35,9 @@ wrap_clear :: proc() {
 }
 
 @(private)
-wrapped_lines :: proc(text: string, width: f32, size: u16, mode: Wrap_Mode = .Text) -> []Wrap_Line {
-	key := Wrap_Key{text, width, UI_SCALE, size, mode}
-	if lines, hit := wrap_cache[key]; hit { return lines }
+wrapped_lines :: proc(text: string, width: f32, size: u16, mode: Wrap_Mode = .Text, fonts: string = "") -> []Wrap_Line {
+	key := Wrap_Key{text, width, UI_SCALE, size, mode, fonts}
+	if lines, hit := wrap_cache[key]; hit && !wrap_flush { return lines }
 	tile_px := mode == .Compose ? f32(18) : body_tile_size(text, size)
 	lines := make([dynamic]Wrap_Line, context.temp_allocator)
 	start := 0
@@ -52,6 +53,10 @@ wrapped_lines :: proc(text: string, width: f32, size: u16, mode: Wrap_Mode = .Te
 			card_at, card_end := end, end
 			if mode == .Cards {
 				for scan := at; scan < end; scan += 1 {
+					if next, _, _, ok := nevent_at(text[:end], scan); ok {
+						card_at, card_end = scan, next
+						break
+					}
 					if text[scan] != 'h' { continue }
 					if next, url, ok := url_at(text[:end], scan); ok {
 						if _, card := gh_ref(url); card {
@@ -63,7 +68,7 @@ wrapped_lines :: proc(text: string, width: f32, size: u16, mode: Wrap_Mode = .Te
 				}
 			}
 			for at < card_at {
-				cut := width > 0 ? wrap_break(text, at, card_at, width, size, mode, tile_px) : card_at
+				cut := width > 0 ? wrap_break(text, at, card_at, width, size, mode, tile_px, fonts) : card_at
 				append(&lines, Wrap_Line{at, cut, i})
 				i += 1
 				at = cut
@@ -80,17 +85,18 @@ wrapped_lines :: proc(text: string, width: f32, size: u16, mode: Wrap_Mode = .Te
 		start = end + 1
 		i += 1
 	}
-	bytes := len(text) + len(lines) * size_of(Wrap_Line)
+	bytes := len(text) + len(fonts) + len(lines) * size_of(Wrap_Line)
 	if bytes > WRAP_CACHE_BYTES { return lines[:] }
 	// Evict between frames: a nested link card may still be reading an
 	// outer paragraph's spans. Large misses use this frame's scratch space.
 	// ponytail: bounded wholesale eviction; use LRU if mixed long bodies churn.
-	if wrap_bytes + bytes > WRAP_CACHE_BYTES || len(wrap_cache) >= 1024 {
+	if wrap_flush || wrap_bytes + bytes > WRAP_CACHE_BYTES || len(wrap_cache) >= 1024 {
 		wrap_flush = true
 		return lines[:]
 	}
 	context.allocator = runtime.default_context().allocator
 	key.text = strings.clone(text)
+	key.fonts = strings.clone(fonts)
 	owned := make([]Wrap_Line, len(lines))
 	copy(owned, lines[:])
 	wrap_cache[key] = owned

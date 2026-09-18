@@ -95,6 +95,7 @@ bech32_encode :: proc(hrp: string, data: []u8) -> string {
 // Returns (hrp, payload bytes, ok). Checksum is verified.
 bech32_decode :: proc(s: string, allocator := context.temp_allocator) -> (string, []u8, bool) {
 	lower := strings.to_lower(s, context.temp_allocator)
+	if s != lower && s != strings.to_upper(s, context.temp_allocator) { return "", nil, false }
 	sep := strings.last_index_byte(lower, '1')
 	if sep < 1 || sep + 7 > len(lower) {
 		return "", nil, false

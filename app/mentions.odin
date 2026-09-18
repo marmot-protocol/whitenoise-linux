@@ -9,7 +9,6 @@
 // carries a token resolving to the local account.
 package main
 
-import "core:encoding/hex"
 import "core:fmt"
 import "core:slice"
 import "core:strings"
@@ -35,58 +34,17 @@ mention_hover: string
 // npub/nprofile bech32 → pubkey hex ("" when undecodable). nprofile
 // wraps TLV records; type 0 is the 32-byte pubkey.
 mention_hex :: proc(tok: string) -> string {
-	hrp, data, ok := bech32_decode(tok)
-	if !ok {
-		return ""
-	}
-	if hrp == "npub" && len(data) == 32 {
-		return string(hex.encode(data, context.temp_allocator))
-	}
-	if hrp == "nprofile" {
-		i := 0
-		for i + 2 <= len(data) {
-			t := data[i]
-			l := int(data[i + 1])
-			i += 2
-			if i + l > len(data) {
-				break
-			}
-			if t == 0 && l == 32 {
-				return string(hex.encode(data[i:i + 32], context.temp_allocator))
-			}
-			i += l
-		}
-	}
-	return ""
+	end, ref := nostr_at(tok, 0)
+	if end != len(tok) || ref.kind != .Profile { return "" }
+	return ref.key
 }
 
-// Parse a mention token at text[i:]: optional "@", optional "nostr:",
-// then npub1/nprofile1 plus its bech32 data run. end is the byte past
-// the token; hx the pubkey hex (temp-allocated).
+// Profiles share strict token/TLV validation with event references.
 mention_at :: proc(text: string, i: int) -> (end: int, hx: string, ok: bool) {
-	j := i
-	if j < len(text) && text[j] == '@' {
-		j += 1
-	}
-	if strings.has_prefix(text[j:], "nostr:") {
-		j += 6
-	}
-	start := j
-	if strings.has_prefix(text[j:], "npub1") {
-		j += 5
-	} else if strings.has_prefix(text[j:], "nprofile1") {
-		j += 9
-	} else {
-		return 0, "", false
-	}
-	for j < len(text) && strings.index_byte(BECH32_CHARSET, text[j]) >= 0 {
-		j += 1
-	}
-	hx = mention_hex(text[start:j])
-	if len(hx) == 0 {
-		return 0, "", false
-	}
-	return j, hx, true
+	ref: Nostr_Ref
+	end, ref = nostr_at(text, i)
+	if ref.kind != .Profile { return 0, "", false }
+	return end, ref.key, true
 }
 
 // Chip label: local nickname first, then the kind-0 name, then the
@@ -104,6 +62,23 @@ mention_label :: proc(hx: string) -> string {
 		}
 	}
 	return short_hex(hx)
+}
+
+// Wrapping and pointer hit testing use the same displayed chip width.
+@(private)
+body_atom :: proc(text: string, at: int, size: u16) -> (end: int, width: f32) {
+	ref: Nostr_Ref
+	end, ref = nostr_at(text, at)
+	if ref.kind == .Invalid {
+		return end, rl.MeasureTextLine(FONT_BODY, size, tr("Invalid Nostr reference"), 0).x
+	}
+	hx := ref.key
+	if ref.kind != .Profile {
+		ok: bool
+		end, hx, ok = marmot_link_at(text, at)
+		if !ok { return 0, 0 }
+	}
+	return end, 8 + 2 * f32(size) + rl.MeasureTextLine(FONT_TITLE, size, fmt.tprintf("@%s", mention_label(hx)), 0).x
 }
 
 // True when text carries a token resolving to my_hex.

@@ -4,6 +4,7 @@ import "base:runtime"
 import "core:fmt"
 import "core:os"
 import "core:strings"
+import "core:sync"
 import "core:time"
 import "core:time/datetime"
 import "core:time/timezone"
@@ -306,6 +307,7 @@ save_nickname :: proc(ui: ^Ui_State) {
 	} else {
 		ui.nicknames[strings.clone(id)] = strings.clone(nick)
 	}
+	wrap_flush = true
 	save_settings(ui)
 	ui.focus = .Compose
 }
@@ -546,17 +548,18 @@ short_hex :: proc(s: string) -> string {
 @(private = "file")
 local_tz: ^datetime.TZ_Region
 @(private = "file")
-local_tz_tried: bool
+local_tz_once: sync.Once
 
 // Epoch seconds (or millis) shifted to local wall-clock seconds, so the
 // UTC-shaped field math in the formatters below reads local values.
 // DST-correct: the offset comes from the tz record covering the instant.
 local_seconds :: proc(at: u64) -> u64 {
 	seconds := at > 100_000_000_000 ? at / 1000 : at
-	if !local_tz_tried {
-		local_tz_tried = true
-		local_tz, _ = timezone.region_load("local")
-	}
+	sync.once_do(&local_tz_once, proc() {
+		// The shared cache must outlive any caller's temporary or test allocator.
+		context.allocator = runtime.default_context().allocator
+		local_tz, _ = timezone.region_load("local", reload_allocator())
+	})
 	if local_tz == nil {
 		return seconds
 	}
@@ -752,12 +755,11 @@ error_handler :: proc "c" (errorData: clay.ErrorData) {
 	fmt.eprintfln("clay: %v: %s", errorData.errorType, string(errorData.errorText.chars[:errorData.errorText.length]))
 }
 
-// Concatenate an inline run's visible text, walking nested emphasis
-// and links. Inline styling itself is dropped for now (clay has no
-// mixed-style inline flow); block structure carries the rendering.
-extract_inlines :: proc(builder: ^strings.Builder, inlines: [^]marmot.Markdown_Inline, count: uint) {
+// Keep font metadata beside visible text, so selection copies no markup.
+extract_inlines :: proc(builder: ^strings.Builder, inlines: [^]marmot.Markdown_Inline, count: uint, fonts: ^strings.Builder = nil, font: u8 = FONT_BODY) {
 	for i in 0 ..< count {
 		node := &inlines[i]
+		start := strings.builder_len(builder^)
 		switch node.tag {
 		case .TEXT:
 			strings.write_string(builder, string(node.body.text.content))
@@ -766,13 +768,17 @@ extract_inlines :: proc(builder: ^strings.Builder, inlines: [^]marmot.Markdown_I
 		case .SOFT_BREAK, .HARD_BREAK:
 			strings.write_rune(builder, ' ')
 		case .EMPH:
-			extract_inlines(builder, node.body.emph.children, node.body.emph.children_len)
+			extract_inlines(builder, node.body.emph.children, node.body.emph.children_len, fonts, font == FONT_TITLE || font == FONT_BOLD_ITALIC ? FONT_BOLD_ITALIC : FONT_ITALIC)
+			continue
 		case .STRONG:
-			extract_inlines(builder, node.body.strong.children, node.body.strong.children_len)
+			extract_inlines(builder, node.body.strong.children, node.body.strong.children_len, fonts, font == FONT_ITALIC || font == FONT_BOLD_ITALIC ? FONT_BOLD_ITALIC : FONT_TITLE)
+			continue
 		case .STRIKETHROUGH:
-			extract_inlines(builder, node.body.strikethrough.children, node.body.strikethrough.children_len)
+			extract_inlines(builder, node.body.strikethrough.children, node.body.strikethrough.children_len, fonts, font)
+			continue
 		case .LINK:
-			extract_inlines(builder, node.body.link.children, node.body.link.children_len)
+			extract_inlines(builder, node.body.link.children, node.body.link.children_len, fonts, font)
+			continue
 		case .AUTOLINK:
 			strings.write_string(builder, string(node.body.autolink.url))
 		case .MATH:
@@ -784,12 +790,19 @@ extract_inlines :: proc(builder: ^strings.Builder, inlines: [^]marmot.Markdown_I
 		case .NOSTR_MENTION, .NOSTR_URI:
 			strings.write_string(builder, string(node.body.nostr_mention.entity.bech32))
 		}
+		if fonts != nil {
+			for _ in start ..< strings.builder_len(builder^) { strings.write_byte(fonts, font) }
+		}
 	}
 }
 
-inline_text :: proc(inlines: [^]marmot.Markdown_Inline, count: uint) -> string {
+inline_text :: proc(inlines: [^]marmot.Markdown_Inline, count: uint, fonts: ^string = nil, font: u8 = FONT_BODY) -> string {
 	builder := strings.builder_make(context.temp_allocator)
-	extract_inlines(&builder, inlines, count)
+	styles := strings.builder_make(context.temp_allocator)
+	extract_inlines(&builder, inlines, count, fonts != nil ? &styles : nil, font)
+	if fonts != nil && len(strings.trim(strings.to_string(styles), "\x00")) > 0 {
+		fonts^ = strings.clone(strings.to_string(styles))
+	}
 	return strings.clone(strings.to_string(builder))
 }
 
@@ -806,9 +819,13 @@ convert_blocks :: proc(out: ^[dynamic]Md_Block_Ui, blocks: [^]marmot.Markdown_Bl
 		switch block.tag {
 		case .PARAGRAPH:
 			kind := quoted ? Md_Kind.Quote : Md_Kind.Para
-			append(out, Md_Block_Ui{kind = kind, text = inline_text(block.body.paragraph.inlines, block.body.paragraph.inlines_len)})
+			row := Md_Block_Ui{kind = kind}
+			row.text = inline_text(block.body.paragraph.inlines, block.body.paragraph.inlines_len, &row.fonts)
+			append(out, row)
 		case .HEADING:
-			append(out, Md_Block_Ui{kind = .Heading, level = int(block.body.heading.level), text = inline_text(block.body.heading.inlines, block.body.heading.inlines_len)})
+			row := Md_Block_Ui{kind = .Heading, level = int(block.body.heading.level)}
+			row.text = inline_text(block.body.heading.inlines, block.body.heading.inlines_len, &row.fonts, FONT_TITLE)
+			append(out, row)
 		case .CODE_BLOCK:
 			append(out, Md_Block_Ui{kind = .Code, text = strings.clone(strings.trim_right(string(block.body.code_block.content), "\n"))})
 		case .BLOCK_QUOTE:
@@ -830,12 +847,18 @@ convert_blocks :: proc(out: ^[dynamic]Md_Block_Ui, blocks: [^]marmot.Markdown_Bl
 				// One row from the item's first paragraph; nested
 				// blocks flatten after it.
 				body_text: string
+				fonts: string
 				if item.blocks_len > 0 && item.blocks[0].tag == .PARAGRAPH {
-					body_text = inline_text(item.blocks[0].body.paragraph.inlines, item.blocks[0].body.paragraph.inlines_len)
+					body_text = inline_text(item.blocks[0].body.paragraph.inlines, item.blocks[0].body.paragraph.inlines_len, &fonts)
+				}
+				if len(fonts) > 0 {
+					body_fonts := fonts
+					fonts = strings.concatenate({strings.repeat("\x00", len(prefix), context.temp_allocator), body_fonts})
+					delete(body_fonts)
 				}
 				gap := j > 0 && !list.tight ? u8(1) : 0
 				if item.blank_lines_before_len > 0 { gap = max(gap, item.blank_lines_before^) }
-				append(out, Md_Block_Ui{kind = .List_Item, text = strings.clone(fmt.tprintf("%s%s", prefix, body_text)), marker_len = len(prefix), blank_lines_before = gap})
+				append(out, Md_Block_Ui{kind = .List_Item, text = strings.clone(fmt.tprintf("%s%s", prefix, body_text)), fonts = fonts, marker_len = len(prefix), blank_lines_before = gap})
 				delete(body_text)
 				if item.blocks_len > 1 {
 					gaps := ([^]u8)(item.blank_lines_before)[:item.blank_lines_before_len]
@@ -847,19 +870,22 @@ convert_blocks :: proc(out: ^[dynamic]Md_Block_Ui, blocks: [^]marmot.Markdown_Bl
 		case .TABLE:
 			t := &block.body.table
 			cells := make([][]string, int(t.rows_len) + 1)
+			fonts := make([][]string, len(cells))
 			hdr := make([]string, int(t.header_len))
+			fonts[0] = make([]string, len(hdr))
 			for j in 0 ..< t.header_len {
-				hdr[j] = inline_text(t.header[j].inlines, t.header[j].inlines_len)
+				hdr[j] = inline_text(t.header[j].inlines, t.header[j].inlines_len, &fonts[0][j], FONT_TITLE)
 			}
 			cells[0] = hdr
 			for r in 0 ..< t.rows_len {
 				row := make([]string, int(t.rows[r].cells_len))
+				fonts[r + 1] = make([]string, len(row))
 				for j in 0 ..< t.rows[r].cells_len {
-					row[j] = inline_text(t.rows[r].cells[j].inlines, t.rows[r].cells[j].inlines_len)
+					row[j] = inline_text(t.rows[r].cells[j].inlines, t.rows[r].cells[j].inlines_len, &fonts[r + 1][j])
 				}
 				cells[int(r) + 1] = row
 			}
-			append(out, Md_Block_Ui{kind = .Table, cells = cells})
+			append(out, Md_Block_Ui{kind = .Table, cells = cells, cell_fonts = fonts})
 		case .MATH_BLOCK:
 			append(out, Md_Block_Ui{kind = .Code, text = strings.clone(string(block.body.math_block.content))})
 		}

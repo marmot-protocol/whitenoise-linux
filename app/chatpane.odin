@@ -58,6 +58,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 				{layout = {padding = {left = 8, right = 8, top = 3, bottom = 3}, childGap = 5, childAlignment = {y = .Center}}, backgroundColor = hovered() ? ACCENT_DIM : ACCENT, cornerRadius = rr(6)},
 				) {
 					clay.Text(ICON_LOCK, {fontId = FONT_ICON, fontSize = 10, textColor = ON_ACCENT})
+					crop_circle("MlsCircle", 0, chat.group_id, 18)
 					clay.Text(fmt.tprintf("mls:0x%s", chat.group_id[:min(len(chat.group_id), 6)]), {fontId = FONT_MONO, fontSize = 11, textColor = ON_ACCENT})
 				}
 			}

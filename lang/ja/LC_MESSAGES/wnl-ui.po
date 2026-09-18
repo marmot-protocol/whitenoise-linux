@@ -705,6 +705,10 @@ msgstr "音声入力"
 msgid "Dictate drafts and transcribe audio messages on your device."
 msgstr "お使いのデバイスで下書きの音声入力や音声メッセージの文字起こしができます。"
 
+#, c-format
+msgid "Difficulty: %d/5"
+msgstr "難易度: %d/5"
+
 msgid "Divider"
 msgstr ""
 
@@ -828,6 +832,9 @@ msgstr "未読のチャットのみ表示"
 msgid "Finish dictation"
 msgstr "音声入力を完了"
 
+msgid "Fit"
+msgstr "全体を表示"
+
 msgid "Focus glow"
 msgstr ""
 
@@ -849,6 +856,9 @@ msgstr "%1 から"
 
 msgid "Fullscreen"
 msgstr "全画面表示"
+
+msgid "GEOCACHE"
+msgstr "ジオキャッシュ"
 
 msgid "GROUP ID"
 msgstr ""
@@ -903,6 +913,9 @@ msgstr ""
 
 msgid "Hard shadows"
 msgstr ""
+
+msgid "Hidden"
+msgstr "非表示"
 
 msgid "Hide"
 msgstr ""
@@ -968,6 +981,9 @@ msgstr "インターフェースのズーム"
 
 msgid "Interface zoom"
 msgstr "インターフェースのズーム"
+
+msgid "Invalid Nostr reference"
+msgstr "無効なNostr参照"
 
 msgid "Invalid attachment."
 msgstr "無効な添付ファイルです。"
@@ -1047,6 +1063,9 @@ msgstr ""
 
 msgid "LINKED DEVICES"
 msgstr "リンク済みデバイス"
+
+msgid "Large"
+msgstr "大"
 
 msgid "Last backup"
 msgstr "最後のバックアップ"
@@ -1132,6 +1151,9 @@ msgstr "画像をコピーしました"
 
 msgid "Message text size"
 msgstr ""
+
+msgid "Micro"
+msgstr "マイクロ"
 
 #, fuzzy
 msgid "Move to folder"
@@ -1292,6 +1314,9 @@ msgstr "オフにすると、本文を表示せず「新着メッセージ」と
 msgid "On accent"
 msgstr "アカウントを追加"
 
+msgid "On sale"
+msgstr "販売中"
+
 msgid "One-tap reactions"
 msgstr "ワンタップリアクション"
 
@@ -1300,6 +1325,9 @@ msgstr "開く"
 
 msgid "Open folder"
 msgstr "フォルダを開く"
+
+msgid "Open in OpenStreetMap"
+msgstr "OpenStreetMapで開く"
 
 msgid "Open in browser"
 msgstr "ブラウザで開く"
@@ -1313,6 +1341,12 @@ msgstr "このリンクを開きますか?"
 #, fuzzy
 msgid "Opening in your browser"
 msgstr "既定のブラウザで{}を開きます。"
+
+msgid "Other"
+msgstr "その他"
+
+msgid "Out of stock"
+msgstr "在庫切れ"
 
 msgid "Outline surfaces"
 msgstr ""
@@ -1334,6 +1368,9 @@ msgstr ""
 
 msgid "PRIVATE GROUP CHAT OVER NOSTR"
 msgstr ""
+
+msgid "PRODUCT"
+msgstr "商品"
 
 msgid "PROFILE"
 msgstr "プロフィール"
@@ -1390,6 +1427,9 @@ msgstr "音を鳴らす"
 
 msgid "Plays here when you send. It can't travel: marmot reserves the chat event kind, so no client attaches the tag any more. An effect sent by an older client still plays."
 msgstr ""
+
+msgid "Pre-order"
+msgstr "予約注文"
 
 msgid "Preparing dictation..."
 msgstr "音声入力を準備しています..."
@@ -1494,6 +1534,9 @@ msgstr ""
 msgid "Refresh"
 msgstr "更新"
 
+msgid "Regular"
+msgstr "標準"
+
 #, fuzzy
 msgid "Relay status unavailable"
 msgstr "(メッセージを表示できません)"
@@ -1561,6 +1604,9 @@ msgstr "起動時に最後のチャットを復元"
 msgid "Restore the default reactions"
 msgstr "デフォルトのリアクションに戻す"
 
+msgid "Retry"
+msgstr "再試行"
+
 msgid "Reveal"
 msgstr ""
 
@@ -1619,6 +1665,9 @@ msgstr ""
 #, fuzzy
 msgid "Save file"
 msgstr "動画を保存"
+
+msgid "Scan to add"
+msgstr "スキャンして追加"
 
 msgid "Scan to add this account from another device"
 msgstr "スキャンすると別のデバイスからこのアカウントを追加できます"
@@ -1762,6 +1811,9 @@ msgstr "QR コードで表示"
 msgid "Show group members"
 msgstr "メンバーを表示"
 
+msgid "Show hint"
+msgstr "ヒントを表示"
+
 msgid "Show message preview"
 msgstr "メッセージのプレビューを表示"
 
@@ -1790,6 +1842,16 @@ msgstr ""
 
 msgid "Size"
 msgstr ""
+
+#, c-format
+msgid "Size: %s"
+msgstr "サイズ: %s"
+
+msgid "Small"
+msgstr "小"
+
+msgid "Sold"
+msgstr "売却済み"
 
 msgid "Speech"
 msgstr "音声"
@@ -1823,6 +1885,10 @@ msgstr "管理者を辞める"
 
 msgid "Step down as admin?"
 msgstr "管理者を辞めますか？"
+
+#, c-format
+msgid "Stock: %s"
+msgstr "在庫数: %s"
 
 msgid "Stop reading"
 msgstr "読み上げを停止"
@@ -1868,6 +1934,10 @@ msgstr ""
 #, fuzzy
 msgid "Tap one to remove it."
 msgstr "メッセージのツールバーとメニューに表示されます。タップすると削除できます。"
+
+#, c-format
+msgid "Terrain: %d/5"
+msgstr "地形: %d/5"
 
 #, fuzzy
 msgid "Test notification"
@@ -2028,6 +2098,9 @@ msgstr "文字起こしを表示"
 
 msgid "Vignette"
 msgstr ""
+
+msgid "Visual fingerprint"
+msgstr "視覚的フィンガープリント"
 
 msgid "Voting has ended."
 msgstr ""

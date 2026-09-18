@@ -705,6 +705,10 @@ msgstr "Diktieren"
 msgid "Dictate drafts and transcribe audio messages on your device."
 msgstr "Diktiere Entwürfe und transkribiere Audionachrichten auf deinem Gerät."
 
+#, c-format
+msgid "Difficulty: %d/5"
+msgstr "Schwierigkeit: %d/5"
+
 msgid "Divider"
 msgstr ""
 
@@ -828,6 +832,9 @@ msgstr "Nur ungelesene Chats anzeigen"
 msgid "Finish dictation"
 msgstr "Diktat beenden"
 
+msgid "Fit"
+msgstr "Einpassen"
+
 msgid "Focus glow"
 msgstr ""
 
@@ -849,6 +856,9 @@ msgstr "Von %1"
 
 msgid "Fullscreen"
 msgstr "Vollbild"
+
+msgid "GEOCACHE"
+msgstr "GEOCACHE"
 
 msgid "GROUP ID"
 msgstr ""
@@ -903,6 +913,9 @@ msgstr ""
 
 msgid "Hard shadows"
 msgstr ""
+
+msgid "Hidden"
+msgstr "Ausgeblendet"
 
 msgid "Hide"
 msgstr ""
@@ -968,6 +981,9 @@ msgstr "Oberflächen-Zoom"
 
 msgid "Interface zoom"
 msgstr "Oberflächen-Zoom"
+
+msgid "Invalid Nostr reference"
+msgstr "Ungültiger Nostr-Verweis"
 
 msgid "Invalid attachment."
 msgstr "Ungültiger Anhang."
@@ -1047,6 +1063,9 @@ msgstr ""
 
 msgid "LINKED DEVICES"
 msgstr "VERKNÜPFTE GERÄTE"
+
+msgid "Large"
+msgstr "Groß"
 
 msgid "Last backup"
 msgstr "Letztes Backup"
@@ -1132,6 +1151,9 @@ msgstr "Bild kopiert"
 
 msgid "Message text size"
 msgstr ""
+
+msgid "Micro"
+msgstr "Mikro"
 
 #, fuzzy
 msgid "Move to folder"
@@ -1292,6 +1314,9 @@ msgstr "Aus zeigt nur „Neue Nachricht“ ohne den Text."
 msgid "On accent"
 msgstr "Konto hinzufügen"
 
+msgid "On sale"
+msgstr "Zum Verkauf"
+
 msgid "One-tap reactions"
 msgstr "Ein-Tipp-Reaktionen"
 
@@ -1300,6 +1325,9 @@ msgstr "Öffnen"
 
 msgid "Open folder"
 msgstr "Ordner öffnen"
+
+msgid "Open in OpenStreetMap"
+msgstr "In OpenStreetMap öffnen"
 
 msgid "Open in browser"
 msgstr "Im Browser öffnen"
@@ -1313,6 +1341,12 @@ msgstr "Diesen Link öffnen?"
 #, fuzzy
 msgid "Opening in your browser"
 msgstr "Dies öffnet {} in deinem Standardbrowser."
+
+msgid "Other"
+msgstr "Andere"
+
+msgid "Out of stock"
+msgstr "Nicht auf Lager"
 
 msgid "Outline surfaces"
 msgstr ""
@@ -1334,6 +1368,9 @@ msgstr ""
 
 msgid "PRIVATE GROUP CHAT OVER NOSTR"
 msgstr ""
+
+msgid "PRODUCT"
+msgstr "PRODUKT"
 
 msgid "PROFILE"
 msgstr "PROFIL"
@@ -1390,6 +1427,9 @@ msgstr "Ton abspielen"
 
 msgid "Plays here when you send. It can't travel: marmot reserves the chat event kind, so no client attaches the tag any more. An effect sent by an older client still plays."
 msgstr ""
+
+msgid "Pre-order"
+msgstr "Vorbestellung"
 
 msgid "Preparing dictation..."
 msgstr "Diktat wird vorbereitet..."
@@ -1494,6 +1534,9 @@ msgstr ""
 msgid "Refresh"
 msgstr "Aktualisieren"
 
+msgid "Regular"
+msgstr "Normal"
+
 #, fuzzy
 msgid "Relay status unavailable"
 msgstr "(Nachricht nicht verfügbar)"
@@ -1561,6 +1604,9 @@ msgstr "Letzten Chat beim Start wiederherstellen"
 msgid "Restore the default reactions"
 msgstr "Standardreaktionen wiederherstellen"
 
+msgid "Retry"
+msgstr "Erneut versuchen"
+
 msgid "Reveal"
 msgstr ""
 
@@ -1619,6 +1665,9 @@ msgstr ""
 #, fuzzy
 msgid "Save file"
 msgstr "Video speichern"
+
+msgid "Scan to add"
+msgstr "Zum Hinzufügen scannen"
 
 msgid "Scan to add this account from another device"
 msgstr "Scanne den Code, um dieses Konto von einem anderen Gerät hinzuzufügen"
@@ -1762,6 +1811,9 @@ msgstr "Als QR anzeigen"
 msgid "Show group members"
 msgstr "Mitglieder anzeigen"
 
+msgid "Show hint"
+msgstr "Hinweis anzeigen"
+
 msgid "Show message preview"
 msgstr "Nachrichtenvorschau anzeigen"
 
@@ -1790,6 +1842,16 @@ msgstr ""
 
 msgid "Size"
 msgstr ""
+
+#, c-format
+msgid "Size: %s"
+msgstr "Größe: %s"
+
+msgid "Small"
+msgstr "Klein"
+
+msgid "Sold"
+msgstr "Verkauft"
 
 msgid "Speech"
 msgstr "Sprache & Stimme"
@@ -1823,6 +1885,10 @@ msgstr "Zurücktreten"
 
 msgid "Step down as admin?"
 msgstr "Als Admin zurücktreten?"
+
+#, c-format
+msgid "Stock: %s"
+msgstr "Bestand: %s"
 
 msgid "Stop reading"
 msgstr "Vorlesen stoppen"
@@ -1868,6 +1934,10 @@ msgstr ""
 #, fuzzy
 msgid "Tap one to remove it."
 msgstr "Wird in der Nachrichtenleiste und im Menü angezeigt. Zum Entfernen antippen."
+
+#, c-format
+msgid "Terrain: %d/5"
+msgstr "Gelände: %d/5"
 
 #, fuzzy
 msgid "Test notification"
@@ -2028,6 +2098,9 @@ msgstr "Transkription anzeigen"
 
 msgid "Vignette"
 msgstr ""
+
+msgid "Visual fingerprint"
+msgstr "Visueller Fingerabdruck"
 
 msgid "Voting has ended."
 msgstr ""

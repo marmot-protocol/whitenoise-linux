@@ -22,6 +22,8 @@ mkdir -p "$PREFIX/bin" "$RES/fonts" "$PREFIX/share/applications" \
 cp "$HERE/build/app" "$PREFIX/bin/whitenoise"
 cp "$HERE/build/wn-tts" "$HERE/build/wn-stt" "$PREFIX/bin/"
 mkdir -p "$RES/licenses"
+cp "$HERE/vendor/crop-circles/LICENSE" "$RES/licenses/crop-circles.txt"
+cp "$HERE/vendor/crop-circles/README.txt" "$RES/licenses/crop-circles-notices.txt"
 cp "$HERE/vendor/sherpa-onnx/LICENSE" "$RES/licenses/sherpa-onnx.txt"
 cp "$HERE/vendor/sherpa-onnx/LICENSE-onnxruntime" "$RES/licenses/onnxruntime.txt"
 cp "$HERE/vendor/sherpa-onnx/ThirdPartyNotices-onnxruntime.txt" "$RES/licenses/onnxruntime-third-party.txt"

@@ -30,10 +30,7 @@ txt_view_make :: proc(text: string) -> ^Txt_View {
 }
 
 txt_view_free :: proc(view: ^Txt_View) {
-	for block in view.blocks {
-		delete(block.text)
-	}
-	delete(view.blocks)
+	blocks_free(view.blocks)
 	free(view)
 }
 

@@ -43,6 +43,45 @@ message_excerpt_layout :: proc(t: ^testing.T) {
 			testing.expect(t, clay.GetElementData(clay.ID("MessageMore", 17)).found)
 		}
 	}
+	// The collapsed row must render parsed blocks, not the source markdown.
+	font := [1]u8{FONT_TITLE}
+	rows := []Md_Block_Ui{
+		{kind = .Heading, text = "H6", level = 6},
+		{kind = .Heading, text = "Setext heading", level = 1},
+		{kind = .Para, text = "not a heading #hashtag mid-line"},
+		{kind = .Quote, text = "blockquote"},
+		{kind = .Quote, text = "nested blockquote"},
+		{kind = .List_Item, text = "• bold", marker_len = len("• "), fonts = fmt.tprintf("%s%s", strings.repeat("\x00", len("• "), context.temp_allocator), strings.repeat(string(font[:]), len("bold"), context.temp_allocator))},
+		{kind = .Para, text = "hidden tail"},
+	}
+	msg := Msg_Ui{id = "markdown-excerpt", sender = "Sender", mine = true,
+		body = "###### H6\nSetext heading\n===\nnot a heading #hashtag mid-line\n> blockquote\n>> nested blockquote\n- **bold**\nhidden tail"}
+	defer delete(msg.blocks)
+	for count in ([]int{6, 7}) {
+		clear(&msg.blocks)
+		append(&msg.blocks, ..rows[:count])
+		for frame in 0 ..< 3 {
+			clear(&sel_lines)
+			clay.BeginLayout()
+			if clay.UI(clay.ID("MarkdownExcerptTest"))({layout = {sizing = {width = clay.SizingFixed(600), height = clay.SizingGrow()}, layoutDirection = .TopToBottom}, backgroundColor = CARD}) { message_row(2, msg) }
+			commands := clay.EndLayout(0)
+			if frame < 2 { continue }
+			testing.expect_value(t, len(sel_lines), MESSAGE_LINES)
+			testing.expect_value(t, clay.GetElementData(clay.ID("MessageMore", 2 * 4096)).found, count > MESSAGE_LINES)
+			testing.expect(t, clay.GetElementData(clay.ID("MsgQuoteBar", 2 * 4096 + 3 * 16)).found)
+			for cmd in commands.internalArray[:commands.length] {
+				if cmd.commandType != .Text { continue }
+				data := cmd.renderData.text
+				part := string(data.stringContents.chars[:data.stringContents.length])
+				testing.expect(t, !strings.contains(part, "######") && !strings.contains(part, "===") && !strings.contains(part, "**") && !strings.contains(part, "hidden tail"))
+				if part == "H6" || part == "Setext heading" || part == "bold" { testing.expect_value(t, data.fontId, u16(FONT_TITLE)) }
+			}
+			rl.BeginDrawing()
+			clay_raylib_render(&commands)
+			rl.TakeScreenshot("/tmp/wn-markdown-excerpt.png")
+			rl.EndDrawing()
+		}
+	}
 	text := fmt.tprintf("%sTHE END", strings.repeat("A paragraph with **formatting**.\n\n", 100, context.temp_allocator))
 	blocks := parse_md_text(text)
 	preview_message(text, blocks[:])

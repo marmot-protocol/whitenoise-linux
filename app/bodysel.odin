@@ -25,6 +25,7 @@ Sel_Line :: struct {
 	block_text: string,
 	size:  u16,
 	tile_px: f32,
+	fonts: string,
 }
 
 sel_lines: [dynamic]Sel_Line
@@ -36,8 +37,8 @@ sel_dragging: bool
 @(private)
 Selection_Unit :: enum { Character, Word, Sentence }
 
-sel_register :: proc(id, block: u32, start: int, text, block_text: string, size: u16, tile_px: f32) {
-	append(&sel_lines, Sel_Line{id, block, start, text, block_text, size, tile_px})
+sel_register :: proc(id, block: u32, start: int, text, block_text: string, size: u16, tile_px: f32, fonts: string = "") {
+	append(&sel_lines, Sel_Line{id, block, start, text, block_text, size, tile_px, fonts})
 }
 
 // The part of `line` that is selected, as byte offsets into the line.
@@ -83,7 +84,7 @@ sel_offset_in :: proc(line: Sel_Line, mx, my: f32) -> (offset: int, over: bool) 
 	case mx >= b.x + b.width:
 		return line.start + len(line.text), true
 	}
-	return line.start + hit_plain(line.text, mx - b.x, line.size, line.tile_px), true
+	return line.start + hit_plain(line.text, mx - b.x, line.size, line.tile_px, line.fonts), true
 }
 
 // The line under the pointer, preferring the block already being
@@ -147,6 +148,7 @@ sel_snap :: proc(text: string, lo, hi: int) -> (out_lo, out_hi: int) {
 	out_lo, out_hi = lo, hi
 	for i := 0; i < len(text); {
 		end, _, ok := url_at(text, i)
+		if next, ref := nostr_at(text, i); ref.kind != .None { end, ok = next, true }
 		if !ok {
 			i += 1
 			continue

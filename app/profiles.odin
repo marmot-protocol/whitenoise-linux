@@ -25,6 +25,8 @@ import "core:time"
 
 import rl "sdlrl"
 import marmot "../marmot"
+import cc "../vendor/crop-circles"
+import clay "../vendor/clay/bindings/odin/clay-odin"
 
 // One account's cached kind-0 essentials; empty strings when unknown.
 Profile_Info :: struct {
@@ -324,6 +326,7 @@ update_profile :: proc(ui: ^Ui_State, hex: string, info: Profile_Info) -> bool {
 		return false
 	}
 	profile_cache[hex] = info
+	if old.name != info.name { wrap_flush = true }
 	name := len(info.name) > 0 ? info.name : short_hex(hex)
 	for &member in ui.members {
 		if member.id_hex != hex {
@@ -377,6 +380,7 @@ update_profile :: proc(ui: ^Ui_State, hex: string, info: Profile_Info) -> bool {
 Fetched_Pic :: struct {
 	url:  string,
 	data: []u8, // nil = fetch failed
+	side: i32, // generated RGBA pixels; zero means encoded image bytes
 }
 
 @(private = "file")
@@ -444,11 +448,19 @@ pic_worker :: proc(_: ^thread.Thread) {
 			continue
 		}
 
-		data := pic_load(url)
+		data: []u8
+		side: i32
+		if strings.has_prefix(url, "crop-circle:") {
+			data, side = crop_circle_pixels(url[len("crop-circle:"):])
+		} else if strings.has_prefix(url, "crop-square:") {
+			data, side = crop_circle_pixels(url[len("crop-square:"):], .Square)
+		} else {
+			data = pic_load(url)
+		}
 		free_all(context.temp_allocator)
 
 		sync.lock(&pic_mutex)
-		append(&pic_done, Fetched_Pic{url = url, data = data})
+		append(&pic_done, Fetched_Pic{url = url, data = data, side = side})
 		sync.unlock(&pic_mutex)
 		frame_wake()
 	}
@@ -516,7 +528,7 @@ stop_pic_worker :: proc() {
 	profile_reads_stop()
 }
 
-// Frame-loop drain: decode fetched bytes into round avatar textures.
+// Upload generated fingerprints and decode photos into round avatar textures.
 drain_pics :: proc() {
 	sync.lock(&pic_mutex)
 	done := pic_done
@@ -525,7 +537,11 @@ drain_pics :: proc() {
 
 	for f in done {
 		tex: ^rl.Texture2D
-		if f.data != nil {
+		if f.data != nil && f.side > 0 {
+			tex = new(rl.Texture2D)
+			tex^ = rl.LoadTextureFromImage({data = raw_data(f.data), width = f.side, height = f.side})
+			delete(f.data)
+		} else if f.data != nil {
 			image := rl.LoadImageFromMemory(".img", raw_data(f.data), i32(len(f.data)))
 			if image.data != nil {
 				tex = new(rl.Texture2D)
@@ -537,6 +553,46 @@ drain_pics :: proc() {
 		pic_textures[f.url] = tex // nil marks a permanent miss
 	}
 	delete(done)
+}
+
+@(private)
+Crop_Shape :: enum { Slanted, Square }
+
+// Public keys are already 32-byte digests. MLS's 16-byte IDs need SHA-256.
+@(private)
+crop_circle_pixels :: proc(key: string, shape := Crop_Shape.Slanted) -> ([]u8, i32) {
+	if len(key) != 64 && len(key) != 32 { return nil, 0 }
+	digest: [32]u8
+	bytes, valid := hex.decode_into_buffer(transmute([]u8)key, digest[:])
+	if !valid { return nil, 0 }
+	if len(bytes) == 16 {
+		group := digest
+		hash.hash(.SHA256, group[:16], digest[:])
+	}
+	image := cc.make_from_digest(digest, .Detailed, module_size = 2, alpha = .Opaque)
+	if shape == .Square { return image.pixels, i32(image.width) }
+	defer cc.image_destroy(image)
+	pixels := make([]u8, len(image.pixels))
+	// Fit every row into a left-leaning trapezoid without cropping the fingerprint.
+	for y in 0 ..< image.height {
+		t := (f32(y) + 0.5) / f32(image.height)
+		left := f32(image.width) * 0.15 * t
+		right := f32(image.width) * (0.75 + 0.25 * t)
+		for x in 0 ..< image.width {
+			coverage := clamp(min(f32(x + 1) - left, right - f32(x)), 0, 1)
+			sx := clamp(int((f32(x) + 0.5 - left) / (right - left) * f32(image.width)), 0, image.width - 1)
+			dst, src := (y * image.width + x) * 4, (y * image.width + sx) * 4
+			copy(pixels[dst:dst + 3], image.pixels[src:src + 3])
+			pixels[dst + 3] = u8(coverage * 255)
+		}
+	}
+	return pixels, i32(image.width)
+}
+
+@(private)
+crop_circle :: proc(id: string, index: u32, key: string, size: f32, shape := Crop_Shape.Slanted) {
+	tex := url_pic(fmt.tprintf("%s:%s", shape == .Square ? "crop-square" : "crop-circle", key))
+	if clay.UI(clay.ID(id, index))({layout = {sizing = {width = clay.SizingFixed(size), height = clay.SizingFixed(size)}}, image = {imageData = tex}}) {}
 }
 
 // Center-crop to a square and cut a circular alpha mask, then upload.

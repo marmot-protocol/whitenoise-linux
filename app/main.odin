@@ -49,6 +49,10 @@ FONT_BODY :: 0
 FONT_TITLE :: 1
 FONT_MONO :: 2
 FONT_ICON :: 3
+@(private)
+FONT_ITALIC :: 4
+@(private)
+FONT_BOLD_ITALIC :: 5
 
 // Nerd Font (Font Awesome range) codepoints for the nav and chrome.
 ICON_CHATS :: "\uf075"
@@ -1415,6 +1419,13 @@ app_main :: proc() {
 			save_settings(&ui)
 			wheel = {}
 		}
+		if preview_shown && (preview.kind == .Image || preview.kind == .Slides) && clay.PointerOver(clay.ID("PvScroll")) {
+			data := clay.GetScrollContainerData(clay.ID("PvScroll"))
+			if data.found && (shift_down() || data.contentDimensions.height <= data.scrollContainerDimensions.height) {
+				wheel.x += wheel.y
+				wheel.y = 0
+			}
+		}
 		wheel.x *= f32(ui.prefs.scroll_speed) / 100
 		wheel.y *= f32(ui.prefs.scroll_speed) / 100
 		if orbit_hover != nil {
@@ -1447,6 +1458,9 @@ app_main :: proc() {
 
 		orbit_hover = nil // rebound by the build when a tile is hovered
 		link_hover = ""
+		nev_more_hover = ""
+		nev_retry_hover = ""
+		nev_hint_hover = ""
 		clear(&sel_lines) // body lines re-register during the build
 		video_hover = nil
 		video_full_hover = {}
@@ -1769,6 +1783,30 @@ app_main :: proc() {
 			)
 			if len(ui.sel_copy) == 0 && !drag_moved {
 				handle_link_click(&ui)
+				if nev_retry_hover != "" && mouse_released() && !modal_open(&ui) {
+					for key, card in nev_cards {
+						if key != nev_retry_hover || !card.done || len(card.raw) > 0 { continue }
+						delete_key(&nev_cards, key)
+						delete(key)
+						break
+					}
+				}
+				if nev_more_hover != "" && mouse_released() && !modal_open(&ui) {
+					card := nev_cards[nev_more_hover]
+					textual := card.kind == NEV_PRODUCT_KIND || card.kind == NEV_GEOCACHE_KIND
+					for kind in NEV_TEXT_KINDS { textual = textual || kind == card.kind }
+					if !textual {
+						preview_message(card.raw)
+					} else if len(card.geocache.mission) > 0 {
+						preview_message(fmt.tprintf("%s\n\n%s", card.content, card.geocache.mission), card.blocks[:])
+						if len(card.blocks) > 0 { append(&preview.message_blocks, Md_Block_Ui{kind = .Para, text = strings.clone(card.geocache.mission)}) }
+					} else {
+						preview_message(card.content, card.blocks[:])
+					}
+				}
+				if nev_hint_hover != "" && mouse_released() && !modal_open(&ui) {
+					preview_message(nev_cards[nev_hint_hover].geocache.hint)
+				}
 			}
 		}
 		// Text input follows the field, not the window: it drives the

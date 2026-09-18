@@ -267,7 +267,10 @@ peer_modal :: proc(ui: ^Ui_State) {
 			avatar("PeerAvatar", 0, ui.peer_hex, ui.peer_name, 56, url_pic(ui.peer_pic))
 			if clay.UI(clay.ID("PeerHeadCol"))({layout = {layoutDirection = .TopToBottom, childGap = 3}}) {
 				clay.Text(ui.peer_name, {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
-				clay.Text(npub_tail(ui.peer_npub), {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO})
+				if clay.UI(clay.ID("PeerFingerprint"))({layout = {childGap = 6, childAlignment = {y = .Center}}}) {
+					crop_circle("PeerCircle", 0, ui.peer_hex, 24)
+					clay.Text(npub_tail(ui.peer_npub), {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO})
+				}
 			}
 			if clay.UI(clay.ID("PeerHeadGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 			if clay.UI(clay.ID("PeerClose"))(
@@ -410,7 +413,7 @@ contacts_pane :: proc(ui: ^Ui_State) {
 	contact := ui.contacts[ui.selected_contact]
 
 	if clay.UI(clay.ID("ContactPage"))(
-	{layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom, padding = {left = 24, right = 24, top = 14, bottom = 24}, childGap = 10}},
+	{layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom, padding = {left = 24, right = 24, top = 14, bottom = 24}, childGap = 10}, clip = {vertical = true, childOffset = clay.GetScrollOffset()}},
 	) {
 		// Header strip: icon plate + page title, like the chat header.
 		if clay.UI(clay.ID("ContactHead"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, childAlignment = {y = .Center}, padding = {bottom = 4}}}) {
@@ -464,6 +467,9 @@ contacts_pane :: proc(ui: ^Ui_State) {
 				clay.Text(npub_tail(contact.npub), {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_DIM})
 				micro_button("CopyNpubBtn", "Copy")
 			}
+			identity_w := clay.GetElementData(clay.ID("IdentityCard")).boundingBox.width
+			if identity_w <= 0 { identity_w = page_w(ui) - 48 }
+			identity_codes("Contact", contact.id_hex, contact_qr(ui, contact.npub), identity_w)
 		}
 		micro_button("QrBtn", "Show as QR")
 
@@ -522,12 +528,12 @@ contacts_pane :: proc(ui: ^Ui_State) {
 			qr_modal(ui, contact)
 		}
 	}
+	scrollbar(clay.ID("ContactPage"))
 }
 
 // The contact's published relays, the ones you share accented: sharing
 // one means your events meet there instead of taking a longer path.
-// Capped, because a published list has no upper bound and the pane does
-// not scroll.
+// Capped to keep long published relay lists compact.
 RELAY_ROWS_MAX :: 6
 
 @(private = "file")
@@ -632,18 +638,24 @@ qr_modal :: proc(ui: ^Ui_State, contact: Contact_Ui) {
 // Rasterize the contact's marmot:// deep link into a texture (same
 // payload as the slint profile_qr_url).
 show_contact_qr :: proc(ui: ^Ui_State, contact: Contact_Ui) {
-	tex := qr_texture(contact.npub)
-	if tex == nil {
+	if contact_qr(ui, contact.npub) == nil {
 		ui.client_status = strings.clone(tr("Couldn't render the QR code. Please try again."))
 		return
 	}
+	ui.qr_open = true
+}
+
+@(private = "file")
+contact_qr :: proc(ui: ^Ui_State, npub: string) -> ^rl.Texture2D {
+	if ui.qr_npub == npub { return ui.qr_tex }
 	if ui.qr_tex != nil {
 		rl.UnloadTexture(ui.qr_tex^)
 		free(ui.qr_tex)
 	}
-	ui.qr_tex = tex
-	ui.qr_npub = contact.npub
-	ui.qr_open = true
+	delete(ui.qr_npub)
+	ui.qr_npub = strings.clone(npub)
+	ui.qr_tex = qr_texture(npub)
+	return ui.qr_tex
 }
 
 // marmot://profile deep link for an npub, rasterized to a texture.
@@ -656,6 +668,24 @@ qr_texture :: proc(npub: string) -> ^rl.Texture2D {
 	tex := new(rl.Texture2D)
 	tex^ = rl.LoadTextureFromImage(image)
 	return tex
+}
+
+@(private = "file")
+identity_codes :: proc(prefix: string, key: string, qr: ^rl.Texture2D, width: f32) {
+	if clay.UI(clay.ID(fmt.tprintf("%sQrPlate", prefix)))({layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, padding = {top = 8, bottom = 16}, childAlignment = {x = .Center}}}) {
+		if clay.UI(clay.ID(fmt.tprintf("%sFingerprint", prefix)))({layout = {layoutDirection = width < 424 ? .TopToBottom : .LeftToRight, childGap = 16}}) {
+			if clay.UI(clay.ID(fmt.tprintf("%sPatternCard", prefix)))({layout = {layoutDirection = .TopToBottom, padding = clay.PaddingAll(16), childGap = 12, childAlignment = {x = .Center}}, backgroundColor = CARD, cornerRadius = rr(10), border = {color = FIELD_BORDER, width = bw()}}) {
+				crop_circle(fmt.tprintf("%sCircle", prefix), 0, key, 160, .Square)
+				clay.Text(tr("Visual fingerprint"), {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT_DIM})
+			}
+			if qr != nil {
+				if clay.UI(clay.ID(fmt.tprintf("%sScanCard", prefix)))({layout = {layoutDirection = .TopToBottom, padding = clay.PaddingAll(16), childGap = 12, childAlignment = {x = .Center}}, backgroundColor = CARD, cornerRadius = rr(10), border = {color = FIELD_BORDER, width = bw()}}) {
+					if clay.UI(clay.ID(fmt.tprintf("%sQr", prefix)))({layout = {sizing = {width = clay.SizingFixed(160), height = clay.SizingFixed(160)}}, image = {imageData = qr}}) {}
+					clay.Text(tr("Scan to add"), {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT_DIM})
+				}
+			}
+		}
+	}
 }
 
 archived_pane :: proc(ui: ^Ui_State) {
@@ -933,14 +963,9 @@ profile_pane :: proc(ui: ^Ui_State) {
 				micro_button("ProfileCopyNpub", "Copy")
 			}
 			if ui.profile.qr != nil {
-				if clay.UI(clay.ID("ProfileQrPlate"))(
-				{layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, padding = {top = 8, bottom = 16}, childGap = 10, childAlignment = {x = .Center}}},
-				) {
-					if clay.UI(clay.ID("ProfileQr"))(
-					{layout = {sizing = {width = clay.SizingFixed(200), height = clay.SizingFixed(200)}}, image = {imageData = ui.profile.qr}, cornerRadius = rr(8)},
-					) {}
-					clay.Text(tr("Scan to add this account from another device"), {fontId = FONT_BODY, fontSize = 10, textColor = TEXT_LO})
-				}
+				identity_w := clay.GetElementData(clay.ID("ProfileIdCard")).boundingBox.width
+				if identity_w <= 0 { identity_w = page_w(ui) - 40 }
+				identity_codes("Profile", ui.account_ref, ui.profile.qr, identity_w)
 			}
 		}
 

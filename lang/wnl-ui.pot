@@ -643,6 +643,10 @@ msgstr ""
 msgid "Dictate drafts and transcribe audio messages on your device."
 msgstr ""
 
+#, c-format
+msgid "Difficulty: %d/5"
+msgstr ""
+
 msgid "Divider"
 msgstr ""
 
@@ -755,6 +759,9 @@ msgstr ""
 msgid "Finish dictation"
 msgstr ""
 
+msgid "Fit"
+msgstr ""
+
 msgid "Focus glow"
 msgstr ""
 
@@ -774,6 +781,9 @@ msgid "From file"
 msgstr ""
 
 msgid "Fullscreen"
+msgstr ""
+
+msgid "GEOCACHE"
 msgstr ""
 
 msgid "GROUP ID"
@@ -822,6 +832,9 @@ msgid "HTML"
 msgstr ""
 
 msgid "Hard shadows"
+msgstr ""
+
+msgid "Hidden"
 msgstr ""
 
 msgid "Hide"
@@ -882,6 +895,9 @@ msgid "Interface sounds"
 msgstr ""
 
 msgid "Interface zoom"
+msgstr ""
+
+msgid "Invalid Nostr reference"
 msgstr ""
 
 msgid "Invalid attachment."
@@ -960,6 +976,9 @@ msgstr ""
 msgid "LINKED DEVICES"
 msgstr ""
 
+msgid "Large"
+msgstr ""
+
 msgid "Last backup"
 msgstr ""
 
@@ -1036,6 +1055,9 @@ msgid "Message text copied"
 msgstr ""
 
 msgid "Message text size"
+msgstr ""
+
+msgid "Micro"
 msgstr ""
 
 msgid "Move to folder"
@@ -1179,6 +1201,9 @@ msgstr ""
 msgid "On accent"
 msgstr ""
 
+msgid "On sale"
+msgstr ""
+
 msgid "One-tap reactions"
 msgstr ""
 
@@ -1186,6 +1211,9 @@ msgid "Open"
 msgstr ""
 
 msgid "Open folder"
+msgstr ""
+
+msgid "Open in OpenStreetMap"
 msgstr ""
 
 msgid "Open in browser"
@@ -1198,6 +1226,12 @@ msgid "Open this link?"
 msgstr ""
 
 msgid "Opening in your browser"
+msgstr ""
+
+msgid "Other"
+msgstr ""
+
+msgid "Out of stock"
 msgstr ""
 
 msgid "Outline surfaces"
@@ -1219,6 +1253,9 @@ msgid "PRIVACY & DEVELOPER FLAGS"
 msgstr ""
 
 msgid "PRIVATE GROUP CHAT OVER NOSTR"
+msgstr ""
+
+msgid "PRODUCT"
 msgstr ""
 
 msgid "PROFILE"
@@ -1273,6 +1310,9 @@ msgid "Play a sound"
 msgstr ""
 
 msgid "Plays here when you send. It can't travel: marmot reserves the chat event kind, so no client attaches the tag any more. An effect sent by an older client still plays."
+msgstr ""
+
+msgid "Pre-order"
 msgstr ""
 
 msgid "Preparing dictation..."
@@ -1374,6 +1414,9 @@ msgstr ""
 msgid "Refresh"
 msgstr ""
 
+msgid "Regular"
+msgstr ""
+
 msgid "Relay status unavailable"
 msgstr ""
 
@@ -1431,6 +1474,9 @@ msgstr ""
 msgid "Restore the default reactions"
 msgstr ""
 
+msgid "Retry"
+msgstr ""
+
 msgid "Reveal"
 msgstr ""
 
@@ -1486,6 +1532,9 @@ msgid "Save and use"
 msgstr ""
 
 msgid "Save file"
+msgstr ""
+
+msgid "Scan to add"
 msgstr ""
 
 msgid "Scan to add this account from another device"
@@ -1611,6 +1660,9 @@ msgstr ""
 msgid "Show group members"
 msgstr ""
 
+msgid "Show hint"
+msgstr ""
+
 msgid "Show message preview"
 msgstr ""
 
@@ -1636,6 +1688,16 @@ msgid "Single choice"
 msgstr ""
 
 msgid "Size"
+msgstr ""
+
+#, c-format
+msgid "Size: %s"
+msgstr ""
+
+msgid "Small"
+msgstr ""
+
+msgid "Sold"
 msgstr ""
 
 msgid "Speech"
@@ -1669,6 +1731,10 @@ msgid "Step down"
 msgstr ""
 
 msgid "Step down as admin?"
+msgstr ""
+
+#, c-format
+msgid "Stock: %s"
 msgstr ""
 
 msgid "Stop reading"
@@ -1711,6 +1777,10 @@ msgid "Takes effect on the next launch."
 msgstr ""
 
 msgid "Tap one to remove it."
+msgstr ""
+
+#, c-format
+msgid "Terrain: %d/5"
 msgstr ""
 
 msgid "Test notification"
@@ -1861,6 +1931,9 @@ msgid "View transcription"
 msgstr ""
 
 msgid "Vignette"
+msgstr ""
+
+msgid "Visual fingerprint"
 msgstr ""
 
 msgid "Voting has ended."

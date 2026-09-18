@@ -65,6 +65,17 @@ if [ ! -f "$HERE/build/clay/clay.a" ] || [ "$CLAY/clay.h" -nt "$HERE/build/clay/
 fi
 cp "$HERE/build/clay/clay.a" "$CLAY_LIB"
 
+# Local LifeHash avatars. The relay's Git server does not support shallow clones.
+CROP="$HERE/vendor/crop-circles"
+CROP_PIN="$(pin crop-circles)"
+if [ ! -d "$CROP" ]; then
+  git clone https://relay.cyberguy.fyi/npub1ven4zk8xxw873876gx8y9g9l9fazkye9qnwnglcptgvfwxmygscqsxddfh/crop-circles.git "$CROP"
+fi
+if [ "$(git -C "$CROP" rev-parse HEAD)" != "$CROP_PIN" ]; then
+  git -C "$CROP" fetch origin "$CROP_PIN"
+  git -C "$CROP" checkout --detach "$CROP_PIN"
+fi
+
 # FBX support: ufbx (single-file MIT reader) plus app/fbx_shim.c, the
 # flat C API the Odin viewer binds. FBX is a versioned proprietary
 # format with skinning and animation curves; ufbx already reads every
@@ -156,8 +167,8 @@ fi
 #
 #   JetBrainsMonoNerdFont-Regular.ttf  icons (Nerd Font private-use
 #                                      codepoints, no system fallback)
-#   Liberation{Sans-Regular,Sans-Bold,Mono-Regular}.ttf
-#                                      body, title, mono
+#   LiberationSans-{Regular,Bold,Italic,BoldItalic}.ttf
+#   LiberationMono-Regular.ttf         body, emphasis, mono
 FONTS="$HERE/vendor/fonts"
 NERD_ZIP_URL="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/JetBrainsMono.zip"
 NERD_ZIP_SHA="fab782a66f7d3019da64f6572db9fc5d3a4bcb19f9fa13e2d8a62e3693d6396e"
@@ -171,13 +182,13 @@ if [ ! -f "$FONTS/JetBrainsMonoNerdFont-Regular.ttf" ]; then
   unzip -qo "$TMP/jbmono.zip" JetBrainsMonoNerdFont-Regular.ttf -d "$FONTS"
   rm -rf "$TMP"
 fi
-if [ ! -f "$FONTS/LiberationSans-Regular.ttf" ]; then
+if [ ! -f "$FONTS/LiberationSans-Regular.ttf" ] || [ ! -f "$FONTS/LiberationSans-Italic.ttf" ] || [ ! -f "$FONTS/LiberationSans-BoldItalic.ttf" ]; then
   TMP="$(mktemp -d)"
   curl -sSfL -o "$TMP/liberation.tar.gz" "$LIBERATION_URL"
   echo "$LIBERATION_SHA  $TMP/liberation.tar.gz" | sha256sum -c -
   tar -xzf "$TMP/liberation.tar.gz" -C "$FONTS" --strip-components=1 \
     --wildcards '*/LiberationSans-Regular.ttf' '*/LiberationSans-Bold.ttf' \
-    '*/LiberationMono-Regular.ttf'
+    '*/LiberationSans-Italic.ttf' '*/LiberationSans-BoldItalic.ttf' '*/LiberationMono-Regular.ttf'
   rm -rf "$TMP"
 fi
 

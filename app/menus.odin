@@ -396,6 +396,9 @@ encryption_modal :: proc(ui: ^Ui_State, chat: Chat_Row_Ui) {
 		clay.Text(tr("Whatever you send in this chat is encrypted on your device with MLS before it goes out. The relays that pass it along can't read it, and neither can anyone else."), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
 
 		eyebrow("GROUP ID")
+		if clay.UI(clay.ID("EncFingerprint"))({layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {x = .Center}}}) {
+			crop_circle("EncCircle", 0, chat.group_id, 128)
+		}
 		if clay.UI(clay.ID("EncIdChip"))(
 		{layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(10)}, backgroundColor = ROW_BG, cornerRadius = rr(8), border = {color = FIELD_BORDER, width = bw()}},
 		) {
@@ -561,4 +564,3 @@ action_chip :: proc(id_str: string, index: u32, label: string) {
 chip_h :: proc() -> f32 {
 	return rl.MeasureTextLine(FONT_BODY, CHIP_FS, "A", 0).y + CHIP_PAD
 }
-

@@ -913,15 +913,19 @@ GetClipboardBytes :: proc(mime: cstring, allocator := context.allocator) -> []u8
 // ── Textures / images ───────────────────────────────────────────────
 
 LoadImageFromMemory :: proc(ext: cstring, data: [^]u8, size: i32) -> Image {
+	if size >= 12 && string(data[:4]) == "RIFF" && string(data[8:12]) == "WEBP" {
+		return decode_webp(data, size)
+	}
 	w, h, comp: c.int
 	pixels := stbi.load_from_memory(data, size, &w, &h, &comp, 4)
 	return {data = pixels, width = i32(w), height = i32(h)}
 }
 
 LoadImage :: proc(path: cstring) -> Image {
-	w, h, comp: c.int
-	pixels := stbi.load(path, &w, &h, &comp, 4)
-	return {data = pixels, width = i32(w), height = i32(h)}
+	data, err := os.read_entire_file(string(path), context.allocator)
+	if err != nil { return {} }
+	defer delete(data)
+	return LoadImageFromMemory("", raw_data(data), i32(len(data)))
 }
 
 UnloadImage :: proc(image: Image) {

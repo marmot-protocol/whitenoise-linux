@@ -32,6 +32,12 @@ message_matches :: proc(old: Msg_Ui, record: ^marmot.Timeline_Message_Record, la
 blocks_free :: proc(blocks: [dynamic]Md_Block_Ui) {
 	for block in blocks {
 		delete(block.text)
+		delete(block.fonts)
+		for row in block.cell_fonts {
+			for fonts in row { delete(fonts) }
+			delete(row)
+		}
+		delete(block.cell_fonts)
 		for row in block.cells {
 			for cell in row {
 				delete(cell)

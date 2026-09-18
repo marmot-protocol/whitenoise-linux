@@ -380,12 +380,25 @@ drag_text_selection :: proc(ed: ^edit.State, text: string, hit: int) {
 }
 
 // Byte offset nearest to x; body lines supply their emoji tile size.
-hit_plain :: proc(text: string, x: f32, font_size: u16, tile_px: f32 = 0) -> int {
+hit_plain :: proc(text: string, x: f32, font_size: u16, tile_px: f32 = 0, fonts: string = "") -> int {
 	pen: f32 = 0
 	previous_emoji := false
+	skip := 0
 	it := utf8.decode_grapheme_iterator_make(text)
 	for cluster, grapheme in utf8.decode_grapheme_iterate(&it) {
-		adv := rl.MeasureTextLine(FONT_BODY, font_size, cluster, 0).x
+		i := grapheme.byte_index
+		if i < skip { continue }
+		if tile_px > 0 {
+			if end, width := body_atom(text, i, font_size); end > i {
+				if i > 0 { pen += 2 }
+				if x < pen + width / 2 { return i }
+				if x < pen + width { return end }
+				pen += width
+				skip, previous_emoji = end, true
+				continue
+			}
+		}
+		adv := rl.MeasureTextLine(text_font(fonts, grapheme.byte_index), font_size, cluster, 0).x
 		emoji := tile_px > 0 && text_emoji(cluster) != nil
 		if emoji { adv = tile_px }
 		if grapheme.byte_index > 0 && (emoji || previous_emoji) { pen += 2 }

@@ -52,7 +52,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             pkg-config cmake ninja-build clang git curl \
-            libarchive-dev libmpv-dev libpoppler-glib-dev libcairo2-dev libcurl4-openssl-dev libssl-dev \
+            libarchive-dev libwebp-dev libmpv-dev libpoppler-glib-dev libcairo2-dev libcurl4-openssl-dev libssl-dev \
             libglib2.0-dev \
             file desktop-file-utils wget ca-certificates unzip
 

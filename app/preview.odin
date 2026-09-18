@@ -68,6 +68,10 @@ Preview :: struct {
 	font:   ^Ttf_View,
 	slides: [dynamic]Slide, // Slides
 	slide:  int, // current slideshow position
+	image_zoom: f32, // 0 = initial readable scale, -1 = fit, positive = scale
+	image_scale: f32, // last rendered scale, for zoom controls
+	image_drag: bool,
+	image_pointer: rl.Vector2,
 }
 
 // Image tile under the pointer, rebound every build (like att_hover).
@@ -87,6 +91,12 @@ preview_message :: proc(text: string, blocks: []Md_Block_Ui = nil) {
 	for block in blocks {
 		owned := block
 		owned.text = strings.clone(block.text)
+		owned.fonts = strings.clone(block.fonts)
+		owned.cell_fonts = make([][]string, len(block.cell_fonts))
+		for row, r in block.cell_fonts {
+			owned.cell_fonts[r] = make([]string, len(row))
+			for fonts, c in row { owned.cell_fonts[r][c] = strings.clone(fonts) }
+		}
 		owned.cells = make([][]string, len(block.cells))
 		for row, r in block.cells {
 			owned.cells[r] = make([]string, len(row))
@@ -419,6 +429,8 @@ preview_close :: proc() {
 // Modal layout, mounted with the other overlays.
 preview_modal :: proc(ui: ^Ui_State) {
 	full := preview.kind == .Video && rl.IsFullscreen()
+	image_view := preview.kind == .Image || preview.kind == .Slides
+	image_w := fit_w(f32(rl.GetScreenWidth()) / UI_ZOOM * 0.94, 26)
 	// A tall body (a long take list, a big hex dump) must not push the
 	// modal past the window: cap it and scroll inside instead.
 	max_h := f32(rl.GetScreenHeight()) / UI_ZOOM * PV_MAX_HEIGHT
@@ -427,7 +439,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 	}
 	if clay.UI(clay.ID("PvModal"))(
 	{
-		layout = {layoutDirection = .TopToBottom, sizing = {width = full ? clay.SizingFixed(f32(rl.GetScreenWidth()) / UI_ZOOM) : clay.SizingFit({min = min(f32(360), fit_w(640))}), height = full ? clay.SizingFixed(max_h) : clay.SizingFit({max = max_h})}, padding = clay.PaddingAll(full ? 0 : 14), childGap = full ? 0 : 10},
+		layout = {layoutDirection = .TopToBottom, sizing = {width = full ? clay.SizingFixed(f32(rl.GetScreenWidth()) / UI_ZOOM) : (image_view ? clay.SizingFixed(image_w + 28) : clay.SizingFit({min = min(f32(360), fit_w(640))})), height = full || image_view ? clay.SizingFixed(max_h) : clay.SizingFit({max = max_h})}, padding = clay.PaddingAll(full ? 0 : 14), childGap = full ? 0 : 10},
 		floating = {attachTo = .Root, zIndex = 12, offset = {0, full ? 0 : rise(clay.ID("PvModal"))}, attachment = {element = .CenterCenter, parent = .CenterCenter}},
 		backgroundColor = full ? clay.Color{0, 0, 0, 255} : CARD,
 		cornerRadius = rr(full ? 0 : 12),
@@ -471,20 +483,45 @@ preview_modal :: proc(ui: ^Ui_State) {
 			}
 		}
 
+		if image_view {
+			if clay.UI(clay.ID("PvZoomTools"))({layout = {childGap = 8, childAlignment = {y = .Center}}}) {
+				micro_button("PvZoomOut", "−")
+				clay.Text(fmt.tprintf("%.0f%%", preview.image_scale * UI_ZOOM * 100), {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_DIM})
+				micro_button("PvZoomIn", "+")
+				micro_button("PvFit", "Fit")
+				micro_button("PvActual", "100%")
+				slide_nav()
+			}
+		}
 		if clay.UI(clay.ID("PvScroll"))(
 		{
 			// Height capped below the modal's own cap, or the fit sizing
 			// matches the content and the scrollbar never engages.
-			layout = {layoutDirection = .TopToBottom, sizing = {width = full ? clay.SizingGrow() : clay.SizingFit({}), height = full ? clay.SizingGrow() : clay.SizingFit({max = max_h - PV_CHROME})}, childAlignment = {x = full ? .Center : .Left, y = full ? .Center : .Top}, childGap = 10},
-			clip = {horizontal = preview.kind == .Message, vertical = true, childOffset = clay.GetScrollOffset()},
+			layout = {layoutDirection = .TopToBottom, sizing = {width = image_view ? clay.SizingFixed(image_w) : (full ? clay.SizingGrow() : clay.SizingFit({})), height = full || image_view ? clay.SizingGrow() : clay.SizingFit({max = max_h - PV_CHROME})}, childAlignment = {x = full ? .Center : .Left, y = full ? .Center : .Top}, childGap = 10},
+			clip = {horizontal = image_view || preview.kind == .Message, vertical = true, childOffset = clay.GetScrollOffset()},
 		},
 		) {
 		switch preview.kind {
-		case .Image:
-			ratio := preview.tex.height > 0 ? f32(preview.tex.width) / f32(preview.tex.height) : 1
-			if clay.UI(clay.ID("PvImage"))(
-			{layout = {sizing = {width = clay.SizingFixed(fit_w(480))}}, aspectRatio = {ratio}, image = {imageData = &preview.tex}, cornerRadius = rr(8)},
-			) {}
+		case .Image, .Slides:
+			tex := slides ? preview.slides[preview.slide].tex : &preview.tex
+			if tex != nil && tex.width > 0 && tex.height > 0 {
+				h := max(f32(80), max_h - PV_CHROME - 40)
+				fit := min(image_w / f32(tex.width), h / f32(tex.height))
+				if preview.image_zoom == 0 {
+					preview.image_zoom = min(fit, 1)
+					if tex.width > 3 * tex.height { preview.image_zoom = max(preview.image_zoom, min(1, 160 / f32(tex.height))) }
+					if tex.height > 3 * tex.width { preview.image_zoom = max(preview.image_zoom, min(1, 160 / f32(tex.width))) }
+				}
+				preview.image_scale = preview.image_zoom < 0 ? fit : preview.image_zoom
+				w, ih := f32(tex.width) * preview.image_scale, f32(tex.height) * preview.image_scale
+				if clay.UI(clay.ID("PvImageCanvas"))({layout = {sizing = {width = clay.SizingFixed(max(image_w, w)), height = clay.SizingFixed(max(h, ih))}, childAlignment = {x = .Center, y = .Center}}}) {
+					if clay.UI(clay.ID("PvImage"))({layout = {sizing = {width = clay.SizingFixed(w), height = clay.SizingFixed(ih)}}, image = {imageData = tex}}) {}
+				}
+			} else {
+				if clay.UI(clay.ID("PvRetry"))({layout = {padding = clay.PaddingAll(20)}, backgroundColor = PLATE}) {
+					clay.Text(tr("Image didn't load. Click to retry."), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
+				}
+			}
 
 		case .Video:
 			view := preview.vid
@@ -626,28 +663,6 @@ preview_modal :: proc(ui: ^Ui_State) {
 			{layout = {sizing = {width = clay.SizingFixed(fit_w(480))}}, aspectRatio = {ratio}, image = {imageData = &view.tex}},
 			) {}
 
-		case .Slides:
-			s := &preview.slides[preview.slide]
-			if s.tex != nil {
-				ratio := s.tex.height > 0 ? f32(s.tex.width) / f32(s.tex.height) : 1
-				if clay.UI(clay.ID("PvSlide"))(
-				{layout = {sizing = {width = clay.SizingFixed(fit_w(480))}, childAlignment = {x = .Center, y = .Bottom}}, aspectRatio = {ratio}, image = {imageData = s.tex}, cornerRadius = rr(8)},
-				) {
-					slide_nav()
-				}
-			} else {
-				if clay.UI(clay.ID("PvSlideFail"))(
-				{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(fit_w(480)), height = clay.SizingFixed(220)}, childGap = 12, childAlignment = {x = .Center, y = .Center}}, backgroundColor = PLATE, cornerRadius = rr(8)},
-				) {
-					if clay.UI(clay.ID("PvRetry"))(
-					{layout = {padding = {left = 10, right = 10, top = 6, bottom = 6}}, backgroundColor = hovered() ? HOVER : ROW_BG, cornerRadius = rr(8)},
-					) {
-						clay.Text("Image didn't load. Click to retry.", {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
-					}
-					slide_nav()
-				}
-			}
-
 		case .Unsupported, .None:
 			if clay.UI(clay.ID("PvNone"))(
 			{layout = {layoutDirection = .TopToBottom, padding = clay.PaddingAll(20), childGap = 10, childAlignment = {x = .Center}}},
@@ -698,6 +713,34 @@ handle_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		tts_read(ui, string(preview.bytes))
 		return
 	}
+	if preview.kind == .Image || preview.kind == .Slides {
+		point := rl.GetMousePosition()
+		if rl.IsMouseButtonPressed(.LEFT) && clay.PointerOver(clay.ID("PvScroll")) && !clay.PointerOver(clay.ID("ScrollThumb", clay.ID("PvScroll").id)) {
+			preview.image_drag = true
+			preview.image_pointer = point
+			scroll_residual = {}
+		}
+		if !rl.IsMouseButtonDown(.LEFT) { preview.image_drag = false }
+		if preview.image_drag {
+			if data := clay.GetScrollContainerData(clay.ID("PvScroll")); data.found {
+				delta := rl.Vector2{(point.x - preview.image_pointer.x) / UI_ZOOM, (point.y - preview.image_pointer.y) / UI_ZOOM}
+				data.scrollPosition.x = clamp(data.scrollPosition.x + delta.x, min(f32(0), data.scrollContainerDimensions.width - data.contentDimensions.width), 0)
+				data.scrollPosition.y = clamp(data.scrollPosition.y + delta.y, min(f32(0), data.scrollContainerDimensions.height - data.contentDimensions.height), 0)
+			}
+			preview.image_pointer = point
+		}
+		changed := true
+		switch {
+		case clicked("PvZoomIn"): preview.image_zoom = clamp(preview.image_scale * 1.25, 0.01, 8)
+		case clicked("PvZoomOut"): preview.image_zoom = clamp(preview.image_scale / 1.25, 0.01, 8)
+		case clicked("PvFit"): preview.image_zoom = -1
+		case clicked("PvActual"): preview.image_zoom = 1 / UI_ZOOM
+		case: changed = false
+		}
+		if changed {
+			if data := clay.GetScrollContainerData(clay.ID("PvScroll")); data.found { data.scrollPosition^ = {} }
+		}
+	}
 	if preview.kind == .Video {
 		if clicked("PvFull") {
 			if preview.vid_shared && rl.IsFullscreen() { preview_close(); return }
@@ -724,11 +767,16 @@ handle_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if preview.kind == .Slides {
+		previous := preview.slide
 		if rl.IsKeyPressed(.LEFT) || clicked("PvSlidePrev") {
 			preview.slide = max(preview.slide - 1, 0)
 		}
 		if rl.IsKeyPressed(.RIGHT) || clicked("PvSlideNext") {
 			preview.slide = min(preview.slide + 1, len(preview.slides) - 1)
+		}
+		if previous != preview.slide {
+			preview.image_zoom = 0
+			if data := clay.GetScrollContainerData(clay.ID("PvScroll")); data.found { data.scrollPosition^ = {} }
 		}
 		if clicked("PvRetry") {
 			retry_failed_images(ui, client)
