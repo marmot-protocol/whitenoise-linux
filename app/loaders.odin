@@ -5,41 +5,33 @@ import "core:fmt"
 import "core:slice"
 import "core:strings"
 import "core:time"
+import "core:thread"
 
 import marmot "../marmot"
 
-// Base timeline window; scrolling near the top raises it per chat in
-// steps of the same size. Growing one window (instead of before-pagination,
-// which marmot also supports) keeps the single-page kind-1009 edit
-// aggregation below correct without stitching pages.
+// Subscription opening window and each cursor-based pagination step.
 TL_PAGE :: 100
 
-tl_limit :: proc(ui: ^Ui_State, group_id: string) -> u32 {
-	if limit, ok := ui.tl_limit[group_id]; ok {
-		return limit
+load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = "") {
+	if client == nil || ui.selected < 0 {
+		return
 	}
-	return TL_PAGE
+	if !timeline_scope(ui, search) || thread.is_done(timeline_job.worker) {
+		timeline_start(client, ui, search)
+		return
+	}
+	// Local hides, completed sends, media retries, and profile changes only
+	// need to re-project the retained snapshot. Wire changes arrive via next.
+	if timeline_page != nil {
+		timeline_apply(client, ui, timeline_page)
+	}
 }
 
-load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = "") {
-	if ui.selected < 0 {
-		return
-	}
-
-	query := marmot.Timeline_Message_Query {
-		group_id_hex = strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator),
-		search       = len(search) > 0 ? strings.clone_to_cstring(search, context.temp_allocator) : nil,
-		has_limit    = true,
-		limit        = tl_limit(ui, ui.chats[ui.selected].group_id),
-	}
-	page: ^marmot.Timeline_Page
+@(private)
+timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Timeline_Page) {
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	if marmot.timeline_messages(client, account, &query, &page) != .OK {
-		ui.client_status = fmt.aprintf("timeline failed: %s", marmot.last_error())
-		return
-	}
-	defer marmot.timeline_page_free(page)
 	ui.tl_has_more = page.has_more_before
+	ui.tl_has_after = page.has_more_after
 	agent_collect(client, ui, page)
 
 	// Message textures are owned by the media_textures session cache
@@ -327,11 +319,11 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 		if (msg.edited || record.kind == KIND_POLL) && content.content_tokens.blocks_len == 0 && len(body) > 0 {
 			doc: ^marmot.Markdown_Document
 			if marmot.parse_markdown(client, strings.clone_to_cstring(body, context.temp_allocator), &doc) == .OK {
-				convert_blocks(&msg.blocks, doc.blocks, doc.blocks_len, false)
+				convert_blocks(&msg.blocks, doc.blocks, doc.blocks_len, false, ([^]u8)(doc.blank_lines_before)[:doc.blank_lines_before_len])
 				marmot.markdown_document_free(doc)
 			}
 		} else if record.kind != AGENT_STREAM_START {
-			convert_blocks(&msg.blocks, content.content_tokens.blocks, content.content_tokens.blocks_len, false)
+			convert_blocks(&msg.blocks, content.content_tokens.blocks, content.content_tokens.blocks_len, false, ([^]u8)(content.content_tokens.blank_lines_before)[:content.content_tokens.blank_lines_before_len])
 		}
 		for j in 0 ..< record.reactions.by_emoji_len {
 			entry := &record.reactions.by_emoji[j]
@@ -359,6 +351,7 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 			})
 		}
 
+		group := strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator)
 		if record.reply_to_message_id_hex != nil {
 			msg.reply_id = strings.clone(string(record.reply_to_message_id_hex))
 		}
@@ -366,13 +359,13 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 			preview := record.reply_preview
 			msg.reply_from = strings.clone(preview.sender != nil ? profile_label(client, string(preview.sender)) : "?")
 			msg.reply_text = strings.clone(preview.plaintext != nil ? string(preview.plaintext) : "")
+			msg.reply_image = reply_image_load(client, account, group, preview)
 		} else if record.reply_to_message_id_hex != nil {
 			// Parent outside the loaded window (or deleted): keep the
 			// reply frame with a plain note instead of dropping it.
 			msg.reply_text = strings.clone("Original message unavailable")
 		}
 
-		group := strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator)
 		for j in 0 ..< record.media_len {
 			media_attach(&msg, client, account, group, &record.media[j])
 		}
@@ -468,49 +461,16 @@ system_text :: proc(client: ^marmot.Client, ev: ^marmot.Group_System_Event) -> s
 // next page (handle_chat).
 TL_FETCH_MARGIN :: f32(300)
 
-// Raise this chat's window by one page and reload, then re-anchor the
-// viewport on the previously-topmost message via the jump/centering
-// path (which also cancels the bottom jump).
-load_earlier :: proc(client: ^marmot.Client, ui: ^Ui_State) {
-	if ui.selected < 0 {
-		return
-	}
-	gid := ui.chats[ui.selected].group_id
-	raised := tl_limit(ui, gid) + TL_PAGE
-	if gid in ui.tl_limit {
-		ui.tl_limit[gid] = raised
-	} else {
-		ui.tl_limit[strings.clone(gid)] = raised
-	}
-
-	anchor: string
-	if len(ui.messages) > 0 {
-		anchor = strings.clone(ui.messages[0].id)
-	}
-	load_timeline(client, ui)
-	delete(ui.jump_id)
-	ui.jump_id = anchor
-}
-
 // Raw-event JSON for the View raw modal (dev mode). marmot-c has no
-// accessor for the outer signed wire event, so this re-queries the
-// timeline window and pretty-prints the record's projection of the
+// accessor for the outer signed wire event, so this pretty-prints the
+// retained timeline record's projection of the
 // inner app event (id, kind, tags, sender, timestamps, ...).
 raw_event_json :: proc(client: ^marmot.Client, ui: ^Ui_State, msg_id: string) -> string {
 	if ui.selected < 0 {
 		return ""
 	}
-	query := marmot.Timeline_Message_Query {
-		group_id_hex = strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator),
-		has_limit    = true,
-		limit        = 200,
-	}
-	page: ^marmot.Timeline_Page
-	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	if marmot.timeline_messages(client, account, &query, &page) != .OK {
-		return fmt.aprintf("Couldn't load the event. %s", marmot.last_error())
-	}
-	defer marmot.timeline_page_free(page)
+	page := timeline_page
+	if page == nil { return "" }
 
 	for i in 0 ..< page.messages_len {
 		record := &page.messages[i]
@@ -586,14 +546,15 @@ load_archived :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 	}
 	defer marmot.chat_list_row_list_free(rows)
 
-	clear(&ui.archived)
+	fresh := make([dynamic]Chat_Row_Ui, 0, int(rows.len))
 	for i in 0 ..< rows.len {
 		row := &rows.items[i]
 		if !row.archived {
 			continue
 		}
-		append(&ui.archived, row_to_ui(client, row, ui.account_ref))
+		append(&fresh, row_to_ui(client, row, ui.account_ref))
 	}
+	chats_replace(&ui.archived, fresh)
 }
 
 // Contacts sorted case-insensitively by name for the sidebar; key is

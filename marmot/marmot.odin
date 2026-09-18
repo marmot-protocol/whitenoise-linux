@@ -144,6 +144,7 @@ Secret_Store :: struct {
 
 // Opaque subscription handle; free before the client that created it.
 Chat_List_Subscription :: struct {}
+Timeline_Subscription :: struct {}
 
 // Opaque handle for the runtime-event firehose.
 Events_Subscription :: struct {}
@@ -485,14 +486,22 @@ User_Profile_Metadata :: struct {
 
 #assert(size_of(User_Profile_Metadata) == 56)
 
-// TRUNCATED mirror of MarmotTimelineReplyPreview: leading pointer
-// fields only (the full struct embeds the markdown document by
-// value). Read through ^ only; never copy or size_of.
 Timeline_Reply_Preview :: struct {
 	message_id_hex: cstring,
 	sender:         cstring,
 	plaintext:      cstring,
+	content_tokens: Markdown_Document,
+	kind:           u64,
+	media_json:     cstring,
+	media:          [^]Media_Attachment_Outcome,
+	media_len:      uint,
+	agent_text_stream_json: cstring,
+	deleted:        bool,
+	invalidation_status: cstring,
 }
+
+#assert(size_of(Timeline_Reply_Preview) == 120)
+#assert(offset_of(Timeline_Reply_Preview, media) == 80)
 
 Timeline_Reaction_Emoji :: struct {
 	emoji:       cstring,
@@ -1090,6 +1099,18 @@ foreign lib {
 
 	timeline_messages  :: proc(client: ^Client, account_ref: cstring, query: ^Timeline_Message_Query, out: ^^Timeline_Page) -> Status ---
 	timeline_page_free :: proc(ptr: ^Timeline_Page) ---
+	@(link_name = "marmot_subscribe_timeline_messages")
+	timeline_subscribe :: proc(client: ^Client, account, group: cstring, has_limit: bool, limit: u32, out: ^^Timeline_Subscription) -> Status ---
+	@(link_name = "marmot_timeline_subscription_snapshot")
+	timeline_snapshot :: proc(sub: ^Timeline_Subscription, out: ^^Timeline_Page) -> Status ---
+	@(link_name = "marmot_timeline_subscription_next")
+	timeline_next :: proc(sub: ^Timeline_Subscription, timeout_ms: u32, out: ^^Timeline_Page) -> Status ---
+	@(link_name = "marmot_timeline_subscription_paginate_backwards")
+	timeline_back :: proc(sub: ^Timeline_Subscription, count: u32, out: ^^Timeline_Page) -> Status ---
+	@(link_name = "marmot_timeline_subscription_paginate_forwards")
+	timeline_forward :: proc(sub: ^Timeline_Subscription, count: u32, out: ^^Timeline_Page) -> Status ---
+	@(link_name = "marmot_timeline_subscription_free")
+	timeline_sub_free :: proc(sub: ^Timeline_Subscription) ---
 
 	parse_markdown         :: proc(client: ^Client, text: cstring, out: ^^Markdown_Document) -> Status ---
 	markdown_document_free :: proc(ptr: ^Markdown_Document) ---

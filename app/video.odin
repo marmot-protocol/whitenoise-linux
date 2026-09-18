@@ -236,7 +236,7 @@ advance_videos :: proc() {
 	for _, view in video_views {
 		advance_one(view)
 	}
-	if preview_shown && preview.vid != nil {
+	if preview_shown && preview.vid != nil && !preview.vid_shared {
 		advance_one(preview.vid)
 	}
 
@@ -370,8 +370,17 @@ mpv_log :: proc() -> bool {
 video_hover: ^Video_View
 
 handle_video :: proc() {
+	if video_full_hover.view != nil && mouse_released() && !video_bar_active() {
+		preview_close()
+		preview = {kind = .Video, name = strings.clone(video_full_hover.name),
+			vid = video_full_hover.view, vid_shared = true, bytes = video_full_hover.view.data}
+		preview_shown = true
+		rl.SetFullscreen(true)
+		video_full_hover = {}
+		return
+	}
 	// att_hover set = the pointer is on the download chip, not the video.
-	if video_hover == nil || !mouse_released() || att_hover.msg_id != "" {
+	if video_hover == nil || !mouse_released() || att_hover.msg_id != "" || video_bar_active() {
 		return
 	}
 
@@ -393,6 +402,36 @@ Video_Bar :: struct {
 
 video_bars: [dynamic]Video_Bar
 video_bar_drag: Video_Bar
+
+@(private)
+video_full_hover: struct { view: ^Video_View, name: string }
+
+// Seeking owns the gesture even after the pointer leaves the bar.
+@(private)
+video_bar_active :: proc() -> bool {
+	if video_bar_drag.view != nil { return true }
+	for bar in video_bars {
+		if clay.PointerOver(bar.id) { return true }
+	}
+	return false
+}
+
+@(private)
+video_scrub_bar :: proc(id: clay.ElementId, view: ^Video_View, width: f32, z_index: i16 = 7) {
+	if view.looping { return }
+	expanded := hovered() || clay.PointerOver(id) || video_bar_drag.view == view
+	append(&video_bars, Video_Bar{id, view})
+	frac := view.dur > 0 ? clamp(f32(view.time / view.dur), 0, 1) : 0
+	if clay.UI(id)({
+		layout = {sizing = {width = clay.SizingFixed(width), height = clay.SizingFixed(expanded ? 14 : 2)}, childAlignment = {y = .Center}},
+		floating = {attachTo = .Parent, clipTo = .AttachedParent, zIndex = z_index, attachment = {element = .LeftBottom, parent = .LeftBottom}},
+		backgroundColor = {0, 0, 0, 150},
+	}) {
+		if hovered() { video_hover = nil }
+		if clay.UI(clay.ID("VideoFill", id.id))({layout = {sizing = {width = clay.SizingFixed(frac * width), height = clay.SizingFixed(expanded ? 10 : 2)}}, backgroundColor = ACCENT}) {}
+	}
+}
+
 @(private = "file")
 bar_sent: f64 = -1 // last position asked for, so a still pointer stays quiet
 

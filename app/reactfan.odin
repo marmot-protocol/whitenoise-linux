@@ -76,6 +76,11 @@ fan_cell :: proc(index, count: int) -> (x, y, t: f32) {
 // Watch the press: still for long enough over a message opens the fan,
 // and a release either picks a cell or drops it.
 handle_react_fan :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if video_bar_active() {
+		delete(fan.msg_id)
+		fan = {hover = -1}
+		return
+	}
 	pos := rl.GetMousePosition()
 	at := [2]f32{pos.x / UI_ZOOM, pos.y / UI_ZOOM}
 

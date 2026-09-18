@@ -483,6 +483,9 @@ msgstr "動画を再生できませんでした — タップして再試行"
 msgid "Couldn't load image. Click to retry."
 msgstr "画像をダウンロードできませんでした。"
 
+msgid "Couldn't load messages. Please try again."
+msgstr "メッセージを読み込めませんでした。もう一度お試しください。"
+
 #, fuzzy, c-format
 msgid "Couldn't load the timeline. %s"
 msgstr "画像をダウンロードできませんでした。"
@@ -541,9 +544,15 @@ msgstr "チャットを作成できませんでした。もう一度お試しく
 msgid "Couldn't reveal your private key. %s"
 msgstr "リアクションを削除できませんでした。もう一度お試しください。"
 
+msgid "Couldn't save the edit. Please try again."
+msgstr "編集を保存できませんでした。もう一度お試しください。"
+
 #, fuzzy
 msgid "Couldn't save the theme. Check the name and colors and try again."
 msgstr "そのアカウントを追加できませんでした。鍵を確認して、もう一度お試しください。"
+
+msgid "Couldn't search messages. Please try again."
+msgstr "メッセージを検索できませんでした。もう一度お試しください。"
 
 #, fuzzy
 msgid "Couldn't serialize the key packages. Please try again."
@@ -769,6 +778,9 @@ msgstr "パスワードを入力してロックを解除"
 msgid "Event id"
 msgstr ""
 
+msgid "Exit fullscreen"
+msgstr "全画面表示を終了"
+
 #, fuzzy
 msgid "Expand the chat list"
 msgstr "チャットパネルを展開"
@@ -831,6 +843,9 @@ msgstr "転送"
 #, fuzzy
 msgid "From file"
 msgstr "%1 から"
+
+msgid "Fullscreen"
+msgstr "全画面表示"
 
 msgid "GROUP ID"
 msgstr ""

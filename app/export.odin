@@ -33,6 +33,22 @@ html_esc :: proc(text: string) -> string {
 	return esc
 }
 
+@(private)
+export_account, export_group: string
+@(private)
+export_kind: Transcript_Kind
+
+@(private)
+export_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if export_group == "" { return }
+	if ui.account_ref == export_account && ui.selected >= 0 && ui.chats[ui.selected].group_id == export_group {
+		if ui.timeline_loading || timeline_page == nil { return }
+		export_chat(ui, client, export_kind)
+	}
+	delete(export_account); delete(export_group)
+	export_account, export_group = "", ""
+}
+
 // Export the selected chat's loaded window as a transcript file.
 // ponytail: image re-downloads block the UI thread like every other
 // media fetch here; moves to the worker with the subscriptions phase.
@@ -48,20 +64,14 @@ export_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, kind: Transcript_Kind
 	}
 	chat := ui.chats[ui.selected]
 
-	// One timeline query covers both the raw-event panels and the
-	// image re-downloads (records aren't retained between loads).
-	query := marmot.Timeline_Message_Query {
-		group_id_hex = strings.clone_to_cstring(chat.group_id, context.temp_allocator),
-		has_limit    = true,
-		limit        = tl_limit(ui, chat.group_id),
-	}
-	page: ^marmot.Timeline_Page
-	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	if marmot.timeline_messages(client, account, &query, &page) != .OK {
-		ui.client_status = fmt.aprintf("Couldn't export the chat. %s", marmot.last_error())
+	if ui.timeline_loading || timeline_page == nil {
+		delete(export_account); delete(export_group)
+		export_account = strings.clone(ui.account_ref)
+		export_group = strings.clone(chat.group_id)
+		export_kind = kind
 		return
 	}
-	defer marmot.timeline_page_free(page)
+	page := timeline_page
 
 	records := make(map[string]^marmot.Timeline_Message_Record, allocator = context.temp_allocator)
 	for i in 0 ..< page.messages_len {

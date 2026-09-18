@@ -103,17 +103,9 @@ forward_modal :: proc(ui: ^Ui_State) {
 // into Pending_Att payloads the upload worker re-encrypts for the
 // target group. Any failure aborts the whole forward.
 fwd_download_atts :: proc(ui: ^Ui_State, client: ^marmot.Client, msg_id: string) -> (atts: [dynamic]Pending_Att, ok: bool) {
-	query := marmot.Timeline_Message_Query {
-		group_id_hex = strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator),
-		has_limit    = true,
-		limit        = 100,
-	}
-	page: ^marmot.Timeline_Page
+	page := timeline_page
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	if marmot.timeline_messages(client, account, &query, &page) != .OK {
-		return atts, false
-	}
-	defer marmot.timeline_page_free(page)
+	if page == nil { return atts, false }
 
 	for i in 0 ..< page.messages_len {
 		record := &page.messages[i]

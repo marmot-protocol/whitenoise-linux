@@ -14,9 +14,35 @@ Row_Chip :: enum {
 	Unarchive,
 }
 
+@(private)
+chat_row_height :: proc() -> f32 {
+	return 24 + max(42, max(chip_h(), 14) + 20)
+}
+
+// Fixed row geometry lets the first frame skip hidden rows too. Keep the
+// complete order outside this window for keyboard navigation and filtering.
+@(private)
+chat_rows_window :: proc(ui: ^Ui_State, rows: []Chat_Row_Ui, order: []int, container: clay.ElementId, chip: Row_Chip, gap: f32) {
+	stride := chat_row_height() + gap
+	data := clay.GetScrollContainerData(container)
+	height := data.found ? data.scrollContainerDimensions.height : f32(rl.GetScreenHeight()) / UI_ZOOM
+	offset := data.found ? -data.scrollPosition.y : 0
+	first := clamp(int(offset / stride) - 2, 0, max(len(order) - 1, 0))
+	last := min(len(order), first + int(height / stride) + 6)
+	if first > 0 {
+		if clay.UI(clay.ID("ChatRowsBefore"))({layout = {sizing = {height = clay.SizingFixed(f32(first) * stride - gap)}}}) {}
+	}
+	for i in order[first:last] {
+		chat_row(u32(i), rows[i], chip == .Archive && ui.selected == i, chip)
+	}
+	if last < len(order) {
+		if clay.UI(clay.ID("ChatRowsAfter"))({layout = {sizing = {height = clay.SizingFixed(f32(len(order) - last) * stride - gap)}}}) {}
+	}
+}
+
 chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 	if clay.UI(clay.ID("ChatRow", index))(
-	{layout = {sizing = {width = clay.SizingGrow()}}},
+	{layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(chat_row_height())}}},
 	) {
 	if clay.UI(clay.ID("ChatRowSlide", index))(
 	{
@@ -648,14 +674,17 @@ archived_pane :: proc(ui: ^Ui_State) {
 		// Same rows as the chat rail, capped to rail width in the wide
 		// card, title-filtered by the sidebar search.
 		filter := strings.to_lower(string(ui.sidebar_filter[:]), context.temp_allocator)
+		order := make([dynamic]int, context.temp_allocator)
 		for chat, i in ui.archived {
 			if len(filter) > 0 && !strings.contains(strings.to_lower(chat.title, context.temp_allocator), filter) {
 				continue
 			}
-			if clay.UI(clay.ID("ArchivedRowBox", u32(i)))({layout = {sizing = {width = clay.SizingFixed(fit_w(420, 24))}}}) {
-				chat_row(u32(i), chat, false, .Unarchive)
-			}
+			append(&order, i)
 		}
+		if clay.UI(clay.ID("ArchivedList"))({layout = {sizing = {width = clay.SizingFixed(fit_w(420, 24)), height = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 8}, clip = {vertical = true, childOffset = clay.GetScrollOffset()}}) {
+			chat_rows_window(ui, ui.archived[:], order[:], clay.ID("ArchivedList"), .Unarchive, 8)
+		}
+		scrollbar(clay.ID("ArchivedList"))
 	}
 }
 
@@ -997,4 +1026,3 @@ NAV_TIPS := [Page]string {
 	.Settings = "Settings",
 	.Profile  = "Your profile",
 }
-

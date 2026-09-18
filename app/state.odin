@@ -242,6 +242,7 @@ Md_Kind :: enum {
 Md_Block_Ui :: struct {
 	kind:  Md_Kind,
 	text:  string,
+	blank_lines_before: u8,
 	level: int, // heading level
 	marker_len: int, // list marker bytes, including the trailing space
 	cells: [][]string, // table rows, row 0 = header
@@ -260,6 +261,7 @@ Msg_Ui :: struct {
 	reactions:  [dynamic]Reaction_Ui,
 	reply_from: string, // sender of the replied-to message, "" = not a reply
 	reply_text: string,
+	reply_image: string, // first parent image's session cache key
 	reply_id:   string, // parent message id, the preview's jump target
 	images:    [dynamic]Att_Item(^rl.Texture2D), // downloaded attachments, heap ptrs for clay
 	models:    [dynamic]Att_Item(^Stl_View), // STL attachments, owned by the stl_views cache
@@ -407,6 +409,7 @@ Ui_State :: struct {
 	ed_target:     rawptr,
 	picker_return: int, // composer caret to insert at when the picker closes
 	editing:       string, // message id being edited, "" = composing new
+	edit_ticket:   int, // outstanding edit; keep the composer until its ack
 	replying:      string, // message id being replied to
 	reply_hint:    string, // preview text for the reply banner
 	show_members:  bool,
@@ -461,7 +464,8 @@ Ui_State :: struct {
 	gs_hits:       [dynamic]Gs_Hit, // its result cards
 	jump_id:       string, // message id to center after next layout
 	tl_has_more:   bool, // last timeline page had older messages beyond the limit
-	tl_limit:      map[string]u32, // group id → raised page limit ("Load earlier")
+	tl_has_after:  bool,
+	timeline_loading, timeline_paging: bool,
 	unread_mark_id: string, // NEW MESSAGES divider anchor, snapshotted at select
 	                        // time (mark-as-read clears the row's first_unread)
 	mention_active: bool, // composer @-autocomplete popover

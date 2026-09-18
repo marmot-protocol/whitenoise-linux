@@ -35,5 +35,7 @@ _Static_assert(offsetof(MarmotMediaAttachmentOutcome, REJECTED.rejection.kind) =
 _Static_assert(offsetof(MarmotMediaAttachmentOutcome, REJECTED.rejection.detail) == 24, "rejection detail");
 _Static_assert(sizeof(MarmotTimelineMessageRecord) == 288, "timeline stride");
 _Static_assert(offsetof(MarmotTimelineMessageRecord, media) == 200, "timeline media");
+_Static_assert(sizeof(MarmotTimelineReplyPreview) == 120, "reply preview stride");
+_Static_assert(offsetof(MarmotTimelineReplyPreview, media) == 80, "reply preview media");
 
 int main(void) { return 0; }

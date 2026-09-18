@@ -149,8 +149,7 @@ save_attachment :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 	ui.client_status = fmt.aprintf("saved %s", path)
 }
 
-// Re-find a message's media reference and download its bytes (records
-// are freed after every timeline load, so a fresh query each time).
+// Use the retained window's media reference, or query if its chat was left.
 // Shared by save_attachment and the lightbox "Copy image".
 fetch_attachment :: proc(ui: ^Ui_State, client: ^marmot.Client, group, msg_id: string, index: int) -> (result: ^marmot.Media_Download_Result, ok: bool) {
 	query := marmot.Timeline_Message_Query {
@@ -158,12 +157,14 @@ fetch_attachment :: proc(ui: ^Ui_State, client: ^marmot.Client, group, msg_id: s
 		has_limit    = true,
 		limit        = 100,
 	}
-	page: ^marmot.Timeline_Page
+	page := timeline_page
+	if timeline_job == nil || string(timeline_job.group) != group || string(timeline_job.account) != ui.account_ref { page = nil }
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	if marmot.timeline_messages(client, account, &query, &page) != .OK {
-		return
+	owned := page == nil
+	if owned {
+		if marmot.timeline_messages(client, account, &query, &page) != .OK { return }
 	}
-	defer marmot.timeline_page_free(page)
+	defer { if owned { marmot.timeline_page_free(page) } }
 
 	for i in 0 ..< page.messages_len {
 		record := &page.messages[i]

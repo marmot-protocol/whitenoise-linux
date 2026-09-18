@@ -49,10 +49,11 @@ wrapped_line_cache :: proc(t: ^testing.T) {
 	defer wrap_clear()
 	text := "first\n\n日本語\nlast"
 	lines := wrapped_lines(text, 0, 14)
-	testing.expect_value(t, len(lines), 3)
+	testing.expect_value(t, len(lines), 4)
 	testing.expect_value(t, lines[0].index, u32(0))
-	testing.expect_value(t, lines[1].index, u32(3))
-	testing.expect_value(t, text[lines[1].start:lines[1].end], "日本語")
+	testing.expect_value(t, lines[1].start, lines[1].end)
+	testing.expect_value(t, lines[2].index, u32(3))
+	testing.expect_value(t, text[lines[2].start:lines[2].end], "日本語")
 	again := wrapped_lines(text, 0, 14)
 	testing.expect(t, raw_data(lines) == raw_data(again))
 	wrapped_lines(text, 120, 14)
@@ -87,7 +88,8 @@ media_reference_owned :: proc(t: ^testing.T) {
 		delete(media_jobs); delete(media_inflight)
 		media_jobs, media_inflight = old_jobs, old_inflight
 	}
-	locator := marmot.Media_Locator{value = "https://example.test/blob"}
+	locator_kind := [?]u8{'b', 'l', 'o', 's', 's', 'o', 'm', 0}
+	locator := marmot.Media_Locator{kind = cstring(raw_data(locator_kind[:])), value = "https://example.test/blob"}
 	ref := marmot.Media_Attachment_Reference{locators = &locator, locators_len = 1,
 		file_name = "picture.png", plaintext_sha256 = "hash", nonce_hex = "nonce", media_type = "image/png"}
 	media_enqueue(nil, "account", "group", &ref, .Image, "hash")
@@ -96,7 +98,10 @@ media_reference_owned :: proc(t: ^testing.T) {
 	job := media_jobs[0]
 	testing.expect(t, job.reference.locators != ref.locators)
 	testing.expect(t, rawptr(job.reference.nonce_hex) != rawptr(ref.nonce_hex))
+	// Releasing a timeline page must not invalidate the queued download.
+	locator_kind[0] = 'x'
 	locator.value = "changed"
+	testing.expect_value(t, string(job.reference.locators[0].kind), "blossom")
 	testing.expect_value(t, string(job.reference.locators[0].value), "https://example.test/blob")
 	items: [dynamic]Att_Item(int)
 	defer delete(items)

@@ -483,6 +483,9 @@ msgstr "Video konnte nicht abgespielt werden – zum Wiederholen tippen"
 msgid "Couldn't load image. Click to retry."
 msgstr "Bild konnte nicht heruntergeladen werden."
 
+msgid "Couldn't load messages. Please try again."
+msgstr "Die Nachrichten konnten nicht geladen werden. Bitte versuche es erneut."
+
 #, fuzzy, c-format
 msgid "Couldn't load the timeline. %s"
 msgstr "Bild konnte nicht heruntergeladen werden."
@@ -541,9 +544,15 @@ msgstr "Chat konnte nicht erstellt werden. Bitte versuche es erneut."
 msgid "Couldn't reveal your private key. %s"
 msgstr "Reaktion konnte nicht entfernt werden. Bitte versuche es erneut."
 
+msgid "Couldn't save the edit. Please try again."
+msgstr "Die Änderung konnte nicht gespeichert werden. Bitte versuche es erneut."
+
 #, fuzzy
 msgid "Couldn't save the theme. Check the name and colors and try again."
 msgstr "Das Konto konnte nicht hinzugefügt werden. Überprüfe den Schlüssel und versuche es erneut."
+
+msgid "Couldn't search messages. Please try again."
+msgstr "Die Nachrichten konnten nicht durchsucht werden. Bitte versuche es erneut."
 
 #, fuzzy
 msgid "Couldn't serialize the key packages. Please try again."
@@ -769,6 +778,9 @@ msgstr "Gib dein Passwort zum Entsperren ein"
 msgid "Event id"
 msgstr ""
 
+msgid "Exit fullscreen"
+msgstr "Vollbild verlassen"
+
 #, fuzzy
 msgid "Expand the chat list"
 msgstr "Chatbereich ausklappen"
@@ -831,6 +843,9 @@ msgstr "Weiterleiten"
 #, fuzzy
 msgid "From file"
 msgstr "Von %1"
+
+msgid "Fullscreen"
+msgstr "Vollbild"
 
 msgid "GROUP ID"
 msgstr ""

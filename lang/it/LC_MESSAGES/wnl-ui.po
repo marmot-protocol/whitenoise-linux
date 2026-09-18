@@ -483,6 +483,9 @@ msgstr "Impossibile riprodurre il video — tocca per riprovare"
 msgid "Couldn't load image. Click to retry."
 msgstr "Impossibile scaricare l'immagine."
 
+msgid "Couldn't load messages. Please try again."
+msgstr "Non è stato possibile caricare i messaggi. Riprova."
+
 #, fuzzy, c-format
 msgid "Couldn't load the timeline. %s"
 msgstr "Impossibile scaricare l'immagine."
@@ -541,9 +544,15 @@ msgstr "Impossibile creare la chat. Riprova."
 msgid "Couldn't reveal your private key. %s"
 msgstr "Impossibile rimuovere la reazione. Riprova."
 
+msgid "Couldn't save the edit. Please try again."
+msgstr "Non è stato possibile salvare la modifica. Riprova."
+
 #, fuzzy
 msgid "Couldn't save the theme. Check the name and colors and try again."
 msgstr "Impossibile aggiungere questo account. Ricontrolla la chiave e riprova."
+
+msgid "Couldn't search messages. Please try again."
+msgstr "Non è stato possibile cercare i messaggi. Riprova."
 
 #, fuzzy
 msgid "Couldn't serialize the key packages. Please try again."
@@ -769,6 +778,9 @@ msgstr "Inserisci la password per sbloccare"
 msgid "Event id"
 msgstr ""
 
+msgid "Exit fullscreen"
+msgstr "Esci da schermo intero"
+
 #, fuzzy
 msgid "Expand the chat list"
 msgstr "Espandi pannello chat"
@@ -831,6 +843,9 @@ msgstr "Inoltra"
 #, fuzzy
 msgid "From file"
 msgstr "Da %1"
+
+msgid "Fullscreen"
+msgstr "Schermo intero"
 
 msgid "GROUP ID"
 msgstr ""

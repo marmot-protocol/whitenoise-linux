@@ -255,6 +255,7 @@ nev_split_images :: proc(blocks: ^[dynamic]Md_Block_Ui) {
 			append(&out, block)
 			continue
 		}
+		first := len(out)
 		at := 0
 		for url in urls {
 			start := strings.index(block.text[at:], url) + at
@@ -269,6 +270,7 @@ nev_split_images :: proc(blocks: ^[dynamic]Md_Block_Ui) {
 		if len(after) > 0 {
 			append(&out, Md_Block_Ui{kind = .Para, text = strings.clone(after)})
 		}
+		out[first].blank_lines_before = block.blank_lines_before
 		delete(block.text)
 	}
 	delete(blocks^)
@@ -410,7 +412,7 @@ drain_nev :: proc() {
 		if len(card.content) > 0 && g_client != nil {
 			doc: ^marmot.Markdown_Document
 			if marmot.parse_markdown(g_client, strings.clone_to_cstring(card.content, context.temp_allocator), &doc) == .OK {
-				convert_blocks(&card.blocks, doc.blocks, doc.blocks_len, false)
+				convert_blocks(&card.blocks, doc.blocks, doc.blocks_len, false, ([^]u8)(doc.blank_lines_before)[:doc.blank_lines_before_len])
 				marmot.markdown_document_free(doc)
 				nev_split_images(&card.blocks)
 			}

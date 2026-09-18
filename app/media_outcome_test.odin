@@ -76,4 +76,54 @@ media_outcome_slots :: proc(t: ^testing.T) {
 	transcript_md(&ui, {}, &b)
 	testing.expect(t, strings.contains(strings.to_string(b), tr(msg.att_rejected[2])))
 	testing.expect(t, !strings.contains(strings.to_string(b), "raw detail"))
+
+	// A reply loads its preview media even when the parent row is absent.
+	old_jobs, old_inflight, old_textures := media_jobs, media_inflight, media_textures
+	media_jobs, media_inflight, media_textures = {}, {}, {}
+	defer {
+		delete(media_jobs); delete(media_inflight); delete(media_textures)
+		media_jobs, media_inflight, media_textures = old_jobs, old_inflight, old_textures
+	}
+	preview := marmot.Timeline_Reply_Preview{media = raw_data(outcomes[:]), media_len = len(outcomes)}
+	outcomes[4].body.accepted.reference = {file_name = "reply.png", media_type = "image/png", plaintext_sha256 = "reply-test-image"}
+	job_count := len(media_jobs)
+	msg.reply_image = reply_image_load(nil, "account", "group", &preview)
+	testing.expect_value(t, msg.reply_image, "reply-test-image")
+	testing.expect_value(t, len(media_jobs), job_count + 1)
+	duplicate := reply_image_load(nil, "account", "group", &preview)
+	delete(duplicate)
+	testing.expect_value(t, len(media_jobs), job_count + 1)
+	defer {
+		media_job_free(media_jobs[job_count])
+		ordered_remove(&media_jobs, job_count)
+		delete_key(&media_textures, "reply-test-image")
+	}
+	clay.BeginLayout()
+	message_row(1, msg)
+	clay.EndLayout(0)
+	loading := clay.GetElementData(clay.ID("MsgReplyImage", 1))
+	testing.expect(t, loading.found)
+	media_textures["reply-test-image"] = &tex
+	for dimensions in ([][2]i32{{30, 100}, {100, 30}}) {
+		tex.width, tex.height = dimensions[0], dimensions[1]
+		clay.BeginLayout()
+		message_row(1, msg)
+		commands := clay.EndLayout(0)
+		image_box := clay.GetElementData(clay.ID("MsgReplyImage", 1)).boundingBox
+		testing.expect(t, image_box.width <= 96 && image_box.height <= 64)
+		testing.expect_value(t, image_box.x, clay.GetElementData(clay.ID("MsgReplyCol", 1)).boundingBox.x)
+		drawn := false
+		for command in commands.internalArray[:commands.length] {
+			if command.commandType != .Image || command.renderData.image.imageData != &tex { continue }
+			if command.id != clay.ID("MsgReplyImage", 1).id { continue }
+			drawn = true
+			testing.expect(t, abs(command.boundingBox.width / command.boundingBox.height - f32(tex.width) / f32(tex.height)) < 0.00001)
+		}
+		testing.expect(t, drawn, "reply must render the parent image")
+	}
+	preview.deleted = true
+	testing.expect_value(t, reply_image_load(nil, "account", "group", &preview), "")
+	preview.deleted = false
+	preview.invalidation_status = "invalid"
+	testing.expect_value(t, reply_image_load(nil, "account", "group", &preview), "")
 }

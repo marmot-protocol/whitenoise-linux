@@ -69,7 +69,7 @@ poll_parse :: proc(client: ^marmot.Client, msg: ^Msg_Ui, record: ^marmot.Timelin
 			}
 			doc: ^marmot.Markdown_Document
 			if marmot.parse_markdown(client, strings.clone_to_cstring(opt.label, context.temp_allocator), &doc) == .OK {
-				convert_blocks(&opt.blocks, doc.blocks, doc.blocks_len, false)
+				convert_blocks(&opt.blocks, doc.blocks, doc.blocks_len, false, ([^]u8)(doc.blank_lines_before)[:doc.blank_lines_before_len])
 				marmot.markdown_document_free(doc)
 			}
 			append(&msg.poll_opts, opt)

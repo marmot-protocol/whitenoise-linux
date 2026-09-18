@@ -14,8 +14,7 @@ import marmot "../marmot"
 
 @(private)
 Live_Change :: struct {
-	group, message, account: string,
-	at: time.Tick,
+	group, account: string,
 }
 
 Live :: struct {
@@ -41,16 +40,12 @@ live_worker :: proc(t: ^thread.Thread) {
 			continue
 		}
 
-		received_at := time.tick_now()
 		fmt.eprintfln("live: chat-list event for %s", string(row.group_id_hex))
 		sync.lock(&live.mutex)
 		live.dirty = true
-		message := row.last_message != nil ? row.last_message.message_id_hex : nil
 		append(&live.dirty_groups, Live_Change{
 			group = strings.clone(string(row.group_id_hex)),
 			account = strings.clone(live.account),
-			message = message != nil ? strings.clone(string(message)) : "",
-			at = received_at,
 		})
 		sync.unlock(&live.mutex)
 		marmot.chat_list_row_free(row)
@@ -128,8 +123,7 @@ start_live :: proc(live: ^Live, client: ^marmot.Client, account_ref: string) {
 // stream that never wakes (a dropped relay socket, a subscription that
 // silently stops) would otherwise leave the rail and the open timeline
 // stale until the user switched chats by hand. The poll just marks the
-// list dirty; drain_live does the one refresh either way, and only
-// reloads the timeline when the open chat's newest id actually moved.
+// list dirty; drain_live refreshes it and restarts a closed timeline stream.
 LIVE_POLL_SECS :: 3.0
 
 @(private = "file")
@@ -202,26 +196,12 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 	sync.lock(&live.mutex)
 	dirty := live.dirty
 	live.dirty = false
-	received := make(map[string]time.Tick, context.temp_allocator)
-	timeline_hit := false
 	for group in live.dirty_groups {
-		if group.account != ui.account_ref {
-			continue
-		}
-		dirty = true
-		if ui.selected >= 0 {
-			if group.group == ui.chats[ui.selected].group_id {
-				if len(group.message) > 0 && !(group.message in received) {
-					received[strings.clone(group.message, context.temp_allocator)] = group.at
-				}
-				timeline_hit = true
-			}
-		}
+		if group.account == ui.account_ref { dirty = true }
 	}
 	had_events := len(live.dirty_groups) > 0
 	for group in live.dirty_groups {
 		delete(group.group)
-		delete(group.message)
 		delete(group.account)
 	}
 	clear(&live.dirty_groups)
@@ -231,21 +211,12 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if had_events {
+		search_revision += 1
 		sync_at = rl.GetTime() // the status bar shows SYNCING for a beat
 	}
 
 	selected_group: string
-	// The open chat's newest message id before the reload. The dirty-group
-	// ids are the primary signal, but a mismatch there (a differently
-	// formatted id, an event for a group the list renamed) would silently
-	// strand the open timeline: the rail row updates and the messages
-	// don't. Comparing the id across the reload catches that case from
-	// the data instead of from the event.
-	selected_last: string
-	if ui.selected >= 0 {
-		selected_group = ui.chats[ui.selected].group_id
-		selected_last = ui.chats[ui.selected].last_id
-	}
+	if ui.selected >= 0 { selected_group = ui.chats[ui.selected].group_id }
 	// Unread counts before the reload, to spot the chats that gained
 	// messages for desktop notifications.
 	old_unread := make(map[string]u64, context.temp_allocator)
@@ -278,22 +249,13 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		notify_mark(chat.group_id, chat.last_id)
 	}
-	if ui.selected >= 0 && (timeline_hit || ui.chats[ui.selected].last_id != selected_last) {
-		old_ids := make(map[string]bool, context.temp_allocator)
-		for msg in ui.messages {
-			old_ids[msg.id] = true
-		}
-		load_timeline(client, ui)
-		for &msg in ui.messages {
-			if !msg.mine && !msg.system && !old_ids[msg.id] {
-				msg.visible_since = received[msg.id]
-			}
-		}
-		// Messages that arrive in the chat you are watching count as
-		// read, so the badge doesn't pile up on screen.
-		if focused && ui.chats[ui.selected].unread > 0 {
-			mark_chat_read(ui, client, ui.selected)
-		}
+	// Timeline subscriptions deliver changes independently of rail updates.
+	if ui.selected >= 0 && (timeline_job == nil || thread.is_done(timeline_job.worker)) {
+		load_timeline(client, ui, string(ui.search_input[:]))
+	}
+	// The rail can receive its unread update after the timeline snapshot.
+	if ui.selected >= 0 && focused && !ui.timeline_loading && !ui.tl_has_after && ui.chats[ui.selected].unread > 0 {
+		mark_chat_read(ui, client, ui.selected)
 	}
 }
 
@@ -360,6 +322,7 @@ Send_Done :: struct {
 	status: marmot.Status, // classifies a failure as queued vs failed
 	err:    string, // "" = ok
 	ids:    [dynamic]string, // hide a dismissed send even if publishing succeeds
+	refresh_requested: bool,
 }
 
 @(private = "file")
@@ -670,8 +633,38 @@ drain_sends :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	defer delete(done)
 
-	reload := false
-	for d in done {
+	reload, refresh := false, false
+	visible := make(map[string]bool, context.temp_allocator)
+	if timeline_page != nil {
+		for record in timeline_page.messages[:timeline_page.messages_len] {
+			visible[string(record.message_id_hex)] = true
+		}
+	}
+	for &d in done {
+		// The acknowledgement can beat the timeline update. Keep its preview
+		// until the replacement exists, and recover a missed subscription update.
+		waiting := false
+		if d.err == "" && timeline_scope(ui, "") {
+			for p in ui.pending {
+				if p.ticket != d.ticket || p.dismissed || p.group_id != string(timeline_job.group) {
+					continue
+				}
+				for id in d.ids {
+					waiting ||= !visible[id]
+				}
+				break
+			}
+		}
+		if waiting {
+			if !d.refresh_requested {
+				refresh = true
+				d.refresh_requested = true
+			}
+			sync.lock(&sends_mutex)
+			append(&sends_done, d)
+			sync.unlock(&sends_mutex)
+			continue
+		}
 		defer {
 			delete(d.err)
 			for id in d.ids {
@@ -713,10 +706,9 @@ drain_sends :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 	save_offline(ui)
-	// ponytail: a live-worker reload can show the confirmed record a
-	// frame before the ack drops the pending row (brief duplicate);
-	// key pending rows by wire id if it ever shows.
-	if reload {
+	if refresh {
+		timeline_start(client, ui, "")
+	} else if reload {
 		load_timeline(client, ui)
 	}
 }
@@ -746,6 +738,7 @@ Op_Done :: struct {
 	ticket: int,
 	op:     Msg_Op,
 	err:    string, // "" = ok, else the owned marmot error
+	account, group, target, content: string, // owned edit recovery data
 }
 
 ops_mutex: sync.Mutex
@@ -764,6 +757,8 @@ op_worker :: proc(t: ^thread.Thread) {
 		status = marmot.unreact_from_message(job.client, job.account, job.group, job.target, &summary)
 	case .Delete:
 		status = marmot.delete_message(job.client, job.account, job.group, job.target, &summary)
+	case .Edit:
+		status = marmot.edit_message(job.client, job.account, job.group, job.target, job.content, &summary)
 	case .Custom:
 		rows := make([]marmot.Message_Tag, len(job.tags))
 		for row, i in job.tags {
@@ -794,8 +789,15 @@ op_worker :: proc(t: ^thread.Thread) {
 	} else {
 		err = marmot.last_error()
 	}
+	done := Op_Done{ticket = job.ticket, op = job.op, err = err}
+	if job.op == .Edit {
+		done.account = strings.clone(string(job.account))
+		done.group = strings.clone(string(job.group))
+		done.target = strings.clone(string(job.target))
+		done.content = strings.clone(string(job.content))
+	}
 	sync.lock(&ops_mutex)
-	append(&ops_done, Op_Done{ticket = job.ticket, op = job.op, err = err})
+	append(&ops_done, done)
 	sync.unlock(&ops_mutex)
 
 	delete(job.account)
@@ -854,6 +856,7 @@ spawn_op :: proc(ui: ^Ui_State, client: ^marmot.Client, op: Msg_Op, message_id, 
 	job.group = strings.clone_to_cstring(ui.chats[ui.selected].group_id)
 	job.target = strings.clone_to_cstring(message_id)
 	job.emoji = op == .React ? strings.clone_to_cstring(emoji) : nil
+	if op == .Edit { job.content = strings.clone_to_cstring(emoji) }
 	job.secs = secs
 
 	t := thread.create(op_worker)
@@ -876,6 +879,10 @@ drain_ops :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	defer delete(done)
 
 	for d in done {
+		if d.op == .Edit {
+			edit_complete(ui, d)
+			continue
+		}
 		// The ghost goes either way: on the ack the reload carries the
 		// confirmed chip, on failure there is nothing to show.
 		for p, i in ui.react_pending {

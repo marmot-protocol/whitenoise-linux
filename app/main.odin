@@ -636,8 +636,8 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 										continue
 									}
 									append(&ui.rail_rows, i)
-									chat_row(u32(i), chat, ui.selected == i, .Archive)
 								}
+								chat_rows_window(ui, ui.chats[:], ui.rail_rows[:], clay.ID("ChatList"), .Archive, 6)
 							}
 							scrollbar(clay.ID("ChatList"))
 						}
@@ -1068,6 +1068,7 @@ main :: proc() {
 		apply_theme(ui.theme, ui.accent)
 		save_settings(&ui)
 	}
+	test_peer_pending := false
 	if client != nil && len(ui.accounts) > 0 {
 		switch os.get_env("WN_TEST_PAGE", context.allocator) {
 		case "contacts":
@@ -1122,19 +1123,10 @@ main :: proc() {
 		case "gsearch":
 			gs_open_modal(&ui)
 		case "peer":
+			test_peer_pending = true
 			if len(ui.chats) > 0 {
 				ui.selected = 0
 				load_timeline(client, &ui)
-				for msg in ui.messages {
-					if !msg.mine && len(msg.sender_id) > 0 {
-						open_peer(&ui, client, msg.sender_id, msg.sender, msg.pic_url)
-						break
-					}
-				}
-			}
-			if !ui.peer_open {
-				// Single-account test home: render the popup on self.
-				open_peer(&ui, client, ui.account_ref, ui.accounts[0], ui.my_pic_url)
 			}
 		}
 	}
@@ -1195,16 +1187,6 @@ main :: proc() {
 	   os.get_env("WN_TEST_SELECT", context.allocator) != "" {
 		ui.selected = 0
 		load_timeline(client, &ui)
-		// Open the thread panel on the newest main-timeline message,
-		// for headless shots of the thread view.
-		if os.get_env("WN_TEST_THREAD", context.allocator) != "" {
-			for i := len(ui.messages) - 1; i >= 0; i -= 1 {
-				if len(ui.messages[i].thread_of) == 0 && !ui.messages[i].system {
-					thread_push(&ui, ui.messages[i].id)
-					break
-				}
-			}
-		}
 	}
 
 	// Reopen the last chat, the General-settings startup toggle.
@@ -1220,6 +1202,7 @@ main :: proc() {
 	splash_frame(2)
 	health_refresh(&ui, client)
 
+	test_thread_pending := os.get_env("WN_TEST_THREAD", context.allocator) != ""
 	live: Live
 	sett_was := ui.settings_section
 	tl_container_was: [2]f32
@@ -1234,6 +1217,7 @@ main :: proc() {
 	for !rl.WindowShouldClose(&frame_input) {
 		defer free_all(context.temp_allocator)
 		defer messages_collect()
+		defer chats_collect()
 		defer { if wrap_flush { wrap_clear() } }
 		poll_system_theme(&ui, rl.GetTime())
 
@@ -1267,6 +1251,28 @@ main :: proc() {
 		start_live(&live, client, ui.account_ref) // no-op once running
 		live_tick(&live, &ui, client) // poll fallback when the stream stalls
 		drain_live(&live, &ui, client)
+		timeline_drain(&ui, client)
+		if !ui.timeline_loading && test_peer_pending {
+			test_peer_pending = false
+			for msg in ui.messages {
+				if !msg.mine && msg.sender_id != "" {
+					open_peer(&ui, client, msg.sender_id, msg.sender, msg.pic_url)
+					break
+				}
+			}
+			if !ui.peer_open { open_peer(&ui, client, ui.account_ref, ui.accounts[0], ui.my_pic_url) }
+		}
+		if !ui.timeline_loading && test_thread_pending && ui.selected >= 0 {
+			test_thread_pending = false
+			for i := len(ui.messages) - 1; i >= 0; i -= 1 {
+				if ui.messages[i].thread_of == "" && !ui.messages[i].system {
+					thread_push(&ui, ui.messages[i].id)
+					break
+				}
+			}
+		}
+		export_drain(&ui, client)
+		search_drain(&ui, client)
 		media_drain(&ui)
 		agent_tick(&ui, tl_at_bottom ? .Follow : .Hold)
 		drain_sends(&ui, client)
@@ -1425,6 +1431,7 @@ main :: proc() {
 		link_hover = ""
 		clear(&sel_lines) // body lines re-register during the build
 		video_hover = nil
+		video_full_hover = {}
 		stt_hover = {}
 		att_hover = {}
 		arc_hover = {}
@@ -1522,7 +1529,7 @@ main :: proc() {
 		// ponytail: best effort, one attempt; a hit older than the loaded
 		// page (limit 100) isn't in ui.messages and falls back to the
 		// bottom jump. Paged loading with an anchor is the upgrade.
-		if len(ui.jump_id) > 0 {
+		if len(ui.jump_id) > 0 && !ui.timeline_loading && !ui.timeline_paging {
 			for msg, i in ui.messages {
 				if msg.id != ui.jump_id {
 					continue
@@ -1728,7 +1735,7 @@ main :: proc() {
 			handle_react_fan(&ui, client)
 			update_drag_scroll(
 				&ui,
-				sel_dragging || orbit_hover != nil || modal_open(&ui) || fan_open(),
+				sel_dragging || orbit_hover != nil || modal_open(&ui) || fan_open() || video_bar_active(),
 			)
 			if len(ui.sel_copy) == 0 && !drag_moved {
 				handle_link_click(&ui)
@@ -1942,27 +1949,7 @@ main :: proc() {
 					}
 				}
 				if len(ui.editing) > 0 {
-					summary: ^marmot.Send_Summary
-					account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-					group := strings.clone_to_cstring(
-						ui.chats[ui.selected].group_id,
-						context.temp_allocator,
-					)
-					target := strings.clone_to_cstring(ui.editing, context.temp_allocator)
-					if marmot.edit_message(
-						   client,
-						   account,
-						   group,
-						   target,
-						   strings.clone_to_cstring(edit_to, context.temp_allocator),
-						   &summary,
-					   ) ==
-					   .OK {
-						marmot.send_summary_free(summary)
-					}
-					ui.editing = ""
-					clear(&ui.compose)
-					load_timeline(client, &ui)
+					queue_edit(&ui, client)
 				}
 			}
 		}
@@ -1970,6 +1957,7 @@ main :: proc() {
 
 	// Persist the open chat's half-written draft across restarts.
 	messages_collect()
+	chats_collect()
 	stt_stop(&ui)
 	tts_stop(&ui)
 	stash_draft(&ui)
@@ -1980,6 +1968,11 @@ main :: proc() {
 	// freed before the client that created it.
 	if client != nil {
 		marmot.client_shutdown(client)
+		for worker in send_threads { thread.join(worker); thread.destroy(worker) }
+		delete(send_threads)
+		timeline_stop()
+		profile_reads_stop()
+		search_stop()
 		media_stop()
 		agent_shutdown()
 		if live.worker != nil {
@@ -1995,6 +1988,16 @@ main :: proc() {
 		marmot.client_free(client)
 	}
 	delete(live.account)
+	for done in failed_edits { edit_result_free(done) }
+	delete(failed_edits)
+	for done in ops_done {
+		if done.op == .Edit { edit_result_free(done) } else { delete(done.err) }
+	}
+	delete(ops_done)
+	delete(export_account); delete(export_group)
+	for row in ui.chats { chat_free(row) }
+	for row in ui.archived { chat_free(row) }
+	delete(ui.chats); delete(ui.archived); delete(retired_chats)
 	for msg in ui.messages { message_free(msg) }
 	delete(ui.messages)
 	delete(ui.messages_group)

@@ -443,7 +443,7 @@ compose_mouse :: proc(ui: ^Ui_State) {
 	if !box.found {
 		return
 	}
-	over := clay.PointerOver(clay.ID("ComposeBox")) && !clay.PointerOver(clay.ID("EmojiBtn"))
+	over := clay.PointerOver(clay.ID("ComposeBox")) && !clay.PointerOver(clay.ID("ComposeTools"))
 	left := over && rl.IsMouseButtonPressed(.LEFT)
 	middle := over && rl.IsMouseButtonPressed(.MIDDLE)
 	dragging := text_drag == &ui.compose && rl.IsMouseButtonDown(.LEFT) && !left
@@ -618,6 +618,10 @@ long_press_tick :: proc() {
 	// Touch only: it stands in for the right click a finger cannot do.
 	// With a mouse the hold belongs to the reaction fan alone.
 	long_pressed = false
+	if video_bar_active() {
+		lp = {}
+		return
+	}
 	if !rl.HasTouch() {
 		return
 	}

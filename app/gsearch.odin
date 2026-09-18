@@ -1,13 +1,12 @@
 // Global cross-chat search, the slint global-search modal: Ctrl+K or
-// the rail-head search chip opens a centered modal; typing re-queries
-// every chat's recent timeline and lists hit cards that jump to the
+// the rail-head search chip opens a centered modal; a worker searches
+// cached recent timelines and lists hit cards that jump to the
 // message. Matching folds case and latin-1 diacritics over the latest
 // GS_FETCH_LIMIT messages per chat: a folded-substring hit ranks
 // above a folded-subsequence ("fuzzy") hit, both newest first. An
 // empty field shows the persisted recent searches.
 package main
 
-import "core:slice"
 import "core:strings"
 import "core:unicode"
 import "core:unicode/utf8"
@@ -22,6 +21,7 @@ GS_HITS_MAX :: 40
 GS_FETCH_LIMIT :: 100 // per-chat page, same depth as the open timeline
 
 Gs_Hit :: struct {
+	group: string, // stable across chat-list reorderings
 	chat:    int, // index into ui.chats
 	msg_id:  string,
 	title:   string, // chat title
@@ -104,6 +104,7 @@ gs_snippet :: proc(body: string, match_rune: int) -> string {
 }
 
 gs_free_hit :: proc(h: Gs_Hit) {
+	delete(h.group)
 	delete(h.msg_id)
 	delete(h.title)
 	delete(h.sender)
@@ -132,74 +133,9 @@ gs_close :: proc(ui: ^Ui_State) {
 	// on screen animating out and would empty in front of the user.
 }
 
-// Re-query all chats for the current input. One unfiltered limit-100
-// query per chat, matched Odin-side so the fold applies (marmot's
-// query search is plain substring and can't see through diacritics).
-// ponytail: synchronous N queries per keystroke, like the rail
-// filter; debounce if a large account ever makes typing lag.
 gs_refresh :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	gs_clear_hits(ui)
-	needle := gs_fold(strings.trim_space(string(ui.gs_input[:])))
-	if len(needle) == 0 {
-		return
-	}
-
-	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	for chat, ci in ui.chats {
-		if chat.pending {
-			continue
-		}
-		query := marmot.Timeline_Message_Query {
-			group_id_hex = strings.clone_to_cstring(chat.group_id, context.temp_allocator),
-			has_limit    = true,
-			limit        = GS_FETCH_LIMIT,
-		}
-		page: ^marmot.Timeline_Page
-		if marmot.timeline_messages(client, account, &query, &page) != .OK {
-			continue
-		}
-		defer marmot.timeline_page_free(page)
-
-		// Newest first within the chat.
-		for i := page.messages_len; i > 0; i -= 1 {
-			record := &page.messages[i - 1]
-			if record.deleted || record.kind == 1009 || record.kind == 5 || record.plaintext == nil {
-				continue
-			}
-			id := record.message_id_hex != nil ? string(record.message_id_hex) : ""
-			if len(id) == 0 || ui.hidden[id] {
-				continue
-			}
-			body := string(record.plaintext)
-			hay := gs_fold(body)
-			pos := strings.index(hay, needle)
-			if pos < 0 && !gs_subseq(hay, needle) {
-				continue
-			}
-
-			mine := record.direction != nil && string(record.direction) == "sent"
-			sender := record.sender != nil ? string(record.sender) : ""
-			append(&ui.gs_hits, Gs_Hit{
-				chat    = ci,
-				msg_id  = strings.clone(id),
-				title   = strings.clone(chat.title),
-				sender  = strings.clone(mine ? "you" : profile_label(client, sender)),
-				snippet = gs_snippet(body, pos > 0 ? utf8.rune_count(hay[:pos]) : 0),
-				at      = format_full(record.timeline_at),
-				when_at = record.timeline_at,
-				exact   = pos >= 0,
-			})
-		}
-	}
-
-	// Substring tier first, then newest across all chats.
-	slice.sort_by(ui.gs_hits[:], proc(a, b: Gs_Hit) -> bool {
-		return a.exact == b.exact ? a.when_at > b.when_at : a.exact
-	})
-	for len(ui.gs_hits) > GS_HITS_MAX {
-		gs_free_hit(pop(&ui.gs_hits))
-	}
-	stagger_arm(clay.ID("GsList").id) // a fresh result set cascades in
+	search_request(ui, client, .Global)
 }
 
 // Push the current query to the front of the persisted recents.
@@ -224,10 +160,12 @@ gs_remember :: proc(ui: ^Ui_State) {
 
 // Select the hit's chat and hand the message id to the frame loop,
 // which centers the row once the new timeline has laid out.
-gs_jump :: proc(ui: ^Ui_State, client: ^marmot.Client, chat_index: int, msg_id: string) {
+gs_jump :: proc(ui: ^Ui_State, client: ^marmot.Client, group, msg_id: string) {
 	id := strings.clone(msg_id)
 	gs_close(ui)
-	if chat_index < 0 || chat_index >= len(ui.chats) {
+	chat_index := -1
+	for chat, i in ui.chats { if chat.group_id == group { chat_index = i; break } }
+	if chat_index < 0 {
 		delete(id)
 		return
 	}
@@ -287,6 +225,8 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 			}
 		} else if empty {
 			clay.Text("Type to search all chats.", {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
+		} else if search_pending[.Global] != nil || (search_active[.Global] != nil && search_active[.Global].worker != nil) {
+			clay.Text(tr("Searching…"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
 		} else if len(ui.gs_hits) == 0 {
 			clay.Text("No matches.", {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
 		}
@@ -337,7 +277,7 @@ handle_gsearch :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// Enter jumps to the top hit.
 	if rl.IsKeyPressed(.ENTER) && len(ui.gs_hits) > 0 {
 		gs_remember(ui)
-		gs_jump(ui, client, ui.gs_hits[0].chat, ui.gs_hits[0].msg_id)
+		gs_jump(ui, client, ui.gs_hits[0].group, ui.gs_hits[0].msg_id)
 		return
 	}
 
@@ -360,7 +300,7 @@ handle_gsearch :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	for hit, i in ui.gs_hits {
 		if clay.PointerOver(clay.ID("GsHit", u32(i))) {
 			gs_remember(ui)
-			gs_jump(ui, client, hit.chat, hit.msg_id)
+			gs_jump(ui, client, hit.group, hit.msg_id)
 			return
 		}
 	}

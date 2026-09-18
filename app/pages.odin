@@ -790,8 +790,14 @@ inline_text :: proc(inlines: [^]marmot.Markdown_Inline, count: uint) -> string {
 }
 
 // Flatten the FFI block tree into owned Md_Block_Ui rows.
-convert_blocks :: proc(out: ^[dynamic]Md_Block_Ui, blocks: [^]marmot.Markdown_Block, count: uint, quoted: bool) {
+convert_blocks :: proc(out: ^[dynamic]Md_Block_Ui, blocks: [^]marmot.Markdown_Block, count: uint, quoted: bool, gaps: []u8 = nil) {
 	for i in 0 ..< count {
+		first := len(out^)
+		defer {
+			if first < len(out^) && i < uint(len(gaps)) {
+				out^[first].blank_lines_before = u8(min(u16(out^[first].blank_lines_before) + u16(gaps[i]), u16(MD_BLANK_MAX)))
+			}
+		}
 		block := &blocks[i]
 		switch block.tag {
 		case .PARAGRAPH:
@@ -802,7 +808,8 @@ convert_blocks :: proc(out: ^[dynamic]Md_Block_Ui, blocks: [^]marmot.Markdown_Bl
 		case .CODE_BLOCK:
 			append(out, Md_Block_Ui{kind = .Code, text = strings.clone(strings.trim_right(string(block.body.code_block.content), "\n"))})
 		case .BLOCK_QUOTE:
-			convert_blocks(out, block.body.block_quote.blocks, block.body.block_quote.blocks_len, true)
+			quote := &block.body.block_quote
+			convert_blocks(out, quote.blocks, quote.blocks_len, true, ([^]u8)(quote.blank_lines_before)[:quote.blank_lines_before_len])
 		case .LIST_BLOCK:
 			list := &block.body.list_block
 			for j in 0 ..< list.items_len {
@@ -822,10 +829,13 @@ convert_blocks :: proc(out: ^[dynamic]Md_Block_Ui, blocks: [^]marmot.Markdown_Bl
 				if item.blocks_len > 0 && item.blocks[0].tag == .PARAGRAPH {
 					body_text = inline_text(item.blocks[0].body.paragraph.inlines, item.blocks[0].body.paragraph.inlines_len)
 				}
-				append(out, Md_Block_Ui{kind = .List_Item, text = strings.clone(fmt.tprintf("%s%s", prefix, body_text)), marker_len = len(prefix)})
+				gap := j > 0 && !list.tight ? u8(1) : 0
+				if item.blank_lines_before_len > 0 { gap = max(gap, item.blank_lines_before^) }
+				append(out, Md_Block_Ui{kind = .List_Item, text = strings.clone(fmt.tprintf("%s%s", prefix, body_text)), marker_len = len(prefix), blank_lines_before = gap})
 				delete(body_text)
 				if item.blocks_len > 1 {
-					convert_blocks(out, item.blocks[1:], item.blocks_len - 1, quoted)
+					gaps := ([^]u8)(item.blank_lines_before)[:item.blank_lines_before_len]
+					convert_blocks(out, item.blocks[1:], item.blocks_len - 1, quoted, gaps[min(1, len(gaps)):])
 				}
 			}
 		case .THEMATIC_BREAK:
@@ -1007,10 +1017,11 @@ load_chat_list :: proc(client: ^marmot.Client, account_ref: string, ui: ^Ui_Stat
 	}
 	defer marmot.chat_list_row_list_free(rows)
 
-	clear(&ui.chats)
+	fresh := make([dynamic]Chat_Row_Ui, 0, int(rows.len))
 	for i in 0 ..< rows.len {
-		append(&ui.chats, row_to_ui(client, &rows.items[i], account_ref))
+		append(&fresh, row_to_ui(client, &rows.items[i], account_ref))
 	}
+	chats_replace(&ui.chats, fresh)
 	ui.my_pic_url = profile_info(client, account_ref).pic_url
 	queue_group_pics(ui, client)
 

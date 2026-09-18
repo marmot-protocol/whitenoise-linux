@@ -16,6 +16,9 @@ TXT_MAX_BLOCKS :: 400 // parse cap
 TXT_TILE_BLOCKS :: 20 // blocks shown on the tile (modal shows more)
 TXT_MODAL_BLOCKS :: 80
 
+@(private)
+MD_BLANK_MAX :: u8(8) // Marmot's source blank-line limit.
+
 Txt_View :: struct {
 	blocks: [dynamic]Md_Block_Ui, // block texts owned by the view
 }
@@ -35,9 +38,9 @@ txt_view_free :: proc(view: ^Txt_View) {
 }
 
 @(private = "file")
-flush_para :: proc(blocks: ^[dynamic]Md_Block_Ui, para: ^strings.Builder) {
+flush_para :: proc(blocks: ^[dynamic]Md_Block_Ui, para: ^strings.Builder, gap: u8) {
 	if strings.builder_len(para^) > 0 {
-		append(blocks, Md_Block_Ui{kind = .Para, text = strings.clone(strings.to_string(para^))})
+		append(blocks, Md_Block_Ui{kind = .Para, text = strings.clone(strings.to_string(para^)), blank_lines_before = gap})
 		strings.builder_reset(para)
 	}
 }
@@ -50,6 +53,7 @@ parse_md_text :: proc(text: string) -> [dynamic]Md_Block_Ui {
 	defer strings.builder_destroy(&para)
 	defer strings.builder_destroy(&code)
 	in_code := false
+	gap, para_gap, code_gap: u8
 
 	it := text
 	for line in strings.split_lines_iterator(&it) {
@@ -61,7 +65,7 @@ parse_md_text :: proc(text: string) -> [dynamic]Md_Block_Ui {
 
 		if in_code {
 			if strings.has_prefix(t, "```") {
-				append(&blocks, Md_Block_Ui{kind = .Code, text = strings.clone(strings.to_string(code))})
+				append(&blocks, Md_Block_Ui{kind = .Code, text = strings.clone(strings.to_string(code)), blank_lines_before = code_gap})
 				strings.builder_reset(&code)
 				in_code = false
 			} else {
@@ -75,38 +79,43 @@ parse_md_text :: proc(text: string) -> [dynamic]Md_Block_Ui {
 
 		switch {
 		case strings.has_prefix(t, "```"):
-			flush_para(&blocks, &para)
+			flush_para(&blocks, &para, para_gap)
+			code_gap = gap
 			in_code = true
 		case len(t) == 0:
-			flush_para(&blocks, &para)
+			flush_para(&blocks, &para, para_gap)
+			gap = min(gap + 1, MD_BLANK_MAX)
 		case strings.has_prefix(t, "#"):
-			flush_para(&blocks, &para)
+			flush_para(&blocks, &para, para_gap)
 			level := 0
 			for level < len(t) && t[level] == '#' {
 				level += 1
 			}
-			append(&blocks, Md_Block_Ui{kind = .Heading, text = strings.clone(strings.trim_space(t[level:])), level = min(level, 6)})
+			append(&blocks, Md_Block_Ui{kind = .Heading, blank_lines_before = gap, text = strings.clone(strings.trim_space(t[level:])), level = min(level, 6)})
 		case t == "---" || t == "***" || t == "___":
-			flush_para(&blocks, &para)
-			append(&blocks, Md_Block_Ui{kind = .Rule})
+			flush_para(&blocks, &para, para_gap)
+			append(&blocks, Md_Block_Ui{kind = .Rule, blank_lines_before = gap})
 		case strings.has_prefix(t, "> "):
-			flush_para(&blocks, &para)
-			append(&blocks, Md_Block_Ui{kind = .Quote, text = strings.clone(t[2:])})
+			flush_para(&blocks, &para, para_gap)
+			append(&blocks, Md_Block_Ui{kind = .Quote, blank_lines_before = gap, text = strings.clone(t[2:])})
 		case strings.has_prefix(t, "- ") || strings.has_prefix(t, "* "):
-			flush_para(&blocks, &para)
-			append(&blocks, Md_Block_Ui{kind = .List_Item, text = fmt.aprintf("• %s", t[2:]), marker_len = len("• ")})
+			flush_para(&blocks, &para, para_gap)
+			append(&blocks, Md_Block_Ui{kind = .List_Item, blank_lines_before = gap, text = fmt.aprintf("• %s", t[2:]), marker_len = len("• ")})
 		case:
 			if strings.builder_len(para) > 0 {
 				strings.write_byte(&para, ' ')
+			} else {
+				para_gap = gap
 			}
 			strings.write_string(&para, t)
 		}
+		if len(t) > 0 { gap = 0 }
 	}
 
 	if in_code && strings.builder_len(code) > 0 {
-		append(&blocks, Md_Block_Ui{kind = .Code, text = strings.clone(strings.to_string(code))})
+		append(&blocks, Md_Block_Ui{kind = .Code, text = strings.clone(strings.to_string(code)), blank_lines_before = code_gap})
 	}
-	flush_para(&blocks, &para)
+	flush_para(&blocks, &para, para_gap)
 	return blocks
 }
 

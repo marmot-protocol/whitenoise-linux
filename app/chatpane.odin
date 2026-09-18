@@ -247,11 +247,8 @@ chat_pane :: proc(ui: ^Ui_State) {
 						voice_bar()
 					} else if clay.UI(clay.ID("ComposeBox"))(
 					{
-						// Height is sprung rather than fit: a wrapped line
-						// opens the pill instead of snapping it. The target
-						// comes from the text column's own box, which is
-						// still fit-sized, so there is no feedback loop.
-						layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(compose_height())}, padding = {left = 16, right = 16, top = 8, bottom = 8}, childGap = 10, childAlignment = {y = .Center}},
+						// The draft owns the full width; controls stay on their own row.
+						layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(compose_height())}, padding = {left = 16, right = 16, top = 8, bottom = 8}, childGap = 8, layoutDirection = .TopToBottom},
 						backgroundColor = ROW_BG,
 						cornerRadius = rr(22),
 						border = {color = ui.focus == .Compose ? ACCENT : FIELD_BORDER, width = bw()},
@@ -267,22 +264,15 @@ chat_pane :: proc(ui: ^Ui_State) {
 						if open_now(clay.ID("MentionPop"), ui.mention_active) {
 							mention_popover(ui)
 						}
-						if clay.UI(clay.ID("AttachBtn"))(
-						{layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
-						) {
-							clay.Text(ICON_CLIP, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
-						}
 						// One row per physical line ('\n' from Shift+Enter or
 						// paste); each splits at the selection so the caret
 						// sits at its head and the selected span highlights.
 						// Emoji render as Twemoji tiles like message bodies.
-						// The clip is what makes the growth read as the pill
-						// opening: a line appears as the box makes room for
-						// it, instead of hanging outside the rounded edge.
+						// Clip until the next frame adopts the text's new height.
 						if clay.UI(clay.ID("ComposeClip"))(
-						{layout = {sizing = {height = clay.SizingFixed(compose_height() - COMPOSE_PAD)}, childAlignment = {y = .Center}}, clip = {vertical = true}},
+						{layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(compose_height() - COMPOSE_CHROME_H)}}, clip = {vertical = true}},
 						) {
-						if clay.UI(clay.ID("ComposeText"))({layout = {layoutDirection = .TopToBottom, childGap = 2}}) {
+						if clay.UI(clay.ID("ComposeText"))({layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 2}}) {
 							if len(ui.compose) == 0 && len(rl.Preedit()) == 0 {
 								if clay.UI(clay.ID("ComposeLine", 0))({layout = {childGap = 1, childAlignment = {y = .Center}}}) {
 									clay.Text(tr("Send a message..."), {fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT_LO})
@@ -307,6 +297,12 @@ chat_pane :: proc(ui: ^Ui_State) {
 								}
 							}
 						}
+						}
+						if clay.UI(clay.ID("ComposeTools"))({layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(COMPOSE_TOOLS_H)}, childGap = 10, childAlignment = {y = .Center}}}) {
+						if clay.UI(clay.ID("AttachBtn"))(
+						{layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
+						) {
+							clay.Text(ICON_CLIP, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
 						}
 						if clay.UI(clay.ID("ComposeGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 						if clay.UI(clay.ID("EmojiBtn"))(
@@ -348,6 +344,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 						) {
 							clay.Text(ICON_MIC, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
 						}
+						}
 					}
 				}
 			}
@@ -363,8 +360,9 @@ panel_target :: proc(ui: ^Ui_State) -> f32 {
 
 // One "Members  8" style section head, the slint Section label + note.
 @(private = "file")
-COMPOSE_H_MIN :: f32(44)
-COMPOSE_PAD :: f32(16) // the pill's top + bottom padding
+COMPOSE_TOOLS_H :: f32(28)
+COMPOSE_CHROME_H :: f32(16 + 8) + COMPOSE_TOOLS_H // padding, gap, toolbar
+COMPOSE_H_MIN :: f32(20) + COMPOSE_CHROME_H
 
 // Height of the composer pill, from last frame's text column. The pill
 // and its clip both ask for it; no easing, the chat box does not
@@ -372,7 +370,7 @@ COMPOSE_PAD :: f32(16) // the pill's top + bottom padding
 compose_height :: proc() -> f32 {
 	target := COMPOSE_H_MIN
 	if box := clay.GetElementData(clay.ID("ComposeText")); box.found {
-		target = max(COMPOSE_H_MIN, box.boundingBox.height + COMPOSE_PAD)
+		target = max(COMPOSE_H_MIN, box.boundingBox.height + COMPOSE_CHROME_H)
 	}
 	return target
 }

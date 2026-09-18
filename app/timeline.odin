@@ -581,13 +581,25 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 		// paused. Click toggles pause (handle_video).
 		if entry, j, found := media_at(msg.videos[:], &video_pos, att); found {
 			view := entry.view
-			ratio := view.h > 0 ? f32(view.w) / f32(view.h) : 16.0 / 9.0
+			ratio := view.w > 0 && view.h > 0 ? f32(view.w) / f32(view.h) : 16.0 / 9.0
+			tile_w := min(att_w(), 320 * ratio)
 			if clay.UI(clay.ID("MsgVideo", index * 1024 + u32(j)))(
-			{layout = {sizing = {width = clay.SizingFixed(att_w())}, childAlignment = {x = .Center, y = .Center}}, aspectRatio = {ratio}, image = {imageData = &view.tex}, cornerRadius = rr(8)},
+			{layout = {sizing = {width = clay.SizingFixed(tile_w)}, childAlignment = {x = .Center, y = .Center}}, aspectRatio = {ratio}, image = {imageData = &view.tex}, cornerRadius = rr(8)},
 			) {
 				att_dl_button("DlVid", index * 1024 + u32(j), msg.id, entry.att, msg.att_names[entry.att])
 				if hovered() {
 					video_hover = view
+				}
+				if clay.UI(clay.ID("MsgVideoFull", index * 1024 + u32(j)))({
+					layout = {padding = clay.PaddingAll(8)},
+					floating = {attachTo = .Parent, clipTo = .AttachedParent, zIndex = 7, offset = {6, 6}, attachment = {element = .LeftTop, parent = .LeftTop}},
+					backgroundColor = {0, 0, 0, 150}, cornerRadius = rr(4),
+				}) {
+					if hovered() {
+						video_full_hover = {view, msg.att_names[entry.att]}
+						tooltip(tr("Fullscreen"))
+					}
+					clay.Text("\uf065", {fontId = FONT_ICON, fontSize = 14, textColor = {255, 255, 255, 230}})
 				}
 				if view.paused {
 					if clay.UI(clay.ID("MsgVideoPlay", index * 1024 + u32(j)))(
@@ -601,7 +613,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 					if clay.UI(clay.ID("MsgVideoDur", index * 1024 + u32(j)))(
 					{
 						layout = {padding = {left = 6, right = 6, top = 2, bottom = 2}},
-						floating = {attachTo = .Parent, zIndex = 6, offset = {-6, -6}, attachment = {element = .RightBottom, parent = .RightBottom}},
+						floating = {attachTo = .Parent, clipTo = .AttachedParent, pointerCaptureMode = .Passthrough, zIndex = 6, offset = {-6, -20}, attachment = {element = .RightBottom, parent = .RightBottom}},
 						backgroundColor = {0, 0, 0, 150},
 						cornerRadius = rr(4),
 					},
@@ -609,19 +621,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 						clay.Text(fmt_clock(view.dur), {fontId = FONT_BODY, fontSize = 11, textColor = {255, 255, 255, 230}})
 					}
 				}
-			}
-			// Scrub bar: drag seeks; hidden for looping GIFs.
-			if !view.looping {
-				bar_id := clay.ID("MsgVideoBar", index * 1024 + u32(j))
-				append(&video_bars, Video_Bar{bar_id, view})
-				frac := view.dur > 0 ? f32(view.time / view.dur) : 0
-				if clay.UI(bar_id)(
-				{layout = {sizing = {width = clay.SizingFixed(att_w()), height = clay.SizingFixed(14)}, padding = {left = 2, right = 2}, childAlignment = {y = .Center}}, backgroundColor = ROW_BG, cornerRadius = rr(7)},
-				) {
-					if clay.UI(clay.ID("MsgVideoFill", index * 1024 + u32(j)))(
-					{layout = {sizing = {width = clay.SizingFixed(max(10, frac * 316)), height = clay.SizingFixed(10)}}, backgroundColor = ACCENT, cornerRadius = rr(5)},
-					) {}
-				}
+				video_scrub_bar(clay.ID("MsgVideoBar", index * 1024 + u32(j)), view, tile_w)
 			}
 		}
 
@@ -851,7 +851,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 
 		// The quoted parent sits above the body it answers; a click
 		// centers that message (handle_reply_jump).
-		if len(msg.reply_from) > 0 || len(msg.reply_text) > 0 {
+		if len(msg.reply_from) > 0 || len(msg.reply_text) > 0 || len(msg.reply_image) > 0 {
 			jumpable := len(msg.reply_id) > 0
 			if clay.UI(clay.ID("MsgReplyPrev", index))(
 			{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8, padding = clay.PaddingAll(8)}, backgroundColor = jumpable && hovered() ? HOVER : ROW_BG, cornerRadius = rr(6)},
@@ -868,6 +868,20 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 					// Wrapped so a long token (a cashu string, a URL)
 					// breaks instead of pushing the bubble off-pane.
 					body_text(index * 4096 + 3072, msg.reply_text, 12, TEXT_DIM, wrap_w = body_wrap_w() - 40)
+					if msg.reply_image != "" {
+						tex, seen := media_textures[msg.reply_image]
+						if tex != nil && tex.width > 0 && tex.height > 0 {
+							scale := min(f32(96) / f32(tex.width), f32(64) / f32(tex.height))
+							if clay.UI(clay.ID("MsgReplyImage", index))({layout = {sizing = {width = clay.SizingFixed(f32(tex.width) * scale), height = clay.SizingFixed(f32(tex.height) * scale)}}, image = {imageData = tex}, cornerRadius = rr(4)}) {}
+						} else if clay.UI(clay.ID("MsgReplyImage", index))({layout = {sizing = {width = clay.SizingFixed(96), height = clay.SizingFixed(64)}, childAlignment = {x = .Center, y = .Center}}, backgroundColor = PLATE, cornerRadius = rr(4)}) {
+							if seen {
+								if hovered() { img_retry_hover = msg.reply_image; reply_jump_hover = "" }
+								clay.Text(tr("Couldn't load image. Click to retry."), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+							} else {
+								clay.Text(tr("Loading…"), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+							}
+						}
+					}
 				}
 			}
 		}
@@ -1308,20 +1322,18 @@ render_segs :: proc(id: u32, segs: []Inline_Seg, font_size: u16, color: clay.Col
 				clay.Text(seg.text, {fontId = FONT_BODY, fontSize = size, textColor = tint})
 			}
 		} else {
-			clay.Text(seg.text, {fontId = FONT_BODY, fontSize = font_size, textColor = color})
+			clay.Text(seg.text, {fontId = FONT_BODY, fontSize = font_size, textColor = color, wrapMode = chips ? .Words : .None})
 		}
 	}
 }
 
-// Text width available in the composer pill: last frame's box minus
-// the paddings, buttons, and gaps around the text column.
+// Wrap to the resolved text viewport, including the current pane and zoom.
 compose_wrap_w :: proc() -> f32 {
-	COMPOSE_CHROME :: f32(210)
-	box := clay.GetElementData(clay.ID("ComposeBox"))
+	box := clay.GetElementData(clay.ID("ComposeClip"))
 	if !box.found {
 		return 480
 	}
-	return max(box.boundingBox.width - COMPOSE_CHROME, 120)
+	return max(box.boundingBox.width - CARET_W, 1)
 }
 
 // Byte ranges of the composer's visual lines: each physical '\n' line
@@ -1403,6 +1415,10 @@ compose_line :: proc(i: u32, text: string, ls, le, lo, hi, head: int) {
 // caller sets it for pre-wrapped (selectable) bodies only, because an
 // element around a plain Text would take clay's own wrapping away.
 body_line :: proc(id: u32, text: string, font_size: u16, color: clay.Color, sel := [2]int{-1, -1}, boxed := false) {
+	if text == "" {
+		if clay.UI(clay.ID("BodyLine", id))({layout = {sizing = {height = clay.SizingFixed(f32(font_size))}}}) {}
+		return
+	}
 	sel := sel
 	if sel[0] >= 0 {
 		// A selection through an event token would split it into
@@ -1518,6 +1534,9 @@ md_table :: proc(id: u32, cells: [][]string) {
 md_blocks :: proc(blocks: []Md_Block_Ui, id_base: u32, selectable := false, wrap_w: f32 = 0) {
 	for block, j in blocks {
 		block_id := id_base + u32(j) * 16
+		if block.blank_lines_before > 0 {
+			if clay.UI(clay.ID("MdGap", block_id))({layout = {sizing = {height = clay.SizingFixed(f32(block.blank_lines_before) * f32(BODY_FS))}}}) {}
+		}
 		switch block.kind {
 		case .Para:
 			body_text(block_id + 1, block.text, BODY_FS, TEXT, selectable, wrap_w)

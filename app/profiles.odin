@@ -1,7 +1,7 @@
 // Profile names + pictures, the slint avatar-pipeline port.
 //
 // Names and picture URLs come from marmot's local kind-0 cache
-// (marmot_user_profile), checked for live changes once a second.
+// (marmot_user_profile), checked in bounded background batches.
 // Picture bytes are fetched by one curl worker thread; the
 // frame loop drains the results and decodes them into textures
 // (texture creation must stay on the render thread), so layout code
@@ -34,19 +34,85 @@ Profile_Info :: struct {
 @(private = "file")
 profile_cache: map[string]Profile_Info
 
+@(private = "file")
+PROFILE_BATCH :: 32
+@(private = "file")
+Profile_Batch :: struct {
+	worker: ^thread.Thread,
+	client: ^marmot.Client,
+	ids: []string,
+	infos: []Profile_Info,
+	ok: []bool,
+}
+@(private = "file")
+profile_batch: ^Profile_Batch
+@(private = "file")
+profile_order: [dynamic]string // borrows the cache's immutable keys
+@(private = "file")
+profile_pending: [dynamic]string
+@(private = "file")
+profile_pending_ids: map[string]bool
+@(private = "file")
+profile_cursor: int
+
+@(private = "file")
+profile_queue :: proc(hex: string) {
+	if hex == "" || profile_pending_ids[hex] { return }
+	if !(hex in profile_cache) {
+		key := strings.clone(hex)
+		profile_cache[key] = {}
+		append(&profile_order, key)
+	}
+	id := strings.clone(hex)
+	profile_pending_ids[id] = true
+	append(&profile_pending, id)
+}
+
+@(private = "file")
+profile_read_worker :: proc(t: ^thread.Thread) {
+	batch := (^Profile_Batch)(t.data)
+	defer frame_wake()
+	defer free_all(context.temp_allocator)
+	for id, i in batch.ids {
+		batch.infos[i], batch.ok[i] = read_profile(batch.client, id)
+	}
+}
+
+@(private)
+profile_reads_stop :: proc() {
+	sync.lock(&refresh_mutex)
+	refresh_stopping = true
+	sync.unlock(&refresh_mutex)
+	if refresh_thread != nil {
+		thread.join(refresh_thread)
+		thread.destroy(refresh_thread)
+		refresh_thread = nil
+	}
+	if batch := profile_batch; batch != nil {
+		thread.join(batch.worker)
+		thread.destroy(batch.worker)
+		for info in batch.infos { delete(info.name); delete(info.pic_url) }
+		for id in batch.ids { delete(id) }
+		delete(batch.ids); delete(batch.infos); delete(batch.ok); free(batch)
+		profile_batch = nil
+	}
+	for id in profile_pending { delete(id) }
+	delete(profile_pending)
+	profile_pending = {}
+	delete(profile_pending_ids)
+	profile_pending_ids = nil
+}
+
 profile_info :: proc(client: ^marmot.Client, hex: string) -> Profile_Info {
 	if info, ok := profile_cache[hex]; ok {
 		return info
 	}
 
-	info, _ := read_profile(client, hex)
-	profile_cache[strings.clone(hex)] = info
-	// Nothing cached means marmot has never seen this account's kind-0.
-	// Ask the relays for one; the memo re-reads when it lands.
-	if len(info.name) == 0 && len(info.pic_url) == 0 {
-		queue_refresh(client, hex)
-	}
-	return info
+	key := strings.clone(hex)
+	profile_cache[key] = {}
+	append(&profile_order, key)
+	if client != nil { profile_queue(hex) }
+	return {}
 }
 
 // One kind-0 read straight out of marmot's cache, no memo.
@@ -87,7 +153,14 @@ register_starter_pic :: proc(hex: string, name: string, url: string, image: rl.I
 		register_local_pic(url, image)
 		pic_url = strings.clone(url)
 	}
-	profile_cache[strings.clone(hex)] = {name = strings.clone(name), pic_url = pic_url}
+	if old, ok := profile_cache[hex]; ok {
+		delete(old.name); delete(old.pic_url)
+		profile_cache[hex] = {name = strings.clone(name), pic_url = pic_url}
+	} else {
+		key := strings.clone(hex)
+		profile_cache[key] = {name = strings.clone(name), pic_url = pic_url}
+		append(&profile_order, key)
+	}
 }
 
 // Register a locally composed image under a pseudo-URL (starter://,
@@ -124,6 +197,10 @@ refresh_done: [dynamic]string
 refresh_asked: map[string]bool
 @(private = "file")
 refresh_client: ^marmot.Client
+@(private = "file")
+refresh_thread: ^thread.Thread
+@(private = "file")
+refresh_stopping: bool
 
 @(private = "file")
 queue_refresh :: proc(client: ^marmot.Client, hex: string) {
@@ -144,6 +221,10 @@ queue_refresh :: proc(client: ^marmot.Client, hex: string) {
 refresh_worker :: proc(_: ^thread.Thread) {
 	for {
 		sync.lock(&refresh_mutex)
+		if refresh_stopping {
+			sync.unlock(&refresh_mutex)
+			return
+		}
 		hex: string
 		client := refresh_client
 		have := len(refresh_queue) > 0
@@ -176,37 +257,55 @@ PROFILE_CHECK_SECS :: 1.0
 @(private = "file")
 profile_checked: f64 = -1
 
-// Directory sync receives kind-0 changes without a runtime event for group
-// members. Poll only the local cache; relay fetch completions bypass the wait.
+// Directory updates have no reliable group event. Read a bounded rotating
+// batch on a worker; misses and relay completions enter the same queue.
 drain_refresh :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 	sync.lock(&refresh_mutex)
 	done := refresh_done
 	refresh_done = {}
 	sync.unlock(&refresh_mutex)
-
-	ready := len(done) > 0
-	for hex in done {
-		delete(hex)
-	}
+	for hex in done { profile_queue(hex); delete(hex) }
 	delete(done)
-	if client == nil {
-		return
-	}
-	now := rl.GetTime()
-	if !ready && profile_checked >= 0 && now - profile_checked < PROFILE_CHECK_SECS {
-		return
-	}
-	profile_checked = now
+	if client == nil { return }
 	changed := false
-	for hex in profile_cache {
-		if info, ok := read_profile(client, hex); ok {
-			changed = update_profile(ui, hex, info) || changed
+	if batch := profile_batch; batch != nil && thread.is_done(batch.worker) {
+		thread.join(batch.worker)
+		thread.destroy(batch.worker)
+		for hex, i in batch.ids {
+			delete_key(&profile_pending_ids, hex)
+			if batch.ok[i] {
+				changed = update_profile(ui, hex, batch.infos[i]) || changed
+				if batch.infos[i] == (Profile_Info{}) { queue_refresh(client, hex) }
+			}
+			delete(hex)
+		}
+		delete(batch.ids); delete(batch.infos); delete(batch.ok); free(batch)
+		profile_batch = nil
+	}
+	if changed { load_timeline(client, ui, string(ui.search_input[:])) }
+	now := rl.GetTime()
+	if profile_checked < 0 || now - profile_checked >= PROFILE_CHECK_SECS {
+		profile_checked = now
+		profile_queue(ui.account_ref)
+		profile_queue(ui.peer_hex)
+		for _ in 0 ..< min(PROFILE_BATCH, len(profile_order)) {
+			profile_cursor %= len(profile_order)
+			profile_queue(profile_order[profile_cursor])
+			profile_cursor += 1
 		}
 	}
-	if changed {
-		// Rebuild reply/reaction/system labels too, retaining the current filter.
-		load_timeline(client, ui, string(ui.search_input[:]))
-	}
+	if profile_batch != nil || len(profile_pending) == 0 { return }
+	batch := new(Profile_Batch)
+	batch.client = client
+	n := min(PROFILE_BATCH, len(profile_pending))
+	batch.ids = make([]string, n)
+	for &id in batch.ids { id = pop(&profile_pending) }
+	batch.infos = make([]Profile_Info, n)
+	batch.ok = make([]bool, n)
+	batch.worker = thread.create(profile_read_worker)
+	batch.worker.data = batch
+	profile_batch = batch
+	thread.start(batch.worker)
 }
 
 // Takes ownership of info. Keep unchanged strings and UI editor indices stable.
@@ -353,7 +452,8 @@ pic_worker :: proc(_: ^thread.Thread) {
 
 start_pic_worker :: proc() {
 	thread.start(thread.create(pic_worker))
-	thread.start(thread.create(refresh_worker))
+	refresh_thread = thread.create(refresh_worker)
+	thread.start(refresh_thread)
 }
 
 // Frame-loop drain: decode fetched bytes into round avatar textures.

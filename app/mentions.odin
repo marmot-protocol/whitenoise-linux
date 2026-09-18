@@ -539,7 +539,9 @@ handle_mi :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	for hit, i in ui.mi_hits {
 		if clay.PointerOver(clay.ID("MiHit", u32(i))) {
 			ui.mi_open = false
-			gs_jump(ui, client, hit.chat, hit.msg_id)
+			if hit.chat >= 0 && hit.chat < len(ui.chats) {
+				gs_jump(ui, client, ui.chats[hit.chat].group_id, hit.msg_id)
+			}
 			return
 		}
 	}

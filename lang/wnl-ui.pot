@@ -444,6 +444,9 @@ msgstr ""
 msgid "Couldn't load image. Click to retry."
 msgstr ""
 
+msgid "Couldn't load messages. Please try again."
+msgstr ""
+
 #, c-format
 msgid "Couldn't load the timeline. %s"
 msgstr ""
@@ -496,7 +499,13 @@ msgstr ""
 msgid "Couldn't reveal your private key. %s"
 msgstr ""
 
+msgid "Couldn't save the edit. Please try again."
+msgstr ""
+
 msgid "Couldn't save the theme. Check the name and colors and try again."
+msgstr ""
+
+msgid "Couldn't search messages. Please try again."
 msgstr ""
 
 msgid "Couldn't serialize the key packages. Please try again."
@@ -701,6 +710,9 @@ msgstr ""
 msgid "Event id"
 msgstr ""
 
+msgid "Exit fullscreen"
+msgstr ""
+
 msgid "Expand the chat list"
 msgstr ""
 
@@ -756,6 +768,9 @@ msgid "Forward"
 msgstr ""
 
 msgid "From file"
+msgstr ""
+
+msgid "Fullscreen"
 msgstr ""
 
 msgid "GROUP ID"

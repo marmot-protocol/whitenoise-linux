@@ -59,6 +59,7 @@ Preview :: struct {
 	mesh:   ^Stl_View,
 	gc:     ^Gcode_View,
 	vid:    ^Video_View,
+	vid_shared: bool, // timeline cache owns the view and its bytes
 	pdf:    ^Pdf_View,
 	txt:    ^Txt_View,
 	code:   ^Code_View,
@@ -361,7 +362,7 @@ preview_close :: proc() {
 	if !preview_shown && preview.name == "" {
 		return
 	}
-	if preview.vid != nil {
+	if preview.vid != nil && !preview.vid_shared {
 		video_view_free(preview.vid)
 	}
 	if preview.mesh != nil {
@@ -388,7 +389,7 @@ preview_close :: proc() {
 		delete(s.name)
 	}
 	delete(preview.slides)
-	delete(preview.bytes)
+	if !preview.vid_shared { delete(preview.bytes) }
 	delete(preview.name)
 	preview = {}
 	preview_shown = false
@@ -397,20 +398,28 @@ preview_close :: proc() {
 
 // Modal layout, mounted with the other overlays.
 preview_modal :: proc(ui: ^Ui_State) {
+	full := preview.kind == .Video && rl.IsFullscreen()
 	// A tall body (a long take list, a big hex dump) must not push the
 	// modal past the window: cap it and scroll inside instead.
 	max_h := f32(rl.GetScreenHeight()) / UI_ZOOM * PV_MAX_HEIGHT
+	if full {
+		max_h = f32(rl.GetScreenHeight()) / UI_ZOOM
+	}
 	if clay.UI(clay.ID("PvModal"))(
 	{
-		layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFit({min = 360}), height = clay.SizingFit({max = max_h})}, padding = clay.PaddingAll(14), childGap = 10},
-		floating = {attachTo = .Root, zIndex = 12, offset = {0, rise(clay.ID("PvModal"))}, attachment = {element = .CenterCenter, parent = .CenterCenter}},
-		backgroundColor = CARD,
-		cornerRadius = rr(12),
-		border = {color = ELEVATED_BORDER, width = bw()},
+		layout = {layoutDirection = .TopToBottom, sizing = {width = full ? clay.SizingFixed(f32(rl.GetScreenWidth()) / UI_ZOOM) : clay.SizingFit({min = 360}), height = full ? clay.SizingFixed(max_h) : clay.SizingFit({max = max_h})}, padding = clay.PaddingAll(full ? 0 : 14), childGap = full ? 0 : 10},
+		floating = {attachTo = .Root, zIndex = 12, offset = {0, full ? 0 : rise(clay.ID("PvModal"))}, attachment = {element = .CenterCenter, parent = .CenterCenter}},
+		backgroundColor = full ? clay.Color{0, 0, 0, 255} : CARD,
+		cornerRadius = rr(full ? 0 : 12),
+		border = {color = ELEVATED_BORDER, width = full ? clay.BorderWidth{} : bw()},
 	},
 	) {
 		slides := preview.kind == .Slides
-		if clay.UI(clay.ID("PvHead"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, childAlignment = {y = .Center}}}) {
+		if clay.UI(clay.ID("PvHead"))({
+			layout = {sizing = {width = full ? clay.SizingFit({}) : clay.SizingGrow()}, padding = clay.PaddingAll(full ? 8 : 0), childGap = 10, childAlignment = {y = .Center}},
+			floating = full ? clay.FloatingElementConfig{attachTo = .Parent, zIndex = 15, offset = {-12, 12}, attachment = {element = .RightTop, parent = .RightTop}} : {},
+			backgroundColor = full ? clay.Color{0, 0, 0, 150} : {},
+		}) {
 			clay.Text(arc_short_name(slides ? preview.slides[preview.slide].name : preview.name), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
 			if clay.UI(clay.ID("PvHeadPad"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 			if preview.kind == .Image || (slides && preview.slides[preview.slide].tex != nil) {
@@ -424,7 +433,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 				if clay.UI(clay.ID("PvFull"))(
 				{layout = {padding = {left = 10, right = 10, top = 5, bottom = 5}}, backgroundColor = hovered() ? HOVER : ROW_BG, cornerRadius = rr(8)},
 				) {
-					clay.Text(rl.IsFullscreen() ? "Exit fullscreen" : "Fullscreen", {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
+					clay.Text(rl.IsFullscreen() ? tr("Exit fullscreen") : tr("Fullscreen"), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
 				}
 			}
 			if clay.UI(clay.ID("PvSave"))(
@@ -443,7 +452,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 		{
 			// Height capped below the modal's own cap, or the fit sizing
 			// matches the content and the scrollbar never engages.
-			layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFit({}), height = clay.SizingFit({max = max_h - PV_CHROME})}, childGap = 10},
+			layout = {layoutDirection = .TopToBottom, sizing = {width = full ? clay.SizingGrow() : clay.SizingFit({}), height = full ? clay.SizingGrow() : clay.SizingFit({max = max_h - PV_CHROME})}, childAlignment = {x = full ? .Center : .Left, y = full ? .Center : .Top}, childGap = 10},
 			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		},
 		) {
@@ -465,15 +474,8 @@ preview_modal :: proc(ui: ^Ui_State) {
 				}
 				break
 			}
-			ratio := view.h > 0 ? f32(view.w) / f32(view.h) : 16.0 / 9.0
-			// Fullscreen grows the video to the window, minus room for
-			// the modal chrome; windowed keeps the 480 card.
-			vw: f32 = 480
-			if rl.IsFullscreen() {
-				avail_w := f32(rl.GetScreenWidth()) / UI_ZOOM - 92
-				avail_h := f32(rl.GetScreenHeight()) / UI_ZOOM - 150
-				vw = max(480, min(avail_w, avail_h * ratio))
-			}
+			ratio := view.w > 0 && view.h > 0 ? f32(view.w) / f32(view.h) : 16.0 / 9.0
+			vw := full ? min(f32(rl.GetScreenWidth()) / UI_ZOOM, max_h * ratio) : min(fit_w(480), max(1, max_h - PV_CHROME - 30) * ratio)
 			if clay.UI(clay.ID("PvVideo"))(
 			{layout = {sizing = {width = clay.SizingFixed(vw)}, childAlignment = {x = .Center, y = .Center}}, aspectRatio = {ratio}, image = {imageData = &view.tex}, cornerRadius = rr(8)},
 			) {
@@ -483,18 +485,9 @@ preview_modal :: proc(ui: ^Ui_State) {
 				if view.paused {
 					clay.Text("\uf04b", {fontId = FONT_ICON, fontSize = 22, textColor = {255, 255, 255, 230}})
 				}
+				video_scrub_bar(clay.ID("PvVideoBar"), view, vw, 14)
 			}
-			if !view.looping {
-				bar_id := clay.ID("PvVideoBar")
-				append(&video_bars, Video_Bar{bar_id, view})
-				frac := view.dur > 0 ? f32(view.time / view.dur) : 0
-				if clay.UI(bar_id)(
-				{layout = {sizing = {width = clay.SizingFixed(vw), height = clay.SizingFixed(14)}, padding = {left = 2, right = 2}, childAlignment = {y = .Center}}, backgroundColor = ROW_BG, cornerRadius = rr(7)},
-				) {
-					if clay.UI(clay.ID("PvVideoFill"))(
-					{layout = {sizing = {width = clay.SizingFixed(max(10, frac * (vw - 4))), height = clay.SizingFixed(10)}}, backgroundColor = ACCENT, cornerRadius = rr(5)},
-					) {}
-				}
+			if !view.looping && !full {
 				// "m:ss / m:ss" position readout under the bar.
 				if clay.UI(clay.ID("PvVideoMeta"))({layout = {sizing = {width = clay.SizingFixed(vw)}}}) {
 					clay.Text(fmt.tprintf("%s / %s", fmt_clock(view.time), fmt_clock(view.dur)), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
@@ -670,12 +663,18 @@ handle_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if preview.kind == .Video {
 		if clicked("PvFull") {
+			if preview.vid_shared && rl.IsFullscreen() { preview_close(); return }
 			rl.SetFullscreen(!rl.IsFullscreen())
 			return
 		}
 		if preview.vid.failed && clicked("PvVidRetry") {
 			mode := preview.vid.looping ? Video_Mode.Loop : Video_Mode.Clip
-			video_view_free(preview.vid)
+			if preview.vid_shared {
+				preview.bytes = clone_bytes(preview.bytes)
+				preview.vid_shared = false
+			} else {
+				video_view_free(preview.vid)
+			}
 			preview.vid = video_view_make(clone_bytes(preview.bytes), mode)
 			return
 		}

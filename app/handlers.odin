@@ -341,17 +341,26 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	if clicked("JumpLatest") {
+		if ui.tl_has_after {
+			timeline_start(client, ui, "")
+		}
 		ui.scroll_pending = true
 		return
 	}
 	// Infinite scroll: nearing the top of loaded history pulls in the
-	// next page. load_earlier's anchor re-pins the viewport on the old
+	// next page. The pagination anchor re-pins the viewport on the old
 	// topmost row, so the trigger doesn't re-fire until the user scrolls
 	// up through the new page (short content refills until it overflows).
 	// A pending jump or bottom snap means the offset isn't settled yet.
-	if ui.tl_has_more && len(ui.jump_id) == 0 && !ui.scroll_pending && len(thread_cur(ui)) == 0 {
+	if ui.tl_has_more && !ui.search_open && len(ui.jump_id) == 0 && !ui.scroll_pending && len(thread_cur(ui)) == 0 {
 		if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found && data.scrollPosition.y > -TL_FETCH_MARGIN {
-			load_earlier(client, ui)
+			timeline_paginate(ui, .Older)
+		}
+	}
+	if ui.tl_has_after && !ui.search_open && len(ui.jump_id) == 0 && !ui.scroll_pending {
+		if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found &&
+			data.contentDimensions.height + data.scrollPosition.y - data.scrollContainerDimensions.height < TL_FETCH_MARGIN {
+			timeline_paginate(ui, .Newer)
 		}
 	}
 
@@ -632,23 +641,14 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// Staged attachments send on their own only outside an edit (an
 	// edit needs text and never sends them, like the slint composer).
 	if send && (len(ui.compose) > 0 || (len(ui.staged) > 0 && len(ui.editing) == 0)) {
-		account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-		group := strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator)
-
 		// The message leaves the composer rather than appearing above it.
 		if len(ui.editing) == 0 && len(ui.compose) > 0 {
 			send_arc(ui, string(ui.compose[:]))
 		}
 		if len(ui.compose) > 0 {
 			if len(ui.editing) > 0 {
-				summary: ^marmot.Send_Summary
-				text := strings.clone_to_cstring(string(ui.compose[:]), context.temp_allocator)
-				target := strings.clone_to_cstring(ui.editing, context.temp_allocator)
-				if marmot.edit_message(client, account, group, target, text, &summary) != .OK {
-					ui.client_status = fmt.aprintf("send failed: %s", marmot.last_error())
-					return
-				}
-				marmot.send_summary_free(summary)
+				queue_edit(ui, client)
+				return
 			} else {
 				// Optimistic path: grayed row now, worker sends,
 				// drain_sends settles it.
@@ -674,10 +674,6 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			// carries no tags.
 			fx_send_armed(ui)
 			play_sound(.Send)
-		} else {
-			// Edit published; bring back the pre-edit draft.
-			ui.editing = ""
-			ed_set(ui, &ui.compose, ui.drafts[ui.chats[ui.selected].group_id])
 		}
 		ui.replying = ""
 		load_timeline(client, ui)
@@ -1062,6 +1058,7 @@ select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) {
 	delete(ui.unread_mark_id)
 	ui.unread_mark_id = strings.clone(ui.chats[index].first_unread)
 	load_timeline(client, ui)
+	if !ui.timeline_loading { edit_restore(ui) }
 
 	// Remember for "Restore last selected chat on launch".
 	if ui.prefs.last_chat != ui.chats[index].group_id {
@@ -1372,6 +1369,7 @@ Msg_Op :: enum {
 	React,
 	Unreact,
 	Delete,
+	Edit,
 	Custom, // app-defined kind + tags (polls, votes, thread messages)
 	Retention, // disappearing-timer change; the seconds ride Op_Job.secs
 	Rename, // group rename; the new name rides Op_Job.target
@@ -1420,32 +1418,11 @@ Edit_Rec :: struct {
 }
 
 // Per-chat message-body hits for the rail filter: one limit-1 search
-// query per chat, cached so the frame loop only reads flags. Recomputed
-// on filter keystrokes and chat-list reloads.
-// ponytail: synchronous N-queries per keystroke; debounce if a large
-// account ever makes typing lag.
+// query per chat on a worker; the frame loop only reads cached flags.
 refresh_filter_hits :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 	resize(&ui.filter_hits, len(ui.chats))
-	search := string(ui.sidebar_filter[:])
-	if len(search) == 0 {
-		return
-	}
-
-	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	for chat, i in ui.chats {
-		query := marmot.Timeline_Message_Query {
-			group_id_hex = strings.clone_to_cstring(chat.group_id, context.temp_allocator),
-			search       = strings.clone_to_cstring(search, context.temp_allocator),
-			has_limit    = true,
-			limit        = 1,
-		}
-		page: ^marmot.Timeline_Page
-		ui.filter_hits[i] = false
-		if marmot.timeline_messages(client, account, &query, &page) == .OK {
-			ui.filter_hits[i] = page.messages_len > 0
-			marmot.timeline_page_free(page)
-		}
-	}
+	for &hit in ui.filter_hits { hit = false }
+	search_request(ui, client, .Sidebar)
 }
 
 // Snapshot the selected chat's timeline into UI-owned strings.

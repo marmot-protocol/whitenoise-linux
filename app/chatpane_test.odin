@@ -6,8 +6,9 @@ import "core:testing"
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
-@(test, disabled = #config(ODIN_TEST_NAMES, "") != "chat_title_overflow")
+@(test)
 chat_title_overflow :: proc(t: ^testing.T) {
+	if #config(ODIN_TEST_NAMES, "") != "chat_title_overflow" { return }
 	rl.InitWindow(987, 1382, "Layout regression")
 	defer rl.CloseWindow()
 	UI_ZOOM = 1.875

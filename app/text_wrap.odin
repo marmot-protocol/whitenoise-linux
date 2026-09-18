@@ -39,6 +39,7 @@ wrapped_lines :: proc(text: string, width: f32, size: u16) -> []Wrap_Line {
 		end := len(text)
 		if nl := strings.index_byte(text[start:], '\n'); nl >= 0 { end = start + nl }
 		at := start
+		if at == end { append(&lines, Wrap_Line{at, at, i}) }
 		for at < end {
 			cut := width > 0 ? wrap_break(text, at, end, width, size) : end
 			append(&lines, Wrap_Line{at, cut, i})

@@ -106,6 +106,24 @@ media_reference :: proc(record: ^marmot.Timeline_Message_Record, index: int) -> 
 }
 
 @(private)
+reply_image_load :: proc(client: ^marmot.Client, account, group: cstring, preview: ^marmot.Timeline_Reply_Preview) -> string {
+	if preview.deleted || preview.invalidation_status != nil { return "" }
+	for &outcome in preview.media[:preview.media_len] {
+		if outcome.tag != .ACCEPTED { continue }
+		ref := &outcome.body.accepted.reference
+		name := ref.file_name != nil ? string(ref.file_name) : ""
+		mime := ref.media_type != nil ? string(ref.media_type) : ""
+		if media_kind(name, mime) != .Image { continue }
+		key := ref.plaintext_sha256 != nil ? string(ref.plaintext_sha256) : name
+		if _, seen := media_cached(.Image, key); !seen {
+			media_enqueue(client, account, group, ref, .Image, key)
+		}
+		return strings.clone(key)
+	}
+	return ""
+}
+
+@(private)
 media_attach :: proc(msg: ^Msg_Ui, client: ^marmot.Client, account, group: cstring, outcome: ^marmot.Media_Attachment_Outcome) {
 	if outcome.tag == .REJECTED {
 		index := int(outcome.body.rejected.attachment_index)
@@ -176,7 +194,10 @@ media_enqueue :: proc(client: ^marmot.Client, account, group: cstring, ref: ^mar
 	}
 	locators := make([]marmot.Media_Locator, r.locators_len)
 	copy(locators, r.locators[:r.locators_len])
-	for &locator in locators { locator.value = strings.clone_to_cstring(string(locator.value)) }
+	for &locator in locators {
+		locator.kind = strings.clone_to_cstring(string(locator.kind))
+		locator.value = strings.clone_to_cstring(string(locator.value))
+	}
 	r.locators = raw_data(locators)
 	media_inflight[Media_Key{job.key, kind}] = true
 	append(&media_jobs, job)
@@ -271,7 +292,10 @@ media_job_free :: proc(job: ^Media_Job) {
 	r := &job.reference
 	for value in ([]cstring{job.account, job.group, r.ciphertext_sha256, r.plaintext_sha256,
 		r.nonce_hex, r.file_name, r.media_type, r.dim, r.thumbhash}) { delete(value) }
-	for locator in r.locators[:r.locators_len] { delete(locator.value) }
+	for locator in r.locators[:r.locators_len] {
+		delete(locator.kind)
+		delete(locator.value)
+	}
 	delete(r.locators[:r.locators_len])
 	delete_key(&media_inflight, Media_Key{job.key, job.kind})
 	delete(job.key)
@@ -299,6 +323,10 @@ media_drain :: proc(ui: ^Ui_State) {
 		media_publish(job)
 		view, _ := media_cached(job.kind, job.key)
 		for &msg in ui.messages {
+			if job.kind == .Image && msg.reply_image == job.key {
+				msg.row_height = 0
+				ui.scroll_pending ||= at_bottom
+			}
 			for j := len(msg.media_pending) - 1; j >= 0; j -= 1 {
 				p := msg.media_pending[j]
 				if p.kind != job.kind || msg.att_keys[p.index] != job.key { continue }
