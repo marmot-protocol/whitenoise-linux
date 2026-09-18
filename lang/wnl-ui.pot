@@ -179,6 +179,9 @@ msgstr ""
 msgid "Asking your relays for their key package."
 msgstr ""
 
+msgid "Audio message"
+msgstr ""
+
 msgid "Audit log file deleted."
 msgstr ""
 
@@ -843,6 +846,9 @@ msgid "INCOMING MESSAGES"
 msgstr ""
 
 msgid "INSPECT SOMEONE ELSE'S"
+msgstr ""
+
+msgid "ISSUE"
 msgstr ""
 
 msgid "Images and files kept on this device so they don't download twice, sealed with your vault key."
@@ -1906,6 +1912,10 @@ msgid "You stop receiving its messages. Rejoining needs a new invite."
 msgstr ""
 
 msgid "You were invited to this group."
+msgstr ""
+
+#, c-format
+msgid "You: %s"
 msgstr ""
 
 msgid "Your current password"

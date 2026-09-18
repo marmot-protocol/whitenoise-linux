@@ -4,6 +4,28 @@ import "core:testing"
 import marmot "../marmot"
 
 @(test)
+contacts_named_first :: proc(t: ^testing.T) {
+	context.allocator = context.temp_allocator
+	ui: Ui_State
+	append(&ui.contacts,
+		Contact_Ui{id_hex = "0123456789abcdef", name = short_hex("0123456789abcdef")},
+		Contact_Ui{id_hex = "alice", name = "Alice"},
+		Contact_Ui{id_hex = "number", name = "123"},
+		Contact_Ui{id_hex = "emoji", name = "⚡ Dee Kay ⚡"},
+		Contact_Ui{id_hex = "nickname", name = "nickname"},
+		Contact_Ui{id_hex = "empty"},
+	)
+	ui.nicknames["nickname"] = "Bob"
+	expected := [6]int{2, 1, 4, 3, 5, 0}
+	for row, i in contact_order(&ui) {
+		testing.expect_value(t, row.idx, expected[i])
+	}
+	// A fetched profile joins the named section on the next frame.
+	ui.contacts[0].name = "Aaron"
+	testing.expect_value(t, contact_order(&ui)[1].idx, 0)
+}
+
+@(test)
 groups_do_not_add_contacts :: proc(t: ^testing.T) {
 	context.allocator = context.temp_allocator
 	ui: Ui_State

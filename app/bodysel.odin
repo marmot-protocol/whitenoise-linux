@@ -32,6 +32,9 @@ sel_lines: [dynamic]Sel_Line
 // doesn't also count as a click on whatever is under the pointer.
 sel_dragging: bool
 
+@(private)
+Selection_Unit :: enum { Character, Word, Sentence }
+
 sel_register :: proc(id, block: u32, start: int, text, block_text: string, size: u16) {
 	append(&sel_lines, Sel_Line{id, block, start, text, block_text, size})
 }
@@ -54,7 +57,7 @@ sel_range :: proc(block: u32, line_start, line_len: int) -> [2]int {
 
 sel_clear :: proc(ui: ^Ui_State) {
 	ui.sel_on = false
-	ui.sel_word = false
+	ui.sel_unit = .Character
 	delete(ui.sel_copy)
 	ui.sel_copy = ""
 }
@@ -214,16 +217,19 @@ handle_body_sel :: proc(ui: ^Ui_State) {
 		ui.sel_block = line.block
 		sel_dragging = true
 		if rl.GetMouseClicks() >= 2 {
-			// Word mode: the anchor is the whole word, and the drag
-			// grows the selection word by word.
+			// Drag by the same unit selected by the initial click.
 			lo, hi := sel_word_at(line.block_text, offset)
-			ui.sel_word = true
+			ui.sel_unit = .Word
+			if rl.GetMouseClicks() >= 3 {
+				lo, hi = sentence_bounds(line.block_text, offset)
+				ui.sel_unit = .Sentence
+			}
 			ui.sel_wa = lo
 			ui.sel_wb = hi
 			ui.sel_a = lo
 			ui.sel_b = hi
 		} else {
-			ui.sel_word = false
+			ui.sel_unit = .Character
 			ui.sel_a = offset
 			ui.sel_b = offset
 		}
@@ -237,8 +243,9 @@ handle_body_sel :: proc(ui: ^Ui_State) {
 		if !ok {
 			return
 		}
-		if ui.sel_word {
+		if ui.sel_unit != .Character {
 			lo, hi := sel_word_at(line.block_text, offset)
+			if ui.sel_unit == .Sentence { lo, hi = sentence_bounds(line.block_text, offset) }
 			ui.sel_a = min(ui.sel_wa, lo)
 			ui.sel_b = max(ui.sel_wb, hi)
 		} else {

@@ -23,6 +23,7 @@ import "core:mem"
 import "core:os"
 import "core:strings"
 import "core:sync"
+import "core:unicode/utf8"
 
 import sdl "vendor:sdl3"
 import stbi "vendor:stb/image"
@@ -126,6 +127,7 @@ State :: struct {
 	stacks:        map[u16][]int, // font id -> indices into fonts
 	glyphs:        map[u64]Glyph,
 	ascents:       map[u64]f32, // (file, px) -> ascent in atlas px
+	text_image:    proc(text: string) -> ^Texture2D,
 }
 
 @(private)
@@ -1157,8 +1159,12 @@ SetPixelScale :: proc(scale: f32) {
 }
 
 // Register a font id as an ordered fallback stack of files (first hit
-// per glyph wins). Missing files are skipped.
-LoadFontStack :: proc(font_id: u16, paths: []cstring) {
+// per glyph wins). Missing files are skipped. The optional image resolver
+// shares the app's emoji cache between text measurement and drawing.
+LoadFontStack :: proc(font_id: u16, paths: []cstring, text_image: proc(text: string) -> ^Texture2D = nil) {
+	if text_image != nil {
+		state.text_image = text_image
+	}
 	indices := make([dynamic]int)
 	for path in paths {
 		if !os.exists(string(path)) {
@@ -1287,13 +1293,19 @@ get_glyph :: proc(font_id: u16, px: u16, r: rune) -> (Glyph, int) {
 MeasureTextLine :: proc(font_id: u16, size: u16, text: string, letter_spacing: f32) -> Vector2 {
 	px := u16(f32(size) * state.pixel_scale + 0.5)
 	width: f32 = 0
-	count := 0
-	for r in text {
-		glyph, _ := get_glyph(font_id, px, r)
-		width += glyph.advance / state.pixel_scale
-		count += 1
+	it := utf8.decode_grapheme_iterator_make(text)
+	for cluster, _ in utf8.decode_grapheme_iterate(&it) {
+		if font_id != IconFont && state.text_image != nil && state.text_image(cluster) != nil {
+			width += f32(size) + letter_spacing
+			continue
+		}
+		for r in cluster {
+			if r == 0xFE0E || r == 0xFE0F || r == 0x200D { continue }
+			glyph, _ := get_glyph(font_id, px, r)
+			width += glyph.advance / state.pixel_scale + letter_spacing
+		}
 	}
-	return {width + f32(count) * letter_spacing, f32(size)}
+	return {width, f32(size)}
 }
 
 // Draw one line of text with per-rune font fallback. Coordinates are
@@ -1302,30 +1314,41 @@ MeasureTextLine :: proc(font_id: u16, size: u16, text: string, letter_spacing: f
 DrawTextLine :: proc(font_id: u16, size: u16, text: string, x, y: f32, letter_spacing: f32, color: Color) {
 	px := u16(f32(size) * state.pixel_scale + 0.5)
 	pen := x
-	for r in text {
-		glyph, file := get_glyph(font_id, px, r)
-		if glyph.tex != nil {
-			sdl.SetTextureColorMod(glyph.tex, color.r, color.g, color.b)
-			sdl.SetTextureAlphaMod(glyph.tex, color.a)
-			ascent := font_ascent(file, px)
-			// Snap to the output pixel grid so 1:1 glyphs never sample
-			// between pixels.
-			ps := state.pixel_scale
-			// Text sits on the baseline; an icon is centered in the
-			// line box instead, so a square button holds it dead center.
-			top := y + (ascent + f32(glyph.yoff)) / ps
-			if glyph.icon {
-				top = y + (f32(size) - f32(glyph.h) / ps) / 2
+	it := utf8.decode_grapheme_iterator_make(text)
+	for cluster, _ in utf8.decode_grapheme_iterate(&it) {
+		if font_id != IconFont && state.text_image != nil {
+			if tex := state.text_image(cluster); tex != nil {
+				DrawTextureRect(tex, pen, y, f32(size), f32(size), {255, 255, 255, color.a})
+				pen += f32(size) + letter_spacing
+				continue
 			}
-			dest := sdl.FRect{
-				math.round((pen + f32(glyph.xoff) / ps) * ps) / ps,
-				math.round(top * ps) / ps,
-				f32(glyph.w) / ps,
-				f32(glyph.h) / ps,
-			}
-			sdl.RenderTexture(state.renderer, glyph.tex, nil, &dest)
 		}
-		pen += glyph.advance / state.pixel_scale + letter_spacing
+		for r in cluster {
+			if r == 0xFE0E || r == 0xFE0F || r == 0x200D { continue }
+			glyph, file := get_glyph(font_id, px, r)
+			if glyph.tex != nil {
+				sdl.SetTextureColorMod(glyph.tex, color.r, color.g, color.b)
+				sdl.SetTextureAlphaMod(glyph.tex, color.a)
+				ascent := font_ascent(file, px)
+				// Snap to the output pixel grid so 1:1 glyphs never sample
+				// between pixels.
+				ps := state.pixel_scale
+				// Text sits on the baseline; an icon is centered in the
+				// line box instead, so a square button holds it dead center.
+				top := y + (ascent + f32(glyph.yoff)) / ps
+				if glyph.icon {
+					top = y + (f32(size) - f32(glyph.h) / ps) / 2
+				}
+				dest := sdl.FRect{
+					math.round((pen + f32(glyph.xoff) / ps) * ps) / ps,
+					math.round(top * ps) / ps,
+					f32(glyph.w) / ps,
+					f32(glyph.h) / ps,
+				}
+				sdl.RenderTexture(state.renderer, glyph.tex, nil, &dest)
+			}
+			pen += glyph.advance / state.pixel_scale + letter_spacing
+		}
 	}
 }
 

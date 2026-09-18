@@ -193,6 +193,9 @@ msgstr ""
 msgid "Asking your relays for their key package."
 msgstr "キーパッケージ本体"
 
+msgid "Audio message"
+msgstr "音声メッセージ"
+
 #, fuzzy
 msgid "Audit log file deleted."
 msgstr "監査ログを削除しました。"
@@ -924,6 +927,9 @@ msgstr "受信メッセージ"
 
 msgid "INSPECT SOMEONE ELSE'S"
 msgstr ""
+
+msgid "ISSUE"
+msgstr "課題"
 
 msgid "Images and files kept on this device so they don't download twice, sealed with your vault key."
 msgstr ""
@@ -2081,6 +2087,10 @@ msgstr "このグループからの新しいメッセージの受信を停止し
 #, fuzzy
 msgid "You were invited to this group."
 msgstr "グループを退出しました。"
+
+#, c-format
+msgid "You: %s"
+msgstr "あなた: %s"
 
 #, fuzzy
 msgid "Your current password"

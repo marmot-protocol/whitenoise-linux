@@ -5,6 +5,7 @@ import "core:slice"
 import "core:strings"
 import "core:sync"
 import "core:thread"
+import "core:time"
 import "core:unicode/utf8"
 import marmot "../marmot"
 import clay "../vendor/clay/bindings/odin/clay-odin"
@@ -90,6 +91,8 @@ search_request :: proc(ui: ^Ui_State, client: ^marmot.Client, kind: Search_Kind)
 search_worker :: proc(t: ^thread.Thread) {
 	context.allocator = reload_allocator()
 	job := (^Search_Job)(t.data)
+	timing_start := time.tick_now()
+	defer local_timing_end(job.kind == .Global ? .search_global : .search_sidebar, timing_start)
 	defer frame_wake()
 	defer free_all(context.temp_allocator)
 	account := strings.clone_to_cstring(job.account, context.temp_allocator)

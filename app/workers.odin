@@ -379,6 +379,8 @@ send_thread_media :: proc(job: ^Send_Job, result: ^marmot.Media_Upload_Result, i
 }
 
 send_worker :: proc(t: ^thread.Thread) {
+	timing_start := time.tick_now()
+	defer local_timing_end(.send_worker, timing_start)
 	context.allocator = reload_allocator()
 	defer frame_wake()
 	job := (^Send_Job)(t.data)
@@ -749,6 +751,8 @@ ops_done: [dynamic]Op_Done
 op_ticket: int
 
 op_worker :: proc(t: ^thread.Thread) {
+	timing_start := time.tick_now()
+	defer local_timing_end(.message_op_worker, timing_start)
 	context.allocator = reload_allocator()
 	defer frame_wake()
 	job := (^Op_Job)(t.data)

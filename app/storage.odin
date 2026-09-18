@@ -47,6 +47,8 @@ cache_path :: proc(sha: string) -> string {
 // first, marmot's download+decrypt otherwise. The returned slice is
 // the caller's to keep or delete.
 media_load :: proc(client: ^marmot.Client, account, group: cstring, reference: ^marmot.Media_Attachment_Reference) -> ([]u8, bool) {
+	timing_start := time.tick_now()
+	defer local_timing_end(.media_load, timing_start)
 	sha := reference.plaintext_sha256 != nil ? string(reference.plaintext_sha256) : ""
 	cacheable := cache_key_ok(sha)
 	if cacheable {
@@ -54,6 +56,7 @@ media_load :: proc(client: ^marmot.Client, account, group: cstring, reference: ^
 		// reads as a miss, which downloads and re-seals it.
 		if sealed, read_err := os.read_entire_file(cache_path(sha), context.temp_allocator); read_err == nil {
 			if data, opened := vault_open_blob(sealed); opened {
+				local_timing_end(.media_cache_hit, timing_start)
 				return data, true
 			}
 		}

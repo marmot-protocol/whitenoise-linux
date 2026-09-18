@@ -1,5 +1,6 @@
 package main
 
+import "base:runtime"
 import "core:fmt"
 import "core:slice"
 import "core:strings"
@@ -1212,39 +1213,19 @@ inline_segs :: proc(text: string) -> [dynamic]Inline_Seg {
 				continue
 			}
 		}
-		if !is_emoji_rune(r) {
+		if !is_emoji_rune(r) && !(r >= '0' && r <= '9') && r != '#' && r != '*' {
 			i += w
 			continue
 		}
+		it := utf8.decode_grapheme_iterator_make(text[i:])
+		cluster, _, _ := utf8.decode_grapheme_iterate(&it)
+		j := i + len(cluster)
+		tex := text_emoji(cluster)
+		if tex == nil { i = j; continue }
 		if i > plain_start {
 			append(&segs, Inline_Seg{text = text[plain_start:i]})
 		}
-		j := i + w
-		for j < len(text) {
-			r2, w2 := utf8.decode_rune_in_string(text[j:])
-			if !is_emoji_rune(r2) && r2 != 0xFE0F && r2 != 0x200D {
-				break
-			}
-			j += w2
-		}
-		if tex := emoji_tex(text[i:j]); tex != nil {
-			append(&segs, Inline_Seg{tex = tex})
-		} else {
-			k := i
-			for k < j {
-				r3, w3 := utf8.decode_rune_in_string(text[k:])
-				sub := text[k:k + w3]
-				k += w3
-				if r3 == 0xFE0F || r3 == 0x200D {
-					continue
-				}
-				if tex2 := emoji_tex(sub); tex2 != nil {
-					append(&segs, Inline_Seg{tex = tex2})
-				} else {
-					append(&segs, Inline_Seg{text = sub})
-				}
-			}
-		}
+		append(&segs, Inline_Seg{tex = tex})
 		i = j
 		plain_start = j
 	}
@@ -1330,20 +1311,35 @@ render_segs :: proc(id: u32, segs: []Inline_Seg, font_size: u16, color: clay.Col
 // Wrap to the resolved text viewport, including the current pane and zoom.
 compose_wrap_w :: proc() -> f32 {
 	box := clay.GetElementData(clay.ID("ComposeClip"))
-	if !box.found {
-		return 480
-	}
-	return max(box.boundingBox.width - CARET_W, 1)
+	width := g_ui != nil ? page_w(g_ui) - 64 - CARET_W : 480
+	if box.found && box.boundingBox.width > CARET_W { width = min(width, box.boundingBox.width - CARET_W) }
+	return max(width, 1)
 }
 
+@(private)
+compose_cache: struct { text: string, width, scale: f32, lines: [dynamic][2]int }
+
 // Byte ranges of the composer's visual lines: each physical '\n' line
-// greedily wrapped to the pill's text width. Spaces at a wrap stay on
-// the upper line so every byte keeps exactly one row and caret
+// greedily wrapped to the pill's text width. Spaces stay in the ranges
+// so every byte keeps exactly one row and caret
 // hit-mapping stays byte-accurate.
-compose_lines :: proc(text: string) -> [dynamic][2]int {
-	lines := make([dynamic][2]int, context.temp_allocator)
+compose_lines :: proc(text: string) -> [][2]int {
+	context.allocator = runtime.default_context().allocator
 	width := compose_wrap_w()
+	keep := 0
 	start := 0
+	if compose_cache.width == width && compose_cache.scale == UI_SCALE && len(compose_cache.lines) > 0 {
+		if compose_cache.text == text { return compose_cache.lines[:] }
+		prefix := 0
+		for prefix < min(len(text), len(compose_cache.text)) && text[prefix] == compose_cache.text[prefix] { prefix += 1 }
+		// Rewrap the preceding line too: deleting a space may pull the
+		// next word back onto it. Unchanged prefixes retain their breaks.
+		for line, i in compose_cache.lines {
+			if line[1] >= prefix { keep = max(i - 1, 0); break }
+		}
+		start = compose_cache.lines[keep][0]
+	}
+	resize(&compose_cache.lines, keep)
 	for {
 		end := len(text)
 		if nl := strings.index_byte(text[start:], '\n'); nl >= 0 {
@@ -1351,11 +1347,8 @@ compose_lines :: proc(text: string) -> [dynamic][2]int {
 		}
 		at := start
 		for {
-			cut := wrap_break(text, at, end, width, BODY_FS)
-			for cut < end && text[cut] == ' ' {
-				cut += 1
-			}
-			append(&lines, [2]int{at, cut})
+			cut := wrap_break(text, at, end, width, BODY_FS, .Compose)
+			append(&compose_cache.lines, [2]int{at, cut})
 			if cut >= end {
 				break
 			}
@@ -1366,7 +1359,10 @@ compose_lines :: proc(text: string) -> [dynamic][2]int {
 		}
 		start = end + 1
 	}
-	return lines
+	delete(compose_cache.text)
+	compose_cache.text = strings.clone(text)
+	compose_cache.width, compose_cache.scale = width, UI_SCALE
+	return compose_cache.lines[:]
 }
 
 // One physical composer line [ls, le): up to three spans split at the
@@ -1421,11 +1417,12 @@ body_line :: proc(id: u32, text: string, font_size: u16, color: clay.Color, sel 
 	}
 	sel := sel
 	if sel[0] >= 0 {
-		// A selection through an event token would split it into
+		// A selection through a card token would split it into
 		// text runs and lose the card, so a line holding one draws
 		// unselected; the copy still carries the token.
 		for seg in inline_segs(text) {
-			if len(seg.evid) > 0 {
+			_, gh := gh_ref(seg.url)
+			if len(seg.evid) > 0 || (gh_cards_on && gh) {
 				sel = {-1, -1}
 				break
 			}
@@ -1595,7 +1592,7 @@ md_blocks :: proc(blocks: []Md_Block_Ui, id_base: u32, selectable := false, wrap
 // whose container clay can't wrap into (reply previews, edit history).
 body_text :: proc(id: u32, text: string, font_size: u16, color: clay.Color, selectable := false, wrap_w: f32 = 0) {
 	wrap := wrap_w > 0 ? wrap_w : (selectable ? body_wrap_w() : 0)
-	for line in wrapped_lines(text, wrap, font_size) {
+	for line in wrapped_lines(text, wrap, font_size, gh_cards_on ? .Cards : .Text) {
 		line_id := id * 8 + line.index
 		if selectable {
 			sel_register(line_id, id, line.start, text[line.start:line.end], text, font_size)
@@ -1633,10 +1630,10 @@ att_w :: proc(w: f32 = 320) -> f32 {
 // `width`, or one over-long word. Widths are measured with the body
 // font, so emoji tiles and mention chips (drawn wider) can push a line
 // slightly over, the same estimate the slint wrapper makes.
-wrap_break :: proc(text: string, at, end: int, width: f32, font_size: u16) -> int {
+wrap_break :: proc(text: string, at, end: int, width: f32, font_size: u16, mode: Wrap_Mode = .Text) -> int {
 	// Only measure the current line. Measuring the whole next word
 	// rescans a long unbroken suffix once per line (quadratic work).
-	fit := rune_fit(text, at, end, width, font_size)
+	fit := rune_fit(text, at, end, width, font_size, mode)
 	if fit == end || text[fit] == ' ' {
 		return fit
 	}
@@ -1648,6 +1645,9 @@ wrap_break :: proc(text: string, at, end: int, width: f32, font_size: u16) -> in
 		cut -= 1
 	}
 	if cut > at {
+		if mode == .Compose {
+			for cut < fit && text[cut] == ' ' { cut += 1 }
+		}
 		return cut
 	}
 	// An event token stays whole because its card replaces the text.
@@ -1655,26 +1655,26 @@ wrap_break :: proc(text: string, at, end: int, width: f32, font_size: u16) -> in
 	for word < fit && text[word] == ' ' {
 		word += 1
 	}
-	if tok_end, _, _, is_event := nevent_at(text, word); is_event && tok_end <= end {
-		return tok_end
+	if mode != .Compose {
+		if tok_end, _, _, is_event := nevent_at(text, word); is_event && tok_end <= end { return tok_end }
 	}
 	return fit
 }
 
-// Longest prefix of [at, end) that fits `width`, cut on a rune
-// boundary, never empty. Per-rune advances (no kerning), the same
-// estimate hit_compose_line makes.
-rune_fit :: proc(text: string, at, end: int, width: f32, font_size: u16) -> int {
+// Longest prefix of [at, end) that fits `width`, keeping emoji
+// graphemes intact and returning at least one cluster.
+rune_fit :: proc(text: string, at, end: int, width: f32, font_size: u16, mode: Wrap_Mode = .Text) -> int {
 	pen: f32 = 0
-	i := at
-	for i < end {
-		_, w := utf8.decode_rune_in_string(text[i:])
-		adv := rl.MeasureTextLine(FONT_BODY, font_size, text[i:i + w], 0).x
+	it := utf8.decode_grapheme_iterator_make(text[at:end])
+	for cluster, grapheme in utf8.decode_grapheme_iterate(&it) {
+		i := at + grapheme.byte_index
+		adv := rl.MeasureTextLine(FONT_BODY, font_size, cluster, 0).x
+		// Draft emoji tiles are 18px, wider than the 14px body font.
+		if mode == .Compose && text_emoji(cluster) != nil { adv = 18 }
 		if i > at && pen + adv > width {
 			return i
 		}
 		pen += adv
-		i += w
 	}
 	return end
 }

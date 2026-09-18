@@ -515,7 +515,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 									}
 
 									letter: u8 = '#'
-									if len(order.key) > 0 && order.key[0] >= 'a' && order.key[0] <= 'z' {
+									if !order.unnamed && len(order.key) > 0 && order.key[0] >= 'a' && order.key[0] <= 'z' {
 										letter = order.key[0] - 32
 									}
 									if letter != last_letter {
@@ -835,6 +835,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 
 	commands := clay.EndLayout(frame_time)
 	timeline_measure(ui)
+	compose_scroll(ui)
 	return commands
 }
 
@@ -882,6 +883,9 @@ main :: proc() {
 
 @(private)
 app_main :: proc() {
+	startup_start := time.tick_now()
+	local_timing_stopped = false
+	defer local_timings_export()
 	home: string
 	link: string
 	if len(os.args) > 1 {
@@ -951,7 +955,9 @@ app_main :: proc() {
 			win_h = i32(h)
 		}
 	}
+	window_start := time.tick_now()
 	rl.InitWindow(win_w, win_h, WIN_TITLE)
+	local_timing_end(.window_init, window_start)
 	// After the window, never before: the zoom is derived from the
 	// window's width, and there is no window to ask until now. The
 	// vault gate runs its own frames before the main loop, so getting
@@ -979,6 +985,7 @@ app_main :: proc() {
 	// Every secret lives in $home/vault.db, marmot's account keys
 	// included, so the vault opens before the runtime does; closing the
 	// window at the gate quits.
+	local_timing_end(.startup_before_vault, startup_start)
 	if !vault_gate(&ui) {
 		rl.CloseWindow()
 		return
@@ -991,6 +998,7 @@ app_main :: proc() {
 	}
 
 	ready_started := time.tick_now()
+	startup_ready := ready_started
 	splash_frame(0)
 	client := boot_marmot(home, &ui)
 	splash_frame(1)
@@ -1223,6 +1231,7 @@ app_main :: proc() {
 
 	frame_input: bool
 	for !rl.WindowShouldClose(&frame_input) {
+		frame_start := time.tick_now()
 		if dev_reload_poll(&ui) { break }
 		defer free_all(context.temp_allocator)
 		defer messages_collect()
@@ -1460,6 +1469,7 @@ app_main :: proc() {
 		clear(&anim_bars)
 		advance_videos() // pull decoded frames into the video textures
 		voice_poll() // drain the mic stream while recording
+		local_timing_end(.frame_update, frame_start)
 		build_start := time.tick_now()
 		if !tl_restore {
 			if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found {
@@ -1515,6 +1525,8 @@ app_main :: proc() {
 			tl_container_was = container
 			tl_at_bottom = data.scrollPosition.y <= -overflow + 1
 		}
+
+		local_timing_end(.frame_layout, build_start)
 
 		// A failed layout contains only Clay's error screen. Grow its arena
 		// and retry next frame, before rendering or handling message clicks.
@@ -1590,6 +1602,7 @@ app_main :: proc() {
 		rl.BeginMode2D(rl.Camera2D{zoom = UI_ZOOM, offset = {shake_x, shake_y}})
 		draw_frame(&render_commands)
 		rl.EndMode2D()
+		local_timing_end(.frame_draw, draw_start)
 		// Before EndDrawing: the backbuffer is undefined after present,
 		// and reading it back then crashes inside Mesa on a frame whose
 		// window was just resized.
@@ -1610,7 +1623,14 @@ app_main :: proc() {
 			}
 		}
 		devctl_draw()
+		present_start := time.tick_now()
 		rl.EndDrawing()
+		local_timing_end(.frame_present, present_start)
+		local_timing_end(.frame_until_present, frame_start)
+		if startup_ready != {} {
+			local_timing_end(.startup_after_vault, startup_ready)
+			startup_ready = {}
+		}
 		if ready_started != {} && rl.IsWindowFocused() {
 			timing_record(client, .Splash_Ready, ready_started)
 			ready_started = {}
@@ -1622,6 +1642,7 @@ app_main :: proc() {
 		timings_presented(&ui, client)
 		video_dbg_draw = max(video_dbg_draw, f32(time.duration_milliseconds(time.tick_since(draw_start))))
 
+		post_start := time.tick_now()
 		// Profile pictures fetched by the curl worker decode here (the
 		// render thread owns texture creation).
 		drain_pics()
@@ -1810,10 +1831,13 @@ app_main :: proc() {
 		delete(saved)
 
 		cursor_apply() // every raise for this frame is in by now
+		local_timing_end(.frame_post_present, post_start)
 
 		// Present handler changes on the next frame before sleeping. Input
 		// and worker events wake immediately; timers poll at most 4 Hz.
 		if !shot && !frame_input && frame_idle() {
+			wait_start := time.tick_now()
+			defer local_timing_end(.frame_idle_wait, wait_start)
 			rl.Wait(u32(clamp((frame_deadline - rl.GetTime()) * 1000, 1, f64(IDLE_REFRESH_MS))))
 		}
 
@@ -1978,6 +2002,7 @@ app_main :: proc() {
 	// Shutdown order matters: closing the runtime makes the blocking
 	// subscription read return CLOSED (worker exits), then the sub is
 	// freed before the client that created it.
+	local_timing_bind(nil)
 	if client != nil { marmot.client_shutdown(client) }
 	stop_gimg_worker()
 	stop_pic_worker()

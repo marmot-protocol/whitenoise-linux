@@ -17,20 +17,33 @@ MDK_REPO="https://github.com/marmot-protocol/mdk.git"
 MDK_PIN="$(pin mdk)"
 MDK="$HERE/vendor/mdk"
 BUNDLE="$MDK/crates/marmot-c/output"
+TIMINGS_PATCH="$HERE/patches/mdk-linux-timings.patch"
 
 if [ ! -d "$MDK" ]; then
   git clone --filter=blob:none "$MDK_REPO" "$MDK"
 fi
 
 if [ "$(git -C "$MDK" rev-parse HEAD)" != "$MDK_PIN" ]; then
+  if git -C "$MDK" apply --reverse --check "$TIMINGS_PATCH" 2>/dev/null; then
+    git -C "$MDK" apply --reverse "$TIMINGS_PATCH"
+  fi
   git -C "$MDK" fetch origin "$MDK_PIN"
   git -C "$MDK" checkout --detach "$MDK_PIN"
   rm -rf "$BUNDLE"
 fi
 
-if [ ! -f "$BUNDLE/lib/libmarmot_c.a" ] || [ ! -f "$BUNDLE/.otlp-export" ]; then
+# The fixed Linux host stages use the same consent-gated OTLP exporter.
+if git -C "$MDK" apply --check "$TIMINGS_PATCH" 2>/dev/null; then
+  git -C "$MDK" apply "$TIMINGS_PATCH"
+elif ! git -C "$MDK" apply --reverse --check "$TIMINGS_PATCH" 2>/dev/null; then
+  echo "==> Linux timing patch conflicts with vendor/mdk" >&2
+  exit 1
+fi
+TIMINGS_HASH="$(sha256sum "$TIMINGS_PATCH")"
+if [ ! -f "$BUNDLE/lib/libmarmot_c.a" ] || [ ! -f "$BUNDLE/.otlp-export" ] || [ "$(cat "$BUNDLE/.linux-timings" 2>/dev/null || true)" != "$TIMINGS_HASH" ]; then
   OTLP_EXPORT=1 "$MDK/crates/marmot-c/c-bindings.sh"
   touch "$BUNDLE/.otlp-export"
+  printf '%s\n' "$TIMINGS_HASH" > "$BUNDLE/.linux-timings"
 fi
 
 CLAY="$HERE/vendor/clay"
@@ -166,6 +179,26 @@ if [ ! -f "$FONTS/LiberationSans-Regular.ttf" ]; then
     --wildcards '*/LiberationSans-Regular.ttf' '*/LiberationSans-Bold.ttf' \
     '*/LiberationMono-Regular.ttf'
   rm -rf "$TMP"
+fi
+
+# Decorative profile names need mathematical alphabets and symbols that
+# Liberation lacks. Keep the OFL faces identical across packages.
+NOTO_URL="https://raw.githubusercontent.com/notofonts/noto-fonts/ffebf8c1ee449e544955a7e813c54f9b73848eac"
+while read -r file sha; do
+  if [ ! -f "$FONTS/$file" ]; then
+    curl -sSfL "$NOTO_URL/hinted/ttf/${file%-Regular.ttf}/$file" -o "$FONTS/$file.tmp"
+    echo "$sha  $FONTS/$file.tmp" | sha256sum -c -
+    mv "$FONTS/$file.tmp" "$FONTS/$file"
+  fi
+done <<'FONTS'
+NotoSansMath-Regular.ttf 80b61fd613d3519197e64fff6f7e71fdc7f3e6526440ea4115b554ef7fd59af7
+NotoSansSymbols-Regular.ttf 8f02f31959bbdf6061547a188248e13f84dc5fdd940326ec494675f453f072bb
+NotoSansSymbols2-Regular.ttf 630846d528dbe4c4981370a4d0a9475a1fd1491a129bb411f8e157cdb5de13c6
+FONTS
+if [ ! -f "$FONTS/Noto-LICENSE.txt" ]; then
+  curl -sSfL "$NOTO_URL/LICENSE" -o "$FONTS/Noto-LICENSE.txt.tmp"
+  echo "0dab92d0544f7b233403f14b84a663bdbfa746982eda629e7f4f9ffe1b036feb  $FONTS/Noto-LICENSE.txt.tmp" | sha256sum -c -
+  mv "$FONTS/Noto-LICENSE.txt.tmp" "$FONTS/Noto-LICENSE.txt"
 fi
 
 mkdir -p "$HERE/build"

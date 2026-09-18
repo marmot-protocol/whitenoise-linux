@@ -578,8 +578,8 @@ Ui_State :: struct {
 	sel_block:     u32, // body_text id base of the block being selected
 	sel_a:         int, // anchor byte offset inside that block
 	sel_b:         int, // drag head
-	sel_word:      bool, // double-click word mode
-	sel_wa:        int, // the anchor word's bounds, for word-mode extend
+	sel_unit:      Selection_Unit,
+	sel_wa:        int, // anchor word/sentence bounds for drag selection
 	sel_wb:        int,
 	sel_copy:      string, // the selected text, refreshed as the drag moves
 	// Message effects (effects.odin): the composer's armed burst.

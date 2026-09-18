@@ -4,6 +4,8 @@ import "core:fmt"
 import "core:os"
 import "core:path/filepath"
 import "core:strings"
+import "core:unicode"
+import "core:unicode/utf8"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -30,6 +32,18 @@ twemoji_dir :: proc() -> string {
 	return dir
 }
 emoji_tex_cache: map[string]^rl.Texture2D
+
+// Plain UI text shares the tile cache with messages. Resolve whole
+// graphemes so flags, skin tones, and joined emoji occupy one cell.
+@(private)
+text_emoji :: proc(text: string) -> ^rl.Texture2D {
+	if strings.contains(text, "\uFE0E") { return nil }
+	r, _ := utf8.decode_rune_in_string(text)
+	if !unicode.is_emoji_extended_pictographic(r) && !unicode.is_regional_indicator(r) && !strings.contains(text, "\u20E3") {
+		return nil
+	}
+	return emoji_tex(text)
+}
 
 // Picker catalog, loaded from vendor/emoji-catalog.tsv (staged by
 // scripts/build.sh): base emoji plus a lowercase search name.

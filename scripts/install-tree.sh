@@ -39,6 +39,7 @@ cp "$HERE/vendor/emoji-catalog.tsv" "$RES/"
 # Fonts are staged and sha256-pinned by scripts/build.sh, so every package ships
 # byte-identical faces.
 cp "$HERE"/vendor/fonts/*.ttf "$RES/fonts/"
+cp "$HERE/vendor/fonts/Noto-LICENSE.txt" "$RES/licenses/noto-fonts.txt"
 
 sed "s|@ID@|$ID|g" "$HERE/assets/whitenoise-linux.desktop" \
   > "$PREFIX/share/applications/$ID.desktop"

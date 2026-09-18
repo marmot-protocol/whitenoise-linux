@@ -213,18 +213,18 @@ chat_pane :: proc(ui: ^Ui_State) {
 				{layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(16), childGap = 8, layoutDirection = .TopToBottom}},
 				) {
 					burst_pane_layer() // own send's effect rises from here
-					// Staged attachment chips, the slint staged_files row:
-					// picked files waiting for Send, removable per chip.
+					// A capped scrollable list keeps every removal control reachable
+					// without letting attachments widen or consume the chat pane.
 					if len(ui.staged) > 0 {
-						if clay.UI(clay.ID("StagedRow"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}}) {
+						if clay.UI(clay.ID("StagedRow"))({layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFit({max = 144})}, layoutDirection = .TopToBottom, childGap = 8}, clip = {vertical = true, childOffset = clay.GetScrollOffset()}}) {
 							for f, i in ui.staged {
 								if clay.UI(clay.ID("StagedChip", u32(i)))(
-								{layout = {padding = clay.PaddingAll(6), childGap = 6, childAlignment = {y = .Center}}, backgroundColor = ROW_BG, cornerRadius = rr(10), border = {color = FIELD_BORDER, width = bw()}},
+								{layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(6), childGap = 6, childAlignment = {y = .Center}}, backgroundColor = ROW_BG, cornerRadius = rr(10), border = {color = FIELD_BORDER, width = bw()}},
 								) {
 									if f.tex != nil {
 										ratio := f.tex.height > 0 ? f32(f.tex.width) / f32(f.tex.height) : 1
 										if clay.UI(clay.ID("StagedThumb", u32(i)))(
-										{layout = {sizing = {height = clay.SizingFixed(40)}}, aspectRatio = {ratio}, image = {imageData = f.tex}, cornerRadius = rr(6)},
+										{layout = {sizing = {width = clay.SizingFixed(min(80, 40 * ratio))}}, aspectRatio = {ratio}, image = {imageData = f.tex}, cornerRadius = rr(6)},
 										) {}
 									} else {
 										clay.Text(ICON_CLIP, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_LO})
@@ -233,7 +233,9 @@ chat_pane :: proc(ui: ^Ui_State) {
 									if len(name) > 28 {
 										name = fmt.tprintf("%s…", name[:rune_snap(name, 28)])
 									}
-									clay.Text(name, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
+									if clay.UI(clay.ID("StagedName", u32(i)))({layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}}) {
+										clay.Text(name, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT, wrapMode = .None})
+									}
 									if clay.UI(clay.ID("StagedX", u32(i)))(
 									{layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
 									) {
@@ -242,6 +244,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 								}
 							}
 						}
+						scrollbar(clay.ID("StagedRow"))
 					}
 					if voice.stream != nil {
 						voice_bar()
@@ -268,12 +271,13 @@ chat_pane :: proc(ui: ^Ui_State) {
 						// paste); each splits at the selection so the caret
 						// sits at its head and the selected span highlights.
 						// Emoji render as Twemoji tiles like message bodies.
-						// Clip until the next frame adopts the text's new height.
+						// Long drafts scroll inside the capped text viewport.
 						if clay.UI(clay.ID("ComposeClip"))(
-						{layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(compose_height() - COMPOSE_CHROME_H)}}, clip = {vertical = true}},
+						{layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(compose_height() - COMPOSE_CHROME_H)}}, clip = {horizontal = true, vertical = true, childOffset = clay.GetScrollOffset()}},
 						) {
 						if clay.UI(clay.ID("ComposeText"))({layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 2}}) {
 							if len(ui.compose) == 0 && len(rl.Preedit()) == 0 {
+								compose_view.row = 0
 								if clay.UI(clay.ID("ComposeLine", 0))({layout = {childGap = 1, childAlignment = {y = .Center}}}) {
 									clay.Text(tr("Send a message..."), {fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT_LO})
 									if ui.focus == .Compose {
@@ -294,10 +298,12 @@ chat_pane :: proc(ui: ^Ui_State) {
 										h = -1
 									}
 									compose_line(u32(i), text, r[0], r[1], lo, hi, h)
+									if h >= r[0] && h <= r[1] { compose_view.row = u32(i) }
 								}
 							}
 						}
 						}
+						scrollbar(clay.ID("ComposeClip"))
 						if clay.UI(clay.ID("ComposeTools"))({layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(COMPOSE_TOOLS_H)}, childGap = 10, childAlignment = {y = .Center}}}) {
 						if clay.UI(clay.ID("AttachBtn"))(
 						{layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
@@ -372,7 +378,29 @@ compose_height :: proc() -> f32 {
 	if box := clay.GetElementData(clay.ID("ComposeText")); box.found {
 		target = max(COMPOSE_H_MIN, box.boundingBox.height + COMPOSE_CHROME_H)
 	}
-	return target
+	return min(target, max(COMPOSE_H_MIN, min(240, f32(rl.GetScreenHeight()) / UI_ZOOM * 0.35)))
+}
+
+@(private = "file")
+compose_view: struct { head, length: int, size: clay.Dimensions, row: u32 }
+
+// Follow edits and caret moves, but leave manual scrolling alone.
+@(private)
+compose_scroll :: proc(ui: ^Ui_State) {
+	data := clay.GetScrollContainerData(clay.ID("ComposeClip"))
+	if ui.focus != .Compose || !data.found {
+		compose_view.head = -1
+		return
+	}
+	_, _, head := field_sel(ui, &ui.compose)
+	size := data.scrollContainerDimensions
+	if compose_view.head == head && compose_view.length == len(ui.compose) && compose_view.size == size { return }
+	compose_view.head, compose_view.length, compose_view.size = head, len(ui.compose), size
+	row := clay.GetElementData(clay.ID("ComposeLine", compose_view.row)).boundingBox
+	clip := clay.GetElementData(clay.ID("ComposeClip")).boundingBox
+	delta := min(row.y - clip.y, 0) + max(row.y + row.height - clip.y - clip.height, 0)
+	data.scrollPosition.y = clamp(data.scrollPosition.y - delta, min(size.height - data.contentDimensions.height, 0), 0)
+	if delta != 0 { anim_moving += 1 }
 }
 
 section_head :: proc(id_str: string, label: string, note: string) {

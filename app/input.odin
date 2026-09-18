@@ -2,6 +2,7 @@ package main
 
 import "core:strings"
 import "core:text/edit"
+import "core:unicode"
 import "core:unicode/utf8"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
@@ -146,43 +147,40 @@ field_sel :: proc(ui: ^Ui_State, buf: ^[dynamic]u8) -> (lo, hi, head: int) {
 	return min(a, b), max(a, b), a
 }
 
-// Soft-line bounds and Up/Down targets around the caret, feeding the
-// Line_Start/Line_End/Up/Down translations. Single-line fields treat
-// the whole buffer as one line.
+// Physical Home/End bounds and visual Up/Down targets. Single-line
+// fields treat the whole buffer as one line.
 set_lines :: proc(ed: ^edit.State, multiline: bool) {
 	text := string(ed.builder.buf[:])
 	head := clamp(ed.selection[0], 0, len(text))
 
-	ls := 0
-	le := len(text)
-	if multiline {
-		ls = strings.last_index_byte(text[:head], '\n') + 1
-		if nl := strings.index_byte(text[head:], '\n'); nl >= 0 {
-			le = head + nl
-		}
-	}
-	ed.line_start = ls
-	ed.line_end = le
-
-	// Up/Down: the same byte column in the neighbour physical line
-	// (byte column approximates the visual one; good enough).
-	col := head - ls
+	ed.line_start, ed.line_end = 0, len(text)
 	ed.up_index = head
 	ed.down_index = head
 	if !multiline {
 		return
 	}
-	if ls > 0 {
-		pls := strings.last_index_byte(text[:ls - 1], '\n') + 1
-		ed.up_index = rune_snap(text, min(pls + col, ls - 1))
-	}
-	if le < len(text) {
-		nls := le + 1
-		nle := len(text)
-		if nl := strings.index_byte(text[nls:], '\n'); nl >= 0 {
-			nle = nls + nl
+	ed.line_start = strings.last_index_byte(text[:head], '\n') + 1
+	if nl := strings.index_byte(text[head:], '\n'); nl >= 0 { ed.line_end = head + nl }
+
+	// Match the rendered rows and horizontal position, including emoji.
+	// A shared wrap boundary belongs to the upper row, as in chat_pane.
+	lines := compose_lines(text)
+	for line, i in lines {
+		if head > line[1] { continue }
+		x: f32
+		it := utf8.decode_grapheme_iterator_make(text[line[0]:head])
+		for cluster, _ in utf8.decode_grapheme_iterate(&it) {
+			x += text_emoji(cluster) != nil ? 18 : rl.MeasureTextLine(FONT_BODY, BODY_FS, cluster, 0).x
 		}
-		ed.down_index = rune_snap(text, min(nls + col, nle))
+		if i > 0 {
+			prev := lines[i - 1]
+			ed.up_index = prev[0] + hit_compose_line(text[prev[0]:prev[1]], x)
+		}
+		if i + 1 < len(lines) {
+			next := lines[i + 1]
+			ed.down_index = next[0] + hit_compose_line(text[next[0]:next[1]], x)
+		}
+		break
 	}
 }
 
@@ -331,18 +329,66 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 // Buffer currently being drag-selected (cleared in the frame loop).
 text_drag: rawptr
 
+@(private = "file")
+text_drag_sentence: [2]int
+
+// Punctuation-based boundaries keep URLs/decimals intact and include
+// closing quotes. ponytail: abbreviations need a language-aware segmenter.
+@(private)
+sentence_bounds :: proc(text: string, at: int) -> (lo, hi: int) {
+	at := clamp(at, 0, len(text))
+	start := 0
+	hi = len(text)
+	for i := 0; i < len(text); {
+		if end, _, ok := url_at(text, i); ok { i = end; continue }
+		r, n := utf8.decode_rune_in_string(text[i:])
+		i += n
+		if !strings.contains_rune(".!?。！？\n", r) { continue }
+		if r == '.' && i < len(text) {
+			next, _ := utf8.decode_rune_in_string(text[i:])
+			if !unicode.is_space(next) && !strings.contains_rune(".!?\"'”’)]}", next) { continue }
+		}
+		for i < len(text) && r != '\n' {
+			next, size := utf8.decode_rune_in_string(text[i:])
+			if !strings.contains_rune(".!?。！？\"'”’)]}", next) { break }
+			i += size
+		}
+		end := i
+		for i < len(text) {
+			next, size := utf8.decode_rune_in_string(text[i:])
+			if !unicode.is_space(next) { break }
+			i += size
+		}
+		if at < i || i == len(text) { hi = end; break }
+		start = i
+	}
+	part := strings.trim_left_space(text[start:hi])
+	lo = hi - len(part)
+	hi = lo + len(strings.trim_right_space(part))
+	return
+}
+
+@(private = "file")
+drag_text_selection :: proc(ed: ^edit.State, text: string, hit: int) {
+	if text_drag_sentence[1] <= text_drag_sentence[0] { ed.selection[0] = hit; return }
+	lo, hi := sentence_bounds(text, hit)
+	if lo < text_drag_sentence[0] {
+		ed.selection = {lo, text_drag_sentence[1]}
+	} else {
+		ed.selection = {hi, text_drag_sentence[0]}
+	}
+}
+
 // Byte offset nearest to x in a plain single-line text run.
 hit_plain :: proc(text: string, x: f32, font_size: u16) -> int {
 	pen: f32 = 0
-	i := 0
-	for i < len(text) {
-		_, w := utf8.decode_rune_in_string(text[i:])
-		adv := rl.MeasureTextLine(FONT_BODY, font_size, text[i:i + w], 0).x
+	it := utf8.decode_grapheme_iterator_make(text)
+	for cluster, grapheme in utf8.decode_grapheme_iterate(&it) {
+		adv := rl.MeasureTextLine(FONT_BODY, font_size, cluster, 0).x
 		if x < pen + adv / 2 {
-			return i
+			return grapheme.byte_index
 		}
 		pen += adv
-		i += w
 	}
 	return len(text)
 }
@@ -357,7 +403,7 @@ select_word_at :: proc(ed: ^edit.State, at: int) {
 
 // Mouse interactions for one single-line field box: press focuses and
 // places the caret (Shift extends, double-click selects the word,
-// triple selects all), drag extends the selection, middle-click pastes
+// triple selects the sentence), drag extends the selection, middle-click pastes
 // the primary selection. Returns true when a press landed in the box
 // so the caller can set keyboard focus. Call every frame the field is
 // visible; runs after layout, so clay bounds are current.
@@ -374,9 +420,12 @@ field_mouse :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, id_str: string, font_size:
 
 	if over && mouse_pressed() {
 		ed_begin(ui, buf)
+		text_drag_sentence = {}
 		switch {
 		case rl.GetMouseClicks() >= 3:
-			edit.perform_command(&ui.ed, .Select_All)
+			lo, hi := sentence_bounds(string(buf[:]), hit)
+			ui.ed.selection = {hi, lo}
+			text_drag_sentence = {lo, hi}
 		case rl.GetMouseClicks() == 2:
 			select_word_at(&ui.ed, hit)
 		case shift_down():
@@ -389,7 +438,7 @@ field_mouse :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, id_str: string, font_size:
 		return true
 	}
 	if text_drag == buf && rl.IsMouseButtonDown(.LEFT) && ui.ed_target == buf {
-		ui.ed.selection[0] = hit
+		drag_text_selection(&ui.ed, string(buf[:]), hit)
 	}
 	if over && rl.IsMouseButtonPressed(.MIDDLE) {
 		primary := rl.GetPrimaryText()
@@ -405,40 +454,27 @@ field_mouse :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, id_str: string, font_size:
 }
 
 // Byte offset nearest to x in one composer line, mirroring the widths
-// compose_line draws: emoji clusters as 18px tiles plus the 1px child
-// gap, text per rune. Span-split gaps are ignored (±1px).
+// compose_line draws: emoji graphemes as 18px tiles, text per glyph.
 hit_compose_line :: proc(line: string, x: f32) -> int {
 	pen: f32 = 0
-	i := 0
-	for i < len(line) {
-		r, w := utf8.decode_rune_in_string(line[i:])
-		j := i + w
-		adv: f32
-		if is_emoji_rune(r) {
-			for j < len(line) {
-				r2, w2 := utf8.decode_rune_in_string(line[j:])
-				if !is_emoji_rune(r2) && r2 != 0xFE0F && r2 != 0x200D {
-					break
-				}
-				j += w2
-			}
-			adv = 19
-		} else {
-			adv = rl.MeasureTextLine(FONT_BODY, BODY_FS, line[i:j], 0).x
-		}
+	it := utf8.decode_grapheme_iterator_make(line)
+	for cluster, g in utf8.decode_grapheme_iterate(&it) {
+		adv := rl.MeasureTextLine(FONT_BODY, BODY_FS, cluster, 0).x
+		if text_emoji(cluster) != nil { adv = 18 }
 		if x < pen + adv / 2 {
-			return i
+			return g.byte_index
 		}
 		pen += adv
-		i = j
 	}
 	return len(line)
 }
 
 // Composer mouse: press focuses and places the caret in the tapped
 // line (Shift extends, double-click selects the word, triple the
-// line), drag selects, middle-click pastes the primary selection.
+// sentence), drag selects, middle-click pastes the primary selection.
 compose_mouse :: proc(ui: ^Ui_State) {
+	clip_id := clay.ID("ComposeClip").id
+	if scroll_drag.container == clip_id || clay.PointerOver(clay.ID("ScrollThumb", clip_id)) { return }
 	box := clay.GetElementData(clay.ID("ComposeBox"))
 	if !box.found {
 		return
@@ -472,14 +508,12 @@ compose_mouse :: proc(ui: ^Ui_State) {
 	case left:
 		ui.focus = .Compose
 		ed_begin(ui, &ui.compose)
+		text_drag_sentence = {}
 		switch {
 		case rl.GetMouseClicks() >= 3:
-			lls := strings.last_index_byte(text[:hit], '\n') + 1
-			lle := len(text)
-			if nl := strings.index_byte(text[hit:], '\n'); nl >= 0 {
-				lle = hit + nl
-			}
-			ui.ed.selection = {lle, lls}
+			lo, hi := sentence_bounds(text, hit)
+			ui.ed.selection = {hi, lo}
+			text_drag_sentence = {lo, hi}
 		case rl.GetMouseClicks() == 2:
 			select_word_at(&ui.ed, hit)
 		case shift_down():
@@ -491,7 +525,7 @@ compose_mouse :: proc(ui: ^Ui_State) {
 		text_drag = &ui.compose
 	case dragging:
 		if ui.ed_target == &ui.compose {
-			ui.ed.selection[0] = hit
+			drag_text_selection(&ui.ed, text, hit)
 		}
 	case middle:
 		ui.focus = .Compose

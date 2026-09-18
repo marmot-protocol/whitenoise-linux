@@ -50,16 +50,13 @@ mod :: proc(a, b: f32) -> f32 {
 	return a - b * f32(int(a / b))
 }
 
-// Up to two initials: word starts for names, leading chars for ids.
+// Up to two initials, keeping emoji and accented graphemes intact.
 avatar_initials :: proc(name: string) -> string {
 	fields := strings.fields(name, context.temp_allocator)
 	if len(fields) >= 2 {
-		return strings.concatenate({fields[0][:1], fields[1][:1]}, context.temp_allocator)
+		return strings.concatenate({fields[0][:next_grapheme(fields[0], 0)], fields[1][:next_grapheme(fields[1], 0)]}, context.temp_allocator)
 	}
-	if len(name) >= 2 {
-		return name[:2]
-	}
-	return name
+	return name[:next_grapheme(name, next_grapheme(name, 0))]
 }
 
 // A profile picture when one is loaded (pre-masked round pixels from

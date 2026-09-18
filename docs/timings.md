@@ -83,3 +83,59 @@ success only on presentation; missing observations are not counted as failures.
 Run `just test` for report/percentile/viewport checks, and
 `build/smoke <fresh-empty-directory>` for real C snapshot and consent checks.
 The smoke test never starts the runtime or uploads telemetry.
+
+## Linux stages
+
+Debug > Timings also includes `linux_performance`, with 38 fixed stages.
+Each reports a sample count, sum, min, max, mean, p50/p95/p99 upper bounds,
+and overflow. Totals retain nanoseconds and display fractional milliseconds.
+The local histogram uses powers of two microseconds through 67,108.864 ms;
+larger samples enter overflow. Empty values and overflow percentiles are null.
+These counters reset on process start or development module reload.
+
+All 38 stages also feed MDK's existing consent-controlled OTLP exporter to
+the configured IPF endpoint. Metric names are
+`app_host_linux_<stage>_duration_ms` and `app_host_linux_<stage>_samples`.
+They use the same installation metadata, route, retry policy, and sharing
+switch as the original timings. No separate uploader or consent is added.
+`patches/mdk-linux-timings.patch` extends the pinned runtime's closed host
+operation enum; the build checks the patch and rebuilds its C bundle.
+Startup samples are buffered until client construction. Collection becomes
+local-only at runtime shutdown. Turning off sharing stops remote export,
+while local diagnostics remain available, as with the original timings.
+
+The C API accepts whole milliseconds, so exported samples truncate below
+one millisecond and use MDK's histogram bounds. Use the local report for
+sub-millisecond comparisons. These stage spans include error and early
+returns, so the new exported counters count samples, not successful actions.
+Consult the existing operation success/failure counters separately.
+
+| Stages | Boundaries |
+| --- | --- |
+| `startup_before_vault`, `startup_after_vault` | App entry to the vault gate, then post-unlock runtime boot to first normal frame presentation. Password-entry time is excluded. |
+| `window_init`, `fonts_init`, `runtime_boot` | Window/renderer initialization, font initialization, and runtime boot including account loading. |
+| `account_load`, `account_switch` | Account snapshot/setup and synchronous account switch work. |
+| `frame_update` | After SDL event polling through worker drains, input preparation and media advancement, before layout. |
+| `frame_layout` | Layout builds and scroll correction, including rebuilds. |
+| `frame_draw`, `frame_present` | Render-command submission and SDL present respectively. Present can include compositor/vsync wait; neither measures GPU completion. |
+| `frame_until_present` | After event polling through normal frame presentation. Excludes post-present handlers and idle sleep. |
+| `frame_post_present`, `frame_idle_wait` | Post-present drains and input handlers, then intentional idle sleep measured separately. |
+| `chat_list_load`, `contacts_load`, `archived_load`, `profile_load`, `profile_read` | Synchronous reads/projection; cached profile no-ops are excluded. |
+| `timeline_open`, `timeline_page`, `timeline_handoff`, `timeline_apply` | Subscription/initial snapshot, cursor reads, latest snapshot publication-to-UI handoff, and UI projection. Subscription idle waits are excluded. |
+| `send_worker`, `message_op_worker` | Worker execution including uploads/runtime calls and cleanup, excluding thread scheduling. |
+| `search_global`, `search_sidebar` | Worker execution, including failed or cancelled partial searches; excludes debounce/queue wait. |
+| `media_queue_wait`, `media_worker` | Enqueue-to-worker-start, then the worker's load/decode/cleanup. |
+| `media_load`, `media_cache_hit`, `media_decode`, `media_publish` | Cache/download work, successful cache reads, decode/preparation, and UI texture/view installation. Cache hits are a subset of loads. |
+| `vault_derive_key`, `vault_open`, `vault_create`, `vault_persist`, `settings_save` | Key derivation, vault operations and settings persistence, including failures. No paths or secret values are recorded. |
+
+Screenshot-exit frames contribute update/layout/draw samples but skip the
+normal presentation and post-present measurements. Nested spans overlap;
+their sums are not elapsed wall time. Collection itself adds clock reads
+and mutex updates and is included in outer spans.
+
+For automated runs, `WN_TIMINGS=/absolute/path/timings.json build/app`
+writes the local Linux report on normal exit, including screenshot runs.
+The report can also be copied alongside MDK counters from Debug > Timings.
+Record the build, hardware, renderer/display, window size, dataset, workload,
+network, cache state, sample counts, and warm-up policy with each comparison.
+Run the same workload on the other apps before making comparative claims.

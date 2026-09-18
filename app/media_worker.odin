@@ -1,5 +1,7 @@
 package main
 
+import "core:time"
+
 import "core:strings"
 import "core:slice"
 import "core:sync"
@@ -36,6 +38,7 @@ Media_Job :: struct {
 	view: rawptr,
 	image: rl.Image,
 	size: i64,
+	queued_at: time.Tick,
 }
 @(private)
 media_jobs: [dynamic]^Media_Job
@@ -184,7 +187,7 @@ media_ready :: proc(msg: ^Msg_Ui, kind: Media_Kind, key: string, index: int, vie
 media_enqueue :: proc(client: ^marmot.Client, account, group: cstring, ref: ^marmot.Media_Attachment_Reference, kind: Media_Kind, key: string) {
 	if media_inflight[Media_Key{key, kind}] { return }
 	job := new(Media_Job)
-	job^ = {client = client, account = strings.clone_to_cstring(string(account)),
+	job^ = {queued_at = time.tick_now(), client = client, account = strings.clone_to_cstring(string(account)),
 		group = strings.clone_to_cstring(string(group)), key = strings.clone(key),
 		reference = ref^, kind = kind, color = clay_color(TEXT)}
 	r := &job.reference
@@ -205,8 +208,11 @@ media_enqueue :: proc(client: ^marmot.Client, account, group: cstring, ref: ^mar
 
 @(private)
 media_worker :: proc(t: ^thread.Thread) {
+	timing_start := time.tick_now()
+	defer local_timing_end(.media_worker, timing_start)
 	context.allocator = reload_allocator()
 	job := (^Media_Job)(t.data)
+	local_timing_end(.media_queue_wait, job.queued_at)
 	defer free_all(context.temp_allocator)
 	defer {
 		sync.lock(&job.mutex)
@@ -216,6 +222,8 @@ media_worker :: proc(t: ^thread.Thread) {
 	}
 	bytes, ok := media_load(job.client, job.account, job.group, &job.reference)
 	if !ok { return }
+	decode_start := time.tick_now()
+	defer local_timing_end(.media_decode, decode_start)
 	job.size = i64(len(bytes))
 	defer delete(bytes)
 	name := strings.to_lower(string(job.reference.file_name), context.temp_allocator)
@@ -246,6 +254,8 @@ media_worker :: proc(t: ^thread.Thread) {
 
 @(private)
 media_publish :: proc(job: ^Media_Job) {
+	timing_start := time.tick_now()
+	defer local_timing_end(.media_publish, timing_start)
 	key := strings.clone(job.key)
 	switch job.kind {
 	case .Image, .Emoji, .Font:

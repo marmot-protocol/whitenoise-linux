@@ -425,30 +425,25 @@ contacts_pane :: proc(ui: ^Ui_State) {
 
 		if clay.UI(clay.ID("ContactHero"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 14, childAlignment = {y = .Center}, padding = {top = 10, bottom = 6}}}) {
 			avatar("ContactHeroAvatar", 0, contact.id_hex, contact.name, 52, url_pic(contact.pic_url))
-			if clay.UI(clay.ID("ContactHeroCol"))({layout = {layoutDirection = .TopToBottom, childGap = 2}}) {
-				clay.Text(contact_label(ui, contact), {fontId = FONT_TITLE, fontSize = 20, textColor = TEXT})
-				clay.Text(npub_tail(contact.npub), {fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO})
+			if clay.UI(clay.ID("ContactHeroCol"))({layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 2}, clip = {horizontal = true}}) {
+				clay.Text(contact_label(ui, contact), {fontId = FONT_TITLE, fontSize = 20, textColor = TEXT, wrapMode = .None})
+				clay.Text(npub_tail(contact.npub), {fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO, wrapMode = .None})
+				if contact_label(ui, contact) != contact.name {
+					clay.Text(fmt.tprintf("aka %s", contact.name), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO, wrapMode = .None})
+				}
 			}
-			if clay.UI(clay.ID("ContactHeroGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-			// A nicknamed contact keeps their published name visible,
-			// the slint "aka" line beside the nickname field.
-			if contact_label(ui, contact) != contact.name {
-				clay.Text(fmt.tprintf("aka %s", contact.name), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
-			}
-			// Private local nickname, saved on Enter; never published.
-			if clay.UI(clay.ID("NickBox"))(
-			{layout = {sizing = {width = clay.SizingFixed(fit_w(320, 40)), height = clay.SizingFixed(36)}, padding = {left = 12, right = 12}, childAlignment = {y = .Center}}, backgroundColor = ROW_BG, cornerRadius = rr(8), border = {color = ui.focus == .Nick ? ACCENT : FIELD_BORDER, width = bw()}},
-			) {
-				field_text(ui, "NickBox", &ui.nick_input, "Nickname", ui.focus == .Nick, 12, TEXT_LO)
-			}
-			// Start chat fills the remaining hero width, the slint
-			// wide accent button.
 			if clay.UI(clay.ID("StartChatBtn"))(
-			{layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(38)}, childGap = 8, childAlignment = {x = .Center, y = .Center}}, backgroundColor = ACCENT, cornerRadius = rr(9)},
+			{layout = {sizing = {height = clay.SizingFixed(38)}, padding = {left = 12, right = 12}, childGap = 8, childAlignment = {x = .Center, y = .Center}}, backgroundColor = ACCENT, cornerRadius = rr(9)},
 			) {
 				clay.Text(PAGE_ICONS[Page.Chats], {fontId = FONT_ICON, fontSize = 12, textColor = ON_ACCENT})
-				clay.Text(tr("Start chat"), {fontId = FONT_TITLE, fontSize = 13, textColor = ON_ACCENT})
+				clay.Text(tr("Start chat"), {fontId = FONT_TITLE, fontSize = 13, textColor = ON_ACCENT, wrapMode = .None})
 			}
+		}
+		// Give the editor its own row so it cannot squeeze the name or action.
+		if clay.UI(clay.ID("NickBox"))(
+		{layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(36)}, padding = {left = 12, right = 12}, childAlignment = {y = .Center}}, backgroundColor = ROW_BG, cornerRadius = rr(8), border = {color = ui.focus == .Nick ? ACCENT : FIELD_BORDER, width = bw()}},
+		) {
+			field_text(ui, "NickBox", &ui.nick_input, "Nickname", ui.focus == .Nick, 12, TEXT_LO)
 		}
 
 		if clay.UI(clay.ID("IdentityEyebrow"))({layout = {padding = {top = 8}}}) {

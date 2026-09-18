@@ -193,6 +193,9 @@ msgstr ""
 msgid "Asking your relays for their key package."
 msgstr "sul pacchetto chiavi stesso"
 
+msgid "Audio message"
+msgstr "Messaggio audio"
+
 #, fuzzy
 msgid "Audit log file deleted."
 msgstr "Log di audit eliminato."
@@ -924,6 +927,9 @@ msgstr "MESSAGGI IN ARRIVO"
 
 msgid "INSPECT SOMEONE ELSE'S"
 msgstr ""
+
+msgid "ISSUE"
+msgstr "SEGNALAZIONE"
 
 msgid "Images and files kept on this device so they don't download twice, sealed with your vault key."
 msgstr ""
@@ -2081,6 +2087,10 @@ msgstr "Smetterai di ricevere nuovi messaggi da questo gruppo. La chat viene spo
 #, fuzzy
 msgid "You were invited to this group."
 msgstr "Hai lasciato il gruppo."
+
+#, c-format
+msgid "You: %s"
+msgstr "Tu: %s"
 
 #, fuzzy
 msgid "Your current password"

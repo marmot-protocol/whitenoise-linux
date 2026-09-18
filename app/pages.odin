@@ -678,6 +678,8 @@ do_create_identity :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // `active` is the account to land on (the one just added); empty falls
 // back to the first row, which is what boot and sign-out want.
 after_login :: proc(ui: ^Ui_State, client: ^marmot.Client, active := "") {
+	timing_start := time.tick_now()
+	defer local_timing_end(.account_load, timing_start)
 	clear(&ui.accounts)
 	clear(&ui.account_ids)
 	clear(&ui.account_npubs)
@@ -718,6 +720,8 @@ after_login :: proc(ui: ^Ui_State, client: ^marmot.Client, active := "") {
 
 // Activate another already-stored account and reload everything.
 switch_account :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string) {
+	timing_start := time.tick_now()
+	defer local_timing_end(.account_switch, timing_start)
 	summary: ^marmot.Account_Summary
 	account := strings.clone_to_cstring(account_id, context.temp_allocator)
 	if marmot.sign_in_account(client, account, &summary) != .OK {
@@ -863,6 +867,8 @@ convert_blocks :: proc(out: ^[dynamic]Md_Block_Ui, blocks: [^]marmot.Markdown_Bl
 }
 
 boot_marmot :: proc(home: string, ui: ^Ui_State) -> ^marmot.Client {
+	timing_start := time.tick_now()
+	defer local_timing_end(.runtime_boot, timing_start)
 	os.make_directory(home)
 	relays := DEFAULT_RELAYS
 
@@ -878,6 +884,7 @@ boot_marmot :: proc(home: string, ui: ^Ui_State) -> ^marmot.Client {
 	}
 
 	// Configure the destination before startup restores the saved consent.
+	local_timing_bind(client)
 	apply_observability(ui, client)
 
 	if marmot.client_start(client) != .OK {
@@ -947,6 +954,9 @@ window_preview :: proc(client: ^marmot.Client, account_ref: string, row: ^marmot
 	return ""
 }
 
+@(private)
+CHAT_ATTACHMENT_AUDIO :: i32(2) // MarmotChatListAttachmentKind::Audio
+
 // Snapshot the account's chat list into UI-owned strings.
 // One marmot chat-list row into a UI row; shared by the rail
 // (load_chat_list) and the archive page (load_archived) so both render
@@ -965,9 +975,13 @@ row_to_ui :: proc(client: ^marmot.Client, row: ^marmot.Chat_List_Row, account_re
 		mine = row.last_message.sender != nil && string(row.last_message.sender) == account_ref
 		if row.last_message.plaintext != nil {
 			preview = string(row.last_message.plaintext)
-			if mine {
-				preview = fmt.tprintf("You: %s", preview)
-			}
+		}
+		if strings.trim_space(preview) == "" && !row.last_message.deleted &&
+			row.last_message.has_attachment_kind && row.last_message.attachment_kind == CHAT_ATTACHMENT_AUDIO {
+			preview = tr("Audio message")
+		}
+		if mine && strings.trim_space(preview) != "" {
+			preview = fmt.tprintf(tr("You: %s"), preview)
 		}
 		// A kind-1210 payload or a webxdc state blob can't speak for
 		// itself; show the newest displayable record instead (already
@@ -1010,6 +1024,8 @@ row_to_ui :: proc(client: ^marmot.Client, row: ^marmot.Chat_List_Row, account_re
 }
 
 load_chat_list :: proc(client: ^marmot.Client, account_ref: string, ui: ^Ui_State) {
+	timing_start := time.tick_now()
+	defer local_timing_end(.chat_list_load, timing_start)
 	rows: ^marmot.Chat_List_Row_List
 	if marmot.chat_list(client, strings.clone_to_cstring(account_ref, context.temp_allocator), false, &rows) != .OK {
 		ui.client_status = fmt.aprintf("chat list failed: %s", marmot.last_error())

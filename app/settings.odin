@@ -3,6 +3,8 @@
 // booting.
 package main
 
+import "core:time"
+
 import "core:encoding/json"
 import "core:fmt"
 import "core:os"
@@ -212,6 +214,8 @@ load_settings :: proc(ui: ^Ui_State) {
 }
 
 save_settings :: proc(ui: ^Ui_State) {
+	timing_start := time.tick_now()
+	defer local_timing_end(.settings_save, timing_start)
 	path := settings_path()
 	dir := fmt.tprintf("%s", path[:len(path) - len("/settings.json")])
 	os.make_directory(dir)

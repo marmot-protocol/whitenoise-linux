@@ -43,6 +43,7 @@ timeline_worker :: proc(t: ^thread.Thread) {
 	context.allocator = reload_allocator()
 	job := (^Timeline_Work)(t.data)
 	defer frame_wake()
+	open_start := time.tick_now()
 	sub: ^marmot.Timeline_Subscription
 	status := marmot.timeline_subscribe(job.client, job.account, job.group, true, TL_PAGE, &sub)
 	defer { if sub != nil { marmot.timeline_sub_free(sub) } }
@@ -50,6 +51,7 @@ timeline_worker :: proc(t: ^thread.Thread) {
 	if status == .OK {
 		status = marmot.timeline_snapshot(sub, &page)
 	}
+	local_timing_end(.timeline_open, open_start)
 	direction := Timeline_Direction.None
 	for {
 		if status == .OK && page != nil && string(job.search) != "" {
@@ -77,11 +79,13 @@ timeline_worker :: proc(t: ^thread.Thread) {
 		sync.unlock(&job.mutex)
 		if status != .TIMEOUT { frame_wake() }
 		if cancel || (status != .OK && status != .TIMEOUT) { break }
+		page_start := time.tick_now()
 		switch direction {
 		case .Older: status = marmot.timeline_back(sub, TL_PAGE, &page)
 		case .Newer: status = marmot.timeline_forward(sub, TL_PAGE, &page)
 		case .None: status = marmot.timeline_next(sub, 100, &page)
 		}
+		if direction != .None { local_timing_end(.timeline_page, page_start) }
 		free_all(context.temp_allocator)
 	}
 	if page != nil { marmot.timeline_page_free(page) }
@@ -170,6 +174,7 @@ timeline_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.timeline_loading, ui.timeline_paging = false, false
 	}
 	if page == nil { return }
+	local_timing_end(.timeline_handoff, at)
 	previous := make(map[string]bool, context.temp_allocator)
 	for msg in ui.messages { previous[msg.id] = true }
 	initial := ui.timeline_loading

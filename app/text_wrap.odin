@@ -4,7 +4,9 @@ import "core:strings"
 import "base:runtime"
 
 @(private)
-Wrap_Key :: struct { text: string, width: f32, scale: f32, size: u16 }
+Wrap_Key :: struct { text: string, width: f32, scale: f32, size: u16, mode: Wrap_Mode }
+@(private)
+Wrap_Mode :: enum { Text, Cards, Compose }
 @(private)
 Wrap_Line :: struct { start, end: int, index: u32 }
 @(private)
@@ -19,6 +21,9 @@ WRAP_CACHE_BYTES :: 4 * 1024 * 1024
 @(private)
 wrap_clear :: proc() {
 	context.allocator = runtime.default_context().allocator
+	delete(compose_cache.text)
+	delete(compose_cache.lines)
+	compose_cache = {}
 	for key, lines in wrap_cache {
 		delete(key.text)
 		delete(lines)
@@ -29,8 +34,8 @@ wrap_clear :: proc() {
 }
 
 @(private)
-wrapped_lines :: proc(text: string, width: f32, size: u16) -> []Wrap_Line {
-	key := Wrap_Key{text, width, UI_SCALE, size}
+wrapped_lines :: proc(text: string, width: f32, size: u16, mode: Wrap_Mode = .Text) -> []Wrap_Line {
+	key := Wrap_Key{text, width, UI_SCALE, size, mode}
 	if lines, hit := wrap_cache[key]; hit { return lines }
 	lines := make([dynamic]Wrap_Line, context.temp_allocator)
 	start := 0
@@ -41,10 +46,33 @@ wrapped_lines :: proc(text: string, width: f32, size: u16) -> []Wrap_Line {
 		at := start
 		if at == end { append(&lines, Wrap_Line{at, at, i}) }
 		for at < end {
-			cut := width > 0 ? wrap_break(text, at, end, width, size) : end
-			append(&lines, Wrap_Line{at, cut, i})
-			i += 1
-			at = cut
+			// Cards occupy a whole row, even when their URL is wider
+			// than the column. Keep source offsets for selection/copy.
+			card_at, card_end := end, end
+			if mode == .Cards {
+				for scan := at; scan < end; scan += 1 {
+					if text[scan] != 'h' { continue }
+					if next, url, ok := url_at(text[:end], scan); ok {
+						if _, card := gh_ref(url); card {
+							card_at, card_end = scan, next
+							break
+						}
+						scan = next - 1
+					}
+				}
+			}
+			for at < card_at {
+				cut := width > 0 ? wrap_break(text, at, card_at, width, size) : card_at
+				append(&lines, Wrap_Line{at, cut, i})
+				i += 1
+				at = cut
+				if at < card_at && text[at] == ' ' { at += 1 }
+			}
+			if card_at < end {
+				append(&lines, Wrap_Line{card_at, card_end, i})
+				i += 1
+				at = card_end
+			}
 			if at < end && text[at] == ' ' { at += 1 }
 		}
 		if end == len(text) { break }

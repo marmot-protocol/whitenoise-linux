@@ -3,6 +3,8 @@
 // (Japanese renders through the Noto CJK fallback stack).
 package main
 
+import "core:time"
+
 import "base:runtime"
 import "core:math"
 
@@ -42,6 +44,8 @@ refresh_ui_scale :: proc() {
 }
 
 init_fonts :: proc() {
+	timing_start := time.tick_now()
+	defer local_timing_end(.fonts_init, timing_start)
 	rl.SetPixelScale(UI_SCALE)
 	// A packaged build ships its own copy of each face; res_font puts it
 	// at the head of the stack so the binary never depends on which
@@ -53,7 +57,10 @@ init_fonts :: proc() {
 		}
 		append(&paths, ..candidates)
 		append(&paths, ..fallbacks)
-		rl.LoadFontStack(id, paths[:])
+		if id != FONT_ICON {
+			append(&paths, res_font("NotoSansMath-Regular.ttf"), res_font("NotoSansSymbols-Regular.ttf"), res_font("NotoSansSymbols2-Regular.ttf"))
+		}
+		rl.LoadFontStack(id, paths[:], text_emoji)
 	}
 	stack(FONT_BODY, "LiberationSans-Regular.ttf", FONT_CANDIDATES, CJK_CANDIDATES)
 	stack(FONT_TITLE, "LiberationSans-Bold.ttf", TITLE_CANDIDATES, CJK_BOLD_CANDIDATES)

@@ -15,6 +15,8 @@
 package main
 
 import "core:fmt"
+import "core:crypto/hash"
+import "core:encoding/hex"
 import "core:os"
 import "core:strings"
 import "core:sync"
@@ -119,6 +121,8 @@ profile_info :: proc(client: ^marmot.Client, hex: string) -> Profile_Info {
 // One kind-0 read straight out of marmot's cache, no memo.
 @(private = "file")
 read_profile :: proc(client: ^marmot.Client, hex: string) -> (Profile_Info, bool) {
+	timing_start := time.tick_now()
+	defer local_timing_end(.profile_read, timing_start)
 	info: Profile_Info
 	meta: ^marmot.User_Profile_Metadata
 	if marmot.user_profile(client, strings.clone_to_cstring(hex, context.temp_allocator), &meta) != .OK {
@@ -440,22 +444,55 @@ pic_worker :: proc(_: ^thread.Thread) {
 			continue
 		}
 
-		state, out, _, err := os.process_exec(
-			{command = {"curl", "-sfL", "--max-time", "15", url}},
-			context.allocator,
-		)
-		data := out
-		if err != nil || state.exit_code != 0 || len(out) == 0 {
-			fmt.eprintfln("pics: fetch failed: %s", url)
-			delete(out)
-			data = nil
-		}
+		data := pic_load(url)
+		free_all(context.temp_allocator)
 
 		sync.lock(&pic_mutex)
 		append(&pic_done, Fetched_Pic{url = url, data = data})
 		sync.unlock(&pic_mutex)
 		frame_wake()
 	}
+}
+
+@(private)
+pic_cache_path :: proc(url: string) -> string {
+	digest: [32]u8
+	hash.hash(.SHA256, url, digest[:])
+	key, _ := hex.encode(digest[:], context.temp_allocator)
+	return fmt.tprintf("%s/profile-%s.bin", media_cache_dir(), key)
+}
+
+// Share the encrypted media cache and its clear action. Refresh mutable
+// URLs after a day; retain the last image when its server is unavailable.
+@(private)
+pic_load :: proc(url: string) -> []u8 {
+	path := pic_cache_path(url)
+	cached: []u8
+	if sealed, err := os.read_entire_file(path, context.temp_allocator); err == nil {
+		cached, _ = vault_open_blob(sealed)
+		if len(cached) > 0 {
+			if info, err := os.stat(path, context.temp_allocator); err == nil && time.since(info.modification_time) < 24 * time.Hour {
+				return cached
+			}
+		}
+	}
+	state, data, stderr, err := os.process_exec(
+		{command = {"curl", "-sfL", "--max-time", "15", "--", url}}, context.allocator,
+	)
+	defer delete(stderr)
+	if err != nil || state.exit_code != 0 || len(data) == 0 {
+		delete(data)
+		return cached
+	}
+	delete(cached)
+	if sealed, ok := vault_seal_blob(data, context.temp_allocator); ok {
+		os.make_directory(media_cache_dir())
+		tmp := fmt.tprintf("%s.tmp", path)
+		if os.write_entire_file(tmp, sealed, {.Read_User, .Write_User}) == nil {
+			if os.rename(tmp, path) != nil { os.remove(tmp) }
+		}
+	}
+	return data
 }
 
 start_pic_worker :: proc() {

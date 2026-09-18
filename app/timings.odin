@@ -38,9 +38,11 @@ timing_p95 :: proc(op: marmot.Performance_Operation) -> string {
 
 @(private)
 timings_json :: proc(client: ^marmot.Client) -> string {
+	local_report := local_timings_json()
+	defer delete(local_report)
 	snapshot: ^marmot.Performance_Snapshot
 	if client == nil || marmot.performance_snapshot(client, &snapshot) != .OK {
-		return strings.clone(tr("Couldn't load timings. Please try again."))
+		return strings.concatenate({"{\n  \"performance\": null,\n  \"linux_performance\": ", local_report, "\n}"})
 	}
 	defer marmot.performance_snapshot_free(snapshot)
 	report := timing_snapshot_json(snapshot)
@@ -53,7 +55,7 @@ timings_json :: proc(client: ^marmot.Client) -> string {
 	// Readiness is configuration/consent status, not proof of server receipt.
 	b := strings.builder_make()
 	strings.write_string(&b, "{\n")
-	fmt.sbprintf(&b, "  \"diagnostics_consent\": \"%v\",\n  \"otlp_export\": \"%v\",\n  \"performance\": %s\n", status.consent, status.telemetry, report)
+	fmt.sbprintf(&b, "  \"diagnostics_consent\": \"%v\",\n  \"otlp_export\": \"%v\",\n  \"performance\": %s,\n  \"linux_performance\": %s\n", status.consent, status.telemetry, report, local_report)
 	strings.write_string(&b, "}")
 	return strings.to_string(b)
 }

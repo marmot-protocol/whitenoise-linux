@@ -4,8 +4,8 @@
 // A link only ever names the fetch: owner, repo and number are read
 // out of the URL and rebuilt into an api.github.com path, so a message
 // cannot point this at a host of its own choosing. The card falls back
-// to "owner/repo #12" when the fetch fails, and its "Open in browser"
-// button goes through the same external-link guard a text link does.
+// to "owner/repo #12" when the fetch fails. Clicking it goes through
+// the same external-link guard a text link does.
 //
 // ponytail: cards are cached for the session and never refetched, and
 // the unauthenticated API allows 60 calls an hour. Persist the cache
@@ -195,41 +195,43 @@ gh_card :: proc(id: u32, ref: Gh_Ref) {
 
 	if clay.UI(clay.ID("GhCard", id))(
 	{
-		layout = {sizing = {width = clay.SizingFixed(att_w())}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(12), childGap = 6},
+		layout = {sizing = {width = clay.SizingFixed(att_w(360))}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(14), childGap = 12},
 		backgroundColor = PLATE,
-		cornerRadius = rr(10),
-		border = {color = CARD_BORDER, width = bw()},
+		cornerRadius = rr(12),
+		border = {color = hovered() ? fade(badge, 0.5) : CARD_BORDER, width = bw()},
 	},
 	) {
-		if clay.UI(clay.ID("GhCardHead", id))({layout = {childGap = 8, childAlignment = {y = .Center}}}) {
-			clay.Text(ICON_CODE, {fontId = FONT_ICON, fontSize = 11, textColor = TEXT_LO})
-			eyebrow(ref.pull ? "PULL REQUEST" : "ISSUE")
+		if hovered() { link_hover = ref.url }
+		if clay.UI(clay.ID("GhCardHead", id))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, childAlignment = {y = .Center}}}) {
+			if clay.UI(clay.ID("GhCardIcon", id))({layout = {sizing = {clay.SizingFixed(28), clay.SizingFixed(28)}, childAlignment = {x = .Center, y = .Center}}, backgroundColor = fade(badge, 0.1), cornerRadius = rr(8)}) {
+				clay.Text(ref.pull ? "\uf407" : ICON_INFO, {fontId = FONT_ICON, fontSize = 15, textColor = badge})
+			}
+			if clay.UI(clay.ID("GhCardRepo", id))({layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 3}, clip = {horizontal = true}}) {
+				kind := ref.pull ? tr("PULL REQUEST") : tr("ISSUE")
+				clay.Text(fmt.tprintf("%s  #%s", kind, ref.num), {fontId = FONT_BODY, fontSize = 9, textColor = TEXT_DIM, letterSpacing = 1, wrapMode = .None})
+				clay.Text(fmt.tprintf("%s/%s", ref.owner, ref.repo), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM, wrapMode = .None})
+			}
 			if len(card.state) > 0 {
 				if clay.UI(clay.ID("GhCardState", id))(
-				{layout = {padding = {left = 7, right = 7, top = 1, bottom = 1}}, backgroundColor = fade(badge, 0.15), cornerRadius = rr(9), border = {color = badge, width = bw()}},
+				{layout = {padding = {left = 8, right = 8, top = 4, bottom = 4}}, backgroundColor = fade(badge, 0.12), cornerRadius = rr(9)},
 				) {
-					clay.Text(card.state, {fontId = FONT_BODY, fontSize = 11, textColor = badge})
+					clay.Text(card.state, {fontId = FONT_TITLE, fontSize = 10, textColor = badge, wrapMode = .None})
 				}
 			}
 		}
-		// Until the fetch lands there is no title, so the reference is
-		// the headline: a card that never fills in still beats the URL.
-		// clay.Text, not body_text: the title needs no selection and no
-		// emoji tiles, and a nested body_line would mint BodyLine ids
-		// inside the ones the body it sits in already uses.
+		// The reference remains useful while metadata is unavailable.
 		title := len(card.title) > 0 ? card.title : fmt.tprintf("%s/%s #%s", ref.owner, ref.repo, ref.num)
-		clay.Text(title, {fontId = FONT_TITLE, fontSize = 14, textColor = TEXT})
-		sub := len(card.author) > 0 ? fmt.tprintf("%s/%s #%s by %s", ref.owner, ref.repo, ref.num, card.author) : fmt.tprintf("%s/%s #%s", ref.owner, ref.repo, ref.num)
-		clay.Text(sub, {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO})
-		// Hovering binds link_hover, so the click takes the same path
-		// as a text link: the external-link guard, then xdg-open.
-		if clay.UI(clay.ID("GhCardOpen", id))(
-		{layout = {padding = {left = 10, right = 10, top = 5, bottom = 5}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(7), border = {color = FIELD_BORDER, width = bw()}},
-		) {
-			if hovered() {
-				link_hover = ref.url
+		clay.Text(title, {fontId = FONT_TITLE, fontSize = 15, textColor = TEXT})
+		if clay.UI(clay.ID("GhCardFoot", id))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, childAlignment = {y = .Center}}}) {
+			if clay.UI(clay.ID("GhCardAuthor", id))({layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}}) {
+				if len(card.author) > 0 {
+					clay.Text(fmt.tprintf("@%s", card.author), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM, wrapMode = .None})
+				}
 			}
-			clay.Text(tr("Open in browser"), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+			if clay.UI(clay.ID("GhCardOpen", id))({layout = {padding = {top = 3, bottom = 3}, childGap = 6, childAlignment = {y = .Center}}}) {
+				clay.Text(tr("Open in browser"), {fontId = FONT_BODY, fontSize = 10, textColor = TEXT_DIM, wrapMode = .None})
+				clay.Text("\uf08e", {fontId = FONT_ICON, fontSize = 10, textColor = TEXT_DIM})
+			}
 		}
 	}
 }

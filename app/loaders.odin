@@ -29,6 +29,8 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 
 @(private)
 timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Timeline_Page) {
+	timing_start := time.tick_now()
+	defer local_timing_end(.timeline_apply, timing_start)
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 	ui.tl_has_more = page.has_more_before
 	ui.tl_has_after = page.has_more_after
@@ -539,6 +541,8 @@ record_json :: proc(record: ^marmot.Timeline_Message_Record, allocator := contex
 // Archived chats: same call as the rail with include_archived, kept
 // to only the archived rows.
 load_archived :: proc(client: ^marmot.Client, ui: ^Ui_State) {
+	timing_start := time.tick_now()
+	defer local_timing_end(.archived_load, timing_start)
 	rows: ^marmot.Chat_List_Row_List
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 	if marmot.chat_list(client, account, true, &rows) != .OK {
@@ -557,12 +561,13 @@ load_archived :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 	chats_replace(&ui.archived, fresh)
 }
 
-// Contacts sorted case-insensitively by name for the sidebar; key is
+// Named contacts first, then unresolved ids, each case-insensitive; key is
 // the lowercased name (also the filter haystack), idx the ui.contacts
 // position. Temp-allocated, rebuilt per frame.
 Contact_Order :: struct {
 	key: string,
 	idx: int,
+	unnamed: bool,
 }
 
 // Local nickname when set, else the published/directory name.
@@ -576,9 +581,11 @@ contact_label :: proc(ui: ^Ui_State, c: Contact_Ui) -> string {
 contact_order :: proc(ui: ^Ui_State) -> []Contact_Order {
 	rows := make([]Contact_Order, len(ui.contacts), context.temp_allocator)
 	for contact, i in ui.contacts {
-		rows[i] = {strings.to_lower(contact_label(ui, contact), context.temp_allocator), i}
+		label := contact_label(ui, contact)
+		rows[i] = {strings.to_lower(label, context.temp_allocator), i, label == "" || label == short_hex(contact.id_hex)}
 	}
 	slice.sort_by(rows, proc(a, b: Contact_Order) -> bool {
+		if a.unnamed != b.unnamed { return !a.unnamed }
 		return a.key < b.key
 	})
 	return rows
@@ -593,6 +600,8 @@ npub_tail :: proc(npub: string) -> string {
 }
 
 load_contacts :: proc(client: ^marmot.Client, ui: ^Ui_State) {
+	timing_start := time.tick_now()
+	defer local_timing_end(.contacts_load, timing_start)
 	clear(&ui.contacts)
 	clear(&ui.dm_peer)
 	indices := make(map[string]int, allocator = context.temp_allocator)
@@ -680,6 +689,8 @@ load_profile :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 	if ui.profile.loaded {
 		return
 	}
+	timing_start := time.tick_now()
+	defer local_timing_end(.profile_load, timing_start)
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 
 	npub: cstring
