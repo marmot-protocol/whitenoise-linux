@@ -54,7 +54,9 @@ pending_row :: proc(index: u32, ui: ^Ui_State, p: Pending_Send) {
 			) {}
 		}
 
-		body_text(0xF00000 + index * 8, p.body, 14, body_color, wrap_w = body_wrap_w())
+		if !message_excerpt(0xF00000 + index * 8, p.body, body_color) {
+			body_text(0xF00000 + index * 8, p.body, 14, body_color, wrap_w = body_wrap_w())
+		}
 		if can_delete {
 			if clay.UI(clay.ID("PendingDeleteEnd", index))({layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(4)}) {
 				clay.Text(tr("Delete for me"), {fontId = FONT_BODY, fontSize = 11, textColor = DANGER})
@@ -890,7 +892,8 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 		// Bodies draw a card in place of every GitHub link they hold.
 		gh_cards_on = true
 
-		if len(msg.blocks) == 0 && len(msg.body) > 0 {
+		cropped := !msg.deleted && message_excerpt(index * 4096, msg.body, TEXT)
+		if !cropped && len(msg.blocks) == 0 && len(msg.body) > 0 {
 			body_text(index * 4096, msg.body, 14, TEXT, true)
 		}
 
@@ -905,7 +908,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 			clay.Text(tr("This message was deleted"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_LO})
 		}
 
-		md_blocks(msg.blocks[:], index * 4096, true)
+		if !cropped { md_blocks(msg.blocks[:], index * 4096, true) }
 
 		gh_cards_on = false
 
@@ -1590,9 +1593,10 @@ md_blocks :: proc(blocks: []Md_Block_Ui, id_base: u32, selectable := false, wrap
 // from measured widths, like the slint renderer's greedy wrapper.
 // `wrap_w` forces wrapping at that width for non-selectable bodies
 // whose container clay can't wrap into (reply previews, edit history).
-body_text :: proc(id: u32, text: string, font_size: u16, color: clay.Color, selectable := false, wrap_w: f32 = 0) {
+body_text :: proc(id: u32, text: string, font_size: u16, color: clay.Color, selectable := false, wrap_w: f32 = 0, max_lines: int = max(int)) {
 	wrap := wrap_w > 0 ? wrap_w : (selectable ? body_wrap_w() : 0)
-	for line in wrapped_lines(text, wrap, font_size, gh_cards_on ? .Cards : .Text) {
+	lines := wrapped_lines(text, wrap, font_size, gh_cards_on ? .Cards : .Text)
+	for line in lines[:min(len(lines), max_lines)] {
 		line_id := id * 8 + line.index
 		if selectable {
 			sel_register(line_id, id, line.start, text[line.start:line.end], text, font_size)
@@ -1601,6 +1605,23 @@ body_text :: proc(id: u32, text: string, font_size: u16, color: clay.Color, sele
 			body_line(line_id, text[line.start:line.end], font_size, color)
 		}
 	}
+}
+
+@(private)
+MESSAGE_LINES :: 6
+
+// Long bodies use a text excerpt; the popup retains the original formatting.
+@(private)
+message_excerpt :: proc(id: u32, text: string, color: clay.Color) -> bool {
+	if len(wrapped_lines(text, body_wrap_w(), BODY_FS)) <= MESSAGE_LINES { return false }
+	cards := gh_cards_on
+	gh_cards_on = false
+	body_text(id, text, BODY_FS, color, true, max_lines = MESSAGE_LINES)
+	gh_cards_on = cards
+	if clay.UI(clay.ID("MessageMore", id))({layout = {padding = {top = 4, bottom = 4}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(4)}) {
+		clay.Text(tr("Read more"), {fontId = FONT_BODY, fontSize = 12, textColor = ACCENT})
+	}
+	return true
 }
 
 // Text width available to a message body: the timeline column from the

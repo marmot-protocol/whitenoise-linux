@@ -94,12 +94,13 @@ layout_arena_grows :: proc(t: ^testing.T) {
 
 	init_layout(&memory, 32768, {800, 600})
 	clay.BeginLayout()
-	pending_row(0, &ui, p)
+	body_text(0, body, BODY_FS, TEXT)
 	clay.EndLayout(0)
 	testing.expect(t, layout_overflow)
 
 	init_layout(&memory, clay.GetMaxElementCount() * 2, {800, 600})
 	clay.BeginLayout()
+	body_text(0, body, BODY_FS, TEXT)
 	pending_row(0, &ui, p)
 	clay.EndLayout(0)
 	testing.expect(t, !layout_overflow)

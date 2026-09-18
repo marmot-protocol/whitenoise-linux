@@ -1116,6 +1116,9 @@ msgstr ""
 msgid "Members"
 msgstr "Mitglieder"
 
+msgid "Message"
+msgstr "Nachricht"
+
 #, fuzzy
 msgid "Message copied"
 msgstr "Bild kopiert"
@@ -1467,6 +1470,9 @@ msgstr "Vorlesen"
 
 msgid "Read messages on your device in 31 languages. Downloads about 145 MB on first use."
 msgstr "Lies Nachrichten auf deinem Gerät in 31 Sprachen vor. Beim ersten Mal werden etwa 145 MB heruntergeladen."
+
+msgid "Read more"
+msgstr "Mehr lesen"
 
 msgid "Reading aloud..."
 msgstr "Wird vorgelesen..."

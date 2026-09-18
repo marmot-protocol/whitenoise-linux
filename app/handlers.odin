@@ -118,6 +118,7 @@ active_buf :: proc(ui: ^Ui_State) -> ^[dynamic]u8 {
 }
 
 handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if preview_shown { return }
 	// A shared theme is taken only on the tap: adopt_theme writes it
 	// under the data dir and returns its slot, which then applies.
 	for msg, i in ui.messages {
@@ -215,6 +216,10 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		// Tap a failed optimistic row to retry the send.
 		for &p, i in ui.pending {
+			if clay.PointerOver(clay.ID("MessageMore", 0xF00000 + u32(i) * 8)) {
+				preview_message(p.body)
+				return
+			}
 			if !pending_can_delete(p, time.tick_now()) {
 				continue
 			}
@@ -545,6 +550,10 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// Per-message row actions.
 	if mouse_released() {
 		for msg, i in ui.messages {
+			if clay.PointerOver(clay.ID("MessageMore", u32(i) * 4096)) {
+				preview_message(msg.body, msg.blocks[:])
+				return
+			}
 			if len(msg.id) == 0 {
 				continue
 			}

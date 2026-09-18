@@ -1116,6 +1116,9 @@ msgstr ""
 msgid "Members"
 msgstr "メンバー"
 
+msgid "Message"
+msgstr "メッセージ"
+
 #, fuzzy
 msgid "Message copied"
 msgstr "画像をコピーしました"
@@ -1467,6 +1470,9 @@ msgstr "読み上げ"
 
 msgid "Read messages on your device in 31 languages. Downloads about 145 MB on first use."
 msgstr "31言語のメッセージを端末上で読み上げます。初回に約145 MBをダウンロードします。"
+
+msgid "Read more"
+msgstr "続きを読む"
 
 msgid "Reading aloud..."
 msgstr "読み上げています..."

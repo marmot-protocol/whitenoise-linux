@@ -22,6 +22,7 @@ Preview_Kind :: enum {
 	Video,
 	Pdf,
 	Text,
+	Message,
 	Code,
 	Hex,
 	Font,
@@ -62,6 +63,7 @@ Preview :: struct {
 	vid_shared: bool, // timeline cache owns the view and its bytes
 	pdf:    ^Pdf_View,
 	txt:    ^Txt_View,
+	message_blocks: [dynamic]Md_Block_Ui,
 	code:   ^Code_View,
 	font:   ^Ttf_View,
 	slides: [dynamic]Slide, // Slides
@@ -77,6 +79,23 @@ img_hover: Img_Ref
 
 preview: Preview
 preview_shown: bool
+
+@(private)
+preview_message :: proc(text: string, blocks: []Md_Block_Ui = nil) {
+	preview_close()
+	preview = {kind = .Message, name = strings.clone(tr("Message")), bytes = clone_bytes(transmute([]u8)text)}
+	for block in blocks {
+		owned := block
+		owned.text = strings.clone(block.text)
+		owned.cells = make([][]string, len(block.cells))
+		for row, r in block.cells {
+			owned.cells[r] = make([]string, len(row))
+			for cell, c in row { owned.cells[r][c] = strings.clone(cell) }
+		}
+		append(&preview.message_blocks, owned)
+	}
+	preview_shown = true
+}
 
 // Dispatch by extension, mirroring the timeline branches. bytes
 // ownership transfers here.
@@ -389,6 +408,7 @@ preview_close :: proc() {
 		delete(s.name)
 	}
 	delete(preview.slides)
+	blocks_free(preview.message_blocks)
 	if !preview.vid_shared { delete(preview.bytes) }
 	delete(preview.name)
 	preview = {}
@@ -407,7 +427,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 	}
 	if clay.UI(clay.ID("PvModal"))(
 	{
-		layout = {layoutDirection = .TopToBottom, sizing = {width = full ? clay.SizingFixed(f32(rl.GetScreenWidth()) / UI_ZOOM) : clay.SizingFit({min = 360}), height = full ? clay.SizingFixed(max_h) : clay.SizingFit({max = max_h})}, padding = clay.PaddingAll(full ? 0 : 14), childGap = full ? 0 : 10},
+		layout = {layoutDirection = .TopToBottom, sizing = {width = full ? clay.SizingFixed(f32(rl.GetScreenWidth()) / UI_ZOOM) : clay.SizingFit({min = min(f32(360), fit_w(640))}), height = full ? clay.SizingFixed(max_h) : clay.SizingFit({max = max_h})}, padding = clay.PaddingAll(full ? 0 : 14), childGap = full ? 0 : 10},
 		floating = {attachTo = .Root, zIndex = 12, offset = {0, full ? 0 : rise(clay.ID("PvModal"))}, attachment = {element = .CenterCenter, parent = .CenterCenter}},
 		backgroundColor = full ? clay.Color{0, 0, 0, 255} : CARD,
 		cornerRadius = rr(full ? 0 : 12),
@@ -422,6 +442,9 @@ preview_modal :: proc(ui: ^Ui_State) {
 		}) {
 			clay.Text(arc_short_name(slides ? preview.slides[preview.slide].name : preview.name), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
 			if clay.UI(clay.ID("PvHeadPad"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+			if preview.kind == .Message && ui.prefs.tts_enabled {
+				micro_button("PvRead", "Read aloud")
+			}
 			if preview.kind == .Image || (slides && preview.slides[preview.slide].tex != nil) {
 				if clay.UI(clay.ID("PvCopy"))(
 				{layout = {padding = {left = 10, right = 10, top = 5, bottom = 5}}, backgroundColor = hovered() ? HOVER : ROW_BG, cornerRadius = rr(8)},
@@ -453,7 +476,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 			// Height capped below the modal's own cap, or the fit sizing
 			// matches the content and the scrollbar never engages.
 			layout = {layoutDirection = .TopToBottom, sizing = {width = full ? clay.SizingGrow() : clay.SizingFit({}), height = full ? clay.SizingGrow() : clay.SizingFit({max = max_h - PV_CHROME})}, childAlignment = {x = full ? .Center : .Left, y = full ? .Center : .Top}, childGap = 10},
-			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+			clip = {horizontal = preview.kind == .Message, vertical = true, childOffset = clay.GetScrollOffset()},
 		},
 		) {
 		switch preview.kind {
@@ -560,6 +583,16 @@ preview_modal :: proc(ui: ^Ui_State) {
 				}
 			}
 
+		case .Message:
+			clear(&sel_lines)
+			if clay.UI(clay.ID("PvMessage"))({layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(fit_w(640, 32))}, childGap = 3}}) {
+				if len(preview.message_blocks) > 0 {
+					md_blocks(preview.message_blocks[:], 0x7f000000, true, fit_w(640, 32))
+				} else {
+					body_text(0x7f000000, string(preview.bytes), BODY_FS, TEXT, true, fit_w(640, 32))
+				}
+			}
+
 		case .Text:
 			if clay.UI(clay.ID("PvText"))(
 			{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(fit_w(480))}, padding = clay.PaddingAll(10), childGap = 6}, backgroundColor = PLATE, cornerRadius = rr(8)},
@@ -659,6 +692,10 @@ handle_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if rl.IsKeyPressed(.ESCAPE) {
 		preview_close()
+		return
+	}
+	if preview.kind == .Message && clicked("PvRead") {
+		tts_read(ui, string(preview.bytes))
 		return
 	}
 	if preview.kind == .Video {

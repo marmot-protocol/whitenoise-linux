@@ -1023,6 +1023,9 @@ msgstr ""
 msgid "Members"
 msgstr ""
 
+msgid "Message"
+msgstr ""
+
 msgid "Message copied"
 msgstr ""
 
@@ -1348,6 +1351,9 @@ msgid "Read aloud"
 msgstr ""
 
 msgid "Read messages on your device in 31 languages. Downloads about 145 MB on first use."
+msgstr ""
+
+msgid "Read more"
 msgstr ""
 
 msgid "Reading aloud..."
