@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/screenshot.png" alt="White Noise Linux" width="720">
+  <img src="assets/screenshot.png" alt="White Noise Linux showing a fictional marmot group chat with replies and reactions" width="960">
 </p>
 
 <h1 align="center">White Noise Linux</h1>
