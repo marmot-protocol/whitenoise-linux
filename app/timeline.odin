@@ -1104,12 +1104,6 @@ Inline_Seg :: struct {
 	fx:   u8, // glyph-effect bits from {name} markup (effects.odin)
 }
 
-// Render one line of body text with emoji as Twemoji tiles: split into
-// text runs and emoji clusters (VS16/ZWJ ride along; a cluster the
-// sheet misses falls back per rune, then to raw text). An emoji-only
-// line draws bigger tiles, like the slint body.
-// ponytail: mixed emoji+text lines lose clay's text wrapping; port the
-// slint run/line model if long mixed lines become common.
 // Split text into text runs and emoji clusters (VS16/ZWJ ride along;
 // a cluster the sheet misses falls back per rune, then raw text).
 inline_segs :: proc(text: string) -> [dynamic]Inline_Seg {
@@ -1404,16 +1398,14 @@ compose_line :: proc(i: u32, text: string, ls, le, lo, hi, head: int) {
 	}
 }
 
-// Render one line of body text with emoji as Twemoji tiles. An
-// emoji-only line draws bigger tiles, like the slint body.
-// ponytail: mixed emoji+text lines lose clay's text wrapping; port the
-// slint run/line model if long mixed lines become common.
+// Render a pre-wrapped line with the body's measured emoji tile size.
 // `sel` is the selected byte range inside this line ({-1,-1} = none,
 // bodysel.odin), drawn as a highlighted middle span like the composer.
 // `boxed` wraps the line in an element hit-testing can measure; the
 // caller sets it for pre-wrapped (selectable) bodies only, because an
 // element around a plain Text would take clay's own wrapping away.
-body_line :: proc(id: u32, text: string, font_size: u16, color: clay.Color, sel := [2]int{-1, -1}, boxed := false) {
+body_line :: proc(id: u32, text: string, font_size: u16, color: clay.Color, sel := [2]int{-1, -1}, boxed := false, tile_px: f32 = 0) {
+	tile_px := tile_px > 0 ? tile_px : body_tile_size(text, font_size)
 	if text == "" {
 		if clay.UI(clay.ID("BodyLine", id))({layout = {sizing = {height = clay.SizingFixed(f32(font_size))}}}) {}
 		return
@@ -1434,16 +1426,16 @@ body_line :: proc(id: u32, text: string, font_size: u16, color: clay.Color, sel 
 	if sel[0] >= 0 {
 		if clay.UI(clay.ID("BodyLine", id))({layout = {childGap = 2, childAlignment = {y = .Center}}}) {
 			if sel[0] > 0 {
-				render_segs(id * 4, inline_segs(text[:sel[0]])[:], font_size, color, f32(font_size) + 4, true)
+				render_segs(id * 4, inline_segs(text[:sel[0]])[:], font_size, color, tile_px, true)
 			}
 			if clay.UI(clay.ID("BodySel", id))({layout = {childGap = 2, childAlignment = {y = .Center}}, backgroundColor = ACCENT}) {
 				// chips inside the highlight too: a link that turned
 				// into a card must not fall back to its URL the moment
 				// a selection covers it.
-				render_segs(id * 4 + 1, inline_segs(text[sel[0]:sel[1]])[:], font_size, ON_ACCENT, f32(font_size) + 4, true)
+				render_segs(id * 4 + 1, inline_segs(text[sel[0]:sel[1]])[:], font_size, ON_ACCENT, tile_px, true)
 			}
 			if sel[1] < len(text) {
-				render_segs(id * 4 + 2, inline_segs(text[sel[1]:])[:], font_size, color, f32(font_size) + 4, true)
+				render_segs(id * 4 + 2, inline_segs(text[sel[1]:])[:], font_size, color, tile_px, true)
 			}
 		}
 		return
@@ -1461,16 +1453,6 @@ body_line :: proc(id: u32, text: string, font_size: u16, color: clay.Color, sel 
 		}
 		return
 	}
-
-	emoji_only := true
-	tiles := 0
-	for seg in segs {
-		if seg.tex == nil && len(strings.trim_space(seg.text)) > 0 {
-			emoji_only = false
-		}
-		tiles += seg.tex != nil ? 1 : 0
-	}
-	tile_px := emoji_only && tiles <= 6 ? f32(28) : f32(font_size) + 4
 
 	if clay.UI(clay.ID("BodyLine", id))({layout = {childGap = 2, childAlignment = {y = .Center}}}) {
 		render_segs(id, segs[:], font_size, color, tile_px, true)
@@ -1595,14 +1577,15 @@ md_blocks :: proc(blocks: []Md_Block_Ui, id_base: u32, selectable := false, wrap
 // whose container clay can't wrap into (reply previews, edit history).
 body_text :: proc(id: u32, text: string, font_size: u16, color: clay.Color, selectable := false, wrap_w: f32 = 0, max_lines: int = max(int)) {
 	wrap := wrap_w > 0 ? wrap_w : (selectable ? body_wrap_w() : 0)
+	tile_px := body_tile_size(text, font_size)
 	lines := wrapped_lines(text, wrap, font_size, gh_cards_on ? .Cards : .Text)
 	for line in lines[:min(len(lines), max_lines)] {
 		line_id := id * 8 + line.index
 		if selectable {
-			sel_register(line_id, id, line.start, text[line.start:line.end], text, font_size)
-			body_line(line_id, text[line.start:line.end], font_size, color, sel_range(id, line.start, line.end - line.start), true)
+			sel_register(line_id, id, line.start, text[line.start:line.end], text, font_size, tile_px)
+			body_line(line_id, text[line.start:line.end], font_size, color, sel_range(id, line.start, line.end - line.start), true, tile_px)
 		} else {
-			body_line(line_id, text[line.start:line.end], font_size, color)
+			body_line(line_id, text[line.start:line.end], font_size, color, tile_px = tile_px)
 		}
 	}
 }
@@ -1647,14 +1630,28 @@ att_w :: proc(w: f32 = 320) -> f32 {
 	return min(w, body_wrap_w())
 }
 
-// Greedy break: the longest run of whole words from `at` that fits
-// `width`, or one over-long word. Widths are measured with the body
-// font, so emoji tiles and mention chips (drawn wider) can push a line
-// slightly over, the same estimate the slint wrapper makes.
-wrap_break :: proc(text: string, at, end: int, width: f32, font_size: u16, mode: Wrap_Mode = .Text) -> int {
+// Pick emoji size for the whole body, so a short wrapped tail does
+// not grow larger than the tiles used to measure its line.
+@(private)
+body_tile_size :: proc(text: string, font_size: u16) -> f32 {
+	tiles := 0
+	it := utf8.decode_grapheme_iterator_make(text)
+	for cluster, _ in utf8.decode_grapheme_iterate(&it) {
+		if text_emoji(cluster) != nil {
+			tiles += 1
+			if tiles > 6 { return f32(font_size) + 4 }
+		} else if len(strings.trim_space(cluster)) > 0 {
+			return f32(font_size) + 4
+		}
+	}
+	return tiles > 0 ? 28 : f32(font_size) + 4
+}
+
+// Greedy break at whole words, or whole graphemes in an over-long word.
+wrap_break :: proc(text: string, at, end: int, width: f32, font_size: u16, mode: Wrap_Mode = .Text, tile_px: f32 = 0) -> int {
 	// Only measure the current line. Measuring the whole next word
 	// rescans a long unbroken suffix once per line (quadratic work).
-	fit := rune_fit(text, at, end, width, font_size, mode)
+	fit := rune_fit(text, at, end, width, font_size, mode, tile_px)
 	if fit == end || text[fit] == ' ' {
 		return fit
 	}
@@ -1684,18 +1681,22 @@ wrap_break :: proc(text: string, at, end: int, width: f32, font_size: u16, mode:
 
 // Longest prefix of [at, end) that fits `width`, keeping emoji
 // graphemes intact and returning at least one cluster.
-rune_fit :: proc(text: string, at, end: int, width: f32, font_size: u16, mode: Wrap_Mode = .Text) -> int {
+rune_fit :: proc(text: string, at, end: int, width: f32, font_size: u16, mode: Wrap_Mode = .Text, tile_px: f32 = 0) -> int {
 	pen: f32 = 0
+	previous_emoji := false
 	it := utf8.decode_grapheme_iterator_make(text[at:end])
 	for cluster, grapheme in utf8.decode_grapheme_iterate(&it) {
 		i := at + grapheme.byte_index
 		adv := rl.MeasureTextLine(FONT_BODY, font_size, cluster, 0).x
-		// Draft emoji tiles are 18px, wider than the 14px body font.
-		if mode == .Compose && text_emoji(cluster) != nil { adv = 18 }
+		emoji := text_emoji(cluster) != nil
+		if emoji { adv = mode == .Compose ? 18 : (tile_px > 0 ? tile_px : f32(font_size) + 4) }
+		// Body segments have a 2px gap; plain graphemes share one run.
+		if mode != .Compose && i > at && (emoji || previous_emoji) { adv += 2 }
 		if i > at && pen + adv > width {
 			return i
 		}
 		pen += adv
+		previous_emoji = emoji
 	}
 	return end
 }

@@ -24,6 +24,7 @@ Sel_Line :: struct {
 	text:  string,
 	block_text: string,
 	size:  u16,
+	tile_px: f32,
 }
 
 sel_lines: [dynamic]Sel_Line
@@ -35,8 +36,8 @@ sel_dragging: bool
 @(private)
 Selection_Unit :: enum { Character, Word, Sentence }
 
-sel_register :: proc(id, block: u32, start: int, text, block_text: string, size: u16) {
-	append(&sel_lines, Sel_Line{id, block, start, text, block_text, size})
+sel_register :: proc(id, block: u32, start: int, text, block_text: string, size: u16, tile_px: f32) {
+	append(&sel_lines, Sel_Line{id, block, start, text, block_text, size, tile_px})
 }
 
 // The part of `line` that is selected, as byte offsets into the line.
@@ -82,7 +83,7 @@ sel_offset_in :: proc(line: Sel_Line, mx, my: f32) -> (offset: int, over: bool) 
 	case mx >= b.x + b.width:
 		return line.start + len(line.text), true
 	}
-	return line.start + hit_plain(line.text, mx - b.x, line.size), true
+	return line.start + hit_plain(line.text, mx - b.x, line.size, line.tile_px), true
 }
 
 // The line under the pointer, preferring the block already being

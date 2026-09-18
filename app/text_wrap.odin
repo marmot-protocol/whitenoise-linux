@@ -37,6 +37,7 @@ wrap_clear :: proc() {
 wrapped_lines :: proc(text: string, width: f32, size: u16, mode: Wrap_Mode = .Text) -> []Wrap_Line {
 	key := Wrap_Key{text, width, UI_SCALE, size, mode}
 	if lines, hit := wrap_cache[key]; hit { return lines }
+	tile_px := mode == .Compose ? f32(18) : body_tile_size(text, size)
 	lines := make([dynamic]Wrap_Line, context.temp_allocator)
 	start := 0
 	i: u32
@@ -62,7 +63,7 @@ wrapped_lines :: proc(text: string, width: f32, size: u16, mode: Wrap_Mode = .Te
 				}
 			}
 			for at < card_at {
-				cut := width > 0 ? wrap_break(text, at, card_at, width, size) : card_at
+				cut := width > 0 ? wrap_break(text, at, card_at, width, size, mode, tile_px) : card_at
 				append(&lines, Wrap_Line{at, cut, i})
 				i += 1
 				at = cut
