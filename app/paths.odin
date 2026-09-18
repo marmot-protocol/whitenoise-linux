@@ -10,7 +10,7 @@
 //   usr/share/whitenoise-linux/fonts/*.ttf
 //
 // A dev build has no such tree, so it falls back to the vendor dir
-// build.sh staged next to the sources.
+// scripts/build.sh staged next to the sources.
 package main
 
 import "core:os"

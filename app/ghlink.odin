@@ -100,6 +100,7 @@ gh_key :: proc(ref: Gh_Ref, allocator := context.temp_allocator) -> string {
 
 @(private = "file")
 gh_worker :: proc(key: string) {
+	context.allocator = reload_allocator()
 	defer frame_wake()
 	url := fmt.aprintf("%s%s", GH_API, key)
 	defer delete(url)
@@ -179,7 +180,7 @@ gh_card :: proc(id: u32, ref: Gh_Ref) {
 	if !cached {
 		owned := strings.clone(key)
 		gh_cards[owned] = Gh_Card{}
-		thread.create_and_start_with_poly_data(owned, gh_worker, self_cleanup = true)
+		append(&send_threads, thread.create_and_start_with_poly_data(owned, gh_worker))
 	}
 
 	badge := ACCENT

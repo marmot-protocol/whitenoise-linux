@@ -88,6 +88,7 @@ search_request :: proc(ui: ^Ui_State, client: ^marmot.Client, kind: Search_Kind)
 
 @(private)
 search_worker :: proc(t: ^thread.Thread) {
+	context.allocator = reload_allocator()
 	job := (^Search_Job)(t.data)
 	defer frame_wake()
 	defer free_all(context.temp_allocator)

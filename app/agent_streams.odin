@@ -119,6 +119,7 @@ agent_apply :: proc(p: ^Agent_Preview, update: ^marmot.Agent_Stream_Update) {
 
 @(private)
 agent_worker :: proc(t: ^thread.Thread) {
+	context.allocator = reload_allocator()
 	p := (^Agent_Preview)(t.data)
 	defer {
 		sync.lock(&p.mutex)

@@ -205,6 +205,7 @@ media_enqueue :: proc(client: ^marmot.Client, account, group: cstring, ref: ^mar
 
 @(private)
 media_worker :: proc(t: ^thread.Thread) {
+	context.allocator = reload_allocator()
 	job := (^Media_Job)(t.data)
 	defer free_all(context.temp_allocator)
 	defer {

@@ -78,11 +78,12 @@ set_profile_pic :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 		data       = data,
 		media_type = media_type,
 	}
-	thread.create_and_start(ppic_worker, self_cleanup = true)
+	append(&send_threads, thread.create_and_start(ppic_worker))
 }
 
 @(private = "file")
 ppic_worker :: proc() {
+	context.allocator = reload_allocator()
 	job := ppic_job
 	account := strings.clone_to_cstring(job.account, context.temp_allocator)
 	media := strings.clone_to_cstring(job.media_type, context.temp_allocator)

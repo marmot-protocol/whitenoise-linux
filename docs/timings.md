@@ -80,6 +80,6 @@ cannot establish compositor scanout, actual reading, recipient delivery,
 or whether another window obscures part of the app. Host milestones record
 success only on presentation; missing observations are not counted as failures.
 
-Run `./build.sh test` for report/percentile/viewport checks, and
+Run `just test` for report/percentile/viewport checks, and
 `build/smoke <fresh-empty-directory>` for real C snapshot and consent checks.
 The smoke test never starts the runtime or uploads telemetry.

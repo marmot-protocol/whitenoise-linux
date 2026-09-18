@@ -2,7 +2,7 @@
 // with what the viewer indexes, and posing has to actually move
 // vertices. Run: ODIN_ROOT=build/odin-root odin test app
 //
-// The fixtures are ufbx's own test data, which build.sh clones (and
+// The fixtures are ufbx's own test data, which scripts/build.sh clones (and
 // .gitignore keeps out of the tree), so each test skips when the
 // vendor dir isn't there rather than failing a fresh checkout.
 package main

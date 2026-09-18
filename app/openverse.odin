@@ -72,13 +72,14 @@ ov_search :: proc(ui: ^Ui_State) {
 	ov_err = ""
 	delete(ov_query)
 	ov_query = strings.clone(query)
-	thread.create_and_start(ov_worker, self_cleanup = true)
+	append(&send_threads, thread.create_and_start(ov_worker))
 }
 
 // One-shot worker: curl the search endpoint (-G --data-urlencode
 // handles the query escaping) and parse the results.
 @(private = "file")
 ov_worker :: proc() {
+	context.allocator = reload_allocator()
 	q := fmt.aprintf("q=%s", ov_query)
 	defer delete(q)
 	ps := fmt.aprintf("page_size=%d", OV_PAGE_SIZE)

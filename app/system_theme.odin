@@ -107,6 +107,7 @@ poll_system_theme :: proc(ui: ^Ui_State, now: f64) {
 	// ponytail: one read per second; use inotify if subsecond updates matter.
 	system_theme_next = now + 1
 	system_theme_worker = thread.create(proc(t: ^thread.Thread) {
+		context.allocator = reload_allocator()
 		system_theme_pending, _ = os.read_entire_file(system_theme_path, context.allocator)
 	})
 	thread.start(system_theme_worker)

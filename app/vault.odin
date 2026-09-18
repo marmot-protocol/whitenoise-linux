@@ -34,8 +34,10 @@ import "core:encoding/json"
 import "core:fmt"
 import "core:mem"
 import "core:os"
+import "core:strconv"
 import "core:strings"
 import "core:sync"
+import "core:sys/linux"
 
 VAULT_VERSION :: 1
 VAULT_SALT_LEN :: 16
@@ -98,6 +100,41 @@ Vault_Envelope :: struct {
 	kdf:            Kdf_Params,
 	nonce_hex:      string,
 	ciphertext_hex: string,
+}
+
+@(private)
+Vault_Unlock :: enum { Password, Dev_Cache }
+
+// Only dev builds accept the watcher's inherited memory file. Mark it
+// close-on-exec so media helpers and external commands cannot inherit it.
+@(private = "file")
+dev_vault_fd :: proc() -> linux.Fd {
+	when !#config(WN_DEV, false) { return -1 }
+	value, ok := strconv.parse_int(os.get_env("WN_DEV_VAULT_FD", context.temp_allocator))
+	if !ok || value < 3 || value > int(max(i32)) { return -1 }
+	fd := linux.Fd(value)
+	if _, err := linux.fcntl_get_seals(fd, .GET_SEALS); err != .NONE { return -1 }
+	FD_CLOEXEC :: linux.Fd(1)
+	if linux.fcntl_setfd(fd, .SETFD, FD_CLOEXEC) != .NONE { return -1 }
+	return fd
+}
+
+@(private = "file")
+dev_vault_store :: proc(v: ^Vault) {
+	fd := dev_vault_fd()
+	if fd < 0 { return }
+	// A missing or incomplete cache falls back to the password gate.
+	if linux.ftruncate(fd, 0) != .NONE { return }
+	if !v.unlocked { return }
+	// Salt binds the cached key to this vault generation. Authentication
+	// of vault.db still runs when loading it, including after a reset.
+	cache: [VAULT_SALT_LEN + VAULT_KEY_LEN]u8
+	defer mem.zero_slice(cache[:])
+	copy(cache[:VAULT_SALT_LEN], v.salt[:])
+	copy(cache[VAULT_SALT_LEN:], v.key[:])
+	if n, err := linux.pwrite(fd, cache[:], 0); err != .NONE || n != len(cache) {
+		linux.ftruncate(fd, 0)
+	}
 }
 
 vault_path :: proc(allocator := context.temp_allocator) -> string {
@@ -188,6 +225,7 @@ vault_persist :: proc(v: ^Vault) -> Vault_Err {
 		os.remove(tmp)
 		return .Io
 	}
+	dev_vault_store(v)
 	return .None
 }
 
@@ -210,7 +248,7 @@ vault_create :: proc(password: string) -> Vault_Err {
 }
 
 // Read $home/vault.db and decrypt it with `password`.
-vault_open :: proc(password: string) -> Vault_Err {
+vault_open :: proc(password: string, source: Vault_Unlock = .Password) -> Vault_Err {
 	bytes, read_err := os.read_entire_file(vault_path(), context.temp_allocator)
 	if read_err != nil {
 		return .Not_Found
@@ -235,8 +273,20 @@ vault_open :: proc(password: string) -> Vault_Err {
 	}
 
 	key: [VAULT_KEY_LEN]u8
-	derive_key(password, salt, env.kdf.m_cost, env.kdf.t_cost, env.kdf.p_cost, key[:])
 	defer mem.zero(&key, size_of(key))
+	if source == .Dev_Cache {
+		cache: [VAULT_SALT_LEN + VAULT_KEY_LEN]u8
+		defer mem.zero_slice(cache[:])
+		fd := dev_vault_fd()
+		if fd < 0 { return .Wrong_Password }
+		n, err := linux.pread(fd, cache[:], 0)
+		if err != .NONE || n != len(cache) || string(cache[:VAULT_SALT_LEN]) != string(salt) {
+			return .Wrong_Password
+		}
+		copy(key[:], cache[VAULT_SALT_LEN:])
+	} else {
+		derive_key(password, salt, env.kdf.m_cost, env.kdf.t_cost, env.kdf.p_cost, key[:])
+	}
 
 	// The on-disk split (nonce, ciphertext) rejoins into the one layout
 	// open_xchacha reads.
@@ -263,6 +313,7 @@ vault_open :: proc(password: string) -> Vault_Err {
 	copy(g_vault.salt[:], salt)
 	g_vault.data = data
 	g_vault.unlocked = true
+	dev_vault_store(&g_vault)
 	return .None
 }
 
@@ -323,12 +374,20 @@ vault_wipe :: proc(v: ^Vault) {
 	v.unlocked = false
 }
 
+@(private)
+vault_lock :: proc() {
+	sync.lock(&g_vault_lock)
+	defer sync.unlock(&g_vault_lock)
+	vault_wipe(&g_vault)
+}
+
 // Forget the vault file and everything sealed under its key: the media
 // cache and the offline queue would be undecryptable after a reset
 // anyway. Backs the unlock screen's "Use another key".
 vault_delete :: proc() {
 	sync.lock(&g_vault_lock)
 	vault_wipe(&g_vault)
+	dev_vault_store(&g_vault)
 	sync.unlock(&g_vault_lock)
 
 	os.remove(vault_path())

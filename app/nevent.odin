@@ -171,6 +171,7 @@ nev_cache_path :: proc(id: string) -> string {
 
 @(private = "file")
 nev_worker :: proc(job: ^Nev_Job) {
+	context.allocator = reload_allocator()
 	defer frame_wake()
 	defer {
 		for r in job.relays {
@@ -289,6 +290,7 @@ nev_img_path :: proc(url: string) -> string {
 // the bytes to drain_nev for the texture upload.
 @(private = "file")
 nev_img_worker :: proc(url: string) {
+	context.allocator = reload_allocator()
 	defer frame_wake()
 	path := nev_img_path(url)
 	if !os.exists(path) {
@@ -315,7 +317,7 @@ nev_img :: proc(url: string) -> ^rl.Texture2D {
 	}
 	owned := strings.clone(url)
 	nev_images[owned] = nil
-	thread.create_and_start_with_poly_data(owned, nev_img_worker, self_cleanup = true)
+	append(&send_threads, thread.create_and_start_with_poly_data(owned, nev_img_worker))
 	return nil
 }
 
@@ -462,7 +464,7 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 		job := new(Nev_Job)
 		job.id = owned
 		job.relays = relays[:]
-		thread.create_and_start_with_poly_data(job, nev_worker, self_cleanup = true)
+		append(&send_threads, thread.create_and_start_with_poly_data(job, nev_worker))
 	}
 
 	textual := false

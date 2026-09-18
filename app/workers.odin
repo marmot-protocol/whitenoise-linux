@@ -29,6 +29,7 @@ Live :: struct {
 }
 
 live_worker :: proc(t: ^thread.Thread) {
+	context.allocator = reload_allocator()
 	live := (^Live)(t.data)
 	for {
 		row: ^marmot.Chat_List_Row
@@ -59,6 +60,7 @@ live_worker :: proc(t: ^thread.Thread) {
 // stayed stale until a chat switch reloaded it by hand. The firehose
 // covers those, scoped to the account and group in each event.
 events_worker :: proc(t: ^thread.Thread) {
+	context.allocator = reload_allocator()
 	live := (^Live)(t.data)
 	for {
 		event: ^marmot.Runtime_Event
@@ -377,6 +379,7 @@ send_thread_media :: proc(job: ^Send_Job, result: ^marmot.Media_Upload_Result, i
 }
 
 send_worker :: proc(t: ^thread.Thread) {
+	context.allocator = reload_allocator()
 	defer frame_wake()
 	job := (^Send_Job)(t.data)
 	status: marmot.Status
@@ -746,6 +749,7 @@ ops_done: [dynamic]Op_Done
 op_ticket: int
 
 op_worker :: proc(t: ^thread.Thread) {
+	context.allocator = reload_allocator()
 	defer frame_wake()
 	job := (^Op_Job)(t.data)
 	summary: ^marmot.Send_Summary
@@ -975,6 +979,7 @@ probe_key_package :: proc(ui: ^Ui_State, client: ^marmot.Client, hex: string) {
 
 @(private = "file")
 kp_worker :: proc(t: ^thread.Thread) {
+	context.allocator = reload_allocator()
 	defer frame_wake()
 	job := (^Kp_Job)(t.data)
 	summary: ^marmot.Member_Key_Package_Prewarm_Summary
@@ -1142,6 +1147,7 @@ Rel_Job :: struct {
 
 @(private = "file")
 rel_worker :: proc(t: ^thread.Thread) {
+	context.allocator = reload_allocator()
 	defer frame_wake()
 	job := (^Rel_Job)(t.data)
 	lists: ^marmot.Account_Relay_Lists
@@ -1206,6 +1212,23 @@ Auth_Job :: struct {
 auth_job: ^Auth_Job
 @(private = "file")
 auth_thread: ^thread.Thread
+
+@(private)
+auth_stop :: proc() {
+	if auth_thread == nil { return }
+	thread.join(auth_thread)
+	thread.destroy(auth_thread)
+	auth_thread = nil
+}
+
+@(private)
+reload_jobs_busy :: proc() -> bool {
+	if auth_thread != nil { return true }
+	for worker in send_threads {
+		if !thread.is_done(worker) { return true }
+	}
+	return false
+}
 @(private = "file")
 auth_mutex: sync.Mutex
 @(private = "file")
@@ -1213,6 +1236,7 @@ auth_done: bool
 
 @(private = "file")
 auth_worker :: proc(t: ^thread.Thread) {
+	context.allocator = reload_allocator()
 	defer frame_wake()
 	job := (^Auth_Job)(t.data)
 	// marmot's last_error is thread-local, so the message is built here.

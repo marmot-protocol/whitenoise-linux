@@ -15,7 +15,7 @@
 // Every stage is O(n) with no per-frame allocation; a still model
 // costs only the RenderGeometry call. Measured, 200k random tris per
 // orbit step: 125ms before; now 20.0ms at -o:minimal, 3.4ms at
-// -o:speed (the app build, see build.sh).
+// -o:speed (the app build, see scripts/build.sh).
 package main
 
 import "core:encoding/endian"

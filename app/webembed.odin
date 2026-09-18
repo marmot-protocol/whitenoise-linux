@@ -205,7 +205,7 @@ web_close :: proc() {
 	web_modal = {}
 }
 
-// wn-webview sits beside the app binary; build.sh only produces it
+// wn-webview sits beside the app binary; scripts/build.sh only produces it
 // when webkit2gtk-4.1 is installed.
 @(private = "file")
 web_viewer_path :: proc() -> string {

@@ -95,19 +95,19 @@ About, diagnostics, AppImage, Flatpak, and Arch packaging use this version.
 
 ## Build from source
 
-You need the [Odin compiler](https://odin-lang.org/docs/install/), a C compiler, and a Rust toolchain (Marmot's C bundle is built from source). Plus SDL3 and the media libraries the viewers bind.
+You need `just`, the [Odin compiler](https://odin-lang.org/docs/install/), a C compiler, and a Rust toolchain (Marmot's C bundle is built from source). Plus SDL3 and the media libraries the viewers bind.
 
 **Debian / Ubuntu** (SDL3 needs 25.04 or newer, or a source build):
 
 ```sh
-sudo apt-get install -y pkg-config cmake clang git curl \
+sudo apt-get install -y just pkg-config cmake clang git curl \
   libsdl3-dev libarchive-dev libmpv-dev libpoppler-glib-dev libcairo2-dev libglib2.0-dev
 ```
 
 **Arch:**
 
 ```sh
-sudo pacman -S --needed odin rust sdl3 libarchive mpv poppler-glib cairo glib2
+sudo pacman -S --needed just odin rust sdl3 libarchive mpv poppler-glib cairo glib2
 ```
 
 **Then:**
@@ -115,8 +115,8 @@ sudo pacman -S --needed odin rust sdl3 libarchive mpv poppler-glib cairo glib2
 ```sh
 git clone https://github.com/marmot-protocol/whitenoise-linux
 cd whitenoise-linux
-./build.sh
-build/app
+just build
+just run
 ```
 
 The first build is the slow one: it clones the pinned Marmot revision and builds its C bundle, fetches clay, ufbx and the Twemoji set, and (on an Odin install shipping no prebuilt `vendor/stb` archives) builds those. Everything after that is a plain Odin compile of a few seconds.
@@ -187,15 +187,28 @@ For the deeper details, see [`AGENTS.md`](AGENTS.md) and [`PORT.md`](PORT.md).
 ## Development
 
 ```sh
-./build.sh                       # build
-./build.sh test                  # build, then run the tests
-./dev.sh                         # rebuild and restart on any .odin change
-scripts/update-translations.sh   # regenerate the gettext catalogs
+just                   # list commands
+just build             # build
+just test              # build, then run the tests
+just dev               # rebuild code in-process, keeping the window
+just test-reload       # check reload, unlock, and failed-build recovery
+just translations      # regenerate the gettext catalogs
 ```
 
-Tests are `@(test)` procs in `*_test.odin` beside the code they cover; CI runs `build.sh test`. End-to-end testing (a QEMU VM harness, a headless control daemon, and multi-VM messaging scenarios) lives in the separate [`darkmatter-automated-testing`](https://github.com/marmot-protocol/darkmatter-automated-testing) repo, which builds this checkout.
+`just dev [data-dir]` and `just run [data-dir]` accept an optional data directory.
+The shell implementations live under `scripts/`; CI and packaging call them directly.
 
-To build against a different Marmot revision, edit `mdk-commit` in `DEPS_PIN`; the next `build.sh` re-checks it out and rebuilds the C bundle. Every pinned third-party revision lives in that one file.
+Tests are `@(test)` procs in `*_test.odin` beside the code they cover; `just test` runs the same checks as CI. End-to-end testing (a QEMU VM harness, a headless control daemon, and multi-VM messaging scenarios) lives in the separate [`darkmatter-automated-testing`](https://github.com/marmot-protocol/darkmatter-automated-testing) repo, which builds this checkout.
+
+`just dev` keeps the SDL window and vault unlock across code reloads. It rebuilds
+the UI and runtime from saved settings and drafts, so transient dialogs and
+playback reset. Reload waits for active writes and file pickers, and for you
+to send or clear staged attachments and finish message edits.
+Failed builds leave the current app running. Changes to the small C window
+host or the Rust library restart the host; the vault stays unlocked for the
+`just dev` session. Normal release builds do not accept the dev unlock cache.
+
+To build against a different Marmot revision, edit `mdk-commit` in `DEPS_PIN`; the next `just build` re-checks it out and rebuilds the C bundle. Every pinned third-party revision lives in that one file.
 
 ## Contributing
 

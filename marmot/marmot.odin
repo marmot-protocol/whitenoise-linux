@@ -6,11 +6,17 @@
 // only with their matching *_free; input strings/arrays are borrowed.
 package marmot
 
-foreign import lib {
-	"../vendor/mdk/crates/marmot-c/output/lib/libmarmot_c.a",
-	"system:m",
-	"system:pthread",
-	"system:dl",
+when #config(WN_RELOAD, false) {
+	// Rust's thread-local destructors keep its library mapped. Share one
+	// runtime library so unloading app code does not retain each generation.
+	foreign import lib "../build/libmarmot-dev.so"
+} else {
+	foreign import lib {
+		"../vendor/mdk/crates/marmot-c/output/lib/libmarmot_c.a",
+		"system:m",
+		"system:pthread",
+		"system:dl",
+	}
 }
 
 // Mirrors `enum MarmotStatus`. 1-9 are binding-level failures; 10+

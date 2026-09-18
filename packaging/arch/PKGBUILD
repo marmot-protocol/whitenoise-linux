@@ -1,6 +1,6 @@
 # Maintainer: Marmot Protocol <https://github.com/marmot-protocol/whitenoise-linux>
 #
-# Builds the current master from the upstream repo. build.sh fetches the
+# Builds the current master from the upstream repo. scripts/build.sh fetches the
 # pinned mdk/clay/ufbx revisions and cargo pulls marmot-c's crates, so
 # build() needs network; that is why this is a -git package and not an
 # AUR-clean release one. To build from a local checkout instead:
@@ -47,7 +47,7 @@ pkgver() {
 
 build() {
   cd "$pkgname"
-  ./build.sh
+  scripts/build.sh
 }
 
 package() {

@@ -1,5 +1,5 @@
 # CI: runs on every push to master and every PR. Builds the app and runs its
-# test procs, which is exactly what `./build.sh test` does locally.
+# test procs, which is exactly what `just test` does locally.
 #
 # The quality gates (catalog validation) are NOT here: they run via
 # pr-precommit.yml, the byte-identical GitHub mirror of the canonical
@@ -65,7 +65,7 @@ jobs:
           echo "LIBRARY_PATH=/usr/local/sdl3/lib" >> "$GITHUB_ENV"
 
       # The linux release ships vendor/stb without its .a archives, so
-      # build.sh builds them into its own ODIN_ROOT overlay (clang, above).
+      # scripts/build.sh builds them into its own ODIN_ROOT overlay (clang, above).
       - name: Cache Odin
         id: odin-cache
         uses: actions/cache@v4
@@ -100,4 +100,4 @@ jobs:
           key: vendor-${{ hashFiles('DEPS_PIN') }}
 
       - name: Build and test
-        run: ./build.sh test
+        run: scripts/build.sh test

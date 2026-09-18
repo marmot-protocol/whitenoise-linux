@@ -8,7 +8,7 @@
 #
 # Usage: install-tree.sh <prefix> <id>
 #   The AppImage passes AppDir/usr and the plain name; the Flatpak passes
-#   /app and its reverse-DNS app id. Run after build.sh.
+#   /app and its reverse-DNS app id. Run after scripts/build.sh.
 set -euo pipefail
 
 PREFIX="$1"
@@ -36,7 +36,7 @@ if [ -x "$HERE/build/wn-webview" ]; then
 fi
 cp -r "$HERE/vendor/twemoji" "$RES/"
 cp "$HERE/vendor/emoji-catalog.tsv" "$RES/"
-# Fonts are staged and sha256-pinned by build.sh, so every package ships
+# Fonts are staged and sha256-pinned by scripts/build.sh, so every package ships
 # byte-identical faces.
 cp "$HERE"/vendor/fonts/*.ttf "$RES/fonts/"
 

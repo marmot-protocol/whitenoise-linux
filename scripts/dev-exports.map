@@ -1,0 +1,4 @@
+{
+    global: wn_app_run; _odin_entry_point; _odin_exit_point;
+    local: *;
+};

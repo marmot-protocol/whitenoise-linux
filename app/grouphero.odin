@@ -243,6 +243,15 @@ gimg_mutex: sync.Mutex
 @(private = "file")
 gimg_queue: [dynamic]Gimg_Job
 @(private = "file")
+gimg_uploads: int
+
+@(private)
+gimg_writes_pending :: proc() -> bool {
+	sync.lock(&gimg_mutex)
+	defer sync.unlock(&gimg_mutex)
+	return gimg_uploads > 0
+}
+@(private = "file")
 gimg_done: [dynamic]Gimg_Result
 // group ids already downloaded (or tried) this session.
 @(private = "file")
@@ -252,6 +261,7 @@ gimg_asked: map[string]bool
 gimg_push :: proc(job: Gimg_Job) {
 	sync.lock(&gimg_mutex)
 	append(&gimg_queue, job)
+	if job.kind == .Upload { gimg_uploads += 1 }
 	sync.unlock(&gimg_mutex)
 }
 
@@ -280,8 +290,10 @@ queue_group_pics :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // Group avatars change rarely, so a queue of one is the normal case.
 @(private = "file")
 gimg_worker :: proc(_: ^thread.Thread) {
+	context.allocator = reload_allocator()
 	for {
 		sync.lock(&gimg_mutex)
+		if gimg_stopping { sync.unlock(&gimg_mutex); return }
 		job: Gimg_Job
 		have := len(gimg_queue) > 0
 		if have {
@@ -329,12 +341,32 @@ gimg_worker :: proc(_: ^thread.Thread) {
 
 		sync.lock(&gimg_mutex)
 		append(&gimg_done, result)
+		if job.kind == .Upload { gimg_uploads -= 1 }
 		sync.unlock(&gimg_mutex)
 	}
 }
 
 start_gimg_worker :: proc() {
-	thread.start(thread.create(gimg_worker))
+	context.allocator = reload_allocator()
+	gimg_thread = thread.create(gimg_worker)
+	thread.start(gimg_thread)
+}
+
+@(private = "file")
+gimg_thread: ^thread.Thread
+@(private = "file")
+gimg_stopping: bool
+
+@(private)
+stop_gimg_worker :: proc() {
+	context.allocator = reload_allocator()
+	if gimg_thread == nil { return }
+	sync.lock(&gimg_mutex)
+	gimg_stopping = true
+	sync.unlock(&gimg_mutex)
+	thread.join(gimg_thread)
+	thread.destroy(gimg_thread)
+	gimg_thread = nil
 }
 
 // Frame-loop drain: decode downloaded avatars into round textures and

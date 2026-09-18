@@ -51,6 +51,6 @@ The voice IDs follow the upstream sorted order: F1–F5, then M1–M5.
 ## Checks
 
 ```sh
-SDL_VIDEODRIVER=dummy ./build.sh test
+SDL_VIDEODRIVER=dummy just test
 SDL_VIDEODRIVER=dummy odin test app -define:ODIN_TEST_NAMES=tts_layout
 ```

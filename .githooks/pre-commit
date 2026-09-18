@@ -70,7 +70,7 @@ fi
 # --- 3. Warn about unused imports in staged Odin files ------------------
 # Odin does not warn on an unused import by default, so copy-pasted import
 # headers accumulate. Warn here and let the commit through; CI runs the same
-# check through build.sh and fails on it.
+# check through scripts/build.sh and fails on it.
 if staged -- '*.odin' | grep -qz . && ! scripts/vet-imports.sh; then
     echo "pre-commit: warning: unused imports in app/ (fatal in CI)." >&2
 fi

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build White Noise Linux against marmot-c from the pinned mdk revision.
-# `build.sh test` builds, then runs the app package's tests.
+# `just test` builds, then runs the app package's tests.
 #
 # Every third-party revision this build pins lives in DEPS_PIN, one
 # `<name>-commit = <sha>` line each. vendor/mdk is cloned at mdk-commit and
@@ -8,7 +8,7 @@
 # when already present. Then the Odin packages build against the staticlib.
 set -euo pipefail
 
-HERE="$(cd "$(dirname "$0")" && pwd)"
+HERE="$(cd "$(dirname "$0")/.." && pwd)"
 bash "$HERE/scripts/version.sh" >/dev/null
 # One pinned revision out of DEPS_PIN, by name.
 pin() { sed -n "s/^$1-commit = //p" "$HERE/DEPS_PIN"; }
@@ -191,6 +191,11 @@ if [ ! -f "$SYS_ODIN/vendor/stb/lib/stb_truetype.a" ]; then
   ODIN_ROOT_ARG=(ODIN_ROOT="$OVERLAY")
 fi
 
+# The dev host builds a reloadable library after staging these same inputs.
+if [ "${1:-}" = stage ]; then
+  exit 0
+fi
+
 # Remove the previous binaries first: overwriting one that is still
 # mapped by a running instance leaves a half-written file whose next
 # run segfaults in libc's init, long before main.
@@ -211,7 +216,7 @@ fi
 
 echo "==> Done: $HERE/build/{smoke,app}"
 
-# `build.sh test` also runs the app package's test procs, which is what CI
+# `just test` also runs the app package's test procs, which is what CI
 # does after the build.
 if [ "${1:-}" = test ]; then
   bash "$HERE/scripts/version-test.sh"

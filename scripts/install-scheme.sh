@@ -2,13 +2,13 @@
 # Register the marmot:// scheme: substitute the
 # built binary's absolute path into the .desktop template, install it
 # to the user's applications dir, and point x-scheme-handler/marmot
-# at it. Run after ./build.sh.
+# at it. Run after just build.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 APP="$ROOT/build/app"
 if [ ! -x "$APP" ]; then
-	echo "build/app missing; run ./build.sh first" >&2
+	echo "build/app missing; run just build first" >&2
 	exit 1
 fi
 

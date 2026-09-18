@@ -234,6 +234,26 @@ xdc_launch :: proc(ui: ^Ui_State, client: ^marmot.Client, view: ^Xdc_View, sessi
 
 @(private = "file")
 listener: net.TCP_Socket
+@(private = "file")
+xdc_worker: ^thread.Thread
+@(private = "file")
+xdc_connection: net.TCP_Socket
+@(private = "file")
+xdc_stopping: bool
+
+@(private)
+xdc_stop :: proc() {
+	if xdc_worker == nil { return }
+	sync.lock(&xdc.mutex)
+	xdc_stopping = true
+	net.shutdown(listener, .Both)
+	if xdc_connection != {} { net.shutdown(xdc_connection, .Both) }
+	sync.unlock(&xdc.mutex)
+	thread.join(xdc_worker)
+	thread.destroy(xdc_worker)
+	net.close(listener)
+	xdc_worker = nil
+}
 
 // Caller holds the mutex. Binds an ephemeral loopback port and leaves
 // one thread accepting for the rest of the process.
@@ -252,19 +272,31 @@ xdc_serve_start :: proc() -> bool {
 	}
 	listener = sock
 	xdc.port = endpoint.port
-	thread.create_and_start(xdc_serve)
+	xdc_worker = thread.create_and_start(xdc_serve)
 	return true
 }
 
 @(private = "file")
 xdc_serve :: proc() {
+	context.allocator = reload_allocator()
 	for {
 		client, _, err := net.accept_tcp(listener)
 		if err != nil {
 			return
 		}
+		sync.lock(&xdc.mutex)
+		if xdc_stopping {
+			sync.unlock(&xdc.mutex)
+			net.close(client)
+			return
+		}
+		xdc_connection = client
+		sync.unlock(&xdc.mutex)
 		xdc_handle(client)
+		sync.lock(&xdc.mutex)
+		xdc_connection = {}
 		net.close(client)
+		sync.unlock(&xdc.mutex)
 	}
 }
 

@@ -40,6 +40,7 @@ timeline_scope :: proc(ui: ^Ui_State, search: string) -> bool {
 
 @(private)
 timeline_worker :: proc(t: ^thread.Thread) {
+	context.allocator = reload_allocator()
 	job := (^Timeline_Work)(t.data)
 	defer frame_wake()
 	sub: ^marmot.Timeline_Subscription

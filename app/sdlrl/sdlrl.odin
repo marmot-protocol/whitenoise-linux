@@ -19,6 +19,7 @@ import "base:runtime"
 import "core:c"
 import "core:fmt"
 import "core:math"
+import "core:mem"
 import "core:os"
 import "core:strings"
 import "core:sync"
@@ -131,6 +132,33 @@ State :: struct {
 state: State
 
 @(private)
+callback_allocator: mem.Allocator
+@(private)
+live_textures: map[^sdl.Texture]bool
+
+@(private)
+track_texture :: proc(tex: ^sdl.Texture) {
+	when #config(WN_RELOAD, false) {
+		if tex != nil { live_textures[tex] = true }
+	}
+}
+
+when #config(WN_RELOAD, false) {
+	@(private)
+	Dev_Dialog_Kind :: enum c.int { Open_One, Open_Many, Save }
+	foreign {
+		@(private)
+		wn_dev_window :: proc "c" (width, height: c.int, title: cstring, renderer: ^^sdl.Renderer) -> ^sdl.Window ---
+		@(private)
+		wn_dev_dialog :: proc "c" (kind: Dev_Dialog_Kind, callback: sdl.DialogFileCallback, name: cstring) ---
+		@(private)
+		wn_dev_wait_dialogs :: proc "c" () ---
+		@(private)
+		wn_dev_dialogs_consumed :: proc "c" (count: c.int) ---
+	}
+}
+
+@(private)
 Font_File :: struct {
 	path: string,
 	data: []u8,
@@ -188,15 +216,22 @@ SCANCODES := [KeyboardKey]sdl.Scancode{
 // ── Window / frame loop ─────────────────────────────────────────────
 
 InitWindow :: proc(width, height: i32, title: cstring) {
-	if !sdl.Init({.VIDEO}) {
-		fmt.eprintfln("sdl: init failed: %s", sdl.GetError())
-		os.exit(1)
+	callback_allocator = context.allocator
+	when #config(WN_RELOAD, false) {
+		state.window = wn_dev_window(c.int(width), c.int(height), title, &state.renderer)
+	} else {
+		if !sdl.Init({.VIDEO}) {
+			fmt.eprintfln("sdl: init failed: %s", sdl.GetError())
+			os.exit(1)
+		}
+		sdl.CreateWindowAndRenderer(title, c.int(width), c.int(height), {.RESIZABLE, .HIGH_PIXEL_DENSITY}, &state.window, &state.renderer)
 	}
-	if !sdl.CreateWindowAndRenderer(title, c.int(width), c.int(height), {.RESIZABLE, .HIGH_PIXEL_DENSITY}, &state.window, &state.renderer) {
+	if state.window == nil || state.renderer == nil {
 		fmt.eprintfln("sdl: window failed: %s", sdl.GetError())
 		os.exit(1)
 	}
 	state.density = max(sdl.GetWindowPixelDensity(state.window), 1)
+	state.fullscreen = .FULLSCREEN in sdl.GetWindowFlags(state.window)
 	// Asked once: SDL synthesizes mouse events from touch, so this is
 	// the only way to tell a finger from a pointer.
 	n: c.int
@@ -266,16 +301,20 @@ SetCursor :: proc(shape: Cursor_Shape) {
 picked_mutex: sync.Mutex
 @(private)
 picked_paths: [dynamic]string
+@(private)
+picked_callbacks: c.int
 
 @(private)
 dialog_cb :: proc "c" (userdata: rawptr, filelist: [^]cstring, filter: c.int) {
 	context = runtime.default_context()
+	context.allocator = callback_allocator
+	sync.lock(&picked_mutex)
+	defer sync.unlock(&picked_mutex)
+	picked_callbacks += 1
 	if filelist == nil {
 		fmt.eprintfln("sdl: file dialog failed: %s", sdl.GetError())
 		return
 	}
-	sync.lock(&picked_mutex)
-	defer sync.unlock(&picked_mutex)
 	for i := 0; filelist[i] != nil; i += 1 {
 		append(&picked_paths, strings.clone(string(filelist[i])))
 	}
@@ -283,7 +322,11 @@ dialog_cb :: proc "c" (userdata: rawptr, filelist: [^]cstring, filter: c.int) {
 
 // Open the native multi-select file picker (async; see PickedFiles).
 OpenFileDialog :: proc(allow_many: bool) {
-	sdl.ShowOpenFileDialog(dialog_cb, nil, state.window, nil, 0, nil, allow_many)
+	when #config(WN_RELOAD, false) {
+		wn_dev_dialog(allow_many ? .Open_Many : .Open_One, dialog_cb, nil)
+	} else {
+		sdl.ShowOpenFileDialog(dialog_cb, nil, state.window, nil, 0, nil, allow_many)
+	}
 }
 
 // Drain the paths picked since the last call. The caller owns the
@@ -293,6 +336,8 @@ PickedFiles :: proc() -> [dynamic]string {
 	defer sync.unlock(&picked_mutex)
 	out := picked_paths
 	picked_paths = {}
+	when #config(WN_RELOAD, false) { wn_dev_dialogs_consumed(picked_callbacks) }
+	picked_callbacks = 0
 	return out
 }
 
@@ -305,23 +350,31 @@ saved_mutex: sync.Mutex
 @(private)
 saved_paths: [dynamic]string
 @(private)
+saved_callbacks: c.int
+@(private)
 save_name: cstring // suggested filename; kept alive across the async dialog
 
 @(private)
 save_cb :: proc "c" (userdata: rawptr, filelist: [^]cstring, filter: c.int) {
 	context = runtime.default_context()
+	context.allocator = callback_allocator
+	sync.lock(&saved_mutex)
+	defer sync.unlock(&saved_mutex)
+	saved_callbacks += 1
 	if filelist == nil || filelist[0] == nil {
 		return // failed or cancelled
 	}
-	sync.lock(&saved_mutex)
-	defer sync.unlock(&saved_mutex)
 	append(&saved_paths, strings.clone(string(filelist[0])))
 }
 
 SaveFileDialog :: proc(default_name: string) {
 	delete(save_name)
 	save_name = strings.clone_to_cstring(default_name)
-	sdl.ShowSaveFileDialog(save_cb, nil, state.window, nil, 0, save_name)
+	when #config(WN_RELOAD, false) {
+		wn_dev_dialog(.Save, save_cb, save_name)
+	} else {
+		sdl.ShowSaveFileDialog(save_cb, nil, state.window, nil, 0, save_name)
+	}
 }
 
 SavedFiles :: proc() -> [dynamic]string {
@@ -329,6 +382,8 @@ SavedFiles :: proc() -> [dynamic]string {
 	defer sync.unlock(&saved_mutex)
 	out := saved_paths
 	saved_paths = {}
+	when #config(WN_RELOAD, false) { wn_dev_dialogs_consumed(saved_callbacks) }
+	saved_callbacks = 0
 	return out
 }
 
@@ -402,6 +457,8 @@ FontSpecimen :: proc(data: []u8, lines: []string, sizes: []f32, color: Color, wi
 @(private)
 tray: ^sdl.Tray
 @(private)
+tray_surface: ^sdl.Surface
+@(private)
 tray_px: [22 * 22]u32 // must outlive the tray; the surface borrows it
 
 @(private)
@@ -427,9 +484,11 @@ InitTray :: proc(tooltip: cstring, abgr: u32, show_label, quit_label: cstring) {
 	for &px in tray_px {
 		px = abgr
 	}
-	icon := sdl.CreateSurfaceFrom(22, 22, .RGBA32, raw_data(tray_px[:]), 22 * 4)
-	tray = sdl.CreateTray(icon, tooltip)
+	tray_surface = sdl.CreateSurfaceFrom(22, 22, .RGBA32, raw_data(tray_px[:]), 22 * 4)
+	tray = sdl.CreateTray(tray_surface, tooltip)
 	if tray == nil {
+		sdl.DestroySurface(tray_surface)
+		tray_surface = nil
 		return
 	}
 	menu := sdl.CreateTrayMenu(tray)
@@ -472,10 +531,22 @@ ShowWindow :: proc() {
 }
 
 CloseWindow :: proc() {
+	when #config(WN_RELOAD, false) { wn_dev_wait_dialogs() }
 	_ = sdl.StopTextInput(state.window)
-	sdl.DestroyRenderer(state.renderer)
-	sdl.DestroyWindow(state.window)
-	sdl.Quit()
+	if tray != nil { sdl.DestroyTray(tray); tray = nil }
+	if tray_surface != nil { sdl.DestroySurface(tray_surface); tray_surface = nil }
+	for cursor in cursors { if cursor != nil { sdl.DestroyCursor(cursor) } }
+	when #config(WN_RELOAD, false) {
+		sdl.SetRenderTarget(state.renderer, nil)
+		sdl.SetRenderClipRect(state.renderer, nil)
+		sdl.SetRenderViewport(state.renderer, nil)
+		sdl.SetRenderScale(state.renderer, 1, 1)
+		for tex in live_textures { sdl.DestroyTexture(tex) }
+	} else {
+		sdl.DestroyRenderer(state.renderer)
+		sdl.DestroyWindow(state.window)
+		sdl.Quit()
+	}
 }
 
 SetTargetFPS :: proc(fps: i32) {} // vsync paces the loop
@@ -862,6 +933,7 @@ LoadTextureFromImage :: proc(image: Image) -> Texture2D {
 		return {}
 	}
 	tex := sdl.CreateTexture(state.renderer, .RGBA32, .STATIC, image.width, image.height)
+	track_texture(tex)
 	if tex == nil {
 		return {}
 	}
@@ -873,6 +945,7 @@ LoadTextureFromImage :: proc(image: Image) -> Texture2D {
 
 UnloadTexture :: proc(texture: Texture2D) {
 	if texture.tex != nil {
+		when #config(WN_RELOAD, false) { delete_key(&live_textures, texture.tex) }
 		sdl.DestroyTexture(texture.tex)
 	}
 }
@@ -885,6 +958,7 @@ UnloadTexture :: proc(texture: Texture2D) {
 // lands opaque.
 CreateStreamTexture :: proc(w, h: i32, blend := false) -> Texture2D {
 	tex := sdl.CreateTexture(state.renderer, blend ? .RGBA32 : .RGBX32, .STREAMING, w, h)
+	track_texture(tex)
 	if tex == nil {
 		return {}
 	}
@@ -1179,6 +1253,7 @@ get_glyph :: proc(font_id: u16, px: u16, r: rune) -> (Glyph, int) {
 			rgba[i * 4 + 3] = bitmap[i]
 		}
 		tex := sdl.CreateTexture(state.renderer, .RGBA32, .STATIC, i32(w), i32(h))
+		track_texture(tex)
 		if tex != nil {
 			sdl.UpdateTexture(tex, nil, raw_data(rgba), w * 4)
 			sdl.SetTextureBlendMode(tex, {.BLEND})
@@ -1293,6 +1368,7 @@ soft_sprite :: proc() -> ^sdl.Texture {
 		}
 	}
 	soft_tex = sdl.CreateTexture(state.renderer, .RGBA32, .STATIC, SOFT_PX, SOFT_PX)
+	track_texture(soft_tex)
 	if soft_tex == nil {
 		return nil
 	}
@@ -1350,6 +1426,7 @@ CaptureFrame :: proc() -> Texture2D {
 	}
 	defer sdl.DestroySurface(surface)
 	tex := sdl.CreateTextureFromSurface(state.renderer, surface)
+	track_texture(tex)
 	if tex == nil {
 		return {}
 	}
@@ -1409,6 +1486,7 @@ ensure_target :: proc(t: ^Target, w, h: i32) -> bool {
 		return true
 	}
 	if t.tex != nil {
+		when #config(WN_RELOAD, false) { delete_key(&live_textures, t.tex) }
 		sdl.DestroyTexture(t.tex)
 		t.tex = nil
 	}
@@ -1416,6 +1494,7 @@ ensure_target :: proc(t: ^Target, w, h: i32) -> bool {
 		return false
 	}
 	tex := sdl.CreateTexture(state.renderer, .RGBA32, .TARGET, w, h)
+	track_texture(tex)
 	if tex == nil {
 		return false
 	}

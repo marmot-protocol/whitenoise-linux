@@ -13,13 +13,16 @@ quirks worth knowing before you debug a layout.
 ## Build & run
 
 ```sh
-./build.sh          # build build/{app,smoke}
-./build.sh test     # build, then run the app package's tests
-./dev.sh            # watch app/ and marmot/, rebuild + restart on save
-build/app           # run against ~/.local/share/whitenoise
+just build         # build build/{app,smoke}
+just test          # build, then run the app package's tests
+just dev           # rebuild and reload in-process, preserving the window
+just run           # run against ~/.local/share/whitenoise
 ```
 
-`build.sh` stages everything the build needs and skips each step when its
+The recipes use the shell implementations under `scripts/`, also called
+directly by CI and packaging.
+
+`just build` stages everything the build needs and skips each step when its
 output is already present, so only the first run is slow:
 
 - `vendor/mdk` cloned at `mdk-commit` from `DEPS_PIN`, and its C bundle built by
@@ -36,16 +39,27 @@ output is already present, so only the first run is slow:
   it can run `build_stb.sh` in.
 
 `DEPS_PIN` holds every third-party revision as `<name>-commit = <sha>`, one
-per line. Bumping one is a one-line edit; `build.sh` re-checks out and
+per line. Bumping one is a one-line edit; `just build` re-checks out and
 rebuilds on the next run.
 
 Odin has no incremental compilation, so a full app build is the unit of work
-(~3s at `-o:minimal`, which is what `dev.sh` uses; release builds use
-`-o:speed` for the STL orbit path). There is no UI markup to hot-reload: the
-layout is Odin code, so `dev.sh` watches, rebuilds, and restarts.
+(~3s at `-o:minimal`, which is what `just dev` uses; release builds use
+`-o:speed` for the STL orbit path). `just dev` builds the Odin app as a shared
+library. `scripts/dev-host.c` owns the SDL window and renderer across reloads.
+The app joins its workers, closes external handles, and releases its tracked heap before
+unloading. UI state is rebuilt from saved settings and drafts. The Rust C
+library stays loaded separately because its thread-local destructors retain
+code. Only host or Rust-library changes require a new process. Unlock is kept
+in an inherited anonymous memory file for the lifetime of `just dev`.
+
+Run `just test-reload` after changing reload or shutdown behavior.
+Workers must use `reload_allocator()` and be joined before the module returns.
+Native file-dialog callbacks go through the host trampoline; it prevents an
+unload until the callback has returned. `just stage` prepares dependencies
+and helpers without compiling the release executables.
 
 **Testing:** `odin test app` runs the `@(test)` procs that live beside the
-code they cover (`*_test.odin`). CI runs exactly `build.sh test`. End-to-end
+code they cover (`*_test.odin`). `just test` runs the same checks as CI. End-to-end
 testing lives in a separate repo, `darkmatter-automated-testing` (the `dmvm`
 QEMU harness and multi-VM scenarios). The `WN_TEST_*` env vars in `main.odin`
 drive the app into a given state for screenshots and harness runs.

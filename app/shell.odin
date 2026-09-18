@@ -594,6 +594,11 @@ tray_tick :: proc(ui: ^Ui_State) {
 @(private = "file")
 lock_file: ^os.File
 
+@(private)
+instance_unlock :: proc() {
+	if lock_file != nil { os.close(lock_file); lock_file = nil }
+}
+
 // Exclusive flock on <home>/.lock. false means another instance already
 // owns the data dir; two runtimes over one sqlite store corrupt it.
 instance_lock :: proc(home: string) -> bool {

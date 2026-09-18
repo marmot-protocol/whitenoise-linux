@@ -12,7 +12,7 @@ patching and resuming costs a round trip per action, and Odin procs take a
 hidden `context` parameter so lldb cannot call them at all.
 
 `app/devctl.odin` polls the file named by `WN_DEV_CMD` and runs what it
-finds. `dev.sh` exports it as `build/dev-cmd` already; outside `dev.sh`, set
+finds. `just dev` exports it as `build/dev-cmd` already; outside `just dev`, set
 it yourself. Output goes to the app's stdout, so redirect that to a log and
 tail it.
 
@@ -87,13 +87,13 @@ any other way.
 
 The release binary (`-o:speed`, no `-debug`) has no usable line info. Build a
 separate debug binary. It takes ~5s and does not disturb `build/app`, so
-`dev.sh` can keep running.
+`just dev` can keep running.
 
 ```sh
 odin build app -debug -o:none -out:build/appdbg
 ```
 
-`build.sh` only needs its `ODIN_ROOT` overlay when the installed Odin lacks
+`just build` only needs its `ODIN_ROOT` overlay when the installed Odin lacks
 `vendor/stb/lib/stb_truetype.a`. If `build/odin-root` exists, prefix with
 `env ODIN_ROOT=build/odin-root`.
 

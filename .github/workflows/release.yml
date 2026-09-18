@@ -100,7 +100,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
 
       - name: Build
-        run: ./build.sh
+        run: scripts/build.sh
 
       - name: Assemble AppDir
         run: |
@@ -169,7 +169,7 @@ jobs:
       - name: Check release version
         run: bash scripts/version.sh "$GITHUB_REF_NAME"
 
-      # The app module needs network during the build (build.sh clones
+      # The app module needs network during the build (scripts/build.sh clones
       # mdk/clay/ufbx, cargo fetches crates), which the manifest declares
       # in its build-args; the action passes it through.
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6

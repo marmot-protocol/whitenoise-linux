@@ -6,7 +6,7 @@
 #
 # The GNOME runtime is the freedesktop 25.08 runtime plus the GNOME
 # platform, which is what ships webkit2gtk-4.1 (and the GTK3 it needs):
-# build.sh then produces wn-webview and webxdc apps run inside the
+# scripts/build.sh then produces wn-webview and webxdc apps run inside the
 # sandbox. The freedesktop runtime has no WebKitGTK, and building it as
 # a module here would cost an hour of CI per release. The 25.08 base
 # keeps the rust-stable and llvm21 SDK extensions below valid.
@@ -17,7 +17,7 @@
 # viewer. Video tiles are software-rendered, so mpv is built without GL
 # or Vulkan.
 #
-# The app module needs network at build time: build.sh clones the
+# The app module needs network at build time: scripts/build.sh clones the
 # pinned mdk/clay/ufbx revisions and cargo fetches marmot-c's crates.
 # That rules Flathub out as-is; this manifest targets a self-published
 # bundle (release.yml) and local `flatpak-builder` runs:
@@ -151,7 +151,7 @@ modules:
         # the linker finds the libmpv and poppler built above.
         LIBRARY_PATH: /app/lib
     build-commands:
-      - ./build.sh
+      - scripts/build.sh
       - scripts/install-tree.sh /app dev.ipf.whitenoise
     sources:
       - type: dir

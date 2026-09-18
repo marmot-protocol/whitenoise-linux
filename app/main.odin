@@ -877,6 +877,11 @@ update_title :: proc(ui: ^Ui_State) {
 }
 
 main :: proc() {
+	when !#config(WN_RELOAD, false) { app_main() }
+}
+
+@(private)
+app_main :: proc() {
 	home: string
 	link: string
 	if len(os.args) > 1 {
@@ -920,6 +925,7 @@ main :: proc() {
 		fmt.eprintfln("White Noise is already running on %s", home)
 		return
 	}
+	defer instance_unlock()
 	load_themes()
 	defer stop_system_theme()
 	load_settings(&ui)
@@ -955,6 +961,8 @@ main :: proc() {
 	app_started = rl.GetTime()
 	start_pic_worker()
 	start_gimg_worker()
+	defer stop_pic_worker()
+	defer stop_gimg_worker()
 	rl.SetTargetFPS(60)
 	refresh_ui_scale()
 	init_fonts()
@@ -978,7 +986,7 @@ main :: proc() {
 	// Tray icon for either tray pref; start-in-tray also hides the
 	// window, honored at boot only, after the unlock.
 	apply_tray(&ui)
-	if ui.prefs.start_in_tray {
+	if ui.prefs.start_in_tray && reload_generation == 0 {
 		rl.HideWindow()
 	}
 
@@ -1215,6 +1223,7 @@ main :: proc() {
 
 	frame_input: bool
 	for !rl.WindowShouldClose(&frame_input) {
+		if dev_reload_poll(&ui) { break }
 		defer free_all(context.temp_allocator)
 		defer messages_collect()
 		defer chats_collect()
@@ -1960,21 +1969,26 @@ main :: proc() {
 	chats_collect()
 	stt_stop(&ui)
 	tts_stop(&ui)
+	preview_close()
+	web_close()
+	xdc_stop()
 	stash_draft(&ui)
 	save_settings(&ui)
 
 	// Shutdown order matters: closing the runtime makes the blocking
 	// subscription read return CLOSED (worker exits), then the sub is
 	// freed before the client that created it.
+	if client != nil { marmot.client_shutdown(client) }
+	stop_gimg_worker()
+	stop_pic_worker()
+	auth_stop()
+	for worker in send_threads { thread.join(worker); thread.destroy(worker) }
+	delete(send_threads)
+	timeline_stop()
+	search_stop()
+	media_stop()
+	agent_shutdown()
 	if client != nil {
-		marmot.client_shutdown(client)
-		for worker in send_threads { thread.join(worker); thread.destroy(worker) }
-		delete(send_threads)
-		timeline_stop()
-		profile_reads_stop()
-		search_stop()
-		media_stop()
-		agent_shutdown()
 		if live.worker != nil {
 			thread.join(live.worker)
 			thread.destroy(live.worker)
@@ -2004,5 +2018,9 @@ main :: proc() {
 	delete(ui.messages_account)
 	wrap_clear()
 	delete(wrap_cache)
+	for _, view in video_views { if view != nil { video_view_free(view) } }
+	for _, view in stl_views { if view != nil { stl_view_free(view) } }
+	for _, view in pdf_views { if view != nil { pdf_view_free(view) } }
+	vault_lock()
 	rl.CloseWindow()
 }

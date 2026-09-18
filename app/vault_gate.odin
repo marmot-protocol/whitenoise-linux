@@ -51,6 +51,7 @@ store_status :: proc(err: Vault_Err) -> marmot.Secret_Store_Status {
 @(private = "file")
 ss_has :: proc "c" (user_data: rawptr, key: cstring, out_present: ^u8) -> marmot.Secret_Store_Status {
 	context = runtime.default_context()
+	context.allocator = reload_allocator()
 
 	full := account_key(key)
 	defer delete(full)
@@ -61,6 +62,7 @@ ss_has :: proc "c" (user_data: rawptr, key: cstring, out_present: ^u8) -> marmot
 @(private = "file")
 ss_write :: proc "c" (user_data: rawptr, label: cstring, account_id_hex: cstring, secret_key_hex: cstring) -> marmot.Secret_Store_Status {
 	context = runtime.default_context()
+	context.allocator = reload_allocator()
 
 	full := account_key(label)
 	defer delete(full)
@@ -70,6 +72,7 @@ ss_write :: proc "c" (user_data: rawptr, label: cstring, account_id_hex: cstring
 @(private = "file")
 ss_load :: proc "c" (user_data: rawptr, label: cstring, account_id_hex: cstring, out_secret_key_hex: ^cstring) -> marmot.Secret_Store_Status {
 	context = runtime.default_context()
+	context.allocator = reload_allocator()
 
 	full := account_key(label)
 	defer delete(full)
@@ -91,6 +94,7 @@ ss_load :: proc "c" (user_data: rawptr, label: cstring, account_id_hex: cstring,
 @(private = "file")
 ss_remove :: proc "c" (user_data: rawptr, label: cstring, account_id_hex: cstring) -> marmot.Secret_Store_Status {
 	context = runtime.default_context()
+	context.allocator = reload_allocator()
 
 	full := account_key(label)
 	defer delete(full)
@@ -100,6 +104,7 @@ ss_remove :: proc "c" (user_data: rawptr, label: cstring, account_id_hex: cstrin
 @(private = "file")
 ss_free :: proc "c" (user_data: rawptr, secret_key_hex: cstring) {
 	context = runtime.default_context()
+	context.allocator = reload_allocator()
 	if secret_key_hex == nil {
 		return
 	}
@@ -157,10 +162,14 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 	if pw := os.get_env("WN_VAULT_PW", context.temp_allocator); pw != "" {
 		return vault_exists() ? vault_open(pw) == .None : vault_create(pw) == .None
 	}
+	when #config(WN_DEV, false) {
+		if vault_open("", .Dev_Cache) == .None { return true }
+	}
 
 	defer gate_close()
 	shot := os.get_env("WN_SHOT", context.temp_allocator) != ""
 	for frame := 0; !rl.WindowShouldClose(); frame += 1 {
+		if dev_reload_poll() { return false }
 		defer free_all(context.temp_allocator)
 		anim_tick(rl.GetFrameTime()) // the gate runs its own loop, so it steps its own motion
 		apply_zoom(ui) // and its own resize response; a no-op unless the width moved

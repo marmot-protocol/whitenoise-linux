@@ -85,6 +85,7 @@ clay_color :: proc(color: clay.Color) -> rl.Color {
 
 measure_text :: proc "c" (text: clay.StringSlice, config: ^clay.TextElementConfig, userData: rawptr) -> clay.Dimensions {
 	context = runtime.default_context()
+	context.allocator = reload_allocator()
 	size := rl.MeasureTextLine(config.fontId, config.fontSize, string(text.chars[:text.length]), f32(config.letterSpacing))
 	return {width = size.x, height = size.y}
 }

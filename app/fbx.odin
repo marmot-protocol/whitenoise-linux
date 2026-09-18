@@ -1,5 +1,5 @@
 // FBX models: bindings for app/fbx_shim.c (ufbx behind a flat C API,
-// built into build/libwnfbx.a by build.sh) plus the inspector state a
+// built into build/libwnfbx.a by scripts/build.sh) plus the inspector state a
 // mesh view carries.
 //
 // An FBX file lands in the same Stl_View the STL/OBJ path uses, so

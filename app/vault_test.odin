@@ -4,9 +4,11 @@
 // Run: ODIN_ROOT=build/odin-root odin test app
 package main
 
+import "core:fmt"
 import "core:os"
 import "core:strings"
 import "core:sync"
+import "core:sys/linux"
 import "core:testing"
 
 // data_home is one global and the vault is keyed off it, so tests that
@@ -15,6 +17,64 @@ test_home_lock: sync.Mutex
 
 @(private = "file")
 VAULT_TEST_HOME :: "/tmp/wn-odin-vault-test"
+
+// Run both configurations: odin test app -define:WN_DEV=true
+// -define:ODIN_TEST_NAMES=vault_dev_session (and without WN_DEV).
+@(test)
+vault_dev_session :: proc(t: ^testing.T) {
+	sync.lock(&test_home_lock)
+	defer sync.unlock(&test_home_lock)
+	prev_home := data_home
+	data_home = VAULT_TEST_HOME
+	defer data_home = prev_home
+	os.remove_all(VAULT_TEST_HOME)
+	os.make_directory(VAULT_TEST_HOME)
+	defer os.remove_all(VAULT_TEST_HOME)
+
+	fd, err := linux.memfd_create("wn-vault-test", {})
+	testing.expect(t, err == .NONE)
+	if err != .NONE { return }
+	defer linux.close(fd)
+	previous := os.get_env("WN_DEV_VAULT_FD", context.temp_allocator)
+	os.set_env("WN_DEV_VAULT_FD", fmt.tprintf("%d", fd))
+	defer {
+		if previous == "" { os.unset_env("WN_DEV_VAULT_FD") }
+		else { os.set_env("WN_DEV_VAULT_FD", previous) }
+	}
+	testing.expect_value(t, vault_create("first"), Vault_Err.None)
+	testing.expect_value(t, vault_set("account:alice", "secret"), Vault_Err.None)
+	defer vault_delete()
+
+	when !#config(WN_DEV, false) {
+		testing.expect_value(t, vault_open("", .Dev_Cache), Vault_Err.Wrong_Password)
+		return
+	}
+	// Simulate losing the process's key, then reopen without a password.
+	g_vault.key = {}
+	g_vault.unlocked = false
+	testing.expect_value(t, vault_open("", .Dev_Cache), Vault_Err.None)
+	value, found := vault_get("account:alice", context.temp_allocator)
+	testing.expect(t, found && value == "secret")
+	stale: [VAULT_SALT_LEN + VAULT_KEY_LEN]u8
+	linux.pread(fd, stale[:], 0)
+	testing.expect_value(t, vault_rekey("second"), Vault_Err.None)
+	testing.expect_value(t, vault_open("", .Dev_Cache), Vault_Err.None)
+	linux.pwrite(fd, stale[:], 0)
+	testing.expect_value(t, vault_open("", .Dev_Cache), Vault_Err.Wrong_Password)
+	testing.expect_value(t, vault_open("second"), Vault_Err.None)
+
+	// Matching salt with a corrupted key must still fail authentication.
+	linux.pread(fd, stale[:], 0)
+	stale[VAULT_SALT_LEN] ~= 1
+	linux.pwrite(fd, stale[:], 0)
+	testing.expect_value(t, vault_open("", .Dev_Cache), Vault_Err.Wrong_Password)
+	linux.ftruncate(fd, 1)
+	testing.expect_value(t, vault_open("", .Dev_Cache), Vault_Err.Wrong_Password)
+	testing.expect_value(t, vault_open("second"), Vault_Err.None)
+	vault_delete()
+	n, _ := linux.pread(fd, stale[:], 0)
+	testing.expect_value(t, n, 0)
+}
 
 @(test)
 vault_round_trip :: proc(t: ^testing.T) {

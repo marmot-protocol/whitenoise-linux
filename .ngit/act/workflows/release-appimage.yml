@@ -91,7 +91,7 @@ jobs:
           echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
       - name: Build
-        run: ./build.sh
+        run: scripts/build.sh
 
       # usr/bin + usr/share/whitenoise-linux is a contract with res_dir in
       # app/paths.odin; scripts/install-tree.sh lays it out, the same way

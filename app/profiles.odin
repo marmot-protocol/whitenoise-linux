@@ -70,6 +70,7 @@ profile_queue :: proc(hex: string) {
 
 @(private = "file")
 profile_read_worker :: proc(t: ^thread.Thread) {
+	context.allocator = reload_allocator()
 	batch := (^Profile_Batch)(t.data)
 	defer frame_wake()
 	defer free_all(context.temp_allocator)
@@ -219,6 +220,7 @@ queue_refresh :: proc(client: ^marmot.Client, hex: string) {
 // misses, which is once per unseen account.
 @(private = "file")
 refresh_worker :: proc(_: ^thread.Thread) {
+	context.allocator = reload_allocator()
 	for {
 		sync.lock(&refresh_mutex)
 		if refresh_stopping {
@@ -381,6 +383,10 @@ pic_queue: [dynamic]string
 pic_done: [dynamic]Fetched_Pic
 @(private = "file")
 pic_requested: map[string]bool
+@(private = "file")
+pic_thread: ^thread.Thread
+@(private = "file")
+pic_stopping: bool
 // url → decoded round texture; an entry holding nil means the fetch
 // or decode failed (gradient fallback stays).
 @(private = "file")
@@ -418,8 +424,10 @@ url_pic :: proc(url: string) -> ^rl.Texture2D {
 // contact list makes the trickle visible.
 @(private = "file")
 pic_worker :: proc(_: ^thread.Thread) {
+	context.allocator = reload_allocator()
 	for {
 		sync.lock(&pic_mutex)
+		if pic_stopping { sync.unlock(&pic_mutex); return }
 		url: string
 		have := len(pic_queue) > 0
 		if have {
@@ -451,9 +459,24 @@ pic_worker :: proc(_: ^thread.Thread) {
 }
 
 start_pic_worker :: proc() {
-	thread.start(thread.create(pic_worker))
+	context.allocator = reload_allocator()
+	pic_thread = thread.create(pic_worker)
+	thread.start(pic_thread)
 	refresh_thread = thread.create(refresh_worker)
 	thread.start(refresh_thread)
+}
+
+@(private)
+stop_pic_worker :: proc() {
+	context.allocator = reload_allocator()
+	if pic_thread == nil { return }
+	sync.lock(&pic_mutex)
+	pic_stopping = true
+	sync.unlock(&pic_mutex)
+	thread.join(pic_thread)
+	thread.destroy(pic_thread)
+	pic_thread = nil
+	profile_reads_stop()
 }
 
 // Frame-loop drain: decode fetched bytes into round avatar textures.

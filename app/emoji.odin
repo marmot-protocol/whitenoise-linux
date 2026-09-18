@@ -21,7 +21,7 @@ quick_tile :: proc(emoji: string) -> ^rl.Texture2D {
 }
 
 // On-demand Twemoji tile cache for arbitrary emoji (reaction chips):
-// emoji → texture from vendor/twemoji (staged by build.sh), keyed by
+// emoji → texture from vendor/twemoji (staged by scripts/build.sh), keyed by
 // the twemoji filename convention (hex codepoints joined by '-', VS16
 // dropped; retried with it when the plain name misses). nil = no tile,
 // caller falls back to the raw text glyph.
@@ -32,7 +32,7 @@ twemoji_dir :: proc() -> string {
 emoji_tex_cache: map[string]^rl.Texture2D
 
 // Picker catalog, loaded from vendor/emoji-catalog.tsv (staged by
-// build.sh): base emoji plus a lowercase search name.
+// scripts/build.sh): base emoji plus a lowercase search name.
 Emoji_Entry :: struct {
 	emoji: string,
 	name:  string,
