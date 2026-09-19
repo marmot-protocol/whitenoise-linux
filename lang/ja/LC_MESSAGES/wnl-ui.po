@@ -2049,6 +2049,9 @@ msgstr ""
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr ""
 
+msgid "Unavailable conversation"
+msgstr "利用できない会話"
+
 msgid "Unblock"
 msgstr "ブロック解除"
 
@@ -2057,6 +2060,9 @@ msgstr "ロック解除"
 
 msgid "Unmute"
 msgstr "ミュート解除"
+
+msgid "Unnamed group"
+msgstr "名前のないグループ"
 
 msgid "Unpin"
 msgstr "固定を解除"

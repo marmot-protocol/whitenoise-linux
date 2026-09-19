@@ -1885,6 +1885,9 @@ msgstr ""
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr ""
 
+msgid "Unavailable conversation"
+msgstr ""
+
 msgid "Unblock"
 msgstr ""
 
@@ -1892,6 +1895,9 @@ msgid "Unlock"
 msgstr ""
 
 msgid "Unmute"
+msgstr ""
+
+msgid "Unnamed group"
 msgstr ""
 
 msgid "Unpin"

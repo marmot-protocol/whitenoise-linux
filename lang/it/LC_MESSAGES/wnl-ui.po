@@ -2049,6 +2049,9 @@ msgstr ""
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr ""
 
+msgid "Unavailable conversation"
+msgstr "Conversazione non disponibile"
+
 msgid "Unblock"
 msgstr "Sblocca"
 
@@ -2057,6 +2060,9 @@ msgstr "Sblocca"
 
 msgid "Unmute"
 msgstr "Riattiva"
+
+msgid "Unnamed group"
+msgstr "Gruppo senza nome"
 
 msgid "Unpin"
 msgstr "Rimuovi dai fissati"

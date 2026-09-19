@@ -543,17 +543,17 @@ record_json :: proc(record: ^marmot.Timeline_Message_Record, allocator := contex
 load_archived :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 	timing_start := time.tick_now()
 	defer local_timing_end(.archived_load, timing_start)
-	rows: ^marmot.Chat_List_Row_List
+	rows: ^marmot.Presented_Chat_List
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	if marmot.chat_list(client, account, true, &rows) != .OK {
+	if marmot.presented_chat_list(client, account, true, &rows) != .OK {
 		return
 	}
-	defer marmot.chat_list_row_list_free(rows)
+	defer marmot.presented_chat_list_free(rows)
 
-	fresh := make([dynamic]Chat_Row_Ui, 0, int(rows.len))
-	for i in 0 ..< rows.len {
-		row := &rows.items[i]
-		if !row.archived {
+	fresh := make([dynamic]Chat_Row_Ui, 0, int(rows.rows_len))
+	for i in 0 ..< rows.rows_len {
+		row := &rows.rows[i]
+		if !row.row.archived {
 			continue
 		}
 		append(&fresh, row_to_ui(client, row, ui.account_ref))

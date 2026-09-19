@@ -144,6 +144,7 @@ Chat_Row_Ui :: struct {
 	tick:     marmot.Delivery_State,
 	first_unread: string, // first unread message id, "" = none
 	avatar_url: string, // chat picture URL, "" = none
+	avatar_key: string, // peer public key for a DM, otherwise group id
 	image_hash: string, // encrypted-Blossom avatar hash, "" = none
 	muted:    bool, // marmot's per-chat mute, suppresses notifications
 	last_id:  string, // latest message id, "" = none (notification dedupe)

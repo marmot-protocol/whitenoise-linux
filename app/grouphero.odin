@@ -60,7 +60,7 @@ group_hero :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("GroupHero"))(
 	{layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 8, childAlignment = {x = .Center}, padding = {top = 4, bottom = 4}}},
 	) {
-		avatar("HeroAvatar", 0, chat.group_id, chat.title, 72, chat_pic(chat))
+		avatar("HeroAvatar", 0, chat.avatar_key, chat.title, 72, chat_pic(chat))
 		clay.Text(chat.title, {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT})
 		clay.Text(fmt.tprintf("%d members", len(ui.members)), {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO, letterSpacing = 1})
 		micro_button("HeroPicBtn", "Change photo")

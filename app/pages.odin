@@ -987,12 +987,20 @@ CHAT_ATTACHMENT_AUDIO :: i32(2) // MarmotChatListAttachmentKind::Audio
 // One marmot chat-list row into a UI row; shared by the rail
 // (load_chat_list) and the archive page (load_archived) so both render
 // identically (avatar, time, "You:" prefix, delivery tick).
-row_to_ui :: proc(client: ^marmot.Client, row: ^marmot.Chat_List_Row, account_ref: string) -> Chat_Row_Ui {
-	title := "Untitled"
-	if row.title != nil && len(string(row.title)) > 0 {
-		title = string(row.title)
-	} else if row.group_name != nil && len(string(row.group_name)) > 0 {
-		title = string(row.group_name)
+row_to_ui :: proc(client: ^marmot.Client, presented: ^marmot.Presented_Chat_Row, account_ref: string) -> Chat_Row_Ui {
+	row := &presented.row
+	presentation := &presented.presentation
+	title: string
+	switch presentation.title.tag {
+	case .Literal: title = string(presentation.title.body.literal)
+	case .Unnamed_Group: title = tr("Unnamed group")
+	case .Unavailable_Conversation: title = tr("Unavailable conversation")
+	}
+	avatar_url, image_hash: string
+	switch presentation.avatar.tag {
+	case .Remote_Image: avatar_url = string(presentation.avatar.body.remote.url)
+	case .Encrypted_Group_Image: image_hash = string(presentation.avatar.body.encrypted.image.image_hash_hex)
+	case .Placeholder:
 	}
 
 	preview: string
@@ -1038,8 +1046,9 @@ row_to_ui :: proc(client: ^marmot.Client, row: ^marmot.Chat_List_Row, account_re
 		stable   = row.lifecycle_state == .STABLE,
 		tick     = tick,
 		first_unread = strings.clone(row.first_unread_message_id_hex != nil ? string(row.first_unread_message_id_hex) : ""),
-		avatar_url = strings.clone(row.avatar_url != nil ? string(row.avatar_url) : ""),
-		image_hash = strings.clone(row.avatar != nil && row.avatar.image_hash_hex != nil ? string(row.avatar.image_hash_hex) : ""),
+		avatar_url = strings.clone(avatar_url),
+		avatar_key = strings.clone(row.conversation_kind == .DIRECT && presentation.peer_id != nil ? string(presentation.peer_id) : string(row.group_id_hex)),
+		image_hash = strings.clone(image_hash),
 		// marmot's mute OR the local one from the row menu (its C API
 		// has no mute setter); the notification gate reads this flag.
 		muted    = row.muted || (g_prefs != nil && g_prefs.muted_ids[string(row.group_id_hex)]),
@@ -1052,16 +1061,16 @@ row_to_ui :: proc(client: ^marmot.Client, row: ^marmot.Chat_List_Row, account_re
 load_chat_list :: proc(client: ^marmot.Client, account_ref: string, ui: ^Ui_State) {
 	timing_start := time.tick_now()
 	defer local_timing_end(.chat_list_load, timing_start)
-	rows: ^marmot.Chat_List_Row_List
-	if marmot.chat_list(client, strings.clone_to_cstring(account_ref, context.temp_allocator), false, &rows) != .OK {
+	rows: ^marmot.Presented_Chat_List
+	if marmot.presented_chat_list(client, strings.clone_to_cstring(account_ref, context.temp_allocator), false, &rows) != .OK {
 		ui.client_status = fmt.aprintf("chat list failed: %s", marmot.last_error())
 		return
 	}
-	defer marmot.chat_list_row_list_free(rows)
+	defer marmot.presented_chat_list_free(rows)
 
-	fresh := make([dynamic]Chat_Row_Ui, 0, int(rows.len))
-	for i in 0 ..< rows.len {
-		append(&fresh, row_to_ui(client, &rows.items[i], account_ref))
+	fresh := make([dynamic]Chat_Row_Ui, 0, int(rows.rows_len))
+	for i in 0 ..< rows.rows_len {
+		append(&fresh, row_to_ui(client, &rows.rows[i], account_ref))
 	}
 	chats_replace(&ui.chats, fresh)
 	ui.my_pic_url = profile_info(client, account_ref).pic_url

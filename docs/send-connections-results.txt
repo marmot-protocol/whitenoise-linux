@@ -1,0 +1,226 @@
+Real EU/US relay runs, 2026-09-19. No samples excluded.
+new_connections is a loopback-proxy counter, inactive on public relays.
+
+baseline, round 1
+running 1 test
+send_sample=0 ack_ms=1220.333 received_ms=1220.349
+send_sample=1 ack_ms=1220.026 received_ms=1220.053
+send_sample=2 ack_ms=1222.450 received_ms=1222.472
+send_sample=3 ack_ms=1224.360 received_ms=1224.381
+send_sample=4 ack_ms=1220.367 received_ms=1220.389
+send_sample=5 ack_ms=1218.311 received_ms=1218.330
+send_sample=6 ack_ms=1220.331 received_ms=1220.351
+send_sample=7 ack_ms=1221.200 received_ms=1221.220
+send_sample=8 ack_ms=1219.550 received_ms=1219.570
+send_sample=9 ack_ms=1219.274 received_ms=1219.293
+send_sample=10 ack_ms=1222.847 received_ms=1222.868
+send_sample=11 ack_ms=1219.283 received_ms=1219.304
+send_sample=12 ack_ms=1216.303 received_ms=1216.323
+send_sample=13 ack_ms=1219.208 received_ms=1219.227
+send_sample=14 ack_ms=829.353 received_ms=829.372
+send_sample=15 ack_ms=828.316 received_ms=828.335
+send_sample=16 ack_ms=826.905 received_ms=826.931
+send_sample=17 ack_ms=845.360 received_ms=845.380
+send_sample=18 ack_ms=1219.601 received_ms=1219.619
+send_sample=19 ack_ms=1221.035 received_ms=1221.054
+send_sample=20 ack_ms=838.334 received_ms=838.354
+send_sample=21 ack_ms=1220.726 received_ms=1220.744
+send_sample=22 ack_ms=1085.889 received_ms=1085.908
+send_sample=23 ack_ms=2049.710 received_ms=2049.727
+send_sample=24 ack_ms=1216.053 received_ms=1216.075
+send_sample=25 ack_ms=829.754 received_ms=829.773
+send_sample=26 ack_ms=1168.349 received_ms=1168.368
+send_sample=27 ack_ms=1216.668 received_ms=1216.686
+send_sample=28 ack_ms=829.890 received_ms=829.909
+send_sample=29 ack_ms=829.890 received_ms=829.909
+send_summary setup_ms=0 samples=30 mean_ms=1137.989 p95_ms=1224.360 p99_ms=2049.710 new_connections=0
+test send_connection_reuse ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 158 filtered out; finished in 41.12s
+
+candidate, round 1
+running 1 test
+send_sample=0 ack_ms=149.543 received_ms=171.933
+send_sample=1 ack_ms=141.799 received_ms=165.826
+send_sample=2 ack_ms=145.516 received_ms=166.818
+send_sample=3 ack_ms=146.578 received_ms=167.280
+send_sample=4 ack_ms=148.191 received_ms=167.855
+send_sample=5 ack_ms=144.624 received_ms=170.058
+send_sample=6 ack_ms=143.649 received_ms=166.460
+send_sample=7 ack_ms=145.240 received_ms=167.153
+send_sample=8 ack_ms=141.498 received_ms=166.447
+send_sample=9 ack_ms=150.721 received_ms=167.883
+send_sample=10 ack_ms=142.516 received_ms=169.015
+send_sample=11 ack_ms=144.753 received_ms=168.117
+send_sample=12 ack_ms=145.615 received_ms=168.762
+send_sample=13 ack_ms=146.387 received_ms=168.131
+send_sample=14 ack_ms=143.550 received_ms=167.877
+send_sample=15 ack_ms=144.848 received_ms=166.384
+send_sample=16 ack_ms=142.087 received_ms=168.607
+send_sample=17 ack_ms=143.139 received_ms=168.934
+send_sample=18 ack_ms=143.843 received_ms=169.051
+send_sample=19 ack_ms=143.618 received_ms=167.168
+send_sample=20 ack_ms=143.506 received_ms=166.423
+send_sample=21 ack_ms=142.078 received_ms=166.186
+send_sample=22 ack_ms=144.481 received_ms=168.164
+send_sample=23 ack_ms=145.241 received_ms=167.262
+send_sample=24 ack_ms=142.572 received_ms=168.464
+send_sample=25 ack_ms=144.711 received_ms=166.781
+send_sample=26 ack_ms=143.938 received_ms=169.584
+send_sample=27 ack_ms=145.233 received_ms=168.783
+send_sample=28 ack_ms=141.787 received_ms=167.434
+send_sample=29 ack_ms=149.992 received_ms=167.420
+send_summary setup_ms=0 samples=30 mean_ms=144.708 p95_ms=149.992 p99_ms=150.721 new_connections=0
+test send_connection_reuse ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 158 filtered out; finished in 12.17s
+
+baseline, round 2
+running 1 test
+send_sample=0 ack_ms=1221.068 received_ms=1221.294
+send_sample=1 ack_ms=1220.710 received_ms=1220.901
+send_sample=2 ack_ms=1217.567 received_ms=1217.585
+send_sample=3 ack_ms=1218.821 received_ms=1218.840
+send_sample=4 ack_ms=5837.230 received_ms=5875.926
+send_sample=5 ack_ms=6205.684 received_ms=6205.704
+send_sample=6 ack_ms=1596.941 received_ms=1596.960
+send_sample=7 ack_ms=1225.226 received_ms=1225.247
+send_sample=8 ack_ms=1218.955 received_ms=1218.976
+send_sample=9 ack_ms=1218.100 received_ms=1218.120
+send_sample=10 ack_ms=5840.779 received_ms=5938.629
+send_sample=11 ack_ms=2728.812 received_ms=2728.832
+send_sample=12 ack_ms=1221.099 received_ms=1221.118
+send_sample=13 ack_ms=1098.847 received_ms=1098.868
+send_sample=14 ack_ms=1216.382 received_ms=1216.401
+send_sample=15 ack_ms=1216.581 received_ms=1216.603
+send_sample=16 ack_ms=1095.372 received_ms=1095.393
+test send_connection_reuse has been running for over 60 seconds
+send_sample=17 ack_ms=5839.685 received_ms=5935.556
+send_sample=18 ack_ms=1523.049 received_ms=1523.075
+send_sample=19 ack_ms=1220.892 received_ms=1220.909
+send_sample=20 ack_ms=1222.430 received_ms=1222.447
+send_sample=21 ack_ms=1214.636 received_ms=1214.658
+send_sample=22 ack_ms=5842.597 received_ms=5940.465
+send_sample=23 ack_ms=10630.380 received_ms=10729.720
+send_sample=24 ack_ms=1822.674 received_ms=1822.693
+send_sample=25 ack_ms=5843.650 received_ms=5940.451
+send_sample=26 ack_ms=1519.321 received_ms=1519.339
+send_sample=27 ack_ms=5842.775 received_ms=5940.499
+send_sample=28 ack_ms=5308.243 received_ms=5308.261
+send_sample=29 ack_ms=1221.476 received_ms=1221.495
+send_summary setup_ms=0 samples=30 mean_ms=2854.999 p95_ms=6205.684 p99_ms=10630.380 new_connections=0
+test send_connection_reuse ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 158 filtered out; finished in 105.77s
+
+candidate, round 2
+running 1 test
+send_sample=0 ack_ms=153.221 received_ms=173.782
+send_sample=1 ack_ms=146.261 received_ms=168.379
+send_sample=2 ack_ms=145.222 received_ms=168.699
+send_sample=3 ack_ms=147.533 received_ms=167.883
+send_sample=4 ack_ms=148.492 received_ms=168.728
+send_sample=5 ack_ms=145.436 received_ms=165.319
+send_sample=6 ack_ms=144.840 received_ms=167.157
+send_sample=7 ack_ms=143.366 received_ms=165.415
+send_sample=8 ack_ms=142.742 received_ms=167.998
+send_sample=9 ack_ms=143.554 received_ms=165.716
+send_sample=10 ack_ms=144.336 received_ms=166.713
+send_sample=11 ack_ms=147.279 received_ms=170.241
+send_sample=12 ack_ms=142.816 received_ms=168.418
+send_sample=13 ack_ms=148.947 received_ms=168.493
+send_sample=14 ack_ms=144.000 received_ms=167.063
+send_sample=15 ack_ms=145.063 received_ms=167.114
+send_sample=16 ack_ms=144.212 received_ms=164.917
+send_sample=17 ack_ms=144.765 received_ms=165.892
+send_sample=18 ack_ms=142.355 received_ms=167.634
+send_sample=19 ack_ms=141.205 received_ms=167.809
+send_sample=20 ack_ms=151.623 received_ms=166.671
+send_sample=21 ack_ms=146.300 received_ms=167.594
+send_sample=22 ack_ms=142.003 received_ms=165.555
+send_sample=23 ack_ms=144.242 received_ms=167.944
+send_sample=24 ack_ms=142.481 received_ms=167.826
+send_sample=25 ack_ms=145.439 received_ms=145.458
+send_sample=26 ack_ms=143.548 received_ms=166.367
+send_sample=27 ack_ms=142.070 received_ms=164.796
+send_sample=28 ack_ms=145.970 received_ms=171.798
+send_sample=29 ack_ms=143.971 received_ms=168.386
+send_summary setup_ms=0 samples=30 mean_ms=145.110 p95_ms=151.623 p99_ms=153.221 new_connections=0
+test send_connection_reuse ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 158 filtered out; finished in 19.39s
+
+baseline, round 3
+running 1 test
+send_sample=0 ack_ms=1222.257 received_ms=1222.273
+send_sample=1 ack_ms=1219.055 received_ms=1219.074
+send_sample=2 ack_ms=1216.833 received_ms=1216.857
+send_sample=3 ack_ms=1212.490 received_ms=1212.508
+send_sample=4 ack_ms=1090.042 received_ms=1090.062
+send_sample=5 ack_ms=827.169 received_ms=827.190
+send_sample=6 ack_ms=1215.888 received_ms=1215.906
+send_sample=7 ack_ms=1237.936 received_ms=1237.958
+send_sample=8 ack_ms=1214.433 received_ms=1214.453
+send_sample=9 ack_ms=1218.126 received_ms=1218.145
+send_sample=10 ack_ms=1213.193 received_ms=1213.215
+send_sample=11 ack_ms=1082.318 received_ms=1082.338
+send_sample=12 ack_ms=1215.078 received_ms=1215.099
+send_sample=13 ack_ms=1224.137 received_ms=1224.156
+send_sample=14 ack_ms=1213.175 received_ms=1213.196
+send_sample=15 ack_ms=1219.141 received_ms=1219.160
+send_sample=16 ack_ms=1217.051 received_ms=1217.072
+send_sample=17 ack_ms=1219.767 received_ms=1219.788
+send_sample=18 ack_ms=1216.336 received_ms=1216.355
+send_sample=19 ack_ms=1211.397 received_ms=1211.418
+send_sample=20 ack_ms=1214.495 received_ms=1214.516
+send_sample=21 ack_ms=1222.075 received_ms=1222.094
+send_sample=22 ack_ms=1212.068 received_ms=1212.087
+send_sample=23 ack_ms=2482.217 received_ms=2482.234
+send_sample=24 ack_ms=1260.876 received_ms=1260.898
+send_sample=25 ack_ms=1213.607 received_ms=1213.629
+send_sample=26 ack_ms=1222.933 received_ms=1222.954
+send_sample=27 ack_ms=1217.128 received_ms=1217.149
+send_sample=28 ack_ms=1218.596 received_ms=1218.615
+send_sample=29 ack_ms=1212.797 received_ms=1212.819
+send_summary setup_ms=0 samples=30 mean_ms=1239.421 p95_ms=1260.876 p99_ms=2482.217 new_connections=0
+test send_connection_reuse ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 158 filtered out; finished in 44.17s
+
+candidate, round 3
+running 1 test
+send_sample=0 ack_ms=155.624 received_ms=174.519
+send_sample=1 ack_ms=145.015 received_ms=168.612
+send_sample=2 ack_ms=145.054 received_ms=166.850
+send_sample=3 ack_ms=144.067 received_ms=166.097
+send_sample=4 ack_ms=142.485 received_ms=167.573
+send_sample=5 ack_ms=147.860 received_ms=167.573
+send_sample=6 ack_ms=146.977 received_ms=167.892
+send_sample=7 ack_ms=147.394 received_ms=166.392
+send_sample=8 ack_ms=144.085 received_ms=166.960
+send_sample=9 ack_ms=144.839 received_ms=167.314
+send_sample=10 ack_ms=146.067 received_ms=168.419
+send_sample=11 ack_ms=142.758 received_ms=168.410
+send_sample=12 ack_ms=150.043 received_ms=167.692
+send_sample=13 ack_ms=146.917 received_ms=167.883
+send_sample=14 ack_ms=143.890 received_ms=165.464
+send_sample=15 ack_ms=143.626 received_ms=167.638
+send_sample=16 ack_ms=150.221 received_ms=165.725
+send_sample=17 ack_ms=144.785 received_ms=168.932
+send_sample=18 ack_ms=142.919 received_ms=165.976
+send_sample=19 ack_ms=147.268 received_ms=167.366
+send_sample=20 ack_ms=141.146 received_ms=166.084
+send_sample=21 ack_ms=149.199 received_ms=166.227
+send_sample=22 ack_ms=151.400 received_ms=167.707
+send_sample=23 ack_ms=145.791 received_ms=167.245
+send_sample=24 ack_ms=143.030 received_ms=168.463
+send_sample=25 ack_ms=146.785 received_ms=173.621
+send_sample=26 ack_ms=145.697 received_ms=167.305
+send_sample=27 ack_ms=146.620 received_ms=168.235
+send_sample=28 ack_ms=145.502 received_ms=169.120
+send_sample=29 ack_ms=145.759 received_ms=167.894
+send_summary setup_ms=0 samples=30 mean_ms=146.094 p95_ms=151.400 p99_ms=155.624 new_connections=0
+test send_connection_reuse ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 158 filtered out; finished in 11.93s
+

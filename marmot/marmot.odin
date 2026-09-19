@@ -1,4 +1,4 @@
-// Odin bindings for the marmot-c ABI (mdk PR #1575).
+// Odin bindings for the marmot-c ABI (mdk PR #1929).
 //
 // Hand-written subset of vendor/mdk/crates/marmot-c/include/marmot.h,
 // grown as the UI needs more surface. Ownership rules (see the header):
@@ -111,6 +111,7 @@ Status :: enum i32 {
 	CONVERSATION_WINDOW_PRESENTATION            = 90,
 	MESSAGE_DRAFT_REVISION_CONFLICT             = 91,
 	CONVERSATION_WINDOW_MESSAGE_NOT_RETAINED    = 92,
+	INVALID_APP_COMPONENT = 93,
 }
 
 // Opaque runtime handle.
@@ -220,6 +221,7 @@ Delivery_State :: enum i32 {
 
 // Full mirror of MarmotChatListMessagePreview.
 Chat_List_Message_Preview :: struct {
+	group_system: ^Group_System_Event,
 	message_id_hex:      cstring,
 	sender:              cstring,
 	sender_display_name: cstring,
@@ -228,13 +230,14 @@ Chat_List_Message_Preview :: struct {
 	kind:                u64,
 	timeline_at:         u64,
 	deleted:             bool,
+	deletion_source: i32,
 	has_attachment_kind: bool,
 	attachment_kind:     i32,
 	attachment_count:    u32,
 	delivery_state:      Delivery_State,
 }
 
-#assert(size_of(Chat_List_Message_Preview) == 104)
+#assert(size_of(Chat_List_Message_Preview) == 120)
 
 // Full mirror of MarmotChatListRow.
 Chat_List_Row :: struct {
@@ -278,6 +281,49 @@ Chat_List_Row_List :: struct {
 	items: [^]Chat_List_Row,
 	len:   uint,
 }
+
+// Selected names and avatars from the runtime, including unnamed DMs.
+Presentation_Text :: struct {
+	tag: enum i32 {Literal, Unnamed_Group, Unavailable_Conversation},
+	body: struct #raw_union {
+		literal: cstring,
+		unnamed_group: struct {has_member_count: bool, member_count: u64},
+	},
+}
+
+Presentation_Source :: enum i32 {Group, Peer_Profile, Peer_Fallback, Group_Fallback, Unknown_Fallback}
+
+Selected_Avatar :: struct {
+	tag: enum i32 {Remote_Image, Encrypted_Group_Image, Placeholder},
+	body: struct #raw_union {
+		remote: struct {url, cache_key: cstring},
+		encrypted: struct {image: Chat_List_Avatar, cache_key: cstring},
+		placeholder: struct {stable_seed: cstring, source: Presentation_Source},
+	},
+}
+
+Presented_Chat_Row :: struct {
+	row: Chat_List_Row,
+	presentation: struct {
+		title: Presentation_Text,
+		avatar: Selected_Avatar,
+		title_source, avatar_source: Presentation_Source,
+		peer_id: cstring,
+		resolution: enum i32 {Cached, Last_Known, Fallback},
+	},
+	avatar_asset: rawptr,
+}
+
+Presented_Chat_List :: struct {
+	rows: [^]Presented_Chat_Row,
+	rows_len: uint,
+	version: struct {account_store_epoch: [^]u8, account_store_epoch_len: uint, revision: u64},
+}
+
+#assert(size_of(Presentation_Text) == 24)
+#assert(size_of(Selected_Avatar) == 56)
+#assert(size_of(Presented_Chat_Row) == 320)
+#assert(size_of(Presented_Chat_List) == 40)
 
 Send_Accept_Disposition :: enum i32 {
 	PUBLISHED,
@@ -503,6 +549,7 @@ Timeline_Reply_Preview :: struct {
 	media_len:      uint,
 	agent_text_stream_json: cstring,
 	deleted:        bool,
+	deletion_source: i32,
 	invalidation_status: cstring,
 }
 
@@ -549,6 +596,8 @@ Timeline_Message_Query :: struct {
 // system row (member/admin/rename/avatar/retention change). Reached by
 // pointer only; freed by timeline_page_free.
 Group_System_Event :: struct {
+	provenance: i32,
+	actor_display_name, subject_display_name: cstring,
 	system_type:               cstring,
 	text:                      cstring, // human-readable fallback
 	actor_account_id_hex:      cstring,
@@ -571,6 +620,7 @@ Message_Tag :: struct {
 // value out of Timeline_Page, so the stride must match C exactly.
 Timeline_Message_Record :: struct {
 	message_id_hex:            cstring,
+	has_reports: bool,
 	source_message_id_hex:     cstring,
 	has_source_epoch:          bool,
 	source_epoch:              u64,
@@ -596,7 +646,9 @@ Timeline_Message_Record :: struct {
 	agent_text_stream_json:    cstring,
 	group_system:              ^Group_System_Event, // kind-1210 only, else nil
 	reactions:                 Timeline_Reaction_Summary,
+	edit: ^Timeline_Edit_Summary,
 	deleted:                   bool,
+	deletion_source: i32,
 	deleted_by_message_id_hex: cstring,
 	invalidation_status:       cstring,
 }
@@ -687,8 +739,8 @@ Timeline_Page :: struct {
 // Layout guards: sizes taken from sizeof() under gcc against the
 // vendored marmot.h (x86_64). A mismatch means a mirror drifted from
 // the C layout; fix the struct, then update the constant.
-#assert(size_of(Timeline_Message_Record) == 288)
-#assert(size_of(Group_System_Event) == 80)
+#assert(size_of(Timeline_Message_Record) == 304)
+#assert(size_of(Group_System_Event) == 104)
 #assert(size_of(Timeline_Page) == 24)
 #assert(size_of(Timeline_Message_Query) == 72)
 #assert(size_of(Send_Summary) == 32)
@@ -1124,6 +1176,9 @@ foreign lib {
 	chat_list               :: proc(client: ^Client, account_ref: cstring, include_archived: bool, out: ^^Chat_List_Row_List) -> Status ---
 	chat_list_row_free      :: proc(ptr: ^Chat_List_Row) ---
 	chat_list_row_list_free :: proc(list: ^Chat_List_Row_List) ---
+	presented_chat_list :: proc(client: ^Client, account_ref: cstring, include_archived: bool, out: ^^Presented_Chat_List) -> Status ---
+	@(link_name = "marmot_presented_chat_list_snapshot_free")
+	presented_chat_list_free :: proc(list: ^Presented_Chat_List) ---
 
 	create_identity :: proc(client: ^Client, default_relays: [^]cstring, default_relays_len: uint, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint, out: ^^Account_Summary) -> Status ---
 	login           :: proc(client: ^Client, identity: cstring, default_relays: [^]cstring, default_relays_len: uint, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint, out: ^^Account_Summary) -> Status ---
@@ -1244,6 +1299,8 @@ Host_Performance :: enum u32 {
 	Foreground_Local_Ready,
 	Outbound_Message_Visible,
 	Inbound_Message_Visible,
+	Conversation_Local_Visible,
+	Conversation_Composer_Ready,
 	Linux_startup_before_vault,
 	Linux_startup_after_vault,
 	Linux_window_init,
@@ -1322,4 +1379,51 @@ foreign lib {
 	diagnostics_status :: proc(client: ^Client, out: ^^Diagnostics_Status) -> Status ---
 	@(link_name = "marmot_usage_diagnostics_status_free")
 	diagnostics_status_free :: proc(status: ^Diagnostics_Status) ---
+}
+
+// Optional private-use MLS state, committed with MDK's admin checks.
+Group_App_Component :: struct { component_id: u16, data: [^]u8, data_len: uint }
+App_Message_Record :: struct {
+ message_id_hex, direction, group_id_hex, sender, plaintext: cstring,
+ content_tokens: Markdown_Document,
+ kind: u64,
+ tags: [^]Message_Tag,
+ tags_len: uint,
+ has_source_epoch: bool,
+ source_epoch: u64,
+ has_retention_seconds: bool,
+ retention_seconds: u64,
+ has_retention_expires_at: bool,
+ retention_expires_at: u64,
+ recorded_at, received_at: u64,
+ has_moderation_grant, moderation_grant, invalidated: bool,
+}
+App_Message_List :: struct { items: [^]App_Message_Record, len: uint }
+foreign lib {
+ @(link_name = "marmot_group_app_component")
+ group_app_component :: proc(client: ^Client, account, group: cstring, id: u16, out: ^^Group_App_Component) -> Status ---
+ @(link_name = "marmot_update_app_component")
+ update_app_component :: proc(client: ^Client, account, group: cstring, id: u16, data: [^]u8, count: uint, out: ^^Send_Summary) -> Status ---
+ @(link_name = "marmot_app_component_free")
+ app_component_free :: proc(value: ^Group_App_Component) ---
+ @(link_name = "marmot_messages")
+ messages :: proc(client: ^Client, account, group: cstring, has_limit: u8, limit: u32, kinds: [^]u64, kinds_len: uint, out: ^^App_Message_List) -> Status ---
+ @(link_name = "marmot_app_message_record_list_free")
+ app_message_list_free :: proc(value: ^App_Message_List) ---
+}
+
+#assert(size_of(App_Message_Record) == 176)
+#assert(offset_of(App_Message_Record, has_moderation_grant) == 168)
+#assert(offset_of(App_Message_Record, invalidated) == 170)
+#assert(size_of(Group_App_Component) == 24)
+
+Timeline_Edit_Summary :: struct { edit_count: u64, latest_id: cstring, edited_at: u64 }
+Timeline_Edit_Version :: struct { id: cstring, edited_at: u64, plaintext: cstring }
+Timeline_Edit_Page :: struct { versions: [^]Timeline_Edit_Version, len: uint, has_more: bool }
+@(default_calling_convention = "c")
+foreign lib {
+ @(link_name = "marmot_message_edit_history")
+ message_edit_history :: proc(client: ^Client, account, group, target: cstring, has_before: u8, before: u64, before_id: cstring, limit: u32, out: ^^Timeline_Edit_Page) -> Status ---
+ @(link_name = "marmot_timeline_edit_history_page_free")
+ edit_history_free :: proc(page: ^Timeline_Edit_Page) ---
 }

@@ -44,7 +44,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("ChatHeader"))(
 		{layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(14), childGap = 10, childAlignment = {y = .Center}}, backgroundColor = RAIL_BG},
 		) {
-			avatar("ChatHeadAvatar", 0, chat.group_id, chat.title, 34, chat_pic(chat))
+			avatar("ChatHeadAvatar", 0, chat.avatar_key, chat.title, 34, chat_pic(chat))
 			// Keep unbroken titles from widening the pane beyond the window.
 			if clay.UI(clay.ID("ChatHeadTitleClip"))({clip = {horizontal = true}}) {
 				clay.Text(chat.title, {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT, wrapMode = .None})

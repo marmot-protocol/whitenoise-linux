@@ -6,7 +6,7 @@ retired_chats: [dynamic]Chat_Row_Ui
 @(private)
 chat_free :: proc(chat: Chat_Row_Ui) {
 	for value in ([]string{chat.group_id, chat.title, chat.preview, chat.at,
-		chat.first_unread, chat.avatar_url, chat.image_hash, chat.last_id}) {
+		chat.first_unread, chat.avatar_url, chat.avatar_key, chat.image_hash, chat.last_id}) {
 		delete(value)
 	}
 }

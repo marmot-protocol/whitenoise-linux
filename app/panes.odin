@@ -58,7 +58,7 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 		// Avatar left; two stacked lines right: title/time then
 		// preview/tick, like the slint chat list rows.
 		if clay.UI(clay.ID("ChatRowMain", index))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, childAlignment = {y = .Center}}}) {
-		avatar("ChatAvatar", index, chat.group_id, chat.title, 42, chat_pic(chat))
+		avatar("ChatAvatar", index, chat.avatar_key, chat.title, 42, chat_pic(chat))
 		if clay.UI(clay.ID("ChatRowLines", index))({layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 4}}) {
 			// Reserves the hover chips' height, so the row keeps its size
 			// as the pointer crosses it.

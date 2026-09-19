@@ -1,8 +1,8 @@
-diff --git i/crates/marmot-app/src/app_telemetry.rs w/crates/marmot-app/src/app_telemetry.rs
-index 93da80cb..123ca54c 100644
---- i/crates/marmot-app/src/app_telemetry.rs
-+++ w/crates/marmot-app/src/app_telemetry.rs
-@@ -102,6 +102,44 @@ pub(crate) enum AppPerformanceOperation {
+diff --git c/crates/marmot-app/src/app_telemetry.rs i/crates/marmot-app/src/app_telemetry.rs
+index 8056ebae..c4b1a9b0 100644
+--- c/crates/marmot-app/src/app_telemetry.rs
++++ i/crates/marmot-app/src/app_telemetry.rs
+@@ -105,6 +105,44 @@ pub(crate) enum AppPerformanceOperation {
      MediaDownloadPlaintextVerify,
      HostSplashReady,
      HostForegroundLocalReady,
@@ -47,10 +47,10 @@ index 93da80cb..123ca54c 100644
  }
  
  /// Host-app milestones accepted by [`AppPerformanceTelemetry::record_host_performance`].
-@@ -117,6 +155,44 @@ pub enum HostPerformanceOperation {
-     OutboundMessageVisible,
-     /// From the host receiving a message update until it is rendered.
+@@ -122,6 +160,44 @@ pub enum HostPerformanceOperation {
      InboundMessageVisible,
+     ConversationLocalVisible,
+     ConversationComposerReady,
 +    LinuxStartupBeforeVault,
 +    LinuxStartupAfterVault,
 +    LinuxWindowInit,
@@ -92,7 +92,7 @@ index 93da80cb..123ca54c 100644
  }
  
  #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-@@ -401,6 +477,82 @@ pub struct AppPerformanceSnapshot {
+@@ -411,6 +487,82 @@ pub struct AppPerformanceSnapshot {
      pub host_splash_ready: AppPerformanceOperationSnapshot,
      #[serde(default)]
      pub host_foreground_local_ready: AppPerformanceOperationSnapshot,
@@ -175,7 +175,7 @@ index 93da80cb..123ca54c 100644
  }
  
  #[derive(Clone, Debug, Default)]
-@@ -491,6 +643,44 @@ struct AppPerformanceTelemetryInner {
+@@ -502,6 +654,44 @@ struct AppPerformanceTelemetryInner {
      media_download_plaintext_verify: AppPerformanceOperationTelemetry,
      host_splash_ready: AppPerformanceOperationTelemetry,
      host_foreground_local_ready: AppPerformanceOperationTelemetry,
@@ -220,7 +220,7 @@ index 93da80cb..123ca54c 100644
  }
  
  #[derive(Clone, Debug, Default)]
-@@ -973,6 +1163,128 @@ impl AppPerformanceTelemetry {
+@@ -986,6 +1176,128 @@ impl AppPerformanceTelemetry {
              AppPerformanceOperation::HostForegroundLocalReady => {
                  inner.host_foreground_local_ready.record(duration, success);
              }
@@ -349,120 +349,204 @@ index 93da80cb..123ca54c 100644
          }
      }
  
-@@ -1030,6 +1342,112 @@ impl AppPerformanceTelemetry {
-             HostPerformanceOperation::ForegroundLocalReady => {
-                 AppPerformanceOperation::HostForegroundLocalReady
-             }
-+            HostPerformanceOperation::LinuxStartupBeforeVault => {
-+                AppPerformanceOperation::HostLinuxStartupBeforeVault
-+            }
-+            HostPerformanceOperation::LinuxStartupAfterVault => {
-+                AppPerformanceOperation::HostLinuxStartupAfterVault
-+            }
-+            HostPerformanceOperation::LinuxWindowInit => {
-+                AppPerformanceOperation::HostLinuxWindowInit
-+            }
-+            HostPerformanceOperation::LinuxFontsInit => AppPerformanceOperation::HostLinuxFontsInit,
-+            HostPerformanceOperation::LinuxRuntimeBoot => {
-+                AppPerformanceOperation::HostLinuxRuntimeBoot
-+            }
-+            HostPerformanceOperation::LinuxAccountLoad => {
-+                AppPerformanceOperation::HostLinuxAccountLoad
-+            }
-+            HostPerformanceOperation::LinuxAccountSwitch => {
-+                AppPerformanceOperation::HostLinuxAccountSwitch
-+            }
-+            HostPerformanceOperation::LinuxFrameUpdate => {
-+                AppPerformanceOperation::HostLinuxFrameUpdate
-+            }
-+            HostPerformanceOperation::LinuxFrameLayout => {
-+                AppPerformanceOperation::HostLinuxFrameLayout
-+            }
-+            HostPerformanceOperation::LinuxFrameDraw => AppPerformanceOperation::HostLinuxFrameDraw,
-+            HostPerformanceOperation::LinuxFramePresent => {
-+                AppPerformanceOperation::HostLinuxFramePresent
-+            }
-+            HostPerformanceOperation::LinuxFramePostPresent => {
-+                AppPerformanceOperation::HostLinuxFramePostPresent
-+            }
-+            HostPerformanceOperation::LinuxFrameUntilPresent => {
-+                AppPerformanceOperation::HostLinuxFrameUntilPresent
-+            }
-+            HostPerformanceOperation::LinuxFrameIdleWait => {
-+                AppPerformanceOperation::HostLinuxFrameIdleWait
-+            }
-+            HostPerformanceOperation::LinuxChatListLoad => {
-+                AppPerformanceOperation::HostLinuxChatListLoad
-+            }
-+            HostPerformanceOperation::LinuxContactsLoad => {
-+                AppPerformanceOperation::HostLinuxContactsLoad
-+            }
-+            HostPerformanceOperation::LinuxArchivedLoad => {
-+                AppPerformanceOperation::HostLinuxArchivedLoad
-+            }
-+            HostPerformanceOperation::LinuxProfileLoad => {
-+                AppPerformanceOperation::HostLinuxProfileLoad
-+            }
-+            HostPerformanceOperation::LinuxProfileRead => {
-+                AppPerformanceOperation::HostLinuxProfileRead
-+            }
-+            HostPerformanceOperation::LinuxTimelineOpen => {
-+                AppPerformanceOperation::HostLinuxTimelineOpen
-+            }
-+            HostPerformanceOperation::LinuxTimelinePage => {
-+                AppPerformanceOperation::HostLinuxTimelinePage
-+            }
-+            HostPerformanceOperation::LinuxTimelineHandoff => {
-+                AppPerformanceOperation::HostLinuxTimelineHandoff
-+            }
-+            HostPerformanceOperation::LinuxTimelineApply => {
-+                AppPerformanceOperation::HostLinuxTimelineApply
-+            }
-+            HostPerformanceOperation::LinuxSendWorker => {
-+                AppPerformanceOperation::HostLinuxSendWorker
-+            }
-+            HostPerformanceOperation::LinuxMessageOpWorker => {
-+                AppPerformanceOperation::HostLinuxMessageOpWorker
-+            }
-+            HostPerformanceOperation::LinuxSearchGlobal => {
-+                AppPerformanceOperation::HostLinuxSearchGlobal
-+            }
-+            HostPerformanceOperation::LinuxSearchSidebar => {
-+                AppPerformanceOperation::HostLinuxSearchSidebar
-+            }
-+            HostPerformanceOperation::LinuxMediaQueueWait => {
-+                AppPerformanceOperation::HostLinuxMediaQueueWait
-+            }
-+            HostPerformanceOperation::LinuxMediaWorker => {
-+                AppPerformanceOperation::HostLinuxMediaWorker
-+            }
-+            HostPerformanceOperation::LinuxMediaLoad => AppPerformanceOperation::HostLinuxMediaLoad,
-+            HostPerformanceOperation::LinuxMediaCacheHit => {
-+                AppPerformanceOperation::HostLinuxMediaCacheHit
-+            }
-+            HostPerformanceOperation::LinuxMediaDecode => {
-+                AppPerformanceOperation::HostLinuxMediaDecode
-+            }
-+            HostPerformanceOperation::LinuxMediaPublish => {
-+                AppPerformanceOperation::HostLinuxMediaPublish
-+            }
-+            HostPerformanceOperation::LinuxVaultDeriveKey => {
-+                AppPerformanceOperation::HostLinuxVaultDeriveKey
-+            }
-+            HostPerformanceOperation::LinuxVaultOpen => AppPerformanceOperation::HostLinuxVaultOpen,
-+            HostPerformanceOperation::LinuxVaultCreate => {
-+                AppPerformanceOperation::HostLinuxVaultCreate
-+            }
-+            HostPerformanceOperation::LinuxVaultPersist => {
-+                AppPerformanceOperation::HostLinuxVaultPersist
-+            }
-+            HostPerformanceOperation::LinuxSettingsSave => {
-+                AppPerformanceOperation::HostLinuxSettingsSave
-+            }
-         };
-         self.record(
-             operation,
-@@ -1142,6 +1560,44 @@ impl AppPerformanceTelemetry {
+@@ -1079,6 +1391,196 @@ impl AppPerformanceTelemetry {
+                 duration,
+                 success,
+             ),
++            HostPerformanceOperation::LinuxStartupBeforeVault => self.record(
++                AppPerformanceOperation::HostLinuxStartupBeforeVault,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxStartupAfterVault => self.record(
++                AppPerformanceOperation::HostLinuxStartupAfterVault,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxWindowInit => self.record(
++                AppPerformanceOperation::HostLinuxWindowInit,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxFontsInit => self.record(
++                AppPerformanceOperation::HostLinuxFontsInit,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxRuntimeBoot => self.record(
++                AppPerformanceOperation::HostLinuxRuntimeBoot,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxAccountLoad => self.record(
++                AppPerformanceOperation::HostLinuxAccountLoad,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxAccountSwitch => self.record(
++                AppPerformanceOperation::HostLinuxAccountSwitch,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxFrameUpdate => self.record(
++                AppPerformanceOperation::HostLinuxFrameUpdate,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxFrameLayout => self.record(
++                AppPerformanceOperation::HostLinuxFrameLayout,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxFrameDraw => self.record(
++                AppPerformanceOperation::HostLinuxFrameDraw,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxFramePresent => self.record(
++                AppPerformanceOperation::HostLinuxFramePresent,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxFramePostPresent => self.record(
++                AppPerformanceOperation::HostLinuxFramePostPresent,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxFrameUntilPresent => self.record(
++                AppPerformanceOperation::HostLinuxFrameUntilPresent,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxFrameIdleWait => self.record(
++                AppPerformanceOperation::HostLinuxFrameIdleWait,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxChatListLoad => self.record(
++                AppPerformanceOperation::HostLinuxChatListLoad,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxContactsLoad => self.record(
++                AppPerformanceOperation::HostLinuxContactsLoad,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxArchivedLoad => self.record(
++                AppPerformanceOperation::HostLinuxArchivedLoad,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxProfileLoad => self.record(
++                AppPerformanceOperation::HostLinuxProfileLoad,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxProfileRead => self.record(
++                AppPerformanceOperation::HostLinuxProfileRead,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxTimelineOpen => self.record(
++                AppPerformanceOperation::HostLinuxTimelineOpen,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxTimelinePage => self.record(
++                AppPerformanceOperation::HostLinuxTimelinePage,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxTimelineHandoff => self.record(
++                AppPerformanceOperation::HostLinuxTimelineHandoff,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxTimelineApply => self.record(
++                AppPerformanceOperation::HostLinuxTimelineApply,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxSendWorker => self.record(
++                AppPerformanceOperation::HostLinuxSendWorker,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxMessageOpWorker => self.record(
++                AppPerformanceOperation::HostLinuxMessageOpWorker,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxSearchGlobal => self.record(
++                AppPerformanceOperation::HostLinuxSearchGlobal,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxSearchSidebar => self.record(
++                AppPerformanceOperation::HostLinuxSearchSidebar,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxMediaQueueWait => self.record(
++                AppPerformanceOperation::HostLinuxMediaQueueWait,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxMediaWorker => self.record(
++                AppPerformanceOperation::HostLinuxMediaWorker,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxMediaLoad => self.record(
++                AppPerformanceOperation::HostLinuxMediaLoad,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxMediaCacheHit => self.record(
++                AppPerformanceOperation::HostLinuxMediaCacheHit,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxMediaDecode => self.record(
++                AppPerformanceOperation::HostLinuxMediaDecode,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxMediaPublish => self.record(
++                AppPerformanceOperation::HostLinuxMediaPublish,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxVaultDeriveKey => self.record(
++                AppPerformanceOperation::HostLinuxVaultDeriveKey,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxVaultOpen => self.record(
++                AppPerformanceOperation::HostLinuxVaultOpen,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxVaultCreate => self.record(
++                AppPerformanceOperation::HostLinuxVaultCreate,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxVaultPersist => self.record(
++                AppPerformanceOperation::HostLinuxVaultPersist,
++                duration,
++                success,
++            ),
++            HostPerformanceOperation::LinuxSettingsSave => self.record(
++                AppPerformanceOperation::HostLinuxSettingsSave,
++                duration,
++                success,
++            ),
+         }
+     }
+ 
+@@ -1187,6 +1689,44 @@ impl AppPerformanceTelemetry {
              media_download_plaintext_verify: inner.media_download_plaintext_verify.snapshot(),
              host_splash_ready: inner.host_splash_ready.snapshot(),
              host_foreground_local_ready: inner.host_foreground_local_ready.snapshot(),
@@ -507,14 +591,14 @@ index 93da80cb..123ca54c 100644
          }
      }
  }
-diff --git i/crates/marmot-app/src/relay_telemetry_export.rs w/crates/marmot-app/src/relay_telemetry_export.rs
-index fa5f1250..ad2fa62d 100644
---- i/crates/marmot-app/src/relay_telemetry_export.rs
-+++ w/crates/marmot-app/src/relay_telemetry_export.rs
-@@ -1679,6 +1679,215 @@ fn append_app_performance_points(
-         metric_names::APP_HOST_FOREGROUND_LOCAL_READY_SUCCESSES,
-         metric_names::APP_HOST_FOREGROUND_LOCAL_READY_FAILURES,
-     );
+diff --git c/crates/marmot-app/src/relay_telemetry_export.rs i/crates/marmot-app/src/relay_telemetry_export.rs
+index 22721530..b023b80f 100644
+--- c/crates/marmot-app/src/relay_telemetry_export.rs
++++ i/crates/marmot-app/src/relay_telemetry_export.rs
+@@ -1718,6 +1718,215 @@ fn append_app_performance_points(
+             });
+         }
+     }
 +    // Linux stages measure elapsed spans, including early/error returns.
 +    // Export durations and sample counts without claiming successful outcomes.
 +    for (name, samples_name, operation) in [
@@ -727,13 +811,13 @@ index fa5f1250..ad2fa62d 100644
      // Process-wide SQLCipher probe counters (mdk#1439): runs are keyed opens
      // paying the passphrase KDF, skips are KDF derivations avoided via cached
      // verdicts. Population-level only, no labels.
-diff --git i/crates/marmot-app/src/relay_telemetry_export/tests.rs w/crates/marmot-app/src/relay_telemetry_export/tests.rs
-index 192ed122..a95c7cb1 100644
---- i/crates/marmot-app/src/relay_telemetry_export/tests.rs
-+++ w/crates/marmot-app/src/relay_telemetry_export/tests.rs
-@@ -796,3 +796,210 @@ fn message_journey_metric_export() {
-     assert_eq!(legacy.outbound_message_queue_wait.attempts, 0);
-     assert_eq!(legacy.host_inbound_message_visible.attempts, 0);
+diff --git c/crates/marmot-app/src/relay_telemetry_export/tests.rs i/crates/marmot-app/src/relay_telemetry_export/tests.rs
+index 224a6355..af532261 100644
+--- c/crates/marmot-app/src/relay_telemetry_export/tests.rs
++++ i/crates/marmot-app/src/relay_telemetry_export/tests.rs
+@@ -862,3 +862,210 @@ fn runtime_metrics_keep_first_observation_and_export_live_gauges_without_labels(
+         matches!(metric(&finished, "app_runtime_conversation_open_duration_ms"), ExportMetricValue::Histogram(h) if h.bucket_counts.iter().sum::<u64>() + h.overflow_count == 1)
+     );
  }
 +
 +#[test]
@@ -942,14 +1026,14 @@ index 192ed122..a95c7cb1 100644
 +        );
 +    }
 +}
-diff --git i/crates/marmot-c/include/marmot.h w/crates/marmot-c/include/marmot.h
-index 4f7f06fd..73397d19 100644
---- i/crates/marmot-c/include/marmot.h
-+++ w/crates/marmot-c/include/marmot.h
-@@ -894,6 +894,44 @@ typedef enum MarmotHostPerformanceOperation {
-   MARMOT_HOST_PERFORMANCE_OPERATION_FOREGROUND_LOCAL_READY,
-   MARMOT_HOST_PERFORMANCE_OPERATION_OUTBOUND_MESSAGE_VISIBLE,
+diff --git c/crates/marmot-c/include/marmot.h i/crates/marmot-c/include/marmot.h
+index 4cc581ac..859812f5 100644
+--- c/crates/marmot-c/include/marmot.h
++++ i/crates/marmot-c/include/marmot.h
+@@ -988,6 +988,44 @@ typedef enum MarmotHostPerformanceOperation {
    MARMOT_HOST_PERFORMANCE_OPERATION_INBOUND_MESSAGE_VISIBLE,
+   MARMOT_HOST_PERFORMANCE_OPERATION_CONVERSATION_LOCAL_VISIBLE,
+   MARMOT_HOST_PERFORMANCE_OPERATION_CONVERSATION_COMPOSER_READY,
 +  MARMOT_HOST_PERFORMANCE_OPERATION_LINUX_STARTUP_BEFORE_VAULT,
 +  MARMOT_HOST_PERFORMANCE_OPERATION_LINUX_STARTUP_AFTER_VAULT,
 +  MARMOT_HOST_PERFORMANCE_OPERATION_LINUX_WINDOW_INIT,
@@ -991,14 +1075,14 @@ index 4f7f06fd..73397d19 100644
  } MarmotHostPerformanceOperation;
  
  /**
-diff --git i/crates/marmot-c/src/types/telemetry.rs w/crates/marmot-c/src/types/telemetry.rs
-index ef73a7e5..0a1edae1 100644
---- i/crates/marmot-c/src/types/telemetry.rs
-+++ w/crates/marmot-c/src/types/telemetry.rs
-@@ -17,6 +17,44 @@ c_enum! {
-         ForegroundLocalReady,
-         OutboundMessageVisible,
+diff --git c/crates/marmot-c/src/types/telemetry.rs i/crates/marmot-c/src/types/telemetry.rs
+index d3ff6a3f..1fd4eca1 100644
+--- c/crates/marmot-c/src/types/telemetry.rs
++++ i/crates/marmot-c/src/types/telemetry.rs
+@@ -20,6 +20,44 @@ c_enum! {
          InboundMessageVisible,
+         ConversationLocalVisible,
+         ConversationComposerReady,
 +        LinuxStartupBeforeVault,
 +        LinuxStartupAfterVault,
 +        LinuxWindowInit,
@@ -1040,9 +1124,9 @@ index ef73a7e5..0a1edae1 100644
      }
  }
  
-@@ -27,6 +65,46 @@ impl From<MarmotHostPerformanceOperation> for HostPerformanceOperationFfi {
-             MarmotHostPerformanceOperation::InboundMessageVisible => Self::InboundMessageVisible,
-             MarmotHostPerformanceOperation::SplashReady => Self::SplashReady,
+@@ -36,6 +74,46 @@ impl From<MarmotHostPerformanceOperation> for HostPerformanceOperationFfi {
+                 Self::ConversationLocalVisible
+             }
              MarmotHostPerformanceOperation::ForegroundLocalReady => Self::ForegroundLocalReady,
 +            MarmotHostPerformanceOperation::LinuxStartupBeforeVault => {
 +                Self::LinuxStartupBeforeVault
@@ -1087,14 +1171,14 @@ index ef73a7e5..0a1edae1 100644
          }
      }
  }
-diff --git i/crates/marmot-uniffi/src/conversions/telemetry.rs w/crates/marmot-uniffi/src/conversions/telemetry.rs
-index 8fd2de5c..7f4a74f7 100644
---- i/crates/marmot-uniffi/src/conversions/telemetry.rs
-+++ w/crates/marmot-uniffi/src/conversions/telemetry.rs
-@@ -6,6 +6,44 @@ pub enum HostPerformanceOperationFfi {
-     ForegroundLocalReady,
-     OutboundMessageVisible,
+diff --git c/crates/marmot-uniffi/src/conversions/telemetry.rs i/crates/marmot-uniffi/src/conversions/telemetry.rs
+index b2343f31..136bff6b 100644
+--- c/crates/marmot-uniffi/src/conversions/telemetry.rs
++++ i/crates/marmot-uniffi/src/conversions/telemetry.rs
+@@ -8,6 +8,44 @@ pub enum HostPerformanceOperationFfi {
      InboundMessageVisible,
+     ConversationLocalVisible,
+     ConversationComposerReady,
 +    LinuxStartupBeforeVault,
 +    LinuxStartupAfterVault,
 +    LinuxWindowInit,
@@ -1135,18 +1219,18 @@ index 8fd2de5c..7f4a74f7 100644
 +    LinuxSettingsSave,
  }
  
- /// One fixed-bucket duration histogram bucket.
-@@ -256,6 +294,7 @@ impl From<marmot_app::AppPerformanceSnapshot> for AppPerformanceSnapshotFfi {
+ /// Bounded runtime diagnostics. Operation names are defined by MDK, never callers.
+@@ -320,6 +358,7 @@ impl From<marmot_app::AppPerformanceSnapshot> for AppPerformanceSnapshotFfi {
              media_download_plaintext_verify,
              host_splash_ready,
              host_foreground_local_ready,
 +            .. // Linux-only distributions are exposed by the host diagnostics.
          } = value;
          Self {
-             app_start: app_start.into(),
-@@ -353,6 +392,44 @@ impl From<HostPerformanceOperationFfi> for marmot_app::HostPerformanceOperation
-             HostPerformanceOperationFfi::InboundMessageVisible => Self::InboundMessageVisible,
-             HostPerformanceOperationFfi::SplashReady => Self::SplashReady,
+             runtime_operations: runtime_operations.into_iter().map(Into::into).collect(),
+@@ -422,6 +461,44 @@ impl From<HostPerformanceOperationFfi> for marmot_app::HostPerformanceOperation
+             }
+             HostPerformanceOperationFfi::ConversationLocalVisible => Self::ConversationLocalVisible,
              HostPerformanceOperationFfi::ForegroundLocalReady => Self::ForegroundLocalReady,
 +            HostPerformanceOperationFfi::LinuxStartupBeforeVault => Self::LinuxStartupBeforeVault,
 +            HostPerformanceOperationFfi::LinuxStartupAfterVault => Self::LinuxStartupAfterVault,

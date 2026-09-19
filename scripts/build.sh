@@ -17,29 +17,33 @@ MDK_REPO="https://github.com/marmot-protocol/mdk.git"
 MDK_PIN="$(pin mdk)"
 MDK="$HERE/vendor/mdk"
 BUNDLE="$MDK/crates/marmot-c/output"
-TIMINGS_PATCH="$HERE/patches/mdk-linux-timings.patch"
+MDK_PATCHES=("$HERE/patches/mdk-linux-timings.patch" "$HERE/patches/mdk-send-connections.patch" "$HERE/patches/mdk-message-authority.patch")
 
 if [ ! -d "$MDK" ]; then
   git clone --filter=blob:none "$MDK_REPO" "$MDK"
 fi
 
 if [ "$(git -C "$MDK" rev-parse HEAD)" != "$MDK_PIN" ]; then
-  if git -C "$MDK" apply --reverse --check "$TIMINGS_PATCH" 2>/dev/null; then
-    git -C "$MDK" apply --reverse "$TIMINGS_PATCH"
-  fi
+  for patch in "${MDK_PATCHES[@]}"; do
+    if git -C "$MDK" apply --reverse --check "$patch" 2>/dev/null; then
+      git -C "$MDK" apply --reverse "$patch"
+    fi
+  done
   git -C "$MDK" fetch origin "$MDK_PIN"
   git -C "$MDK" checkout --detach "$MDK_PIN"
   rm -rf "$BUNDLE"
 fi
 
-# The fixed Linux host stages use the same consent-gated OTLP exporter.
-if git -C "$MDK" apply --check "$TIMINGS_PATCH" 2>/dev/null; then
-  git -C "$MDK" apply "$TIMINGS_PATCH"
-elif ! git -C "$MDK" apply --reverse --check "$TIMINGS_PATCH" 2>/dev/null; then
-  echo "==> Linux timing patch conflicts with vendor/mdk" >&2
-  exit 1
-fi
-TIMINGS_HASH="$(sha256sum "$TIMINGS_PATCH")"
+# Apply Linux telemetry and connected-relay publishing changes to the pinned MDK.
+for patch in "${MDK_PATCHES[@]}"; do
+  if git -C "$MDK" apply --check "$patch" 2>/dev/null; then
+    git -C "$MDK" apply "$patch"
+  elif ! git -C "$MDK" apply --reverse --check "$patch" 2>/dev/null; then
+    echo "==> MDK patch conflicts with vendor/mdk: $patch" >&2
+    exit 1
+  fi
+done
+TIMINGS_HASH="$(sha256sum "${MDK_PATCHES[@]}")"
 if [ ! -f "$BUNDLE/lib/libmarmot_c.a" ] || [ ! -f "$BUNDLE/.otlp-export" ] || [ "$(cat "$BUNDLE/.linux-timings" 2>/dev/null || true)" != "$TIMINGS_HASH" ]; then
   OTLP_EXPORT=1 "$MDK/crates/marmot-c/c-bindings.sh"
   touch "$BUNDLE/.otlp-export"

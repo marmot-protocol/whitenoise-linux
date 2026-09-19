@@ -90,7 +90,7 @@ forward_modal :: proc(ui: ^Ui_State) {
 					cornerRadius = rr(8),
 				},
 				) {
-					avatar("FwdAvatar", u32(i), chat.group_id, chat.title, 30, chat_pic(chat))
+					avatar("FwdAvatar", u32(i), chat.avatar_key, chat.title, 30, chat_pic(chat))
 					clay.Text(chat.title, {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
 				}
 			}
