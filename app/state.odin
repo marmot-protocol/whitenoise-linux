@@ -339,6 +339,7 @@ Member_Ui :: struct {
 
 // One chat shared with a contact, for the GROUPS IN COMMON section.
 Common_Group :: struct {
+	id: string,
 	title:   string,
 	members: int,
 }
@@ -381,7 +382,7 @@ Ui_State :: struct {
 	peer_name:     string,
 	peer_pic:      string, // kind-0 picture URL, "" = none
 	peer_npub:     string, // derived from peer_hex, "" if malformed
-	peer_contact:  bool, // peer is in the contacts list
+	profile_contact: Contact_Ui, // viewed profile outside the saved contacts list
 	add_account_open: bool, // show the login pane to add another account
 	member_count:  int, // selected chat's member count
 	scroll_pending: bool, // jump timeline scroll to newest after reload

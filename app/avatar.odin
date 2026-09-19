@@ -1,12 +1,14 @@
-// Deterministic fallback avatars, the avatar_for port: any key hashes
-// to a stable color + initials so every row always renders something.
-// Profile pictures layer on top later.
+// Published pictures take precedence over identity and group crop circles.
 package main
 
 import "core:strings"
+import "core:fmt"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
+
+@(private = "file")
+AVATAR_CROP_SCALE :: f32(0.9)
 
 // FNV-1a, the same stable-hash idea the slint app uses.
 avatar_hash :: proc(key: string) -> u32 {
@@ -60,28 +62,52 @@ avatar_initials :: proc(name: string) -> string {
 }
 
 // A profile picture when one is loaded (pre-masked round pixels from
-// drain_pics), else a colored circle with centered initials.
+// drain_pics), else the key's crop circle. Initials cover loading or invalid keys.
 // `ring` draws an accent halo around the circle: callers pass a fading
 // color when the person just said something, so the eye lands on who
 // spoke before it lands on what they said.
 avatar :: proc(id_str: string, index: u32, key: string, name: string, size: f32, tex: ^rl.Texture2D = nil, ring: clay.Color = {}) {
+	tex := tex
+	radius := size / 2
+	crop := tex == nil && (len(key) == 64 || len(key) == 32)
+	if crop {
+		shape := g_ui != nil ? g_ui.prefs.crop_avatar_shape : Crop_Shape.Slanted
+		tex = url_pic(fmt.tprintf("%s:%s", CROP_SHAPE_PREFIX[shape], key))
+		if shape == .Square { radius = 0 }
+		if shape == .Rounded { radius = size * 0.2 }
+	} else {
+		shape := g_ui != nil ? g_ui.prefs.avatar_shape : Avatar_Shape.Circle
+		if shape == .Square { radius = 0 }
+		if shape == .Rounded { radius = size * 0.2 }
+		mask := shape == .Square ? "square" : shape == .Rounded ? "rounded" : "circle"
+		if tex != nil {
+			style := profile_style(key, .Avatar)
+			if style.shape != "" { mask = style.shape }
+		}
+		tex = shaped_avatar(tex, mask)
+	}
 	halo := ring.a > 0 ? clay.BorderElementConfig{color = ring, width = {2, 2, 2, 2, 0}} : {}
 	if tex != nil {
+		image_size := crop ? size * AVATAR_CROP_SCALE : size
 		if clay.UI(clay.ID(id_str, index))(
 		{
-			layout = {sizing = {width = clay.SizingFixed(size), height = clay.SizingFixed(size)}},
-			image = {imageData = tex},
-			cornerRadius = rr(size / 2),
+			layout = {sizing = {width = clay.SizingFixed(size), height = clay.SizingFixed(size)}, childAlignment = {x = .Center, y = .Center}},
+			cornerRadius = clay.CornerRadiusAll(radius),
 			border = halo,
 		},
-		) {}
+		) {
+			if clay.UI(clay.ID("AvatarImage", clay.ID(id_str, index).id))({
+				layout = {sizing = {width = clay.SizingFixed(image_size), height = clay.SizingFixed(image_size)}},
+				image = {imageData = tex},
+			}) {}
+		}
 		return
 	}
 	if clay.UI(clay.ID(id_str, index))(
 	{
 		layout = {sizing = {width = clay.SizingFixed(size), height = clay.SizingFixed(size)}, childAlignment = {x = .Center, y = .Center}},
 		backgroundColor = avatar_color(key),
-		cornerRadius = rr(size / 2),
+		cornerRadius = clay.CornerRadiusAll(radius),
 		border = halo,
 	},
 	) {

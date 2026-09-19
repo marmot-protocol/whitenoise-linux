@@ -79,6 +79,20 @@ emoji_tex :: proc(emoji: string) -> ^rl.Texture2D {
 		return cached
 	}
 
+	img := emoji_image(emoji)
+	tex: ^rl.Texture2D
+	if img.data != nil {
+		tex = new(rl.Texture2D)
+		tex^ = rl.LoadTextureFromImage(img)
+		rl.UnloadImage(img)
+		rl.SetTextureFilter(tex^, .BILINEAR)
+	}
+	emoji_tex_cache[strings.clone(emoji)] = tex
+	return tex
+}
+
+@(private)
+emoji_image :: proc(emoji: string) -> rl.Image {
 	plain := strings.builder_make(context.temp_allocator)
 	full := strings.builder_make(context.temp_allocator)
 	for r in emoji {
@@ -95,7 +109,6 @@ emoji_tex :: proc(emoji: string) -> ^rl.Texture2D {
 		fmt.sbprintf(&plain, "%x", i32(r))
 	}
 
-	tex: ^rl.Texture2D
 	candidates := [2]string{strings.to_string(plain), strings.to_string(full)}
 	for candidate in candidates {
 		path := fmt.tprintf("%s/%s.png", twemoji_dir(), candidate)
@@ -106,14 +119,9 @@ emoji_tex :: proc(emoji: string) -> ^rl.Texture2D {
 		if img.data == nil {
 			continue
 		}
-		tex = new(rl.Texture2D)
-		tex^ = rl.LoadTextureFromImage(img)
-		rl.UnloadImage(img)
-		rl.SetTextureFilter(tex^, .BILINEAR)
-		break
+		return img
 	}
-	emoji_tex_cache[strings.clone(emoji)] = tex
-	return tex
+	return {}
 }
 
 PAGE_ICONS := [Page]string{

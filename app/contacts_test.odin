@@ -4,6 +4,31 @@ import "core:testing"
 import marmot "../marmot"
 
 @(test)
+view_unsaved_profile :: proc(t: ^testing.T) {
+	context.allocator = context.temp_allocator
+	ui := Ui_State{selected_contact = -1, peer_hex = "visitor", peer_name = "Pepi Testing", peer_npub = "npub-visitor", peer_open = true}
+	append(&ui.contacts, Contact_Ui{id_hex = "saved", name = "Saved contact"})
+	view_peer_profile(&ui, nil)
+	contact, found := shown_contact(&ui)
+	testing.expect(t, found && !ui.peer_open && ui.page == .Contacts)
+	testing.expect_value(t, contact.id_hex, "visitor")
+	testing.expect_value(t, contact.name, "Pepi Testing")
+	testing.expect_value(t, len(ui.contacts), 1)
+	testing.expect_value(t, ui.selected_contact, -1)
+	// Opening another popup cannot replace the profile being viewed underneath it.
+	ui.peer_hex = "saved"
+	contact, _ = shown_contact(&ui)
+	testing.expect_value(t, contact.id_hex, "visitor")
+	view_peer_profile(&ui, nil)
+	contact, found = shown_contact(&ui)
+	testing.expect(t, found && ui.selected_contact == 0 && len(ui.profile_contact.id_hex) == 0)
+	testing.expect_value(t, contact.name, "Saved contact")
+	ui.account_ref, ui.peer_hex, ui.profile.loaded = "self", "self", true
+	view_peer_profile(&ui, nil)
+	testing.expect_value(t, ui.page, Page.Profile)
+}
+
+@(test)
 contacts_named_first :: proc(t: ^testing.T) {
 	context.allocator = context.temp_allocator
 	ui: Ui_State

@@ -11,6 +11,7 @@ profiles_update_live_views :: proc(t: ^testing.T) {
 	ui := Ui_State{account_ref = hex, peer_hex = hex, peer_open = true, member_nick = 0}
 	append(&ui.members, Member_Ui{id_hex = hex, name = strings.clone("Before")})
 	append(&ui.contacts, Contact_Ui{id_hex = hex, name = strings.clone("Before")})
+	ui.profile_contact = Contact_Ui{id_hex = hex, name = strings.clone("Before")}
 	append(&ui.account_ids, hex)
 	append(&ui.accounts, strings.clone("Before"))
 	append(&ui.account_pics, "")
@@ -26,6 +27,8 @@ profiles_update_live_views :: proc(t: ^testing.T) {
 	testing.expect_value(t, ui.contacts[0].name, "After")
 	testing.expect_value(t, contact_label(&ui, ui.contacts[0]), "Local nickname")
 	testing.expect_value(t, ui.contacts[0].pic_url, info.pic_url)
+	testing.expect_value(t, ui.profile_contact.name, "After")
+	testing.expect_value(t, ui.profile_contact.pic_url, info.pic_url)
 	testing.expect_value(t, ui.peer_name, "Local nickname")
 	testing.expect_value(t, ui.peer_pic, info.pic_url)
 	testing.expect_value(t, ui.my_pic_url, info.pic_url)
@@ -43,6 +46,7 @@ profiles_update_live_views :: proc(t: ^testing.T) {
 	testing.expect_value(t, ui.peer_name, short_hex(hex))
 	testing.expect_value(t, ui.members[0].pic_url, "")
 	testing.expect_value(t, ui.contacts[0].pic_url, "")
+	testing.expect_value(t, ui.profile_contact.pic_url, "")
 	testing.expect_value(t, ui.peer_pic, "")
 	testing.expect_value(t, ui.my_pic_url, "")
 }

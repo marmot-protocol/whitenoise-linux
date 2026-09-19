@@ -633,7 +633,7 @@ contact_groups :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, members: []marmot.Group
 			ui.dm_peer[strings.clone(chat.group_id)] = strings.clone(id)
 		}
 		if index, ok := indices[id]; ok {
-			append(&ui.contacts[index].groups, Common_Group{strings.clone(chat.title), len(members)})
+			append(&ui.contacts[index].groups, Common_Group{strings.clone(chat.group_id), strings.clone(chat.title), len(members)})
 		}
 	}
 }

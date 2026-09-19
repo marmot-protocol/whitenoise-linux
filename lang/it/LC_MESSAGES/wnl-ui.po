@@ -90,6 +90,9 @@ msgstr "MEMBRI"
 msgid "AUDIT LOG FILES"
 msgstr "FILE DI LOG DI AUDIT"
 
+msgid "AVATARS"
+msgstr "AVATAR"
+
 msgid "About"
 msgstr "Informazioni"
 
@@ -347,6 +350,9 @@ msgstr ""
 #, fuzzy
 msgid "Chip text"
 msgstr "Copia testo"
+
+msgid "Circle"
+msgstr "Cerchio"
 
 msgid "Clear cache"
 msgstr "Svuota cache"
@@ -609,6 +615,9 @@ msgstr "Crea backup"
 msgid "Create poll"
 msgstr "Crea"
 
+msgid "Crop circle shape"
+msgstr "Forma dei crop circle"
+
 msgid "DANGER ZONE"
 msgstr "ZONA PERICOLOSA"
 
@@ -651,6 +660,9 @@ msgstr ""
 
 msgid "Decode own"
 msgstr ""
+
+msgid "Default avatar shape"
+msgstr "Forma predefinita degli avatar"
 
 msgid "Default stack"
 msgstr ""
@@ -1449,6 +1461,9 @@ msgstr "Anteprima"
 msgid "Previous / next in the media viewer"
 msgstr ""
 
+msgid "Profile"
+msgstr "Profilo"
+
 msgid "Promote"
 msgstr ""
 
@@ -1617,6 +1632,9 @@ msgstr ""
 msgid "RevealNsecBtn"
 msgstr "Mostra chiave"
 
+msgid "Rounded"
+msgstr "Arrotondato"
+
 msgid "SCROLLING"
 msgstr ""
 
@@ -1668,9 +1686,6 @@ msgstr "Salva video"
 
 msgid "Scan to add"
 msgstr "Scansiona per aggiungere"
-
-msgid "Scan to add this account from another device"
-msgstr "Scansiona per aggiungere questo account da un altro dispositivo"
 
 msgid "Scroll speed"
 msgstr ""
@@ -1847,6 +1862,9 @@ msgstr ""
 msgid "Size: %s"
 msgstr "Dimensione: %s"
 
+msgid "Slanted"
+msgstr "Inclinato"
+
 msgid "Small"
 msgstr "Piccola"
 
@@ -1861,6 +1879,9 @@ msgstr "Modello vocale"
 
 msgid "Speech to text"
 msgstr "Da voce a testo"
+
+msgid "Square"
+msgstr "Quadrato"
 
 msgid "Start chat"
 msgstr "Avvia chat"
@@ -2083,6 +2104,12 @@ msgstr "Usa un'altra chiave"
 msgid "Use this theme"
 msgstr "Immagine successiva"
 
+msgid "Used for generated user and group avatars."
+msgstr "Usata per gli avatar generati di utenti e gruppi."
+
+msgid "Used for profile photos without a published shape."
+msgstr "Usata per le foto profilo senza una forma pubblicata."
+
 msgid "Vault password changed."
 msgstr ""
 
@@ -2092,9 +2119,8 @@ msgstr "Verifica del download..."
 msgid "View"
 msgstr ""
 
-#, fuzzy
-msgid "View contact"
-msgstr "Aggiungi contatto"
+msgid "View full profile"
+msgstr "Visualizza il profilo completo"
 
 msgid "View raw event"
 msgstr ""

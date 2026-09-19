@@ -668,6 +668,20 @@ settings_appearance :: proc(ui: ^Ui_State) {
 		}
 	}
 
+	eyebrow("AVATARS")
+	if clay.UI(clay.ID("RowAvatarShape"))(srow()) {
+		row_labels("Default avatar shape", "Used for profile photos without a published shape.")
+		for label, shape in AVATAR_SHAPE_NAMES {
+			theme_chip_indexed("AvatarShapeChip", u32(shape), tr(label), ui.prefs.avatar_shape == shape)
+		}
+	}
+	if clay.UI(clay.ID("RowCropShape"))(srow()) {
+		row_labels("Crop circle shape", "Used for generated user and group avatars.")
+		for label, shape in CROP_SHAPE_NAMES {
+			theme_chip_indexed("CropShapeChip", u32(shape), tr(label), ui.prefs.crop_avatar_shape == shape)
+		}
+	}
+
 	eyebrow("ZOOM")
 	if clay.UI(clay.ID("RowZoom"))(srow()) {
 		row_labels("Interface zoom", "Also Ctrl + / - / 0.")
@@ -1233,6 +1247,20 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		handle_keys(ui, client)
 
 	case .Appearance:
+		for _, shape in AVATAR_SHAPE_NAMES {
+			if clay.PointerOver(clay.ID("AvatarShapeChip", u32(shape))) {
+				ui.prefs.avatar_shape = shape
+				save_settings(ui)
+				return
+			}
+		}
+		for _, shape in CROP_SHAPE_NAMES {
+			if clay.PointerOver(clay.ID("CropShapeChip", u32(shape))) {
+				ui.prefs.crop_avatar_shape = shape
+				save_settings(ui)
+				return
+			}
+		}
 		if clicked("ThemeDrop") {
 			ui.theme_menu_open = true
 			return

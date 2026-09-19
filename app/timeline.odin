@@ -1284,8 +1284,11 @@ render_segs :: proc(id: u32, segs: []Inline_Seg, font_size: u16, color: clay.Col
 					mention_hover = seg.hex
 				}
 				info := profile_info(g_client, seg.hex)
-				avatar("MentionPhoto", id * 128 + u32(k), seg.hex, mention_label(seg.hex), f32(font_size), url_pic(info.pic_url))
-				crop_circle("MentionCircle", id * 128 + u32(k), seg.hex, f32(font_size))
+				photo := url_pic(info.pic_url)
+				avatar("MentionPhoto", id * 128 + u32(k), seg.hex, mention_label(seg.hex), f32(font_size), photo)
+				if photo != nil {
+					crop_circle("MentionCircle", id * 128 + u32(k), seg.hex, f32(font_size))
+				}
 				clay.Text(fmt.tprintf("@%s", mention_label(seg.hex)), {fontId = FONT_TITLE, fontSize = font_size, textColor = {255, 255, 255, 235}})
 			}
 		} else if seg.fx != 0 {

@@ -174,10 +174,10 @@ register_starter_pic :: proc(hex: string, name: string, url: string, image: rl.I
 // group://, blossom://): nothing to fetch, the texture lands in the cache
 // directly. Re-registering an URL replaces its texture.
 register_local_pic :: proc(url: string, image: rl.Image) {
-	tex := new(rl.Texture2D)
-	tex^ = circle_texture(image)
+	tex := photo_texture(image)
 	if old, ok := pic_textures[url]; ok {
 		if old != nil {
+			forget_avatar(old)
 			rl.UnloadTexture(old^)
 			free(old)
 		}
@@ -326,7 +326,7 @@ update_profile :: proc(ui: ^Ui_State, hex: string, info: Profile_Info) -> bool {
 		return false
 	}
 	profile_cache[hex] = info
-	if old.name != info.name { wrap_flush = true }
+	wrap_flush = true
 	name := len(info.name) > 0 ? info.name : short_hex(hex)
 	for &member in ui.members {
 		if member.id_hex != hex {
@@ -349,6 +349,12 @@ update_profile :: proc(ui: ^Ui_State, hex: string, info: Profile_Info) -> bool {
 		delete(contact.pic_url)
 		contact.name = strings.clone(name)
 		contact.pic_url = strings.clone(info.pic_url)
+	}
+	if ui.profile_contact.id_hex == hex {
+		delete(ui.profile_contact.name)
+		delete(ui.profile_contact.pic_url)
+		ui.profile_contact.name = strings.clone(name)
+		ui.profile_contact.pic_url = strings.clone(info.pic_url)
 	}
 	if ui.peer_hex == hex {
 		delete(ui.peer_name)
@@ -454,6 +460,10 @@ pic_worker :: proc(_: ^thread.Thread) {
 			data, side = crop_circle_pixels(url[len("crop-circle:"):])
 		} else if strings.has_prefix(url, "crop-square:") {
 			data, side = crop_circle_pixels(url[len("crop-square:"):], .Square)
+		} else if strings.has_prefix(url, "crop-round:") {
+			data, side = crop_circle_pixels(url[len("crop-round:"):], .Circle)
+		} else if strings.has_prefix(url, "crop-rounded:") {
+			data, side = crop_circle_pixels(url[len("crop-rounded:"):], .Rounded)
 		} else {
 			data = pic_load(url)
 		}
@@ -544,19 +554,25 @@ drain_pics :: proc() {
 		} else if f.data != nil {
 			image := rl.LoadImageFromMemory(".img", raw_data(f.data), i32(len(f.data)))
 			if image.data != nil {
-				tex = new(rl.Texture2D)
-				tex^ = circle_texture(image)
+				tex = photo_texture(image)
 				rl.UnloadImage(image)
 			}
 			delete(f.data)
 		}
 		pic_textures[f.url] = tex // nil marks a permanent miss
+		if tex != nil && f.side == 0 { wrap_flush = true }
 	}
 	delete(done)
 }
 
 @(private)
-Crop_Shape :: enum { Slanted, Square }
+Crop_Shape :: enum { Slanted, Square, Circle, Rounded }
+
+@(private)
+CROP_SHAPE_PREFIX := [Crop_Shape]string{.Slanted = "crop-circle", .Square = "crop-square", .Circle = "crop-round", .Rounded = "crop-rounded"}
+
+@(private)
+CROP_SHAPE_NAMES := [Crop_Shape]string{.Slanted = N_("Slanted"), .Square = N_("Square"), .Circle = N_("Circle"), .Rounded = N_("Rounded")}
 
 // Public keys are already 32-byte digests. MLS's 16-byte IDs need SHA-256.
 @(private)
@@ -572,6 +588,10 @@ crop_circle_pixels :: proc(key: string, shape := Crop_Shape.Slanted) -> ([]u8, i
 	image := cc.make_from_digest(digest, .Detailed, module_size = 2, alpha = .Opaque)
 	if shape == .Square { return image.pixels, i32(image.width) }
 	defer cc.image_destroy(image)
+	if shape == .Circle || shape == .Rounded {
+		mask := shape == .Circle ? "circle" : "rounded"
+		return avatar_mask_pixels({data = raw_data(image.pixels), width = i32(image.width), height = i32(image.height)}, mask), i32(image.width)
+	}
 	pixels := make([]u8, len(image.pixels))
 	// Fit every row into a left-leaning trapezoid without cropping the fingerprint.
 	for y in 0 ..< image.height {
@@ -590,34 +610,9 @@ crop_circle_pixels :: proc(key: string, shape := Crop_Shape.Slanted) -> ([]u8, i
 }
 
 @(private)
-crop_circle :: proc(id: string, index: u32, key: string, size: f32, shape := Crop_Shape.Slanted) {
-	tex := url_pic(fmt.tprintf("%s:%s", shape == .Square ? "crop-square" : "crop-circle", key))
+crop_circle :: proc(id: string, index: u32, key: string, size: f32, shape: Crop_Shape = Crop_Shape(-1)) {
+	shape := shape
+	if shape == Crop_Shape(-1) { shape = g_ui != nil ? g_ui.prefs.crop_avatar_shape : .Slanted }
+	tex := url_pic(fmt.tprintf("%s:%s", CROP_SHAPE_PREFIX[shape], key))
 	if clay.UI(clay.ID(id, index))({layout = {sizing = {width = clay.SizingFixed(size), height = clay.SizingFixed(size)}}, image = {imageData = tex}}) {}
-}
-
-// Center-crop to a square and cut a circular alpha mask, then upload.
-// The clay SDL renderer draws images as plain rects (cornerRadius is
-// ignored for images), so roundness has to live in the pixels.
-@(private = "file")
-circle_texture :: proc(image: rl.Image) -> rl.Texture2D {
-	side := min(image.width, image.height)
-	ox := (image.width - side) / 2
-	oy := (image.height - side) / 2
-	out := make([]u8, int(side) * int(side) * 4, context.temp_allocator)
-
-	src := image.data
-	radius := f32(side) / 2
-	for y in 0 ..< side {
-		for x in 0 ..< side {
-			s := (int(oy + y) * int(image.width) + int(ox + x)) * 4
-			d := (int(y) * int(side) + int(x)) * 4
-			out[d + 0] = src[s + 0]
-			out[d + 1] = src[s + 1]
-			out[d + 2] = src[s + 2]
-			dx := f32(x) + 0.5 - radius
-			dy := f32(y) + 0.5 - radius
-			out[d + 3] = dx * dx + dy * dy <= radius * radius ? src[s + 3] : 0
-		}
-	}
-	return rl.LoadTextureFromImage({data = raw_data(out), width = side, height = side})
 }

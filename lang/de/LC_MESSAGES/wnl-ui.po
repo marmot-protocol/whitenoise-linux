@@ -90,6 +90,9 @@ msgstr "MITGLIEDER"
 msgid "AUDIT LOG FILES"
 msgstr "AUDIT-PROTOKOLLDATEIEN"
 
+msgid "AVATARS"
+msgstr "AVATARE"
+
 msgid "About"
 msgstr "Über"
 
@@ -347,6 +350,9 @@ msgstr ""
 #, fuzzy
 msgid "Chip text"
 msgstr "Text kopieren"
+
+msgid "Circle"
+msgstr "Kreis"
 
 msgid "Clear cache"
 msgstr "Cache leeren"
@@ -609,6 +615,9 @@ msgstr "Backup erstellen"
 msgid "Create poll"
 msgstr "Erstellen"
 
+msgid "Crop circle shape"
+msgstr "Crop-Circle-Form"
+
 msgid "DANGER ZONE"
 msgstr "GEFAHRENZONE"
 
@@ -651,6 +660,9 @@ msgstr ""
 
 msgid "Decode own"
 msgstr ""
+
+msgid "Default avatar shape"
+msgstr "Standardform für Avatare"
 
 msgid "Default stack"
 msgstr ""
@@ -1449,6 +1461,9 @@ msgstr "Anhören"
 msgid "Previous / next in the media viewer"
 msgstr ""
 
+msgid "Profile"
+msgstr "Profil"
+
 msgid "Promote"
 msgstr ""
 
@@ -1617,6 +1632,9 @@ msgstr ""
 msgid "RevealNsecBtn"
 msgstr "Schlüssel anzeigen"
 
+msgid "Rounded"
+msgstr "Abgerundet"
+
 msgid "SCROLLING"
 msgstr ""
 
@@ -1668,9 +1686,6 @@ msgstr "Video speichern"
 
 msgid "Scan to add"
 msgstr "Zum Hinzufügen scannen"
-
-msgid "Scan to add this account from another device"
-msgstr "Scanne den Code, um dieses Konto von einem anderen Gerät hinzuzufügen"
 
 msgid "Scroll speed"
 msgstr ""
@@ -1847,6 +1862,9 @@ msgstr ""
 msgid "Size: %s"
 msgstr "Größe: %s"
 
+msgid "Slanted"
+msgstr "Schräg"
+
 msgid "Small"
 msgstr "Klein"
 
@@ -1861,6 +1879,9 @@ msgstr "Sprachmodell"
 
 msgid "Speech to text"
 msgstr "Sprache zu Text"
+
+msgid "Square"
+msgstr "Quadratisch"
 
 msgid "Start chat"
 msgstr "Chat starten"
@@ -2083,6 +2104,12 @@ msgstr "Anderen Schlüssel verwenden"
 msgid "Use this theme"
 msgstr "Nächstes Bild"
 
+msgid "Used for generated user and group avatars."
+msgstr "Wird für generierte Benutzer- und Gruppenavatare verwendet."
+
+msgid "Used for profile photos without a published shape."
+msgstr "Wird für Profilbilder ohne veröffentlichte Form verwendet."
+
 msgid "Vault password changed."
 msgstr ""
 
@@ -2092,9 +2119,8 @@ msgstr "Download wird überprüft..."
 msgid "View"
 msgstr ""
 
-#, fuzzy
-msgid "View contact"
-msgstr "Kontakt hinzufügen"
+msgid "View full profile"
+msgstr "Vollständiges Profil anzeigen"
 
 msgid "View raw event"
 msgstr ""

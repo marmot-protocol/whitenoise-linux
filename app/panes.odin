@@ -241,18 +241,10 @@ open_peer :: proc(ui: ^Ui_State, client: ^marmot.Client, hex_id: string, name: s
 	if len(ui.contacts) == 0 {
 		load_contacts(client, ui)
 	}
-	ui.peer_contact = false
-	for contact in ui.contacts {
-		if contact.id_hex == hex_id {
-			ui.peer_contact = true
-			break
-		}
-	}
 	ui.peer_open = true
 }
 
-// Peer-profile popup: who they are, their npub, and the jump to the
-// full contact page when they're a contact.
+// Peer-profile popup with a jump to the full profile for any public key.
 peer_modal :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("PeerModal"))(
 	{
@@ -264,11 +256,14 @@ peer_modal :: proc(ui: ^Ui_State) {
 	},
 	) {
 		if clay.UI(clay.ID("PeerHead"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 14, childAlignment = {y = .Center}}}) {
-			avatar("PeerAvatar", 0, ui.peer_hex, ui.peer_name, 56, url_pic(ui.peer_pic))
+			photo := url_pic(ui.peer_pic)
+			avatar("PeerAvatar", 0, ui.peer_hex, ui.peer_name, 56, photo)
 			if clay.UI(clay.ID("PeerHeadCol"))({layout = {layoutDirection = .TopToBottom, childGap = 3}}) {
 				clay.Text(ui.peer_name, {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
 				if clay.UI(clay.ID("PeerFingerprint"))({layout = {childGap = 6, childAlignment = {y = .Center}}}) {
-					crop_circle("PeerCircle", 0, ui.peer_hex, 24)
+					if photo != nil {
+						crop_circle("PeerCircle", 0, ui.peer_hex, 24)
+					}
 					clay.Text(npub_tail(ui.peer_npub), {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO})
 				}
 			}
@@ -282,9 +277,7 @@ peer_modal :: proc(ui: ^Ui_State) {
 
 		if clay.UI(clay.ID("PeerActions"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}}) {
 			micro_button("PeerCopyNpub", "Copy npub")
-			if ui.peer_contact {
-				micro_button("PeerViewContact", "View contact")
-			}
+			micro_button("PeerViewProfile", "View full profile")
 		}
 	}
 }
@@ -406,14 +399,21 @@ profile_rail_link :: proc(id_str: string, icon: string, label: string) {
 }
 
 contacts_pane :: proc(ui: ^Ui_State) {
-	if ui.selected_contact < 0 || ui.selected_contact >= len(ui.contacts) {
+	contact, found := shown_contact(ui)
+	if !found {
 		centered_note("PickContact", "Contact", "Select a contact from the list.")
 		return
 	}
-	contact := ui.contacts[ui.selected_contact]
 
+	style := profile_style(contact.id_hex)
+	body_font, title_font := profile_font(style.fonts[0]), profile_font(style.fonts[1])
+	FONT_BODY := body_font != 0 ? body_font : u16(0)
+	FONT_TITLE := body_font != 0 ? body_font : u16(1)
+	old := profile_palette(profile_colors(style))
+	defer profile_palette(old)
+	background := profile_background(style)
 	if clay.UI(clay.ID("ContactPage"))(
-	{layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom, padding = {left = 24, right = 24, top = 14, bottom = 24}, childGap = 10}, clip = {vertical = true, childOffset = clay.GetScrollOffset()}},
+	{layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom, padding = {left = 24, right = 24, top = 14, bottom = 24}, childGap = 10}, backgroundColor = background.customData == nil ? BG : clay.Color{}, custom = background, clip = {vertical = true, childOffset = clay.GetScrollOffset()}},
 	) {
 		// Header strip: icon plate + page title, like the chat header.
 		if clay.UI(clay.ID("ContactHead"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, childAlignment = {y = .Center}, padding = {bottom = 4}}}) {
@@ -422,14 +422,14 @@ contacts_pane :: proc(ui: ^Ui_State) {
 			) {
 				clay.Text(PAGE_ICONS[Page.Contacts], {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
 			}
-			clay.Text("Contact", {fontId = FONT_TITLE, fontSize = 14, textColor = TEXT})
+			clay.Text(tr(ui.selected_contact >= 0 ? N_("Contact") : N_("Profile")), {fontId = FONT_TITLE, fontSize = 14, textColor = TEXT})
 		}
 		if clay.UI(clay.ID("ContactHeadRule"))({layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(1)}}, backgroundColor = DIVIDER}) {}
 
 		if clay.UI(clay.ID("ContactHero"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 14, childAlignment = {y = .Center}, padding = {top = 10, bottom = 6}}}) {
 			avatar("ContactHeroAvatar", 0, contact.id_hex, contact.name, 52, url_pic(contact.pic_url))
 			if clay.UI(clay.ID("ContactHeroCol"))({layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 2}, clip = {horizontal = true}}) {
-				clay.Text(contact_label(ui, contact), {fontId = FONT_TITLE, fontSize = 20, textColor = TEXT, wrapMode = .None})
+				clay.Text(contact_label(ui, contact), {fontId = title_font != 0 ? title_font : FONT_TITLE, fontSize = 20, textColor = TEXT, wrapMode = .None})
 				clay.Text(npub_tail(contact.npub), {fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO, wrapMode = .None})
 				if contact_label(ui, contact) != contact.name {
 					clay.Text(fmt.tprintf("aka %s", contact.name), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO, wrapMode = .None})
@@ -469,7 +469,7 @@ contacts_pane :: proc(ui: ^Ui_State) {
 			}
 			identity_w := clay.GetElementData(clay.ID("IdentityCard")).boundingBox.width
 			if identity_w <= 0 { identity_w = page_w(ui) - 48 }
-			identity_codes("Contact", contact.id_hex, contact_qr(ui, contact.npub), identity_w)
+			identity_codes("Contact", contact.id_hex, contact_qr(ui, contact.npub), identity_w, font = FONT_TITLE)
 		}
 		micro_button("QrBtn", "Show as QR")
 
@@ -489,7 +489,7 @@ contacts_pane :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("RelaysEyebrow"))({layout = {padding = {top = 8}}}) {
 			eyebrow("RELAYS IN COMMON")
 		}
-		contact_relays_card()
+		contact_relays_card(FONT_BODY)
 
 		if clay.UI(clay.ID("GroupsEyebrow"))({layout = {padding = {top = 8}}}) {
 			eyebrow("GROUPS IN COMMON")
@@ -505,7 +505,7 @@ contacts_pane :: proc(ui: ^Ui_State) {
 				if clay.UI(clay.ID("CommonGroup", u32(i)))(
 				{layout = {sizing = {width = clay.SizingGrow()}, padding = {left = 8, right = 8, top = 8, bottom = 8}, childGap = 10, childAlignment = {y = .Center}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(8)},
 				) {
-					avatar("CommonGroupAvatar", u32(i), group.title, group.title, 26)
+					avatar("CommonGroupAvatar", u32(i), group.id, group.title, 26)
 					if clay.UI(clay.ID("CommonGroupCol", u32(i)))({layout = {layoutDirection = .TopToBottom, childGap = 1}}) {
 						clay.Text(group.title, {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
 						clay.Text(fmt.tprintf("%d members", group.members), {fontId = FONT_BODY, fontSize = 10, textColor = TEXT_LO})
@@ -521,7 +521,9 @@ contacts_pane :: proc(ui: ^Ui_State) {
 		}
 		if clay.UI(clay.ID("ActionsRow"))({layout = {childGap = 8}}) {
 			micro_button("BlockBtn", ui.blocked[contact.id_hex] ? "Unblock" : "Block", DANGER)
-			micro_button("RemoveContactBtn", "Remove contact", DANGER)
+			if ui.selected_contact >= 0 {
+				micro_button("RemoveContactBtn", "Remove contact", DANGER)
+			}
 		}
 
 		if open_now(clay.ID("QrModal"), ui.qr_open) && ui.qr_tex != nil {
@@ -537,7 +539,9 @@ contacts_pane :: proc(ui: ^Ui_State) {
 RELAY_ROWS_MAX :: 6
 
 @(private = "file")
-contact_relays_card :: proc() {
+contact_relays_card :: proc(font: u16 = FONT_BODY) {
+	FONT_BODY := font
+	FONT_TITLE := font == 0 ? u16(1) : font
 	if clay.UI(clay.ID("RelaysCard"))(
 	{layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, padding = {left = 16, right = 12, top = 10, bottom = 10}, childGap = 6}, backgroundColor = ROW_BG, cornerRadius = rr(10), border = {color = FIELD_BORDER, width = bw()}},
 	) {
@@ -671,7 +675,8 @@ qr_texture :: proc(npub: string) -> ^rl.Texture2D {
 }
 
 @(private = "file")
-identity_codes :: proc(prefix: string, key: string, qr: ^rl.Texture2D, width: f32) {
+identity_codes :: proc(prefix: string, key: string, qr: ^rl.Texture2D, width: f32, font: u16 = FONT_TITLE) {
+	FONT_TITLE := font
 	if clay.UI(clay.ID(fmt.tprintf("%sQrPlate", prefix)))({layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, padding = {top = 8, bottom = 16}, childAlignment = {x = .Center}}}) {
 		if clay.UI(clay.ID(fmt.tprintf("%sFingerprint", prefix)))({layout = {layoutDirection = width < 424 ? .TopToBottom : .LeftToRight, childGap = 16}}) {
 			if clay.UI(clay.ID(fmt.tprintf("%sPatternCard", prefix)))({layout = {layoutDirection = .TopToBottom, padding = clay.PaddingAll(16), childGap = 12, childAlignment = {x = .Center}}, backgroundColor = CARD, cornerRadius = rr(10), border = {color = FIELD_BORDER, width = bw()}}) {
@@ -772,7 +777,9 @@ form_row :: proc(ui: ^Ui_State, index: u32, label: string, box_id: string, buf: 
 // One label-left / value-right hairline row in the PROFILE card.
 // The whole row is a shortcut into the edit form, so it lights on
 // hover like any other actionable row.
-profile_kv :: proc(index: u32, label: string, value: string, last := false) {
+profile_kv :: proc(index: u32, label: string, value: string, last := false, font: u16 = FONT_BODY) {
+	FONT_BODY := font
+	FONT_TITLE := font == 0 ? u16(1) : font
 	if clay.UI(clay.ID("ProfileKv", index))(
 	{
 		layout = {sizing = {width = clay.SizingGrow()}, padding = {left = 16, right = 16, top = 12, bottom = 12}, childAlignment = {y = .Center}, childGap = 10},
@@ -795,9 +802,18 @@ profile_kv :: proc(index: u32, label: string, value: string, last := false) {
 // IDENTITY (npub + inline QR), PROFILE rows, accounts. Relays and the
 // nsec moved to Settings (Network / Keys) and left this page.
 profile_pane :: proc(ui: ^Ui_State) {
+	style := profile_style(ui.account_ref)
+	body_font, title_font := profile_font(style.fonts[0]), profile_font(style.fonts[1])
+	FONT_BODY := body_font != 0 ? body_font : u16(0)
+	FONT_TITLE := body_font != 0 ? body_font : u16(1)
+	old := profile_palette(profile_colors(style))
+	defer profile_palette(old)
+	background := profile_background(style)
 	if clay.UI(clay.ID("ProfilePage"))(
 	{
 		layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(20), childGap = 12},
+		backgroundColor = background.customData == nil ? BG : clay.Color{},
+		custom = background,
 		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 	},
 	) {
@@ -890,7 +906,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 					// While editing, the hero previews the drafts live.
 					shown_name := ui.profile.editing ? string(ui.name_input[:]) : ui.profile.name
 					shown_about := ui.profile.editing ? string(ui.about_input[:]) : ui.profile.about
-					clay.Text(len(shown_name) > 0 ? shown_name : "(no display name)", {fontId = FONT_TITLE, fontSize = 24, textColor = TEXT})
+					clay.Text(len(shown_name) > 0 ? shown_name : "(no display name)", {fontId = title_font != 0 ? title_font : FONT_TITLE, fontSize = 24, textColor = TEXT})
 					clay.Text(len(ui.profile.username) > 0 ? fmt.tprintf("@%s", ui.profile.username) : npub_tail(ui.profile.npub), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO})
 					if len(shown_about) > 0 {
 						clay.Text(shown_about, {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
@@ -965,7 +981,7 @@ profile_pane :: proc(ui: ^Ui_State) {
 			if ui.profile.qr != nil {
 				identity_w := clay.GetElementData(clay.ID("ProfileIdCard")).boundingBox.width
 				if identity_w <= 0 { identity_w = page_w(ui) - 40 }
-				identity_codes("Profile", ui.account_ref, ui.profile.qr, identity_w)
+				identity_codes("Profile", ui.account_ref, ui.profile.qr, identity_w, font = FONT_TITLE)
 			}
 		}
 
@@ -981,10 +997,10 @@ profile_pane :: proc(ui: ^Ui_State) {
 			border = {color = FIELD_BORDER, width = bw()},
 		},
 		) {
-			profile_kv(0, "Username", len(ui.profile.username) > 0 ? fmt.tprintf("@%s", ui.profile.username) : "")
-			profile_kv(1, "NIP-05", ui.profile.nip05)
-			profile_kv(2, "Lightning", ui.profile.lud16)
-			profile_kv(3, "Picture", ui.profile.pic_set ? "Set" : "Not set", true)
+			profile_kv(0, "Username", len(ui.profile.username) > 0 ? fmt.tprintf("@%s", ui.profile.username) : "", font = FONT_BODY)
+			profile_kv(1, "NIP-05", ui.profile.nip05, font = FONT_BODY)
+			profile_kv(2, "Lightning", ui.profile.lud16, font = FONT_BODY)
+			profile_kv(3, "Picture", ui.profile.pic_set ? "Set" : "Not set", true, font = FONT_BODY)
 		}
 
 		if clay.UI(clay.ID("SignOutPad"))({layout = {padding = {top = 6}}}) {

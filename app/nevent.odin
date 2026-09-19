@@ -288,7 +288,7 @@ nev_img_worker :: proc(url: string) {
 	if !os.exists(path) {
 		os.make_directory(fmt.tprintf("%s/events", data_home))
 		os.make_directory(fmt.tprintf("%s/events/img", data_home))
-		state, _, _, err := os.process_exec({command = {"curl", "-sfL", "--user-agent", "WhiteNoiseLinux/1.0 (Nostr event previews)", "--max-time", "20", "-o", path, url}}, context.temp_allocator)
+		state, _, _, err := os.process_exec({command = {"curl", "-sfL", "--proto", "=http,https", "--proto-redir", "=http,https", "--user-agent", "WhiteNoiseLinux/1.0 (Nostr event previews)", "--max-time", "20", "--max-filesize", "16777216", "-o", path, "--", url}}, context.temp_allocator)
 		if err != nil || state.exit_code != 0 {
 			os.remove(path)
 		}
@@ -432,7 +432,7 @@ drain_nev :: proc() {
 		if card.created > 0 {
 			card.stamp = format_full(u64(card.created))
 		}
-		if len(card.content) > 0 && g_client != nil {
+		if card.kind != 0 && card.kind != 16767 && len(card.content) > 0 && g_client != nil {
 			doc: ^marmot.Markdown_Document
 			if marmot.parse_markdown(g_client, strings.clone_to_cstring(card.content, context.temp_allocator), &doc) == .OK {
 				convert_blocks(&card.blocks, doc.blocks, doc.blocks_len, false, ([^]u8)(doc.blank_lines_before)[:doc.blank_lines_before_len])
@@ -462,13 +462,9 @@ drain_nev :: proc() {
 
 // ── card ────────────────────────────────────────────────────────────
 
-// The card itself, drawn where the token was written. token is the
-// bech32 as written (minus any nostr: prefix), what the button opens.
-nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
-	if nev_depth > 0 {
-		clay.Text(token, {fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT_DIM})
-		return
-	}
+// Shared cache and relay discovery for cards and profile presentation.
+@(private)
+nev_lookup :: proc(evid: string, token: string, hints: []string = nil) -> Nev_Card {
 	card, cached := nev_cards[evid]
 	if !cached {
 		owned := strings.clone(evid)
@@ -489,6 +485,17 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 		job.relays = relays[:]
 		append(&send_threads, thread.create_and_start_with_poly_data(job, nev_worker))
 	}
+	return card
+}
+
+// The card itself, drawn where the token was written. token is the
+// bech32 as written (minus any nostr: prefix), what the button opens.
+nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
+	if nev_depth > 0 {
+		clay.Text(token, {fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT_DIM})
+		return
+	}
+	card := nev_lookup(evid, token, hints)
 	nev_depth += 1
 	defer { nev_depth -= 1 }
 

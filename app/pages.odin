@@ -120,19 +120,8 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			copy_text(ui, ui.peer_npub, "npub copied")
 			return
 		}
-		if clicked("PeerViewContact") {
-			ui.peer_open = false
-			for contact, i in ui.contacts {
-				if contact.id_hex == ui.peer_hex {
-					ui.page = .Contacts
-					ui.selected_contact = i
-					probe_key_package(ui, client, contact.id_hex)
-					load_contact_relays(ui, client, contact.id_hex)
-					ed_set(ui, &ui.nick_input, ui.nicknames[contact.id_hex])
-					ui.focus = .Compose
-					break
-				}
-			}
+		if clicked("PeerViewProfile") {
+			view_peer_profile(ui, client)
 			return
 		}
 		if clicked("PeerClose") || !clay.PointerOver(clay.ID("PeerModal")) {
@@ -235,6 +224,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		for contact, i in ui.contacts {
 			if clay.PointerOver(clay.ID("ContactRow", u32(i))) {
+				reset_profile_view(ui)
 				ui.selected_contact = i
 				probe_key_package(ui, client, contact.id_hex)
 				load_contact_relays(ui, client, contact.id_hex)
@@ -244,8 +234,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				return
 			}
 		}
-		if ui.selected_contact >= 0 && ui.selected_contact < len(ui.contacts) {
-			contact := ui.contacts[ui.selected_contact]
+		if contact, found := shown_contact(ui); found {
 			if clicked("StartChatBtn") {
 				start_dm(ui, client, contact)
 				return
@@ -277,6 +266,44 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 }
 
+@(private)
+shown_contact :: proc(ui: ^Ui_State) -> (Contact_Ui, bool) {
+	if ui.selected_contact >= 0 {
+		if ui.selected_contact >= len(ui.contacts) { return {}, false }
+		return ui.contacts[ui.selected_contact], true
+	}
+	return ui.profile_contact, len(ui.profile_contact.id_hex) > 0
+}
+
+@(private)
+view_peer_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	ui.peer_open = false
+	if ui.peer_hex == ui.account_ref && len(ui.account_ref) > 0 {
+		ui.page = .Profile
+		load_profile(client, ui)
+		return
+	}
+	ui.page = .Contacts
+	ui.selected_contact = -1
+	for contact, i in ui.contacts {
+		if contact.id_hex == ui.peer_hex { ui.selected_contact = i; break }
+	}
+	reset_profile_view(ui)
+	if ui.selected_contact < 0 {
+		ui.profile_contact = {id_hex = strings.clone(ui.peer_hex), name = strings.clone(ui.peer_name), pic_url = strings.clone(ui.peer_pic), npub = strings.clone(ui.peer_npub)}
+	}
+	probe_key_package(ui, client, ui.peer_hex)
+	load_contact_relays(ui, client, ui.peer_hex)
+	ed_set(ui, &ui.nick_input, ui.nicknames[ui.peer_hex])
+	ui.focus = .Compose
+}
+
+@(private = "file")
+reset_profile_view :: proc(ui: ^Ui_State) {
+	for field in ([]^string{&ui.profile_contact.id_hex, &ui.profile_contact.name, &ui.profile_contact.pic_url, &ui.profile_contact.npub}) { delete(field^) }
+	ui.profile_contact = {}
+}
+
 // Unfollow a contact without changing shared group memberships.
 remove_contact :: proc(ui: ^Ui_State, client: ^marmot.Client, hex: string) {
 	follows: ^marmot.String_List
@@ -297,10 +324,9 @@ remove_contact :: proc(ui: ^Ui_State, client: ^marmot.Client, hex: string) {
 
 // Persist the nickname editor for the selected contact: empty clears.
 save_nickname :: proc(ui: ^Ui_State) {
-	if ui.selected_contact < 0 || ui.selected_contact >= len(ui.contacts) {
-		return
-	}
-	id := ui.contacts[ui.selected_contact].id_hex
+	contact, found := shown_contact(ui)
+	if !found { return }
+	id := contact.id_hex
 	nick := strings.trim_space(string(ui.nick_input[:]))
 	if len(nick) == 0 {
 		delete_key(&ui.nicknames, id)
@@ -737,6 +763,7 @@ switch_account :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string
 	ui.selected = -1
 	ui.show_members = false
 	ui.profile = {}
+	reset_profile_view(ui)
 	clear(&ui.contacts)
 	load_chat_list(client, account_id, ui)
 }

@@ -86,6 +86,9 @@ msgstr ""
 msgid "AUDIT LOG FILES"
 msgstr ""
 
+msgid "AVATARS"
+msgstr ""
+
 msgid "About"
 msgstr ""
 
@@ -319,6 +322,9 @@ msgid "Chip outline"
 msgstr ""
 
 msgid "Chip text"
+msgstr ""
+
+msgid "Circle"
 msgstr ""
 
 msgid "Clear cache"
@@ -556,6 +562,9 @@ msgstr ""
 msgid "Create poll"
 msgstr ""
 
+msgid "Crop circle shape"
+msgstr ""
+
 msgid "DANGER ZONE"
 msgstr ""
 
@@ -593,6 +602,9 @@ msgid "Decline this invitation?"
 msgstr ""
 
 msgid "Decode own"
+msgstr ""
+
+msgid "Default avatar shape"
 msgstr ""
 
 msgid "Default stack"
@@ -1333,6 +1345,9 @@ msgstr ""
 msgid "Previous / next in the media viewer"
 msgstr ""
 
+msgid "Profile"
+msgstr ""
+
 msgid "Promote"
 msgstr ""
 
@@ -1486,6 +1501,9 @@ msgstr ""
 msgid "RevealNsecBtn"
 msgstr ""
 
+msgid "Rounded"
+msgstr ""
+
 msgid "SCROLLING"
 msgstr ""
 
@@ -1535,9 +1553,6 @@ msgid "Save file"
 msgstr ""
 
 msgid "Scan to add"
-msgstr ""
-
-msgid "Scan to add this account from another device"
 msgstr ""
 
 msgid "Scroll speed"
@@ -1694,6 +1709,9 @@ msgstr ""
 msgid "Size: %s"
 msgstr ""
 
+msgid "Slanted"
+msgstr ""
+
 msgid "Small"
 msgstr ""
 
@@ -1707,6 +1725,9 @@ msgid "Speech model"
 msgstr ""
 
 msgid "Speech to text"
+msgstr ""
+
+msgid "Square"
 msgstr ""
 
 msgid "Start chat"
@@ -1918,6 +1939,12 @@ msgstr ""
 msgid "Use this theme"
 msgstr ""
 
+msgid "Used for generated user and group avatars."
+msgstr ""
+
+msgid "Used for profile photos without a published shape."
+msgstr ""
+
 msgid "Vault password changed."
 msgstr ""
 
@@ -1927,7 +1954,7 @@ msgstr ""
 msgid "View"
 msgstr ""
 
-msgid "View contact"
+msgid "View full profile"
 msgstr ""
 
 msgid "View raw event"

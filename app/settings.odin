@@ -35,6 +35,8 @@ Prefs :: struct {
 	ui_sounds:         bool, // short tones on send, arrival and failure
 	notify_preview:    bool,
 	// Appearance
+	avatar_shape:      Avatar_Shape,
+	crop_avatar_shape: Crop_Shape,
 	zoom_pct:          int, // 100 = the default 1.5 render scale
 	scroll_speed:      int, // wheel multiplier in percent; 200 = 2x raw
 	centered_chat:     bool,
@@ -200,6 +202,8 @@ load_settings :: proc(ui: ^Ui_State) {
 	if ui.prefs.panel_w == 0 {
 		ui.prefs.panel_w = PANEL_W_DEFAULT
 	}
+	ui.prefs.avatar_shape = Avatar_Shape(clamp(int(ui.prefs.avatar_shape), 0, int(Avatar_Shape.Square)))
+	ui.prefs.crop_avatar_shape = Crop_Shape(clamp(int(ui.prefs.crop_avatar_shape), 0, int(Crop_Shape.Rounded)))
 	// ponytail: an empty list reads as "older settings.json", so the
 	// defaults come back; a user who wants no fetch relays at all
 	// cannot have that yet.

@@ -117,6 +117,9 @@ if [ ! -f "$HERE/build/libwnws.a" ] || [ "$HERE/app/ws_shim.c" -nt "$HERE/build/
   ar rcs "$HERE/build/libwnws.a" "$HERE/build/ws/ws_shim.o"
 fi
 
+# FreeType decodes profile web fonts for the existing SFNT text renderer.
+cc -O2 -Wall -Wextra "$HERE/app/font.c" $(pkg-config --cflags --libs freetype2) -o "$HERE/build/wn-font"
+
 # Speech helper uses the pinned multilingual CPU runtime.
 bash "$HERE/scripts/build-tts.sh"
 TTS="$HERE/vendor/sherpa-onnx"

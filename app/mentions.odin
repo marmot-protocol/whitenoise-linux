@@ -78,7 +78,11 @@ body_atom :: proc(text: string, at: int, size: u16) -> (end: int, width: f32) {
 		end, hx, ok = marmot_link_at(text, at)
 		if !ok { return 0, 0 }
 	}
-	return end, 8 + 2 * f32(size) + rl.MeasureTextLine(FONT_TITLE, size, fmt.tprintf("@%s", mention_label(hx)), 0).x
+	width = 6 + f32(size) + rl.MeasureTextLine(FONT_TITLE, size, fmt.tprintf("@%s", mention_label(hx)), 0).x
+	if url_pic(profile_info(g_client, hx).pic_url) != nil {
+		width += 2 + f32(size)
+	}
+	return end, width
 }
 
 // True when text carries a token resolving to my_hex.

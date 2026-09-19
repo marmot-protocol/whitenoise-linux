@@ -53,7 +53,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             pkg-config cmake ninja-build clang git curl \
             libarchive-dev libwebp-dev libmpv-dev libpoppler-glib-dev libcairo2-dev libcurl4-openssl-dev libssl-dev \
-            libglib2.0-dev \
+            libglib2.0-dev libfreetype-dev \
             file desktop-file-utils wget ca-certificates unzip
 
       - name: Cache SDL3
@@ -129,6 +129,7 @@ jobs:
             --executable AppDir/usr/bin/whitenoise \
             --executable AppDir/usr/bin/wn-tts \
             --executable AppDir/usr/bin/wn-stt \
+            --executable AppDir/usr/share/whitenoise-linux/wn-font \
             --desktop-file AppDir/usr/share/applications/whitenoise.desktop \
             --icon-file AppDir/usr/share/icons/hicolor/256x256/apps/whitenoise.png
           out="WhiteNoise-${GITHUB_REF_NAME}-x86_64.AppImage"

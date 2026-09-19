@@ -64,6 +64,7 @@ Model_Kind :: enum u8 {
 	Glow, // an additive halo behind an element (glow.odin)
 	Shade, // a linear drop-shadow gradient beside a panel (threads.odin)
 	Image_Crop, // attachment thumbnails with extreme aspect ratios
+	Profile_Background, // cover or tile media confined to a profile
 }
 
 // Shared orbit state: drag rotates, wheel zooms; one handler serves

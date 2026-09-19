@@ -96,20 +96,93 @@ crop_circle_layout :: proc(t: ^testing.T) {
 	testing.expect(t, tex != nil, "worker must generate and upload a fingerprint texture")
 	testing.expect(t, group_tex != nil, "16-byte MLS IDs must produce a fingerprint")
 	testing.expect(t, square_tex != nil && square_tex != tex, "square and slanted fingerprints need separate cached textures")
+	for tc in ([]struct {key: string, photo, want: ^rl.Texture2D}{
+		{key, nil, tex}, {key[:32], nil, group_tex}, {key, square_tex, square_tex},
+	}) {
+		clay.BeginLayout()
+		avatar("FallbackAvatar", 0, tc.key, "Initials", 42, tc.photo)
+		commands := clay.EndLayout(0)
+		box := clay.GetElementData(clay.ID("FallbackAvatar", 0)).boundingBox
+		testing.expect_value(t, box.width, f32(42))
+		drawn := false
+		for command in commands.internalArray[:commands.length] {
+			if command.commandType == .Image && command.id == clay.ID("AvatarImage", clay.ID("FallbackAvatar", 0).id).id {
+				drawn = true
+				testing.expect_value(t, command.renderData.image.imageData, rawptr(tc.want))
+				testing.expect(t, abs(command.boundingBox.width - (tc.photo == nil ? f32(37.8) : 42)) < 0.001)
+				testing.expect(t, abs(command.boundingBox.x + command.boundingBox.width / 2 - box.x - box.width / 2) < 0.001)
+			}
+		}
+		testing.expect(t, drawn, "users and groups render crop circles; photos take precedence")
+	}
 	ui := Ui_State{account_ref = key, selected_contact = 0}
 	ui.prefs.reduce_motion = true
 	ui.nicknames[key] = "Danny"
 	ui.profile.npub = hex_npub(key)
 	ui.profile.qr = qr_texture(ui.profile.npub)
 	defer { rl.UnloadTexture(ui.profile.qr^); free(ui.profile.qr) }
-	ui.peer_hex, ui.peer_npub, ui.peer_name = key, ui.profile.npub, "Danny"
-	ui.peer_contact = true
-	append(&ui.contacts, Contact_Ui{id_hex = key, name = "Danny", npub = ui.profile.npub})
+	ui.peer_hex, ui.peer_npub, ui.peer_name = key, ui.profile.npub, strings.clone("Danny")
+	append(&ui.contacts, Contact_Ui{id_hex = key, name = strings.clone("Danny"), npub = ui.profile.npub})
 	append(&ui.chats, Chat_Row_Ui{group_id = key[:32], title = "Testing Marmots"})
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer { g_ui, g_prefs = nil, nil; wrap_clear() }
-	for pane in 0 ..< 8 {
-		width := pane >= 6 ? f32(350) : f32(900)
+	for photo_url in ([]string{"", square_url, ""}) {
+		if photo_url != "" || profile_info(nil, key).pic_url != "" {
+			wrap_flush = false
+			testing.expect(t, update_profile(&ui, key, {pic_url = strings.clone(photo_url)}))
+			testing.expect(t, wrap_flush, "photo changes must invalidate mention wrapping")
+		}
+		clay.BeginLayout()
+		render_segs(70, []Inline_Seg{{hex = key}}, BODY_FS, TEXT, 18, chips = true)
+		peer_modal(&ui)
+		commands := clay.EndLayout(0)
+		for id in ([]clay.ElementId{clay.ID("MentionCircle", 70 * 128), clay.ID("PeerCircle", 0)}) {
+			testing.expect_value(t, clay.GetElementData(id).found, photo_url != "")
+		}
+		for id in ([]clay.ElementId{clay.ID("MentionPhoto", 70 * 128), clay.ID("PeerAvatar", 0)}) {
+			drawn := false
+			for command in commands.internalArray[:commands.length] {
+				if command.commandType != .Image || command.id != clay.ID("AvatarImage", id.id).id { continue }
+				drawn = true
+				testing.expect_value(t, command.renderData.image.imageData, rawptr(photo_url == "" ? tex : square_tex))
+			}
+			testing.expect(t, drawn, "the primary avatar must keep its photo or fallback")
+		}
+		_, measured := body_atom(fmt.tprintf("@%s", ui.profile.npub), 0, BODY_FS)
+		chip := clay.GetElementData(clay.ID("SegMention", 70 * 128)).boundingBox
+		testing.expect(t, abs(chip.width - measured) < 0.01, "mention wrapping must match its rendered width")
+	}
+	for shape in Crop_Shape {
+		ui.prefs.crop_avatar_shape = shape
+		url := fmt.tprintf("%s:%s", CROP_SHAPE_PREFIX[shape], key[:32])
+		want := url_pic(url)
+		for i := 0; want == nil && i < 100; i += 1 {
+			time.sleep(10 * time.Millisecond)
+			drain_pics()
+			want = url_pic(url)
+		}
+		testing.expect(t, want != nil)
+		for pane in 0 ..< 2 {
+			clay.BeginLayout()
+			if pane == 0 { encryption_modal(&ui, ui.chats[0]) } else { chat_pane(&ui) }
+			commands := clay.EndLayout(0)
+			drawn := false
+			for command in commands.internalArray[:commands.length] {
+				if command.commandType != .Image || command.id != clay.ID(pane == 0 ? "EncCircle" : "MlsCircle", 0).id { continue }
+				drawn = true
+				testing.expect_value(t, command.renderData.image.imageData, rawptr(want))
+			}
+			testing.expect(t, drawn, "group info and chat header must use the chosen crop-circle shape")
+		}
+	}
+	ui.prefs.crop_avatar_shape = .Slanted
+	for pane in 0 ..< 9 {
+		width := pane == 6 || pane == 7 ? f32(350) : f32(900)
+		if pane == 8 {
+			ui.contacts[0].id_hex = "saved-other"
+			ui.account_ref = "self"
+			view_peer_profile(&ui, nil)
+		}
 		rl.SetWindowSize(i32(width + 100), 1000)
 		clay.SetLayoutDimensions({width + 100, 1000})
 		for frame in 0 ..< 3 {
@@ -125,10 +198,11 @@ crop_circle_layout :: proc(t: ^testing.T) {
 				case 5: chat_pane(&ui)
 				case 6: profile_pane(&ui)
 				case 7: contacts_pane(&ui)
+				case 8: contacts_pane(&ui)
 				}
 			}
 			commands := clay.EndLayout(0)
-			if pane > 0 && pane < 4 {
+			if pane > 0 && pane < 3 {
 				ids := []string{"ContactCircle", "ProfileCircle", "PeerCircle"}
 				testing.expect(t, clay.GetElementData(clay.ID(ids[pane - 1], 0)).found)
 				if pane < 3 {
@@ -143,7 +217,11 @@ crop_circle_layout :: proc(t: ^testing.T) {
 			if pane == 4 || pane == 5 {
 				testing.expect(t, clay.GetElementData(clay.ID(pane == 4 ? "EncCircle" : "MlsCircle", 0)).found)
 			}
-			if pane >= 6 && frame == 2 {
+			if pane == 3 {
+				testing.expect(t, clay.GetElementData(clay.ID("PeerViewProfile")).found)
+				testing.expect(t, !clay.GetElementData(clay.ID("PeerCircle", 0)).found)
+			}
+			if (pane == 6 || pane == 7) && frame == 2 {
 				prefix := pane == 6 ? "Profile" : "Contact"
 				pattern := clay.GetElementData(clay.ID(fmt.tprintf("%sPatternCard", prefix))).boundingBox
 				qr := clay.GetElementData(clay.ID(fmt.tprintf("%sScanCard", prefix))).boundingBox
@@ -151,6 +229,10 @@ crop_circle_layout :: proc(t: ^testing.T) {
 				testing.expect(t, qr.x >= 0 && qr.x + qr.width <= width)
 				data := clay.GetScrollContainerData(clay.ID(fmt.tprintf("%sPage", prefix)))
 				testing.expect(t, data.found && data.contentDimensions.height > data.scrollContainerDimensions.height, prefix)
+			}
+			if pane == 8 {
+				testing.expect(t, !clay.GetElementData(clay.ID("RemoveContactBtn")).found)
+				for id in ([]string{"ContactQr", "StartChatBtn", "CopyNpubBtn"}) { testing.expect(t, clay.GetElementData(clay.ID(id)).found, id) }
 			}
 			rl.BeginDrawing()
 			clay_raylib_render(&commands)
