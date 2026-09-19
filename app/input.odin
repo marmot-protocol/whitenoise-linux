@@ -490,7 +490,9 @@ hit_compose_line :: proc(line: string, x: f32) -> int {
 // Composer mouse: press focuses and places the caret in the tapped
 // line (Shift extends, double-click selects the word, triple the
 // sentence), drag selects, middle-click pastes the primary selection.
-compose_mouse :: proc(ui: ^Ui_State) {
+compose_mouse :: proc(ui: ^Ui_State, buf: ^[dynamic]u8 = nil, focus: Focus = .Compose) {
+	buf := buf
+	if buf == nil { buf = &ui.compose }
 	clip_id := clay.ID("ComposeClip").id
 	if scroll_drag.container == clip_id || clay.PointerOver(clay.ID("ScrollThumb", clip_id)) { return }
 	box := clay.GetElementData(clay.ID("ComposeBox"))
@@ -500,7 +502,7 @@ compose_mouse :: proc(ui: ^Ui_State) {
 	over := clay.PointerOver(clay.ID("ComposeBox")) && !clay.PointerOver(clay.ID("ComposeTools"))
 	left := over && rl.IsMouseButtonPressed(.LEFT)
 	middle := over && rl.IsMouseButtonPressed(.MIDDLE)
-	dragging := text_drag == &ui.compose && rl.IsMouseButtonDown(.LEFT) && !left
+	dragging := text_drag == buf && rl.IsMouseButtonDown(.LEFT) && !left
 	if !left && !middle && !dragging {
 		return
 	}
@@ -508,7 +510,7 @@ compose_mouse :: proc(ui: ^Ui_State) {
 	m := rl.GetMousePosition()
 	mx := m.x / UI_ZOOM
 	my := m.y / UI_ZOOM
-	text := string(ui.compose[:])
+	text := string(buf[:])
 
 	// The first line row whose bottom edge is under the pointer takes
 	// the hit; past the last row the caret lands in the last line.
@@ -524,8 +526,8 @@ compose_mouse :: proc(ui: ^Ui_State) {
 
 	switch {
 	case left:
-		ui.focus = .Compose
-		ed_begin(ui, &ui.compose)
+		ui.focus = focus
+		ed_begin(ui, buf)
 		text_drag_sentence = {}
 		switch {
 		case rl.GetMouseClicks() >= 3:
@@ -539,21 +541,21 @@ compose_mouse :: proc(ui: ^Ui_State) {
 		case:
 			ui.ed.selection = {hit, hit}
 		}
-		ed_end(ui, &ui.compose)
-		text_drag = &ui.compose
+		ed_end(ui, buf)
+		text_drag = buf
 	case dragging:
-		if ui.ed_target == &ui.compose {
+		if ui.ed_target == buf {
 			drag_text_selection(&ui.ed, text, hit)
 		}
 	case middle:
-		ui.focus = .Compose
+		ui.focus = focus
 		primary := rl.GetPrimaryText()
-		ed_begin(ui, &ui.compose)
+		ed_begin(ui, buf)
 		ui.ed.selection = {hit, hit}
 		if primary != nil {
 			edit.input_text(&ui.ed, clean_paste(string(primary)))
 		}
-		ed_end(ui, &ui.compose)
+		ed_end(ui, buf)
 	}
 }
 

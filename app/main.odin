@@ -1274,6 +1274,8 @@ app_main :: proc() {
 		live_tick(&live, &ui, client) // poll fallback when the stream stalls
 		drain_live(&live, &ui, client)
 		timeline_drain(&ui, client)
+		issues_drain(&ui, client)
+		issues_sync_route(&ui, client)
 		if !ui.timeline_loading && test_peer_pending {
 			test_peer_pending = false
 			for msg in ui.messages {
@@ -2048,6 +2050,7 @@ app_main :: proc() {
 	for worker in send_threads { thread.join(worker); thread.destroy(worker) }
 	delete(send_threads)
 	timeline_stop()
+	issues_stop(&ui)
 	search_stop()
 	media_stop()
 	agent_shutdown()
@@ -2068,9 +2071,22 @@ app_main :: proc() {
 	for done in failed_edits { edit_result_free(done) }
 	delete(failed_edits)
 	for done in ops_done {
-		if done.op == .Edit { edit_result_free(done) } else { delete(done.err) }
+		for page in done.history { marmot.edit_history_free(page) }
+		delete(done.history)
+		if done.op == .Edit || done.op == .History || done.op == .Issue || done.op == .Issue_Setting { edit_result_free(done) } else { delete(done.err) }
 	}
 	delete(ops_done)
+	for v in ui.hist_versions { delete(v.at); delete(v.text) }
+	delete(ui.hist_versions)
+	for len(ui.staged) > 0 { remove_staged(&ui, len(ui.staged) - 1) }
+	delete(ui.staged)
+	for key, files in ui.staged_drafts {
+		ui.staged = files
+		for len(ui.staged) > 0 { remove_staged(&ui, len(ui.staged) - 1) }
+		delete(ui.staged); delete(key)
+	}
+	delete(ui.staged_drafts)
+	delete(ui.compose_issue)
 	delete(export_account); delete(export_group)
 	for row in ui.chats { chat_free(row) }
 	for row in ui.archived { chat_free(row) }

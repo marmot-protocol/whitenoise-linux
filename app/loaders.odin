@@ -31,6 +31,15 @@ load_timeline :: proc(client: ^marmot.Client, ui: ^Ui_State, search: string = ""
 timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Timeline_Page) {
 	timing_start := time.tick_now()
 	defer local_timing_end(.timeline_apply, timing_start)
+	page := page
+	combined: marmot.Timeline_Page
+	if page == timeline_page && len(timeline_history) > 0 {
+		records := make([dynamic]marmot.Timeline_Message_Record, context.temp_allocator)
+		for i := len(timeline_history) - 1; i >= 0; i -= 1 { older := timeline_history[i]; append(&records, ..older.messages[:older.messages_len]) }
+		append(&records, ..page.messages[:page.messages_len])
+		combined = {messages = raw_data(records[:]), messages_len = uint(len(records))}
+		page = &combined
+	}
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 	ui.tl_has_more = page.has_more_before
 	ui.tl_has_after = page.has_more_after
@@ -44,7 +53,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 	author_of := make(map[string]string, context.temp_allocator)
 	for i in 0 ..< page.messages_len {
 		record := &page.messages[i]
-		if record.kind == 9 && record.message_id_hex != nil {
+		if (record.kind == 9 || record.kind == 1111) && record.message_id_hex != nil {
 			author_of[string(record.message_id_hex)] = record.sender != nil ? string(record.sender) : ""
 		}
 	}
@@ -120,11 +129,14 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 	clear(&ui.messages)
 	xdc_collect_begin()
 	defer xdc_collect_end()
+	issue_comments := make(map[string]bool, context.temp_allocator)
+	for row in ui.issues { for comment in row.comments { issue_comments[comment.id] = true } }
 	for i in 0 ..< page.messages_len {
 		record := &page.messages[i]
+		if ui.issues_open && record.kind != 1009 && !issue_comments[string(record.message_id_hex)] { continue }
 		// Edit and delete records act on other rows; they never render
 		// as their own message.
-		if record.kind == 1009 || record.kind == 5 {
+		if record.kind == 1009 || record.kind == 5 || (issue_chat_hidden(record.kind, record.tags[:record.tags_len]) && !issue_comments[string(record.message_id_hex)]) {
 			continue
 		}
 		if record.kind == AGENT_ACTIVITY || record.kind == AGENT_OPERATION {
@@ -251,6 +263,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 				day       = format_day(record.timeline_at),
 				mine      = mine,
 				deleted   = true,
+				thread_of = strings.clone(first_event_ref(record)),
 			})
 			continue
 		}
@@ -284,7 +297,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			at_full = format_full(record.timeline_at),
 			day     = format_day(record.timeline_at),
 			mine   = mine,
-			edited = has_edits && len(versions) > 0,
+			edited = record.edit != nil || (has_edits && len(versions) > 0),
 			effect = record_effect(record),
 		}
 		// A kind-1068 poll renders its question as the body plus the
@@ -305,7 +318,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		// A burst plays the first time its message is seen, not on every
 		// reload (effects.odin keeps the seen set).
 		burst_arrive(msg.id, msg.effect, mine)
-		if msg.edited {
+		if has_edits {
 			original := record.plaintext != nil ? string(record.plaintext) : ""
 			append(&msg.history, Edit_Version{at = format_when(record.timeline_at), text = strings.clone(original)})
 			for v in versions {
@@ -318,7 +331,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		// Edit records and poll questions arrive without parsed content
 		// tokens; run the text through marmot's markdown parser so they
 		// render like any other body.
-		if (msg.edited || record.kind == KIND_POLL) && content.content_tokens.blocks_len == 0 && len(body) > 0 {
+		if (msg.edited || record.kind == KIND_POLL || record.kind == KIND_THREAD) && content.content_tokens.blocks_len == 0 && len(body) > 0 {
 			doc: ^marmot.Markdown_Document
 			if marmot.parse_markdown(client, strings.clone_to_cstring(body, context.temp_allocator), &doc) == .OK {
 				convert_blocks(&msg.blocks, doc.blocks, doc.blocks_len, false, ([^]u8)(doc.blank_lines_before)[:doc.blank_lines_before_len])
@@ -354,6 +367,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		}
 
 		group := strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator)
+		if !issue_comments[id_str] || issue_tag(record.tags[:record.tags_len], "e") != issue_tag(record.tags[:record.tags_len], "E") {
 		if record.reply_to_message_id_hex != nil {
 			msg.reply_id = strings.clone(string(record.reply_to_message_id_hex))
 		}
@@ -366,6 +380,8 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			// Parent outside the loaded window (or deleted): keep the
 			// reply frame with a plain note instead of dropping it.
 			msg.reply_text = strings.clone("Original message unavailable")
+		}
+
 		}
 
 		for j in 0 ..< record.media_len {

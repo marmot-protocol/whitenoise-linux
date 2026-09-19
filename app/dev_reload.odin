@@ -62,6 +62,8 @@ dev_reload_poll :: proc(ui: ^Ui_State = nil) -> bool {
 		// Ordinary compose text is already persisted by stash_draft.
 		if ui != nil {
 			if len(ui.staged) > 0 || ui.editing != "" || reload_jobs_busy() || gimg_writes_pending() { gate = .Busy }
+			if len(ui.issue_subject) + len(ui.issue_body) + len(ui.issue_labels) > 0 || ui.issue_ticket != 0 { gate = .Busy }
+			for _, files in ui.staged_drafts { if len(files) > 0 { gate = .Busy; break } }
 			for p in ui.pending {
 				if !p.dismissed && !p.queued && !p.failed { gate = .Busy; break }
 			}

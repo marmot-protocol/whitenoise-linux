@@ -24,7 +24,7 @@ import rl "sdlrl"
 THREAD_KICK :: f32(26) // px the timeline slides in from on push/pop
 
 thread_cur :: proc(ui: ^Ui_State) -> string {
-	return len(ui.thread_stack) > 0 ? ui.thread_stack[len(ui.thread_stack) - 1] : ""
+	return len(ui.thread_stack) > 0 ? ui.thread_stack[len(ui.thread_stack) - 1] : ui.compose_issue
 }
 
 thread_push :: proc(ui: ^Ui_State, root_id: string) {

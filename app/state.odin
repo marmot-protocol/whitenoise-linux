@@ -190,6 +190,7 @@ Edit_Version :: struct {
 
 // Which input box receives typed characters.
 Focus :: enum {
+	Issue_Search, Issue_Subject, Issue_Body, Issue_Labels,
 	Compose,
 	Search,
 	Invite,
@@ -425,6 +426,19 @@ Ui_State :: struct {
 	invite_input:  [dynamic]u8,
 	rename_input:  [dynamic]u8,
 	group_desc:    string, // selected group's description snapshot
+	issue_setting: Issue_Setting,
+	issue_admin, issues_open, issue_new: bool,
+	issues: [dynamic]Issue_Row,
+	issue_index: map[string]int,
+	issue_selected: string,
+	compose_issue: string, // issue owning the shared composer; empty for chat
+	staged_drafts: map[string][dynamic]Staged_File,
+	issue_blocks: [dynamic]Md_Block_Ui,
+	issue_subject, issue_body, issue_labels, issue_search: [dynamic]u8,
+	issue_filter_open: bool,
+	issue_filter: int, // 0 = all, 1..3 = status
+	issue_ticket: int,
+	issue_action: Issue_Action,
 	group_retention: u64, // disappearing-message timer in seconds, 0 = off
 	desc_input:    [dynamic]u8, // hero description editor
 	desc_editing:  bool,
@@ -439,6 +453,9 @@ Ui_State :: struct {
 	ctx_msg:       int, // index into messages
 	ctx_x:         f32, // panel anchor, layout coords
 	ctx_y:         f32,
+	hist_versions: [dynamic]Edit_Version,
+	hist_ticket: int,
+	hist_original: bool,
 	hist_open:     bool, // edit-history modal
 	hist_msg:      int, // index into messages
 	raw_open:      bool, // view-raw-event modal (dev mode)

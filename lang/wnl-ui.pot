@@ -65,6 +65,9 @@ msgstr ""
 msgid "-"
 msgstr ""
 
+msgid "100%"
+msgstr ""
+
 msgid "25 European languages, including English and Italian."
 msgstr ""
 
@@ -149,6 +152,9 @@ msgstr ""
 msgid "Aggregate connection counter from the relay pool."
 msgstr ""
 
+msgid "All"
+msgstr ""
+
 msgid "All accounts stay connected. Switching only changes which one you're looking at."
 msgstr ""
 
@@ -162,6 +168,9 @@ msgid "Always open links to this site"
 msgstr ""
 
 msgid "An empty box derives its value. The window previews as you type."
+msgstr ""
+
+msgid "Another group change took precedence. Review your group settings."
 msgstr ""
 
 msgid "Anything you write here stays between you and this device's key."
@@ -201,6 +210,12 @@ msgid "BUILT WITH"
 msgstr ""
 
 msgid "Back"
+msgstr ""
+
+msgid "Back to chat"
+msgstr ""
+
+msgid "Back to issues"
 msgstr ""
 
 msgid "Back up everything"
@@ -339,6 +354,9 @@ msgstr ""
 msgid "Close to tray"
 msgstr ""
 
+msgid "Closed"
+msgstr ""
+
 msgid "Closing the window hides it. The tray icon shows your unread total and brings it back."
 msgstr ""
 
@@ -450,7 +468,13 @@ msgstr ""
 msgid "Couldn't load attachment. Click to retry."
 msgstr ""
 
+msgid "Couldn't load edit history. Please try again."
+msgstr ""
+
 msgid "Couldn't load image. Click to retry."
+msgstr ""
+
+msgid "Couldn't load issues. Please try again."
 msgstr ""
 
 msgid "Couldn't load messages. Please try again."
@@ -544,6 +568,9 @@ msgstr ""
 msgid "Couldn't unlock the vault. Double-check the password and try again."
 msgstr ""
 
+msgid "Couldn't update issues. Please try again."
+msgstr ""
+
 msgid "Couldn't use that theme. It isn't a theme this version reads."
 msgstr ""
 
@@ -559,10 +586,16 @@ msgstr ""
 msgid "Create backup..."
 msgstr ""
 
+msgid "Create issue"
+msgstr ""
+
 msgid "Create poll"
 msgstr ""
 
 msgid "Crop circle shape"
+msgstr ""
+
+msgid "Current"
 msgstr ""
 
 msgid "DANGER ZONE"
@@ -637,6 +670,12 @@ msgstr ""
 msgid "Demote"
 msgstr ""
 
+msgid "Describe the issue (Markdown)"
+msgstr ""
+
+msgid "Description"
+msgstr ""
+
 msgid "Desktop notifications"
 msgstr ""
 
@@ -657,6 +696,15 @@ msgstr ""
 
 #, c-format
 msgid "Difficulty: %d/5"
+msgstr ""
+
+msgid "Disable issue tracking"
+msgstr ""
+
+msgid "Disabled for this group."
+msgstr ""
+
+msgid "Discussion"
 msgstr ""
 
 msgid "Divider"
@@ -696,6 +744,10 @@ msgstr ""
 msgid "Edit"
 msgstr ""
 
+#, c-format
+msgid "Edit %d"
+msgstr ""
+
 msgid "Edit history"
 msgstr ""
 
@@ -711,10 +763,19 @@ msgstr ""
 msgid "Elevated border"
 msgstr ""
 
+msgid "Enable issue tracking"
+msgstr ""
+
+msgid "Enabled for this group."
+msgstr ""
+
 msgid "Encrypted key copied"
 msgstr ""
 
 msgid "End-to-end encrypted"
+msgstr ""
+
+msgid "Enter an issue title and description."
 msgstr ""
 
 msgid "Enter publishes, Escape cancels."
@@ -876,6 +937,12 @@ msgstr ""
 msgid "ISSUE"
 msgstr ""
 
+msgid "ISSUE TRACKING"
+msgstr ""
+
+msgid "Image didn't load. Click to retry."
+msgstr ""
+
 msgid "Images and files kept on this device so they don't download twice, sealed with your vault key."
 msgstr ""
 
@@ -919,6 +986,15 @@ msgid "Invert selected text"
 msgstr ""
 
 msgid "Invite"
+msgstr ""
+
+msgid "Issue title"
+msgstr ""
+
+msgid "Issue tracking is unavailable."
+msgstr ""
+
+msgid "Issues"
 msgstr ""
 
 msgid "It disappears for everyone in the chat. This can't be undone."
@@ -988,6 +1064,12 @@ msgstr ""
 msgid "LINKED DEVICES"
 msgstr ""
 
+msgid "Labels"
+msgstr ""
+
+msgid "Labels, separated by commas"
+msgstr ""
+
 msgid "Large"
 msgstr ""
 
@@ -1013,6 +1095,9 @@ msgid "Listening... Finish when you're done (30 seconds maximum)."
 msgstr ""
 
 msgid "Loading your accounts"
+msgstr ""
+
+msgid "Loading..."
 msgstr ""
 
 msgid "Loading…"
@@ -1111,6 +1196,9 @@ msgstr ""
 msgid "New chat"
 msgstr ""
 
+msgid "New issue"
+msgstr ""
+
 msgid "New message"
 msgstr ""
 
@@ -1154,6 +1242,9 @@ msgid "No folders yet."
 msgstr ""
 
 msgid "No inbox relays."
+msgstr ""
+
+msgid "No issues found."
 msgstr ""
 
 msgid "No key package on this device or its relays."
@@ -1219,6 +1310,9 @@ msgstr ""
 msgid "One-tap reactions"
 msgstr ""
 
+msgid "Only group admins can change this setting."
+msgstr ""
+
 msgid "Open"
 msgstr ""
 
@@ -1238,6 +1332,9 @@ msgid "Open this link?"
 msgstr ""
 
 msgid "Opening in your browser"
+msgstr ""
+
+msgid "Original"
 msgstr ""
 
 msgid "Other"
@@ -1462,6 +1559,9 @@ msgstr ""
 msgid "Rename"
 msgstr ""
 
+msgid "Reopen"
+msgstr ""
+
 msgid "Replaces the settings, drafts, custom emoji, and themes on this device."
 msgstr ""
 
@@ -1481,6 +1581,12 @@ msgid "Reset"
 msgstr ""
 
 msgid "Reset zoom"
+msgstr ""
+
+msgid "Resolve"
+msgstr ""
+
+msgid "Resolved"
 msgstr ""
 
 msgid "Restore last selected chat on launch"
@@ -1567,6 +1673,9 @@ msgstr ""
 msgid "Search images"
 msgstr ""
 
+msgid "Search issues"
+msgstr ""
+
 msgid "Searching…"
 msgstr ""
 
@@ -1583,6 +1692,12 @@ msgid "Select a contact from the list."
 msgstr ""
 
 msgid "Select a model to download it for dictation and audio messages."
+msgstr ""
+
+msgid "Select an issue"
+msgstr ""
+
+msgid "Select an issue to read its discussion."
 msgstr ""
 
 msgid "Selected"
@@ -1604,6 +1719,9 @@ msgid "Send the message"
 msgstr ""
 
 msgid "Send with an effect"
+msgstr ""
+
+msgid "Sending..."
 msgstr ""
 
 msgid "Settings: about"
@@ -1640,6 +1758,9 @@ msgid "Shadow popover"
 msgstr ""
 
 msgid "Shadow soft"
+msgstr ""
+
+msgid "Share a problem with your group."
 msgstr ""
 
 msgid "Share aggregate performance timings and relay diagnostics. Nothing is sent while this is off."
@@ -1885,6 +2006,9 @@ msgstr ""
 msgid "Timings"
 msgstr ""
 
+msgid "Title"
+msgstr ""
+
 msgid "Toggle developer mode"
 msgstr ""
 
@@ -1924,7 +2048,13 @@ msgstr ""
 msgid "Unpin"
 msgstr ""
 
+msgid "Unresolved"
+msgstr ""
+
 msgid "Unsupported attachment format."
+msgstr ""
+
+msgid "Updating issue tracking..."
 msgstr ""
 
 msgid "Uploaded emoji"
@@ -2011,10 +2141,16 @@ msgstr ""
 msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
 msgstr ""
 
+msgid "Write a comment"
+msgstr ""
+
 msgid "YOU"
 msgstr ""
 
 msgid "YOUR KEY PACKAGES"
+msgstr ""
+
+msgid "You"
 msgstr ""
 
 msgid "You stay in the group, but another admin has to grant the rights back."
@@ -2109,4 +2245,7 @@ msgid "relay"
 msgstr ""
 
 msgid "sealed here"
+msgstr ""
+
+msgid "−"
 msgstr ""

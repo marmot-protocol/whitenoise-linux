@@ -24,7 +24,7 @@ edit_complete :: proc(ui: ^Ui_State, done: Op_Done) {
 	if ui.account_ref == done.account && ui.selected >= 0 && ui.chats[ui.selected].group_id == done.group &&
 		ui.editing == done.target && string(ui.compose[:]) == done.content {
 		ui.editing = ""
-		ed_set(ui, &ui.compose, ui.drafts[done.group])
+		ed_set(ui, &ui.compose, ui.drafts[compose_draft_key(ui)])
 	}
 	for i := len(failed_edits) - 1; i >= 0; i -= 1 {
 		old := failed_edits[i]
@@ -43,7 +43,7 @@ edit_restore :: proc(ui: ^Ui_State) {
 		done := failed_edits[i]
 		if done.account == ui.account_ref && done.group == ui.chats[ui.selected].group_id {
 			for msg in ui.messages {
-				if msg.id == done.target {
+				if msg.id == done.target && msg.thread_of == thread_cur(ui) {
 					ui.editing = msg.id
 					ed_set(ui, &ui.compose, done.content)
 					return

@@ -2,7 +2,7 @@
 // drawn over everything while it travels.
 //
 // Three moments share it, which is why it exists at all:
-//   - opening a chat, the rail row's avatar flies into the header
+//   - opening a picture, its tile flies into the lightbox
 //   - sending, the composer's text flies to where the row will appear
 //   - reacting, the emoji flies from the pointer onto the message
 //
@@ -64,18 +64,6 @@ fly :: proc(
 	}
 	delete(flies[slot].text)
 	flies[slot] = {shape, tex, strings.clone(text), color, from, to, rl.GetTime(), secs, arc}
-}
-
-// The same, addressed by element: the common case is "this box, to
-// that box", and a missing endpoint means no flight rather than a
-// flight from nowhere.
-fly_ids :: proc(from_id, to_id: clay.ElementId, tex: ^rl.Texture2D, text: string, color: clay.Color, arc: f32 = 0) {
-	from, from_ok := element_box(from_id)
-	to, to_ok := element_box(to_id)
-	if !from_ok || !to_ok {
-		return
-	}
-	fly(from, to, tex, text, color, arc)
 }
 
 // A point, for a flight that starts under the pointer.

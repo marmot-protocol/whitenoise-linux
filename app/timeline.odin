@@ -452,7 +452,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 				action_chip("MsgReact", index, "+1")
 				// A reply can't carry a thread tag, so thread rows
 				// offer Thread (nesting) instead of Reply.
-				if len(msg.thread_of) == 0 {
+				if len(msg.thread_of) == 0 || g_ui.compose_issue != "" {
 					action_chip("MsgReply", index, "Reply")
 				}
 				action_chip("MsgThread", index, "Thread")
@@ -1696,6 +1696,7 @@ body_wrap_w :: proc() -> f32 {
 		return 480
 	}
 	avail := page_w(g_ui)
+	if g_ui.issues_open { avail = tl.boundingBox.width - (page_w(g_ui) < 720 ? 40 : 64) }
 	return max(min(tl.boundingBox.width, avail) - MSG_ROW_CHROME, 120)
 }
 

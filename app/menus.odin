@@ -156,7 +156,7 @@ context_menu :: proc(ui: ^Ui_State) {
 		// Same rows and gating as wiring/extra.rs builds (no text
 		// selection here). A tombstone offers no action rows.
 		ctx_item("CtxReact", ICON_SMILE, "Add reaction")
-		if len(msg.thread_of) == 0 {
+		if len(msg.thread_of) == 0 || ui.compose_issue != "" {
 			ctx_item("CtxReply", ICON_REPLY, "Reply")
 		}
 		ctx_item("CtxThread", ICON_COMMENTS, "Reply in thread")
@@ -188,7 +188,7 @@ context_menu :: proc(ui: ^Ui_State) {
 // Edit-history modal, the slint edit-history pane: original first,
 // each edit after, current highlighted.
 edit_history_modal :: proc(ui: ^Ui_State) {
-	msg := ui.messages[ui.hist_msg]
+	history := ui.hist_versions[:]
 
 	if clay.UI(clay.ID("HistModal"))(
 	{
@@ -208,11 +208,13 @@ edit_history_modal :: proc(ui: ^Ui_State) {
 				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
 			}
 		}
-		edit_count := len(msg.history) - 1
+		if ui.hist_ticket != 0 { clay.Text(tr("Loading..."), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM}) }
+		edit_count := max(0, len(history) - (ui.hist_original ? 1 : 0))
 		clay.Text(fmt.tprintf("%d edit%s", edit_count, edit_count == 1 ? "" : "s"), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
 
-		for version, i in msg.history {
-			current := i == len(msg.history) - 1
+		if clay.UI(clay.ID("HistScroll"))({layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFit({max = max(f32(100), f32(rl.GetScreenHeight()) / UI_ZOOM - 200)})}, layoutDirection = .TopToBottom, childGap = 10}, clip = {vertical = true, childOffset = clay.GetScrollOffset()}}) {
+		for version, i in history {
+			current := i == len(history) - 1
 			if clay.UI(clay.ID("HistRow", u32(i)))(
 			{
 				layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(10), childGap = 4},
@@ -222,24 +224,30 @@ edit_history_modal :: proc(ui: ^Ui_State) {
 			},
 			) {
 				if clay.UI(clay.ID("HistRowHead", u32(i)))({layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}}) {
-					label := i == 0 ? "Original" : (current ? "Current" : fmt.tprintf("Edit %d", i))
+					label := i == 0 && ui.hist_original ? tr("Original") : (current ? tr("Current") : fmt.tprintf(tr("Edit %d"), i + (ui.hist_original ? 0 : 1)))
 					clay.Text(label, {fontId = FONT_TITLE, fontSize = 12, textColor = current ? ACCENT : TEXT})
 					if clay.UI(clay.ID("HistRowGap", u32(i)))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 					clay.Text(version.at, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
 				}
 				if i == 0 {
-					body_text(0xD0000 + u32(i) * 8, version.text, 13, TEXT, wrap_w = EDIT_DIFF_WRAP)
+					body_text(0xD0000 + u32(i) * 8, version.text, 13, TEXT, wrap_w = edit_diff_wrap())
 				} else {
-					diff_chips(u32(i), msg.history[i - 1].text, version.text)
+					diff_chips(u32(i), history[i - 1].text, version.text)
 				}
 			}
 		}
+		}
+		scrollbar(clay.ID("HistScroll"))
 	}
 }
 
 // Horizontal budget for a diff line: modal width minus card and row
 // padding.
-EDIT_DIFF_WRAP :: f32(360)
+@(private)
+edit_diff_wrap :: proc() -> f32 {
+ box := clay.GetElementData(clay.ID("HistModal"))
+ return box.found ? max(f32(100), box.boundingBox.width - 52) : 360
+}
 
 // Word diff against the previous revision, flowing as wrapped word
 // chips: removed words on a danger-tinted plate in dim text, added on
@@ -248,7 +256,7 @@ EDIT_DIFF_WRAP :: f32(360)
 diff_chips :: proc(version: u32, prev, next: string) {
 	runs := diff_words(prev, next)
 	if len(runs) == 0 {
-		body_text(0xD0000 + version * 8, next, 13, TEXT, wrap_w = EDIT_DIFF_WRAP)
+		body_text(0xD0000 + version * 8, next, 13, TEXT, wrap_w = edit_diff_wrap())
 		return
 	}
 
@@ -258,7 +266,7 @@ diff_chips :: proc(version: u32, prev, next: string) {
 	for run in runs {
 		at := 0
 		for at < len(run.text) {
-			cut := rune_fit(run.text, at, len(run.text), EDIT_DIFF_WRAP - 16, 13)
+			cut := rune_fit(run.text, at, len(run.text), edit_diff_wrap() - 16, 13)
 			append(&split, Diff_Run{run.kind, run.text[at:cut]})
 			at = cut
 		}
@@ -273,7 +281,7 @@ diff_chips :: proc(version: u32, prev, next: string) {
 				run := runs[i]
 				pad := run.kind == .Same ? f32(0) : 8
 				cw := rl.MeasureTextLine(FONT_BODY, 13, run.text, 0).x + pad
-				if w > 0 && w + cw > EDIT_DIFF_WRAP {
+				if w > 0 && w + cw > edit_diff_wrap() {
 					break
 				}
 				w += cw + 4

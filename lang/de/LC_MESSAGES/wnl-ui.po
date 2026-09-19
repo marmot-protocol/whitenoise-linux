@@ -67,6 +67,9 @@ msgstr ""
 msgid "-"
 msgstr ""
 
+msgid "100%"
+msgstr ""
+
 msgid "25 European languages, including English and Italian."
 msgstr "25 europäische Sprachen, darunter Englisch und Italienisch."
 
@@ -160,6 +163,9 @@ msgstr "Erweitert"
 msgid "Aggregate connection counter from the relay pool."
 msgstr "Aggregierter Verbindungszähler aus dem Relay-Pool."
 
+msgid "All"
+msgstr "Alle"
+
 msgid "All accounts stay connected. Switching only changes which one you're looking at."
 msgstr "Alle Konten bleiben verbunden. Beim Wechseln ändert sich nur, welches du gerade ansiehst."
 
@@ -176,6 +182,9 @@ msgstr ""
 
 msgid "An empty box derives its value. The window previews as you type."
 msgstr ""
+
+msgid "Another group change took precedence. Review your group settings."
+msgstr "Eine andere Gruppenänderung hatte Vorrang. Überprüfe deine Gruppeneinstellungen."
 
 msgid "Anything you write here stays between you and this device's key."
 msgstr ""
@@ -217,6 +226,12 @@ msgstr ""
 
 msgid "Back"
 msgstr "Zurück"
+
+msgid "Back to chat"
+msgstr "Zurück zum Chat"
+
+msgid "Back to issues"
+msgstr "Zurück zu den Meldungen"
 
 msgid "Back up everything"
 msgstr "Alles sichern"
@@ -367,6 +382,9 @@ msgstr "Schließen"
 msgid "Close to tray"
 msgstr ""
 
+msgid "Closed"
+msgstr "Geschlossen"
+
 msgid "Closing the window hides it. The tray icon shows your unread total and brings it back."
 msgstr ""
 
@@ -488,9 +506,15 @@ msgstr "Es wurde keine Sprache erkannt. Sprich deutlich und versuch es erneut."
 msgid "Couldn't load attachment. Click to retry."
 msgstr "Video konnte nicht abgespielt werden – zum Wiederholen tippen"
 
+msgid "Couldn't load edit history. Please try again."
+msgstr "Der Bearbeitungsverlauf konnte nicht geladen werden. Bitte versuche es erneut."
+
 #, fuzzy
 msgid "Couldn't load image. Click to retry."
 msgstr "Bild konnte nicht heruntergeladen werden."
+
+msgid "Couldn't load issues. Please try again."
+msgstr "Meldungen konnten nicht geladen werden. Bitte versuche es erneut."
 
 msgid "Couldn't load messages. Please try again."
 msgstr "Die Nachrichten konnten nicht geladen werden. Bitte versuche es erneut."
@@ -594,6 +618,9 @@ msgstr "Deine Sprache konnte nicht transkribiert werden. Versuch es bitte erneut
 msgid "Couldn't unlock the vault. Double-check the password and try again."
 msgstr "Das Konto konnte nicht hinzugefügt werden. Überprüfe den Schlüssel und versuche es erneut."
 
+msgid "Couldn't update issues. Please try again."
+msgstr "Meldungen konnten nicht aktualisiert werden. Bitte versuche es erneut."
+
 msgid "Couldn't use that theme. It isn't a theme this version reads."
 msgstr ""
 
@@ -611,12 +638,18 @@ msgstr "Backup erstellen"
 msgid "Create backup..."
 msgstr "Backup erstellen"
 
+msgid "Create issue"
+msgstr "Meldung erstellen"
+
 #, fuzzy
 msgid "Create poll"
 msgstr "Erstellen"
 
 msgid "Crop circle shape"
 msgstr "Crop-Circle-Form"
+
+msgid "Current"
+msgstr ""
 
 msgid "DANGER ZONE"
 msgstr "GEFAHRENZONE"
@@ -699,6 +732,12 @@ msgstr "Das Löschen der gerade aufgezeichneten Datei rotiert sie — die Aufzei
 msgid "Demote"
 msgstr ""
 
+msgid "Describe the issue (Markdown)"
+msgstr "Beschreibe das Problem (Markdown)"
+
+msgid "Description"
+msgstr "Beschreibung"
+
 msgid "Desktop notifications"
 msgstr "Desktop-Benachrichtigungen"
 
@@ -720,6 +759,15 @@ msgstr "Diktiere Entwürfe und transkribiere Audionachrichten auf deinem Gerät.
 #, c-format
 msgid "Difficulty: %d/5"
 msgstr "Schwierigkeit: %d/5"
+
+msgid "Disable issue tracking"
+msgstr "Problemverfolgung deaktivieren"
+
+msgid "Disabled for this group."
+msgstr "Für diese Gruppe deaktiviert."
+
+msgid "Discussion"
+msgstr "Diskussion"
 
 msgid "Divider"
 msgstr ""
@@ -761,6 +809,10 @@ msgstr ""
 msgid "Edit"
 msgstr "Bearbeitung %1"
 
+#, fuzzy, c-format
+msgid "Edit %d"
+msgstr "Bearbeitung %d"
+
 msgid "Edit history"
 msgstr "Bearbeitungsverlauf"
 
@@ -777,12 +829,21 @@ msgstr ""
 msgid "Elevated border"
 msgstr ""
 
+msgid "Enable issue tracking"
+msgstr "Problemverfolgung aktivieren"
+
+msgid "Enabled for this group."
+msgstr "Für diese Gruppe aktiviert."
+
 #, fuzzy
 msgid "Encrypted key copied"
 msgstr "Verschlüsselten Schlüssel exportieren (ncryptsec)"
 
 msgid "End-to-end encrypted"
 msgstr "Ende-zu-Ende-verschlüsselt"
+
+msgid "Enter an issue title and description."
+msgstr "Gib einen Titel und eine Beschreibung ein."
 
 msgid "Enter publishes, Escape cancels."
 msgstr ""
@@ -956,6 +1017,13 @@ msgstr ""
 msgid "ISSUE"
 msgstr "ISSUE"
 
+msgid "ISSUE TRACKING"
+msgstr "PROBLEMMELDUNGEN"
+
+#, fuzzy
+msgid "Image didn't load. Click to retry."
+msgstr "Bild konnte nicht heruntergeladen werden."
+
 msgid "Images and files kept on this device so they don't download twice, sealed with your vault key."
 msgstr ""
 
@@ -1005,6 +1073,15 @@ msgstr ""
 
 msgid "Invite"
 msgstr "Einladen"
+
+msgid "Issue title"
+msgstr "Titel der Meldung"
+
+msgid "Issue tracking is unavailable."
+msgstr "Die Problemverfolgung ist nicht verfügbar."
+
+msgid "Issues"
+msgstr "Meldungen"
 
 msgid "It disappears for everyone in the chat. This can't be undone."
 msgstr ""
@@ -1076,6 +1153,12 @@ msgstr ""
 msgid "LINKED DEVICES"
 msgstr "VERKNÜPFTE GERÄTE"
 
+msgid "Labels"
+msgstr "Labels"
+
+msgid "Labels, separated by commas"
+msgstr "Labels, durch Kommas getrennt"
+
 msgid "Large"
 msgstr "Groß"
 
@@ -1104,6 +1187,9 @@ msgstr "Aufnahme läuft... Beende sie, wenn du fertig bist (maximal 30 Sekunden)
 
 msgid "Loading your accounts"
 msgstr ""
+
+msgid "Loading..."
+msgstr "Wird geladen..."
 
 msgid "Loading…"
 msgstr "Wird geladen…"
@@ -1208,6 +1294,9 @@ msgstr ""
 msgid "New chat"
 msgstr "Neuer Chat"
 
+msgid "New issue"
+msgstr "Neue Meldung"
+
 #, fuzzy
 msgid "New message"
 msgstr "Nachricht senden"
@@ -1263,6 +1352,9 @@ msgstr "Noch keine Relays"
 #, fuzzy
 msgid "No inbox relays."
 msgstr "Kein Profil auf den Relays gefunden."
+
+msgid "No issues found."
+msgstr "Keine Meldungen gefunden."
 
 #, fuzzy
 msgid "No key package on this device or its relays."
@@ -1332,6 +1424,9 @@ msgstr "Zum Verkauf"
 msgid "One-tap reactions"
 msgstr "Ein-Tipp-Reaktionen"
 
+msgid "Only group admins can change this setting."
+msgstr "Nur Gruppenadmins können diese Einstellung ändern."
+
 msgid "Open"
 msgstr "Öffnen"
 
@@ -1353,6 +1448,9 @@ msgstr "Diesen Link öffnen?"
 #, fuzzy
 msgid "Opening in your browser"
 msgstr "Dies öffnet {} in deinem Standardbrowser."
+
+msgid "Original"
+msgstr ""
 
 msgid "Other"
 msgstr "Andere"
@@ -1590,6 +1688,9 @@ msgstr "Dieses Relay entfernen?"
 msgid "Rename"
 msgstr "Umbenannt."
 
+msgid "Reopen"
+msgstr "Wieder öffnen"
+
 msgid "Replaces the settings, drafts, custom emoji, and themes on this device."
 msgstr ""
 
@@ -1612,6 +1713,12 @@ msgstr "Zurücksetzen"
 #, fuzzy
 msgid "Reset zoom"
 msgstr "Zoom auf 100 % zurücksetzen"
+
+msgid "Resolve"
+msgstr "Als gelöst markieren"
+
+msgid "Resolved"
+msgstr "Gelöst"
 
 msgid "Restore last selected chat on launch"
 msgstr "Letzten Chat beim Start wiederherstellen"
@@ -1701,6 +1808,9 @@ msgstr ""
 msgid "Search images"
 msgstr "Nachrichten durchsuchen…"
 
+msgid "Search issues"
+msgstr "Meldungen suchen"
+
 msgid "Searching…"
 msgstr "Suche…"
 
@@ -1720,6 +1830,12 @@ msgstr ""
 
 msgid "Select a model to download it for dictation and audio messages."
 msgstr "Wähle ein Modell, um es für Diktate und Audionachrichten herunterzuladen."
+
+msgid "Select an issue"
+msgstr "Wähle eine Meldung"
+
+msgid "Select an issue to read its discussion."
+msgstr "Wähle eine Meldung aus, um die Diskussion zu lesen."
 
 msgid "Selected"
 msgstr "Ausgewählt"
@@ -1744,6 +1860,9 @@ msgstr "Nachricht senden"
 
 msgid "Send with an effect"
 msgstr ""
+
+msgid "Sending..."
+msgstr "Wird gesendet..."
 
 #, fuzzy
 msgid "Settings: about"
@@ -1788,6 +1907,9 @@ msgstr ""
 
 msgid "Shadow soft"
 msgstr ""
+
+msgid "Share a problem with your group."
+msgstr "Teile ein Problem mit deiner Gruppe."
 
 msgid "Share aggregate performance timings and relay diagnostics. Nothing is sent while this is off."
 msgstr "Teile zusammengefasste Laufzeiten und Relay-Diagnosedaten. Solange diese Option deaktiviert ist, wird nichts gesendet."
@@ -2048,6 +2170,9 @@ msgstr "Zeitformat"
 msgid "Timings"
 msgstr "Laufzeiten"
 
+msgid "Title"
+msgstr "Titel"
+
 #, fuzzy
 msgid "Toggle developer mode"
 msgstr "Entwicklermodus"
@@ -2088,8 +2213,14 @@ msgstr "Unbenannte Gruppe"
 msgid "Unpin"
 msgstr "Loslösen"
 
+msgid "Unresolved"
+msgstr "Offen"
+
 msgid "Unsupported attachment format."
 msgstr "Nicht unterstütztes Anhangformat."
+
+msgid "Updating issue tracking..."
+msgstr "Problemverfolgung wird aktualisiert..."
 
 msgid "Uploaded emoji"
 msgstr "Hochgeladene Emojis"
@@ -2182,11 +2313,17 @@ msgstr "wo du veröffentlichst"
 msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
 msgstr "White Noise sieht deinen privaten Schlüssel nie. Er bleibt nur auf diesem Gerät und jedem verbundenen Signiergerät."
 
+msgid "Write a comment"
+msgstr "Schreibe einen Kommentar"
+
 msgid "YOU"
 msgstr "DU"
 
 msgid "YOUR KEY PACKAGES"
 msgstr "DEINE SCHLÜSSELPAKETE"
+
+msgid "You"
+msgstr "Du"
 
 msgid "You stay in the group, but another admin has to grant the rights back."
 msgstr ""
@@ -2285,4 +2422,7 @@ msgid "relay"
 msgstr "Relay"
 
 msgid "sealed here"
+msgstr ""
+
+msgid "−"
 msgstr ""

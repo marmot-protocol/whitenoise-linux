@@ -67,6 +67,9 @@ msgstr ""
 msgid "-"
 msgstr ""
 
+msgid "100%"
+msgstr ""
+
 msgid "25 European languages, including English and Italian."
 msgstr "英語とイタリア語を含む25のヨーロッパ言語に対応しています。"
 
@@ -160,6 +163,9 @@ msgstr "詳細"
 msgid "Aggregate connection counter from the relay pool."
 msgstr "リレープールからの接続数カウンター。"
 
+msgid "All"
+msgstr "すべて"
+
 msgid "All accounts stay connected. Switching only changes which one you're looking at."
 msgstr "すべてのアカウントは接続されたままです。切り替えても、表示するアカウントが変わるだけです。"
 
@@ -176,6 +182,9 @@ msgstr ""
 
 msgid "An empty box derives its value. The window previews as you type."
 msgstr ""
+
+msgid "Another group change took precedence. Review your group settings."
+msgstr "別のグループ変更が優先されました。グループ設定を確認してください。"
 
 msgid "Anything you write here stays between you and this device's key."
 msgstr ""
@@ -217,6 +226,12 @@ msgstr ""
 
 msgid "Back"
 msgstr "戻る"
+
+msgid "Back to chat"
+msgstr "チャットに戻る"
+
+msgid "Back to issues"
+msgstr "報告の一覧に戻る"
 
 msgid "Back up everything"
 msgstr "すべてをバックアップ"
@@ -367,6 +382,9 @@ msgstr "閉じる"
 msgid "Close to tray"
 msgstr ""
 
+msgid "Closed"
+msgstr "終了"
+
 msgid "Closing the window hides it. The tray icon shows your unread total and brings it back."
 msgstr ""
 
@@ -488,9 +506,15 @@ msgstr "音声を聞き取れませんでした。はっきり話して、もう
 msgid "Couldn't load attachment. Click to retry."
 msgstr "動画を再生できませんでした — タップして再試行"
 
+msgid "Couldn't load edit history. Please try again."
+msgstr "編集履歴を読み込めませんでした。もう一度お試しください。"
+
 #, fuzzy
 msgid "Couldn't load image. Click to retry."
 msgstr "画像をダウンロードできませんでした。"
+
+msgid "Couldn't load issues. Please try again."
+msgstr "報告を読み込めませんでした。もう一度お試しください。"
 
 msgid "Couldn't load messages. Please try again."
 msgstr "メッセージを読み込めませんでした。もう一度お試しください。"
@@ -594,6 +618,9 @@ msgstr "音声を文字に変換できませんでした。もう一度お試し
 msgid "Couldn't unlock the vault. Double-check the password and try again."
 msgstr "そのアカウントを追加できませんでした。鍵を確認して、もう一度お試しください。"
 
+msgid "Couldn't update issues. Please try again."
+msgstr "報告を更新できませんでした。もう一度お試しください。"
+
 msgid "Couldn't use that theme. It isn't a theme this version reads."
 msgstr ""
 
@@ -611,12 +638,18 @@ msgstr "バックアップを作成"
 msgid "Create backup..."
 msgstr "バックアップを作成"
 
+msgid "Create issue"
+msgstr "報告を作成"
+
 #, fuzzy
 msgid "Create poll"
 msgstr "作成"
 
 msgid "Crop circle shape"
 msgstr "クロップサークルの形状"
+
+msgid "Current"
+msgstr ""
 
 msgid "DANGER ZONE"
 msgstr "危険ゾーン"
@@ -699,6 +732,12 @@ msgstr "記録中のファイルを削除するとローテーションされ、
 msgid "Demote"
 msgstr ""
 
+msgid "Describe the issue (Markdown)"
+msgstr "問題の説明（Markdown）"
+
+msgid "Description"
+msgstr "説明"
+
 msgid "Desktop notifications"
 msgstr "デスクトップ通知"
 
@@ -720,6 +759,15 @@ msgstr "お使いのデバイスで下書きの音声入力や音声メッセー
 #, c-format
 msgid "Difficulty: %d/5"
 msgstr "難易度: %d/5"
+
+msgid "Disable issue tracking"
+msgstr "問題の追跡を無効にする"
+
+msgid "Disabled for this group."
+msgstr "このグループでは無効です。"
+
+msgid "Discussion"
+msgstr "議論"
 
 msgid "Divider"
 msgstr ""
@@ -761,6 +809,10 @@ msgstr ""
 msgid "Edit"
 msgstr "編集 %1"
 
+#, fuzzy, c-format
+msgid "Edit %d"
+msgstr "編集 %d"
+
 msgid "Edit history"
 msgstr "編集履歴"
 
@@ -777,12 +829,21 @@ msgstr ""
 msgid "Elevated border"
 msgstr ""
 
+msgid "Enable issue tracking"
+msgstr "問題の追跡を有効にする"
+
+msgid "Enabled for this group."
+msgstr "このグループでは有効です。"
+
 #, fuzzy
 msgid "Encrypted key copied"
 msgstr "暗号化キーをエクスポート(ncryptsec)"
 
 msgid "End-to-end encrypted"
 msgstr "エンドツーエンド暗号化"
+
+msgid "Enter an issue title and description."
+msgstr "報告のタイトルと説明を入力してください。"
 
 msgid "Enter publishes, Escape cancels."
 msgstr ""
@@ -956,6 +1017,13 @@ msgstr ""
 msgid "ISSUE"
 msgstr "課題"
 
+msgid "ISSUE TRACKING"
+msgstr "問題の追跡"
+
+#, fuzzy
+msgid "Image didn't load. Click to retry."
+msgstr "画像をダウンロードできませんでした。"
+
 msgid "Images and files kept on this device so they don't download twice, sealed with your vault key."
 msgstr ""
 
@@ -1005,6 +1073,15 @@ msgstr ""
 
 msgid "Invite"
 msgstr "招待"
+
+msgid "Issue title"
+msgstr "報告のタイトル"
+
+msgid "Issue tracking is unavailable."
+msgstr "問題の追跡を利用できません。"
+
+msgid "Issues"
+msgstr "問題の報告"
 
 msgid "It disappears for everyone in the chat. This can't be undone."
 msgstr ""
@@ -1076,6 +1153,12 @@ msgstr ""
 msgid "LINKED DEVICES"
 msgstr "リンク済みデバイス"
 
+msgid "Labels"
+msgstr "ラベル"
+
+msgid "Labels, separated by commas"
+msgstr "ラベル（カンマ区切り）"
+
 msgid "Large"
 msgstr "大"
 
@@ -1104,6 +1187,9 @@ msgstr "聞き取り中です。話し終えたら完了してください（最
 
 msgid "Loading your accounts"
 msgstr ""
+
+msgid "Loading..."
+msgstr "読み込んでいます..."
 
 msgid "Loading…"
 msgstr "読み込み中…"
@@ -1208,6 +1294,9 @@ msgstr ""
 msgid "New chat"
 msgstr "新しいチャット"
 
+msgid "New issue"
+msgstr "新しい報告"
+
 #, fuzzy
 msgid "New message"
 msgstr "メッセージを送信"
@@ -1263,6 +1352,9 @@ msgstr "リレーがまだありません"
 #, fuzzy
 msgid "No inbox relays."
 msgstr "リレー上にプロフィールが見つかりません。"
+
+msgid "No issues found."
+msgstr "報告が見つかりませんでした。"
 
 #, fuzzy
 msgid "No key package on this device or its relays."
@@ -1332,6 +1424,9 @@ msgstr "販売中"
 msgid "One-tap reactions"
 msgstr "ワンタップリアクション"
 
+msgid "Only group admins can change this setting."
+msgstr "この設定を変更できるのはグループ管理者だけです。"
+
 msgid "Open"
 msgstr "開く"
 
@@ -1353,6 +1448,9 @@ msgstr "このリンクを開きますか?"
 #, fuzzy
 msgid "Opening in your browser"
 msgstr "既定のブラウザで{}を開きます。"
+
+msgid "Original"
+msgstr ""
 
 msgid "Other"
 msgstr "その他"
@@ -1590,6 +1688,9 @@ msgstr "このリレーを削除しますか？"
 msgid "Rename"
 msgstr "名前を変更しました。"
 
+msgid "Reopen"
+msgstr "再開"
+
 msgid "Replaces the settings, drafts, custom emoji, and themes on this device."
 msgstr ""
 
@@ -1612,6 +1713,12 @@ msgstr "リセット"
 #, fuzzy
 msgid "Reset zoom"
 msgstr "ズームを100%にリセット"
+
+msgid "Resolve"
+msgstr "解決済みにする"
+
+msgid "Resolved"
+msgstr "解決済み"
 
 msgid "Restore last selected chat on launch"
 msgstr "起動時に最後のチャットを復元"
@@ -1701,6 +1808,9 @@ msgstr ""
 msgid "Search images"
 msgstr "メッセージを検索…"
 
+msgid "Search issues"
+msgstr "報告を検索"
+
 msgid "Searching…"
 msgstr "検索中…"
 
@@ -1720,6 +1830,12 @@ msgstr ""
 
 msgid "Select a model to download it for dictation and audio messages."
 msgstr "音声入力や音声メッセージに使用するモデルを選択してダウンロードします。"
+
+msgid "Select an issue"
+msgstr "報告を選択"
+
+msgid "Select an issue to read its discussion."
+msgstr "報告を選択すると、その議論を読めます。"
 
 msgid "Selected"
 msgstr "選択中"
@@ -1744,6 +1860,9 @@ msgstr "メッセージを送信"
 
 msgid "Send with an effect"
 msgstr ""
+
+msgid "Sending..."
+msgstr "送信しています..."
 
 #, fuzzy
 msgid "Settings: about"
@@ -1788,6 +1907,9 @@ msgstr ""
 
 msgid "Shadow soft"
 msgstr ""
+
+msgid "Share a problem with your group."
+msgstr "グループに問題を報告できます。"
 
 msgid "Share aggregate performance timings and relay diagnostics. Nothing is sent while this is off."
 msgstr "集計した処理時間とリレーの診断情報を共有します。オフの間は何も送信されません。"
@@ -2048,6 +2170,9 @@ msgstr "時刻形式"
 msgid "Timings"
 msgstr "処理時間"
 
+msgid "Title"
+msgstr "タイトル"
+
 #, fuzzy
 msgid "Toggle developer mode"
 msgstr "開発者モード"
@@ -2088,8 +2213,14 @@ msgstr "名前のないグループ"
 msgid "Unpin"
 msgstr "固定を解除"
 
+msgid "Unresolved"
+msgstr "未解決"
+
 msgid "Unsupported attachment format."
 msgstr "この添付ファイルの形式には対応していません。"
+
+msgid "Updating issue tracking..."
+msgstr "問題の追跡を更新しています..."
 
 msgid "Uploaded emoji"
 msgstr "アップロード済みの絵文字"
@@ -2182,11 +2313,17 @@ msgstr "あなたが発信する場所"
 msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
 msgstr "White Noise はあなたの秘密鍵を一切見ません。このデバイスと接続した署名者にのみ存在します。"
 
+msgid "Write a comment"
+msgstr "コメントを入力"
+
 msgid "YOU"
 msgstr "あなた"
 
 msgid "YOUR KEY PACKAGES"
 msgstr "あなたのキーパッケージ"
+
+msgid "You"
+msgstr "あなた"
 
 msgid "You stay in the group, but another admin has to grant the rights back."
 msgstr ""
@@ -2285,4 +2422,7 @@ msgid "relay"
 msgstr "リレー"
 
 msgid "sealed here"
+msgstr ""
+
+msgid "−"
 msgstr ""

@@ -78,6 +78,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 			}
 			// Right-pinned chrome; the bell opens the mentions inbox.
 			if clay.UI(clay.ID("ChatHeadGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+			if ui.issue_setting == .Enabled { header_chip("IssuesBtn", ICON_COMMENTS, ui.issues_open, tr("Issues")) }
 			header_chip("SearchBtn", ICON_SEARCH, ui.search_open, "Search this chat")
 			bell_chip(ui)
 			header_chip("MembersBtn", ICON_PEOPLE, ui.show_members, "Group members")
@@ -92,7 +93,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 			mention_inbox(ui)
 		}
 		// Thread route: breadcrumb bar under the header while open.
-		if len(ui.thread_stack) > 0 {
+		if len(ui.thread_stack) > 0 && !ui.issues_open {
 			thread_bar(ui)
 		}
 
@@ -112,6 +113,8 @@ chat_pane :: proc(ui: ^Ui_State) {
 			// thread route; page_view_key plays the swap transition.
 			if ui.show_members {
 				members_panel(ui)
+			} else if ui.issues_open && ui.issue_setting == .Enabled {
+				issues_panel(ui)
 			} else if clay.UI(clay.ID("ChatColumn"))(
 			{layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom}},
 			) {
@@ -198,162 +201,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 				scrollbar(clay.ID("Timeline"))
 				jump_latest_button()
 
-				// Reply banner.
-				if len(ui.replying) > 0 {
-					if clay.UI(clay.ID("ReplyBanner"))(
-					{layout = {sizing = {width = clay.SizingGrow()}, padding = {left = 16, right = 16, top = 6, bottom = 6}, childGap = 8}, backgroundColor = RAIL_BG},
-					) {
-						clay.Text(fmt.tprintf("Replying to: %s", ui.reply_hint), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
-						action_chip("ReplyCancel", 0, "Cancel")
-					}
-				}
-
-				// Composer: one floating pill on the pane bg, like the
-				// slint input bar. Enter sends; no Send button.
-				if clay.UI(clay.ID("Composer"))(
-				{layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(16), childGap = 8, layoutDirection = .TopToBottom}},
-				) {
-					burst_pane_layer() // own send's effect rises from here
-					// A capped scrollable list keeps every removal control reachable
-					// without letting attachments widen or consume the chat pane.
-					if len(ui.staged) > 0 {
-						if clay.UI(clay.ID("StagedRow"))({layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFit({max = 144})}, layoutDirection = .TopToBottom, childGap = 8}, clip = {vertical = true, childOffset = clay.GetScrollOffset()}}) {
-							for f, i in ui.staged {
-								if clay.UI(clay.ID("StagedChip", u32(i)))(
-								{layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(6), childGap = 6, childAlignment = {y = .Center}}, backgroundColor = ROW_BG, cornerRadius = rr(10), border = {color = FIELD_BORDER, width = bw()}},
-								) {
-									if f.tex != nil {
-										ratio := f.tex.height > 0 ? f32(f.tex.width) / f32(f.tex.height) : 1
-										if clay.UI(clay.ID("StagedThumb", u32(i)))(
-										{layout = {sizing = {width = clay.SizingFixed(min(80, 40 * ratio))}}, aspectRatio = {ratio}, image = {imageData = f.tex}, cornerRadius = rr(6)},
-										) {}
-									} else {
-										clay.Text(ICON_CLIP, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_LO})
-									}
-									name := f.name
-									if len(name) > 28 {
-										name = fmt.tprintf("%s…", name[:rune_snap(name, 28)])
-									}
-									if clay.UI(clay.ID("StagedName", u32(i)))({layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}}) {
-										clay.Text(name, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT, wrapMode = .None})
-									}
-									if clay.UI(clay.ID("StagedX", u32(i)))(
-									{layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
-									) {
-										clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 10, textColor = TEXT_DIM})
-									}
-								}
-							}
-						}
-						scrollbar(clay.ID("StagedRow"))
-					}
-					if voice.stream != nil {
-						voice_bar()
-					} else if clay.UI(clay.ID("ComposeBox"))(
-					{
-						// The draft owns the full width; controls stay on their own row.
-						layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(compose_height())}, padding = {left = 16, right = 16, top = 8, bottom = 8}, childGap = 8, layoutDirection = .TopToBottom},
-						backgroundColor = ROW_BG,
-						cornerRadius = rr(22),
-						border = {color = ui.focus == .Compose ? ACCENT : FIELD_BORDER, width = bw()},
-					},
-					) {
-						if clay.Hovered() {
-							cursor_raise(.Text)
-						}
-						// Focus lights the pill rather than only recoloring
-						// its border.
-						glow(clay.ID("ComposeBox"), ACCENT, anim_to(clay.ID("ComposeBox").id ~ GLOW_SALT, ui.focus == .Compose ? 1 : 0, HOVER_RATE) * 0.7, 18)
-						// The @-mention popover floats above the box.
-						if open_now(clay.ID("MentionPop"), ui.mention_active) {
-							mention_popover(ui)
-						}
-						// One row per physical line ('\n' from Shift+Enter or
-						// paste); each splits at the selection so the caret
-						// sits at its head and the selected span highlights.
-						// Emoji render as Twemoji tiles like message bodies.
-						// Long drafts scroll inside the capped text viewport.
-						if clay.UI(clay.ID("ComposeClip"))(
-						{layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(compose_height() - COMPOSE_CHROME_H)}}, clip = {horizontal = true, vertical = true, childOffset = clay.GetScrollOffset()}},
-						) {
-						if clay.UI(clay.ID("ComposeText"))({layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 2}}) {
-							if len(ui.compose) == 0 && len(rl.Preedit()) == 0 {
-								compose_view.row = 0
-								if clay.UI(clay.ID("ComposeLine", 0))({layout = {childGap = 1, childAlignment = {y = .Center}}}) {
-									clay.Text(tr("Send a message..."), {fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT_LO})
-									if ui.focus == .Compose {
-										caret()
-									}
-								}
-							} else {
-								text := string(ui.compose[:])
-								lo, hi, head := field_sel(ui, &ui.compose)
-								if ui.focus != .Compose {
-									head = -1
-								}
-								for r, i in compose_lines(text) {
-									h := head
-									// A caret on a wrap boundary belongs to
-									// the upper visual line.
-									if head == r[0] && r[0] > 0 && text[r[0] - 1] != '\n' {
-										h = -1
-									}
-									compose_line(u32(i), text, r[0], r[1], lo, hi, h)
-									if h >= r[0] && h <= r[1] { compose_view.row = u32(i) }
-								}
-							}
-						}
-						}
-						scrollbar(clay.ID("ComposeClip"))
-						if clay.UI(clay.ID("ComposeTools"))({layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(COMPOSE_TOOLS_H)}, childGap = 10, childAlignment = {y = .Center}}}) {
-						if clay.UI(clay.ID("AttachBtn"))(
-						{layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
-						) {
-							clay.Text(ICON_CLIP, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
-						}
-						if clay.UI(clay.ID("ComposeGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-						if clay.UI(clay.ID("EmojiBtn"))(
-						{layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
-						) {
-							clay.Text(ICON_SMILE, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
-						}
-						// Effect picker: arms a burst for the next send.
-						if clay.UI(clay.ID("FxBtn"))(
-						{layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
-						) {
-							if open_now(clay.ID("FxPanel"), ui.fx_open) {
-								effect_picker(ui)
-							}
-							if hovered() {
-								tooltip("Send with an effect")
-							}
-							if tex := emoji_tex(effect_emoji(ui.fx_armed)); ui.fx_armed != 0 && tex != nil {
-								if clay.UI(clay.ID("FxBtnArmed"))(
-								{layout = {sizing = {width = clay.SizingFixed(16)}}, aspectRatio = {1}, image = {imageData = tex}},
-								) {}
-							} else {
-								clay.Text(ICON_STAR, {fontId = FONT_ICON, fontSize = 14, textColor = ui.fx_armed != 0 ? ACCENT : TEXT_LO})
-							}
-						}
-						if clay.UI(clay.ID("PollBtn"))(
-						{layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
-						) {
-							if hovered() {
-								tooltip("Create a poll")
-							}
-							clay.Text(ICON_POLL, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
-						}
-						if ui.prefs.stt_enabled {
-							micro_button("DictateBtn", "Dictate", ui.stt.file != nil ? TEXT_LO : {})
-						}
-						if clay.UI(clay.ID("MicBtn"))(
-						{layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
-						) {
-							clay.Text(ICON_MIC, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
-						}
-						}
-					}
-				}
+				chat_composer(ui)
 			}
 		}
 	}
@@ -388,15 +236,21 @@ compose_view: struct { head, length: int, size: clay.Dimensions, row: u32 }
 // Follow edits and caret moves, but leave manual scrolling alone.
 @(private)
 compose_scroll :: proc(ui: ^Ui_State) {
+	buf := &ui.compose
+	focus := Focus.Compose
+	if ui.issues_open && ui.issue_new && !ui.show_members {
+		buf = &ui.issue_body
+		focus = .Issue_Body
+	}
 	data := clay.GetScrollContainerData(clay.ID("ComposeClip"))
-	if ui.focus != .Compose || !data.found {
+	if ui.focus != focus || !data.found {
 		compose_view.head = -1
 		return
 	}
-	_, _, head := field_sel(ui, &ui.compose)
+	_, _, head := field_sel(ui, buf)
 	size := data.scrollContainerDimensions
-	if compose_view.head == head && compose_view.length == len(ui.compose) && compose_view.size == size { return }
-	compose_view.head, compose_view.length, compose_view.size = head, len(ui.compose), size
+	if compose_view.head == head && compose_view.length == len(buf) && compose_view.size == size { return }
+	compose_view.head, compose_view.length, compose_view.size = head, len(buf), size
 	row := clay.GetElementData(clay.ID("ComposeLine", compose_view.row)).boundingBox
 	clip := clay.GetElementData(clay.ID("ComposeClip")).boundingBox
 	delta := min(row.y - clip.y, 0) + max(row.y + row.height - clip.y - clip.height, 0)
@@ -526,6 +380,8 @@ info_settings_col :: proc(ui: ^Ui_State) {
 			micro_button(fmt.tprintf("RetChip%d", i), labels[i], active ? ACCENT : {})
 		}
 	}
+
+	issues_settings(ui)
 
 	eyebrow("ADD MEMBER")
 	if clay.UI(clay.ID("InviteBox"))(
@@ -939,3 +795,183 @@ login_pane :: proc(ui: ^Ui_State) {
 
 // Apply this frame's typing (chars, backspace, Ctrl+V paste) to buf.
 // Key press including OS key-repeat, so held arrows/backspace repeat.
+
+// Uses the chat composer's wrapping, selection, IME, and caret hit testing.
+@(private)
+issue_editor :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, focus: Focus, placeholder: string, height: f32) {
+ if clay.UI(clay.ID("ComposeBox"))({layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(10)}, backgroundColor = ROW_BG, border = ui.focus == focus ? focus_border(true) : clay.BorderElementConfig{color = FIELD_BORDER, width = bw()}, cornerRadius = rr(8)}) {
+  if clay.UI(clay.ID("ComposeClip"))({layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(height)}, layoutDirection = .TopToBottom}, clip = {horizontal = true, vertical = true, childOffset = clay.GetScrollOffset()}}) {
+   if len(buf) == 0 { clay.Text(placeholder, {fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT_DIM}) }
+   text := string(buf[:])
+   lo, hi, head := field_sel(ui, buf)
+   if ui.focus != focus { head = -1 }
+   for line, i in compose_lines(text) {
+    h := head
+    if head == line[0] && line[0] > 0 && text[line[0] - 1] != '\n' { h = -1 }
+    compose_line(u32(i), text, line[0], line[1], lo, hi, h)
+    if h >= line[0] && h <= line[1] { compose_view.row = u32(i) }
+   }
+  }
+  scrollbar(clay.ID("ComposeClip"))
+ }
+}
+
+@(private)
+chat_composer :: proc(ui: ^Ui_State) {
+	// Reply banner.
+	if len(ui.replying) > 0 {
+		if clay.UI(clay.ID("ReplyBanner"))(
+		{layout = {sizing = {width = clay.SizingGrow()}, padding = {left = 16, right = 16, top = 6, bottom = 6}, childGap = 8}, backgroundColor = RAIL_BG},
+		) {
+			clay.Text(fmt.tprintf("Replying to: %s", ui.reply_hint), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+			action_chip("ReplyCancel", 0, "Cancel")
+		}
+	}
+
+	// Composer: one floating pill on the pane bg, like the
+	// slint input bar. Enter sends; no Send button.
+	if clay.UI(clay.ID("Composer"))(
+	{layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(16), childGap = 8, layoutDirection = .TopToBottom}},
+	) {
+		burst_pane_layer() // own send's effect rises from here
+		// A capped scrollable list keeps every removal control reachable
+		// without letting attachments widen or consume the chat pane.
+		if len(ui.staged) > 0 {
+			if clay.UI(clay.ID("StagedRow"))({layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFit({max = 144})}, layoutDirection = .TopToBottom, childGap = 8}, clip = {vertical = true, childOffset = clay.GetScrollOffset()}}) {
+				for f, i in ui.staged {
+					if clay.UI(clay.ID("StagedChip", u32(i)))(
+					{layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(6), childGap = 6, childAlignment = {y = .Center}}, backgroundColor = ROW_BG, cornerRadius = rr(10), border = {color = FIELD_BORDER, width = bw()}},
+					) {
+						if f.tex != nil {
+							ratio := f.tex.height > 0 ? f32(f.tex.width) / f32(f.tex.height) : 1
+							if clay.UI(clay.ID("StagedThumb", u32(i)))(
+							{layout = {sizing = {width = clay.SizingFixed(min(80, 40 * ratio))}}, aspectRatio = {ratio}, image = {imageData = f.tex}, cornerRadius = rr(6)},
+							) {}
+						} else {
+							clay.Text(ICON_CLIP, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_LO})
+						}
+						name := f.name
+						if len(name) > 28 {
+							name = fmt.tprintf("%s…", name[:rune_snap(name, 28)])
+						}
+						if clay.UI(clay.ID("StagedName", u32(i)))({layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}}) {
+							clay.Text(name, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT, wrapMode = .None})
+						}
+						if clay.UI(clay.ID("StagedX", u32(i)))(
+						{layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
+						) {
+							clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 10, textColor = TEXT_DIM})
+						}
+					}
+				}
+			}
+			scrollbar(clay.ID("StagedRow"))
+		}
+		if voice.stream != nil {
+			voice_bar()
+		} else if clay.UI(clay.ID("ComposeBox"))(
+		{
+			// The draft owns the full width; controls stay on their own row.
+			layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(compose_height())}, padding = {left = 16, right = 16, top = 8, bottom = 8}, childGap = 8, layoutDirection = .TopToBottom},
+			backgroundColor = ROW_BG,
+			cornerRadius = rr(22),
+			border = {color = ui.focus == .Compose ? ACCENT : FIELD_BORDER, width = bw()},
+		},
+		) {
+			if clay.Hovered() {
+				cursor_raise(.Text)
+			}
+			// Focus lights the pill rather than only recoloring
+			// its border.
+			glow(clay.ID("ComposeBox"), ACCENT, anim_to(clay.ID("ComposeBox").id ~ GLOW_SALT, ui.focus == .Compose ? 1 : 0, HOVER_RATE) * 0.7, 18)
+			// The @-mention popover floats above the box.
+			if open_now(clay.ID("MentionPop"), ui.mention_active) {
+				mention_popover(ui)
+			}
+			// One row per physical line ('\n' from Shift+Enter or
+			// paste); each splits at the selection so the caret
+			// sits at its head and the selected span highlights.
+			// Emoji render as Twemoji tiles like message bodies.
+			// Long drafts scroll inside the capped text viewport.
+			if clay.UI(clay.ID("ComposeClip"))(
+			{layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(compose_height() - COMPOSE_CHROME_H)}}, clip = {horizontal = true, vertical = true, childOffset = clay.GetScrollOffset()}},
+			) {
+			if clay.UI(clay.ID("ComposeText"))({layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 2}}) {
+				if len(ui.compose) == 0 && len(rl.Preedit()) == 0 {
+					compose_view.row = 0
+					if clay.UI(clay.ID("ComposeLine", 0))({layout = {childGap = 1, childAlignment = {y = .Center}}}) {
+						clay.Text(ui.compose_issue != "" ? tr("Write a comment") : tr("Send a message..."), {fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT_LO})
+						if ui.focus == .Compose {
+							caret()
+						}
+					}
+				} else {
+					text := string(ui.compose[:])
+					lo, hi, head := field_sel(ui, &ui.compose)
+					if ui.focus != .Compose {
+						head = -1
+					}
+					for r, i in compose_lines(text) {
+						h := head
+						// A caret on a wrap boundary belongs to
+						// the upper visual line.
+						if head == r[0] && r[0] > 0 && text[r[0] - 1] != '\n' {
+							h = -1
+						}
+						compose_line(u32(i), text, r[0], r[1], lo, hi, h)
+						if h >= r[0] && h <= r[1] { compose_view.row = u32(i) }
+					}
+				}
+			}
+			}
+			scrollbar(clay.ID("ComposeClip"))
+			if clay.UI(clay.ID("ComposeTools"))({layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(COMPOSE_TOOLS_H)}, childGap = 10, childAlignment = {y = .Center}}}) {
+			if clay.UI(clay.ID("AttachBtn"))(
+			{layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
+			) {
+				clay.Text(ICON_CLIP, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
+			}
+			if clay.UI(clay.ID("ComposeGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+			if clay.UI(clay.ID("EmojiBtn"))(
+			{layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
+			) {
+				clay.Text(ICON_SMILE, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
+			}
+			// Effect picker: arms a burst for the next send.
+			if clay.UI(clay.ID("FxBtn"))(
+			{layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
+			) {
+				if open_now(clay.ID("FxPanel"), ui.fx_open) {
+					effect_picker(ui)
+				}
+				if hovered() {
+					tooltip("Send with an effect")
+				}
+				if tex := emoji_tex(effect_emoji(ui.fx_armed)); ui.fx_armed != 0 && tex != nil {
+					if clay.UI(clay.ID("FxBtnArmed"))(
+					{layout = {sizing = {width = clay.SizingFixed(16)}}, aspectRatio = {1}, image = {imageData = tex}},
+					) {}
+				} else {
+					clay.Text(ICON_STAR, {fontId = FONT_ICON, fontSize = 14, textColor = ui.fx_armed != 0 ? ACCENT : TEXT_LO})
+				}
+			}
+			if clay.UI(clay.ID("PollBtn"))(
+			{layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
+			) {
+				if hovered() {
+					tooltip("Create a poll")
+				}
+				clay.Text(ICON_POLL, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
+			}
+			if ui.prefs.stt_enabled {
+				micro_button("DictateBtn", "Dictate", ui.stt.file != nil ? TEXT_LO : {})
+			}
+			if clay.UI(clay.ID("MicBtn"))(
+			{layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
+			) {
+				clay.Text(ICON_MIC, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
+			}
+			}
+		}
+	}
+}

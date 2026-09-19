@@ -56,6 +56,7 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // the subscriptions phase.
 // The input buffer that currently receives typed characters.
 active_buf :: proc(ui: ^Ui_State) -> ^[dynamic]u8 {
+	if ui.issues_open && ui.focus == .Issue_Search { return &ui.issue_search }
 	if ui.theme_edit && len(ui.theme_fields) > 0 {
 		return &ui.theme_fields[clamp(ui.theme_edit_idx, 0, len(ui.theme_fields) - 1)]
 	}
@@ -369,6 +370,18 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 
+	if clicked("IssuesBtn") && ui.issue_setting == .Enabled {
+		ui.issues_open = !ui.issues_open
+		ui.show_members, ui.search_open = false, false
+		ui.focus = .Issue_Search
+		issues_sync_route(ui, client)
+		return
+	}
+	if clicked("SearchBtn") { ui.issues_open = false; issues_sync_route(ui, client) }
+	if ui.issues_open && !ui.show_members {
+		if clicked("MembersBtn") { ui.show_members = true; ui.issues_open = false; issues_sync_route(ui, client); load_members(client, ui); return }
+		if handle_issues(ui, client) { return }
+	}
 	// With the webxdc modal open the page owns the keyboard: skip the
 	// composer edit, or it drains the typed runes before
 	// handle_web_input can forward them.
@@ -571,6 +584,15 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			if msg.edited && clay.PointerOver(clay.ID("MsgEdited", u32(i))) {
 				ui.hist_open = true
 				ui.hist_msg = i
+				for v in ui.hist_versions { delete(v.at); delete(v.text) }
+				clear(&ui.hist_versions)
+				ui.hist_original = false
+				if issue_page != nil {
+					for record in issue_page.items[:issue_page.len] {
+						if string(record.message_id_hex) == msg.id { ui.hist_original = true; append(&ui.hist_versions, Edit_Version{format_when(record.recorded_at), strings.clone(string(record.plaintext))}); break }
+					}
+				}
+				ui.hist_ticket = spawn_op(ui, client, .History, msg.id, "")
 				return
 			}
 			// Wave button on a member_added row: greet the new member
@@ -624,6 +646,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	// The @-mention popover consumes Escape/Enter/arrows while open.
+	if ui.issues_open && ui.focus != .Compose { return }
 	if handle_mention(ui, client) {
 		return
 	}
@@ -632,7 +655,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if len(ui.editing) > 0 {
 			// Cancel the edit; bring back the pre-edit draft.
 			ui.editing = ""
-			ed_set(ui, &ui.compose, ui.drafts[ui.chats[ui.selected].group_id])
+			ed_set(ui, &ui.compose, ui.drafts[compose_draft_key(ui)])
 		} else {
 			clear(&ui.compose)
 			drop_draft(ui)
@@ -1016,7 +1039,7 @@ stash_draft :: proc(ui: ^Ui_State) {
 	if ui.selected < 0 || len(ui.editing) > 0 {
 		return
 	}
-	gid := ui.chats[ui.selected].group_id
+	gid := compose_draft_key(ui)
 	if len(strings.trim_space(string(ui.compose[:]))) == 0 {
 		delete_key(&ui.drafts, gid)
 		return
@@ -1030,7 +1053,7 @@ drop_draft :: proc(ui: ^Ui_State) {
 	if ui.selected < 0 {
 		return
 	}
-	gid := ui.chats[ui.selected].group_id
+	gid := compose_draft_key(ui)
 	if gid in ui.drafts {
 		delete_key(&ui.drafts, gid)
 		save_settings(ui)
@@ -1040,19 +1063,14 @@ drop_draft :: proc(ui: ^Ui_State) {
 // Select a chat, load its timeline, and clear the unread badge by
 // marking the newest message read.
 select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) {
-	// The row the user clicked and the header it is about to become:
-	// both boxes are from the frame still on screen, so the avatar
-	// travels the actual distance between them.
-	fly_ids(
-		clay.ID("ChatAvatar", u32(index)),
-		clay.ID("ChatHeadAvatar", 0),
-		chat_pic(ui.chats[index]),
-		avatar_initials(ui.chats[index].title),
-		avatar_color(ui.chats[index].group_id),
-	)
 	stash_draft(ui)
+	stash_staged(ui)
+	ui.issues_open = false
+	delete(ui.compose_issue); ui.compose_issue = ""
 	thread_clear(ui) // thread roots belong to the chat being left
 	ui.selected = index
+	ui.staged = ui.staged_drafts[compose_draft_key(ui)]
+	if compose_draft_key(ui) in ui.staged_drafts { ui.staged_drafts[compose_draft_key(ui)] = {} }
 	ui.search_open = false
 	ui.show_members = false
 	// Stale members would feed the @-mention popover; reload lazily.
@@ -1315,6 +1333,12 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
+	if clicked("IssueToggle") && ui.issue_admin && ui.issue_setting != .Unavailable && ui.issue_ticket == 0 {
+		ui.issue_action = .Setting
+		ui.issue_ticket = spawn_op(ui, client, .Issue_Setting, "", "", ui.issue_setting == .Enabled ? 0 : 1)
+		return
+	}
+	if clicked("IssueRetry") { issues_refresh(); return }
 	for secs, i in RETENTION_SECS {
 		if !clicked(fmt.tprintf("RetChip%d", i)) || ui.group_retention == secs {
 			continue
@@ -1379,6 +1403,8 @@ Msg_Op :: enum {
 	Unreact,
 	Delete,
 	Edit,
+	History,
+	Issue, Issue_Setting,
 	Custom, // app-defined kind + tags (polls, votes, thread messages)
 	Retention, // disappearing-timer change; the seconds ride Op_Job.secs
 	Rename, // group rename; the new name rides Op_Job.target
