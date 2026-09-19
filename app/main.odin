@@ -1697,6 +1697,7 @@ app_main :: proc() {
 		drain_ppic(&ui)
 		drain_ov()
 		drain_gh()
+		drain_hn()
 		drain_nev()
 
 		// Files picked in the async SDL dialog land here; they become

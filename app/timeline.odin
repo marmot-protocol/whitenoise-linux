@@ -1251,6 +1251,8 @@ render_segs :: proc(id: u32, segs: []Inline_Seg, font_size: u16, color: clay.Col
 			// A GitHub PR or issue link is drawn as its own card, in
 			// place of the URL run.
 			gh_card(id * 128 + u32(k), ref)
+		} else if key := hn_ref(seg.url); chips && gh_cards_on && key != "" {
+			hn_card(id * 128 + u32(k), key, seg.url)
 		} else if chips && gh_cards_on && len(seg.evid) > 0 {
 			// A referenced Nostr event is drawn as its own card, in
 			// place of the token.
@@ -1435,7 +1437,7 @@ body_line :: proc(id: u32, text: string, font_size: u16, color: clay.Color, sel 
 		// unselected; the copy still carries the token.
 		for seg in inline_segs(text, fonts, links, offset) {
 			_, gh := gh_ref(seg.url)
-			if len(seg.evid) > 0 || (gh_cards_on && gh) {
+			if len(seg.evid) > 0 || (gh_cards_on && (gh || hn_ref(seg.url) != "")) {
 				sel = {-1, -1}
 				break
 			}

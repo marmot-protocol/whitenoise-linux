@@ -59,7 +59,7 @@ wrapped_lines :: proc(text: string, width: f32, size: u16, mode: Wrap_Mode = .Te
 					}
 					if text[scan] != 'h' { continue }
 					if next, url, ok := url_at(text[:end], scan); ok {
-						if _, card := gh_ref(url); card {
+						if _, card := gh_ref(url); card || hn_ref(url) != "" {
 							card_at, card_end = scan, next
 							break
 						}
