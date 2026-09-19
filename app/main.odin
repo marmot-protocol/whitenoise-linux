@@ -512,8 +512,13 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 									context.temp_allocator,
 								)
 								last_letter: u8 = 0
+								Contact_Item :: struct {idx: int, letter: u8, y, end: f32}
+								rows := make([dynamic]Contact_Item, 0, len(ui.contacts), context.temp_allocator)
+								ROW_H :: f32(50)
+								HEADER_H :: f32(22)
+								GAP :: f32(6)
+								y: f32
 								for order in contact_order(ui) {
-									contact := ui.contacts[order.idx]
 									if len(filter) > 0 && !strings.contains(order.key, filter) {
 										continue
 									}
@@ -522,13 +527,30 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 									if !order.unnamed && len(order.key) > 0 && order.key[0] >= 'a' && order.key[0] <= 'z' {
 										letter = order.key[0] - 32
 									}
-									if letter != last_letter {
-										last_letter = letter
+									header := letter != last_letter
+									end := y + ROW_H + GAP + (header ? HEADER_H + GAP : 0)
+									append(&rows, Contact_Item{order.idx, header ? letter : 0, y, end})
+									y, last_letter = end, letter
+								}
+								// Keep full scroll geometry, but build only the viewport and two spare rows.
+								data := clay.GetScrollContainerData(clay.ID("ContactList"))
+								height := data.found ? data.scrollContainerDimensions.height : f32(rl.GetScreenHeight()) / UI_ZOOM
+								offset := data.found ? clamp(-data.scrollPosition.y, 0, max(0, y - GAP - height)) : 0
+								if data.found { data.scrollPosition.y = -offset }
+								first, last := 0, len(rows)
+								for first < last && rows[first].end < offset - 2 * (ROW_H + GAP) { first += 1 }
+								for last > first && rows[last - 1].y > offset + height + 2 * (ROW_H + GAP) { last -= 1 }
+								if first > 0 {
+									if clay.UI(clay.ID("ContactsBefore"))({layout = {sizing = {height = clay.SizingFixed(rows[first].y - GAP)}}}) {}
+								}
+								for order in rows[first:last] {
+									contact := ui.contacts[order.idx]
+									if order.letter != 0 {
 										if clay.UI(clay.ID("ContactLetter", u32(order.idx)))(
-										{layout = {padding = {left = 10, top = 6, bottom = 2}}},
+										{layout = {sizing = {height = clay.SizingFixed(HEADER_H)}, padding = {left = 10, top = 6, bottom = 2}}},
 										) {
 											clay.Text(
-												fmt.tprintf("%c", letter),
+												fmt.tprintf("%c", order.letter),
 												{
 													fontId = FONT_MONO,
 													fontSize = 11,
@@ -543,7 +565,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 									if clay.UI(clay.ID("ContactRow", u32(order.idx)))(
 									{
 										layout = {
-											sizing = {width = clay.SizingGrow()},
+											sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(ROW_H)},
 											padding = clay.PaddingAll(10),
 											childGap = 10,
 											childAlignment = {y = .Center},
@@ -574,10 +596,12 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 											30,
 											url_pic(contact.pic_url),
 										)
-										clay.Text(
-											contact_label(ui, contact),
-											{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT},
-										)
+										if clay.UI(clay.ID("ContactNameClip", u32(order.idx)))({clip = {horizontal = true}}) {
+											clay.Text(
+												contact_label(ui, contact),
+												{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT, wrapMode = .None},
+											)
+										}
 										if selected && len(contact.npub) > 0 {
 											if clay.UI(clay.ID("ContactRowGap", u32(order.idx)))(
 											{layout = {sizing = {width = clay.SizingGrow()}}},
@@ -588,6 +612,9 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 											)
 										}
 									}
+								}
+								if last < len(rows) {
+									if clay.UI(clay.ID("ContactsAfter"))({layout = {sizing = {height = clay.SizingFixed(y - rows[last].y - GAP)}}}) {}
 								}
 							}
 							scrollbar(clay.ID("ContactList"))

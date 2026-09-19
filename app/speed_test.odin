@@ -12,6 +12,66 @@ import clay "../vendor/clay/bindings/odin/clay-odin"
 import marmot "../marmot"
 import rl "sdlrl"
 
+// SDL_VIDEODRIVER=dummy odin test app -define:WN_PERF=true -define:ODIN_TEST_NAMES=contacts_layout
+@(test)
+contacts_layout :: proc(t: ^testing.T) {
+	when !#config(WN_PERF, false) { return }
+	context.allocator = runtime.default_context().allocator
+	rl.InitWindow(1200, 800, "Contacts regression")
+	defer rl.CloseWindow()
+	UI_ZOOM, UI_SCALE = 1, 1
+	init_fonts()
+	memory: []u8
+	init_layout(&memory, 32768, {1200, 800})
+	defer delete(memory)
+	ui := Ui_State{page = .Contacts, row_menu = -1, member_menu = -1, selected_contact = -1}
+	ui.prefs.rail_w = RAIL_W_MIN
+	append(&ui.accounts, "Test")
+	g_ui, g_prefs = &ui, &ui.prefs
+	defer { g_ui, g_prefs = nil, nil }
+	for i in 0 ..< 1000 {
+		append(&ui.contacts, Contact_Ui{id_hex = fmt.aprintf("contact-%d", i), name = fmt.aprintf("%c Contact %04d", 'A' + i / 40, i)})
+	}
+	for _ in 0 ..< 5 { build_layout(&ui, 0) }
+	samples: [31]f64
+	for &ms in samples {
+		start := time.tick_now()
+		build_layout(&ui, 0)
+		ms = time.duration_milliseconds(time.tick_since(start))
+		free_all(context.temp_allocator)
+	}
+	slice.sort(samples[:])
+	data := clay.GetScrollContainerData(clay.ID("ContactList"))
+	testing.expect(t, data.found)
+	full_height := data.contentDimensions.height
+	for fraction in ([]f32{0, 0.5, 1}) {
+		data.scrollPosition.y = -fraction * (full_height - data.scrollContainerDimensions.height)
+		commands := build_layout(&ui, 0)
+		mounted := 0
+		for _, i in ui.contacts { if clay.GetElementData(clay.ID("ContactRow", u32(i))).found { mounted += 1 } }
+		fmt.printf("contacts=1000 scroll=%.1f mounted=%d median_ms=%.3f p95_ms=%.3f\n", fraction, mounted, samples[15], samples[29])
+		testing.expect(t, mounted > 0 && mounted < 30)
+		testing.expect(t, abs(clay.GetScrollContainerData(clay.ID("ContactList")).contentDimensions.height - full_height) < 1)
+		rl.BeginDrawing()
+		clay_raylib_render(&commands)
+		rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-contacts-scroll-%d.png", int(fraction * 2)))
+		rl.EndDrawing()
+	}
+	testing.expect(t, clay.GetElementData(clay.ID("ContactRow", 999)).found)
+	clear(&ui.sidebar_filter)
+	append(&ui.sidebar_filter, "0999")
+	for _ in 0 ..< 3 { build_layout(&ui, 0) }
+	testing.expect(t, clay.GetElementData(clay.ID("ContactRow", 999)).found, "filtering at the bottom must keep the match visible")
+	row := clay.GetElementData(clay.ID("ContactRow", 999)).boundingBox
+	list := clay.GetElementData(clay.ID("ContactList")).boundingBox
+	testing.expect(t, row.y >= list.y && row.y + row.height <= list.y + list.height)
+	append(&ui.sidebar_filter, "no match")
+	build_layout(&ui, 0)
+	for _, i in ui.contacts { testing.expect(t, !clay.GetElementData(clay.ID("ContactRow", u32(i))).found) }
+	for contact in ui.contacts { delete(contact.id_hex); delete(contact.name) }
+	delete(ui.contacts); delete(ui.accounts); delete(ui.sidebar_filter)
+}
+
 @(test)
 chat_refresh_ownership :: proc(t: ^testing.T) {
 	track: mem.Tracking_Allocator

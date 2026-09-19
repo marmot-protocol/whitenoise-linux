@@ -5,8 +5,26 @@ import "core:encoding/json"
 import "core:fmt"
 import "core:strings"
 import "core:testing"
+import "core:mem"
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
+
+@(test)
+relay_discovery_ownership :: proc(t: ^testing.T) {
+	track: mem.Tracking_Allocator
+	mem.tracking_allocator_init(&track, context.allocator)
+	defer mem.tracking_allocator_destroy(&track)
+	track.bad_free_callback = mem.tracking_allocator_bad_free_callback_add_to_array
+	context.allocator = mem.tracking_allocator(&track)
+	message := `["EVENT","wn",{"pubkey":"author","kind":10002,"tags":[["r","wss://write.example","write"],["r","wss://read.example","read"],["r","wss://both.example"]]}]`
+	relays := nev_relay_urls(transmute([]u8)message, "author")
+	testing.expect(t, len(relays) == 2)
+	testing.expect_value(t, relays[0], "wss://write.example")
+	testing.expect_value(t, relays[1], "wss://both.example")
+	testing.expect(t, nev_relay_urls(transmute([]u8)message, "other") == nil)
+	testing.expect_value(t, len(track.bad_free_array), 0)
+	testing.expect_value(t, len(track.allocation_map), 0)
+}
 
 @(private)
 TEST_NADDR :: "naddr1qqxnzd3cxqmrzv3exgmr2wfeqgsxu35yyt0mwjjh8pcz4zprhxegz69t4wr9t74vk6zne58wzh0waycrqsqqqa28pjfdhz"

@@ -111,7 +111,7 @@ nev_request :: proc(key: string) -> string {
 nev_relay_urls :: proc(body: []u8, author: string) -> []string {
 	value, err := json.parse(body, allocator = context.temp_allocator)
 	if err != nil { return nil }
-	defer json.destroy_value(value)
+	defer json.destroy_value(value, allocator = context.temp_allocator)
 	message, ok := value.(json.Array)
 	if !ok || len(message) != 3 { return nil }
 	type, _ := message[0].(json.String)
