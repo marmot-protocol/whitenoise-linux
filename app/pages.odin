@@ -1066,7 +1066,7 @@ row_to_ui :: proc(client: ^marmot.Client, presented: ^marmot.Presented_Chat_Row,
 	return Chat_Row_Ui{
 		group_id = strings.clone(string(row.group_id_hex)),
 		title    = strings.clone(title),
-		preview  = strings.clone(preview),
+		preview  = strings.clone(chat_preview(preview)),
 		at       = format_when(row.activity_sort_at),
 		unread   = row.unread_count,
 		pending  = row.pending_confirmation,

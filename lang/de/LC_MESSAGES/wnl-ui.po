@@ -993,6 +993,9 @@ msgstr "Ausgeblendet"
 msgid "Hide"
 msgstr ""
 
+msgid "Hide hidden message"
+msgstr "Versteckte Nachricht ausblenden"
+
 msgid "Hover"
 msgstr ""
 
@@ -1731,6 +1734,9 @@ msgstr "Erneut versuchen"
 
 msgid "Reveal"
 msgstr ""
+
+msgid "Reveal hidden message"
+msgstr "Versteckte Nachricht anzeigen"
 
 msgid "Reveal private key (nsec)"
 msgstr ""

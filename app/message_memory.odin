@@ -58,6 +58,10 @@ message_free :: proc(msg: Msg_Ui) {
 		delete(value)
 	}
 	blocks_free(msg.blocks)
+	for secret in msg.secrets {
+		blocks_free(secret.blocks)
+	}
+	delete(msg.secrets)
 	for reaction in msg.reactions {
 		delete(reaction.label)
 		delete(reaction.emoji)

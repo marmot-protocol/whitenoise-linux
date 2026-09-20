@@ -361,6 +361,8 @@ render_range :: proc(render_commands: ^clay.ClayArray(clay.RenderCommand), from,
 				glow_draw((^Glow_View)(data), bounds)
 			case .Shade:
 				shade_draw((^Shade_View)(data), bounds)
+			case .Hidden_Border:
+				hidden_border_draw(bounds)
 			case .Profile_Background:
 				tint := clay.Color{255, 255, 255, 255}
 				if len(overlay_colors) > 0 && overlay_colors[len(overlay_colors) - 1] != 0 { tint = overlay_colors[len(overlay_colors) - 1] }

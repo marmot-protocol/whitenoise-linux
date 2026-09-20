@@ -45,7 +45,8 @@ for patch in "${MDK_PATCHES[@]}"; do
 done
 TIMINGS_HASH="$(sha256sum "${MDK_PATCHES[@]}")"
 if [ ! -f "$BUNDLE/lib/libmarmot_c.a" ] || [ ! -f "$BUNDLE/.otlp-export" ] || [ "$(cat "$BUNDLE/.linux-timings" 2>/dev/null || true)" != "$TIMINGS_HASH" ]; then
-  OTLP_EXPORT=1 "$MDK/crates/marmot-c/c-bindings.sh"
+  # GCC folds SQLCipher's TLS seed into overflowing relocations (sqlcipher#600).
+  CC="${CC:-clang}" OTLP_EXPORT=1 "$MDK/crates/marmot-c/c-bindings.sh"
   touch "$BUNDLE/.otlp-export"
   printf '%s\n' "$TIMINGS_HASH" > "$BUNDLE/.linux-timings"
 fi

@@ -993,6 +993,9 @@ msgstr "非表示"
 msgid "Hide"
 msgstr ""
 
+msgid "Hide hidden message"
+msgstr "隠されたメッセージを非表示"
+
 msgid "Hover"
 msgstr ""
 
@@ -1731,6 +1734,9 @@ msgstr "再試行"
 
 msgid "Reveal"
 msgstr ""
+
+msgid "Reveal hidden message"
+msgstr "隠されたメッセージを表示"
 
 msgid "Reveal private key (nsec)"
 msgstr ""

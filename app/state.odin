@@ -261,6 +261,7 @@ Msg_Ui :: struct {
 	sender_id: string, // account hex
 	pic_url:   string, // sender's kind-0 picture, "" = none
 	body:      string, // plaintext fallback when blocks is empty
+	secrets: [dynamic]Secret_Ui, // decoded layers, each revealed separately
 	blocks:    [dynamic]Md_Block_Ui,
 	reactions:  [dynamic]Reaction_Ui,
 	reply_from: string, // sender of the replied-to message, "" = not a reply

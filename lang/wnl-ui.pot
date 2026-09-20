@@ -913,6 +913,9 @@ msgstr ""
 msgid "Hide"
 msgstr ""
 
+msgid "Hide hidden message"
+msgstr ""
+
 msgid "Hover"
 msgstr ""
 
@@ -1599,6 +1602,9 @@ msgid "Retry"
 msgstr ""
 
 msgid "Reveal"
+msgstr ""
+
+msgid "Reveal hidden message"
 msgstr ""
 
 msgid "Reveal private key (nsec)"

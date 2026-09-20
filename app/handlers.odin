@@ -563,6 +563,14 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	// Per-message row actions.
 	if mouse_released() {
 		for msg, i in ui.messages {
+			for &secret, j in msg.secrets {
+				if !msg.deleted && clay.PointerOver(clay.ID("MsgReveal", u32(i) * 4096 + u32(j))) {
+					secret.open = !secret.open
+					ui.messages[i].row_height = 0
+					return
+				}
+				if !secret.open { break }
+			}
 			if clay.PointerOver(clay.ID("MessageMore", u32(i) * 4096)) {
 				preview_message(msg.body, msg.blocks[:])
 				return

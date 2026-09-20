@@ -331,11 +331,21 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		// Edit records and poll questions arrive without parsed content
 		// tokens; run the text through marmot's markdown parser so they
 		// render like any other body.
-		if (msg.edited || record.kind == KIND_POLL || record.kind == KIND_THREAD) && content.content_tokens.blocks_len == 0 && len(body) > 0 {
+		cover, secret := hidden_message(body)
+		msg.secrets = secret_layers(client, secret)
+		if old, found := previous_ids[id_str]; found && previous[old].body == body {
+			for &layer, j in msg.secrets {
+				if j < len(previous[old].secrets) { layer.open = previous[old].secrets[j].open }
+			}
+		}
+		if secret != "" || ((msg.edited || record.kind == KIND_POLL || record.kind == KIND_THREAD) && content.content_tokens.blocks_len == 0 && len(body) > 0) {
 			doc: ^marmot.Markdown_Document
-			if marmot.parse_markdown(client, strings.clone_to_cstring(body, context.temp_allocator), &doc) == .OK {
+			if marmot.parse_markdown(client, strings.clone_to_cstring(cover, context.temp_allocator), &doc) == .OK {
 				convert_blocks(&msg.blocks, doc.blocks, doc.blocks_len, false, ([^]u8)(doc.blank_lines_before)[:doc.blank_lines_before_len])
 				marmot.markdown_document_free(doc)
+			}
+			if secret != "" && len(msg.blocks) == 0 {
+				append(&msg.blocks, Md_Block_Ui{kind = .Para, text = strings.clone(cover)})
 			}
 		} else if record.kind != AGENT_STREAM_START {
 			convert_blocks(&msg.blocks, content.content_tokens.blocks, content.content_tokens.blocks_len, false, ([^]u8)(content.content_tokens.blank_lines_before)[:content.content_tokens.blank_lines_before_len])
@@ -374,7 +384,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		if record.reply_preview != nil {
 			preview := record.reply_preview
 			msg.reply_from = strings.clone(preview.sender != nil ? profile_label(client, string(preview.sender)) : "?")
-			msg.reply_text = strings.clone(preview.plaintext != nil ? string(preview.plaintext) : "")
+			msg.reply_text = strings.clone(chat_preview(preview.plaintext != nil ? string(preview.plaintext) : ""))
 			msg.reply_image = reply_image_load(client, account, group, preview)
 		} else if record.reply_to_message_id_hex != nil {
 			// Parent outside the loaded window (or deleted): keep the

@@ -911,11 +911,43 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 			clay.Text(tr("This message was deleted"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_LO})
 		}
 
-		if !cropped && md_blocks(msg.blocks[:], index * 4096, true, max_lines = MESSAGE_LINES) {
+		if len(msg.secrets) == 0 && !cropped && md_blocks(msg.blocks[:], index * 4096, true, max_lines = MESSAGE_LINES) {
 			message_more(index * 4096)
 		}
 
 		gh_cards_on = false
+
+		if len(msg.secrets) > 0 && !msg.deleted {
+			for layer in 0 ..= len(msg.secrets) {
+				blocks := msg.blocks[:]
+				if layer > 0 {
+					if !msg.secrets[layer - 1].open { break }
+					blocks = msg.secrets[layer - 1].blocks[:]
+				}
+				// Keep the low bits distinct too: line/emoji IDs multiply this base.
+				block_id := layer == 0 ? index * 4096 : 0x60000008 + index * 65536 + u32(layer) * 4096
+				if layer == len(msg.secrets) {
+					md_blocks(blocks, block_id, true)
+					continue
+				}
+				// Leave Markdown above an emoji carrier outside its outline.
+				last := len(blocks) - 1
+				carrier: [1]Md_Block_Ui
+				if last > 0 && blocks[last].kind == .Para && text_emoji(strings.trim_space(blocks[last].text)) != nil {
+					md_blocks(blocks[:last], block_id, true)
+					block_id += u32(last) * 16
+					carrier[0] = blocks[last]
+					carrier[0].blank_lines_before = 0
+					blocks = carrier[:]
+				}
+				cover_cropped := false
+				if clay.UI(clay.ID("MsgReveal", index * 4096 + u32(layer)))({layout = {layoutDirection = .TopToBottom, padding = clay.PaddingAll(8), sizing = {width = clay.SizingFit({min = 44}), height = clay.SizingFit({min = 44})}}, custom = {customData = &hidden_border}}) {
+					cover_cropped = md_blocks(blocks, block_id, wrap_w = body_wrap_w() - 16, max_lines = layer == 0 ? MESSAGE_LINES : max(int))
+					if hovered() { tooltip(msg.secrets[layer].open ? tr("Hide hidden message") : tr("Reveal hidden message"), .Above) }
+				}
+				if cover_cropped { message_more(index * 4096) }
+			}
+		}
 
 		// Poll options under the question; clicks vote (handle_chat).
 		if len(msg.poll_opts) > 0 {

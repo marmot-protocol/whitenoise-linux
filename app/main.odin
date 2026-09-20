@@ -18,9 +18,11 @@
 package main
 
 import "core:fmt"
+import "core:c/libc"
 import "core:os"
 import "core:strconv"
 import "core:strings"
+import "core:sys/linux"
 import "core:text/edit"
 import "core:time"
 import "core:thread"
@@ -914,6 +916,8 @@ main :: proc() {
 
 @(private)
 app_main :: proc() {
+	// Relay sockets can close during a write. Let the runtime handle EPIPE.
+	libc.signal(libc.int(linux.Signal.SIGPIPE), transmute(proc "c" (libc.int))libc.SIG_IGN)
 	startup_start := time.tick_now()
 	local_timing_stopped = false
 	defer local_timings_export()

@@ -1,7 +1,31 @@
 package main
 
 import "core:testing"
+import "core:strings"
+import "core:unicode/utf8"
 import marmot "../marmot"
+
+@(test)
+chat_hidden_preview :: proc(t: ^testing.T) {
+	secret := secret_fixture(strings.repeat("secret ", 6000, context.temp_allocator))
+	text := strings.concatenate({"You: 🦂", secret}, context.temp_allocator)
+	testing.expect_value(t, chat_preview(text), "You: 🦂")
+	last := marmot.Chat_List_Message_Preview{plaintext = strings.clone_to_cstring(text, context.temp_allocator), kind = 9}
+	row := marmot.Presented_Chat_Row{row = {group_id_hex = "group", last_message = &last}}
+	chat := row_to_ui(nil, &row, "self")
+	defer chat_free(chat)
+	testing.expect_value(t, chat.preview, "You: 🦂")
+	for text in ([]string{
+		strings.repeat("日", 200, context.temp_allocator),
+		strings.concatenate({"🦂", strings.repeat("\u200d", 1024 * 1024, context.temp_allocator)}, context.temp_allocator),
+	}) {
+		preview := chat_preview(text)
+		testing.expect(t, len(preview) <= 259)
+		testing.expect(t, utf8.valid_string(preview))
+		testing.expect(t, strings.has_suffix(preview, "…"))
+	}
+	testing.expect_value(t, chat_preview("👩🏽‍💻 hello"), "👩🏽‍💻 hello")
+}
 
 @(test)
 chat_audio_preview :: proc(t: ^testing.T) {

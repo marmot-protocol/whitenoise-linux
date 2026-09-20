@@ -65,6 +65,7 @@ Model_Kind :: enum u8 {
 	Shade, // a linear drop-shadow gradient beside a panel (threads.odin)
 	Image_Crop, // attachment thumbnails with extreme aspect ratios
 	Profile_Background, // cover or tile media confined to a profile
+	Hidden_Border, // rainbow outline around a zero-width message carrier
 }
 
 // Shared orbit state: drag rotates, wheel zooms; one handler serves
