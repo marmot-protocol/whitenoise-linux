@@ -2544,8 +2544,8 @@ md_blocks :: proc(
 		if remaining <= 0 {return true}
 		block_id := id_base + u32(j) * 16
 		gap_lines := int(block.blank_lines_before)
-		// Keep list items together; preserve any extra blank lines.
-		if j > 0 && block.kind == .List_Item && blocks[j - 1].kind == .List_Item {
+		// Keep lists close to their introduction; preserve any extra blank lines.
+		if block.kind == .List_Item {
 			gap_lines = max(gap_lines - 1, 0)
 		}
 		if gap_lines > 0 {

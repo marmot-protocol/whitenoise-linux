@@ -143,6 +143,11 @@ message_excerpt_layout :: proc(t: ^testing.T) {
 		commands := clay.EndLayout(0)
 		testing.expect(
 			t,
+			!clay.GetElementData(clay.ID("MdGap", 32)).found,
+			"the first list item follows its introduction without an extra spacer",
+		)
+		testing.expect(
+			t,
 			len(sel_lines) >= MESSAGE_LINES,
 			"blank lines leave room for six text lines",
 		)
