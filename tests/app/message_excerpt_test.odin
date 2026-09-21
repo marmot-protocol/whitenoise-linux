@@ -114,6 +114,45 @@ message_excerpt_layout :: proc(t: ^testing.T) {
 			rl.EndDrawing()
 		}
 	}
+	list := parse_md_text(
+		"asked astra:\n\n• Jeff has related work, but I found no duplicate of #1961:\n\n" +
+		"- #1955, still open: subscription failure isolation and recovery. Touches the same transport code, but doesn’t reuse sockets for outbound sends.\n\n" +
+		"- #1120, merged July 26: reuses connections within KeyPackage deletion batches.\n\n" +
+		"- #1635, merged September 3: reuses HTTP clients for media downloads.\n\n" +
+		"Our group-message and push connection reuse remains distinct. #1955 is the one to coordinate with when merging.",
+	)
+	defer blocks_free(list)
+	for limit in ([]int{MESSAGE_LINES, max(int)}) {
+		clear(&sel_lines)
+		clay.BeginLayout()
+		if clay.UI(clay.ID("ListExcerptTest"))(
+		{
+			layout = {
+				layoutDirection = .TopToBottom,
+				sizing = {width = clay.SizingFixed(680)},
+				padding = clay.PaddingAll(20),
+				childGap = 3,
+			},
+			backgroundColor = BG,
+		},
+		) {
+			cropped := md_blocks(list[:], 0, true, 640, limit)
+			testing.expect_value(t, cropped, limit == MESSAGE_LINES)
+			if cropped {message_more(0)}
+		}
+		commands := clay.EndLayout(0)
+		testing.expect(
+			t,
+			len(sel_lines) >= MESSAGE_LINES,
+			"blank lines leave room for six text lines",
+		)
+		rl.BeginDrawing()
+		clay_raylib_render(&commands)
+		rl.TakeScreenshot(
+			limit == MESSAGE_LINES ? "/tmp/wn-list-excerpt.png" : "/tmp/wn-list-full.png",
+		)
+		rl.EndDrawing()
+	}
 	text := fmt.tprintf(
 		"%sTHE END",
 		strings.repeat("A paragraph with **formatting**.\n\n", 100, context.temp_allocator),

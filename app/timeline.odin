@@ -2544,12 +2544,11 @@ md_blocks :: proc(
 		if remaining <= 0 {return true}
 		block_id := id_base + u32(j) * 16
 		if block.blank_lines_before > 0 {
-			gap := min(int(block.blank_lines_before), remaining)
+			// Paragraph spacing is half a line and does not consume the text excerpt.
+			gap := f32(block.blank_lines_before) * f32(BODY_FS) / 2
 			if clay.UI(clay.ID("MdGap", block_id))(
-			{layout = {sizing = {height = clay.SizingFixed(f32(gap) * f32(BODY_FS))}}},
+			{layout = {sizing = {height = clay.SizingFixed(gap)}}},
 			) {}
-			remaining -= gap
-			if remaining <= 0 {return true}
 		}
 		used := 1
 		switch block.kind {

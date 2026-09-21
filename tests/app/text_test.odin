@@ -45,7 +45,11 @@ md_blank_lines :: proc(t: ^testing.T) {
 	clay.SetMeasureTextFunction(measure_text, nil)
 	clay.BeginLayout()
 	if clay.UI(clay.ID("ParagraphTest"))({layout = {layoutDirection = .TopToBottom}}) {
-		md_blocks(blocks[:], 0)
+		testing.expect(
+			t,
+			!md_blocks(blocks[:], 0, max_lines = 3),
+			"spacing does not truncate text",
+		)
 		body_text(100, "first\n\nsecond", BODY_FS, TEXT)
 	}
 	clay.EndLayout(0)
@@ -53,7 +57,7 @@ md_blank_lines :: proc(t: ^testing.T) {
 	for i in 1 ..< 3 {
 		gap := clay.GetElementData(clay.ID("MdGap", u32(i) * 16))
 		testing.expect(t, gap.found)
-		testing.expect_value(t, gap.boundingBox.height, f32(i) * f32(BODY_FS))
+		testing.expect_value(t, gap.boundingBox.height, f32(i) * f32(BODY_FS) / 2)
 	}
 	testing.expect_value(
 		t,
