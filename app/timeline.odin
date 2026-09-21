@@ -2543,9 +2543,14 @@ md_blocks :: proc(
 	for block, j in blocks {
 		if remaining <= 0 {return true}
 		block_id := id_base + u32(j) * 16
-		if block.blank_lines_before > 0 {
+		gap_lines := int(block.blank_lines_before)
+		// Keep list items together; preserve any extra blank lines.
+		if j > 0 && block.kind == .List_Item && blocks[j - 1].kind == .List_Item {
+			gap_lines = max(gap_lines - 1, 0)
+		}
+		if gap_lines > 0 {
 			// Paragraph spacing is half a line and does not consume the text excerpt.
-			gap := f32(block.blank_lines_before) * f32(BODY_FS) / 2
+			gap := f32(gap_lines) * f32(BODY_FS) / 2
 			if clay.UI(clay.ID("MdGap", block_id))(
 			{layout = {sizing = {height = clay.SizingFixed(gap)}}},
 			) {}
@@ -2634,7 +2639,7 @@ md_blocks :: proc(
 			}
 		case .List_Item:
 			marker := block.text[:block.marker_len]
-			marker_w := max(f32(20), rl.MeasureTextLine(FONT_BODY, BODY_FS, marker, 0).x)
+			marker_w := max(f32(12), rl.MeasureTextLine(FONT_BODY, BODY_FS, marker, 0).x)
 			width := wrap_w > 0 ? wrap_w : (selectable ? body_wrap_w() : 0)
 			if clay.UI(clay.ID("MsgListItem", block_id))({layout = {padding = {left = 12}}}) {
 				if clay.UI(clay.ID("MsgListMarker", block_id))(

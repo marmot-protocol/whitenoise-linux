@@ -113,16 +113,33 @@ md_list_layout :: proc(t: ^testing.T) {
 		{},
 	)
 	clay.SetMeasureTextFunction(measure_text, nil)
-	blocks := parse_md_text("- Answer questions and explain things and help you write or plan")
-	defer delete(blocks[0].text)
-	defer delete(blocks)
+	blocks := parse_md_text(
+		"- Answer questions and explain things and help you write or plan\n\n- Next item\n\n\n- Separate item",
+	)
+	defer blocks_free(blocks)
 	clay.BeginLayout()
-	md_blocks(blocks[:], 0, wrap_w = 200)
+	if clay.UI(clay.ID("ListTest"))(
+	{layout = {layoutDirection = .TopToBottom, childGap = 3}},
+	) {md_blocks(blocks[:], 0, wrap_w = 200)}
 	commands := clay.EndLayout(0)
 	marker := clay.GetElementData(clay.ID("MsgListMarker", 0)).boundingBox
 	body := clay.GetElementData(clay.ID("MsgListBody", 0)).boundingBox
 	testing.expect_value(t, marker.x, f32(12))
+	testing.expect_value(
+		t,
+		marker.width,
+		max(f32(12), rl.MeasureTextLine(FONT_BODY, BODY_FS, "• ", 0).x),
+	)
 	testing.expect_value(t, body.x, marker.x + marker.width)
+	first := clay.GetElementData(clay.ID("MsgListItem", 0)).boundingBox
+	next := clay.GetElementData(clay.ID("MsgListItem", 16)).boundingBox
+	testing.expect_value(t, next.y, first.y + first.height + 3)
+	testing.expect(t, !clay.GetElementData(clay.ID("MdGap", 16)).found)
+	testing.expect_value(
+		t,
+		clay.GetElementData(clay.ID("MdGap", 32)).boundingBox.height,
+		f32(BODY_FS) / 2,
+	)
 	lines := 0
 	for command in commands.internalArray[:commands.length] {
 		if command.commandType != .Text || command.boundingBox.x < body.x {
