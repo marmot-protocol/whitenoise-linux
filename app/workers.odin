@@ -573,6 +573,8 @@ spawn_send :: proc(ui: ^Ui_State, client: ^marmot.Client, p: ^Pending_Send) {
 // right after in the caller.
 queue_send :: proc(ui: ^Ui_State, client: ^marmot.Client, body: string) {
 	started := time.tick_now()
+	ui.scroll_pending = true // Reveal the preview before the relay responds.
+	delete(ui.jump_id); ui.jump_id = ""
 	info := profile_info(client, ui.account_ref)
 	send_ticket += 1
 	append(
@@ -651,6 +653,8 @@ queue_staged :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	started := time.tick_now()
+	ui.scroll_pending = true
+	delete(ui.jump_id); ui.jump_id = ""
 	info := profile_info(client, ui.account_ref)
 	sender := len(info.name) > 0 ? info.name : "you"
 	group := ui.chats[ui.selected].group_id

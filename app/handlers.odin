@@ -740,7 +740,6 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			play_sound(.Send)
 		}
 		ui.replying = ""
-		load_timeline(client, ui)
 	}
 }
 

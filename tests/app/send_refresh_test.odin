@@ -6,6 +6,61 @@ import "core:strings"
 import "core:sync"
 import "core:testing"
 import "core:thread"
+import rl "sdlrl"
+
+@(test)
+send_reveals_preview :: proc(t: ^testing.T) {
+	context.allocator = runtime.default_context().allocator
+	sync.lock(&test_home_lock)
+	defer sync.unlock(&test_home_lock)
+	old_threads, old_done, old_ticket := send_threads, sends_done, send_ticket
+	send_threads, sends_done = {}, {}
+	ui := Ui_State {
+		account_ref = "preview-test",
+	}
+	append(&ui.chats, Chat_Row_Ui{group_id = "group"})
+	defer {
+		for worker in send_threads {thread.join(worker); thread.destroy(worker)}
+		for done in sends_done {
+			delete(done.err)
+			for id in done.ids {delete(id)}
+			delete(done.ids)
+		}
+		delete(send_threads); delete(sends_done)
+		send_threads, sends_done, send_ticket = old_threads, old_done, old_ticket
+		for &pending in ui.pending {free_pending(&pending)}
+		delete(ui.pending); delete(ui.staged); delete(ui.chats)
+		delete(ui.jump_id)
+	}
+	// No client: workers cannot publish. The preview must still become visible.
+	ui.jump_id = strings.clone("older-message")
+	queue_send(&ui, nil, "preview")
+	testing.expect(t, ui.scroll_pending)
+	testing.expect_value(t, ui.jump_id, "")
+	testing.expect_value(t, len(ui.pending), 1)
+	ui.scroll_pending = false
+	queue_staged(&ui, nil)
+	testing.expect(t, !ui.scroll_pending, "empty staging must preserve the viewport")
+	ui.jump_id = strings.clone("older-message")
+	append(&ui.staged, Staged_File{name = strings.clone("note.txt"), media_type = "text/plain"})
+	queue_staged(&ui, nil)
+	testing.expect(t, ui.scroll_pending)
+	testing.expect_value(t, ui.jump_id, "")
+	testing.expect_value(t, len(ui.pending), 2)
+	testing.expect_value(t, len(ui.staged), 0)
+	ui.scroll_pending = false
+	append(
+		&ui.staged,
+		Staged_File {
+			name = strings.clone("photo.png"),
+			media_type = "image/png",
+			tex = new(rl.Texture2D),
+		},
+	)
+	queue_staged(&ui, nil)
+	testing.expect(t, ui.scroll_pending, "image albums must reveal their preview too")
+	testing.expect_value(t, len(ui.pending), 3)
+}
 
 @(test)
 send_waits_for_timeline :: proc(t: ^testing.T) {
