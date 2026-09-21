@@ -206,7 +206,8 @@ markdown_layout :: proc(t: ^testing.T) {
 			testing.expect_value(
 				t,
 				clay.GetElementData(clay.ID("MdHeadingText", 77)).boundingBox.x,
-				f32(60),
+				f32(60) +
+				(frame == 1 ? rl.MeasureTextLine(FONT_MONO, 11, strings.repeat("#", level, context.temp_allocator), 0).x + 6 : 0),
 			)
 			testing.expect_value(
 				t,

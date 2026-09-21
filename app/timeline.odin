@@ -2670,19 +2670,16 @@ md_blocks :: proc(
 				{layout = {sizing = {width = clay.SizingGrow()}}},
 				) {
 					show_marks := clay.PointerOver(clay.ID("MdHeading", block_id))
+					gutter := show_marks ? rl.MeasureTextLine(FONT_MONO, 11, marks, 0).x + 6 : 0
 					if show_marks {
 						if clay.UI(clay.ID("MdHeadingMarks", block_id))(
 						{
 							layout = {
-								sizing = {height = clay.SizingFixed(f32(size))},
+								sizing = {
+									width = clay.SizingFixed(gutter),
+									height = clay.SizingFixed(f32(size)),
+								},
 								childAlignment = {y = .Center},
-							},
-							floating = {
-								attachTo = .Parent,
-								attachment = {element = .RightTop, parent = .LeftTop},
-								offset = {-6, 0},
-								pointerCaptureMode = .Passthrough,
-								zIndex = 14,
 							},
 						},
 						) {clay.Text(marks, {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO})}
@@ -2696,7 +2693,7 @@ md_blocks :: proc(
 							size,
 							TEXT,
 							selectable,
-							width,
+							max(f32(1), width - gutter),
 							remaining,
 							fonts,
 						)
