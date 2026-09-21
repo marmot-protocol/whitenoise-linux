@@ -595,11 +595,6 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				for v in ui.hist_versions { delete(v.at); delete(v.text) }
 				clear(&ui.hist_versions)
 				ui.hist_original = false
-				if issue_page != nil {
-					for record in issue_page.items[:issue_page.len] {
-						if string(record.message_id_hex) == msg.id { ui.hist_original = true; append(&ui.hist_versions, Edit_Version{format_when(record.recorded_at), strings.clone(string(record.plaintext))}); break }
-					}
-				}
 				ui.hist_ticket = spawn_op(ui, client, .History, msg.id, "")
 				return
 			}

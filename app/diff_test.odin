@@ -3,6 +3,34 @@
 package main
 
 import "core:testing"
+import "core:strings"
+
+@(test)
+history_original_completion :: proc(t: ^testing.T) {
+	old := ops_done
+	ops_done = {}
+	defer { delete(ops_done); ops_done = old }
+	ui := Ui_State{hist_ticket = 2}
+	defer {
+		for v in ui.hist_versions { delete(v.at); delete(v.text) }
+		delete(ui.hist_versions)
+	}
+	// A stale result must not supply another message's original.
+	append(&ops_done, Op_Done{ticket = 1, op = .History, has_original = true, content = strings.clone("other message")})
+	drain_ops(&ui, nil)
+	testing.expect_value(t, len(ui.hist_versions), 0)
+	testing.expect_value(t, ui.hist_ticket, 2)
+	append(&ops_done, Op_Done{ticket = 2, op = .History, has_original = true, original_at = 123, content = strings.clone("original message")})
+	drain_ops(&ui, nil)
+	testing.expect(t, ui.hist_original)
+	testing.expect_value(t, ui.hist_ticket, 0)
+	if testing.expect_value(t, len(ui.hist_versions), 1) {
+		testing.expect_value(t, ui.hist_versions[0].text, "original message")
+		at := format_when(123)
+		defer delete(at)
+		testing.expect_value(t, ui.hist_versions[0].at, at)
+	}
+}
 
 @(test)
 diff_word_cases :: proc(t: ^testing.T) {

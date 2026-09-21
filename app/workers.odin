@@ -766,6 +766,8 @@ Op_Done :: struct {
 	err:    string, // "" = ok, else the owned marmot error
 	account, group, target, content: string, // owned edit recovery data
 	history: [dynamic]^marmot.Timeline_Edit_Page,
+	has_original: bool, // .History: content holds the original plaintext
+	original_at: u64,
 }
 
 ops_mutex: sync.Mutex
@@ -779,7 +781,7 @@ op_worker :: proc(t: ^thread.Thread) {
 	defer frame_wake()
 	job := (^Op_Job)(t.data)
 	summary: ^marmot.Send_Summary
-	history: [dynamic]^marmot.Timeline_Edit_Page
+	done := Op_Done{ticket = job.ticket, op = job.op}
 	status: marmot.Status
 	switch job.op {
 	case .History:
@@ -789,9 +791,26 @@ op_worker :: proc(t: ^thread.Thread) {
 			page: ^marmot.Timeline_Edit_Page
 			status = marmot.message_edit_history(job.client, job.account, job.group, job.target, before_id != nil ? 1 : 0, before, before_id, 100, &page)
 			if status != .OK { break }
-			append(&history, page)
+			append(&done.history, page)
 			if !page.has_more || page.len == 0 { break }
 			before, before_id = page.versions[0].edited_at, page.versions[0].id
+		}
+		// An empty history also covers deleted or invisible targets.
+		if status == .OK && len(done.history) > 0 && done.history[0].len > 0 {
+			records: ^marmot.App_Message_List
+			// ponytail: scans the group's retained messages; use an ID lookup
+			// when marmot-c exposes one. Keep the scan off the UI thread.
+			status = marmot.messages(job.client, job.account, job.group, 0, 0, nil, 0, &records)
+			if status == .OK && records != nil {
+				for record in records.items[:records.len] {
+					if string(record.message_id_hex) != string(job.target) { continue }
+					done.has_original = true
+					done.original_at = record.recorded_at
+					done.content = strings.clone(string(record.plaintext))
+					break
+				}
+			}
+			if records != nil { marmot.app_message_list_free(records) }
 		}
 	case .React:
 		status = marmot.react_to_message(job.client, job.account, job.group, job.target, job.emoji, &summary)
@@ -843,12 +862,12 @@ op_worker :: proc(t: ^thread.Thread) {
 		err = marmot.last_error()
 		if err == "" { err = strings.clone("Group action unavailable.") }
 	}
-	done := Op_Done{ticket = job.ticket, op = job.op, err = err, history = history}
+	done.err = err
 	if job.op == .History || job.op == .Edit || job.op == .Issue || job.op == .Issue_Setting {
 		done.account = strings.clone(string(job.account))
 		done.group = strings.clone(string(job.group))
 		done.target = strings.clone(string(job.target))
-		done.content = strings.clone(string(job.content))
+		if job.op != .History { done.content = strings.clone(string(job.content)) }
 	}
 	sync.lock(&ops_mutex)
 	append(&ops_done, done)
@@ -939,6 +958,8 @@ drain_ops :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			if d.ticket == ui.hist_ticket {
 				ui.hist_ticket = 0
 				if d.err != "" { ui.client_status = strings.clone(tr("Couldn't load edit history. Please try again.")) } else {
+					ui.hist_original = d.has_original
+					if d.has_original { append(&ui.hist_versions, Edit_Version{format_when(d.original_at), strings.clone(d.content)}) }
 					for i := len(d.history) - 1; i >= 0; i -= 1 {
 						for v in d.history[i].versions[:d.history[i].len] { append(&ui.hist_versions, Edit_Version{format_when(v.edited_at), strings.clone(string(v.plaintext))}) }
 					}
