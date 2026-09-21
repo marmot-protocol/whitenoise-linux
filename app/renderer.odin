@@ -315,7 +315,7 @@ render_range :: proc(
 					bounds.width,
 					bounds.height,
 					2,
-					clay_color(PLATE),
+					clay_color(CODE_PLATE),
 				)
 			}
 			rl.DrawTextLine(

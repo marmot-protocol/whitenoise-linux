@@ -42,7 +42,7 @@ styled_text :: proc(text, fonts: string, size: u16, color: clay.Color) {
 				{
 					fontId = text_font(fonts, at),
 					fontSize = size,
-					textColor = fonts[at] & TEXT_MATH != 0 ? ACCENT : color,
+					textColor = color,
 					wrapMode = .None,
 					userData = rawptr(uintptr(fonts[at] & ~TEXT_FONT_MASK)),
 				},

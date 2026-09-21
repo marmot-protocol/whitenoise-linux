@@ -142,6 +142,13 @@ markdown_layout :: proc(t: ^testing.T) {
 					}
 					testing.expect_value(t, numbers, strings.count(block.text, "\n") + 1)
 				}
+				if block.kind == .Math && width == 700 {
+					testing.expect_value(
+						t,
+						clay.GetElementData(clay.ID("MsgCode", id)).boundingBox.height,
+						f32(33),
+					)
+				}
 				if block.kind == .List_Item {
 					box := clay.GetElementData(clay.ID("MsgListMarker", id)).boundingBox
 					testing.expect_value(t, box.x, 32 + f32(block.indent))
@@ -193,6 +200,7 @@ markdown_layout :: proc(t: ^testing.T) {
 	for level in 1 ..= 6 {
 		heading := [1]Md_Block_Ui{{kind = .Heading, text = "Heading", level = level}}
 		for frame in 0 ..< 3 {
+			anim_tick(1.0 / 60)
 			box := clay.GetElementData(clay.ID("MdHeading", 77)).boundingBox
 			clay.SetPointerState(
 				frame == 1 ? clay.Vector2{box.x + 1, box.y + 1} : clay.Vector2{-100, -100},
@@ -207,7 +215,7 @@ markdown_layout :: proc(t: ^testing.T) {
 				t,
 				clay.GetElementData(clay.ID("MdHeadingText", 77)).boundingBox.x,
 				f32(60) +
-				(frame == 1 ? rl.MeasureTextLine(FONT_MONO, 11, strings.repeat("#", level, context.temp_allocator), 0).x + 6 : 0),
+				(frame == 1 ? rl.MeasureTextLine(FONT_MONO, u16(max(24 - level * 2, 15)), strings.repeat("#", level, context.temp_allocator), 0).x + 6 : 0),
 			)
 			testing.expect_value(
 				t,
@@ -223,6 +231,95 @@ markdown_layout :: proc(t: ^testing.T) {
 					   strings.repeat("#", level, context.temp_allocator) {found = true}
 				}
 				testing.expect(t, found)
+			}
+		}
+	}
+	ui.prefs.reduce_motion = false
+	heading := [1]Md_Block_Ui{{kind = .Heading, text = "Animated heading", level = 2}}
+	previous: f32
+	for frame in 0 ..< 41 {
+		anim_tick(1.0 / 60)
+		clay.SetPointerState(
+			frame > 0 && frame <= 20 ? clay.Vector2{61, 1} : clay.Vector2{-100, -100},
+			false,
+		)
+		clay.BeginLayout()
+		if clay.UI(clay.ID("HeadingTest"))(
+		{layout = {padding = {left = 60}, sizing = {width = clay.SizingFixed(560)}}},
+		) {
+			md_blocks(heading[:], 77, true, 500)
+		}
+		commands := clay.EndLayout(0)
+		x := clay.GetElementData(clay.ID("MdHeadingText", 77)).boundingBox.x
+		if frame ==
+		   1 {testing.expect(t, x > 60 && x < 60 + rl.MeasureTextLine(FONT_MONO, 20, "##", 0).x + 6, "heading moves through an intermediate position")}
+		if frame > 0 && frame <= 20 {testing.expect(t, x >= previous)}
+		if frame > 20 {testing.expect(t, x <= previous)}
+		if frame == 40 {testing.expect_value(t, x, f32(60))}
+		previous = x
+		if frame == 2 {
+			rl.BeginDrawing()
+			clay_raylib_render(&commands)
+			rl.TakeScreenshot("/tmp/wn-heading-slide.png")
+			rl.EndDrawing()
+		}
+	}
+	ui.prefs.reduce_motion = true
+	// Hover nested content and verify the background reaches its full block.
+	CARD = {36, 42, 54, 255}
+	HOVER = {255, 255, 255, 16}
+	hover_blocks := []Md_Block_Ui {
+		{kind = .List_Item, text = "• Parent", marker_len = len("• ")},
+		{kind = .List_Item, text = "• Nested", marker_len = len("• "), indent = 24},
+		{kind = .Quote, text = "Outer", quote_depth = 1, quote_starts = 1},
+		{kind = .Quote, text = "Inner", quote_depth = 2, quote_starts = 1},
+		{kind = .Table, cells = [][]string{{"Header", "Header"}, {"Cell", "Cell"}}},
+	}
+	targets := []clay.ElementId {
+		clay.ID("MsgListItem", 0),
+		clay.ID("MsgListItem", 16),
+		clay.ID("MsgQuoteGroup", 32 * 128),
+		clay.ID("MsgQuoteGroup", 48 * 128 + 1),
+		clay.ID("MsgTableCell", 64 + 64),
+	}
+	for target in targets {
+		for frame in 0 ..< 3 {
+			box := clay.GetElementData(target).boundingBox
+			clay.SetPointerState(
+				frame == 1 ? clay.Vector2{box.x + 2, box.y + 2} : clay.Vector2{-100, -100},
+				false,
+			)
+			clay.BeginLayout()
+			if clay.UI(clay.ID("HoverTest"))(
+			{
+				layout = {
+					layoutDirection = .TopToBottom,
+					sizing = {width = clay.SizingFixed(500)},
+					childGap = 3,
+				},
+				backgroundColor = CARD,
+			},
+			) {md_blocks(hover_blocks, 0, true, 500)}
+			commands := clay.EndLayout(0)
+			filled := false
+			for cmd in commands.internalArray[:commands.length] {
+				if cmd.id == target.id && cmd.commandType == .Rectangle {
+					filled = true
+					color := cmd.renderData.rectangle.backgroundColor
+					testing.expect_value(t, color.a, f32(255))
+					testing.expect(
+						t,
+						color.r < 65,
+						"nested translucent themes stay close to the surface color",
+					)
+				}
+			}
+			testing.expect_value(t, filled, frame == 1)
+			if frame == 1 && target == targets[3] {
+				rl.BeginDrawing()
+				clay_raylib_render(&commands)
+				rl.TakeScreenshot("/tmp/wn-markdown-hover.png")
+				rl.EndDrawing()
 			}
 		}
 	}

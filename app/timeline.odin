@@ -2444,12 +2444,23 @@ body_line :: proc(
 MD_TABLE_COL_MAX :: 140
 MD_TABLE_PAD :: 7
 
+@(private)
+md_hover :: proc(depth: u16, rest: clay.Color = {}) -> clay.Color {
+	if !clay.Hovered() {return rest}
+	// Composite once so translucent theme colors cannot stack into a bright wash.
+	base := mix_color(CARD, HOVER, HOVER.a / 255)
+	shade := mix_color(base, TEXT, 0.06 * f32(depth) / (f32(depth) + 2))
+	shade.a = 255
+	return shade
+}
+
 md_table :: proc(
 	id: u32,
 	cells: [][]string,
 	cell_fonts: [][]string = nil,
 	alignments: []marmot.Markdown_Alignment = nil,
 	width: f32 = 480,
+	depth: u16 = 0,
 ) {
 	if len(cells) == 0 {
 		return
@@ -2468,7 +2479,7 @@ md_table :: proc(
 			fonts := r < len(cell_fonts) && c < len(cell_fonts[r]) ? cell_fonts[r][c] : ""
 			width: f32
 			it := utf8.decode_grapheme_iterator_make(cell)
-			for cluster, g in utf8.decode_grapheme_iterate(&it) {width += rl.MeasureTextLine(text_font(fonts, g.byte_index), 13, cluster, 0).x}
+			for cluster, g in utf8.decode_grapheme_iterate(&it) {width += rl.MeasureTextLine(len(fonts) > 0 ? text_font(fonts, g.byte_index) : (r == 0 ? FONT_TITLE : FONT_BODY), 13, cluster, 0).x}
 			widths[c] = max(widths[c], width)
 		}
 	}
@@ -2479,13 +2490,14 @@ md_table :: proc(
 	if clay.UI(clay.ID("MsgTable", id))(
 	{
 		layout = {layoutDirection = .TopToBottom},
+		backgroundColor = md_hover(depth),
 		border = {color = FIELD_BORDER, width = bw()},
 		cornerRadius = rr(4),
 	},
 	) {
 		for row, r in cells {
 			if clay.UI(clay.ID("MsgTableRow", id + u32(r) * 64))(
-			{layout = {}, backgroundColor = r == 0 ? PLATE : {}},
+			{layout = {}, backgroundColor = md_hover(depth + 1, r == 0 ? PLATE : {})},
 			) {
 				for c in 0 ..< cols {
 					text := c < len(row) ? row[c] : ""
@@ -2502,6 +2514,7 @@ md_table :: proc(
 							},
 							padding = clay.PaddingAll(pad),
 						},
+						backgroundColor = md_hover(depth + 2),
 						border = {
 							color = FIELD_BORDER,
 							width = {0, c < cols - 1 ? 1 : 0, 0, r < len(cells) - 1 ? 1 : 0, 0},
@@ -2596,6 +2609,8 @@ md_blocks :: proc(
 					padding = {left = u16(indent)},
 					childGap = 8,
 				},
+				backgroundColor = md_hover(quote_level + block.indent / 24),
+				cornerRadius = rr(3),
 			},
 			) {
 				if clay.UI(
@@ -2670,8 +2685,14 @@ md_blocks :: proc(
 				{layout = {sizing = {width = clay.SizingGrow()}}},
 				) {
 					show_marks := clay.PointerOver(clay.ID("MdHeading", block_id))
-					gutter := show_marks ? rl.MeasureTextLine(FONT_MONO, 11, marks, 0).x + 6 : 0
-					if show_marks {
+					reveal := anim_to(
+						clay.ID("MdHeadingMarks", block_id).id,
+						show_marks ? 1 : 0,
+						HOVER_RATE,
+					)
+					full_gutter := rl.MeasureTextLine(FONT_MONO, size, marks, 0).x + 6
+					gutter := full_gutter * reveal
+					if reveal > 0 {
 						if clay.UI(clay.ID("MdHeadingMarks", block_id))(
 						{
 							layout = {
@@ -2681,8 +2702,9 @@ md_blocks :: proc(
 								},
 								childAlignment = {y = .Center},
 							},
+							clip = {horizontal = true, childOffset = {gutter - full_gutter, 0}},
 						},
-						) {clay.Text(marks, {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO})}
+						) {clay.Text(marks, {fontId = FONT_MONO, fontSize = size, textColor = fade(TEXT_LO, reveal), wrapMode = .None})}
 					}
 					if clay.UI(clay.ID("MdHeadingText", block_id))(
 					{layout = {layoutDirection = .TopToBottom}},
@@ -2700,6 +2722,7 @@ md_blocks :: proc(
 					}
 				}
 			case .Code, .Math:
+				text := block.kind == .Math ? strings.trim_right(block.text, "\n") : block.text
 				if clay.UI(clay.ID("MsgCode", block_id))(
 				{
 					layout = {
@@ -2708,23 +2731,17 @@ md_blocks :: proc(
 						padding = clay.PaddingAll(10),
 						childGap = 3,
 					},
-					backgroundColor = PLATE,
+					backgroundColor = CODE_PLATE,
 					cornerRadius = rr(6),
-					border = block.kind == .Math ? clay.BorderElementConfig{color = ACCENT, width = {1, 1, 1, 1, 0}} : {},
+					border = {color = FIELD_BORDER, width = {1, 1, 1, 1, 0}},
 				},
 				) {
 					font := [1]u8{FONT_MONO | (block.kind == .Math ? TEXT_MATH : TEXT_CODE)}
-					fonts := strings.repeat(
-						string(font[:]),
-						len(block.text),
-						context.temp_allocator,
-					)
-					if block.kind ==
-					   .Math {clay.Text("∑", {fontId = FONT_TITLE, fontSize = 16, textColor = ACCENT})}
+					fonts := strings.repeat(string(font[:]), len(text), context.temp_allocator)
 					gutter :=
 						block.kind == .Code ? rl.MeasureTextLine(FONT_MONO, 11, fmt.tprintf("%d", strings.count(block.text, "\n") + 1), 0).x + 10 : 0
 					lines := wrapped_lines(
-						block.text,
+						text,
 						max(f32(1), width - 20 - gutter),
 						13,
 						fonts = fonts,
@@ -2765,7 +2782,13 @@ md_blocks :: proc(
 				task := marker == "[ ] " || marker == "[x] "
 				marker_w := max(f32(12), rl.MeasureTextLine(FONT_BODY, BODY_FS, marker, 0).x)
 				if task {marker_w = 18}
-				if clay.UI(clay.ID("MsgListItem", block_id))({layout = {padding = {left = 12}}}) {
+				if clay.UI(clay.ID("MsgListItem", block_id))(
+				{
+					layout = {sizing = {width = clay.SizingGrow()}, padding = {left = 12}},
+					backgroundColor = md_hover(quote_level + block.indent / 24),
+					cornerRadius = rr(3),
+				},
+				) {
 					if clay.UI(clay.ID("MsgListMarker", block_id))(
 					{
 						layout = {
@@ -2851,6 +2874,7 @@ md_blocks :: proc(
 					block.cell_fonts,
 					block.alignments,
 					width,
+					quote_level + block.indent / 24,
 				)
 			}
 		}
