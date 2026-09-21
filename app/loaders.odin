@@ -310,6 +310,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 
 		msg := Msg_Ui {
 			id        = strings.clone(id_str),
+			sticker   = sticker_from_record(record),
 			sender    = strings.clone(label),
 			sender_id = strings.clone(sender),
 			pic_url   = strings.clone(info.pic_url),

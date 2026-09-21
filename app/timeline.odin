@@ -89,9 +89,16 @@ pending_row :: proc(index: u32, ui: ^Ui_State, p: Pending_Send) {
 				ratio := a.tex.height > 0 ? f32(a.tex.width) / f32(a.tex.height) : 1
 				if clay.UI(clay.ID("PendingImage", index * 1024 + u32(j)))(
 				{
-					layout = {sizing = {width = clay.SizingFixed(att_w())}},
+					layout = {
+						sizing = {
+							width = clay.SizingFixed(
+								p.sticker.sha != "" ? min(att_w(), min(220, 220 * ratio)) : att_w(),
+							),
+						},
+					},
 					aspectRatio = {ratio},
 					image = {imageData = a.tex},
+					userData = p.sticker.sha != "" ? rawptr(STICKER_IMAGE) : nil,
 					cornerRadius = rr(8),
 				},
 				) {}
@@ -682,10 +689,13 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 			// aspect mix, like the telegram album layouter. Failed cells
 			// ride along as 4:3 retry plates.
 			img_cells := make([dynamic]Img_Cell, context.temp_allocator)
+			if msg.sticker.sha != "" {message_sticker(g_ui, index, msg)}
 			for entry in msg.images {
+				if msg.sticker.sha != "" && msg.att_keys[entry.att] == msg.sticker.sha {continue}
 				append(&img_cells, Img_Cell{entry.view, entry.att, ""})
 			}
 			for entry in msg.img_failed {
+				if msg.sticker.sha != "" && msg.att_keys[entry.att] == msg.sticker.sha {continue}
 				append(&img_cells, Img_Cell{nil, entry.att, entry.view})
 			}
 			slice.sort_by(img_cells[:], proc(a, b: Img_Cell) -> bool {
@@ -695,6 +705,11 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 			image_pos, video_pos, audio_pos, pdf_pos, model_pos, gcode_pos: int
 			arc_pos, xdc_pos, text_pos, code_pos, font_pos, file_pos, pending_pos: int
 			for att := 0; att < len(msg.att_names); att += 1 {
+				if msg.sticker.sha != "" && msg.att_keys[att] == msg.sticker.sha {
+					if pending_pos < len(msg.media_pending) &&
+					   msg.media_pending[pending_pos].index == att {pending_pos += 1}
+					continue
+				}
 				if rejection, rejected := msg.att_rejected[att]; rejected {
 					if clay.UI(clay.ID("MediaRejected", index * 1024 + u32(att)))(
 					{
@@ -1513,6 +1528,10 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 						)
 						if msg.reply_image != "" {
 							tex, seen := media_textures[msg.reply_image]
+							if !seen {
+								view, found := media_cached(.Sticker, msg.reply_image)
+								tex, seen = (^rl.Texture2D)(view), found
+							}
 							if tex != nil && tex.width > 0 && tex.height > 0 {
 								scale := min(f32(96) / f32(tex.width), f32(64) / f32(tex.height))
 								if clay.UI(clay.ID("MsgReplyImage", index))(

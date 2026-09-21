@@ -263,6 +263,7 @@ Md_Block_Ui :: struct {
 }
 
 Msg_Ui :: struct {
+	sticker:             Sticker_Ref,
 	row_height, row_top: f32,
 	row_measure:         [4]f32, // width, pixel scale, corner scale, action height
 	visible_since:       time.Tick, // live observation until first presented row
@@ -381,6 +382,24 @@ Profile_Ui :: struct {
 }
 
 Ui_State :: struct {
+	stickers:                                              [dynamic]Sticker_Item,
+	sticker_packs:                                         [dynamic]Sticker_Pack,
+	sticker_recent:                                        [dynamic]string,
+	sticker_preview:                                       [dynamic]Sticker_Item,
+	sticker_pack:                                          Sticker_Pack,
+	sticker_selected:                                      Sticker_Ref,
+	sticker_input:                                         [dynamic]u8,
+	sticker_name:                                          [dynamic]u8,
+	sticker_filter:                                        string,
+	sticker_error:                                         string,
+	sticker_open:                                          bool,
+	sticker_tab:                                           bool,
+	sticker_loaded:                                        bool,
+	sticker_loading:                                       bool,
+	sticker_installing:                                    bool,
+	picking_sticker:                                       bool,
+	sticker_focus:                                         int,
+	sticker_page:                                          Sticker_Page,
 	timeline_metric:                                       [4]f32,
 	messages_group, messages_account:                      string,
 	account_ref:                                           string, // active account's full hex; "" when logged out

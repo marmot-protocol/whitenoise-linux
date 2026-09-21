@@ -7,13 +7,8 @@
 // split the run per letter, like slint's RunCell, so each glyph moves
 // on its own.
 //
-// Bursts are the `["effect", <key>]` tag on the kind-9 event, catalog
-// love/fire/party/star/like. Incoming ones play. An armed one plays
-// locally when you send and stops there: marmot rejects a hand-built
-// kind 9 ("custom event kind 9 is reserved for Marmot protocol use",
-// marmot-app is_reserved_app_event_kind) and send_text carries no tags
-// of its own. The slint app hit the same wall and stopped transmitting
-// too (src/main.rs dispatch_send), so both ends behave alike.
+// Bursts travel as ["effect", <key>] on encrypted kind-9 messages.
+// The send queue retains the tag across uploads, replies and retries.
 package main
 
 import "core:strings"
@@ -464,12 +459,6 @@ effect_picker :: proc(ui: ^Ui_State) {
 				}
 			}
 		}
-		clay.Text(
-			tr(
-				"Plays here when you send. It can't travel: marmot reserves the chat event kind, so no client attaches the tag any more. An effect sent by an older client still plays.",
-			),
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
-		)
 		if ui.fx_armed != 0 {
 			micro_button("FxClear", "Clear effect")
 		}

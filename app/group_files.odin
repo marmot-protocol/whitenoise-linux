@@ -87,7 +87,7 @@ group_file_type :: proc(name, media_type: string) -> Group_File_Type {
 	mime := media_type
 	if mime == "" || mime == "application/octet-stream" {mime = media_type_for(name)}
 	switch media_kind(name, mime) {
-	case .Image, .Loop, .Emoji:
+	case .Image, .Sticker, .Loop, .Emoji:
 		return .Images
 	case .Video:
 		return .Videos

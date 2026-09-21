@@ -295,3 +295,41 @@ done:
     curl_easy_cleanup(c);
     return result;
 }
+
+struct sticker_buffer {
+    unsigned char *bytes;
+    size_t len, cap;
+};
+
+static size_t sticker_write(void *data, size_t size, size_t count, void *opaque) {
+    struct sticker_buffer *buffer = opaque;
+    if (size && count > (buffer->cap - buffer->len) / size) {
+        return 0;
+    }
+    size_t bytes = size * count;
+    memcpy(buffer->bytes + buffer->len, data, bytes);
+    buffer->len += bytes;
+    return bytes;
+}
+
+// Pack assets are bounded even when a server omits Content-Length.
+int wn_https_get(const char *url, unsigned char *out, size_t cap) {
+    CURL *curl = curl_easy_init();
+    if (!curl) {
+        return -1;
+    }
+    struct sticker_buffer buffer = {out, 0, cap};
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_PROTOCOLS_STR, "https");
+    curl_easy_setopt(curl, CURLOPT_REDIR_PROTOCOLS_STR, "https");
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 3L);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, 10000L);
+    curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+    curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1L);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, sticker_write);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
+    CURLcode status = curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
+    return status == CURLE_OK ? (int)buffer.len : -1;
+}

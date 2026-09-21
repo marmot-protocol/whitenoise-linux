@@ -346,6 +346,10 @@ render_range :: proc(
 				tint = overlay_colors[len(overlay_colors) - 1]
 			}
 			texture := (^rl.Texture2D)(config.imageData)
+			if uintptr(render_command.userData) == STICKER_IMAGE {
+				sticker_draw(texture, bounds, render_command.id, clay_color(tint))
+				continue
+			}
 			rl.DrawTextureRect(
 				texture,
 				bounds.x,

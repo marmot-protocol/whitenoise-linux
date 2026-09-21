@@ -159,6 +159,8 @@ fwd_download_atts :: proc(
 		if record.message_id_hex == nil || string(record.message_id_hex) != msg_id {
 			continue
 		}
+		sticker := sticker_from_record(record)
+		defer sticker_ref_free(sticker)
 		for j in 0 ..< record.media_len {
 			result: ^marmot.Media_Download_Result
 			group := strings.clone_to_cstring(
@@ -176,7 +178,7 @@ fwd_download_atts :: proc(
 					delete(a.dim)
 					delete(a.data)
 					if a.tex != nil {
-						rl.UnloadTexture(a.tex^)
+						sticker_texture_free(a.tex^)
 						free(a.tex)
 					}
 				}
@@ -202,10 +204,16 @@ fwd_download_atts :: proc(
 				)
 				image := rl.LoadImageFromMemory(ext, raw_data(att.data), i32(len(att.data)))
 				if image.data != nil {
+					att.dim = fmt.aprintf("%dx%d", image.width, image.height)
+					is_sticker :=
+						sticker.sha != "" && string(reference.plaintext_sha256) == sticker.sha
+					if is_sticker {
+						image = sticker_thumb(image)
+					}
 					att.tex = new(rl.Texture2D)
-					att.tex^ = rl.LoadTextureFromImage(image)
+					att.tex^ =
+						is_sticker ? sticker_texture_load(image) : rl.LoadTextureFromImage(image)
 					rl.UnloadImage(image)
-					att.dim = fmt.aprintf("%dx%d", att.tex.width, att.tex.height)
 				}
 			}
 			append(&atts, att)
@@ -245,6 +253,7 @@ do_forward :: proc(ui: ^Ui_State, client: ^marmot.Client, dest: int) {
 				group_id = strings.clone(group),
 				sender = strings.clone(sender),
 				body = strings.clone(msg.body),
+				effect = len(atts) == 0 ? msg.effect : 0,
 			},
 		)
 		spawn_send(ui, client, &ui.pending[len(ui.pending) - 1])
@@ -259,6 +268,8 @@ do_forward :: proc(ui: ^Ui_State, client: ^marmot.Client, dest: int) {
 				sender = strings.clone(sender),
 				body = strings.clone(""),
 				atts = atts,
+				sticker = sticker_ref_clone(msg.sticker),
+				effect = msg.effect,
 			},
 		)
 		spawn_send(ui, client, &ui.pending[len(ui.pending) - 1])

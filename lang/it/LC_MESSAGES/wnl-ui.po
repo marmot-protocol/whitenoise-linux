@@ -200,11 +200,20 @@ msgstr "Aggiungi reazione"
 msgid "Add option"
 msgstr "Aggiungi reazione"
 
+msgid "Add pack"
+msgstr "Aggiungi pacchetto"
+
 msgid "Add reaction"
 msgstr "Aggiungi reazione"
 
 msgid "Add someone by npub, or make a group of your own."
 msgstr ""
+
+msgid "Added to your stickers"
+msgstr "Aggiunto ai tuoi adesivi"
+
+msgid "Adding…"
+msgstr "Aggiunta…"
 
 msgid "Admin"
 msgstr "Amministratore"
@@ -449,6 +458,9 @@ msgstr "Svuota cache"
 msgid "Clear effect"
 msgstr "Svuota cache"
 
+msgid "Click a sticker for a larger preview."
+msgstr "Fai clic su un adesivo per ingrandirlo."
+
 msgid "Close"
 msgstr "Chiudi"
 
@@ -530,6 +542,9 @@ msgstr "Copia testo"
 msgid "Corner scale"
 msgstr ""
 
+msgid "Couldn't add the pack. No supported stickers are available."
+msgstr "Impossibile aggiungere il pacchetto. Non ci sono adesivi supportati disponibili."
+
 msgid "Couldn't cache your transcription. Please try again."
 msgstr "Impossibile salvare la trascrizione nella cache. Riprova."
 
@@ -569,11 +584,17 @@ msgstr "Impossibile scaricare il modello vocale. Controlla la connessione e lo s
 msgid "Couldn't export the key. %s"
 msgstr "Impossibile esportare i contatti."
 
+msgid "Couldn't find that pack. Enter a sticker pack naddr or coordinate."
+msgstr "Impossibile trovare il pacchetto. Inserisci il suo naddr o le sue coordinate."
+
 msgid "Couldn't finish dictation. Please try again."
 msgstr "Impossibile completare la dettatura. Riprova."
 
 msgid "Couldn't hear any speech. Speak clearly and try again."
 msgstr "Impossibile rilevare la voce. Parla chiaramente e riprova."
+
+msgid "Couldn't import the sticker. Choose an image under 4 MiB."
+msgstr "Impossibile importare l'adesivo. Scegli un'immagine inferiore a 4 MiB."
 
 #, fuzzy
 msgid "Couldn't load attachment. Click to retry."
@@ -598,6 +619,12 @@ msgstr "Non è stato possibile caricare le segnalazioni. Riprova."
 msgid "Couldn't load messages. Please try again."
 msgstr "Non è stato possibile caricare i messaggi. Riprova."
 
+msgid "Couldn't load the pack. Check your relay settings and try again."
+msgstr "Impossibile caricare il pacchetto. Controlla le impostazioni dei relay e riprova."
+
+msgid "Couldn't load the sticker. Please try again."
+msgstr "Impossibile caricare l'adesivo. Riprova."
+
 #, fuzzy, c-format
 msgid "Couldn't load the timeline. %s"
 msgstr "Impossibile scaricare l'immagine."
@@ -607,6 +634,9 @@ msgstr "Impossibile caricare questo evento. Controlla le impostazioni dei relay 
 
 msgid "Couldn't load timings. Please try again."
 msgstr "Impossibile caricare i tempi. Riprova."
+
+msgid "Couldn't load your stickers. Please try again."
+msgstr "Impossibile caricare i tuoi adesivi. Riprova."
 
 #, fuzzy
 msgid "Couldn't open the backup. Double-check the password and try again."
@@ -634,6 +664,9 @@ msgstr "Impossibile creare la chat. Riprova."
 msgid "Couldn't read the backup. Please try again."
 msgstr "Impossibile creare la chat. Riprova."
 
+msgid "Couldn't read the image. Please try again."
+msgstr "Impossibile leggere l'immagine. Riprova."
+
 #, fuzzy
 msgid "Couldn't read the vault file. Please try again."
 msgstr "Impossibile creare la chat. Riprova."
@@ -659,12 +692,21 @@ msgstr "Impossibile rimuovere la reazione. Riprova."
 msgid "Couldn't save the edit. Please try again."
 msgstr "Non è stato possibile salvare la modifica. Riprova."
 
+msgid "Couldn't save the sticker. Wait for its image to load and try again."
+msgstr "Impossibile salvare l'adesivo. Attendi il caricamento dell'immagine e riprova."
+
 #, fuzzy
 msgid "Couldn't save the theme. Check the name and colors and try again."
 msgstr "Impossibile aggiungere questo account. Ricontrolla la chiave e riprova."
 
+msgid "Couldn't save your stickers. Please try again."
+msgstr "Impossibile salvare i tuoi adesivi. Riprova."
+
 msgid "Couldn't search messages. Please try again."
 msgstr "Non è stato possibile cercare i messaggi. Riprova."
+
+msgid "Couldn't send the sticker. Switch back to your account and try again."
+msgstr "Impossibile inviare l'adesivo. Torna al tuo account e riprova."
 
 #, fuzzy
 msgid "Couldn't serialize the key packages. Please try again."
@@ -702,6 +744,9 @@ msgstr "Non è stato possibile aggiornare le segnalazioni. Riprova."
 
 msgid "Couldn't use that theme. It isn't a theme this version reads."
 msgstr ""
+
+msgid "Couldn't use the sticker. Choose a static PNG, WebP or JPEG up to 4096 pixels."
+msgstr "Impossibile usare l'adesivo. Scegli un PNG, WebP o JPEG statico fino a 4096 pixel."
 
 msgid "Create"
 msgstr "Crea"
@@ -911,6 +956,9 @@ msgstr ""
 msgid "Elevated border"
 msgstr ""
 
+msgid "Emoji"
+msgstr "Emoji"
+
 msgid "Enable issue tracking"
 msgstr "Attiva le segnalazioni"
 
@@ -923,6 +971,9 @@ msgstr "Esporta chiave crittografata (ncryptsec)"
 
 msgid "End-to-end encrypted"
 msgstr "Crittografato end-to-end"
+
+msgid "Enter a sticker name of 1 to 64 characters."
+msgstr "Inserisci un nome per l'adesivo da 1 a 64 caratteri."
 
 msgid "Enter an issue title and description."
 msgstr "Inserisci un titolo e una descrizione."
@@ -1132,8 +1183,14 @@ msgstr "Importa un backup"
 msgid "Import a key"
 msgstr "Importa un backup"
 
+msgid "Import an image to make your first sticker."
+msgstr "Importa un’immagine per creare il tuo primo adesivo."
+
 msgid "Import backup"
 msgstr "Importa backup"
+
+msgid "Import image"
+msgstr "Importa immagine"
 
 #, fuzzy
 msgid "Import..."
@@ -1313,6 +1370,9 @@ msgstr "Rendere {} admin?"
 msgid "Male voice. Supports all reading languages."
 msgstr "Voce maschile. Supporta tutte le lingue di lettura."
 
+msgid "Manage"
+msgstr "Gestisci"
+
 msgid "Mark read"
 msgstr ""
 
@@ -1474,12 +1534,18 @@ msgstr ""
 msgid "No key package yet. Publish one so people can invite you."
 msgstr "Pubblicane uno così altri utenti possono invitarti nei gruppi."
 
+msgid "No matching stickers."
+msgstr "Nessun adesivo corrispondente."
+
 msgid "No messages yet"
 msgstr "Ancora nessun messaggio"
 
 #, fuzzy
 msgid "No relay list published."
 msgstr "Elenco relay modificato."
+
+msgid "No stickers here yet."
+msgstr "Qui non ci sono ancora adesivi."
 
 msgid "No trusted sites."
 msgstr "Nessun sito affidabile."
@@ -1595,6 +1661,9 @@ msgstr "PROFILO"
 msgid "PULL REQUEST"
 msgstr "PULL REQUEST"
 
+msgid "Pack link or address"
+msgstr "Link o indirizzo del pacchetto"
+
 #, fuzzy
 msgid "Pack your settings, drafts, custom emoji, and themes into one encrypted file."
 msgstr "Racchiudi account, chat e impostazioni in un unico file crittografato."
@@ -1604,6 +1673,9 @@ msgstr ""
 
 msgid "Panel 2"
 msgstr ""
+
+msgid "Paste a pack link to preview its stickers before adding it."
+msgstr "Incolla il link di un pacchetto per vedere gli adesivi prima di aggiungerlo."
 
 #, fuzzy
 msgid "Path copied"
@@ -1642,9 +1714,6 @@ msgstr ""
 msgid "Play a sound"
 msgstr "Riproduci un suono"
 
-msgid "Plays here when you send. It can't travel: marmot reserves the chat event kind, so no client attaches the tag any more. An effect sent by an older client still plays."
-msgstr ""
-
 msgid "Pre-order"
 msgstr "Preordine"
 
@@ -1662,6 +1731,9 @@ msgstr ""
 
 msgid "Preview"
 msgstr "Anteprima"
+
+msgid "Preview pack"
+msgstr "Anteprima pacchetto"
 
 msgid "Previous / next in the media viewer"
 msgstr ""
@@ -1737,6 +1809,9 @@ msgstr "Leggi di più"
 msgid "Reading aloud..."
 msgstr "Lettura in corso..."
 
+msgid "Recent"
+msgstr "Recenti"
+
 #, fuzzy
 msgid "Reconnect"
 msgstr "Riconnetti ora"
@@ -1779,6 +1854,12 @@ msgstr "Rimuovi ruolo admin"
 #, fuzzy
 msgid "Remove contact"
 msgstr "Aggiungi contatto"
+
+msgid "Remove pack"
+msgstr "Rimuovi pacchetto"
+
+msgid "Remove sticker"
+msgstr "Rimuovi adesivo"
 
 #, fuzzy
 msgid "Remove this contact?"
@@ -1904,6 +1985,9 @@ msgstr "Salva allegato"
 msgid "Save file"
 msgstr "Salva video"
 
+msgid "Save sticker"
+msgstr "Salva adesivo"
+
 msgid "Scan to add"
 msgstr "Scansiona per aggiungere"
 
@@ -1926,6 +2010,9 @@ msgstr "Cerca messaggi…"
 
 msgid "Search issues"
 msgstr "Cerca segnalazioni"
+
+msgid "Search stickers"
+msgstr "Cerca adesivi"
 
 msgid "Searching…"
 msgstr "Ricerca…"
@@ -2148,6 +2235,25 @@ msgstr "Rinuncia"
 msgid "Step down as admin?"
 msgstr "Rinunciare al ruolo di admin?"
 
+msgid "Sticker"
+msgstr "Adesivo"
+
+msgid "Sticker name"
+msgstr "Nome dell'adesivo"
+
+msgid "Sticker pack"
+msgstr "Pacchetto di adesivi"
+
+msgid "Sticker unavailable. Click to view options."
+msgstr "Adesivo non disponibile. Fai clic per vedere le opzioni."
+
+msgid "Stickers"
+msgstr "Adesivi"
+
+#, c-format
+msgid "Stickers: %d"
+msgstr "Adesivi: %d"
+
 #, c-format
 msgid "Stock: %s"
 msgstr "Disponibilità: %s"
@@ -2281,6 +2387,9 @@ msgstr "Questo apre {} nel browser predefinito."
 msgid "This message was deleted"
 msgstr "Nessuna immagine selezionata."
 
+msgid "This sticker is not in the current pack."
+msgstr "Questo adesivo non è nel pacchetto attuale."
+
 msgid "Thread"
 msgstr ""
 
@@ -2385,6 +2494,9 @@ msgstr "Visualizza il profilo completo"
 msgid "View raw event"
 msgstr ""
 
+msgid "View sticker pack"
+msgstr "Vedi pacchetto di adesivi"
+
 msgid "View transcription"
 msgstr "Mostra trascrizione"
 
@@ -2451,6 +2563,12 @@ msgstr "TU"
 msgid "YOUR KEY PACKAGES"
 msgstr "I TUOI PACCHETTI CHIAVE"
 
+msgid "YOUR PACKS"
+msgstr "I TUOI PACCHETTI"
+
+msgid "YOUR STICKERS"
+msgstr "I TUOI ADESIVI"
+
 msgid "You"
 msgstr "Tu"
 
@@ -2500,6 +2618,9 @@ msgstr "Il tuo profilo"
 
 msgid "Your public key. Safe to share."
 msgstr "La tua chiave pubblica. Sicura da condividere."
+
+msgid "Your stickers"
+msgstr "I tuoi adesivi"
 
 msgid "ZOOM"
 msgstr "ZOOM"

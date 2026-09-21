@@ -55,6 +55,8 @@ Offline_Att :: struct {
 }
 
 Offline_Item :: struct {
+	sticker:  Sticker_Ref,
+	effect:   int,
 	group_id: string,
 	sender:   string,
 	body:     string,
@@ -82,6 +84,8 @@ save_offline :: proc(ui: ^Ui_State) {
 			continue
 		}
 		item := Offline_Item {
+			sticker  = p.sticker,
+			effect   = p.effect,
 			group_id = p.group_id,
 			sender   = p.sender,
 			body     = p.body,
@@ -138,6 +142,8 @@ load_offline :: proc(ui: ^Ui_State) {
 	for &item in items {
 		send_ticket += 1
 		p := Pending_Send {
+			sticker  = item.sticker,
+			effect   = item.effect,
 			ticket   = send_ticket,
 			group_id = item.group_id, // unmarshal allocated; adopt
 			sender   = item.sender,

@@ -200,11 +200,20 @@ msgstr "リアクションを追加"
 msgid "Add option"
 msgstr "リアクションを追加"
 
+msgid "Add pack"
+msgstr "パックを追加"
+
 msgid "Add reaction"
 msgstr "リアクションを追加"
 
 msgid "Add someone by npub, or make a group of your own."
 msgstr ""
+
+msgid "Added to your stickers"
+msgstr "ステッカーに追加済み"
+
+msgid "Adding…"
+msgstr "追加中…"
 
 msgid "Admin"
 msgstr "管理者"
@@ -449,6 +458,9 @@ msgstr "キャッシュを消去"
 msgid "Clear effect"
 msgstr "キャッシュを消去"
 
+msgid "Click a sticker for a larger preview."
+msgstr "ステッカーをクリックすると拡大表示できます。"
+
 msgid "Close"
 msgstr "閉じる"
 
@@ -530,6 +542,9 @@ msgstr "テキストをコピー"
 msgid "Corner scale"
 msgstr ""
 
+msgid "Couldn't add the pack. No supported stickers are available."
+msgstr "パックを追加できませんでした。対応するステッカーがありません。"
+
 msgid "Couldn't cache your transcription. Please try again."
 msgstr "文字起こしをキャッシュできませんでした。もう一度お試しください。"
 
@@ -569,11 +584,17 @@ msgstr "音声モデルをダウンロードできませんでした。接続と
 msgid "Couldn't export the key. %s"
 msgstr "連絡先をエクスポートできませんでした。"
 
+msgid "Couldn't find that pack. Enter a sticker pack naddr or coordinate."
+msgstr "パックが見つかりませんでした。ステッカーパックのnaddrまたは座標を入力してください。"
+
 msgid "Couldn't finish dictation. Please try again."
 msgstr "音声入力を完了できませんでした。もう一度お試しください。"
 
 msgid "Couldn't hear any speech. Speak clearly and try again."
 msgstr "音声を聞き取れませんでした。はっきり話して、もう一度お試しください。"
+
+msgid "Couldn't import the sticker. Choose an image under 4 MiB."
+msgstr "ステッカーを読み込めませんでした。4 MiB未満の画像を選んでください。"
 
 #, fuzzy
 msgid "Couldn't load attachment. Click to retry."
@@ -598,6 +619,12 @@ msgstr "報告を読み込めませんでした。もう一度お試しくださ
 msgid "Couldn't load messages. Please try again."
 msgstr "メッセージを読み込めませんでした。もう一度お試しください。"
 
+msgid "Couldn't load the pack. Check your relay settings and try again."
+msgstr "パックを読み込めませんでした。リレーの設定を確認して、もう一度お試しください。"
+
+msgid "Couldn't load the sticker. Please try again."
+msgstr "ステッカーを読み込めませんでした。もう一度お試しください。"
+
 #, fuzzy, c-format
 msgid "Couldn't load the timeline. %s"
 msgstr "画像をダウンロードできませんでした。"
@@ -607,6 +634,9 @@ msgstr "このイベントを読み込めませんでした。リレー設定を
 
 msgid "Couldn't load timings. Please try again."
 msgstr "処理時間を読み込めませんでした。もう一度お試しください。"
+
+msgid "Couldn't load your stickers. Please try again."
+msgstr "ステッカーを読み込めませんでした。もう一度お試しください。"
 
 #, fuzzy
 msgid "Couldn't open the backup. Double-check the password and try again."
@@ -634,6 +664,9 @@ msgstr "チャットを作成できませんでした。もう一度お試しく
 msgid "Couldn't read the backup. Please try again."
 msgstr "チャットを作成できませんでした。もう一度お試しください。"
 
+msgid "Couldn't read the image. Please try again."
+msgstr "画像を読み取れませんでした。もう一度お試しください。"
+
 #, fuzzy
 msgid "Couldn't read the vault file. Please try again."
 msgstr "チャットを作成できませんでした。もう一度お試しください。"
@@ -659,12 +692,21 @@ msgstr "リアクションを削除できませんでした。もう一度お試
 msgid "Couldn't save the edit. Please try again."
 msgstr "編集を保存できませんでした。もう一度お試しください。"
 
+msgid "Couldn't save the sticker. Wait for its image to load and try again."
+msgstr "ステッカーを保存できませんでした。画像の読み込みが完了してから、もう一度お試しください。"
+
 #, fuzzy
 msgid "Couldn't save the theme. Check the name and colors and try again."
 msgstr "そのアカウントを追加できませんでした。鍵を確認して、もう一度お試しください。"
 
+msgid "Couldn't save your stickers. Please try again."
+msgstr "ステッカーを保存できませんでした。もう一度お試しください。"
+
 msgid "Couldn't search messages. Please try again."
 msgstr "メッセージを検索できませんでした。もう一度お試しください。"
+
+msgid "Couldn't send the sticker. Switch back to your account and try again."
+msgstr "ステッカーを送信できませんでした。元のアカウントに戻って、もう一度お試しください。"
 
 #, fuzzy
 msgid "Couldn't serialize the key packages. Please try again."
@@ -702,6 +744,9 @@ msgstr "報告を更新できませんでした。もう一度お試しくださ
 
 msgid "Couldn't use that theme. It isn't a theme this version reads."
 msgstr ""
+
+msgid "Couldn't use the sticker. Choose a static PNG, WebP or JPEG up to 4096 pixels."
+msgstr "ステッカーを使用できませんでした。4096ピクセル以下の静止画PNG、WebP、JPEGを選んでください。"
 
 msgid "Create"
 msgstr "作成"
@@ -911,6 +956,9 @@ msgstr ""
 msgid "Elevated border"
 msgstr ""
 
+msgid "Emoji"
+msgstr "絵文字"
+
 msgid "Enable issue tracking"
 msgstr "問題の追跡を有効にする"
 
@@ -923,6 +971,9 @@ msgstr "暗号化キーをエクスポート(ncryptsec)"
 
 msgid "End-to-end encrypted"
 msgstr "エンドツーエンド暗号化"
+
+msgid "Enter a sticker name of 1 to 64 characters."
+msgstr "ステッカー名を1〜64文字で入力してください。"
 
 msgid "Enter an issue title and description."
 msgstr "報告のタイトルと説明を入力してください。"
@@ -1132,8 +1183,14 @@ msgstr "バックアップをインポート"
 msgid "Import a key"
 msgstr "バックアップをインポート"
 
+msgid "Import an image to make your first sticker."
+msgstr "画像を読み込んで最初のステッカーを作成できます。"
+
 msgid "Import backup"
 msgstr "バックアップをインポート"
+
+msgid "Import image"
+msgstr "画像を読み込む"
 
 #, fuzzy
 msgid "Import..."
@@ -1313,6 +1370,9 @@ msgstr "{}を管理者にしますか？"
 msgid "Male voice. Supports all reading languages."
 msgstr "男性の声です。すべての読み上げ言語に対応しています。"
 
+msgid "Manage"
+msgstr "管理"
+
 msgid "Mark read"
 msgstr ""
 
@@ -1474,12 +1534,18 @@ msgstr ""
 msgid "No key package yet. Publish one so people can invite you."
 msgstr "公開すると他のユーザーがグループに招待できるようになります。"
 
+msgid "No matching stickers."
+msgstr "一致するステッカーがありません。"
+
 msgid "No messages yet"
 msgstr "まだメッセージはありません"
 
 #, fuzzy
 msgid "No relay list published."
 msgstr "リレーリストが変更されました。"
+
+msgid "No stickers here yet."
+msgstr "まだステッカーがありません。"
 
 msgid "No trusted sites."
 msgstr "信頼済みのサイトはありません。"
@@ -1595,6 +1661,9 @@ msgstr "プロフィール"
 msgid "PULL REQUEST"
 msgstr "プルリクエスト"
 
+msgid "Pack link or address"
+msgstr "パックのリンクまたはアドレス"
+
 #, fuzzy
 msgid "Pack your settings, drafts, custom emoji, and themes into one encrypted file."
 msgstr "アカウント、チャット、設定を1つの暗号化ファイルにまとめます。"
@@ -1604,6 +1673,9 @@ msgstr ""
 
 msgid "Panel 2"
 msgstr ""
+
+msgid "Paste a pack link to preview its stickers before adding it."
+msgstr "パックのリンクを貼り付けると、追加する前にステッカーを確認できます。"
 
 #, fuzzy
 msgid "Path copied"
@@ -1642,9 +1714,6 @@ msgstr ""
 msgid "Play a sound"
 msgstr "音を鳴らす"
 
-msgid "Plays here when you send. It can't travel: marmot reserves the chat event kind, so no client attaches the tag any more. An effect sent by an older client still plays."
-msgstr ""
-
 msgid "Pre-order"
 msgstr "予約注文"
 
@@ -1662,6 +1731,9 @@ msgstr ""
 
 msgid "Preview"
 msgstr "試聴"
+
+msgid "Preview pack"
+msgstr "パックをプレビュー"
 
 msgid "Previous / next in the media viewer"
 msgstr ""
@@ -1737,6 +1809,9 @@ msgstr "続きを読む"
 msgid "Reading aloud..."
 msgstr "読み上げています..."
 
+msgid "Recent"
+msgstr "最近使ったもの"
+
 #, fuzzy
 msgid "Reconnect"
 msgstr "今すぐ再接続"
@@ -1779,6 +1854,12 @@ msgstr "管理者から外す"
 #, fuzzy
 msgid "Remove contact"
 msgstr "連絡先を追加"
+
+msgid "Remove pack"
+msgstr "パックを削除"
+
+msgid "Remove sticker"
+msgstr "ステッカーを削除"
 
 #, fuzzy
 msgid "Remove this contact?"
@@ -1904,6 +1985,9 @@ msgstr "添付ファイルを保存"
 msgid "Save file"
 msgstr "動画を保存"
 
+msgid "Save sticker"
+msgstr "ステッカーを保存"
+
 msgid "Scan to add"
 msgstr "スキャンして追加"
 
@@ -1926,6 +2010,9 @@ msgstr "メッセージを検索…"
 
 msgid "Search issues"
 msgstr "報告を検索"
+
+msgid "Search stickers"
+msgstr "ステッカーを検索"
 
 msgid "Searching…"
 msgstr "検索中…"
@@ -2148,6 +2235,25 @@ msgstr "管理者を辞める"
 msgid "Step down as admin?"
 msgstr "管理者を辞めますか？"
 
+msgid "Sticker"
+msgstr "ステッカー"
+
+msgid "Sticker name"
+msgstr "ステッカー名"
+
+msgid "Sticker pack"
+msgstr "ステッカーパック"
+
+msgid "Sticker unavailable. Click to view options."
+msgstr "ステッカーを利用できません。クリックして操作を表示します。"
+
+msgid "Stickers"
+msgstr "ステッカー"
+
+#, c-format
+msgid "Stickers: %d"
+msgstr "ステッカー：%d"
+
 #, c-format
 msgid "Stock: %s"
 msgstr "在庫数: %s"
@@ -2281,6 +2387,9 @@ msgstr "既定のブラウザで{}を開きます。"
 msgid "This message was deleted"
 msgstr "画像が選択されていません。"
 
+msgid "This sticker is not in the current pack."
+msgstr "このステッカーは現在のパックに含まれていません。"
+
 msgid "Thread"
 msgstr ""
 
@@ -2385,6 +2494,9 @@ msgstr "プロフィール全体を表示"
 msgid "View raw event"
 msgstr ""
 
+msgid "View sticker pack"
+msgstr "ステッカーパックを表示"
+
 msgid "View transcription"
 msgstr "文字起こしを表示"
 
@@ -2451,6 +2563,12 @@ msgstr "あなた"
 msgid "YOUR KEY PACKAGES"
 msgstr "あなたのキーパッケージ"
 
+msgid "YOUR PACKS"
+msgstr "あなたのパック"
+
+msgid "YOUR STICKERS"
+msgstr "あなたのステッカー"
+
 msgid "You"
 msgstr "あなた"
 
@@ -2500,6 +2618,9 @@ msgstr "あなたのプロフィール"
 
 msgid "Your public key. Safe to share."
 msgstr "公開鍵。共有して問題ありません。"
+
+msgid "Your stickers"
+msgstr "あなたのステッカー"
 
 msgid "ZOOM"
 msgstr "ズーム"

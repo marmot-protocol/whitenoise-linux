@@ -75,6 +75,7 @@ blocks_free :: proc(blocks: [dynamic]Md_Block_Ui) {
 
 @(private)
 message_free :: proc(msg: Msg_Ui) {
+	sticker_ref_free(msg.sticker)
 	for value in ([]string{msg.id, msg.sender, msg.sender_id, msg.pic_url, msg.body, msg.reply_from, msg.reply_text, msg.reply_id, msg.reply_image, msg.at, msg.at_full, msg.day, msg.sys_text, msg.sys_added_hex, msg.theme_name, msg.theme_toml, msg.thread_of}) {
 		delete(value)
 	}

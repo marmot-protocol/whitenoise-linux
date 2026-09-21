@@ -119,6 +119,7 @@ active_buf :: proc(ui: ^Ui_State) -> ^[dynamic]u8 {
 }
 
 handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if ui.sticker_open || ui.picker_open {return}
 	if preview_shown {return}
 	// A shared theme is taken only on the tap: adopt_theme writes it
 	// under the data dir and returns its slot, which then applies.
@@ -203,6 +204,10 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	if mouse_released() {
+		for msg, i in ui.messages {
+			if msg.sticker.sha != "" &&
+			   clicked_indexed("MessageSticker", u32(i)) {sticker_show(ui, msg.sticker); return}
+		}
 		for _, i in ui.chats {
 			if clay.PointerOver(clay.ID("ChatMenu", u32(i))) {
 				open_row_menu(ui, i)
@@ -746,19 +751,6 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			queue_staged(ui, client)
 			clear(&ui.compose)
 			drop_draft(ui)
-			// The armed burst plays here and is spent. It never reaches
-			// the wire: marmot-c's send_text carries no tags.
-			if ui.fx_armed != 0 {
-				fx_send_armed(ui)
-			}
-			// The armed burst plays here and is spent. It never reaches
-			// the wire: marmot-c's send_text carries no tags.
-			if ui.fx_armed != 0 {
-				fx_send_armed(ui)
-			}
-			// Every send whooshes; an armed burst plays here too and is
-			// spent. Effects never reach the wire: marmot-c's send_text
-			// carries no tags.
 			fx_send_armed(ui)
 			play_sound(.Send)
 		}
@@ -919,6 +911,8 @@ uri_unescape :: proc(uri: string) -> string {
 
 // Open the picker anchored near the pointer, clamped on-window.
 open_picker :: proc(ui: ^Ui_State, target: string) {
+	if target != "" {ui.sticker_tab = false}
+	if ui.sticker_tab {sticker_library_open(ui)}
 	m := rl.GetMousePosition()
 	ui.picker_open = true
 	ui.picker_target = target
@@ -970,6 +964,17 @@ pick_emoji :: proc(ui: ^Ui_State, client: ^marmot.Client, emoji: string) {
 }
 
 handle_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if ui.picker_target == "" && !ui.adding_quick {
+		if clicked_indexed(
+			"PickerStickers",
+			0,
+		) {ui.sticker_tab = true; ui.sticker_focus = 0; clear(&ui.picker_filter); sticker_library_open(ui); return}
+		if clicked_indexed(
+			"PickerEmoji",
+			0,
+		) {ui.sticker_tab = false; clear(&ui.picker_filter); return}
+		if ui.sticker_tab {handle_sticker_picker(ui); return}
+	}
 	if rl.IsKeyPressed(.ESCAPE) {
 		ui.picker_open = false
 		ui.focus = .Compose

@@ -189,10 +189,19 @@ msgstr ""
 msgid "Add option"
 msgstr ""
 
+msgid "Add pack"
+msgstr ""
+
 msgid "Add reaction"
 msgstr ""
 
 msgid "Add someone by npub, or make a group of your own."
+msgstr ""
+
+msgid "Added to your stickers"
+msgstr ""
+
+msgid "Adding…"
 msgstr ""
 
 msgid "Admin"
@@ -421,6 +430,9 @@ msgstr ""
 msgid "Clear effect"
 msgstr ""
 
+msgid "Click a sticker for a larger preview."
+msgstr ""
+
 msgid "Close"
 msgstr ""
 
@@ -496,6 +508,9 @@ msgstr ""
 msgid "Corner scale"
 msgstr ""
 
+msgid "Couldn't add the pack. No supported stickers are available."
+msgstr ""
+
 msgid "Couldn't cache your transcription. Please try again."
 msgstr ""
 
@@ -532,10 +547,16 @@ msgstr ""
 msgid "Couldn't export the key. %s"
 msgstr ""
 
+msgid "Couldn't find that pack. Enter a sticker pack naddr or coordinate."
+msgstr ""
+
 msgid "Couldn't finish dictation. Please try again."
 msgstr ""
 
 msgid "Couldn't hear any speech. Speak clearly and try again."
+msgstr ""
+
+msgid "Couldn't import the sticker. Choose an image under 4 MiB."
 msgstr ""
 
 msgid "Couldn't load attachment. Click to retry."
@@ -559,6 +580,12 @@ msgstr ""
 msgid "Couldn't load messages. Please try again."
 msgstr ""
 
+msgid "Couldn't load the pack. Check your relay settings and try again."
+msgstr ""
+
+msgid "Couldn't load the sticker. Please try again."
+msgstr ""
+
 #, c-format
 msgid "Couldn't load the timeline. %s"
 msgstr ""
@@ -567,6 +594,9 @@ msgid "Couldn't load this event. Check your relay settings and try again."
 msgstr ""
 
 msgid "Couldn't load timings. Please try again."
+msgstr ""
+
+msgid "Couldn't load your stickers. Please try again."
 msgstr ""
 
 msgid "Couldn't open the backup. Double-check the password and try again."
@@ -589,6 +619,9 @@ msgid "Couldn't read the backup file. Please try again."
 msgstr ""
 
 msgid "Couldn't read the backup. Please try again."
+msgstr ""
+
+msgid "Couldn't read the image. Please try again."
 msgstr ""
 
 msgid "Couldn't read the vault file. Please try again."
@@ -614,10 +647,19 @@ msgstr ""
 msgid "Couldn't save the edit. Please try again."
 msgstr ""
 
+msgid "Couldn't save the sticker. Wait for its image to load and try again."
+msgstr ""
+
 msgid "Couldn't save the theme. Check the name and colors and try again."
 msgstr ""
 
+msgid "Couldn't save your stickers. Please try again."
+msgstr ""
+
 msgid "Couldn't search messages. Please try again."
+msgstr ""
+
+msgid "Couldn't send the sticker. Switch back to your account and try again."
 msgstr ""
 
 msgid "Couldn't serialize the key packages. Please try again."
@@ -651,6 +693,9 @@ msgid "Couldn't update issues. Please try again."
 msgstr ""
 
 msgid "Couldn't use that theme. It isn't a theme this version reads."
+msgstr ""
+
+msgid "Couldn't use the sticker. Choose a static PNG, WebP or JPEG up to 4096 pixels."
 msgstr ""
 
 msgid "Create"
@@ -845,6 +890,9 @@ msgstr ""
 msgid "Elevated border"
 msgstr ""
 
+msgid "Emoji"
+msgstr ""
+
 msgid "Enable issue tracking"
 msgstr ""
 
@@ -855,6 +903,9 @@ msgid "Encrypted key copied"
 msgstr ""
 
 msgid "End-to-end encrypted"
+msgstr ""
+
+msgid "Enter a sticker name of 1 to 64 characters."
 msgstr ""
 
 msgid "Enter an issue title and description."
@@ -1050,7 +1101,13 @@ msgstr ""
 msgid "Import a key"
 msgstr ""
 
+msgid "Import an image to make your first sticker."
+msgstr ""
+
 msgid "Import backup"
+msgstr ""
+
+msgid "Import image"
 msgstr ""
 
 msgid "Import..."
@@ -1219,6 +1276,9 @@ msgstr ""
 msgid "Male voice. Supports all reading languages."
 msgstr ""
 
+msgid "Manage"
+msgstr ""
+
 msgid "Mark read"
 msgstr ""
 
@@ -1363,10 +1423,16 @@ msgstr ""
 msgid "No key package yet. Publish one so people can invite you."
 msgstr ""
 
+msgid "No matching stickers."
+msgstr ""
+
 msgid "No messages yet"
 msgstr ""
 
 msgid "No relay list published."
+msgstr ""
+
+msgid "No stickers here yet."
 msgstr ""
 
 msgid "No trusted sites."
@@ -1480,6 +1546,9 @@ msgstr ""
 msgid "PULL REQUEST"
 msgstr ""
 
+msgid "Pack link or address"
+msgstr ""
+
 msgid "Pack your settings, drafts, custom emoji, and themes into one encrypted file."
 msgstr ""
 
@@ -1487,6 +1556,9 @@ msgid "Panel"
 msgstr ""
 
 msgid "Panel 2"
+msgstr ""
+
+msgid "Paste a pack link to preview its stickers before adding it."
 msgstr ""
 
 msgid "Path copied"
@@ -1525,9 +1597,6 @@ msgstr ""
 msgid "Play a sound"
 msgstr ""
 
-msgid "Plays here when you send. It can't travel: marmot reserves the chat event kind, so no client attaches the tag any more. An effect sent by an older client still plays."
-msgstr ""
-
 msgid "Pre-order"
 msgstr ""
 
@@ -1544,6 +1613,9 @@ msgid "Press Ctrl P for the command palette."
 msgstr ""
 
 msgid "Preview"
+msgstr ""
+
+msgid "Preview pack"
 msgstr ""
 
 msgid "Previous / next in the media viewer"
@@ -1618,6 +1690,9 @@ msgstr ""
 msgid "Reading aloud..."
 msgstr ""
 
+msgid "Recent"
+msgstr ""
+
 msgid "Reconnect"
 msgstr ""
 
@@ -1652,6 +1727,12 @@ msgid "Remove admin rights?"
 msgstr ""
 
 msgid "Remove contact"
+msgstr ""
+
+msgid "Remove pack"
+msgstr ""
+
+msgid "Remove sticker"
 msgstr ""
 
 msgid "Remove this contact?"
@@ -1771,6 +1852,9 @@ msgstr ""
 msgid "Save file"
 msgstr ""
 
+msgid "Save sticker"
+msgstr ""
+
 msgid "Scan to add"
 msgstr ""
 
@@ -1790,6 +1874,9 @@ msgid "Search images"
 msgstr ""
 
 msgid "Search issues"
+msgstr ""
+
+msgid "Search stickers"
 msgstr ""
 
 msgid "Searching…"
@@ -1994,6 +2081,25 @@ msgstr ""
 msgid "Step down as admin?"
 msgstr ""
 
+msgid "Sticker"
+msgstr ""
+
+msgid "Sticker name"
+msgstr ""
+
+msgid "Sticker pack"
+msgstr ""
+
+msgid "Sticker unavailable. Click to view options."
+msgstr ""
+
+msgid "Stickers"
+msgstr ""
+
+#, c-format
+msgid "Stickers: %d"
+msgstr ""
+
 #, c-format
 msgid "Stock: %s"
 msgstr ""
@@ -2117,6 +2223,9 @@ msgstr ""
 msgid "This message was deleted"
 msgstr ""
 
+msgid "This sticker is not in the current pack."
+msgstr ""
+
 msgid "Thread"
 msgstr ""
 
@@ -2219,6 +2328,9 @@ msgstr ""
 msgid "View raw event"
 msgstr ""
 
+msgid "View sticker pack"
+msgstr ""
+
 msgid "View transcription"
 msgstr ""
 
@@ -2279,6 +2391,12 @@ msgstr ""
 msgid "YOUR KEY PACKAGES"
 msgstr ""
 
+msgid "YOUR PACKS"
+msgstr ""
+
+msgid "YOUR STICKERS"
+msgstr ""
+
 msgid "You"
 msgstr ""
 
@@ -2323,6 +2441,9 @@ msgid "Your profile"
 msgstr ""
 
 msgid "Your public key. Safe to share."
+msgstr ""
+
+msgid "Your stickers"
 msgstr ""
 
 msgid "ZOOM"

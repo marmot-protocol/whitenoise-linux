@@ -1,5 +1,6 @@
 package main
 
+import "core:fmt"
 import "core:time"
 
 import "core:slice"
@@ -20,6 +21,7 @@ Media_Phase :: enum {
 Media_Kind :: enum {
 	File,
 	Image,
+	Sticker,
 	Emoji,
 	Mesh,
 	Gcode,
@@ -101,6 +103,8 @@ media_cached :: proc(kind: Media_Kind, key: string) -> (rawptr, bool) {
 	switch kind {
 	case .Image:
 		v, ok := media_textures[key]; return v, ok
+	case .Sticker:
+		v, ok := media_textures[fmt.tprintf("sticker:%s", key)]; return v, ok
 	case .Emoji:
 		v, ok := remote_emoji_tex[key]; return v, ok
 	case .Mesh:
@@ -195,6 +199,7 @@ media_attach :: proc(
 	msg.att_names[index] = strings.clone(name != "" ? name : "attachment")
 	msg.att_keys[index] = strings.clone(key)
 	kind := media_kind(name, ref.media_type != nil ? string(ref.media_type) : "")
+	if key == msg.sticker.sha && msg.sticker.sha != "" {kind = .Sticker}
 	if kind == .Emoji {key = emoji_code(name[len(EMOJI_ATT_PREFIX):])}
 	view, seen := media_cached(kind, key)
 	if !seen {
@@ -210,7 +215,7 @@ media_ready :: proc(msg: ^Msg_Ui, kind: Media_Kind, key: string, index: int, vie
 	if kind == .Emoji {return}
 	if view == nil {
 		#partial switch kind {
-		case .Image:
+		case .Image, .Sticker:
 			media_insert(&msg.img_failed, Att_Item(string){strings.clone(key), index})
 		case .Mesh, .Gcode, .Video, .Loop, .Pdf:
 			msg.media_failed = true
@@ -221,7 +226,7 @@ media_ready :: proc(msg: ^Msg_Ui, kind: Media_Kind, key: string, index: int, vie
 		return
 	}
 	switch kind {
-	case .Image:
+	case .Image, .Sticker:
 		media_insert(&msg.images, Att_Item(^rl.Texture2D){(^rl.Texture2D)(view), index})
 	case .Mesh:
 		media_insert(&msg.models, Att_Item(^Stl_View){(^Stl_View)(view), index})
@@ -304,6 +309,8 @@ media_worker :: proc(t: ^thread.Thread) {
 	defer delete(bytes)
 	name := strings.to_lower(string(job.reference.file_name), context.temp_allocator)
 	switch job.kind {
+	case .Sticker:
+		job.image = sticker_thumb(sticker_image(bytes, string(job.reference.media_type)))
 	case .Image, .Emoji:
 		job.image = rl.LoadImageFromMemory("", raw_data(bytes), i32(len(bytes)))
 	case .Font:
@@ -336,10 +343,12 @@ media_worker :: proc(t: ^thread.Thread) {
 media_publish :: proc(job: ^Media_Job) {
 	timing_start := time.tick_now()
 	defer local_timing_end(.media_publish, timing_start)
-	key := strings.clone(job.key)
+	// A sticker's display finish must not replace an ordinary photo's texture.
+	key := job.kind == .Sticker ? fmt.aprintf("sticker:%s", job.key) : strings.clone(job.key)
 	switch job.kind {
-	case .Image, .Emoji, .Font:
-		tex := rl.LoadTextureFromImage(job.image)
+	case .Image, .Sticker, .Emoji, .Font:
+		tex :=
+			job.kind == .Sticker ? sticker_texture_load(job.image) : rl.LoadTextureFromImage(job.image)
 		if job.kind == .Font {
 			view: ^Ttf_View
 			if tex.width > 0 {view = new(Ttf_View); view^ = {tex, tex.width, tex.height}}

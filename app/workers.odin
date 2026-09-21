@@ -319,6 +319,8 @@ live_apply :: proc(ui: ^Ui_State, client: ^marmot.Client, job: ^Chat_List_Work) 
 //                (grayed row)          (mutex)     (drop row + reload,
 //                                                   or mark failed)
 Pending_Send :: struct {
+	sticker:       Sticker_Ref,
+	effect:        int,
 	visible_since: time.Tick, // compose action until first presented optimistic row
 	sending_since: time.Tick, // start of the current send attempt
 	ticket:        int, // matches a Send_Done back to its row
@@ -356,6 +358,7 @@ Job_Att :: struct {
 }
 
 Send_Job :: struct {
+	tags:    []marmot.Message_Tag,
 	ticket:  int,
 	client:  ^marmot.Client,
 	account: cstring,
@@ -404,6 +407,7 @@ send_thread :: proc(
 	e_vals := [2]cstring{"e", job.thread}
 	rows := make([dynamic]marmot.Message_Tag)
 	defer delete(rows)
+	append(&rows, ..job.tags)
 	if job.issue.root == "" {
 		append(&rows, marmot.Message_Tag{values = raw_data(e_vals[:]), values_len = 2})
 	} else {
@@ -467,8 +471,7 @@ send_worker :: proc(t: ^thread.Thread) {
 		// One upload_media round trip: encrypt, push to Blossom, and
 		// (main timeline) publish the kind-9 message in the same call.
 		// A thread upload keeps send=false and publishes the references
-		// itself as a kind-1111 event, since upload_media carries no
-		// tags to place it in the thread.
+		// itself as a kind-1111 event; upload_media sends kind 9.
 		requests := make([]marmot.Media_Upload_Attachment_Request, len(job.atts))
 		for a, i in job.atts {
 			requests[i] = {
@@ -480,10 +483,12 @@ send_worker :: proc(t: ^thread.Thread) {
 			}
 		}
 		request := marmot.Media_Upload_Request {
-			attachments     = raw_data(requests),
-			attachments_len = uint(len(requests)),
-			caption         = job.caption,
-			send            = job.thread == nil,
+			message_tags     = raw_data(job.tags),
+			message_tags_len = uint(len(job.tags)),
+			attachments      = raw_data(requests),
+			attachments_len  = uint(len(requests)),
+			caption          = job.caption,
+			send             = job.thread == nil,
 		}
 		result: ^marmot.Media_Upload_Result
 		status = marmot.upload_media(job.client, job.account, job.group, &request, &result)
@@ -500,6 +505,16 @@ send_worker :: proc(t: ^thread.Thread) {
 		summary: ^marmot.Send_Summary
 		if job.thread != nil {
 			status = send_thread(job, nil, &ids)
+		} else if len(job.tags) > 0 {
+			status = marmot.send_tagged_text(
+				job.client,
+				job.account,
+				job.group,
+				raw_data(job.tags),
+				uint(len(job.tags)),
+				job.text,
+				&summary,
+			)
 		} else if job.reply != nil {
 			status = marmot.reply_to_message(
 				job.client,
@@ -546,6 +561,11 @@ send_worker :: proc(t: ^thread.Thread) {
 		// a.data belongs to the Pending_Att; drain_sends frees it.
 	}
 	delete(job.atts)
+	for tag in job.tags {
+		for value in tag.values[:tag.values_len] {delete(value)}
+		delete(tag.values[:tag.values_len])
+	}
+	delete(job.tags)
 	free(job)
 }
 
@@ -560,6 +580,7 @@ spawn_send :: proc(ui: ^Ui_State, client: ^marmot.Client, p: ^Pending_Send) {
 	job.reply = len(p.reply_to) > 0 ? strings.clone_to_cstring(p.reply_to) : nil
 	job.issue = p.issue
 	job.thread = len(p.thread) > 0 ? strings.clone_to_cstring(p.thread) : nil
+	job.tags = send_message_tags(p)
 	if len(p.atts) > 0 {
 		// upload_media publishes the kind-9 itself, so the typed body
 		// only survives as its caption. Staged files carry no typed
@@ -569,7 +590,7 @@ spawn_send :: proc(ui: ^Ui_State, client: ^marmot.Client, p: ^Pending_Send) {
 		for a in p.atts {
 			emoji_only &= strings.has_prefix(a.name, EMOJI_ATT_PREFIX)
 		}
-		if emoji_only {
+		if emoji_only || p.sticker.sha != "" {
 			job.caption = job.text
 		}
 		job.atts = make([]Job_Att, len(p.atts))
@@ -603,6 +624,7 @@ queue_send :: proc(ui: ^Ui_State, client: ^marmot.Client, body: string) {
 		&ui.pending,
 		Pending_Send {
 			visible_since = started,
+			effect        = ui.fx_armed,
 			ticket        = send_ticket,
 			group_id      = strings.clone(ui.chats[ui.selected].group_id),
 			sender        = strings.clone(len(info.name) > 0 ? info.name : "you"),
@@ -620,13 +642,9 @@ queue_send :: proc(ui: ^Ui_State, client: ^marmot.Client, body: string) {
 }
 
 // Ship the image behind every :shortcode: this device defines, so the
-// group renders it instead of the literal text. A reply is left alone:
-// upload_media has no reply tag, so attaching would drop the reply.
+// group renders it instead of the literal text, including in replies.
 @(private = "file")
 attach_body_emoji :: proc(p: ^Pending_Send, body: string) {
-	if len(p.reply_to) > 0 {
-		return
-	}
 	for code in emoji_codes_in(body) {
 		name := emoji_file_for(code)
 		data, err := os.read_entire_file(
@@ -649,6 +667,7 @@ attach_body_emoji :: proc(p: ^Pending_Send, body: string) {
 
 free_pending :: proc(p: ^Pending_Send) {
 	delete(p.group_id)
+	sticker_ref_free(p.sticker)
 	delete(p.sender)
 	delete(p.body)
 	delete(p.reply_to)
@@ -659,7 +678,7 @@ free_pending :: proc(p: ^Pending_Send) {
 		delete(a.dim)
 		delete(a.data)
 		if a.tex != nil {
-			rl.UnloadTexture(a.tex^)
+			sticker_texture_free(a.tex^)
 			free(a.tex)
 		}
 	}
@@ -682,6 +701,8 @@ queue_staged :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	group := ui.chats[ui.selected].group_id
 
 	album := Pending_Send {
+		effect        = len(ui.compose) == 0 ? ui.fx_armed : 0,
+		reply_to      = strings.clone(thread_cur(ui) == "" ? ui.replying : ""),
 		visible_since = started,
 	}
 	for &f in ui.staged {
@@ -697,6 +718,8 @@ queue_staged :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		} else {
 			send_ticket += 1
 			p := Pending_Send {
+				effect        = len(ui.compose) == 0 ? ui.fx_armed : 0,
+				reply_to      = strings.clone(thread_cur(ui) == "" ? ui.replying : ""),
 				visible_since = started,
 				ticket        = send_ticket,
 				group_id      = strings.clone(group),
@@ -721,6 +744,7 @@ queue_staged :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		append(&ui.pending, album)
 		spawn_send(ui, client, &ui.pending[len(ui.pending) - 1])
 	}
+	if len(album.atts) == 0 {delete(album.reply_to)}
 	clear(&ui.staged) // fields moved into the pendings above
 }
 

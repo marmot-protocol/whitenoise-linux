@@ -956,6 +956,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 			if open_now(clay.ID("PickerPanel"), ui.picker_open) {
 				emoji_picker(ui)
 			}
+			if open_now(clay.ID("StickerPanel"), ui.sticker_open) {sticker_panel(ui)}
 
 			if open_now(clay.ID("RowMenu"), ui.row_menu >= 0) &&
 			   row_menu_index(ui) < len(ui.chats) {
@@ -1850,13 +1851,17 @@ app_main :: proc() {
 		drain_gh()
 		drain_hn()
 		drain_nev()
+		drain_stickers(&ui, client)
 
 		// Files picked in the async SDL dialog land here; they become
 		// composer chips, custom emoji when the settings "+" asked, or
 		// the group photo when the hero chooser asked.
 		picked := rl.PickedFiles()
 		for path in picked {
-			if ui.picking_backup {
+			if ui.picking_sticker {
+				job := sticker_job_add(.Import)
+				job.input = strings.clone(path)
+			} else if ui.picking_backup {
 				backup_stage(&ui, path)
 			} else if ui.picking_emoji {
 				stage_emoji(&ui, path)
@@ -1870,6 +1875,7 @@ app_main :: proc() {
 			delete(path)
 		}
 		if len(picked) > 0 {
+			ui.picking_sticker = false
 			ui.picking_emoji = false
 			ui.picking_gpic = false
 			ui.picking_ppic = false
@@ -1936,6 +1942,8 @@ app_main :: proc() {
 			handle_backup(&ui)
 		} else if ui.vault_pw_open {
 			handle_vault_pw(&ui)
+		} else if ui.sticker_open {
+			handle_sticker_panel(&ui)
 		} else if ui.gs_open {
 			handle_gsearch(&ui, client)
 		} else if len(ui.accounts) > 0 &&
@@ -2237,6 +2245,7 @@ app_main :: proc() {
 	stop_pic_worker()
 	auth_stop()
 	for worker in send_threads {thread.join(worker); thread.destroy(worker)}
+	sticker_stop()
 	delete(send_threads)
 	timeline_stop()
 	members_stop()

@@ -689,6 +689,31 @@ emoji_picker :: proc(ui: ^Ui_State) {
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
+		if ui.picker_target == "" && !ui.adding_quick {
+			if clay.UI(clay.ID("PickerTabs"))(
+			{layout = {sizing = {width = clay.SizingGrow()}, childGap = 6}},
+			) {
+				sticker_control(
+					"PickerEmoji",
+					0,
+					tr("Emoji"),
+					!ui.sticker_tab ? .Selected : .Normal,
+				)
+				sticker_control(
+					"PickerStickers",
+					0,
+					tr("Stickers"),
+					ui.sticker_tab ? .Selected : .Normal,
+				)
+				if ui.sticker_tab {
+					if clay.UI(clay.ID("PickerTabGap"))(
+					{layout = {sizing = {width = clay.SizingGrow()}}},
+					) {}
+					sticker_control("StickerManage", 0, tr("Manage"))
+				}
+			}
+			if ui.sticker_tab {sticker_picker(ui); return}
+		}
 		eyebrow("RECENT")
 		if clay.UI(clay.ID("PkRecentRow"))({layout = {childGap = 2}}) {
 			for recent, i in ui.recent_emoji {

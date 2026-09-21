@@ -97,13 +97,20 @@ offline_roundtrip :: proc(t: ^testing.T) {
 
 	ui: Ui_State
 	p := Pending_Send {
-		ticket   = 1,
+		ticket = 1,
+		effect = 3,
+		sticker = {
+			pack = "30031:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:tiny",
+			code = "ok",
+			sha = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+			relay = "wss://relay.example",
+		},
 		group_id = "g1",
-		sender   = "you",
-		body     = "hello",
+		sender = "you",
+		body = "hello",
 		reply_to = "r1",
 		attempts = 2,
-		queued   = true,
+		queued = true,
 	}
 	append(
 		&p.atts,
@@ -116,6 +123,10 @@ offline_roundtrip :: proc(t: ^testing.T) {
 	load_offline(&restored)
 	testing.expect_value(t, len(restored.pending), 1)
 	q := restored.pending[0]
+	testing.expect_value(t, q.effect, 3)
+	testing.expect_value(t, q.sticker.pack, p.sticker.pack)
+	testing.expect_value(t, q.sticker.sha, p.sticker.sha)
+	testing.expect_value(t, q.sticker.relay, p.sticker.relay)
 	testing.expect_value(t, q.body, "hello")
 	testing.expect_value(t, q.reply_to, "r1")
 	testing.expect_value(t, q.attempts, 2)

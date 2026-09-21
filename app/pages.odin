@@ -15,6 +15,7 @@ import rl "sdlrl"
 import marmot "../marmot"
 
 handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if ui.sticker_open {handle_sticker_panel(ui); return}
 	// The revealed nsec lives only while the Keys page is on screen.
 	if ui.page != .Settings || ui.settings_section != .Keys {
 		keys_forget(ui)
