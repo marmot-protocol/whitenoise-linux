@@ -848,11 +848,13 @@ Media_Upload_Attachment_Request :: struct {
 }
 
 Media_Upload_Request :: struct {
-	attachments:     [^]Media_Upload_Attachment_Request,
-	attachments_len: uint,
-	caption:         cstring, // nullable
-	send:            bool,
-	blossom_server:  cstring, // nullable
+	message_tags:     [^]Message_Tag,
+	message_tags_len: uint,
+	attachments:      [^]Media_Upload_Attachment_Request,
+	attachments_len:  uint,
+	caption:          cstring, // nullable
+	send:             bool,
+	blossom_server:   cstring, // nullable
 }
 
 Media_Upload_Attachment_Result :: struct {
@@ -898,7 +900,7 @@ Timeline_Page :: struct {
 #assert(size_of(Media_Attachment_Reference) == 88)
 #assert(size_of(Media_Attachment_Outcome) == 104)
 #assert(offset_of(Media_Attachment_Outcome, body) == 8)
-#assert(size_of(Media_Upload_Request) == 40)
+#assert(size_of(Media_Upload_Request) == 56)
 #assert(size_of(Media_Upload_Attachment_Request) == 48)
 #assert(size_of(Media_Upload_Result) == 24)
 #assert(size_of(Media_Upload_Attachment_Result) == 96)
@@ -1263,6 +1265,7 @@ foreign lib {
 	// (borrowed, MarmotStringArray rows == Message_Tag layout). Carries
 	// NIP-88 polls/votes and thread messages.
 	send_custom_event :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, kind: u64, tags: [^]Message_Tag, tags_len: uint, content: cstring, out: ^^Send_Summary) -> Status ---
+	send_tagged_text :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, tags: [^]Message_Tag, tags_len: uint, content: cstring, out: ^^Send_Summary) -> Status ---
 	// An imeta tag for an uploaded reference, so a custom event can
 	// carry media the timeline resolves like a kind-9's.
 	build_media_imeta_tag :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, reference: ^Media_Attachment_Reference, out: ^^Message_Tag) -> Status ---

@@ -1,0 +1,685 @@
+--- a/crates/agent-connector/src/messaging.rs
++++ b/crates/agent-connector/src/messaging.rs
+@@ -626,6 +626,7 @@
+                 &account.label,
+                 &group_id,
+                 MediaUploadRequest {
++                    message_tags: Vec::new(),
+                     attachments: upload_attachments,
+                     caption,
+                     send: true,
+--- a/crates/marmot-app/src/client/audit.rs
++++ b/crates/marmot-app/src/client/audit.rs
+@@ -131,7 +131,9 @@
+         intent: &AppMessageIntent,
+     ) -> Option<AuditEventContext> {
+         let (action, target_count): (&'static str, Option<u64>) = match intent {
+-            AppMessageIntent::Chat { .. } => ("send_message", None),
++            AppMessageIntent::Chat { .. } | AppMessageIntent::TaggedChat { .. } => {
++                ("send_message", None)
++            }
+             AppMessageIntent::Reply { .. } => ("reply_message", None),
+             AppMessageIntent::Edit { .. } => ("edit_message", None),
+             AppMessageIntent::Reaction { .. } => ("react", None),
+--- a/crates/marmot-app/src/client/mod.rs
++++ b/crates/marmot-app/src/client/mod.rs
+@@ -167,6 +167,7 @@
+     media_secret: SecretBytes,
+     should_send: bool,
+     caption: Option<String>,
++    message_tags: Vec<Vec<String>>,
+ }
+ 
+ pub(crate) struct EncryptedMediaDownloadHttp {
+@@ -3692,7 +3693,9 @@
+             AppMessageIntent::Report { .. } | AppMessageIntent::DismissReports { .. } => {
+                 (Family::MessageAction, "custom")
+             }
+-            AppMessageIntent::Chat { .. } => (Family::MessageAction, "text"),
++            AppMessageIntent::Chat { .. } | AppMessageIntent::TaggedChat { .. } => {
++                (Family::MessageAction, "text")
++            }
+             AppMessageIntent::Reply { .. } => (Family::MessageAction, "reply"),
+             AppMessageIntent::Reaction { .. } => (Family::MessageAction, "reaction"),
+             AppMessageIntent::Unreact { .. } | AppMessageIntent::DeleteReactions { .. } => {
+@@ -4463,6 +4466,7 @@
+             self.validate_draft_media_references(group, &attachments)?;
+             (
+                 AppMessageIntent::Media {
++                    message_tags: Vec::new(),
+                     attachments,
+                     caption: Some(draft.content),
+                 },
+@@ -4531,6 +4535,7 @@
+             .send_app_event(
+                 group_id,
+                 AppMessageIntent::Media {
++                    message_tags: Vec::new(),
+                     attachments,
+                     caption,
+                 },
+@@ -4626,6 +4631,8 @@
+         let (source_epoch, media_secret) = self.encrypted_media_secret(group_id)?;
+         let account = self.app.account_home().account(&self.state.label)?;
+         let signer = self.app.account_signer_for_summary(&account)?;
++        crate::messages::validate_message_tags(&request.message_tags)?;
++        let message_tags = request.message_tags.clone();
+         let should_send = request.send;
+         let caption = request.caption.clone();
+         Ok((
+@@ -4646,6 +4653,7 @@
+                 media_secret,
+                 should_send,
+                 caption,
++                message_tags,
+             },
+         ))
+     }
+@@ -4658,13 +4666,23 @@
+         if !finish.should_send {
+             return Ok(result);
+         }
+-        let attachments = result
++        let attachments: Vec<_> = result
+             .attachments
+             .iter()
+             .map(|attachment| attachment.reference.clone())
+             .collect();
+-        let summary = self
+-            .send_media_attachments(&finish.group_id, attachments, finish.caption)
++        self.ensure_group_application_messages_allowed(&finish.group_id)?;
++        self.sync_runtime_groups().await?;
++        self.validate_draft_media_references(&finish.group_id, &attachments)?;
++        let (_, summary) = self
++            .send_app_event(
++                &finish.group_id,
++                AppMessageIntent::Media {
++                    attachments,
++                    caption: finish.caption,
++                    message_tags: finish.message_tags,
++                },
++            )
+             .await?;
+         // The post-publish projection now durably references this source
+         // epoch. Persist again so a prior final-reference retirement cannot
+--- a/crates/marmot-app/src/client/push.rs
++++ b/crates/marmot-app/src/client/push.rs
+@@ -671,6 +671,7 @@
+ ) -> Option<notifications::NotificationTrigger> {
+     match intent {
+         AppMessageIntent::Chat { .. }
++        | AppMessageIntent::TaggedChat { .. }
+         | AppMessageIntent::Reply { .. }
+         | AppMessageIntent::Media { .. }
+         | AppMessageIntent::StreamFinal { .. } => {
+--- a/crates/marmot-app/src/media/mod.rs
++++ b/crates/marmot-app/src/media/mod.rs
+@@ -643,6 +643,7 @@
+ 
+ #[derive(Clone, Debug, PartialEq, Eq)]
+ pub struct MediaUploadRequest {
++    pub message_tags: Vec<Vec<String>>,
+     pub attachments: Vec<MediaUploadAttachmentRequest>,
+     pub caption: Option<String>,
+     pub send: bool,
+--- a/crates/marmot-app/src/media/tests.rs
++++ b/crates/marmot-app/src/media/tests.rs
+@@ -655,6 +655,7 @@
+ 
+ fn media_upload_request(blossom_server: Option<String>) -> MediaUploadRequest {
+     MediaUploadRequest {
++        message_tags: Vec::new(),
+         attachments: vec![MediaUploadAttachmentRequest {
+             file_name: "diagram.png".to_owned(),
+             media_type: "image/png".to_owned(),
+@@ -791,6 +792,7 @@
+     let keys = signing_keys();
+     let plaintext_len = 64 * 1024 * 1024 + 1;
+     let request = MediaUploadRequest {
++        message_tags: Vec::new(),
+         attachments: vec![MediaUploadAttachmentRequest {
+             file_name: "release.apk".to_owned(),
+             media_type: "application/vnd.android.package-archive".to_owned(),
+--- a/crates/marmot-app/src/messages/intents.rs
++++ b/crates/marmot-app/src/messages/intents.rs
+@@ -201,6 +201,10 @@
+     Chat {
+         content: String,
+     },
++    TaggedChat {
++        content: String,
++        tags: Vec<Vec<String>>,
++    },
+     Reaction {
+         target_message_id: String,
+         emoji: String,
+@@ -226,6 +230,7 @@
+     Media {
+         attachments: Vec<MediaAttachmentReference>,
+         caption: Option<String>,
++        message_tags: Vec<Vec<String>>,
+     },
+     StreamStart {
+         stream_id: Vec<u8>,
+@@ -312,6 +317,16 @@
+             mention_p_tags(content),
+             content.clone(),
+         )),
++        AppMessageIntent::TaggedChat { content, tags } => {
++            validate_message_tags(tags)?;
++            let mut tags = tags.clone();
++            for mention in mention_p_tags(content) {
++                if !tags.contains(&mention) {
++                    tags.push(mention);
++                }
++            }
++            Ok(event(MARMOT_APP_EVENT_KIND_CHAT, tags, content.clone()))
++        }
+         AppMessageIntent::Reaction {
+             target_message_id,
+             emoji,
+@@ -441,7 +456,9 @@
+         AppMessageIntent::Media {
+             attachments,
+             caption,
++            message_tags,
+         } => {
++            validate_message_tags(message_tags)?;
+             if attachments.is_empty() {
+                 return Err(AppError::InvalidAppMessagePayload(
+                     "media message requires at least one attachment".into(),
+@@ -464,6 +481,7 @@
+                 .iter()
+                 .map(MediaAttachmentReference::imeta_tag)
+                 .collect();
++            tags.extend(message_tags.iter().cloned());
+             if let Some(caption) = caption {
+                 tags.extend(mention_p_tags(caption));
+             }
+@@ -715,6 +733,29 @@
+     RESERVED_APP_EVENT_KINDS.contains(&kind)
+ }
+ 
++// Application tags may decorate chat, but encrypted media references remain typed.
++pub(crate) fn validate_message_tags(tags: &[Vec<String>]) -> Result<(), AppError> {
++    if tags.len() > 64 || tags.iter().flatten().map(String::len).sum::<usize>() > 16 * 1024 {
++        return Err(AppError::InvalidAppMessagePayload(
++            "message tags exceed limits".into(),
++        ));
++    }
++    for tag in tags {
++        if tag.is_empty() || tag[0].is_empty() || tag[0] == "imeta" {
++            return Err(AppError::InvalidAppMessagePayload(
++                "invalid additional message tag".into(),
++            ));
++        }
++        if tag[0] == "e" || tag[0] == "q" {
++            let target = tag.get(1).ok_or_else(|| {
++                AppError::InvalidAppMessagePayload("missing message reference".into())
++            })?;
++            validate_message_ref(target)?;
++        }
++    }
++    Ok(())
++}
++
+ fn validate_custom_event_kind(kind: u64) -> Result<(), AppError> {
+     if is_reserved_app_event_kind(kind) {
+         return Err(AppError::InvalidAppMessagePayload(format!(
+@@ -1088,3 +1129,49 @@
+         }
+     }
+ }
++
++#[cfg(test)]
++mod application_tag_tests {
++    use super::*;
++    #[test]
++    fn message_application_tags() {
++        let pk = nostr::Keys::generate().public_key().to_hex();
++        let reference = "ab".repeat(32);
++        let tags = vec![
++            vec!["effect".into(), "party".into()],
++            vec!["q".into(), reference.clone()],
++        ];
++        let intent = AppMessageIntent::TaggedChat {
++            content: "hello".into(),
++            tags: tags.clone(),
++        };
++        let event = build_inner_event(&intent, &pk, 1).unwrap();
++        assert_eq!(event.kind, MARMOT_APP_EVENT_KIND_CHAT);
++        assert_eq!(event.tags, tags);
++        let media = AppMessageIntent::Media {
++            attachments: vec![MediaAttachmentReference {
++                locators: vec![],
++                ciphertext_sha256: reference.clone(),
++                plaintext_sha256: reference.clone(),
++                nonce_hex: "11".repeat(12),
++                file_name: "sticker.png".into(),
++                media_type: "image/png".into(),
++                version: "encrypted-media-v2".into(),
++                source_epoch: 1,
++                dim: None,
++                thumbhash: None,
++            }],
++            caption: None,
++            message_tags: tags.clone(),
++        };
++        let event = build_inner_event(&media, &pk, 1).unwrap();
++        assert_eq!(event.kind, MARMOT_APP_EVENT_KIND_CHAT);
++        assert_eq!(event.tags[0][0], "imeta");
++        assert_eq!(&event.tags[1..], tags);
++        assert!(validate_message_tags(&[vec!["imeta".into(), "forged".into()]]).is_err());
++        assert!(validate_message_tags(&[vec!["q".into(), " ".into()]]).is_err());
++        assert!(validate_message_tags(&vec![vec!["effect".into()]; 65]).is_err());
++        assert!(validate_custom_event_kind(MARMOT_APP_EVENT_KIND_CHAT).is_err());
++    }
++
++}
+--- a/crates/marmot-app/src/messages/mod.rs
++++ b/crates/marmot-app/src/messages/mod.rs
+@@ -3,6 +3,7 @@
+ pub(crate) use intents::{
+     AppMessageIntent, MAX_MARKDOWN_MENTION_SCAN_BYTES, PUBKEY_REF_TAG, STREAM_ROUTE_QUIC,
+     build_inner_event, build_inner_event_with_media_reply, encode_inner_event,
+-    inline_mention_pubkey_hexes, mention_pubkey_hex, validate_reaction_content,
++    inline_mention_pubkey_hexes, mention_pubkey_hex, validate_message_tags,
++    validate_reaction_content,
+ };
+ pub use intents::{is_reserved_app_event_kind, is_stream_final_event, tag_value, tag_values};
+--- a/crates/marmot-app/src/runtime/mod.rs
++++ b/crates/marmot-app/src/runtime/mod.rs
+@@ -2345,6 +2345,29 @@
+         Ok(summary)
+     }
+ 
++    pub async fn send_tagged_text(
++        &self,
++        account_ref: &str,
++        group_id: &GroupId,
++        content: String,
++        tags: Vec<Vec<String>>,
++    ) -> Result<SendSummary, AppError> {
++        let summary = self
++            .accounts
++            .send_app_event(
++                account_ref,
++                group_id,
++                AppMessageIntent::TaggedChat { content, tags },
++            )
++            .await?;
++        let _ = self.publish_chat_list_projection_refresh(
++            account_ref,
++            &hex::encode(group_id.as_slice()),
++            ChatListUpdateTrigger::NewLastMessage,
++        );
++        Ok(summary)
++    }
++
+     pub async fn send_agent_activity(
+         &self,
+         account_ref: &str,
+@@ -3219,6 +3242,7 @@
+                 account_ref,
+                 group_id,
+                 AppMessageIntent::Media {
++                    message_tags: Vec::new(),
+                     attachments,
+                     caption,
+                 },
+--- a/crates/marmot-app/src/tests.rs
++++ b/crates/marmot-app/src/tests.rs
+@@ -5198,6 +5198,7 @@
+         .send_app_event(
+             &group_id,
+             AppMessageIntent::Media {
++                message_tags: Vec::new(),
+                 attachments: vec![pinned_elsewhere],
+                 caption: None,
+             },
+@@ -5256,6 +5257,7 @@
+         .send_app_event(
+             &group_id,
+             AppMessageIntent::Media {
++                message_tags: Vec::new(),
+                 attachments: vec![current],
+                 caption: None,
+             },
+@@ -13156,6 +13158,7 @@
+ #[test]
+ fn media_intent_builds_kind_nine_with_ordered_imeta_tags() {
+     let event = build(AppMessageIntent::Media {
++        message_tags: Vec::new(),
+         attachments: vec![
+             MediaAttachmentReference {
+                 locators: vec![MediaLocator {
+@@ -13533,6 +13536,7 @@
+     // keeps a structurally well-formed media reference regardless of locator
+     // policy; fetchability is decided later at download time.
+     let event = build(AppMessageIntent::Media {
++        message_tags: Vec::new(),
+         attachments: vec![MediaAttachmentReference {
+             // A locator kind that is not the default `blossom-v1` and would be
+             // out of a blossom-only policy.
+@@ -13570,6 +13574,7 @@
+ 
+ fn malformed_media_message(version: &str) -> Vec<u8> {
+     let mut event = build(AppMessageIntent::Media {
++        message_tags: Vec::new(),
+         attachments: vec![MediaAttachmentReference {
+             locators: vec![MediaLocator {
+                 kind: "blossom-v1".to_owned(),
+--- a/crates/marmot-app/src/tests/draft_lifecycle.rs
++++ b/crates/marmot-app/src/tests/draft_lifecycle.rs
+@@ -235,6 +235,7 @@
+     reference.source_epoch = epoch;
+     let invalid = crate::messages::build_inner_event_with_media_reply(
+         &AppMessageIntent::Media {
++            message_tags: Vec::new(),
+             attachments: vec![reference.clone()],
+             caption: Some("caption".into()),
+         },
+--- a/crates/marmot-app/tests/relay_runtime.rs
++++ b/crates/marmot-app/tests/relay_runtime.rs
+@@ -8481,6 +8481,98 @@
+ }
+ 
+ #[tokio::test]
++async fn sticker_tags_reach_peer() {
++    let dir = tempfile::tempdir().unwrap();
++    let (_relay, app, url) = mock_app(&dir).await;
++    let blossom = mock_blossom().await;
++    let runtime = MarmotAppRuntime::new(app.clone());
++    let setup = AccountSetupRequest {
++        default_relays: vec![endpoint(&url)],
++        bootstrap_relays: vec![endpoint(&url)],
++        publish_initial_key_package: true,
++        ..Default::default()
++    };
++    let alice = create_network_ready_identity(&runtime, setup.relay_options_only())
++        .await
++        .account;
++    let bob = create_network_ready_identity(&runtime, setup).await.account;
++    let a = &alice.account_id_hex;
++    let b = &bob.account_id_hex;
++    let mut events = runtime.subscribe();
++    let group = runtime
++        .create_group(a, "stickers", std::slice::from_ref(b), None)
++        .await
++        .unwrap();
++    wait_for_event(&mut events, |event| matches!(event, MarmotAppEvent::GroupJoined { account_id_hex, group_id, .. } if account_id_hex == b && group_id == &group)).await;
++    accept_group_invite_retrying_busy(&runtime, b, &group)
++        .await
++        .unwrap();
++    let reply = runtime
++        .send_message(a, &group, b"reply target".to_vec())
++        .await
++        .unwrap();
++    let plaintext = b"sticker payload".to_vec();
++    let tags = vec![
++        vec!["effect".into(), "party".into()],
++        vec![
++            "wn-sticker".into(),
++            hex::encode(Sha256::digest(&plaintext)),
++            "marmot".into(),
++        ],
++        vec!["e".into(), reply.message_ids[0].clone()],
++        vec!["q".into(), reply.message_ids[0].clone()],
++    ];
++    let upload = runtime
++        .upload_media(
++            a,
++            &group,
++            MediaUploadRequest {
++                message_tags: tags.clone(),
++                attachments: vec![MediaUploadAttachmentRequest {
++                    file_name: "sticker.png".into(),
++                    media_type: "image/png".into(),
++                    plaintext: plaintext.clone(),
++                    dim: None,
++                    thumbhash: None,
++                }],
++                caption: None,
++                send: true,
++                blossom_server: Some(blossom.url.clone()),
++            },
++        )
++        .await
++        .unwrap();
++    let id = &upload.sent.as_ref().unwrap().message_ids[0];
++    wait_for_event(&mut events, |event| matches!(event, MarmotAppEvent::MessageReceived(m) if &m.account_id_hex == b && &m.message.message_id_hex == id)).await;
++    let received = app
++        .message_by_id(&bob.label, &hex::encode(group.as_slice()), id)
++        .unwrap()
++        .unwrap();
++    for tag in &tags {
++        assert!(received.tags.contains(tag));
++    }
++    let downloaded = runtime
++        .download_media(b, &group, upload.attachments[0].reference.clone())
++        .await
++        .unwrap();
++    assert_eq!(downloaded.plaintext, plaintext);
++    let effects = vec![vec!["effect".into(), "party".into()]];
++    let sent = runtime
++        .send_tagged_text(a, &group, "with an effect".into(), effects.clone())
++        .await
++        .unwrap();
++    let id = &sent.message_ids[0];
++    wait_for_event(&mut events, |event| matches!(event, MarmotAppEvent::MessageReceived(m) if &m.account_id_hex == b && &m.message.message_id_hex == id)).await;
++    let received = app
++        .message_by_id(&bob.label, &hex::encode(group.as_slice()), id)
++        .unwrap()
++        .unwrap();
++    assert_eq!(received.plaintext, "with an effect");
++    assert!(received.tags.contains(&effects[0]));
++    runtime.shutdown().await;
++}
++
++#[tokio::test]
+ async fn encrypted_media_upload_sends_ciphertext_and_download_decrypts_plaintext() {
+     let dir = tempfile::tempdir().unwrap();
+     let home = AccountHome::open(dir.path());
+@@ -8509,6 +8601,7 @@
+         .upload_media(
+             &group_id,
+             MediaUploadRequest {
++                message_tags: Vec::new(),
+                 attachments: vec![
+                     MediaUploadAttachmentRequest {
+                         file_name: "note.txt".to_owned(),
+@@ -8635,6 +8728,7 @@
+         .upload_media(
+             &group_id,
+             MediaUploadRequest {
++                message_tags: Vec::new(),
+                 attachments: vec![MediaUploadAttachmentRequest {
+                     file_name: "repeat.txt".to_owned(),
+                     media_type: "text/plain".to_owned(),
+@@ -8662,6 +8756,7 @@
+         .upload_media(
+             &group_id,
+             MediaUploadRequest {
++                message_tags: Vec::new(),
+                 attachments: vec![MediaUploadAttachmentRequest {
+                     file_name: "bob.txt".to_owned(),
+                     media_type: "text/plain".to_owned(),
+@@ -8697,6 +8792,7 @@
+         .upload_media(
+             &group_id,
+             MediaUploadRequest {
++                message_tags: Vec::new(),
+                 attachments: vec![MediaUploadAttachmentRequest {
+                     file_name: "third.txt".to_owned(),
+                     media_type: "text/plain".to_owned(),
+@@ -8752,6 +8848,7 @@
+         .upload_media(
+             &group_id,
+             MediaUploadRequest {
++                message_tags: Vec::new(),
+                 attachments: vec![MediaUploadAttachmentRequest {
+                     file_name: "expired.txt".to_owned(),
+                     media_type: "text/plain".to_owned(),
+@@ -8816,6 +8913,7 @@
+         .upload_media(
+             &group_id,
+             MediaUploadRequest {
++                message_tags: Vec::new(),
+                 attachments: vec![MediaUploadAttachmentRequest {
+                     file_name: "retained.txt".to_owned(),
+                     media_type: "text/plain".to_owned(),
+@@ -8977,6 +9075,7 @@
+         .upload_media(
+             &group_id,
+             MediaUploadRequest {
++                message_tags: Vec::new(),
+                 attachments: vec![MediaUploadAttachmentRequest {
+                     file_name: "note.txt".to_owned(),
+                     media_type: "text/plain".to_owned(),
+--- a/crates/marmot-c/include/marmot.h
++++ b/crates/marmot-c/include/marmot.h
+@@ -3444,6 +3444,8 @@
+  * A full upload request. Borrowed input only.
+  */
+ typedef struct MarmotMediaUploadRequest {
++  const struct MarmotStringArray *message_tags;
++  uintptr_t message_tags_len;
+   const struct MarmotMediaUploadAttachmentRequest *attachments;
+   uintptr_t attachments_len;
+   /**
+@@ -8201,6 +8203,10 @@
+                                           const struct MarmotMediaAttachmentReference *reference,
+                                           struct MarmotMessageTag **out);
+ 
++/** Send kind-9 text with additional tags. The tags and output follow
++ * marmot_send_custom_event ownership rules. imeta tags are rejected. */
++MarmotStatus marmot_send_tagged_text(const struct MarmotClient *client, const char *account_ref, const char *group_id_hex, const struct MarmotStringArray *tags, uintptr_t tags_len, const char *content, struct MarmotSendSummary **out);
++
+ /**
+  * Send a custom application event into the group. `tags` is a flat
+  * array of `tags_len` tag rows, each row a `(char **, len)` pair of
+--- a/crates/marmot-c/src/commands.rs
++++ b/crates/marmot-c/src/commands.rs
+@@ -2252,6 +2252,47 @@
+     })
+ }
+ 
++/// Send kind-9 text with additional application tags. `tags` is a flat
++/// array of `tags_len` tag rows, each row a `(char **, len)` pair of
++/// string values. Free with `marmot_send_summary_free`.
++///
++/// # Safety
++/// `client` must be a live handle; strings valid; `tags` must point to
++/// `tags_len` valid rows (or be NULL with length 0), each row's values
++/// pointer holding its stated length; `out` valid.
++#[unsafe(no_mangle)]
++pub unsafe extern "C" fn marmot_send_tagged_text(
++    client: *const MarmotClient,
++    account_ref: *const c_char,
++    group_id_hex: *const c_char,
++    tags: *const MarmotStringArray,
++    tags_len: usize,
++    content: *const c_char,
++    out: *mut *mut MarmotSendSummary,
++) -> MarmotStatus {
++    ffi_guard(|| {
++        try_arg!(unsafe { crate::preflight_out_ptr(out) });
++        let client = try_arg!(unsafe { client_ref(client) });
++        let account_ref = try_arg!(unsafe { required_str(account_ref) });
++        let group_id_hex = try_arg!(unsafe { required_str(group_id_hex) });
++        let content = try_arg!(unsafe { required_str(content) });
++        let tags = try_arg!(unsafe {
++            struct_array(tags, tags_len, |row| str_array(row.values, row.values_len))
++        });
++        unsafe {
++            deliver(
++                client.block_on(client.marmot.send_tagged_text(
++                    account_ref,
++                    group_id_hex,
++                    content,
++                    tags,
++                )),
++                out,
++            )
++        }
++    })
++}
++
+ /// Send a custom application event into the group. `tags` is a flat
+ /// array of `tags_len` tag rows, each row a `(char **, len)` pair of
+ /// string values. Free with `marmot_send_summary_free`.
+--- a/crates/marmot-c/src/types/media.rs
++++ b/crates/marmot-c/src/types/media.rs
+@@ -207,6 +207,8 @@
+ /// A full upload request. Borrowed input only.
+ #[repr(C)]
+ pub struct MarmotMediaUploadRequest {
++    pub message_tags: *const super::common::MarmotStringArray,
++    pub message_tags_len: usize,
+     pub attachments: *const MarmotMediaUploadAttachmentRequest,
+     pub attachments_len: usize,
+     /// Nullable.
+@@ -232,6 +234,11 @@
+             attachments.push(unsafe { (*self.attachments.add(i)).to_ffi() }?);
+         }
+         Ok(MediaUploadRequestFfi {
++            message_tags: unsafe {
++                crate::commands::struct_array(self.message_tags, self.message_tags_len, |row| {
++                    crate::memory::str_array(row.values, row.values_len)
++                })
++            }?,
+             attachments,
+             caption: unsafe { optional_str(self.caption) }?,
+             send: c_bool(self.send),
+--- a/crates/marmot-uniffi/src/commands/message.rs
++++ b/crates/marmot-uniffi/src/commands/message.rs
+@@ -32,6 +32,21 @@
+         Ok(summary.into())
+     }
+ 
++    pub async fn send_tagged_text(
++        &self,
++        account_ref: String,
++        group_id_hex: String,
++        text: String,
++        tags: Vec<Vec<String>>,
++    ) -> Result<SendSummaryFfi, MarmotKitError> {
++        let group_id = group_id_from_hex(&group_id_hex)?;
++        Ok(self
++            .runtime
++            .send_tagged_text(&account_ref, &group_id, text, tags)
++            .await?
++            .into())
++    }
++
+     /// Re-attempt publishing a group's pending (committed-but-undelivered)
+     /// commit(s) without minting a new event.
+     ///
+--- a/crates/marmot-uniffi/src/conversions/media.rs
++++ b/crates/marmot-uniffi/src/conversions/media.rs
+@@ -271,6 +271,7 @@
+ 
+ #[derive(Clone, Debug, uniffi::Record)]
+ pub struct MediaUploadRequestFfi {
++    pub message_tags: Vec<Vec<String>>,
+     pub attachments: Vec<MediaUploadAttachmentRequestFfi>,
+     pub caption: Option<String>,
+     pub send: bool,
+@@ -281,6 +282,7 @@
+     fn from(value: MediaUploadRequestFfi) -> Self {
+         Self {
+             attachments: value.attachments.into_iter().map(Into::into).collect(),
++            message_tags: value.message_tags,
+             caption: value.caption,
+             send: value.send,
+             blossom_server: value.blossom_server,
+--- a/crates/marmot-uniffi/tests/smoke.rs
++++ b/crates/marmot-uniffi/tests/smoke.rs
+@@ -555,6 +555,7 @@
+         thumbhash: None,
+     };
+     let request = MediaUploadRequestFfi {
++        message_tags: Vec::new(),
+         attachments: vec![MediaUploadAttachmentRequestFfi {
+             file_name: "note.txt".into(),
+             media_type: "text/plain".into(),
