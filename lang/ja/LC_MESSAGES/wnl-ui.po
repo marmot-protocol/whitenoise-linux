@@ -2002,12 +2002,6 @@ msgstr ""
 msgid "Show as QR"
 msgstr "QR コードで表示"
 
-msgid "Show changes"
-msgstr "変更を表示"
-
-msgid "Show formatted"
-msgstr "書式付きで表示"
-
 #, fuzzy
 msgid "Show group members"
 msgstr "メンバーを表示"

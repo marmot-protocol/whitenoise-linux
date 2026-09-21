@@ -1851,12 +1851,6 @@ msgstr ""
 msgid "Show as QR"
 msgstr ""
 
-msgid "Show changes"
-msgstr ""
-
-msgid "Show formatted"
-msgstr ""
-
 msgid "Show group members"
 msgstr ""
 

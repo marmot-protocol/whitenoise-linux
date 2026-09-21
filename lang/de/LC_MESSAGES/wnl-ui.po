@@ -2002,12 +2002,6 @@ msgstr ""
 msgid "Show as QR"
 msgstr "Als QR anzeigen"
 
-msgid "Show changes"
-msgstr "Änderungen anzeigen"
-
-msgid "Show formatted"
-msgstr "Formatiert anzeigen"
-
 #, fuzzy
 msgid "Show group members"
 msgstr "Mitglieder anzeigen"

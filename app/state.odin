@@ -467,7 +467,6 @@ Ui_State :: struct {
 	hist_versions:                                         [dynamic]Edit_Version,
 	hist_ticket:                                           int,
 	hist_original:                                         bool,
-	hist_changes:                                          bool,
 	hist_open:                                             bool, // edit-history modal
 	hist_msg:                                              int, // index into messages
 	raw_open:                                              bool, // view-raw-event modal (dev mode)

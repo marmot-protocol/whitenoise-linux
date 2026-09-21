@@ -43,7 +43,6 @@ history_layout :: proc(t: ^testing.T) {
 	ui: Ui_State
 	ui.prefs.reduce_motion = true
 	ui.hist_original = true
-	ui.hist_changes = true
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil
 		for v in ui.hist_versions {delete(v.at); delete(v.text); blocks_free(v.blocks)}
@@ -62,6 +61,7 @@ history_layout :: proc(t: ^testing.T) {
 		),
 	)
 	for width in ([]i32{600, 320}) {
+		history_highlight(ui.hist_versions[:])
 		rl.SetWindowSize(width, 600)
 		clay.SetLayoutDimensions({f32(width), 600})
 		for frame in 0 ..< 3 {
@@ -108,11 +108,11 @@ history_layout :: proc(t: ^testing.T) {
 	}
 	for v in ui.hist_versions {delete(v.at); delete(v.text); blocks_free(v.blocks)}
 	clear(&ui.hist_versions)
-	ui.hist_changes = false
 	source := "## Heading\n\n**bold** and `code` with $x^2$.\n\n- item\n  - nested\n\n> quote\n\n| A | B |\n|---|---|\n| one | two |\n\n```python\nprint(1)\n```"
 	append(&ui.hist_versions, history_version(client, 0, source))
 	updated, _ := strings.replace_all(source, "bold", "updated", context.temp_allocator)
 	append(&ui.hist_versions, history_version(client, 60, updated))
+	history_highlight(ui.hist_versions[:])
 	for width in ([]i32{600, 320}) {
 		rl.SetWindowSize(width, 600)
 		clay.SetLayoutDimensions({f32(width), 600})
@@ -143,7 +143,7 @@ history_layout :: proc(t: ^testing.T) {
 					}
 				}
 			}
-			bold, literal := false, false
+			bold, literal, removed := false, false, false
 			modal := clay.GetElementData(clay.ID("HistModal")).boundingBox
 			for cmd in commands.internalArray[:commands.length] {
 				if cmd.commandType != .Text {continue}
@@ -151,6 +151,8 @@ history_layout :: proc(t: ^testing.T) {
 				shown := string(data.stringContents.chars[:data.stringContents.length])
 				if shown == "bold" {bold = data.fontId == FONT_TITLE}
 				literal = literal || u8(uintptr(cmd.userData)) & TEXT_MATH != 0
+				removed =
+					removed || (shown == "bold" && u8(uintptr(cmd.userData)) & TEXT_REMOVED != 0)
 				testing.expect(t, !strings.contains(shown, "**"))
 				testing.expect(
 					t,
@@ -158,7 +160,14 @@ history_layout :: proc(t: ^testing.T) {
 					shown,
 				)
 			}
-			testing.expect(t, bold && literal)
+			testing.expect(t, bold && literal && removed)
+			testing.expect(t, !clay.GetElementData(clay.ID("HistChanges")).found)
+			for block in ui.hist_versions[1].blocks {
+				if strings.has_prefix(
+					block.text,
+					"updated",
+				) {testing.expect(t, block.fonts[0] & TEXT_ADDED != 0)}
+			}
 			rl.BeginDrawing()
 			clay_raylib_render(&commands)
 			rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-history-markdown-%d.png", width))

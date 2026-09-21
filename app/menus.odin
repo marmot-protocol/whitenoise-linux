@@ -305,17 +305,10 @@ edit_history_modal :: proc(ui: ^Ui_State) {
 		if ui.hist_ticket !=
 		   0 {clay.Text(tr("Loading..."), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})}
 		edit_count := max(0, len(history) - (ui.hist_original ? 1 : 0))
-		if clay.UI(clay.ID("HistOptions"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
-		) {
-			clay.Text(
-				fmt.tprintf("%d edit%s", edit_count, edit_count == 1 ? "" : "s"),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
-			)
-			if clay.UI()({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-			if len(history) >
-			   1 {micro_button("HistChanges", ui.hist_changes ? N_("Show formatted") : N_("Show changes"))}
-		}
+		clay.Text(
+			fmt.tprintf("%d edit%s", edit_count, edit_count == 1 ? "" : "s"),
+			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+		)
 
 		if clay.UI(clay.ID("HistScroll"))(
 		{
@@ -374,13 +367,13 @@ edit_history_modal :: proc(ui: ^Ui_State) {
 							{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
 						)
 					}
-					if !ui.hist_changes && len(version.blocks) > 0 {
+					if len(version.blocks) > 0 {
 						md_blocks(
 							version.blocks[:],
 							0xD0000 + u32(i) * 0x10000,
 							wrap_w = edit_diff_wrap(),
 						)
-					} else if i == 0 || !ui.hist_changes {
+					} else {
 						body_text(
 							0xD0000 + u32(i) * 8,
 							version.text,
@@ -388,8 +381,6 @@ edit_history_modal :: proc(ui: ^Ui_State) {
 							TEXT,
 							wrap_w = edit_diff_wrap(),
 						)
-					} else {
-						diff_chips(u32(i), history[i - 1].text, version.text)
 					}
 				}
 			}
@@ -403,73 +394,6 @@ edit_history_modal :: proc(ui: ^Ui_State) {
 @(private)
 edit_diff_wrap :: proc() -> f32 {
 	return max(f32(1), modal_w(clay.ID("HistModal"), HISTORY_WIDTH) - 52 - f32(HISTORY_GUTTER))
-}
-
-// Word diff against the previous revision, flowing as wrapped word
-// chips: removed words on a danger-tinted plate in dim text, added on
-// the accent surface. Mention chips use the same measurement and drawing
-// as message bodies, so their raw npub never expands the row.
-diff_chips :: proc(version: u32, prev, next: string) {
-	runs := diff_words(prev, next)
-	if len(runs) == 0 {
-		body_text(0xD0000 + version * 8, next, 13, TEXT, wrap_w = edit_diff_wrap())
-		return
-	}
-
-	// A single word wider than the line budget (a pasted token) splits
-	// into rune-fit fragments so its chips wrap instead of overflowing.
-	split := make([dynamic]Diff_Run, context.temp_allocator)
-	for run in runs {
-		at := 0
-		for at < len(run.text) {
-			cut := rune_fit(run.text, at, len(run.text), edit_diff_wrap() - 16, 13, tile_px = 13)
-			append(&split, Diff_Run{run.kind, run.text[at:cut]})
-			at = cut
-		}
-	}
-	runs = split
-
-	i := 0
-	for line := u32(0); i < len(runs); line += 1 {
-		if clay.UI(clay.ID("DiffLine", version * 64 + line))(
-		{layout = {childGap = 4, childAlignment = {y = .Center}}},
-		) {
-			w: f32
-			for ; i < len(runs); i += 1 {
-				run := runs[i]
-				pad := run.kind == .Same ? f32(0) : 8
-				cw := rl.MeasureTextLine(FONT_BODY, 13, run.text, 0).x
-				if end, width := body_atom(run.text, 0, 13); end == len(run.text) {cw = width}
-				cw += pad
-				if w > 0 && w + cw > edit_diff_wrap() {
-					break
-				}
-				w += cw + 4
-
-				if run.kind == .Same {
-					body_line(0xD1000 + version * 1024 + u32(i), run.text, 13, TEXT, tile_px = 13)
-					continue
-				}
-				added := run.kind == .Added
-				plate := added ? SELECTED : clay.Color{DANGER.r, DANGER.g, DANGER.b, 46}
-				if clay.UI(clay.ID("DiffChip", version * 1024 + u32(i)))(
-				{
-					layout = {padding = {left = 4, right = 4, top = 1, bottom = 1}},
-					backgroundColor = plate,
-					cornerRadius = rr(4),
-				},
-				) {
-					body_line(
-						0xD1000 + version * 1024 + u32(i),
-						run.text,
-						13,
-						added ? ACCENT : TEXT_LO,
-						tile_px = 13,
-					)
-				}
-			}
-		}
-	}
 }
 
 RAW_MODAL_W :: f32(560)

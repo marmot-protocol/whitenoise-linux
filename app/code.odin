@@ -415,14 +415,24 @@ md_code_kinds :: proc(info, text: string) -> string {
 }
 
 @(private)
-md_code_text :: proc(text, kinds: string, size: u16) {
+md_code_text :: proc(text, kinds: string, size: u16, fonts: string = "") {
 	for at := 0; at < len(text); {
 		kind := len(kinds) > 0 ? Code_Kind(kinds[at]) : Code_Kind.Plain
 		end := at + 1
-		for end < len(text) && (len(kinds) == 0 || kinds[end] == kinds[at]) {end += 1}
+		for end < len(text) &&
+		    (len(kinds) == 0 || kinds[end] == kinds[at]) &&
+		    (len(fonts) == 0 || fonts[end] == fonts[at]) {end += 1}
 		clay.Text(
 			text[at:end],
-			{fontId = FONT_MONO, fontSize = size, textColor = code_color(kind), wrapMode = .None},
+			{
+				fontId = FONT_MONO,
+				fontSize = size,
+				textColor = code_color(kind),
+				wrapMode = .None,
+				userData = rawptr(
+					uintptr(len(fonts) > 0 ? fonts[at] & (TEXT_ADDED | TEXT_REMOVED) : 0),
+				),
+			},
 		)
 		at = end
 	}

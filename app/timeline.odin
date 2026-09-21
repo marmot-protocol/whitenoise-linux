@@ -1912,6 +1912,7 @@ inline_segs :: proc(
 			   plain_start {append(&segs, Inline_Seg{text = text[plain_start:i], fonts = text_fonts(fonts, plain_start, i)})}
 			seg := Inline_Seg {
 				text    = text[i:end],
+				fonts   = text_fonts(fonts, i, end),
 				bad_ref = ref.kind == .Invalid,
 			}
 			if ref.kind == .Profile {seg.hex = ref.key}
@@ -1955,7 +1956,10 @@ inline_segs :: proc(
 						},
 					)
 				}
-				append(&segs, Inline_Seg{text = text[i:end], hex = hx})
+				append(
+					&segs,
+					Inline_Seg{text = text[i:end], hex = hx, fonts = text_fonts(fonts, i, end)},
+				)
 				i = end
 				plain_start = end
 				continue
@@ -2167,7 +2171,16 @@ render_segs :: proc(
 				}
 				clay.Text(
 					fmt.tprintf("@%s", mention_label(seg.hex)),
-					{fontId = FONT_TITLE, fontSize = font_size, textColor = {255, 255, 255, 235}},
+					{
+						fontId = FONT_TITLE,
+						fontSize = font_size,
+						textColor = {255, 255, 255, 235},
+						userData = rawptr(
+							uintptr(
+								len(seg.fonts) > 0 ? seg.fonts[0] & (TEXT_ADDED | TEXT_REMOVED) : 0,
+							),
+						),
+					},
 				)
 			}
 		} else if seg.fx != 0 {
@@ -2773,6 +2786,7 @@ md_blocks :: proc(
 								block.text[line.start:line.end],
 								text_fonts(block.code_kinds, line.start, line.end),
 								13,
+								text_fonts(block.fonts, line.start, line.end),
 							)
 						}
 					}

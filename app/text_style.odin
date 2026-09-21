@@ -10,6 +10,10 @@ TEXT_STRIKE :: u8(8)
 TEXT_CODE :: u8(16)
 @(private)
 TEXT_MATH :: u8(32)
+@(private)
+TEXT_ADDED :: u8(64)
+@(private)
+TEXT_REMOVED :: u8(128)
 
 @(private)
 text_font :: proc(fonts: string, at: int) -> u16 {

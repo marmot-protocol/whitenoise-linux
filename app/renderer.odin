@@ -308,14 +308,17 @@ render_range :: proc(
 			config := render_command.renderData.text
 			text := string(config.stringContents.chars[:config.stringContents.length])
 			style := u8(uintptr(render_command.userData))
-			if style & (TEXT_CODE | TEXT_MATH) != 0 {
+			if style & (TEXT_CODE | TEXT_MATH | TEXT_ADDED | TEXT_REMOVED) != 0 {
+				plate := CODE_PLATE
+				if style & TEXT_ADDED != 0 {plate = fade(ACCENT, 0.22)}
+				if style & TEXT_REMOVED != 0 {plate = fade(DANGER, 0.22)}
 				rl.DrawRectangleRoundedPx(
 					bounds.x,
 					bounds.y,
 					bounds.width,
 					bounds.height,
 					2,
-					clay_color(CODE_PLATE),
+					clay_color(plate),
 				)
 			}
 			rl.DrawTextLine(
@@ -327,7 +330,7 @@ render_range :: proc(
 				f32(config.letterSpacing),
 				clay_color(config.textColor),
 			)
-			if style & TEXT_STRIKE != 0 {
+			if style & (TEXT_STRIKE | TEXT_REMOVED) != 0 {
 				rl.DrawRectangleRec(
 					bounds.x,
 					bounds.y + bounds.height / 2,

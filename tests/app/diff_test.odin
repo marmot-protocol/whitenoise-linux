@@ -6,6 +6,46 @@ import "core:strings"
 import "core:testing"
 
 @(test)
+history_markdown_diff :: proc(t: ^testing.T) {
+	versions := [2]Edit_Version{}
+	for &v, i in versions {
+		append(
+			&v.blocks,
+			Md_Block_Ui {
+				kind = .Para,
+				text = strings.clone(i == 0 ? "same before" : "same after"),
+				fonts = strings.repeat("\x01", i == 0 ? 11 : 10),
+			},
+		)
+		append(
+			&v.blocks,
+			Md_Block_Ui{kind = .Code, text = strings.clone(i == 0 ? "old()" : "new()")},
+		)
+		append(
+			&v.blocks,
+			Md_Block_Ui {
+				kind = .Para,
+				text = strings.clone("style"),
+				fonts = strings.repeat(i == 0 ? "\x00" : "\x01", 5),
+			},
+		)
+	}
+	defer {for v in versions {blocks_free(v.blocks)}}
+	history_highlight(versions[:])
+	for version, i in versions {
+		flag := i == 0 ? TEXT_REMOVED : TEXT_ADDED
+		testing.expect_value(t, version.blocks[0].fonts[0], u8(1))
+		testing.expect_value(t, version.blocks[0].fonts[5], u8(1) | flag)
+		testing.expect_value(t, version.blocks[1].fonts[0], u8(FONT_MONO) | flag)
+		testing.expect(
+			t,
+			version.blocks[2].fonts[0] & flag != 0,
+			"formatting-only edits are highlighted",
+		)
+	}
+}
+
+@(test)
 history_original_completion :: proc(t: ^testing.T) {
 	old := ops_done
 	ops_done = {}

@@ -1122,6 +1122,7 @@ drain_ops :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 					for i := len(d.history) - 1; i >= 0; i -= 1 {
 						for v in d.history[i].versions[:d.history[i].len] {append(&ui.hist_versions, history_version(client, v.edited_at, string(v.plaintext)))}
 					}
+					history_highlight(ui.hist_versions[:])
 				}
 			}
 			for page in d.history {marmot.edit_history_free(page)}
