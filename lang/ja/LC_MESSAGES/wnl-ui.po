@@ -43,6 +43,58 @@ msgstr ""
 msgid "%d votes"
 msgstr ""
 
+#, c-format
+msgid "%s added %s"
+msgstr "%sさんが%sさんを追加しました"
+
+#, c-format
+msgid "%s changed the disappearing message timer"
+msgstr "%sさんが消えるメッセージのタイマーを変更しました"
+
+#, c-format
+msgid "%s changed the group photo"
+msgstr "%sさんがグループ写真を変更しました"
+
+#, c-format
+msgid "%s disbanded the group"
+msgstr "%sさんがグループを解散しました"
+
+#, c-format
+msgid "%s dismissed %s as admin"
+msgstr "%sさんが%sさんの管理者権限を解除しました"
+
+#, c-format
+msgid "%s is no longer an admin"
+msgstr "%sさんは管理者ではなくなりました"
+
+#, c-format
+msgid "%s left the group"
+msgstr "%sさんがグループを退出しました"
+
+#, c-format
+msgid "%s made %s an admin"
+msgstr "%sさんが%sさんを管理者にしました"
+
+#, c-format
+msgid "%s removed %s"
+msgstr "%sさんが%sさんを削除しました"
+
+#, c-format
+msgid "%s renamed the group to %s"
+msgstr "%sさんがグループ名を%sに変更しました"
+
+#, c-format
+msgid "%s was added to the group"
+msgstr "%sさんがグループに追加されました"
+
+#, c-format
+msgid "%s was made an admin"
+msgstr "%sさんが管理者になりました"
+
+#, c-format
+msgid "%s was removed from the group"
+msgstr "%sさんがグループから削除されました"
+
 msgid "(none)"
 msgstr ""
 
@@ -2110,6 +2162,10 @@ msgstr "そのアカウントを追加できませんでした。鍵を確認し
 
 msgid "The chat leaves your list. Joining later needs a new invite."
 msgstr ""
+
+#, c-format
+msgid "The group was renamed to %s"
+msgstr "グループ名が%sに変更されました"
 
 msgid "The new password re-encrypts this device's keys. There is still no recovery: forgetting it means starting over from your nsec."
 msgstr ""

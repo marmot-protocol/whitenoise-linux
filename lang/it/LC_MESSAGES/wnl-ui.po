@@ -43,6 +43,58 @@ msgstr ""
 msgid "%d votes"
 msgstr ""
 
+#, c-format
+msgid "%s added %s"
+msgstr "%s ha aggiunto %s"
+
+#, c-format
+msgid "%s changed the disappearing message timer"
+msgstr "%s ha cambiato il timer dei messaggi a scomparsa"
+
+#, c-format
+msgid "%s changed the group photo"
+msgstr "%s ha cambiato la foto del gruppo"
+
+#, c-format
+msgid "%s disbanded the group"
+msgstr "%s ha sciolto il gruppo"
+
+#, c-format
+msgid "%s dismissed %s as admin"
+msgstr "%s ha revocato il ruolo di amministratore a %s"
+
+#, c-format
+msgid "%s is no longer an admin"
+msgstr "%s non è più amministratore"
+
+#, c-format
+msgid "%s left the group"
+msgstr "%s ha lasciato il gruppo"
+
+#, c-format
+msgid "%s made %s an admin"
+msgstr "%s ha nominato %s amministratore"
+
+#, c-format
+msgid "%s removed %s"
+msgstr "%s ha rimosso %s"
+
+#, c-format
+msgid "%s renamed the group to %s"
+msgstr "%s ha rinominato il gruppo in %s"
+
+#, c-format
+msgid "%s was added to the group"
+msgstr "%s è stato aggiunto al gruppo"
+
+#, c-format
+msgid "%s was made an admin"
+msgstr "%s è stato nominato amministratore"
+
+#, c-format
+msgid "%s was removed from the group"
+msgstr "%s è stato rimosso dal gruppo"
+
 msgid "(none)"
 msgstr ""
 
@@ -2110,6 +2162,10 @@ msgstr "Impossibile aggiungere questo account. Ricontrolla la chiave e riprova."
 
 msgid "The chat leaves your list. Joining later needs a new invite."
 msgstr ""
+
+#, c-format
+msgid "The group was renamed to %s"
+msgstr "Il gruppo è stato rinominato in %s"
 
 msgid "The new password re-encrypts this device's keys. There is still no recovery: forgetting it means starting over from your nsec."
 msgstr ""

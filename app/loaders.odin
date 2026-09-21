@@ -174,20 +174,17 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			continue
 		}
 
-		// A kind-1210 group-system row renders as a dim one-line
-		// sentence ("Alice added Bob"), no avatar or actions. A
-		// member_added row with a known subject splits into actor
-		// label + subject hex so the row can draw a mention chip and
-		// a wave button (system_row).
+		// System rows use the same mention chips as message bodies.
+		// Member additions also keep the subject for the wave button.
 		if record.kind == 1210 && record.group_system != nil {
 			sys := record.group_system
 			kind := sys.system_type != nil ? string(sys.system_type) : ""
-			actor := sys.actor_account_id_hex != nil ? string(sys.actor_account_id_hex) : ""
 			subject := sys.subject_account_id_hex != nil ? string(sys.subject_account_id_hex) : ""
 			is_add := kind == "member_added" && len(subject) > 0
 			msg := Msg_Ui{
 				id      = strings.clone(id_str),
 				body    = strings.clone(system_text(client, sys)),
+				sys_text = strings.clone(system_text(client, sys, .Mentions)),
 				at      = format_when(record.timeline_at),
 				at_full = format_full(record.timeline_at),
 				day     = format_day(record.timeline_at),
@@ -195,9 +192,6 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			}
 			if is_add {
 				msg.sys_added_hex = strings.clone(subject)
-				if len(actor) > 0 {
-					msg.sys_actor = strings.clone(profile_label(client, actor))
-				}
 			}
 			append(&ui.messages, msg)
 			continue
@@ -452,35 +446,68 @@ apply_pending_reacts :: proc(ui: ^Ui_State) {
 	}
 }
 
-// The system-line sentence for a kind-1210 record, the slint
-// system_event_text templates; marmot's own fallback text covers the
-// types not phrased here (disappearing-timer change). Temp-allocated.
-system_text :: proc(client: ^marmot.Client, ev: ^marmot.Group_System_Event) -> string {
-	actor, subject: string
-	if ev.actor_account_id_hex != nil && len(string(ev.actor_account_id_hex)) > 0 {
+@(private)
+System_Names :: enum { Labels, Mentions }
+
+// Keep known participants even when the authenticated event has no actor.
+// Mentions use the existing inline renderer; previews keep labels.
+system_text :: proc(client: ^marmot.Client, ev: ^marmot.Group_System_Event, names: System_Names = .Labels) -> string {
+	actor := ev.actor_display_name != nil ? string(ev.actor_display_name) : ""
+	subject := ev.subject_display_name != nil ? string(ev.subject_display_name) : ""
+	if len(actor) == 0 && ev.actor_account_id_hex != nil && len(string(ev.actor_account_id_hex)) > 0 {
 		actor = profile_label(client, string(ev.actor_account_id_hex))
 	}
-	if ev.subject_account_id_hex != nil && len(string(ev.subject_account_id_hex)) > 0 {
+	if len(subject) == 0 && ev.subject_account_id_hex != nil && len(string(ev.subject_account_id_hex)) > 0 {
 		subject = profile_label(client, string(ev.subject_account_id_hex))
+	}
+	if names == .Mentions {
+		if ev.actor_account_id_hex != nil {
+			if npub := hex_npub(string(ev.actor_account_id_hex)); len(npub) > 0 {
+				defer delete(npub)
+				actor = fmt.tprintf("nostr:%s", npub)
+			}
+		}
+		if ev.subject_account_id_hex != nil {
+			if npub := hex_npub(string(ev.subject_account_id_hex)); len(npub) > 0 {
+				defer delete(npub)
+				subject = fmt.tprintf("nostr:%s", npub)
+			}
+		}
 	}
 	kind := ev.system_type != nil ? string(ev.system_type) : ""
 	name := ev.name != nil ? string(ev.name) : ""
 
 	switch {
 	case kind == "member_added" && len(actor) > 0 && len(subject) > 0:
-		return fmt.tprintf("%s added %s", actor, subject)
+		return fmt.tprintf(tr("%s added %s"), actor, subject)
+	case kind == "member_added" && len(subject) > 0:
+		return fmt.tprintf(tr("%s was added to the group"), subject)
 	case kind == "member_removed" && len(actor) > 0 && len(subject) > 0:
-		return fmt.tprintf("%s removed %s", actor, subject)
+		return fmt.tprintf(tr("%s removed %s"), actor, subject)
+	case kind == "member_removed" && len(subject) > 0:
+		return fmt.tprintf(tr("%s was removed from the group"), subject)
 	case kind == "member_left" && len(subject) > 0:
-		return fmt.tprintf("%s left the group", subject)
+		return fmt.tprintf(tr("%s left the group"), subject)
+	case kind == "member_left" && len(actor) > 0:
+		return fmt.tprintf(tr("%s left the group"), actor)
 	case kind == "admin_added" && len(actor) > 0 && len(subject) > 0:
-		return fmt.tprintf("%s made %s an admin", actor, subject)
+		return fmt.tprintf(tr("%s made %s an admin"), actor, subject)
+	case kind == "admin_added" && len(subject) > 0:
+		return fmt.tprintf(tr("%s was made an admin"), subject)
 	case kind == "admin_removed" && len(actor) > 0 && len(subject) > 0:
-		return fmt.tprintf("%s dismissed %s as admin", actor, subject)
+		return fmt.tprintf(tr("%s dismissed %s as admin"), actor, subject)
+	case kind == "admin_removed" && len(subject) > 0:
+		return fmt.tprintf(tr("%s is no longer an admin"), subject)
 	case kind == "group_renamed" && len(actor) > 0 && len(name) > 0:
-		return fmt.tprintf("%s renamed the group to %s", actor, name)
+		return fmt.tprintf(tr("%s renamed the group to %s"), actor, name)
+	case kind == "group_renamed" && len(name) > 0:
+		return fmt.tprintf(tr("The group was renamed to %s"), name)
 	case kind == "group_avatar_changed" && len(actor) > 0:
-		return fmt.tprintf("%s changed the group photo", actor)
+		return fmt.tprintf(tr("%s changed the group photo"), actor)
+	case kind == "disappearing_timer_changed" && len(actor) > 0:
+		return fmt.tprintf(tr("%s changed the disappearing message timer"), actor)
+	case kind == "group_disbanded" && len(actor) > 0:
+		return fmt.tprintf(tr("%s disbanded the group"), actor)
 	}
 	return ev.text != nil ? string(ev.text) : ""
 }
