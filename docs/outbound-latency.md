@@ -1,5 +1,58 @@
 # Outbound latency investigation, 2026-09-21
 
+Push-enabled sends now reuse connected subscription sockets for their signed
+notification gift wraps. Previously notification publishing opened a separate
+connection after message publication, occupying the account worker until it
+finished. The existing signer-bound fallback still handles disconnected
+endpoints and explicit authentication rejection.
+
+Three alternating baseline/candidate pairs used isolated two-member groups,
+30 sequential messages per run, and the EU and US White Noise relays. Both
+builds included the unchanged-subscription guard below; the only measured
+network-path difference was notification connection reuse. Each send required
+a relay acknowledgement and independent receiver decryption. Release builds,
+no injected delay, push enabled with a synthetic token and generated server key:
+
+| Caller response, 90 sends per build | Before | After |
+| --- | ---: | ---: |
+| Mean | 525.8 ms | 210.7 ms |
+| p95 | 537.6 ms | 217.9 ms |
+| Maximum | 543.9 ms | 222.0 ms |
+
+Mean response decreased 59.9%. This measures the complete SDK send response,
+including push publication. It does not establish cross-platform rankings or
+explain every historical queue stall. Reproduce with:
+
+```sh
+cd vendor/mdk
+SEND_PUSH=1 SEND_RELAYS=wss://relay.eu.whitenoise.chat,wss://relay.us.whitenoise.chat \
+  CC=clang cargo test --release --locked -p marmot-app --test relay_runtime \
+  send_connection_reuse -- --ignored --nocapture
+```
+
+Without `SEND_RELAYS`, the diagnostic uses a local relay and counts connections.
+With `SEND_PUSH=1`, it also fetches and decrypts all 30 notification gift wraps.
+Both public-relay and loopback delivery checks passed. Loopback opened zero
+connections during the candidate's 30 sends, versus 30 before. Its mean was
+56.6 ms versus 36.3 ms before, so the latency improvement is specific to the
+measured remote-relay workload. The final local fixture allows 1,000 events
+per minute: setup plus 30 messages and 30 pushes exceeded the mock's default
+60-event allowance on one connection.
+
+Unchanged subscription syncs now return before rebuilding the routing index.
+The lifecycle lock and pending-unsubscribe retry remain in place. A separate
+release benchmark measured sync alone, excluding request cloning, after ten
+warmups with 100 samples per group count:
+
+| Groups | Before median | After median |
+| --- | ---: | ---: |
+| 1 | 0.001803 ms | 0.000180 ms |
+| 100 | 0.163177 ms | 0.005139 ms |
+| 1,000 | 1.708731 ms | 0.051287 ms |
+
+Reproduce with `cargo test --release --locked -p transport-nostr-adapter
+--test inbound_routing unchanged_sync_latency -- --ignored --nocapture`.
+
 The [Arena outbound panels](https://grafana.ipf.dev/d/mdk-app-arena/mdk-app-arena?from=now-7d&to=now&var-env=production)
 combine Linux commits under `2026.9.15+1`. That label cannot isolate a build.
 Read-only production queries on September 21 returned these means:

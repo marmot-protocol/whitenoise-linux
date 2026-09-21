@@ -1,17 +1,19 @@
-diff --git i/crates/marmot-app/src/relay_plane/mod.rs w/crates/marmot-app/src/relay_plane/mod.rs
-index 4596406b..ee4a7f89 100644
---- i/crates/marmot-app/src/relay_plane/mod.rs
-+++ w/crates/marmot-app/src/relay_plane/mod.rs
-@@ -2156,10 +2156,54 @@ impl TransportAdapter for MarmotRelayPlaneAccountAdapter {
-         request.validate_envelope_matches_target()?;
-         let event = NostrTransportEvent::from_transport_message(&request.message)
-             .map_err(|e| TransportAdapterError::Publish(format!("Nostr payload: {e}")))?;
--        let outcome = self
--            .publish_client
+--- a/crates/marmot-app/src/relay_plane/mod.rs
++++ b/crates/marmot-app/src/relay_plane/mod.rs
+@@ -726,6 +726,62 @@
+         }
+     }
+
++    pub(super) async fn publish_signed_event(
++        &self,
++        fallback: &dyn NostrRelayClient,
++        endpoints: &[TransportEndpoint],
++        event: &NostrTransportEvent,
++        required_acks: usize,
++    ) -> Result<NostrPublishOutcome, TransportAdapterError> {
 +        // Signed envelopes need no account signer. Reuse the subscription
 +        // pool's sockets instead of opening a second connection for each send.
 +        let mut shared = self
-+            .relay_plane
 +            .inner
 +            .transport
 +            .sdk_relay_client
@@ -20,7 +22,7 @@ index 4596406b..ee4a7f89 100644
 +        // Keep fresh connection attempts on the existing path, including its
 +        // distinction between a failed dial and an ambiguous in-flight send.
 +        if let Some(client) = shared {
-+            for endpoint in request.target.endpoints() {
++            for endpoint in endpoints {
 +                if client
 +                    .client()
 +                    .relay(endpoint.as_str())
@@ -35,15 +37,14 @@ index 4596406b..ee4a7f89 100644
 +        }
 +        let publisher: &dyn NostrRelayClient = match shared {
 +            Some(client) => client,
-+            None => self.publish_client.as_ref(),
++            None => fallback,
 +        };
 +        let outcome = publisher
-             .publish_event(request.target.endpoints(), &event, request.required_acks)
--            .await?;
++            .publish_event(endpoints, event, required_acks)
 +            .await;
 +        // A public read socket can still require account authentication to
 +        // write. Preserve the signer-bound path for that explicit rejection.
-+        let outcome = match outcome {
++        match outcome {
 +            Err(error)
 +                if shared.is_some()
 +                    && error.publish_endpoint_failures().iter().any(|failure| {
@@ -51,27 +52,70 @@ index 4596406b..ee4a7f89 100644
 +                            == Some(cgka_traits::TransportEndpointRejectionCategory::AuthRequired)
 +                    }) =>
 +            {
-+                self.publish_client
-+                    .publish_event(request.target.endpoints(), &event, request.required_acks)
-+                    .await?
++                fallback
++                    .publish_event(endpoints, event, required_acks)
++                    .await
 +            }
-+            result => result?,
-+        };
++            result => result,
++        }
++    }
++
+     pub(crate) fn sanitize_relay_endpoints(
+         &self,
+         endpoints: Vec<TransportEndpoint>,
+@@ -2157,8 +2213,13 @@
+         let event = NostrTransportEvent::from_transport_message(&request.message)
+             .map_err(|e| TransportAdapterError::Publish(format!("Nostr payload: {e}")))?;
+         let outcome = self
+-            .publish_client
+-            .publish_event(request.target.endpoints(), &event, request.required_acks)
++            .relay_plane
++            .publish_signed_event(
++                self.publish_client.as_ref(),
++                request.target.endpoints(),
++                &event,
++                request.required_acks,
++            )
+             .await?;
          let local_fanout_endpoints = if !outcome.accepted.is_empty() {
              outcome
-                 .accepted
-diff --git i/crates/marmot-app/tests/relay_runtime.rs w/crates/marmot-app/tests/relay_runtime.rs
-index 323967ae..ddb27bb6 100644
---- i/crates/marmot-app/tests/relay_runtime.rs
-+++ w/crates/marmot-app/tests/relay_runtime.rs
-@@ -186,6 +186,211 @@ async fn active_group_send_timings() {
+--- a/crates/marmot-app/src/client/push.rs
++++ b/crates/marmot-app/src/client/push.rs
+@@ -580,10 +580,12 @@
+                     "trigger",
+                     crate::ProductUnit::Attempt,
+                 );
+-                let result = self
++                let fallback = self
+                     .app
+-                    .relay_client_for_account_id(&account.account_id_hex, nostr_signer.clone())
+-                    .publish_event(&endpoints, &event, 1)
++                    .relay_client_for_account_id(&account.account_id_hex, nostr_signer.clone());
++                let result = self
++                    .relay_plane
++                    .publish_signed_event(fallback.as_ref(), &endpoints, &event, 1)
+                     .await;
+                 if let Some(observation) = observation {
+                     observation.finish(if result.is_ok() {
+--- a/crates/marmot-app/tests/relay_runtime.rs
++++ b/crates/marmot-app/tests/relay_runtime.rs
+@@ -187,6 +187,286 @@
      }
  }
- 
+
 +#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 +#[ignore = "send latency and connection reuse diagnostic"]
 +async fn send_connection_reuse() {
-+    let (_relay, relay_url) = mock_relay().await;
++    // Thirty messages plus thirty pushes exceed the mock's 60-event budget
++    // once group setup is included on the same persistent connection.
++    let _relay = LocalRelay::new(RelayBuilder::default().rate_limit(
++        nostr_relay_builder::builder::RateLimit {
++            notes_per_minute: 1_000,
++            ..Default::default()
++        },
++    ));
++    _relay.run().await.unwrap();
++    let relay_url = _relay.url().await.to_string();
 +    let relay_addr = relay_url
 +        .strip_prefix("ws://")
 +        .unwrap()
@@ -137,6 +181,39 @@ index 323967ae..ddb27bb6 100644
 +    accept_group_invite_retrying_busy(&runtimes[1], &accounts[1], &group)
 +        .await
 +        .unwrap();
++    let push_server = Keys::generate();
++    if std::env::var_os("SEND_PUSH").is_some() {
++        runtimes[1]
++            .set_native_push_enabled(&accounts[1], true)
++            .await
++            .unwrap();
++        runtimes[1]
++            .upsert_push_registration(
++                &accounts[1],
++                PushPlatform::Fcm,
++                "latency-test-token",
++                &push_server.public_key().to_hex(),
++                Some(urls[0].clone()),
++            )
++            .await
++            .unwrap();
++        timeout(Duration::from_secs(10), async {
++            loop {
++                if runtimes[0]
++                    .group_push_debug_info(&accounts[0], &group)
++                    .await
++                    .unwrap()
++                    .active_token_count
++                    == 1
++                {
++                    break;
++                }
++                sleep(Duration::from_millis(20)).await;
++            }
++        })
++        .await
++        .expect("sender receives peer push token");
++    }
 +    sleep(Duration::from_secs(2)).await;
 +    let mut received = runtimes[1].subscribe();
 +    let before = connections.load(Ordering::SeqCst);
@@ -178,6 +255,39 @@ index 323967ae..ddb27bb6 100644
 +        samples[28],
 +        samples[29]
 +    );
++    if std::env::var_os("SEND_PUSH").is_some() {
++        let client = NostrSdkClient::builder().build();
++        client.add_relay(&urls[0]).await.unwrap();
++        client.connect().await;
++        let events = client
++            .fetch_events_from(
++                [&urls[0]],
++                Filter::new()
++                    .kind(Kind::GiftWrap)
++                    .pubkey(push_server.public_key()),
++                Duration::from_secs(5),
++            )
++            .await
++            .unwrap();
++        assert_eq!(
++            events.len(),
++            30,
++            "one notification per acknowledged message"
++        );
++        for event in events {
++            let gift = nostr::nips::nip59::extract_rumor(&push_server, &event)
++                .await
++                .unwrap();
++            assert_eq!(gift.rumor.kind, Kind::Custom(446));
++            assert!(
++                !BASE64_STANDARD
++                    .decode(&gift.rumor.content)
++                    .unwrap()
++                    .is_empty()
++            );
++        }
++        client.shutdown().await;
++    }
 +    for runtime in runtimes {
 +        runtime.shutdown_and_close().await.unwrap();
 +    }
@@ -276,3 +386,75 @@ index 323967ae..ddb27bb6 100644
  async fn mock_relay() -> (MockRelay, String) {
      let relay = MockRelay::run().await.unwrap();
      let url = relay.url().await.to_string();
+--- a/crates/transport-nostr-adapter/src/lib.rs
++++ b/crates/transport-nostr-adapter/src/lib.rs
+@@ -1076,6 +1076,11 @@
+                 .accounts
+                 .get(&sync.account_id)
+                 .expect("the AccountNotActive guard above proved the account is active");
++            // Sends repeat this sync. Keep the committed routes and telemetry
++            // intact when nothing changed; failed relay teardown still retries.
++            if routes.groups == sync.group_subscriptions && state.pending_unsubscribes.is_empty() {
++                return Ok(());
++            }
+             // A sync amends the live activation's route set; it does not open a
+             // new attempt, so both sides of the diff carry the activation's own
+             // attempt and the ids stay stable across it.
+--- a/crates/transport-nostr-adapter/tests/inbound_routing.rs
++++ b/crates/transport-nostr-adapter/tests/inbound_routing.rs
+@@ -19,6 +19,55 @@
+
+ const DEFAULT_CONCURRENT_SUBSCRIBE_TIMEOUT: Duration = Duration::from_secs(5);
+
++#[tokio::test]
++#[ignore = "unchanged subscription latency diagnostic"]
++async fn unchanged_sync_latency() {
++    for count in [1u32, 100, 1000] {
++        let relay = Arc::new(FakeRelayClient::default());
++        let adapter = NostrTransportAdapter::new(relay.clone());
++        let account_id = MemberId::new(vec![0xA1; 32]);
++        let groups = (0..count)
++            .map(|index| TransportGroupSubscription {
++                group_id: cgka_traits::GroupId::new(index.to_be_bytes().to_vec()),
++                transport_group_id: [index.to_be_bytes().as_slice(), &[0; 28]].concat(),
++                endpoints: vec![TransportEndpoint("wss://group.example".into())],
++            })
++            .collect::<Vec<_>>();
++        adapter
++            .activate_account(TransportAccountActivation {
++                account_id: account_id.clone(),
++                inbox_endpoints: vec![TransportEndpoint("wss://inbox.example".into())],
++                group_subscriptions: groups.clone(),
++                since: None,
++            })
++            .await
++            .unwrap();
++        let mut samples = Vec::new();
++        for index in 0..110 {
++            let request = TransportGroupSync {
++                account_id: account_id.clone(),
++                group_subscriptions: groups.clone(),
++                since: Some(Timestamp(1_700_000_000 + index)),
++            };
++            let started = std::time::Instant::now();
++            adapter.sync_account_groups(request).await.unwrap();
++            if index >= 10 {
++                samples.push(started.elapsed().as_secs_f64() * 1000.0);
++            }
++        }
++        samples.sort_by(f64::total_cmp);
++        println!(
++            "groups={count} samples=100 median_ms={:.6} p95_ms={:.6}",
++            samples[49], samples[94]
++        );
++        assert_eq!(
++            relay.subscriptions.lock().unwrap().len(),
++            count as usize + 1
++        );
++        assert!(relay.unsubscribed.lock().unwrap().is_empty());
++    }
++}
++
+ fn concurrent_subscribe_timeout() -> Duration {
+     std::env::var("MARMOT_CONCURRENT_SUBSCRIBE_TEST_TIMEOUT_MS")
+         .ok()
