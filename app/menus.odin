@@ -255,6 +255,11 @@ context_menu :: proc(ui: ^Ui_State) {
 
 // Edit-history modal, the slint edit-history pane: original first,
 // each edit after, current highlighted.
+@(private)
+HISTORY_WIDTH :: f32(420)
+@(private)
+HISTORY_GUTTER :: u16(12)
+
 edit_history_modal :: proc(ui: ^Ui_State) {
 	history := ui.hist_versions[:]
 
@@ -262,7 +267,7 @@ edit_history_modal :: proc(ui: ^Ui_State) {
 	{
 		layout = {
 			layoutDirection = .TopToBottom,
-			sizing = {width = clay.SizingFixed(modal_w(clay.ID("HistModal"), 420))},
+			sizing = {width = clay.SizingFixed(modal_w(clay.ID("HistModal"), HISTORY_WIDTH))},
 			padding = clay.PaddingAll(16),
 			childGap = 10,
 		},
@@ -313,8 +318,9 @@ edit_history_modal :: proc(ui: ^Ui_State) {
 				},
 				layoutDirection = .TopToBottom,
 				childGap = 10,
+				padding = {right = HISTORY_GUTTER},
 			},
-			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+			clip = {horizontal = true, vertical = true, childOffset = clay.GetScrollOffset()},
 		},
 		) {
 			for version, i in history {
@@ -372,7 +378,7 @@ edit_history_modal :: proc(ui: ^Ui_State) {
 				}
 			}
 		}
-		scrollbar(clay.ID("HistScroll"))
+		scrollbar(clay.ID("HistScroll"), 12)
 	}
 }
 
@@ -380,15 +386,17 @@ edit_history_modal :: proc(ui: ^Ui_State) {
 // padding.
 @(private)
 edit_diff_wrap :: proc() -> f32 {
-	box := clay.GetElementData(clay.ID("HistModal"))
-	return box.found ? max(f32(100), box.boundingBox.width - 52) : 360
+	return max(f32(1), modal_w(clay.ID("HistModal"), HISTORY_WIDTH) - 52 - f32(HISTORY_GUTTER))
 }
 
 // Word diff against the previous revision, flowing as wrapped word
 // chips: removed words on a danger-tinted plate in dim text, added on
-// the accent surface (no strikethrough in this renderer, color plates
-// carry the meaning).
+// the accent surface. Mention chips use the same measurement and drawing
+// as message bodies, so their raw npub never expands the row.
 diff_chips :: proc(version: u32, prev, next: string) {
+	cards := gh_cards_on
+	gh_cards_on = false
+	defer {gh_cards_on = cards}
 	runs := diff_words(prev, next)
 	if len(runs) == 0 {
 		body_text(0xD0000 + version * 8, next, 13, TEXT, wrap_w = edit_diff_wrap())
@@ -401,7 +409,7 @@ diff_chips :: proc(version: u32, prev, next: string) {
 	for run in runs {
 		at := 0
 		for at < len(run.text) {
-			cut := rune_fit(run.text, at, len(run.text), edit_diff_wrap() - 16, 13)
+			cut := rune_fit(run.text, at, len(run.text), edit_diff_wrap() - 16, 13, tile_px = 13)
 			append(&split, Diff_Run{run.kind, run.text[at:cut]})
 			at = cut
 		}
@@ -417,14 +425,16 @@ diff_chips :: proc(version: u32, prev, next: string) {
 			for ; i < len(runs); i += 1 {
 				run := runs[i]
 				pad := run.kind == .Same ? f32(0) : 8
-				cw := rl.MeasureTextLine(FONT_BODY, 13, run.text, 0).x + pad
+				cw := rl.MeasureTextLine(FONT_BODY, 13, run.text, 0).x
+				if end, width := body_atom(run.text, 0, 13); end == len(run.text) {cw = width}
+				cw += pad
 				if w > 0 && w + cw > edit_diff_wrap() {
 					break
 				}
 				w += cw + 4
 
 				if run.kind == .Same {
-					clay.Text(run.text, {fontId = FONT_BODY, fontSize = 13, textColor = TEXT})
+					body_line(0xD1000 + version * 1024 + u32(i), run.text, 13, TEXT, tile_px = 13)
 					continue
 				}
 				added := run.kind == .Added
@@ -436,9 +446,12 @@ diff_chips :: proc(version: u32, prev, next: string) {
 					cornerRadius = rr(4),
 				},
 				) {
-					clay.Text(
+					body_line(
+						0xD1000 + version * 1024 + u32(i),
 						run.text,
-						{fontId = FONT_BODY, fontSize = 13, textColor = added ? ACCENT : TEXT_LO},
+						13,
+						added ? ACCENT : TEXT_LO,
+						tile_px = 13,
 					)
 				}
 			}
