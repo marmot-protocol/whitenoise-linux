@@ -252,7 +252,7 @@ fi
 # mapped by a running instance leaves a half-written file whose next
 # run segfaults in libc's init, long before main.
 rm -f "$HERE/build/smoke" "$HERE/build/app"
-odin build "$HERE/smoke" -out:"$HERE/build/smoke"
+odin build "$HERE/tests/smoke" -out:"$HERE/build/smoke"
 # -o:speed: the STL orbit path needs it (200k tris: 20ms/step at
 # -o:minimal vs 3.4ms; 60fps budget is 16.6ms).
 env "${ODIN_ROOT_ARG[@]}" odin build "$HERE/app" -o:speed -out:"$HERE/build/app"
@@ -271,14 +271,15 @@ echo "==> Done: $HERE/build/{smoke,app}"
 # `just test` also runs the app package's test procs, which is what CI
 # does after the build.
 if [ "${1:-}" = test ]; then
-  bash "$HERE/scripts/version-test.sh"
-  cc -std=c11 -I"$HERE/vendor/mdk/crates/marmot-c/include" "$HERE/scripts/event-layout-test.c" -o "$HERE/build/event-layout-test"
+  bash "$HERE/tests/version-test.sh"
+  cc -std=c11 -I"$HERE/vendor/mdk/crates/marmot-c/include" "$HERE/tests/event-layout-test.c" -o "$HERE/build/event-layout-test"
   "$HERE/build/event-layout-test"
-  cc -O2 -I"$HERE/build/clay" "$HERE/scripts/clay_hashmap_test.c" -lm -o "$HERE/build/clay/hashmap-test"
+  cc -O2 -I"$HERE/build/clay" "$HERE/tests/clay_hashmap_test.c" -lm -o "$HERE/build/clay/hashmap-test"
   "$HERE/build/clay/hashmap-test"
-  cc -O2 -Wall -Wextra -I"$TTS/include" "$HERE/scripts/stt-test.c" \
+  cc -O2 -Wall -Wextra -I"$TTS/include" "$HERE/tests/stt-test.c" \
     -L"$TTS/lib" -lsherpa-onnx-c-api -Wl,-rpath,'$ORIGIN/tts-lib' \
     $(pkg-config --cflags --libs sdl3 libcurl glib-2.0 mpv libcrypto) -lm -o "$HERE/build/stt-test"
   "$HERE/build/stt-test"
-  env "${ODIN_ROOT_ARG[@]}" odin test "$HERE/app" -out:"$HERE/build/apptest"
+  env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app
+  SDL_VIDEODRIVER=dummy env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app/sdlrl
 fi

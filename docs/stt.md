@@ -94,8 +94,8 @@ SOFTWARE.
 ## Checks
 
 ```sh
-SDL_VIDEODRIVER=dummy odin test app -define:ODIN_TEST_NAMES=stt_draft_safety
-SDL_VIDEODRIVER=dummy odin test app -define:ODIN_TEST_NAMES=stt_layout
+SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=stt_draft_safety
+SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=stt_layout
 build/stt-test <model-cache> <audio-file> <expected-lowercase-substring> [tiny|base|small|medium|large-v3|turbo|parakeet-v3|sensevoice]
 ```
 

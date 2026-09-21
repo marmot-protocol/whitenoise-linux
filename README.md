@@ -171,7 +171,7 @@ It reads flat by intent. The layout is immediate-mode: every frame rebuilds the 
 | `app/sdlrl/` | SDL3 shim with a raylib-shaped API: window, input, IME, clipboard, and a stb_truetype text engine |
 | `app/vault.odin` | The password-encrypted secret vault |
 | `marmot/` | The `marmot-c` bindings, the only place that touches C |
-| `smoke/` | Standalone liveness check for the bindings against a fresh home dir |
+| `tests/smoke/` | Standalone liveness check for the bindings against a fresh home dir |
 | `themes/` | The theme packs, `#load`ed at build time |
 | `lang/` | gettext catalogs (`en` source, plus `it`, `de`, `ja`), `#load`ed at build time |
 | `assets/` | Logo, fonts, and the SVG starter-avatar set |
@@ -198,7 +198,7 @@ just translations      # regenerate the gettext catalogs
 `just dev [data-dir]` and `just run [data-dir]` accept an optional data directory.
 The shell implementations live under `scripts/`; CI and packaging call them directly.
 
-Tests are `@(test)` procs in `*_test.odin` beside the code they cover; `just test` runs the same checks as CI. End-to-end testing (a QEMU VM harness, a headless control daemon, and multi-VM messaging scenarios) lives in the separate [`darkmatter-automated-testing`](https://github.com/marmot-protocol/darkmatter-automated-testing) repo, which builds this checkout.
+All tests live under `tests/`; `just test` runs the same checks as CI. For a focused Odin run, use `tests/odin.sh app [odin test flags]` or `tests/odin.sh app/sdlrl`. The runner assembles a temporary package so tests retain access to private symbols. End-to-end testing (a QEMU VM harness, a headless control daemon, and multi-VM messaging scenarios) lives in the separate [`darkmatter-automated-testing`](https://github.com/marmot-protocol/darkmatter-automated-testing) repo, which builds this checkout.
 
 `just dev` keeps the SDL window and vault unlock across code reloads. It rebuilds
 the UI and runtime from saved settings and drafts, so transient dialogs and

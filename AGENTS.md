@@ -58,8 +58,10 @@ Native file-dialog callbacks go through the host trampoline; it prevents an
 unload until the callback has returned. `just stage` prepares dependencies
 and helpers without compiling the release executables.
 
-**Testing:** `odin test app` runs the `@(test)` procs that live beside the
-code they cover (`*_test.odin`). `just test` runs the same checks as CI. End-to-end
+**Testing:** All tests live under `tests/`. `tests/odin.sh app` assembles a
+temporary package with the app and `tests/app/*_test.odin`, preserving private
+access. Use `tests/odin.sh app/sdlrl` for the SDL shim. Extra Odin test flags
+can follow the package name. `just test` runs the same checks as CI. End-to-end
 testing lives in a separate repo, `darkmatter-automated-testing` (the `dmvm`
 QEMU harness and multi-VM scenarios). The `WN_TEST_*` env vars in `main.odin`
 drive the app into a given state for screenshots and harness runs.

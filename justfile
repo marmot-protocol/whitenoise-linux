@@ -26,7 +26,7 @@ stage:
 
 # Check code reload, unlock preservation, and failed-build recovery.
 test-reload:
-    @scripts/dev-reload-test.sh
+    @tests/dev-reload-test.sh
 
 # Regenerate and merge gettext catalogs.
 translations:
