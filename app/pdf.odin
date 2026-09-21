@@ -129,7 +129,9 @@ pdf_render_page :: proc(view: ^Pdf_View, phase: Media_Phase = .Present) {
 	view.w, view.h = i32(w), i32(h)
 	if phase == .Present {
 		rl.UnloadTexture(view.tex)
-		view.tex = rl.LoadTextureFromImage(rl.Image{data = raw_data(view.pix), width = view.w, height = view.h})
+		view.tex = rl.LoadTextureFromImage(
+			rl.Image{data = raw_data(view.pix), width = view.w, height = view.h},
+		)
 	}
 }
 

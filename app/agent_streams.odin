@@ -1,11 +1,11 @@
 package main
 
+import marmot "../marmot"
 import "core:encoding/json"
 import "core:fmt"
 import "core:strings"
 import "core:sync"
 import "core:thread"
-import marmot "../marmot"
 
 @(private)
 AGENT_STREAM_START :: u64(1200)
@@ -18,11 +18,11 @@ AGENT_PREVIEW_BYTES :: 256 * 1024
 
 @(private)
 Agent_Preview :: struct {
-	mutex: sync.Mutex,
-	client: ^marmot.Client,
-	account, group, stream, message: string,
-	worker: ^thread.Thread,
-	text: [dynamic]u8,
+	mutex:                                                    sync.Mutex,
+	client:                                                   ^marmot.Client,
+	account, group, stream, message:                          string,
+	worker:                                                   ^thread.Thread,
+	text:                                                     [dynamic]u8,
 	cancel, done, dirty, failed, final, checkpoint, progress: bool,
 }
 
@@ -38,8 +38,15 @@ agent_projection :: proc(record: ^marmot.Timeline_Message_Record) -> (id, status
 	if record.agent_text_stream_json == nil {
 		return
 	}
-	projection: struct { stream_id_hex, status: string }
-	if json.unmarshal(transmute([]u8)string(record.agent_text_stream_json), &projection, allocator = context.temp_allocator) != nil {
+	projection: struct {
+		stream_id_hex, status: string,
+	}
+	if json.unmarshal(
+		   transmute([]u8)string(record.agent_text_stream_json),
+		   &projection,
+		   allocator = context.temp_allocator,
+	   ) !=
+	   nil {
 		return
 	}
 	if len(projection.stream_id_hex) != 64 {
@@ -92,11 +99,13 @@ agent_apply :: proc(p: ^Agent_Preview, update: ^marmot.Agent_Stream_Update) {
 		}
 	case .RECORD:
 		switch update.data.record.record_type {
-		case .CHECKPOINT: // Checkpoints replace the accumulated transcript.
+		case .CHECKPOINT:
+			// Checkpoints replace the accumulated transcript.
 			p.checkpoint = true
 			p.progress = false
 			agent_set_text(p, string(update.data.record.text))
-		case .ABORT: // Abort: the agent may fall back to a regular chat reply.
+		case .ABORT:
+			// Abort: the agent may fall back to a regular chat reply.
 			fmt.eprintfln("agent stream aborted: %s", string(update.data.record.text))
 			p.failed = true
 			p.dirty = true
@@ -195,7 +204,10 @@ agent_collect :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Timel
 		for i in 0 ..< page.messages_len {
 			r := &page.messages[i]
 			id, status := agent_projection(r)
-			if len(id) == 0 || r.sender == nil || (status != "started" && status != "finalized") || (status == "started" && r.kind != AGENT_STREAM_START) {
+			if len(id) == 0 ||
+			   r.sender == nil ||
+			   (status != "started" && status != "finalized") ||
+			   (status == "started" && r.kind != AGENT_STREAM_START) {
 				continue
 			}
 			is_final := status == "finalized"
@@ -212,13 +224,20 @@ agent_collect :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Timel
 				p.stream = strings.clone(id)
 				p.message = strings.clone(string(r.message_id_hex))
 				agent_previews[strings.clone(key)] = p
-				if client != nil && !is_final && !r.deleted && r.invalidation_status == nil && !ui.hidden[p.message] {
+				if client != nil &&
+				   !is_final &&
+				   !r.deleted &&
+				   r.invalidation_status == nil &&
+				   !ui.hidden[p.message] {
 					p.worker = thread.create(agent_worker)
 					p.worker.data = p
 					thread.start(p.worker)
 				}
 			}
-			if is_final || r.deleted || r.invalidation_status != nil || ui.hidden[string(r.message_id_hex)] {
+			if is_final ||
+			   r.deleted ||
+			   r.invalidation_status != nil ||
+			   ui.hidden[string(r.message_id_hex)] {
 				sync.lock(&p.mutex)
 				p.cancel = true
 				sync.unlock(&p.mutex)
@@ -244,7 +263,10 @@ agent_body :: proc(record: ^marmot.Timeline_Message_Record) -> (string, bool) {
 }
 
 @(private)
-agent_tick :: proc(ui: ^Ui_State, scroll: enum { Follow, Hold }) {
+agent_tick :: proc(ui: ^Ui_State, scroll: enum {
+		Follow,
+		Hold,
+	}) {
 	group := ui.selected >= 0 ? ui.chats[ui.selected].group_id : ""
 	agent_scope(ui.account_ref, group)
 	changed: map[string]^Agent_Preview

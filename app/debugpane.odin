@@ -21,7 +21,12 @@ import clay "../vendor/clay/bindings/odin/clay-odin"
 import marmot "../marmot"
 
 DEBUG_TABS := []string{N_("State"), N_("Raw events"), N_("Key packages"), N_("Timings")}
-DEBUG_EYEBROWS := []string{N_("STATE SNAPSHOT"), N_("RAW EVENTS"), N_("KEY PACKAGES"), N_("TIMINGS")}
+DEBUG_EYEBROWS := []string {
+	N_("STATE SNAPSHOT"),
+	N_("RAW EVENTS"),
+	N_("KEY PACKAGES"),
+	N_("TIMINGS"),
+}
 
 // Newest records dumped on the raw-events tab. The whole page relayouts
 // every frame, so the window stays small.
@@ -50,10 +55,17 @@ settings_debug :: proc(ui: ^Ui_State) {
 		micro_button("DbgCopy", "Copy JSON")
 	}
 	if clay.UI(clay.ID("DbgPlate"))(
-	{layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(12)}, backgroundColor = PLATE, cornerRadius = rr(8)},
+	{
+		layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(12)},
+		backgroundColor = PLATE,
+		cornerRadius = rr(8),
+	},
 	) {
 		display := ui.debug_tab == 3 ? ui.debug_text : ui.debug_json
-		clay.Text(len(display) > 0 ? display : tr("(nothing loaded yet, click Refresh)"), {fontId = FONT_MONO, fontSize = 11, textColor = TEXT})
+		clay.Text(
+			len(display) > 0 ? display : tr("(nothing loaded yet, click Refresh)"),
+			{fontId = FONT_MONO, fontSize = 11, textColor = TEXT},
+		)
 	}
 }
 
@@ -88,7 +100,15 @@ debug_state_json :: proc(ui: ^Ui_State) -> string {
 	}
 	chats := make([dynamic]Chat_Dump, context.temp_allocator)
 	for chat in ui.chats {
-		append(&chats, Chat_Dump{group_id = chat.group_id, title = chat.title, unread = chat.unread, pending = chat.pending})
+		append(
+			&chats,
+			Chat_Dump {
+				group_id = chat.group_id,
+				title = chat.title,
+				unread = chat.unread,
+				pending = chat.pending,
+			},
+		)
 	}
 
 	selected_id, selected_title: string
@@ -97,42 +117,38 @@ debug_state_json :: proc(ui: ^Ui_State) -> string {
 		selected_title = ui.chats[ui.selected].title
 	}
 
-	data, err := json.marshal(
-		struct {
-			account:                                       string,
-			accounts:                                      []string,
-			page, settings_section, focus:                 string,
-			selected_chat, selected_title:                 string,
-			chats:                                         []Chat_Dump,
+	data, err := json.marshal(struct {
+			account:                                        string,
+			accounts:                                       []string,
+			page, settings_section, focus:                  string,
+			selected_chat, selected_title:                  string,
+			chats:                                          []Chat_Dump,
 			archived, contacts, messages, pending, members: int,
-			theme, accent:                                 int,
-			locale:                                        string,
-			dev_mode, show_members, unread_only, offline:  bool,
+			theme, accent:                                  int,
+			locale:                                         string,
+			dev_mode, show_members, unread_only, offline:   bool,
 		} {
-			account          = ui.account_ref,
-			accounts         = ui.account_ids[:],
-			page             = fmt.tprintf("%v", ui.page),
+			account = ui.account_ref,
+			accounts = ui.account_ids[:],
+			page = fmt.tprintf("%v", ui.page),
 			settings_section = fmt.tprintf("%v", ui.settings_section),
-			focus            = fmt.tprintf("%v", ui.focus),
-			selected_chat    = selected_id,
-			selected_title   = selected_title,
-			chats            = chats[:],
-			archived         = len(ui.archived),
-			contacts         = len(ui.contacts),
-			messages         = len(ui.messages),
-			pending          = len(ui.pending),
-			members          = len(ui.members),
-			theme            = ui.theme,
-			accent           = ui.accent,
-			locale           = ui.prefs.locale,
-			dev_mode         = ui.prefs.dev_mode,
-			show_members     = ui.show_members,
-			unread_only      = ui.unread_only,
-			offline          = !ui.health_ok,
-		},
-		json_opts(),
-		context.temp_allocator,
-	)
+			focus = fmt.tprintf("%v", ui.focus),
+			selected_chat = selected_id,
+			selected_title = selected_title,
+			chats = chats[:],
+			archived = len(ui.archived),
+			contacts = len(ui.contacts),
+			messages = len(ui.messages),
+			pending = len(ui.pending),
+			members = len(ui.members),
+			theme = ui.theme,
+			accent = ui.accent,
+			locale = ui.prefs.locale,
+			dev_mode = ui.prefs.dev_mode,
+			show_members = ui.show_members,
+			unread_only = ui.unread_only,
+			offline = !ui.health_ok,
+		}, json_opts(), context.temp_allocator)
 	if err != nil {
 		return strings.clone(tr("Couldn't serialize the snapshot. Please try again."))
 	}
@@ -147,7 +163,10 @@ debug_events_json :: proc(ui: ^Ui_State, client: ^marmot.Client) -> string {
 		return strings.clone(tr("No chat is open. Select one and refresh."))
 	}
 	query := marmot.Timeline_Message_Query {
-		group_id_hex = strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator),
+		group_id_hex = strings.clone_to_cstring(
+			ui.chats[ui.selected].group_id,
+			context.temp_allocator,
+		),
 		has_limit    = true,
 		limit        = 200,
 	}
@@ -178,7 +197,10 @@ debug_events_json :: proc(ui: ^Ui_State, client: ^marmot.Client) -> string {
 		if n > 0 {
 			strings.write_string(&b, ",\n")
 		}
-		strings.write_string(&b, record_json(&page.messages[total - 1 - n], context.temp_allocator))
+		strings.write_string(
+			&b,
+			record_json(&page.messages[total - 1 - n], context.temp_allocator),
+		)
 	}
 	strings.write_string(&b, "\n  ]\n}")
 	return strings.to_string(b)
@@ -229,10 +251,23 @@ settings_kp :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("KpMineRow"))({layout = {childGap = 8}}) {
 		micro_button("KpMineRefresh", "Decode own")
 	}
-	kp_cards(ui, "KpMine", ui.kp_list[:], ui.kp_fetched ? tr("No key package on this device or its relays.") : tr("Not loaded yet. Click Decode own."))
+	kp_cards(
+		ui,
+		"KpMine",
+		ui.kp_list[:],
+		ui.kp_fetched ? tr("No key package on this device or its relays.") : tr("Not loaded yet. Click Decode own."),
+	)
 
 	eyebrow("INSPECT SOMEONE ELSE'S")
-	if clay.UI(clay.ID("KpInspectRow"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, childAlignment = {y = .Center}}}) {
+	if clay.UI(clay.ID("KpInspectRow"))(
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			childGap = 10,
+			childAlignment = {y = .Center},
+		},
+	},
+	) {
 		input_box(ui, "KpBox", &ui.kp_input, "npub or hex pubkey", ui.focus == .KP, 300)
 		login_button("KpInspect", "Inspect")
 	}
@@ -241,7 +276,12 @@ settings_kp :: proc(ui: ^Ui_State) {
 		kp_cards(ui, "KpPeer", ui.kp_peer[:], tr("No key package published for that pubkey."))
 	}
 
-	clay.Text(tr("marmot exposes publish metadata only. Ciphersuite, capabilities, and credential decoding are not available in this build."), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
+	clay.Text(
+		tr(
+			"marmot exposes publish metadata only. Ciphersuite, capabilities, and credential decoding are not available in this build.",
+		),
+		{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+	)
 }
 
 // One labeled row per decoded field, then the raw JSON plate.
@@ -251,26 +291,46 @@ kp_cards :: proc(ui: ^Ui_State, prefix: string, rows: []Kp_Row, empty: string) {
 		return
 	}
 	for row, i in rows {
-		where_at := row.local && row.relay ? tr("local + relay") : (row.local ? tr("local only") : tr("relay"))
+		where_at :=
+			row.local && row.relay ? tr("local + relay") : (row.local ? tr("local only") : tr("relay"))
 		kp_kv(prefix, u32(i * 10 + 0), "Owner", len(row.owner) > 0 ? row.owner : tr("(unknown)"))
-		kp_kv(prefix, u32(i * 10 + 1), "Key package ref", len(row.kp_ref) > 0 ? row.kp_ref : tr("(none)"))
+		kp_kv(
+			prefix,
+			u32(i * 10 + 1),
+			"Key package ref",
+			len(row.kp_ref) > 0 ? row.kp_ref : tr("(none)"),
+		)
 		kp_kv(prefix, u32(i * 10 + 2), "Event id", len(row.id) > 0 ? row.id : tr("(unpublished)"))
 		kp_kv(prefix, u32(i * 10 + 3), "Published", row.at)
 		kp_kv(prefix, u32(i * 10 + 4), "Where", where_at)
 		kp_kv(prefix, u32(i * 10 + 5), "Size", fmt.tprintf("%d bytes", row.bytes))
-		kp_kv(prefix, u32(i * 10 + 6), "Relays", len(row.relay_urls) > 0 ? strings.join(row.relay_urls, ", ", context.temp_allocator) : tr("(none)"))
+		kp_kv(
+			prefix,
+			u32(i * 10 + 6),
+			"Relays",
+			len(row.relay_urls) > 0 ? strings.join(row.relay_urls, ", ", context.temp_allocator) : tr("(none)"),
+		)
 	}
 	if clay.UI(clay.ID(fmt.tprintf("%sRawPlate", prefix)))(
-	{layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(12)}, backgroundColor = PLATE, cornerRadius = rr(8)},
+	{
+		layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(12)},
+		backgroundColor = PLATE,
+		cornerRadius = rr(8),
+	},
 	) {
-		clay.Text(kp_json_cached(ui, prefix, rows), {fontId = FONT_MONO, fontSize = 11, textColor = TEXT})
+		clay.Text(
+			kp_json_cached(ui, prefix, rows),
+			{fontId = FONT_MONO, fontSize = 11, textColor = TEXT},
+		)
 	}
 }
 
 kp_kv :: proc(prefix: string, index: u32, label: string, value: string) {
 	if clay.UI(clay.ID(fmt.tprintf("%sKv", prefix), index))(srow()) {
 		clay.Text(tr(label), {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT_DIM})
-		if clay.UI(clay.ID(fmt.tprintf("%sKvVal", prefix), index))({layout = {sizing = {width = clay.SizingGrow()}}}) {
+		if clay.UI(clay.ID(fmt.tprintf("%sKvVal", prefix), index))(
+		{layout = {sizing = {width = clay.SizingGrow()}}},
+		) {
 			clay.Text(value, {fontId = FONT_MONO, fontSize = 11, textColor = TEXT})
 		}
 	}
@@ -303,7 +363,10 @@ inspect_peer_key_packages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	ui.kp_peer_owner = strings.clone(string(hex))
 	if !kp_rows(client, ui.kp_peer_owner, &ui.kp_peer) {
-		ui.client_status = fmt.aprintf(tr("Couldn't read their key packages. %s"), marmot.last_error())
+		ui.client_status = fmt.aprintf(
+			tr("Couldn't read their key packages. %s"),
+			marmot.last_error(),
+		)
 	}
 }
 

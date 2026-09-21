@@ -36,7 +36,11 @@ xdc_updates_shape :: proc(t: ^testing.T) {
 
 	all := xdc_updates_json("serial=0")
 	defer delete(all)
-	testing.expect_value(t, all, `[{"payload":{"a":1},"serial":1,"max_serial":2},{"payload":{"b":2},"serial":2,"max_serial":2}]`)
+	testing.expect_value(
+		t,
+		all,
+		`[{"payload":{"a":1},"serial":1,"max_serial":2},{"payload":{"b":2},"serial":2,"max_serial":2}]`,
+	)
 
 	// A listener that has seen serial 1 gets only what follows it.
 	tail := xdc_updates_json("serial=1")

@@ -11,14 +11,24 @@ import "core:testing"
 tts_controls :: proc(t: ^testing.T) {
 	manifest :: string(#load("tts_models.h"))
 	for size, i in TTS_MODEL_SIZES {
-		testing.expect(t, strings.contains(manifest, fmt.tprintf("\"%s\", %d,", TTS_MODEL_FILES[i], size)))
+		testing.expect(
+			t,
+			strings.contains(manifest, fmt.tprintf("\"%s\", %d,", TTS_MODEL_FILES[i], size)),
+		)
 	}
 	for language in TTS_LANGUAGES {
 		testing.expect(t, strings.contains(manifest, fmt.tprintf("\"%s\"", language.code)))
 	}
 	prefs: Prefs
 	testing.expect(t, !prefs.tts_enabled)
-	testing.expect(t, json.unmarshal(transmute([]u8)string(`{"tts_enabled":true,"tts_voice":7,"tts_language":"de"}`), &prefs) == nil)
+	testing.expect(
+		t,
+		json.unmarshal(
+			transmute([]u8)string(`{"tts_enabled":true,"tts_voice":7,"tts_language":"de"}`),
+			&prefs,
+		) ==
+		nil,
+	)
 	testing.expect(t, prefs.tts_enabled && prefs.tts_voice == 7)
 
 	ui: Ui_State
@@ -45,7 +55,11 @@ tts_controls :: proc(t: ^testing.T) {
 		os.close(file)
 		return
 	}
-	ui.tts = {child = child, file = file, account = strings.clone("previous-account")}
+	ui.tts = {
+		child   = child,
+		file    = file,
+		account = strings.clone("previous-account"),
+	}
 	defer tts_stop(&ui)
 	ui.account_ref = "previous-account"
 	n, write_err := os.write_string(file, "D\x02\x32")

@@ -54,13 +54,22 @@ backup_seal :: proc(plain: []u8, password: string, allocator := context.allocato
 
 	ctx: chacha20poly1305.Context
 	chacha20poly1305.init_xchacha(&ctx, sym[:])
-	chacha20poly1305.seal(&ctx, out[BACKUP_HEADER:], out[46:62], out[22:46], out[0:BACKUP_AD_LEN], plain)
+	chacha20poly1305.seal(
+		&ctx,
+		out[BACKUP_HEADER:],
+		out[46:62],
+		out[22:46],
+		out[0:BACKUP_AD_LEN],
+		plain,
+	)
 	return out
 }
 
 // nil on a wrong password, a truncated file, or a foreign format.
 backup_open :: proc(blob: []u8, password: string, allocator := context.allocator) -> ([]u8, bool) {
-	if len(blob) < BACKUP_HEADER || string(blob[0:4]) != BACKUP_MAGIC || blob[4] != BACKUP_VERSION {
+	if len(blob) < BACKUP_HEADER ||
+	   string(blob[0:4]) != BACKUP_MAGIC ||
+	   blob[4] != BACKUP_VERSION {
 		return nil, false
 	}
 	if uint(blob[5]) > BACKUP_MAX_LOG_N {
@@ -73,7 +82,14 @@ backup_open :: proc(blob: []u8, password: string, allocator := context.allocator
 	plain := make([]u8, len(blob) - BACKUP_HEADER, allocator)
 	ctx: chacha20poly1305.Context
 	chacha20poly1305.init_xchacha(&ctx, sym[:])
-	if !chacha20poly1305.open(&ctx, plain, blob[22:46], blob[0:BACKUP_AD_LEN], blob[BACKUP_HEADER:], blob[46:62]) {
+	if !chacha20poly1305.open(
+		&ctx,
+		plain,
+		blob[22:46],
+		blob[0:BACKUP_AD_LEN],
+		blob[BACKUP_HEADER:],
+		blob[46:62],
+	) {
 		delete(plain, allocator)
 		return nil, false
 	}
@@ -139,11 +155,15 @@ backup_target :: proc(label: string, allocator := context.temp_allocator) -> (st
 	case strings.has_prefix(label, "emoji/"):
 		dir, name = emoji_dir(allocator), label[len("emoji/"):]
 	case strings.has_prefix(label, "themes/"):
-		dir, name = fmt.aprintf("%s/themes", data_home, allocator = allocator), label[len("themes/"):]
+		dir, name =
+			fmt.aprintf("%s/themes", data_home, allocator = allocator), label[len("themes/"):]
 	case:
 		return "", false
 	}
-	if len(name) == 0 || strings.contains(name, "/") || strings.contains(name, "\\") || strings.contains(name, "..") {
+	if len(name) == 0 ||
+	   strings.contains(name, "/") ||
+	   strings.contains(name, "\\") ||
+	   strings.contains(name, "..") {
 		return "", false
 	}
 	return fmt.aprintf("%s/%s", dir, name, allocator = allocator), true

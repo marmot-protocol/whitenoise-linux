@@ -141,14 +141,18 @@ live_textures: map[^sdl.Texture]bool
 @(private)
 track_texture :: proc(tex: ^sdl.Texture) {
 	when #config(WN_RELOAD, false) {
-		if tex != nil { live_textures[tex] = true }
+		if tex != nil {live_textures[tex] = true}
 	}
 }
 
 when #config(WN_RELOAD, false) {
 	@(private)
-	Dev_Dialog_Kind :: enum c.int { Open_One, Open_Many, Save }
-	foreign {
+	Dev_Dialog_Kind :: enum c.int {
+		Open_One,
+		Open_Many,
+		Save,
+	}
+	foreign _ {
 		@(private)
 		wn_dev_window :: proc "c" (width, height: c.int, title: cstring, renderer: ^^sdl.Renderer) -> ^sdl.Window ---
 		@(private)
@@ -185,7 +189,7 @@ Glyph :: struct {
 IconFont: u16 = max(u16)
 
 @(private)
-SCANCODES := [KeyboardKey]sdl.Scancode{
+SCANCODES := [KeyboardKey]sdl.Scancode {
 	.ESCAPE        = .ESCAPE,
 	.ENTER         = .RETURN,
 	.TAB           = .TAB,
@@ -226,7 +230,14 @@ InitWindow :: proc(width, height: i32, title: cstring) {
 			fmt.eprintfln("sdl: init failed: %s", sdl.GetError())
 			os.exit(1)
 		}
-		sdl.CreateWindowAndRenderer(title, c.int(width), c.int(height), {.RESIZABLE, .HIGH_PIXEL_DENSITY}, &state.window, &state.renderer)
+		sdl.CreateWindowAndRenderer(
+			title,
+			c.int(width),
+			c.int(height),
+			{.RESIZABLE, .HIGH_PIXEL_DENSITY},
+			&state.window,
+			&state.renderer,
+		)
 	}
 	if state.window == nil || state.renderer == nil {
 		fmt.eprintfln("sdl: window failed: %s", sdl.GetError())
@@ -338,7 +349,7 @@ PickedFiles :: proc() -> [dynamic]string {
 	defer sync.unlock(&picked_mutex)
 	out := picked_paths
 	picked_paths = {}
-	when #config(WN_RELOAD, false) { wn_dev_dialogs_consumed(picked_callbacks) }
+	when #config(WN_RELOAD, false) {wn_dev_dialogs_consumed(picked_callbacks)}
 	picked_callbacks = 0
 	return out
 }
@@ -384,14 +395,20 @@ SavedFiles :: proc() -> [dynamic]string {
 	defer sync.unlock(&saved_mutex)
 	out := saved_paths
 	saved_paths = {}
-	when #config(WN_RELOAD, false) { wn_dev_dialogs_consumed(saved_callbacks) }
+	when #config(WN_RELOAD, false) {wn_dev_dialogs_consumed(saved_callbacks)}
 	saved_callbacks = 0
 	return out
 }
 
 // Rasterize sample lines of an in-memory font into owned RGBA pixels (the
 // .ttf attachment preview). Returns {} when stb can't parse the file.
-FontSpecimen :: proc(data: []u8, lines: []string, sizes: []f32, color: Color, width: i32) -> Image {
+FontSpecimen :: proc(
+	data: []u8,
+	lines: []string,
+	sizes: []f32,
+	color: Color,
+	width: i32,
+) -> Image {
 	info: stbtt.fontinfo
 	offset := stbtt.GetFontOffsetForIndex(raw_data(data), 0)
 	if offset < 0 || !bool(stbtt.InitFont(&info, raw_data(data), offset)) {
@@ -533,17 +550,17 @@ ShowWindow :: proc() {
 }
 
 CloseWindow :: proc() {
-	when #config(WN_RELOAD, false) { wn_dev_wait_dialogs() }
+	when #config(WN_RELOAD, false) {wn_dev_wait_dialogs()}
 	_ = sdl.StopTextInput(state.window)
-	if tray != nil { sdl.DestroyTray(tray); tray = nil }
-	if tray_surface != nil { sdl.DestroySurface(tray_surface); tray_surface = nil }
-	for cursor in cursors { if cursor != nil { sdl.DestroyCursor(cursor) } }
+	if tray != nil {sdl.DestroyTray(tray); tray = nil}
+	if tray_surface != nil {sdl.DestroySurface(tray_surface); tray_surface = nil}
+	for cursor in cursors {if cursor != nil {sdl.DestroyCursor(cursor)}}
 	when #config(WN_RELOAD, false) {
 		sdl.SetRenderTarget(state.renderer, nil)
 		sdl.SetRenderClipRect(state.renderer, nil)
 		sdl.SetRenderViewport(state.renderer, nil)
 		sdl.SetRenderScale(state.renderer, 1, 1)
-		for tex in live_textures { sdl.DestroyTexture(tex) }
+		for tex in live_textures {sdl.DestroyTexture(tex)}
 	} else {
 		sdl.DestroyRenderer(state.renderer)
 		sdl.DestroyWindow(state.window)
@@ -551,7 +568,7 @@ CloseWindow :: proc() {
 	}
 }
 
-SetTargetFPS :: proc(fps: i32) {} // vsync paces the loop
+SetTargetFPS :: proc(fps: i32) {} 	// vsync paces the loop
 
 // Output pixels per window point. Layout and mouse stay in points;
 // the density folds into the render scale and glyph atlases so the
@@ -582,7 +599,7 @@ IsWindowFocused :: proc() -> bool {
 
 // Pumps events and refreshes per-frame input state.
 WindowShouldClose :: proc(changed: ^bool = nil) -> bool {
-	if changed != nil { changed^ = false }
+	if changed != nil {changed^ = false}
 	for key in KeyboardKey {
 		state.pressed[key] = false
 		state.repeated[key] = false
@@ -602,7 +619,7 @@ WindowShouldClose :: proc(changed: ^bool = nil) -> bool {
 
 	event: sdl.Event
 	for sdl.PollEvent(&event) {
-		if changed != nil { changed^ = true }
+		if changed != nil {changed^ = true}
 		#partial switch event.type {
 		case .WINDOW_CLOSE_REQUESTED:
 			if hide_on_close {
@@ -923,7 +940,7 @@ LoadImageFromMemory :: proc(ext: cstring, data: [^]u8, size: i32) -> Image {
 
 LoadImage :: proc(path: cstring) -> Image {
 	data, err := os.read_entire_file(string(path), context.allocator)
-	if err != nil { return {} }
+	if err != nil {return {}}
 	defer delete(data)
 	return LoadImageFromMemory("", raw_data(data), i32(len(data)))
 }
@@ -951,7 +968,7 @@ LoadTextureFromImage :: proc(image: Image) -> Texture2D {
 
 UnloadTexture :: proc(texture: Texture2D) {
 	if texture.tex != nil {
-		when #config(WN_RELOAD, false) { delete_key(&live_textures, texture.tex) }
+		when #config(WN_RELOAD, false) {delete_key(&live_textures, texture.tex)}
 		sdl.DestroyTexture(texture.tex)
 	}
 }
@@ -980,11 +997,16 @@ UpdateTexturePixels :: proc(texture: ^Texture2D, rgba: [^]u8) {
 	// A rejected upload leaves the texture at whatever it held before
 	// (black, for a fresh one), which is invisible without this.
 	if !sdl.UpdateTexture(texture.tex, nil, rgba, texture.width * 4) {
-		fmt.eprintfln("sdlrl: UpdateTexture %dx%d failed: %s", texture.width, texture.height, sdl.GetError())
+		fmt.eprintfln(
+			"sdlrl: UpdateTexture %dx%d failed: %s",
+			texture.width,
+			texture.height,
+			sdl.GetError(),
+		)
 	}
 }
 
-SetTextureFilter :: proc(texture: Texture2D, filter: TextureFilter) {} // LINEAR set at load
+SetTextureFilter :: proc(texture: Texture2D, filter: TextureFilter) {} 	// LINEAR set at load
 
 // Vertex-colored triangle soup for the STL viewer, in layout coords
 // (the render scale applies). Clips to the given rect intersected
@@ -997,7 +1019,8 @@ FColor :: sdl.FColor
 // modulated by its color (the inspector's UV-checker view).
 DrawTrianglesClipped :: proc(vertices: []Vertex, x, y, w, h: f32, texture: ^Texture2D = nil) {
 	prev: sdl.Rect
-	had_prev := sdl.RenderClipEnabled(state.renderer) && sdl.GetRenderClipRect(state.renderer, &prev)
+	had_prev :=
+		sdl.RenderClipEnabled(state.renderer) && sdl.GetRenderClipRect(state.renderer, &prev)
 
 	clip := sdl.Rect{c.int(x), c.int(y), c.int(w), c.int(h)}
 	if had_prev && !sdl.GetRectIntersection(prev, clip, &clip) {
@@ -1031,7 +1054,7 @@ DrawTextureRect :: proc(texture: ^Texture2D, x, y, w, h: f32, tint: Color) {
 
 @(private)
 Clip_State :: struct {
-	rect: sdl.Rect,
+	rect:    sdl.Rect,
 	enabled: bool,
 }
 
@@ -1060,7 +1083,12 @@ EndScissorMode :: proc() {
 
 // Filled rounded rectangle, ported from clay_renderer_SDL3.c.
 DrawRectangleRoundedPx :: proc(x, y, w, h, corner_radius: f32, color: Color) {
-	fcolor := sdl.FColor{f32(color.r) / 255, f32(color.g) / 255, f32(color.b) / 255, f32(color.a) / 255}
+	fcolor := sdl.FColor {
+		f32(color.r) / 255,
+		f32(color.g) / 255,
+		f32(color.b) / 255,
+		f32(color.a) / 255,
+	}
 	radius := min(corner_radius, min(w, h) / 2)
 	segments := max(16, int(radius * 0.5))
 
@@ -1087,7 +1115,7 @@ DrawRectangleRoundedPx :: proc(x, y, w, h, corner_radius: f32, color: Color) {
 	corners := [4]struct {
 		cx, cy, sx, sy: f32,
 		center:         c.int,
-	}{
+	} {
 		{x + radius, y + radius, -1, -1, tl},
 		{x + w - radius, y + radius, 1, -1, tr},
 		{x + w - radius, y + h - radius, 1, 1, br},
@@ -1097,8 +1125,18 @@ DrawRectangleRoundedPx :: proc(x, y, w, h, corner_radius: f32, color: Color) {
 		for i in 0 ..< segments {
 			a1 := f32(i) * step
 			a2 := f32(i + 1) * step
-			v1 := push(&vertices, corner.cx + math.cos(a1) * radius * corner.sx, corner.cy + math.sin(a1) * radius * corner.sy, fcolor)
-			v2 := push(&vertices, corner.cx + math.cos(a2) * radius * corner.sx, corner.cy + math.sin(a2) * radius * corner.sy, fcolor)
+			v1 := push(
+				&vertices,
+				corner.cx + math.cos(a1) * radius * corner.sx,
+				corner.cy + math.sin(a1) * radius * corner.sy,
+				fcolor,
+			)
+			v2 := push(
+				&vertices,
+				corner.cx + math.cos(a2) * radius * corner.sx,
+				corner.cy + math.sin(a2) * radius * corner.sy,
+				fcolor,
+			)
 			tri(&indices, corner.center, v1, v2)
 		}
 	}
@@ -1121,13 +1159,25 @@ DrawRectangleRoundedPx :: proc(x, y, w, h, corner_radius: f32, color: Color) {
 	tri(&indices, bl, el1, el2)
 	tri(&indices, tl, bl, el2)
 
-	sdl.RenderGeometry(state.renderer, nil, raw_data(vertices), c.int(len(vertices)), raw_data(indices), c.int(len(indices)))
+	sdl.RenderGeometry(
+		state.renderer,
+		nil,
+		raw_data(vertices),
+		c.int(len(vertices)),
+		raw_data(indices),
+		c.int(len(indices)),
+	)
 }
 
 // Border corner arc as a filled annular sector (triangle strip), so
 // it stays solid at any render scale.
 DrawArc :: proc(cx, cy, radius, start_deg, end_deg, thickness: f32, color: Color) {
-	fcolor := sdl.FColor{f32(color.r) / 255, f32(color.g) / 255, f32(color.b) / 255, f32(color.a) / 255}
+	fcolor := sdl.FColor {
+		f32(color.r) / 255,
+		f32(color.g) / 255,
+		f32(color.b) / 255,
+		f32(color.a) / 255,
+	}
 	outer := radius
 	inner := max(radius - max(thickness, 1), 0)
 	rad_start := start_deg * math.PI / 180
@@ -1141,8 +1191,14 @@ DrawArc :: proc(cx, cy, radius, start_deg, end_deg, thickness: f32, color: Color
 		angle := rad_start + f32(i) * angle_step
 		cos := math.cos(angle)
 		sin := math.sin(angle)
-		append(&vertices, sdl.Vertex{position = {cx + cos * outer, cy + sin * outer}, color = fcolor})
-		append(&vertices, sdl.Vertex{position = {cx + cos * inner, cy + sin * inner}, color = fcolor})
+		append(
+			&vertices,
+			sdl.Vertex{position = {cx + cos * outer, cy + sin * outer}, color = fcolor},
+		)
+		append(
+			&vertices,
+			sdl.Vertex{position = {cx + cos * inner, cy + sin * inner}, color = fcolor},
+		)
 	}
 	for i in 0 ..< segments {
 		o0 := c.int(i * 2)
@@ -1151,7 +1207,14 @@ DrawArc :: proc(cx, cy, radius, start_deg, end_deg, thickness: f32, color: Color
 		i1 := o0 + 3
 		append(&indices, o0, i0, o1, i0, i1, o1)
 	}
-	sdl.RenderGeometry(state.renderer, nil, raw_data(vertices), c.int(len(vertices)), raw_data(indices), c.int(len(indices)))
+	sdl.RenderGeometry(
+		state.renderer,
+		nil,
+		raw_data(vertices),
+		c.int(len(vertices)),
+		raw_data(indices),
+		c.int(len(indices)),
+	)
 }
 
 // ── Text engine ─────────────────────────────────────────────────────
@@ -1165,7 +1228,11 @@ SetPixelScale :: proc(scale: f32) {
 // Register a font id as an ordered fallback stack of files (first hit
 // per glyph wins). Missing files are skipped. The optional image resolver
 // shares the app's emoji cache between text measurement and drawing.
-LoadFontStack :: proc(font_id: u16, paths: []cstring, text_image: proc(text: string) -> ^Texture2D = nil) {
+LoadFontStack :: proc(
+	font_id: u16,
+	paths: []cstring,
+	text_image: proc(text: string) -> ^Texture2D = nil,
+) {
 	if text_image != nil {
 		state.text_image = text_image
 	}
@@ -1186,7 +1253,7 @@ LoadFontStack :: proc(font_id: u16, paths: []cstring, text_image: proc(text: str
 			if err != nil {
 				continue
 			}
-			file := Font_File{
+			file := Font_File {
 				path = strings.clone(string(path)),
 				data = data,
 			}
@@ -1250,7 +1317,10 @@ get_glyph :: proc(font_id: u16, px: u16, r: rune) -> (Glyph, int) {
 	advance, lsb: c.int
 	stbtt.GetCodepointHMetrics(info, r, &advance, &lsb)
 
-	glyph := Glyph{advance = f32(advance) * scale, file = file}
+	glyph := Glyph {
+		advance = f32(advance) * scale,
+		file    = file,
+	}
 	w, h, xoff, yoff: c.int
 	bitmap := stbtt.GetCodepointBitmap(info, scale, scale, r, &w, &h, &xoff, &yoff)
 	if bitmap != nil && w > 0 && h > 0 {
@@ -1304,7 +1374,7 @@ MeasureTextLine :: proc(font_id: u16, size: u16, text: string, letter_spacing: f
 			continue
 		}
 		for r in cluster {
-			if r == 0xFE0E || r == 0xFE0F || r == 0x200D { continue }
+			if r == 0xFE0E || r == 0xFE0F || r == 0x200D {continue}
 			glyph, _ := get_glyph(font_id, px, r)
 			width += glyph.advance / state.pixel_scale + letter_spacing
 		}
@@ -1315,7 +1385,14 @@ MeasureTextLine :: proc(font_id: u16, size: u16, text: string, letter_spacing: f
 // Draw one line of text with per-rune font fallback. Coordinates are
 // in the scaled drawing space; glyphs are baked pixel_scale denser so
 // the render scale lands them 1:1 on output pixels.
-DrawTextLine :: proc(font_id: u16, size: u16, text: string, x, y: f32, letter_spacing: f32, color: Color) {
+DrawTextLine :: proc(
+	font_id: u16,
+	size: u16,
+	text: string,
+	x, y: f32,
+	letter_spacing: f32,
+	color: Color,
+) {
 	px := u16(f32(size) * state.pixel_scale + 0.5)
 	pen := x
 	it := utf8.decode_grapheme_iterator_make(text)
@@ -1328,7 +1405,7 @@ DrawTextLine :: proc(font_id: u16, size: u16, text: string, x, y: f32, letter_sp
 			}
 		}
 		for r in cluster {
-			if r == 0xFE0E || r == 0xFE0F || r == 0x200D { continue }
+			if r == 0xFE0E || r == 0xFE0F || r == 0x200D {continue}
 			glyph, file := get_glyph(font_id, px, r)
 			if glyph.tex != nil {
 				sdl.SetTextureColorMod(glyph.tex, color.r, color.g, color.b)
@@ -1343,7 +1420,7 @@ DrawTextLine :: proc(font_id: u16, size: u16, text: string, x, y: f32, letter_sp
 				if glyph.icon {
 					top = y + (f32(size) - f32(glyph.h) / ps) / 2
 				}
-				dest := sdl.FRect{
+				dest := sdl.FRect {
 					math.round((pen + f32(glyph.xoff) / ps) * ps) / ps,
 					math.round(top * ps) / ps,
 					f32(glyph.w) / ps,
@@ -1513,7 +1590,7 @@ ensure_target :: proc(t: ^Target, w, h: i32) -> bool {
 		return true
 	}
 	if t.tex != nil {
-		when #config(WN_RELOAD, false) { delete_key(&live_textures, t.tex) }
+		when #config(WN_RELOAD, false) {delete_key(&live_textures, t.tex)}
 		sdl.DestroyTexture(t.tex)
 		t.tex = nil
 	}

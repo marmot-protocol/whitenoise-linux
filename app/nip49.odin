@@ -47,7 +47,15 @@ bech32_hrp_expand :: proc(hrp: string, out: ^[dynamic]u8) {
 
 // 8-bit → 5-bit regroup (pad = true for encode).
 @(private = "file")
-convert_bits :: proc(data: []u8, from, to: uint, pad: bool, allocator := context.temp_allocator) -> ([]u8, bool) {
+convert_bits :: proc(
+	data: []u8,
+	from, to: uint,
+	pad: bool,
+	allocator := context.temp_allocator,
+) -> (
+	[]u8,
+	bool,
+) {
 	out := make([dynamic]u8, allocator)
 	acc: u32
 	bits: uint
@@ -95,7 +103,7 @@ bech32_encode :: proc(hrp: string, data: []u8) -> string {
 // Returns (hrp, payload bytes, ok). Checksum is verified.
 bech32_decode :: proc(s: string, allocator := context.temp_allocator) -> (string, []u8, bool) {
 	lower := strings.to_lower(s, context.temp_allocator)
-	if s != lower && s != strings.to_upper(s, context.temp_allocator) { return "", nil, false }
+	if s != lower && s != strings.to_upper(s, context.temp_allocator) {return "", nil, false}
 	sep := strings.last_index_byte(lower, '1')
 	if sep < 1 || sep + 7 > len(lower) {
 		return "", nil, false
@@ -181,7 +189,11 @@ scrypt_r8p1 :: proc(password: []u8, salt: []u8, log_n: uint, dst: []u8) {
 	raw := make([]u8, 1024, context.temp_allocator)
 	pbkdf2.derive(hash.Algorithm.SHA256, password, salt, 1, raw)
 	for i in 0 ..< 256 {
-		block[i] = u32(raw[i * 4]) | u32(raw[i * 4 + 1]) << 8 | u32(raw[i * 4 + 2]) << 16 | u32(raw[i * 4 + 3]) << 24
+		block[i] =
+			u32(raw[i * 4]) |
+			u32(raw[i * 4 + 1]) << 8 |
+			u32(raw[i * 4 + 2]) << 16 |
+			u32(raw[i * 4 + 3]) << 24
 	}
 
 	v := make([][256]u32, n)
@@ -264,7 +276,14 @@ nip49_decrypt :: proc(ncryptsec: string, password: string) -> string {
 	key: [32]u8
 	ctx: chacha20poly1305.Context
 	chacha20poly1305.init_xchacha(&ctx, sym[:])
-	if !chacha20poly1305.open(&ctx, key[:], payload[18:42], payload[42:43], payload[43:75], payload[75:91]) {
+	if !chacha20poly1305.open(
+		&ctx,
+		key[:],
+		payload[18:42],
+		payload[42:43],
+		payload[43:75],
+		payload[75:91],
+	) {
 		return ""
 	}
 

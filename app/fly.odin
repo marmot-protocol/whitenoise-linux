@@ -103,7 +103,12 @@ fly_layer :: proc() {
 			if clay.UI(id)(
 			{
 				layout = {sizing = {width = clay.SizingFixed(w), height = clay.SizingFixed(h)}},
-				floating = {attachTo = .Root, zIndex = 30, offset = {x, y}, attachment = {element = .LeftTop, parent = .LeftTop}},
+				floating = {
+					attachTo = .Root,
+					zIndex = 30,
+					offset = {x, y},
+					attachment = {element = .LeftTop, parent = .LeftTop},
+				},
 				image = {imageData = f.tex},
 				cornerRadius = rr(f.shape == .Round ? w / 2 : 8),
 				overlayColor = {255, 255, 255, alpha * 255},
@@ -118,14 +123,22 @@ fly_layer :: proc() {
 				padding = {left = 10, right = 10},
 				childAlignment = {x = .Center, y = .Center},
 			},
-			floating = {attachTo = .Root, zIndex = 30, offset = {x, y}, attachment = {element = .LeftTop, parent = .LeftTop}},
+			floating = {
+				attachTo = .Root,
+				zIndex = 30,
+				offset = {x, y},
+				attachment = {element = .LeftTop, parent = .LeftTop},
+			},
 			backgroundColor = fade(f.color, alpha),
 			cornerRadius = rr(h / 2), // a pill for the send, a circle for an avatar
 			clip = {horizontal = true, vertical = true},
 		},
 		) {
 			if len(f.text) > 0 {
-				clay.Text(f.text, {fontId = FONT_BODY, fontSize = 13, textColor = fade(ON_ACCENT, alpha)})
+				clay.Text(
+					f.text,
+					{fontId = FONT_BODY, fontSize = 13, textColor = fade(ON_ACCENT, alpha)},
+				)
 			}
 		}
 	}

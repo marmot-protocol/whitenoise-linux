@@ -2,8 +2,8 @@
 // Run: ODIN_ROOT=build/odin-root tests/odin.sh app
 package main
 
-import "core:testing"
 import "core:encoding/endian"
+import "core:testing"
 
 @(test)
 voice_wav_round_trip :: proc(t: ^testing.T) {
@@ -21,7 +21,7 @@ voice_wav_round_trip :: proc(t: ^testing.T) {
 	count, _ := endian.get_u32(wav[40:], .Little)
 	testing.expect_value(t, count, u32(VOICE_RATE * 2))
 	first, _ := endian.get_u16(wav[44:], .Little)
-	last, _ := endian.get_u16(wav[len(wav)-2:], .Little)
+	last, _ := endian.get_u16(wav[len(wav) - 2:], .Little)
 	testing.expect_value(t, first, u16(0))
 	testing.expect_value(t, last, u16(30000))
 }

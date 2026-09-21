@@ -27,8 +27,8 @@ import "core:encoding/json"
 import "core:fmt"
 import "core:math"
 import "core:os"
-import "core:strings"
 import "core:strconv"
+import "core:strings"
 import "core:sync"
 import "core:thread"
 import "core:unicode/utf8"
@@ -38,10 +38,7 @@ import clay "../vendor/clay/bindings/odin/clay-odin"
 import marmot "../marmot"
 import rl "sdlrl"
 
-foreign import wslib {
-	"../build/libwnws.a",
-	"system:curl",
-}
+foreign import wslib {"../build/libwnws.a", "system:curl"}
 
 @(default_calling_convention = "c")
 foreign wslib {
@@ -61,16 +58,16 @@ NEV_TIMEOUT_MS :: 6000
 NEV_TEXT_KINDS := []i64{1, 11, 1111, 30023}
 
 Nev_Card :: struct {
-	product: Nev_Product,
+	product:  Nev_Product,
 	geocache: Nev_Geocache,
-	done:    bool, // fetch finished; raw == "" then means not found
-	kind:    i64,
-	pubkey:  string,
-	content: string,
-	created: i64,
-	stamp:   string, // created formatted for the header, set on drain
-	raw:     string, // pretty-printed event JSON
-	blocks:  [dynamic]Md_Block_Ui, // content as markdown blocks, built on drain
+	done:     bool, // fetch finished; raw == "" then means not found
+	kind:     i64,
+	pubkey:   string,
+	content:  string,
+	created:  i64,
+	stamp:    string, // created formatted for the header, set on drain
+	raw:      string, // pretty-printed event JSON
+	blocks:   [dynamic]Md_Block_Ui, // content as markdown blocks, built on drain
 }
 
 // event id hex → card. An entry appears the frame the token is first
@@ -117,7 +114,7 @@ Nev_Job :: struct {
 nevent_at :: proc(text: string, i: int) -> (end: int, id: string, relays: []string, ok: bool) {
 	ref: Nostr_Ref
 	end, ref = nostr_at(text, i)
-	if ref.kind != .Event && ref.kind != .Address { return 0, "", nil, false }
+	if ref.kind != .Event && ref.kind != .Address {return 0, "", nil, false}
 	return end, ref.key, ref.relays, true
 }
 
@@ -126,7 +123,10 @@ nevent_at :: proc(text: string, i: int) -> (end: int, id: string, relays: []stri
 @(private = "file")
 nev_cache_path :: proc(id: string) -> string {
 	key := id
-	if strings.has_prefix(id, "naddr1") { key = string(hex.encode(hash.hash_string(.SHA256, id, context.temp_allocator), context.temp_allocator)) }
+	if strings.has_prefix(
+		id,
+		"naddr1",
+	) {key = string(hex.encode(hash.hash_string(.SHA256, id, context.temp_allocator), context.temp_allocator))}
 	return fmt.tprintf("%s/events/%s.json", data_home, key)
 }
 
@@ -161,18 +161,27 @@ nev_worker :: proc(job: ^Nev_Job) {
 		seen := make(map[string]bool, context.temp_allocator)
 		for pass in 0 ..< 2 {
 			if pass == 1 {
-				if len(job.author) == 0 { break }
+				if len(job.author) == 0 {break}
 				relays = nil
-				discover := fmt.ctprintf(`["REQ","wn",{{"authors":["%s"],"kinds":[10002],"limit":1}}]`, job.author)
+				discover := fmt.ctprintf(
+					`["REQ","wn",{{"authors":["%s"],"kinds":[10002],"limit":1}}]`,
+					job.author,
+				)
 				for relay in job.relays {
-					n := wn_ws_fetch(strings.clone_to_cstring(relay, context.temp_allocator), discover, raw_data(buf), NEV_MAX, NEV_TIMEOUT_MS)
-					if n <= 0 { continue }
+					n := wn_ws_fetch(
+						strings.clone_to_cstring(relay, context.temp_allocator),
+						discover,
+						raw_data(buf),
+						NEV_MAX,
+						NEV_TIMEOUT_MS,
+					)
+					if n <= 0 {continue}
 					relays = nev_relay_urls(buf[:n], job.author)
-					if len(relays) > 0 { break }
+					if len(relays) > 0 {break}
 				}
 			}
 			for relay in relays {
-				if seen[relay] { continue }
+				if seen[relay] {continue}
 				seen[relay] = true
 				relay_c := strings.clone_to_cstring(relay)
 				n := wn_ws_fetch(relay_c, req_c, raw_data(buf), NEV_MAX, NEV_TIMEOUT_MS)
@@ -185,15 +194,15 @@ nev_worker :: proc(job: ^Nev_Job) {
 					continue
 				}
 				delete(card.raw); delete(card.content); delete(card.pubkey)
-				for value in ([]string{card.product.title, card.product.summary, card.product.image, card.product.price, card.product.availability, card.product.stock, card.product.location}) { delete(value) }
-				for value in ([]string{card.geocache.name, card.geocache.image, card.geocache.hint, card.geocache.size, card.geocache.mission, card.geocache.geohash}) { delete(value) }
+				for value in ([]string{card.product.title, card.product.summary, card.product.image, card.product.price, card.product.availability, card.product.stock, card.product.location}) {delete(value)}
+				for value in ([]string{card.geocache.name, card.geocache.image, card.geocache.hint, card.geocache.size, card.geocache.mission, card.geocache.geohash}) {delete(value)}
 				card = fresh
 				found = true
 				os.make_directory(fmt.tprintf("%s/events", data_home))
 				_ = os.write_entire_file(nev_cache_path(job.id), transmute([]u8)card.raw)
 				break
 			}
-			if found { break }
+			if found {break}
 		}
 	}
 
@@ -250,7 +259,14 @@ nev_split_images :: proc(blocks: ^[dynamic]Md_Block_Ui) {
 			before := strings.trim_space(block.text[at:start])
 			if len(before) > 0 {
 				lo := start - len(strings.trim_left_space(block.text[at:start]))
-				append(&out, Md_Block_Ui{kind = .Para, text = strings.clone(before), fonts = strings.clone(text_fonts(block.fonts, lo, lo + len(before)))})
+				append(
+					&out,
+					Md_Block_Ui {
+						kind = .Para,
+						text = strings.clone(before),
+						fonts = strings.clone(text_fonts(block.fonts, lo, lo + len(before))),
+					},
+				)
 			}
 			append(&out, Md_Block_Ui{kind = .Image, text = strings.clone(url)})
 			at = start + len(url)
@@ -258,7 +274,14 @@ nev_split_images :: proc(blocks: ^[dynamic]Md_Block_Ui) {
 		after := strings.trim_space(block.text[at:])
 		if len(after) > 0 {
 			lo := len(block.text) - len(strings.trim_left_space(block.text[at:]))
-			append(&out, Md_Block_Ui{kind = .Para, text = strings.clone(after), fonts = strings.clone(text_fonts(block.fonts, lo, lo + len(after)))})
+			append(
+				&out,
+				Md_Block_Ui {
+					kind = .Para,
+					text = strings.clone(after),
+					fonts = strings.clone(text_fonts(block.fonts, lo, lo + len(after))),
+				},
+			)
 		}
 		out[first].blank_lines_before = block.blank_lines_before
 		delete(block.text)
@@ -286,7 +309,29 @@ nev_img_worker :: proc(url: string) {
 	if !os.exists(path) {
 		os.make_directory(fmt.tprintf("%s/events", data_home))
 		os.make_directory(fmt.tprintf("%s/events/img", data_home))
-		state, _, _, err := os.process_exec({command = {"curl", "-sfL", "--proto", "=http,https", "--proto-redir", "=http,https", "--user-agent", "WhiteNoiseLinux/1.0 (Nostr event previews)", "--max-time", "20", "--max-filesize", "16777216", "-o", path, "--", url}}, context.temp_allocator)
+		state, _, _, err := os.process_exec(
+			{
+				command = {
+					"curl",
+					"-sfL",
+					"--proto",
+					"=http,https",
+					"--proto-redir",
+					"=http,https",
+					"--user-agent",
+					"WhiteNoiseLinux/1.0 (Nostr event previews)",
+					"--max-time",
+					"20",
+					"--max-filesize",
+					"16777216",
+					"-o",
+					path,
+					"--",
+					url,
+				},
+			},
+			context.temp_allocator,
+		)
 		if err != nil || state.exit_code != 0 {
 			os.remove(path)
 		}
@@ -336,7 +381,7 @@ nev_parse :: proc(body: []u8, shape: Nev_Shape, key: string = "") -> (card: Nev_
 		}
 		message, _ := arr[0].(json.String)
 		subscription, _ := arr[1].(json.String)
-		if message != "EVENT" || subscription != "wn" { return }
+		if message != "EVENT" || subscription != "wn" {return}
 		ev_val = arr[2]
 	}
 	ev, is_obj := ev_val.(json.Object)
@@ -351,31 +396,31 @@ nev_parse :: proc(body: []u8, shape: Nev_Shape, key: string = "") -> (card: Nev_
 	if len(key) > 0 {
 		_, ref := nostr_at(key, 0)
 		if ref.kind == .Address {
-			if kind != json.Float(ref.event_kind) || pubkey != json.String(ref.author) { return }
+			if kind != json.Float(ref.event_kind) || pubkey != json.String(ref.author) {return}
 			if ref.event_kind >= 30000 {
 				matched := false
 				if tags, ok := ev["tags"].(json.Array); ok {
 					for tag in tags {
 						if values, ok := tag.(json.Array); ok && len(values) >= 2 {
 							name, _ := values[0].(json.String)
-							if name != "d" { continue }
+							if name != "d" {continue}
 							identifier, ok := values[1].(json.String)
 							matched = ok && identifier == json.String(ref.identifier)
 							break
 						}
 					}
 				}
-				if !matched { return }
+				if !matched {return}
 			}
 		} else {
 			id, _ := ev["id"].(json.String)
-			if id != json.String(key) { return }
+			if id != json.String(key) {return}
 		}
 	}
 	card.kind = i64(kind)
 	card.pubkey = strings.clone(pubkey)
-	if card.kind == NEV_PRODUCT_KIND { card.product = nev_product_parse(ev) }
-	if card.kind == NEV_GEOCACHE_KIND { card.geocache = nev_geocache_parse(ev) }
+	if card.kind == NEV_PRODUCT_KIND {card.product = nev_product_parse(ev)}
+	if card.kind == NEV_GEOCACHE_KIND {card.geocache = nev_geocache_parse(ev)}
 	if content, ok := ev["content"].(json.String); ok {
 		card.content = strings.clone(content)
 	}
@@ -432,8 +477,19 @@ drain_nev :: proc() {
 		}
 		if card.kind != 0 && card.kind != 16767 && len(card.content) > 0 && g_client != nil {
 			doc: ^marmot.Markdown_Document
-			if marmot.parse_markdown(g_client, strings.clone_to_cstring(card.content, context.temp_allocator), &doc) == .OK {
-				convert_blocks(&card.blocks, doc.blocks, doc.blocks_len, false, ([^]u8)(doc.blank_lines_before)[:doc.blank_lines_before_len])
+			if marmot.parse_markdown(
+				   g_client,
+				   strings.clone_to_cstring(card.content, context.temp_allocator),
+				   &doc,
+			   ) ==
+			   .OK {
+				convert_blocks(
+					&card.blocks,
+					doc.blocks,
+					doc.blocks_len,
+					false,
+					([^]u8)(doc.blank_lines_before)[:doc.blank_lines_before_len],
+				)
 				marmot.markdown_document_free(doc)
 				nev_split_images(&card.blocks)
 			}
@@ -495,7 +551,7 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 	}
 	card := nev_lookup(evid, token, hints)
 	nev_depth += 1
-	defer { nev_depth -= 1 }
+	defer {nev_depth -= 1}
 
 	textual := false
 	for k in NEV_TEXT_KINDS {
@@ -507,13 +563,26 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 
 	if clay.UI(clay.ID("NevCard", id))(
 	{
-		layout = {sizing = {width = clay.SizingFixed(att_w())}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(12), childGap = 6},
+		layout = {
+			sizing = {width = clay.SizingFixed(att_w())},
+			layoutDirection = .TopToBottom,
+			padding = clay.PaddingAll(12),
+			childGap = 6,
+		},
 		backgroundColor = PLATE,
 		cornerRadius = rr(10),
 		border = {color = CARD_BORDER, width = bw()},
 	},
 	) {
-		if clay.UI(clay.ID("NevCardHead", id))({layout = {sizing = {width = clay.SizingFixed(inner_w)}, childGap = 8, childAlignment = {y = .Center}}}) {
+		if clay.UI(clay.ID("NevCardHead", id))(
+		{
+			layout = {
+				sizing = {width = clay.SizingFixed(inner_w)},
+				childGap = 8,
+				childAlignment = {y = .Center},
+			},
+		},
+		) {
 			clay.Text(ICON_GLOBE, {fontId = FONT_ICON, fontSize = 11, textColor = TEXT_LO})
 			switch {
 			case len(card.raw) == 0:
@@ -525,10 +594,18 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 			case textual:
 				eyebrow("NOTE")
 			case:
-				clay.Text(fmt.tprintf("KIND %d", card.kind), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
+				clay.Text(
+					fmt.tprintf("KIND %d", card.kind),
+					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+				)
 			}
-			if len(card.pubkey) > 0 && card.kind != NEV_PRODUCT_KIND && card.kind != NEV_GEOCACHE_KIND {
-				clay.Text(fmt.tprintf("%s · %s", mention_label(card.pubkey), card.stamp), {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO})
+			if len(card.pubkey) > 0 &&
+			   card.kind != NEV_PRODUCT_KIND &&
+			   card.kind != NEV_GEOCACHE_KIND {
+				clay.Text(
+					fmt.tprintf("%s · %s", mention_label(card.pubkey), card.stamp),
+					{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO},
+				)
 			}
 		}
 
@@ -536,13 +613,19 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 		case !card.done:
 			clay.Text(tr("Loading…"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
 		case len(card.raw) == 0:
-			clay.Text(tr("Couldn't load this event. Check your relay settings and try again."), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
-			if clay.UI(clay.ID("NevRetry", id))({layout = {padding = {top = 4, bottom = 4}}, backgroundColor = hovered() ? HOVER : {}}) {
-				if hovered() { nev_retry_hover = evid }
+			clay.Text(
+				tr("Couldn't load this event. Check your relay settings and try again."),
+				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+			)
+			if clay.UI(clay.ID("NevRetry", id))(
+			{layout = {padding = {top = 4, bottom = 4}}, backgroundColor = hovered() ? HOVER : {}},
+			) {
+				if hovered() {nev_retry_hover = evid}
 				clay.Text(tr("Retry"), {fontId = FONT_BODY, fontSize = 12, textColor = ACCENT})
 			}
 		case card.kind == NEV_PRODUCT_KIND:
-			if len(card.pubkey) > 0 { body_text(0x30000000 + id, mention_label(card.pubkey), 11, TEXT_LO, wrap_w = inner_w, max_lines = 1) }
+			if len(card.pubkey) >
+			   0 {body_text(0x30000000 + id, mention_label(card.pubkey), 11, TEXT_LO, wrap_w = inner_w, max_lines = 1)}
 			nev_product_card(id, evid, card, inner_w)
 		case card.kind == NEV_GEOCACHE_KIND:
 			nev_geocache_card(id, evid, card, inner_w)
@@ -556,14 +639,27 @@ nev_card :: proc(id: u32, evid: string, token: string, hints: []string) {
 		// external-link guard as a text link.
 		if g_ui != nil && strings.contains(g_ui.prefs.event_client, "{id}") {
 			_, ref := nostr_at(token, 0)
-			url, _ := strings.replace_all(g_ui.prefs.event_client, "{id}", ref.token, context.temp_allocator)
+			url, _ := strings.replace_all(
+				g_ui.prefs.event_client,
+				"{id}",
+				ref.token,
+				context.temp_allocator,
+			)
 			if clay.UI(clay.ID("NevOpen", id))(
-			{layout = {padding = {left = 10, right = 10, top = 5, bottom = 5}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(7), border = {color = FIELD_BORDER, width = bw()}},
+			{
+				layout = {padding = {left = 10, right = 10, top = 5, bottom = 5}},
+				backgroundColor = hovered() ? HOVER : {},
+				cornerRadius = rr(7),
+				border = {color = FIELD_BORDER, width = bw()},
+			},
 			) {
 				if hovered() {
 					link_hover = url
 				}
-				clay.Text(tr("Open in client"), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+				clay.Text(
+					tr("Open in client"),
+					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+				)
 			}
 		}
 	}
@@ -592,33 +688,38 @@ nev_product_parse :: proc(ev: json.Object) -> (product: Nev_Product) {
 	image_order := max(i64)
 	for tag, index in tags {
 		values, ok := tag.(json.Array)
-		if !ok || len(values) < 2 { continue }
+		if !ok || len(values) < 2 {continue}
 		name, _ := values[0].(json.String)
 		value, is_string := values[1].(json.String)
-		if !is_string { continue }
+		if !is_string {continue}
 		text := string(value)
 		switch name {
-		case "title": product.title = text
-		case "summary": product.summary = text
-		case "location": product.location = text
-		case "status": status = text
-		case "visibility": visibility = text
+		case "title":
+			product.title = text
+		case "summary":
+			product.summary = text
+		case "location":
+			product.location = text
+		case "status":
+			status = text
+		case "visibility":
+			visibility = text
 		case "stock":
-			if _, valid := strconv.parse_u64(text); valid { product.stock = text }
+			if _, valid := strconv.parse_u64(text); valid {product.stock = text}
 		case "image":
 			end, _, valid := url_at(text, 0)
-			if !valid || end != len(text) { continue }
+			if !valid || end != len(text) {continue}
 			order := i64(index)
 			if len(values) > 3 {
 				if raw, ok := values[3].(json.String); ok {
-					if n, valid := strconv.parse_i64(string(raw)); valid { order = n }
+					if n, valid := strconv.parse_i64(string(raw)); valid {order = n}
 				}
 			}
-			if order < image_order { product.image, image_order = text, order }
+			if order < image_order {product.image, image_order = text, order}
 		case "price":
-			if len(values) < 3 { continue }
+			if len(values) < 3 {continue}
 			currency, ok := values[2].(json.String)
-			if !ok || len(text) == 0 || len(currency) == 0 { continue }
+			if !ok || len(text) == 0 || len(currency) == 0 {continue}
 			product.price = fmt.tprintf("%s %s", text, currency)
 			if len(values) > 3 {
 				if frequency, ok := values[3].(json.String); ok && len(frequency) > 0 {
@@ -628,11 +729,16 @@ nev_product_parse :: proc(ev: json.Object) -> (product: Nev_Product) {
 		}
 	}
 	switch {
-	case visibility == "hidden": product.availability = N_("Hidden")
-	case status == "sold": product.availability = N_("Sold")
-	case product.stock == "0": product.availability = N_("Out of stock")
-	case visibility == "pre-order": product.availability = N_("Pre-order")
-	case visibility == "on-sale" || status == "active": product.availability = N_("On sale")
+	case visibility == "hidden":
+		product.availability = N_("Hidden")
+	case status == "sold":
+		product.availability = N_("Sold")
+	case product.stock == "0":
+		product.availability = N_("Out of stock")
+	case visibility == "pre-order":
+		product.availability = N_("Pre-order")
+	case visibility == "on-sale" || status == "active":
+		product.availability = N_("On sale")
 	}
 	for field in ([]^string{&product.title, &product.summary, &product.image, &product.price, &product.availability, &product.stock, &product.location}) {
 		field^ = strings.clone(field^)
@@ -647,22 +753,36 @@ nev_product_card :: proc(id: u32, key: string, card: Nev_Card, width: f32) {
 	base := 0x20000000 + id * 64
 	if len(p.title) > 0 {
 		fonts := make([]u8, len(p.title), context.temp_allocator)
-		for &font in fonts { font = u8(FONT_TITLE) }
+		for &font in fonts {font = u8(FONT_TITLE)}
 		body_text(base, p.title, 17, TEXT, wrap_w = width, max_lines = 2, fonts = string(fonts))
 	}
-	if len(p.price) > 0 { body_text(base + 1, p.price, 16, ACCENT, wrap_w = width, max_lines = 2) }
-	if len(p.availability) > 0 { body_text(base + 2, tr(p.availability), 12, TEXT_DIM, wrap_w = width) }
-	if len(p.stock) > 0 { body_text(base + 3, fmt.tprintf(tr("Stock: %s"), p.stock), 12, TEXT_LO, wrap_w = width) }
-	if len(p.location) > 0 { body_text(base + 4, p.location, 12, TEXT_LO, wrap_w = width, max_lines = 2) }
+	if len(p.price) > 0 {body_text(base + 1, p.price, 16, ACCENT, wrap_w = width, max_lines = 2)}
+	if len(p.availability) >
+	   0 {body_text(base + 2, tr(p.availability), 12, TEXT_DIM, wrap_w = width)}
+	if len(p.stock) >
+	   0 {body_text(base + 3, fmt.tprintf(tr("Stock: %s"), p.stock), 12, TEXT_LO, wrap_w = width)}
+	if len(p.location) >
+	   0 {body_text(base + 4, p.location, 12, TEXT_LO, wrap_w = width, max_lines = 2)}
 	nev_card_excerpt(id, key, card, width, p.summary)
 }
 
 @(private = "file")
 nev_card_image :: proc(id: u32, url: string, width: f32) {
-	if len(url) == 0 { return }
+	if len(url) == 0 {return}
 	if tex := nev_img(url); tex != nil && tex.width > 0 && tex.height > 0 {
 		scale := min(width / f32(tex.width), 200 / f32(tex.height))
-		if clay.UI(clay.ID("NevImage", id))({layout = {sizing = {width = clay.SizingFixed(f32(tex.width) * scale), height = clay.SizingFixed(f32(tex.height) * scale)}}, image = {imageData = tex}, cornerRadius = rr(6)}) {}
+		if clay.UI(clay.ID("NevImage", id))(
+		{
+			layout = {
+				sizing = {
+					width = clay.SizingFixed(f32(tex.width) * scale),
+					height = clay.SizingFixed(f32(tex.height) * scale),
+				},
+			},
+			image = {imageData = tex},
+			cornerRadius = rr(6),
+		},
+		) {}
 	}
 }
 
@@ -674,11 +794,22 @@ nev_card_excerpt :: proc(id: u32, key: string, card: Nev_Card, width: f32, summa
 	if len(summary) == 0 && len(card.blocks) > 0 {
 		more = md_blocks(card.blocks[:], base + 5, false, width, MESSAGE_LINES)
 	} else {
-		more = body_text(base + 5, description, BODY_FS, TEXT_DIM, wrap_w = width, max_lines = MESSAGE_LINES) > MESSAGE_LINES
+		more =
+			body_text(
+				base + 5,
+				description,
+				BODY_FS,
+				TEXT_DIM,
+				wrap_w = width,
+				max_lines = MESSAGE_LINES,
+			) >
+			MESSAGE_LINES
 	}
 	if more || len(summary) > 0 && summary != card.content || len(card.geocache.mission) > 0 {
-		if clay.UI(clay.ID("NevMore", id))({layout = {padding = {top = 4, bottom = 4}}, backgroundColor = hovered() ? HOVER : {}}) {
-			if hovered() { nev_more_hover = key }
+		if clay.UI(clay.ID("NevMore", id))(
+		{layout = {padding = {top = 4, bottom = 4}}, backgroundColor = hovered() ? HOVER : {}},
+		) {
+			if hovered() {nev_more_hover = key}
 			clay.Text(tr("Read more"), {fontId = FONT_BODY, fontSize = 12, textColor = ACCENT})
 		}
 	}
@@ -690,22 +821,22 @@ NEV_GEOCACHE_KIND :: 37516
 @(private)
 Nev_Geocache :: struct {
 	name, image, hint, size, mission, geohash: string,
-	difficulty, terrain: int,
-	lat, lon: f64,
+	difficulty, terrain:                       int,
+	lat, lon:                                  f64,
 }
 
 // Geohash alternates longitude and latitude bisections, most significant bit first.
 @(private)
 geohash_coords :: proc(value: string) -> (lat, lon: f64, valid: bool) {
-	if len(value) < 3 || len(value) > 9 { return }
+	if len(value) < 3 || len(value) > 9 {return}
 	lo, hi := [2]f64{-180, -90}, [2]f64{180, 90}
 	axis := 0
 	for c in value {
 		n := strings.index_rune("0123456789bcdefghjkmnpqrstuvwxyz", c)
-		if n < 0 { return }
+		if n < 0 {return}
 		for bit := 4; bit >= 0; bit -= 1 {
 			mid := (lo[axis] + hi[axis]) / 2
-			if n & (1 << uint(bit)) != 0 { lo[axis] = mid } else { hi[axis] = mid }
+			if n & (1 << uint(bit)) != 0 {lo[axis] = mid} else {hi[axis] = mid}
 			axis = 1 - axis
 		}
 	}
@@ -717,36 +848,46 @@ nev_geocache_parse :: proc(ev: json.Object) -> (cache: Nev_Geocache) {
 	tags, _ := ev["tags"].(json.Array)
 	for tag in tags {
 		values, ok := tag.(json.Array)
-		if !ok || len(values) < 2 { continue }
+		if !ok || len(values) < 2 {continue}
 		name, _ := values[0].(json.String)
 		value, is_string := values[1].(json.String)
-		if !is_string { continue }
+		if !is_string {continue}
 		text := string(value)
 		switch name {
-		case "name": if len(cache.name) == 0 { cache.name = text }
-		case "hint": if len(cache.hint) == 0 { cache.hint = text }
-		case "mission": if len(cache.mission) == 0 { cache.mission = text }
+		case "name":
+			if len(cache.name) == 0 {cache.name = text}
+		case "hint":
+			if len(cache.hint) == 0 {cache.hint = text}
+		case "mission":
+			if len(cache.mission) == 0 {cache.mission = text}
 		case "S":
 			switch text {
-			case "micro": cache.size = N_("Micro")
-			case "small": cache.size = N_("Small")
-			case "regular": cache.size = N_("Regular")
-			case "large": cache.size = N_("Large")
-			case "other": cache.size = N_("Other")
+			case "micro":
+				cache.size = N_("Micro")
+			case "small":
+				cache.size = N_("Small")
+			case "regular":
+				cache.size = N_("Regular")
+			case "large":
+				cache.size = N_("Large")
+			case "other":
+				cache.size = N_("Other")
 			}
 		case "D", "T":
 			n, valid := strconv.parse_int(text)
-			if !valid || n < 1 || n > 5 { continue }
-			if name == "D" { cache.difficulty = n } else { cache.terrain = n }
+			if !valid || n < 1 || n > 5 {continue}
+			if name == "D" {cache.difficulty = n} else {cache.terrain = n}
 		case "image":
 			end, _, valid := url_at(text, 0)
-			if valid && end == len(text) && len(cache.image) == 0 { cache.image = text }
+			if valid && end == len(text) && len(cache.image) == 0 {cache.image = text}
 		case "g":
 			lat, lon, valid := geohash_coords(text)
-			if valid && len(text) > len(cache.geohash) { cache.geohash, cache.lat, cache.lon = text, lat, lon }
+			if valid &&
+			   len(text) >
+				   len(cache.geohash) {cache.geohash, cache.lat, cache.lon = text, lat, lon}
 		}
 	}
-	for field in ([]^string{&cache.name, &cache.image, &cache.hint, &cache.size, &cache.mission, &cache.geohash}) { field^ = strings.clone(field^) }
+	for field in ([]^string{&cache.name, &cache.image, &cache.hint, &cache.size, &cache.mission, &cache.geohash}) {field^ = strings.clone(field^)}
 	return
 }
 
@@ -755,44 +896,91 @@ nev_geocache_card :: proc(id: u32, key: string, card: Nev_Card, width: f32) {
 	c := card.geocache
 	base := 0x28000000 + id * 64
 	fonts := make([]u8, len(c.name), context.temp_allocator)
-	for &font in fonts { font = u8(FONT_TITLE) }
+	for &font in fonts {font = u8(FONT_TITLE)}
 	body_text(base, c.name, 17, TEXT, wrap_w = width, max_lines = 2, fonts = string(fonts))
 	nev_card_image(id, c.image, width)
-	if c.difficulty > 0 { body_text(base + 1, fmt.tprintf(tr("Difficulty: %d/5"), c.difficulty), 12, TEXT_DIM, wrap_w = width) }
-	if c.terrain > 0 { body_text(base + 2, fmt.tprintf(tr("Terrain: %d/5"), c.terrain), 12, TEXT_DIM, wrap_w = width) }
-	if len(c.size) > 0 { body_text(base + 3, fmt.tprintf(tr("Size: %s"), tr(c.size)), 12, TEXT_DIM, wrap_w = width) }
+	if c.difficulty >
+	   0 {body_text(base + 1, fmt.tprintf(tr("Difficulty: %d/5"), c.difficulty), 12, TEXT_DIM, wrap_w = width)}
+	if c.terrain >
+	   0 {body_text(base + 2, fmt.tprintf(tr("Terrain: %d/5"), c.terrain), 12, TEXT_DIM, wrap_w = width)}
+	if len(c.size) >
+	   0 {body_text(base + 3, fmt.tprintf(tr("Size: %s"), tr(c.size)), 12, TEXT_DIM, wrap_w = width)}
 	nev_card_excerpt(id, key, card, width)
-	if len(c.mission) > 0 { body_text(base + 4, c.mission, BODY_FS, TEXT_DIM, wrap_w = width, max_lines = 3) }
+	if len(c.mission) >
+	   0 {body_text(base + 4, c.mission, BODY_FS, TEXT_DIM, wrap_w = width, max_lines = 3)}
 	if len(c.hint) > 0 {
-		if clay.UI(clay.ID("NevHint", id))({layout = {padding = {top = 4, bottom = 4}}, backgroundColor = hovered() ? HOVER : {}}) {
-			if hovered() { nev_hint_hover = key }
+		if clay.UI(clay.ID("NevHint", id))(
+		{layout = {padding = {top = 4, bottom = 4}}, backgroundColor = hovered() ? HOVER : {}},
+		) {
+			if hovered() {nev_hint_hover = key}
 			clay.Text(tr("Show hint"), {fontId = FONT_BODY, fontSize = 12, textColor = ACCENT})
 		}
 	}
-	if len(c.geohash) == 0 { return }
-	map_url := fmt.tprintf("https://www.openstreetmap.org/?mlat=%.6f&mlon=%.6f#map=16/%.6f/%.6f", c.lat, c.lon, c.lat, c.lon)
+	if len(c.geohash) == 0 {return}
+	map_url := fmt.tprintf(
+		"https://www.openstreetmap.org/?mlat=%.6f&mlon=%.6f#map=16/%.6f/%.6f",
+		c.lat,
+		c.lon,
+		c.lat,
+		c.lon,
+	)
 	zoom := min(15, len(c.geohash) * 2 + 2)
 	tiles := f64(u32(1) << uint(zoom))
 	x := (c.lon + 180) / 360 * tiles
 	lat := clamp(c.lat, -85.05112878, 85.05112878) * math.PI / 180
-	y := clamp((1 - math.ln(math.tan(lat) + 1 / math.cos(lat)) / math.PI) / 2 * tiles, 0, tiles - 0.000001)
+	y := clamp(
+		(1 - math.ln(math.tan(lat) + 1 / math.cos(lat)) / math.PI) / 2 * tiles,
+		0,
+		tiles - 0.000001,
+	)
 	tile_url := fmt.tprintf("https://tile.openstreetmap.org/%d/%d/%d.png", zoom, int(x), int(y))
 	size := min(width, 256)
 	pin_size := f32(14)
 	tex: ^rl.Texture2D
 	box := clay.GetElementData(clay.ID("NevMap", id))
 	// Only request the visible tile. The shared disk cache retains it across runs.
-	if box.found && box.boundingBox.y + box.boundingBox.height > 0 && box.boundingBox.y < f32(rl.GetScreenHeight()) / UI_ZOOM { tex = nev_img(tile_url) }
-	if clay.UI(clay.ID("NevMap", id))({layout = {sizing = {width = clay.SizingFixed(size), height = clay.SizingFixed(size)}, padding = {left = u16(clamp(f32(x - math.floor(x)) * size - pin_size / 2, 0, size - pin_size)), top = u16(clamp(f32(y - math.floor(y)) * size - pin_size / 2, 0, size - pin_size))}}, image = {imageData = tex}}) {
-		if hovered() { link_hover = map_url }
-		if clay.UI(clay.ID("NevMapPin", id))({layout = {sizing = {width = clay.SizingFixed(pin_size), height = clay.SizingFixed(pin_size)}}, backgroundColor = ACCENT, cornerRadius = clay.CornerRadiusAll(pin_size / 2), border = {color = BG, width = {left = 2, right = 2, top = 2, bottom = 2}}}) {}
+	if box.found &&
+	   box.boundingBox.y + box.boundingBox.height > 0 &&
+	   box.boundingBox.y < f32(rl.GetScreenHeight()) / UI_ZOOM {tex = nev_img(tile_url)}
+	if clay.UI(clay.ID("NevMap", id))(
+	{
+		layout = {
+			sizing = {width = clay.SizingFixed(size), height = clay.SizingFixed(size)},
+			padding = {
+				left = u16(
+					clamp(f32(x - math.floor(x)) * size - pin_size / 2, 0, size - pin_size),
+				),
+				top = u16(clamp(f32(y - math.floor(y)) * size - pin_size / 2, 0, size - pin_size)),
+			},
+		},
+		image = {imageData = tex},
+	},
+	) {
+		if hovered() {link_hover = map_url}
+		if clay.UI(clay.ID("NevMapPin", id))(
+		{
+			layout = {
+				sizing = {width = clay.SizingFixed(pin_size), height = clay.SizingFixed(pin_size)},
+			},
+			backgroundColor = ACCENT,
+			cornerRadius = clay.CornerRadiusAll(pin_size / 2),
+			border = {color = BG, width = {left = 2, right = 2, top = 2, bottom = 2}},
+		},
+		) {}
 	}
-	if clay.UI(clay.ID("NevMapCredit", id))({layout = {sizing = {width = clay.SizingFixed(width)}}}) {
-		if hovered() { link_hover = "https://www.openstreetmap.org/copyright" }
+	if clay.UI(clay.ID("NevMapCredit", id))(
+	{layout = {sizing = {width = clay.SizingFixed(width)}}},
+	) {
+		if hovered() {link_hover = "https://www.openstreetmap.org/copyright"}
 		body_text(base + 6, "© OpenStreetMap contributors", 10, TEXT_DIM, wrap_w = width)
 	}
-	if clay.UI(clay.ID("NevMapOpen", id))({layout = {sizing = {width = clay.SizingFixed(width)}, padding = {top = 4, bottom = 4}}}) {
-		if hovered() { link_hover = map_url }
-		clay.Text(tr("Open in OpenStreetMap"), {fontId = FONT_BODY, fontSize = 12, textColor = ACCENT})
+	if clay.UI(clay.ID("NevMapOpen", id))(
+	{layout = {sizing = {width = clay.SizingFixed(width)}, padding = {top = 4, bottom = 4}}},
+	) {
+		if hovered() {link_hover = map_url}
+		clay.Text(
+			tr("Open in OpenStreetMap"),
+			{fontId = FONT_BODY, fontSize = 12, textColor = ACCENT},
+		)
 	}
 }

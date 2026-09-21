@@ -27,7 +27,13 @@ settings_network :: proc(ui: ^Ui_State) {
 	eyebrow("STATUS")
 	if clay.UI(clay.ID("RowNetStatus"))(srow()) {
 		dot := ui.health_ok && ui.health.connected > 0 ? ACCENT : TEXT_DIM
-		if clay.UI(clay.ID("NetDot"))({layout = {sizing = {width = clay.SizingFixed(7), height = clay.SizingFixed(7)}}, backgroundColor = dot, cornerRadius = rr(4)}) {}
+		if clay.UI(clay.ID("NetDot"))(
+		{
+			layout = {sizing = {width = clay.SizingFixed(7), height = clay.SizingFixed(7)}},
+			backgroundColor = dot,
+			cornerRadius = rr(4),
+		},
+		) {}
 		row_labels(health_line(ui), health_detail(ui))
 		micro_button("NetRefresh", "Refresh")
 	}
@@ -40,34 +46,93 @@ settings_network :: proc(ui: ^Ui_State) {
 
 	eyebrow("OUTBOX RELAYS (NIP-65)")
 	clay.Text(tr("Where you publish."), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
-	if clay.UI(clay.ID("AddRelayRow"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, childAlignment = {y = .Center}}}) {
-		input_box(ui, "RelayBox", &ui.relay_input, "wss://relay.example.com", ui.focus == .Relay, 300)
+	if clay.UI(clay.ID("AddRelayRow"))(
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			childGap = 10,
+			childAlignment = {y = .Center},
+		},
+	},
+	) {
+		input_box(
+			ui,
+			"RelayBox",
+			&ui.relay_input,
+			"wss://relay.example.com",
+			ui.focus == .Relay,
+			300,
+		)
 		login_button("AddRelayBtn", "Add")
 	}
 	if len(ui.profile.nip65) == 0 {
-		clay.Text(tr("No relay list published."), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
+		clay.Text(
+			tr("No relay list published."),
+			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+		)
 	}
 	for relay, i in ui.profile.nip65 {
 		relay_row("RelayRow", "RelayRemove", u32(i), relay)
 	}
 
 	eyebrow("INBOX RELAYS")
-	clay.Text(tr("Where peers reach you."), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
-	if clay.UI(clay.ID("AddInboxRow"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, childAlignment = {y = .Center}}}) {
-		input_box(ui, "InboxBox", &ui.inbox_input, "wss://relay.example.com", ui.focus == .Inbox, 300)
+	clay.Text(
+		tr("Where peers reach you."),
+		{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+	)
+	if clay.UI(clay.ID("AddInboxRow"))(
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			childGap = 10,
+			childAlignment = {y = .Center},
+		},
+	},
+	) {
+		input_box(
+			ui,
+			"InboxBox",
+			&ui.inbox_input,
+			"wss://relay.example.com",
+			ui.focus == .Inbox,
+			300,
+		)
 		login_button("AddInboxBtn", "Add")
 	}
 	if len(ui.profile.inbox) == 0 {
-		clay.Text(tr("No inbox relays."), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
+		clay.Text(
+			tr("No inbox relays."),
+			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+		)
 	}
 	for relay, i in ui.profile.inbox {
 		relay_row("InboxRow", "InboxRemove", u32(i), relay)
 	}
 
 	eyebrow("EVENT FETCH RELAYS")
-	clay.Text(tr("Where linked Nostr events (nevent, note) are pulled from. Your chats never touch these."), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
-	if clay.UI(clay.ID("AddFetchRow"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, childAlignment = {y = .Center}}}) {
-		input_box(ui, "FetchBox", &ui.fetch_input, "wss://relay.example.com", ui.focus == .Fetch, 300)
+	clay.Text(
+		tr(
+			"Where linked Nostr events (nevent, note) are pulled from. Your chats never touch these.",
+		),
+		{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+	)
+	if clay.UI(clay.ID("AddFetchRow"))(
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			childGap = 10,
+			childAlignment = {y = .Center},
+		},
+	},
+	) {
+		input_box(
+			ui,
+			"FetchBox",
+			&ui.fetch_input,
+			"wss://relay.example.com",
+			ui.focus == .Fetch,
+			300,
+		)
 		login_button("AddFetchBtn", "Add")
 	}
 	for relay, i in ui.prefs.fetch_relays {
@@ -75,25 +140,46 @@ settings_network :: proc(ui: ^Ui_State) {
 	}
 
 	eyebrow("OPEN EVENTS IN")
-	clay.Text(tr("The web client an event card opens, with {id} in place of the event. For example https://primal.net/e/{id}."), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+	clay.Text(
+		tr(
+			"The web client an event card opens, with {id} in place of the event. For example https://primal.net/e/{id}.",
+		),
+		{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+	)
 	input_box(ui, "ClientBox", &ui.client_input, DEFAULT_EVENT_CLIENT, ui.focus == .Client, 300)
 
 	eyebrow("SYNC")
 	if clay.UI(clay.ID("RowRepublish"))(srow()) {
-		row_labels("Republish relay lists", "Re-broadcasts your outbox and inbox relay lists. Use this if peers can't find you.")
+		row_labels(
+			"Republish relay lists",
+			"Re-broadcasts your outbox and inbox relay lists. Use this if peers can't find you.",
+		)
 		micro_button("RepublishBtn", "Republish")
 	}
 }
 
 relay_row :: proc(row_id: string, remove_id: string, index: u32, relay: string) {
 	if clay.UI(clay.ID(row_id, index))(
-	{layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(12), childGap = 8, childAlignment = {y = .Center}}, backgroundColor = hovered() ? HOVER : ROW_BG, cornerRadius = rr(8)},
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			padding = clay.PaddingAll(12),
+			childGap = 8,
+			childAlignment = {y = .Center},
+		},
+		backgroundColor = hovered() ? HOVER : ROW_BG,
+		cornerRadius = rr(8),
+	},
 	) {
 		clay.Text(relay, {fontId = FONT_BODY, fontSize = 13, textColor = TEXT})
 		if clay.UI(clay.ID_LOCAL("Gap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 		if hovered() {
 			if clay.UI(clay.ID(remove_id, index))(
-			{layout = {padding = clay.PaddingAll(5)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
+			{
+				layout = {padding = clay.PaddingAll(5)},
+				backgroundColor = hovered() ? HOVER : {},
+				cornerRadius = rr(6),
+			},
 			) {
 				clay.Text(ICON_TRASH, {fontId = FONT_ICON, fontSize = 11, textColor = TEXT_DIM})
 			}
@@ -116,7 +202,10 @@ health_detail :: proc(ui: ^Ui_State) -> string {
 	h := ui.health
 	return fmt.tprintf(
 		tr("%d connecting, %d pending, %d disconnected, %d sleeping."),
-		h.connecting, h.pending, h.disconnected, h.sleeping,
+		h.connecting,
+		h.pending,
+		h.disconnected,
+		h.sleeping,
 	)
 }
 
@@ -156,7 +245,16 @@ health_tick :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 set_inbox_relays :: proc(ui: ^Ui_State, client: ^marmot.Client, relays: []cstring) {
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 	lists: ^marmot.Account_Relay_Lists
-	if marmot.set_account_inbox_relays(client, account, raw_data(relays), uint(len(relays)), raw_data(DEFAULT_RELAYS), uint(len(DEFAULT_RELAYS)), &lists) != .OK {
+	if marmot.set_account_inbox_relays(
+		   client,
+		   account,
+		   raw_data(relays),
+		   uint(len(relays)),
+		   raw_data(DEFAULT_RELAYS),
+		   uint(len(DEFAULT_RELAYS)),
+		   &lists,
+	   ) !=
+	   .OK {
 		ui.client_status = fmt.aprintf("Couldn't update inbox relays. %s", marmot.last_error())
 		return
 	}
@@ -192,7 +290,10 @@ handle_network :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		for relay in ui.profile.inbox {
 			append(&relays, strings.clone_to_cstring(relay, context.temp_allocator))
 		}
-		append(&relays, strings.clone_to_cstring(string(ui.inbox_input[:]), context.temp_allocator))
+		append(
+			&relays,
+			strings.clone_to_cstring(string(ui.inbox_input[:]), context.temp_allocator),
+		)
 		set_inbox_relays(ui, client, relays[:])
 		clear(&ui.inbox_input)
 		return
@@ -229,8 +330,19 @@ handle_network :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 republish_relay_lists :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	if marmot.publish_relay_lists(client, account, raw_data(DEFAULT_RELAYS), uint(len(DEFAULT_RELAYS)), raw_data(DEFAULT_RELAYS), uint(len(DEFAULT_RELAYS))) != .OK {
-		ui.client_status = fmt.aprintf("Couldn't republish the relay lists. %s", marmot.last_error())
+	if marmot.publish_relay_lists(
+		   client,
+		   account,
+		   raw_data(DEFAULT_RELAYS),
+		   uint(len(DEFAULT_RELAYS)),
+		   raw_data(DEFAULT_RELAYS),
+		   uint(len(DEFAULT_RELAYS)),
+	   ) !=
+	   .OK {
+		ui.client_status = fmt.aprintf(
+			"Couldn't republish the relay lists. %s",
+			marmot.last_error(),
+		)
 		return
 	}
 	ui.client_status = "Relay lists republished."

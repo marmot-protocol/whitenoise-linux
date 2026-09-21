@@ -70,7 +70,10 @@ custom_emoji_texture :: proc(name: string) -> ^rl.Texture2D {
 		return tex
 	}
 	tex: ^rl.Texture2D
-	path := strings.clone_to_cstring(fmt.tprintf("%s/%s", emoji_dir(), name), context.temp_allocator)
+	path := strings.clone_to_cstring(
+		fmt.tprintf("%s/%s", emoji_dir(), name),
+		context.temp_allocator,
+	)
 	image := rl.LoadImage(path)
 	if image.data != nil {
 		tex = new(rl.Texture2D)
@@ -216,7 +219,8 @@ save_staged_emoji :: proc(ui: ^Ui_State) {
 	}
 
 	ext := ".png"
-	if dot := strings.last_index_byte(ui.emoji_staged, '.'); dot > strings.last_index_byte(ui.emoji_staged, '/') {
+	if dot := strings.last_index_byte(ui.emoji_staged, '.');
+	   dot > strings.last_index_byte(ui.emoji_staged, '/') {
 		ext = ui.emoji_staged[dot:]
 	}
 	name := fmt.tprintf("%s%s", strings.to_string(code), ext)
@@ -291,7 +295,10 @@ remote_emoji_add :: proc(att_name: string, data: []u8) {
 	if len(code) == 0 || code in remote_emoji_tex {
 		return
 	}
-	ext := strings.clone_to_cstring(att_name[strings.last_index_byte(att_name, '.'):], context.temp_allocator)
+	ext := strings.clone_to_cstring(
+		att_name[strings.last_index_byte(att_name, '.'):],
+		context.temp_allocator,
+	)
 	img := rl.LoadImageFromMemory(ext, raw_data(data), i32(len(data)))
 	if img.data == nil {
 		remote_emoji_tex[strings.clone(code)] = nil // bad file, don't retry

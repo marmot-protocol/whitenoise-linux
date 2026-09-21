@@ -58,11 +58,22 @@ chat_pic :: proc(chat: Chat_Row_Ui) -> ^rl.Texture2D {
 group_hero :: proc(ui: ^Ui_State) {
 	chat := ui.chats[ui.selected]
 	if clay.UI(clay.ID("GroupHero"))(
-	{layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 8, childAlignment = {x = .Center}, padding = {top = 4, bottom = 4}}},
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			layoutDirection = .TopToBottom,
+			childGap = 8,
+			childAlignment = {x = .Center},
+			padding = {top = 4, bottom = 4},
+		},
+	},
 	) {
 		avatar("HeroAvatar", 0, chat.avatar_key, chat.title, 72, chat_pic(chat))
 		clay.Text(chat.title, {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT})
-		clay.Text(fmt.tprintf("%d members", len(ui.members)), {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO, letterSpacing = 1})
+		clay.Text(
+			fmt.tprintf("%d members", len(ui.members)),
+			{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO, letterSpacing = 1},
+		)
 		micro_button("HeroPicBtn", "Change photo")
 		if ui.gpic_menu_open {
 			if clay.UI(clay.ID("GpicMenu"))({layout = {childGap = 8}}) {
@@ -74,7 +85,11 @@ group_hero :: proc(ui: ^Ui_State) {
 		if ui.desc_editing {
 			if clay.UI(clay.ID("DescBox"))(
 			{
-				layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(34)}, padding = {left = 10, right = 10}, childAlignment = {y = .Center}},
+				layout = {
+					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(34)},
+					padding = {left = 10, right = 10},
+					childAlignment = {y = .Center},
+				},
 				backgroundColor = ROW_BG,
 				cornerRadius = rr(8),
 				border = ui.focus == .Desc ? clay.BorderElementConfig{color = ACCENT, width = bw()} : {},
@@ -90,7 +105,10 @@ group_hero :: proc(ui: ^Ui_State) {
 			if len(ui.group_desc) > 0 {
 				clay.Text(ui.group_desc, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
 			} else {
-				clay.Text("No description.", {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO})
+				clay.Text(
+					"No description.",
+					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
+				)
 			}
 			micro_button("DescEditBtn", "Edit")
 		}
@@ -181,7 +199,10 @@ set_group_pic :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 		ui.client_status = strings.clone("Couldn't use that file. Choose a PNG or JPEG.")
 		return
 	}
-	ext := strings.clone_to_cstring(fmt.tprintf(".%s", strings.trim_prefix(media_type, "image/")), context.temp_allocator)
+	ext := strings.clone_to_cstring(
+		fmt.tprintf(".%s", strings.trim_prefix(media_type, "image/")),
+		context.temp_allocator,
+	)
 	image := rl.LoadImageFromMemory(ext, raw_data(data), i32(len(data)))
 	if image.data == nil {
 		ui.client_status = strings.clone("Couldn't decode the image. Choose a PNG or JPEG.")
@@ -261,7 +282,7 @@ gimg_asked: map[string]bool
 gimg_push :: proc(job: Gimg_Job) {
 	sync.lock(&gimg_mutex)
 	append(&gimg_queue, job)
-	if job.kind == .Upload { gimg_uploads += 1 }
+	if job.kind == .Upload {gimg_uploads += 1}
 	sync.unlock(&gimg_mutex)
 }
 
@@ -293,7 +314,7 @@ gimg_worker :: proc(_: ^thread.Thread) {
 	context.allocator = reload_allocator()
 	for {
 		sync.lock(&gimg_mutex)
-		if gimg_stopping { sync.unlock(&gimg_mutex); return }
+		if gimg_stopping {sync.unlock(&gimg_mutex); return}
 		job: Gimg_Job
 		have := len(gimg_queue) > 0
 		if have {
@@ -316,18 +337,33 @@ gimg_worker :: proc(_: ^thread.Thread) {
 			length: uint
 			// marmot's last_error is thread-local, so the message is
 			// built here rather than on the UI thread.
-			if marmot.download_group_blossom_image(job.client, account, group, &data, &length) == .OK && length > 0 {
+			if marmot.download_group_blossom_image(job.client, account, group, &data, &length) ==
+				   .OK &&
+			   length > 0 {
 				result.data = slice.clone(data[:length])
 				marmot.bytes_free(data, length)
 			} else {
-				fmt.eprintfln("gimg: download failed for %s: %s", job.group_id, marmot.last_error())
+				fmt.eprintfln(
+					"gimg: download failed for %s: %s",
+					job.group_id,
+					marmot.last_error(),
+				)
 			}
 			result.url = job.url
 
 		case .Upload:
 			summary: ^marmot.Send_Summary
 			media := strings.clone_to_cstring(job.media_type, context.temp_allocator)
-			if marmot.update_group_image(job.client, account, group, raw_data(job.data), uint(len(job.data)), media, &summary) != .OK {
+			if marmot.update_group_image(
+				   job.client,
+				   account,
+				   group,
+				   raw_data(job.data),
+				   uint(len(job.data)),
+				   media,
+				   &summary,
+			   ) !=
+			   .OK {
 				result.err = fmt.aprintf("Couldn't publish the photo. %s", marmot.last_error())
 			} else {
 				marmot.send_summary_free(summary)
@@ -341,7 +377,7 @@ gimg_worker :: proc(_: ^thread.Thread) {
 
 		sync.lock(&gimg_mutex)
 		append(&gimg_done, result)
-		if job.kind == .Upload { gimg_uploads -= 1 }
+		if job.kind == .Upload {gimg_uploads -= 1}
 		sync.unlock(&gimg_mutex)
 	}
 }
@@ -360,7 +396,7 @@ gimg_stopping: bool
 @(private)
 stop_gimg_worker :: proc() {
 	context.allocator = reload_allocator()
-	if gimg_thread == nil { return }
+	if gimg_thread == nil {return}
 	sync.lock(&gimg_mutex)
 	gimg_stopping = true
 	sync.unlock(&gimg_mutex)

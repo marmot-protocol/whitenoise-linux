@@ -44,7 +44,8 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	// Contact QR modal captures everything while open.
 	if ui.qr_open {
-		if rl.IsKeyPressed(.ESCAPE) || (mouse_released() && !clay.PointerOver(clay.ID("QrModal"))) {
+		if rl.IsKeyPressed(.ESCAPE) ||
+		   (mouse_released() && !clay.PointerOver(clay.ID("QrModal"))) {
 			ui.qr_open = false
 		}
 		return
@@ -160,7 +161,9 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			ui.login_error = ""
 			return
 		}
-		if clicked("AcctClose") || clicked("AcctCloseBtn") || !clay.PointerOver(clay.ID("AccountsModal")) {
+		if clicked("AcctClose") ||
+		   clicked("AcctCloseBtn") ||
+		   !clay.PointerOver(clay.ID("AccountsModal")) {
 			ui.accounts_open = false
 		}
 		return
@@ -269,7 +272,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 @(private)
 shown_contact :: proc(ui: ^Ui_State) -> (Contact_Ui, bool) {
 	if ui.selected_contact >= 0 {
-		if ui.selected_contact >= len(ui.contacts) { return {}, false }
+		if ui.selected_contact >= len(ui.contacts) {return {}, false}
 		return ui.contacts[ui.selected_contact], true
 	}
 	return ui.profile_contact, len(ui.profile_contact.id_hex) > 0
@@ -286,11 +289,16 @@ view_peer_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	ui.page = .Contacts
 	ui.selected_contact = -1
 	for contact, i in ui.contacts {
-		if contact.id_hex == ui.peer_hex { ui.selected_contact = i; break }
+		if contact.id_hex == ui.peer_hex {ui.selected_contact = i; break}
 	}
 	reset_profile_view(ui)
 	if ui.selected_contact < 0 {
-		ui.profile_contact = {id_hex = strings.clone(ui.peer_hex), name = strings.clone(ui.peer_name), pic_url = strings.clone(ui.peer_pic), npub = strings.clone(ui.peer_npub)}
+		ui.profile_contact = {
+			id_hex  = strings.clone(ui.peer_hex),
+			name    = strings.clone(ui.peer_name),
+			pic_url = strings.clone(ui.peer_pic),
+			npub    = strings.clone(ui.peer_npub),
+		}
 	}
 	probe_key_package(ui, client, ui.peer_hex)
 	load_contact_relays(ui, client, ui.peer_hex)
@@ -300,7 +308,7 @@ view_peer_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 @(private = "file")
 reset_profile_view :: proc(ui: ^Ui_State) {
-	for field in ([]^string{&ui.profile_contact.id_hex, &ui.profile_contact.name, &ui.profile_contact.pic_url, &ui.profile_contact.npub}) { delete(field^) }
+	for field in ([]^string{&ui.profile_contact.id_hex, &ui.profile_contact.name, &ui.profile_contact.pic_url, &ui.profile_contact.npub}) {delete(field^)}
 	ui.profile_contact = {}
 }
 
@@ -325,7 +333,7 @@ remove_contact :: proc(ui: ^Ui_State, client: ^marmot.Client, hex: string) {
 // Persist the nickname editor for the selected contact: empty clears.
 save_nickname :: proc(ui: ^Ui_State) {
 	contact, found := shown_contact(ui)
-	if !found { return }
+	if !found {return}
 	id := contact.id_hex
 	nick := strings.trim_space(string(ui.nick_input[:]))
 	if len(nick) == 0 {
@@ -344,7 +352,16 @@ start_dm :: proc(ui: ^Ui_State, client: ^marmot.Client, contact: Contact_Ui) {
 	group_id: cstring
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 	members := []cstring{strings.clone_to_cstring(contact.id_hex, context.temp_allocator)}
-	if marmot.create_group(client, account, strings.clone_to_cstring(contact.name, context.temp_allocator), raw_data(members), 1, nil, &group_id) != .OK {
+	if marmot.create_group(
+		   client,
+		   account,
+		   strings.clone_to_cstring(contact.name, context.temp_allocator),
+		   raw_data(members),
+		   1,
+		   nil,
+		   &group_id,
+	   ) !=
+	   .OK {
 		ui.client_status = fmt.aprintf("Couldn't start the chat. %s", marmot.last_error())
 		return
 	}
@@ -389,7 +406,10 @@ publish_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	cur: ^marmot.User_Profile_Metadata
 	if marmot.user_profile(client, account, &cur) == .OK && cur != nil {
 		if cur.picture != nil {
-			metadata.picture = strings.clone_to_cstring(string(cur.picture), context.temp_allocator)
+			metadata.picture = strings.clone_to_cstring(
+				string(cur.picture),
+				context.temp_allocator,
+			)
 		}
 		if cur.banner != nil {
 			metadata.banner = strings.clone_to_cstring(string(cur.banner), context.temp_allocator)
@@ -398,7 +418,17 @@ publish_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	out: ^marmot.User_Profile_Metadata
-	if marmot.publish_user_profile(client, account, &metadata, raw_data(DEFAULT_RELAYS), uint(len(DEFAULT_RELAYS)), raw_data(DEFAULT_RELAYS), uint(len(DEFAULT_RELAYS)), &out) != .OK {
+	if marmot.publish_user_profile(
+		   client,
+		   account,
+		   &metadata,
+		   raw_data(DEFAULT_RELAYS),
+		   uint(len(DEFAULT_RELAYS)),
+		   raw_data(DEFAULT_RELAYS),
+		   uint(len(DEFAULT_RELAYS)),
+		   &out,
+	   ) !=
+	   .OK {
 		ui.client_status = fmt.aprintf("Couldn't publish the profile. %s", marmot.last_error())
 		return
 	}
@@ -519,7 +549,9 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 
-	if ui.profile.editing && (clicked("ChangePicBtn") || clicked("ProfileAvatarPick")) && !ppic_busy {
+	if ui.profile.editing &&
+	   (clicked("ChangePicBtn") || clicked("ProfileAvatarPick")) &&
+	   !ppic_busy {
 		ui.picking_ppic = true
 		rl.OpenFileDialog(false)
 	}
@@ -533,7 +565,10 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		for relay in ui.profile.nip65 {
 			append(&relays, strings.clone_to_cstring(relay, context.temp_allocator))
 		}
-		append(&relays, strings.clone_to_cstring(string(ui.relay_input[:]), context.temp_allocator))
+		append(
+			&relays,
+			strings.clone_to_cstring(string(ui.relay_input[:]), context.temp_allocator),
+		)
 		set_relays(ui, client, relays[:])
 		clear(&ui.relay_input)
 		return
@@ -553,7 +588,16 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 set_relays :: proc(ui: ^Ui_State, client: ^marmot.Client, relays: []cstring) {
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 	lists: ^marmot.Account_Relay_Lists
-	if marmot.set_account_nip65_relays(client, account, raw_data(relays), uint(len(relays)), raw_data(DEFAULT_RELAYS), uint(len(DEFAULT_RELAYS)), &lists) != .OK {
+	if marmot.set_account_nip65_relays(
+		   client,
+		   account,
+		   raw_data(relays),
+		   uint(len(relays)),
+		   raw_data(DEFAULT_RELAYS),
+		   uint(len(DEFAULT_RELAYS)),
+		   &lists,
+	   ) !=
+	   .OK {
 		ui.client_status = fmt.aprintf("Couldn't update relays. %s", marmot.last_error())
 		return
 	}
@@ -581,11 +625,14 @@ local_tz_once: sync.Once
 // DST-correct: the offset comes from the tz record covering the instant.
 local_seconds :: proc(at: u64) -> u64 {
 	seconds := at > 100_000_000_000 ? at / 1000 : at
-	sync.once_do(&local_tz_once, proc() {
-		// The shared cache must outlive any caller's temporary or test allocator.
-		context.allocator = runtime.default_context().allocator
-		local_tz, _ = timezone.region_load("local", reload_allocator())
-	})
+	sync.once_do(
+		&local_tz_once,
+		proc() {
+			// The shared cache must outlive any caller's temporary or test allocator.
+			context.allocator = runtime.default_context().allocator
+			local_tz, _ = timezone.region_load("local", reload_allocator())
+		},
+	)
 	if local_tz == nil {
 		return seconds
 	}
@@ -623,7 +670,20 @@ format_when :: proc(at: u64) -> string {
 	return fmt.aprintf("%02d:%02d", hour, minutes_of_day % 60)
 }
 
-MONTH_ABBREV := []string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
+MONTH_ABBREV := []string {
+	"Jan",
+	"Feb",
+	"Mar",
+	"Apr",
+	"May",
+	"Jun",
+	"Jul",
+	"Aug",
+	"Sep",
+	"Oct",
+	"Nov",
+	"Dec",
+}
 
 // Full stamp for the timestamp hover tooltip: "Aug 25, 2026 · 09:14".
 format_full :: proc(at: u64) -> string {
@@ -660,10 +720,26 @@ format_day :: proc(at: u64) -> string {
 // Register an nsec with marmot. Blocks on the relay round trip, so the
 // UI calls it through the sign-in worker (workers.odin); the returned
 // hex and error are cloned into `allocator` for the UI thread to adopt.
-import_identity_blocking :: proc(client: ^marmot.Client, identity: string, allocator := context.allocator) -> (hex: string, err: string) {
+import_identity_blocking :: proc(
+	client: ^marmot.Client,
+	identity: string,
+	allocator := context.allocator,
+) -> (
+	hex: string,
+	err: string,
+) {
 	summary: ^marmot.Account_Summary
 	id := strings.clone_to_cstring(identity, context.temp_allocator)
-	if marmot.login(client, id, raw_data(DEFAULT_RELAYS), len(DEFAULT_RELAYS), raw_data(DEFAULT_RELAYS), len(DEFAULT_RELAYS), &summary) != .OK {
+	if marmot.login(
+		   client,
+		   id,
+		   raw_data(DEFAULT_RELAYS),
+		   len(DEFAULT_RELAYS),
+		   raw_data(DEFAULT_RELAYS),
+		   len(DEFAULT_RELAYS),
+		   &summary,
+	   ) !=
+	   .OK {
 		return "", fmt.aprintf("Couldn't log in. %s", marmot.last_error(), allocator = allocator)
 	}
 	defer marmot.account_summary_free(summary)
@@ -673,10 +749,29 @@ import_identity_blocking :: proc(client: ^marmot.Client, identity: string, alloc
 // Mint a fresh identity and seed its starter profile on the wire. Same
 // blocking contract as import_identity_blocking; `pic_url` is what the
 // local seed registers the face under.
-create_identity_blocking :: proc(client: ^marmot.Client, allocator := context.allocator) -> (hex: string, pic_url: string, err: string) {
+create_identity_blocking :: proc(
+	client: ^marmot.Client,
+	allocator := context.allocator,
+) -> (
+	hex: string,
+	pic_url: string,
+	err: string,
+) {
 	summary: ^marmot.Account_Summary
-	if marmot.create_identity(client, raw_data(DEFAULT_RELAYS), len(DEFAULT_RELAYS), raw_data(DEFAULT_RELAYS), len(DEFAULT_RELAYS), &summary) != .OK {
-		return "", "", fmt.aprintf("Couldn't create an identity. %s", marmot.last_error(), allocator = allocator)
+	if marmot.create_identity(
+		   client,
+		   raw_data(DEFAULT_RELAYS),
+		   len(DEFAULT_RELAYS),
+		   raw_data(DEFAULT_RELAYS),
+		   len(DEFAULT_RELAYS),
+		   &summary,
+	   ) !=
+	   .OK {
+		return "", "", fmt.aprintf(
+			"Couldn't create an identity. %s",
+			marmot.last_error(),
+			allocator = allocator,
+		)
 	}
 	hex = strings.clone(string(summary.account_id_hex), allocator)
 	marmot.account_summary_free(summary)
@@ -685,7 +780,13 @@ create_identity_blocking :: proc(client: ^marmot.Client, allocator := context.al
 
 // UI-thread tail of a sign-in: register the starter face (fresh
 // identities only) and land on the account just added.
-finish_auth :: proc(ui: ^Ui_State, client: ^marmot.Client, hex: string, pic_url: string, seed: Auth_Seed) {
+finish_auth :: proc(
+	ui: ^Ui_State,
+	client: ^marmot.Client,
+	hex: string,
+	pic_url: string,
+	seed: Auth_Seed,
+) {
 	if seed == .Starter_Face {
 		seed_starter_local(client, hex, pic_url)
 	}
@@ -731,7 +832,9 @@ after_login :: proc(ui: ^Ui_State, client: ^marmot.Client, active := "") {
 			append(&ui.account_pics, strings.clone(profile_info(client, hex).pic_url))
 			npub: cstring
 			row_npub := ""
-			if marmot.npub(client, strings.clone_to_cstring(hex, context.temp_allocator), &npub) == .OK && npub != nil {
+			if marmot.npub(client, strings.clone_to_cstring(hex, context.temp_allocator), &npub) ==
+				   .OK &&
+			   npub != nil {
 				row_npub = strings.clone(string(npub))
 				marmot.string_free(npub)
 			}
@@ -775,15 +878,27 @@ CLAY_HASH_MAP_CAPACITY :: u32(9)
 // Capacity errors request a larger arena; other layout errors are logged.
 error_handler :: proc "c" (errorData: clay.ErrorData) {
 	context = runtime.default_context()
-	if errorData.errorType == .ElementsCapacityExceeded || errorData.errorType == .TextMeasurementCapacityExceeded || u32(errorData.errorType) == CLAY_HASH_MAP_CAPACITY {
+	if errorData.errorType == .ElementsCapacityExceeded ||
+	   errorData.errorType == .TextMeasurementCapacityExceeded ||
+	   u32(errorData.errorType) == CLAY_HASH_MAP_CAPACITY {
 		layout_overflow = true
 		return
 	}
-	fmt.eprintfln("clay: %v: %s", errorData.errorType, string(errorData.errorText.chars[:errorData.errorText.length]))
+	fmt.eprintfln(
+		"clay: %v: %s",
+		errorData.errorType,
+		string(errorData.errorText.chars[:errorData.errorText.length]),
+	)
 }
 
 // Keep font metadata beside visible text, so selection copies no markup.
-extract_inlines :: proc(builder: ^strings.Builder, inlines: [^]marmot.Markdown_Inline, count: uint, fonts: ^strings.Builder = nil, font: u8 = FONT_BODY) {
+extract_inlines :: proc(
+	builder: ^strings.Builder,
+	inlines: [^]marmot.Markdown_Inline,
+	count: uint,
+	fonts: ^strings.Builder = nil,
+	font: u8 = FONT_BODY,
+) {
 	for i in 0 ..< count {
 		node := &inlines[i]
 		start := strings.builder_len(builder^)
@@ -795,16 +910,40 @@ extract_inlines :: proc(builder: ^strings.Builder, inlines: [^]marmot.Markdown_I
 		case .SOFT_BREAK, .HARD_BREAK:
 			strings.write_rune(builder, ' ')
 		case .EMPH:
-			extract_inlines(builder, node.body.emph.children, node.body.emph.children_len, fonts, font == FONT_TITLE || font == FONT_BOLD_ITALIC ? FONT_BOLD_ITALIC : FONT_ITALIC)
+			extract_inlines(
+				builder,
+				node.body.emph.children,
+				node.body.emph.children_len,
+				fonts,
+				font == FONT_TITLE || font == FONT_BOLD_ITALIC ? FONT_BOLD_ITALIC : FONT_ITALIC,
+			)
 			continue
 		case .STRONG:
-			extract_inlines(builder, node.body.strong.children, node.body.strong.children_len, fonts, font == FONT_ITALIC || font == FONT_BOLD_ITALIC ? FONT_BOLD_ITALIC : FONT_TITLE)
+			extract_inlines(
+				builder,
+				node.body.strong.children,
+				node.body.strong.children_len,
+				fonts,
+				font == FONT_ITALIC || font == FONT_BOLD_ITALIC ? FONT_BOLD_ITALIC : FONT_TITLE,
+			)
 			continue
 		case .STRIKETHROUGH:
-			extract_inlines(builder, node.body.strikethrough.children, node.body.strikethrough.children_len, fonts, font)
+			extract_inlines(
+				builder,
+				node.body.strikethrough.children,
+				node.body.strikethrough.children_len,
+				fonts,
+				font,
+			)
 			continue
 		case .LINK:
-			extract_inlines(builder, node.body.link.children, node.body.link.children_len, fonts, font)
+			extract_inlines(
+				builder,
+				node.body.link.children,
+				node.body.link.children_len,
+				fonts,
+				font,
+			)
 			continue
 		case .AUTOLINK:
 			strings.write_string(builder, string(node.body.autolink.url))
@@ -818,12 +957,17 @@ extract_inlines :: proc(builder: ^strings.Builder, inlines: [^]marmot.Markdown_I
 			strings.write_string(builder, string(node.body.nostr_mention.entity.bech32))
 		}
 		if fonts != nil {
-			for _ in start ..< strings.builder_len(builder^) { strings.write_byte(fonts, font) }
+			for _ in start ..< strings.builder_len(builder^) {strings.write_byte(fonts, font)}
 		}
 	}
 }
 
-inline_text :: proc(inlines: [^]marmot.Markdown_Inline, count: uint, fonts: ^string = nil, font: u8 = FONT_BODY) -> string {
+inline_text :: proc(
+	inlines: [^]marmot.Markdown_Inline,
+	count: uint,
+	fonts: ^string = nil,
+	font: u8 = FONT_BODY,
+) -> string {
 	builder := strings.builder_make(context.temp_allocator)
 	styles := strings.builder_make(context.temp_allocator)
 	extract_inlines(&builder, inlines, count, fonts != nil ? &styles : nil, font)
@@ -834,30 +978,66 @@ inline_text :: proc(inlines: [^]marmot.Markdown_Inline, count: uint, fonts: ^str
 }
 
 // Flatten the FFI block tree into owned Md_Block_Ui rows.
-convert_blocks :: proc(out: ^[dynamic]Md_Block_Ui, blocks: [^]marmot.Markdown_Block, count: uint, quoted: bool, gaps: []u8 = nil) {
+convert_blocks :: proc(
+	out: ^[dynamic]Md_Block_Ui,
+	blocks: [^]marmot.Markdown_Block,
+	count: uint,
+	quoted: bool,
+	gaps: []u8 = nil,
+) {
 	for i in 0 ..< count {
 		first := len(out^)
 		defer {
 			if first < len(out^) && i < uint(len(gaps)) {
-				out^[first].blank_lines_before = u8(min(u16(out^[first].blank_lines_before) + u16(gaps[i]), u16(MD_BLANK_MAX)))
+				out^[first].blank_lines_before = u8(
+					min(u16(out^[first].blank_lines_before) + u16(gaps[i]), u16(MD_BLANK_MAX)),
+				)
 			}
 		}
 		block := &blocks[i]
 		switch block.tag {
 		case .PARAGRAPH:
 			kind := quoted ? Md_Kind.Quote : Md_Kind.Para
-			row := Md_Block_Ui{kind = kind}
-			row.text = inline_text(block.body.paragraph.inlines, block.body.paragraph.inlines_len, &row.fonts)
+			row := Md_Block_Ui {
+				kind = kind,
+			}
+			row.text = inline_text(
+				block.body.paragraph.inlines,
+				block.body.paragraph.inlines_len,
+				&row.fonts,
+			)
 			append(out, row)
 		case .HEADING:
-			row := Md_Block_Ui{kind = .Heading, level = int(block.body.heading.level)}
-			row.text = inline_text(block.body.heading.inlines, block.body.heading.inlines_len, &row.fonts, FONT_TITLE)
+			row := Md_Block_Ui {
+				kind  = .Heading,
+				level = int(block.body.heading.level),
+			}
+			row.text = inline_text(
+				block.body.heading.inlines,
+				block.body.heading.inlines_len,
+				&row.fonts,
+				FONT_TITLE,
+			)
 			append(out, row)
 		case .CODE_BLOCK:
-			append(out, Md_Block_Ui{kind = .Code, text = strings.clone(strings.trim_right(string(block.body.code_block.content), "\n"))})
+			append(
+				out,
+				Md_Block_Ui {
+					kind = .Code,
+					text = strings.clone(
+						strings.trim_right(string(block.body.code_block.content), "\n"),
+					),
+				},
+			)
 		case .BLOCK_QUOTE:
 			quote := &block.body.block_quote
-			convert_blocks(out, quote.blocks, quote.blocks_len, true, ([^]u8)(quote.blank_lines_before)[:quote.blank_lines_before_len])
+			convert_blocks(
+				out,
+				quote.blocks,
+				quote.blocks_len,
+				true,
+				([^]u8)(quote.blank_lines_before)[:quote.blank_lines_before_len],
+			)
 		case .LIST_BLOCK:
 			list := &block.body.list_block
 			for j in 0 ..< list.items_len {
@@ -866,7 +1046,11 @@ convert_blocks :: proc(out: ^[dynamic]Md_Block_Ui, blocks: [^]marmot.Markdown_Bl
 				if item.has_checked {
 					prefix = item.checked ? "[x] " : "[ ] "
 				} else if list.kind.tag == 1 {
-					prefix = fmt.tprintf("%d%s ", list.kind.body.ordered.start + u32(j), string(list.kind.body.ordered.delimiter))
+					prefix = fmt.tprintf(
+						"%d%s ",
+						list.kind.body.ordered.start + u32(j),
+						string(list.kind.body.ordered.delimiter),
+					)
 				} else {
 					prefix = "• "
 				}
@@ -876,20 +1060,41 @@ convert_blocks :: proc(out: ^[dynamic]Md_Block_Ui, blocks: [^]marmot.Markdown_Bl
 				body_text: string
 				fonts: string
 				if item.blocks_len > 0 && item.blocks[0].tag == .PARAGRAPH {
-					body_text = inline_text(item.blocks[0].body.paragraph.inlines, item.blocks[0].body.paragraph.inlines_len, &fonts)
+					body_text = inline_text(
+						item.blocks[0].body.paragraph.inlines,
+						item.blocks[0].body.paragraph.inlines_len,
+						&fonts,
+					)
 				}
 				if len(fonts) > 0 {
 					body_fonts := fonts
-					fonts = strings.concatenate({strings.repeat("\x00", len(prefix), context.temp_allocator), body_fonts})
+					fonts = strings.concatenate(
+						{strings.repeat("\x00", len(prefix), context.temp_allocator), body_fonts},
+					)
 					delete(body_fonts)
 				}
 				gap := j > 0 && !list.tight ? u8(1) : 0
-				if item.blank_lines_before_len > 0 { gap = max(gap, item.blank_lines_before^) }
-				append(out, Md_Block_Ui{kind = .List_Item, text = strings.clone(fmt.tprintf("%s%s", prefix, body_text)), fonts = fonts, marker_len = len(prefix), blank_lines_before = gap})
+				if item.blank_lines_before_len > 0 {gap = max(gap, item.blank_lines_before^)}
+				append(
+					out,
+					Md_Block_Ui {
+						kind = .List_Item,
+						text = strings.clone(fmt.tprintf("%s%s", prefix, body_text)),
+						fonts = fonts,
+						marker_len = len(prefix),
+						blank_lines_before = gap,
+					},
+				)
 				delete(body_text)
 				if item.blocks_len > 1 {
 					gaps := ([^]u8)(item.blank_lines_before)[:item.blank_lines_before_len]
-					convert_blocks(out, item.blocks[1:], item.blocks_len - 1, quoted, gaps[min(1, len(gaps)):])
+					convert_blocks(
+						out,
+						item.blocks[1:],
+						item.blocks_len - 1,
+						quoted,
+						gaps[min(1, len(gaps)):],
+					)
 				}
 			}
 		case .THEMATIC_BREAK:
@@ -901,20 +1106,35 @@ convert_blocks :: proc(out: ^[dynamic]Md_Block_Ui, blocks: [^]marmot.Markdown_Bl
 			hdr := make([]string, int(t.header_len))
 			fonts[0] = make([]string, len(hdr))
 			for j in 0 ..< t.header_len {
-				hdr[j] = inline_text(t.header[j].inlines, t.header[j].inlines_len, &fonts[0][j], FONT_TITLE)
+				hdr[j] = inline_text(
+					t.header[j].inlines,
+					t.header[j].inlines_len,
+					&fonts[0][j],
+					FONT_TITLE,
+				)
 			}
 			cells[0] = hdr
 			for r in 0 ..< t.rows_len {
 				row := make([]string, int(t.rows[r].cells_len))
 				fonts[r + 1] = make([]string, len(row))
 				for j in 0 ..< t.rows[r].cells_len {
-					row[j] = inline_text(t.rows[r].cells[j].inlines, t.rows[r].cells[j].inlines_len, &fonts[r + 1][j])
+					row[j] = inline_text(
+						t.rows[r].cells[j].inlines,
+						t.rows[r].cells[j].inlines_len,
+						&fonts[r + 1][j],
+					)
 				}
 				cells[int(r) + 1] = row
 			}
 			append(out, Md_Block_Ui{kind = .Table, cells = cells, cell_fonts = fonts})
 		case .MATH_BLOCK:
-			append(out, Md_Block_Ui{kind = .Code, text = strings.clone(string(block.body.math_block.content))})
+			append(
+				out,
+				Md_Block_Ui {
+					kind = .Code,
+					text = strings.clone(string(block.body.math_block.content)),
+				},
+			)
 		}
 	}
 }
@@ -931,7 +1151,14 @@ boot_marmot :: proc(home: string, ui: ^Ui_State) -> ^marmot.Client {
 	store := vault_secret_store()
 
 	client: ^marmot.Client
-	if marmot.client_new_with_secret_store(strings.clone_to_cstring(home), raw_data(relays), len(relays), &store, &client) != .OK {
+	if marmot.client_new_with_secret_store(
+		   strings.clone_to_cstring(home),
+		   raw_data(relays),
+		   len(relays),
+		   &store,
+		   &client,
+	   ) !=
+	   .OK {
 		ui.client_status = fmt.aprintf("runtime failed: %s", marmot.last_error())
 		return nil
 	}
@@ -966,7 +1193,11 @@ is_xdc_blob :: proc(text: string) -> bool {
 // newest displayable record the way the timeline does, skipping what
 // the timeline skips. Temp-allocated; "" when nothing qualifies.
 @(private = "file")
-window_preview :: proc(client: ^marmot.Client, account_ref: string, row: ^marmot.Chat_List_Row) -> string {
+window_preview :: proc(
+	client: ^marmot.Client,
+	account_ref: string,
+	row: ^marmot.Chat_List_Row,
+) -> string {
 	if client == nil {
 		return ""
 	}
@@ -991,7 +1222,10 @@ window_preview :: proc(client: ^marmot.Client, account_ref: string, row: ^marmot
 			if record.group_system != nil {
 				// system_text can hand back ev.text, which borrows the
 				// page freed on return; copy before it goes.
-				return strings.clone(system_text(client, record.group_system), context.temp_allocator)
+				return strings.clone(
+					system_text(client, record.group_system),
+					context.temp_allocator,
+				)
 			}
 			continue
 		}
@@ -1014,19 +1248,28 @@ CHAT_ATTACHMENT_AUDIO :: i32(2) // MarmotChatListAttachmentKind::Audio
 // One marmot chat-list row into a UI row; shared by the rail
 // (load_chat_list) and the archive page (load_archived) so both render
 // identically (avatar, time, "You:" prefix, delivery tick).
-row_to_ui :: proc(client: ^marmot.Client, presented: ^marmot.Presented_Chat_Row, account_ref: string) -> Chat_Row_Ui {
+row_to_ui :: proc(
+	client: ^marmot.Client,
+	presented: ^marmot.Presented_Chat_Row,
+	account_ref: string,
+) -> Chat_Row_Ui {
 	row := &presented.row
 	presentation := &presented.presentation
 	title: string
 	switch presentation.title.tag {
-	case .Literal: title = string(presentation.title.body.literal)
-	case .Unnamed_Group: title = tr("Unnamed group")
-	case .Unavailable_Conversation: title = tr("Unavailable conversation")
+	case .Literal:
+		title = string(presentation.title.body.literal)
+	case .Unnamed_Group:
+		title = tr("Unnamed group")
+	case .Unavailable_Conversation:
+		title = tr("Unavailable conversation")
 	}
 	avatar_url, image_hash: string
 	switch presentation.avatar.tag {
-	case .Remote_Image: avatar_url = string(presentation.avatar.body.remote.url)
-	case .Encrypted_Group_Image: image_hash = string(presentation.avatar.body.encrypted.image.image_hash_hex)
+	case .Remote_Image:
+		avatar_url = string(presentation.avatar.body.remote.url)
+	case .Encrypted_Group_Image:
+		image_hash = string(presentation.avatar.body.encrypted.image.image_hash_hex)
 	case .Placeholder:
 	}
 
@@ -1037,8 +1280,10 @@ row_to_ui :: proc(client: ^marmot.Client, presented: ^marmot.Presented_Chat_Row,
 		if row.last_message.plaintext != nil {
 			preview = string(row.last_message.plaintext)
 		}
-		if strings.trim_space(preview) == "" && !row.last_message.deleted &&
-			row.last_message.has_attachment_kind && row.last_message.attachment_kind == CHAT_ATTACHMENT_AUDIO {
+		if strings.trim_space(preview) == "" &&
+		   !row.last_message.deleted &&
+		   row.last_message.has_attachment_kind &&
+		   row.last_message.attachment_kind == CHAT_ATTACHMENT_AUDIO {
 			preview = tr("Audio message")
 		}
 		if mine && strings.trim_space(preview) != "" {
@@ -1047,7 +1292,9 @@ row_to_ui :: proc(client: ^marmot.Client, presented: ^marmot.Presented_Chat_Row,
 		// A kind-1210 payload or a webxdc state blob can't speak for
 		// itself; show the newest displayable record instead (already
 		// phrased, so no "You:" prefix on top).
-		xdc := is_xdc_blob(row.last_message.plaintext != nil ? string(row.last_message.plaintext) : "")
+		xdc := is_xdc_blob(
+			row.last_message.plaintext != nil ? string(row.last_message.plaintext) : "",
+		)
 		if row.last_message.kind == 1210 || xdc {
 			phrased := window_preview(client, account_ref, row)
 			if len(phrased) > 0 {
@@ -1063,25 +1310,31 @@ row_to_ui :: proc(client: ^marmot.Client, presented: ^marmot.Presented_Chat_Row,
 		tick = row.last_message.delivery_state
 	}
 
-	return Chat_Row_Ui{
-		group_id = strings.clone(string(row.group_id_hex)),
-		title    = strings.clone(title),
-		preview  = strings.clone(chat_preview(preview)),
-		at       = format_when(row.activity_sort_at),
-		unread   = row.unread_count,
-		pending  = row.pending_confirmation,
-		stable   = row.lifecycle_state == .STABLE,
-		tick     = tick,
-		first_unread = strings.clone(row.first_unread_message_id_hex != nil ? string(row.first_unread_message_id_hex) : ""),
-		avatar_url = strings.clone(avatar_url),
-		avatar_key = strings.clone(row.conversation_kind == .DIRECT && presentation.peer_id != nil ? string(presentation.peer_id) : string(row.group_id_hex)),
-		image_hash = strings.clone(image_hash),
+	return Chat_Row_Ui {
+		group_id     = strings.clone(string(row.group_id_hex)),
+		title        = strings.clone(title),
+		preview      = strings.clone(chat_preview(preview)),
+		at           = format_when(row.activity_sort_at),
+		unread       = row.unread_count,
+		pending      = row.pending_confirmation,
+		stable       = row.lifecycle_state == .STABLE,
+		tick         = tick,
+		first_unread = strings.clone(
+			row.first_unread_message_id_hex != nil ? string(row.first_unread_message_id_hex) : "",
+		),
+		avatar_url   = strings.clone(avatar_url),
+		avatar_key   = strings.clone(
+			row.conversation_kind == .DIRECT && presentation.peer_id != nil ? string(presentation.peer_id) : string(row.group_id_hex),
+		),
+		image_hash   = strings.clone(image_hash),
 		// marmot's mute OR the local one from the row menu (its C API
 		// has no mute setter); the notification gate reads this flag.
-		muted    = row.muted || (g_prefs != nil && g_prefs.muted_ids[string(row.group_id_hex)]),
-		last_id  = strings.clone(row.last_message != nil && row.last_message.message_id_hex != nil ? string(row.last_message.message_id_hex) : ""),
-		last_kind = row.last_message != nil ? row.last_message.kind : 0,
-		last_mine = mine,
+		muted        = row.muted || (g_prefs != nil && g_prefs.muted_ids[string(row.group_id_hex)]),
+		last_id      = strings.clone(
+			row.last_message != nil && row.last_message.message_id_hex != nil ? string(row.last_message.message_id_hex) : "",
+		),
+		last_kind    = row.last_message != nil ? row.last_message.kind : 0,
+		last_mine    = mine,
 	}
 }
 
@@ -1089,7 +1342,13 @@ load_chat_list :: proc(client: ^marmot.Client, account_ref: string, ui: ^Ui_Stat
 	timing_start := time.tick_now()
 	defer local_timing_end(.chat_list_load, timing_start)
 	rows: ^marmot.Presented_Chat_List
-	if marmot.presented_chat_list(client, strings.clone_to_cstring(account_ref, context.temp_allocator), false, &rows) != .OK {
+	if marmot.presented_chat_list(
+		   client,
+		   strings.clone_to_cstring(account_ref, context.temp_allocator),
+		   false,
+		   &rows,
+	   ) !=
+	   .OK {
 		ui.client_status = fmt.aprintf("chat list failed: %s", marmot.last_error())
 		return
 	}

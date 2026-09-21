@@ -153,7 +153,11 @@ bone_color :: proc(index: int) -> [3]f32 {
 @(private = "file")
 heat :: proc(t: f32) -> [3]f32 {
 	v := clamp(t, 0, 1)
-	return {clamp(v * 2 - 0.6, 0, 1), clamp(1 - abs(v - 0.5) * 2.2, 0, 1), clamp(1.2 - v * 2.4, 0, 1)}
+	return {
+		clamp(v * 2 - 0.6, 0, 1),
+		clamp(1 - abs(v - 0.5) * 2.2, 0, 1),
+		clamp(1.2 - v * 2.4, 0, 1),
+	}
 }
 
 // One color per corner of a triangle: the whole inspector, per mode.
@@ -275,7 +279,7 @@ build_overlay :: proc(view: ^Stl_View, cx, cy, scale: f32) {
 		// Screen position of each corner, matching stl_build_verts.
 		p: [3]rl.Vector2
 		for k in 0 ..< 3 {
-				p[k] = {cx + view.rot[at + k * 3] * scale, cy - view.rot[at + k * 3 + 1] * scale}
+			p[k] = {cx + view.rot[at + k * 3] * scale, cy - view.rot[at + k * 3 + 1] * scale}
 		}
 
 		if wire {
@@ -286,7 +290,10 @@ build_overlay :: proc(view: ^Stl_View, cx, cy, scale: f32) {
 		if normals {
 			for k in 0 ..< 3 {
 				n := corner_normal(view, tri, k)
-				tip := rl.Vector2{p[k].x + n[0] * NORMAL_LEN * scale, p[k].y - n[1] * NORMAL_LEN * scale}
+				tip := rl.Vector2 {
+					p[k].x + n[0] * NORMAL_LEN * scale,
+					p[k].y - n[1] * NORMAL_LEN * scale,
+				}
 				push_quad(&view.over, p[k], tip, color)
 			}
 		}
@@ -303,10 +310,22 @@ push_quad :: proc(out: ^[dynamic]rl.Vertex, a, b: rl.Vector2, color: rl.FColor) 
 		return
 	}
 	nx, ny := -dy / length * OVERLAY_WIDTH, dx / length * OVERLAY_WIDTH
-	v0 := rl.Vertex{position = {a.x + nx, a.y + ny}, color = color}
-	v1 := rl.Vertex{position = {a.x - nx, a.y - ny}, color = color}
-	v2 := rl.Vertex{position = {b.x + nx, b.y + ny}, color = color}
-	v3 := rl.Vertex{position = {b.x - nx, b.y - ny}, color = color}
+	v0 := rl.Vertex {
+		position = {a.x + nx, a.y + ny},
+		color    = color,
+	}
+	v1 := rl.Vertex {
+		position = {a.x - nx, a.y - ny},
+		color    = color,
+	}
+	v2 := rl.Vertex {
+		position = {b.x + nx, b.y + ny},
+		color    = color,
+	}
+	v3 := rl.Vertex {
+		position = {b.x - nx, b.y - ny},
+		color    = color,
+	}
 	append(out, v0, v1, v2, v2, v1, v3)
 }
 
@@ -345,7 +364,12 @@ INSP_WIDTH :: 196
 inspector_panel :: proc(view: ^Stl_View, height: f32) {
 	if clay.UI(clay.ID("MiPanel"))(
 	{
-		layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(INSP_WIDTH), height = clay.SizingFixed(height)}, padding = clay.PaddingAll(10), childGap = 8},
+		layout = {
+			layoutDirection = .TopToBottom,
+			sizing = {width = clay.SizingFixed(INSP_WIDTH), height = clay.SizingFixed(height)},
+			padding = clay.PaddingAll(10),
+			childGap = 8,
+		},
 		backgroundColor = PLATE,
 		cornerRadius = rr(8),
 		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
@@ -354,19 +378,27 @@ inspector_panel :: proc(view: ^Stl_View, height: f32) {
 		clay.Text("Model inspector", {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT})
 
 		insp_caption("MiWireCap", "WIREFRAME", len(WIRE_COLORS) - 1)
-		if clay.UI(clay.ID("MiWireRow"))({layout = {childGap = 4, sizing = {width = clay.SizingGrow()}}}) {
+		if clay.UI(clay.ID("MiWireRow"))(
+		{layout = {childGap = 4, sizing = {width = clay.SizingGrow()}}},
+		) {
 			for color, i in WIRE_COLORS {
 				on := view.insp.wire == i || (i == 0 && view.insp.wire <= 0)
 				if clay.UI(clay.ID("MiWire", u32(i)))(
 				{
-					layout = {sizing = {width = clay.SizingFixed(20), height = clay.SizingFixed(20)}, childAlignment = {x = .Center, y = .Center}},
+					layout = {
+						sizing = {width = clay.SizingFixed(20), height = clay.SizingFixed(20)},
+						childAlignment = {x = .Center, y = .Center},
+					},
 					backgroundColor = i == 0 ? ROW_BG : {color.r * 255, color.g * 255, color.b * 255, 255},
 					cornerRadius = rr(4),
 					border = {color = on ? ACCENT : ELEVATED_BORDER, width = bw()},
 				},
 				) {
 					if i == 0 {
-						clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 9, textColor = TEXT_DIM})
+						clay.Text(
+							ICON_CLOSE,
+							{fontId = FONT_ICON, fontSize = 9, textColor = TEXT_DIM},
+						)
 					}
 				}
 			}
@@ -390,7 +422,10 @@ inspector_panel :: proc(view: ^Stl_View, height: f32) {
 @(private = "file")
 insp_caption :: proc(id: string, label: string, count: int) {
 	if clay.UI(clay.ID(id))({layout = {padding = {top = 4}}}) {
-		clay.Text(fmt.tprintf("%s (%d)", label, count), {fontId = FONT_BODY, fontSize = 9, textColor = TEXT_DIM})
+		clay.Text(
+			fmt.tprintf("%s (%d)", label, count),
+			{fontId = FONT_BODY, fontSize = 9, textColor = TEXT_DIM},
+		)
 	}
 }
 
@@ -411,7 +446,11 @@ insp_section :: proc(view: ^Stl_View, section: Insp_Section) {
 		selected := view.insp.mode == row.mode
 		if clay.UI(clay.ID(section.id, u32(i)))(
 		{
-			layout = {sizing = {width = clay.SizingGrow()}, padding = {left = 6, right = 6, top = 5, bottom = 5}, childAlignment = {y = .Center}},
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				padding = {left = 6, right = 6, top = 5, bottom = 5},
+				childAlignment = {y = .Center},
+			},
 			backgroundColor = selected ? ACCENT : (available && hovered() ? HOVER : ROW_BG),
 			cornerRadius = rr(6),
 		},
@@ -426,7 +465,12 @@ insp_section :: proc(view: ^Stl_View, section: Insp_Section) {
 insp_toggle_row :: proc(view: ^Stl_View) {
 	if clay.UI(clay.ID("MiSingle"))(
 	{
-		layout = {sizing = {width = clay.SizingGrow()}, padding = {left = 6, right = 6, top = 5, bottom = 5}, childGap = 8, childAlignment = {y = .Center}},
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			padding = {left = 6, right = 6, top = 5, bottom = 5},
+			childGap = 8,
+			childAlignment = {y = .Center},
+		},
 		backgroundColor = hovered() ? HOVER : ROW_BG,
 		cornerRadius = rr(6),
 	},
@@ -434,14 +478,22 @@ insp_toggle_row :: proc(view: ^Stl_View) {
 		on := view.insp.single_sided
 		if clay.UI(clay.ID("MiSingleSw"))(
 		{
-			layout = {sizing = {width = clay.SizingFixed(28), height = clay.SizingFixed(16)}, padding = clay.PaddingAll(2), childAlignment = {x = on ? .Right : .Left, y = .Center}},
+			layout = {
+				sizing = {width = clay.SizingFixed(28), height = clay.SizingFixed(16)},
+				padding = clay.PaddingAll(2),
+				childAlignment = {x = on ? .Right : .Left, y = .Center},
+			},
 			backgroundColor = on ? ACCENT : ROW_BG,
 			cornerRadius = rr(8),
 			border = {color = ELEVATED_BORDER, width = bw()},
 		},
 		) {
 			if clay.UI(clay.ID("MiSingleKnob"))(
-			{layout = {sizing = {width = clay.SizingFixed(12), height = clay.SizingFixed(12)}}, backgroundColor = on ? PLATE : TEXT_DIM, cornerRadius = rr(6)},
+			{
+				layout = {sizing = {width = clay.SizingFixed(12), height = clay.SizingFixed(12)}},
+				backgroundColor = on ? PLATE : TEXT_DIM,
+				cornerRadius = rr(6),
+			},
 			) {}
 		}
 		clay.Text("Single sided", {fontId = FONT_BODY, fontSize = 11, textColor = TEXT})
@@ -459,13 +511,20 @@ insp_animation :: proc(view: ^Stl_View) {
 		selected := insp.anim == i
 		if clay.UI(clay.ID("MiTake", u32(i)))(
 		{
-			layout = {sizing = {width = clay.SizingGrow()}, padding = {left = 6, right = 6, top = 5, bottom = 5}, childAlignment = {y = .Center}},
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				padding = {left = 6, right = 6, top = 5, bottom = 5},
+				childAlignment = {y = .Center},
+			},
 			backgroundColor = selected ? ACCENT : (hovered() ? HOVER : ROW_BG),
 			cornerRadius = rr(6),
 		},
 		) {
 			label := len(take) > 0 ? take : fmt.tprintf("Take %d", i + 1)
-			clay.Text(label, {fontId = FONT_BODY, fontSize = 11, textColor = selected ? PLATE : TEXT})
+			clay.Text(
+				label,
+				{fontId = FONT_BODY, fontSize = 11, textColor = selected ? PLATE : TEXT},
+			)
 		}
 	}
 
@@ -474,7 +533,14 @@ insp_animation :: proc(view: ^Stl_View) {
 	}
 
 	if clay.UI(clay.ID("MiTransport"))(
-	{layout = {sizing = {width = clay.SizingGrow()}, padding = {top = 4}, childGap = 8, childAlignment = {y = .Center}}},
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			padding = {top = 4},
+			childGap = 8,
+			childAlignment = {y = .Center},
+		},
+	},
 	) {
 		if clay.UI(clay.ID("MiPlay"))(
 		{
@@ -483,7 +549,10 @@ insp_animation :: proc(view: ^Stl_View) {
 			cornerRadius = rr(6),
 		},
 		) {
-			clay.Text(insp.playing ? "Pause" : "Play", {fontId = FONT_BODY, fontSize = 11, textColor = TEXT})
+			clay.Text(
+				insp.playing ? "Pause" : "Play",
+				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT},
+			)
 		}
 		span := insp.t1 - insp.t0
 		clay.Text(
@@ -498,14 +567,23 @@ insp_animation :: proc(view: ^Stl_View) {
 	frac := f32((insp.time - insp.t0) / max(insp.t1 - insp.t0, 0.001))
 	if clay.UI(bar_id)(
 	{
-		layout = {sizing = {width = clay.SizingFixed(width), height = clay.SizingFixed(12)}, padding = {left = 2, right = 2}, childAlignment = {y = .Center}},
+		layout = {
+			sizing = {width = clay.SizingFixed(width), height = clay.SizingFixed(12)},
+			padding = {left = 2, right = 2},
+			childAlignment = {y = .Center},
+		},
 		backgroundColor = ROW_BG,
 		cornerRadius = rr(6),
 	},
 	) {
 		if clay.UI(clay.ID("MiBarFill"))(
 		{
-			layout = {sizing = {width = clay.SizingFixed(max(8, frac * (width - 4))), height = clay.SizingFixed(8)}},
+			layout = {
+				sizing = {
+					width = clay.SizingFixed(max(8, frac * (width - 4))),
+					height = clay.SizingFixed(8),
+				},
+			},
 			backgroundColor = ACCENT,
 			cornerRadius = rr(4),
 		},

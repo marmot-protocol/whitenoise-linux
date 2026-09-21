@@ -11,12 +11,17 @@ import rl "sdlrl"
 TTS_VOICES := [?]string{"F1", "F2", "F3", "F4", "F5", "M1", "M2", "M3", "M4", "M5"}
 
 @(private)
-TTS_DESCRIPTIONS := [?]string{
-	N_("Female voice. Supports all reading languages."), N_("Female voice. Supports all reading languages."),
-	N_("Female voice. Supports all reading languages."), N_("Female voice. Supports all reading languages."),
-	N_("Female voice. Supports all reading languages."), N_("Male voice. Supports all reading languages."),
-	N_("Male voice. Supports all reading languages."), N_("Male voice. Supports all reading languages."),
-	N_("Male voice. Supports all reading languages."), N_("Male voice. Supports all reading languages."),
+TTS_DESCRIPTIONS := [?]string {
+	N_("Female voice. Supports all reading languages."),
+	N_("Female voice. Supports all reading languages."),
+	N_("Female voice. Supports all reading languages."),
+	N_("Female voice. Supports all reading languages."),
+	N_("Female voice. Supports all reading languages."),
+	N_("Male voice. Supports all reading languages."),
+	N_("Male voice. Supports all reading languages."),
+	N_("Male voice. Supports all reading languages."),
+	N_("Male voice. Supports all reading languages."),
+	N_("Male voice. Supports all reading languages."),
 }
 
 @(private)
@@ -27,17 +32,26 @@ TTS_MODEL_REV :: "cca5a0e6c96e1d2c720986bf7e75fcc81dee3ae4"
 TTS_MODEL_SIZES := [?]i64{3700147, 36416150, 78400833, 25991073, 8253, 262144, 517168, 1070}
 
 @(private)
-TTS_MODEL_FILES := [?]string{"duration_predictor.int8.onnx", "text_encoder.int8.onnx", "vector_estimator.int8.onnx", "vocoder.int8.onnx", "tts.json", "unicode_indexer.bin", "voice.bin", "LICENSE"}
+TTS_MODEL_FILES := [?]string {
+	"duration_predictor.int8.onnx",
+	"text_encoder.int8.onnx",
+	"vector_estimator.int8.onnx",
+	"vocoder.int8.onnx",
+	"tts.json",
+	"unicode_indexer.bin",
+	"voice.bin",
+	"LICENSE",
+}
 
 @(private)
 Tts_State :: struct {
-	child: os.Process,
-	file: ^os.File,
-	status: u8,
-	account: string,
+	child:          os.Process,
+	file:           ^os.File,
+	status:         u8,
+	account:        string,
 	model, percent: u8,
-	ready: [len(TTS_MODEL_SIZES)]bool,
-	checked_at: f64,
+	ready:          [len(TTS_MODEL_SIZES)]bool,
+	checked_at:     f64,
 }
 
 @(private)
@@ -49,7 +63,9 @@ tts_stop :: proc(ui: ^Ui_State) {
 	_, _ = os.process_wait(ui.tts.child)
 	os.close(ui.tts.file)
 	delete(ui.tts.account)
-	ui.tts = {ready = ui.tts.ready}
+	ui.tts = {
+		ready = ui.tts.ready,
+	}
 }
 
 @(private)
@@ -89,32 +105,44 @@ tts_read :: proc(ui: ^Ui_State, text: string) {
 		toast(ui, tr("Couldn't start reading aloud. Please try again."))
 		return
 	}
-	child, start_err := os.process_start({
-		command = {
-			fmt.tprintf("%s/wn-tts", filepath.dir(exe)),
-			fmt.tprintf("%s/tts/%s", data_home, TTS_MODEL_REV),
-			TTS_VOICES[clamp(ui.prefs.tts_voice, 0, len(TTS_VOICES) - 1)],
-			fmt.tprintf("%d", os.get_pid()),
-			TTS_LANGUAGES[tts_language(ui, text)].code,
+	child, start_err := os.process_start(
+		{
+			command = {
+				fmt.tprintf("%s/wn-tts", filepath.dir(exe)),
+				fmt.tprintf("%s/tts/%s", data_home, TTS_MODEL_REV),
+				TTS_VOICES[clamp(ui.prefs.tts_voice, 0, len(TTS_VOICES) - 1)],
+				fmt.tprintf("%d", os.get_pid()),
+				TTS_LANGUAGES[tts_language(ui, text)].code,
+			},
+			stdin = file,
+			stdout = file,
 		},
-		stdin = file,
-		stdout = file,
-	})
+	)
 	if start_err != nil {
 		toast(ui, tr("Couldn't start reading aloud. Please try again."))
 		return
 	}
 	ok = true
-	ui.tts = {child = child, file = file, status = 'G', account = strings.clone(ui.account_ref), ready = ui.tts.ready}
+	ui.tts = {
+		child   = child,
+		file    = file,
+		status  = 'G',
+		account = strings.clone(ui.account_ref),
+		ready   = ui.tts.ready,
+	}
 }
 
 @(private)
 tts_tick :: proc(ui: ^Ui_State) {
-	if ui.page == .Settings && ui.prefs.tts_enabled &&
+	if ui.page == .Settings &&
+	   ui.prefs.tts_enabled &&
 	   (ui.tts.checked_at == 0 || rl.GetTime() - ui.tts.checked_at >= 1) {
 		for size, i in TTS_MODEL_SIZES {
 			name := TTS_MODEL_FILES[i]
-			info, err := os.stat(fmt.tprintf("%s/tts/%s/%s", data_home, TTS_MODEL_REV, name), context.temp_allocator)
+			info, err := os.stat(
+				fmt.tprintf("%s/tts/%s/%s", data_home, TTS_MODEL_REV, name),
+				context.temp_allocator,
+			)
 			ui.tts.ready[i] = err == nil && info.type == .Regular && info.size == size
 		}
 		ui.tts.checked_at = rl.GetTime()
@@ -127,8 +155,11 @@ tts_tick :: proc(ui: ^Ui_State) {
 		return
 	}
 	status: [3]u8
-	if n, err := os.read_at(ui.tts.file, status[:], 0); err == nil && n == len(status) &&
-	   int(status[1]) < len(TTS_MODEL_SIZES) && status[2] <= 100 {
+	if n, err := os.read_at(ui.tts.file, status[:], 0);
+	   err == nil &&
+	   n == len(status) &&
+	   int(status[1]) < len(TTS_MODEL_SIZES) &&
+	   status[2] <= 100 {
 		ui.tts.status = status[0]
 		ui.tts.model, ui.tts.percent = status[1], status[2]
 	}
@@ -139,14 +170,21 @@ tts_tick :: proc(ui: ^Ui_State) {
 	os.close(ui.tts.file)
 	delete(ui.tts.account)
 	model := ui.tts.model
-	ui.tts = {ready = ui.tts.ready}
+	ui.tts = {
+		ready = ui.tts.ready,
+	}
 	if err != nil || state.exit_code != 0 {
 		if state.exit_code == 1 {
 			ui.tts.status, ui.tts.model = 'F', model
 		}
 		switch state.exit_code {
 		case 1:
-			toast(ui, tr("Couldn't download the speech model. Check your connection and available disk space, then try again."))
+			toast(
+				ui,
+				tr(
+					"Couldn't download the speech model. Check your connection and available disk space, then try again.",
+				),
+			)
 		case 3:
 			toast(ui, tr("Couldn't play speech. Check your audio output and try again."))
 		case:
@@ -158,8 +196,11 @@ tts_tick :: proc(ui: ^Ui_State) {
 @(private)
 tts_status :: proc(ui: ^Ui_State) -> string {
 	switch ui.tts.status {
-	case 'D': return tr("Downloading speech model...")
-	case 'P': return tr("Reading aloud...")
-	case: return tr("Preparing speech...")
+	case 'D':
+		return tr("Downloading speech model...")
+	case 'P':
+		return tr("Reading aloud...")
+	case:
+		return tr("Preparing speech...")
 	}
 }

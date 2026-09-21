@@ -1,14 +1,28 @@
 package main
 
-import "core:strings"
 import "base:runtime"
+import "core:strings"
 
 @(private)
-Wrap_Key :: struct { text: string, width: f32, scale: f32, size: u16, mode: Wrap_Mode, fonts: string }
+Wrap_Key :: struct {
+	text:  string,
+	width: f32,
+	scale: f32,
+	size:  u16,
+	mode:  Wrap_Mode,
+	fonts: string,
+}
 @(private)
-Wrap_Mode :: enum { Text, Cards, Compose }
+Wrap_Mode :: enum {
+	Text,
+	Cards,
+	Compose,
+}
 @(private)
-Wrap_Line :: struct { start, end: int, index: u32 }
+Wrap_Line :: struct {
+	start, end: int,
+	index:      u32,
+}
 @(private)
 wrap_cache: map[Wrap_Key][]Wrap_Line
 @(private)
@@ -35,18 +49,24 @@ wrap_clear :: proc() {
 }
 
 @(private)
-wrapped_lines :: proc(text: string, width: f32, size: u16, mode: Wrap_Mode = .Text, fonts: string = "") -> []Wrap_Line {
+wrapped_lines :: proc(
+	text: string,
+	width: f32,
+	size: u16,
+	mode: Wrap_Mode = .Text,
+	fonts: string = "",
+) -> []Wrap_Line {
 	key := Wrap_Key{text, width, UI_SCALE, size, mode, fonts}
-	if lines, hit := wrap_cache[key]; hit && !wrap_flush { return lines }
+	if lines, hit := wrap_cache[key]; hit && !wrap_flush {return lines}
 	tile_px := mode == .Compose ? f32(18) : body_tile_size(text, size)
 	lines := make([dynamic]Wrap_Line, context.temp_allocator)
 	start := 0
 	i: u32
 	for {
 		end := len(text)
-		if nl := strings.index_byte(text[start:], '\n'); nl >= 0 { end = start + nl }
+		if nl := strings.index_byte(text[start:], '\n'); nl >= 0 {end = start + nl}
 		at := start
-		if at == end { append(&lines, Wrap_Line{at, at, i}) }
+		if at == end {append(&lines, Wrap_Line{at, at, i})}
 		for at < end {
 			// Cards occupy a whole row, even when their URL is wider
 			// than the column. Keep source offsets for selection/copy.
@@ -57,7 +77,7 @@ wrapped_lines :: proc(text: string, width: f32, size: u16, mode: Wrap_Mode = .Te
 						card_at, card_end = scan, next
 						break
 					}
-					if text[scan] != 'h' { continue }
+					if text[scan] != 'h' {continue}
 					if next, url, ok := url_at(text[:end], scan); ok {
 						if _, card := gh_ref(url); card || hn_ref(url) != "" {
 							card_at, card_end = scan, next
@@ -68,25 +88,26 @@ wrapped_lines :: proc(text: string, width: f32, size: u16, mode: Wrap_Mode = .Te
 				}
 			}
 			for at < card_at {
-				cut := width > 0 ? wrap_break(text, at, card_at, width, size, mode, tile_px, fonts) : card_at
+				cut :=
+					width > 0 ? wrap_break(text, at, card_at, width, size, mode, tile_px, fonts) : card_at
 				append(&lines, Wrap_Line{at, cut, i})
 				i += 1
 				at = cut
-				if at < card_at && text[at] == ' ' { at += 1 }
+				if at < card_at && text[at] == ' ' {at += 1}
 			}
 			if card_at < end {
 				append(&lines, Wrap_Line{card_at, card_end, i})
 				i += 1
 				at = card_end
 			}
-			if at < end && text[at] == ' ' { at += 1 }
+			if at < end && text[at] == ' ' {at += 1}
 		}
-		if end == len(text) { break }
+		if end == len(text) {break}
 		start = end + 1
 		i += 1
 	}
 	bytes := len(text) + len(fonts) + len(lines) * size_of(Wrap_Line)
-	if bytes > WRAP_CACHE_BYTES { return lines[:] }
+	if bytes > WRAP_CACHE_BYTES {return lines[:]}
 	// Evict between frames: a nested link card may still be reading an
 	// outer paragraph's spans. Large misses use this frame's scratch space.
 	// ponytail: bounded wholesale eviction; use LRU if mixed long bodies churn.

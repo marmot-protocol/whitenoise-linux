@@ -1,29 +1,37 @@
 package main
 
-import "core:strings"
 import "core:slice"
+import "core:strings"
 import "core:sync"
 import "core:testing"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import marmot "../marmot"
+import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
 @(test)
 media_outcome_slots :: proc(t: ^testing.T) {
 	sync.lock(&clay_test_mutex)
 	defer sync.unlock(&clay_test_mutex)
-	msg := Msg_Ui{sender = strings.clone("Alice")}
+	msg := Msg_Ui {
+		sender = strings.clone("Alice"),
+	}
 	defer message_free(msg)
 	outcomes: [8]marmot.Media_Attachment_Outcome
 	for &outcome, i in outcomes {
 		outcome.body.accepted = {u32(i), {file_name = "file.bin"}}
 		if i == 2 || i == 5 {
-			outcome = {tag = .REJECTED, body = {rejected = {u32(i), {.UNSUPPORTED_FORMAT, "raw detail"}}}}
+			outcome = {
+				tag = .REJECTED,
+				body = {rejected = {u32(i), {.UNSUPPORTED_FORMAT, "raw detail"}}},
+			}
 		}
 		media_attach(&msg, nil, "account", "group", &outcome)
 	}
-	record := marmot.Timeline_Message_Record{media = raw_data(outcomes[:]), media_len = len(outcomes)}
+	record := marmot.Timeline_Message_Record {
+		media     = raw_data(outcomes[:]),
+		media_len = len(outcomes),
+	}
 	testing.expect_value(t, len(msg.att_names), 8)
 	testing.expect(t, slice.equal(msg.files[:], []int{0, 1, 3, 4, 6, 7}))
 	testing.expect_value(t, msg.att_rejected[2], "Unsupported attachment format.")
@@ -41,7 +49,10 @@ media_outcome_slots :: proc(t: ^testing.T) {
 	append(&msg.files, 0)
 	text_view: Txt_View
 	append(&msg.txts, Att_Item(^Txt_View){&text_view, 6})
-	tex := rl.Texture2D{width = 40, height = 30}
+	tex := rl.Texture2D {
+		width  = 40,
+		height = 30,
+	}
 	for i in ([]int{1, 3, 4}) {
 		append(&msg.images, Att_Item(^rl.Texture2D){&tex, i})
 	}
@@ -57,17 +68,17 @@ media_outcome_slots :: proc(t: ^testing.T) {
 	message_row(0, msg)
 	clay.EndLayout(0)
 	last_bottom: f32
-	for id in ([]clay.ElementId{
-		clay.ID("MsgFile", 0), clay.ID("MsgImage", 1), clay.ID("MediaRejected", 2),
-		clay.ID("MsgImage", 3), clay.ID("MediaRejected", 5), clay.ID("MsgTxt", 0), clay.ID("MediaLoading", 7),
-	}) {
+	for id in ([]clay.ElementId{clay.ID("MsgFile", 0), clay.ID("MsgImage", 1), clay.ID("MediaRejected", 2), clay.ID("MsgImage", 3), clay.ID("MediaRejected", 5), clay.ID("MsgTxt", 0), clay.ID("MediaLoading", 7)}) {
 		data := clay.GetElementData(id)
 		testing.expect(t, data.found)
 		testing.expect(t, data.boundingBox.y >= last_bottom)
 		last_bottom = data.boundingBox.y + data.boundingBox.height
 	}
-	testing.expect_value(t, clay.GetElementData(clay.ID("MsgImage", 3)).boundingBox.y,
-		clay.GetElementData(clay.ID("MsgImage", 4)).boundingBox.y)
+	testing.expect_value(
+		t,
+		clay.GetElementData(clay.ID("MsgImage", 3)).boundingBox.y,
+		clay.GetElementData(clay.ID("MsgImage", 4)).boundingBox.y,
+	)
 
 	ui: Ui_State
 	append(&ui.messages, msg)
@@ -84,8 +95,15 @@ media_outcome_slots :: proc(t: ^testing.T) {
 		delete(media_jobs); delete(media_inflight); delete(media_textures)
 		media_jobs, media_inflight, media_textures = old_jobs, old_inflight, old_textures
 	}
-	preview := marmot.Timeline_Reply_Preview{media = raw_data(outcomes[:]), media_len = len(outcomes)}
-	outcomes[4].body.accepted.reference = {file_name = "reply.png", media_type = "image/png", plaintext_sha256 = "reply-test-image"}
+	preview := marmot.Timeline_Reply_Preview {
+		media     = raw_data(outcomes[:]),
+		media_len = len(outcomes),
+	}
+	outcomes[4].body.accepted.reference = {
+		file_name        = "reply.png",
+		media_type       = "image/png",
+		plaintext_sha256 = "reply-test-image",
+	}
 	job_count := len(media_jobs)
 	msg.reply_image = reply_image_load(nil, "account", "group", &preview)
 	testing.expect_value(t, msg.reply_image, "reply-test-image")
@@ -111,13 +129,25 @@ media_outcome_slots :: proc(t: ^testing.T) {
 		commands := clay.EndLayout(0)
 		image_box := clay.GetElementData(clay.ID("MsgReplyImage", 1)).boundingBox
 		testing.expect(t, image_box.width <= 96 && image_box.height <= 64)
-		testing.expect_value(t, image_box.x, clay.GetElementData(clay.ID("MsgReplyCol", 1)).boundingBox.x)
+		testing.expect_value(
+			t,
+			image_box.x,
+			clay.GetElementData(clay.ID("MsgReplyCol", 1)).boundingBox.x,
+		)
 		drawn := false
 		for command in commands.internalArray[:commands.length] {
-			if command.commandType != .Image || command.renderData.image.imageData != &tex { continue }
-			if command.id != clay.ID("MsgReplyImage", 1).id { continue }
+			if command.commandType != .Image ||
+			   command.renderData.image.imageData != &tex {continue}
+			if command.id != clay.ID("MsgReplyImage", 1).id {continue}
 			drawn = true
-			testing.expect(t, abs(command.boundingBox.width / command.boundingBox.height - f32(tex.width) / f32(tex.height)) < 0.00001)
+			testing.expect(
+				t,
+				abs(
+					command.boundingBox.width / command.boundingBox.height -
+					f32(tex.width) / f32(tex.height),
+				) <
+				0.00001,
+			)
 		}
 		testing.expect(t, drawn, "reply must render the parent image")
 	}

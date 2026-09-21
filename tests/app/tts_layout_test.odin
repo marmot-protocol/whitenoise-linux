@@ -1,9 +1,9 @@
 package main
 
+import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:fmt"
 import "core:os"
 import "core:testing"
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
 @(test)
@@ -20,7 +20,11 @@ tts_layout :: proc(t: ^testing.T) {
 	init_fonts()
 	memory := make([]u8, int(clay.MinMemorySize()))
 	defer delete(memory)
-	clay.Initialize(clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)), {720, 1100}, {})
+	clay.Initialize(
+		clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)),
+		{720, 1100},
+		{},
+	)
 	clay.SetMeasureTextFunction(measure_text, nil)
 	ui: Ui_State
 	ui.prefs.tts_enabled = true
@@ -37,7 +41,17 @@ tts_layout :: proc(t: ^testing.T) {
 	for width in ([]f32{420, 720}) {
 		clay.SetLayoutDimensions({width, 1100})
 		clay.BeginLayout()
-		if clay.UI(clay.ID("VoiceTest"))({layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(16), childGap = 8}, backgroundColor = BG}) {
+		if clay.UI(clay.ID("VoiceTest"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				layoutDirection = .TopToBottom,
+				padding = clay.PaddingAll(16),
+				childGap = 8,
+			},
+			backgroundColor = BG,
+		},
+		) {
 			settings_pane(&ui)
 		}
 		commands := clay.EndLayout(0)
@@ -53,7 +67,10 @@ tts_layout :: proc(t: ^testing.T) {
 			testing.expect(t, box.found)
 			testing.expect(t, box.boundingBox.x + box.boundingBox.width <= width)
 			preview := clay.GetElementData(clay.ID(fmt.tprintf("TtsPreview%d", i)))
-			testing.expect(t, preview.found && preview.boundingBox.x + preview.boundingBox.width <= width)
+			testing.expect(
+				t,
+				preview.found && preview.boundingBox.x + preview.boundingBox.width <= width,
+			)
 		}
 		rl.BeginDrawing()
 		draw_frame(&commands)

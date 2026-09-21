@@ -28,7 +28,9 @@ debug_state_snapshot :: proc(t: ^testing.T) {
 
 @(test)
 debug_kp_dump :: proc(t: ^testing.T) {
-	rows := []Kp_Row{{id = "ev1", kp_ref = "ref1", local = true, relay_urls = {"wss://a"}, bytes = 400}}
+	rows := []Kp_Row {
+		{id = "ev1", kp_ref = "ref1", local = true, relay_urls = {"wss://a"}, bytes = 400},
+	}
 
 	out := kp_json(rows)
 	defer delete(out)

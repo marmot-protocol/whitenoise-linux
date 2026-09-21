@@ -1,8 +1,8 @@
 package main
 
+import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:sync"
 import "core:testing"
-import clay "../vendor/clay/bindings/odin/clay-odin"
 
 @(test)
 system_theme_layout :: proc(t: ^testing.T) {
@@ -17,10 +17,14 @@ system_theme_layout :: proc(t: ^testing.T) {
 		delete(memory)
 	}
 	errors: int
-	clay.Initialize(clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)), {1200, 2000}, {
-		handler = proc "c" (error: clay.ErrorData) { (^int)(error.userData)^ += 1 },
-		userData = &errors,
-	})
+	clay.Initialize(
+		clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)),
+		{1200, 2000},
+		{
+			handler = proc "c" (error: clay.ErrorData) {(^int)(error.userData)^ += 1},
+			userData = &errors,
+		},
+	)
 	clay.SetMeasureTextFunction(measure_text, nil)
 	saved_packs := theme_packs
 	saved_index := system_theme_index
@@ -32,16 +36,22 @@ system_theme_layout :: proc(t: ^testing.T) {
 		theme_packs = saved_packs
 		system_theme_index = saved_index
 	}
-	for index in 0..<2 {
-		ui := Ui_State{theme = index}
+	for index in 0 ..< 2 {
+		ui := Ui_State {
+			theme = index,
+		}
 		clay.BeginLayout()
 		if clay.UI(clay.ID("SystemTestRoot"))({}) {
 			settings_appearance(&ui)
 		}
 		testing.expect_value(t, errors, 0)
-		if errors > 0 { return } // EndLayout cannot traverse an unbalanced tree.
+		if errors > 0 {return} 	// EndLayout cannot traverse an unbalanced tree.
 		clay.EndLayout(0)
 		testing.expect_value(t, errors, 0)
-		testing.expect_value(t, clay.GetElementData(clay.ID("RowAccent")).found, index != system_theme_index)
+		testing.expect_value(
+			t,
+			clay.GetElementData(clay.ID("RowAccent")).found,
+			index != system_theme_index,
+		)
 	}
 }

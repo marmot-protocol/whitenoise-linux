@@ -78,7 +78,9 @@ fan_cell :: proc(index, count: int) -> (x, y, t: f32) {
 handle_react_fan :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if video_bar_active() {
 		delete(fan.msg_id)
-		fan = {hover = -1}
+		fan = {
+			hover = -1,
+		}
 		return
 	}
 	pos := rl.GetMousePosition()
@@ -90,12 +92,16 @@ handle_react_fan :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			drag_moved = true // this release was a gesture, not a click
 		}
 		delete(fan.msg_id)
-		fan = {hover = -1}
+		fan = {
+			hover = -1,
+		}
 		return
 	}
 	if !rl.IsMouseButtonDown(.LEFT) {
 		delete(fan.msg_id)
-		fan = {hover = -1}
+		fan = {
+			hover = -1,
+		}
 		return
 	}
 	if fan_open() {
@@ -113,7 +119,11 @@ handle_react_fan :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if rl.IsMouseButtonPressed(.LEFT) {
 		delete(fan.msg_id)
-		fan = {at = at, held = rl.GetTime(), hover = -1}
+		fan = {
+			at    = at,
+			held  = rl.GetTime(),
+			hover = -1,
+		}
 		// Only over a message, and only where a reaction means anything.
 		if !motion_on() || modal_open(ui) || ui.ctx_open || len(ui.prefs.quick_reactions) == 0 {
 			fan.held = 0
@@ -166,11 +176,22 @@ fan_layer :: proc(ui: ^Ui_State) {
 		}
 		anim_moving += 1
 		picked := fan.hover == i
-		size := FAN_CELL * t * anim_to(anim_key(clay.ID("FanCell", u32(i)).id, 5), picked ? FAN_PICK : 1, 26)
+		size :=
+			FAN_CELL *
+			t *
+			anim_to(anim_key(clay.ID("FanCell", u32(i)).id, 5), picked ? FAN_PICK : 1, 26)
 		if clay.UI(clay.ID("FanCell", u32(i)))(
 		{
-			layout = {sizing = {width = clay.SizingFixed(size), height = clay.SizingFixed(size)}, childAlignment = {x = .Center, y = .Center}},
-			floating = {attachTo = .Root, zIndex = 29, offset = {x - size / 2, y - size / 2}, attachment = {element = .LeftTop, parent = .LeftTop}},
+			layout = {
+				sizing = {width = clay.SizingFixed(size), height = clay.SizingFixed(size)},
+				childAlignment = {x = .Center, y = .Center},
+			},
+			floating = {
+				attachTo = .Root,
+				zIndex = 29,
+				offset = {x - size / 2, y - size / 2},
+				attachment = {element = .LeftTop, parent = .LeftTop},
+			},
 			backgroundColor = picked ? ACCENT : CARD,
 			cornerRadius = rr(size / 2),
 			border = {color = picked ? ACCENT : ELEVATED_BORDER, width = bw()},
@@ -178,7 +199,11 @@ fan_layer :: proc(ui: ^Ui_State) {
 		) {
 			if tex := quick_tile(emoji); tex != nil {
 				if clay.UI(clay.ID("FanTile", u32(i)))(
-				{layout = {sizing = {width = clay.SizingFixed(FAN_TILE * t)}}, aspectRatio = {1}, image = {imageData = tex}},
+				{
+					layout = {sizing = {width = clay.SizingFixed(FAN_TILE * t)}},
+					aspectRatio = {1},
+					image = {imageData = tex},
+				},
 				) {}
 			} else {
 				clay.Text(emoji, {fontId = FONT_BODY, fontSize = 15, textColor = TEXT})

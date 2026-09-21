@@ -63,7 +63,9 @@ issue_tag :: proc(tags: []marmot.Message_Tag, key: string) -> string {
 @(private)
 issue_has_author :: proc(tags: []marmot.Message_Tag, author: string) -> bool {
 	for tag in tags {
-		if tag.values_len >= 2 && string(tag.values[0]) == "p" && string(tag.values[1]) == author { return true }
+		if tag.values_len >= 2 &&
+		   string(tag.values[0]) == "p" &&
+		   string(tag.values[1]) == author {return true}
 	}
 	return false
 }

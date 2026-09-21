@@ -25,26 +25,26 @@ VIDEO_MAX_TEX_W :: 480
 VIDEO_SW_FORMAT: cstring : "rgb0" // R,G,B,X bytes; texture blend is off
 
 Video_View :: struct {
-	data:    []u8, // decrypted attachment bytes, owned by the view
-	pos:     i64, // stream-cb read cursor
-	mpv:     ^mpv_handle,
-	rctx:    ^mpv_render_context,
-	tex:     rl.Texture2D, // streaming; &tex is the clay imageData
-	buf:     []u8, // sw render target, w*h*4
-	w, h:    i32, // texture size (placeholder until mpv reports)
-	sized:   bool, // real video dimensions adopted
-	paused:  bool,
-	looping: bool, // GIF mode: autoplay, loop, no scrub bar
-	audio:   bool, // audio-only: no frames, the tile is the controls
-	transcript: string, // locally recognized text; owned by this view
-	transcript_model: int, // model index + 1; zero means not checked
+	data:                             []u8, // decrypted attachment bytes, owned by the view
+	pos:                              i64, // stream-cb read cursor
+	mpv:                              ^mpv_handle,
+	rctx:                             ^mpv_render_context,
+	tex:                              rl.Texture2D, // streaming; &tex is the clay imageData
+	buf:                              []u8, // sw render target, w*h*4
+	w, h:                             i32, // texture size (placeholder until mpv reports)
+	sized:                            bool, // real video dimensions adopted
+	paused:                           bool,
+	looping:                          bool, // GIF mode: autoplay, loop, no scrub bar
+	audio:                            bool, // audio-only: no frames, the tile is the controls
+	transcript:                       string, // locally recognized text; owned by this view
+	transcript_model:                 int, // model index + 1; zero means not checked
 	transcript_done, transcript_open: bool,
-	audio_hash: [32]u8,
-	failed:  bool,
-	time:    f64, // playback position, seconds
-	dur:     f64, // duration, seconds (0 until known)
-	dw, dh:  i64, // mpv's display size, 0 until it reports (post-rotation)
-	at_eof:  bool, // parked at the end by keep-open, so play restarts
+	audio_hash:                       [32]u8,
+	failed:                           bool,
+	time:                             f64, // playback position, seconds
+	dur:                              f64, // duration, seconds (0 until known)
+	dw, dh:                           i64, // mpv's display size, 0 until it reports (post-rotation)
+	at_eof:                           bool, // parked at the end by keep-open, so play restarts
 }
 
 // Observed properties, identified by reply id so the event handler
@@ -115,7 +115,11 @@ Video_Mode :: enum {
 	Audio, // clip behavior, but no video track to render
 }
 
-video_view_make :: proc(data: []u8, mode: Video_Mode = .Clip, phase: Media_Phase = .Present) -> ^Video_View {
+video_view_make :: proc(
+	data: []u8,
+	mode: Video_Mode = .Clip,
+	phase: Media_Phase = .Present,
+) -> ^Video_View {
 	view := new(Video_View)
 	view.data = data
 	view.paused = mode != .Loop
@@ -173,7 +177,7 @@ video_view_make :: proc(data: []u8, mode: Video_Mode = .Clip, phase: Media_Phase
 		mpv_observe_property(view.mpv, PROP_EOF, "eof-reached", MPV_FORMAT_FLAG)
 	}
 	if ok {
-		params := [2]mpv_render_param{
+		params := [2]mpv_render_param {
 			{MPV_RENDER_PARAM_API_TYPE, transmute(rawptr)MPV_RENDER_API_TYPE_SW},
 			{MPV_RENDER_PARAM_INVALID, nil},
 		}
@@ -337,7 +341,7 @@ advance_one :: proc(view: ^Video_View) {
 	if fresh || resized {
 		size := [2]c.int{c.int(view.w), c.int(view.h)}
 		stride := c.size_t(view.w * 4)
-		params := [5]mpv_render_param{
+		params := [5]mpv_render_param {
 			{MPV_RENDER_PARAM_SW_SIZE, &size},
 			{MPV_RENDER_PARAM_SW_FORMAT, transmute(rawptr)VIDEO_SW_FORMAT},
 			{MPV_RENDER_PARAM_SW_STRIDE, &stride},
@@ -372,8 +376,13 @@ video_hover: ^Video_View
 handle_video :: proc() {
 	if video_full_hover.view != nil && mouse_released() && !video_bar_active() {
 		preview_close()
-		preview = {kind = .Video, name = strings.clone(video_full_hover.name),
-			vid = video_full_hover.view, vid_shared = true, bytes = video_full_hover.view.data}
+		preview = {
+			kind       = .Video,
+			name       = strings.clone(video_full_hover.name),
+			vid        = video_full_hover.view,
+			vid_shared = true,
+			bytes      = video_full_hover.view.data,
+		}
 		preview_shown = true
 		rl.SetFullscreen(true)
 		video_full_hover = {}
@@ -404,31 +413,57 @@ video_bars: [dynamic]Video_Bar
 video_bar_drag: Video_Bar
 
 @(private)
-video_full_hover: struct { view: ^Video_View, name: string }
+video_full_hover: struct {
+	view: ^Video_View,
+	name: string,
+}
 
 // Seeking owns the gesture even after the pointer leaves the bar.
 @(private)
 video_bar_active :: proc() -> bool {
-	if video_bar_drag.view != nil { return true }
+	if video_bar_drag.view != nil {return true}
 	for bar in video_bars {
-		if clay.PointerOver(bar.id) { return true }
+		if clay.PointerOver(bar.id) {return true}
 	}
 	return false
 }
 
 @(private)
 video_scrub_bar :: proc(id: clay.ElementId, view: ^Video_View, width: f32, z_index: i16 = 7) {
-	if view.looping { return }
+	if view.looping {return}
 	expanded := hovered() || clay.PointerOver(id) || video_bar_drag.view == view
 	append(&video_bars, Video_Bar{id, view})
 	frac := view.dur > 0 ? clamp(f32(view.time / view.dur), 0, 1) : 0
-	if clay.UI(id)({
-		layout = {sizing = {width = clay.SizingFixed(width), height = clay.SizingFixed(expanded ? 14 : 2)}, childAlignment = {y = .Center}},
-		floating = {attachTo = .Parent, clipTo = .AttachedParent, zIndex = z_index, attachment = {element = .LeftBottom, parent = .LeftBottom}},
+	if clay.UI(id)(
+	{
+		layout = {
+			sizing = {
+				width = clay.SizingFixed(width),
+				height = clay.SizingFixed(expanded ? 14 : 2),
+			},
+			childAlignment = {y = .Center},
+		},
+		floating = {
+			attachTo = .Parent,
+			clipTo = .AttachedParent,
+			zIndex = z_index,
+			attachment = {element = .LeftBottom, parent = .LeftBottom},
+		},
 		backgroundColor = {0, 0, 0, 150},
-	}) {
-		if hovered() { video_hover = nil }
-		if clay.UI(clay.ID("VideoFill", id.id))({layout = {sizing = {width = clay.SizingFixed(frac * width), height = clay.SizingFixed(expanded ? 10 : 2)}}, backgroundColor = ACCENT}) {}
+	},
+	) {
+		if hovered() {video_hover = nil}
+		if clay.UI(clay.ID("VideoFill", id.id))(
+		{
+			layout = {
+				sizing = {
+					width = clay.SizingFixed(frac * width),
+					height = clay.SizingFixed(expanded ? 10 : 2),
+				},
+			},
+			backgroundColor = ACCENT,
+		},
+		) {}
 	}
 }
 

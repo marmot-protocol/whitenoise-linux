@@ -10,10 +10,10 @@ import marmot "../marmot"
 @(test)
 test_convert_table :: proc(t: ^testing.T) {
 	txt :: proc(s: cstring) -> marmot.Markdown_Inline {
-		inline: marmot.Markdown_Inline
-		inline.tag = .TEXT
-		inline.body.text.content = s
-		return inline
+		span: marmot.Markdown_Inline
+		span.tag = .TEXT
+		span.body.text.content = s
+		return span
 	}
 
 	h0 := [1]marmot.Markdown_Inline{txt("Name")}
@@ -21,11 +21,11 @@ test_convert_table :: proc(t: ^testing.T) {
 	c0 := [1]marmot.Markdown_Inline{txt("Ada")}
 	c1 := [1]marmot.Markdown_Inline{txt("36")}
 
-	header := [2]marmot.Markdown_Table_Cell{
+	header := [2]marmot.Markdown_Table_Cell {
 		{inlines = &h0[0], inlines_len = 1},
 		{inlines = &h1[0], inlines_len = 1},
 	}
-	body_cells := [2]marmot.Markdown_Table_Cell{
+	body_cells := [2]marmot.Markdown_Table_Cell {
 		{inlines = &c0[0], inlines_len = 1},
 		{inlines = &c1[0], inlines_len = 1},
 	}

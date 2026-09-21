@@ -18,13 +18,15 @@ offline_delete_pending :: proc(t: ^testing.T) {
 
 	previous_home := data_home
 	data_home = OFFLINE_TEST_HOME
-	defer { data_home = previous_home }
+	defer {data_home = previous_home}
 	os.remove_all(OFFLINE_TEST_HOME)
 	os.make_directory(OFFLINE_TEST_HOME)
 	defer os.remove_all(OFFLINE_TEST_HOME)
 	testing.expect_value(t, vault_create("test"), Vault_Err.None)
 
-	ui := Ui_State{selected = -1}
+	ui := Ui_State {
+		selected = -1,
+	}
 	defer delete(ui.pending)
 	append(&ui.pending, Pending_Send{ticket = 1, body = strings.repeat("x", 65537), failed = true})
 	append(&ui.pending, Pending_Send{ticket = 2, body = strings.clone("queued"), queued = true})
@@ -60,7 +62,9 @@ offline_delete_pending :: proc(t: ^testing.T) {
 	defer os.set_env("XDG_CONFIG_HOME", previous_config)
 	append(&ui.pending, Pending_Send{ticket = 4, body = strings.clone("sending")})
 	delete_pending(&ui, 0)
-	done := Send_Done{ticket = 4}
+	done := Send_Done {
+		ticket = 4,
+	}
 	append(&done.ids, strings.clone("late-message-id"))
 	append(&sends_done, done)
 	drain_sends(&ui, nil)
@@ -92,8 +96,19 @@ offline_roundtrip :: proc(t: ^testing.T) {
 	testing.expect_value(t, vault_create("test"), Vault_Err.None)
 
 	ui: Ui_State
-	p := Pending_Send{ticket = 1, group_id = "g1", sender = "you", body = "hello", reply_to = "r1", attempts = 2, queued = true}
-	append(&p.atts, Pending_Att{name = "notes.txt", media_type = "text/plain", data = []u8{1, 2, 3}})
+	p := Pending_Send {
+		ticket   = 1,
+		group_id = "g1",
+		sender   = "you",
+		body     = "hello",
+		reply_to = "r1",
+		attempts = 2,
+		queued   = true,
+	}
+	append(
+		&p.atts,
+		Pending_Att{name = "notes.txt", media_type = "text/plain", data = []u8{1, 2, 3}},
+	)
 	append(&ui.pending, p)
 	save_offline(&ui)
 

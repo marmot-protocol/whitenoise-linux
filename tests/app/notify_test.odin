@@ -7,7 +7,12 @@ import "core:testing"
 
 @(test)
 notify_gate :: proc(t: ^testing.T) {
-	base := Notify_Gate{enabled = true, fresh = true, kind = KIND_CHAT_MESSAGE, msg_id = "m1"}
+	base := Notify_Gate {
+		enabled = true,
+		fresh   = true,
+		kind    = KIND_CHAT_MESSAGE,
+		msg_id  = "m1",
+	}
 	testing.expect(t, should_notify(base), "plain incoming message notifies")
 
 	off := base; off.enabled = false

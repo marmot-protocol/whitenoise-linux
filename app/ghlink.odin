@@ -29,7 +29,7 @@ Gh_Ref :: struct {
 	repo:  string,
 	num:   string,
 	url:   string, // what a click opens
-	pull:  bool,   // false = issue
+	pull:  bool, // false = issue
 }
 
 Gh_Card :: struct {
@@ -95,7 +95,14 @@ gh_ref :: proc(url: string) -> (ref: Gh_Ref, ok: bool) {
 // "owner/repo/pulls/12": the api.github.com path, and the cache key.
 // The REST endpoint is plural where the web URL is singular.
 gh_key :: proc(ref: Gh_Ref, allocator := context.temp_allocator) -> string {
-	return fmt.aprintf("%s/%s/%s/%s", ref.owner, ref.repo, ref.pull ? "pulls" : "issues", ref.num, allocator = allocator)
+	return fmt.aprintf(
+		"%s/%s/%s/%s",
+		ref.owner,
+		ref.repo,
+		ref.pull ? "pulls" : "issues",
+		ref.num,
+		allocator = allocator,
+	)
 }
 
 @(private = "file")
@@ -105,7 +112,17 @@ gh_worker :: proc(key: string) {
 	url := fmt.aprintf("%s%s", GH_API, key)
 	defer delete(url)
 	state, out, _, err := os.process_exec(
-		{command = {"curl", "-sf", "--max-time", "10", "-H", "Accept: application/vnd.github+json", url}},
+		{
+			command = {
+				"curl",
+				"-sf",
+				"--max-time",
+				"10",
+				"-H",
+				"Accept: application/vnd.github+json",
+				url,
+			},
+		},
 		context.allocator,
 	)
 	defer delete(out)
@@ -195,41 +212,124 @@ gh_card :: proc(id: u32, ref: Gh_Ref) {
 
 	if clay.UI(clay.ID("GhCard", id))(
 	{
-		layout = {sizing = {width = clay.SizingFixed(att_w(360))}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(14), childGap = 12},
+		layout = {
+			sizing = {width = clay.SizingFixed(att_w(360))},
+			layoutDirection = .TopToBottom,
+			padding = clay.PaddingAll(14),
+			childGap = 12,
+		},
 		backgroundColor = PLATE,
 		cornerRadius = rr(12),
 		border = {color = hovered() ? fade(badge, 0.5) : CARD_BORDER, width = bw()},
 	},
 	) {
-		if hovered() { link_hover = ref.url }
-		if clay.UI(clay.ID("GhCardHead", id))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, childAlignment = {y = .Center}}}) {
-			if clay.UI(clay.ID("GhCardIcon", id))({layout = {sizing = {clay.SizingFixed(28), clay.SizingFixed(28)}, childAlignment = {x = .Center, y = .Center}}, backgroundColor = fade(badge, 0.1), cornerRadius = rr(8)}) {
-				clay.Text(ref.pull ? "\uf407" : ICON_INFO, {fontId = FONT_ICON, fontSize = 15, textColor = badge})
+		if hovered() {link_hover = ref.url}
+		if clay.UI(clay.ID("GhCardHead", id))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				childGap = 10,
+				childAlignment = {y = .Center},
+			},
+		},
+		) {
+			if clay.UI(clay.ID("GhCardIcon", id))(
+			{
+				layout = {
+					sizing = {clay.SizingFixed(28), clay.SizingFixed(28)},
+					childAlignment = {x = .Center, y = .Center},
+				},
+				backgroundColor = fade(badge, 0.1),
+				cornerRadius = rr(8),
+			},
+			) {
+				clay.Text(
+					ref.pull ? "\uf407" : ICON_INFO,
+					{fontId = FONT_ICON, fontSize = 15, textColor = badge},
+				)
 			}
-			if clay.UI(clay.ID("GhCardRepo", id))({layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 3}, clip = {horizontal = true}}) {
+			if clay.UI(clay.ID("GhCardRepo", id))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					layoutDirection = .TopToBottom,
+					childGap = 3,
+				},
+				clip = {horizontal = true},
+			},
+			) {
 				kind := ref.pull ? tr("PULL REQUEST") : tr("ISSUE")
-				clay.Text(fmt.tprintf("%s  #%s", kind, ref.num), {fontId = FONT_BODY, fontSize = 9, textColor = TEXT_DIM, letterSpacing = 1, wrapMode = .None})
-				clay.Text(fmt.tprintf("%s/%s", ref.owner, ref.repo), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM, wrapMode = .None})
+				clay.Text(
+					fmt.tprintf("%s  #%s", kind, ref.num),
+					{
+						fontId = FONT_BODY,
+						fontSize = 9,
+						textColor = TEXT_DIM,
+						letterSpacing = 1,
+						wrapMode = .None,
+					},
+				)
+				clay.Text(
+					fmt.tprintf("%s/%s", ref.owner, ref.repo),
+					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM, wrapMode = .None},
+				)
 			}
 			if len(card.state) > 0 {
 				if clay.UI(clay.ID("GhCardState", id))(
-				{layout = {padding = {left = 8, right = 8, top = 4, bottom = 4}}, backgroundColor = fade(badge, 0.12), cornerRadius = rr(9)},
+				{
+					layout = {padding = {left = 8, right = 8, top = 4, bottom = 4}},
+					backgroundColor = fade(badge, 0.12),
+					cornerRadius = rr(9),
+				},
 				) {
-					clay.Text(card.state, {fontId = FONT_TITLE, fontSize = 10, textColor = badge, wrapMode = .None})
+					clay.Text(
+						card.state,
+						{fontId = FONT_TITLE, fontSize = 10, textColor = badge, wrapMode = .None},
+					)
 				}
 			}
 		}
 		// The reference remains useful while metadata is unavailable.
-		title := len(card.title) > 0 ? card.title : fmt.tprintf("%s/%s #%s", ref.owner, ref.repo, ref.num)
+		title :=
+			len(card.title) > 0 ? card.title : fmt.tprintf("%s/%s #%s", ref.owner, ref.repo, ref.num)
 		clay.Text(title, {fontId = FONT_TITLE, fontSize = 15, textColor = TEXT})
-		if clay.UI(clay.ID("GhCardFoot", id))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, childAlignment = {y = .Center}}}) {
-			if clay.UI(clay.ID("GhCardAuthor", id))({layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}}) {
+		if clay.UI(clay.ID("GhCardFoot", id))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				childGap = 10,
+				childAlignment = {y = .Center},
+			},
+		},
+		) {
+			if clay.UI(clay.ID("GhCardAuthor", id))(
+			{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
+			) {
 				if len(card.author) > 0 {
-					clay.Text(fmt.tprintf("@%s", card.author), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM, wrapMode = .None})
+					clay.Text(
+						fmt.tprintf("@%s", card.author),
+						{
+							fontId = FONT_BODY,
+							fontSize = 11,
+							textColor = TEXT_DIM,
+							wrapMode = .None,
+						},
+					)
 				}
 			}
-			if clay.UI(clay.ID("GhCardOpen", id))({layout = {padding = {top = 3, bottom = 3}, childGap = 6, childAlignment = {y = .Center}}}) {
-				clay.Text(tr("Open in browser"), {fontId = FONT_BODY, fontSize = 10, textColor = TEXT_DIM, wrapMode = .None})
+			if clay.UI(clay.ID("GhCardOpen", id))(
+			{
+				layout = {
+					padding = {top = 3, bottom = 3},
+					childGap = 6,
+					childAlignment = {y = .Center},
+				},
+			},
+			) {
+				clay.Text(
+					tr("Open in browser"),
+					{fontId = FONT_BODY, fontSize = 10, textColor = TEXT_DIM, wrapMode = .None},
+				)
 				clay.Text("\uf08e", {fontId = FONT_ICON, fontSize = 10, textColor = TEXT_DIM})
 			}
 		}

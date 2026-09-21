@@ -49,10 +49,10 @@ mpv_event_property :: struct {
 }
 
 mpv_event_end_file :: struct {
-	reason:                    c.int,
-	error:                     c.int,
-	playlist_entry_id:         i64,
-	playlist_insert_id:        i64,
+	reason:                      c.int,
+	error:                       c.int,
+	playlist_entry_id:           i64,
+	playlist_insert_id:          i64,
 	playlist_insert_num_entries: c.int,
 }
 
@@ -65,7 +65,11 @@ mpv_stream_cb_info :: struct {
 	cancel_fn: proc "c" (cookie: rawptr),
 }
 
-mpv_stream_cb_open_fn :: proc "c" (user_data: rawptr, uri: cstring, info: ^mpv_stream_cb_info) -> c.int
+mpv_stream_cb_open_fn :: proc "c" (
+	user_data: rawptr,
+	uri: cstring,
+	info: ^mpv_stream_cb_info,
+) -> c.int
 
 @(default_calling_convention = "c")
 foreign libmpv {

@@ -29,10 +29,18 @@ FLUSH_INTERVAL :: 30 * time.Second
 // auto-retry, everything else fails outright.
 send_retryable :: proc(s: marmot.Status) -> bool {
 	#partial switch s {
-	case .TIMEOUT, .PUBLISH, .TRANSPORT_CLOSED, .RUNTIME_STOPPING,
-	     .STORAGE_BUSY, .IO, .RUNTIME, .RUNTIME_BUSY,
-	     .ACCOUNT_SESSION_BUSY, .ACCOUNT_WORKER_BUSY,
-	     .ACCOUNT_WORKER_RESPONSE_TIMED_OUT, .GROUP_SEND_QUEUE_FULL:
+	case .TIMEOUT,
+	     .PUBLISH,
+	     .TRANSPORT_CLOSED,
+	     .RUNTIME_STOPPING,
+	     .STORAGE_BUSY,
+	     .IO,
+	     .RUNTIME,
+	     .RUNTIME_BUSY,
+	     .ACCOUNT_SESSION_BUSY,
+	     .ACCOUNT_WORKER_BUSY,
+	     .ACCOUNT_WORKER_RESPONSE_TIMED_OUT,
+	     .GROUP_SEND_QUEUE_FULL:
 		return true
 	}
 	return false
@@ -51,8 +59,8 @@ Offline_Item :: struct {
 	sender:   string,
 	body:     string,
 	reply_to: string,
-	thread: string,
-	issue: Issue_Reply,
+	thread:   string,
+	issue:    Issue_Reply,
 	attempts: int,
 	atts:     [dynamic]Offline_Att,
 }
@@ -73,13 +81,13 @@ save_offline :: proc(ui: ^Ui_State) {
 		if !p.queued && !p.failed && p.attempts == 0 {
 			continue
 		}
-		item := Offline_Item{
+		item := Offline_Item {
 			group_id = p.group_id,
 			sender   = p.sender,
 			body     = p.body,
 			reply_to = p.reply_to,
-			thread = p.thread,
-			issue = p.issue,
+			thread   = p.thread,
+			issue    = p.issue,
 			attempts = p.attempts,
 		}
 		item.atts = make([dynamic]Offline_Att, context.temp_allocator)
@@ -129,14 +137,14 @@ load_offline :: proc(ui: ^Ui_State) {
 
 	for &item in items {
 		send_ticket += 1
-		p := Pending_Send{
+		p := Pending_Send {
 			ticket   = send_ticket,
 			group_id = item.group_id, // unmarshal allocated; adopt
 			sender   = item.sender,
 			body     = item.body,
 			reply_to = item.reply_to,
-			thread = item.thread,
-			issue = item.issue,
+			thread   = item.thread,
+			issue    = item.issue,
 			attempts = item.attempts,
 			queued   = true,
 		}
@@ -148,14 +156,17 @@ load_offline :: proc(ui: ^Ui_State) {
 				delete(att.dim)
 				continue
 			}
-			a := Pending_Att{
+			a := Pending_Att {
 				name       = att.name,
 				media_type = media_type_for(att.name),
 				dim        = att.dim,
 				data       = bytes,
 			}
 			if strings.has_prefix(a.media_type, "image/") {
-				ext := strings.clone_to_cstring(fmt.tprintf(".%s", strings.trim_prefix(a.media_type, "image/")), context.temp_allocator)
+				ext := strings.clone_to_cstring(
+					fmt.tprintf(".%s", strings.trim_prefix(a.media_type, "image/")),
+					context.temp_allocator,
+				)
 				image := rl.LoadImageFromMemory(ext, raw_data(a.data), i32(len(a.data)))
 				if image.data != nil {
 					a.tex = new(rl.Texture2D)

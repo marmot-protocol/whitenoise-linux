@@ -36,7 +36,11 @@ voice_start :: proc(ui: ^Ui_State) {
 		ui.client_status = strings.clone("Couldn't open the microphone. Please try again.")
 		return
 	}
-	spec := sdl.AudioSpec{format = .S16, channels = 1, freq = VOICE_RATE}
+	spec := sdl.AudioSpec {
+		format   = .S16,
+		channels = 1,
+		freq     = VOICE_RATE,
+	}
 	voice.stream = sdl.OpenAudioDeviceStream(sdl.AUDIO_DEVICE_DEFAULT_RECORDING, &spec, nil, nil)
 	if voice.stream == nil {
 		ui.client_status = strings.clone("Couldn't open the microphone. Please try again.")
@@ -99,9 +103,12 @@ voice_send :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		sender   = strings.clone(len(info.name) > 0 ? info.name : "you"),
 		body     = strings.clone(name),
 		thread   = strings.clone(thread_cur(ui)),
-		issue = issue_reply(ui),
+		issue    = issue_reply(ui),
 	}
-	append(&p.atts, Pending_Att{name = name, media_type = "audio/wav", data = wav_encode(voice.samples[:])})
+	append(
+		&p.atts,
+		Pending_Att{name = name, media_type = "audio/wav", data = wav_encode(voice.samples[:])},
+	)
 	append(&ui.pending, p)
 	spawn_send(ui, client, &ui.pending[len(ui.pending) - 1])
 
@@ -136,22 +143,51 @@ VOICE_METER_W :: 120
 voice_bar :: proc() {
 	if clay.UI(clay.ID("VoiceBar"))(
 	{
-		layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFit({min = 44})}, padding = {left = 16, right = 16, top = 8, bottom = 8}, childGap = 10, childAlignment = {y = .Center}},
+		layout = {
+			sizing = {width = clay.SizingGrow(), height = clay.SizingFit({min = 44})},
+			padding = {left = 16, right = 16, top = 8, bottom = 8},
+			childGap = 10,
+			childAlignment = {y = .Center},
+		},
 		backgroundColor = ROW_BG,
 		cornerRadius = rr(22),
 		border = {color = DANGER, width = bw()},
 	},
 	) {
 		if clay.UI(clay.ID("VoiceDot"))(
-		{layout = {sizing = {width = clay.SizingFixed(10), height = clay.SizingFixed(10)}}, backgroundColor = DANGER, cornerRadius = rr(5)},
+		{
+			layout = {sizing = {width = clay.SizingFixed(10), height = clay.SizingFixed(10)}},
+			backgroundColor = DANGER,
+			cornerRadius = rr(5),
+		},
 		) {}
 		clay.Text("Recording", {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
-		clay.Text(fmt_clock(f64(len(voice.samples)) / VOICE_RATE), {fontId = FONT_MONO, fontSize = 12, textColor = TEXT_DIM})
+		clay.Text(
+			fmt_clock(f64(len(voice.samples)) / VOICE_RATE),
+			{fontId = FONT_MONO, fontSize = 12, textColor = TEXT_DIM},
+		)
 		if clay.UI(clay.ID("VoiceMeter"))(
-		{layout = {sizing = {width = clay.SizingFixed(VOICE_METER_W), height = clay.SizingFixed(8)}, padding = {left = 1, right = 1}, childAlignment = {y = .Center}}, backgroundColor = PLATE, cornerRadius = rr(4)},
+		{
+			layout = {
+				sizing = {width = clay.SizingFixed(VOICE_METER_W), height = clay.SizingFixed(8)},
+				padding = {left = 1, right = 1},
+				childAlignment = {y = .Center},
+			},
+			backgroundColor = PLATE,
+			cornerRadius = rr(4),
+		},
 		) {
 			if clay.UI(clay.ID("VoiceMeterFill"))(
-			{layout = {sizing = {width = clay.SizingFixed(max(2, voice.level * (VOICE_METER_W - 2))), height = clay.SizingFixed(6)}}, backgroundColor = ACCENT, cornerRadius = rr(3)},
+			{
+				layout = {
+					sizing = {
+						width = clay.SizingFixed(max(2, voice.level * (VOICE_METER_W - 2))),
+						height = clay.SizingFixed(6),
+					},
+				},
+				backgroundColor = ACCENT,
+				cornerRadius = rr(3),
+			},
 			) {}
 		}
 		if clay.UI(clay.ID("VoiceGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}

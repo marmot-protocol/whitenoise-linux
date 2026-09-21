@@ -321,7 +321,14 @@ qr_penalty :: proc(g: ^Grid) -> int {
 
 // Lay the codewords into a finished module grid. `mods` is one byte
 // per module, 1 = dark, row-major.
-qr_matrix :: proc(cw: []u8, version: int, allocator := context.allocator) -> (mods: []u8, size: int) {
+qr_matrix :: proc(
+	cw: []u8,
+	version: int,
+	allocator := context.allocator,
+) -> (
+	mods: []u8,
+	size: int,
+) {
 	size = qr_size(version)
 	g := Grid {
 		mods = make([]u8, size * size, allocator),
@@ -393,7 +400,14 @@ qr_matrix :: proc(cw: []u8, version: int, allocator := context.allocator) -> (mo
 }
 
 // Modules for `text`, or ok = false when it does not fit version 5.
-qr_encode :: proc(text: string, allocator := context.allocator) -> (mods: []u8, size: int, ok: bool) {
+qr_encode :: proc(
+	text: string,
+	allocator := context.allocator,
+) -> (
+	mods: []u8,
+	size: int,
+	ok: bool,
+) {
 	payload := transmute([]u8)text
 	version := qr_version_for(len(payload))
 	if version == 0 {

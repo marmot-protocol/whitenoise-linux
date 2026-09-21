@@ -37,9 +37,11 @@ emoji_tex_cache: map[string]^rl.Texture2D
 // graphemes so flags, skin tones, and joined emoji occupy one cell.
 @(private)
 text_emoji :: proc(text: string) -> ^rl.Texture2D {
-	if strings.contains(text, "\uFE0E") { return nil }
+	if strings.contains(text, "\uFE0E") {return nil}
 	r, _ := utf8.decode_rune_in_string(text)
-	if !unicode.is_emoji_extended_pictographic(r) && !unicode.is_regional_indicator(r) && !strings.contains(text, "\u20E3") {
+	if !unicode.is_emoji_extended_pictographic(r) &&
+	   !unicode.is_regional_indicator(r) &&
+	   !strings.contains(text, "\u20E3") {
 		return nil
 	}
 	return emoji_tex(text)
@@ -65,7 +67,10 @@ load_emoji_catalog :: proc() {
 		if tab <= 0 {
 			continue
 		}
-		append(&emoji_catalog, Emoji_Entry{emoji = line[:tab], name = strings.to_lower(line[tab + 1:])})
+		append(
+			&emoji_catalog,
+			Emoji_Entry{emoji = line[:tab], name = strings.to_lower(line[tab + 1:])},
+		)
 	}
 }
 
@@ -124,7 +129,7 @@ emoji_image :: proc(emoji: string) -> rl.Image {
 	return {}
 }
 
-PAGE_ICONS := [Page]string{
+PAGE_ICONS := [Page]string {
 	.Chats    = ICON_CHATS,
 	.Contacts = ICON_PEOPLE,
 	.Archived = ICON_ARCHIVE,
@@ -188,4 +193,3 @@ MEDIA_CHIP_BG := clay.Color{0, 0, 0, 184}
 MEDIA_CHIP_FG := clay.Color{255, 255, 255, 255}
 MEDIA_CHIP_OUTLINE := clay.Color{255, 255, 255, 102}
 MEDIA_CONTROL_BG := clay.Color{255, 255, 255, 34}
-

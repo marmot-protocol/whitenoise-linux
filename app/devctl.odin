@@ -133,8 +133,7 @@ devctl_apply_input :: proc(frame: int, pointer: ^clay.Vector2) {
 	// The real mouse takes it back the moment it actually moves, or one
 	// scripted click would pin the pointer for the rest of the session.
 	real := rl.GetMousePosition()
-	if dev_pointer_on &&
-	   (abs(real.x - dev_real_at.x) > 2 || abs(real.y - dev_real_at.y) > 2) {
+	if dev_pointer_on && (abs(real.x - dev_real_at.x) > 2 || abs(real.y - dev_real_at.y) > 2) {
 		dev_pointer_on = false
 		test_pointer_on = false
 	}

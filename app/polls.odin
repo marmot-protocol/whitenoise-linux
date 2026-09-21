@@ -31,7 +31,10 @@ Poll_Vote :: struct {
 }
 
 // Fold one vote record into the per-poll map; latest timestamp wins.
-poll_vote_collect :: proc(votes: ^map[string]map[string]Poll_Vote, record: ^marmot.Timeline_Message_Record) {
+poll_vote_collect :: proc(
+	votes: ^map[string]map[string]Poll_Vote,
+	record: ^marmot.Timeline_Message_Record,
+) {
 	poll_id := first_event_ref(record)
 	if len(poll_id) == 0 || record.sender == nil {
 		return
@@ -51,7 +54,10 @@ poll_vote_collect :: proc(votes: ^map[string]map[string]Poll_Vote, record: ^marm
 		per = make(map[string]Poll_Vote, context.temp_allocator)
 	}
 	if prev, seen := per[sender]; !seen || record.timeline_at > prev.at {
-		per[sender] = Poll_Vote{at = record.timeline_at, opts = opts[:]}
+		per[sender] = Poll_Vote {
+			at   = record.timeline_at,
+			opts = opts[:],
+		}
 	}
 	votes[poll_id] = per
 }
@@ -63,13 +69,24 @@ poll_parse :: proc(client: ^marmot.Client, msg: ^Msg_Ui, record: ^marmot.Timelin
 	for t in 0 ..< record.tags_len {
 		tag := &record.tags[t]
 		if tag.values_len >= 3 && string(tag.values[0]) == "option" {
-			opt := Poll_Opt_Ui{
+			opt := Poll_Opt_Ui {
 				id    = strings.clone(string(tag.values[1])),
 				label = strings.clone(string(tag.values[2])),
 			}
 			doc: ^marmot.Markdown_Document
-			if marmot.parse_markdown(client, strings.clone_to_cstring(opt.label, context.temp_allocator), &doc) == .OK {
-				convert_blocks(&opt.blocks, doc.blocks, doc.blocks_len, false, ([^]u8)(doc.blank_lines_before)[:doc.blank_lines_before_len])
+			if marmot.parse_markdown(
+				   client,
+				   strings.clone_to_cstring(opt.label, context.temp_allocator),
+				   &doc,
+			   ) ==
+			   .OK {
+				convert_blocks(
+					&opt.blocks,
+					doc.blocks,
+					doc.blocks_len,
+					false,
+					([^]u8)(doc.blank_lines_before)[:doc.blank_lines_before_len],
+				)
 				marmot.markdown_document_free(doc)
 			}
 			append(&msg.poll_opts, opt)
@@ -126,52 +143,100 @@ poll_closed :: proc(msg: Msg_Ui) -> bool {
 // Clicks are routed by handle_chat to poll_vote.
 poll_block :: proc(index: u32, msg: Msg_Ui) {
 	if clay.UI(clay.ID("MsgPoll", index))(
-	{layout = {layoutDirection = .TopToBottom, childGap = 4, sizing = {width = clay.SizingGrow({max = 300})}}},
+	{
+		layout = {
+			layoutDirection = .TopToBottom,
+			childGap = 4,
+			sizing = {width = clay.SizingGrow({max = 300})},
+		},
+	},
 	) {
 		for opt, j in msg.poll_opts {
 			slot := index * 64 + u32(j)
 			if clay.UI(clay.ID("PollOptRow", slot))(
 			{
-				layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 4, padding = clay.PaddingAll(8)},
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					layoutDirection = .TopToBottom,
+					childGap = 4,
+					padding = clay.PaddingAll(8),
+				},
 				backgroundColor = hovered() && !poll_closed(msg) ? HOVER : ROW_BG,
 				cornerRadius = rr(8),
 				border = opt.mine ? clay.BorderElementConfig{color = ACCENT, width = bw()} : {},
 			},
 			) {
 				if clay.UI(clay.ID("PollOptTop", slot))(
-				{layout = {sizing = {width = clay.SizingGrow()}, childGap = 6, childAlignment = {y = .Center}}},
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						childGap = 6,
+						childAlignment = {y = .Center},
+					},
+				},
 				) {
 					// Label drawn by the message markdown renderer; the
 					// grow column pushes the count to the right edge.
 					// Id window: [1024, 3072) inside the row's 4096 block
 					// (body is below, reply preview at +3072), 32 per option.
 					if clay.UI(clay.ID("PollOptLabel", slot))(
-					{layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 2}},
+					{
+						layout = {
+							sizing = {width = clay.SizingGrow()},
+							layoutDirection = .TopToBottom,
+							childGap = 2,
+						},
+					},
 					) {
 						if len(opt.blocks) > 0 {
 							md_blocks(opt.blocks[:], index * 4096 + 1024 + u32(j) * 32)
 						} else {
-							clay.Text(opt.label, {fontId = FONT_BODY, fontSize = 13, textColor = TEXT})
+							clay.Text(
+								opt.label,
+								{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
+							)
 						}
 					}
-					clay.Text(fmt.tprintf("%d", opt.count), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO})
+					clay.Text(
+						fmt.tprintf("%d", opt.count),
+						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
+					)
 				}
 				frac := msg.poll_total > 0 ? f32(opt.count) / f32(msg.poll_total) : 0
 				if clay.UI(clay.ID("PollOptBarBg", slot))(
-				{layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(4)}}, backgroundColor = PLATE, cornerRadius = rr(2)},
+				{
+					layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(4)}},
+					backgroundColor = PLATE,
+					cornerRadius = rr(2),
+				},
 				) {
 					if frac > 0 {
 						if clay.UI(clay.ID("PollOptBar", slot))(
-						{layout = {sizing = {width = clay.SizingPercent(frac), height = clay.SizingGrow()}}, backgroundColor = ACCENT, cornerRadius = rr(2)},
+						{
+							layout = {
+								sizing = {
+									width = clay.SizingPercent(frac),
+									height = clay.SizingGrow(),
+								},
+							},
+							backgroundColor = ACCENT,
+							cornerRadius = rr(2),
+						},
 						) {}
 					}
 				}
 			}
 		}
 		if clay.UI(clay.ID("MsgPollFoot", index))({layout = {childGap = 6}}) {
-			clay.Text(fmt.tprintf(tr("%d votes"), msg.poll_total), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
+			clay.Text(
+				fmt.tprintf(tr("%d votes"), msg.poll_total),
+				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+			)
 			if poll_closed(msg) {
-				clay.Text(tr("Voting has ended."), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
+				clay.Text(
+					tr("Voting has ended."),
+					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+				)
 			}
 		}
 	}
@@ -210,8 +275,18 @@ poll_vote :: proc(ui: ^Ui_State, client: ^marmot.Client, msg: ^Msg_Ui, opt: int)
 poll_modal :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("PollModal"))(
 	{
-		layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(modal_w(clay.ID("PollModal"), 460))}, padding = clay.PaddingAll(16), childGap = 10},
-		floating = {attachTo = .Root, zIndex = 11, offset = {0, rise(clay.ID("PollModal"))}, attachment = {element = .CenterCenter, parent = .CenterCenter}},
+		layout = {
+			layoutDirection = .TopToBottom,
+			sizing = {width = clay.SizingFixed(modal_w(clay.ID("PollModal"), 460))},
+			padding = clay.PaddingAll(16),
+			childGap = 10,
+		},
+		floating = {
+			attachTo = .Root,
+			zIndex = 11,
+			offset = {0, rise(clay.ID("PollModal"))},
+			attachment = {element = .CenterCenter, parent = .CenterCenter},
+		},
 		backgroundColor = CARD,
 		cornerRadius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
@@ -220,12 +295,26 @@ poll_modal :: proc(ui: ^Ui_State) {
 		clay.Text(tr("Create poll"), {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
 		input_box(ui, "PollQBox", &ui.poll_question, tr("Ask a question..."), ui.focus == .PollQ)
 		for i in 0 ..< len(ui.poll_inputs) {
-			input_box(ui, fmt.tprintf("PollOptBox%d", i), &ui.poll_inputs[i], tr("Add an option..."), ui.focus == .PollOpt && ui.poll_focus == i)
+			input_box(
+				ui,
+				fmt.tprintf("PollOptBox%d", i),
+				&ui.poll_inputs[i],
+				tr("Add an option..."),
+				ui.focus == .PollOpt && ui.poll_focus == i,
+			)
 		}
 		if len(ui.poll_inputs) < POLL_OPTS_CAP {
 			micro_button("PollAddOpt", "Add option")
 		}
-		if clay.UI(clay.ID("PollBtnRow"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 8, childAlignment = {y = .Center}}}) {
+		if clay.UI(clay.ID("PollBtnRow"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				childGap = 8,
+				childAlignment = {y = .Center},
+			},
+		},
+		) {
 			if ui.poll_multi_in {
 				micro_button("PollMulti", "Multiple choice")
 			} else {
@@ -299,7 +388,14 @@ poll_create :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		append(&tags, ref)
 	}
 
-	spawn_custom(ui, client, KIND_POLL, tags[:], question, ui.compose_issue != "" ? .Issue : .Custom)
+	spawn_custom(
+		ui,
+		client,
+		KIND_POLL,
+		tags[:],
+		question,
+		ui.compose_issue != "" ? .Issue : .Custom,
+	)
 	play_sound(.Send)
 	poll_close(ui)
 }

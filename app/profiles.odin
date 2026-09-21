@@ -14,19 +14,19 @@
 //             pic_queue ──► curl worker ──► pic_done ──► drain_pics (frame loop)
 package main
 
-import "core:fmt"
 import "core:crypto/hash"
 import "core:encoding/hex"
+import "core:fmt"
 import "core:os"
 import "core:strings"
 import "core:sync"
 import "core:thread"
 import "core:time"
 
-import rl "sdlrl"
 import marmot "../marmot"
-import cc "../vendor/crop-circles"
 import clay "../vendor/clay/bindings/odin/clay-odin"
+import cc "../vendor/crop-circles"
+import rl "sdlrl"
 
 // One account's cached kind-0 essentials; empty strings when unknown.
 Profile_Info :: struct {
@@ -44,9 +44,9 @@ PROFILE_BATCH :: 32
 Profile_Batch :: struct {
 	worker: ^thread.Thread,
 	client: ^marmot.Client,
-	ids: []string,
-	infos: []Profile_Info,
-	ok: []bool,
+	ids:    []string,
+	infos:  []Profile_Info,
+	ok:     []bool,
 }
 @(private = "file")
 profile_batch: ^Profile_Batch
@@ -61,7 +61,7 @@ profile_cursor: int
 
 @(private = "file")
 profile_queue :: proc(hex: string) {
-	if hex == "" || profile_pending_ids[hex] { return }
+	if hex == "" || profile_pending_ids[hex] {return}
 	if !(hex in profile_cache) {
 		key := strings.clone(hex)
 		profile_cache[key] = {}
@@ -96,12 +96,12 @@ profile_reads_stop :: proc() {
 	if batch := profile_batch; batch != nil {
 		thread.join(batch.worker)
 		thread.destroy(batch.worker)
-		for info in batch.infos { delete(info.name); delete(info.pic_url) }
-		for id in batch.ids { delete(id) }
+		for info in batch.infos {delete(info.name); delete(info.pic_url)}
+		for id in batch.ids {delete(id)}
 		delete(batch.ids); delete(batch.infos); delete(batch.ok); free(batch)
 		profile_batch = nil
 	}
-	for id in profile_pending { delete(id) }
+	for id in profile_pending {delete(id)}
 	delete(profile_pending)
 	profile_pending = {}
 	delete(profile_pending_ids)
@@ -116,7 +116,7 @@ profile_info :: proc(client: ^marmot.Client, hex: string) -> Profile_Info {
 	key := strings.clone(hex)
 	profile_cache[key] = {}
 	append(&profile_order, key)
-	if client != nil { profile_queue(hex) }
+	if client != nil {profile_queue(hex)}
 	return {}
 }
 
@@ -127,7 +127,8 @@ read_profile :: proc(client: ^marmot.Client, hex: string) -> (Profile_Info, bool
 	defer local_timing_end(.profile_read, timing_start)
 	info: Profile_Info
 	meta: ^marmot.User_Profile_Metadata
-	if marmot.user_profile(client, strings.clone_to_cstring(hex, context.temp_allocator), &meta) != .OK {
+	if marmot.user_profile(client, strings.clone_to_cstring(hex, context.temp_allocator), &meta) !=
+	   .OK {
 		return {}, false
 	}
 	if meta != nil {
@@ -162,10 +163,16 @@ register_starter_pic :: proc(hex: string, name: string, url: string, image: rl.I
 	}
 	if old, ok := profile_cache[hex]; ok {
 		delete(old.name); delete(old.pic_url)
-		profile_cache[hex] = {name = strings.clone(name), pic_url = pic_url}
+		profile_cache[hex] = {
+			name    = strings.clone(name),
+			pic_url = pic_url,
+		}
 	} else {
 		key := strings.clone(hex)
-		profile_cache[key] = {name = strings.clone(name), pic_url = pic_url}
+		profile_cache[key] = {
+			name    = strings.clone(name),
+			pic_url = pic_url,
+		}
 		append(&profile_order, key)
 	}
 }
@@ -247,7 +254,13 @@ refresh_worker :: proc(_: ^thread.Thread) {
 		}
 
 		id := strings.clone_to_cstring(hex, context.temp_allocator)
-		if marmot.refresh_profile(client, id, raw_data(DEFAULT_RELAYS), uint(len(DEFAULT_RELAYS))) != .OK {
+		if marmot.refresh_profile(
+			   client,
+			   id,
+			   raw_data(DEFAULT_RELAYS),
+			   uint(len(DEFAULT_RELAYS)),
+		   ) !=
+		   .OK {
 			// marmot's last_error is thread-local, so it is read here.
 			fmt.eprintfln("profiles: refresh failed for %s: %s", hex, marmot.last_error())
 		}
@@ -272,9 +285,9 @@ drain_refresh :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 	done := refresh_done
 	refresh_done = {}
 	sync.unlock(&refresh_mutex)
-	for hex in done { profile_queue(hex); delete(hex) }
+	for hex in done {profile_queue(hex); delete(hex)}
 	delete(done)
-	if client == nil { return }
+	if client == nil {return}
 	changed := false
 	if batch := profile_batch; batch != nil && thread.is_done(batch.worker) {
 		thread.join(batch.worker)
@@ -283,14 +296,14 @@ drain_refresh :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 			delete_key(&profile_pending_ids, hex)
 			if batch.ok[i] {
 				changed = update_profile(ui, hex, batch.infos[i]) || changed
-				if batch.infos[i] == (Profile_Info{}) { queue_refresh(client, hex) }
+				if batch.infos[i] == (Profile_Info{}) {queue_refresh(client, hex)}
 			}
 			delete(hex)
 		}
 		delete(batch.ids); delete(batch.infos); delete(batch.ok); free(batch)
 		profile_batch = nil
 	}
-	if changed { load_timeline(client, ui, string(ui.search_input[:])) }
+	if changed {load_timeline(client, ui, string(ui.search_input[:]))}
 	now := rl.GetTime()
 	if profile_checked < 0 || now - profile_checked >= PROFILE_CHECK_SECS {
 		profile_checked = now
@@ -302,12 +315,12 @@ drain_refresh :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 			profile_cursor += 1
 		}
 	}
-	if profile_batch != nil || len(profile_pending) == 0 { return }
+	if profile_batch != nil || len(profile_pending) == 0 {return}
 	batch := new(Profile_Batch)
 	batch.client = client
 	n := min(PROFILE_BATCH, len(profile_pending))
 	batch.ids = make([]string, n)
-	for &id in batch.ids { id = pop(&profile_pending) }
+	for &id in batch.ids {id = pop(&profile_pending)}
 	batch.infos = make([]Profile_Info, n)
 	batch.ok = make([]bool, n)
 	batch.worker = thread.create(profile_read_worker)
@@ -441,7 +454,7 @@ pic_worker :: proc(_: ^thread.Thread) {
 	context.allocator = reload_allocator()
 	for {
 		sync.lock(&pic_mutex)
-		if pic_stopping { sync.unlock(&pic_mutex); return }
+		if pic_stopping {sync.unlock(&pic_mutex); return}
 		url: string
 		have := len(pic_queue) > 0
 		if have {
@@ -493,13 +506,15 @@ pic_load :: proc(url: string) -> []u8 {
 	if sealed, err := os.read_entire_file(path, context.temp_allocator); err == nil {
 		cached, _ = vault_open_blob(sealed)
 		if len(cached) > 0 {
-			if info, err := os.stat(path, context.temp_allocator); err == nil && time.since(info.modification_time) < 24 * time.Hour {
+			if info, err := os.stat(path, context.temp_allocator);
+			   err == nil && time.since(info.modification_time) < 24 * time.Hour {
 				return cached
 			}
 		}
 	}
 	state, data, stderr, err := os.process_exec(
-		{command = {"curl", "-sfL", "--max-time", "15", "--", url}}, context.allocator,
+		{command = {"curl", "-sfL", "--max-time", "15", "--", url}},
+		context.allocator,
 	)
 	defer delete(stderr)
 	if err != nil || state.exit_code != 0 || len(data) == 0 {
@@ -511,7 +526,7 @@ pic_load :: proc(url: string) -> []u8 {
 		os.make_directory(media_cache_dir())
 		tmp := fmt.tprintf("%s.tmp", path)
 		if os.write_entire_file(tmp, sealed, {.Read_User, .Write_User}) == nil {
-			if os.rename(tmp, path) != nil { os.remove(tmp) }
+			if os.rename(tmp, path) != nil {os.remove(tmp)}
 		}
 	}
 	return data
@@ -528,7 +543,7 @@ start_pic_worker :: proc() {
 @(private)
 stop_pic_worker :: proc() {
 	context.allocator = reload_allocator()
-	if pic_thread == nil { return }
+	if pic_thread == nil {return}
 	sync.lock(&pic_mutex)
 	pic_stopping = true
 	sync.unlock(&pic_mutex)
@@ -549,7 +564,9 @@ drain_pics :: proc() {
 		tex: ^rl.Texture2D
 		if f.data != nil && f.side > 0 {
 			tex = new(rl.Texture2D)
-			tex^ = rl.LoadTextureFromImage({data = raw_data(f.data), width = f.side, height = f.side})
+			tex^ = rl.LoadTextureFromImage(
+				{data = raw_data(f.data), width = f.side, height = f.side},
+			)
 			delete(f.data)
 		} else if f.data != nil {
 			image := rl.LoadImageFromMemory(".img", raw_data(f.data), i32(len(f.data)))
@@ -560,37 +577,55 @@ drain_pics :: proc() {
 			delete(f.data)
 		}
 		pic_textures[f.url] = tex // nil marks a permanent miss
-		if tex != nil && f.side == 0 { wrap_flush = true }
+		if tex != nil && f.side == 0 {wrap_flush = true}
 	}
 	delete(done)
 }
 
 @(private)
-Crop_Shape :: enum { Slanted, Square, Circle, Rounded }
+Crop_Shape :: enum {
+	Slanted,
+	Square,
+	Circle,
+	Rounded,
+}
 
 @(private)
-CROP_SHAPE_PREFIX := [Crop_Shape]string{.Slanted = "crop-circle", .Square = "crop-square", .Circle = "crop-round", .Rounded = "crop-rounded"}
+CROP_SHAPE_PREFIX := [Crop_Shape]string {
+	.Slanted = "crop-circle",
+	.Square  = "crop-square",
+	.Circle  = "crop-round",
+	.Rounded = "crop-rounded",
+}
 
 @(private)
-CROP_SHAPE_NAMES := [Crop_Shape]string{.Slanted = N_("Slanted"), .Square = N_("Square"), .Circle = N_("Circle"), .Rounded = N_("Rounded")}
+CROP_SHAPE_NAMES := [Crop_Shape]string {
+	.Slanted = N_("Slanted"),
+	.Square  = N_("Square"),
+	.Circle  = N_("Circle"),
+	.Rounded = N_("Rounded"),
+}
 
 // Public keys are already 32-byte digests. MLS's 16-byte IDs need SHA-256.
 @(private)
 crop_circle_pixels :: proc(key: string, shape := Crop_Shape.Slanted) -> ([]u8, i32) {
-	if len(key) != 64 && len(key) != 32 { return nil, 0 }
+	if len(key) != 64 && len(key) != 32 {return nil, 0}
 	digest: [32]u8
 	bytes, valid := hex.decode_into_buffer(transmute([]u8)key, digest[:])
-	if !valid { return nil, 0 }
+	if !valid {return nil, 0}
 	if len(bytes) == 16 {
 		group := digest
 		hash.hash(.SHA256, group[:16], digest[:])
 	}
 	image := cc.make_from_digest(digest, .Detailed, module_size = 2, alpha = .Opaque)
-	if shape == .Square { return image.pixels, i32(image.width) }
+	if shape == .Square {return image.pixels, i32(image.width)}
 	defer cc.image_destroy(image)
 	if shape == .Circle || shape == .Rounded {
 		mask := shape == .Circle ? "circle" : "rounded"
-		return avatar_mask_pixels({data = raw_data(image.pixels), width = i32(image.width), height = i32(image.height)}, mask), i32(image.width)
+		return avatar_mask_pixels(
+			{data = raw_data(image.pixels), width = i32(image.width), height = i32(image.height)},
+			mask,
+		), i32(image.width)
 	}
 	pixels := make([]u8, len(image.pixels))
 	// Fit every row into a left-leaning trapezoid without cropping the fingerprint.
@@ -600,7 +635,11 @@ crop_circle_pixels :: proc(key: string, shape := Crop_Shape.Slanted) -> ([]u8, i
 		right := f32(image.width) * (0.75 + 0.25 * t)
 		for x in 0 ..< image.width {
 			coverage := clamp(min(f32(x + 1) - left, right - f32(x)), 0, 1)
-			sx := clamp(int((f32(x) + 0.5 - left) / (right - left) * f32(image.width)), 0, image.width - 1)
+			sx := clamp(
+				int((f32(x) + 0.5 - left) / (right - left) * f32(image.width)),
+				0,
+				image.width - 1,
+			)
 			dst, src := (y * image.width + x) * 4, (y * image.width + sx) * 4
 			copy(pixels[dst:dst + 3], image.pixels[src:src + 3])
 			pixels[dst + 3] = u8(coverage * 255)
@@ -610,9 +649,20 @@ crop_circle_pixels :: proc(key: string, shape := Crop_Shape.Slanted) -> ([]u8, i
 }
 
 @(private)
-crop_circle :: proc(id: string, index: u32, key: string, size: f32, shape: Crop_Shape = Crop_Shape(-1)) {
+crop_circle :: proc(
+	id: string,
+	index: u32,
+	key: string,
+	size: f32,
+	shape: Crop_Shape = Crop_Shape(-1),
+) {
 	shape := shape
-	if shape == Crop_Shape(-1) { shape = g_ui != nil ? g_ui.prefs.crop_avatar_shape : .Slanted }
+	if shape == Crop_Shape(-1) {shape = g_ui != nil ? g_ui.prefs.crop_avatar_shape : .Slanted}
 	tex := url_pic(fmt.tprintf("%s:%s", CROP_SHAPE_PREFIX[shape], key))
-	if clay.UI(clay.ID(id, index))({layout = {sizing = {width = clay.SizingFixed(size), height = clay.SizingFixed(size)}}, image = {imageData = tex}}) {}
+	if clay.UI(clay.ID(id, index))(
+	{
+		layout = {sizing = {width = clay.SizingFixed(size), height = clay.SizingFixed(size)}},
+		image = {imageData = tex},
+	},
+	) {}
 }

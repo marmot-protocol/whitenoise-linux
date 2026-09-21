@@ -2,10 +2,10 @@
 // Run: ODIN_ROOT=build/odin-root tests/odin.sh app
 package main
 
-import "core:testing"
-import "core:sync"
 import marmot "../marmot"
 import clay "../vendor/clay/bindings/odin/clay-odin"
+import "core:sync"
+import "core:testing"
 import rl "sdlrl"
 
 @(test)
@@ -15,26 +15,33 @@ md_blank_lines :: proc(t: ^testing.T) {
 	blocks := parse_md_text("first\n\nsecond\n\n\nthird")
 	defer blocks_free(blocks)
 	testing.expect_value(t, len(blocks), 3)
-	for block, i in blocks { testing.expect_value(t, block.blank_lines_before, u8(i)) }
-	inline: marmot.Markdown_Inline
-	inline.tag = .TEXT
-	inline.body.text.content = "paragraph"
+	for block, i in blocks {testing.expect_value(t, block.blank_lines_before, u8(i))}
+	span: marmot.Markdown_Inline
+	span.tag = .TEXT
+	span.body.text.content = "paragraph"
 	paragraph: marmot.Markdown_Block
 	paragraph.tag = .PARAGRAPH
-	paragraph.body.paragraph = {inlines = &inline, inlines_len = 1}
+	paragraph.body.paragraph = {
+		inlines     = &span,
+		inlines_len = 1,
+	}
 	raw := [3]marmot.Markdown_Block{paragraph, paragraph, paragraph}
 	gaps := [3]u8{0, 1, 2}
 	converted: [dynamic]Md_Block_Ui
 	convert_blocks(&converted, raw_data(raw[:]), 3, false, gaps[:])
 	defer blocks_free(converted)
-	for block, i in converted { testing.expect_value(t, block.blank_lines_before, u8(i)) }
+	for block, i in converted {testing.expect_value(t, block.blank_lines_before, u8(i))}
 
 	rl.SetPixelScale(1)
 	memory := make([]u8, int(clay.MinMemorySize()))
 	defer delete(memory)
 	previous := clay.GetCurrentContext()
 	defer clay.SetCurrentContext(previous)
-	clay.Initialize(clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)), {240, 400}, {})
+	clay.Initialize(
+		clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)),
+		{240, 400},
+		{},
+	)
 	clay.SetMeasureTextFunction(measure_text, nil)
 	clay.BeginLayout()
 	if clay.UI(clay.ID("ParagraphTest"))({layout = {layoutDirection = .TopToBottom}}) {
@@ -48,7 +55,11 @@ md_blank_lines :: proc(t: ^testing.T) {
 		testing.expect(t, gap.found)
 		testing.expect_value(t, gap.boundingBox.height, f32(i) * f32(BODY_FS))
 	}
-	testing.expect_value(t, clay.GetElementData(clay.ID("BodyLine", 802)).boundingBox.height, f32(BODY_FS))
+	testing.expect_value(
+		t,
+		clay.GetElementData(clay.ID("BodyLine", 802)).boundingBox.height,
+		f32(BODY_FS),
+	)
 	joined := parse_md_text("first\nsecond")
 	defer blocks_free(joined)
 	testing.expect_value(t, len(joined), 1)
@@ -92,7 +103,11 @@ md_list_layout :: proc(t: ^testing.T) {
 	defer delete(memory)
 	previous := clay.GetCurrentContext()
 	defer clay.SetCurrentContext(previous)
-	clay.Initialize(clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)), {240, 400}, {})
+	clay.Initialize(
+		clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)),
+		{240, 400},
+		{},
+	)
 	clay.SetMeasureTextFunction(measure_text, nil)
 	blocks := parse_md_text("- Answer questions and explain things and help you write or plan")
 	defer delete(blocks[0].text)
@@ -118,13 +133,16 @@ md_list_layout :: proc(t: ^testing.T) {
 
 @(test)
 md_list_markers :: proc(t: ^testing.T) {
-	inline: marmot.Markdown_Inline
-	inline.tag = .TEXT
-	inline.body.text.content = "Answer questions"
+	span: marmot.Markdown_Inline
+	span.tag = .TEXT
+	span.body.text.content = "Answer questions"
 	paragraph: marmot.Markdown_Block
 	paragraph.tag = .PARAGRAPH
-	paragraph.body.paragraph = {inlines = &inline, inlines_len = 1}
-	items := [2]marmot.Markdown_List_Item{
+	paragraph.body.paragraph = {
+		inlines     = &span,
+		inlines_len = 1,
+	}
+	items := [2]marmot.Markdown_List_Item {
 		{blocks = &paragraph, blocks_len = 1},
 		{blocks = &paragraph, blocks_len = 1},
 	}
@@ -136,7 +154,10 @@ md_list_markers :: proc(t: ^testing.T) {
 	for expected, i in markers {
 		if i == 1 {
 			list.body.list_block.kind.tag = 1
-			list.body.list_block.kind.body.ordered = {start = 3, delimiter = "."}
+			list.body.list_block.kind.body.ordered = {
+				start     = 3,
+				delimiter = ".",
+			}
 		}
 		if i == 2 {
 			items[0].has_checked = true

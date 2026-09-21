@@ -62,7 +62,10 @@ set_profile_pic :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 		ui.client_status = strings.clone("Couldn't use that file. Choose a PNG or JPEG.")
 		return
 	}
-	ext := strings.clone_to_cstring(fmt.tprintf(".%s", strings.trim_prefix(media_type, "image/")), context.temp_allocator)
+	ext := strings.clone_to_cstring(
+		fmt.tprintf(".%s", strings.trim_prefix(media_type, "image/")),
+		context.temp_allocator,
+	)
 	image := rl.LoadImageFromMemory(ext, raw_data(data), i32(len(data)))
 	if image.data == nil {
 		delete(data)
@@ -90,7 +93,17 @@ ppic_worker :: proc() {
 	url, err: string
 
 	url_c: cstring
-	if marmot.upload_profile_image(job.client, account, raw_data(job.data), uint(len(job.data)), media, nil, &url_c) == .OK && url_c != nil {
+	if marmot.upload_profile_image(
+		   job.client,
+		   account,
+		   raw_data(job.data),
+		   uint(len(job.data)),
+		   media,
+		   nil,
+		   &url_c,
+	   ) ==
+		   .OK &&
+	   url_c != nil {
 		url = strings.clone(string(url_c))
 		marmot.string_free(url_c)
 	} else {
@@ -107,7 +120,17 @@ ppic_worker :: proc() {
 		metadata.picture = strings.clone_to_cstring(url, context.temp_allocator)
 
 		out: ^marmot.User_Profile_Metadata
-		if marmot.publish_user_profile(job.client, account, &metadata, raw_data(DEFAULT_RELAYS), uint(len(DEFAULT_RELAYS)), raw_data(DEFAULT_RELAYS), uint(len(DEFAULT_RELAYS)), &out) != .OK {
+		if marmot.publish_user_profile(
+			   job.client,
+			   account,
+			   &metadata,
+			   raw_data(DEFAULT_RELAYS),
+			   uint(len(DEFAULT_RELAYS)),
+			   raw_data(DEFAULT_RELAYS),
+			   uint(len(DEFAULT_RELAYS)),
+			   &out,
+		   ) !=
+		   .OK {
 			err = fmt.aprintf("Couldn't publish the picture. %s", marmot.last_error())
 			delete(url)
 			url = ""
@@ -144,7 +167,10 @@ drain_ppic :: proc(ui: ^Ui_State) {
 		ui.client_status = err
 	}
 	if len(url) > 0 {
-		ext := strings.clone_to_cstring(fmt.tprintf(".%s", strings.trim_prefix(ppic_job.media_type, "image/")), context.temp_allocator)
+		ext := strings.clone_to_cstring(
+			fmt.tprintf(".%s", strings.trim_prefix(ppic_job.media_type, "image/")),
+			context.temp_allocator,
+		)
 		image := rl.LoadImageFromMemory(ext, raw_data(ppic_job.data), i32(len(ppic_job.data)))
 		if image.data != nil {
 			register_local_pic(url, image)

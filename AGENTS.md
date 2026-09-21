@@ -274,7 +274,8 @@ register per string.
 ## Commits
 
 Install the hooks once per clone: `scripts/install-hooks.sh`. The pre-commit
-hook normalizes and validates staged gettext catalogs, and keeps
+hook formats staged Odin files when `odinfmt` is installed, normalizes and
+validates staged gettext catalogs, and keeps
 `.github/workflows/pr-precommit.yml` byte-identical to its canonical copy at
 `.ngit/act/workflows/pr-precommit.yml` (ngit is the primary forge; GitHub
 cannot run workflows through symlinks).

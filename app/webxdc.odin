@@ -11,18 +11,18 @@ package main
 
 import "core:strings"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import marmot "../marmot"
+import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
 XDC_ICON_PX :: 48
 
 Xdc_View :: struct {
-	arc:      ^Arc_View, // the unpacked zip, owns the bytes
-	name:     string, // manifest name, else the file name
-	icon:     rl.Texture2D,
+	arc:        ^Arc_View, // the unpacked zip, owns the bytes
+	name:       string, // manifest name, else the file name
+	icon:       rl.Texture2D,
 	icon_image: rl.Image, // worker pixels until the UI uploads them
-	has_icon: bool,
+	has_icon:   bool,
 }
 
 is_xdc_name :: proc(lower: string) -> bool {
@@ -128,23 +128,51 @@ handle_xdc_click :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 xdc_tile :: proc(view: ^Xdc_View, id: u32, msg_id: string, att: int, file_name: string) {
 	if clay.UI(clay.ID("MsgXdc", id))(
-	{layout = {sizing = {width = clay.SizingFixed(320)}, padding = clay.PaddingAll(10), childGap = 10, childAlignment = {y = .Center}}, backgroundColor = PLATE, cornerRadius = rr(8)},
+	{
+		layout = {
+			sizing = {width = clay.SizingFixed(320)},
+			padding = clay.PaddingAll(10),
+			childGap = 10,
+			childAlignment = {y = .Center},
+		},
+		backgroundColor = PLATE,
+		cornerRadius = rr(8),
+	},
 	) {
 		att_dl_button("DlXdc", id, msg_id, att, file_name)
 		if view.has_icon {
 			if clay.UI(clay.ID("MsgXdcIcon", id))(
-			{layout = {sizing = {width = clay.SizingFixed(XDC_ICON_PX), height = clay.SizingFixed(XDC_ICON_PX)}}, image = {imageData = &view.icon}, cornerRadius = rr(10)},
+			{
+				layout = {
+					sizing = {
+						width = clay.SizingFixed(XDC_ICON_PX),
+						height = clay.SizingFixed(XDC_ICON_PX),
+					},
+				},
+				image = {imageData = &view.icon},
+				cornerRadius = rr(10),
+			},
 			) {}
 		}
 		if clay.UI(clay.ID("MsgXdcText", id))(
-		{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingGrow()}, childGap = 2}},
+		{
+			layout = {
+				layoutDirection = .TopToBottom,
+				sizing = {width = clay.SizingGrow()},
+				childGap = 2,
+			},
+		},
 		) {
 			clay.Text(view.name, {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
 			clay.Text(tr("Webxdc app"), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
 		}
 		// Opens in the system browser, served from memory.
 		if clay.UI(clay.ID("MsgXdcOpen", id))(
-		{layout = {padding = {left = 12, right = 12, top = 6, bottom = 6}}, backgroundColor = hovered() ? ACCENT : ROW_BG, cornerRadius = rr(6)},
+		{
+			layout = {padding = {left = 12, right = 12, top = 6, bottom = 6}},
+			backgroundColor = hovered() ? ACCENT : ROW_BG,
+			cornerRadius = rr(6),
+		},
 		) {
 			if hovered() {
 				xdc_hover = {view, msg_id}

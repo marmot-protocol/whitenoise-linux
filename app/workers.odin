@@ -15,18 +15,18 @@ import marmot "../marmot"
 @(private)
 Live_Change :: struct {
 	group, account: string,
-	superseded: bool,
+	superseded:     bool,
 }
 
 Live :: struct {
-	mutex:          sync.Mutex,
-	account:        string,
-	dirty:          bool, // chat list changed
-	dirty_groups:   [dynamic]Live_Change, // group ids with changed rows
-	sub:            ^marmot.Chat_List_Subscription,
-	worker:         ^thread.Thread,
-	events_sub:     ^marmot.Events_Subscription,
-	events_worker:  ^thread.Thread,
+	mutex:         sync.Mutex,
+	account:       string,
+	dirty:         bool, // chat list changed
+	dirty_groups:  [dynamic]Live_Change, // group ids with changed rows
+	sub:           ^marmot.Chat_List_Subscription,
+	worker:        ^thread.Thread,
+	events_sub:    ^marmot.Events_Subscription,
+	events_worker: ^thread.Thread,
 }
 
 live_worker :: proc(t: ^thread.Thread) {
@@ -45,10 +45,13 @@ live_worker :: proc(t: ^thread.Thread) {
 		fmt.eprintfln("live: chat-list event for %s", string(row.group_id_hex))
 		sync.lock(&live.mutex)
 		live.dirty = true
-		append(&live.dirty_groups, Live_Change{
-			group = strings.clone(string(row.group_id_hex)),
-			account = strings.clone(live.account),
-		})
+		append(
+			&live.dirty_groups,
+			Live_Change {
+				group = strings.clone(string(row.group_id_hex)),
+				account = strings.clone(live.account),
+			},
+		)
 		sync.unlock(&live.mutex)
 		marmot.chat_list_row_free(row)
 		frame_wake()
@@ -77,8 +80,12 @@ events_worker :: proc(t: ^thread.Thread) {
 		switch event.tag {
 		case .Message_Received:
 			group = event.body.message.group
-		case .Group_Joined, .Group_State_Updated, .Projection_Updated,
-		     .Group_Event, .Welcome_Delivery_Pending, .Epoch_Stall_Escalated,
+		case .Group_Joined,
+		     .Group_State_Updated,
+		     .Projection_Updated,
+		     .Group_Event,
+		     .Welcome_Delivery_Pending,
+		     .Epoch_Stall_Escalated,
 		     .Group_Change_Superseded:
 			group = event.body.group.group
 		case .Account_Error, .Agent_Stream_Activity:
@@ -88,11 +95,14 @@ events_worker :: proc(t: ^thread.Thread) {
 			continue
 		}
 		sync.lock(&live.mutex)
-		append(&live.dirty_groups, Live_Change{
-			group = strings.clone(string(group)),
-			account = strings.clone(string(event.body.group.account)),
-			superseded = event.tag == .Group_Change_Superseded,
-		})
+		append(
+			&live.dirty_groups,
+			Live_Change {
+				group = strings.clone(string(group)),
+				account = strings.clone(string(event.body.group.account)),
+				superseded = event.tag == .Group_Change_Superseded,
+			},
+		)
 		sync.unlock(&live.mutex)
 		frame_wake()
 	}
@@ -201,12 +211,17 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 	dirty := live.dirty
 	live.dirty = false
 	for group in live.dirty_groups {
-		if group.account == ui.account_ref { dirty = true }
+		if group.account == ui.account_ref {dirty = true}
 	}
 	had_events := len(live.dirty_groups) > 0
 	for group in live.dirty_groups {
-		if group.superseded && group.account == ui.account_ref && ui.selected >= 0 && group.group == ui.chats[ui.selected].group_id {
-			ui.client_status = strings.clone(tr("Another group change took precedence. Review your group settings."))
+		if group.superseded &&
+		   group.account == ui.account_ref &&
+		   ui.selected >= 0 &&
+		   group.group == ui.chats[ui.selected].group_id {
+			ui.client_status = strings.clone(
+				tr("Another group change took precedence. Review your group settings."),
+			)
 		}
 		delete(group.group)
 		delete(group.account)
@@ -224,7 +239,7 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	selected_group: string
-	if ui.selected >= 0 { selected_group = ui.chats[ui.selected].group_id }
+	if ui.selected >= 0 {selected_group = ui.chats[ui.selected].group_id}
 	// Unread counts before the reload, to spot the chats that gained
 	// messages for desktop notifications.
 	old_unread := make(map[string]u64, context.temp_allocator)
@@ -241,7 +256,7 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	focused := rl.IsWindowFocused()
 	for chat in ui.chats {
-		gate := Notify_Gate{
+		gate := Notify_Gate {
 			enabled = ui.prefs.notify_desktop,
 			focused = focused,
 			viewing = chat.group_id == selected_group,
@@ -262,7 +277,11 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 		load_timeline(client, ui, string(ui.search_input[:]))
 	}
 	// The rail can receive its unread update after the timeline snapshot.
-	if ui.selected >= 0 && focused && !ui.timeline_loading && !ui.tl_has_after && ui.chats[ui.selected].unread > 0 {
+	if ui.selected >= 0 &&
+	   focused &&
+	   !ui.timeline_loading &&
+	   !ui.tl_has_after &&
+	   ui.chats[ui.selected].unread > 0 {
 		mark_chat_read(ui, client, ui.selected)
 	}
 }
@@ -280,18 +299,18 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 Pending_Send :: struct {
 	visible_since: time.Tick, // compose action until first presented optimistic row
 	sending_since: time.Tick, // start of the current send attempt
-	ticket:   int, // matches a Send_Done back to its row
-	group_id: string,
-	sender:   string, // own display label, mirrors confirmed rows
-	body:     string, // composed text; file name for a non-image upload
-	reply_to: string, // message id, "" = plain send
-	issue:    Issue_Reply,
-	thread:   string, // thread root id, "" = main timeline
-	atts:     [dynamic]Pending_Att, // upload payloads, owned until drained
-	failed:   bool,
-	queued:   bool, // waiting for the auto-retry timer (offline.odin)
-	dismissed: bool, // hidden during an active send; freed when its worker completes
-	attempts: int, // failed tries so far, capped by MAX_SEND_ATTEMPTS
+	ticket:        int, // matches a Send_Done back to its row
+	group_id:      string,
+	sender:        string, // own display label, mirrors confirmed rows
+	body:          string, // composed text; file name for a non-image upload
+	reply_to:      string, // message id, "" = plain send
+	issue:         Issue_Reply,
+	thread:        string, // thread root id, "" = main timeline
+	atts:          [dynamic]Pending_Att, // upload payloads, owned until drained
+	failed:        bool,
+	queued:        bool, // waiting for the auto-retry timer (offline.odin)
+	dismissed:     bool, // hidden during an active send; freed when its worker completes
+	attempts:      int, // failed tries so far, capped by MAX_SEND_ATTEMPTS
 }
 
 // One attachment moved out of Staged_File at send time. The worker's
@@ -328,10 +347,10 @@ Send_Job :: struct {
 }
 
 Send_Done :: struct {
-	ticket: int,
-	status: marmot.Status, // classifies a failure as queued vs failed
-	err:    string, // "" = ok
-	ids:    [dynamic]string, // hide a dismissed send even if publishing succeeds
+	ticket:            int,
+	status:            marmot.Status, // classifies a failure as queued vs failed
+	err:               string, // "" = ok
+	ids:               [dynamic]string, // hide a dismissed send even if publishing succeeds
 	refresh_requested: bool,
 }
 
@@ -355,7 +374,11 @@ send_ticket: int
 // marmot, the same shape its own kind-9 media messages use, so the
 // timeline resolves them into downloadable media on every client).
 @(private = "file")
-send_thread :: proc(job: ^Send_Job, result: ^marmot.Media_Upload_Result, ids: ^[dynamic]string) -> marmot.Status {
+send_thread :: proc(
+	job: ^Send_Job,
+	result: ^marmot.Media_Upload_Result,
+	ids: ^[dynamic]string,
+) -> marmot.Status {
 	e_vals := [2]cstring{"e", job.thread}
 	rows := make([dynamic]marmot.Message_Tag)
 	defer delete(rows)
@@ -364,7 +387,7 @@ send_thread :: proc(job: ^Send_Job, result: ^marmot.Media_Upload_Result, ids: ^[
 	} else {
 		for tag in issue_reply_tags(job.issue) {
 			values := make([]cstring, len(tag), context.temp_allocator)
-			for value, i in tag { values[i] = strings.clone_to_cstring(value, context.temp_allocator) }
+			for value, i in tag {values[i] = strings.clone_to_cstring(value, context.temp_allocator)}
 			append(&rows, marmot.Message_Tag{raw_data(values), uint(len(values))})
 		}
 	}
@@ -378,7 +401,13 @@ send_thread :: proc(job: ^Send_Job, result: ^marmot.Media_Upload_Result, ids: ^[
 	}
 	for i in 0 ..< (result != nil ? result.attachments_len : 0) {
 		tag: ^marmot.Message_Tag
-		if s := marmot.build_media_imeta_tag(job.client, job.account, job.group, &result.attachments[i].reference, &tag); s != .OK {
+		if s := marmot.build_media_imeta_tag(
+			job.client,
+			job.account,
+			job.group,
+			&result.attachments[i].reference,
+			&tag,
+		); s != .OK {
 			return s
 		}
 		append(&built, tag)
@@ -386,7 +415,16 @@ send_thread :: proc(job: ^Send_Job, result: ^marmot.Media_Upload_Result, ids: ^[
 	}
 
 	summary: ^marmot.Send_Summary
-	status := marmot.send_custom_event(job.client, job.account, job.group, KIND_THREAD, raw_data(rows[:]), uint(len(rows)), job.text, &summary)
+	status := marmot.send_custom_event(
+		job.client,
+		job.account,
+		job.group,
+		KIND_THREAD,
+		raw_data(rows[:]),
+		uint(len(rows)),
+		job.text,
+		&summary,
+	)
 	if status == .OK {
 		sent_ids(ids, summary)
 		marmot.send_summary_free(summary)
@@ -402,7 +440,7 @@ send_worker :: proc(t: ^thread.Thread) {
 	job := (^Send_Job)(t.data)
 	status := marmot.Status.OK
 	ids: [dynamic]string
-	if job.issue.root != "" { status = issue_send_allowed(job.client, job.account, job.group) }
+	if job.issue.root != "" {status = issue_send_allowed(job.client, job.account, job.group)}
 	if status == .OK && len(job.atts) > 0 {
 		// One upload_media round trip: encrypt, push to Blossom, and
 		// (main timeline) publish the kind-9 message in the same call.
@@ -441,7 +479,14 @@ send_worker :: proc(t: ^thread.Thread) {
 		if job.thread != nil {
 			status = send_thread(job, nil, &ids)
 		} else if job.reply != nil {
-			status = marmot.reply_to_message(job.client, job.account, job.group, job.reply, job.text, &summary)
+			status = marmot.reply_to_message(
+				job.client,
+				job.account,
+				job.group,
+				job.reply,
+				job.text,
+				&summary,
+			)
 		} else {
 			status = marmot.send_text(job.client, job.account, job.group, job.text, &summary)
 		}
@@ -454,7 +499,7 @@ send_worker :: proc(t: ^thread.Thread) {
 	err: string
 	if status != .OK {
 		err = marmot.last_error()
-		if err == "" { err = fmt.aprintf("%v", status) }
+		if err == "" {err = fmt.aprintf("%v", status)}
 	}
 	fmt.eprintfln("send: ticket=%d done status=%v err=%s", job.ticket, status, err)
 	sync.lock(&sends_mutex)
@@ -530,17 +575,22 @@ queue_send :: proc(ui: ^Ui_State, client: ^marmot.Client, body: string) {
 	started := time.tick_now()
 	info := profile_info(client, ui.account_ref)
 	send_ticket += 1
-	append(&ui.pending, Pending_Send{
-		visible_since = started,
-		ticket   = send_ticket,
-		group_id = strings.clone(ui.chats[ui.selected].group_id),
-		sender   = strings.clone(len(info.name) > 0 ? info.name : "you"),
-		body     = strings.clone(body),
-		// A reply can't carry a thread tag, so the open thread wins.
-		reply_to = strings.clone(len(thread_cur(ui)) > 0 && ui.compose_issue == "" ? "" : ui.replying),
-		thread   = strings.clone(thread_cur(ui)),
-		issue    = issue_reply(ui),
-	})
+	append(
+		&ui.pending,
+		Pending_Send {
+			visible_since = started,
+			ticket        = send_ticket,
+			group_id      = strings.clone(ui.chats[ui.selected].group_id),
+			sender        = strings.clone(len(info.name) > 0 ? info.name : "you"),
+			body          = strings.clone(body),
+			// A reply can't carry a thread tag, so the open thread wins.
+			reply_to      = strings.clone(
+				len(thread_cur(ui)) > 0 && ui.compose_issue == "" ? "" : ui.replying,
+			),
+			thread        = strings.clone(thread_cur(ui)),
+			issue         = issue_reply(ui),
+		},
+	)
 	attach_body_emoji(&ui.pending[len(ui.pending) - 1], body)
 	spawn_send(ui, client, &ui.pending[len(ui.pending) - 1])
 }
@@ -555,15 +605,21 @@ attach_body_emoji :: proc(p: ^Pending_Send, body: string) {
 	}
 	for code in emoji_codes_in(body) {
 		name := emoji_file_for(code)
-		data, err := os.read_entire_file(fmt.tprintf("%s/%s", emoji_dir(), name), context.allocator)
+		data, err := os.read_entire_file(
+			fmt.tprintf("%s/%s", emoji_dir(), name),
+			context.allocator,
+		)
 		if err != nil {
 			continue
 		}
-		append(&p.atts, Pending_Att{
-			name       = fmt.aprintf("%s%s", EMOJI_ATT_PREFIX, name),
-			media_type = media_type_for(name),
-			data       = data,
-		})
+		append(
+			&p.atts,
+			Pending_Att {
+				name = fmt.aprintf("%s%s", EMOJI_ATT_PREFIX, name),
+				media_type = media_type_for(name),
+				data = data,
+			},
+		)
 	}
 }
 
@@ -599,7 +655,9 @@ queue_staged :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	sender := len(info.name) > 0 ? info.name : "you"
 	group := ui.chats[ui.selected].group_id
 
-	album := Pending_Send{visible_since = started}
+	album := Pending_Send {
+		visible_since = started,
+	}
 	for &f in ui.staged {
 		att := Pending_Att {
 			name       = f.name, // ownership moves out of Staged_File
@@ -614,12 +672,12 @@ queue_staged :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			send_ticket += 1
 			p := Pending_Send {
 				visible_since = started,
-				ticket   = send_ticket,
-				group_id = strings.clone(group),
-				sender   = strings.clone(sender),
-				body     = strings.clone(f.name),
-				thread   = strings.clone(thread_cur(ui)),
-		issue    = issue_reply(ui),
+				ticket        = send_ticket,
+				group_id      = strings.clone(group),
+				sender        = strings.clone(sender),
+				body          = strings.clone(f.name),
+				thread        = strings.clone(thread_cur(ui)),
+				issue         = issue_reply(ui),
 			}
 			append(&p.atts, att)
 			append(&ui.pending, p)
@@ -672,7 +730,9 @@ drain_sends :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		waiting := false
 		if d.err == "" && timeline_scope(ui, "") {
 			for p in ui.pending {
-				if p.ticket != d.ticket || p.dismissed || p.group_id != string(timeline_job.group) {
+				if p.ticket != d.ticket ||
+				   p.dismissed ||
+				   p.group_id != string(timeline_job.group) {
 					continue
 				}
 				for id in d.ids {
@@ -761,13 +821,13 @@ Op_Job :: struct {
 }
 
 Op_Done :: struct {
-	ticket: int,
-	op:     Msg_Op,
-	err:    string, // "" = ok, else the owned marmot error
+	ticket:                          int,
+	op:                              Msg_Op,
+	err:                             string, // "" = ok, else the owned marmot error
 	account, group, target, content: string, // owned edit recovery data
-	history: [dynamic]^marmot.Timeline_Edit_Page,
-	has_original: bool, // .History: content holds the original plaintext
-	original_at: u64,
+	history:                         [dynamic]^marmot.Timeline_Edit_Page,
+	has_original:                    bool, // .History: content holds the original plaintext
+	original_at:                     u64,
 }
 
 ops_mutex: sync.Mutex
@@ -781,7 +841,10 @@ op_worker :: proc(t: ^thread.Thread) {
 	defer frame_wake()
 	job := (^Op_Job)(t.data)
 	summary: ^marmot.Send_Summary
-	done := Op_Done{ticket = job.ticket, op = job.op}
+	done := Op_Done {
+		ticket = job.ticket,
+		op     = job.op,
+	}
 	status: marmot.Status
 	switch job.op {
 	case .History:
@@ -789,10 +852,20 @@ op_worker :: proc(t: ^thread.Thread) {
 		before_id: cstring
 		for {
 			page: ^marmot.Timeline_Edit_Page
-			status = marmot.message_edit_history(job.client, job.account, job.group, job.target, before_id != nil ? 1 : 0, before, before_id, 100, &page)
-			if status != .OK { break }
+			status = marmot.message_edit_history(
+				job.client,
+				job.account,
+				job.group,
+				job.target,
+				before_id != nil ? 1 : 0,
+				before,
+				before_id,
+				100,
+				&page,
+			)
+			if status != .OK {break}
 			append(&done.history, page)
-			if !page.has_more || page.len == 0 { break }
+			if !page.has_more || page.len == 0 {break}
 			before, before_id = page.versions[0].edited_at, page.versions[0].id
 		}
 		// An empty history also covers deleted or invisible targets.
@@ -803,51 +876,119 @@ op_worker :: proc(t: ^thread.Thread) {
 			status = marmot.messages(job.client, job.account, job.group, 0, 0, nil, 0, &records)
 			if status == .OK && records != nil {
 				for record in records.items[:records.len] {
-					if string(record.message_id_hex) != string(job.target) { continue }
+					if string(record.message_id_hex) != string(job.target) {continue}
 					done.has_original = true
 					done.original_at = record.recorded_at
 					done.content = strings.clone(string(record.plaintext))
 					break
 				}
 			}
-			if records != nil { marmot.app_message_list_free(records) }
+			if records != nil {marmot.app_message_list_free(records)}
 		}
 	case .React:
-		status = marmot.react_to_message(job.client, job.account, job.group, job.target, job.emoji, &summary)
+		status = marmot.react_to_message(
+			job.client,
+			job.account,
+			job.group,
+			job.target,
+			job.emoji,
+			&summary,
+		)
 	case .Unreact:
-		status = marmot.unreact_from_message(job.client, job.account, job.group, job.target, &summary)
+		status = marmot.unreact_from_message(
+			job.client,
+			job.account,
+			job.group,
+			job.target,
+			&summary,
+		)
 	case .Delete:
 		status = marmot.delete_message(job.client, job.account, job.group, job.target, &summary)
 	case .Edit:
-		status = marmot.edit_message(job.client, job.account, job.group, job.target, job.content, &summary)
+		status = marmot.edit_message(
+			job.client,
+			job.account,
+			job.group,
+			job.target,
+			job.content,
+			&summary,
+		)
 	case .Custom, .Issue:
 		rows := make([]marmot.Message_Tag, len(job.tags))
 		for row, i in job.tags {
-			rows[i] = {values = raw_data(row), values_len = uint(len(row))}
+			rows[i] = {
+				values     = raw_data(row),
+				values_len = uint(len(row)),
+			}
 		}
 		status = .OK
-		if job.op == .Issue { status = issue_send_allowed(job.client, job.account, job.group) }
-		if status == .OK { status = marmot.send_custom_event(job.client, job.account, job.group, job.kind, raw_data(rows), uint(len(rows)), job.content, &summary) }
+		if job.op == .Issue {status = issue_send_allowed(job.client, job.account, job.group)}
+		if status ==
+		   .OK {status = marmot.send_custom_event(job.client, job.account, job.group, job.kind, raw_data(rows), uint(len(rows)), job.content, &summary)}
 		delete(rows)
 	case .Issue_Setting:
 		component: ^marmot.Group_App_Component
-		status = marmot.group_app_component(job.client, job.account, job.group, ISSUE_COMPONENT, &component)
-		if status == .OK && component != nil && issue_setting(component.data[:component.data_len]) == .Unavailable { status = .INVALID_APP_COMPONENT }
-		if component != nil { marmot.app_component_free(component) }
+		status = marmot.group_app_component(
+			job.client,
+			job.account,
+			job.group,
+			ISSUE_COMPONENT,
+			&component,
+		)
+		if status == .OK &&
+		   component != nil &&
+		   issue_setting(component.data[:component.data_len]) ==
+			   .Unavailable {status = .INVALID_APP_COMPONENT}
+		if component != nil {marmot.app_component_free(component)}
 		if status == .OK {
 			data := [2]u8{1, u8(job.secs)}
-			status = marmot.update_app_component(job.client, job.account, job.group, ISSUE_COMPONENT, raw_data(data[:]), 2, &summary)
+			status = marmot.update_app_component(
+				job.client,
+				job.account,
+				job.group,
+				ISSUE_COMPONENT,
+				raw_data(data[:]),
+				2,
+				&summary,
+			)
 		}
 	case .Retention:
-		status = marmot.update_message_retention(job.client, job.account, job.group, job.secs, &summary)
+		status = marmot.update_message_retention(
+			job.client,
+			job.account,
+			job.group,
+			job.secs,
+			&summary,
+		)
 	case .Rename:
-		status = marmot.update_group_profile(job.client, job.account, job.group, job.target, nil, &summary)
+		status = marmot.update_group_profile(
+			job.client,
+			job.account,
+			job.group,
+			job.target,
+			nil,
+			&summary,
+		)
 	case .Invite, .Remove:
 		refs := [1]cstring{job.target}
 		if job.op == .Invite {
-			status = marmot.invite_members(job.client, job.account, job.group, raw_data(refs[:]), 1, &summary)
+			status = marmot.invite_members(
+				job.client,
+				job.account,
+				job.group,
+				raw_data(refs[:]),
+				1,
+				&summary,
+			)
 		} else {
-			status = marmot.remove_members(job.client, job.account, job.group, raw_data(refs[:]), 1, &summary)
+			status = marmot.remove_members(
+				job.client,
+				job.account,
+				job.group,
+				raw_data(refs[:]),
+				1,
+				&summary,
+			)
 		}
 	case .Promote:
 		status = marmot.promote_admin(job.client, job.account, job.group, job.target, &summary)
@@ -860,14 +1001,14 @@ op_worker :: proc(t: ^thread.Thread) {
 		marmot.send_summary_free(summary)
 	} else {
 		err = marmot.last_error()
-		if err == "" { err = strings.clone("Group action unavailable.") }
+		if err == "" {err = strings.clone("Group action unavailable.")}
 	}
 	done.err = err
 	if job.op == .History || job.op == .Edit || job.op == .Issue || job.op == .Issue_Setting {
 		done.account = strings.clone(string(job.account))
 		done.group = strings.clone(string(job.group))
 		done.target = strings.clone(string(job.target))
-		if job.op != .History { done.content = strings.clone(string(job.content)) }
+		if job.op != .History {done.content = strings.clone(string(job.content))}
 	}
 	sync.lock(&ops_mutex)
 	append(&ops_done, done)
@@ -894,7 +1035,14 @@ op_worker :: proc(t: ^thread.Thread) {
 
 // Fire-and-forget custom event onto the op worker (poll, vote, thread
 // message); drain_ops reloads the timeline on the ack.
-spawn_custom :: proc(ui: ^Ui_State, client: ^marmot.Client, kind: u64, tags: [][]string, content: string, op: Msg_Op = .Custom) -> int {
+spawn_custom :: proc(
+	ui: ^Ui_State,
+	client: ^marmot.Client,
+	kind: u64,
+	tags: [][]string,
+	content: string,
+	op: Msg_Op = .Custom,
+) -> int {
 	op_ticket += 1
 	job := new(Op_Job)
 	job.ticket = op_ticket
@@ -921,7 +1069,13 @@ spawn_custom :: proc(ui: ^Ui_State, client: ^marmot.Client, kind: u64, tags: [][
 	return ticket
 }
 
-spawn_op :: proc(ui: ^Ui_State, client: ^marmot.Client, op: Msg_Op, message_id, emoji: string, secs: u64 = 0) -> int {
+spawn_op :: proc(
+	ui: ^Ui_State,
+	client: ^marmot.Client,
+	op: Msg_Op,
+	message_id, emoji: string,
+	secs: u64 = 0,
+) -> int {
 	op_ticket += 1
 	job := new(Op_Job)
 	job.ticket = op_ticket
@@ -931,7 +1085,7 @@ spawn_op :: proc(ui: ^Ui_State, client: ^marmot.Client, op: Msg_Op, message_id, 
 	job.group = strings.clone_to_cstring(ui.chats[ui.selected].group_id)
 	job.target = strings.clone_to_cstring(message_id)
 	job.emoji = op == .React ? strings.clone_to_cstring(emoji) : nil
-	if op == .Edit { job.content = strings.clone_to_cstring(emoji) }
+	if op == .Edit {job.content = strings.clone_to_cstring(emoji)}
 	job.secs = secs
 
 	t := thread.create(op_worker)
@@ -957,19 +1111,20 @@ drain_ops :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if d.op == .History {
 			if d.ticket == ui.hist_ticket {
 				ui.hist_ticket = 0
-				if d.err != "" { ui.client_status = strings.clone(tr("Couldn't load edit history. Please try again.")) } else {
+				if d.err !=
+				   "" {ui.client_status = strings.clone(tr("Couldn't load edit history. Please try again."))} else {
 					ui.hist_original = d.has_original
-					if d.has_original { append(&ui.hist_versions, Edit_Version{format_when(d.original_at), strings.clone(d.content)}) }
+					if d.has_original {append(&ui.hist_versions, Edit_Version{format_when(d.original_at), strings.clone(d.content)})}
 					for i := len(d.history) - 1; i >= 0; i -= 1 {
-						for v in d.history[i].versions[:d.history[i].len] { append(&ui.hist_versions, Edit_Version{format_when(v.edited_at), strings.clone(string(v.plaintext))}) }
+						for v in d.history[i].versions[:d.history[i].len] {append(&ui.hist_versions, Edit_Version{format_when(v.edited_at), strings.clone(string(v.plaintext))})}
 					}
 				}
 			}
-			for page in d.history { marmot.edit_history_free(page) }
+			for page in d.history {marmot.edit_history_free(page)}
 			delete(d.history); edit_result_free(d)
 			continue
 		}
-		if d.op == .Issue || d.op == .Issue_Setting { issues_complete(ui, d); continue }
+		if d.op == .Issue || d.op == .Issue_Setting {issues_complete(ui, d); continue}
 		if d.op == .Edit {
 			edit_complete(ui, d)
 			continue
@@ -1075,7 +1230,15 @@ kp_worker :: proc(t: ^thread.Thread) {
 	refs := [1]cstring{member}
 
 	found := false
-	if marmot.prewarm_group_member_key_packages(job.client, account, raw_data(refs[:]), 1, &summary) == .OK && summary != nil {
+	if marmot.prewarm_group_member_key_packages(
+		   job.client,
+		   account,
+		   raw_data(refs[:]),
+		   1,
+		   &summary,
+	   ) ==
+		   .OK &&
+	   summary != nil {
 		found = summary.reused_members + summary.network_resolved_members > 0
 		marmot.member_key_package_prewarm_summary_free(summary)
 	}
@@ -1241,7 +1404,15 @@ rel_worker :: proc(t: ^thread.Thread) {
 	id := strings.clone_to_cstring(job.hex, context.temp_allocator)
 	// The result is dropped: it lands in marmot's cache, and the drain
 	// re-reads it on the UI thread where rel_list lives.
-	if marmot.refresh_user_relay_lists(job.client, id, raw_data(DEFAULT_RELAYS), uint(len(DEFAULT_RELAYS)), &lists) == .OK && lists != nil {
+	if marmot.refresh_user_relay_lists(
+		   job.client,
+		   id,
+		   raw_data(DEFAULT_RELAYS),
+		   uint(len(DEFAULT_RELAYS)),
+		   &lists,
+	   ) ==
+		   .OK &&
+	   lists != nil {
 		marmot.account_relay_lists_free(lists)
 	}
 	free_all(context.temp_allocator)
@@ -1302,7 +1473,7 @@ auth_thread: ^thread.Thread
 
 @(private)
 auth_stop :: proc() {
-	if auth_thread == nil { return }
+	if auth_thread == nil {return}
 	thread.join(auth_thread)
 	thread.destroy(auth_thread)
 	auth_thread = nil
@@ -1310,9 +1481,9 @@ auth_stop :: proc() {
 
 @(private)
 reload_jobs_busy :: proc() -> bool {
-	if auth_thread != nil { return true }
+	if auth_thread != nil {return true}
 	for worker in send_threads {
-		if !thread.is_done(worker) { return true }
+		if !thread.is_done(worker) {return true}
 	}
 	return false
 }

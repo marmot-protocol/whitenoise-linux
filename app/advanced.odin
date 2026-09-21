@@ -34,20 +34,39 @@ Audit_File :: struct {
 settings_advanced :: proc(ui: ^Ui_State) {
 	eyebrow("SECURITY & PRIVACY")
 	if clay.UI(clay.ID("RowTelemetry"))(srow()) {
-		row_labels("Share usage and diagnostics", "Share aggregate performance timings and relay diagnostics. Nothing is sent while this is off.")
+		row_labels(
+			"Share usage and diagnostics",
+			"Share aggregate performance timings and relay diagnostics. Nothing is sent while this is off.",
+		)
 		toggle("TgTelemetry", ui.telemetry_enabled)
 	}
-	clay.Text(tr("Diagnostics includes a random installation identifier until you turn sharing off, app and device details, and relay labels. The collector receives your IP address. Message contents and account or group identifiers are excluded. Turning sharing off stops future uploads; already sent data cannot be recalled. Audit logs are separate."), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
-	clay.Text(tr("Diagnostics is sent to the operator of otlp.ipf.dev unless you configured another collector. Its retention policy has not been verified here. Usage event export is not configured."), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+	clay.Text(
+		tr(
+			"Diagnostics includes a random installation identifier until you turn sharing off, app and device details, and relay labels. The collector receives your IP address. Message contents and account or group identifiers are excluded. Turning sharing off stops future uploads; already sent data cannot be recalled. Audit logs are separate.",
+		),
+		{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+	)
+	clay.Text(
+		tr(
+			"Diagnostics is sent to the operator of otlp.ipf.dev unless you configured another collector. Its retention policy has not been verified here. Usage event export is not configured.",
+		),
+		{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+	)
 	if clay.UI(clay.ID("RowAudit"))(srow()) {
-		row_labels("Audit logs", "Record group audit log files on this device. Identifiers are hashed.")
+		row_labels(
+			"Audit logs",
+			"Record group audit log files on this device. Identifiers are hashed.",
+		)
 		toggle("TgAudit", ui.audit_enabled)
 	}
 
 	eyebrow("TRUSTED LINK SITES")
 	if len(ui.prefs.trusted_sites) == 0 {
 		if clay.UI(clay.ID("RowNoTrusted"))(srow()) {
-			clay.Text(tr("No trusted sites."), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+			clay.Text(
+				tr("No trusted sites."),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			)
 		}
 	}
 	for site, i in ui.prefs.trusted_sites {
@@ -55,22 +74,49 @@ settings_advanced :: proc(ui: ^Ui_State) {
 	}
 	if len(ui.prefs.trusted_sites) > 0 {
 		if clay.UI(clay.ID("TrustActions"))({layout = {childGap = 8}}) {
-			micro_button("TrustForgetAll", ui.keys_confirm == "TrustForgetAll" ? "Confirm forget all" : "Forget all", DANGER)
+			micro_button(
+				"TrustForgetAll",
+				ui.keys_confirm == "TrustForgetAll" ? "Confirm forget all" : "Forget all",
+				DANGER,
+			)
 		}
 	}
-	clay.Text(tr("Links to these exact sites open without confirmation."), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+	clay.Text(
+		tr("Links to these exact sites open without confirmation."),
+		{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+	)
 
 	eyebrow("AUDIT LOG FILES")
 	if len(ui.audit_files) == 0 {
 		if clay.UI(clay.ID("RowNoAudit"))(srow()) {
-			clay.Text(tr("No audit log files."), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+			clay.Text(
+				tr("No audit log files."),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			)
 		}
 	}
 	for file, i in ui.audit_files {
 		if clay.UI(clay.ID("AuditRow", u32(i)))(
-		{layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(12), childGap = 8, childAlignment = {y = .Center}}, backgroundColor = hovered() ? HOVER : ROW_BG, cornerRadius = rr(8)},
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				padding = clay.PaddingAll(12),
+				childGap = 8,
+				childAlignment = {y = .Center},
+			},
+			backgroundColor = hovered() ? HOVER : ROW_BG,
+			cornerRadius = rr(8),
+		},
 		) {
-			if clay.UI(clay.ID("AuditRowCol", u32(i)))({layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 3}}) {
+			if clay.UI(clay.ID("AuditRowCol", u32(i)))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					layoutDirection = .TopToBottom,
+					childGap = 3,
+				},
+			},
+			) {
 				clay.Text(file.name, {fontId = FONT_MONO, fontSize = 12, textColor = TEXT})
 				clay.Text(file.label, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
 			}
@@ -81,11 +127,17 @@ settings_advanced :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("AuditRefreshRow"))({layout = {childGap = 8}}) {
 		micro_button("AuditRefresh", "Refresh")
 	}
-	clay.Text(tr("Deleting the file being recorded rotates it. Recording continues in a fresh file."), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+	clay.Text(
+		tr("Deleting the file being recorded rotates it. Recording continues in a fresh file."),
+		{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+	)
 
 	eyebrow("DEVELOPER")
 	if clay.UI(clay.ID("RowDevMode"))(srow()) {
-		row_labels("Developer mode", "Shows diagnostics and MLS internals. Adds a Debug entry with account, key-packages, and group state.")
+		row_labels(
+			"Developer mode",
+			"Shows diagnostics and MLS internals. Adds a Debug entry with account, key-packages, and group state.",
+		)
 		toggle("TgDevMode", ui.prefs.dev_mode)
 	}
 }
@@ -170,7 +222,8 @@ load_advanced :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // An explicit toggle grants the expanded scope; startup never grants consent.
 set_telemetry :: proc(ui: ^Ui_State, client: ^marmot.Client, on: bool) {
 	out: ^marmot.Diagnostics_Settings
-	if client == nil || marmot.set_diagnostics_consent(client, on ? .Grant : .Decline, &out) != .OK {
+	if client == nil ||
+	   marmot.set_diagnostics_consent(client, on ? .Grant : .Decline, &out) != .OK {
 		ui.telemetry_enabled = false // MDK fails closed if the receipt cannot be saved.
 		ui.client_status = tr("Couldn't change diagnostics sharing. Please try again.")
 		return
@@ -186,7 +239,10 @@ set_audit :: proc(ui: ^Ui_State, client: ^marmot.Client, on: bool) {
 		ui.client_status = fmt.aprintf(tr("Couldn't change audit logs. %s"), marmot.last_error())
 		return
 	}
-	next := marmot.Audit_Log_Settings{enabled = on, data_mode = cur.data_mode}
+	next := marmot.Audit_Log_Settings {
+		enabled   = on,
+		data_mode = cur.data_mode,
+	}
 	marmot.audit_log_settings_free(cur)
 
 	out: ^marmot.Audit_Log_Settings
@@ -219,11 +275,17 @@ audit_scan :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	for i in 0 ..< int(list.len) {
 		file := list.items[i]
-		append(&ui.audit_files, Audit_File {
-			path  = strings.clone(string(file.path)),
-			name  = strings.clone(string(file.file_name)),
-			label = audit_label(i64(file.size_bytes), file.has_modified_at_ms ? i64(file.modified_at_ms) : 0),
-		})
+		append(
+			&ui.audit_files,
+			Audit_File {
+				path = strings.clone(string(file.path)),
+				name = strings.clone(string(file.file_name)),
+				label = audit_label(
+					i64(file.size_bytes),
+					file.has_modified_at_ms ? i64(file.modified_at_ms) : 0,
+				),
+			},
+		)
 	}
 }
 
@@ -236,18 +298,36 @@ audit_label :: proc(size_bytes: i64, modified_at_ms: i64) -> string {
 	stamp := time.unix(i64(local_seconds(u64(modified_at_ms))), 0)
 	year, month, day := time.date(stamp)
 	hour, minute, _ := time.clock_from_time(stamp)
-	return fmt.aprintf("%s · %04d-%02d-%02d · %02d:%02d", human_size(size_bytes), year, int(month), day, hour, minute)
+	return fmt.aprintf(
+		"%s · %04d-%02d-%02d · %02d:%02d",
+		human_size(size_bytes),
+		year,
+		int(month),
+		day,
+		hour,
+		minute,
+	)
 }
 
 // marmot owns these files (it may be recording into one right now), so
 // deletion goes through the runtime, which rotates instead of yanking.
 audit_delete :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 	result: ^marmot.Audit_Log_Delete_Result
-	if client == nil || marmot.delete_audit_log_file(client, strings.clone_to_cstring(path, context.temp_allocator), &result) != .OK {
-		ui.client_status = fmt.aprintf(tr("Couldn't delete the audit log file. %s"), marmot.last_error())
+	if client == nil ||
+	   marmot.delete_audit_log_file(
+		   client,
+		   strings.clone_to_cstring(path, context.temp_allocator),
+		   &result,
+	   ) !=
+		   .OK {
+		ui.client_status = fmt.aprintf(
+			tr("Couldn't delete the audit log file. %s"),
+			marmot.last_error(),
+		)
 		return
 	}
-	ui.client_status = result.still_recording ? tr("Deleted. Recording continues in a fresh file.") : tr("Audit log file deleted.")
+	ui.client_status =
+		result.still_recording ? tr("Deleted. Recording continues in a fresh file.") : tr("Audit log file deleted.")
 	marmot.audit_log_delete_result_free(result)
 
 	audit_scan(ui, client)
@@ -301,7 +381,10 @@ apply_observability :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	obs_parse(OBSERVABILITY_TOML, &cfg)
 
 	// A copy in the data dir wins, so endpoints change without a rebuild.
-	if data, err := os.read_entire_file(fmt.tprintf("%s/observability.toml", data_home), context.temp_allocator); err == nil {
+	if data, err := os.read_entire_file(
+		fmt.tprintf("%s/observability.toml", data_home),
+		context.temp_allocator,
+	); err == nil {
 		obs_parse(string(data), &cfg)
 	}
 

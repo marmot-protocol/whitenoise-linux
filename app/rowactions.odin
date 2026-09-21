@@ -19,7 +19,11 @@ import marmot "../marmot"
 
 // Rail order: pinned chats first, each half keeping marmot's activity
 // order. Returns indices into `chats`.
-rail_order :: proc(chats: []Chat_Row_Ui, pinned: map[string]bool, allocator := context.temp_allocator) -> [dynamic]int {
+rail_order :: proc(
+	chats: []Chat_Row_Ui,
+	pinned: map[string]bool,
+	allocator := context.temp_allocator,
+) -> [dynamic]int {
 	order := make([dynamic]int, 0, len(chats), allocator)
 	for chat, i in chats {
 		if pinned[chat.group_id] {
@@ -71,8 +75,17 @@ chat_row_menu :: proc(ui: ^Ui_State) {
 
 	if clay.UI(clay.ID("RowMenu"))(
 	{
-		layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFit({min = 210})}, padding = clay.PaddingAll(4), childGap = 1},
-		floating = {attachTo = .Root, offset = {ui.row_menu_x, ui.row_menu_y + rise(clay.ID("RowMenu"))}, zIndex = 10},
+		layout = {
+			layoutDirection = .TopToBottom,
+			sizing = {width = clay.SizingFit({min = 210})},
+			padding = clay.PaddingAll(4),
+			childGap = 1,
+		},
+		floating = {
+			attachTo = .Root,
+			offset = {ui.row_menu_x, ui.row_menu_y + rise(clay.ID("RowMenu"))},
+			zIndex = 10,
+		},
 		backgroundColor = CARD,
 		cornerRadius = rr(10),
 		border = {color = ELEVATED_BORDER, width = bw()},
@@ -96,40 +109,76 @@ folder_modal :: proc(ui: ^Ui_State) {
 
 	if clay.UI(clay.ID("FolderModal"))(
 	{
-		layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(modal_w(clay.ID("FolderModal"), 380))}, padding = clay.PaddingAll(20), childGap = 12},
-		floating = {attachTo = .Root, zIndex = 13, offset = {0, rise(clay.ID("FolderModal"))}, attachment = {element = .CenterCenter, parent = .CenterCenter}},
+		layout = {
+			layoutDirection = .TopToBottom,
+			sizing = {width = clay.SizingFixed(modal_w(clay.ID("FolderModal"), 380))},
+			padding = clay.PaddingAll(20),
+			childGap = 12,
+		},
+		floating = {
+			attachTo = .Root,
+			zIndex = 13,
+			offset = {0, rise(clay.ID("FolderModal"))},
+			attachment = {element = .CenterCenter, parent = .CenterCenter},
+		},
 		backgroundColor = CARD,
 		cornerRadius = rr(16),
 		border = {color = CARD_BORDER, width = bw()},
 	},
 	) {
-		if clay.UI(clay.ID("FolderHead"))({layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}}) {
+		if clay.UI(clay.ID("FolderHead"))(
+		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
+		) {
 			clay.Text(tr("Folders"), {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
-			if clay.UI(clay.ID("FolderHeadGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+			if clay.UI(clay.ID("FolderHeadGap"))(
+			{layout = {sizing = {width = clay.SizingGrow()}}},
+			) {}
 			if clay.UI(clay.ID("FolderClose"))(
-			{layout = {padding = clay.PaddingAll(6)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
+			{
+				layout = {padding = clay.PaddingAll(6)},
+				backgroundColor = hovered() ? HOVER : {},
+				cornerRadius = rr(6),
+			},
 			) {
 				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
 			}
 		}
-		clay.Text(tr("Pick a folder for this chat, or make a new one. A chat sits in one folder at a time."), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+		clay.Text(
+			tr(
+				"Pick a folder for this chat, or make a new one. A chat sits in one folder at a time.",
+			),
+			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+		)
 
 		eyebrow("FOLDERS")
 		if len(ui.prefs.folders) == 0 {
-			clay.Text(tr("No folders yet."), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO})
+			clay.Text(
+				tr("No folders yet."),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
+			)
 		}
 		for name, i in ui.prefs.folders {
 			active := name == current
 			if clay.UI(clay.ID("FolderRow", u32(i)))(
 			{
-				layout = {sizing = {width = clay.SizingGrow()}, padding = {left = 12, right = 10, top = 8, bottom = 8}, childGap = 10, childAlignment = {y = .Center}},
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					padding = {left = 12, right = 10, top = 8, bottom = 8},
+					childGap = 10,
+					childAlignment = {y = .Center},
+				},
 				backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
 				cornerRadius = rr(10),
 			},
 			) {
-				clay.Text(ICON_FOLDER, {fontId = FONT_ICON, fontSize = 12, textColor = active ? ACCENT : TEXT_DIM})
+				clay.Text(
+					ICON_FOLDER,
+					{fontId = FONT_ICON, fontSize = 12, textColor = active ? ACCENT : TEXT_DIM},
+				)
 				clay.Text(name, {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
-				if clay.UI(clay.ID("FolderRowGap", u32(i)))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+				if clay.UI(clay.ID("FolderRowGap", u32(i)))(
+				{layout = {sizing = {width = clay.SizingGrow()}}},
+				) {}
 				action_chip("FolderRename", u32(i), tr("Rename"))
 				action_chip("FolderDelete", u32(i), tr("Delete"))
 			}
@@ -138,15 +187,29 @@ folder_modal :: proc(ui: ^Ui_State) {
 		eyebrow(ui.folder_rename >= 0 ? "RENAME FOLDER" : "NEW FOLDER")
 		if clay.UI(clay.ID("FolderBox"))(
 		{
-			layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(34)}, padding = {left = 12, right = 12}, childAlignment = {y = .Center}},
+			layout = {
+				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(34)},
+				padding = {left = 12, right = 12},
+				childAlignment = {y = .Center},
+			},
 			backgroundColor = ROW_BG,
 			cornerRadius = rr(10),
 			border = {color = ui.focus == .Folder ? ACCENT : FIELD_BORDER, width = bw()},
 		},
 		) {
-			field_text(ui, "FolderBox", &ui.folder_input, "Folder name", ui.focus == .Folder, 13, TEXT_LO)
+			field_text(
+				ui,
+				"FolderBox",
+				&ui.folder_input,
+				"Folder name",
+				ui.focus == .Folder,
+				13,
+				TEXT_LO,
+			)
 		}
-		if clay.UI(clay.ID("FolderActions"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}}) {
+		if clay.UI(clay.ID("FolderActions"))(
+		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
+		) {
 			micro_button("FolderSave", ui.folder_rename >= 0 ? "Save" : "Create folder")
 			if len(current) > 0 {
 				micro_button("FolderClear", "Take out of folder")
@@ -157,7 +220,9 @@ folder_modal :: proc(ui: ^Ui_State) {
 
 // Rail head chips, one per folder plus the all-chats chip.
 folder_chips :: proc(ui: ^Ui_State) {
-	if clay.UI(clay.ID("FolderChips"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 6, padding = {top = 2}}}) {
+	if clay.UI(clay.ID("FolderChips"))(
+	{layout = {sizing = {width = clay.SizingGrow()}, childGap = 6, padding = {top = 2}}},
+	) {
 		folder_chip("FolderAllChip", 0, tr("All folders"), len(ui.folder_filter) == 0)
 		for name, i in ui.prefs.folders {
 			folder_chip("FolderFilter", u32(i), name, ui.folder_filter == name)
@@ -174,7 +239,10 @@ folder_chip :: proc(id_str: string, index: u32, label: string, active: bool) {
 		border = {color = FIELD_BORDER, width = bw()},
 	},
 	) {
-		clay.Text(label, {fontId = FONT_BODY, fontSize = 11, textColor = active ? ACCENT : TEXT_DIM})
+		clay.Text(
+			label,
+			{fontId = FONT_BODY, fontSize = 11, textColor = active ? ACCENT : TEXT_DIM},
+		)
 	}
 }
 
@@ -268,7 +336,9 @@ mark_chat_read :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) {
 handle_folder_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	edit_text(ui, &ui.folder_input)
 
-	if rl.IsKeyPressed(.ESCAPE) || clicked("FolderClose") || (mouse_released() && !clay.PointerOver(clay.ID("FolderModal"))) {
+	if rl.IsKeyPressed(.ESCAPE) ||
+	   clicked("FolderClose") ||
+	   (mouse_released() && !clay.PointerOver(clay.ID("FolderModal"))) {
 		ui.folder_open = false
 		ui.focus = .Compose
 		return

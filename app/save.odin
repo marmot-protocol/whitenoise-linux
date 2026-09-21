@@ -12,8 +12,8 @@ import "core:fmt"
 import "core:os"
 import "core:strings"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import marmot "../marmot"
+import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
 // A tile-list element: the rendered view plus the media index it
@@ -48,7 +48,9 @@ start_blob_save :: proc(name: string, bytes: []u8) {
 	delete(pending_save.group)
 	delete(pending_save.msg_id)
 	delete(pending_save.name)
-	pending_save = {name = strings.clone(name)}
+	pending_save = {
+		name = strings.clone(name),
+	}
 	rl.SaveFileDialog(name)
 }
 
@@ -76,16 +78,31 @@ att_dl_button :: proc(id_str: string, id: u32, msg_id: string, att: int, name: s
 	}
 	if clay.UI(clay.ID(id_str, id))(
 	{
-		layout = {sizing = {width = clay.SizingFixed(26), height = clay.SizingFixed(26)}, childAlignment = {x = .Center, y = .Center}},
-		floating = {attachTo = .Parent, zIndex = 6, offset = {-6, 6}, attachment = {element = .RightTop, parent = .RightTop}},
+		layout = {
+			sizing = {width = clay.SizingFixed(26), height = clay.SizingFixed(26)},
+			childAlignment = {x = .Center, y = .Center},
+		},
+		floating = {
+			attachTo = .Parent,
+			zIndex = 6,
+			offset = {-6, 6},
+			attachment = {element = .RightTop, parent = .RightTop},
+		},
 		backgroundColor = {0, 0, 0, hovered() ? 210 : 150},
 		cornerRadius = rr(13),
 	},
 	) {
 		if hovered() {
-			att_hover = {msg_id = msg_id, index = att, name = name}
+			att_hover = {
+				msg_id = msg_id,
+				index  = att,
+				name   = name,
+			}
 		}
-		clay.Text(ICON_DOWNLOAD, {fontId = FONT_ICON, fontSize = 12, textColor = {255, 255, 255, 230}})
+		clay.Text(
+			ICON_DOWNLOAD,
+			{fontId = FONT_ICON, fontSize = 12, textColor = {255, 255, 255, 230}},
+		)
 	}
 }
 
@@ -135,7 +152,13 @@ save_attachment :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 		return
 	}
 
-	result, ok := fetch_attachment(ui, client, pending_save.group, pending_save.msg_id, pending_save.index)
+	result, ok := fetch_attachment(
+		ui,
+		client,
+		pending_save.group,
+		pending_save.msg_id,
+		pending_save.index,
+	)
 	if !ok {
 		fail(ui, pending_save.name)
 		return
@@ -151,20 +174,30 @@ save_attachment :: proc(ui: ^Ui_State, client: ^marmot.Client, path: string) {
 
 // Use the retained window's media reference, or query if its chat was left.
 // Shared by save_attachment and the lightbox "Copy image".
-fetch_attachment :: proc(ui: ^Ui_State, client: ^marmot.Client, group, msg_id: string, index: int) -> (result: ^marmot.Media_Download_Result, ok: bool) {
+fetch_attachment :: proc(
+	ui: ^Ui_State,
+	client: ^marmot.Client,
+	group, msg_id: string,
+	index: int,
+) -> (
+	result: ^marmot.Media_Download_Result,
+	ok: bool,
+) {
 	query := marmot.Timeline_Message_Query {
 		group_id_hex = strings.clone_to_cstring(group, context.temp_allocator),
 		has_limit    = true,
 		limit        = 100,
 	}
 	page := timeline_page
-	if timeline_job == nil || string(timeline_job.group) != group || string(timeline_job.account) != ui.account_ref { page = nil }
+	if timeline_job == nil ||
+	   string(timeline_job.group) != group ||
+	   string(timeline_job.account) != ui.account_ref {page = nil}
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 	owned := page == nil
 	if owned {
-		if marmot.timeline_messages(client, account, &query, &page) != .OK { return }
+		if marmot.timeline_messages(client, account, &query, &page) != .OK {return}
 	}
-	defer { if owned { marmot.timeline_page_free(page) } }
+	defer {if owned {marmot.timeline_page_free(page)}}
 
 	for i in 0 ..< page.messages_len {
 		record := &page.messages[i]

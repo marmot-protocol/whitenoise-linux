@@ -1,12 +1,18 @@
 package main
 
-import "core:testing"
 import marmot "../marmot"
+import "core:testing"
 
 @(test)
 view_unsaved_profile :: proc(t: ^testing.T) {
 	context.allocator = context.temp_allocator
-	ui := Ui_State{selected_contact = -1, peer_hex = "visitor", peer_name = "Pepi Testing", peer_npub = "npub-visitor", peer_open = true}
+	ui := Ui_State {
+		selected_contact = -1,
+		peer_hex         = "visitor",
+		peer_name        = "Pepi Testing",
+		peer_npub        = "npub-visitor",
+		peer_open        = true,
+	}
 	append(&ui.contacts, Contact_Ui{id_hex = "saved", name = "Saved contact"})
 	view_peer_profile(&ui, nil)
 	contact, found := shown_contact(&ui)
@@ -32,7 +38,8 @@ view_unsaved_profile :: proc(t: ^testing.T) {
 contacts_named_first :: proc(t: ^testing.T) {
 	context.allocator = context.temp_allocator
 	ui: Ui_State
-	append(&ui.contacts,
+	append(
+		&ui.contacts,
 		Contact_Ui{id_hex = "0123456789abcdef", name = short_hex("0123456789abcdef")},
 		Contact_Ui{id_hex = "alice", name = "Alice"},
 		Contact_Ui{id_hex = "number", name = "123"},
@@ -58,7 +65,7 @@ groups_do_not_add_contacts :: proc(t: ^testing.T) {
 	indices: map[string]int
 	indices["saved"] = 0
 	indices["no-shared-group"] = 1
-	members := []marmot.Group_Member_Record{
+	members := []marmot.Group_Member_Record {
 		{member_id_hex = "self", local = true},
 		{member_id_hex = "saved"},
 		{member_id_hex = "acquaintance"},

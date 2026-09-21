@@ -14,10 +14,14 @@ chat_pane :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("ChatPane"))(
 	{layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom}},
 	) {
-		if open_now(clay.ID("CtxMenu"), ui.ctx_open) && ui.ctx_msg >= 0 && ui.ctx_msg < len(ui.messages) {
+		if open_now(clay.ID("CtxMenu"), ui.ctx_open) &&
+		   ui.ctx_msg >= 0 &&
+		   ui.ctx_msg < len(ui.messages) {
 			context_menu(ui)
 		}
-		if open_now(clay.ID("HistModal"), ui.hist_open) && ui.hist_msg >= 0 && ui.hist_msg < len(ui.messages) {
+		if open_now(clay.ID("HistModal"), ui.hist_open) &&
+		   ui.hist_msg >= 0 &&
+		   ui.hist_msg < len(ui.messages) {
 			edit_history_modal(ui)
 		}
 		if open_now(clay.ID("RawModal"), ui.raw_open) {
@@ -26,7 +30,9 @@ chat_pane :: proc(ui: ^Ui_State) {
 		if open_now(clay.ID("EncModal"), ui.enc_open) {
 			encryption_modal(ui, chat)
 		}
-		if open_now(clay.ID("FwdModal"), ui.fwd_open && ui.fwd_kind == .Message) && ui.fwd_msg >= 0 && ui.fwd_msg < len(ui.messages) {
+		if open_now(clay.ID("FwdModal"), ui.fwd_open && ui.fwd_kind == .Message) &&
+		   ui.fwd_msg >= 0 &&
+		   ui.fwd_msg < len(ui.messages) {
 			forward_modal(ui)
 		}
 		if open_now(clay.ID("OvModal"), ui.ov_open) {
@@ -42,12 +48,23 @@ chat_pane :: proc(ui: ^Ui_State) {
 		}
 		// Header.
 		if clay.UI(clay.ID("ChatHeader"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(14), childGap = 10, childAlignment = {y = .Center}}, backgroundColor = RAIL_BG},
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				padding = clay.PaddingAll(14),
+				childGap = 10,
+				childAlignment = {y = .Center},
+			},
+			backgroundColor = RAIL_BG,
+		},
 		) {
 			avatar("ChatHeadAvatar", 0, chat.avatar_key, chat.title, 34, chat_pic(chat))
 			// Keep unbroken titles from widening the pane beyond the window.
 			if clay.UI(clay.ID("ChatHeadTitleClip"))({clip = {horizontal = true}}) {
-				clay.Text(chat.title, {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT, wrapMode = .None})
+				clay.Text(
+					chat.title,
+					{fontId = FONT_TITLE, fontSize = 16, textColor = TEXT, wrapMode = .None},
+				)
 			}
 			// The badge is provenance, not a control, and it is the
 			// widest thing in the row: dropped when the row has to
@@ -55,11 +72,25 @@ chat_pane :: proc(ui: ^Ui_State) {
 			// on the chat's encryption panel.
 			if page_w(ui) >= HEAD_BADGE_W {
 				if clay.UI(clay.ID("MlsBadge"))(
-				{layout = {padding = {left = 8, right = 8, top = 3, bottom = 3}, childGap = 5, childAlignment = {y = .Center}}, backgroundColor = hovered() ? ACCENT_DIM : ACCENT, cornerRadius = rr(6)},
+				{
+					layout = {
+						padding = {left = 8, right = 8, top = 3, bottom = 3},
+						childGap = 5,
+						childAlignment = {y = .Center},
+					},
+					backgroundColor = hovered() ? ACCENT_DIM : ACCENT,
+					cornerRadius = rr(6),
+				},
 				) {
-					clay.Text(ICON_LOCK, {fontId = FONT_ICON, fontSize = 10, textColor = ON_ACCENT})
+					clay.Text(
+						ICON_LOCK,
+						{fontId = FONT_ICON, fontSize = 10, textColor = ON_ACCENT},
+					)
 					crop_circle("MlsCircle", 0, chat.group_id, 18)
-					clay.Text(fmt.tprintf("mls:0x%s", chat.group_id[:min(len(chat.group_id), 6)]), {fontId = FONT_MONO, fontSize = 11, textColor = ON_ACCENT})
+					clay.Text(
+						fmt.tprintf("mls:0x%s", chat.group_id[:min(len(chat.group_id), 6)]),
+						{fontId = FONT_MONO, fontSize = 11, textColor = ON_ACCENT},
+					)
 				}
 			}
 			// Search box before the grow spacer: fixed siblings after a
@@ -67,18 +98,31 @@ chat_pane :: proc(ui: ^Ui_State) {
 			if ui.search_open {
 				if clay.UI(clay.ID("SearchBox"))(
 				{
-					layout = {sizing = {width = clay.SizingFixed(240), height = clay.SizingFixed(32)}, padding = {left = 10, right = 10}, childAlignment = {y = .Center}},
+					layout = {
+						sizing = {width = clay.SizingFixed(240), height = clay.SizingFixed(32)},
+						padding = {left = 10, right = 10},
+						childAlignment = {y = .Center},
+					},
 					backgroundColor = ROW_BG,
 					cornerRadius = rr(8),
 					border = {color = FIELD_BORDER, width = bw()},
 				},
 				) {
-					field_text(ui, "SearchBox", &ui.search_input, "Search messages", ui.focus == .Search)
+					field_text(
+						ui,
+						"SearchBox",
+						&ui.search_input,
+						"Search messages",
+						ui.focus == .Search,
+					)
 				}
 			}
 			// Right-pinned chrome; the bell opens the mentions inbox.
-			if clay.UI(clay.ID("ChatHeadGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-			if ui.issue_setting == .Enabled { header_chip("IssuesBtn", ICON_COMMENTS, ui.issues_open, tr("Issues")) }
+			if clay.UI(clay.ID("ChatHeadGap"))(
+			{layout = {sizing = {width = clay.SizingGrow()}}},
+			) {}
+			if ui.issue_setting ==
+			   .Enabled {header_chip("IssuesBtn", ICON_COMMENTS, ui.issues_open, tr("Issues"))}
 			header_chip("SearchBtn", ICON_SEARCH, ui.search_open, "Search this chat")
 			bell_chip(ui)
 			header_chip("MembersBtn", ICON_PEOPLE, ui.show_members, "Group members")
@@ -100,15 +144,33 @@ chat_pane :: proc(ui: ^Ui_State) {
 		// Pending-invite banner: this chat awaits a decision.
 		if chat.pending {
 			if clay.UI(clay.ID("InviteBanner"))(
-			{layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(12), childGap = 10, childAlignment = {y = .Center}}, backgroundColor = ROW_BG},
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					padding = clay.PaddingAll(12),
+					childGap = 10,
+					childAlignment = {y = .Center},
+				},
+				backgroundColor = ROW_BG,
+			},
 			) {
-				clay.Text(tr("You were invited to this group."), {fontId = FONT_BODY, fontSize = 14, textColor = TEXT})
+				clay.Text(
+					tr("You were invited to this group."),
+					{fontId = FONT_BODY, fontSize = 14, textColor = TEXT},
+				)
 				login_button("InviteAccept", "Accept")
 				login_button("InviteDecline", "Decline")
 			}
 		}
 
-		if clay.UI(clay.ID("ChatBody"))({layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .LeftToRight}}) {
+		if clay.UI(clay.ID("ChatBody"))(
+		{
+			layout = {
+				sizing = {clay.SizingGrow(), clay.SizingGrow()},
+				layoutDirection = .LeftToRight,
+			},
+		},
+		) {
 			// Group info takes the whole conversation area, like the
 			// thread route; page_view_key plays the swap transition.
 			if ui.show_members {
@@ -116,7 +178,12 @@ chat_pane :: proc(ui: ^Ui_State) {
 			} else if ui.issues_open && ui.issue_setting == .Enabled {
 				issues_panel(ui)
 			} else if clay.UI(clay.ID("ChatColumn"))(
-			{layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom}},
+			{
+				layout = {
+					sizing = {clay.SizingGrow(), clay.SizingGrow()},
+					layoutDirection = .TopToBottom,
+				},
+			},
 			) {
 				// Timeline: a real scroll container, top-anchored like the
 				// slint pane; loads jump to the newest message.
@@ -132,7 +199,17 @@ chat_pane :: proc(ui: ^Ui_State) {
 				cur := thread_cur(ui)
 				if clay.UI(clay.ID("Timeline"))(
 				{
-					layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom, padding = {left = side_pad + u16(thread_slide()), right = side_pad, top = 8 + u16(max(overscroll, 0)), bottom = 8 + u16(max(-overscroll, 0))}, childGap = 2},
+					layout = {
+						sizing = {clay.SizingGrow(), clay.SizingGrow()},
+						layoutDirection = .TopToBottom,
+						padding = {
+							left = side_pad + u16(thread_slide()),
+							right = side_pad,
+							top = 8 + u16(max(overscroll, 0)),
+							bottom = 8 + u16(max(-overscroll, 0)),
+						},
+						childGap = 2,
+					},
 					clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 					// The theme's decor scene: clay emits the Custom
 					// command before the children, so it paints behind
@@ -145,8 +222,18 @@ chat_pane :: proc(ui: ^Ui_State) {
 					// Pending invite: the timeline is preview context under
 					// the accept/decline banner.
 					if chat.pending {
-						if clay.UI(clay.ID("RequestDivider"))({layout = {padding = {left = 16, right = 16, top = 8, bottom = 2}}}) {
-							clay.Text("• CHAT REQUEST •", {fontId = FONT_MONO, fontSize = 10, textColor = ACCENT_DIM, letterSpacing = 2})
+						if clay.UI(clay.ID("RequestDivider"))(
+						{layout = {padding = {left = 16, right = 16, top = 8, bottom = 2}}},
+						) {
+							clay.Text(
+								"• CHAT REQUEST •",
+								{
+									fontId = FONT_MONO,
+									fontSize = 10,
+									textColor = ACCENT_DIM,
+									letterSpacing = 2,
+								},
+							)
 						}
 					}
 					if len(ui.messages) == 0 && len(ui.pending) == 0 {
@@ -166,24 +253,81 @@ chat_pane :: proc(ui: ^Ui_State) {
 						if len(ui.unread_mark_id) > 0 && msg.id == ui.unread_mark_id {
 							// Center label between two rule lines, like the
 							// slint unread divider.
-							if clay.UI(clay.ID("UnreadMarker"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 12, childAlignment = {y = .Center}, padding = {left = 16, right = 16, top = 6, bottom = 2}}}) {
-								if clay.UI(clay.ID("UnreadLineL"))({layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(1)}}, backgroundColor = ACCENT_DIM}) {}
-								clay.Text("• NEW MESSAGES •", {fontId = FONT_MONO, fontSize = 10, textColor = ACCENT, letterSpacing = 2})
-								if clay.UI(clay.ID("UnreadLineR"))({layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(1)}}, backgroundColor = ACCENT_DIM}) {}
+							if clay.UI(clay.ID("UnreadMarker"))(
+							{
+								layout = {
+									sizing = {width = clay.SizingGrow()},
+									childGap = 12,
+									childAlignment = {y = .Center},
+									padding = {left = 16, right = 16, top = 6, bottom = 2},
+								},
+							},
+							) {
+								if clay.UI(clay.ID("UnreadLineL"))(
+								{
+									layout = {
+										sizing = {
+											width = clay.SizingGrow(),
+											height = clay.SizingFixed(1),
+										},
+									},
+									backgroundColor = ACCENT_DIM,
+								},
+								) {}
+								clay.Text(
+									"• NEW MESSAGES •",
+									{
+										fontId = FONT_MONO,
+										fontSize = 10,
+										textColor = ACCENT,
+										letterSpacing = 2,
+									},
+								)
+								if clay.UI(clay.ID("UnreadLineR"))(
+								{
+									layout = {
+										sizing = {
+											width = clay.SizingGrow(),
+											height = clay.SizingFixed(1),
+										},
+									},
+									backgroundColor = ACCENT_DIM,
+								},
+								) {}
 							}
 						}
 						if i == 0 || msg.day != ui.messages[i - 1].day {
 							if clay.UI(clay.ID("DayMarker", u32(i)))(
-							{layout = {layoutDirection = .TopToBottom, padding = {left = 16, right = 16, top = 10, bottom = 4}}},
+							{
+								layout = {
+									layoutDirection = .TopToBottom,
+									padding = {left = 16, right = 16, top = 10, bottom = 4},
+								},
+							},
 							) {
-								clay.Text(msg.day, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM, letterSpacing = 1})
+								clay.Text(
+									msg.day,
+									{
+										fontId = FONT_BODY,
+										fontSize = 12,
+										textColor = TEXT_DIM,
+										letterSpacing = 1,
+									},
+								)
 							}
 						}
 						if msg.system {
 							system_row(u32(i), msg)
 						} else if timeline_skip(ui, msg) {
 							if clay.UI(clay.ID("MsgRow", u32(i)))(
-							{layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(msg.row_height)}}},
+							{
+								layout = {
+									sizing = {
+										width = clay.SizingGrow(),
+										height = clay.SizingFixed(msg.row_height),
+									},
+								},
+							},
 							) {}
 						} else {
 							message_row(u32(i), msg)
@@ -231,7 +375,11 @@ compose_height :: proc() -> f32 {
 }
 
 @(private = "file")
-compose_view: struct { head, length: int, size: clay.Dimensions, row: u32 }
+compose_view: struct {
+	head, length: int,
+	size:         clay.Dimensions,
+	row:          u32,
+}
 
 // Follow edits and caret moves, but leave manual scrolling alone.
 @(private)
@@ -249,20 +397,36 @@ compose_scroll :: proc(ui: ^Ui_State) {
 	}
 	_, _, head := field_sel(ui, buf)
 	size := data.scrollContainerDimensions
-	if compose_view.head == head && compose_view.length == len(buf) && compose_view.size == size { return }
+	if compose_view.head == head &&
+	   compose_view.length == len(buf) &&
+	   compose_view.size == size {return}
 	compose_view.head, compose_view.length, compose_view.size = head, len(buf), size
 	row := clay.GetElementData(clay.ID("ComposeLine", compose_view.row)).boundingBox
 	clip := clay.GetElementData(clay.ID("ComposeClip")).boundingBox
 	delta := min(row.y - clip.y, 0) + max(row.y + row.height - clip.y - clip.height, 0)
-	data.scrollPosition.y = clamp(data.scrollPosition.y - delta, min(size.height - data.contentDimensions.height, 0), 0)
-	if delta != 0 { anim_moving += 1 }
+	data.scrollPosition.y = clamp(
+		data.scrollPosition.y - delta,
+		min(size.height - data.contentDimensions.height, 0),
+		0,
+	)
+	if delta != 0 {anim_moving += 1}
 }
 
 section_head :: proc(id_str: string, label: string, note: string) {
 	if clay.UI(clay.ID(id_str))(
-	{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8, childAlignment = {y = .Center}, padding = {top = 8, bottom = 2}}},
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			childGap = 8,
+			childAlignment = {y = .Center},
+			padding = {top = 8, bottom = 2},
+		},
+	},
 	) {
-		clay.Text(tr(label), {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT_DIM, letterSpacing = 1})
+		clay.Text(
+			tr(label),
+			{fontId = FONT_TITLE, fontSize = 12, textColor = TEXT_DIM, letterSpacing = 1},
+		)
 		if len(note) > 0 {
 			clay.Text(note, {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO})
 		}
@@ -277,15 +441,40 @@ members_panel :: proc(ui: ^Ui_State) {
 	},
 	) {
 		if clay.UI(clay.ID("MembersBody"))(
-		{layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom}},
+		{
+			layout = {
+				sizing = {clay.SizingGrow(), clay.SizingGrow()},
+				layoutDirection = .TopToBottom,
+			},
+		},
 		) {
 			// Close sits over the hero, top-right, like the slint panel.
-			if clay.UI(clay.ID("MembersHead"))({layout = {sizing = {width = clay.SizingGrow()}, padding = {left = 14, right = 10, top = 10}, childAlignment = {y = .Center}}}) {
-				if clay.UI(clay.ID("MembersHeadGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+			if clay.UI(clay.ID("MembersHead"))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					padding = {left = 14, right = 10, top = 10},
+					childAlignment = {y = .Center},
+				},
+			},
+			) {
+				if clay.UI(clay.ID("MembersHeadGap"))(
+				{layout = {sizing = {width = clay.SizingGrow()}}},
+				) {}
 				if clay.UI(clay.ID("MembersClose"))(
-				{layout = {sizing = {width = clay.SizingFixed(26), height = clay.SizingFixed(26)}, childAlignment = {x = .Center, y = .Center}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(7)},
+				{
+					layout = {
+						sizing = {width = clay.SizingFixed(26), height = clay.SizingFixed(26)},
+						childAlignment = {x = .Center, y = .Center},
+					},
+					backgroundColor = hovered() ? HOVER : {},
+					cornerRadius = rr(7),
+				},
 				) {
-					clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
+					clay.Text(
+						ICON_CLOSE,
+						{fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM},
+					)
 				}
 			}
 
@@ -295,23 +484,60 @@ members_panel :: proc(ui: ^Ui_State) {
 			// stacks the same two blocks.
 			if clay.UI(clay.ID("MembersScroll"))(
 			{
-				layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom, padding = {left = 14, right = 14, bottom = 12}, childGap = 6, childAlignment = {x = .Center}},
+				layout = {
+					sizing = {clay.SizingGrow(), clay.SizingGrow()},
+					layoutDirection = .TopToBottom,
+					padding = {left = 14, right = 14, bottom = 12},
+					childGap = 6,
+					childAlignment = {x = .Center},
+				},
 				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 			},
 			) {
 				content := info_width(ui)
 				if content >= INFO_WIDE_MIN {
 					row_w := min(content, INFO_COLS_MAX)
-					if clay.UI(clay.ID("InfoCols"))({layout = {sizing = {width = clay.SizingFixed(row_w)}, childGap = INFO_COL_GAP}}) {
-						if clay.UI(clay.ID("InfoSettings"))({layout = {sizing = {width = clay.SizingFixed(INFO_SETTINGS_W)}, layoutDirection = .TopToBottom, childGap = 6}}) {
+					if clay.UI(clay.ID("InfoCols"))(
+					{
+						layout = {
+							sizing = {width = clay.SizingFixed(row_w)},
+							childGap = INFO_COL_GAP,
+						},
+					},
+					) {
+						if clay.UI(clay.ID("InfoSettings"))(
+						{
+							layout = {
+								sizing = {width = clay.SizingFixed(INFO_SETTINGS_W)},
+								layoutDirection = .TopToBottom,
+								childGap = 6,
+							},
+						},
+						) {
 							info_settings_col(ui)
 						}
-						if clay.UI(clay.ID("InfoPeople"))({layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 6}}) {
+						if clay.UI(clay.ID("InfoPeople"))(
+						{
+							layout = {
+								sizing = {width = clay.SizingGrow()},
+								layoutDirection = .TopToBottom,
+								childGap = 6,
+							},
+						},
+						) {
 							info_people_col(ui, row_w - INFO_SETTINGS_W - INFO_COL_GAP)
 						}
 					}
 				} else {
-					if clay.UI(clay.ID("InfoStack"))({layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 6}}) {
+					if clay.UI(clay.ID("InfoStack"))(
+					{
+						layout = {
+							sizing = {width = clay.SizingGrow()},
+							layoutDirection = .TopToBottom,
+							childGap = 6,
+						},
+					},
+					) {
 						info_settings_col(ui)
 						info_people_col(ui, content)
 					}
@@ -322,13 +548,21 @@ members_panel :: proc(ui: ^Ui_State) {
 			// Pinned under the scroll, the slint GroupLeaveRow.
 			if clay.UI(clay.ID("LeaveBtn"))(
 			{
-				layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(46)}, padding = {left = 20, right = 20}, childGap = 10, childAlignment = {y = .Center}},
+				layout = {
+					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(46)},
+					padding = {left = 20, right = 20},
+					childGap = 10,
+					childAlignment = {y = .Center},
+				},
 				backgroundColor = hovered() ? HOVER : {},
 				border = {color = FIELD_BORDER, width = {top = BORDER_W}},
 			},
 			) {
 				clay.Text(ICON_BAN, {fontId = FONT_ICON, fontSize = 13, textColor = DANGER})
-				clay.Text(tr("Leave group"), {fontId = FONT_TITLE, fontSize = 13, textColor = DANGER})
+				clay.Text(
+					tr("Leave group"),
+					{fontId = FONT_TITLE, fontSize = 13, textColor = DANGER},
+				)
 			}
 		}
 	}
@@ -360,7 +594,11 @@ info_settings_col :: proc(ui: ^Ui_State) {
 	eyebrow("GROUP NAME")
 	if clay.UI(clay.ID("RenameBox"))(
 	{
-		layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(34)}, padding = {left = 10, right = 10}, childAlignment = {y = .Center}},
+		layout = {
+			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(34)},
+			padding = {left = 10, right = 10},
+			childAlignment = {y = .Center},
+		},
 		backgroundColor = ROW_BG,
 		cornerRadius = rr(8),
 		border = ui.focus == .Rename ? clay.BorderElementConfig{color = ACCENT, width = bw()} : {},
@@ -386,7 +624,11 @@ info_settings_col :: proc(ui: ^Ui_State) {
 	eyebrow("ADD MEMBER")
 	if clay.UI(clay.ID("InviteBox"))(
 	{
-		layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(34)}, padding = {left = 10, right = 10}, childAlignment = {y = .Center}},
+		layout = {
+			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(34)},
+			padding = {left = 10, right = 10},
+			childAlignment = {y = .Center},
+		},
 		backgroundColor = ROW_BG,
 		cornerRadius = rr(8),
 		border = {color = FIELD_BORDER, width = bw()},
@@ -410,33 +652,77 @@ info_people_col :: proc(ui: ^Ui_State, col_w: f32) {
 	for member, i in ui.members {
 		if clay.UI(clay.ID("MemberRow", u32(i)))(
 		{
-			layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(48)}, padding = {left = 6, right = 2}, childGap = 10, childAlignment = {y = .Center}},
+			layout = {
+				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(48)},
+				padding = {left = 6, right = 2},
+				childGap = 10,
+				childAlignment = {y = .Center},
+			},
 			backgroundColor = hovered() ? HOVER : {},
 			cornerRadius = rr(8),
 		},
 		) {
 			avatar("MemberAvatar", u32(i), member.id_hex, member.name, 36, url_pic(member.pic_url))
-			if clay.UI(clay.ID("MemberCol", u32(i)))({layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 1}}) {
-				if clay.UI(clay.ID("MemberName", u32(i)))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 6, childAlignment = {y = .Center}}}) {
+			if clay.UI(clay.ID("MemberCol", u32(i)))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					layoutDirection = .TopToBottom,
+					childGap = 1,
+				},
+			},
+			) {
+				if clay.UI(clay.ID("MemberName", u32(i)))(
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						childGap = 6,
+						childAlignment = {y = .Center},
+					},
+				},
+				) {
 					clay.Text(member.name, {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
 					if member.is_self {
 						if clay.UI(clay.ID("MemberYou", u32(i)))(
-						{layout = {padding = {left = 6, right = 6, top = 1, bottom = 1}}, backgroundColor = SELECTED, cornerRadius = rr(5)},
+						{
+							layout = {padding = {left = 6, right = 6, top = 1, bottom = 1}},
+							backgroundColor = SELECTED,
+							cornerRadius = rr(5),
+						},
 						) {
-							clay.Text(tr("YOU"), {fontId = FONT_MONO, fontSize = 9, textColor = ACCENT, letterSpacing = 1})
+							clay.Text(
+								tr("YOU"),
+								{
+									fontId = FONT_MONO,
+									fontSize = 9,
+									textColor = ACCENT,
+									letterSpacing = 1,
+								},
+							)
 						}
 					}
 				}
 				// Admin marker rides the subline, so the name stays quiet.
 				clay.Text(
 					member.is_admin ? tr("Admin") : npub_tail(member.npub),
-					{fontId = member.is_admin ? FONT_TITLE : FONT_MONO, fontSize = 10, textColor = member.is_admin ? ACCENT : TEXT_LO},
+					{
+						fontId = member.is_admin ? FONT_TITLE : FONT_MONO,
+						fontSize = 10,
+						textColor = member.is_admin ? ACCENT : TEXT_LO,
+					},
 				)
 			}
 			// A non-admin self row has no action to offer.
 			if !member.is_self || member.is_admin {
 				if clay.UI(clay.ID("MemberMenuBtn", u32(i)))(
-				{layout = {sizing = {width = clay.SizingFixed(26), height = clay.SizingFixed(26)}, childAlignment = {x = .Center, y = .Center}}, backgroundColor = hovered() ? SELECTED : {}, cornerRadius = rr(6)},
+				{
+					layout = {
+						sizing = {width = clay.SizingFixed(26), height = clay.SizingFixed(26)},
+						childAlignment = {x = .Center, y = .Center},
+					},
+					backgroundColor = hovered() ? SELECTED : {},
+					cornerRadius = rr(6),
+				},
 				) {
 					clay.Text("...", {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM})
 				}
@@ -446,13 +732,25 @@ info_people_col :: proc(ui: ^Ui_State, col_w: f32) {
 		if ui.member_nick == i {
 			if clay.UI(clay.ID("MemberNickBox", u32(i)))(
 			{
-				layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(28)}, padding = {left = 8, right = 8}, childAlignment = {y = .Center}},
+				layout = {
+					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(28)},
+					padding = {left = 8, right = 8},
+					childAlignment = {y = .Center},
+				},
 				backgroundColor = ROW_BG,
 				cornerRadius = rr(6),
 				border = clay.BorderElementConfig{color = ACCENT, width = bw()},
 			},
 			) {
-				field_text(ui, "MemberNickBox", &ui.nick_input, "Nickname", ui.focus == .Nick, 12, TEXT_LO)
+				field_text(
+					ui,
+					"MemberNickBox",
+					&ui.nick_input,
+					"Nickname",
+					ui.focus == .Nick,
+					12,
+					TEXT_LO,
+				)
 			}
 		}
 	}
@@ -499,10 +797,22 @@ shared_media_grid :: proc(ui: ^Ui_State, col_w: f32) {
 			if clay.UI(clay.ID("SharedMediaRow", u32(row)))({layout = {childGap = 6}}) {
 				for t, c in thumbs[row * SHARED_MEDIA_COLS:min((row + 1) * SHARED_MEDIA_COLS, len(thumbs))] {
 					if clay.UI(clay.ID("SharedMediaCell", u32(row * SHARED_MEDIA_COLS + c)))(
-					{layout = {sizing = {width = clay.SizingFixed(cell), height = clay.SizingFixed(cell)}}, image = {imageData = t.tex}, cornerRadius = rr(6)},
+					{
+						layout = {
+							sizing = {
+								width = clay.SizingFixed(cell),
+								height = clay.SizingFixed(cell),
+							},
+						},
+						image = {imageData = t.tex},
+						cornerRadius = rr(6),
+					},
 					) {
 						if hovered() {
-							img_hover = {msg_id = t.msg_id, att = t.att}
+							img_hover = {
+								msg_id = t.msg_id,
+								att    = t.att,
+							}
 						}
 					}
 				}
@@ -510,7 +820,10 @@ shared_media_grid :: proc(ui: ^Ui_State, col_w: f32) {
 		}
 	}
 	if total > len(thumbs) {
-		clay.Text(fmt.tprintf("+%d more", total - len(thumbs)), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+		clay.Text(
+			fmt.tprintf("+%d more", total - len(thumbs)),
+			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+		)
 	}
 }
 
@@ -529,7 +842,9 @@ load_members :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 	defer marmot.group_details_free(details)
 
 	delete(ui.group_desc)
-	ui.group_desc = strings.clone(details.group.description != nil ? string(details.group.description) : "")
+	ui.group_desc = strings.clone(
+		details.group.description != nil ? string(details.group.description) : "",
+	)
 	ui.group_retention = details.group.disappearing_message_secs
 
 	clear(&ui.members)
@@ -538,7 +853,8 @@ load_members :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 		member := &details.members[i]
 		// Local nickname wins over the published name, like contacts.
 		name: string
-		if nick, ok := ui.nicknames[string(member.member_id_hex)]; ok && len(nick) > 0 && !member.is_self {
+		if nick, ok := ui.nicknames[string(member.member_id_hex)];
+		   ok && len(nick) > 0 && !member.is_self {
 			name = nick
 		} else if member.display_name != nil && len(string(member.display_name)) > 0 {
 			name = string(member.display_name)
@@ -547,14 +863,19 @@ load_members :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 		} else {
 			name = short_hex(string(member.member_id_hex))
 		}
-		append(&ui.members, Member_Ui{
-			pic_url  = strings.clone(profile_info(client, string(member.member_id_hex)).pic_url),
-			id_hex   = strings.clone(string(member.member_id_hex)),
-			npub     = strings.clone(hex_npub(string(member.member_id_hex))),
-			name     = strings.clone(name),
-			is_admin = member.is_admin,
-			is_self  = member.is_self,
-		})
+		append(
+			&ui.members,
+			Member_Ui {
+				pic_url = strings.clone(
+					profile_info(client, string(member.member_id_hex)).pic_url,
+				),
+				id_hex = strings.clone(string(member.member_id_hex)),
+				npub = strings.clone(hex_npub(string(member.member_id_hex))),
+				name = strings.clone(name),
+				is_admin = member.is_admin,
+				is_self = member.is_self,
+			},
+		)
 	}
 }
 
@@ -567,14 +888,25 @@ login_button :: proc(id_str: string, label: string) {
 		border = bevel_border(),
 	},
 	) {
-		clay.Text(tr(label), {fontId = FONT_BODY, fontSize = 16, textColor = hovered() ? BG : TEXT})
+		clay.Text(
+			tr(label),
+			{fontId = FONT_BODY, fontSize = 16, textColor = hovered() ? BG : TEXT},
+		)
 	}
 }
 
 // The text row of an input box: placeholder, or the value with the
 // selection highlighted and the caret at the selection head. Also the
 // element (id_str, 1) that field_mouse hit-tests against.
-field_text :: proc(ui: ^Ui_State, id_str: string, buf: ^[dynamic]u8, placeholder: string, focused: bool, font_size: u16 = 13, ph_color: clay.Color = {}) {
+field_text :: proc(
+	ui: ^Ui_State,
+	id_str: string,
+	buf: ^[dynamic]u8,
+	placeholder: string,
+	focused: bool,
+	font_size: u16 = 13,
+	ph_color: clay.Color = {},
+) {
 	// Clip inside the parent's padding; keep the selection head in view.
 	view := clay.GetElementData(clay.ID(id_str, 3))
 	offset: f32
@@ -583,10 +915,12 @@ field_text :: proc(ui: ^Ui_State, id_str: string, buf: ^[dynamic]u8, placeholder
 		x := rl.MeasureTextLine(FONT_BODY, font_size, string(buf[:head]), 0).x
 		offset = max(0, x + CARET_W - view.boundingBox.width)
 	}
-	if clay.UI(clay.ID(id_str, 3))({
+	if clay.UI(clay.ID(id_str, 3))(
+	{
 		layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}},
 		clip = {horizontal = true, childOffset = {-offset, 0}},
-	}) {
+	},
+	) {
 		if clay.UI(clay.ID(id_str, 1))({layout = {childAlignment = {y = .Center}}}) {
 			if clay.Hovered() {
 				cursor_raise(.Text)
@@ -597,7 +931,10 @@ field_text :: proc(ui: ^Ui_State, id_str: string, buf: ^[dynamic]u8, placeholder
 				if ph.a == 0 {
 					ph = TEXT_DIM
 				}
-				clay.Text(placeholder, {fontId = FONT_BODY, fontSize = font_size, textColor = ph, wrapMode = .None})
+				clay.Text(
+					placeholder,
+					{fontId = FONT_BODY, fontSize = font_size, textColor = ph, wrapMode = .None},
+				)
 				if focused {
 					caret(caret_h)
 				}
@@ -605,21 +942,45 @@ field_text :: proc(ui: ^Ui_State, id_str: string, buf: ^[dynamic]u8, placeholder
 				text := string(buf[:])
 				lo, hi, head := field_sel(ui, buf)
 				if lo > 0 {
-					clay.Text(text[:lo], {fontId = FONT_BODY, fontSize = font_size, textColor = TEXT, wrapMode = .None})
+					clay.Text(
+						text[:lo],
+						{
+							fontId = FONT_BODY,
+							fontSize = font_size,
+							textColor = TEXT,
+							wrapMode = .None,
+						},
+					)
 				}
 				if focused && head == lo {
 					caret(caret_h)
 				}
 				if hi > lo {
 					if clay.UI(clay.ID(id_str, 2))({backgroundColor = ACCENT}) {
-						clay.Text(text[lo:hi], {fontId = FONT_BODY, fontSize = font_size, textColor = ON_ACCENT, wrapMode = .None})
+						clay.Text(
+							text[lo:hi],
+							{
+								fontId = FONT_BODY,
+								fontSize = font_size,
+								textColor = ON_ACCENT,
+								wrapMode = .None,
+							},
+						)
 					}
 					if focused && head == hi {
 						caret(caret_h)
 					}
 				}
 				if hi < len(text) {
-					clay.Text(text[hi:], {fontId = FONT_BODY, fontSize = font_size, textColor = TEXT, wrapMode = .None})
+					clay.Text(
+						text[hi:],
+						{
+							fontId = FONT_BODY,
+							fontSize = font_size,
+							textColor = TEXT,
+							wrapMode = .None,
+						},
+					)
 				}
 			}
 		}
@@ -628,10 +989,24 @@ field_text :: proc(ui: ^Ui_State, id_str: string, buf: ^[dynamic]u8, placeholder
 
 // Labeled single-line input box; active border while focused.
 // width 0 grows to fill the row.
-input_box :: proc(ui: ^Ui_State, id_str: string, buf: ^[dynamic]u8, placeholder: string, active: bool, width: f32 = 420) {
+input_box :: proc(
+	ui: ^Ui_State,
+	id_str: string,
+	buf: ^[dynamic]u8,
+	placeholder: string,
+	active: bool,
+	width: f32 = 420,
+) {
 	if clay.UI(clay.ID(id_str))(
 	{
-		layout = {sizing = {width = width > 0 ? clay.SizingFixed(width) : clay.SizingGrow(), height = clay.SizingFixed(38)}, padding = {left = 12, right = 12}, childAlignment = {y = .Center}},
+		layout = {
+			sizing = {
+				width = width > 0 ? clay.SizingFixed(width) : clay.SizingGrow(),
+				height = clay.SizingFixed(38),
+			},
+			padding = {left = 12, right = 12},
+			childAlignment = {y = .Center},
+		},
 		backgroundColor = ROW_BG,
 		cornerRadius = rr(8),
 		// A resting border keeps the box visible on ROW_BG cards.
@@ -660,13 +1035,19 @@ empty_timeline :: proc(ui: ^Ui_State) {
 		// Ringed glyph, the same circle language as an avatar.
 		if clay.UI(clay.ID("EmptyTLRing"))(
 		{
-			layout = {sizing = {width = clay.SizingFixed(64), height = clay.SizingFixed(64)}, childAlignment = {x = .Center, y = .Center}},
+			layout = {
+				sizing = {width = clay.SizingFixed(64), height = clay.SizingFixed(64)},
+				childAlignment = {x = .Center, y = .Center},
+			},
 			backgroundColor = PLATE,
 			cornerRadius = rr(32),
 			border = {color = FIELD_BORDER, width = bw()},
 		},
 		) {
-			clay.Text(notes ? ICON_PENCIL : ICON_CHATS, {fontId = FONT_ICON, fontSize = 24, textColor = ACCENT_DIM})
+			clay.Text(
+				notes ? ICON_PENCIL : ICON_CHATS,
+				{fontId = FONT_ICON, fontSize = 24, textColor = ACCENT_DIM},
+			)
 		}
 		clay.Text(
 			notes ? tr("Your own notepad") : tr("No messages yet"),
@@ -681,10 +1062,20 @@ empty_timeline :: proc(ui: ^Ui_State) {
 
 new_chat_pane :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("NewChatPane"))(
-	{layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom, childAlignment = {x = .Center, y = .Center}, childGap = 12}},
+	{
+		layout = {
+			sizing = {clay.SizingGrow(), clay.SizingGrow()},
+			layoutDirection = .TopToBottom,
+			childAlignment = {x = .Center, y = .Center},
+			childGap = 12,
+		},
+	},
 	) {
 		clay.Text(tr("New chat"), {fontId = FONT_TITLE, fontSize = 24, textColor = TEXT})
-		clay.Text(tr("Add a contact for a direct chat, or leave it empty for a group of your own."), {fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM})
+		clay.Text(
+			tr("Add a contact for a direct chat, or leave it empty for a group of your own."),
+			{fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM},
+		)
 		input_box(ui, "NCMember", &ui.nc_member, "npub or hex (optional)", ui.focus == .NC_Member)
 		input_box(ui, "NCName", &ui.nc_name, "Group name", ui.focus == .NC_Name)
 		if clay.UI(clay.ID("NCButtons"))({layout = {childGap = 12}}) {
@@ -698,7 +1089,10 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 login_big_button :: proc(id_str: string, label: string, primary: bool) {
 	if clay.UI(clay.ID(id_str))(
 	{
-		layout = {sizing = {width = clay.SizingGrow({max = 560}), height = clay.SizingFixed(52)}, childAlignment = {x = .Center, y = .Center}},
+		layout = {
+			sizing = {width = clay.SizingGrow({max = 560}), height = clay.SizingFixed(52)},
+			childAlignment = {x = .Center, y = .Center},
+		},
 		backgroundColor = primary ? ACCENT : ROW_BG,
 		cornerRadius = rr(10),
 		border = primary ? {} : clay.BorderElementConfig{color = FIELD_BORDER, width = bw()},
@@ -707,7 +1101,10 @@ login_big_button :: proc(id_str: string, label: string, primary: bool) {
 		if primary {
 			hover_glow(clay.ID(id_str), ACCENT, hovered())
 		}
-		clay.Text(label, {fontId = FONT_TITLE, fontSize = 16, textColor = primary ? ON_ACCENT : TEXT})
+		clay.Text(
+			label,
+			{fontId = FONT_TITLE, fontSize = 16, textColor = primary ? ON_ACCENT : TEXT},
+		)
 	}
 }
 
@@ -718,7 +1115,11 @@ progress_dots :: proc(id_str: string) {
 		lit := int(rl.GetTime() * 3) % 3
 		for i in 0 ..< 3 {
 			if clay.UI(clay.ID(id_str, u32(i + 1)))(
-			{layout = {sizing = {width = clay.SizingFixed(10), height = clay.SizingFixed(10)}}, backgroundColor = i == lit ? ACCENT : ROW_BG, cornerRadius = rr(5)},
+			{
+				layout = {sizing = {width = clay.SizingFixed(10), height = clay.SizingFixed(10)}},
+				backgroundColor = i == lit ? ACCENT : ROW_BG,
+				cornerRadius = rr(5),
+			},
 			) {}
 		}
 	}
@@ -728,7 +1129,13 @@ progress_dots :: proc(id_str: string) {
 login_pane :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("LoginCard"))(
 	{
-		layout = {sizing = {width = clay.SizingFixed(fit_w(660))}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(50), childGap = 14, childAlignment = {x = .Center}},
+		layout = {
+			sizing = {width = clay.SizingFixed(fit_w(660))},
+			layoutDirection = .TopToBottom,
+			padding = clay.PaddingAll(50),
+			childGap = 14,
+			childAlignment = {x = .Center},
+		},
 		backgroundColor = CARD,
 		cornerRadius = rr(16),
 		border = {color = CARD_BORDER, width = bw()},
@@ -741,42 +1148,77 @@ login_pane :: proc(ui: ^Ui_State) {
 			// The round trip runs on the sign-in worker; this is the only
 			// thing the card offers until drain_auth picks it up.
 			minting := len(auth_job.nsec) == 0
-			clay.Text(minting ? tr("Generating your key") : tr("Signing you in"), {fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM})
-			if clay.UI(clay.ID("LoginGapA"))({layout = {sizing = {height = clay.SizingFixed(10)}}}) {}
+			clay.Text(
+				minting ? tr("Generating your key") : tr("Signing you in"),
+				{fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM},
+			)
+			if clay.UI(clay.ID("LoginGapA"))(
+			{layout = {sizing = {height = clay.SizingFixed(10)}}},
+			) {}
 			progress_dots("LoginDots")
-			if clay.UI(clay.ID("LoginGapB"))({layout = {sizing = {height = clay.SizingFixed(10)}}}) {}
+			if clay.UI(clay.ID("LoginGapB"))(
+			{layout = {sizing = {height = clay.SizingFixed(10)}}},
+			) {}
 			clay.Text(
 				minting ? tr("Publishing your profile to the relays. This takes a few seconds.") : tr("Checking your key with the relays. This takes a few seconds."),
 				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
 			)
 		} else if !ui.login_import {
-			clay.Text(tr("Sign in to your Nostr identity"), {fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM})
-			if clay.UI(clay.ID("LoginGapA"))({layout = {sizing = {height = clay.SizingFixed(10)}}}) {}
+			clay.Text(
+				tr("Sign in to your Nostr identity"),
+				{fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM},
+			)
+			if clay.UI(clay.ID("LoginGapA"))(
+			{layout = {sizing = {height = clay.SizingFixed(10)}}},
+			) {}
 			login_big_button("LoginImportBtn", "I have an nsec", true)
 			login_big_button("LoginCreate", "Generate a new key", false)
-			if clay.UI(clay.ID("LoginGapB"))({layout = {sizing = {height = clay.SizingFixed(10)}}}) {}
-			clay.Text(tr("Your key never leaves this device."), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO})
+			if clay.UI(clay.ID("LoginGapB"))(
+			{layout = {sizing = {height = clay.SizingFixed(10)}}},
+			) {}
+			clay.Text(
+				tr("Your key never leaves this device."),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
+			)
 			micro_button("LoginBackup", tr("Import backup"))
 		} else {
-			clay.Text(tr("Import a key"), {fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM})
-			if clay.UI(clay.ID("LoginGapA"))({layout = {sizing = {height = clay.SizingFixed(10)}}}) {}
+			clay.Text(
+				tr("Import a key"),
+				{fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM},
+			)
+			if clay.UI(clay.ID("LoginGapA"))(
+			{layout = {sizing = {height = clay.SizingFixed(10)}}},
+			) {}
 			eyebrow("NSEC")
 			if clay.UI(clay.ID("LoginInput"))(
 			{
-				layout = {sizing = {width = clay.SizingGrow({max = 560}), height = clay.SizingFixed(46)}, padding = {left = 14, right = 14}, childAlignment = {y = .Center}},
+				layout = {
+					sizing = {width = clay.SizingGrow({max = 560}), height = clay.SizingFixed(46)},
+					padding = {left = 14, right = 14},
+					childAlignment = {y = .Center},
+				},
 				backgroundColor = ROW_BG,
 				cornerRadius = rr(10),
 				border = {color = ACCENT, width = bw()},
 			},
 			) {
 				if len(ui.login_input) == 0 {
-					clay.Text("nsec1...", {fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM})
+					clay.Text(
+						"nsec1...",
+						{fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM},
+					)
 				} else {
-					masked := strings.repeat("*", min(len(ui.login_input), 48), context.temp_allocator)
+					masked := strings.repeat(
+						"*",
+						min(len(ui.login_input), 48),
+						context.temp_allocator,
+					)
 					clay.Text(masked, {fontId = FONT_BODY, fontSize = 15, textColor = TEXT})
 				}
 			}
-			if clay.UI(clay.ID("LoginGapB"))({layout = {sizing = {height = clay.SizingFixed(6)}}}) {}
+			if clay.UI(clay.ID("LoginGapB"))(
+			{layout = {sizing = {height = clay.SizingFixed(6)}}},
+			) {}
 			if clay.UI(clay.ID("LoginButtons"))({layout = {childGap = 12}}) {
 				login_button("LoginBack", "Back")
 				login_button("LoginGo", "Continue")
@@ -798,22 +1240,44 @@ login_pane :: proc(ui: ^Ui_State) {
 
 // Uses the chat composer's wrapping, selection, IME, and caret hit testing.
 @(private)
-issue_editor :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, focus: Focus, placeholder: string, height: f32) {
- if clay.UI(clay.ID("ComposeBox"))({layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(10)}, backgroundColor = ROW_BG, border = ui.focus == focus ? focus_border(true) : clay.BorderElementConfig{color = FIELD_BORDER, width = bw()}, cornerRadius = rr(8)}) {
-  if clay.UI(clay.ID("ComposeClip"))({layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(height)}, layoutDirection = .TopToBottom}, clip = {horizontal = true, vertical = true, childOffset = clay.GetScrollOffset()}}) {
-   if len(buf) == 0 { clay.Text(placeholder, {fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT_DIM}) }
-   text := string(buf[:])
-   lo, hi, head := field_sel(ui, buf)
-   if ui.focus != focus { head = -1 }
-   for line, i in compose_lines(text) {
-    h := head
-    if head == line[0] && line[0] > 0 && text[line[0] - 1] != '\n' { h = -1 }
-    compose_line(u32(i), text, line[0], line[1], lo, hi, h)
-    if h >= line[0] && h <= line[1] { compose_view.row = u32(i) }
-   }
-  }
-  scrollbar(clay.ID("ComposeClip"))
- }
+issue_editor :: proc(
+	ui: ^Ui_State,
+	buf: ^[dynamic]u8,
+	focus: Focus,
+	placeholder: string,
+	height: f32,
+) {
+	if clay.UI(clay.ID("ComposeBox"))(
+	{
+		layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(10)},
+		backgroundColor = ROW_BG,
+		border = ui.focus == focus ? focus_border(true) : clay.BorderElementConfig{color = FIELD_BORDER, width = bw()},
+		cornerRadius = rr(8),
+	},
+	) {
+		if clay.UI(clay.ID("ComposeClip"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(height)},
+				layoutDirection = .TopToBottom,
+			},
+			clip = {horizontal = true, vertical = true, childOffset = clay.GetScrollOffset()},
+		},
+		) {
+			if len(buf) ==
+			   0 {clay.Text(placeholder, {fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT_DIM})}
+			text := string(buf[:])
+			lo, hi, head := field_sel(ui, buf)
+			if ui.focus != focus {head = -1}
+			for line, i in compose_lines(text) {
+				h := head
+				if head == line[0] && line[0] > 0 && text[line[0] - 1] != '\n' {h = -1}
+				compose_line(u32(i), text, line[0], line[1], lo, hi, h)
+				if h >= line[0] && h <= line[1] {compose_view.row = u32(i)}
+			}
+		}
+		scrollbar(clay.ID("ComposeClip"))
+	}
 }
 
 @(private)
@@ -821,9 +1285,19 @@ chat_composer :: proc(ui: ^Ui_State) {
 	// Reply banner.
 	if len(ui.replying) > 0 {
 		if clay.UI(clay.ID("ReplyBanner"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, padding = {left = 16, right = 16, top = 6, bottom = 6}, childGap = 8}, backgroundColor = RAIL_BG},
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				padding = {left = 16, right = 16, top = 6, bottom = 6},
+				childGap = 8,
+			},
+			backgroundColor = RAIL_BG,
+		},
 		) {
-			clay.Text(fmt.tprintf("Replying to: %s", ui.reply_hint), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+			clay.Text(
+				fmt.tprintf("Replying to: %s", ui.reply_hint),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			)
 			action_chip("ReplyCancel", 0, "Cancel")
 		}
 	}
@@ -831,36 +1305,92 @@ chat_composer :: proc(ui: ^Ui_State) {
 	// Composer: one floating pill on the pane bg, like the
 	// slint input bar. Enter sends; no Send button.
 	if clay.UI(clay.ID("Composer"))(
-	{layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(16), childGap = 8, layoutDirection = .TopToBottom}},
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			padding = clay.PaddingAll(16),
+			childGap = 8,
+			layoutDirection = .TopToBottom,
+		},
+	},
 	) {
 		burst_pane_layer() // own send's effect rises from here
 		// A capped scrollable list keeps every removal control reachable
 		// without letting attachments widen or consume the chat pane.
 		if len(ui.staged) > 0 {
-			if clay.UI(clay.ID("StagedRow"))({layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFit({max = 144})}, layoutDirection = .TopToBottom, childGap = 8}, clip = {vertical = true, childOffset = clay.GetScrollOffset()}}) {
+			if clay.UI(clay.ID("StagedRow"))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow(), height = clay.SizingFit({max = 144})},
+					layoutDirection = .TopToBottom,
+					childGap = 8,
+				},
+				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+			},
+			) {
 				for f, i in ui.staged {
 					if clay.UI(clay.ID("StagedChip", u32(i)))(
-					{layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(6), childGap = 6, childAlignment = {y = .Center}}, backgroundColor = ROW_BG, cornerRadius = rr(10), border = {color = FIELD_BORDER, width = bw()}},
+					{
+						layout = {
+							sizing = {width = clay.SizingGrow()},
+							padding = clay.PaddingAll(6),
+							childGap = 6,
+							childAlignment = {y = .Center},
+						},
+						backgroundColor = ROW_BG,
+						cornerRadius = rr(10),
+						border = {color = FIELD_BORDER, width = bw()},
+					},
 					) {
 						if f.tex != nil {
 							ratio := f.tex.height > 0 ? f32(f.tex.width) / f32(f.tex.height) : 1
 							if clay.UI(clay.ID("StagedThumb", u32(i)))(
-							{layout = {sizing = {width = clay.SizingFixed(min(80, 40 * ratio))}}, aspectRatio = {ratio}, image = {imageData = f.tex}, cornerRadius = rr(6)},
+							{
+								layout = {
+									sizing = {width = clay.SizingFixed(min(80, 40 * ratio))},
+								},
+								aspectRatio = {ratio},
+								image = {imageData = f.tex},
+								cornerRadius = rr(6),
+							},
 							) {}
 						} else {
-							clay.Text(ICON_CLIP, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_LO})
+							clay.Text(
+								ICON_CLIP,
+								{fontId = FONT_ICON, fontSize = 12, textColor = TEXT_LO},
+							)
 						}
 						name := f.name
 						if len(name) > 28 {
 							name = fmt.tprintf("%s…", name[:rune_snap(name, 28)])
 						}
-						if clay.UI(clay.ID("StagedName", u32(i)))({layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}}) {
-							clay.Text(name, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT, wrapMode = .None})
+						if clay.UI(clay.ID("StagedName", u32(i)))(
+						{
+							layout = {sizing = {width = clay.SizingGrow()}},
+							clip = {horizontal = true},
+						},
+						) {
+							clay.Text(
+								name,
+								{
+									fontId = FONT_BODY,
+									fontSize = 12,
+									textColor = TEXT,
+									wrapMode = .None,
+								},
+							)
 						}
 						if clay.UI(clay.ID("StagedX", u32(i)))(
-						{layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
+						{
+							layout = {padding = clay.PaddingAll(4)},
+							backgroundColor = hovered() ? HOVER : {},
+							cornerRadius = rr(6),
+						},
 						) {
-							clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 10, textColor = TEXT_DIM})
+							clay.Text(
+								ICON_CLOSE,
+								{fontId = FONT_ICON, fontSize = 10, textColor = TEXT_DIM},
+							)
 						}
 					}
 				}
@@ -872,7 +1402,12 @@ chat_composer :: proc(ui: ^Ui_State) {
 		} else if clay.UI(clay.ID("ComposeBox"))(
 		{
 			// The draft owns the full width; controls stay on their own row.
-			layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(compose_height())}, padding = {left = 16, right = 16, top = 8, bottom = 8}, childGap = 8, layoutDirection = .TopToBottom},
+			layout = {
+				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(compose_height())},
+				padding = {left = 16, right = 16, top = 8, bottom = 8},
+				childGap = 8,
+				layoutDirection = .TopToBottom,
+			},
 			backgroundColor = ROW_BG,
 			cornerRadius = rr(22),
 			border = {color = ui.focus == .Compose ? ACCENT : FIELD_BORDER, width = bw()},
@@ -883,7 +1418,17 @@ chat_composer :: proc(ui: ^Ui_State) {
 			}
 			// Focus lights the pill rather than only recoloring
 			// its border.
-			glow(clay.ID("ComposeBox"), ACCENT, anim_to(clay.ID("ComposeBox").id ~ GLOW_SALT, ui.focus == .Compose ? 1 : 0, HOVER_RATE) * 0.7, 18)
+			glow(
+				clay.ID("ComposeBox"),
+				ACCENT,
+				anim_to(
+					clay.ID("ComposeBox").id ~ GLOW_SALT,
+					ui.focus == .Compose ? 1 : 0,
+					HOVER_RATE,
+				) *
+				0.7,
+				18,
+			)
 			// The @-mention popover floats above the box.
 			if open_now(clay.ID("MentionPop"), ui.mention_active) {
 				mention_popover(ui)
@@ -894,83 +1439,149 @@ chat_composer :: proc(ui: ^Ui_State) {
 			// Emoji render as Twemoji tiles like message bodies.
 			// Long drafts scroll inside the capped text viewport.
 			if clay.UI(clay.ID("ComposeClip"))(
-			{layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(compose_height() - COMPOSE_CHROME_H)}}, clip = {horizontal = true, vertical = true, childOffset = clay.GetScrollOffset()}},
+			{
+				layout = {
+					sizing = {
+						width = clay.SizingGrow(),
+						height = clay.SizingFixed(compose_height() - COMPOSE_CHROME_H),
+					},
+				},
+				clip = {horizontal = true, vertical = true, childOffset = clay.GetScrollOffset()},
+			},
 			) {
-			if clay.UI(clay.ID("ComposeText"))({layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 2}}) {
-				if len(ui.compose) == 0 && len(rl.Preedit()) == 0 {
-					compose_view.row = 0
-					if clay.UI(clay.ID("ComposeLine", 0))({layout = {childGap = 1, childAlignment = {y = .Center}}}) {
-						clay.Text(ui.compose_issue != "" ? tr("Write a comment") : tr("Send a message..."), {fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT_LO})
-						if ui.focus == .Compose {
-							caret()
+				if clay.UI(clay.ID("ComposeText"))(
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						layoutDirection = .TopToBottom,
+						childGap = 2,
+					},
+				},
+				) {
+					if len(ui.compose) == 0 && len(rl.Preedit()) == 0 {
+						compose_view.row = 0
+						if clay.UI(clay.ID("ComposeLine", 0))(
+						{layout = {childGap = 1, childAlignment = {y = .Center}}},
+						) {
+							clay.Text(
+								ui.compose_issue != "" ? tr("Write a comment") : tr("Send a message..."),
+								{fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT_LO},
+							)
+							if ui.focus == .Compose {
+								caret()
+							}
 						}
-					}
-				} else {
-					text := string(ui.compose[:])
-					lo, hi, head := field_sel(ui, &ui.compose)
-					if ui.focus != .Compose {
-						head = -1
-					}
-					for r, i in compose_lines(text) {
-						h := head
-						// A caret on a wrap boundary belongs to
-						// the upper visual line.
-						if head == r[0] && r[0] > 0 && text[r[0] - 1] != '\n' {
-							h = -1
+					} else {
+						text := string(ui.compose[:])
+						lo, hi, head := field_sel(ui, &ui.compose)
+						if ui.focus != .Compose {
+							head = -1
 						}
-						compose_line(u32(i), text, r[0], r[1], lo, hi, h)
-						if h >= r[0] && h <= r[1] { compose_view.row = u32(i) }
+						for r, i in compose_lines(text) {
+							h := head
+							// A caret on a wrap boundary belongs to
+							// the upper visual line.
+							if head == r[0] && r[0] > 0 && text[r[0] - 1] != '\n' {
+								h = -1
+							}
+							compose_line(u32(i), text, r[0], r[1], lo, hi, h)
+							if h >= r[0] && h <= r[1] {compose_view.row = u32(i)}
+						}
 					}
 				}
-			}
 			}
 			scrollbar(clay.ID("ComposeClip"))
-			if clay.UI(clay.ID("ComposeTools"))({layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(COMPOSE_TOOLS_H)}, childGap = 10, childAlignment = {y = .Center}}}) {
-			if clay.UI(clay.ID("AttachBtn"))(
-			{layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
+			if clay.UI(clay.ID("ComposeTools"))(
+			{
+				layout = {
+					sizing = {
+						width = clay.SizingGrow(),
+						height = clay.SizingFixed(COMPOSE_TOOLS_H),
+					},
+					childGap = 10,
+					childAlignment = {y = .Center},
+				},
+			},
 			) {
-				clay.Text(ICON_CLIP, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
-			}
-			if clay.UI(clay.ID("ComposeGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-			if clay.UI(clay.ID("EmojiBtn"))(
-			{layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
-			) {
-				clay.Text(ICON_SMILE, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
-			}
-			// Effect picker: arms a burst for the next send.
-			if clay.UI(clay.ID("FxBtn"))(
-			{layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
-			) {
-				if open_now(clay.ID("FxPanel"), ui.fx_open) {
-					effect_picker(ui)
+				if clay.UI(clay.ID("AttachBtn"))(
+				{
+					layout = {padding = clay.PaddingAll(4)},
+					backgroundColor = hovered() ? HOVER : {},
+					cornerRadius = rr(6),
+				},
+				) {
+					clay.Text(ICON_CLIP, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
 				}
-				if hovered() {
-					tooltip("Send with an effect")
+				if clay.UI(clay.ID("ComposeGap"))(
+				{layout = {sizing = {width = clay.SizingGrow()}}},
+				) {}
+				if clay.UI(clay.ID("EmojiBtn"))(
+				{
+					layout = {padding = clay.PaddingAll(4)},
+					backgroundColor = hovered() ? HOVER : {},
+					cornerRadius = rr(6),
+				},
+				) {
+					clay.Text(ICON_SMILE, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
 				}
-				if tex := emoji_tex(effect_emoji(ui.fx_armed)); ui.fx_armed != 0 && tex != nil {
-					if clay.UI(clay.ID("FxBtnArmed"))(
-					{layout = {sizing = {width = clay.SizingFixed(16)}}, aspectRatio = {1}, image = {imageData = tex}},
-					) {}
-				} else {
-					clay.Text(ICON_STAR, {fontId = FONT_ICON, fontSize = 14, textColor = ui.fx_armed != 0 ? ACCENT : TEXT_LO})
+				// Effect picker: arms a burst for the next send.
+				if clay.UI(clay.ID("FxBtn"))(
+				{
+					layout = {padding = clay.PaddingAll(4)},
+					backgroundColor = hovered() ? HOVER : {},
+					cornerRadius = rr(6),
+				},
+				) {
+					if open_now(clay.ID("FxPanel"), ui.fx_open) {
+						effect_picker(ui)
+					}
+					if hovered() {
+						tooltip("Send with an effect")
+					}
+					if tex := emoji_tex(effect_emoji(ui.fx_armed));
+					   ui.fx_armed != 0 && tex != nil {
+						if clay.UI(clay.ID("FxBtnArmed"))(
+						{
+							layout = {sizing = {width = clay.SizingFixed(16)}},
+							aspectRatio = {1},
+							image = {imageData = tex},
+						},
+						) {}
+					} else {
+						clay.Text(
+							ICON_STAR,
+							{
+								fontId = FONT_ICON,
+								fontSize = 14,
+								textColor = ui.fx_armed != 0 ? ACCENT : TEXT_LO,
+							},
+						)
+					}
 				}
-			}
-			if clay.UI(clay.ID("PollBtn"))(
-			{layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
-			) {
-				if hovered() {
-					tooltip("Create a poll")
+				if clay.UI(clay.ID("PollBtn"))(
+				{
+					layout = {padding = clay.PaddingAll(4)},
+					backgroundColor = hovered() ? HOVER : {},
+					cornerRadius = rr(6),
+				},
+				) {
+					if hovered() {
+						tooltip("Create a poll")
+					}
+					clay.Text(ICON_POLL, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
 				}
-				clay.Text(ICON_POLL, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
-			}
-			if ui.prefs.stt_enabled {
-				micro_button("DictateBtn", "Dictate", ui.stt.file != nil ? TEXT_LO : {})
-			}
-			if clay.UI(clay.ID("MicBtn"))(
-			{layout = {padding = clay.PaddingAll(4)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
-			) {
-				clay.Text(ICON_MIC, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
-			}
+				if ui.prefs.stt_enabled {
+					micro_button("DictateBtn", "Dictate", ui.stt.file != nil ? TEXT_LO : {})
+				}
+				if clay.UI(clay.ID("MicBtn"))(
+				{
+					layout = {padding = clay.PaddingAll(4)},
+					backgroundColor = hovered() ? HOVER : {},
+					cornerRadius = rr(6),
+				},
+				) {
+					clay.Text(ICON_MIC, {fontId = FONT_ICON, fontSize = 14, textColor = TEXT_LO})
+				}
 			}
 		}
 	}

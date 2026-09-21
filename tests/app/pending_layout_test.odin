@@ -1,9 +1,9 @@
 package main
 
+import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:sync"
 import "core:testing"
 import "core:time"
-import clay "../vendor/clay/bindings/odin/clay-odin"
 
 @(test)
 pending_layout_balanced :: proc(t: ^testing.T) {
@@ -16,10 +16,14 @@ pending_layout_balanced :: proc(t: ^testing.T) {
 		delete(memory)
 	}
 	errors: int
-	clay.Initialize(clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)), {800, 600}, {
-		handler = proc "c" (error: clay.ErrorData) { (^int)(error.userData)^ += 1 },
-		userData = &errors,
-	})
+	clay.Initialize(
+		clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)),
+		{800, 600},
+		{
+			handler = proc "c" (error: clay.ErrorData) {(^int)(error.userData)^ += 1},
+			userData = &errors,
+		},
+	)
 	clay.SetMeasureTextFunction(measure_text, nil)
 	ui: Ui_State
 	clay.BeginLayout()

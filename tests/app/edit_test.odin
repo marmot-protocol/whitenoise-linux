@@ -4,32 +4,18 @@
 // Run: ODIN_ROOT=build/odin-root tests/odin.sh app
 package main
 
-import "core:testing"
+import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:strings"
 import "core:sync"
+import "core:testing"
 import "core:text/edit"
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
 @(test)
 sentence_selection :: proc(t: ^testing.T) {
-	for tc in ([]struct { text, click, want: string }{
-		{"First sentence. Another sentence! Last one?", "Another", "Another sentence!"},
-		{"First sentence. Another sentence!", "sentence.", "First sentence."},
-		{"A long sentence that wraps across several visual rows. Next.", "visual", "A long sentence that wraps across several visual rows."},
-		{"Price is 3.14. Next.", "14", "Price is 3.14."},
-		{"See https://example.com/a?q=yes. Next.", "example", "See https://example.com/a?q=yes."},
-		{"He said “Hello!” Next.", "Hello", "He said “Hello!”"},
-		{"Really?! Yes... Done.", "Really", "Really?!"},
-		{"Really?! Yes... Done.", "Yes", "Yes..."},
-		{"最初です。次の文です！最後。", "次", "次の文です！"},
-		{"Hi 👩🏽‍💻! Café é.", "👩", "Hi 👩🏽‍💻!"},
-		{"First line\nSecond line", "Second", "Second line"},
-		{"First. Last without punctuation", "Last", "Last without punctuation"},
-		{"  Last sentence.  ", "", "Last sentence."},
-		{"", "", ""},
-		{"   ", "", ""},
-	}) {
+	for tc in ([]struct {
+			text, click, want: string,
+		}{{"First sentence. Another sentence! Last one?", "Another", "Another sentence!"}, {"First sentence. Another sentence!", "sentence.", "First sentence."}, {"A long sentence that wraps across several visual rows. Next.", "visual", "A long sentence that wraps across several visual rows."}, {"Price is 3.14. Next.", "14", "Price is 3.14."}, {"See https://example.com/a?q=yes. Next.", "example", "See https://example.com/a?q=yes."}, {"He said “Hello!” Next.", "Hello", "He said “Hello!”"}, {"Really?! Yes... Done.", "Really", "Really?!"}, {"Really?! Yes... Done.", "Yes", "Yes..."}, {"最初です。次の文です！最後。", "次", "次の文です！"}, {"Hi 👩🏽‍💻! Café é.", "👩", "Hi 👩🏽‍💻!"}, {"First line\nSecond line", "Second", "Second line"}, {"First. Last without punctuation", "Last", "Last without punctuation"}, {"  Last sentence.  ", "", "Last sentence."}, {"", "", ""}, {"   ", "", ""}}) {
 		at := tc.click == "" ? len(tc.text) : strings.index(tc.text, tc.click)
 		lo, hi := sentence_bounds(tc.text, at)
 		testing.expect_value(t, tc.text[lo:hi], tc.want)
@@ -46,7 +32,11 @@ wrapped_caret_motion :: proc(t: ^testing.T) {
 	defer clay.SetCurrentContext(previous)
 	memory := make([]u8, int(clay.MinMemorySize()))
 	defer delete(memory)
-	clay.Initialize(clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)), {600, 200}, {})
+	clay.Initialize(
+		clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)),
+		{600, 200},
+		{},
+	)
 	rl.SetPixelScale(1)
 	defer wrap_clear()
 	ui: Ui_State

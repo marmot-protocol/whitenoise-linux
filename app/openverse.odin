@@ -85,7 +85,19 @@ ov_worker :: proc() {
 	ps := fmt.aprintf("page_size=%d", OV_PAGE_SIZE)
 	defer delete(ps)
 	state, out, _, err := os.process_exec(
-		{command = {"curl", "-sfG", "--max-time", "15", "--data-urlencode", q, "--data-urlencode", ps, OV_ENDPOINT}},
+		{
+			command = {
+				"curl",
+				"-sfG",
+				"--max-time",
+				"15",
+				"--data-urlencode",
+				q,
+				"--data-urlencode",
+				ps,
+				OV_ENDPOINT,
+			},
+		},
 		context.allocator,
 	)
 	defer delete(out)
@@ -164,33 +176,76 @@ OV_COLS :: 4
 openverse_modal :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("OvModal"))(
 	{
-		layout = {sizing = {width = clay.SizingFixed(modal_w(clay.ID("OvModal"), OV_CELL * OV_COLS + 8 * (OV_COLS - 1) + 40))}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(20), childGap = 12},
+		layout = {
+			sizing = {
+				width = clay.SizingFixed(
+					modal_w(clay.ID("OvModal"), OV_CELL * OV_COLS + 8 * (OV_COLS - 1) + 40),
+				),
+			},
+			layoutDirection = .TopToBottom,
+			padding = clay.PaddingAll(20),
+			childGap = 12,
+		},
 		backgroundColor = CARD,
 		cornerRadius = rr(16),
 		border = {color = CARD_BORDER, width = bw()},
-		floating = {attachTo = .Root, zIndex = 13, offset = {0, rise(clay.ID("OvModal"))}, attachment = {element = .CenterCenter, parent = .CenterCenter}},
+		floating = {
+			attachTo = .Root,
+			zIndex = 13,
+			offset = {0, rise(clay.ID("OvModal"))},
+			attachment = {element = .CenterCenter, parent = .CenterCenter},
+		},
 	},
 	) {
-		if clay.UI(clay.ID("OvHead"))({layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}}) {
+		if clay.UI(clay.ID("OvHead"))(
+		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
+		) {
 			clay.Text("Search images", {fontId = FONT_TITLE, fontSize = 20, textColor = TEXT})
 			if clay.UI(clay.ID("OvHeadGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 			if clay.UI(clay.ID("OvClose"))(
-			{layout = {sizing = {width = clay.SizingFixed(26), height = clay.SizingFixed(26)}, childAlignment = {x = .Center, y = .Center}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(7)},
+			{
+				layout = {
+					sizing = {width = clay.SizingFixed(26), height = clay.SizingFixed(26)},
+					childAlignment = {x = .Center, y = .Center},
+				},
+				backgroundColor = hovered() ? HOVER : {},
+				cornerRadius = rr(7),
+			},
 			) {
 				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
 			}
 		}
 
-		if clay.UI(clay.ID("OvRow"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 8, childAlignment = {y = .Center}}}) {
+		if clay.UI(clay.ID("OvRow"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				childGap = 8,
+				childAlignment = {y = .Center},
+			},
+		},
+		) {
 			if clay.UI(clay.ID("OvField"))(
 			{
-				layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(36)}, padding = {left = 12, right = 12}, childAlignment = {y = .Center}},
+				layout = {
+					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(36)},
+					padding = {left = 12, right = 12},
+					childAlignment = {y = .Center},
+				},
 				backgroundColor = ROW_BG,
 				cornerRadius = rr(8),
 				border = {color = ui.focus == .Ov ? ACCENT : FIELD_BORDER, width = bw()},
 			},
 			) {
-				field_text(ui, "OvField", &ui.ov_input, "Search openly licensed images", ui.focus == .Ov, 13, TEXT_LO)
+				field_text(
+					ui,
+					"OvField",
+					&ui.ov_input,
+					"Search openly licensed images",
+					ui.focus == .Ov,
+					13,
+					TEXT_LO,
+				)
 			}
 			micro_button("OvGo", ov_busy ? "Searching…" : "Search")
 		}
@@ -201,7 +256,11 @@ openverse_modal :: proc(ui: ^Ui_State) {
 
 		if clay.UI(clay.ID("OvList"))(
 		{
-			layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFit({max = 320})}, layoutDirection = .TopToBottom, childGap = 8},
+			layout = {
+				sizing = {width = clay.SizingGrow(), height = clay.SizingFit({max = 320})},
+				layoutDirection = .TopToBottom,
+				childGap = 8,
+			},
 			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		},
 		) {
@@ -211,7 +270,12 @@ openverse_modal :: proc(ui: ^Ui_State) {
 						tex := url_pic(ov_hits[i].thumb)
 						if clay.UI(clay.ID("OvCell", u32(i)))(
 						{
-							layout = {sizing = {width = clay.SizingFixed(OV_CELL), height = clay.SizingFixed(OV_CELL)}},
+							layout = {
+								sizing = {
+									width = clay.SizingFixed(OV_CELL),
+									height = clay.SizingFixed(OV_CELL),
+								},
+							},
 							backgroundColor = tex == nil ? ROW_BG : {},
 							cornerRadius = rr(8),
 							image = tex != nil ? clay.ImageElementConfig{imageData = tex} : {},
@@ -229,7 +293,8 @@ openverse_modal :: proc(ui: ^Ui_State) {
 // Modal input: Escape/backdrop closes, Enter/Search queries, a cell
 // click publishes the pick as the group photo.
 handle_openverse :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if rl.IsKeyPressed(.ESCAPE) || (mouse_released() && (clicked("OvClose") || !clay.PointerOver(clay.ID("OvModal")))) {
+	if rl.IsKeyPressed(.ESCAPE) ||
+	   (mouse_released() && (clicked("OvClose") || !clay.PointerOver(clay.ID("OvModal")))) {
 		ov_close(ui)
 		return
 	}

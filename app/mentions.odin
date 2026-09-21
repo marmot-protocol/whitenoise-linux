@@ -35,7 +35,7 @@ mention_hover: string
 // wraps TLV records; type 0 is the 32-byte pubkey.
 mention_hex :: proc(tok: string) -> string {
 	end, ref := nostr_at(tok, 0)
-	if end != len(tok) || ref.kind != .Profile { return "" }
+	if end != len(tok) || ref.kind != .Profile {return ""}
 	return ref.key
 }
 
@@ -43,7 +43,7 @@ mention_hex :: proc(tok: string) -> string {
 mention_at :: proc(text: string, i: int) -> (end: int, hx: string, ok: bool) {
 	ref: Nostr_Ref
 	end, ref = nostr_at(text, i)
-	if ref.kind != .Profile { return 0, "", false }
+	if ref.kind != .Profile {return 0, "", false}
 	return end, ref.key, true
 }
 
@@ -76,9 +76,12 @@ body_atom :: proc(text: string, at: int, size: u16) -> (end: int, width: f32) {
 	if ref.kind != .Profile {
 		ok: bool
 		end, hx, ok = marmot_link_at(text, at)
-		if !ok { return 0, 0 }
+		if !ok {return 0, 0}
 	}
-	width = 6 + f32(size) + rl.MeasureTextLine(FONT_TITLE, size, fmt.tprintf("@%s", mention_label(hx)), 0).x
+	width =
+		6 +
+		f32(size) +
+		rl.MeasureTextLine(FONT_TITLE, size, fmt.tprintf("@%s", mention_label(hx)), 0).x
 	if url_pic(profile_info(g_client, hx).pic_url) != nil {
 		width += 2 + f32(size)
 	}
@@ -178,7 +181,8 @@ mention_update :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	clear(&ui.mention_cands)
 	q := strings.to_lower(query, context.temp_allocator)
 	for member, i in ui.members {
-		if len(q) > 0 && !strings.contains(strings.to_lower(member.name, context.temp_allocator), q) {
+		if len(q) > 0 &&
+		   !strings.contains(strings.to_lower(member.name, context.temp_allocator), q) {
 			np := hex_npub(member.id_hex)
 			defer delete(np)
 			if !strings.contains(np, q) {
@@ -261,21 +265,50 @@ handle_mention :: proc(ui: ^Ui_State, client: ^marmot.Client) -> bool {
 mention_popover :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("MentionPop"))(
 	{
-		layout = {sizing = {width = clay.SizingFixed(280)}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(6), childGap = 2},
+		layout = {
+			sizing = {width = clay.SizingFixed(280)},
+			layoutDirection = .TopToBottom,
+			padding = clay.PaddingAll(6),
+			childGap = 2,
+		},
 		backgroundColor = CARD,
 		cornerRadius = rr(10),
 		border = {color = ELEVATED_BORDER, width = bw()},
-		floating = {attachTo = .Parent, zIndex = 12, offset = {0, -8 - rise(clay.ID("MentionPop"))}, attachment = {element = .LeftBottom, parent = .LeftTop}},
+		floating = {
+			attachTo = .Parent,
+			zIndex = 12,
+			offset = {0, -8 - rise(clay.ID("MentionPop"))},
+			attachment = {element = .LeftBottom, parent = .LeftTop},
+		},
 	},
 	) {
 		for mi, i in ui.mention_cands {
 			member := ui.members[mi]
 			sel := i == ui.mention_sel
 			if clay.UI(clay.ID("MentionCand", u32(i)))(
-			{layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(6), childGap = 8, childAlignment = {y = .Center}}, backgroundColor = sel ? SELECTED : (hovered() ? HOVER : {}), cornerRadius = rr(8)},
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					padding = clay.PaddingAll(6),
+					childGap = 8,
+					childAlignment = {y = .Center},
+				},
+				backgroundColor = sel ? SELECTED : (hovered() ? HOVER : {}),
+				cornerRadius = rr(8),
+			},
 			) {
-				avatar("MentionCandAv", u32(i), member.id_hex, member.name, 22, url_pic(member.pic_url))
-				clay.Text(member.name, {fontId = FONT_BODY, fontSize = 13, textColor = sel ? ACCENT : TEXT})
+				avatar(
+					"MentionCandAv",
+					u32(i),
+					member.id_hex,
+					member.name,
+					22,
+					url_pic(member.pic_url),
+				)
+				clay.Text(
+					member.name,
+					{fontId = FONT_BODY, fontSize = 13, textColor = sel ? ACCENT : TEXT},
+				)
 			}
 		}
 	}
@@ -370,7 +403,10 @@ mi_refresh :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 		for i := page.messages_len; i > 0; i -= 1 {
 			record := &page.messages[i - 1]
-			if record.deleted || record.kind == 1009 || record.kind == 5 || record.plaintext == nil {
+			if record.deleted ||
+			   record.kind == 1009 ||
+			   record.kind == 5 ||
+			   record.plaintext == nil {
 				continue
 			}
 			if record.direction != nil && string(record.direction) == "sent" {
@@ -385,16 +421,19 @@ mi_refresh :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				continue
 			}
 			sender := record.sender != nil ? string(record.sender) : ""
-			append(&ui.mi_hits, Mention_Hit{
-				chat    = ci,
-				msg_id  = strings.clone(id),
-				title   = strings.clone(chat.title),
-				sender  = strings.clone(profile_label(client, sender)),
-				snippet = gs_snippet(body, 0),
-				at      = format_full(record.timeline_at),
-				when_at = record.timeline_at,
-				unread  = !mi_is_read(ui, id),
-			})
+			append(
+				&ui.mi_hits,
+				Mention_Hit {
+					chat = ci,
+					msg_id = strings.clone(id),
+					title = strings.clone(chat.title),
+					sender = strings.clone(profile_label(client, sender)),
+					snippet = gs_snippet(body, 0),
+					at = format_full(record.timeline_at),
+					when_at = record.timeline_at,
+					unread = !mi_is_read(ui, id),
+				},
+			)
 		}
 	}
 
@@ -427,19 +466,34 @@ mi_tick :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 bell_chip :: proc(ui: ^Ui_State) {
 	unread := mi_unread_count(ui)
 	if clay.UI(clay.ID("BellBtn"))(
-	{layout = {padding = {left = 14, right = 14, top = 8, bottom = 8}}, backgroundColor = ui.mi_open ? ACCENT : ROW_BG, cornerRadius = rr(8)},
+	{
+		layout = {padding = {left = 14, right = 14, top = 8, bottom = 8}},
+		backgroundColor = ui.mi_open ? ACCENT : ROW_BG,
+		cornerRadius = rr(8),
+	},
 	) {
-		clay.Text(ICON_BELL, {fontId = FONT_ICON, fontSize = 14, textColor = ui.mi_open ? ON_ACCENT : TEXT})
+		clay.Text(
+			ICON_BELL,
+			{fontId = FONT_ICON, fontSize = 14, textColor = ui.mi_open ? ON_ACCENT : TEXT},
+		)
 		if unread > 0 {
 			if clay.UI(clay.ID("BellBadge"))(
 			{
 				layout = {padding = {left = 5, right = 5, top = 1, bottom = 1}},
-				floating = {attachTo = .Parent, zIndex = 6, offset = {6, -6}, attachment = {element = .RightTop, parent = .RightTop}},
+				floating = {
+					attachTo = .Parent,
+					zIndex = 6,
+					offset = {6, -6},
+					attachment = {element = .RightTop, parent = .RightTop},
+				},
 				backgroundColor = DANGER,
 				cornerRadius = rr(8),
 			},
 			) {
-				clay.Text(unread > 99 ? "99+" : fmt.tprintf("%d", unread), {fontId = FONT_BODY, fontSize = 10, textColor = {255, 255, 255, 235}})
+				clay.Text(
+					unread > 99 ? "99+" : fmt.tprintf("%d", unread),
+					{fontId = FONT_BODY, fontSize = 10, textColor = {255, 255, 255, 235}},
+				)
 			}
 		}
 	}
@@ -450,54 +504,124 @@ bell_chip :: proc(ui: ^Ui_State) {
 mention_inbox :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("MiModal"))(
 	{
-		layout = {sizing = {width = clay.SizingFixed(fit_w(420))}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(12), childGap = 6},
+		layout = {
+			sizing = {width = clay.SizingFixed(fit_w(420))},
+			layoutDirection = .TopToBottom,
+			padding = clay.PaddingAll(12),
+			childGap = 6,
+		},
 		backgroundColor = CARD,
 		cornerRadius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
-		floating = {attachTo = .ElementWithId, parentId = clay.ID("BellBtn").id, zIndex = 13, offset = {0, 8 + rise(clay.ID("MiModal"))}, attachment = {element = .RightTop, parent = .RightBottom}},
+		floating = {
+			attachTo = .ElementWithId,
+			parentId = clay.ID("BellBtn").id,
+			zIndex = 13,
+			offset = {0, 8 + rise(clay.ID("MiModal"))},
+			attachment = {element = .RightTop, parent = .RightBottom},
+		},
 	},
 	) {
-		if clay.UI(clay.ID("MiHead"))({layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}}) {
-			clay.Text("MENTIONS", {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_DIM, letterSpacing = 2})
+		if clay.UI(clay.ID("MiHead"))(
+		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
+		) {
+			clay.Text(
+				"MENTIONS",
+				{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_DIM, letterSpacing = 2},
+			)
 			if clay.UI(clay.ID("MiHeadGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 			if clay.UI(clay.ID("MiClose"))(
-			{layout = {sizing = {width = clay.SizingFixed(24), height = clay.SizingFixed(24)}, childAlignment = {x = .Center, y = .Center}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(7)},
+			{
+				layout = {
+					sizing = {width = clay.SizingFixed(24), height = clay.SizingFixed(24)},
+					childAlignment = {x = .Center, y = .Center},
+				},
+				backgroundColor = hovered() ? HOVER : {},
+				cornerRadius = rr(7),
+			},
 			) {
 				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 11, textColor = TEXT_DIM})
 			}
 		}
 
 		if len(ui.mi_hits) == 0 {
-			clay.Text("No mentions yet.", {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
+			clay.Text(
+				"No mentions yet.",
+				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+			)
 		}
 
 		if clay.UI(clay.ID("MiList"))(
 		{
-			layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFit({max = 380})}, layoutDirection = .TopToBottom, childGap = 2},
+			layout = {
+				sizing = {width = clay.SizingGrow(), height = clay.SizingFit({max = 380})},
+				layoutDirection = .TopToBottom,
+				childGap = 2,
+			},
 			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		},
 		) {
 			for hit, i in ui.mi_hits {
 				if clay.UI(clay.ID("MiHit", u32(i)))(
 				{
-					layout = {sizing = {width = clay.SizingGrow()}, childGap = 8, padding = clay.PaddingAll(8)},
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						childGap = 8,
+						padding = clay.PaddingAll(8),
+					},
 					backgroundColor = hovered() ? HOVER : {},
 					cornerRadius = rr(8),
 				},
 				) {
 					if hit.unread {
-						if clay.UI(clay.ID("MiHitDot", u32(i)))({layout = {sizing = {width = clay.SizingFixed(3), height = clay.SizingGrow()}}, backgroundColor = ACCENT, cornerRadius = rr(2)}) {}
+						if clay.UI(clay.ID("MiHitDot", u32(i)))(
+						{
+							layout = {
+								sizing = {width = clay.SizingFixed(3), height = clay.SizingGrow()},
+							},
+							backgroundColor = ACCENT,
+							cornerRadius = rr(2),
+						},
+						) {}
 					}
 					if clay.UI(clay.ID("MiHitCol", u32(i)))(
-					{layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 3}},
+					{
+						layout = {
+							sizing = {width = clay.SizingGrow()},
+							layoutDirection = .TopToBottom,
+							childGap = 3,
+						},
+					},
 					) {
-						if clay.UI(clay.ID("MiHitTop", u32(i)))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 8, childAlignment = {y = .Center}}}) {
-							clay.Text(hit.title, {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
-							clay.Text(hit.sender, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
-							if clay.UI(clay.ID("MiHitGap", u32(i)))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-							clay.Text(hit.at, {fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO})
+						if clay.UI(clay.ID("MiHitTop", u32(i)))(
+						{
+							layout = {
+								sizing = {width = clay.SizingGrow()},
+								childGap = 8,
+								childAlignment = {y = .Center},
+							},
+						},
+						) {
+							clay.Text(
+								hit.title,
+								{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT},
+							)
+							clay.Text(
+								hit.sender,
+								{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+							)
+							if clay.UI(clay.ID("MiHitGap", u32(i)))(
+							{layout = {sizing = {width = clay.SizingGrow()}}},
+							) {}
+							clay.Text(
+								hit.at,
+								{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO},
+							)
 						}
-						clay.Text(hit.snippet, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+						clay.Text(
+							hit.snippet,
+							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+						)
 					}
 				}
 			}
@@ -524,7 +648,8 @@ handle_mi :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			return
 		}
 	}
-	if clicked("MiClose") || (!clay.PointerOver(clay.ID("MiModal")) && !clay.PointerOver(clay.ID("BellBtn"))) {
+	if clicked("MiClose") ||
+	   (!clay.PointerOver(clay.ID("MiModal")) && !clay.PointerOver(clay.ID("BellBtn"))) {
 		ui.mi_open = false
 	}
 }

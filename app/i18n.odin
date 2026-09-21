@@ -8,7 +8,7 @@ package main
 import "core:strings"
 
 // en is the msgid source, so it needs no catalog.
-CATALOGS := [][2]string{
+CATALOGS := [][2]string {
 	{"it", #load("../lang/it/LC_MESSAGES/wnl-ui.po", string)},
 	{"de", #load("../lang/de/LC_MESSAGES/wnl-ui.po", string)},
 	{"ja", #load("../lang/ja/LC_MESSAGES/wnl-ui.po", string)},

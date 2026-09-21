@@ -131,48 +131,107 @@ handle_vault_pw :: proc(ui: ^Ui_State) {
 vault_pw_modal :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("VaultPwModal"))(
 	{
-		layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(modal_w(clay.ID("VaultPwModal"), 460))}, padding = clay.PaddingAll(18), childGap = 10},
-		floating = {attachTo = .Root, zIndex = 12, offset = {0, rise(clay.ID("VaultPwModal"))}, attachment = {element = .CenterCenter, parent = .CenterCenter}},
+		layout = {
+			layoutDirection = .TopToBottom,
+			sizing = {width = clay.SizingFixed(modal_w(clay.ID("VaultPwModal"), 460))},
+			padding = clay.PaddingAll(18),
+			childGap = 10,
+		},
+		floating = {
+			attachTo = .Root,
+			zIndex = 12,
+			offset = {0, rise(clay.ID("VaultPwModal"))},
+			attachment = {element = .CenterCenter, parent = .CenterCenter},
+		},
 		backgroundColor = CARD,
 		cornerRadius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		if clay.UI(clay.ID("VaultPwHead"))({layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}}) {
-			clay.Text(tr("Change vault password"), {fontId = FONT_TITLE, fontSize = 17, textColor = TEXT})
-			if clay.UI(clay.ID("VaultPwHeadGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-			if clay.UI(clay.ID("VaultPwClose"))({layout = {padding = clay.PaddingAll(6)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)}) {
+		if clay.UI(clay.ID("VaultPwHead"))(
+		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
+		) {
+			clay.Text(
+				tr("Change vault password"),
+				{fontId = FONT_TITLE, fontSize = 17, textColor = TEXT},
+			)
+			if clay.UI(clay.ID("VaultPwHeadGap"))(
+			{layout = {sizing = {width = clay.SizingGrow()}}},
+			) {}
+			if clay.UI(clay.ID("VaultPwClose"))(
+			{
+				layout = {padding = clay.PaddingAll(6)},
+				backgroundColor = hovered() ? HOVER : {},
+				cornerRadius = rr(6),
+			},
+			) {
 				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
 			}
 		}
 
 		clay.Text(
-			tr("The new password re-encrypts this device's keys. There is still no recovery: forgetting it means starting over from your nsec."),
+			tr(
+				"The new password re-encrypts this device's keys. There is still no recovery: forgetting it means starting over from your nsec.",
+			),
 			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
 		)
 
 		eyebrow("CURRENT PASSWORD")
-		gate_field(ui, "VaultPwCurBox", &ui.vault_pw[.Current], ui.vault_pw_focus == .Current, "Your current password")
+		gate_field(
+			ui,
+			"VaultPwCurBox",
+			&ui.vault_pw[.Current],
+			ui.vault_pw_focus == .Current,
+			"Your current password",
+		)
 		eyebrow("NEW PASSWORD")
-		gate_field(ui, "VaultPwNewBox", &ui.vault_pw[.New], ui.vault_pw_focus == .New, "Your new password")
+		gate_field(
+			ui,
+			"VaultPwNewBox",
+			&ui.vault_pw[.New],
+			ui.vault_pw_focus == .New,
+			"Your new password",
+		)
 		eyebrow("CONFIRM NEW PASSWORD")
-		gate_field(ui, "VaultPwNew2Box", &ui.vault_pw[.Confirm], ui.vault_pw_focus == .Confirm, "Your new password")
+		gate_field(
+			ui,
+			"VaultPwNew2Box",
+			&ui.vault_pw[.Confirm],
+			ui.vault_pw_focus == .Confirm,
+			"Your new password",
+		)
 
 		if len(ui.vault_pw_err) > 0 {
 			clay.Text(ui.vault_pw_err, {fontId = FONT_BODY, fontSize = 12, textColor = DANGER})
 		}
 
-		if clay.UI(clay.ID("VaultPwBtns"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, padding = {top = 8}}}) {
+		if clay.UI(clay.ID("VaultPwBtns"))(
+		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, padding = {top = 8}}},
+		) {
 			if clay.UI(clay.ID("VaultPwCancel"))(
-			{layout = {padding = {left = 22, right = 22, top = 9, bottom = 9}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(9), border = {color = FIELD_BORDER, width = bw()}},
+			{
+				layout = {padding = {left = 22, right = 22, top = 9, bottom = 9}},
+				backgroundColor = hovered() ? HOVER : {},
+				cornerRadius = rr(9),
+				border = {color = FIELD_BORDER, width = bw()},
+			},
 			) {
 				clay.Text(tr("Cancel"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
 			}
-			if clay.UI(clay.ID("VaultPwBtnsGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+			if clay.UI(clay.ID("VaultPwBtnsGap"))(
+			{layout = {sizing = {width = clay.SizingGrow()}}},
+			) {}
 			if clay.UI(clay.ID("VaultPwGo"))(
-			{layout = {padding = {left = 22, right = 22, top = 9, bottom = 9}}, backgroundColor = ACCENT, cornerRadius = rr(9)},
+			{
+				layout = {padding = {left = 22, right = 22, top = 9, bottom = 9}},
+				backgroundColor = ACCENT,
+				cornerRadius = rr(9),
+			},
 			) {
-				clay.Text(tr("Change password"), {fontId = FONT_TITLE, fontSize = 13, textColor = ON_ACCENT})
+				clay.Text(
+					tr("Change password"),
+					{fontId = FONT_TITLE, fontSize = 13, textColor = ON_ACCENT},
+				)
 			}
 		}
 	}

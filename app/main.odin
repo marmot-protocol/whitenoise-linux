@@ -17,15 +17,15 @@
 // vtable (vault_gate.odin), so nothing lands in an OS keychain.
 package main
 
-import "core:fmt"
 import "core:c/libc"
+import "core:fmt"
 import "core:os"
 import "core:strconv"
 import "core:strings"
 import "core:sys/linux"
 import "core:text/edit"
-import "core:time"
 import "core:thread"
+import "core:time"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -42,7 +42,11 @@ init_layout :: proc(memory: ^[]u8, count: i32, dimensions: clay.Dimensions) {
 	delete(memory^)
 	clay.SetMaxElementCount(count)
 	memory^ = make([]u8, int(clay.MinMemorySize()))
-	clay.Initialize(clay.CreateArenaWithCapacityAndMemory(uint(len(memory^)), raw_data(memory^)), dimensions, {handler = error_handler})
+	clay.Initialize(
+		clay.CreateArenaWithCapacityAndMemory(uint(len(memory^)), raw_data(memory^)),
+		dimensions,
+		{handler = error_handler},
+	)
 	clay.SetMeasureTextFunction(measure_text, nil)
 	layout_overflow = false
 }
@@ -225,7 +229,10 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 									sizing = {width = clay.SizingGrow()},
 									layoutDirection = collapsed ? .TopToBottom : .LeftToRight,
 									childGap = 8,
-									childAlignment = {x = collapsed ? .Center : .Left, y = .Center},
+									childAlignment = {
+										x = collapsed ? .Center : .Left,
+										y = .Center,
+									},
 								},
 							},
 							) {
@@ -270,7 +277,11 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 										}
 										clay.Text(
 											collapsed ? "›" : "‹",
-											{fontId = FONT_TITLE, fontSize = 15, textColor = TEXT_DIM},
+											{
+												fontId = FONT_TITLE,
+												fontSize = 15,
+												textColor = TEXT_DIM,
+											},
 										)
 									}
 								}
@@ -317,7 +328,12 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 										{
 											layout = {
 												sizing = {width = clay.SizingGrow()},
-												padding = {left = 12, right = 12, top = 9, bottom = 9},
+												padding = {
+													left = 12,
+													right = 12,
+													top = 9,
+													bottom = 9,
+												},
 												childGap = 10,
 												childAlignment = {y = .Center},
 											},
@@ -380,20 +396,25 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 											// All/Unread filter tabs, the slint chat-list tabs.
 											for label, t in ([2]string{"All", "Unread"}) {
 												active := ui.unread_only == (t == 1)
-												if clay.UI(clay.ID(t == 0 ? "AllPill" : "UnreadPill"))(
-												{
-													layout = {
-														padding = {
-															left = 14,
-															right = 14,
-															top = 5,
-															bottom = 5,
+												if clay.UI(
+													clay.ID(t == 0 ? "AllPill" : "UnreadPill"),
+												)(
+													{
+														layout = {
+															padding = {
+																left = 14,
+																right = 14,
+																top = 5,
+																bottom = 5,
+															},
+														},
+														backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
+														cornerRadius = rr(8),
+														border = {
+															color = FIELD_BORDER,
+															width = bw(),
 														},
 													},
-													backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
-													cornerRadius = rr(8),
-													border = {color = FIELD_BORDER, width = bw()},
-												},
 												) {
 													clay.Text(
 														label,
@@ -410,7 +431,12 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 										if clay.UI(clay.ID("GSearchBtn"))(
 										{
 											layout = {
-												padding = {left = 8, right = 8, top = 5, bottom = 5},
+												padding = {
+													left = 8,
+													right = 8,
+													top = 5,
+													bottom = 5,
+												},
 												childAlignment = {x = .Center, y = .Center},
 											},
 											backgroundColor = hovered() ? HOVER : {},
@@ -429,7 +455,12 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 										if clay.UI(clay.ID("NewChatBtn"))(
 										{
 											layout = {
-												padding = {left = 8, right = 8, top = 3, bottom = 3},
+												padding = {
+													left = 8,
+													right = 8,
+													top = 3,
+													bottom = 3,
+												},
 												childAlignment = {x = .Center, y = .Center},
 											},
 											backgroundColor = hovered() ? HOVER : {},
@@ -466,7 +497,11 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 									) {
 										clay.Text(
 											ICON_SEARCH,
-											{fontId = FONT_ICON, fontSize = 12, textColor = TEXT_LO},
+											{
+												fontId = FONT_ICON,
+												fontSize = 12,
+												textColor = TEXT_LO,
+											},
 										)
 										field_text(
 											ui,
@@ -502,7 +537,11 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 							}
 							if clay.UI(clay.ID("ContactList"))(
 							{
-								layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 6},
+								layout = {
+									sizing = {clay.SizingGrow(), clay.SizingGrow()},
+									layoutDirection = .TopToBottom,
+									childGap = 6,
+								},
 								clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 							},
 							) {
@@ -514,8 +553,17 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 									context.temp_allocator,
 								)
 								last_letter: u8 = 0
-								Contact_Item :: struct {idx: int, letter: u8, y, end: f32}
-								rows := make([dynamic]Contact_Item, 0, len(ui.contacts), context.temp_allocator)
+								Contact_Item :: struct {
+									idx:    int,
+									letter: u8,
+									y, end: f32,
+								}
+								rows := make(
+									[dynamic]Contact_Item,
+									0,
+									len(ui.contacts),
+									context.temp_allocator,
+								)
 								ROW_H :: f32(50)
 								HEADER_H :: f32(22)
 								GAP :: f32(6)
@@ -526,30 +574,54 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 									}
 
 									letter: u8 = '#'
-									if !order.unnamed && len(order.key) > 0 && order.key[0] >= 'a' && order.key[0] <= 'z' {
+									if !order.unnamed &&
+									   len(order.key) > 0 &&
+									   order.key[0] >= 'a' &&
+									   order.key[0] <= 'z' {
 										letter = order.key[0] - 32
 									}
 									header := letter != last_letter
 									end := y + ROW_H + GAP + (header ? HEADER_H + GAP : 0)
-									append(&rows, Contact_Item{order.idx, header ? letter : 0, y, end})
+									append(
+										&rows,
+										Contact_Item{order.idx, header ? letter : 0, y, end},
+									)
 									y, last_letter = end, letter
 								}
 								// Keep full scroll geometry, but build only the viewport and two spare rows.
 								data := clay.GetScrollContainerData(clay.ID("ContactList"))
-								height := data.found ? data.scrollContainerDimensions.height : f32(rl.GetScreenHeight()) / UI_ZOOM
-								offset := data.found ? clamp(-data.scrollPosition.y, 0, max(0, y - GAP - height)) : 0
-								if data.found { data.scrollPosition.y = -offset }
+								height :=
+									data.found ? data.scrollContainerDimensions.height : f32(rl.GetScreenHeight()) / UI_ZOOM
+								offset :=
+									data.found ? clamp(-data.scrollPosition.y, 0, max(0, y - GAP - height)) : 0
+								if data.found {data.scrollPosition.y = -offset}
 								first, last := 0, len(rows)
-								for first < last && rows[first].end < offset - 2 * (ROW_H + GAP) { first += 1 }
-								for last > first && rows[last - 1].y > offset + height + 2 * (ROW_H + GAP) { last -= 1 }
+								for first < last &&
+								    rows[first].end < offset - 2 * (ROW_H + GAP) {first += 1}
+								for last > first &&
+								    rows[last - 1].y >
+									    offset + height + 2 * (ROW_H + GAP) {last -= 1}
 								if first > 0 {
-									if clay.UI(clay.ID("ContactsBefore"))({layout = {sizing = {height = clay.SizingFixed(rows[first].y - GAP)}}}) {}
+									if clay.UI(clay.ID("ContactsBefore"))(
+									{
+										layout = {
+											sizing = {
+												height = clay.SizingFixed(rows[first].y - GAP),
+											},
+										},
+									},
+									) {}
 								}
 								for order in rows[first:last] {
 									contact := ui.contacts[order.idx]
 									if order.letter != 0 {
 										if clay.UI(clay.ID("ContactLetter", u32(order.idx)))(
-										{layout = {sizing = {height = clay.SizingFixed(HEADER_H)}, padding = {left = 10, top = 6, bottom = 2}}},
+										{
+											layout = {
+												sizing = {height = clay.SizingFixed(HEADER_H)},
+												padding = {left = 10, top = 6, bottom = 2},
+											},
+										},
 										) {
 											clay.Text(
 												fmt.tprintf("%c", order.letter),
@@ -567,7 +639,10 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 									if clay.UI(clay.ID("ContactRow", u32(order.idx)))(
 									{
 										layout = {
-											sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(ROW_H)},
+											sizing = {
+												width = clay.SizingGrow(),
+												height = clay.SizingFixed(ROW_H),
+											},
 											padding = clay.PaddingAll(10),
 											childGap = 10,
 											childAlignment = {y = .Center},
@@ -598,10 +673,17 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 											30,
 											url_pic(contact.pic_url),
 										)
-										if clay.UI(clay.ID("ContactNameClip", u32(order.idx)))({clip = {horizontal = true}}) {
+										if clay.UI(clay.ID("ContactNameClip", u32(order.idx)))(
+										{clip = {horizontal = true}},
+										) {
 											clay.Text(
 												contact_label(ui, contact),
-												{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT, wrapMode = .None},
+												{
+													fontId = FONT_TITLE,
+													fontSize = 14,
+													textColor = TEXT,
+													wrapMode = .None,
+												},
 											)
 										}
 										if selected && len(contact.npub) > 0 {
@@ -610,13 +692,25 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 											) {}
 											clay.Text(
 												npub_tail(contact.npub),
-												{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO},
+												{
+													fontId = FONT_MONO,
+													fontSize = 10,
+													textColor = TEXT_LO,
+												},
 											)
 										}
 									}
 								}
 								if last < len(rows) {
-									if clay.UI(clay.ID("ContactsAfter"))({layout = {sizing = {height = clay.SizingFixed(y - rows[last].y - GAP)}}}) {}
+									if clay.UI(clay.ID("ContactsAfter"))(
+									{
+										layout = {
+											sizing = {
+												height = clay.SizingFixed(y - rows[last].y - GAP),
+											},
+										},
+									},
+									) {}
 								}
 							}
 							scrollbar(clay.ID("ContactList"))
@@ -625,7 +719,11 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 						if ui.page == .Chats && logged_in && !rail_narrow(ui) {
 							if clay.UI(clay.ID("ChatList"))(
 							{
-								layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 6},
+								layout = {
+									sizing = {clay.SizingGrow(), clay.SizingGrow()},
+									layoutDirection = .TopToBottom,
+									childGap = 6,
+								},
 								clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 							},
 							) {
@@ -644,14 +742,21 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 								clear(&ui.rail_rows) // rebuilt below; Ctrl+Tab cycles it
 								for i in rail_order(ui.chats[:], ui.prefs.pinned) {
 									chat := ui.chats[i]
-									if !in_folder(ui.prefs.folder_of, chat.group_id, ui.folder_filter) {
+									if !in_folder(
+										ui.prefs.folder_of,
+										chat.group_id,
+										ui.folder_filter,
+									) {
 										continue
 									}
 									// A chat stays visible on a title match or a cached
 									// message-body hit (refresh_filter_hits).
 									if len(filter) > 0 &&
 									   !strings.contains(
-											   strings.to_lower(chat.title, context.temp_allocator),
+											   strings.to_lower(
+												   chat.title,
+												   context.temp_allocator,
+											   ),
 											   filter,
 										   ) &&
 									   !(i < len(ui.filter_hits) && ui.filter_hits[i]) {
@@ -670,7 +775,14 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 									}
 									append(&ui.rail_rows, i)
 								}
-								chat_rows_window(ui, ui.chats[:], ui.rail_rows[:], clay.ID("ChatList"), .Archive, 6)
+								chat_rows_window(
+									ui,
+									ui.chats[:],
+									ui.rail_rows[:],
+									clay.ID("ChatList"),
+									.Archive,
+									6,
+								)
 							}
 							scrollbar(clay.ID("ChatList"))
 						}
@@ -911,13 +1023,13 @@ update_title :: proc(ui: ^Ui_State) {
 }
 
 main :: proc() {
-	when !#config(WN_RELOAD, false) { app_main() }
+	when !#config(WN_RELOAD, false) {app_main()}
 }
 
 @(private)
 app_main :: proc() {
 	// Relay sockets can close during a write. Let the runtime handle EPIPE.
-	libc.signal(libc.int(linux.Signal.SIGPIPE), transmute(proc "c" (libc.int))libc.SIG_IGN)
+	libc.signal(libc.int(linux.Signal.SIGPIPE), transmute(proc "c" (_: libc.int))libc.SIG_IGN)
 	startup_start := time.tick_now()
 	local_timing_stopped = false
 	defer local_timings_export()
@@ -1267,11 +1379,11 @@ app_main :: proc() {
 	frame_input: bool
 	for !rl.WindowShouldClose(&frame_input) {
 		frame_start := time.tick_now()
-		if dev_reload_poll(&ui) { break }
+		if dev_reload_poll(&ui) {break}
 		defer free_all(context.temp_allocator)
 		defer messages_collect()
 		defer chats_collect()
-		defer { if wrap_flush { wrap_clear() } }
+		defer {if wrap_flush {wrap_clear()}}
 		poll_system_theme(&ui, rl.GetTime())
 
 		focused := rl.IsWindowFocused()
@@ -1296,7 +1408,13 @@ app_main :: proc() {
 			// for a re-bake when the value actually moves.
 			apply_zoom(&ui)
 			if debug_size {
-				fmt.eprintfln("size: frame %d win %dx%d density %.4f", frame, win_now.x, win_now.y, rl.GetWindowScaleDPI().x)
+				fmt.eprintfln(
+					"size: frame %d win %dx%d density %.4f",
+					frame,
+					win_now.x,
+					win_now.y,
+					rl.GetWindowScaleDPI().x,
+				)
 			}
 			win_was = win_now
 		}
@@ -1315,7 +1433,7 @@ app_main :: proc() {
 					break
 				}
 			}
-			if !ui.peer_open { open_peer(&ui, client, ui.account_ref, ui.accounts[0], ui.my_pic_url) }
+			if !ui.peer_open {open_peer(&ui, client, ui.account_ref, ui.accounts[0], ui.my_pic_url)}
 		}
 		if !ui.timeline_loading && test_thread_pending && ui.selected >= 0 {
 			test_thread_pending = false
@@ -1452,9 +1570,13 @@ app_main :: proc() {
 			save_settings(&ui)
 			wheel = {}
 		}
-		if preview_shown && (preview.kind == .Image || preview.kind == .Slides) && clay.PointerOver(clay.ID("PvScroll")) {
+		if preview_shown &&
+		   (preview.kind == .Image || preview.kind == .Slides) &&
+		   clay.PointerOver(clay.ID("PvScroll")) {
 			data := clay.GetScrollContainerData(clay.ID("PvScroll"))
-			if data.found && (shift_down() || data.contentDimensions.height <= data.scrollContainerDimensions.height) {
+			if data.found &&
+			   (shift_down() ||
+					   data.contentDimensions.height <= data.scrollContainerDimensions.height) {
 				wheel.x += wheel.y
 				wheel.y = 0
 			}
@@ -1541,7 +1663,8 @@ app_main :: proc() {
 		// size is the relayout tell; a new message only grows the
 		// content, so the arrival glide below keeps its motion. The
 		// second build is safe: per-frame anim steps are idempotent.
-		if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found && !layout_overflow {
+		if data := clay.GetScrollContainerData(clay.ID("Timeline"));
+		   data.found && !layout_overflow {
 			overflow := max(
 				data.contentDimensions.height - data.scrollContainerDimensions.height,
 				0,
@@ -1578,7 +1701,11 @@ app_main :: proc() {
 		// A failed layout contains only Clay's error screen. Grow its arena
 		// and retry next frame, before rendering or handling message clicks.
 		if layout_overflow {
-			init_layout(&memory, clay.GetMaxElementCount() * 2, {f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM})
+			init_layout(
+				&memory,
+				clay.GetMaxElementCount() * 2,
+				{f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM},
+			)
 			tl_restore = true
 			continue
 		}
@@ -1641,7 +1768,10 @@ app_main :: proc() {
 				ui.scroll_pending = false
 			}
 		}
-		video_dbg_build = max(video_dbg_build, f32(time.duration_milliseconds(time.tick_since(build_start))))
+		video_dbg_build = max(
+			video_dbg_build,
+			f32(time.duration_milliseconds(time.tick_since(build_start))),
+		)
 
 		draw_start := time.tick_now()
 		rl.BeginDrawing()
@@ -1687,7 +1817,10 @@ app_main :: proc() {
 			foreground_started = {}
 		}
 		timings_presented(&ui, client)
-		video_dbg_draw = max(video_dbg_draw, f32(time.duration_milliseconds(time.tick_since(draw_start))))
+		video_dbg_draw = max(
+			video_dbg_draw,
+			f32(time.duration_milliseconds(time.tick_since(draw_start))),
+		)
 
 		post_start := time.tick_now()
 		// Profile pictures fetched by the curl worker decode here (the
@@ -1813,13 +1946,17 @@ app_main :: proc() {
 			handle_react_fan(&ui, client)
 			update_drag_scroll(
 				&ui,
-				sel_dragging || orbit_hover != nil || modal_open(&ui) || fan_open() || video_bar_active(),
+				sel_dragging ||
+				orbit_hover != nil ||
+				modal_open(&ui) ||
+				fan_open() ||
+				video_bar_active(),
 			)
 			if len(ui.sel_copy) == 0 && !drag_moved {
 				handle_link_click(&ui)
 				if nev_retry_hover != "" && mouse_released() && !modal_open(&ui) {
 					for key, card in nev_cards {
-						if key != nev_retry_hover || !card.done || len(card.raw) > 0 { continue }
+						if key != nev_retry_hover || !card.done || len(card.raw) > 0 {continue}
 						delete_key(&nev_cards, key)
 						delete(key)
 						break
@@ -1828,12 +1965,16 @@ app_main :: proc() {
 				if nev_more_hover != "" && mouse_released() && !modal_open(&ui) {
 					card := nev_cards[nev_more_hover]
 					textual := card.kind == NEV_PRODUCT_KIND || card.kind == NEV_GEOCACHE_KIND
-					for kind in NEV_TEXT_KINDS { textual = textual || kind == card.kind }
+					for kind in NEV_TEXT_KINDS {textual = textual || kind == card.kind}
 					if !textual {
 						preview_message(card.raw)
 					} else if len(card.geocache.mission) > 0 {
-						preview_message(fmt.tprintf("%s\n\n%s", card.content, card.geocache.mission), card.blocks[:])
-						if len(card.blocks) > 0 { append(&preview.message_blocks, Md_Block_Ui{kind = .Para, text = strings.clone(card.geocache.mission)}) }
+						preview_message(
+							fmt.tprintf("%s\n\n%s", card.content, card.geocache.mission),
+							card.blocks[:],
+						)
+						if len(card.blocks) >
+						   0 {append(&preview.message_blocks, Md_Block_Ui{kind = .Para, text = strings.clone(card.geocache.mission)})}
 					} else {
 						preview_message(card.content, card.blocks[:])
 					}
@@ -1914,7 +2055,9 @@ app_main :: proc() {
 		}
 
 		frame += 1
-		if test_resize_frame >= 0 && frame >= test_resize_frame && frame < test_resize_frame + test_resize_ramp {
+		if test_resize_frame >= 0 &&
+		   frame >= test_resize_frame &&
+		   frame < test_resize_frame + test_resize_ramp {
 			if frame == test_resize_frame {
 				test_resize_from_w, test_resize_from_h = rl.GetScreenWidth(), rl.GetScreenHeight()
 			}
@@ -2075,11 +2218,11 @@ app_main :: proc() {
 	// subscription read return CLOSED (worker exits), then the sub is
 	// freed before the client that created it.
 	local_timing_bind(nil)
-	if client != nil { marmot.client_shutdown(client) }
+	if client != nil {marmot.client_shutdown(client)}
 	stop_gimg_worker()
 	stop_pic_worker()
 	auth_stop()
-	for worker in send_threads { thread.join(worker); thread.destroy(worker) }
+	for worker in send_threads {thread.join(worker); thread.destroy(worker)}
 	delete(send_threads)
 	timeline_stop()
 	issues_stop(&ui)
@@ -2100,38 +2243,41 @@ app_main :: proc() {
 		marmot.client_free(client)
 	}
 	delete(live.account)
-	for done in failed_edits { edit_result_free(done) }
+	for done in failed_edits {edit_result_free(done)}
 	delete(failed_edits)
 	for done in ops_done {
-		for page in done.history { marmot.edit_history_free(page) }
+		for page in done.history {marmot.edit_history_free(page)}
 		delete(done.history)
-		if done.op == .Edit || done.op == .History || done.op == .Issue || done.op == .Issue_Setting { edit_result_free(done) } else { delete(done.err) }
+		if done.op == .Edit ||
+		   done.op == .History ||
+		   done.op == .Issue ||
+		   done.op == .Issue_Setting {edit_result_free(done)} else {delete(done.err)}
 	}
 	delete(ops_done)
-	for v in ui.hist_versions { delete(v.at); delete(v.text) }
+	for v in ui.hist_versions {delete(v.at); delete(v.text)}
 	delete(ui.hist_versions)
-	for len(ui.staged) > 0 { remove_staged(&ui, len(ui.staged) - 1) }
+	for len(ui.staged) > 0 {remove_staged(&ui, len(ui.staged) - 1)}
 	delete(ui.staged)
 	for key, files in ui.staged_drafts {
 		ui.staged = files
-		for len(ui.staged) > 0 { remove_staged(&ui, len(ui.staged) - 1) }
+		for len(ui.staged) > 0 {remove_staged(&ui, len(ui.staged) - 1)}
 		delete(ui.staged); delete(key)
 	}
 	delete(ui.staged_drafts)
 	delete(ui.compose_issue)
 	delete(export_account); delete(export_group)
-	for row in ui.chats { chat_free(row) }
-	for row in ui.archived { chat_free(row) }
+	for row in ui.chats {chat_free(row)}
+	for row in ui.archived {chat_free(row)}
 	delete(ui.chats); delete(ui.archived); delete(retired_chats)
-	for msg in ui.messages { message_free(msg) }
+	for msg in ui.messages {message_free(msg)}
 	delete(ui.messages)
 	delete(ui.messages_group)
 	delete(ui.messages_account)
 	wrap_clear()
 	delete(wrap_cache)
-	for _, view in video_views { if view != nil { video_view_free(view) } }
-	for _, view in stl_views { if view != nil { stl_view_free(view) } }
-	for _, view in pdf_views { if view != nil { pdf_view_free(view) } }
+	for _, view in video_views {if view != nil {video_view_free(view)}}
+	for _, view in stl_views {if view != nil {stl_view_free(view)}}
+	for _, view in pdf_views {if view != nil {pdf_view_free(view)}}
 	vault_lock()
 	rl.CloseWindow()
 }

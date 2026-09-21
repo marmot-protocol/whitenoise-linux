@@ -105,7 +105,17 @@ THEME_FLAGS := []struct {
 }
 
 // "" is a valid pick: no scene at all.
-THEME_BACKDROPS := []string{"", "deco", "blinds", "stripes", "waves", "airmail", "synth", "dust", "scan"}
+THEME_BACKDROPS := []string {
+	"",
+	"deco",
+	"blinds",
+	"stripes",
+	"waves",
+	"airmail",
+	"synth",
+	"dust",
+	"scan",
+}
 
 @(private = "file")
 hex6 :: proc(c: clay.Color) -> string {
@@ -417,15 +427,31 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 
 	if clay.UI(clay.ID("ThemeEdit"))(
 	{
-		layout = {sizing = {width = clay.SizingFixed(modal_w(clay.ID("ThemeEdit"), THEME_EDIT_W + 36))}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(18), childGap = 8},
+		layout = {
+			sizing = {width = clay.SizingFixed(modal_w(clay.ID("ThemeEdit"), THEME_EDIT_W + 36))},
+			layoutDirection = .TopToBottom,
+			padding = clay.PaddingAll(18),
+			childGap = 8,
+		},
 		backgroundColor = CARD,
 		cornerRadius = rr(14),
 		border = {color = CARD_BORDER, width = bw()},
-		floating = {attachTo = .Root, zIndex = 16, offset = {0, rise(clay.ID("ThemeEdit"))}, attachment = {element = .CenterCenter, parent = .CenterCenter}},
+		floating = {
+			attachTo = .Root,
+			zIndex = 16,
+			offset = {0, rise(clay.ID("ThemeEdit"))},
+			attachment = {element = .CenterCenter, parent = .CenterCenter},
+		},
 	},
 	) {
 		if clay.UI(clay.ID("ThemeEditHead"))(
-		{layout = {sizing = {width = clay.SizingFixed(THEME_EDIT_W)}, layoutDirection = .TopToBottom, childGap = 2}},
+		{
+			layout = {
+				sizing = {width = clay.SizingFixed(THEME_EDIT_W)},
+				layoutDirection = .TopToBottom,
+				childGap = 2,
+			},
+		},
 		) {
 			clay.Text(tr("Edit theme"), {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT})
 			clay.Text(
@@ -436,43 +462,79 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 
 		if clay.UI(clay.ID("ThemeEditScroll"))(
 		{
-			layout = {sizing = {width = clay.SizingFixed(THEME_EDIT_W), height = clay.SizingFixed(THEME_EDIT_H)}, layoutDirection = .TopToBottom, childGap = 3},
+			layout = {
+				sizing = {
+					width = clay.SizingFixed(THEME_EDIT_W),
+					height = clay.SizingFixed(THEME_EDIT_H),
+				},
+				layoutDirection = .TopToBottom,
+				childGap = 3,
+			},
 			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		},
 		) {
 			for field, i in THEME_FIELDS {
 				if len(field.group) > 0 {
-					if clay.UI(clay.ID("ThemeGroup", u32(i)))({layout = {padding = {top = 8, bottom = 2}}}) {
+					if clay.UI(clay.ID("ThemeGroup", u32(i)))(
+					{layout = {padding = {top = 8, bottom = 2}}},
+					) {
 						eyebrow(field.group)
 					}
 				}
 				theme_field_row(ui, live, field, i)
 			}
 
-			if clay.UI(clay.ID("ThemeFlagsEyebrow"))({layout = {padding = {top = 10, bottom = 2}}}) {
+			if clay.UI(clay.ID("ThemeFlagsEyebrow"))(
+			{layout = {padding = {top = 10, bottom = 2}}},
+			) {
 				eyebrow("STYLE")
 			}
 			if clay.UI(clay.ID("ThemeFlags"))(
-			{layout = {sizing = {width = clay.SizingFixed(THEME_EDIT_W)}, layoutDirection = .TopToBottom, childGap = 3}},
+			{
+				layout = {
+					sizing = {width = clay.SizingFixed(THEME_EDIT_W)},
+					layoutDirection = .TopToBottom,
+					childGap = 3,
+				},
+			},
 			) {
 				for flag, i in THEME_FLAGS {
 					if clay.UI(clay.ID("ThemeFlagRow", u32(i)))(
-					{layout = {sizing = {width = clay.SizingFixed(THEME_EDIT_W)}, childGap = 10, childAlignment = {y = .Center}}},
+					{
+						layout = {
+							sizing = {width = clay.SizingFixed(THEME_EDIT_W)},
+							childGap = 10,
+							childAlignment = {y = .Center},
+						},
+					},
 					) {
-						clay.Text(tr(flag.label), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
-						if clay.UI(clay.ID("ThemeFlagGap", u32(i)))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+						clay.Text(
+							tr(flag.label),
+							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+						)
+						if clay.UI(clay.ID("ThemeFlagGap", u32(i)))(
+						{layout = {sizing = {width = clay.SizingGrow()}}},
+						) {}
 						on := i < len(ui.theme_flags) && ui.theme_flags[i]
 						theme_chip_indexed("ThemeFlag", u32(i), on ? "On" : "Off", on)
 					}
 				}
 			}
 
-			if clay.UI(clay.ID("ThemeBackdropEyebrow"))({layout = {padding = {top = 10, bottom = 2}}}) {
+			if clay.UI(clay.ID("ThemeBackdropEyebrow"))(
+			{layout = {padding = {top = 10, bottom = 2}}},
+			) {
 				eyebrow("BACKDROP")
 			}
 			for row in 0 ..< (len(THEME_BACKDROPS) + THEME_BACKDROPS_PER_ROW - 1) / THEME_BACKDROPS_PER_ROW {
 				if clay.UI(clay.ID("ThemeBackdrops", u32(row)))(
-				{layout = {sizing = {width = clay.SizingFixed(THEME_EDIT_W)}, childGap = 4, padding = {bottom = 4}}},
+				{
+					layout = {
+						sizing = {width = clay.SizingFixed(THEME_EDIT_W)},
+						childGap = 4,
+						padding = {bottom = 4},
+					},
+				},
 				) {
 					for i in row * THEME_BACKDROPS_PER_ROW ..< min((row + 1) * THEME_BACKDROPS_PER_ROW, len(THEME_BACKDROPS)) {
 						name := THEME_BACKDROPS[i]
@@ -488,9 +550,19 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 		}
 		scrollbar(clay.ID("ThemeEditScroll"), 17) // the editor floats at 16
 
-		if clay.UI(clay.ID("ThemeEditActions"))({layout = {sizing = {width = clay.SizingFixed(THEME_EDIT_W)}, childGap = 10, padding = {top = 6}}}) {
+		if clay.UI(clay.ID("ThemeEditActions"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingFixed(THEME_EDIT_W)},
+				childGap = 10,
+				padding = {top = 6},
+			},
+		},
+		) {
 			micro_button("ThemeEditCancel", "Cancel")
-			if clay.UI(clay.ID("ThemeEditGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+			if clay.UI(clay.ID("ThemeEditGap"))(
+			{layout = {sizing = {width = clay.SizingGrow()}}},
+			) {}
 			micro_button("ThemeEditSave", "Save and use", ACCENT)
 		}
 	}
@@ -499,10 +571,18 @@ theme_edit_modal :: proc(ui: ^Ui_State) {
 @(private = "file")
 theme_field_row :: proc(ui: ^Ui_State, live: Theme_Pack, field: Theme_Field, i: int) {
 	if clay.UI(clay.ID("ThemeSeedRow", u32(i)))(
-	{layout = {sizing = {width = clay.SizingFixed(THEME_EDIT_W)}, childGap = 8, childAlignment = {y = .Center}}},
+	{
+		layout = {
+			sizing = {width = clay.SizingFixed(THEME_EDIT_W)},
+			childGap = 8,
+			childAlignment = {y = .Center},
+		},
+	},
 	) {
 		clay.Text(tr(field.label), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
-		if clay.UI(clay.ID("ThemeSeedGap", u32(i)))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+		if clay.UI(clay.ID("ThemeSeedGap", u32(i)))(
+		{layout = {sizing = {width = clay.SizingGrow()}}},
+		) {}
 
 		// The swatch shows the effective color: what was typed, or the
 		// derived value the placeholder names.
@@ -519,7 +599,14 @@ theme_field_row :: proc(ui: ^Ui_State, live: Theme_Pack, field: Theme_Field, i: 
 			) {}
 		}
 		focused := ui.focus == .ThemeSeed && ui.theme_edit_idx == i
-		input_box(ui, fmt.tprintf("ThemeSeedBox%d", i), &ui.theme_fields[i], derived_hint(live, field.key), focused, 130)
+		input_box(
+			ui,
+			fmt.tprintf("ThemeSeedBox%d", i),
+			&ui.theme_fields[i],
+			derived_hint(live, field.key),
+			focused,
+			130,
+		)
 	}
 }
 
@@ -541,7 +628,9 @@ handle_theme_edit :: proc(ui: ^Ui_State) -> bool {
 
 		slot := adopt_theme(toml)
 		if slot < 0 {
-			ui.client_status = strings.clone(tr("Couldn't save the theme. Check the name and colors and try again."))
+			ui.client_status = strings.clone(
+				tr("Couldn't save the theme. Check the name and colors and try again."),
+			)
 			return true
 		}
 		ui.theme = slot

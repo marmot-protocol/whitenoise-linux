@@ -136,27 +136,53 @@ pal_refresh :: proc(ui: ^Ui_State) {
 palette_modal :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("PalModal"))(
 	{
-		layout = {sizing = {width = clay.SizingFixed(modal_w(clay.ID("PalModal"), 520))}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(14), childGap = 8},
+		layout = {
+			sizing = {width = clay.SizingFixed(modal_w(clay.ID("PalModal"), 520))},
+			layoutDirection = .TopToBottom,
+			padding = clay.PaddingAll(14),
+			childGap = 8,
+		},
 		backgroundColor = CARD,
 		cornerRadius = rr(14),
 		border = {color = CARD_BORDER, width = bw()},
-		floating = {attachTo = .Root, zIndex = 15, offset = {0, 90 + rise(clay.ID("PalModal"), 12)}, attachment = {element = .CenterTop, parent = .CenterTop}},
+		floating = {
+			attachTo = .Root,
+			zIndex = 15,
+			offset = {0, 90 + rise(clay.ID("PalModal"), 12)},
+			attachment = {element = .CenterTop, parent = .CenterTop},
+		},
 	},
 	) {
 		if clay.UI(clay.ID("PalInput"))(
 		{
-			layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(38)}, padding = {left = 12, right = 12}, childGap = 8, childAlignment = {y = .Center}},
+			layout = {
+				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(38)},
+				padding = {left = 12, right = 12},
+				childGap = 8,
+				childAlignment = {y = .Center},
+			},
 			backgroundColor = ROW_BG,
 			cornerRadius = rr(9),
 			border = {color = ACCENT, width = bw()},
 		},
 		) {
 			clay.Text("›", {fontId = FONT_TITLE, fontSize = 16, textColor = ACCENT})
-			field_text(ui, "PalInput", &ui.pal_input, "Type a command", ui.focus == .Pal, 14, TEXT_LO)
+			field_text(
+				ui,
+				"PalInput",
+				&ui.pal_input,
+				"Type a command",
+				ui.focus == .Pal,
+				14,
+				TEXT_LO,
+			)
 		}
 
 		if len(ui.pal_hits) == 0 {
-			clay.Text(tr("No command matches."), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
+			clay.Text(
+				tr("No command matches."),
+				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+			)
 		}
 		// Only the window around the selection renders: the list is
 		// short and clay has no virtualization.
@@ -168,21 +194,57 @@ palette_modal :: proc(ui: ^Ui_State) {
 			arrived := stagger(clay.ID("PalModal").id, i - first)
 			if clay.UI(clay.ID("PalRow", u32(i)))(
 			{
-				layout = {sizing = {width = clay.SizingGrow()}, padding = {left = 12, right = 12, top = 8, bottom = 8}, childGap = 10, childAlignment = {y = .Center}},
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					padding = {left = 12, right = 12, top = 8, bottom = 8},
+					childGap = 10,
+					childAlignment = {y = .Center},
+				},
 				backgroundColor = fade(selected ? SELECTED : (hovered() ? HOVER : {}), arrived),
 				cornerRadius = rr(8),
 			},
 			) {
-				clay.Text(tr(COMMANDS[cmd].label), {fontId = FONT_BODY, fontSize = 13, textColor = fade(selected ? ACCENT : TEXT, arrived)})
-				if clay.UI(clay.ID("PalRowGap", u32(i)))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-				clay.Text(COMMANDS[cmd].hint, {fontId = FONT_MONO, fontSize = 10, textColor = fade(TEXT_LO, arrived), letterSpacing = 1})
+				clay.Text(
+					tr(COMMANDS[cmd].label),
+					{
+						fontId = FONT_BODY,
+						fontSize = 13,
+						textColor = fade(selected ? ACCENT : TEXT, arrived),
+					},
+				)
+				if clay.UI(clay.ID("PalRowGap", u32(i)))(
+				{layout = {sizing = {width = clay.SizingGrow()}}},
+				) {}
+				clay.Text(
+					COMMANDS[cmd].hint,
+					{
+						fontId = FONT_MONO,
+						fontSize = 10,
+						textColor = fade(TEXT_LO, arrived),
+						letterSpacing = 1,
+					},
+				)
 			}
 		}
 
-		if clay.UI(clay.ID("PalFoot"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 12, padding = {left = 4, top = 2}}}) {
-			clay.Text("↑↓ move   ⏎ run   esc close", {fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO, letterSpacing = 1})
+		if clay.UI(clay.ID("PalFoot"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				childGap = 12,
+				padding = {left = 4, top = 2},
+			},
+		},
+		) {
+			clay.Text(
+				"↑↓ move   ⏎ run   esc close",
+				{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO, letterSpacing = 1},
+			)
 			if clay.UI(clay.ID("PalFootGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-			clay.Text(fmt.tprintf("%d", len(ui.pal_hits)), {fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO})
+			clay.Text(
+				fmt.tprintf("%d", len(ui.pal_hits)),
+				{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO},
+			)
 		}
 	}
 }
@@ -322,7 +384,8 @@ run_command :: proc(ui: ^Ui_State, client: ^marmot.Client, cmd: Cmd) {
 		flip(ui, &ui.prefs.dev_mode)
 		toast(ui, ui.prefs.dev_mode ? "Developer mode on" : "Developer mode off")
 	case .Zoom_In, .Zoom_Out, .Zoom_Reset:
-		ui.prefs.zoom_pct = cmd == .Zoom_Reset ? 100 : ui.prefs.zoom_pct + (cmd == .Zoom_In ? 10 : -10)
+		ui.prefs.zoom_pct =
+			cmd == .Zoom_Reset ? 100 : ui.prefs.zoom_pct + (cmd == .Zoom_In ? 10 : -10)
 		apply_zoom(ui)
 		save_settings(ui)
 	case .Shortcuts:

@@ -91,11 +91,14 @@ arc_view_make :: proc(data: []u8) -> ^Arc_View {
 		if path == nil {
 			continue
 		}
-		append(&entries, Arc_Entry{
-			name  = strings.clone(string(path)),
-			size  = archive_entry_size(entry),
-			index = index,
-		})
+		append(
+			&entries,
+			Arc_Entry {
+				name = strings.clone(string(path)),
+				size = archive_entry_size(entry),
+				index = index,
+			},
+		)
 	}
 
 	if len(entries) == 0 {
@@ -103,7 +106,10 @@ arc_view_make :: proc(data: []u8) -> ^Arc_View {
 		return nil
 	}
 	view := new(Arc_View)
-	view^ = {data = data, entries = entries[:]}
+	view^ = {
+		data    = data,
+		entries = entries[:],
+	}
 	return view
 }
 
@@ -117,7 +123,7 @@ arc_entry_bytes :: proc(view: ^Arc_View, header_index: int) -> ([]u8, bool) {
 	defer archive_read_free(a)
 
 	entry: ^archive_entry_t
-	for index := 0; ; index += 1 {
+	for index := 0;; index += 1 {
 		if archive_read_next_header(a, &entry) != ARCHIVE_OK {
 			return nil, false
 		}

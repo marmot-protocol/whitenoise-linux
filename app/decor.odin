@@ -31,12 +31,24 @@ scan_decor := Decor_View {
 	kind = .Scan,
 }
 
-wash_decor := Decor_View{kind = .Wash}
-deco_decor := Decor_View{kind = .Deco}
-blinds_decor := Decor_View{kind = .Blinds}
-stripes_decor := Decor_View{kind = .Stripes}
-waves_decor := Decor_View{kind = .Waves}
-airmail_decor := Decor_View{kind = .Airmail}
+wash_decor := Decor_View {
+	kind = .Wash,
+}
+deco_decor := Decor_View {
+	kind = .Deco,
+}
+blinds_decor := Decor_View {
+	kind = .Blinds,
+}
+stripes_decor := Decor_View {
+	kind = .Stripes,
+}
+waves_decor := Decor_View {
+	kind = .Waves,
+}
+airmail_decor := Decor_View {
+	kind = .Airmail,
+}
 
 // The page's own gradient, mounted on the root rather than the
 // timeline so it runs under the rail and the panels too. nil when the
@@ -59,7 +71,13 @@ wash_draw :: proc(bounds: clay.BoundingBox) {
 			BG.b + (BG_2.b - BG.b) * t,
 			255,
 		}
-		rl.DrawRectangleRec(bounds.x, bounds.y + f32(i) * bounds.height / WASH_BANDS, bounds.width, h, clay_color(tint))
+		rl.DrawRectangleRec(
+			bounds.x,
+			bounds.y + f32(i) * bounds.height / WASH_BANDS,
+			bounds.width,
+			h,
+			clay_color(tint),
+		)
 	}
 }
 
@@ -116,10 +134,22 @@ SYNTH_ROLL :: 0.22 // rungs per second travelling toward the viewer
 @(private = "file")
 rail_quad :: proc(verts: ^[dynamic]rl.Vertex, x0, y0, x1, y1, w: f32, color: rl.FColor) {
 	h := w / 2
-	a := rl.Vertex{position = {x0 - h, y0}, color = color}
-	b := rl.Vertex{position = {x0 + h, y0}, color = color}
-	c := rl.Vertex{position = {x1 - h, y1}, color = color}
-	d := rl.Vertex{position = {x1 + h, y1}, color = color}
+	a := rl.Vertex {
+		position = {x0 - h, y0},
+		color    = color,
+	}
+	b := rl.Vertex {
+		position = {x0 + h, y0},
+		color    = color,
+	}
+	c := rl.Vertex {
+		position = {x1 - h, y1},
+		color    = color,
+	}
+	d := rl.Vertex {
+		position = {x1 + h, y1},
+		color    = color,
+	}
 	append(verts, a, b, c, b, d, c)
 }
 
@@ -133,17 +163,30 @@ synth_draw :: proc(bounds: clay.BoundingBox) {
 	glow := clay_color({ACCENT.r, ACCENT.g, ACCENT.b, 18})
 	rl.DrawRectangleRec(bounds.x, horizon_y - 60, bounds.width, 60, glow)
 	// Horizon line.
-	rl.DrawRectangleRec(bounds.x, horizon_y, bounds.width, 1, clay_color({ACCENT.r, ACCENT.g, ACCENT.b, 70}))
+	rl.DrawRectangleRec(
+		bounds.x,
+		horizon_y,
+		bounds.width,
+		1,
+		clay_color({ACCENT.r, ACCENT.g, ACCENT.b, 70}),
+	)
 
 	verts := make([dynamic]rl.Vertex, context.temp_allocator)
 	// Rails: from the vanishing point on the horizon, fanning out to
 	// the bottom edge (and past it, clipped by the draw).
 	for i in 0 ..< SYNTH_RAILS {
 		t := f32(i) / f32(SYNTH_RAILS - 1)
-		bottom_x := bounds.x + (t - 0.5) * bounds.width * 2.6 + bounds.width / 2 - px * PARALLAX * 2
+		bottom_x :=
+			bounds.x + (t - 0.5) * bounds.width * 2.6 + bounds.width / 2 - px * PARALLAX * 2
 		rail_quad(&verts, center_x, horizon_y, bottom_x, bounds.y + bounds.height, 1.5, tint)
 	}
-	rl.DrawTrianglesClipped(verts[:], bounds.x, horizon_y, bounds.width, bounds.y + bounds.height - horizon_y)
+	rl.DrawTrianglesClipped(
+		verts[:],
+		bounds.x,
+		horizon_y,
+		bounds.width,
+		bounds.y + bounds.height - horizon_y,
+	)
 
 	// Rungs: perspective-spaced horizontals, denser near the horizon,
 	// each one sliding down its own curve so the floor rolls forward.
@@ -160,7 +203,13 @@ synth_draw :: proc(bounds: clay.BoundingBox) {
 		y := horizon_y + t * t * floor_h
 		// Fade in at the horizon so a new rung doesn't pop.
 		alpha := 45 * min(t * 6, 1)
-		rl.DrawRectangleRec(bounds.x, y, bounds.width, 1, clay_color({ACCENT.r, ACCENT.g, ACCENT.b, alpha}))
+		rl.DrawRectangleRec(
+			bounds.x,
+			y,
+			bounds.width,
+			1,
+			clay_color({ACCENT.r, ACCENT.g, ACCENT.b, alpha}),
+		)
 	}
 }
 
@@ -265,7 +314,15 @@ deco_draw :: proc(bounds: clay.BoundingBox) {
 		// Half a turn, spread evenly, skipping the two along the floor.
 		t := f32(i) / f32(DECO_RAYS - 1)
 		angle := -f32(3.14159) * (0.08 + t * 0.84)
-		rail_quad(&verts, cx, cy, cx + reach * cos_approx(f64(angle)), cy + reach * sin_approx(f64(angle)), 8, tint)
+		rail_quad(
+			&verts,
+			cx,
+			cy,
+			cx + reach * cos_approx(f64(angle)),
+			cy + reach * sin_approx(f64(angle)),
+			8,
+			tint,
+		)
 	}
 	rl.DrawTrianglesClipped(verts[:], bounds.x, bounds.y, bounds.width, bounds.height)
 
@@ -275,7 +332,13 @@ deco_draw :: proc(bounds: clay.BoundingBox) {
 		ring := clay_color({ACCENT.r, ACCENT.g, ACCENT.b, 10})
 		for step in 0 ..< 48 {
 			a := f32(3.14159) * (1 + f32(step) / 48)
-			rl.DrawRectangleRec(cx + r * cos_approx(f64(a)), cy + r * sin_approx(f64(a)), 2, 2, ring)
+			rl.DrawRectangleRec(
+				cx + r * cos_approx(f64(a)),
+				cy + r * sin_approx(f64(a)),
+				2,
+				2,
+				ring,
+			)
 		}
 	}
 }
@@ -297,10 +360,25 @@ blinds_draw :: proc(bounds: clay.BoundingBox) {
 	span := bounds.height + bounds.width * BLIND_SHEAR
 	for y := -bounds.width * BLIND_SHEAR; y < span; y += BLIND_GAP {
 		top := bounds.y + y + py * PARALLAX * 0.5
-		a := rl.Vertex{position = {bounds.x, top}, color = pale}
-		b := rl.Vertex{position = {bounds.x, top + BLIND_GAP * 0.45}, color = pale}
-		c := rl.Vertex{position = {bounds.x + bounds.width, top + bounds.width * BLIND_SHEAR}, color = pale}
-		d := rl.Vertex{position = {bounds.x + bounds.width, top + bounds.width * BLIND_SHEAR + BLIND_GAP * 0.45}, color = pale}
+		a := rl.Vertex {
+			position = {bounds.x, top},
+			color    = pale,
+		}
+		b := rl.Vertex {
+			position = {bounds.x, top + BLIND_GAP * 0.45},
+			color    = pale,
+		}
+		c := rl.Vertex {
+			position = {bounds.x + bounds.width, top + bounds.width * BLIND_SHEAR},
+			color    = pale,
+		}
+		d := rl.Vertex {
+			position = {
+				bounds.x + bounds.width,
+				top + bounds.width * BLIND_SHEAR + BLIND_GAP * 0.45,
+			},
+			color    = pale,
+		}
 		append(&verts, a, b, c, b, d, c)
 	}
 	rl.DrawTrianglesClipped(verts[:], bounds.x, bounds.y, bounds.width, bounds.height)
@@ -318,10 +396,22 @@ stripes_draw :: proc(bounds: clay.BoundingBox) {
 	tint := rl.FColor{WARNING.r / 255, WARNING.g / 255, WARNING.b / 255, 0.045}
 
 	for x := bounds.x - bounds.height; x < bounds.x + bounds.width; x += STRIPE_W * 2 {
-		a := rl.Vertex{position = {x, bounds.y + bounds.height}, color = tint}
-		b := rl.Vertex{position = {x + STRIPE_W, bounds.y + bounds.height}, color = tint}
-		c := rl.Vertex{position = {x + bounds.height, bounds.y}, color = tint}
-		d := rl.Vertex{position = {x + bounds.height + STRIPE_W, bounds.y}, color = tint}
+		a := rl.Vertex {
+			position = {x, bounds.y + bounds.height},
+			color    = tint,
+		}
+		b := rl.Vertex {
+			position = {x + STRIPE_W, bounds.y + bounds.height},
+			color    = tint,
+		}
+		c := rl.Vertex {
+			position = {x + bounds.height, bounds.y},
+			color    = tint,
+		}
+		d := rl.Vertex {
+			position = {x + bounds.height + STRIPE_W, bounds.y},
+			color    = tint,
+		}
 		append(&verts, a, b, c, b, d, c)
 	}
 	rl.DrawTrianglesClipped(verts[:], bounds.x, bounds.y, bounds.width, bounds.height)
@@ -363,10 +453,22 @@ airmail_draw :: proc(bounds: clay.BoundingBox) {
 	red := rl.FColor{DANGER.r / 255, DANGER.g / 255, DANGER.b / 255, 0.5}
 
 	band :: proc(verts: ^[dynamic]rl.Vertex, x, top, h, w: f32, color: rl.FColor) {
-		a := rl.Vertex{position = {x, top}, color = color}
-		b := rl.Vertex{position = {x + w, top}, color = color}
-		c := rl.Vertex{position = {x, top + h}, color = color}
-		d := rl.Vertex{position = {x + w, top + h}, color = color}
+		a := rl.Vertex {
+			position = {x, top},
+			color    = color,
+		}
+		b := rl.Vertex {
+			position = {x + w, top},
+			color    = color,
+		}
+		c := rl.Vertex {
+			position = {x, top + h},
+			color    = color,
+		}
+		d := rl.Vertex {
+			position = {x + w, top + h},
+			color    = color,
+		}
 		append(verts, a, b, c, b, d, c)
 	}
 

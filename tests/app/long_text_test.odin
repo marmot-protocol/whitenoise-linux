@@ -33,7 +33,12 @@ long_text_wrap :: proc(t: ^testing.T) {
 			at = cut
 			lines += 1
 		}
-		fmt.printf("long-wrap bytes=%d lines=%d ms=%.3f\n", size, lines, time.duration_milliseconds(time.tick_since(started)))
+		fmt.printf(
+			"long-wrap bytes=%d lines=%d ms=%.3f\n",
+			size,
+			lines,
+			time.duration_milliseconds(time.tick_since(started)),
+		)
 		delete(text)
 	}
 }

@@ -7,6 +7,7 @@
 #   2. Refresh .github/workflows/pr-precommit.yml (GitHub's byte-identical
 #      mirror of the canonical ngit-ci gate at
 #      .ngit/act/workflows/pr-precommit.yml) and re-stage it on drift.
+#   3. Format staged Odin files with odinfmt when installed.
 #
 # Emergency bypass:  git commit --no-verify
 set -euo pipefail
@@ -67,7 +68,28 @@ if [ -f "$gate_src" ] && ! cmp -s "$gate_src" "$gate_dst"; then
     echo "pre-commit: refreshed $gate_dst from canonical $gate_src."
 fi
 
-# --- 3. Warn about unused imports in staged Odin files ------------------
+# --- 3. Format staged Odin files ---------------------------------------
+mapfile -d '' odin_files < <(staged -- '*.odin')
+if [ "${#odin_files[@]}" -gt 0 ]; then
+    if ! command -v odinfmt >/dev/null 2>&1; then
+        echo "pre-commit: warning: install odinfmt to auto-format staged Odin files." >&2
+    else
+        # Check every file first so partial staging never includes extra edits.
+        for f in "${odin_files[@]}"; do
+            if ! git diff --quiet -- "$f"; then
+                printf 'pre-commit: %s has unstaged edits. Stage or stash them before formatting.\n' "$f" >&2
+                exit 1
+            fi
+        done
+        for f in "${odin_files[@]}"; do
+            [ -f "$f" ] && [ ! -L "$f" ] || continue
+            odinfmt -w "$ROOT/$f"
+            git add -- "$f"
+        done
+    fi
+fi
+
+# --- 4. Warn about unused imports in staged Odin files ------------------
 # Odin does not warn on an unused import by default, so copy-pasted import
 # headers accumulate. Warn here and let the commit through; CI runs the same
 # check through scripts/build.sh and fails on it.

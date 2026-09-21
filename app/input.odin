@@ -160,17 +160,18 @@ set_lines :: proc(ed: ^edit.State, multiline: bool) {
 		return
 	}
 	ed.line_start = strings.last_index_byte(text[:head], '\n') + 1
-	if nl := strings.index_byte(text[head:], '\n'); nl >= 0 { ed.line_end = head + nl }
+	if nl := strings.index_byte(text[head:], '\n'); nl >= 0 {ed.line_end = head + nl}
 
 	// Match the rendered rows and horizontal position, including emoji.
 	// A shared wrap boundary belongs to the upper row, as in chat_pane.
 	lines := compose_lines(text)
 	for line, i in lines {
-		if head > line[1] { continue }
+		if head > line[1] {continue}
 		x: f32
 		it := utf8.decode_grapheme_iterator_make(text[line[0]:head])
 		for cluster, _ in utf8.decode_grapheme_iterate(&it) {
-			x += text_emoji(cluster) != nil ? 18 : rl.MeasureTextLine(FONT_BODY, BODY_FS, cluster, 0).x
+			x +=
+				text_emoji(cluster) != nil ? 18 : rl.MeasureTextLine(FONT_BODY, BODY_FS, cluster, 0).x
 		}
 		if i > 0 {
 			prev := lines[i - 1]
@@ -211,7 +212,13 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 
 	ctrl := ctrl_down()
 	shift := shift_down()
-	masked := buf == &ui.login_input || buf == &ui.export_pw || buf == &ui.backup_pw || buf == &gate_pw || buf == &gate_pw2 || vault_pw_field(ui, buf)
+	masked :=
+		buf == &ui.login_input ||
+		buf == &ui.export_pw ||
+		buf == &ui.backup_pw ||
+		buf == &gate_pw ||
+		buf == &gate_pw2 ||
+		vault_pw_field(ui, buf)
 	set_lines(ed, multiline)
 
 	if key_hit(.BACKSPACE) {
@@ -229,7 +236,7 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 			}
 		}
 	}
-	if key_hit(.DELETE) && !(shift && !ctrl) { // Shift+Delete is cut below
+	if key_hit(.DELETE) && !(shift && !ctrl) { 	// Shift+Delete is cut below
 		switch {
 		case ctrl:
 			edit.perform_command(ed, .Delete_Word_Right)
@@ -282,11 +289,13 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 		edit.perform_command(ed, shift ? edit.Command.Select_Down : .Down)
 	}
 	if rl.IsKeyPressed(.HOME) {
-		cmd := ctrl ? (shift ? edit.Command.Select_Start : .Start) : (shift ? edit.Command.Select_Line_Start : .Line_Start)
+		cmd :=
+			ctrl ? (shift ? edit.Command.Select_Start : .Start) : (shift ? edit.Command.Select_Line_Start : .Line_Start)
 		edit.perform_command(ed, cmd)
 	}
 	if rl.IsKeyPressed(.END) {
-		cmd := ctrl ? (shift ? edit.Command.Select_End : .End) : (shift ? edit.Command.Select_Line_End : .Line_End)
+		cmd :=
+			ctrl ? (shift ? edit.Command.Select_End : .End) : (shift ? edit.Command.Select_Line_End : .Line_End)
 		edit.perform_command(ed, cmd)
 	}
 
@@ -320,7 +329,9 @@ edit_text :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, multiline := false) {
 
 	// Select-to-copy, the Linux primary selection.
 	if !masked && ed.selection != prev_sel && edit.has_selection(ed) {
-		rl.SetPrimaryText(strings.clone_to_cstring(edit.current_selected_text(ed), context.temp_allocator))
+		rl.SetPrimaryText(
+			strings.clone_to_cstring(edit.current_selected_text(ed), context.temp_allocator),
+		)
 	}
 }
 
@@ -340,26 +351,27 @@ sentence_bounds :: proc(text: string, at: int) -> (lo, hi: int) {
 	start := 0
 	hi = len(text)
 	for i := 0; i < len(text); {
-		if end, _, ok := url_at(text, i); ok { i = end; continue }
+		if end, _, ok := url_at(text, i); ok {i = end; continue}
 		r, n := utf8.decode_rune_in_string(text[i:])
 		i += n
-		if !strings.contains_rune(".!?。！？\n", r) { continue }
+		if !strings.contains_rune(".!?。！？\n", r) {continue}
 		if r == '.' && i < len(text) {
 			next, _ := utf8.decode_rune_in_string(text[i:])
-			if !unicode.is_space(next) && !strings.contains_rune(".!?\"'”’)]}", next) { continue }
+			if !unicode.is_space(next) &&
+			   !strings.contains_rune(".!?\"'”’)]}", next) {continue}
 		}
 		for i < len(text) && r != '\n' {
 			next, size := utf8.decode_rune_in_string(text[i:])
-			if !strings.contains_rune(".!?。！？\"'”’)]}", next) { break }
+			if !strings.contains_rune(".!?。！？\"'”’)]}", next) {break}
 			i += size
 		}
 		end := i
 		for i < len(text) {
 			next, size := utf8.decode_rune_in_string(text[i:])
-			if !unicode.is_space(next) { break }
+			if !unicode.is_space(next) {break}
 			i += size
 		}
-		if at < i || i == len(text) { hi = end; break }
+		if at < i || i == len(text) {hi = end; break}
 		start = i
 	}
 	part := strings.trim_left_space(text[start:hi])
@@ -370,7 +382,7 @@ sentence_bounds :: proc(text: string, at: int) -> (lo, hi: int) {
 
 @(private = "file")
 drag_text_selection :: proc(ed: ^edit.State, text: string, hit: int) {
-	if text_drag_sentence[1] <= text_drag_sentence[0] { ed.selection[0] = hit; return }
+	if text_drag_sentence[1] <= text_drag_sentence[0] {ed.selection[0] = hit; return}
 	lo, hi := sentence_bounds(text, hit)
 	if lo < text_drag_sentence[0] {
 		ed.selection = {lo, text_drag_sentence[1]}
@@ -380,19 +392,25 @@ drag_text_selection :: proc(ed: ^edit.State, text: string, hit: int) {
 }
 
 // Byte offset nearest to x; body lines supply their emoji tile size.
-hit_plain :: proc(text: string, x: f32, font_size: u16, tile_px: f32 = 0, fonts: string = "") -> int {
+hit_plain :: proc(
+	text: string,
+	x: f32,
+	font_size: u16,
+	tile_px: f32 = 0,
+	fonts: string = "",
+) -> int {
 	pen: f32 = 0
 	previous_emoji := false
 	skip := 0
 	it := utf8.decode_grapheme_iterator_make(text)
 	for cluster, grapheme in utf8.decode_grapheme_iterate(&it) {
 		i := grapheme.byte_index
-		if i < skip { continue }
+		if i < skip {continue}
 		if tile_px > 0 {
 			if end, width := body_atom(text, i, font_size); end > i {
-				if i > 0 { pen += 2 }
-				if x < pen + width / 2 { return i }
-				if x < pen + width { return end }
+				if i > 0 {pen += 2}
+				if x < pen + width / 2 {return i}
+				if x < pen + width {return end}
 				pen += width
 				skip, previous_emoji = end, true
 				continue
@@ -400,8 +418,8 @@ hit_plain :: proc(text: string, x: f32, font_size: u16, tile_px: f32 = 0, fonts:
 		}
 		adv := rl.MeasureTextLine(text_font(fonts, grapheme.byte_index), font_size, cluster, 0).x
 		emoji := tile_px > 0 && text_emoji(cluster) != nil
-		if emoji { adv = tile_px }
-		if grapheme.byte_index > 0 && (emoji || previous_emoji) { pen += 2 }
+		if emoji {adv = tile_px}
+		if grapheme.byte_index > 0 && (emoji || previous_emoji) {pen += 2}
 		if x < pen + adv / 2 {
 			return grapheme.byte_index
 		}
@@ -425,7 +443,12 @@ select_word_at :: proc(ed: ^edit.State, at: int) {
 // the primary selection. Returns true when a press landed in the box
 // so the caller can set keyboard focus. Call every frame the field is
 // visible; runs after layout, so clay bounds are current.
-field_mouse :: proc(ui: ^Ui_State, buf: ^[dynamic]u8, id_str: string, font_size: u16 = 13) -> bool {
+field_mouse :: proc(
+	ui: ^Ui_State,
+	buf: ^[dynamic]u8,
+	id_str: string,
+	font_size: u16 = 13,
+) -> bool {
 	box := clay.GetElementData(clay.ID(id_str))
 	if !box.found {
 		return false
@@ -478,7 +501,7 @@ hit_compose_line :: proc(line: string, x: f32) -> int {
 	it := utf8.decode_grapheme_iterator_make(line)
 	for cluster, g in utf8.decode_grapheme_iterate(&it) {
 		adv := rl.MeasureTextLine(FONT_BODY, BODY_FS, cluster, 0).x
-		if text_emoji(cluster) != nil { adv = 18 }
+		if text_emoji(cluster) != nil {adv = 18}
 		if x < pen + adv / 2 {
 			return g.byte_index
 		}
@@ -492,9 +515,10 @@ hit_compose_line :: proc(line: string, x: f32) -> int {
 // sentence), drag selects, middle-click pastes the primary selection.
 compose_mouse :: proc(ui: ^Ui_State, buf: ^[dynamic]u8 = nil, focus: Focus = .Compose) {
 	buf := buf
-	if buf == nil { buf = &ui.compose }
+	if buf == nil {buf = &ui.compose}
 	clip_id := clay.ID("ComposeClip").id
-	if scroll_drag.container == clip_id || clay.PointerOver(clay.ID("ScrollThumb", clip_id)) { return }
+	if scroll_drag.container == clip_id ||
+	   clay.PointerOver(clay.ID("ScrollThumb", clip_id)) {return}
 	box := clay.GetElementData(clay.ID("ComposeBox"))
 	if !box.found {
 		return
@@ -651,7 +675,12 @@ long_pressed: bool
 // The state machine, kept clear of rl so it can be stepped in a test.
 lp_step :: proc(s: ^Long_Press, pressed, down: bool, now: f64, x, y: f32) -> bool {
 	if pressed {
-		s^ = {at = now, x = x, y = y, live = true}
+		s^ = {
+			at   = now,
+			x    = x,
+			y    = y,
+			live = true,
+		}
 		return false
 	}
 	if !down || s.fired || !s.live {

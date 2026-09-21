@@ -264,12 +264,40 @@ settings_tts_download :: proc(ui: ^Ui_State, model: int) {
 	} else if active && ui.tts.status == 'F' {
 		label = tr("Couldn't download speech files. Please try again.")
 	}
-	if clay.UI(clay.ID_LOCAL("DownloadStatus"))({layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 5}}) {
-		clay.Text(fmt.tprintf("%s · %.1f MB", label, f64(size) / 1_000_000), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+	if clay.UI(clay.ID_LOCAL("DownloadStatus"))(
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			layoutDirection = .TopToBottom,
+			childGap = 5,
+		},
+	},
+	) {
+		clay.Text(
+			fmt.tprintf("%s · %.1f MB", label, f64(size) / 1_000_000),
+			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+		)
 		if active && ui.tts.status == 'D' {
-			if clay.UI(clay.ID_LOCAL("DownloadTrack"))({layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(4)}}, backgroundColor = PLATE, cornerRadius = rr(2)}) {
+			if clay.UI(clay.ID_LOCAL("DownloadTrack"))(
+			{
+				layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(4)}},
+				backgroundColor = PLATE,
+				cornerRadius = rr(2),
+			},
+			) {
 				if fraction > 0 {
-					if clay.UI(clay.ID_LOCAL("DownloadFill"))({layout = {sizing = {width = clay.SizingPercent(fraction), height = clay.SizingGrow()}}, backgroundColor = ACCENT, cornerRadius = rr(2)}) {}
+					if clay.UI(clay.ID_LOCAL("DownloadFill"))(
+					{
+						layout = {
+							sizing = {
+								width = clay.SizingPercent(fraction),
+								height = clay.SizingGrow(),
+							},
+						},
+						backgroundColor = ACCENT,
+						cornerRadius = rr(2),
+					},
+					) {}
 				}
 			}
 		}
@@ -282,12 +310,18 @@ settings_tts_download :: proc(ui: ^Ui_State, model: int) {
 settings_speech :: proc(ui: ^Ui_State) {
 	eyebrow("SPEECH TO TEXT")
 	if clay.UI(clay.ID("RowStt"))(srow()) {
-		row_labels("Speech to text", "Dictate drafts and transcribe audio messages on your device.")
+		row_labels(
+			"Speech to text",
+			"Dictate drafts and transcribe audio messages on your device.",
+		)
 		toggle("TgStt", ui.prefs.stt_enabled)
 	}
 	if ui.prefs.stt_enabled {
 		eyebrow("TRANSCRIPTION MODEL")
-		clay.Text(tr("Select a model to download it for dictation and audio messages."), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+		clay.Text(
+			tr("Select a model to download it for dictation and audio messages."),
+			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+		)
 		for model, i in STT_MODELS {
 			selected := stt_model(ui.prefs.stt_model) == i
 			row := srow()
@@ -299,22 +333,62 @@ settings_speech :: proc(ui: ^Ui_State) {
 				fraction: f32
 				if active {
 					bytes := f32(model.sizes[ui.stt.model]) * f32(ui.stt.percent) / 100
-					for j in 0 ..< int(ui.stt.model) { bytes += f32(model.sizes[j]) }
+					for j in 0 ..< int(ui.stt.model) {bytes += f32(model.sizes[j])}
 					fraction = bytes / f32(model.bytes)
-					label = ui.stt.status == 'D' ? fmt.tprintf(tr("Downloading: %d%%"), int(fraction * 100)) : tr("Verifying download...")
+					label =
+						ui.stt.status == 'D' ? fmt.tprintf(tr("Downloading: %d%%"), int(fraction * 100)) : tr("Verifying download...")
 				}
-				if clay.UI(clay.ID_LOCAL("SttModelHeading"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 8, childAlignment = {y = .Center}}}) {
-					row_labels(model.label, fmt.tprintf("%s · %s", human_size(model.bytes), label))
+				if clay.UI(clay.ID_LOCAL("SttModelHeading"))(
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						childGap = 8,
+						childAlignment = {y = .Center},
+					},
+				},
+				) {
+					row_labels(
+						model.label,
+						fmt.tprintf("%s · %s", human_size(model.bytes), label),
+					)
 					if selected {
-						clay.Text(ICON_CHECK, {fontId = FONT_ICON, fontSize = 12, textColor = ACCENT})
-						clay.Text(tr("Selected"), {fontId = FONT_BODY, fontSize = 11, textColor = ACCENT})
+						clay.Text(
+							ICON_CHECK,
+							{fontId = FONT_ICON, fontSize = 12, textColor = ACCENT},
+						)
+						clay.Text(
+							tr("Selected"),
+							{fontId = FONT_BODY, fontSize = 11, textColor = ACCENT},
+						)
 					}
 				}
-				clay.Text(tr(model.languages), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+				clay.Text(
+					tr(model.languages),
+					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+				)
 				if active {
-					if clay.UI(clay.ID_LOCAL("SttDownloadTrack"))({layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(4)}}, backgroundColor = PLATE, cornerRadius = rr(2)}) {
+					if clay.UI(clay.ID_LOCAL("SttDownloadTrack"))(
+					{
+						layout = {
+							sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(4)},
+						},
+						backgroundColor = PLATE,
+						cornerRadius = rr(2),
+					},
+					) {
 						if fraction > 0 {
-							if clay.UI(clay.ID_LOCAL("SttDownloadFill"))({layout = {sizing = {width = clay.SizingPercent(fraction), height = clay.SizingGrow()}}, backgroundColor = ACCENT, cornerRadius = rr(2)}) {}
+							if clay.UI(clay.ID_LOCAL("SttDownloadFill"))(
+							{
+								layout = {
+									sizing = {
+										width = clay.SizingPercent(fraction),
+										height = clay.SizingGrow(),
+									},
+								},
+								backgroundColor = ACCENT,
+								cornerRadius = rr(2),
+							},
+							) {}
 						}
 					}
 					micro_button("SttCancel", "Cancel")
@@ -324,12 +398,18 @@ settings_speech :: proc(ui: ^Ui_State) {
 	}
 	eyebrow("READ ALOUD")
 	if clay.UI(clay.ID("RowTts"))(srow()) {
-		row_labels("Read aloud", "Read messages on your device in 31 languages. Downloads about 145 MB on first use.")
+		row_labels(
+			"Read aloud",
+			"Read messages on your device in 31 languages. Downloads about 145 MB on first use.",
+		)
 		toggle("TgTts", ui.prefs.tts_enabled)
 	}
 	if ui.prefs.tts_enabled {
 		if clay.UI(clay.ID("TtsModel"))(srow()) {
-			row_labels("Speech model", "Shared by all ten voices and 31 languages. Downloads once.")
+			row_labels(
+				"Speech model",
+				"Shared by all ten voices and 31 languages. Downloads once.",
+			)
 			settings_tts_download(ui, 0)
 		}
 		for voice, i in TTS_VOICES {
@@ -339,14 +419,36 @@ settings_speech :: proc(ui: ^Ui_State) {
 			row.backgroundColor = selected ? SELECTED : ROW_BG
 			if clay.UI(clay.ID("TtsVoice", u32(i)))(row) {
 				_ = hovered()
-				if clay.UI(clay.ID_LOCAL("VoiceTitle"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, childAlignment = {y = .Center}}}) {
+				if clay.UI(clay.ID_LOCAL("VoiceTitle"))(
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						childGap = 10,
+						childAlignment = {y = .Center},
+					},
+				},
+				) {
 					row_labels(voice, TTS_DESCRIPTIONS[i])
 					if selected {
-						clay.Text(ICON_CHECK, {fontId = FONT_ICON, fontSize = 12, textColor = ACCENT})
-						clay.Text(tr("Selected"), {fontId = FONT_BODY, fontSize = 11, textColor = ACCENT})
+						clay.Text(
+							ICON_CHECK,
+							{fontId = FONT_ICON, fontSize = 12, textColor = ACCENT},
+						)
+						clay.Text(
+							tr("Selected"),
+							{fontId = FONT_BODY, fontSize = 11, textColor = ACCENT},
+						)
 					}
 				}
-				if clay.UI(clay.ID_LOCAL("VoiceDownload"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 12, childAlignment = {y = .Center}}}) {
+				if clay.UI(clay.ID_LOCAL("VoiceDownload"))(
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						childGap = 12,
+						childAlignment = {y = .Center},
+					},
+				},
+				) {
 					settings_tts_download(ui, 6)
 					micro_button(fmt.tprintf("TtsPreview%d", i), "Preview")
 				}
@@ -410,7 +512,10 @@ settings_general :: proc(ui: ^Ui_State) {
 
 	eyebrow("QUICK REACTIONS")
 	if clay.UI(clay.ID("RowQuick"))(srow()) {
-		row_labels("One-tap reactions", "Shown on the message menu. Tap one to remove it. Up to 16.")
+		row_labels(
+			"One-tap reactions",
+			"Shown on the message menu. Tap one to remove it. Up to 16.",
+		)
 		for emoji, i in ui.prefs.quick_reactions {
 			if clay.UI(clay.ID("QuickChip", u32(i)))(
 			{
@@ -435,13 +540,7 @@ settings_general :: proc(ui: ^Ui_State) {
 				}
 			}
 		}
-		if len(ui.prefs.quick_reactions) < QUICK_MAX do if clay.UI(clay.ID("QuickAdd"))(
-		{
-			layout = {padding = {left = 8, right = 8, top = 4, bottom = 4}},
-			backgroundColor = hovered() ? HOVER : {},
-			cornerRadius = rr(6),
-		},
-		) {
+		if len(ui.prefs.quick_reactions) < QUICK_MAX do if clay.UI(clay.ID("QuickAdd"))({layout = {padding = {left = 8, right = 8, top = 4, bottom = 4}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)}) {
 			clay.Text("+", {fontId = FONT_BODY, fontSize = 14, textColor = TEXT})
 		}
 	}
@@ -658,7 +757,9 @@ settings_appearance :: proc(ui: ^Ui_State) {
 			for _, i in ACCENT_NAMES {
 				if clay.UI(clay.ID("AccentDot", u32(i)))(
 				{
-					layout = {sizing = {width = clay.SizingFixed(18), height = clay.SizingFixed(18)}},
+					layout = {
+						sizing = {width = clay.SizingFixed(18), height = clay.SizingFixed(18)},
+					},
 					backgroundColor = active_pack(ui).accent_base[i],
 					cornerRadius = rr(9),
 					border = ui.accent == i ? clay.BorderElementConfig{color = TEXT, width = {2, 2, 2, 2, 0}} : {},
@@ -672,13 +773,23 @@ settings_appearance :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("RowAvatarShape"))(srow()) {
 		row_labels("Default avatar shape", "Used for profile photos without a published shape.")
 		for label, shape in AVATAR_SHAPE_NAMES {
-			theme_chip_indexed("AvatarShapeChip", u32(shape), tr(label), ui.prefs.avatar_shape == shape)
+			theme_chip_indexed(
+				"AvatarShapeChip",
+				u32(shape),
+				tr(label),
+				ui.prefs.avatar_shape == shape,
+			)
 		}
 	}
 	if clay.UI(clay.ID("RowCropShape"))(srow()) {
 		row_labels("Crop circle shape", "Used for generated user and group avatars.")
 		for label, shape in CROP_SHAPE_NAMES {
-			theme_chip_indexed("CropShapeChip", u32(shape), tr(label), ui.prefs.crop_avatar_shape == shape)
+			theme_chip_indexed(
+				"CropShapeChip",
+				u32(shape),
+				tr(label),
+				ui.prefs.crop_avatar_shape == shape,
+			)
 		}
 	}
 
@@ -1110,7 +1221,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if ui.prefs.stt_enabled {
 			for model, i in STT_MODELS {
 				if clay.PointerOver(clay.ID("SttModel", u32(i))) {
-					if clicked("SttCancel") { return }
+					if clicked("SttCancel") {return}
 					stt_stop(ui)
 					delete(ui.prefs.stt_model)
 					ui.prefs.stt_model = strings.clone(model.name)

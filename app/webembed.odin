@@ -91,7 +91,7 @@ Web_Key :: struct {
 	keyval: u32,
 }
 
-WEB_KEYS :: [?]Web_Key{
+WEB_KEYS :: [?]Web_Key {
 	{.BACKSPACE, GDK_BACKSPACE},
 	{.ENTER, GDK_RETURN},
 	{.DELETE, GDK_DELETE},
@@ -124,7 +124,10 @@ web_open :: proc(url, title: string) -> bool {
 
 	viewer := web_viewer_path()
 	if len(viewer) == 0 {
-		fmt.eprintfln("webxdc: no wn-webview beside %s (webkit2gtk-4.1 missing at build time?)", os.args[0])
+		fmt.eprintfln(
+			"webxdc: no wn-webview beside %s (webkit2gtk-4.1 missing at build time?)",
+			os.args[0],
+		)
 		return false
 	}
 
@@ -132,7 +135,11 @@ web_open :: proc(url, title: string) -> bool {
 	// needs nothing but a path.
 	path := fmt.tprintf("/dev/shm/wn-web-%d", os.get_pid())
 	size := uint(size_of(Web_Shm) + WEB_CAP_W * WEB_CAP_H * 4)
-	fd := posix.open(strings.clone_to_cstring(path, context.temp_allocator), {.RDWR, .CREAT, .TRUNC}, {.IRUSR, .IWUSR})
+	fd := posix.open(
+		strings.clone_to_cstring(path, context.temp_allocator),
+		{.RDWR, .CREAT, .TRUNC},
+		{.IRUSR, .IWUSR},
+	)
 	if fd < 0 {
 		fmt.eprintfln("webxdc: cannot create %s", path)
 		return false
@@ -155,14 +162,16 @@ web_open :: proc(url, title: string) -> bool {
 		posix.munmap(mapped, size)
 		return false
 	}
-	child, err := os.process_start({
+	child, err := os.process_start(
+	{
 		command = {viewer, url, path, fmt.tprintf("%d", WEB_CAP_W), fmt.tprintf("%d", WEB_CAP_H)},
 		stdin   = reader,
 		// The child's own output (and, under WN_DEBUG, the page's
 		// console) lands in the app's log.
 		stdout  = os.stderr,
 		stderr  = os.stderr,
-	})
+	},
+	)
 	os.close(reader)
 	if err != nil {
 		os.close(writer)
@@ -341,25 +350,43 @@ web_modal_draw :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("WebModal"))(
 	{
 		layout = {layoutDirection = .TopToBottom, childGap = 8, padding = clay.PaddingAll(12)},
-		floating = {attachTo = .Root, zIndex = 10, attachment = {element = .CenterCenter, parent = .CenterCenter}},
+		floating = {
+			attachTo = .Root,
+			zIndex = 10,
+			attachment = {element = .CenterCenter, parent = .CenterCenter},
+		},
 		backgroundColor = CARD,
 		cornerRadius = rr(12),
 	},
 	) {
 		if clay.UI(clay.ID("WebBar"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, childAlignment = {y = .Center}}},
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				childGap = 10,
+				childAlignment = {y = .Center},
+			},
+		},
 		) {
 			clay.Text(web_modal.title, {fontId = FONT_TITLE, fontSize = 14, textColor = TEXT})
 			if clay.UI(clay.ID("WebPad"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 			if clay.UI(clay.ID("WebClose"))(
-			{layout = {padding = {left = 10, right = 10, top = 4, bottom = 4}}, backgroundColor = hovered() ? HOVER : ROW_BG, cornerRadius = rr(6)},
+			{
+				layout = {padding = {left = 10, right = 10, top = 4, bottom = 4}},
+				backgroundColor = hovered() ? HOVER : ROW_BG,
+				cornerRadius = rr(6),
+			},
 			) {
 				clay.Text(tr("Close"), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
 			}
 		}
 		w, h := web_fit()
 		if clay.UI(clay.ID("WebPage"))(
-		{layout = {sizing = {width = clay.SizingFixed(w), height = clay.SizingFixed(h)}}, image = {imageData = &web_modal.tex}, cornerRadius = rr(8)},
+		{
+			layout = {sizing = {width = clay.SizingFixed(w), height = clay.SizingFixed(h)}},
+			image = {imageData = &web_modal.tex},
+			cornerRadius = rr(8),
+		},
 		) {}
 	}
 }

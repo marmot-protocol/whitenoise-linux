@@ -49,7 +49,11 @@ store_status :: proc(err: Vault_Err) -> marmot.Secret_Store_Status {
 }
 
 @(private = "file")
-ss_has :: proc "c" (user_data: rawptr, key: cstring, out_present: ^u8) -> marmot.Secret_Store_Status {
+ss_has :: proc "c" (
+	user_data: rawptr,
+	key: cstring,
+	out_present: ^u8,
+) -> marmot.Secret_Store_Status {
 	context = runtime.default_context()
 	context.allocator = reload_allocator()
 
@@ -60,7 +64,12 @@ ss_has :: proc "c" (user_data: rawptr, key: cstring, out_present: ^u8) -> marmot
 }
 
 @(private = "file")
-ss_write :: proc "c" (user_data: rawptr, label: cstring, account_id_hex: cstring, secret_key_hex: cstring) -> marmot.Secret_Store_Status {
+ss_write :: proc "c" (
+	user_data: rawptr,
+	label: cstring,
+	account_id_hex: cstring,
+	secret_key_hex: cstring,
+) -> marmot.Secret_Store_Status {
 	context = runtime.default_context()
 	context.allocator = reload_allocator()
 
@@ -70,7 +79,12 @@ ss_write :: proc "c" (user_data: rawptr, label: cstring, account_id_hex: cstring
 }
 
 @(private = "file")
-ss_load :: proc "c" (user_data: rawptr, label: cstring, account_id_hex: cstring, out_secret_key_hex: ^cstring) -> marmot.Secret_Store_Status {
+ss_load :: proc "c" (
+	user_data: rawptr,
+	label: cstring,
+	account_id_hex: cstring,
+	out_secret_key_hex: ^cstring,
+) -> marmot.Secret_Store_Status {
 	context = runtime.default_context()
 	context.allocator = reload_allocator()
 
@@ -92,7 +106,11 @@ ss_load :: proc "c" (user_data: rawptr, label: cstring, account_id_hex: cstring,
 }
 
 @(private = "file")
-ss_remove :: proc "c" (user_data: rawptr, label: cstring, account_id_hex: cstring) -> marmot.Secret_Store_Status {
+ss_remove :: proc "c" (
+	user_data: rawptr,
+	label: cstring,
+	account_id_hex: cstring,
+) -> marmot.Secret_Store_Status {
 	context = runtime.default_context()
 	context.allocator = reload_allocator()
 
@@ -163,13 +181,13 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 		return vault_exists() ? vault_open(pw) == .None : vault_create(pw) == .None
 	}
 	when #config(WN_DEV, false) {
-		if vault_open("", .Dev_Cache) == .None { return true }
+		if vault_open("", .Dev_Cache) == .None {return true}
 	}
 
 	defer gate_close()
 	shot := os.get_env("WN_SHOT", context.temp_allocator) != ""
 	for frame := 0; !rl.WindowShouldClose(); frame += 1 {
-		if dev_reload_poll() { return false }
+		if dev_reload_poll() {return false}
 		defer free_all(context.temp_allocator)
 		anim_tick(rl.GetFrameTime()) // the gate runs its own loop, so it steps its own motion
 		apply_zoom(ui) // and its own resize response; a no-op unless the width moved
@@ -178,7 +196,9 @@ vault_gate :: proc(ui: ^Ui_State) -> bool {
 		pointer.x /= UI_ZOOM
 		pointer.y /= UI_ZOOM
 		clay.SetPointerState(pointer, rl.IsMouseButtonDown(.LEFT))
-		clay.SetLayoutDimensions({f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM})
+		clay.SetLayoutDimensions(
+			{f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM},
+		)
 
 		render_commands := gate_layout(ui)
 		rl.BeginDrawing()
@@ -252,9 +272,7 @@ gate_input :: proc(ui: ^Ui_State) -> bool {
 	if !creating {
 		if err := vault_open(password); err != .None {
 			gate_err =
-				err == .Wrong_Password \
-				? tr("Couldn't unlock the vault. Double-check the password and try again.") \
-				: tr("Couldn't read the vault file. Please try again.")
+				err == .Wrong_Password ? tr("Couldn't unlock the vault. Double-check the password and try again.") : tr("Couldn't read the vault file. Please try again.")
 			clear(&gate_pw)
 			return false
 		}
@@ -277,10 +295,20 @@ gate_input :: proc(ui: ^Ui_State) -> bool {
 // Shared with the change-password modal (vault_pw.odin), the other
 // place a vault password gets typed.
 @(private)
-gate_field :: proc(ui: ^Ui_State, id_str: string, buf: ^[dynamic]u8, focused: bool, placeholder: string) {
+gate_field :: proc(
+	ui: ^Ui_State,
+	id_str: string,
+	buf: ^[dynamic]u8,
+	focused: bool,
+	placeholder: string,
+) {
 	if clay.UI(clay.ID(id_str))(
 	{
-		layout = {sizing = {width = clay.SizingGrow({max = 560}), height = clay.SizingFixed(46)}, padding = {left = 14, right = 14}, childAlignment = {y = .Center}},
+		layout = {
+			sizing = {width = clay.SizingGrow({max = 560}), height = clay.SizingFixed(46)},
+			padding = {left = 14, right = 14},
+			childAlignment = {y = .Center},
+		},
 		backgroundColor = ROW_BG,
 		cornerRadius = rr(10),
 		border = {color = focused ? ACCENT : FIELD_BORDER, width = bw()},
@@ -295,7 +323,10 @@ gate_field :: proc(ui: ^Ui_State, id_str: string, buf: ^[dynamic]u8, focused: bo
 		if len(buf) == 0 {
 			clay.Text(tr(placeholder), {fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM})
 		} else {
-			clay.Text(strings.repeat("*", min(len(buf), 48), context.temp_allocator), {fontId = FONT_BODY, fontSize = 15, textColor = TEXT})
+			clay.Text(
+				strings.repeat("*", min(len(buf), 48), context.temp_allocator),
+				{fontId = FONT_BODY, fontSize = 15, textColor = TEXT},
+			)
 		}
 		if focused {
 			caret(16)
@@ -310,20 +341,32 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 	creating := !vault_exists()
 
 	if clay.UI(clay.ID("Root"))(
-	{layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom}, backgroundColor = BG},
+	{
+		layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, layoutDirection = .TopToBottom},
+		backgroundColor = BG,
+	},
 	) {
 		// The unlock screen is the first thing anyone sees, so it gets
 		// the synthwave rail fan behind it whatever the saved theme is.
 		// It draws from the accent color, so it suits every palette.
 		if clay.UI(clay.ID("GateCanvas"))(
 		{
-			layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, childAlignment = {x = .Center, y = .Center}},
+			layout = {
+				sizing = {clay.SizingGrow(), clay.SizingGrow()},
+				childAlignment = {x = .Center, y = .Center},
+			},
 			custom = {customData = &synth_decor},
 		},
 		) {
 			if clay.UI(clay.ID("GateCard"))(
 			{
-				layout = {sizing = {width = clay.SizingFixed(fit_w(660))}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(single_pane() ? 20 : 50), childGap = 14, childAlignment = {x = .Center}},
+				layout = {
+					sizing = {width = clay.SizingFixed(fit_w(660))},
+					layoutDirection = .TopToBottom,
+					padding = clay.PaddingAll(single_pane() ? 20 : 50),
+					childGap = 14,
+					childAlignment = {x = .Center},
+				},
 				backgroundColor = CARD,
 				cornerRadius = rr(16),
 				border = {color = CARD_BORDER, width = bw()},
@@ -336,7 +379,9 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 					creating ? tr("Pick a password. It encrypts everything in the app, and there is no way to recover it.") : tr("Enter your password to unlock this device's keys."),
 					{fontId = FONT_BODY, fontSize = 15, textColor = TEXT_DIM},
 				)
-				if clay.UI(clay.ID("GateGapA"))({layout = {sizing = {height = clay.SizingFixed(10)}}}) {}
+				if clay.UI(clay.ID("GateGapA"))(
+				{layout = {sizing = {height = clay.SizingFixed(10)}}},
+				) {}
 
 				eyebrow("PASSWORD")
 				gate_field(ui, "GatePwBox", &gate_pw, !gate_confirm || !creating, "Your password")
@@ -345,10 +390,16 @@ gate_layout :: proc(ui: ^Ui_State) -> clay.ClayArray(clay.RenderCommand) {
 					gate_field(ui, "GatePw2Box", &gate_pw2, gate_confirm, "Your password")
 				}
 
-				if clay.UI(clay.ID("GateGapB"))({layout = {sizing = {height = clay.SizingFixed(6)}}}) {}
+				if clay.UI(clay.ID("GateGapB"))(
+				{layout = {sizing = {height = clay.SizingFixed(6)}}},
+				) {}
 				login_big_button("GateGo", creating ? tr("Continue") : tr("Unlock"), true)
 				if !creating {
-					micro_button("GateReset", gate_reset_armed ? tr("Confirm: delete this vault") : tr("Use another key"), DANGER)
+					micro_button(
+						"GateReset",
+						gate_reset_armed ? tr("Confirm: delete this vault") : tr("Use another key"),
+						DANGER,
+					)
 				}
 				if len(gate_err) > 0 {
 					clay.Text(gate_err, {fontId = FONT_BODY, fontSize = 14, textColor = DANGER})

@@ -43,11 +43,18 @@ gutter :: proc(id_str: string) {
 	active := gutter_drag == id_str
 	if clay.UI(clay.ID(id_str))(
 	{
-		layout = {sizing = {width = clay.SizingFixed(GUTTER_W), height = clay.SizingGrow()}, childAlignment = {x = .Center, y = .Center}},
+		layout = {
+			sizing = {width = clay.SizingFixed(GUTTER_W), height = clay.SizingGrow()},
+			childAlignment = {x = .Center, y = .Center},
+		},
 	},
 	) {
 		if clay.UI(clay.ID_LOCAL("GutterLine"))(
-		{layout = {sizing = {width = clay.SizingFixed(2), height = clay.SizingFixed(40)}}, backgroundColor = active || hovered() ? ACCENT : FIELD_BORDER, cornerRadius = rr(1)},
+		{
+			layout = {sizing = {width = clay.SizingFixed(2), height = clay.SizingFixed(40)}},
+			backgroundColor = active || hovered() ? ACCENT : FIELD_BORDER,
+			cornerRadius = rr(1),
+		},
 		) {}
 	}
 }
@@ -96,7 +103,8 @@ rail_width :: proc(ui: ^Ui_State) -> f32 {
 		anim_set(clay.ID("RailWidth").id, RAIL_W_COLLAPSED)
 		return RAIL_W_COLLAPSED
 	}
-	target := ui.prefs.rail_collapsed ? f32(RAIL_W_COLLAPSED) : f32(clamp(ui.prefs.rail_w, RAIL_W_MIN, RAIL_W_MAX))
+	target :=
+		ui.prefs.rail_collapsed ? f32(RAIL_W_COLLAPSED) : f32(clamp(ui.prefs.rail_w, RAIL_W_MIN, RAIL_W_MAX))
 	// Dragging the gutter must track the pointer exactly; only the
 	// collapse toggle animates. Pin the entry too, or release replays
 	// the drag from its starting width.
@@ -231,7 +239,11 @@ phone_detail :: proc(ui: ^Ui_State) -> bool {
 phone_back :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("PhoneBack"))(
 	{
-		layout = {padding = {left = 12, right = 14, top = 8, bottom = 8}, childGap = 6, childAlignment = {y = .Center}},
+		layout = {
+			padding = {left = 12, right = 14, top = 8, bottom = 8},
+			childGap = 6,
+			childAlignment = {y = .Center},
+		},
 		backgroundColor = hovered() ? HOVER : {},
 		cornerRadius = rr(9),
 	},
@@ -306,7 +318,11 @@ status_pill :: proc(id_str: string, label: string, color: clay.Color, dot := tru
 	if clay.UI(clay.ID(id_str))({layout = {childGap = 6, childAlignment = {y = .Center}}}) {
 		if dot {
 			if clay.UI(clay.ID_LOCAL("PillDot"))(
-			{layout = {sizing = {width = clay.SizingFixed(7), height = clay.SizingFixed(7)}}, backgroundColor = color, cornerRadius = rr(4)},
+			{
+				layout = {sizing = {width = clay.SizingFixed(7), height = clay.SizingFixed(7)}},
+				backgroundColor = color,
+				cornerRadius = rr(4),
+			},
 			) {}
 		}
 		clay.Text(label, {fontId = FONT_MONO, fontSize = 10, textColor = color, letterSpacing = 2})
@@ -315,7 +331,17 @@ status_pill :: proc(id_str: string, label: string, color: clay.Color, dot := tru
 
 status_bar :: proc(ui: ^Ui_State) {
 	if ui.stt.file != nil && ui.stt.message == "" && ui.stt.purpose != .Download {
-		if clay.UI(clay.ID("SttBar"))({layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(6), childGap = 12, childAlignment = {y = .Center}}, backgroundColor = STATUS_BAR}) {
+		if clay.UI(clay.ID("SttBar"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				padding = clay.PaddingAll(6),
+				childGap = 12,
+				childAlignment = {y = .Center},
+			},
+			backgroundColor = STATUS_BAR,
+		},
+		) {
 			micro_button("SttCancel", "Cancel")
 			if ui.stt.status == 'R' {
 				micro_button("SttFinish", "Finish dictation")
@@ -324,7 +350,17 @@ status_bar :: proc(ui: ^Ui_State) {
 		}
 	}
 	if ui.tts.file != nil {
-		if clay.UI(clay.ID("TtsBar"))({layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(6), childGap = 12, childAlignment = {y = .Center}}, backgroundColor = STATUS_BAR}) {
+		if clay.UI(clay.ID("TtsBar"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				padding = clay.PaddingAll(6),
+				childGap = 12,
+				childAlignment = {y = .Center},
+			},
+			backgroundColor = STATUS_BAR,
+		},
+		) {
 			micro_button("TtsStopGlobal", "Stop reading")
 			clay.Text(tts_status(ui), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
 		}
@@ -333,10 +369,22 @@ status_bar :: proc(ui: ^Ui_State) {
 		banner_bar(ui)
 	}
 	if clay.UI(clay.ID("StatusBar"))(
-	{layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(28)}, padding = {left = 14, right = 14}, childGap = 12, childAlignment = {y = .Center}}, backgroundColor = STATUS_BAR},
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(28)},
+			padding = {left = 14, right = 14},
+			childGap = 12,
+			childAlignment = {y = .Center},
+		},
+		backgroundColor = STATUS_BAR,
+	},
 	) {
 		state := net_state(ui)
-		status_pill("NetPill", state == .Online ? "ONLINE" : state == .Connecting ? "CONNECTING" : "OFFLINE", net_color(state))
+		status_pill(
+			"NetPill",
+			state == .Online ? "ONLINE" : state == .Connecting ? "CONNECTING" : "OFFLINE",
+			net_color(state),
+		)
 		if clay.UI(clay.ID("StatusGapL"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 
 		syncing := rl.GetTime() - sync_at < SYNCING_SECS
@@ -351,8 +399,14 @@ status_bar :: proc(ui: ^Ui_State) {
 			if f32(rl.GetScreenWidth()) / UI_ZOOM < HINTS_W {
 				break
 			}
-			clay.Text(hint[0], {fontId = FONT_MONO, fontSize = 10, textColor = TEXT_DIM, letterSpacing = 1})
-			clay.Text(hint[1], {fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO, letterSpacing = 2})
+			clay.Text(
+				hint[0],
+				{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_DIM, letterSpacing = 1},
+			)
+			clay.Text(
+				hint[1],
+				{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO, letterSpacing = 2},
+			)
 		}
 	}
 }
@@ -383,15 +437,30 @@ banner_bar :: proc(ui: ^Ui_State) {
 	color := ui.banner_error ? DANGER : ACCENT
 	if clay.UI(clay.ID("Banner"))(
 	{
-		layout = {sizing = {width = clay.SizingGrow()}, padding = {left = 14, right = 10, top = 8, bottom = 8}, childGap = 10, childAlignment = {y = .Center}},
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			padding = {left = 14, right = 10, top = 8, bottom = 8},
+			childGap = 10,
+			childAlignment = {y = .Center},
+		},
 		backgroundColor = {color.r, color.g, color.b, 38},
 	},
 	) {
-		if clay.UI(clay.ID("BannerBar"))({layout = {sizing = {width = clay.SizingFixed(3), height = clay.SizingFixed(16)}}, backgroundColor = color, cornerRadius = rr(2)}) {}
+		if clay.UI(clay.ID("BannerBar"))(
+		{
+			layout = {sizing = {width = clay.SizingFixed(3), height = clay.SizingFixed(16)}},
+			backgroundColor = color,
+			cornerRadius = rr(2),
+		},
+		) {}
 		clay.Text(ui.banner, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
 		if clay.UI(clay.ID("BannerGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 		if clay.UI(clay.ID("BannerClose"))(
-		{layout = {padding = clay.PaddingAll(6)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
+		{
+			layout = {padding = clay.PaddingAll(6)},
+			backgroundColor = hovered() ? HOVER : {},
+			cornerRadius = rr(6),
+		},
 		) {
 			clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 11, textColor = TEXT_DIM})
 		}
@@ -440,7 +509,11 @@ modal_backdrop :: proc() {
 	if clay.UI(clay.ID("ModalVeil"))(
 	{
 		layout = {sizing = {width = clay.SizingFixed(w), height = clay.SizingFixed(h)}},
-		floating = {attachTo = .Root, zIndex = 9, attachment = {element = .CenterCenter, parent = .CenterCenter}},
+		floating = {
+			attachTo = .Root,
+			zIndex = 9,
+			attachment = {element = .CenterCenter, parent = .CenterCenter},
+		},
 		backgroundColor = OVERLAY,
 	},
 	) {}
@@ -472,7 +545,12 @@ toast_layer :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("Toast"))(
 	{
 		layout = {padding = {left = 16, right = 16, top = 9, bottom = 9}},
-		floating = {attachTo = .Root, zIndex = 20, offset = {0, -52}, attachment = {element = .CenterBottom, parent = .CenterBottom}},
+		floating = {
+			attachTo = .Root,
+			zIndex = 20,
+			offset = {0, -52},
+			attachment = {element = .CenterBottom, parent = .CenterBottom},
+		},
 		backgroundColor = CARD,
 		cornerRadius = rr(10),
 		border = {color = ELEVATED_BORDER, width = bw()},
@@ -494,11 +572,17 @@ Tip_Side :: enum {
 }
 
 tooltip :: proc(text: string, side: Tip_Side = .Below) {
-	attach := side == .Below ? clay.FloatingAttachPoints{element = .CenterTop, parent = .CenterBottom} : clay.FloatingAttachPoints{element = .CenterBottom, parent = .CenterTop}
+	attach :=
+		side == .Below ? clay.FloatingAttachPoints{element = .CenterTop, parent = .CenterBottom} : clay.FloatingAttachPoints{element = .CenterBottom, parent = .CenterTop}
 	if clay.UI(clay.ID_LOCAL("Tip"))(
 	{
 		layout = {padding = {left = 8, right = 8, top = 4, bottom = 4}},
-		floating = {attachTo = .Parent, zIndex = 18, offset = {0, side == .Below ? 6 : -6}, attachment = attach},
+		floating = {
+			attachTo = .Parent,
+			zIndex = 18,
+			offset = {0, side == .Below ? 6 : -6},
+			attachment = attach,
+		},
 		backgroundColor = CARD,
 		cornerRadius = rr(6),
 		border = {color = ELEVATED_BORDER, width = bw()},
@@ -510,20 +594,38 @@ tooltip :: proc(text: string, side: Tip_Side = .Below) {
 
 // ── Boot splash ─────────────────────────────────────────────────────
 
-BOOT_PHASES := []string{N_("Starting the runtime"), N_("Loading your accounts"), N_("Connecting to relays")}
+BOOT_PHASES := []string {
+	N_("Starting the runtime"),
+	N_("Loading your accounts"),
+	N_("Connecting to relays"),
+}
 
 // One rendered frame of the splash before a blocking boot step, so the
 // window shows what it is waiting on instead of staying black. Phases
 // are announced before the work they name.
 splash_frame :: proc(step: int) {
-	clay.SetLayoutDimensions({f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM})
+	clay.SetLayoutDimensions(
+		{f32(rl.GetScreenWidth()) / UI_ZOOM, f32(rl.GetScreenHeight()) / UI_ZOOM},
+	)
 	clay.BeginLayout()
 	if clay.UI(clay.ID("SplashRoot"))(
-	{layout = {sizing = {clay.SizingGrow(), clay.SizingGrow()}, childAlignment = {x = .Center, y = .Center}}, backgroundColor = BG},
+	{
+		layout = {
+			sizing = {clay.SizingGrow(), clay.SizingGrow()},
+			childAlignment = {x = .Center, y = .Center},
+		},
+		backgroundColor = BG,
+	},
 	) {
 		if clay.UI(clay.ID("SplashCard"))(
 		{
-			layout = {sizing = {width = clay.SizingFixed(fit_w(360))}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(single_pane() ? 20 : 36), childGap = 10, childAlignment = {x = .Center}},
+			layout = {
+				sizing = {width = clay.SizingFixed(fit_w(360))},
+				layoutDirection = .TopToBottom,
+				padding = clay.PaddingAll(single_pane() ? 20 : 36),
+				childGap = 10,
+				childAlignment = {x = .Center},
+			},
 			backgroundColor = CARD,
 			cornerRadius = rr(16),
 			border = {color = CARD_BORDER, width = bw()},
@@ -531,13 +633,24 @@ splash_frame :: proc(step: int) {
 		) {
 			clay.Text("///", {fontId = FONT_TITLE, fontSize = 34, textColor = ACCENT})
 			clay.Text("White Noise", {fontId = FONT_TITLE, fontSize = 22, textColor = TEXT})
-			if clay.UI(clay.ID("SplashGap"))({layout = {sizing = {height = clay.SizingFixed(6)}}}) {}
-			clay.Text(tr(BOOT_PHASES[clamp(step, 0, len(BOOT_PHASES) - 1)]), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
+			if clay.UI(clay.ID("SplashGap"))(
+			{layout = {sizing = {height = clay.SizingFixed(6)}}},
+			) {}
+			clay.Text(
+				tr(BOOT_PHASES[clamp(step, 0, len(BOOT_PHASES) - 1)]),
+				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+			)
 			// One pip per phase; filled up to the running one.
 			if clay.UI(clay.ID("SplashPips"))({layout = {childGap = 6, padding = {top = 6}}}) {
 				for _, i in BOOT_PHASES {
 					if clay.UI(clay.ID("SplashPip", u32(i)))(
-					{layout = {sizing = {width = clay.SizingFixed(46), height = clay.SizingFixed(3)}}, backgroundColor = i <= step ? ACCENT : ROW_BG, cornerRadius = rr(2)},
+					{
+						layout = {
+							sizing = {width = clay.SizingFixed(46), height = clay.SizingFixed(3)},
+						},
+						backgroundColor = i <= step ? ACCENT : ROW_BG,
+						cornerRadius = rr(2),
+					},
 					) {}
 				}
 			}
@@ -596,7 +709,7 @@ lock_file: ^os.File
 
 @(private)
 instance_unlock :: proc() {
-	if lock_file != nil { os.close(lock_file); lock_file = nil }
+	if lock_file != nil {os.close(lock_file); lock_file = nil}
 }
 
 // Exclusive flock on <home>/.lock. false means another instance already

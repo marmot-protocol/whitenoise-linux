@@ -1,12 +1,12 @@
 package main
 
+import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
 import "core:encoding/json"
 import "core:fmt"
+import "core:mem"
 import "core:strings"
 import "core:testing"
-import "core:mem"
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
 @(test)
@@ -56,9 +56,19 @@ nostr_geocache_preview :: proc(t: ^testing.T) {
 		_, _, valid := geohash_coords(bad)
 		testing.expect(t, !valid)
 	}
-	variant, _ := strings.replace_all(TEST_GEOCACHE_JSON, `"tags":[`, `"tags":[null,[],["D",3],["T","6"],["S",{}],["g","invalid00"],["image","file:///tmp/no"],`, context.temp_allocator)
+	variant, _ := strings.replace_all(
+		TEST_GEOCACHE_JSON,
+		`"tags":[`,
+		`"tags":[null,[],["D",3],["T","6"],["S",{}],["g","invalid00"],["image","file:///tmp/no"],`,
+		context.temp_allocator,
+	)
 	testing.expect_value(t, nev_parse(transmute([]u8)variant, .Event).geocache.geohash, c.geohash)
-	variant, _ = strings.replace_all(TEST_GEOCACHE_JSON, `"g","xn77hdukr"`, `"g","invalid00"`, context.temp_allocator)
+	variant, _ = strings.replace_all(
+		TEST_GEOCACHE_JSON,
+		`"g","xn77hdukr"`,
+		`"g","invalid00"`,
+		context.temp_allocator,
+	)
 	testing.expect_value(t, nev_parse(transmute([]u8)variant, .Event).geocache.geohash, "xn77")
 }
 
@@ -81,8 +91,16 @@ nostr_reference_cases :: proc(t: ^testing.T) {
 	if err == nil {
 		defer json.destroy_value(value)
 		filter := value.(json.Array)[2].(json.Object)
-		testing.expect_value(t, string(filter["authors"].(json.Array)[0].(json.String)), address.author)
-		testing.expect_value(t, string(filter["#d"].(json.Array)[0].(json.String)), address.identifier)
+		testing.expect_value(
+			t,
+			string(filter["authors"].(json.Array)[0].(json.String)),
+			address.author,
+		)
+		testing.expect_value(
+			t,
+			string(filter["#d"].(json.Array)[0].(json.String)),
+			address.identifier,
+		)
 	}
 	_, event := nostr_at(TEST_PRIMAL, 0)
 	testing.expect_value(t, event.kind, Nostr_Kind.Event)
@@ -90,16 +108,12 @@ nostr_reference_cases :: proc(t: ^testing.T) {
 	testing.expect(t, strings.has_prefix(event.token, "nevent1"))
 	value, err = json.parse_string(nev_request(event.key))
 	testing.expect(t, err == nil)
-	if err == nil { json.destroy_value(value) }
+	if err == nil {json.destroy_value(value)}
 	segs := inline_segs("see " + TEST_PRIMAL + " now")
 	testing.expect_value(t, len(segs), 3)
 	testing.expect_value(t, segs[1].evid, event.key)
 
-	for bad in ([]string{
-		"nostr:npub1thisisnotvalidbech32datawillfailchecksum000000000000000000",
-		"nevent1qqstna2yrezu5wghjvswqqculwvwxsrcvu7uc0f78gan4xqhvz49d9spr3mhxue69uhkummnw3ez6un9d3shjtn4de6x2argwghx6egpr4mhxue69uhkummnw3ez6ur4vgh8wetvd3hhyer9wghxuet5",
-		"naddr1qqqq", "Npub1qqqq",
-	}) {
+	for bad in ([]string{"nostr:npub1thisisnotvalidbech32datawillfailchecksum000000000000000000", "nevent1qqstna2yrezu5wghjvswqqculwvwxsrcvu7uc0f78gan4xqhvz49d9spr3mhxue69uhkummnw3ez6un9d3shjtn4de6x2argwghx6egpr4mhxue69uhkummnw3ez6ur4vgh8wetvd3hhyer9wghxuet5", "naddr1qqqq", "Npub1qqqq"}) {
 		last, ref := nostr_at(bad, 0)
 		testing.expect_value(t, last, len(bad))
 		testing.expect_value(t, ref.kind, Nostr_Kind.Invalid)
@@ -136,7 +150,7 @@ nostr_reference_cases :: proc(t: ^testing.T) {
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=mention_wrap_layout
 @(test)
 mention_wrap_layout :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "mention_wrap_layout" { return }
+	if #config(ODIN_TEST_NAMES, "") != "mention_wrap_layout" {return}
 	context.allocator = runtime.default_context().allocator
 	rl.InitWindow(800, 600, "Mention wrapping")
 	defer rl.CloseWindow()
@@ -147,11 +161,11 @@ mention_wrap_layout :: proc(t: ^testing.T) {
 	defer delete(memory)
 	ui: Ui_State
 	g_ui = &ui
-	defer { g_ui = nil; wrap_clear(); delete(sel_lines); sel_lines = nil }
+	defer {g_ui = nil; wrap_clear(); delete(sel_lines); sel_lines = nil}
 	labels := []string{"Max", "JeffG", "Pepi Testing"}
 	n := 0
 	for seg in inline_segs(TEST_MENTIONS) {
-		if len(seg.hex) == 0 { continue }
+		if len(seg.hex) == 0 {continue}
 		ui.nicknames[seg.hex] = labels[n]
 		n += 1
 	}
@@ -159,20 +173,45 @@ mention_wrap_layout :: proc(t: ^testing.T) {
 	for width in ([]f32{120, 480}) {
 		clear(&sel_lines)
 		clay.BeginLayout()
-		if clay.UI(clay.ID("MentionTest"))({layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(width)}}}) {
+		if clay.UI(clay.ID("MentionTest"))(
+		{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(width)}}},
+		) {
 			body_text(42, TEST_MENTIONS, BODY_FS, TEXT, true, width)
 		}
 		commands := clay.EndLayout(0)
-		if width == 480 { testing.expect_value(t, len(sel_lines), 1) }
+		if width == 480 {testing.expect_value(t, len(sel_lines), 1)}
 		for line in sel_lines {
 			box := clay.GetElementData(clay.ID("BodyLine", line.id)).boundingBox
-			testing.expect(t, box.width <= width + 0.1, fmt.tprintf("%.1f > %.1f", box.width, width))
+			testing.expect(
+				t,
+				box.width <= width + 0.1,
+				fmt.tprintf("%.1f > %.1f", box.width, width),
+			)
 			at := 0
 			for seg, k in inline_segs(line.text) {
 				if len(seg.hex) > 0 {
-					chip := clay.GetElementData(clay.ID("SegMention", line.id * 128 + u32(k))).boundingBox
-					testing.expect_value(t, hit_plain(line.text, chip.x + chip.width * 0.25 - box.x, line.size, line.tile_px), at)
-					testing.expect_value(t, hit_plain(line.text, chip.x + chip.width * 0.75 - box.x, line.size, line.tile_px), at + len(seg.text))
+					chip :=
+						clay.GetElementData(clay.ID("SegMention", line.id * 128 + u32(k))).boundingBox
+					testing.expect_value(
+						t,
+						hit_plain(
+							line.text,
+							chip.x + chip.width * 0.25 - box.x,
+							line.size,
+							line.tile_px,
+						),
+						at,
+					)
+					testing.expect_value(
+						t,
+						hit_plain(
+							line.text,
+							chip.x + chip.width * 0.75 - box.x,
+							line.size,
+							line.tile_px,
+						),
+						at + len(seg.text),
+					)
 				}
 				at += len(seg.text)
 			}
@@ -185,7 +224,7 @@ mention_wrap_layout :: proc(t: ^testing.T) {
 		}
 	}
 	gh_cards_on = true
-	defer { gh_cards_on = false }
+	defer {gh_cards_on = false}
 	for token in ([]string{TEST_NADDR, TEST_PRIMAL}) {
 		text := fmt.tprintf("before %s after", token)
 		lines := wrapped_lines(text, 480, BODY_FS, .Cards)
@@ -204,9 +243,17 @@ nostr_product_preview :: proc(t: ^testing.T) {
 	_, ref := nostr_at(TEST_PRODUCT, 0)
 	testing.expect_value(t, ref.kind, Nostr_Kind.Address)
 	testing.expect_value(t, ref.event_kind, 30402)
-	testing.expect_value(t, ref.author, "211f325b5396968ac0c79b7c0a030d768206d32ac61f93f143de112b859bd46f")
+	testing.expect_value(
+		t,
+		ref.author,
+		"211f325b5396968ac0c79b7c0a030d768206d32ac61f93f143de112b859bd46f",
+	)
 	testing.expect_value(t, ref.identifier, "product_1768341630046_c91xy")
-	testing.expect_value(t, nev_parse(transmute([]u8)string(TEST_PRODUCT_JSON), .Event, ref.key).raw, "")
+	testing.expect_value(
+		t,
+		nev_parse(transmute([]u8)string(TEST_PRODUCT_JSON), .Event, ref.key).raw,
+		"",
+	)
 	_, payload, _ := bech32_decode(TEST_PRODUCT)
 	start := strings.index(string(payload), ref.identifier)
 	copy(payload[start:], transmute([]u8)string("product_1768336493906_b3hw1"))
@@ -220,18 +267,55 @@ nostr_product_preview :: proc(t: ^testing.T) {
 	testing.expect_value(t, card.product.stock, "100")
 	testing.expect(t, strings.has_suffix(card.product.image, ".webp"))
 	for replacement in ([][2]string{{"30402", "30023"}, {"product_1768336493906_b3hw1", "wrong"}, {ref.author, strings.repeat("0", 64, context.temp_allocator)}}) {
-		wrong, _ := strings.replace_all(TEST_PRODUCT_JSON, replacement[0], replacement[1], context.temp_allocator)
+		wrong, _ := strings.replace_all(
+			TEST_PRODUCT_JSON,
+			replacement[0],
+			replacement[1],
+			context.temp_allocator,
+		)
 		testing.expect_value(t, nev_parse(transmute([]u8)wrong, .Event, ref.key).raw, "")
 	}
-	variant, _ := strings.replace_all(TEST_PRODUCT_JSON, `"on-sale"`, `"pre-order"`, context.temp_allocator)
-	testing.expect_value(t, nev_parse(transmute([]u8)variant, .Event).product.availability, "Pre-order")
-	variant, _ = strings.replace_all(TEST_PRODUCT_JSON, `"stock","100"`, `"stock","0"`, context.temp_allocator)
-	testing.expect_value(t, nev_parse(transmute([]u8)variant, .Event).product.availability, "Out of stock")
-	variant, _ = strings.replace_all(TEST_PRODUCT_JSON, `["summary",""]`, `["status","sold"]`, context.temp_allocator)
+	variant, _ := strings.replace_all(
+		TEST_PRODUCT_JSON,
+		`"on-sale"`,
+		`"pre-order"`,
+		context.temp_allocator,
+	)
+	testing.expect_value(
+		t,
+		nev_parse(transmute([]u8)variant, .Event).product.availability,
+		"Pre-order",
+	)
+	variant, _ = strings.replace_all(
+		TEST_PRODUCT_JSON,
+		`"stock","100"`,
+		`"stock","0"`,
+		context.temp_allocator,
+	)
+	testing.expect_value(
+		t,
+		nev_parse(transmute([]u8)variant, .Event).product.availability,
+		"Out of stock",
+	)
+	variant, _ = strings.replace_all(
+		TEST_PRODUCT_JSON,
+		`["summary",""]`,
+		`["status","sold"]`,
+		context.temp_allocator,
+	)
 	testing.expect_value(t, nev_parse(transmute([]u8)variant, .Event).product.availability, "Sold")
 	// Malformed optional tags must not break an otherwise usable preview.
-	variant, _ = strings.replace_all(TEST_PRODUCT_JSON, `"tags":[`, `"tags":[null,[],["price",3],`, context.temp_allocator)
+	variant, _ = strings.replace_all(
+		TEST_PRODUCT_JSON,
+		`"tags":[`,
+		`"tags":[null,[],["price",3],`,
+		context.temp_allocator,
+	)
 	testing.expect_value(t, nev_parse(transmute([]u8)variant, .Event).product.title, "RoboCoin")
-	by_id := nev_parse(transmute([]u8)string(TEST_PRODUCT_JSON), .Event, "8b3e3ad45de07d0180625e97970f59547db2ef5476c7c64ec60ef01e7aa58cc7")
+	by_id := nev_parse(
+		transmute([]u8)string(TEST_PRODUCT_JSON),
+		.Event,
+		"8b3e3ad45de07d0180625e97970f59547db2ef5476c7c64ec60ef01e7aa58cc7",
+	)
 	testing.expect_value(t, by_id.product.title, "RoboCoin")
 }

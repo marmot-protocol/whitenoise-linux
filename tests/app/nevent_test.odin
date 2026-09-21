@@ -17,10 +17,17 @@ nevent_at_tokens :: proc(t: ^testing.T) {
 	testing.expect_value(t, hints[0], "wss://relay.damus.io")
 
 	// bare note1 carries no hints.
-	end2, hx2, hints2, ok2 := nevent_at("note13ze9zdt8ulg08ggc4g9ycmpen5ltscc4hvfy8seceu578zlvkyzsq77jau", 0)
+	end2, hx2, hints2, ok2 := nevent_at(
+		"note13ze9zdt8ulg08ggc4g9ycmpen5ltscc4hvfy8seceu578zlvkyzsq77jau",
+		0,
+	)
 	testing.expect(t, ok2)
 	testing.expect_value(t, hx2, id)
-	testing.expect_value(t, end2, len("note13ze9zdt8ulg08ggc4g9ycmpen5ltscc4hvfy8seceu578zlvkyzsq77jau"))
+	testing.expect_value(
+		t,
+		end2,
+		len("note13ze9zdt8ulg08ggc4g9ycmpen5ltscc4hvfy8seceu578zlvkyzsq77jau"),
+	)
 	testing.expect_value(t, len(hints2), 0)
 
 	// npub is a mention, not an event; garbage is nothing.
@@ -32,7 +39,9 @@ nevent_at_tokens :: proc(t: ^testing.T) {
 
 @(test)
 nev_parse_shapes :: proc(t: ^testing.T) {
-	msg := transmute([]u8)string(`["EVENT","wn",{"content":"hi","created_at":1788349644,"id":"ab","kind":1,"pubkey":"6b8f","sig":"00","tags":[]}]`)
+	msg := transmute([]u8)string(
+		`["EVENT","wn",{"content":"hi","created_at":1788349644,"id":"ab","kind":1,"pubkey":"6b8f","sig":"00","tags":[]}]`,
+	)
 	card := nev_parse(msg, .Message)
 	testing.expect(t, card.done)
 	testing.expect_value(t, card.kind, 1)
@@ -55,22 +64,36 @@ nev_parse_shapes :: proc(t: ^testing.T) {
 
 @(test)
 nevent_inline_seg :: proc(t: ^testing.T) {
-	segs := inline_segs("look at this nevent1qqsg3vj3x4n7058n5yv25zjvdsue604cvv2mkyjrcvuv720r30ktzpgpz3mhxue69uhhyetvv9ujuerpd46hxtnfdudrh9q7 and more")
+	segs := inline_segs(
+		"look at this nevent1qqsg3vj3x4n7058n5yv25zjvdsue604cvv2mkyjrcvuv720r30ktzpgpz3mhxue69uhhyetvv9ujuerpd46hxtnfdudrh9q7 and more",
+	)
 	testing.expect_value(t, len(segs), 3)
-	testing.expect_value(t, segs[1].evid, "88b2513567e7d0f3a118aa0a4c6c399d3eb86315bb1243c338cf29e38becb105")
+	testing.expect_value(
+		t,
+		segs[1].evid,
+		"88b2513567e7d0f3a118aa0a4c6c399d3eb86315bb1243c338cf29e38becb105",
+	)
 	testing.expect_value(t, segs[2].text, " and more")
 }
 
 @(test)
 nevent_bare_note_in_text :: proc(t: ^testing.T) {
-	segs := inline_segs("just a note: note1evtv9rerzqa6g6wt2pjuw9vhkkza2zq2p9qfn6aa4kdkrmumdpssy3nw7z")
+	segs := inline_segs(
+		"just a note: note1evtv9rerzqa6g6wt2pjuw9vhkkza2zq2p9qfn6aa4kdkrmumdpssy3nw7z",
+	)
 	testing.expect_value(t, len(segs), 2)
-	testing.expect_value(t, segs[1].evid, "cb16c28f23103ba469cb5065c71597b585d5080a094099ebbdad9b61ef9b6861")
+	testing.expect_value(
+		t,
+		segs[1].evid,
+		"cb16c28f23103ba469cb5065c71597b585d5080a094099ebbdad9b61ef9b6861",
+	)
 }
 
 @(test)
 nev_image_urls_scan :: proc(t: ^testing.T) {
-	urls := nev_image_urls("pic https://x.io/a.JPG?w=1 and https://x.io/doc.pdf then https://y.io/b.webp.")
+	urls := nev_image_urls(
+		"pic https://x.io/a.JPG?w=1 and https://x.io/doc.pdf then https://y.io/b.webp.",
+	)
 	testing.expect_value(t, len(urls), 2)
 	testing.expect_value(t, urls[0], "https://x.io/a.JPG?w=1")
 	testing.expect_value(t, urls[1], "https://y.io/b.webp")

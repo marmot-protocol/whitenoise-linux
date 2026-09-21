@@ -40,13 +40,27 @@ glow :: proc(parent: clay.ElementId, color: clay.Color, strength: f32, spread: f
 		return
 	}
 	view := new(Glow_View, context.temp_allocator)
-	view^ = {kind = .Glow, color = color, spread = spread, strength = clamp(strength, 0, 1)}
+	view^ = {
+		kind     = .Glow,
+		color    = color,
+		spread   = spread,
+		strength = clamp(strength, 0, 1),
+	}
 	id := parent
 	id.id ~= GLOW_SALT
 	if clay.UI(id)(
 	{
-		layout = {sizing = {width = clay.SizingFixed(box.width + spread * 2), height = clay.SizingFixed(box.height + spread * 2)}},
-		floating = {attachTo = .Parent, zIndex = -1, attachment = {element = .CenterCenter, parent = .CenterCenter}},
+		layout = {
+			sizing = {
+				width = clay.SizingFixed(box.width + spread * 2),
+				height = clay.SizingFixed(box.height + spread * 2),
+			},
+		},
+		floating = {
+			attachTo = .Parent,
+			zIndex = -1,
+			attachment = {element = .CenterCenter, parent = .CenterCenter},
+		},
 		custom = {customData = view},
 	},
 	) {}
@@ -62,7 +76,12 @@ hover_glow :: proc(parent: clay.ElementId, color: clay.Color, on: bool) {
 // halo is drawn around the element inside it.
 glow_draw :: proc(view: ^Glow_View, bounds: clay.BoundingBox) {
 	alpha := GLOW_ALPHA * view.strength
-	color := rl.Color{u8(view.color.r), u8(view.color.g), u8(view.color.b), u8(clamp(alpha, 0, 255))}
+	color := rl.Color {
+		u8(view.color.r),
+		u8(view.color.g),
+		u8(view.color.b),
+		u8(clamp(alpha, 0, 255)),
+	}
 	rl.DrawGlow(
 		bounds.x + view.spread,
 		bounds.y + view.spread,

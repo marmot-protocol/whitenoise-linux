@@ -23,7 +23,7 @@ UI_ZOOM: f32 = 1.5
 @(private)
 Image_Crop :: struct {
 	kind: Model_Kind,
-	tex: ^rl.Texture2D,
+	tex:  ^rl.Texture2D,
 }
 
 // Register the per-font-id fallback stacks. Noto Sans CJK rides
@@ -64,14 +64,37 @@ init_fonts :: proc() {
 		append(&paths, ..candidates)
 		append(&paths, ..fallbacks)
 		if id != FONT_ICON {
-			append(&paths, res_font("NotoSansMath-Regular.ttf"), res_font("NotoSansSymbols-Regular.ttf"), res_font("NotoSansSymbols2-Regular.ttf"))
+			append(
+				&paths,
+				res_font("NotoSansMath-Regular.ttf"),
+				res_font("NotoSansSymbols-Regular.ttf"),
+				res_font("NotoSansSymbols2-Regular.ttf"),
+			)
 		}
 		rl.LoadFontStack(id, paths[:], text_emoji)
 	}
 	stack(FONT_BODY, "LiberationSans-Regular.ttf", FONT_CANDIDATES, CJK_CANDIDATES)
 	stack(FONT_TITLE, "LiberationSans-Bold.ttf", TITLE_CANDIDATES, CJK_BOLD_CANDIDATES)
-	stack(FONT_ITALIC, "LiberationSans-Italic.ttf", {"/usr/share/fonts/liberation/LiberationSans-Italic.ttf", "/usr/share/fonts/truetype/liberation/LiberationSans-Italic.ttf", "/usr/share/fonts/liberation-sans/LiberationSans-Italic.ttf"}, CJK_CANDIDATES)
-	stack(FONT_BOLD_ITALIC, "LiberationSans-BoldItalic.ttf", {"/usr/share/fonts/liberation/LiberationSans-BoldItalic.ttf", "/usr/share/fonts/truetype/liberation/LiberationSans-BoldItalic.ttf", "/usr/share/fonts/liberation-sans/LiberationSans-BoldItalic.ttf"}, CJK_BOLD_CANDIDATES)
+	stack(
+		FONT_ITALIC,
+		"LiberationSans-Italic.ttf",
+		{
+			"/usr/share/fonts/liberation/LiberationSans-Italic.ttf",
+			"/usr/share/fonts/truetype/liberation/LiberationSans-Italic.ttf",
+			"/usr/share/fonts/liberation-sans/LiberationSans-Italic.ttf",
+		},
+		CJK_CANDIDATES,
+	)
+	stack(
+		FONT_BOLD_ITALIC,
+		"LiberationSans-BoldItalic.ttf",
+		{
+			"/usr/share/fonts/liberation/LiberationSans-BoldItalic.ttf",
+			"/usr/share/fonts/truetype/liberation/LiberationSans-BoldItalic.ttf",
+			"/usr/share/fonts/liberation-sans/LiberationSans-BoldItalic.ttf",
+		},
+		CJK_BOLD_CANDIDATES,
+	)
 	stack(FONT_MONO, "LiberationMono-Regular.ttf", MONO_CANDIDATES, CJK_CANDIDATES)
 	stack(FONT_ICON, "JetBrainsMonoNerdFont-Regular.ttf", ICON_CANDIDATES, nil)
 	rl.IconFont = FONT_ICON // ink-boxed, so icons center in their buttons
@@ -98,10 +121,19 @@ clay_color :: proc(color: clay.Color) -> rl.Color {
 	return {u8(color.r), u8(color.g), u8(color.b), u8(color.a)}
 }
 
-measure_text :: proc "c" (text: clay.StringSlice, config: ^clay.TextElementConfig, userData: rawptr) -> clay.Dimensions {
+measure_text :: proc "c" (
+	text: clay.StringSlice,
+	config: ^clay.TextElementConfig,
+	userData: rawptr,
+) -> clay.Dimensions {
 	context = runtime.default_context()
 	context.allocator = reload_allocator()
-	size := rl.MeasureTextLine(config.fontId, config.fontSize, string(text.chars[:text.length]), f32(config.letterSpacing))
+	size := rl.MeasureTextLine(
+		config.fontId,
+		config.fontSize,
+		string(text.chars[:text.length]),
+		f32(config.letterSpacing),
+	)
 	return {width = size.x, height = size.y}
 }
 
@@ -185,7 +217,14 @@ scroll_smear :: proc() {
 		return
 	}
 	rl.FadeTargetInto(TRAIL_SLOT, FRAME_SLOT, TRAIL_MIX)
-	rl.DrawTargetRegion(TRAIL_SLOT, box.x * UI_ZOOM, box.y * UI_ZOOM, box.width * UI_ZOOM, box.height * UI_ZOOM, strength)
+	rl.DrawTargetRegion(
+		TRAIL_SLOT,
+		box.x * UI_ZOOM,
+		box.y * UI_ZOOM,
+		box.width * UI_ZOOM,
+		box.height * UI_ZOOM,
+		strength,
+	)
 }
 
 // The page that was there, fading off the page that replaced it, inside
@@ -224,7 +263,10 @@ veil_split :: proc(commands: ^clay.ClayArray(clay.RenderCommand)) -> i32 {
 	return -1
 }
 
-clay_raylib_render :: proc(render_commands: ^clay.ClayArray(clay.RenderCommand), allocator := context.temp_allocator) {
+clay_raylib_render :: proc(
+	render_commands: ^clay.ClayArray(clay.RenderCommand),
+	allocator := context.temp_allocator,
+) {
 	split := veil_split(render_commands)
 	if split < 0 {
 		render_range(render_commands, 0, render_commands.length, allocator)
@@ -250,7 +292,11 @@ clay_raylib_render :: proc(render_commands: ^clay.ClayArray(clay.RenderCommand),
 }
 
 @(private = "file")
-render_range :: proc(render_commands: ^clay.ClayArray(clay.RenderCommand), from, to: i32, allocator := context.temp_allocator) {
+render_range :: proc(
+	render_commands: ^clay.ClayArray(clay.RenderCommand),
+	from, to: i32,
+	allocator := context.temp_allocator,
+) {
 	overlay_colors := make([dynamic]clay.Color, allocator)
 	for i in from ..< to {
 		render_command := clay.RenderCommandArray_Get(render_commands, i)
@@ -261,7 +307,15 @@ render_range :: proc(render_commands: ^clay.ClayArray(clay.RenderCommand), from,
 		case .Text:
 			config := render_command.renderData.text
 			text := string(config.stringContents.chars[:config.stringContents.length])
-			rl.DrawTextLine(config.fontId, config.fontSize, text, bounds.x, bounds.y, f32(config.letterSpacing), clay_color(config.textColor))
+			rl.DrawTextLine(
+				config.fontId,
+				config.fontSize,
+				text,
+				bounds.x,
+				bounds.y,
+				f32(config.letterSpacing),
+				clay_color(config.textColor),
+			)
 		case .Image:
 			config := render_command.renderData.image
 			tint := clay.Color{255, 255, 255, 255}
@@ -269,9 +323,21 @@ render_range :: proc(render_commands: ^clay.ClayArray(clay.RenderCommand), from,
 				tint = overlay_colors[len(overlay_colors) - 1]
 			}
 			texture := (^rl.Texture2D)(config.imageData)
-			rl.DrawTextureRect(texture, bounds.x, bounds.y, bounds.width, bounds.height, clay_color(tint))
+			rl.DrawTextureRect(
+				texture,
+				bounds.x,
+				bounds.y,
+				bounds.width,
+				bounds.height,
+				clay_color(tint),
+			)
 		case .ScissorStart:
-			rl.BeginScissorMode(i32(math.round(bounds.x)), i32(math.round(bounds.y)), i32(math.round(bounds.width)), i32(math.round(bounds.height)))
+			rl.BeginScissorMode(
+				i32(math.round(bounds.x)),
+				i32(math.round(bounds.y)),
+				i32(math.round(bounds.width)),
+				i32(math.round(bounds.height)),
+			)
 		case .ScissorEnd:
 			rl.EndScissorMode()
 		case .Rectangle:
@@ -283,13 +349,22 @@ render_range :: proc(render_commands: ^clay.ClayArray(clay.RenderCommand), from,
 			config := render_command.renderData.rectangle
 			fill := clay_color(anim_color(render_command.id, config.backgroundColor, HOVER_RATE))
 			if config.cornerRadius.topLeft > 0 {
-				rl.DrawRectangleRoundedPx(bounds.x, bounds.y, bounds.width, bounds.height, config.cornerRadius.topLeft, fill)
+				rl.DrawRectangleRoundedPx(
+					bounds.x,
+					bounds.y,
+					bounds.width,
+					bounds.height,
+					config.cornerRadius.topLeft,
+					fill,
+				)
 			} else {
 				rl.DrawRectangleRec(bounds.x, bounds.y, bounds.width, bounds.height, fill)
 			}
 		case .Border:
 			config := render_command.renderData.border
-			color := clay_color(anim_color(anim_key(render_command.id, 1), config.color, HOVER_RATE))
+			color := clay_color(
+				anim_color(anim_key(render_command.id, 1), config.color, HOVER_RATE),
+			)
 			min_radius := min(bounds.width, bounds.height) / 2
 			tl := min(config.cornerRadius.topLeft, min_radius)
 			tr := min(config.cornerRadius.topRight, min_radius)
@@ -298,31 +373,87 @@ render_range :: proc(render_commands: ^clay.ClayArray(clay.RenderCommand), from,
 
 			id := render_command.id
 			if config.width.left > 0 {
-				rl.DrawRectangleRec(bounds.x + boil(id, 0), bounds.y + tl, f32(config.width.left), bounds.height - tl - bl, color)
+				rl.DrawRectangleRec(
+					bounds.x + boil(id, 0),
+					bounds.y + tl,
+					f32(config.width.left),
+					bounds.height - tl - bl,
+					color,
+				)
 			}
 			if config.width.right > 0 {
-				rl.DrawRectangleRec(bounds.x + bounds.width - f32(config.width.right) + boil(id, 1), bounds.y + tr, f32(config.width.right), bounds.height - tr - br, color)
+				rl.DrawRectangleRec(
+					bounds.x + bounds.width - f32(config.width.right) + boil(id, 1),
+					bounds.y + tr,
+					f32(config.width.right),
+					bounds.height - tr - br,
+					color,
+				)
 			}
 			if config.width.top > 0 {
-				rl.DrawRectangleRec(bounds.x + tl, bounds.y + boil(id, 2), bounds.width - tl - tr, f32(config.width.top), color)
+				rl.DrawRectangleRec(
+					bounds.x + tl,
+					bounds.y + boil(id, 2),
+					bounds.width - tl - tr,
+					f32(config.width.top),
+					color,
+				)
 			}
 			if config.width.bottom > 0 {
-				rl.DrawRectangleRec(bounds.x + bl, bounds.y + bounds.height - f32(config.width.bottom) + boil(id, 3), bounds.width - bl - br, f32(config.width.bottom), color)
+				rl.DrawRectangleRec(
+					bounds.x + bl,
+					bounds.y + bounds.height - f32(config.width.bottom) + boil(id, 3),
+					bounds.width - bl - br,
+					f32(config.width.bottom),
+					color,
+				)
 			}
 
 			// Arc centers sit exactly radius-in from the box corner so
 			// the annular band lines up with the straight edge rects.
 			if tl > 0 {
-				rl.DrawArc(bounds.x + tl, bounds.y + tl, tl, 180, 270, f32(config.width.top), color)
+				rl.DrawArc(
+					bounds.x + tl,
+					bounds.y + tl,
+					tl,
+					180,
+					270,
+					f32(config.width.top),
+					color,
+				)
 			}
 			if tr > 0 {
-				rl.DrawArc(bounds.x + bounds.width - tr, bounds.y + tr, tr, 270, 360, f32(config.width.top), color)
+				rl.DrawArc(
+					bounds.x + bounds.width - tr,
+					bounds.y + tr,
+					tr,
+					270,
+					360,
+					f32(config.width.top),
+					color,
+				)
 			}
 			if bl > 0 {
-				rl.DrawArc(bounds.x + bl, bounds.y + bounds.height - bl, bl, 90, 180, f32(config.width.bottom), color)
+				rl.DrawArc(
+					bounds.x + bl,
+					bounds.y + bounds.height - bl,
+					bl,
+					90,
+					180,
+					f32(config.width.bottom),
+					color,
+				)
 			}
 			if br > 0 {
-				rl.DrawArc(bounds.x + bounds.width - br, bounds.y + bounds.height - br, br, 0, 90, f32(config.width.bottom), color)
+				rl.DrawArc(
+					bounds.x + bounds.width - br,
+					bounds.y + bounds.height - br,
+					br,
+					0,
+					90,
+					f32(config.width.bottom),
+					color,
+				)
 			}
 		case .OverlayColorStart:
 			config := render_command.renderData.overlayColor
@@ -365,18 +496,34 @@ render_range :: proc(render_commands: ^clay.ClayArray(clay.RenderCommand), from,
 				hidden_border_draw(bounds)
 			case .Profile_Background:
 				tint := clay.Color{255, 255, 255, 255}
-				if len(overlay_colors) > 0 && overlay_colors[len(overlay_colors) - 1] != 0 { tint = overlay_colors[len(overlay_colors) - 1] }
+				if len(overlay_colors) > 0 &&
+				   overlay_colors[len(overlay_colors) - 1] !=
+					   0 {tint = overlay_colors[len(overlay_colors) - 1]}
 				profile_background_draw((^Profile_Background)(data), bounds, clay_color(tint))
 			case .Image_Crop:
 				tex := (^Image_Crop)(data).tex
-				if tex.width <= 0 || tex.height <= 0 { continue }
+				if tex.width <= 0 || tex.height <= 0 {continue}
 				scale := max(bounds.width / f32(tex.width), bounds.height / f32(tex.height))
 				tint := clay.Color{255, 255, 255, 255}
-				if len(overlay_colors) > 0 && overlay_colors[len(overlay_colors) - 1] != 0 { tint = overlay_colors[len(overlay_colors) - 1] }
+				if len(overlay_colors) > 0 &&
+				   overlay_colors[len(overlay_colors) - 1] !=
+					   0 {tint = overlay_colors[len(overlay_colors) - 1]}
 				// Crop from the top left to preserve the beginning of screenshots.
 				// Renderer clipping leaves wheel scrolling with the timeline.
-				rl.BeginScissorMode(i32(bounds.x), i32(bounds.y), i32(bounds.width), i32(bounds.height))
-				rl.DrawTextureRect(tex, bounds.x, bounds.y, f32(tex.width) * scale, f32(tex.height) * scale, clay_color(tint))
+				rl.BeginScissorMode(
+					i32(bounds.x),
+					i32(bounds.y),
+					i32(bounds.width),
+					i32(bounds.height),
+				)
+				rl.DrawTextureRect(
+					tex,
+					bounds.x,
+					bounds.y,
+					f32(tex.width) * scale,
+					f32(tex.height) * scale,
+					clay_color(tint),
+				)
 				rl.EndScissorMode()
 			}
 		}

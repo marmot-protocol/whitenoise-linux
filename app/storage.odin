@@ -46,7 +46,14 @@ cache_path :: proc(sha: string) -> string {
 // Attachment bytes for a timeline media reference: the disk cache
 // first, marmot's download+decrypt otherwise. The returned slice is
 // the caller's to keep or delete.
-media_load :: proc(client: ^marmot.Client, account, group: cstring, reference: ^marmot.Media_Attachment_Reference) -> ([]u8, bool) {
+media_load :: proc(
+	client: ^marmot.Client,
+	account, group: cstring,
+	reference: ^marmot.Media_Attachment_Reference,
+) -> (
+	[]u8,
+	bool,
+) {
 	timing_start := time.tick_now()
 	defer local_timing_end(.media_load, timing_start)
 	sha := reference.plaintext_sha256 != nil ? string(reference.plaintext_sha256) : ""
@@ -54,7 +61,8 @@ media_load :: proc(client: ^marmot.Client, account, group: cstring, reference: ^
 	if cacheable {
 		// A blob sealed under a previous vault password fails its tag and
 		// reads as a miss, which downloads and re-seals it.
-		if sealed, read_err := os.read_entire_file(cache_path(sha), context.temp_allocator); read_err == nil {
+		if sealed, read_err := os.read_entire_file(cache_path(sha), context.temp_allocator);
+		   read_err == nil {
 			if data, opened := vault_open_blob(sealed); opened {
 				local_timing_end(.media_cache_hit, timing_start)
 				return data, true
@@ -192,9 +200,19 @@ settings_storage :: proc(ui: ^Ui_State) {
 
 	eyebrow("MEDIA CACHE")
 	if clay.UI(clay.ID("RowCache"))(srow()) {
-		row_labels("Cached attachments", "Images and files kept on this device so they don't download twice, sealed with your vault key.")
-		clay.Text(human_size(ui.cache_bytes), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
-		micro_button("CacheClear", ui.keys_confirm == "CacheClear" ? tr("Confirm clear") : tr("Clear cache"), DANGER)
+		row_labels(
+			"Cached attachments",
+			"Images and files kept on this device so they don't download twice, sealed with your vault key.",
+		)
+		clay.Text(
+			human_size(ui.cache_bytes),
+			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+		)
+		micro_button(
+			"CacheClear",
+			ui.keys_confirm == "CacheClear" ? tr("Confirm clear") : tr("Clear cache"),
+			DANGER,
+		)
 	}
 
 	eyebrow("KEYS & BACKUPS")
@@ -204,18 +222,30 @@ settings_storage :: proc(ui: ^Ui_State) {
 		micro_button("LocOpen", "Open folder")
 	}
 	if clay.UI(clay.ID("RowBackup"))(srow()) {
-		row_labels("Back up everything", "Pack your settings, drafts, custom emoji, and themes into one encrypted file.")
+		row_labels(
+			"Back up everything",
+			"Pack your settings, drafts, custom emoji, and themes into one encrypted file.",
+		)
 		micro_button("BackupBtn", "Create backup...")
 	}
 	if clay.UI(clay.ID("RowImport"))(srow()) {
-		row_labels("Import a backup", "Replaces the settings, drafts, custom emoji, and themes on this device.")
-		micro_button("ImportBtn", ui.keys_confirm == "ImportBtn" ? tr("Confirm import") : tr("Import..."), DANGER)
+		row_labels(
+			"Import a backup",
+			"Replaces the settings, drafts, custom emoji, and themes on this device.",
+		)
+		micro_button(
+			"ImportBtn",
+			ui.keys_confirm == "ImportBtn" ? tr("Confirm import") : tr("Import..."),
+			DANGER,
+		)
 	}
 	if clay.UI(clay.ID("RowLastBackup"))(srow()) {
 		row_labels("Last backup", last_backup_line(ui))
 	}
 	clay.Text(
-		tr("Backups hold what this device stores locally. Your keys and message history live in marmot's own store and are not included."),
+		tr(
+			"Backups hold what this device stores locally. Your keys and message history live in marmot's own store and are not included.",
+		),
 		{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 	)
 }
@@ -298,52 +328,104 @@ backup_modal :: proc(ui: ^Ui_State) {
 	creating := backup_shown == .Create
 	if clay.UI(clay.ID("BackupModal"))(
 	{
-		layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(modal_w(clay.ID("BackupModal"), 440))}, padding = clay.PaddingAll(18), childGap = 10},
-		floating = {attachTo = .Root, zIndex = 12, offset = {0, rise(clay.ID("BackupModal"))}, attachment = {element = .CenterCenter, parent = .CenterCenter}},
+		layout = {
+			layoutDirection = .TopToBottom,
+			sizing = {width = clay.SizingFixed(modal_w(clay.ID("BackupModal"), 440))},
+			padding = clay.PaddingAll(18),
+			childGap = 10,
+		},
+		floating = {
+			attachTo = .Root,
+			zIndex = 12,
+			offset = {0, rise(clay.ID("BackupModal"))},
+			attachment = {element = .CenterCenter, parent = .CenterCenter},
+		},
 		backgroundColor = CARD,
 		cornerRadius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		if clay.UI(clay.ID("BackupHead"))({layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}}) {
-			clay.Text(creating ? tr("Create backup") : tr("Import backup"), {fontId = FONT_TITLE, fontSize = 17, textColor = TEXT})
-			if clay.UI(clay.ID("BackupHeadGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-			if clay.UI(clay.ID("BackupClose"))({layout = {padding = clay.PaddingAll(6)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)}) {
+		if clay.UI(clay.ID("BackupHead"))(
+		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
+		) {
+			clay.Text(
+				creating ? tr("Create backup") : tr("Import backup"),
+				{fontId = FONT_TITLE, fontSize = 17, textColor = TEXT},
+			)
+			if clay.UI(clay.ID("BackupHeadGap"))(
+			{layout = {sizing = {width = clay.SizingGrow()}}},
+			) {}
+			if clay.UI(clay.ID("BackupClose"))(
+			{
+				layout = {padding = clay.PaddingAll(6)},
+				backgroundColor = hovered() ? HOVER : {},
+				cornerRadius = rr(6),
+			},
+			) {
 				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
 			}
 		}
 
 		blurb :=
-			creating \
-			? tr("Pick a password to encrypt the backup with. Without it the file cannot be opened again.") \
-			: tr("Enter the password this backup was created with. The settings, drafts, custom emoji, and themes on this device will be replaced.")
+			creating ? tr("Pick a password to encrypt the backup with. Without it the file cannot be opened again.") : tr("Enter the password this backup was created with. The settings, drafts, custom emoji, and themes on this device will be replaced.")
 		clay.Text(blurb, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
 
 		eyebrow("PASSWORD")
 		if clay.UI(clay.ID("BackupPwBox"))(
-		{layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(38)}, padding = {left = 12, right = 12}, childAlignment = {y = .Center}}, backgroundColor = ROW_BG, cornerRadius = rr(9), border = {color = ui.focus == .BackupPw ? ACCENT : FIELD_BORDER, width = bw()}},
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(38)},
+				padding = {left = 12, right = 12},
+				childAlignment = {y = .Center},
+			},
+			backgroundColor = ROW_BG,
+			cornerRadius = rr(9),
+			border = {color = ui.focus == .BackupPw ? ACCENT : FIELD_BORDER, width = bw()},
+		},
 		) {
 			if len(ui.backup_pw) == 0 {
-				clay.Text(tr("Your password"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_LO})
+				clay.Text(
+					tr("Your password"),
+					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_LO},
+				)
 			} else {
-				clay.Text(strings.repeat("*", min(len(ui.backup_pw), 48), context.temp_allocator), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT})
+				clay.Text(
+					strings.repeat("*", min(len(ui.backup_pw), 48), context.temp_allocator),
+					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
+				)
 			}
 			if ui.focus == .BackupPw {
 				caret(15)
 			}
 		}
 
-		if clay.UI(clay.ID("BackupBtns"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, padding = {top = 8}}}) {
+		if clay.UI(clay.ID("BackupBtns"))(
+		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, padding = {top = 8}}},
+		) {
 			if clay.UI(clay.ID("BackupCancel"))(
-			{layout = {padding = {left = 22, right = 22, top = 9, bottom = 9}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(9), border = {color = FIELD_BORDER, width = bw()}},
+			{
+				layout = {padding = {left = 22, right = 22, top = 9, bottom = 9}},
+				backgroundColor = hovered() ? HOVER : {},
+				cornerRadius = rr(9),
+				border = {color = FIELD_BORDER, width = bw()},
+			},
 			) {
 				clay.Text("Cancel", {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
 			}
-			if clay.UI(clay.ID("BackupBtnsGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+			if clay.UI(clay.ID("BackupBtnsGap"))(
+			{layout = {sizing = {width = clay.SizingGrow()}}},
+			) {}
 			if clay.UI(clay.ID("BackupGo"))(
-			{layout = {padding = {left = 22, right = 22, top = 9, bottom = 9}}, backgroundColor = creating ? ACCENT : DANGER, cornerRadius = rr(9)},
+			{
+				layout = {padding = {left = 22, right = 22, top = 9, bottom = 9}},
+				backgroundColor = creating ? ACCENT : DANGER,
+				cornerRadius = rr(9),
+			},
 			) {
-				clay.Text(creating ? tr("Create backup") : tr("Import backup"), {fontId = FONT_TITLE, fontSize = 13, textColor = ON_ACCENT})
+				clay.Text(
+					creating ? tr("Create backup") : tr("Import backup"),
+					{fontId = FONT_TITLE, fontSize = 13, textColor = ON_ACCENT},
+				)
 			}
 		}
 	}

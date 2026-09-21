@@ -10,22 +10,44 @@ retired_messages: [dynamic]Msg_Ui
 // Ordinary immutable text rows are the common case. Mutable projections
 // (edits, reactions, replies, media, polls) retain the full conversion path.
 @(private)
-message_matches :: proc(old: Msg_Ui, record: ^marmot.Timeline_Message_Record, label, picture: string) -> bool {
-	if record.kind != 9 || record.deleted || old.deleted || old.edited || old.system ||
-		old.effect != 0 || old.thread_of != "" || len(old.poll_opts) != 0 || old.theme_name != "" ||
-		record.tags_len != 0 || record.media_len != 0 || len(old.att_names) != 0 ||
-		record.reactions.by_emoji_len != 0 || len(old.reactions) != 0 ||
-		record.reply_to_message_id_hex != nil || record.reply_preview != nil || old.reply_id != "" {
+message_matches :: proc(
+	old: Msg_Ui,
+	record: ^marmot.Timeline_Message_Record,
+	label, picture: string,
+) -> bool {
+	if record.kind != 9 ||
+	   record.deleted ||
+	   old.deleted ||
+	   old.edited ||
+	   old.system ||
+	   old.effect != 0 ||
+	   old.thread_of != "" ||
+	   len(old.poll_opts) != 0 ||
+	   old.theme_name != "" ||
+	   record.tags_len != 0 ||
+	   record.media_len != 0 ||
+	   len(old.att_names) != 0 ||
+	   record.reactions.by_emoji_len != 0 ||
+	   len(old.reactions) != 0 ||
+	   record.reply_to_message_id_hex != nil ||
+	   record.reply_preview != nil ||
+	   old.reply_id != "" {
 		return false
 	}
-	if old.body != string(record.plaintext) || old.sender_id != string(record.sender) ||
-		old.sender != label || old.pic_url != picture || old.mine != (string(record.direction) == "sent") {
+	if old.body != string(record.plaintext) ||
+	   old.sender_id != string(record.sender) ||
+	   old.sender != label ||
+	   old.pic_url != picture ||
+	   old.mine != (string(record.direction) == "sent") {
 		return false
 	}
 	// Time/date preferences and midnight can change labels without a wire update.
 	context.allocator = context.temp_allocator
-	return old.at == format_when(record.timeline_at) && old.at_full == format_full(record.timeline_at) &&
-		old.day == format_day(record.timeline_at)
+	return(
+		old.at == format_when(record.timeline_at) &&
+		old.at_full == format_full(record.timeline_at) &&
+		old.day == format_day(record.timeline_at) \
+	)
 }
 
 @(private)
@@ -34,7 +56,7 @@ blocks_free :: proc(blocks: [dynamic]Md_Block_Ui) {
 		delete(block.text)
 		delete(block.fonts)
 		for row in block.cell_fonts {
-			for fonts in row { delete(fonts) }
+			for fonts in row {delete(fonts)}
 			delete(row)
 		}
 		delete(block.cell_fonts)
@@ -51,10 +73,7 @@ blocks_free :: proc(blocks: [dynamic]Md_Block_Ui) {
 
 @(private)
 message_free :: proc(msg: Msg_Ui) {
-	for value in ([]string{msg.id, msg.sender, msg.sender_id, msg.pic_url,
-		msg.body, msg.reply_from, msg.reply_text, msg.reply_id, msg.reply_image, msg.at,
-		msg.at_full, msg.day, msg.sys_text, msg.sys_added_hex,
-		msg.theme_name, msg.theme_toml, msg.thread_of}) {
+	for value in ([]string{msg.id, msg.sender, msg.sender_id, msg.pic_url, msg.body, msg.reply_from, msg.reply_text, msg.reply_id, msg.reply_image, msg.at, msg.at_full, msg.day, msg.sys_text, msg.sys_added_hex, msg.theme_name, msg.theme_toml, msg.thread_of}) {
 		delete(value)
 	}
 	blocks_free(msg.blocks)

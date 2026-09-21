@@ -6,8 +6,11 @@ import clay "../vendor/clay/bindings/odin/clay-odin"
 // One viewport of overscan keeps wheel/fling movement ahead of the clip.
 @(private)
 timeline_skip :: proc(ui: ^Ui_State, msg: Msg_Ui) -> bool {
-	if msg.row_height <= 0 || msg.deleted || sel_dragging ||
-		msg.id == ui.jump_id || msg.row_measure != ui.timeline_metric {
+	if msg.row_height <= 0 ||
+	   msg.deleted ||
+	   sel_dragging ||
+	   msg.id == ui.jump_id ||
+	   msg.row_measure != ui.timeline_metric {
 		return false
 	}
 	data := clay.GetScrollContainerData(clay.ID("Timeline"))
@@ -40,8 +43,10 @@ timeline_measure :: proc(ui: ^Ui_State) {
 		row := clay.GetElementData(clay.ID("MsgRow", u32(i)))
 		if row.found {
 			top := row.boundingBox.y - view.boundingBox.y - data.scrollPosition.y
-			if !anchored && msg.row_height > 0 && msg.row_measure == ui.timeline_metric &&
-				msg.row_top + data.scrollPosition.y >= 0 {
+			if !anchored &&
+			   msg.row_height > 0 &&
+			   msg.row_measure == ui.timeline_metric &&
+			   msg.row_top + data.scrollPosition.y >= 0 {
 				anchor_delta = top - msg.row_top
 				anchored = true
 			}
@@ -51,8 +56,11 @@ timeline_measure :: proc(ui: ^Ui_State) {
 		}
 	}
 	if abs(anchor_delta) > 1 {
-		data.scrollPosition.y = clamp(data.scrollPosition.y - anchor_delta,
-			-max(data.contentDimensions.height - data.scrollContainerDimensions.height, 0), 0)
+		data.scrollPosition.y = clamp(
+			data.scrollPosition.y - anchor_delta,
+			-max(data.contentDimensions.height - data.scrollContainerDimensions.height, 0),
+			0,
+		)
 		scroll_jumped = true
 	}
 }

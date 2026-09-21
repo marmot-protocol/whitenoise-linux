@@ -8,10 +8,18 @@ profiles_update_live_views :: proc(t: ^testing.T) {
 	context.allocator = context.temp_allocator
 	hex := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	register_starter_pic(hex, "Before", "", {})
-	ui := Ui_State{account_ref = hex, peer_hex = hex, peer_open = true, member_nick = 0}
+	ui := Ui_State {
+		account_ref = hex,
+		peer_hex    = hex,
+		peer_open   = true,
+		member_nick = 0,
+	}
 	append(&ui.members, Member_Ui{id_hex = hex, name = strings.clone("Before")})
 	append(&ui.contacts, Contact_Ui{id_hex = hex, name = strings.clone("Before")})
-	ui.profile_contact = Contact_Ui{id_hex = hex, name = strings.clone("Before")}
+	ui.profile_contact = Contact_Ui {
+		id_hex = hex,
+		name   = strings.clone("Before"),
+	}
 	append(&ui.account_ids, hex)
 	append(&ui.accounts, strings.clone("Before"))
 	append(&ui.account_pics, "")
@@ -37,7 +45,10 @@ profiles_update_live_views :: proc(t: ^testing.T) {
 
 	// Equal results leave the owned strings in place; clearing a profile is an update.
 	before := raw_data(ui.members[0].pic_url)
-	testing.expect(t, !update_profile(&ui, hex, {strings.clone(info.name), strings.clone(info.pic_url)}))
+	testing.expect(
+		t,
+		!update_profile(&ui, hex, {strings.clone(info.name), strings.clone(info.pic_url)}),
+	)
 	testing.expect_value(t, raw_data(ui.members[0].pic_url), before)
 	delete_key(&ui.nicknames, hex)
 	testing.expect(t, update_profile(&ui, hex, {}))

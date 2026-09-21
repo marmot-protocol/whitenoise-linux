@@ -11,107 +11,102 @@ when #config(WN_RELOAD, false) {
 	// runtime library so unloading app code does not retain each generation.
 	foreign import lib "../build/libmarmot-dev.so"
 } else {
-	foreign import lib {
-		"../vendor/mdk/crates/marmot-c/output/lib/libmarmot_c.a",
-		"system:m",
-		"system:pthread",
-		"system:dl",
-	}
+	foreign import lib {"../vendor/mdk/crates/marmot-c/output/lib/libmarmot_c.a", "system:m", "system:pthread", "system:dl"}
 }
 
 // Mirrors `enum MarmotStatus`. 1-9 are binding-level failures; 10+
 // mirror the runtime's typed error variants one-to-one.
 Status :: enum i32 {
-	OK                                          = 0,
-	NULL_POINTER                                = 1,
-	INVALID_UTF8                                = 2,
-	PANIC_CAUGHT                                = 3,
-	TIMEOUT                                     = 4,
-	CLOSED                                      = 5,
-	DUPLICATE_IDENTITY                          = 10,
-	UNKNOWN_ACCOUNT                             = 11,
-	UNKNOWN_GROUP                               = 12,
-	INVALID_HEX                                 = 13,
-	INVALID_IDENTITY                            = 14,
-	MISSING_KEY_PACKAGE                         = 15,
-	PUBLISH                                     = 16,
-	TRANSPORT_CLOSED                            = 17,
-	RUNTIME_STOPPING                            = 18,
-	NOT_GROUP_ADMIN                             = 19,
-	ADMIN_CANNOT_SELF_REMOVE                    = 20,
-	WOULD_REMOVE_LAST_ADMIN                     = 21,
-	MEMBER_NOT_IN_GROUP                         = 22,
-	ALREADY_ADMIN                               = 23,
-	NOT_ADMIN                                   = 24,
-	STORAGE_BUSY                                = 25,
-	SECRET_NOT_FOUND                            = 26,
-	KEYSTORE_UNAVAILABLE                        = 27,
-	EMPTY_PASSPHRASE                            = 28,
-	ENCRYPTION_FAILED                           = 29,
-	IO                                          = 30,
-	RUNTIME                                     = 31,
-	EXTERNAL_SIGNER_UNAVAILABLE                 = 32,
-	EXTERNAL_SIGNER_MISMATCH                    = 33,
-	EXTERNAL_SIGNER_REJECTED                    = 34,
-	INVALID_GROUP_MEMBERSHIP_PAGE               = 35,
-	GROUP_HYDRATION_PENDING                     = 36,
-	INVALID_CHAT_PIN                            = 37,
-	INVALID_MESSAGE_DRAFT                       = 38,
-	INVALID_MEDIA_REFERENCE                     = 39,
-	INVALID_KEY_PACKAGE_EVENT                   = 40,
-	FOLLOW_LIST_UNAVAILABLE                     = 41,
-	RUNTIME_BUSY                                = 42,
-	ACCOUNT_SESSION_BUSY                        = 43,
-	ACCOUNT_SETUP_RECOVERY_REQUIRED             = 44,
-	ACCOUNT_SETUP_RETRY_REQUIRED                = 45,
-	ACCOUNT_SETUP_RESET_NOT_APPLICABLE          = 46,
+	OK                                           = 0,
+	NULL_POINTER                                 = 1,
+	INVALID_UTF8                                 = 2,
+	PANIC_CAUGHT                                 = 3,
+	TIMEOUT                                      = 4,
+	CLOSED                                       = 5,
+	DUPLICATE_IDENTITY                           = 10,
+	UNKNOWN_ACCOUNT                              = 11,
+	UNKNOWN_GROUP                                = 12,
+	INVALID_HEX                                  = 13,
+	INVALID_IDENTITY                             = 14,
+	MISSING_KEY_PACKAGE                          = 15,
+	PUBLISH                                      = 16,
+	TRANSPORT_CLOSED                             = 17,
+	RUNTIME_STOPPING                             = 18,
+	NOT_GROUP_ADMIN                              = 19,
+	ADMIN_CANNOT_SELF_REMOVE                     = 20,
+	WOULD_REMOVE_LAST_ADMIN                      = 21,
+	MEMBER_NOT_IN_GROUP                          = 22,
+	ALREADY_ADMIN                                = 23,
+	NOT_ADMIN                                    = 24,
+	STORAGE_BUSY                                 = 25,
+	SECRET_NOT_FOUND                             = 26,
+	KEYSTORE_UNAVAILABLE                         = 27,
+	EMPTY_PASSPHRASE                             = 28,
+	ENCRYPTION_FAILED                            = 29,
+	IO                                           = 30,
+	RUNTIME                                      = 31,
+	EXTERNAL_SIGNER_UNAVAILABLE                  = 32,
+	EXTERNAL_SIGNER_MISMATCH                     = 33,
+	EXTERNAL_SIGNER_REJECTED                     = 34,
+	INVALID_GROUP_MEMBERSHIP_PAGE                = 35,
+	GROUP_HYDRATION_PENDING                      = 36,
+	INVALID_CHAT_PIN                             = 37,
+	INVALID_MESSAGE_DRAFT                        = 38,
+	INVALID_MEDIA_REFERENCE                      = 39,
+	INVALID_KEY_PACKAGE_EVENT                    = 40,
+	FOLLOW_LIST_UNAVAILABLE                      = 41,
+	RUNTIME_BUSY                                 = 42,
+	ACCOUNT_SESSION_BUSY                         = 43,
+	ACCOUNT_SETUP_RECOVERY_REQUIRED              = 44,
+	ACCOUNT_SETUP_RETRY_REQUIRED                 = 45,
+	ACCOUNT_SETUP_RESET_NOT_APPLICABLE           = 46,
 	ACCOUNT_SETUP_KEY_PACKAGE_RECOVERY_AVAILABLE = 47,
-	ACCOUNT_CATCH_UP                            = 48,
-	LEAVE_ALREADY_REQUESTED                     = 49,
-	DISBANDING_UNSUPPORTED_MEMBERS              = 50,
-	DISBANDING_NOT_ENABLED                      = 51,
-	GROUP_DISBANDING                            = 52,
-	STORAGE_CLOSED                              = 53,
-	GROUP_SEND_QUEUE_FULL                       = 54,
-	CREATED_GROUP_PROJECTION_UNAVAILABLE        = 55,
-	INVALID_CACHED_IDENTITY_PAGE                = 56,
-	DIRECT_CONVERSATION_INDEX_NOT_READY         = 57,
-	GROUP_UNRECOVERABLE_REPAIR_REQUIRED         = 58,
-	ACCOUNT_WORKER_BUSY                         = 59,
-	ACCOUNT_WORKER_RESPONSE_TIMED_OUT           = 60,
-	GROUP_INVITE_NOT_PENDING                    = 61,
-	MISSING_MEMBER_INBOX_ROUTE                  = 62,
-	GROUP_REMOVED                               = 63,
-	ONBOARDING_ACTION_UNAVAILABLE               = 64,
-	ONBOARDING_REQUIRED                         = 65,
-	CONSENT_REQUIRED                            = 66,
-	INVALID_PRODUCT_ANALYTICS_CONFIGURATION     = 67,
-	INVALID_PRODUCT_OBSERVATION                 = 68,
-	CHAT_PRESENTATION_NOT_READY                 = 69,
-	MEDIA_ATTACHMENT_REJECTED                   = 70,
-	MEDIA_UNFETCHABLE                           = 71,
-	MEDIA_DOWNLOAD_FAILED                       = 72,
-	CHAT_WINDOW_INVALID_LIMIT                   = 73,
-	CHAT_WINDOW_STALE                           = 74,
-	CHAT_WINDOW_ANCHOR_OUTSIDE                  = 75,
-	CHAT_WINDOW_CLOSED                          = 76,
-	CHAT_WINDOW_QUERY                           = 77,
-	USER_BLOCKED                                = 78,
-	BLOCK_LIST_UNAVAILABLE                      = 79,
-	BLOCK_PUBLICATION_UNCERTAIN                 = 80,
-	CONVERSATION_WINDOW_INVALID_LIMIT           = 81,
-	CONVERSATION_WINDOW_STALE                   = 82,
-	CONVERSATION_WINDOW_WRONG_GENERATION        = 83,
-	CONVERSATION_WINDOW_ANCHOR_OUTSIDE          = 84,
-	CONVERSATION_WINDOW_CLOSED                  = 85,
-	CONVERSATION_WINDOW_NOT_READY               = 86,
-	CONVERSATION_WINDOW_TIMED_OUT               = 87,
-	CONVERSATION_WINDOW_INVALID_TARGET          = 88,
-	CONVERSATION_WINDOW_QUERY                   = 89,
-	CONVERSATION_WINDOW_PRESENTATION            = 90,
-	MESSAGE_DRAFT_REVISION_CONFLICT             = 91,
-	CONVERSATION_WINDOW_MESSAGE_NOT_RETAINED    = 92,
-	INVALID_APP_COMPONENT = 93,
+	ACCOUNT_CATCH_UP                             = 48,
+	LEAVE_ALREADY_REQUESTED                      = 49,
+	DISBANDING_UNSUPPORTED_MEMBERS               = 50,
+	DISBANDING_NOT_ENABLED                       = 51,
+	GROUP_DISBANDING                             = 52,
+	STORAGE_CLOSED                               = 53,
+	GROUP_SEND_QUEUE_FULL                        = 54,
+	CREATED_GROUP_PROJECTION_UNAVAILABLE         = 55,
+	INVALID_CACHED_IDENTITY_PAGE                 = 56,
+	DIRECT_CONVERSATION_INDEX_NOT_READY          = 57,
+	GROUP_UNRECOVERABLE_REPAIR_REQUIRED          = 58,
+	ACCOUNT_WORKER_BUSY                          = 59,
+	ACCOUNT_WORKER_RESPONSE_TIMED_OUT            = 60,
+	GROUP_INVITE_NOT_PENDING                     = 61,
+	MISSING_MEMBER_INBOX_ROUTE                   = 62,
+	GROUP_REMOVED                                = 63,
+	ONBOARDING_ACTION_UNAVAILABLE                = 64,
+	ONBOARDING_REQUIRED                          = 65,
+	CONSENT_REQUIRED                             = 66,
+	INVALID_PRODUCT_ANALYTICS_CONFIGURATION      = 67,
+	INVALID_PRODUCT_OBSERVATION                  = 68,
+	CHAT_PRESENTATION_NOT_READY                  = 69,
+	MEDIA_ATTACHMENT_REJECTED                    = 70,
+	MEDIA_UNFETCHABLE                            = 71,
+	MEDIA_DOWNLOAD_FAILED                        = 72,
+	CHAT_WINDOW_INVALID_LIMIT                    = 73,
+	CHAT_WINDOW_STALE                            = 74,
+	CHAT_WINDOW_ANCHOR_OUTSIDE                   = 75,
+	CHAT_WINDOW_CLOSED                           = 76,
+	CHAT_WINDOW_QUERY                            = 77,
+	USER_BLOCKED                                 = 78,
+	BLOCK_LIST_UNAVAILABLE                       = 79,
+	BLOCK_PUBLICATION_UNCERTAIN                  = 80,
+	CONVERSATION_WINDOW_INVALID_LIMIT            = 81,
+	CONVERSATION_WINDOW_STALE                    = 82,
+	CONVERSATION_WINDOW_WRONG_GENERATION         = 83,
+	CONVERSATION_WINDOW_ANCHOR_OUTSIDE           = 84,
+	CONVERSATION_WINDOW_CLOSED                   = 85,
+	CONVERSATION_WINDOW_NOT_READY                = 86,
+	CONVERSATION_WINDOW_TIMED_OUT                = 87,
+	CONVERSATION_WINDOW_INVALID_TARGET           = 88,
+	CONVERSATION_WINDOW_QUERY                    = 89,
+	CONVERSATION_WINDOW_PRESENTATION             = 90,
+	MESSAGE_DRAFT_REVISION_CONFLICT              = 91,
+	CONVERSATION_WINDOW_MESSAGE_NOT_RETAINED     = 92,
+	INVALID_APP_COMPONENT                        = 93,
 }
 
 // Opaque runtime handle.
@@ -137,13 +132,35 @@ Secret_Store_Status :: enum u32 {
 Secret_Store :: struct {
 	user_data:                 rawptr,
 	// Write nonzero to out_present when a credential exists.
-	has_secret_for_label:      proc "c" (user_data: rawptr, key: cstring, out_present: ^u8) -> Secret_Store_Status,
-	has_secret_for_account_id: proc "c" (user_data: rawptr, key: cstring, out_present: ^u8) -> Secret_Store_Status,
-	write_secret:              proc "c" (user_data: rawptr, label: cstring, account_id_hex: cstring, secret_key_hex: cstring) -> Secret_Store_Status,
+	has_secret_for_label:      proc "c" (
+		user_data: rawptr,
+		key: cstring,
+		out_present: ^u8,
+	) -> Secret_Store_Status,
+	has_secret_for_account_id: proc "c" (
+		user_data: rawptr,
+		key: cstring,
+		out_present: ^u8,
+	) -> Secret_Store_Status,
+	write_secret:              proc "c" (
+		user_data: rawptr,
+		label: cstring,
+		account_id_hex: cstring,
+		secret_key_hex: cstring,
+	) -> Secret_Store_Status,
 	// Writes a NUL-terminated hex string the library copies and returns
 	// to free_secret.
-	load_secret:               proc "c" (user_data: rawptr, label: cstring, account_id_hex: cstring, out_secret_key_hex: ^cstring) -> Secret_Store_Status,
-	remove_secret:             proc "c" (user_data: rawptr, label: cstring, account_id_hex: cstring) -> Secret_Store_Status,
+	load_secret:               proc "c" (
+		user_data: rawptr,
+		label: cstring,
+		account_id_hex: cstring,
+		out_secret_key_hex: ^cstring,
+	) -> Secret_Store_Status,
+	remove_secret:             proc "c" (
+		user_data: rawptr,
+		label: cstring,
+		account_id_hex: cstring,
+	) -> Secret_Store_Status,
 	free_secret:               proc "c" (user_data: rawptr, secret_key_hex: cstring),
 	// Optional; fires when the last runtime reference is released.
 	destroy:                   proc "c" (user_data: rawptr),
@@ -158,25 +175,59 @@ Events_Subscription :: struct {}
 // Borrowed prefix view of MarmotEvent. Only read fields selected by tag;
 // the runtime owns the full union and event_free releases it.
 Runtime_Event :: struct {
-	tag: enum i32 {
-		Group_Joined, Group_State_Updated, Message_Received, Projection_Updated,
-		Group_Event, Account_Error, Agent_Stream_Activity, Welcome_Delivery_Pending,
-		Epoch_Stall_Escalated, Group_Change_Superseded,
+	tag:  enum i32 {
+		Group_Joined,
+		Group_State_Updated,
+		Message_Received,
+		Projection_Updated,
+		Group_Event,
+		Account_Error,
+		Agent_Stream_Activity,
+		Welcome_Delivery_Pending,
+		Epoch_Stall_Escalated,
+		Group_Change_Superseded,
 	},
 	body: struct #raw_union {
-		group: struct {account, label, group: cstring},
-		message: struct {account, label, message, group: cstring},
+		group:   struct {
+			account, label, group: cstring,
+		},
+		message: struct {
+			account, label, message, group: cstring,
+		},
 	},
 }
 
 Agent_Stream_Subscription :: struct {}
 Agent_Stream_Update :: struct {
-	tag: enum i32 { CHUNK, STATUS, PROGRESS, RECORD, FINISHED, FAILED },
+	tag:  enum i32 {
+		CHUNK,
+		STATUS,
+		PROGRESS,
+		RECORD,
+		FINISHED,
+		FAILED,
+	},
 	data: struct #raw_union {
-		chunk: struct { seq: u64, text: cstring },
-		record: struct { seq: u64, record_type: enum u8 { CHECKPOINT = 4, ABORT = 5, FINAL_NOTICE = 6 }, text: cstring },
-		finished: struct { text, transcript_hash_hex: cstring, chunk_count: u64 },
-		failed: struct { message: cstring },
+		chunk:    struct {
+			seq:  u64,
+			text: cstring,
+		},
+		record:   struct {
+			seq:         u64,
+			record_type: enum u8 {
+				CHECKPOINT   = 4,
+				ABORT        = 5,
+				FINAL_NOTICE = 6,
+			},
+			text:        cstring,
+		},
+		finished: struct {
+			text, transcript_hash_hex: cstring,
+			chunk_count:               u64,
+		},
+		failed:   struct {
+			message: cstring,
+		},
 	},
 }
 
@@ -221,7 +272,7 @@ Delivery_State :: enum i32 {
 
 // Full mirror of MarmotChatListMessagePreview.
 Chat_List_Message_Preview :: struct {
-	group_system: ^Group_System_Event,
+	group_system:        ^Group_System_Event,
 	message_id_hex:      cstring,
 	sender:              cstring,
 	sender_display_name: cstring,
@@ -230,7 +281,7 @@ Chat_List_Message_Preview :: struct {
 	kind:                u64,
 	timeline_at:         u64,
 	deleted:             bool,
-	deletion_source: i32,
+	deletion_source:     i32,
 	has_attachment_kind: bool,
 	attachment_kind:     i32,
 	attachment_count:    u32,
@@ -284,40 +335,73 @@ Chat_List_Row_List :: struct {
 
 // Selected names and avatars from the runtime, including unnamed DMs.
 Presentation_Text :: struct {
-	tag: enum i32 {Literal, Unnamed_Group, Unavailable_Conversation},
+	tag:  enum i32 {
+		Literal,
+		Unnamed_Group,
+		Unavailable_Conversation,
+	},
 	body: struct #raw_union {
-		literal: cstring,
-		unnamed_group: struct {has_member_count: bool, member_count: u64},
+		literal:       cstring,
+		unnamed_group: struct {
+			has_member_count: bool,
+			member_count:     u64,
+		},
 	},
 }
 
-Presentation_Source :: enum i32 {Group, Peer_Profile, Peer_Fallback, Group_Fallback, Unknown_Fallback}
+Presentation_Source :: enum i32 {
+	Group,
+	Peer_Profile,
+	Peer_Fallback,
+	Group_Fallback,
+	Unknown_Fallback,
+}
 
 Selected_Avatar :: struct {
-	tag: enum i32 {Remote_Image, Encrypted_Group_Image, Placeholder},
+	tag:  enum i32 {
+		Remote_Image,
+		Encrypted_Group_Image,
+		Placeholder,
+	},
 	body: struct #raw_union {
-		remote: struct {url, cache_key: cstring},
-		encrypted: struct {image: Chat_List_Avatar, cache_key: cstring},
-		placeholder: struct {stable_seed: cstring, source: Presentation_Source},
+		remote:      struct {
+			url, cache_key: cstring,
+		},
+		encrypted:   struct {
+			image:     Chat_List_Avatar,
+			cache_key: cstring,
+		},
+		placeholder: struct {
+			stable_seed: cstring,
+			source:      Presentation_Source,
+		},
 	},
 }
 
 Presented_Chat_Row :: struct {
-	row: Chat_List_Row,
+	row:          Chat_List_Row,
 	presentation: struct {
-		title: Presentation_Text,
-		avatar: Selected_Avatar,
+		title:                       Presentation_Text,
+		avatar:                      Selected_Avatar,
 		title_source, avatar_source: Presentation_Source,
-		peer_id: cstring,
-		resolution: enum i32 {Cached, Last_Known, Fallback},
+		peer_id:                     cstring,
+		resolution:                  enum i32 {
+			Cached,
+			Last_Known,
+			Fallback,
+		},
 	},
 	avatar_asset: rawptr,
 }
 
 Presented_Chat_List :: struct {
-	rows: [^]Presented_Chat_Row,
+	rows:     [^]Presented_Chat_Row,
 	rows_len: uint,
-	version: struct {account_store_epoch: [^]u8, account_store_epoch_len: uint, revision: u64},
+	version:  struct {
+		account_store_epoch:     [^]u8,
+		account_store_epoch_len: uint,
+		revision:                u64,
+	},
 }
 
 #assert(size_of(Presentation_Text) == 24)
@@ -380,17 +464,37 @@ Markdown_Nostr_Entity :: struct {
 Markdown_Inline :: struct {
 	tag:  Markdown_Inline_Tag,
 	body: struct #raw_union {
-		text:          struct { content: cstring },
-		code:          struct { content: cstring },
+		text:          struct {
+			content: cstring,
+		},
+		code:          struct {
+			content: cstring,
+		},
 		emph:          Markdown_Children,
 		strong:        Markdown_Children,
 		strikethrough: Markdown_Children,
 		link:          Markdown_Link_Body,
-		image:         struct { dest: cstring, title: cstring, alt: [^]Markdown_Inline, alt_len: uint, classification: i32 },
-		autolink:      struct { url: cstring, kind: i32, classification: i32 },
-		math:          struct { content: cstring },
-		nostr_mention: struct { entity: Markdown_Nostr_Entity },
-		nostr_uri:     struct { entity: Markdown_Nostr_Entity },
+		image:         struct {
+			dest:           cstring,
+			title:          cstring,
+			alt:            [^]Markdown_Inline,
+			alt_len:        uint,
+			classification: i32,
+		},
+		autolink:      struct {
+			url:            cstring,
+			kind:           i32,
+			classification: i32,
+		},
+		math:          struct {
+			content: cstring,
+		},
+		nostr_mention: struct {
+			entity: Markdown_Nostr_Entity,
+		},
+		nostr_uri:     struct {
+			entity: Markdown_Nostr_Entity,
+		},
 	},
 }
 
@@ -408,8 +512,13 @@ Markdown_Block_Tag :: enum i32 {
 Markdown_List_Kind :: struct {
 	tag:  i32, // 0 = bullet, 1 = ordered
 	body: struct #raw_union {
-		bullet:  struct { marker: cstring },
-		ordered: struct { start: u32, delimiter: cstring },
+		bullet:  struct {
+			marker: cstring,
+		},
+		ordered: struct {
+			start:     u32,
+			delimiter: cstring,
+		},
 	},
 }
 
@@ -448,12 +557,39 @@ Markdown_Block :: struct {
 	tag:  Markdown_Block_Tag,
 	body: struct #raw_union {
 		paragraph:   Markdown_Inlines,
-		heading:     struct { level: u8, inlines: [^]Markdown_Inline, inlines_len: uint },
-		code_block:  struct { kind: i32, info: cstring, content: cstring },
-		block_quote: struct { blocks: [^]Markdown_Block, blocks_len: uint, blank_lines_before: ^u8, blank_lines_before_len: uint },
-		list_block:  struct { kind: Markdown_List_Kind, tight: bool, items: [^]Markdown_List_Item, items_len: uint },
-		math_block:  struct { content: cstring },
-		table:       struct { alignments: [^]Markdown_Alignment, alignments_len: uint, header: [^]Markdown_Table_Cell, header_len: uint, rows: [^]Markdown_Table_Row, rows_len: uint },
+		heading:     struct {
+			level:       u8,
+			inlines:     [^]Markdown_Inline,
+			inlines_len: uint,
+		},
+		code_block:  struct {
+			kind:    i32,
+			info:    cstring,
+			content: cstring,
+		},
+		block_quote: struct {
+			blocks:                 [^]Markdown_Block,
+			blocks_len:             uint,
+			blank_lines_before:     ^u8,
+			blank_lines_before_len: uint,
+		},
+		list_block:  struct {
+			kind:      Markdown_List_Kind,
+			tight:     bool,
+			items:     [^]Markdown_List_Item,
+			items_len: uint,
+		},
+		math_block:  struct {
+			content: cstring,
+		},
+		table:       struct {
+			alignments:     [^]Markdown_Alignment,
+			alignments_len: uint,
+			header:         [^]Markdown_Table_Cell,
+			header_len:     uint,
+			rows:           [^]Markdown_Table_Row,
+			rows_len:       uint,
+		},
 	},
 }
 
@@ -506,24 +642,24 @@ Account_Relay_Lists :: struct {
 
 // Aggregate relay-pool counters (no per-relay identities).
 Relay_Health :: struct {
-	sdk_backed:                             bool,
-	total_relays:                           u32,
-	initialized:                            u32,
-	pending:                                u32,
-	connecting:                             u32,
-	connected:                              u32,
-	disconnected:                           u32,
-	terminated:                             u32,
-	banned:                                 u32,
-	sleeping:                               u32,
-	connection_attempts:                    u32,
-	connection_successes:                   u32,
-	notification_forwarder_running:         bool,
-	notification_forwarder_restarts:        u64,
-	notification_forwarder_lag_incidents:   u64,
+	sdk_backed:                                  bool,
+	total_relays:                                u32,
+	initialized:                                 u32,
+	pending:                                     u32,
+	connecting:                                  u32,
+	connected:                                   u32,
+	disconnected:                                u32,
+	terminated:                                  u32,
+	banned:                                      u32,
+	sleeping:                                    u32,
+	connection_attempts:                         u32,
+	connection_successes:                        u32,
+	notification_forwarder_running:              bool,
+	notification_forwarder_restarts:             u64,
+	notification_forwarder_lag_incidents:        u64,
 	notification_forwarder_lagged_notifications: u64,
-	notification_forwarder_panics:          u64,
-	notification_forwarder_unexpected_exits: u64,
+	notification_forwarder_panics:               u64,
+	notification_forwarder_unexpected_exits:     u64,
 }
 
 User_Profile_Metadata :: struct {
@@ -539,18 +675,18 @@ User_Profile_Metadata :: struct {
 #assert(size_of(User_Profile_Metadata) == 56)
 
 Timeline_Reply_Preview :: struct {
-	message_id_hex: cstring,
-	sender:         cstring,
-	plaintext:      cstring,
-	content_tokens: Markdown_Document,
-	kind:           u64,
-	media_json:     cstring,
-	media:          [^]Media_Attachment_Outcome,
-	media_len:      uint,
+	message_id_hex:         cstring,
+	sender:                 cstring,
+	plaintext:              cstring,
+	content_tokens:         Markdown_Document,
+	kind:                   u64,
+	media_json:             cstring,
+	media:                  [^]Media_Attachment_Outcome,
+	media_len:              uint,
 	agent_text_stream_json: cstring,
-	deleted:        bool,
-	deletion_source: i32,
-	invalidation_status: cstring,
+	deleted:                bool,
+	deletion_source:        i32,
+	invalidation_status:    cstring,
 }
 
 #assert(size_of(Timeline_Reply_Preview) == 120)
@@ -596,18 +732,18 @@ Timeline_Message_Query :: struct {
 // system row (member/admin/rename/avatar/retention change). Reached by
 // pointer only; freed by timeline_page_free.
 Group_System_Event :: struct {
-	provenance: i32,
+	provenance:                               i32,
 	actor_display_name, subject_display_name: cstring,
-	system_type:               cstring,
-	text:                      cstring, // human-readable fallback
-	actor_account_id_hex:      cstring,
-	subject_account_id_hex:    cstring,
-	name:                      cstring,
-	old_name:                  cstring,
-	has_old_retention_seconds: bool,
-	old_retention_seconds:     u64,
-	has_new_retention_seconds: bool,
-	new_retention_seconds:     u64,
+	system_type:                              cstring,
+	text:                                     cstring, // human-readable fallback
+	actor_account_id_hex:                     cstring,
+	subject_account_id_hex:                   cstring,
+	name:                                     cstring,
+	old_name:                                 cstring,
+	has_old_retention_seconds:                bool,
+	old_retention_seconds:                    u64,
+	has_new_retention_seconds:                bool,
+	new_retention_seconds:                    u64,
 }
 
 // Mirror of MarmotMessageTag: one Nostr tag of the inner app event.
@@ -620,7 +756,7 @@ Message_Tag :: struct {
 // value out of Timeline_Page, so the stride must match C exactly.
 Timeline_Message_Record :: struct {
 	message_id_hex:            cstring,
-	has_reports: bool,
+	has_reports:               bool,
 	source_message_id_hex:     cstring,
 	has_source_epoch:          bool,
 	source_epoch:              u64,
@@ -646,9 +782,9 @@ Timeline_Message_Record :: struct {
 	agent_text_stream_json:    cstring,
 	group_system:              ^Group_System_Event, // kind-1210 only, else nil
 	reactions:                 Timeline_Reaction_Summary,
-	edit: ^Timeline_Edit_Summary,
+	edit:                      ^Timeline_Edit_Summary,
 	deleted:                   bool,
-	deletion_source: i32,
+	deletion_source:           i32,
 	deleted_by_message_id_hex: cstring,
 	invalidation_status:       cstring,
 }
@@ -682,12 +818,21 @@ Media_Rejection_Kind :: enum i32 {
 }
 
 Media_Attachment_Outcome :: struct {
-	tag: enum i32 { ACCEPTED, REJECTED },
+	tag:  enum i32 {
+		ACCEPTED,
+		REJECTED,
+	},
 	body: struct #raw_union {
-		accepted: struct { attachment_index: u32, reference: Media_Attachment_Reference },
+		accepted: struct {
+			attachment_index: u32,
+			reference:        Media_Attachment_Reference,
+		},
 		rejected: struct {
 			attachment_index: u32,
-			rejection: struct { kind: Media_Rejection_Kind, detail: cstring },
+			rejection:        struct {
+				kind:   Media_Rejection_Kind,
+				detail: cstring,
+			},
 		},
 	},
 }
@@ -815,21 +960,21 @@ Group_Member_Details :: struct {
 // enough to read the group's profile (name/description/avatar_url);
 // the rest is padded to the record's 256-byte size.
 Group_Record_Head :: struct {
-	group_id_hex:       cstring,
-	protocol_profile:   i32,
-	endpoint:           cstring,
-	profile_present:    bool,
-	name:               cstring, // nullable
-	description:        cstring, // nullable
-	admins:             [^]cstring,
-	admins_len:         uint,
-	relays:             [^]cstring,
-	relays_len:         uint,
-	nostr_group_id_hex: cstring,
-	avatar_url:         cstring, // nullable; wins over the Blossom image
-	_mid:               [88]u8, // avatar_dim .. encrypted_media
+	group_id_hex:              cstring,
+	protocol_profile:          i32,
+	endpoint:                  cstring,
+	profile_present:           bool,
+	name:                      cstring, // nullable
+	description:               cstring, // nullable
+	admins:                    [^]cstring,
+	admins_len:                uint,
+	relays:                    [^]cstring,
+	relays_len:                uint,
+	nostr_group_id_hex:        cstring,
+	avatar_url:                cstring, // nullable; wins over the Blossom image
+	_mid:                      [88]u8, // avatar_dim .. encrypted_media
 	disappearing_message_secs: u64, // 0 = messages never expire
-	_tail:              [64]u8, // archived .. via_welcome_message_id_hex
+	_tail:                     [64]u8, // archived .. via_welcome_message_id_hex
 }
 
 // Partial mirror of MarmotGroupDetails: the trailing mls_state is
@@ -981,64 +1126,64 @@ Audit_Log_Tracker_Config :: struct {
 
 @(default_calling_convention = "c", link_prefix = "marmot_")
 foreign lib {
-	client_new         :: proc(root_path: cstring, relay_urls: [^]cstring, relay_urls_len: uint, out_client: ^^Client) -> Status ---
+	client_new :: proc(root_path: cstring, relay_urls: [^]cstring, relay_urls_len: uint, out_client: ^^Client) -> Status ---
 	client_new_with_secret_store :: proc(root_path: cstring, relay_urls: [^]cstring, relay_urls_len: uint, store: ^Secret_Store, out_client: ^^Client) -> Status ---
-	client_start       :: proc(client: ^Client) -> Status ---
-	client_shutdown    :: proc(client: ^Client) -> Status ---
-	client_free        :: proc(client: ^Client) ---
+	client_start :: proc(client: ^Client) -> Status ---
+	client_shutdown :: proc(client: ^Client) -> Status ---
+	client_free :: proc(client: ^Client) ---
 
 	// Thread-local detail for the most recent failure; free with string_free.
 	last_error_message :: proc() -> cstring ---
-	string_free        :: proc(s: cstring) ---
+	string_free :: proc(s: cstring) ---
 
-	list_accounts             :: proc(client: ^Client, out: ^^Account_Summary_List) -> Status ---
-	account_summary_free      :: proc(ptr: ^Account_Summary) ---
+	list_accounts :: proc(client: ^Client, out: ^^Account_Summary_List) -> Status ---
+	account_summary_free :: proc(ptr: ^Account_Summary) ---
 	account_summary_list_free :: proc(list: ^Account_Summary_List) ---
 
 	sign_in_account :: proc(client: ^Client, account_ref: cstring, out: ^^Account_Summary) -> Status ---
-	sign_out        :: proc(client: ^Client, account_ref: cstring, delete_key_packages: bool, out: ^^Sign_Out_Outcome) -> Status ---
+	sign_out :: proc(client: ^Client, account_ref: cstring, delete_key_packages: bool, out: ^^Sign_Out_Outcome) -> Status ---
 	sign_out_outcome_free :: proc(ptr: ^Sign_Out_Outcome) ---
 
 	set_account_nip65_relays :: proc(client: ^Client, account_ref: cstring, relays: [^]cstring, relays_len: uint, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint, out: ^^Account_Relay_Lists) -> Status ---
 	set_account_inbox_relays :: proc(client: ^Client, account_ref: cstring, relays: [^]cstring, relays_len: uint, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint, out: ^^Account_Relay_Lists) -> Status ---
-	publish_relay_lists      :: proc(client: ^Client, account_ref: cstring, default_relays: [^]cstring, default_relays_len: uint, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint) -> Status ---
+	publish_relay_lists :: proc(client: ^Client, account_ref: cstring, default_relays: [^]cstring, default_relays_len: uint, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint) -> Status ---
 	account_relay_lists_free :: proc(ptr: ^Account_Relay_Lists) ---
 
-	relay_health      :: proc(client: ^Client, out: ^^Relay_Health) -> Status ---
+	relay_health :: proc(client: ^Client, out: ^^Relay_Health) -> Status ---
 	relay_health_free :: proc(ptr: ^Relay_Health) ---
 
 	// Observability. The *_settings pairs gate whether anything is
 	// recorded or sent; the *_config calls only say where it would go.
-	relay_telemetry_settings           :: proc(client: ^Client, out: ^^Relay_Telemetry_Settings) -> Status ---
-	set_relay_telemetry_settings       :: proc(client: ^Client, settings: ^Relay_Telemetry_Settings, out: ^^Relay_Telemetry_Settings) -> Status ---
+	relay_telemetry_settings :: proc(client: ^Client, out: ^^Relay_Telemetry_Settings) -> Status ---
+	set_relay_telemetry_settings :: proc(client: ^Client, settings: ^Relay_Telemetry_Settings, out: ^^Relay_Telemetry_Settings) -> Status ---
 	set_relay_telemetry_runtime_config :: proc(client: ^Client, config: ^Relay_Telemetry_Runtime_Config) -> Status ---
-	relay_telemetry_settings_free      :: proc(ptr: ^Relay_Telemetry_Settings) ---
-	telemetry_install_id               :: proc(client: ^Client, out: ^cstring) -> Status ---
+	relay_telemetry_settings_free :: proc(ptr: ^Relay_Telemetry_Settings) ---
+	telemetry_install_id :: proc(client: ^Client, out: ^cstring) -> Status ---
 
-	audit_log_settings           :: proc(client: ^Client, out: ^^Audit_Log_Settings) -> Status ---
-	set_audit_log_settings       :: proc(client: ^Client, settings: ^Audit_Log_Settings, out: ^^Audit_Log_Settings) -> Status ---
-	audit_log_settings_free      :: proc(ptr: ^Audit_Log_Settings) ---
+	audit_log_settings :: proc(client: ^Client, out: ^^Audit_Log_Settings) -> Status ---
+	set_audit_log_settings :: proc(client: ^Client, settings: ^Audit_Log_Settings, out: ^^Audit_Log_Settings) -> Status ---
+	audit_log_settings_free :: proc(ptr: ^Audit_Log_Settings) ---
 	set_audit_log_tracker_config :: proc(client: ^Client, config: ^Audit_Log_Tracker_Config, out: ^^Audit_Log_Tracker_Config) -> Status ---
 	audit_log_tracker_config_free :: proc(ptr: ^Audit_Log_Tracker_Config) ---
 
-	audit_log_files            :: proc(client: ^Client, out: ^^Audit_Log_File_List) -> Status ---
-	audit_log_file_list_free   :: proc(list: ^Audit_Log_File_List) ---
-	delete_audit_log_file      :: proc(client: ^Client, path: cstring, out: ^^Audit_Log_Delete_Result) -> Status ---
+	audit_log_files :: proc(client: ^Client, out: ^^Audit_Log_File_List) -> Status ---
+	audit_log_file_list_free :: proc(list: ^Audit_Log_File_List) ---
+	delete_audit_log_file :: proc(client: ^Client, path: cstring, out: ^^Audit_Log_Delete_Result) -> Status ---
 	audit_log_delete_result_free :: proc(ptr: ^Audit_Log_Delete_Result) ---
 
-	publish_user_profile      :: proc(client: ^Client, account_ref: cstring, profile: ^User_Profile_Metadata, default_relays: [^]cstring, default_relays_len: uint, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint, out: ^^User_Profile_Metadata) -> Status ---
+	publish_user_profile :: proc(client: ^Client, account_ref: cstring, profile: ^User_Profile_Metadata, default_relays: [^]cstring, default_relays_len: uint, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint, out: ^^User_Profile_Metadata) -> Status ---
 	user_profile_metadata_free :: proc(ptr: ^User_Profile_Metadata) ---
 
 	// NIP-02 follow list. follow/unfollow publish the updated list and
 	// write the new follow set.
 	account_follows :: proc(client: ^Client, account_ref: cstring, out: ^^String_List) -> Status ---
-	unfollow_user   :: proc(client: ^Client, account_ref: cstring, user_ref: cstring, out: ^^String_List) -> Status ---
+	unfollow_user :: proc(client: ^Client, account_ref: cstring, user_ref: cstring, out: ^^String_List) -> Status ---
 
 	// Resolve and cache KeyPackages for prospective members. Asked
 	// about one member, the counters answer whether that member has a
 	// KeyPackage anyone could invite them with.
-	prewarm_group_member_key_packages         :: proc(client: ^Client, account_ref: cstring, member_refs: [^]cstring, member_refs_len: uint, out: ^^Member_Key_Package_Prewarm_Summary) -> Status ---
-	member_key_package_prewarm_summary_free   :: proc(ptr: ^Member_Key_Package_Prewarm_Summary) ---
+	prewarm_group_member_key_packages :: proc(client: ^Client, account_ref: cstring, member_refs: [^]cstring, member_refs_len: uint, out: ^^Member_Key_Package_Prewarm_Summary) -> Status ---
+	member_key_package_prewarm_summary_free :: proc(ptr: ^Member_Key_Package_Prewarm_Summary) ---
 
 	// Cached kind-0 profile for an account id; out may be NULL with OK.
 	user_profile :: proc(client: ^Client, account_id_hex: cstring, out: ^^User_Profile_Metadata) -> Status ---
@@ -1052,16 +1197,16 @@ foreign lib {
 	// the refresh fetches from `relays` and updates the cache. An
 	// account that has published nothing reports both kinds in
 	// `missing` rather than failing. Free with account_relay_lists_free.
-	user_relay_lists         :: proc(client: ^Client, account_id_hex: cstring, out: ^^Account_Relay_Lists) -> Status ---
+	user_relay_lists :: proc(client: ^Client, account_id_hex: cstring, out: ^^Account_Relay_Lists) -> Status ---
 	refresh_user_relay_lists :: proc(client: ^Client, account_id_hex: cstring, relays: [^]cstring, relays_len: uint, out: ^^Account_Relay_Lists) -> Status ---
 
 	// Directory/profile lookups; out strings may be NULL with OK.
-	npub         :: proc(client: ^Client, account_id_hex: cstring, out: ^cstring) -> Status ---
+	npub :: proc(client: ^Client, account_id_hex: cstring, out: ^cstring) -> Status ---
 	// Hex id for an npub/hex reference; out may be NULL with OK when the
 	// input does not decode.
 	account_id_hex :: proc(client: ^Client, reference: cstring, out: ^cstring) -> Status ---
 	display_name :: proc(client: ^Client, account_id_hex: cstring, out: ^cstring) -> Status ---
-	reveal_nsec  :: proc(client: ^Client, account_ref: cstring, out: ^cstring) -> Status ---
+	reveal_nsec :: proc(client: ^Client, account_ref: cstring, out: ^cstring) -> Status ---
 
 	// SENSITIVE: reveal_nsec marks the account key handled-insecurely;
 	// the encrypted export seals under `passphrase` (NIP-49) instead.
@@ -1069,39 +1214,39 @@ foreign lib {
 
 	// Key-package state and publishing. `out` takes the accepting-relay
 	// count; republish reuses the cached package, publish_new mints one.
-	account_key_packages          :: proc(client: ^Client, account_ref: cstring, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint, out: ^^Account_Key_Package_List) -> Status ---
+	account_key_packages :: proc(client: ^Client, account_ref: cstring, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint, out: ^^Account_Key_Package_List) -> Status ---
 	account_key_package_list_free :: proc(list: ^Account_Key_Package_List) ---
-	publish_new_key_package       :: proc(client: ^Client, account_ref: cstring, out: ^u64) -> Status ---
-	republish_key_package         :: proc(client: ^Client, account_ref: cstring, out: ^u64) -> Status ---
+	publish_new_key_package :: proc(client: ^Client, account_ref: cstring, out: ^u64) -> Status ---
+	republish_key_package :: proc(client: ^Client, account_ref: cstring, out: ^u64) -> Status ---
 
 	account_nip65_relays :: proc(client: ^Client, account_ref: cstring, out: ^^String_List) -> Status ---
 	account_inbox_relays :: proc(client: ^Client, account_ref: cstring, out: ^^String_List) -> Status ---
-	string_list_free     :: proc(list: ^String_List) ---
+	string_list_free :: proc(list: ^String_List) ---
 
-	group_members                     :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out: ^^Group_Member_Record_List) -> Status ---
-	group_details                     :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out: ^^Group_Details) -> Status ---
-	group_details_free                :: proc(ptr: ^Group_Details) ---
-	group_mls_state                   :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out: ^^Group_Mls_State_Head) -> Status ---
-	app_group_mls_state_free          :: proc(ptr: ^Group_Mls_State_Head) ---
+	group_members :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out: ^^Group_Member_Record_List) -> Status ---
+	group_details :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out: ^^Group_Details) -> Status ---
+	group_details_free :: proc(ptr: ^Group_Details) ---
+	group_mls_state :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out: ^^Group_Mls_State_Head) -> Status ---
+	app_group_mls_state_free :: proc(ptr: ^Group_Mls_State_Head) ---
 
 	invite_members :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, member_refs: [^]cstring, member_refs_len: uint, out: ^^Send_Summary) -> Status ---
 	remove_members :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, member_refs: [^]cstring, member_refs_len: uint, out: ^^Send_Summary) -> Status ---
-	promote_admin  :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, member_ref: cstring, out: ^^Send_Summary) -> Status ---
-	demote_admin   :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, member_ref: cstring, out: ^^Send_Summary) -> Status ---
+	promote_admin :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, member_ref: cstring, out: ^^Send_Summary) -> Status ---
+	demote_admin :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, member_ref: cstring, out: ^^Send_Summary) -> Status ---
 	app_group_member_record_list_free :: proc(list: ^Group_Member_Record_List) ---
 
 	// Blocking-next subscription to the account's chat-list projection;
 	// timeout_ms 0 waits forever, shutdown yields CLOSED.
-	subscribe_chat_list         :: proc(client: ^Client, account_ref: cstring, include_archived: bool, out_sub: ^^Chat_List_Subscription) -> Status ---
+	subscribe_chat_list :: proc(client: ^Client, account_ref: cstring, include_archived: bool, out_sub: ^^Chat_List_Subscription) -> Status ---
 	chat_list_subscription_next :: proc(sub: ^Chat_List_Subscription, timeout_ms: u32, out: ^^Chat_List_Row) -> Status ---
 	chat_list_subscription_free :: proc(sub: ^Chat_List_Subscription) ---
 
 	// Runtime-event firehose (all accounts). Items are opaque wake
 	// signals; timeout_ms 0 waits forever, shutdown yields CLOSED.
-	subscribe_events            :: proc(client: ^Client, out_sub: ^^Events_Subscription) -> Status ---
-	events_subscription_next    :: proc(sub: ^Events_Subscription, timeout_ms: u32, out: ^^Runtime_Event) -> Status ---
-	events_subscription_free    :: proc(sub: ^Events_Subscription) ---
-	event_free                  :: proc(event: ^Runtime_Event) ---
+	subscribe_events :: proc(client: ^Client, out_sub: ^^Events_Subscription) -> Status ---
+	events_subscription_next :: proc(sub: ^Events_Subscription, timeout_ms: u32, out: ^^Runtime_Event) -> Status ---
+	events_subscription_free :: proc(sub: ^Events_Subscription) ---
+	event_free :: proc(event: ^Runtime_Event) ---
 
 	watch_agent_text_stream :: proc(client: ^Client, account_ref, group_id_hex, stream_id_hex: cstring, server_cert_der: [^]u8, server_cert_der_len: uint, insecure_local: u8, out_sub: ^^Agent_Stream_Subscription) -> Status ---
 	@(link_name = "marmot_agent_stream_subscription_next")
@@ -1110,8 +1255,8 @@ foreign lib {
 	agent_stream_free :: proc(sub: ^Agent_Stream_Subscription) ---
 	agent_stream_update_free :: proc(update: ^Agent_Stream_Update) ---
 
-	create_group      :: proc(client: ^Client, account_ref: cstring, name: cstring, member_refs: [^]cstring, member_refs_len: uint, description: cstring, out: ^cstring) -> Status ---
-	send_text         :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, text: cstring, out: ^^Send_Summary) -> Status ---
+	create_group :: proc(client: ^Client, account_ref: cstring, name: cstring, member_refs: [^]cstring, member_refs_len: uint, description: cstring, out: ^cstring) -> Status ---
+	send_text :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, text: cstring, out: ^^Send_Summary) -> Status ---
 	// App-defined event: any non-reserved kind with caller-built tags
 	// (borrowed, MarmotStringArray rows == Message_Tag layout). Carries
 	// NIP-88 polls/votes and thread messages.
@@ -1119,43 +1264,43 @@ foreign lib {
 	// An imeta tag for an uploaded reference, so a custom event can
 	// carry media the timeline resolves like a kind-9's.
 	build_media_imeta_tag :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, reference: ^Media_Attachment_Reference, out: ^^Message_Tag) -> Status ---
-	message_tag_free      :: proc(tag: ^Message_Tag) ---
-	react_to_message  :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, target_message_id: cstring, emoji: cstring, out: ^^Send_Summary) -> Status ---
+	message_tag_free :: proc(tag: ^Message_Tag) ---
+	react_to_message :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, target_message_id: cstring, emoji: cstring, out: ^^Send_Summary) -> Status ---
 	unreact_from_message :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, target_message_id: cstring, out: ^^Send_Summary) -> Status ---
-	reply_to_message     :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, target_message_id: cstring, text: cstring, out: ^^Send_Summary) -> Status ---
+	reply_to_message :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, target_message_id: cstring, text: cstring, out: ^^Send_Summary) -> Status ---
 
-	set_group_archived         :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, archived: bool, out: ^^App_Group_Record) -> Status ---
-	leave_group                :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out: ^^Send_Summary) -> Status ---
-	accept_group_invite        :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out: ^^App_Group_Record) -> Status ---
-	decline_group_invite       :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out: ^^Group_Invite_Decline_Result) -> Status ---
-	update_group_profile       :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, name: cstring, description: cstring, out: ^^Send_Summary) -> Status ---
-	update_message_retention   :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, disappearing_message_secs: u64, out: ^^Send_Summary) -> Status ---
-	sweep_expired_retention    :: proc(client: ^Client, account_ref: cstring, now_ms: u64, out: ^^Retention_Sweep_Report) -> Status ---
+	set_group_archived :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, archived: bool, out: ^^App_Group_Record) -> Status ---
+	leave_group :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out: ^^Send_Summary) -> Status ---
+	accept_group_invite :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out: ^^App_Group_Record) -> Status ---
+	decline_group_invite :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out: ^^Group_Invite_Decline_Result) -> Status ---
+	update_group_profile :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, name: cstring, description: cstring, out: ^^Send_Summary) -> Status ---
+	update_message_retention :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, disappearing_message_secs: u64, out: ^^Send_Summary) -> Status ---
+	sweep_expired_retention :: proc(client: ^Client, account_ref: cstring, now_ms: u64, out: ^^Retention_Sweep_Report) -> Status ---
 	retention_sweep_report_free :: proc(ptr: ^Retention_Sweep_Report) ---
-	update_group_avatar_url    :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, url: cstring, dim: cstring, thumbhash: cstring, out: ^^Send_Summary) -> Status ---
+	update_group_avatar_url :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, url: cstring, dim: cstring, thumbhash: cstring, out: ^^Send_Summary) -> Status ---
 
 	// Encrypted-Blossom group avatar: update_group_image encrypts and
 	// uploads the raw bytes then commits them (admin only), download
 	// fetches and decrypts the committed one. Free the buffer with
 	// bytes_free.
-	update_group_image             :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, plaintext: [^]u8, plaintext_len: uint, media_type: cstring, out: ^^Send_Summary) -> Status ---
-	download_group_blossom_image   :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out_data: ^[^]u8, out_len: ^uint) -> Status ---
-	bytes_free                     :: proc(data: [^]u8, len: uint) ---
+	update_group_image :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, plaintext: [^]u8, plaintext_len: uint, media_type: cstring, out: ^^Send_Summary) -> Status ---
+	download_group_blossom_image :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out_data: ^[^]u8, out_len: ^uint) -> Status ---
+	bytes_free :: proc(data: [^]u8, len: uint) ---
 	mark_timeline_message_read :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, message_id_hex: cstring, out: ^^Chat_List_Row) -> Status ---
 
-	app_group_record_free            :: proc(ptr: ^App_Group_Record) ---
+	app_group_record_free :: proc(ptr: ^App_Group_Record) ---
 	group_invite_decline_result_free :: proc(ptr: ^Group_Invite_Decline_Result) ---
-	edit_message      :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, target_message_id: cstring, content: cstring, out: ^^Send_Summary) -> Status ---
-	delete_message    :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, target_message_id: cstring, out: ^^Send_Summary) -> Status ---
+	edit_message :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, target_message_id: cstring, content: cstring, out: ^^Send_Summary) -> Status ---
+	delete_message :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, target_message_id: cstring, out: ^^Send_Summary) -> Status ---
 	send_summary_free :: proc(ptr: ^Send_Summary) ---
 
-	upload_media               :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, request: ^Media_Upload_Request, out: ^^Media_Upload_Result) -> Status ---
-	upload_profile_image       :: proc(client: ^Client, account_ref: cstring, data: [^]u8, data_len: uint, media_type: cstring, blossom_server: cstring, out: ^cstring) -> Status ---
-	media_upload_result_free   :: proc(ptr: ^Media_Upload_Result) ---
-	download_media             :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, reference: ^Media_Attachment_Reference, out: ^^Media_Download_Result) -> Status ---
+	upload_media :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, request: ^Media_Upload_Request, out: ^^Media_Upload_Result) -> Status ---
+	upload_profile_image :: proc(client: ^Client, account_ref: cstring, data: [^]u8, data_len: uint, media_type: cstring, blossom_server: cstring, out: ^cstring) -> Status ---
+	media_upload_result_free :: proc(ptr: ^Media_Upload_Result) ---
+	download_media :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, reference: ^Media_Attachment_Reference, out: ^^Media_Download_Result) -> Status ---
 	media_download_result_free :: proc(ptr: ^Media_Download_Result) ---
 
-	timeline_messages  :: proc(client: ^Client, account_ref: cstring, query: ^Timeline_Message_Query, out: ^^Timeline_Page) -> Status ---
+	timeline_messages :: proc(client: ^Client, account_ref: cstring, query: ^Timeline_Message_Query, out: ^^Timeline_Page) -> Status ---
 	timeline_page_free :: proc(ptr: ^Timeline_Page) ---
 	@(link_name = "marmot_subscribe_timeline_messages")
 	timeline_subscribe :: proc(client: ^Client, account, group: cstring, has_limit: bool, limit: u32, out: ^^Timeline_Subscription) -> Status ---
@@ -1170,18 +1315,18 @@ foreign lib {
 	@(link_name = "marmot_timeline_subscription_free")
 	timeline_sub_free :: proc(sub: ^Timeline_Subscription) ---
 
-	parse_markdown         :: proc(client: ^Client, text: cstring, out: ^^Markdown_Document) -> Status ---
+	parse_markdown :: proc(client: ^Client, text: cstring, out: ^^Markdown_Document) -> Status ---
 	markdown_document_free :: proc(ptr: ^Markdown_Document) ---
 
-	chat_list               :: proc(client: ^Client, account_ref: cstring, include_archived: bool, out: ^^Chat_List_Row_List) -> Status ---
-	chat_list_row_free      :: proc(ptr: ^Chat_List_Row) ---
+	chat_list :: proc(client: ^Client, account_ref: cstring, include_archived: bool, out: ^^Chat_List_Row_List) -> Status ---
+	chat_list_row_free :: proc(ptr: ^Chat_List_Row) ---
 	chat_list_row_list_free :: proc(list: ^Chat_List_Row_List) ---
 	presented_chat_list :: proc(client: ^Client, account_ref: cstring, include_archived: bool, out: ^^Presented_Chat_List) -> Status ---
 	@(link_name = "marmot_presented_chat_list_snapshot_free")
 	presented_chat_list_free :: proc(list: ^Presented_Chat_List) ---
 
 	create_identity :: proc(client: ^Client, default_relays: [^]cstring, default_relays_len: uint, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint, out: ^^Account_Summary) -> Status ---
-	login           :: proc(client: ^Client, identity: cstring, default_relays: [^]cstring, default_relays_len: uint, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint, out: ^^Account_Summary) -> Status ---
+	login :: proc(client: ^Client, identity: cstring, default_relays: [^]cstring, default_relays_len: uint, bootstrap_relays: [^]cstring, bootstrap_relays_len: uint, out: ^^Account_Summary) -> Status ---
 }
 
 // Copy the thread-local error detail into an Odin string and release
@@ -1203,96 +1348,96 @@ Duration_Bucket :: struct {
 	upper_bound_ms, count: u64,
 }
 Duration_Histogram :: struct {
-	buckets: [^]Duration_Bucket,
-	buckets_len: uint,
+	buckets:                [^]Duration_Bucket,
+	buckets_len:            uint,
 	overflow_count, sum_ms: u64,
 }
 Performance_Operation :: struct {
 	attempts, successes, failures: u64,
-	duration_ms: Duration_Histogram,
+	duration_ms:                   Duration_Histogram,
 }
 Performance_Snapshot :: struct {
-	app_start: Performance_Operation,
-	directory_subscription_sync: Performance_Operation,
-	account_reconcile: Performance_Operation,
-	account_open: Performance_Operation,
-	account_worker_readiness: Performance_Operation,
-	account_session_open: Performance_Operation,
-	account_group_hydration: Performance_Operation,
-	account_profile_load: Performance_Operation,
-	account_group_read_snapshot: Performance_Operation,
-	account_transport_activation: Performance_Operation,
-	account_subscription_registration: Performance_Operation,
-	account_catch_up: Performance_Operation,
-	account_sync: Performance_Operation,
-	account_setup_advisory_step: Performance_Operation,
-	account_bootstrap_relay_and_follow_publish: Performance_Operation,
-	account_default_profile_publish: Performance_Operation,
-	account_initial_key_package_publish: Performance_Operation,
-	account_initial_sync_overlap: Performance_Operation,
-	account_setup_identity_local: Performance_Operation,
-	account_setup_storage_local: Performance_Operation,
-	account_setup_profile_local: Performance_Operation,
-	account_setup_key_package_local: Performance_Operation,
-	account_setup_local_ready_handoff: Performance_Operation,
-	account_setup_network_ready: Performance_Operation,
-	sqlcipher_migration_probe_runs: u64,
-	sqlcipher_migration_probe_skips: u64,
-	inbound_delivery_projection: Performance_Operation,
-	outbound_message_send: Performance_Operation,
-	outbound_message_queue_wait: Performance_Operation,
-	outbound_message_local_projection: Performance_Operation,
-	outbound_message_local_accept: Performance_Operation,
-	outbound_message_publish: Performance_Operation,
-	outbound_message_response: Performance_Operation,
-	host_outbound_message_visible: Performance_Operation,
-	host_inbound_message_visible: Performance_Operation,
-	group_create_queue_wait: Performance_Operation,
-	group_create_key_package_lookup: Performance_Operation,
-	group_member_key_package_prewarm: Performance_Operation,
-	group_create_key_package_cache_reuse: Performance_Operation,
+	app_start:                                   Performance_Operation,
+	directory_subscription_sync:                 Performance_Operation,
+	account_reconcile:                           Performance_Operation,
+	account_open:                                Performance_Operation,
+	account_worker_readiness:                    Performance_Operation,
+	account_session_open:                        Performance_Operation,
+	account_group_hydration:                     Performance_Operation,
+	account_profile_load:                        Performance_Operation,
+	account_group_read_snapshot:                 Performance_Operation,
+	account_transport_activation:                Performance_Operation,
+	account_subscription_registration:           Performance_Operation,
+	account_catch_up:                            Performance_Operation,
+	account_sync:                                Performance_Operation,
+	account_setup_advisory_step:                 Performance_Operation,
+	account_bootstrap_relay_and_follow_publish:  Performance_Operation,
+	account_default_profile_publish:             Performance_Operation,
+	account_initial_key_package_publish:         Performance_Operation,
+	account_initial_sync_overlap:                Performance_Operation,
+	account_setup_identity_local:                Performance_Operation,
+	account_setup_storage_local:                 Performance_Operation,
+	account_setup_profile_local:                 Performance_Operation,
+	account_setup_key_package_local:             Performance_Operation,
+	account_setup_local_ready_handoff:           Performance_Operation,
+	account_setup_network_ready:                 Performance_Operation,
+	sqlcipher_migration_probe_runs:              u64,
+	sqlcipher_migration_probe_skips:             u64,
+	inbound_delivery_projection:                 Performance_Operation,
+	outbound_message_send:                       Performance_Operation,
+	outbound_message_queue_wait:                 Performance_Operation,
+	outbound_message_local_projection:           Performance_Operation,
+	outbound_message_local_accept:               Performance_Operation,
+	outbound_message_publish:                    Performance_Operation,
+	outbound_message_response:                   Performance_Operation,
+	host_outbound_message_visible:               Performance_Operation,
+	host_inbound_message_visible:                Performance_Operation,
+	group_create_queue_wait:                     Performance_Operation,
+	group_create_key_package_lookup:             Performance_Operation,
+	group_member_key_package_prewarm:            Performance_Operation,
+	group_create_key_package_cache_reuse:        Performance_Operation,
 	group_create_key_package_network_resolution: Performance_Operation,
-	group_create_image_preprocess: Performance_Operation,
-	group_create_image_upload: Performance_Operation,
-	group_create_mls_prepare_persist: Performance_Operation,
-	group_create_pending_welcome_index: Performance_Operation,
-	group_create_welcome_publish: Performance_Operation,
-	group_create_local_projection_save: Performance_Operation,
-	group_create_response_handoff: Performance_Operation,
-	group_create_subscription_refresh: Performance_Operation,
-	group_create_post_mutation_catch_up: Performance_Operation,
-	group_create_total_caller_latency: Performance_Operation,
-	group_invite_members: Performance_Operation,
-	group_invite_key_package_lookup: Performance_Operation,
-	group_invite_routing_refresh: Performance_Operation,
-	group_invite_pre_send_sync: Performance_Operation,
-	group_invite_engine_publish: Performance_Operation,
-	group_invite_local_refresh: Performance_Operation,
-	group_invite_notification_trigger: Performance_Operation,
-	group_invite_welcome_publish: Performance_Operation,
-	group_invite_post_mutation_catch_up: Performance_Operation,
-	group_promote_admin: Performance_Operation,
-	group_details_read: Performance_Operation,
-	group_conversation_snapshot_read: Performance_Operation,
-	chat_list_row_read: Performance_Operation,
-	existing_direct_conversation_read: Performance_Operation,
-	group_mls_state_read: Performance_Operation,
-	group_roster_read: Performance_Operation,
-	group_accept_invite: Performance_Operation,
-	media_upload: Performance_Operation,
-	media_download: Performance_Operation,
-	media_download_queue_wait: Performance_Operation,
-	media_download_preparation: Performance_Operation,
-	media_download_host_setup: Performance_Operation,
-	media_download_response_headers: Performance_Operation,
-	media_download_first_byte: Performance_Operation,
-	media_download_body_transfer: Performance_Operation,
-	media_download_locator_failover: Performance_Operation,
-	media_download_ciphertext_verify: Performance_Operation,
-	media_download_decrypt: Performance_Operation,
-	media_download_plaintext_verify: Performance_Operation,
-	host_splash_ready: Performance_Operation,
-	host_foreground_local_ready: Performance_Operation,
+	group_create_image_preprocess:               Performance_Operation,
+	group_create_image_upload:                   Performance_Operation,
+	group_create_mls_prepare_persist:            Performance_Operation,
+	group_create_pending_welcome_index:          Performance_Operation,
+	group_create_welcome_publish:                Performance_Operation,
+	group_create_local_projection_save:          Performance_Operation,
+	group_create_response_handoff:               Performance_Operation,
+	group_create_subscription_refresh:           Performance_Operation,
+	group_create_post_mutation_catch_up:         Performance_Operation,
+	group_create_total_caller_latency:           Performance_Operation,
+	group_invite_members:                        Performance_Operation,
+	group_invite_key_package_lookup:             Performance_Operation,
+	group_invite_routing_refresh:                Performance_Operation,
+	group_invite_pre_send_sync:                  Performance_Operation,
+	group_invite_engine_publish:                 Performance_Operation,
+	group_invite_local_refresh:                  Performance_Operation,
+	group_invite_notification_trigger:           Performance_Operation,
+	group_invite_welcome_publish:                Performance_Operation,
+	group_invite_post_mutation_catch_up:         Performance_Operation,
+	group_promote_admin:                         Performance_Operation,
+	group_details_read:                          Performance_Operation,
+	group_conversation_snapshot_read:            Performance_Operation,
+	chat_list_row_read:                          Performance_Operation,
+	existing_direct_conversation_read:           Performance_Operation,
+	group_mls_state_read:                        Performance_Operation,
+	group_roster_read:                           Performance_Operation,
+	group_accept_invite:                         Performance_Operation,
+	media_upload:                                Performance_Operation,
+	media_download:                              Performance_Operation,
+	media_download_queue_wait:                   Performance_Operation,
+	media_download_preparation:                  Performance_Operation,
+	media_download_host_setup:                   Performance_Operation,
+	media_download_response_headers:             Performance_Operation,
+	media_download_first_byte:                   Performance_Operation,
+	media_download_body_transfer:                Performance_Operation,
+	media_download_locator_failover:             Performance_Operation,
+	media_download_ciphertext_verify:            Performance_Operation,
+	media_download_decrypt:                      Performance_Operation,
+	media_download_plaintext_verify:             Performance_Operation,
+	host_splash_ready:                           Performance_Operation,
+	host_foreground_local_ready:                 Performance_Operation,
 }
 Host_Performance :: enum u32 {
 	Splash_Ready,
@@ -1340,7 +1485,10 @@ Host_Performance :: enum u32 {
 	Linux_vault_persist,
 	Linux_settings_save,
 }
-Performance_Outcome :: enum u32 { Success, Failure }
+Performance_Outcome :: enum u32 {
+	Success,
+	Failure,
+}
 
 foreign lib {
 	@(link_name = "marmot_app_performance_snapshot")
@@ -1352,20 +1500,32 @@ foreign lib {
 }
 
 // Combined diagnostics consent supersedes the legacy telemetry setter.
-Diagnostics_Decision :: enum u32 { Acceptance_Required, Declined, Granted }
-Diagnostics_Consent :: enum u8 { Decline, Grant }
+Diagnostics_Decision :: enum u32 {
+	Acceptance_Required,
+	Declined,
+	Granted,
+}
+Diagnostics_Consent :: enum u8 {
+	Decline,
+	Grant,
+}
 Diagnostics_Settings :: struct {
-	decision: Diagnostics_Decision,
+	decision:                           Diagnostics_Decision,
 	policy_revision, registry_revision: cstring,
-	updated_at_ms: i64,
-	previously_enabled: u8,
+	updated_at_ms:                      i64,
+	previously_enabled:                 u8,
 }
 Diagnostics_Exporter :: enum u32 {
-	Disabled, Consent_Required, Unconfigured, Unsupported_Build, Ready, Configuration_Rejected,
+	Disabled,
+	Consent_Required,
+	Unconfigured,
+	Unsupported_Build,
+	Ready,
+	Configuration_Rejected,
 }
 Diagnostics_Status :: struct {
-	consent: Diagnostics_Decision,
-	telemetry, product_analytics: Diagnostics_Exporter,
+	consent:                                                         Diagnostics_Decision,
+	telemetry, product_analytics:                                    Diagnostics_Exporter,
 	queued_events, dropped_events, accepted_batches, failed_batches: u64,
 }
 foreign lib {
@@ -1382,34 +1542,41 @@ foreign lib {
 }
 
 // Optional private-use MLS state, committed with MDK's admin checks.
-Group_App_Component :: struct { component_id: u16, data: [^]u8, data_len: uint }
-App_Message_Record :: struct {
- message_id_hex, direction, group_id_hex, sender, plaintext: cstring,
- content_tokens: Markdown_Document,
- kind: u64,
- tags: [^]Message_Tag,
- tags_len: uint,
- has_source_epoch: bool,
- source_epoch: u64,
- has_retention_seconds: bool,
- retention_seconds: u64,
- has_retention_expires_at: bool,
- retention_expires_at: u64,
- recorded_at, received_at: u64,
- has_moderation_grant, moderation_grant, invalidated: bool,
+Group_App_Component :: struct {
+	component_id: u16,
+	data:         [^]u8,
+	data_len:     uint,
 }
-App_Message_List :: struct { items: [^]App_Message_Record, len: uint }
+App_Message_Record :: struct {
+	message_id_hex, direction, group_id_hex, sender, plaintext: cstring,
+	content_tokens:                                             Markdown_Document,
+	kind:                                                       u64,
+	tags:                                                       [^]Message_Tag,
+	tags_len:                                                   uint,
+	has_source_epoch:                                           bool,
+	source_epoch:                                               u64,
+	has_retention_seconds:                                      bool,
+	retention_seconds:                                          u64,
+	has_retention_expires_at:                                   bool,
+	retention_expires_at:                                       u64,
+	recorded_at, received_at:                                   u64,
+	has_moderation_grant, moderation_grant, invalidated:        bool,
+}
+App_Message_List :: struct {
+	items: [^]App_Message_Record,
+	len:   uint,
+}
 foreign lib {
- @(link_name = "marmot_group_app_component")
- group_app_component :: proc(client: ^Client, account, group: cstring, id: u16, out: ^^Group_App_Component) -> Status ---
- @(link_name = "marmot_update_app_component")
- update_app_component :: proc(client: ^Client, account, group: cstring, id: u16, data: [^]u8, count: uint, out: ^^Send_Summary) -> Status ---
- @(link_name = "marmot_app_component_free")
- app_component_free :: proc(value: ^Group_App_Component) ---
- @(link_name = "marmot_messages")
- messages :: proc(client: ^Client, account, group: cstring, has_limit: u8, limit: u32, kinds: [^]u64, kinds_len: uint, out: ^^App_Message_List) -> Status ---
- @(link_name = "marmot_app_message_record_list_free")
- app_message_list_free :: proc(value: ^App_Message_List) ---
+	@(link_name = "marmot_group_app_component")
+	group_app_component :: proc(client: ^Client, account, group: cstring, id: u16, out: ^^Group_App_Component) -> Status ---
+	@(link_name = "marmot_update_app_component")
+	update_app_component :: proc(client: ^Client, account, group: cstring, id: u16, data: [^]u8, count: uint, out: ^^Send_Summary) -> Status ---
+	@(link_name = "marmot_app_component_free")
+	app_component_free :: proc(value: ^Group_App_Component) ---
+	@(link_name = "marmot_messages")
+	messages :: proc(client: ^Client, account, group: cstring, has_limit: u8, limit: u32, kinds: [^]u64, kinds_len: uint, out: ^^App_Message_List) -> Status ---
+	@(link_name = "marmot_app_message_record_list_free")
+	app_message_list_free :: proc(value: ^App_Message_List) ---
 }
 
 #assert(size_of(App_Message_Record) == 176)
@@ -1417,13 +1584,25 @@ foreign lib {
 #assert(offset_of(App_Message_Record, invalidated) == 170)
 #assert(size_of(Group_App_Component) == 24)
 
-Timeline_Edit_Summary :: struct { edit_count: u64, latest_id: cstring, edited_at: u64 }
-Timeline_Edit_Version :: struct { id: cstring, edited_at: u64, plaintext: cstring }
-Timeline_Edit_Page :: struct { versions: [^]Timeline_Edit_Version, len: uint, has_more: bool }
+Timeline_Edit_Summary :: struct {
+	edit_count: u64,
+	latest_id:  cstring,
+	edited_at:  u64,
+}
+Timeline_Edit_Version :: struct {
+	id:        cstring,
+	edited_at: u64,
+	plaintext: cstring,
+}
+Timeline_Edit_Page :: struct {
+	versions: [^]Timeline_Edit_Version,
+	len:      uint,
+	has_more: bool,
+}
 @(default_calling_convention = "c")
 foreign lib {
- @(link_name = "marmot_message_edit_history")
- message_edit_history :: proc(client: ^Client, account, group, target: cstring, has_before: u8, before: u64, before_id: cstring, limit: u32, out: ^^Timeline_Edit_Page) -> Status ---
- @(link_name = "marmot_timeline_edit_history_page_free")
- edit_history_free :: proc(page: ^Timeline_Edit_Page) ---
+	@(link_name = "marmot_message_edit_history")
+	message_edit_history :: proc(client: ^Client, account, group, target: cstring, has_before: u8, before: u64, before_id: cstring, limit: u32, out: ^^Timeline_Edit_Page) -> Status ---
+	@(link_name = "marmot_timeline_edit_history_page_free")
+	edit_history_free :: proc(page: ^Timeline_Edit_Page) ---
 }

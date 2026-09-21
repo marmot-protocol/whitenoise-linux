@@ -1,17 +1,24 @@
 package main
 
+import marmot "../marmot"
 import "core:encoding/json"
 import "core:fmt"
 import "core:strings"
 import "core:testing"
-import marmot "../marmot"
 
 @(test)
 timing_report_boundaries :: proc(t: ^testing.T) {
 	buckets := [?]marmot.Duration_Bucket{{10, 18}, {500, 1}}
-	op := marmot.Performance_Operation{
-		attempts = 20, successes = 19, failures = 1,
-		duration_ms = {buckets = raw_data(buckets[:]), buckets_len = len(buckets), overflow_count = 1, sum_ms = 1000},
+	op := marmot.Performance_Operation {
+		attempts = 20,
+		successes = 19,
+		failures = 1,
+		duration_ms = {
+			buckets = raw_data(buckets[:]),
+			buckets_len = len(buckets),
+			overflow_count = 1,
+			sum_ms = 1000,
+		},
 	}
 	testing.expect_value(t, timing_p95(op), "500")
 	op.attempts = 21
@@ -19,12 +26,16 @@ timing_report_boundaries :: proc(t: ^testing.T) {
 	testing.expect_value(t, timing_p95(op), "null")
 	testing.expect_value(t, timing_p95({}), "null")
 
-	snapshot := marmot.Performance_Snapshot{outbound_message_queue_wait = op}
+	snapshot := marmot.Performance_Snapshot {
+		outbound_message_queue_wait = op,
+	}
 	report := timing_snapshot_json(&snapshot)
 	defer delete(report)
 	decoded: struct {
 		scope, unit: string,
-		timings: map[string]struct { samples, successes, failures, sum_ms: u64 },
+		timings:     map[string]struct {
+			samples, successes, failures, sum_ms: u64,
+		},
 	}
 	err := json.unmarshal(transmute([]u8)report, &decoded, allocator = context.temp_allocator)
 	testing.expect(t, err == nil)
@@ -43,7 +54,7 @@ timing_report_boundaries :: proc(t: ^testing.T) {
 local_timing_boundaries :: proc(t: ^testing.T) {
 	op: Local_Distribution
 	testing.expect_value(t, local_timing_percentile(op, 95), "null")
-	for ns in ([4]u64{0, 1000, 1001, 2000}) { local_timing_add(&op, ns) }
+	for ns in ([4]u64{0, 1000, 1001, 2000}) {local_timing_add(&op, ns)}
 	testing.expect_value(t, op.samples, 4)
 	testing.expect_value(t, op.sum_ns, 4001)
 	testing.expect_value(t, op.min_ns, 0)
@@ -56,15 +67,21 @@ local_timing_boundaries :: proc(t: ^testing.T) {
 	testing.expect_value(t, local_timing_percentile(op, 99), "null")
 	testing.expect_value(t, op.buckets[27], 1)
 	for stage in Local_Timing {
-		foreign_stage := marmot.Host_Performance(u32(marmot.Host_Performance.Linux_startup_before_vault) + u32(stage))
+		foreign_stage := marmot.Host_Performance(
+			u32(marmot.Host_Performance.Linux_startup_before_vault) + u32(stage),
+		)
 		testing.expect_value(t, fmt.tprintf("%v", foreign_stage), fmt.tprintf("Linux_%v", stage))
 	}
 	report := timings_json(nil)
 	defer delete(report)
-	decoded: struct { linux_performance: struct {
-		scope, unit: string,
-		timings: map[string]struct { samples: u64 },
-	}}
+	decoded: struct {
+		linux_performance: struct {
+			scope, unit: string,
+			timings:     map[string]struct {
+				samples: u64,
+			},
+		},
+	}
 	err := json.unmarshal(transmute([]u8)report, &decoded, allocator = context.temp_allocator)
 	testing.expect(t, err == nil)
 	testing.expect_value(t, len(decoded.linux_performance.timings), 38)

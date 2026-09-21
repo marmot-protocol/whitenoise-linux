@@ -95,42 +95,98 @@ link_modal :: proc(ui: ^Ui_State) {
 	host := url_host(ui.link_url)
 	if clay.UI(clay.ID("LinkModal"))(
 	{
-		layout = {sizing = {width = clay.SizingFixed(modal_w(clay.ID("LinkModal"), 440))}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(20), childGap = 12},
+		layout = {
+			sizing = {width = clay.SizingFixed(modal_w(clay.ID("LinkModal"), 440))},
+			layoutDirection = .TopToBottom,
+			padding = clay.PaddingAll(20),
+			childGap = 12,
+		},
 		backgroundColor = CARD,
 		cornerRadius = rr(16),
 		border = {color = CARD_BORDER, width = bw()},
-		floating = {attachTo = .Root, zIndex = 16, offset = {0, rise(clay.ID("LinkModal"))}, attachment = {element = .CenterCenter, parent = .CenterCenter}},
+		floating = {
+			attachTo = .Root,
+			zIndex = 16,
+			offset = {0, rise(clay.ID("LinkModal"))},
+			attachment = {element = .CenterCenter, parent = .CenterCenter},
+		},
 	},
 	) {
-		if clay.UI(clay.ID("LinkHead"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, childAlignment = {y = .Center}}}) {
+		if clay.UI(clay.ID("LinkHead"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				childGap = 10,
+				childAlignment = {y = .Center},
+			},
+		},
+		) {
 			clay.Text(ICON_GLOBE, {fontId = FONT_ICON, fontSize = 15, textColor = ACCENT})
-			clay.Text(tr("Open this link?"), {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
+			clay.Text(
+				tr("Open this link?"),
+				{fontId = FONT_TITLE, fontSize = 18, textColor = TEXT},
+			)
 		}
-		clay.Text(tr("This leaves White Noise and opens in your browser."), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+		clay.Text(
+			tr("This leaves White Noise and opens in your browser."),
+			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+		)
 
 		eyebrow("SITE")
 		if clay.UI(clay.ID("LinkCard"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(12), childGap = 5}, backgroundColor = ROW_BG, cornerRadius = rr(10), border = {color = FIELD_BORDER, width = bw()}},
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				layoutDirection = .TopToBottom,
+				padding = clay.PaddingAll(12),
+				childGap = 5,
+			},
+			backgroundColor = ROW_BG,
+			cornerRadius = rr(10),
+			border = {color = FIELD_BORDER, width = bw()},
+		},
 		) {
 			clay.Text(host, {fontId = FONT_TITLE, fontSize = 14, textColor = TEXT})
 			// Chopped to the card: a nevent URL has no space to wrap at.
 			mono_lines(ui.link_url, modal_w(clay.ID("LinkModal"), 440) - 64, TEXT_LO)
 		}
 
-		if clay.UI(clay.ID("LinkTrustRow"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, childAlignment = {y = .Center}}}) {
+		if clay.UI(clay.ID("LinkTrustRow"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				childGap = 10,
+				childAlignment = {y = .Center},
+			},
+		},
+		) {
 			toggle("LinkTrust", ui.link_trust)
-			clay.Text(tr("Always open links to this site"), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+			clay.Text(
+				tr("Always open links to this site"),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			)
 		}
 
-		if clay.UI(clay.ID("LinkActions"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 10}}) {
+		if clay.UI(clay.ID("LinkActions"))(
+		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10}},
+		) {
 			if clay.UI(clay.ID("LinkCancel"))(
-			{layout = {padding = {left = 16, right = 16, top = 9, bottom = 9}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(9), border = {color = FIELD_BORDER, width = bw()}},
+			{
+				layout = {padding = {left = 16, right = 16, top = 9, bottom = 9}},
+				backgroundColor = hovered() ? HOVER : {},
+				cornerRadius = rr(9),
+				border = {color = FIELD_BORDER, width = bw()},
+			},
 			) {
 				clay.Text(tr("Cancel"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
 			}
 			if clay.UI(clay.ID("LinkGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 			if clay.UI(clay.ID("LinkGo"))(
-			{layout = {padding = {left = 16, right = 16, top = 9, bottom = 9}}, backgroundColor = hovered() ? ACCENT_DIM : ACCENT, cornerRadius = rr(9)},
+			{
+				layout = {padding = {left = 16, right = 16, top = 9, bottom = 9}},
+				backgroundColor = hovered() ? ACCENT_DIM : ACCENT,
+				cornerRadius = rr(9),
+			},
 			) {
 				clay.Text(tr("Open"), {fontId = FONT_TITLE, fontSize = 13, textColor = ON_ACCENT})
 			}

@@ -18,14 +18,14 @@ import rl "sdlrl"
 // text slices point into the message's own strings, which outlive the
 // frame.
 Sel_Line :: struct {
-	id:    u32, // the clay id body_line used
-	block: u32, // body_text's id base: the selection's scope
-	start: int, // byte offset of this line inside block_text
-	text:  string,
+	id:         u32, // the clay id body_line used
+	block:      u32, // body_text's id base: the selection's scope
+	start:      int, // byte offset of this line inside block_text
+	text:       string,
 	block_text: string,
-	size:  u16,
-	tile_px: f32,
-	fonts: string,
+	size:       u16,
+	tile_px:    f32,
+	fonts:      string,
 }
 
 sel_lines: [dynamic]Sel_Line
@@ -35,9 +35,20 @@ sel_lines: [dynamic]Sel_Line
 sel_dragging: bool
 
 @(private)
-Selection_Unit :: enum { Character, Word, Sentence }
+Selection_Unit :: enum {
+	Character,
+	Word,
+	Sentence,
+}
 
-sel_register :: proc(id, block: u32, start: int, text, block_text: string, size: u16, tile_px: f32, fonts: string = "") {
+sel_register :: proc(
+	id, block: u32,
+	start: int,
+	text, block_text: string,
+	size: u16,
+	tile_px: f32,
+	fonts: string = "",
+) {
 	append(&sel_lines, Sel_Line{id, block, start, text, block_text, size, tile_px, fonts})
 }
 
@@ -91,7 +102,15 @@ sel_offset_in :: proc(line: Sel_Line, mx, my: f32) -> (offset: int, over: bool) 
 // selected so a drag that strays over a neighbouring message keeps
 // extending the original selection.
 @(private = "file")
-sel_hit :: proc(ui: ^Ui_State, mx, my: f32, block_only: bool) -> (line: Sel_Line, offset: int, ok: bool) {
+sel_hit :: proc(
+	ui: ^Ui_State,
+	mx, my: f32,
+	block_only: bool,
+) -> (
+	line: Sel_Line,
+	offset: int,
+	ok: bool,
+) {
 	best_gap := max(f32)
 	for candidate in sel_lines {
 		if block_only && candidate.block != ui.sel_block {
@@ -148,7 +167,7 @@ sel_snap :: proc(text: string, lo, hi: int) -> (out_lo, out_hi: int) {
 	out_lo, out_hi = lo, hi
 	for i := 0; i < len(text); {
 		end, _, ok := url_at(text, i)
-		if next, ref := nostr_at(text, i); ref.kind != .None { end, ok = next, true }
+		if next, ref := nostr_at(text, i); ref.kind != .None {end, ok = next, true}
 		if !ok {
 			i += 1
 			continue
@@ -248,7 +267,7 @@ handle_body_sel :: proc(ui: ^Ui_State) {
 		}
 		if ui.sel_unit != .Character {
 			lo, hi := sel_word_at(line.block_text, offset)
-			if ui.sel_unit == .Sentence { lo, hi = sentence_bounds(line.block_text, offset) }
+			if ui.sel_unit == .Sentence {lo, hi = sentence_bounds(line.block_text, offset)}
 			ui.sel_a = min(ui.sel_wa, lo)
 			ui.sel_b = max(ui.sel_wb, hi)
 		} else {

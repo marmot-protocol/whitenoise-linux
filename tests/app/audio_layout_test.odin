@@ -1,14 +1,14 @@
 package main
 
+import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:fmt"
 import "core:os"
 import "core:testing"
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
 @(test)
 audio_layout :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "audio_layout" { return }
+	if #config(ODIN_TEST_NAMES, "") != "audio_layout" {return}
 	rl.InitWindow(720, 900, "Audio messages")
 	defer rl.CloseWindow()
 	UI_ZOOM, UI_SCALE = 1, 1
@@ -17,15 +17,29 @@ audio_layout :: proc(t: ^testing.T) {
 	init_fonts()
 	memory := make([]u8, int(clay.MinMemorySize()))
 	defer delete(memory)
-	clay.Initialize(clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)), {720, 900}, {})
+	clay.Initialize(
+		clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)),
+		{720, 900},
+		{},
+	)
 	clay.SetMeasureTextFunction(measure_text, nil)
-	ui := Ui_State{row_menu = -1, member_menu = -1, selected_contact = -1}
+	ui := Ui_State {
+		row_menu         = -1,
+		member_menu      = -1,
+		selected_contact = -1,
+	}
 	ui.prefs.stt_enabled = true
 	append(&ui.accounts, "Test")
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "Audio"})
-	views := [2]Video_View{{paused = true, time = 27, dur = 27}, {paused = false, time = 3, dur = 6}}
+	views := [2]Video_View {
+		{paused = true, time = 27, dur = 27},
+		{paused = false, time = 3, dur = 6},
+	}
 	for name, i in ([]string{"mono_44100_127389__acclivity__thetimehascome.wav", "if-you-are-going-to-get-mad-at-me-every-time-i-do-something-stupid-then-i-guess-i-will-just-have-to-stop-doing-stupid-things.mp3"}) {
-		msg := Msg_Ui{id = fmt.aprintf("message%d", i), sender = "Danny"}
+		msg := Msg_Ui {
+			id     = fmt.aprintf("message%d", i),
+			sender = "Danny",
+		}
 		append(&msg.att_names, name)
 		append(&msg.att_keys, name)
 		blob_sizes[name] = i == 0 ? 2500000 : 20300
@@ -46,19 +60,28 @@ audio_layout :: proc(t: ^testing.T) {
 			for key in ([]string{"MsgAudioName", "MsgAudioBar", "MsgAudioMeta"}) {
 				box := clay.GetElementData(clay.ID(key, id))
 				testing.expect(t, box.found)
-				testing.expect(t, box.boundingBox.x + box.boundingBox.width <= tile.x + tile.width, key)
+				testing.expect(
+					t,
+					box.boundingBox.x + box.boundingBox.width <= tile.x + tile.width,
+					key,
+				)
 			}
 			testing.expect(t, tile.x + tile.width <= width)
 		}
-		before := [3]clay.BoundingBox{
+		before := [3]clay.BoundingBox {
 			clay.GetElementData(clay.ID("Timeline")).boundingBox,
 			clay.GetElementData(clay.ID("MsgAudio", 0)).boundingBox,
 			clay.GetElementData(clay.ID("MsgAudio", 1024)).boundingBox,
 		}
 		file: os.File
-		ui.stt = {file = &file, message = "message1", status = 'D', percent = 42}
+		ui.stt = {
+			file    = &file,
+			message = "message1",
+			status  = 'D',
+			percent = 42,
+		}
 		_ = build_layout(&ui, 0)
-		after := [3]clay.BoundingBox{
+		after := [3]clay.BoundingBox {
 			clay.GetElementData(clay.ID("Timeline")).boundingBox,
 			clay.GetElementData(clay.ID("MsgAudio", 0)).boundingBox,
 			clay.GetElementData(clay.ID("MsgAudio", 1024)).boundingBox,

@@ -47,31 +47,57 @@ confirm_copy :: proc(c: Confirm) -> (title, body, action: string) {
 	case .None:
 		return "", "", ""
 	case .Delete_All:
-		return N_("Delete this message?"), N_("It disappears for everyone in the chat. This can't be undone."), N_("Delete for everyone")
+		return N_(
+			"Delete this message?",
+		), N_("It disappears for everyone in the chat. This can't be undone."), N_("Delete for everyone")
 	case .Delete_Me:
-		return N_("Delete for you?"), N_("It stays for everyone else. You won't see it on this device again."), N_("Delete for me")
+		return N_(
+			"Delete for you?",
+		), N_("It stays for everyone else. You won't see it on this device again."), N_("Delete for me")
 	case .Leave_Group:
-		return N_("Leave this group?"), N_("You stop receiving its messages. Rejoining needs a new invite."), N_("Leave")
+		return N_(
+			"Leave this group?",
+		), N_("You stop receiving its messages. Rejoining needs a new invite."), N_("Leave")
 	case .Block:
-		return N_("Block this contact?"), N_("Their direct chat leaves your list. Nothing is published, and you can undo it here."), N_("Block")
+		return N_(
+			"Block this contact?",
+		), N_("Their direct chat leaves your list. Nothing is published, and you can undo it here."), N_("Block")
 	case .Delete_Theme:
-		return N_("Delete this theme?"), N_("Its file is removed from this device. Themes shared into a chat stay there."), N_("Delete")
+		return N_(
+			"Delete this theme?",
+		), N_("Its file is removed from this device. Themes shared into a chat stay there."), N_("Delete")
 	case .Remove_Contact:
-		return N_("Remove this contact?"), N_("They come off your published contact list. Groups you already share stay as they are."), N_("Remove")
+		return N_(
+			"Remove this contact?",
+		), N_("They come off your published contact list. Groups you already share stay as they are."), N_("Remove")
 	case .Remove_Member:
-		return N_("Remove this member?"), N_("They lose access to new messages in this group."), N_("Remove")
+		return N_(
+			"Remove this member?",
+		), N_("They lose access to new messages in this group."), N_("Remove")
 	case .Promote:
-		return N_("Make this member an admin?"), N_("Admins can add and remove members and change group details."), N_("Promote")
+		return N_(
+			"Make this member an admin?",
+		), N_("Admins can add and remove members and change group details."), N_("Promote")
 	case .Demote:
-		return N_("Remove admin rights?"), N_("They stay in the group as a regular member."), N_("Demote")
+		return N_(
+			"Remove admin rights?",
+		), N_("They stay in the group as a regular member."), N_("Demote")
 	case .Step_Down:
-		return N_("Step down as admin?"), N_("You stay in the group, but another admin has to grant the rights back."), N_("Step down")
+		return N_(
+			"Step down as admin?",
+		), N_("You stay in the group, but another admin has to grant the rights back."), N_("Step down")
 	case .Decline_Invite:
-		return N_("Decline this invitation?"), N_("The chat leaves your list. Joining later needs a new invite."), N_("Decline")
+		return N_(
+			"Decline this invitation?",
+		), N_("The chat leaves your list. Joining later needs a new invite."), N_("Decline")
 	case .Remove_Relay, .Remove_Inbox:
-		return N_("Remove this relay?"), N_("The updated list is published to your relays."), N_("Remove")
+		return N_(
+			"Remove this relay?",
+		), N_("The updated list is published to your relays."), N_("Remove")
 	case .Sign_Out:
-		return N_("Sign out of this account?"), N_("Its keys stay in the vault on this device. You can sign in again from the accounts screen."), N_("Sign out")
+		return N_(
+			"Sign out of this account?",
+		), N_("Its keys stay in the vault on this device. You can sign in again from the accounts screen."), N_("Sign out")
 	}
 	return "", "", ""
 }
@@ -89,11 +115,22 @@ msg_preview :: proc(msg: Msg_Ui) -> string {
 	return line
 }
 
-confirm_ask :: proc(ui: ^Ui_State, kind: Confirm_Kind, arg: string, name: string = "", idx: int = -1) {
+confirm_ask :: proc(
+	ui: ^Ui_State,
+	kind: Confirm_Kind,
+	arg: string,
+	name: string = "",
+	idx: int = -1,
+) {
 	// Frees the previous ask's payload, which confirm_close left alone.
 	delete(ui.confirm.arg)
 	delete(ui.confirm.name)
-	ui.confirm = Confirm{kind = kind, arg = strings.clone(arg), name = strings.clone(name), idx = idx}
+	ui.confirm = Confirm {
+		kind = kind,
+		arg  = strings.clone(arg),
+		name = strings.clone(name),
+		idx  = idx,
+	}
 	confirm_shown = kind
 }
 
@@ -116,34 +153,64 @@ confirm_modal :: proc(ui: ^Ui_State) {
 	title, body, action := confirm_copy(shown)
 	if clay.UI(clay.ID("ConfirmModal"))(
 	{
-		layout = {sizing = {width = clay.SizingFixed(modal_w(clay.ID("ConfirmModal"), 400))}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(20), childGap = 10},
+		layout = {
+			sizing = {width = clay.SizingFixed(modal_w(clay.ID("ConfirmModal"), 400))},
+			layoutDirection = .TopToBottom,
+			padding = clay.PaddingAll(20),
+			childGap = 10,
+		},
 		backgroundColor = CARD,
 		cornerRadius = rr(16),
 		border = {color = CARD_BORDER, width = bw()},
-		floating = {attachTo = .Root, zIndex = 16, offset = {0, rise(clay.ID("ConfirmModal"))}, attachment = {element = .CenterCenter, parent = .CenterCenter}},
+		floating = {
+			attachTo = .Root,
+			zIndex = 16,
+			offset = {0, rise(clay.ID("ConfirmModal"))},
+			attachment = {element = .CenterCenter, parent = .CenterCenter},
+		},
 	},
 	) {
 		clay.Text(tr(title), {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
 		if len(ui.confirm.name) > 0 {
 			if clay.UI(clay.ID("ConfirmSubject"))(
-			{layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(10)}, backgroundColor = ROW_BG, cornerRadius = rr(8), border = {color = FIELD_BORDER, width = bw()}},
+			{
+				layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(10)},
+				backgroundColor = ROW_BG,
+				cornerRadius = rr(8),
+				border = {color = FIELD_BORDER, width = bw()},
+			},
 			) {
 				clay.Text(ui.confirm.name, {fontId = FONT_BODY, fontSize = 13, textColor = TEXT})
 			}
 		}
 		clay.Text(tr(body), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
 
-		if clay.UI(clay.ID("ConfirmActions"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, padding = {top = 6}}}) {
+		if clay.UI(clay.ID("ConfirmActions"))(
+		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, padding = {top = 6}}},
+		) {
 			if clay.UI(clay.ID("ConfirmCancel"))(
-			{layout = {padding = {left = 16, right = 16, top = 9, bottom = 9}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(9), border = {color = FIELD_BORDER, width = bw()}},
+			{
+				layout = {padding = {left = 16, right = 16, top = 9, bottom = 9}},
+				backgroundColor = hovered() ? HOVER : {},
+				cornerRadius = rr(9),
+				border = {color = FIELD_BORDER, width = bw()},
+			},
 			) {
 				clay.Text(tr("Cancel"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
 			}
 			if clay.UI(clay.ID("ConfirmGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 			if clay.UI(clay.ID("ConfirmGo"))(
-			{layout = {padding = {left = 16, right = 16, top = 9, bottom = 9}}, backgroundColor = hovered() ? DANGER : ROW_BG, cornerRadius = rr(9), border = {color = DANGER, width = bw()}},
+			{
+				layout = {padding = {left = 16, right = 16, top = 9, bottom = 9}},
+				backgroundColor = hovered() ? DANGER : ROW_BG,
+				cornerRadius = rr(9),
+				border = {color = DANGER, width = bw()},
+			},
 			) {
-				clay.Text(tr(action), {fontId = FONT_TITLE, fontSize = 13, textColor = hovered() ? BG : DANGER})
+				clay.Text(
+					tr(action),
+					{fontId = FONT_TITLE, fontSize = 13, textColor = hovered() ? BG : DANGER},
+				)
 			}
 		}
 	}
@@ -161,7 +228,8 @@ handle_confirm :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		run_confirm(ui, client)
 		return
 	}
-	if mouse_released() && (clicked("ConfirmCancel") || !clay.PointerOver(clay.ID("ConfirmModal"))) {
+	if mouse_released() &&
+	   (clicked("ConfirmCancel") || !clay.PointerOver(clay.ID("ConfirmModal"))) {
 		confirm_close(ui)
 	}
 }

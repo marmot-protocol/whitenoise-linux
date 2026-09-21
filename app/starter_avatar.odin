@@ -12,22 +12,56 @@ package main
 import "base:runtime"
 import "core:c"
 import "core:fmt"
-import "core:strings"
 import "core:slice"
+import "core:strings"
 
 import stbi "vendor:stb/image"
 
-import rl "sdlrl"
 import marmot "../marmot"
+import rl "sdlrl"
 
 @(private = "file")
-ADJECTIVES := [?]string{
-	"Spooky", "Cosmic", "Dapper", "Fuzzy", "Sleepy", "Sneaky", "Mighty",
-	"Velvet", "Turbo", "Witty", "Zesty", "Plucky", "Quirky", "Nimble",
-	"Frosty", "Mellow", "Peppy", "Rusty", "Stormy", "Sunny", "Dusty",
-	"Misty", "Jolly", "Groovy", "Snazzy", "Breezy", "Cheeky", "Daring",
-	"Electric", "Golden", "Icy", "Lucky", "Magnetic", "Neon", "Prickly",
-	"Quantum", "Silent", "Vivid", "Wandering", "Wobbly",
+ADJECTIVES := [?]string {
+	"Spooky",
+	"Cosmic",
+	"Dapper",
+	"Fuzzy",
+	"Sleepy",
+	"Sneaky",
+	"Mighty",
+	"Velvet",
+	"Turbo",
+	"Witty",
+	"Zesty",
+	"Plucky",
+	"Quirky",
+	"Nimble",
+	"Frosty",
+	"Mellow",
+	"Peppy",
+	"Rusty",
+	"Stormy",
+	"Sunny",
+	"Dusty",
+	"Misty",
+	"Jolly",
+	"Groovy",
+	"Snazzy",
+	"Breezy",
+	"Cheeky",
+	"Daring",
+	"Electric",
+	"Golden",
+	"Icy",
+	"Lucky",
+	"Magnetic",
+	"Neon",
+	"Prickly",
+	"Quantum",
+	"Silent",
+	"Vivid",
+	"Wandering",
+	"Wobbly",
 }
 
 // Every animal pairs its name with the Twemoji codepoint used for the
@@ -37,13 +71,31 @@ Starter_Animal :: struct {
 	cp:   rune,
 }
 
-ANIMALS := [?]Starter_Animal{
-	{"Bear", '🐻'}, {"Fox", '🦊'}, {"Otter", '🦦'}, {"Wolf", '🐺'},
-	{"Owl", '🦉'}, {"Badger", '🦡'}, {"Panda", '🐼'}, {"Koala", '🐨'},
-	{"Hedgehog", '🦔'}, {"Raccoon", '🦝'}, {"Penguin", '🐧'}, {"Toad", '🐸'},
-	{"Hare", '🐰'}, {"Falcon", '🦅'}, {"Parrot", '🦜'}, {"Gecko", '🦎'},
-	{"Beaver", '🦫'}, {"Seal", '🦭'}, {"Bison", '🦬'}, {"Lion", '🦁'},
-	{"Tiger", '🐯'}, {"Deer", '🦌'}, {"Duck", '🦆'}, {"Llama", '🦙'},
+ANIMALS := [?]Starter_Animal {
+	{"Bear", '🐻'},
+	{"Fox", '🦊'},
+	{"Otter", '🦦'},
+	{"Wolf", '🐺'},
+	{"Owl", '🦉'},
+	{"Badger", '🦡'},
+	{"Panda", '🐼'},
+	{"Koala", '🐨'},
+	{"Hedgehog", '🦔'},
+	{"Raccoon", '🦝'},
+	{"Penguin", '🐧'},
+	{"Toad", '🐸'},
+	{"Hare", '🐰'},
+	{"Falcon", '🦅'},
+	{"Parrot", '🦜'},
+	{"Gecko", '🦎'},
+	{"Beaver", '🦫'},
+	{"Seal", '🦭'},
+	{"Bison", '🦬'},
+	{"Lion", '🦁'},
+	{"Tiger", '🐯'},
+	{"Deer", '🦌'},
+	{"Duck", '🦆'},
+	{"Llama", '🦙'},
 }
 
 // Output edge; big enough that the 72px Twemoji tile upscales cleanly
@@ -64,7 +116,12 @@ starter_identity :: proc(npub: string) -> (name: string, cp: rune) {
 // missing (temp-allocated otherwise; texture upload copies it).
 @(private = "file")
 starter_face :: proc(npub: string, cp: rune) -> rl.Image {
-	glyph := rl.LoadImage(strings.clone_to_cstring(fmt.tprintf("%s/%x.png", twemoji_dir(), i32(cp)), context.temp_allocator))
+	glyph := rl.LoadImage(
+		strings.clone_to_cstring(
+			fmt.tprintf("%s/%x.png", twemoji_dir(), i32(cp)),
+			context.temp_allocator,
+		),
+	)
 	if glyph.data == nil {
 		return {}
 	}
@@ -139,7 +196,15 @@ png_sink :: proc "c" (ctx: rawptr, data: rawptr, size: c.int) {
 image_png :: proc(image: rl.Image) -> []u8 {
 	clear(&png_buf)
 	ctx := context
-	stbi.write_png_to_func(png_sink, &ctx, image.width, image.height, 4, image.data, image.width * 4)
+	stbi.write_png_to_func(
+		png_sink,
+		&ctx,
+		image.width,
+		image.height,
+		4,
+		image.data,
+		image.width * 4,
+	)
 	return png_buf[:]
 }
 
@@ -147,7 +212,9 @@ image_png :: proc(image: rl.Image) -> []u8 {
 @(private = "file")
 account_npub :: proc(client: ^marmot.Client, hex: string) -> string {
 	npub_c: cstring
-	if marmot.npub(client, strings.clone_to_cstring(hex, context.temp_allocator), &npub_c) != .OK || npub_c == nil {
+	if marmot.npub(client, strings.clone_to_cstring(hex, context.temp_allocator), &npub_c) !=
+		   .OK ||
+	   npub_c == nil {
 		return ""
 	}
 	defer marmot.string_free(npub_c)
@@ -159,7 +226,11 @@ account_npub :: proc(client: ^marmot.Client, hex: string) -> string {
 // Blocks on both round trips, so it runs on the sign-in worker; the
 // returned URL is cloned into `allocator` for the UI thread to adopt.
 // Failures only log, and an empty URL still leaves a local face.
-publish_starter_profile :: proc(client: ^marmot.Client, hex: string, allocator := context.allocator) -> string {
+publish_starter_profile :: proc(
+	client: ^marmot.Client,
+	hex: string,
+	allocator := context.allocator,
+) -> string {
 	npub := account_npub(client, hex)
 	if len(npub) == 0 {
 		return ""
@@ -173,7 +244,18 @@ publish_starter_profile :: proc(client: ^marmot.Client, hex: string, allocator :
 	if face := starter_face(npub, cp); face.data != nil {
 		png := image_png(face)
 		url_c: cstring
-		if len(png) > 0 && marmot.upload_profile_image(client, account, raw_data(png), uint(len(png)), "image/png", nil, &url_c) == .OK && url_c != nil {
+		if len(png) > 0 &&
+		   marmot.upload_profile_image(
+			   client,
+			   account,
+			   raw_data(png),
+			   uint(len(png)),
+			   "image/png",
+			   nil,
+			   &url_c,
+		   ) ==
+			   .OK &&
+		   url_c != nil {
 			pic_url = strings.clone(string(url_c), allocator)
 			marmot.string_free(url_c)
 		} else {
@@ -188,7 +270,17 @@ publish_starter_profile :: proc(client: ^marmot.Client, hex: string, allocator :
 		picture      = pic_url != "" ? strings.clone_to_cstring(pic_url, context.temp_allocator) : nil,
 	}
 	out: ^marmot.User_Profile_Metadata
-	if marmot.publish_user_profile(client, account, &metadata, raw_data(DEFAULT_RELAYS), uint(len(DEFAULT_RELAYS)), raw_data(DEFAULT_RELAYS), uint(len(DEFAULT_RELAYS)), &out) != .OK {
+	if marmot.publish_user_profile(
+		   client,
+		   account,
+		   &metadata,
+		   raw_data(DEFAULT_RELAYS),
+		   uint(len(DEFAULT_RELAYS)),
+		   raw_data(DEFAULT_RELAYS),
+		   uint(len(DEFAULT_RELAYS)),
+		   &out,
+	   ) !=
+	   .OK {
 		fmt.eprintfln("starter: couldn't publish the name: %s", marmot.last_error())
 	} else {
 		marmot.user_profile_metadata_free(out)
@@ -205,7 +297,12 @@ seed_starter_local :: proc(client: ^marmot.Client, hex: string, pic_url: string)
 		return
 	}
 	name, cp := starter_identity(npub)
-	register_starter_pic(hex, name, pic_url != "" ? pic_url : fmt.tprintf("starter://%s", hex), starter_face(npub, cp))
+	register_starter_pic(
+		hex,
+		name,
+		pic_url != "" ? pic_url : fmt.tprintf("starter://%s", hex),
+		starter_face(npub, cp),
+	)
 }
 
 // Regenerate the local starter face at login. The face never leaves

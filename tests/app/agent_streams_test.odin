@@ -1,8 +1,8 @@
 package main
 
+import marmot "../marmot"
 import "core:strings"
 import "core:testing"
-import marmot "../marmot"
 
 @(test)
 agent_preview_updates :: proc(t: ^testing.T) {
@@ -11,13 +11,17 @@ agent_preview_updates :: proc(t: ^testing.T) {
 	testing.expect_value(t, offset_of(marmot.Agent_Stream_Update, data), 8)
 	p: Agent_Preview
 	defer delete(p.text)
-	progress := marmot.Agent_Stream_Update{tag = .PROGRESS}
+	progress := marmot.Agent_Stream_Update {
+		tag = .PROGRESS,
+	}
 	progress.data.chunk.text = "Checking "
 	agent_apply(&p, &progress)
 	progress.data.chunk.text = "the files"
 	agent_apply(&p, &progress)
 	testing.expect_value(t, string(p.text[:]), "Checking the files")
-	chunk := marmot.Agent_Stream_Update{tag = .CHUNK}
+	chunk := marmot.Agent_Stream_Update {
+		tag = .CHUNK,
+	}
 	chunk.data.chunk.text = "hello"
 	agent_apply(&p, &chunk)
 	chunk.data.chunk.text = " world"
@@ -25,11 +29,15 @@ agent_preview_updates :: proc(t: ^testing.T) {
 	testing.expect_value(t, string(p.text[:]), "hello world")
 	agent_apply(&p, &progress)
 	testing.expect_value(t, string(p.text[:]), "hello world")
-	checkpoint := marmot.Agent_Stream_Update{tag = .RECORD}
+	checkpoint := marmot.Agent_Stream_Update {
+		tag = .RECORD,
+	}
 	checkpoint.data.record.record_type = .CHECKPOINT
 	checkpoint.data.record.text = "corrected"
 	agent_apply(&p, &checkpoint)
-	finish := marmot.Agent_Stream_Update{tag = .FINISHED}
+	finish := marmot.Agent_Stream_Update {
+		tag = .FINISHED,
+	}
 	finish.data.finished.text = "old chunks"
 	agent_apply(&p, &finish)
 	testing.expect_value(t, string(p.text[:]), "corrected")
@@ -54,32 +62,52 @@ agent_preview_updates :: proc(t: ^testing.T) {
 
 @(test)
 agent_final_reconciliation :: proc(t: ^testing.T) {
-	ui := Ui_State{account_ref = "test", selected = 0}
+	ui := Ui_State {
+		account_ref = "test",
+		selected    = 0,
+	}
 	append(&ui.chats, Chat_Row_Ui{group_id = "group"})
 	defer delete(ui.chats)
 	defer agent_shutdown()
-	start := marmot.Timeline_Message_Record{
-		kind = AGENT_STREAM_START, sender = "agent", message_id_hex = "start",
+	start := marmot.Timeline_Message_Record {
+		kind                   = AGENT_STREAM_START,
+		sender                 = "agent",
+		message_id_hex         = "start",
 		agent_text_stream_json = `{"stream_id_hex":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","status":"started"}`,
 	}
-	final := marmot.Timeline_Message_Record{
-		kind = 9, sender = "agent", message_id_hex = "final",
+	final := marmot.Timeline_Message_Record {
+		kind                   = 9,
+		sender                 = "agent",
+		message_id_hex         = "final",
 		agent_text_stream_json = `{"stream_id_hex":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","status":"finalized"}`,
 	}
 	start.timeline_at = 1
-	plain := marmot.Timeline_Message_Record{
-		kind = 9, sender = "agent", message_id_hex = "commentary", timeline_at = 2,
+	plain := marmot.Timeline_Message_Record {
+		kind           = 9,
+		sender         = "agent",
+		message_id_hex = "commentary",
+		timeline_at    = 2,
 	}
 	live_records := [?]marmot.Timeline_Message_Record{start, plain}
-	live_page := marmot.Timeline_Page{messages = raw_data(live_records[:]), messages_len = len(live_records)}
+	live_page := marmot.Timeline_Page {
+		messages     = raw_data(live_records[:]),
+		messages_len = len(live_records),
+	}
 	agent_collect(nil, &ui, &live_page)
 	_, live_visible := agent_body(&start)
 	testing.expect(t, live_visible, "A plain message must not cancel a live stream")
 	records := [?]marmot.Timeline_Message_Record{start, final}
-	page := marmot.Timeline_Page{messages = raw_data(records[:]), messages_len = len(records)}
+	page := marmot.Timeline_Page {
+		messages     = raw_data(records[:]),
+		messages_len = len(records),
+	}
 	agent_collect(nil, &ui, &page)
 	_, visible := agent_body(&start)
-	testing.expect(t, !visible, "Final anchor suppresses start even when it follows it in the page")
+	testing.expect(
+		t,
+		!visible,
+		"Final anchor suppresses start even when it follows it in the page",
+	)
 	start.agent_text_stream_json = `{"stream_id_hex":"bad","status":"started"}`
 	id, _ := agent_projection(&start)
 	testing.expect_value(t, id, "")

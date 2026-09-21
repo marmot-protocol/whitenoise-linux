@@ -1,9 +1,9 @@
 package main
 
+import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:fmt"
 import "core:os"
 import "core:testing"
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
 @(test)
@@ -19,9 +19,17 @@ stt_layout :: proc(t: ^testing.T) {
 	init_fonts()
 	memory := make([]u8, int(clay.MinMemorySize()))
 	defer delete(memory)
-	clay.Initialize(clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)), {720, 700}, {})
+	clay.Initialize(
+		clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)),
+		{720, 700},
+		{},
+	)
 	clay.SetMeasureTextFunction(measure_text, nil)
-	ui := Ui_State{row_menu = -1, member_menu = -1, selected_contact = -1}
+	ui := Ui_State {
+		row_menu         = -1,
+		member_menu      = -1,
+		selected_contact = -1,
+	}
 	ui.prefs.stt_enabled = true
 	append(&ui.accounts, "Test")
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "Dictation"})

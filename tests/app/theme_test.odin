@@ -48,7 +48,12 @@ theme_parse :: proc(t: ^testing.T) {
 @(test)
 theme_inherit :: proc(t: ^testing.T) {
 	base := parse_theme("Base", "base", TEST_THEME, default_pack())
-	child := parse_theme("Child", "child", "base = \"base\"\n\n[colors]\nbg = \"#050607ff\"\n", base)
+	child := parse_theme(
+		"Child",
+		"child",
+		"base = \"base\"\n\n[colors]\nbg = \"#050607ff\"\n",
+		base,
+	)
 
 	// Overridden key takes; everything else rides the base.
 	testing.expect_value(t, child.bg, [4]f32{5, 6, 7, 255})
@@ -68,28 +73,21 @@ theme_str_key :: proc(t: ^testing.T) {
 
 @(test)
 theme_system_palette :: proc(t: ^testing.T) {
-	for source in ([]string{
-		"background = \"#101020\"\nforeground = \"#eeeeff\"\naccent = \"#88aaff\"\ncolor1 = \"#ff5566\"",
-		"background = '#ffffff' # light\nforeground = '#112233'\naccent = '#445566'\nred = '#ff5566'",
-	}) {
+	for source in ([]string{"background = \"#101020\"\nforeground = \"#eeeeff\"\naccent = \"#88aaff\"\ncolor1 = \"#ff5566\"", "background = '#ffffff' # light\nforeground = '#112233'\naccent = '#445566'\nred = '#ff5566'"}) {
 		pack, ok := parse_system_theme(source)
 		testing.expect(t, ok)
-		if !ok { continue }
+		if !ok {continue}
 		defer delete(pack.source)
 		testing.expect_value(t, pack.name, "System")
 		testing.expect_value(t, pack.danger, [4]f32{255, 85, 102, 255})
 		testing.expect(t, pack.bg != pack.text_hi)
 		testing.expect(t, pack.panel != pack.bg)
-		for accent in pack.accent_base { testing.expect_value(t, accent, pack.accent_base[0]) }
+		for accent in pack.accent_base {testing.expect_value(t, accent, pack.accent_base[0])}
 		snapshot := parse_theme("Shared", "shared", pack.source, default_pack())
 		testing.expect_value(t, snapshot.bg, pack.bg)
 		testing.expect_value(t, snapshot.accent_base, pack.accent_base)
 	}
-	for source in ([]string{
-		"", "background = \"#112233\"",
-		"background = \"#112233\"\nforeground = \"#ffffff\"\naccent = \"#GGGGGG\"",
-		"background = \"#112233\"\nforeground = \"#ffffff\"\naccent = \"#1234567\"",
-	}) {
+	for source in ([]string{"", "background = \"#112233\"", "background = \"#112233\"\nforeground = \"#ffffff\"\naccent = \"#GGGGGG\"", "background = \"#112233\"\nforeground = \"#ffffff\"\naccent = \"#1234567\""}) {
 		_, ok := parse_system_theme(source)
 		testing.expect(t, !ok)
 	}

@@ -105,29 +105,32 @@ Vault_Envelope :: struct {
 }
 
 @(private)
-Vault_Unlock :: enum { Password, Dev_Cache }
+Vault_Unlock :: enum {
+	Password,
+	Dev_Cache,
+}
 
 // Only dev builds accept the watcher's inherited memory file. Mark it
 // close-on-exec so media helpers and external commands cannot inherit it.
 @(private = "file")
 dev_vault_fd :: proc() -> linux.Fd {
-	when !#config(WN_DEV, false) { return -1 }
+	when !#config(WN_DEV, false) {return -1}
 	value, ok := strconv.parse_int(os.get_env("WN_DEV_VAULT_FD", context.temp_allocator))
-	if !ok || value < 3 || value > int(max(i32)) { return -1 }
+	if !ok || value < 3 || value > int(max(i32)) {return -1}
 	fd := linux.Fd(value)
-	if _, err := linux.fcntl_get_seals(fd, .GET_SEALS); err != .NONE { return -1 }
+	if _, err := linux.fcntl_get_seals(fd, .GET_SEALS); err != .NONE {return -1}
 	FD_CLOEXEC :: linux.Fd(1)
-	if linux.fcntl_setfd(fd, .SETFD, FD_CLOEXEC) != .NONE { return -1 }
+	if linux.fcntl_setfd(fd, .SETFD, FD_CLOEXEC) != .NONE {return -1}
 	return fd
 }
 
 @(private = "file")
 dev_vault_store :: proc(v: ^Vault) {
 	fd := dev_vault_fd()
-	if fd < 0 { return }
+	if fd < 0 {return}
 	// A missing or incomplete cache falls back to the password gate.
-	if linux.ftruncate(fd, 0) != .NONE { return }
-	if !v.unlocked { return }
+	if linux.ftruncate(fd, 0) != .NONE {return}
+	if !v.unlocked {return}
 	// Salt binds the cached key to this vault generation. Authentication
 	// of vault.db still runs when loading it, including after a reset.
 	cache: [VAULT_SALT_LEN + VAULT_KEY_LEN]u8
@@ -153,7 +156,11 @@ vault_exists :: proc() -> bool {
 derive_key :: proc(password: string, salt: []u8, m_cost, t_cost, p_cost: u32, dst: []u8) {
 	timing_start := time.tick_now()
 	defer local_timing_end(.vault_derive_key, timing_start)
-	params := argon2id.Parameters{memory_size = m_cost, passes = t_cost, parallelism = p_cost}
+	params := argon2id.Parameters {
+		memory_size = m_cost,
+		passes      = t_cost,
+		parallelism = p_cost,
+	}
 	_ = argon2id.derive(&params, transmute([]u8)password, salt, dst)
 }
 
@@ -167,7 +174,14 @@ seal_xchacha :: proc(key: []u8, plain: []u8, allocator := context.allocator) -> 
 	body := VAULT_NONCE_LEN + len(plain)
 	ctx: chacha20poly1305.Context
 	chacha20poly1305.init_xchacha(&ctx, key)
-	chacha20poly1305.seal(&ctx, out[VAULT_NONCE_LEN:body], out[body:], out[:VAULT_NONCE_LEN], nil, plain)
+	chacha20poly1305.seal(
+		&ctx,
+		out[VAULT_NONCE_LEN:body],
+		out[body:],
+		out[:VAULT_NONCE_LEN],
+		nil,
+		plain,
+	)
 	return out
 }
 
@@ -181,7 +195,14 @@ open_xchacha :: proc(key: []u8, sealed: []u8, allocator := context.allocator) ->
 	plain := make([]u8, body - VAULT_NONCE_LEN, allocator)
 	ctx: chacha20poly1305.Context
 	chacha20poly1305.init_xchacha(&ctx, key)
-	if !chacha20poly1305.open(&ctx, plain, sealed[:VAULT_NONCE_LEN], nil, sealed[VAULT_NONCE_LEN:body], sealed[body:]) {
+	if !chacha20poly1305.open(
+		&ctx,
+		plain,
+		sealed[:VAULT_NONCE_LEN],
+		nil,
+		sealed[VAULT_NONCE_LEN:body],
+		sealed[body:],
+	) {
 		delete(plain, allocator)
 		return nil, false
 	}
@@ -271,14 +292,20 @@ vault_open :: proc(password: string, source: Vault_Unlock = .Password) -> Vault_
 	if env.version != VAULT_VERSION || env.kdf.algo != "argon2id" {
 		return .Corrupt
 	}
-	if env.kdf.m_cost > VAULT_MAX_M_COST || env.kdf.t_cost > VAULT_MAX_T_COST || env.kdf.p_cost > VAULT_MAX_P_COST {
+	if env.kdf.m_cost > VAULT_MAX_M_COST ||
+	   env.kdf.t_cost > VAULT_MAX_T_COST ||
+	   env.kdf.p_cost > VAULT_MAX_P_COST {
 		return .Corrupt
 	}
 
 	salt, salt_ok := hex.decode(transmute([]u8)env.kdf.salt_hex, context.temp_allocator)
 	nonce, nonce_ok := hex.decode(transmute([]u8)env.nonce_hex, context.temp_allocator)
 	cipher, cipher_ok := hex.decode(transmute([]u8)env.ciphertext_hex, context.temp_allocator)
-	if !salt_ok || !nonce_ok || !cipher_ok || len(salt) != VAULT_SALT_LEN || len(nonce) != VAULT_NONCE_LEN {
+	if !salt_ok ||
+	   !nonce_ok ||
+	   !cipher_ok ||
+	   len(salt) != VAULT_SALT_LEN ||
+	   len(nonce) != VAULT_NONCE_LEN {
 		return .Corrupt
 	}
 
@@ -288,7 +315,7 @@ vault_open :: proc(password: string, source: Vault_Unlock = .Password) -> Vault_
 		cache: [VAULT_SALT_LEN + VAULT_KEY_LEN]u8
 		defer mem.zero_slice(cache[:])
 		fd := dev_vault_fd()
-		if fd < 0 { return .Wrong_Password }
+		if fd < 0 {return .Wrong_Password}
 		n, err := linux.pread(fd, cache[:], 0)
 		if err != .NONE || n != len(cache) || string(cache[:VAULT_SALT_LEN]) != string(salt) {
 			return .Wrong_Password

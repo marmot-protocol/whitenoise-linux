@@ -27,12 +27,18 @@ gh_ref_scan :: proc(t: ^testing.T) {
 
 @(test)
 gh_parse_fields :: proc(t: ^testing.T) {
-	merged := gh_parse(transmute([]u8)string(`{"title":"Fix it","state":"closed","merged_at":"2026-01-02T03:04:05Z","draft":false,"user":{"login":"dannym"}}`))
+	merged := gh_parse(
+		transmute([]u8)string(
+			`{"title":"Fix it","state":"closed","merged_at":"2026-01-02T03:04:05Z","draft":false,"user":{"login":"dannym"}}`,
+		),
+	)
 	testing.expect_value(t, merged.title, "Fix it")
 	testing.expect_value(t, merged.state, "merged")
 	testing.expect_value(t, merged.author, "dannym")
 
-	draft := gh_parse(transmute([]u8)string(`{"title":"WIP","state":"open","merged_at":null,"draft":true}`))
+	draft := gh_parse(
+		transmute([]u8)string(`{"title":"WIP","state":"open","merged_at":null,"draft":true}`),
+	)
 	testing.expect_value(t, draft.state, "draft")
 	testing.expect_value(t, draft.author, "")
 
@@ -40,4 +46,3 @@ gh_parse_fields :: proc(t: ^testing.T) {
 	miss := gh_parse(transmute([]u8)string(`{"message":"Not Found"}`))
 	testing.expect_value(t, miss.title, "")
 }
-

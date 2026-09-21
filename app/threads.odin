@@ -58,7 +58,10 @@ thread_clear :: proc(ui: ^Ui_State) {
 @(private = "file")
 thread_kick :: proc() {
 	if motion_on() {
-		anim_vals[clay.ID("ThreadSlide").id] = {v = THREAD_KICK, frame = anim_frame}
+		anim_vals[clay.ID("ThreadSlide").id] = {
+			v     = THREAD_KICK,
+			frame = anim_frame,
+		}
 	}
 }
 
@@ -70,17 +73,32 @@ thread_slide :: proc() -> f32 {
 // chevron, depth, and the root's one-line summary.
 thread_bar :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("ThreadBar"))(
-	{layout = {sizing = {width = clay.SizingGrow()}, padding = {left = 8, right = 14, top = 6, bottom = 6}, childGap = 8, childAlignment = {y = .Center}}, backgroundColor = RAIL_BG},
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			padding = {left = 8, right = 14, top = 6, bottom = 6},
+			childGap = 8,
+			childAlignment = {y = .Center},
+		},
+		backgroundColor = RAIL_BG,
+	},
 	) {
 		cast_shade(clay.ID("ThreadBar"), .Down, 14, 0.35)
 		if clay.UI(clay.ID("ThreadBack"))(
-		{layout = {padding = {left = 10, right = 10, top = 4, bottom = 4}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)},
+		{
+			layout = {padding = {left = 10, right = 10, top = 4, bottom = 4}},
+			backgroundColor = hovered() ? HOVER : {},
+			cornerRadius = rr(6),
+		},
 		) {
 			clay.Text("‹", {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT})
 		}
 		clay.Text(ICON_COMMENTS, {fontId = FONT_ICON, fontSize = 12, textColor = ACCENT})
 		if len(ui.thread_stack) > 1 {
-			clay.Text(fmt.tprintf("%s · %d", tr("Thread"), len(ui.thread_stack)), {fontId = FONT_TITLE, fontSize = 14, textColor = TEXT})
+			clay.Text(
+				fmt.tprintf("%s · %d", tr("Thread"), len(ui.thread_stack)),
+				{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT},
+			)
 		} else {
 			clay.Text(tr("Thread"), {fontId = FONT_TITLE, fontSize = 14, textColor = TEXT})
 		}
@@ -90,7 +108,10 @@ thread_bar :: proc(ui: ^Ui_State) {
 				continue
 			}
 			snippet := msg.body[:min(len(msg.body), 48)]
-			clay.Text(fmt.tprintf("%s: %s", msg.sender, snippet), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO})
+			clay.Text(
+				fmt.tprintf("%s: %s", msg.sender, snippet),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
+			)
 			break
 		}
 	}
@@ -108,7 +129,10 @@ thread_root_plate :: proc(ui: ^Ui_State) {
 		if clay.UI(clay.ID("ThreadRootRule"))(
 		{layout = {padding = {left = 16, right = 16, top = 4, bottom = 2}}},
 		) {
-			clay.Text("• THREAD •", {fontId = FONT_MONO, fontSize = 10, textColor = ACCENT_DIM, letterSpacing = 2})
+			clay.Text(
+				"• THREAD •",
+				{fontId = FONT_MONO, fontSize = 10, textColor = ACCENT_DIM, letterSpacing = 2},
+			)
 		}
 		return
 	}
@@ -141,13 +165,22 @@ cast_shade :: proc(parent: clay.ElementId, dir: Shade_Dir, span: f32, alpha: f32
 		return
 	}
 	view := new(Shade_View, context.temp_allocator)
-	view^ = {kind = .Shade, dir = dir, alpha = clamp(alpha, 0, 1)}
+	view^ = {
+		kind  = .Shade,
+		dir   = dir,
+		alpha = clamp(alpha, 0, 1),
+	}
 	id := parent
 	id.id ~= SHADE_SALT
 	down := dir == .Down
 	if clay.UI(id)(
 	{
-		layout = {sizing = {width = clay.SizingFixed(down ? box.width : span), height = clay.SizingFixed(down ? span : box.height)}},
+		layout = {
+			sizing = {
+				width = clay.SizingFixed(down ? box.width : span),
+				height = clay.SizingFixed(down ? span : box.height),
+			},
+		},
 		floating = {
 			attachTo = .Parent,
 			zIndex = 4,

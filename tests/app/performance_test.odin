@@ -11,8 +11,8 @@ import "core:testing"
 import "core:thread"
 import "core:time"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import marmot "../marmot"
+import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
 @(test)
@@ -22,15 +22,29 @@ message_storage_released :: proc(t: ^testing.T) {
 	defer mem.tracking_allocator_destroy(&track)
 	context.allocator = mem.tracking_allocator(&track)
 	for _ in 0 ..< 1000 {
-		msg := Msg_Ui{id = strings.clone("message"), body = strings.repeat("x", 1024)}
+		msg := Msg_Ui {
+			id   = strings.clone("message"),
+			body = strings.repeat("x", 1024),
+		}
 		cells := make([][]string, 1)
 		cells[0] = make([]string, 1)
 		cells[0][0] = strings.clone("cell")
 		append(&msg.blocks, Md_Block_Ui{kind = .Table, cells = cells})
-		opt := Poll_Opt_Ui{id = strings.clone("option"), label = strings.clone("label")}
+		opt := Poll_Opt_Ui {
+			id    = strings.clone("option"),
+			label = strings.clone("label"),
+		}
 		append(&opt.blocks, Md_Block_Ui{text = strings.clone("option paragraph")})
 		append(&msg.poll_opts, opt)
-		append(&msg.reactions, Reaction_Ui{label = strings.clone("+ 1"), emoji = strings.clone("+"), count = strings.clone("1"), who = strings.clone("Alice")})
+		append(
+			&msg.reactions,
+			Reaction_Ui {
+				label = strings.clone("+ 1"),
+				emoji = strings.clone("+"),
+				count = strings.clone("1"),
+				who = strings.clone("Alice"),
+			},
+		)
 		append(&msg.history, Edit_Version{strings.clone("12:00"), strings.clone("old")})
 		append(&msg.att_names, strings.clone("picture.png"))
 		append(&msg.att_keys, strings.clone("hash"))
@@ -63,9 +77,20 @@ wrapped_line_cache :: proc(t: ^testing.T) {
 
 @(test)
 message_reuse_guards :: proc(t: ^testing.T) {
-	record := marmot.Timeline_Message_Record{kind = 9, sender = "alice", plaintext = "hello", timeline_at = 1000}
-	msg := Msg_Ui{body = "hello", sender = "Alice", sender_id = "alice",
-		at = format_when(1000), at_full = format_full(1000), day = format_day(1000)}
+	record := marmot.Timeline_Message_Record {
+		kind        = 9,
+		sender      = "alice",
+		plaintext   = "hello",
+		timeline_at = 1000,
+	}
+	msg := Msg_Ui {
+		body      = "hello",
+		sender    = "Alice",
+		sender_id = "alice",
+		at        = format_when(1000),
+		at_full   = format_full(1000),
+		day       = format_day(1000),
+	}
 	defer delete(msg.at); defer delete(msg.at_full); defer delete(msg.day)
 	testing.expect(t, message_matches(msg, &record, "Alice", ""))
 	testing.expect(t, !message_matches(msg, &record, "Renamed", ""))
@@ -84,14 +109,23 @@ media_reference_owned :: proc(t: ^testing.T) {
 	old_jobs, old_inflight := media_jobs, media_inflight
 	media_jobs, media_inflight = {}, nil
 	defer {
-		for job in media_jobs { media_job_free(job) }
+		for job in media_jobs {media_job_free(job)}
 		delete(media_jobs); delete(media_inflight)
 		media_jobs, media_inflight = old_jobs, old_inflight
 	}
 	locator_kind := [?]u8{'b', 'l', 'o', 's', 's', 'o', 'm', 0}
-	locator := marmot.Media_Locator{kind = cstring(raw_data(locator_kind[:])), value = "https://example.test/blob"}
-	ref := marmot.Media_Attachment_Reference{locators = &locator, locators_len = 1,
-		file_name = "picture.png", plaintext_sha256 = "hash", nonce_hex = "nonce", media_type = "image/png"}
+	locator := marmot.Media_Locator {
+		kind  = cstring(raw_data(locator_kind[:])),
+		value = "https://example.test/blob",
+	}
+	ref := marmot.Media_Attachment_Reference {
+		locators         = &locator,
+		locators_len     = 1,
+		file_name        = "picture.png",
+		plaintext_sha256 = "hash",
+		nonce_hex        = "nonce",
+		media_type       = "image/png",
+	}
 	media_enqueue(nil, "account", "group", &ref, .Image, "hash")
 	media_enqueue(nil, "account", "group", &ref, .Image, "hash")
 	testing.expect_value(t, len(media_jobs), 1)
@@ -112,7 +146,7 @@ media_reference_owned :: proc(t: ^testing.T) {
 
 @(test)
 performance_media :: proc(t: ^testing.T) {
-	when !#config(WN_PERF, false) { return }
+	when !#config(WN_PERF, false) {return}
 	context.allocator = runtime.default_context().allocator
 	rl.InitWindow(100, 100, "Media worker regression")
 	defer rl.CloseWindow()
@@ -122,11 +156,14 @@ performance_media :: proc(t: ^testing.T) {
 	os.make_directory(media_cache_dir())
 	defer os.remove_all(data_home)
 	// Only a blob key is needed; avoid networking and password-KDF timing.
-	g_vault = Vault{unlocked = true, key = {0 = 1, 1 = 2, 2 = 3}}
+	g_vault = Vault {
+		unlocked = true,
+		key = {0 = 1, 1 = 2, 2 = 3},
+	}
 	defer g_vault = {}
 	ui: Ui_State
 	append(&ui.messages, Msg_Ui{id = strings.clone("one")})
-	defer { message_free(ui.messages[0]); delete(ui.messages) }
+	defer {message_free(ui.messages[0]); delete(ui.messages)}
 	for i in 0 ..< 5 {
 		key := fmt.aprintf("%064d", i)
 		name := fmt.aprintf("file-%d.md", i)
@@ -137,7 +174,10 @@ performance_media :: proc(t: ^testing.T) {
 			delete(name); delete(body)
 			path := i == 3 ? "twemoji/1f600.png" : "fonts/LiberationSans-Regular.ttf"
 			read_err: os.Error
-			bytes, read_err = os.read_entire_file(fmt.tprintf("%s/%s", res_dir(), path), context.allocator)
+			bytes, read_err = os.read_entire_file(
+				fmt.tprintf("%s/%s", res_dir(), path),
+				context.allocator,
+			)
 			testing.expect_value(t, read_err, nil)
 			body = string(bytes)
 			name = strings.clone(i == 3 ? "image.png" : "font.ttf")
@@ -145,10 +185,18 @@ performance_media :: proc(t: ^testing.T) {
 		}
 		sealed, ok := vault_seal_blob(bytes)
 		testing.expect(t, ok)
-		testing.expect(t, os.write_entire_file(fmt.tprintf("%s/%s.bin", media_cache_dir(), key), sealed) == nil)
-		ref := marmot.Media_Attachment_Reference{
-			plaintext_sha256 = strings.clone_to_cstring(key), file_name = strings.clone_to_cstring(name), media_type = mime}
-		outcome := marmot.Media_Attachment_Outcome{body = {accepted = {u32(i), ref}}}
+		testing.expect(
+			t,
+			os.write_entire_file(fmt.tprintf("%s/%s.bin", media_cache_dir(), key), sealed) == nil,
+		)
+		ref := marmot.Media_Attachment_Reference {
+			plaintext_sha256 = strings.clone_to_cstring(key),
+			file_name        = strings.clone_to_cstring(name),
+			media_type       = mime,
+		}
+		outcome := marmot.Media_Attachment_Outcome {
+			body = {accepted = {u32(i), ref}},
+		}
 		media_attach(&ui.messages[0], nil, "account", "group", &outcome)
 		delete(ref.plaintext_sha256); delete(ref.file_name)
 		delete(key); delete(name); delete(body); delete(sealed)
@@ -156,7 +204,7 @@ performance_media :: proc(t: ^testing.T) {
 	testing.expect_value(t, len(media_jobs), 5)
 	media_drain(&ui)
 	active := 0
-	for job in media_jobs { if job.worker != nil { active += 1 } }
+	for job in media_jobs {if job.worker != nil {active += 1}}
 	testing.expect_value(t, active, MEDIA_WORKERS)
 	start := time.tick_now()
 	for len(media_jobs) > 0 && time.tick_since(start) < 5 * time.Second {
@@ -177,13 +225,13 @@ performance_media :: proc(t: ^testing.T) {
 	}
 	fmt.printf("media workers=%d completed=5 timeline_reloads=0\n", MEDIA_WORKERS)
 	media_stop()
-	for key, view in txt_views { txt_view_free(view); delete(key) }
+	for key, view in txt_views {txt_view_free(view); delete(key)}
 	delete(txt_views)
-	for key, tex in media_textures { rl.UnloadTexture(tex^); free(tex); delete(key) }
+	for key, tex in media_textures {rl.UnloadTexture(tex^); free(tex); delete(key)}
 	delete(media_textures)
-	for key, view in ttf_views { ttf_view_free(view); delete(key) }
+	for key, view in ttf_views {ttf_view_free(view); delete(key)}
 	delete(ttf_views)
-	for key in blob_sizes { delete(key) }
+	for key in blob_sizes {delete(key)}
 	delete(blob_sizes)
 	delete(media_jobs); delete(media_inflight)
 }
@@ -192,7 +240,7 @@ performance_media :: proc(t: ^testing.T) {
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -o:speed -define:ODIN_TEST_NAMES=performance_layout -define:WN_PERF=true
 @(test)
 performance_layout :: proc(t: ^testing.T) {
-	when !#config(WN_PERF, false) { return }
+	when !#config(WN_PERF, false) {return}
 	context.allocator = runtime.default_context().allocator
 	rl.InitWindow(1200, 800, "Performance regression")
 	defer rl.CloseWindow()
@@ -201,48 +249,79 @@ performance_layout :: proc(t: ^testing.T) {
 	memory: []u8
 	init_layout(&memory, 131072, {1200, 800})
 	defer delete(memory)
-	ui := Ui_State{row_menu = -1, member_menu = -1, selected_contact = -1}
+	ui := Ui_State {
+		row_menu         = -1,
+		member_menu      = -1,
+		selected_contact = -1,
+	}
 	g_ui, g_prefs = &ui, &ui.prefs
 	ui.prefs.rail_w = RAIL_W_MIN
 	append(&ui.accounts, "Test")
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "Timeline"})
 	for i in 0 ..< 1000 {
-		append(&ui.messages, Msg_Ui{id = fmt.aprintf("message-%d", i),
-			sender = strings.clone("Alice"), body = fmt.aprintf("Message %d. A paragraph with several words to wrap across the conversation pane.", i)})
+		append(
+			&ui.messages,
+			Msg_Ui {
+				id = fmt.aprintf("message-%d", i),
+				sender = strings.clone("Alice"),
+				body = fmt.aprintf(
+					"Message %d. A paragraph with several words to wrap across the conversation pane.",
+					i,
+				),
+			},
+		)
 	}
 	defer {
-		for msg in ui.messages { message_free(msg) }
+		for msg in ui.messages {message_free(msg)}
 		delete(ui.messages)
 		delete(ui.chats)
 		delete(ui.accounts)
 		wrap_clear()
 		g_ui, g_prefs = nil, nil
 	}
-	for _ in 0 ..< 3 { anim_tick(1.0 / 60); build_layout(&ui, 1.0 / 60) }
+	for _ in 0 ..< 3 {anim_tick(1.0 / 60); build_layout(&ui, 1.0 / 60)}
 	data := clay.GetScrollContainerData(clay.ID("Timeline"))
 	testing.expect(t, data.found)
-	data.scrollPosition.y = -(data.contentDimensions.height - data.scrollContainerDimensions.height)
+	data.scrollPosition.y = -(data.contentDimensions.height -
+		data.scrollContainerDimensions.height)
 	full, windowed: [7]f64
 	full_height: f32
 	for pass in 0 ..< 2 {
 		for sample in 0 ..< 7 {
-			if pass == 0 { for &msg in ui.messages { msg.row_height = 0 } }
+			if pass == 0 {for &msg in ui.messages {msg.row_height = 0}}
 			anim_tick(1.0 / 60)
 			start := time.tick_now()
 			build_layout(&ui, 1.0 / 60)
 			ms := time.duration_milliseconds(time.tick_since(start))
-			if pass == 0 { full[sample] = ms } else { windowed[sample] = ms }
+			if pass == 0 {full[sample] = ms} else {windowed[sample] = ms}
 			testing.expect(t, !layout_overflow)
 		}
-		if pass == 0 { full_height = clay.GetScrollContainerData(clay.ID("Timeline")).contentDimensions.height }
+		if pass ==
+		   0 {full_height = clay.GetScrollContainerData(clay.ID("Timeline")).contentDimensions.height}
 	}
 	real := 0
-	for _, i in ui.messages { if clay.GetElementData(clay.ID("MsgHead", u32(i))).found { real += 1 } }
-	testing.expect(t, real > 0 && real < 100, "Only the viewport and overscan should build message bodies")
-	testing.expect(t, abs(clay.GetScrollContainerData(clay.ID("Timeline")).contentDimensions.height - full_height) < 1)
+	for _, i in ui.messages {if clay.GetElementData(clay.ID("MsgHead", u32(i))).found {real += 1}}
+	testing.expect(
+		t,
+		real > 0 && real < 100,
+		"Only the viewport and overscan should build message bodies",
+	)
+	testing.expect(
+		t,
+		abs(
+			clay.GetScrollContainerData(clay.ID("Timeline")).contentDimensions.height -
+			full_height,
+		) <
+		1,
+	)
 	testing.expect(t, clay.GetElementData(clay.ID("MsgHead", 999)).found)
 	slice.sort(full[:]); slice.sort(windowed[:])
-	fmt.printf("layout rows=1000 mounted=%d median_ms full=%.3f windowed=%.3f\n", real, full[3], windowed[3])
+	fmt.printf(
+		"layout rows=1000 mounted=%d median_ms full=%.3f windowed=%.3f\n",
+		real,
+		full[3],
+		windowed[3],
+	)
 	commands := build_layout(&ui, 0)
 	rl.BeginDrawing()
 	draw_frame(&commands)
@@ -260,21 +339,28 @@ performance_layout :: proc(t: ^testing.T) {
 	build_layout(&ui, 0)
 	anchor := -1
 	for msg, i in ui.messages {
-		if msg.row_top + data.scrollPosition.y >= 0 { anchor = i; break }
+		if msg.row_top + data.scrollPosition.y >= 0 {anchor = i; break}
 	}
 	testing.expect(t, anchor > 0)
 	testing.expect(t, clay.GetElementData(clay.ID("MsgHead", u32(anchor))).found)
 	anchor_y := ui.messages[anchor].row_top + data.scrollPosition.y
 	delete(ui.messages[0].body)
-	ui.messages[0].body = strings.clone("A newly decoded attachment.\nLine two.\nLine three.\nLine four.")
+	ui.messages[0].body = strings.clone(
+		"A newly decoded attachment.\nLine two.\nLine three.\nLine four.",
+	)
 	ui.messages[0].row_height = 0
 	build_layout(&ui, 0)
 	build_layout(&ui, 0)
-	testing.expect(t, abs(ui.messages[anchor].row_top + data.scrollPosition.y - anchor_y) < 1,
-		"Growing a row above the viewport must preserve the reading position")
+	testing.expect(
+		t,
+		abs(ui.messages[anchor].row_top + data.scrollPosition.y - anchor_y) < 1,
+		"Growing a row above the viewport must preserve the reading position",
+	)
 	// Thread completion wakes a sleeping UI and leaves the event queued.
 	rl.WindowShouldClose()
-	worker := thread.create(proc(_: ^thread.Thread) { time.sleep(20 * time.Millisecond); frame_wake() })
+	worker := thread.create(
+		proc(_: ^thread.Thread) {time.sleep(20 * time.Millisecond); frame_wake()},
+	)
 	thread.start(worker)
 	start := time.tick_now()
 	rl.Wait(1000)
@@ -286,7 +372,10 @@ performance_layout :: proc(t: ^testing.T) {
 	fmt.printf("idle worker_wake_ms=%.3f fallback_max_hz=4\n", ms)
 	// Unrelated accounts cannot dirty the selected timeline.
 	live := Live{}
-	append(&live.dirty_groups, Live_Change{account = strings.clone("other"), group = strings.clone("test")})
+	append(
+		&live.dirty_groups,
+		Live_Change{account = strings.clone("other"), group = strings.clone("test")},
+	)
 	drain_live(&live, &ui, nil)
 	delete(live.dirty_groups)
 	testing.expect_value(t, ui.selected, 0)

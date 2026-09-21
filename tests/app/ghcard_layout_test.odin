@@ -1,10 +1,10 @@
 package main
 
+import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
 import "core:fmt"
 import "core:sync"
 import "core:testing"
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
 @(test)
@@ -34,7 +34,7 @@ gh_card_lines :: proc(t: ^testing.T) {
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=gh_card_layout
 @(test)
 gh_card_layout :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "gh_card_layout" { return }
+	if #config(ODIN_TEST_NAMES, "") != "gh_card_layout" {return}
 	context.allocator = runtime.default_context().allocator
 	rl.InitWindow(900, 1200, "Pull request cards")
 	defer rl.CloseWindow()
@@ -47,22 +47,56 @@ gh_card_layout :: proc(t: ^testing.T) {
 	ui: Ui_State
 	ui.prefs.reduce_motion = true
 	g_ui, g_prefs = &ui, &ui.prefs
-	defer { g_ui, g_prefs = nil, nil }
-	refs := [5]Gh_Ref{
-		{"marmot-protocol", "whitenoise-android", "2624", "https://github.com/marmot-protocol/whitenoise-android/pull/2624", true},
-		{"marmot-protocol", "mdk", "1903", "https://github.com/marmot-protocol/mdk/pull/1903", true},
-		{"marmot-protocol", "mdk", "1904", "https://github.com/marmot-protocol/mdk/pull/1904", true},
-		{"marmot-protocol", "mdk", "1905", "https://github.com/marmot-protocol/mdk/issues/1905", false},
-		{"marmot-protocol", "mdk", "1906", "https://github.com/marmot-protocol/mdk/pull/1906", true},
+	defer {g_ui, g_prefs = nil, nil}
+	refs := [5]Gh_Ref {
+		{
+			"marmot-protocol",
+			"whitenoise-android",
+			"2624",
+			"https://github.com/marmot-protocol/whitenoise-android/pull/2624",
+			true,
+		},
+		{
+			"marmot-protocol",
+			"mdk",
+			"1903",
+			"https://github.com/marmot-protocol/mdk/pull/1903",
+			true,
+		},
+		{
+			"marmot-protocol",
+			"mdk",
+			"1904",
+			"https://github.com/marmot-protocol/mdk/pull/1904",
+			true,
+		},
+		{
+			"marmot-protocol",
+			"mdk",
+			"1905",
+			"https://github.com/marmot-protocol/mdk/issues/1905",
+			false,
+		},
+		{
+			"marmot-protocol",
+			"mdk",
+			"1906",
+			"https://github.com/marmot-protocol/mdk/pull/1906",
+			true,
+		},
 	}
-	cards := [5]Gh_Card{
+	cards := [5]Gh_Card {
 		{"Reduce repeated conversation presentation work", "open", "dannym-arx"},
 		{"Report missing invitation key packages", "merged", "dannym-arx"},
-		{"A draft with a longer title that wraps across multiple lines", "draft", "a-long-author-name"},
+		{
+			"A draft with a longer title that wraps across multiple lines",
+			"draft",
+			"a-long-author-name",
+		},
 		{"Restore profile pictures after a restart", "closed", "dannym-arx"},
 		{},
 	}
-	for ref, i in refs { gh_cards[gh_key(ref, context.allocator)] = cards[i] }
+	for ref, i in refs {gh_cards[gh_key(ref, context.allocator)] = cards[i]}
 	for theme in ([]int{0, 1}) {
 		apply_theme(theme, 0)
 		for width in ([]f32{240, 360}) {
@@ -70,18 +104,35 @@ gh_card_layout :: proc(t: ^testing.T) {
 				clay.SetPointerState({24, 24}, false)
 				link_hover = ""
 				clay.BeginLayout()
-				if clay.UI(clay.ID("Timeline"))({layout = {sizing = {width = clay.SizingFixed(width + 78), height = clay.SizingGrow()}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(20), childGap = 16}, backgroundColor = CARD}) {
-					for ref, i in refs { gh_card(u32(i), ref) }
+				if clay.UI(clay.ID("Timeline"))(
+				{
+					layout = {
+						sizing = {
+							width = clay.SizingFixed(width + 78),
+							height = clay.SizingGrow(),
+						},
+						layoutDirection = .TopToBottom,
+						padding = clay.PaddingAll(20),
+						childGap = 16,
+					},
+					backgroundColor = CARD,
+				},
+				) {
+					for ref, i in refs {gh_card(u32(i), ref)}
 				}
 				commands := clay.EndLayout(0)
-				if frame < 2 { continue }
+				if frame < 2 {continue}
 				testing.expect_value(t, link_hover, refs[0].url)
 				for _, i in refs {
 					box := clay.GetElementData(clay.ID("GhCard", u32(i))).boundingBox
 					testing.expect(t, box.width <= width)
 					for key in ([]string{"GhCardRepo", "GhCardFoot", "GhCardOpen"}) {
 						child := clay.GetElementData(clay.ID(key, u32(i))).boundingBox
-						testing.expect(t, child.x >= box.x && child.x + child.width <= box.x + box.width, key)
+						testing.expect(
+							t,
+							child.x >= box.x && child.x + child.width <= box.x + box.width,
+							key,
+						)
 					}
 				}
 				rl.BeginDrawing()
@@ -94,23 +145,33 @@ gh_card_layout :: proc(t: ^testing.T) {
 		}
 	}
 	gh_cards_on = true
-	defer { gh_cards_on = false; wrap_clear() }
+	defer {gh_cards_on = false; wrap_clear()}
 	apply_theme(0, 0)
 	for width in ([]f32{240, 520}) {
 		text := fmt.tprintf("Before the pull request %s after the pull request", refs[0].url)
 		for frame in 0 ..< 3 {
 			clay.BeginLayout()
-			if clay.UI(clay.ID("Timeline"))({layout = {sizing = {width = clay.SizingFixed(width + 78), height = clay.SizingGrow()}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(20), childGap = 8}, backgroundColor = CARD}) {
+			if clay.UI(clay.ID("Timeline"))(
+			{
+				layout = {
+					sizing = {width = clay.SizingFixed(width + 78), height = clay.SizingGrow()},
+					layoutDirection = .TopToBottom,
+					padding = clay.PaddingAll(20),
+					childGap = 8,
+				},
+				backgroundColor = CARD,
+			},
+			) {
 				body_text(32, text, 14, TEXT, true, width)
 			}
 			commands := clay.EndLayout(0)
-			if frame < 2 { continue }
+			if frame < 2 {continue}
 			lines := wrapped_lines(text, width, 14, .Cards)
 			prev: clay.BoundingBox
 			for line, i in lines {
 				box := clay.GetElementData(clay.ID("BodyLine", 32 * 8 + line.index)).boundingBox
 				testing.expect(t, box.x == 20 && box.width <= width)
-				if i > 0 { testing.expect(t, box.y >= prev.y + prev.height) }
+				if i > 0 {testing.expect(t, box.y >= prev.y + prev.height)}
 				prev = box
 			}
 			rl.BeginDrawing()

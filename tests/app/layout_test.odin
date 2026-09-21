@@ -5,8 +5,8 @@ import "core:sync"
 import "core:testing"
 import "core:time"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import marmot "../marmot"
+import clay "../vendor/clay/bindings/odin/clay-odin"
 
 @(private)
 clay_test_mutex: sync.Mutex
@@ -19,7 +19,7 @@ pending_delete_clicks :: proc(t: ^testing.T) {
 	defer sync.unlock(&test_home_lock)
 	previous_home := data_home
 	data_home = "/tmp/wn-pending-click-test"
-	defer { data_home = previous_home }
+	defer {data_home = previous_home}
 
 	previous := clay.GetCurrentContext()
 	memory: []u8
@@ -28,7 +28,10 @@ pending_delete_clicks :: proc(t: ^testing.T) {
 		clay.SetCurrentContext(previous)
 		delete(memory)
 	}
-	ui := Ui_State{selected = -1, row_menu = -1}
+	ui := Ui_State {
+		selected = -1,
+		row_menu = -1,
+	}
 	append(&ui.accounts, "Test")
 	defer delete(ui.accounts)
 	defer delete(ui.pending)
@@ -37,10 +40,15 @@ pending_delete_clicks :: proc(t: ^testing.T) {
 	defer forced_release = false
 	buttons := []string{"PendingDelete", "PendingDeleteEnd"}
 	started := time.tick_now()
-	fresh := Pending_Send{sending_since = started}
+	fresh := Pending_Send {
+		sending_since = started,
+	}
 	testing.expect(t, pending_can_delete(Pending_Send{failed = true}, started))
 	testing.expect(t, pending_can_delete(Pending_Send{queued = true}, started))
-	testing.expect(t, !pending_can_delete(fresh, time.tick_add(started, PENDING_DELETE_DELAY - time.Nanosecond)))
+	testing.expect(
+		t,
+		!pending_can_delete(fresh, time.tick_add(started, PENDING_DELETE_DELAY - time.Nanosecond)),
+	)
 	testing.expect(t, pending_can_delete(fresh, time.tick_add(started, PENDING_DELETE_DELAY)))
 	clay.BeginLayout()
 	pending_row(0, &ui, fresh)
@@ -50,7 +58,16 @@ pending_delete_clicks :: proc(t: ^testing.T) {
 	}
 	for button in buttons {
 		for state in 0 ..< 3 {
-			append(&ui.pending, Pending_Send{ticket = 1, body = strings.clone("stuck"), failed = state == 0, queued = state == 1, sending_since = time.tick_add(started, -PENDING_DELETE_DELAY)})
+			append(
+				&ui.pending,
+				Pending_Send {
+					ticket = 1,
+					body = strings.clone("stuck"),
+					failed = state == 0,
+					queued = state == 1,
+					sending_since = time.tick_add(started, -PENDING_DELETE_DELAY),
+				},
+			)
 			clay.BeginLayout()
 			pending_row(0, &ui, ui.pending[0])
 			clay.EndLayout(0)
@@ -64,7 +81,10 @@ pending_delete_clicks :: proc(t: ^testing.T) {
 				pending_row(0, &ui, ui.pending[0])
 				clay.EndLayout(0)
 				testing.expect(t, !clay.GetElementData(clay.ID("PendingRow", 0)).found)
-				append(&sends_done, Send_Done{ticket = 1, status = .PUBLISH, err = strings.clone("too large")})
+				append(
+					&sends_done,
+					Send_Done{ticket = 1, status = .PUBLISH, err = strings.clone("too large")},
+				)
 				drain_sends(&ui, nil)
 			}
 			testing.expect_value(t, len(ui.pending), 0)
@@ -90,7 +110,10 @@ layout_arena_grows :: proc(t: ^testing.T) {
 	ui: Ui_State
 	body := strings.repeat("x\n", 32769)
 	defer delete(body)
-	p := Pending_Send{body = body, failed = true}
+	p := Pending_Send {
+		body   = body,
+		failed = true,
+	}
 
 	init_layout(&memory, 32768, {800, 600})
 	clay.BeginLayout()

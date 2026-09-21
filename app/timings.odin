@@ -1,15 +1,19 @@
 // Snapshot formatting and host milestones. MDK owns consent and export.
 package main
 
+import marmot "../marmot"
+import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:fmt"
 import "core:strings"
 import "core:time"
-import marmot "../marmot"
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
 @(private)
-timing_record :: proc(client: ^marmot.Client, operation: marmot.Host_Performance, start: time.Tick) {
+timing_record :: proc(
+	client: ^marmot.Client,
+	operation: marmot.Host_Performance,
+	start: time.Tick,
+) {
 	if client == nil || start == {} {
 		return
 	}
@@ -42,7 +46,9 @@ timings_json :: proc(client: ^marmot.Client) -> string {
 	defer delete(local_report)
 	snapshot: ^marmot.Performance_Snapshot
 	if client == nil || marmot.performance_snapshot(client, &snapshot) != .OK {
-		return strings.concatenate({"{\n  \"performance\": null,\n  \"linux_performance\": ", local_report, "\n}"})
+		return strings.concatenate(
+			{"{\n  \"performance\": null,\n  \"linux_performance\": ", local_report, "\n}"},
+		)
 	}
 	defer marmot.performance_snapshot_free(snapshot)
 	report := timing_snapshot_json(snapshot)
@@ -55,14 +61,24 @@ timings_json :: proc(client: ^marmot.Client) -> string {
 	// Readiness is configuration/consent status, not proof of server receipt.
 	b := strings.builder_make()
 	strings.write_string(&b, "{\n")
-	fmt.sbprintf(&b, "  \"diagnostics_consent\": \"%v\",\n  \"otlp_export\": \"%v\",\n  \"performance\": %s,\n  \"linux_performance\": %s\n", status.consent, status.telemetry, report, local_report)
+	fmt.sbprintf(
+		&b,
+		"  \"diagnostics_consent\": \"%v\",\n  \"otlp_export\": \"%v\",\n  \"performance\": %s,\n  \"linux_performance\": %s\n",
+		status.consent,
+		status.telemetry,
+		report,
+		local_report,
+	)
 	strings.write_string(&b, "}")
 	return strings.to_string(b)
 }
 
 @(private)
 timing_snapshot_json :: proc(s: ^marmot.Performance_Snapshot) -> string {
-	rows := [?]struct {name: string, op: marmot.Performance_Operation} {
+	rows := [?]struct {
+		name: string,
+		op:   marmot.Performance_Operation,
+	} {
 		{"app_start", s.app_start},
 		{"directory_subscription_sync", s.directory_subscription_sync},
 		{"account_reconcile", s.account_reconcile},
@@ -77,7 +93,10 @@ timing_snapshot_json :: proc(s: ^marmot.Performance_Snapshot) -> string {
 		{"account_catch_up", s.account_catch_up},
 		{"account_sync", s.account_sync},
 		{"account_setup_advisory_step", s.account_setup_advisory_step},
-		{"account_bootstrap_relay_and_follow_publish", s.account_bootstrap_relay_and_follow_publish},
+		{
+			"account_bootstrap_relay_and_follow_publish",
+			s.account_bootstrap_relay_and_follow_publish,
+		},
 		{"account_default_profile_publish", s.account_default_profile_publish},
 		{"account_initial_key_package_publish", s.account_initial_key_package_publish},
 		{"account_initial_sync_overlap", s.account_initial_sync_overlap},
@@ -100,7 +119,10 @@ timing_snapshot_json :: proc(s: ^marmot.Performance_Snapshot) -> string {
 		{"group_create_key_package_lookup", s.group_create_key_package_lookup},
 		{"group_member_key_package_prewarm", s.group_member_key_package_prewarm},
 		{"group_create_key_package_cache_reuse", s.group_create_key_package_cache_reuse},
-		{"group_create_key_package_network_resolution", s.group_create_key_package_network_resolution},
+		{
+			"group_create_key_package_network_resolution",
+			s.group_create_key_package_network_resolution,
+		},
 		{"group_create_image_preprocess", s.group_create_image_preprocess},
 		{"group_create_image_upload", s.group_create_image_upload},
 		{"group_create_mls_prepare_persist", s.group_create_mls_prepare_persist},
@@ -144,14 +166,27 @@ timing_snapshot_json :: proc(s: ^marmot.Performance_Snapshot) -> string {
 		{"host_foreground_local_ready", s.host_foreground_local_ready},
 	}
 	b := strings.builder_make()
-	strings.write_string(&b, "{\n  \"scope\": \"process_lifetime\",\n  \"unit\": \"milliseconds\",\n  \"timings\": {\n")
+	strings.write_string(
+		&b,
+		"{\n  \"scope\": \"process_lifetime\",\n  \"unit\": \"milliseconds\",\n  \"timings\": {\n",
+	)
 	for row, i in rows {
 		op := row.op
-		mean := op.attempts > 0 ? fmt.tprintf("%.3f", f64(op.duration_ms.sum_ms) / f64(op.attempts)) : "null"
+		mean :=
+			op.attempts > 0 ? fmt.tprintf("%.3f", f64(op.duration_ms.sum_ms) / f64(op.attempts)) : "null"
 		fmt.sbprintf(&b, "    \"%s\": ", row.name)
 		strings.write_string(&b, "{\n")
-		fmt.sbprintf(&b, "      \"samples\": %d,\n      \"successes\": %d,\n      \"failures\": %d,\n      \"sum_ms\": %d,\n      \"mean_ms\": %s,\n      \"p95_upper_ms\": %s,\n      \"overflow\": %d\n",
-			op.attempts, op.successes, op.failures, op.duration_ms.sum_ms, mean, timing_p95(op), op.duration_ms.overflow_count)
+		fmt.sbprintf(
+			&b,
+			"      \"samples\": %d,\n      \"successes\": %d,\n      \"failures\": %d,\n      \"sum_ms\": %d,\n      \"mean_ms\": %s,\n      \"p95_upper_ms\": %s,\n      \"overflow\": %d\n",
+			op.attempts,
+			op.successes,
+			op.failures,
+			op.duration_ms.sum_ms,
+			mean,
+			timing_p95(op),
+			op.duration_ms.overflow_count,
+		)
 		strings.write_string(&b, i + 1 < len(rows) ? "    },\n" : "    }\n")
 	}
 	strings.write_string(&b, "  }\n}")
@@ -181,7 +216,9 @@ timings_presented :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 	for &p, i in ui.pending {
-		if p.visible_since == {} || p.group_id != ui.chats[ui.selected].group_id || p.thread != cur {
+		if p.visible_since == {} ||
+		   p.group_id != ui.chats[ui.selected].group_id ||
+		   p.thread != cur {
 			continue
 		}
 		row := clay.GetElementData(clay.ID("PendingRow", u32(i)))
@@ -194,7 +231,14 @@ timings_presented :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 @(private)
 timing_intersects :: proc(row, view: clay.BoundingBox) -> bool {
-	return row.width > 0 && row.height > 0 && view.width > 0 && view.height > 0 &&
-		row.x < view.x + view.width && row.x + row.width > view.x &&
-		row.y < view.y + view.height && row.y + row.height > view.y
+	return(
+		row.width > 0 &&
+		row.height > 0 &&
+		view.width > 0 &&
+		view.height > 0 &&
+		row.x < view.x + view.width &&
+		row.x + row.width > view.x &&
+		row.y < view.y + view.height &&
+		row.y + row.height > view.y \
+	)
 }

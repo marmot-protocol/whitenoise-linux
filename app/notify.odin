@@ -77,7 +77,12 @@ Notify_Force :: enum {
 	Always,
 }
 
-do_notify :: proc(ui: ^Ui_State, title: string, body: string, force := Notify_Force.Respect_Toggle) {
+do_notify :: proc(
+	ui: ^Ui_State,
+	title: string,
+	body: string,
+	force := Notify_Force.Respect_Toggle,
+) {
 	if !ui.prefs.notify_desktop && force == .Respect_Toggle {
 		return
 	}

@@ -12,13 +12,25 @@ keys_status :: proc(t: ^testing.T) {
 	testing.expect_value(t, kp_status_line(&ui), "Not loaded yet. Click Refresh.")
 
 	ui.kp_fetched = true
-	testing.expect_value(t, kp_status_line(&ui), "No key package yet. Publish one so people can invite you.")
+	testing.expect_value(
+		t,
+		kp_status_line(&ui),
+		"No key package yet. Publish one so people can invite you.",
+	)
 
 	append(&ui.kp_list, Kp_Row{local = true})
-	testing.expect_value(t, kp_status_line(&ui), "Stored on this device, not published to any relay yet.")
+	testing.expect_value(
+		t,
+		kp_status_line(&ui),
+		"Stored on this device, not published to any relay yet.",
+	)
 
 	append(&ui.kp_list, Kp_Row{relay = true, relay_urls = {"wss://a", "wss://b"}})
-	testing.expect_value(t, kp_status_line(&ui), "1 published, 1 on this device, seen on 2 relays.")
+	testing.expect_value(
+		t,
+		kp_status_line(&ui),
+		"1 published, 1 on this device, seen on 2 relays.",
+	)
 }
 
 @(test)

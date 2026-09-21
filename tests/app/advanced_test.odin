@@ -38,7 +38,14 @@ audit_label_formats :: proc(t: ^testing.T) {
 	stamp := time.unix(i64(local_seconds(1_770_000_000_000)), 0)
 	year, month, day := time.date(stamp)
 	hour, minute, _ := time.clock_from_time(stamp)
-	expected := fmt.aprintf("2.0 MB · %04d-%02d-%02d · %02d:%02d", year, int(month), day, hour, minute)
+	expected := fmt.aprintf(
+		"2.0 MB · %04d-%02d-%02d · %02d:%02d",
+		year,
+		int(month),
+		day,
+		hour,
+		minute,
+	)
 	defer delete(expected)
 
 	dated := audit_label(2_000_000, 1_770_000_000_000)

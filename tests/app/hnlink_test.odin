@@ -1,10 +1,10 @@
 package main
 
-import "core:sync"
-import "core:testing"
+import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
 import "core:fmt"
-import clay "../vendor/clay/bindings/odin/clay-odin"
+import "core:sync"
+import "core:testing"
 import rl "sdlrl"
 
 @(test)
@@ -13,22 +13,14 @@ hn_links :: proc(t: ^testing.T) {
 	for link in ([]string{url, url + "#comments", url + "&foo=bar", "http://news.ycombinator.com/item?foo=bar&id=049749369"}) {
 		testing.expect_value(t, hn_ref(link), "49749369")
 	}
-	for link in ([]string{
-		"https://news.ycombinator.com.evil/item?id=1",
-		"https://news.ycombinator.com@evil/item?id=1",
-		"https://http://news.ycombinator.com/item?id=1",
-		"https://news.ycombinator.com/user?id=1",
-		"https://news.ycombinator.com/item?id=",
-		"https://news.ycombinator.com/item?id=-1",
-		"https://news.ycombinator.com/item?id=0",
-		"https://news.ycombinator.com/item?id=1/2",
-		"https://news.ycombinator.com/item?id=1&id=2",
-		"https://news.ycombinator.com/item?other=1",
-		"https://news.ycombinator.com/item#id=1",
-	}) {
+	for link in ([]string{"https://news.ycombinator.com.evil/item?id=1", "https://news.ycombinator.com@evil/item?id=1", "https://http://news.ycombinator.com/item?id=1", "https://news.ycombinator.com/user?id=1", "https://news.ycombinator.com/item?id=", "https://news.ycombinator.com/item?id=-1", "https://news.ycombinator.com/item?id=0", "https://news.ycombinator.com/item?id=1/2", "https://news.ycombinator.com/item?id=1&id=2", "https://news.ycombinator.com/item?other=1", "https://news.ycombinator.com/item#id=1"}) {
 		testing.expect(t, hn_ref(link) == "", link)
 	}
-	card := hn_parse(transmute([]u8)string(`{"title":"Ask HN: A &amp; B &#39;test&#39;","by":"author","type":"story"}`))
+	card := hn_parse(
+		transmute([]u8)string(
+			`{"title":"Ask HN: A &amp; B &#39;test&#39;","by":"author","type":"story"}`,
+		),
+	)
 	defer delete(card.title)
 	defer delete(card.author)
 	testing.expect_value(t, card.title, "Ask HN: A & B 'test'")
@@ -63,7 +55,7 @@ hn_links :: proc(t: ^testing.T) {
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=hn_layout
 @(test)
 hn_layout :: proc(t: ^testing.T) {
-	if #config(ODIN_TEST_NAMES, "") != "hn_layout" { return }
+	if #config(ODIN_TEST_NAMES, "") != "hn_layout" {return}
 	context.allocator = runtime.default_context().allocator
 	rl.InitWindow(600, 600, "Hacker News cards")
 	defer rl.CloseWindow()
@@ -76,11 +68,11 @@ hn_layout :: proc(t: ^testing.T) {
 	defer wrap_clear()
 	ui: Ui_State
 	g_ui, g_prefs = &ui, &ui.prefs
-	defer { g_ui, g_prefs = nil, nil }
+	defer {g_ui, g_prefs = nil, nil}
 	url :: "https://news.ycombinator.com/item?id=49749369"
 	hn_cards["49749369"] = {"Minimal Phone 2", "nashashmi"}
 	gh_cards_on = true
-	defer { gh_cards_on = false; clear(&hn_cards) }
+	defer {gh_cards_on = false; clear(&hn_cards)}
 	for theme in ([]int{0, 1}) {
 		apply_theme(theme, 0)
 		for width in ([]f32{240, 360}) {
@@ -88,14 +80,27 @@ hn_layout :: proc(t: ^testing.T) {
 				clay.SetPointerState({24, 24}, false)
 				link_hover = ""
 				clay.BeginLayout()
-				if clay.UI(clay.ID("Timeline"))({layout = {sizing = {width = clay.SizingFixed(width + 78), height = clay.SizingGrow()}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(20), childGap = 16}, backgroundColor = CARD}) {
+				if clay.UI(clay.ID("Timeline"))(
+				{
+					layout = {
+						sizing = {
+							width = clay.SizingFixed(width + 78),
+							height = clay.SizingGrow(),
+						},
+						layoutDirection = .TopToBottom,
+						padding = clay.PaddingAll(20),
+						childGap = 16,
+					},
+					backgroundColor = CARD,
+				},
+				) {
 					body_line(1, url, 14, TEXT, {5, 15})
 					hn_card(2, "49749369", url)
 					hn_cards["42"] = {}
 					hn_card(3, "42", "https://news.ycombinator.com/item?id=42")
 				}
 				commands := clay.EndLayout(0)
-				if frame < 2 { continue }
+				if frame < 2 {continue}
 				testing.expect_value(t, link_hover, url)
 				for id in ([]u32{128, 2, 3}) {
 					data := clay.GetElementData(clay.ID("HnCard", id))

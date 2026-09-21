@@ -81,21 +81,21 @@ Orbit :: struct {
 // parse; the rotation caches (rot/shade/order) rebuild on orientation
 // change, and verts rebuilds when those or the tile placement change.
 Stl_View :: struct {
-	kind:  Model_Kind, // .Mesh; must stay the first field
+	kind:        Model_Kind, // .Mesh; must stay the first field
 	using orbit: Orbit,
-	tris:  []f32, // ntri * 9 vertex floats, unit-sphere normalized
-	norms: []f32, // ntri * 3 unit face normals
-	rot:   []f32, // rotated tris, same layout
-	shade: []f32, // per-tri view-space normal z (sign = facing)
-	order: []i32, // triangle indices, back to front
-	verts: []rl.Vertex, // cached draw buffer, ntri * 3
-	built: [5]f32, // (cx, cy, scale, yaw, pitch) verts was built for
+	tris:        []f32, // ntri * 9 vertex floats, unit-sphere normalized
+	norms:       []f32, // ntri * 3 unit face normals
+	rot:         []f32, // rotated tris, same layout
+	shade:       []f32, // per-tri view-space normal z (sign = facing)
+	order:       []i32, // triangle indices, back to front
+	verts:       []rl.Vertex, // cached draw buffer, ntri * 3
+	built:       [5]f32, // (cx, cy, scale, yaw, pitch) verts was built for
 	// View-space axes expressed in model space, rebuilt with the
 	// rotation caches. The inspector dots vertex normals against
 	// these instead of rotating a second normal buffer per frame.
-	basis: [3][3]f32,
-	insp:  Inspect, // render mode, overlays, FBX channels + animation
-	over:  [dynamic]rl.Vertex, // overlay quads (wireframe / normals)
+	basis:       [3][3]f32,
+	insp:        Inspect, // render mode, overlays, FBX channels + animation
+	over:        [dynamic]rl.Vertex, // overlay quads (wireframe / normals)
 
 	// Software z-buffer raster (models under RASTER_MAX_TRIS): the
 	// painter's sort can't order stacked shells, so the surface is
@@ -103,11 +103,11 @@ Stl_View :: struct {
 	// `built` doubles as its cache key ((rw, rh, zoom, yaw, pitch)
 	// there), so everything that already clears `built` to force a
 	// color rebuild invalidates the raster the same way.
-	pix:        []u8, // rw * rh RGBA
-	zbuf:       []f32,
-	raster_tex: rl.Texture2D,
-	rw, rh:     i32,
-	over_built: [5]f32, // (cx, cy, scale, yaw, pitch) the overlay has
+	pix:         []u8, // rw * rh RGBA
+	zbuf:        []f32,
+	raster_tex:  rl.Texture2D,
+	rw, rh:      i32,
+	over_built:  [5]f32, // (cx, cy, scale, yaw, pitch) the overlay has
 }
 
 // Extension picks the parser; both produce the same triangle soup.
@@ -316,15 +316,15 @@ stl_view_make :: proc(tris: []f32) -> ^Stl_View {
 	ntri := len(tris) / 9
 	view := new(Stl_View)
 	view^ = {
-		kind  = .Mesh,
+		kind = .Mesh,
 		orbit = default_orbit(),
-		tris  = tris,
+		tris = tris,
 		norms = make([]f32, ntri * 3),
-		rot   = make([]f32, len(tris)),
+		rot = make([]f32, len(tris)),
 		shade = make([]f32, ntri),
 		order = make([]i32, ntri),
 		verts = make([]rl.Vertex, ntri * 3),
-		insp  = {wire = -1, anim = -1},
+		insp = {wire = -1, anim = -1},
 	}
 	stl_face_normals(view)
 	return view
@@ -338,8 +338,16 @@ stl_face_normals :: proc(view: ^Stl_View) {
 	tris := view.tris
 	for i in 0 ..< len(tris) / 9 {
 		at := i * 9
-		e1 := [3]f32{tris[at + 3] - tris[at], tris[at + 4] - tris[at + 1], tris[at + 5] - tris[at + 2]}
-		e2 := [3]f32{tris[at + 6] - tris[at], tris[at + 7] - tris[at + 1], tris[at + 8] - tris[at + 2]}
+		e1 := [3]f32 {
+			tris[at + 3] - tris[at],
+			tris[at + 4] - tris[at + 1],
+			tris[at + 5] - tris[at + 2],
+		}
+		e2 := [3]f32 {
+			tris[at + 6] - tris[at],
+			tris[at + 7] - tris[at + 1],
+			tris[at + 8] - tris[at + 2],
+		}
 		nx := e1[1] * e2[2] - e1[2] * e2[1]
 		ny := e1[2] * e2[0] - e1[0] * e2[2]
 		nz := e1[0] * e2[1] - e1[1] * e2[0]
@@ -347,7 +355,8 @@ stl_face_normals :: proc(view: ^Stl_View) {
 		if length <= 0 {
 			length = 1
 		}
-		view.norms[i * 3], view.norms[i * 3 + 1], view.norms[i * 3 + 2] = nx / length, ny / length, nz / length
+		view.norms[i * 3], view.norms[i * 3 + 1], view.norms[i * 3 + 2] =
+			nx / length, ny / length, nz / length
 	}
 }
 
@@ -437,7 +446,9 @@ stl_build_verts :: proc(view: ^Stl_View, cx, cy, scale: f32) {
 		// Single Sided drops back-facing triangles by collapsing them
 		// to a point, which keeps every buffer index stable.
 		if view.insp.single_sided && view.shade[idx] < 0 {
-			p := rl.Vertex{position = {cx, cy}}
+			p := rl.Vertex {
+				position = {cx, cy},
+			}
 			view.verts[i * 3], view.verts[i * 3 + 1], view.verts[i * 3 + 2] = p, p, p
 			continue
 		}
@@ -446,7 +457,10 @@ stl_build_verts :: proc(view: ^Stl_View, cx, cy, scale: f32) {
 		uvs := model_vert_uvs(view, int(idx))
 		for k in 0 ..< 3 {
 			view.verts[i * 3 + k] = {
-				position  = {cx + view.rot[at + k * 3] * scale, cy - view.rot[at + k * 3 + 1] * scale},
+				position  = {
+					cx + view.rot[at + k * 3] * scale,
+					cy - view.rot[at + k * 3 + 1] * scale,
+				},
 				color     = colors[k],
 				tex_coord = {uvs[k][0], uvs[k][1]},
 			}
@@ -585,7 +599,14 @@ stl_draw :: proc(view: ^Stl_View, bounds: clay.BoundingBox) {
 		h := i32(bounds.height * UI_SCALE / UI_ZOOM)
 		if w > 0 && h > 0 {
 			rebuilt := stl_raster(view, w, h)
-			rl.DrawTextureRect(&view.raster_tex, bounds.x, bounds.y, bounds.width, bounds.height, {255, 255, 255, 255})
+			rl.DrawTextureRect(
+				&view.raster_tex,
+				bounds.x,
+				bounds.y,
+				bounds.width,
+				bounds.height,
+				{255, 255, 255, 255},
+			)
 			cx := bounds.x + bounds.width / 2
 			cy := bounds.y + bounds.height / 2
 			scale := min(bounds.width, bounds.height) * 0.45 * view.zoom
@@ -595,7 +616,13 @@ stl_draw :: proc(view: ^Stl_View, bounds: clay.BoundingBox) {
 				build_overlay(view, cx, cy, scale)
 			}
 			if len(view.over) > 0 {
-				rl.DrawTrianglesClipped(view.over[:], bounds.x, bounds.y, bounds.width, bounds.height)
+				rl.DrawTrianglesClipped(
+					view.over[:],
+					bounds.x,
+					bounds.y,
+					bounds.width,
+					bounds.height,
+				)
 			}
 			return
 		}
@@ -642,7 +669,12 @@ default_orbit :: proc() -> Orbit {
 		if comma := strings.index_byte(to, ','); comma > 0 {
 			yaw, _ := strconv.parse_f32(to[:comma])
 			pitch, _ := strconv.parse_f32(to[comma + 1:])
-			return {yaw = yaw * math.PI / 180, pitch = pitch * math.PI / 180, zoom = 1, dirty = true}
+			return {
+				yaw = yaw * math.PI / 180,
+				pitch = pitch * math.PI / 180,
+				zoom = 1,
+				dirty = true,
+			}
 		}
 	}
 	// Slight top-down tilt so a flat model reads as 3D.
@@ -686,7 +718,11 @@ handle_orbit :: proc() {
 			dy := (mouse.y - orbit_grab.y) / UI_ZOOM
 			if dx != 0 || dy != 0 {
 				orbit_drag.yaw += dx * STL_ORBIT_SPEED
-				orbit_drag.pitch = clamp(orbit_drag.pitch + dy * STL_ORBIT_SPEED, -math.PI / 2, math.PI / 2)
+				orbit_drag.pitch = clamp(
+					orbit_drag.pitch + dy * STL_ORBIT_SPEED,
+					-math.PI / 2,
+					math.PI / 2,
+				)
 				orbit_drag.dirty = true
 				orbit_grab = mouse
 				orbit_moved = true
@@ -699,8 +735,11 @@ handle_orbit :: proc() {
 	if orbit_hover != nil {
 		wheel := rl.GetMouseWheelMoveV().y
 		if wheel != 0 {
-			orbit_hover.zoom = clamp(orbit_hover.zoom * math.pow(f32(STL_ZOOM_STEP), wheel), STL_ZOOM_MIN, STL_ZOOM_MAX)
+			orbit_hover.zoom = clamp(
+				orbit_hover.zoom * math.pow(f32(STL_ZOOM_STEP), wheel),
+				STL_ZOOM_MIN,
+				STL_ZOOM_MAX,
+			)
 		}
 	}
 }
-

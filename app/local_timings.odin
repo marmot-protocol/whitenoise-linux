@@ -1,24 +1,52 @@
 // Fixed local counters, independent of MDK consent and its millisecond buckets.
 package main
 
+import marmot "../marmot"
 import "core:fmt"
 import "core:os"
 import "core:strings"
 import "core:sync"
 import "core:time"
-import marmot "../marmot"
 
 @(private)
 Local_Timing :: enum {
-	startup_before_vault, startup_after_vault, window_init, fonts_init,
-	runtime_boot, account_load, account_switch,
-	frame_update, frame_layout, frame_draw, frame_present, frame_post_present,
-	frame_until_present, frame_idle_wait,
-	chat_list_load, contacts_load, archived_load, profile_load, profile_read,
-	timeline_open, timeline_page, timeline_handoff, timeline_apply,
-	send_worker, message_op_worker, search_global, search_sidebar,
-	media_queue_wait, media_worker, media_load, media_cache_hit, media_decode, media_publish,
-	vault_derive_key, vault_open, vault_create, vault_persist,
+	startup_before_vault,
+	startup_after_vault,
+	window_init,
+	fonts_init,
+	runtime_boot,
+	account_load,
+	account_switch,
+	frame_update,
+	frame_layout,
+	frame_draw,
+	frame_present,
+	frame_post_present,
+	frame_until_present,
+	frame_idle_wait,
+	chat_list_load,
+	contacts_load,
+	archived_load,
+	profile_load,
+	profile_read,
+	timeline_open,
+	timeline_page,
+	timeline_handoff,
+	timeline_apply,
+	send_worker,
+	message_op_worker,
+	search_global,
+	search_sidebar,
+	media_queue_wait,
+	media_worker,
+	media_load,
+	media_cache_hit,
+	media_decode,
+	media_publish,
+	vault_derive_key,
+	vault_open,
+	vault_create,
+	vault_persist,
 	settings_save,
 }
 
@@ -26,7 +54,7 @@ Local_Timing :: enum {
 Local_Distribution :: struct {
 	samples, sum_ns, min_ns, max_ns: u64,
 	// Inclusive powers of two microseconds, then unbounded overflow.
-	buckets: [28]u64,
+	buckets:                         [28]u64,
 }
 
 @(private)
@@ -38,13 +66,16 @@ local_timing_client: ^marmot.Client
 @(private)
 local_timing_stopped: bool = true
 @(private)
-Local_Timing_Sample :: struct { operation: Local_Timing, ns: u64 }
+Local_Timing_Sample :: struct {
+	operation: Local_Timing,
+	ns:        u64,
+}
 @(private)
 local_timing_pending: [dynamic]Local_Timing_Sample
 
 @(private)
 local_timing_add :: proc(op: ^Local_Distribution, ns: u64) {
-	if op.samples == 0 || ns < op.min_ns { op.min_ns = ns }
+	if op.samples == 0 || ns < op.min_ns {op.min_ns = ns}
 	op.samples += 1
 	op.sum_ns += ns
 	op.max_ns = max(op.max_ns, ns)
@@ -57,14 +88,20 @@ local_timing_add :: proc(op: ^Local_Distribution, ns: u64) {
 
 @(private)
 local_timing_end :: proc(operation: Local_Timing, start: time.Tick) {
-	if start == {} { return }
+	if start == {} {return}
 	ns := u64(max(time.tick_since(start), 0))
 	// ponytail: one lock serializes counter updates; split per operation if contended.
 	sync.lock(&local_timing_mutex)
 	local_timing_add(&local_timings[operation], ns)
 	if local_timing_client != nil {
-		status := marmot.record_host_performance(local_timing_client,
-			marmot.Host_Performance(u32(marmot.Host_Performance.Linux_startup_before_vault) + u32(operation)), ns / 1_000_000, .Success)
+		status := marmot.record_host_performance(
+			local_timing_client,
+			marmot.Host_Performance(
+				u32(marmot.Host_Performance.Linux_startup_before_vault) + u32(operation),
+			),
+			ns / 1_000_000,
+			.Success,
+		)
 		assert(status == .OK)
 	} else if !local_timing_stopped {
 		append(&local_timing_pending, Local_Timing_Sample{operation, ns})
@@ -81,8 +118,15 @@ local_timing_bind :: proc(client: ^marmot.Client) {
 	local_timing_stopped = client == nil
 	if client != nil {
 		for sample in local_timing_pending {
-			status := marmot.record_host_performance(client,
-				marmot.Host_Performance(u32(marmot.Host_Performance.Linux_startup_before_vault) + u32(sample.operation)), sample.ns / 1_000_000, .Success)
+			status := marmot.record_host_performance(
+				client,
+				marmot.Host_Performance(
+					u32(marmot.Host_Performance.Linux_startup_before_vault) +
+					u32(sample.operation),
+				),
+				sample.ns / 1_000_000,
+				.Success,
+			)
 			assert(status == .OK)
 		}
 	}
@@ -92,12 +136,12 @@ local_timing_bind :: proc(client: ^marmot.Client) {
 
 @(private)
 local_timing_percentile :: proc(op: Local_Distribution, percentile: u64) -> string {
-	if op.samples == 0 { return "null" }
+	if op.samples == 0 {return "null"}
 	target := op.samples / 100 * percentile + (op.samples % 100 * percentile + 99) / 100
 	count: u64
 	for i in 0 ..< len(op.buckets) - 1 {
 		count += op.buckets[i]
-		if count >= target { return fmt.tprintf("%.6f", f64(u64(1000) << u64(i)) / 1e6) }
+		if count >= target {return fmt.tprintf("%.6f", f64(u64(1000) << u64(i)) / 1e6)}
 	}
 	return "null"
 }
@@ -110,7 +154,10 @@ local_timings_json :: proc() -> string {
 	b := strings.builder_make()
 	strings.write_string(&b, "{\n")
 	fmt.sbprintf(&b, "  \"app_version\": \"%s\",\n", APP_VERSION)
-	strings.write_string(&b, "  \"scope\": \"module_lifetime\",\n  \"unit\": \"milliseconds\",\n  \"timings\": {\n")
+	strings.write_string(
+		&b,
+		"  \"scope\": \"module_lifetime\",\n  \"unit\": \"milliseconds\",\n  \"timings\": {\n",
+	)
 	for op, name in snapshot {
 		fmt.sbprintf(&b, "    \"%v\": ", name)
 		strings.write_string(&b, "{")
@@ -118,10 +165,22 @@ local_timings_json :: proc() -> string {
 		if op.samples == 0 {
 			strings.write_string(&b, "\"min_ms\": null, \"max_ms\": null, \"mean_ms\": null, ")
 		} else {
-			fmt.sbprintf(&b, "\"min_ms\": %.6f, \"max_ms\": %.6f, \"mean_ms\": %.6f, ", f64(op.min_ns) / 1e6, f64(op.max_ns) / 1e6, f64(op.sum_ns) / f64(op.samples) / 1e6)
+			fmt.sbprintf(
+				&b,
+				"\"min_ms\": %.6f, \"max_ms\": %.6f, \"mean_ms\": %.6f, ",
+				f64(op.min_ns) / 1e6,
+				f64(op.max_ns) / 1e6,
+				f64(op.sum_ns) / f64(op.samples) / 1e6,
+			)
 		}
-		fmt.sbprintf(&b, "\"p50_upper_ms\": %s, \"p95_upper_ms\": %s, \"p99_upper_ms\": %s, \"overflow\": %d",
-			local_timing_percentile(op, 50), local_timing_percentile(op, 95), local_timing_percentile(op, 99), op.buckets[len(op.buckets) - 1])
+		fmt.sbprintf(
+			&b,
+			"\"p50_upper_ms\": %s, \"p95_upper_ms\": %s, \"p99_upper_ms\": %s, \"overflow\": %d",
+			local_timing_percentile(op, 50),
+			local_timing_percentile(op, 95),
+			local_timing_percentile(op, 99),
+			op.buckets[len(op.buckets) - 1],
+		)
 		strings.write_string(&b, int(name) + 1 < len(snapshot) ? "},\n" : "}\n")
 	}
 	strings.write_string(&b, "  }\n}")
@@ -132,7 +191,7 @@ local_timings_json :: proc() -> string {
 local_timings_export :: proc() {
 	defer local_timing_bind(nil)
 	path := os.get_env("WN_TIMINGS", context.temp_allocator)
-	if path == "" { return }
+	if path == "" {return}
 	report := local_timings_json()
 	defer delete(report)
 	if err := os.write_entire_file(path, transmute([]u8)report); err != nil {

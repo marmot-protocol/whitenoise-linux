@@ -56,7 +56,10 @@ delivery_tick :: proc(group_id: string, index: u32, state: marmot.Delivery_State
 		anim_moving += 1
 	}
 	if clay.UI(clay.ID("Tick", index))(
-	{layout = {sizing = {width = clay.SizingFixed(width), height = clay.SizingFixed(CHECK_H)}}, custom = {customData = view}},
+	{
+		layout = {sizing = {width = clay.SizingFixed(width), height = clay.SizingFixed(CHECK_H)}},
+		custom = {customData = view},
+	},
 	) {}
 }
 
@@ -69,10 +72,22 @@ stroke :: proc(verts: ^[dynamic]rl.Vertex, x0, y0, x1, y1, w: f32, color: rl.FCo
 	// Normal to the segment, scaled to half the stroke width.
 	nx := -dy / mag * w / 2
 	ny := dx / mag * w / 2
-	a := rl.Vertex{position = {x0 + nx, y0 + ny}, color = color}
-	b := rl.Vertex{position = {x0 - nx, y0 - ny}, color = color}
-	c := rl.Vertex{position = {x1 + nx, y1 + ny}, color = color}
-	d := rl.Vertex{position = {x1 - nx, y1 - ny}, color = color}
+	a := rl.Vertex {
+		position = {x0 + nx, y0 + ny},
+		color    = color,
+	}
+	b := rl.Vertex {
+		position = {x0 - nx, y0 - ny},
+		color    = color,
+	}
+	c := rl.Vertex {
+		position = {x1 + nx, y1 + ny},
+		color    = color,
+	}
+	d := rl.Vertex {
+		position = {x1 - nx, y1 - ny},
+		color    = color,
+	}
 	append(verts, a, b, c, b, d, c)
 }
 
@@ -111,7 +126,12 @@ check_path :: proc(verts: ^[dynamic]rl.Vertex, x, y, progress: f32, color: rl.FC
 }
 
 check_draw :: proc(view: ^Check_View, bounds: clay.BoundingBox) {
-	color := rl.FColor{view.color.r / 255, view.color.g / 255, view.color.b / 255, view.color.a / 255}
+	color := rl.FColor {
+		view.color.r / 255,
+		view.color.g / 255,
+		view.color.b / 255,
+		view.color.a / 255,
+	}
 	elapsed := rl.GetTime() - view.start
 
 	verts := make([dynamic]rl.Vertex, context.temp_allocator)
@@ -121,6 +141,12 @@ check_draw :: proc(view: ^Check_View, bounds: clay.BoundingBox) {
 		check_path(&verts, bounds.x + 4, bounds.y, ease_out(f32(lag)), color)
 	}
 	if len(verts) > 0 {
-		rl.DrawTrianglesClipped(verts[:], bounds.x - 1, bounds.y - 1, bounds.width + 2, bounds.height + 2)
+		rl.DrawTrianglesClipped(
+			verts[:],
+			bounds.x - 1,
+			bounds.y - 1,
+			bounds.width + 2,
+			bounds.height + 2,
+		)
 	}
 }

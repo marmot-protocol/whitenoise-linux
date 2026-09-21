@@ -107,7 +107,10 @@ anim_to :: proc(key: u32, target: f32, rate: f32 = ANIM_RATE) -> f32 {
 // the entry must follow it, or release replays the whole move from
 // where the drag began.
 anim_set :: proc(key: u32, v: f32) {
-	anim_vals[key] = {v = v, frame = anim_frame}
+	anim_vals[key] = {
+		v     = v,
+		frame = anim_frame,
+	}
 }
 
 // A global geometry discontinuity (a zoom change): every eased value
@@ -181,7 +184,12 @@ anim_drain :: proc(rate: f32) -> f32 {
 
 mix_color :: proc(a, b: clay.Color, t: f32) -> clay.Color {
 	k := clamp(t, 0, 1)
-	return {a.r + (b.r - a.r) * k, a.g + (b.g - a.g) * k, a.b + (b.b - a.b) * k, a.a + (b.a - a.a) * k}
+	return {
+		a.r + (b.r - a.r) * k,
+		a.g + (b.g - a.g) * k,
+		a.b + (b.b - a.b) * k,
+		a.a + (b.a - a.a) * k,
+	}
 }
 
 fade :: proc(color: clay.Color, alpha: f32) -> clay.Color {
@@ -597,7 +605,9 @@ scroll_lag :: proc(index: u32) -> (top, bottom: u16) {
 		return MSG_PAD_Y, MSG_PAD_Y
 	}
 	from_mid := ((row.y + row.height / 2) - (view.y + view.height / 2)) / (view.height / 2)
-	lag := clamp(scroll_vel * SCROLL_LAG_K, -SCROLL_LAG_MAX, SCROLL_LAG_MAX) * abs(clamp(from_mid, -1, 1))
+	lag :=
+		clamp(scroll_vel * SCROLL_LAG_K, -SCROLL_LAG_MAX, SCROLL_LAG_MAX) *
+		abs(clamp(from_mid, -1, 1))
 	return lag_pads(lag)
 }
 

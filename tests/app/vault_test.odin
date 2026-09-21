@@ -33,13 +33,13 @@ vault_dev_session :: proc(t: ^testing.T) {
 
 	fd, err := linux.memfd_create("wn-vault-test", {})
 	testing.expect(t, err == .NONE)
-	if err != .NONE { return }
+	if err != .NONE {return}
 	defer linux.close(fd)
 	previous := os.get_env("WN_DEV_VAULT_FD", context.temp_allocator)
 	os.set_env("WN_DEV_VAULT_FD", fmt.tprintf("%d", fd))
 	defer {
-		if previous == "" { os.unset_env("WN_DEV_VAULT_FD") }
-		else { os.set_env("WN_DEV_VAULT_FD", previous) }
+		if previous ==
+		   "" {os.unset_env("WN_DEV_VAULT_FD")} else {os.set_env("WN_DEV_VAULT_FD", previous)}
 	}
 	testing.expect_value(t, vault_create("first"), Vault_Err.None)
 	testing.expect_value(t, vault_set("account:alice", "secret"), Vault_Err.None)

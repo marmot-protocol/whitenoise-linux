@@ -113,14 +113,14 @@ text_attachment_layout :: proc(t: ^testing.T) {
 		init_fonts()
 	}
 	defer {
-		when #config(ODIN_TEST_NAMES, "") == "text_attachment_layout" { rl.CloseWindow() }
+		when #config(ODIN_TEST_NAMES, "") == "text_attachment_layout" {rl.CloseWindow()}
 	}
 	src := "type: logcat\r\n\r\n  # not a heading\r\n09-11 14:46:31 4853 I focus=true\r\n"
 	for name in ([]string{"logcat.txt", "debug.LOG"}) {
 		testing.expect_value(t, media_kind(name, "text/plain"), Media_Kind.Code)
 		view := code_view_make(name, src)
 		testing.expect(t, view != nil)
-		if view == nil { return }
+		if view == nil {return}
 		testing.expect_value(t, len(view.lines), 4)
 		testing.expect_value(t, joined(view, 1), "")
 		testing.expect_value(t, joined(view, 2), "  # not a heading")
@@ -140,7 +140,9 @@ text_attachment_layout :: proc(t: ^testing.T) {
 	defer code_view_free(code)
 	markdown := txt_view_make(long)
 	defer txt_view_free(markdown)
-	msg := Msg_Ui{sender = strings.clone("Max")}
+	msg := Msg_Ui {
+		sender = strings.clone("Max"),
+	}
 	defer message_free(msg)
 	append(&msg.att_names, strings.clone("logcat.txt"), strings.clone("notes.md"))
 	append(&msg.codes, Att_Item(^Code_View){code, 0})
@@ -166,7 +168,10 @@ text_attachment_layout :: proc(t: ^testing.T) {
 	plate := clay.GetElementData(clay.ID("MsgTxt", 0)).boundingBox
 	for command in commands.internalArray[:commands.length] {
 		if command.commandType == .Text && command.boundingBox.y >= plate.y {
-			testing.expect(t, command.boundingBox.x + command.boundingBox.width <= plate.x + plate.width)
+			testing.expect(
+				t,
+				command.boundingBox.x + command.boundingBox.width <= plate.x + plate.width,
+			)
 		}
 	}
 	when #config(ODIN_TEST_NAMES, "") == "text_attachment_layout" {

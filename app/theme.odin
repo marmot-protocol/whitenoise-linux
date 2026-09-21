@@ -14,7 +14,7 @@ import clay "../vendor/clay/bindings/odin/clay-odin"
 
 import marmot "../marmot"
 
-THEME_SOURCES := [][2]string{
+THEME_SOURCES := [][2]string {
 	{"Dark", #load("../themes/dark.toml", string)},
 	{"Light", #load("../themes/light.toml", string)},
 	{"AMOLED", #load("../themes/amoled.toml", string)},
@@ -38,39 +38,39 @@ THEME_SOURCES := [][2]string{
 // dozen lines rather than ninety. A pack that names a `base` inherits
 // instead, which is what every built-in does.
 Theme_Pack :: struct {
-	source:                                                string, // the toml it was parsed from, for sharing and editing
-	name:                                                  string,
-	mode:                                                  string, // lowercase key `base` refers to
-	bg, panel, panel_2, rail, elevated, card_border:       clay.Color,
-	status_bar, banner, canvas_top:                        clay.Color,
-	text_hi, text_mid, text_lo, text_vlo:                  clay.Color,
-	field, field_hover, field_border, hover, plate:        clay.Color,
+	source:                                                 string, // the toml it was parsed from, for sharing and editing
+	name:                                                   string,
+	mode:                                                   string, // lowercase key `base` refers to
+	bg, panel, panel_2, rail, elevated, card_border:        clay.Color,
+	status_bar, banner, canvas_top:                         clay.Color,
+	text_hi, text_mid, text_lo, text_vlo:                   clay.Color,
+	field, field_hover, field_border, hover, plate:         clay.Color,
 	plate_inset, code_plate, card_well, divider, on_accent: clay.Color,
-	elevated_border, border_2:                             clay.Color,
-	danger, danger_soft, danger_border:                    clay.Color,
-	warning, warning_soft, warning_border:                 clay.Color,
+	elevated_border, border_2:                              clay.Color,
+	danger, danger_soft, danger_border:                     clay.Color,
+	warning, warning_soft, warning_border:                  clay.Color,
 	// Depth: the overlay behind a modal, the four shadow tints, and the
 	// two bevel edges a raised surface is lit and shaded with.
-	overlay, overlay_strong, vignette:                     clay.Color,
+	overlay, overlay_strong, vignette:                      clay.Color,
 	shadow_soft, shadow_card, shadow_popover, shadow_float: clay.Color,
-	bevel_hi, bevel_lo, top_glint, avatar_ring:            clay.Color,
+	bevel_hi, bevel_lo, top_glint, avatar_ring:             clay.Color,
 	// Media chrome: the chips and controls that float over a picture,
 	// which cannot take their colors from the page behind them.
-	media_backdrop, media_chip_bg, media_chip_fg:          clay.Color,
-	media_chip_outline, media_control_bg:                  clay.Color,
-	accent_base, accent_hi, accent_dim:                    [5]clay.Color,
-	accent_surface, accent_glow:                           [5]clay.Color,
+	media_backdrop, media_chip_bg, media_chip_fg:           clay.Color,
+	media_chip_outline, media_control_bg:                   clay.Color,
+	accent_base, accent_hi, accent_dim:                     [5]clay.Color,
+	accent_surface, accent_glow:                            [5]clay.Color,
 	// [style] structural metrics, the capability flags this renderer
 	// honours, and the motion durations.
-	r_scale, border_w, glow_r, shadow_y, bubble_r:         f32,
-	hover_dur, transition_dur:                             f32,
-	pixel_metrics, synth_grid, paper_doodles, scanlines:   bool,
-	hard_shadow, focus_glow, bevel, outline_surfaces:      bool,
-	selected_inverts_text, bracket_labels, motion_fast:    bool,
-	font:                                                  string, // family name, "" = the default stack
-	backdrop:                                              string, // named scene behind the conversation, "" = none
-	custom:                                                bool, // from <data-dir>/themes, so it can be deleted
-	bg_2:                                                  clay.Color, // second stop of the page wash, a == 0 = flat
+	r_scale, border_w, glow_r, shadow_y, bubble_r:          f32,
+	hover_dur, transition_dur:                              f32,
+	pixel_metrics, synth_grid, paper_doodles, scanlines:    bool,
+	hard_shadow, focus_glow, bevel, outline_surfaces:       bool,
+	selected_inverts_text, bracket_labels, motion_fast:     bool,
+	font:                                                   string, // family name, "" = the default stack
+	backdrop:                                               string, // named scene behind the conversation, "" = none
+	custom:                                                 bool, // from <data-dir>/themes, so it can be deleted
+	bg_2:                                                   clay.Color, // second stop of the page wash, a == 0 = flat
 }
 
 theme_packs: [dynamic]Theme_Pack
@@ -151,14 +151,27 @@ parse_hex_color :: proc(value: string) -> clay.Color {
 // A pack with the neutral structural metrics, the start for any theme
 // that names no base.
 default_pack :: proc() -> Theme_Pack {
-	return {r_scale = 1, border_w = 1, glow_r = 3, shadow_y = 2, bubble_r = 10, hover_dur = 110, transition_dur = 140}
+	return {
+		r_scale = 1,
+		border_w = 1,
+		glow_r = 3,
+		shadow_y = 2,
+		bubble_r = 10,
+		hover_dur = 110,
+		transition_dur = 140,
+	}
 }
 
 // ── Color math, for deriving what a pack leaves unsaid ───────────────
 
 @(private = "file")
 mix :: proc(a, b: clay.Color, t: f32) -> clay.Color {
-	return {a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t, a.a + (b.a - a.a) * t}
+	return {
+		a.r + (b.r - a.r) * t,
+		a.g + (b.g - a.g) * t,
+		a.b + (b.b - a.b) * t,
+		a.a + (b.a - a.a) * t,
+	}
 }
 
 @(private = "file")
@@ -352,7 +365,12 @@ adopt_theme :: proc(toml: string) -> int {
 		return -1
 	}
 
-	pack := parse_theme(strings.clone(name), slug, strings.clone(toml), resolve_base(toml_str_key(toml, "base")))
+	pack := parse_theme(
+		strings.clone(name),
+		slug,
+		strings.clone(toml),
+		resolve_base(toml_str_key(toml, "base")),
+	)
 	pack.source = strings.clone(toml)
 	pack.custom = true
 	for existing, i in theme_packs {
@@ -388,87 +406,87 @@ parse_theme :: proc(name: string, mode: string, source: string, base: Theme_Pack
 	pack.name = name
 	pack.mode = mode
 
-	scalars := map[string]^clay.Color{
-		"bg" = &pack.bg,
-		"bg-2" = &pack.bg_2,
-		"panel" = &pack.panel,
-		"panel-2" = &pack.panel_2,
-		"rail" = &pack.rail,
-		"elevated" = &pack.elevated,
-		"card-border" = &pack.card_border,
-		"elevated-border" = &pack.elevated_border,
-		"border-2" = &pack.border_2,
-		"status-bar" = &pack.status_bar,
-		"banner" = &pack.banner,
-		"canvas-top" = &pack.canvas_top,
-		"text-hi" = &pack.text_hi,
-		"text-mid" = &pack.text_mid,
-		"text-lo" = &pack.text_lo,
-		"text-vlo" = &pack.text_vlo,
-		"field" = &pack.field,
-		"field-hover" = &pack.field_hover,
-		"field-border" = &pack.field_border,
-		"hover" = &pack.hover,
-		"plate" = &pack.plate,
-		"plate-inset" = &pack.plate_inset,
-		"code-plate" = &pack.code_plate,
-		"card-well" = &pack.card_well,
-		"divider" = &pack.divider,
-		"on-accent" = &pack.on_accent,
-		"danger" = &pack.danger,
-		"danger-soft" = &pack.danger_soft,
-		"danger-border" = &pack.danger_border,
-		"warning" = &pack.warning,
-		"warning-soft" = &pack.warning_soft,
-		"warning-border" = &pack.warning_border,
-		"overlay" = &pack.overlay,
-		"overlay-strong" = &pack.overlay_strong,
-		"vignette" = &pack.vignette,
-		"shadow-soft" = &pack.shadow_soft,
-		"shadow-card" = &pack.shadow_card,
-		"shadow-popover" = &pack.shadow_popover,
-		"shadow-float" = &pack.shadow_float,
-		"bevel-hi" = &pack.bevel_hi,
-		"bevel-lo" = &pack.bevel_lo,
-		"top-glint" = &pack.top_glint,
-		"avatar-ring" = &pack.avatar_ring,
-		"media-backdrop" = &pack.media_backdrop,
-		"media-chip-bg" = &pack.media_chip_bg,
-		"media-chip-fg" = &pack.media_chip_fg,
+	scalars := map[string]^clay.Color {
+		"bg"                 = &pack.bg,
+		"bg-2"               = &pack.bg_2,
+		"panel"              = &pack.panel,
+		"panel-2"            = &pack.panel_2,
+		"rail"               = &pack.rail,
+		"elevated"           = &pack.elevated,
+		"card-border"        = &pack.card_border,
+		"elevated-border"    = &pack.elevated_border,
+		"border-2"           = &pack.border_2,
+		"status-bar"         = &pack.status_bar,
+		"banner"             = &pack.banner,
+		"canvas-top"         = &pack.canvas_top,
+		"text-hi"            = &pack.text_hi,
+		"text-mid"           = &pack.text_mid,
+		"text-lo"            = &pack.text_lo,
+		"text-vlo"           = &pack.text_vlo,
+		"field"              = &pack.field,
+		"field-hover"        = &pack.field_hover,
+		"field-border"       = &pack.field_border,
+		"hover"              = &pack.hover,
+		"plate"              = &pack.plate,
+		"plate-inset"        = &pack.plate_inset,
+		"code-plate"         = &pack.code_plate,
+		"card-well"          = &pack.card_well,
+		"divider"            = &pack.divider,
+		"on-accent"          = &pack.on_accent,
+		"danger"             = &pack.danger,
+		"danger-soft"        = &pack.danger_soft,
+		"danger-border"      = &pack.danger_border,
+		"warning"            = &pack.warning,
+		"warning-soft"       = &pack.warning_soft,
+		"warning-border"     = &pack.warning_border,
+		"overlay"            = &pack.overlay,
+		"overlay-strong"     = &pack.overlay_strong,
+		"vignette"           = &pack.vignette,
+		"shadow-soft"        = &pack.shadow_soft,
+		"shadow-card"        = &pack.shadow_card,
+		"shadow-popover"     = &pack.shadow_popover,
+		"shadow-float"       = &pack.shadow_float,
+		"bevel-hi"           = &pack.bevel_hi,
+		"bevel-lo"           = &pack.bevel_lo,
+		"top-glint"          = &pack.top_glint,
+		"avatar-ring"        = &pack.avatar_ring,
+		"media-backdrop"     = &pack.media_backdrop,
+		"media-chip-bg"      = &pack.media_chip_bg,
+		"media-chip-fg"      = &pack.media_chip_fg,
 		"media-chip-outline" = &pack.media_chip_outline,
-		"media-control-bg" = &pack.media_control_bg,
+		"media-control-bg"   = &pack.media_control_bg,
 	}
 	defer delete(scalars)
-	tables := map[string]^[5]clay.Color{
-		"accent-base" = &pack.accent_base,
-		"accent-hi" = &pack.accent_hi,
-		"accent-dim" = &pack.accent_dim,
+	tables := map[string]^[5]clay.Color {
+		"accent-base"    = &pack.accent_base,
+		"accent-hi"      = &pack.accent_hi,
+		"accent-dim"     = &pack.accent_dim,
 		"accent-surface" = &pack.accent_surface,
-		"accent-glow" = &pack.accent_glow,
+		"accent-glow"    = &pack.accent_glow,
 	}
 	defer delete(tables)
-	floats := map[string]^f32{
-		"r-scale" = &pack.r_scale,
-		"border-w" = &pack.border_w,
-		"glow-r" = &pack.glow_r,
-		"shadow-y" = &pack.shadow_y,
-		"bubble-r" = &pack.bubble_r,
-		"hover-dur" = &pack.hover_dur,
+	floats := map[string]^f32 {
+		"r-scale"        = &pack.r_scale,
+		"border-w"       = &pack.border_w,
+		"glow-r"         = &pack.glow_r,
+		"shadow-y"       = &pack.shadow_y,
+		"bubble-r"       = &pack.bubble_r,
+		"hover-dur"      = &pack.hover_dur,
 		"transition-dur" = &pack.transition_dur,
 	}
 	defer delete(floats)
-	bools := map[string]^bool{
-		"pixel-metrics" = &pack.pixel_metrics,
-		"synth-grid" = &pack.synth_grid,
-		"paper-doodles" = &pack.paper_doodles,
-		"scanlines" = &pack.scanlines,
-		"hard-shadow" = &pack.hard_shadow,
-		"focus-glow" = &pack.focus_glow,
-		"bevel" = &pack.bevel,
-		"outline-surfaces" = &pack.outline_surfaces,
+	bools := map[string]^bool {
+		"pixel-metrics"         = &pack.pixel_metrics,
+		"synth-grid"            = &pack.synth_grid,
+		"paper-doodles"         = &pack.paper_doodles,
+		"scanlines"             = &pack.scanlines,
+		"hard-shadow"           = &pack.hard_shadow,
+		"focus-glow"            = &pack.focus_glow,
+		"bevel"                 = &pack.bevel,
+		"outline-surfaces"      = &pack.outline_surfaces,
 		"selected-inverts-text" = &pack.selected_inverts_text,
-		"bracket-labels" = &pack.bracket_labels,
-		"motion-fast" = &pack.motion_fast,
+		"bracket-labels"        = &pack.bracket_labels,
+		"motion-fast"           = &pack.motion_fast,
 	}
 	defer delete(bools)
 
@@ -481,7 +499,9 @@ parse_theme :: proc(name: string, mode: string, source: string, base: Theme_Pack
 	lines := strings.split_lines(source, context.temp_allocator)
 	for line in lines {
 		trimmed := strings.trim_space(line)
-		if len(trimmed) == 0 || trimmed[0] == '#' || trimmed[0] == '[' && table == nil && !strings.contains(trimmed, "\"") {
+		if len(trimmed) == 0 ||
+		   trimmed[0] == '#' ||
+		   trimmed[0] == '[' && table == nil && !strings.contains(trimmed, "\"") {
 			// section headers like [colors]/[style] fall through here
 			if table == nil {
 				continue
@@ -596,7 +616,7 @@ load_themes :: proc() {
 	if read_err != nil {
 		return
 	}
-	slice.sort_by(files, proc(a, b: os.File_Info) -> bool { return a.name < b.name })
+	slice.sort_by(files, proc(a, b: os.File_Info) -> bool {return a.name < b.name})
 
 	for file in files {
 		if file.type == .Directory || !strings.has_suffix(file.name, ".toml") {
@@ -639,9 +659,15 @@ share_theme :: proc(ui: ^Ui_State, client: ^marmot.Client, dest: int) {
 	// without parsing the body.
 	d_values := [2]cstring {
 		"d",
-		strings.clone_to_cstring(fmt.tprintf("%s%s", THEME_D_PREFIX, pack.mode), context.temp_allocator),
+		strings.clone_to_cstring(
+			fmt.tprintf("%s%s", THEME_D_PREFIX, pack.mode),
+			context.temp_allocator,
+		),
 	}
-	title_values := [2]cstring{"title", strings.clone_to_cstring(pack.name, context.temp_allocator)}
+	title_values := [2]cstring {
+		"title",
+		strings.clone_to_cstring(pack.name, context.temp_allocator),
+	}
 	tags := [2]marmot.Message_Tag {
 		{values = raw_data(d_values[:]), values_len = 2},
 		{values = raw_data(title_values[:]), values_len = 2},
@@ -651,7 +677,17 @@ share_theme :: proc(ui: ^Ui_State, client: ^marmot.Client, dest: int) {
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 	group := strings.clone_to_cstring(ui.chats[dest].group_id, context.temp_allocator)
 	content := strings.clone_to_cstring(pack.source, context.temp_allocator)
-	if marmot.send_custom_event(client, account, group, THEME_EVENT_KIND, raw_data(tags[:]), 2, content, &summary) != .OK {
+	if marmot.send_custom_event(
+		   client,
+		   account,
+		   group,
+		   THEME_EVENT_KIND,
+		   raw_data(tags[:]),
+		   2,
+		   content,
+		   &summary,
+	   ) !=
+	   .OK {
 		ui.client_status = fmt.aprintf("Couldn't share the theme. %s", marmot.last_error())
 		return
 	}
@@ -664,7 +700,14 @@ share_theme :: proc(ui: ^Ui_State, client: ^marmot.Client, dest: int) {
 // never in layout.
 theme_swatches :: proc(name: string, toml: string) -> [THEME_SWATCHES]clay.Color {
 	pack := parse_theme(name, "preview", toml, default_pack())
-	return {pack.bg, pack.panel, pack.text_hi, pack.accent_base[0], pack.accent_base[2], pack.danger}
+	return {
+		pack.bg,
+		pack.panel,
+		pack.text_hi,
+		pack.accent_base[0],
+		pack.accent_base[2],
+		pack.danger,
+	}
 }
 
 // Remove a theme this device owns: its file, then its slot. Built-ins
@@ -676,7 +719,10 @@ delete_theme :: proc(ui: ^Ui_State, index: int) {
 	}
 	path := fmt.tprintf("%s/themes/%s.toml", data_home, theme_packs[index].mode)
 	if err := os.remove(path); err != nil {
-		ui.client_status = fmt.aprintf("Couldn't delete %s. Please try again.", theme_packs[index].name)
+		ui.client_status = fmt.aprintf(
+			"Couldn't delete %s. Please try again.",
+			theme_packs[index].name,
+		)
 		return
 	}
 

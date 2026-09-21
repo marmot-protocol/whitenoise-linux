@@ -19,13 +19,13 @@ GCODE_MAX_SEGS :: 2_000_000 // parse cap, same spirit as STL_MAX_TRIS
 GCODE_COLOR :: rl.FColor{0.93, 0.58, 0.25, 1} // filament orange
 
 Gcode_View :: struct {
-	kind:  Model_Kind, // .Gcode; must stay the first field
+	kind:        Model_Kind, // .Gcode; must stay the first field
 	using orbit: Orbit,
-	segs:  []f32, // nseg * 6 endpoint floats, unit-sphere normalized
-	frac:  f32, // slider progress, share of segments drawn
-	rot:   []f32, // rotated endpoints, same layout
-	verts: []rl.Vertex, // cached ribbon buffer, nseg * 6
-	built: [6]f32, // (cx, cy, scale, yaw, pitch, frac) verts was built for
+	segs:        []f32, // nseg * 6 endpoint floats, unit-sphere normalized
+	frac:        f32, // slider progress, share of segments drawn
+	rot:         []f32, // rotated endpoints, same layout
+	verts:       []rl.Vertex, // cached ribbon buffer, nseg * 6
+	built:       [6]f32, // (cx, cy, scale, yaw, pitch, frac) verts was built for
 }
 
 // Extrusion segments from the move stream: G0/G1 with a positive E
@@ -63,10 +63,14 @@ parse_gcode :: proc(data: []u8) -> ([]f32, bool) {
 			for tok in strings.fields_iterator(&fields) {
 				if v, ok := strconv.parse_f32(tok[1:]); ok {
 					switch tok[0] {
-					case 'X': x = v
-					case 'Y': y = v
-					case 'Z': z = v
-					case 'E': e = v
+					case 'X':
+						x = v
+					case 'Y':
+						y = v
+					case 'Z':
+						z = v
+					case 'E':
+						e = v
 					}
 				}
 			}
@@ -82,10 +86,14 @@ parse_gcode :: proc(data: []u8) -> ([]f32, bool) {
 					continue
 				}
 				switch tok[0] {
-				case 'X': nx = abs_move ? v : x + v
-				case 'Y': ny = abs_move ? v : y + v
-				case 'Z': nz = abs_move ? v : z + v
-				case 'E': ne = abs_e ? v : e + v
+				case 'X':
+					nx = abs_move ? v : x + v
+				case 'Y':
+					ny = abs_move ? v : y + v
+				case 'Z':
+					nz = abs_move ? v : z + v
+				case 'E':
+					ne = abs_e ? v : e + v
 				}
 			}
 			extruding := ne > e && (nx != x || ny != y || nz != z)
@@ -172,16 +180,40 @@ gcode_draw :: proc(view: ^Gcode_View, bounds: clay.BoundingBox) {
 			g := clamp(0.55 + 0.225 * (view.rot[at + 2] + view.rot[at + 5]), 0.2, 1.0)
 			color := rl.FColor{GCODE_COLOR.r * g, GCODE_COLOR.g * g, GCODE_COLOR.b * g, 1}
 
-			view.verts[at] = {position = {x1 + px, y1 + py}, color = color}
-			view.verts[at + 1] = {position = {x1 - px, y1 - py}, color = color}
-			view.verts[at + 2] = {position = {x2 + px, y2 + py}, color = color}
-			view.verts[at + 3] = {position = {x2 + px, y2 + py}, color = color}
-			view.verts[at + 4] = {position = {x2 - px, y2 - py}, color = color}
-			view.verts[at + 5] = {position = {x1 - px, y1 - py}, color = color}
+			view.verts[at] = {
+				position = {x1 + px, y1 + py},
+				color    = color,
+			}
+			view.verts[at + 1] = {
+				position = {x1 - px, y1 - py},
+				color    = color,
+			}
+			view.verts[at + 2] = {
+				position = {x2 + px, y2 + py},
+				color    = color,
+			}
+			view.verts[at + 3] = {
+				position = {x2 + px, y2 + py},
+				color    = color,
+			}
+			view.verts[at + 4] = {
+				position = {x2 - px, y2 - py},
+				color    = color,
+			}
+			view.verts[at + 5] = {
+				position = {x1 - px, y1 - py},
+				color    = color,
+			}
 		}
 	}
 
-	rl.DrawTrianglesClipped(view.verts[:count * 6], bounds.x, bounds.y, bounds.width, bounds.height)
+	rl.DrawTrianglesClipped(
+		view.verts[:count * 6],
+		bounds.x,
+		bounds.y,
+		bounds.width,
+		bounds.height,
+	)
 }
 
 // Slider drag: the bar element's bounds come from clay, so the frac
@@ -214,6 +246,10 @@ handle_gcode_bar :: proc() {
 
 	bb := clay.GetElementData(gcode_bar_drag.id).boundingBox
 	if bb.width > 0 {
-		gcode_bar_drag.view.frac = clamp((rl.GetMousePosition().x / UI_ZOOM - bb.x) / bb.width, 0, 1)
+		gcode_bar_drag.view.frac = clamp(
+			(rl.GetMousePosition().x / UI_ZOOM - bb.x) / bb.width,
+			0,
+			1,
+		)
 	}
 }

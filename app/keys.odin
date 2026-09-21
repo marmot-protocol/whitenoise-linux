@@ -36,7 +36,14 @@ Kp_Row :: struct {
 kp_rows :: proc(client: ^marmot.Client, account_ref: string, out: ^[dynamic]Kp_Row) -> bool {
 	ref := strings.clone_to_cstring(account_ref, context.temp_allocator)
 	list: ^marmot.Account_Key_Package_List
-	if marmot.account_key_packages(client, ref, raw_data(DEFAULT_RELAYS), uint(len(DEFAULT_RELAYS)), &list) != .OK {
+	if marmot.account_key_packages(
+		   client,
+		   ref,
+		   raw_data(DEFAULT_RELAYS),
+		   uint(len(DEFAULT_RELAYS)),
+		   &list,
+	   ) !=
+	   .OK {
 		return false
 	}
 	defer marmot.account_key_package_list_free(list)
@@ -111,7 +118,12 @@ kp_status_line :: proc(ui: ^Ui_State) -> string {
 	if published == 0 {
 		return tr("Stored on this device, not published to any relay yet.")
 	}
-	return fmt.tprintf(tr("%d published, %d on this device, seen on %d relays."), published, local, relays)
+	return fmt.tprintf(
+		tr("%d published, %d on this device, seen on %d relays."),
+		published,
+		local,
+		relays,
+	)
 }
 
 // Publish (republish the cached package) or rotate (mint a fresh one).
@@ -125,11 +137,12 @@ publish_key_package :: proc(ui: ^Ui_State, client: ^marmot.Client, kind: Kp_Publ
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 	accepted: u64
 	status :=
-		kind == .Fresh \
-		? marmot.publish_new_key_package(client, account, &accepted) \
-		: marmot.republish_key_package(client, account, &accepted)
+		kind == .Fresh ? marmot.publish_new_key_package(client, account, &accepted) : marmot.republish_key_package(client, account, &accepted)
 	if status != .OK {
-		ui.client_status = fmt.aprintf(tr("Couldn't publish the key package. %s"), marmot.last_error())
+		ui.client_status = fmt.aprintf(
+			tr("Couldn't publish the key package. %s"),
+			marmot.last_error(),
+		)
 		return
 	}
 	fetch_key_packages(ui, client)
@@ -154,7 +167,10 @@ reveal_nsec :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 	nsec: cstring
 	if marmot.reveal_nsec(client, account, &nsec) != .OK || nsec == nil {
-		ui.client_status = fmt.aprintf(tr("Couldn't reveal your private key. %s"), marmot.last_error())
+		ui.client_status = fmt.aprintf(
+			tr("Couldn't reveal your private key. %s"),
+			marmot.last_error(),
+		)
 		return
 	}
 	ui.keys_nsec = strings.clone(string(nsec))
@@ -190,42 +206,88 @@ do_export :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 settings_keys :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("RowSovereign"))(srow()) {
 		clay.Text(ICON_LOCK, {fontId = FONT_ICON, fontSize = 13, textColor = ACCENT})
-		row_labels("Your identity is sovereign", "White Noise never sees your private key. It lives only on this device and any signer you connect.")
+		row_labels(
+			"Your identity is sovereign",
+			"White Noise never sees your private key. It lives only on this device and any signer you connect.",
+		)
 	}
 
 	eyebrow("IDENTITY")
 	if clay.UI(clay.ID("NpubRow"))(srow()) {
-		if clay.UI(clay.ID("NpubCol"))({layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 3}}) {
+		if clay.UI(clay.ID("NpubCol"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				layoutDirection = .TopToBottom,
+				childGap = 3,
+			},
+		},
+		) {
 			clay.Text("Public key (npub)", {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
-			clay.Text("Safe to share. This is how people find you.", {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
-			clay.Text(len(ui.profile.npub) > 0 ? ui.profile.npub : "(unknown)", {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO})
+			clay.Text(
+				"Safe to share. This is how people find you.",
+				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+			)
+			clay.Text(
+				len(ui.profile.npub) > 0 ? ui.profile.npub : "(unknown)",
+				{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO},
+			)
 		}
 		micro_button("SettingsCopyNpub", "Copy")
 	}
 
 	eyebrow("KEY PACKAGES (PUBLISHED TO YOUR KIND-10051 RELAY LIST)")
 	if clay.UI(clay.ID("KpStatus"))(srow()) {
-		if clay.UI(clay.ID("KpStatusCol"))({layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 3}}) {
+		if clay.UI(clay.ID("KpStatusCol"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				layoutDirection = .TopToBottom,
+				childGap = 3,
+			},
+		},
+		) {
 			clay.Text(tr("Key package"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
-			clay.Text(kp_status_line(ui), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+			clay.Text(
+				kp_status_line(ui),
+				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+			)
 		}
 		micro_button("KpPublish", tr("Publish"))
 		micro_button("KpRefresh", tr("Refresh"))
 	}
 	for row, i in ui.kp_list {
 		if clay.UI(clay.ID("KpRow", u32(i)))(srow()) {
-			if clay.UI(clay.ID("KpRowCol", u32(i)))({layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 3}}) {
-				clay.Text(fmt.tprintf("0x%s...", row.id[:min(len(row.id), 16)]), {fontId = FONT_MONO, fontSize = 12, textColor = TEXT})
+			if clay.UI(clay.ID("KpRowCol", u32(i)))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					layoutDirection = .TopToBottom,
+					childGap = 3,
+				},
+			},
+			) {
+				clay.Text(
+					fmt.tprintf("0x%s...", row.id[:min(len(row.id), 16)]),
+					{fontId = FONT_MONO, fontSize = 12, textColor = TEXT},
+				)
 				clay.Text(row.at, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
 			}
-			tag := row.relay ? (len(row.relay_urls) > 0 ? fmt.tprintf("RELAY · %d", len(row.relay_urls)) : "RELAY") : "LOCAL"
-			clay.Text(tag, {fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO, letterSpacing = 2})
+			tag :=
+				row.relay ? (len(row.relay_urls) > 0 ? fmt.tprintf("RELAY · %d", len(row.relay_urls)) : "RELAY") : "LOCAL"
+			clay.Text(
+				tag,
+				{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO, letterSpacing = 2},
+			)
 		}
 	}
 
 	eyebrow("LINKED DEVICES")
 	if clay.UI(clay.ID("RowLinked"))(srow()) {
-		row_labels("Multi-device isn't available yet", "Your identity lives only on this device for now. When device linking ships, the devices signed into your key will appear here.")
+		row_labels(
+			"Multi-device isn't available yet",
+			"Your identity lives only on this device for now. When device linking ships, the devices signed into your key will appear here.",
+		)
 	}
 
 	eyebrow("DEVICE VAULT")
@@ -249,11 +311,26 @@ settings_keys :: proc(ui: ^Ui_State) {
 
 	// Reveal: arm, confirm, then a masked plate with copy and unmask.
 	if clay.UI(clay.ID("RowReveal"))(danger_plate()) {
-		if clay.UI(clay.ID("RevealCol"))({layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, childGap = 3}}) {
-			clay.Text(tr("Reveal private key (nsec)"), {fontId = FONT_TITLE, fontSize = 13, textColor = DANGER})
-			clay.Text(tr("Never share it. It is your identity."), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+		if clay.UI(clay.ID("RevealCol"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				layoutDirection = .TopToBottom,
+				childGap = 3,
+			},
+		},
+		) {
+			clay.Text(
+				tr("Reveal private key (nsec)"),
+				{fontId = FONT_TITLE, fontSize = 13, textColor = DANGER},
+			)
+			clay.Text(
+				tr("Never share it. It is your identity."),
+				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+			)
 			if len(ui.keys_nsec) > 0 {
-				shown := ui.keys_nsec_show ? ui.keys_nsec : strings.repeat("*", min(len(ui.keys_nsec), 63), context.temp_allocator)
+				shown :=
+					ui.keys_nsec_show ? ui.keys_nsec : strings.repeat("*", min(len(ui.keys_nsec), 63), context.temp_allocator)
 				clay.Text(shown, {fontId = FONT_MONO, fontSize = 11, textColor = TEXT})
 			}
 		}
@@ -261,7 +338,11 @@ settings_keys :: proc(ui: ^Ui_State) {
 			micro_button("NsecShow", ui.keys_nsec_show ? tr("Hide") : tr("Show"))
 			micro_button("NsecCopy", tr("Copy"))
 		} else {
-			micro_button("RevealNsecBtn", ui.keys_confirm == "RevealNsecBtn" ? tr("Confirm reveal") : tr("Reveal"), DANGER)
+			micro_button(
+				"RevealNsecBtn",
+				ui.keys_confirm == "RevealNsecBtn" ? tr("Confirm reveal") : tr("Reveal"),
+				DANGER,
+			)
 		}
 	}
 
@@ -278,14 +359,26 @@ settings_keys :: proc(ui: ^Ui_State) {
 
 danger_plate :: proc() -> clay.ElementDeclaration {
 	return {
-		layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(12), childGap = 10, childAlignment = {y = .Center}},
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			padding = clay.PaddingAll(12),
+			childGap = 10,
+			childAlignment = {y = .Center},
+		},
 		backgroundColor = ROW_BG,
 		cornerRadius = rr(8),
 		border = {color = DANGER, width = bw()},
 	}
 }
 
-danger_row :: proc(ui: ^Ui_State, row_id: string, title: string, sub: string, btn_id: string, btn_label: string) {
+danger_row :: proc(
+	ui: ^Ui_State,
+	row_id: string,
+	title: string,
+	sub: string,
+	btn_id: string,
+	btn_label: string,
+) {
 	if clay.UI(clay.ID(row_id))(danger_plate()) {
 		row_labels(title, sub, DANGER)
 		micro_button(btn_id, ui.keys_confirm == btn_id ? tr("Confirm") : btn_label, DANGER)
@@ -359,56 +452,130 @@ handle_keys :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 export_modal :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("ExportModal"))(
 	{
-		layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(modal_w(clay.ID("ExportModal"), 440))}, padding = clay.PaddingAll(18), childGap = 10},
-		floating = {attachTo = .Root, zIndex = 11, offset = {0, rise(clay.ID("ExportModal"))}, attachment = {element = .CenterCenter, parent = .CenterCenter}},
+		layout = {
+			layoutDirection = .TopToBottom,
+			sizing = {width = clay.SizingFixed(modal_w(clay.ID("ExportModal"), 440))},
+			padding = clay.PaddingAll(18),
+			childGap = 10,
+		},
+		floating = {
+			attachTo = .Root,
+			zIndex = 11,
+			offset = {0, rise(clay.ID("ExportModal"))},
+			attachment = {element = .CenterCenter, parent = .CenterCenter},
+		},
 		backgroundColor = CARD,
 		cornerRadius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
 	},
 	) {
-		if clay.UI(clay.ID("ExportHead"))({layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}}) {
-			clay.Text("Export encrypted key", {fontId = FONT_TITLE, fontSize = 17, textColor = TEXT})
-			if clay.UI(clay.ID("ExportHeadGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-			if clay.UI(clay.ID("ExportClose"))({layout = {padding = clay.PaddingAll(6)}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)}) {
+		if clay.UI(clay.ID("ExportHead"))(
+		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
+		) {
+			clay.Text(
+				"Export encrypted key",
+				{fontId = FONT_TITLE, fontSize = 17, textColor = TEXT},
+			)
+			if clay.UI(clay.ID("ExportHeadGap"))(
+			{layout = {sizing = {width = clay.SizingGrow()}}},
+			) {}
+			if clay.UI(clay.ID("ExportClose"))(
+			{
+				layout = {padding = clay.PaddingAll(6)},
+				backgroundColor = hovered() ? HOVER : {},
+				cornerRadius = rr(6),
+			},
+			) {
 				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
 			}
 		}
 
 		if len(ui.export_result) == 0 {
 			// Step 1: password.
-			clay.Text(tr("Pick a password to encrypt the key with. You will need it to import the key anywhere else."), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+			clay.Text(
+				tr(
+					"Pick a password to encrypt the key with. You will need it to import the key anywhere else.",
+				),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			)
 			eyebrow("PASSWORD")
 			if clay.UI(clay.ID("ExportPwBox"))(
-			{layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(38)}, padding = {left = 12, right = 12}, childAlignment = {y = .Center}}, backgroundColor = ROW_BG, cornerRadius = rr(9), border = {color = ui.focus == .ExportPw ? ACCENT : FIELD_BORDER, width = bw()}},
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(38)},
+					padding = {left = 12, right = 12},
+					childAlignment = {y = .Center},
+				},
+				backgroundColor = ROW_BG,
+				cornerRadius = rr(9),
+				border = {color = ui.focus == .ExportPw ? ACCENT : FIELD_BORDER, width = bw()},
+			},
 			) {
 				if len(ui.export_pw) == 0 {
-					clay.Text(tr("Your password"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_LO})
+					clay.Text(
+						tr("Your password"),
+						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_LO},
+					)
 				} else {
-					clay.Text(strings.repeat("*", min(len(ui.export_pw), 48), context.temp_allocator), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT})
+					clay.Text(
+						strings.repeat("*", min(len(ui.export_pw), 48), context.temp_allocator),
+						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
+					)
 				}
 				if ui.focus == .ExportPw {
 					caret(15)
 				}
 			}
-			if clay.UI(clay.ID("ExportBtns"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, padding = {top = 8}}}) {
+			if clay.UI(clay.ID("ExportBtns"))(
+			{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10, padding = {top = 8}}},
+			) {
 				if clay.UI(clay.ID("ExportCancel"))(
-				{layout = {padding = {left = 22, right = 22, top = 9, bottom = 9}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(9), border = {color = FIELD_BORDER, width = bw()}},
+				{
+					layout = {padding = {left = 22, right = 22, top = 9, bottom = 9}},
+					backgroundColor = hovered() ? HOVER : {},
+					cornerRadius = rr(9),
+					border = {color = FIELD_BORDER, width = bw()},
+				},
 				) {
 					clay.Text("Cancel", {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
 				}
-				if clay.UI(clay.ID("ExportBtnsGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+				if clay.UI(clay.ID("ExportBtnsGap"))(
+				{layout = {sizing = {width = clay.SizingGrow()}}},
+				) {}
 				if clay.UI(clay.ID("ExportGo"))(
-				{layout = {padding = {left = 22, right = 22, top = 9, bottom = 9}}, backgroundColor = DANGER, cornerRadius = rr(9)},
+				{
+					layout = {padding = {left = 22, right = 22, top = 9, bottom = 9}},
+					backgroundColor = DANGER,
+					cornerRadius = rr(9),
+				},
 				) {
-					clay.Text("Export key", {fontId = FONT_TITLE, fontSize = 13, textColor = ON_ACCENT})
+					clay.Text(
+						"Export key",
+						{fontId = FONT_TITLE, fontSize = 13, textColor = ON_ACCENT},
+					)
 				}
 			}
 		} else {
 			// Step 2: the sealed key.
-			clay.Text(tr("This is your secret key, encrypted with the password you entered. Whoever holds this string and that password controls your identity."), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+			clay.Text(
+				tr(
+					"This is your secret key, encrypted with the password you entered. Whoever holds this string and that password controls your identity.",
+				),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			)
 			eyebrow("ENCRYPTED KEY (NCRYPTSEC)")
 			if clay.UI(clay.ID("ExportKeyPlate"))(
-			{layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(10), layoutDirection = .TopToBottom, childGap = 2}, backgroundColor = ROW_BG, cornerRadius = rr(9), border = {color = FIELD_BORDER, width = bw()}},
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					padding = clay.PaddingAll(10),
+					layoutDirection = .TopToBottom,
+					childGap = 2,
+				},
+				backgroundColor = ROW_BG,
+				cornerRadius = rr(9),
+				border = {color = FIELD_BORDER, width = bw()},
+			},
 			) {
 				// One unbroken token: clay wraps on words only, so chunk
 				// it into fixed slices or the plate blows past the modal.
@@ -419,15 +586,29 @@ export_modal :: proc(ui: ^Ui_State) {
 					key = key[n:]
 				}
 			}
-			if clay.UI(clay.ID("ExportCopyRow"))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}}) {
-				if clay.UI(clay.ID("ExportCopyGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+			if clay.UI(clay.ID("ExportCopyRow"))(
+			{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
+			) {
+				if clay.UI(clay.ID("ExportCopyGap"))(
+				{layout = {sizing = {width = clay.SizingGrow()}}},
+				) {}
 				micro_button("ExportSave", tr("Save file"))
 				micro_button("ExportCopy", "Copy")
 			}
-			clay.Text(tr("Store it somewhere safe and close this dialog. Anyone who imports it will need the password you just entered to decrypt it."), {fontId = FONT_BODY, fontSize = 11, textColor = DANGER})
+			clay.Text(
+				tr(
+					"Store it somewhere safe and close this dialog. Anyone who imports it will need the password you just entered to decrypt it.",
+				),
+				{fontId = FONT_BODY, fontSize = 11, textColor = DANGER},
+			)
 			if clay.UI(clay.ID("ExportDoneRow"))({layout = {padding = {top = 8}}}) {
 				if clay.UI(clay.ID("ExportDone"))(
-				{layout = {padding = {left = 22, right = 22, top = 9, bottom = 9}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(9), border = {color = FIELD_BORDER, width = bw()}},
+				{
+					layout = {padding = {left = 22, right = 22, top = 9, bottom = 9}},
+					backgroundColor = hovered() ? HOVER : {},
+					cornerRadius = rr(9),
+					border = {color = FIELD_BORDER, width = bw()},
+				},
 				) {
 					clay.Text("Done", {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
 				}

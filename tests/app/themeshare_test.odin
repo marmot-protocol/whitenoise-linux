@@ -17,7 +17,13 @@ test_theme_slug :: proc(t: ^testing.T) {
 	// Nothing usable left means the pack is refused outright.
 	testing.expect_value(t, theme_slug("///", context.temp_allocator), "")
 	// Bounded, so a long name cannot make a long path.
-	testing.expect(t, len(theme_slug(strings.repeat("x", 500, context.temp_allocator), context.temp_allocator)) <= 24)
+	testing.expect(
+		t,
+		len(
+			theme_slug(strings.repeat("x", 500, context.temp_allocator), context.temp_allocator),
+		) <=
+		24,
+	)
 }
 
 // An incoming pack is untrusted: only a sized, named, seeded one is
@@ -32,9 +38,16 @@ test_theme_offer_name :: proc(t: ^testing.T) {
 	testing.expect_value(t, theme_offer_name("[colors]\nbg = \"#101010ff\"\n"), "")
 	testing.expect_value(t, theme_offer_name("name = \"///\"\n[colors]\nbg = \"#101010ff\"\n"), "")
 	// No bg seed: every derivation rule starts there.
-	testing.expect_value(t, theme_offer_name("name = \"Shared\"\n[colors]\ntext-hi = \"#ffffffff\"\n"), "")
+	testing.expect_value(
+		t,
+		theme_offer_name("name = \"Shared\"\n[colors]\ntext-hi = \"#ffffffff\"\n"),
+		"",
+	)
 	// Oversized payloads are dropped before parsing.
-	big := strings.concatenate({ok, strings.repeat("#pad\n", 4000, context.temp_allocator)}, context.temp_allocator)
+	big := strings.concatenate(
+		{ok, strings.repeat("#pad\n", 4000, context.temp_allocator)},
+		context.temp_allocator,
+	)
 	testing.expect_value(t, theme_offer_name(big), "")
 }
 
@@ -113,17 +126,35 @@ test_builtin_packs_legible :: proc(t: ^testing.T) {
 	for pack in theme_packs {
 		gap := abs(lum(pack.text_hi) - lum(pack.bg))
 		if gap < 0.35 {
-			testing.fail_now(t, strings.concatenate({pack.name, ": text and background are too close"}, context.temp_allocator))
+			testing.fail_now(
+				t,
+				strings.concatenate(
+					{pack.name, ": text and background are too close"},
+					context.temp_allocator,
+				),
+			)
 		}
 		// A magenta channel triple is what parse_hex_color returns for
 		// an unparseable value, so it doubles as a typo detector.
 		for accent in pack.accent_base {
 			if accent == BAD {
-				testing.fail_now(t, strings.concatenate({pack.name, ": unparseable accent"}, context.temp_allocator))
+				testing.fail_now(
+					t,
+					strings.concatenate(
+						{pack.name, ": unparseable accent"},
+						context.temp_allocator,
+					),
+				)
 			}
 		}
 		if pack.bg == BAD {
-			testing.fail_now(t, strings.concatenate({pack.name, ": unparseable background"}, context.temp_allocator))
+			testing.fail_now(
+				t,
+				strings.concatenate(
+					{pack.name, ": unparseable background"},
+					context.temp_allocator,
+				),
+			)
 		}
 	}
 }

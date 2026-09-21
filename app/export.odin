@@ -40,9 +40,11 @@ export_kind: Transcript_Kind
 
 @(private)
 export_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if export_group == "" { return }
-	if ui.account_ref == export_account && ui.selected >= 0 && ui.chats[ui.selected].group_id == export_group {
-		if ui.timeline_loading || timeline_page == nil { return }
+	if export_group == "" {return}
+	if ui.account_ref == export_account &&
+	   ui.selected >= 0 &&
+	   ui.chats[ui.selected].group_id == export_group {
+		if ui.timeline_loading || timeline_page == nil {return}
 		export_chat(ui, client, export_kind)
 	}
 	delete(export_account); delete(export_group)
@@ -106,21 +108,49 @@ details{margin-top:6px}
 summary{color:#8a8a95;font-size:12px;cursor:pointer}
 pre{background:#1d1d24;padding:10px;border-radius:8px;overflow-x:auto;font-size:11px;white-space:pre-wrap}`
 
-transcript_html :: proc(ui: ^Ui_State, client: ^marmot.Client, chat: Chat_Row_Ui, records: map[string]^marmot.Timeline_Message_Record, b: ^strings.Builder) {
-	fmt.sbprintf(b, "<!doctype html>\n<html><head><meta charset=\"utf-8\">\n<title>%s</title>\n<style>%s</style></head>\n<body>\n<h1>%s</h1>\n", html_esc(chat.title), TRANSCRIPT_CSS, html_esc(chat.title))
+transcript_html :: proc(
+	ui: ^Ui_State,
+	client: ^marmot.Client,
+	chat: Chat_Row_Ui,
+	records: map[string]^marmot.Timeline_Message_Record,
+	b: ^strings.Builder,
+) {
+	fmt.sbprintf(
+		b,
+		"<!doctype html>\n<html><head><meta charset=\"utf-8\">\n<title>%s</title>\n<style>%s</style></head>\n<body>\n<h1>%s</h1>\n",
+		html_esc(chat.title),
+		TRANSCRIPT_CSS,
+		html_esc(chat.title),
+	)
 
 	for msg in ui.messages {
 		if msg.system {
-			fmt.sbprintf(b, "<div class=\"sys\">%s <span class=\"when\">%s</span></div>\n", html_esc(msg.body), msg.at_full)
+			fmt.sbprintf(
+				b,
+				"<div class=\"sys\">%s <span class=\"when\">%s</span></div>\n",
+				html_esc(msg.body),
+				msg.at_full,
+			)
 			continue
 		}
-		fmt.sbprintf(b, "<div class=\"msg%s\">\n<span class=\"sender\">%s</span> <span class=\"when\">%s</span>\n", msg.mine ? " mine" : "", html_esc(msg.sender), msg.at_full)
+		fmt.sbprintf(
+			b,
+			"<div class=\"msg%s\">\n<span class=\"sender\">%s</span> <span class=\"when\">%s</span>\n",
+			msg.mine ? " mine" : "",
+			html_esc(msg.sender),
+			msg.at_full,
+		)
 		if msg.deleted {
 			strings.write_string(b, "<div class=\"deleted\">Message deleted.</div>\n</div>\n")
 			continue
 		}
 		if len(msg.body) > 0 {
-			body, _ := strings.replace_all(html_esc(msg.body), "\n", "<br>", context.temp_allocator)
+			body, _ := strings.replace_all(
+				html_esc(msg.body),
+				"\n",
+				"<br>",
+				context.temp_allocator,
+			)
 			fmt.sbprintf(b, "<div class=\"body\">%s</div>\n", body)
 		}
 		record := records[msg.id]
@@ -134,7 +164,11 @@ transcript_html :: proc(ui: ^Ui_State, client: ^marmot.Client, chat: Chat_Row_Ui
 			}
 		}
 		if record != nil {
-			fmt.sbprintf(b, "<details><summary>Raw event</summary><pre>%s</pre></details>\n", html_esc(record_json(record, context.temp_allocator)))
+			fmt.sbprintf(
+				b,
+				"<details><summary>Raw event</summary><pre>%s</pre></details>\n",
+				html_esc(record_json(record, context.temp_allocator)),
+			)
 		}
 		strings.write_string(b, "</div>\n")
 	}
@@ -143,7 +177,14 @@ transcript_html :: proc(ui: ^Ui_State, client: ^marmot.Client, chat: Chat_Row_Ui
 
 // Re-download one image attachment and inline it as a data URI; a
 // failed download degrades to a visible note.
-inline_image :: proc(ui: ^Ui_State, client: ^marmot.Client, record: ^marmot.Timeline_Message_Record, index: int, name: string, b: ^strings.Builder) {
+inline_image :: proc(
+	ui: ^Ui_State,
+	client: ^marmot.Client,
+	record: ^marmot.Timeline_Message_Record,
+	index: int,
+	name: string,
+	b: ^strings.Builder,
+) {
 	result: ^marmot.Media_Download_Result
 	reference := media_reference(record, index)
 	ok := reference != nil
@@ -158,8 +199,18 @@ inline_image :: proc(ui: ^Ui_State, client: ^marmot.Client, record: ^marmot.Time
 	}
 	defer marmot.media_download_result_free(result)
 
-	encoded := base64.encode(result.plaintext[:result.plaintext_len], base64.ENC_TABLE, context.temp_allocator)
-	fmt.sbprintf(b, "<img alt=\"%s\" src=\"data:%s;base64,%s\">\n", html_esc(name), media_type_for(name), encoded)
+	encoded := base64.encode(
+		result.plaintext[:result.plaintext_len],
+		base64.ENC_TABLE,
+		context.temp_allocator,
+	)
+	fmt.sbprintf(
+		b,
+		"<img alt=\"%s\" src=\"data:%s;base64,%s\">\n",
+		html_esc(name),
+		media_type_for(name),
+		encoded,
+	)
 }
 
 transcript_md :: proc(ui: ^Ui_State, chat: Chat_Row_Ui, b: ^strings.Builder) {
@@ -208,9 +259,21 @@ export_contacts :: proc(ui: ^Ui_State, kind: Contacts_Kind) {
 		}
 		rows := make([dynamic]Row, context.temp_allocator)
 		for contact in ui.contacts {
-			append(&rows, Row{contact.name, contact.npub, ui.nicknames[contact.id_hex], ui.blocked[contact.id_hex]})
+			append(
+				&rows,
+				Row {
+					contact.name,
+					contact.npub,
+					ui.nicknames[contact.id_hex],
+					ui.blocked[contact.id_hex],
+				},
+			)
 		}
-		data, err := json.marshal(rows[:], {pretty = true, use_spaces = true, spaces = 2}, context.temp_allocator)
+		data, err := json.marshal(
+			rows[:],
+			{pretty = true, use_spaces = true, spaces = 2},
+			context.temp_allocator,
+		)
 		if err != nil {
 			ui.client_status = "Couldn't export contacts. Please try again."
 			return

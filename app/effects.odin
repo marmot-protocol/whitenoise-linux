@@ -63,7 +63,9 @@ fx_open_at :: proc(text: string, at: int) -> (bit: u8, after: int, ok: bool) {
 	}
 	for entry in FX_NAMES {
 		marker := len(entry.name) + 2
-		if at + marker <= len(text) && text[at + 1:at + marker - 1] == entry.name && text[at + marker - 1] == '}' {
+		if at + marker <= len(text) &&
+		   text[at + 1:at + marker - 1] == entry.name &&
+		   text[at + marker - 1] == '}' {
 			return entry.bit, at + marker, true
 		}
 	}
@@ -210,7 +212,14 @@ Emitter :: struct {
 // the oldest slot is recycled rather than grown.
 emitters: [EMITTERS_MAX]Emitter
 
-emit :: proc(anchor: string, tex: ^rl.Texture2D, count: int, rise, spread: f32, secs: f64 = BURST_SECS, mode: Emit_Mode = .Tile) {
+emit :: proc(
+	anchor: string,
+	tex: ^rl.Texture2D,
+	count: int,
+	rise, spread: f32,
+	secs: f64 = BURST_SECS,
+	mode: Emit_Mode = .Tile,
+) {
 	if !motion_on() {
 		return
 	}
@@ -335,8 +344,18 @@ burst_particles :: proc(index: u32, slot: int) {
 			side := 5 + 7 * (1 - progress)
 			if clay.UI(id)(
 			{
-				layout = {sizing = {width = clay.SizingFixed(side), height = clay.SizingFixed(side * 0.7)}},
-				floating = {attachTo = .Parent, zIndex = 9, offset = {drift, fall - 10}, attachment = {element = .CenterCenter, parent = .CenterCenter}},
+				layout = {
+					sizing = {
+						width = clay.SizingFixed(side),
+						height = clay.SizingFixed(side * 0.7),
+					},
+				},
+				floating = {
+					attachTo = .Parent,
+					zIndex = 9,
+					offset = {drift, fall - 10},
+					attachment = {element = .CenterCenter, parent = .CenterCenter},
+				},
 				backgroundColor = {TEXT_LO.r, TEXT_LO.g, TEXT_LO.b, alpha},
 				cornerRadius = rr(2),
 			},
@@ -347,8 +366,15 @@ burst_particles :: proc(index: u32, slot: int) {
 			// The whoosh: a stretched accent pill, thinning as it rises.
 			if clay.UI(id)(
 			{
-				layout = {sizing = {width = clay.SizingFixed(3), height = clay.SizingFixed(size * 1.6)}},
-				floating = {attachTo = .Parent, zIndex = 9, offset = {x, y}, attachment = {element = .CenterCenter, parent = .CenterCenter}},
+				layout = {
+					sizing = {width = clay.SizingFixed(3), height = clay.SizingFixed(size * 1.6)},
+				},
+				floating = {
+					attachTo = .Parent,
+					zIndex = 9,
+					offset = {x, y},
+					attachment = {element = .CenterCenter, parent = .CenterCenter},
+				},
 				backgroundColor = {ACCENT.r, ACCENT.g, ACCENT.b, alpha * 0.7},
 				cornerRadius = rr(2),
 			},
@@ -358,7 +384,12 @@ burst_particles :: proc(index: u32, slot: int) {
 		if clay.UI(id)(
 		{
 			layout = {sizing = {width = clay.SizingFixed(size), height = clay.SizingFixed(size)}},
-			floating = {attachTo = .Parent, zIndex = 9, offset = {x, y}, attachment = {element = .CenterCenter, parent = .CenterCenter}},
+			floating = {
+				attachTo = .Parent,
+				zIndex = 9,
+				offset = {x, y},
+				attachment = {element = .CenterCenter, parent = .CenterCenter},
+			},
 			image = {imageData = e.tex},
 			overlayColor = {255, 255, 255, alpha}, // the renderer's image tint
 		},
@@ -387,8 +418,18 @@ effect_picker :: proc(ui: ^Ui_State) {
 	{
 		// Right-anchored: the star sits near the window's right edge, so
 		// a left-anchored panel would run off-screen.
-		layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(300)}, padding = clay.PaddingAll(12), childGap = 8},
-		floating = {attachTo = .Parent, zIndex = 12, offset = {0, -10 + rise(clay.ID("FxPanel"))}, attachment = {element = .RightBottom, parent = .RightTop}},
+		layout = {
+			layoutDirection = .TopToBottom,
+			sizing = {width = clay.SizingFixed(300)},
+			padding = clay.PaddingAll(12),
+			childGap = 8,
+		},
+		floating = {
+			attachTo = .Parent,
+			zIndex = 12,
+			offset = {0, -10 + rise(clay.ID("FxPanel"))},
+			attachment = {element = .RightBottom, parent = .RightTop},
+		},
 		backgroundColor = CARD,
 		cornerRadius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
@@ -400,7 +441,10 @@ effect_picker :: proc(ui: ^Ui_State) {
 				armed := ui.fx_armed == e.id
 				if clay.UI(clay.ID("FxOpt", u32(i)))(
 				{
-					layout = {sizing = {width = clay.SizingFixed(38), height = clay.SizingFixed(38)}, childAlignment = {x = .Center, y = .Center}},
+					layout = {
+						sizing = {width = clay.SizingFixed(38), height = clay.SizingFixed(38)},
+						childAlignment = {x = .Center, y = .Center},
+					},
 					backgroundColor = armed ? SELECTED : (hovered() ? HOVER : ROW_BG),
 					cornerRadius = rr(10),
 					border = armed ? clay.BorderElementConfig{color = ACCENT, width = bw()} : {},
@@ -408,7 +452,11 @@ effect_picker :: proc(ui: ^Ui_State) {
 				) {
 					if tex := emoji_tex(e.emoji); tex != nil {
 						if clay.UI(clay.ID("FxOptImg", u32(i)))(
-						{layout = {sizing = {width = clay.SizingFixed(20)}}, aspectRatio = {1}, image = {imageData = tex}},
+						{
+							layout = {sizing = {width = clay.SizingFixed(20)}},
+							aspectRatio = {1},
+							image = {imageData = tex},
+						},
 						) {}
 					} else {
 						clay.Text(e.emoji, {fontId = FONT_BODY, fontSize = 15, textColor = TEXT})
@@ -416,7 +464,12 @@ effect_picker :: proc(ui: ^Ui_State) {
 				}
 			}
 		}
-		clay.Text(tr("Plays here when you send. It can't travel: marmot reserves the chat event kind, so no client attaches the tag any more. An effect sent by an older client still plays."), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
+		clay.Text(
+			tr(
+				"Plays here when you send. It can't travel: marmot reserves the chat event kind, so no client attaches the tag any more. An effect sent by an older client still plays.",
+			),
+			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+		)
 		if ui.fx_armed != 0 {
 			micro_button("FxClear", "Clear effect")
 		}

@@ -2,11 +2,11 @@
 // Run: ODIN_ROOT=build/odin-root tests/odin.sh app
 package main
 
-import "core:testing"
 import "core:sync"
+import "core:testing"
 
-import clay "../vendor/clay/bindings/odin/clay-odin"
 import marmot "../marmot"
+import clay "../vendor/clay/bindings/odin/clay-odin"
 
 @(test)
 rail_order_pins_first :: proc(t: ^testing.T) {
@@ -61,12 +61,26 @@ folder_chip_clicks :: proc(t: ^testing.T) {
 	defer delete(memory)
 	previous := clay.GetCurrentContext()
 	defer clay.SetCurrentContext(previous)
-	clay.Initialize(clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)), {600, 400}, {})
-	clay.SetMeasureTextFunction(proc "c" (text: clay.StringSlice, config: ^clay.TextElementConfig, data: rawptr) -> clay.Dimensions {
-		return {f32(text.length) * 6, 12}
-	}, nil)
+	clay.Initialize(
+		clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)),
+		{600, 400},
+		{},
+	)
+	clay.SetMeasureTextFunction(
+		proc "c" (
+			text: clay.StringSlice,
+			config: ^clay.TextElementConfig,
+			data: rawptr,
+		) -> clay.Dimensions {
+			return {f32(text.length) * 6, 12}
+		},
+		nil,
+	)
 
-	ui := Ui_State{selected = -1, row_menu = -1}
+	ui := Ui_State {
+		selected = -1,
+		row_menu = -1,
+	}
 	append(&ui.accounts, "Test")
 	append(&ui.chats, Chat_Row_Ui{group_id = "a"})
 	append(&ui.prefs.folders, "Work", "Family")

@@ -22,8 +22,11 @@ styled_text :: proc(text, fonts: string, size: u16, color: clay.Color) {
 	if clay.UI()({layout = {childAlignment = {y = .Center}}}) {
 		for at := 0; at < len(text); {
 			end := at + 1
-			for end < len(text) && fonts[end] == fonts[at] { end += 1 }
-			clay.Text(text[at:end], {fontId = u16(fonts[at]), fontSize = size, textColor = color, wrapMode = .None})
+			for end < len(text) && fonts[end] == fonts[at] {end += 1}
+			clay.Text(
+				text[at:end],
+				{fontId = u16(fonts[at]), fontSize = size, textColor = color, wrapMode = .None},
+			)
 			at = end
 		}
 	}

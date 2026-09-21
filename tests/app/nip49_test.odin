@@ -9,7 +9,11 @@ import "core:testing"
 nip49_vector :: proc(t: ^testing.T) {
 	// The test vector from nips/49.md (log_n 16, password "nostr").
 	vector := "ncryptsec1qgg9947rlpvqu76pj5ecreduf9jxhselq2nae2kghhvd5g7dgjtcxfqtd67p9m0w57lspw8gsq6yphnm8623nsl8xn9j4jdzz84zm3frztj3z7s35vpzmqf6ksu8r89qk5z2zxfmu5gv8th8wclt0h4p"
-	testing.expect_value(t, nip49_decrypt(vector, "nostr"), "3501454135014541350145413501453fefb02227e449e57cf4d3a3ce05378683")
+	testing.expect_value(
+		t,
+		nip49_decrypt(vector, "nostr"),
+		"3501454135014541350145413501453fefb02227e449e57cf4d3a3ce05378683",
+	)
 
 	// Wrong password fails the tag.
 	testing.expect_value(t, nip49_decrypt(vector, "wrong"), "")
@@ -26,5 +30,9 @@ nip49_round_trip :: proc(t: ^testing.T) {
 
 	sealed := nip49_encrypt(nsec, "hunter2")
 	testing.expect(t, len(sealed) > 0)
-	testing.expect_value(t, nip49_decrypt(sealed, "hunter2"), "0000000000000000000000000000000000000000000000000000000000000001")
+	testing.expect_value(
+		t,
+		nip49_decrypt(sealed, "hunter2"),
+		"0000000000000000000000000000000000000000000000000000000000000001",
+	)
 }

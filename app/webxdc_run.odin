@@ -66,7 +66,14 @@ xdc_encode :: proc(session: string, payload: []u8, allocator := context.allocato
 
 // A sentinel line splits into its session and its decoded payload.
 // ok = false for every ordinary message, which is most of them.
-xdc_decode :: proc(text: string, allocator := context.allocator) -> (session: string, payload: []u8, ok: bool) {
+xdc_decode :: proc(
+	text: string,
+	allocator := context.allocator,
+) -> (
+	session: string,
+	payload: []u8,
+	ok: bool,
+) {
 	line := strings.trim_space(text)
 	if !strings.has_prefix(line, XDC_SENTINEL) {
 		return
@@ -162,7 +169,11 @@ xdc_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		// back as an ordinary reload, which is also how the app sees
 		// its own update.
 		send_ticket += 1
-		p := Pending_Send{ticket = send_ticket, group_id = group, body = line}
+		p := Pending_Send {
+			ticket   = send_ticket,
+			group_id = group,
+			body     = line,
+		}
 		spawn_send(ui, client, &p) // clones everything it keeps
 	}
 }
@@ -176,7 +187,12 @@ slice_clone_strings :: proc(src: []string) -> []string {
 
 // ── Launch ──────────────────────────────────────────────────────────
 
-xdc_launch :: proc(ui: ^Ui_State, client: ^marmot.Client, view: ^Xdc_View, session, group_id: string) {
+xdc_launch :: proc(
+	ui: ^Ui_State,
+	client: ^marmot.Client,
+	view: ^Xdc_View,
+	session, group_id: string,
+) {
 	info := profile_info(client, ui.account_ref)
 	token: [16]u8
 	crypto.rand_bytes(token[:])
@@ -243,11 +259,11 @@ xdc_stopping: bool
 
 @(private)
 xdc_stop :: proc() {
-	if xdc_worker == nil { return }
+	if xdc_worker == nil {return}
 	sync.lock(&xdc.mutex)
 	xdc_stopping = true
 	net.shutdown(listener, .Both)
-	if xdc_connection != {} { net.shutdown(xdc_connection, .Both) }
+	if xdc_connection != {} {net.shutdown(xdc_connection, .Both)}
 	sync.unlock(&xdc.mutex)
 	thread.join(xdc_worker)
 	thread.destroy(xdc_worker)

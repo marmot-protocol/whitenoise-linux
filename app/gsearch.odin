@@ -21,7 +21,7 @@ GS_HITS_MAX :: 40
 GS_FETCH_LIMIT :: 100 // per-chat page, same depth as the open timeline
 
 Gs_Hit :: struct {
-	group: string, // stable across chat-list reorderings
+	group:   string, // stable across chat-list reorderings
 	chat:    int, // index into ui.chats
 	msg_id:  string,
 	title:   string, // chat title
@@ -164,7 +164,7 @@ gs_jump :: proc(ui: ^Ui_State, client: ^marmot.Client, group, msg_id: string) {
 	id := strings.clone(msg_id)
 	gs_close(ui)
 	chat_index := -1
-	for chat, i in ui.chats { if chat.group_id == group { chat_index = i; break } }
+	for chat, i in ui.chats {if chat.group_id == group {chat_index = i; break}}
 	if chat_index < 0 {
 		delete(id)
 		return
@@ -177,18 +177,37 @@ gs_jump :: proc(ui: ^Ui_State, client: ^marmot.Client, group, msg_id: string) {
 gsearch_modal :: proc(ui: ^Ui_State) {
 	if clay.UI(clay.ID("GsModal"))(
 	{
-		layout = {sizing = {width = clay.SizingFixed(modal_w(clay.ID("GsModal"), 560))}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(20), childGap = 12},
+		layout = {
+			sizing = {width = clay.SizingFixed(modal_w(clay.ID("GsModal"), 560))},
+			layoutDirection = .TopToBottom,
+			padding = clay.PaddingAll(20),
+			childGap = 12,
+		},
 		backgroundColor = CARD,
 		cornerRadius = rr(16),
 		border = {color = CARD_BORDER, width = bw()},
-		floating = {attachTo = .Root, zIndex = 13, offset = {0, rise(clay.ID("GsModal"))}, attachment = {element = .CenterCenter, parent = .CenterCenter}},
+		floating = {
+			attachTo = .Root,
+			zIndex = 13,
+			offset = {0, rise(clay.ID("GsModal"))},
+			attachment = {element = .CenterCenter, parent = .CenterCenter},
+		},
 	},
 	) {
-		if clay.UI(clay.ID("GsHead"))({layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}}) {
+		if clay.UI(clay.ID("GsHead"))(
+		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
+		) {
 			clay.Text("Search all chats", {fontId = FONT_TITLE, fontSize = 20, textColor = TEXT})
 			if clay.UI(clay.ID("GsHeadGap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
 			if clay.UI(clay.ID("GsClose"))(
-			{layout = {sizing = {width = clay.SizingFixed(26), height = clay.SizingFixed(26)}, childAlignment = {x = .Center, y = .Center}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(7)},
+			{
+				layout = {
+					sizing = {width = clay.SizingFixed(26), height = clay.SizingFixed(26)},
+					childAlignment = {x = .Center, y = .Center},
+				},
+				backgroundColor = hovered() ? HOVER : {},
+				cornerRadius = rr(7),
+			},
 			) {
 				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
 			}
@@ -196,44 +215,79 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 
 		if clay.UI(clay.ID("GsInput"))(
 		{
-			layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(36)}, padding = {left = 12, right = 12}, childGap = 8, childAlignment = {y = .Center}},
+			layout = {
+				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(36)},
+				padding = {left = 12, right = 12},
+				childGap = 8,
+				childAlignment = {y = .Center},
+			},
 			backgroundColor = ROW_BG,
 			cornerRadius = rr(8),
 			border = {color = ui.focus == .GSearch ? ACCENT : FIELD_BORDER, width = bw()},
 		},
 		) {
 			clay.Text(ICON_SEARCH, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_LO})
-			field_text(ui, "GsInput", &ui.gs_input, "Search messages", ui.focus == .GSearch, 13, TEXT_LO)
+			field_text(
+				ui,
+				"GsInput",
+				&ui.gs_input,
+				"Search messages",
+				ui.focus == .GSearch,
+				13,
+				TEXT_LO,
+			)
 		}
 
 		empty := len(strings.trim_space(string(ui.gs_input[:]))) == 0
 		if empty && len(ui.prefs.recent_searches) > 0 {
 			if clay.UI(clay.ID("GsRecentHead"))({layout = {padding = {left = 4, top = 2}}}) {
-				clay.Text("RECENT", {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO, letterSpacing = 2})
+				clay.Text(
+					"RECENT",
+					{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO, letterSpacing = 2},
+				)
 			}
 			for q, i in ui.prefs.recent_searches {
 				if clay.UI(clay.ID("GsRecent", u32(i)))(
 				{
-					layout = {sizing = {width = clay.SizingGrow()}, padding = {left = 10, right = 10, top = 8, bottom = 8}, childGap = 10, childAlignment = {y = .Center}},
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						padding = {left = 10, right = 10, top = 8, bottom = 8},
+						childGap = 10,
+						childAlignment = {y = .Center},
+					},
 					backgroundColor = hovered() ? HOVER : {},
 					cornerRadius = rr(8),
 				},
 				) {
-					clay.Text(ICON_SEARCH, {fontId = FONT_ICON, fontSize = 11, textColor = TEXT_LO})
+					clay.Text(
+						ICON_SEARCH,
+						{fontId = FONT_ICON, fontSize = 11, textColor = TEXT_LO},
+					)
 					clay.Text(q, {fontId = FONT_BODY, fontSize = 13, textColor = TEXT})
 				}
 			}
 		} else if empty {
-			clay.Text("Type to search all chats.", {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
-		} else if search_pending[.Global] != nil || (search_active[.Global] != nil && search_active[.Global].worker != nil) {
-			clay.Text(tr("Searching…"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
+			clay.Text(
+				"Type to search all chats.",
+				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+			)
+		} else if search_pending[.Global] != nil ||
+		   (search_active[.Global] != nil && search_active[.Global].worker != nil) {
+			clay.Text(
+				tr("Searching…"),
+				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+			)
 		} else if len(ui.gs_hits) == 0 {
 			clay.Text("No matches.", {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
 		}
 
 		if clay.UI(clay.ID("GsList"))(
 		{
-			layout = {sizing = {width = clay.SizingGrow(), height = clay.SizingFit({max = 400})}, layoutDirection = .TopToBottom, childGap = 2},
+			layout = {
+				sizing = {width = clay.SizingGrow(), height = clay.SizingFit({max = 400})},
+				layoutDirection = .TopToBottom,
+				childGap = 2,
+			},
 			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 		},
 		) {
@@ -242,18 +296,53 @@ gsearch_modal :: proc(ui: ^Ui_State) {
 				arrived := stagger(clay.ID("GsList").id, i)
 				if clay.UI(clay.ID("GsHit", u32(i)))(
 				{
-					layout = {sizing = {width = clay.SizingGrow()}, layoutDirection = .TopToBottom, padding = clay.PaddingAll(10), childGap = 3},
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						layoutDirection = .TopToBottom,
+						padding = clay.PaddingAll(10),
+						childGap = 3,
+					},
 					backgroundColor = fade(hovered() ? HOVER : {}, arrived),
 					cornerRadius = rr(8),
 				},
 				) {
-					if clay.UI(clay.ID("GsHitTop", u32(i)))({layout = {sizing = {width = clay.SizingGrow()}, childGap = 8, childAlignment = {y = .Center}}}) {
-						clay.Text(hit.title, {fontId = FONT_TITLE, fontSize = 13, textColor = fade(TEXT, arrived)})
-						clay.Text(hit.sender, {fontId = FONT_BODY, fontSize = 12, textColor = fade(TEXT_DIM, arrived)})
-						if clay.UI(clay.ID("GsHitGap", u32(i)))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-						clay.Text(hit.at, {fontId = FONT_MONO, fontSize = 10, textColor = fade(TEXT_LO, arrived)})
+					if clay.UI(clay.ID("GsHitTop", u32(i)))(
+					{
+						layout = {
+							sizing = {width = clay.SizingGrow()},
+							childGap = 8,
+							childAlignment = {y = .Center},
+						},
+					},
+					) {
+						clay.Text(
+							hit.title,
+							{fontId = FONT_TITLE, fontSize = 13, textColor = fade(TEXT, arrived)},
+						)
+						clay.Text(
+							hit.sender,
+							{
+								fontId = FONT_BODY,
+								fontSize = 12,
+								textColor = fade(TEXT_DIM, arrived),
+							},
+						)
+						if clay.UI(clay.ID("GsHitGap", u32(i)))(
+						{layout = {sizing = {width = clay.SizingGrow()}}},
+						) {}
+						clay.Text(
+							hit.at,
+							{
+								fontId = FONT_MONO,
+								fontSize = 10,
+								textColor = fade(TEXT_LO, arrived),
+							},
+						)
 					}
-					clay.Text(hit.snippet, {fontId = FONT_BODY, fontSize = 12, textColor = fade(TEXT_DIM, arrived)})
+					clay.Text(
+						hit.snippet,
+						{fontId = FONT_BODY, fontSize = 12, textColor = fade(TEXT_DIM, arrived)},
+					)
 				}
 			}
 		}

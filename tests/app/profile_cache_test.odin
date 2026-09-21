@@ -13,8 +13,10 @@ profile_picture_cache :: proc(t: ^testing.T) {
 	defer sync.unlock(&test_home_lock)
 	previous_home, previous_vault := data_home, g_vault
 	data_home = fmt.tprintf("/tmp/wn-profile-cache-%d", time.now()._nsec)
-	g_vault = {unlocked = true}
-	defer { data_home, g_vault = previous_home, previous_vault }
+	g_vault = {
+		unlocked = true,
+	}
+	defer {data_home, g_vault = previous_home, previous_vault}
 	os.make_directory(data_home)
 	defer os.remove_all(data_home)
 	source := fmt.tprintf("%s/picture", data_home)
@@ -29,7 +31,11 @@ profile_picture_cache :: proc(t: ^testing.T) {
 	sealed, err := os.read_entire_file(path, context.temp_allocator)
 	testing.expect(t, err == nil && !strings.contains(string(sealed), first))
 	info, stat_err := os.stat(path, context.temp_allocator)
-	testing.expect(t, stat_err == nil && info.mode & {.Read_Group, .Write_Group, .Read_Other, .Write_Other} == {})
+	testing.expect(
+		t,
+		stat_err == nil &&
+		info.mode & {.Read_Group, .Write_Group, .Read_Other, .Write_Other} == {},
+	)
 	os.remove(source)
 	data = pic_load(url)
 	testing.expect(t, string(data) == first, "cached picture survives an unavailable source")

@@ -14,10 +14,10 @@ import "core:strings"
 Prefs :: struct {
 	// General
 	launch_at_login:   bool,
-	tts_enabled:      bool,
-	stt_enabled:      bool,
-	stt_model:        string,
-	tts_voice:        int,
+	tts_enabled:       bool,
+	stt_enabled:       bool,
+	stt_model:         string,
+	tts_voice:         int,
 	start_in_tray:     bool, // honored at boot (SDL tray icon + hidden window)
 	minimize_tray:     bool, // closing the window hides it to the tray
 	restore_last_chat: bool,
@@ -202,8 +202,12 @@ load_settings :: proc(ui: ^Ui_State) {
 	if ui.prefs.panel_w == 0 {
 		ui.prefs.panel_w = PANEL_W_DEFAULT
 	}
-	ui.prefs.avatar_shape = Avatar_Shape(clamp(int(ui.prefs.avatar_shape), 0, int(Avatar_Shape.Square)))
-	ui.prefs.crop_avatar_shape = Crop_Shape(clamp(int(ui.prefs.crop_avatar_shape), 0, int(Crop_Shape.Rounded)))
+	ui.prefs.avatar_shape = Avatar_Shape(
+		clamp(int(ui.prefs.avatar_shape), 0, int(Avatar_Shape.Square)),
+	)
+	ui.prefs.crop_avatar_shape = Crop_Shape(
+		clamp(int(ui.prefs.crop_avatar_shape), 0, int(Crop_Shape.Rounded)),
+	)
 	// ponytail: an empty list reads as "older settings.json", so the
 	// defaults come back; a user who wants no fetch relays at all
 	// cannot have that yet.
