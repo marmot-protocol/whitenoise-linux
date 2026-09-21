@@ -406,7 +406,8 @@ hit_plain :: proc(
 	for cluster, grapheme in utf8.decode_grapheme_iterate(&it) {
 		i := grapheme.byte_index
 		if i < skip {continue}
-		if tile_px > 0 {
+		literal := text_literal(fonts, i)
+		if tile_px > 0 && !literal {
 			if end, width := body_atom(text, i, font_size); end > i {
 				if i > 0 {pen += 2}
 				if x < pen + width / 2 {return i}
@@ -417,7 +418,7 @@ hit_plain :: proc(
 			}
 		}
 		adv := rl.MeasureTextLine(text_font(fonts, grapheme.byte_index), font_size, cluster, 0).x
-		emoji := tile_px > 0 && text_emoji(cluster) != nil
+		emoji := tile_px > 0 && !literal && text_emoji(cluster) != nil
 		if emoji {adv = tile_px}
 		if grapheme.byte_index > 0 && (emoji || previous_emoji) {pen += 2}
 		if x < pen + adv / 2 {

@@ -3,8 +3,22 @@ package main
 import clay "../vendor/clay/bindings/odin/clay-odin"
 
 @(private)
+TEXT_FONT_MASK :: u8(7)
+@(private)
+TEXT_STRIKE :: u8(8)
+@(private)
+TEXT_CODE :: u8(16)
+@(private)
+TEXT_MATH :: u8(32)
+
+@(private)
 text_font :: proc(fonts: string, at: int) -> u16 {
-	return len(fonts) > 0 ? u16(fonts[at]) : FONT_BODY
+	return len(fonts) > 0 ? u16(fonts[at] & TEXT_FONT_MASK) : FONT_BODY
+}
+
+@(private)
+text_literal :: proc(fonts: string, at: int) -> bool {
+	return len(fonts) > 0 && fonts[at] & (TEXT_CODE | TEXT_MATH) != 0
 }
 
 @(private)
@@ -25,7 +39,13 @@ styled_text :: proc(text, fonts: string, size: u16, color: clay.Color) {
 			for end < len(text) && fonts[end] == fonts[at] {end += 1}
 			clay.Text(
 				text[at:end],
-				{fontId = u16(fonts[at]), fontSize = size, textColor = color, wrapMode = .None},
+				{
+					fontId = text_font(fonts, at),
+					fontSize = size,
+					textColor = fonts[at] & TEXT_MATH != 0 ? ACCENT : color,
+					wrapMode = .None,
+					userData = rawptr(uintptr(fonts[at] & ~TEXT_FONT_MASK)),
+				},
 			)
 			at = end
 		}

@@ -73,6 +73,7 @@ wrapped_lines :: proc(
 			card_at, card_end := end, end
 			if mode == .Cards {
 				for scan := at; scan < end; scan += 1 {
+					if text_literal(fonts, scan) {continue}
 					if next, _, _, ok := nevent_at(text[:end], scan); ok {
 						card_at, card_end = scan, next
 						break

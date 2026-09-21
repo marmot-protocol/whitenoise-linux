@@ -242,15 +242,21 @@ Md_Kind :: enum {
 	Rule,
 	Table,
 	Image, // text = image url; only event cards (nevent.odin) mint these
+	Math,
 }
 
 Md_Block_Ui :: struct {
 	kind:               Md_Kind,
 	text:               string,
 	blank_lines_before: u8,
-	fonts:              string, // owned font id per UTF-8 byte; empty means regular text
+	fonts:              string, // owned font id and style flags per UTF-8 byte
 	level:              int, // heading level
 	marker_len:         int, // list marker bytes, including the trailing space
+	indent:             u16,
+	quote_depth:        u16,
+	quote_starts:       u16, // quote containers beginning at this row
+	alignments:         []marmot.Markdown_Alignment,
+	code_kinds:         string, // owned token kind per UTF-8 byte
 	cells:              [][]string, // table rows, row 0 = header
 	cell_fonts:         [][]string,
 }

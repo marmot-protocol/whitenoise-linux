@@ -1906,6 +1906,7 @@ inline_segs :: proc(
 	i := 0
 	link_index := 0
 	for i < len(text) {
+		if text_literal(fonts, i) {i += 1; continue}
 		if end, ref := nostr_at(text, i); ref.kind != .None {
 			if i >
 			   plain_start {append(&segs, Inline_Seg{text = text[plain_start:i], fonts = text_fonts(fonts, plain_start, i)})}
@@ -2439,14 +2440,17 @@ body_line :: proc(
 // Multi-line wrapper: one body_line per physical line.
 // Markdown block list, shared by message bodies, .md/.txt tiles, and
 
-// GFM table: header row on a plate, content-sized columns capped so a
-// wide table stays inside the bubble, hairline cell borders. All cells
-// left-aligned (the source alignments are ignored: cross-axis centering
-// is dropped by this clay build inside the timeline, see PORT.md).
+// Content-sized columns share the available width and retain source alignment.
 MD_TABLE_COL_MAX :: 140
 MD_TABLE_PAD :: 7
 
-md_table :: proc(id: u32, cells: [][]string, cell_fonts: [][]string = nil) {
+md_table :: proc(
+	id: u32,
+	cells: [][]string,
+	cell_fonts: [][]string = nil,
+	alignments: []marmot.Markdown_Alignment = nil,
+	width: f32 = 480,
+) {
 	if len(cells) == 0 {
 		return
 	}
@@ -2469,7 +2473,7 @@ md_table :: proc(id: u32, cells: [][]string, cell_fonts: [][]string = nil) {
 		}
 	}
 	for &w in widths {
-		w = min(w, MD_TABLE_COL_MAX) + MD_TABLE_PAD * 2
+		w = min(min(w, MD_TABLE_COL_MAX) + MD_TABLE_PAD * 2, width / f32(cols))
 	}
 
 	if clay.UI(clay.ID("MsgTable", id))(
@@ -2485,14 +2489,18 @@ md_table :: proc(id: u32, cells: [][]string, cell_fonts: [][]string = nil) {
 			) {
 				for c in 0 ..< cols {
 					text := c < len(row) ? row[c] : ""
+					pad := u16(min(f32(MD_TABLE_PAD), widths[c] / 4))
+					align := c < len(alignments) ? alignments[c] : marmot.Markdown_Alignment.None
+					inner_w := max(f32(1), widths[c] - f32(pad) * 2)
 					if clay.UI(clay.ID("MsgTableCell", id + u32(r) * 64 + u32(c)))(
 					{
 						layout = {
+							layoutDirection = .TopToBottom,
 							sizing = {
 								width = clay.SizingFixed(widths[c]),
 								height = clay.SizingGrow(),
 							},
-							padding = clay.PaddingAll(MD_TABLE_PAD),
+							padding = clay.PaddingAll(pad),
 						},
 						border = {
 							color = FIELD_BORDER,
@@ -2502,26 +2510,32 @@ md_table :: proc(id: u32, cells: [][]string, cell_fonts: [][]string = nil) {
 					) {
 						fonts :=
 							r < len(cell_fonts) && c < len(cell_fonts[r]) ? cell_fonts[r][c] : ""
-						if len(fonts) > 0 {
-							if clay.UI()({layout = {layoutDirection = .TopToBottom}}) {
-								body_text(
-									id + u32(r) * 64 + u32(c),
-									text,
+						if r == 0 && len(fonts) == 0 {
+							font := [1]u8{FONT_TITLE}
+							fonts = strings.repeat(
+								string(font[:]),
+								len(text),
+								context.temp_allocator,
+							)
+						}
+						for line in wrapped_lines(text, inner_w, 13, fonts = fonts) {
+							if clay.UI()(
+							{
+								layout = {
+									sizing = {width = clay.SizingFixed(inner_w)},
+									childAlignment = {
+										x = align == .Right ? .Right : (align == .Center ? .Center : .Left),
+									},
+								},
+							},
+							) {
+								styled_text(
+									text[line.start:line.end],
+									text_fonts(fonts, line.start, line.end),
 									13,
-									r == 0 ? TEXT : TEXT_DIM,
-									wrap_w = widths[c] - MD_TABLE_PAD * 2,
-									fonts = fonts,
+									TEXT,
 								)
 							}
-						} else {
-							clay.Text(
-								text,
-								{
-									fontId = r == 0 ? FONT_TITLE : FONT_BODY,
-									fontSize = 13,
-									textColor = r == 0 ? TEXT : TEXT_DIM,
-								},
-							)
 						}
 					}
 				}
@@ -2538,12 +2552,18 @@ md_blocks :: proc(
 	selectable := false,
 	wrap_w: f32 = 0,
 	max_lines: int = max(int),
+	quote_level: u16 = 0,
+	indent_base: u16 = 0,
+	lines_used: ^int = nil,
 ) -> bool {
 	remaining := max_lines
-	for block, j in blocks {
+	defer {if lines_used != nil {lines_used^ = max_lines - remaining}}
+	for j := 0; j < len(blocks); j += 1 {
+		block := blocks[j]
 		if remaining <= 0 {return true}
 		block_id := id_base + u32(j) * 16
 		gap_lines := int(block.blank_lines_before)
+		if j == 0 && quote_level > 0 {gap_lines = 0}
 		// Keep lists close to their introduction; preserve any extra blank lines.
 		if block.kind == .List_Item {
 			gap_lines = max(gap_lines - 1, 0)
@@ -2556,141 +2576,290 @@ md_blocks :: proc(
 			) {}
 		}
 		used := 1
-		switch block.kind {
-		case .Para:
-			used = body_text(
-				block_id + 1,
-				block.text,
-				BODY_FS,
-				TEXT,
-				selectable,
-				wrap_w,
-				remaining,
-				block.fonts,
-			)
-		case .Heading:
-			size := u16(max(24 - block.level * 2, 15))
-			fonts := block.fonts
-			font := [1]u8{FONT_TITLE}
-			if len(fonts) ==
-			   0 {fonts = strings.repeat(string(font[:]), len(block.text), context.temp_allocator)}
-			used = body_text(
-				block_id + 1,
-				block.text,
-				size,
-				TEXT,
-				selectable,
-				wrap_w,
-				remaining,
-				fonts,
-			)
-		case .Code:
-			if clay.UI(clay.ID("MsgCode", block_id))(
+		available := wrap_w > 0 ? wrap_w : body_wrap_w()
+		indent := min(f32(max(int(block.indent) - int(indent_base), 0)), available / 2)
+		depth := max(block.quote_depth, block.kind == .Quote ? u16(1) : 0)
+		if depth > quote_level && available - indent > 24 {
+			end := j + 1
+			for end < len(blocks) {
+				next := blocks[end]
+				next_depth := max(next.quote_depth, next.kind == .Quote ? u16(1) : 0)
+				if next_depth <= quote_level ||
+				   next.quote_starts >= next_depth - quote_level {break}
+				end += 1
+			}
+			cropped := false
+			if clay.UI(clay.ID("MsgQuoteGroup", block_id * 128 + u32(quote_level)))(
 			{
 				layout = {
-					layoutDirection = .TopToBottom,
-					sizing = {width = clay.SizingGrow()},
-					padding = clay.PaddingAll(10),
+					sizing = {width = clay.SizingFixed(available)},
+					padding = {left = u16(indent)},
+					childGap = 8,
 				},
-				backgroundColor = PLATE,
-				cornerRadius = rr(6),
 			},
 			) {
-				font := [1]u8{FONT_MONO}
-				fonts := strings.repeat(string(font[:]), len(block.text), context.temp_allocator)
-				width := max(f32(1), (wrap_w > 0 ? wrap_w : body_wrap_w()) - 20)
-				lines := wrapped_lines(block.text, width, 13, fonts = fonts)
-				used = len(lines)
-				for line in lines[:min(used, remaining)] {
-					if clay.UI()({layout = {sizing = {height = clay.SizingFixed(13)}}}) {
-						clay.Text(
-							block.text[line.start:line.end],
-							{
-								fontId = FONT_MONO,
-								fontSize = 13,
-								textColor = TEXT,
-								wrapMode = .None,
-							},
-						)
-					}
-				}
-			}
-		case .Quote:
-			if clay.UI(clay.ID("MsgQuote", block_id))({layout = {childGap = 8}}) {
-				if clay.UI(clay.ID("MsgQuoteBar", block_id))(
+				if clay.UI(
+					quote_level == 0 ? clay.ID("MsgQuoteBar", block_id) : clay.ID("MsgQuoteInner", block_id * 128 + u32(quote_level)),
+				)(
 				{
 					layout = {sizing = {width = clay.SizingFixed(3), height = clay.SizingGrow()}},
-					backgroundColor = ACCENT,
+					backgroundColor = mix_color(
+						ACCENT,
+						TEXT_DIM,
+						min(f32(quote_level) * 0.3, 0.8),
+					),
 					cornerRadius = rr(2),
 				},
 				) {}
-				if clay.UI()({layout = {layoutDirection = .TopToBottom}}) {
-					used = body_text(
-						block_id + 1,
-						block.text,
-						15,
-						TEXT_DIM,
+				if clay.UI()(
+				{
+					layout = {
+						layoutDirection = .TopToBottom,
+						sizing = {width = clay.SizingGrow()},
+						childGap = 3,
+					},
+				},
+				) {
+					cropped = md_blocks(
+						blocks[j:end],
+						block_id,
 						selectable,
-						max(f32(1), (wrap_w > 0 ? wrap_w : body_wrap_w()) - 11),
+						available - indent - 11,
 						remaining,
-						block.fonts,
+						quote_level + 1,
+						max(indent_base, block.indent),
+						&used,
 					)
 				}
 			}
-		case .List_Item:
-			marker := block.text[:block.marker_len]
-			marker_w := max(f32(12), rl.MeasureTextLine(FONT_BODY, BODY_FS, marker, 0).x)
-			width := wrap_w > 0 ? wrap_w : (selectable ? body_wrap_w() : 0)
-			if clay.UI(clay.ID("MsgListItem", block_id))({layout = {padding = {left = 12}}}) {
-				if clay.UI(clay.ID("MsgListMarker", block_id))(
-				{layout = {sizing = {width = clay.SizingFixed(marker_w)}}},
-				) {
-					clay.Text(marker, {fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT})
-				}
-				if clay.UI(clay.ID("MsgListBody", block_id))(
-				{layout = {layoutDirection = .TopToBottom}},
-				) {
-					used = body_text(
-						block_id + 2,
-						block.text[block.marker_len:],
-						BODY_FS,
-						TEXT,
-						selectable,
-						width > 0 ? max(f32(1), width - 12 - marker_w) : 0,
-						remaining,
-						text_fonts(block.fonts, block.marker_len, len(block.text)),
-					)
-				}
-			}
-		case .Image:
-			tex := nev_img(block.text)
-			if tex == nil {
-				clay.Text(block.text, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
-				remaining -= 1
-				continue
-			}
-			ratio := tex.height > 0 ? f32(tex.width) / f32(tex.height) : 1
-			if clay.UI(clay.ID("MdImage", block_id))(
-			{
-				layout = {sizing = {width = clay.SizingFixed(wrap_w > 0 ? wrap_w : att_w())}},
-				aspectRatio = {ratio},
-				image = {imageData = tex},
-				cornerRadius = rr(8),
-			},
-			) {}
-		case .Rule:
-			if clay.UI(clay.ID("MsgRule", block_id))(
-			{
-				layout = {sizing = {width = clay.SizingFixed(240), height = clay.SizingFixed(1)}},
-				backgroundColor = TEXT_DIM,
-			},
-			) {}
-		case .Table:
-			used = len(block.cells)
-			md_table(block_id, block.cells[:min(used, remaining)], block.cell_fonts)
+			remaining -= used
+			if cropped {return true}
+			j = end - 1
+			continue
 		}
-		if used > remaining {return true}
-		remaining -= used
+		width := max(f32(1), available - indent)
+		if clay.UI(clay.ID("MdBlock", block_id))(
+		{
+			layout = {
+				layoutDirection = .TopToBottom,
+				sizing = {width = clay.SizingFixed(available)},
+				padding = {left = u16(indent)},
+			},
+		},
+		) {
+			switch block.kind {
+			case .Para, .Quote:
+				used = body_text(
+					block_id + 1,
+					block.text,
+					BODY_FS,
+					block.kind == .Quote ? TEXT_DIM : TEXT,
+					selectable,
+					width,
+					remaining,
+					block.fonts,
+				)
+			case .Heading:
+				size := u16(max(24 - block.level * 2, 15))
+				marks := strings.repeat("#", clamp(block.level, 1, 6), context.temp_allocator)
+				fonts := block.fonts
+				font := [1]u8{FONT_TITLE}
+				if len(fonts) ==
+				   0 {fonts = strings.repeat(string(font[:]), len(block.text), context.temp_allocator)}
+				if clay.UI(clay.ID("MdHeading", block_id))(
+				{layout = {sizing = {width = clay.SizingGrow()}}},
+				) {
+					show_marks := clay.PointerOver(clay.ID("MdHeading", block_id))
+					if show_marks {
+						if clay.UI(clay.ID("MdHeadingMarks", block_id))(
+						{
+							layout = {
+								sizing = {height = clay.SizingFixed(f32(size))},
+								childAlignment = {y = .Center},
+							},
+							floating = {
+								attachTo = .Parent,
+								attachment = {element = .RightTop, parent = .LeftTop},
+								offset = {-6, 0},
+								pointerCaptureMode = .Passthrough,
+								zIndex = 14,
+							},
+						},
+						) {clay.Text(marks, {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO})}
+					}
+					if clay.UI(clay.ID("MdHeadingText", block_id))(
+					{layout = {layoutDirection = .TopToBottom}},
+					) {
+						used = body_text(
+							block_id + 1,
+							block.text,
+							size,
+							TEXT,
+							selectable,
+							width,
+							remaining,
+							fonts,
+						)
+					}
+				}
+			case .Code, .Math:
+				if clay.UI(clay.ID("MsgCode", block_id))(
+				{
+					layout = {
+						layoutDirection = .TopToBottom,
+						sizing = {width = clay.SizingGrow()},
+						padding = clay.PaddingAll(10),
+						childGap = 3,
+					},
+					backgroundColor = PLATE,
+					cornerRadius = rr(6),
+					border = block.kind == .Math ? clay.BorderElementConfig{color = ACCENT, width = {1, 1, 1, 1, 0}} : {},
+				},
+				) {
+					font := [1]u8{FONT_MONO | (block.kind == .Math ? TEXT_MATH : TEXT_CODE)}
+					fonts := strings.repeat(
+						string(font[:]),
+						len(block.text),
+						context.temp_allocator,
+					)
+					if block.kind ==
+					   .Math {clay.Text("∑", {fontId = FONT_TITLE, fontSize = 16, textColor = ACCENT})}
+					gutter :=
+						block.kind == .Code ? rl.MeasureTextLine(FONT_MONO, 11, fmt.tprintf("%d", strings.count(block.text, "\n") + 1), 0).x + 10 : 0
+					lines := wrapped_lines(
+						block.text,
+						max(f32(1), width - 20 - gutter),
+						13,
+						fonts = fonts,
+					)
+					used = len(lines)
+					number, scanned := 1, 0
+					for line in lines[:min(used, remaining)] {
+						for scanned < line.start {
+							if block.text[scanned] == '\n' {number += 1}
+							scanned += 1
+						}
+						if clay.UI()({layout = {sizing = {height = clay.SizingFixed(13)}}}) {
+							if block.kind == .Code {
+								if clay.UI()(
+								{
+									layout = {
+										sizing = {width = clay.SizingFixed(gutter)},
+										padding = {right = 10},
+										childAlignment = {x = .Right},
+									},
+								},
+								) {
+									if line.start == 0 ||
+									   block.text[line.start - 1] ==
+										   '\n' {clay.Text(fmt.tprintf("%d", number), {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO})}
+								}
+							}
+							md_code_text(
+								block.text[line.start:line.end],
+								text_fonts(block.code_kinds, line.start, line.end),
+								13,
+							)
+						}
+					}
+				}
+			case .List_Item:
+				marker := block.text[:block.marker_len]
+				task := marker == "[ ] " || marker == "[x] "
+				marker_w := max(f32(12), rl.MeasureTextLine(FONT_BODY, BODY_FS, marker, 0).x)
+				if task {marker_w = 18}
+				if clay.UI(clay.ID("MsgListItem", block_id))({layout = {padding = {left = 12}}}) {
+					if clay.UI(clay.ID("MsgListMarker", block_id))(
+					{
+						layout = {
+							sizing = {
+								width = clay.SizingFixed(marker_w),
+								height = clay.SizingFixed(f32(BODY_FS)),
+							},
+							childAlignment = {y = .Center},
+						},
+					},
+					) {
+						if task {
+							if clay.UI(clay.ID("MdTask", block_id))(
+							{
+								layout = {
+									sizing = {
+										width = clay.SizingFixed(12),
+										height = clay.SizingFixed(12),
+									},
+									childAlignment = {x = .Center, y = .Center},
+								},
+								border = {
+									color = marker == "[x] " ? ACCENT : TEXT_DIM,
+									width = {1, 1, 1, 1, 0},
+								},
+								backgroundColor = marker == "[x] " ? SELECTED : {},
+								cornerRadius = rr(2),
+							},
+							) {
+								if marker ==
+								   "[x] " {clay.Text(ICON_CHECK, {fontId = FONT_ICON, fontSize = 12, textColor = ACCENT})}
+							}
+						} else {clay.Text(
+								marker,
+								{fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT},
+							)}
+					}
+					if clay.UI(clay.ID("MsgListBody", block_id))(
+					{layout = {layoutDirection = .TopToBottom}},
+					) {
+						used = body_text(
+							block_id + 2,
+							block.text[block.marker_len:],
+							BODY_FS,
+							TEXT,
+							selectable,
+							width > 0 ? max(f32(1), width - 12 - marker_w) : 0,
+							remaining,
+							text_fonts(block.fonts, block.marker_len, len(block.text)),
+						)
+					}
+				}
+			case .Image:
+				tex := nev_img(block.text)
+				if tex == nil {
+					clay.Text(block.text, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
+					remaining -= 1
+					continue
+				}
+				ratio := tex.height > 0 ? f32(tex.width) / f32(tex.height) : 1
+				if clay.UI(clay.ID("MdImage", block_id))(
+				{
+					layout = {sizing = {width = clay.SizingFixed(min(width, att_w()))}},
+					aspectRatio = {ratio},
+					image = {imageData = tex},
+					cornerRadius = rr(8),
+				},
+				) {}
+			case .Rule:
+				if clay.UI(clay.ID("MsgRule", block_id))(
+				{
+					layout = {
+						sizing = {width = clay.SizingFixed(width), height = clay.SizingFixed(1)},
+					},
+					backgroundColor = TEXT_DIM,
+				},
+				) {}
+			case .Table:
+				used = len(block.cells)
+				md_table(
+					block_id,
+					block.cells[:min(used, remaining)],
+					block.cell_fonts,
+					block.alignments,
+					width,
+				)
+			}
+		}
+		cropped := used > remaining
+		remaining -= min(used, remaining)
+		if cropped {return true}
 	}
 	return false
 }
@@ -2877,7 +3046,7 @@ wrap_break :: proc(
 	for word < fit && text[word] == ' ' {
 		word += 1
 	}
-	if mode != .Compose {
+	if mode != .Compose && !text_literal(fonts, word) {
 		if tok_end, _, _, is_event := nevent_at(text, word);
 		   is_event && tok_end <= end {return tok_end}
 	}
@@ -2902,7 +3071,8 @@ rune_fit :: proc(
 	for cluster, grapheme in utf8.decode_grapheme_iterate(&it) {
 		i := at + grapheme.byte_index
 		if i < skip {continue}
-		if mode != .Compose {
+		literal := text_literal(fonts, i)
+		if mode != .Compose && !literal {
 			if next, atom_width := body_atom(text[:end], i, font_size); next > i {
 				adv := atom_width + (i > at ? 2 : 0)
 				if i > at && pen + adv > width {return i}
@@ -2912,7 +3082,7 @@ rune_fit :: proc(
 			}
 		}
 		adv := rl.MeasureTextLine(text_font(fonts, i), font_size, cluster, 0).x
-		emoji := text_emoji(cluster) != nil
+		emoji := !literal && text_emoji(cluster) != nil
 		if emoji {adv = mode == .Compose ? 18 : (tile_px > 0 ? tile_px : f32(font_size) + 4)}
 		// Body segments have a 2px gap; plain graphemes share one run.
 		if mode != .Compose && i > at && (emoji || previous_emoji) {adv += 2}

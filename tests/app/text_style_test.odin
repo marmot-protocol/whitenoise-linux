@@ -60,7 +60,13 @@ markdown_emphasis :: proc(t: ^testing.T) {
 	text, fonts := blocks[0].text, blocks[0].fonts
 	testing.expect_value(t, text, "Normal bold both 🌻 italic *literal*")
 	testing.expect_value(t, len(fonts), len(text))
-	expected_fonts := []u8{FONT_BODY, FONT_TITLE, FONT_BOLD_ITALIC, FONT_ITALIC, FONT_BODY}
+	expected_fonts := []u8 {
+		FONT_BODY,
+		FONT_TITLE,
+		FONT_BOLD_ITALIC,
+		FONT_ITALIC,
+		FONT_MONO | TEXT_CODE,
+	}
 	for part, i in ([]string{"Normal", "bold", "both 🌻", "italic", "*literal*"}) {
 		start := strings.index(text, part)
 		expected := expected_fonts[i]
@@ -135,7 +141,7 @@ rich_text_layout :: proc(t: ^testing.T) {
 				}
 			}
 			testing.expect_value(t, images, 1)
-			for font in ([]int{FONT_BODY, FONT_TITLE, FONT_ITALIC, FONT_BOLD_ITALIC}) {testing.expect(t, seen[font])}
+			for font in ([]int{FONT_BODY, FONT_TITLE, FONT_MONO, FONT_ITALIC, FONT_BOLD_ITALIC}) {testing.expect(t, seen[font])}
 			for line in sel_lines {
 				box := clay.GetElementData(clay.ID("BodyLine", line.id)).boundingBox
 				testing.expect(t, box.width <= width + 0.1)
@@ -184,4 +190,40 @@ rich_text_layout :: proc(t: ^testing.T) {
 		handle_link_click(&ui)
 		testing.expect_value(t, ui.link_url, url)
 	}
+}
+
+@(test)
+markdown_inline_styles :: proc(t: ^testing.T) {
+	leaf := marmot.Markdown_Inline {
+		tag = .TEXT,
+	}
+	leaf.body.text.content = "removed"
+	strong := marmot.Markdown_Inline {
+		tag = .STRONG,
+	}
+	strong.body.strong = {&leaf, 1}
+	strike := marmot.Markdown_Inline {
+		tag = .STRIKETHROUGH,
+	}
+	strike.body.strikethrough = {&strong, 1}
+	formula := marmot.Markdown_Inline {
+		tag = .MATH,
+	}
+	formula.body.math.content = "x^2"
+	code := marmot.Markdown_Inline {
+		tag = .CODE,
+	}
+	code.body.code.content = "🌻https://github.com/a/b/issues/1"
+	inlines := [4]marmot.Markdown_Inline{strike, {tag = .HARD_BREAK}, formula, code}
+	fonts: string
+	text := inline_text(raw_data(inlines[:]), len(inlines), &fonts)
+	defer delete(text)
+	defer delete(fonts)
+	testing.expect_value(t, text, "removed\nx^2🌻https://github.com/a/b/issues/1")
+	testing.expect_value(t, fonts[0], u8(FONT_TITLE | TEXT_STRIKE))
+	testing.expect_value(t, fonts[8], u8(FONT_MONO | TEXT_MATH))
+	testing.expect_value(t, text_font(fonts, 8), u16(FONT_MONO))
+	segments := inline_segs(text[11:], fonts[11:])
+	testing.expect_value(t, len(segments), 1)
+	testing.expect(t, segments[0].tex == nil && segments[0].url == "", "code remains literal")
 }

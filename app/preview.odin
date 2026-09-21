@@ -40,6 +40,8 @@ HEX_ROWS :: 64
 // starts scrolling, and the header + padding the body sits under.
 PV_MAX_HEIGHT :: 0.75
 PV_CHROME :: 70
+@(private)
+PV_TEXT_GUTTER :: u16(12)
 
 // One entry of the lightbox slideshow: an image attachment of the open
 // conversation. tex points into the media_textures session cache
@@ -96,6 +98,9 @@ preview_message :: proc(text: string, blocks: []Md_Block_Ui = nil) {
 		owned := block
 		owned.text = strings.clone(block.text)
 		owned.fonts = strings.clone(block.fonts)
+		owned.code_kinds = strings.clone(block.code_kinds)
+		owned.alignments = make([]marmot.Markdown_Alignment, len(block.alignments))
+		copy(owned.alignments, block.alignments)
 		owned.cell_fonts = make([][]string, len(block.cell_fonts))
 		for row, r in block.cell_fonts {
 			owned.cell_fonts[r] = make([]string, len(row))
@@ -856,12 +861,18 @@ preview_modal :: proc(ui: ^Ui_State) {
 					layout = {
 						layoutDirection = .TopToBottom,
 						sizing = {width = clay.SizingFixed(fit_w(640, 32))},
+						padding = {right = PV_TEXT_GUTTER},
 						childGap = 3,
 					},
 				},
 				) {
 					if len(preview.message_blocks) > 0 {
-						md_blocks(preview.message_blocks[:], 0x7f000000, true, fit_w(640, 32))
+						md_blocks(
+							preview.message_blocks[:],
+							0x7f000000,
+							true,
+							fit_w(640, 32) - f32(PV_TEXT_GUTTER),
+						)
 					} else {
 						body_text(
 							0x7f000000,
@@ -869,7 +880,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 							BODY_FS,
 							TEXT,
 							true,
-							fit_w(640, 32),
+							fit_w(640, 32) - f32(PV_TEXT_GUTTER),
 						)
 					}
 				}

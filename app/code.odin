@@ -390,6 +390,44 @@ code_view_free :: proc(view: ^Code_View) {
 	free(view)
 }
 
+// Reuse the attachment tokenizer without retaining another copy of the source.
+@(private)
+md_code_kinds :: proc(info, text: string) -> string {
+	name := strings.to_lower(strings.trim_space(info), context.temp_allocator)
+	if end := strings.index_any(name, " \t"); end >= 0 {name = name[:end]}
+	for alias in ([][2]string{{"python", "py"}, {"javascript", "js"}, {"typescript", "ts"}, {"rust", "rs"}, {"shell", "sh"}, {"bash", "sh"}, {"json", "js"}, {"c++", "cpp"}}) {
+		if name == alias[0] {name = alias[1]; break}
+	}
+	lang := code_lang_for(fmt.tprintf(".%s", name))
+	if lang == nil {return ""}
+	kinds := make([]u8, len(text))
+	in_block := false
+	rest := text
+	for line in strings.split_lines_iterator(&rest) {
+		runs := code_runs(line, lang, &in_block)
+		for run in runs {
+			start := int(uintptr(raw_data(run.text)) - uintptr(raw_data(text)))
+			for &kind in kinds[start:start + len(run.text)] {kind = u8(run.kind)}
+		}
+		delete(runs)
+	}
+	return string(kinds)
+}
+
+@(private)
+md_code_text :: proc(text, kinds: string, size: u16) {
+	for at := 0; at < len(text); {
+		kind := len(kinds) > 0 ? Code_Kind(kinds[at]) : Code_Kind.Plain
+		end := at + 1
+		for end < len(text) && (len(kinds) == 0 || kinds[end] == kinds[at]) {end += 1}
+		clay.Text(
+			text[at:end],
+			{fontId = FONT_MONO, fontSize = size, textColor = code_color(kind), wrapMode = .None},
+		)
+		at = end
+	}
+}
+
 // ── Render ──────────────────────────────────────────────────────────
 
 @(private = "file")

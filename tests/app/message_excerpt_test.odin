@@ -197,6 +197,16 @@ message_excerpt_layout :: proc(t: ^testing.T) {
 			rl.EndDrawing()
 			if frame == 0 {continue}
 			scroll_box := clay.GetElementData(clay.ID("PvScroll")).boundingBox
+			thumb := clay.GetElementData(clay.ID("ScrollThumb", clay.ID("PvScroll").id))
+			testing.expect(t, thumb.found)
+			for line in sel_lines {
+				line_box := clay.GetElementData(clay.ID("BodyLine", line.id)).boundingBox
+				testing.expect(
+					t,
+					line_box.x + line_box.width <= thumb.boundingBox.x - 3,
+					"text leaves a scrollbar gutter",
+				)
+			}
 			clay.SetPointerState(
 				{scroll_box.x + scroll_box.width / 2, scroll_box.y + scroll_box.height / 2},
 				false,

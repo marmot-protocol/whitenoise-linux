@@ -902,20 +902,25 @@ extract_inlines :: proc(
 	for i in 0 ..< count {
 		node := &inlines[i]
 		start := strings.builder_len(builder^)
+		style := font
 		switch node.tag {
 		case .TEXT:
 			strings.write_string(builder, string(node.body.text.content))
 		case .CODE:
 			strings.write_string(builder, string(node.body.code.content))
-		case .SOFT_BREAK, .HARD_BREAK:
+			style = FONT_MONO | TEXT_CODE | (font & TEXT_STRIKE)
+		case .SOFT_BREAK:
 			strings.write_rune(builder, ' ')
+		case .HARD_BREAK:
+			strings.write_rune(builder, '\n')
 		case .EMPH:
 			extract_inlines(
 				builder,
 				node.body.emph.children,
 				node.body.emph.children_len,
 				fonts,
-				font == FONT_TITLE || font == FONT_BOLD_ITALIC ? FONT_BOLD_ITALIC : FONT_ITALIC,
+				((font & TEXT_FONT_MASK) == FONT_TITLE || (font & TEXT_FONT_MASK) == FONT_BOLD_ITALIC ? FONT_BOLD_ITALIC : FONT_ITALIC) |
+				(font & ~TEXT_FONT_MASK),
 			)
 			continue
 		case .STRONG:
@@ -924,7 +929,8 @@ extract_inlines :: proc(
 				node.body.strong.children,
 				node.body.strong.children_len,
 				fonts,
-				font == FONT_ITALIC || font == FONT_BOLD_ITALIC ? FONT_BOLD_ITALIC : FONT_TITLE,
+				((font & TEXT_FONT_MASK) == FONT_ITALIC || (font & TEXT_FONT_MASK) == FONT_BOLD_ITALIC ? FONT_BOLD_ITALIC : FONT_TITLE) |
+				(font & ~TEXT_FONT_MASK),
 			)
 			continue
 		case .STRIKETHROUGH:
@@ -933,7 +939,7 @@ extract_inlines :: proc(
 				node.body.strikethrough.children,
 				node.body.strikethrough.children_len,
 				fonts,
-				font,
+				font | TEXT_STRIKE,
 			)
 			continue
 		case .LINK:
@@ -949,6 +955,7 @@ extract_inlines :: proc(
 			strings.write_string(builder, string(node.body.autolink.url))
 		case .MATH:
 			strings.write_string(builder, string(node.body.math.content))
+			style = FONT_MONO | TEXT_MATH | (font & TEXT_STRIKE)
 		case .IMAGE:
 			// The url itself: a link in a body, an inline image when an
 			// event card splits its paragraphs (nevent.odin).
@@ -957,7 +964,7 @@ extract_inlines :: proc(
 			strings.write_string(builder, string(node.body.nostr_mention.entity.bech32))
 		}
 		if fonts != nil {
-			for _ in start ..< strings.builder_len(builder^) {strings.write_byte(fonts, font)}
+			for _ in start ..< strings.builder_len(builder^) {strings.write_byte(fonts, style)}
 		}
 	}
 }
@@ -1029,6 +1036,10 @@ convert_blocks :: proc(
 					),
 				},
 			)
+			out^[len(out^) - 1].code_kinds = md_code_kinds(
+				string(block.body.code_block.info),
+				out^[len(out^) - 1].text,
+			)
 		case .BLOCK_QUOTE:
 			quote := &block.body.block_quote
 			convert_blocks(
@@ -1038,6 +1049,8 @@ convert_blocks :: proc(
 				true,
 				([^]u8)(quote.blank_lines_before)[:quote.blank_lines_before_len],
 			)
+			for &row in out^[first:] {row.quote_depth += 1}
+			if first < len(out^) {out^[first].quote_starts += 1}
 		case .LIST_BLOCK:
 			list := &block.body.list_block
 			for j in 0 ..< list.items_len {
@@ -1059,7 +1072,9 @@ convert_blocks :: proc(
 				// blocks flatten after it.
 				body_text: string
 				fonts: string
+				body_start := uint(0)
 				if item.blocks_len > 0 && item.blocks[0].tag == .PARAGRAPH {
+					body_start = 1
 					body_text = inline_text(
 						item.blocks[0].body.paragraph.inlines,
 						item.blocks[0].body.paragraph.inlines_len,
@@ -1086,15 +1101,17 @@ convert_blocks :: proc(
 					},
 				)
 				delete(body_text)
-				if item.blocks_len > 1 {
+				if item.blocks_len > body_start {
+					nested_start := len(out^)
 					gaps := ([^]u8)(item.blank_lines_before)[:item.blank_lines_before_len]
 					convert_blocks(
 						out,
-						item.blocks[1:],
-						item.blocks_len - 1,
+						item.blocks[body_start:],
+						item.blocks_len - body_start,
 						quoted,
-						gaps[min(1, len(gaps)):],
+						gaps[min(int(body_start), len(gaps)):],
 					)
+					for &row in out^[nested_start:] {row.indent += 24}
 				}
 			}
 		case .THEMATIC_BREAK:
@@ -1126,12 +1143,22 @@ convert_blocks :: proc(
 				}
 				cells[int(r) + 1] = row
 			}
-			append(out, Md_Block_Ui{kind = .Table, cells = cells, cell_fonts = fonts})
+			alignments := make([]marmot.Markdown_Alignment, int(t.alignments_len))
+			copy(alignments, t.alignments[:t.alignments_len])
+			append(
+				out,
+				Md_Block_Ui {
+					kind = .Table,
+					cells = cells,
+					cell_fonts = fonts,
+					alignments = alignments,
+				},
+			)
 		case .MATH_BLOCK:
 			append(
 				out,
 				Md_Block_Ui {
-					kind = .Code,
+					kind = .Math,
 					text = strings.clone(string(block.body.math_block.content)),
 				},
 			)

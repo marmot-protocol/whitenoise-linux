@@ -45,10 +45,12 @@ test_convert_table :: proc(t: ^testing.T) {
 
 	out: [dynamic]Md_Block_Ui
 	convert_blocks(&out, &block, 1, false)
+	defer blocks_free(out)
 
 	testing.expect(t, len(out) == 1)
 	testing.expect(t, out[0].kind == .Table)
 	testing.expect(t, len(out[0].cells) == 2)
 	testing.expect(t, out[0].cells[0][0] == "Name" && out[0].cells[0][1] == "Age")
 	testing.expect(t, out[0].cells[1][0] == "Ada" && out[0].cells[1][1] == "36")
+	testing.expect_value(t, out[0].alignments[1], marmot.Markdown_Alignment.Right)
 }

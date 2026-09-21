@@ -55,6 +55,8 @@ blocks_free :: proc(blocks: [dynamic]Md_Block_Ui) {
 	for block in blocks {
 		delete(block.text)
 		delete(block.fonts)
+		delete(block.alignments)
+		delete(block.code_kinds)
 		for row in block.cell_fonts {
 			for fonts in row {delete(fonts)}
 			delete(row)

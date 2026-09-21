@@ -307,6 +307,17 @@ render_range :: proc(
 		case .Text:
 			config := render_command.renderData.text
 			text := string(config.stringContents.chars[:config.stringContents.length])
+			style := u8(uintptr(render_command.userData))
+			if style & (TEXT_CODE | TEXT_MATH) != 0 {
+				rl.DrawRectangleRoundedPx(
+					bounds.x,
+					bounds.y,
+					bounds.width,
+					bounds.height,
+					2,
+					clay_color(PLATE),
+				)
+			}
 			rl.DrawTextLine(
 				config.fontId,
 				config.fontSize,
@@ -316,6 +327,15 @@ render_range :: proc(
 				f32(config.letterSpacing),
 				clay_color(config.textColor),
 			)
+			if style & TEXT_STRIKE != 0 {
+				rl.DrawRectangleRec(
+					bounds.x,
+					bounds.y + bounds.height / 2,
+					bounds.width,
+					1,
+					clay_color(config.textColor),
+				)
+			}
 		case .Image:
 			config := render_command.renderData.image
 			tint := clay.Color{255, 255, 255, 255}
