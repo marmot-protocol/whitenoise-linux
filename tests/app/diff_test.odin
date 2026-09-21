@@ -14,7 +14,7 @@ history_original_completion :: proc(t: ^testing.T) {
 		hist_ticket = 2,
 	}
 	defer {
-		for v in ui.hist_versions {delete(v.at); delete(v.text)}
+		for v in ui.hist_versions {delete(v.at); delete(v.text); blocks_free(v.blocks)}
 		delete(ui.hist_versions)
 	}
 	// A stale result must not supply another message's original.

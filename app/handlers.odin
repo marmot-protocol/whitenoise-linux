@@ -242,6 +242,9 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	// Open edit-history modal captures everything while open.
 	if ui.hist_open {
+		if mouse_released() && clicked("HistChanges") {
+			ui.hist_changes = !ui.hist_changes
+		}
 		if rl.IsKeyPressed(.ESCAPE) ||
 		   (mouse_released() &&
 				   (clicked("HistClose") || !clay.PointerOver(clay.ID("HistModal")))) {
@@ -616,9 +619,10 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			if msg.edited && clay.PointerOver(clay.ID("MsgEdited", u32(i))) {
 				ui.hist_open = true
 				ui.hist_msg = i
-				for v in ui.hist_versions {delete(v.at); delete(v.text)}
+				for v in ui.hist_versions {delete(v.at); delete(v.text); blocks_free(v.blocks)}
 				clear(&ui.hist_versions)
 				ui.hist_original = false
+				ui.hist_changes = false
 				ui.hist_ticket = spawn_op(ui, client, .History, msg.id, "")
 				return
 			}

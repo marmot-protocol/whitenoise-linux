@@ -93,6 +93,7 @@ message_free :: proc(msg: Msg_Ui) {
 	for version in msg.history {
 		delete(version.at)
 		delete(version.text)
+		blocks_free(version.blocks)
 	}
 	delete(msg.history)
 	for opt in msg.poll_opts {

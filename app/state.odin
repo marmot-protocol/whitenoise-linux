@@ -184,8 +184,9 @@ Pending_React :: struct {
 // One entry of an edited message's history: the original, then each
 // applied edit in order (last = current text).
 Edit_Version :: struct {
-	at:   string, // HH:MM
-	text: string,
+	at:     string, // HH:MM
+	text:   string,
+	blocks: [dynamic]Md_Block_Ui,
 }
 
 // Which input box receives typed characters.
@@ -466,6 +467,7 @@ Ui_State :: struct {
 	hist_versions:                                         [dynamic]Edit_Version,
 	hist_ticket:                                           int,
 	hist_original:                                         bool,
+	hist_changes:                                          bool,
 	hist_open:                                             bool, // edit-history modal
 	hist_msg:                                              int, // index into messages
 	raw_open:                                              bool, // view-raw-event modal (dev mode)

@@ -1118,9 +1118,9 @@ drain_ops :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				if d.err !=
 				   "" {ui.client_status = strings.clone(tr("Couldn't load edit history. Please try again."))} else {
 					ui.hist_original = d.has_original
-					if d.has_original {append(&ui.hist_versions, Edit_Version{format_when(d.original_at), strings.clone(d.content)})}
+					if d.has_original {append(&ui.hist_versions, history_version(client, d.original_at, d.content))}
 					for i := len(d.history) - 1; i >= 0; i -= 1 {
-						for v in d.history[i].versions[:d.history[i].len] {append(&ui.hist_versions, Edit_Version{format_when(v.edited_at), strings.clone(string(v.plaintext))})}
+						for v in d.history[i].versions[:d.history[i].len] {append(&ui.hist_versions, history_version(client, v.edited_at, string(v.plaintext)))}
 					}
 				}
 			}

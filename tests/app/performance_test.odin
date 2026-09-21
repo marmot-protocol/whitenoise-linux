@@ -45,7 +45,11 @@ message_storage_released :: proc(t: ^testing.T) {
 				who = strings.clone("Alice"),
 			},
 		)
-		append(&msg.history, Edit_Version{strings.clone("12:00"), strings.clone("old")})
+		append(
+			&msg.history,
+			Edit_Version{at = strings.clone("12:00"), text = strings.clone("old")},
+		)
+		append(&msg.history[0].blocks, Md_Block_Ui{text = strings.clone("old")})
 		append(&msg.att_names, strings.clone("picture.png"))
 		append(&msg.att_keys, strings.clone("hash"))
 		append(&msg.img_failed, Att_Item(string){strings.clone("hash"), 0})

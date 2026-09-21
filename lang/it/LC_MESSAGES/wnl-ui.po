@@ -2002,6 +2002,12 @@ msgstr ""
 msgid "Show as QR"
 msgstr "Mostra come QR"
 
+msgid "Show changes"
+msgstr "Mostra modifiche"
+
+msgid "Show formatted"
+msgstr "Mostra formattato"
+
 #, fuzzy
 msgid "Show group members"
 msgstr "Mostra membri"

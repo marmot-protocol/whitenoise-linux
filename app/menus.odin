@@ -262,6 +262,9 @@ HISTORY_GUTTER :: u16(12)
 
 edit_history_modal :: proc(ui: ^Ui_State) {
 	history := ui.hist_versions[:]
+	cards := gh_cards_on
+	gh_cards_on = false
+	defer {gh_cards_on = cards}
 
 	if clay.UI(clay.ID("HistModal"))(
 	{
@@ -302,10 +305,17 @@ edit_history_modal :: proc(ui: ^Ui_State) {
 		if ui.hist_ticket !=
 		   0 {clay.Text(tr("Loading..."), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})}
 		edit_count := max(0, len(history) - (ui.hist_original ? 1 : 0))
-		clay.Text(
-			fmt.tprintf("%d edit%s", edit_count, edit_count == 1 ? "" : "s"),
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
-		)
+		if clay.UI(clay.ID("HistOptions"))(
+		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
+		) {
+			clay.Text(
+				fmt.tprintf("%d edit%s", edit_count, edit_count == 1 ? "" : "s"),
+				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+			)
+			if clay.UI()({layout = {sizing = {width = clay.SizingGrow()}}}) {}
+			if len(history) >
+			   1 {micro_button("HistChanges", ui.hist_changes ? N_("Show formatted") : N_("Show changes"))}
+		}
 
 		if clay.UI(clay.ID("HistScroll"))(
 		{
@@ -364,7 +374,13 @@ edit_history_modal :: proc(ui: ^Ui_State) {
 							{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
 						)
 					}
-					if i == 0 {
+					if !ui.hist_changes && len(version.blocks) > 0 {
+						md_blocks(
+							version.blocks[:],
+							0xD0000 + u32(i) * 0x10000,
+							wrap_w = edit_diff_wrap(),
+						)
+					} else if i == 0 || !ui.hist_changes {
 						body_text(
 							0xD0000 + u32(i) * 8,
 							version.text,
@@ -394,9 +410,6 @@ edit_diff_wrap :: proc() -> f32 {
 // the accent surface. Mention chips use the same measurement and drawing
 // as message bodies, so their raw npub never expands the row.
 diff_chips :: proc(version: u32, prev, next: string) {
-	cards := gh_cards_on
-	gh_cards_on = false
-	defer {gh_cards_on = cards}
 	runs := diff_words(prev, next)
 	if len(runs) == 0 {
 		body_text(0xD0000 + version * 8, next, 13, TEXT, wrap_w = edit_diff_wrap())

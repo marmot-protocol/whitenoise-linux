@@ -3,7 +3,35 @@
 // subsequence, everything else is Removed/Added.
 package main
 
+import marmot "../marmot"
 import "core:strings"
+
+// Parse complete revisions once, before the modal starts laying out frames.
+@(private)
+history_version :: proc(client: ^marmot.Client, at: u64, text: string) -> Edit_Version {
+	version := Edit_Version {
+		at   = format_when(at),
+		text = strings.clone(text),
+	}
+	if client == nil || text == "" {return version}
+	doc: ^marmot.Markdown_Document
+	if marmot.parse_markdown(
+		   client,
+		   strings.clone_to_cstring(text, context.temp_allocator),
+		   &doc,
+	   ) ==
+	   .OK {
+		defer marmot.markdown_document_free(doc)
+		convert_blocks(
+			&version.blocks,
+			doc.blocks,
+			doc.blocks_len,
+			false,
+			([^]u8)(doc.blank_lines_before)[:doc.blank_lines_before_len],
+		)
+	}
+	return version
+}
 
 Diff_Kind :: enum {
 	Same,

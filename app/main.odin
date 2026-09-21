@@ -2254,7 +2254,7 @@ app_main :: proc() {
 		   done.op == .Issue_Setting {edit_result_free(done)} else {delete(done.err)}
 	}
 	delete(ops_done)
-	for v in ui.hist_versions {delete(v.at); delete(v.text)}
+	for v in ui.hist_versions {delete(v.at); delete(v.text); blocks_free(v.blocks)}
 	delete(ui.hist_versions)
 	for len(ui.staged) > 0 {remove_staged(&ui, len(ui.staged) - 1)}
 	delete(ui.staged)
