@@ -21,7 +21,14 @@
 #include "speech_download.h"
 
 enum { DOWNLOAD_ERROR = 1, RECOGNIZE_ERROR = 2, AUDIO_ERROR = 3, LENGTH_ERROR = 4 };
-enum { SAMPLE_RATE = 16000, MAX_SAMPLES = SAMPLE_RATE * 30, CHUNK_SAMPLES = SAMPLE_RATE * 29, MAX_AUDIO_SAMPLES = SAMPLE_RATE * 600, HEADER_BYTES = 4, TEXT_LIMIT = 16384 };
+enum {
+    SAMPLE_RATE = 16000,
+    MAX_SAMPLES = SAMPLE_RATE * 30,
+    CHUNK_SAMPLES = SAMPLE_RATE * 29,
+    MAX_AUDIO_SAMPLES = SAMPLE_RATE * 600,
+    HEADER_BYTES = 4,
+    TEXT_LIMIT = 16384
+};
 
 static int set_status(char value) {
     return pwrite(STDOUT_FILENO, &value, 1, 0) == 1;
@@ -41,24 +48,31 @@ static const SherpaOnnxOfflineRecognizer *load_model(const char *dir) {
     switch (stt_model->kind) {
     case WHISPER:
         config.model_config.whisper = (SherpaOnnxOfflineWhisperModelConfig){
-            .encoder = paths[0], .decoder = paths[1], .task = "transcribe",
+            .encoder = paths[0],
+            .decoder = paths[1],
+            .task = "transcribe",
         };
         break;
     case PARAKEET:
         config.model_config.transducer = (SherpaOnnxOfflineTransducerModelConfig){
-            .encoder = paths[0], .decoder = paths[1], .joiner = paths[2],
+            .encoder = paths[0],
+            .decoder = paths[1],
+            .joiner = paths[2],
         };
         config.model_config.model_type = "nemo_transducer";
         break;
     case SENSEVOICE:
         config.model_config.sense_voice = (SherpaOnnxOfflineSenseVoiceModelConfig){
-            .model = paths[0], .language = "auto", .use_itn = 1,
+            .model = paths[0],
+            .language = "auto",
+            .use_itn = 1,
         };
         break;
     }
     config.model_config.tokens = paths[stt_model->file_count - 1];
-    config.model_config.num_threads = recognition_threads > 0 ? recognition_threads :
-        (int)MAX(1, MIN(8, sysconf(_SC_NPROCESSORS_ONLN)));
+    config.model_config.num_threads = recognition_threads > 0
+                                          ? recognition_threads
+                                          : (int)MAX(1, MIN(8, sysconf(_SC_NPROCESSORS_ONLN)));
     config.model_config.provider = "cpu";
     config.decoding_method = "greedy_search";
     const SherpaOnnxOfflineRecognizer *model = SherpaOnnxCreateOfflineRecognizer(&config);
@@ -80,21 +94,27 @@ static int transcribe(const SherpaOnnxOfflineRecognizer *model, const float *sam
     int window = (count + chunks - 1) / chunks;
     for (int offset = 0; offset < count; offset += window) {
         const SherpaOnnxOfflineStream *stream = SherpaOnnxCreateOfflineStream(model);
-        if (!stream) { goto done; }
+        if (!stream) {
+            goto done;
+        }
         int n = MIN(window, count - offset);
         SherpaOnnxAcceptWaveformOffline(stream, SAMPLE_RATE, samples + offset, n);
         SherpaOnnxDecodeOfflineStream(model, stream);
         const SherpaOnnxOfflineRecognizerResult *result = SherpaOnnxGetOfflineStreamResult(stream);
         size_t previous = text->len;
         int valid = result && result->text && g_utf8_validate(result->text, -1, NULL) &&
-            text->len + strlen(result->text) + 1 <= TEXT_LIMIT;
+                    text->len + strlen(result->text) + 1 <= TEXT_LIMIT;
         if (valid) {
-            if (text->len) { g_string_append_c(text, ' '); }
+            if (text->len) {
+                g_string_append_c(text, ' ');
+            }
             g_string_append(text, result->text);
         }
         SherpaOnnxDestroyOfflineRecognizerResult(result);
         SherpaOnnxDestroyOfflineStream(stream);
-        if (!valid) { goto done; }
+        if (!valid) {
+            goto done;
+        }
         // Append first, then publish the complete segment. Readers ignore uncommitted bytes.
         unsigned char update[] = {'P', text->len & 255, text->len >> 8};
         if (pwrite(STDOUT_FILENO, text->str + previous, text->len - previous,
@@ -115,31 +135,50 @@ done:
 // output is a memfd, never a plaintext file or an audio-device stream.
 static int decode_audio(int pcm) {
     mpv_handle *mpv = mpv_create();
-    if (!mpv) { return AUDIO_ERROR; }
+    if (!mpv) {
+        return AUDIO_ERROR;
+    }
     char output[64];
     snprintf(output, sizeof(output), "/proc/self/fd/%d", pcm);
     const char *options[][2] = {
-        {"config", "no"}, {"terminal", "no"}, {"load-scripts", "no"},
-        {"autoload-files", "no"}, {"access-references", "no"},
-        {"demuxer", "lavf"}, {"demuxer-lavf-o", "protocol_whitelist=none"},
-        {"vid", "no"}, {"sid", "no"}, {"ao", "pcm"},
-        {"ao-pcm-file", output}, {"ao-pcm-waveheader", "no"},
-        {"audio-samplerate", "16000"}, {"audio-format", "float"},
-        {"audio-channels", "mono"}, {"end", "601"},
+        {"config", "no"},
+        {"terminal", "no"},
+        {"load-scripts", "no"},
+        {"autoload-files", "no"},
+        {"access-references", "no"},
+        {"demuxer", "lavf"},
+        {"demuxer-lavf-o", "protocol_whitelist=none"},
+        {"vid", "no"},
+        {"sid", "no"},
+        {"ao", "pcm"},
+        {"ao-pcm-file", output},
+        {"ao-pcm-waveheader", "no"},
+        {"audio-samplerate", "16000"},
+        {"audio-format", "float"},
+        {"audio-channels", "mono"},
+        {"end", "601"},
     };
     int code = AUDIO_ERROR;
     for (size_t i = 0; i < G_N_ELEMENTS(options); ++i) {
-        if (mpv_set_option_string(mpv, options[i][0], options[i][1]) < 0) { goto done; }
+        if (mpv_set_option_string(mpv, options[i][0], options[i][1]) < 0) {
+            goto done;
+        }
     }
-    if (mpv_initialize(mpv) < 0) { goto done; }
+    if (mpv_initialize(mpv) < 0) {
+        goto done;
+    }
     const char *args[] = {"loadfile", "/proc/self/fd/0", NULL};
-    if (mpv_command(mpv, args) < 0) { goto done; }
+    if (mpv_command(mpv, args) < 0) {
+        goto done;
+    }
     gint64 started = g_get_monotonic_time();
     while (g_get_monotonic_time() - started < 60 * G_USEC_PER_SEC) {
         mpv_event *event = mpv_wait_event(mpv, 0.1);
         if (event->event_id == MPV_EVENT_END_FILE) {
             const mpv_event_end_file *end = event->data;
-            if (end && end->reason == MPV_END_FILE_REASON_EOF) { code = 0; }
+            if (end && end->reason == MPV_END_FILE_REASON_EOF) {
+                code = 0;
+            }
             break;
         }
     }
@@ -159,7 +198,9 @@ static int select_model(const char *name) {
 }
 
 int main(int argc, char **argv) {
-    if (argc != 5 || !select_model(argv[4]) || (strcmp(argv[3], "dictate") && strcmp(argv[3], "audio") && strcmp(argv[3], "download")) || prctl(PR_SET_PDEATHSIG, SIGKILL) || getppid() != atoi(argv[2])) {
+    if (argc != 5 || !select_model(argv[4]) ||
+        (strcmp(argv[3], "dictate") && strcmp(argv[3], "audio") && strcmp(argv[3], "download")) ||
+        prctl(PR_SET_PDEATHSIG, SIGKILL) || getppid() != atoi(argv[2])) {
         return RECOGNIZE_ERROR;
     }
     int diagnostics = open("/dev/null", O_WRONLY | O_CLOEXEC);
@@ -169,7 +210,8 @@ int main(int argc, char **argv) {
     close(diagnostics);
     struct stat st;
     int audio = !strcmp(argv[3], "audio");
-    if (fstat(STDIN_FILENO, &st) || (audio ? st.st_size <= 0 || st.st_size > 100 * 1024 * 1024 : st.st_size != HEADER_BYTES)) {
+    if (fstat(STDIN_FILENO, &st) ||
+        (audio ? st.st_size <= 0 || st.st_size > 100 * 1024 * 1024 : st.st_size != HEADER_BYTES)) {
         return RECOGNIZE_ERROR;
     }
     umask(0077);
@@ -212,23 +254,37 @@ int main(int argc, char **argv) {
         code = AUDIO_ERROR;
         // Bound decoder output even for malformed or misleading durations.
         struct rlimit limit;
-        if (pcm < 0 || getrlimit(RLIMIT_FSIZE, &limit)) { goto free_pcm; }
+        if (pcm < 0 || getrlimit(RLIMIT_FSIZE, &limit)) {
+            goto free_pcm;
+        }
         limit.rlim_cur = MIN(limit.rlim_max, (MAX_AUDIO_SAMPLES + SAMPLE_RATE * 2) * sizeof(float));
-        if (setrlimit(RLIMIT_FSIZE, &limit) || !set_status('C')) { goto free_pcm; }
+        if (setrlimit(RLIMIT_FSIZE, &limit) || !set_status('C')) {
+            goto free_pcm;
+        }
         code = decode_audio(pcm);
-        if (code) { goto free_pcm; }
+        if (code) {
+            goto free_pcm;
+        }
         struct stat decoded;
         code = AUDIO_ERROR;
-        if (fstat(pcm, &decoded) || decoded.st_size <= 0 || decoded.st_size % sizeof(float)) { goto free_pcm; }
+        if (fstat(pcm, &decoded) || decoded.st_size <= 0 || decoded.st_size % sizeof(float)) {
+            goto free_pcm;
+        }
         code = LENGTH_ERROR;
-        if (decoded.st_size > MAX_AUDIO_SAMPLES * (off_t)sizeof(float)) { goto free_pcm; }
+        if (decoded.st_size > MAX_AUDIO_SAMPLES * (off_t)sizeof(float)) {
+            goto free_pcm;
+        }
         code = RECOGNIZE_ERROR;
         float *samples = mmap(NULL, decoded.st_size, PROT_READ, MAP_PRIVATE, pcm, 0);
-        if (samples == MAP_FAILED) { goto free_pcm; }
+        if (samples == MAP_FAILED) {
+            goto free_pcm;
+        }
         code = transcribe(model, samples, decoded.st_size / sizeof(float));
         munmap(samples, decoded.st_size);
-free_pcm:
-        if (pcm >= 0) { close(pcm); }
+    free_pcm:
+        if (pcm >= 0) {
+            close(pcm);
+        }
         SherpaOnnxDestroyOfflineRecognizer(model);
         goto done;
     }
@@ -246,7 +302,8 @@ free_pcm:
     Uint64 started = SDL_GetTicks();
     while (count < MAX_SAMPLES) {
         char command;
-        int got = SDL_GetAudioStreamData(mic, samples + count, (MAX_SAMPLES - count) * sizeof(float));
+        int got =
+            SDL_GetAudioStreamData(mic, samples + count, (MAX_SAMPLES - count) * sizeof(float));
         if (got < 0 || pread(STDIN_FILENO, &command, 1, 3) != 1) {
             goto free_audio;
         }

@@ -7,13 +7,19 @@
 #include <sys/resource.h>
 
 int main(int argc, char **argv) {
-    if (argc != 2) { return 1; }
+    if (argc != 2) {
+        return 1;
+    }
     struct rlimit memory = {256 * 1024 * 1024, 256 * 1024 * 1024};
     struct rlimit cpu = {5, 5};
-    if (setrlimit(RLIMIT_AS, &memory) || setrlimit(RLIMIT_CPU, &cpu)) { return 1; }
+    if (setrlimit(RLIMIT_AS, &memory) || setrlimit(RLIMIT_CPU, &cpu)) {
+        return 1;
+    }
     FT_Library library;
     FT_Face face;
-    if (FT_Init_FreeType(&library)) { return 1; }
+    if (FT_Init_FreeType(&library)) {
+        return 1;
+    }
     if (FT_New_Face(library, argv[1], 0, &face)) {
         FT_Done_FreeType(library);
         return 1;

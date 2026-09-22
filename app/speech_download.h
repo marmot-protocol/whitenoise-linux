@@ -46,7 +46,8 @@ static size_t download_write(char *data, size_t size, size_t count, void *user) 
     size_t bytes = size * count;
     size_t written = fwrite(data, 1, bytes, download->file);
     download->remaining -= written;
-    unsigned char percent = (unsigned char)(100 * (download->model->size - download->remaining) / download->model->size);
+    unsigned char percent = (unsigned char)(100 * (download->model->size - download->remaining) /
+                                            download->model->size);
     if (percent != download->percent) {
         unsigned char update[] = {'D', (unsigned char)(download->model - models), percent};
         if (pwrite(STDOUT_FILENO, update, sizeof(update), 0) != sizeof(update)) {
@@ -104,4 +105,3 @@ static int ensure_model(const char *dir, const ModelFile *model) {
     g_free(path);
     return ok;
 }
-

@@ -35,7 +35,8 @@ static size_t chunk_length(const char *text, size_t n) {
     // ponytail: punctuation heuristic; use a sentence tokenizer if abbreviations matter.
     for (size_t i = 0; i + 1 < n && i < CHUNK_BYTES; ++i) {
         if (i + 3 <= n && i + 3 <= CHUNK_BYTES &&
-            (!memcmp(text + i, "。", 3) || !memcmp(text + i, "！", 3) || !memcmp(text + i, "？", 3))) {
+            (!memcmp(text + i, "。", 3) || !memcmp(text + i, "！", 3) ||
+             !memcmp(text + i, "？", 3))) {
             return i + 3;
         }
         if ((text[i] == '.' || text[i] == '!' || text[i] == '?') && g_ascii_isspace(text[i + 1])) {
@@ -65,9 +66,13 @@ static const SherpaOnnxOfflineTts *load_model(const char *dir) {
     SherpaOnnxOfflineTtsConfig config = {0};
     config.model.num_threads = 2;
     config.model.supertonic = (SherpaOnnxOfflineTtsSupertonicModelConfig){
-        .duration_predictor = paths[0], .text_encoder = paths[1],
-        .vector_estimator = paths[2], .vocoder = paths[3],
-        .tts_json = paths[4], .unicode_indexer = paths[5], .voice_style = paths[6],
+        .duration_predictor = paths[0],
+        .text_encoder = paths[1],
+        .vector_estimator = paths[2],
+        .vocoder = paths[3],
+        .tts_json = paths[4],
+        .unicode_indexer = paths[5],
+        .voice_style = paths[6],
     };
     const SherpaOnnxOfflineTts *model = SherpaOnnxCreateOfflineTts(&config);
     for (size_t i = 0; i < G_N_ELEMENTS(paths); ++i) {
@@ -104,12 +109,14 @@ int main(int argc, char **argv) {
         }
     }
     struct stat st;
-    if (!language_ok || voice < 0 || fstat(STDIN_FILENO, &st) || st.st_size <= HEADER_BYTES || st.st_size > TEXT_LIMIT + HEADER_BYTES) {
+    if (!language_ok || voice < 0 || fstat(STDIN_FILENO, &st) || st.st_size <= HEADER_BYTES ||
+        st.st_size > TEXT_LIMIT + HEADER_BYTES) {
         return GENERATE_ERROR;
     }
     size_t length = (size_t)st.st_size - HEADER_BYTES;
     char *text = g_malloc(length + 1);
-    if (pread(STDIN_FILENO, text, length, HEADER_BYTES) != (ssize_t)length || memchr(text, 0, length)) {
+    if (pread(STDIN_FILENO, text, length, HEADER_BYTES) != (ssize_t)length ||
+        memchr(text, 0, length)) {
         g_free(text);
         return GENERATE_ERROR;
     }
@@ -150,10 +157,12 @@ int main(int argc, char **argv) {
         goto done;
     }
     result = AUDIO_ERROR;
-    SDL_AudioSpec spec = {.format = SDL_AUDIO_F32, .channels = 1, .freq = SherpaOnnxOfflineTtsSampleRate(ctx)};
+    SDL_AudioSpec spec = {
+        .format = SDL_AUDIO_F32, .channels = 1, .freq = SherpaOnnxOfflineTtsSampleRate(ctx)};
     SDL_AudioStream *stream = NULL;
     if (!SDL_InitSubSystem(SDL_INIT_AUDIO) ||
-        !(stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL, NULL)) ||
+        !(stream =
+              SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL, NULL)) ||
         !SDL_ResumeAudioStreamDevice(stream)) {
         goto free_model;
     }
@@ -174,8 +183,10 @@ int main(int argc, char **argv) {
         }
         char language[32];
         snprintf(language, sizeof(language), "{\"lang\":\"%s\"}", argv[4]);
-        SherpaOnnxGenerationConfig params = {.sid = voice, .num_steps = 8, .speed = 1, .extra = language};
-        const SherpaOnnxGeneratedAudio *audio = SherpaOnnxOfflineTtsGenerateWithConfig(ctx, cursor, &params, NULL, NULL);
+        SherpaOnnxGenerationConfig params = {
+            .sid = voice, .num_steps = 8, .speed = 1, .extra = language};
+        const SherpaOnnxGeneratedAudio *audio =
+            SherpaOnnxOfflineTtsGenerateWithConfig(ctx, cursor, &params, NULL, NULL);
         cursor[n] = saved;
         cursor += n;
         length -= n;
@@ -185,8 +196,8 @@ int main(int argc, char **argv) {
         }
         int bytes = audio->n * (int)sizeof(float);
         int queued = audio->sample_rate == spec.freq && audio->n > 0 &&
-            SDL_PutAudioStreamData(stream, audio->samples, bytes) &&
-            SDL_FlushAudioStream(stream);
+                     SDL_PutAudioStreamData(stream, audio->samples, bytes) &&
+                     SDL_FlushAudioStream(stream);
         SherpaOnnxDestroyOfflineTtsGeneratedAudio(audio);
         if (!queued) {
             result = AUDIO_ERROR;

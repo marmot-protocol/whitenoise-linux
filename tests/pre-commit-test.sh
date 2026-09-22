@@ -39,4 +39,34 @@ cmp staged after
 # Deleted files are never passed to the formatter.
 git rm -fq -- 'with space.odin'
 bash "$HERE/.githooks/pre-commit"
+
+# C sources and headers use the project style and preserve partial staging.
+cp "$HERE/.clang-format" .
+for ext in c h; do
+  file="with space.$ext"
+  printf 'int value(void){return 42;}\n' > "$file"
+  clang-format --style=file "$file" > expected
+  git add -- "$file"
+  bash "$HERE/.githooks/pre-commit"
+  cmp expected "$file"
+  git show ":$file" > staged
+  cmp expected staged
+  git commit -qm "Add $ext fixture"
+
+  printf '\nint other = 1;\n' >> "$file"
+  git add -- "$file"
+  printf '\nint unstaged = 2;\n' >> "$file"
+  cp "$file" working
+  git show ":$file" > staged
+  if bash "$HERE/.githooks/pre-commit"; then
+    echo 'Hook accepted unstaged C edits.' >&2
+    exit 1
+  fi
+  cmp working "$file"
+  git show ":$file" > after
+  cmp staged after
+
+  git rm -fq -- "$file"
+  bash "$HERE/.githooks/pre-commit"
+done
 echo 'Pre-commit formatting checks passed.'

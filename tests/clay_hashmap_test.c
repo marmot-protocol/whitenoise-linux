@@ -20,13 +20,15 @@ int main(void) {
     for (int frame = 0; frame < 20; frame++) {
         Clay_BeginLayout();
         for (int i = 0; i < (frame < 2 ? 31 : 30); i++) {
-            CLAY(CLAY_IDI("Row", frame * 31 + i), {}) {}
+            CLAY(CLAY_IDI("Row", frame * 31 + i), {}) {
+            }
         }
         if (frame >= 2) {
             CLAY(CLAY_ID("Floating"), {.floating = {
-                .parentId = CLAY_IDI("Row", frame * 31).id,
-                .attachTo = CLAY_ATTACH_TO_ELEMENT_WITH_ID,
-            }}) {}
+                                           .parentId = CLAY_IDI("Row", frame * 31).id,
+                                           .attachTo = CLAY_ATTACH_TO_ELEMENT_WITH_ID,
+                                       }}) {
+            }
         }
         Clay_EndLayout(0);
     }

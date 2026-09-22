@@ -16,23 +16,32 @@ _Static_assert(MARMOT_EVENT_GROUP_CHANGE_SUPERSEDED == 9, "last event tag");
 _Static_assert(offsetof(MarmotEvent, GROUP_JOINED.account_id_hex) == 8, "body alignment");
 _Static_assert(offsetof(MarmotEvent, GROUP_JOINED.group_id_hex) == 24, "group prefix");
 _Static_assert(offsetof(MarmotEvent, GROUP_STATE_UPDATED.group_id_hex) == 24, "state prefix");
-_Static_assert(offsetof(MarmotEvent, MESSAGE_RECEIVED.received.message.group_id_hex) == 32, "message prefix");
-_Static_assert(offsetof(MarmotEvent, PROJECTION_UPDATED.update.update.group_id_hex) == 24, "projection prefix");
+_Static_assert(offsetof(MarmotEvent, MESSAGE_RECEIVED.received.message.group_id_hex) == 32,
+               "message prefix");
+_Static_assert(offsetof(MarmotEvent, PROJECTION_UPDATED.update.update.group_id_hex) == 24,
+               "projection prefix");
 _Static_assert(offsetof(MarmotEvent, GROUP_EVENT.group_id_hex) == 24, "lifecycle prefix");
-_Static_assert(offsetof(MarmotEvent, WELCOME_DELIVERY_PENDING.group_id_hex) == 24, "welcome prefix");
+_Static_assert(offsetof(MarmotEvent, WELCOME_DELIVERY_PENDING.group_id_hex) == 24,
+               "welcome prefix");
 _Static_assert(offsetof(MarmotEvent, EPOCH_STALL_ESCALATED.group_id_hex) == 24, "stall prefix");
-_Static_assert(offsetof(MarmotEvent, GROUP_CHANGE_SUPERSEDED.group_id_hex) == 24, "superseded prefix");
+_Static_assert(offsetof(MarmotEvent, GROUP_CHANGE_SUPERSEDED.group_id_hex) == 24,
+               "superseded prefix");
 
 /* Timeline media is now an outcome union, including rejected source slots. */
 _Static_assert(sizeof(MarmotMediaAttachmentReference) == 88, "media reference stride");
 _Static_assert(sizeof(MarmotMediaAttachmentOutcome) == 104, "media outcome stride");
 _Static_assert(MARMOT_MEDIA_ATTACHMENT_OUTCOME_ACCEPTED == 0, "accepted tag");
 _Static_assert(MARMOT_MEDIA_ATTACHMENT_OUTCOME_REJECTED == 1, "rejected tag");
-_Static_assert(offsetof(MarmotMediaAttachmentOutcome, ACCEPTED.attachment_index) == 8, "accepted index");
-_Static_assert(offsetof(MarmotMediaAttachmentOutcome, ACCEPTED.reference) == 16, "accepted reference");
-_Static_assert(offsetof(MarmotMediaAttachmentOutcome, REJECTED.attachment_index) == 8, "rejected index");
-_Static_assert(offsetof(MarmotMediaAttachmentOutcome, REJECTED.rejection.kind) == 16, "rejection kind");
-_Static_assert(offsetof(MarmotMediaAttachmentOutcome, REJECTED.rejection.detail) == 24, "rejection detail");
+_Static_assert(offsetof(MarmotMediaAttachmentOutcome, ACCEPTED.attachment_index) == 8,
+               "accepted index");
+_Static_assert(offsetof(MarmotMediaAttachmentOutcome, ACCEPTED.reference) == 16,
+               "accepted reference");
+_Static_assert(offsetof(MarmotMediaAttachmentOutcome, REJECTED.attachment_index) == 8,
+               "rejected index");
+_Static_assert(offsetof(MarmotMediaAttachmentOutcome, REJECTED.rejection.kind) == 16,
+               "rejection kind");
+_Static_assert(offsetof(MarmotMediaAttachmentOutcome, REJECTED.rejection.detail) == 24,
+               "rejection detail");
 _Static_assert(sizeof(MarmotTimelineMessageRecord) == 304, "timeline stride");
 _Static_assert(offsetof(MarmotTimelineMessageRecord, media) == 208, "timeline media");
 _Static_assert(sizeof(MarmotTimelineReplyPreview) == 120, "reply preview stride");
@@ -45,6 +54,9 @@ _Static_assert(sizeof(MarmotAppMessageRecord) == 176, "raw message stride");
 _Static_assert(offsetof(MarmotAppMessageRecord, has_moderation_grant) == 168, "source authority");
 _Static_assert(offsetof(MarmotAppMessageRecord, invalidated) == 170, "invalidated event");
 _Static_assert(sizeof(MarmotGroupAppComponent) == 24, "component stride");
-_Static_assert(MARMOT_HOST_PERFORMANCE_OPERATION_LINUX_STARTUP_BEFORE_VAULT == 6, "host operation order");
+_Static_assert(MARMOT_HOST_PERFORMANCE_OPERATION_LINUX_STARTUP_BEFORE_VAULT == 6,
+               "host operation order");
 
-int main(void) { return 0; }
+int main(void) {
+    return 0;
+}
