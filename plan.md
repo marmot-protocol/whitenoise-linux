@@ -80,7 +80,7 @@ Status: implementation complete; validation recorded below.
   input, including changes arriving before their referenced issue.
 - Run just test and just test-reload when worker lifecycles change.
 - Exercise two clients: enable, report, comment, resolve, disable, reconnect.
-- Update translations and PORT.md; visually inspect the sidebar and narrow
+- Update translations; visually inspect the sidebar and narrow
   layouts, including keyboard interaction.
 
 ## Scope

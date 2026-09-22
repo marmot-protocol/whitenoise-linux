@@ -7,9 +7,6 @@ desktop client for [Marmot](https://github.com/marmot-protocol/mdk): MLS group
 messaging over Nostr relays. It talks to the Marmot runtime through
 `marmot-c`, the same C API the Android, iOS, and macOS apps use.
 
-`PORT.md` records what is built, what is still outstanding, and the clay/SDL
-quirks worth knowing before you debug a layout.
-
 ## Build & run
 
 ```sh

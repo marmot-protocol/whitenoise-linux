@@ -17,7 +17,7 @@
 
 White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-protocol/mdk): [MLS](https://messaginglayersecurity.rocks/) group messaging carried over [Nostr](https://nostr.com) relays. You get the forward secrecy and post-compromise security of MLS together with a portable, self-owned Nostr identity: no phone number, no central server, no account anyone can take away from you. It is one Odin binary drawing an immediate-mode [clay](https://github.com/nicbarker/clay) layout on SDL3, and every secret lives in a single password-encrypted vault.
 
-> **Status: early.** It works and is usable day-to-day, but it is moving fast, so expect rough edges. [`PORT.md`](PORT.md) tracks what is built and what is still outstanding.
+> **Status: early.** It works and is usable day-to-day, but it is moving fast, so expect rough edges.
 
 **Jump to:** [Features](#features) · [Install](#install) · [Build from source](#build-from-source) · [Configuration](#configuration) · [Architecture](#architecture) · [Development](#development) · [Contributing](#contributing) · [License](#license)
 
@@ -182,7 +182,7 @@ A few design choices are worth knowing before you dig in:
 - **Two upload paths.** Chat attachments go through Marmot's encrypted MIP-04 path, readable only by group members. Profile pictures take the deliberately public Blossom path.
 - **Data-driven themes.** Every color, metric, and capability flag comes from a `themes/*.toml` pack. A new component reads the globals; it never branches on which theme is active.
 
-For the deeper details, see [`AGENTS.md`](AGENTS.md) and [`PORT.md`](PORT.md).
+For the deeper details, see [`AGENTS.md`](AGENTS.md).
 
 ## Development
 
