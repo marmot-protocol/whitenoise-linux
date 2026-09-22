@@ -18,16 +18,18 @@ retry_convergence_failure :: proc(t: ^testing.T) {
 		delete(ops_done)
 		ops_done = previous
 	}
-	job := new(Op_Job)
-	job.op = .Retry_Convergence
-	job.account = strings.clone_to_cstring("account")
-	job.group = strings.clone_to_cstring("group")
-	job.target = strings.clone_to_cstring("")
-	worker := thread.Thread {
-		data = job,
+	for op, i in ([]Msg_Op{.Retry_Convergence, .Repair_History}) {
+		job := new(Op_Job)
+		job.op = op
+		job.account = strings.clone_to_cstring("account")
+		job.group = strings.clone_to_cstring("group")
+		job.target = strings.clone_to_cstring("")
+		worker := thread.Thread {
+			data = job,
+		}
+		op_worker(&worker)
+		testing.expect_value(t, len(ops_done), i + 1)
+		testing.expect_value(t, ops_done[i].op, op)
+		testing.expect(t, ops_done[i].err != "", "a failed repair must reach the UI")
 	}
-	op_worker(&worker)
-	testing.expect_value(t, len(ops_done), 1)
-	testing.expect_value(t, ops_done[0].op, Msg_Op.Retry_Convergence)
-	testing.expect(t, ops_done[0].err != "", "a failed retry must reach the UI")
 }

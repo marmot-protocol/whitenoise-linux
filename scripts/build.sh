@@ -17,7 +17,7 @@ MDK_REPO="https://github.com/marmot-protocol/mdk.git"
 MDK_PIN="$(pin mdk)"
 MDK="$HERE/vendor/mdk"
 BUNDLE="$MDK/crates/marmot-c/output"
-MDK_PATCHES=("$HERE/patches/mdk-linux-timings.patch" "$HERE/patches/mdk-send-connections.patch" "$HERE/patches/mdk-message-authority.patch")
+MDK_PATCHES=("$HERE/patches/mdk-linux-timings.patch" "$HERE/patches/mdk-send-connections.patch" "$HERE/patches/mdk-message-authority.patch" "$HERE/patches/mdk-history-repair.patch")
 
 if [ ! -d "$MDK" ]; then
   git clone --filter=blob:none "$MDK_REPO" "$MDK"
@@ -34,7 +34,7 @@ if [ "$(git -C "$MDK" rev-parse HEAD)" != "$MDK_PIN" ]; then
   rm -rf "$BUNDLE"
 fi
 
-# Apply Linux telemetry and connected-relay publishing changes to the pinned MDK.
+# Apply Linux integration changes to the pinned MDK.
 for patch in "${MDK_PATCHES[@]}"; do
   if git -C "$MDK" apply --check "$patch" 2>/dev/null; then
     git -C "$MDK" apply "$patch"

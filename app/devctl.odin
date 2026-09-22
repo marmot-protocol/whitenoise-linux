@@ -486,13 +486,14 @@ devctl_run :: proc(ui: ^Ui_State, client: ^marmot.Client, frame: int, line: stri
 		}
 		fmt.printfln("devctl: no chat matching %q", arg)
 
-	case "retry-convergence":
+	case "retry-convergence", "repair-history":
 		if client == nil || ui.selected < 0 || ui.selected >= len(ui.chats) {
 			fmt.println("devctl: select a chat first")
 			return
 		}
-		spawn_op(ui, client, .Retry_Convergence, arg, "")
-		fmt.println("devctl: convergence retry queued")
+		op := verb == "retry-convergence" ? Msg_Op.Retry_Convergence : Msg_Op.Repair_History
+		spawn_op(ui, client, op, arg, "")
+		fmt.printfln("devctl: %s queued", verb)
 
 	case "send":
 		if client == nil {
@@ -581,6 +582,7 @@ DEV_HELP :: `devctl commands (append one per line to $WN_DEV_CMD)
           PATH is relative to Ui_State: chats[0].title, prefs.locale
   chat    chats | select TITLE | send TEXT | archive TITLE|ID on|off
           retry-convergence [RESULT_PATH] (selected chat)
+          repair-history [RESULT_PATH] (selected account)
   other   state [PATH] | timings [PATH] | shot [PATH] | help
   key names are rl.KeyboardKey values, uppercase: ENTER, ESCAPE, TAB,
   BACKSPACE, F5. 'fields ' with an empty path lists all of Ui_State.`
