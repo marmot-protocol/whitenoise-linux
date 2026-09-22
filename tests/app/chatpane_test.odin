@@ -55,30 +55,93 @@ chat_title_overflow :: proc(t: ^testing.T) {
 	)
 	append(&ui.messages, Msg_Ui{system = true, body = "Disappearing timer changed", at = "12:00"})
 	defer delete(ui.messages)
-	for search in ([]bool{false, true}) {
-		ui.search_open = search
-		ui.issue_setting = .Enabled
-		for width in ([]f32{526.4, 340, 400, 700}) {
-			rl.SetWindowSize(i32(width * UI_ZOOM), 1382)
-			clay.SetLayoutDimensions({width, 700})
-			commands := build_layout(&ui, 0)
-			for id in ([]string{"ChatPane", "ChatHeader", "SearchBtn", "FilesBtn", "BellBtn", "MembersBtn", "Composer"}) {
-				element := clay.GetElementData(clay.ID(id))
-				testing.expect(t, element.found, id)
-				testing.expect(
-					t,
-					element.boundingBox.x + element.boundingBox.width <= width + 0.01,
-					id,
-				)
-			}
-			view := clay.GetElementData(clay.ID("ChatHeadTitleClip")).boundingBox
-			clipped := false
-			for command in commands.internalArray[:commands.length] {
-				if command.commandType == .ScissorStart && command.boundingBox == view {
-					clipped = true
+	for locale in ([]string{"en", "it", "de", "ja"}) {
+		set_locale(locale)
+		for search in ([]bool{false, true}) {
+			ui.search_open = search
+			ui.issue_setting = .Enabled
+			for width in ([]f32{526.4, 340, 400, 700}) {
+				rl.SetWindowSize(i32(width * UI_ZOOM), 1382)
+				clay.SetLayoutDimensions({width, 700})
+				commands := build_layout(&ui, 0)
+				for id in ([]string{"ChatPane", "ChatHeader", "SearchBtn", "FilesBtn", "BellBtn", "MembersBtn", "Composer"}) {
+					element := clay.GetElementData(clay.ID(id))
+					testing.expect(t, element.found, id)
+					testing.expect(
+						t,
+						element.boundingBox.x + element.boundingBox.width <= width + 0.01,
+						id,
+					)
 				}
+				view := clay.GetElementData(clay.ID("ChatHeadTitleClip")).boundingBox
+				clipped := false
+				for command in commands.internalArray[:commands.length] {
+					if command.commandType == .ScissorStart && command.boundingBox == view {
+						clipped = true
+					}
+				}
+				testing.expect(t, clipped, "title must be clipped inside the header")
+				for id in ([]string{"IssuesBtn", "FilesBtn", "SearchBtn", "BellBtn", "MembersBtn"}) {
+					clay.SetPointerState({-100, -100}, false)
+					anim_snap_all()
+					anim_tick(0.02)
+					build_layout(&ui, 0)
+					button := clay.GetElementData(clay.ID(id)).boundingBox
+					pointer := clay.Vector2 {
+						button.x + button.width / 2,
+						button.y + button.height / 2,
+					}
+					first_width: f32
+					for frame in 0 ..< 5 {
+						clay.SetPointerState(pointer, false)
+						anim_tick(0.02)
+						build_layout(&ui, 0)
+						expanded := clay.GetElementData(clay.ID(id)).boundingBox
+						if frame == 0 {first_width = expanded.width}
+						testing.expect(t, expanded.width > button.width, id)
+						testing.expect(
+							t,
+							expanded.x <= pointer.x && expanded.x + expanded.width >= pointer.x,
+							id,
+						)
+						testing.expect(t, expanded.x + expanded.width <= width + 0.01, id)
+						right := clay.GetElementData(clay.ID("MembersBtn")).boundingBox
+						testing.expect(t, right.x + right.width <= width + 0.01, id)
+					}
+					full := clay.GetElementData(clay.ID(id)).boundingBox.width
+					testing.expect(
+						t,
+						full > first_width,
+						"label must animate rather than appear instantly",
+					)
+					anim_tick(0.02)
+					build_layout(&ui, 0)
+					testing.expect(
+						t,
+						clay.GetElementData(clay.ID(id)).boundingBox.width == full,
+						"animation must finish in 100 ms",
+					)
+					clay.SetPointerState({-100, -100}, false)
+					for _ in 0 ..< 5 {anim_tick(0.02); build_layout(&ui, 0)}
+					testing.expect_value(
+						t,
+						clay.GetElementData(clay.ID(id)).boundingBox.width,
+						button.width,
+					)
+					ui.prefs.reduce_motion = true
+					clay.SetPointerState(pointer, false)
+					anim_tick(0.02)
+					build_layout(&ui, 0)
+					testing.expect_value(
+						t,
+						clay.GetElementData(clay.ID(id)).boundingBox.width,
+						full,
+					)
+					ui.prefs.reduce_motion = false
+				}
+				clay.SetPointerState({-100, -100}, false)
 			}
-			testing.expect(t, clipped, "title must be clipped inside the header")
 		}
 	}
+	set_locale("en")
 }

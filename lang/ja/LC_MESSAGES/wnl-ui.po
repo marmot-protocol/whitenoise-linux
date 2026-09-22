@@ -1331,6 +1331,9 @@ msgstr ""
 msgid "Members"
 msgstr "メンバー"
 
+msgid "Mentions"
+msgstr "メンション"
+
 msgid "Message"
 msgstr "メッセージ"
 
@@ -1906,6 +1909,9 @@ msgstr "スキャンして追加"
 
 msgid "Scroll speed"
 msgstr ""
+
+msgid "Search"
+msgstr "検索"
 
 #, fuzzy
 msgid "Search all chats"

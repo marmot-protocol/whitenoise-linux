@@ -1324,23 +1324,60 @@ theme_chip_indexed :: proc(id_str: string, index: u32, label: string, active: bo
 	}
 }
 
-// theme_chip with a hover tooltip, for the icon-only chat-header
-// controls where the glyph is the only label.
-header_chip :: proc(id_str: string, glyph: string, active: bool, tip: string) {
+// Header actions reveal their labels without moving the controls to their right.
+header_chip :: proc(id_str: string, glyph: string, active: bool, label: string) {
 	pad := tap_size() ? u16(13) : u16(8)
 	if clay.UI(clay.ID(id_str))(
 	{
-		layout = {padding = {left = 14, right = 14, top = pad, bottom = pad}},
-		backgroundColor = active ? ACCENT : ROW_BG,
+		layout = {
+			padding = {left = 10, right = 10, top = pad, bottom = pad},
+			childAlignment = {y = .Center},
+		},
+		backgroundColor = active ? ACCENT : hovered() ? HOVER : ROW_BG,
 		cornerRadius = rr(8),
 	},
 	) {
-		if hovered() {
-			tooltip(tip)
-		}
 		clay.Text(
 			glyph,
 			{fontId = FONT_ICON, fontSize = 14, textColor = active ? ON_ACCENT : TEXT},
+		)
+		header_label(label, active ? ON_ACCENT : TEXT)
+	}
+}
+
+@(private)
+HEADER_LABEL_SECS :: f32(0.1)
+
+@(private)
+header_label :: proc(label: string, color: clay.Color) {
+	id := clay.ID_LOCAL("HeaderLabel")
+	target: f32 = hovered() ? 1 : 0
+	entry, seen := anim_vals[id.id]
+	if !seen || entry.frame != anim_frame {
+		step := anim_dt / HEADER_LABEL_SECS
+		entry.v += clamp(target - entry.v, -step, step)
+		if !motion_on() || abs(target - entry.v) < ANIM_EPS {entry.v = target}
+		entry.frame = anim_frame
+		anim_vals[id.id] = entry
+		if entry.v != target {anim_moving += 1}
+	}
+	if entry.v == 0 {return}
+	progress := ease_in_out(entry.v)
+	width := rl.MeasureTextLine(FONT_BODY, 13, label, 0).x + 6
+	if clay.UI(id)(
+	{
+		layout = {sizing = {width = clay.SizingFixed(width * progress)}, padding = {left = 6}},
+		clip = {horizontal = true},
+	},
+	) {
+		clay.Text(
+			label,
+			{
+				fontId = FONT_BODY,
+				fontSize = 13,
+				textColor = fade(color, progress),
+				wrapMode = .None,
+			},
 		)
 	}
 }

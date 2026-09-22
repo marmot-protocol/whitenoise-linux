@@ -101,37 +101,10 @@ chat_pane :: proc(ui: ^Ui_State) {
 			) {}
 			if ui.issue_setting ==
 			   .Enabled {header_chip("IssuesBtn", ICON_COMMENTS, ui.issues_open, tr("Issues"))}
-			if clay.UI(clay.ID("FilesBtn"))(
-			{
-				layout = {
-					padding = {left = 10, right = 10, top = 8, bottom = 8},
-					childGap = 6,
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = ui.group_files_open ? ACCENT : hovered() ? HOVER : ROW_BG,
-				cornerRadius = rr(8),
-			},
-			) {
-				clay.Text(
-					ICON_FOLDER,
-					{
-						fontId = FONT_ICON,
-						fontSize = 13,
-						textColor = ui.group_files_open ? ON_ACCENT : TEXT_DIM,
-					},
-				)
-				clay.Text(
-					tr("Files"),
-					{
-						fontId = FONT_BODY,
-						fontSize = 13,
-						textColor = ui.group_files_open ? ON_ACCENT : TEXT,
-					},
-				)
-			}
-			header_chip("SearchBtn", ICON_SEARCH, ui.search_open, "Search this chat")
+			header_chip("FilesBtn", ICON_FOLDER, ui.group_files_open, tr("Files"))
+			header_chip("SearchBtn", ICON_SEARCH, ui.search_open, tr("Search"))
 			bell_chip(ui)
-			header_chip("MembersBtn", ICON_PEOPLE, ui.show_members, "Group members")
+			header_chip("MembersBtn", ICON_PEOPLE, ui.show_members, tr("Members"))
 			// The chrome floats over the timeline; only the bottom-most
 			// bar casts, so the shadows don't stack.
 			if len(ui.thread_stack) == 0 {

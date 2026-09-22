@@ -1331,6 +1331,9 @@ msgstr ""
 msgid "Members"
 msgstr "Membri"
 
+msgid "Mentions"
+msgstr "Menzioni"
+
 msgid "Message"
 msgstr "Messaggio"
 
@@ -1906,6 +1909,9 @@ msgstr "Scansiona per aggiungere"
 
 msgid "Scroll speed"
 msgstr ""
+
+msgid "Search"
+msgstr "Cerca"
 
 #, fuzzy
 msgid "Search all chats"

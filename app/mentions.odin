@@ -410,8 +410,11 @@ bell_chip :: proc(ui: ^Ui_State) {
 	unread := mi_unread_count(ui)
 	if clay.UI(clay.ID("BellBtn"))(
 	{
-		layout = {padding = {left = 14, right = 14, top = 8, bottom = 8}},
-		backgroundColor = ui.mi_open ? ACCENT : ROW_BG,
+		layout = {
+			padding = {left = 10, right = 10, top = 8, bottom = 8},
+			childAlignment = {y = .Center},
+		},
+		backgroundColor = ui.mi_open ? ACCENT : hovered() ? HOVER : ROW_BG,
 		cornerRadius = rr(8),
 	},
 	) {
@@ -419,6 +422,7 @@ bell_chip :: proc(ui: ^Ui_State) {
 			ICON_BELL,
 			{fontId = FONT_ICON, fontSize = 14, textColor = ui.mi_open ? ON_ACCENT : TEXT},
 		)
+		header_label(tr("Mentions"), ui.mi_open ? ON_ACCENT : TEXT)
 		if unread > 0 {
 			if clay.UI(clay.ID("BellBadge"))(
 			{
