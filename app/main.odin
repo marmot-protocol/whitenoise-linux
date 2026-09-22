@@ -145,9 +145,15 @@ QUICK_REACT := [6]struct {
 }
 quick_react_tex: [6]rl.Texture2D
 
+@(private)
+timeline_draw_offset: f32
+
 // Tile for a one-tap reaction: staged twemoji first, bundled default
 // tiles as fallback, nil = draw the text glyph.
 build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.RenderCommand) {
+	if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found {
+		timeline_draw_offset = data.scrollPosition.y
+	}
 	clay.BeginLayout()
 
 	page_advance(ui)
@@ -1423,6 +1429,7 @@ app_main :: proc() {
 		live_tick(&live, &ui, client) // poll fallback when the stream stalls
 		drain_live(&live, &ui, client)
 		timeline_drain(&ui, client)
+		members_drain(&ui, client)
 		issues_drain(&ui, client)
 		issues_sync_route(&ui, client)
 		if !ui.timeline_loading && test_peer_pending {
@@ -1754,7 +1761,7 @@ app_main :: proc() {
 			delete(ui.jump_id)
 			ui.jump_id = ""
 		}
-		if ui.scroll_pending {
+		if ui.scroll_pending && !ui.timeline_loading && !ui.timeline_paging {
 			scroll_data := clay.GetScrollContainerData(clay.ID("Timeline"))
 			if scroll_data.found {
 				overflow :=
@@ -1767,6 +1774,12 @@ app_main :: proc() {
 				scroll_jumped = true // a teleport, not velocity
 				ui.scroll_pending = false
 			}
+		}
+		// Anchor and jump corrections happen after layout. Draw their corrected
+		// position in this frame instead of flashing the old position once.
+		if data := clay.GetScrollContainerData(clay.ID("Timeline"));
+		   data.found && abs(data.scrollPosition.y - timeline_draw_offset) > 0.01 {
+			render_commands = build_layout(&ui, 0)
 		}
 		video_dbg_build = max(
 			video_dbg_build,
@@ -2225,8 +2238,10 @@ app_main :: proc() {
 	for worker in send_threads {thread.join(worker); thread.destroy(worker)}
 	delete(send_threads)
 	timeline_stop()
+	members_stop()
 	issues_stop(&ui)
 	search_stop()
+	if live.refresh != nil {chat_list_free(live.refresh); free(live.refresh)}
 	media_stop()
 	agent_shutdown()
 	if client != nil {

@@ -14,6 +14,7 @@ import "core:unicode/utf8"
 Search_Kind :: enum {
 	Global,
 	Sidebar,
+	Mentions,
 }
 @(private)
 Search_Page :: struct {
@@ -68,7 +69,8 @@ search_free :: proc(job: ^Search_Job) {
 // unbounded set of threads, and replacing a queued query discards it outright.
 @(private)
 search_request :: proc(ui: ^Ui_State, client: ^marmot.Client, kind: Search_Kind) {
-	input := kind == .Global ? string(ui.gs_input[:]) : string(ui.sidebar_filter[:])
+	input :=
+		kind == .Mentions ? "" : kind == .Global ? string(ui.gs_input[:]) : string(ui.sidebar_filter[:])
 	for job in ([]^Search_Job{search_pending[kind], search_active[kind]}) {
 		if job != nil &&
 		   !sync.atomic_load(&job.cancel) &&
@@ -83,12 +85,12 @@ search_request :: proc(ui: ^Ui_State, client: ^marmot.Client, kind: Search_Kind)
 	if active := search_active[kind]; active != nil {sync.atomic_store(&active.cancel, true)}
 	search_free(search_pending[kind])
 	search_pending[kind] = nil
-	if client == nil || strings.trim_space(input) == "" {return}
+	if client == nil || (kind != .Mentions && strings.trim_space(input) == "") {return}
 	job := new(Search_Job)
 	job.client, job.kind, job.revision = client, kind, search_revision
 	job.account, job.input = strings.clone(ui.account_ref), strings.clone(input)
 	for chat in ui.chats {
-		if kind == .Global && chat.pending {continue}
+		if kind != .Sidebar && chat.pending {continue}
 		append(&job.groups, strings.clone(chat.group_id))
 	}
 	for id, hidden in ui.hidden {
@@ -102,7 +104,8 @@ search_worker :: proc(t: ^thread.Thread) {
 	context.allocator = reload_allocator()
 	job := (^Search_Job)(t.data)
 	timing_start := time.tick_now()
-	defer local_timing_end(job.kind == .Global ? .search_global : .search_sidebar, timing_start)
+	defer {if job.kind !=
+		   .Mentions {local_timing_end(job.kind == .Global ? .search_global : .search_sidebar, timing_start)}}
 	defer frame_wake()
 	defer free_all(context.temp_allocator)
 	account := strings.clone_to_cstring(job.account, context.temp_allocator)
@@ -112,7 +115,7 @@ search_worker :: proc(t: ^thread.Thread) {
 		query := marmot.Timeline_Message_Query {
 			group_id_hex = strings.clone_to_cstring(group, context.temp_allocator),
 			has_limit    = true,
-			limit        = job.kind == .Global ? GS_FETCH_LIMIT : 1,
+			limit        = job.kind == .Mentions ? MI_FETCH_LIMIT : job.kind == .Global ? GS_FETCH_LIMIT : 1,
 		}
 		if job.kind == .Sidebar {
 			query.search = strings.clone_to_cstring(job.input, context.temp_allocator)
@@ -131,15 +134,18 @@ search_worker :: proc(t: ^thread.Thread) {
 				job.err = marmot.last_error()
 				return
 			}
-			entry.folded = make([]string, int(entry.page.messages_len))
-			for i in 0 ..< entry.page.messages_len {
-				entry.folded[i] = gs_fold(
-					string(entry.page.messages[i].plaintext),
-					context.allocator,
-				)
+			if job.kind != .Mentions {
+				entry.folded = make([]string, int(entry.page.messages_len))
+				for i in 0 ..< entry.page.messages_len {
+					entry.folded[i] = gs_fold(
+						string(entry.page.messages[i].plaintext),
+						context.allocator,
+					)
+				}
+				job.cache[strings.clone(group)] = entry
 			}
-			job.cache[strings.clone(group)] = entry
 		}
+		defer {if job.kind == .Mentions && !cached {marmot.timeline_page_free(entry.page)}}
 		for i := int(entry.page.messages_len) - 1; i >= 0; i -= 1 {
 			if sync.atomic_load(&job.cancel) {return}
 			record := &entry.page.messages[i]
@@ -149,9 +155,16 @@ search_worker :: proc(t: ^thread.Thread) {
 			   record.kind == 5 ||
 			   id == "" ||
 			   job.hidden[id] {continue}
-			hay := entry.folded[i]
-			pos := strings.index(hay, needle)
-			if pos < 0 && !gs_subseq(hay, needle) {continue}
+			hay: string
+			pos := 0
+			if job.kind == .Mentions {
+				if string(record.direction) == "sent" ||
+				   !text_mentions_me(string(record.plaintext), job.account) {continue}
+			} else {
+				hay = entry.folded[i]
+				pos = strings.index(hay, needle)
+				if pos < 0 && !gs_subseq(hay, needle) {continue}
+			}
 			append(
 				&job.hits,
 				Gs_Hit {
@@ -173,17 +186,19 @@ search_worker :: proc(t: ^thread.Thread) {
 	slice.sort_by(job.hits[:], proc(a, b: Gs_Hit) -> bool {
 		return a.exact == b.exact ? a.when_at > b.when_at : a.exact
 	})
-	for len(job.hits) > GS_HITS_MAX {gs_free_hit(pop(&job.hits))}
+	for len(job.hits) >
+	    (job.kind == .Mentions ? MI_HITS_MAX : GS_HITS_MAX) {gs_free_hit(pop(&job.hits))}
 }
 
 @(private)
 search_current :: proc(job: ^Search_Job, ui: ^Ui_State) -> bool {
-	input := job.kind == .Global ? string(ui.gs_input[:]) : string(ui.sidebar_filter[:])
+	input :=
+		job.kind == .Mentions ? "" : job.kind == .Global ? string(ui.gs_input[:]) : string(ui.sidebar_filter[:])
 	return(
 		!sync.atomic_load(&job.cancel) &&
 		job.account == ui.account_ref &&
 		job.input == input &&
-		job.revision == search_revision &&
+		(job.kind == .Mentions || job.revision == search_revision) &&
 		(job.kind != .Global || ui.gs_open) \
 	)
 }
@@ -194,7 +209,8 @@ search_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		job := search_active[kind]
 		if job != nil && kind == .Global && !ui.gs_open {sync.atomic_store(&job.cancel, true)}
 		if job != nil &&
-		   (job.account != ui.account_ref || job.revision != search_revision) &&
+		   (job.account != ui.account_ref ||
+				   (kind != .Mentions && job.revision != search_revision)) &&
 		   (kind != .Global || ui.gs_open) &&
 		   search_pending[kind] == nil {
 			search_request(ui, client, kind)
@@ -216,9 +232,10 @@ search_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				} else {
 					indices := make(map[string]int, context.temp_allocator)
 					for chat, i in ui.chats {indices[chat.group_id] = i}
-					if kind == .Global {
-						gs_clear_hits(ui)
+					if kind != .Sidebar {
+						if kind == .Global {gs_clear_hits(ui)} else {mi_clear(ui)}
 						for &hit in job.hits {
+							if kind == .Mentions && ui.hidden[hit.msg_id] {continue}
 							if i, ok := indices[hit.group]; ok {
 								hit.chat = i
 								hit.title = strings.clone(ui.chats[i].title)
@@ -227,11 +244,29 @@ search_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 								name := strings.clone(label)
 								delete(hit.sender); hit.sender = name
 								hit.at = format_full(hit.when_at)
-								append(&ui.gs_hits, hit)
+								if kind == .Global {
+									append(&ui.gs_hits, hit)
+								} else {
+									append(
+										&ui.mi_hits,
+										Mention_Hit {
+											group = hit.group,
+											msg_id = hit.msg_id,
+											title = hit.title,
+											sender = hit.sender,
+											snippet = hit.snippet,
+											at = hit.at,
+											when_at = hit.when_at,
+											unread = !mi_is_read(ui, hit.msg_id),
+										},
+									)
+									if ui.mi_open {mi_mark_read(ui, hit.msg_id)}
+								}
 								hit = {}
 							}
 						}
-						stagger_arm(clay.ID("GsList").id)
+						if kind ==
+						   .Global {stagger_arm(clay.ID("GsList").id)} else if ui.mi_open {save_settings(ui)}
 					} else {
 						resize(&ui.filter_hits, len(ui.chats))
 						for &hit in ui.filter_hits {hit = false}
@@ -246,7 +281,8 @@ search_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		next := search_pending[kind]
 		if next == nil {
 			if job != nil &&
-			   (job.account != ui.account_ref ||
+			   (kind == .Mentions ||
+					   job.account != ui.account_ref ||
 					   job.revision != search_revision ||
 					   (kind == .Global && !ui.gs_open)) {
 				search_free(job); search_active[kind] = nil

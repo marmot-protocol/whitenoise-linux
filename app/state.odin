@@ -396,7 +396,6 @@ Ui_State :: struct {
 	peer_npub:                                             string, // derived from peer_hex, "" if malformed
 	profile_contact:                                       Contact_Ui, // viewed profile outside the saved contacts list
 	add_account_open:                                      bool, // show the login pane to add another account
-	member_count:                                          int, // selected chat's member count
 	scroll_pending:                                        bool, // jump timeline scroll to newest after reload
 	selected_contact:                                      int, // index into contacts, -1 = none
 	name_input:                                            [dynamic]u8, // profile display name draft
@@ -430,6 +429,7 @@ Ui_State :: struct {
 	reply_hint:                                            string, // preview text for the reply banner
 	show_members:                                          bool,
 	members:                                               [dynamic]Member_Ui,
+	members_scroll_y:                                      f32, // scroll offset used by the previous layout
 	member_nick:                                           int, // member-row nickname editor, -1 = closed
 	member_menu:                                           int, // member-row "⋯" action menu, -1 = closed
 	member_menu_x:                                         f32, // its anchor, layout coords
@@ -506,6 +506,7 @@ Ui_State :: struct {
 	mention_cands:                                         [dynamic]int, // candidate indices into members
 	mention_dismissed:                                     int, // "@" offset Escaped away, -1 = none
 	mi_open:                                               bool, // mentions inbox dropdown
+	mi_account:                                            string, // account owning the displayed mentions
 	mi_hits:                                               [dynamic]Mention_Hit, // its cards, newest first
 	picker_open:                                           bool, // emoji picker
 	picker_target:                                         string, // message id to react to; "" = insert in composer

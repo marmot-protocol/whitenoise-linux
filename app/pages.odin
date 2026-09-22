@@ -1239,7 +1239,12 @@ window_preview :: proc(
 		return ""
 	}
 	defer marmot.timeline_page_free(page)
+	return preview_text(client, page)
+}
 
+@(private = "file")
+preview_text :: proc(client: ^marmot.Client, page: ^marmot.Timeline_Page) -> string {
+	if page == nil {return ""}
 	for i := int(page.messages_len) - 1; i >= 0; i -= 1 {
 		record := &page.messages[i]
 		if record.kind == 1009 || record.kind == 5 || record.kind == KIND_POLL_VOTE {
@@ -1279,6 +1284,7 @@ row_to_ui :: proc(
 	client: ^marmot.Client,
 	presented: ^marmot.Presented_Chat_Row,
 	account_ref: string,
+	previews: map[string]^marmot.Timeline_Page = nil,
 ) -> Chat_Row_Ui {
 	row := &presented.row
 	presentation := &presented.presentation
@@ -1322,8 +1328,15 @@ row_to_ui :: proc(
 		xdc := is_xdc_blob(
 			row.last_message.plaintext != nil ? string(row.last_message.plaintext) : "",
 		)
-		if row.last_message.kind == 1210 || xdc {
-			phrased := window_preview(client, account_ref, row)
+		if row.last_message.kind == 1210 && row.last_message.group_system != nil {
+			preview = system_text(client, row.last_message.group_system)
+		} else if row.last_message.kind == 1210 || xdc {
+			phrased: string
+			if page, read := previews[string(row.group_id_hex)]; read {
+				phrased = preview_text(client, page)
+			} else {
+				phrased = window_preview(client, account_ref, row)
+			}
 			if len(phrased) > 0 {
 				preview = phrased
 			} else if xdc {
@@ -1366,29 +1379,32 @@ row_to_ui :: proc(
 }
 
 load_chat_list :: proc(client: ^marmot.Client, account_ref: string, ui: ^Ui_State) {
-	timing_start := time.tick_now()
-	defer local_timing_end(.chat_list_load, timing_start)
-	rows: ^marmot.Presented_Chat_List
-	if marmot.presented_chat_list(
-		   client,
-		   strings.clone_to_cstring(account_ref, context.temp_allocator),
-		   false,
-		   &rows,
-	   ) !=
-	   .OK {
-		ui.client_status = fmt.aprintf("chat list failed: %s", marmot.last_error())
+	chat_list_revision += 1 // an older background read cannot replace this explicit refresh
+	job := Chat_List_Work {
+		client  = client,
+		account = strings.clone_to_cstring(account_ref),
+	}
+	defer chat_list_free(&job)
+	chat_list_read(&job)
+	chat_list_apply(ui, &job)
+}
+
+@(private)
+chat_list_apply :: proc(ui: ^Ui_State, job: ^Chat_List_Work) {
+	if job.err != "" {
+		ui.client_status = fmt.aprintf("chat list failed: %s", job.err)
 		return
 	}
-	defer marmot.presented_chat_list_free(rows)
-
+	rows := job.rows
+	if rows == nil {return}
 	fresh := make([dynamic]Chat_Row_Ui, 0, int(rows.rows_len))
 	for i in 0 ..< rows.rows_len {
-		append(&fresh, row_to_ui(client, &rows.rows[i], account_ref))
+		append(&fresh, row_to_ui(job.client, &rows.rows[i], string(job.account), job.previews))
 	}
 	chats_replace(&ui.chats, fresh)
-	ui.my_pic_url = profile_info(client, account_ref).pic_url
-	queue_group_pics(ui, client)
+	ui.my_pic_url = profile_info(job.client, string(job.account)).pic_url
+	queue_group_pics(ui, job.client)
 
 	// Keep the rail-filter flags aligned with the fresh row set.
-	refresh_filter_hits(client, ui)
+	refresh_filter_hits(job.client, ui)
 }

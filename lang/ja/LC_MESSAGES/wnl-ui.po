@@ -561,6 +561,9 @@ msgstr "動画を再生できませんでした — タップして再試行"
 msgid "Couldn't load edit history. Please try again."
 msgstr "編集履歴を読み込めませんでした。もう一度お試しください。"
 
+msgid "Couldn't load group members. Please try again."
+msgstr "グループのメンバーを読み込めませんでした。もう一度お試しください。"
+
 #, fuzzy
 msgid "Couldn't load image. Click to retry."
 msgstr "画像をダウンロードできませんでした。"

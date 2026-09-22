@@ -243,6 +243,8 @@ timeline_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	previous := make(map[string]bool, context.temp_allocator)
 	for msg in ui.messages {previous[msg.id] = true}
 	initial := ui.timeline_loading
+	// An explicit latest click must survive a page already in flight.
+	latest := ui.scroll_pending && ui.jump_id == ""
 	if timeline_page != nil {marmot.timeline_page_free(timeline_page)}
 	for older in timeline_history {marmot.timeline_page_free(older)}
 	delete(timeline_history)
@@ -253,7 +255,7 @@ timeline_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if initial {edit_restore(ui)}
 	if paged {
 		ui.timeline_paging = false
-		ui.scroll_pending = false
+		ui.scroll_pending = latest
 	}
 	if !initial && !paged {
 		for &msg in ui.messages {

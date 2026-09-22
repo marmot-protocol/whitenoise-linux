@@ -8,7 +8,6 @@ import clay "../vendor/clay/bindings/odin/clay-odin"
 timeline_skip :: proc(ui: ^Ui_State, msg: Msg_Ui) -> bool {
 	if msg.row_height <= 0 ||
 	   msg.deleted ||
-	   sel_dragging ||
 	   msg.id == ui.jump_id ||
 	   msg.row_measure != ui.timeline_metric {
 		return false
@@ -37,16 +36,18 @@ timeline_measure :: proc(ui: ^Ui_State) {
 	anchor_delta: f32
 	anchored := ui.scroll_pending || ui.jump_id != ""
 	for &msg, i in ui.messages {
-		if msg.thread_of != cur || msg.system {
+		if msg.thread_of != cur {
 			continue
 		}
-		row := clay.GetElementData(clay.ID("MsgRow", u32(i)))
+		row := clay.GetElementData(clay.ID(msg.system ? "SysRow" : "MsgRow", u32(i)))
 		if row.found {
-			top := row.boundingBox.y - view.boundingBox.y - data.scrollPosition.y
+			// The scrollbar can change the requested offset during layout. Measure
+			// against the offset these boxes used, so anchoring cannot undo a drag.
+			top := row.boundingBox.y - view.boundingBox.y - timeline_draw_offset
 			if !anchored &&
 			   msg.row_height > 0 &&
 			   msg.row_measure == ui.timeline_metric &&
-			   msg.row_top + data.scrollPosition.y >= 0 {
+			   msg.row_top + timeline_draw_offset >= 0 {
 				anchor_delta = top - msg.row_top
 				anchored = true
 			}

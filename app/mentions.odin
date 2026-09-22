@@ -10,7 +10,6 @@
 package main
 
 import "core:fmt"
-import "core:slice"
 import "core:strings"
 import "core:text/edit"
 import "core:unicode"
@@ -170,7 +169,11 @@ mention_update :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if ui.mention_dismissed == at {
 		return
 	}
-	if len(ui.members) == 0 {
+	if len(ui.members) == 0 &&
+	   ui.selected >= 0 &&
+	   (members_job == nil ||
+			   string(members_job.account) != ui.account_ref ||
+			   string(members_job.group) != ui.chats[ui.selected].group_id) {
 		load_members(client, ui)
 	}
 	if ui.mention_at_b != at {
@@ -183,9 +186,7 @@ mention_update :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	for member, i in ui.members {
 		if len(q) > 0 &&
 		   !strings.contains(strings.to_lower(member.name, context.temp_allocator), q) {
-			np := hex_npub(member.id_hex)
-			defer delete(np)
-			if !strings.contains(np, q) {
+			if !strings.contains(member.npub, q) {
 				continue
 			}
 		}
@@ -322,7 +323,7 @@ MI_REFRESH_SECS :: 60.0
 MENTION_READ_CAP :: 200 // stored read-ids cap (prefs)
 
 Mention_Hit :: struct {
-	chat:    int, // index into ui.chats
+	group:   string, // stable across chat-list reorderings
 	msg_id:  string,
 	title:   string, // chat title
 	sender:  string, // display label
@@ -333,6 +334,7 @@ Mention_Hit :: struct {
 }
 
 mi_free_hit :: proc(h: Mention_Hit) {
+	delete(h.group)
 	delete(h.msg_id)
 	delete(h.title)
 	delete(h.sender)
@@ -376,73 +378,14 @@ mi_unread_count :: proc(ui: ^Ui_State) -> int {
 	return n
 }
 
-// Re-scan every chat's recent page for messages mentioning me, newest
-// first. Same query shape as gs_refresh; edits ride the timeline as
-// the record's current text already (load path parity is a caveat:
-// this reads plaintext, so a 1009 edit body is scanned as its own
-// record and the original keeps its pre-edit text).
-// ponytail: synchronous N limit-100 queries; worker thread if a large
-// account ever makes the refresh hitch.
+// Share the bounded search worker; keep existing results until the scan completes.
 mi_refresh :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	mi_clear(ui)
-	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	for chat, ci in ui.chats {
-		if chat.pending {
-			continue
-		}
-		query := marmot.Timeline_Message_Query {
-			group_id_hex = strings.clone_to_cstring(chat.group_id, context.temp_allocator),
-			has_limit    = true,
-			limit        = MI_FETCH_LIMIT,
-		}
-		page: ^marmot.Timeline_Page
-		if marmot.timeline_messages(client, account, &query, &page) != .OK {
-			continue
-		}
-		defer marmot.timeline_page_free(page)
-
-		for i := page.messages_len; i > 0; i -= 1 {
-			record := &page.messages[i - 1]
-			if record.deleted ||
-			   record.kind == 1009 ||
-			   record.kind == 5 ||
-			   record.plaintext == nil {
-				continue
-			}
-			if record.direction != nil && string(record.direction) == "sent" {
-				continue
-			}
-			id := record.message_id_hex != nil ? string(record.message_id_hex) : ""
-			if len(id) == 0 || ui.hidden[id] {
-				continue
-			}
-			body := string(record.plaintext)
-			if !text_mentions_me(body, ui.account_ref) {
-				continue
-			}
-			sender := record.sender != nil ? string(record.sender) : ""
-			append(
-				&ui.mi_hits,
-				Mention_Hit {
-					chat = ci,
-					msg_id = strings.clone(id),
-					title = strings.clone(chat.title),
-					sender = strings.clone(profile_label(client, sender)),
-					snippet = gs_snippet(body, 0),
-					at = format_full(record.timeline_at),
-					when_at = record.timeline_at,
-					unread = !mi_is_read(ui, id),
-				},
-			)
-		}
+	if ui.mi_account != ui.account_ref {
+		mi_clear(ui)
+		delete(ui.mi_account)
+		ui.mi_account = strings.clone(ui.account_ref)
 	}
-
-	slice.sort_by(ui.mi_hits[:], proc(a, b: Mention_Hit) -> bool {
-		return a.when_at > b.when_at
-	})
-	for len(ui.mi_hits) > MI_HITS_MAX {
-		mi_free_hit(pop(&ui.mi_hits))
-	}
+	search_request(ui, client, .Mentions)
 }
 
 @(private = "file")
@@ -455,7 +398,7 @@ mi_tick :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	now := rl.GetTime()
-	if mi_last >= 0 && now - mi_last < MI_REFRESH_SECS {
+	if ui.mi_account == ui.account_ref && mi_last >= 0 && now - mi_last < MI_REFRESH_SECS {
 		return
 	}
 	mi_last = now
@@ -642,9 +585,7 @@ handle_mi :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	for hit, i in ui.mi_hits {
 		if clay.PointerOver(clay.ID("MiHit", u32(i))) {
 			ui.mi_open = false
-			if hit.chat >= 0 && hit.chat < len(ui.chats) {
-				gs_jump(ui, client, ui.chats[hit.chat].group_id, hit.msg_id)
-			}
+			gs_jump(ui, client, hit.group, hit.msg_id)
 			return
 		}
 	}

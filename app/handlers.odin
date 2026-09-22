@@ -354,6 +354,9 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	if clicked("JumpLatest") {
+		delete(ui.jump_id)
+		ui.jump_id = ""
+		scroll_residual = {}
 		if ui.tl_has_after {
 			timeline_start(client, ui, "")
 		}
@@ -1113,7 +1116,7 @@ select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) {
 	ui.search_open = false
 	ui.show_members = false
 	// Stale members would feed the @-mention popover; reload lazily.
-	clear(&ui.members)
+	members_clear(ui)
 	ui.focus = .Compose
 	// Restore this chat's saved draft (empty if none). A switch also
 	// abandons any in-progress edit; it targeted the old chat.
@@ -1131,15 +1134,6 @@ select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) {
 		delete(ui.prefs.last_chat)
 		ui.prefs.last_chat = strings.clone(ui.chats[index].group_id)
 		save_settings(ui)
-	}
-
-	ui.member_count = 0
-	members: ^marmot.Group_Member_Record_List
-	account_c := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	group_c := strings.clone_to_cstring(ui.chats[index].group_id, context.temp_allocator)
-	if marmot.group_members(client, account_c, group_c, &members) == .OK {
-		ui.member_count = int(members.len)
-		marmot.app_group_member_record_list_free(members)
 	}
 
 	if len(ui.messages) > 0 {

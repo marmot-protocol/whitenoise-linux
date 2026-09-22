@@ -27,6 +27,8 @@ Live :: struct {
 	worker:        ^thread.Thread,
 	events_sub:    ^marmot.Events_Subscription,
 	events_worker: ^thread.Thread,
+	refresh:       ^Chat_List_Work,
+	refresh_dirty: bool,
 }
 
 live_worker :: proc(t: ^thread.Thread) {
@@ -229,15 +231,35 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 	clear(&live.dirty_groups)
 	sync.unlock(&live.mutex)
 
-	if !dirty {
-		return
-	}
-	issues_refresh()
+	if dirty {issues_refresh(); live.refresh_dirty = true}
 	if had_events {
 		search_revision += 1
 		sync_at = rl.GetTime() // the status bar shows SYNCING for a beat
 	}
 
+	job := live.refresh
+	if job != nil && thread.is_done(job.worker) {
+		live.refresh = nil
+		if string(job.account) == ui.account_ref && job.revision == chat_list_revision {
+			live_apply(ui, client, job)
+		}
+		chat_list_free(job)
+		free(job)
+	}
+	// Coalesce events while a read is running; never wait for that read on a frame.
+	if live.refresh != nil || !live.refresh_dirty || client == nil {return}
+	live.refresh_dirty = false
+	job = new(Chat_List_Work)
+	job.client, job.account = client, strings.clone_to_cstring(ui.account_ref)
+	job.revision = chat_list_revision
+	job.worker = thread.create(chat_list_worker)
+	job.worker.data = job
+	live.refresh = job
+	thread.start(job.worker)
+}
+
+@(private)
+live_apply :: proc(ui: ^Ui_State, client: ^marmot.Client, job: ^Chat_List_Work) {
 	selected_group: string
 	if ui.selected >= 0 {selected_group = ui.chats[ui.selected].group_id}
 	// Unread counts before the reload, to spot the chats that gained
@@ -246,7 +268,7 @@ drain_live :: proc(live: ^Live, ui: ^Ui_State, client: ^marmot.Client) {
 	for chat in ui.chats {
 		old_unread[chat.group_id] = chat.unread
 	}
-	load_chat_list(client, ui.account_ref, ui)
+	chat_list_apply(ui, job)
 	ui.selected = -1
 	for chat, i in ui.chats {
 		if chat.group_id == selected_group {

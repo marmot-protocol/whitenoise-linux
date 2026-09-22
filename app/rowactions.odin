@@ -314,8 +314,10 @@ handle_row_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // and tell marmot the latest message was read.
 mark_chat_read :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) {
 	chat := ui.chats[index]
-	delete_key(&ui.prefs.unread_ids, chat.group_id)
-	save_settings(ui)
+	if chat.group_id in ui.prefs.unread_ids {
+		delete_key(&ui.prefs.unread_ids, chat.group_id)
+		save_settings(ui)
+	}
 	if len(chat.last_id) == 0 {
 		return
 	}
@@ -328,8 +330,10 @@ mark_chat_read :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) {
 		ui.client_status = fmt.aprintf("Couldn't mark the chat read. %s", marmot.last_error())
 		return
 	}
+	ui.chats[index].unread = row.unread_count
+	delete(ui.chats[index].first_unread)
+	ui.chats[index].first_unread = strings.clone(string(row.first_unread_message_id_hex))
 	marmot.chat_list_row_free(row)
-	refresh_after_action(ui, client)
 }
 
 // Clicks and typing in the open folder modal.

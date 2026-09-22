@@ -267,7 +267,7 @@ performance_layout :: proc(t: ^testing.T) {
 			&ui.messages,
 			Msg_Ui {
 				id = fmt.aprintf("message-%d", i),
-				sender = strings.clone("Alice"),
+				sender = i == 999 ? strings.repeat("Long display name ", 12) : strings.clone("Alice"),
 				body = fmt.aprintf(
 					"Message %d. A paragraph with several words to wrap across the conversation pane.",
 					i,
@@ -354,12 +354,69 @@ performance_layout :: proc(t: ^testing.T) {
 	)
 	ui.messages[0].row_height = 0
 	build_layout(&ui, 0)
+	testing.expect(
+		t,
+		abs(data.scrollPosition.y - timeline_draw_offset) > 1,
+		"an anchor correction must invalidate the rendered scroll position",
+	)
 	build_layout(&ui, 0)
+	testing.expect(t, abs(data.scrollPosition.y - timeline_draw_offset) < 1)
 	testing.expect(
 		t,
 		abs(ui.messages[anchor].row_top + data.scrollPosition.y - anchor_y) < 1,
 		"Growing a row above the viewport must preserve the reading position",
 	)
+	// Holding text at the top must not remount the entire history or resize it.
+	data.scrollPosition.y = 0
+	build_layout(&ui, 0)
+	height := data.contentDimensions.height
+	first := clay.GetElementData(clay.ID("MsgRow", 0)).boundingBox
+	ui.sel_on, ui.sel_block = true, 0
+	sel_dragging = true
+	for end in ([]int{0, 7, 21}) {
+		ui.sel_b = end
+		build_layout(&ui, 0)
+		testing.expect(
+			t,
+			!clay.GetElementData(clay.ID("MsgHead", 999)).found,
+			"holding text must keep offscreen history virtualized",
+		)
+		testing.expect(t, abs(data.contentDimensions.height - height) < 1)
+		testing.expect_value(t, clay.GetElementData(clay.ID("MsgRow", 0)).boundingBox, first)
+	}
+	sel_dragging = false
+	sel_clear(&ui)
+	// The latest button supersedes an older-history anchor, even mid-page.
+	ui.jump_id = strings.clone(ui.messages[0].id)
+	ui.timeline_paging = true
+	scroll_residual.y = 10
+	for _ in 0 ..< 30 {anim_tick(1.0 / 60); build_layout(&ui, 0)}
+	button := clay.GetElementData(clay.ID("JumpLatest"))
+	testing.expect(t, button.found)
+	clay.SetPointerState({button.boundingBox.x + 7, button.boundingBox.y + 7}, false)
+	forced_release = true
+	client: marmot.Client
+	handle_chat(&ui, &client)
+	forced_release = false
+	testing.expect(t, ui.scroll_pending)
+	testing.expect_value(t, ui.jump_id, "")
+	testing.expect_value(t, scroll_residual, clay.Vector2{})
+	delete(ui.jump_id); ui.jump_id = ""
+	// A page already in flight must not consume the explicit latest request.
+	page: marmot.Timeline_Page
+	job := Timeline_Work {
+		account = "",
+		group   = "test",
+		page    = &page,
+		paged   = true,
+	}
+	timeline_job = &job
+	timeline_drain(&ui, nil)
+	timeline_job, timeline_page = nil, nil // the fixture page is stack-owned
+	testing.expect(t, !ui.timeline_paging && ui.scroll_pending)
+	delete(ui.messages_account); delete(ui.messages_group)
+	messages_collect()
+	ui.scroll_pending = false
 	// Thread completion wakes a sleeping UI and leaves the event queued.
 	rl.WindowShouldClose()
 	worker := thread.create(

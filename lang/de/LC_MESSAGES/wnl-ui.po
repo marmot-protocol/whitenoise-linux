@@ -561,6 +561,9 @@ msgstr "Video konnte nicht abgespielt werden – zum Wiederholen tippen"
 msgid "Couldn't load edit history. Please try again."
 msgstr "Der Bearbeitungsverlauf konnte nicht geladen werden. Bitte versuche es erneut."
 
+msgid "Couldn't load group members. Please try again."
+msgstr "Die Gruppenmitglieder konnten nicht geladen werden. Bitte versuche es erneut."
+
 #, fuzzy
 msgid "Couldn't load image. Click to retry."
 msgstr "Bild konnte nicht heruntergeladen werden."

@@ -2,6 +2,7 @@ package main
 
 import "core:fmt"
 import "core:strings"
+import "core:thread"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -316,10 +317,8 @@ chat_pane :: proc(ui: ^Ui_State) {
 								)
 							}
 						}
-						if msg.system {
-							system_row(u32(i), msg)
-						} else if timeline_skip(ui, msg) {
-							if clay.UI(clay.ID("MsgRow", u32(i)))(
+						if timeline_skip(ui, msg) {
+							if clay.UI(clay.ID(msg.system ? "SysRow" : "MsgRow", u32(i)))(
 							{
 								layout = {
 									sizing = {
@@ -329,6 +328,8 @@ chat_pane :: proc(ui: ^Ui_State) {
 								},
 							},
 							) {}
+						} else if msg.system {
+							system_row(u32(i), msg)
 						} else {
 							message_row(u32(i), msg)
 						}
@@ -440,6 +441,10 @@ members_panel :: proc(ui: ^Ui_State) {
 		backgroundColor = RAIL_BG,
 	},
 	) {
+		if members_job != nil && len(ui.members) == 0 {
+			clay.Text(tr("Loading…"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
+			return
+		}
 		if clay.UI(clay.ID("MembersBody"))(
 		{
 			layout = {
@@ -521,7 +526,7 @@ members_panel :: proc(ui: ^Ui_State) {
 							layout = {
 								sizing = {width = clay.SizingGrow()},
 								layoutDirection = .TopToBottom,
-								childGap = 6,
+								childGap = MEMBER_GAP,
 							},
 						},
 						) {
@@ -534,7 +539,7 @@ members_panel :: proc(ui: ^Ui_State) {
 						layout = {
 							sizing = {width = clay.SizingGrow()},
 							layoutDirection = .TopToBottom,
-							childGap = 6,
+							childGap = MEMBER_GAP,
 						},
 					},
 					) {
@@ -645,15 +650,42 @@ info_settings_col :: proc(ui: ^Ui_State) {
 	}
 }
 
+@(private = "file")
+MEMBER_HEIGHT :: 48
+@(private = "file")
+MEMBER_GAP :: 6
+@(private = "file")
+MEMBER_NICK_HEIGHT :: 28
+
 // The people column: the member list and shared media.
 @(private = "file")
 info_people_col :: proc(ui: ^Ui_State, col_w: f32) {
 	section_head("MembersSection", "Members", fmt.tprintf("%d", len(ui.members)))
+	// Retain row geometry, but do not build names or queue avatars off screen.
+	data := clay.GetScrollContainerData(clay.ID("MembersScroll"))
+	view := clay.GetElementData(clay.ID("MembersScroll"))
+	first := clay.GetElementData(clay.ID("MemberRow", 0))
+	y := first.boundingBox.y
+	if data.found {
+		y += data.scrollPosition.y - ui.members_scroll_y
+		ui.members_scroll_y = data.scrollPosition.y
+	}
 	for member, i in ui.members {
+		visible :=
+			!data.found ||
+			!first.found ||
+			ui.member_nick == i ||
+			y + MEMBER_HEIGHT >= view.boundingBox.y - 2 * (MEMBER_HEIGHT + MEMBER_GAP) &&
+				y <=
+					view.boundingBox.y + view.boundingBox.height + 2 * (MEMBER_HEIGHT + MEMBER_GAP)
+		y +=
+			MEMBER_HEIGHT +
+			MEMBER_GAP +
+			(ui.member_nick == i ? MEMBER_NICK_HEIGHT + MEMBER_GAP : 0)
 		if clay.UI(clay.ID("MemberRow", u32(i)))(
 		{
 			layout = {
-				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(48)},
+				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(MEMBER_HEIGHT)},
 				padding = {left = 6, right = 2},
 				childGap = 10,
 				childAlignment = {y = .Center},
@@ -662,6 +694,7 @@ info_people_col :: proc(ui: ^Ui_State, col_w: f32) {
 			cornerRadius = rr(8),
 		},
 		) {
+			if !visible {continue}
 			avatar("MemberAvatar", u32(i), member.id_hex, member.name, 36, url_pic(member.pic_url))
 			if clay.UI(clay.ID("MemberCol", u32(i)))(
 			{
@@ -733,7 +766,10 @@ info_people_col :: proc(ui: ^Ui_State, col_w: f32) {
 			if clay.UI(clay.ID("MemberNickBox", u32(i)))(
 			{
 				layout = {
-					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(28)},
+					sizing = {
+						width = clay.SizingGrow(),
+						height = clay.SizingFixed(MEMBER_NICK_HEIGHT),
+					},
 					padding = {left = 8, right = 8},
 					childAlignment = {y = .Center},
 				},
@@ -827,28 +863,95 @@ shared_media_grid :: proc(ui: ^Ui_State, col_w: f32) {
 	}
 }
 
-// Snapshot the selected chat's enriched member rows.
-load_members :: proc(client: ^marmot.Client, ui: ^Ui_State) {
-	if ui.selected < 0 {
-		return
-	}
-	details: ^marmot.Group_Details
-	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
-	group := strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator)
-	if marmot.group_details(client, account, group, &details) != .OK {
-		ui.client_status = fmt.aprintf("members failed: %s", marmot.last_error())
-		return
-	}
-	defer marmot.group_details_free(details)
+@(private)
+Members_Work :: struct {
+	worker:         ^thread.Thread,
+	client:         ^marmot.Client,
+	account, group: cstring,
+	details:        ^marmot.Group_Details,
+	err:            string,
+}
 
+@(private)
+members_job: ^Members_Work
+@(private)
+members_retired: [dynamic]^Members_Work
+
+// Group details enrich every member. Keep that database work off the UI thread.
+load_members :: proc(client: ^marmot.Client, ui: ^Ui_State) {
+	if ui.selected < 0 {return}
+	if members_job != nil {append(&members_retired, members_job)}
+	job := new(Members_Work)
+	job.client = client
+	job.account = strings.clone_to_cstring(ui.account_ref)
+	job.group = strings.clone_to_cstring(ui.chats[ui.selected].group_id)
+	job.worker = thread.create(proc(t: ^thread.Thread) {
+			context.allocator = reload_allocator()
+			job := (^Members_Work)(t.data)
+			defer frame_wake()
+			defer free_all(context.temp_allocator)
+			if marmot.group_details(job.client, job.account, job.group, &job.details) != .OK {
+				job.err = marmot.last_error()
+			}
+		})
+	job.worker.data = job
+	members_job = job
+	thread.start(job.worker)
+}
+
+@(private)
+members_free :: proc(job: ^Members_Work) {
+	thread.join(job.worker)
+	thread.destroy(job.worker)
+	if job.details != nil {marmot.group_details_free(job.details)}
+	delete(job.account); delete(job.group); delete(job.err)
+	free(job)
+}
+
+@(private)
+members_stop :: proc() {
+	if members_job != nil {members_free(members_job); members_job = nil}
+	for job in members_retired {members_free(job)}
+	delete(members_retired); members_retired = {}
+}
+
+@(private)
+members_drain :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	for i := len(members_retired) - 1; i >= 0; i -= 1 {
+		if thread.is_done(members_retired[i].worker) {
+			members_free(members_retired[i])
+			unordered_remove(&members_retired, i)
+		}
+	}
+	job := members_job
+	if job == nil || !thread.is_done(job.worker) {return}
+	members_job = nil
+	defer members_free(job)
+	if ui.selected < 0 ||
+	   ui.account_ref != string(job.account) ||
+	   ui.chats[ui.selected].group_id != string(job.group) {return}
+	if job.details == nil {
+		ui.client_status = fmt.aprintf(
+			"%s %s",
+			tr("Couldn't load group members. Please try again."),
+			job.err,
+		)
+		return
+	}
+	members_apply(ui, client, job.details)
+}
+
+@(private)
+members_apply :: proc(ui: ^Ui_State, client: ^marmot.Client, details: ^marmot.Group_Details) {
 	delete(ui.group_desc)
 	ui.group_desc = strings.clone(
 		details.group.description != nil ? string(details.group.description) : "",
 	)
 	ui.group_retention = details.group.disappearing_message_secs
 
-	clear(&ui.members)
+	members_clear(ui)
 	ui.member_nick = -1 // fresh rows invalidate the editor index
+	ui.member_menu = -1
 	for i in 0 ..< details.members_len {
 		member := &details.members[i]
 		// Local nickname wins over the published name, like contacts.
@@ -870,13 +973,21 @@ load_members :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 					profile_info(client, string(member.member_id_hex)).pic_url,
 				),
 				id_hex = strings.clone(string(member.member_id_hex)),
-				npub = strings.clone(hex_npub(string(member.member_id_hex))),
+				npub = hex_npub(string(member.member_id_hex)),
 				name = strings.clone(name),
 				is_admin = member.is_admin,
 				is_self = member.is_self,
 			},
 		)
 	}
+}
+
+@(private)
+members_clear :: proc(ui: ^Ui_State) {
+	for member in ui.members {
+		delete(member.id_hex); delete(member.npub); delete(member.name); delete(member.pic_url)
+	}
+	clear(&ui.members)
 }
 
 login_button :: proc(id_str: string, label: string) {
