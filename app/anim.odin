@@ -242,6 +242,7 @@ page_view_key :: proc(ui: ^Ui_State) -> u32 {
 	if ui.show_members {
 		key ~= 0x2ab17e10 // the group-info page swaps the whole chat area
 	}
+	if ui.group_files_open {key ~= 0x31f19a24}
 	return ui.new_chat_open ? key ~ 0x5bf03635 : key
 }
 

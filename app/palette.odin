@@ -351,6 +351,7 @@ run_command :: proc(ui: ^Ui_State, client: ^marmot.Client, cmd: Cmd) {
 		flip(ui, &ui.prefs.rail_collapsed)
 	case .Toggle_Members:
 		if ui.selected >= 0 {
+			ui.group_files_open = false
 			ui.show_members = !ui.show_members
 			if ui.show_members {
 				load_members(client, ui)

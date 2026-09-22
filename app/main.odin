@@ -1430,6 +1430,7 @@ app_main :: proc() {
 		drain_live(&live, &ui, client)
 		timeline_drain(&ui, client)
 		members_drain(&ui, client)
+		group_files_tick(&ui, client)
 		issues_drain(&ui, client)
 		issues_sync_route(&ui, client)
 		if !ui.timeline_loading && test_peer_pending {
@@ -2239,6 +2240,7 @@ app_main :: proc() {
 	delete(send_threads)
 	timeline_stop()
 	members_stop()
+	group_files_stop()
 	issues_stop(&ui)
 	search_stop()
 	if live.refresh != nil {chat_list_free(live.refresh); free(live.refresh)}

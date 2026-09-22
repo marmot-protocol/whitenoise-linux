@@ -865,6 +865,7 @@ switch_account :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string
 	ui.account_ref = strings.clone(account_id)
 	ui.selected = -1
 	ui.show_members = false
+	ui.group_files_open = false
 	ui.profile = {}
 	reset_profile_view(ui)
 	clear(&ui.contacts)

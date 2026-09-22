@@ -125,6 +125,9 @@ msgstr ""
 msgid "25 European languages, including English and Italian."
 msgstr "25 europäische Sprachen, darunter Englisch und Italienisch."
 
+msgid "3D models"
+msgstr "3D-Modelle"
+
 #, fuzzy
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr "White Noise ist ein nativer Desktop-Client für private Gruppenchats. Nachrichten werden mit MLS verschlüsselt, bevor sie dein Gerät verlassen, über Nostr-Relays geleitet und nur für die Personen im Raum entschlüsselt."
@@ -225,6 +228,12 @@ msgstr "Alle Konten bleiben verbunden. Beim Wechseln ändert sich nur, welches d
 msgid "All folders"
 msgstr "Ordner öffnen"
 
+msgid "All senders"
+msgstr "Alle Absender"
+
+msgid "All types"
+msgstr "Alle Typen"
+
 #, fuzzy
 msgid "Also Ctrl + / - / 0."
 msgstr "Auch Strg + / − / 0 oder Strg + Scrollen."
@@ -247,8 +256,14 @@ msgstr "Erscheinungsbild"
 msgid "Applies to message bodies and the composer."
 msgstr ""
 
+msgid "Apps"
+msgstr "Apps"
+
 msgid "Archive"
 msgstr "Archivieren"
+
+msgid "Archives"
+msgstr "Archive"
 
 msgid "Ask a question..."
 msgstr ""
@@ -256,6 +271,12 @@ msgstr ""
 #, fuzzy
 msgid "Asking your relays for their key package."
 msgstr "auf dem Schlüsselpaket selbst"
+
+msgid "Attachment"
+msgstr "Anhang"
+
+msgid "Audio"
+msgstr "Audio"
 
 msgid "Audio message"
 msgstr "Audionachricht"
@@ -561,6 +582,9 @@ msgstr "Video konnte nicht abgespielt werden – zum Wiederholen tippen"
 msgid "Couldn't load edit history. Please try again."
 msgstr "Der Bearbeitungsverlauf konnte nicht geladen werden. Bitte versuche es erneut."
 
+msgid "Couldn't load files. Please try again."
+msgstr "Die Dateien konnten nicht geladen werden. Bitte versuche es erneut."
+
 msgid "Couldn't load group members. Please try again."
 msgstr "Die Gruppenmitglieder konnten nicht geladen werden. Bitte versuche es erneut."
 
@@ -827,6 +851,9 @@ msgstr "Diskussion"
 msgid "Divider"
 msgstr ""
 
+msgid "Documents"
+msgstr "Dokumente"
+
 #, fuzzy
 msgid "Done."
 msgstr "Fertig"
@@ -953,6 +980,13 @@ msgstr ""
 msgid "Field hover"
 msgstr ""
 
+msgid "Files"
+msgstr "Dateien"
+
+#, c-format
+msgid "Files: %d"
+msgstr "Dateien: %d"
+
 #, fuzzy
 msgid "Filter unread chats"
 msgstr "Nur ungelesene Chats anzeigen"
@@ -974,6 +1008,9 @@ msgstr ""
 
 msgid "Font"
 msgstr ""
+
+msgid "Fonts"
+msgstr "Schriftarten"
 
 msgid "Forward"
 msgstr "Weiterleiten"
@@ -1081,6 +1118,9 @@ msgstr "PROBLEMMELDUNGEN"
 #, fuzzy
 msgid "Image didn't load. Click to retry."
 msgstr "Bild konnte nicht heruntergeladen werden."
+
+msgid "Images"
+msgstr "Bilder"
 
 msgid "Images and files kept on this device so they don't download twice, sealed with your vault key."
 msgstr ""
@@ -1403,6 +1443,9 @@ msgstr "Keine Treffer"
 msgid "No contacts yet"
 msgstr "Noch keine Kontakte"
 
+msgid "No files match these filters."
+msgstr "Keine Dateien entsprechen diesen Filtern."
+
 #, fuzzy
 msgid "No folders yet."
 msgstr "Noch keine Relays"
@@ -1512,6 +1555,9 @@ msgstr ""
 
 msgid "Other"
 msgstr "Andere"
+
+msgid "Other files"
+msgstr "Andere Dateien"
 
 msgid "Out of stock"
 msgstr "Nicht auf Lager"
@@ -1848,6 +1894,9 @@ msgstr "Speichern"
 msgid "Save and use"
 msgstr ""
 
+msgid "Save attachment"
+msgstr "Anhang speichern"
+
 #, fuzzy
 msgid "Save file"
 msgstr "Video speichern"
@@ -1921,6 +1970,9 @@ msgstr "Nachricht senden"
 
 msgid "Send with an effect"
 msgstr ""
+
+msgid "Sender"
+msgstr "Absender"
 
 msgid "Sending..."
 msgstr "Wird gesendet..."
@@ -2260,6 +2312,9 @@ msgstr ""
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr ""
 
+msgid "Type"
+msgstr "Typ"
+
 msgid "Unavailable conversation"
 msgstr "Unterhaltung nicht verfügbar"
 
@@ -2311,6 +2366,9 @@ msgstr ""
 
 msgid "Verifying download..."
 msgstr "Download wird überprüft..."
+
+msgid "Videos"
+msgstr "Videos"
 
 msgid "View"
 msgstr ""

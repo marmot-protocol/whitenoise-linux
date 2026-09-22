@@ -55,26 +55,30 @@ chat_title_overflow :: proc(t: ^testing.T) {
 	)
 	append(&ui.messages, Msg_Ui{system = true, body = "Disappearing timer changed", at = "12:00"})
 	defer delete(ui.messages)
-	for width in ([]f32{526.4, 340, 400, 700}) {
-		rl.SetWindowSize(i32(width * UI_ZOOM), 1382)
-		clay.SetLayoutDimensions({width, 700})
-		commands := build_layout(&ui, 0)
-		for id in ([]string{"ChatPane", "ChatHeader", "SearchBtn", "BellBtn", "MembersBtn", "Composer"}) {
-			element := clay.GetElementData(clay.ID(id))
-			testing.expect(t, element.found, id)
-			testing.expect(
-				t,
-				element.boundingBox.x + element.boundingBox.width <= width + 0.01,
-				id,
-			)
-		}
-		view := clay.GetElementData(clay.ID("ChatHeadTitleClip")).boundingBox
-		clipped := false
-		for command in commands.internalArray[:commands.length] {
-			if command.commandType == .ScissorStart && command.boundingBox == view {
-				clipped = true
+	for search in ([]bool{false, true}) {
+		ui.search_open = search
+		ui.issue_setting = .Enabled
+		for width in ([]f32{526.4, 340, 400, 700}) {
+			rl.SetWindowSize(i32(width * UI_ZOOM), 1382)
+			clay.SetLayoutDimensions({width, 700})
+			commands := build_layout(&ui, 0)
+			for id in ([]string{"ChatPane", "ChatHeader", "SearchBtn", "FilesBtn", "BellBtn", "MembersBtn", "Composer"}) {
+				element := clay.GetElementData(clay.ID(id))
+				testing.expect(t, element.found, id)
+				testing.expect(
+					t,
+					element.boundingBox.x + element.boundingBox.width <= width + 0.01,
+					id,
+				)
 			}
+			view := clay.GetElementData(clay.ID("ChatHeadTitleClip")).boundingBox
+			clipped := false
+			for command in commands.internalArray[:commands.length] {
+				if command.commandType == .ScissorStart && command.boundingBox == view {
+					clipped = true
+				}
+			}
+			testing.expect(t, clipped, "title must be clipped inside the header")
 		}
-		testing.expect(t, clipped, "title must be clipped inside the header")
 	}
 }

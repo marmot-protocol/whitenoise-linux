@@ -125,6 +125,9 @@ msgstr ""
 msgid "25 European languages, including English and Italian."
 msgstr "英語とイタリア語を含む25のヨーロッパ言語に対応しています。"
 
+msgid "3D models"
+msgstr "3Dモデル"
+
 #, fuzzy
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr "White Noise は、プライベートなグループチャットのためのネイティブデスクトップクライアントです。メッセージはあなたのマシンを離れる前に MLS で暗号化され、Nostr リレーを経由して送られ、ルーム内の人にだけ復号されます。"
@@ -225,6 +228,12 @@ msgstr "すべてのアカウントは接続されたままです。切り替え
 msgid "All folders"
 msgstr "フォルダを開く"
 
+msgid "All senders"
+msgstr "すべての送信者"
+
+msgid "All types"
+msgstr "すべての種類"
+
 #, fuzzy
 msgid "Also Ctrl + / - / 0."
 msgstr "Ctrl + / − / 0、または Ctrl + スクロールでも操作できます。"
@@ -247,7 +256,13 @@ msgstr "外観"
 msgid "Applies to message bodies and the composer."
 msgstr ""
 
+msgid "Apps"
+msgstr "アプリ"
+
 msgid "Archive"
+msgstr "アーカイブ"
+
+msgid "Archives"
 msgstr "アーカイブ"
 
 msgid "Ask a question..."
@@ -256,6 +271,12 @@ msgstr ""
 #, fuzzy
 msgid "Asking your relays for their key package."
 msgstr "キーパッケージ本体"
+
+msgid "Attachment"
+msgstr "添付ファイル"
+
+msgid "Audio"
+msgstr "音声"
 
 msgid "Audio message"
 msgstr "音声メッセージ"
@@ -561,6 +582,9 @@ msgstr "動画を再生できませんでした — タップして再試行"
 msgid "Couldn't load edit history. Please try again."
 msgstr "編集履歴を読み込めませんでした。もう一度お試しください。"
 
+msgid "Couldn't load files. Please try again."
+msgstr "ファイルを読み込めませんでした。もう一度お試しください。"
+
 msgid "Couldn't load group members. Please try again."
 msgstr "グループのメンバーを読み込めませんでした。もう一度お試しください。"
 
@@ -827,6 +851,9 @@ msgstr "議論"
 msgid "Divider"
 msgstr ""
 
+msgid "Documents"
+msgstr "文書"
+
 #, fuzzy
 msgid "Done."
 msgstr "完了"
@@ -953,6 +980,13 @@ msgstr ""
 msgid "Field hover"
 msgstr ""
 
+msgid "Files"
+msgstr "ファイル"
+
+#, c-format
+msgid "Files: %d"
+msgstr "ファイル：%d"
+
 #, fuzzy
 msgid "Filter unread chats"
 msgstr "未読のチャットのみ表示"
@@ -974,6 +1008,9 @@ msgstr ""
 
 msgid "Font"
 msgstr ""
+
+msgid "Fonts"
+msgstr "フォント"
 
 msgid "Forward"
 msgstr "転送"
@@ -1081,6 +1118,9 @@ msgstr "問題の追跡"
 #, fuzzy
 msgid "Image didn't load. Click to retry."
 msgstr "画像をダウンロードできませんでした。"
+
+msgid "Images"
+msgstr "画像"
 
 msgid "Images and files kept on this device so they don't download twice, sealed with your vault key."
 msgstr ""
@@ -1403,6 +1443,9 @@ msgstr "一致するものがありません"
 msgid "No contacts yet"
 msgstr "連絡先がまだありません"
 
+msgid "No files match these filters."
+msgstr "このフィルターに一致するファイルはありません。"
+
 #, fuzzy
 msgid "No folders yet."
 msgstr "リレーがまだありません"
@@ -1512,6 +1555,9 @@ msgstr ""
 
 msgid "Other"
 msgstr "その他"
+
+msgid "Other files"
+msgstr "その他のファイル"
 
 msgid "Out of stock"
 msgstr "在庫切れ"
@@ -1848,6 +1894,9 @@ msgstr "保存"
 msgid "Save and use"
 msgstr ""
 
+msgid "Save attachment"
+msgstr "添付ファイルを保存"
+
 #, fuzzy
 msgid "Save file"
 msgstr "動画を保存"
@@ -1921,6 +1970,9 @@ msgstr "メッセージを送信"
 
 msgid "Send with an effect"
 msgstr ""
+
+msgid "Sender"
+msgstr "送信者"
 
 msgid "Sending..."
 msgstr "送信しています..."
@@ -2260,6 +2312,9 @@ msgstr ""
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr ""
 
+msgid "Type"
+msgstr "種類"
+
 msgid "Unavailable conversation"
 msgstr "利用できない会話"
 
@@ -2311,6 +2366,9 @@ msgstr ""
 
 msgid "Verifying download..."
 msgstr "ダウンロードを確認中..."
+
+msgid "Videos"
+msgstr "動画"
 
 msgid "View"
 msgstr ""

@@ -199,26 +199,42 @@ fetch_attachment :: proc(
 	}
 	defer {if owned {marmot.timeline_page_free(page)}}
 
+	reference: ^marmot.Media_Attachment_Reference
 	for i in 0 ..< page.messages_len {
 		record := &page.messages[i]
 		if record.message_id_hex == nil || string(record.message_id_hex) != msg_id {
 			continue
 		}
-		reference := media_reference(record, index)
-		if reference == nil {
-			return
-		}
-
-		group_c := strings.clone_to_cstring(group, context.temp_allocator)
-		if marmot.download_media(client, account, group_c, reference, &result) != .OK {
-			fmt.eprintfln("media: download failed: %s", marmot.last_error())
-			return
-		}
-		// The chip's size label learns from any download that passes by.
-		if sha := reference.plaintext_sha256; sha != nil && string(sha) not_in blob_sizes {
-			blob_sizes[strings.clone(string(sha))] = i64(result.plaintext_len)
-		}
-		return result, true
+		if record.deleted || record.invalidation_status != nil {return}
+		reference = media_reference(record, index)
+		if reference == nil {return}
+		break
 	}
-	return
+	// The file browser retains references outside the timeline's loaded window.
+	if job := group_files_job;
+	   reference == nil &&
+	   job != nil &&
+	   job.worker == nil &&
+	   string(job.account) == ui.account_ref &&
+	   string(job.group) == group {
+		for file in job.files {
+			if string(file.record.message_id_hex) == msg_id &&
+			   file.index == index &&
+			   group_file_matches(ui, file) {
+				reference = media_reference(file.record, index)
+				break
+			}
+		}
+	}
+	if reference == nil {return}
+	group_c := strings.clone_to_cstring(group, context.temp_allocator)
+	if marmot.download_media(client, account, group_c, reference, &result) != .OK {
+		fmt.eprintfln("media: download failed: %s", marmot.last_error())
+		return
+	}
+	// The chip's size label learns from any download that passes by.
+	if sha := reference.plaintext_sha256; sha != nil && string(sha) not_in blob_sizes {
+		blob_sizes[strings.clone(string(sha))] = i64(result.plaintext_len)
+	}
+	return result, true
 }

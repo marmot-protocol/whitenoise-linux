@@ -53,13 +53,14 @@ chat_pane :: proc(ui: ^Ui_State) {
 			layout = {
 				sizing = {width = clay.SizingGrow()},
 				padding = clay.PaddingAll(14),
-				childGap = 10,
+				childGap = 6,
 				childAlignment = {y = .Center},
 			},
 			backgroundColor = RAIL_BG,
 		},
 		) {
-			avatar("ChatHeadAvatar", 0, chat.avatar_key, chat.title, 34, chat_pic(chat))
+			if page_w(ui) >=
+			   420 {avatar("ChatHeadAvatar", 0, chat.avatar_key, chat.title, 34, chat_pic(chat))}
 			// Keep unbroken titles from widening the pane beyond the window.
 			if clay.UI(clay.ID("ChatHeadTitleClip"))({clip = {horizontal = true}}) {
 				clay.Text(
@@ -69,9 +70,9 @@ chat_pane :: proc(ui: ^Ui_State) {
 			}
 			// The badge is provenance, not a control, and it is the
 			// widest thing in the row: dropped when the row has to
-			// choose between it and the three chips. The same string is
+			// choose between it and the header actions. The same string is
 			// on the chat's encryption panel.
-			if page_w(ui) >= HEAD_BADGE_W {
+			if page_w(ui) >= HEAD_BADGE_W + 160 {
 				if clay.UI(clay.ID("MlsBadge"))(
 				{
 					layout = {
@@ -94,36 +95,40 @@ chat_pane :: proc(ui: ^Ui_State) {
 					)
 				}
 			}
-			// Search box before the grow spacer: fixed siblings after a
-			// grow sibling drop in this clay build.
-			if ui.search_open {
-				if clay.UI(clay.ID("SearchBox"))(
-				{
-					layout = {
-						sizing = {width = clay.SizingFixed(240), height = clay.SizingFixed(32)},
-						padding = {left = 10, right = 10},
-						childAlignment = {y = .Center},
-					},
-					backgroundColor = ROW_BG,
-					cornerRadius = rr(8),
-					border = {color = FIELD_BORDER, width = bw()},
-				},
-				) {
-					field_text(
-						ui,
-						"SearchBox",
-						&ui.search_input,
-						"Search messages",
-						ui.focus == .Search,
-					)
-				}
-			}
 			// Right-pinned chrome; the bell opens the mentions inbox.
 			if clay.UI(clay.ID("ChatHeadGap"))(
 			{layout = {sizing = {width = clay.SizingGrow()}}},
 			) {}
 			if ui.issue_setting ==
 			   .Enabled {header_chip("IssuesBtn", ICON_COMMENTS, ui.issues_open, tr("Issues"))}
+			if clay.UI(clay.ID("FilesBtn"))(
+			{
+				layout = {
+					padding = {left = 10, right = 10, top = 8, bottom = 8},
+					childGap = 6,
+					childAlignment = {y = .Center},
+				},
+				backgroundColor = ui.group_files_open ? ACCENT : hovered() ? HOVER : ROW_BG,
+				cornerRadius = rr(8),
+			},
+			) {
+				clay.Text(
+					ICON_FOLDER,
+					{
+						fontId = FONT_ICON,
+						fontSize = 13,
+						textColor = ui.group_files_open ? ON_ACCENT : TEXT_DIM,
+					},
+				)
+				clay.Text(
+					tr("Files"),
+					{
+						fontId = FONT_BODY,
+						fontSize = 13,
+						textColor = ui.group_files_open ? ON_ACCENT : TEXT,
+					},
+				)
+			}
 			header_chip("SearchBtn", ICON_SEARCH, ui.search_open, "Search this chat")
 			bell_chip(ui)
 			header_chip("MembersBtn", ICON_PEOPLE, ui.show_members, "Group members")
@@ -131,6 +136,28 @@ chat_pane :: proc(ui: ^Ui_State) {
 			// bar casts, so the shadows don't stack.
 			if len(ui.thread_stack) == 0 {
 				cast_shade(clay.ID("ChatHeader"), .Down, 14, 0.35)
+			}
+		}
+		if ui.search_open {
+			if clay.UI(clay.ID("SearchBox"))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(32)},
+					padding = {left = 10, right = 10},
+					childAlignment = {y = .Center},
+				},
+				backgroundColor = ROW_BG,
+				cornerRadius = rr(8),
+				border = {color = FIELD_BORDER, width = bw()},
+			},
+			) {
+				field_text(
+					ui,
+					"SearchBox",
+					&ui.search_input,
+					"Search messages",
+					ui.focus == .Search,
+				)
 			}
 		}
 		// Declared after the header so the bell it attaches to exists.
@@ -174,7 +201,9 @@ chat_pane :: proc(ui: ^Ui_State) {
 		) {
 			// Group info takes the whole conversation area, like the
 			// thread route; page_view_key plays the swap transition.
-			if ui.show_members {
+			if ui.group_files_open {
+				group_files_panel(ui)
+			} else if ui.show_members {
 				members_panel(ui)
 			} else if ui.issues_open && ui.issue_setting == .Enabled {
 				issues_panel(ui)
@@ -463,6 +492,7 @@ members_panel :: proc(ui: ^Ui_State) {
 				},
 			},
 			) {
+				login_button("GroupFilesOpen", "Files")
 				if clay.UI(clay.ID("MembersHeadGap"))(
 				{layout = {sizing = {width = clay.SizingGrow()}}},
 				) {}

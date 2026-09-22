@@ -428,6 +428,11 @@ Ui_State :: struct {
 	replying:                                              string, // message id being replied to
 	reply_hint:                                            string, // preview text for the reply banner
 	show_members:                                          bool,
+	group_files_open:                                      bool,
+	group_files_type:                                      Group_File_Type,
+	group_files_sender:                                    string, // borrowed from the completed file job
+	group_files_menu:                                      Group_File_Menu,
+	group_files_option:                                    int,
 	members:                                               [dynamic]Member_Ui,
 	members_scroll_y:                                      f32, // scroll offset used by the previous layout
 	member_nick:                                           int, // member-row nickname editor, -1 = closed

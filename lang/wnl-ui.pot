@@ -123,6 +123,9 @@ msgstr ""
 msgid "25 European languages, including English and Italian."
 msgstr ""
 
+msgid "3D models"
+msgstr ""
+
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr ""
 
@@ -213,6 +216,12 @@ msgstr ""
 msgid "All folders"
 msgstr ""
 
+msgid "All senders"
+msgstr ""
+
+msgid "All types"
+msgstr ""
+
 msgid "Also Ctrl + / - / 0."
 msgstr ""
 
@@ -234,13 +243,25 @@ msgstr ""
 msgid "Applies to message bodies and the composer."
 msgstr ""
 
+msgid "Apps"
+msgstr ""
+
 msgid "Archive"
+msgstr ""
+
+msgid "Archives"
 msgstr ""
 
 msgid "Ask a question..."
 msgstr ""
 
 msgid "Asking your relays for their key package."
+msgstr ""
+
+msgid "Attachment"
+msgstr ""
+
+msgid "Audio"
 msgstr ""
 
 msgid "Audio message"
@@ -523,6 +544,9 @@ msgstr ""
 msgid "Couldn't load edit history. Please try again."
 msgstr ""
 
+msgid "Couldn't load files. Please try again."
+msgstr ""
+
 msgid "Couldn't load group members. Please try again."
 msgstr ""
 
@@ -765,6 +789,9 @@ msgstr ""
 msgid "Divider"
 msgstr ""
 
+msgid "Documents"
+msgstr ""
+
 msgid "Done."
 msgstr ""
 
@@ -881,6 +908,13 @@ msgstr ""
 msgid "Field hover"
 msgstr ""
 
+msgid "Files"
+msgstr ""
+
+#, c-format
+msgid "Files: %d"
+msgstr ""
+
 msgid "Filter unread chats"
 msgstr ""
 
@@ -900,6 +934,9 @@ msgid "Folders"
 msgstr ""
 
 msgid "Font"
+msgstr ""
+
+msgid "Fonts"
 msgstr ""
 
 msgid "Forward"
@@ -999,6 +1036,9 @@ msgid "ISSUE TRACKING"
 msgstr ""
 
 msgid "Image didn't load. Click to retry."
+msgstr ""
+
+msgid "Images"
 msgstr ""
 
 msgid "Images and files kept on this device so they don't download twice, sealed with your vault key."
@@ -1296,6 +1336,9 @@ msgstr ""
 msgid "No contacts yet"
 msgstr ""
 
+msgid "No files match these filters."
+msgstr ""
+
 msgid "No folders yet."
 msgstr ""
 
@@ -1396,6 +1439,9 @@ msgid "Original"
 msgstr ""
 
 msgid "Other"
+msgstr ""
+
+msgid "Other files"
 msgstr ""
 
 msgid "Out of stock"
@@ -1716,6 +1762,9 @@ msgstr ""
 msgid "Save and use"
 msgstr ""
 
+msgid "Save attachment"
+msgstr ""
+
 msgid "Save file"
 msgstr ""
 
@@ -1780,6 +1829,9 @@ msgid "Send the message"
 msgstr ""
 
 msgid "Send with an effect"
+msgstr ""
+
+msgid "Sender"
 msgstr ""
 
 msgid "Sending..."
@@ -2095,6 +2147,9 @@ msgstr ""
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr ""
 
+msgid "Type"
+msgstr ""
+
 msgid "Unavailable conversation"
 msgstr ""
 
@@ -2144,6 +2199,9 @@ msgid "Vault password changed."
 msgstr ""
 
 msgid "Verifying download..."
+msgstr ""
+
+msgid "Videos"
 msgstr ""
 
 msgid "View"

@@ -353,6 +353,19 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
+	if clicked("FilesBtn") || clicked("GroupFilesOpen") {
+		ui.group_files_open = !ui.group_files_open
+		ui.show_members, ui.issues_open = false, false
+		ui.group_files_type, ui.group_files_sender, ui.group_files_menu = .All, "", .None
+		if ui.search_open {
+			ui.search_open = false
+			clear(&ui.search_input)
+			load_timeline(client, ui)
+		}
+		ui.focus = .Compose
+		issues_sync_route(ui, client)
+		return
+	}
 	if clicked("JumpLatest") {
 		delete(ui.jump_id)
 		ui.jump_id = ""
@@ -390,6 +403,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 
 	if clicked("IssuesBtn") && ui.issue_setting == .Enabled {
+		ui.group_files_open = false
 		ui.issues_open = !ui.issues_open
 		ui.show_members, ui.search_open = false, false
 		ui.focus = .Issue_Search
@@ -402,6 +416,10 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			"MembersBtn",
 		) {ui.show_members = true; ui.issues_open = false; issues_sync_route(ui, client); load_members(client, ui); return}
 		if handle_issues(ui, client) {return}
+	}
+	if ui.group_files_open && !clicked("MembersBtn") && !clicked("SearchBtn") {
+		handle_group_files(ui)
+		return
 	}
 	// With the webxdc modal open the page owns the keyboard: skip the
 	// composer edit, or it drains the typed runes before
@@ -527,6 +545,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if clicked("MembersBtn") {
+		ui.group_files_open = false
 		ui.show_members = !ui.show_members
 		ui.focus = .Invite
 		ui.desc_editing = false
@@ -537,6 +556,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 	if clicked("SearchBtn") {
+		ui.group_files_open = false
 		ui.search_open = !ui.search_open
 		ui.focus = ui.search_open ? .Search : .Compose
 		if !ui.search_open {
@@ -1115,6 +1135,7 @@ select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) {
 	if compose_draft_key(ui) in ui.staged_drafts {ui.staged_drafts[compose_draft_key(ui)] = {}}
 	ui.search_open = false
 	ui.show_members = false
+	ui.group_files_open = false
 	// Stale members would feed the @-mention popover; reload lazily.
 	members_clear(ui)
 	ui.focus = .Compose
