@@ -15,6 +15,7 @@ import "core:fmt"
 import "core:strings"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
+import rl "sdlrl"
 
 // Colors come from the active theme's own tokens, so a light or retro
 // pack stays readable without new pack fields.
@@ -28,10 +29,11 @@ Code_Kind :: enum u8 {
 
 CODE_MAX_LINES :: 4000 // parse cap; a generated file can be enormous
 CODE_TILE_LINES :: 14 // rows on a timeline tile
-// ponytail: 1000 rows keeps the modal under clay's element budget
-// (32k) with room for the rest of the frame; virtualized rows are the
-// upgrade if whole generated files need to scroll.
+// ponytail: cap highlighted source at 1000 lines for clay's element
+// budget; virtualize colored runs if whole files need to scroll.
 CODE_MODAL_LINES :: 1000 // rows in the preview modal (it scrolls)
+@(private = "file")
+CODE_FONT_SIZE :: u16(11)
 
 // One colored span of a line; text borrows from the view's source.
 Code_Run :: struct {
@@ -40,13 +42,16 @@ Code_Run :: struct {
 }
 
 Code_Line :: struct {
-	runs: []Code_Run,
+	runs:         []Code_Run,
+	wrapped:      [dynamic]Wrap_Line,
+	width, scale: f32,
 }
 
 Code_View :: struct {
 	src:   string, // owned
 	lines: []Code_Line,
 	lang:  string, // label shown in the modal header
+	plain: bool,
 }
 
 // Comment and string rules per family. The keyword set is shared.
@@ -62,6 +67,7 @@ Code_Lang :: struct {
 @(private = "file")
 CODE_LANGS := []Code_Lang {
 	{"Text", {".txt", ".log"}, "", "", ""},
+	{"JSON", {".json", ".jsonl", ".ndjson"}, "", "", ""},
 	{"Odin", {".odin"}, "//", "/*", "*/"},
 	{
 		"C-like",
@@ -236,15 +242,16 @@ code_view_make :: proc(name: string, text: string) -> ^Code_View {
 	// become spaces up front; runs then borrow from the expanded copy.
 	expanded, allocated := strings.replace_all(text, "\t", "    ")
 	view^ = {
-		src  = allocated ? expanded : strings.clone(text),
-		lang = lang.label,
+		src   = allocated ? expanded : strings.clone(text),
+		lang  = lang.label,
+		plain = lang.line == "",
 	}
 
 	lines := make([dynamic]Code_Line)
 	rest := view.src
 	in_block := false
 	for line in strings.split_lines_iterator(&rest) {
-		append(&lines, Code_Line{code_runs(line, lang, &in_block)})
+		append(&lines, Code_Line{runs = code_runs(line, lang, &in_block)})
 		if len(lines) >= CODE_MAX_LINES {
 			break
 		}
@@ -384,6 +391,7 @@ is_keyword :: proc(word: string) -> bool {
 code_view_free :: proc(view: ^Code_View) {
 	for line in view.lines {
 		delete(line.runs)
+		delete(line.wrapped)
 	}
 	delete(view.lines)
 	delete(view.src)
@@ -462,20 +470,113 @@ code_color :: proc(kind: Code_Kind) -> clay.Color {
 // past the tile; the gutter never wraps.
 // ponytail: a line whose runs overflow *together* still clips (clay
 // rows don't wrap children); a run/line reflow model is the upgrade.
-code_lines :: proc(view: ^Code_View, id_seed: u32, limit: int) {
+code_lines :: proc(
+	view: ^Code_View,
+	id_seed: u32,
+	limit: int,
+	width: f32,
+	scroll_id: clay.ElementId,
+	offset, gap: f32,
+) {
 	shown := min(len(view.lines), limit)
-	for line, i in view.lines[:shown] {
+	line_h := f32(CODE_FONT_SIZE)
+	scroll := clay.GetScrollContainerData(scroll_id)
+	top, bottom := f32(0), max(f32(600), f32(rl.GetScreenHeight()) / UI_ZOOM)
+	if scroll.found && scroll.scrollContainerDimensions.height > 0 {
+		top = -scroll.scrollPosition.y
+		bottom = top + scroll.scrollContainerDimensions.height
+	}
+	y := offset
+	for &line, i in view.lines[:shown] {
+		plain := len(line.runs) == 1 && line.runs[0].kind == .Plain
+		first, last: int
+		height: f32
+		if plain {
+			text := line.runs[0].text
+			if len(line.wrapped) == 0 || line.width != width || line.scale != UI_SCALE {
+				clear(&line.wrapped)
+				line.width, line.scale = width, UI_SCALE
+				font := [1]u8{FONT_MONO | TEXT_CODE}
+				fonts := strings.repeat(string(font[:]), len(text), context.temp_allocator)
+				gutter :=
+					rl.MeasureTextLine(FONT_MONO, CODE_FONT_SIZE, fmt.tprintf("%4d ", i + 1), 0).x
+				at := 0
+				for {
+					cut := wrap_break(
+						text,
+						at,
+						len(text),
+						max(f32(1), width - gutter),
+						CODE_FONT_SIZE,
+						fonts = fonts,
+					)
+					append(&line.wrapped, Wrap_Line{start = at, end = cut})
+					if cut == len(text) {break}
+					at = cut
+					if text[at] == ' ' {at += 1}
+					if at == len(text) {break}
+				}
+			}
+			last = len(line.wrapped)
+			height = f32(last) * line_h
+			if view.plain {
+				first = clamp(int((top - y) / line_h), 0, last)
+				last = clamp(int((bottom - y) / line_h) + 1, first, last)
+			}
+		}
 		if clay.UI(clay.ID("CodeLine", id_seed + u32(i)))(
-		{layout = {sizing = {width = clay.SizingGrow()}}},
+		{
+			layout = {
+				sizing = {
+					width = clay.SizingGrow(),
+					height = plain ? clay.SizingFixed(height) : clay.SizingFit({}),
+				},
+			},
+		},
 		) {
+			if plain && first == last {y += height + gap; continue}
 			clay.Text(
-				fmt.tprintf("%4d ", i + 1),
-				{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO, wrapMode = .None},
+				first == 0 ? fmt.tprintf("%4d ", i + 1) : "     ",
+				{
+					fontId = FONT_MONO,
+					fontSize = CODE_FONT_SIZE,
+					textColor = TEXT_LO,
+					wrapMode = .None,
+				},
 			)
+			// Plain records need hard wrapping too: compact JSON has no spaces.
+			if plain {
+				text := line.runs[0].text
+				if clay.UI()({layout = {layoutDirection = .TopToBottom}}) {
+					// Keep the full scroll extent without laying out offscreen text.
+					if first > 0 {
+						if clay.UI()(
+						{layout = {sizing = {height = clay.SizingFixed(f32(first) * line_h)}}},
+						) {}
+					}
+					for part in line.wrapped[first:last] {
+						clay.Text(
+							text[part.start:part.end],
+							{
+								fontId = FONT_MONO,
+								fontSize = CODE_FONT_SIZE,
+								textColor = TEXT,
+								wrapMode = .None,
+							},
+						)
+					}
+				}
+				y += height + gap
+				continue
+			}
 			for run in line.runs {
 				clay.Text(
 					run.text,
-					{fontId = FONT_MONO, fontSize = 11, textColor = code_color(run.kind)},
+					{
+						fontId = FONT_MONO,
+						fontSize = CODE_FONT_SIZE,
+						textColor = code_color(run.kind),
+					},
 				)
 			}
 		}

@@ -922,7 +922,15 @@ preview_modal :: proc(ui: ^Ui_State) {
 					cornerRadius = rr(8),
 				},
 				) {
-					code_lines(view, 0, CODE_MODAL_LINES)
+					code_lines(
+						view,
+						0,
+						CODE_MODAL_LINES,
+						fit_w(600) - 20,
+						clay.ID("PvScroll"),
+						10,
+						1,
+					)
 				}
 
 			case .Hex:

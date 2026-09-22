@@ -1364,7 +1364,16 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 								{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 							)
 						}
-						code_lines(view, index * 4096 + 3072 + u32(j) * 512, CODE_TILE_LINES)
+						code_lines(
+							view,
+							index * 4096 + 3072 + u32(j) * 512,
+							CODE_TILE_LINES,
+							att_w(480) - 20,
+							clay.ID("MsgCode", index * 1024 + u32(j)),
+							// Padding + filename row + gap.
+							28,
+							2,
+						)
 					}
 				}
 
