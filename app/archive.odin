@@ -207,7 +207,7 @@ handle_arc_click :: proc(ui: ^Ui_State) {
 		ui.client_status = fmt.aprintf("couldn't read %s", arc_hover.name)
 		return
 	}
-	preview_show(arc_hover.name, bytes)
+	preview_show(arc_hover.name, bytes, arc_hover.view)
 }
 
 // Only the rejection paths need this: the timeline caches keep their

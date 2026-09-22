@@ -17,6 +17,7 @@ package main
 
 import "core:fmt"
 import "core:math"
+import "core:math/linalg"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -690,4 +691,91 @@ handle_anim_bar :: proc() {
 @(private = "file")
 clicked_id :: proc(id: clay.ElementId) -> bool {
 	return mouse_released() && clay.PointerOver(id)
+}
+
+// View-space normals and tangent frame, computed once per textured triangle.
+@(private)
+model_texture_basis :: proc(view: ^Stl_View, tri: int) -> [5][3]f32 {
+	out: [5][3]f32
+	for k in 0 ..< 3 {out[k] = corner_normal(view, tri, k)}
+	at := tri * 9
+	e1 :=
+		[3]f32{view.rot[at + 3], view.rot[at + 4], view.rot[at + 5]} -
+		[3]f32{view.rot[at], view.rot[at + 1], view.rot[at + 2]}
+	e2 :=
+		[3]f32{view.rot[at + 6], view.rot[at + 7], view.rot[at + 8]} -
+		[3]f32{view.rot[at], view.rot[at + 1], view.rot[at + 2]}
+	uv := view.insp.uv[tri * 6:tri * 6 + 6]
+	d1 := [2]f32{uv[2] - uv[0], uv[3] - uv[1]}
+	d2 := [2]f32{uv[4] - uv[0], uv[5] - uv[1]}
+	det := d1[0] * d2[1] - d1[1] * d2[0]
+	if abs(det) > 0.000001 {
+		out[3] = linalg.normalize0((e1 * d2[1] - e2 * d1[1]) / det)
+		out[4] = linalg.normalize0((e2 * d1[0] - e1 * d2[0]) / det)
+	}
+	return out
+}
+
+@(private)
+model_texture_color :: proc(
+	view: ^Stl_View,
+	tri: int,
+	uv: [2]f32,
+	weights: [3]f32,
+	basis: [5][3]f32,
+	fallback: rl.FColor,
+) -> rl.FColor {
+	index := int(view.insp.mat[tri])
+	if index < 0 || index >= len(view.insp.textures) {return fallback}
+	textures := &view.insp.textures[index]
+	mode := view.insp.mode
+	channel: Fbx_Channel
+	#partial switch mode {
+	case .Final, .Base_Color:
+		channel = .Base_Color
+	case .Metalness:
+		channel = .Metalness
+	case .Roughness:
+		channel = .Roughness
+	case .Emission:
+		channel = .Emission
+	case .Specular:
+		channel = .Specular
+	case:
+		return fallback
+	}
+	color := [4]f32{fallback.r, fallback.g, fallback.b, fallback.a}
+	if textures[channel].image.data != nil {
+		color = fbx_sample_texture(&textures[channel], uv)
+		if channel == .Metalness || channel == .Roughness {
+			color = {color[0], color[0], color[0], 1}
+		}
+	}
+	if mode == .Final {
+		mat := material_of(view, tri)
+		if textures[.Base_Color].image.data == nil {
+			color = {mat[0], mat[1], mat[2], mat[11]}
+		}
+		n := linalg.normalize0(
+			basis[0] * weights[0] + basis[1] * weights[1] + basis[2] * weights[2],
+		)
+		if textures[.Normal].image.data != nil && linalg.dot(basis[3], basis[3]) > 0 {
+			sample := fbx_sample_texture(&textures[.Normal], uv)
+			tangent := linalg.normalize0(basis[3] - n * linalg.dot(n, basis[3]))
+			bitangent := linalg.cross(n, tangent)
+			if linalg.dot(bitangent, basis[4]) < 0 {bitangent = -bitangent}
+			n = linalg.normalize0(
+				tangent * (sample[0] * 2 - 1) +
+				bitangent * (sample[1] * 2 - 1) +
+				n * (sample[2] * 2 - 1),
+			)
+		}
+		g := lambert(n)
+		for k in 0 ..< 3 {color[k] *= g}
+		if textures[.Emission].image.data != nil {
+			emission := fbx_sample_texture(&textures[.Emission], uv)
+			for k in 0 ..< 3 {color[k] += emission[k]}
+		}
+	}
+	return {color[0], color[1], color[2], color[3]}
 }

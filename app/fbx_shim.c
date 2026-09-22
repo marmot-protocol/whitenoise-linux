@@ -167,6 +167,93 @@ static void fill_material(float *row, const ufbx_material *mat) {
     }
 }
 
+// Borrowed paths and sampling metadata; the caller resolves only archive entries.
+// Layout and channel order are mirrored in fbx_textures.odin.
+enum fbx_channel {
+    FBX_BASE_COLOR,
+    FBX_METALNESS,
+    FBX_ROUGHNESS,
+    FBX_EMISSION,
+    FBX_SPECULAR,
+    FBX_NORMAL,
+    FBX_CHANNEL_COUNT,
+};
+
+typedef struct fbx_texture_info {
+    const char *path;
+    float uv[6];
+    float tint[4];
+    int32_t clamp_u, clamp_v;
+} fbx_texture_info;
+
+const char *fbx_material_name(fbx_scene *s, int32_t material) {
+    if (!s || material < 0 || material >= s->model.num_mats) {
+        return "";
+    }
+    return s->scene->materials.data[material]->name.data;
+}
+
+int32_t fbx_texture_of(fbx_scene *s, int32_t material, int32_t channel, fbx_texture_info *out) {
+    if (!s || material < 0 || material >= s->model.num_mats || channel < 0 ||
+        channel >= FBX_CHANNEL_COUNT) {
+        return 0;
+    }
+    const ufbx_material *m = s->scene->materials.data[material];
+    const ufbx_material_map *maps[] = {&m->pbr.base_color,     &m->pbr.metalness,
+                                       &m->pbr.roughness,      &m->pbr.emission_color,
+                                       &m->pbr.specular_color, &m->pbr.normal_map};
+    const ufbx_material_map *fallback[] = {
+        &m->fbx.diffuse_color, NULL, NULL, &m->fbx.emission_color, &m->fbx.specular_color,
+        &m->fbx.normal_map};
+    const ufbx_material_map *map = maps[channel];
+    if (!map->texture && fallback[channel]) {
+        map = fallback[channel];
+    }
+    if (!map->texture) {
+        return 0;
+    }
+    if (!map->texture_enabled || map->feature_disabled) {
+        return -1;
+    }
+    const ufbx_texture *tex = map->texture;
+    // ponytail: one file per channel; layered/procedural shaders need a shader evaluator.
+    if (tex->type != UFBX_TEXTURE_FILE) {
+        return -1;
+    }
+    memset(out, 0, sizeof(*out));
+    out->path = tex->relative_filename.length ? tex->relative_filename.data : tex->filename.data;
+    out->uv[0] = (float)tex->uv_to_texture.m00;
+    out->uv[1] = (float)tex->uv_to_texture.m01;
+    out->uv[2] = (float)tex->uv_to_texture.m03;
+    out->uv[3] = (float)tex->uv_to_texture.m10;
+    out->uv[4] = (float)tex->uv_to_texture.m11;
+    out->uv[5] = (float)tex->uv_to_texture.m13;
+    out->clamp_u = tex->wrap_u == UFBX_WRAP_CLAMP;
+    out->clamp_v = tex->wrap_v == UFBX_WRAP_CLAMP;
+    for (int i = 0; i < 4; i++) {
+        out->tint[i] = 1.0f;
+    }
+    if (map->has_value && channel != FBX_NORMAL) {
+        for (int i = 0; i < 3; i++) {
+            out->tint[i] = (float)map->value_vec3.v[map->value_components == 1 ? 0 : i];
+        }
+    }
+    const ufbx_material_map *factor = NULL;
+    if (channel == FBX_BASE_COLOR) {
+        factor = map == &m->fbx.diffuse_color ? &m->fbx.diffuse_factor : &m->pbr.base_factor;
+    } else if (channel == FBX_EMISSION) {
+        factor = map == &m->fbx.emission_color ? &m->fbx.emission_factor : &m->pbr.emission_factor;
+    } else if (channel == FBX_SPECULAR) {
+        factor = map == &m->fbx.specular_color ? &m->fbx.specular_factor : &m->pbr.specular_factor;
+    }
+    if (factor && factor->has_value) {
+        for (int i = 0; i < 3; i++) {
+            out->tint[i] *= (float)factor->value_real;
+        }
+    }
+    return out->path && out->path[0] ? 1 : -1;
+}
+
 static void fbx_free_arrays(fbx_scene *s) {
     free(s->model.pos);
     free(s->model.nrm);
@@ -391,8 +478,8 @@ static void subdivide_big_tris(fbx_scene *s) {
 fbx_scene *fbx_open(const void *data, size_t len) {
     ufbx_load_opts opts = {0};
     // Y-up right-handed metres, matching the viewer's own axes, and
-    // no external or embedded content: an attachment must never make
-    // the app touch the filesystem or decode a texture.
+    // no external or embedded content: texture bytes are resolved
+    // separately from the containing archive, never the filesystem.
     opts.target_axes = ufbx_axes_right_handed_y_up;
     opts.target_unit_meters = 1.0f;
     opts.generate_missing_normals = true;

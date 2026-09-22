@@ -16,6 +16,8 @@ package main
 import "core:c"
 import "core:strings"
 
+import rl "sdlrl"
+
 foreign import fbxlib {"../build/libwnfbx.a", "system:m", "system:stdc++"}
 
 // Mirrors `struct fbx_model` in app/fbx_shim.c: four i32, then only
@@ -41,6 +43,10 @@ FBX_MAT_FLOATS :: 12 // base rgb, metal, rough, emission rgb, specular rgb, opac
 
 @(default_calling_convention = "c")
 foreign fbxlib {
+	@(private)
+	fbx_texture_of :: proc(scene: rawptr, material: i32, channel: Fbx_Channel, out: ^Fbx_Texture_Info) -> i32 ---
+	@(private)
+	fbx_material_name :: proc(scene: rawptr, material: i32) -> cstring ---
 	fbx_open :: proc(data: rawptr, len: c.size_t) -> rawptr ---
 	fbx_model_of :: proc(scene: rawptr) -> ^Fbx_Model ---
 	fbx_anim_name :: proc(scene: rawptr, index: i32) -> cstring ---
@@ -93,6 +99,8 @@ Inspect :: struct {
 	mat:          []i32, // ntri material index
 	mats:         []f32, // nmat*FBX_MAT_FLOATS
 	nbones:       int,
+	textures:     [][Fbx_Channel]Fbx_Texture,
+	images:       [dynamic]rl.Image, // decoded archive textures, owned and shared by materials
 
 	// Animation chooser: -1 is the rest pose, otherwise a take index.
 	anim:         int,
@@ -219,6 +227,11 @@ fbx_free :: proc(insp: ^Inspect) {
 	}
 	// uv/bone/bwt/mat/mats are shim memory, released by fbx_close.
 	fbx_close(insp.scene)
+	for image in insp.images {
+		rl.UnloadImage(image)
+	}
+	delete(insp.images)
+	delete(insp.textures)
 	delete(insp.vnrm)
 	for name in insp.takes {
 		delete(name)

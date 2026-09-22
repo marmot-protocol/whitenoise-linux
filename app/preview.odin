@@ -118,7 +118,7 @@ preview_message :: proc(text: string, blocks: []Md_Block_Ui = nil) {
 
 // Dispatch by extension, mirroring the timeline branches. bytes
 // ownership transfers here.
-preview_show :: proc(name: string, bytes: []u8) {
+preview_show :: proc(name: string, bytes: []u8, archive: ^Arc_View = nil) {
 	preview_close()
 	lower := strings.to_lower(name, context.temp_allocator)
 	has :: strings.has_suffix
@@ -137,6 +137,7 @@ preview_show :: proc(name: string, bytes: []u8) {
 		preview.kind = .Video
 	case is_model_name(lower):
 		if mesh := model_view_make(lower, bytes); mesh != nil {
+			fbx_load_textures(&mesh.insp, archive, name)
 			preview.mesh = mesh
 			preview.kind = .Mesh
 		}

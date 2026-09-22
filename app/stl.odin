@@ -475,6 +475,9 @@ stl_build_verts :: proc(view: ^Stl_View, cx, cy, scale: f32) {
 // huge STL orbits fine sorted: its facets are small).
 RASTER_MAX_TRIS :: 150_000
 
+@(private)
+ORBIT_RASTER_SIZE :: 256 // longest edge while dragging; full resolution returns on release
+
 // Rasterize the model into view.pix with a real depth test, at the
 // tile's pixel size. Rebuilds only when the key (size, orbit, or a
 // cleared `built`) moves; a still model costs one texture draw.
@@ -503,6 +506,7 @@ stl_raster :: proc(view: ^Stl_View, w, h: i32) -> (rebuilt: bool) {
 	cx, cy := f32(w) / 2, f32(h) / 2
 	scale := f32(min(w, h)) * 0.45 * view.zoom
 	checker := view.insp.mode == .Uv_Checker && view.insp.uv != nil
+	textured := len(view.insp.images) > 0
 	cell := f32(CHECKER_SQUARES)
 
 	ntri := len(view.tris) / 9
@@ -538,8 +542,14 @@ stl_raster :: proc(view: ^Stl_View, w, h: i32) -> (rebuilt: bool) {
 
 		colors := model_vert_colors(view, tri)
 		uvs: [3][2]f32
+		basis: [5][3]f32
 		if checker {
 			uvs = model_vert_uvs(view, tri)
+		} else if textured {
+			for k in 0 ..< 3 {
+				uvs[k] = {view.insp.uv[tri * 6 + k * 2], view.insp.uv[tri * 6 + k * 2 + 1]}
+			}
+			if view.insp.mode == .Final {basis = model_texture_basis(view, tri)}
 		}
 
 		for py in lo_y ..= hi_y {
@@ -559,8 +569,6 @@ stl_raster :: proc(view: ^Stl_View, w, h: i32) -> (rebuilt: bool) {
 				if z <= view.zbuf[row + px] {
 					continue
 				}
-				view.zbuf[row + px] = z
-
 				r := w0 * colors[0].r + w1 * colors[1].r + w2 * colors[2].r
 				g := w0 * colors[0].g + w1 * colors[1].g + w2 * colors[2].g
 				b := w0 * colors[0].b + w1 * colors[1].b + w2 * colors[2].b
@@ -575,7 +583,14 @@ stl_raster :: proc(view: ^Stl_View, w, h: i32) -> (rebuilt: bool) {
 					r *= tone
 					g *= tone
 					b *= tone
+				} else if textured {
+					uv := uvs[0] * w0 + uvs[1] * w1 + uvs[2] * w2
+					color := model_texture_color(view, tri, uv, {w0, w1, w2}, basis, {r, g, b, 1})
+					// ponytail: alpha cutouts; translucent surfaces need a sorted blend pass.
+					if color.a < 0.5 {continue}
+					r, g, b = color.r, color.g, color.b
 				}
+				view.zbuf[row + px] = z
 				out := (row + px) * 4
 				view.pix[out] = u8(clamp(r, 0, 1) * 255)
 				view.pix[out + 1] = u8(clamp(g, 0, 1) * 255)
@@ -589,14 +604,19 @@ stl_raster :: proc(view: ^Stl_View, w, h: i32) -> (rebuilt: bool) {
 }
 
 // Clay renderer hook for the Custom command, clipped to the tile so
-// zoom can't bleed over neighboring rows. The UV-checker mode is the
-// one textured pass; everything else is vertex colors.
+// zoom can't bleed over neighboring rows.
 stl_draw :: proc(view: ^Stl_View, bounds: clay.BoundingBox) {
 	stl_update(view)
 
-	if len(view.tris) / 9 <= RASTER_MAX_TRIS {
+	// Textures need per-pixel sampling; the large-mesh SDL fallback only colors vertices.
+	if len(view.tris) / 9 <= RASTER_MAX_TRIS || len(view.insp.images) > 0 {
 		w := i32(bounds.width * UI_SCALE / UI_ZOOM)
 		h := i32(bounds.height * UI_SCALE / UI_ZOOM)
+		if orbit_drag == &view.orbit && orbit_moved && max(w, h) > ORBIT_RASTER_SIZE {
+			ratio := f32(ORBIT_RASTER_SIZE) / f32(max(w, h))
+			w = max(1, i32(f32(w) * ratio))
+			h = max(1, i32(f32(h) * ratio))
+		}
 		if w > 0 && h > 0 {
 			rebuilt := stl_raster(view, w, h)
 			rl.DrawTextureRect(
