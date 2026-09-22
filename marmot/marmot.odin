@@ -1228,6 +1228,7 @@ foreign lib {
 	group_details_free :: proc(ptr: ^Group_Details) ---
 	group_mls_state :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out: ^^Group_Mls_State_Head) -> Status ---
 	app_group_mls_state_free :: proc(ptr: ^Group_Mls_State_Head) ---
+	retry_group_convergence :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, out: ^^Send_Summary) -> Status ---
 
 	invite_members :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, member_refs: [^]cstring, member_refs_len: uint, out: ^^Send_Summary) -> Status ---
 	remove_members :: proc(client: ^Client, account_ref: cstring, group_id_hex: cstring, member_refs: [^]cstring, member_refs_len: uint, out: ^^Send_Summary) -> Status ---

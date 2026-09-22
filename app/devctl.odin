@@ -486,6 +486,14 @@ devctl_run :: proc(ui: ^Ui_State, client: ^marmot.Client, frame: int, line: stri
 		}
 		fmt.printfln("devctl: no chat matching %q", arg)
 
+	case "retry-convergence":
+		if client == nil || ui.selected < 0 || ui.selected >= len(ui.chats) {
+			fmt.println("devctl: select a chat first")
+			return
+		}
+		spawn_op(ui, client, .Retry_Convergence, arg, "")
+		fmt.println("devctl: convergence retry queued")
+
 	case "send":
 		if client == nil {
 			fmt.println("devctl: no client")
@@ -522,10 +530,18 @@ devctl_run :: proc(ui: ^Ui_State, client: ^marmot.Client, frame: int, line: stri
 		set_archived(ui, client, group_id, on_off == "on")
 		fmt.printfln("devctl: archived=%v %s", on_off == "on", group_id)
 
-	case "state":
-		snapshot := debug_state_json(ui)
+	case "state", "timings":
+		snapshot := verb == "state" ? debug_state_json(ui) : timings_json(client)
 		defer delete(snapshot)
-		fmt.println(snapshot)
+		if arg == "" {
+			fmt.println(snapshot)
+		} else if err := os.write_entire_file(
+			arg,
+			transmute([]u8)snapshot,
+			{.Read_User, .Write_User},
+		); err != nil {
+			fmt.printfln("devctl: couldn't write snapshot: %v", err)
+		}
 
 	case "shot":
 		// Held until devctl_draw: devctl_poll runs before the frame is
@@ -564,6 +580,7 @@ DEV_HELP :: `devctl commands (append one per line to $WN_DEV_CMD)
   memory  get PATH | set PATH VALUE | fields PATH | len PATH | x PATH [BYTES]
           PATH is relative to Ui_State: chats[0].title, prefs.locale
   chat    chats | select TITLE | send TEXT | archive TITLE|ID on|off
-  other   state | shot [PATH] | help
+          retry-convergence [RESULT_PATH] (selected chat)
+  other   state [PATH] | timings [PATH] | shot [PATH] | help
   key names are rl.KeyboardKey values, uppercase: ENTER, ESCAPE, TAB,
   BACKSPACE, F5. 'fields ' with an empty path lists all of Ui_State.`
