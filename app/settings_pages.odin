@@ -687,6 +687,7 @@ settings_appearance :: proc(ui: ^Ui_State) {
 				if clay.UI(clay.ID("ThemeMenu"))(
 				{
 					layout = {
+						sizing = {height = clay.SizingFit({max = 240})},
 						layoutDirection = .TopToBottom,
 						padding = clay.PaddingAll(6),
 						childGap = 2,
@@ -699,6 +700,7 @@ settings_appearance :: proc(ui: ^Ui_State) {
 					},
 					backgroundColor = CARD,
 					cornerRadius = rr(10),
+					clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 					border = {color = ELEVATED_BORDER, width = bw()},
 				},
 				) {

@@ -31,6 +31,8 @@ THEME_SOURCES := [][2]string {
 	{"Industria", #load("../themes/industria.toml", string)},
 	{"Aegean", #load("../themes/aegean.toml", string)},
 	{"Par Avion", #load("../themes/paravion.toml", string)},
+	{"Luna", #load("../themes/luna.toml", string)},
+	{"Luna Dark", #load("../themes/lunadark.toml", string)},
 }
 
 // A pack is written as seeds plus overrides: anything a pack does not

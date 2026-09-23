@@ -1,0 +1,44 @@
+# Windows XP Luna: warm dialog panels, blue chrome, and raised controls.
+name = "Luna"
+
+[colors]
+bg = "#ece9d8ff"
+panel = "#f5f3e8ff"
+elevated = "#d6dff7ff"
+status-bar = "#c1d2eeff"
+field = "#ffffffff"
+field-hover = "#f5f9ffff"
+field-border = "#7f9db9ff"
+card-border = "#7495caff"
+elevated-border = "#315eaeff"
+divider = "#b4bed2ff"
+plate = "#fffdf5ff"
+hover = "#c1d2eeff"
+text-hi = "#17264aff"
+text-mid = "#3b4c69ff"
+text-lo = "#54617aff"
+text-vlo = "#67738aff"
+on-accent = "#ffffffff"
+bevel-hi = "#ffffffff"
+bevel-lo = "#7a8baaff"
+top-glint = "#ffffffb8"
+danger = "#b52c20ff"
+warning = "#895300ff"
+accent-base = [
+    "#267326ff",
+    "#0054e3ff",
+    "#a92752ff",
+    "#aa450cff",
+    "#6841a3ff",
+]
+
+[style]
+bevel = true
+outline-surfaces = true
+motion-fast = true
+r-scale = 0.45
+border-w = 1.0
+bubble-r = 6.0
+shadow-y = 2.0
+hover-dur = 80
+transition-dur = 100

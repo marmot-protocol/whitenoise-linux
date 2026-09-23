@@ -1,0 +1,44 @@
+# Luna after dark: navy chrome and slate panels with the same raised edges.
+name = "Luna Dark"
+
+[colors]
+bg = "#172033ff"
+panel = "#222e43ff"
+elevated = "#243c64ff"
+status-bar = "#1c3052ff"
+field = "#101a2aff"
+field-hover = "#1b2b45ff"
+field-border = "#5876a1ff"
+card-border = "#45628eff"
+elevated-border = "#648bd0ff"
+divider = "#3c5071ff"
+plate = "#2a3850ff"
+hover = "#344f78ff"
+text-hi = "#f0f3ffff"
+text-mid = "#c4d0e8ff"
+text-lo = "#a4b5d4ff"
+text-vlo = "#899dbfff"
+on-accent = "#101a2aff"
+bevel-hi = "#688bbaff"
+bevel-lo = "#0c1425ff"
+top-glint = "#b6d5ff40"
+danger = "#ff9181ff"
+warning = "#f2c36bff"
+accent-base = [
+    "#83c95aff",
+    "#75a8ffff",
+    "#f19bb9ff",
+    "#f3ac70ff",
+    "#bca5efff",
+]
+
+[style]
+bevel = true
+outline-surfaces = true
+motion-fast = true
+r-scale = 0.45
+border-w = 1.0
+bubble-r = 6.0
+shadow-y = 2.0
+hover-dur = 80
+transition-dur = 100
