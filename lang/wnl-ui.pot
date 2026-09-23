@@ -611,6 +611,9 @@ msgstr ""
 msgid "Couldn't load your stickers. Please try again."
 msgstr ""
 
+msgid "Couldn't look up that NIP-05 address. Double-check it and try again."
+msgstr ""
+
 msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr ""
 
@@ -1289,6 +1292,12 @@ msgid "Loading…"
 msgstr ""
 
 msgid "Location"
+msgstr ""
+
+msgid "Look up"
+msgstr ""
+
+msgid "Looking up..."
 msgstr ""
 
 msgid "MEDIA CACHE"
@@ -2534,6 +2543,12 @@ msgid "marmot exposes publish metadata only. Ciphersuite, capabilities, and cred
 msgstr ""
 
 msgid "npub copied"
+msgstr ""
+
+msgid "npub, hex or name@domain"
+msgstr ""
+
+msgid "npub, hex or name@domain (optional)"
 msgstr ""
 
 msgid "opened there"

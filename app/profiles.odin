@@ -32,6 +32,7 @@ import rl "sdlrl"
 Profile_Info :: struct {
 	name:    string,
 	pic_url: string,
+	nip05:   string,
 }
 
 // account hex → kind-0 essentials, shared by the visible UI snapshots.
@@ -96,7 +97,7 @@ profile_reads_stop :: proc() {
 	if batch := profile_batch; batch != nil {
 		thread.join(batch.worker)
 		thread.destroy(batch.worker)
-		for info in batch.infos {delete(info.name); delete(info.pic_url)}
+		for info in batch.infos {delete(info.name); delete(info.pic_url); delete(info.nip05)}
 		for id in batch.ids {delete(id)}
 		delete(batch.ids); delete(batch.infos); delete(batch.ok); free(batch)
 		profile_batch = nil
@@ -140,6 +141,7 @@ read_profile :: proc(client: ^marmot.Client, hex: string) -> (Profile_Info, bool
 		if meta.picture != nil {
 			info.pic_url = strings.clone(string(meta.picture))
 		}
+		if meta.nip05 != nil {info.nip05 = strings.clone(string(meta.nip05))}
 		marmot.user_profile_metadata_free(meta)
 	}
 	return info, true
@@ -162,7 +164,7 @@ register_starter_pic :: proc(hex: string, name: string, url: string, image: rl.I
 		pic_url = strings.clone(url)
 	}
 	if old, ok := profile_cache[hex]; ok {
-		delete(old.name); delete(old.pic_url)
+		delete(old.name); delete(old.pic_url); delete(old.nip05)
 		profile_cache[hex] = {
 			name    = strings.clone(name),
 			pic_url = pic_url,
@@ -336,6 +338,7 @@ update_profile :: proc(ui: ^Ui_State, hex: string, info: Profile_Info) -> bool {
 	if old == info {
 		delete(info.name)
 		delete(info.pic_url)
+		delete(info.nip05)
 		return false
 	}
 	profile_cache[hex] = info
@@ -390,6 +393,7 @@ update_profile :: proc(ui: ^Ui_State, hex: string, info: Profile_Info) -> bool {
 	}
 	delete(old.name)
 	delete(old.pic_url)
+	delete(old.nip05)
 	return true
 }
 

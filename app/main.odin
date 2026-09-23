@@ -2277,6 +2277,7 @@ app_main :: proc() {
 		for page in done.history {marmot.edit_history_free(page)}
 		delete(done.history)
 		if done.op == .Edit ||
+		   done.op == .Lookup_Member ||
 		   done.op == .History ||
 		   done.op == .Issue ||
 		   done.op == .Issue_Setting {edit_result_free(done)} else {delete(done.err)}

@@ -650,6 +650,9 @@ msgstr "保存したGIFを読み込めませんでした。もう一度お試し
 msgid "Couldn't load your stickers. Please try again."
 msgstr "ステッカーを読み込めませんでした。もう一度お試しください。"
 
+msgid "Couldn't look up that NIP-05 address. Double-check it and try again."
+msgstr "このNIP-05アドレスを検索できませんでした。確認してもう一度お試しください。"
+
 #, fuzzy
 msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr "そのアカウントを追加できませんでした。鍵を確認して、もう一度お試しください。"
@@ -1381,6 +1384,12 @@ msgstr "読み込み中…"
 
 msgid "Location"
 msgstr "保存場所"
+
+msgid "Look up"
+msgstr "検索"
+
+msgid "Looking up..."
+msgstr "検索中..."
 
 msgid "MEDIA CACHE"
 msgstr "メディアキャッシュ"
@@ -2712,6 +2721,12 @@ msgstr ""
 
 msgid "npub copied"
 msgstr "npubをコピーしました"
+
+msgid "npub, hex or name@domain"
+msgstr "npub、16進数、または name@domain"
+
+msgid "npub, hex or name@domain (optional)"
+msgstr "npub、16進数、または name@domain（任意）"
 
 msgid "opened there"
 msgstr ""

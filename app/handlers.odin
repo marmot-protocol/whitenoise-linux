@@ -158,6 +158,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 
 	// New chat flow captures everything while open.
 	if clicked("NewChatBtn") {
+		ui.nip05_ticket = 0
 		ui.new_chat_open = true
 		ui.focus = .NC_Member
 		return
@@ -1136,6 +1137,7 @@ drop_draft :: proc(ui: ^Ui_State) {
 // Select a chat, load its timeline, and clear the unread badge by
 // marking the newest message read.
 select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) {
+	ui.nip05_ticket = 0
 	stash_draft(ui)
 	stash_staged(ui)
 	ui.issues_open = false
@@ -1312,12 +1314,18 @@ handle_new_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		ui.focus = .NC_Name
 	}
 	if clicked("NCCancel") || rl.IsKeyPressed(.ESCAPE) {
+		ui.nip05_ticket = 0
 		ui.new_chat_open = false
 		ui.focus = .Compose
 		return
 	}
 
 	if clicked("NCCreate") || rl.IsKeyPressed(.ENTER) {
+		if ui.nip05_ticket != 0 {return}
+		if strings.contains(string(ui.nc_member[:]), "@") {
+			ui.nip05_ticket = spawn_op(ui, client, .Lookup_Member, string(ui.nc_member[:]), "")
+			return
+		}
 		name := len(ui.nc_name) > 0 ? string(ui.nc_name[:]) : "New group"
 
 		member := strings.trim_space(string(ui.nc_member[:]))
@@ -1392,6 +1400,7 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			}
 		}
 		if clay.PointerOver(clay.ID("MembersClose")) {
+			ui.nip05_ticket = 0
 			ui.show_members = false
 			return
 		}
@@ -1458,6 +1467,11 @@ handle_members :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if (rl.IsKeyPressed(.ENTER) || clicked("InviteBtn")) &&
 	   ui.focus == .Invite &&
 	   len(ui.invite_input) > 0 {
+		if ui.nip05_ticket != 0 {return}
+		if strings.contains(string(ui.invite_input[:]), "@") {
+			ui.nip05_ticket = spawn_op(ui, client, .Lookup_Member, string(ui.invite_input[:]), "")
+			return
+		}
 		admin_op(ui, client, "invite", string(ui.invite_input[:]))
 		clear(&ui.invite_input)
 	}
@@ -1511,6 +1525,7 @@ Msg_Op :: enum {
 	Remove,
 	Promote,
 	Demote,
+	Lookup_Member,
 }
 
 // Fire and forget onto the op worker: the round trip is a relay's

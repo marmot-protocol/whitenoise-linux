@@ -897,6 +897,9 @@ op_worker :: proc(t: ^thread.Thread) {
 	}
 	status: marmot.Status
 	switch job.op {
+	case .Lookup_Member:
+		done.content = nip05_lookup(string(job.target))
+		status = .OK
 	case .Retry_Convergence:
 		status = marmot.retry_group_convergence(job.client, job.account, job.group, &summary)
 	case .Repair_History:
@@ -1068,11 +1071,16 @@ op_worker :: proc(t: ^thread.Thread) {
 			fmt.eprintfln("%v: couldn't write result: %v", job.op, write_err)
 		}
 	}
-	if job.op == .History || job.op == .Edit || job.op == .Issue || job.op == .Issue_Setting {
+	if job.op == .History ||
+	   job.op == .Edit ||
+	   job.op == .Issue ||
+	   job.op == .Issue_Setting ||
+	   job.op == .Lookup_Member {
 		done.account = strings.clone(string(job.account))
 		done.group = strings.clone(string(job.group))
 		done.target = strings.clone(string(job.target))
-		if job.op != .History {done.content = strings.clone(string(job.content))}
+		if job.op != .History &&
+		   job.op != .Lookup_Member {done.content = strings.clone(string(job.content))}
 	}
 	sync.lock(&ops_mutex)
 	append(&ops_done, done)
@@ -1146,7 +1154,9 @@ spawn_op :: proc(
 	job.client = client
 	job.op = op
 	job.account = strings.clone_to_cstring(ui.account_ref)
-	job.group = strings.clone_to_cstring(ui.chats[ui.selected].group_id)
+	job.group = strings.clone_to_cstring(
+		op == .Lookup_Member && ui.new_chat_open ? "" : ui.chats[ui.selected].group_id,
+	)
 	job.target = strings.clone_to_cstring(message_id)
 	job.emoji = op == .React ? strings.clone_to_cstring(emoji) : nil
 	if op == .Edit {job.content = strings.clone_to_cstring(emoji)}
@@ -1171,7 +1181,10 @@ drain_ops :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	defer delete(done)
 
+	reload := false
 	for d in done {
+		if d.op == .Lookup_Member {nip05_complete(ui, d); continue}
+		reload = true
 		if d.op == .History {
 			if d.ticket == ui.hist_ticket {
 				ui.hist_ticket = 0
@@ -1227,7 +1240,7 @@ drain_ops :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		shake()
 		play_sound(.Error)
 	}
-	load_timeline(client, ui)
+	if reload {load_timeline(client, ui)}
 }
 
 // Which hover action a chat row offers (rail rows archive, archive-page

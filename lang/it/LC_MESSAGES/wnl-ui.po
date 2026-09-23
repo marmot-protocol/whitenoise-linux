@@ -650,6 +650,9 @@ msgstr "Impossibile caricare le tue GIF. Riprova."
 msgid "Couldn't load your stickers. Please try again."
 msgstr "Impossibile caricare i tuoi adesivi. Riprova."
 
+msgid "Couldn't look up that NIP-05 address. Double-check it and try again."
+msgstr "Impossibile trovare questo indirizzo NIP-05. Ricontrollalo e riprova."
+
 #, fuzzy
 msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr "Impossibile aggiungere questo account. Ricontrolla la chiave e riprova."
@@ -1381,6 +1384,12 @@ msgstr "Caricamento…"
 
 msgid "Location"
 msgstr "Posizione"
+
+msgid "Look up"
+msgstr "Cerca"
+
+msgid "Looking up..."
+msgstr "Ricerca in corso..."
 
 msgid "MEDIA CACHE"
 msgstr "CACHE DEI MEDIA"
@@ -2712,6 +2721,12 @@ msgstr ""
 
 msgid "npub copied"
 msgstr "npub copiato"
+
+msgid "npub, hex or name@domain"
+msgstr "npub, hex o nome@dominio"
+
+msgid "npub, hex or name@domain (optional)"
+msgstr "npub, hex o nome@dominio (facoltativo)"
 
 msgid "opened there"
 msgstr ""

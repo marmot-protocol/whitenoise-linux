@@ -642,9 +642,18 @@ info_settings_col :: proc(ui: ^Ui_State) {
 		border = {color = FIELD_BORDER, width = bw()},
 	},
 	) {
-		field_text(ui, "InviteBox", &ui.invite_input, "npub or hex", ui.focus == .Invite)
+		field_text(
+			ui,
+			"InviteBox",
+			&ui.invite_input,
+			tr("npub, hex or name@domain"),
+			ui.focus == .Invite,
+		)
 	}
-	login_button("InviteBtn", "Invite")
+	login_button(
+		"InviteBtn",
+		ui.nip05_ticket != 0 ? N_("Looking up...") : strings.contains(string(ui.invite_input[:]), "@") ? N_("Look up") : N_("Invite"),
+	)
 
 	eyebrow("EXPORT CHAT")
 	if clay.UI(clay.ID("ExportRow"))({layout = {childGap = 8}}) {
@@ -1190,10 +1199,19 @@ new_chat_pane :: proc(ui: ^Ui_State) {
 			tr("Add a contact for a direct chat, or leave it empty for a group of your own."),
 			{fontId = FONT_BODY, fontSize = 14, textColor = TEXT_DIM},
 		)
-		input_box(ui, "NCMember", &ui.nc_member, "npub or hex (optional)", ui.focus == .NC_Member)
+		input_box(
+			ui,
+			"NCMember",
+			&ui.nc_member,
+			tr("npub, hex or name@domain (optional)"),
+			ui.focus == .NC_Member,
+		)
 		input_box(ui, "NCName", &ui.nc_name, "Group name", ui.focus == .NC_Name)
 		if clay.UI(clay.ID("NCButtons"))({layout = {childGap = 12}}) {
-			login_button("NCCreate", "Create")
+			login_button(
+				"NCCreate",
+				ui.nip05_ticket != 0 ? N_("Looking up...") : strings.contains(string(ui.nc_member[:]), "@") ? N_("Look up") : N_("Create"),
+			)
 			login_button("NCCancel", "Cancel")
 		}
 	}

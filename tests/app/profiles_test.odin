@@ -26,9 +26,14 @@ profiles_update_live_views :: proc(t: ^testing.T) {
 	ui.nicknames[hex] = "Local nickname"
 	ui.peer_name = strings.clone("Before")
 
-	info := Profile_Info{strings.clone("After"), strings.clone("https://example.org/new.png")}
+	info := Profile_Info {
+		strings.clone("After"),
+		strings.clone("https://example.org/new.png"),
+		strings.clone("after@example.org"),
+	}
 	testing.expect(t, update_profile(&ui, hex, info))
 	testing.expect_value(t, profile_info(nil, hex).name, "After")
+	testing.expect_value(t, profile_info(nil, hex).nip05, "after@example.org")
 	testing.expect_value(t, ui.members[0].name, "Local nickname")
 	testing.expect_value(t, ui.members[0].pic_url, info.pic_url)
 	testing.expect_value(t, ui.member_nick, 0)
@@ -47,7 +52,11 @@ profiles_update_live_views :: proc(t: ^testing.T) {
 	before := raw_data(ui.members[0].pic_url)
 	testing.expect(
 		t,
-		!update_profile(&ui, hex, {strings.clone(info.name), strings.clone(info.pic_url)}),
+		!update_profile(
+			&ui,
+			hex,
+			{strings.clone(info.name), strings.clone(info.pic_url), strings.clone(info.nip05)},
+		),
 	)
 	testing.expect_value(t, raw_data(ui.members[0].pic_url), before)
 	delete_key(&ui.nicknames, hex)
@@ -60,4 +69,5 @@ profiles_update_live_views :: proc(t: ^testing.T) {
 	testing.expect_value(t, ui.profile_contact.pic_url, "")
 	testing.expect_value(t, ui.peer_pic, "")
 	testing.expect_value(t, ui.my_pic_url, "")
+	testing.expect_value(t, profile_info(nil, hex).nip05, "")
 }

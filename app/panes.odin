@@ -789,6 +789,9 @@ contacts_pane :: proc(ui: ^Ui_State) {
 					npub_tail(contact.npub),
 					{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO, wrapMode = .None},
 				)
+				if address := profile_info(nil, contact.id_hex).nip05; address != "" {
+					clay.Text(address, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
+				}
 				if contact_label(ui, contact) != contact.name {
 					clay.Text(
 						fmt.tprintf("aka %s", contact.name),

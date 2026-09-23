@@ -625,7 +625,8 @@ Ui_State :: struct {
 	// never both. Set by the section change detector in build_layout,
 	// cleared by the back chip; ignored at desktop widths.
 	sett_open:                                             bool,
-	nc_member:                                             [dynamic]u8, // npub/hex for a DM; empty = own group
+	nc_member:                                             [dynamic]u8, // npub/hex/NIP-05 for a DM; empty = own group
+	nip05_ticket:                                          int,
 	nc_name:                                               [dynamic]u8,
 	client_status:                                         string,
 	// ── Shell chrome (shell.odin, palette.odin, confirm.odin,
