@@ -1769,6 +1769,12 @@ reload_jobs_busy :: proc() -> bool {
 	for worker in send_threads {
 		if !thread.is_done(worker) {return true}
 	}
+	// A Namecoin resolver worker still running against the tracked heap
+	// would revisit freed memory after `wn_app_run` frees the reload
+	// heap. Hold the reload until every resolver has landed; the frame
+	// drain reaps done threads, so this typically clears within a few
+	// frames of the request.
+	if nc_workers_busy() {return true}
 	return false
 }
 @(private = "file")

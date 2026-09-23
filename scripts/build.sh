@@ -174,13 +174,17 @@ if [ ! -f "$HERE/build/fbx/ufbx.o" ] || [ "$(cat "$HERE/build/fbx/ufbx.stamp" 2>
   echo "$UFBX_PIN" > "$HERE/build/fbx/ufbx.stamp"
 fi
 
-# Nostr event fetch (nevent cards): a websocket REQ over libcurl's
-# raw socket, framed in app/ws_shim.c.
+# Nostr event fetch (nevent cards) and Namecoin `.bit` NIP-05 resolution:
+# both use one-shot websocket clients over libcurl's raw socket, framed
+# in app/ws_shim.c (Nostr REQ) and app/nc_shim.c (ElectrumX JSON-RPC).
 mkdir -p "$HERE/build/ws"
-if [ ! -f "$HERE/build/libwnws.a" ] || [ "$HERE/app/ws_shim.c" -nt "$HERE/build/libwnws.a" ]; then
+if [ ! -f "$HERE/build/libwnws.a" ] || \
+   [ "$HERE/app/ws_shim.c" -nt "$HERE/build/libwnws.a" ] || \
+   [ "$HERE/app/nc_shim.c" -nt "$HERE/build/libwnws.a" ]; then
   cc -c -O2 -fPIC $(pkg-config --cflags libcurl) "$HERE/app/ws_shim.c" -o "$HERE/build/ws/ws_shim.o"
+  cc -c -O2 -fPIC $(pkg-config --cflags libcurl) "$HERE/app/nc_shim.c" -o "$HERE/build/ws/nc_shim.o"
   rm -f "$HERE/build/libwnws.a"
-  ar rcs "$HERE/build/libwnws.a" "$HERE/build/ws/ws_shim.o"
+  ar rcs "$HERE/build/libwnws.a" "$HERE/build/ws/ws_shim.o" "$HERE/build/ws/nc_shim.o"
 fi
 fi
 
