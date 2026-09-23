@@ -96,6 +96,11 @@ rail_width :: proc(ui: ^Ui_State) -> f32 {
 		}
 		return f32(rl.GetScreenWidth()) / UI_ZOOM
 	}
+	// Archive is a standalone page. Leave the saved sidebar width and
+	// animation untouched so returning to another tab restores its layout.
+	if ui.page == .Archived {
+		return RAIL_W_COLLAPSED
+	}
 	// Resize immediately; preserving the pref restores the list when it fits.
 	if !rail_fits(f32(rl.GetScreenWidth()) / UI_ZOOM, ui.prefs.rail_w) {
 		anim_set(clay.ID("RailWidth").id, RAIL_W_COLLAPSED)
@@ -163,7 +168,7 @@ shell_navigation :: proc(ui: ^Ui_State) {
 		for page in ([3]Page{.Chats, .Contacts, .Archived}) {
 			nav_button(page, ui.page == page)
 		}
-		if !single_pane() {
+		if !single_pane() && ui.page != .Archived {
 			if clay.UI(clay.ID("RailCollapse"))(
 			{
 				layout = {

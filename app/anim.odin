@@ -233,6 +233,7 @@ element_box :: proc(id: clay.ElementId) -> (clay.BoundingBox, bool) {
 
 PAGE_SECS :: 0.22
 PAGE_SLIDE :: f32(10) // how far the new page rises into place
+PUSH_SECS :: 0.18
 PAGE_SETTLE :: 0.4 // grace after a switch: arrivals inside it are "already there"
 
 // What counts as a different view: the page, the selected chat, the
@@ -250,15 +251,35 @@ page_shown: u32
 page_at: f64
 page_t: f32 = 1 // 0 on switch, 1 once the new page has landed
 page_held: bool // switched this frame: the renderer keeps the old frame
+page_push: bool
+page_tab_push: bool
+
+@(private = "file")
+page_last: Page
+
+@(private = "file")
+page_was_chat: bool
 
 // Called once per frame, at the top of the layout.
 page_advance :: proc(ui: ^Ui_State) {
+	chat_view :=
+		ui.page == .Chats &&
+		ui.selected >= 0 &&
+		!ui.new_chat_open &&
+		!ui.show_members &&
+		!ui.group_files_open &&
+		!ui.add_account_open
 	if key := page_view_key(ui); key != page_shown {
+		page_tab_push = page_shown != 0 && ui.page != page_last
 		page_shown = key
+		page_push = page_tab_push || (chat_view && page_was_chat)
 		page_at = rl.GetTime()
 		page_held = motion_on()
 	}
-	page_t = motion_on() ? ease_out(f32(clamp((rl.GetTime() - page_at) / PAGE_SECS, 0, 1))) : 1
+	page_was_chat = chat_view
+	page_last = ui.page
+	seconds := page_push ? PUSH_SECS : PAGE_SECS
+	page_t = motion_on() ? ease_out(f32(clamp((rl.GetTime() - page_at) / seconds, 0, 1))) : 1
 	if page_t < 1 {
 		anim_moving += 1
 	}

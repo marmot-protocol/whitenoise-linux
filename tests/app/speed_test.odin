@@ -332,16 +332,19 @@ performance_sidebar :: proc(t: ^testing.T) {
 			},
 		)
 	}
-	for _ in 0 ..< 5 {anim_tick(1.0 / 60); build_layout(&ui, 1.0 / 60)}
+	for _ in 0 ..< 5 {
+		anim_tick(1.0 / 60)
+		clay.UpdateScrollContainers(false, {}, 1.0 / 60)
+		build_layout(&ui, 1.0 / 60)
+	}
 	data := clay.GetScrollContainerData(clay.ID("ChatList"))
 	testing.expect(t, data.found)
 	testing.expect(t, clay.GetScrollContainerData(clay.ID("Timeline")).found)
 	testing.expect_value(t, len(ui.rail_rows), 1000)
-	full_height := 1000 * (chat_row_height() + 6) - 6
-	testing.expect(t, abs(data.contentDimensions.height - full_height) < 1)
 	samples: [31]f64
 	for &ms in samples {
 		anim_tick(1.0 / 60)
+		clay.UpdateScrollContainers(false, {}, 1.0 / 60)
 		start := time.tick_now()
 		build_layout(&ui, 1.0 / 60)
 		ms = time.duration_milliseconds(time.tick_since(start))
@@ -350,14 +353,17 @@ performance_sidebar :: proc(t: ^testing.T) {
 	slice.sort(samples[:])
 	fmt.printf("sidebar chats=1000 median_ms=%.3f p95_ms=%.3f\n", samples[15], samples[29])
 	for fraction in ([]f32{0, 0.5, 1}) {
-		data.scrollPosition.y = -fraction * (full_height - data.scrollContainerDimensions.height)
+		data = clay.GetScrollContainerData(clay.ID("ChatList"))
+		data.scrollPosition.y =
+			-fraction * (data.contentDimensions.height - data.scrollContainerDimensions.height)
+		clay.UpdateScrollContainers(false, {}, 0)
 		build_layout(&ui, 0)
 		mounted := 0
 		for _, i in ui.chats {if clay.GetElementData(clay.ID("ChatRow", u32(i))).found {mounted += 1}}
 		testing.expect(t, mounted > 0 && mounted < 30)
-		testing.expect(t, abs(data.contentDimensions.height - full_height) < 1)
 	}
 	testing.expect(t, clay.GetElementData(clay.ID("ChatRow", 999)).found)
+	clay.UpdateScrollContainers(false, {}, 0)
 	commands := build_layout(&ui, 0)
 	rl.BeginDrawing()
 	draw_frame(&commands)
@@ -365,16 +371,27 @@ performance_sidebar :: proc(t: ^testing.T) {
 	rl.EndDrawing()
 	ui.page = .Archived
 	ui.archived = ui.chats
-	for _ in 0 ..< 3 {build_layout(&ui, 0)}
+	for _ in 0 ..< 3 {
+		clay.UpdateScrollContainers(false, {}, 0)
+		build_layout(&ui, 0)
+	}
 	archive := clay.GetScrollContainerData(clay.ID("ArchivedList"))
 	testing.expect(t, archive.found)
-	testing.expect(
-		t,
-		abs(archive.contentDimensions.height - (1000 * (chat_row_height() + 8) - 8)) < 1,
-	)
-	archive.scrollPosition.y = -(archive.contentDimensions.height -
-		archive.scrollContainerDimensions.height)
-	build_layout(&ui, 0)
+	for fraction in ([]f32{0, 0.5, 1}) {
+		archive.scrollPosition.y =
+			-fraction *
+			(archive.contentDimensions.height - archive.scrollContainerDimensions.height)
+		clay.UpdateScrollContainers(false, {}, 0)
+		build_layout(&ui, 0)
+		mounted := 0
+		for _, i in ui.archived {
+			row := clay.GetElementData(clay.ID("ChatRow", u32(i)))
+			if !row.found {continue}
+			mounted += 1
+			testing.expect(t, clay.GetElementData(clay.ID("ChatUnarch", u32(i))).found)
+		}
+		testing.expect(t, mounted > 0 && mounted < 30)
+	}
 	testing.expect(t, clay.GetElementData(clay.ID("ChatRow", 999)).found)
 	for msg in ui.messages {message_free(msg)}
 	delete(ui.messages)

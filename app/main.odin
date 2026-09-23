@@ -303,8 +303,6 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 										count := len(ui.chats)
 										if ui.page == .Contacts {
 											head, count = tr("People"), len(ui.contacts)
-										} else if ui.page == .Archived {
-											head, count = tr("Archives"), len(ui.archived)
 										}
 										clay.Text(
 											head,
@@ -428,7 +426,7 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 											ui,
 											"FilterBox",
 											&ui.sidebar_filter,
-											ui.page == .Contacts ? "Search contacts..." : ui.page == .Archived ? "Search archived..." : "Search messages...",
+											ui.page == .Contacts ? "Search contacts..." : "Search messages...",
 											ui.focus == .Filter,
 											13,
 											TEXT_LO,
@@ -781,16 +779,15 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 				if !hide_main {
 					if clay.UI(clay.ID("MainCard"))(
 					{
-						// Switching page or chat: the new content rises the last few
-						// pixels into place under a veil in the card's own color, so
-						// the swap reads as a transition instead of a cut.
+						// Chat and tab pushes translate rendered panes without
+						// changing layout. Other views retain the vertical rise.
 						layout = {
 							sizing = {
 								width = hide_main ? clay.SizingFixed(0) : clay.SizingGrow(),
 								height = clay.SizingGrow(),
 							},
 							layoutDirection = .TopToBottom,
-							padding = {top = u16((1 - page_t) * PAGE_SLIDE)},
+							padding = {top = page_push ? 0 : u16((1 - page_t) * PAGE_SLIDE)},
 						},
 						clip = {horizontal = hide_main},
 						backgroundColor = hide_main ? {} : CARD,

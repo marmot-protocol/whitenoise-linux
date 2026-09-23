@@ -160,19 +160,23 @@ crop_circle_layout :: proc(t: ^testing.T) {
 	append(&ui.chats, Chat_Row_Ui{group_id = key[:32], title = "Testing Marmots"})
 	g_ui, g_prefs = &ui, &ui.prefs
 	defer {g_ui, g_prefs = nil, nil; wrap_clear()}
+	mention_width: f32
+	clay.SetPointerState({-1, -1}, false)
 	for photo_url in ([]string{"", square_url, ""}) {
 		if photo_url != "" || profile_info(nil, key).pic_url != "" {
-			wrap_flush = false
 			testing.expect(t, update_profile(&ui, key, {pic_url = strings.clone(photo_url)}))
-			testing.expect(t, wrap_flush, "photo changes must invalidate mention wrapping")
 		}
+		anim_tick(1.0 / 60)
 		clay.BeginLayout()
 		render_segs(70, []Inline_Seg{{hex = key}}, BODY_FS, TEXT, 18, chips = true)
 		peer_modal(&ui)
 		commands := clay.EndLayout(0)
-		for id in ([]clay.ElementId{clay.ID("MentionCircle", 70 * 128), clay.ID("PeerCircle", 0)}) {
-			testing.expect_value(t, clay.GetElementData(id).found, photo_url != "")
-		}
+		testing.expect_value(
+			t,
+			clay.GetElementData(clay.ID("PeerCircle", 0)).found,
+			photo_url != "",
+		)
+		testing.expect(t, !clay.GetElementData(clay.ID("MentionReveal", 70 * 128)).found)
 		for id in ([]clay.ElementId{clay.ID("MentionPhoto", 70 * 128), clay.ID("PeerAvatar", 0)}) {
 			drawn := false
 			for command in commands.internalArray[:commands.length] {
@@ -194,7 +198,40 @@ crop_circle_layout :: proc(t: ^testing.T) {
 			abs(chip.width - measured) < 0.01,
 			"mention wrapping must match its rendered width",
 		)
+		if mention_width == 0 {
+			mention_width = chip.width
+		} else {
+			testing.expect(
+				t,
+				abs(chip.width - mention_width) < 0.01,
+				"photo changes must not reflow mentions",
+			)
+		}
 	}
+	testing.expect(t, update_profile(&ui, key, {pic_url = strings.clone(square_url)}))
+	for over in ([]bool{false, true, false}) {
+		chip_before := clay.GetElementData(clay.ID("SegMention", 70 * 128)).boundingBox
+		clay.SetPointerState(
+			over ? clay.Vector2{chip_before.x + chip_before.width - 4, chip_before.y + 4} : clay.Vector2{-1, -1},
+			false,
+		)
+		anim_tick(1.0 / 60)
+		clay.BeginLayout()
+		render_segs(70, []Inline_Seg{{hex = key}}, BODY_FS, TEXT, 18, chips = true)
+		_ = clay.EndLayout(0)
+		reveal := clay.GetElementData(clay.ID("MentionReveal", 70 * 128))
+		testing.expect_value(t, reveal.found, over)
+		chip := clay.GetElementData(clay.ID("SegMention", 70 * 128)).boundingBox
+		testing.expect(t, abs(chip.width - mention_width) < 0.01, "hover must not reflow mentions")
+		if over {
+			testing.expect_value(t, mention_hover, key)
+			photo := clay.GetElementData(clay.ID("MentionAvatar", 70 * 128)).boundingBox
+			mark := clay.GetElementData(clay.ID("MentionCircle", 70 * 128)).boundingBox
+			testing.expect(t, mark == photo, "hover identity must replace the entire avatar")
+			testing.expect_value(t, reveal.boundingBox, photo)
+		}
+	}
+	testing.expect(t, update_profile(&ui, key, {pic_url = strings.clone("")}))
 	for shape in Crop_Shape {
 		ui.prefs.crop_avatar_shape = shape
 		url := fmt.tprintf("%s:%s", CROP_SHAPE_PREFIX[shape], key[:32])

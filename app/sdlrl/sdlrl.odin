@@ -1552,7 +1552,7 @@ CaptureFrame :: proc() -> Texture2D {
 //
 //   frame ──▶ 1/2 ──▶ 1/4 ──▶ 1/8 ──▶ 1/16 ──stretch──▶ screen
 
-TARGET_SLOTS :: 5 // named by the SLOT constants in renderer.odin
+TARGET_SLOTS :: 6 // named by the SLOT constants in renderer.odin
 BLUR_STEPS :: 4
 TARGET_DEPTH :: 2 // the frame, and the layer split inside it
 
@@ -1779,10 +1779,15 @@ FadeTargetInto :: proc(dst_slot, src_slot: int, alpha: f32) -> bool {
 	return true
 }
 
-// One rectangle of a target, put back where it came from, scaled about
-// its own centre. The rect is in window points; the DPI density is the
-// shim's business.
-DrawTargetRegion :: proc(slot: int, x, y, w, h: f32, alpha: f32, scale: f32 = 1) {
+// One rectangle of a target, scaled about its centre and translated within
+// its original clip. Geometry is in window points; DPI density stays here.
+DrawTargetRegion :: proc(
+	slot: int,
+	x, y, w, h: f32,
+	alpha: f32,
+	scale: f32 = 1,
+	offset_x: f32 = 0,
+) {
 	t := targets[slot]
 	if t.tex == nil || alpha <= 0 || w <= 0 || h <= 0 {
 		return
@@ -1792,6 +1797,7 @@ DrawTargetRegion :: proc(slot: int, x, y, w, h: f32, alpha: f32, scale: f32 = 1)
 	src := sdl.FRect{x * state.density, y * state.density, w * state.density, h * state.density}
 	grow := sdl.FRect{src.w * (scale - 1) / 2, src.h * (scale - 1) / 2, 0, 0}
 	dest := sdl.FRect{src.x - grow.x, src.y - grow.y, src.w * scale, src.h * scale}
+	dest.x += offset_x * state.density
 	// Clipped to where it belongs, so a scaled-up region can't spill
 	// past the card it is dissolving inside.
 	clip := sdl.Rect{i32(src.x), i32(src.y), i32(src.w), i32(src.h)}

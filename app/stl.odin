@@ -66,6 +66,7 @@ Model_Kind :: enum u8 {
 	Image_Crop, // attachment thumbnails with extreme aspect ratios
 	Profile_Background, // cover or tile media confined to a profile
 	Hidden_Border, // rainbow outline around a zero-width message carrier
+	Avatar_Hinge, // a photo cover rotating around its top-center pivot
 }
 
 // Shared orbit state: drag rotates, wheel zooms; one handler serves

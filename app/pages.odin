@@ -70,9 +70,8 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 
-	// Contact/archive sidebar search: same box as the rail filter, handled
-	// here because handle_chat only runs on the Chats page. Runs before
-	// the mouse gate so typing lands every frame.
+	// Contacts search stays in the rail; Archive owns its search in the
+	// main page. Handle both before the mouse gate so typing lands every frame.
 	if (ui.page == .Contacts || ui.page == .Archived) && !ui.new_chat_open {
 		if field_mouse(ui, &ui.sidebar_filter, "FilterBox") {
 			ui.focus = .Filter
@@ -198,9 +197,19 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 
-	// Unarchive from the archive page's row hover chip. Lives here, not
-	// in handle_chat, which only runs on the Chats page.
+	// Archive actions live here because handle_chat only runs on Chats.
 	if ui.page == .Archived {
+		if clicked("ArchiveBack") {
+			clear(&ui.sidebar_filter)
+			ui.focus = .Compose
+			ui.page = .Chats
+			return
+		}
+		if clicked("ArchiveClearSearch") {
+			clear(&ui.sidebar_filter)
+			ui.focus = .Filter
+			return
+		}
 		for _, i in ui.archived {
 			if clay.PointerOver(clay.ID("ChatUnarch", u32(i))) {
 				set_archived(ui, client, ui.archived[i].group_id, false)

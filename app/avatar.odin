@@ -10,6 +10,14 @@ import rl "sdlrl"
 @(private = "file")
 AVATAR_CROP_SCALE :: f32(0.9)
 
+@(private)
+Avatar_Hinge :: struct {
+	kind:  Model_Kind,
+	tex:   ^rl.Texture2D,
+	angle: f32,
+	back:  clay.Color,
+}
+
 // FNV-1a, the same stable-hash idea the slint app uses.
 avatar_hash :: proc(key: string) -> u32 {
 	hash: u32 = 2166136261
@@ -77,6 +85,7 @@ avatar :: proc(
 	size: f32,
 	tex: ^rl.Texture2D = nil,
 	ring: clay.Color = {},
+	hinge_angle: f32 = 0,
 ) {
 	tex := tex
 	radius := size / 2
@@ -110,6 +119,23 @@ avatar :: proc(
 			border = halo,
 		},
 		) {
+			image := clay.ImageElementConfig {
+				imageData = tex,
+			}
+			custom: clay.CustomElementConfig
+			if hinge_angle != 0 {
+				view := new(Avatar_Hinge, context.temp_allocator)
+				view^ = {
+					kind  = .Avatar_Hinge,
+					tex   = tex,
+					angle = hinge_angle,
+					back  = avatar_color(key),
+				}
+				image = {}
+				custom = {
+					customData = view,
+				}
+			}
 			if clay.UI(clay.ID("AvatarImage", clay.ID(id_str, index).id))(
 			{
 				layout = {
@@ -118,7 +144,8 @@ avatar :: proc(
 						height = clay.SizingFixed(image_size),
 					},
 				},
-				image = {imageData = tex},
+				image = image,
+				custom = custom,
 			},
 			) {}
 		}

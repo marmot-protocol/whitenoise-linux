@@ -233,10 +233,6 @@ msgstr "Alle"
 msgid "All accounts stay connected. Switching only changes which one you're looking at."
 msgstr "Alle Konten bleiben verbunden. Beim Wechseln ändert sich nur, welches du gerade ansiehst."
 
-#, fuzzy
-msgid "All folders"
-msgstr "Ordner öffnen"
-
 msgid "All senders"
 msgstr "Alle Absender"
 
@@ -273,6 +269,9 @@ msgstr "Apps"
 
 msgid "Archive"
 msgstr "Archivieren"
+
+msgid "Archived chats"
+msgstr "Archivierte Chats"
 
 msgid "Archives"
 msgstr "Archive"
@@ -317,6 +316,9 @@ msgstr "Zurück"
 
 msgid "Back to chat"
 msgstr "Zurück zum Chat"
+
+msgid "Back to chats"
+msgstr "Zurück zu den Chats"
 
 msgid "Back to issues"
 msgstr "Zurück zu den Meldungen"
@@ -448,6 +450,9 @@ msgstr "Chat-Optionen"
 msgid "Chats"
 msgstr "Chats"
 
+msgid "Chats you archive will appear here."
+msgstr "Chats, die du archivierst, erscheinen hier."
+
 #, fuzzy
 msgid "Check now"
 msgstr "Wird geprüft…"
@@ -484,6 +489,9 @@ msgstr "Cache leeren"
 #, fuzzy
 msgid "Clear effect"
 msgstr "Cache leeren"
+
+msgid "Clear search"
+msgstr "Suche löschen"
 
 msgid "Click a sticker for a larger preview."
 msgstr "Klicke auf einen Sticker, um ihn größer anzusehen."
@@ -660,9 +668,6 @@ msgstr "Meldungen konnten nicht geladen werden. Bitte versuche es erneut."
 
 msgid "Couldn't load messages. Please try again."
 msgstr "Die Nachrichten konnten nicht geladen werden. Bitte versuche es erneut."
-
-msgid "Couldn't load the GIF. Please try again."
-msgstr "Das GIF konnte nicht geladen werden. Versuch es bitte erneut."
 
 msgid "Couldn't load the pack. Check your relay settings and try again."
 msgstr "Das Paket konnte nicht geladen werden. Prüfe deine Relay-Einstellungen und versuche es erneut."
@@ -1112,9 +1117,6 @@ msgstr "Exportieren"
 msgid "Export as Markdown"
 msgstr ""
 
-msgid "FOLDERS"
-msgstr ""
-
 msgid "Family"
 msgstr "Familie"
 
@@ -1138,10 +1140,6 @@ msgstr ""
 
 msgid "Files"
 msgstr "Dateien"
-
-#, c-format
-msgid "Files: %d"
-msgstr "Dateien: %d"
 
 #, fuzzy
 msgid "Filter unread chats"
@@ -1429,6 +1427,9 @@ msgstr ""
 msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
 msgstr "Hält die geöffnete Unterhaltung auf einer angenehmen Lesebreite, statt die volle Breite auszufüllen."
 
+msgid "Keep your chat list focused without deleting conversations."
+msgstr "Halte deine Chatliste übersichtlich, ohne Unterhaltungen zu löschen."
+
 msgid "Key package"
 msgstr "Schlüsselpaket"
 
@@ -1676,8 +1677,7 @@ msgstr "Spitzname"
 msgid "No GIFs found. Try another search."
 msgstr "Keine GIFs gefunden. Versuch einen anderen Suchbegriff."
 
-#, fuzzy
-msgid "No archived chats."
+msgid "No archived chats"
 msgstr "Keine archivierten Chats"
 
 #, fuzzy
@@ -1712,10 +1712,6 @@ msgid "No folders match your search."
 msgstr "Keine Ordner entsprechen deiner Suche."
 
 #, fuzzy
-msgid "No folders yet."
-msgstr "Noch keine Relays"
-
-#, fuzzy
 msgid "No inbox relays."
 msgstr "Kein Profil auf den Relays gefunden."
 
@@ -1735,6 +1731,9 @@ msgstr ""
 #, fuzzy
 msgid "No key package yet. Publish one so people can invite you."
 msgstr "Veröffentliche eines, damit andere dich in Gruppen einladen können."
+
+msgid "No matching chats"
+msgstr "Keine passenden Chats"
 
 msgid "No matching stickers."
 msgstr "Keine passenden Sticker."
@@ -1898,9 +1897,6 @@ msgstr "Fotos"
 msgid "Pick a chat to send it to. They choose whether to use it."
 msgstr ""
 
-msgid "Pick a folder for this chat, or make a new one. A chat sits in one folder at a time."
-msgstr ""
-
 msgid "Pick a new password first."
 msgstr ""
 
@@ -2004,9 +2000,6 @@ msgstr ""
 #, fuzzy
 msgid "RELAYS IN COMMON"
 msgstr "GEMEINSAME GRUPPEN"
-
-msgid "RENAME FOLDER"
-msgstr ""
 
 msgid "Rail"
 msgstr ""
@@ -2139,6 +2132,9 @@ msgstr "Als gelöst markieren"
 msgid "Resolved"
 msgstr "Gelöst"
 
+msgid "Restore"
+msgstr "Wiederherstellen"
+
 msgid "Restore last selected chat on launch"
 msgstr "Letzten Chat beim Start wiederherstellen"
 
@@ -2250,6 +2246,9 @@ msgstr "GIFs suchen"
 msgid "Search all chats"
 msgstr "Chats durchsuchen…"
 
+msgid "Search archived chats..."
+msgstr "Archivierte Chats durchsuchen..."
+
 msgid "Search everywhere"
 msgstr ""
 
@@ -2318,9 +2317,6 @@ msgstr "Nachricht senden"
 
 msgid "Send with an effect"
 msgstr ""
-
-msgid "Sender"
-msgstr "Absender"
 
 msgid "Sending..."
 msgstr "Wird gesendet..."
@@ -2460,9 +2456,6 @@ msgstr "Klein"
 msgid "Sold"
 msgstr "Verkauft"
 
-msgid "Sort chats by recent activity"
-msgstr "Chats nach letzter Aktivität sortieren"
-
 msgid "Speech"
 msgstr "Sprache & Stimme"
 
@@ -2562,9 +2555,6 @@ msgstr "TRANSKRIPTIONSMODELL"
 
 msgid "TRUSTED LINK SITES"
 msgstr "VERTRAUENSWÜRDIGE WEBSITES"
-
-msgid "Take out of folder"
-msgstr ""
 
 msgid "Takes effect on the next launch."
 msgstr ""
@@ -2709,11 +2699,11 @@ msgstr "Trophäe"
 msgid "TrustForgetAll"
 msgstr ""
 
+msgid "Try a different search."
+msgstr "Versuche eine andere Suche."
+
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr ""
-
-msgid "Type"
-msgstr "Typ"
 
 msgid "Unavailable conversation"
 msgstr "Unterhaltung nicht verfügbar"

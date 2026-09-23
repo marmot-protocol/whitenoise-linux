@@ -233,10 +233,6 @@ msgstr "Tutte"
 msgid "All accounts stay connected. Switching only changes which one you're looking at."
 msgstr "Tutti gli account restano connessi. Il passaggio cambia solo quale stai visualizzando."
 
-#, fuzzy
-msgid "All folders"
-msgstr "Apri cartella"
-
 msgid "All senders"
 msgstr "Tutti i mittenti"
 
@@ -273,6 +269,9 @@ msgstr "App"
 
 msgid "Archive"
 msgstr "Archivia"
+
+msgid "Archived chats"
+msgstr "Chat archiviate"
 
 msgid "Archives"
 msgstr "Archivi"
@@ -317,6 +316,9 @@ msgstr "Indietro"
 
 msgid "Back to chat"
 msgstr "Torna alla chat"
+
+msgid "Back to chats"
+msgstr "Torna alle chat"
 
 msgid "Back to issues"
 msgstr "Torna alle segnalazioni"
@@ -448,6 +450,9 @@ msgstr "Opzioni chat"
 msgid "Chats"
 msgstr "Chat"
 
+msgid "Chats you archive will appear here."
+msgstr "Le chat che archivi appariranno qui."
+
 #, fuzzy
 msgid "Check now"
 msgstr "Verifica in corso…"
@@ -484,6 +489,9 @@ msgstr "Svuota cache"
 #, fuzzy
 msgid "Clear effect"
 msgstr "Svuota cache"
+
+msgid "Clear search"
+msgstr "Cancella ricerca"
 
 msgid "Click a sticker for a larger preview."
 msgstr "Fai clic su un adesivo per ingrandirlo."
@@ -660,9 +668,6 @@ msgstr "Non è stato possibile caricare le segnalazioni. Riprova."
 
 msgid "Couldn't load messages. Please try again."
 msgstr "Non è stato possibile caricare i messaggi. Riprova."
-
-msgid "Couldn't load the GIF. Please try again."
-msgstr "Impossibile caricare la GIF. Riprova."
 
 msgid "Couldn't load the pack. Check your relay settings and try again."
 msgstr "Impossibile caricare il pacchetto. Controlla le impostazioni dei relay e riprova."
@@ -1112,9 +1117,6 @@ msgstr "Esporta"
 msgid "Export as Markdown"
 msgstr ""
 
-msgid "FOLDERS"
-msgstr ""
-
 msgid "Family"
 msgstr "Famiglia"
 
@@ -1138,10 +1140,6 @@ msgstr ""
 
 msgid "Files"
 msgstr "File"
-
-#, c-format
-msgid "Files: %d"
-msgstr "File: %d"
 
 #, fuzzy
 msgid "Filter unread chats"
@@ -1429,6 +1427,9 @@ msgstr ""
 msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
 msgstr "Mantieni la conversazione aperta su una comoda larghezza di lettura invece di riempire tutta la larghezza."
 
+msgid "Keep your chat list focused without deleting conversations."
+msgstr "Tieni in ordine il tuo elenco di chat senza eliminare le conversazioni."
+
 msgid "Key package"
 msgstr "Pacchetto chiavi"
 
@@ -1676,8 +1677,7 @@ msgstr "Soprannome"
 msgid "No GIFs found. Try another search."
 msgstr "Nessuna GIF trovata. Prova un'altra ricerca."
 
-#, fuzzy
-msgid "No archived chats."
+msgid "No archived chats"
 msgstr "Nessuna chat archiviata"
 
 #, fuzzy
@@ -1712,10 +1712,6 @@ msgid "No folders match your search."
 msgstr "Nessuna cartella corrisponde alla ricerca."
 
 #, fuzzy
-msgid "No folders yet."
-msgstr "Ancora nessun relay"
-
-#, fuzzy
 msgid "No inbox relays."
 msgstr "Nessun profilo trovato sui relay."
 
@@ -1735,6 +1731,9 @@ msgstr ""
 #, fuzzy
 msgid "No key package yet. Publish one so people can invite you."
 msgstr "Pubblicane uno così altri utenti possono invitarti nei gruppi."
+
+msgid "No matching chats"
+msgstr "Nessuna chat corrispondente"
 
 msgid "No matching stickers."
 msgstr "Nessun adesivo corrispondente."
@@ -1898,9 +1897,6 @@ msgstr "Foto"
 msgid "Pick a chat to send it to. They choose whether to use it."
 msgstr ""
 
-msgid "Pick a folder for this chat, or make a new one. A chat sits in one folder at a time."
-msgstr ""
-
 msgid "Pick a new password first."
 msgstr ""
 
@@ -2004,9 +2000,6 @@ msgstr ""
 #, fuzzy
 msgid "RELAYS IN COMMON"
 msgstr "GRUPPI IN COMUNE"
-
-msgid "RENAME FOLDER"
-msgstr ""
 
 msgid "Rail"
 msgstr ""
@@ -2139,6 +2132,9 @@ msgstr "Segna come risolta"
 msgid "Resolved"
 msgstr "Risolta"
 
+msgid "Restore"
+msgstr "Ripristina"
+
 msgid "Restore last selected chat on launch"
 msgstr "Ripristina l'ultima chat selezionata all'avvio"
 
@@ -2250,6 +2246,9 @@ msgstr "Cerca GIF"
 msgid "Search all chats"
 msgstr "Cerca chat…"
 
+msgid "Search archived chats..."
+msgstr "Cerca nelle chat archiviate..."
+
 msgid "Search everywhere"
 msgstr ""
 
@@ -2318,9 +2317,6 @@ msgstr "Invia messaggio"
 
 msgid "Send with an effect"
 msgstr ""
-
-msgid "Sender"
-msgstr "Mittente"
 
 msgid "Sending..."
 msgstr "Invio in corso..."
@@ -2460,9 +2456,6 @@ msgstr "Piccola"
 msgid "Sold"
 msgstr "Venduto"
 
-msgid "Sort chats by recent activity"
-msgstr "Ordina le chat per attività recente"
-
 msgid "Speech"
 msgstr "Voce"
 
@@ -2562,9 +2555,6 @@ msgstr "MODELLO DI TRASCRIZIONE"
 
 msgid "TRUSTED LINK SITES"
 msgstr "SITI AFFIDABILI"
-
-msgid "Take out of folder"
-msgstr ""
 
 msgid "Takes effect on the next launch."
 msgstr ""
@@ -2709,11 +2699,11 @@ msgstr "Trofeo"
 msgid "TrustForgetAll"
 msgstr ""
 
+msgid "Try a different search."
+msgstr "Prova un’altra ricerca."
+
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr ""
-
-msgid "Type"
-msgstr "Tipo"
 
 msgid "Unavailable conversation"
 msgstr "Conversazione non disponibile"

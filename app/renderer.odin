@@ -153,22 +153,27 @@ LAYER_SLOT :: 1
 FRAME_SLOT :: 2
 HOLD_SLOT :: 3
 TRAIL_SLOT :: 4
+PUSH_SLOT :: 5 // incoming view while FRAME retains the displayed composite
 MODAL_LIFT :: f32(0.04) // how far the modal layer scales in from
 PAGE_PUSH :: f32(0.03) // how far the outgoing page pulls away from the eye
 
 // The whole frame, composited. Everything is drawn into a target rather
 // than straight at the window for one reason: the target still holds
 // the frame that was on screen a moment ago, so a page switch can copy
-// it aside and dissolve the old page out over the new one. clay is
+// it aside while the next page takes its place. clay is
 // immediate mode and keeps nothing, and a GPU→CPU readback (CaptureFrame)
 // is far too slow per frame; a texture that simply isn't cleared yet
 // costs nothing.
 draw_frame :: proc(render_commands: ^clay.ClayArray(clay.RenderCommand)) {
 	if page_held {
 		page_held = false
-		rl.CopyTarget(HOLD_SLOT, FRAME_SLOT)
+		if !rl.CopyTarget(HOLD_SLOT, FRAME_SLOT) {
+			page_t = 1
+		}
 	}
-	if !rl.BeginTarget(FRAME_SLOT) {
+	pushing := page_push && page_t < 1
+	slot := pushing ? PUSH_SLOT : FRAME_SLOT
+	if !rl.BeginTarget(slot) {
 		clay_raylib_render(render_commands)
 		reveal_step()
 		return
@@ -176,9 +181,19 @@ draw_frame :: proc(render_commands: ^clay.ClayArray(clay.RenderCommand)) {
 	clay_raylib_render(render_commands)
 	reveal_step() // holds the old theme's frame while the new one opens
 	rl.EndTarget()
-	rl.DrawTarget(FRAME_SLOT, 1)
+	// Retain the actual moving pair, not just its destination. A second
+	// navigation click can push the partially finished transition away.
+	if pushing && rl.BeginTarget(FRAME_SLOT) {
+		rl.DrawTarget(PUSH_SLOT, 1)
+		draw_page_transition()
+		rl.EndTarget()
+		slot = FRAME_SLOT
+	}
+	rl.DrawTarget(slot, 1)
 	scroll_smear()
-	page_dissolve()
+	if !page_push {
+		draw_page_transition()
+	}
 }
 
 // Motion blur on a thrown timeline. TRAIL keeps a decayed history of
@@ -227,12 +242,23 @@ scroll_smear :: proc() {
 	)
 }
 
-// The page that was there, fading off the page that replaced it, inside
-// the card both of them live in. It pulls slightly away as it goes, so
-// the two pages read as depth rather than as a fade.
+// Adjacent, opaque panes share one moving edge. Tab changes push the sidebar
+// and content in opposite directions; the navigation column stays anchored.
+// Chat changes move only the content. Other views retain their depth fade.
 @(private = "file")
-page_dissolve :: proc() {
+draw_page_transition :: proc() {
 	if page_t >= 1 {
+		return
+	}
+	if page_push {
+		if box, ok := element_box(clay.ID("MainCard")); ok {
+			push_region(box, -1)
+		}
+		if page_tab_push {
+			if box, ok := element_box(clay.ID("RailContent")); ok {
+				push_region(box, 1)
+			}
+		}
 		return
 	}
 	box, ok := element_box(clay.ID("MainCard"))
@@ -247,6 +273,30 @@ page_dissolve :: proc() {
 		box.height * UI_ZOOM,
 		1 - page_t,
 		1 + PAGE_PUSH * page_t,
+	)
+}
+
+@(private = "file")
+push_region :: proc(box: clay.BoundingBox, direction: f32) {
+	width := box.width * UI_ZOOM
+	travel := width * page_t
+	rl.DrawTargetRegion(
+		HOLD_SLOT,
+		box.x * UI_ZOOM,
+		box.y * UI_ZOOM,
+		width,
+		box.height * UI_ZOOM,
+		1,
+		offset_x = direction * travel,
+	)
+	rl.DrawTargetRegion(
+		PUSH_SLOT,
+		box.x * UI_ZOOM,
+		box.y * UI_ZOOM,
+		width,
+		box.height * UI_ZOOM,
+		1,
+		offset_x = direction * (travel - width),
 	)
 }
 
@@ -527,6 +577,53 @@ render_range :: proc(
 				   overlay_colors[len(overlay_colors) - 1] !=
 					   0 {tint = overlay_colors[len(overlay_colors) - 1]}
 				profile_background_draw((^Profile_Background)(data), bounds, clay_color(tint))
+			case .Avatar_Hinge:
+				view := (^Avatar_Hinge)(data)
+				angle := view.angle * math.PI / 180
+				sin, cos := math.sin(angle), math.cos(angle)
+				tint := clay.Color{255, 255, 255, 255}
+				if len(overlay_colors) > 0 && overlay_colors[len(overlay_colors) - 1] != 0 {
+					tint = overlay_colors[len(overlay_colors) - 1]
+				}
+				// The top-center hinge stays fixed. Rotate the opaque cover
+				// and its photo together, clipped to the original avatar slot.
+				uvs := [6]rl.Vector2{{0, 0}, {1, 0}, {1, 1}, {0, 0}, {1, 1}, {0, 1}}
+				vertices: [6]rl.Vertex
+				for uv, k in uvs {
+					dx := (uv.x - 0.5) * bounds.width
+					dy := uv.y * bounds.height
+					vertices[k] = {
+						position  = {
+							bounds.x + bounds.width / 2 + dx * cos - dy * sin,
+							bounds.y + dx * sin + dy * cos,
+						},
+						color     = {
+							view.back.r / 255,
+							view.back.g / 255,
+							view.back.b / 255,
+							tint.a / 255,
+						},
+						tex_coord = {uv.x, uv.y},
+					}
+				}
+				rl.DrawTrianglesClipped(
+					vertices[:],
+					bounds.x,
+					bounds.y,
+					bounds.width,
+					bounds.height,
+				)
+				for &vertex in vertices {
+					vertex.color = {tint.r / 255, tint.g / 255, tint.b / 255, tint.a / 255}
+				}
+				rl.DrawTrianglesClipped(
+					vertices[:],
+					bounds.x,
+					bounds.y,
+					bounds.width,
+					bounds.height,
+					view.tex,
+				)
 			case .Image_Crop:
 				tex := (^Image_Crop)(data).tex
 				if tex.width <= 0 || tex.height <= 0 {continue}

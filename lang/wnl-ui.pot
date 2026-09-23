@@ -222,9 +222,6 @@ msgstr ""
 msgid "All accounts stay connected. Switching only changes which one you're looking at."
 msgstr ""
 
-msgid "All folders"
-msgstr ""
-
 msgid "All senders"
 msgstr ""
 
@@ -259,6 +256,9 @@ msgid "Apps"
 msgstr ""
 
 msgid "Archive"
+msgstr ""
+
+msgid "Archived chats"
 msgstr ""
 
 msgid "Archives"
@@ -301,6 +301,9 @@ msgid "Back"
 msgstr ""
 
 msgid "Back to chat"
+msgstr ""
+
+msgid "Back to chats"
 msgstr ""
 
 msgid "Back to issues"
@@ -424,6 +427,9 @@ msgstr ""
 msgid "Chats"
 msgstr ""
 
+msgid "Chats you archive will appear here."
+msgstr ""
+
 msgid "Check now"
 msgstr ""
 
@@ -455,6 +461,9 @@ msgid "Clear cache"
 msgstr ""
 
 msgid "Clear effect"
+msgstr ""
+
+msgid "Clear search"
 msgstr ""
 
 msgid "Click a sticker for a larger preview."
@@ -620,9 +629,6 @@ msgid "Couldn't load issues. Please try again."
 msgstr ""
 
 msgid "Couldn't load messages. Please try again."
-msgstr ""
-
-msgid "Couldn't load the GIF. Please try again."
 msgstr ""
 
 msgid "Couldn't load the pack. Check your relay settings and try again."
@@ -1040,9 +1046,6 @@ msgstr ""
 msgid "Export as Markdown"
 msgstr ""
 
-msgid "FOLDERS"
-msgstr ""
-
 msgid "Family"
 msgstr ""
 
@@ -1065,10 +1068,6 @@ msgid "Field hover"
 msgstr ""
 
 msgid "Files"
-msgstr ""
-
-#, c-format
-msgid "Files: %d"
 msgstr ""
 
 msgid "Filter unread chats"
@@ -1341,6 +1340,9 @@ msgstr ""
 msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
 msgstr ""
 
+msgid "Keep your chat list focused without deleting conversations."
+msgstr ""
+
 msgid "Key package"
 msgstr ""
 
@@ -1576,7 +1578,7 @@ msgstr ""
 msgid "No GIFs found. Try another search."
 msgstr ""
 
-msgid "No archived chats."
+msgid "No archived chats"
 msgstr ""
 
 msgid "No audit log files."
@@ -1606,9 +1608,6 @@ msgstr ""
 msgid "No folders match your search."
 msgstr ""
 
-msgid "No folders yet."
-msgstr ""
-
 msgid "No inbox relays."
 msgstr ""
 
@@ -1625,6 +1624,9 @@ msgid "No key package published for that pubkey."
 msgstr ""
 
 msgid "No key package yet. Publish one so people can invite you."
+msgstr ""
+
+msgid "No matching chats"
 msgstr ""
 
 msgid "No matching stickers."
@@ -1783,9 +1785,6 @@ msgstr ""
 msgid "Pick a chat to send it to. They choose whether to use it."
 msgstr ""
 
-msgid "Pick a folder for this chat, or make a new one. A chat sits in one folder at a time."
-msgstr ""
-
 msgid "Pick a new password first."
 msgstr ""
 
@@ -1886,9 +1885,6 @@ msgid "RECENT"
 msgstr ""
 
 msgid "RELAYS IN COMMON"
-msgstr ""
-
-msgid "RENAME FOLDER"
 msgstr ""
 
 msgid "Rail"
@@ -2011,6 +2007,9 @@ msgstr ""
 msgid "Resolved"
 msgstr ""
 
+msgid "Restore"
+msgstr ""
+
 msgid "Restore last selected chat on launch"
 msgstr ""
 
@@ -2119,6 +2118,9 @@ msgstr ""
 msgid "Search all chats"
 msgstr ""
 
+msgid "Search archived chats..."
+msgstr ""
+
 msgid "Search everywhere"
 msgstr ""
 
@@ -2180,9 +2182,6 @@ msgid "Send the message"
 msgstr ""
 
 msgid "Send with an effect"
-msgstr ""
-
-msgid "Sender"
 msgstr ""
 
 msgid "Sending..."
@@ -2309,9 +2308,6 @@ msgstr ""
 msgid "Sold"
 msgstr ""
 
-msgid "Sort chats by recent activity"
-msgstr ""
-
 msgid "Speech"
 msgstr ""
 
@@ -2408,9 +2404,6 @@ msgid "TRANSCRIPTION MODEL"
 msgstr ""
 
 msgid "TRUSTED LINK SITES"
-msgstr ""
-
-msgid "Take out of folder"
 msgstr ""
 
 msgid "Takes effect on the next launch."
@@ -2547,10 +2540,10 @@ msgstr ""
 msgid "TrustForgetAll"
 msgstr ""
 
-msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
+msgid "Try a different search."
 msgstr ""
 
-msgid "Type"
+msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr ""
 
 msgid "Unavailable conversation"

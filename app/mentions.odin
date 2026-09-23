@@ -81,9 +81,6 @@ body_atom :: proc(text: string, at: int, size: u16) -> (end: int, width: f32) {
 		6 +
 		f32(size) +
 		rl.MeasureTextLine(FONT_TITLE, size, fmt.tprintf("@%s", mention_label(hx)), 0).x
-	if url_pic(profile_info(g_client, hx).pic_url) != nil {
-		width += 2 + f32(size)
-	}
 	return end, width
 }
 

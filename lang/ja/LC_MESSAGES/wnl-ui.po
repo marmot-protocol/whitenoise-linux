@@ -233,10 +233,6 @@ msgstr "すべて"
 msgid "All accounts stay connected. Switching only changes which one you're looking at."
 msgstr "すべてのアカウントは接続されたままです。切り替えても、表示するアカウントが変わるだけです。"
 
-#, fuzzy
-msgid "All folders"
-msgstr "フォルダを開く"
-
 msgid "All senders"
 msgstr "すべての送信者"
 
@@ -273,6 +269,9 @@ msgstr "アプリ"
 
 msgid "Archive"
 msgstr "アーカイブ"
+
+msgid "Archived chats"
+msgstr "アーカイブしたチャット"
 
 msgid "Archives"
 msgstr "アーカイブ"
@@ -316,6 +315,9 @@ msgid "Back"
 msgstr "戻る"
 
 msgid "Back to chat"
+msgstr "チャットに戻る"
+
+msgid "Back to chats"
 msgstr "チャットに戻る"
 
 msgid "Back to issues"
@@ -448,6 +450,9 @@ msgstr "チャットのオプション"
 msgid "Chats"
 msgstr "チャット"
 
+msgid "Chats you archive will appear here."
+msgstr "アーカイブしたチャットがここに表示されます。"
+
 #, fuzzy
 msgid "Check now"
 msgstr "確認中…"
@@ -484,6 +489,9 @@ msgstr "キャッシュを消去"
 #, fuzzy
 msgid "Clear effect"
 msgstr "キャッシュを消去"
+
+msgid "Clear search"
+msgstr "検索をクリア"
 
 msgid "Click a sticker for a larger preview."
 msgstr "ステッカーをクリックすると拡大表示できます。"
@@ -660,9 +668,6 @@ msgstr "報告を読み込めませんでした。もう一度お試しくださ
 
 msgid "Couldn't load messages. Please try again."
 msgstr "メッセージを読み込めませんでした。もう一度お試しください。"
-
-msgid "Couldn't load the GIF. Please try again."
-msgstr "GIFを読み込めませんでした。もう一度お試しください。"
 
 msgid "Couldn't load the pack. Check your relay settings and try again."
 msgstr "パックを読み込めませんでした。リレーの設定を確認して、もう一度お試しください。"
@@ -1112,9 +1117,6 @@ msgstr "エクスポート"
 msgid "Export as Markdown"
 msgstr ""
 
-msgid "FOLDERS"
-msgstr ""
-
 msgid "Family"
 msgstr "家族"
 
@@ -1138,10 +1140,6 @@ msgstr ""
 
 msgid "Files"
 msgstr "ファイル"
-
-#, c-format
-msgid "Files: %d"
-msgstr "ファイル：%d"
 
 #, fuzzy
 msgid "Filter unread chats"
@@ -1429,6 +1427,9 @@ msgstr ""
 msgid "Keep the open conversation on a comfortable reading measure instead of filling the width."
 msgstr "開いている会話を全幅にせず、読みやすい幅に保ちます。"
 
+msgid "Keep your chat list focused without deleting conversations."
+msgstr "会話を削除せずに、チャット一覧を整理できます。"
+
 msgid "Key package"
 msgstr "キーパッケージ"
 
@@ -1676,8 +1677,7 @@ msgstr "ニックネーム"
 msgid "No GIFs found. Try another search."
 msgstr "GIFが見つかりませんでした。別のキーワードで検索してください。"
 
-#, fuzzy
-msgid "No archived chats."
+msgid "No archived chats"
 msgstr "アーカイブしたチャットはありません"
 
 #, fuzzy
@@ -1712,10 +1712,6 @@ msgid "No folders match your search."
 msgstr "検索に一致するフォルダはありません。"
 
 #, fuzzy
-msgid "No folders yet."
-msgstr "リレーがまだありません"
-
-#, fuzzy
 msgid "No inbox relays."
 msgstr "リレー上にプロフィールが見つかりません。"
 
@@ -1735,6 +1731,9 @@ msgstr ""
 #, fuzzy
 msgid "No key package yet. Publish one so people can invite you."
 msgstr "公開すると他のユーザーがグループに招待できるようになります。"
+
+msgid "No matching chats"
+msgstr "一致するチャットはありません"
 
 msgid "No matching stickers."
 msgstr "一致するステッカーがありません。"
@@ -1898,9 +1897,6 @@ msgstr "写真"
 msgid "Pick a chat to send it to. They choose whether to use it."
 msgstr ""
 
-msgid "Pick a folder for this chat, or make a new one. A chat sits in one folder at a time."
-msgstr ""
-
 msgid "Pick a new password first."
 msgstr ""
 
@@ -2004,9 +2000,6 @@ msgstr ""
 #, fuzzy
 msgid "RELAYS IN COMMON"
 msgstr "共通のグループ"
-
-msgid "RENAME FOLDER"
-msgstr ""
 
 msgid "Rail"
 msgstr ""
@@ -2139,6 +2132,9 @@ msgstr "解決済みにする"
 msgid "Resolved"
 msgstr "解決済み"
 
+msgid "Restore"
+msgstr "復元"
+
 msgid "Restore last selected chat on launch"
 msgstr "起動時に最後のチャットを復元"
 
@@ -2250,6 +2246,9 @@ msgstr "GIFを検索"
 msgid "Search all chats"
 msgstr "チャットを検索…"
 
+msgid "Search archived chats..."
+msgstr "アーカイブしたチャットを検索..."
+
 msgid "Search everywhere"
 msgstr ""
 
@@ -2318,9 +2317,6 @@ msgstr "メッセージを送信"
 
 msgid "Send with an effect"
 msgstr ""
-
-msgid "Sender"
-msgstr "送信者"
 
 msgid "Sending..."
 msgstr "送信しています..."
@@ -2460,9 +2456,6 @@ msgstr "小"
 msgid "Sold"
 msgstr "売却済み"
 
-msgid "Sort chats by recent activity"
-msgstr "チャットを最近の更新順に並べ替え"
-
 msgid "Speech"
 msgstr "音声"
 
@@ -2562,9 +2555,6 @@ msgstr "文字起こしモデル"
 
 msgid "TRUSTED LINK SITES"
 msgstr "信頼済みのリンク先"
-
-msgid "Take out of folder"
-msgstr ""
 
 msgid "Takes effect on the next launch."
 msgstr ""
@@ -2709,11 +2699,11 @@ msgstr "トロフィー"
 msgid "TrustForgetAll"
 msgstr ""
 
+msgid "Try a different search."
+msgstr "別の検索語を試してください。"
+
 msgid "Turn off animated transitions, flights and effects. State still changes, nothing moves."
 msgstr ""
-
-msgid "Type"
-msgstr "種類"
 
 msgid "Unavailable conversation"
 msgstr "利用できない会話"
