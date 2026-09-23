@@ -31,10 +31,11 @@ last_host=""
 last_native=""
 generation=0
 
-# Start watching before compilation, so saves during a build stay queued.
+# Watch the root so atomic DEPS_PIN replacements remain visible.
 coproc WATCH { exec inotifywait -mq -e close_write,moved_to,delete,create \
-	--include '\.(odin|c|h|toml|po|map)$' -r \
-	"$HERE/app" "$HERE/marmot" "$HERE/themes" "$HERE/lang" "$HERE/scripts" {WN_DEV_VAULT_FD}>&-; }
+	--format '%w%f' \
+	--exclude '/(\.git|\.ngit|\.flatpak-builder|build|vendor)(/|$)' -r \
+	"$HERE" {WN_DEV_VAULT_FD}>&-; }
 watch_pid=$WATCH_PID
 watch_fd=${WATCH[0]}
 stop() {
@@ -55,7 +56,7 @@ trap cleanup EXIT
 trap 'exit 0' INT TERM
 
 build_module() {
-	# C helpers use the same staging rules as release builds.
+	# Native helpers and SDK patches use the same staging rules as release builds.
 	if [ -n "$last_native" ] && [ "$native_hash" != "$last_native" ]; then
 		"$HERE/scripts/build.sh" stage {WN_DEV_VAULT_FD}>&- || return $?
 	fi
@@ -77,8 +78,8 @@ build_module() {
 
 while :; do
 	host_hash=$(sha256sum "$HERE/scripts/dev-host.c")
-	native_hash=$(find "$HERE/app" -maxdepth 1 -type f \( -name '*.c' -o -name '*.h' \) -print0 | sort -z | xargs -0 sha256sum | sha256sum)
-	source_hash=$({ find "$HERE/app" "$HERE/marmot" "$HERE/themes" "$HERE/lang" -type f -print0 | sort -z | xargs -0 sha256sum; sha256sum "$HERE/scripts/dev-host.c" "$HERE/scripts/dev-exports.map"; } | sha256sum)
+	native_hash=$({ find "$HERE/app" -maxdepth 1 -type f \( -name '*.c' -o -name '*.h' \) -print0 | sort -z | xargs -0 sha256sum; sha256sum "$HERE/DEPS_PIN" "$HERE/patches/"*.patch "$HERE/scripts/build.sh"; } | sha256sum)
+	source_hash=$({ find "$HERE/app" "$HERE/marmot" "$HERE/themes" "$HERE/lang" -type f -print0 | sort -z | xargs -0 sha256sum; sha256sum "$HERE/scripts/dev-host.c" "$HERE/scripts/dev-exports.map"; printf '%s\n' "$native_hash"; } | sha256sum)
 	if [ "$source_hash" = "$last_source" ] && [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
 		echo "==> unchanged source, keeping the running app"
 	else
@@ -103,6 +104,11 @@ while :; do
 			echo "==> build failed, keeping the running app"
 		fi
 	fi
-	read -r -u "$watch_fd" changed || break
+	while :; do
+		read -r -u "$watch_fd" changed || exit 0
+		case "$changed" in
+			*.odin|*.c|*.h|*.toml|*.po|*.map|*.patch|*.sh|*/DEPS_PIN) break ;;
+		esac
+	done
 	while read -r -t 0.1 -u "$watch_fd" changed; do :; done
 done

@@ -769,6 +769,7 @@ drain_sends :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	defer delete(done)
 
 	reload, refresh := false, false
+	offline_changed := false
 	visible := make(map[string]bool, context.temp_allocator)
 	if timeline_page != nil {
 		for record in timeline_page.messages[:timeline_page.messages_len] {
@@ -814,6 +815,7 @@ drain_sends :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				continue
 			}
 			fmt.eprintfln("send: ticket=%d settled err=%s", d.ticket, d.err)
+			offline_changed = true
 			if p.dismissed || len(d.err) == 0 {
 				if p.dismissed && len(d.ids) > 0 {
 					for id in d.ids {
@@ -842,7 +844,9 @@ drain_sends :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			break
 		}
 	}
-	save_offline(ui)
+	if offline_changed {
+		save_offline(ui)
+	}
 	if refresh {
 		timeline_start(client, ui, "")
 	} else if reload {

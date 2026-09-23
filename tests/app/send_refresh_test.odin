@@ -2,10 +2,13 @@ package main
 
 import marmot "../marmot"
 import "base:runtime"
+import "core:fmt"
+import "core:os"
 import "core:strings"
 import "core:sync"
 import "core:testing"
 import "core:thread"
+import "core:time"
 import rl "sdlrl"
 
 @(test)
@@ -70,7 +73,12 @@ send_waits_for_timeline :: proc(t: ^testing.T) {
 	old_job, old_page, old_retired := timeline_job, timeline_page, timeline_retired
 	old_done, old_home := sends_done, data_home
 	timeline_job, timeline_page, timeline_retired, sends_done = nil, nil, {}, {}
-	data_home = "/tmp/wn-send-refresh-test-unused"
+	test_home := fmt.aprintf("/tmp/wn-send-refresh-%d", time.tick_now())
+	defer delete(test_home)
+	os.make_directory(test_home)
+	defer os.remove_all(test_home)
+	data_home = test_home
+	testing.expect_value(t, vault_create("test"), Vault_Err.None)
 	defer {
 		timeline_page = nil // the fixture page is stack-owned
 		timeline_stop()
@@ -82,8 +90,11 @@ send_waits_for_timeline :: proc(t: ^testing.T) {
 	}
 	append(&ui.chats, Chat_Row_Ui{group_id = "group"})
 	defer {delete(ui.chats); delete(ui.pending)}
-	append(&ui.pending, Pending_Send{ticket = 1, group_id = strings.clone("group")})
+	append(&ui.pending, Pending_Send{ticket = 1, group_id = strings.clone("group"), attempts = 1})
 	append(&ui.pending[0].atts, Pending_Att{name = strings.clone("photo.png")})
+	save_offline(&ui)
+	persisted, read_err := os.read_entire_file(offline_path(), context.temp_allocator)
+	testing.expect(t, read_err == nil)
 	done := Send_Done {
 		ticket = 1,
 	}
@@ -104,6 +115,13 @@ send_waits_for_timeline :: proc(t: ^testing.T) {
 	testing.expect_value(t, len(ui.pending), 1)
 	testing.expect_value(t, ui.pending[0].atts[0].name, "photo.png")
 	testing.expect(t, sends_done[0].refresh_requested)
+	unchanged, unchanged_err := os.read_entire_file(offline_path(), context.temp_allocator)
+	testing.expect(t, unchanged_err == nil)
+	testing.expect(
+		t,
+		string(unchanged) == string(persisted),
+		"waiting must not rewrite the encrypted queue",
+	)
 	thread.join(timeline_job.worker)
 	records := [?]marmot.Timeline_Message_Record {
 		{message_id_hex = "second-id"},
@@ -121,4 +139,6 @@ send_waits_for_timeline :: proc(t: ^testing.T) {
 	drain_sends(&ui, nil)
 	testing.expect_value(t, len(ui.pending), 0)
 	testing.expect_value(t, len(sends_done), 0)
+	_, settled_err := os.read_entire_file(offline_path(), context.temp_allocator)
+	testing.expect(t, settled_err != nil, "confirmed completion must remove the persisted retry")
 }

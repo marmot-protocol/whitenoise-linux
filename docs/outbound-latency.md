@@ -167,3 +167,34 @@ on the write-only path. Earlier, larger-chunk experiments hit approximately
 40 ms loopback stalls; disabling Nagle on the test relay's accepted sockets
 removed them. Final comparisons used the stock relay without socket
 overrides or injected delays. The larger remote gain is workload-dependent.
+
+## Native deployment check, 2026-09-23
+
+The running dev host was still using a C bundle built before these SDK
+changes. Building Rust tests had not rebuilt `marmot-c` or replaced the
+host's loaded `libmarmot-dev.so`. Rebuilding through `just build` and
+restarting the host applied the changes to the native app.
+
+`just dev` now includes `DEPS_PIN`, SDK patches, and the staging script in
+its native dependency fingerprint. Changes stage the dependencies before
+compiling Odin; a changed C bundle replaces the shared library and restarts
+the host. Watching the repository root also catches atomic pin-file
+replacements.
+
+Before replacement, the live process had 117 sends averaging 23,322 ms in
+the account queue, 1,262 ms executing, and 1,214 ms publishing. Local
+acceptance averaged 7 ms.
+
+A separate native `build/app` instance used a generated account, a
+notes-to-self group, and the default public relays. One warmup followed by
+20 simultaneous sends produced 21 retained messages and zero pending
+sends. SDK execution averaged 151 ms and publication 140 ms across all 21.
+The longest Linux worker call was 3,025 ms. The burst still queues behind
+serialized publications; this is not a same-workload before/after result
+or a measurement of a large recipient group.
+
+The Linux completion drain also stops rewriting the encrypted offline
+queue on every frame while an acknowledged send waits for its timeline
+IDs. It persists only when a pending send settles or fails. The regression
+keeps ciphertext unchanged while waiting and verifies removal after the
+complete timeline replacement arrives.
