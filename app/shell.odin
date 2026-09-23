@@ -18,10 +18,8 @@ import rl "sdlrl"
 // ── Gutters ─────────────────────────────────────────────────────────
 
 RAIL_W_DEFAULT :: 340
-// The narrowest rail that still fits its top strip: avatar (30), five
-// 32px nav buttons, the collapse chip, the gaps between them, and the
-// card padding. Narrower and this clay pushes the last sibling past the
-// card edge, or drops it (PORT.md Quirks).
+// Total sidebar width, including the persistent navigation column.
+// The list needs at least 240px for a name, preview, and row actions.
 RAIL_W_MIN :: 300
 RAIL_W_MAX :: 560
 RAIL_W_COLLAPSED :: 60
@@ -79,24 +77,24 @@ handle_gutters :: proc(ui: ^Ui_State) {
 	mx := rl.GetMousePosition().x / UI_ZOOM
 	switch gutter_drag {
 	case "RailGutter":
-		// The rail card starts at the CardsRow padding (10px).
-		ui.prefs.rail_w = clamp(int(mx) - 10, RAIL_W_MIN, RAIL_W_MAX)
+		// The connected sidebar starts at the window's left edge.
+		ui.prefs.rail_w = clamp(int(mx), RAIL_W_MIN, RAIL_W_MAX)
 	}
 }
 
 @(private)
 rail_fits :: proc(window_w: f32, rail_w: int) -> bool {
-	return window_w - f32(clamp(rail_w, RAIL_W_MIN, RAIL_W_MAX)) - 40 >= PAGE_W_MIN
+	return window_w - f32(clamp(rail_w, RAIL_W_MIN, RAIL_W_MAX)) - GUTTER_W >= PAGE_W_MIN
 }
 
 rail_width :: proc(ui: ^Ui_State) -> f32 {
-	// One card at a time: the rail is either the whole window or gone,
+	// One pane at a time: the sidebar is either the whole window or gone,
 	// and neither width is draggable, so the eased path is skipped.
 	if single_pane() {
 		if phone_detail(ui) {
 			return 0
 		}
-		return f32(rl.GetScreenWidth()) / UI_ZOOM - CARDS_PAD
+		return f32(rl.GetScreenWidth()) / UI_ZOOM
 	}
 	// Resize immediately; preserving the pref restores the list when it fits.
 	if !rail_fits(f32(rl.GetScreenWidth()) / UI_ZOOM, ui.prefs.rail_w) {
@@ -132,6 +130,67 @@ rail_narrow :: proc(ui: ^Ui_State) -> bool {
 	return rail_open(ui) < 0.5
 }
 
+// Destinations stay in one column whether the conversation list is open
+// or collapsed. Existing IDs keep shortcuts and account switching intact.
+@(private)
+shell_navigation :: proc(ui: ^Ui_State) {
+	if clay.UI(clay.ID("RailTop"))(
+	{
+		layout = {
+			sizing = {width = clay.SizingFixed(RAIL_W_COLLAPSED), height = clay.SizingGrow()},
+			layoutDirection = .TopToBottom,
+			padding = {top = 14, bottom = 12},
+			childGap = 8,
+			childAlignment = {x = .Center},
+		},
+		backgroundColor = BG,
+	},
+	) {
+		avatar(
+			"RailAvatar",
+			0,
+			ui.account_ref,
+			short_hex(ui.account_ref),
+			36,
+			url_pic(ui.my_pic_url),
+		)
+		if clay.UI(clay.ID("RailDivider"))(
+		{
+			layout = {sizing = {width = clay.SizingFixed(28), height = clay.SizingFixed(1)}},
+			backgroundColor = DIVIDER,
+		},
+		) {}
+		for page in ([3]Page{.Chats, .Contacts, .Archived}) {
+			nav_button(page, ui.page == page)
+		}
+		if !single_pane() {
+			if clay.UI(clay.ID("RailCollapse"))(
+			{
+				layout = {
+					sizing = {width = clay.SizingFixed(42), height = clay.SizingFixed(32)},
+					childAlignment = {x = .Center, y = .Center},
+				},
+				backgroundColor = hovered() ? HOVER : {},
+				cornerRadius = rr(10),
+			},
+			) {
+				collapsed := rail_narrow(ui)
+				if hovered() {
+					tooltip(collapsed ? "Expand the chat list" : "Collapse the chat list", .Right)
+				}
+				clay.Text(
+					collapsed ? "›" : "‹",
+					{fontId = FONT_TITLE, fontSize = 18, textColor = TEXT_DIM},
+				)
+			}
+		}
+		if clay.UI(clay.ID("RailTopGap"))({layout = {sizing = {height = clay.SizingGrow()}}}) {}
+		nav_button(.Profile, ui.page == .Profile)
+		nav_button(.Settings, ui.page == .Settings)
+		nav_indicator(ui)
+	}
+}
+
 // ── Narrow windows ──────────────────────────────────────────────────
 //
 // A phone panel reports anywhere from 360 to 720 points wide depending
@@ -140,9 +199,6 @@ rail_narrow :: proc(ui: ^Ui_State) -> bool {
 // both rules key off the window's own width, which means a desktop
 // window dragged narrow behaves identically and the phone layout is
 // testable without a phone.
-
-// The CardsRow left+right padding, the width a card does not get.
-CARDS_PAD :: f32(20)
 
 // Fewest clay units the layout ever runs at. A phone at 360 points
 // would otherwise get 240 units at the desktop zoom, less than the
@@ -175,11 +231,13 @@ fit_w :: proc(w: f32, margin: f32 = 12) -> f32 {
 	return min(w, max(f32(rl.GetScreenWidth()) / UI_ZOOM - margin * 2, 120))
 }
 
-// How wide the page card gets: the window less the rail and the
-// padding around and between the two cards. Three call sites measured
-// this themselves before; the header's badge is the fourth.
+// Match the actual shell allocation, including the draggable separator.
 page_w :: proc(ui: ^Ui_State) -> f32 {
-	return f32(rl.GetScreenWidth()) / UI_ZOOM - rail_width(ui) - 40
+	width := f32(rl.GetScreenWidth()) / UI_ZOOM
+	if single_pane() {
+		return phone_detail(ui) ? width : 0
+	}
+	return width - rail_width(ui) - (rail_narrow(ui) ? 0 : GUTTER_W)
 }
 
 // Narrowest page card that still fits the chat header's badge beside
@@ -566,24 +624,40 @@ toast_layer :: proc(ui: ^Ui_State) {
 // Hover label for an icon-only control. Call inside the hovered
 // element's body, guarded by hovered(). Defaults to hanging below
 // the control (the top-chrome callers, where above would fall off
-// the window); .Above suits anything near the bottom edge.
+// the window); .Above suits bottom controls, .Right the navigation rail.
 Tip_Side :: enum {
 	Below,
 	Above,
+	Right,
 }
 
 tooltip :: proc(text: string, side: Tip_Side = .Below) {
-	attach :=
-		side == .Below ? clay.FloatingAttachPoints{element = .CenterTop, parent = .CenterBottom} : clay.FloatingAttachPoints{element = .CenterBottom, parent = .CenterTop}
+	attach: clay.FloatingAttachPoints
+	offset: clay.Vector2
+	switch side {
+	case .Below:
+		attach = {
+			element = .CenterTop,
+			parent  = .CenterBottom,
+		}
+		offset = {0, 6}
+	case .Above:
+		attach = {
+			element = .CenterBottom,
+			parent  = .CenterTop,
+		}
+		offset = {0, -6}
+	case .Right:
+		attach = {
+			element = .LeftCenter,
+			parent  = .RightCenter,
+		}
+		offset = {8, 0}
+	}
 	if clay.UI(clay.ID_LOCAL("Tip"))(
 	{
 		layout = {padding = {left = 8, right = 8, top = 4, bottom = 4}},
-		floating = {
-			attachTo = .Parent,
-			zIndex = 18,
-			offset = {0, side == .Below ? 6 : -6},
-			attachment = attach,
-		},
+		floating = {attachTo = .Parent, zIndex = 18, offset = offset, attachment = attach},
 		backgroundColor = CARD,
 		cornerRadius = rr(6),
 		border = {color = ELEVATED_BORDER, width = bw()},

@@ -16,7 +16,7 @@ Row_Chip :: enum {
 
 @(private)
 chat_row_height :: proc() -> f32 {
-	return 24 + max(42, max(chip_h(), 14) + 20)
+	return 16 + max(36, max(chip_h(), 14) + 20)
 }
 
 // Fixed row geometry lets the first frame skip hidden rows too. Keep the
@@ -29,16 +29,18 @@ chat_rows_window :: proc(
 	container: clay.ElementId,
 	chip: Row_Chip,
 	gap: f32,
+	offset_y: f32 = 0,
+	section: u32 = 0,
 ) {
 	stride := chat_row_height() + gap
 	data := clay.GetScrollContainerData(container)
 	height :=
 		data.found ? data.scrollContainerDimensions.height : f32(rl.GetScreenHeight()) / UI_ZOOM
-	offset := data.found ? -data.scrollPosition.y : 0
-	first := clamp(int(offset / stride) - 2, 0, max(len(order) - 1, 0))
-	last := min(len(order), first + int(height / stride) + 6)
+	offset := (data.found ? -data.scrollPosition.y : 0) - offset_y
+	first := clamp(int(offset / stride) - 2, 0, len(order))
+	last := clamp(int((offset + height) / stride) + 3, first, len(order))
 	if first > 0 {
-		if clay.UI(clay.ID("ChatRowsBefore"))(
+		if clay.UI(clay.ID("ChatRowsBefore", section))(
 		{layout = {sizing = {height = clay.SizingFixed(f32(first) * stride - gap)}}},
 		) {}
 	}
@@ -46,9 +48,210 @@ chat_rows_window :: proc(
 		chat_row(u32(i), rows[i], chip == .Archive && ui.selected == i, chip)
 	}
 	if last < len(order) {
-		if clay.UI(clay.ID("ChatRowsAfter"))(
+		if clay.UI(clay.ID("ChatRowsAfter", section))(
 		{layout = {sizing = {height = clay.SizingFixed(f32(len(order) - last) * stride - gap)}}},
 		) {}
+	}
+}
+
+@(private)
+Folder_Section :: struct {
+	start, count, unread: int,
+}
+
+// Stable partition: input is already pinned-first, then activity order.
+// Unknown assignments stay visible under Unfiled rather than disappearing.
+@(private)
+chat_folder_sections :: proc(
+	ui: ^Ui_State,
+	order: []int,
+	allocator := context.temp_allocator,
+) -> (
+	[]Folder_Section,
+	[]int,
+) {
+	sections := make([]Folder_Section, len(ui.prefs.folders) + 1, allocator)
+	ordered := make([]int, len(order), allocator)
+	slots := make(map[string]int, len(ui.prefs.folders), allocator)
+	defer delete(slots)
+	for name, i in ui.prefs.folders {slots[name] = i}
+	for i in order {
+		chat := &ui.chats[i]
+		slot, found := slots[ui.prefs.folder_of[chat.group_id]]
+		if !found {slot = len(ui.prefs.folders)}
+		sections[slot].count += 1
+		if chat.unread > 0 || ui.prefs.unread_ids[chat.group_id] {
+			sections[slot].unread += 1
+		}
+	}
+	start := 0
+	for &section in sections {
+		section.start = start
+		start += section.count
+		section.count = 0
+	}
+	for i in order {
+		slot, found := slots[ui.prefs.folder_of[ui.chats[i].group_id]]
+		if !found {slot = len(ui.prefs.folders)}
+		section := &sections[slot]
+		ordered[section.start + section.count] = i
+		section.count += 1
+	}
+	return sections, ordered
+}
+
+// One scroll container owns both headers and conversations. Each section
+// windows its rows at its real offset; collapsed rows leave keyboard order.
+@(private)
+chat_rail :: proc(ui: ^Ui_State) {
+	filter := strings.to_lower(string(ui.sidebar_filter[:]), context.temp_allocator)
+	order := rail_order(ui.chats[:], ui.prefs.pinned)
+	count := 0
+	for i in order {
+		chat := &ui.chats[i]
+		if peer, is_dm := ui.dm_peer[chat.group_id]; is_dm && ui.blocked[peer] {continue}
+		if len(filter) > 0 &&
+		   !strings.contains(strings.to_lower(chat.title, context.temp_allocator), filter) &&
+		   !(i < len(ui.filter_hits) && ui.filter_hits[i]) {continue}
+		if ui.unread_only && chat.unread == 0 && !ui.prefs.unread_ids[chat.group_id] {continue}
+		order[count] = i
+		count += 1
+	}
+	clear(&ui.rail_rows)
+	matched := order[:count]
+	if ui.prefs.recent_chats || len(ui.prefs.folders) == 0 {
+		append(&ui.rail_rows, ..matched)
+		chat_rows_window(ui, ui.chats[:], matched, clay.ID("ChatList"), .Archive, 2)
+		if len(matched) == 0 {
+			clay.Text(
+				tr("No chats yet"),
+				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+			)
+		}
+		return
+	}
+
+	sections, grouped := chat_folder_sections(ui, matched)
+	y: f32
+	view := clay.GetScrollContainerData(clay.ID("ChatList"))
+	top := view.found ? max(0, -view.scrollPosition.y) : 0
+	bottom :=
+		top +
+		(view.found ? view.scrollContainerDimensions.height : f32(rl.GetScreenHeight()) / UI_ZOOM)
+	filtered := len(filter) > 0 || ui.unread_only
+	for section, i in sections {
+		if section.count == 0 && (filtered || i == len(ui.prefs.folders)) {continue}
+		name := i < len(ui.prefs.folders) ? ui.prefs.folders[i] : ""
+		collapsed := ui.prefs.collapsed_folders[name]
+		rows := grouped[section.start:section.start + section.count]
+		height: f32 = 36
+		if !collapsed {
+			append(&ui.rail_rows, ..rows)
+			height += len(rows) == 0 ? 30 : f32(len(rows)) * (chat_row_height() + 2)
+		}
+		// Offscreen headers need no text clips. Clay tracks every clip as
+		// a scroll container, so mounting all folders exhausts its pool.
+		if y + height < top - 72 || y > bottom + 72 {
+			if clay.UI(clay.ID("FolderSectionGap", u32(i)))(
+			{layout = {sizing = {height = clay.SizingFixed(height - 2)}}},
+			) {}
+			y += height
+			continue
+		}
+		folder_header(ui, u32(i), name, section.unread, collapsed)
+		y += 36 // header and the list's 2px gap
+		if collapsed {continue}
+		if len(rows) == 0 {
+			if clay.UI(clay.ID("FolderEmpty", u32(i)))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(28)},
+					padding = {left = 12},
+					childAlignment = {y = .Center},
+				},
+			},
+			) {
+				clay.Text(
+					tr("No chats yet"),
+					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
+				)
+			}
+			y += 30
+		} else {
+			chat_rows_window(ui, ui.chats[:], rows, clay.ID("ChatList"), .Archive, 2, y, u32(i))
+			y += f32(len(rows)) * (chat_row_height() + 2)
+		}
+	}
+	if filtered && len(matched) == 0 {
+		clay.Text(tr("No chats yet"), {fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM})
+	}
+}
+
+@(private)
+folder_header :: proc(ui: ^Ui_State, index: u32, name: string, unread: int, collapsed: bool) {
+	if clay.UI(clay.ID("FolderHeader", index))(
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(34)},
+			padding = {left = 4, right = 4},
+			childGap = 8,
+			childAlignment = {y = .Center},
+		},
+		backgroundColor = hovered() ? HOVER : {},
+		cornerRadius = rr(6),
+	},
+	) {
+		if clay.UI(clay.ID("FolderChevron", index))(
+		{layout = {sizing = {width = clay.SizingFixed(10)}, childAlignment = {x = .Center}}},
+		) {
+			clay.Text(
+				collapsed ? "›" : "⌄",
+				{fontId = FONT_TITLE, fontSize = 15, textColor = TEXT_DIM},
+			)
+		}
+		folder_icon(ui, name, 16)
+		if clay.UI(clay.ID("FolderHeaderName", index))(
+		{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
+		) {
+			clay.Text(
+				name == "" ? tr("Unfiled") : name,
+				{
+					fontId = FONT_TITLE,
+					fontSize = 13,
+					textColor = unread > 0 ? TEXT : TEXT_DIM,
+					wrapMode = .None,
+				},
+			)
+		}
+		if unread > 0 {
+			if clay.UI(clay.ID("FolderUnread", index))(
+			{
+				layout = {padding = {left = 6, right = 6, top = 2, bottom = 2}},
+				backgroundColor = SELECTED,
+				cornerRadius = rr(7),
+			},
+			) {
+				clay.Text(
+					fmt.tprintf("%d", unread),
+					{fontId = FONT_BODY, fontSize = 11, textColor = ACCENT},
+				)
+			}
+		}
+		if name != "" {
+			if clay.UI(clay.ID("FolderMenuBtn", index))(
+			{
+				layout = {
+					padding = {left = 6, right = 6, top = 4, bottom = 4},
+					childAlignment = {x = .Center, y = .Center},
+				},
+				backgroundColor = hovered() ? SELECTED : {},
+				cornerRadius = rr(5),
+			},
+			) {
+				clay.Text("···", {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_LO})
+				if hovered() {tooltip("Folder options")}
+			}
+		}
 	}
 }
 
@@ -64,7 +267,7 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 		{
 			layout = {sizing = {width = clay.SizingGrow()}, childGap = 0},
 			backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
-			cornerRadius = rr(12),
+			cornerRadius = rr(6),
 		},
 		) {
 			if clay.UI(clay.ID("ChatRowBar", index))(
@@ -79,7 +282,7 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 				layout = {
 					sizing = {width = clay.SizingGrow()},
 					layoutDirection = .TopToBottom,
-					padding = clay.PaddingAll(12),
+					padding = {left = 8, right = 8, top = 8, bottom = 8},
 					childGap = 5,
 				},
 			},
@@ -95,7 +298,7 @@ chat_row :: proc(index: u32, chat: Chat_Row_Ui, active: bool, chip: Row_Chip) {
 					},
 				},
 				) {
-					avatar("ChatAvatar", index, chat.avatar_key, chat.title, 42, chat_pic(chat))
+					avatar("ChatAvatar", index, chat.avatar_key, chat.title, 36, chat_pic(chat))
 					if clay.UI(clay.ID("ChatRowLines", index))(
 					{
 						layout = {
@@ -1879,13 +2082,10 @@ profile_pane :: proc(ui: ^Ui_State) {
 }
 
 nav_button :: proc(page: Page, active: bool) {
-	// Fixed square + centered glyph: fit-sizing made each button take
-	// its icon's advance/height, so the row wobbled per glyph.
+	// A fixed target keeps the vertical rail stable across icon fonts
+	// and remains usable on touch screens.
 	down := press_down(clay.ID("Nav", u32(page)))
-	// 42 is what the rail's top strip can spare at its narrowest with
-	// the collapse chip gone; ~7mm at phone density, the floor for a
-	// fingertip.
-	side := tap_size() ? f32(42) : f32(32)
+	side := f32(42)
 	if clay.UI(clay.ID("Nav", u32(page)))(
 	{
 		layout = {
@@ -1894,39 +2094,31 @@ nav_button :: proc(page: Page, active: bool) {
 			childAlignment = {x = .Center, y = .Center},
 		},
 		backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
-		cornerRadius = rr(9),
+		cornerRadius = rr(12),
 	},
 	) {
 		if hovered() {
-			tooltip(NAV_TIPS[page])
+			tooltip(NAV_TIPS[page], .Right)
 		}
 		clay.Text(
 			PAGE_ICONS[page],
-			{fontId = FONT_ICON, fontSize = 15, textColor = active ? ACCENT : TEXT_DIM},
+			{fontId = FONT_ICON, fontSize = 17, textColor = active ? ACCENT : TEXT_DIM},
 		)
 	}
 }
 
-NAV_BAR_W :: f32(16)
-
-// Accent underline that slides between nav buttons instead of blinking
-// from one to the next. It reads last frame's button box, so it starts
-// a frame behind the click, which is exactly what makes the travel
-// visible.
+// A vertical selection marker follows the active destination. Read last
+// frame's box so moving between top and bottom controls eases naturally.
 nav_indicator :: proc(ui: ^Ui_State) {
 	box := clay.GetElementData(clay.ID("Nav", u32(ui.page)))
 	if !box.found {
 		return
 	}
-	x := anim_to(
-		clay.ID("NavBarX").id,
-		box.boundingBox.x + (box.boundingBox.width - NAV_BAR_W) / 2,
-		22,
-	)
-	y := anim_to(clay.ID("NavBarY").id, box.boundingBox.y + box.boundingBox.height - 3, 22)
+	x := anim_to(clay.ID("NavBarX").id, box.boundingBox.x - 7, 22)
+	y := anim_to(clay.ID("NavBarY").id, box.boundingBox.y + (box.boundingBox.height - 20) / 2, 22)
 	if clay.UI(clay.ID("NavBar"))(
 	{
-		layout = {sizing = {width = clay.SizingFixed(NAV_BAR_W), height = clay.SizingFixed(2)}},
+		layout = {sizing = {width = clay.SizingFixed(3), height = clay.SizingFixed(20)}},
 		floating = {
 			attachTo = .Root,
 			zIndex = 6,

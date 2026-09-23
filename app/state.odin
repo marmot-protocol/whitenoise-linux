@@ -221,6 +221,7 @@ Focus :: enum {
 	BackupPw, // backup create/import password box
 	EmojiName, // custom-emoji shortcode box
 	Folder, // folder-modal name box
+	FolderColor, // custom folder RGB input
 	Pal, // command-palette query box
 	PollQ, // poll-modal question box
 	PollOpt, // poll-modal option box, index in ui.poll_focus
@@ -573,7 +574,13 @@ Ui_State :: struct {
 	folder_gid:                                            string, // the chat it assigns, snapshotted at open
 	folder_input:                                          [dynamic]u8, // its create/rename name box
 	folder_rename:                                         int, // folder index being renamed, -1 = creating
-	folder_filter:                                         string, // active folder chip, "" = every chat
+	folder_mode:                                           Folder_Mode,
+	folder_icon:                                           int,
+	folder_search:                                         [dynamic]u8,
+	folder_color_input:                                    [dynamic]u8,
+	folder_menu_open:                                      bool,
+	folder_menu_name:                                      string, // "" opens the Chats menu
+	folder_menu_x, folder_menu_y:                          f32,
 	search_input:                                          [dynamic]u8,
 	settings_section:                                      Settings_Section,
 	prefs:                                                 Prefs, // the slint settings knobs (settings.odin)

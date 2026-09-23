@@ -1,12 +1,8 @@
-// Rail ordering and folder filtering for the chat-list row actions.
+// Rail ordering and folder grouping for the chat list.
 // Run: ODIN_ROOT=build/odin-root tests/odin.sh app
 package main
 
-import "core:sync"
 import "core:testing"
-
-import marmot "../marmot"
-import clay "../vendor/clay/bindings/odin/clay-odin"
 
 @(test)
 rail_order_pins_first :: proc(t: ^testing.T) {
@@ -37,72 +33,54 @@ rail_order_pins_first :: proc(t: ^testing.T) {
 }
 
 @(test)
-folder_filter :: proc(t: ^testing.T) {
-	folder_of: map[string]string
-	folder_of["a"] = "Work"
-	folder_of["b"] = "Family"
-	defer delete(folder_of)
-
-	// No chip: every chat, assigned or not.
-	testing.expect(t, in_folder(folder_of, "a", ""))
-	testing.expect(t, in_folder(folder_of, "z", ""))
-
-	testing.expect(t, in_folder(folder_of, "a", "Work"))
-	testing.expect(t, !in_folder(folder_of, "b", "Work"))
-	testing.expect(t, !in_folder(folder_of, "z", "Work"))
-}
-
-@(test)
-folder_chip_clicks :: proc(t: ^testing.T) {
-	sync.lock(&clay_test_mutex)
-	defer sync.unlock(&clay_test_mutex)
-
-	memory := make([]u8, int(clay.MinMemorySize()))
-	defer delete(memory)
-	previous := clay.GetCurrentContext()
-	defer clay.SetCurrentContext(previous)
-	clay.Initialize(
-		clay.CreateArenaWithCapacityAndMemory(uint(len(memory)), raw_data(memory)),
-		{600, 400},
-		{},
-	)
-	clay.SetMeasureTextFunction(
-		proc "c" (
-			text: clay.StringSlice,
-			config: ^clay.TextElementConfig,
-			data: rawptr,
-		) -> clay.Dimensions {
-			return {f32(text.length) * 6, 12}
-		},
-		nil,
-	)
-
-	ui := Ui_State {
-		selected = -1,
-		row_menu = -1,
-	}
-	append(&ui.accounts, "Test")
-	append(&ui.chats, Chat_Row_Ui{group_id = "a"})
+chat_folder_sections_keep_order_and_count_unread :: proc(t: ^testing.T) {
+	ui: Ui_State
 	append(&ui.prefs.folders, "Work", "Family")
-	defer delete(ui.accounts)
+	append(
+		&ui.chats,
+		Chat_Row_Ui{group_id = "family-unread", unread = 3},
+		Chat_Row_Ui{group_id = "unfiled-read"},
+		Chat_Row_Ui{group_id = "work-read"},
+		Chat_Row_Ui{group_id = "work-pinned", unread = 5},
+		Chat_Row_Ui{group_id = "unfiled-pinned"},
+		Chat_Row_Ui{group_id = "family-pinned"},
+		Chat_Row_Ui{group_id = "unknown-folder", unread = 2},
+		Chat_Row_Ui{group_id = "family-read"},
+	)
+	ui.prefs.folder_of["family-unread"] = "Family"
+	ui.prefs.folder_of["work-read"] = "Work"
+	ui.prefs.folder_of["work-pinned"] = "Work"
+	ui.prefs.folder_of["family-pinned"] = "Family"
+	ui.prefs.folder_of["family-read"] = "Family"
+	ui.prefs.folder_of["unknown-folder"] = "Removed folder"
+	ui.prefs.unread_ids["work-pinned"] = true // Still one unread chat, not two.
+	ui.prefs.unread_ids["unfiled-pinned"] = true
+	ui.prefs.unread_ids["family-pinned"] = true
 	defer delete(ui.chats)
 	defer delete(ui.prefs.folders)
-	defer delete(ui.folder_filter)
+	defer delete(ui.prefs.folder_of)
+	defer delete(ui.prefs.unread_ids)
 
-	clay.BeginLayout()
-	folder_chips(&ui)
-	clay.EndLayout(0)
-	client: marmot.Client // The filter path must not call the runtime.
-	forced_release = true
-	defer forced_release = false
-	for name, i in ui.prefs.folders {
-		box := clay.GetElementData(clay.ID("FolderFilter", u32(i))).boundingBox
-		clay.SetPointerState({box.x + 1, box.y + 1}, false)
-		handle_chat(&ui, &client)
-		testing.expect_value(t, ui.folder_filter, name)
+	// The rail has already moved pins first, preserving activity order in each half.
+	order := []int{3, 4, 5, 0, 1, 2, 6, 7}
+	sections, grouped := chat_folder_sections(&ui, order, context.allocator)
+	defer delete(sections)
+	defer delete(grouped)
+	if !testing.expect_value(t, len(sections), 3) {return}
+	if !testing.expect_value(t, len(grouped), len(order)) {return}
+
+	// Folder preference order, then Unfiled; each partition keeps the rail's order.
+	expected := []Folder_Section {
+		{start = 0, count = 2, unread = 1},
+		{start = 2, count = 3, unread = 2},
+		{start = 5, count = 3, unread = 2},
 	}
-	box := clay.GetElementData(clay.ID("FolderAllChip")).boundingBox
-	clay.SetPointerState({box.x + 1, box.y + 1}, false)
-	handle_chat(&ui, &client)
-	testing.expect_value(t, ui.folder_filter, "")
+	for section, i in sections {
+		testing.expect_value(t, section.start, expected[i].start)
+		testing.expect_value(t, section.count, expected[i].count)
+		testing.expect_value(t, section.unread, expected[i].unread)
+	}
+	for index, i in ([]int{3, 2, 5, 0, 7, 4, 1, 6}) {
+		testing.expect_value(t, grouped[i], index)
+	}
 }

@@ -250,6 +250,9 @@ msgstr "Ctrl + / − / 0、または Ctrl + スクロールでも操作できま
 msgid "Always open links to this site"
 msgstr ""
 
+msgid "Amber"
+msgstr "琥珀色"
+
 msgid "An empty box derives its value. The window previews as you type."
 msgstr ""
 
@@ -354,6 +357,9 @@ msgstr "ブロック"
 msgid "Block this contact?"
 msgstr "このチャットリクエストをブロックしますか？"
 
+msgid "Blue"
+msgstr "青"
+
 msgid "Border 2"
 msgstr ""
 
@@ -365,6 +371,9 @@ msgstr ""
 
 msgid "Bubble radius"
 msgstr ""
+
+msgid "COLOR"
+msgstr "色"
 
 #, fuzzy
 msgid "CONFIRM NEW PASSWORD"
@@ -385,6 +394,12 @@ msgstr ""
 
 msgid "Cached attachments"
 msgstr "キャッシュされた添付ファイル"
+
+msgid "Calendar"
+msgstr "カレンダー"
+
+msgid "Camera"
+msgstr "カメラ"
 
 msgid "Cancel"
 msgstr "キャンセル"
@@ -427,6 +442,12 @@ msgstr ""
 msgid "Change..."
 msgstr "変更"
 
+msgid "Chat options"
+msgstr "チャットのオプション"
+
+msgid "Chats"
+msgstr "チャット"
+
 #, fuzzy
 msgid "Check now"
 msgstr "確認中…"
@@ -450,6 +471,9 @@ msgstr ""
 #, fuzzy
 msgid "Chip text"
 msgstr "テキストをコピー"
+
+msgid "Choose a destination for this chat."
+msgstr "このチャットの移動先を選んでください。"
 
 msgid "Circle"
 msgstr "円"
@@ -476,8 +500,17 @@ msgstr "終了"
 msgid "Closing the window hides it. The tray icon shows your unread total and brings it back."
 msgstr ""
 
+msgid "Cloud"
+msgstr "クラウド"
+
+msgid "Code"
+msgstr "コード"
+
 msgid "Code plate"
 msgstr ""
+
+msgid "Coffee"
+msgstr "コーヒー"
 
 #, fuzzy
 msgid "Collapse the chat list"
@@ -528,6 +561,9 @@ msgstr "続行"
 
 msgid "Control background"
 msgstr ""
+
+msgid "Conversations"
+msgstr "会話"
 
 msgid "Copy"
 msgstr "コピー"
@@ -789,6 +825,12 @@ msgstr "バックアップを作成"
 msgid "Create backup..."
 msgstr "バックアップを作成"
 
+msgid "Create folder"
+msgstr "フォルダを作成"
+
+msgid "Create folders to organize your chats."
+msgstr "フォルダを作成してチャットを整理できます。"
+
 msgid "Create issue"
 msgstr "報告を作成"
 
@@ -801,6 +843,12 @@ msgstr "クロップサークルの形状"
 
 msgid "Current"
 msgstr ""
+
+msgid "Custom color"
+msgstr "カスタムカラー"
+
+msgid "Cyan"
+msgstr "シアン"
 
 msgid "DANGER ZONE"
 msgstr "危険ゾーン"
@@ -845,6 +893,9 @@ msgstr ""
 msgid "Decode own"
 msgstr ""
 
+msgid "Default"
+msgstr "デフォルト"
+
 msgid "Default avatar shape"
 msgstr "デフォルトのアバター形状"
 
@@ -876,6 +927,9 @@ msgstr "自分のみ削除しますか？"
 msgid "Deleted. Recording continues in a fresh file."
 msgstr "監査ログを削除しました — 新しいファイルで記録を続けます。"
 
+msgid "Deleting a folder doesn't delete your chats."
+msgstr "フォルダを削除しても、チャットは削除されません。"
+
 #, fuzzy
 msgid "Deleting the file being recorded rotates it. Recording continues in a fresh file."
 msgstr "記録中のファイルを削除するとローテーションされ、新しいファイルに記録が続きます。"
@@ -888,6 +942,9 @@ msgstr "問題の説明（Markdown）"
 
 msgid "Description"
 msgstr "説明"
+
+msgid "Design"
+msgstr "デザイン"
 
 msgid "Desktop notifications"
 msgstr "デスクトップ通知"
@@ -943,6 +1000,9 @@ msgstr "音声モデルをダウンロードしています..."
 msgid "Downloading: %d%%"
 msgstr "ダウンロード中: %d%%"
 
+msgid "Downloads"
+msgstr "ダウンロード"
+
 msgid "Drops idle relay sockets and dials them again."
 msgstr ""
 
@@ -970,6 +1030,9 @@ msgstr "編集 %1"
 msgid "Edit %d"
 msgstr "編集 %d"
 
+msgid "Edit folder"
+msgstr "フォルダを編集"
+
 msgid "Edit history"
 msgstr "編集履歴"
 
@@ -986,6 +1049,9 @@ msgstr ""
 msgid "Elevated border"
 msgstr ""
 
+msgid "Email"
+msgstr "メール"
+
 msgid "Emoji"
 msgstr "絵文字"
 
@@ -1001,6 +1067,9 @@ msgstr "暗号化キーをエクスポート(ncryptsec)"
 
 msgid "End-to-end encrypted"
 msgstr "エンドツーエンド暗号化"
+
+msgid "Enter a color as #RRGGBB."
+msgstr "色を #RRGGBB 形式で入力してください。"
 
 msgid "Enter a sticker name of 1 to 64 characters."
 msgstr "ステッカー名を1〜64文字で入力してください。"
@@ -1046,8 +1115,14 @@ msgstr ""
 msgid "FOLDERS"
 msgstr ""
 
+msgid "Family"
+msgstr "家族"
+
 msgid "Fast motion"
 msgstr ""
+
+msgid "Favorites"
+msgstr "お気に入り"
 
 msgid "Female voice. Supports all reading languages."
 msgstr "女性の声です。すべての読み上げ言語に対応しています。"
@@ -1078,20 +1153,41 @@ msgstr "音声入力を完了"
 msgid "Fit"
 msgstr "全体を表示"
 
+msgid "Fitness"
+msgstr "フィットネス"
+
+msgid "Flag"
+msgstr "旗"
+
 msgid "Focus glow"
 msgstr ""
 
 msgid "Focus glow radius"
 msgstr ""
 
+msgid "Folder"
+msgstr "フォルダ"
+
+msgid "Folder name"
+msgstr "フォルダ名"
+
+msgid "Folder names must be unique. Choose a different name."
+msgstr "同じ名前のフォルダは作成できません。別の名前を選んでください。"
+
+msgid "Folder options"
+msgstr "フォルダのオプション"
+
 msgid "Folders"
-msgstr ""
+msgstr "フォルダ"
 
 msgid "Font"
 msgstr ""
 
 msgid "Fonts"
 msgstr "フォント"
+
+msgid "Food"
+msgstr "食べ物"
 
 msgid "Forward"
 msgstr "転送"
@@ -1119,6 +1215,9 @@ msgstr "グループ名（任意）"
 msgid "GROUPS IN COMMON"
 msgstr "共通のグループ"
 
+msgid "Games"
+msgstr "ゲーム"
+
 msgid "General"
 msgstr "一般"
 
@@ -1131,6 +1230,9 @@ msgstr "表示していないチャットにメッセージが届いたときに
 
 msgid "Get started"
 msgstr ""
+
+msgid "Gift"
+msgstr "ギフト"
 
 #, fuzzy
 msgid "Go to archive"
@@ -1150,9 +1252,21 @@ msgstr "設定"
 msgid "Go to your profile"
 msgstr "あなたのプロフィール"
 
+msgid "Gray"
+msgstr "グレー"
+
+msgid "Green"
+msgstr "緑"
+
+msgid "Group chats by folder"
+msgstr "チャットをフォルダ別に表示"
+
 #, fuzzy
 msgid "Group id copied"
 msgstr "グループ ID"
+
+msgid "Grouped"
+msgstr "フォルダ別"
 
 msgid "HELP"
 msgstr ""
@@ -1172,6 +1286,9 @@ msgstr ""
 msgid "Hide hidden message"
 msgstr "隠されたメッセージを非表示"
 
+msgid "Home"
+msgstr "家"
+
 msgid "Hover"
 msgstr ""
 
@@ -1180,6 +1297,9 @@ msgstr ""
 
 msgid "How far the mouse wheel moves the view."
 msgstr ""
+
+msgid "ICON"
+msgstr "アイコン"
 
 msgid "IDENTITY"
 msgstr "ID"
@@ -1198,6 +1318,9 @@ msgstr "課題"
 
 msgid "ISSUE TRACKING"
 msgstr "問題の追跡"
+
+msgid "Ideas"
+msgstr "アイデア"
 
 #, fuzzy
 msgid "Image didn't load. Click to retry."
@@ -1326,6 +1449,9 @@ msgstr "キーパッケージ"
 msgid "Keyboard shortcuts"
 msgstr ""
 
+msgid "Keys"
+msgstr "鍵"
+
 msgid "Keys & identity"
 msgstr "鍵と ID"
 
@@ -1366,6 +1492,12 @@ msgstr "グループを退出"
 #, fuzzy
 msgid "Leave this group?"
 msgstr "グループを退出"
+
+msgid "Lime"
+msgstr "ライム"
+
+msgid "Links"
+msgstr "リンク"
 
 msgid "Links to these exact sites open without confirmation."
 msgstr "これらのサイトへのリンクは確認なしで開きます。"
@@ -1421,6 +1553,9 @@ msgstr ""
 msgid "Markdown"
 msgstr ""
 
+msgid "Marmot"
+msgstr "マーモット"
+
 msgid "Media backdrop"
 msgstr ""
 
@@ -1453,9 +1588,20 @@ msgstr ""
 msgid "Micro"
 msgstr "マイクロ"
 
-#, fuzzy
+msgid "Money"
+msgstr "お金"
+
+msgid "Monitor"
+msgstr "モニター"
+
+msgid "Move down"
+msgstr "下に移動"
+
 msgid "Move to folder"
-msgstr "フォルダを開く"
+msgstr "フォルダに移動"
+
+msgid "Move up"
+msgstr "上に移動"
 
 msgid "Multi-device isn't available yet"
 msgstr "マルチデバイスはまだ利用できません"
@@ -1465,6 +1611,9 @@ msgstr "多言語対応です。言語を自動で検出します。"
 
 msgid "Multiple choice"
 msgstr ""
+
+msgid "Music"
+msgstr "音楽"
 
 #, fuzzy
 msgid "NEW PASSWORD"
@@ -1485,6 +1634,9 @@ msgstr ""
 msgid "Name"
 msgstr ""
 
+msgid "Nature"
+msgstr "自然"
+
 msgid "Network & relays"
 msgstr "ネットワークとリレー"
 
@@ -1494,12 +1646,18 @@ msgstr ""
 msgid "New chat"
 msgstr "新しいチャット"
 
+msgid "New folder"
+msgstr "新しいフォルダ"
+
 msgid "New issue"
 msgstr "新しい報告"
 
 #, fuzzy
 msgid "New message"
 msgstr "メッセージを送信"
+
+msgid "News"
+msgstr "ニュース"
 
 msgid "Next / previous chat"
 msgstr "次のチャット / 前のチャット"
@@ -1537,9 +1695,8 @@ msgstr ""
 msgid "No chats to share with yet."
 msgstr "連絡先がまだありません"
 
-#, fuzzy
 msgid "No chats yet"
-msgstr "連絡先がまだありません"
+msgstr "チャットがまだありません"
 
 #, fuzzy
 msgid "No command matches."
@@ -1550,6 +1707,9 @@ msgstr "連絡先がまだありません"
 
 msgid "No files match these filters."
 msgstr "このフィルターに一致するファイルはありません。"
+
+msgid "No folders match your search."
+msgstr "検索に一致するフォルダはありません。"
 
 #, fuzzy
 msgid "No folders yet."
@@ -1661,6 +1821,9 @@ msgstr "このリンクを開きますか?"
 msgid "Opening in your browser"
 msgstr "既定のブラウザで{}を開きます。"
 
+msgid "Orange"
+msgstr "オレンジ"
+
 msgid "Original"
 msgstr ""
 
@@ -1723,6 +1886,15 @@ msgstr "パックのリンクを貼り付けると、追加する前にステッ
 msgid "Path copied"
 msgstr "画像をコピーしました"
 
+msgid "People"
+msgstr "連絡先"
+
+msgid "Pets"
+msgstr "ペット"
+
+msgid "Photos"
+msgstr "写真"
+
 msgid "Pick a chat to send it to. They choose whether to use it."
 msgstr ""
 
@@ -1746,6 +1918,12 @@ msgstr ""
 
 msgid "Pick the whole app's look."
 msgstr "アプリ全体の見た目を選択します。"
+
+msgid "Pink"
+msgstr "ピンク"
+
+msgid "Pinned"
+msgstr "ピン留め"
 
 msgid "Pixel metrics"
 msgstr ""
@@ -1780,8 +1958,14 @@ msgstr "パックをプレビュー"
 msgid "Previous / next in the media viewer"
 msgstr ""
 
+msgid "Private"
+msgstr "プライベート"
+
 msgid "Profile"
 msgstr "プロフィール"
+
+msgid "Projects"
+msgstr "プロジェクト"
 
 msgid "Promote"
 msgstr ""
@@ -1852,7 +2036,7 @@ msgid "Reading aloud..."
 msgstr "読み上げています..."
 
 msgid "Recent"
-msgstr "最近使ったもの"
+msgstr "最近"
 
 #, fuzzy
 msgid "Reconnect"
@@ -1864,6 +2048,9 @@ msgstr "今すぐ再接続"
 #, fuzzy
 msgid "Record group audit log files on this device. Identifiers are hashed."
 msgstr "グループの監査ログファイルを Goggles の監査エンドポイントに送信します。すぐに適用されます。"
+
+msgid "Red"
+msgstr "赤"
 
 msgid "Reduce motion"
 msgstr ""
@@ -1917,9 +2104,8 @@ msgstr "このリレーを削除しますか？"
 msgid "Remove this relay?"
 msgstr "このリレーを削除しますか？"
 
-#, fuzzy
 msgid "Rename"
-msgstr "名前を変更しました。"
+msgstr "名前を変更"
 
 msgid "Reopen"
 msgstr "再開"
@@ -1974,6 +2160,9 @@ msgstr ""
 #, fuzzy
 msgid "RevealNsecBtn"
 msgstr "鍵を表示"
+
+msgid "Rocket"
+msgstr "ロケット"
 
 msgid "Rounded"
 msgstr "角丸"
@@ -2045,6 +2234,9 @@ msgstr "保存済み"
 msgid "Scan to add"
 msgstr "スキャンして追加"
 
+msgid "Science"
+msgstr "科学"
+
 msgid "Scroll speed"
 msgstr ""
 
@@ -2060,6 +2252,9 @@ msgstr "チャットを検索…"
 
 msgid "Search everywhere"
 msgstr ""
+
+msgid "Search folders..."
+msgstr "フォルダを検索..."
 
 #, fuzzy
 msgid "Search images"
@@ -2077,6 +2272,9 @@ msgstr "検索中…"
 #, fuzzy
 msgid "Secret key copied"
 msgstr "nsecをコピーしました"
+
+msgid "Security"
+msgstr "セキュリティ"
 
 msgid "See and hear it with today's sound and preview settings."
 msgstr "現在のサウンドとプレビュー設定で確認できます。"
@@ -2198,6 +2396,9 @@ msgstr "10種類の音声と31言語で共有します。ダウンロードは�
 msgid "Shared media"
 msgstr "共有メディア"
 
+msgid "Shopping"
+msgstr "買い物"
+
 msgid "Short tones when a message leaves, arrives, or fails to send."
 msgstr ""
 
@@ -2258,6 +2459,9 @@ msgstr "小"
 
 msgid "Sold"
 msgstr "売却済み"
+
+msgid "Sort chats by recent activity"
+msgstr "チャットを最近の更新順に並べ替え"
 
 msgid "Speech"
 msgstr "音声"
@@ -2332,6 +2536,12 @@ msgstr "安全な場所に保管し、このダイアログを閉じてくださ
 msgid "Stored on this device, not published to any relay yet."
 msgstr "この端末に鍵が保存されていません。リセットしてnsecを再入力してください。"
 
+msgid "Study"
+msgstr "勉強"
+
+msgid "Support"
+msgstr "サポート"
+
 msgid "System"
 msgstr "システム"
 
@@ -2362,6 +2572,12 @@ msgstr ""
 #, fuzzy
 msgid "Tap one to remove it."
 msgstr "メッセージのツールバーとメニューに表示されます。タップすると削除できます。"
+
+msgid "Tasks"
+msgstr "タスク"
+
+msgid "Teal"
+msgstr "青緑"
 
 #, c-format
 msgid "Terrain: %d/5"
@@ -2469,6 +2685,9 @@ msgstr "タイトル"
 msgid "Toggle developer mode"
 msgstr "開発者モード"
 
+msgid "Tools"
+msgstr "ツール"
+
 msgid "Top glint"
 msgstr ""
 
@@ -2480,6 +2699,12 @@ msgstr "文字に変換しています..."
 
 msgid "Transition ms"
 msgstr ""
+
+msgid "Travel"
+msgstr "旅行"
+
+msgid "Trophy"
+msgstr "トロフィー"
 
 msgid "TrustForgetAll"
 msgstr ""
@@ -2496,6 +2721,9 @@ msgstr "利用できない会話"
 msgid "Unblock"
 msgstr "ブロック解除"
 
+msgid "Unfiled"
+msgstr "未分類"
+
 msgid "Unlock"
 msgstr "ロック解除"
 
@@ -2507,6 +2735,9 @@ msgstr "名前のないグループ"
 
 msgid "Unpin"
 msgstr "固定を解除"
+
+msgid "Unread"
+msgstr "未読"
 
 msgid "Unresolved"
 msgstr "未解決"
@@ -2566,6 +2797,9 @@ msgstr "文字起こしを表示"
 msgid "Vignette"
 msgstr ""
 
+msgid "Violet"
+msgstr "紫"
+
 msgid "Visual fingerprint"
 msgstr "視覚的フィンガープリント"
 
@@ -2617,6 +2851,12 @@ msgstr "あなたが発信する場所"
 msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
 msgstr "White Noise はあなたの秘密鍵を一切見ません。このデバイスと接続した署名者にのみ存在します。"
 
+msgid "Work"
+msgstr "仕事"
+
+msgid "World"
+msgstr "世界"
+
 msgid "Write a comment"
 msgstr "コメントを入力"
 
@@ -2631,6 +2871,9 @@ msgstr "あなたのパック"
 
 msgid "YOUR STICKERS"
 msgstr "あなたのステッカー"
+
+msgid "Yellow"
+msgstr "黄"
 
 msgid "You"
 msgstr "あなた"

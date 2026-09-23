@@ -1,6 +1,6 @@
 // Chat-list row actions: the right-click menu on a rail row (pin,
 // mute, mark read/unread, folders, export) plus the folder modal and
-// the rail ordering/filtering they drive.
+// the rail ordering and folder navigation they drive.
 //
 // marmot's C API exports no per-group pin, mute or mark-unread setter
 // (only marmot_set_group_archived and marmot_mark_timeline_message_read),
@@ -17,6 +17,203 @@ import rl "sdlrl"
 
 import marmot "../marmot"
 
+
+Folder_Mode :: enum {
+	Move,
+	Create,
+	Edit,
+}
+
+FOLDER_MARMOT_ICON :: 48
+FOLDER_ICONS := [49]string {
+	ICON_FOLDER,
+	ICON_CODE,
+	ICON_PEOPLE,
+	ICON_STAR,
+	ICON_CHATS,
+	ICON_LOCK,
+	"\uf0b1",
+	"\uf015",
+	"\uf004",
+	"\uf02d",
+	"\uf073",
+	"\uf072",
+	"\uf001",
+	"\uf03e",
+	"\uf008",
+	"\uf11b",
+	"\uf07a",
+	"\uf0f5",
+	"\uf0f4",
+	"\uf21e",
+	"\uf0eb",
+	"\uf1ea",
+	"\uf0c3",
+	"\uf06c",
+	"\uf1b0",
+	"\uf0d6",
+	"\uf0ae",
+	"\uf046",
+	"\uf0e0",
+	"\uf0f3",
+	"\uf132",
+	"\uf084",
+	"\uf0ac",
+	"\uf041",
+	"\uf0ad",
+	"\uf1fc",
+	"\uf030",
+	"\uf019",
+	"\uf187",
+	"\uf08d",
+	"\uf1cd",
+	"\uf0c1",
+	"\uf0c2",
+	"\uf135",
+	"\uf024",
+	"\uf06b",
+	"\uf091",
+	"\uf108",
+	"", // Marmot uses the bundled artwork instead of a font glyph.
+}
+FOLDER_ICON_NAMES := [49]string {
+	N_("Folder"),
+	N_("Code"),
+	N_("People"),
+	N_("Favorites"),
+	N_("Conversations"),
+	N_("Private"),
+	N_("Work"),
+	N_("Home"),
+	N_("Family"),
+	N_("Study"),
+	N_("Calendar"),
+	N_("Travel"),
+	N_("Music"),
+	N_("Photos"),
+	N_("Videos"),
+	N_("Games"),
+	N_("Shopping"),
+	N_("Food"),
+	N_("Coffee"),
+	N_("Fitness"),
+	N_("Ideas"),
+	N_("News"),
+	N_("Science"),
+	N_("Nature"),
+	N_("Pets"),
+	N_("Money"),
+	N_("Projects"),
+	N_("Tasks"),
+	N_("Email"),
+	N_("Notifications"),
+	N_("Security"),
+	N_("Keys"),
+	N_("World"),
+	N_("Location"),
+	N_("Tools"),
+	N_("Design"),
+	N_("Camera"),
+	N_("Downloads"),
+	N_("Archive"),
+	N_("Pinned"),
+	N_("Support"),
+	N_("Links"),
+	N_("Cloud"),
+	N_("Rocket"),
+	N_("Flag"),
+	N_("Gift"),
+	N_("Trophy"),
+	N_("Monitor"),
+	N_("Marmot"),
+}
+
+FOLDER_COLORS := [12]u32 {
+	0xEF6B73,
+	0xF59E62,
+	0xE5B85C,
+	0xE8D86B,
+	0xA7CE67,
+	0x65C890,
+	0x62C9B8,
+	0x63C9DF,
+	0x76A6F0,
+	0xA993EF,
+	0xE994C4,
+	0xA6ADB8,
+}
+FOLDER_COLOR_NAMES := [12]string {
+	N_("Red"),
+	N_("Orange"),
+	N_("Amber"),
+	N_("Yellow"),
+	N_("Lime"),
+	N_("Green"),
+	N_("Teal"),
+	N_("Cyan"),
+	N_("Blue"),
+	N_("Violet"),
+	N_("Pink"),
+	N_("Gray"),
+}
+
+@(private = "file")
+folder_rgb :: proc(rgb: u32) -> clay.Color {
+	return {f32((rgb >> 16) & 0xff), f32((rgb >> 8) & 0xff), f32(rgb & 0xff), 255}
+}
+
+folder_color :: proc(ui: ^Ui_State, name: string) -> clay.Color {
+	if name != "" {
+		if rgb, ok := ui.prefs.folder_colors[name]; ok {return folder_rgb(rgb)}
+	}
+	return ACCENT
+}
+
+// Blank selects the theme default; zero is a valid custom RGB value.
+@(private = "file")
+folder_color_draft :: proc(ui: ^Ui_State) -> (rgb: u32, custom, valid: bool) {
+	text := strings.trim_space(string(ui.folder_color_input[:]))
+	if text == "" {return 0, false, true}
+	if len(text) != 7 || text[0] != '#' {return 0, true, false}
+	for c in text[1:] {
+		digit: u32
+		switch {
+		case c >= '0' && c <= '9':
+			digit = u32(c - '0')
+		case c >= 'a' && c <= 'f':
+			digit = u32(c - 'a') + 10
+		case c >= 'A' && c <= 'F':
+			digit = u32(c - 'A') + 10
+		case:
+			return 0, true, false
+		}
+		rgb = (rgb << 4) | digit
+	}
+	return rgb, true, true
+}
+
+folder_icon :: proc(ui: ^Ui_State, name: string, size: u16) {
+	index := name == "" ? 0 : clamp(ui.prefs.folder_icons[name], 0, len(FOLDER_ICONS) - 1)
+	folder_icon_draw(index, size, folder_color(ui, name))
+}
+
+@(private = "file")
+folder_icon_draw :: proc(index: int, size: u16, color: clay.Color) {
+	index := clamp(index, 0, len(FOLDER_ICONS) - 1)
+	if index != FOLDER_MARMOT_ICON {
+		clay.Text(FOLDER_ICONS[index], {fontId = FONT_ICON, fontSize = size, textColor = color})
+		return
+	}
+	if clay.UI(clay.ID_LOCAL("FolderMarmot"))(
+	{
+		layout = {sizing = {clay.SizingFixed(f32(size) + 4), clay.SizingFixed(f32(size) + 4)}},
+		image = {imageData = builtin_tex_by_code("marmot")},
+		backgroundColor = fade(color, 0.2),
+		cornerRadius = rr(4),
+		border = {color = color, width = bw()},
+	},
+	) {}
+}
 // Rail order: pinned chats first, each half keeping marmot's activity
 // order. Returns indices into `chats`.
 rail_order :: proc(
@@ -36,12 +233,6 @@ rail_order :: proc(
 		}
 	}
 	return order
-}
-
-// Folder chip predicate: no active chip shows every chat, otherwise
-// only the chats assigned to that folder.
-in_folder :: proc(folder_of: map[string]string, group_id: string, filter: string) -> bool {
-	return len(filter) == 0 || folder_of[group_id] == filter
 }
 
 // Flip a group id in a local set; returns the new state. The removed
@@ -101,19 +292,396 @@ chat_row_menu :: proc(ui: ^Ui_State) {
 	}
 }
 
-// Folder modal: create, rename and delete folders, and put the
-// right-clicked chat in one (a chat belongs to at most one folder;
-// clicking its current folder takes it out again).
-folder_modal :: proc(ui: ^Ui_State) {
-	current := ui.prefs.folder_of[ui.folder_gid]
+// Folder menus float at the root so the rail's scroll clip cannot cut them off.
+folder_menu :: proc(ui: ^Ui_State) {
+	width: f32 = 210
+	height: f32 = ui.folder_menu_name == "" ? 40 : 73
+	if data := clay.GetElementData(clay.ID("FolderMenu")); data.found {
+		width = max(width, data.boundingBox.width)
+	}
+	x, y := panel_pos(ui.folder_menu_x - width, ui.folder_menu_y, width, height)
+	if clay.UI(clay.ID("FolderMenu"))(
+	{
+		layout = {
+			layoutDirection = .TopToBottom,
+			sizing = {width = clay.SizingFit({min = 210})},
+			padding = clay.PaddingAll(4),
+			childGap = 1,
+		},
+		floating = {attachTo = .Root, offset = {x, y}, zIndex = 10},
+		backgroundColor = CARD,
+		cornerRadius = rr(10),
+		border = {color = ELEVATED_BORDER, width = bw()},
+	},
+	) {
+		if ui.folder_menu_name == "" {
+			ctx_item("FolderCreate", ICON_FOLDER, "New folder")
+		} else {
+			ctx_item("FolderMenuEdit", ICON_PENCIL, N_("Edit folder"))
+			ctx_item("FolderMenuDelete", ICON_TRASH, "Delete")
+		}
+	}
+}
 
+@(private = "file")
+open_folder_menu :: proc(ui: ^Ui_State, name: string = "", index: int = -1) {
+	delete(ui.folder_menu_name)
+	ui.folder_menu_name = strings.clone(name)
+	anchor := index < 0 ? clay.ID("ChatsMenuBtn") : clay.ID("FolderMenuBtn", u32(index))
+	if data := clay.GetElementData(anchor); data.found {
+		box := data.boundingBox
+		ui.folder_menu_x = box.x + box.width
+		ui.folder_menu_y = box.y + box.height + 4
+	}
+	ui.folder_menu_open = true
+}
+
+// Capture menu dismissal as well as actions, never passing a release to a chat.
+handle_folder_navigation :: proc(ui: ^Ui_State) -> bool {
+	if ui.folder_menu_open {
+		if rl.IsKeyPressed(.ESCAPE) ||
+		   (rl.IsMouseButtonPressed(.RIGHT) && !clay.PointerOver(clay.ID("FolderMenu"))) {
+			ui.folder_menu_open = false
+			return true
+		}
+		if mouse_released() {
+			ui.folder_menu_open = false
+			if ui.folder_menu_name == "" {
+				if clay.PointerOver(clay.ID("FolderCreate")) {
+					open_folder_modal(ui)
+				}
+			} else {
+				for name, i in ui.prefs.folders {
+					if name != ui.folder_menu_name {continue}
+					if clay.PointerOver(clay.ID("FolderMenuEdit")) {
+						open_folder_modal(ui, rename = i)
+					} else if clay.PointerOver(clay.ID("FolderMenuDelete")) {
+						delete_folder(ui, i)
+					}
+					break
+				}
+			}
+		}
+		return true
+	}
+	if ui.page != .Chats {return false}
+	if clicked("ChatsMenuBtn") {
+		open_folder_menu(ui)
+		return true
+	}
+	if clicked("ChatViewBtn") {
+		ui.prefs.recent_chats = !ui.prefs.recent_chats
+		if data := clay.GetScrollContainerData(clay.ID("ChatList")); data.found {
+			data.scrollPosition.y = 0
+		}
+		scroll_residual = {}
+		save_settings(ui)
+		return true
+	}
+	if !ui.prefs.recent_chats && mouse_released() {
+		for i in 0 ..= len(ui.prefs.folders) {
+			name := i < len(ui.prefs.folders) ? ui.prefs.folders[i] : ""
+			// A nested menu button must win over its section header.
+			if i < len(ui.prefs.folders) && clay.PointerOver(clay.ID("FolderMenuBtn", u32(i))) {
+				open_folder_menu(ui, name, i)
+				return true
+			}
+			if clay.PointerOver(clay.ID("FolderHeader", u32(i))) {
+				toggle_flag(&ui.prefs.collapsed_folders, name)
+				save_settings(ui)
+				return true
+			}
+		}
+	}
+	return false
+}
+
+@(private)
+open_folder_modal :: proc(ui: ^Ui_State, gid: string = "", rename: int = -1) {
+	delete(ui.folder_gid)
+	ui.folder_gid = strings.clone(gid)
+	ui.folder_rename = rename
+	ui.folder_icon = 0
+	ui.folder_mode = gid != "" ? .Move : .Create
+	ed_set(ui, &ui.folder_input, "")
+	ed_set(ui, &ui.folder_search, "")
+	ed_set(ui, &ui.folder_color_input, "")
+	if rename >= 0 && rename < len(ui.prefs.folders) {
+		ui.folder_mode = .Edit
+		name := ui.prefs.folders[rename]
+		ed_set(ui, &ui.folder_input, name)
+		ui.folder_icon = clamp(ui.prefs.folder_icons[name], 0, len(FOLDER_ICONS) - 1)
+		if rgb, ok := ui.prefs.folder_colors[name]; ok {
+			ed_set(ui, &ui.folder_color_input, fmt.tprintf("#%06X", rgb))
+		}
+	}
+	if data := clay.GetScrollContainerData(clay.ID("FolderList")); data.found {
+		data.scrollPosition.y = 0
+	}
+	if data := clay.GetScrollContainerData(clay.ID("FolderEditorBody")); data.found {
+		data.scrollPosition.y = 0
+	}
+	ui.folder_menu_open = false
+	ui.folder_open = true
+	ui.focus = .Folder
+}
+
+@(private = "file")
+folder_destination :: proc(ui: ^Ui_State, name: string, index: int, active: bool) {
+	if clay.UI(clay.ID("FolderDestination", u32(index)))(
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(44)},
+			padding = {left = 12, right = 12},
+			childGap = 12,
+			childAlignment = {y = .Center},
+		},
+		backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
+		cornerRadius = rr(9),
+	},
+	) {
+		folder_icon(ui, name, 16)
+		if clay.UI(clay.ID("FolderDestinationName", u32(index)))(
+		{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
+		) {
+			clay.Text(
+				name == "" ? tr("Unfiled") : name,
+				{fontId = FONT_TITLE, fontSize = 14, textColor = TEXT, wrapMode = .None},
+			)
+		}
+		if active {
+			clay.Text(ICON_CHECK, {fontId = FONT_ICON, fontSize = 13, textColor = ACCENT})
+		}
+		if hovered() {cursor_raise(.Pointer)}
+	}
+}
+
+@(private)
+folder_action :: proc(id, label: string, primary: bool = false) {
+	if clay.UI(clay.ID(id))(
+	{
+		layout = {
+			sizing = {height = clay.SizingFixed(36)},
+			padding = {left = 14, right = 14},
+			childAlignment = {x = .Center, y = .Center},
+		},
+		backgroundColor = primary ? (hovered() ? ACCENT_DIM : ACCENT) : (hovered() ? HOVER : ROW_BG),
+		cornerRadius = rr(9),
+		border = primary ? {} : clay.BorderElementConfig{color = FIELD_BORDER, width = bw()},
+	},
+	) {
+		clay.Text(
+			label,
+			{fontId = FONT_TITLE, fontSize = 13, textColor = primary ? ON_ACCENT : TEXT_DIM},
+		)
+		if hovered() {cursor_raise(.Pointer)}
+	}
+}
+
+@(private = "file")
+folder_editor_focus :: proc(ui: ^Ui_State, focus: Focus) {
+	ui.focus = focus
+	body := clay.GetElementData(clay.ID("FolderEditorBody")).boundingBox
+	field :=
+		clay.GetElementData(clay.ID(focus == .FolderColor ? "FolderColorBox" : "FolderBox")).boundingBox
+	scroll := clay.GetScrollContainerData(clay.ID("FolderEditorBody"))
+	if scroll.found {
+		if field.y < body.y {scroll.scrollPosition.y += body.y - field.y}
+		if field.y + field.height > body.y + body.height {
+			scroll.scrollPosition.y -= field.y + field.height - body.y - body.height
+		}
+	}
+}
+
+@(private = "file")
+folder_editor :: proc(ui: ^Ui_State, width: f32) {
+	rgb, custom, valid := folder_color_draft(ui)
+	preview := custom && valid ? folder_rgb(rgb) : ACCENT
+	columns := clamp(int((width - 40 + 8) / 50), 4, 8)
+	if clay.UI(clay.ID("FolderEditorBody"))(
+	{
+		layout = {
+			layoutDirection = .TopToBottom,
+			sizing = {
+				width = clay.SizingGrow(),
+				height = clay.SizingFixed(max(60, modal_h(620) - 144)),
+			},
+			childGap = 12,
+			padding = {right = 6, bottom = 4},
+		},
+		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+	},
+	) {
+		clay.Text(tr("Folder name"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM})
+		if clay.UI(clay.ID("FolderBox"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(40)},
+				padding = {left = 12, right = 12},
+				childGap = 10,
+				childAlignment = {y = .Center},
+			},
+			backgroundColor = ROW_BG,
+			cornerRadius = rr(9),
+			border = {color = ui.focus == .Folder ? ACCENT : FIELD_BORDER, width = bw()},
+		},
+		) {
+			folder_icon_draw(ui.folder_icon, 17, preview)
+			field_text(
+				ui,
+				"FolderBox",
+				&ui.folder_input,
+				tr("Folder name"),
+				ui.focus == .Folder,
+				14,
+				TEXT_LO,
+			)
+		}
+		eyebrow(N_("COLOR"))
+		if clay.UI(clay.ID("FolderColorDefault"))(
+		{
+			layout = {
+				sizing = {height = clay.SizingFixed(32)},
+				padding = {left = 10, right = 10},
+				childGap = 8,
+				childAlignment = {y = .Center},
+			},
+			backgroundColor = !custom ? SELECTED : (hovered() ? HOVER : ROW_BG),
+			border = {color = !custom ? ACCENT : FIELD_BORDER, width = bw()},
+			cornerRadius = rr(8),
+		},
+		) {
+			clay.Text(ICON_FOLDER, {fontId = FONT_ICON, fontSize = 13, textColor = ACCENT})
+			clay.Text(tr("Default"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
+			if hovered() {cursor_raise(.Pointer)}
+		}
+		for row in 0 ..< 2 {
+			if clay.UI(clay.ID("FolderColorRow", u32(row)))(
+			{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
+			) {
+				for column in 0 ..< 6 {
+					i := row * 6 + column
+					selected := custom && valid && rgb == FOLDER_COLORS[i]
+					if clay.UI(clay.ID("FolderColor", u32(i)))(
+					{
+						layout = {
+							sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(34)},
+							childAlignment = {x = .Center, y = .Center},
+						},
+						backgroundColor = selected ? SELECTED : (hovered() ? HOVER : ROW_BG),
+						border = {color = selected ? ACCENT : FIELD_BORDER, width = bw()},
+						cornerRadius = rr(8),
+					},
+					) {
+						if clay.UI(clay.ID("FolderColorSwatch", u32(i)))(
+						{
+							layout = {
+								sizing = {
+									width = clay.SizingFixed(20),
+									height = clay.SizingFixed(20),
+								},
+							},
+							backgroundColor = folder_rgb(FOLDER_COLORS[i]),
+							cornerRadius = rr(10),
+						},
+						) {}
+						if hovered() {
+							tooltip(FOLDER_COLOR_NAMES[i])
+							cursor_raise(.Pointer)
+						}
+					}
+				}
+			}
+		}
+		clay.Text(tr("Custom color"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT_DIM})
+		if clay.UI(clay.ID("FolderColorBox"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(36)},
+				padding = {left = 12, right = 12},
+				childAlignment = {y = .Center},
+			},
+			backgroundColor = ROW_BG,
+			cornerRadius = rr(9),
+			border = {color = ui.focus == .FolderColor ? ACCENT : FIELD_BORDER, width = bw()},
+		},
+		) {
+			field_text(
+				ui,
+				"FolderColorBox",
+				&ui.folder_color_input,
+				"#RRGGBB",
+				ui.focus == .FolderColor,
+				13,
+				TEXT_LO,
+			)
+		}
+		clay.Text(
+			tr("Enter a color as #RRGGBB."),
+			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
+		)
+		eyebrow(N_("ICON"))
+		if clay.UI(clay.ID("FolderIconGrid"))(
+		{
+			layout = {
+				layoutDirection = .TopToBottom,
+				sizing = {width = clay.SizingGrow()},
+				childGap = 8,
+			},
+		},
+		) {
+			for row in 0 ..< (len(FOLDER_ICONS) + columns - 1) / columns {
+				if clay.UI(clay.ID("FolderIconRow", u32(row)))(
+				{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
+				) {
+					for column in 0 ..< columns {
+						i := row * columns + column
+						if i >= len(FOLDER_ICONS) {
+							if clay.UI(clay.ID("FolderIconGap", u32(i)))(
+							{layout = {sizing = {width = clay.SizingGrow()}}},
+							) {}
+							continue
+						}
+						selected := ui.folder_icon == i
+						if clay.UI(clay.ID("FolderIcon", u32(i)))(
+						{
+							layout = {
+								sizing = {
+									width = clay.SizingGrow(),
+									height = clay.SizingFixed(42),
+								},
+								childAlignment = {x = .Center, y = .Center},
+							},
+							backgroundColor = selected ? SELECTED : (hovered() ? HOVER : ROW_BG),
+							border = {color = selected ? ACCENT : FIELD_BORDER, width = bw()},
+							cornerRadius = rr(9),
+						},
+						) {
+							folder_icon_draw(i, 20, preview)
+							if hovered() {
+								tooltip(FOLDER_ICON_NAMES[i])
+								cursor_raise(.Pointer)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	scrollbar(clay.ID("FolderEditorBody"), 14)
+}
+
+// A destination picker and a separate, compact folder editor share one shell.
+folder_modal :: proc(ui: ^Ui_State) {
+	moving := ui.folder_mode == .Move
+	width := modal_w(clay.ID("FolderModal"), moving ? 440 : 480)
 	if clay.UI(clay.ID("FolderModal"))(
 	{
 		layout = {
 			layoutDirection = .TopToBottom,
-			sizing = {width = clay.SizingFixed(modal_w(clay.ID("FolderModal"), 380))},
+			sizing = {width = clay.SizingFixed(width)},
 			padding = clay.PaddingAll(20),
-			childGap = 12,
+			childGap = 16,
 		},
 		floating = {
 			attachTo = .Root,
@@ -127,122 +695,144 @@ folder_modal :: proc(ui: ^Ui_State) {
 	},
 	) {
 		if clay.UI(clay.ID("FolderHead"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {y = .Center}}},
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				childGap = 12,
+				childAlignment = {y = .Center},
+			},
+		},
 		) {
-			clay.Text(tr("Folders"), {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
-			if clay.UI(clay.ID("FolderHeadGap"))(
-			{layout = {sizing = {width = clay.SizingGrow()}}},
-			) {}
+			if clay.UI(clay.ID("FolderTitle"))({layout = {sizing = {width = clay.SizingGrow()}}}) {
+				title :=
+					moving ? tr("Move to folder") : (ui.folder_mode == .Edit ? tr("Edit folder") : tr("New folder"))
+				clay.Text(title, {fontId = FONT_TITLE, fontSize = 20, textColor = TEXT})
+			}
 			if clay.UI(clay.ID("FolderClose"))(
 			{
-				layout = {padding = clay.PaddingAll(6)},
+				layout = {padding = clay.PaddingAll(7)},
 				backgroundColor = hovered() ? HOVER : {},
-				cornerRadius = rr(6),
+				cornerRadius = rr(7),
 			},
 			) {
 				clay.Text(ICON_CLOSE, {fontId = FONT_ICON, fontSize = 12, textColor = TEXT_DIM})
+				if hovered() {cursor_raise(.Pointer)}
 			}
 		}
-		clay.Text(
-			tr(
-				"Pick a folder for this chat, or make a new one. A chat sits in one folder at a time.",
-			),
-			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-		)
-
-		eyebrow("FOLDERS")
-		if len(ui.prefs.folders) == 0 {
+		if moving {
 			clay.Text(
-				tr("No folders yet."),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
+				tr("Choose a destination for this chat."),
+				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
 			)
-		}
-		for name, i in ui.prefs.folders {
-			active := name == current
-			if clay.UI(clay.ID("FolderRow", u32(i)))(
+			if clay.UI(clay.ID("FolderSearchBox"))(
 			{
 				layout = {
-					sizing = {width = clay.SizingGrow()},
-					padding = {left = 12, right = 10, top = 8, bottom = 8},
+					sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(40)},
+					padding = {left = 12, right = 12},
 					childGap = 10,
 					childAlignment = {y = .Center},
 				},
-				backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
-				cornerRadius = rr(10),
+				backgroundColor = ROW_BG,
+				cornerRadius = rr(9),
+				border = {color = ui.focus == .Folder ? ACCENT : FIELD_BORDER, width = bw()},
 			},
 			) {
-				clay.Text(
-					ICON_FOLDER,
-					{fontId = FONT_ICON, fontSize = 12, textColor = active ? ACCENT : TEXT_DIM},
+				clay.Text(ICON_SEARCH, {fontId = FONT_ICON, fontSize = 13, textColor = TEXT_LO})
+				field_text(
+					ui,
+					"FolderSearchBox",
+					&ui.folder_search,
+					tr("Search folders..."),
+					ui.focus == .Folder,
+					13,
+					TEXT_LO,
 				)
-				clay.Text(name, {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
-				if clay.UI(clay.ID("FolderRowGap", u32(i)))(
-				{layout = {sizing = {width = clay.SizingGrow()}}},
-				) {}
-				action_chip("FolderRename", u32(i), tr("Rename"))
-				action_chip("FolderDelete", u32(i), tr("Delete"))
 			}
-		}
-
-		eyebrow(ui.folder_rename >= 0 ? "RENAME FOLDER" : "NEW FOLDER")
-		if clay.UI(clay.ID("FolderBox"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(34)},
-				padding = {left = 12, right = 12},
-				childAlignment = {y = .Center},
-			},
-			backgroundColor = ROW_BG,
-			cornerRadius = rr(10),
-			border = {color = ui.focus == .Folder ? ACCENT : FIELD_BORDER, width = bw()},
-		},
-		) {
-			field_text(
-				ui,
-				"FolderBox",
-				&ui.folder_input,
-				"Folder name",
-				ui.focus == .Folder,
-				13,
-				TEXT_LO,
+			query := strings.to_lower(
+				strings.trim_space(string(ui.folder_search[:])),
+				context.temp_allocator,
 			)
+			current := ui.prefs.folder_of[ui.folder_gid]
+			has_current := false
+			destinations := make([]int, len(ui.prefs.folders), context.temp_allocator)
+			matches := 0
+			for name, i in ui.prefs.folders {
+				has_current = has_current || (ui.folder_gid != "" && name == current)
+				if query != "" &&
+				   !strings.contains(
+						   strings.to_lower(name, context.temp_allocator),
+						   query,
+					   ) {continue}
+				destinations[matches] = i
+				matches += 1
+			}
+			if clay.UI(clay.ID("FolderList"))(
+			{
+				layout = {
+					layoutDirection = .TopToBottom,
+					sizing = {
+						width = clay.SizingGrow(),
+						height = clay.SizingFit({max = max(44, min(264, modal_h(580) - 290))}),
+					},
+					childGap = 4,
+				},
+				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+			},
+			) {
+				view := clay.GetScrollContainerData(clay.ID("FolderList"))
+				height := view.found ? view.scrollContainerDimensions.height : 264
+				offset := view.found ? -view.scrollPosition.y : 0
+				first := clamp(int(offset / 48) - 2, 0, matches)
+				last := clamp(int((offset + height) / 48) + 3, first, matches)
+				if first > 0 {
+					if clay.UI(clay.ID("FolderDestinationsBefore"))(
+					{layout = {sizing = {height = clay.SizingFixed(f32(first) * 48 - 4)}}},
+					) {}
+				}
+				for i in destinations[first:last] {
+					name := ui.prefs.folders[i]
+					folder_destination(ui, name, i, ui.folder_gid != "" && name == current)
+				}
+				if last < matches {
+					if clay.UI(clay.ID("FolderDestinationsAfter"))(
+					{
+						layout = {
+							sizing = {height = clay.SizingFixed(f32(matches - last) * 48 - 4)},
+						},
+					},
+					) {}
+				}
+				if matches == 0 && query != "" {
+					clay.Text(
+						tr("No folders match your search."),
+						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_LO},
+					)
+				}
+			}
+			scrollbar(clay.ID("FolderList"), 14)
+			// Keep Unfiled reachable even while searching or scrolling a long list.
+			folder_destination(ui, "", len(ui.prefs.folders), ui.folder_gid != "" && !has_current)
+		} else {
+			folder_editor(ui, width)
 		}
 		if clay.UI(clay.ID("FolderActions"))(
-		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
+		{layout = {sizing = {width = clay.SizingGrow()}, childGap = 10}},
 		) {
-			micro_button("FolderSave", ui.folder_rename >= 0 ? "Save" : "Create folder")
-			if len(current) > 0 {
-				micro_button("FolderClear", "Take out of folder")
+			if moving {
+				folder_action("FolderNew", tr("New folder"))
+			}
+			if clay.UI(clay.ID("FolderActionsGap"))(
+			{layout = {sizing = {width = clay.SizingGrow()}}},
+			) {}
+			folder_action("FolderCancel", tr("Cancel"))
+			if !moving {
+				folder_action(
+					"FolderSave",
+					ui.folder_mode == .Edit ? tr("Save") : tr("Create folder"),
+					true,
+				)
 			}
 		}
-	}
-}
-
-// Rail head chips, one per folder plus the all-chats chip.
-folder_chips :: proc(ui: ^Ui_State) {
-	if clay.UI(clay.ID("FolderChips"))(
-	{layout = {sizing = {width = clay.SizingGrow()}, childGap = 6, padding = {top = 2}}},
-	) {
-		folder_chip("FolderAllChip", 0, tr("All folders"), len(ui.folder_filter) == 0)
-		for name, i in ui.prefs.folders {
-			folder_chip("FolderFilter", u32(i), name, ui.folder_filter == name)
-		}
-	}
-}
-
-folder_chip :: proc(id_str: string, index: u32, label: string, active: bool) {
-	if clay.UI(clay.ID(id_str, index))(
-	{
-		layout = {padding = {left = 10, right = 10, top = 4, bottom = 4}},
-		backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
-		cornerRadius = rr(8),
-		border = {color = FIELD_BORDER, width = bw()},
-	},
-	) {
-		clay.Text(
-			label,
-			{fontId = FONT_BODY, fontSize = 11, textColor = active ? ACCENT : TEXT_DIM},
-		)
 	}
 }
 
@@ -272,12 +862,7 @@ handle_row_menu :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	ui.row_menu = -1
 
 	if clay.PointerOver(clay.ID("RowFolder")) {
-		delete(ui.folder_gid)
-		ui.folder_gid = strings.clone(gid)
-		ui.folder_rename = -1
-		clear(&ui.folder_input)
-		ui.folder_open = true
-		ui.focus = .Folder
+		open_folder_modal(ui, gid)
 		return
 	}
 	if clay.PointerOver(clay.ID("RowPin")) {
@@ -336,92 +921,178 @@ mark_chat_read :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) {
 	marmot.chat_list_row_free(row)
 }
 
-// Clicks and typing in the open folder modal.
+@(private = "file")
+close_folder_modal :: proc(ui: ^Ui_State) {
+	// Keep the mode and field contents intact while the modal animates away.
+	ui.folder_open = false
+	ui.focus = .Compose
+}
+
+// The outer modal dispatcher consumes every click, including dismissal.
 handle_folder_modal :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	edit_text(ui, &ui.folder_input)
-
-	if rl.IsKeyPressed(.ESCAPE) ||
-	   clicked("FolderClose") ||
-	   (mouse_released() && !clay.PointerOver(clay.ID("FolderModal"))) {
-		ui.folder_open = false
-		ui.focus = .Compose
+	if clicked("FolderClose") || (mouse_released() && !clay.PointerOver(clay.ID("FolderModal"))) {
+		close_folder_modal(ui)
 		return
 	}
-	if field_mouse(ui, &ui.folder_input, "FolderBox") {
-		ui.focus = .Folder
+	if rl.IsKeyPressed(.ESCAPE) || clicked("FolderCancel") {
+		if ui.folder_mode == .Create && ui.folder_gid != "" {
+			ui.folder_mode = .Move
+			ui.focus = .Folder
+		} else {
+			close_folder_modal(ui)
+		}
 		return
 	}
 
-	released := mouse_released()
-	for name, i in ui.prefs.folders {
-		if released && clay.PointerOver(clay.ID("FolderRename", u32(i))) {
-			ui.folder_rename = i
-			ed_set(ui, &ui.folder_input, name)
+	if ui.folder_mode == .Move {
+		edit_text(ui, &ui.folder_search)
+		if field_mouse(ui, &ui.folder_search, "FolderSearchBox") {
 			ui.focus = .Folder
 			return
 		}
-		if released && clay.PointerOver(clay.ID("FolderDelete", u32(i))) {
-			// Chats in a deleted folder fall back to no folder (the
-			// keys are gathered first, deleting while iterating a map
-			// is not safe).
-			orphans := make([dynamic]string, context.temp_allocator)
-			for gid, folder in ui.prefs.folder_of {
-				if folder == name {
-					append(&orphans, gid)
+		if clicked("FolderNew") {
+			ui.folder_mode = .Create
+			ui.focus = .Folder
+			return
+		}
+		if mouse_released() {
+			for name, i in ui.prefs.folders {
+				if clay.PointerOver(clay.ID("FolderDestination", u32(i))) {
+					assign_folder(ui, name)
+					return
 				}
 			}
-			for gid in orphans {
-				delete_key(&ui.prefs.folder_of, gid)
+			if clay.PointerOver(clay.ID("FolderDestination", u32(len(ui.prefs.folders)))) {
+				assign_folder(ui, "")
 			}
-			if ui.folder_filter == name {
-				ui.folder_filter = ""
-			}
-			ordered_remove(&ui.prefs.folders, i)
-			ui.folder_rename = -1
-			save_settings(ui)
-			return
 		}
-		if released && clay.PointerOver(clay.ID("FolderRow", u32(i))) {
-			assign_folder(ui, ui.prefs.folder_of[ui.folder_gid] == name ? "" : name)
-			return
-		}
+		return
 	}
 
-	if clicked("FolderClear") {
-		assign_folder(ui, "")
+	if ui.focus == .FolderColor {
+		edit_text(ui, &ui.folder_color_input)
+	} else {
+		edit_text(ui, &ui.folder_input)
+	}
+	if field_mouse(ui, &ui.folder_color_input, "FolderColorBox") {
+		ui.focus = .FolderColor
 		return
+	}
+	if field_mouse(ui, &ui.folder_input, "FolderBox", 14) {
+		ui.focus = .Folder
+		return
+	}
+	if rl.IsKeyPressed(.TAB) {
+		folder_editor_focus(ui, ui.focus == .FolderColor ? .Folder : .FolderColor)
+	}
+	if clicked("FolderColorDefault") {
+		ed_set(ui, &ui.folder_color_input, "")
+		return
+	}
+	if mouse_released() {
+		for color, i in FOLDER_COLORS {
+			if clay.PointerOver(clay.ID("FolderColor", u32(i))) {
+				ed_set(ui, &ui.folder_color_input, fmt.tprintf("#%06X", color))
+				return
+			}
+		}
+		for _, i in FOLDER_ICONS {
+			if clay.PointerOver(clay.ID("FolderIcon", u32(i))) {
+				ui.folder_icon = i
+				return
+			}
+		}
 	}
 	if clicked("FolderSave") || rl.IsKeyPressed(.ENTER) {
 		name := strings.trim_space(string(ui.folder_input[:]))
-		if len(name) == 0 {
+		if name == "" {return}
+		for folder, i in ui.prefs.folders {
+			if folder == name && (ui.folder_mode != .Edit || i != ui.folder_rename) {
+				toast(ui, tr("Folder names must be unique. Choose a different name."))
+				return
+			}
+		}
+		rgb, custom, valid := folder_color_draft(ui)
+		if !valid {
+			toast(ui, tr("Enter a color as #RRGGBB."))
+			folder_editor_focus(ui, .FolderColor)
 			return
 		}
-		if ui.folder_rename >= 0 && ui.folder_rename < len(ui.prefs.folders) {
+		if ui.folder_mode == .Edit {
+			if ui.folder_rename < 0 || ui.folder_rename >= len(ui.prefs.folders) {return}
 			old := ui.prefs.folders[ui.folder_rename]
-			for gid, folder in ui.prefs.folder_of {
-				if folder == old {
-					ui.prefs.folder_of[gid] = strings.clone(name)
+			if old != name {
+				for gid, folder in ui.prefs.folder_of {
+					if folder == old {
+						ui.prefs.folder_of[gid] = strings.clone(name)
+					}
 				}
+				if collapsed, ok := ui.prefs.collapsed_folders[old]; ok {
+					ui.prefs.collapsed_folders[strings.clone(name)] = collapsed
+				}
+				delete_key(&ui.prefs.collapsed_folders, old)
+				delete_key(&ui.prefs.folder_icons, old)
+				delete_key(&ui.prefs.folder_colors, old)
+				ui.prefs.folders[ui.folder_rename] = strings.clone(name)
 			}
-			if ui.folder_filter == old {
-				ui.folder_filter = strings.clone(name)
-			}
-			ui.prefs.folders[ui.folder_rename] = strings.clone(name)
-			ui.folder_rename = -1
 		} else {
 			append(&ui.prefs.folders, strings.clone(name))
 		}
-		clear(&ui.folder_input)
+		ui.prefs.folder_icons[strings.clone(name)] = clamp(
+			ui.folder_icon,
+			0,
+			len(FOLDER_ICONS) - 1,
+		)
+		if custom {
+			ui.prefs.folder_colors[strings.clone(name)] = rgb
+		} else {
+			delete_key(&ui.prefs.folder_colors, name)
+		}
+		if ui.folder_mode == .Create && ui.folder_gid != "" {
+			assign_folder(ui, name)
+			return
+		}
 		save_settings(ui)
+		close_folder_modal(ui)
 	}
 }
 
+// Remove only organization metadata; the chats themselves are untouched.
+@(private)
+delete_folder :: proc(ui: ^Ui_State, index: int) {
+	name := ui.prefs.folders[index]
+	orphans := make([dynamic]string, context.temp_allocator)
+	for gid, folder in ui.prefs.folder_of {
+		if folder == name {
+			append(&orphans, gid)
+		}
+	}
+	for gid in orphans {
+		delete_key(&ui.prefs.folder_of, gid)
+	}
+	delete_key(&ui.prefs.collapsed_folders, name)
+	delete_key(&ui.prefs.folder_icons, name)
+	delete_key(&ui.prefs.folder_colors, name)
+	ordered_remove(&ui.prefs.folders, index)
+	if ui.folder_rename == index {
+		ui.folder_rename = -1
+		clear(&ui.folder_input)
+		clear(&ui.folder_color_input)
+	} else if ui.folder_rename > index {
+		ui.folder_rename -= 1
+	}
+	save_settings(ui)
+}
+
 // Put the modal's chat in `name` ("" takes it out of every folder).
+@(private = "file")
 assign_folder :: proc(ui: ^Ui_State, name: string) {
+	if ui.folder_gid == "" {return}
 	if len(name) == 0 {
 		delete_key(&ui.prefs.folder_of, ui.folder_gid)
 	} else {
 		ui.prefs.folder_of[strings.clone(ui.folder_gid)] = strings.clone(name)
 	}
 	save_settings(ui)
+	close_folder_modal(ui)
 }

@@ -98,6 +98,12 @@ custom_tex_by_code :: proc(code: string) -> ^rl.Texture2D {
 		return tex
 	}
 
+	return builtin_tex_by_code(code)
+}
+
+// Built-in artwork stays independent of user shortcode overrides.
+@(private)
+builtin_tex_by_code :: proc(code: string) -> ^rl.Texture2D {
 	for b, i in BUILTIN_EMOJI {
 		if b.code != code {
 			continue

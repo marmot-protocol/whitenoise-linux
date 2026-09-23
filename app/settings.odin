@@ -54,6 +54,10 @@ Prefs :: struct {
 	unread_ids:        map[string]bool, // manual unread reminder
 	folders:           [dynamic]string, // user-defined folder names
 	folder_of:         map[string]string, // group id → folder name
+	recent_chats:      bool, // false groups the list by folder
+	collapsed_folders: map[string]bool, // folder name; "" is Unfiled
+	folder_icons:      map[string]int, // folder name → FOLDER_ICONS index
+	folder_colors:     map[string]u32, // folder name → RGB; absent uses the theme accent
 	// Advanced (telemetry/audit toggles live in marmot's shared
 	// sqlite, not here)
 	trusted_sites:     [dynamic]string,

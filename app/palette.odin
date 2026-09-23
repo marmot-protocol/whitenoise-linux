@@ -321,7 +321,15 @@ run_command :: proc(ui: ^Ui_State, client: ^marmot.Client, cmd: Cmd) {
 			}
 		case .Advanced:
 			load_advanced(ui, client)
-		case .General, .Speech, .Appearance, .Notifications, .Storage, .About, .Debug, .KP:
+		case .General,
+		     .Folders,
+		     .Speech,
+		     .Appearance,
+		     .Notifications,
+		     .Storage,
+		     .About,
+		     .Debug,
+		     .KP:
 		}
 	}
 

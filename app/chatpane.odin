@@ -366,9 +366,8 @@ COMPOSE_TOOLS_H :: f32(28)
 COMPOSE_CHROME_H :: f32(16 + 8) + COMPOSE_TOOLS_H // padding, gap, toolbar
 COMPOSE_H_MIN :: f32(20) + COMPOSE_CHROME_H
 
-// Height of the composer pill, from last frame's text column. The pill
-// and its clip both ask for it; no easing, the chat box does not
-// animate.
+// Height of the input surface from last frame's text column. The surface
+// and its clip use the same height so growing drafts never animate apart.
 compose_height :: proc() -> f32 {
 	target := COMPOSE_H_MIN
 	if box := clay.GetElementData(clay.ID("ComposeText")); box.found {
@@ -1434,8 +1433,8 @@ chat_composer :: proc(ui: ^Ui_State) {
 		}
 	}
 
-	// Composer: one floating pill on the pane bg, like the
-	// slint input bar. Enter sends; no Send button.
+	// A filled input surface anchored to the conversation. Enter sends;
+	// the existing toolbar stays separate from the growing draft.
 	if clay.UI(clay.ID("Composer"))(
 	{
 		layout = {
@@ -1540,27 +1539,14 @@ chat_composer :: proc(ui: ^Ui_State) {
 				childGap = 8,
 				layoutDirection = .TopToBottom,
 			},
-			backgroundColor = ROW_BG,
-			cornerRadius = rr(22),
-			border = {color = ui.focus == .Compose ? ACCENT : FIELD_BORDER, width = bw()},
+			backgroundColor = PLATE,
+			cornerRadius = rr(8),
+			border = {color = ui.focus == .Compose ? ACCENT_DIM : FIELD_BORDER, width = bw()},
 		},
 		) {
 			if clay.Hovered() {
 				cursor_raise(.Text)
 			}
-			// Focus lights the pill rather than only recoloring
-			// its border.
-			glow(
-				clay.ID("ComposeBox"),
-				ACCENT,
-				anim_to(
-					clay.ID("ComposeBox").id ~ GLOW_SALT,
-					ui.focus == .Compose ? 1 : 0,
-					HOVER_RATE,
-				) *
-				0.7,
-				18,
-			)
 			// The @-mention popover floats above the box.
 			if open_now(clay.ID("MentionPop"), ui.mention_active) {
 				mention_popover(ui)

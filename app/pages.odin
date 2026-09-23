@@ -25,7 +25,8 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
-	if (ui.page == .Profile || ui.page == .Settings) && !ui.new_chat_open {
+	if (ui.page == .Profile || (ui.page == .Settings && ui.settings_section != .Folders)) &&
+	   !ui.new_chat_open {
 		edit_text(ui, active_buf(ui))
 	}
 

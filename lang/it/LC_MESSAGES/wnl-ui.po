@@ -250,6 +250,9 @@ msgstr "Anche Ctrl + / − / 0, o Ctrl + scorrimento."
 msgid "Always open links to this site"
 msgstr ""
 
+msgid "Amber"
+msgstr "Ambra"
+
 msgid "An empty box derives its value. The window previews as you type."
 msgstr ""
 
@@ -354,6 +357,9 @@ msgstr "Blocca"
 msgid "Block this contact?"
 msgstr "Bloccare questa richiesta chat?"
 
+msgid "Blue"
+msgstr "Blu"
+
 msgid "Border 2"
 msgstr ""
 
@@ -365,6 +371,9 @@ msgstr ""
 
 msgid "Bubble radius"
 msgstr ""
+
+msgid "COLOR"
+msgstr "COLORE"
 
 #, fuzzy
 msgid "CONFIRM NEW PASSWORD"
@@ -385,6 +394,12 @@ msgstr ""
 
 msgid "Cached attachments"
 msgstr "Allegati in cache"
+
+msgid "Calendar"
+msgstr "Calendario"
+
+msgid "Camera"
+msgstr "Fotocamera"
 
 msgid "Cancel"
 msgstr "Annulla"
@@ -427,6 +442,12 @@ msgstr ""
 msgid "Change..."
 msgstr "Cambia"
 
+msgid "Chat options"
+msgstr "Opzioni chat"
+
+msgid "Chats"
+msgstr "Chat"
+
 #, fuzzy
 msgid "Check now"
 msgstr "Verifica in corso…"
@@ -450,6 +471,9 @@ msgstr ""
 #, fuzzy
 msgid "Chip text"
 msgstr "Copia testo"
+
+msgid "Choose a destination for this chat."
+msgstr "Scegli una destinazione per questa chat."
 
 msgid "Circle"
 msgstr "Cerchio"
@@ -476,8 +500,17 @@ msgstr "Chiusa"
 msgid "Closing the window hides it. The tray icon shows your unread total and brings it back."
 msgstr ""
 
+msgid "Cloud"
+msgstr "Cloud"
+
+msgid "Code"
+msgstr "Codice"
+
 msgid "Code plate"
 msgstr ""
+
+msgid "Coffee"
+msgstr "Caffè"
 
 #, fuzzy
 msgid "Collapse the chat list"
@@ -528,6 +561,9 @@ msgstr "Continua"
 
 msgid "Control background"
 msgstr ""
+
+msgid "Conversations"
+msgstr "Conversazioni"
 
 msgid "Copy"
 msgstr "Copia"
@@ -789,6 +825,12 @@ msgstr "Crea backup"
 msgid "Create backup..."
 msgstr "Crea backup"
 
+msgid "Create folder"
+msgstr "Crea cartella"
+
+msgid "Create folders to organize your chats."
+msgstr "Crea cartelle per organizzare le tue chat."
+
 msgid "Create issue"
 msgstr "Crea segnalazione"
 
@@ -801,6 +843,12 @@ msgstr "Forma dei crop circle"
 
 msgid "Current"
 msgstr ""
+
+msgid "Custom color"
+msgstr "Colore personalizzato"
+
+msgid "Cyan"
+msgstr "Ciano"
 
 msgid "DANGER ZONE"
 msgstr "ZONA PERICOLOSA"
@@ -845,6 +893,9 @@ msgstr ""
 msgid "Decode own"
 msgstr ""
 
+msgid "Default"
+msgstr "Predefinito"
+
 msgid "Default avatar shape"
 msgstr "Forma predefinita degli avatar"
 
@@ -876,6 +927,9 @@ msgstr "Eliminare per me?"
 msgid "Deleted. Recording continues in a fresh file."
 msgstr "Log di audit eliminato — la registrazione continua in un nuovo file."
 
+msgid "Deleting a folder doesn't delete your chats."
+msgstr "Eliminare una cartella non elimina le tue chat."
+
 #, fuzzy
 msgid "Deleting the file being recorded rotates it. Recording continues in a fresh file."
 msgstr "Eliminare il file in registrazione lo ruota — la registrazione continua in un nuovo file."
@@ -888,6 +942,9 @@ msgstr "Descrivi il problema (Markdown)"
 
 msgid "Description"
 msgstr "Descrizione"
+
+msgid "Design"
+msgstr "Design"
 
 msgid "Desktop notifications"
 msgstr "Notifiche desktop"
@@ -943,6 +1000,9 @@ msgstr "Download del modello vocale in corso..."
 msgid "Downloading: %d%%"
 msgstr "Download: %d%%"
 
+msgid "Downloads"
+msgstr "Download"
+
 msgid "Drops idle relay sockets and dials them again."
 msgstr ""
 
@@ -970,6 +1030,9 @@ msgstr "Modifica %1"
 msgid "Edit %d"
 msgstr "Modifica %d"
 
+msgid "Edit folder"
+msgstr "Modifica cartella"
+
 msgid "Edit history"
 msgstr "Cronologia modifiche"
 
@@ -986,6 +1049,9 @@ msgstr ""
 msgid "Elevated border"
 msgstr ""
 
+msgid "Email"
+msgstr "Email"
+
 msgid "Emoji"
 msgstr "Emoji"
 
@@ -1001,6 +1067,9 @@ msgstr "Esporta chiave crittografata (ncryptsec)"
 
 msgid "End-to-end encrypted"
 msgstr "Crittografato end-to-end"
+
+msgid "Enter a color as #RRGGBB."
+msgstr "Inserisci un colore nel formato #RRGGBB."
 
 msgid "Enter a sticker name of 1 to 64 characters."
 msgstr "Inserisci un nome per l'adesivo da 1 a 64 caratteri."
@@ -1046,8 +1115,14 @@ msgstr ""
 msgid "FOLDERS"
 msgstr ""
 
+msgid "Family"
+msgstr "Famiglia"
+
 msgid "Fast motion"
 msgstr ""
+
+msgid "Favorites"
+msgstr "Preferiti"
 
 msgid "Female voice. Supports all reading languages."
 msgstr "Voce femminile. Supporta tutte le lingue di lettura."
@@ -1078,20 +1153,41 @@ msgstr "Termina dettatura"
 msgid "Fit"
 msgstr "Adatta"
 
+msgid "Fitness"
+msgstr "Fitness"
+
+msgid "Flag"
+msgstr "Bandiera"
+
 msgid "Focus glow"
 msgstr ""
 
 msgid "Focus glow radius"
 msgstr ""
 
+msgid "Folder"
+msgstr "Cartella"
+
+msgid "Folder name"
+msgstr "Nome della cartella"
+
+msgid "Folder names must be unique. Choose a different name."
+msgstr "Ogni cartella deve avere un nome diverso. Scegli un altro nome."
+
+msgid "Folder options"
+msgstr "Opzioni cartella"
+
 msgid "Folders"
-msgstr ""
+msgstr "Cartelle"
 
 msgid "Font"
 msgstr ""
 
 msgid "Fonts"
 msgstr "Caratteri"
+
+msgid "Food"
+msgstr "Cibo"
 
 msgid "Forward"
 msgstr "Inoltra"
@@ -1119,6 +1215,9 @@ msgstr "NOME DEL GRUPPO (OPZIONALE)"
 msgid "GROUPS IN COMMON"
 msgstr "GRUPPI IN COMUNE"
 
+msgid "Games"
+msgstr "Giochi"
+
 msgid "General"
 msgstr "Generale"
 
@@ -1131,6 +1230,9 @@ msgstr "Ricevi un avviso quando arriva un messaggio in una chat che non stai gua
 
 msgid "Get started"
 msgstr ""
+
+msgid "Gift"
+msgstr "Regalo"
 
 #, fuzzy
 msgid "Go to archive"
@@ -1150,9 +1252,21 @@ msgstr "Impostazioni"
 msgid "Go to your profile"
 msgstr "Il tuo profilo"
 
+msgid "Gray"
+msgstr "Grigio"
+
+msgid "Green"
+msgstr "Verde"
+
+msgid "Group chats by folder"
+msgstr "Raggruppa le chat per cartella"
+
 #, fuzzy
 msgid "Group id copied"
 msgstr "ID gruppo"
+
+msgid "Grouped"
+msgstr "Raggruppate"
 
 msgid "HELP"
 msgstr ""
@@ -1172,6 +1286,9 @@ msgstr ""
 msgid "Hide hidden message"
 msgstr "Nascondi il messaggio nascosto"
 
+msgid "Home"
+msgstr "Casa"
+
 msgid "Hover"
 msgstr ""
 
@@ -1180,6 +1297,9 @@ msgstr ""
 
 msgid "How far the mouse wheel moves the view."
 msgstr ""
+
+msgid "ICON"
+msgstr "ICONA"
 
 msgid "IDENTITY"
 msgstr "IDENTITÀ"
@@ -1198,6 +1318,9 @@ msgstr "SEGNALAZIONE"
 
 msgid "ISSUE TRACKING"
 msgstr "SEGNALAZIONI"
+
+msgid "Ideas"
+msgstr "Idee"
 
 #, fuzzy
 msgid "Image didn't load. Click to retry."
@@ -1326,6 +1449,9 @@ msgstr "Pacchetti chiave"
 msgid "Keyboard shortcuts"
 msgstr ""
 
+msgid "Keys"
+msgstr "Chiavi"
+
 msgid "Keys & identity"
 msgstr "Chiavi e identità"
 
@@ -1366,6 +1492,12 @@ msgstr "Lascia il gruppo"
 #, fuzzy
 msgid "Leave this group?"
 msgstr "Lascia il gruppo"
+
+msgid "Lime"
+msgstr "Lime"
+
+msgid "Links"
+msgstr "Link"
 
 msgid "Links to these exact sites open without confirmation."
 msgstr "I link esattamente a questi siti si aprono senza conferma."
@@ -1421,6 +1553,9 @@ msgstr ""
 msgid "Markdown"
 msgstr ""
 
+msgid "Marmot"
+msgstr "Marmotta"
+
 msgid "Media backdrop"
 msgstr ""
 
@@ -1453,9 +1588,20 @@ msgstr ""
 msgid "Micro"
 msgstr "Micro"
 
-#, fuzzy
+msgid "Money"
+msgstr "Denaro"
+
+msgid "Monitor"
+msgstr "Monitor"
+
+msgid "Move down"
+msgstr "Sposta giù"
+
 msgid "Move to folder"
-msgstr "Apri cartella"
+msgstr "Sposta nella cartella"
+
+msgid "Move up"
+msgstr "Sposta su"
 
 msgid "Multi-device isn't available yet"
 msgstr "Multi-dispositivo non ancora disponibile"
@@ -1465,6 +1611,9 @@ msgstr "Multilingue. Rileva automaticamente la tua lingua."
 
 msgid "Multiple choice"
 msgstr ""
+
+msgid "Music"
+msgstr "Musica"
 
 #, fuzzy
 msgid "NEW PASSWORD"
@@ -1485,6 +1634,9 @@ msgstr ""
 msgid "Name"
 msgstr ""
 
+msgid "Nature"
+msgstr "Natura"
+
 msgid "Network & relays"
 msgstr "Rete e relay"
 
@@ -1494,12 +1646,18 @@ msgstr ""
 msgid "New chat"
 msgstr "Nuova chat"
 
+msgid "New folder"
+msgstr "Nuova cartella"
+
 msgid "New issue"
 msgstr "Nuova segnalazione"
 
 #, fuzzy
 msgid "New message"
 msgstr "Invia messaggio"
+
+msgid "News"
+msgstr "Notizie"
 
 msgid "Next / previous chat"
 msgstr "Chat successiva / precedente"
@@ -1537,9 +1695,8 @@ msgstr ""
 msgid "No chats to share with yet."
 msgstr "Ancora nessun contatto"
 
-#, fuzzy
 msgid "No chats yet"
-msgstr "Ancora nessun contatto"
+msgstr "Ancora nessuna chat"
 
 #, fuzzy
 msgid "No command matches."
@@ -1550,6 +1707,9 @@ msgstr "Ancora nessun contatto"
 
 msgid "No files match these filters."
 msgstr "Nessun file corrisponde a questi filtri."
+
+msgid "No folders match your search."
+msgstr "Nessuna cartella corrisponde alla ricerca."
 
 #, fuzzy
 msgid "No folders yet."
@@ -1661,6 +1821,9 @@ msgstr "Aprire questo link?"
 msgid "Opening in your browser"
 msgstr "Questo apre {} nel browser predefinito."
 
+msgid "Orange"
+msgstr "Arancione"
+
 msgid "Original"
 msgstr ""
 
@@ -1723,6 +1886,15 @@ msgstr "Incolla il link di un pacchetto per vedere gli adesivi prima di aggiunge
 msgid "Path copied"
 msgstr "immagine copiata"
 
+msgid "People"
+msgstr "Contatti"
+
+msgid "Pets"
+msgstr "Animali"
+
+msgid "Photos"
+msgstr "Foto"
+
 msgid "Pick a chat to send it to. They choose whether to use it."
 msgstr ""
 
@@ -1746,6 +1918,12 @@ msgstr ""
 
 msgid "Pick the whole app's look."
 msgstr "Scegli l'aspetto di tutta l'app."
+
+msgid "Pink"
+msgstr "Rosa"
+
+msgid "Pinned"
+msgstr "Fissati"
 
 msgid "Pixel metrics"
 msgstr ""
@@ -1780,8 +1958,14 @@ msgstr "Anteprima pacchetto"
 msgid "Previous / next in the media viewer"
 msgstr ""
 
+msgid "Private"
+msgstr "Privato"
+
 msgid "Profile"
 msgstr "Profilo"
+
+msgid "Projects"
+msgstr "Progetti"
 
 msgid "Promote"
 msgstr ""
@@ -1865,6 +2049,9 @@ msgstr "Riconnetti ora"
 msgid "Record group audit log files on this device. Identifiers are hashed."
 msgstr "Invia i file di log di audit del gruppo all'endpoint Goggles. Si applica subito."
 
+msgid "Red"
+msgstr "Rosso"
+
 msgid "Reduce motion"
 msgstr ""
 
@@ -1917,9 +2104,8 @@ msgstr "Rimuovere questo relay?"
 msgid "Remove this relay?"
 msgstr "Rimuovere questo relay?"
 
-#, fuzzy
 msgid "Rename"
-msgstr "Rinominato."
+msgstr "Rinomina"
 
 msgid "Reopen"
 msgstr "Riapri"
@@ -1974,6 +2160,9 @@ msgstr ""
 #, fuzzy
 msgid "RevealNsecBtn"
 msgstr "Mostra chiave"
+
+msgid "Rocket"
+msgstr "Razzo"
 
 msgid "Rounded"
 msgstr "Arrotondato"
@@ -2045,6 +2234,9 @@ msgstr "Salvate"
 msgid "Scan to add"
 msgstr "Scansiona per aggiungere"
 
+msgid "Science"
+msgstr "Scienza"
+
 msgid "Scroll speed"
 msgstr ""
 
@@ -2060,6 +2252,9 @@ msgstr "Cerca chat…"
 
 msgid "Search everywhere"
 msgstr ""
+
+msgid "Search folders..."
+msgstr "Cerca cartelle..."
 
 #, fuzzy
 msgid "Search images"
@@ -2077,6 +2272,9 @@ msgstr "Ricerca…"
 #, fuzzy
 msgid "Secret key copied"
 msgstr "nsec copiato"
+
+msgid "Security"
+msgstr "Sicurezza"
 
 msgid "See and hear it with today's sound and preview settings."
 msgstr "Guardala e ascoltala con le impostazioni attuali di suono e anteprima."
@@ -2198,6 +2396,9 @@ msgstr "Condiviso da tutte le dieci voci e le 31 lingue. Si scarica una sola vol
 msgid "Shared media"
 msgstr "Media condivisi"
 
+msgid "Shopping"
+msgstr "Shopping"
+
 msgid "Short tones when a message leaves, arrives, or fails to send."
 msgstr ""
 
@@ -2258,6 +2459,9 @@ msgstr "Piccola"
 
 msgid "Sold"
 msgstr "Venduto"
+
+msgid "Sort chats by recent activity"
+msgstr "Ordina le chat per attività recente"
 
 msgid "Speech"
 msgstr "Voce"
@@ -2332,6 +2536,12 @@ msgstr "Conservala in un posto sicuro e chiudi questa finestra. Chiunque la impo
 msgid "Stored on this device, not published to any relay yet."
 msgstr "Nessuna chiave salvata su questo dispositivo. Reimposta e reinserisci il tuo nsec."
 
+msgid "Study"
+msgstr "Studio"
+
+msgid "Support"
+msgstr "Assistenza"
+
 msgid "System"
 msgstr "Sistema"
 
@@ -2362,6 +2572,12 @@ msgstr ""
 #, fuzzy
 msgid "Tap one to remove it."
 msgstr "Mostrate sulla barra e nel menu del messaggio. Toccane una per rimuoverla."
+
+msgid "Tasks"
+msgstr "Attività"
+
+msgid "Teal"
+msgstr "Verde acqua"
 
 #, c-format
 msgid "Terrain: %d/5"
@@ -2469,6 +2685,9 @@ msgstr "Titolo"
 msgid "Toggle developer mode"
 msgstr "Modalità sviluppatore"
 
+msgid "Tools"
+msgstr "Strumenti"
+
 msgid "Top glint"
 msgstr ""
 
@@ -2480,6 +2699,12 @@ msgstr "Trascrizione in corso..."
 
 msgid "Transition ms"
 msgstr ""
+
+msgid "Travel"
+msgstr "Viaggi"
+
+msgid "Trophy"
+msgstr "Trofeo"
 
 msgid "TrustForgetAll"
 msgstr ""
@@ -2496,6 +2721,9 @@ msgstr "Conversazione non disponibile"
 msgid "Unblock"
 msgstr "Sblocca"
 
+msgid "Unfiled"
+msgstr "Senza cartella"
+
 msgid "Unlock"
 msgstr "Sblocca"
 
@@ -2507,6 +2735,9 @@ msgstr "Gruppo senza nome"
 
 msgid "Unpin"
 msgstr "Rimuovi dai fissati"
+
+msgid "Unread"
+msgstr "Non letti"
 
 msgid "Unresolved"
 msgstr "Aperta"
@@ -2566,6 +2797,9 @@ msgstr "Mostra trascrizione"
 msgid "Vignette"
 msgstr ""
 
+msgid "Violet"
+msgstr "Viola"
+
 msgid "Visual fingerprint"
 msgstr "Impronta visiva"
 
@@ -2617,6 +2851,12 @@ msgstr "dove pubblichi"
 msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
 msgstr "White Noise non vede mai la tua chiave privata. Resta solo su questo dispositivo e su qualsiasi firmatario collegato."
 
+msgid "Work"
+msgstr "Lavoro"
+
+msgid "World"
+msgstr "Mondo"
+
 msgid "Write a comment"
 msgstr "Scrivi un commento"
 
@@ -2631,6 +2871,9 @@ msgstr "I TUOI PACCHETTI"
 
 msgid "YOUR STICKERS"
 msgstr "I TUOI ADESIVI"
+
+msgid "Yellow"
+msgstr "Giallo"
 
 msgid "You"
 msgstr "Tu"

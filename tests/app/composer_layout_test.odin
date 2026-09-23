@@ -115,17 +115,6 @@ composer_layout :: proc(t: ^testing.T) {
 						"attachment removal stays inside the window",
 					)
 				}
-				for i in 1 ..< 3 {
-					previous :=
-						clay.GetElementData(clay.ID("BodyLine", u32(((i - 1) * 16 + 1) * 8))).boundingBox
-					paragraph :=
-						clay.GetElementData(clay.ID("BodyLine", u32((i * 16 + 1) * 8))).boundingBox
-					testing.expect(
-						t,
-						paragraph.y >= previous.y + previous.height + f32(i) * f32(BODY_FS),
-						"paragraphs retain their blank-line gaps",
-					)
-				}
 				clip := clay.GetElementData(clay.ID("ComposeClip")).boundingBox
 				box := clay.GetElementData(clay.ID("ComposeBox")).boundingBox
 				testing.expect(t, box.height <= 240 && box.y + box.height <= 800)

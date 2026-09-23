@@ -237,6 +237,9 @@ msgstr ""
 msgid "Always open links to this site"
 msgstr ""
 
+msgid "Amber"
+msgstr ""
+
 msgid "An empty box derives its value. The window previews as you type."
 msgstr ""
 
@@ -337,6 +340,9 @@ msgstr ""
 msgid "Block this contact?"
 msgstr ""
 
+msgid "Blue"
+msgstr ""
+
 msgid "Border 2"
 msgstr ""
 
@@ -347,6 +353,9 @@ msgid "Bracket labels"
 msgstr ""
 
 msgid "Bubble radius"
+msgstr ""
+
+msgid "COLOR"
 msgstr ""
 
 msgid "CONFIRM NEW PASSWORD"
@@ -365,6 +374,12 @@ msgid "CacheClear"
 msgstr ""
 
 msgid "Cached attachments"
+msgstr ""
+
+msgid "Calendar"
+msgstr ""
+
+msgid "Camera"
 msgstr ""
 
 msgid "Cancel"
@@ -403,6 +418,12 @@ msgstr ""
 msgid "Change..."
 msgstr ""
 
+msgid "Chat options"
+msgstr ""
+
+msgid "Chats"
+msgstr ""
+
 msgid "Check now"
 msgstr ""
 
@@ -422,6 +443,9 @@ msgid "Chip outline"
 msgstr ""
 
 msgid "Chip text"
+msgstr ""
+
+msgid "Choose a destination for this chat."
 msgstr ""
 
 msgid "Circle"
@@ -448,7 +472,16 @@ msgstr ""
 msgid "Closing the window hides it. The tray icon shows your unread total and brings it back."
 msgstr ""
 
+msgid "Cloud"
+msgstr ""
+
+msgid "Code"
+msgstr ""
+
 msgid "Code plate"
+msgstr ""
+
+msgid "Coffee"
 msgstr ""
 
 msgid "Collapse the chat list"
@@ -494,6 +527,9 @@ msgid "Continue"
 msgstr ""
 
 msgid "Control background"
+msgstr ""
+
+msgid "Conversations"
 msgstr ""
 
 msgid "Copy"
@@ -737,6 +773,12 @@ msgstr ""
 msgid "Create backup..."
 msgstr ""
 
+msgid "Create folder"
+msgstr ""
+
+msgid "Create folders to organize your chats."
+msgstr ""
+
 msgid "Create issue"
 msgstr ""
 
@@ -747,6 +789,12 @@ msgid "Crop circle shape"
 msgstr ""
 
 msgid "Current"
+msgstr ""
+
+msgid "Custom color"
+msgstr ""
+
+msgid "Cyan"
 msgstr ""
 
 msgid "DANGER ZONE"
@@ -788,6 +836,9 @@ msgstr ""
 msgid "Decode own"
 msgstr ""
 
+msgid "Default"
+msgstr ""
+
 msgid "Default avatar shape"
 msgstr ""
 
@@ -815,6 +866,9 @@ msgstr ""
 msgid "Deleted. Recording continues in a fresh file."
 msgstr ""
 
+msgid "Deleting a folder doesn't delete your chats."
+msgstr ""
+
 msgid "Deleting the file being recorded rotates it. Recording continues in a fresh file."
 msgstr ""
 
@@ -825,6 +879,9 @@ msgid "Describe the issue (Markdown)"
 msgstr ""
 
 msgid "Description"
+msgstr ""
+
+msgid "Design"
 msgstr ""
 
 msgid "Desktop notifications"
@@ -880,6 +937,9 @@ msgstr ""
 msgid "Downloading: %d%%"
 msgstr ""
 
+msgid "Downloads"
+msgstr ""
+
 msgid "Drops idle relay sockets and dials them again."
 msgstr ""
 
@@ -905,6 +965,9 @@ msgstr ""
 msgid "Edit %d"
 msgstr ""
 
+msgid "Edit folder"
+msgstr ""
+
 msgid "Edit history"
 msgstr ""
 
@@ -920,6 +983,9 @@ msgstr ""
 msgid "Elevated border"
 msgstr ""
 
+msgid "Email"
+msgstr ""
+
 msgid "Emoji"
 msgstr ""
 
@@ -933,6 +999,9 @@ msgid "Encrypted key copied"
 msgstr ""
 
 msgid "End-to-end encrypted"
+msgstr ""
+
+msgid "Enter a color as #RRGGBB."
 msgstr ""
 
 msgid "Enter a sticker name of 1 to 64 characters."
@@ -974,7 +1043,13 @@ msgstr ""
 msgid "FOLDERS"
 msgstr ""
 
+msgid "Family"
+msgstr ""
+
 msgid "Fast motion"
+msgstr ""
+
+msgid "Favorites"
 msgstr ""
 
 msgid "Female voice. Supports all reading languages."
@@ -1005,10 +1080,28 @@ msgstr ""
 msgid "Fit"
 msgstr ""
 
+msgid "Fitness"
+msgstr ""
+
+msgid "Flag"
+msgstr ""
+
 msgid "Focus glow"
 msgstr ""
 
 msgid "Focus glow radius"
+msgstr ""
+
+msgid "Folder"
+msgstr ""
+
+msgid "Folder name"
+msgstr ""
+
+msgid "Folder names must be unique. Choose a different name."
+msgstr ""
+
+msgid "Folder options"
 msgstr ""
 
 msgid "Folders"
@@ -1018,6 +1111,9 @@ msgid "Font"
 msgstr ""
 
 msgid "Fonts"
+msgstr ""
+
+msgid "Food"
 msgstr ""
 
 msgid "Forward"
@@ -1044,6 +1140,9 @@ msgstr ""
 msgid "GROUPS IN COMMON"
 msgstr ""
 
+msgid "Games"
+msgstr ""
+
 msgid "General"
 msgstr ""
 
@@ -1054,6 +1153,9 @@ msgid "Get an alert when a message arrives in a chat you're not viewing."
 msgstr ""
 
 msgid "Get started"
+msgstr ""
+
+msgid "Gift"
 msgstr ""
 
 msgid "Go to archive"
@@ -1071,7 +1173,19 @@ msgstr ""
 msgid "Go to your profile"
 msgstr ""
 
+msgid "Gray"
+msgstr ""
+
+msgid "Green"
+msgstr ""
+
+msgid "Group chats by folder"
+msgstr ""
+
 msgid "Group id copied"
+msgstr ""
+
+msgid "Grouped"
 msgstr ""
 
 msgid "HELP"
@@ -1092,6 +1206,9 @@ msgstr ""
 msgid "Hide hidden message"
 msgstr ""
 
+msgid "Home"
+msgstr ""
+
 msgid "Hover"
 msgstr ""
 
@@ -1099,6 +1216,9 @@ msgid "Hover ms"
 msgstr ""
 
 msgid "How far the mouse wheel moves the view."
+msgstr ""
+
+msgid "ICON"
 msgstr ""
 
 msgid "IDENTITY"
@@ -1117,6 +1237,9 @@ msgid "ISSUE"
 msgstr ""
 
 msgid "ISSUE TRACKING"
+msgstr ""
+
+msgid "Ideas"
 msgstr ""
 
 msgid "Image didn't load. Click to retry."
@@ -1237,6 +1360,9 @@ msgstr ""
 msgid "Keyboard shortcuts"
 msgstr ""
 
+msgid "Keys"
+msgstr ""
+
 msgid "Keys & identity"
 msgstr ""
 
@@ -1274,6 +1400,12 @@ msgid "Leave group"
 msgstr ""
 
 msgid "Leave this group?"
+msgstr ""
+
+msgid "Lime"
+msgstr ""
+
+msgid "Links"
 msgstr ""
 
 msgid "Links to these exact sites open without confirmation."
@@ -1327,6 +1459,9 @@ msgstr ""
 msgid "Markdown"
 msgstr ""
 
+msgid "Marmot"
+msgstr ""
+
 msgid "Media backdrop"
 msgstr ""
 
@@ -1357,7 +1492,19 @@ msgstr ""
 msgid "Micro"
 msgstr ""
 
+msgid "Money"
+msgstr ""
+
+msgid "Monitor"
+msgstr ""
+
+msgid "Move down"
+msgstr ""
+
 msgid "Move to folder"
+msgstr ""
+
+msgid "Move up"
 msgstr ""
 
 msgid "Multi-device isn't available yet"
@@ -1367,6 +1514,9 @@ msgid "Multilingual. Detects your language automatically."
 msgstr ""
 
 msgid "Multiple choice"
+msgstr ""
+
+msgid "Music"
 msgstr ""
 
 msgid "NEW PASSWORD"
@@ -1387,6 +1537,9 @@ msgstr ""
 msgid "Name"
 msgstr ""
 
+msgid "Nature"
+msgstr ""
+
 msgid "Network & relays"
 msgstr ""
 
@@ -1396,10 +1549,16 @@ msgstr ""
 msgid "New chat"
 msgstr ""
 
+msgid "New folder"
+msgstr ""
+
 msgid "New issue"
 msgstr ""
 
 msgid "New message"
+msgstr ""
+
+msgid "News"
 msgstr ""
 
 msgid "Next / previous chat"
@@ -1442,6 +1601,9 @@ msgid "No contacts yet"
 msgstr ""
 
 msgid "No files match these filters."
+msgstr ""
+
+msgid "No folders match your search."
 msgstr ""
 
 msgid "No folders yet."
@@ -1546,6 +1708,9 @@ msgstr ""
 msgid "Opening in your browser"
 msgstr ""
 
+msgid "Orange"
+msgstr ""
+
 msgid "Original"
 msgstr ""
 
@@ -1606,6 +1771,15 @@ msgstr ""
 msgid "Path copied"
 msgstr ""
 
+msgid "People"
+msgstr ""
+
+msgid "Pets"
+msgstr ""
+
+msgid "Photos"
+msgstr ""
+
 msgid "Pick a chat to send it to. They choose whether to use it."
 msgstr ""
 
@@ -1628,6 +1802,12 @@ msgid "Pick a password. It encrypts everything in the app, and there is no way t
 msgstr ""
 
 msgid "Pick the whole app's look."
+msgstr ""
+
+msgid "Pink"
+msgstr ""
+
+msgid "Pinned"
 msgstr ""
 
 msgid "Pixel metrics"
@@ -1663,7 +1843,13 @@ msgstr ""
 msgid "Previous / next in the media viewer"
 msgstr ""
 
+msgid "Private"
+msgstr ""
+
 msgid "Profile"
+msgstr ""
+
+msgid "Projects"
 msgstr ""
 
 msgid "Promote"
@@ -1742,6 +1928,9 @@ msgid "Reconnect now"
 msgstr ""
 
 msgid "Record group audit log files on this device. Identifiers are hashed."
+msgstr ""
+
+msgid "Red"
 msgstr ""
 
 msgid "Reduce motion"
@@ -1843,6 +2032,9 @@ msgstr ""
 msgid "RevealNsecBtn"
 msgstr ""
 
+msgid "Rocket"
+msgstr ""
+
 msgid "Rounded"
 msgstr ""
 
@@ -1912,6 +2104,9 @@ msgstr ""
 msgid "Scan to add"
 msgstr ""
 
+msgid "Science"
+msgstr ""
+
 msgid "Scroll speed"
 msgstr ""
 
@@ -1927,6 +2122,9 @@ msgstr ""
 msgid "Search everywhere"
 msgstr ""
 
+msgid "Search folders..."
+msgstr ""
+
 msgid "Search images"
 msgstr ""
 
@@ -1940,6 +2138,9 @@ msgid "Searching…"
 msgstr ""
 
 msgid "Secret key copied"
+msgstr ""
+
+msgid "Security"
 msgstr ""
 
 msgid "See and hear it with today's sound and preview settings."
@@ -2047,6 +2248,9 @@ msgstr ""
 msgid "Shared media"
 msgstr ""
 
+msgid "Shopping"
+msgstr ""
+
 msgid "Short tones when a message leaves, arrives, or fails to send."
 msgstr ""
 
@@ -2103,6 +2307,9 @@ msgid "Small"
 msgstr ""
 
 msgid "Sold"
+msgstr ""
+
+msgid "Sort chats by recent activity"
 msgstr ""
 
 msgid "Speech"
@@ -2176,6 +2383,12 @@ msgstr ""
 msgid "Stored on this device, not published to any relay yet."
 msgstr ""
 
+msgid "Study"
+msgstr ""
+
+msgid "Support"
+msgstr ""
+
 msgid "System"
 msgstr ""
 
@@ -2204,6 +2417,12 @@ msgid "Takes effect on the next launch."
 msgstr ""
 
 msgid "Tap one to remove it."
+msgstr ""
+
+msgid "Tasks"
+msgstr ""
+
+msgid "Teal"
 msgstr ""
 
 #, c-format
@@ -2304,6 +2523,9 @@ msgstr ""
 msgid "Toggle developer mode"
 msgstr ""
 
+msgid "Tools"
+msgstr ""
+
 msgid "Top glint"
 msgstr ""
 
@@ -2314,6 +2536,12 @@ msgid "Transcribing..."
 msgstr ""
 
 msgid "Transition ms"
+msgstr ""
+
+msgid "Travel"
+msgstr ""
+
+msgid "Trophy"
 msgstr ""
 
 msgid "TrustForgetAll"
@@ -2331,6 +2559,9 @@ msgstr ""
 msgid "Unblock"
 msgstr ""
 
+msgid "Unfiled"
+msgstr ""
+
 msgid "Unlock"
 msgstr ""
 
@@ -2341,6 +2572,9 @@ msgid "Unnamed group"
 msgstr ""
 
 msgid "Unpin"
+msgstr ""
+
+msgid "Unread"
 msgstr ""
 
 msgid "Unresolved"
@@ -2400,6 +2634,9 @@ msgstr ""
 msgid "Vignette"
 msgstr ""
 
+msgid "Violet"
+msgstr ""
+
 msgid "Visual fingerprint"
 msgstr ""
 
@@ -2445,6 +2682,12 @@ msgstr ""
 msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
 msgstr ""
 
+msgid "Work"
+msgstr ""
+
+msgid "World"
+msgstr ""
+
 msgid "Write a comment"
 msgstr ""
 
@@ -2458,6 +2701,9 @@ msgid "YOUR PACKS"
 msgstr ""
 
 msgid "YOUR STICKERS"
+msgstr ""
+
+msgid "Yellow"
 msgstr ""
 
 msgid "You"

@@ -5,7 +5,7 @@ import "core:testing"
 @(test)
 test_rail_fits :: proc(t: ^testing.T) {
 	for rail_w in ([]int{0, RAIL_W_MIN, RAIL_W_DEFAULT, RAIL_W_MAX, 900}) {
-		threshold := f32(clamp(rail_w, RAIL_W_MIN, RAIL_W_MAX)) + 40 + PAGE_W_MIN
+		threshold := f32(clamp(rail_w, RAIL_W_MIN, RAIL_W_MAX)) + GUTTER_W + PAGE_W_MIN
 		testing.expect(t, !rail_fits(threshold - 1, rail_w))
 		testing.expect(t, rail_fits(threshold, rail_w))
 		testing.expect(t, rail_fits(threshold + 1, rail_w))

@@ -56,6 +56,10 @@ handle_login :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // the subscriptions phase.
 // The input buffer that currently receives typed characters.
 active_buf :: proc(ui: ^Ui_State) -> ^[dynamic]u8 {
+	if ui.folder_open {
+		if ui.folder_mode != .Move && ui.focus == .FolderColor {return &ui.folder_color_input}
+		return ui.folder_mode == .Move ? &ui.folder_search : &ui.folder_input
+	}
 	if ui.issues_open && ui.focus == .Issue_Search {return &ui.issue_search}
 	if ui.theme_edit && len(ui.theme_fields) > 0 {
 		return &ui.theme_fields[clamp(ui.theme_edit_idx, 0, len(ui.theme_fields) - 1)]
@@ -191,8 +195,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		handle_row_menu(ui, client)
 		return
 	}
-	if ui.folder_open {
-		handle_folder_modal(ui, client)
+	if handle_folder_navigation(ui) {
 		return
 	}
 	if ui.page == .Chats && (rl.IsMouseButtonPressed(.RIGHT) || long_pressed) {
@@ -307,28 +310,6 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 
-	if mouse_released() {
-		for name, i in ui.prefs.folders {
-			if clicked_indexed("FolderFilter", u32(i)) {
-				delete(ui.folder_filter)
-				ui.folder_filter = strings.clone(name)
-				if data := clay.GetScrollContainerData(clay.ID("ChatList")); data.found {
-					data.scrollPosition.y = 0
-				}
-				scroll_residual = {}
-				return
-			}
-		}
-	}
-	if clicked("FolderAllChip") {
-		delete(ui.folder_filter)
-		ui.folder_filter = ""
-		if data := clay.GetScrollContainerData(clay.ID("ChatList")); data.found {
-			data.scrollPosition.y = 0
-		}
-		scroll_residual = {}
-		return
-	}
 	if clicked("AllPill") {
 		ui.unread_only = false
 		return
