@@ -69,10 +69,10 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 	}
 
-	// Archive-page sidebar search: same box as the rail filter, handled
+	// Contact/archive sidebar search: same box as the rail filter, handled
 	// here because handle_chat only runs on the Chats page. Runs before
 	// the mouse gate so typing lands every frame.
-	if ui.page == .Archived {
+	if (ui.page == .Contacts || ui.page == .Archived) && !ui.new_chat_open {
 		if field_mouse(ui, &ui.sidebar_filter, "FilterBox") {
 			ui.focus = .Filter
 		}

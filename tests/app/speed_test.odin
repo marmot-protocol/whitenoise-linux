@@ -8,6 +8,7 @@ import "core:mem"
 import "core:slice"
 import "core:strings"
 import "core:testing"
+import "core:text/edit"
 import "core:thread"
 import "core:time"
 import rl "sdlrl"
@@ -44,6 +45,8 @@ contacts_layout :: proc(t: ^testing.T) {
 		)
 	}
 	for _ in 0 ..< 5 {build_layout(&ui, 0)}
+	testing.expect(t, !clay.GetElementData(clay.ID("GSearchBtn")).found)
+	testing.expect(t, !clay.GetElementData(clay.ID("NewChatBtn")).found)
 	samples: [31]f64
 	for &ms in samples {
 		start := time.tick_now()
@@ -83,7 +86,21 @@ contacts_layout :: proc(t: ^testing.T) {
 	}
 	testing.expect(t, clay.GetElementData(clay.ID("ContactRow", 999)).found)
 	clear(&ui.sidebar_filter)
-	append(&ui.sidebar_filter, "0999")
+	// The real page handler must focus and edit the displayed search field.
+	edit.init(&ui.ed, context.allocator, context.allocator)
+	defer edit.destroy(&ui.ed)
+	client: marmot.Client // this local filtering path never calls Marmot
+	box := clay.GetElementData(clay.ID("FilterBox")).boundingBox
+	clay.SetPointerState({box.x + 8, box.y + 8}, true)
+	forced_press = true
+	handle_pages(&ui, &client)
+	forced_press = false
+	text_drag = nil
+	clay.SetPointerState({box.x + 8, box.y + 8}, false)
+	testing.expect_value(t, ui.focus, Focus.Filter)
+	for c in "0999" {rl.PushChar(c)}
+	handle_pages(&ui, &client)
+	testing.expect_value(t, string(ui.sidebar_filter[:]), "0999")
 	for _ in 0 ..< 3 {build_layout(&ui, 0)}
 	testing.expect(
 		t,
@@ -96,6 +113,11 @@ contacts_layout :: proc(t: ^testing.T) {
 	append(&ui.sidebar_filter, "no match")
 	build_layout(&ui, 0)
 	for _, i in ui.contacts {testing.expect(t, !clay.GetElementData(clay.ID("ContactRow", u32(i))).found)}
+	rl.PushKey(.ESCAPE, true)
+	handle_pages(&ui, &client)
+	rl.PushKey(.ESCAPE, false)
+	testing.expect_value(t, len(ui.sidebar_filter), 0)
+	testing.expect_value(t, ui.focus, Focus.Compose)
 	for contact in ui.contacts {delete(contact.id_hex); delete(contact.name)}
 	delete(ui.contacts); delete(ui.accounts); delete(ui.sidebar_filter)
 }

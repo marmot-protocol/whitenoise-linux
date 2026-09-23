@@ -433,57 +433,58 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 												}
 											}
 										}
-										// Global-search chip, also on Ctrl+K.
-										if clay.UI(clay.ID("GSearchBtn"))(
-										{
-											layout = {
-												padding = {
-													left = 8,
-													right = 8,
-													top = 5,
-													bottom = 5,
+										if ui.page != .Contacts {
+											// Global-search chip, also on Ctrl+K.
+											if clay.UI(clay.ID("GSearchBtn"))(
+											{
+												layout = {
+													padding = {
+														left = 8,
+														right = 8,
+														top = 5,
+														bottom = 5,
+													},
+													childAlignment = {x = .Center, y = .Center},
 												},
-												childAlignment = {x = .Center, y = .Center},
+												backgroundColor = hovered() ? HOVER : {},
+												cornerRadius = rr(7),
 											},
-											backgroundColor = hovered() ? HOVER : {},
-											cornerRadius = rr(7),
-										},
-										) {
-											clay.Text(
-												ICON_SEARCH,
-												{
-													fontId = FONT_ICON,
-													fontSize = 12,
-													textColor = TEXT_DIM,
+											) {
+												clay.Text(
+													ICON_SEARCH,
+													{
+														fontId = FONT_ICON,
+														fontSize = 12,
+														textColor = TEXT_DIM,
+													},
+												)
+											}
+											if clay.UI(clay.ID("NewChatBtn"))(
+											{
+												layout = {
+													padding = {
+														left = 8,
+														right = 8,
+														top = 3,
+														bottom = 3,
+													},
+													childAlignment = {x = .Center, y = .Center},
 												},
-											)
-										}
-										if clay.UI(clay.ID("NewChatBtn"))(
-										{
-											layout = {
-												padding = {
-													left = 8,
-													right = 8,
-													top = 3,
-													bottom = 3,
-												},
-												childAlignment = {x = .Center, y = .Center},
+												backgroundColor = hovered() ? HOVER : {},
+												cornerRadius = rr(7),
 											},
-											backgroundColor = hovered() ? HOVER : {},
-											cornerRadius = rr(7),
-										},
-										) {
-											clay.Text(
-												"+",
-												{
-													fontId = FONT_TITLE,
-													fontSize = 18,
-													textColor = ACCENT,
-												},
-											)
+											) {
+												clay.Text(
+													"+",
+													{
+														fontId = FONT_TITLE,
+														fontSize = 18,
+														textColor = ACCENT,
+													},
+												)
+											}
 										}
 									}
-
 									// Chat filter.
 									if clay.UI(clay.ID("FilterBox"))(
 									{
