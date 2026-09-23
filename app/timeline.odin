@@ -1750,7 +1750,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 			}
 
 			// Thread reply count, click opens the panel on this root.
-			if msg.thread_replies > 0 {
+			if msg.thread_replies > 0 && msg.id != thread_cur(g_ui) {
 				if clay.UI(clay.ID("MsgThreadChip", index))(
 				{
 					layout = {

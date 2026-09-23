@@ -3,8 +3,54 @@ package main
 // Clay and the UI caches are global. Run this check alone:
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=chat_title_overflow
 import clay "../vendor/clay/bindings/odin/clay-odin"
+import "base:runtime"
 import "core:testing"
 import rl "sdlrl"
+
+// SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=thread_reply_count_layout
+@(test)
+thread_reply_count_layout :: proc(t: ^testing.T) {
+	if #config(ODIN_TEST_NAMES, "") != "thread_reply_count_layout" {return}
+	context.allocator = runtime.default_context().allocator
+	rl.InitWindow(600, 400, "Thread reply counts")
+	defer rl.CloseWindow()
+	UI_ZOOM, UI_SCALE = 1, 1
+	init_fonts()
+	memory: []u8
+	init_layout(&memory, 32768, {600, 400})
+	defer delete(memory)
+	ui: Ui_State
+	ui.prefs.reduce_motion = true
+	g_ui, g_prefs = &ui, &ui.prefs
+	append(&ui.messages, Msg_Ui{id = "parent", sender = "Parent", thread_replies = 1})
+	append(
+		&ui.messages,
+		Msg_Ui{id = "child", sender = "Child", thread_of = "parent", thread_replies = 2},
+	)
+	defer {g_ui, g_prefs = nil, nil; delete(ui.messages); delete(ui.thread_stack)}
+	for root in ([]string{"", "parent", "child", "parent", ""}) {
+		clear(&ui.thread_stack)
+		if root != "" {append(&ui.thread_stack, root)}
+		clay.BeginLayout()
+		if clay.UI(clay.ID("ThreadCountTest"))(
+		{layout = {layoutDirection = .TopToBottom, sizing = {width = clay.SizingFixed(600)}}},
+		) {
+			if root != "" {thread_root_plate(&ui)}
+			for msg, i in ui.messages {
+				if msg.id != root {message_row(u32(i), msg)}
+			}
+		}
+		clay.EndLayout(0)
+		for msg, i in ui.messages {
+			testing.expect_value(
+				t,
+				clay.GetElementData(clay.ID("MsgThreadChip", u32(i))).found,
+				msg.id != root,
+			)
+			testing.expect_value(t, msg.thread_replies, i + 1)
+		}
+	}
+}
 
 @(test)
 chat_title_overflow :: proc(t: ^testing.T) {
