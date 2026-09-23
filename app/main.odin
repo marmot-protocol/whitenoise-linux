@@ -1328,6 +1328,7 @@ app_main :: proc() {
 		drain_sends(&ui, client)
 		tts_tick(&ui)
 		drain_ops(&ui, client)
+		drain_nc_intents(&ui, client) // Namecoin .bit resolutions land here
 		web_tick() // webxdc modal: run WebKit, take its pixels
 		xdc_drain(&ui, client) // webxdc sendUpdate() becomes a group message
 		drain_auth(&ui, client) // a finished sign-in lands on the UI thread

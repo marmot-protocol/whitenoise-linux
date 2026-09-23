@@ -836,6 +836,11 @@ switch_account :: proc(ui: ^Ui_State, client: ^marmot.Client, account_id: string
 	}
 	marmot.account_summary_free(summary)
 
+	// Drop any pending Namecoin resolves that were queued under the
+	// previous account: their follow-up actions (invite, new chat) must
+	// not fire on the new one.
+	nc_pending_cancel_account(ui.account_ref)
+
 	ui.account_ref = strings.clone(account_id)
 	ui.selected = -1
 	ui.show_members = false
