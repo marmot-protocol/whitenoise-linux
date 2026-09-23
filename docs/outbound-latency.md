@@ -90,3 +90,80 @@ scroll request without a usable client. It fails against the previous send
 code. `just test` covers the existing acknowledgement handoff as well.
 No deployed latency improvement is claimed until fresh production samples
 exercise this change.
+
+## Large push groups
+
+The protocol permits 32 encrypted tokens in a notification rumor, but the
+twice-encrypted NIP-59 envelope has tighter limits. The old 32-token chunks
+failed encryption with `message too long`. Direct serialization measured:
+
+| Tokens per gift wrap | Serialized event |
+| --- | ---: |
+| 19 | 55,121 bytes |
+| 20–22 | 66,045 bytes |
+| 23–28 | 76,965 bytes |
+| 29–32 | NIP-44 encryption fails |
+
+The EU White Noise relay rejected a 76,965-byte event as `event too large`.
+Publishing now uses 19-token chunks, below
+[strfry's default 65,536-byte event limit](https://github.com/hoytech/strfry/blob/master/strfry.conf).
+The protocol's 32-token validation bound remains unchanged. The regression
+test decrypts every chunk, checks the complete token sequence, and caps the
+serialized event size.
+
+Notification publishing keeps at most four chunk operations in flight per
+push server. It resolves the account publisher once and uses the existing
+single-event publication path, preserving connection reuse and authenticated
+fallback. It drains every chunk before returning an error. MLS mutation,
+durability, and send-completion semantics are unchanged.
+
+The SDK's batch publisher was rejected: it waits for all endpoints to
+connect before publishing, allowing a stalled relay hint to hold up a
+healthy relay. The local regression scenario includes both a healthy relay
+and a TCP listener that never completes its WebSocket handshake.
+
+The ignored `push_batch_scaling` diagnostic invokes notification publication
+with synthetic stored tokens, then independently fetches and decrypts every
+gift wrap. It measures the notification stage, not complete message sending,
+queue wait, or the MLS cost of a group containing that many real members.
+It uses one warmup and eight measured calls per token count and publisher
+mode. The default is loopback; `PUSH_RELAY` opts into a remote relay:
+
+```sh
+cd vendor/mdk
+PUSH_RELAY=wss://relay.eu.whitenoise.chat CC=clang \
+  cargo test --release --locked \
+  --config profile.release.package.cgka-session.debug-assertions=true \
+  --config profile.release.package.cgka-engine.debug-assertions=true \
+  -p marmot-app --lib push_batch_scaling -- --ignored --nocapture
+```
+
+Those package overrides expose legacy profiles required by existing app
+unit tests; the measured app code remains release-optimized. Both comparison
+builds use identical flags and the corrected 19-token limit. Comparing with
+the old oversized chunks would reward failed delivery.
+
+One candidate run followed by one serial-baseline run against the EU relay
+produced these means (eight measured calls per cell):
+
+| Tokens | Shared before | Shared after | Write-only before | Write-only after |
+| --- | ---: | ---: | ---: | ---: |
+| 32 | 216.9 ms | 150.6 ms | 892.4 ms | 471.1 ms |
+| 33 | 216.5 ms | 143.2 ms | 892.3 ms | 486.7 ms |
+| 128 | 707.0 ms | 280.2 ms | 3,240.5 ms | 718.5 ms |
+| 512 | 2,700.1 ms | 819.6 ms | 12,957.9 ms | 1,355.6 ms |
+
+With shared connections, the notification stage was 2.5 times faster at
+128 tokens and 3.3 times faster at 512. Write-only mode shuts down the
+subscription pool to force account publishing; its larger gain also
+includes avoiding repeated publisher construction and connection setup
+inside one trigger. Every envelope was independently decrypted in both
+builds. This single before/after pair does not establish an end-to-end
+large-group speedup or a production latency distribution.
+
+With the final 19-token chunks, loopback median time at 512 tokens fell
+from 20.42 to 15.07 ms on shared connections and from 21.80 to 15.50 ms
+on the write-only path. Earlier, larger-chunk experiments hit approximately
+40 ms loopback stalls; disabling Nagle on the test relay's accepted sockets
+removed them. Final comparisons used the stock relay without socket
+overrides or injected delays. The larger remote gain is workload-dependent.
