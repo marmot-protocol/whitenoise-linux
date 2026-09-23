@@ -2524,8 +2524,13 @@ md_table :: proc(
 			widths[c] = max(widths[c], width)
 		}
 	}
+	total: f32
 	for &w in widths {
 		w = min(min(w, MD_TABLE_COL_MAX) + MD_TABLE_PAD * 2, width / f32(cols))
+		total += w
+	}
+	for &w in widths {
+		w *= width / total
 	}
 
 	if clay.UI(clay.ID("MsgTable", id))(

@@ -156,6 +156,12 @@ markdown_layout :: proc(t: ^testing.T) {
 				if block.kind ==
 				   .Rule {testing.expect_value(t, clay.GetElementData(clay.ID("MsgRule", id)).boundingBox.width, width)}
 				if block.kind == .Table {
+					table := clay.GetElementData(clay.ID("MsgTable", id)).boundingBox
+					testing.expect(
+						t,
+						abs(table.width - width) < 0.1,
+						"table fills the available width",
+					)
 					for cmd in commands.internalArray[:commands.length] {
 						if cmd.commandType != .Text {continue}
 						data := cmd.renderData.text
