@@ -15,6 +15,89 @@ import "core:text/edit"
 import "core:thread"
 import rl "sdlrl"
 
+
+@(test)
+gif_ios_message :: proc(t: ^testing.T) {
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
+	old_lines, old_deleted, old_moving := sel_lines, del_seen, anim_moving
+	sel_lines, del_seen = {}, {}
+	defer {
+		delete(sel_lines)
+		for key in del_seen {delete(key)}
+		delete(del_seen)
+		sel_lines, del_seen, anim_moving = old_lines, old_deleted, old_moving
+	}
+	url :: "https://media3.giphy.com/media/v1.Y2lkPWFjZTYxYTllYWpldGZ0Ym05em5sbmhvc3ZxMDBjdjh6MG1kMDJxbm01YXQ5OHZ6ZCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/l4FATJpd4LWgeruTK/giphy.gif"
+	msg := Msg_Ui {
+		body = strings.clone(url + " via GIPHY"),
+	}
+	defer message_free(msg)
+	view := Video_View {
+		w       = 320,
+		h       = 240,
+		looping = true,
+	}
+	old_views := video_views
+	video_views = {}
+	video_views[url] = &view
+	defer {delete(video_views); video_views = old_views}
+	previous := clay.GetCurrentContext()
+	memory: []u8
+	init_layout(&memory, 32768, {800, 2000})
+	defer {clay.SetCurrentContext(previous); delete(memory)}
+	clay.BeginLayout()
+	message_row(0, msg)
+	commands := clay.EndLayout(0)
+	drawn := false
+	for command in commands.internalArray[:commands.length] {
+		if command.commandType == .Image && command.renderData.image.imageData == &view.tex {
+			drawn = true
+		}
+	}
+	testing.expect(t, drawn, "iOS GIPHY shares must render the looping GIF")
+	for size in ([][2]i32{{0, 240}, {320, 0}, {-1, 240}, {320, -1}}) {
+		view.w, view.h = size[0], size[1]
+		clay.BeginLayout()
+		message_row(0, msg)
+		commands = clay.EndLayout(0)
+		text := strings.builder_make(context.temp_allocator)
+		for command in commands.internalArray[:commands.length] {
+			if command.commandType == .Image {
+				testing.expect(t, command.renderData.image.imageData != &view.tex)
+			}
+			if command.commandType == .Text {
+				part := command.renderData.text.stringContents
+				strings.write_string(&text, string(part.chars[:part.length]))
+			}
+		}
+		testing.expect(
+			t,
+			strings.contains(strings.to_string(text), url),
+			"invalid dimensions must leave the original link visible",
+		)
+	}
+	view.w, view.h = 320, 240
+	testing.expect_value(t, giphy_message_url("\n" + url + "\nvia GIPHY\n"), url)
+	query :: "https://media.giphy.com/media/test/giphy.gif?size=small"
+	testing.expect_value(t, giphy_message_url(query + " via GIPHY"), query)
+	for body in ([]string{url, "Look at " + url + " via GIPHY", url + " via GIPHY extra", "https://media3.giphy.com.evil.test/media/test/giphy.gif via GIPHY", "https://media3.giphy.com@evil.test/media/test/giphy.gif via GIPHY", "https://mediaevil.giphy.com/media/test/giphy.gif via GIPHY", "https://media3.giphy.com/media/test/video.mp4 via GIPHY", "http://media3.giphy.com/media/test/giphy.gif via GIPHY"}) {
+		testing.expect_value(t, giphy_message_url(body), "")
+	}
+	msg.deleted = true
+	clay.BeginLayout()
+	message_row(0, msg)
+	commands = clay.EndLayout(0)
+	for command in commands.internalArray[:commands.length] {
+		if command.commandType == .Image {
+			testing.expect(
+				t,
+				command.renderData.image.imageData != &view.tex,
+				"deleted shares must not render GIFs",
+			)
+		}
+	}
+}
 @(test)
 gif_data :: proc(t: ^testing.T) {
 	context.allocator = runtime.default_context().allocator

@@ -65,6 +65,7 @@ Media_Job :: struct {
 	image:          rl.Image,
 	size:           i64,
 	queued_at:      time.Tick,
+	external_gif:   bool,
 }
 @(private)
 media_jobs: [dynamic]^Media_Job
@@ -301,8 +302,21 @@ media_worker :: proc(t: ^thread.Thread) {
 		sync.unlock(&job.mutex)
 		frame_wake()
 	}
-	bytes, ok := media_load(job.client, job.account, job.group, &job.reference)
-	if !ok {return}
+	bytes: []u8
+	if job.external_gif {
+		buffer := make([]u8, GIF_BYTES_LIMIT, context.temp_allocator)
+		n := wn_https_get(
+			strings.clone_to_cstring(job.key, context.temp_allocator),
+			raw_data(buffer),
+			uint(len(buffer)),
+		)
+		if n <= 0 || !gif_valid(buffer[:n]) {return}
+		bytes = slice.clone(buffer[:n])
+	} else {
+		ok: bool
+		bytes, ok = media_load(job.client, job.account, job.group, &job.reference)
+		if !ok {return}
+	}
 	decode_start := time.tick_now()
 	defer local_timing_end(.media_decode, decode_start)
 	job.size = i64(len(bytes))
@@ -430,6 +444,10 @@ media_drain :: proc(ui: ^Ui_State) {
 		media_publish(job)
 		view, _ := media_cached(job.kind, job.key)
 		for &msg in ui.messages {
+			if job.external_gif && giphy_message_url(msg.body) == job.key {
+				msg.row_height = 0
+				ui.scroll_pending ||= at_bottom
+			}
 			if job.kind == .Image && msg.reply_image == job.key {
 				msg.row_height = 0
 				ui.scroll_pending ||= at_bottom

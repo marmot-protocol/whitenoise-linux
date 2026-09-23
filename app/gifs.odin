@@ -10,6 +10,7 @@ import "core:os"
 import "core:slice"
 import "core:strings"
 import "core:thread"
+import "core:time"
 import rl "sdlrl"
 
 @(private)
@@ -117,6 +118,71 @@ gif_valid :: proc(bytes: []u8) -> bool {
 	if string(bytes[:6]) != "GIF87a" && string(bytes[:6]) != "GIF89a" {return false}
 	w, h := int(bytes[6]) | int(bytes[7]) << 8, int(bytes[8]) | int(bytes[9]) << 8
 	return w > 0 && h > 0 && w <= 4096 && h <= 4096 && w * h <= 4096 * 4096
+}
+
+// iOS shares a direct GIF URL followed by attribution, not an imeta attachment.
+@(private)
+giphy_message_url :: proc(body: string) -> string {
+	text := strings.trim_space(body)
+	end, url, ok := url_at(text, 0)
+	if !ok ||
+	   !strings.has_prefix(url, "https://") ||
+	   end == len(text) ||
+	   text[end] > ' ' ||
+	   strings.trim_space(text[end:]) != "via GIPHY" {return ""}
+	host := url_host(url)
+	if host != "media.giphy.com" {
+		if !strings.has_prefix(host, "media") ||
+		   !strings.has_suffix(host, ".giphy.com") {return ""}
+		number := host[len("media"):len(host) - len(".giphy.com")]
+		if len(number) == 0 {return ""}
+		for digit in number {
+			if digit < '0' || digit > '9' {return ""}
+		}
+	}
+	path := url[len("https://") + len(host):]
+	if cut := strings.index_any(path, "?#"); cut >= 0 {path = path[:cut]}
+	if !strings.has_prefix(path, "/media/") || !strings.has_suffix(path, ".gif") {return ""}
+	return url
+}
+
+@(private)
+giphy_message :: proc(index: u32, body: string) -> bool {
+	url := giphy_message_url(body)
+	if url == "" {return false}
+	cached, seen := media_cached(.Loop, url)
+	if !seen && !media_inflight[Media_Key{url, .Loop}] {
+		job := new(Media_Job)
+		job^ = {
+			key          = strings.clone(url),
+			kind         = .Loop,
+			external_gif = true,
+			queued_at    = time.tick_now(),
+		}
+		media_inflight[Media_Key{job.key, .Loop}] = true
+		append(&media_jobs, job)
+	}
+	view := (^Video_View)(cached)
+	if view == nil || view.failed || view.w <= 0 || view.h <= 0 {return false}
+	ratio := f32(view.w) / f32(view.h)
+	if clay.UI(clay.ID("MsgGiphy", index))(
+	{
+		layout = {sizing = {width = clay.SizingFixed(min(att_w(), 320 * ratio))}},
+		aspectRatio = {ratio},
+		image = {imageData = &view.tex},
+		cornerRadius = rr(8),
+	},
+	) {
+		if hovered() {video_hover = view}
+	}
+	if clay.UI(clay.ID("MsgGiphySource", index))({}) {
+		clay.Text(
+			strings.trim_space(strings.trim_space(body)[len(url):]),
+			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+		)
+		if hovered() {link_hover = url}
+	}
+	return true
 }
 
 @(private)

@@ -20,6 +20,14 @@ saved GIF searches run locally. GifSnap is a best-effort external service.
 Downloads are limited to 24 MiB and GIF canvases to 4096 pixels per side.
 The picker uses the existing thumbnail worker and attachment send path.
 
+## GIFs shared from iOS
+
+Messages consisting of a GIPHY media URL followed by `via GIPHY` render as
+looping GIFs with a clickable attribution. Downloads run in the media workers
+and use the same byte and canvas limits as the picker. This contacts GIPHY
+directly; no API key is needed. If loading fails, the original message stays
+visible as a link. Copying or forwarding keeps the original message text.
+
 Run the parser and storage check with:
 
 ```sh

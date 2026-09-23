@@ -1582,12 +1582,14 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 
 			// Bodies draw a card in place of every GitHub link they hold.
 			gh_cards_on = true
+			giphy := !msg.deleted && giphy_message(index, msg.body)
 
 			cropped :=
+				!giphy &&
 				len(msg.blocks) == 0 &&
 				!msg.deleted &&
 				message_excerpt(index * 4096, msg.body, TEXT, msg.excerpt)
-			if !cropped && len(msg.blocks) == 0 && len(msg.body) > 0 {
+			if !giphy && !cropped && len(msg.blocks) == 0 && len(msg.body) > 0 {
 				body_text(index * 4096, msg.body, 14, TEXT, true)
 			}
 
@@ -1605,7 +1607,8 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 				)
 			}
 
-			if len(msg.secrets) == 0 &&
+			if !giphy &&
+			   len(msg.secrets) == 0 &&
 			   !cropped &&
 			   excerpt_body(index * 4096, "", msg.blocks[:], msg.excerpt, body_wrap_w(), TEXT) {
 				message_more(index * 4096, msg.excerpt)
