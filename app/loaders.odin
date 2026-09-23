@@ -364,6 +364,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		cover, secret := hidden_message(body)
 		msg.secrets = secret_layers(client, secret)
 		if old, found := previous_ids[id_str]; found && previous[old].body == body {
+			msg.excerpt = previous[old].excerpt
 			for &layer, j in msg.secrets {
 				if j < len(previous[old].secrets) {layer.open = previous[old].secrets[j].open}
 			}

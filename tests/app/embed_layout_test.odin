@@ -168,8 +168,33 @@ embed_layout :: proc(t: ^testing.T) {
 						!strings.contains(string(text.chars[:text.length]), "final line"),
 					)
 				}
-				preview_message(card.content, card.blocks[:])
-				testing.expect_value(t, string(preview.bytes), text)
+				for expanded in ([]bool{true, false}) {
+					card.excerpt.expanded = expanded
+					nev_cards[key] = card
+					clay.BeginLayout()
+					if clay.UI(clay.ID("NostrTest"))(
+					{
+						layout = {
+							layoutDirection = .TopToBottom,
+							sizing = {width = clay.SizingFixed(400)},
+						},
+					},
+					) {
+						nev_card(99, key, "note", nil)
+					}
+					commands = clay.EndLayout(0)
+					found_tail, found_close := false, false
+					for command in commands.internalArray[:commands.length] {
+						if command.commandType != .Text {continue}
+						text := command.renderData.text.stringContents
+						part := string(text.chars[:text.length])
+						found_tail = found_tail || strings.contains(part, "final line")
+						found_close = found_close || part == "Show less"
+					}
+					testing.expect_value(t, found_tail, expanded || count == MESSAGE_LINES)
+					testing.expect_value(t, found_close, expanded)
+					testing.expect_value(t, preview.kind, Preview_Kind.None)
+				}
 			}
 		}
 	}

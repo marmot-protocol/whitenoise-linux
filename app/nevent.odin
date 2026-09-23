@@ -31,6 +31,7 @@ import "core:strconv"
 import "core:strings"
 import "core:sync"
 import "core:thread"
+import "core:time"
 import "core:unicode/utf8"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
@@ -58,6 +59,7 @@ NEV_TIMEOUT_MS :: 6000
 NEV_TEXT_KINDS := []i64{1, 11, 1111, 30023}
 
 Nev_Card :: struct {
+	excerpt:  Excerpt,
 	product:  Nev_Product,
 	geocache: Nev_Geocache,
 	done:     bool, // fetch finished; raw == "" then means not found
@@ -676,6 +678,8 @@ Nev_Product :: struct {
 @(private)
 nev_more_hover: string
 @(private)
+nev_more_id: u32
+@(private)
 nev_retry_hover: string
 @(private)
 nev_hint_hover: string
@@ -790,27 +794,41 @@ nev_card_image :: proc(id: u32, url: string, width: f32) {
 nev_card_excerpt :: proc(id: u32, key: string, card: Nev_Card, width: f32, summary: string = "") {
 	description := len(summary) > 0 ? summary : card.content
 	base := 0x20000000 + id * 64
-	more := false
-	if len(summary) == 0 && len(card.blocks) > 0 {
-		more = md_blocks(card.blocks[:], base + 5, false, width, MESSAGE_LINES)
-	} else {
-		more =
-			body_text(
-				base + 5,
-				description,
-				BODY_FS,
-				TEXT_DIM,
-				wrap_w = width,
-				max_lines = MESSAGE_LINES,
-			) >
-			MESSAGE_LINES
+	full :=
+		card.excerpt.expanded ||
+		card.excerpt.changed != {} &&
+			motion_on() &&
+			time.tick_since(card.excerpt.changed) < EXCERPT_DURATION
+	blocks := card.blocks[:]
+	if len(summary) > 0 {
+		blocks = nil
+		if full && card.kind == NEV_PRODUCT_KIND {
+			description, blocks = card.content, card.blocks[:]
+		}
 	}
+	if full && len(card.geocache.mission) > 0 {
+		with_mission := make([]Md_Block_Ui, max(len(blocks), 1) + 1, context.temp_allocator)
+		copy(with_mission, blocks)
+		if len(blocks) == 0 {with_mission[0] = {
+				kind = .Para,
+				text = description,
+			}}
+		with_mission[len(with_mission) - 1] = {
+			kind = .Para,
+			text = card.geocache.mission,
+		}
+		blocks = with_mission
+	}
+	more := excerpt_body(base + 5, description, blocks, card.excerpt, width, TEXT_DIM, .Embed)
 	if more || len(summary) > 0 && summary != card.content || len(card.geocache.mission) > 0 {
 		if clay.UI(clay.ID("NevMore", id))(
 		{layout = {padding = {top = 4, bottom = 4}}, backgroundColor = hovered() ? HOVER : {}},
 		) {
-			if hovered() {nev_more_hover = key}
-			clay.Text(tr("Read more"), {fontId = FONT_BODY, fontSize = 12, textColor = ACCENT})
+			if hovered() {nev_more_hover, nev_more_id = key, base + 5}
+			clay.Text(
+				card.excerpt.expanded ? tr("Show less") : tr("Read more"),
+				{fontId = FONT_BODY, fontSize = 12, textColor = ACCENT},
+			)
 		}
 	}
 }

@@ -263,6 +263,7 @@ Md_Block_Ui :: struct {
 }
 
 Msg_Ui :: struct {
+	excerpt:             Excerpt,
 	sticker:             Sticker_Ref,
 	row_height, row_top: f32,
 	row_measure:         [4]f32, // width, pixel scale, corner scale, action height

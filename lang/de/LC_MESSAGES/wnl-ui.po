@@ -2214,6 +2214,9 @@ msgstr "Mitglieder anzeigen"
 msgid "Show hint"
 msgstr "Hinweis anzeigen"
 
+msgid "Show less"
+msgstr "Weniger anzeigen"
+
 msgid "Show message preview"
 msgstr "Nachrichtenvorschau anzeigen"
 

@@ -5,6 +5,7 @@ import "base:runtime"
 import "core:fmt"
 import "core:strings"
 import "core:testing"
+import "core:time"
 import rl "sdlrl"
 
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=message_excerpt_layout
@@ -114,6 +115,95 @@ message_excerpt_layout :: proc(t: ^testing.T) {
 			rl.EndDrawing()
 		}
 	}
+	// Expand and collapse both body renderers, including reduced motion.
+	for width in ([]f32{280, 700}) {
+		for markdown in ([]bool{false, true}) {
+			for reduced in ([]bool{false, true}) {
+				ui.prefs.reduce_motion = reduced
+				state: Excerpt
+				closed, full, previous: f32
+				steps := [4]time.Duration{0, 25, 50, 100}
+				for frame in 0 ..< 9 {
+					if frame == 1 || frame == 5 {excerpt_toggle(&state, 99)}
+					if frame > 0 {
+						elapsed := steps[(frame - 1) % 4] * time.Millisecond
+						state.changed = time.tick_add(time.tick_now(), -elapsed)
+					}
+					clear(&sel_lines)
+					anim_tick(0.025)
+					clay.BeginLayout()
+					if clay.UI(clay.ID("ExpandTest"))(
+					{
+						layout = {
+							layoutDirection = .TopToBottom,
+							sizing = {width = clay.SizingFixed(width)},
+						},
+					},
+					) {
+						blocks := markdown ? rows[:] : nil
+						testing.expect(
+							t,
+							excerpt_body(
+								99,
+								"1\n2\n3\n4\n5\n6\n7\n8\n9\n10",
+								blocks,
+								state,
+								width,
+								TEXT,
+							),
+						)
+						message_more(99, state)
+					}
+					commands := clay.EndLayout(0)
+					clay.UpdateScrollContainers(false, {}, 0.025)
+					height := clay.GetElementData(clay.ID("ExcerptClip", 99)).boundingBox.height
+					if frame == 0 {closed = height}
+					if frame ==
+					   1 {full = clay.GetElementData(clay.ID("ExcerptBody", 99)).boundingBox.height}
+					if frame == 2 || frame == 3 {
+						testing.expect(t, height >= previous && height > closed)
+						testing.expect(
+							t,
+							reduced || height < full,
+							"expansion has intermediate heights",
+						)
+					}
+					if frame == 4 ||
+					   reduced && frame > 0 && frame < 5 {testing.expect_value(t, height, full)}
+					if frame == 6 || frame == 7 {
+						testing.expect(t, height <= previous && height < full)
+						testing.expect(
+							t,
+							reduced || height > closed,
+							"collapse has intermediate heights",
+						)
+					}
+					if frame == 8 ||
+					   reduced && frame >= 5 {testing.expect_value(t, height, closed)}
+					label_found := false
+					for cmd in commands.internalArray[:commands.length] {
+						if cmd.commandType != .Text {continue}
+						text := cmd.renderData.text.stringContents
+						if string(text.chars[:text.length]) ==
+						   (state.expanded ? "Show less" : "Read more") {label_found = true}
+					}
+					testing.expect(t, label_found)
+					testing.expect_value(t, preview.kind, Preview_Kind.None)
+					if markdown &&
+					   !reduced &&
+					   width == 700 &&
+					   (frame == 2 || frame == 4 || frame == 8) {
+						rl.BeginDrawing()
+						clay_raylib_render(&commands)
+						rl.TakeScreenshot(fmt.ctprintf("/tmp/wn-excerpt-%d.png", frame))
+						rl.EndDrawing()
+					}
+					previous = height
+				}
+			}
+		}
+	}
+	ui.prefs.reduce_motion = true
 	list := parse_md_text(
 		"asked astra:\n\n• Jeff has related work, but I found no duplicate of #1961:\n\n" +
 		"- #1955, still open: subscription failure isolation and recovery. Touches the same transport code, but doesn’t reuse sockets for outbound sends.\n\n" +

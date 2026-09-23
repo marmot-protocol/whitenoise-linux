@@ -1988,20 +1988,9 @@ app_main :: proc() {
 				}
 				if nev_more_hover != "" && mouse_released() && !modal_open(&ui) {
 					card := nev_cards[nev_more_hover]
-					textual := card.kind == NEV_PRODUCT_KIND || card.kind == NEV_GEOCACHE_KIND
-					for kind in NEV_TEXT_KINDS {textual = textual || kind == card.kind}
-					if !textual {
-						preview_message(card.raw)
-					} else if len(card.geocache.mission) > 0 {
-						preview_message(
-							fmt.tprintf("%s\n\n%s", card.content, card.geocache.mission),
-							card.blocks[:],
-						)
-						if len(card.blocks) >
-						   0 {append(&preview.message_blocks, Md_Block_Ui{kind = .Para, text = strings.clone(card.geocache.mission)})}
-					} else {
-						preview_message(card.content, card.blocks[:])
-					}
+					excerpt_toggle(&card.excerpt, nev_more_id)
+					nev_cards[nev_more_hover] = card
+					for &msg in ui.messages {msg.row_height = 0}
 				}
 				if nev_hint_hover != "" && mouse_released() && !modal_open(&ui) {
 					preview_message(nev_cards[nev_hint_hover].geocache.hint)

@@ -2214,6 +2214,9 @@ msgstr "メンバーを表示"
 msgid "Show hint"
 msgstr "ヒントを表示"
 
+msgid "Show less"
+msgstr "折りたたむ"
+
 msgid "Show message preview"
 msgstr "メッセージのプレビューを表示"
 

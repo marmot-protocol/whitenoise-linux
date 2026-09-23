@@ -2062,6 +2062,9 @@ msgstr ""
 msgid "Show hint"
 msgstr ""
 
+msgid "Show less"
+msgstr ""
+
 msgid "Show message preview"
 msgstr ""
 

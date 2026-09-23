@@ -226,7 +226,7 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		// Tap a failed optimistic row to retry the send.
 		for &p, i in ui.pending {
 			if clay.PointerOver(clay.ID("MessageMore", 0xF00000 + u32(i) * 8)) {
-				preview_message(p.body)
+				excerpt_toggle(&p.excerpt, 0xF00000 + u32(i) * 8)
 				return
 			}
 			if !pending_can_delete(p, time.tick_now()) {
@@ -625,7 +625,8 @@ handle_chat :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 				if !secret.open {break}
 			}
 			if clay.PointerOver(clay.ID("MessageMore", u32(i) * 4096)) {
-				preview_message(msg.body, msg.blocks[:])
+				excerpt_toggle(&ui.messages[i].excerpt, u32(i) * 4096)
+				ui.messages[i].row_height = 0
 				return
 			}
 			if len(msg.id) == 0 {

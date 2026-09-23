@@ -104,7 +104,7 @@ pending_row :: proc(index: u32, ui: ^Ui_State, p: Pending_Send) {
 				) {}
 			}
 
-			if !message_excerpt(0xF00000 + index * 8, p.body, body_color) {
+			if !message_excerpt(0xF00000 + index * 8, p.body, body_color, p.excerpt) {
 				body_text(0xF00000 + index * 8, p.body, 14, body_color, wrap_w = body_wrap_w())
 			}
 			if can_delete {
@@ -1586,7 +1586,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 			cropped :=
 				len(msg.blocks) == 0 &&
 				!msg.deleted &&
-				message_excerpt(index * 4096, msg.body, TEXT)
+				message_excerpt(index * 4096, msg.body, TEXT, msg.excerpt)
 			if !cropped && len(msg.blocks) == 0 && len(msg.body) > 0 {
 				body_text(index * 4096, msg.body, 14, TEXT, true)
 			}
@@ -1607,8 +1607,8 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 
 			if len(msg.secrets) == 0 &&
 			   !cropped &&
-			   md_blocks(msg.blocks[:], index * 4096, true, max_lines = MESSAGE_LINES) {
-				message_more(index * 4096)
+			   excerpt_body(index * 4096, "", msg.blocks[:], msg.excerpt, body_wrap_w(), TEXT) {
+				message_more(index * 4096, msg.excerpt)
 			}
 
 			gh_cards_on = false
@@ -1653,12 +1653,19 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 						custom = {customData = &hidden_border},
 					},
 					) {
-						cover_cropped = md_blocks(
-							blocks,
-							block_id,
-							wrap_w = body_wrap_w() - 16,
-							max_lines = layer == 0 ? MESSAGE_LINES : max(int),
-						)
+						if layer == 0 {
+							cover_cropped = excerpt_body(
+								block_id,
+								"",
+								blocks,
+								msg.excerpt,
+								body_wrap_w() - 16,
+								TEXT,
+								.Embed,
+							)
+						} else {
+							md_blocks(blocks, block_id, wrap_w = body_wrap_w() - 16)
+						}
 						if hovered() {
 							tooltip(
 								msg.secrets[layer].open ? tr("Hide hidden message") : tr("Reveal hidden message"),
@@ -1666,7 +1673,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 							)
 						}
 					}
-					if cover_cropped {message_more(index * 4096)}
+					if cover_cropped {message_more(index * 4096, msg.excerpt)}
 				}
 			}
 
@@ -3014,20 +3021,99 @@ body_text :: proc(
 @(private)
 MESSAGE_LINES :: 6
 
+@(private)
+EXCERPT_DURATION :: 100 * time.Millisecond
+
+@(private)
+Excerpt :: struct {
+	expanded:                   bool,
+	changed:                    time.Tick,
+	from_height, closed_height: f32,
+}
+
+@(private)
+Excerpt_Source :: enum {
+	Message,
+	Embed,
+}
+
+@(private)
+excerpt_toggle :: proc(state: ^Excerpt, id: u32) {
+	state.from_height = clay.GetElementData(clay.ID("ExcerptClip", id)).boundingBox.height
+	if !state.expanded &&
+	   (state.changed == {} || time.tick_since(state.changed) >= EXCERPT_DURATION) {
+		state.closed_height = state.from_height
+	}
+	state.expanded = !state.expanded
+	state.changed = time.tick_now()
+}
+
+@(private)
+excerpt_body :: proc(
+	id: u32,
+	text: string,
+	blocks: []Md_Block_Ui,
+	state: Excerpt,
+	width: f32,
+	color: clay.Color,
+	source: Excerpt_Source = .Message,
+) -> bool {
+	if len(text) == 0 && len(blocks) == 0 {return false}
+	progress :=
+		state.changed == {} || !motion_on() ? f32(1) : clamp(f32(time.tick_since(state.changed)) / f32(EXCERPT_DURATION), 0, 1)
+	moving := progress < 1
+	limit := state.expanded || moving ? max(int) : MESSAGE_LINES
+	height := clay.SizingFit()
+	if moving {
+		full := clay.GetElementData(clay.ID("ExcerptBody", id)).boundingBox.height
+		target := state.expanded ? full : state.closed_height
+		eased := progress * progress * (3 - 2 * progress)
+		height = clay.SizingFixed(state.from_height + (target - state.from_height) * eased)
+		anim_moving += 1
+	}
+	more := state.expanded || moving
+	if clay.UI(clay.ID("ExcerptClip", id))(
+	{
+		layout = {sizing = {width = clay.SizingFixed(width), height = height}},
+		clip = {vertical = moving},
+	},
+	) {
+		if clay.UI(clay.ID("ExcerptBody", id))(
+		{
+			layout = {
+				layoutDirection = .TopToBottom,
+				sizing = {width = clay.SizingFixed(width)},
+				childGap = 3,
+			},
+		},
+		) {
+			if len(blocks) > 0 {
+				more = md_blocks(blocks, id, source == .Message, width, limit) || more
+			} else {
+				more =
+					body_text(id, text, BODY_FS, color, source == .Message, width, limit) >
+						MESSAGE_LINES ||
+					more
+			}
+		}
+	}
+	return more
+}
+
 // Plain fallback for pending messages and records without parsed blocks.
 @(private)
-message_excerpt :: proc(id: u32, text: string, color: clay.Color) -> bool {
+message_excerpt :: proc(id: u32, text: string, color: clay.Color, state: Excerpt = {}) -> bool {
 	if len(wrapped_lines(text, body_wrap_w(), BODY_FS)) <= MESSAGE_LINES {return false}
 	cards := gh_cards_on
 	gh_cards_on = false
-	body_text(id, text, BODY_FS, color, true, max_lines = MESSAGE_LINES)
+	excerpt_body(id, text, nil, state, body_wrap_w(), color)
 	gh_cards_on = cards
-	message_more(id)
+	message_more(id, state)
 	return true
 }
 
 @(private)
-message_more :: proc(id: u32) {
+message_more :: proc(id: u32, state: Excerpt = {}) {
 	if clay.UI(clay.ID("MessageMore", id))(
 	{
 		layout = {padding = {top = 4, bottom = 4}},
@@ -3035,7 +3121,10 @@ message_more :: proc(id: u32) {
 		cornerRadius = rr(4),
 	},
 	) {
-		clay.Text(tr("Read more"), {fontId = FONT_BODY, fontSize = 12, textColor = ACCENT})
+		clay.Text(
+			state.expanded ? tr("Show less") : tr("Read more"),
+			{fontId = FONT_BODY, fontSize = 12, textColor = ACCENT},
+		)
 	}
 }
 

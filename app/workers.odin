@@ -319,6 +319,7 @@ live_apply :: proc(ui: ^Ui_State, client: ^marmot.Client, job: ^Chat_List_Work) 
 //                (grayed row)          (mutex)     (drop row + reload,
 //                                                   or mark failed)
 Pending_Send :: struct {
+	excerpt:       Excerpt,
 	sticker:       Sticker_Ref,
 	effect:        int,
 	visible_since: time.Tick, // compose action until first presented optimistic row
