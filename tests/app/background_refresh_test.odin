@@ -200,3 +200,74 @@ chat_preview_uses_snapshot :: proc(t: ^testing.T) {
 	defer chat_free(chat)
 	testing.expect_value(t, chat.preview, "Alice was added to the group")
 }
+
+// tests/odin.sh app -define:ODIN_TEST_NAMES=thread_reply_previews
+@(test)
+thread_reply_previews :: proc(t: ^testing.T) {
+	if #config(ODIN_TEST_NAMES, "") != "thread_reply_previews" {return}
+	context.allocator = runtime.default_context().allocator
+	ui := Ui_State {
+		account_ref      = "account",
+		timeline_loading = true,
+	}
+	append(&ui.chats, Chat_Row_Ui{group_id = "group"})
+	defer {
+		for msg in ui.messages {message_free(msg)}
+		delete(ui.messages); delete(ui.chats)
+		delete(ui.messages_account); delete(ui.messages_group)
+		messages_collect()
+	}
+	root_tag := [2]cstring{"e", "root"}
+	quote_tag := [2]cstring{"q", "root"}
+	tags := [2]marmot.Message_Tag{{raw_data(root_tag[:]), 2}, {raw_data(quote_tag[:]), 2}}
+	preview := marmot.Timeline_Reply_Preview {
+		message_id_hex = "root",
+		sender         = "alice",
+		plaintext      = "Original",
+	}
+	record := marmot.Timeline_Message_Record {
+		message_id_hex          = "message",
+		sender                  = "alice",
+		plaintext               = "Reply",
+		tags                    = raw_data(tags[:]),
+		reply_to_message_id_hex = "root",
+	}
+	page := marmot.Timeline_Page {
+		messages     = &record,
+		messages_len = 1,
+	}
+	for kind in ([]u64{9, KIND_THREAD, KIND_POLL}) {
+		for quoted in ([]bool{false, true}) {
+			for available in ([]bool{false, true}) {
+				record.kind = kind
+				record.tags_len = quoted ? 2 : 1
+				record.reply_preview = available ? &preview : nil
+				timeline_apply(nil, &ui, &page)
+				testing.expect_value(t, len(ui.messages), 1)
+				msg := ui.messages[0]
+				show := kind == 9 || quoted
+				testing.expect_value(t, msg.thread_of, kind == 9 ? "" : "root")
+				testing.expect_value(t, msg.reply_id, show ? "root" : "")
+				testing.expect_value(
+					t,
+					msg.reply_text,
+					show ? (available ? "Original" : "Original message unavailable") : "",
+				)
+				testing.expect_value(t, len(msg.reply_from) > 0, show && available)
+				testing.expect_value(t, msg.reply_image, "")
+			}
+		}
+	}
+	// Issue comments already distinguish their root (E) from their reply target (e).
+	append(&ui.issues, Issue_Row{})
+	append(&ui.issues[0].comments, Issue_Comment{id = "message"})
+	defer {delete(ui.issues[0].comments); delete(ui.issues)}
+	record.kind = KIND_THREAD
+	record.tags_len = 2
+	quote_tag[0] = "E"
+	for root in ([]cstring{"issue", "root"}) {
+		quote_tag[1] = root
+		timeline_apply(nil, &ui, &page)
+		testing.expect_value(t, ui.messages[0].reply_id, root == "issue" ? "root" : "")
+	}
+}

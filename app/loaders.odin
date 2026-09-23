@@ -435,9 +435,15 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		}
 
 		group := strings.clone_to_cstring(ui.chats[ui.selected].group_id, context.temp_allocator)
-		if !issue_comments[id_str] ||
-		   issue_tag(record.tags[:record.tags_len], "e") !=
-			   issue_tag(record.tags[:record.tags_len], "E") {
+		tags := record.tags[:record.tags_len]
+		// The thread's e tag sets membership; only an explicit q tag quotes its parent.
+		thread_parent :=
+			!issue_comments[id_str] &&
+			msg.thread_of != "" &&
+			string(record.reply_to_message_id_hex) == msg.thread_of &&
+			issue_tag(tags, "q") == ""
+		if !thread_parent &&
+		   (!issue_comments[id_str] || issue_tag(tags, "e") != issue_tag(tags, "E")) {
 			if record.reply_to_message_id_hex != nil {
 				msg.reply_id = strings.clone(string(record.reply_to_message_id_hex))
 			}
