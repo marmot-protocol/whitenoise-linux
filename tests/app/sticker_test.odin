@@ -118,7 +118,7 @@ sticker_image_storage :: proc(t: ^testing.T) {
 			context.temp_allocator,
 		),
 	)
-	testing.expect(t, sticker_write(sticker_blob_path(sha), bytes))
+	testing.expect(t, media_write_sealed(sticker_blob_path(sha), bytes))
 	stored, read_err := os.read_entire_file(sticker_blob_path(sha), context.temp_allocator)
 	testing.expect(
 		t,
@@ -159,7 +159,7 @@ sticker_image_storage :: proc(t: ^testing.T) {
 	testing.expect(t, index_err == nil)
 	plain, opened := vault_open_blob(index, context.temp_allocator)
 	testing.expect(t, opened && strings.contains(string(plain), "Renamed"))
-	testing.expect(t, sticker_write(sticker_blob_path(sha), []u8{1, 2, 3}))
+	testing.expect(t, media_write_sealed(sticker_blob_path(sha), []u8{1, 2, 3}))
 	testing.expect_value(t, len(sticker_read_blob(sha)), 0)
 }
 

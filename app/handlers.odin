@@ -911,7 +911,7 @@ uri_unescape :: proc(uri: string) -> string {
 
 // Open the picker anchored near the pointer, clamped on-window.
 open_picker :: proc(ui: ^Ui_State, target: string) {
-	if target != "" {ui.sticker_tab = false}
+	if target != "" || ui.adding_quick {ui.sticker_tab = false; ui.gif_tab = false}
 	if ui.sticker_tab {sticker_library_open(ui)}
 	m := rl.GetMousePosition()
 	ui.picker_open = true
@@ -923,6 +923,7 @@ open_picker :: proc(ui: ^Ui_State, target: string) {
 	ui.focus = .Picker
 	clear(&ui.picker_filter)
 	ui.picker_x, ui.picker_y = panel_pos(m.x / UI_ZOOM - 200, m.y / UI_ZOOM - 452, 408, 448)
+	if ui.gif_tab {gif_open(ui)}
 }
 
 // Insert into the composer or react to the target, then close.
@@ -968,11 +969,16 @@ handle_picker :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		if clicked_indexed(
 			"PickerStickers",
 			0,
-		) {ui.sticker_tab = true; ui.sticker_focus = 0; clear(&ui.picker_filter); sticker_library_open(ui); return}
+		) {ui.gif_tab = false; ui.sticker_tab = true; ui.sticker_focus = 0; clear(&ui.picker_filter); sticker_library_open(ui); return}
 		if clicked_indexed(
 			"PickerEmoji",
 			0,
-		) {ui.sticker_tab = false; clear(&ui.picker_filter); return}
+		) {ui.gif_tab = false; ui.sticker_tab = false; clear(&ui.picker_filter); return}
+		if clicked_indexed("PickerGifs", 0) {
+			ui.gif_tab = true; ui.sticker_tab = false; clear(&ui.picker_filter)
+			gif_open(ui); return
+		}
+		if ui.gif_tab {handle_gif_picker(ui); return}
 		if ui.sticker_tab {handle_sticker_picker(ui); return}
 	}
 	if rl.IsKeyPressed(.ESCAPE) {

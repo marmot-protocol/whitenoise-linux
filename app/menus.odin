@@ -668,22 +668,31 @@ picker_cell :: proc(id_str: string, index: u32, tex: ^rl.Texture2D) {
 
 // Emoji picker, the slint EmojiPicker: recents, search, Twemoji grid.
 emoji_picker :: proc(ui: ^Ui_State) {
+	gif := ui.gif_tab && ui.picker_target == "" && !ui.adding_quick
+	width := modal_w(clay.ID("PickerPanel"), gif ? 560 : 400)
+	height := modal_h(gif ? 540 : 440)
+	x, y := ui.picker_x, ui.picker_y
+	if gif {
+		if composer := clay.GetElementData(clay.ID("ComposeBox")); composer.found {
+			x, y =
+				composer.boundingBox.x +
+				composer.boundingBox.width -
+				width,
+				composer.boundingBox.y -
+				height -
+				8
+		}
+		x, y = panel_pos(x, y, width, height)
+	}
 	if clay.UI(clay.ID("PickerPanel"))(
 	{
 		layout = {
 			layoutDirection = .TopToBottom,
-			sizing = {
-				width = clay.SizingFixed(modal_w(clay.ID("PickerPanel"), 400)),
-				height = clay.SizingFixed(modal_h(440)),
-			},
+			sizing = {width = clay.SizingFixed(width), height = clay.SizingFixed(height)},
 			padding = clay.PaddingAll(12),
 			childGap = 8,
 		},
-		floating = {
-			attachTo = .Root,
-			offset = {ui.picker_x, ui.picker_y + rise(clay.ID("PickerPanel"))},
-			zIndex = 12,
-		},
+		floating = {attachTo = .Root, offset = {x, y + rise(clay.ID("PickerPanel"))}, zIndex = 12},
 		backgroundColor = CARD,
 		cornerRadius = rr(12),
 		border = {color = ELEVATED_BORDER, width = bw()},
@@ -697,7 +706,7 @@ emoji_picker :: proc(ui: ^Ui_State) {
 					"PickerEmoji",
 					0,
 					tr("Emoji"),
-					!ui.sticker_tab ? .Selected : .Normal,
+					!ui.sticker_tab && !ui.gif_tab ? .Selected : .Normal,
 				)
 				sticker_control(
 					"PickerStickers",
@@ -705,14 +714,10 @@ emoji_picker :: proc(ui: ^Ui_State) {
 					tr("Stickers"),
 					ui.sticker_tab ? .Selected : .Normal,
 				)
-				if ui.sticker_tab {
-					if clay.UI(clay.ID("PickerTabGap"))(
-					{layout = {sizing = {width = clay.SizingGrow()}}},
-					) {}
-					sticker_control("StickerManage", 0, tr("Manage"))
-				}
+				sticker_control("PickerGifs", 0, tr("GIFs"), ui.gif_tab ? .Selected : .Normal)
 			}
-			if ui.sticker_tab {sticker_picker(ui); return}
+			if ui.gif_tab {gif_picker(ui); return}
+			if ui.sticker_tab {sticker_control("StickerManage", 0, tr("Manage")); sticker_picker(ui); return}
 		}
 		eyebrow("RECENT")
 		if clay.UI(clay.ID("PkRecentRow"))({layout = {childGap = 2}}) {

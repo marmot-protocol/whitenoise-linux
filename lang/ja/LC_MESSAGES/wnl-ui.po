@@ -297,6 +297,9 @@ msgstr "監査ログを削除しました。"
 msgid "Audit logs"
 msgstr "監査ログ"
 
+msgid "Available offline"
+msgstr "オフラインで利用できます"
+
 msgid "Avatar ring"
 msgstr ""
 
@@ -596,6 +599,9 @@ msgstr "音声を聞き取れませんでした。はっきり話して、もう
 msgid "Couldn't import the sticker. Choose an image under 4 MiB."
 msgstr "ステッカーを読み込めませんでした。4 MiB未満の画像を選んでください。"
 
+msgid "Couldn't load GIFs. Please try again."
+msgstr "GIFを読み込めませんでした。もう一度お試しください。"
+
 #, fuzzy
 msgid "Couldn't load attachment. Click to retry."
 msgstr "動画を再生できませんでした — タップして再試行"
@@ -619,6 +625,9 @@ msgstr "報告を読み込めませんでした。もう一度お試しくださ
 msgid "Couldn't load messages. Please try again."
 msgstr "メッセージを読み込めませんでした。もう一度お試しください。"
 
+msgid "Couldn't load the GIF. Please try again."
+msgstr "GIFを読み込めませんでした。もう一度お試しください。"
+
 msgid "Couldn't load the pack. Check your relay settings and try again."
 msgstr "パックを読み込めませんでした。リレーの設定を確認して、もう一度お試しください。"
 
@@ -634,6 +643,9 @@ msgstr "このイベントを読み込めませんでした。リレー設定を
 
 msgid "Couldn't load timings. Please try again."
 msgstr "処理時間を読み込めませんでした。もう一度お試しください。"
+
+msgid "Couldn't load your GIFs. Please try again."
+msgstr "保存したGIFを読み込めませんでした。もう一度お試しください。"
 
 msgid "Couldn't load your stickers. Please try again."
 msgstr "ステッカーを読み込めませんでした。もう一度お試しください。"
@@ -681,6 +693,12 @@ msgstr "このメッセージを読み上げられませんでした。短いテ
 msgid "Couldn't read this message aloud. Please try again."
 msgstr "このメッセージを読み上げられませんでした。もう一度お試しください。"
 
+msgid "Couldn't remove the GIF. Please try again."
+msgstr "GIFを削除できませんでした。もう一度お試しください。"
+
+msgid "Couldn't remove the saved file. Please try again."
+msgstr "保存したファイルを削除できませんでした。もう一度お試しください。"
+
 #, fuzzy
 msgid "Couldn't render the QR code. Please try again."
 msgstr "チャットを作成できませんでした。もう一度お試しください。"
@@ -688,6 +706,9 @@ msgstr "チャットを作成できませんでした。もう一度お試しく
 #, fuzzy, c-format
 msgid "Couldn't reveal your private key. %s"
 msgstr "リアクションを削除できませんでした。もう一度お試しください。"
+
+msgid "Couldn't save the GIF. Please try again."
+msgstr "GIFを保存できませんでした。もう一度お試しください。"
 
 msgid "Couldn't save the edit. Please try again."
 msgstr "編集を保存できませんでした。もう一度お試しください。"
@@ -701,6 +722,9 @@ msgstr "そのアカウントを追加できませんでした。鍵を確認し
 
 msgid "Couldn't save your stickers. Please try again."
 msgstr "ステッカーを保存できませんでした。もう一度お試しください。"
+
+msgid "Couldn't search GIFs. Please try again."
+msgstr "GIFを検索できませんでした。もう一度お試しください。"
 
 msgid "Couldn't search messages. Please try again."
 msgstr "メッセージを検索できませんでした。もう一度お試しください。"
@@ -890,6 +914,9 @@ msgstr "問題の追跡を無効にする"
 msgid "Disabled for this group."
 msgstr "このグループでは無効です。"
 
+msgid "Discover"
+msgstr "見つける"
+
 msgid "Discussion"
 msgstr "議論"
 
@@ -1075,6 +1102,9 @@ msgstr "全画面表示"
 
 msgid "GEOCACHE"
 msgstr "ジオキャッシュ"
+
+msgid "GIFs"
+msgstr "GIF"
 
 msgid "GROUP ID"
 msgstr ""
@@ -1476,6 +1506,9 @@ msgstr "次の画像"
 msgid "Nickname"
 msgstr "ニックネーム"
 
+msgid "No GIFs found. Try another search."
+msgstr "GIFが見つかりませんでした。別のキーワードで検索してください。"
+
 #, fuzzy
 msgid "No archived chats."
 msgstr "アーカイブしたチャットはありません"
@@ -1858,6 +1891,9 @@ msgstr "連絡先を追加"
 msgid "Remove pack"
 msgstr "パックを削除"
 
+msgid "Remove saved GIF"
+msgstr "保存したGIFを削除"
+
 msgid "Remove sticker"
 msgstr "ステッカーを削除"
 
@@ -1975,6 +2011,12 @@ msgstr "同期"
 msgid "Save"
 msgstr "保存"
 
+msgid "Save GIF"
+msgstr "GIFを保存"
+
+msgid "Save GIFs with the star to find them here."
+msgstr "星を押してGIFを保存すると、ここに表示されます。"
+
 msgid "Save and use"
 msgstr ""
 
@@ -1988,6 +2030,9 @@ msgstr "動画を保存"
 msgid "Save sticker"
 msgstr "ステッカーを保存"
 
+msgid "Saved"
+msgstr "保存済み"
+
 msgid "Scan to add"
 msgstr "スキャンして追加"
 
@@ -1996,6 +2041,9 @@ msgstr ""
 
 msgid "Search"
 msgstr "検索"
+
+msgid "Search GIFs"
+msgstr "GIFを検索"
 
 #, fuzzy
 msgid "Search all chats"
@@ -2462,6 +2510,9 @@ msgstr "アップロード済みの絵文字"
 
 msgid "Uploading picture"
 msgstr ""
+
+msgid "Use a shorter search."
+msgstr "検索キーワードを短くしてください。"
 
 msgid "Use another key"
 msgstr "別の鍵を使う"

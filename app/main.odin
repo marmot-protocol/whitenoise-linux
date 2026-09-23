@@ -1852,6 +1852,7 @@ app_main :: proc() {
 		drain_hn()
 		drain_nev()
 		drain_stickers(&ui, client)
+		gif_drain(&ui)
 
 		// Files picked in the async SDL dialog land here; they become
 		// composer chips, custom emoji when the settings "+" asked, or
@@ -2246,6 +2247,7 @@ app_main :: proc() {
 	auth_stop()
 	for worker in send_threads {thread.join(worker); thread.destroy(worker)}
 	sticker_stop()
+	gif_stop(&ui)
 	delete(send_threads)
 	timeline_stop()
 	members_stop()

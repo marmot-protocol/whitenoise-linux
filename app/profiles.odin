@@ -425,6 +425,35 @@ local_pic :: proc(url: string) -> ^rl.Texture2D {
 	return pic_textures[url]
 }
 
+// GIFs share the image queue, but only visible tiles request a thumbnail.
+@(private)
+gif_thumb :: proc(item: Gif_Item, index: int) -> (tex: ^rl.Texture2D, loading, failed: bool) {
+	if item.sha == "" && item.thumb == "" {return}
+	key := item.sha != "" ? fmt.tprintf("gif:%s", item.sha) : fmt.tprintf("image:%s", item.thumb)
+	if cached, ready := pic_textures[key]; ready {return cached, false, cached == nil}
+	if !gif_visible(index) {return}
+	return url_pic(key), true, false
+}
+
+@(private)
+gif_retry :: proc(ui: ^Ui_State) {
+	for &item in ui.gif_hits {item.failed = false}
+	for &item in ui.gif_library {item.failed = false}
+	sync.lock(&pic_mutex)
+	defer sync.unlock(&pic_mutex)
+	for key, tex in pic_textures {
+		if tex != nil ||
+		   !(strings.has_prefix(key, "image:") || strings.has_prefix(key, "gif:")) {continue}
+		delete_key(&pic_textures, key)
+		pic_requested[key] = false
+		delete(key)
+	}
+	for key, requested in pic_requested {
+		if !requested {delete_key(&pic_requested, key); delete(key)}
+	}
+	ui.gif_error = ""
+}
+
 // Layout-side accessor: the picture texture once fetched, nil while
 // the gradient fallback should render. First sight queues the fetch.
 url_pic :: proc(url: string) -> ^rl.Texture2D {
@@ -477,6 +506,17 @@ pic_worker :: proc(_: ^thread.Thread) {
 			data, side = crop_circle_pixels(url[len("crop-round:"):], .Circle)
 		} else if strings.has_prefix(url, "crop-rounded:") {
 			data, side = crop_circle_pixels(url[len("crop-rounded:"):], .Rounded)
+		} else if strings.has_prefix(url, "gif:") {
+			data = gif_read(url[len("gif:"):])
+		} else if strings.has_prefix(url, "image:") {
+			// Transient picker thumbnails use the bounded HTTPS fetch, without avatar cropping.
+			buffer := make([]u8, 4 * 1024 * 1024, context.temp_allocator)
+			n := wn_https_get(
+				strings.clone_to_cstring(url[len("image:"):], context.temp_allocator),
+				raw_data(buffer),
+				uint(len(buffer)),
+			)
+			if n > 0 {data = make([]u8, int(n)); copy(data, buffer[:n])}
 		} else {
 			data = pic_load(url)
 		}
@@ -571,7 +611,10 @@ drain_pics :: proc() {
 		} else if f.data != nil {
 			image := rl.LoadImageFromMemory(".img", raw_data(f.data), i32(len(f.data)))
 			if image.data != nil {
-				tex = photo_texture(image)
+				if strings.has_prefix(f.url, "image:") || strings.has_prefix(f.url, "gif:") {
+					tex = new(rl.Texture2D)
+					tex^ = rl.LoadTextureFromImage(image)
+				} else {tex = photo_texture(image)}
 				rl.UnloadImage(image)
 			}
 			delete(f.data)

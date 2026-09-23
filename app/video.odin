@@ -243,6 +243,9 @@ advance_videos :: proc() {
 	if preview_shown && preview.vid != nil && !preview.vid_shared {
 		advance_one(preview.vid)
 	}
+	if g_ui != nil && g_ui.picker_open && g_ui.gif_tab {
+		advance_one(g_ui.gif_view)
+	}
 
 	// WN_DEBUG_MPV: where a laggy frame actually goes. "advance" is
 	// this pass, "frame" is the whole previous frame.

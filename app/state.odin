@@ -382,6 +382,19 @@ Profile_Ui :: struct {
 }
 
 Ui_State :: struct {
+	gif_tab, gif_saved, gif_loaded:                        bool,
+	gif_hits, gif_library:                                 [dynamic]Gif_Item,
+	gif_job:                                               ^Gif_Job,
+	gif_view:                                              ^Video_View,
+	gif_selected:                                          Gif_Item,
+	gif_error:                                             string,
+	gif_focus:                                             int,
+	gif_page:                                              int,
+	gif_more:                                              bool,
+	gif_filter:                                            string,
+	gif_due:                                               f64,
+	gif_hover:                                             int,
+	gif_hover_at:                                          f64,
 	stickers:                                              [dynamic]Sticker_Item,
 	sticker_packs:                                         [dynamic]Sticker_Pack,
 	sticker_recent:                                        [dynamic]string,

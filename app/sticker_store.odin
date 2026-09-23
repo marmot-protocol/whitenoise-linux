@@ -8,6 +8,7 @@ import "core:encoding/hex"
 import "core:encoding/json"
 import "core:fmt"
 import "core:os"
+import "core:path/filepath"
 import "core:strings"
 import "core:thread"
 import rl "sdlrl"
@@ -69,11 +70,10 @@ sticker_blob_path :: proc(sha: string) -> string {
 }
 
 @(private)
-sticker_write :: proc(path: string, data: []u8) -> bool {
+media_write_sealed :: proc(path: string, data: []u8) -> bool {
 	sealed, ok := vault_seal_blob(data, context.temp_allocator)
 	if !ok {return false}
-	if err := os.make_directory(fmt.tprintf("%s/stickers", data_home));
-	   err != nil && err != .Exist {return false}
+	if err := os.make_directory(filepath.dir(path)); err != nil && err != .Exist {return false}
 	next := fmt.tprintf("%s.next", path)
 	if os.write_entire_file(next, sealed, {.Read_User, .Write_User}) != nil {return false}
 	return os.rename(next, path) == nil
@@ -217,7 +217,7 @@ sticker_worker :: proc(t: ^thread.Thread) {
 		   json.unmarshal(plain, &job.library) !=
 			   nil {job.error = N_("Couldn't load your stickers. Please try again.")}
 	case .Save:
-		if !sticker_write(
+		if !media_write_sealed(
 			fmt.tprintf("%s/stickers/library.bin", data_home),
 			job.data,
 		) {job.error = N_("Couldn't save your stickers. Please try again.")}
@@ -279,7 +279,7 @@ sticker_worker :: proc(t: ^thread.Thread) {
 		if job.image.data ==
 		   nil {job.error = N_("Couldn't use the sticker. Choose a static PNG, WebP or JPEG up to 4096 pixels."); return}
 		job.dim = fmt.aprintf("%dx%d", job.image.width, job.image.height)
-		if job.op != .Send && !sticker_write(sticker_blob_path(job.item.ref.sha), job.data) {
+		if job.op != .Send && !media_write_sealed(sticker_blob_path(job.item.ref.sha), job.data) {
 			job.error = N_("Couldn't save your stickers. Please try again."); return
 		}
 		job.image = sticker_thumb(job.image)
@@ -431,7 +431,7 @@ sticker_stop :: proc() {
 	for job in sticker_jobs {
 		if job.worker != nil {thread.join(job.worker); thread.destroy(job.worker)}
 		if job.op == .Save && job.worker == nil {
-			if !sticker_write(
+			if !media_write_sealed(
 				fmt.tprintf("%s/stickers/library.bin", data_home),
 				job.data,
 			) {fmt.eprintln("Couldn't save sticker library during shutdown.")}

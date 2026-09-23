@@ -282,6 +282,9 @@ msgstr ""
 msgid "Audit logs"
 msgstr ""
 
+msgid "Available offline"
+msgstr ""
+
 msgid "Avatar ring"
 msgstr ""
 
@@ -559,6 +562,9 @@ msgstr ""
 msgid "Couldn't import the sticker. Choose an image under 4 MiB."
 msgstr ""
 
+msgid "Couldn't load GIFs. Please try again."
+msgstr ""
+
 msgid "Couldn't load attachment. Click to retry."
 msgstr ""
 
@@ -580,6 +586,9 @@ msgstr ""
 msgid "Couldn't load messages. Please try again."
 msgstr ""
 
+msgid "Couldn't load the GIF. Please try again."
+msgstr ""
+
 msgid "Couldn't load the pack. Check your relay settings and try again."
 msgstr ""
 
@@ -594,6 +603,9 @@ msgid "Couldn't load this event. Check your relay settings and try again."
 msgstr ""
 
 msgid "Couldn't load timings. Please try again."
+msgstr ""
+
+msgid "Couldn't load your GIFs. Please try again."
 msgstr ""
 
 msgid "Couldn't load your stickers. Please try again."
@@ -637,11 +649,20 @@ msgstr ""
 msgid "Couldn't read this message aloud. Please try again."
 msgstr ""
 
+msgid "Couldn't remove the GIF. Please try again."
+msgstr ""
+
+msgid "Couldn't remove the saved file. Please try again."
+msgstr ""
+
 msgid "Couldn't render the QR code. Please try again."
 msgstr ""
 
 #, c-format
 msgid "Couldn't reveal your private key. %s"
+msgstr ""
+
+msgid "Couldn't save the GIF. Please try again."
 msgstr ""
 
 msgid "Couldn't save the edit. Please try again."
@@ -654,6 +675,9 @@ msgid "Couldn't save the theme. Check the name and colors and try again."
 msgstr ""
 
 msgid "Couldn't save your stickers. Please try again."
+msgstr ""
+
+msgid "Couldn't search GIFs. Please try again."
 msgstr ""
 
 msgid "Couldn't search messages. Please try again."
@@ -828,6 +852,9 @@ msgstr ""
 msgid "Disabled for this group."
 msgstr ""
 
+msgid "Discover"
+msgstr ""
+
 msgid "Discussion"
 msgstr ""
 
@@ -1000,6 +1027,9 @@ msgid "Fullscreen"
 msgstr ""
 
 msgid "GEOCACHE"
+msgstr ""
+
+msgid "GIFs"
 msgstr ""
 
 msgid "GROUP ID"
@@ -1375,6 +1405,9 @@ msgstr ""
 msgid "Nickname"
 msgstr ""
 
+msgid "No GIFs found. Try another search."
+msgstr ""
+
 msgid "No archived chats."
 msgstr ""
 
@@ -1732,6 +1765,9 @@ msgstr ""
 msgid "Remove pack"
 msgstr ""
 
+msgid "Remove saved GIF"
+msgstr ""
+
 msgid "Remove sticker"
 msgstr ""
 
@@ -1843,6 +1879,12 @@ msgstr ""
 msgid "Save"
 msgstr ""
 
+msgid "Save GIF"
+msgstr ""
+
+msgid "Save GIFs with the star to find them here."
+msgstr ""
+
 msgid "Save and use"
 msgstr ""
 
@@ -1855,6 +1897,9 @@ msgstr ""
 msgid "Save sticker"
 msgstr ""
 
+msgid "Saved"
+msgstr ""
+
 msgid "Scan to add"
 msgstr ""
 
@@ -1862,6 +1907,9 @@ msgid "Scroll speed"
 msgstr ""
 
 msgid "Search"
+msgstr ""
+
+msgid "Search GIFs"
 msgstr ""
 
 msgid "Search all chats"
@@ -2296,6 +2344,9 @@ msgid "Uploaded emoji"
 msgstr ""
 
 msgid "Uploading picture"
+msgstr ""
+
+msgid "Use a shorter search."
 msgstr ""
 
 msgid "Use another key"

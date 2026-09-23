@@ -32,6 +32,13 @@ frame_idle :: proc() -> bool {
 			return false
 		}
 	}
+	if g_ui != nil &&
+	   g_ui.picker_open &&
+	   g_ui.gif_tab &&
+	   g_ui.gif_view != nil &&
+	   !g_ui.gif_view.failed {
+		return false
+	}
 	if preview_shown &&
 	   preview.vid != nil &&
 	   !preview.vid.failed &&
