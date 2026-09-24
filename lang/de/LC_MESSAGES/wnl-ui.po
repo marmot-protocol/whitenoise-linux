@@ -123,9 +123,6 @@ msgstr ""
 msgid "-"
 msgstr ""
 
-msgid "1 file"
-msgstr "1 Datei"
-
 msgid "100%"
 msgstr ""
 
@@ -555,6 +552,9 @@ msgstr "Empfänger und Aufbewahrung"
 msgid "Command palette"
 msgstr ""
 
+msgid "Comment"
+msgstr "Kommentar"
+
 msgid "Confirm"
 msgstr ""
 
@@ -612,6 +612,9 @@ msgstr "Kopieren"
 
 msgid "Copy JSON"
 msgstr "JSON kopieren"
+
+msgid "Copy info hash"
+msgstr "Info-Hash kopieren"
 
 msgid "Copy magnet link"
 msgstr "Magnet-Link kopieren"
@@ -880,6 +883,12 @@ msgstr "Meldung erstellen"
 msgid "Create poll"
 msgstr "Erstellen"
 
+msgid "Created"
+msgstr "Erstellt"
+
+msgid "Created by"
+msgstr "Erstellt mit"
+
 msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
 msgstr "Erstellt einen mit einem Passwort verschlüsselten NIP-49-Schlüssel, den du sicher aufbewahren oder in einen anderen Client übertragen kannst."
 
@@ -897,6 +906,9 @@ msgstr "Benutzerdefinierte Emojis"
 
 msgid "Cyan"
 msgstr "Cyan"
+
+msgid "DETAILS"
+msgstr "DETAILS"
 
 #, fuzzy
 msgid "DISAPPEARING MESSAGES"
@@ -1162,6 +1174,9 @@ msgstr ""
 msgid "Export encrypted key (ncryptsec)"
 msgstr "Verschlüsselten Schlüssel exportieren (ncryptsec)"
 
+msgid "FILES"
+msgstr "DATEIEN"
+
 msgid "Family"
 msgstr "Familie"
 
@@ -1410,6 +1425,12 @@ msgstr "Empfangs-Relays"
 
 msgid "Incoming messages"
 msgstr "Eingehende Nachrichten"
+
+msgid "Info hash"
+msgstr "Info-Hash"
+
+msgid "Info hash copied"
+msgstr "Info-Hash kopiert"
 
 #, fuzzy
 msgid "Insert a new line"
@@ -2003,6 +2024,9 @@ msgstr ""
 msgid "Pick the whole app's look."
 msgstr "Wähle das Aussehen der gesamten App."
 
+msgid "Pieces"
+msgstr "Teile"
+
 msgid "Pink"
 msgstr "Rosa"
 
@@ -2490,9 +2514,6 @@ msgstr ""
 msgid "Show as QR"
 msgstr "Als QR anzeigen"
 
-msgid "Show fewer files"
-msgstr "Weniger Dateien anzeigen"
-
 #, fuzzy
 msgid "Show group members"
 msgstr "Mitglieder anzeigen"
@@ -2766,6 +2787,15 @@ msgstr "Werkzeuge"
 
 msgid "Top glint"
 msgstr ""
+
+msgid "Torrent"
+msgstr "Torrent"
+
+msgid "Trackers"
+msgstr "Tracker"
+
+msgid "Trackers only, no DHT or peer exchange."
+msgstr "Nur Tracker, kein DHT und kein Peer-Austausch."
 
 msgid "Transcribe"
 msgstr "Transkribieren"

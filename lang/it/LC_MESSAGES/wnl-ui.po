@@ -123,9 +123,6 @@ msgstr ""
 msgid "-"
 msgstr ""
 
-msgid "1 file"
-msgstr "1 file"
-
 msgid "100%"
 msgstr ""
 
@@ -555,6 +552,9 @@ msgstr "Destinatario e conservazione"
 msgid "Command palette"
 msgstr ""
 
+msgid "Comment"
+msgstr "Commento"
+
 msgid "Confirm"
 msgstr ""
 
@@ -612,6 +612,9 @@ msgstr "Copia"
 
 msgid "Copy JSON"
 msgstr "Copia JSON"
+
+msgid "Copy info hash"
+msgstr "Copia info hash"
 
 msgid "Copy magnet link"
 msgstr "Copia link magnet"
@@ -880,6 +883,12 @@ msgstr "Crea segnalazione"
 msgid "Create poll"
 msgstr "Crea"
 
+msgid "Created"
+msgstr "Creato"
+
+msgid "Created by"
+msgstr "Creato da"
+
 msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
 msgstr "Crea una chiave NIP-49 crittografata con una password, da conservare o trasferire in sicurezza a un altro client."
 
@@ -897,6 +906,9 @@ msgstr "Emoji personalizzate"
 
 msgid "Cyan"
 msgstr "Ciano"
+
+msgid "DETAILS"
+msgstr "DETTAGLI"
 
 #, fuzzy
 msgid "DISAPPEARING MESSAGES"
@@ -1162,6 +1174,9 @@ msgstr ""
 msgid "Export encrypted key (ncryptsec)"
 msgstr "Esporta chiave crittografata (ncryptsec)"
 
+msgid "FILES"
+msgstr "FILE"
+
 msgid "Family"
 msgstr "Famiglia"
 
@@ -1410,6 +1425,12 @@ msgstr "Relay in entrata"
 
 msgid "Incoming messages"
 msgstr "Messaggi in arrivo"
+
+msgid "Info hash"
+msgstr "Info hash"
+
+msgid "Info hash copied"
+msgstr "Info hash copiato"
 
 #, fuzzy
 msgid "Insert a new line"
@@ -2003,6 +2024,9 @@ msgstr ""
 msgid "Pick the whole app's look."
 msgstr "Scegli l'aspetto di tutta l'app."
 
+msgid "Pieces"
+msgstr "Pezzi"
+
 msgid "Pink"
 msgstr "Rosa"
 
@@ -2490,9 +2514,6 @@ msgstr ""
 msgid "Show as QR"
 msgstr "Mostra come QR"
 
-msgid "Show fewer files"
-msgstr "Mostra meno file"
-
 #, fuzzy
 msgid "Show group members"
 msgstr "Mostra membri"
@@ -2766,6 +2787,15 @@ msgstr "Strumenti"
 
 msgid "Top glint"
 msgstr ""
+
+msgid "Torrent"
+msgstr "Torrent"
+
+msgid "Trackers"
+msgstr "Tracker"
+
+msgid "Trackers only, no DHT or peer exchange."
+msgstr "Solo tracker, niente DHT né scambio di peer."
 
 msgid "Transcribe"
 msgstr "Trascrivi"

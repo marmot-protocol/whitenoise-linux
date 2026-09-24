@@ -121,9 +121,6 @@ msgstr ""
 msgid "-"
 msgstr ""
 
-msgid "1 file"
-msgstr ""
-
 msgid "100%"
 msgstr ""
 
@@ -527,6 +524,9 @@ msgstr ""
 msgid "Command palette"
 msgstr ""
 
+msgid "Comment"
+msgstr ""
+
 msgid "Confirm"
 msgstr ""
 
@@ -579,6 +579,9 @@ msgid "Copy"
 msgstr ""
 
 msgid "Copy JSON"
+msgstr ""
+
+msgid "Copy info hash"
 msgstr ""
 
 msgid "Copy magnet link"
@@ -828,6 +831,12 @@ msgstr ""
 msgid "Create poll"
 msgstr ""
 
+msgid "Created"
+msgstr ""
+
+msgid "Created by"
+msgstr ""
+
 msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
 msgstr ""
 
@@ -844,6 +853,9 @@ msgid "Custom emoji"
 msgstr ""
 
 msgid "Cyan"
+msgstr ""
+
+msgid "DETAILS"
 msgstr ""
 
 msgid "DISAPPEARING MESSAGES"
@@ -1092,6 +1104,9 @@ msgstr ""
 msgid "Export encrypted key (ncryptsec)"
 msgstr ""
 
+msgid "FILES"
+msgstr ""
+
 msgid "Family"
 msgstr ""
 
@@ -1327,6 +1342,12 @@ msgid "Inbox relays"
 msgstr ""
 
 msgid "Incoming messages"
+msgstr ""
+
+msgid "Info hash"
+msgstr ""
+
+msgid "Info hash copied"
 msgstr ""
 
 msgid "Insert a new line"
@@ -1894,6 +1915,9 @@ msgstr ""
 msgid "Pick the whole app's look."
 msgstr ""
 
+msgid "Pieces"
+msgstr ""
+
 msgid "Pink"
 msgstr ""
 
@@ -2350,9 +2374,6 @@ msgstr ""
 msgid "Show as QR"
 msgstr ""
 
-msgid "Show fewer files"
-msgstr ""
-
 msgid "Show group members"
 msgstr ""
 
@@ -2611,6 +2632,15 @@ msgid "Tools"
 msgstr ""
 
 msgid "Top glint"
+msgstr ""
+
+msgid "Torrent"
+msgstr ""
+
+msgid "Trackers"
+msgstr ""
+
+msgid "Trackers only, no DHT or peer exchange."
 msgstr ""
 
 msgid "Transcribe"

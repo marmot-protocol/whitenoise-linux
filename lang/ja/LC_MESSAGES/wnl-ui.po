@@ -123,9 +123,6 @@ msgstr ""
 msgid "-"
 msgstr ""
 
-msgid "1 file"
-msgstr "1 個のファイル"
-
 msgid "100%"
 msgstr ""
 
@@ -555,6 +552,9 @@ msgstr "送信先と保存期間"
 msgid "Command palette"
 msgstr ""
 
+msgid "Comment"
+msgstr "コメント"
+
 msgid "Confirm"
 msgstr ""
 
@@ -612,6 +612,9 @@ msgstr "コピー"
 
 msgid "Copy JSON"
 msgstr "JSON をコピー"
+
+msgid "Copy info hash"
+msgstr "情報ハッシュをコピー"
 
 msgid "Copy magnet link"
 msgstr "マグネットリンクをコピー"
@@ -880,6 +883,12 @@ msgstr "報告を作成"
 msgid "Create poll"
 msgstr "作成"
 
+msgid "Created"
+msgstr "作成日"
+
+msgid "Created by"
+msgstr "作成ツール"
+
 msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
 msgstr "パスワードで暗号化したNIP-49キーを作成します。安全に保存したり、別のクライアントに移したりできます。"
 
@@ -897,6 +906,9 @@ msgstr "カスタム絵文字"
 
 msgid "Cyan"
 msgstr "シアン"
+
+msgid "DETAILS"
+msgstr "詳細"
 
 #, fuzzy
 msgid "DISAPPEARING MESSAGES"
@@ -1162,6 +1174,9 @@ msgstr ""
 msgid "Export encrypted key (ncryptsec)"
 msgstr "暗号化キーをエクスポート(ncryptsec)"
 
+msgid "FILES"
+msgstr "ファイル"
+
 msgid "Family"
 msgstr "家族"
 
@@ -1410,6 +1425,12 @@ msgstr "受信リレー"
 
 msgid "Incoming messages"
 msgstr "受信メッセージ"
+
+msgid "Info hash"
+msgstr "情報ハッシュ"
+
+msgid "Info hash copied"
+msgstr "情報ハッシュをコピーしました"
 
 #, fuzzy
 msgid "Insert a new line"
@@ -2003,6 +2024,9 @@ msgstr ""
 msgid "Pick the whole app's look."
 msgstr "アプリ全体の見た目を選択します。"
 
+msgid "Pieces"
+msgstr "ピース"
+
 msgid "Pink"
 msgstr "ピンク"
 
@@ -2490,9 +2514,6 @@ msgstr ""
 msgid "Show as QR"
 msgstr "QR コードで表示"
 
-msgid "Show fewer files"
-msgstr "表示するファイルを減らす"
-
 #, fuzzy
 msgid "Show group members"
 msgstr "メンバーを表示"
@@ -2766,6 +2787,15 @@ msgstr "ツール"
 
 msgid "Top glint"
 msgstr ""
+
+msgid "Torrent"
+msgstr "トレント"
+
+msgid "Trackers"
+msgstr "トラッカー"
+
+msgid "Trackers only, no DHT or peer exchange."
+msgstr "トラッカーのみ。DHT とピア交換は使いません。"
 
 msgid "Transcribe"
 msgstr "文字起こし"

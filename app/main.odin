@@ -1487,7 +1487,8 @@ app_main :: proc() {
 		att_hover = {}
 		arc_hover = {}
 		arc_more_hover = nil
-		tor_more_hover = nil
+		tor_open_hover = nil
+		tor_hash_hover = nil
 		tor_magnet_hover = nil
 		xdc_hover = {}
 		img_hover = {}
@@ -2153,6 +2154,7 @@ app_main :: proc() {
 	for _, view in video_views {if view != nil {video_view_free(view)}}
 	for _, view in stl_views {if view != nil {stl_view_free(view)}}
 	for _, view in pdf_views {if view != nil {pdf_view_free(view)}}
+	for _, view in tor_views {if view != nil {tor_view_free(view)}}
 	vault_lock()
 	rl.CloseWindow()
 }
