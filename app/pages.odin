@@ -16,8 +16,9 @@ import marmot "../marmot"
 
 handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if ui.sticker_open {handle_sticker_panel(ui); return}
-	// The revealed nsec lives only while the Keys page is on screen.
-	if ui.page != .Settings || ui.settings_section != .Keys {
+	// Wipe private keys off their page without disarming other settings actions.
+	if ui.page != .Settings ||
+	   (ui.settings_section != .Keys && (len(ui.keys_nsec) > 0 || ui.keys_nsec_show)) {
 		keys_forget(ui)
 	}
 
@@ -25,7 +26,16 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
-	if (ui.page == .Profile || (ui.page == .Settings && ui.settings_section != .Folders)) &&
+	if (ui.page == .Profile ||
+		   (ui.page == .Settings &&
+				   (ui.theme_edit ||
+						   ui.focus == .Relay ||
+						   ui.focus == .Inbox ||
+						   ui.focus == .Fetch ||
+						   ui.focus == .Client ||
+						   ui.focus == .KP ||
+						   ui.focus == .EmojiName ||
+						   ui.focus == .ExportPw))) &&
 	   !ui.new_chat_open {
 		edit_text(ui, active_buf(ui))
 	}
@@ -99,6 +109,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			handle_settings(ui, client) // open modals capture Esc every frame
 			return
 		}
+		if settings_handle_navigation(ui, client) {return}
 	}
 
 	// Profile presses and keys, before the release gate below:
@@ -190,6 +201,7 @@ handle_pages :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 			case .Archived:
 				load_archived(client, ui)
 			case .Settings:
+				settings_open(ui, client, .Home)
 			case .Profile:
 				load_profile(client, ui)
 			}
@@ -517,12 +529,7 @@ handle_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		}
 		if clicked("PrKeys") || clicked("PrNetwork") {
 			keys := clicked("PrKeys")
-			ui.page = .Settings
-			ui.settings_section = keys ? .Keys : .Network
-			load_profile(client, ui)
-			if keys {
-				fetch_key_packages(ui, client)
-			}
+			settings_open(ui, client, keys ? .Keys : .Network)
 			return
 		}
 	}

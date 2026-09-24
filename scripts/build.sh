@@ -281,5 +281,6 @@ if [ "${1:-}" = test ]; then
     $(pkg-config --cflags --libs sdl3 libcurl glib-2.0 mpv libcrypto) -lm -o "$HERE/build/stt-test"
   "$HERE/build/stt-test"
   env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app
+  SDL_VIDEODRIVER=dummy env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app -define:ODIN_TEST_NAMES=settings_viewport
   SDL_VIDEODRIVER=dummy env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app/sdlrl
 fi

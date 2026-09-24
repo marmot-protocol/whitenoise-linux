@@ -24,165 +24,255 @@ health_last: f64 = -1
 // ── Render ──────────────────────────────────────────────────────────
 
 settings_network :: proc(ui: ^Ui_State) {
-	eyebrow("STATUS")
-	if clay.UI(clay.ID("RowNetStatus"))(srow()) {
-		dot := ui.health_ok && ui.health.connected > 0 ? ACCENT : TEXT_DIM
-		if clay.UI(clay.ID("NetDot"))(
+	narrow := settings_body_width(ui) < 400
+	if ui.settings_tab == 0 {
+		if clay.UI(clay.ID("NetworkStatusGroup"))(
 		{
-			layout = {sizing = {width = clay.SizingFixed(7), height = clay.SizingFixed(7)}},
-			backgroundColor = dot,
-			cornerRadius = rr(4),
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				layoutDirection = .TopToBottom,
+				childGap = 3,
+			},
 		},
-		) {}
-		row_labels(health_line(ui), health_detail(ui))
-		micro_button("NetRefresh", "Refresh")
-	}
-	if clay.UI(clay.ID("RowReconnect"))(srow()) {
-		// marmot-c exports no reconnect entry point, so this keeps the
-		// slint row's look and surfaces the stub status on use.
-		row_labels("Reconnect now", "Drops idle relay sockets and dials them again.")
-		micro_button("ReconnectBtn", "Reconnect")
-	}
+		) {
+			status := settings_row()
+			status.layout.layoutDirection = narrow ? .TopToBottom : .LeftToRight
+			if clay.UI(clay.ID("RowNetStatus"))(status) {
+				if clay.UI(clay.ID("NetworkConnectionSummary"))(
+				{layout = {childGap = 8, childAlignment = {y = .Center}}},
+				) {
+					dot := ui.health_ok && ui.health.connected > 0 ? ACCENT : TEXT_DIM
+					if clay.UI(clay.ID("NetDot"))(
+					{
+						layout = {
+							sizing = {width = clay.SizingFixed(7), height = clay.SizingFixed(7)},
+						},
+						backgroundColor = dot,
+						cornerRadius = rr(4),
+					},
+					) {}
+					clay.Text(
+						health_line(ui),
+						{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT},
+					)
+				}
+				settings_button("NetRefresh", "Refresh")
+			}
+			clay.Text(health_detail(ui), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+		}
 
-	eyebrow("OUTBOX RELAYS (NIP-65)")
-	clay.Text(tr("Where you publish."), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
-	if clay.UI(clay.ID("AddRelayRow"))(
+		if clay.UI(clay.ID("NetworkOutboxGroup"))(settings_box()) {
+			settings_group(N_("Published outbox relays (NIP-65)"))
+			clay.Text(
+				tr("Where you publish."),
+				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+			)
+			if len(ui.profile.nip65) == 0 {
+				clay.Text(
+					tr("No relay list published."),
+					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+				)
+			}
+			for relay, i in ui.profile.nip65 {
+				relay_row("RelayRow", "RelayRemove", u32(i), relay)
+			}
+			if clay.UI(clay.ID("AddRelayRow"))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					layoutDirection = narrow ? .TopToBottom : .LeftToRight,
+					childGap = 6,
+					childAlignment = {y = .Center},
+				},
+			},
+			) {
+				settings_input(
+					ui,
+					"RelayBox",
+					&ui.relay_input,
+					"wss://relay.example.com",
+					ui.focus == .Relay,
+				)
+				settings_button("AddRelayBtn", "Add")
+			}
+		}
+
+		if clay.UI(clay.ID("NetworkInboxGroup"))(settings_box()) {
+			settings_group(N_("Published inbox relays"))
+			clay.Text(
+				tr("Where peers reach you."),
+				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+			)
+			if len(ui.profile.inbox) == 0 {
+				clay.Text(
+					tr("No inbox relays."),
+					{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
+				)
+			}
+			for relay, i in ui.profile.inbox {
+				relay_row("InboxRow", "InboxRemove", u32(i), relay)
+			}
+			if clay.UI(clay.ID("AddInboxRow"))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					layoutDirection = narrow ? .TopToBottom : .LeftToRight,
+					childGap = 6,
+					childAlignment = {y = .Center},
+				},
+			},
+			) {
+				settings_input(
+					ui,
+					"InboxBox",
+					&ui.inbox_input,
+					"wss://relay.example.com",
+					ui.focus == .Inbox,
+				)
+				settings_button("AddInboxBtn", "Add")
+			}
+		}
+
+		if clay.UI(clay.ID("NetworkSyncGroup"))(
+		{
+			layout = {sizing = {width = clay.SizingGrow()}, padding = {top = 8}},
+			border = {color = FIELD_BORDER, width = {top = 1}},
+		},
+		) {
+			recovery := settings_row()
+			recovery.layout.layoutDirection = .TopToBottom
+			recovery.layout.childGap = 8
+			if clay.UI(clay.ID("RowRepublish"))(recovery) {
+				row_labels(
+					"Republish relay lists",
+					"Re-broadcasts your outbox and inbox relay lists. Use this if peers can't find you.",
+				)
+				settings_button("RepublishBtn", "Republish")
+			}
+		}
+	} else {
+		if clay.UI(clay.ID("NetworkFetchGroup"))(settings_box()) {
+			settings_group(N_("Event fetch relays"))
+			clay.Text(
+				tr(
+					"Where linked Nostr events (nevent, note) are pulled from. Your chats never touch these.",
+				),
+				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+			)
+			for relay, i in ui.prefs.fetch_relays {
+				relay_row("FetchRow", "FetchRemove", u32(i), relay)
+			}
+			if clay.UI(clay.ID("AddFetchRow"))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					layoutDirection = narrow ? .TopToBottom : .LeftToRight,
+					childGap = 6,
+					childAlignment = {y = .Center},
+				},
+			},
+			) {
+				settings_input(
+					ui,
+					"FetchBox",
+					&ui.fetch_input,
+					"wss://relay.example.com",
+					ui.focus == .Fetch,
+				)
+				settings_button("AddFetchBtn", "Add")
+			}
+		}
+
+		if clay.UI(clay.ID("NetworkClientGroup"))(settings_box()) {
+			settings_group(N_("Open events in"))
+			clay.Text(
+				tr(
+					"The web client an event card opens, with {id} in place of the event. For example https://primal.net/e/{id}.",
+				),
+				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+			)
+			settings_input(
+				ui,
+				"ClientBox",
+				&ui.client_input,
+				DEFAULT_EVENT_CLIENT,
+				ui.focus == .Client,
+			)
+		}
+	}
+}
+
+// Shared compact field; preserve input sizing and focus behavior across settings pages.
+settings_input :: proc(
+	ui: ^Ui_State,
+	id: string,
+	buf: ^[dynamic]u8,
+	placeholder: string,
+	active: bool,
+	width: f32 = 0,
+) {
+	if clay.UI(clay.ID(id))(
 	{
 		layout = {
-			sizing = {width = clay.SizingGrow()},
-			childGap = 10,
+			sizing = {
+				width = width > 0 ? clay.SizingFixed(width) : clay.SizingGrow(),
+				height = clay.SizingFixed(30),
+			},
+			padding = {left = 8, right = 8},
 			childAlignment = {y = .Center},
 		},
+		backgroundColor = ROW_BG,
+		cornerRadius = rr(6),
+		border = active ? focus_border(true) : {color = FIELD_BORDER, width = bw()},
 	},
 	) {
-		input_box(
-			ui,
-			"RelayBox",
-			&ui.relay_input,
-			"wss://relay.example.com",
-			ui.focus == .Relay,
-			300,
-		)
-		login_button("AddRelayBtn", "Add")
-	}
-	if len(ui.profile.nip65) == 0 {
-		clay.Text(
-			tr("No relay list published."),
-			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
-		)
-	}
-	for relay, i in ui.profile.nip65 {
-		relay_row("RelayRow", "RelayRemove", u32(i), relay)
-	}
-
-	eyebrow("INBOX RELAYS")
-	clay.Text(
-		tr("Where peers reach you."),
-		{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
-	)
-	if clay.UI(clay.ID("AddInboxRow"))(
-	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			childGap = 10,
-			childAlignment = {y = .Center},
-		},
-	},
-	) {
-		input_box(
-			ui,
-			"InboxBox",
-			&ui.inbox_input,
-			"wss://relay.example.com",
-			ui.focus == .Inbox,
-			300,
-		)
-		login_button("AddInboxBtn", "Add")
-	}
-	if len(ui.profile.inbox) == 0 {
-		clay.Text(
-			tr("No inbox relays."),
-			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
-		)
-	}
-	for relay, i in ui.profile.inbox {
-		relay_row("InboxRow", "InboxRemove", u32(i), relay)
-	}
-
-	eyebrow("EVENT FETCH RELAYS")
-	clay.Text(
-		tr(
-			"Where linked Nostr events (nevent, note) are pulled from. Your chats never touch these.",
-		),
-		{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
-	)
-	if clay.UI(clay.ID("AddFetchRow"))(
-	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			childGap = 10,
-			childAlignment = {y = .Center},
-		},
-	},
-	) {
-		input_box(
-			ui,
-			"FetchBox",
-			&ui.fetch_input,
-			"wss://relay.example.com",
-			ui.focus == .Fetch,
-			300,
-		)
-		login_button("AddFetchBtn", "Add")
-	}
-	for relay, i in ui.prefs.fetch_relays {
-		relay_row("FetchRow", "FetchRemove", u32(i), relay)
-	}
-
-	eyebrow("OPEN EVENTS IN")
-	clay.Text(
-		tr(
-			"The web client an event card opens, with {id} in place of the event. For example https://primal.net/e/{id}.",
-		),
-		{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
-	)
-	input_box(ui, "ClientBox", &ui.client_input, DEFAULT_EVENT_CLIENT, ui.focus == .Client, 300)
-
-	eyebrow("SYNC")
-	if clay.UI(clay.ID("RowRepublish"))(srow()) {
-		row_labels(
-			"Republish relay lists",
-			"Re-broadcasts your outbox and inbox relay lists. Use this if peers can't find you.",
-		)
-		micro_button("RepublishBtn", "Republish")
+		field_text(ui, id, buf, placeholder, active, 14)
 	}
 }
 
 relay_row :: proc(row_id: string, remove_id: string, index: u32, relay: string) {
-	if clay.UI(clay.ID(row_id, index))(
-	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			padding = clay.PaddingAll(12),
-			childGap = 8,
-			childAlignment = {y = .Center},
-		},
-		backgroundColor = hovered() ? HOVER : ROW_BG,
-		cornerRadius = rr(8),
-	},
-	) {
-		clay.Text(relay, {fontId = FONT_BODY, fontSize = 13, textColor = TEXT})
-		if clay.UI(clay.ID_LOCAL("Gap"))({layout = {sizing = {width = clay.SizingGrow()}}}) {}
-		if hovered() {
-			if clay.UI(clay.ID(remove_id, index))(
-			{
-				layout = {padding = clay.PaddingAll(5)},
-				backgroundColor = hovered() ? HOVER : {},
-				cornerRadius = rr(6),
+	row := settings_row()
+	row.layout.childGap = 8
+	row.border = {
+		color = FIELD_BORDER,
+		width = {bottom = 1},
+	}
+	if clay.UI(clay.ID(row_id, index))(row) {
+		if clay.UI(clay.ID_LOCAL("RelayAddress"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(30)},
+				childAlignment = {y = .Center},
 			},
-			) {
-				clay.Text(ICON_TRASH, {fontId = FONT_ICON, fontSize = 11, textColor = TEXT_DIM})
+			clip = {horizontal = true},
+		},
+		) {
+			clay.Text(
+				relay,
+				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT, wrapMode = .None},
+			)
+			if hovered() {
+				tooltip(relay)
 			}
+		}
+		if clay.UI(clay.ID(remove_id, index))(
+		{
+			layout = {
+				sizing = {width = clay.SizingFixed(30), height = clay.SizingFixed(30)},
+				childAlignment = {x = .Center, y = .Center},
+			},
+			backgroundColor = hovered() ? HOVER : {},
+			cornerRadius = rr(6),
+		},
+		) {
+			if hovered() {
+				tooltip(N_("Remove"))
+				cursor_raise(.Pointer)
+			}
+			clay.Text(
+				ICON_TRASH,
+				{fontId = FONT_ICON, fontSize = 13, textColor = hovered() ? DANGER : TEXT_DIM},
+			)
 		}
 	}
 }
@@ -275,10 +365,6 @@ handle_network :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	if clicked("NetRefresh") {
 		health_refresh(ui, client)
 		reload_profile(ui, client)
-		return
-	}
-	if clicked("ReconnectBtn") {
-		ui.client_status = STUB_STATUS // no marmot-c reconnect export
 		return
 	}
 	if clicked("RepublishBtn") {

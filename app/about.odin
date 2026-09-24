@@ -29,26 +29,34 @@ TRACE_SECS :: 1.1 // per hop
 settings_about :: proc(ui: ^Ui_State) {
 	about_wordmark()
 
-	eyebrow("WHAT IT IS")
-	clay.Text(
-		tr(
-			"A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group.",
-		),
-		{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
-	)
+	if clay.UI(clay.ID("AboutDescriptionGroup"))(settings_box()) {
+		settings_group(N_("What it is"))
+		clay.Text(
+			tr(
+				"A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group.",
+			),
+			{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
+		)
+	}
 
-	eyebrow("WHERE A MESSAGE GOES")
-	about_trace()
-	clay.Text(
-		tr("The relay in the middle stores and forwards. It never holds a key."),
-		{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
-	)
+	if clay.UI(clay.ID("AboutTraceGroup"))(settings_box()) {
+		settings_group(N_("Where a message goes"))
+		about_trace(ui)
+		clay.Text(
+			tr("The relay in the middle stores and forwards. It never holds a key."),
+			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+		)
+	}
 
-	eyebrow("THIS SESSION")
-	about_readout(ui)
+	if clay.UI(clay.ID("AboutSessionGroup"))(settings_box()) {
+		settings_group(N_("This session"))
+		about_readout(ui)
+	}
 
-	eyebrow("BUILT WITH")
-	about_credits()
+	if clay.UI(clay.ID("AboutCreditsGroup"))(settings_box()) {
+		settings_group(N_("Built with"))
+		about_credits(ui)
+	}
 
 	if clay.UI(clay.ID("AboutFoot"))(
 	{
@@ -77,13 +85,11 @@ about_wordmark :: proc() {
 	{
 		layout = {
 			sizing = {width = clay.SizingGrow()},
-			padding = {left = 20, right = 20, top = 22, bottom = 22},
+			padding = {top = 8, bottom = 12},
 			childGap = 16,
 			childAlignment = {y = .Center},
 		},
-		backgroundColor = PLATE,
-		cornerRadius = rr(14),
-		border = {color = FIELD_BORDER, width = bw()},
+		border = {color = DIVIDER, width = {bottom = BORDER_W}},
 	},
 	) {
 		if clay.UI(clay.ID("AboutBars"))(
@@ -107,10 +113,10 @@ about_wordmark :: proc() {
 		if clay.UI(clay.ID("AboutMarkCol"))(
 		{layout = {layoutDirection = .TopToBottom, childGap = 4}},
 		) {
-			clay.Text("White Noise", {fontId = FONT_TITLE, fontSize = 26, textColor = TEXT})
+			clay.Text("White Noise", {fontId = FONT_TITLE, fontSize = 21, textColor = TEXT})
 			clay.Text(
-				tr("PRIVATE GROUP CHAT OVER NOSTR"),
-				{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO, letterSpacing = 2},
+				tr("Private group chat over Nostr"),
+				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 			)
 		}
 	}
@@ -119,12 +125,13 @@ about_wordmark :: proc() {
 // The four hops with a packet crossing them. The packet is one accent
 // square parked under the hop it currently occupies.
 @(private = "file")
-about_trace :: proc() {
+about_trace :: proc(ui: ^Ui_State) {
 	at := int(rl.GetTime() / TRACE_SECS) % len(HOPS)
 	if clay.UI(clay.ID("AboutTrace"))(
 	{
 		layout = {
 			sizing = {width = clay.SizingGrow()},
+			layoutDirection = settings_body_width(ui) - 24 < 520 ? .TopToBottom : .LeftToRight,
 			childGap = 8,
 			childAlignment = {y = .Center},
 		},
@@ -137,12 +144,11 @@ about_trace :: proc() {
 				layout = {
 					sizing = {width = clay.SizingGrow()},
 					layoutDirection = .TopToBottom,
-					padding = clay.PaddingAll(12),
+					padding = clay.PaddingAll(8),
 					childGap = 6,
 				},
-				backgroundColor = here ? SELECTED : ROW_BG,
-				cornerRadius = rr(10),
-				border = {color = here ? ACCENT : FIELD_BORDER, width = bw()},
+				backgroundColor = here ? PLATE : {},
+				border = {color = here ? ACCENT : DIVIDER, width = {bottom = BORDER_W}},
 			},
 			) {
 				clay.Text(
@@ -151,7 +157,7 @@ about_trace :: proc() {
 						fontId = FONT_MONO,
 						fontSize = 11,
 						textColor = here ? ACCENT : TEXT_DIM,
-						letterSpacing = 2,
+						letterSpacing = 0,
 					},
 				)
 				clay.Text(tr(hop[1]), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
@@ -167,7 +173,7 @@ about_trace :: proc() {
 			}
 			if i < len(HOPS) - 1 {
 				clay.Text(
-					"→",
+					settings_body_width(ui) - 24 < 520 ? "↓" : "→",
 					{fontId = FONT_BODY, fontSize = 14, textColor = i < at ? ACCENT : TEXT_LO},
 				)
 			}
@@ -196,6 +202,7 @@ about_readout :: proc(ui: ^Ui_State) {
 		},
 		{uptime_label(), "UPTIME"},
 	}
+	columns := settings_body_width(ui) - 24 < 520 ? 2 : 3
 	if clay.UI(clay.ID("AboutGrid"))(
 	{
 		layout = {
@@ -205,22 +212,20 @@ about_readout :: proc(ui: ^Ui_State) {
 		},
 	},
 	) {
-		for row in 0 ..< 2 {
+		for row in 0 ..< (len(tiles) + columns - 1) / columns {
 			if clay.UI(clay.ID("AboutGridRow", u32(row)))(
 			{layout = {sizing = {width = clay.SizingGrow()}, childGap = 8}},
 			) {
-				for i in row * 3 ..< row * 3 + 3 {
+				for i in row * columns ..< min(row * columns + columns, len(tiles)) {
 					if clay.UI(clay.ID("AboutTile", u32(i)))(
 					{
 						layout = {
 							sizing = {width = clay.SizingGrow()},
 							layoutDirection = .TopToBottom,
-							padding = clay.PaddingAll(12),
+							padding = {top = 8, bottom = 8},
 							childGap = 4,
 						},
-						backgroundColor = ROW_BG,
-						cornerRadius = rr(10),
-						border = {color = FIELD_BORDER, width = bw()},
+						border = {color = DIVIDER, width = {bottom = BORDER_W}},
 					},
 					) {
 						clay.Text(
@@ -246,20 +251,36 @@ about_readout :: proc(ui: ^Ui_State) {
 CREDITS := []string{"Odin", "clay", "SDL3", "marmot", "MLS", "Nostr", "stb", "Twemoji", "mpv"}
 
 @(private = "file")
-about_credits :: proc() {
+about_credits :: proc(ui: ^Ui_State) {
+	columns := settings_body_width(ui) - 24 < 520 ? 3 : 5
 	if clay.UI(clay.ID("AboutCredits"))(
-	{layout = {sizing = {width = clay.SizingGrow()}, childGap = 6}},
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			layoutDirection = .TopToBottom,
+			childGap = 6,
+		},
+	},
 	) {
-		for name, i in CREDITS {
-			if clay.UI(clay.ID("AboutCredit", u32(i)))(
-			{
-				layout = {padding = {left = 10, right = 10, top = 5, bottom = 5}},
-				backgroundColor = PLATE,
-				cornerRadius = rr(7),
-				border = {color = FIELD_BORDER, width = bw()},
-			},
+		for first := 0; first < len(CREDITS); first += columns {
+			if clay.UI(clay.ID("AboutCreditRow", u32(first)))(
+			{layout = {sizing = {width = clay.SizingGrow()}, childGap = 6}},
 			) {
-				clay.Text(name, {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_DIM})
+				for i in first ..< min(first + columns, len(CREDITS)) {
+					if clay.UI(clay.ID("AboutCredit", u32(i)))(
+					{
+						layout = {
+							sizing = {width = clay.SizingGrow()},
+							padding = {top = 4, bottom = 4},
+						},
+					},
+					) {
+						clay.Text(
+							CREDITS[i],
+							{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_DIM},
+						)
+					}
+				}
 			}
 		}
 	}

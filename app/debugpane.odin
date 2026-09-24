@@ -40,32 +40,34 @@ json_opts :: proc() -> json.Marshal_Options {
 // ── Debug page ──────────────────────────────────────────────────────
 
 settings_debug :: proc(ui: ^Ui_State) {
-	eyebrow(DEBUG_EYEBROWS[clamp(ui.debug_tab, 0, len(DEBUG_EYEBROWS) - 1)])
-	if clay.UI(clay.ID("DbgTabs"))({layout = {layoutDirection = .TopToBottom, childGap = 8}}) {
-		for row in 0 ..< 2 {
-			if clay.UI(clay.ID("DbgTabRow", u32(row)))({layout = {childGap = 8}}) {
-				for i in row * 2 ..< min(row * 2 + 2, len(DEBUG_TABS)) {
-					theme_chip_indexed("DbgTab", u32(i), tr(DEBUG_TABS[i]), ui.debug_tab == i)
+	if clay.UI(clay.ID("DebugSnapshotGroup"))(settings_box()) {
+		settings_group(DEBUG_EYEBROWS[clamp(ui.debug_tab, 0, len(DEBUG_EYEBROWS) - 1)])
+		if clay.UI(clay.ID("DbgTabs"))({layout = {layoutDirection = .TopToBottom, childGap = 4}}) {
+			for row in 0 ..< 2 {
+				if clay.UI(clay.ID("DbgTabRow", u32(row)))({layout = {childGap = 4}}) {
+					for i in row * 2 ..< min(row * 2 + 2, len(DEBUG_TABS)) {
+						settings_option("DbgTab", u32(i), tr(DEBUG_TABS[i]), ui.debug_tab == i)
+					}
 				}
 			}
 		}
-	}
-	if clay.UI(clay.ID("DbgActions"))({layout = {childGap = 8}}) {
-		micro_button("DbgRefresh", "Refresh")
-		micro_button("DbgCopy", "Copy JSON")
-	}
-	if clay.UI(clay.ID("DbgPlate"))(
-	{
-		layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(12)},
-		backgroundColor = PLATE,
-		cornerRadius = rr(8),
-	},
-	) {
-		display := ui.debug_tab == 3 ? ui.debug_text : ui.debug_json
-		clay.Text(
-			len(display) > 0 ? display : tr("(nothing loaded yet, click Refresh)"),
-			{fontId = FONT_MONO, fontSize = 11, textColor = TEXT},
-		)
+		if clay.UI(clay.ID("DbgActions"))({layout = {childGap = 6}}) {
+			settings_button("DbgRefresh", "Refresh")
+			settings_button("DbgCopy", "Copy JSON")
+		}
+		if clay.UI(clay.ID("DbgPlate"))(
+		{
+			layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(8)},
+			backgroundColor = PLATE,
+			border = {color = FIELD_BORDER, width = bw()},
+		},
+		) {
+			display := ui.debug_tab == 3 ? ui.debug_text : ui.debug_json
+			clay.Text(
+				len(display) > 0 ? display : tr("(nothing loaded yet, click Refresh)"),
+				{fontId = FONT_MONO, fontSize = 11, textColor = TEXT},
+			)
+		}
 	}
 }
 
@@ -247,41 +249,45 @@ kp_json :: proc(rows: []Kp_Row) -> string {
 // ── KP inspector page ───────────────────────────────────────────────
 
 settings_kp :: proc(ui: ^Ui_State) {
-	eyebrow("YOUR KEY PACKAGES")
-	if clay.UI(clay.ID("KpMineRow"))({layout = {childGap = 8}}) {
-		micro_button("KpMineRefresh", "Decode own")
+	if clay.UI(clay.ID("KpOwnGroup"))(settings_box()) {
+		settings_group(N_("YOUR KEY PACKAGES"))
+		if clay.UI(clay.ID("KpMineRow"))({layout = {childGap = 6}}) {
+			settings_button("KpMineRefresh", "Decode own")
+		}
+		kp_cards(
+			ui,
+			"KpMine",
+			ui.kp_list[:],
+			ui.kp_fetched ? tr("No key package on this device or its relays.") : tr("Not loaded yet. Click Decode own."),
+		)
 	}
-	kp_cards(
-		ui,
-		"KpMine",
-		ui.kp_list[:],
-		ui.kp_fetched ? tr("No key package on this device or its relays.") : tr("Not loaded yet. Click Decode own."),
-	)
 
-	eyebrow("INSPECT SOMEONE ELSE'S")
-	if clay.UI(clay.ID("KpInspectRow"))(
-	{
-		layout = {
-			sizing = {width = clay.SizingGrow()},
-			childGap = 10,
-			childAlignment = {y = .Center},
+	if clay.UI(clay.ID("KpInspectGroup"))(settings_box()) {
+		settings_group(N_("INSPECT SOMEONE ELSE'S"))
+		if clay.UI(clay.ID("KpInspectRow"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				childGap = 6,
+				childAlignment = {y = .Center},
+			},
 		},
-	},
-	) {
-		input_box(ui, "KpBox", &ui.kp_input, "npub or hex pubkey", ui.focus == .KP, 300)
-		login_button("KpInspect", "Inspect")
-	}
-	if len(ui.kp_peer_owner) > 0 {
-		clay.Text(ui.kp_peer_owner, {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_DIM})
-		kp_cards(ui, "KpPeer", ui.kp_peer[:], tr("No key package published for that pubkey."))
-	}
+		) {
+			settings_input(ui, "KpBox", &ui.kp_input, "npub or hex pubkey", ui.focus == .KP)
+			settings_button("KpInspect", "Inspect")
+		}
+		if len(ui.kp_peer_owner) > 0 {
+			clay.Text(ui.kp_peer_owner, {fontId = FONT_MONO, fontSize = 11, textColor = TEXT_DIM})
+			kp_cards(ui, "KpPeer", ui.kp_peer[:], tr("No key package published for that pubkey."))
+		}
 
-	clay.Text(
-		tr(
-			"marmot exposes publish metadata only. Ciphersuite, capabilities, and credential decoding are not available in this build.",
-		),
-		{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
-	)
+		clay.Text(
+			tr(
+				"marmot exposes publish metadata only. Ciphersuite, capabilities, and credential decoding are not available in this build.",
+			),
+			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO},
+		)
+	}
 }
 
 // One labeled row per decoded field, then the raw JSON plate.
@@ -313,9 +319,9 @@ kp_cards :: proc(ui: ^Ui_State, prefix: string, rows: []Kp_Row, empty: string) {
 	}
 	if clay.UI(clay.ID(fmt.tprintf("%sRawPlate", prefix)))(
 	{
-		layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(12)},
+		layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(8)},
 		backgroundColor = PLATE,
-		cornerRadius = rr(8),
+		border = {color = FIELD_BORDER, width = bw()},
 	},
 	) {
 		clay.Text(
@@ -326,7 +332,7 @@ kp_cards :: proc(ui: ^Ui_State, prefix: string, rows: []Kp_Row, empty: string) {
 }
 
 kp_kv :: proc(prefix: string, index: u32, label: string, value: string) {
-	if clay.UI(clay.ID(fmt.tprintf("%sKv", prefix), index))(srow()) {
+	if clay.UI(clay.ID(fmt.tprintf("%sKv", prefix), index))(settings_row(true)) {
 		clay.Text(tr(label), {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT_DIM})
 		if clay.UI(clay.ID(fmt.tprintf("%sKvVal", prefix), index))(
 		{layout = {sizing = {width = clay.SizingGrow()}}},

@@ -96,9 +96,9 @@ rail_width :: proc(ui: ^Ui_State) -> f32 {
 		}
 		return f32(rl.GetScreenWidth()) / UI_ZOOM
 	}
-	// Archive is a standalone page. Leave the saved sidebar width and
-	// animation untouched so returning to another tab restores its layout.
-	if ui.page == .Archived {
+	// Standalone pages leave the saved sidebar width and animation
+	// untouched so returning to another tab restores its layout.
+	if ui.page == .Archived || ui.page == .Settings {
 		return RAIL_W_COLLAPSED
 	}
 	// Resize immediately; preserving the pref restores the list when it fits.
@@ -168,7 +168,7 @@ shell_navigation :: proc(ui: ^Ui_State) {
 		for page in ([3]Page{.Chats, .Contacts, .Archived}) {
 			nav_button(page, ui.page == page)
 		}
-		if !single_pane() && ui.page != .Archived {
+		if !single_pane() && ui.page != .Archived && ui.page != .Settings {
 			if clay.UI(clay.ID("RailCollapse"))(
 			{
 				layout = {
@@ -277,9 +277,8 @@ single_pane :: proc() -> bool {
 }
 
 // Which half a one-card window is showing: the rail is the list, the
-// page card is the detail a list row opens. Archive is its own list
-// and Profile's rail is the account switcher (which the accounts modal
-// also reaches), so both of those pages are always the detail.
+// page card is the detail a list row opens. Standalone pages always
+// occupy the detail; Settings owns its category home and breadcrumbs.
 phone_detail :: proc(ui: ^Ui_State) -> bool {
 	if ui.new_chat_open || ui.add_account_open {
 		return true
@@ -289,9 +288,7 @@ phone_detail :: proc(ui: ^Ui_State) -> bool {
 		return ui.selected >= 0
 	case .Contacts:
 		return ui.selected_contact >= 0
-	case .Settings:
-		return ui.sett_open
-	case .Archived, .Profile:
+	case .Settings, .Archived, .Profile:
 		return true
 	}
 	return false
@@ -332,7 +329,11 @@ phone_back_action :: proc(ui: ^Ui_State) {
 	case .Contacts:
 		ui.selected_contact = -1
 	case .Settings:
-		ui.sett_open = false
+		if ui.settings_section == .Home {
+			ui.page = .Chats
+		} else {
+			settings_open(ui, nil, .Home)
+		}
 	case .Archived, .Profile:
 		ui.page = .Chats // no list half of their own to fall back to
 	}

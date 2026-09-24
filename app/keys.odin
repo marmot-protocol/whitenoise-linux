@@ -14,6 +14,7 @@ import "core:mem"
 import "core:strings"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
+import rl "sdlrl"
 
 import marmot "../marmot"
 
@@ -204,61 +205,146 @@ do_export :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // ── Page ────────────────────────────────────────────────────────────
 
 settings_keys :: proc(ui: ^Ui_State) {
-	if clay.UI(clay.ID("RowSovereign"))(srow()) {
-		clay.Text(ICON_LOCK, {fontId = FONT_ICON, fontSize = 13, textColor = ACCENT})
-		row_labels(
-			"Your identity is sovereign",
-			"White Noise never sees your private key. It lives only on this device and any signer you connect.",
-		)
-	}
-
-	eyebrow("IDENTITY")
-	if clay.UI(clay.ID("NpubRow"))(srow()) {
-		if clay.UI(clay.ID("NpubCol"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				layoutDirection = .TopToBottom,
-				childGap = 3,
+	body_width := settings_body_width(ui) - 24
+	if ui.settings_tab == 0 {
+		if clay.UI(clay.ID("KeysIdentityGroup"))(settings_box()) {
+			settings_group(N_("Keys & identity"))
+			if clay.UI(clay.ID("KeysProfile"))(settings_row()) {
+				name := len(ui.profile.name) > 0 ? ui.profile.name : short_hex(ui.account_ref)
+				avatar("KeysAvatar", 0, ui.account_ref, name, 44, url_pic(ui.my_pic_url))
+				if clay.UI(clay.ID("KeysProfileName"))(
+				{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
+				) {
+					clay.Text(name, {fontId = FONT_TITLE, fontSize = 16, textColor = TEXT})
+				}
+			}
+			public_row := settings_row()
+			public_row.layout.layoutDirection = body_width < 220 ? .TopToBottom : .LeftToRight
+			if clay.UI(clay.ID("NpubRow"))(public_row) {
+				clay.Text(
+					tr("Public key (npub)"),
+					{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT},
+				)
+				settings_button("SettingsCopyNpub", "Copy")
+			}
+			if clay.UI(clay.ID("NpubInset"))(
+			{
+				layout = {sizing = {width = clay.SizingGrow()}, padding = clay.PaddingAll(10)},
+				backgroundColor = CARD,
+				border = {color = FIELD_BORDER, width = {1, 1, 1, 1, 0}},
+				cornerRadius = rr(2),
 			},
-		},
-		) {
-			clay.Text("Public key (npub)", {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
+			) {
+				keys_key_lines(
+					"NpubCol",
+					len(ui.profile.npub) > 0 ? ui.profile.npub : tr("(unknown)"),
+					body_width - 20,
+				)
+			}
 			clay.Text(
-				"Safe to share. This is how people find you.",
+				tr("Safe to share. This is how people find you."),
 				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 			)
-			clay.Text(
-				len(ui.profile.npub) > 0 ? ui.profile.npub : "(unknown)",
-				{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO},
-			)
+			if clay.UI(clay.ID("RowSovereign"))(settings_row()) {
+				clay.Text(ICON_LOCK, {fontId = FONT_ICON, fontSize = 13, textColor = ACCENT})
+				row_labels(
+					"Your identity is sovereign",
+					"White Noise never sees your private key. It lives only on this device and any signer you connect.",
+				)
+			}
 		}
-		micro_button("SettingsCopyNpub", "Copy")
+		return
 	}
 
-	eyebrow("KEY PACKAGES (PUBLISHED TO YOUR KIND-10051 RELAY LIST)")
-	if clay.UI(clay.ID("KpStatus"))(srow()) {
-		if clay.UI(clay.ID("KpStatusCol"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				layoutDirection = .TopToBottom,
-				childGap = 3,
+	action_row := settings_row()
+	action_row.layout.layoutDirection = .TopToBottom
+	action_row.layout.childGap = 6
+	if ui.settings_tab == 1 {
+		if clay.UI(clay.ID("KpStatus"))(settings_box()) {
+			settings_group(N_("Key packages"))
+			clay.Text(kp_status_line(ui), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
+			if clay.UI(clay.ID("KpStatusActions"))(
+			{
+				layout = {
+					layoutDirection = body_width < 260 ? .TopToBottom : .LeftToRight,
+					childGap = 6,
+				},
 			},
-		},
-		) {
-			clay.Text(tr("Key package"), {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
+			) {
+				settings_button("KpPublish", tr("Publish"), ACCENT)
+				settings_button("KpRefresh", tr("Refresh"))
+			}
 			clay.Text(
-				kp_status_line(ui),
+				tr("Key packages (published to your kind-10051 relay list)"),
 				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 			)
+			for row, i in ui.kp_list {
+				if clay.UI(clay.ID("KpRow", u32(i)))(settings_row()) {
+					if clay.UI(clay.ID("KpRowCol", u32(i)))(
+					{
+						layout = {
+							sizing = {width = clay.SizingGrow()},
+							layoutDirection = .TopToBottom,
+							childGap = 3,
+						},
+					},
+					) {
+						clay.Text(
+							fmt.tprintf("0x%s...", row.id[:min(len(row.id), 16)]),
+							{fontId = FONT_MONO, fontSize = 11, textColor = TEXT_LO},
+						)
+						clay.Text(
+							row.at,
+							{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+						)
+					}
+					tag :=
+						row.relay ? (len(row.relay_urls) > 0 ? fmt.tprintf("RELAY · %d", len(row.relay_urls)) : "RELAY") : "LOCAL"
+					clay.Text(tag, {fontId = FONT_MONO, fontSize = 10, textColor = TEXT_DIM})
+				}
+			}
 		}
-		micro_button("KpPublish", tr("Publish"))
-		micro_button("KpRefresh", tr("Refresh"))
+		if clay.UI(clay.ID("RowRotate"))(settings_box()) {
+			settings_group(N_("Rotate key package now"))
+			clay.Text(
+				tr("Invalidates the current package and uploads a fresh one to your relays."),
+				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+			)
+			label := ui.keys_confirm == "RotateBtn" ? tr("Confirm") : tr("Rotate")
+			settings_button("RotateBtn", label, DANGER)
+		}
+		return
 	}
-	for row, i in ui.kp_list {
-		if clay.UI(clay.ID("KpRow", u32(i)))(srow()) {
-			if clay.UI(clay.ID("KpRowCol", u32(i)))(
+
+	if clay.UI(clay.ID("KeysVaultGroup"))(settings_box()) {
+		settings_group(N_("Device vault"))
+		if clay.UI(clay.ID("RowVaultPw"))(action_row) {
+			row_labels(
+				"Change vault password",
+				"Re-encrypts this device's secrets under a new password. The media cache is cleared, since it was sealed with the old one.",
+			)
+			settings_button("VaultPwBtn", "Change...")
+		}
+		if clay.UI(clay.ID("RowExport"))(action_row) {
+			row_labels(
+				"Export encrypted key (ncryptsec)",
+				"Creates a NIP-49 key encrypted with a password, safe to store or move to another client.",
+			)
+			label := ui.keys_confirm == "ExportBtn" ? tr("Confirm") : tr("Export")
+			settings_button("ExportBtn", label)
+		}
+	}
+
+	security := settings_box()
+	security.border = {
+		color = DANGER_BORDER,
+		width = {left = 2, right = 1, top = 1, bottom = 1},
+	}
+	if clay.UI(clay.ID("KeysDangerGroup"))(security) {
+		settings_group(N_("Security actions"))
+		// Reveal: arm, confirm, then a masked plate with copy and unmask.
+		if clay.UI(clay.ID("RowReveal"))(action_row) {
+			if clay.UI(clay.ID("RevealCol"))(
 			{
 				layout = {
 					sizing = {width = clay.SizingGrow()},
@@ -268,120 +354,65 @@ settings_keys :: proc(ui: ^Ui_State) {
 			},
 			) {
 				clay.Text(
-					fmt.tprintf("0x%s...", row.id[:min(len(row.id), 16)]),
-					{fontId = FONT_MONO, fontSize = 12, textColor = TEXT},
+					tr("Reveal private key (nsec)"),
+					{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT},
 				)
-				clay.Text(row.at, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+				clay.Text(
+					tr("Never share it. It is your identity."),
+					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+				)
 			}
-			tag :=
-				row.relay ? (len(row.relay_urls) > 0 ? fmt.tprintf("RELAY · %d", len(row.relay_urls)) : "RELAY") : "LOCAL"
-			clay.Text(
-				tag,
-				{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO, letterSpacing = 2},
-			)
-		}
-	}
-
-	eyebrow("LINKED DEVICES")
-	if clay.UI(clay.ID("RowLinked"))(srow()) {
-		row_labels(
-			"Multi-device isn't available yet",
-			"Your identity lives only on this device for now. When device linking ships, the devices signed into your key will appear here.",
-		)
-	}
-
-	eyebrow("DEVICE VAULT")
-	if clay.UI(clay.ID("RowVaultPw"))(srow()) {
-		row_labels(
-			"Change vault password",
-			"Re-encrypts this device's secrets under a new password. The media cache is cleared, since it was sealed with the old one.",
-		)
-		micro_button("VaultPwBtn", "Change...")
-	}
-
-	eyebrow("DANGER ZONE")
-	danger_row(
-		ui,
-		"RowRotate",
-		"Rotate key package now",
-		"Invalidates the current package and uploads a fresh one to your relays.",
-		"RotateBtn",
-		"Rotate",
-	)
-
-	// Reveal: arm, confirm, then a masked plate with copy and unmask.
-	if clay.UI(clay.ID("RowReveal"))(danger_plate()) {
-		if clay.UI(clay.ID("RevealCol"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				layoutDirection = .TopToBottom,
-				childGap = 3,
-			},
-		},
-		) {
-			clay.Text(
-				tr("Reveal private key (nsec)"),
-				{fontId = FONT_TITLE, fontSize = 13, textColor = DANGER},
-			)
-			clay.Text(
-				tr("Never share it. It is your identity."),
-				{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
-			)
 			if len(ui.keys_nsec) > 0 {
-				shown :=
-					ui.keys_nsec_show ? ui.keys_nsec : strings.repeat("*", min(len(ui.keys_nsec), 63), context.temp_allocator)
-				clay.Text(shown, {fontId = FONT_MONO, fontSize = 11, textColor = TEXT})
+				if clay.UI(clay.ID("NsecActions"))(
+				{
+					layout = {
+						layoutDirection = body_width < 180 ? .TopToBottom : .LeftToRight,
+						childGap = 6,
+					},
+				},
+				) {
+					settings_button("NsecShow", ui.keys_nsec_show ? tr("Hide") : tr("Show"))
+					settings_button("NsecCopy", tr("Copy"))
+				}
+			} else {
+				label := ui.keys_confirm == "RevealNsecBtn" ? tr("Confirm reveal") : tr("Reveal")
+				settings_button("RevealNsecBtn", label, DANGER)
 			}
 		}
 		if len(ui.keys_nsec) > 0 {
-			micro_button("NsecShow", ui.keys_nsec_show ? tr("Hide") : tr("Show"))
-			micro_button("NsecCopy", tr("Copy"))
-		} else {
-			micro_button(
-				"RevealNsecBtn",
-				ui.keys_confirm == "RevealNsecBtn" ? tr("Confirm reveal") : tr("Reveal"),
-				DANGER,
-			)
+			if ui.keys_nsec_show {
+				keys_key_lines("NsecValue", ui.keys_nsec, body_width)
+			} else {
+				clay.Text(
+					"****************",
+					{fontId = FONT_MONO, fontSize = 11, textColor = TEXT},
+				)
+			}
 		}
 	}
-
-	danger_row(
-		ui,
-		"RowExport",
-		"Export encrypted key (ncryptsec)",
-		"Creates a NIP-49 key encrypted with a password, safe to store or move to another client.",
-		"ExportBtn",
-		"Export",
-	)
-
 }
 
-danger_plate :: proc() -> clay.ElementDeclaration {
-	return {
+// Bech32 keys are ASCII. Borrow slices from the existing value rather than
+// constructing a second copy of a revealed secret just to insert line breaks.
+@(private = "file")
+keys_key_lines :: proc(id: string, key: string, width: f32) {
+	char_width := max(1, rl.MeasureTextLine(FONT_MONO, 11, "0", 0).x)
+	columns := max(1, int(width / char_width))
+	if clay.UI(clay.ID(id))(
+	{
 		layout = {
-			sizing = {width = clay.SizingGrow()},
-			padding = clay.PaddingAll(12),
-			childGap = 10,
-			childAlignment = {y = .Center},
+			sizing = {width = clay.SizingFixed(max(1, width))},
+			layoutDirection = .TopToBottom,
+			childGap = 2,
 		},
-		backgroundColor = ROW_BG,
-		cornerRadius = rr(8),
-		border = {color = DANGER, width = bw()},
-	}
-}
-
-danger_row :: proc(
-	ui: ^Ui_State,
-	row_id: string,
-	title: string,
-	sub: string,
-	btn_id: string,
-	btn_label: string,
-) {
-	if clay.UI(clay.ID(row_id))(danger_plate()) {
-		row_labels(title, sub, DANGER)
-		micro_button(btn_id, ui.keys_confirm == btn_id ? tr("Confirm") : btn_label, DANGER)
+	},
+	) {
+		for start := 0; start < len(key); start += columns {
+			clay.Text(
+				key[start:min(start + columns, len(key))],
+				{fontId = FONT_MONO, fontSize = 11, textColor = TEXT},
+			)
+		}
 	}
 }
 

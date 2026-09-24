@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 96 96">
+<!-- Original White Noise category illustration, created for this project.
+     Licensed under the project's GNU AGPL v3 license; no third-party artwork. -->
+<title>Notifications settings illustration</title>
+<defs>
+<linearGradient id="blue" x1="0" y1="0" x2=".7" y2="1"><stop stop-color="#a5e5ff"/><stop offset=".46" stop-color="#4caddd"/><stop offset="1" stop-color="#2873b6"/></linearGradient>
+<linearGradient id="navy" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#6789a6"/><stop offset="1" stop-color="#344d70"/></linearGradient>
+<linearGradient id="silver" x1="0" y1="0" x2=".5" y2="1"><stop stop-color="#fff"/><stop offset=".48" stop-color="#dce6ec"/><stop offset="1" stop-color="#8da5b8"/></linearGradient>
+<linearGradient id="gold" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#fff4b5"/><stop offset=".42" stop-color="#f9cf66"/><stop offset="1" stop-color="#d99536"/></linearGradient>
+<linearGradient id="green" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#d7f4a5"/><stop offset=".5" stop-color="#9ed06c"/><stop offset="1" stop-color="#5d9d58"/></linearGradient>
+<linearGradient id="red" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#ffc0a2"/><stop offset=".5" stop-color="#e6826a"/><stop offset="1" stop-color="#b84d49"/></linearGradient>
+<filter id="shadow" x="-.3" y="-1" width="1.6" height="3"><feGaussianBlur stdDeviation="2"/></filter>
+</defs>
+<ellipse cx="47" cy="83" rx="32" ry="5" fill="#213a59" opacity=".22" filter="url(#shadow)"/>
+<circle cx="47" cy="72" r="9" fill="url(#gold)" stroke="#a47936" stroke-width="2"/>
+<path d="M43 17a5 5 0 0 1 10 0v7H43Z" fill="url(#gold)" stroke="#a47936" stroke-width="2"/>
+<path d="M28 42c0-27 39-27 39 0 0 20 5 20 10 26 3 4-2 6-29 6s-31-2-29-6c5-6 9-6 9-26Z" fill="url(#gold)" stroke="#a47936" stroke-width="2"/>
+<path d="M34 41c0-8 3-13 8-15m-14 40c10 3 30 3 40 0" fill="none" stroke="#fff6d5" stroke-width="3" stroke-linecap="round"/>
+<path d="M19 28a24 24 0 0 0-5 16m65-16a24 24 0 0 1 5 16" fill="none" stroke="#589bc2" stroke-width="4" stroke-linecap="round"/>
+<path d="M11 24a32 32 0 0 0-6 20m82-20a32 32 0 0 1 5 20" fill="none" stroke="#8dbfd8" stroke-width="2" stroke-linecap="round"/>
+</svg>

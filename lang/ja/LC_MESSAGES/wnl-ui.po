@@ -103,7 +103,7 @@ msgid "(nothing loaded yet, click Refresh)"
 msgstr "(まだ読み込みなし。「更新」をクリックしてください)"
 
 msgid "(unknown)"
-msgstr ""
+msgstr "（不明）"
 
 #, fuzzy
 msgid "(unpublished)"
@@ -132,8 +132,14 @@ msgstr "3Dモデル"
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr "White Noise は、プライベートなグループチャットのためのネイティブデスクトップクライアントです。メッセージはあなたのマシンを離れる前に MLS で暗号化され、Nostr リレーを経由して送られ、ルーム内の人にだけ復号されます。"
 
+msgid "A friend"
+msgstr "友だち"
+
 msgid "A line about you"
 msgstr ""
+
+msgid "A little more room for conversation."
+msgstr "会話のスペースが少し広くなりました。"
 
 msgid "ABOUT"
 msgstr ""
@@ -145,14 +151,11 @@ msgstr "操作"
 msgid "ADD MEMBER"
 msgstr "メンバー"
 
-msgid "AUDIT LOG FILES"
-msgstr "監査ログファイル"
-
-msgid "AVATARS"
-msgstr "アバター"
-
 msgid "About"
 msgstr "このアプリについて"
+
+msgid "About White Noise"
+msgstr "White Noise について"
 
 #, fuzzy
 msgid "Accent 1"
@@ -296,6 +299,9 @@ msgstr "音声メッセージ"
 msgid "Audit log file deleted."
 msgstr "監査ログを削除しました。"
 
+msgid "Audit log files"
+msgstr "監査ログファイル"
+
 msgid "Audit logs"
 msgstr "監査ログ"
 
@@ -305,10 +311,10 @@ msgstr "オフラインで利用できます"
 msgid "Avatar ring"
 msgstr ""
 
-msgid "BACKDROP"
-msgstr ""
+msgid "Avatars"
+msgstr "アバター"
 
-msgid "BUILT WITH"
+msgid "BACKDROP"
 msgstr ""
 
 msgid "Back"
@@ -374,6 +380,9 @@ msgstr ""
 msgid "Bubble radius"
 msgstr ""
 
+msgid "Built with"
+msgstr "使用技術"
+
 msgid "COLOR"
 msgstr "色"
 
@@ -387,9 +396,6 @@ msgstr "パスワードの確認"
 #, fuzzy
 msgid "CURRENT PASSWORD"
 msgstr "パスワードの確認"
-
-msgid "CUSTOM EMOJI"
-msgstr "カスタム絵文字"
 
 msgid "CacheClear"
 msgstr ""
@@ -421,9 +427,6 @@ msgstr "会話を中央に配置"
 
 msgid "Centred conversation"
 msgstr "会話を中央に配置"
-
-msgid "Change"
-msgstr "変更"
 
 #, fuzzy
 msgid "Change password"
@@ -480,6 +483,18 @@ msgstr "テキストをコピー"
 msgid "Choose a destination for this chat."
 msgstr "このチャットの移動先を選んでください。"
 
+msgid "Choose how your conversations look and feel."
+msgstr "会話の見た目や操作感を設定します。"
+
+msgid "Choose what gets your attention."
+msgstr "通知を受け取る内容を選択します。"
+
+msgid "Choose what you'd like to change."
+msgstr "変更したい設定を選択してください。"
+
+msgid "Choose when and how White Noise alerts you."
+msgstr "White Noise が通知するタイミングと方法を設定します。"
+
 msgid "Circle"
 msgstr "円"
 
@@ -527,6 +542,9 @@ msgstr "チャットパネルを折りたたむ"
 msgid "Collapse transcription"
 msgstr "文字起こしを折りたたむ"
 
+msgid "Collector and retention"
+msgstr "送信先と保存期間"
+
 msgid "Command palette"
 msgstr ""
 
@@ -538,6 +556,9 @@ msgstr ""
 
 msgid "Confirm delete"
 msgstr ""
+
+msgid "Confirm forget all"
+msgstr "すべての削除を確認"
 
 #, fuzzy
 msgid "Confirm import"
@@ -552,6 +573,9 @@ msgstr ""
 #, fuzzy
 msgid "Connect to relays"
 msgstr "リレーに接続する"
+
+msgid "Connect with the relays you choose."
+msgstr "選択したリレーに接続します。"
 
 #, fuzzy
 msgid "Connected to relays"
@@ -569,6 +593,9 @@ msgstr "続行"
 
 msgid "Control background"
 msgstr ""
+
+msgid "Conversation preview"
+msgstr "会話のプレビュー"
 
 msgid "Conversations"
 msgstr "会話"
@@ -843,6 +870,9 @@ msgstr "報告を作成"
 msgid "Create poll"
 msgstr "作成"
 
+msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
+msgstr "パスワードで暗号化したNIP-49キーを作成します。安全に保存したり、別のクライアントに移したりできます。"
+
 msgid "Crop circle shape"
 msgstr "クロップサークルの形状"
 
@@ -852,24 +882,11 @@ msgstr ""
 msgid "Custom color"
 msgstr "カスタムカラー"
 
+msgid "Custom emoji"
+msgstr "カスタム絵文字"
+
 msgid "Cyan"
 msgstr "シアン"
-
-msgid "DANGER ZONE"
-msgstr "危険ゾーン"
-
-#, fuzzy
-msgid "DECODED MLS KEY PACKAGES"
-msgstr "あなたのキーパッケージ"
-
-msgid "DESKTOP ALERTS"
-msgstr "デスクトップ通知"
-
-msgid "DEVELOPER"
-msgstr "開発者"
-
-msgid "DEVICE VAULT"
-msgstr ""
 
 #, fuzzy
 msgid "DISAPPEARING MESSAGES"
@@ -954,8 +971,14 @@ msgstr "デザイン"
 msgid "Desktop notifications"
 msgstr "デスクトップ通知"
 
+msgid "Developer"
+msgstr "開発者"
+
 msgid "Developer mode"
 msgstr "開発者モード"
+
+msgid "Device vault"
+msgstr "デバイスの保管庫"
 
 msgid "Diagnostics includes a random installation identifier until you turn sharing off, app and device details, and relay labels. The collector receives your IP address. Message contents and account or group identifiers are excluded. Turning sharing off stops future uploads; already sent data cannot be recalled. Audit logs are separate."
 msgstr "診断情報には、共有をオフにするまで使用されるランダムなインストール識別子、アプリと端末の情報、リレーのラベルが含まれます。収集サービスはあなたのIPアドレスを受け取ります。メッセージの内容やアカウント、グループの識別子は含まれません。共有をオフにすると今後の送信は停止しますが、送信済みのデータは取り消せません。監査ログは別の設定です。"
@@ -966,8 +989,17 @@ msgstr "別の収集サービスを設定していない場合、診断情報は
 msgid "Dictate"
 msgstr "音声入力"
 
+msgid "Dictate and listen on this device."
+msgstr "このデバイス上で音声入力や読み上げができます。"
+
 msgid "Dictate drafts and transcribe audio messages on your device."
 msgstr "お使いのデバイスで下書きの音声入力や音声メッセージの文字起こしができます。"
+
+msgid "Dictate messages and listen to them aloud."
+msgstr "メッセージの音声入力や読み上げができます。"
+
+msgid "Dictation"
+msgstr "音声入力"
 
 #, c-format
 msgid "Difficulty: %d/5"
@@ -1008,9 +1040,6 @@ msgstr "ダウンロード中: %d%%"
 msgid "Downloads"
 msgstr "ダウンロード"
 
-msgid "Drops idle relay sockets and dials them again."
-msgstr ""
-
 #, fuzzy
 msgid "EDIT PROFILE"
 msgstr "プロフィール"
@@ -1020,9 +1049,6 @@ msgstr "暗号化キー(NCRYPTSEC)"
 
 msgid "EPOCH"
 msgstr "エポック"
-
-msgid "EVENT FETCH RELAYS"
-msgstr "イベント取得リレー"
 
 msgid "EXPORT CHAT"
 msgstr ""
@@ -1092,6 +1118,9 @@ msgstr ""
 msgid "Enter your password to unlock this device's keys."
 msgstr "パスワードを入力してロックを解除"
 
+msgid "Event fetch relays"
+msgstr "イベント取得リレー"
+
 msgid "Event id"
 msgstr ""
 
@@ -1101,6 +1130,9 @@ msgstr "全画面表示を終了"
 #, fuzzy
 msgid "Expand the chat list"
 msgstr "チャットパネルを展開"
+
+msgid "Export"
+msgstr "エクスポート"
 
 #, fuzzy
 msgid "Export CSV"
@@ -1116,6 +1148,9 @@ msgstr "エクスポート"
 
 msgid "Export as Markdown"
 msgstr ""
+
+msgid "Export encrypted key (ncryptsec)"
+msgstr "暗号化キーをエクスポート(ncryptsec)"
 
 msgid "Family"
 msgstr "家族"
@@ -1144,6 +1179,12 @@ msgstr "ファイル"
 #, fuzzy
 msgid "Filter unread chats"
 msgstr "未読のチャットのみ表示"
+
+msgid "Find a setting"
+msgstr "設定を検索"
+
+msgid "Find a setting..."
+msgstr "設定を検索..."
 
 msgid "Finish dictation"
 msgstr "音声入力を完了"
@@ -1186,6 +1227,9 @@ msgstr "フォント"
 
 msgid "Food"
 msgstr "食べ物"
+
+msgid "Forget all"
+msgstr "すべて忘れる"
 
 msgid "Forward"
 msgstr "転送"
@@ -1266,14 +1310,14 @@ msgstr "グループ ID"
 msgid "Grouped"
 msgstr "フォルダ別"
 
-msgid "HELP"
-msgstr ""
-
 msgid "HTML"
 msgstr ""
 
 msgid "Hard shadows"
 msgstr ""
+
+msgid "Help"
+msgstr "ヘルプ"
 
 msgid "Hidden"
 msgstr "非表示"
@@ -1302,12 +1346,6 @@ msgstr "アイコン"
 msgid "IDENTITY"
 msgstr "ID"
 
-msgid "INBOX RELAYS"
-msgstr "受信リレー"
-
-msgid "INCOMING MESSAGES"
-msgstr "受信メッセージ"
-
 msgid "INSPECT SOMEONE ELSE'S"
 msgstr ""
 
@@ -1319,6 +1357,9 @@ msgstr "問題の追跡"
 
 msgid "Ideas"
 msgstr "アイデア"
+
+msgid "Identity"
+msgstr "ID"
 
 #, fuzzy
 msgid "Image didn't load. Click to retry."
@@ -1354,12 +1395,33 @@ msgstr "インポート"
 msgid "ImportBtn"
 msgstr "インポート"
 
+msgid "Inbox relays"
+msgstr "受信リレー"
+
+msgid "Incoming messages"
+msgstr "受信メッセージ"
+
 #, fuzzy
 msgid "Insert a new line"
 msgstr "新しい鍵を生成"
 
 msgid "Inspect"
 msgstr ""
+
+msgid "Inspect MLS key packages."
+msgstr "MLS キーパッケージを確認します。"
+
+msgid "Inspect application state and events."
+msgstr "アプリの状態とイベントを確認します。"
+
+msgid "Inspect published MLS key packages."
+msgstr "公開済みの MLS キーパッケージを確認します。"
+
+msgid "Inspect the current session."
+msgstr "現在のセッションを確認します。"
+
+msgid "Interface"
+msgstr "インターフェース"
 
 msgid "Interface language"
 msgstr "インターフェース言語"
@@ -1376,6 +1438,9 @@ msgstr "無効なNostr参照"
 
 msgid "Invalid attachment."
 msgstr "無効な添付ファイルです。"
+
+msgid "Invalidates the current package and uploads a fresh one to your relays."
+msgstr "現在のパッケージを無効にして、新しいパッケージをあなたのリレーにアップロードします。"
 
 msgid "Invert selected text"
 msgstr ""
@@ -1415,12 +1480,6 @@ msgstr "キーパッケージ"
 msgid "KEY PACKAGES"
 msgstr "キーパッケージ"
 
-msgid "KEY PACKAGES (PUBLISHED TO YOUR KIND-10051 RELAY LIST)"
-msgstr ""
-
-msgid "KEYS & BACKUPS"
-msgstr "鍵とバックアップ"
-
 msgid "KP inspector"
 msgstr ""
 
@@ -1430,8 +1489,8 @@ msgstr "開いている会話を全幅にせず、読みやすい幅に保ちま
 msgid "Keep your chat list focused without deleting conversations."
 msgstr "会話を削除せずに、チャット一覧を整理できます。"
 
-msgid "Key package"
-msgstr "キーパッケージ"
+msgid "Keep your conversations in order."
+msgstr "会話を整理できます。"
 
 #, c-format
 msgid "Key package accepted by %d relays."
@@ -1447,32 +1506,35 @@ msgstr "キーパッケージ参照"
 msgid "Key packages"
 msgstr "キーパッケージ"
 
+msgid "Key packages (published to your kind-10051 relay list)"
+msgstr "キーパッケージ（kind-10051 のリレーリストに公開）"
+
 msgid "Keyboard shortcuts"
 msgstr ""
 
 msgid "Keys"
 msgstr "鍵"
 
+msgid "Keys & backups"
+msgstr "鍵とバックアップ"
+
 msgid "Keys & identity"
 msgstr "鍵と ID"
 
-msgid "LANGUAGE"
-msgstr "言語"
-
-msgid "LAYOUT"
-msgstr "レイアウト"
-
 msgid "LIGHTNING"
 msgstr ""
-
-msgid "LINKED DEVICES"
-msgstr "リンク済みデバイス"
 
 msgid "Labels"
 msgstr "ラベル"
 
 msgid "Labels, separated by commas"
 msgstr "ラベル（カンマ区切り）"
+
+msgid "Language"
+msgstr "言語"
+
+msgid "Language, startup, and everyday preferences."
+msgstr "言語、起動時の動作、日常的に使う機能を設定します。"
 
 msgid "Large"
 msgstr "大"
@@ -1482,6 +1544,12 @@ msgstr "最後のバックアップ"
 
 msgid "Launch at login"
 msgstr "ログイン時に起動"
+
+msgid "Layout"
+msgstr "レイアウト"
+
+msgid "Learn about White Noise."
+msgstr "White Noise について紹介します。"
 
 #, fuzzy
 msgid "Leave"
@@ -1496,6 +1564,9 @@ msgstr "グループを退出"
 
 msgid "Lime"
 msgstr "ライム"
+
+msgid "Linked events"
+msgstr "リンク先のイベント"
 
 msgid "Links"
 msgstr "リンク"
@@ -1515,6 +1586,9 @@ msgstr "読み込んでいます..."
 msgid "Loading…"
 msgstr "読み込み中…"
 
+msgid "Local files, cached media, and encrypted backups."
+msgstr "ローカルファイル、メディアキャッシュ、暗号化バックアップを管理します。"
+
 msgid "Location"
 msgstr "保存場所"
 
@@ -1524,16 +1598,8 @@ msgstr "検索"
 msgid "Looking up..."
 msgstr "検索中..."
 
-msgid "MEDIA CACHE"
-msgstr "メディアキャッシュ"
-
-#, fuzzy
-msgid "MLS · YOUR KEY MATERIAL"
-msgstr "MLS  ·  あなたの鍵素材"
-
-#, fuzzy
-msgid "MOTION"
-msgstr "操作"
+msgid "Make White Noise work your way."
+msgstr "White Noise の動作を自分に合わせて設定します。"
 
 #, fuzzy
 msgid "Make this member an admin?"
@@ -1544,6 +1610,15 @@ msgstr "男性の声です。すべての読み上げ言語に対応していま
 
 msgid "Manage"
 msgstr "管理"
+
+msgid "Manage connections and published relay lists."
+msgstr "接続と公開済みのリレーリストを管理します。"
+
+msgid "Manage local files and encrypted backups."
+msgstr "ローカルファイルと暗号化バックアップを管理します。"
+
+msgid "Manage your relays"
+msgstr "リレーを管理"
 
 msgid "Mark read"
 msgstr ""
@@ -1559,6 +1634,9 @@ msgstr "マーモット"
 
 msgid "Media backdrop"
 msgstr ""
+
+msgid "Media cache"
+msgstr "メディアキャッシュ"
 
 msgid "Media cache cleared."
 msgstr ""
@@ -1586,6 +1664,9 @@ msgstr "画像をコピーしました"
 msgid "Message text size"
 msgstr ""
 
+msgid "Messaging"
+msgstr "メッセージ"
+
 msgid "Micro"
 msgstr "マイクロ"
 
@@ -1603,9 +1684,6 @@ msgstr "フォルダに移動"
 
 msgid "Move up"
 msgstr "上に移動"
-
-msgid "Multi-device isn't available yet"
-msgstr "マルチデバイスはまだ利用できません"
 
 msgid "Multilingual. Detects your language automatically."
 msgstr "多言語対応です。言語を自動で検出します。"
@@ -1735,6 +1813,9 @@ msgstr "公開すると他のユーザーがグループに招待できるよう
 msgid "No matching chats"
 msgstr "一致するチャットはありません"
 
+msgid "No matching settings."
+msgstr "一致する設定はありません。"
+
 msgid "No matching stickers."
 msgstr "一致するステッカーがありません。"
 
@@ -1770,15 +1851,6 @@ msgstr ""
 msgid "Notifications"
 msgstr "通知"
 
-msgid "ON THIS DEVICE"
-msgstr "このデバイス上"
-
-msgid "OPEN EVENTS IN"
-msgstr "イベントを開くクライアント"
-
-msgid "OUTBOX RELAYS (NIP-65)"
-msgstr "送信リレー (NIP-65)"
-
 msgid "Off"
 msgstr ""
 
@@ -1801,6 +1873,9 @@ msgstr "この設定を変更できるのはグループ管理者だけです。
 msgid "Open"
 msgstr "開く"
 
+msgid "Open events in"
+msgstr "イベントを開くクライアント"
+
 msgid "Open folder"
 msgstr "フォルダを開く"
 
@@ -1822,6 +1897,12 @@ msgstr "既定のブラウザで{}を開きます。"
 
 msgid "Orange"
 msgstr "オレンジ"
+
+msgid "Organize your conversations."
+msgstr "会話を整理します。"
+
+msgid "Organize your folders"
+msgstr "フォルダを整理"
 
 msgid "Original"
 msgstr ""
@@ -1849,12 +1930,6 @@ msgstr ""
 
 msgid "PASSWORD"
 msgstr "パスワード"
-
-msgid "PRIVACY & DEVELOPER FLAGS"
-msgstr ""
-
-msgid "PRIVATE GROUP CHAT OVER NOSTR"
-msgstr ""
 
 msgid "PRODUCT"
 msgstr "商品"
@@ -1954,8 +2029,17 @@ msgstr "パックをプレビュー"
 msgid "Previous / next in the media viewer"
 msgstr ""
 
+msgid "Privacy"
+msgstr "プライバシー"
+
+msgid "Privacy, diagnostics, and developer tools."
+msgstr "プライバシー、診断情報、開発者向けツールを設定します。"
+
 msgid "Private"
 msgstr "プライベート"
+
+msgid "Private group chat over Nostr"
+msgstr "Nostr を使ったプライベートグループチャット"
 
 msgid "Profile"
 msgstr "プロフィール"
@@ -1964,6 +2048,9 @@ msgid "Projects"
 msgstr "プロジェクト"
 
 msgid "Promote"
+msgstr ""
+
+msgid "Public key (npub)"
 msgstr ""
 
 msgid "Public key, safe to share."
@@ -1982,17 +2069,20 @@ msgstr "キーパッケージを公開する"
 msgid "Published"
 msgstr "公開済み"
 
+msgid "Published inbox relays"
+msgstr "公開済みの受信リレー"
+
+msgid "Published outbox relays (NIP-65)"
+msgstr "公開済みの送信リレー (NIP-65)"
+
 msgid "Publishing your profile to the relays. This takes a few seconds."
 msgstr ""
 
-msgid "QUICK REACTIONS"
+msgid "Quick reactions"
 msgstr "クイックリアクション"
 
 msgid "RAW EVENTS"
 msgstr ""
-
-msgid "READ ALOUD"
-msgstr "読み上げ"
 
 msgid "RECENT"
 msgstr ""
@@ -2030,13 +2120,6 @@ msgstr "読み上げています..."
 
 msgid "Recent"
 msgstr "最近"
-
-#, fuzzy
-msgid "Reconnect"
-msgstr "今すぐ再接続"
-
-msgid "Reconnect now"
-msgstr "今すぐ再接続"
 
 #, fuzzy
 msgid "Record group audit log files on this device. Identifiers are hashed."
@@ -2153,27 +2236,20 @@ msgstr "隠されたメッセージを表示"
 msgid "Reveal private key (nsec)"
 msgstr ""
 
-#, fuzzy
-msgid "RevealNsecBtn"
-msgstr "鍵を表示"
-
 msgid "Rocket"
 msgstr "ロケット"
+
+msgid "Rotate"
+msgstr "更新"
+
+msgid "Rotate key package now"
+msgstr "キーパッケージを今すぐ更新"
 
 msgid "Rounded"
 msgstr "角丸"
 
-msgid "SCROLLING"
-msgstr ""
-
-msgid "SECURITY & PRIVACY"
-msgstr "セキュリティとプライバシー"
-
 msgid "SEND WITH EFFECT"
 msgstr ""
-
-msgid "SETTINGS"
-msgstr "設定"
 
 msgid "SHARED THEME"
 msgstr ""
@@ -2181,26 +2257,14 @@ msgstr ""
 msgid "SITE"
 msgstr ""
 
-msgid "SPEECH TO TEXT"
-msgstr "音声認識"
-
-msgid "STARTUP"
-msgstr "起動"
-
-msgid "STATE / EVENTS / KEYS / TIMINGS"
-msgstr "状態 / イベント / 鍵 / 処理時間"
-
 msgid "STATE SNAPSHOT"
 msgstr "状態スナップショット"
-
-msgid "STATUS"
-msgstr "状態"
 
 msgid "STYLE"
 msgstr ""
 
-msgid "SYNC"
-msgstr "同期"
+msgid "Safe to share. This is how people find you."
+msgstr ""
 
 msgid "Save"
 msgstr "保存"
@@ -2262,6 +2326,9 @@ msgstr "メッセージを検索…"
 msgid "Search issues"
 msgstr "報告を検索"
 
+msgid "Search results"
+msgstr "検索結果"
+
 msgid "Search stickers"
 msgstr "ステッカーを検索"
 
@@ -2274,6 +2341,12 @@ msgstr "nsecをコピーしました"
 
 msgid "Security"
 msgstr "セキュリティ"
+
+msgid "Security & privacy"
+msgstr "セキュリティとプライバシー"
+
+msgid "Security actions"
+msgstr "セキュリティ操作"
 
 msgid "See and hear it with today's sound and preview settings."
 msgstr "現在のサウンドとプレビュー設定で確認できます。"
@@ -2293,9 +2366,6 @@ msgstr "報告を選択"
 
 msgid "Select an issue to read its discussion."
 msgstr "報告を選択すると、その議論を読めます。"
-
-msgid "Selected"
-msgstr "選択中"
 
 #, fuzzy
 msgid "Send a message..."
@@ -2320,6 +2390,9 @@ msgstr ""
 
 msgid "Sending..."
 msgstr "送信しています..."
+
+msgid "Settings"
+msgstr "設定"
 
 #, fuzzy
 msgid "Settings: about"
@@ -2480,6 +2553,9 @@ msgstr "最初のチャットを開始する"
 msgid "Starting the runtime"
 msgstr ""
 
+msgid "Startup"
+msgstr "起動"
+
 msgid "State"
 msgstr "状態"
 
@@ -2538,23 +2614,8 @@ msgstr "サポート"
 msgid "System"
 msgstr "システム"
 
-msgid "TEXT SIZE"
-msgstr ""
-
-msgid "THEME"
-msgstr "テーマ"
-
-msgid "THIS SESSION"
-msgstr ""
-
 msgid "TIMINGS"
 msgstr "処理時間"
-
-msgid "TRANSCRIPTION MODEL"
-msgstr "文字起こしモデル"
-
-msgid "TRUSTED LINK SITES"
-msgstr "信頼済みのリンク先"
 
 msgid "Takes effect on the next launch."
 msgstr ""
@@ -2589,6 +2650,9 @@ msgstr ""
 msgid "Text mid"
 msgstr ""
 
+msgid "That feels right."
+msgstr "ちょうどいい感じですね。"
+
 #, fuzzy
 msgid "That isn't your current password. Double-check it and try again."
 msgstr "そのアカウントを追加できませんでした。鍵を確認して、もう一度お試しください。"
@@ -2621,6 +2685,9 @@ msgstr ""
 msgid "Theme"
 msgstr "テーマ"
 
+msgid "Themes, text size, and the look of your conversations."
+msgstr "テーマ、文字サイズ、会話の見た目を設定します。"
+
 msgid "They can be added to a chat."
 msgstr ""
 
@@ -2652,6 +2719,9 @@ msgstr "既定のブラウザで{}を開きます。"
 #, fuzzy
 msgid "This message was deleted"
 msgstr "画像が選択されていません。"
+
+msgid "This session"
+msgstr "現在のセッション"
 
 msgid "This sticker is not in the current pack."
 msgstr "このステッカーは現在のパックに含まれていません。"
@@ -2687,6 +2757,9 @@ msgstr "文字起こし"
 msgid "Transcribing..."
 msgstr "文字に変換しています..."
 
+msgid "Transcription model"
+msgstr "文字起こしモデル"
+
 msgid "Transition ms"
 msgstr ""
 
@@ -2696,8 +2769,8 @@ msgstr "旅行"
 msgid "Trophy"
 msgstr "トロフィー"
 
-msgid "TrustForgetAll"
-msgstr ""
+msgid "Trusted link sites"
+msgstr "信頼済みのリンク先"
 
 msgid "Try a different search."
 msgstr "別の検索語を試してください。"
@@ -2796,20 +2869,6 @@ msgstr "視覚的フィンガープリント"
 msgid "Voting has ended."
 msgstr ""
 
-msgid "WHAT IT IS"
-msgstr "概要"
-
-#, fuzzy
-msgid "WHAT THIS IS, LIVE"
-msgstr "概要"
-
-#, fuzzy
-msgid "WHERE A MESSAGE GOES"
-msgstr "新着メッセージ"
-
-msgid "WHERE YOUR MESSAGES LAND"
-msgstr ""
-
 msgid "Warning"
 msgstr ""
 
@@ -2820,12 +2879,21 @@ msgstr "動画を保存"
 msgid "Webxdc app"
 msgstr ""
 
+msgid "What is shared"
+msgstr "共有されるデータ"
+
+msgid "What it is"
+msgstr "概要"
+
 #, fuzzy
 msgid "Whatever you send in this chat is encrypted on your device with MLS before it goes out. The relays that pass it along can't read it, and neither can anyone else."
 msgstr "このチャットで送る内容は、送信前にあなたのデバイス上で暗号化されます。中継するリレーは内容を読めず、ほかの誰にも読めません。"
 
 msgid "Where"
 msgstr ""
+
+msgid "Where a message goes"
+msgstr "メッセージの経路"
 
 msgid "Where linked Nostr events (nevent, note) are pulled from. Your chats never touch these."
 msgstr "リンクされたNostrイベント（nevent、note）の取得元です。チャットがこれらのリレーに触れることはありません。"
@@ -2837,6 +2905,9 @@ msgstr "相手があなたに届ける場所"
 #, fuzzy
 msgid "Where you publish."
 msgstr "あなたが発信する場所"
+
+msgid "White Noise and this session."
+msgstr "White Noise と現在のセッションについて確認できます。"
 
 msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
 msgstr "White Noise はあなたの秘密鍵を一切見ません。このデバイスと接続した署名者にのみ存在します。"
@@ -2887,11 +2958,14 @@ msgstr "あなた: %s"
 msgid "Your current password"
 msgstr "パスワード"
 
+msgid "Your identity and the secrets on this device."
+msgstr "あなたのアイデンティティと、このデバイス上の秘密情報を管理します。"
+
 msgid "Your identity is sovereign"
 msgstr "あなたの ID は主権的です"
 
-msgid "Your identity lives only on this device for now. When device linking ships, the devices signed into your key will appear here."
-msgstr "現在、あなたのアイデンティティはこのデバイスにのみ存在します。デバイス連携が導入されると、あなたの鍵でサインインしたデバイスがここに表示されます。"
+msgid "Your identity, key packages, and device security."
+msgstr "あなたのアイデンティティ、キーパッケージ、デバイスのセキュリティを管理します。"
 
 msgid "Your key never leaves this device."
 msgstr "鍵がこのデバイス外に出ることはありません。"
@@ -2912,14 +2986,17 @@ msgstr "パスワード"
 msgid "Your profile"
 msgstr "あなたのプロフィール"
 
+msgid "Your public key"
+msgstr "あなたの公開鍵"
+
 msgid "Your public key. Safe to share."
 msgstr "公開鍵。共有して問題ありません。"
 
+msgid "Your secret key"
+msgstr "あなたの秘密鍵"
+
 msgid "Your stickers"
 msgstr "あなたのステッカー"
-
-msgid "ZOOM"
-msgstr "ズーム"
 
 msgid "Zoom in"
 msgstr "拡大"

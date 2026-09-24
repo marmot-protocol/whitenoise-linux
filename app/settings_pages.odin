@@ -1,7 +1,4 @@
-// The slint settings shell: section sidebar + row-grammar pages
-// (ui/settings/ in the slint tree). Sections mirror the slint list;
-// rows whose backing feature isn't in marmot-c yet keep the exact
-// look and surface "Not available in the odin port yet." on use.
+// Settings Control Panel and compact, immediately applied property pages.
 package main
 
 import "core:fmt"
@@ -14,6 +11,7 @@ import rl "sdlrl"
 import marmot "../marmot"
 
 Settings_Section :: enum {
+	Home,
 	General,
 	Folders,
 	Speech,
@@ -32,6 +30,7 @@ SETTINGS_SECTIONS := [Settings_Section]struct {
 	label: string,
 	icon:  string,
 } {
+	.Home          = {N_("Settings"), ICON_SETTINGS},
 	.General       = {N_("General"), ICON_SETTINGS},
 	.Folders       = {N_("Folders"), ICON_FOLDER},
 	.Speech        = {N_("Speech"), ICON_MIC},
@@ -69,6 +68,301 @@ srow :: proc() -> clay.ElementDeclaration {
 		},
 		backgroundColor = ROW_BG,
 		cornerRadius = rr(8),
+	}
+}
+
+// Deliberately separate from srow: profile and other surfaces retain their cards.
+settings_row :: proc(stacked: bool = false) -> clay.ElementDeclaration {
+	stacked := stacked && (g_ui == nil || settings_body_width(g_ui) < 580)
+	return {
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			layoutDirection = stacked ? .TopToBottom : .LeftToRight,
+			padding = {top = 4, bottom = 4},
+			childGap = 12,
+			childAlignment = {y = .Center},
+		},
+	}
+}
+
+settings_content_width :: proc(ui: ^Ui_State) -> f32 {
+	return min(
+		ui.settings_section == .Home ? 900 : (ui.settings_section == .General ? 560 : 740),
+		max(120, page_w(ui) - (page_w(ui) < 560 ? 24 : 48)),
+	)
+}
+
+@(private)
+settings_body_width :: proc(ui: ^Ui_State) -> f32 {
+	return max(120, settings_content_width(ui) - (page_w(ui) < 560 ? 16 : 32))
+}
+
+@(private)
+settings_box :: proc() -> clay.ElementDeclaration {
+	return {
+		layout = {
+			sizing = {
+				width = g_ui == nil ? clay.SizingGrow() : clay.SizingFixed(settings_body_width(g_ui)),
+			},
+			layoutDirection = .TopToBottom,
+			padding = {left = 12, right = 12, top = 18, bottom = 10},
+			childGap = 8,
+		},
+		backgroundColor = PANEL,
+		border = {color = FIELD_BORDER, width = {1, 1, 1, 1, 0}},
+		cornerRadius = rr(2),
+	}
+}
+
+settings_group :: proc(label: string) {
+	label := tr(label)
+	width := g_ui == nil ? f32(600) : settings_body_width(g_ui) - 24
+	long := rl.MeasureTextLine(FONT_TITLE, 12, label, 0).x > width - 8
+	if clay.UI(clay.ID_LOCAL(label))(
+	{
+		layout = {
+			sizing = {width = long ? clay.SizingFixed(width) : clay.SizingFit()},
+			padding = {left = 4, right = 4},
+		},
+		floating = long ? clay.FloatingElementConfig{} : clay.FloatingElementConfig{attachTo = .Parent, clipTo = .AttachedParent, offset = {8, -8}, pointerCaptureMode = .Passthrough},
+		backgroundColor = PANEL,
+	},
+	) {
+		clay.Text(label, {fontId = FONT_TITLE, fontSize = 12, textColor = TEXT})
+	}
+}
+
+@(private)
+settings_check :: proc(id_str: string, checked: bool, title: string, sub: string) {
+	if clay.UI(clay.ID(id_str))(
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			childGap = 9,
+			padding = {top = 3, bottom = 3},
+		},
+		backgroundColor = hovered() ? HOVER : {},
+		cornerRadius = rr(2),
+	},
+	) {
+		if clay.UI(clay.ID_LOCAL("Check"))(
+		{
+			layout = {
+				sizing = {clay.SizingFixed(16), clay.SizingFixed(16)},
+				childAlignment = {x = .Center, y = .Center},
+			},
+			backgroundColor = CARD,
+			border = {color = hovered() ? ACCENT : FIELD_BORDER, width = {1, 1, 1, 1, 0}},
+			cornerRadius = rr(2),
+		},
+		) {
+			if checked {clay.Text(ICON_CHECK, {fontId = FONT_ICON, fontSize = 12, textColor = ACCENT})}
+		}
+		row_labels(title, sub)
+	}
+}
+
+@(private)
+settings_radio_mark :: proc(selected: bool) {
+	if clay.UI(clay.ID_LOCAL("Radio"))(
+	{
+		layout = {
+			sizing = {clay.SizingFixed(14), clay.SizingFixed(14)},
+			childAlignment = {x = .Center, y = .Center},
+		},
+		backgroundColor = CARD,
+		border = {color = FIELD_BORDER, width = {1, 1, 1, 1, 0}},
+		cornerRadius = clay.CornerRadiusAll(7),
+	},
+	) {
+		if selected do if clay.UI(clay.ID_LOCAL("Selected"))({layout = {sizing = {clay.SizingFixed(6), clay.SizingFixed(6)}}, backgroundColor = ACCENT, cornerRadius = clay.CornerRadiusAll(3)}) {}
+	}
+}
+
+@(private)
+settings_option :: proc(id_str: string, index: u32, label: string, selected: bool) {
+	if clay.UI(clay.ID(id_str, index))(
+	{
+		layout = {
+			padding = {left = 10, right = 10, top = 7, bottom = 7},
+			childGap = 6,
+			childAlignment = {y = .Center},
+		},
+		backgroundColor = selected ? SELECTED : (hovered() ? HOVER : CARD),
+		border = {color = selected ? ACCENT : FIELD_BORDER, width = {1, 1, 1, 1, 0}},
+		cornerRadius = rr(6),
+	},
+	) {
+		clay.Text(label, {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
+	}
+}
+
+@(private)
+settings_button :: proc(id_str: string, label: string, color: clay.Color = {}) {
+	down := press_down(clay.ID(id_str))
+	if clay.UI(clay.ID(id_str))(
+	{
+		layout = {
+			sizing = {width = clay.SizingFit({min = 56}), height = clay.SizingFixed(30)},
+			padding = {left = 12, right = 12, top = down},
+			childAlignment = {x = .Center, y = .Center},
+		},
+		backgroundColor = hovered() ? HOVER : CARD,
+		border = {color = color.a != 0 ? color : FIELD_BORDER, width = {1, 1, 1, 1, 0}},
+		cornerRadius = rr(7),
+	},
+	) {
+		clay.Text(
+			tr(label),
+			{fontId = FONT_BODY, fontSize = 12, textColor = color.a != 0 ? color : TEXT},
+		)
+	}
+}
+
+SETTINGS_GENERAL_TABS := []string{N_("Startup"), N_("Language"), N_("Messaging")}
+SETTINGS_APPEARANCE_TABS := []string{N_("Theme"), N_("Interface"), N_("Avatars")}
+SETTINGS_SPEECH_TABS := []string{N_("Dictation"), N_("Read aloud")}
+SETTINGS_NETWORK_TABS := []string{N_("Relays"), N_("Linked events")}
+SETTINGS_KEYS_TABS := []string{N_("Identity"), N_("Key packages"), N_("Security")}
+SETTINGS_ADVANCED_TABS := []string{N_("Privacy"), N_("Audit logs"), N_("Developer")}
+
+settings_tabs :: proc(ui: ^Ui_State) -> []string {
+	#partial switch ui.settings_section {
+	case .General:
+		return SETTINGS_GENERAL_TABS
+	case .Appearance:
+		return SETTINGS_APPEARANCE_TABS
+	case .Speech:
+		return SETTINGS_SPEECH_TABS
+	case .Network:
+		return SETTINGS_NETWORK_TABS
+	case .Keys:
+		return SETTINGS_KEYS_TABS
+	case .Advanced:
+		return SETTINGS_ADVANCED_TABS
+	case:
+		return nil
+	}
+}
+
+settings_target_tab :: proc(section: Settings_Section, anchor: string) -> int {
+	#partial switch section {
+	case .General:
+		switch anchor {
+		case "RowLang", "LangChange", "RowTimeFmt", "TimeFmt", "RowDateFmt", "DateFmt":
+			return 1
+		case "RowQuick",
+		     "RowQuickReset",
+		     "QuickAdd",
+		     "QuickReset",
+		     "RowEmoji",
+		     "EmojiAdd",
+		     "EmojiNameBox",
+		     "RowShortcuts",
+		     "ShortcutsView":
+			return 2
+		}
+	case .Appearance:
+		switch anchor {
+		case "RowZoom",
+		     "ZoomMinus",
+		     "ZoomPlus",
+		     "ZoomReset",
+		     "RowBodyFont",
+		     "BodyFontChip",
+		     "RowScroll",
+		     "ScrollChip",
+		     "RowMotion",
+		     "TgMotion",
+		     "RowCentered",
+		     "TgCentered":
+			return 1
+		case "RowAvatarShape", "AvatarShapeChip", "RowCropShape", "CropShapeChip":
+			return 2
+		}
+	case .Speech:
+		switch anchor {
+		case "RowTts", "TgTts", "TtsModel", "TtsVoice":
+			return 1
+		}
+	case .Network:
+		switch anchor {
+		case "AddFetchRow",
+		     "FetchBox",
+		     "AddFetchBtn",
+		     "NetworkFetchGroup",
+		     "ClientBox",
+		     "NetworkClientGroup":
+			return 1
+		}
+	case .Keys:
+		switch anchor {
+		case "KpStatus", "KpPublish", "KpRefresh", "RowRotate", "RotateBtn":
+			return 1
+		case "RowVaultPw", "VaultPwBtn", "RowReveal", "RevealNsecBtn", "RowExport", "ExportBtn":
+			return 2
+		}
+	case .Advanced:
+		switch anchor {
+		case "RowAudit", "TgAudit", "AuditRefresh", "AdvancedAuditGroup":
+			return 1
+		case "RowDevMode", "TgDevMode", "AdvancedDeveloperGroup":
+			return 2
+		}
+	case:
+	}
+	return 0
+}
+
+settings_tab_strip :: proc(ui: ^Ui_State) {
+	tabs := settings_tabs(ui)
+	if len(tabs) == 0 {return}
+	if clay.UI(clay.ID("SettingsTabs"))(
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			childGap = 2,
+			childAlignment = {y = .Bottom},
+		},
+	},
+	) {
+		for label, i in tabs {
+			selected := ui.settings_tab == i
+			if clay.UI(clay.ID("SettingsTab", u32(i)))(
+			{
+				layout = {
+					sizing = {
+						width = clay.SizingGrow({max = 120}),
+						height = clay.SizingFixed(selected ? 32 : 29),
+					},
+					padding = {left = 8, right = 8},
+					childAlignment = {x = .Center, y = .Center},
+				},
+				backgroundColor = selected ? PANEL : (hovered() ? HOVER : ROW_BG),
+				cornerRadius = {topLeft = 3 * R_SCALE, topRight = 3 * R_SCALE},
+				border = {
+					color = FIELD_BORDER,
+					width = {
+						left = 1,
+						right = 1,
+						top = selected ? 2 : 1,
+						bottom = selected ? 0 : 1,
+					},
+				},
+			},
+			) {
+				clay.Text(
+					tr(label),
+					{fontId = FONT_TITLE, fontSize = 12, textColor = selected ? ACCENT : TEXT_DIM},
+				)
+			}
+		}
+		if clay.UI(clay.ID("SettingsTabEdge"))(
+		{
+			layout = {sizing = {clay.SizingGrow(), clay.SizingFixed(1)}},
+			backgroundColor = FIELD_BORDER,
+		},
+		) {}
 	}
 }
 
@@ -119,40 +413,31 @@ toggle :: proc(id_str: string, on: bool) {
 	}
 }
 
-// Page header: icon plate + title + caps sub-line.
-settings_header :: proc(icon: string, title: string, sub: string) {
+// Illustrated identity remains quiet so the controls own the property page.
+settings_header :: proc(section: Settings_Section, title: string, sub: string) {
 	if clay.UI(clay.ID("SettingsHead"))(
 	{
 		layout = {
 			sizing = {width = clay.SizingGrow()},
-			childGap = 12,
+			childGap = 10,
 			childAlignment = {y = .Center},
-			padding = {bottom = 8},
+			padding = {bottom = 12},
 		},
 	},
 	) {
-		if clay.UI(clay.ID("SettingsHeadIcon"))(
+		settings_illustration("SettingsHeadArt", section, 40)
+		if clay.UI(clay.ID("SettingsHeadCol"))(
 		{
 			layout = {
-				sizing = {width = clay.SizingFixed(36), height = clay.SizingFixed(36)},
-				childAlignment = {x = .Center, y = .Center},
+				sizing = {width = clay.SizingGrow()},
+				layoutDirection = .TopToBottom,
+				childGap = 4,
 			},
-			backgroundColor = SELECTED,
-			cornerRadius = rr(10),
-			border = {color = FIELD_BORDER, width = bw()},
 		},
-		) {
-			clay.Text(icon, {fontId = FONT_ICON, fontSize = 15, textColor = ACCENT})
-		}
-		if clay.UI(clay.ID("SettingsHeadCol"))(
-		{layout = {layoutDirection = .TopToBottom, childGap = 3}},
 		) {
 			clay.Text(tr(title), {fontId = FONT_TITLE, fontSize = 18, textColor = TEXT})
 			if len(sub) > 0 {
-				clay.Text(
-					tr(sub),
-					{fontId = FONT_MONO, fontSize = 10, textColor = TEXT_LO, letterSpacing = 2},
-				)
+				clay.Text(tr(sub), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
 			}
 		}
 	}
@@ -160,58 +445,123 @@ settings_header :: proc(icon: string, title: string, sub: string) {
 
 // ── Pane dispatch ───────────────────────────────────────────────────
 
+settings_description :: proc(section: Settings_Section) -> string {
+	switch section {
+	case .Home:
+		return ""
+	case .General:
+		return N_("Make White Noise work your way.")
+	case .Folders:
+		return N_("Organize your conversations.")
+	case .Speech:
+		return N_("Dictate and listen on this device.")
+	case .Network:
+		return N_("Manage connections and published relay lists.")
+	case .Keys:
+		return N_("Your identity, key packages, and device security.")
+	case .Appearance:
+		return N_("Choose how your conversations look and feel.")
+	case .Notifications:
+		return N_("Choose when and how White Noise alerts you.")
+	case .Storage:
+		return N_("Manage local files and encrypted backups.")
+	case .Advanced:
+		return N_("Privacy, diagnostics, and developer tools.")
+	case .About:
+		return N_("White Noise and this session.")
+	case .Debug:
+		return N_("Inspect application state and events.")
+	case .KP:
+		return N_("Inspect published MLS key packages.")
+	}
+	return ""
+}
+
 settings_pane :: proc(ui: ^Ui_State) {
-	if clay.UI(clay.ID("SettingsPage"))(
+	if clay.UI(clay.ID("SettingsRoot"))(
 	{
 		layout = {
-			sizing = {clay.SizingGrow(), clay.SizingGrow()},
+			sizing = {clay.SizingFixed(page_w(ui)), clay.SizingGrow()},
 			layoutDirection = .TopToBottom,
-			padding = clay.PaddingAll(20),
-			childGap = 10,
 		},
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 	},
 	) {
-		switch ui.settings_section {
-		case .General:
-			settings_header(ICON_SETTINGS, "General", "")
-			settings_general(ui)
-		case .Folders:
-			settings_header(ICON_FOLDER, "Folders", "")
-			settings_folders(ui)
-		case .Speech:
-			settings_header(ICON_MIC, "Speech", "")
-			settings_speech(ui)
-		case .Network:
-			settings_header(ICON_GLOBE, "Network & relays", "WHERE YOUR MESSAGES LAND")
-			settings_network(ui)
-		case .Keys:
-			settings_header(ICON_KEY, "Keys & identity", "MLS · YOUR KEY MATERIAL")
-			settings_keys(ui)
-		case .Appearance:
-			settings_header(ICON_BRUSH, "Appearance", "")
-			settings_appearance(ui)
-		case .Notifications:
-			settings_header(ICON_BELL, "Notifications", "DESKTOP ALERTS")
-			settings_notifications(ui)
-		case .Storage:
-			settings_header(ICON_ARCHIVE, "Storage", "ON THIS DEVICE")
-			settings_storage(ui)
-		case .Advanced:
-			settings_header(ICON_CODE, "Advanced", "PRIVACY & DEVELOPER FLAGS")
-			settings_advanced(ui)
-		case .About:
-			settings_header(ICON_INFO, "About", "WHAT THIS IS, LIVE")
-			settings_about(ui)
-		case .Debug:
-			settings_header(ICON_BUG, "Debug", "STATE / EVENTS / KEYS / TIMINGS")
-			settings_debug(ui)
-		case .KP:
-			settings_header(ICON_KEY, "KP inspector", "DECODED MLS KEY PACKAGES")
-			settings_kp(ui)
+		settings_navigation(ui)
+		if clay.UI(clay.ID("SettingsPage"))(
+		{
+			layout = {
+				sizing = {clay.SizingGrow(), clay.SizingGrow()},
+				layoutDirection = .TopToBottom,
+				padding = clay.PaddingAll(page_w(ui) < 560 ? 12 : 24),
+				childAlignment = {x = .Center},
+			},
+			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		},
+		) {
+			if clay.UI(clay.ID("SettingsContent"))(
+			{
+				layout = {
+					sizing = {width = clay.SizingFixed(settings_content_width(ui))},
+					layoutDirection = .TopToBottom,
+					childGap = 0,
+				},
+			},
+			) {
+				if ui.settings_section != .Home {
+					section := SETTINGS_SECTIONS[ui.settings_section]
+					settings_header(
+						ui.settings_section,
+						section.label,
+						settings_description(ui.settings_section),
+					)
+					settings_tab_strip(ui)
+				}
+				if ui.settings_section == .Home {
+					settings_home(ui)
+				} else if clay.UI(clay.ID("SettingsSheet"))(
+				{
+					layout = {
+						sizing = {width = clay.SizingGrow()},
+						layoutDirection = .TopToBottom,
+						padding = clay.PaddingAll(page_w(ui) < 560 ? 8 : 16),
+						childGap = 18,
+					},
+					backgroundColor = len(settings_tabs(ui)) > 0 ? PANEL : {},
+					border = len(settings_tabs(ui)) > 0 ? clay.BorderElementConfig{color = FIELD_BORDER, width = {left = 1, right = 1, bottom = 1}} : {},
+					cornerRadius = {bottomLeft = 3 * R_SCALE, bottomRight = 3 * R_SCALE},
+				},
+				) {
+					#partial switch ui.settings_section {
+					case .General:
+						settings_general(ui)
+					case .Folders:
+						settings_folders(ui)
+					case .Speech:
+						settings_speech(ui)
+					case .Network:
+						settings_network(ui)
+					case .Keys:
+						settings_keys(ui)
+					case .Appearance:
+						settings_appearance(ui)
+					case .Notifications:
+						settings_notifications(ui)
+					case .Storage:
+						settings_storage(ui)
+					case .Advanced:
+						settings_advanced(ui)
+					case .About:
+						settings_about(ui)
+					case .Debug:
+						settings_debug(ui)
+					case .KP:
+						settings_kp(ui)
+					}
+				}
+			}
 		}
+		scrollbar(clay.ID("SettingsPage"))
 	}
-	scrollbar(clay.ID("SettingsPage"))
 
 	if open_now(clay.ID("ThemeEdit"), ui.theme_edit) {
 		theme_edit_modal(ui)
@@ -240,135 +590,169 @@ settings_pane :: proc(ui: ^Ui_State) {
 
 @(private)
 settings_folders :: proc(ui: ^Ui_State) {
-	clay.Text(
-		tr("Create folders to organize your chats."),
-		{fontId = FONT_BODY, fontSize = 13, textColor = TEXT_DIM},
-	)
-	clay.Text(
-		tr("Deleting a folder doesn't delete your chats."),
-		{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_LO},
-	)
-	if clay.UI(clay.ID("SettingsFolderActions"))(
-	{layout = {sizing = {width = clay.SizingGrow()}, childAlignment = {x = .Right}}},
-	) {
-		folder_action("SettingsFolderNew", tr("New folder"), true)
-	}
-	// A grow child inside the page's scroll clip can expand to its entire
-	// content. Give the folder list the actual remaining viewport instead.
-	list_height := max(60, f32(rl.GetScreenHeight()) / UI_ZOOM - 240)
-	page := clay.GetElementData(clay.ID("SettingsPage"))
-	actions := clay.GetElementData(clay.ID("SettingsFolderActions"))
-	if page.found && actions.found {
-		page_scroll := clay.GetScrollContainerData(clay.ID("SettingsPage"))
-		offset := page_scroll.found ? page_scroll.scrollPosition.y : 0
-		used := actions.boundingBox.y + actions.boundingBox.height - page.boundingBox.y - offset
-		list_height = max(60, page.boundingBox.height - used - 30)
-	}
-	if clay.UI(clay.ID("SettingsFolderList"))(
-	{
-		layout = {
-			sizing = {clay.SizingGrow(), clay.SizingFixed(list_height)},
-			layoutDirection = .TopToBottom,
-			childGap = 8,
+	box := settings_box()
+	box.layout.sizing.width = clay.SizingFixed(min(580, settings_body_width(ui)))
+	if clay.UI(clay.ID("FoldersGroup"))(box) {
+		settings_group(N_("Folders"))
+		if clay.UI(clay.ID("SettingsFolderActions"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow()},
+				layoutDirection = settings_body_width(ui) < 360 ? .TopToBottom : .LeftToRight,
+				childGap = 12,
+				childAlignment = {y = .Center},
+			},
 		},
-		clip = {vertical = true, childOffset = clay.GetScrollOffset()},
-	},
-	) {
-		view := clay.GetScrollContainerData(clay.ID("SettingsFolderList"))
-		height :=
-			view.found ? view.scrollContainerDimensions.height : f32(rl.GetScreenHeight()) / UI_ZOOM
-		offset := view.found ? -view.scrollPosition.y : 0
-		first := clamp(int(offset / 68) - 2, 0, len(ui.prefs.folders))
-		last := clamp(int((offset + height) / 68) + 3, first, len(ui.prefs.folders))
-		if first > 0 {
-			if clay.UI(clay.ID("SettingsFoldersBefore"))(
-			{layout = {sizing = {height = clay.SizingFixed(f32(first) * 68 - 8)}}},
-			) {}
+		) {
+			if clay.UI(clay.ID("FolderDescription"))(
+			{
+				layout = {
+					sizing = {width = clay.SizingGrow()},
+					layoutDirection = .TopToBottom,
+					childGap = 4,
+				},
+			},
+			) {
+				clay.Text(
+					tr("Create folders to organize your chats."),
+					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT},
+				)
+				clay.Text(
+					tr("Deleting a folder doesn't delete your chats."),
+					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+				)
+			}
+			settings_button("SettingsFolderNew", "New folder", ACCENT)
 		}
-		for i in first ..< last {
-			name := ui.prefs.folders[i]
-			row := srow()
-			row.layout.sizing.height = clay.SizingFixed(60)
-			if clay.UI(clay.ID("SettingsFolder", u32(i)))(row) {
-				folder_icon(ui, name, 17)
-				if clay.UI(clay.ID("SettingsFolderName", u32(i)))(
-				{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
-				) {
-					clay.Text(
-						name,
-						{fontId = FONT_TITLE, fontSize = 13, textColor = TEXT, wrapMode = .None},
-					)
+		// Short lists fit their contents; long lists retain a bounded scroll viewport.
+		list_height := max(60, f32(rl.GetScreenHeight()) / UI_ZOOM - 240)
+		page := clay.GetElementData(clay.ID("SettingsPage"))
+		actions := clay.GetElementData(clay.ID("SettingsFolderActions"))
+		if page.found && actions.found {
+			page_scroll := clay.GetScrollContainerData(clay.ID("SettingsPage"))
+			offset := page_scroll.found ? page_scroll.scrollPosition.y : 0
+			used :=
+				actions.boundingBox.y + actions.boundingBox.height - page.boundingBox.y - offset
+			list_height = max(60, page.boundingBox.height - used - 30)
+		}
+		list_height = min(list_height, max(0, f32(len(ui.prefs.folders) * 40 - 4)))
+		if clay.UI(clay.ID("SettingsFolderList"))(
+		{
+			layout = {
+				sizing = {clay.SizingGrow(), clay.SizingFixed(list_height)},
+				layoutDirection = .TopToBottom,
+				childGap = 4,
+			},
+			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+		},
+		) {
+			view := clay.GetScrollContainerData(clay.ID("SettingsFolderList"))
+			height :=
+				view.found ? view.scrollContainerDimensions.height : f32(rl.GetScreenHeight()) / UI_ZOOM
+			offset := view.found ? -view.scrollPosition.y : 0
+			first := clamp(int(offset / 40) - 2, 0, len(ui.prefs.folders))
+			last := clamp(int((offset + height) / 40) + 3, first, len(ui.prefs.folders))
+			if first > 0 {
+				if clay.UI(clay.ID("SettingsFoldersBefore"))(
+				{layout = {sizing = {height = clay.SizingFixed(f32(first) * 40 - 4)}}},
+				) {}
+			}
+			for i in first ..< last {
+				name := ui.prefs.folders[i]
+				row := settings_row()
+				row.layout.sizing.height = clay.SizingFixed(36)
+				row.backgroundColor =
+					clay.PointerOver(clay.ID("SettingsFolder", u32(i))) ? HOVER : {}
+				row.border = {
+					color = FIELD_BORDER,
+					width = {bottom = 1},
 				}
-				if clay.UI(clay.ID("SettingsFolderOrder", u32(i)))({layout = {childGap = 2}}) {
-					for direction in 0 ..< 2 {
-						id := direction == 0 ? "SettingsFolderUp" : "SettingsFolderDown"
-						enabled := direction == 0 ? i > 0 : i + 1 < len(ui.prefs.folders)
+				if clay.UI(clay.ID("SettingsFolder", u32(i)))(row) {
+					folder_icon(ui, name, 17)
+					if clay.UI(clay.ID("SettingsFolderName", u32(i)))(
+					{layout = {sizing = {width = clay.SizingGrow()}}, clip = {horizontal = true}},
+					) {
+						clay.Text(
+							name,
+							{
+								fontId = FONT_TITLE,
+								fontSize = 13,
+								textColor = TEXT,
+								wrapMode = .None,
+							},
+						)
+					}
+					if clay.UI(clay.ID("SettingsFolderOrder", u32(i)))({layout = {childGap = 2}}) {
+						for direction in 0 ..< 2 {
+							id := direction == 0 ? "SettingsFolderUp" : "SettingsFolderDown"
+							enabled := direction == 0 ? i > 0 : i + 1 < len(ui.prefs.folders)
+							if clay.UI(clay.ID(id, u32(i)))(
+							{
+								layout = {
+									sizing = {clay.SizingFixed(26), clay.SizingFixed(26)},
+									childAlignment = {x = .Center, y = .Center},
+								},
+								backgroundColor = enabled && hovered() ? HOVER : {},
+								cornerRadius = rr(6),
+							},
+							) {
+								clay.Text(
+									direction == 0 ? "\uf062" : ICON_DOWN,
+									{
+										fontId = FONT_ICON,
+										fontSize = 12,
+										textColor = enabled ? TEXT_DIM : fade(TEXT_LO, 0.4),
+									},
+								)
+								if hovered() {
+									tooltip(direction == 0 ? N_("Move up") : N_("Move down"))
+									if enabled {cursor_raise(.Pointer)}
+								}
+							}
+						}
+					}
+					for action in 0 ..< 2 {
+						id := action == 0 ? "SettingsFolderEdit" : "SettingsFolderDelete"
 						if clay.UI(clay.ID(id, u32(i)))(
 						{
 							layout = {
-								sizing = {clay.SizingFixed(26), clay.SizingFixed(36)},
+								sizing = {clay.SizingFixed(26), clay.SizingFixed(26)},
 								childAlignment = {x = .Center, y = .Center},
 							},
-							backgroundColor = enabled && hovered() ? HOVER : {},
-							cornerRadius = rr(8),
+							backgroundColor = hovered() ? HOVER : {},
+							cornerRadius = rr(6),
 						},
 						) {
 							clay.Text(
-								direction == 0 ? "\uf062" : ICON_DOWN,
+								action == 0 ? ICON_PENCIL : ICON_TRASH,
 								{
 									fontId = FONT_ICON,
-									fontSize = 12,
-									textColor = enabled ? TEXT_DIM : fade(TEXT_LO, 0.4),
+									fontSize = 14,
+									textColor = action == 0 ? TEXT_DIM : DANGER,
 								},
 							)
 							if hovered() {
-								tooltip(direction == 0 ? N_("Move up") : N_("Move down"))
-								if enabled {cursor_raise(.Pointer)}
+								tooltip(action == 0 ? N_("Edit folder") : N_("Delete"))
+								cursor_raise(.Pointer)
 							}
 						}
 					}
 				}
-				for action in 0 ..< 2 {
-					id := action == 0 ? "SettingsFolderEdit" : "SettingsFolderDelete"
-					if clay.UI(clay.ID(id, u32(i)))(
-					{
-						layout = {
-							sizing = {clay.SizingFixed(36), clay.SizingFixed(36)},
-							childAlignment = {x = .Center, y = .Center},
-						},
-						backgroundColor = hovered() ? HOVER : {},
-						cornerRadius = rr(8),
-					},
-					) {
-						clay.Text(
-							action == 0 ? ICON_PENCIL : ICON_TRASH,
-							{
-								fontId = FONT_ICON,
-								fontSize = 14,
-								textColor = action == 0 ? TEXT_DIM : DANGER,
-							},
-						)
-						if hovered() {
-							tooltip(action == 0 ? N_("Edit folder") : N_("Delete"))
-							cursor_raise(.Pointer)
-						}
-					}
-				}
 			}
-		}
-		if last < len(ui.prefs.folders) {
-			if clay.UI(clay.ID("SettingsFoldersAfter"))(
-			{
-				layout = {
-					sizing = {
-						height = clay.SizingFixed(f32(len(ui.prefs.folders) - last) * 68 - 8),
+			if last < len(ui.prefs.folders) {
+				if clay.UI(clay.ID("SettingsFoldersAfter"))(
+				{
+					layout = {
+						sizing = {
+							height = clay.SizingFixed(f32(len(ui.prefs.folders) - last) * 40 - 4),
+						},
 					},
 				},
-			},
-			) {}
+				) {}
+			}
 		}
+		scrollbar(clay.ID("SettingsFolderList"))
 	}
-	scrollbar(clay.ID("SettingsFolderList"))
 }
 
 @(private)
@@ -442,122 +826,179 @@ settings_tts_download :: proc(ui: ^Ui_State, model: int) {
 	}
 }
 
-// Speech
+// ── General ─────────────────────────────────────────────────────────
 
-@(private)
-settings_speech :: proc(ui: ^Ui_State) {
-	eyebrow("SPEECH TO TEXT")
-	if clay.UI(clay.ID("RowStt"))(srow()) {
-		row_labels(
-			"Speech to text",
-			"Dictate drafts and transcribe audio messages on your device.",
-		)
-		toggle("TgStt", ui.prefs.stt_enabled)
-	}
-	if ui.prefs.stt_enabled {
-		eyebrow("TRANSCRIPTION MODEL")
-		clay.Text(
-			tr("Select a model to download it for dictation and audio messages."),
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
-		)
-		for model, i in STT_MODELS {
-			selected := stt_model(ui.prefs.stt_model) == i
-			row := srow()
-			row.backgroundColor = selected ? SELECTED : ROW_BG
-			row.layout.layoutDirection = .TopToBottom
-			if clay.UI(clay.ID("SttModel", u32(i)))(row) {
-				active := selected && ui.stt.file != nil && ui.stt.purpose == .Download
-				label := ui.stt.ready[i] ? tr("Downloaded") : tr("Not downloaded")
-				fraction: f32
-				if active {
-					bytes := f32(model.sizes[ui.stt.model]) * f32(ui.stt.percent) / 100
-					for j in 0 ..< int(ui.stt.model) {bytes += f32(model.sizes[j])}
-					fraction = bytes / f32(model.bytes)
-					label =
-						ui.stt.status == 'D' ? fmt.tprintf(tr("Downloading: %d%%"), int(fraction * 100)) : tr("Verifying download...")
-				}
-				if clay.UI(clay.ID_LOCAL("SttModelHeading"))(
-				{
-					layout = {
-						sizing = {width = clay.SizingGrow()},
-						childGap = 8,
-						childAlignment = {y = .Center},
-					},
-				},
-				) {
-					row_labels(
-						model.label,
-						fmt.tprintf("%s · %s", human_size(model.bytes), label),
-					)
-					if selected {
-						clay.Text(
-							ICON_CHECK,
-							{fontId = FONT_ICON, fontSize = 12, textColor = ACCENT},
-						)
-						clay.Text(
-							tr("Selected"),
-							{fontId = FONT_BODY, fontSize = 11, textColor = ACCENT},
-						)
-					}
-				}
-				clay.Text(
-					tr(model.languages),
-					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+settings_general :: proc(ui: ^Ui_State) {
+	switch ui.settings_tab {
+	case 0:
+		if clay.UI(clay.ID("StartupGroup"))(settings_box()) {
+			settings_group(N_("Startup"))
+			if clay.UI(clay.ID("RowLaunch"))(settings_row()) {
+				settings_check("TgLaunch", ui.prefs.launch_at_login, "Launch at login", "")
+			}
+			if clay.UI(clay.ID("RowTray"))(settings_row()) {
+				settings_check(
+					"TgTray",
+					ui.prefs.start_in_tray,
+					"Start minimized to tray",
+					"Takes effect on the next launch.",
 				)
-				if active {
-					if clay.UI(clay.ID_LOCAL("SttDownloadTrack"))(
-					{
-						layout = {
-							sizing = {width = clay.SizingGrow(), height = clay.SizingFixed(4)},
-						},
-						backgroundColor = PLATE,
-						cornerRadius = rr(2),
-					},
-					) {
-						if fraction > 0 {
-							if clay.UI(clay.ID_LOCAL("SttDownloadFill"))(
-							{
-								layout = {
-									sizing = {
-										width = clay.SizingPercent(fraction),
-										height = clay.SizingGrow(),
-									},
-								},
-								backgroundColor = ACCENT,
-								cornerRadius = rr(2),
-							},
-							) {}
-						}
+			}
+			if clay.UI(clay.ID("RowMinTray"))(settings_row()) {
+				settings_check(
+					"TgMinTray",
+					ui.prefs.minimize_tray,
+					"Close to tray",
+					"Closing the window hides it. The tray icon shows your unread total and brings it back.",
+				)
+			}
+			if clay.UI(clay.ID("RowRestore"))(settings_row()) {
+				settings_check(
+					"TgRestore",
+					ui.prefs.restore_last_chat,
+					"Restore last selected chat on launch",
+					"",
+				)
+			}
+		}
+
+	case 1:
+		if clay.UI(clay.ID("LanguageGroup"))(settings_box()) {
+			settings_group(N_("Language"))
+			column := settings_row()
+			column.layout.layoutDirection = .TopToBottom
+			column.layout.childGap = 8
+			if clay.UI(clay.ID("RowLang"))(column) {
+				row_labels("Interface language", "")
+				settings_button(
+					"LangChange",
+					fmt.tprintf("%s  ▾", locale_label(ui.prefs.locale)),
+				)
+			}
+			if clay.UI(clay.ID("RowTimeFmt"))(column) {
+				row_labels("Time format", "")
+				if clay.UI(clay.ID("TimeFmtCol"))({layout = {childGap = 6}}) {
+					settings_option("TimeFmt", 0, "14:30", !ui.prefs.hour12)
+					settings_option("TimeFmt", 1, "2:30 PM", ui.prefs.hour12)
+				}
+			}
+			if clay.UI(clay.ID("RowDateFmt"))(column) {
+				row_labels("Date format", "")
+				if clay.UI(clay.ID("DateFmtCol"))({layout = {childGap = 6}}) {
+					for label, i in DATE_FORMATS {
+						settings_option("DateFmt", u32(i), label, ui.prefs.date_format == i)
 					}
-					micro_button("SttCancel", "Cancel")
 				}
 			}
 		}
-	}
-	eyebrow("READ ALOUD")
-	if clay.UI(clay.ID("RowTts"))(srow()) {
-		row_labels(
-			"Read aloud",
-			"Read messages on your device in 31 languages. Downloads about 145 MB on first use.",
-		)
-		toggle("TgTts", ui.prefs.tts_enabled)
-	}
-	if ui.prefs.tts_enabled {
-		if clay.UI(clay.ID("TtsModel"))(srow()) {
-			row_labels(
-				"Speech model",
-				"Shared by all ten voices and 31 languages. Downloads once.",
-			)
-			settings_tts_download(ui, 0)
-		}
-		for voice, i in TTS_VOICES {
-			selected := clamp(ui.prefs.tts_voice, 0, len(TTS_VOICES) - 1) == i
-			row := srow()
+
+	case 2:
+		if clay.UI(clay.ID("ReactionsGroup"))(settings_box()) {
+			settings_group(N_("Quick reactions"))
+			row := settings_row()
 			row.layout.layoutDirection = .TopToBottom
-			row.backgroundColor = selected ? SELECTED : ROW_BG
-			if clay.UI(clay.ID("TtsVoice", u32(i)))(row) {
-				_ = hovered()
-				if clay.UI(clay.ID_LOCAL("VoiceTitle"))(
+			if clay.UI(clay.ID("RowQuick"))(row) {
+				row_labels(
+					"One-tap reactions",
+					"Shown on the message menu. Tap one to remove it. Up to 16.",
+				)
+				columns := max(1, int((settings_body_width(ui) - 24) / 32))
+				for first := 0; first < len(ui.prefs.quick_reactions); first += columns {
+					if clay.UI(clay.ID("QuickChoiceRow", u32(first)))({layout = {childGap = 8}}) {
+						for i in first ..< min(first + columns, len(ui.prefs.quick_reactions)) {
+							emoji := ui.prefs.quick_reactions[i]
+							if clay.UI(clay.ID("QuickChip", u32(i)))(
+							{
+								layout = {
+									sizing = {
+										width = clay.SizingFixed(24),
+										height = clay.SizingFixed(24),
+									},
+									childAlignment = {x = .Center, y = .Center},
+								},
+								backgroundColor = hovered() ? HOVER : {},
+								cornerRadius = rr(6),
+							},
+							) {
+								if tex := emoji_tex(emoji); tex != nil {
+									if clay.UI(clay.ID("QuickChipImg", u32(i)))(
+									{
+										layout = {sizing = {width = clay.SizingFixed(16)}},
+										aspectRatio = {1},
+										image = {imageData = tex},
+									},
+									) {}
+								} else {
+									clay.Text(
+										emoji,
+										{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
+									)
+								}
+							}
+						}
+					}
+				}
+				if len(ui.prefs.quick_reactions) < QUICK_MAX do if clay.UI(clay.ID("QuickAdd"))({layout = {padding = {left = 8, right = 8, top = 4, bottom = 4}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)}) {
+					clay.Text("+", {fontId = FONT_BODY, fontSize = 14, textColor = TEXT})
+				}
+			}
+			if clay.UI(clay.ID("RowQuickReset"))(settings_row()) {
+				row_labels("Restore the default reactions", "")
+				settings_button("QuickReset", "Reset")
+			}
+		}
+
+		if clay.UI(clay.ID("CustomEmojiGroup"))(settings_box()) {
+			settings_group(N_("Custom emoji"))
+			row := settings_row()
+			row.layout.layoutDirection = .TopToBottom
+			if clay.UI(clay.ID("RowEmoji"))(row) {
+				row_labels("Uploaded emoji", "Tap one to remove it.")
+				for name, i in custom_emoji_names {
+					if clay.UI(clay.ID("EmojiChip", u32(i)))(
+					{
+						layout = {
+							padding = {left = 6, right = 8, top = 3, bottom = 3},
+							childGap = 5,
+							childAlignment = {y = .Center},
+						},
+						backgroundColor = hovered() ? HOVER : ROW_BG,
+						cornerRadius = rr(6),
+					},
+					) {
+						if tex := custom_emoji_texture(name); tex != nil {
+							if clay.UI(clay.ID("EmojiChipImg", u32(i)))(
+							{
+								layout = {sizing = {width = clay.SizingFixed(18)}},
+								aspectRatio = {1},
+								image = {imageData = tex},
+							},
+							) {}
+						}
+						clay.Text(
+							fmt.tprintf(":%s:", emoji_code(name)),
+							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+						)
+					}
+				}
+				if clay.UI(clay.ID("EmojiAdd"))(
+				{
+					layout = {padding = {left = 8, right = 8, top = 4, bottom = 4}},
+					backgroundColor = hovered() ? HOVER : {},
+					cornerRadius = rr(6),
+				},
+				) {
+					clay.Text("+", {fontId = FONT_BODY, fontSize = 14, textColor = TEXT})
+				}
+			}
+			if len(ui.emoji_staged) > 0 {
+				clay.Text(
+					"Name the shortcode. Type it in messages as :name:.",
+					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
+				)
+				// Fixed-size input first: this clay build drops a fixed sibling
+				// declared after a grow sibling (see PORT.md quirks).
+				if clay.UI(clay.ID("RowEmojiName"))(
 				{
 					layout = {
 						sizing = {width = clay.SizingGrow()},
@@ -566,200 +1007,27 @@ settings_speech :: proc(ui: ^Ui_State) {
 					},
 				},
 				) {
-					row_labels(voice, TTS_DESCRIPTIONS[i])
-					if selected {
-						clay.Text(
-							ICON_CHECK,
-							{fontId = FONT_ICON, fontSize = 12, textColor = ACCENT},
-						)
-						clay.Text(
-							tr("Selected"),
-							{fontId = FONT_BODY, fontSize = 11, textColor = ACCENT},
-						)
-					}
-				}
-				if clay.UI(clay.ID_LOCAL("VoiceDownload"))(
-				{
-					layout = {
-						sizing = {width = clay.SizingGrow()},
-						childGap = 12,
-						childAlignment = {y = .Center},
-					},
-				},
-				) {
-					settings_tts_download(ui, 6)
-					micro_button(fmt.tprintf("TtsPreview%d", i), "Preview")
+					settings_input(
+						ui,
+						"EmojiNameBox",
+						&ui.emoji_name,
+						"party_parrot",
+						ui.focus == .EmojiName,
+						min(220, settings_body_width(ui) - 200),
+					)
+					settings_button("EmojiSave", "Save")
+					settings_button("EmojiCancel", "Cancel")
 				}
 			}
 		}
-	}
-}
 
-// ── General ─────────────────────────────────────────────────────────
-
-settings_general :: proc(ui: ^Ui_State) {
-	eyebrow("STARTUP")
-	if clay.UI(clay.ID("RowLaunch"))(srow()) {
-		row_labels("Launch at login", "")
-		toggle("TgLaunch", ui.prefs.launch_at_login)
-	}
-	if clay.UI(clay.ID("RowTray"))(srow()) {
-		row_labels("Start minimized to tray", "Takes effect on the next launch.")
-		toggle("TgTray", ui.prefs.start_in_tray)
-	}
-	if clay.UI(clay.ID("RowMinTray"))(srow()) {
-		row_labels(
-			"Close to tray",
-			"Closing the window hides it. The tray icon shows your unread total and brings it back.",
-		)
-		toggle("TgMinTray", ui.prefs.minimize_tray)
-	}
-	if clay.UI(clay.ID("RowRestore"))(srow()) {
-		row_labels("Restore last selected chat on launch", "")
-		toggle("TgRestore", ui.prefs.restore_last_chat)
-	}
-
-	eyebrow("LANGUAGE")
-	if clay.UI(clay.ID("RowLang"))(srow()) {
-		row_labels("Interface language", "")
-		clay.Text(
-			locale_label(ui.prefs.locale),
-			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-		)
-		micro_button("LangChange", "Change")
-	}
-	if clay.UI(clay.ID("RowTimeFmt"))(srow()) {
-		row_labels("Time format", "")
-		if clay.UI(clay.ID("TimeFmtCol"))(
-		{layout = {layoutDirection = .TopToBottom, childGap = 4}},
-		) {
-			theme_chip_indexed("TimeFmt", 0, "24-hour", !ui.prefs.hour12)
-			theme_chip_indexed("TimeFmt", 1, "12-hour", ui.prefs.hour12)
-		}
-	}
-	if clay.UI(clay.ID("RowDateFmt"))(srow()) {
-		row_labels("Date format", "")
-		if clay.UI(clay.ID("DateFmtCol"))(
-		{layout = {layoutDirection = .TopToBottom, childGap = 4}},
-		) {
-			for label, i in DATE_FORMATS {
-				theme_chip_indexed("DateFmt", u32(i), label, ui.prefs.date_format == i)
+		if clay.UI(clay.ID("ShortcutsGroup"))(settings_box()) {
+			settings_group(N_("Help"))
+			if clay.UI(clay.ID("RowShortcuts"))(settings_row()) {
+				row_labels("Keyboard shortcuts", "")
+				settings_button("ShortcutsView", "View")
 			}
 		}
-	}
-
-	eyebrow("QUICK REACTIONS")
-	if clay.UI(clay.ID("RowQuick"))(srow()) {
-		row_labels(
-			"One-tap reactions",
-			"Shown on the message menu. Tap one to remove it. Up to 16.",
-		)
-		for emoji, i in ui.prefs.quick_reactions {
-			if clay.UI(clay.ID("QuickChip", u32(i)))(
-			{
-				layout = {
-					sizing = {width = clay.SizingFixed(24), height = clay.SizingFixed(24)},
-					childAlignment = {x = .Center, y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : {},
-				cornerRadius = rr(6),
-			},
-			) {
-				if tex := emoji_tex(emoji); tex != nil {
-					if clay.UI(clay.ID("QuickChipImg", u32(i)))(
-					{
-						layout = {sizing = {width = clay.SizingFixed(16)}},
-						aspectRatio = {1},
-						image = {imageData = tex},
-					},
-					) {}
-				} else {
-					clay.Text(emoji, {fontId = FONT_BODY, fontSize = 13, textColor = TEXT})
-				}
-			}
-		}
-		if len(ui.prefs.quick_reactions) < QUICK_MAX do if clay.UI(clay.ID("QuickAdd"))({layout = {padding = {left = 8, right = 8, top = 4, bottom = 4}}, backgroundColor = hovered() ? HOVER : {}, cornerRadius = rr(6)}) {
-			clay.Text("+", {fontId = FONT_BODY, fontSize = 14, textColor = TEXT})
-		}
-	}
-	if clay.UI(clay.ID("RowQuickReset"))(srow()) {
-		row_labels("Restore the default reactions", "")
-		micro_button("QuickReset", "Reset")
-	}
-
-	eyebrow("CUSTOM EMOJI")
-	if clay.UI(clay.ID("RowEmoji"))(srow()) {
-		row_labels("Uploaded emoji", "Tap one to remove it.")
-		for name, i in custom_emoji_names {
-			if clay.UI(clay.ID("EmojiChip", u32(i)))(
-			{
-				layout = {
-					padding = {left = 6, right = 8, top = 3, bottom = 3},
-					childGap = 5,
-					childAlignment = {y = .Center},
-				},
-				backgroundColor = hovered() ? HOVER : ROW_BG,
-				cornerRadius = rr(6),
-			},
-			) {
-				if tex := custom_emoji_texture(name); tex != nil {
-					if clay.UI(clay.ID("EmojiChipImg", u32(i)))(
-					{
-						layout = {sizing = {width = clay.SizingFixed(18)}},
-						aspectRatio = {1},
-						image = {imageData = tex},
-					},
-					) {}
-				}
-				clay.Text(
-					fmt.tprintf(":%s:", emoji_code(name)),
-					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-				)
-			}
-		}
-		if clay.UI(clay.ID("EmojiAdd"))(
-		{
-			layout = {padding = {left = 8, right = 8, top = 4, bottom = 4}},
-			backgroundColor = hovered() ? HOVER : {},
-			cornerRadius = rr(6),
-		},
-		) {
-			clay.Text("+", {fontId = FONT_BODY, fontSize = 14, textColor = TEXT})
-		}
-	}
-	if len(ui.emoji_staged) > 0 {
-		clay.Text(
-			"Name the shortcode. Type it in messages as :name:.",
-			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
-		)
-		// Fixed-size input first: this clay build drops a fixed sibling
-		// declared after a grow sibling (see PORT.md quirks).
-		if clay.UI(clay.ID("RowEmojiName"))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				childGap = 10,
-				childAlignment = {y = .Center},
-			},
-		},
-		) {
-			input_box(
-				ui,
-				"EmojiNameBox",
-				&ui.emoji_name,
-				"party_parrot",
-				ui.focus == .EmojiName,
-				220,
-			)
-			micro_button("EmojiSave", "Save")
-			micro_button("EmojiCancel", "Cancel")
-		}
-	}
-
-	eyebrow("HELP")
-	if clay.UI(clay.ID("RowShortcuts"))(srow()) {
-		row_labels("Keyboard shortcuts", "")
-		micro_button("ShortcutsView", "View")
 	}
 }
 
@@ -780,248 +1048,333 @@ SCROLL_SPEED_LABELS := []string{"1x", "1.5x", "2x", "3x"}
 BODY_FONT_DELTAS := []int{-2, 0, 2}
 BODY_FONT_LABELS := []string{"Small", "Default", "Large"}
 
-settings_appearance :: proc(ui: ^Ui_State) {
-	eyebrow("THEME")
-	if clay.UI(clay.ID("RowThemeShare"))(srow()) {
-		row_labels("Share this theme", "Pick a chat to send it to. They choose whether to use it.")
-		micro_button("ThemeShareBtn", "Share to chat")
-		micro_button("ThemeEditBtn", "Edit")
-		if theme_packs[ui.theme].custom {
-			micro_button("ThemeDeleteBtn", "Delete", DANGER)
-		}
-		if active_pack(ui).custom {
-			micro_button("ThemeDeleteBtn", "Delete", DANGER)
-		}
-	}
-	if clay.UI(clay.ID("RowTheme"))(srow()) {
-		row_labels("Theme", "Pick the whole app's look.")
-		if clay.UI(clay.ID("ThemeDrop"))(
+// Sample conversation rendered with the active theme and actual text-size preference.
+// It never replaces the user's theme with a canned palette.
+settings_conversation_preview :: proc(ui: ^Ui_State) {
+	if clay.UI(clay.ID("SettingsConversationPreview"))(
+	{
+		layout = {
+			sizing = {width = clay.SizingGrow()},
+			layoutDirection = .TopToBottom,
+			padding = clay.PaddingAll(8),
+			childGap = 4,
+			childAlignment = {x = ui.prefs.centered_chat ? .Center : .Left},
+		},
+		backgroundColor = PANEL,
+		border = {color = FIELD_BORDER, width = bw()},
+		cornerRadius = rr(4),
+	},
+	) {
+		clay.Text(
+			tr("Conversation preview"),
+			{fontId = FONT_TITLE, fontSize = 11, textColor = TEXT_DIM},
+		)
+		if clay.UI(clay.ID("SettingsPreviewReceived"))(
 		{
 			layout = {
-				padding = {left = 12, right = 12, top = 7, bottom = 7},
-				childGap = 8,
-				childAlignment = {y = .Center},
+				sizing = {width = clay.SizingGrow({max = ui.prefs.centered_chat ? 620 : 900})},
+				layoutDirection = .TopToBottom,
+				childGap = 3,
+				padding = clay.PaddingAll(6),
 			},
-			backgroundColor = hovered() ? HOVER : {},
-			cornerRadius = rr(8),
-			border = {color = FIELD_BORDER, width = bw()},
+			backgroundColor = PLATE,
+			cornerRadius = rr(BUBBLE_R),
 		},
 		) {
-			if clay.UI(clay.ID("ThemeDropSwatch"))(
-			{
-				layout = {sizing = {width = clay.SizingFixed(12), height = clay.SizingFixed(12)}},
-				backgroundColor = active_pack(ui).bg,
-				cornerRadius = rr(4),
-				border = {color = FIELD_BORDER, width = bw()},
-			},
-			) {}
+			if clay.UI(clay.ID("SettingsPreviewAuthor"))(
+			{layout = {childGap = 8, childAlignment = {y = .Center}}},
+			) {
+				avatar("SettingsPreviewAvatar", 0, "settings-preview", tr("A friend"), 20)
+				clay.Text(tr("A friend"), {fontId = FONT_TITLE, fontSize = 11, textColor = ACCENT})
+			}
 			clay.Text(
-				tr(active_pack(ui).name),
-				{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
+				tr("A little more room for conversation."),
+				{fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT},
 			)
-			clay.Text("▾", {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+		}
+		if clay.UI(clay.ID("SettingsPreviewSent"))(
+		{
+			layout = {
+				sizing = {width = clay.SizingGrow({max = ui.prefs.centered_chat ? 620 : 900})},
+				padding = clay.PaddingAll(6),
+				childAlignment = {x = .Right},
+			},
+			backgroundColor = ROW_BG,
+			cornerRadius = rr(BUBBLE_R),
+		},
+		) {
+			clay.Text(
+				tr("That feels right."),
+				{fontId = FONT_BODY, fontSize = BODY_FS, textColor = TEXT},
+			)
+		}
+	}
+}
 
-			if open_now(clay.ID("ThemeMenu"), ui.theme_menu_open) {
-				if clay.UI(clay.ID("ThemeMenu"))(
+settings_appearance :: proc(ui: ^Ui_State) {
+	if ui.settings_tab != 2 {settings_conversation_preview(ui)}
+	switch ui.settings_tab {
+	case 0:
+		if clay.UI(clay.ID("ThemeGroup"))(settings_box()) {
+			settings_group(N_("Theme"))
+			if clay.UI(clay.ID("RowTheme"))(settings_row(true)) {
+				row_labels("Theme", "Pick the whole app's look.")
+				if clay.UI(clay.ID("ThemeDrop"))(
 				{
 					layout = {
-						sizing = {height = clay.SizingFit({max = 240})},
-						layoutDirection = .TopToBottom,
-						padding = clay.PaddingAll(6),
-						childGap = 2,
+						sizing = {
+							width = clay.SizingFit({min = 160}),
+							height = clay.SizingFixed(30),
+						},
+						padding = {left = 8, right = 8},
+						childGap = 8,
+						childAlignment = {y = .Center},
 					},
-					floating = {
-						attachTo = .Parent,
-						zIndex = 12,
-						offset = {0, rise(clay.ID("ThemeMenu"))},
-						attachment = {element = .RightTop, parent = .RightBottom},
-					},
-					backgroundColor = CARD,
-					cornerRadius = rr(10),
-					clip = {vertical = true, childOffset = clay.GetScrollOffset()},
-					border = {color = ELEVATED_BORDER, width = bw()},
+					backgroundColor = hovered() ? HOVER : CARD,
+					cornerRadius = rr(7),
+					border = {color = FIELD_BORDER, width = bw()},
 				},
 				) {
-					for _, n in theme_packs {
-						i := n
-						if system_theme_index >= 0 {
-							i = n == 0 ? system_theme_index : (n <= system_theme_index ? n - 1 : n)
-						}
-						pack := theme_packs[i]
-						if clay.UI(clay.ID("ThemeOpt", u32(i)))(
+					if clay.UI(clay.ID("ThemeDropSwatch"))(
+					{
+						layout = {
+							sizing = {width = clay.SizingFixed(12), height = clay.SizingFixed(12)},
+						},
+						backgroundColor = active_pack(ui).bg,
+						cornerRadius = rr(4),
+						border = {color = FIELD_BORDER, width = bw()},
+					},
+					) {}
+					clay.Text(
+						tr(active_pack(ui).name),
+						{fontId = FONT_BODY, fontSize = 13, textColor = TEXT},
+					)
+					clay.Text("▾", {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+
+					if open_now(clay.ID("ThemeMenu"), ui.theme_menu_open) {
+						menu_w := fit_w(172, 8)
+						menu_h := min(f32(240), f32(rl.GetScreenHeight()) / UI_ZOOM - 16)
+						anchor, _ := element_box(clay.ID("ThemeDrop"))
+						x, y := panel_pos(
+							anchor.x + anchor.width - menu_w,
+							anchor.y + anchor.height + rise(clay.ID("ThemeMenu")),
+							menu_w,
+							menu_h,
+						)
+						if clay.UI(clay.ID("ThemeMenu"))(
 						{
 							layout = {
-								sizing = {width = clay.SizingFixed(160)},
-								padding = clay.PaddingAll(8),
-								childGap = 8,
-								childAlignment = {y = .Center},
+								sizing = {
+									width = clay.SizingFixed(menu_w),
+									height = clay.SizingFit({max = menu_h}),
+								},
+								layoutDirection = .TopToBottom,
+								padding = clay.PaddingAll(6),
+								childGap = 2,
 							},
-							backgroundColor = ui.theme == i ? SELECTED : (hovered() ? HOVER : {}),
-							cornerRadius = rr(6),
+							floating = {attachTo = .Root, zIndex = 12, offset = {x, y}},
+							backgroundColor = CARD,
+							cornerRadius = rr(2),
+							clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+							border = {color = ELEVATED_BORDER, width = bw()},
 						},
 						) {
-							if clay.UI(clay.ID("ThemeOptSwatch", u32(i)))(
-							{
-								layout = {
-									sizing = {
-										width = clay.SizingFixed(12),
-										height = clay.SizingFixed(12),
-									},
-								},
-								backgroundColor = pack.bg,
-								cornerRadius = rr(4),
-								border = {color = FIELD_BORDER, width = bw()},
-							},
-							) {}
-							clay.Text(
-								tr(pack.name),
+							for _, n in theme_packs {
+								i := n
+								if system_theme_index >= 0 {
+									i =
+										n == 0 ? system_theme_index : (n <= system_theme_index ? n - 1 : n)
+								}
+								pack := theme_packs[i]
+								if clay.UI(clay.ID("ThemeOpt", u32(i)))(
 								{
-									fontId = FONT_BODY,
-									fontSize = 13,
-									textColor = ui.theme == i ? ACCENT : TEXT,
+									layout = {
+										sizing = {width = clay.SizingGrow()},
+										padding = clay.PaddingAll(8),
+										childGap = 8,
+										childAlignment = {y = .Center},
+									},
+									backgroundColor = ui.theme == i ? SELECTED : (hovered() ? HOVER : {}),
+									cornerRadius = rr(2),
 								},
-							)
+								) {
+									if clay.UI(clay.ID("ThemeOptSwatch", u32(i)))(
+									{
+										layout = {
+											sizing = {
+												width = clay.SizingFixed(12),
+												height = clay.SizingFixed(12),
+											},
+										},
+										backgroundColor = pack.bg,
+										cornerRadius = rr(4),
+										border = {color = FIELD_BORDER, width = bw()},
+									},
+									) {}
+									clay.Text(
+										tr(pack.name),
+										{
+											fontId = FONT_BODY,
+											fontSize = 13,
+											textColor = ui.theme == i ? ACCENT : TEXT,
+										},
+									)
+								}
+							}
 						}
 					}
 				}
 			}
+			if ui.theme != system_theme_index {
+				if clay.UI(clay.ID("RowAccent"))(settings_row(true)) {
+					row_labels("Accent color", "")
+					clay.Text(
+						ACCENT_NAMES[ui.accent],
+						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+					)
+					if clay.UI(clay.ID("AccentChoices"))({layout = {childGap = 10}}) {
+						for _, i in ACCENT_NAMES {
+							if clay.UI(clay.ID("AccentDot", u32(i)))(
+							{
+								layout = {
+									sizing = {
+										width = clay.SizingFixed(18),
+										height = clay.SizingFixed(18),
+									},
+								},
+								backgroundColor = active_pack(ui).accent_base[i],
+								cornerRadius = rr(2),
+								border = ui.accent == i ? clay.BorderElementConfig{color = TEXT, width = {2, 2, 2, 2, 0}} : {},
+							},
+							) {}
+						}
+					}
+				}
+			}
+			if clay.UI(clay.ID("RowThemeShare"))(settings_row(true)) {
+				row_labels(
+					"Share this theme",
+					"Pick a chat to send it to. They choose whether to use it.",
+				)
+				if clay.UI(clay.ID("ThemeShareActions"))({layout = {childGap = 8}}) {
+					settings_button("ThemeShareBtn", "Share to chat")
+					settings_button("ThemeEditBtn", "Edit")
+					if active_pack(ui).custom {
+						settings_button("ThemeDeleteBtn", "Delete", DANGER)
+					}
+				}
+			}
+
 		}
-	}
-	if ui.theme != system_theme_index {
-		if clay.UI(clay.ID("RowAccent"))(srow()) {
-			row_labels("Accent color", "")
-			clay.Text(
-				ACCENT_NAMES[ui.accent],
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-			)
-			for _, i in ACCENT_NAMES {
-				if clay.UI(clay.ID("AccentDot", u32(i)))(
-				{
-					layout = {
-						sizing = {width = clay.SizingFixed(18), height = clay.SizingFixed(18)},
-					},
-					backgroundColor = active_pack(ui).accent_base[i],
-					cornerRadius = rr(9),
-					border = ui.accent == i ? clay.BorderElementConfig{color = TEXT, width = {2, 2, 2, 2, 0}} : {},
-				},
-				) {}
+	case 2:
+		settings_avatar_choices(ui)
+
+	case 1:
+		if clay.UI(clay.ID("InterfaceGroup"))(settings_box()) {
+			settings_group(N_("Interface"))
+			if clay.UI(clay.ID("RowZoom"))(settings_row(true)) {
+				row_labels("Interface zoom", "Also Ctrl + / - / 0.")
+				if clay.UI(clay.ID("ZoomChoices"))(
+				{layout = {childGap = 8, childAlignment = {y = .Center}}},
+				) {
+					clay.Text(
+						fmt.tprintf("%d%%", ui.prefs.zoom_pct),
+						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+					)
+					settings_button("ZoomMinus", "-")
+					settings_button("ZoomPlus", "+")
+					settings_button("ZoomReset", "Reset")
+				}
+			}
+			if clay.UI(clay.ID("RowBodyFont"))(settings_row(true)) {
+				row_labels("Message text size", "Applies to message bodies and the composer.")
+				if clay.UI(clay.ID("BodyFontChoices"))({layout = {childGap = 6}}) {
+					for label, i in BODY_FONT_LABELS {
+						settings_option(
+							"BodyFontChip",
+							u32(i),
+							label,
+							ui.prefs.body_font == BODY_FONT_DELTAS[i],
+						)
+					}
+				}
+			}
+			if clay.UI(clay.ID("RowScroll"))(settings_row(true)) {
+				row_labels("Scroll speed", "How far the mouse wheel moves the view.")
+				if clay.UI(clay.ID("ScrollChoices"))({layout = {childGap = 6}}) {
+					for label, i in SCROLL_SPEED_LABELS {
+						settings_option(
+							"ScrollChip",
+							u32(i),
+							label,
+							ui.prefs.scroll_speed == SCROLL_SPEEDS[i],
+						)
+					}
+				}
 			}
 		}
-	}
 
-	eyebrow("AVATARS")
-	if clay.UI(clay.ID("RowAvatarShape"))(srow()) {
-		row_labels("Default avatar shape", "Used for profile photos without a published shape.")
-		for label, shape in AVATAR_SHAPE_NAMES {
-			theme_chip_indexed(
-				"AvatarShapeChip",
-				u32(shape),
-				tr(label),
-				ui.prefs.avatar_shape == shape,
-			)
+		if clay.UI(clay.ID("LayoutGroup"))(settings_box()) {
+			settings_group(N_("Layout"))
+			if clay.UI(clay.ID("RowMotion"))(settings_row()) {
+				settings_check(
+					"TgMotion",
+					ui.prefs.reduce_motion,
+					"Reduce motion",
+					"Turn off animated transitions, flights and effects. State still changes, nothing moves.",
+				)
+			}
+			if clay.UI(clay.ID("RowCentered"))(settings_row()) {
+				settings_check(
+					"TgCentered",
+					ui.prefs.centered_chat,
+					"Centred conversation",
+					"Keep the open conversation on a comfortable reading measure instead of filling the width.",
+				)
+			}
 		}
-	}
-	if clay.UI(clay.ID("RowCropShape"))(srow()) {
-		row_labels("Crop circle shape", "Used for generated user and group avatars.")
-		for label, shape in CROP_SHAPE_NAMES {
-			theme_chip_indexed(
-				"CropShapeChip",
-				u32(shape),
-				tr(label),
-				ui.prefs.crop_avatar_shape == shape,
-			)
-		}
-	}
-
-	eyebrow("ZOOM")
-	if clay.UI(clay.ID("RowZoom"))(srow()) {
-		row_labels("Interface zoom", "Also Ctrl + / - / 0.")
-		clay.Text(
-			fmt.tprintf("%d%%", ui.prefs.zoom_pct),
-			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-		)
-		micro_button("ZoomMinus", "-")
-		micro_button("ZoomPlus", "+")
-		micro_button("ZoomReset", "Reset")
-	}
-
-	eyebrow("TEXT SIZE")
-	if clay.UI(clay.ID("RowBodyFont"))(srow()) {
-		row_labels("Message text size", "Applies to message bodies and the composer.")
-		for label, i in BODY_FONT_LABELS {
-			theme_chip_indexed(
-				"BodyFontChip",
-				u32(i),
-				label,
-				ui.prefs.body_font == BODY_FONT_DELTAS[i],
-			)
-		}
-	}
-
-	eyebrow("SCROLLING")
-	if clay.UI(clay.ID("RowScroll"))(srow()) {
-		row_labels("Scroll speed", "How far the mouse wheel moves the view.")
-		for label, i in SCROLL_SPEED_LABELS {
-			theme_chip_indexed(
-				"ScrollChip",
-				u32(i),
-				label,
-				ui.prefs.scroll_speed == SCROLL_SPEEDS[i],
-			)
-		}
-	}
-
-	eyebrow("MOTION")
-	if clay.UI(clay.ID("RowMotion"))(srow()) {
-		row_labels(
-			"Reduce motion",
-			"Turn off animated transitions, flights and effects. State still changes, nothing moves.",
-		)
-		toggle("TgMotion", ui.prefs.reduce_motion)
-	}
-
-	eyebrow("LAYOUT")
-	if clay.UI(clay.ID("RowCentered"))(srow()) {
-		row_labels(
-			"Centred conversation",
-			"Keep the open conversation on a comfortable reading measure instead of filling the width.",
-		)
-		toggle("TgCentered", ui.prefs.centered_chat)
 	}
 }
 
 // ── Notifications ───────────────────────────────────────────────────
 
 settings_notifications :: proc(ui: ^Ui_State) {
-	eyebrow("INCOMING MESSAGES")
-	if clay.UI(clay.ID("RowNotify"))(srow()) {
-		row_labels(
-			"Desktop notifications",
-			"Get an alert when a message arrives in a chat you're not viewing.",
-		)
-		toggle("TgNotify", ui.prefs.notify_desktop)
-	}
-	if clay.UI(clay.ID("RowSound"))(srow()) {
-		row_labels("Play a sound", "")
-		toggle("TgSound", ui.prefs.notify_sound)
-	}
-	if clay.UI(clay.ID("RowUiSounds"))(srow()) {
-		row_labels(
-			"Interface sounds",
-			"Short tones when a message leaves, arrives, or fails to send.",
-		)
-		toggle("TgUiSounds", ui.prefs.ui_sounds)
-	}
-	if clay.UI(clay.ID("RowPreview"))(srow()) {
-		row_labels("Show message preview", "Off shows only \"New message\" without the text.")
-		toggle("TgPreview", ui.prefs.notify_preview)
-	}
-	if clay.UI(clay.ID("RowNotifyTest"))(srow()) {
-		row_labels(
-			"Send a test notification",
-			"See and hear it with today's sound and preview settings.",
-		)
-		micro_button("NotifyTest", "Send test")
+	if clay.UI(clay.ID("NotificationsGroup"))(settings_box()) {
+		settings_group(N_("Incoming messages"))
+		if clay.UI(clay.ID("RowNotify"))(settings_row()) {
+			settings_check(
+				"TgNotify",
+				ui.prefs.notify_desktop,
+				"Desktop notifications",
+				"Get an alert when a message arrives in a chat you're not viewing.",
+			)
+		}
+		if clay.UI(clay.ID("RowSound"))(settings_row()) {
+			settings_check("TgSound", ui.prefs.notify_sound, "Play a sound", "")
+		}
+		if clay.UI(clay.ID("RowUiSounds"))(settings_row()) {
+			settings_check(
+				"TgUiSounds",
+				ui.prefs.ui_sounds,
+				"Interface sounds",
+				"Short tones when a message leaves, arrives, or fails to send.",
+			)
+		}
+		if clay.UI(clay.ID("RowPreview"))(settings_row()) {
+			settings_check(
+				"TgPreview",
+				ui.prefs.notify_preview,
+				"Show message preview",
+				"Off shows only \"New message\" without the text.",
+			)
+		}
+		if clay.UI(clay.ID("RowNotifyTest"))(settings_row()) {
+			row_labels(
+				"Send a test notification",
+				"See and hear it with today's sound and preview settings.",
+			)
+			settings_button("NotifyTest", "Send test")
+		}
 	}
 }
 
@@ -1329,34 +1682,33 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		return
 	}
 
+	if settings_handle_navigation(ui, client) {return}
+
 	if !mouse_released() {
 		return
 	}
 
-	// Section nav.
-	for s in Settings_Section {
-		if clay.PointerOver(clay.ID("SettingsNav", u32(s))) && ui.settings_section != s {
-			ui.settings_section = s
-			// Network/Keys read npub, relay lists, and nsec state.
-			if s == .Network || s == .Keys {
-				load_profile(client, ui)
+	for _, i in settings_tabs(ui) {
+		if clay.PointerOver(clay.ID("SettingsTab", u32(i))) && ui.settings_tab != i {
+			if ui.settings_section == .Keys {
+				keys_forget(ui)
+			} else {
+				ui.keys_confirm = ""
 			}
-			// ponytail: blocks the nav click while marmot queries the
-			// bootstrap relays; move to a worker if it ever drags.
-			if s == .Keys {
-				fetch_key_packages(ui, client)
-			}
-			if s == .Debug {
-				compose_debug_json(ui, client)
-			}
-			if s == .Advanced {
-				load_advanced(ui, client)
+			ui.settings_tab = i
+			ui.settings_anchor = ""
+			ui.settings_scroll_pending = true
+			ui.focus = .Compose
+			if scroll := clay.GetScrollContainerData(clay.ID("SettingsPage")); scroll.found {
+				scroll.scrollPosition^ = {}
 			}
 			return
 		}
 	}
 
 	switch ui.settings_section {
+	case .Home:
+		return
 	case .Folders:
 		if clicked("SettingsFolderNew") {
 			open_folder_modal(ui)
@@ -1666,6 +2018,7 @@ handle_settings :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 // Focus clicks for the settings text boxes run on press, not release;
 // the frame loop calls this before the release-gated handler.
 settings_fields :: proc(ui: ^Ui_State) {
+	settings_search_field(ui)
 	if ui.settings_section == .Network {
 		if field_mouse(ui, &ui.relay_input, "RelayBox", 14) {
 			ui.focus = .Relay
@@ -1685,7 +2038,7 @@ settings_fields :: proc(ui: ^Ui_State) {
 			ui.focus = .KP
 		}
 	}
-	if ui.settings_section == .General && len(ui.emoji_staged) > 0 {
+	if ui.settings_section == .General && ui.settings_tab == 2 && len(ui.emoji_staged) > 0 {
 		if field_mouse(ui, &ui.emoji_name, "EmojiNameBox", 14) {
 			ui.focus = .EmojiName
 		}

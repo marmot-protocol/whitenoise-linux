@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 96 96">
+<!-- Original White Noise category illustration, created for this project.
+     Licensed under the project's GNU AGPL v3 license; no third-party artwork. -->
+<title>Appearance settings illustration</title>
+<defs>
+<linearGradient id="blue" x1="0" y1="0" x2=".7" y2="1"><stop stop-color="#a5e5ff"/><stop offset=".46" stop-color="#4caddd"/><stop offset="1" stop-color="#2873b6"/></linearGradient>
+<linearGradient id="navy" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#6789a6"/><stop offset="1" stop-color="#344d70"/></linearGradient>
+<linearGradient id="silver" x1="0" y1="0" x2=".5" y2="1"><stop stop-color="#fff"/><stop offset=".48" stop-color="#dce6ec"/><stop offset="1" stop-color="#8da5b8"/></linearGradient>
+<linearGradient id="gold" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#fff4b5"/><stop offset=".42" stop-color="#f9cf66"/><stop offset="1" stop-color="#d99536"/></linearGradient>
+<linearGradient id="green" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#d7f4a5"/><stop offset=".5" stop-color="#9ed06c"/><stop offset="1" stop-color="#5d9d58"/></linearGradient>
+<linearGradient id="red" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#ffc0a2"/><stop offset=".5" stop-color="#e6826a"/><stop offset="1" stop-color="#b84d49"/></linearGradient>
+<filter id="shadow" x="-.3" y="-1" width="1.6" height="3"><feGaussianBlur stdDeviation="2"/></filter>
+</defs>
+<ellipse cx="48" cy="83" rx="36" ry="5" fill="#213a59" opacity=".22" filter="url(#shadow)"/>
+<path d="M38 57h15l3 19H32Z" fill="url(#silver)" stroke="#526d8b" stroke-width="2"/>
+<rect x="25" y="74" width="36" height="7" rx="3" fill="url(#silver)" stroke="#526d8b" stroke-width="2"/>
+<rect x="8" y="16" width="66" height="47" rx="5" fill="url(#silver)" stroke="#526d8b" stroke-width="2"/>
+<rect x="14" y="22" width="54" height="32" rx="2" fill="url(#blue)" stroke="#456e8f"/>
+<path d="M15 49 30 35l12 9 12-15 13 11v13H15Z" fill="#d2eeef" opacity=".65"/>
+<circle cx="26" cy="30" r="4" fill="#fff4bc"/>
+<path d="M66 46c-13 0-24 9-24 22 0 10 10 16 22 15 7-1 5-7 9-9 4-2 11 1 13-5 4-12-7-23-20-23Z" fill="url(#gold)" stroke="#a67538" stroke-width="2"/>
+<path d="M49 58c6-8 17-10 25-5" fill="none" stroke="#fff9d7" stroke-width="2" stroke-linecap="round"/>
+<circle cx="58" cy="57" r="4" fill="#d86b62"/><circle cx="71" cy="56" r="4" fill="#62a67a"/><circle cx="79" cy="65" r="4" fill="#4a93c3"/>
+<ellipse cx="58" cy="71" rx="5" ry="4" fill="#8d642f" transform="rotate(-30 58 71)"/>
+</svg>

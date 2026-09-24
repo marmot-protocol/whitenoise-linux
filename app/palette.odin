@@ -306,30 +306,9 @@ run_command :: proc(ui: ^Ui_State, client: ^marmot.Client, cmd: Cmd) {
 		case .Archived:
 			load_archived(client, ui)
 		case .Settings:
+			settings_open(ui, client, .Home)
 		case .Profile:
 			load_profile(client, ui)
-		}
-	}
-	goto_section :: proc(ui: ^Ui_State, client: ^marmot.Client, section: Settings_Section) {
-		ui.page = .Settings
-		ui.settings_section = section
-		switch section {
-		case .Network, .Keys:
-			load_profile(client, ui)
-			if section == .Keys {
-				fetch_key_packages(ui, client)
-			}
-		case .Advanced:
-			load_advanced(ui, client)
-		case .General,
-		     .Folders,
-		     .Speech,
-		     .Appearance,
-		     .Notifications,
-		     .Storage,
-		     .About,
-		     .Debug,
-		     .KP:
 		}
 	}
 
@@ -366,21 +345,21 @@ run_command :: proc(ui: ^Ui_State, client: ^marmot.Client, cmd: Cmd) {
 			}
 		}
 	case .Set_General:
-		goto_section(ui, client, .General)
+		settings_open(ui, client, .General)
 	case .Set_Network:
-		goto_section(ui, client, .Network)
+		settings_open(ui, client, .Network)
 	case .Set_Keys:
-		goto_section(ui, client, .Keys)
+		settings_open(ui, client, .Keys)
 	case .Set_Appearance:
-		goto_section(ui, client, .Appearance)
+		settings_open(ui, client, .Appearance)
 	case .Set_Notifications:
-		goto_section(ui, client, .Notifications)
+		settings_open(ui, client, .Notifications)
 	case .Set_Storage:
-		goto_section(ui, client, .Storage)
+		settings_open(ui, client, .Storage)
 	case .Set_Advanced:
-		goto_section(ui, client, .Advanced)
+		settings_open(ui, client, .Advanced)
 	case .Set_About:
-		goto_section(ui, client, .About)
+		settings_open(ui, client, .About)
 	case .Next_Theme:
 		theme_switch(ui, (ui.theme + 1) % max(len(theme_packs), 1), ui.accent)
 		toast(ui, theme_packs[ui.theme].name)

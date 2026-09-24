@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 96 96">
+<!-- Original White Noise category illustration, created for this project.
+     Licensed under the project's GNU AGPL v3 license; no third-party artwork. -->
+<title>Folders settings illustration</title>
+<defs>
+<linearGradient id="blue" x1="0" y1="0" x2=".7" y2="1"><stop stop-color="#a5e5ff"/><stop offset=".46" stop-color="#4caddd"/><stop offset="1" stop-color="#2873b6"/></linearGradient>
+<linearGradient id="navy" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#6789a6"/><stop offset="1" stop-color="#344d70"/></linearGradient>
+<linearGradient id="silver" x1="0" y1="0" x2=".5" y2="1"><stop stop-color="#fff"/><stop offset=".48" stop-color="#dce6ec"/><stop offset="1" stop-color="#8da5b8"/></linearGradient>
+<linearGradient id="gold" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#fff4b5"/><stop offset=".42" stop-color="#f9cf66"/><stop offset="1" stop-color="#d99536"/></linearGradient>
+<linearGradient id="green" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#d7f4a5"/><stop offset=".5" stop-color="#9ed06c"/><stop offset="1" stop-color="#5d9d58"/></linearGradient>
+<linearGradient id="red" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#ffc0a2"/><stop offset=".5" stop-color="#e6826a"/><stop offset="1" stop-color="#b84d49"/></linearGradient>
+<filter id="shadow" x="-.3" y="-1" width="1.6" height="3"><feGaussianBlur stdDeviation="2"/></filter>
+</defs>
+<ellipse cx="49" cy="83" rx="35" ry="5" fill="#213a59" opacity=".22" filter="url(#shadow)"/>
+<path d="M20 19h23l7 8h31a4 4 0 0 1 4 4v39H18V23a4 4 0 0 1 2-4Z" fill="url(#blue)" stroke="#416f99" stroke-width="2"/>
+<path d="M13 29h24l7 7h33v38H10V33a4 4 0 0 1 3-4Z" fill="url(#gold)" stroke="#af833f" stroke-width="2"/>
+<path d="M11 40h65l-6 36H17Z" fill="#c18d3f"/>
+<path d="M17 44h65a3 3 0 0 1 3 4L76 77a5 5 0 0 1-5 4H18a4 4 0 0 1-4-4l-1-29a4 4 0 0 1 4-4Z" fill="url(#gold)" stroke="#a77a35" stroke-width="2"/>
+<path d="M19 47h59" stroke="#fff5cd" stroke-width="2" stroke-linecap="round"/>
+<path d="M23 34h12m-11-11h17" stroke="#fff" opacity=".65" stroke-width="2" stroke-linecap="round"/>
+<rect x="23" y="58" width="20" height="8" rx="2" fill="#fff7d9" opacity=".8"/>
+</svg>

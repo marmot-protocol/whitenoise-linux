@@ -32,113 +32,172 @@ Audit_File :: struct {
 // ── Page ────────────────────────────────────────────────────────────
 
 settings_advanced :: proc(ui: ^Ui_State) {
-	eyebrow("SECURITY & PRIVACY")
-	if clay.UI(clay.ID("RowTelemetry"))(srow()) {
-		row_labels(
-			"Share usage and diagnostics",
-			"Share aggregate performance timings and relay diagnostics. Nothing is sent while this is off.",
-		)
-		toggle("TgTelemetry", ui.telemetry_enabled)
-	}
-	clay.Text(
-		tr(
-			"Diagnostics includes a random installation identifier until you turn sharing off, app and device details, and relay labels. The collector receives your IP address. Message contents and account or group identifiers are excluded. Turning sharing off stops future uploads; already sent data cannot be recalled. Audit logs are separate.",
-		),
-		{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
-	)
-	clay.Text(
-		tr(
-			"Diagnostics is sent to the operator of otlp.ipf.dev unless you configured another collector. Its retention policy has not been verified here. Usage event export is not configured.",
-		),
-		{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
-	)
-	if clay.UI(clay.ID("RowAudit"))(srow()) {
-		row_labels(
-			"Audit logs",
-			"Record group audit log files on this device. Identifiers are hashed.",
-		)
-		toggle("TgAudit", ui.audit_enabled)
-	}
-
-	eyebrow("TRUSTED LINK SITES")
-	if len(ui.prefs.trusted_sites) == 0 {
-		if clay.UI(clay.ID("RowNoTrusted"))(srow()) {
-			clay.Text(
-				tr("No trusted sites."),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-			)
-		}
-	}
-	for site, i in ui.prefs.trusted_sites {
-		relay_row("TrustRow", "TrustRemove", u32(i), site)
-	}
-	if len(ui.prefs.trusted_sites) > 0 {
-		if clay.UI(clay.ID("TrustActions"))({layout = {childGap = 8}}) {
-			micro_button(
-				"TrustForgetAll",
-				ui.keys_confirm == "TrustForgetAll" ? "Confirm forget all" : "Forget all",
-				DANGER,
-			)
-		}
-	}
-	clay.Text(
-		tr("Links to these exact sites open without confirmation."),
-		{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
-	)
-
-	eyebrow("AUDIT LOG FILES")
-	if len(ui.audit_files) == 0 {
-		if clay.UI(clay.ID("RowNoAudit"))(srow()) {
-			clay.Text(
-				tr("No audit log files."),
-				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-			)
-		}
-	}
-	for file, i in ui.audit_files {
-		if clay.UI(clay.ID("AuditRow", u32(i)))(
-		{
-			layout = {
-				sizing = {width = clay.SizingGrow()},
-				padding = clay.PaddingAll(12),
-				childGap = 8,
-				childAlignment = {y = .Center},
-			},
-			backgroundColor = hovered() ? HOVER : ROW_BG,
-			cornerRadius = rr(8),
-		},
-		) {
-			if clay.UI(clay.ID("AuditRowCol", u32(i)))(
+	switch ui.settings_tab {
+	case 0:
+		if clay.UI(clay.ID("AdvancedPrivacyGroup"))(settings_box()) {
+			settings_group(N_("Security & privacy"))
+			if clay.UI(clay.ID("RowTelemetry"))(settings_row()) {
+				settings_check(
+					"TgTelemetry",
+					ui.telemetry_enabled,
+					"Share usage and diagnostics",
+					"Share aggregate performance timings and relay diagnostics. Nothing is sent while this is off.",
+				)
+			}
+			if clay.UI(clay.ID("TelemetryDisclosure"))(
 			{
 				layout = {
 					sizing = {width = clay.SizingGrow()},
 					layoutDirection = .TopToBottom,
-					childGap = 3,
+					padding = {left = 25, top = 4},
+					childGap = 8,
 				},
 			},
 			) {
-				clay.Text(file.name, {fontId = FONT_MONO, fontSize = 12, textColor = TEXT})
-				clay.Text(file.label, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+				clay.Text(
+					tr("What is shared"),
+					{fontId = FONT_TITLE, fontSize = 12, textColor = TEXT},
+				)
+				clay.Text(
+					tr(
+						"Diagnostics includes a random installation identifier until you turn sharing off, app and device details, and relay labels. The collector receives your IP address. Message contents and account or group identifiers are excluded. Turning sharing off stops future uploads; already sent data cannot be recalled. Audit logs are separate.",
+					),
+					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+				)
+				clay.Text(
+					tr("Collector and retention"),
+					{fontId = FONT_TITLE, fontSize = 12, textColor = TEXT},
+				)
+				clay.Text(
+					tr(
+						"Diagnostics is sent to the operator of otlp.ipf.dev unless you configured another collector. Its retention policy has not been verified here. Usage event export is not configured.",
+					),
+					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+				)
 			}
-			id := audit_delete_id(i)
-			micro_button(id, ui.keys_confirm == id ? "Confirm delete" : "Delete", DANGER)
 		}
-	}
-	if clay.UI(clay.ID("AuditRefreshRow"))({layout = {childGap = 8}}) {
-		micro_button("AuditRefresh", "Refresh")
-	}
-	clay.Text(
-		tr("Deleting the file being recorded rotates it. Recording continues in a fresh file."),
-		{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
-	)
 
-	eyebrow("DEVELOPER")
-	if clay.UI(clay.ID("RowDevMode"))(srow()) {
-		row_labels(
-			"Developer mode",
-			"Shows diagnostics and MLS internals. Adds a Debug entry with account, key-packages, and group state.",
-		)
-		toggle("TgDevMode", ui.prefs.dev_mode)
+		if clay.UI(clay.ID("AdvancedTrustedGroup"))(settings_box()) {
+			settings_group(N_("Trusted link sites"))
+			clay.Text(
+				tr("Links to these exact sites open without confirmation."),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			)
+			if len(ui.prefs.trusted_sites) == 0 {
+				if clay.UI(clay.ID("RowNoTrusted"))({layout = {padding = {top = 4, bottom = 4}}}) {
+					clay.Text(
+						tr("No trusted sites."),
+						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+					)
+				}
+			}
+			for site, i in ui.prefs.trusted_sites {
+				relay_row("TrustRow", "TrustRemove", u32(i), site)
+			}
+			if len(ui.prefs.trusted_sites) > 0 {
+				if clay.UI(clay.ID("TrustActions"))({layout = {childGap = 8}}) {
+					label :=
+						ui.keys_confirm == "TrustForgetAll" ? tr("Confirm forget all") : tr("Forget all")
+					settings_button("TrustForgetAll", label, DANGER)
+				}
+			}
+		}
+
+	case 1:
+		if clay.UI(clay.ID("AdvancedAuditGroup"))(settings_box()) {
+			settings_group(N_("Audit logs"))
+			if clay.UI(clay.ID("RowAudit"))(settings_row()) {
+				settings_check(
+					"TgAudit",
+					ui.audit_enabled,
+					"Audit logs",
+					"Record group audit log files on this device. Identifiers are hashed.",
+				)
+			}
+			if clay.UI(clay.ID("AuditRefreshRow"))(
+			{layout = {padding = {top = 8}, childGap = 12, childAlignment = {y = .Center}}},
+			) {
+				clay.Text(
+					tr("Audit log files"),
+					{fontId = FONT_TITLE, fontSize = 12, textColor = TEXT},
+				)
+				settings_button("AuditRefresh", "Refresh")
+			}
+			if len(ui.audit_files) == 0 {
+				if clay.UI(clay.ID("RowNoAudit"))({layout = {padding = {top = 4, bottom = 4}}}) {
+					clay.Text(
+						tr("No audit log files."),
+						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+					)
+				}
+			}
+			for file, i in ui.audit_files {
+				if clay.UI(clay.ID("AuditRow", u32(i)))(settings_row(true)) {
+					if clay.UI(clay.ID("AuditRowCol", u32(i)))(
+					{
+						layout = {
+							sizing = {width = clay.SizingGrow()},
+							layoutDirection = .TopToBottom,
+							childGap = 4,
+						},
+					},
+					) {
+						if clay.UI(clay.ID("AuditFileName", u32(i)))(
+						{
+							layout = {sizing = {width = clay.SizingGrow()}},
+							clip = {horizontal = true},
+						},
+						) {
+							clay.Text(
+								file.name,
+								{
+									fontId = FONT_MONO,
+									fontSize = 12,
+									textColor = TEXT,
+									wrapMode = .None,
+								},
+							)
+						}
+						clay.Text(
+							file.label,
+							{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+						)
+					}
+					if clay.UI(clay.ID("AuditDeleteAction", u32(i)))(
+					{
+						layout = {padding = {left = 12}},
+						border = {color = FIELD_BORDER, width = {left = 1}},
+					},
+					) {
+						id := audit_delete_id(i)
+						settings_button(
+							id,
+							ui.keys_confirm == id ? "Confirm delete" : "Delete",
+							DANGER,
+						)
+					}
+				}
+			}
+			clay.Text(
+				tr(
+					"Deleting the file being recorded rotates it. Recording continues in a fresh file.",
+				),
+				{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+			)
+		}
+
+	case 2:
+		if clay.UI(clay.ID("AdvancedDeveloperGroup"))(settings_box()) {
+			settings_group(N_("Developer"))
+			if clay.UI(clay.ID("RowDevMode"))(settings_row()) {
+				settings_check(
+					"TgDevMode",
+					ui.prefs.dev_mode,
+					"Developer mode",
+					"Shows diagnostics and MLS internals. Adds a Debug entry with account, key-packages, and group state.",
+				)
+			}
+		}
 	}
 }
 

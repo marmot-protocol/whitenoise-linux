@@ -95,6 +95,12 @@ active_buf :: proc(ui: ^Ui_State) -> ^[dynamic]u8 {
 	if ui.focus == .Filter {
 		return &ui.sidebar_filter
 	}
+	if ui.focus == .SettingsSearch {
+		return &ui.settings_search
+	}
+	if ui.focus == .Relay {
+		return &ui.relay_input
+	}
 	if ui.focus == .Nick {
 		return &ui.nick_input
 	}

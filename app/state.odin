@@ -226,6 +226,7 @@ Focus :: enum {
 	PollQ, // poll-modal question box
 	PollOpt, // poll-modal option box, index in ui.poll_focus
 	ThemeSeed, // theme-editor seed box, index in ui.theme_edit_idx
+	SettingsSearch, // control-panel search, separate from chat drafts and filters
 }
 
 // The create-poll modal grows one option row at a time up to this cap
@@ -583,6 +584,10 @@ Ui_State :: struct {
 	folder_menu_x, folder_menu_y:                          f32,
 	search_input:                                          [dynamic]u8,
 	settings_section:                                      Settings_Section,
+	settings_search:                                       [dynamic]u8,
+	settings_tab:                                          int,
+	settings_anchor:                                       string, // borrowed control ID for a task link
+	settings_scroll_pending:                               bool,
 	prefs:                                                 Prefs, // the slint settings knobs (settings.odin)
 	tts:                                                   Tts_State,
 	stt:                                                   Stt_State,
@@ -629,10 +634,6 @@ Ui_State :: struct {
 	debug_text:                                            string, // timing names spaced for wrapping; Copy keeps the original JSON
 	debug_json:                                            string, // composed snapshot shown on the Debug page
 	new_chat_open:                                         bool,
-	// A one-card window shows the settings section list or one section,
-	// never both. Set by the section change detector in build_layout,
-	// cleared by the back chip; ignored at desktop widths.
-	sett_open:                                             bool,
 	nc_member:                                             [dynamic]u8, // npub/hex/NIP-05 for a DM; empty = own group
 	nip05_ticket:                                          int,
 	nc_name:                                               [dynamic]u8,

@@ -198,56 +198,66 @@ settings_storage :: proc(ui: ^Ui_State) {
 		cache_scan(ui)
 	}
 
-	eyebrow("MEDIA CACHE")
-	if clay.UI(clay.ID("RowCache"))(srow()) {
-		row_labels(
-			"Cached attachments",
-			"Images and files kept on this device so they don't download twice, sealed with your vault key.",
-		)
-		clay.Text(
-			human_size(ui.cache_bytes),
-			{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
-		)
-		micro_button(
-			"CacheClear",
-			ui.keys_confirm == "CacheClear" ? tr("Confirm clear") : tr("Clear cache"),
-			DANGER,
-		)
+	if clay.UI(clay.ID("StorageCacheGroup"))(settings_box()) {
+		settings_group(N_("Media cache"))
+		if clay.UI(clay.ID("RowCache"))(settings_row(true)) {
+			row_labels(
+				"Cached attachments",
+				"Images and files kept on this device so they don't download twice, sealed with your vault key.",
+			)
+			if clay.UI(clay.ID("CacheActions"))(
+			{layout = {childGap = 6, childAlignment = {y = .Center}}},
+			) {
+				clay.Text(
+					human_size(ui.cache_bytes),
+					{fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM},
+				)
+				settings_button(
+					"CacheClear",
+					ui.keys_confirm == "CacheClear" ? tr("Confirm clear") : tr("Clear cache"),
+					DANGER,
+				)
+			}
+		}
 	}
 
-	eyebrow("KEYS & BACKUPS")
-	if clay.UI(clay.ID("RowLocation"))(srow()) {
-		row_labels("Location", data_home)
-		micro_button("LocCopy", "Copy")
-		micro_button("LocOpen", "Open folder")
-	}
-	if clay.UI(clay.ID("RowBackup"))(srow()) {
-		row_labels(
-			"Back up everything",
-			"Pack your settings, drafts, custom emoji, and themes into one encrypted file.",
+	if clay.UI(clay.ID("StorageBackupsGroup"))(settings_box()) {
+		settings_group(N_("Keys & backups"))
+		if clay.UI(clay.ID("RowLocation"))(settings_row(true)) {
+			row_labels("Location", data_home)
+			if clay.UI(clay.ID("LocationActions"))({layout = {childGap = 6}}) {
+				settings_button("LocCopy", "Copy")
+				settings_button("LocOpen", "Open folder")
+			}
+		}
+		if clay.UI(clay.ID("RowBackup"))(settings_row()) {
+			row_labels(
+				"Back up everything",
+				"Pack your settings, drafts, custom emoji, and themes into one encrypted file.",
+			)
+			settings_button("BackupBtn", "Create backup...")
+		}
+		if clay.UI(clay.ID("RowImport"))(settings_row()) {
+			row_labels(
+				"Import a backup",
+				"Replaces the settings, drafts, custom emoji, and themes on this device.",
+			)
+			settings_button(
+				"ImportBtn",
+				ui.keys_confirm == "ImportBtn" ? tr("Confirm import") : tr("Import..."),
+				DANGER,
+			)
+		}
+		if clay.UI(clay.ID("RowLastBackup"))(settings_row()) {
+			row_labels("Last backup", last_backup_line(ui))
+		}
+		clay.Text(
+			tr(
+				"Backups hold what this device stores locally. Your keys and message history live in marmot's own store and are not included.",
+			),
+			{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
 		)
-		micro_button("BackupBtn", "Create backup...")
 	}
-	if clay.UI(clay.ID("RowImport"))(srow()) {
-		row_labels(
-			"Import a backup",
-			"Replaces the settings, drafts, custom emoji, and themes on this device.",
-		)
-		micro_button(
-			"ImportBtn",
-			ui.keys_confirm == "ImportBtn" ? tr("Confirm import") : tr("Import..."),
-			DANGER,
-		)
-	}
-	if clay.UI(clay.ID("RowLastBackup"))(srow()) {
-		row_labels("Last backup", last_backup_line(ui))
-	}
-	clay.Text(
-		tr(
-			"Backups hold what this device stores locally. Your keys and message history live in marmot's own store and are not included.",
-		),
-		{fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM},
-	)
 }
 
 @(private = "file")

@@ -224,66 +224,9 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 								backgroundColor = PANEL,
 							},
 							) {
-								// Settings and Profile swap the chat rail for their own
-								// sidebar: the slint settings sections, and the accounts
-								// on this device.
+								// Profile replaces the conversation list with accounts.
 								if ui.page == .Profile {
 									profile_rail(ui)
-								} else if ui.page == .Settings {
-									if clay.UI(clay.ID("SettingsNavHead"))(
-									{layout = {padding = {left = 4, top = 6, bottom = 4}}},
-									) {
-										clay.Text(
-											tr("SETTINGS"),
-											{
-												fontId = FONT_MONO,
-												fontSize = 12,
-												textColor = TEXT_DIM,
-												letterSpacing = 2,
-											},
-										)
-									}
-									for s in Settings_Section {
-										// Debug pages only exist in developer mode.
-										if (s == .Debug || s == .KP) && !ui.prefs.dev_mode {
-											continue
-										}
-										active := ui.settings_section == s
-										if clay.UI(clay.ID("SettingsNav", u32(s)))(
-										{
-											layout = {
-												sizing = {width = clay.SizingGrow()},
-												padding = {
-													left = 12,
-													right = 12,
-													top = 9,
-													bottom = 9,
-												},
-												childGap = 10,
-												childAlignment = {y = .Center},
-											},
-											backgroundColor = active ? SELECTED : (hovered() ? HOVER : {}),
-											cornerRadius = rr(9),
-										},
-										) {
-											clay.Text(
-												SETTINGS_SECTIONS[s].icon,
-												{
-													fontId = FONT_ICON,
-													fontSize = 13,
-													textColor = active ? ACCENT : TEXT_DIM,
-												},
-											)
-											clay.Text(
-												tr(SETTINGS_SECTIONS[s].label),
-												{
-													fontId = FONT_TITLE,
-													fontSize = 13,
-													textColor = active ? TEXT : TEXT_DIM,
-												},
-											)
-										}
-									}
 								} else {
 									// Section header: CHATS/CONTACTS count + new-chat button.
 									if clay.UI(clay.ID("RailHead"))(
@@ -795,7 +738,8 @@ build_layout :: proc(ui: ^Ui_State, frame_time: f32) -> clay.ClayArray(clay.Rend
 					},
 					) {
 						// No rail on screen to click back to.
-						if single_pane() {
+						if single_pane() &&
+						   (ui.page != .Settings || ui.settings_section == .Home) {
 							phone_back(ui)
 						}
 						if !logged_in || ui.add_account_open {
@@ -1286,7 +1230,6 @@ app_main :: proc() {
 
 	test_thread_pending := os.get_env("WN_TEST_THREAD", context.allocator) != ""
 	live: Live
-	sett_was := ui.settings_section
 	tl_container_was: [2]f32
 	tl_at_bottom: bool
 	win_was: [2]i32
@@ -1567,6 +1510,9 @@ app_main :: proc() {
 			}
 		}
 		render_commands := build_layout(&ui, rl.GetFrameTime())
+		if !layout_overflow && settings_resolve_scroll(&ui) {
+			render_commands = build_layout(&ui, 0)
+		}
 		if tl_restore && !layout_overflow {
 			if data := clay.GetScrollContainerData(clay.ID("Timeline")); data.found {
 				data.scrollPosition.y = tl_offset
@@ -1827,14 +1773,6 @@ app_main :: proc() {
 		}
 		if clicked("PhoneBack") {
 			phone_back_action(&ui)
-		}
-		// Settings has no "nothing picked" state of its own, so a
-		// one-card window treats a section change as the open. Watched
-		// here rather than set at each assignment, because the palette
-		// and the profile jump rows land on a section too.
-		if ui.settings_section != sett_was {
-			sett_was = ui.settings_section
-			ui.sett_open = true
 		}
 
 		// Modal capture order: a confirm sits over everything, then the

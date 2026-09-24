@@ -129,7 +129,13 @@ msgstr ""
 msgid "A desktop client for private group chat. Messages are sealed with MLS on this machine, handed to Nostr relays as opaque blobs, and opened again only inside the group."
 msgstr ""
 
+msgid "A friend"
+msgstr ""
+
 msgid "A line about you"
+msgstr ""
+
+msgid "A little more room for conversation."
 msgstr ""
 
 msgid "ABOUT"
@@ -141,13 +147,10 @@ msgstr ""
 msgid "ADD MEMBER"
 msgstr ""
 
-msgid "AUDIT LOG FILES"
-msgstr ""
-
-msgid "AVATARS"
-msgstr ""
-
 msgid "About"
+msgstr ""
+
+msgid "About White Noise"
 msgstr ""
 
 msgid "Accent 1"
@@ -282,6 +285,9 @@ msgstr ""
 msgid "Audit log file deleted."
 msgstr ""
 
+msgid "Audit log files"
+msgstr ""
+
 msgid "Audit logs"
 msgstr ""
 
@@ -291,10 +297,10 @@ msgstr ""
 msgid "Avatar ring"
 msgstr ""
 
-msgid "BACKDROP"
+msgid "Avatars"
 msgstr ""
 
-msgid "BUILT WITH"
+msgid "BACKDROP"
 msgstr ""
 
 msgid "Back"
@@ -358,6 +364,9 @@ msgstr ""
 msgid "Bubble radius"
 msgstr ""
 
+msgid "Built with"
+msgstr ""
+
 msgid "COLOR"
 msgstr ""
 
@@ -368,9 +377,6 @@ msgid "CONFIRM PASSWORD"
 msgstr ""
 
 msgid "CURRENT PASSWORD"
-msgstr ""
-
-msgid "CUSTOM EMOJI"
 msgstr ""
 
 msgid "CacheClear"
@@ -401,9 +407,6 @@ msgid "Center the conversation"
 msgstr ""
 
 msgid "Centred conversation"
-msgstr ""
-
-msgid "Change"
 msgstr ""
 
 msgid "Change password"
@@ -454,6 +457,18 @@ msgstr ""
 msgid "Choose a destination for this chat."
 msgstr ""
 
+msgid "Choose how your conversations look and feel."
+msgstr ""
+
+msgid "Choose what gets your attention."
+msgstr ""
+
+msgid "Choose what you'd like to change."
+msgstr ""
+
+msgid "Choose when and how White Noise alerts you."
+msgstr ""
+
 msgid "Circle"
 msgstr ""
 
@@ -499,6 +514,9 @@ msgstr ""
 msgid "Collapse transcription"
 msgstr ""
 
+msgid "Collector and retention"
+msgstr ""
+
 msgid "Command palette"
 msgstr ""
 
@@ -511,6 +529,9 @@ msgstr ""
 msgid "Confirm delete"
 msgstr ""
 
+msgid "Confirm forget all"
+msgstr ""
+
 msgid "Confirm import"
 msgstr ""
 
@@ -521,6 +542,9 @@ msgid "Confirm: delete this vault"
 msgstr ""
 
 msgid "Connect to relays"
+msgstr ""
+
+msgid "Connect with the relays you choose."
 msgstr ""
 
 msgid "Connected to relays"
@@ -536,6 +560,9 @@ msgid "Continue"
 msgstr ""
 
 msgid "Control background"
+msgstr ""
+
+msgid "Conversation preview"
 msgstr ""
 
 msgid "Conversations"
@@ -791,6 +818,9 @@ msgstr ""
 msgid "Create poll"
 msgstr ""
 
+msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
+msgstr ""
+
 msgid "Crop circle shape"
 msgstr ""
 
@@ -800,22 +830,10 @@ msgstr ""
 msgid "Custom color"
 msgstr ""
 
+msgid "Custom emoji"
+msgstr ""
+
 msgid "Cyan"
-msgstr ""
-
-msgid "DANGER ZONE"
-msgstr ""
-
-msgid "DECODED MLS KEY PACKAGES"
-msgstr ""
-
-msgid "DESKTOP ALERTS"
-msgstr ""
-
-msgid "DEVELOPER"
-msgstr ""
-
-msgid "DEVICE VAULT"
 msgstr ""
 
 msgid "DISAPPEARING MESSAGES"
@@ -893,7 +911,13 @@ msgstr ""
 msgid "Desktop notifications"
 msgstr ""
 
+msgid "Developer"
+msgstr ""
+
 msgid "Developer mode"
+msgstr ""
+
+msgid "Device vault"
 msgstr ""
 
 msgid "Diagnostics includes a random installation identifier until you turn sharing off, app and device details, and relay labels. The collector receives your IP address. Message contents and account or group identifiers are excluded. Turning sharing off stops future uploads; already sent data cannot be recalled. Audit logs are separate."
@@ -905,7 +929,16 @@ msgstr ""
 msgid "Dictate"
 msgstr ""
 
+msgid "Dictate and listen on this device."
+msgstr ""
+
 msgid "Dictate drafts and transcribe audio messages on your device."
+msgstr ""
+
+msgid "Dictate messages and listen to them aloud."
+msgstr ""
+
+msgid "Dictation"
 msgstr ""
 
 #, c-format
@@ -946,9 +979,6 @@ msgstr ""
 msgid "Downloads"
 msgstr ""
 
-msgid "Drops idle relay sockets and dials them again."
-msgstr ""
-
 msgid "EDIT PROFILE"
 msgstr ""
 
@@ -956,9 +986,6 @@ msgid "ENCRYPTED KEY (NCRYPTSEC)"
 msgstr ""
 
 msgid "EPOCH"
-msgstr ""
-
-msgid "EVENT FETCH RELAYS"
 msgstr ""
 
 msgid "EXPORT CHAT"
@@ -1025,6 +1052,9 @@ msgstr ""
 msgid "Enter your password to unlock this device's keys."
 msgstr ""
 
+msgid "Event fetch relays"
+msgstr ""
+
 msgid "Event id"
 msgstr ""
 
@@ -1032,6 +1062,9 @@ msgid "Exit fullscreen"
 msgstr ""
 
 msgid "Expand the chat list"
+msgstr ""
+
+msgid "Export"
 msgstr ""
 
 msgid "Export CSV"
@@ -1044,6 +1077,9 @@ msgid "Export as HTML"
 msgstr ""
 
 msgid "Export as Markdown"
+msgstr ""
+
+msgid "Export encrypted key (ncryptsec)"
 msgstr ""
 
 msgid "Family"
@@ -1071,6 +1107,12 @@ msgid "Files"
 msgstr ""
 
 msgid "Filter unread chats"
+msgstr ""
+
+msgid "Find a setting"
+msgstr ""
+
+msgid "Find a setting..."
 msgstr ""
 
 msgid "Finish dictation"
@@ -1113,6 +1155,9 @@ msgid "Fonts"
 msgstr ""
 
 msgid "Food"
+msgstr ""
+
+msgid "Forget all"
 msgstr ""
 
 msgid "Forward"
@@ -1187,13 +1232,13 @@ msgstr ""
 msgid "Grouped"
 msgstr ""
 
-msgid "HELP"
-msgstr ""
-
 msgid "HTML"
 msgstr ""
 
 msgid "Hard shadows"
+msgstr ""
+
+msgid "Help"
 msgstr ""
 
 msgid "Hidden"
@@ -1223,12 +1268,6 @@ msgstr ""
 msgid "IDENTITY"
 msgstr ""
 
-msgid "INBOX RELAYS"
-msgstr ""
-
-msgid "INCOMING MESSAGES"
-msgstr ""
-
 msgid "INSPECT SOMEONE ELSE'S"
 msgstr ""
 
@@ -1239,6 +1278,9 @@ msgid "ISSUE TRACKING"
 msgstr ""
 
 msgid "Ideas"
+msgstr ""
+
+msgid "Identity"
 msgstr ""
 
 msgid "Image didn't load. Click to retry."
@@ -1271,10 +1313,31 @@ msgstr ""
 msgid "ImportBtn"
 msgstr ""
 
+msgid "Inbox relays"
+msgstr ""
+
+msgid "Incoming messages"
+msgstr ""
+
 msgid "Insert a new line"
 msgstr ""
 
 msgid "Inspect"
+msgstr ""
+
+msgid "Inspect MLS key packages."
+msgstr ""
+
+msgid "Inspect application state and events."
+msgstr ""
+
+msgid "Inspect published MLS key packages."
+msgstr ""
+
+msgid "Inspect the current session."
+msgstr ""
+
+msgid "Interface"
 msgstr ""
 
 msgid "Interface language"
@@ -1290,6 +1353,9 @@ msgid "Invalid Nostr reference"
 msgstr ""
 
 msgid "Invalid attachment."
+msgstr ""
+
+msgid "Invalidates the current package and uploads a fresh one to your relays."
 msgstr ""
 
 msgid "Invert selected text"
@@ -1328,12 +1394,6 @@ msgstr ""
 msgid "KEY PACKAGES"
 msgstr ""
 
-msgid "KEY PACKAGES (PUBLISHED TO YOUR KIND-10051 RELAY LIST)"
-msgstr ""
-
-msgid "KEYS & BACKUPS"
-msgstr ""
-
 msgid "KP inspector"
 msgstr ""
 
@@ -1343,7 +1403,7 @@ msgstr ""
 msgid "Keep your chat list focused without deleting conversations."
 msgstr ""
 
-msgid "Key package"
+msgid "Keep your conversations in order."
 msgstr ""
 
 #, c-format
@@ -1359,31 +1419,34 @@ msgstr ""
 msgid "Key packages"
 msgstr ""
 
+msgid "Key packages (published to your kind-10051 relay list)"
+msgstr ""
+
 msgid "Keyboard shortcuts"
 msgstr ""
 
 msgid "Keys"
 msgstr ""
 
+msgid "Keys & backups"
+msgstr ""
+
 msgid "Keys & identity"
 msgstr ""
 
-msgid "LANGUAGE"
-msgstr ""
-
-msgid "LAYOUT"
-msgstr ""
-
 msgid "LIGHTNING"
-msgstr ""
-
-msgid "LINKED DEVICES"
 msgstr ""
 
 msgid "Labels"
 msgstr ""
 
 msgid "Labels, separated by commas"
+msgstr ""
+
+msgid "Language"
+msgstr ""
+
+msgid "Language, startup, and everyday preferences."
 msgstr ""
 
 msgid "Large"
@@ -1393,6 +1456,12 @@ msgid "Last backup"
 msgstr ""
 
 msgid "Launch at login"
+msgstr ""
+
+msgid "Layout"
+msgstr ""
+
+msgid "Learn about White Noise."
 msgstr ""
 
 msgid "Leave"
@@ -1405,6 +1474,9 @@ msgid "Leave this group?"
 msgstr ""
 
 msgid "Lime"
+msgstr ""
+
+msgid "Linked events"
 msgstr ""
 
 msgid "Links"
@@ -1425,6 +1497,9 @@ msgstr ""
 msgid "Loading…"
 msgstr ""
 
+msgid "Local files, cached media, and encrypted backups."
+msgstr ""
+
 msgid "Location"
 msgstr ""
 
@@ -1434,13 +1509,7 @@ msgstr ""
 msgid "Looking up..."
 msgstr ""
 
-msgid "MEDIA CACHE"
-msgstr ""
-
-msgid "MLS · YOUR KEY MATERIAL"
-msgstr ""
-
-msgid "MOTION"
+msgid "Make White Noise work your way."
 msgstr ""
 
 msgid "Make this member an admin?"
@@ -1450,6 +1519,15 @@ msgid "Male voice. Supports all reading languages."
 msgstr ""
 
 msgid "Manage"
+msgstr ""
+
+msgid "Manage connections and published relay lists."
+msgstr ""
+
+msgid "Manage local files and encrypted backups."
+msgstr ""
+
+msgid "Manage your relays"
 msgstr ""
 
 msgid "Mark read"
@@ -1465,6 +1543,9 @@ msgid "Marmot"
 msgstr ""
 
 msgid "Media backdrop"
+msgstr ""
+
+msgid "Media cache"
 msgstr ""
 
 msgid "Media cache cleared."
@@ -1491,6 +1572,9 @@ msgstr ""
 msgid "Message text size"
 msgstr ""
 
+msgid "Messaging"
+msgstr ""
+
 msgid "Micro"
 msgstr ""
 
@@ -1507,9 +1591,6 @@ msgid "Move to folder"
 msgstr ""
 
 msgid "Move up"
-msgstr ""
-
-msgid "Multi-device isn't available yet"
 msgstr ""
 
 msgid "Multilingual. Detects your language automatically."
@@ -1629,6 +1710,9 @@ msgstr ""
 msgid "No matching chats"
 msgstr ""
 
+msgid "No matching settings."
+msgstr ""
+
 msgid "No matching stickers."
 msgstr ""
 
@@ -1662,15 +1746,6 @@ msgstr ""
 msgid "Notifications"
 msgstr ""
 
-msgid "ON THIS DEVICE"
-msgstr ""
-
-msgid "OPEN EVENTS IN"
-msgstr ""
-
-msgid "OUTBOX RELAYS (NIP-65)"
-msgstr ""
-
 msgid "Off"
 msgstr ""
 
@@ -1692,6 +1767,9 @@ msgstr ""
 msgid "Open"
 msgstr ""
 
+msgid "Open events in"
+msgstr ""
+
 msgid "Open folder"
 msgstr ""
 
@@ -1711,6 +1789,12 @@ msgid "Opening in your browser"
 msgstr ""
 
 msgid "Orange"
+msgstr ""
+
+msgid "Organize your conversations."
+msgstr ""
+
+msgid "Organize your folders"
 msgstr ""
 
 msgid "Original"
@@ -1738,12 +1822,6 @@ msgid "Owner"
 msgstr ""
 
 msgid "PASSWORD"
-msgstr ""
-
-msgid "PRIVACY & DEVELOPER FLAGS"
-msgstr ""
-
-msgid "PRIVATE GROUP CHAT OVER NOSTR"
 msgstr ""
 
 msgid "PRODUCT"
@@ -1842,7 +1920,16 @@ msgstr ""
 msgid "Previous / next in the media viewer"
 msgstr ""
 
+msgid "Privacy"
+msgstr ""
+
+msgid "Privacy, diagnostics, and developer tools."
+msgstr ""
+
 msgid "Private"
+msgstr ""
+
+msgid "Private group chat over Nostr"
 msgstr ""
 
 msgid "Profile"
@@ -1852,6 +1939,9 @@ msgid "Projects"
 msgstr ""
 
 msgid "Promote"
+msgstr ""
+
+msgid "Public key (npub)"
 msgstr ""
 
 msgid "Public key, safe to share."
@@ -1869,16 +1959,19 @@ msgstr ""
 msgid "Published"
 msgstr ""
 
+msgid "Published inbox relays"
+msgstr ""
+
+msgid "Published outbox relays (NIP-65)"
+msgstr ""
+
 msgid "Publishing your profile to the relays. This takes a few seconds."
 msgstr ""
 
-msgid "QUICK REACTIONS"
+msgid "Quick reactions"
 msgstr ""
 
 msgid "RAW EVENTS"
-msgstr ""
-
-msgid "READ ALOUD"
 msgstr ""
 
 msgid "RECENT"
@@ -1915,12 +2008,6 @@ msgid "Reading aloud..."
 msgstr ""
 
 msgid "Recent"
-msgstr ""
-
-msgid "Reconnect"
-msgstr ""
-
-msgid "Reconnect now"
 msgstr ""
 
 msgid "Record group audit log files on this device. Identifiers are hashed."
@@ -2028,25 +2115,19 @@ msgstr ""
 msgid "Reveal private key (nsec)"
 msgstr ""
 
-msgid "RevealNsecBtn"
+msgid "Rocket"
 msgstr ""
 
-msgid "Rocket"
+msgid "Rotate"
+msgstr ""
+
+msgid "Rotate key package now"
 msgstr ""
 
 msgid "Rounded"
 msgstr ""
 
-msgid "SCROLLING"
-msgstr ""
-
-msgid "SECURITY & PRIVACY"
-msgstr ""
-
 msgid "SEND WITH EFFECT"
-msgstr ""
-
-msgid "SETTINGS"
 msgstr ""
 
 msgid "SHARED THEME"
@@ -2055,25 +2136,13 @@ msgstr ""
 msgid "SITE"
 msgstr ""
 
-msgid "SPEECH TO TEXT"
-msgstr ""
-
-msgid "STARTUP"
-msgstr ""
-
-msgid "STATE / EVENTS / KEYS / TIMINGS"
-msgstr ""
-
 msgid "STATE SNAPSHOT"
-msgstr ""
-
-msgid "STATUS"
 msgstr ""
 
 msgid "STYLE"
 msgstr ""
 
-msgid "SYNC"
+msgid "Safe to share. This is how people find you."
 msgstr ""
 
 msgid "Save"
@@ -2133,6 +2202,9 @@ msgstr ""
 msgid "Search issues"
 msgstr ""
 
+msgid "Search results"
+msgstr ""
+
 msgid "Search stickers"
 msgstr ""
 
@@ -2143,6 +2215,12 @@ msgid "Secret key copied"
 msgstr ""
 
 msgid "Security"
+msgstr ""
+
+msgid "Security & privacy"
+msgstr ""
+
+msgid "Security actions"
 msgstr ""
 
 msgid "See and hear it with today's sound and preview settings."
@@ -2161,9 +2239,6 @@ msgid "Select an issue"
 msgstr ""
 
 msgid "Select an issue to read its discussion."
-msgstr ""
-
-msgid "Selected"
 msgstr ""
 
 msgid "Send a message..."
@@ -2185,6 +2260,9 @@ msgid "Send with an effect"
 msgstr ""
 
 msgid "Sending..."
+msgstr ""
+
+msgid "Settings"
 msgstr ""
 
 msgid "Settings: about"
@@ -2332,6 +2410,9 @@ msgstr ""
 msgid "Starting the runtime"
 msgstr ""
 
+msgid "Startup"
+msgstr ""
+
 msgid "State"
 msgstr ""
 
@@ -2388,22 +2469,7 @@ msgstr ""
 msgid "System"
 msgstr ""
 
-msgid "TEXT SIZE"
-msgstr ""
-
-msgid "THEME"
-msgstr ""
-
-msgid "THIS SESSION"
-msgstr ""
-
 msgid "TIMINGS"
-msgstr ""
-
-msgid "TRANSCRIPTION MODEL"
-msgstr ""
-
-msgid "TRUSTED LINK SITES"
 msgstr ""
 
 msgid "Takes effect on the next launch."
@@ -2437,6 +2503,9 @@ msgstr ""
 msgid "Text mid"
 msgstr ""
 
+msgid "That feels right."
+msgstr ""
+
 msgid "That isn't your current password. Double-check it and try again."
 msgstr ""
 
@@ -2468,6 +2537,9 @@ msgstr ""
 msgid "Theme"
 msgstr ""
 
+msgid "Themes, text size, and the look of your conversations."
+msgstr ""
+
 msgid "They can be added to a chat."
 msgstr ""
 
@@ -2493,6 +2565,9 @@ msgid "This leaves White Noise and opens in your browser."
 msgstr ""
 
 msgid "This message was deleted"
+msgstr ""
+
+msgid "This session"
 msgstr ""
 
 msgid "This sticker is not in the current pack."
@@ -2528,6 +2603,9 @@ msgstr ""
 msgid "Transcribing..."
 msgstr ""
 
+msgid "Transcription model"
+msgstr ""
+
 msgid "Transition ms"
 msgstr ""
 
@@ -2537,7 +2615,7 @@ msgstr ""
 msgid "Trophy"
 msgstr ""
 
-msgid "TrustForgetAll"
+msgid "Trusted link sites"
 msgstr ""
 
 msgid "Try a different search."
@@ -2636,18 +2714,6 @@ msgstr ""
 msgid "Voting has ended."
 msgstr ""
 
-msgid "WHAT IT IS"
-msgstr ""
-
-msgid "WHAT THIS IS, LIVE"
-msgstr ""
-
-msgid "WHERE A MESSAGE GOES"
-msgstr ""
-
-msgid "WHERE YOUR MESSAGES LAND"
-msgstr ""
-
 msgid "Warning"
 msgstr ""
 
@@ -2657,10 +2723,19 @@ msgstr ""
 msgid "Webxdc app"
 msgstr ""
 
+msgid "What is shared"
+msgstr ""
+
+msgid "What it is"
+msgstr ""
+
 msgid "Whatever you send in this chat is encrypted on your device with MLS before it goes out. The relays that pass it along can't read it, and neither can anyone else."
 msgstr ""
 
 msgid "Where"
+msgstr ""
+
+msgid "Where a message goes"
 msgstr ""
 
 msgid "Where linked Nostr events (nevent, note) are pulled from. Your chats never touch these."
@@ -2670,6 +2745,9 @@ msgid "Where peers reach you."
 msgstr ""
 
 msgid "Where you publish."
+msgstr ""
+
+msgid "White Noise and this session."
 msgstr ""
 
 msgid "White Noise never sees your private key. It lives only on this device and any signer you connect."
@@ -2718,10 +2796,13 @@ msgstr ""
 msgid "Your current password"
 msgstr ""
 
+msgid "Your identity and the secrets on this device."
+msgstr ""
+
 msgid "Your identity is sovereign"
 msgstr ""
 
-msgid "Your identity lives only on this device for now. When device linking ships, the devices signed into your key will appear here."
+msgid "Your identity, key packages, and device security."
 msgstr ""
 
 msgid "Your key never leaves this device."
@@ -2742,13 +2823,16 @@ msgstr ""
 msgid "Your profile"
 msgstr ""
 
+msgid "Your public key"
+msgstr ""
+
 msgid "Your public key. Safe to share."
 msgstr ""
 
-msgid "Your stickers"
+msgid "Your secret key"
 msgstr ""
 
-msgid "ZOOM"
+msgid "Your stickers"
 msgstr ""
 
 msgid "Zoom in"

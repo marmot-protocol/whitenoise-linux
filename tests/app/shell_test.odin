@@ -64,12 +64,68 @@ test_phone_detail :: proc(t: ^testing.T) {
 	phone_back_action(&ui)
 	testing.expect(t, !phone_detail(&ui), "back from the chat shows the list")
 
-	ui.page = .Settings
-	testing.expect(t, !phone_detail(&ui), "settings opens on its section list")
-	ui.sett_open = true
-	testing.expect(t, phone_detail(&ui), "a picked section shows the page card")
+	settings_open(&ui, nil, .Appearance, 2)
+	testing.expect(t, phone_detail(&ui), "settings uses the page rather than a second sidebar")
 	phone_back_action(&ui)
-	testing.expect(t, !phone_detail(&ui), "back returns to the section list")
+	testing.expect(
+		t,
+		ui.page == .Settings && ui.settings_section == .Home,
+		"back returns to the category home",
+	)
+	testing.expect(t, phone_detail(&ui), "the category home remains reachable at narrow widths")
+	phone_back_action(&ui)
+	testing.expect(
+		t,
+		ui.page == .Chats && !phone_detail(&ui),
+		"back from settings returns to the chat list",
+	)
+}
+
+@(test)
+test_keys_tab_clears_secret :: proc(t: ^testing.T) {
+	ui := Ui_State {
+		page             = .Settings,
+		settings_section = .Keys,
+		settings_tab     = 2,
+		keys_nsec        = string(make([]u8, 63)),
+		keys_nsec_show   = true,
+		keys_confirm     = "RevealNsecBtn",
+	}
+	defer keys_forget(&ui)
+
+	settings_open(&ui, nil, .Keys, anchor = "NpubRow")
+	testing.expect(
+		t,
+		len(ui.keys_nsec) == 0 && !ui.keys_nsec_show && ui.keys_confirm == "",
+		"Leaving private-key controls must discard the revealed key and confirmation",
+	)
+
+	ui.keys_nsec = string(make([]u8, 63))
+	ui.keys_nsec_show = true
+	ui.settings_section = .Advanced
+	handle_pages(&ui, nil)
+	testing.expect(
+		t,
+		len(ui.keys_nsec) == 0 && !ui.keys_nsec_show,
+		"Frame cleanup must still wipe a private key outside its settings page",
+	)
+}
+
+@(test)
+test_confirm_survives_frame :: proc(t: ^testing.T) {
+	ui := Ui_State {
+		page             = .Settings,
+		settings_section = .Advanced,
+		keys_confirm     = "TrustForgetAll",
+	}
+	handle_pages(&ui, nil)
+	testing.expect(
+		t,
+		ui.keys_confirm == "TrustForgetAll",
+		"An idle frame must preserve a pending settings confirmation",
+	)
+	settings_open(&ui, nil, .Home)
+	testing.expect(t, ui.keys_confirm == "", "Leaving settings controls must disarm them")
 }
 
 // A hold that stays put fires once; one that travels never does.
