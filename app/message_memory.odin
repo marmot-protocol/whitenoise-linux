@@ -126,6 +126,7 @@ message_free :: proc(msg: Msg_Ui) {
 	delete(msg.gcodes)
 	delete(msg.pdfs)
 	delete(msg.arcs)
+	delete(msg.tors)
 	delete(msg.xdcs)
 	delete(msg.txts)
 	delete(msg.codes)

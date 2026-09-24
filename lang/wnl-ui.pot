@@ -16,6 +16,10 @@ msgid "%d connecting, %d pending, %d disconnected, %d sleeping."
 msgstr ""
 
 #, c-format
+msgid "%d files"
+msgstr ""
+
+#, c-format
 msgid "%d of %d connected"
 msgstr ""
 
@@ -115,6 +119,9 @@ msgid "+%d more"
 msgstr ""
 
 msgid "-"
+msgstr ""
+
+msgid "1 file"
 msgstr ""
 
 msgid "100%"
@@ -572,6 +579,9 @@ msgid "Copy"
 msgstr ""
 
 msgid "Copy JSON"
+msgstr ""
+
+msgid "Copy magnet link"
 msgstr ""
 
 msgid "Copy npub"
@@ -1509,6 +1519,9 @@ msgstr ""
 msgid "Looking up..."
 msgstr ""
 
+msgid "Magnet link copied"
+msgstr ""
+
 msgid "Make White Noise work your way."
 msgstr ""
 
@@ -2337,6 +2350,9 @@ msgstr ""
 msgid "Show as QR"
 msgstr ""
 
+msgid "Show fewer files"
+msgstr ""
+
 msgid "Show group members"
 msgstr ""
 
@@ -2842,6 +2858,10 @@ msgid "Zoom in / out / reset"
 msgstr ""
 
 msgid "Zoom out"
+msgstr ""
+
+#, c-format
+msgid "and %d more files"
 msgstr ""
 
 msgid "carries the blob"

@@ -16,6 +16,10 @@ msgid "%d connecting, %d pending, %d disconnected, %d sleeping."
 msgstr ""
 
 #, c-format
+msgid "%d files"
+msgstr "%d 個のファイル"
+
+#, c-format
 msgid "%d of %d connected"
 msgstr ""
 
@@ -118,6 +122,9 @@ msgstr ""
 
 msgid "-"
 msgstr ""
+
+msgid "1 file"
+msgstr "1 個のファイル"
 
 msgid "100%"
 msgstr ""
@@ -605,6 +612,9 @@ msgstr "コピー"
 
 msgid "Copy JSON"
 msgstr "JSON をコピー"
+
+msgid "Copy magnet link"
+msgstr "マグネットリンクをコピー"
 
 #, fuzzy
 msgid "Copy npub"
@@ -1598,6 +1608,9 @@ msgstr "検索"
 msgid "Looking up..."
 msgstr "検索中..."
 
+msgid "Magnet link copied"
+msgstr "マグネットリンクをコピーしました"
+
 msgid "Make White Noise work your way."
 msgstr "White Noise の動作を自分に合わせて設定します。"
 
@@ -2477,6 +2490,9 @@ msgstr ""
 msgid "Show as QR"
 msgstr "QR コードで表示"
 
+msgid "Show fewer files"
+msgstr "表示するファイルを減らす"
+
 #, fuzzy
 msgid "Show group members"
 msgstr "メンバーを表示"
@@ -3006,6 +3022,10 @@ msgstr ""
 
 msgid "Zoom out"
 msgstr "縮小"
+
+#, c-format
+msgid "and %d more files"
+msgstr "ほか %d 個のファイル"
 
 msgid "carries the blob"
 msgstr ""

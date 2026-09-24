@@ -703,7 +703,7 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 			})
 			// Keep rejected and loading slots between their accepted siblings.
 			image_pos, video_pos, audio_pos, pdf_pos, model_pos, gcode_pos: int
-			arc_pos, xdc_pos, text_pos, code_pos, font_pos, file_pos, pending_pos: int
+			arc_pos, tor_pos, xdc_pos, text_pos, code_pos, font_pos, file_pos, pending_pos: int
 			for att := 0; att < len(msg.att_names); att += 1 {
 				if msg.sticker.sha != "" && msg.att_keys[att] == msg.sticker.sha {
 					if pending_pos < len(msg.media_pending) &&
@@ -1275,6 +1275,17 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 							}
 						}
 					}
+				}
+
+				// Torrent tiles: name, file listing, copyable magnet link.
+				if entry, j, found := media_at(msg.tors[:], &tor_pos, att); found {
+					tor_tile(
+						entry.view,
+						index * 1024 + u32(j),
+						msg.id,
+						entry.att,
+						msg.att_names[entry.att],
+					)
 				}
 
 				// Webxdc app tiles: icon + name, no execution.

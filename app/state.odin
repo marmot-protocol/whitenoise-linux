@@ -289,6 +289,7 @@ Msg_Ui :: struct {
 	gcodes:              [dynamic]Att_Item(^Gcode_View), // g-code attachments, owned by the gcode_views cache
 	pdfs:                [dynamic]Att_Item(^Pdf_View), // pdf attachments, owned by the pdf_views cache
 	arcs:                [dynamic]Att_Item(^Arc_View), // archive attachments, owned by the arc_views cache
+	tors:                [dynamic]Att_Item(^Tor_View), // torrent metainfo, owned by the tor_views cache
 	xdcs:                [dynamic]Att_Item(^Xdc_View), // webxdc apps, owned by the xdc_views cache
 	txts:                [dynamic]Att_Item(^Txt_View), // text/markdown attachments, owned by the txt_views cache
 	codes:               [dynamic]Att_Item(^Code_View), // source attachments, owned by the code_views cache

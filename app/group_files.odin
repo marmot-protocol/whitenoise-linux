@@ -103,7 +103,7 @@ group_file_type :: proc(name, media_type: string) -> Group_File_Type {
 		return .Fonts
 	case .Xdc:
 		return .Apps
-	case .File:
+	case .File, .Torrent:
 		if strings.has_prefix(mime, "text/") ||
 		   strings.contains(mime, "officedocument") ||
 		   strings.contains(mime, "opendocument") ||

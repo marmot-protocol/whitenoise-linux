@@ -31,6 +31,7 @@ Media_Kind :: enum {
 	Pdf,
 	Xdc,
 	Arc,
+	Torrent,
 	Text,
 	Code,
 	Font,
@@ -90,6 +91,8 @@ media_kind :: proc(name, mime: string) -> Media_Kind {
 		if strings.has_suffix(lower, ext) {return .Arc}
 	}
 	if strings.contains(lower, ".tar.") {return .Arc}
+	if strings.has_suffix(lower, ".torrent") ||
+	   mime == "application/x-bittorrent" {return .Torrent}
 	for ext in ([]string{".md", ".markdown"}) {
 		if strings.has_suffix(lower, ext) {return .Text}
 	}
@@ -120,6 +123,8 @@ media_cached :: proc(kind: Media_Kind, key: string) -> (rawptr, bool) {
 		v, ok := xdc_views[key]; return v, ok
 	case .Arc:
 		v, ok := arc_views[key]; return v, ok
+	case .Torrent:
+		v, ok := tor_views[key]; return v, ok
 	case .Text:
 		v, ok := txt_views[key]; return v, ok
 	case .Code:
@@ -243,6 +248,8 @@ media_ready :: proc(msg: ^Msg_Ui, kind: Media_Kind, key: string, index: int, vie
 		media_insert(&msg.xdcs, Att_Item(^Xdc_View){(^Xdc_View)(view), index})
 	case .Arc:
 		media_insert(&msg.arcs, Att_Item(^Arc_View){(^Arc_View)(view), index})
+	case .Torrent:
+		media_insert(&msg.tors, Att_Item(^Tor_View){(^Tor_View)(view), index})
 	case .Text:
 		media_insert(&msg.txts, Att_Item(^Txt_View){(^Txt_View)(view), index})
 	case .Code:
@@ -345,6 +352,8 @@ media_worker :: proc(t: ^thread.Thread) {
 	case .Arc:
 		job.view = arc_view_make(bytes)
 		if job.view != nil {bytes = nil}
+	case .Torrent:
+		job.view = tor_view_make(bytes)
 	case .Text:
 		job.view = txt_view_make(string(bytes))
 	case .Code:
@@ -398,6 +407,8 @@ media_publish :: proc(job: ^Media_Job) {
 		xdc_views[key] = view
 	case .Arc:
 		arc_views[key] = (^Arc_View)(job.view)
+	case .Torrent:
+		tor_views[key] = (^Tor_View)(job.view)
 	case .Text:
 		txt_views[key] = (^Txt_View)(job.view)
 	case .Code:

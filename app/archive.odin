@@ -156,6 +156,8 @@ arc_entry_bytes :: proc(view: ^Arc_View, header_index: int) -> ([]u8, bool) {
 // "1.4 MiB" style label for the entry rows.
 arc_size_label :: proc(size: i64) -> string {
 	switch {
+	case size >= 1 << 30:
+		return fmt.tprintf("%.1f GiB", f64(size) / f64(1 << 30))
 	case size >= 1 << 20:
 		return fmt.tprintf("%.1f MiB", f64(size) / f64(1 << 20))
 	case size >= 1 << 10:

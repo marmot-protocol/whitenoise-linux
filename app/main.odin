@@ -1487,6 +1487,8 @@ app_main :: proc() {
 		att_hover = {}
 		arc_hover = {}
 		arc_more_hover = nil
+		tor_more_hover = nil
+		tor_magnet_hover = nil
 		xdc_hover = {}
 		img_hover = {}
 		model_hover = {}
@@ -1885,6 +1887,7 @@ app_main :: proc() {
 		handle_pdf()
 		handle_preview(&ui, client)
 		handle_arc_click(&ui)
+		handle_tor_click(&ui)
 		handle_xdc_click(&ui, client)
 		handle_web_input(&ui)
 		handle_att_click(&ui)

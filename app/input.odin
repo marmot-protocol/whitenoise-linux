@@ -632,6 +632,9 @@ pdf_views: map[string]^Pdf_View
 // And for archives (the listing is parsed once).
 arc_views: map[string]^Arc_View
 
+// And for torrents (the metainfo is parsed once).
+tor_views: map[string]^Tor_View
+
 // And for webxdc apps (icon texture + manifest name).
 xdc_views: map[string]^Xdc_View
 
