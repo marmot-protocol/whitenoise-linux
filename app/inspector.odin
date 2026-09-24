@@ -228,7 +228,11 @@ model_vert_colors :: proc(view: ^Stl_View, tri: int) -> [3]rl.FColor {
 			rgb = insp.uv != nil ? [3]f32{g, g, g} : {0.5 * g, 0.5 * g, 0.5 * g}
 		}
 
-		out[k] = {rgb[0], rgb[1], rgb[2], 1}
+		alpha := f32(1)
+		if mat != nil && (insp.mode == .Final || insp.mode == .Base_Color) {
+			alpha = mat[11]
+		}
+		out[k] = {rgb[0], rgb[1], rgb[2], alpha}
 	}
 	return out
 }

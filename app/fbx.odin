@@ -83,15 +83,15 @@ Render_Mode :: enum u8 {
 // frame. A real line renderer is the upgrade.
 WIRE_MAX_TRIS :: 60_000
 
-// Inspector state carried by every mesh view. The C-owned slices are
-// nil for STL/OBJ.
+// Inspector channels are borrowed from the FBX shim when scene is non-nil;
+// otherwise the mesh view owns them.
 Inspect :: struct {
 	mode:         Render_Mode,
 	wire:         int, // wireframe overlay color index, -1 = off
 	single_sided: bool,
 
-	// FBX side channels, pointing into shim memory.
-	scene:        rawptr, // ^fbx_scene, nil for STL/OBJ
+	// Shared model channels; scene is only used for FBX animation.
+	scene:        rawptr, // ^fbx_scene, nil for static formats
 	vnrm:         []f32, // ntri*9 per-vertex normals, Odin-owned (posed)
 	uv:           []f32, // ntri*6
 	bone:         []i32, // ntri*3 dominant cluster
@@ -222,11 +222,15 @@ advance_models :: proc(dt: f32) {
 playing_models: [dynamic]^Stl_View
 
 fbx_free :: proc(insp: ^Inspect) {
-	if insp.scene == nil {
-		return
+	if insp.scene != nil {
+		fbx_close(insp.scene)
+	} else {
+		delete(insp.uv)
+		delete(insp.bone)
+		delete(insp.bwt)
+		delete(insp.mat)
+		delete(insp.mats)
 	}
-	// uv/bone/bwt/mat/mats are shim memory, released by fbx_close.
-	fbx_close(insp.scene)
 	for image in insp.images {
 		rl.UnloadImage(image)
 	}

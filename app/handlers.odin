@@ -782,10 +782,14 @@ media_type_for :: proc(name: string) -> string {
 		return "model/obj"
 	case ".fbx":
 		return "model/fbx"
+	case ".glb":
+		return "model/gltf-binary"
 	case ".gcode", ".gco":
 		return "text/x-gcode"
 	case ".pdf":
 		return "application/pdf"
+	case ".torrent":
+		return "application/x-bittorrent"
 	case ".txt":
 		return "text/plain"
 	}

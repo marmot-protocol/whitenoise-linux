@@ -29,12 +29,20 @@ Fbx_Texture_Info :: struct {
 
 @(private)
 Fbx_Texture :: struct {
-	info:   Fbx_Texture_Info,
-	image:  rl.Image, // borrowed from Inspect.images
-	pixels: enum {
+	info:         Fbx_Texture_Info,
+	image:        rl.Image, // borrowed from Inspect.images
+	pixels:       enum {
 		Color,
 		Smoothness,
+		Green,
+		Blue,
 	},
+	alpha:        enum {
+		From_Image,
+		Opaque,
+		Mask,
+	},
+	alpha_cutoff: f32,
 }
 
 @(private)
@@ -166,8 +174,16 @@ fbx_sample_texture :: proc(texture: ^Fbx_Texture, uv: [2]f32) -> [4]f32 {
 	u := m[0] * uv[0] + m[1] * uv[1] + m[2]
 	v := m[3] * uv[0] + m[4] * uv[1] + m[5]
 	if math.is_nan(u) || math.is_inf(u) || math.is_nan(v) || math.is_inf(v) {return {1, 1, 1, 1}}
-	u = texture.info.clamp_u != 0 ? clamp(u, 0, 1) : u - math.floor(u)
-	v = texture.info.clamp_v != 0 ? clamp(v, 0, 1) : v - math.floor(v)
+	if texture.info.clamp_u == 2 {
+		u = 1 - abs(1 - (u - 2 * math.floor(u / 2)))
+	} else {
+		u = texture.info.clamp_u == 1 ? clamp(u, 0, 1) : u - math.floor(u)
+	}
+	if texture.info.clamp_v == 2 {
+		v = 1 - abs(1 - (v - 2 * math.floor(v / 2)))
+	} else {
+		v = texture.info.clamp_v == 1 ? clamp(v, 0, 1) : v - math.floor(v)
+	}
 	image := texture.image
 	x := min(int(u * f32(image.width)), int(image.width) - 1)
 	y := min(int((1 - v) * f32(image.height)), int(image.height) - 1)
@@ -177,13 +193,24 @@ fbx_sample_texture :: proc(texture: ^Fbx_Texture, uv: [2]f32) -> [4]f32 {
 		rough := 1 - f32(pixels[at + 3]) / 255
 		return {rough, rough, rough, 1}
 	}
-	return(
-		{
-			f32(pixels[at]) / 255,
-			f32(pixels[at + 1]) / 255,
-			f32(pixels[at + 2]) / 255,
-			f32(pixels[at + 3]) / 255,
-		} *
-		texture.info.tint \
-	)
+	color := [4]f32 {
+		f32(pixels[at]) / 255,
+		f32(pixels[at + 1]) / 255,
+		f32(pixels[at + 2]) / 255,
+		f32(pixels[at + 3]) / 255,
+	}
+	if texture.pixels == .Green {
+		color = {color[1], color[1], color[1], 1}
+	} else if texture.pixels == .Blue {
+		color = {color[2], color[2], color[2], 1}
+	}
+	color *= texture.info.tint
+	switch texture.alpha {
+	case .Opaque:
+		color[3] = 1
+	case .Mask:
+		color[3] = color[3] >= texture.alpha_cutoff ? 1 : 0
+	case .From_Image:
+	}
+	return color
 }

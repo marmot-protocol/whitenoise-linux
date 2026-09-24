@@ -126,13 +126,18 @@ is_model_name :: proc(lower: string) -> bool {
 	return(
 		strings.has_suffix(lower, ".stl") ||
 		strings.has_suffix(lower, ".obj") ||
-		strings.has_suffix(lower, ".fbx") \
+		strings.has_suffix(lower, ".fbx") ||
+		strings.has_suffix(lower, ".glb") \
 	)
 }
 
 // One entry point for the timeline and the preview modal: parse any
 // mesh format into a ready view, or nil.
 model_view_make :: proc(lower: string, data: []u8) -> ^Stl_View {
+	if strings.has_suffix(lower, ".glb") {
+		view, ok := parse_glb(data)
+		return ok ? view : nil
+	}
 	if strings.has_suffix(lower, ".fbx") {
 		view, ok := parse_fbx(data)
 		return ok ? view : nil
@@ -573,6 +578,7 @@ stl_raster :: proc(view: ^Stl_View, w, h: i32) -> (rebuilt: bool) {
 				r := w0 * colors[0].r + w1 * colors[1].r + w2 * colors[2].r
 				g := w0 * colors[0].g + w1 * colors[1].g + w2 * colors[2].g
 				b := w0 * colors[0].b + w1 * colors[1].b + w2 * colors[2].b
+				alpha := w0 * colors[0].a + w1 * colors[1].a + w2 * colors[2].a
 				if checker {
 					u := w0 * uvs[0][0] + w1 * uvs[1][0] + w2 * uvs[2][0]
 					v := w0 * uvs[0][1] + w1 * uvs[1][1] + w2 * uvs[2][1]
@@ -586,11 +592,18 @@ stl_raster :: proc(view: ^Stl_View, w, h: i32) -> (rebuilt: bool) {
 					b *= tone
 				} else if textured {
 					uv := uvs[0] * w0 + uvs[1] * w1 + uvs[2] * w2
-					color := model_texture_color(view, tri, uv, {w0, w1, w2}, basis, {r, g, b, 1})
-					// ponytail: alpha cutouts; translucent surfaces need a sorted blend pass.
-					if color.a < 0.5 {continue}
-					r, g, b = color.r, color.g, color.b
+					color := model_texture_color(
+						view,
+						tri,
+						uv,
+						{w0, w1, w2},
+						basis,
+						{r, g, b, alpha},
+					)
+					r, g, b, alpha = color.r, color.g, color.b, color.a
 				}
+				// ponytail: alpha cutouts; translucent surfaces need a sorted blend pass.
+				if alpha < 0.5 {continue}
 				view.zbuf[row + px] = z
 				out := (row + px) * 4
 				view.pix[out] = u8(clamp(r, 0, 1) * 255)
