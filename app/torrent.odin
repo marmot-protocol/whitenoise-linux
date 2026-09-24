@@ -541,37 +541,6 @@ tor_cuts :: proc(text: string) -> []int {
 	return cuts[:]
 }
 
-// Lines no wider than width: broken at the last space that fits, else
-// mid-token, because a URL or a hash has no space for clay's word wrap
-// to use and would run past the tile.
-@(private = "file")
-tor_lines :: proc(text: string, width: f32, font, size: u16) -> []string {
-	lines := make([dynamic]string, context.temp_allocator)
-	rest := strings.trim_space(text)
-	for rest != "" {
-		if rl.MeasureTextLine(font, size, rest, 0).x <= width {
-			append(&lines, rest)
-			break
-		}
-		// Longest prefix that fits; at least one rune so a line always
-		// advances.
-		cuts := tor_cuts(rest)
-		lo, hi := 1, len(cuts) - 1
-		for lo < hi {
-			mid := (lo + hi + 1) / 2
-			if rl.MeasureTextLine(font, size, rest[:cuts[mid]], 0).x <=
-			   width {lo = mid} else {hi = mid - 1}
-		}
-		end := cuts[lo]
-		if space := strings.last_index_byte(rest[:end], ' '); space > 0 {
-			end = space
-		}
-		append(&lines, strings.trim_right_space(rest[:end]))
-		rest = strings.trim_left_space(rest[end:])
-	}
-	return lines[:]
-}
-
 // Closed, the tile is the header and the magnet button. A click on the
 // header opens the file list and the metainfo details under it.
 //   ┌───────────────────────────────────────────┐
@@ -753,7 +722,8 @@ tor_tile :: proc(view: ^Tor_View, id: u32, msg_id: string, att: int, file_name: 
 					)
 				}
 				if view.piece_len > 0 {
-					pieces := (view.total + view.piece_len - 1) / view.piece_len
+					pieces :=
+						view.total / view.piece_len + (view.total % view.piece_len != 0 ? 1 : 0)
 					tor_detail(
 						tr("Pieces"),
 						fmt.tprintf("%s × %d", arc_size_label(view.piece_len), pieces),
@@ -868,9 +838,11 @@ tor_detail :: proc(key, value: string, width: f32) {
 			},
 		},
 		) {
-			for line in tor_lines(value, width, FONT_BODY, 11) {
+			// wrapped_lines hard-breaks tokens with no space, like URLs,
+			// which clay's word wrap would let run past the tile.
+			for line in wrapped_lines(value, width, 11) {
 				clay.Text(
-					line,
+					value[line.start:line.end],
 					{fontId = FONT_BODY, fontSize = 11, textColor = TEXT, wrapMode = .None},
 				)
 			}

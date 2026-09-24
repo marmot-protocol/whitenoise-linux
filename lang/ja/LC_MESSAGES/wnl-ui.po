@@ -887,7 +887,7 @@ msgid "Created"
 msgstr "作成日"
 
 msgid "Created by"
-msgstr "作成ツール"
+msgstr "作成者"
 
 msgid "Creates a NIP-49 key encrypted with a password, safe to store or move to another client."
 msgstr "パスワードで暗号化したNIP-49キーを作成します。安全に保存したり、別のクライアントに移したりできます。"
