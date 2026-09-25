@@ -5,6 +5,9 @@ import { basename, dirname, extname, join, relative } from "node:path";
 
 const [system, destination, ...roots] = Bun.argv.slice(2);
 const libdir = join(destination, system === "linux" ? "usr/lib" : system === "darwin" ? "Contents/Frameworks" : ".");
+// macOS packages build on a Mac; cross-toolchain.sh points these at Xcode's tools.
+const objdump = process.env.WN_OBJDUMP ?? "objdump";
+const installNameTool = process.env.WN_INSTALL_NAME_TOOL ?? "install_name_tool";
 mkdirSync(libdir, { recursive: true });
 
 function* files(root, symlinks = false) {
@@ -57,7 +60,7 @@ function dependencies(path) {
   if (system === "windows") {
     return Array.from(run(["x86_64-w64-mingw32-objdump", "-p", path]).matchAll(/DLL Name:\s+(\S+)/g), match => match[1]);
   }
-  return run(["llvm-objdump", "--macho", "--dylibs-used", path]).split("\n").slice(1)
+  return run([objdump, "--macho", "--dylibs-used", path]).split("\n").slice(1)
     .filter(line => line.includes(" (")).map(line => line.trim().split(" (", 1)[0]);
 }
 
@@ -81,14 +84,14 @@ while (queue.length) {
       cpSync(realpathSync(source), target, { preserveTimestamps: true });
       queue.push(target);
     }
-    if (system === "darwin") run(["llvm-install-name-tool", "-change", dependency, "@rpath/" + name, path]);
+    if (system === "darwin") run([installNameTool, "-change", dependency, "@rpath/" + name, path]);
   }
   const libraryPath = relative(dirname(path), libdir) || ".";
   if (system === "linux") {
     run(["patchelf", "--set-rpath", "$ORIGIN/" + libraryPath, path]);
   } else if (system === "darwin") {
-    run(["llvm-install-name-tool", "-add_rpath", "@loader_path/" + libraryPath, path]);
-    if (extname(path) === ".dylib") run(["llvm-install-name-tool", "-id", "@rpath/" + basename(path), path]);
+    run([installNameTool, "-add_rpath", "@loader_path/" + libraryPath, path]);
+    if (extname(path) === ".dylib") run([installNameTool, "-id", "@rpath/" + basename(path), path]);
   }
 }
 console.log(`Bundled and checked ${seen.size} ${system} executables/libraries`);

@@ -94,34 +94,32 @@ CLANG
     PREFIX="$OUT/vcpkg-installed/$TARGET-llvm-ucrt"
     ;;
   darwin-amd64|darwin-arm64)
-    : "${MACOS_SDK_ARCHIVE:?Set MACOS_SDK_ARCHIVE to your licensed MacOSX SDK tarball (never downloaded publicly)}"
-    : "${MACOS_SDK_SHA256:?Set MACOS_SDK_SHA256 to the operator-approved archive digest}"
-    test -f "$MACOS_SDK_ARCHIVE"
-    printf '%s  %s\n' "$MACOS_SDK_SHA256" "$MACOS_SDK_ARCHIVE" | sha256sum -c
-    checkout osxcross https://github.com/tpoechtrager/osxcross.git "$(pin osxcross)"
-    OSXCROSS="$OUT/osxcross"
-    if [ ! -f "$OSXCROSS/.sdk-digest" ] || [ "$(cat "$OSXCROSS/.sdk-digest")" != "$MACOS_SDK_SHA256" ]; then
-      mkdir -p "$HERE/vendor/osxcross/tarballs"
-      cp "$MACOS_SDK_ARCHIVE" "$HERE/vendor/osxcross/tarballs/"
-      (cd "$HERE/vendor/osxcross" && UNATTENDED=1 BUILD_FLAVOR=llvm ENABLE_ARCHS='arm64 x86_64' \
-        OSX_VERSION_MIN=13.0 TARGET_DIR="$OSXCROSS" ./build.sh)
-      printf '%s\n' "$MACOS_SDK_SHA256" > "$OSXCROSS/.sdk-digest"
-    fi
-    export PATH="$OSXCROSS/bin:$PATH" MACOSX_DEPLOYMENT_TARGET=13.0
+    # Apple's SDK is licensed for Apple hardware only, so macOS packages build
+    # on a Mac with Xcode or its Command Line Tools. Either architecture builds
+    # on either Mac: the wrappers pin clang's -arch, the SDK and the minimum
+    # macOS version for every compiler, linker and build-system invocation.
+    SYSROOT="$(xcrun --sdk macosx --show-sdk-path)"
+    export MACOSX_DEPLOYMENT_TARGET=13.0 SDKROOT="$SYSROOT"
     if [ "$TARGET" = darwin-arm64 ]; then
-      CPU=aarch64; APPLE_CPU=arm64; RUST_TARGET=aarch64-apple-darwin; ODIN_TARGET=darwin_arm64; CC=oa64-clang; CXX=oa64-clang++
+      CPU=aarch64; APPLE_CPU=arm64; RUST_TARGET=aarch64-apple-darwin; ODIN_TARGET=darwin_arm64
     else
-      CPU=x86_64; APPLE_CPU=x86_64; RUST_TARGET=x86_64-apple-darwin; ODIN_TARGET=darwin_amd64; CC=o64-clang; CXX=o64-clang++
+      CPU=x86_64; APPLE_CPU=x86_64; RUST_TARGET=x86_64-apple-darwin; ODIN_TARGET=darwin_amd64
     fi
-    SYSTEM=Darwin; AR=llvm-ar; STRIP=llvm-strip; OBJCOPY=llvm-objcopy
-    SYSROOT="$(find "$OSXCROSS/SDK" -maxdepth 1 -type d -name 'MacOSX*.sdk' -print -quit)"
-    test -n "$SYSROOT"
-    export SDKROOT="$SYSROOT" CARGO_PROFILE_RELEASE_STRIP=none
+    mkdir -p "$OUT/tool-bin"
+    for tool in clang clang++; do
+      printf '#!/bin/sh\nexec "%s" -arch %s -isysroot "%s" -mmacosx-version-min=%s "$@"\n' \
+        "$(xcrun -f "$tool")" "$APPLE_CPU" "$SYSROOT" "$MACOSX_DEPLOYMENT_TARGET" > "$OUT/tool-bin/$APPLE_CPU-apple-$tool"
+      chmod +x "$OUT/tool-bin/$APPLE_CPU-apple-$tool"
+    done
+    CC="$OUT/tool-bin/$APPLE_CPU-apple-clang"; CXX="$OUT/tool-bin/$APPLE_CPU-apple-clang++"
+    SYSTEM=Darwin; AR="$(xcrun -f ar)"; STRIP="$(xcrun -f strip)"
+    # Mach-O inspection and rpath rewriting in cross-bundle.js.
+    export WN_OBJDUMP="$(xcrun -f objdump)" WN_INSTALL_NAME_TOOL="$(xcrun -f install_name_tool)"
     ;;
 esac
 CC="$(command -v "$CC")"; CXX="$(command -v "$CXX")"; AR="$(command -v "$AR")"
 export CC CXX AR STRIP
-# Cargo's build dependencies execute on Linux, so target-specific variables
+# Cargo's build dependencies execute on the build machine, so target variables
 # must not accidentally replace their compiler or pkg-config environment.
 RUST_KEY="${RUST_TARGET//-/_}"; RUST_UPPER="${RUST_KEY^^}"
 export "CC_$RUST_KEY=$CC" "CXX_$RUST_KEY=$CXX" "AR_$RUST_KEY=$AR"
@@ -151,7 +149,7 @@ elif [ "$SYSTEM" = Darwin ]; then
 set(CMAKE_OSX_SYSROOT "$SYSROOT")
 set(CMAKE_OSX_ARCHITECTURES "$APPLE_CPU")
 set(CMAKE_OSX_DEPLOYMENT_TARGET 13.0)
-set(CMAKE_INSTALL_NAME_TOOL llvm-install-name-tool)
+set(CMAKE_INSTALL_NAME_TOOL "$WN_INSTALL_NAME_TOOL")
 CMAKE
 elif [ "$SYSTEM" = Windows ]; then
   cat >> "$OUT/toolchain.cmake" <<CMAKE

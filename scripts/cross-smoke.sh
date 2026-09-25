@@ -4,7 +4,7 @@
 set -euo pipefail
 
 if [ "$#" -lt 2 ] || [ "$#" -gt 3 ]; then
-  echo "Usage: $0 <linux-arm64|windows-amd64> <package-root> [linux-sysroot]" >&2
+  echo "Usage: $0 <linux-arm64|windows-amd64|darwin-arm64|darwin-amd64> <package-root> [linux-sysroot]" >&2
   exit 2
 fi
 target="$1"
@@ -31,8 +31,13 @@ case "$target" in
     run=(xvfb-run -a wine)
     ;;
   darwin-*)
-    echo "macOS runtime smoke requires a macOS machine; Linux cannot execute this artifact." >&2
-    exit 2
+    if [ "$(uname -s)" != Darwin ]; then
+      echo "macOS runtime smoke runs on a Mac." >&2
+      exit 2
+    fi
+    exe="$root/White Noise.app/Contents/MacOS/whitenoise"
+    # An Apple silicon Mac runs the Intel bundle through Rosetta.
+    if [ "$target" = darwin-amd64 ] && [ "$(uname -m)" = arm64 ]; then run=(arch -x86_64); fi
     ;;
   *) echo "Unknown cross-release target: $target" >&2; exit 2 ;;
 esac

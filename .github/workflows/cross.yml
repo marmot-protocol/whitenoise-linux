@@ -1,4 +1,4 @@
-name: Linux-hosted cross releases
+name: Cross releases
 
 on:
   workflow_call:
@@ -109,53 +109,47 @@ jobs:
           path: build/cross-evidence/${{ matrix.target }}.png
           if-no-files-found: error
 
+  # Apple's SDK is licensed for Apple hardware, so macOS packages build on a
+  # Mac. One Apple silicon runner builds both architectures; the Intel bundle
+  # is smoke-tested under Rosetta. ponytail: GitHub-hosted until the
+  # self-hosted Mac mini runs these same scripts under ngit act.
   macos:
-    name: Cross ${{ matrix.target }} on Linux (private SDK)
-    # SDK access is opt-in and unavailable to untrusted fork pull requests.
-    # Skipping these jobs does not prevent Linux/Windows publication.
-    if: vars.WN_ENABLE_MACOS == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-    runs-on: ubuntu-24.04
+    name: Build ${{ matrix.target }} on macOS
+    runs-on: macos-15
     strategy:
       fail-fast: false
       matrix:
-        target: [darwin-amd64, darwin-arm64]
+        target: [darwin-arm64, darwin-amd64]
     steps:
       - uses: actions/checkout@v4
-      - name: Install Podman
-        run: sudo apt-get update && sudo apt-get install -y podman
-      - name: Fetch operator-provided private Apple SDK
+      - name: Install pinned build tools
+        run: scripts/macos-setup.sh "$RUNNER_TEMP/tools"
+      # vcpkg's binary cache; the key covers every input to the dependency build.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/vcpkg/archives
+          key: vcpkg-${{ matrix.target }}-${{ hashFiles('DEPS_PIN', 'packaging/cross/vcpkg.json', 'scripts/cross-toolchain.sh', 'scripts/cross-deps.sh') }}
+      - name: Build and package
         env:
-          MACOS_SDK_URL: ${{ secrets.MACOS_SDK_URL }}
-          MACOS_SDK_SHA256: ${{ secrets.MACOS_SDK_SHA256 }}
-          MACOS_SDK_FILENAME: ${{ vars.MACOS_SDK_FILENAME }}
-        run: |
-          set -euo pipefail
-          : "${MACOS_SDK_URL:?Configure private SDK URL secret}"
-          : "${MACOS_SDK_SHA256:?Configure SDK digest secret}"
-          case "$MACOS_SDK_FILENAME" in MacOSX*.sdk.tar.xz|MacOSX*.sdk.tar.gz) ;; *) echo 'Set MACOS_SDK_FILENAME to the SDK archive basename' >&2; exit 1;; esac
-          case "$MACOS_SDK_FILENAME" in */*) exit 1;; esac
-          mkdir -p "$RUNNER_TEMP/macos-sdk"
-          curl --fail --location --proto '=https' --tlsv1.2 "$MACOS_SDK_URL" \
-            -o "$RUNNER_TEMP/macos-sdk/$MACOS_SDK_FILENAME"
-          printf '%s  %s\n' "$MACOS_SDK_SHA256" "$RUNNER_TEMP/macos-sdk/$MACOS_SDK_FILENAME" | sha256sum -c
-      - name: Build Linux toolchain image
-        run: podman build -f packaging/cross/Containerfile -t whitenoise-cross packaging/cross
-      - name: Cross compile and package macOS
-        env:
-          MACOS_SDK_SHA256: ${{ secrets.MACOS_SDK_SHA256 }}
-          MACOS_SDK_FILENAME: ${{ vars.MACOS_SDK_FILENAME }}
           WN_RELEASE_VERSION: ${{ inputs.version }}
         run: |
-          podman run --rm -v "$PWD:/work" -v "$RUNNER_TEMP/macos-sdk:/run/macos-sdk:ro" \
-            -e MACOS_SDK_ARCHIVE="/run/macos-sdk/$MACOS_SDK_FILENAME" \
-            -e MACOS_SDK_SHA256 -e WN_RELEASE_VERSION whitenoise-cross '${{ matrix.target }}'
-      - name: Record runtime verification limitation
-        run: echo 'Mach-O dependency closure and ad-hoc signing checked on Linux; macOS runtime smoke requires an external macOS machine.'
+          source "$RUNNER_TEMP/tools/env"
+          bash scripts/cross-build.sh '${{ matrix.target }}'
+      - name: Extract and execute shipped package
+        run: |
+          source "$RUNNER_TEMP/tools/env"
+          mkdir -p build/cross-smoke build/cross-evidence
+          tar -xzf dist/*-${{ matrix.target }}.tar.gz -C build/cross-smoke
+          root=$(find build/cross-smoke -mindepth 1 -maxdepth 1 -type d -print -quit)
+          cd build/cross-evidence
+          bash ../../scripts/cross-smoke.sh '${{ matrix.target }}' "../../$root"
       - uses: actions/upload-artifact@v4
         with:
           name: cross-${{ matrix.target }}
           path: dist/*-${{ matrix.target }}.tar.gz
           if-no-files-found: error
-      - name: Remove private SDK download
-        if: always()
-        run: rm -rf "$RUNNER_TEMP/macos-sdk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: smoke-${{ matrix.target }}
+          path: build/cross-evidence/${{ matrix.target }}.png
+          if-no-files-found: error

@@ -1,5 +1,5 @@
-# Release: Linux x86_64 AppImage/Flatpak plus Linux-hosted cross archives.
-# macOS archives are included when the private SDK job is enabled.
+# Release: Linux x86_64 AppImage/Flatpak plus the cross.yml packages
+# (Linux ARM64 and Windows built on Linux, macOS built on a Mac).
 #
 # Both packages install the same tree, via scripts/install-tree.sh:
 #   * the binary at <prefix>/bin, and the runtime data the app reads from

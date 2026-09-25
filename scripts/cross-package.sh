@@ -141,9 +141,15 @@ if [ "$SYSTEM" = windows ]; then
   rm "$RES/wn-font.exe"
 fi
 if [ "$SYSTEM" = darwin ]; then
-  # Install-name changes invalidate signatures. rcodesign runs on Linux; this
-  # is ad-hoc signing, not a Developer ID signature or Apple notarization.
-  rcodesign sign "$STAGE"
+  # Install-name changes above invalidate signatures, and Apple silicon runs
+  # no unsigned code. Sign every Mach-O file inside-out (helpers also live in
+  # Resources, which --deep skips), then the bundle. Ad-hoc: no Developer ID
+  # or notarization, so Gatekeeper asks once on first launch.
+  while IFS= read -r -d '' file; do
+    if file --brief "$file" | grep -q '^Mach-O'; then codesign --force --sign - --timestamp=none "$file"; fi
+  done < <(find "$STAGE/Contents" -type f -print0)
+  codesign --force --sign - --timestamp=none "$STAGE"
+  codesign --verify --strict --deep "$STAGE"
 fi
 
 # Setup.exe, the self-updating portable zip, and the update feed. With

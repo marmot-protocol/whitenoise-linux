@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Linux-hosted cross compilation; see README.md for SDK and container setup.
+# Release builds for other targets. Linux and Windows packages build on Linux
+# (the packaging/cross container); macOS packages build on a Mac, where
+# Apple's SDK is licensed (scripts/macos-setup.sh). See README.md.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 TARGET="${1:-${WN_TARGET:-}}"
@@ -7,10 +9,15 @@ case "$TARGET" in
   linux-arm64|windows-amd64|darwin-amd64|darwin-arm64) ;;
   *) echo 'Usage: scripts/cross-build.sh {linux-arm64|windows-amd64|darwin-amd64|darwin-arm64}' >&2; exit 2 ;;
 esac
-if [ "$(uname -s)" != Linux ]; then echo 'Cross compilation must run on Linux.' >&2; exit 2; fi
+if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then echo 'Run with bash 4 or newer (on macOS: scripts/macos-setup.sh).' >&2; exit 2; fi
+case "$TARGET" in
+  darwin-*) HOST=Darwin ;;
+  *) HOST=Linux ;;
+esac
+if [ "$(uname -s)" != "$HOST" ]; then echo "$TARGET packages build on a $HOST host." >&2; exit 2; fi
 export WN_TARGET="$TARGET"
 OUT="$HERE/build/cross/$TARGET"
-JOBS="${WN_BUILD_JOBS:-$(nproc)}"
+JOBS="${WN_BUILD_JOBS:-$(getconf _NPROCESSORS_ONLN)}"
 mkdir -p "$OUT"
 source "$HERE/scripts/cross-toolchain.sh"
 # This mode fetches and patches sources and assets only, never host archives.

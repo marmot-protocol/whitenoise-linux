@@ -88,10 +88,9 @@ flatpak run dev.ipf.whitenoise
 
 The Flatpak keeps its data under `~/.var/app/dev.ipf.whitenoise/`. One thing stays outside its sandbox: "Launch at login".
 
-Linux ARM64 and Windows x86-64 archives are built on Linux alongside the
-existing Linux x86-64 packages. macOS Intel and ARM64 archives are published
-when the release operator has configured the private Apple SDK described
-below.
+Linux ARM64 and Windows x86-64 packages are built on Linux alongside the
+existing Linux x86-64 packages; macOS Intel and ARM64 bundles are built on a
+Mac.
 
 | Target | Archive | Launch |
 | --- | --- | --- |
@@ -112,12 +111,11 @@ Windows and macOS builds do not run webxdc (`.xdc`) apps. Linux retains its
 WebKitGTK webxdc viewer. Ordinary attachments, video, PDFs, 3D previews,
 speech and dictation are not disabled on the other targets.
 
-The macOS bundle is ad-hoc signed on Linux, not Developer ID signed or
-notarized. Gatekeeper may block a downloaded copy; distributing a trusted
-macOS release also requires the operator's Apple signing and notarization
-credentials. Linux CI checks Mach-O dependencies and signs the bundle, but
-cannot run it. A macOS runtime check is still required before treating that
-artifact as tested.
+The macOS bundle is ad-hoc signed, not Developer ID signed or notarized, so
+macOS says it cannot verify the developer the first time you open it. Open it
+once with Control-click, Open (or System Settings, Privacy & Security, Open
+Anyway); after that it launches normally. A Developer ID signature and
+notarization need an Apple Developer account.
 
 On Arch, `packaging/arch/PKGBUILD` builds a `whitenoise-linux-git` package against the system SDL3, mpv, and poppler:
 
@@ -164,7 +162,7 @@ just run
 
 The first build is the slow one: it clones the pinned Marmot revision and builds its C bundle, fetches clay, ufbx, MicroTeX and the Twemoji set, and (on an Odin install shipping no prebuilt `vendor/stb` archives) builds those. Everything after that is a plain Odin compile of a few seconds.
 
-### Cross releases from Linux
+### Cross releases
 
 `scripts/cross-build.sh TARGET` accepts `linux-arm64`, `windows-amd64`,
 `darwin-amd64`, or `darwin-arm64`. `WN_TARGET=TARGET scripts/build.sh` invokes
@@ -184,8 +182,8 @@ podman run --rm -v "$PWD:/work" whitenoise-cross windows-amd64
 The ARM64 build extracts an Ubuntu 24.04 target sysroot without running ARM
 compilers. Windows uses LLVM-MinGW 20260922 with UCRT and libc++, paired with
 Rust's `x86_64-pc-windows-gnullvm` target. Its separate vcpkg triplet avoids
-reusing GCC/MSVCRT libraries. Windows 10 or newer supplies UCRT. Both Apple
-targets use osxcross. Odin emits target objects; the target C++ linker links
+reusing GCC/MSVCRT libraries. Windows 10 or newer supplies UCRT. Odin emits
+target objects; the target C++ linker links
 them with Marmot, Clay, STB,
 MicroTeX, the app shims and media libraries. Source revisions are pinned in
 `DEPS_PIN`, and Windows/macOS dependency recipes are pinned by the vcpkg
@@ -194,33 +192,27 @@ decoding on Windows and macOS. Speech uses the same pinned upstream
 sherpa-onnx CPU runtime as the native build. Packages include the speech/font
 helpers, curl, their loader dependencies, fonts, emoji data and licenses.
 
-For macOS, supply an SDK extracted from an Apple download you are entitled
-to use. Keep it private. No public SDK mirror is used by these scripts.
-The archive must use osxcross's `MacOSX<version>.sdk.tar.xz` or
-`.tar.gz` naming and contain that SDK directory:
+macOS bundles build on a Mac, where Apple's SDK is licensed: Xcode or its
+Command Line Tools supply it, and no Apple account is needed. An Apple silicon
+Mac builds both architectures. `scripts/macos-setup.sh` installs the pinned
+tools with Homebrew (GNU userland, bash 5, Odin, Bun, Meson) the way the
+container does on Linux, and needs Homebrew, rustup and the Command Line
+Tools already present:
 
 ```sh
-export MACOS_SDK_SHA256='<sha256 of your SDK archive>'
-podman run --rm -v "$PWD:/work" -v "/private/sdk-directory:/run/macos-sdk:ro" \
-  -e MACOS_SDK_ARCHIVE=/run/macos-sdk/MacOSX14.5.sdk.tar.xz \
-  -e MACOS_SDK_SHA256 whitenoise-cross darwin-arm64
-# Use darwin-amd64 for an Intel bundle.
+scripts/macos-setup.sh ~/.cache/whitenoise-macos-tools
+source ~/.cache/whitenoise-macos-tools/env
+scripts/cross-build.sh darwin-arm64    # or darwin-amd64 for Intel
 ```
 
-In GitHub Actions, set repository variable `WN_ENABLE_MACOS=true`,
-`MACOS_SDK_FILENAME` to the archive basename, and secrets `MACOS_SDK_URL`
-(an operator-managed private HTTPS download URL) and `MACOS_SDK_SHA256`.
-The URL must work without an interactive login, for example a short-lived
-signed artifact URL. The job fails if an enabled SDK is missing or fails its
-checksum. Without the opt-in variable, macOS jobs are explicitly skipped and
-Linux/Windows jobs still run. The SDK is mounted read-only into the build
-container and is never part of the uploaded release archive.
+The build uses Xcode's clang with a pinned `-arch` and a macOS 13 deployment
+target, then signs every Mach-O file and the bundle ad hoc with `codesign`.
 
 `.github/workflows/cross.yml` is called by CI and tagged releases. Its Linux
 ARM64 and Windows jobs extract the shipped archive and require a headless
 launch to produce a screenshot under QEMU or Wine. No compiler runs under
-those emulators. The macOS jobs report their runtime-verification limit
-instead of claiming a launch succeeded.
+those emulators. Its macOS jobs build both bundles on a GitHub Apple silicon
+runner and launch each one there, the Intel bundle through Rosetta.
 
 Tagged releases publish the Windows installer, the portable zip, and
 Velopack's feed (`releases.win.json`, `assets.win.json`, `RELEASES`, and the
@@ -238,8 +230,9 @@ keep a plain zip and never join the update feed.
 
 ngit staging uses `.ngit/act/workflows/release-cross.yml` alongside the
 existing x86-64 AppImage workflow. The act worker needs Podman with working
-user namespaces and permission to build and run nested containers. Configure
-the same SDK variables/secrets there to enable macOS. Each target is passed
+user namespaces and permission to build and run nested containers. It has no
+macOS job yet: those need a Mac act runner, and until one exists macOS
+bundles come from the GitHub workflow. Each target is passed
 to `actions/upload-artifact`; Blossom publication requires the coordinator's
 `--blossom-servers` setting and an artifact-size limit large enough for the
 archives (`--blossom-max-artifact-bytes`, commonly above the default 64 MiB).

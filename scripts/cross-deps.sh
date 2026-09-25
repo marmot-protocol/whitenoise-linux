@@ -50,9 +50,15 @@ if(PORT STREQUAL "libffi")
 endif()
 CMAKE
   fi
+  # Build-machine tools (code generators) are built for the host itself.
+  case "$(uname -s)-$(uname -m)" in
+    Darwin-arm64) HOST_TRIPLET=arm64-osx ;;
+    Darwin-x86_64) HOST_TRIPLET=x64-osx ;;
+    *) HOST_TRIPLET=x64-linux ;;
+  esac
   # Do not expose target CC/pkg-config to build-machine code generators.
   env -u CC -u CXX -u AR -u PKG_CONFIG_SYSROOT_DIR -u PKG_CONFIG_LIBDIR \
-    "$VCPKG/vcpkg" install --triplet "$VCPKG_TRIPLET" --host-triplet x64-linux \
+    "$VCPKG/vcpkg" install --triplet "$VCPKG_TRIPLET" --host-triplet "$HOST_TRIPLET" \
     --overlay-triplets="$OUT/triplets" --x-manifest-root="$HERE/packaging/cross" \
     --x-install-root="$OUT/vcpkg-installed"
   PREFIX="$OUT/vcpkg-installed/$VCPKG_TRIPLET"
