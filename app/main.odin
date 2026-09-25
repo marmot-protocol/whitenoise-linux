@@ -1496,6 +1496,7 @@ app_main :: proc() {
 		model_hover = {}
 		code_hover = {}
 		pdf_flip_hover = nil
+		pdf_full_hover = {}
 		img_retry_hover = ""
 		media_retry_hover = false
 		reply_jump_hover = ""
@@ -1896,6 +1897,7 @@ app_main :: proc() {
 		handle_img_click(&ui, client)
 		handle_model_click(&ui, client)
 		handle_code_click(&ui, client)
+		handle_pdf_full(&ui, client)
 		handle_mention_click(&ui, client)
 		handle_img_retry(&ui, client)
 		handle_media_retry(&ui, client)

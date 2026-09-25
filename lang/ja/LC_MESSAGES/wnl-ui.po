@@ -737,6 +737,10 @@ msgstr "ステッカーを読み込めませんでした。もう一度お試し
 msgid "Couldn't look up that NIP-05 address. Double-check it and try again."
 msgstr "このNIP-05アドレスを検索できませんでした。確認してもう一度お試しください。"
 
+#, c-format
+msgid "Couldn't open %s. Please try again."
+msgstr "%sを開けませんでした。もう一度お試しください。"
+
 #, fuzzy
 msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr "そのアカウントを追加できませんでした。鍵を確認して、もう一度お試しください。"

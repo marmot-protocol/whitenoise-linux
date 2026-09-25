@@ -1018,6 +1018,34 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 							entry.att,
 							msg.att_names[entry.att],
 						)
+						if clay.UI(clay.ID("MsgPdfFull", index * 1024 + u32(j)))(
+						{
+							layout = {padding = clay.PaddingAll(8)},
+							floating = {
+								attachTo = .Parent,
+								clipTo = .AttachedParent,
+								zIndex = 7,
+								offset = {6, 6},
+								attachment = {element = .LeftTop, parent = .LeftTop},
+							},
+							backgroundColor = {0, 0, 0, 150},
+							cornerRadius = rr(4),
+						},
+						) {
+							if hovered() {
+								pdf_full_hover = {msg.id, entry.att, msg.att_names[entry.att]}
+								pdf_full_page = view.page
+								tooltip(tr("Fullscreen"))
+							}
+							clay.Text(
+								"\uf065",
+								{
+									fontId = FONT_ICON,
+									fontSize = 14,
+									textColor = {255, 255, 255, 230},
+								},
+							)
+						}
 						if view.pages > 1 {
 							if clay.UI(clay.ID("MsgPdfNav", index * 1024 + u32(j)))(
 							{

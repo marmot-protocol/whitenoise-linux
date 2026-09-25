@@ -51,13 +51,14 @@ foreign cr_lib {
 }
 
 Pdf_View :: struct {
-	doc:    rawptr, // PopplerDocument, holds its own ref to the bytes
-	pages:  int,
-	page:   int,
-	tex:    rl.Texture2D,
-	pix:    []u8, // last rendered page, RGBA (kept for tests/rebuilds)
-	w, h:   i32,
-	failed: bool,
+	doc:      rawptr, // PopplerDocument, holds its own ref to the bytes
+	pages:    int,
+	page:     int,
+	tex:      rl.Texture2D,
+	pix:      []u8, // last rendered page, RGBA (kept for tests/rebuilds)
+	w, h:     i32,
+	max_size: rl.Vector2, // zero = inline width; otherwise fit these physical pixels
+	failed:   bool,
 }
 
 pdf_view_make :: proc(data: []u8, phase: Media_Phase = .Present) -> ^Pdf_View {
@@ -80,9 +81,8 @@ pdf_view_make :: proc(data: []u8, phase: Media_Phase = .Present) -> ^Pdf_View {
 	return view
 }
 
-// Render the current page: white background, page scaled to
-// PDF_TEX_W, cairo's premultiplied BGRA swizzled to RGBA (alpha is
-// opaque thanks to the background paint).
+// Render the current page on white at inline width or fitted to max_size.
+// Swizzle cairo's premultiplied BGRA to RGBA; the background is opaque.
 pdf_render_page :: proc(view: ^Pdf_View, phase: Media_Phase = .Present) {
 	page := poppler_document_get_page(view.doc, c.int(view.page))
 	if page == nil {
@@ -98,8 +98,11 @@ pdf_render_page :: proc(view: ^Pdf_View, phase: Media_Phase = .Present) {
 		return
 	}
 	scale := f64(PDF_TEX_W) / wpt
-	w := c.int(PDF_TEX_W)
-	h := c.int(hpt * scale + 0.5)
+	if view.max_size.x > 0 && view.max_size.y > 0 {
+		scale = min(f64(view.max_size.x) / wpt, f64(view.max_size.y) / hpt)
+	}
+	w := max(c.int(1), c.int(wpt * scale + 0.5))
+	h := max(c.int(1), c.int(hpt * scale + 0.5))
 
 	surface := cairo_image_surface_create(CAIRO_FORMAT_ARGB32, w, h)
 	defer cairo_surface_destroy(surface)

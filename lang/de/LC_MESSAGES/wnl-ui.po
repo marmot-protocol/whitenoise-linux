@@ -737,6 +737,10 @@ msgstr "Deine Sticker konnten nicht geladen werden. Bitte versuche es erneut."
 msgid "Couldn't look up that NIP-05 address. Double-check it and try again."
 msgstr "Diese NIP-05-Adresse konnte nicht gefunden werden. Überprüfe sie und versuche es erneut."
 
+#, c-format
+msgid "Couldn't open %s. Please try again."
+msgstr "%s konnte nicht geöffnet werden. Bitte versuche es erneut."
+
 #, fuzzy
 msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr "Das Konto konnte nicht hinzugefügt werden. Überprüfe den Schlüssel und versuche es erneut."

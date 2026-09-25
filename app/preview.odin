@@ -64,6 +64,7 @@ Preview :: struct {
 	vid:            ^Video_View,
 	vid_shared:     bool, // timeline cache owns the view and its bytes
 	pdf:            ^Pdf_View,
+	pdf_fullscreen: bool, // fills the app window without changing desktop fullscreen
 	txt:            ^Txt_View,
 	message_blocks: [dynamic]Md_Block_Ui,
 	code:           ^Code_View,
@@ -337,6 +338,40 @@ handle_code_click :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	preview_show(code_hover.name, clone_bytes(result.plaintext[:result.plaintext_len]))
 }
 
+@(private)
+pdf_full_hover: Model_Ref
+@(private)
+pdf_full_page: int
+
+@(private)
+handle_pdf_full :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if pdf_full_hover.msg_id == "" || preview_shown || !mouse_released() || drag_moved {
+		return
+	}
+	if att_hover.msg_id != "" || ui.selected < 0 || ui.selected >= len(ui.chats) {
+		return
+	}
+	result, ok := fetch_attachment(
+		ui,
+		client,
+		ui.chats[ui.selected].group_id,
+		pdf_full_hover.msg_id,
+		pdf_full_hover.att,
+	)
+	if !ok {
+		ui.client_status = fmt.aprintf(
+			tr("Couldn't open %s. Please try again."),
+			pdf_full_hover.name,
+		)
+		return
+	}
+	defer marmot.media_download_result_free(result)
+	preview_show(pdf_full_hover.name, clone_bytes(result.plaintext[:result.plaintext_len]))
+	if preview.kind != .Pdf {return}
+	preview.pdf.page = clamp(pdf_full_page, 0, preview.pdf.pages - 1)
+	preview.pdf_fullscreen = true
+}
+
 // Drop every failed (nil) entry from the image session cache and
 // reload the timeline, so the downloads run again. An open slideshow
 // is rebuilt in place, keeping its position.
@@ -474,14 +509,17 @@ preview_close :: proc() {
 	blocks_free(preview.message_blocks)
 	if !preview.vid_shared {delete(preview.bytes)}
 	delete(preview.name)
+	if preview.kind == .Video {
+		rl.SetFullscreen(false)
+	}
 	preview = {}
 	preview_shown = false
-	rl.SetFullscreen(false) // never leave the app stuck fullscreen
 }
 
 // Modal layout, mounted with the other overlays.
 preview_modal :: proc(ui: ^Ui_State) {
-	full := preview.kind == .Video && rl.IsFullscreen()
+	full :=
+		preview.kind == .Pdf ? preview.pdf_fullscreen : (preview.kind == .Video && rl.IsFullscreen())
 	image_view := preview.kind == .Image || preview.kind == .Slides
 	image_w := fit_w(f32(rl.GetScreenWidth()) / UI_ZOOM * 0.94, 26)
 	// A tall body (a long take list, a big hex dump) must not push the
@@ -546,7 +584,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 					clay.Text("Copy image", {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
 				}
 			}
-			if preview.kind == .Video {
+			if preview.kind == .Video || preview.kind == .Pdf {
 				if clay.UI(clay.ID("PvFull"))(
 				{
 					layout = {padding = {left = 10, right = 10, top = 5, bottom = 5}},
@@ -555,7 +593,7 @@ preview_modal :: proc(ui: ^Ui_State) {
 				},
 				) {
 					clay.Text(
-						rl.IsFullscreen() ? tr("Exit fullscreen") : tr("Fullscreen"),
+						full ? tr("Exit fullscreen") : tr("Fullscreen"),
 						{fontId = FONT_BODY, fontSize = 12, textColor = TEXT},
 					)
 				}
@@ -805,11 +843,22 @@ preview_modal :: proc(ui: ^Ui_State) {
 
 			case .Pdf:
 				view := preview.pdf
+				dpi := rl.GetWindowScaleDPI()
+				size :=
+					full ? rl.Vector2{f32(rl.GetScreenWidth()) * dpi.x, f32(rl.GetScreenHeight()) * dpi.y} : rl.Vector2{}
+				if view.max_size != size {
+					view.max_size = size
+					pdf_render_page(view)
+				}
 				ratio := view.h > 0 ? f32(view.w) / f32(view.h) : 0.77
 				if clay.UI(clay.ID("PvPdf"))(
 				{
 					layout = {
-						sizing = {width = clay.SizingFixed(fit_w(480))},
+						sizing = {
+							width = clay.SizingFixed(
+								full ? min(f32(rl.GetScreenWidth()) / UI_ZOOM, max_h * ratio) : fit_w(480),
+							),
+						},
 						childAlignment = {x = .Center, y = .Bottom},
 					},
 					aspectRatio = {ratio},
@@ -1051,6 +1100,13 @@ handle_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if rl.IsKeyPressed(.ESCAPE) {
 		preview_close()
+		return
+	}
+	if preview.kind == .Pdf && clicked("PvFull") {
+		preview.pdf_fullscreen = !preview.pdf_fullscreen
+		if data := clay.GetScrollContainerData(clay.ID("PvScroll")); data.found {
+			data.scrollPosition^ = {}
+		}
 		return
 	}
 	if preview.kind == .Message && clicked("PvRead") {

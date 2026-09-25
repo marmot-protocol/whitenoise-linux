@@ -699,6 +699,10 @@ msgstr ""
 msgid "Couldn't look up that NIP-05 address. Double-check it and try again."
 msgstr ""
 
+#, c-format
+msgid "Couldn't open %s. Please try again."
+msgstr ""
+
 msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr ""
 

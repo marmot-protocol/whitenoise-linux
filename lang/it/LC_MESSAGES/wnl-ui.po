@@ -737,6 +737,10 @@ msgstr "Impossibile caricare i tuoi adesivi. Riprova."
 msgid "Couldn't look up that NIP-05 address. Double-check it and try again."
 msgstr "Impossibile trovare questo indirizzo NIP-05. Ricontrollalo e riprova."
 
+#, c-format
+msgid "Couldn't open %s. Please try again."
+msgstr "Impossibile aprire %s. Riprova."
+
 #, fuzzy
 msgid "Couldn't open the backup. Double-check the password and try again."
 msgstr "Impossibile aggiungere questo account. Ricontrolla la chiave e riprova."

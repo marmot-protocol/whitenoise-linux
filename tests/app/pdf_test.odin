@@ -32,6 +32,7 @@ pdf_render :: proc(t: ^testing.T) {
 	fmt.sbprintf(&b, "trailer\n<< /Size 4 /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n", xref)
 
 	view := pdf_view_make(b.buf[:])
+	defer pdf_view_free(view)
 	testing.expect(t, !view.failed)
 	testing.expect_value(t, view.pages, 1)
 	testing.expect_value(t, view.w, i32(PDF_TEX_W))
@@ -39,4 +40,19 @@ pdf_render :: proc(t: ^testing.T) {
 
 	// Blank page renders as the white background.
 	testing.expect(t, len(view.pix) > 0 && view.pix[0] == 255 && view.pix[3] == 255)
+
+	view.max_size = {1600, 900}
+	pdf_render_page(view)
+	testing.expect_value(t, view.w, i32(1600))
+	testing.expect_value(t, view.h, i32(800))
+
+	view.max_size = {1, 1}
+	pdf_render_page(view)
+	testing.expect_value(t, view.w, i32(1))
+	testing.expect_value(t, view.h, i32(1))
+
+	view.max_size = {}
+	pdf_render_page(view)
+	testing.expect_value(t, view.w, i32(PDF_TEX_W))
+	testing.expect_value(t, view.h, i32(PDF_TEX_W / 2))
 }
