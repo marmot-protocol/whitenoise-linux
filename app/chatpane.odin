@@ -315,6 +315,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 										fontSize = 12,
 										textColor = TEXT_DIM,
 										letterSpacing = 1,
+										wrapMode = .None,
 									},
 								)
 							}

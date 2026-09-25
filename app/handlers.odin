@@ -1163,7 +1163,11 @@ select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) {
 	}
 
 	if len(ui.messages) > 0 {
-		last := ui.messages[len(ui.messages) - 1]
+		// The newest row by MLS order, which the wall-clock sort can move off the tail.
+		last := len(ui.messages) - 1
+		for msg, i in ui.messages {
+			if msg.mls_order > ui.messages[last].mls_order {last = i}
+		}
 		row: ^marmot.Chat_List_Row
 		account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 		group := strings.clone_to_cstring(ui.chats[index].group_id, context.temp_allocator)
@@ -1171,7 +1175,7 @@ select_chat :: proc(ui: ^Ui_State, client: ^marmot.Client, index: int) {
 			   client,
 			   account,
 			   group,
-			   strings.clone_to_cstring(last.id, context.temp_allocator),
+			   strings.clone_to_cstring(ui.messages[last].id, context.temp_allocator),
 			   &row,
 		   ) ==
 		   .OK {

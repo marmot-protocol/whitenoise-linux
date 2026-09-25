@@ -302,6 +302,8 @@ Msg_Ui :: struct {
 	at:                  string, // HH:MM
 	at_full:             string, // full date + time, the stamp's hover tooltip
 	day:                 string, // YYYY-MM-DD or "Today", for day markers
+	sort_at:             u64, // record timeline_at, the render order key
+	mls_order:           int, // position in the marmot page, the read cursor's order
 	mine:                bool,
 	system:              bool, // kind-1210 group-system line; body holds the sentence
 	sys_text:            string, // system sentence with profile references for mention chips

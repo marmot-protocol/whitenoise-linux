@@ -183,6 +183,49 @@ incoming_preserves_scroll :: proc(t: ^testing.T) {
 	}
 }
 
+// A commit row stamped when this device processed it arrives ahead of
+// its epoch's older messages; rows render by wall clock, the read
+// cursor keeps the page's MLS position.
+@(test)
+timeline_renders_by_wall_clock :: proc(t: ^testing.T) {
+	// retired_messages and the agent scope are package-global caches.
+	context.allocator = runtime.default_context().allocator
+	ui := Ui_State {
+		account_ref = "account",
+	}
+	append(&ui.chats, Chat_Row_Ui{group_id = "group"})
+	defer {
+		for msg in ui.messages {message_free(msg)}
+		delete(ui.messages); delete(ui.chats)
+		delete(ui.messages_account); delete(ui.messages_group)
+		messages_collect()
+	}
+	event := marmot.Group_System_Event {
+		text = "A member joined",
+	}
+	records := [?]marmot.Timeline_Message_Record {
+		{kind = 1210, group_system = &event, message_id_hex = "commit", timeline_at = 3_000},
+		{kind = 1210, group_system = &event, message_id_hex = "sep-24", timeline_at = 1_000},
+		{kind = 1210, group_system = &event, message_id_hex = "tie-a", timeline_at = 2_000},
+		{kind = 1210, group_system = &event, message_id_hex = "tie-b", timeline_at = 2_000},
+	}
+	page := marmot.Timeline_Page {
+		messages     = raw_data(records[:]),
+		messages_len = len(records),
+	}
+	// Twice: the second pass re-sorts a snapshot that is already sorted.
+	for _ in 0 ..< 2 {
+		timeline_apply(nil, &ui, &page)
+		testing.expect_value(t, len(ui.messages), 4)
+		for id, i in ([]string{"sep-24", "tie-a", "tie-b", "commit"}) {
+			testing.expect_value(t, ui.messages[i].id, id)
+		}
+		for order, i in ([]int{1, 2, 3, 0}) {
+			testing.expect_value(t, ui.messages[i].mls_order, order)
+		}
+	}
+}
+
 @(test)
 chat_preview_uses_snapshot :: proc(t: ^testing.T) {
 	event := marmot.Group_System_Event {

@@ -207,6 +207,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 				at       = format_when(record.timeline_at),
 				at_full  = format_full(record.timeline_at),
 				day      = format_day(record.timeline_at),
+				sort_at  = record.timeline_at,
 				system   = true,
 			}
 			if is_add {
@@ -243,6 +244,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 					at = format_when(record.timeline_at),
 					at_full = format_full(record.timeline_at),
 					day = format_day(record.timeline_at),
+					sort_at = record.timeline_at,
 					mine = mine,
 				},
 			)
@@ -263,7 +265,6 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 		   message_matches(previous[old], record, label, info.pic_url) {
 			msg := previous[old]
 			msg.thread_replies = 0
-			if old != len(ui.messages) {msg.row_height = 0}
 			append(&ui.messages, msg)
 			previous[old] = {} // ownership moved into the new snapshot
 			continue
@@ -281,6 +282,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 					at = format_when(record.timeline_at),
 					at_full = format_full(record.timeline_at),
 					day = format_day(record.timeline_at),
+					sort_at = record.timeline_at,
 					mine = mine,
 					deleted = true,
 					thread_of = strings.clone(first_event_ref(record)),
@@ -318,6 +320,7 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			at        = format_when(record.timeline_at),
 			at_full   = format_full(record.timeline_at),
 			day       = format_day(record.timeline_at),
+			sort_at   = record.timeline_at,
 			mine      = mine,
 			edited    = record.edit != nil || (has_edits && len(versions) > 0),
 			effect    = record_effect(record),
@@ -468,6 +471,18 @@ timeline_apply :: proc(client: ^marmot.Client, ui: ^Ui_State, page: ^marmot.Time
 			media_attach(&msg, client, account, group, &record.media[j])
 		}
 		append(&ui.messages, msg)
+	}
+
+	// marmot pages arrive in MLS order: epoch first, then time. A commit's
+	// system row carries the local time it was processed, so it can sort
+	// ahead of messages its epoch holds from days earlier and the day
+	// markers flip Today → Sep 24 → Today. Rows render by wall clock;
+	// the stable sort keeps MLS order among equal stamps. The read cursor
+	// still advances in MLS order, so each row keeps its page position.
+	for &msg, i in ui.messages {msg.mls_order = i}
+	slice.stable_sort_by(ui.messages[:], proc(a, b: Msg_Ui) -> bool {return a.sort_at < b.sort_at})
+	for &msg, i in ui.messages {
+		if old, found := previous_ids[msg.id]; !found || old != i {msg.row_height = 0}
 	}
 
 	for &msg in ui.messages {
