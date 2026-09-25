@@ -13,61 +13,62 @@ import "core:strings"
 // The slint settings pages' knobs. Serialized nested under "prefs".
 Prefs :: struct {
 	// General
-	launch_at_login:   bool,
-	tts_enabled:       bool,
-	stt_enabled:       bool,
-	stt_model:         string,
-	tts_voice:         int,
-	start_in_tray:     bool, // honored at boot (SDL tray icon + hidden window)
-	minimize_tray:     bool, // closing the window hides it to the tray
-	restore_last_chat: bool,
-	last_chat:         string, // group id to reopen on launch
-	notes_group:       string, // group id of the solo "Notes to self" chat
-	locale:            string, // en/it/de/ja; catalogs applied via i18n.odin
-	hour12:            bool,
-	date_format:       int, // index into DATE_FORMATS
-	quick_reactions:   [dynamic]string,
-	recent_searches:   [dynamic]string, // global search, newest first, max 8
-	mention_read:      [dynamic]string, // seen mention message ids, capped
+	launch_at_login:       bool,
+	tts_enabled:           bool,
+	stt_enabled:           bool,
+	stt_model:             string,
+	tts_voice:             int,
+	start_in_tray:         bool, // honored at boot (SDL tray icon + hidden window)
+	minimize_tray:         bool, // closing the window hides it to the tray
+	restore_last_chat:     bool,
+	last_chat:             string, // group id to reopen on launch
+	notes_group:           string, // group id of the solo "Notes to self" chat
+	locale:                string, // en/it/de/ja; catalogs applied via i18n.odin
+	hour12:                bool,
+	date_format:           int, // index into DATE_FORMATS
+	quick_reactions:       [dynamic]string,
+	recent_searches:       [dynamic]string, // global search, newest first, max 8
+	mention_read:          [dynamic]string, // seen mention message ids, capped
 	// Notifications
-	notify_desktop:    bool,
-	notify_sound:      bool,
-	ui_sounds:         bool, // short tones on send, arrival and failure
-	notify_preview:    bool,
+	notify_desktop:        bool,
+	notify_sound:          bool,
+	ui_sounds:             bool, // short tones on send, arrival and failure
+	notify_preview:        bool,
 	// Appearance
-	avatar_shape:      Avatar_Shape,
-	crop_avatar_shape: Crop_Shape,
-	zoom_pct:          int, // 100 = the default 1.5 render scale
-	scroll_speed:      int, // wheel multiplier in percent; 200 = 2x raw
-	centered_chat:     bool,
-	reduce_motion:     bool, // snaps every transition; nothing animates
-	body_font:         int, // message-body px delta; -2/0/+2 = small/default/large
+	avatar_shape:          Avatar_Shape,
+	crop_avatar_shape:     Crop_Shape,
+	zoom_pct:              int, // 100 = the default 1.5 render scale
+	scroll_speed:          int, // wheel multiplier in percent; 200 = 2x raw
+	centered_chat:         bool,
+	reduce_motion:         bool, // snaps every transition; nothing animates
+	body_font:             int, // message-body px delta; -2/0/+2 = small/default/large
 	// Gutters: drag-resized, persisted widths and the collapsed rail.
-	rail_w:            int, // chat-list card width
-	panel_w:           int, // members/info panel width
-	rail_collapsed:    bool, // rail shrinks to the icon nav
+	rail_w:                int, // chat-list card width
+	panel_w:               int, // members/info panel width
+	rail_collapsed:        bool, // rail shrinks to the icon nav
 	// Chat-list row actions (rowactions.odin). marmot's C API exports
 	// no pin/mute/mark-unread setter (only archive and mark-read), so
 	// all four are local-only, keyed by group id.
-	pinned:            map[string]bool, // sorts above the rest of the rail
-	muted_ids:         map[string]bool, // folded into the row's muted flag
-	unread_ids:        map[string]bool, // manual unread reminder
-	folders:           [dynamic]string, // user-defined folder names
-	folder_of:         map[string]string, // group id → folder name
-	recent_chats:      bool, // false groups the list by folder
-	collapsed_folders: map[string]bool, // folder name; "" is Unfiled
-	folder_icons:      map[string]int, // folder name → FOLDER_ICONS index
-	folder_colors:     map[string]u32, // folder name → RGB; absent uses the theme accent
+	pinned:                map[string]bool, // sorts above the rest of the rail
+	muted_ids:             map[string]bool, // folded into the row's muted flag
+	unread_ids:            map[string]bool, // manual unread reminder
+	folders:               [dynamic]string, // user-defined folder names
+	folder_of:             map[string]string, // group id → folder name
+	recent_chats:          bool, // false groups the list by folder
+	collapsed_folders:     map[string]bool, // folder name; "" is Unfiled
+	folder_icons:          map[string]int, // folder name → FOLDER_ICONS index
+	folder_colors:         map[string]u32, // folder name → RGB; absent uses the theme accent
 	// Advanced (telemetry/audit toggles live in marmot's shared
 	// sqlite, not here)
-	trusted_sites:     [dynamic]string,
+	trusted_sites:         [dynamic]string,
+	disable_link_previews: bool, // zero keeps automatic previews on for older settings
 	// Nostr event cards (nevent.odin): where referenced events are
 	// pulled from, and the user's own "open in" web client, a URL
 	// with {id} standing for the nevent/note token.
-	fetch_relays:      [dynamic]string,
-	event_client:      string,
-	dev_mode:          bool, // shows the Debug / KP inspector sections
-	last_backup:       i64, // unix seconds of the last backup written; 0 = never
+	fetch_relays:          [dynamic]string,
+	event_client:          string,
+	dev_mode:              bool, // shows the Debug / KP inspector sections
+	last_backup:           i64, // unix seconds of the last backup written; 0 = never
 }
 
 DEFAULT_QUICK_REACTIONS := []string{"👍", "❤️", "😂", "😮", "😢", "🙏"}

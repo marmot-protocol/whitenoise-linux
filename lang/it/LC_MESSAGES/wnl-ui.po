@@ -309,6 +309,9 @@ msgstr "File dei log di audit"
 msgid "Audit logs"
 msgstr "Log di audit"
 
+msgid "Automatically load previews of images and supported websites. Their hosts can see your IP address. Turning this off stops automatic link previews, not attachment downloads."
+msgstr "Carica automaticamente le anteprime di immagini e siti web supportati. I loro gestori possono vedere il tuo indirizzo IP. Disattivando questa opzione, le anteprime dei link non vengono più caricate automaticamente, ma gli allegati continuano a essere scaricati."
+
 msgid "Available offline"
 msgstr "Disponibile offline"
 
@@ -1595,6 +1598,9 @@ msgstr "Lascia il gruppo"
 
 msgid "Lime"
 msgstr "Lime"
+
+msgid "Link previews"
+msgstr "Anteprime dei link"
 
 msgid "Linked events"
 msgstr "Eventi collegati"

@@ -86,25 +86,22 @@ profile_theme_layout :: proc(t: ^testing.T) {
 	init_layout(&memory, 32768, {1100, 950})
 	defer delete(memory)
 	data_home = "/tmp/wn-profile-layout"
-	for dir in ([]string{"", "/events", "/events/img", "/events/fonts"}) {os.make_directory(fmt.tprintf("%s%s", data_home, dir))}
+	for dir in ([]string{"", "/events", "/events/fonts"}) {os.make_directory(fmt.tprintf("%s%s", data_home, dir))}
 	key := strings.repeat("ab", 32)
 	background := "https://example.invalid/theme-background.png"
 	font := "https://example.invalid/profile-font.woff2"
-	for asset, i in ([2]string{background, font}) {
-		sum := string(
-			hex.encode(
-				hash.hash_string(.SHA256, asset, context.temp_allocator),
-				context.temp_allocator,
-			),
-		)
-		path :=
-			i == 0 ? fmt.tprintf("%s/events/img/%s", data_home, sum) : fmt.tprintf("%s/events/fonts/%s.ttf", data_home, sum)
-		bytes, err := os.read_entire_file(
-			i == 0 ? "assets/whitenoise-linux.png" : "vendor/fonts/LiberationMono-Regular.ttf",
+	sum := string(
+		hex.encode(
+			hash.hash_string(.SHA256, font, context.temp_allocator),
 			context.temp_allocator,
-		)
-		testing.expect(t, err == nil && os.write_entire_file(path, bytes) == nil)
-	}
+		),
+	)
+	path := fmt.tprintf("%s/events/fonts/%s.ttf", data_home, sum)
+	bytes, err := os.read_entire_file(
+		"vendor/fonts/LiberationMono-Regular.ttf",
+		context.temp_allocator,
+	)
+	testing.expect(t, err == nil && os.write_entire_file(path, bytes) == nil)
 	for kind in ([2]u32{16767, 0}) {
 		payload: [42]u8
 		payload[2], payload[3], payload[36], payload[37] = 2, 32, 3, 4
@@ -124,6 +121,9 @@ profile_theme_layout :: proc(t: ^testing.T) {
 		}
 	}
 	image := rl.LoadImage("assets/whitenoise-linux.png")
+	texture := rl.LoadTextureFromImage(image)
+	nev_test_image(background, &texture)
+	defer {nev_test_image(background, nil); rl.UnloadTexture(texture)}
 	register_local_pic("test://avatar", image)
 	rl.UnloadImage(image)
 	ui := Ui_State {

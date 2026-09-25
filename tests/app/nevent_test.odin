@@ -1,7 +1,9 @@
 package main
 
+import "core:encoding/base64"
 import "core:strings"
 import "core:testing"
+import rl "sdlrl"
 
 @(test)
 nevent_at_tokens :: proc(t: ^testing.T) {
@@ -97,6 +99,36 @@ nev_image_urls_scan :: proc(t: ^testing.T) {
 	testing.expect_value(t, len(urls), 2)
 	testing.expect_value(t, urls[0], "https://x.io/a.JPG?w=1")
 	testing.expect_value(t, urls[1], "https://y.io/b.webp")
+}
+
+@(test)
+nev_image_preview_boundaries :: proc(t: ^testing.T) {
+	for url in ([]string{"https://x.io/p.GIF#view", "http://x.io/a.jpeg?size=2", "https://x.io/p.webp"}) {
+		testing.expect(t, nev_image_url(url), url)
+	}
+	for url in ([]string{"https://example.png", "https://example.png?q=/x", "file:///tmp/a.png", "https://x.io/page?image=a.png", "https://x.io/a.png.exe"}) {
+		testing.expect(t, !nev_image_url(url), url)
+	}
+	text := "https://x.io/a.png"
+	fonts := make([]u8, len(text)); defer delete(fonts)
+	for &font in fonts {font = TEXT_CODE | u8(FONT_MONO)}
+	urls := nev_image_urls(text, string(fonts)); defer delete(urls)
+	testing.expect_value(t, len(urls), 0)
+}
+
+@(test)
+nev_image_decode_bounds :: proc(t: ^testing.T) {
+	bytes, _ := base64.decode("R0lGODlhAQABAIAAAAAAAP///yH5BAAAAAAALAAAAAABAAEAAAIBRAA7")
+	defer delete(bytes)
+	image := nev_image_decode(bytes)
+	testing.expect(t, image.data != nil && image.width == 1 && image.height == 1)
+	if image.data != nil {rl.UnloadImage(image)}
+	bytes[6], bytes[7] = 1, 32 // Width 8193 must be rejected before decoding.
+	testing.expect(t, nev_image_decode(bytes).data == nil)
+	testing.expect(
+		t,
+		nev_image_decode(transmute([]u8)string("<html>not an image</html>")).data == nil,
+	)
 }
 
 @(test)

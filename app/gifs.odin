@@ -148,6 +148,9 @@ giphy_message_url :: proc(body: string) -> string {
 
 @(private)
 giphy_message :: proc(index: u32, body: string) -> bool {
+	if g_ui != nil && g_ui.prefs.disable_link_previews {
+		return false
+	}
 	url := giphy_message_url(body)
 	if url == "" {return false}
 	cached, seen := media_cached(.Loop, url)

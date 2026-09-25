@@ -34,6 +34,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 
 - [Personal stickers and Nostr packs](docs/stickers.md), with pack previews from received stickers.
 - Image albums, inline video (libmpv), voice messages, and a preview modal that reads PDFs (poppler), archives (libarchive), STL, OBJ, FBX, and GLB models, and source files with syntax highlighting.
+- Direct JPG, PNG, GIF, and WebP links show inline cards with the image above its clickable URL. Link previews are on by default; turn them off in Settings > Advanced > Security & privacy to stop new automatic preview requests, including supported-site cards. Preview hosts can see your IP address. Attachment downloads are unaffected.
 - Attachments travel over Marmot's encrypted MIP-04 path. Profile pictures are the one deliberate exception: they go out publicly via Blossom.
 - GLB attachments open as static 3D scenes with orbit, zoom, and the model inspector. The viewer reads node transforms, material factors, and embedded PNG/JPEG textures on UV0. GLB animation, skinning, morph targets, vertex colors, and Draco/meshopt compression are not supported. External resources are never fetched; translucent materials use alpha cutouts.
 
@@ -59,6 +60,12 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 There is no OS keyring and no plaintext key on disk. Every secret (your nsec, Marmot's per-account MLS keys, the decrypted media cache, the offline queue) lives in a single vault file (`vault.db`) sealed with XChaCha20-Poly1305 under a key derived from your password with Argon2id.
 
 The flip side is that **there is no recovery**: lose the password and the data is gone. Take a backup if that matters to you; the backup is sealed with the same vault password, so a restore needs exactly one secret.
+
+Image previews stay in memory for the session. They check decoded format
+and dimensions, with a 16 MiB download limit and a 16-megapixel decode limit.
+These checks do not sandbox image decoders or prevent requests to
+private-network hosts. Disable link previews if you do not want message
+links fetched automatically.
 
 ## Install
 

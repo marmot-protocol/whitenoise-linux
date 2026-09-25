@@ -1595,6 +1595,10 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 			// Bodies draw a card in place of every GitHub link they hold.
 			gh_cards_on = true
 			giphy := !msg.deleted && giphy_message(index, msg.body)
+			// GIPHY already owns the download, including its loading fallback.
+			if giphy_message_url(msg.body) != "" {
+				gh_cards_on = false
+			}
 
 			cropped :=
 				!giphy &&
@@ -2132,6 +2136,51 @@ inline_segs :: proc(
 	return segs
 }
 
+@(private)
+link_cards_enabled :: proc() -> bool {
+	return gh_cards_on && (g_ui == nil || !g_ui.prefs.disable_link_previews)
+}
+
+// Keep the original clickable link in every state, including loading and failure.
+@(private)
+image_link :: proc(id: u32, url: string, size: u16, width: f32) {
+	cards := gh_cards_on
+	gh_cards_on = false
+	defer {gh_cards_on = cards}
+	inner_w := max(1, width - 20)
+	if tex := nev_img(url); tex != nil && tex.width > 0 && tex.height > 0 {
+		inner_w = min(inner_w, 200 * f32(tex.width) / f32(tex.height))
+	}
+	if clay.UI(clay.ID("ImageLink", id))(
+	{
+		layout = {
+			layoutDirection = .TopToBottom,
+			childGap = 8,
+			padding = clay.PaddingAll(10),
+			sizing = {width = clay.SizingFixed(inner_w + 20)},
+		},
+		backgroundColor = PLATE,
+		cornerRadius = rr(10),
+		border = {color = CARD_BORDER, width = bw()},
+	},
+	) {
+		// The picture opens the lightbox; the URL goes through the link guard.
+		nev_card_image(id, url, inner_w)
+		if clay.PointerOver(clay.ID("NevImage", id)) {
+			img_link_hover = url
+			cursor_raise(.Pointer)
+		}
+		if clay.UI(clay.ID("ImageLinkUrl", id))({}) {
+			// Plain, single line: body_text would turn an npub inside the host into a mention chip.
+			clay.Text(
+				group_file_label(url, inner_w, FONT_BODY, size),
+				{fontId = FONT_BODY, fontSize = size, textColor = ACCENT, wrapMode = .None},
+			)
+			if hovered() {link_hover = url}
+		}
+	}
+}
+
 // Emit segments inline into the current parent element. chips draws
 // mention segs as name plates (bodies); composer lines keep the raw
 // token so caret hit-mapping stays byte-accurate.
@@ -2152,13 +2201,15 @@ render_segs :: proc(
 				image = {imageData = seg.tex},
 			},
 			) {}
-		} else if ref, is_gh := gh_ref(seg.url); chips && gh_cards_on && is_gh {
+		} else if chips && link_cards_enabled() && nev_image_url(seg.url) {
+			image_link(id * 128 + u32(k), seg.url, font_size, max(1, att_w() - 24))
+		} else if ref, is_gh := gh_ref(seg.url); chips && link_cards_enabled() && is_gh {
 			// A GitHub PR or issue link is drawn as its own card, in
 			// place of the URL run.
 			gh_card(id * 128 + u32(k), ref)
-		} else if key := hn_ref(seg.url); chips && gh_cards_on && key != "" {
+		} else if key := hn_ref(seg.url); chips && link_cards_enabled() && key != "" {
 			hn_card(id * 128 + u32(k), key, seg.url)
-		} else if chips && gh_cards_on && len(seg.evid) > 0 {
+		} else if chips && link_cards_enabled() && len(seg.evid) > 0 {
 			// A referenced Nostr event is drawn as its own card, in
 			// place of the token.
 			nev_card(
@@ -2411,7 +2462,8 @@ body_line :: proc(
 		// unselected; the copy still carries the token.
 		for seg in inline_segs(text, fonts, links, offset) {
 			_, gh := gh_ref(seg.url)
-			if len(seg.evid) > 0 || (gh_cards_on && (gh || hn_ref(seg.url) != "")) {
+			if link_cards_enabled() &&
+			   (len(seg.evid) > 0 || gh || hn_ref(seg.url) != "" || nev_image_url(seg.url)) {
 				sel = {-1, -1}
 				break
 			}
@@ -2937,21 +2989,7 @@ md_blocks :: proc(
 					}
 				}
 			case .Image:
-				tex := nev_img(block.text)
-				if tex == nil {
-					clay.Text(block.text, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
-					remaining -= 1
-					continue
-				}
-				ratio := tex.height > 0 ? f32(tex.width) / f32(tex.height) : 1
-				if clay.UI(clay.ID("MdImage", block_id))(
-				{
-					layout = {sizing = {width = clay.SizingFixed(min(width, att_w()))}},
-					aspectRatio = {ratio},
-					image = {imageData = tex},
-					cornerRadius = rr(8),
-				},
-				) {}
+				image_link(block_id, block.text, 11, min(width > 0 ? width : att_w(), att_w()))
 			case .Rule:
 				if clay.UI(clay.ID("MsgRule", block_id))(
 				{
@@ -3001,7 +3039,7 @@ body_text :: proc(
 ) -> int {
 	wrap := wrap_w > 0 ? wrap_w : (selectable ? body_wrap_w() : 0)
 	tile_px := body_tile_size(text, font_size)
-	lines := wrapped_lines(text, wrap, font_size, gh_cards_on ? .Cards : .Text, fonts)
+	lines := wrapped_lines(text, wrap, font_size, link_cards_enabled() ? .Cards : .Text, fonts)
 	count := len(lines)
 	lines = lines[:min(len(lines), max_lines)]
 	// Parse destinations before wrapping: every visible fragment keeps

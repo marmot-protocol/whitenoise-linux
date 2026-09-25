@@ -80,7 +80,8 @@ wrapped_lines :: proc(
 					}
 					if text[scan] != 'h' {continue}
 					if next, url, ok := url_at(text[:end], scan); ok {
-						if _, card := gh_ref(url); card || hn_ref(url) != "" {
+						if _, card := gh_ref(url);
+						   card || hn_ref(url) != "" || nev_image_url(url) {
 							card_at, card_end = scan, next
 							break
 						}

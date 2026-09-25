@@ -1492,6 +1492,7 @@ app_main :: proc() {
 		tor_magnet_hover = nil
 		xdc_hover = {}
 		img_hover = {}
+		img_link_hover = ""
 		model_hover = {}
 		code_hover = {}
 		pdf_flip_hover = nil

@@ -146,9 +146,22 @@ link_modal :: proc(ui: ^Ui_State) {
 			border = {color = FIELD_BORDER, width = bw()},
 		},
 		) {
-			clay.Text(host, {fontId = FONT_TITLE, fontSize = 14, textColor = TEXT})
-			// Chopped to the card: a nevent URL has no space to wrap at.
-			mono_lines(ui.link_url, modal_w(clay.ID("LinkModal"), 440) - 64, TEXT_LO)
+			// Both chopped to the card: an npub host or a nevent URL has no
+			// space to wrap at. The host stays whole (it is what the user is
+			// trusting), just broken across lines.
+			inner := modal_w(clay.ID("LinkModal"), 440) - 64
+			for rest := host; len(rest) > 0; {
+				lo, hi := 1, len(rest)
+				for lo < hi {
+					mid := (lo + hi + 1) / 2
+					if rl.MeasureTextLine(FONT_TITLE, 14, rest[:mid], 0).x <=
+					   inner {lo = mid} else {hi = mid - 1}
+				}
+				for lo < len(rest) && (rest[lo] & 0xc0) == 0x80 {lo += 1}
+				clay.Text(rest[:lo], {fontId = FONT_TITLE, fontSize = 14, textColor = TEXT})
+				rest = rest[lo:]
+			}
+			mono_lines(ui.link_url, inner, TEXT_LO)
 		}
 
 		if clay.UI(clay.ID("LinkTrustRow"))(

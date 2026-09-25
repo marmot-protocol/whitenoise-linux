@@ -969,6 +969,14 @@ extract_inlines :: proc(
 				fonts,
 				font,
 			)
+			dest := string(node.body.link.dest)
+			if nev_image_url(dest) && !strings.has_suffix(strings.to_string(builder^), dest) {
+				start := strings.builder_len(builder^)
+				strings.write_string(builder, fmt.tprintf(" (%s)", dest))
+				if fonts != nil {
+					for _ in start ..< strings.builder_len(builder^) {strings.write_byte(fonts, font)}
+				}
+			}
 			continue
 		case .AUTOLINK:
 			strings.write_string(builder, string(node.body.autolink.url))
@@ -976,8 +984,7 @@ extract_inlines :: proc(
 			strings.write_string(builder, string(node.body.math.content))
 			style = FONT_MONO | TEXT_MATH | (font & TEXT_STRIKE)
 		case .IMAGE:
-			// The url itself: a link in a body, an inline image when an
-			// event card splits its paragraphs (nevent.odin).
+			// Preserve the destination for clickable links and optional previews.
 			strings.write_string(builder, string(node.body.image.dest))
 		case .NOSTR_MENTION, .NOSTR_URI:
 			strings.write_string(builder, string(node.body.nostr_mention.entity.bech32))

@@ -7,8 +7,8 @@
 // session and as <home>/events/<id>.json across runs. Kind 1 (and the
 // kind-11/1111 reply shapes) render as author + text; any other kind
 // shows the raw event JSON. A note's text goes through marmot's
-// markdown parser like a chat body, and image links in it are fetched
-// into <home>/events/img/ and drawn inline where they were written. Every card offers one
+// markdown parser like a chat body; image links are fetched into memory
+// for this session and drawn inline. Every card offers one
 // "Open in client" button, the web client set in Settings → Network.
 //
 //   body token ──inline_segs──▶ Inline_Seg.evid ──render_segs──▶ nev_card
@@ -38,6 +38,7 @@ import clay "../vendor/clay/bindings/odin/clay-odin"
 
 import marmot "../marmot"
 import rl "sdlrl"
+import stbi "vendor:stb/image"
 
 foreign import wslib {"../build/libwnws.a", "system:curl"}
 
@@ -216,12 +217,28 @@ nev_worker :: proc(job: ^Nev_Job) {
 	sync.unlock(&nev_mutex)
 }
 
+@(private)
+nev_image_url :: proc(url: string) -> bool {
+	if end, _, ok := url_at(url, 0); !ok || end != len(url) {return false}
+	path := url
+	if cut := strings.index_any(path, "?#"); cut >= 0 {path = path[:cut]}
+	// A host named example.png is not an image path.
+	scheme := strings.has_prefix(path, "https://") ? 8 : 7
+	if !strings.contains(path[scheme:], "/") {return false}
+	for ext in NEV_IMAGE_EXTS {
+		if len(path) >= len(ext) &&
+		   strings.equal_fold(path[len(path) - len(ext):], ext) {return true}
+	}
+	return false
+}
+
 // http(s) links in text whose path ends in an image extension. The
 // slices point into text.
-nev_image_urls :: proc(text: string) -> []string {
+@(private)
+nev_image_urls :: proc(text: string, fonts: string = "") -> []string {
 	out := make([dynamic]string)
 	for i := 0; i + 8 <= len(text); i += 1 {
-		if text[i] != 'h' {
+		if text[i] != 'h' || text_literal(fonts, i) {
 			continue
 		}
 		end, url, ok := url_at(text, i)
@@ -229,16 +246,7 @@ nev_image_urls :: proc(text: string) -> []string {
 			continue
 		}
 		i = end - 1
-		path := url
-		if cut := strings.index_any(path, "?#"); cut >= 0 {
-			path = path[:cut]
-		}
-		for ext in NEV_IMAGE_EXTS {
-			if strings.has_suffix(strings.to_lower(path, context.temp_allocator), ext) {
-				append(&out, url)
-				break
-			}
-		}
+		if nev_image_url(url) {append(&out, url)}
 	}
 	return out[:]
 }
@@ -248,7 +256,7 @@ nev_image_urls :: proc(text: string) -> []string {
 nev_split_images :: proc(blocks: ^[dynamic]Md_Block_Ui) {
 	out := make([dynamic]Md_Block_Ui)
 	for block in blocks {
-		urls := block.kind == .Para ? nev_image_urls(block.text) : nil
+		urls := block.kind == .Para ? nev_image_urls(block.text, block.fonts) : nil
 		defer delete(urls)
 		if len(urls) == 0 {
 			append(&out, block)
@@ -295,50 +303,40 @@ nev_split_images :: proc(blocks: ^[dynamic]Md_Block_Ui) {
 
 // ── images ──────────────────────────────────────────────────────────
 
-@(private = "file")
-nev_img_path :: proc(url: string) -> string {
-	sum := hash.hash_string(.SHA256, url, context.temp_allocator)
-	return fmt.tprintf("%s/events/img/%s", data_home, hex.encode(sum, context.temp_allocator))
-}
-
-// curl the image to its cache file (skipped when present), then hand
-// the bytes to drain_nev for the texture upload.
+// Keep private-message image bytes in memory, never in the public event cache.
+// drain_nev consumes the owned buffer for texture upload.
 @(private = "file")
 nev_img_worker :: proc(url: string) {
 	context.allocator = reload_allocator()
 	defer frame_wake()
-	path := nev_img_path(url)
-	if !os.exists(path) {
-		os.make_directory(fmt.tprintf("%s/events", data_home))
-		os.make_directory(fmt.tprintf("%s/events/img", data_home))
-		state, _, _, err := os.process_exec(
-			{
-				command = {
-					"curl",
-					"-sfL",
-					"--proto",
-					"=http,https",
-					"--proto-redir",
-					"=http,https",
-					"--user-agent",
-					"WhiteNoiseLinux/1.0 (Nostr event previews)",
-					"--max-time",
-					"20",
-					"--max-filesize",
-					"16777216",
-					"-o",
-					path,
-					"--",
-					url,
-				},
+	state, data, stderr, err := os.process_exec(
+		{
+			command = {
+				"curl",
+				"-sfL",
+				"--proto",
+				"=http,https",
+				"--proto-redir",
+				"=http,https",
+				"--max-redirs",
+				"3",
+				"--user-agent",
+				"WhiteNoiseLinux/1.0 (image previews)",
+				"--max-time",
+				"20",
+				"--max-filesize",
+				"16777216",
+				"--",
+				url,
 			},
-			context.temp_allocator,
-		)
-		if err != nil || state.exit_code != 0 {
-			os.remove(path)
-		}
+		},
+		context.allocator,
+	)
+	delete(stderr)
+	if err != nil || state.exit_code != 0 || len(data) > 16 * 1024 * 1024 {
+		delete(data)
+		data = nil
 	}
-	data, _ := os.read_entire_file(path, context.allocator)
 	sync.lock(&nev_mutex)
 	append(&nev_img_fresh, struct {
 		url:  string,
@@ -347,8 +345,24 @@ nev_img_worker :: proc(url: string) {
 	sync.unlock(&nev_mutex)
 }
 
+// Probe actual bytes before the decoder allocates the RGBA buffer.
+@(private)
+nev_image_decode :: proc(bytes: []u8) -> rl.Image {
+	if len(bytes) < 12 || len(bytes) > 16 * 1024 * 1024 {return {}}
+	w, h, channels: c.int
+	if string(bytes[:4]) == "RIFF" && string(bytes[8:12]) == "WEBP" {
+		if WebPGetInfo(raw_data(bytes), uint(len(bytes)), &w, &h) == 0 {return {}}
+	} else if stbi.info_from_memory(raw_data(bytes), c.int(len(bytes)), &w, &h, &channels) == 0 {
+		return {}
+	}
+	if w <= 0 || h <= 0 || w > 8192 || h > 8192 || i64(w) * i64(h) > 16 * 1024 * 1024 {return {}}
+	return rl.LoadImageFromMemory("", raw_data(bytes), i32(len(bytes)))
+}
+
 // The texture for an image link, requesting it on first sight.
 nev_img :: proc(url: string) -> ^rl.Texture2D {
+	if g_ui != nil && g_ui.prefs.disable_link_previews {return nil}
+	if end, _, ok := url_at(url, 0); !ok || end != len(url) {return nil}
 	if tex, seen := nev_images[url]; seen {
 		return tex
 	}
@@ -503,7 +517,7 @@ drain_nev :: proc() {
 		if f.data == nil {
 			continue
 		}
-		image := rl.LoadImageFromMemory(".img", raw_data(f.data), i32(len(f.data)))
+		image := nev_image_decode(f.data)
 		delete(f.data)
 		if image.data == nil {
 			continue
@@ -770,7 +784,7 @@ nev_product_card :: proc(id: u32, key: string, card: Nev_Card, width: f32) {
 	nev_card_excerpt(id, key, card, width, p.summary)
 }
 
-@(private = "file")
+@(private)
 nev_card_image :: proc(id: u32, url: string, width: f32) {
 	if len(url) == 0 {return}
 	if tex := nev_img(url); tex != nil && tex.width > 0 && tex.height > 0 {

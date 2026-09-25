@@ -3,6 +3,12 @@ package main
 import "base:runtime"
 import "core:testing"
 
+// Isolated layout fixtures seed the session-only image cache without a network request.
+@(private)
+nev_test_image :: proc(url: string, tex: ^rl.Texture2D) {
+	if tex == nil {delete_key(&nev_images, url)} else {nev_images[url] = tex}
+}
+
 // Place /tmp/wn-robocoin.webp before running to include the real product photo.
 // SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=product_card_layout
 @(test)

@@ -295,6 +295,9 @@ msgstr ""
 msgid "Audit logs"
 msgstr ""
 
+msgid "Automatically load previews of images and supported websites. Their hosts can see your IP address. Turning this off stops automatic link previews, not attachment downloads."
+msgstr ""
+
 msgid "Available offline"
 msgstr ""
 
@@ -1505,6 +1508,9 @@ msgid "Leave this group?"
 msgstr ""
 
 msgid "Lime"
+msgstr ""
+
+msgid "Link previews"
 msgstr ""
 
 msgid "Linked events"

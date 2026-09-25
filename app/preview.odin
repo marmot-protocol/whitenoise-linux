@@ -82,6 +82,10 @@ Img_Ref :: struct {
 	att:    int,
 }
 img_hover: Img_Ref
+// Image-link tile under the pointer (the URL it previews), rebound every
+// build. Its slide has no msg_id: the bytes were never kept, so the
+// lightbox offers no Copy or Save for it.
+img_link_hover: string
 
 preview: Preview
 preview_shown: bool
@@ -222,11 +226,21 @@ preview_show_slides :: proc(ui: ^Ui_State, msg_id: string, att: int) {
 // Click an image tile: open the lightbox on it; a failed tile retries
 // the download instead (matching the slint viewer's failed-cell tap).
 handle_img_click :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if img_hover.msg_id == "" ||
+	if (img_hover.msg_id == "" && img_link_hover == "") ||
 	   preview_shown ||
 	   !mouse_released() ||
 	   att_hover.msg_id != "" ||
 	   drag_moved {
+		return
+	}
+	if img_link_hover != "" {
+		tex := nev_img(img_link_hover)
+		if tex == nil {return}
+		preview_close()
+		preview.kind = .Slides
+		name := img_link_hover[strings.last_index_byte(img_link_hover, '/') + 1:]
+		append(&preview.slides, Slide{"", strings.clone(name), 0, tex})
+		preview_shown = true
 		return
 	}
 	preview_show_slides(ui, img_hover.msg_id, img_hover.att)
@@ -519,7 +533,9 @@ preview_modal :: proc(ui: ^Ui_State) {
 			if preview.kind == .Message && ui.prefs.tts_enabled {
 				micro_button("PvRead", "Read aloud")
 			}
-			if preview.kind == .Image || (slides && preview.slides[preview.slide].tex != nil) {
+			stored := !slides || preview.slides[preview.slide].msg_id != ""
+			if stored &&
+			   (preview.kind == .Image || (slides && preview.slides[preview.slide].tex != nil)) {
 				if clay.UI(clay.ID("PvCopy"))(
 				{
 					layout = {padding = {left = 10, right = 10, top = 5, bottom = 5}},
@@ -544,14 +560,16 @@ preview_modal :: proc(ui: ^Ui_State) {
 					)
 				}
 			}
-			if clay.UI(clay.ID("PvSave"))(
-			{
-				layout = {padding = {left = 10, right = 10, top = 5, bottom = 5}},
-				backgroundColor = hovered() ? HOVER : ROW_BG,
-				cornerRadius = rr(8),
-			},
-			) {
-				clay.Text("Save", {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
+			if stored {
+				if clay.UI(clay.ID("PvSave"))(
+				{
+					layout = {padding = {left = 10, right = 10, top = 5, bottom = 5}},
+					backgroundColor = hovered() ? HOVER : ROW_BG,
+					cornerRadius = rr(8),
+				},
+				) {
+					clay.Text("Save", {fontId = FONT_BODY, fontSize = 12, textColor = TEXT})
+				}
 			}
 			if clay.UI(clay.ID("PvClose"))(
 			{
@@ -1140,6 +1158,9 @@ handle_preview :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 	if clay.PointerOver(clay.ID("PvClose")) {
 		preview_close()
+		return
+	}
+	if preview.kind == .Slides && preview.slides[preview.slide].msg_id == "" {
 		return
 	}
 	if clay.PointerOver(clay.ID("PvCopy")) {

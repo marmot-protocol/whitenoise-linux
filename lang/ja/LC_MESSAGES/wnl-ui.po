@@ -309,6 +309,9 @@ msgstr "監査ログファイル"
 msgid "Audit logs"
 msgstr "監査ログ"
 
+msgid "Automatically load previews of images and supported websites. Their hosts can see your IP address. Turning this off stops automatic link previews, not attachment downloads."
+msgstr "画像と対応ウェブサイトのプレビューを自動的に読み込みます。配信元の運営者にはあなたのIPアドレスが見えます。オフにするとリンクのプレビューの自動読み込みは停止しますが、添付ファイルのダウンロードは継続されます。"
+
 msgid "Available offline"
 msgstr "オフラインで利用できます"
 
@@ -1595,6 +1598,9 @@ msgstr "グループを退出"
 
 msgid "Lime"
 msgstr "ライム"
+
+msgid "Link previews"
+msgstr "リンクのプレビュー"
 
 msgid "Linked events"
 msgstr "リンク先のイベント"

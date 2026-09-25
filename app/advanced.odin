@@ -36,6 +36,14 @@ settings_advanced :: proc(ui: ^Ui_State) {
 	case 0:
 		if clay.UI(clay.ID("AdvancedPrivacyGroup"))(settings_box()) {
 			settings_group(N_("Security & privacy"))
+			if clay.UI(clay.ID("RowLinkPreviews"))(settings_row()) {
+				settings_check(
+					"TgLinkPreviews",
+					!ui.prefs.disable_link_previews,
+					"Link previews",
+					"Automatically load previews of images and supported websites. Their hosts can see your IP address. Turning this off stops automatic link previews, not attachment downloads.",
+				)
+			}
 			if clay.UI(clay.ID("RowTelemetry"))(settings_row()) {
 				settings_check(
 					"TgTelemetry",
@@ -210,6 +218,10 @@ audit_delete_id :: proc(index: int) -> string {
 // ── Interactions ────────────────────────────────────────────────────
 
 handle_advanced :: proc(ui: ^Ui_State, client: ^marmot.Client) {
+	if clay.PointerOver(clay.ID("TgLinkPreviews")) {
+		flip(ui, &ui.prefs.disable_link_previews)
+		return
+	}
 	if clay.PointerOver(clay.ID("TgTelemetry")) {
 		set_telemetry(ui, client, !ui.telemetry_enabled)
 		return
