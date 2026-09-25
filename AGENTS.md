@@ -267,6 +267,10 @@ register per string.
   its place at the second call site, not the first.
 - **Deliberate corner cuts get a `ponytail:` comment** naming the ceiling and
   the upgrade path (see `sdlrl.odin`'s per-glyph textures for the shape).
+- **MDK changes ship as patch files.** When a task needs a change in MDK,
+  write it as `patches/mdk-<topic>.patch` against the `mdk-commit` pin and
+  add it to `MDK_PATCHES` in `scripts/build.sh`. Never leave the change as
+  uncommitted edits in `vendor/mdk`.
 - Keep visibility tight: `@(private)` / `@(private = "file")` unless another
   file genuinely needs the symbol.
 - Comments explain *what* a block does and *why*, with an example or an ASCII
