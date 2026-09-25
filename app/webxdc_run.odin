@@ -193,6 +193,10 @@ xdc_launch :: proc(
 	view: ^Xdc_View,
 	session, group_id: string,
 ) {
+	if !WEBXDC_SUPPORTED {
+		toast(ui, tr("Webxdc apps are only supported on Linux."))
+		return
+	}
 	info := profile_info(client, ui.account_ref)
 	token: [16]u8
 	crypto.rand_bytes(token[:])

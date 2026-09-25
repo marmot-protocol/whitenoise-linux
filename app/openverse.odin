@@ -87,7 +87,7 @@ ov_worker :: proc() {
 	state, out, _, err := os.process_exec(
 		{
 			command = {
-				"curl",
+				curl_path(),
 				"-sfG",
 				"--max-time",
 				"15",

@@ -1,12 +1,6 @@
 // Webxdc apps (NIP-DC): a .xdc attachment is a zip holding index.html,
-// manifest.toml and an icon. Listing it as a plain archive says
-// nothing, so it gets its own tile: icon, app name, and the honest
-// note that nothing runs here yet.
-//
-// ponytail: identification only. Running the app needs an HTML engine
-// (loopback server + system browser, or an embedded webview) and a
-// transport for sendUpdate(); marmot-c sends no custom kinds or tags
-// today, so the kind-4932 half has nowhere to go either.
+// manifest.toml and an icon. Linux runs these in the embedded WebKit helper;
+// other platforms keep the attachment downloadable without offering a launch.
 package main
 
 import "core:strings"
@@ -120,7 +114,7 @@ xdc_hover: Xdc_Hover
 // so every member of the group derives the same one without an imeta
 // tag (NIP-DC's `webxdc` param, which marmot-c cannot write).
 handle_xdc_click :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	if !mouse_released() || xdc_hover.view == nil || ui.selected < 0 {
+	if !WEBXDC_SUPPORTED || !mouse_released() || xdc_hover.view == nil || ui.selected < 0 {
 		return
 	}
 	xdc_launch(ui, client, xdc_hover.view, xdc_hover.msg_id, ui.chats[ui.selected].group_id)
@@ -164,16 +158,18 @@ xdc_tile :: proc(view: ^Xdc_View, id: u32, msg_id: string, att: int, file_name: 
 		},
 		) {
 			clay.Text(view.name, {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
-			clay.Text(tr("Webxdc app"), {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
+			label :=
+				WEBXDC_SUPPORTED ? tr("Webxdc app") : tr("Webxdc apps are only supported on Linux.")
+			clay.Text(label, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_DIM})
 		}
-		// Opens in the system browser, served from memory.
-		if clay.UI(clay.ID("MsgXdcOpen", id))(
-		{
-			layout = {padding = {left = 12, right = 12, top = 6, bottom = 6}},
-			backgroundColor = hovered() ? ACCENT : ROW_BG,
-			cornerRadius = rr(6),
-		},
-		) {
+		if WEBXDC_SUPPORTED &&
+		   clay.UI(clay.ID("MsgXdcOpen", id))(
+		   {
+			   layout = {padding = {left = 12, right = 12, top = 6, bottom = 6}},
+			   backgroundColor = hovered() ? ACCENT : ROW_BG,
+			   cornerRadius = rr(6),
+		   },
+		   ) {
 			if hovered() {
 				xdc_hover = {view, msg_id}
 			}

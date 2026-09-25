@@ -557,7 +557,7 @@ pic_load :: proc(url: string) -> []u8 {
 		}
 	}
 	state, data, stderr, err := os.process_exec(
-		{command = {"curl", "-sfL", "--max-time", "15", "--", url}},
+		{command = {curl_path(), "-sfL", "--max-time", "15", "--", url}},
 		context.allocator,
 	)
 	defer delete(stderr)

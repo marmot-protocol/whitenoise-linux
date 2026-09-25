@@ -40,7 +40,7 @@ import marmot "../marmot"
 import rl "sdlrl"
 import stbi "vendor:stb/image"
 
-foreign import wslib {"../build/libwnws.a", "system:curl"}
+foreign import wslib {WN_BUILD_DIR + "/libwnws.a", "system:curl"}
 
 @(default_calling_convention = "c")
 foreign wslib {
@@ -312,7 +312,7 @@ nev_img_worker :: proc(url: string) {
 	state, data, stderr, err := os.process_exec(
 		{
 			command = {
-				"curl",
+				curl_path(),
 				"-sfL",
 				"--proto",
 				"=http,https",

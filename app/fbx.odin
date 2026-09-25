@@ -18,7 +18,7 @@ import "core:strings"
 
 import rl "sdlrl"
 
-foreign import fbxlib {"../build/libwnfbx.a", "system:m", "system:stdc++"}
+foreign import fbxlib {WN_BUILD_DIR + "/libwnfbx.a", "system:m", WN_CXX_LIBRARY}
 
 // Mirrors `struct fbx_model` in app/fbx_shim.c: four i32, then only
 // pointers, then two i32. Every array is owned by the C side and

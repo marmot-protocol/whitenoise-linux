@@ -64,7 +64,7 @@ nip05_lookup :: proc(ref: string) -> string {
 	state, out, stderr, err := os.process_exec(
 		{
 			command = {
-				"curl",
+				curl_path(),
 				"-q",
 				"-sf",
 				"--proto",

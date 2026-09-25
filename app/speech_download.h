@@ -1,11 +1,12 @@
 // Shared by the TTS and STT helpers; the including file supplies its manifest.
 #include <openssl/evp.h>
+#include <glib/gstdio.h>
 static int valid_file(const char *path, const ModelFile *model) {
-    struct stat st;
-    if (stat(path, &st) || st.st_size < 0 || (size_t)st.st_size != model->size) {
+    GStatBuf st;
+    if (g_stat(path, &st) || st.st_size < 0 || (size_t)st.st_size != model->size) {
         return 0;
     }
-    FILE *file = fopen(path, "rb");
+    FILE *file = g_fopen(path, "rb");
     if (!file) {
         return 0;
     }
@@ -50,7 +51,7 @@ static size_t download_write(char *data, size_t size, size_t count, void *user) 
                                             download->model->size);
     if (percent != download->percent) {
         unsigned char update[] = {'D', (unsigned char)(download->model - models), percent};
-        if (pwrite(STDOUT_FILENO, update, sizeof(update), 0) != sizeof(update)) {
+        if (wn_ipc_write(speech_ipc, update, sizeof(update), 0) != sizeof(update)) {
             return 0;
         }
         download->percent = percent;
@@ -65,7 +66,7 @@ static int ensure_model(const char *dir, const ModelFile *model) {
         return 1;
     }
     unsigned char update[] = {'D', (unsigned char)(model - models), 0};
-    if (pwrite(STDOUT_FILENO, update, sizeof(update), 0) != sizeof(update)) {
+    if (wn_ipc_write(speech_ipc, update, sizeof(update), 0) != sizeof(update)) {
         g_free(path);
         return 0;
     }
@@ -73,13 +74,16 @@ static int ensure_model(const char *dir, const ModelFile *model) {
     int ready = g_mkdir_with_parents(parent, 0700) == 0;
     g_free(parent);
     char *partial = g_strdup_printf("%s.part", path);
-    FILE *file = ready ? fopen(partial, "wb") : NULL;
+    FILE *file = ready ? g_fopen(partial, "wb") : NULL;
     CURL *curl = file ? curl_easy_init() : NULL;
     int ok = 0;
     if (curl) {
         char *url = g_strdup_printf("%s/%s", MODEL_URL, model->name);
         Download download = {.file = file, .remaining = model->size, .model = model};
         curl_easy_setopt(curl, CURLOPT_URL, url);
+        const char *ca_file = getenv("SSL_CERT_FILE");
+        if (ca_file && *ca_file)
+            curl_easy_setopt(curl, CURLOPT_CAINFO, ca_file);
         curl_easy_setopt(curl, CURLOPT_PROTOCOLS_STR, "https");
         curl_easy_setopt(curl, CURLOPT_REDIR_PROTOCOLS_STR, "https");
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
@@ -98,9 +102,9 @@ static int ensure_model(const char *dir, const ModelFile *model) {
         ok = 0;
     }
     if (ok) {
-        ok = valid_file(partial, model) && rename(partial, path) == 0;
+        ok = valid_file(partial, model) && g_rename(partial, path) == 0;
     }
-    unlink(partial);
+    g_unlink(partial);
     g_free(partial);
     g_free(path);
     return ok;

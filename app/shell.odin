@@ -11,6 +11,12 @@ import "core:fmt"
 import "core:os"
 import "core:strings"
 import "core:sys/linux"
+import "core:sys/posix"
+import "core:sys/windows"
+
+_ :: linux
+_ :: windows
+_ :: posix
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -825,14 +831,35 @@ instance_unlock :: proc() {
 	if lock_file != nil {os.close(lock_file); lock_file = nil}
 }
 
-// Exclusive flock on <home>/.lock. false means another instance already
-// owns the data dir; two runtimes over one sqlite store corrupt it.
+// Nonblocking exclusive lock on <home>/.lock. A failure must stop startup;
+// two runtimes over one sqlite store can corrupt it.
 instance_lock :: proc(home: string) -> bool {
 	file, err := os.open(fmt.tprintf("%s/.lock", home), {.Read, .Write, .Create}, os.perm(0o600))
 	if err != nil {
-		return true // can't lock, don't block the user
+		return false
 	}
-	if linux.flock(linux.Fd(os.fd(file)), {.EX, .NB}) != .NONE {
+	locked: bool
+	when ODIN_OS == .Linux {
+		locked = linux.flock(linux.Fd(os.fd(file)), {.EX, .NB}) == .NONE
+	} else when ODIN_OS == .Windows {
+		overlap: windows.OVERLAPPED
+		locked = bool(
+			windows.LockFileEx(
+				windows.HANDLE(os.fd(file)),
+				windows.LOCKFILE_EXCLUSIVE_LOCK | windows.LOCKFILE_FAIL_IMMEDIATELY,
+				0,
+				1,
+				0,
+				&overlap,
+			),
+		)
+	} else {
+		lock := posix.flock {
+			l_type = .WRLCK,
+		}
+		locked = posix.fcntl(posix.FD(os.fd(file)), .SETLK, &lock) == 0
+	}
+	if !locked {
 		os.close(file)
 		return false
 	}

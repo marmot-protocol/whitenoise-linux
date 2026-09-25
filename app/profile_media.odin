@@ -76,7 +76,7 @@ profile_font_worker :: proc(font: ^Profile_Font) {
 		state, _, _, err := os.process_exec(
 			{
 				command = {
-					"curl",
+					curl_path(),
 					"-sfL",
 					"--proto",
 					"=http,https",
@@ -95,8 +95,7 @@ profile_font_worker :: proc(font: ^Profile_Font) {
 			context.temp_allocator,
 		)
 		if err != nil || state.exit_code != 0 {return}
-		helper := fmt.tprintf("%s/wn-font", res_dir())
-		if res_dir() == #directory + "/../vendor" {helper = #directory + "/../build/wn-font"}
+		helper := helper_path("wn-font")
 		decoded, data, _, decode_err := os.process_exec(
 			{command = {helper, tmp}},
 			context.temp_allocator,

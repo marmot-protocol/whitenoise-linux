@@ -1,13 +1,11 @@
-// Desktop notifications for incoming messages, the slint src/notify.rs
-// path. One `notify-send` per arrival plus an optional freedesktop
-// sound, both fire-and-forget shell spawns.
-//
-//   live event ──► drain_live ──► should_notify ──► do_notify
-//                  (chat rows)     (pure gate)      (notify-send)
+// Native desktop notifications for incoming messages. Notification helpers
+// are fire-and-forget; message text is quoted as data, never shell code.
 package main
 
 import "core:fmt"
 import "core:strings"
+
+_ :: fmt
 
 // Chat message; everything else on a group (kind-1009 edits, kind-5
 // deletes, kind-7 reactions, kind-1210 system rows) must not notify.
@@ -87,8 +85,26 @@ do_notify :: proc(
 		return
 	}
 	shown := ui.prefs.notify_preview ? body : tr("New message")
-	spawn_cmd(fmt.tprintf("notify-send -a 'White Noise' %q %q", title, shown))
-	if ui.prefs.notify_sound {
-		spawn_cmd(NOTIFY_SOUND)
+	when ODIN_OS == .Windows {
+		// A transient tray icon works for unpacked releases without requiring
+		// a Store identity or an installed Start Menu shortcut.
+		sound := ui.prefs.notify_sound ? "[System.Media.SystemSounds]::Asterisk.Play();" : ""
+		spawn_cmd(
+			fmt.tprintf(
+				"Add-Type -AssemblyName System.Windows.Forms; Add-Type -AssemblyName System.Drawing; $n = New-Object System.Windows.Forms.NotifyIcon; $n.Icon = [System.Drawing.SystemIcons]::Information; $n.Visible = $true; $n.BalloonTipTitle = %s; $n.BalloonTipText = %s; $n.ShowBalloonTip(10000); %s Start-Sleep -Seconds 10; $n.Dispose()",
+				shell_quote(title),
+				shell_quote(shown),
+				sound,
+			),
+		)
+	} else when ODIN_OS == .Darwin {
+		script := `on run argv
+display notification (item 2 of argv) with title (item 1 of argv)
+end run`
+		spawn_argv({"osascript", "-e", script, "--", title, shown})
+		if ui.prefs.notify_sound {spawn_argv({"afplay", "/System/Library/Sounds/Glass.aiff"})}
+	} else {
+		spawn_argv({"notify-send", "-a", "White Noise", "--", title, shown})
+		if ui.prefs.notify_sound {spawn_cmd(NOTIFY_SOUND)}
 	}
 }

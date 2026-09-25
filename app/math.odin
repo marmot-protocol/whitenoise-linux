@@ -14,7 +14,7 @@ import "core:strings"
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
 
-foreign import mathlib {"../build/libwnmath.a", "../build/microtex/lib/libmicrotex.a", "system:cairo", "system:stdc++", "system:m"}
+foreign import mathlib {WN_BUILD_DIR + "/libwnmath.a", WN_BUILD_DIR + "/microtex/lib/libmicrotex.a", "system:cairo", WN_CXX_LIBRARY, "system:m"}
 
 @(private = "file", default_calling_convention = "c")
 foreign mathlib {

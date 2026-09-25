@@ -6,7 +6,14 @@ package main
 import "core:time"
 
 import "base:runtime"
+import "core:fmt"
 import "core:math"
+import "core:os"
+import "core:strings"
+
+_ :: fmt
+_ :: os
+_ :: strings
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -26,10 +33,8 @@ Image_Crop :: struct {
 	tex:  ^rl.Texture2D,
 }
 
-// Register the per-font-id fallback stacks. Noto Sans CJK rides
-// behind the latin faces so CJK text resolves per glyph. It is not
-// bundled (the .ttc is tens of megabytes), so Japanese needs the
-// system package.
+// Latin faces are bundled. CJK uses each platform's installed fallback
+// fonts; Linux installations need the Noto CJK system package.
 CJK_CANDIDATES := []cstring {
 	"/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
 	"/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
@@ -63,6 +68,27 @@ init_fonts :: proc() {
 		}
 		append(&paths, ..candidates)
 		append(&paths, ..fallbacks)
+		if id != FONT_ICON {
+			when ODIN_OS == .Windows {
+				windir := os.get_env("WINDIR", context.temp_allocator)
+				for face in ([]string{"msyh.ttc", "meiryo.ttc", "YuGothR.ttc", "malgun.ttf"}) {
+					append(
+						&paths,
+						strings.clone_to_cstring(
+							fmt.tprintf("%s/Fonts/%s", windir, face),
+							context.temp_allocator,
+						),
+					)
+				}
+			} else when ODIN_OS == .Darwin {
+				append(
+					&paths,
+					"/System/Library/Fonts/PingFang.ttc",
+					"/System/Library/Fonts/Hiragino Sans GB.ttc",
+					"/System/Library/Fonts/AppleSDGothicNeo.ttc",
+				)
+			}
+		}
 		if id != FONT_ICON {
 			append(
 				&paths,

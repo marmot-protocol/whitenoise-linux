@@ -10,9 +10,8 @@ int main(int argc, char **argv) {
     assert(recognition_threads > 0 && recognition_threads <= 32);
     const SherpaOnnxWave *wave = SherpaOnnxReadWave(argv[2]);
     assert(wave && wave->sample_rate == SAMPLE_RATE);
-    int fd = memfd_create("stt-bench", MFD_CLOEXEC);
-    assert(fd >= 0 && dup2(fd, STDOUT_FILENO) >= 0);
-    close(fd);
+    speech_ipc = wn_ipc_create(HEADER_BYTES + TEXT_LIMIT);
+    assert(speech_ipc);
     gint64 start = g_get_monotonic_time();
     for (size_t i = 0; i < stt_model->file_count; ++i) {
         char *path = g_build_filename(argv[1], models[i].name, NULL);
@@ -33,5 +32,6 @@ int main(int argc, char **argv) {
     }
     SherpaOnnxDestroyOfflineRecognizer(model);
     SherpaOnnxFreeWave(wave);
+    wn_ipc_close(speech_ipc);
     return 0;
 }

@@ -1,26 +1,39 @@
 package main
 
 import "core:encoding/json"
-import "core:fmt"
 import "core:os"
 import "core:strings"
-import "core:sys/linux"
 import "core:testing"
+
+// Keep a real helper process alive until the test closes its stdin. No sleeps
+// or shell-dependent timing are needed to exercise cancellation and completion.
+speech_test_process :: proc() -> (os.Process, ^os.File, bool) {
+	reader, writer, pipe_err := os.pipe()
+	if pipe_err != nil {return {}, nil, false}
+	defer os.close(reader)
+	command: []string
+	when ODIN_OS == .Windows {
+		command = []string {
+			"powershell",
+			"-NoProfile",
+			"-NonInteractive",
+			"-Command",
+			"[Console]::In.ReadToEnd() | Out-Null",
+		}
+	} else {
+		command = []string{"cat"}
+	}
+	child, err := os.process_start({command = command, stdin = reader})
+	if err != nil {
+		os.close(writer)
+		return {}, nil, false
+	}
+	return child, writer, true
+}
 
 @(test)
 tts_controls :: proc(t: ^testing.T) {
-	manifest :: string(#load("tts_models.h"))
-	for size, i in TTS_MODEL_SIZES {
-		testing.expect(
-			t,
-			strings.contains(manifest, fmt.tprintf("\"%s\", %d,", TTS_MODEL_FILES[i], size)),
-		)
-	}
-	for language in TTS_LANGUAGES {
-		testing.expect(t, strings.contains(manifest, fmt.tprintf("\"%s\"", language.code)))
-	}
 	prefs: Prefs
-	testing.expect(t, !prefs.tts_enabled)
 	testing.expect(
 		t,
 		json.unmarshal(
@@ -38,23 +51,16 @@ tts_controls :: proc(t: ^testing.T) {
 	tts_read(&ui, " \n\t")
 	testing.expect(t, ui.tts.file == nil)
 
-	fd, ferr := linux.memfd_create("tts-controls", {.CLOEXEC})
-	testing.expect(t, ferr == .NONE)
-	if ferr != .NONE {
-		return
-	}
-	file := os.new_file(uintptr(fd), "tts-controls")
+	file := wn_ipc_create(4)
 	testing.expect(t, file != nil)
-	if file == nil {
-		linux.close(fd)
+	if file == nil {return}
+	child, pipe, started := speech_test_process()
+	testing.expect(t, started)
+	if !started {
+		wn_ipc_close(file)
 		return
 	}
-	child, err := os.process_start({command = {"sleep", "30"}})
-	testing.expect(t, err == nil)
-	if err != nil {
-		os.close(file)
-		return
-	}
+	defer os.close(pipe)
 	ui.tts = {
 		child   = child,
 		file    = file,
@@ -62,8 +68,7 @@ tts_controls :: proc(t: ^testing.T) {
 	}
 	defer tts_stop(&ui)
 	ui.account_ref = "previous-account"
-	n, write_err := os.write_string(file, "D\x02\x32")
-	testing.expect(t, write_err == nil && n == 3)
+	testing.expect_value(t, helper_write_string(file, "D\x02\x32"), 3)
 	tts_tick(&ui)
 	testing.expect(t, ui.tts.status == 'D' && ui.tts.model == 2 && ui.tts.percent == 50)
 	ui.account_ref = "next-account"

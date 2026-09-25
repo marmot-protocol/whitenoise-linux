@@ -9,36 +9,51 @@
 // ponytail: no ping/pong, no fragment reassembly across control
 // frames, no Sec-WebSocket-Accept check. Enough for a REQ that
 // answers in one round trip; grow it if a relay starts pinging first.
-#include <curl/curl.h>
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <winsock2.h>
+#include <windows.h>
+#else
 #include <poll.h>
+#endif
+#include <curl/curl.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
-static long now_ms(void) {
+static int64_t now_ms(void) {
+#ifdef _WIN32
+    return (int64_t)GetTickCount64();
+#else
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ts.tv_sec * 1000L + ts.tv_nsec / 1000000L;
+    return (int64_t)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+#endif
 }
 
 // Block on the curl socket until it is readable/writable or the
 // deadline passes. 0 = ready, -1 = timed out.
-static int wait_sock(CURL *c, int for_recv, long deadline) {
+static int wait_sock(CURL *c, int for_recv, int64_t deadline) {
     curl_socket_t s;
     if (curl_easy_getinfo(c, CURLINFO_ACTIVESOCKET, &s) != CURLE_OK) {
         return -1;
     }
-    long left = deadline - now_ms();
+    int64_t left = deadline - now_ms();
     if (left <= 0) {
         return -1;
     }
+#ifdef _WIN32
+    WSAPOLLFD p = {.fd = s, .events = for_recv ? POLLRDNORM : POLLWRNORM};
+    return WSAPoll(&p, 1, (int)left) > 0 ? 0 : -1;
+#else
     struct pollfd p = {.fd = s, .events = for_recv ? POLLIN : POLLOUT};
     return poll(&p, 1, (int)left) > 0 ? 0 : -1;
+#endif
 }
 
-static int send_all(CURL *c, const unsigned char *b, size_t n, long deadline) {
+static int send_all(CURL *c, const unsigned char *b, size_t n, int64_t deadline) {
     while (n > 0) {
         size_t sent = 0;
         CURLcode r = curl_easy_send(c, b, n, &sent);
@@ -57,7 +72,7 @@ static int send_all(CURL *c, const unsigned char *b, size_t n, long deadline) {
     return 0;
 }
 
-static int recv_all(CURL *c, unsigned char *b, size_t n, long deadline) {
+static int recv_all(CURL *c, unsigned char *b, size_t n, int64_t deadline) {
     while (n > 0) {
         size_t got = 0;
         CURLcode r = curl_easy_recv(c, b, n, &got);
@@ -77,7 +92,7 @@ static int recv_all(CURL *c, unsigned char *b, size_t n, long deadline) {
 }
 
 // One masked text frame, the client side of RFC 6455 §5.2.
-static int send_text(CURL *c, const char *msg, long deadline) {
+static int send_text(CURL *c, const char *msg, int64_t deadline) {
     size_t n = strlen(msg);
     unsigned char hdr[14];
     size_t hl = 2;
@@ -115,7 +130,7 @@ static int send_text(CURL *c, const char *msg, long deadline) {
 // Read one complete message into out (fragments concatenated).
 // Returns its length, 0 for a control frame / a message the buffer
 // cannot hold, -1 on close or socket error.
-static long recv_message(CURL *c, unsigned char *out, size_t cap, long deadline) {
+static long recv_message(CURL *c, unsigned char *out, size_t cap, int64_t deadline) {
     size_t len = 0;
     for (;;) {
         unsigned char h[2];
@@ -201,7 +216,7 @@ static void ws_key(char out[25]) {
 // length; 0 when EOSE/CLOSED/NOTICE arrives first; -1 when the dial or
 // the handshake fails. The caller frees nothing.
 int wn_ws_fetch(const char *url, const char *req, char *out, size_t cap, long timeout_ms) {
-    long deadline = now_ms() + timeout_ms;
+    int64_t deadline = now_ms() + timeout_ms;
     const char *rest = strstr(url, "://");
     if (!rest) {
         return -1;
@@ -226,6 +241,9 @@ int wn_ws_fetch(const char *url, const char *req, char *out, size_t cap, long ti
         return -1;
     }
     curl_easy_setopt(c, CURLOPT_URL, http_url);
+    const char *ca_file = getenv("SSL_CERT_FILE");
+    if (ca_file && *ca_file)
+        curl_easy_setopt(c, CURLOPT_CAINFO, ca_file);
     curl_easy_setopt(c, CURLOPT_CONNECT_ONLY, 1L);
     curl_easy_setopt(c, CURLOPT_TIMEOUT_MS, timeout_ms);
     curl_easy_setopt(c, CURLOPT_NOSIGNAL, 1L);
@@ -320,6 +338,9 @@ int wn_https_get(const char *url, unsigned char *out, size_t cap) {
     }
     struct sticker_buffer buffer = {out, 0, cap};
     curl_easy_setopt(curl, CURLOPT_URL, url);
+    const char *ca_file = getenv("SSL_CERT_FILE");
+    if (ca_file && *ca_file)
+        curl_easy_setopt(curl, CURLOPT_CAINFO, ca_file);
     curl_easy_setopt(curl, CURLOPT_PROTOCOLS_STR, "https");
     curl_easy_setopt(curl, CURLOPT_REDIR_PROTOCOLS_STR, "https");
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);

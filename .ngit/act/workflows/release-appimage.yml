@@ -33,7 +33,7 @@ on:
     branches: [master]
 
 env:
-  ODIN_VERSION: dev-2026-08
+  ODIN_VERSION: dev-2026-09
   SDL_VERSION: "3.4.14"
   # The AppImage tooling, pinned by tag and sha256 like everything else
   # this build fetches. Upstream's "continuous" release is mutable, so
@@ -59,7 +59,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             pkg-config cmake ninja-build clang git curl \
             libarchive-dev libwebp-dev libmpv-dev libpoppler-glib-dev libcairo2-dev libcurl4-openssl-dev libssl-dev \
-            libglib2.0-dev libfreetype-dev \
+            libglib2.0-dev libfreetype-dev libavformat-dev libavcodec-dev libavutil-dev libswresample-dev \
             file desktop-file-utils wget ca-certificates unzip
 
       - name: Build SDL3

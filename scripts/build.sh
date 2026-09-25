@@ -9,6 +9,10 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
+# Cross builds share source pins and assets, but never stage host objects.
+if [ -n "${WN_TARGET:-}" ] && [ "${1:-}" != sources ]; then
+  exec bash "$HERE/scripts/cross-build.sh" "$WN_TARGET"
+fi
 bash "$HERE/scripts/version.sh" >/dev/null
 # One pinned revision out of DEPS_PIN, by name.
 pin() { sed -n "s/^$1-commit = //p" "$HERE/DEPS_PIN"; }
@@ -17,7 +21,7 @@ MDK_REPO="https://github.com/marmot-protocol/mdk.git"
 MDK_PIN="$(pin mdk)"
 MDK="$HERE/vendor/mdk"
 BUNDLE="$MDK/crates/marmot-c/output"
-MDK_PATCHES=("$HERE/patches/mdk-send-connections.patch" "$HERE/patches/mdk-message-authority.patch" "$HERE/patches/mdk-message-tags.patch" "$HERE/patches/mdk-history-repair.patch")
+MDK_PATCHES=("$HERE/patches/mdk-send-connections.patch" "$HERE/patches/mdk-message-authority.patch" "$HERE/patches/mdk-message-tags.patch" "$HERE/patches/mdk-history-repair.patch" "$HERE/patches/mdk-windows-port.patch")
 
 if [ ! -d "$MDK" ]; then
   git clone --filter=blob:none "$MDK_REPO" "$MDK"
@@ -44,7 +48,7 @@ for patch in "${MDK_PATCHES[@]}"; do
   fi
 done
 PATCHES_HASH="$(sha256sum "${MDK_PATCHES[@]}")"
-if [ ! -f "$BUNDLE/lib/libmarmot_c.a" ] || [ ! -f "$BUNDLE/.otlp-export" ] || [ "$(cat "$BUNDLE/.mdk-patches" 2>/dev/null || true)" != "$PATCHES_HASH" ]; then
+if [ "${1:-}" != sources ] && { [ ! -f "$BUNDLE/lib/libmarmot_c.a" ] || [ ! -f "$BUNDLE/.otlp-export" ] || [ "$(cat "$BUNDLE/.mdk-patches" 2>/dev/null || true)" != "$PATCHES_HASH" ]; }; then
   # GCC folds SQLCipher's TLS seed into overflowing relocations (sqlcipher#600).
   CC="${CC:-clang}" OTLP_EXPORT=1 "$MDK/crates/marmot-c/c-bindings.sh"
   touch "$BUNDLE/.otlp-export"
@@ -58,6 +62,7 @@ if [ ! -d "$CLAY" ]; then
   git -C "$CLAY" checkout --detach "$CLAY_PIN"
 fi
 
+if [ "${1:-}" != sources ]; then
 # Rebuild Clay: the upstream prebuilt archive has the slot-reuse bug too.
 CLAY_LIB="$CLAY/bindings/odin/clay-odin/linux/clay.a"
 CLAY_PATCH="$HERE/patches/clay-hashmap.patch"
@@ -69,6 +74,7 @@ if [ ! -f "$HERE/build/clay/clay.a" ] || [ "$CLAY/clay.h" -nt "$HERE/build/clay/
   ar rcs "$HERE/build/clay/clay.a" "$HERE/build/clay/clay.o"
 fi
 cp "$HERE/build/clay/clay.a" "$CLAY_LIB"
+fi
 
 # Local LifeHash avatars. The relay's Git server does not support shallow clones.
 CROP="$HERE/vendor/crop-circles"
@@ -97,6 +103,7 @@ if [ "$(git -C "$UFBX" rev-parse HEAD)" != "$UFBX_PIN" ]; then
   rm -rf "$HERE/build/fbx"
 fi
 
+if [ "${1:-}" != sources ]; then
 mkdir -p "$HERE/build/fbx"
 if [ ! -f "$HERE/build/fbx/ufbx.o" ]; then
   cc -c -O2 -fPIC "$UFBX/ufbx.c" -o "$HERE/build/fbx/ufbx.o"
@@ -117,6 +124,7 @@ if [ ! -f "$HERE/build/libwnws.a" ] || [ "$HERE/app/ws_shim.c" -nt "$HERE/build/
   rm -f "$HERE/build/libwnws.a"
   ar rcs "$HERE/build/libwnws.a" "$HERE/build/ws/ws_shim.o"
 fi
+fi
 
 # Math blocks: MicroTeX (MIT) typesets TeX into a draw-command stream and
 # app/math_shim.cpp replays it onto a cairo surface. Pinned to the
@@ -129,9 +137,11 @@ fi
 # next: MicroTeX holds \newcommand definitions and \definecolor colors in
 # process-wide maps. The patch bounds macro expansion, refuses to replace
 # built-ins, and adds the resets the shim calls after every render.
+# patches/microtex-libcxx-includes.patch adds headers libstdc++ pulls in
+# transitively but LLVM's libc++ (the Windows and macOS toolchains) does not.
 MICROTEX="$HERE/vendor/microtex"
 MICROTEX_PIN="$(pin microtex)"
-MICROTEX_PATCH="$HERE/patches/microtex-isolation.patch"
+MICROTEX_PATCHES=("$HERE/patches/microtex-isolation.patch" "$HERE/patches/microtex-libcxx-includes.patch")
 if [ ! -d "$MICROTEX" ]; then
   git clone --filter=blob:none https://github.com/NanoMichael/MicroTeX.git "$MICROTEX"
 fi
@@ -141,12 +151,15 @@ if [ "$(git -C "$MICROTEX" rev-parse HEAD)" != "$MICROTEX_PIN" ]; then
   git -C "$MICROTEX" checkout --detach "$MICROTEX_PIN"
   rm -rf "$HERE/build/microtex"
 fi
-if git -C "$MICROTEX" apply --check "$MICROTEX_PATCH" 2>/dev/null; then
-  git -C "$MICROTEX" apply "$MICROTEX_PATCH"
-elif ! git -C "$MICROTEX" apply --reverse --check "$MICROTEX_PATCH" 2>/dev/null; then
-  echo "==> MicroTeX patch conflicts with vendor/microtex: $MICROTEX_PATCH" >&2
-  exit 1
-fi
+for patch in "${MICROTEX_PATCHES[@]}"; do
+  if git -C "$MICROTEX" apply --check "$patch" 2>/dev/null; then
+    git -C "$MICROTEX" apply "$patch"
+  elif ! git -C "$MICROTEX" apply --reverse --check "$patch" 2>/dev/null; then
+    echo "==> MicroTeX patch conflicts with vendor/microtex: $patch" >&2
+    exit 1
+  fi
+done
+if [ "${1:-}" != sources ]; then
 if [ ! -f "$HERE/build/microtex/CMakeCache.txt" ]; then
   cmake -S "$MICROTEX" -B "$HERE/build/microtex" -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DBUILD_STATIC=ON -DHAVE_CWRAPPER=ON \
@@ -155,12 +168,16 @@ fi
 # Incremental: a no-op unless the pin or the patch changed sources.
 cmake --build "$HERE/build/microtex" --target microtex -j"$(nproc)"
 mkdir -p "$HERE/build/math"
-if [ ! -f "$HERE/build/libwnmath.a" ] || [ "$HERE/app/math_shim.cpp" -nt "$HERE/build/libwnmath.a" ] || [ "$MICROTEX_PATCH" -nt "$HERE/build/libwnmath.a" ]; then
+if [ ! -f "$HERE/build/libwnmath.a" ] || [ "$HERE/app/math_shim.cpp" -nt "$HERE/build/libwnmath.a" ] || [ "${MICROTEX_PATCHES[0]}" -nt "$HERE/build/libwnmath.a" ]; then
   c++ -std=c++17 -c -O2 -fPIC -Wall -Wextra -DHAVE_CWRAPPER -isystem "$MICROTEX/lib" -isystem "$HERE/build/microtex/lib" \
     $(pkg-config --cflags cairo) "$HERE/app/math_shim.cpp" -o "$HERE/build/math/math_shim.o"
   rm -f "$HERE/build/libwnmath.a"
   ar rcs "$HERE/build/libwnmath.a" "$HERE/build/math/math_shim.o"
 fi
+
+# Parent/child IPC is shared by speech and the webxdc host.
+cc -c -O2 -fPIC -pthread "$HERE/app/helper_ipc.c" -o "$HERE/build/helper_ipc.o"
+ar rcs "$HERE/build/libwnipc.a" "$HERE/build/helper_ipc.o"
 
 # FreeType decodes profile web fonts for the existing SFNT text renderer.
 cc -O2 -Wall -Wextra "$HERE/app/font.c" $(pkg-config --cflags --libs freetype2) -o "$HERE/build/wn-font"
@@ -169,21 +186,22 @@ cc -O2 -Wall -Wextra "$HERE/app/font.c" $(pkg-config --cflags --libs freetype2) 
 bash "$HERE/scripts/build-tts.sh"
 TTS="$HERE/vendor/sherpa-onnx"
 for speech in tts stt; do
-  cc -O2 -Wall -Wextra -I"$TTS/include" "$HERE/app/$speech.c" \
+  cc -O2 -Wall -Wextra -I"$TTS/include" "$HERE/app/$speech.c" "$HERE/build/libwnipc.a" \
     -L"$TTS/lib" -lsherpa-onnx-c-api -Wl,-rpath,'$ORIGIN/tts-lib:$ORIGIN/../share/whitenoise-linux/tts-lib' \
-    $(pkg-config --cflags --libs sdl3 libcurl glib-2.0 mpv libcrypto) -lm -o "$HERE/build/wn-$speech"
+    $(pkg-config --cflags --libs sdl3 libcurl glib-2.0 libavformat libavcodec libavutil libswresample libcrypto) -pthread -lm -o "$HERE/build/wn-$speech"
 done
 
 # wn-webview: the process that runs a webxdc app offscreen and hands
 # the app its pixels through shared memory. Optional: without
 # webkit2gtk-4.1 there is no viewer, and .xdc attachments stay inert.
 if pkg-config --exists webkit2gtk-4.1 2>/dev/null; then
-  if [ ! -f "$HERE/build/wn-webview" ] || [ "$HERE/app/webview.c" -nt "$HERE/build/wn-webview" ] || [ "$HERE/app/webview.h" -nt "$HERE/build/wn-webview" ]; then
-    cc -O2 "$HERE/app/webview.c" -o "$HERE/build/wn-webview" \
+  if [ ! -f "$HERE/build/wn-webview" ] || [ "$HERE/app/webview.c" -nt "$HERE/build/wn-webview" ] || [ "$HERE/app/webview.h" -nt "$HERE/build/wn-webview" ] || [ "$HERE/build/libwnipc.a" -nt "$HERE/build/wn-webview" ]; then
+    cc -O2 "$HERE/app/webview.c" "$HERE/build/libwnipc.a" -pthread -o "$HERE/build/wn-webview" \
       $(pkg-config --cflags --libs webkit2gtk-4.1)
   fi
 else
   echo "==> webkit2gtk-4.1 not found: webxdc apps will not run"
+fi
 fi
 
 # Full Twemoji 72x72 PNG set for reaction chips (any emoji, not just
@@ -279,6 +297,9 @@ DejaVu-LICENSE.txt 7a083b136e64d064794c3419751e5c7dd10d2f64c108fe5ba161eae5e5958
 LICENSES
 
 mkdir -p "$HERE/build"
+if [ "${1:-}" = sources ]; then
+  exit 0
+fi
 
 # The distro odin package ships vendor/stb without the built .a archives
 # (the sdlrl text/image layer needs truetype + image). When they are
@@ -334,10 +355,14 @@ if [ "${1:-}" = test ]; then
   "$HERE/build/event-layout-test"
   cc -O2 -I"$HERE/build/clay" "$HERE/tests/clay_hashmap_test.c" -lm -o "$HERE/build/clay/hashmap-test"
   "$HERE/build/clay/hashmap-test"
-  cc -O2 -Wall -Wextra -I"$TTS/include" "$HERE/tests/stt-test.c" \
+  cc -O2 -Wall -Wextra -I"$TTS/include" "$HERE/tests/stt-test.c" "$HERE/build/libwnipc.a" \
     -L"$TTS/lib" -lsherpa-onnx-c-api -Wl,-rpath,'$ORIGIN/tts-lib' \
-    $(pkg-config --cflags --libs sdl3 libcurl glib-2.0 mpv libcrypto) -lm -o "$HERE/build/stt-test"
+    $(pkg-config --cflags --libs sdl3 libcurl glib-2.0 libavformat libavcodec libavutil libswresample libcrypto) -pthread -lm -o "$HERE/build/stt-test"
   "$HERE/build/stt-test"
+  cc -O2 -Wall -Wextra "$HERE/tests/speech-decode-test.c" "$HERE/app/helper_ipc.c" \
+    $(pkg-config --cflags --libs glib-2.0 libavformat libavcodec libavutil libswresample) \
+    -pthread -lm -o "$HERE/build/speech-decode-test"
+  "$HERE/build/speech-decode-test"
   env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app
   SDL_VIDEODRIVER=dummy env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app -define:ODIN_TEST_NAMES=settings_viewport
   SDL_VIDEODRIVER=dummy env "${ODIN_ROOT_ARG[@]}" "$HERE/tests/odin.sh" app/sdlrl

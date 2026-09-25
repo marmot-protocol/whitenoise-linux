@@ -3,9 +3,7 @@ package main
 import "core:encoding/hex"
 import "core:fmt"
 import "core:os"
-import "core:path/filepath"
 import "core:strings"
-import "core:sys/linux"
 import "core:text/edit"
 import "core:unicode/utf8"
 import rl "sdlrl"
@@ -121,7 +119,8 @@ Stt_State :: struct {
 	ready:                                  [len(STT_MODELS)]bool,
 	checked_at:                             f64,
 	child:                                  os.Process,
-	file:                                   ^os.File,
+	file:                                   ^Helper_Ipc,
+	audio:                                  ^Helper_Ipc,
 	status, model, percent:                 u8,
 	account, group, thread, editing, draft: string,
 	message:                                string,
@@ -195,7 +194,8 @@ stt_stop :: proc(ui: ^Ui_State) {
 		_ = os.process_kill(ui.stt.child)
 		_, _ = os.process_wait(ui.stt.child)
 	}
-	os.close(ui.stt.file)
+	wn_ipc_close(ui.stt.file)
+	wn_ipc_close(ui.stt.audio)
 	delete(ui.stt.account)
 	delete(ui.stt.group)
 	delete(ui.stt.thread)
@@ -238,61 +238,42 @@ stt_start :: proc(
 		}
 	}
 	tts_stop(ui)
-	fd, ferr := linux.memfd_create("wn-stt", {.CLOEXEC})
-	if ferr != .NONE {
-		toast(ui, tr("Couldn't start transcription. Please try again."))
-		return
-	}
-	file := os.new_file(uintptr(fd), "wn-stt")
+	file := wn_ipc_create(4 + 16384)
 	if file == nil {
-		linux.close(fd)
 		toast(ui, tr("Couldn't start transcription. Please try again."))
 		return
 	}
 	ok := false
 	defer if !ok {
-		os.close(file)
+		wn_ipc_close(file)
 	}
-	n, err := os.write_string(file, "G\x00\x00\x00")
-	exe, exe_err := os.read_link("/proc/self/exe", context.temp_allocator)
-	if err != nil || n != 4 || exe_err != nil {
+	if helper_write_string(file, "G\x00\x00\x00") != 4 {
 		toast(ui, tr("Couldn't start transcription. Please try again."))
 		return
 	}
-	input := file
+	input: ^Helper_Ipc
 	if message != "" {
-		afd, aerr := linux.memfd_create("wn-stt-audio", {.CLOEXEC})
-		if aerr != .NONE {
-			toast(ui, tr("Couldn't start transcription. Please try again."))
-			return
-		}
-		input = os.new_file(uintptr(afd), "wn-stt-audio")
-		if input == nil {
-			linux.close(afd)
+		input = wn_ipc_create(uint(len(audio)))
+		if input == nil || helper_write_at(input, audio) != len(audio) {
+			wn_ipc_close(input)
 			toast(ui, tr("Couldn't start transcription. Please try again."))
 			return
 		}
 	}
-	defer if input != file {os.close(input)}
-	if input != file {
-		written, write_err := os.write(input, audio)
-		if write_err != nil || written != len(audio) {
-			toast(ui, tr("Couldn't start transcription. Please try again."))
-			return
-		}
-	}
+	defer if !ok {wn_ipc_close(input)}
 	model := STT_MODELS[stt_model(ui.prefs.stt_model)]
 	child, start_err := os.process_start(
 		{
 			command = {
-				fmt.tprintf("%s/wn-stt", filepath.dir(exe)),
+				helper_path("wn-stt"),
 				fmt.tprintf("%s/stt/%s", data_home, model.revision),
 				fmt.tprintf("%d", os.get_pid()),
 				purpose == .Download ? "download" : (message == "" ? "dictate" : "audio"),
 				model.name,
+				string(wn_ipc_name(file)),
+				string(wn_ipc_name(input)),
+				fmt.tprintf("%d", len(audio)),
 			},
-			stdin = input,
-			stdout = file,
 		},
 	)
 	if start_err != nil {
@@ -309,6 +290,7 @@ stt_start :: proc(
 	}
 	ui.stt = {
 		child          = child,
+		audio          = input,
 		file           = file,
 		status         = 'G',
 		purpose        = purpose,
@@ -329,8 +311,7 @@ stt_finish :: proc(ui: ^Ui_State) {
 	if ui.stt.file == nil || ui.stt.status != 'R' {
 		return
 	}
-	n, err := os.write_at(ui.stt.file, []u8{'S'}, 3)
-	if err != nil || n != 1 {
+	if helper_write_at(ui.stt.file, []u8{'S'}, 3) != 1 {
 		stt_stop(ui)
 		toast(ui, tr("Couldn't finish dictation. Please try again."))
 	}
@@ -381,7 +362,7 @@ stt_tick :: proc(ui: ^Ui_State) {
 		return
 	}
 	status: [3]u8
-	if n, err := os.read_at(ui.stt.file, status[:], 0); err == nil && n == len(status) {
+	if helper_read_at(ui.stt.file, status[:], 0) == len(status) {
 		ui.stt.status = status[0]
 		if status[0] == 'D' &&
 		   int(status[1]) < STT_MODELS[ui.stt.selected_model].count &&
@@ -418,10 +399,9 @@ stt_tick :: proc(ui: ^Ui_State) {
 		return
 	}
 	if ui.stt.purpose == .Download {return}
-	header_n, header_err := os.read_at(ui.stt.file, status[:], 0)
+	header_n := helper_read_at(ui.stt.file, status[:], 0)
 	length := int(status[1]) | (int(status[2]) << 8)
-	if header_err != nil ||
-	   header_n != len(status) ||
+	if header_n != len(status) ||
 	   (status[0] != 'P' && status[0] != 'T') ||
 	   length > 16384 ||
 	   length < ui.stt.received {
@@ -431,9 +411,8 @@ stt_tick :: proc(ui: ^Ui_State) {
 	}
 	if running && length > 0 && length == ui.stt.received {return}
 	buf: [16384]u8
-	n, read_err := os.read_at(ui.stt.file, buf[:length], 4)
-	if (read_err != nil && read_err != .EOF) ||
-	   n != length ||
+	n := helper_read_at(ui.stt.file, buf[:length], 4)
+	if n != length ||
 	   !utf8.valid_string(string(buf[:n])) ||
 	   strings.contains(string(buf[:n]), "\x00") {
 		stt_stop(ui)

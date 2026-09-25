@@ -5,14 +5,16 @@
 // timeline caches keep their views forever; a modal must not).
 package main
 
+import "base:runtime"
 import "core:fmt"
-import "core:os"
+import "core:mem"
 import "core:slice"
 import "core:strings"
 
 import marmot "../marmot"
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
+import sdl "vendor:sdl3"
 
 Preview_Kind :: enum {
 	None,
@@ -400,10 +402,8 @@ retry_failed_images :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	}
 }
 
-// "Copy image": pipe the original bytes to the system clipboard via
-// wl-copy, falling back to xclip (the slint clipboard ladder). A slide
-// re-fetches its bytes from the record like save_attachment; the
-// in-memory kinds already hold them.
+// SDL owns the clipboard offer on every desktop. Keep the bytes alive until
+// its cleanup callback instead of writing decrypted images to a temp file.
 @(private = "file")
 copy_preview_image :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	bytes := preview.bytes
@@ -427,36 +427,42 @@ copy_preview_image :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		marmot.media_download_result_free(result)
 	}
 
-	// The helpers read a file, not stdin pipes; stage the bytes in the
-	// runtime dir under a fixed name.
-	dir := os.get_env("XDG_RUNTIME_DIR", context.temp_allocator)
-	if len(dir) == 0 {
-		dir = "/tmp"
-	}
-	path := fmt.tprintf("%s/wn-clipboard-image", dir)
-	mime := image_mime(name)
-	if os.write_entire_file(path, bytes) != nil {
-		ui.client_status = fmt.aprintf("couldn't copy %s", name)
-		return
-	}
-	cmd := fmt.tprintf(
-		"wl-copy -t %s < '%s' 2>/dev/null || xclip -selection clipboard -t %s -i '%s' 2>/dev/null",
-		mime,
-		path,
-		mime,
-		path,
-	)
-	state, out, errout, err := os.process_exec(
-		{command = {"sh", "-c", cmd}},
-		context.temp_allocator,
-	)
-	delete(out)
-	delete(errout)
-	if err != nil || state.exit_code != 0 {
-		ui.client_status = "couldn't copy image (is wl-copy or xclip installed?)"
+	offer := new(Clipboard_Image)
+	offer.allocator = context.allocator
+	offer.bytes = make([]u8, len(bytes))
+	copy(offer.bytes, bytes)
+	mime := strings.clone_to_cstring(image_mime(name), context.temp_allocator)
+	if !sdl.SetClipboardData(clipboard_image_data, clipboard_image_free, offer, &mime, 1) {
+		// SDL takes ownership before invoking the platform backend, even
+		// when that backend fails. Clearing runs its cleanup exactly once.
+		_ = sdl.ClearClipboardData()
+		ui.client_status = "couldn't copy image to the clipboard"
 		return
 	}
 	ui.client_status = fmt.aprintf("copied %s", name)
+}
+
+@(private = "file")
+Clipboard_Image :: struct {
+	bytes:     []u8,
+	allocator: mem.Allocator,
+}
+
+@(private = "file")
+clipboard_image_data :: proc "c" (userdata: rawptr, mime: cstring, size: ^uint) -> rawptr {
+	if mime == nil || size == nil {return nil}
+	offer := (^Clipboard_Image)(userdata)
+	size^ = uint(len(offer.bytes))
+	return raw_data(offer.bytes)
+}
+
+@(private = "file")
+clipboard_image_free :: proc "c" (userdata: rawptr) {
+	context = runtime.default_context()
+	offer := (^Clipboard_Image)(userdata)
+	allocator := offer.allocator
+	delete(offer.bytes, allocator)
+	free(offer, allocator)
 }
 
 // Clipboard MIME from the attachment name; the helpers advertise it to

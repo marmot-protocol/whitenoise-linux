@@ -20,17 +20,16 @@
 // WEBKIT_DISABLE_COMPOSITING_MODE is required: with accelerated
 // compositing on, the page renders into a GL surface the offscreen
 // draw never sees, and every frame comes back blank.
-#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/mman.h>
 #include <unistd.h>
 
 #include <gtk/gtk.h>
 #include <webkit2/webkit2.h>
 
 #include "webview.h"
+#include "helper_ipc.h"
 
 #define WN_TICK_MS 16 // ~60Hz draw
 
@@ -310,7 +309,7 @@ static const char *WN_CONSOLE_HOOK =
 
 int main(int argc, char **argv) {
     if (argc < 5) {
-        g_printerr("usage: wn-webview <url> <shm-path> <width> <height>\n");
+        g_printerr("usage: wn-webview <url> <shm-token> <width> <height>\n");
         return 2;
     }
     const char *url = argv[1];
@@ -319,18 +318,15 @@ int main(int argc, char **argv) {
     int w = atoi(argv[3]);
     int h = atoi(argv[4]);
 
-    int fd = open(argv[2], O_RDWR);
-    if (fd < 0) {
-        g_printerr("wn-webview: cannot open %s\n", argv[2]);
+    if (w < 1 || w > 3840 || h < 1 || h > 2160)
         return 2;
-    }
     size_t size = sizeof(struct WnShm) + (size_t)w * h * 4;
-    struct WnShm *shm = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    close(fd);
-    if (shm == MAP_FAILED) {
-        g_printerr("wn-webview: mmap failed\n");
+    WnIpc *ipc = wn_ipc_open(argv[2], size);
+    if (!ipc) {
+        g_printerr("wn-webview: cannot open shared memory\n");
         return 2;
     }
+    struct WnShm *shm = wn_ipc_data(ipc);
 
     // Overridable: with compositing on, a page can use WebGL from a
     // worker (OffscreenCanvas), but the offscreen draw comes back
@@ -379,5 +375,6 @@ int main(int argc, char **argv) {
     g_io_add_watch(stdin_channel, G_IO_HUP | G_IO_ERR, on_parent_gone, NULL);
     g_timeout_add(WN_TICK_MS, on_tick, web);
     gtk_main();
+    wn_ipc_close(ipc);
     return 0;
 }

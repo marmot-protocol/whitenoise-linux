@@ -1,0 +1,484 @@
+diff --git a/crates/fs-private/src/lib.rs b/crates/fs-private/src/lib.rs
+index 1b5caf18..3b6b0ce1 100644
+--- a/crates/fs-private/src/lib.rs
++++ b/crates/fs-private/src/lib.rs
+@@ -35,7 +35,7 @@ const MAX_MODE: u32 = 0o7777;
+ /// exits, including abrupt termination. Callers must keep the lock file at a
+ /// stable path for its full lifetime: unlinking or replacing the file would
+ /// allow a second process to lock a different inode under the same pathname.
+-#[cfg(unix)]
++#[cfg(any(unix, windows))]
+ #[derive(Debug)]
+ pub struct PrivateExclusiveFileLease {
+     _file: std::fs::File,
+@@ -63,6 +63,88 @@ pub fn try_acquire_private_exclusive_file_lease(
+     finish_private_exclusive_file_lease(file, path, libc::LOCK_EX | libc::LOCK_NB)
+ }
+ 
++/// Windows counterpart of the Unix lease: `LockFileEx` with
++/// `LOCKFILE_EXCLUSIVE_LOCK | LOCKFILE_FAIL_IMMEDIATELY` over the whole file.
++/// Like `flock`, the OS releases the lock when the handle closes or the
++/// process exits, and a second holder gets [`io::ErrorKind::WouldBlock`].
++/// The file is opened without following a final symlink or junction.
++#[cfg(windows)]
++pub fn try_acquire_private_exclusive_file_lease(
++    path: &Path,
++) -> io::Result<PrivateExclusiveFileLease> {
++    use std::os::windows::fs::OpenOptionsExt;
++    use std::os::windows::io::AsRawHandle;
++
++    const FILE_FLAG_OPEN_REPARSE_POINT: u32 = 0x0020_0000;
++    const LOCKFILE_FAIL_IMMEDIATELY: u32 = 0x1;
++    const LOCKFILE_EXCLUSIVE_LOCK: u32 = 0x2;
++    const ERROR_LOCK_VIOLATION: i32 = 33;
++
++    #[repr(C)]
++    struct Overlapped {
++        internal: usize,
++        internal_high: usize,
++        offset: u32,
++        offset_high: u32,
++        event: *mut std::ffi::c_void,
++    }
++    unsafe extern "system" {
++        fn LockFileEx(
++            file: *mut std::ffi::c_void,
++            flags: u32,
++            reserved: u32,
++            bytes_low: u32,
++            bytes_high: u32,
++            overlapped: *mut Overlapped,
++        ) -> i32;
++    }
++
++    let file = OpenOptions::new()
++        .read(true)
++        .write(true)
++        .create(true)
++        .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT)
++        .open(path)
++        .map_err(|error| io_context("open private lease file", path, error))?;
++    let metadata = file
++        .metadata()
++        .map_err(|error| io_context("read private lease file metadata", path, error))?;
++    if !metadata.file_type().is_file() {
++        return Err(io::Error::new(
++            io::ErrorKind::InvalidInput,
++            format!(
++                "validate private lease file at {}: target must be a regular file",
++                path.display()
++            ),
++        ));
++    }
++    let mut overlapped = Overlapped {
++        internal: 0,
++        internal_high: 0,
++        offset: 0,
++        offset_high: 0,
++        event: std::ptr::null_mut(),
++    };
++    let flags = LOCKFILE_EXCLUSIVE_LOCK | LOCKFILE_FAIL_IMMEDIATELY;
++    // SAFETY: the handle is owned by `file` and outlives the call; the
++    // OVERLAPPED is zeroed (offset 0) and the handle is synchronous.
++    let locked = unsafe {
++        LockFileEx(file.as_raw_handle().cast(), flags, 0, u32::MAX, u32::MAX, &mut overlapped)
++    };
++    if locked == 0 {
++        let error = io::Error::last_os_error();
++        if error.raw_os_error() == Some(ERROR_LOCK_VIOLATION) {
++            return Err(io_context(
++                "acquire private lease",
++                path,
++                io::Error::from(io::ErrorKind::WouldBlock),
++            ));
++        }
++        return Err(io_context("acquire private lease", path, error));
++    }
++    Ok(PrivateExclusiveFileLease { _file: file })
++}
++
+ #[cfg(unix)]
+ fn finish_private_exclusive_file_lease(
+     file: std::fs::File,
+@@ -725,7 +807,7 @@ fn resolve_platform_directory_aliases(
+     Ok(Some(resolved))
+ }
+ 
+-#[cfg(unix)]
++#[cfg(any(unix, windows))]
+ fn io_context(operation: &str, path: &Path, error: io::Error) -> io::Error {
+     io::Error::new(
+         error.kind(),
+@@ -1073,6 +1155,21 @@ mod tests {
+             assert!(parse_octal_mode(input).is_err(), "input {input:?}");
+         }
+     }
++
++    // Same contract on flock and LockFileEx: a second holder (another open
++    // file, as another process would have) is refused without waiting, and
++    // dropping the owner releases the lease.
++    #[cfg(any(unix, windows))]
++    #[test]
++    fn exclusive_lease_is_busy_until_the_owner_drops() {
++        let dir = tempfile::tempdir().unwrap();
++        let path = dir.path().join("owner.lock");
++        let owner = try_acquire_private_exclusive_file_lease(&path).unwrap();
++        let error = try_acquire_private_exclusive_file_lease(&path).unwrap_err();
++        assert_eq!(error.kind(), io::ErrorKind::WouldBlock, "{error}");
++        drop(owner);
++        try_acquire_private_exclusive_file_lease(&path).unwrap();
++    }
+ }
+ 
+ #[cfg(all(test, unix))]
+diff --git a/crates/marmot-account/src/io.rs b/crates/marmot-account/src/io.rs
+index 22f135f1..bb33acb6 100644
+--- a/crates/marmot-account/src/io.rs
++++ b/crates/marmot-account/src/io.rs
+@@ -192,12 +192,36 @@ fn create_temp_file(
+     .into())
+ }
+ 
++/// Windows: the caller may still hold the old file open (the secret scrub
++/// handle). Deleting it and renaming onto its name then only works with
++/// POSIX delete semantics (NTFS on Windows 10 1903 and later); elsewhere the
++/// name stays delete-pending and the rename is denied. Moving the old file
++/// aside works on every Windows filesystem: open handles follow it, a failed
++/// install moves it back, and the live path never disappears on failure.
+ #[cfg(windows)]
+ fn replace_file(temp_path: &Path, path: &Path) -> io::Result<()> {
+-    if path.exists() {
+-        fs::remove_file(path)?;
++    let mut aside = OsString::from(".");
++    aside.push(path.file_name().unwrap_or_default());
++    aside.push(format!(
++        ".old.{}.{}",
++        std::process::id(),
++        TEMP_FILE_COUNTER.fetch_add(1, Ordering::Relaxed)
++    ));
++    let aside = path.with_file_name(aside);
++    match fs::rename(path, &aside) {
++        Ok(()) => {}
++        Err(err) if err.kind() == io::ErrorKind::NotFound => return fs::rename(temp_path, path),
++        Err(err) => return Err(err),
+     }
+-    fs::rename(temp_path, path)
++    if let Err(err) = fs::rename(temp_path, path) {
++        let _ = fs::rename(&aside, path);
++        return Err(err);
++    }
++    // The new file is live; the caller scrubs the old bytes through its open
++    // handle, and the name goes once that handle closes. Best-effort, like
++    // the rest of secret deletion: failing here must not fail the write.
++    let _ = fs::remove_file(&aside);
++    Ok(())
+ }
+ 
+ #[cfg(not(windows))]
+diff --git a/crates/marmot-app/src/root_runtime_lease.rs b/crates/marmot-app/src/root_runtime_lease.rs
+index 6531e14a..ec2baeb3 100644
+--- a/crates/marmot-app/src/root_runtime_lease.rs
++++ b/crates/marmot-app/src/root_runtime_lease.rs
+@@ -23,9 +23,9 @@ pub const MARMOT_ROOT_RUNTIME_LOCK_FILE: &str = ".marmot-runtime.lock";
+ /// is released.
+ #[derive(Debug)]
+ pub struct MarmotRootRuntimeLease {
+-    #[cfg(unix)]
++    #[cfg(any(unix, windows))]
+     _lease: fs_private::PrivateExclusiveFileLease,
+-    #[cfg(not(unix))]
++    #[cfg(not(any(unix, windows)))]
+     _unsupported: (),
+ }
+ 
+@@ -64,7 +64,22 @@ impl MarmotRootRuntimeLease {
+             }
+         }
+ 
+-        #[cfg(not(unix))]
++        #[cfg(windows)]
++        {
++            let path = root.join(MARMOT_ROOT_RUNTIME_LOCK_FILE);
++            match fs_private::try_acquire_private_exclusive_file_lease(&path) {
++                Ok(lease) => Ok(Self { _lease: lease }),
++                Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
++                    Err(AppError::RuntimeBusy)
++                }
++                Err(error) => Err(AppError::Io(io::Error::new(
++                    error.kind(),
++                    format!("acquire Marmot root runtime lease: {error}"),
++                ))),
++            }
++        }
++
++        #[cfg(not(any(unix, windows)))]
+         {
+             Err(AppError::Io(io::Error::new(
+                 io::ErrorKind::Unsupported,
+diff --git a/crates/marmot-forensics/src/lib.rs b/crates/marmot-forensics/src/lib.rs
+index 60f0441b..6181988d 100644
+--- a/crates/marmot-forensics/src/lib.rs
++++ b/crates/marmot-forensics/src/lib.rs
+@@ -1,5 +1,4 @@
+ pub mod audit;
+-#[cfg(unix)]
+ pub mod local_delivery;
+ 
+ pub use audit::{
+diff --git a/crates/marmot-forensics/src/local_delivery.rs b/crates/marmot-forensics/src/local_delivery.rs
+index bf3bb6d7..5bf8ba98 100644
+--- a/crates/marmot-forensics/src/local_delivery.rs
++++ b/crates/marmot-forensics/src/local_delivery.rs
+@@ -159,11 +159,14 @@ impl LocalAuditDelivery {
+         if !name.starts_with("audit-") || !name.ends_with(".jsonl") {
+             return Err(invalid("unexpected recorder file name"));
+         }
++        #[cfg(unix)]
+         fs_private::prepare_directory_path(
+             state_dir.as_ref(),
+             0o700,
+             fs_private::ExistingDirectoryMode::Enforce,
+         )?;
++        #[cfg(not(unix))]
++        fs_private::create_dir_all_private(state_dir.as_ref())?;
+         let state_path = state_dir.as_ref().join("local-delivery.json");
+         // Rename is the state commit point. A leftover staging file came from
+         // an interrupted pre-commit write and can be discarded on restart.
+@@ -245,7 +248,7 @@ impl LocalAuditDelivery {
+                 if len < prepared.end {
+                     self.state.journals[index].observed_len =
+                         self.state.journals[index].observed_len.max(prepared.end);
+-                    file.sync_all()?;
++                    sync_source(&file)?;
+                     self.record_gap(
+                         index,
+                         prepared.start,
+@@ -259,7 +262,7 @@ impl LocalAuditDelivery {
+                 }
+                 let bytes = read_range(&mut file, prepared.start, prepared.end)?;
+                 if digest(&bytes) != prepared.digest {
+-                    file.sync_all()?;
++                    sync_source(&file)?;
+                     self.record_gap(
+                         index,
+                         prepared.start,
+@@ -290,7 +293,7 @@ impl LocalAuditDelivery {
+                     if self.is_active(index) {
+                         return Ok(Preparation::Step(DeliveryStep::WaitingForWriter));
+                     }
+-                    file.sync_all()?;
++                    sync_source(&file)?;
+                     self.record_gap(index, line_start, end, GapReason::TornTail)?;
+                     return Ok(Preparation::Step(DeliveryStep::Gap));
+                 }
+@@ -298,7 +301,7 @@ impl LocalAuditDelivery {
+                     if !bodies.is_empty() {
+                         break;
+                     }
+-                    file.sync_all()?;
++                    sync_source(&file)?;
+                     self.record_gap(index, line_start, end, GapReason::OversizedLine)?;
+                     return Ok(Preparation::Step(DeliveryStep::Gap));
+                 }
+@@ -306,7 +309,7 @@ impl LocalAuditDelivery {
+                     if !bodies.is_empty() {
+                         break;
+                     }
+-                    file.sync_all()?;
++                    sync_source(&file)?;
+                     self.record_gap(index, line_start, end, GapReason::InvalidRecord)?;
+                     return Ok(Preparation::Step(DeliveryStep::Gap));
+                 }
+@@ -322,7 +325,7 @@ impl LocalAuditDelivery {
+             let end = start + bytes.len() as u64;
+             // The recorder flushes but does not fsync. A local prepared claim
+             // must establish that boundary before publication and send.
+-            file.sync_all()?;
++            sync_source(&file)?;
+             let prepared = Prepared {
+                 start,
+                 end,
+@@ -473,9 +476,8 @@ impl LocalAuditDelivery {
+             }
+             result => result?,
+         };
+-        let meta = file.metadata()?;
+-        let (device, inode) = file_identity(&meta);
+-        let len = meta.len();
++        let (device, inode) = file_identity(&file)?;
++        let len = file.metadata()?.len();
+         if device != j.device || inode != j.inode {
+             return Err(io::Error::from(io::ErrorKind::WouldBlock));
+         }
+@@ -516,21 +518,20 @@ impl LocalAuditDelivery {
+         let mut source_identities = std::collections::HashSet::new();
+         for path in paths.into_iter().filter(|path| path != &self.active) {
+             let file = open_source(&path)?;
+-            if source_identities.insert(file_identity(&file.metadata()?)) {
++            if source_identities.insert(file_identity(&file)?) {
+                 sources.push((path, file));
+             }
+         }
+         if let Some(file) = active_file
+-            && source_identities.insert(file_identity(&file.metadata()?))
++            && source_identities.insert(file_identity(&file)?)
+         {
+             sources.push((self.active.clone(), file));
+         }
+         let mut seen = vec![false; self.state.journals.len()];
+         let mut changed = false;
+         for (path, mut file) in sources {
+-            let meta = file.metadata()?;
+-            let (device, inode) = file_identity(&meta);
+-            let len = meta.len();
++            let (device, inode) = file_identity(&file)?;
++            let len = file.metadata()?.len();
+             let fp_len = (len as usize).min(FINGERPRINT_BYTES) as u8;
+             let fp = fingerprint(&mut file, fp_len as usize)?;
+             let name = path
+@@ -653,8 +654,7 @@ impl LocalAuditDelivery {
+             return Err(error);
+         }
+         drop(file);
+-        fs::rename(&temp, &self.state_path)?;
+-        File::open(self.state_path.parent().unwrap_or(Path::new(".")))?.sync_all()
++        commit_rename(&temp, &self.state_path)
+     }
+ }
+ 
+@@ -805,6 +805,13 @@ fn open_source(path: &Path) -> io::Result<File> {
+         use std::os::unix::fs::OpenOptionsExt;
+         options.custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK);
+     }
++    #[cfg(windows)]
++    {
++        // Open a symlink itself (like O_NOFOLLOW); the is_file check rejects it.
++        use std::os::windows::fs::OpenOptionsExt;
++        const FILE_FLAG_OPEN_REPARSE_POINT: u32 = 0x0020_0000;
++        options.custom_flags(FILE_FLAG_OPEN_REPARSE_POINT);
++    }
+     let file = options.open(path)?;
+     if !file.metadata()?.is_file() {
+         return Err(invalid("source is not a regular file"));
+@@ -833,9 +840,110 @@ fn load_state(path: &Path, destination: &str, active_name: &str) -> io::Result<S
+     Ok(state)
+ }
+ 
+-fn file_identity(meta: &fs::Metadata) -> (u64, u64) {
++/// Flush a source's bytes before publishing a range that depends on them.
++#[cfg(unix)]
++fn sync_source(file: &File) -> io::Result<()> {
++    file.sync_all()
++}
++
++/// FlushFileBuffers needs write access, which the read-only source handle
++/// lacks. Reopen the same file object (not the path, so a concurrent rotation
++/// cannot swap it) with write access for the flush only.
++#[cfg(windows)]
++fn sync_source(file: &File) -> io::Result<()> {
++    use std::os::windows::io::{AsRawHandle, FromRawHandle};
++
++    const GENERIC_WRITE: u32 = 0x4000_0000;
++    const FILE_SHARE_ALL: u32 = 0x1 | 0x2 | 0x4;
++    const INVALID_HANDLE_VALUE: isize = -1;
++    unsafe extern "system" {
++        fn ReOpenFile(
++            file: *mut std::ffi::c_void,
++            access: u32,
++            share: u32,
++            flags: u32,
++        ) -> *mut std::ffi::c_void;
++    }
++    // SAFETY: the source handle is valid for the call; ReOpenFile returns a
++    // new owned handle, which `File` closes on drop.
++    let handle = unsafe { ReOpenFile(file.as_raw_handle().cast(), GENERIC_WRITE, FILE_SHARE_ALL, 0) };
++    if handle as isize == INVALID_HANDLE_VALUE {
++        return Err(io::Error::last_os_error());
++    }
++    unsafe { File::from_raw_handle(handle.cast()) }.sync_all()
++}
++
++#[cfg(unix)]
++fn file_identity(file: &File) -> io::Result<(u64, u64)> {
+     use std::os::unix::fs::MetadataExt;
+-    (meta.dev(), meta.ino())
++    let meta = file.metadata()?;
++    Ok((meta.dev(), meta.ino()))
++}
++
++/// Volume serial and 64-bit file index, the Windows analogue of dev/inode.
++/// NTFS file indexes are unique per volume; ReFS may need the 128-bit
++/// FILE_ID_INFO instead, which the journal's u64 inode field cannot hold.
++#[cfg(windows)]
++fn file_identity(file: &File) -> io::Result<(u64, u64)> {
++    use std::os::windows::io::AsRawHandle;
++
++    #[repr(C)]
++    #[derive(Default)]
++    struct ByHandleFileInformation {
++        attributes: u32,
++        times: [u32; 6],
++        volume_serial: u32,
++        size_high: u32,
++        size_low: u32,
++        links: u32,
++        index_high: u32,
++        index_low: u32,
++    }
++    unsafe extern "system" {
++        fn GetFileInformationByHandle(
++            file: *mut std::ffi::c_void,
++            info: *mut ByHandleFileInformation,
++        ) -> i32;
++    }
++    let mut info = ByHandleFileInformation::default();
++    // SAFETY: the handle is owned by `file` and outlives the call; `info`
++    // matches BY_HANDLE_FILE_INFORMATION's layout.
++    if unsafe { GetFileInformationByHandle(file.as_raw_handle().cast(), &mut info) } == 0 {
++        return Err(io::Error::last_os_error());
++    }
++    let index = (u64::from(info.index_high) << 32) | u64::from(info.index_low);
++    Ok((u64::from(info.volume_serial), index))
++}
++
++/// Replace `target` with the fully synced `temp`; this is the cursor's
++/// commit point, so the rename itself must be durable before returning.
++#[cfg(unix)]
++fn commit_rename(temp: &Path, target: &Path) -> io::Result<()> {
++    fs::rename(temp, target)?;
++    File::open(target.parent().unwrap_or(Path::new(".")))?.sync_all()
++}
++
++/// Windows cannot fsync a directory; MOVEFILE_WRITE_THROUGH returns only
++/// after the rename is flushed to disk.
++#[cfg(windows)]
++fn commit_rename(temp: &Path, target: &Path) -> io::Result<()> {
++    use std::os::windows::ffi::OsStrExt;
++
++    const MOVEFILE_REPLACE_EXISTING: u32 = 0x1;
++    const MOVEFILE_WRITE_THROUGH: u32 = 0x8;
++    unsafe extern "system" {
++        fn MoveFileExW(from: *const u16, to: *const u16, flags: u32) -> i32;
++    }
++    let wide = |path: &Path| -> Vec<u16> {
++        path.as_os_str().encode_wide().chain(std::iter::once(0)).collect()
++    };
++    let (from, to) = (wide(temp), wide(target));
++    // SAFETY: both buffers are NUL-terminated UTF-16 paths that outlive the call.
++    let flags = MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH;
++    if unsafe { MoveFileExW(from.as_ptr(), to.as_ptr(), flags) } == 0 {
++        return Err(io::Error::last_os_error());
++    }
++    Ok(())
+ }
+ 
+ fn fingerprint(file: &mut File, len: usize) -> io::Result<String> {
+@@ -1249,7 +1357,7 @@ mod tests {
+         // match the replacement after a real recorder clear to model reuse.
+         recorder.rotate().unwrap();
+         record(&recorder, "new_generation");
+-        let identity = file_identity(&fs::metadata(&active).unwrap());
++        let identity = file_identity(&File::open(&active).unwrap()).unwrap();
+         worker.state.journals[0].device = identity.0;
+         worker.state.journals[0].inode = identity.1;
+         worker.publish().unwrap();

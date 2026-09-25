@@ -111,10 +111,8 @@ Settings :: struct {
 }
 
 settings_path :: proc(allocator := context.temp_allocator) -> string {
-	cfg := os.get_env("XDG_CONFIG_HOME", allocator)
-	if cfg == "" {
-		cfg = fmt.aprintf("%s/.config", os.get_env("HOME", allocator), allocator = allocator)
-	}
+	cfg, err := os.user_config_dir(allocator)
+	if err != nil {return ""}
 	return fmt.aprintf("%s/whitenoise/settings.json", cfg, allocator = allocator)
 }
 

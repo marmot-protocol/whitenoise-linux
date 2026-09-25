@@ -41,6 +41,9 @@ import "core:strings"
 import "core:sync"
 import "core:sys/linux"
 
+_ :: linux
+_ :: strconv
+
 VAULT_VERSION :: 1
 VAULT_SALT_LEN :: 16
 VAULT_NONCE_LEN :: 24 // XChaCha20-Poly1305 takes a 192-bit nonce
@@ -110,35 +113,49 @@ Vault_Unlock :: enum {
 	Dev_Cache,
 }
 
-// Only dev builds accept the watcher's inherited memory file. Mark it
-// close-on-exec so media helpers and external commands cannot inherit it.
-@(private = "file")
-dev_vault_fd :: proc() -> linux.Fd {
-	when !#config(WN_DEV, false) {return -1}
-	value, ok := strconv.parse_int(os.get_env("WN_DEV_VAULT_FD", context.temp_allocator))
-	if !ok || value < 3 || value > int(max(i32)) {return -1}
-	fd := linux.Fd(value)
-	if _, err := linux.fcntl_get_seals(fd, .GET_SEALS); err != .NONE {return -1}
-	FD_CLOEXEC :: linux.Fd(1)
-	if linux.fcntl_setfd(fd, .SETFD, FD_CLOEXEC) != .NONE {return -1}
-	return fd
+// The Linux development watcher keeps this cache in an inherited memfd.
+// Release builds on every platform always authenticate the vault password.
+when ODIN_OS == .Linux {
+	@(private = "file")
+	dev_vault_fd :: proc() -> linux.Fd {
+		when !#config(WN_DEV, false) {return -1}
+		value, ok := strconv.parse_int(os.get_env("WN_DEV_VAULT_FD", context.temp_allocator))
+		if !ok || value < 3 || value > int(max(i32)) {return -1}
+		fd := linux.Fd(value)
+		if _, err := linux.fcntl_get_seals(fd, .GET_SEALS); err != .NONE {return -1}
+		FD_CLOEXEC :: linux.Fd(1)
+		if linux.fcntl_setfd(fd, .SETFD, FD_CLOEXEC) != .NONE {return -1}
+		return fd
+	}
 }
 
 @(private = "file")
 dev_vault_store :: proc(v: ^Vault) {
-	fd := dev_vault_fd()
-	if fd < 0 {return}
-	// A missing or incomplete cache falls back to the password gate.
-	if linux.ftruncate(fd, 0) != .NONE {return}
-	if !v.unlocked {return}
-	// Salt binds the cached key to this vault generation. Authentication
-	// of vault.db still runs when loading it, including after a reset.
-	cache: [VAULT_SALT_LEN + VAULT_KEY_LEN]u8
-	defer mem.zero_slice(cache[:])
-	copy(cache[:VAULT_SALT_LEN], v.salt[:])
-	copy(cache[VAULT_SALT_LEN:], v.key[:])
-	if n, err := linux.pwrite(fd, cache[:], 0); err != .NONE || n != len(cache) {
-		linux.ftruncate(fd, 0)
+	when ODIN_OS == .Linux {
+		fd := dev_vault_fd()
+		if fd < 0 {return}
+		if linux.ftruncate(fd, 0) != .NONE {return}
+		if !v.unlocked {return}
+		// Salt binds the cached key to this vault generation.
+		cache: [VAULT_SALT_LEN + VAULT_KEY_LEN]u8
+		defer mem.zero_slice(cache[:])
+		copy(cache[:VAULT_SALT_LEN], v.salt[:])
+		copy(cache[VAULT_SALT_LEN:], v.key[:])
+		if n, err := linux.pwrite(fd, cache[:], 0); err != .NONE || n != len(cache) {
+			linux.ftruncate(fd, 0)
+		}
+	}
+}
+
+@(private = "file")
+dev_vault_read :: proc(cache: []u8) -> bool {
+	when ODIN_OS == .Linux {
+		fd := dev_vault_fd()
+		if fd < 0 {return false}
+		n, err := linux.pread(fd, cache, 0)
+		return err == .NONE && n == len(cache)
+	} else {
+		return false
 	}
 }
 
@@ -314,10 +331,7 @@ vault_open :: proc(password: string, source: Vault_Unlock = .Password) -> Vault_
 	if source == .Dev_Cache {
 		cache: [VAULT_SALT_LEN + VAULT_KEY_LEN]u8
 		defer mem.zero_slice(cache[:])
-		fd := dev_vault_fd()
-		if fd < 0 {return .Wrong_Password}
-		n, err := linux.pread(fd, cache[:], 0)
-		if err != .NONE || n != len(cache) || string(cache[:VAULT_SALT_LEN]) != string(salt) {
+		if !dev_vault_read(cache[:]) || string(cache[:VAULT_SALT_LEN]) != string(salt) {
 			return .Wrong_Password
 		}
 		copy(key[:], cache[VAULT_SALT_LEN:])

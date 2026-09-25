@@ -17,7 +17,6 @@ package main
 import "core:fmt"
 import "core:os"
 import "core:strings"
-import "core:sys/posix"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -33,6 +32,7 @@ WEB_W :: 900
 WEB_H :: 620
 WEB_CAP_W :: 3840
 WEB_CAP_H :: 2160
+WEBXDC_SUPPORTED :: ODIN_OS == .Linux
 
 // Room the modal leaves around the page: its own padding either side,
 // plus the title bar above.
@@ -104,8 +104,7 @@ WEB_KEYS :: [?]Web_Key {
 Web_Modal :: struct {
 	shm:    ^Web_Shm,
 	pixels: [^]u8,
-	size:   uint, // the whole mapping, for munmap
-	path:   string, // the backing file, unlinked on close
+	ipc:    ^Helper_Ipc,
 	child:  os.Process,
 	pipe:   ^os.File, // the child holds the read end; closing it ends the child
 	tex:    rl.Texture2D,
@@ -120,6 +119,7 @@ Web_Modal :: struct {
 web_modal: Web_Modal
 
 web_open :: proc(url, title: string) -> bool {
+	if !WEBXDC_SUPPORTED {return false}
 	web_close()
 
 	viewer := web_viewer_path()
@@ -131,40 +131,31 @@ web_open :: proc(url, title: string) -> bool {
 		return false
 	}
 
-	// A plain file under /dev/shm rather than shm_open, so the child
-	// needs nothing but a path.
-	path := fmt.tprintf("/dev/shm/wn-web-%d", os.get_pid())
 	size := uint(size_of(Web_Shm) + WEB_CAP_W * WEB_CAP_H * 4)
-	fd := posix.open(
-		strings.clone_to_cstring(path, context.temp_allocator),
-		{.RDWR, .CREAT, .TRUNC},
-		{.IRUSR, .IWUSR},
-	)
-	if fd < 0 {
-		fmt.eprintfln("webxdc: cannot create %s", path)
+	ipc := wn_ipc_create(size)
+	if ipc == nil {
+		fmt.eprintln("webxdc: cannot create shared memory")
 		return false
 	}
-	defer posix.close(fd)
-	if posix.ftruncate(fd, posix.off_t(size)) != .OK {
-		return false
-	}
-
-	mapped := posix.mmap(nil, size, {.READ, .WRITE}, {.SHARED}, fd, 0)
-	if mapped == posix.MAP_FAILED {
-		return false
-	}
+	mapped := wn_ipc_data(ipc)
 
 	// The child holds the read end of this pipe, so if this process
 	// dies the app's window goes with it.
 	reader, writer, pipe_err := os.pipe()
 	if pipe_err != nil {
 		fmt.eprintfln("webxdc: pipe failed: %v", pipe_err)
-		posix.munmap(mapped, size)
+		wn_ipc_close(ipc)
 		return false
 	}
 	child, err := os.process_start(
 	{
-		command = {viewer, url, path, fmt.tprintf("%d", WEB_CAP_W), fmt.tprintf("%d", WEB_CAP_H)},
+		command = {
+			viewer,
+			url,
+			string(wn_ipc_name(ipc)),
+			fmt.tprintf("%d", WEB_CAP_W),
+			fmt.tprintf("%d", WEB_CAP_H),
+		},
 		stdin   = reader,
 		// The child's own output (and, under WN_DEBUG, the page's
 		// console) lands in the app's log.
@@ -175,7 +166,7 @@ web_open :: proc(url, title: string) -> bool {
 	os.close(reader)
 	if err != nil {
 		os.close(writer)
-		posix.munmap(mapped, size)
+		wn_ipc_close(ipc)
 		fmt.eprintfln("webxdc: %s failed to start: %v", viewer, err)
 		return false
 	}
@@ -183,8 +174,7 @@ web_open :: proc(url, title: string) -> bool {
 	web_modal = {
 		shm    = (^Web_Shm)(mapped),
 		pixels = ([^]u8)(uintptr(mapped) + uintptr(size_of(Web_Shm))),
-		size   = size,
-		path   = strings.clone(path),
+		ipc    = ipc,
 		child  = child,
 		pipe   = writer,
 		tex    = rl.CreateStreamTexture(WEB_W, WEB_H),
@@ -204,11 +194,7 @@ web_close :: proc() {
 	os.close(web_modal.pipe)
 	_, _ = os.process_wait(web_modal.child)
 
-	posix.munmap(rawptr(web_modal.shm), web_modal.size)
-	if len(web_modal.path) > 0 {
-		posix.unlink(strings.clone_to_cstring(web_modal.path, context.temp_allocator))
-		delete(web_modal.path)
-	}
+	wn_ipc_close(web_modal.ipc)
 	rl.UnloadTexture(web_modal.tex)
 	delete(web_modal.title)
 	web_modal = {}
@@ -218,11 +204,7 @@ web_close :: proc() {
 // when webkit2gtk-4.1 is installed.
 @(private = "file")
 web_viewer_path :: proc() -> string {
-	dir := "."
-	if slash := strings.last_index_byte(os.args[0], '/'); slash >= 0 {
-		dir = os.args[0][:slash]
-	}
-	path := fmt.tprintf("%s/wn-webview", dir)
+	path := helper_path("wn-webview")
 	return os.is_file(path) ? path : ""
 }
 
@@ -255,15 +237,6 @@ web_tick :: proc() {
 		web_modal.tex_w, web_modal.tex_h = frame_w, frame_h
 	}
 	rl.UpdateTexturePixels(&web_modal.tex, web_modal.pixels)
-
-	// The first frame proves the child mapped the file, so the name
-	// can go: the mapping outlives it, and a crash from here on leaves
-	// nothing behind in /dev/shm.
-	if len(web_modal.path) > 0 {
-		posix.unlink(strings.clone_to_cstring(web_modal.path, context.temp_allocator))
-		delete(web_modal.path)
-		web_modal.path = ""
-	}
 }
 
 @(private = "file")

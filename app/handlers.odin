@@ -880,7 +880,16 @@ paste_clipboard_files :: proc(ui: ^Ui_State) -> bool {
 		if !strings.has_prefix(uri, "file://") {
 			continue
 		}
-		stage_file(ui, uri_unescape(uri[len("file://"):]))
+		path := uri_unescape(uri[len("file://"):])
+		when ODIN_OS == .Windows {
+			// file:///C:/... names a drive; file://server/share/... is UNC.
+			if len(path) >= 3 && path[0] == '/' && path[2] == ':' {
+				path = path[1:]
+			} else if !strings.has_prefix(path, "/") {
+				path = fmt.tprintf("//%s", path)
+			}
+		}
+		stage_file(ui, path)
 		staged = true
 	}
 	return staged

@@ -7,7 +7,6 @@
 // links to that exact host open without the stop.
 package main
 
-import "core:fmt"
 import "core:strings"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
@@ -78,7 +77,7 @@ open_link :: proc(ui: ^Ui_State, url: string) {
 }
 
 spawn_link :: proc(ui: ^Ui_State, url: string) {
-	spawn_cmd(fmt.tprintf("xdg-open %q", url))
+	open_external(url)
 	toast(ui, tr("Opening in your browser"))
 }
 

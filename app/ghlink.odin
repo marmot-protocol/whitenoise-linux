@@ -114,7 +114,7 @@ gh_worker :: proc(key: string) {
 	state, out, _, err := os.process_exec(
 		{
 			command = {
-				"curl",
+				curl_path(),
 				"-sf",
 				"--max-time",
 				"10",

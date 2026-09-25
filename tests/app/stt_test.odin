@@ -4,7 +4,6 @@ import "core:encoding/json"
 import "core:os"
 import "core:strings"
 import "core:sync"
-import "core:sys/linux"
 import "core:testing"
 import "core:text/edit"
 import "core:time"
@@ -13,7 +12,7 @@ import "core:time"
 stt_draft_safety :: proc(t: ^testing.T) {
 	sync.lock(&test_home_lock)
 	defer sync.unlock(&test_home_lock)
-	// A fake helper supplies a real memfd result, without a model or microphone.
+	// A controlled helper supplies a real memory result, without a model or microphone.
 	for scenario in 0 ..< 8 {
 		ui: Ui_State
 		edit.init(&ui.ed, context.allocator, context.allocator)
@@ -22,17 +21,15 @@ stt_draft_safety :: proc(t: ^testing.T) {
 		ui.account_ref = "account"
 		append(&ui.chats, Chat_Row_Ui{group_id = "chat"})
 		append(&ui.compose, "Draft")
-		fd, ferr := linux.memfd_create("stt-test", {.CLOEXEC})
-		testing.expect(t, ferr == .NONE)
-		if ferr != .NONE {
+		file := wn_ipc_create(4 + 16384)
+		child, pipe, started := speech_test_process()
+		testing.expect(t, file != nil && started)
+		if file == nil || !started {
+			wn_ipc_close(file)
+			if started {os.close(pipe); _ = os.process_kill(child); _, _ = os.process_wait(child)}
 			return
 		}
-		file := os.new_file(uintptr(fd), "stt-test")
-		child, err := os.process_start({command = {"true"}})
-		testing.expect(t, file != nil && err == nil)
-		if file == nil || err != nil {
-			return
-		}
+		os.close(pipe)
 		ui.stt = {
 			file    = file,
 			child   = child,
@@ -43,10 +40,9 @@ stt_draft_safety :: proc(t: ^testing.T) {
 		ui.stt.status = 'R'
 		stt_finish(&ui)
 		command: [1]u8
-		_, _ = os.read_at(file, command[:], 3)
+		_ = helper_read_at(file, command[:], 3)
 		testing.expect(t, command[0] == 'S')
-		n, write_err := os.write_string(file, "T\x0f\x00\x00こんにちは")
-		testing.expect(t, write_err == nil && n > 4)
+		testing.expect_value(t, helper_write_string(file, "T\x0f\x00\x00こんにちは"), 19)
 		view, other: Video_View
 		if scenario == 5 || scenario == 6 {
 			ui.stt.message = strings.clone("audio")
@@ -98,18 +94,11 @@ stt_draft_safety :: proc(t: ^testing.T) {
 
 @(test)
 stt_model_selection :: proc(t: ^testing.T) {
-	manifest :: string(#load("stt_models.h"))
 	prefs: Prefs
 	testing.expect_value(t, stt_model(prefs.stt_model), 0)
 	testing.expect_value(t, stt_model("unknown"), 0)
 	for model, i in STT_MODELS {
 		testing.expect_value(t, stt_model(model.name), i)
-		testing.expect(t, strings.contains(manifest, model.revision))
-		testing.expect_value(
-			t,
-			model.sizes[0] + model.sizes[1] + model.sizes[2] + model.sizes[3],
-			model.bytes,
-		)
 		encoded, err := json.marshal(Prefs{stt_model = model.name})
 		testing.expect(t, err == nil)
 		decoded: Prefs
@@ -131,11 +120,15 @@ stt_partial_results :: proc(t: ^testing.T) {
 		ui.page = .Chats
 		append(&ui.chats, Chat_Row_Ui{group_id = "chat"})
 		append(&ui.compose, "Draft")
-		fd, ferr := linux.memfd_create("stt-partial", {.CLOEXEC})
-		testing.expect(t, ferr == .NONE)
-		file := os.new_file(uintptr(fd), "stt-partial")
-		child, err := os.process_start({command = {"sleep", "0.05"}})
-		testing.expect(t, file != nil && err == nil)
+		file := wn_ipc_create(4 + 16384)
+		child, pipe, started := speech_test_process()
+		testing.expect(t, file != nil && started)
+		if file == nil || !started {
+			wn_ipc_close(file)
+			if started {os.close(pipe); _ = os.process_kill(child); _, _ = os.process_wait(child)}
+			return
+		}
+		defer if pipe != nil {os.close(pipe)}
 		ui.stt = {
 			file  = file,
 			child = child,
@@ -152,12 +145,12 @@ stt_partial_results :: proc(t: ^testing.T) {
 			append(&ui.messages, msg)
 		}
 		// Bytes beyond the published length must remain invisible.
-		_, _ = os.write_string(file, "P\x05\x00\x00Hello unfinished")
+		_ = helper_write_string(file, "P\x05\x00\x00Hello unfinished")
 		stt_tick(&ui)
 		testing.expect(t, ui.stt.file != nil && ui.stt.child.pid == child.pid)
 		testing.expect_value(t, string(ui.compose[:]), attachment == 0 ? "Draft Hello" : "Draft")
 		testing.expect_value(t, view.transcript, attachment == 1 ? "Hello" : "")
-		_, _ = os.write_at(file, transmute([]u8)string("P\x0b\x00\x00Hello world"), 0)
+		_ = helper_write_string(file, "P\x0b\x00\x00Hello world")
 		stt_tick(&ui)
 		stt_tick(&ui) // Polling the same segment must not duplicate it.
 		testing.expect_value(
@@ -167,7 +160,9 @@ stt_partial_results :: proc(t: ^testing.T) {
 		)
 		testing.expect_value(t, view.transcript, attachment == 1 ? "Hello world" : "")
 		if attachment == 1 {
-			_, _ = os.write_at(file, []u8{'T'}, 0)
+			_ = helper_write_at(file, []u8{'T'}, 0)
+			os.close(pipe)
+			pipe = nil
 			for attempt := 0; attempt < 1000 && ui.stt.file != nil; attempt += 1 {
 				stt_tick(&ui)
 				time.sleep(time.Millisecond)

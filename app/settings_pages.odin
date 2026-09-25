@@ -1,9 +1,14 @@
 // Settings Control Panel and compact, immediately applied property pages.
 package main
 
+import "core:encoding/base64"
 import "core:fmt"
 import "core:os"
 import "core:strings"
+import "core:sys/windows"
+
+_ :: base64
+_ :: windows
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -1530,37 +1535,121 @@ human_size :: proc(n: i64) -> string {
 
 // ── System hooks ────────────────────────────────────────────────────
 
-// Fire-and-forget shell command; the shell backgrounds and reaps it.
-spawn_cmd :: proc(cmdline: string) {
-	state, out, errout, _ := os.process_exec(
-		{command = {"sh", "-c", fmt.tprintf("%s >/dev/null 2>&1 &", cmdline)}},
-		context.temp_allocator,
-	)
-	_ = state
-	delete(out)
-	delete(errout)
+// Shell text is internal code; user-controlled arguments always go through
+// shell_quote or spawn_argv, not the language's string-literal formatter.
+@(private)
+shell_quote :: proc(value: string) -> string {
+	replacement := "'\\''"
+	when ODIN_OS == .Windows {replacement = "''"}
+	escaped, _ := strings.replace_all(value, "'", replacement, context.temp_allocator)
+	return fmt.tprintf("'%s'", escaped)
 }
 
-// XDG autostart entry for "Launch at login".
-// ponytail: Exec uses argv[0] as launched; a relocated binary needs
-// the toggle flipped off and on again.
+@(private)
+spawn_cmd :: proc(cmdline: string) {
+	when ODIN_OS == .Windows {
+		wide := windows.utf8_to_utf16(cmdline)
+		encoded := base64.encode(
+			([^]u8)(raw_data(wide))[:len(wide) * 2],
+			allocator = context.temp_allocator,
+		)
+		params := windows.utf8_to_wstring(
+			fmt.tprintf("-NoProfile -NonInteractive -EncodedCommand %s", encoded),
+		)
+		windows.ShellExecuteW(nil, nil, windows.utf8_to_wstring("powershell.exe"), params, nil, 0)
+	} else {
+		state, out, errout, _ := os.process_exec(
+			{command = {"sh", "-c", fmt.tprintf("%s >/dev/null 2>&1 &", cmdline)}},
+			context.temp_allocator,
+		)
+		_ = state
+		delete(out)
+		delete(errout)
+	}
+}
+
+@(private)
+spawn_argv :: proc(args: []string) {
+	command := strings.builder_make(context.temp_allocator)
+	when ODIN_OS == .Windows {strings.write_string(&command, "& ")}
+	for arg, i in args {
+		if i > 0 {strings.write_byte(&command, ' ')}
+		strings.write_string(&command, shell_quote(arg))
+	}
+	spawn_cmd(strings.to_string(command))
+}
+
+@(private)
+open_external :: proc(target: string) {
+	when ODIN_OS == .Windows {
+		windows.ShellExecuteW(nil, nil, windows.utf8_to_wstring(target), nil, nil, 1)
+	} else when ODIN_OS == .Darwin {
+		spawn_argv({"open", "--", target})
+	} else {
+		spawn_argv({"xdg-open", target})
+	}
+}
+
+// Use each desktop's user-level launch-at-login mechanism. Relocating an
+// unpacked app requires toggling this setting again.
 apply_autostart :: proc(on: bool) {
-	cfg := os.get_env("XDG_CONFIG_HOME", context.temp_allocator)
-	if cfg == "" {
-		cfg = fmt.tprintf("%s/.config", os.get_env("HOME", context.temp_allocator))
+	exe := executable_path()
+	if exe == "" {return}
+	when ODIN_OS == .Windows {
+		key := `HKCU:\Software\Microsoft\Windows\CurrentVersion\Run`
+		if on {
+			spawn_cmd(
+				fmt.tprintf(
+					"New-Item -Path %s -Force | Out-Null; Set-ItemProperty -Path %s -Name WhiteNoise -Value %s",
+					shell_quote(key),
+					shell_quote(key),
+					shell_quote(fmt.tprintf("\"%s\"", exe)),
+				),
+			)
+		} else {
+			spawn_cmd(
+				fmt.tprintf(
+					"Remove-ItemProperty -Path %s -Name WhiteNoise -ErrorAction SilentlyContinue",
+					shell_quote(key),
+				),
+			)
+		}
+	} else when ODIN_OS == .Darwin {
+		home, err := os.user_home_dir(context.temp_allocator)
+		if err != nil {return}
+		dir := fmt.tprintf("%s/Library/LaunchAgents", home)
+		path := fmt.tprintf("%s/org.whitenoise.desktop.plist", dir)
+		if !on {os.remove(path); return}
+		os.make_directory_all(dir)
+		entry := fmt.tprintf(
+			"<?xml version=\"1.0\" encoding=\"UTF-8\"?><!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\"><plist version=\"1.0\"><dict><key>Label</key><string>org.whitenoise.desktop</string><key>ProgramArguments</key><array><string>%s</string></array><key>RunAtLoad</key><true/></dict></plist>",
+			html_esc(exe),
+		)
+		_ = os.write_entire_file(path, transmute([]u8)entry)
+	} else {
+		cfg, err := os.user_config_dir(context.temp_allocator)
+		if err != nil {return}
+		dir := fmt.tprintf("%s/autostart", cfg)
+		path := fmt.tprintf("%s/whitenoise.desktop", dir)
+		if !on {os.remove(path); return}
+		os.make_directory_all(dir)
+		// Desktop Entry Exec uses its own quoting, not shell quoting.
+		escaped, _ := strings.replace_all(exe, "\\", "\\\\", context.temp_allocator)
+		for ch in ([]string{"\"", "`", "$"}) {
+			escaped, _ = strings.replace_all(
+				escaped,
+				ch,
+				fmt.tprintf("\\%s", ch),
+				context.temp_allocator,
+			)
+		}
+		escaped, _ = strings.replace_all(escaped, "%", "%%", context.temp_allocator)
+		entry := fmt.tprintf(
+			"[Desktop Entry]\nType=Application\nName=White Noise\nExec=\"%s\"\n",
+			escaped,
+		)
+		_ = os.write_entire_file(path, transmute([]u8)entry)
 	}
-	dir := fmt.tprintf("%s/autostart", cfg)
-	path := fmt.tprintf("%s/whitenoise.desktop", dir)
-	if !on {
-		os.remove(path)
-		return
-	}
-	os.make_directory(dir)
-	entry := fmt.tprintf(
-		"[Desktop Entry]\nType=Application\nName=White Noise\nExec=%s\n",
-		os.args[0],
-	)
-	_ = os.write_entire_file(path, transmute([]u8)entry)
 }
 
 // Message-body text size, the default 14px plus the prefs delta.

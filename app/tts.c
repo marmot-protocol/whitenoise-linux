@@ -1,6 +1,6 @@
 // Speech runs in a helper so cancellation stops inference and audio immediately.
 // The app can kill this helper without leaving inference or audio running.
-// memfd header: status, model index, percent; message text starts at byte 3.
+// Shared-memory header: status, model index, percent; text starts at byte 3.
 #define _GNU_SOURCE
 #include <sherpa-onnx/c-api/c-api.h>
 #include "tts_models.h"
@@ -13,16 +13,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/prctl.h>
-#include <sys/file.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include "helper_ipc.h"
+
+static WnIpc *speech_ipc;
 
 enum { DOWNLOAD_ERROR = 1, GENERATE_ERROR = 2, AUDIO_ERROR = 3 };
 enum { CHUNK_BYTES = 240, TEXT_LIMIT = 1024 * 1024, HEADER_BYTES = 3 };
 
 static void status(char value) {
-    if (pwrite(STDOUT_FILENO, &value, 1, 0) != 1) {
+    if (wn_ipc_write(speech_ipc, &value, 1, 0) != 1) {
         exit(GENERATE_ERROR);
     }
 }
@@ -82,20 +83,20 @@ static const SherpaOnnxOfflineTts *load_model(const char *dir) {
 }
 
 int main(int argc, char **argv) {
-    if (argc != 5) {
+    if (argc != 7) {
         return GENERATE_ERROR;
     }
     // No orphaned speech if the desktop app crashes or is killed.
-    if (prctl(PR_SET_PDEATHSIG, SIGKILL) || getppid() != atoi(argv[3])) {
+    if (!wn_helper_guard(strtoul(argv[3], NULL, 10))) {
         return GENERATE_ERROR;
     }
     // Runtime diagnostics can quote input text. Keep private messages out of logs.
-    int diagnostics = open("/dev/null", O_WRONLY | O_CLOEXEC);
-    if (diagnostics < 0 || dup2(diagnostics, STDERR_FILENO) < 0) {
+    if (!wn_helper_silence())
         return GENERATE_ERROR;
-    }
-    close(diagnostics);
-    umask(0077);
+    size_t input_size = (size_t)strtoull(argv[6], NULL, 10);
+    if (input_size <= HEADER_BYTES || input_size > TEXT_LIMIT + HEADER_BYTES ||
+        !(speech_ipc = wn_ipc_open(argv[5], input_size)))
+        return GENERATE_ERROR;
     int voice = -1;
     for (size_t i = 0; i < G_N_ELEMENTS(voices); ++i) {
         if (!strcmp(argv[2], voices[i])) {
@@ -108,14 +109,12 @@ int main(int argc, char **argv) {
             language_ok = 1;
         }
     }
-    struct stat st;
-    if (!language_ok || voice < 0 || fstat(STDIN_FILENO, &st) || st.st_size <= HEADER_BYTES ||
-        st.st_size > TEXT_LIMIT + HEADER_BYTES) {
+    if (!language_ok || voice < 0) {
         return GENERATE_ERROR;
     }
-    size_t length = (size_t)st.st_size - HEADER_BYTES;
+    size_t length = input_size - HEADER_BYTES;
     char *text = g_malloc(length + 1);
-    if (pread(STDIN_FILENO, text, length, HEADER_BYTES) != (ssize_t)length ||
+    if (wn_ipc_read(speech_ipc, text, length, HEADER_BYTES) != (intptr_t)length ||
         memchr(text, 0, length)) {
         g_free(text);
         return GENERATE_ERROR;
@@ -135,21 +134,16 @@ int main(int argc, char **argv) {
     }
     // Serialize cache writes across app instances. An interrupted .part is
     // overwritten on retry and can never be loaded as a completed model.
-    int lock = open(argv[1], O_RDONLY | O_DIRECTORY | O_CLOEXEC);
-    if (lock < 0) {
+    void *lock = wn_model_lock(argv[1]);
+    if (!lock)
         goto done;
-    }
-    if (flock(lock, LOCK_EX)) {
-        close(lock);
-        goto done;
-    }
     for (size_t i = 0; i < G_N_ELEMENTS(models); ++i) {
         if (!ensure_model(argv[1], &models[i])) {
-            close(lock);
+            wn_model_unlock(lock);
             goto done;
         }
     }
-    close(lock);
+    wn_model_unlock(lock);
     status('G');
     result = GENERATE_ERROR;
     const SherpaOnnxOfflineTts *ctx = load_model(argv[1]);
@@ -231,5 +225,8 @@ free_model:
 done:
     curl_global_cleanup();
     g_free(text);
+    wn_ipc_close(speech_ipc);
     return result;
 }
+
+#include "helper_main.h"

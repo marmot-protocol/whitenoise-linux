@@ -1,0 +1,12 @@
+diff --git a/lib/utils/string_utils.h b/lib/utils/string_utils.h
+index 0d0a016..089abc9 100644
+--- a/lib/utils/string_utils.h
++++ b/lib/utils/string_utils.h
+@@ -4,6 +4,7 @@
+ #include <algorithm>
+ #include <cerrno>
+ #include <climits>
++#include <cstdlib>
+ #include <functional>
+ #include <map>
+ #include <string>

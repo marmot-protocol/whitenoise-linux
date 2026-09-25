@@ -2,7 +2,6 @@ package main
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:fmt"
-import "core:os"
 import "core:testing"
 import rl "sdlrl"
 
@@ -73,9 +72,12 @@ audio_layout :: proc(t: ^testing.T) {
 			clay.GetElementData(clay.ID("MsgAudio", 0)).boundingBox,
 			clay.GetElementData(clay.ID("MsgAudio", 1024)).boundingBox,
 		}
-		file: os.File
+		file := wn_ipc_create(4)
+		testing.expect(t, file != nil)
+		if file == nil {return}
+		defer wn_ipc_close(file)
 		ui.stt = {
-			file    = &file,
+			file    = file,
 			message = "message1",
 			status  = 'D',
 			percent = 42,

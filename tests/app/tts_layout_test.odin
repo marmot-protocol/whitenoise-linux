@@ -3,7 +3,6 @@ package main
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import "base:runtime"
 import "core:fmt"
-import "core:os"
 import "core:testing"
 import rl "sdlrl"
 
@@ -37,7 +36,10 @@ tts_layout :: proc(t: ^testing.T) {
 	ui.stt.ready[0] = true
 	ui.stt.purpose = .Download
 	ui.stt.status, ui.stt.model, ui.stt.percent = 'D', 1, 42
-	ui.stt.file = cast(^os.File)uintptr(1)
+	ui.stt.file = wn_ipc_create(4)
+	testing.expect(t, ui.stt.file != nil)
+	if ui.stt.file == nil {return}
+	defer wn_ipc_close(ui.stt.file)
 	ui.page = .Settings
 	ui.settings_section = .Speech
 	ui.tts.status, ui.tts.model, ui.tts.percent = 'D', 0, 42

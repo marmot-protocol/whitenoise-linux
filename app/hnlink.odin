@@ -73,7 +73,7 @@ hn_worker :: proc(key: string) {
 	url := fmt.aprintf("https://hacker-news.firebaseio.com/v0/item/%s.json", key)
 	defer delete(url)
 	state, out, _, err := os.process_exec(
-		{command = {"curl", "-sf", "--max-time", "10", "--max-filesize", "1048576", url}},
+		{command = {curl_path(), "-sf", "--max-time", "10", "--max-filesize", "1048576", url}},
 		context.allocator,
 	)
 	defer delete(out)

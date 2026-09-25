@@ -63,9 +63,9 @@ load_system_theme :: proc() {
 	delete(system_theme_path)
 	delete(system_theme_source)
 	system_theme_path, system_theme_source = "", ""
-	home := os.get_env("HOME", context.temp_allocator)
-	cfg := os.get_env("XDG_CONFIG_HOME", context.temp_allocator)
-	if len(cfg) == 0 {cfg = fmt.tprintf("%s/.config", home)}
+	home, home_err := os.user_home_dir(context.temp_allocator)
+	cfg, cfg_err := os.user_config_dir(context.temp_allocator)
+	if home_err != nil || cfg_err != nil {return}
 	for path in ([]string{fmt.tprintf("%s/.local/state/omarchy/current/theme/colors.toml", home), fmt.tprintf("%s/omarchy/current/theme/colors.toml", cfg), fmt.tprintf("%s/.config/omarchy/current/theme/colors.toml", home)}) {
 		data, err := os.read_entire_file(path, context.temp_allocator)
 		if err != nil {continue}

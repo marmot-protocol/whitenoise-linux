@@ -1,4 +1,4 @@
-// Audio stays in this killable helper. memfd: status/model/percent/command,
+// Audio stays in this killable helper. Shared memory: status/model/percent/command,
 // P/T reuse model/percent as a little-endian committed UTF-8 byte count.
 #define _GNU_SOURCE
 #include <sherpa-onnx/c-api/c-api.h>
@@ -6,18 +6,13 @@
 #include <SDL3/SDL.h>
 #include <curl/curl.h>
 #include <glib.h>
-#include <fcntl.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/prctl.h>
-#include <sys/file.h>
 #include <sys/stat.h>
-#include <unistd.h>
-#include <mpv/client.h>
-#include <sys/mman.h>
-#include <sys/resource.h>
+#include "helper_ipc.h"
+
+static WnIpc *speech_ipc;
 #include "speech_download.h"
 
 enum { DOWNLOAD_ERROR = 1, RECOGNIZE_ERROR = 2, AUDIO_ERROR = 3, LENGTH_ERROR = 4 };
@@ -30,8 +25,10 @@ enum {
     TEXT_LIMIT = 16384
 };
 
+#include "speech_decode.h"
+
 static int set_status(char value) {
-    return pwrite(STDOUT_FILENO, &value, 1, 0) == 1;
+    return wn_ipc_write(speech_ipc, &value, 1, 0) == 1;
 }
 
 // Zero selects up to eight available CPUs; the benchmark can override it.
@@ -70,9 +67,8 @@ static const SherpaOnnxOfflineRecognizer *load_model(const char *dir) {
         break;
     }
     config.model_config.tokens = paths[stt_model->file_count - 1];
-    config.model_config.num_threads = recognition_threads > 0
-                                          ? recognition_threads
-                                          : (int)MAX(1, MIN(8, sysconf(_SC_NPROCESSORS_ONLN)));
+    config.model_config.num_threads =
+        recognition_threads > 0 ? recognition_threads : (int)MAX(1, MIN(8, g_get_num_processors()));
     config.model_config.provider = "cpu";
     config.decoding_method = "greedy_search";
     const SherpaOnnxOfflineRecognizer *model = SherpaOnnxCreateOfflineRecognizer(&config);
@@ -117,9 +113,9 @@ static int transcribe(const SherpaOnnxOfflineRecognizer *model, const float *sam
         }
         // Append first, then publish the complete segment. Readers ignore uncommitted bytes.
         unsigned char update[] = {'P', text->len & 255, text->len >> 8};
-        if (pwrite(STDOUT_FILENO, text->str + previous, text->len - previous,
-                   HEADER_BYTES + previous) != (ssize_t)(text->len - previous) ||
-            pwrite(STDOUT_FILENO, update, sizeof(update), 0) != sizeof(update)) {
+        if (wn_ipc_write(speech_ipc, text->str + previous, text->len - previous,
+                         HEADER_BYTES + previous) != (intptr_t)(text->len - previous) ||
+            wn_ipc_write(speech_ipc, update, sizeof(update), 0) != sizeof(update)) {
             goto done;
         }
     }
@@ -128,62 +124,6 @@ static int transcribe(const SherpaOnnxOfflineRecognizer *model, const float *sam
     }
 done:
     g_string_free(text, TRUE);
-    return code;
-}
-
-// Decode the in-memory attachment with the same codecs as playback. The PCM
-// output is a memfd, never a plaintext file or an audio-device stream.
-static int decode_audio(int pcm) {
-    mpv_handle *mpv = mpv_create();
-    if (!mpv) {
-        return AUDIO_ERROR;
-    }
-    char output[64];
-    snprintf(output, sizeof(output), "/proc/self/fd/%d", pcm);
-    const char *options[][2] = {
-        {"config", "no"},
-        {"terminal", "no"},
-        {"load-scripts", "no"},
-        {"autoload-files", "no"},
-        {"access-references", "no"},
-        {"demuxer", "lavf"},
-        {"demuxer-lavf-o", "protocol_whitelist=none"},
-        {"vid", "no"},
-        {"sid", "no"},
-        {"ao", "pcm"},
-        {"ao-pcm-file", output},
-        {"ao-pcm-waveheader", "no"},
-        {"audio-samplerate", "16000"},
-        {"audio-format", "float"},
-        {"audio-channels", "mono"},
-        {"end", "601"},
-    };
-    int code = AUDIO_ERROR;
-    for (size_t i = 0; i < G_N_ELEMENTS(options); ++i) {
-        if (mpv_set_option_string(mpv, options[i][0], options[i][1]) < 0) {
-            goto done;
-        }
-    }
-    if (mpv_initialize(mpv) < 0) {
-        goto done;
-    }
-    const char *args[] = {"loadfile", "/proc/self/fd/0", NULL};
-    if (mpv_command(mpv, args) < 0) {
-        goto done;
-    }
-    gint64 started = g_get_monotonic_time();
-    while (g_get_monotonic_time() - started < 60 * G_USEC_PER_SEC) {
-        mpv_event *event = mpv_wait_event(mpv, 0.1);
-        if (event->event_id == MPV_EVENT_END_FILE) {
-            const mpv_event_end_file *end = event->data;
-            if (end && end->reason == MPV_END_FILE_REASON_EOF) {
-                code = 0;
-            }
-            break;
-        }
-    }
-done:
-    mpv_terminate_destroy(mpv);
     return code;
 }
 
@@ -198,23 +138,20 @@ static int select_model(const char *name) {
 }
 
 int main(int argc, char **argv) {
-    if (argc != 5 || !select_model(argv[4]) ||
+    if (argc != 8 || !select_model(argv[4]) ||
         (strcmp(argv[3], "dictate") && strcmp(argv[3], "audio") && strcmp(argv[3], "download")) ||
-        prctl(PR_SET_PDEATHSIG, SIGKILL) || getppid() != atoi(argv[2])) {
+        !wn_helper_guard(strtoul(argv[2], NULL, 10)) || !wn_helper_silence()) {
         return RECOGNIZE_ERROR;
     }
-    int diagnostics = open("/dev/null", O_WRONLY | O_CLOEXEC);
-    if (diagnostics < 0 || dup2(diagnostics, STDERR_FILENO) < 0) {
+    speech_ipc = wn_ipc_open(argv[5], HEADER_BYTES + TEXT_LIMIT);
+    if (!speech_ipc)
         return RECOGNIZE_ERROR;
-    }
-    close(diagnostics);
-    struct stat st;
     int audio = !strcmp(argv[3], "audio");
-    if (fstat(STDIN_FILENO, &st) ||
-        (audio ? st.st_size <= 0 || st.st_size > 100 * 1024 * 1024 : st.st_size != HEADER_BYTES)) {
+    size_t audio_size = (size_t)strtoull(argv[7], NULL, 10);
+    WnIpc *input = NULL;
+    if (audio && (!audio_size || audio_size > 100 * 1024 * 1024 ||
+                  !(input = wn_ipc_open(argv[6], audio_size))))
         return RECOGNIZE_ERROR;
-    }
-    umask(0077);
     if (curl_global_init(CURL_GLOBAL_DEFAULT)) {
         return DOWNLOAD_ERROR;
     }
@@ -222,21 +159,16 @@ int main(int argc, char **argv) {
     if (g_mkdir_with_parents(argv[1], 0700)) {
         goto done;
     }
-    int lock = open(argv[1], O_RDONLY | O_DIRECTORY | O_CLOEXEC);
-    if (lock < 0) {
+    void *lock = wn_model_lock(argv[1]);
+    if (!lock)
         goto done;
-    }
-    if (flock(lock, LOCK_EX)) {
-        close(lock);
-        goto done;
-    }
     for (size_t i = 0; i < stt_model->file_count; ++i) {
         if (!ensure_model(argv[1], &models[i])) {
-            close(lock);
+            wn_model_unlock(lock);
             goto done;
         }
     }
-    close(lock);
+    wn_model_unlock(lock);
     if (!strcmp(argv[3], "download")) {
         code = set_status('T') ? 0 : DOWNLOAD_ERROR;
         goto done;
@@ -250,41 +182,14 @@ int main(int argc, char **argv) {
         goto done;
     }
     if (audio) {
-        int pcm = memfd_create("wn-stt-pcm", MFD_CLOEXEC);
+        float *samples = NULL;
+        int count = 0;
         code = AUDIO_ERROR;
-        // Bound decoder output even for malformed or misleading durations.
-        struct rlimit limit;
-        if (pcm < 0 || getrlimit(RLIMIT_FSIZE, &limit)) {
-            goto free_pcm;
-        }
-        limit.rlim_cur = MIN(limit.rlim_max, (MAX_AUDIO_SAMPLES + SAMPLE_RATE * 2) * sizeof(float));
-        if (setrlimit(RLIMIT_FSIZE, &limit) || !set_status('C')) {
-            goto free_pcm;
-        }
-        code = decode_audio(pcm);
-        if (code) {
-            goto free_pcm;
-        }
-        struct stat decoded;
-        code = AUDIO_ERROR;
-        if (fstat(pcm, &decoded) || decoded.st_size <= 0 || decoded.st_size % sizeof(float)) {
-            goto free_pcm;
-        }
-        code = LENGTH_ERROR;
-        if (decoded.st_size > MAX_AUDIO_SAMPLES * (off_t)sizeof(float)) {
-            goto free_pcm;
-        }
-        code = RECOGNIZE_ERROR;
-        float *samples = mmap(NULL, decoded.st_size, PROT_READ, MAP_PRIVATE, pcm, 0);
-        if (samples == MAP_FAILED) {
-            goto free_pcm;
-        }
-        code = transcribe(model, samples, decoded.st_size / sizeof(float));
-        munmap(samples, decoded.st_size);
-    free_pcm:
-        if (pcm >= 0) {
-            close(pcm);
-        }
+        if (set_status('C'))
+            code = decode_audio(input, &samples, &count);
+        if (!code)
+            code = transcribe(model, samples, count);
+        g_free(samples);
         SherpaOnnxDestroyOfflineRecognizer(model);
         goto done;
     }
@@ -304,7 +209,7 @@ int main(int argc, char **argv) {
         char command;
         int got =
             SDL_GetAudioStreamData(mic, samples + count, (MAX_SAMPLES - count) * sizeof(float));
-        if (got < 0 || pread(STDIN_FILENO, &command, 1, 3) != 1) {
+        if (got < 0 || wn_ipc_read(speech_ipc, &command, 1, 3) != 1) {
             goto free_audio;
         }
         count += got / sizeof(float);
@@ -326,5 +231,9 @@ free_audio:
     SherpaOnnxDestroyOfflineRecognizer(model);
 done:
     curl_global_cleanup();
+    wn_ipc_close(input);
+    wn_ipc_close(speech_ipc);
     return code;
 }
+
+#include "helper_main.h"

@@ -2,9 +2,7 @@ package main
 
 import "core:fmt"
 import "core:os"
-import "core:path/filepath"
 import "core:strings"
-import "core:sys/linux"
 import rl "sdlrl"
 
 @(private)
@@ -46,7 +44,7 @@ TTS_MODEL_FILES := [?]string {
 @(private)
 Tts_State :: struct {
 	child:          os.Process,
-	file:           ^os.File,
+	file:           ^Helper_Ipc,
 	status:         u8,
 	account:        string,
 	model, percent: u8,
@@ -61,7 +59,7 @@ tts_stop :: proc(ui: ^Ui_State) {
 	}
 	_ = os.process_kill(ui.tts.child)
 	_, _ = os.process_wait(ui.tts.child)
-	os.close(ui.tts.file)
+	wn_ipc_close(ui.tts.file)
 	delete(ui.tts.account)
 	ui.tts = {
 		ready = ui.tts.ready,
@@ -79,43 +77,31 @@ tts_read :: proc(ui: ^Ui_State, text: string) {
 		toast(ui, tr("Couldn't read this message aloud. Choose a shorter text message."))
 		return
 	}
-	// A memfd keeps message text out of argv, logs and plaintext disk files.
-	fd, ferr := linux.memfd_create("wn-tts", {.CLOEXEC})
-	if ferr != .NONE {
-		toast(ui, tr("Couldn't start reading aloud. Please try again."))
-		return
-	}
-	file := os.new_file(uintptr(fd), "wn-tts")
+	// The helper sees only a random mapping token, never message text in argv or files.
+	file := wn_ipc_create(uint(len(text) + 3))
 	if file == nil {
-		linux.close(fd)
 		toast(ui, tr("Couldn't start reading aloud. Please try again."))
 		return
 	}
 	ok := false
 	defer if !ok {
-		os.close(file)
+		wn_ipc_close(file)
 	}
-	n, err := os.write_string(file, fmt.tprintf("G\x00\x00%s", text))
-	if err != nil || n != len(text) + 3 {
-		toast(ui, tr("Couldn't start reading aloud. Please try again."))
-		return
-	}
-	exe, exe_err := os.read_link("/proc/self/exe", context.temp_allocator)
-	if exe_err != nil {
+	if helper_write_string(file, fmt.tprintf("G\x00\x00%s", text)) != len(text) + 3 {
 		toast(ui, tr("Couldn't start reading aloud. Please try again."))
 		return
 	}
 	child, start_err := os.process_start(
 		{
 			command = {
-				fmt.tprintf("%s/wn-tts", filepath.dir(exe)),
+				helper_path("wn-tts"),
 				fmt.tprintf("%s/tts/%s", data_home, TTS_MODEL_REV),
 				TTS_VOICES[clamp(ui.prefs.tts_voice, 0, len(TTS_VOICES) - 1)],
 				fmt.tprintf("%d", os.get_pid()),
 				TTS_LANGUAGES[tts_language(ui, text)].code,
+				string(wn_ipc_name(file)),
+				fmt.tprintf("%d", wn_ipc_size(file)),
 			},
-			stdin = file,
-			stdout = file,
 		},
 	)
 	if start_err != nil {
@@ -155,11 +141,8 @@ tts_tick :: proc(ui: ^Ui_State) {
 		return
 	}
 	status: [3]u8
-	if n, err := os.read_at(ui.tts.file, status[:], 0);
-	   err == nil &&
-	   n == len(status) &&
-	   int(status[1]) < len(TTS_MODEL_SIZES) &&
-	   status[2] <= 100 {
+	if n := helper_read_at(ui.tts.file, status[:], 0);
+	   n == len(status) && int(status[1]) < len(TTS_MODEL_SIZES) && status[2] <= 100 {
 		ui.tts.status = status[0]
 		ui.tts.model, ui.tts.percent = status[1], status[2]
 	}
@@ -167,7 +150,7 @@ tts_tick :: proc(ui: ^Ui_State) {
 	if err == .Timeout {
 		return
 	}
-	os.close(ui.tts.file)
+	wn_ipc_close(ui.tts.file)
 	delete(ui.tts.account)
 	model := ui.tts.model
 	ui.tts = {

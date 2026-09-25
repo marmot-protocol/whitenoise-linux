@@ -22,10 +22,13 @@ import "core:fmt"
 import "core:os"
 import "core:strconv"
 import "core:strings"
-import "core:sys/linux"
+import "core:sys/posix"
 import "core:text/edit"
 import "core:thread"
 import "core:time"
+
+_ :: libc
+_ :: posix
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import rl "sdlrl"
@@ -892,7 +895,10 @@ main :: proc() {
 @(private)
 app_main :: proc() {
 	// Relay sockets can close during a write. Let the runtime handle EPIPE.
-	libc.signal(libc.int(linux.Signal.SIGPIPE), transmute(proc "c" (_: libc.int))libc.SIG_IGN)
+	when ODIN_OS != .Windows {
+		libc.signal(libc.int(posix.SIGPIPE), transmute(proc "c" (_: libc.int))libc.SIG_IGN)
+	}
+	configure_bundle_environment()
 	startup_start := time.tick_now()
 	local_timing_stopped = false
 	defer local_timings_export()
@@ -908,11 +914,10 @@ app_main :: proc() {
 		}
 	}
 	if len(home) == 0 {
-		// XDG_DATA_HOME first: a Flatpak points it at the app's own
-		// ~/.var/app/<id>/data, the only writable home the sandbox has.
-		data := os.get_env("XDG_DATA_HOME", context.temp_allocator)
-		if len(data) == 0 {
-			data = fmt.tprintf("%s/.local/share", os.get_env("HOME", context.temp_allocator))
+		data, err := os.user_data_dir(context.temp_allocator)
+		if err != nil {
+			fmt.eprintfln("Cannot locate the user data directory: %v", err)
+			return
 		}
 		home = fmt.aprintf("%s/whitenoise", data)
 	}
@@ -931,7 +936,7 @@ app_main :: proc() {
 	ui.ed.set_clipboard = clip_set
 	ui.ed.get_clipboard = clip_get
 	data_home = home // before load_themes: user themes live in <home>/themes
-	os.make_directory(home) // the vault writes here before marmot boots
+	os.make_directory_all(home) // the vault writes here before marmot boots
 	harden_perms(home)
 	// Two runtimes over one sqlite store corrupt it, so a second
 	// instance stops here instead of booting.

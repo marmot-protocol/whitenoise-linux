@@ -2,7 +2,6 @@ package main
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:fmt"
-import "core:os"
 import "core:testing"
 import rl "sdlrl"
 
@@ -34,13 +33,16 @@ stt_layout :: proc(t: ^testing.T) {
 	append(&ui.accounts, "Test")
 	append(&ui.chats, Chat_Row_Ui{group_id = "test", title = "Dictation"})
 	g_ui, g_prefs = &ui, &ui.prefs
+	file := wn_ipc_create(4)
+	testing.expect(t, file != nil)
+	if file == nil {return}
+	defer wn_ipc_close(file)
 	for width in ([]f32{420, 720}) {
 		clay.SetLayoutDimensions({width, 700})
 		ui.stt.file = nil
 		_ = build_layout(&ui, 0)
 		testing.expect(t, clay.GetElementData(clay.ID("DictateBtn")).found)
-		file: os.File
-		ui.stt.file, ui.stt.status = &file, 'R'
+		ui.stt.file, ui.stt.status = file, 'R'
 		commands := build_layout(&ui, 0)
 		for id in ([]string{"SttCancel", "SttFinish"}) {
 			box := clay.GetElementData(clay.ID(id))

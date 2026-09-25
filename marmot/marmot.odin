@@ -6,12 +6,23 @@
 // only with their matching *_free; input strings/arrays are borrowed.
 package marmot
 
+@(private = "file")
+MARMOT_ARCHIVE ::
+	"../vendor/mdk/crates/marmot-c/output/lib/libmarmot_c.a" when #config(WN_TARGET, "") ==
+	"" else "../build/cross/" +
+	#config(WN_TARGET, "") +
+	"/libmarmot_c.a"
+
 when #config(WN_RELOAD, false) {
 	// Rust's thread-local destructors keep its library mapped. Share one
 	// runtime library so unloading app code does not retain each generation.
 	foreign import lib "../build/libmarmot-dev.so"
+} else when ODIN_OS == .Windows {
+	foreign import lib {MARMOT_ARCHIVE, "system:ws2_32", "system:bcrypt", "system:ntdll", "system:userenv", "system:advapi32", "system:secur32", "system:crypt32"}
+} else when ODIN_OS == .Darwin {
+	foreign import lib {MARMOT_ARCHIVE, "system:Security.framework", "system:CoreFoundation.framework", "system:SystemConfiguration.framework"}
 } else {
-	foreign import lib {"../vendor/mdk/crates/marmot-c/output/lib/libmarmot_c.a", "system:m", "system:pthread", "system:dl"}
+	foreign import lib {MARMOT_ARCHIVE, "system:m", "system:pthread", "system:dl"}
 }
 
 // Mirrors `enum MarmotStatus`. 1-9 are binding-level failures; 10+

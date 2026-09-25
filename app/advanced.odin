@@ -12,7 +12,10 @@ package main
 import "core:fmt"
 import "core:os"
 import "core:strings"
+import sysinfo "core:sys/info"
 import "core:time"
+
+_ :: sysinfo
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 
@@ -472,9 +475,9 @@ apply_observability :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		service_instance_id     = install_id != nil ? install_id : "unknown",
 		deployment_environment  = obs_cstr(cfg.deployment_environment, "development"),
 		tenant                  = obs_cstr(cfg.tenant, "whitenoise-linux"),
-		os_type                 = "linux",
-		os_version              = obs_file_cstr("/proc/sys/kernel/osrelease"),
-		device_model_identifier = obs_file_cstr("/sys/devices/virtual/dmi/id/product_name"),
+		os_type                 = obs_os_type(),
+		os_version              = obs_os_version(),
+		device_model_identifier = obs_device_model(),
 	}
 	route := marmot.Relay_Telemetry_Runtime_Config {
 		otlp_endpoint              = obs_cstr(cfg.otlp_metrics_endpoint),
@@ -490,7 +493,7 @@ apply_observability :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 		authorization_bearer_token = obs_cstr(cfg.goggles_token),
 		source = {
 			device_label = obs_cstr(ui.account_ref, "whitenoise-linux"),
-			platform = "linux",
+			platform = obs_os_type(),
 			app_version = APP_VERSION,
 		},
 	}
@@ -518,4 +521,34 @@ obs_file_cstr :: proc(path: string) -> cstring {
 		return "unknown"
 	}
 	return obs_cstr(strings.trim_space(string(data)), "unknown")
+}
+
+@(private = "file")
+obs_os_type :: proc() -> cstring {
+	when ODIN_OS == .Windows {
+		return "windows"
+	} else when ODIN_OS == .Darwin {
+		return "darwin"
+	} else {
+		return "linux"
+	}
+}
+
+@(private = "file")
+obs_os_version :: proc() -> cstring {
+	when ODIN_OS == .Linux {
+		return obs_file_cstr("/proc/sys/kernel/osrelease")
+	} else {
+		version, ok := sysinfo.os_version(context.temp_allocator)
+		return ok ? obs_cstr(version.full, "unknown") : "unknown"
+	}
+}
+
+@(private = "file")
+obs_device_model :: proc() -> cstring {
+	when ODIN_OS == .Linux {
+		return obs_file_cstr("/sys/devices/virtual/dmi/id/product_name")
+	} else {
+		return "unknown"
+	}
 }

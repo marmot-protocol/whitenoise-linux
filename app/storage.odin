@@ -279,7 +279,7 @@ handle_storage :: proc(ui: ^Ui_State) {
 		return
 	}
 	if clicked("LocOpen") {
-		spawn_cmd(fmt.tprintf("xdg-open %q", data_home))
+		open_external(data_home)
 		return
 	}
 	if clicked("CacheClear") {
