@@ -155,7 +155,7 @@ vault_exists :: proc() -> bool {
 @(private = "file")
 derive_key :: proc(password: string, salt: []u8, m_cost, t_cost, p_cost: u32, dst: []u8) {
 	timing_start := time.tick_now()
-	defer local_timing_end(.vault_derive_key, timing_start)
+	defer local_timing_end(.linux_vault_derive_key, timing_start)
 	params := argon2id.Parameters {
 		memory_size = m_cost,
 		passes      = t_cost,
@@ -214,7 +214,7 @@ open_xchacha :: proc(key: []u8, sealed: []u8, allocator := context.allocator) ->
 @(private = "file")
 vault_persist :: proc(v: ^Vault) -> Vault_Err {
 	timing_start := time.tick_now()
-	defer local_timing_end(.vault_persist, timing_start)
+	defer local_timing_end(.linux_vault_persist, timing_start)
 	plain, marshal_err := json.marshal(v.data, allocator = context.temp_allocator)
 	if marshal_err != nil {
 		return .Io
@@ -260,7 +260,7 @@ vault_persist :: proc(v: ^Vault) -> Vault_Err {
 // g_vault held.
 vault_create :: proc(password: string) -> Vault_Err {
 	timing_start := time.tick_now()
-	defer local_timing_end(.vault_create, timing_start)
+	defer local_timing_end(.linux_vault_create, timing_start)
 	sync.lock(&g_vault_lock)
 	defer sync.unlock(&g_vault_lock)
 
@@ -279,7 +279,7 @@ vault_create :: proc(password: string) -> Vault_Err {
 // Read $home/vault.db and decrypt it with `password`.
 vault_open :: proc(password: string, source: Vault_Unlock = .Password) -> Vault_Err {
 	timing_start := time.tick_now()
-	defer local_timing_end(.vault_open, timing_start)
+	defer local_timing_end(.linux_vault_open, timing_start)
 	bytes, read_err := os.read_entire_file(vault_path(), context.temp_allocator)
 	if read_err != nil {
 		return .Not_Found

@@ -64,7 +64,7 @@ media_load :: proc(
 		if sealed, read_err := os.read_entire_file(cache_path(sha), context.temp_allocator);
 		   read_err == nil {
 			if data, opened := vault_open_blob(sealed); opened {
-				local_timing_end(.media_cache_hit, timing_start)
+				local_timing_end(.media_cache_read, timing_start)
 				return data, true
 			}
 		}

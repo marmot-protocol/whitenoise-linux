@@ -318,7 +318,7 @@ stash_staged :: proc(ui: ^Ui_State) {
 issue_send_allowed :: proc(client: ^marmot.Client, account, group: cstring) -> marmot.Status {
 	component: ^marmot.Group_App_Component
 	status := marmot.group_app_component(client, account, group, ISSUE_COMPONENT, &component)
-	defer {if component != nil {marmot.app_component_free(component)}}
+	defer {if component != nil {marmot.group_app_component_free(component)}}
 	if status != .OK {return status}
 	if component == nil ||
 	   issue_setting(component.data[:component.data_len]) !=

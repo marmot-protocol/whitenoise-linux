@@ -105,7 +105,7 @@ search_worker :: proc(t: ^thread.Thread) {
 	job := (^Search_Job)(t.data)
 	timing_start := time.tick_now()
 	defer {if job.kind !=
-		   .Mentions {local_timing_end(job.kind == .Global ? .search_global : .search_sidebar, timing_start)}}
+		   .Mentions {local_timing_end(job.kind == .Global ? .message_search : .conversation_search, timing_start)}}
 	defer frame_wake()
 	defer free_all(context.temp_allocator)
 	account := strings.clone_to_cstring(job.account, context.temp_allocator)

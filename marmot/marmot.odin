@@ -106,7 +106,9 @@ Status :: enum i32 {
 	CONVERSATION_WINDOW_PRESENTATION             = 90,
 	MESSAGE_DRAFT_REVISION_CONFLICT              = 91,
 	CONVERSATION_WINDOW_MESSAGE_NOT_RETAINED     = 92,
-	INVALID_APP_COMPONENT                        = 93,
+	ATTACHMENT_MODE_REQUIRED                     = 93,
+	ATTACHMENT_ACCOUNT_SIGNED_OUT                = 94,
+	INVALID_APP_COMPONENT                        = 95,
 }
 
 // Opaque runtime handle.
@@ -272,23 +274,27 @@ Delivery_State :: enum i32 {
 
 // Full mirror of MarmotChatListMessagePreview.
 Chat_List_Message_Preview :: struct {
-	group_system:        ^Group_System_Event,
-	message_id_hex:      cstring,
-	sender:              cstring,
-	sender_display_name: cstring,
-	plaintext:           cstring,
-	content_tokens:      Markdown_Document,
-	kind:                u64,
-	timeline_at:         u64,
-	deleted:             bool,
-	deletion_source:     i32,
-	has_attachment_kind: bool,
-	attachment_kind:     i32,
-	attachment_count:    u32,
-	delivery_state:      Delivery_State,
+	group_system:             ^Group_System_Event,
+	message_id_hex:           cstring,
+	sender:                   cstring,
+	sender_display_name:      cstring,
+	plaintext:                cstring,
+	content_tokens:           Markdown_Document,
+	kind:                     u64,
+	timeline_at:              u64,
+	has_retention_seconds:    bool,
+	retention_seconds:        u64,
+	has_retention_expires_at: bool,
+	retention_expires_at:     u64,
+	deleted:                  bool,
+	deletion_source:          i32,
+	has_attachment_kind:      bool,
+	attachment_kind:          i32,
+	attachment_count:         u32,
+	delivery_state:           Delivery_State,
 }
 
-#assert(size_of(Chat_List_Message_Preview) == 120)
+#assert(size_of(Chat_List_Message_Preview) == 152)
 
 // Full mirror of MarmotChatListRow.
 Chat_List_Row :: struct {
@@ -378,7 +384,20 @@ Selected_Avatar :: struct {
 	},
 }
 
+// preview and actions are unread mirrors of MarmotSelectedChatPreview and
+// MarmotChatListRowActions, kept for layout.
 Presented_Chat_Row :: struct {
+	preview:      struct {
+		tag:   i32,
+		draft: struct {
+			text:                cstring,
+			text_truncated:      bool,
+			attachment_count:    u64,
+			has_attachment_kind: bool,
+			attachment_kind:     i32,
+		},
+	},
+	actions:      [10]bool,
 	row:          Chat_List_Row,
 	presentation: struct {
 		title:                       Presentation_Text,
@@ -406,7 +425,7 @@ Presented_Chat_List :: struct {
 
 #assert(size_of(Presentation_Text) == 24)
 #assert(size_of(Selected_Avatar) == 56)
-#assert(size_of(Presented_Chat_Row) == 320)
+#assert(size_of(Presented_Chat_Row) == 376)
 #assert(size_of(Presented_Chat_List) == 40)
 
 Send_Accept_Disposition :: enum i32 {
@@ -757,6 +776,7 @@ Message_Tag :: struct {
 Timeline_Message_Record :: struct {
 	message_id_hex:            cstring,
 	has_reports:               bool,
+	poll:                      rawptr, // ^MarmotPollProjection, unread
 	source_message_id_hex:     cstring,
 	has_source_epoch:          bool,
 	source_epoch:              u64,
@@ -787,6 +807,7 @@ Timeline_Message_Record :: struct {
 	deletion_source:           i32,
 	deleted_by_message_id_hex: cstring,
 	invalidation_status:       cstring,
+	client_token:              cstring,
 }
 
 Media_Locator :: struct {
@@ -886,7 +907,7 @@ Timeline_Page :: struct {
 // Layout guards: sizes taken from sizeof() under gcc against the
 // vendored marmot.h (x86_64). A mismatch means a mirror drifted from
 // the C layout; fix the struct, then update the constant.
-#assert(size_of(Timeline_Message_Record) == 304)
+#assert(size_of(Timeline_Message_Record) == 320)
 #assert(size_of(Group_System_Event) == 104)
 #assert(size_of(Timeline_Page) == 24)
 #assert(size_of(Timeline_Message_Query) == 72)
@@ -1451,44 +1472,43 @@ Host_Performance :: enum u32 {
 	Inbound_Message_Visible,
 	Conversation_Local_Visible,
 	Conversation_Composer_Ready,
-	Linux_startup_before_vault,
-	Linux_startup_after_vault,
-	Linux_window_init,
-	Linux_fonts_init,
-	Linux_runtime_boot,
-	Linux_account_load,
-	Linux_account_switch,
-	Linux_frame_update,
-	Linux_frame_layout,
-	Linux_frame_draw,
-	Linux_frame_present,
-	Linux_frame_post_present,
-	Linux_frame_until_present,
-	Linux_frame_idle_wait,
-	Linux_chat_list_load,
-	Linux_contacts_load,
-	Linux_archived_load,
-	Linux_profile_load,
-	Linux_profile_read,
-	Linux_timeline_open,
-	Linux_timeline_page,
-	Linux_timeline_handoff,
-	Linux_timeline_apply,
-	Linux_send_worker,
-	Linux_message_op_worker,
-	Linux_search_global,
-	Linux_search_sidebar,
-	Linux_media_queue_wait,
-	Linux_media_worker,
-	Linux_media_load,
-	Linux_media_cache_hit,
-	Linux_media_decode,
-	Linux_media_publish,
-	Linux_vault_derive_key,
-	Linux_vault_open,
-	Linux_vault_create,
-	Linux_vault_persist,
-	Linux_settings_save,
+	Linux_Startup_Before_Vault,
+	Linux_Startup_After_Vault,
+	Window_Init,
+	Fonts_Init,
+	Runtime_Init,
+	Account_Load,
+	Account_Switch,
+	Frame_Update,
+	Frame_Layout,
+	Frame_Draw,
+	Frame_Present,
+	Linux_Frame_Post_Present,
+	Linux_Frame_Until_Present,
+	Linux_Frame_Idle_Wait,
+	Chat_List_Load,
+	Contacts_Load,
+	Archived_Chat_List_Load,
+	Profile_Load,
+	Profile_Read,
+	Timeline_Open,
+	Timeline_Page,
+	Timeline_Handoff,
+	Timeline_Apply,
+	Message_Send,
+	Message_Search,
+	Conversation_Search,
+	Media_Queue_Wait,
+	Media_Prepare,
+	Media_Load,
+	Media_Cache_Read,
+	Media_Decode,
+	Media_Apply,
+	Linux_Vault_Derive_Key,
+	Linux_Vault_Open,
+	Linux_Vault_Create,
+	Linux_Vault_Persist,
+	Settings_Save,
 }
 Performance_Outcome :: enum u32 {
 	Success,
@@ -1576,8 +1596,8 @@ foreign lib {
 	group_app_component :: proc(client: ^Client, account, group: cstring, id: u16, out: ^^Group_App_Component) -> Status ---
 	@(link_name = "marmot_update_app_component")
 	update_app_component :: proc(client: ^Client, account, group: cstring, id: u16, data: [^]u8, count: uint, out: ^^Send_Summary) -> Status ---
-	@(link_name = "marmot_app_component_free")
-	app_component_free :: proc(value: ^Group_App_Component) ---
+	@(link_name = "marmot_group_app_component_free")
+	group_app_component_free :: proc(value: ^Group_App_Component) ---
 	@(link_name = "marmot_messages")
 	messages :: proc(client: ^Client, account, group: cstring, has_limit: u8, limit: u32, kinds: [^]u64, kinds_len: uint, out: ^^App_Message_List) -> Status ---
 	@(link_name = "marmot_app_message_record_list_free")

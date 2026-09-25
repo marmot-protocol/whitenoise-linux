@@ -298,7 +298,7 @@ media_enqueue :: proc(
 @(private)
 media_worker :: proc(t: ^thread.Thread) {
 	timing_start := time.tick_now()
-	defer local_timing_end(.media_worker, timing_start)
+	defer local_timing_end(.media_prepare, timing_start)
 	context.allocator = reload_allocator()
 	job := (^Media_Job)(t.data)
 	local_timing_end(.media_queue_wait, job.queued_at)
@@ -365,7 +365,7 @@ media_worker :: proc(t: ^thread.Thread) {
 @(private)
 media_publish :: proc(job: ^Media_Job) {
 	timing_start := time.tick_now()
-	defer local_timing_end(.media_publish, timing_start)
+	defer local_timing_end(.media_apply, timing_start)
 	// A sticker's display finish must not replace an ordinary photo's texture.
 	key := job.kind == .Sticker ? fmt.aprintf("sticker:%s", job.key) : strings.clone(job.key)
 	switch job.kind {

@@ -8,45 +8,46 @@ import "core:strings"
 import "core:sync"
 import "core:time"
 
+// Same order and names as the host stages after Conversation_Composer_Ready in
+// marmot.Host_Performance, so a stage maps to its C value by offset.
 @(private)
 Local_Timing :: enum {
-	startup_before_vault,
-	startup_after_vault,
+	linux_startup_before_vault,
+	linux_startup_after_vault,
 	window_init,
 	fonts_init,
-	runtime_boot,
+	runtime_init,
 	account_load,
 	account_switch,
 	frame_update,
 	frame_layout,
 	frame_draw,
 	frame_present,
-	frame_post_present,
-	frame_until_present,
-	frame_idle_wait,
+	linux_frame_post_present,
+	linux_frame_until_present,
+	linux_frame_idle_wait,
 	chat_list_load,
 	contacts_load,
-	archived_load,
+	archived_chat_list_load,
 	profile_load,
 	profile_read,
 	timeline_open,
 	timeline_page,
 	timeline_handoff,
 	timeline_apply,
-	send_worker,
-	message_op_worker,
-	search_global,
-	search_sidebar,
+	message_send,
+	message_search,
+	conversation_search,
 	media_queue_wait,
-	media_worker,
+	media_prepare,
 	media_load,
-	media_cache_hit,
+	media_cache_read,
 	media_decode,
-	media_publish,
-	vault_derive_key,
-	vault_open,
-	vault_create,
-	vault_persist,
+	media_apply,
+	linux_vault_derive_key,
+	linux_vault_open,
+	linux_vault_create,
+	linux_vault_persist,
 	settings_save,
 }
 
@@ -97,7 +98,7 @@ local_timing_end :: proc(operation: Local_Timing, start: time.Tick) {
 		status := marmot.record_host_performance(
 			local_timing_client,
 			marmot.Host_Performance(
-				u32(marmot.Host_Performance.Linux_startup_before_vault) + u32(operation),
+				u32(marmot.Host_Performance.Linux_Startup_Before_Vault) + u32(operation),
 			),
 			ns / 1_000_000,
 			.Success,
@@ -121,7 +122,7 @@ local_timing_bind :: proc(client: ^marmot.Client) {
 			status := marmot.record_host_performance(
 				client,
 				marmot.Host_Performance(
-					u32(marmot.Host_Performance.Linux_startup_before_vault) +
+					u32(marmot.Host_Performance.Linux_Startup_Before_Vault) +
 					u32(sample.operation),
 				),
 				sample.ns / 1_000_000,

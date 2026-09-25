@@ -995,7 +995,7 @@ app_main :: proc() {
 	// Every secret lives in $home/vault.db, marmot's account keys
 	// included, so the vault opens before the runtime does; closing the
 	// window at the gate quits.
-	local_timing_end(.startup_before_vault, startup_start)
+	local_timing_end(.linux_startup_before_vault, startup_start)
 	if !vault_gate(&ui) {
 		rl.CloseWindow()
 		return
@@ -1679,9 +1679,9 @@ app_main :: proc() {
 		present_start := time.tick_now()
 		rl.EndDrawing()
 		local_timing_end(.frame_present, present_start)
-		local_timing_end(.frame_until_present, frame_start)
+		local_timing_end(.linux_frame_until_present, frame_start)
 		if startup_ready != {} {
-			local_timing_end(.startup_after_vault, startup_ready)
+			local_timing_end(.linux_startup_after_vault, startup_ready)
 			startup_ready = {}
 		}
 		if ready_started != {} && rl.IsWindowFocused() {
@@ -1914,13 +1914,13 @@ app_main :: proc() {
 		delete(saved)
 
 		cursor_apply() // every raise for this frame is in by now
-		local_timing_end(.frame_post_present, post_start)
+		local_timing_end(.linux_frame_post_present, post_start)
 
 		// Present handler changes on the next frame before sleeping. Input
 		// and worker events wake immediately; timers poll at most 4 Hz.
 		if !shot && !frame_input && frame_idle() {
 			wait_start := time.tick_now()
-			defer local_timing_end(.frame_idle_wait, wait_start)
+			defer local_timing_end(.linux_frame_idle_wait, wait_start)
 			rl.Wait(u32(clamp((frame_deadline - rl.GetTime()) * 1000, 1, f64(IDLE_REFRESH_MS))))
 		}
 

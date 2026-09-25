@@ -42,13 +42,13 @@ _Static_assert(offsetof(MarmotMediaAttachmentOutcome, REJECTED.rejection.kind) =
                "rejection kind");
 _Static_assert(offsetof(MarmotMediaAttachmentOutcome, REJECTED.rejection.detail) == 24,
                "rejection detail");
-_Static_assert(sizeof(MarmotTimelineMessageRecord) == 304, "timeline stride");
-_Static_assert(offsetof(MarmotTimelineMessageRecord, media) == 208, "timeline media");
+_Static_assert(sizeof(MarmotTimelineMessageRecord) == 320, "timeline stride");
+_Static_assert(offsetof(MarmotTimelineMessageRecord, media) == 216, "timeline media");
 _Static_assert(sizeof(MarmotTimelineReplyPreview) == 120, "reply preview stride");
 _Static_assert(offsetof(MarmotTimelineReplyPreview, media) == 80, "reply preview media");
 
-_Static_assert(sizeof(MarmotChatListMessagePreview) == 120, "chat preview stride");
-_Static_assert(sizeof(MarmotPresentedChatRow) == 320, "presented row stride");
+_Static_assert(sizeof(MarmotChatListMessagePreview) == 152, "chat preview stride");
+_Static_assert(sizeof(MarmotPresentedChatRow) == 376, "presented row stride");
 _Static_assert(sizeof(MarmotGroupSystemEvent) == 104, "system event stride");
 _Static_assert(sizeof(MarmotAppMessageRecord) == 176, "raw message stride");
 _Static_assert(offsetof(MarmotAppMessageRecord, has_moderation_grant) == 168, "source authority");

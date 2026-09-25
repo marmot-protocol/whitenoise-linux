@@ -17,7 +17,7 @@ MDK_REPO="https://github.com/marmot-protocol/mdk.git"
 MDK_PIN="$(pin mdk)"
 MDK="$HERE/vendor/mdk"
 BUNDLE="$MDK/crates/marmot-c/output"
-MDK_PATCHES=("$HERE/patches/mdk-linux-timings.patch" "$HERE/patches/mdk-send-connections.patch" "$HERE/patches/mdk-message-authority.patch" "$HERE/patches/mdk-message-tags.patch" "$HERE/patches/mdk-history-repair.patch")
+MDK_PATCHES=("$HERE/patches/mdk-send-connections.patch" "$HERE/patches/mdk-message-authority.patch" "$HERE/patches/mdk-message-tags.patch" "$HERE/patches/mdk-history-repair.patch")
 
 if [ ! -d "$MDK" ]; then
   git clone --filter=blob:none "$MDK_REPO" "$MDK"
@@ -43,12 +43,12 @@ for patch in "${MDK_PATCHES[@]}"; do
     exit 1
   fi
 done
-TIMINGS_HASH="$(sha256sum "${MDK_PATCHES[@]}")"
-if [ ! -f "$BUNDLE/lib/libmarmot_c.a" ] || [ ! -f "$BUNDLE/.otlp-export" ] || [ "$(cat "$BUNDLE/.linux-timings" 2>/dev/null || true)" != "$TIMINGS_HASH" ]; then
+PATCHES_HASH="$(sha256sum "${MDK_PATCHES[@]}")"
+if [ ! -f "$BUNDLE/lib/libmarmot_c.a" ] || [ ! -f "$BUNDLE/.otlp-export" ] || [ "$(cat "$BUNDLE/.mdk-patches" 2>/dev/null || true)" != "$PATCHES_HASH" ]; then
   # GCC folds SQLCipher's TLS seed into overflowing relocations (sqlcipher#600).
   CC="${CC:-clang}" OTLP_EXPORT=1 "$MDK/crates/marmot-c/c-bindings.sh"
   touch "$BUNDLE/.otlp-export"
-  printf '%s\n' "$TIMINGS_HASH" > "$BUNDLE/.linux-timings"
+  printf '%s\n' "$PATCHES_HASH" > "$BUNDLE/.mdk-patches"
 fi
 
 CLAY="$HERE/vendor/clay"

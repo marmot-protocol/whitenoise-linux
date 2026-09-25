@@ -709,7 +709,7 @@ record_json :: proc(
 // to only the archived rows.
 load_archived :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 	timing_start := time.tick_now()
-	defer local_timing_end(.archived_load, timing_start)
+	defer local_timing_end(.archived_chat_list_load, timing_start)
 	rows: ^marmot.Presented_Chat_List
 	account := strings.clone_to_cstring(ui.account_ref, context.temp_allocator)
 	if marmot.presented_chat_list(client, account, true, &rows) != .OK {

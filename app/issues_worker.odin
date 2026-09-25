@@ -52,7 +52,7 @@ issues_worker :: proc(t: ^thread.Thread) {
 			setting = .Disabled
 			if component != nil {
 				setting = issue_setting(component.data[:component.data_len])
-				marmot.app_component_free(component)
+				marmot.group_app_component_free(component)
 			}
 			status = marmot.group_details(job.client, job.account, job.group, &details)
 			if status == .OK {

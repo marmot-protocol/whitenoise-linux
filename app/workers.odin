@@ -461,7 +461,7 @@ send_thread :: proc(
 
 send_worker :: proc(t: ^thread.Thread) {
 	timing_start := time.tick_now()
-	defer local_timing_end(.send_worker, timing_start)
+	defer local_timing_end(.message_send, timing_start)
 	context.allocator = reload_allocator()
 	defer frame_wake()
 	job := (^Send_Job)(t.data)
@@ -890,8 +890,6 @@ ops_done: [dynamic]Op_Done
 op_ticket: int
 
 op_worker :: proc(t: ^thread.Thread) {
-	timing_start := time.tick_now()
-	defer local_timing_end(.message_op_worker, timing_start)
 	context.allocator = reload_allocator()
 	defer frame_wake()
 	job := (^Op_Job)(t.data)
@@ -1001,7 +999,7 @@ op_worker :: proc(t: ^thread.Thread) {
 		   component != nil &&
 		   issue_setting(component.data[:component.data_len]) ==
 			   .Unavailable {status = .INVALID_APP_COMPONENT}
-		if component != nil {marmot.app_component_free(component)}
+		if component != nil {marmot.group_app_component_free(component)}
 		if status == .OK {
 			data := [2]u8{1, u8(job.secs)}
 			status = marmot.update_app_component(

@@ -1187,7 +1187,7 @@ convert_blocks :: proc(
 
 boot_marmot :: proc(home: string, ui: ^Ui_State) -> ^marmot.Client {
 	timing_start := time.tick_now()
-	defer local_timing_end(.runtime_boot, timing_start)
+	defer local_timing_end(.runtime_init, timing_start)
 	os.make_directory(home)
 	relays := DEFAULT_RELAYS
 

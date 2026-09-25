@@ -68,10 +68,19 @@ local_timing_boundaries :: proc(t: ^testing.T) {
 	testing.expect_value(t, op.buckets[27], 1)
 	for stage in Local_Timing {
 		foreign_stage := marmot.Host_Performance(
-			u32(marmot.Host_Performance.Linux_startup_before_vault) + u32(stage),
+			u32(marmot.Host_Performance.Linux_Startup_Before_Vault) + u32(stage),
 		)
-		testing.expect_value(t, fmt.tprintf("%v", foreign_stage), fmt.tprintf("Linux_%v", stage))
+		testing.expect_value(
+			t,
+			strings.to_lower(fmt.tprintf("%v", foreign_stage), context.temp_allocator),
+			fmt.tprintf("%v", stage),
+		)
 	}
+	testing.expect_value(
+		t,
+		u32(marmot.Host_Performance.Linux_Startup_Before_Vault) + len(Local_Timing),
+		u32(len(marmot.Host_Performance)),
+	)
 	report := timings_json(nil)
 	defer delete(report)
 	decoded: struct {
@@ -84,7 +93,7 @@ local_timing_boundaries :: proc(t: ^testing.T) {
 	}
 	err := json.unmarshal(transmute([]u8)report, &decoded, allocator = context.temp_allocator)
 	testing.expect(t, err == nil)
-	testing.expect_value(t, len(decoded.linux_performance.timings), 38)
+	testing.expect_value(t, len(decoded.linux_performance.timings), 37)
 	testing.expect_value(t, decoded.linux_performance.scope, "module_lifetime")
 	testing.expect_value(t, decoded.linux_performance.unit, "milliseconds")
 }
