@@ -1,0 +1,11 @@
+{
+  "name": "whitenoise-cross-dependencies",
+  "version-string": "1",
+  "builtin-baseline": "10541e317a660f4165ba4ac2851ab54a8d4577b1",
+  "dependencies": [
+    "sdl3", "cairo", "freetype", "glib", "libarchive", "libwebp", "openssl", "libass",
+    { "name": "poppler", "features": ["glib", "cairo"] },
+    { "name": "curl", "features": ["tool", "ssl"] },
+    { "name": "ffmpeg", "features": ["avcodec", "avformat", "avfilter", "swresample", "swscale", "dav1d"] }
+  ]
+}

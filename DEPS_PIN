@@ -4,3 +4,7 @@ ufbx-commit = fcc5d6ba444cfd3eb80677dba5e37e493941abe5
 microtex-commit = 086f4eb740270b28bd0c61a0a359aea9300d61ae
 sherpa-onnx-commit = 917bed95c8e5c7c18aa4d69fea42e9ef8ef0a60e
 crop-circles-commit = 0401a246a35fd28669e0872ee5043ad89332b355
+vcpkg-commit = 10541e317a660f4165ba4ac2851ab54a8d4577b1
+osxcross-commit = 27d21e4977c9751d01199c7a226a6faf494c3dd9
+mpv-commit = 2a4eb8067ca68ec19adf23daf8ccbb1a05afd6ed
+libplacebo-commit = c42968d8616a1d1c8ad5f4f1a8d6f5a9cb396e56

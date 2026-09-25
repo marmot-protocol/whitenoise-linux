@@ -58,6 +58,8 @@ settings_about :: proc(ui: ^Ui_State) {
 		about_credits(ui)
 	}
 
+	update_settings_row()
+
 	if clay.UI(clay.ID("AboutFoot"))(
 	{
 		layout = {

@@ -1,6 +1,5 @@
-# Release: triggered by a `v*` tag (e.g. v2026.9.15-build.1). Builds the app
-# twice, as a self-contained AppImage and as a Flatpak bundle, and
-# publishes both on a GitHub Release.
+# Release: Linux x86_64 AppImage/Flatpak plus Linux-hosted cross archives.
+# macOS archives are included when the private SDK job is enabled.
 #
 # Both packages install the same tree, via scripts/install-tree.sh:
 #   * the binary at <prefix>/bin, and the runtime data the app reads from
@@ -21,7 +20,7 @@ on:
     tags: ["v*"]
 
 env:
-  ODIN_VERSION: dev-2026-08
+  ODIN_VERSION: dev-2026-09
   SDL_VERSION: "3.4.14"
   FLATPAK_ID: dev.ipf.whitenoise
   # The AppImage tooling, pinned by tag and sha256 like everything else
@@ -53,7 +52,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             pkg-config cmake ninja-build clang git curl \
             libarchive-dev libwebp-dev libmpv-dev libpoppler-glib-dev libcairo2-dev libcurl4-openssl-dev libssl-dev \
-            libglib2.0-dev libfreetype-dev \
+            libglib2.0-dev libfreetype-dev libavformat-dev libavcodec-dev libavutil-dev libswresample-dev \
             file desktop-file-utils wget ca-certificates unzip
 
       - name: Cache SDL3
@@ -196,9 +195,15 @@ jobs:
           path: WhiteNoise-${{ github.ref_name }}-x86_64.flatpak
           if-no-files-found: error
 
+  cross:
+    uses: ./.github/workflows/cross.yml
+    with:
+      version: ${{ github.ref_name }}
+    secrets: inherit
+
   publish:
     name: Publish release
-    needs: [appimage, flatpak]
+    needs: [appimage, flatpak, cross]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -208,12 +213,16 @@ jobs:
           path: dist
           merge-multiple: true
 
+      # Smoke screenshots from the cross jobs are CI evidence, not release files.
+      - name: Drop CI evidence
+        run: rm -f dist/*.png
+
       # One checksum file over everything the release ships, so a
       # download can be verified without trusting the release page alone.
       - name: Checksums
         run: |
           cd dist
-          sha256sum *.AppImage *.zsync *.flatpak > SHA256SUMS.txt
+          sha256sum -- * > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
       - uses: softprops/action-gh-release@v2
@@ -222,6 +231,12 @@ jobs:
             dist/*.AppImage
             dist/*.zsync
             dist/*.flatpak
+            dist/*.tar.gz
+            dist/*.zip
+            dist/*-Setup.exe
+            dist/*.nupkg
+            dist/*.win.json
+            dist/RELEASES
             dist/SHA256SUMS.txt
           generate_release_notes: true
           fail_on_unmatched_files: true

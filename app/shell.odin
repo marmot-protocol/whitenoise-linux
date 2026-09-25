@@ -467,6 +467,7 @@ status_bar :: proc(ui: ^Ui_State) {
 			clay.Text(tts_status(ui), {fontId = FONT_BODY, fontSize = 12, textColor = TEXT_DIM})
 		}
 	}
+	update_bar()
 	if len(ui.banner) > 0 {
 		banner_bar(ui)
 	}

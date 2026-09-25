@@ -467,6 +467,9 @@ msgstr "Le chat che archivi appariranno qui."
 msgid "Check now"
 msgstr "Verifica in corso…"
 
+msgid "Checking for updates."
+msgstr "Controllo degli aggiornamenti in corso."
+
 msgid "Checking your key with the relays. This takes a few seconds."
 msgstr ""
 
@@ -648,6 +651,9 @@ msgstr "Impossibile modificare la condivisione della diagnostica. Riprova."
 #, fuzzy
 msgid "Couldn't change the password. Please try again."
 msgstr "Impossibile creare la chat. Riprova."
+
+msgid "Couldn't check for updates. Please try again."
+msgstr "Impossibile controllare gli aggiornamenti. Riprova."
 
 #, fuzzy
 msgid "Couldn't create the backup. Please try again."
@@ -1058,6 +1064,9 @@ msgstr "Fatto"
 
 msgid "Downloaded"
 msgstr "Scaricato"
+
+msgid "Downloading an update."
+msgstr "Download di un aggiornamento in corso."
 
 msgid "Downloading speech model..."
 msgstr "Download del modello vocale in corso..."
@@ -1579,6 +1588,9 @@ msgstr "Grande"
 
 msgid "Last backup"
 msgstr "Ultimo backup"
+
+msgid "Later"
+msgstr "Più tardi"
 
 msgid "Launch at login"
 msgstr "Avvia all'accesso"
@@ -2262,6 +2274,9 @@ msgstr "Segna come risolta"
 msgid "Resolved"
 msgstr "Risolta"
 
+msgid "Restart now"
+msgstr "Riavvia ora"
+
 msgid "Restore"
 msgstr "Ripristina"
 
@@ -2864,6 +2879,9 @@ msgstr "Aperta"
 msgid "Unsupported attachment format."
 msgstr "Formato dell’allegato non supportato."
 
+msgid "Updates"
+msgstr "Aggiornamenti"
+
 msgid "Updating issue tracking..."
 msgstr "Aggiornamento delle segnalazioni..."
 
@@ -2935,6 +2953,9 @@ msgstr "Salva video"
 msgid "Webxdc app"
 msgstr ""
 
+msgid "Webxdc apps are only supported on Linux."
+msgstr "Le app webxdc sono supportate solo su Linux."
+
 msgid "What is shared"
 msgstr "Dati condivisi"
 
@@ -2961,6 +2982,10 @@ msgstr "dove i contatti ti raggiungono"
 #, fuzzy
 msgid "Where you publish."
 msgstr "dove pubblichi"
+
+#, c-format
+msgid "White Noise %s is ready to install."
+msgstr "White Noise %s è pronto per l'installazione."
 
 msgid "White Noise and this session."
 msgstr "Scopri White Noise e questa sessione."
@@ -2994,6 +3019,9 @@ msgstr "Giallo"
 
 msgid "You"
 msgstr "Tu"
+
+msgid "You have the latest version."
+msgstr "Hai la versione più recente."
 
 msgid "You stay in the group, but another admin has to grant the rights back."
 msgstr ""

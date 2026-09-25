@@ -1,0 +1,15 @@
+diff --git a/clay.h b/clay.h
+index 7d9cf4c..ef9b2d5 100644
+--- a/clay.h
++++ b/clay.h
+@@ -175,6 +175,10 @@ static inline void Clay__SuppressUnusedLatchDefinitionVariableWarning(void) { (v
+ 
+ #if defined(_MSC_VER) && !defined(__clang__)
+ #define CLAY_PACKED_ENUM __pragma(pack(push, 1)) enum __pragma(pack(pop))
++#elif defined(_WIN32)
++// The Odin binding reads 4-byte enums on every Windows target, matching
++// MSVC. Clang targeting MinGW would otherwise pack them to 1 byte.
++#define CLAY_PACKED_ENUM enum
+ #else
+ #define CLAY_PACKED_ENUM enum __attribute__((__packed__))
+ #endif

@@ -894,6 +894,7 @@ main :: proc() {
 
 @(private)
 app_main :: proc() {
+	update_hooks() // Velopack install/update hooks exit inside; must run first
 	// Relay sockets can close during a write. Let the runtime handle EPIPE.
 	when ODIN_OS != .Windows {
 		libc.signal(libc.int(posix.SIGPIPE), transmute(proc "c" (_: libc.int))libc.SIG_IGN)
@@ -1005,6 +1006,8 @@ app_main :: proc() {
 		rl.CloseWindow()
 		return
 	}
+	update_start(os.get_env("WN_TEST_UPDATE_FEED", context.temp_allocator))
+	defer update_stop()
 	// Tray icon for either tray pref; start-in-tray also hides the
 	// window, honored at boot only, after the unlock.
 	apply_tray(&ui)
@@ -1778,6 +1781,7 @@ app_main :: proc() {
 		if clicked("BannerClose") {
 			ui.banner = "" // borrowed from client_status; never freed here
 		}
+		update_handle()
 		if clicked("RailCollapse") {
 			toggle_rail(&ui)
 		}

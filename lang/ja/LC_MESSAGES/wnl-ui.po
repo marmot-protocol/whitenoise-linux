@@ -467,6 +467,9 @@ msgstr "アーカイブしたチャットがここに表示されます。"
 msgid "Check now"
 msgstr "確認中…"
 
+msgid "Checking for updates."
+msgstr "アップデートを確認しています。"
+
 msgid "Checking your key with the relays. This takes a few seconds."
 msgstr ""
 
@@ -648,6 +651,9 @@ msgstr "診断情報の共有設定を変更できませんでした。もう一
 #, fuzzy
 msgid "Couldn't change the password. Please try again."
 msgstr "チャットを作成できませんでした。もう一度お試しください。"
+
+msgid "Couldn't check for updates. Please try again."
+msgstr "アップデートを確認できませんでした。もう一度お試しください。"
 
 #, fuzzy
 msgid "Couldn't create the backup. Please try again."
@@ -1058,6 +1064,9 @@ msgstr "完了"
 
 msgid "Downloaded"
 msgstr "ダウンロード済み"
+
+msgid "Downloading an update."
+msgstr "アップデートをダウンロードしています。"
 
 msgid "Downloading speech model..."
 msgstr "音声モデルをダウンロードしています..."
@@ -1579,6 +1588,9 @@ msgstr "大"
 
 msgid "Last backup"
 msgstr "最後のバックアップ"
+
+msgid "Later"
+msgstr "後で"
 
 msgid "Launch at login"
 msgstr "ログイン時に起動"
@@ -2262,6 +2274,9 @@ msgstr "解決済みにする"
 msgid "Resolved"
 msgstr "解決済み"
 
+msgid "Restart now"
+msgstr "今すぐ再起動"
+
 msgid "Restore"
 msgstr "復元"
 
@@ -2864,6 +2879,9 @@ msgstr "未解決"
 msgid "Unsupported attachment format."
 msgstr "この添付ファイルの形式には対応していません。"
 
+msgid "Updates"
+msgstr "アップデート"
+
 msgid "Updating issue tracking..."
 msgstr "問題の追跡を更新しています..."
 
@@ -2935,6 +2953,9 @@ msgstr "動画を保存"
 msgid "Webxdc app"
 msgstr ""
 
+msgid "Webxdc apps are only supported on Linux."
+msgstr "WebxdcアプリはLinuxでのみサポートされています。"
+
 msgid "What is shared"
 msgstr "共有されるデータ"
 
@@ -2961,6 +2982,10 @@ msgstr "相手があなたに届ける場所"
 #, fuzzy
 msgid "Where you publish."
 msgstr "あなたが発信する場所"
+
+#, c-format
+msgid "White Noise %s is ready to install."
+msgstr "White Noise %s をインストールする準備ができました。"
 
 msgid "White Noise and this session."
 msgstr "White Noise と現在のセッションについて確認できます。"
@@ -2994,6 +3019,9 @@ msgstr "黄"
 
 msgid "You"
 msgstr "あなた"
+
+msgid "You have the latest version."
+msgstr "最新バージョンです。"
 
 msgid "You stay in the group, but another admin has to grant the rights back."
 msgstr ""

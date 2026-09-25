@@ -443,6 +443,9 @@ msgstr ""
 msgid "Check now"
 msgstr ""
 
+msgid "Checking for updates."
+msgstr ""
+
 msgid "Checking your key with the relays. This takes a few seconds."
 msgstr ""
 
@@ -613,6 +616,9 @@ msgid "Couldn't change diagnostics sharing. Please try again."
 msgstr ""
 
 msgid "Couldn't change the password. Please try again."
+msgstr ""
+
+msgid "Couldn't check for updates. Please try again."
 msgstr ""
 
 msgid "Couldn't create the backup. Please try again."
@@ -996,6 +1002,9 @@ msgid "Done."
 msgstr ""
 
 msgid "Downloaded"
+msgstr ""
+
+msgid "Downloading an update."
 msgstr ""
 
 msgid "Downloading speech model..."
@@ -1491,6 +1500,9 @@ msgid "Large"
 msgstr ""
 
 msgid "Last backup"
+msgstr ""
+
+msgid "Later"
 msgstr ""
 
 msgid "Launch at login"
@@ -2141,6 +2153,9 @@ msgstr ""
 msgid "Resolved"
 msgstr ""
 
+msgid "Restart now"
+msgstr ""
+
 msgid "Restore"
 msgstr ""
 
@@ -2710,6 +2725,9 @@ msgstr ""
 msgid "Unsupported attachment format."
 msgstr ""
 
+msgid "Updates"
+msgstr ""
+
 msgid "Updating issue tracking..."
 msgstr ""
 
@@ -2779,6 +2797,9 @@ msgstr ""
 msgid "Webxdc app"
 msgstr ""
 
+msgid "Webxdc apps are only supported on Linux."
+msgstr ""
+
 msgid "What is shared"
 msgstr ""
 
@@ -2801,6 +2822,10 @@ msgid "Where peers reach you."
 msgstr ""
 
 msgid "Where you publish."
+msgstr ""
+
+#, c-format
+msgid "White Noise %s is ready to install."
 msgstr ""
 
 msgid "White Noise and this session."
@@ -2834,6 +2859,9 @@ msgid "Yellow"
 msgstr ""
 
 msgid "You"
+msgstr ""
+
+msgid "You have the latest version."
 msgstr ""
 
 msgid "You stay in the group, but another admin has to grant the rights back."
