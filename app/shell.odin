@@ -102,12 +102,11 @@ rail_width :: proc(ui: ^Ui_State) -> f32 {
 		return RAIL_W_COLLAPSED
 	}
 	// Resize immediately; preserving the pref restores the list when it fits.
-	if !rail_fits(f32(rl.GetScreenWidth()) / UI_ZOOM, ui.prefs.rail_w) {
+	if !ui.rail_peek && !rail_fits(f32(rl.GetScreenWidth()) / UI_ZOOM, ui.prefs.rail_w) {
 		anim_set(clay.ID("RailWidth").id, RAIL_W_COLLAPSED)
 		return RAIL_W_COLLAPSED
 	}
-	target :=
-		ui.prefs.rail_collapsed ? f32(RAIL_W_COLLAPSED) : f32(clamp(ui.prefs.rail_w, RAIL_W_MIN, RAIL_W_MAX))
+	target := ui.prefs.rail_collapsed ? f32(RAIL_W_COLLAPSED) : rail_full_w(ui)
 	// Dragging the gutter must track the pointer exactly; only the
 	// collapse toggle animates. Pin the entry too, or release replays
 	// the drag from its starting width.
@@ -118,11 +117,44 @@ rail_width :: proc(ui: ^Ui_State) -> f32 {
 	return anim_to(clay.ID("RailWidth").id, target, 20)
 }
 
+// Width of the open rail. Opened by hand in a window too narrow for the
+// saved width beside a full page card, it gives up the excess down to
+// its minimum and the page card takes the squeeze.
+@(private)
+rail_full_w :: proc(ui: ^Ui_State) -> f32 {
+	full := f32(clamp(ui.prefs.rail_w, RAIL_W_MIN, RAIL_W_MAX))
+	if !ui.rail_peek {
+		return full
+	}
+	room := f32(rl.GetScreenWidth()) / UI_ZOOM - GUTTER_W - PAGE_W_MIN
+	return min(full, max(f32(RAIL_W_MIN), room))
+}
+
+// The collapse button and palette command. A window too narrow for the
+// list beside the page collapses it on its own; expanding there opens
+// it anyway (rail_peek) until the user collapses it again. Pages that
+// pin the rail shut (one-card, Archived, Settings) render no button and
+// only flip the pref, since their rail width says nothing about it.
+@(private)
+toggle_rail :: proc(ui: ^Ui_State) {
+	if single_pane() || ui.page == .Archived || ui.page == .Settings {
+		ui.rail_peek = false
+		ui.prefs.rail_collapsed = !ui.prefs.rail_collapsed
+	} else if rail_narrow(ui) {
+		ui.rail_peek = !rail_fits(f32(rl.GetScreenWidth()) / UI_ZOOM, ui.prefs.rail_w)
+		ui.prefs.rail_collapsed = false
+	} else {
+		ui.rail_peek = false
+		ui.prefs.rail_collapsed = true
+	}
+	save_settings(ui)
+}
+
 // How open the rail is: 0 collapsed, 1 at its full width. Everything
 // inside reads this instead of the pref, so the list leaves with the
 // width instead of vanishing the frame the toggle flips.
 rail_open :: proc(ui: ^Ui_State) -> f32 {
-	full := f32(clamp(ui.prefs.rail_w, RAIL_W_MIN, RAIL_W_MAX))
+	full := rail_full_w(ui)
 	if full <= RAIL_W_COLLAPSED {
 		return 0
 	}

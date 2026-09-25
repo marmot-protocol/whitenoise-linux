@@ -1,6 +1,9 @@
 package main
 
+import "base:runtime"
+import "core:os"
 import "core:testing"
+import rl "sdlrl"
 
 @(test)
 test_rail_fits :: proc(t: ^testing.T) {
@@ -12,6 +15,52 @@ test_rail_fits :: proc(t: ^testing.T) {
 	}
 	testing.expect(t, !rail_fits(780, RAIL_W_MIN), "collapse at the reported window width")
 	testing.expect(t, rail_fits(1200, RAIL_W_DEFAULT), "restore the list in a wide window")
+}
+
+// A two-card window too narrow for the saved rail collapses it on its
+// own; the expand toggle must still open the list there, and collapse
+// it again. Settings pins the rail shut, so its toggle flips the pref
+// without forcing the list open for the Chats page later.
+// SDL_VIDEODRIVER=dummy tests/odin.sh app -define:ODIN_TEST_NAMES=rail_expand_narrow
+@(test)
+rail_expand_narrow :: proc(t: ^testing.T) {
+	if #config(ODIN_TEST_NAMES, "") != "rail_expand_narrow" {return}
+	context.allocator = runtime.default_context().allocator
+	rl.InitWindow(780, 700, "Rail expand")
+	defer rl.CloseWindow()
+	UI_ZOOM, UI_SCALE = 1, 1
+	home :: "/tmp/wn-odin-rail-test"
+	previous_config := os.get_env("XDG_CONFIG_HOME", context.temp_allocator)
+	os.set_env("XDG_CONFIG_HOME", home)
+	defer os.set_env("XDG_CONFIG_HOME", previous_config)
+	defer os.remove_all(home)
+
+	ui: Ui_State
+	ui.page = .Chats
+	ui.prefs.rail_w = RAIL_W_MIN
+	ui.prefs.reduce_motion = true
+	g_prefs = &ui.prefs
+	defer g_prefs = nil
+	width :: proc(ui: ^Ui_State) -> f32 {
+		anim_frame += 1
+		return rail_width(ui)
+	}
+
+	testing.expect_value(t, width(&ui), f32(RAIL_W_COLLAPSED))
+	toggle_rail(&ui)
+	testing.expect_value(t, width(&ui), f32(RAIL_W_MIN))
+	testing.expect(t, !rail_narrow(&ui), "expanded list must render its rows")
+	toggle_rail(&ui)
+	testing.expect_value(t, width(&ui), f32(RAIL_W_COLLAPSED))
+	testing.expect(t, ui.prefs.rail_collapsed)
+
+	ui.page = .Settings
+	toggle_rail(&ui)
+	toggle_rail(&ui)
+	testing.expect(t, ui.prefs.rail_collapsed, "Settings toggle round-trips the pref")
+	testing.expect(t, !ui.rail_peek, "Settings must not force the list open")
+	ui.page = .Chats
+	testing.expect_value(t, width(&ui), f32(RAIL_W_COLLAPSED))
 }
 
 // The two width rules the narrow layout hangs on. Both are pure, so

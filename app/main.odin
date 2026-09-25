@@ -1772,7 +1772,7 @@ app_main :: proc() {
 			ui.banner = "" // borrowed from client_status; never freed here
 		}
 		if clicked("RailCollapse") {
-			flip(&ui, &ui.prefs.rail_collapsed)
+			toggle_rail(&ui)
 		}
 		if clicked("PhoneBack") {
 			phone_back_action(&ui)

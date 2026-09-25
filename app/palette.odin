@@ -335,7 +335,7 @@ run_command :: proc(ui: ^Ui_State, client: ^marmot.Client, cmd: Cmd) {
 		ui.page = .Chats
 		ui.unread_only = !ui.unread_only
 	case .Toggle_Rail:
-		flip(ui, &ui.prefs.rail_collapsed)
+		toggle_rail(ui)
 	case .Toggle_Members:
 		if ui.selected >= 0 {
 			ui.group_files_open = false
