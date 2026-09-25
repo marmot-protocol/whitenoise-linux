@@ -26,7 +26,7 @@ White Noise Linux is a desktop front end for [Marmot](https://github.com/marmot-
 **Messaging**
 
 - One-to-one and group chats, end-to-end encrypted through Marmot's MLS, with sealed-sender invites over NIP-59.
-- Markdown bodies, reactions, replies, edits with history, forwarding, and search.
+- Markdown bodies (with typeset `$$` math blocks), reactions, replies, edits with history, forwarding, and search.
 - A durable on-disk send queue, so messages written offline aren't lost and go out on reconnect.
 - Per-chat unread tracking, surfaced as rail badges.
 
@@ -97,7 +97,7 @@ About, diagnostics, AppImage, Flatpak, and Arch packaging use this version.
 
 ## Build from source
 
-You need `just`, the [Odin compiler](https://odin-lang.org/docs/install/), a C compiler, and a Rust toolchain (Marmot's C bundle is built from source). Plus SDL3 and the media libraries the viewers bind.
+You need `just`, the [Odin compiler](https://odin-lang.org/docs/install/), a C and C++ compiler, CMake, and a Rust toolchain (Marmot's C bundle is built from source). Plus SDL3 and the media libraries the viewers bind.
 
 **Debian / Ubuntu** (SDL3 needs 25.04 or newer, or a source build):
 
@@ -109,7 +109,7 @@ sudo apt-get install -y just pkg-config cmake clang git curl \
 **Arch:**
 
 ```sh
-sudo pacman -S --needed just odin rust sdl3 libarchive mpv poppler-glib cairo glib2
+sudo pacman -S --needed just odin rust cmake sdl3 libarchive mpv poppler-glib cairo glib2
 ```
 
 **Then:**
@@ -121,7 +121,7 @@ just build
 just run
 ```
 
-The first build is the slow one: it clones the pinned Marmot revision and builds its C bundle, fetches clay, ufbx and the Twemoji set, and (on an Odin install shipping no prebuilt `vendor/stb` archives) builds those. Everything after that is a plain Odin compile of a few seconds.
+The first build is the slow one: it clones the pinned Marmot revision and builds its C bundle, fetches clay, ufbx, MicroTeX and the Twemoji set, and (on an Odin install shipping no prebuilt `vendor/stb` archives) builds those. Everything after that is a plain Odin compile of a few seconds.
 
 ### First run
 

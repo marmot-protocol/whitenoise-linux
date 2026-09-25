@@ -2151,6 +2151,7 @@ app_main :: proc() {
 	delete(ui.messages_account)
 	wrap_clear()
 	delete(wrap_cache)
+	math_stop()
 	for _, view in video_views {if view != nil {video_view_free(view)}}
 	for _, view in stl_views {if view != nil {stl_view_free(view)}}
 	for _, view in pdf_views {if view != nil {pdf_view_free(view)}}

@@ -96,6 +96,7 @@ jobs:
             vendor/clay
             vendor/crop-circles
             vendor/ufbx
+            vendor/microtex
             vendor/twemoji
             vendor/emoji-catalog.tsv
           key: vendor-${{ hashFiles('DEPS_PIN') }}

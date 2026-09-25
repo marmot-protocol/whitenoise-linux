@@ -29,6 +29,10 @@ output is already present, so only the first run is slow:
   `app/fbx_shim.c` are archived into `build/libwnfbx.a`.
 - `vendor/twemoji` (the 72x72 PNG set) and `vendor/emoji-catalog.tsv`, both
   pulled from pinned crates.io tarballs.
+- `vendor/microtex` at its pinned `openmath` commit with
+  `patches/microtex-isolation.patch` applied, built by CMake into
+  `build/microtex/lib/libmicrotex.a`; `app/math_shim.cpp` (the `$$` math
+  block renderer) is archived into `build/libwnmath.a`.
 - An `ODIN_ROOT` overlay at `build/odin-root`, but **only** when the installed
   Odin is missing `vendor/stb/lib/stb_truetype.a` (the Linux release tarball
   and the Arch package both are; `sdlrl` needs truetype and image). The
@@ -81,11 +85,12 @@ the offline queue. UI prefs are a separate JSON blob at
 
 ### System dependencies
 
-Odin (a recent nightly; CI pins one in `.github/workflows/ci.yml`), a C
-compiler, and a Rust toolchain for `marmot-c`. Then SDL3 plus the libraries
-behind the `foreign import "system:…"` lines in `app/`: `libarchive`
+Odin (a recent nightly; CI pins one in `.github/workflows/ci.yml`), a C and
+C++ compiler, CMake, and a Rust toolchain for `marmot-c`. Then SDL3 plus the
+libraries behind the `foreign import "system:…"` lines in `app/`: `libarchive`
 (`archive.odin`), `libmpv` (`mpv.odin`), `poppler-glib` + `glib` + `gobject` +
-`cairo` (`pdf.odin`), `libcurl` (`ws_shim.c`, the nevent card fetch).
+`cairo` (`pdf.odin`, `math.odin`), `libcurl` (`ws_shim.c`, the nevent card
+fetch).
 
 ## Architecture
 

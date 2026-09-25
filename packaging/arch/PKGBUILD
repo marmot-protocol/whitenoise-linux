@@ -1,7 +1,7 @@
 # Maintainer: Marmot Protocol <https://github.com/marmot-protocol/whitenoise-linux>
 #
 # Builds the current master from the upstream repo. scripts/build.sh fetches the
-# pinned mdk/clay/ufbx revisions and cargo pulls marmot-c's crates, so
+# pinned mdk/clay/ufbx/microtex revisions and cargo pulls marmot-c's crates, so
 # build() needs network; that is why this is a -git package and not an
 # AUR-clean release one. To build from a local checkout instead:
 #
@@ -21,7 +21,7 @@ license=(AGPL-3.0-or-later)
 # behind the bundled faces (DejaVu Sans Mono has no bundled copy).
 depends=(sdl3 libwebp libarchive mpv poppler-glib cairo glib2 curl openssl gcc-libs freetype2
          xdg-utils libnotify ttf-dejavu hicolor-icon-theme)
-makedepends=(git odin rust clang unzip)
+makedepends=(git odin rust clang unzip cmake)
 optdepends=(
   'webkit2gtk-4.1: run webxdc apps attached to messages'
   'noto-fonts-cjk: Japanese text'

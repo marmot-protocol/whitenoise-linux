@@ -118,6 +118,50 @@ if [ ! -f "$HERE/build/libwnws.a" ] || [ "$HERE/app/ws_shim.c" -nt "$HERE/build/
   ar rcs "$HERE/build/libwnws.a" "$HERE/build/ws/ws_shim.o"
 fi
 
+# Math blocks: MicroTeX (MIT) typesets TeX into a draw-command stream and
+# app/math_shim.cpp replays it onto a cairo surface. Pinned to the
+# openmath branch: its core is dependency-free C++17, and its C wrapper
+# emits glyphs as paths, so no font rasterizer or GTK stack is involved.
+# The checkout also carries TeX Gyre DejaVu Math pre-converted to MicroTeX's .clm2
+# format, which app/math.odin #loads.
+#
+# patches/microtex-isolation.patch keeps one formula from changing the
+# next: MicroTeX holds \newcommand definitions and \definecolor colors in
+# process-wide maps. The patch bounds macro expansion, refuses to replace
+# built-ins, and adds the resets the shim calls after every render.
+MICROTEX="$HERE/vendor/microtex"
+MICROTEX_PIN="$(pin microtex)"
+MICROTEX_PATCH="$HERE/patches/microtex-isolation.patch"
+if [ ! -d "$MICROTEX" ]; then
+  git clone --filter=blob:none https://github.com/NanoMichael/MicroTeX.git "$MICROTEX"
+fi
+if [ "$(git -C "$MICROTEX" rev-parse HEAD)" != "$MICROTEX_PIN" ]; then
+  git -C "$MICROTEX" checkout -- .
+  git -C "$MICROTEX" fetch origin "$MICROTEX_PIN"
+  git -C "$MICROTEX" checkout --detach "$MICROTEX_PIN"
+  rm -rf "$HERE/build/microtex"
+fi
+if git -C "$MICROTEX" apply --check "$MICROTEX_PATCH" 2>/dev/null; then
+  git -C "$MICROTEX" apply "$MICROTEX_PATCH"
+elif ! git -C "$MICROTEX" apply --reverse --check "$MICROTEX_PATCH" 2>/dev/null; then
+  echo "==> MicroTeX patch conflicts with vendor/microtex: $MICROTEX_PATCH" >&2
+  exit 1
+fi
+if [ ! -f "$HERE/build/microtex/CMakeCache.txt" ]; then
+  cmake -S "$MICROTEX" -B "$HERE/build/microtex" -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DBUILD_STATIC=ON -DHAVE_CWRAPPER=ON \
+    -DHAVE_LOG=OFF -DGRAPHICS_DEBUG=OFF -DHAVE_AUTO_FONT_FIND=OFF
+fi
+# Incremental: a no-op unless the pin or the patch changed sources.
+cmake --build "$HERE/build/microtex" --target microtex -j"$(nproc)"
+mkdir -p "$HERE/build/math"
+if [ ! -f "$HERE/build/libwnmath.a" ] || [ "$HERE/app/math_shim.cpp" -nt "$HERE/build/libwnmath.a" ] || [ "$MICROTEX_PATCH" -nt "$HERE/build/libwnmath.a" ]; then
+  c++ -std=c++17 -c -O2 -fPIC -Wall -Wextra -DHAVE_CWRAPPER -isystem "$MICROTEX/lib" -isystem "$HERE/build/microtex/lib" \
+    $(pkg-config --cflags cairo) "$HERE/app/math_shim.cpp" -o "$HERE/build/math/math_shim.o"
+  rm -f "$HERE/build/libwnmath.a"
+  ar rcs "$HERE/build/libwnmath.a" "$HERE/build/math/math_shim.o"
+fi
+
 # FreeType decodes profile web fonts for the existing SFNT text renderer.
 cc -O2 -Wall -Wextra "$HERE/app/font.c" $(pkg-config --cflags --libs freetype2) -o "$HERE/build/wn-font"
 
@@ -219,6 +263,20 @@ if [ ! -f "$FONTS/Noto-LICENSE.txt" ]; then
   echo "0dab92d0544f7b233403f14b84a663bdbfa746982eda629e7f4f9ffe1b036feb  $FONTS/Noto-LICENSE.txt.tmp" | sha256sum -c -
   mv "$FONTS/Noto-LICENSE.txt.tmp" "$FONTS/Noto-LICENSE.txt"
 fi
+
+# The math font (TeX Gyre DejaVu Math, app/math.odin) is under the GUST
+# Font License, with the DejaVu changes in the public domain. MicroTeX's
+# copy ships only a README that names both texts, so fetch them here.
+while read -r file sha url; do
+  if [ ! -f "$FONTS/$file" ]; then
+    curl -sSfL "$url" -o "$FONTS/$file.tmp"
+    echo "$sha  $FONTS/$file.tmp" | sha256sum -c -
+    mv "$FONTS/$file.tmp" "$FONTS/$file"
+  fi
+done <<'LICENSES'
+GUST-FONT-LICENSE.txt 2bd69affc3da00715116f713f57eab9707e96daf3562ad0215987b15b9c16f73 https://mirrors.ctan.org/fonts/tex-gyre-math/doc/GUST-FONT-LICENSE.txt
+DejaVu-LICENSE.txt 7a083b136e64d064794c3419751e5c7dd10d2f64c108fe5ba161eae5e5958a93 https://raw.githubusercontent.com/dejavu-fonts/dejavu-fonts/version_2_37/LICENSE
+LICENSES
 
 mkdir -p "$HERE/build"
 

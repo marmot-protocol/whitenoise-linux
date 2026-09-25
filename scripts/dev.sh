@@ -78,7 +78,7 @@ build_module() {
 
 while :; do
 	host_hash=$(sha256sum "$HERE/scripts/dev-host.c")
-	native_hash=$({ find "$HERE/app" -maxdepth 1 -type f \( -name '*.c' -o -name '*.h' \) -print0 | sort -z | xargs -0 sha256sum; sha256sum "$HERE/DEPS_PIN" "$HERE/patches/"*.patch "$HERE/scripts/build.sh"; } | sha256sum)
+	native_hash=$({ find "$HERE/app" -maxdepth 1 -type f \( -name '*.c' -o -name '*.cpp' -o -name '*.h' \) -print0 | sort -z | xargs -0 sha256sum; sha256sum "$HERE/DEPS_PIN" "$HERE/patches/"*.patch "$HERE/scripts/build.sh"; } | sha256sum)
 	source_hash=$({ find "$HERE/app" "$HERE/marmot" "$HERE/themes" "$HERE/lang" -type f -print0 | sort -z | xargs -0 sha256sum; sha256sum "$HERE/scripts/dev-host.c" "$HERE/scripts/dev-exports.map"; printf '%s\n' "$native_hash"; } | sha256sum)
 	if [ "$source_hash" = "$last_source" ] && [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
 		echo "==> unchanged source, keeping the running app"

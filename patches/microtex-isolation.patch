@@ -1,0 +1,144 @@
+diff --git i/lib/atom/atom_basic.h w/lib/atom/atom_basic.h
+index 05434f2..44e9a48 100644
+--- i/lib/atom/atom_basic.h
++++ w/lib/atom/atom_basic.h
+@@ -174,6 +174,10 @@ private:
+   sptr<RowAtom> _elements;
+ 
+ public:
++  /** Restore the predefined colors, dropping \definecolor results. The
++   * first call records the set to restore. */
++  static void _reset_();
++
+   ColorAtom() = delete;
+ 
+   ColorAtom(const sptr<Atom>& atom, color bg, color c);
+diff --git i/lib/atom/colors_def.cpp w/lib/atom/colors_def.cpp
+index 22e41a7..081e473 100644
+--- i/lib/atom/colors_def.cpp
++++ w/lib/atom/colors_def.cpp
+@@ -155,3 +155,8 @@ color ColorAtom::getColor(std::string name) {
+ 
+   return _default;
+ }
++
++void microtex::ColorAtom::_reset_() {
++  static const auto defaults = _colors;
++  _colors = defaults;
++}
+diff --git i/lib/macro/macro.cpp w/lib/macro/macro.cpp
+index 0d4c755..160696f 100644
+--- i/lib/macro/macro.cpp
++++ w/lib/macro/macro.cpp
+@@ -8,6 +8,23 @@ using namespace std;
+ using namespace microtex;
+ 
+ bool NewCommandMacro::_errIfConflict = true;
++int NewCommandMacro::_expansions = 0;
++
++static const int MAX_EXPANSIONS = 1000;
++
++// Definitions present before the first _reset_: _init_ registers
++// predefined commands (pmatrix, tbinom, ...) as expansions in _codes.
++static map<string, string> baselineCodes;
++static map<string, string> baselineReplacements;
++static bool baselineTaken = false;
++
++// Built-in commands are never replaced, native or predefined: they
++// cannot be restored once MacroInfo::add has deleted them.
++static void checkBuiltin(const string& name) {
++  bool native = MacroInfo::get(name) != nullptr && !NewCommandMacro::isMacro(name);
++  if (native || baselineCodes.count(name) != 0)
++    throw ex_parse("Command " + name + " is built in and cannot be redefined!");
++}
+ 
+ bool NewCommandMacro::isMacro(const string& name) {
+   auto it = _codes.find(name);
+@@ -15,11 +32,13 @@ bool NewCommandMacro::isMacro(const string& name) {
+ }
+ 
+ void NewCommandMacro::checkNew(const string& name) {
++  checkBuiltin(name);
+   if (_errIfConflict && isMacro(name))
+     throw ex_parse("Command " + name + " already exists! Use renewcommand instead!");
+ }
+ 
+ void NewCommandMacro::checkRenew(const string& name) {
++  checkBuiltin(name);
+   if (NewCommandMacro::_errIfConflict && !isMacro(name))
+     throw ex_parse("Command " + name + " is no defined! Use newcommand instead!");
+ }
+@@ -61,6 +80,7 @@ void NewCommandMacro::addRenewCommand(
+ }
+ 
+ void NewCommandMacro::execute(Parser& tp, vector<string>& args) {
++  if (++_expansions > MAX_EXPANSIONS) throw ex_parse("Too many macro expansions!");
+   string code = _codes[args[0]];
+   string rep;
+   size_t argc = args.size() - 12;
+@@ -114,6 +134,21 @@ void NewEnvironmentMacro::addRenewEnvironment(
+   addRenewCommand(name + "@env", begDef + " #" + toString(argc + 1) + " " + endDef, argc + 1);
+ }
+ 
++void NewCommandMacro::_reset_() {
++  if (!baselineTaken) {
++    baselineCodes = _codes;
++    baselineReplacements = _replacements;
++    baselineTaken = true;
++  }
++  for (const auto& i : _codes) {
++    if (baselineCodes.count(i.first) == 0) MacroInfo::remove(i.first);
++  }
++  _codes = baselineCodes;
++  _replacements = baselineReplacements;
++  _errIfConflict = true;
++  _expansions = 0;
++}
++
+ void NewCommandMacro::_free_() {
+   delete _instance;
+ }
+@@ -130,6 +165,13 @@ MacroInfo* MacroInfo::get(const std::string& name) {
+   return it->second;
+ }
+ 
++void MacroInfo::remove(const std::string& name) {
++  auto it = _commands.find(name);
++  if (it == _commands.end()) return;
++  delete it->second;
++  _commands.erase(it);
++}
++
+ void MacroInfo::_free_() {
+   for (const auto& i : _commands) delete i.second;
+ }
+diff --git i/lib/macro/macro.h w/lib/macro/macro.h
+index a3bdb2c..1777b2a 100644
+--- i/lib/macro/macro.h
++++ w/lib/macro/macro.h
+@@ -36,6 +36,15 @@ public:
+    */
+   static bool _errIfConflict;
+ 
++  /** Macro expansions since the last _reset_; bounded so self-referencing
++   * definitions (\newcommand{\a}{\a\a}\a) fail instead of looping. */
++  static int _expansions;
++
++  /** Forget every user definition and restore the defaults above. The
++   * first call records the predefined commands to keep; call it once
++   * right after init. */
++  static void _reset_();
++
+   void execute(Parser& tp, std::vector<std::string>& args) override;
+ 
+   static void addNewCommand(const std::string& name, const std::string& code, int argc);
+@@ -89,6 +98,9 @@ public:
+   /** Get the macro info from given name, return nullptr if not found. */
+   static MacroInfo* get(const std::string& name);
+ 
++  /** Remove and delete a macro, if present. */
++  static void remove(const std::string& name);
++
+   // Number of arguments
+   const int argc;
+   // Options' position, can be  0, 1 and 2

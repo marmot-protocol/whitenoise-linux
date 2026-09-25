@@ -2786,7 +2786,36 @@ md_blocks :: proc(
 						)
 					}
 				}
-			case .Code, .Math:
+			case .Math:
+				// Typeset when MicroTeX accepts it, centered like display
+				// math; otherwise fall through to the source on the plate.
+				if tex := math_texture(block.text); tex != nil {
+					if clay.UI(clay.ID("MsgMath", block_id))(
+					{
+						layout = {
+							sizing = {width = clay.SizingGrow()},
+							padding = clay.PaddingAll(10),
+							childAlignment = {x = .Center},
+						},
+						backgroundColor = CODE_PLATE,
+						cornerRadius = rr(6),
+						border = {color = FIELD_BORDER, width = {1, 1, 1, 1, 0}},
+					},
+					) {
+						// Wider than the bubble: scale down rather than clip.
+						w := min(f32(tex.width) / UI_SCALE, max(f32(1), width - 20))
+						if clay.UI()(
+						{
+							layout = {sizing = {width = clay.SizingFixed(w)}},
+							aspectRatio = {f32(tex.width) / f32(tex.height)},
+							image = {imageData = tex},
+						},
+						) {}
+					}
+					break
+				}
+				fallthrough
+			case .Code:
 				text := block.kind == .Math ? strings.trim_right(block.text, "\n") : block.text
 				if clay.UI(clay.ID("MsgCode", block_id))(
 				{
