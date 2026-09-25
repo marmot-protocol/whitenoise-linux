@@ -1,5 +1,6 @@
 /build/
 /vendor/
+/dist/
 
 # odin build output when built in-package
 /app/app
