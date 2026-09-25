@@ -18,6 +18,7 @@ import "core:crypto/hash"
 import "core:encoding/hex"
 import "core:fmt"
 import "core:os"
+import "core:slice"
 import "core:strings"
 import "core:sync"
 import "core:thread"
@@ -255,14 +256,21 @@ refresh_worker :: proc(_: ^thread.Thread) {
 			continue
 		}
 
+		// Ask the whitenoise fleet plus, for a local account, its own NIP-65
+		// relays: another client may publish kind 0 only to those.
 		id := strings.clone_to_cstring(hex, context.temp_allocator)
-		if marmot.refresh_profile(
-			   client,
-			   id,
-			   raw_data(DEFAULT_RELAYS),
-			   uint(len(DEFAULT_RELAYS)),
-		   ) !=
-		   .OK {
+		relays := make([dynamic]cstring, context.temp_allocator)
+		append(&relays, ..DEFAULT_RELAYS)
+		nip65: ^marmot.String_List
+		if marmot.account_nip65_relays(client, id, &nip65) == .OK && nip65 != nil {
+			for i in 0 ..< nip65.len {
+				url := nip65.items[i]
+				if url == nil || slice.contains(DEFAULT_RELAYS, url) {continue}
+				append(&relays, strings.clone_to_cstring(string(url), context.temp_allocator))
+			}
+			marmot.string_list_free(nip65)
+		}
+		if marmot.refresh_profile(client, id, raw_data(relays), uint(len(relays))) != .OK {
 			// marmot's last_error is thread-local, so it is read here.
 			fmt.eprintfln("profiles: refresh failed for %s: %s", hex, marmot.last_error())
 		}
@@ -287,7 +295,15 @@ drain_refresh :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 	done := refresh_done
 	refresh_done = {}
 	sync.unlock(&refresh_mutex)
-	for hex in done {profile_queue(hex); delete(hex)}
+	for hex in done {
+		profile_queue(hex)
+		// The queued essentials read misses about/handle/lud16, and an open
+		// profile page never reloads on its own.
+		if client != nil && hex == ui.account_ref && ui.profile.loaded {
+			reload_profile(ui, client)
+		}
+		delete(hex)
+	}
 	delete(done)
 	if client == nil {return}
 	changed := false
@@ -309,6 +325,9 @@ drain_refresh :: proc(client: ^marmot.Client, ui: ^Ui_State) {
 	now := rl.GetTime()
 	if profile_checked < 0 || now - profile_checked >= PROFILE_CHECK_SECS {
 		profile_checked = now
+		// Own kind 0 once per account per session, whatever the cache holds:
+		// an edit made in another client must show up after a restart.
+		queue_refresh(client, ui.account_ref)
 		profile_queue(ui.account_ref)
 		profile_queue(ui.peer_hex)
 		for _ in 0 ..< min(PROFILE_BATCH, len(profile_order)) {

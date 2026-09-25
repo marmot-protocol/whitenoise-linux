@@ -455,7 +455,7 @@ publish_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
 	marmot.user_profile_metadata_free(out)
 
 	ui.profile.name = strings.clone(string(ui.name_input[:]))
-	ui.profile.username = ui.profile.name
+	ui.profile.username = strings.clone(ui.profile.name)
 	ui.profile.about = strings.clone(string(ui.about_input[:]))
 	ui.profile.nip05 = strings.clone(string(ui.nip05_input[:]))
 	ui.profile.lud16 = strings.clone(string(ui.lud16_input[:]))

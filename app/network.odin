@@ -353,9 +353,16 @@ set_inbox_relays :: proc(ui: ^Ui_State, client: ^marmot.Client, relays: []cstrin
 }
 
 reload_profile :: proc(ui: ^Ui_State, client: ^marmot.Client) {
-	ui.profile.loaded = false
-	clear(&ui.profile.nip65)
-	clear(&ui.profile.inbox)
+	// load_profile only writes fields the cache has, so a field removed
+	// upstream must be emptied here or the old value would stay.
+	p := &ui.profile
+	delete(p.npub); delete(p.name); delete(p.username)
+	delete(p.about); delete(p.nip05); delete(p.lud16)
+	p.npub, p.name, p.username, p.about, p.nip05, p.lud16 = "", "", "", "", "", ""
+	p.pic_set = false
+	p.loaded = false
+	clear(&p.nip65)
+	clear(&p.inbox)
 	load_profile(client, ui)
 }
 
