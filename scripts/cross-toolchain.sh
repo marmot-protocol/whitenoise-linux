@@ -30,7 +30,7 @@ case "$TARGET" in
       # extract mode downloads and unpacks arm64 packages without chrooting or
       # emulating a compiler; GCC above remains an amd64 Linux executable.
       mmdebstrap --mode=root --variant=extract --architectures=arm64 \
-        --include=libc6-dev,libstdc++-13-dev,libarchive-dev,libwebp-dev,libmpv-dev,libpoppler-glib-dev,libcairo2-dev,libcurl4-openssl-dev,libssl-dev,libglib2.0-dev,libfreetype-dev,libavformat-dev,libavcodec-dev,libavutil-dev,libswresample-dev,libwebkit2gtk-4.1-dev,libasound2-dev,libpulse-dev,libx11-dev,libxext-dev,libxcursor-dev,libxi-dev,libxfixes-dev,libxrandr-dev,libxss-dev,libwayland-dev,libxkbcommon-dev,libegl1-mesa-dev,libgbm-dev,curl,ca-certificates,gstreamer1.0-plugins-good,gstreamer1.0-libav \
+        --include=libc6-dev,libstdc++-13-dev,libarchive-dev,libwebp-dev,libmpv-dev,libpoppler-glib-dev,libcairo2-dev,libcurl4-openssl-dev,libssl-dev,libglib2.0-dev,libfreetype-dev,libavformat-dev,libavcodec-dev,libavutil-dev,libswresample-dev,libwebkit2gtk-4.1-dev,libasound2-dev,libpulse-dev,libx11-dev,libxext-dev,libxcursor-dev,libxi-dev,libxfixes-dev,libxrandr-dev,libxss-dev,libxtst-dev,libwayland-dev,libxkbcommon-dev,libegl1-mesa-dev,libgbm-dev,curl,ca-certificates,gstreamer1.0-plugins-good,gstreamer1.0-libav \
         noble "$SYSROOT" 'deb http://ports.ubuntu.com/ubuntu-ports noble main universe' \
         'deb http://ports.ubuntu.com/ubuntu-ports noble-updates main universe' \
         'deb http://ports.ubuntu.com/ubuntu-ports noble-security main universe'

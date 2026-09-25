@@ -52,7 +52,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             pkg-config cmake ninja-build clang git curl \
             libarchive-dev libwebp-dev libmpv-dev libpoppler-glib-dev libcairo2-dev libcurl4-openssl-dev libssl-dev \
-            libglib2.0-dev libfreetype-dev libavformat-dev libavcodec-dev libavutil-dev libswresample-dev \
+            libglib2.0-dev libfreetype-dev libavformat-dev libavcodec-dev libavutil-dev libswresample-dev libxtst-dev \
             file desktop-file-utils wget ca-certificates unzip
 
       - name: Cache SDL3

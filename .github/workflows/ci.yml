@@ -39,7 +39,8 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             pkg-config cmake ninja-build clang git curl \
             libarchive-dev libwebp-dev libmpv-dev libpoppler-glib-dev libcairo2-dev libcurl4-openssl-dev libssl-dev \
-            libglib2.0-dev libfreetype-dev libavformat-dev libavcodec-dev libavutil-dev libswresample-dev gettext
+            libglib2.0-dev libfreetype-dev libavformat-dev libavcodec-dev libavutil-dev libswresample-dev gettext \
+            libxtst-dev
 
       - name: Cache SDL3
         id: sdl-cache
