@@ -57,7 +57,7 @@ excluded from the real-network results above.
 The Linux build applies `patches/mdk-send-connections.patch`. From `vendor/mdk`:
 
 ```sh
-CC=clang cargo test --release --locked -p marmot-app --test relay_runtime publish_
+CC=clang cargo test --release --locked -p marmot-app --test relay_runtime publish_socket_isolation -- --exact
 SEND_RELAYS=wss://relay.eu.whitenoise.chat,wss://relay.us.whitenoise.chat \
   CC=clang cargo test --release --locked -p marmot-app --test relay_runtime \
   send_connection_reuse -- --ignored --nocapture

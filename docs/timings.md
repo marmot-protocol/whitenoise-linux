@@ -1,6 +1,6 @@
 # Timing diagnostics
 
-MDK is pinned to the merge of marmot-protocol/mdk#1760. Enable Developer
+The pinned MDK includes the timing work from marmot-protocol/mdk#1760. Enable Developer
 mode in Settings > Advanced, then open Debug > Timings and click Refresh.
 Copy JSON exports all **79 distinct operation distributions**. The names
 are listed explicitly in `app/timings.odin`, matching the C snapshot in

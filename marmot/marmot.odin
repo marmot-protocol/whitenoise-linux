@@ -1513,6 +1513,9 @@ Host_Performance :: enum u32 {
 Performance_Outcome :: enum u32 {
 	Success,
 	Failure,
+	Cancelled,
+	Timeout,
+	Unavailable,
 }
 
 foreign lib {
