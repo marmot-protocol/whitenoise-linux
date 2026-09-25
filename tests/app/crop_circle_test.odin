@@ -176,8 +176,9 @@ crop_circle_layout :: proc(t: ^testing.T) {
 			clay.GetElementData(clay.ID("PeerCircle", 0)).found,
 			photo_url != "",
 		)
-		testing.expect(t, !clay.GetElementData(clay.ID("MentionReveal", 70 * 128)).found)
-		for id in ([]clay.ElementId{clay.ID("MentionPhoto", 70 * 128), clay.ID("PeerAvatar", 0)}) {
+		mention := clay.ID("MentionAvatar", 70 * 128).id
+		testing.expect(t, !clay.GetElementData(clay.ID("PeepReveal", mention)).found)
+		for id in ([]clay.ElementId{clay.ID("PeepPhoto", mention), clay.ID("PeerAvatar", 0)}) {
 			drawn := false
 			for command in commands.internalArray[:commands.length] {
 				if command.commandType != .Image ||
@@ -209,6 +210,12 @@ crop_circle_layout :: proc(t: ^testing.T) {
 		}
 	}
 	testing.expect(t, update_profile(&ui, key, {pic_url = strings.clone(square_url)}))
+	msg := Msg_Ui {
+		id        = "m1",
+		sender    = "Danny",
+		sender_id = key,
+		pic_url   = square_url,
+	}
 	for over in ([]bool{false, true, false}) {
 		chip_before := clay.GetElementData(clay.ID("SegMention", 70 * 128)).boundingBox
 		clay.SetPointerState(
@@ -219,16 +226,35 @@ crop_circle_layout :: proc(t: ^testing.T) {
 		clay.BeginLayout()
 		render_segs(70, []Inline_Seg{{hex = key}}, BODY_FS, TEXT, 18, chips = true)
 		_ = clay.EndLayout(0)
-		reveal := clay.GetElementData(clay.ID("MentionReveal", 70 * 128))
+		mention := clay.ID("MentionAvatar", 70 * 128)
+		reveal := clay.GetElementData(clay.ID("PeepReveal", mention.id))
 		testing.expect_value(t, reveal.found, over)
 		chip := clay.GetElementData(clay.ID("SegMention", 70 * 128)).boundingBox
 		testing.expect(t, abs(chip.width - mention_width) < 0.01, "hover must not reflow mentions")
 		if over {
 			testing.expect_value(t, mention_hover, key)
-			photo := clay.GetElementData(clay.ID("MentionAvatar", 70 * 128)).boundingBox
-			mark := clay.GetElementData(clay.ID("MentionCircle", 70 * 128)).boundingBox
+			photo := clay.GetElementData(mention).boundingBox
+			mark := clay.GetElementData(clay.ID("PeepCircle", mention.id)).boundingBox
 			testing.expect(t, mark == photo, "hover identity must replace the entire avatar")
 			testing.expect_value(t, reveal.boundingBox, photo)
+		}
+	}
+	// The sender avatar beside a message opens the same peephole.
+	for over in ([]bool{false, true, false}) {
+		box := clay.GetElementData(clay.ID("MsgAvatar", 0)).boundingBox
+		clay.SetPointerState(
+			over ? clay.Vector2{box.x + box.width / 2, box.y + box.height / 2} : clay.Vector2{-1, -1},
+			false,
+		)
+		anim_tick(1.0 / 60)
+		clay.BeginLayout()
+		message_row(0, msg)
+		_ = clay.EndLayout(0)
+		avatar := clay.ID("MsgAvatar", 0)
+		reveal := clay.GetElementData(clay.ID("PeepReveal", avatar.id))
+		testing.expect_value(t, reveal.found, over)
+		if over {
+			testing.expect_value(t, reveal.boundingBox, clay.GetElementData(avatar).boundingBox)
 		}
 	}
 	testing.expect(t, update_profile(&ui, key, {pic_url = strings.clone("")}))

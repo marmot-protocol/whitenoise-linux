@@ -168,3 +168,59 @@ avatar :: proc(
 		)
 	}
 }
+
+@(private)
+Peephole :: enum {
+	Closed,
+	Open,
+}
+
+// The photo as a cover over the key's crop circle: while `.Open`, it
+// swings up on its top hinge and shows the identity fingerprint behind
+// it. Without a photo the crop circle is all there is. The outer element
+// takes `id_str`/`index`, so click handlers keyed on it keep matching.
+@(private)
+peephole_avatar :: proc(
+	id_str: string,
+	index: u32,
+	key: string,
+	name: string,
+	size: f32,
+	photo: ^rl.Texture2D,
+	state: Peephole,
+	ring: clay.Color = {},
+) {
+	outer := clay.ID(id_str, index)
+	reveal_id := clay.ID("PeepReveal", outer.id)
+	reveal := anim_to(reveal_id.id, photo != nil && state == .Open ? 1 : 0)
+	if photo == nil {reveal = 0}
+	if clay.UI(outer)(
+	{layout = {sizing = {width = clay.SizingFixed(size), height = clay.SizingFixed(size)}}},
+	) {
+		if reveal > 0 {
+			if clay.UI(reveal_id)(
+			{
+				layout = {
+					sizing = {width = clay.SizingFixed(size), height = clay.SizingFixed(size)},
+				},
+			},
+			) {
+				avatar("PeepCircle", outer.id, key, name, size, ring = ring)
+			}
+		}
+		if reveal < 1 {
+			if clay.UI(clay.ID("PeepCover", outer.id))(
+			{
+				floating = {
+					attachTo = .Parent,
+					clipTo = .AttachedParent,
+					pointerCaptureMode = .Passthrough,
+					attachment = {element = .LeftTop, parent = .LeftTop},
+				},
+			},
+			) {
+				avatar("PeepPhoto", outer.id, key, name, size, photo, ring, reveal * 180)
+			}
+		}
+	}
+}

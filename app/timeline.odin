@@ -603,13 +603,14 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 	},
 	) {
 		burst_layer(index, msg.id) // particle effect anchored to this row
-		avatar(
+		peephole_avatar(
 			"MsgAvatar",
 			index,
 			msg.sender_id,
 			msg.sender,
 			28,
 			url_pic(msg.pic_url),
+			clay.PointerOver(clay.ID("MsgAvatar", index)) ? .Open : .Closed,
 			fade(ACCENT, fresh),
 		)
 		if clay.UI(clay.ID("MsgCol", index))(
@@ -2206,65 +2207,15 @@ render_segs :: proc(
 				if over {
 					mention_hover = seg.hex
 				}
-				info := profile_info(g_client, seg.hex)
-				photo := url_pic(info.pic_url)
-				reveal_id := clay.ID("MentionReveal", id * 128 + u32(k))
-				reveal := anim_to(reveal_id.id, photo != nil && over ? 1 : 0)
-				if photo == nil {reveal = 0}
-				if clay.UI(clay.ID("MentionAvatar", id * 128 + u32(k)))(
-				{
-					layout = {
-						sizing = {
-							width = clay.SizingFixed(f32(font_size)),
-							height = clay.SizingFixed(f32(font_size)),
-						},
-					},
-				},
-				) {
-					full := f32(font_size)
-					if reveal > 0 {
-						if clay.UI(reveal_id)(
-						{
-							layout = {
-								sizing = {
-									width = clay.SizingFixed(full),
-									height = clay.SizingFixed(full),
-								},
-							},
-						},
-						) {
-							avatar(
-								"MentionCircle",
-								id * 128 + u32(k),
-								seg.hex,
-								mention_label(seg.hex),
-								full,
-							)
-						}
-					}
-					if reveal < 1 {
-						if clay.UI(clay.ID("MentionCover", id * 128 + u32(k)))(
-						{
-							floating = {
-								attachTo = .Parent,
-								clipTo = .AttachedParent,
-								pointerCaptureMode = .Passthrough,
-								attachment = {element = .LeftTop, parent = .LeftTop},
-							},
-						},
-						) {
-							avatar(
-								"MentionPhoto",
-								id * 128 + u32(k),
-								seg.hex,
-								mention_label(seg.hex),
-								full,
-								photo,
-								hinge_angle = reveal * 180,
-							)
-						}
-					}
-				}
+				peephole_avatar(
+					"MentionAvatar",
+					id * 128 + u32(k),
+					seg.hex,
+					mention_label(seg.hex),
+					f32(font_size),
+					url_pic(profile_info(g_client, seg.hex).pic_url),
+					over ? .Open : .Closed,
+				)
 				clay.Text(
 					fmt.tprintf("@%s", mention_label(seg.hex)),
 					{
