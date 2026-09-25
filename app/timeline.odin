@@ -564,7 +564,69 @@ media_at :: proc(
 	return items[index], index, true
 }
 
-message_row :: proc(index: u32, msg: Msg_Ui) {
+// Discord-style grouping: a row continues the one above it when the same
+// sender posts again within GROUP_WINDOW_SECS of the run's first row, with
+// no one else in between, while the run stays under GROUP_LINES lines of
+// text. A continued row drops the avatar and the name/time head.
+//
+//   [av] Danny 15:35
+//        first message
+//        second message      <- .Continued, time shows in the gutter on hover
+GROUP_WINDOW_SECS :: 5 * 60
+GROUP_LINES :: 15
+
+Msg_Head :: enum u8 {
+	Full,
+	Continued,
+}
+
+// The run the next row may join. Zero value = no run (start of the list,
+// or right after a marker, system line, or tombstone).
+Msg_Run :: struct {
+	sender: string,
+	start:  u64, // head row's timestamp, seconds
+	lines:  int,
+}
+
+// `wrap_w` is the body column width (body_wrap_w), so the budget counts
+// lines as drawn: one long paragraph that wraps to 20 lines is 20.
+msg_run_step :: proc(run: ^Msg_Run, msg: Msg_Ui, wrap_w: f32) -> Msg_Head {
+	if msg.system || msg.deleted {
+		run^ = {}
+		return .Full
+	}
+	at := msg.sort_at > 100_000_000_000 ? msg.sort_at / 1000 : msg.sort_at
+	lines := len(wrapped_lines(msg.body, wrap_w, BODY_FS, .Cards))
+	if run.sender != "" &&
+	   msg.sender_id == run.sender &&
+	   at >= run.start &&
+	   at - run.start < GROUP_WINDOW_SECS &&
+	   run.lines + lines < GROUP_LINES {
+		run.lines += lines
+		return .Continued
+	}
+	run^ = {msg.sender_id, at, lines}
+	return .Full
+}
+
+// Hover actions for a row: in the head for a full row, floating at the
+// row's top-right for a continued one.
+@(private = "file")
+msg_actions :: proc(index: u32, msg: Msg_Ui) {
+	action_chip("MsgReact", index, "+1")
+	// A reply can't carry a thread tag, so thread rows
+	// offer Thread (nesting) instead of Reply.
+	if len(msg.thread_of) == 0 || g_ui.compose_issue != "" {
+		action_chip("MsgReply", index, "Reply")
+	}
+	action_chip("MsgThread", index, "Thread")
+	if msg.mine {
+		action_chip("MsgEdit", index, "Edit")
+		action_chip("MsgDel", index, "Delete")
+	}
+}
+
+message_row :: proc(index: u32, msg: Msg_Ui, head := Msg_Head.Full) {
 	// A message that just landed glows in the accent surface and fades
 	// back to the row's normal fill, so the eye is carried to it without
 	// anything moving.
@@ -588,6 +650,10 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 	// Rows trail a fast scroll by a few px, more the further they sit
 	// from the middle of the view, and settle when it stops.
 	lag_top, lag_bottom := scroll_lag(index)
+	// A continued row sits tight under the one above it.
+	if head == .Continued {
+		lag_top -= min(lag_top, MSG_PAD_Y)
+	}
 	if clay.UI(clay.ID("MsgRow", index))(
 	{
 		layout = {
@@ -602,17 +668,55 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 		clip = collapsing ? clay.ClipElementConfig{vertical = true} : {},
 	},
 	) {
+		row_hovered := hovered()
 		burst_layer(index, msg.id) // particle effect anchored to this row
-		peephole_avatar(
-			"MsgAvatar",
-			index,
-			msg.sender_id,
-			msg.sender,
-			28,
-			url_pic(msg.pic_url),
-			clay.PointerOver(clay.ID("MsgAvatar", index)) ? .Open : .Closed,
-			fade(ACCENT, fresh),
-		)
+		if head == .Full {
+			peephole_avatar(
+				"MsgAvatar",
+				index,
+				msg.sender_id,
+				msg.sender,
+				28,
+				url_pic(msg.pic_url),
+				clay.PointerOver(clay.ID("MsgAvatar", index)) ? .Open : .Closed,
+				fade(ACCENT, fresh),
+			)
+		} else {
+			// The avatar's column, holding the time while hovered.
+			if clay.UI(clay.ID("MsgGutter", index))(
+			{
+				layout = {
+					sizing = {width = clay.SizingFixed(28)},
+					padding = {top = 3},
+					childAlignment = {x = .Center},
+				},
+			},
+			) {
+				if row_hovered {
+					clay.Text(
+						msg.at,
+						{fontId = FONT_BODY, fontSize = 10, textColor = TEXT_LO, wrapMode = .None},
+					)
+				}
+			}
+			if row_hovered && !msg.deleted {
+				if clay.UI(clay.ID("MsgActions", index))(
+				{
+					layout = {childGap = 8},
+					floating = {
+						attachTo = .Parent,
+						clipTo = .AttachedParent,
+						pointerCaptureMode = .Passthrough,
+						zIndex = 6,
+						offset = {-16, 0},
+						attachment = {element = .RightTop, parent = .RightTop},
+					},
+				},
+				) {
+					msg_actions(index, msg)
+				}
+			}
+		}
 		if clay.UI(clay.ID("MsgCol", index))(
 		{
 			layout = {
@@ -623,59 +727,52 @@ message_row :: proc(index: u32, msg: Msg_Ui) {
 		},
 		) {
 			// The head reserves an action chip's height whether or not the
-			// chips are showing, so hovering a row doesn't resize it.
-			if clay.UI(clay.ID("MsgHead", index))(
-			{
-				layout = {
-					sizing = {
-						width = clay.SizingGrow(),
-						height = clay.SizingFit({min = chip_h()}),
-					},
-					childGap = 8,
-					childAlignment = {y = .Center},
-				},
-			},
-			) {
-				clay.Text(msg.sender, {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
-				if clay.UI(clay.ID("MsgTime", index))({layout = {}}) {
-					clay.Text(msg.at, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
-					// Full date on hover.
-					if hovered() && len(msg.at_full) > 0 {
-						if clay.UI(clay.ID("MsgTimeTip", index))(
-						{
-							layout = {padding = {left = 8, right = 8, top = 4, bottom = 4}},
-							floating = {
-								attachTo = .Parent,
-								zIndex = 12,
-								attachment = {element = .LeftBottom, parent = .LeftTop},
-							},
-							backgroundColor = CARD,
-							cornerRadius = rr(6),
-							border = {color = ELEVATED_BORDER, width = bw()},
+			// chips are showing, so hovering a row doesn't resize it. A
+			// continued row has no head.
+			if head == .Full {
+				if clay.UI(clay.ID("MsgHead", index))(
+				{
+					layout = {
+						sizing = {
+							width = clay.SizingGrow(),
+							height = clay.SizingFit({min = chip_h()}),
 						},
-						) {
-							clay.Text(
-								msg.at_full,
-								{fontId = FONT_BODY, fontSize = 11, textColor = TEXT},
-							)
+						childGap = 8,
+						childAlignment = {y = .Center},
+					},
+				},
+				) {
+					clay.Text(msg.sender, {fontId = FONT_TITLE, fontSize = 13, textColor = TEXT})
+					if clay.UI(clay.ID("MsgTime", index))({layout = {}}) {
+						clay.Text(msg.at, {fontId = FONT_BODY, fontSize = 11, textColor = TEXT_LO})
+						// Full date on hover.
+						if hovered() && len(msg.at_full) > 0 {
+							if clay.UI(clay.ID("MsgTimeTip", index))(
+							{
+								layout = {padding = {left = 8, right = 8, top = 4, bottom = 4}},
+								floating = {
+									attachTo = .Parent,
+									zIndex = 12,
+									attachment = {element = .LeftBottom, parent = .LeftTop},
+								},
+								backgroundColor = CARD,
+								cornerRadius = rr(6),
+								border = {color = ELEVATED_BORDER, width = bw()},
+							},
+							) {
+								clay.Text(
+									msg.at_full,
+									{fontId = FONT_BODY, fontSize = 11, textColor = TEXT},
+								)
+							}
 						}
 					}
-				}
 
-				// Row actions, shown while the row is hovered. Kept before
-				// any grow sibling (after-gap siblings drop in this clay).
-				// A tombstone offers none.
-				if hovered() && !msg.deleted {
-					action_chip("MsgReact", index, "+1")
-					// A reply can't carry a thread tag, so thread rows
-					// offer Thread (nesting) instead of Reply.
-					if len(msg.thread_of) == 0 || g_ui.compose_issue != "" {
-						action_chip("MsgReply", index, "Reply")
-					}
-					action_chip("MsgThread", index, "Thread")
-					if msg.mine {
-						action_chip("MsgEdit", index, "Edit")
-						action_chip("MsgDel", index, "Delete")
+					// Row actions, shown while the row is hovered. Kept before
+					// any grow sibling (after-gap siblings drop in this clay).
+					// A tombstone offers none.
+					if hovered() && !msg.deleted {
+						msg_actions(index, msg)
 					}
 				}
 			}

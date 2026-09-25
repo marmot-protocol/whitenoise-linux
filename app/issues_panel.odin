@@ -502,10 +502,12 @@ issues_panel :: proc(ui: ^Ui_State) {
 				comments := make(map[string]bool, context.temp_allocator)
 				for comment in row.comments {comments[comment.id] = true}
 				if len(ui.thread_stack) > 0 {thread_bar(ui); thread_root_plate(ui)}
+				run: Msg_Run
+				wrap_w := body_wrap_w()
 				for msg, i in ui.messages {
 					if !comments[msg.id] ||
 					   (len(ui.thread_stack) > 0 && msg.thread_of != thread_cur(ui)) {continue}
-					message_row(u32(i), msg)
+					message_row(u32(i), msg, msg_run_step(&run, msg, wrap_w))
 				}
 				for p, i in ui.pending {
 					if p.group_id == ui.chats[ui.selected].group_id &&

@@ -249,11 +249,14 @@ chat_pane :: proc(ui: ^Ui_State) {
 						thread_root_plate(ui)
 					}
 					ui.timeline_metric = {body_wrap_w(), UI_SCALE, R_SCALE, chip_h()}
+					run: Msg_Run
+					wrap_w := body_wrap_w()
 					for msg, i in ui.messages {
 						if msg.thread_of != cur {
 							continue
 						}
 						if len(ui.unread_mark_id) > 0 && msg.id == ui.unread_mark_id {
+							run = {}
 							// Center label between two rule lines, like the
 							// slint unread divider.
 							if clay.UI(clay.ID("UnreadMarker"))(
@@ -300,6 +303,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 							}
 						}
 						if i == 0 || msg.day != ui.messages[i - 1].day {
+							run = {}
 							if clay.UI(clay.ID("DayMarker", u32(i)))(
 							{
 								layout = {
@@ -320,6 +324,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 								)
 							}
 						}
+						head := msg_run_step(&run, msg, wrap_w)
 						if timeline_skip(ui, msg) {
 							if clay.UI(clay.ID(msg.system ? "SysRow" : "MsgRow", u32(i)))(
 							{
@@ -334,7 +339,7 @@ chat_pane :: proc(ui: ^Ui_State) {
 						} else if msg.system {
 							system_row(u32(i), msg)
 						} else {
-							message_row(u32(i), msg)
+							message_row(u32(i), msg, head)
 						}
 					}
 					// Optimistic rows at the tail: unacked sends grayed,
