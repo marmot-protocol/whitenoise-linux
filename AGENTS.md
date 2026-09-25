@@ -30,7 +30,7 @@ output is already present, so only the first run is slow:
 - `vendor/twemoji` (the 72x72 PNG set) and `vendor/emoji-catalog.tsv`, both
   pulled from pinned crates.io tarballs.
 - `vendor/microtex` at its pinned `openmath` commit with
-  `patches/microtex-isolation.patch` applied, built by CMake into
+  `patches/microtex-isolation.patch` and `patches/microtex-libcxx-includes.patch` applied, built by CMake into
   `build/microtex/lib/libmicrotex.a`; `app/math_shim.cpp` (the `$$` math
   block renderer) is archived into `build/libwnmath.a`.
 - An `ODIN_ROOT` overlay at `build/odin-root`, but **only** when the installed
@@ -76,6 +76,7 @@ drive the app into a given state for screenshots and harness runs.
 | `WN_TEST_*` | Drive a specific pane/action on boot; see `main.odin`. |
 | `WN_DEBUG_INPUT` | Log input events. |
 | `WN_TEST_LINK` | Raise the external-link guard on a URL at frame 12. |
+| `WN_TEST_UPDATE_FEED` | Windows: point the Velopack updater at a local feed directory instead of GitHub releases (`updater.odin`). |
 | `WN_WS_DEBUG` | Log the websocket handshake behind nevent cards (`ws_shim.c`). |
 
 The data dir is the app's first argument, defaulting to

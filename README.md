@@ -88,6 +88,37 @@ flatpak run dev.ipf.whitenoise
 
 The Flatpak keeps its data under `~/.var/app/dev.ipf.whitenoise/`. One thing stays outside its sandbox: "Launch at login".
 
+Linux ARM64 and Windows x86-64 archives are built on Linux alongside the
+existing Linux x86-64 packages. macOS Intel and ARM64 archives are published
+when the release operator has configured the private Apple SDK described
+below.
+
+| Target | Archive | Launch |
+| --- | --- | --- |
+| Linux ARM64 | `WhiteNoise-<version>-linux-arm64.tar.gz` | Extract and run the top-level `whitenoise` script; requires glibc 2.39 or newer |
+| Windows x86-64 | `WhiteNoise-win-Setup.exe` or `WhiteNoise-win-Portable.zip` | Run the installer, or extract the portable zip anywhere and run `White Noise.exe`; requires Windows 10 or newer |
+| macOS Intel / ARM64 | `WhiteNoise-<version>-darwin-{amd64,arm64}.tar.gz` | Extract `White Noise.app`; requires macOS 13 or newer |
+
+Windows installs update themselves through [Velopack](https://velopack.io).
+The app checks this repository's GitHub releases at launch and every six
+hours, downloads a newer build in the background, and shows a
+"Restart now" strip in the status bar. An update left waiting applies on the
+next launch. The About page in Settings shows the update state and has a "Check now"
+button. The portable zip updates the same way, in place. A build run from
+anywhere else (a development build, a staging zip) has no updater and shows
+no update UI.
+
+Windows and macOS builds do not run webxdc (`.xdc`) apps. Linux retains its
+WebKitGTK webxdc viewer. Ordinary attachments, video, PDFs, 3D previews,
+speech and dictation are not disabled on the other targets.
+
+The macOS bundle is ad-hoc signed on Linux, not Developer ID signed or
+notarized. Gatekeeper may block a downloaded copy; distributing a trusted
+macOS release also requires the operator's Apple signing and notarization
+credentials. Linux CI checks Mach-O dependencies and signs the bundle, but
+cannot run it. A macOS runtime check is still required before treating that
+artifact as tested.
+
 On Arch, `packaging/arch/PKGBUILD` builds a `whitenoise-linux-git` package against the system SDL3, mpv, and poppler:
 
 ```sh
@@ -111,13 +142,15 @@ You need `just`, the [Odin compiler](https://odin-lang.org/docs/install/), a C a
 
 ```sh
 sudo apt-get install -y just pkg-config cmake clang git curl \
-  libsdl3-dev libarchive-dev libmpv-dev libpoppler-glib-dev libcairo2-dev libglib2.0-dev
+  libsdl3-dev libarchive-dev libmpv-dev libpoppler-glib-dev libcairo2-dev libglib2.0-dev \
+  libcurl4-openssl-dev libssl-dev libfreetype-dev libwebp-dev \
+  libavformat-dev libavcodec-dev libavutil-dev libswresample-dev
 ```
 
 **Arch:**
 
 ```sh
-sudo pacman -S --needed just odin rust cmake sdl3 libarchive mpv poppler-glib cairo glib2
+sudo pacman -S --needed just odin rust cmake sdl3 libarchive mpv ffmpeg poppler-glib cairo glib2 curl openssl freetype2 libwebp
 ```
 
 **Then:**
@@ -130,6 +163,87 @@ just run
 ```
 
 The first build is the slow one: it clones the pinned Marmot revision and builds its C bundle, fetches clay, ufbx, MicroTeX and the Twemoji set, and (on an Odin install shipping no prebuilt `vendor/stb` archives) builds those. Everything after that is a plain Odin compile of a few seconds.
+
+### Cross releases from Linux
+
+`scripts/cross-build.sh TARGET` accepts `linux-arm64`, `windows-amd64`,
+`darwin-amd64`, or `darwin-arm64`. `WN_TARGET=TARGET scripts/build.sh` invokes
+the same path. The normal `scripts/build.sh` remains a native Linux build.
+Each target has separate objects, Rust output, libraries and package files
+under `build/cross/TARGET`; finished archives go to `dist/`.
+
+The supplied amd64 Linux container includes the cross compilers and package
+tools:
+
+```sh
+podman build -f packaging/cross/Containerfile -t whitenoise-cross packaging/cross
+podman run --rm -v "$PWD:/work" whitenoise-cross linux-arm64
+podman run --rm -v "$PWD:/work" whitenoise-cross windows-amd64
+```
+
+The ARM64 build extracts an Ubuntu 24.04 target sysroot without running ARM
+compilers. Windows uses LLVM-MinGW 20260922 with UCRT and libc++, paired with
+Rust's `x86_64-pc-windows-gnullvm` target. Its separate vcpkg triplet avoids
+reusing GCC/MSVCRT libraries. Windows 10 or newer supplies UCRT. Both Apple
+targets use osxcross. Odin emits target objects; the target C++ linker links
+them with Marmot, Clay, STB,
+MicroTeX, the app shims and media libraries. Source revisions are pinned in
+`DEPS_PIN`, and Windows/macOS dependency recipes are pinned by the vcpkg
+baseline in `packaging/cross/vcpkg.json`. FFmpeg includes dav1d for CPU AV1
+decoding on Windows and macOS. Speech uses the same pinned upstream
+sherpa-onnx CPU runtime as the native build. Packages include the speech/font
+helpers, curl, their loader dependencies, fonts, emoji data and licenses.
+
+For macOS, supply an SDK extracted from an Apple download you are entitled
+to use. Keep it private. No public SDK mirror is used by these scripts.
+The archive must use osxcross's `MacOSX<version>.sdk.tar.xz` or
+`.tar.gz` naming and contain that SDK directory:
+
+```sh
+export MACOS_SDK_SHA256='<sha256 of your SDK archive>'
+podman run --rm -v "$PWD:/work" -v "/private/sdk-directory:/run/macos-sdk:ro" \
+  -e MACOS_SDK_ARCHIVE=/run/macos-sdk/MacOSX14.5.sdk.tar.xz \
+  -e MACOS_SDK_SHA256 whitenoise-cross darwin-arm64
+# Use darwin-amd64 for an Intel bundle.
+```
+
+In GitHub Actions, set repository variable `WN_ENABLE_MACOS=true`,
+`MACOS_SDK_FILENAME` to the archive basename, and secrets `MACOS_SDK_URL`
+(an operator-managed private HTTPS download URL) and `MACOS_SDK_SHA256`.
+The URL must work without an interactive login, for example a short-lived
+signed artifact URL. The job fails if an enabled SDK is missing or fails its
+checksum. Without the opt-in variable, macOS jobs are explicitly skipped and
+Linux/Windows jobs still run. The SDK is mounted read-only into the build
+container and is never part of the uploaded release archive.
+
+`.github/workflows/cross.yml` is called by CI and tagged releases. Its Linux
+ARM64 and Windows jobs extract the shipped archive and require a headless
+launch to produce a screenshot under QEMU or Wine. No compiler runs under
+those emulators. The macOS jobs report their runtime-verification limit
+instead of claiming a launch succeeded.
+
+Tagged releases publish the Windows installer, the portable zip, and
+Velopack's feed (`releases.win.json`, `assets.win.json`, `RELEASES`, and the
+`.nupkg` packages) to the GitHub release. The job first downloads the previous
+release so Velopack can also publish a delta package. Windows binaries,
+`Update.exe`, and `Setup.exe` are Authenticode-signed with
+[jsign](https://ebourg.github.io/jsign/), and a tag fails without signing
+configured. Set repository variables `JSIGN_STORETYPE` (jsign's
+`--storetype`, for example `PKCS12` or `TRUSTEDSIGNING`) and `JSIGN_ALIAS`,
+secret `JSIGN_STOREPASS`, and either secret `JSIGN_KEYSTORE_BASE64` (a
+base64 keystore file, such as a `.p12`) or secret `JSIGN_KEYSTORE` (a cloud
+keystore name or endpoint). Local builds sign when the same `JSIGN_*`
+variables are passed to the container. Staging builds (a non-release version)
+keep a plain zip and never join the update feed.
+
+ngit staging uses `.ngit/act/workflows/release-cross.yml` alongside the
+existing x86-64 AppImage workflow. The act worker needs Podman with working
+user namespaces and permission to build and run nested containers. Configure
+the same SDK variables/secrets there to enable macOS. Each target is passed
+to `actions/upload-artifact`; Blossom publication requires the coordinator's
+`--blossom-servers` setting and an artifact-size limit large enough for the
+archives (`--blossom-max-artifact-bytes`, commonly above the default 64 MiB).
+
 
 ### First run
 
