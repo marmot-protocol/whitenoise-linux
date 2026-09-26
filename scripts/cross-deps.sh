@@ -39,8 +39,14 @@ set(VCPKG_CRT_LINKAGE dynamic)
 set(VCPKG_LIBRARY_LINKAGE dynamic)
 set(VCPKG_BUILD_TYPE release)
 set(VCPKG_CHAINLOAD_TOOLCHAIN_FILE "$OUT/toolchain.cmake")
-set(VCPKG_MESON_CROSS_FILE "$OUT/meson.ini")
 CMAKE
+  # vcpkg treats an arm64 Mac building darwin-arm64 as native and puts the
+  # prefix include/link flags in its --native file; an extra --cross file
+  # then compiles the host side without them (glib: no libintl.h). vcpkg
+  # describes Darwin hosts itself, so only non-Apple targets need ours.
+  if [ "$SYSTEM" != Darwin ]; then
+    echo "set(VCPKG_MESON_CROSS_FILE \"$OUT/meson.ini\")" >> "$OUT/triplets/$VCPKG_TRIPLET.cmake"
+  fi
   if [ "$SYSTEM" = Windows ]; then
     cat >> "$OUT/triplets/$VCPKG_TRIPLET.cmake" <<'CMAKE'
 # PE has no ELF symbol versioning; libffi otherwise assumes GNU-style ld

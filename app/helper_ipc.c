@@ -1,4 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
+// Strict POSIX mode hides flock() and LOCK_EX on macOS; this re-exposes
+// them. Other platforms ignore it.
+#define _DARWIN_C_SOURCE
 #include "helper_ipc.h"
 #include <stdio.h>
 #include <stdlib.h>
