@@ -51,7 +51,11 @@ cp "$TTS/LICENSE-onnxruntime" "$RES/licenses/onnxruntime.txt"
 cp "$TTS/ThirdPartyNotices-onnxruntime.txt" "$RES/licenses/onnxruntime-third-party.txt"
 cp "$HERE/docs/tts.md" "$RES/licenses/speech-model.md"
 cp "$HERE/docs/stt.md" "$RES/licenses/dictation-model.md"
-cp /etc/ssl/certs/ca-certificates.crt "$RES/cacert.pem"
+# The build host's CA bundle: Ubuntu's in the container, the system LibreSSL
+# bundle on a Mac (macOS has no /etc/ssl/certs).
+CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+if [ "$(uname -s)" = Darwin ]; then CA_BUNDLE=/etc/ssl/cert.pem; fi
+cp "$CA_BUNDLE" "$RES/cacert.pem"
 
 if [ "$SYSTEM" = linux ]; then
   cp "$OUT/wn-webview" "$PREFIX/bin/curl" "$BIN/"
