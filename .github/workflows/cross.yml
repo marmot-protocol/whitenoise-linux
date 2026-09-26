@@ -28,6 +28,31 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y podman
       - name: Build Linux toolchain image
         run: podman build -f packaging/cross/Containerfile -t whitenoise-cross packaging/cross
+      # vcpkg's binary cache (only Windows uses vcpkg here) and the marmot-c
+      # archive are keyed on their inputs and saved right after the build, so
+      # a failed package or smoke step still keeps them. vcpkg hashes each
+      # port's ABI itself, so an older archive set is a safe starting point.
+      - name: Restore vcpkg binary cache
+        id: vcpkg-cache
+        if: matrix.target == 'windows-amd64'
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/vcpkg/archives
+          key: vcpkg-${{ matrix.target }}-${{ hashFiles('DEPS_PIN', 'packaging/cross/vcpkg.json', 'scripts/cross-toolchain.sh', 'scripts/cross-deps.sh') }}
+          restore-keys: vcpkg-${{ matrix.target }}-
+      # cross-build.sh skips cargo when libmarmot_c.stamp matches the same
+      # inputs: the MDK commit and its patches, nothing else.
+      - name: Read the MDK pin
+        id: mdk
+        run: echo "commit=$(sed -n 's/^mdk-commit = //p' DEPS_PIN)" >> "$GITHUB_OUTPUT"
+      - name: Restore marmot-c
+        id: marmot-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            build/cross/${{ matrix.target }}/libmarmot_c.a
+            build/cross/${{ matrix.target }}/libmarmot_c.stamp
+          key: marmot-${{ matrix.target }}-${{ steps.mdk.outputs.commit }}-${{ hashFiles('patches/mdk-*.patch') }}
       # Tagged releases (a version input) sign Windows binaries and build a
       # delta from the previous GitHub release. JSIGN_STORETYPE, JSIGN_ALIAS
       # (variables) and JSIGN_STOREPASS plus JSIGN_KEYSTORE or
@@ -54,7 +79,8 @@ jobs:
           JSIGN_STOREPASS: ${{ secrets.JSIGN_STOREPASS }}
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          args=(-e WN_RELEASE_VERSION)
+          mkdir -p "$HOME/.cache/vcpkg/archives"
+          args=(-e WN_RELEASE_VERSION -v "$HOME/.cache/vcpkg:/root/.cache/vcpkg")
           if [ "$RELEASE" = true ]; then
             # A keystore file is mounted; a cloud keystore is a name/URL.
             keystore="$JSIGN_KEYSTORE_SECRET"
@@ -63,6 +89,20 @@ jobs:
               -e JSIGN_KEYSTORE="$keystore" -e GITHUB_TOKEN -e WN_VELOPACK_REPO="https://github.com/${{ github.repository }}")
           fi
           podman run --rm -v "$PWD:/work" "${args[@]}" whitenoise-cross '${{ matrix.target }}'
+      - name: Save marmot-c
+        if: always() && steps.marmot-cache.outputs.cache-hit != 'true' && hashFiles(format('build/cross/{0}/libmarmot_c.stamp', matrix.target)) != ''
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            build/cross/${{ matrix.target }}/libmarmot_c.a
+            build/cross/${{ matrix.target }}/libmarmot_c.stamp
+          key: ${{ steps.marmot-cache.outputs.cache-primary-key }}
+      - name: Save vcpkg binary cache
+        if: always() && matrix.target == 'windows-amd64' && steps.vcpkg-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/vcpkg/archives
+          key: ${{ steps.vcpkg-cache.outputs.cache-primary-key }}
       - name: Remove signing material
         if: always() && matrix.target == 'windows-amd64'
         run: rm -rf "$RUNNER_TEMP/signing"
@@ -124,17 +164,46 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install pinned build tools
         run: scripts/macos-setup.sh "$RUNNER_TEMP/tools"
-      # vcpkg's binary cache; the key covers every input to the dependency build.
-      - uses: actions/cache@v4
+      # vcpkg's binary cache and the marmot-c archive, as in the Linux job:
+      # keyed on their inputs and saved right after the build.
+      - name: Restore vcpkg binary cache
+        id: vcpkg-cache
+        uses: actions/cache/restore@v4
         with:
           path: ~/.cache/vcpkg/archives
           key: vcpkg-${{ matrix.target }}-${{ hashFiles('DEPS_PIN', 'packaging/cross/vcpkg.json', 'scripts/cross-toolchain.sh', 'scripts/cross-deps.sh') }}
+          restore-keys: vcpkg-${{ matrix.target }}-
+      - name: Read the MDK pin
+        id: mdk
+        run: echo "commit=$(sed -n 's/^mdk-commit = //p' DEPS_PIN)" >> "$GITHUB_OUTPUT"
+      - name: Restore marmot-c
+        id: marmot-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            build/cross/${{ matrix.target }}/libmarmot_c.a
+            build/cross/${{ matrix.target }}/libmarmot_c.stamp
+          key: marmot-${{ matrix.target }}-${{ steps.mdk.outputs.commit }}-${{ hashFiles('patches/mdk-*.patch') }}
       - name: Build and package
         env:
           WN_RELEASE_VERSION: ${{ inputs.version }}
         run: |
           source "$RUNNER_TEMP/tools/env"
           bash scripts/cross-build.sh '${{ matrix.target }}'
+      - name: Save marmot-c
+        if: always() && steps.marmot-cache.outputs.cache-hit != 'true' && hashFiles(format('build/cross/{0}/libmarmot_c.stamp', matrix.target)) != ''
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            build/cross/${{ matrix.target }}/libmarmot_c.a
+            build/cross/${{ matrix.target }}/libmarmot_c.stamp
+          key: ${{ steps.marmot-cache.outputs.cache-primary-key }}
+      - name: Save vcpkg binary cache
+        if: always() && steps.vcpkg-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/vcpkg/archives
+          key: ${{ steps.vcpkg-cache.outputs.cache-primary-key }}
       - name: Extract and execute shipped package
         run: |
           source "$RUNNER_TEMP/tools/env"

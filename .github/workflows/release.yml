@@ -55,6 +55,11 @@ jobs:
             libglib2.0-dev libfreetype-dev libavformat-dev libavcodec-dev libavutil-dev libswresample-dev libxtst-dev \
             file desktop-file-utils wget ca-certificates unzip
 
+      # actions/cache restores as the runner user, which cannot create
+      # directories under /usr/local.
+      - name: Own the cached install prefixes
+        run: sudo install -d -o "$(id -u)" -g "$(id -g)" /usr/local/sdl3 /usr/local/odin
+
       - name: Cache SDL3
         id: sdl-cache
         uses: actions/cache@v4
@@ -98,6 +103,20 @@ jobs:
         run: echo /usr/local/odin >> "$GITHUB_PATH"
 
       - uses: dtolnay/rust-toolchain@stable
+
+      # The marmot-c bundle ci.yml saved on master for the same pin and
+      # patches; build.sh rebuilds it when the stamp does not match.
+      - name: Fetch sources
+        id: sources
+        run: |
+          scripts/build.sh sources
+          echo "mdk=$(sed -n 's/^mdk-commit = //p' DEPS_PIN)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the marmot-c bundle
+        uses: actions/cache/restore@v4
+        with:
+          path: vendor/mdk/crates/marmot-c/output
+          key: marmot-linux-x64-${{ steps.sources.outputs.mdk }}-${{ hashFiles('patches/mdk-*.patch') }}
 
       - name: Build
         run: scripts/build.sh

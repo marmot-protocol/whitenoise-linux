@@ -24,19 +24,32 @@ source "$HERE/scripts/cross-toolchain.sh"
 bash "$HERE/scripts/build.sh" sources
 source "$HERE/scripts/cross-deps.sh"
 
-# Rust host proc macros/build scripts use the host compiler. Only target crates
-# receive the target C compiler, sysroot and link arguments.
-rustup target add "$RUST_TARGET"
-export "CFLAGS_$RUST_KEY=${CFLAGS[*]}" "CXXFLAGS_$RUST_KEY=${CFLAGS[*]}"
-export "PKG_CONFIG_LIBDIR_$RUST_KEY=$PKG_CONFIG_LIBDIR"
-export "PKG_CONFIG_SYSROOT_DIR_$RUST_KEY=${PKG_CONFIG_SYSROOT_DIR:-}"
-RUST_ARGS=(-C "linker=$CC")
-if [ "$TARGET" = linux-arm64 ]; then RUST_ARGS+=(-C "link-arg=--sysroot=$SYSROOT"); fi
-export "CARGO_TARGET_${RUST_UPPER}_RUSTFLAGS=${RUST_ARGS[*]}"
-env -u CC -u CXX -u AR -u PKG_CONFIG_LIBDIR -u PKG_CONFIG_SYSROOT_DIR \
-  CARGO_TARGET_DIR="$OUT/cargo" cargo build --manifest-path "$HERE/vendor/mdk/Cargo.toml" \
-  --locked --release --target "$RUST_TARGET" -p marmot-c --features otlp-export
-cp "$OUT/cargo/$RUST_TARGET/release/libmarmot_c.a" "$OUT/libmarmot_c.a"
+# The Rust build is the slowest step (13-15 min on CI runners). Skip it when
+# libmarmot_c.a was built from the same MDK commit and patches for this
+# target. Toolchain and dependency-prefix edits deliberately do not count:
+# the archive is unlinked Rust, and the final link picks up the prefix. CI
+# caches the archive plus this stamp under a key over the same inputs.
+MARMOT_STAMP="$({
+  git -C "$HERE/vendor/mdk" rev-parse HEAD
+  echo "$RUST_TARGET"
+  cat "$HERE"/patches/mdk-*.patch
+} | sha256sum | cut -d' ' -f1)"
+if [ ! -f "$OUT/libmarmot_c.a" ] || [ "$(cat "$OUT/libmarmot_c.stamp" 2>/dev/null || true)" != "$MARMOT_STAMP" ]; then
+  # Rust host proc macros/build scripts use the host compiler. Only target crates
+  # receive the target C compiler, sysroot and link arguments.
+  rustup target add "$RUST_TARGET"
+  export "CFLAGS_$RUST_KEY=${CFLAGS[*]}" "CXXFLAGS_$RUST_KEY=${CFLAGS[*]}"
+  export "PKG_CONFIG_LIBDIR_$RUST_KEY=$PKG_CONFIG_LIBDIR"
+  export "PKG_CONFIG_SYSROOT_DIR_$RUST_KEY=${PKG_CONFIG_SYSROOT_DIR:-}"
+  RUST_ARGS=(-C "linker=$CC")
+  if [ "$TARGET" = linux-arm64 ]; then RUST_ARGS+=(-C "link-arg=--sysroot=$SYSROOT"); fi
+  export "CARGO_TARGET_${RUST_UPPER}_RUSTFLAGS=${RUST_ARGS[*]}"
+  env -u CC -u CXX -u AR -u PKG_CONFIG_LIBDIR -u PKG_CONFIG_SYSROOT_DIR \
+    CARGO_TARGET_DIR="$OUT/cargo" cargo build --manifest-path "$HERE/vendor/mdk/Cargo.toml" \
+    --locked --release --target "$RUST_TARGET" -p marmot-c --features otlp-export
+  cp "$OUT/cargo/$RUST_TARGET/release/libmarmot_c.a" "$OUT/libmarmot_c.a"
+  echo "$MARMOT_STAMP" > "$OUT/libmarmot_c.stamp"
+fi
 
 mkdir -p "$OUT/clay" "$OUT/fbx" "$OUT/math" "$OUT/stb"
 cp "$HERE/vendor/clay/clay.h" "$OUT/clay/clay.h"

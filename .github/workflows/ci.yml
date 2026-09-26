@@ -42,6 +42,11 @@ jobs:
             libglib2.0-dev libfreetype-dev libavformat-dev libavcodec-dev libavutil-dev libswresample-dev gettext \
             libxtst-dev
 
+      # actions/cache restores as the runner user, which cannot create
+      # directories under /usr/local.
+      - name: Own the cached install prefixes
+        run: sudo install -d -o "$(id -u)" -g "$(id -g)" /usr/local/sdl3 /usr/local/odin
+
       - name: Cache SDL3
         id: sdl-cache
         uses: actions/cache@v4
@@ -87,24 +92,36 @@ jobs:
         run: echo /usr/local/odin >> "$GITHUB_PATH"
 
       # marmot-c is a Rust staticlib; c-bindings.sh builds it from the mdk
-      # revision pinned in DEPS_PIN.
+      # revision pinned in DEPS_PIN. That build is the long pole, so only its
+      # output bundle is cached, keyed on the pin and the MDK patches.
+      # build.sh checks the same inputs through the bundle's .mdk-patches
+      # stamp. Sources are fetched first: build.sh clones vendor/mdk only
+      # when the directory is missing.
       - uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache the marmot-c bundle
-        uses: actions/cache@v4
+      - name: Fetch sources
+        id: sources
+        run: |
+          scripts/build.sh sources
+          echo "mdk=$(sed -n 's/^mdk-commit = //p' DEPS_PIN)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the marmot-c bundle
+        id: marmot-cache
+        uses: actions/cache/restore@v4
         with:
-          path: |
-            vendor/mdk
-            vendor/clay
-            vendor/crop-circles
-            vendor/ufbx
-            vendor/microtex
-            vendor/twemoji
-            vendor/emoji-catalog.tsv
-          key: vendor-${{ hashFiles('DEPS_PIN') }}
+          path: vendor/mdk/crates/marmot-c/output
+          key: marmot-linux-x64-${{ steps.sources.outputs.mdk }}-${{ hashFiles('patches/mdk-*.patch') }}
 
       - name: Build and test
         run: scripts/build.sh test
+
+      # Saved even when a test fails, so the next run skips the Rust build.
+      - name: Save the marmot-c bundle
+        if: always() && steps.marmot-cache.outputs.cache-hit != 'true' && hashFiles('vendor/mdk/crates/marmot-c/output/.mdk-patches') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: vendor/mdk/crates/marmot-c/output
+          key: ${{ steps.marmot-cache.outputs.cache-primary-key }}
 
   cross:
     uses: ./.github/workflows/cross.yml
