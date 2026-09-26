@@ -30,14 +30,16 @@ output is already present, so only the first run is slow:
 - `vendor/twemoji` (the 72x72 PNG set) and `vendor/emoji-catalog.tsv`, both
   pulled from pinned crates.io tarballs.
 - `vendor/microtex` at its pinned `openmath` commit with
-  `patches/microtex-isolation.patch` and `patches/microtex-libcxx-includes.patch` applied, built by CMake into
+  `patches/microtex-isolation.patch`, `patches/microtex-libcxx-includes.patch`
+  and `patches/microtex-locale-fallback.patch` applied, built by CMake into
   `build/microtex/lib/libmicrotex.a`; `app/math_shim.cpp` (the `$$` math
   block renderer) is archived into `build/libwnmath.a`.
 - An `ODIN_ROOT` overlay at `build/odin-root`, but **only** when the installed
-  Odin is missing `vendor/stb/lib/stb_truetype.a` (the Linux release tarball
-  and the Arch package both are; `sdlrl` needs truetype and image). The
-  overlay symlinks the real install and swaps in a writable `vendor/stb` copy
-  it can run `build_stb.sh` in.
+  Odin is missing `vendor/stb/lib/stb_truetype.a` or `vendor/cgltf/lib/cgltf.a`
+  (the Linux release tarball is; `sdlrl` needs stb truetype and image, the
+  glTF viewer needs cgltf). The overlay symlinks the real install and swaps
+  in writable `vendor/stb` and `vendor/cgltf` copies it can run
+  `build_stb.sh` and `build_cgltf.sh` in.
 
 `DEPS_PIN` holds every third-party revision as `<name>-commit = <sha>`, one
 per line. Bumping one is a one-line edit; `just build` re-checks out and

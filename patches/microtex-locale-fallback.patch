@@ -1,0 +1,26 @@
+diff --git i/lib/utils/utils.cpp w/lib/utils/utils.cpp
+index 63e9d44..a879063 100644
+--- i/lib/utils/utils.cpp
++++ w/lib/utils/utils.cpp
+@@ -1,8 +1,20 @@
+ #include "utils/utils.h"
+ 
++#include <stdexcept>
++
+ const std::locale& microtex::defaultLocale() {
+ #if !defined(__WIN32__)
+-  static const std::locale locale("en_US.UTF-8");
++  // Hosts without en_US.UTF-8 generated (minimal containers, non-English
++  // installs) throw from the named constructor, failing every render
++  // that classifies a character. glibc 2.35+ builds C.UTF-8 in.
++  static const std::locale locale = [] {
++    for (const char* name : {"en_US.UTF-8", "C.UTF-8"}) {
++      try {
++        return std::locale(name);
++      } catch (const std::runtime_error&) {}
++    }
++    return std::locale::classic();
++  }();
+ #else
+   static const std::locale locale("C");
+ #endif

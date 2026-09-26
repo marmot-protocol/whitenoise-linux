@@ -149,6 +149,10 @@ elif [ "$SYSTEM" = Darwin ]; then
 set(CMAKE_OSX_SYSROOT "$SYSROOT")
 set(CMAKE_OSX_ARCHITECTURES "$APPLE_CPU")
 set(CMAKE_OSX_DEPLOYMENT_TARGET 13.0)
+# The ONLY find modes above re-root every search under the vcpkg prefix,
+# which hides the SDK's frameworks (curl needs SystemConfiguration).
+# Paths already inside a root are searched as-is.
+list(APPEND CMAKE_FIND_ROOT_PATH "$SYSROOT")
 set(CMAKE_INSTALL_NAME_TOOL "$WN_INSTALL_NAME_TOOL")
 CMAKE
 elif [ "$SYSTEM" = Windows ]; then

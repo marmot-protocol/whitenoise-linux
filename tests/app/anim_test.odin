@@ -1,6 +1,19 @@
 package main
 
+import "base:runtime"
+import "core:sync"
 import "core:testing"
+
+// The runner frees each test's allocator when the test ends, so a global
+// map first grown inside one test points at dead memory in the next and
+// its next insert panics. Allocate the anim maps from the heap up front,
+// as the app's own context does.
+@(init)
+anim_maps_on_heap :: proc "contextless" () {
+	context = runtime.default_context()
+	anim_vals = make(map[u32]Anim)
+	anim_cols = make(map[u32]Anim_Color)
+}
 
 // The scroll-lag split must never change a row's height: if it does,
 // the timeline's content resizes mid-scroll and the bottom-pinned view
@@ -10,6 +23,9 @@ import "core:testing"
 // value the drag started at.
 @(test)
 test_anim_set_no_replay :: proc(t: ^testing.T) {
+	// Layout tests step the same global anim state under this lock.
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
 	anim_tick(1.0 / 60)
 	_ = anim_to(0x77770001, 100) // first sighting seeds at the target
 	anim_tick(1.0 / 60)

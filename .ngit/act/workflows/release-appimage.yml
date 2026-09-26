@@ -68,7 +68,8 @@ jobs:
             https://github.com/libsdl-org/SDL.git /tmp/SDL
           cmake -S /tmp/SDL -B /tmp/SDL/build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/sdl3
-          cmake --build /tmp/SDL/build --target install
+          cmake --build /tmp/SDL/build
+          sudo cmake --install /tmp/SDL/build
           echo /usr/local/sdl3/lib | sudo tee /etc/ld.so.conf.d/sdl3.conf
           sudo ldconfig
           echo "PKG_CONFIG_PATH=/usr/local/sdl3/lib/pkgconfig" >> "$GITHUB_ENV"

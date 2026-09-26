@@ -69,7 +69,8 @@ jobs:
             https://github.com/libsdl-org/SDL.git /tmp/SDL
           cmake -S /tmp/SDL -B /tmp/SDL/build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/sdl3
-          cmake --build /tmp/SDL/build --target install
+          cmake --build /tmp/SDL/build
+          sudo cmake --install /tmp/SDL/build
 
       - name: Put SDL3 on the linker path
         run: |

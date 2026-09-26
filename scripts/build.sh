@@ -139,9 +139,11 @@ fi
 # built-ins, and adds the resets the shim calls after every render.
 # patches/microtex-libcxx-includes.patch adds headers libstdc++ pulls in
 # transitively but LLVM's libc++ (the Windows and macOS toolchains) does not.
+# patches/microtex-locale-fallback.patch falls back to C.UTF-8 when the host
+# has no en_US.UTF-8, which otherwise fails most renders with an exception.
 MICROTEX="$HERE/vendor/microtex"
 MICROTEX_PIN="$(pin microtex)"
-MICROTEX_PATCHES=("$HERE/patches/microtex-isolation.patch" "$HERE/patches/microtex-libcxx-includes.patch")
+MICROTEX_PATCHES=("$HERE/patches/microtex-isolation.patch" "$HERE/patches/microtex-libcxx-includes.patch" "$HERE/patches/microtex-locale-fallback.patch")
 if [ ! -d "$MICROTEX" ]; then
   git clone --filter=blob:none https://github.com/NanoMichael/MicroTeX.git "$MICROTEX"
 fi
@@ -301,23 +303,32 @@ if [ "${1:-}" = sources ]; then
   exit 0
 fi
 
-# The distro odin package ships vendor/stb without the built .a archives
-# (the sdlrl text/image layer needs truetype + image). When they are
-# missing, build them inside a private ODIN_ROOT that symlinks the real
-# install and swaps in a writable copy of vendor/stb.
+# The Linux odin release ships vendor/stb and vendor/cgltf without their
+# built .a archives (sdlrl needs stb truetype + image, the glTF viewer
+# needs cgltf). When either is missing, build them inside a private
+# ODIN_ROOT that symlinks the real install and swaps in writable copies
+# of those two vendor dirs.
 SYS_ODIN="$(dirname "$(realpath "$(command -v odin)")")"
 ODIN_ROOT_ARG=()
-if [ ! -f "$SYS_ODIN/vendor/stb/lib/stb_truetype.a" ]; then
+if [ ! -f "$SYS_ODIN/vendor/stb/lib/stb_truetype.a" ] || [ ! -f "$SYS_ODIN/vendor/cgltf/lib/cgltf.a" ]; then
   OVERLAY="$HERE/build/odin-root"
-  if [ ! -f "$OVERLAY/vendor/stb/lib/stb_truetype.a" ]; then
+  if [ ! -f "$OVERLAY/vendor/stb/lib/stb_truetype.a" ] || [ ! -f "$OVERLAY/vendor/cgltf/lib/cgltf.a" ]; then
+    # An older overlay symlinks vendor/cgltf to the read-only install;
+    # start over rather than copy into it. rm -rf does not follow links.
+    rm -rf "$OVERLAY"
     mkdir -p "$OVERLAY/vendor"
     ln -sfn "$SYS_ODIN/base" "$SYS_ODIN/core" "$SYS_ODIN/shared" "$OVERLAY/"
     for entry in "$SYS_ODIN/vendor"/*; do
-      [ "$(basename "$entry")" = stb ] || ln -sfn "$entry" "$OVERLAY/vendor/"
+      case "$(basename "$entry")" in
+        stb | cgltf)
+          cp -r "$entry" "$OVERLAY/vendor/"
+          chmod -R u+w "$OVERLAY/vendor/$(basename "$entry")"
+          ;;
+        *) ln -sfn "$entry" "$OVERLAY/vendor/" ;;
+      esac
     done
-    cp -r "$SYS_ODIN/vendor/stb" "$OVERLAY/vendor/stb"
-    chmod -R u+w "$OVERLAY/vendor/stb"
-    (cd "$OVERLAY/vendor/stb/src" && ./build_stb.sh)
+    ODIN_ROOT="$OVERLAY" "$OVERLAY/vendor/stb/src/build_stb.sh"
+    ODIN_ROOT="$OVERLAY" "$OVERLAY/vendor/cgltf/src/build_cgltf.sh"
   fi
   ODIN_ROOT_ARG=(ODIN_ROOT="$OVERLAY")
 fi
