@@ -149,9 +149,22 @@ if [ "$SYSTEM" = darwin ]; then
   # no unsigned code. Sign every Mach-O file inside-out (helpers also live in
   # Resources, which --deep skips), then the bundle. Ad-hoc: no Developer ID
   # or notarization, so Gatekeeper asks once on first launch.
-  while IFS= read -r -d '' file; do
-    if file --brief "$file" | grep -q '^Mach-O'; then codesign --force --sign - --timestamp=none "$file"; fi
-  done < <(find "$STAGE/Contents" -type f -print0)
+  # find's order is arbitrary, so sign in two passes: Frameworks and
+  # Resources first, then Contents/MacOS. Signing the bundle's main
+  # executable signs the bundle, which codesign refuses while any nested
+  # dylib is still unsigned ("In subcomponent: …/Frameworks/libwebp…").
+  sign_macho() {
+    local file
+    while IFS= read -r -d '' file; do
+      # `case`, not `file | grep -q`: grep exiting early can fail the pipe
+      # under pipefail and silently skip a file.
+      case "$(file --brief "$file")" in
+        Mach-O*) codesign --force --sign - --timestamp=none "$file" ;;
+      esac
+    done
+  }
+  sign_macho < <(find "$STAGE/Contents" -type f ! -path "$STAGE/Contents/MacOS/*" -print0)
+  sign_macho < <(find "$STAGE/Contents/MacOS" -type f -print0)
   codesign --force --sign - --timestamp=none "$STAGE"
   codesign --verify --strict --deep "$STAGE"
 fi
