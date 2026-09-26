@@ -72,24 +72,36 @@ CMAKE
   export PKG_CONFIG_SYSROOT_DIR=
   # libmpv is not a vcpkg port. It uses software RGBA rendering in this app;
   # its CLI, Swift/Cocoa window backend and GPU backends are not app features.
+  # Both install through a --destdir stage copied into the prefix, so the
+  # stage alone can be cached (CI) and replayed while its stamp matches.
+  # mpv links vcpkg's ffmpeg, so vcpkg's pin and manifest count as inputs.
   checkout libplacebo https://github.com/haasn/libplacebo.git "$(pin libplacebo)"
-  git -C "$HERE/vendor/libplacebo" submodule update --init --recursive
-  meson setup "$OUT/libplacebo" "$HERE/vendor/libplacebo" --reconfigure \
-    --cross-file "$OUT/meson.ini" --prefix "$PREFIX" --libdir lib --buildtype release \
-    -Ddefault_library=shared -Ddemos=false -Dtests=false -Dvulkan=disabled \
-    -Dopengl=disabled -Dd3d11=disabled -Dshaderc=disabled -Dglslang=disabled
-  meson compile -C "$OUT/libplacebo" -j "$JOBS"
-  meson install -C "$OUT/libplacebo"
   checkout mpv https://github.com/mpv-player/mpv.git "$(pin mpv)"
-  # The app renders through the software API into an RGBA buffer and never
-  # enables hwdec, so mpv's GPU outputs and D3D decoders are unused.
-  meson setup "$OUT/mpv" "$HERE/vendor/mpv" --reconfigure \
-    --cross-file "$OUT/meson.ini" --prefix "$PREFIX" --libdir lib --buildtype release \
-    -Dlibmpv=true -Dcplayer=false -Dtests=false -Dmanpage-build=disabled \
-    -Dswift-build=disabled -Dcocoa=disabled -Dgl=disabled -Dvulkan=disabled \
-    -Dd3d11=disabled -Ddirect3d=disabled -Dd3d-hwaccel=disabled -Dd3d9-hwaccel=disabled
-  meson compile -C "$OUT/mpv" -j "$JOBS"
-  meson install -C "$OUT/mpv"
+  MPV_STAGE="$OUT/mpv-stage"
+  MPV_STAMP="$({ pin libplacebo; pin mpv; pin vcpkg; cat "$HERE/packaging/cross/vcpkg.json"; } | sha256sum | cut -d' ' -f1)"
+  if ! stamp_fresh "$MPV_STAGE$PREFIX/lib" "$OUT/mpv.stamp" "$MPV_STAMP"; then
+    rm -rf "$MPV_STAGE"
+    git -C "$HERE/vendor/libplacebo" submodule update --init --recursive
+    meson setup "$OUT/libplacebo" "$HERE/vendor/libplacebo" --reconfigure \
+      --cross-file "$OUT/meson.ini" --prefix "$PREFIX" --libdir lib --buildtype release \
+      -Ddefault_library=shared -Ddemos=false -Dtests=false -Dvulkan=disabled \
+      -Dopengl=disabled -Dd3d11=disabled -Dshaderc=disabled -Dglslang=disabled
+    meson compile -C "$OUT/libplacebo" -j "$JOBS"
+    meson install -C "$OUT/libplacebo" --destdir "$MPV_STAGE"
+    # mpv's configure finds libplacebo through the prefix's pkg-config.
+    cp -a "$MPV_STAGE$PREFIX/." "$PREFIX/"
+    # The app renders through the software API into an RGBA buffer and never
+    # enables hwdec, so mpv's GPU outputs and D3D decoders are unused.
+    meson setup "$OUT/mpv" "$HERE/vendor/mpv" --reconfigure \
+      --cross-file "$OUT/meson.ini" --prefix "$PREFIX" --libdir lib --buildtype release \
+      -Dlibmpv=true -Dcplayer=false -Dtests=false -Dmanpage-build=disabled \
+      -Dswift-build=disabled -Dcocoa=disabled -Dgl=disabled -Dvulkan=disabled \
+      -Dd3d11=disabled -Ddirect3d=disabled -Dd3d-hwaccel=disabled -Dd3d9-hwaccel=disabled
+    meson compile -C "$OUT/mpv" -j "$JOBS"
+    meson install -C "$OUT/mpv" --destdir "$MPV_STAGE"
+    echo "$MPV_STAMP" > "$OUT/mpv.stamp"
+  fi
+  cp -a "$MPV_STAGE$PREFIX/." "$PREFIX/"
 fi
 
 # Use upstream's pinned CPU C runtime, as the native build does. Target-specific

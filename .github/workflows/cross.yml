@@ -26,8 +26,30 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Podman
         run: sudo apt-get update && sudo apt-get install -y podman
+      # The toolchain image (~1.2 GB compressed) is cached per Containerfile:
+      # loading it beats reinstalling ~660 MB of packages. It also freezes the
+      # image's stable Rust until the Containerfile changes.
+      - name: Restore toolchain image
+        id: image-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/whitenoise-cross.tar
+          key: cross-image-${{ hashFiles('packaging/cross/Containerfile') }}
       - name: Build Linux toolchain image
-        run: podman build -f packaging/cross/Containerfile -t whitenoise-cross packaging/cross
+        run: |
+          image="$RUNNER_TEMP/whitenoise-cross.tar"
+          if [ -f "$image" ]; then
+            podman load -i "$image"
+          else
+            podman build -f packaging/cross/Containerfile -t whitenoise-cross packaging/cross
+            podman save -o "$image" whitenoise-cross
+          fi
+      - name: Save toolchain image
+        if: steps.image-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/whitenoise-cross.tar
+          key: ${{ steps.image-cache.outputs.cache-primary-key }}
       # vcpkg's binary cache (only Windows uses vcpkg here) and the marmot-c
       # archive are keyed on their inputs and saved right after the build, so
       # a failed package or smoke step still keeps them. vcpkg hashes each
@@ -53,6 +75,22 @@ jobs:
             build/cross/${{ matrix.target }}/libmarmot_c.a
             build/cross/${{ matrix.target }}/libmarmot_c.stamp
           key: marmot-${{ matrix.target }}-${{ steps.mdk.outputs.commit }}-${{ hashFiles('patches/mdk-*.patch') }}
+      # MicroTeX, ufbx and (Windows) libplacebo + mpv. Each output carries a
+      # stamp of its pins and patches, so the newest older entry is a safe
+      # fallback: only components whose inputs changed rebuild.
+      - name: Restore C dependencies
+        id: cdeps-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            build/cross/${{ matrix.target }}/microtex
+            build/cross/${{ matrix.target }}/microtex.stamp
+            build/cross/${{ matrix.target }}/fbx/ufbx.o
+            build/cross/${{ matrix.target }}/fbx/ufbx.stamp
+            build/cross/${{ matrix.target }}/mpv-stage
+            build/cross/${{ matrix.target }}/mpv.stamp
+          key: cdeps-${{ matrix.target }}-${{ hashFiles('DEPS_PIN', 'patches/microtex-*.patch', 'packaging/cross/vcpkg.json') }}
+          restore-keys: cdeps-${{ matrix.target }}-
       # Tagged releases (a version input) sign Windows binaries and build a
       # delta from the previous GitHub release. JSIGN_STORETYPE, JSIGN_ALIAS
       # (variables) and JSIGN_STOREPASS plus JSIGN_KEYSTORE or
@@ -103,6 +141,18 @@ jobs:
         with:
           path: ~/.cache/vcpkg/archives
           key: ${{ steps.vcpkg-cache.outputs.cache-primary-key }}
+      - name: Save C dependencies
+        if: always() && steps.cdeps-cache.outputs.cache-hit != 'true' && hashFiles(format('build/cross/{0}/microtex.stamp', matrix.target)) != ''
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            build/cross/${{ matrix.target }}/microtex
+            build/cross/${{ matrix.target }}/microtex.stamp
+            build/cross/${{ matrix.target }}/fbx/ufbx.o
+            build/cross/${{ matrix.target }}/fbx/ufbx.stamp
+            build/cross/${{ matrix.target }}/mpv-stage
+            build/cross/${{ matrix.target }}/mpv.stamp
+          key: ${{ steps.cdeps-cache.outputs.cache-primary-key }}
       - name: Remove signing material
         if: always() && matrix.target == 'windows-amd64'
         run: rm -rf "$RUNNER_TEMP/signing"
@@ -184,6 +234,19 @@ jobs:
             build/cross/${{ matrix.target }}/libmarmot_c.a
             build/cross/${{ matrix.target }}/libmarmot_c.stamp
           key: marmot-${{ matrix.target }}-${{ steps.mdk.outputs.commit }}-${{ hashFiles('patches/mdk-*.patch') }}
+      - name: Restore C dependencies
+        id: cdeps-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            build/cross/${{ matrix.target }}/microtex
+            build/cross/${{ matrix.target }}/microtex.stamp
+            build/cross/${{ matrix.target }}/fbx/ufbx.o
+            build/cross/${{ matrix.target }}/fbx/ufbx.stamp
+            build/cross/${{ matrix.target }}/mpv-stage
+            build/cross/${{ matrix.target }}/mpv.stamp
+          key: cdeps-${{ matrix.target }}-${{ hashFiles('DEPS_PIN', 'patches/microtex-*.patch', 'packaging/cross/vcpkg.json') }}
+          restore-keys: cdeps-${{ matrix.target }}-
       - name: Build and package
         env:
           WN_RELEASE_VERSION: ${{ inputs.version }}
@@ -198,6 +261,18 @@ jobs:
             build/cross/${{ matrix.target }}/libmarmot_c.a
             build/cross/${{ matrix.target }}/libmarmot_c.stamp
           key: ${{ steps.marmot-cache.outputs.cache-primary-key }}
+      - name: Save C dependencies
+        if: always() && steps.cdeps-cache.outputs.cache-hit != 'true' && hashFiles(format('build/cross/{0}/microtex.stamp', matrix.target)) != ''
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            build/cross/${{ matrix.target }}/microtex
+            build/cross/${{ matrix.target }}/microtex.stamp
+            build/cross/${{ matrix.target }}/fbx/ufbx.o
+            build/cross/${{ matrix.target }}/fbx/ufbx.stamp
+            build/cross/${{ matrix.target }}/mpv-stage
+            build/cross/${{ matrix.target }}/mpv.stamp
+          key: ${{ steps.cdeps-cache.outputs.cache-primary-key }}
       - name: Save vcpkg binary cache
         if: always() && steps.vcpkg-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4

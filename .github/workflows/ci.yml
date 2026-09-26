@@ -31,16 +31,41 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # apt's downloads (~120 MB at ~3 MB/s from the runner mirror) are cached
+      # in a runner-owned directory; the install itself still runs. The saved
+      # key names the exact .deb set, so package updates refresh the cache.
+      - name: Restore apt packages
+        id: apt-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/apt-archives
+          key: apt-ci-ubuntu-24.04
+          restore-keys: apt-ci-ubuntu-24.04-
+
       # libarchive/mpv/poppler/cairo back the archive, video and PDF
       # viewers (see the `foreign import "system:…"` lines in app/).
       - name: Install system deps
+        id: apt
         run: |
+          archives="$HOME/.cache/apt-archives"
+          mkdir -p "$archives/partial"
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          sudo apt-get install -y --no-install-recommends -o "Dir::Cache::Archives=$archives" \
             pkg-config cmake ninja-build clang git curl \
             libarchive-dev libwebp-dev libmpv-dev libpoppler-glib-dev libcairo2-dev libcurl4-openssl-dev libssl-dev \
             libglib2.0-dev libfreetype-dev libavformat-dev libavcodec-dev libavutil-dev libswresample-dev gettext \
             libxtst-dev
+          sudo apt-get autoclean -o "Dir::Cache::Archives=$archives"
+          # apt leaves its lock and partial/ root-only; the cache save reads as the runner.
+          sudo chown -R "$(id -u):$(id -g)" "$archives"
+          echo "key=apt-ci-ubuntu-24.04-$(ls "$archives" | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      - name: Save apt packages
+        if: steps.apt.outputs.key != steps.apt-cache.outputs.cache-matched-key
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/apt-archives
+          key: ${{ steps.apt.outputs.key }}
 
       # actions/cache restores as the runner user, which cannot create
       # directories under /usr/local.
@@ -112,6 +137,20 @@ jobs:
           path: vendor/mdk/crates/marmot-c/output
           key: marmot-linux-x64-${{ steps.sources.outputs.mdk }}-${{ hashFiles('patches/mdk-*.patch') }}
 
+      # MicroTeX and ufbx, stamped with their pins and patches by build.sh,
+      # so the newest older entry is a safe fallback: only what changed
+      # rebuilds.
+      - name: Restore C dependencies
+        id: cdeps-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            build/microtex
+            build/fbx/ufbx.o
+            build/fbx/ufbx.stamp
+          key: cdeps-linux-x64-${{ hashFiles('DEPS_PIN', 'patches/microtex-*.patch') }}
+          restore-keys: cdeps-linux-x64-
+
       # A test that crashes while holding clay_test_mutex blocks the rest of
       # the suite forever; fail after an hour instead of GitHub's six.
       - name: Build and test
@@ -125,6 +164,16 @@ jobs:
         with:
           path: vendor/mdk/crates/marmot-c/output
           key: ${{ steps.marmot-cache.outputs.cache-primary-key }}
+
+      - name: Save C dependencies
+        if: always() && steps.cdeps-cache.outputs.cache-hit != 'true' && hashFiles('build/microtex/stamp') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            build/microtex
+            build/fbx/ufbx.o
+            build/fbx/ufbx.stamp
+          key: ${{ steps.cdeps-cache.outputs.cache-primary-key }}
 
   cross:
     uses: ./.github/workflows/cross.yml

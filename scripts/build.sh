@@ -105,8 +105,12 @@ fi
 
 if [ "${1:-}" != sources ]; then
 mkdir -p "$HERE/build/fbx"
-if [ ! -f "$HERE/build/fbx/ufbx.o" ]; then
+# The stamp names the ufbx pin the object was built from, so a CI cache
+# restored from another pin rebuilds instead of linking a stale object.
+if [ ! -f "$HERE/build/fbx/ufbx.o" ] || [ "$(cat "$HERE/build/fbx/ufbx.stamp" 2>/dev/null || true)" != "$UFBX_PIN" ]; then
   cc -c -O2 -fPIC "$UFBX/ufbx.c" -o "$HERE/build/fbx/ufbx.o"
+  echo "$UFBX_PIN" > "$HERE/build/fbx/ufbx.stamp"
+  rm -f "$HERE/build/libwnfbx.a"
 fi
 if [ ! -f "$HERE/build/fbx/fbx_shim.o" ] || [ "$HERE/app/fbx_shim.c" -nt "$HERE/build/fbx/fbx_shim.o" ]; then
   cc -c -O2 -fPIC -I"$UFBX" "$HERE/app/fbx_shim.c" -o "$HERE/build/fbx/fbx_shim.o"
@@ -162,13 +166,19 @@ for patch in "${MICROTEX_PATCHES[@]}"; do
   fi
 done
 if [ "${1:-}" != sources ]; then
-if [ ! -f "$HERE/build/microtex/CMakeCache.txt" ]; then
+# MicroTeX is rebuilt only when its pin or patches change. The stamp makes
+# that explicit: a restored CI cache has older mtimes than the fresh clone,
+# so CMake's own staleness check would rebuild everything.
+MICROTEX_STAMP="$({ echo "$MICROTEX_PIN"; cat "${MICROTEX_PATCHES[@]}"; } | sha256sum | cut -d' ' -f1)"
+if [ ! -f "$HERE/build/microtex/lib/libmicrotex.a" ] || [ "$(cat "$HERE/build/microtex/stamp" 2>/dev/null || true)" != "$MICROTEX_STAMP" ]; then
+  rm -rf "$HERE/build/microtex"
   cmake -S "$MICROTEX" -B "$HERE/build/microtex" -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DBUILD_STATIC=ON -DHAVE_CWRAPPER=ON \
     -DHAVE_LOG=OFF -DGRAPHICS_DEBUG=OFF -DHAVE_AUTO_FONT_FIND=OFF
+  cmake --build "$HERE/build/microtex" --target microtex -j"$(nproc)"
+  echo "$MICROTEX_STAMP" > "$HERE/build/microtex/stamp"
+  rm -f "$HERE/build/libwnmath.a"
 fi
-# Incremental: a no-op unless the pin or the patch changed sources.
-cmake --build "$HERE/build/microtex" --target microtex -j"$(nproc)"
 mkdir -p "$HERE/build/math"
 if [ ! -f "$HERE/build/libwnmath.a" ] || [ "$HERE/app/math_shim.cpp" -nt "$HERE/build/libwnmath.a" ] || [ "${MICROTEX_PATCHES[0]}" -nt "$HERE/build/libwnmath.a" ]; then
   c++ -std=c++17 -c -O2 -fPIC -Wall -Wextra -DHAVE_CWRAPPER -isystem "$MICROTEX/lib" -isystem "$HERE/build/microtex/lib" \

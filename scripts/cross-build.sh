@@ -19,6 +19,11 @@ export WN_TARGET="$TARGET"
 OUT="$HERE/build/cross/$TARGET"
 JOBS="${WN_BUILD_JOBS:-$(getconf _NPROCESSORS_ONLN)}"
 mkdir -p "$OUT"
+# Slow third-party builds write a stamp of their inputs (pins, patches) next
+# to their output and are skipped while it matches. CI caches the outputs
+# plus stamps; a restore from other inputs just fails the check and rebuilds.
+#   stamp_fresh <output> <stamp-file> <stamp>
+stamp_fresh() { [ -e "$1" ] && [ "$(cat "$2" 2>/dev/null || true)" = "$3" ]; }
 source "$HERE/scripts/cross-toolchain.sh"
 # This mode fetches and patches sources and assets only, never host archives.
 bash "$HERE/scripts/build.sh" sources
@@ -34,7 +39,7 @@ MARMOT_STAMP="$({
   echo "$RUST_TARGET"
   cat "$HERE"/patches/mdk-*.patch
 } | sha256sum | cut -d' ' -f1)"
-if [ ! -f "$OUT/libmarmot_c.a" ] || [ "$(cat "$OUT/libmarmot_c.stamp" 2>/dev/null || true)" != "$MARMOT_STAMP" ]; then
+if ! stamp_fresh "$OUT/libmarmot_c.a" "$OUT/libmarmot_c.stamp" "$MARMOT_STAMP"; then
   # Rust host proc macros/build scripts use the host compiler. Only target crates
   # receive the target C compiler, sysroot and link arguments.
   rustup target add "$RUST_TARGET"
@@ -60,18 +65,27 @@ for patch in clay-hashmap clay-mingw-enums; do
 done
 "$CC" "${CFLAGS[@]}" -x c -c -DCLAY_IMPLEMENTATION "$OUT/clay/clay.h" -o "$OUT/clay/clay.o"
 "$AR" rcs "$OUT/clay/clay.a" "$OUT/clay/clay.o"
-"$CC" "${CFLAGS[@]}" -c "$HERE/vendor/ufbx/ufbx.c" -o "$OUT/fbx/ufbx.o"
+UFBX_STAMP="$(pin ufbx)"
+if ! stamp_fresh "$OUT/fbx/ufbx.o" "$OUT/fbx/ufbx.stamp" "$UFBX_STAMP"; then
+  "$CC" "${CFLAGS[@]}" -c "$HERE/vendor/ufbx/ufbx.c" -o "$OUT/fbx/ufbx.o"
+  echo "$UFBX_STAMP" > "$OUT/fbx/ufbx.stamp"
+fi
 "$CC" "${CFLAGS[@]}" -I"$HERE/vendor/ufbx" -c "$HERE/app/fbx_shim.c" -o "$OUT/fbx/shim.o"
 "$AR" rcs "$OUT/libwnfbx.a" "$OUT/fbx/ufbx.o" "$OUT/fbx/shim.o"
 "$CC" "${CFLAGS[@]}" $(pkg-config --cflags libcurl) -c "$HERE/app/ws_shim.c" -o "$OUT/ws.o"
 "$AR" rcs "$OUT/libwnws.a" "$OUT/ws.o"
 "$CC" "${CFLAGS[@]}" -c "$HERE/app/helper_ipc.c" -o "$OUT/ipc.o"
 "$AR" rcs "$OUT/libwnipc.a" "$OUT/ipc.o"
-cmake -S "$HERE/vendor/microtex" -B "$OUT/microtex" -G Ninja \
-  -DCMAKE_TOOLCHAIN_FILE="$OUT/toolchain.cmake" -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DBUILD_STATIC=ON -DHAVE_CWRAPPER=ON \
-  -DHAVE_LOG=OFF -DGRAPHICS_DEBUG=OFF -DHAVE_AUTO_FONT_FIND=OFF
-cmake --build "$OUT/microtex" --target microtex -j"$JOBS"
+MICROTEX_STAMP="$({ pin microtex; cat "$HERE"/patches/microtex-*.patch; } | sha256sum | cut -d' ' -f1)"
+if ! stamp_fresh "$OUT/microtex/lib/libmicrotex.a" "$OUT/microtex.stamp" "$MICROTEX_STAMP"; then
+  rm -rf "$OUT/microtex"
+  cmake -S "$HERE/vendor/microtex" -B "$OUT/microtex" -G Ninja \
+    -DCMAKE_TOOLCHAIN_FILE="$OUT/toolchain.cmake" -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DBUILD_STATIC=ON -DHAVE_CWRAPPER=ON \
+    -DHAVE_LOG=OFF -DGRAPHICS_DEBUG=OFF -DHAVE_AUTO_FONT_FIND=OFF
+  cmake --build "$OUT/microtex" --target microtex -j"$JOBS"
+  echo "$MICROTEX_STAMP" > "$OUT/microtex.stamp"
+fi
 "$CXX" "${CFLAGS[@]}" -std=c++17 -DHAVE_CWRAPPER \
   -isystem "$HERE/vendor/microtex/lib" -isystem "$OUT/microtex/lib" \
   $(pkg-config --cflags cairo) -c "$HERE/app/math_shim.cpp" -o "$OUT/math/shim.o"
