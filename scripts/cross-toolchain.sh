@@ -167,6 +167,10 @@ CMAKE
 fi
 MESON_WINDRES=
 if [ "$SYSTEM" = Windows ]; then MESON_WINDRES="windres = '$LLVM_MINGW/bin/x86_64-w64-mingw32-windres'"; fi
+# Meson cannot autodetect a cross host's subsystem; glib's meson.build calls
+# host_machine.subsystem() on Darwin and stops without it.
+MESON_DARWIN=
+if [ "$SYSTEM" = Darwin ]; then MESON_DARWIN=$'subsystem = \'macos\'\nkernel = \'xnu\''; fi
 cat > "$OUT/meson.ini" <<MESON
 [binaries]
 c = '$CC'
@@ -182,6 +186,7 @@ system = '${SYSTEM,,}'
 cpu_family = '$CPU'
 cpu = '$CPU'
 endian = 'little'
+$MESON_DARWIN
 [properties]
 needs_exe_wrapper = true
 MESON
