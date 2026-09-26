@@ -204,6 +204,21 @@ jobs:
         with:
           path: ~/.cache/vcpkg/archives
           key: ${{ steps.vcpkg-cache.outputs.cache-primary-key }}
+      # Apple clang has crashed (SIGABRT) on harfbuzz here. Keep its crash
+      # report and preprocessed reproducer, which otherwise die with the runner.
+      - name: Collect compiler crash reports
+        if: failure()
+        run: |
+          mkdir -p build/clang-crash
+          find ~/Library/Logs/DiagnosticReports -name 'clang*' -exec cp {} build/clang-crash/ \;
+          find "${TMPDIR:-/tmp}" -maxdepth 1 \( -name '*.sh' -o -name '*.cpp' -o -name '*.c' \) -newer "$GITHUB_WORKSPACE/DEPS_PIN" \
+            -exec cp {} build/clang-crash/ \;
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: clang-crash-${{ matrix.target }}
+          path: build/clang-crash/
+          if-no-files-found: ignore
       - name: Extract and execute shipped package
         run: |
           source "$RUNNER_TEMP/tools/env"

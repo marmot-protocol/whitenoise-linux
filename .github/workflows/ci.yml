@@ -112,7 +112,10 @@ jobs:
           path: vendor/mdk/crates/marmot-c/output
           key: marmot-linux-x64-${{ steps.sources.outputs.mdk }}-${{ hashFiles('patches/mdk-*.patch') }}
 
+      # A test that crashes while holding clay_test_mutex blocks the rest of
+      # the suite forever; fail after an hour instead of GitHub's six.
       - name: Build and test
+        timeout-minutes: 60
         run: scripts/build.sh test
 
       # Saved even when a test fails, so the next run skips the Rust build.

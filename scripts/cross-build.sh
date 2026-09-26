@@ -121,7 +121,10 @@ SUFFIX=a; SUBDIR=
 if [ "$SYSTEM" = Windows ]; then SUFFIX=lib; fi
 if [ "$SYSTEM" = Darwin ]; then SUBDIR=/darwin; fi
 mkdir -p "$OVERLAY/vendor/stb/lib$SUBDIR" "$OVERLAY/vendor/cgltf/lib$SUBDIR"
+# Replace, never update: `ar rcs` edits an existing archive in place, and the
+# copied Odin tree ships prebuilt ones (universal on macOS, which ar rejects).
 for stb in image image_write image_resize truetype rect_pack vorbis sprintf; do
+  rm -f "$OVERLAY/vendor/stb/lib$SUBDIR/stb_$stb.$SUFFIX"
   "$AR" rcs "$OVERLAY/vendor/stb/lib$SUBDIR/stb_$stb.$SUFFIX" "$OUT/stb/$stb.o"
 done
 cp "$OUT/cgltf.a" "$OVERLAY/vendor/cgltf/lib$SUBDIR/cgltf.$SUFFIX"
