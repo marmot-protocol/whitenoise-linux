@@ -345,6 +345,10 @@ agent_shutdown :: proc() {
 		}
 	}
 	agent_reap()
+	// delete() frees the storage but leaves the variables pointing at it;
+	// the next agent_scope would iterate freed map slots.
 	delete(agent_previews)
 	delete(agent_retired)
+	agent_previews = nil
+	agent_retired = nil
 }

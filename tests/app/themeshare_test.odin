@@ -2,6 +2,7 @@ package main
 
 import "core:os"
 import "core:strings"
+import "core:sync"
 
 import clay "../vendor/clay/bindings/odin/clay-odin"
 import "core:testing"
@@ -116,6 +117,11 @@ test_derive_both_polarities :: proc(t: ^testing.T) {
 // catches a mistyped hex in a hand-written pack.
 @(test)
 test_builtin_packs_legible :: proc(t: ^testing.T) {
+	// load_themes rebuilds the global theme_packs; see the adopt test.
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&test_home_lock)
+	defer sync.unlock(&test_home_lock)
 	load_themes()
 	testing.expect(t, len(theme_packs) >= 16, "the eight new packs load")
 
@@ -166,6 +172,10 @@ test_builtin_packs_legible :: proc(t: ^testing.T) {
 // theme_packs[ui.theme] took the whole app down.
 @(test)
 test_active_pack_clamps :: proc(t: ^testing.T) {
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&test_home_lock)
+	defer sync.unlock(&test_home_lock)
 	load_themes()
 	ui: Ui_State
 
@@ -181,6 +191,12 @@ test_active_pack_clamps :: proc(t: ^testing.T) {
 // and the index it returns has to stay valid.
 @(test)
 test_adopt_theme_replaces_by_slug :: proc(t: ^testing.T) {
+	// theme_packs and data_home are package globals that
+	// system_theme_layout also reloads; take its locks in its order.
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
+	sync.lock(&test_home_lock)
+	defer sync.unlock(&test_home_lock)
 	dir, dir_err := os.make_directory_temp("", "wn-theme-test", context.temp_allocator)
 	if dir_err != nil {
 		return // no writable temp dir; the path is exercised elsewhere

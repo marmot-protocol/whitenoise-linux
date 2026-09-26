@@ -188,7 +188,11 @@ incoming_preserves_scroll :: proc(t: ^testing.T) {
 // cursor keeps the page's MLS position.
 @(test)
 timeline_renders_by_wall_clock :: proc(t: ^testing.T) {
-	// retired_messages and the agent scope are package-global caches.
+	// timeline_apply writes package-global state (the agent scope,
+	// retired_messages), as incoming_preserves_scroll does; unlocked, the
+	// two race (ThreadSanitizer: agent_scope) and one can crash.
+	sync.lock(&clay_test_mutex)
+	defer sync.unlock(&clay_test_mutex)
 	context.allocator = runtime.default_context().allocator
 	ui := Ui_State {
 		account_ref = "account",
